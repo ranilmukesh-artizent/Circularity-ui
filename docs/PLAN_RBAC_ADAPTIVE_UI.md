@@ -2,7 +2,7 @@
 
 **Purpose of this file:** a self-contained brief for a fresh session. It does not assume any earlier conversation. Read it top to bottom, then start at **Phase 0**.
 
-**Status:** plan only. No RBAC code has been written yet.
+**Status:** implemented on branch `feature/rbac-adaptive-ui` (phases 0 to 6, 2026-10-14). The Product Owner's answers are in **section 9**; points still marked **(assumed)** are open. Code map: the policy lives between `/*RBAC-START*/` and `/*RBAC-END*/` in `index.html` (`ROLE_POLICY`, `PERM_ACTS`, `ACCOUNTS`, `can`, `canPage`, `canRoute`, `homeFor`); sign-in, requests, the Command Center layouts (`CC_LAYOUT`) and comments follow it. The user-facing walk-through is **Update 7** in `CHANGES.md`.
 
 > Compliance note: access control is a compliance-adjacent topic. Per Kinective policy, the role matrix and any wording about access, security or regulation should be reviewed by Kinective's Legal team before it is relied on or acted on.
 
@@ -33,43 +33,52 @@ Today the role selector only changes what you can **click**. Every role still **
 
 ---
 
-## 3. Proposed personas (to confirm with the Product Owner)
+## 3. Personas (confirmed by the Product Owner)
 
-The word "dev" is ambiguous. This plan assumes **Developer = integration and platform engineer** (connects systems, builds workflows, manages MCP tools), **not** a software developer. Confirm this first.
+**Developer = integration and platform engineer** (connects systems, builds workflows, proposes and manages MCP servers and tools), not a software developer. Confirmed.
+
+**Admin** is wanted and is the master role: every permission, every page, every tenant, plus the new **Access** page where Admin assigns roles and delegates approval rights. **Approver** is a role Admin delegates for specific things (see 4.6), not a second Admin.
 
 | Role | Job in one line | Landing page |
 |---|---|---|
-| **Planner** | Prepares cases, requests evidence, evaluates and queues decisions | Command Center (planner view) |
-| **Approver** | Approves or overrides decisions, spend and sale terms | Command Center (approver view) |
+| **Planner** | Prepares cases in their own tenant, requests evidence, evaluates and submits decisions for review | Command Center (planner view) |
+| **Approver** | Approves or declines what Admin has delegated to them: decisions and overrides, MCP server proposals, tenant access requests | Command Center (approver view, with an approvals inbox) |
 | **Engineer** | Inspects, records assessments and tests, owns technical eligibility | Product, Asset intelligence |
-| **Finance** | Confirms outcomes, tracks recovery, avoided spend and variance | Analytics, Value |
-| **Developer** (new) | Connects sources, builds workflows, governs agents and tools | Integration, Source map |
-| **Admin** (optional, ask PO) | Manages roles and sees everything | Command Center |
+| **Finance** | Confirms outcomes, tracks recovery, avoided spend and variance; can comment on the audit log and Source map | Analytics, Value |
+| **Developer** (new) | Connects sources, builds workflows, proposes MCP servers and governs tools | Integration, Source map |
+| **Admin** (new) | Everything above, plus roles, delegations and access | Command Center (admin view) |
 
-### Draft visibility matrix
+### Visibility matrix
 
-`V` = visible and can use, `R` = read-only, `—` = hidden entirely. This is a starting point, not a decision.
+`V` = visible and can use, `R` = read-only, `R+C` = read-only plus comments, `—` = hidden entirely. Admin is `V` everywhere and is left out of the table.
 
 | Area | Planner | Approver | Engineer | Finance | Developer |
 |---|---|---|---|---|---|
 | Command Center (role-specific KPIs and panels, see section 5) | V | V | V | V | V (health only) |
-| Product: Returned assets, Expected returns | V | V | V | R | — |
-| Product: Pool optimizer | V | V | — | R | — |
-| Asset intelligence (all tabs) | V | V | V (condition, eligibility, data focus) | V (economic focus) | — |
+| Product: Returned assets, Expected returns | V (own tenant) | V | V | R | — |
+| Product: Pool optimizer | V (own tenant) | V | — | R | — |
+| Asset intelligence (all tabs) | V (own tenant) | V | V (condition, eligibility, data focus) | V (economic focus) | — |
 | Treatment Intelligence: panels 1 to 3 | V | V | V | R | — |
 | Treatment Intelligence: scenario, save, compare | V | V | R | R | — |
-| Treatment Intelligence: **Approve / override** | — | V | — | — | — |
+| Treatment Intelligence: **Submit for review** | V | — | — | — | — |
+| Treatment Intelligence: **Approve / decline / override** | — | V (if delegated "decisions") | — | — | — |
 | Treatment Intelligence: **Request evidence / inspection** | V | V | V | — | — |
 | Treatment Intelligence: **Record assessment or test result** | — | — | V | — | — |
 | Treatment Intelligence: **Confirm outcome** | — | — | — | V | — |
 | Treatment Intelligence: execution readiness, timeline | V | V | V | R | — |
 | Analytics (value, mix, models, overrides) | R | V | — | V | — |
 | Analytics: sustainability | — | R | V | V | — |
-| Integration: Source map, Source tables, Canonical models | — | — | R | — | V |
+| Integration: Source map | — | — (assumed) | R | **R+C** | V |
+| Integration: Source tables, Canonical models | — | — (assumed) | R | — | V |
 | Integration: Workflow studio, Manual import | — | — | — | — | V |
-| Integration: Event stream, Conflict queue | — | R | — | — | V |
-| MCP & Tools | — | R (call log, write gate) | — | — | V |
-| Audit & provenance | R (own cases) | V | R | R | V |
+| Integration: Event stream, Conflict queue | — | R (assumed) | — | — | V |
+| MCP & Tools: catalogue, call log, write gate | — | R | R | — | V |
+| MCP & Tools: **Propose MCP server** | — | — | — | — | V |
+| MCP & Tools: **Approve / decline MCP server proposal** | — | V (if delegated "mcp") | — | — | — |
+| Audit & provenance | R (own tenant) | V | R | **R+C** | V |
+| Access (roles, delegations, all requests) | — | — | — | — | — |
+| Approvals inbox (requests in the Approver's delegated scopes) | — | V | — | — | — |
+| Tenant switch | own tenant; others by **Request access** | all (assumed) | all (assumed) | all (assumed) | all (assumed) |
 
 ---
 
@@ -110,11 +119,66 @@ Each role gets the right content, not a shrunken copy of everyone's:
 - **Vocabulary:** small label changes where it helps (for example "Submit for review" for Planner, "Approve" for Approver).
 - **Empty and denied states:** use the existing `.empty` pattern, with one line saying which role does this.
 
-### 4.4 Role switcher
+### 4.4 Simulated sign-in (replaces the role selector)
 
-Keep the top-bar role selector for the demo, but present it as **"View as"**, show the active role clearly, persist it (`circ-role`), and make switching feel immediate (navigate to the landing page, update nav, toast with the role description). Make sure the legacy stored value (an old role name) cannot crash startup; fall back to Planner.
+The PO wants the app to **simulate signing in per role**, not a "View as" switch.
 
-### 4.5 Do not break
+- **Sign-in screen** shown when there is no session: a card with one row per demo account, each a synthetic identity such as "Planner · Customer A", "Planner · Customer B", "Approver", "Engineer", "Finance", "Developer", "Admin". No passwords. A clear line: "Simulated sign-in for the demo. No real accounts or authentication." Use synthetic labels only, never personal names.
+- A **Planner account carries a home tenant** (see 4.7). Other roles have no home tenant.
+- **Top bar:** replace `<select id="rsel">` with an account chip (role, and tenant for Planner) that opens a small menu: role description, "Switch account", "Sign out". Sign out returns to the sign-in screen and clears the session.
+- **Persistence:** store the session in `circ-session` (`{role, tenant}`), replacing `circ-role`. Migrate a legacy `circ-role` value on startup; an unknown or malformed value falls back to the sign-in screen without errors. This is the only new persisted key; requests, delegations and comments stay in memory.
+- Signing in lands on `homeFor(role)`, rebuilds nav, and toasts the role description. Deep links opened while signed out go to sign-in first, then to the link if the role may open it.
+- Audit rows record the account (`by: 'Planner · Customer A'`), keeping the role visible.
+
+### 4.5 Admin
+
+- `can(anything)` is true for Admin; `see(anything)` is true; every tenant.
+- New **Access** page (Admin only, `#/access/...`) with three sections:
+  1. **Accounts and roles:** the demo accounts and their roles (read-only list is enough for the demo, assumed).
+  2. **Approver delegations:** toggles for which scopes the Approver holds: `decisions`, `mcp`, `tenantAccess`. Default: all three on.
+  3. **All requests:** every pending and decided request (tenant access, MCP proposals), which Admin can approve or decline directly.
+- Every change is written to the audit log.
+
+### 4.6 Approver as a delegated role
+
+- Approver permissions come from the delegations Admin sets: `can('approve')` becomes `can('approve.decisions')`, plus `approve.mcp` and `approve.tenantAccess`.
+- If a scope is removed, the matching buttons and inbox items **disappear** (hide, don't disable), and the Approver's Command Center loses the related KPI.
+- **Approvals inbox** (a section on the Approver's Command Center, with its own link `#/command/approvals`): one list across scopes, each item with Approve / Decline and an optional note. Sidebar badge shows the count.
+
+### 4.7 Tenant scope and access requests
+
+- A Planner sees **only their home tenant**: `S.tenant` is locked to it, and every list, KPI, search result and deep link is filtered. A deep link to another tenant's case redirects home with "This case belongs to another tenant".
+- The tenant selector shows other tenants with a lock and a **Request access** action (with a reason field). The request goes to Approvers holding `tenantAccess` and to Admin.
+- When approved, the Planner can switch to that tenant for the rest of the session (in memory). Declined requests show the decision and note. All steps are audited.
+- Command Center numbers for a Planner reconcile with the Product pages filtered to the same tenant; add an invariant for this.
+
+### 4.8 MCP server proposals
+
+- Developer gets **Propose MCP server** on MCP & Tools: name, purpose, tools it exposes, read or write, data it touches. A proposal starts as "Pending review" and is listed for everyone who can see MCP.
+- Approver (with `mcp`) or Admin approves or declines it, with a note. Approved servers join the catalogue; declined ones stay listed as declined with the note. Engineer sees proposals and the catalogue read-only.
+- Seed two or three synthetic proposals so the flow is visible on first load (load-time only, deterministic).
+
+### 4.9 Comments (Finance)
+
+- Finance can **comment** on audit log rows and on Source map sources: a small thread in the existing drawer, with author account and time.
+- Everyone who can see the item can read its comments; Developer and Admin can reply (assumed). In memory only.
+- Comment text goes through `esc()`. The UI hint reminds users not to enter personal data.
+
+### 4.10 Role wording
+
+The PO accepted the proposed wording. Use one vocabulary map in `ROLE_POLICY` rather than inline strings:
+
+| Action | Planner | Approver | Engineer | Finance | Developer | Admin |
+|---|---|---|---|---|---|---|
+| Moving a decision forward | Submit for review | Approve / Decline / Override | — | — | — | Approve / Decline / Override |
+| Evidence | Request evidence | Request evidence | Request inspection | — | — | Request evidence |
+| Assessment | — | — | Record assessment | — | — | Record assessment |
+| Outcome | — | — | — | Confirm outcome | — | Confirm outcome |
+| MCP | — | Approve / Decline proposal | — | — | Propose MCP server | Approve / Decline proposal |
+| Tenant | Request access | Approve / Decline access | — | — | — | Approve / Decline access |
+| Denied state | "Only the <Role> can do this." | | | | | |
+
+### 4.11 Do not break
 
 - Tenant scoping (`S.tenant`) is separate from role. Keep it working.
 - The approval, override and re-evaluation logic keeps its current behaviour and audit trail (`by: S.role`).
@@ -130,7 +194,10 @@ Keep the top-bar role selector for the demo, but present it as **"View as"**, sh
 | Approver | Awaiting approval (value), potential recovery, value at risk, closing soon | Value at risk by reason, actions awaiting approval, capacity |
 | Engineer | Inspection queue, gate failures, condition mix, parts at risk | Lifecycle portfolio (condition), signals (evidence gaps, parts), capacity |
 | Finance | Net recovery, uplift vs baseline, recovery yield, avoided spend, CO2e | Value realisation, treatment mix, predicted vs actual |
-| Developer | Integration health, sources needing attention, failing workflows, sync success | Data-health strip, integration health, mapping exceptions, recent events |
+| Developer | Integration health, sources needing attention, failing workflows, sync success, my MCP proposals | Data-health strip, integration health, mapping exceptions, recent events |
+| Admin | Pending requests (all), awaiting approval (value), integration health, net recovery | Approvals inbox (all scopes), value at risk, integration health, recent access changes |
+
+The Approver row also gets the **approvals inbox** (4.6) and an "Approvals pending" KPI for each delegated scope.
 
 ---
 
@@ -138,15 +205,17 @@ Keep the top-bar role selector for the demo, but present it as **"View as"**, sh
 
 **Phase 0: Baseline.** Branch from current `main`. Re-create the test harness (section 8). Record current behaviour and screenshots so regressions are obvious. Confirm the open questions in section 9 with the PO; if unavailable, proceed with the draft matrix and mark it "assumed".
 
-**Phase 1: Policy foundation (no visible change).** Add `ROLE_POLICY`, `can`, `see`, `canPage`, `homeFor`. Add the Developer role (and Admin if confirmed). Migrate the existing `can('...')` and `canMgr()` call sites to the new helpers. Output must be identical for existing roles.
+**Phase 1: Policy foundation (no visible change).** Add `ROLE_POLICY`, `can`, `see`, `canPage`, `homeFor`, the vocabulary map, and approver delegation state. Add the Developer and Admin roles. Migrate the existing `can('...')` and `canMgr()` call sites to the new helpers. Output must be identical for existing roles.
 
-**Phase 2: Navigation and routing.** Role-filtered `NAV`, route guard, landing pages, redirects on role switch, role-aware sidebar badges, flyout and mobile sub-nav, search results. Add the "View as" polish.
+**Phase 2: Sign-in, navigation and routing.** Simulated sign-in screen, account chip, sign out, `circ-session` with legacy migration (4.4). Role-filtered `NAV`, route guard, landing pages, redirects on account switch, role-aware sidebar badges, flyout and mobile sub-nav, search results. Planner tenant lock (4.7, filtering only).
+
+**Phase 2b: Requests and Admin.** Shared request model (tenant access, MCP proposals), approvals inbox, Access page with delegations, audit entries, Planner "Request access" flow, Developer "Propose MCP server" flow, seeded proposals.
 
 **Phase 3: Command Center.** Per-role KPI sets and panels (section 5), using `see(...)` per widget so layout still fills the grid (no empty holes; reflow with container queries).
 
 **Phase 4: Product, Asset intelligence, Treatment Intelligence.** Gate panels, tabs and action buttons per the matrix. Hide (not disable) actions the role can never perform. Keep state-based disabled buttons with `data-why`.
 
-**Phase 5: Analytics, Integration, MCP & Tools, Audit.** Role-gate sections and tabs. For Integration, only Developer sees configuration, workflows and imports. Others who have read access get truly read-only views (no Add, Edit, Save, Delete, Sync buttons rendered).
+**Phase 5: Analytics, Integration, MCP & Tools, Audit.** Role-gate sections and tabs. For Integration, only Developer and Admin see configuration, workflows and imports. Others who have read access get truly read-only views (no Add, Edit, Save, Delete, Sync buttons rendered). Add Finance comments on audit rows and Source map sources (4.9).
 
 **Phase 6: Hardening and docs.** Role by page matrix test, forbidden-control scan, palette audit, responsive and dark-mode screenshots per role, update `CHANGES.md` (new "Update N", a role table, screenshots), commit with a detailed message. Do **not** push until asked.
 
@@ -210,7 +279,10 @@ Automated checks to write:
 
 1. **Role by page matrix:** for each role and each page and section, assert the nav item exists or does not, and that opening the deep link either renders or redirects to the landing page with a toast.
 2. **Forbidden controls scan:** for each role, search the rendered DOM of every page for `data-act` names that role must not have (for example `approve`, `srcDel`, `wfPublish`) and assert none are present.
-3. **Landing and switching:** switching role from a forbidden page lands on the new role's home. A stale value in `localStorage` falls back to Planner without errors.
+3. **Sign-in, landing and switching:** no session shows sign-in; signing in lands on the role's home; switching account from a forbidden page lands on the new home; sign out clears the session. A legacy `circ-role` value migrates, and a malformed `circ-session` shows sign-in without errors.
+9. **Tenant lock:** a Planner sees only home-tenant cases on every page and in search; a deep link to another tenant redirects; after an approved access request the tenant becomes available.
+10. **Delegations and requests:** removing an Approver scope hides its buttons, inbox items and KPI; approving or declining a tenant request or MCP proposal updates state, inbox counts and the audit log. Admin can act on all requests.
+11. **Comments:** Finance can add a comment on an audit row and a Source map source; text is escaped; roles without access to the item never see it.
 4. **Command Center per role:** the KPI and panel ids match section 5, with no empty grid holes.
 5. **Cases still render:** `caseView` for all 128 cases under every role, no `undefined` or `NaN`, no console errors.
 6. **Reconciliation:** the existing invariants and a spot check that awaiting-approval, recovery and uplift numbers match across Command Center, Product, Analytics and Asset pages for each role that can see them.
@@ -221,20 +293,25 @@ Manual: a short demo pass per role, with screenshots saved to `docs/screenshots/
 
 ---
 
-## 9. Open questions for the Product Owner
+## 9. Product Owner decisions (2026-10-14)
 
-1. Is **Developer** the integration and platform engineer role described here? Is **Admin** wanted?
-2. Should Approver or Engineer see Integration, MCP or Audit read-only, or not at all?
-3. May Finance see the audit log and the Source map?
-4. Is the role selector a demo-only "View as" switch, or should the app simulate sign-in per role?
-5. Should a Planner see other tenants' cases, or only their own? (The tenant selector exists today.)
-6. Any role-specific wording the PO wants (for example "Submit for review" vs "Approve")?
+| # | Question | Answer | Where it lands |
+|---|---|---|---|
+| 1 | Is Developer the integration and platform engineer? Is Admin wanted? | Yes. Admin is wanted and has every permission. | Section 3, 4.5 |
+| 2 | Should Approver or Engineer see Integration, MCP or Audit? | Approver and Engineer can see MCP. Approver can approve or decline the Developer's MCP server proposals. Admin is master overall; Approvers are delegated by Admin for specific things. | Matrix, 4.6, 4.8 |
+| 3 | May Finance see the audit log and Source map? | Yes, read-only, with comments. | Matrix, 4.9 |
+| 4 | "View as" switch or simulated sign-in? | Simulate sign-in. | 4.4 |
+| 5 | Should a Planner see other tenants' cases? | Own tenant only. Seeing another tenant needs approval from an Approver or Admin. | 4.7 |
+| 6 | Role-specific wording? | Use the proposed wording. | 4.10 |
+
+**Still assumed (not covered by the answers; confirm in the next review):** Approver and Engineer access to Integration sections and Audit stays as in the draft matrix; non-Planner roles see all tenants; Developer and Admin may reply to Finance comments; the Access page lists accounts read-only rather than letting Admin create new ones.
 
 ---
 
 ## 10. Definition of done
 
 - Each role sees only its own pages, sections, panels, KPIs, tabs and action buttons; nothing else is rendered (not merely greyed out).
+- Simulated sign-in works for all six roles; a Planner is confined to their tenant unless access is approved; MCP proposals, tenant requests, Approver delegations and Finance comments work end to end and are audited.
 - Deep links to forbidden pages redirect safely; switching role never leaves a broken view.
 - Existing behaviour, audit trail and cross-page numbers are unchanged for allowed paths.
 - All automated checks pass with no console errors; no new colours; light and dark both correct; no horizontal overflow at 390 px.
@@ -244,4 +321,4 @@ Manual: a short demo pass per role, with screenshots saved to `docs/screenshots/
 
 ## 11. Prompt to paste into the fresh session
 
-> Read `docs/PLAN_RBAC_ADAPTIVE_UI.md` fully, then `CHANGES.md` and skim `index.html` around `ROLES`, `can`, `NAV`, `PAGES`, `route` and `shell`. Follow the project rules in section 7 exactly (palette tokens only, no new libraries, prefixed class names, reconcile numbers, synthetic data, no personal data). Start with Phase 0: confirm the open questions in section 9 with me (or proceed with the draft matrix and mark it assumed), rebuild the test harness, and show me the baseline. Then do one phase at a time, running tests and sharing a screenshot after each. Commit with detailed messages but do not push until I say so.
+> Read `docs/PLAN_RBAC_ADAPTIVE_UI.md` fully, then `CHANGES.md` and skim `index.html` around `ROLES`, `can`, `NAV`, `PAGES`, `route` and `shell`. Follow the project rules in section 7 exactly (palette tokens only, no new libraries, prefixed class names, reconcile numbers, synthetic data, no personal data). Start with Phase 0: the PO's answers are in section 9 (items marked "assumed" are still open), rebuild the test harness, and show me the baseline. Then do one phase at a time, running tests and sharing a screenshot after each. Commit with detailed messages but do not push until I say so.

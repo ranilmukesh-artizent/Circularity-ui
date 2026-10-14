@@ -1,8 +1,124 @@
 # Circularity UI: what changed
 
-Open `index.html`. The app now opens on the **Command Center** (Update 3). Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
+Open `index.html`. The app now opens on a **sign-in screen** (Update 7): pick a demo account, and it opens on that role's home page. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
 
-**Quick links:** [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+**Quick links:** [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+
+---
+
+## Update 7: Role-based views (sign in as a role)
+
+**Where:** the app now opens on a **sign-in screen**. Pick a demo account. Each role then sees only the pages, panels, figures and buttons that belong to its job. Controls a role can never use are **not shown at all**, rather than greyed out. The account menu (top right) has **Switch account** and **Sign out**.
+
+| Sign-in | Phone |
+|---|---|
+| [![Sign-in](docs/screenshots/rbac-signin.webp)](docs/screenshots/rbac-signin.webp) | [![Phone sign-in](docs/screenshots/rbac-phone-signin.webp)](docs/screenshots/rbac-phone-signin.webp) |
+
+**Simulated sign-in.** There are eight demo accounts: three Planners (one per customer tenant), Approver, Engineer, Finance, Developer and Admin. There are no passwords and no real authentication. Labels are synthetic. The choice is remembered on this device until you sign out. An old saved role from earlier versions is carried over automatically.
+
+> Access control is close to compliance. The role matrix below, and any wording about access, should be reviewed by Kinective's Legal team before it is relied on.
+
+### What each role sees
+
+| Role | Lands on | Left menu | Can do | Does not see |
+|---|---|---|---|---|
+| **Planner** (Customer A, B or C) | Command Center | Command Center, Product, Analytics (read-only), Audit (own tenant) | Request evidence, **Submit for review**, scenarios, re-evaluate, **request access to another tenant** | Integration, MCP, other tenants' cases (until access is granted) |
+| **Approver** | Command Center, with the **Approvals inbox** | Command Center, Product, Analytics, Integration (Event stream and Conflict queue, read-only), MCP (read-only), Audit | **Approve, Override, Decline** decisions; approve or decline **MCP server proposals** and **tenant access requests**, each only if Admin delegated it | Workflow studio, Source map, Manual import, MCP playground |
+| **Engineer** | Asset intelligence | Command Center, Product (no Pool optimizer), Analytics (engineering economics and sustainability), Integration (Source map, tables, models, read-only), MCP (read-only), Audit | Request inspection, **Record assessment result** | Economic tab, approval, Finance actions |
+| **Finance** | Analytics | Command Center, Product (read-only), Analytics, Integration (Source map, read-only), Audit | **Confirm outcome**, **comment** on audit entries and Source map sources | Approval, evidence requests, MCP, workflows |
+| **Developer** | Integration, Source map | Command Center (integration health), Integration, MCP and Tools, Audit | Everything in Integration, MCP playground, **Propose MCP server**, comment | Product and Analytics (no case data) |
+| **Admin** | Command Center | Everything, plus **Access** | Everything, plus Approver delegations and every request | Nothing hidden |
+
+Opening a page your role cannot see (for example from an old bookmark) takes you to your home page with a short message saying why. A link to another tenant's case says that the record belongs to another tenant.
+
+### Command Center for each role
+
+Each role gets its own key figures and panels, computed from the same data, so numbers still match Product and Analytics.
+
+| Role | Key figures | Panels |
+|---|---|---|
+| Planner | Assets in scope, Awaiting approval, Evidence gaps, Closing within 5 days | Lifecycle portfolio, time to action, actions to prioritise, signals |
+| Approver | Awaiting approval (value), Potential recovery, Value at risk, Closing within 5 days, Requests waiting | **Approvals inbox**, value at risk by reason, time to action, actions, capacity, value realisation |
+| Engineer | Inspection queue, Failed gates, Graded A or B, Parts on backorder (illustrative) | Lifecycle portfolio, treatment opportunity, actions, signals, capacity |
+| Finance | Net recovery, Uplift vs baseline, Recovery yield, Avoided spend, CO₂e avoided | **Outcomes to confirm**, treatment opportunity, value realisation |
+| Developer | Integration health, Sources needing attention, Failing workflows, Open conflicts, My MCP proposals | Integration health, mapping exceptions, recent events (live) |
+| Admin | Requests waiting, Potential recovery, Value at risk, Integration health, Uplift | Everything above |
+
+| Planner | Approver | Finance | Developer |
+|---|---|---|---|
+| [![Planner](docs/screenshots/rbac-planner-command.webp)](docs/screenshots/rbac-planner-command.webp) | [![Approver](docs/screenshots/rbac-approver-command.webp)](docs/screenshots/rbac-approver-command.webp) | [![Finance](docs/screenshots/rbac-finance-command.webp)](docs/screenshots/rbac-finance-command.webp) | [![Developer](docs/screenshots/rbac-developer-command.webp)](docs/screenshots/rbac-developer-command.webp) |
+
+### Treatment Intelligence and Asset intelligence
+
+| Moment | Planner | Approver | Engineer | Finance |
+|---|---|---|---|---|
+| Decision waiting | **Submit for review** | **Approve**, **Override**, **Decline** | Status only | Status only |
+| Evidence missing | Request evidence | Request evidence | Request inspection, then **Record assessment result** | Status only |
+| Outcome reported | Status only | Status only | Status only | **Confirm outcome** |
+| Scenarios | Save, load, delete | Save, load, delete | Preview only | Preview only |
+
+- **Submit for review** records who submitted and when; the Approver sees it on the decision card.
+- **Decline** needs a reason. The case goes back to re-evaluation and the Planner sees the reason.
+- **Asset intelligence** shows the tabs of the role: the Engineer has no Economic tab; Finance gets an economic view (Overview, Lifecycle, Economic, Data, Related). The overview reflows, so there are no empty gaps.
+
+| Planner: Submit for review | Approver: Approve, Override, Decline | Engineer: asset page |
+|---|---|---|
+| [![Planner case](docs/screenshots/rbac-planner-case.webp)](docs/screenshots/rbac-planner-case.webp) | [![Approver case](docs/screenshots/rbac-approver-case.webp)](docs/screenshots/rbac-approver-case.webp) | [![Engineer asset](docs/screenshots/rbac-engineer-asset.webp)](docs/screenshots/rbac-engineer-asset.webp) |
+
+### Approvals, requests and the Access page
+
+- **Approvals inbox** (Approver and Admin, on the Command Center, with a count in the left menu): tenant access requests and MCP server proposals. **Approve** adds an optional note; **Decline** needs a reason.
+- **Tenant access:** a Planner picks **Request access…** in the tenant menu (or **Request tenant access** in the account menu), chooses a tenant and gives a reason. Once approved, that tenant appears in the Planner's menu for the rest of the session.
+- **MCP server proposals:** the Developer uses **Propose MCP server** under **MCP and Tools → Server proposals** (name, owner, purpose, tools, read or write, data it touches). An approved server joins the MCP client list as "approved, not yet connected".
+- **Access** page (Admin only): accounts and roles, **Approver delegations** (decisions, MCP proposals, tenant access) and all requests. Untick a delegation and its buttons, inbox items and key figure disappear for the Approver straight away.
+- Every request, decision and delegation change is written to the event stream and audit log with the account that made it.
+
+[![Access page](docs/screenshots/rbac-admin-access.webp)](docs/screenshots/rbac-admin-access.webp)
+
+### Read-only views and comments
+
+- Integration and MCP pages say **Read-only view** for roles that may look but not change. A source opens with every field read-only.
+- **Comments:** Finance, Developer and Admin can comment on an **audit entry** (open it from the audit log) and on a **Source map source** (open it, then the **Comments** tab). Everyone who can see the item can read the comments. Do not enter personal data.
+
+### Try it (three minutes)
+
+1. Sign in as **Planner · Customer A**. Open **RT-1048** and press **Submit for review**.
+2. Account menu → **Switch account** → **Approver**. In the **Approvals inbox**, approve **REQ-304** (tenant access for Planner · Customer B). Open **RT-1048**, see who submitted it, and press **Decline** with a reason.
+3. Switch to **Planner · Customer A**: RT-1048 shows your reason. Press **Run re-evaluation**.
+4. Switch to **Planner · Customer B**: the tenant menu now includes Customer A.
+5. Switch to **Admin** → **Access** → untick **MCP server proposals**. Switch to **Approver**: the proposal has left the inbox.
+6. Switch to **Developer** → **MCP and Tools → Server proposals** → **Propose MCP server**.
+7. Switch to **Finance** → **Integration → Source map** → open **ERP** → **Comments**. Post a comment.
+
+[![Dark mode](docs/screenshots/rbac-dark-approver.webp)](docs/screenshots/rbac-dark-approver.webp) [![Phone](docs/screenshots/rbac-phone-planner.webp)](docs/screenshots/rbac-phone-planner.webp)
+
+### Also fixed
+
+- **Phone layout:** Analytics and MCP and Tools no longer scroll sideways at phone width. Some rows stayed in two columns on small screens, and two tables and the engineering heat map now scroll inside their panels.
+
+### Still assumed (please confirm)
+
+These points were not covered by the Product Owner's answers, so the app follows the draft plan:
+- Approver and Engineer access to the Integration sections and the audit log stays as in the draft matrix.
+- Roles other than Planner see all tenants.
+- Developer and Admin can reply to Finance comments.
+- The Access page lists the demo accounts but does not create new ones.
+
+### How it was checked
+
+An automated headless-browser suite runs 178 checks. It covers:
+- sign-in, migration of the old saved role, and recovery from a broken saved value
+- every route for every account (allowed pages render; forbidden ones send you home with a reason)
+- no forbidden control anywhere on any page, drawer or modal, and no link to a page the role cannot open
+- the Command Center figures and panels per role, with no gaps
+- all visible cases rendering for every role
+- the tenant lock
+- inbox, approve and decline, delegations and proposals
+- comments, including escaped text
+- numbers that match across Command Center, Product and Analytics
+- the existing data integrity checks
+
+A second run opens every page each role can reach at 390 px and finds no sideways scrolling. Every colour added in this update comes from the existing palette; no new colour values were added.
 
 ---
 
@@ -270,6 +386,8 @@ A table graph for a system's data, with clusters and foreign keys.
 
 ## Two-minute demo script
 
+Sign in as **Admin** to follow every step below (Update 7 has its own role walk-through). Integration changes need the **Developer** or **Admin** account.
+
 0b. Open **any asset → Treatment Intelligence**. Drag a scenario slider, change an objective weight, tick pathways and press **Compare**, then **Save scenario**.
 0a. **Product → Asset intelligence** (or click an asset ID in Returned assets). Walk the eight tabs, then press **Compare similar assets**.
 0. **Command Center** (opens first). Click the **Awaiting approval** slice, then a **Value at risk** reason, then a table row. Resize the window to show the phone layout.
@@ -287,11 +405,11 @@ A table graph for a system's data, with clusters and foreign keys.
 ## Good to know
 
 - This is a **demo skeleton**. All changes live in the browser and **reset on refresh**. There is no backend.
-- The **role** dropdown (top right) matters. **Approver** and **Engineer** can add, edit, save and delete. **Planner** and **Finance** are read-only and see a message instead.
+- **Sign in as a role** (Update 7). Only the **Developer** and **Admin** can add, edit, sync and delete in Integration; Engineer, Finance and Approver see read-only views, and Planners do not see Integration at all.
 - **Device telemetry (AWS IoT Core)** is deliberately **not connected**. It shows how an unavailable source looks and how workflows react to it.
 - **Market pricing** is deliberately **stale** (expired token). Open it and use **Refresh token and re-sync** to bring it back.
 - **Recycler partner** is a **flat file** import, so its Sync button is disabled. It is loaded from the **Manual import** tab.
 - The Source tables tab covers six systems. Other systems show no table model yet.
 - Vendor and product names are used to make the demo feel real. Data, volumes and run results are synthetic.
 - The Command Center uses planning assumptions for capacity limits and the value-at-risk factors. They are labelled as such when you hover, and are easy to change.
-- The colours and fonts are the same as before. The Command Center is new, and the Product, Analytics, MCP and Audit pages are unchanged.
+- The colours and fonts are the same as before. Update 7 adds no new colours.
