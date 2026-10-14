@@ -1,5 +1,7 @@
 # Circularity UI: what changed
 
+For the product overview (what Circularity does, every screen and every role) read [`README.md`](README.md). This file is the reviewer walk-through, one section per update, newest first.
+
 Open `index.html`. The app now opens on a **sign-in screen** (Update 7): pick a demo account, and it opens on that role's home page. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
 
 **Quick links:** [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
@@ -94,6 +96,7 @@ Each role gets its own key figures and panels, computed from the same data, so n
 
 ### Also fixed
 
+- **Five key figures on a laptop screen:** the Approver, Finance, Developer and Admin Command Centers have five key figures. On laptop-size windows (roughly 1,050 to 1,500 px wide) they sat three on one row and two on the next, leaving an empty slot. The second row now stretches to fill the width.
 - **Phone layout:** Analytics and MCP and Tools no longer scroll sideways at phone width. Some rows stayed in two columns on small screens, and two tables and the engineering heat map now scroll inside their panels.
 
 ### Still assumed (please confirm)
@@ -132,7 +135,9 @@ A second run opens every page each role can reach at 390 px and finds no sideway
 
 **Header buttons**
 - **Asset Decision Mode / Portfolio Optimization Mode:** the second one opens the Pool optimizer, which allocates assets that compete for the same demand.
-- **Save scenario**, **Compare (n)**, **Evidence snapshot**, and **Submit for review →** (for an Approver this opens the review and approval step; for other roles it queues it for an Approver).
+- **Save scenario**, **Compare (n)**, **Evidence snapshot**, and **Submit for review →**.
+
+> **Since Update 7** the decision buttons depend on the role: the Planner sees **Submit for review**; the Approver sees **Approve**, **Override** and **Decline** (with a reason); the Engineer sees **Record assessment result**; Finance sees **Confirm outcome**. Scenario saving is for Planner, Approver and Admin. See the Treatment Intelligence table in Update 7.
 - Below it, a card with the product photo, key facts, a link back to **Asset Intelligence**, and four **business objective sliders** (net recovery, turnaround time, environmental impact, serviceability).
 
 **The five panels**
@@ -201,6 +206,8 @@ Command Center, for reference: [docs/screenshots/command-center.webp](docs/scree
 
 The left menu now has a dropdown under every page, listing the sections that actually exist on it.
 
+> **Since Update 7** the menu shows only the pages and sections of the signed-in role. Update 7 also added **Approvals inbox**, **Outcomes to confirm** and **Integration health** to Command Center, **Server proposals** to MCP and Tools, and a new **Access** page for Admin.
+
 | Page | Sections in its dropdown |
 |---|---|
 | **Command Center** | Key figures, Portfolio charts, Actions to prioritise, Signals and capacity, Value realisation |
@@ -225,7 +232,9 @@ The left menu now has a dropdown under every page, listing the sections that act
 
 ## Update 3: Command Center (new home page)
 
-**Where:** the first item in the left menu, **Command Center**. It is now the page the app opens on. The old Returned assets list is still there under **Product**.
+**Where:** the first item in the left menu, **Command Center**. It is now the page the app opens on.
+
+> **Since Update 7** each role has its own Command Center: its own key figures and panels, built from the same data. The five figures below are the original layout; the Admin view is closest to it. See "Command Center for each role" in Update 7. The old Returned assets list is still there under **Product**.
 
 **What it replaces:** a long table of returned assets. The new page shows the same data as charts first, with the table below as the action list.
 
@@ -388,17 +397,17 @@ A table graph for a system's data, with clusters and foreign keys.
 
 Sign in as **Admin** to follow every step below (Update 7 has its own role walk-through). Integration changes need the **Developer** or **Admin** account.
 
-0b. Open **any asset → Treatment Intelligence**. Drag a scenario slider, change an objective weight, tick pathways and press **Compare**, then **Save scenario**.
-0a. **Product → Asset intelligence** (or click an asset ID in Returned assets). Walk the eight tabs, then press **Compare similar assets**.
-0. **Command Center** (opens first). Click the **Awaiting approval** slice, then a **Value at risk** reason, then a table row. Resize the window to show the phone layout.
-1. **Integration → Source map.** Point at the KPI strip and the live "Updated … ago" counters.
-2. Click the **API / JDBC / Native** badges, or use the **All methods** filter.
-3. Click **Edit** on **EAM**, switch **Connection method**, change the owner, press **Save changes**, then open **History**.
-4. Click **+ Add source**, fill it in, and **Create connection**. Watch the initial sync.
-5. Click **Delete** on that new source, then **Undo**.
-6. **Workflow studio.** Open **Ingest · Fixably** to show red and orange failure states and the Task instances table.
-7. Click **Run simulation** on a healthy workflow, then **Publish**.
-8. **Source tables.** Hover a table and a link, drag one around, then click **New Foreign Key**.
+1. **Command Center** (after sign-in). Click the **Awaiting approval** slice, then a **Value at risk** reason, then a table row. Resize the window to show the phone layout.
+2. **Product → Asset intelligence** (or click an asset ID in Returned assets). Walk the eight tabs, then press **Compare similar assets**.
+3. Open **any asset → Treatment Intelligence**. Drag a scenario slider, change an objective weight, tick pathways and press **Compare**, then **Save scenario**.
+4. **Integration → Source map.** Point at the KPI strip and the live "Updated … ago" counters.
+5. Click the **API / JDBC / Native** badges, or use the **All methods** filter.
+6. Click **Edit** on **EAM**, switch **Connection method**, change the owner, press **Save changes**, then open **History**.
+7. Click **+ Add source**, fill it in, and **Create connection**. Watch the initial sync.
+8. Click **Delete** on that new source, then **Undo**.
+9. **Workflow studio.** Open **Ingest · Fixably** to show red and orange failure states and the Task instances table.
+10. Click **Run simulation** on a healthy workflow, then **Publish**.
+11. **Source tables.** Hover a table and a link, drag one around, then click **New Foreign Key**.
 
 ---
 
