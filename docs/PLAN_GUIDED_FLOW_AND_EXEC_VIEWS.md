@@ -388,7 +388,11 @@ Add these checks:
 
 | # | Answer | Where it lands |
 |---|---|---|
-| D1–D20 | pending | |
+| D1 | **Team decision (2026-10-15):** new **Executive** role, read-only plus Notify; Admin also gets the Senior / Operational switch. Still to confirm with the Product Owner | 4.7, 4.10 |
+| D3 | **Team decision:** keep **Warehouse Manager** as its own role, locked to one warehouse | 4.7, 4.10, 5 |
+| D4 | **Team decision:** a default site filter for Planner and Engineer (they can widen it within their tenant); a hard lock only for Warehouse Manager | 4.7 |
+| — | **Team decision:** keep the additions beyond the brief: instruction preview before approval, confidence levels and the RUL range, and Likely lease outcome on Expected returns | 4.2, 4.4, 4.5, 4.6 |
+| D2, D5–D20 | pending (Product Owner) | |
 
 **Still open from the RBAC plan:** Approver and Engineer access to Integration and Audit; non-Planner roles see all tenants; Developer and Admin reply to Finance comments; the Access page cannot create accounts. D13 may settle the last one.
 
