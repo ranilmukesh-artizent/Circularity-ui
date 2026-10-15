@@ -2,7 +2,7 @@
 
 **Purpose of this file:** a self-contained brief for a fresh session. It does not assume any earlier conversation. Read it top to bottom, then start at **Phase 0**.
 
-**Status:** draft, not started (2026-10-15). Checked against published guidance on 2026-10-15 (section 13); the confirmed findings are folded into section 4 and marked "research note 13.x". Section 14 checks each requirement against the plan. The source is the Product Owner review of the role-based demo (meeting notes and the written requirements, summarised in section 1). Open decisions are in **section 3**. Each has a recommended default. Until the Product Owner answers, build the default and label it **(assumed)**.
+**Status:** built end to end on `feature/guided-flow` (2026-10-15), Phases 0–8; see `CHANGES.md` Update 8. Open decisions below are built on their defaults and marked (assumed). Originally drafted 2026-10-15. Checked against published guidance on 2026-10-15 (section 13); the confirmed findings are folded into section 4 and marked "research note 13.x". Section 14 checks each requirement against the plan. The source is the Product Owner review of the role-based demo (meeting notes and the written requirements, summarised in section 1). Open decisions are in **section 3**. Each has a recommended default. Until the Product Owner answers, build the default and label it **(assumed)**.
 
 **Builds on:** `docs/PLAN_RBAC_ADAPTIVE_UI.md` (role-adaptive UI, branch `feature/rbac-adaptive-ui`, not merged into `main` at the time of writing). This plan reuses its access policy, sign-in, requests and Command Center layouts. **Branch from `feature/rbac-adaptive-ui`** (or from `main` once that PR is merged).
 
@@ -392,7 +392,16 @@ Add these checks:
 | D3 | **Team decision:** keep **Warehouse Manager** as its own role, locked to one warehouse | 4.7, 4.10, 5 |
 | D4 | **Team decision:** a default site filter for Planner and Engineer (they can widen it within their tenant); a hard lock only for Warehouse Manager | 4.7 |
 | — | **Team decision:** keep the additions beyond the brief: instruction preview before approval, confidence levels and the RUL range, and Likely lease outcome on Expected returns | 4.2, 4.4, 4.5, 4.6 |
-| D2, D5–D20 | pending (Product Owner) | |
+| D2, D5–D11, D13, D14, D16–D20 | **Built on the recommended default, (assumed)** until the Product Owner answers | 4.1–4.10 |
+| D12 | Not built; still to clarify | — |
+| D15 | Diagram not in the repo yet | — |
+
+**Build notes (2026-10-15).**
+- Phase 0 measured **38** near-ties under the 5%-or-$250 rule (mostly low-value cases where $250 dominates), so no seed data was changed. Seeded recommendations are unchanged; when secondary factors favour the runner-up, the Close call box says so and the recommendation stays on net value until re-evaluated.
+- Diagnostic metric, RUL range, certified period, order numbers and demand horizon are **derived** from the existing seed (grade, `engLife`, class, a hash of the case id) rather than added to the random generator, so no existing figure moved. RT-1048: estimate 36 (30–40), certified 24, order SO-48102 at Site 3, horizon 24.
+- Notifications are kept in their own list (`S.notes`), not in `S.reqs`, so the Access request list is unaffected.
+- The "declining metric" exception compares the last two complete months; the current month is partial (as of 07 Oct).
+- Tests: role suite 208/208, guided-flow suite 110/110, no overflow at 390 px on the new screens.
 
 **Still open from the RBAC plan:** Approver and Engineer access to Integration and Audit; non-Planner roles see all tenants; Developer and Admin reply to Finance comments; the Access page cannot create accounts. D13 may settle the last one.
 

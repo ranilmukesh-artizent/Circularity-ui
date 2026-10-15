@@ -702,6 +702,65 @@ ul.impact{margin:0 0 14px;padding-left:18px;color:var(--ink2)}ul.impact li{margi
 .anr{grid-template-columns:var(--cols,minmax(0,1fr))}.ank4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .mcpcg{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start}.mcppg{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
 @media (max-width:860px){.anr,.mcpcg,.mcppg{grid-template-columns:minmax(0,1fr)}.ank4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* ===== senior and operational views (ex, ao), orchestration (or), identity (idp) ===== */
+.exp{margin-top:14px}.exops{margin:12px 0 0}.exa{text-align:right}
+.aogrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+#ccAome{margin-top:14px}
+.aol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.aor{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line2);border-left:3px solid var(--warn);border-radius:8px;padding:8px 10px}
+.aot{display:grid;gap:1px;min-width:0}.aot .note{overflow:hidden;text-overflow:ellipsis}
+.or{container-type:inline-size;container-name:or;min-width:0}
+.or .phead .row{flex-wrap:wrap;min-width:0}.or select{max-width:100%;min-width:0}.or .sh{flex-wrap:wrap}.orst{min-width:0;overflow-wrap:anywhere}
+.orflow{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;counter-reset:or}
+.orst{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:6px;align-content:start;font-size:12.5px}
+.orst.done{border-top-color:var(--ok)}.orst.active{border-top-color:var(--warn)}.orst.failed{border-top-color:var(--bad)}.orst.upstream{border-top-style:dashed;opacity:.75}.orst.pending{opacity:.8}
+.orsh{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.orsh b{flex:1;min-width:0}
+.orst p{margin:0}.orkv{margin:0;display:grid;gap:4px}.orkv dt{color:var(--muted);font-size:11px}.orkv dd{margin:0}
+.ordet{border-top:1px dashed var(--line2);padding-top:6px;color:var(--ink2)}
+.orlk{display:flex;gap:8px;flex-wrap:wrap}
+.orred{background:var(--panel3);border-radius:4px;padding:0 4px}
+@container or (max-width:1100px){.orflow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container or (max-width:560px){.orflow{grid-template-columns:1fr}}
+.idpg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.idpc{display:grid;gap:4px;align-content:start;border:1px solid var(--line2);border-radius:10px;padding:12px}
+.idps{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:13px}
+@media (max-width:1100px){.idpg{grid-template-columns:1fr}.aogrid{grid-template-columns:1fr}}
+.aship .tist{grid-column:1/-1;border-left:0;padding-left:0;border-top:1px solid var(--line2);padding-top:12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 24px}
+.aship .tist>h3,.aship .tist>div,.aship .tist>p{grid-column:1}.aship .tist>h4,.aship .tist>ul,.aship .tist>.note{grid-column:2}.aship .tist>h4{grid-row:1}.aship .tist>ul{grid-row:2/span 3}
+@container ti (max-width:700px){.aship .tist{grid-template-columns:1fr}.aship .tist>*{grid-column:1!important;grid-row:auto!important}}
+/* ===== guided treatment page (ti) ===== */
+.tistp{position:sticky;top:57px;z-index:20;display:flex;gap:4px;overflow-x:auto;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:10px;padding:6px;margin:0 0 14px}
+.tistp a{display:inline-flex;align-items:center;gap:2px;white-space:nowrap;padding:6px 10px;border-radius:8px;color:var(--ink2);text-decoration:none;font-size:13px;font-weight:600}
+.tistp a:hover{background:var(--panel2);color:var(--ink)}
+.tistp .tin{width:20px;height:20px;font-size:11px}
+.tistep{scroll-margin-top:118px;margin:0 0 22px}
+.tish{display:flex;gap:10px;align-items:flex-start;margin:0 0 10px;padding-top:6px;border-top:2px solid var(--ink)}
+.tish h2{margin:0;font:800 19px var(--f-display)}.tish p{margin:2px 0 0}.tish .tin{margin-top:2px;flex:none}
+.tist h3{margin:0}.tiout{list-style:none;margin:0;padding:0;display:grid;gap:4px}.tiout li{display:grid;gap:0;font-size:13px;border-left:3px solid var(--warn);padding-left:8px}
+.ticlv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 0}
+.ticlvc{display:grid;gap:4px;align-content:start;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px}
+.ticlh{font:700 11.5px var(--f-display);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.ticert{border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.tisum{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:10px;padding:14px 16px}
+.tisumh{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.tisumg{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:10px}
+.tisumg>div{display:grid;gap:2px}.tisumg b{font:800 20px var(--f-display)}
+.tiwi{background:var(--panel);border:2px solid var(--ink);border-radius:12px;padding:14px 16px;margin:0 0 14px}
+.tiwih{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}
+.tiwig{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tiwig>div{display:grid;gap:2px;background:var(--panel2);border-radius:8px;padding:10px 12px}
+.tiwig b{font:800 28px var(--f-display);line-height:1.15}
+.tiwic{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tiwis{margin:8px 0 0;font-weight:600}
+.tipre{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.tipre .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ticmp{margin:14px 0 0}.ticmp>summary{cursor:pointer;list-style:none;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.ticmp>summary::-webkit-details-marker{display:none}
+.titf{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:2px;font-size:12.5px}
+.titr{margin:8px 0}
+.tifull{margin-top:6px}.tifull>summary{cursor:pointer;padding:10px 0}
+@container ti (max-width:900px){.ticlv{grid-template-columns:1fr}.tisumg{grid-template-columns:repeat(3,minmax(0,1fr))}.tiwig{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container ti (max-width:480px){.tisumg{grid-template-columns:repeat(2,minmax(0,1fr))}.tiwig b{font-size:22px}}
+@media (max-width:860px){.tistp{top:0}}
 </style>
 </head>
 <body>
@@ -1009,23 +1068,26 @@ const G_STD=['Inspection passed; 36 months engineering life','Prep scope approve
 })();
 
 /* ===== Seeded fill for the remaining live returns ===== */
+/* Each step is an instruction sent to a named enterprise system. Circularity decides and instructs; these systems carry out the work. */
 const STEP_TPL={
- redeploy:[['Reserve','WMS · stock reservation'],['Prepare','EAM · repair work order'],['Transfer','WMS · movement'],['Confirm outcome','EAM · ERP']],
- resale:[['Reserve','WMS · stock reservation'],['List for sale','CRM · sale task'],['Ship','WMS · movement'],['Confirm receipts','ERP · finance']],
- relase:[['Reserve','WMS · stock reservation'],['Prepare','EAM · work order'],['Contract','CRM · order'],['Confirm outcome','ERP · finance']],
- intparts:[['Reserve','WMS · stock reservation'],['Teardown','EAM · work order'],['Allocate parts','ERP · stock transfer'],['Confirm outcome','EAM · ERP']],
- extparts:[['Reserve','WMS · stock reservation'],['Teardown','EAM · work order'],['List parts','CRM · sale task'],['Confirm receipts','ERP · finance']],
- material:[['Reserve','WMS · stock reservation'],['Collection','Recycler partner'],['Processing','Recycler partner'],['Confirm yield','Recycler · certificate']],
- exit:[['Reserve','WMS · stock reservation'],['Collection','Exit partner'],['Processing','Exit partner'],['Custody certificate','Exit partner']],
- hold:[['Reserve','WMS · stock reservation'],['Hold until review','Planning'],['Re-evaluate','Circularity'],['Confirm outcome','ERP · finance']]
+ redeploy:[['Redeployment order','ERP · Order Management'],['Refurbishment work order','EAM · Diagnostic and Repair'],['Transfer to site','WMS · transfer'],['Outcome reported','ERP · order fulfilled']],
+ resale:[['Reserve unit','WMS · reservation'],['Sale task','CRM · sale task'],['Ship to buyer','WMS · shipment'],['Outcome reported','ERP · receipts']],
+ relase:[['Refurbishment work order','EAM · Diagnostic and Repair'],['Putaway after refurbishment','WMS · putaway'],['Lease contract','CRM / Lease · contract'],['Outcome reported','ERP · finance']],
+ intparts:[['Teardown work order','EAM · Diagnostic and Repair'],['Parts putaway','WMS · putaway'],['Parts allocation','ERP · stock transfer'],['Outcome reported','EAM · ERP']],
+ extparts:[['Teardown work order','EAM · Diagnostic and Repair'],['Reserve parts','WMS · reservation'],['Sale task','CRM · sale task'],['Outcome reported','ERP · receipts']],
+ material:[['Release to partner','WMS · release'],['Collection','Recycler / Exit partner'],['Processing','Recycler / Exit partner'],['Certificate returned','Recycler · certificate']],
+ exit:[['Release to partner','WMS · release'],['Collection','Recycler / Exit partner'],['Processing','Recycler / Exit partner'],['Custody certificate returned','Exit partner']],
+ hold:[['Return to stock','WMS · inventory putaway'],['Hold until review','Planning'],['Re-evaluate','Circularity'],['Outcome reported','ERP · finance']]
 };
+const HANDOFF_MODEL=[['Redeploy','ERP · Order Management','Redeployment against a pending order'],['Refurbish or repair','EAM · Diagnostic and Repair','Work order for refurbishment, repair or teardown'],['Return to stock','WMS · putaway','Inventory putaway, reservation and transfers']];
+function handoffLegend(){return `<div class="tw" style="margin-top:10px"><table class="t static"><thead><tr><th>Decision</th><th>Instruction goes to</th><th>What that system does</th></tr></thead><tbody>${HANDOFF_MODEL.map(h=>`<tr><td><b>${h[0]}</b></td><td>${h[1]}</td><td class="note">${h[2]}</td></tr>`).join('')}</tbody></table></div>`}
 function stepsFor(routeId,done){return (STEP_TPL[routeId]||STEP_TPL.resale).map((s,i)=>({k:['reserve','prepare','transfer','confirm'][i],label:s[0],sys:s[1],state:i<done?'done':i===done?'active':'todo',ack:null}))}
 function hashId(s){let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return (h>>>0).toString(16).toUpperCase().padStart(8,'0')}
 function approvalRef(id){return 'APR-2026-10-'+String(parseInt(id.slice(3))*3+17).padStart(4,'0')}
 function mkExec(c,done,v){
   const r=c.chosen||c.recommendation,steps=stepsFor(r.id,done);
   for(let i=0;i<done;i++){steps[i].ack={by:steps[i].sys.split(' · ')[0],ref:['RSV','WO','MV','CF'][i]+'-'+(40000+parseInt(c.id.slice(3))*7+i*13),at:addDays(AS_OF,-(done-i)*.6)}}
-  c.exec={ref:approvalRef(c.id),decisionId:'DI-2026-'+c.id.slice(3),instruction:v||1,steps,dest:steps[0].sys.split(' · ')[0]+' / '+steps[1].sys.split(' · ')[0],approvedAt:addDays(AS_OF,-(done+1)*.6),approver:pick(['A. Menon','R. Das','S. Iyer','K. Raman'])};
+  c.exec={ref:approvalRef(c.id),decisionId:'DI-2026-'+c.id.slice(3),instruction:v||1,steps,dest:steps[0].sys.split(' · ')[0]+' / '+steps[1].sys.split(' · ')[0],approvedAt:addDays(AS_OF,-(done+1)*.6),approver:pick(['Approver','Approver · Customer A','Approver · Customer B','Approver · Customer C'])};
   c.approval={ref:c.exec.ref,by:c.exec.approver,at:c.exec.approvedAt,rationale:'Recommendation accepted; evidence snapshot reviewed.'};
 }
 const SITE_IDS=SITES.map(s=>s.id);
@@ -1313,7 +1375,7 @@ const CANON=[
  {n:'Intervention',v:'1.5',fields:['process','predicted_condition','cost','duration','success_p','capacity','required_tests[]'],purpose:'Approved process, predicted resulting condition, cost, duration, success uncertainty, capacity and required tests.',sources:['Inspection','EAM','QMS']},
  {n:'Route candidate',v:'2.0',fields:['components[]','channel','demand_id','intervention_ref','timing','expected_net','cost_breakdown','baseline','exclusions[]'],purpose:'Asset or component combination, channel, demand, intervention, timing, expected contribution, cost breakdown, baseline and exclusions.',sources:['Circularity']},
  {n:'Decision',v:'2.2',fields:['decision_id','route','allocation','alternatives[]','evidence_snapshot','approval_ref','model_version','policy_version','expires_at'],purpose:'Selected route and allocation, alternatives, evidence snapshot, approval reference, model and policy versions and expiry.',sources:['Circularity']},
- {n:'Outcome',v:'1.6',fields:['decision_id','action_taken','execution_ref','receipts','costs','avoided_spend','service_results','environmental_evidence'],purpose:'Action actually taken, execution reference, actual receipts and costs, confirmed avoided expenditure, service results and environmental evidence.',sources:['ERP','EAM','WMS','Partners']}
+ {n:'Outcome',v:'1.6',fields:['decision_id','action_taken','execution_ref','receipts','costs','avoided_spend','service_results','environmental_evidence'],purpose:'Action actually taken, external system reference, actual receipts and costs, confirmed avoided expenditure, service results and environmental evidence.',sources:['ERP','EAM','WMS','Partners']}
 ];
 const MAPPINGS={
  crm:[['Opportunity.StageName','Proposal','demand.status','forecast','Stage map: Proposal → forecast'],['Opportunity.Amount','2400','demand.lease_rate','$2,400 / month','Currency + period normalised'],['Account.Id','001Hs00003AbCdE','asset.owner_tenant','Customer A','Tenant key lookup'],['Opportunity.CloseDate','31/12/2026','demand.need_by','2026-12-31','Date format']],
@@ -1380,7 +1442,7 @@ const AGENTS=[
  {id:'assembler',name:'Evidence Assembler',step:'1–2',scopes:['evidence:read'],tools:['get_case_evidence','list_eligible_routes','get_model_validation'],limit:'Read-only. Cannot change eligibility.',calls:312},
  {id:'finder',name:'Opportunity Finder',step:'2–4',scopes:['demand:read','market:read','pool:read'],tools:['find_demand','predict_outcomes','optimize_pool','list_eligible_routes','get_case_evidence'],limit:'Proposes candidates. Cannot commit stock or price.',calls:268},
  {id:'gap',name:'Gap Requester',step:'2',scopes:['evidence:read','request:write'],tools:['get_case_evidence','request_missing_evidence'],limit:'May request inspections and tests up to 5 per case.',calls:84},
- {id:'coordinator',name:'Execution Coordinator',step:'6',scopes:['instruction:write'],tools:['get_case_evidence','request_approval','send_instruction'],limit:'Sends only what a person approved. Spend capped at the approved amount.',calls:151},
+ {id:'coordinator',name:'Handoff Coordinator',step:'6',scopes:['instruction:write'],tools:['get_case_evidence','request_approval','send_instruction'],limit:'Sends only what a person approved. Spend capped at the approved amount.',calls:151},
  {id:'reconciler',name:'Reconciler',step:'10',scopes:['outcome:write','evidence:read'],tools:['get_case_evidence','reconcile_outcome','get_model_validation'],limit:'Links actuals to the decision. Cannot edit the original evidence snapshot.',calls:197}
 ];
 const HARD_RULES=['An agent cannot waive a failed gate. Failed gates are resolved by engineering and policy owners.','An agent cannot create a commercial commitment beyond its authority.','Write tools that commit stock, spend or price always stop at a human approval.','Cross-client demand is never assumed available; tenant consent is checked on every call.','Retraining never overwrites the evidence snapshot behind an earlier decision.'];
@@ -1444,9 +1506,9 @@ applyTheme();
 /*RBAC-START*/
 /* ===== Roles, demo accounts and the access policy: the only place that decides who sees and does what ===== */
 const AS_TAB_IDS=['overview','lifecycle','condition','product','economic','eligibility','data','related'];
-const RB_SECS={command:['kpis','approvals','outcomes','charts','actions','signals','value','health'],product:['received','expected','pools','asset','case'],
+const RB_SECS={command:['kpis','exceptions','aome','handed','approvals','outcomes','charts','actions','signals','value','health'],product:['received','expected','pools','asset','case'],
  analytics:['waterfall','pipeline','mix','predicted','models','pool','overrides','eng','sustain'],integration:['studio','map','tables','models','events','conflicts','import'],
- mcp:['catalog','agents','playground','perms','calls','client','proposals'],audit:['log','gaps'],access:['accounts','delegations','requests']};
+ mcp:['catalog','agents','playground','perms','calls','client','proposals'],audit:['log','gaps'],orchestration:['flow','run','agents'],access:['accounts','identity','delegations','requests']};
 /* each permission names the controls (data-act, data-in, data-ch) it unlocks; a role without the permission never gets those controls rendered */
 const PERM_ACTS={
  'approve.decisions':['approve','confirmApprove','apRoute','wfApprove','declineDecision','declineDecisionOk'],
@@ -1456,32 +1518,40 @@ const PERM_ACTS={
   'tgAdd','tgAddOk','tgEdit','tgEditOk','tgDel','tgFkNew','tgFkOk','tgFkDel','tgFkF','tgFkWhy','taN','resolveConf','escConf','csvSample','csvValidate','csvCommit','csvText','csvFile','gotoImport'],
  manageWorkflows:['wfNew','wfNewOk','wfSave','wfPublish','wfToggle','wfRunNow','wfDup','wfDelAsk','wfDelOk','wfDel','wfDelEdge','wfDiscard','wfReset','wfRun','wfFail','wfName','wfOwn','wfMin','wfTrig','nwF','nwName','wfConnTo'],
  useTools:['pgRun','tryTool','pgReset','pgTool','pgAgent','pgTenant','pgInput'],
- proposeMcp:['mcpPropose','mcpProposeOk'],requestTenant:['tenantReq','tenantReqOk'],comment:['cmAdd'],manageAccess:['delegToggle']};
+ proposeMcp:['mcpPropose','mcpProposeOk'],requestTenant:['tenantReq','tenantReqOk'],comment:['cmAdd'],manageAccess:['delegToggle'],
+ notify:['notifyOpen','notifyOk'],ack:['notifyAck'],manageIdentity:['idpSync','idpMap','idpSrc','idpRemove','oooSave','oooDel']};
 const PERM_ALIAS={approve:'approve.decisions'};
 const ROLE_POLICY={
  Planner:{desc:'Prepares cases in their own tenant, requests evidence and submits decisions for review.',landing:'command',tenantScoped:true,
-  perms:['submit','request','reeval','execSim','scenario','requestTenant'],
-  pages:{command:['kpis','charts','actions','signals'],product:['received','expected','pools','asset','case'],analytics:['waterfall','pipeline','mix','predicted','models','pool','overrides'],audit:['log','gaps']},asTabs:AS_TAB_IDS},
+  perms:['submit','request','reeval','execSim','scenario','requestTenant','ack'],
+  pages:{command:['kpis','aome','handed','charts','actions','signals'],product:['received','expected','pools','asset','case'],analytics:['waterfall','pipeline','mix','predicted','models','pool','overrides'],audit:['log','gaps'],orchestration:RB_SECS.orchestration},asTabs:AS_TAB_IDS},
  Approver:{desc:'Approves or declines what Admin delegates: decisions and overrides, MCP server proposals and tenant access.',landing:'command',
-  perms:['approve.decisions','approve.mcp','approve.tenantAccess','request','reeval','execSim','scenario'],
-  pages:{command:['kpis','approvals','charts','actions','signals','value'],product:['received','expected','pools','asset','case'],analytics:RB_SECS.analytics,integration:['events','conflicts'],mcp:['catalog','agents','perms','calls','client','proposals'],audit:['log','gaps']},asTabs:AS_TAB_IDS},
+  perms:['approve.decisions','approve.mcp','approve.tenantAccess','request','reeval','execSim','scenario','ack'],
+  pages:{command:['kpis','aome','approvals','charts','actions','signals','value'],product:['received','expected','pools','asset','case'],analytics:RB_SECS.analytics,integration:['events','conflicts'],mcp:['catalog','agents','perms','calls','client','proposals'],audit:['log','gaps'],orchestration:RB_SECS.orchestration},asTabs:AS_TAB_IDS},
  Engineer:{desc:'Inspects assets, records assessments and test results, and owns technical eligibility.',landing:'product/asset',
-  perms:['request','assess','execSim'],
-  pages:{command:['kpis','charts','actions','signals'],product:['received','expected','asset','case'],analytics:['eng','sustain'],integration:['map','tables','models'],mcp:['catalog','agents','perms','calls','client','proposals'],audit:['log','gaps']},
+  perms:['request','assess','execSim','ack'],
+  pages:{command:['kpis','aome','handed','charts','actions','signals'],product:['received','expected','asset','case'],analytics:['eng','sustain'],integration:['map','tables','models'],mcp:['catalog','agents','perms','calls','client','proposals'],audit:['log','gaps'],orchestration:RB_SECS.orchestration},
   asTabs:['overview','lifecycle','condition','product','eligibility','data','related']},
  Finance:{desc:'Confirms outcomes and tracks recovery, avoided spend and variance. Reads and comments on the audit log and Source map.',landing:'analytics',
-  perms:['confirm','comment'],
-  pages:{command:['kpis','outcomes','charts','value'],product:['received','expected','pools','asset','case'],analytics:RB_SECS.analytics,integration:['map'],audit:['log','gaps']},
+  perms:['confirm','comment','ack'],
+  pages:{command:['kpis','aome','outcomes','charts','value'],product:['received','expected','pools','asset','case'],analytics:RB_SECS.analytics,integration:['map'],audit:['log','gaps'],orchestration:RB_SECS.orchestration},
   asTabs:['overview','lifecycle','economic','data','related']},
  Developer:{desc:'Connects sources, builds workflows, proposes MCP servers and governs agent tools.',landing:'integration/map',
-  perms:['manageIntegrations','manageWorkflows','useTools','proposeMcp','comment'],
-  pages:{command:['kpis','health'],integration:RB_SECS.integration,mcp:RB_SECS.mcp,audit:['log','gaps']},asTabs:[]},
+  perms:['manageIntegrations','manageWorkflows','useTools','proposeMcp','comment','ack'],
+  pages:{command:['kpis','aome','health'],integration:RB_SECS.integration,mcp:RB_SECS.mcp,audit:['log','gaps'],orchestration:RB_SECS.orchestration},asTabs:[]},
+ Executive:{desc:'Senior view: value realised, portfolio health and ranked exceptions. Read-only, plus Notify the owner.',landing:'command',
+  perms:['notify'],
+  pages:{command:['kpis','exceptions','charts','value'],product:['received','expected','asset','case'],analytics:RB_SECS.analytics,audit:['log','gaps'],orchestration:RB_SECS.orchestration},asTabs:AS_TAB_IDS},
+ 'Warehouse Manager':{desc:'Runs one warehouse: cases at that location, inbound expected returns, capacity and items awaiting handoff outcomes. Requests evidence and acknowledges notifications; WMS stays the system of record.',landing:'command',warehouseScoped:true,
+  perms:['request','ack'],
+  pages:{command:['kpis','exceptions','aome','handed','charts','signals'],product:['received','expected','asset','case'],audit:['log'],orchestration:RB_SECS.orchestration},asTabs:['overview','lifecycle','condition','data','related']},
  Admin:{desc:'Every permission on every page and tenant, plus accounts, Approver delegations and access requests.',landing:'command',all:true,perms:Object.keys(PERM_ACTS).concat('approve.mcp','approve.tenantAccess'),pages:RB_SECS,asTabs:AS_TAB_IDS}
 };
 /* demo accounts: synthetic labels only, never personal names */
 const ACCOUNTS=[
- {id:'planner-a',role:'Planner',tenant:'Customer A',label:'Planner · Customer A'},{id:'planner-b',role:'Planner',tenant:'Customer B',label:'Planner · Customer B'},{id:'planner-c',role:'Planner',tenant:'Customer C',label:'Planner · Customer C'},
- {id:'approver',role:'Approver',label:'Approver'},{id:'engineer',role:'Engineer',label:'Engineer'},{id:'finance',role:'Finance',label:'Finance'},{id:'developer',role:'Developer',label:'Developer'},{id:'admin',role:'Admin',label:'Admin'}];
+ {id:'planner-a',role:'Planner',tenant:'Customer A',site:'Warehouse 1',label:'Planner · Customer A'},{id:'planner-b',role:'Planner',tenant:'Customer B',site:'Warehouse 2',label:'Planner · Customer B'},{id:'planner-c',role:'Planner',tenant:'Customer C',site:'Warehouse 1',label:'Planner · Customer C'},
+ {id:'approver',role:'Approver',label:'Approver'},{id:'engineer',role:'Engineer',site:'Repair centre',label:'Engineer'},{id:'finance',role:'Finance',label:'Finance'},{id:'developer',role:'Developer',label:'Developer'},{id:'admin',role:'Admin',label:'Admin'},
+ {id:'executive',role:'Executive',label:'Executive'},{id:'wm-1',role:'Warehouse Manager',warehouse:'Warehouse 1',label:'Warehouse Manager · Warehouse 1'},{id:'wm-2',role:'Warehouse Manager',warehouse:'Warehouse 2',label:'Warehouse Manager · Warehouse 2'}];
 const ACCT=id=>ACCOUNTS.find(a=>a.id===id);
 S.acct=null;S.deleg={decisions:true,mcp:true,tenantAccess:true};S.grants={};
 const pol=()=>S.acct?ROLE_POLICY[S.acct.role]:null;
@@ -1496,7 +1566,9 @@ const who=()=>S.acct?S.acct.label:'—';
 /* tenant scope: a Planner sees their home tenant plus any tenant an Approver or Admin granted */
 const allowedTenants=()=>{const P=pol();if(!P||!P.tenantScoped)return TENANTS.slice();return TENANTS.filter(t=>t===S.acct.tenant||(S.grants[S.acct.id]||[]).includes(t))};
 const tenantOK=t=>allowedTenants().includes(t);
-const myCases=()=>CASES.filter(c=>tenantOK(c.owner));
+/* warehouse scope: a Warehouse Manager is locked to one warehouse (the asset's current location) */
+const locOK=c=>{const P=pol();return !P||!P.warehouseScoped||c.location===S.acct.warehouse};
+const myCases=()=>CASES.filter(c=>tenantOK(c.owner)&&locOK(c));
 /* actions a role may never take: removed from the page, inputs made read-only, clicks refused */
 function rbDenied(){const s=new Set();if(!S.acct)return s;if(pol().all)return s;
   const ok=new Set();Object.keys(PERM_ACTS).forEach(p=>{if(can(p))PERM_ACTS[p].forEach(a=>ok.add(a))});
@@ -1504,13 +1576,13 @@ function rbDenied(){const s=new Set();if(!S.acct)return s;if(pol().all)return s;
 /* route check: true, false, or 'tenant' when the record belongs to a tenant the account cannot see */
 function canRoute(r){const p=r.page;if(!PAGES[p]||!canPage(p))return false;
   if(p==='product'){if(!r.a||['received','expected','pools'].includes(r.a))return canPage(p,r.a||'received');
-    if(r.a==='asset'){if(!canPage(p,'asset'))return false;const c=r.b&&CASE_BY_ID[r.b];return c&&!tenantOK(c.owner)?'tenant':true}
-    if(CASE_BY_ID[r.a]){if(!canPage(p,'case'))return false;return tenantOK(CASE_BY_ID[r.a].owner)?true:'tenant'}return canPage(p,'received')}
+    if(r.a==='asset'){if(!canPage(p,'asset'))return false;const c=r.b&&CASE_BY_ID[r.b];return c&&(!tenantOK(c.owner)||!locOK(c))?'tenant':true}
+    if(CASE_BY_ID[r.a]){if(!canPage(p,'case'))return false;const c=CASE_BY_ID[r.a];return tenantOK(c.owner)&&locOK(c)?true:'tenant'}return canPage(p,'received')}
   if(p==='mcp'&&r.a==='client')return canPage(p,'client');
   return !r.a||!RB_SECS[p]||canPage(p,r.a)}
 /*RBAC-END*/
 const ROLES=ROLE_POLICY;
-const visCases=()=>CASES.filter(c=>tenantOK(c.owner)&&(S.tenant==='All'||c.owner===S.tenant));
+const visCases=()=>CASES.filter(c=>tenantOK(c.owner)&&locOK(c)&&(S.tenant==='All'||c.owner===S.tenant));
 const visRows=()=>ROWS.filter(r=>tenantOK(r.tenant)&&(S.tenant==='All'||r.tenant===S.tenant));
 /* toasts, drawer, modal */
 function toast(msg,ms=3200){const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;$('#toasts').appendChild(t);setTimeout(()=>t.remove(),ms)}
@@ -1533,23 +1605,25 @@ ACT.closeDrawer=closeDrawer;ACT.closeModal=closeModal;
 function parse(){const h=location.hash.replace(/^#\/?/,'').split('?')[0].split('/').filter(Boolean);return{page:h[0]||'command',a:h[1]||null,b:h[2]||null}}
 function go(path){if(location.hash==='#/'+path)route();else location.hash='#/'+path}
 ACT.go=a=>{closeDrawer();closeModal();go(a)};
-const PAGES={command:{t:'Command Center',sub:'Overview and priorities',icon:'command',j:[2,3,4,5,10]},product:{t:'Product',sub:'Decision Workbench',icon:'product',j:[2,3,4,5]},analytics:{t:'Analytics',sub:'Reconcile & learn',icon:'analytics',j:[10]},integration:{t:'Integration',sub:'Connection Fabric',icon:'integration',j:[1,6,7,8,9]},mcp:{t:'MCP & Tools',sub:'Agents within permissions',icon:'mcp',j:[2,3,4,5,6,10]},audit:{t:'Audit & provenance',sub:'What was fetched, from where',icon:'audit',j:[1,2,3,6,9,10]},access:{t:'Access',sub:'Accounts, delegations, requests',icon:'access',j:[5]}};
+const PAGES={command:{t:'Command Center',sub:'Overview and priorities',icon:'command',j:[2,3,4,5,10]},product:{t:'Product',sub:'Decision Workbench',icon:'product',j:[2,3,4,5]},analytics:{t:'Analytics',sub:'Reconcile & learn',icon:'analytics',j:[10]},integration:{t:'Integration',sub:'Connection Fabric',icon:'integration',j:[1,6,7,8,9]},mcp:{t:'MCP & Tools',sub:'Agents within permissions',icon:'mcp',j:[2,3,4,5,6,10]},audit:{t:'Audit & provenance',sub:'What was fetched, from where',icon:'audit',j:[1,2,3,6,9,10]},orchestration:{t:'Process orchestration',sub:'How a recommendation is made',icon:'orch',j:[1,2,3,4,5,6,7,8,9,10]},access:{t:'Access',sub:'Accounts, delegations, requests',icon:'access',j:[5]}};
 /* ===== Sidebar with sections: dropdowns, hover flyout, collapsible rail, deep links ===== */
 const NAV=[
- {id:'command',label:'Command Center',sub:'Overview and priorities',icon:'command',kids:[['kpis','Key figures','Headline numbers for your role'],['approvals','Approvals inbox','Requests waiting for your decision','inbox'],['outcomes','Outcomes to confirm','Results that need Finance'],['charts','Portfolio charts','Lifecycle, treatments, risk, time to action'],['actions','Actions to prioritise','Ranked opportunities to act on'],['signals','Signals and capacity','What needs attention'],['value','Value realisation','Predicted vs actual recovery'],['health','Integration health','Sources, workflows and events']]},
+ {id:'command',label:'Command Center',sub:'Overview and priorities',icon:'command',kids:[['kpis','Key figures','Headline numbers for your role'],['exceptions','Exceptions','Ranked issues to drill into or notify'],['aome','Actions on me','What waits on you'],['handed','Handed off','With enterprise systems, awaiting outcome'],['approvals','Approvals inbox','Requests waiting for your decision','inbox'],['outcomes','Outcomes to confirm','Results that need Finance'],['charts','Portfolio charts','Lifecycle, treatments, risk, time to action'],['actions','Actions to prioritise','Ranked opportunities to act on'],['signals','Signals and capacity','What needs attention'],['value','Value realisation','Predicted vs actual recovery'],['health','Integration health','Sources, workflows and events']]},
  {id:'product',label:'Product',sub:'Decision Workbench',icon:'product',mode:1,kids:[['received','Returned assets','Inspect inventory and evaluate use'],['expected','Expected returns','Planning signals, not yet received'],['pools','Pool optimizer','Allocate scarce assets across demand'],['asset','Asset intelligence','Lifecycle, condition and economics of one asset']]},
  {id:'analytics',label:'Analytics',sub:'Reconcile & learn',icon:'analytics',kids:[['waterfall','Recovery waterfall','Baseline to Circularity uplift'],['pipeline','Pipeline','Case to reconciled'],['mix','Route mix','How routes change over time'],['predicted','Predicted vs actual','Forecast against outcome'],['models','Model versions','The learning loop'],['pool','Pool efficiency','Allocation results'],['overrides','Overrides','When people changed the plan'],['eng','Engineering economics','Parts and economics'],['sustain','Sustainability','Estimated vs measured CO₂e']]},
  {id:'integration',label:'Integration',sub:'Connection Fabric',icon:'integration',mode:1,kids:[['studio','Workflow studio','Build pipelines and workflows','wffail'],['map','Source map','Connect and monitor systems','srcissue'],['tables','Source tables','Tables and how they link'],['models','Canonical models','Versioned shared models'],['events','Event stream','Live message stream'],['conflicts','Conflict queue','Systems that disagree','conf'],['import','Manual import','Controlled CSV import']]},
  {id:'mcp',label:'MCP & Tools',sub:'Agents within permissions',icon:'mcp',kids:[['catalog','Tool catalog','Governed tools'],['agents','Agent registry','Who can call what'],['playground','Playground','Try a tool call'],['perms','Permission matrix','Agent permissions by tenant'],['calls','Call log and gate','Every call, and the write gate'],['client','As MCP client','Consume enterprise MCP servers'],['proposals','Server proposals','New MCP servers waiting for review']]},
+ {id:'orchestration',label:'Process orchestration',sub:'How a recommendation is made',icon:'orch',kids:[['flow','Stages','Ten stages from start to outcome'],['run','Case run','One case, stage by stage'],['agents','Agents and services','Who does what, with which systems']]},
  {id:'audit',label:'Audit & provenance',sub:'What was fetched, from where',icon:'audit',kids:[['log','Fetch log','Every fetch with its source'],['gaps','Evidence gaps','Evidence with no provenance']]},
- {id:'access',label:'Access',sub:'Accounts, delegations, requests',icon:'access',kids:[['accounts','Accounts and roles','Who signs in as what'],['delegations','Approver delegations','What the Approver may decide'],['requests','All requests','Tenant access and MCP proposals']]}
+ {id:'access',label:'Access',sub:'Accounts, delegations, requests',icon:'access',kids:[['accounts','Accounts and roles','Who signs in as what'],['identity','Identity and users','Users and roles from your identity provider'],['delegations','Approver delegations','What the Approver may decide'],['requests','All requests','Tenant access and MCP proposals']]}
 ];
 const INT_TABS=['studio','map','tables','models','events','conflicts','import'];
 const byHead=t=>()=>{const h=$$('#view h2,#view h3').find(x=>x.textContent.toLowerCase().includes(t.toLowerCase()));return h?(h.closest('.panel,.sect,section')||h):null};
 const ANCH={
- command:{approvals:()=>$('#ccApprovals'),outcomes:()=>$('#ccOutcomes'),health:()=>$('#ccDevHealth'),kpis:()=>$('#ccKpis'),charts:()=>$('#ccCharts'),actions:()=>$('#ccActions'),signals:()=>$('#ccSignals'),value:()=>$('#ccValue')},
+ command:{exceptions:()=>$('#ccEx'),aome:()=>$('#ccAome'),handed:()=>$('#ccHanded'),approvals:()=>$('#ccApprovals'),outcomes:()=>$('#ccOutcomes'),health:()=>$('#ccDevHealth'),kpis:()=>$('#ccKpis'),charts:()=>$('#ccCharts'),actions:()=>$('#ccActions'),signals:()=>$('#ccSignals'),value:()=>$('#ccValue')},
  analytics:{waterfall:byHead('Recovery waterfall'),pipeline:byHead('Pipeline'),mix:byHead('Route mix'),predicted:byHead('Predicted vs actual'),models:byHead('Model versions'),pool:byHead('Pool efficiency'),overrides:byHead('Overrides'),eng:byHead('Engineering economic'),sustain:byHead('Sustainability')},
- access:{accounts:()=>$('#axAccounts'),delegations:()=>$('#axDeleg'),requests:()=>$('#axReqs')},
+ orchestration:{flow:()=>$('#orFlow'),run:()=>$('#orRun'),agents:()=>$('#orAgents')},
+ access:{identity:()=>$('#axIdp'),accounts:()=>$('#axAccounts'),delegations:()=>$('#axDeleg'),requests:()=>$('#axReqs')},
  mcp:{proposals:()=>$('#mcpProps'),catalog:byHead('Tool catalog'),agents:byHead('Agent registry'),playground:byHead('Playground'),perms:byHead('Permission matrix'),calls:byHead('Call log')},
  audit:{log:()=>$('#view .panel'),gaps:byHead('Evidence gaps')}
 };
@@ -1593,6 +1667,7 @@ document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest
 document.addEventListener('keydown',e=>{const g=e.target.closest&&e.target.closest('.ngr');if(g&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){const id=g.parentNode.dataset.g;if(e.key==='ArrowRight'){if(!navIsOpen(id))ACT.navToggle(id);const f=$('#ns-'+id+' a');f&&f.focus()}else if(navIsOpen(id))ACT.navToggle(id);e.preventDefault()}
   if(e.key==='Escape')navFlyHide(true)});
 ICON.access=IC('<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>');
+ICON.orch=IC('<circle cx="5" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M7 6h10M6 8l5 8M18 8l-5 8"/>');
 ICON.railc=IC('<path d="M11 7l-5 5 5 5M18 7l-5 5 5 5"/>');
 function shell(){
   $('#app').innerHTML=`<aside class="side"><div class="brand"><img src="${LOGO}" alt="Artizent"><small>Decision Intelligence Framework<br>Circularity</small></div>
@@ -1610,13 +1685,14 @@ function shell(){
   $('#app').classList.toggle('rail',S.navRail);const rb=$('.railbtn');rb&&(rb.setAttribute('aria-pressed',S.navRail),rb.setAttribute('aria-label',S.navRail?'Expand sidebar':'Collapse sidebar'));
 }
 /* ===== Simulated sign-in: one demo account per role, no passwords, nothing leaves the browser ===== */
-const RB_AV={Planner:'PL',Approver:'AP',Engineer:'EN',Finance:'FI',Developer:'DE',Admin:'AD'};
+const RB_AV={Planner:'PL',Approver:'AP',Engineer:'EN',Finance:'FI',Developer:'DE',Admin:'AD',Executive:'EX','Warehouse Manager':'WM'};
 function sessionLoad(){try{const raw=localStorage.getItem('circ-session');if(raw){const o=JSON.parse(raw),a=o&&ACCT(o.acct);if(a)return a}
   const old=localStorage.getItem('circ-role');if(old){localStorage.removeItem('circ-role');const a=ACCOUNTS.find(x=>x.role===old);if(a){localStorage.setItem('circ-session',JSON.stringify({acct:a.id}));return a}}}catch(e){}return null}
-function setAcct(a){S.acct=a||null;S.role=a?a.role:'';S.tenant='All';S.lastR=null;try{a?localStorage.setItem('circ-session',JSON.stringify({acct:a.id})):localStorage.removeItem('circ-session')}catch(e){}}
+function setAcct(a){S.acct=a||null;S.role=a?a.role:'';S.tenant='All';S.lastR=null;S.opScope=undefined;try{a?localStorage.setItem('circ-session',JSON.stringify({acct:a.id})):localStorage.removeItem('circ-session')}catch(e){}}
 function signInHTML(){const card=a=>{const P=ROLE_POLICY[a.role];return `<button class="sia" data-act="signIn" data-arg="${a.id}"><span class="siav" aria-hidden="true">${RB_AV[a.role]}</span><span><b>${esc(a.label)}</b><span class="note">${esc(P.desc)}</span></span></button>`};
   return `<div class="si"><div class="sibox"><div class="sil"><img src="${LOGO}" alt="Artizent"><h1>Circularity<br>Decision Workbench</h1><p>Choose a demo account. Each role sees only the pages, panels and actions that belong to its job.</p>
-   <div class="sinote"><b>Simulated sign-in.</b> These are demo accounts with synthetic labels. There are no passwords and no real authentication; all data is synthetic.</div></div>
+   <div class="sinote"><b>Simulated sign-in.</b> These are demo accounts with synthetic labels. There are no passwords and no real authentication; all data is synthetic.</div>
+   <div class="sinote" id="siSso">In production you sign in with your company account (SSO). Users, roles and approval hierarchy come from your identity provider. This demo lets you pick a role.</div></div>
   <div class="sir"><div class="row between"><h2>Sign in as</h2><button class="iconbtn" data-act="theme" aria-label="Toggle theme" id="thm">${S.theme==='dark'?ICON.sun:ICON.moon}</button></div><p class="note" style="margin:0">Your choice is remembered on this device until you sign out.</p>
    <div class="sigrp"><h3>Planners (one per customer tenant)</h3><div class="silist">${ACCOUNTS.filter(a=>a.role==='Planner').map(card).join('')}</div></div>
    <div class="sigrp"><h3>Other roles</h3><div class="silist">${ACCOUNTS.filter(a=>a.role!=='Planner').map(card).join('')}</div></div></div></div></div>`}
@@ -1703,7 +1779,8 @@ function mcpPropHTML(){const l=S.reqs.filter(r=>r.kind==='mcp');
    <p class="note" style="margin:-4px 0 10px">New enterprise MCP servers are reviewed before any agent can call them. ${can('approve.mcp')?'You can approve or decline pending proposals.':'An Approver with the MCP delegation, or Admin, decides.'}</p><div class="panel"><div class="pb">${reqListHTML(l,['No proposals yet','The Developer proposes new servers here.'])}</div></div></div>`}
 function renderAccess(){const pend=S.reqs.filter(r=>r.status==='pending');
   return `<div class="phead"><div><h1>Access</h1><p>Who signs in as what, what the Approver may decide, and every access request. Every change is recorded in the audit log.</p></div></div>
-  <section class="panel" id="axAccounts"><div class="ph"><h3>Accounts and roles</h3><span class="chip line">${ACCOUNTS.length} demo accounts</span></div><div class="tw"><table class="t static"><thead><tr><th>Account</th><th>Role</th><th>Tenants</th><th>Lands on</th><th>What the role does</th></tr></thead><tbody>${ACCOUNTS.map(a=>{const P=ROLE_POLICY[a.role];return `<tr><td><b>${esc(a.label)}</b></td><td>${a.role}</td><td>${P.tenantScoped?esc([a.tenant].concat(S.grants[a.id]||[]).join(', ')):'All'}</td><td>${HOME_LABEL[homeFor(a.role)]||homeFor(a.role)}</td><td class="note">${esc(P.desc)}</td></tr>`}).join('')}</tbody></table></div><div class="note" style="padding:8px 14px">Accounts are fixed for this demo. Tenant grants last for the session.</div></section>
+  <section class="panel" id="axAccounts"><div class="ph"><h3>Accounts and roles</h3><span class="chip line">${ACCOUNTS.length} demo accounts</span></div><div class="tw"><table class="t static"><thead><tr><th>Account</th><th>Role</th><th>Tenants</th><th>Lands on</th><th>What the role does</th></tr></thead><tbody>${ACCOUNTS.map(a=>{const P=ROLE_POLICY[a.role];return `<tr><td><b>${esc(a.label)}</b></td><td>${a.role}</td><td>${P.tenantScoped?esc([a.tenant].concat(S.grants[a.id]||[]).join(', ')):'All'}</td><td>${HOME_LABEL[homeFor(a.role)]||homeFor(a.role)}</td><td class="note">${esc(P.desc)}</td></tr>`}).join('')}</tbody></table></div><div class="note" style="padding:8px 14px">Accounts are fixed for this demo; in production they arrive from your identity provider (see Identity and users). Tenant grants last for the session.</div></section>
+  ${idpHTML()}
   <section class="panel sect" id="axDeleg"><div class="ph"><h3>Approver delegations</h3><span class="note">What the Approver may decide; Admin can always decide</span></div><div class="pb">${DELEG.map(d=>`<label class="axd"><input type="checkbox" ${S.deleg[d[0]]?'checked':''} data-ch="delegToggle" data-arg="${d[0]}"><span><b>${d[1]}</b><span class="note">${d[2]}</span></span><span class="chip ${S.deleg[d[0]]?'ok':'line'}">${S.deleg[d[0]]?'Delegated':'Admin only'}</span></label>`).join('')}</div></section>
   <section class="panel sect" id="axReqs"><div class="ph"><h3>All requests</h3><span class="chip ${pend.length?'warn':'ok'}">${pend.length} pending</span></div><div class="pb">${reqListHTML(S.reqs,['No requests yet','Tenant access requests and MCP server proposals appear here.'])}</div></section>`}
 ACT.theme=()=>{S.theme=S.theme==='dark'?'light':'dark';applyTheme();const t=$('#thm');t&&(t.innerHTML=S.theme==='dark'?ICON.sun:ICON.moon);route(true)};
@@ -1719,7 +1796,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.search'))hideResult
 function route(keep){
   if(!S.acct){renderSignIn();return}
   const r=parse();if(!PAGES[r.page]){rbBounce('Page not found. Showing your home page.');return}
-  const ok=canRoute(r);if(ok!==true){rbBounce(ok==='tenant'?'That record belongs to a tenant you cannot see. Use the tenant menu to request access.':'Not available for the '+S.acct.role+' view.');return}
+  const ok=canRoute(r);if(ok!==true){rbBounce(ok==='tenant'?(pol()&&pol().warehouseScoped?'That record is at another warehouse or tenant you cannot see.':'That record belongs to a tenant you cannot see. Use the tenant menu to request access.'):'Not available for the '+S.acct.role+' view.');return}
   const y=keep?scrollY:0;
   if(r.page==='integration'&&INT_TABS.includes(r.a))S.intTab=r.a;
   if(r.page==='integration'&&!canPage('integration',S.intTab))S.intTab=RB_SECS.integration.find(x=>canPage('integration',x));
@@ -1727,13 +1804,13 @@ function route(keep){
   const L=S.lastR;S.lastR=r;
   if(!keep&&ANCH[r.page]&&L&&L.page===r.page&&!(r.page==='mcp'&&(r.a==='client')!==(L.a==='client'))){navSync(r);anchorScroll(r);return}
   navSync(r);
-  if((r.page==='product'?r.a:null)!==S.lastCase){S.lastCase=r.page==='product'?r.a:null;S.scenOpen=false;S.scen={purchase:1,cost:1,service:1,market:1,demandOff:false};S.xtab='why'}
+  if((r.page==='product'?r.a:null)!==S.lastCase){S.lastCase=r.page==='product'?r.a:null;S.scenOpen=false;S.scen={purchase:1,cost:1,service:1,market:1,demandOff:false};S.xtab='why';if(S.ti){S.ti.apply='';S.ti.diffOnly=false}}
   const isCase=r.page==='product'&&r.a&&/^RT-/.test(r.a)&&CASE_BY_ID[r.a];
   const j=r.page==='product'&&isCase?[2,3,4,5,6]:r.page==='command'&&!canPage('product')?[1,6,7,8,9]:PAGES[r.page].j;
   $('#jmount').innerHTML=journey(j);
   const nc=$('#navcnt');if(nc)nc.textContent=visCases().filter(c=>c.stage==='awaiting_approval').length;
   const v=$('#view');
-  try{v.innerHTML=({command:renderCommand,product:renderProduct,analytics:renderAnalytics,integration:renderIntegration,mcp:renderMcp,audit:renderAudit,access:renderAccess})[r.page](r)}catch(err){console.error(err);v.innerHTML=`<div class="empty"><b>This view could not be drawn</b>${esc(err.message)}. Reload the page; your data is synthetic and regenerates identically.</div>`}
+  try{v.innerHTML=({command:renderCommand,product:renderProduct,analytics:renderAnalytics,integration:renderIntegration,mcp:renderMcp,audit:renderAudit,orchestration:renderOrch,access:renderAccess})[r.page](r)}catch(err){console.error(err);v.innerHTML=`<div class="empty"><b>This view could not be drawn</b>${esc(err.message)}. Reload the page; your data is synthetic and regenerates identically.</div>`}
   document.title=PAGES[r.page].t+' · Circularity Decision Workbench';
   if(!keep){window.scrollTo(0,0)}else window.scrollTo(0,y);
   rbPrune();
@@ -1742,7 +1819,7 @@ function route(keep){
 window.addEventListener('hashchange',()=>route());
 /* shared helpers used by pages */
 const pct=(n,d=0)=>(n*100).toFixed(d)+'%';
-const stageChip=c=>({awaiting_approval:'<span class="chip y">Awaiting approval</span>',approved:'<span class="chip dk">Approved · sending</span>',executing:'<span class="chip ok">Executing</span>',reeval:'<span class="chip warn">Re-evaluate</span>',none:c.blocked?'<span class="chip bad">Needs evidence</span>':'<span class="chip line">—</span>',closed:'<span class="chip ok">Closed</span>'})[c.stage]||'';
+const stageChip=c=>({awaiting_approval:'<span class="chip y">Awaiting approval</span>',approved:'<span class="chip dk">Approved · handing off</span>',executing:'<span class="chip ok" data-tip="Instruction sent; the enterprise system carries out the work and reports the outcome">Handed off</span>',reeval:'<span class="chip warn">Re-evaluate</span>',none:c.blocked?'<span class="chip bad">Needs evidence</span>':'<span class="chip line">—</span>',closed:'<span class="chip ok">Closed</span>'})[c.stage]||'';
 const condChip=c=>{const m={'Inspected':'ok','Test required':'warn','Not inspected':'line','Mixed':'line'};const k=m[c.condition]||(/^Grade/.test(c.condition)?'ok':'line');return `<span class="chip ${k}">${esc(c.condition)}</span>`};
 const assessChip=c=>`<span class="chip ${({Ready:'ok',Review:'warn',Pending:'warn',Partial:'line'})[c.assessment]}">${c.assessment}</span>`;
 const rid=r=>ROUTES.find(x=>x.id===r)||{name:r,short:r,color:'#999'};
@@ -1761,6 +1838,20 @@ const EXPECTED=[
  {id:'ER-3107',product:'Industrial motor',cls:'motor',owner:'Customer B',date:'24 Oct',signal:'Lease LS-5471 ends 22 Oct',range:'$2.6k–$7.4k',loc:'Site 2'},
  {id:'ER-3108',product:'Hydraulic pump',cls:'pump',owner:'Customer A',date:'28 Oct',signal:'Failure-driven swap at Site 5',range:'$0.9k–$2.8k',loc:'Site 5'},
  {id:'ER-3109',product:'Power tool',cls:'drill',owner:'Customer C',date:'30 Oct',signal:'Warranty return batch',range:'$60–$180',loc:'Site 6'}];
+/* Expected returns come from contract and lease expiry in the Contract Management application (the Lease management source).
+   Likely outcome, probabilities and the return window are modelled from contract terms and past outcomes (synthetic). */
+const EXP_REASON=e=>/^Lease/.test(e.signal)?'Lease ends':/refresh/i.test(e.signal)?'Refresh programme':/swap|Warranty/i.test(e.signal)?'Contract ends (swap or warranty)':'Contract ends';
+const parseK=s=>{const m=/\$([\d.]+)(k?)/.exec(s||'');return m?Math.round(+m[1]*(m[2]?1000:1)):0};
+EXPECTED.forEach((e,i)=>{const h=parseInt(hashId(e.id),16),lm=/LS-\d+/.exec(e.signal),lease=!!lm,months=[24,36,36,48,24,36][h%6],day=+e.date.split(' ')[0];
+  e.contract=lm?lm[0]:'CT-'+(7031+i*7);e.customer=e.owner;e.source='Contract Management';e.reason=EXP_REASON(e);
+  e.expiry=new Date(Date.UTC(2026,9,day-1));e.start=new Date(Date.UTC(2026,9-months,day));e.lease={start:e.start,end:e.expiry,months};
+  e.wh=['Warehouse 1','Warehouse 2'][h%2];
+  const pr=lease?[62+h%20,0,0,0]:[100,0,0,0];if(lease){const rest=100-pr[0];pr[1]=Math.round(rest*.45);pr[2]=Math.round(rest*.35);pr[3]=rest-pr[1]-pr[2]}
+  e.outcome={probs:{Return:pr[0],Buyout:pr[1],Extension:pr[2],'Early termination':pr[3]},likely:'Return',prob:pr[0],window:fmtD(new Date(Date.UTC(2026,9,day-2)))+'–'+fmtD(new Date(Date.UTC(2026,9,day+12))),modelled:lease};
+  const lo=parseK(e.range.split('–')[0]),hi=parseK(e.range.split('–')[1]);e.wRange=kfmtE(lo*pr[0]/100)+'–'+kfmtE(hi*pr[0]/100)});
+function kfmtE(n){return n>=1000?'$'+(n/1000).toFixed(1)+'k':'$'+Math.round(n)}
+const whOK=e=>{const P=pol();return !P||!P.warehouseScoped||e.wh===S.acct.warehouse};
+const expVis=()=>EXPECTED.filter(e=>tenantOK(e.owner)&&whOK(e)&&(S.tenant==='All'||e.owner===S.tenant));
 function queueRows(){
   const f=S.q;let rows=visCases();
   if(f.kpi==='ready')rows=rows.filter(c=>c.assessment==='Ready');
@@ -1792,10 +1883,10 @@ function queueTable(){
   </tbody></table></div>
   <div class="filters" style="border-top:1px solid var(--line2);border-bottom:0;justify-content:space-between"><span class="note">Showing ${shown.length} of ${rows.length}. Physical inventory remains controlled by the source system.</span>${rows.length>shown.length?`<button class="btn sm" data-act="more">Show 25 more</button>`:''}</div></div>`;
 }
-function expectedTable(){
-  return `<div class="callout info" style="margin-bottom:12px">Expected returns support planning only. Any commitment stays conditional until the asset is received and inspected.</div>
-  <div class="panel"><div class="tw"><table class="t"><thead><tr><th>Signal</th><th>Product</th><th>Owner</th><th>Expected</th><th>Source</th><th>Planning range</th><th>Status</th></tr></thead><tbody>
-  ${EXPECTED.filter(e=>tenantOK(e.owner)&&(S.tenant==='All'||e.owner===S.tenant)).map(e=>`<tr data-act="expDetail" data-arg="${e.id}"><td><b>${e.id}</b></td><td><div class="row" style="gap:8px;flex-wrap:nowrap">${thumb(e.cls)}${e.product}</div></td><td>${e.owner}</td><td>${e.date} Oct</td><td>${e.signal}</td><td class="num">${e.range}</td><td><span class="chip line">Conditional</span></td></tr>`).join('')}</tbody></table></div></div>`;
+function expectedTable(){const src=SRC('lease')||{vendor:'Contract Management'};
+  return `<div class="callout info" style="margin-bottom:12px" id="expNote"><b>Expected returns are derived from contract and lease expiry in the Contract Management application</b> (${esc(src.vendor)}). They are planning signals; nothing is committed until the asset is received and inspected. Likely outcomes are modelled from contract terms and past outcomes (buyouts, extensions, early terminations).</div>
+  <div class="panel"><div class="tw"><table class="t" id="expTab"><thead><tr><th>Contract ID</th><th>Customer</th><th>Asset</th><th>Lease period</th><th>Contract expiry</th><th>Likely outcome</th><th>Expected return</th><th>Site</th><th>Planning range</th><th>Source application</th><th>Status</th></tr></thead><tbody>
+  ${expVis().map(e=>`<tr data-act="expDetail" data-arg="${e.id}"><td data-l="Contract"><b class="mono">${e.contract}</b><div class="note">${e.id} · ${esc(e.reason)}</div></td><td data-l="Customer">${e.customer}</td><td data-l="Asset"><div class="row" style="gap:8px;flex-wrap:nowrap">${thumb(e.cls)}<span>${e.product}<div class="note">${esc(CLASSES[e.cls].label)}</div></span></div></td><td class="num nowrap" data-l="Lease period">${fmtD(e.lease.start)} ${e.lease.start.getUTCFullYear()} – ${fmtD(e.lease.end)}<div class="note">${e.lease.months} months</div></td><td class="num nowrap" data-l="Expiry">${fmtDY(e.expiry)}</td><td data-l="Likely outcome"><b>${e.outcome.likely}</b> <span class="note num">${e.outcome.prob}%</span>${e.outcome.modelled?'':'<div class="note">No history: expiry = return</div>'}</td><td class="num nowrap" data-l="Expected return">${e.outcome.window}</td><td data-l="Site">${e.loc}<div class="note">${e.wh}</div></td><td class="num" data-l="Planning range">${e.range}<div class="note" data-tip="Weighted by the probability of return">weighted ${e.wRange}</div></td><td data-l="Source"><span class="chip line" data-tip="${esc('Contract / Lease Management application: '+src.vendor+'. Its role here is to supply contract and lease expiry.')}">Contract Management</span></td><td data-l="Status"><span class="chip line">Conditional</span></td></tr>`).join('')||'<tr><td colspan="11"><div class="empty"><b>No expected returns in your scope</b>Contracts that expire soon appear here.</div></td></tr>'}</tbody></table></div></div>`;
 }
 function renderProduct(r){
   if(r.a==='expected')S.q.view='expected';else if(r.a==='received')S.q.view='received';
@@ -1803,8 +1894,8 @@ function renderProduct(r){
   if(r.a==='pools')return poolsPage();
   if(r.a&&CASE_BY_ID[r.a])return caseView(CASE_BY_ID[r.a]);
   const v=S.q.view;
-  return `<div class="phead"><div><h1>Returned assets</h1><p>Inspect the inventory, establish readiness, evaluate the best use. Each case below runs steps 2–5 of the journey; execution continues in your systems.</p></div>
-   <div class="row"><div class="seg" role="group" aria-label="View"><button data-act="qview" data-arg="received" aria-pressed="${v==='received'}">Received</button><button data-act="qview" data-arg="expected" aria-pressed="${v==='expected'}">Expected (${EXPECTED.filter(e=>tenantOK(e.owner)).length})</button></div>${canPage('product','pools')?'<a class="btn" href="#/product/pools">Pool optimizer</a>':''}</div></div>
+  return `<div class="phead"><div><h1>Returned assets</h1><p>Inspect the inventory, establish readiness, evaluate the best use. Each case below runs steps 2–5 of the journey; once approved, the instruction goes to your enterprise systems, which carry out the work.</p></div>
+   <div class="row"><div class="seg" role="group" aria-label="View"><button data-act="qview" data-arg="received" aria-pressed="${v==='received'}">Received</button><button data-act="qview" data-arg="expected" aria-pressed="${v==='expected'}">Expected (${EXPECTED.filter(e=>tenantOK(e.owner)&&whOK(e)).length})</button></div>${canPage('product','pools')?'<a class="btn" href="#/product/pools">Pool optimizer</a>':''}</div></div>
    ${v==='received'?kpiStrip()+'<div style="height:14px"></div>'+queueTable():expectedTable()}`;
 }
 /* queue interactions */
@@ -1826,14 +1917,20 @@ function openCase(id){const c=CASE_BY_ID[id];if(!c)return;
    ${c.blocked?`<div class="callout bad" style="margin-top:12px"><b>${esc(c.blocked.gateName)} gate</b><br>${esc(c.blocked.reason)}</div>`:''}`;
   openDrawer(body,`${c.id} · ${esc(c.product)}`,`Returned asset · ${c.owner}`,`<button class="btn pri" data-act="go" data-arg="product/${c.id}">${c.blocked?'Open exception':'Evaluate selected asset'} ${ICON.arrow}</button>`);
 }
-ACT.expDetail=a=>{const e=EXPECTED.find(x=>x.id===a);openDrawer(`<div class="callout">Conditional plan. Expected ${e.date} Oct from <b>${esc(e.signal)}</b>. Nothing is reserved or promised until receipt and inspection establish actual availability.</div><dl class="kv" style="margin-top:14px"><dt>Owner</dt><dd>${e.owner}</dd><dt>Planning range</dt><dd>${e.range} (class prior, not decision-grade)</dd><dt>Receiving at</dt><dd>${e.loc}</dd></dl>`,`${e.id} · ${e.product}`,'Expected return')};
+ACT.expDetail=a=>{const e=EXPECTED.find(x=>x.id===a),src=SRC('lease')||{vendor:'—',freshMin:0},t0=+e.lease.start,t1=+e.expiry,t2=t1+12*864e5,pos=t=>Math.round((t-t0)/(t2-t0)*100);
+  openDrawer(`<div class="callout">Conditional plan derived from contract <b class="mono">${e.contract}</b> in the Contract Management application. Nothing is reserved or promised until receipt and inspection establish actual availability.</div>
+   <h4 style="margin:14px 0 6px">Contract summary</h4><dl class="kv"><dt>Customer</dt><dd>${e.customer}</dd><dt>Return reason</dt><dd>${esc(e.reason)} · ${esc(e.signal)}</dd><dt>Lease period</dt><dd>${fmtDY(e.lease.start)} – ${fmtDY(e.lease.end)} (${e.lease.months} months)</dd><dt>Contract expiry</dt><dd>${fmtDY(e.expiry)}</dd><dt>Receiving at</dt><dd>${e.loc} · ${e.wh}</dd><dt>Planning range</dt><dd>${e.range} (class prior, not decision-grade) · weighted by return probability ${e.wRange}</dd></dl>
+   <h4 style="margin:14px 0 6px">Lease timeline</h4><div class="exptl" role="img" aria-label="Lease start, contract expiry and expected return window"><span class="bar" style="display:block;height:8px;margin:18px 0 6px"><i style="width:${pos(t1)}%;background:var(--chart3)"></i></span><div class="row between note num"><span>Start ${fmtD(e.lease.start)}</span><span>Expiry ${fmtD(e.expiry)}</span><span>Return ${e.outcome.window}</span></div></div>
+   <h4 style="margin:14px 0 6px">Likely outcome <span class="note">${e.outcome.modelled?'modelled from contract terms and past outcomes':'no outcome history: expiry is treated as the return'}</span></h4>
+   <table class="t static tight"><tbody>${Object.entries(e.outcome.probs).map(([k,v])=>`<tr><td>${k}</td><td class="r num"><b>${v}%</b></td></tr>`).join('')}</tbody></table>
+   <h4 style="margin:14px 0 6px">Source</h4><dl class="kv"><dt>Source application</dt><dd>Contract Management · ${esc(src.vendor)}</dd><dt>Freshness</dt><dd>Updated ${src.freshMin||0} min ago</dd></dl>`,`${e.contract} · ${e.product}`,'Expected return · '+e.id,rbPath('integration/map')?`<button class="btn" data-act="go" data-arg="integration/map">Open source</button>`:'')};
 function evRow(e,c){c=c&&c.id?c:null;const ic={ready:'✓',missing:'!',partial:'~',stale:'~',conflict:'!'}[e.state];return `<div class="ev ${e.state}"><span class="ic" aria-hidden="true">${ic}</span><div><b>${esc(e.label)}${e.state!=='ready'?` <span class="chip ${e.state==='missing'||e.state==='conflict'?'bad':'warn'}">${e.state}</span>`:''}</b><small>${esc(e.source)}${e.note?' · '+esc(e.note):''}</small></div><em>${e.state==='missing'?'—':esc(e.fresh)}${c&&c.id?(e.state==='missing'?'<div style="margin-top:2px">'+PU+'</div>':`<div><button class="btn sm ghost" style="height:22px;padding:0 4px;font-size:11.5px" data-act="trace" data-arg="${c.id}|${e.k}">View Data Trace</button></div>`):''}</em></div>`}
 /* ===== scenario maths ===== */
 const KIND_MULT={purchase:'purchase',prep:'cost',fees:'cost',service:'service',sale:'market',parts:'market',material:'market',lease:'market'};
 function scenNet(r){const sc=S.scen;return Math.round(sum(r.terms.map(t=>t.amt*(sc[KIND_MULT[t.kind]]||1))))}
 function scenActive(){const s=S.scen;return s.purchase!==1||s.cost!==1||s.service!==1||s.market!==1||s.demandOff}
 function scenRoutes(c){
-  const rs=c.routes.map(r=>{const ex=r.excluded||(S.scen.demandOff&&r.demandStatus==='confirmed'&&(r.id==='redeploy'||r.id==='intparts')&&c.id!=='RT-1052');return{r,ex,sn:scenActive()?scenNet(r):r.net}});
+  const rs=c.routes.map(r=>{const ex=r.excluded||(S.scen.demandOff&&r.demandStatus==='confirmed'&&(r.id==='redeploy'||r.id==='intparts')&&c.id!=='RT-1052');return{r,ex,sn:scenActive()&&(!S.ti||!S.ti.apply||S.ti.apply===r.plan)?scenNet(r):r.net}});
   const el=rs.filter(x=>!x.ex).sort((a,b)=>b.sn-a.sn);el.forEach((x,i)=>x.rank=i+1);return{all:rs,el};
 }
 function flips(c){
@@ -1935,7 +2032,7 @@ ACT.scen=(v,el)=>{const k=el.dataset.arg;S.scen[k]=v/100;$('#scv-'+k).textConten
 function scenTopText(c,sr){const t=sr.el[0];return t?`Top route under this scenario: <b>${esc(t.r.plan)}</b> at ${money(t.sn)}${c.recommendation&&t.r!==c.recommendation?' — <b class="neg">differs from the approved recommendation</b>':''}.`:'No eligible route under this scenario.'}
 ACT.scenDemand=v=>{S.scen.demandOff=v;route(true)};ACT.scenReset=()=>{S.scen={purchase:1,cost:1,service:1,market:1,demandOff:false};route(true)};ACT.scenToggle=()=>{S.scenOpen=!S.scenOpen;route(true);if(S.scenOpen){const c=CASE_BY_ID[parse().a];const st=$('#scenTop');if(st)st.innerHTML=scenTopText(c,scenRoutes(c))}};
 
-/* ===== Product: best action, approval, execution ===== */
+/* ===== Product: best action, approval, enterprise handoff ===== */
 function stepsOf(c){return c.exec?c.exec.steps:stepsFor((c.chosen||c.recommendation||{id:'resale'}).id,-1)}
 function bestCard(c,sr){
   if(c.blocked&&!c.recommendation){
@@ -1972,10 +2069,11 @@ function execBlock(c){
   const r=c.chosen||c.recommendation;if(!r)return '';
   const steps=stepsOf(c),started=!!c.exec;
   const done=steps.filter(s=>s.state==='done').length;
-  return `<div class="panel" style="margin-top:16px"><div class="ph"><h3>Execution timeline</h3><span class="sp"></span>${[6,7,8,9].map(stpn).join('')}</div><div class="pb">
-   ${started?'':`<div class="note" style="margin-bottom:8px">Starts after approval. Execution systems stay authoritative for physical movements and status.</div>`}
-   ${steps.map((s,i)=>`<div class="ev ${s.state==='done'?'':s.state==='active'?'partial':'missing'}" style="${s.state==='todo'||!started?'opacity:.62':''}"><span class="ic" aria-hidden="true" style="${s.state==='todo'||!started?'background:var(--panel3);color:var(--ink)':''}">${s.state==='done'?'✓':i+1}</span><div><b>${esc(s.label)}${s.state==='active'?' <span class="chip warn">waiting for acknowledgement</span>':''}</b><small>${esc(s.sys)}${s.ack?` · ack ${esc(s.ack.ref)} from ${esc(s.ack.by)}`:''}</small></div><em>${s.ack?fmtD(s.ack.at):''}</em></div>`).join('')}
-   ${started?`<div class="row" style="margin-top:12px"><button class="btn sm" data-act="advance" data-arg="${c.id}" ${done>=4?'disabled':''}>Advance simulation</button><button class="btn sm" data-act="replay" data-arg="${c.id}">Replay instruction</button><button class="btn sm ghost" data-act="viewInstr" data-arg="${c.id}">View payload</button></div>`:''}
+  return `<div class="panel" style="margin-top:16px"><div class="ph"><h3>Enterprise handoff</h3><span class="sp"></span>${[6,7,8,9].map(stpn).join('')}</div><div class="pb">
+   ${started?'':`<div class="note" style="margin-bottom:8px">Starts after approval. Circularity sends the approved instruction; the target system carries out the work and reports back.</div>`}
+   ${steps.map((s,i)=>`<div class="ev ${s.state==='done'?'':s.state==='active'?'partial':'missing'}" style="${s.state==='todo'||!started?'opacity:.62':''}"><span class="ic" aria-hidden="true" style="${s.state==='todo'||!started?'background:var(--panel3);color:var(--ink)':''}">${s.state==='done'?'✓':i+1}</span><div><b>${esc(s.label)} <span class="chip ${!started||s.state==='todo'?'line':s.state==='active'?'warn':'ok'}">${!started||s.state==='todo'?'Not sent':s.state==='active'?'Sent · awaiting acknowledgement':i===3?'Done':'Acknowledged'}</span></b><small>To <b>${esc(s.sys)}</b>${s.ack?` · external ref ${esc(s.ack.ref)} from ${esc(s.ack.by)}`:''}</small></div><em>${s.ack?fmtD(s.ack.at):''}</em></div>`).join('')}
+   ${started?`<div class="row" style="margin-top:12px"><button class="btn sm" data-act="advance" data-arg="${c.id}" ${done>=4?'disabled':''}>Simulate system acknowledgement</button><button class="btn sm" data-act="replay" data-arg="${c.id}">Resend instruction</button><button class="btn sm ghost" data-act="viewInstr" data-arg="${c.id}">View payload</button></div>`:''}
+   <div class="note" style="margin-top:10px">Circularity sends the approved instruction. ${esc([...new Set(steps.map(s=>s.sys.split(' · ')[0]))].filter(x=>x!=='Circularity'&&x!=='Planning').join(' / '))} carries out the work and reports back; those systems stay the record for orders, stock and repairs.</div>${handoffLegend()}
    ${c.stage==='closed'?`<div class="callout ${c.outcome?'ok':''}" style="margin-top:12px">${c.outcome?`<b>Outcome confirmed.</b> Predicted ${money(r.net)} · actual ${money(c.outcome.net)} · variance ${money(c.outcome.net-r.net)}. Linked to ${c.exec.decisionId} for learning (step 10).`:`<b>Outcome reported by source systems.</b> Finance confirms the economic result.${can('confirm')?`<div style="margin-top:8px"><button class="btn sm pri" data-act="confirmOutcome" data-arg="${c.id}">Confirm outcome ${stp(10)}</button></div>`:''}`}</div>`:''}
   </div></div>`;
 }
@@ -2020,8 +2118,7 @@ function ackStep(c,quiet){
 }
 ACT.advance=id=>ackStep(CASE_BY_ID[id]);
 ACT.replay=id=>{const c=CASE_BY_ID[id],x=c.exec;pushEvent({dir:'out',type:'instruction.sent',caseId:c.id,decisionId:x.decisionId,approval:x.ref,ver:x.instruction,dest:x.steps[0].sys,ack:'duplicate · deduplicated',key:'idem-'+hashId(c.id+x.ref).slice(0,6).toLowerCase(),retries:1,note:'Repeated message ignored: same idempotency key, no second reservation or work order'});toast('Duplicate delivery ignored. The idempotency key already exists, so nothing was created twice.',4200)};
-ACT.viewInstr=id=>{const c=CASE_BY_ID[id],x=c.exec,r=c.chosen||c.recommendation;
-  const p={decisionId:x.decisionId,approvalRef:x.ref,instructionVersion:x.instruction,destination:x.steps[0].sys,caseId:c.id,assetId:c.assetId,quantity:c.qty,action:r.id,plan:r.plan,expectedNetUsd:r.net,spendAuthorityUsd:c.approval&&c.approval.spend!=null?c.approval.spend:defaultSpend(c,r),terms:c.approval&&c.approval.terms||'As approved',evidenceSnapshot:c.snapshot.id,policyVersion:'POL-3.2',modelVersion:c.model,idempotencyKey:'idem-'+hashId(c.id+x.ref).slice(0,6).toLowerCase(),expiresAt:addDays(AS_OF,7).toISOString().slice(0,10)};
+ACT.viewInstr=id=>{const c=CASE_BY_ID[id],p=Object.assign(instrPayload(c),{expiresAt:addDays(AS_OF,7).toISOString().slice(0,10)});
   openModal('Work instructions · '+c.id,`<p class="ink2" style="margin-top:0">Every outbound message carries a decision identifier, approval reference, instruction version, destination and acknowledgement. Retries are idempotent.</p><pre class="code">${jsonHtml(p)}</pre>`,`<button class="btn" data-act="closeModal">Close</button>`)};
 function jsonHtml(o){return esc(JSON.stringify(o,null,2)).replace(/&quot;([^&]+?)&quot;:/g,'<span class="k">"$1"</span>:').replace(/: &quot;(.*?)&quot;/g,': <span class="s">"$1"</span>').replace(/: (-?\d+(\.\d+)?)/g,': <span class="n">$1</span>')}
 ACT.confirmOutcome=id=>{if(!can('confirm')){toast('Only Finance confirms outcomes.');return}const c=CASE_BY_ID[id],r=c.chosen||c.recommendation;c.outcome={net:Math.round(r.net*(1+gauss()*.05-.01))};pushEvent({dir:'in',type:'outcome.confirmed',caseId:c.id,decisionId:c.exec.decisionId,approval:c.exec.ref,ver:c.exec.instruction,dest:'ERP · finance',ack:'acknowledged',key:'idem-'+hashId(c.id+'fin').slice(0,6),retries:0});toast('Outcome confirmed and linked to the decision.');route(true)};
@@ -2046,7 +2143,8 @@ ACT.models=()=>{const rows=MODELS.map(m=>({m,s:modelStats(m.v)}));
   openDrawer(`<p class="ink2" style="margin-top:0">Each prediction names its model version. Error shrinks as outcomes feed back; early versions were optimistic.</p><table class="t static"><thead><tr><th>Version</th><th class="r">Closed</th><th class="r">Error (MAPE)</th><th class="r">Bias</th><th class="r">P10–P90 coverage</th></tr></thead><tbody>${rows.map(({m,s})=>`<tr><td><b>${m.v}</b><div class="note">${fmtDY(m.released)}</div></td><td class="r num">${s.n}</td><td class="r num">${pct(s.mape,1)}</td><td class="r num ${s.bias<0?'neg':''}">${(s.bias*100).toFixed(1)}%</td><td class="r num">${pct(s.cov)}</td></tr>`).join('')}</tbody></table><div class="note" style="margin:10px 0">Negative bias: the model over-predicted. Overrides and pending cases are excluded.</div>`,'Model versions and validation','Compared with actual outcomes',rbPath('analytics')?'<a class="btn pri" href="#/analytics" data-act="go" data-arg="analytics">Open Analytics</a>':'')};
 ACT.dataChecks=()=>{const res=runInvariants(),ok=res.filter(r=>r.ok).length;
   openModal('Data integrity checks',`<p class="ink2" style="margin-top:0">One seeded generator feeds all four pages, so numbers reconcile everywhere. These checks run on every load.</p><div class="callout ${ok===res.length?'ok':'bad'}" style="margin-bottom:12px"><b>${ok} of ${res.length} checks pass.</b> Seed 20261007 · mulberry32</div>${res.map(r=>`<div class="ev ${r.ok?'':'missing'}"><span class="ic">${r.ok?'✓':'!'}</span><div><b>${esc(r.name)}</b><small>${esc(r.detail)}</small></div></div>`).join('')}`,`<button class="btn" data-act="closeModal">Close</button>`,true)};
-function afterRender(r,keep){if(typeof wfPaint==='function'&&S.wf&&$('#wfView'))wfPaint();$$('[data-nk="product/asset"]').forEach(a=>a.setAttribute('href',navHref(NAV[1],'asset')));if(r&&!keep&&ANCH[r.page]&&r.a)setTimeout(()=>anchorScroll(r),30)}
+function afterRender(r,keep){if(typeof wfPaint==='function'&&S.wf&&$('#wfView'))wfPaint();$$('[data-nk="product/asset"]').forEach(a=>a.setAttribute('href',navHref(NAV[1],'asset')));if(r&&!keep&&ANCH[r.page]&&r.a)setTimeout(()=>anchorScroll(r),30);
+  if(r&&!keep&&r.page==='product'&&r.a&&CASE_BY_ID[r.a]){const m=/[?&](?:step=(\d)|(explain))/.exec(location.hash);if(m)setTimeout(()=>m[1]?ACT.tiStep(m[1]):ACT.tiExplain(),40)}}
 
 /* ===== Analytics · reconcile & learn ===== */
 const kfmt=n=>{const a=Math.abs(n),s=n<0?'−':'';return a>=1e6?s+'$'+(a/1e6).toFixed(2)+'M':a>=1e3?s+'$'+Math.round(a/1e3)+'k':s+'$'+Math.round(a)};
@@ -2054,10 +2152,11 @@ const med=a=>{if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>
 /* ===== Command Center: one overview, every number from the same seeded world ===== */
 const CC_DAY=864e5;
 S.cc={site:'',cls:'',route:'',stage:'',reason:'',due:'',view:'',q:'',months:12,sort:'priority',ts:null};
-const CC_STAGES=[['await_insp','Awaiting inspection','var(--chart7)'],['need','Needs information','var(--chart5)'],['approval','Awaiting approval','var(--chart2)'],['approved','Approved · sending','var(--chart3)'],['exec','Executing','var(--chart1)'],['reeval','Re-evaluate','var(--chart4)'],['noroute','No viable route','var(--chart6)']];
+const CC_STAGES=[['await_insp','Awaiting inspection','var(--chart7)'],['need','Needs information','var(--chart5)'],['approval','Awaiting approval','var(--chart2)'],['approved','Approved · handing off','var(--chart3)'],['exec','Handed off · awaiting outcome','var(--chart1)'],['reeval','Re-evaluate','var(--chart4)'],['noroute','No viable route','var(--chart6)']];
 const CC_REASONS=['Delayed approval','Condition deterioration','Missing evidence','Market price decline','Capacity constraints'];
 const CC_DECAY={motor:.012,pump:.014,control:.03,drill:.025,batch:.03,it:.05};
 const CC_CAP={'Repair centre':45,'Warehouse 1':60,'Warehouse 2':60,'Inspection queue':30,'In execution':40};
+const CAP_LBL={'In execution':'Awaiting outcome from enterprise systems'};
 const CC_DUE=[['d5','< 5 days','var(--bad)'],['d7','5–7 days','#D4A800'],['d10','8–10 days','var(--chart2)'],['d11','> 10 days','var(--ok)']];
 ICON.command=IC('<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M7 16l3.5-4.5 3 2.2L17.5 8"/>');
 ICON.trend=IC('<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>');
@@ -2130,7 +2229,7 @@ function ccSignals(sc){const a=[],v=sc.all,ap=v.filter(c=>c._st==='approval'),cl
   return a.slice(0,5)}
 function ccSignalsHTML(sc){return ccSignals(sc).filter(s=>s.act.indexOf('go:')!==0||rbPath(s.act.slice(3))).map(s=>`<button class="ccsg" data-act="ccPick" data-arg="${s.act}"><span class="sgi ${s.lvl}">${s.ic}</span><span class="sgt"><b>${esc(s.t)}</b><span class="note">${esc(s.note)}</span></span><span class="sgn num">${s.n}</span></button>`).join('')||'<div class="empty"><b>No signals</b>Nothing needs attention.</div>'}
 function ccCapHTML(sc){return Object.keys(CC_CAP).map(k=>{const u=sc.util[k]||0,p=u/CC_CAP[k],cl=p>=.9?'var(--bad)':p>=.75?'#D4A800':'var(--ok)',msg=p>=.9?'Over limit risk':p>=.75?'Tight':'Within limit';
-  return `<div class="cccp" data-tip="${esc(k+': '+u+' of '+CC_CAP[k]+' planned slots. Capacity values are configured planning figures in this demo.')}"><span class="ccvl">${k}</span><span class="ccvb"><i style="width:${Math.min(100,p*100)}%;background:${cl}"></i></span><b class="num">${Math.round(p*100)}%</b><span class="note" style="color:${p>=.75?cl:'var(--muted)'}">${msg}</span></div>`}).join('')}
+  return `<div class="cccp" data-tip="${esc((CAP_LBL[k]||k)+': '+u+' of '+CC_CAP[k]+' planned slots. Capacity values are configured planning figures in this demo.')}"><span class="ccvl">${CAP_LBL[k]||k}</span><span class="ccvb"><i style="width:${Math.min(100,p*100)}%;background:${cl}"></i></span><b class="num">${Math.round(p*100)}%</b><span class="note" style="color:${p>=.75?cl:'var(--muted)'}">${msg}</span></div>`}).join('')}
 function ccHealthHTML(){const t=hhTotals(),st={live:0,stale:0,manual:0,unavailable:0};SOURCES.forEach(s=>st[s.status]++);
   return `<span class="livedot"><i></i>Live</span><span><b class="num">${t.pct.toFixed(1)}%</b> integration health</span><span class="note">${st.live} sources live${st.stale?' · <b style="color:var(--warn)">'+st.stale+' stale</b>':''}${st.unavailable?' · <b style="color:var(--bad)">'+st.unavailable+' not connected</b>':''}${st.manual?' · '+st.manual+' manual':''}</span>${rbPath('integration/map')?'<a class="lnk" href="#/integration/map" data-act="ccGoMap">View connections</a>':''}`}
 function ccInsightsHTML(sc){const o=[],cl=sc.all.filter(c=>c._st==='approval'&&c._left<5).length,ap=sc.all.filter(c=>c._st==='approval').length;
@@ -2160,17 +2259,84 @@ function ccTableHTML(sc){const l=ccTableRows(sc),top=l.slice(0,10),pc={High:'bad
 function ccClockText(){const d=asOfNow();return fmtDY(AS_OF)+', '+d.toISOString().slice(11,16)}
 /* role-specific Command Center: each role gets its own key figures and panels from the same seeded world */
 const CC_LAYOUT={
- Planner:{sub:'Prepare cases, close evidence gaps and submit decisions for review.',kpis:['scope','awaiting','gaps','closing'],charts:['lifecycle','due'],actions:1,row:['signals'],ops:1},
- Approver:{sub:'Decide what is waiting for you: treatment decisions, spend and sale terms, and the requests Admin delegated to you.',kpis:['awaitVal','potential','risk','closing','inbox'],inbox:1,charts:['var','due'],actions:1,row:['capacity','value'],ops:1},
- Engineer:{sub:'Inspection queue, failed eligibility gates, condition and parts at risk.',kpis:['inspq','gatefail','graded','parts'],charts:['lifecycle','treat'],actions:1,row:['signals','capacity'],ops:1,health:'strip'},
- Finance:{sub:'Recovered value, uplift against the baseline, avoided spend and outcomes waiting for confirmation.',kpis:['net','uplift','yield','avoided','co2m'],outcomes:1,charts:['treat'],row:['value'],fin:1,health:'strip'},
- Developer:{sub:'Health of connected systems, workflows, conflicts and MCP server proposals.',kpis:['ihealth','srcattn','wffail','conf','props'],health:'full'},
- Admin:{sub:'Identify, prioritise and act on lifecycle opportunities to maximise economic, operational and sustainability outcomes.',kpis:['inbox','potential','risk','ihealth','uplift'],inbox:1,outcomes:1,charts:['lifecycle','treat','var','due'],actions:1,row:['signals','capacity','value'],ops:1,health:'full'}};
+ Planner:{sub:'Prepare cases, close evidence gaps and submit decisions for review.',kpis:['aome','scope','awaiting','gaps','closing'],aome:1,handed:1,charts:['lifecycle','due'],actions:1,row:['signals'],ops:1},
+ Approver:{sub:'Decide what is waiting for you: treatment decisions, spend and sale terms, and the requests Admin delegated to you.',kpis:['awaitVal','potential','risk','closing','inbox'],aome:1,inbox:1,charts:['var','due'],actions:1,row:['capacity','value'],ops:1},
+ Engineer:{sub:'Inspection queue, failed eligibility gates, condition and parts at risk.',kpis:['aome','inspq','gatefail','graded','parts'],aome:1,handed:1,charts:['lifecycle','treat'],actions:1,row:['signals','capacity'],ops:1,health:'strip'},
+ Finance:{sub:'Recovered value, uplift against the baseline, avoided spend and outcomes waiting for confirmation.',kpis:['net','uplift','yield','avoided','co2m'],aome:1,outcomes:1,charts:['treat'],row:['value'],fin:1,health:'strip'},
+ Developer:{sub:'Health of connected systems, workflows, conflicts and MCP server proposals.',kpis:['ihealth','srcattn','wffail','conf','props'],aome:1,health:'full'},
+ Executive:{sub:'Value realised, portfolio health and the exceptions that need attention. Drill into the cases or notify the owner.',kpis:['net','uplift','yield','avoided','co2m'],senior:1,charts:['lifecycle','treat'],row:['value'],fin:1},
+ 'Warehouse Manager':{sub:'Your warehouse: what is on you, inbound expected returns, and items with enterprise systems awaiting an outcome. WMS stays the system of record.',kpis:['aome','whcases','handed','capwh'],exceptions:1,aome:1,handed:1,charts:['lifecycle','due'],row:['capacity']},
+ Admin:{sub:'Identify, prioritise and act on lifecycle opportunities to maximise economic, operational and sustainability outcomes.',kpis:['inbox','potential','risk','ihealth','uplift'],exceptions:1,aome:1,handed:1,inbox:1,outcomes:1,charts:['lifecycle','treat','var','due'],actions:1,row:['signals','capacity','value'],ops:1,health:'full'}};
 const rbPath=p=>{const h=String(p).replace(/^#?\/?/,'').split('/');return canRoute({page:h[0],a:h[1]||null,b:h[2]||null})===true};
 function ccOutcomesHTML(){const l=visCases().filter(c=>c.stage==='closed'&&!c.outcome),done=visCases().filter(c=>c.outcome).length;
-  return `<section class="panel" id="ccOutcomes"><div class="ph"><div><h3>Outcomes to confirm</h3><div class="note">Execution finished; Finance confirms the economic result.</div></div><span class="sp"></span><span class="chip ${l.length?'warn':'ok'}">${l.length} waiting</span></div>
+  return `<section class="panel" id="ccOutcomes"><div class="ph"><div><h3>Outcomes to confirm</h3><div class="note">Enterprise systems reported the outcome; Finance confirms the economic result.</div></div><span class="sp"></span><span class="chip ${l.length?'warn':'ok'}">${l.length} waiting</span></div>
   ${l.length?`<div class="tw"><table class="t cctab"><thead><tr><th>Return</th><th>Asset</th><th>Route</th><th class="r">Predicted net</th><th></th></tr></thead><tbody>${l.map(c=>{const r=c.chosen||c.recommendation;return `<tr data-act="ccOpen" data-arg="${c.id}" tabindex="0"><td data-l="Return"><b>${c.id}</b></td><td data-l="Asset">${esc(c.product)} <span class="note">${c.assetId}</span></td><td data-l="Route">${esc(r?r.plan:'—')}</td><td class="r num" data-l="Predicted">${r?money(r.net):'—'}</td><td><span class="btn sm">Open to confirm</span></td></tr>`}).join('')}</tbody></table></div>`
-   :`<div class="pb"><div class="empty"><b>Nothing to confirm right now</b>Cases appear here when execution systems report an outcome. ${done} outcome${done===1?'':'s'} confirmed this session.</div></div>`}</section>`}
+   :`<div class="pb"><div class="empty"><b>Nothing to confirm right now</b>Cases appear here when enterprise systems report an outcome. ${done} outcome${done===1?'':'s'} confirmed this session.</div></div>`}</section>`}
+/* ===== Senior and operational views: exceptions, Notify, Actions on me, handed off ===== */
+S.notes=[{id:'NTF-101',exId:'var:Delayed approval',title:'Value at risk: delayed approval',msg:'Decisions are close to their window. Please clear the oldest first.',sev:'High',to:'approver',toLabel:'Approver',from:'Executive',at:addDays(AS_OF,-.2),status:'open',ids:[]}];S.ntSeq=102;
+try{const o=JSON.parse(localStorage.getItem('circ-cc')||'{}');S.ccMode=o.mode==='senior'?'senior':'operational';S.ccOps=!!o.ops}catch(e){S.ccMode='operational';S.ccOps=false}
+const ccSave=()=>{try{localStorage.setItem('circ-cc',JSON.stringify({mode:S.ccMode,ops:S.ccOps}))}catch(e){}};
+ACT.ccMode=v=>{S.ccMode=v==='senior'?'senior':'operational';ccSave();route(true)};
+ACT.ccOps=v=>{S.ccOps=!!v;ccSave();route(true)};
+const prevGrade=c=>c.grade&&c.grade!=='A'&&asHex(c,'pg')%11===0?String.fromCharCode(c.grade.charCodeAt(0)-1):null;
+/* operational scope: Planner and Engineer default to their home site and can widen it; Warehouse Manager is locked */
+const opHome=()=>S.acct&&(S.acct.warehouse||S.acct.site)||'';
+const opScope=()=>S.acct&&S.acct.warehouse?S.acct.warehouse:S.opScope===undefined?opHome():S.opScope;
+const opScoped=()=>{const s=opScope();return visCases().filter(c=>!s||c.location===s)};
+const opScopeChip=()=>{const s=opScope();if(!opHome())return '';return `<span class="chip line">${esc(s||'All locations')}</span>${S.acct.warehouse?'':` <button class="lnk" data-act="opScope">${s?'Show all locations':'Back to '+esc(opHome())}</button>`}`};
+ACT.opScope=()=>{S.opScope=opScope()?'':opHome();route(true)};
+const EX_OWNER={value:'approver',evidence:'engineer',integration:'developer'};
+function exOwner(x){if(x.type==='bottleneck')return x.loc==='Warehouse 2'?'wm-2':x.loc==='Warehouse 1'?'wm-1':'engineer';return EX_OWNER[x.type]||'approver'}
+/* exceptions, ranked by value × urgency rather than listed by threshold */
+function ccExList(sc){const out=[],wh=S.acct&&S.acct.warehouse,by={};
+  sc.all.forEach(c=>Object.entries(c._risk||{}).forEach(([k,v])=>{if(v>0){const o=by[k]||(by[k]={v:0,ids:[]});o.v+=v;o.ids.push(c.id)}}));
+  Object.entries(by).forEach(([k,o])=>out.push({id:'var:'+k,type:k==='Missing evidence'||k==='Condition deterioration'?'evidence':k==='Capacity constraints'?'bottleneck':'value',loc:k==='Capacity constraints'?'Repair centre':null,title:'Value at risk: '+k.toLowerCase(),value:Math.round(o.v),count:o.ids.length,ids:o.ids,trend:'next 30 days if no action',sev:o.v>20000?'High':o.v>5000?'Medium':'Low',urg:k==='Delayed approval'?1:.8}));
+  const u=sc.util||ccUtil();['Repair centre','Warehouse 1','Warehouse 2'].filter(l=>!wh||l===wh).forEach(l=>{const p=(u[l]||0)/CC_CAP[l];if(p>=.85){const ids=sc.all.filter(c=>c.location===l).map(c=>c.id);out.push({id:'cap:'+l,type:'bottleneck',loc:l,title:'Warehouse bottleneck: '+l,value:Math.round(sum(sc.all.filter(c=>c.location===l).map(c=>c._val||0))),count:ids.length,ids,trend:Math.round(p*100)+'% of planned capacity',sev:p>=1?'High':'Medium',urg:p})}});
+  if(!wh){const vR=visRows();[['net recovery',r=>r.status==='reconciled'?r.actual:0],['uplift vs baseline',r=>r.status==='reconciled'?r.actual-r.baseline:0],['closed decisions',()=>1]].forEach(([n,fn])=>{const s=ccSeries(fn,vR),a=s[10],b=s[9];if(b>0&&a/b-1<-.05)out.push({id:'kpi:'+n,type:'value',title:'Declining metric: '+n,value:Math.round(Math.max(0,b-a)),count:0,ids:[],trend:'▼ '+Math.abs(Math.round((a/b-1)*100))+'% last full month vs the month before',sev:a/b-1<-.15?'High':'Medium',urg:.6,go:'analytics'})})}
+  const det=sc.all.filter(prevGrade);if(det.length)out.push({id:'cond',type:'evidence',title:'Deteriorating condition',value:Math.round(sum(det.map(c=>c._val||0))),count:det.length,ids:det.map(c=>c.id),trend:det.length+' graded lower than at the last inspection',sev:det.length>6?'Medium':'Low',urg:.5});
+  out.forEach(x=>x.score=x.value*x.urg*({High:1.5,Medium:1,Low:.6})[x.sev]);return out.sort((a,b)=>b.score-a.score)}
+function ccExHTML(sc){const l=ccExList(sc),N=S.notes;
+  return `<section class="panel exp" id="ccEx"><div class="ph"><div><h3>Exceptions</h3><div class="note">Ranked by value × urgency. Drill into the cases, or notify the owner.</div></div><span class="sp"></span><span class="chip ${l.length?'warn':'ok'}">${l.length} open</span></div>
+  ${l.length?`<div class="tw"><table class="t cctab exl"><thead><tr><th>Exception</th><th>Severity</th><th class="r">Value</th><th class="r">Cases</th><th>Trend</th><th>Status</th><th></th></tr></thead><tbody>${l.map(x=>{const n=N.filter(y=>y.exId===x.id).slice(-1)[0];return `<tr data-ex="${esc(x.id)}"><td data-l="Exception"><b>${esc(x.title)}</b></td><td data-l="Severity"><span class="chip ${x.sev==='High'?'bad':x.sev==='Medium'?'warn':'line'}">${x.sev}</span></td><td class="r num" data-l="Value">${kfmt(x.value)}</td><td class="r num" data-l="Cases">${x.count||'—'}</td><td class="note" data-l="Trend">${esc(x.trend)}</td><td data-l="Status">${n?(n.status==='ack'?`<span class="chip ok">In hand by ${esc(n.ackBy)}</span>`:`<span class="chip line">Notified ${esc(n.toLabel)}</span>`):'<span class="note">Open</span>'}</td><td class="nowrap exa"><button class="btn sm" data-act="exView" data-arg="${esc(x.id)}">View cases</button>${can('notify')?` <button class="btn sm pri" data-act="notifyOpen" data-arg="${esc(x.id)}">Notify owner</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="pb"><div class="empty"><b>No exceptions</b>Nothing needs attention right now.</div></div>'}</section>`}
+ACT.exView=id=>{const x=ccExList(ccScope()).find(e=>e.id===id);if(!x)return;if(x.go){if(rbPath(x.go))ACT.go(x.go);else toast('Open Analytics for this metric.');return}
+  const cs=x.ids.map(i=>CASE_BY_ID[i]).filter(Boolean).sort((a,b)=>(b._val||0)-(a._val||0)),open=canPage('product','case');
+  openDrawer(`<p class="note" style="margin-top:0">${esc(x.trend)} · ${kfmt(x.value)} · ${cs.length} case${cs.length===1?'':'s'}. Senior view drills to Analytics and the case pages.</p><div class="tw"><table class="t static tight"><thead><tr><th>Return</th><th>Asset</th><th>Location</th><th>Status</th><th class="r">Value</th></tr></thead><tbody>${cs.slice(0,40).map(c=>`<tr><td>${open?`<a class="lnk" href="#/product/${c.id}" data-act="go" data-arg="product/${c.id}">${c.id}</a>`:c.id}</td><td>${esc(c.product)}</td><td>${esc(c.location)}</td><td>${stageChip(c)}</td><td class="r num">${kfmt(c._val||0)}</td></tr>`).join('')}</tbody></table></div>${cs.length>40?`<p class="note">Showing 40 of ${cs.length}.</p>`:''}`,esc(x.title),'Exception · ranked '+(ccExList(ccScope()).indexOf(x)+1),rbPath('analytics')?`<button class="btn" data-act="go" data-arg="analytics">Open Analytics</button>`:'')};
+ACT.notifyOpen=id=>{if(!can('notify'))return;const x=ccExList(ccScope()).find(e=>e.id===id);if(!x)return;const to=exOwner(x);
+  openModal('Notify the owner',`<div class="callout info" style="margin-bottom:12px"><b>${esc(x.title)}</b> · ${kfmt(x.value)}${x.count?' · '+x.count+' cases':''}</div>
+   <div class="fld"><label for="nt-to">Recipient</label><select id="nt-to">${ACCOUNTS.filter(a=>a.role!=='Executive').map(a=>`<option value="${a.id}" ${a.id===to?'selected':''}>${esc(a.label)}</option>`).join('')}</select><div class="hint">Prefilled by exception type. You can change it.</div></div>
+   <div class="fld"><label for="nt-sev">Severity</label><select id="nt-sev">${['High','Medium','Low'].map(s=>`<option ${s===x.sev?'selected':''}>${s}</option>`).join('')}</select></div>
+   <div class="fld"><label for="nt-msg">Message</label><textarea id="nt-msg" maxlength="300">${esc('Please look at: '+x.title.toLowerCase()+'.')}</textarea><div class="hint">Simulated: it creates an Actions on me item and an audit entry; nothing is sent outside the app. Do not enter personal data.</div><div class="err" id="nt-err" hidden></div></div>`,
+   `<button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="notifyOk" data-arg="${esc(id)}">Send notification</button>`)};
+ACT.notifyOk=id=>{if(!can('notify'))return;const x=ccExList(ccScope()).find(e=>e.id===id),to=ACCT(($('#nt-to')||{}).value),msg=(($('#nt-msg')||{}).value||'').trim();
+  if(!x||!to||msg.length<5){const e=$('#nt-err');if(e){e.textContent='Add a message of at least 5 characters.';e.hidden=false}return}
+  const n={id:'NTF-'+(S.ntSeq++),exId:x.id,title:x.title,msg,sev:$('#nt-sev').value,to:to.id,toLabel:to.label,from:who(),at:asOfNow(),status:'open',ids:x.ids.slice(0,40)};S.notes.push(n);
+  rbLog('notification.sent',n.id+' · '+x.title+' → '+to.label+' (simulated)');closeModal();toast('Notification sent to '+to.label+' (simulated).',4200);route(true)};
+ACT.notifyAck=id=>{const n=S.notes.find(x=>x.id===id);if(!n||!S.acct||n.to!==S.acct.id)return;n.status='ack';n.ackBy=who();n.ackAt=asOfNow();rbLog('notification.acknowledged',n.id+' · '+n.title+' · in hand by '+who());toast('Acknowledged. The sender sees it is in hand.');route(true)};
+/* Actions on me: everything whose next step belongs to this account, each with one button to the right step */
+function aomeItems(){if(!S.acct)return[];const me=S.acct,role=me.role,P=pol(),out=[],cs=opScoped(),st5=id=>'product/'+id+'?step=5';
+  S.notes.filter(n=>n.to===me.id&&n.status==='open').forEach(n=>out.push({t:n.title,d:'From '+n.from+' · '+n.sev+' · '+n.msg,btn:'Acknowledge',act:'notifyAck',arg:n.id}));
+  if(role==='Admin'||(P.perms||[]).some(p=>p.indexOf('approve.')===0))inboxReqs().forEach(r=>out.push({t:REQ_KIND[r.kind]+' '+r.id,d:'Requested by '+r.by,btn:'Open inbox',go:'command/approvals'}));
+  if(role==='Engineer')cs.filter(c=>c.blocked&&c.requested).forEach(c=>out.push({t:c.id+' · record the assessment result',d:c.blocked.action+' · '+c.blocked.gateName+' gate',btn:'Record result',go:st5(c.id)}));
+  if(role==='Engineer')cs.filter(c=>c.assessment==='Pending').slice(0,6).forEach(c=>out.push({t:c.id+' · inspection due',d:c.product+' at '+c.location,btn:'Open asset',go:'product/asset/'+c.id}));
+  if(role==='Planner')cs.filter(c=>c.stage==='reeval').forEach(c=>out.push({t:c.id+' · re-evaluate',d:c.reevalReason||'Review triggered',btn:'Re-evaluate',go:st5(c.id)}));
+  if(role==='Planner')cs.filter(c=>c.stage==='awaiting_approval'&&!c.submitted&&c.recommendation).slice(0,6).forEach(c=>out.push({t:c.id+' · submit for review',d:c.recommendation.plan+' · '+money(c.recommendation.net),btn:'Submit',go:st5(c.id)}));
+  if(role==='Approver')visCases().filter(c=>c.stage==='awaiting_approval'&&c.submitted).forEach(c=>out.push({t:c.id+' · approve or decline',d:'Submitted by '+c.submitted.by+' · '+money(c.recommendation.net),btn:'Decide',go:st5(c.id)}));
+  if(role==='Finance')visCases().filter(c=>c.stage==='closed'&&!c.outcome).forEach(c=>out.push({t:c.id+' · confirm the outcome',d:'Reported by the enterprise systems',btn:'Confirm',go:st5(c.id)}));
+  if(role==='Developer')SOURCES.filter(s=>s.status==='stale'||s.status==='unavailable').forEach(s=>out.push({t:s.name+' · '+s.status,d:s.vendor,btn:'Open Source map',go:'integration/map'}));
+  if(role==='Warehouse Manager'){cs.filter(c=>{const a=c.exec&&c.exec.steps.find(s=>s.state==='active');return a&&/^WMS/.test(a.sys)}).forEach(c=>{const a=c.exec.steps.find(s=>s.state==='active');out.push({t:c.id+' · '+a.label.toLowerCase(),d:'WMS acknowledgement pending · '+c.product,btn:'Check',go:st5(c.id)})});
+   expVis().forEach(e=>out.push({t:e.contract+' · inbound '+e.outcome.window,d:e.product+' · '+e.customer+' · '+e.outcome.prob+'% likely to return',btn:'Plan receiving',go:'product/expected'}))}
+  return out}
+function ccAomeHTML(){const l=aomeItems();
+  return `<section class="panel" id="ccAome"><div class="ph"><div><h3>Actions on me</h3><div class="note">Everything whose next step is yours</div></div><span class="sp"></span>${opScopeChip()}<span class="chip ${l.length?'warn':'ok'}">${l.length}</span></div><div class="pb">${l.length?`<ul class="aol">${l.slice(0,8).map(i=>`<li class="aor"><span class="aot"><b>${esc(i.t)}</b><span class="note">${esc(i.d)}</span></span>${i.act?`<button class="btn sm pri" data-act="${i.act}" data-arg="${esc(i.arg)}">${i.btn}</button>`:`<a class="btn sm pri" href="#/${esc(i.go)}" data-act="go" data-arg="${esc(i.go)}">${i.btn} →</a>`}</li>`).join('')}</ul>${l.length>8?`<p class="note" style="margin:8px 0 0">${l.length-8} more in the queues below.</p>`:''}`:'<div class="empty"><b>Nothing waits on you</b>New items appear here when a step becomes yours.</div>'}</div></section>`}
+function handedRows(){return opScoped().filter(c=>c.stage==='approved'||c.stage==='executing').map(c=>{const st=stepsOf(c),a=st.find(s=>s.state==='active')||st[0],last=st.filter(s=>s.ack).slice(-1)[0],age=c.exec?Math.max(0,(AS_OF-new Date(c.exec.approvedAt))/864e5):0;return{c,a,last,age,over:age>2}}).sort((x,y)=>y.age-x.age)}
+function ccHandedHTML(){const l=handedRows(),ap=opScoped().filter(c=>c.stage==='awaiting_approval'),dl=S.deleg.decisions?'Approver':'Admin';
+  return `<div class="aogrid" id="ccHanded"><section class="panel"><div class="ph"><div><h3>Waiting for approval</h3><div class="note">Status only; ${dl} decides</div></div><span class="sp"></span>${opScopeChip()}<span class="chip line">${ap.length}</span></div>
+   ${ap.length?`<div class="tw"><table class="t cctab"><thead><tr><th>Return</th><th>Pathway</th><th>Waits on</th></tr></thead><tbody>${ap.slice(0,6).map(c=>`<tr data-act="ccOpen" data-arg="${c.id}" tabindex="0"><td data-l="Return"><b>${c.id}</b><div class="note">${esc(c.location)}</div></td><td data-l="Pathway">${esc(c.recommendation?c.recommendation.plan:'—')}</td><td data-l="Waits on">${dl}${c.submitted?' · submitted':' · not yet submitted'}</td></tr>`).join('')}</tbody></table></div>${ap.length>6?`<p class="note" style="padding:6px 14px;margin:0">${ap.length-6} more</p>`:''}`:'<div class="pb"><div class="empty"><b>Nothing waiting</b>No decisions in this scope wait for approval.</div></div>'}</section>
+  <section class="panel"><div class="ph"><div><h3>Handed off · awaiting outcome</h3><div class="note">Instructions with ERP, EAM or WMS; they carry out the work and report back</div></div><span class="sp"></span><span class="chip line" id="ccHandedN">${l.length}</span></div>
+   ${l.length?`<div class="tw"><table class="t cctab"><thead><tr><th>Return</th><th>Target system</th><th>External ref</th><th class="r">Age</th></tr></thead><tbody>${l.slice(0,8).map(x=>`<tr data-act="ccOpen" data-arg="${x.c.id}" tabindex="0"><td data-l="Return"><b>${x.c.id}</b><div class="note">${esc(x.a.label)}</div></td><td data-l="Target">${esc(x.a.sys)}</td><td class="mono" data-l="Ref">${x.last?esc(x.last.ack.ref):'—'}</td><td class="r num nowrap" data-l="Age">${x.age.toFixed(1)} d${x.over?' <span class="chip warn">Overdue</span>':''}</td></tr>`).join('')}</tbody></table></div>${l.length>8?`<p class="note" style="padding:6px 14px;margin:0">${l.length-8} more · oldest first</p>`:''}`:'<div class="pb"><div class="empty"><b>Nothing handed off</b>Approved instructions appear here until the system reports an outcome.</div></div>'}</section></div>`}
+/* senior view: the operational queues, read-only, only when asked for */
+function ccOpsRO(sc){const ap=sc.all.filter(c=>c._st==='approval');
+  return `<div class="aogrid" id="ccOpsRO"><section class="panel"><div class="ph"><div><h3>Awaiting approval</h3><div class="note">Read-only</div></div><span class="sp"></span><span class="chip line">${ap.length}</span></div><div class="tw"><table class="t cctab"><tbody>${ap.sort((a,b)=>ccNet(b)-ccNet(a)).slice(0,6).map(c=>`<tr data-act="ccOpen" data-arg="${c.id}" tabindex="0"><td><b>${c.id}</b></td><td>${esc(c.recommendation?c.recommendation.plan:'—')}</td><td class="r num">${kfmt(ccNet(c))}</td></tr>`).join('')}</tbody></table></div></section>${ccOutcomesHTML()}</div>`}
 function ccKpiSet(keys,sc,rows,m){
   const k=(cls,ic,label,val,sub,d,s,act,arg,tip)=>`<button class="cck ${cls}" data-act="${act}" data-arg="${esc(arg||'')}" data-tip="${esc(tip)}"><span class="cckt"><span class="kic">${ic}</span><span class="ccl">${label}</span></span><span class="ccv num">${val}</span><span class="ccs">${d?`<span class="ccd ${d.cls}">${d.arrow} ${d.txt}</span>`:''}<span class="note">${sub}</span></span>${s?`<span class="ccsp">${ccSpark(s)}</span>`:''}</button>`;
   const st=x=>sc.all.filter(c=>c._st===x),ap=st('approval'),open=sc.all.filter(c=>c._st==='approval'||c._st==='reeval'),pot=sum(open.map(ccNet)),vr=sum(sc.all.map(c=>c._var)),vR=visRows();
@@ -2198,10 +2364,14 @@ function ccKpiSet(keys,sc,rows,m){
    srcattn:()=>{const l=SOURCES.filter(s=>s.status==='stale'||s.status==='unavailable');return k(l.length?'bad':'ok',ICON.flag,'Sources needing attention',fmtN(l.length),l.map(s=>s.name).join(', ')||'all sources fresh',null,null,'go','integration/map','Sources that are stale or not connected.')},
    wffail:()=>{wfInit();const n=S.wf.list.filter(w=>wfStat(w)==='failing').length;return k(n?'bad':'ok',ICON.play,'Failing workflows',fmtN(n),'published, last run failed',null,null,'go','integration/studio','Published workflows whose last run failed.')},
    conf:()=>{const n=CONFLICTS.filter(c=>c.status==='open').length;return k(n?'bad':'ok',ICON.integration,'Open conflicts',fmtN(n),'systems that disagree',null,null,'go','integration/conflicts','Records where two systems disagree. Dependent routes stay held until resolved.')},
+   aome:()=>{const n=aomeItems().length;return k(n?'y':'ok',ICON.flag,'Actions on me',fmtN(n),'items whose next step is yours',null,null,'ccScroll','ccAome','Everything waiting on you: notifications, requests, cases to submit, approve, inspect or confirm. Listed in Actions on me below.')},
+   whcases:()=>k('',ICON.batch,'Assets at '+(S.acct.warehouse||'your site'),fmtN(sc.all.length),sum(sc.all.map(c=>c.qty)).toLocaleString()+' units · current location',null,null,'go','product/received','Returned assets whose current location is your warehouse.'),
+   handed:()=>{const n=sc.all.filter(c=>c.stage==='approved'||c.stage==='executing').length;return k('',ICON.integration,'Handed off',fmtN(n),'with enterprise systems · awaiting outcome',null,null,'ccScroll','ccHanded','Approved instructions sent to ERP, EAM or WMS that have not reported an outcome yet.')},
+   capwh:()=>{const w=S.acct.warehouse||'Warehouse 1',p=(sc.util[w]||0)/CC_CAP[w];return k(p>=.85?'bad':'ok',ICON.flag,'Capacity used',Math.round(p*100)+'%',(sc.util[w]||0)+' of '+CC_CAP[w]+' planned slots',null,null,'ccScroll','ccSignals','Utilisation of your warehouse against its configured planning capacity.')},
    props:()=>{const l=myReqs().filter(r=>r.kind==='mcp');return k('y',ICON.mcp,'My MCP proposals',fmtN(l.filter(r=>r.status==='pending').length)+' pending',l.filter(r=>r.status==='approved').length+' approved · '+l.filter(r=>r.status==='declined').length+' declined',null,null,'go','mcp/proposals','Servers you proposed and their review status.')}};
   return keys.map(x=>D[x]()).join('')}
 function renderCommand(){
-  const L=CC_LAYOUT[S.acct.role],sc=ccScope(),rows=ccRows(),m=metrics(rows),f=S.cc;
+  const adm=S.acct.role==='Admin',L=adm&&S.ccMode==='senior'?Object.assign({},CC_LAYOUT.Executive,{sub:'Senior view: value realised, portfolio health and exceptions. Switch to Operational for the queues.'}):CC_LAYOUT[S.acct.role],sc=ccScope(),rows=ccRows(),m=metrics(rows),f=S.cc;
   const stages=CC_STAGES.map(([k,l,c])=>({k:'stage:'+k,label:l,v:sc.all.filter(x=>x._st===k).length,color:c,tip:''}));
   const tr=ROUTES.map(r=>{const a=sc.all.filter(c=>c.recommendation&&c.recommendation.id===r.id);return{id:r.id,label:r.short,v:sum(a.map(c=>c.qty)),net:sum(a.map(ccNet)),color:r.color}}).filter(x=>x.v>0);
   const actable=sc.act,due=CC_DUE.map(([k,l,c])=>({k:'due:'+k,label:l,v:actable.filter(x=>x._due===k).length,color:c}));
@@ -2217,11 +2387,15 @@ function renderCommand(){
   const charts=(L.charts||[]),row=(L.row||[]);
   return `<div class="cc">
   <div class="phead"><div><h1>Circularity Command Center <span class="chip line ccrole">${esc(S.acct.role)} view</span></h1><p>${esc(L.sub)}</p></div>
-   <div class="row ccact"><span class="note ccrf">Last refreshed<br><b class="num" data-cc-clock>${ccClockText()}</b></span><button class="iconbtn" data-act="ccRefresh" aria-label="Refresh data" data-tip="Refresh">${ICON.refresh}</button><button class="btn" data-act="ccShare">${ICON.share}Share</button><button class="btn pri" data-act="ccExport">${ICON.export}Export</button></div></div>
+   <div class="row ccact">${adm?`<div class="seg" role="group" aria-label="Command Center view"><button data-act="ccMode" data-arg="operational" aria-pressed="${S.ccMode!=='senior'}">Operational</button><button data-act="ccMode" data-arg="senior" aria-pressed="${S.ccMode==='senior'}">Senior</button></div>`:''}<span class="note ccrf">Last refreshed<br><b class="num" data-cc-clock>${ccClockText()}</b></span><button class="iconbtn" data-act="ccRefresh" aria-label="Refresh data" data-tip="Refresh">${ICON.refresh}</button><button class="btn" data-act="ccShare">${ICON.share}Share</button><button class="btn pri" data-act="ccExport">${ICON.export}Export</button></div></div>
   ${L.health?`<div class="cchealth" id="ccHealth">${ccHealthHTML()}</div>`:''}
   ${L.ops||L.fin?ccFilters(sc):''}
   ${L.ops?`<div class="ccinsights"><span class="ccit">Needs attention now</span>${ccInsightsHTML(sc)}</div>`:''}
   <div class="cckpis" id="ccKpis" data-n="${L.kpis.length}">${ccKpiSet(L.kpis,sc,rows,m)}</div>
+  ${(L.senior||L.exceptions)&&canPage('command','exceptions')?ccExHTML(sc):''}
+  ${L.senior?`<label class="tog exops"><input type="checkbox" data-ch="ccOps" ${S.ccOps?'checked':''}> Show operational queues (read-only)</label>${S.ccOps?ccOpsRO(sc):''}`:''}
+  ${L.aome&&canPage('command','aome')?ccAomeHTML():''}
+  ${L.handed&&canPage('command','handed')?ccHandedHTML():''}
   ${L.inbox&&canPage('command','approvals')?ccInboxHTML():''}
   ${L.outcomes&&canPage('command','outcomes')?ccOutcomesHTML():''}
   ${charts.length?`<div class="ccgrid4" id="ccCharts" data-n="${charts.length}">${charts.map(x=>CH[x]()).join('')}</div>`:''}
@@ -2246,6 +2420,104 @@ ACT.ccShare=()=>{const u=location.href;(navigator.clipboard?navigator.clipboard.
 ACT.ccExport=()=>{toast('Opening the print dialog. Choose Save as PDF for a one-page summary.');setTimeout(()=>window.print(),400)};
 ACT.ccGoMap=()=>{go('integration/map')};
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();const g=$('#gs');g&&g.focus()}});
+/*ORCH-START*/
+/* ===== Process orchestration ("behind the screen"): how agents and services produce a recommendation ===== */
+const OR_STAGES=[
+ ['start','Start','A return is received, or a contract nears expiry','Return intake (event)',['WMS','Contract Management']],
+ ['pull','Pull data','Fetch evidence from the systems of record','Evidence Assembler',['EAM','ERP','CRM','WMS','Telemetry']],
+ ['prep','Data preparation','Validate, link identities and resolve conflicts','Data preparation service',['Canonical models','Conflict queue']],
+ ['gates','Evaluate gates','Six eligibility gates per pathway','Gate engine',['Policy','QMS','Contract Management']],
+ ['ml','ML predictions','Price, cost, condition and success per pathway','Prediction models',['Market data','EAM history']],
+ ['opt','Optimise pool','Allocate scarce assets across competing demand','Opportunity Finder · optimize_pool',['ERP demand','CRM pipeline']],
+ ['rec','Recommendation','Rank pathways and explain the choice','Recommendation service',['Circularity']],
+ ['appr','Present for approval','A person approves, overrides or declines','Approval (human)',['Circularity']],
+ ['hand','Hand off to enterprise system','Send the approved instruction with its approval reference','Handoff Coordinator · send_instruction',['ERP Order Management','EAM','WMS']],
+ ['out','Retrieve actual outcome','Collect the reported result and reconcile it','Reconciler · reconcile_outcome',['ERP','EAM','WMS']]];
+const OR_ST={done:['Done','ok'],active:['Active','warn'],failed:['Failed','bad'],upstream:['Upstream failed','line'],pending:['Pending','line']};
+S.or={case:null,fail:'',play:null};
+function orCases(){return canPage('product','case')?myCases():visCases()}
+function orCase(){const cs=orCases();return cs.find(c=>c.id===S.or.case)||cs.find(c=>c.id==='RT-1048')||cs[0]}
+/* stage states and times come from the case record and its audit trail (evidence fetches, approval, handoff acknowledgements) */
+function orRun(c){const ev=c.evidence||[],st=c.stage,x=c.exec,steps=x?x.steps:[],prov=ev.filter(e=>e.state!=='missing').map(e=>provFor(c,e)),fT=prov.map(p=>+new Date(p.fetchedAt)).filter(Boolean),rec=+new Date(c.received);
+  const t0=fT.length?Math.min(...fT):rec,t1=fT.length?Math.max(...fT):rec+36e5,h=n=>new Date(t1+n*6e4),ap=c.approval?+new Date(c.approval.at):null,acks=steps.filter(s=>s.ack).map(s=>+new Date(s.ack.at));
+  const s=[['done',new Date(rec),new Date(rec+6e4),'Return '+c.id+' registered at '+c.location],
+   [ev.some(e=>e.state==='missing')?'active':'done',new Date(t0),new Date(t1),ev.filter(e=>e.state==='ready').length+' of '+ev.length+' evidence items fetched'],
+   [ev.some(e=>e.state==='conflict')?'failed':'done',h(1),h(3),ev.some(e=>e.state==='conflict')?'A source conflict blocks linking':'Identities linked; no open conflict'],
+   [c.blocked?'failed':'done',h(3),h(4),c.blocked?c.blocked.gateName+' gate failed: '+c.blocked.reason:c.routes.filter(r=>!r.excluded).length+' of '+c.routes.length+' pathways passed all gates'],
+   [c.routes.length?'done':'pending',h(4),h(6),c.routes.length?'Model '+(c.model||'v1.3')+' · '+c.routes.length+' pathways predicted':'Waiting for evidence'],
+   [c.routes.length?'done':'pending',h(6),h(9),c.pool?'Allocated in pool '+(c.pool.id||'')+' across competing demand':'Single asset; no competing demand to allocate'],
+   [c.recommendation?'done':'pending',h(9),h(10),c.recommendation?c.recommendation.plan+' · '+money(c.recommendation.net):'No recommendation yet'],
+   [st==='awaiting_approval'||st==='reeval'?'active':['approved','executing','closed'].includes(st)?'done':'pending',h(10),ap?new Date(ap):null,c.approval?c.approval.ref+' by '+c.approval.by:st==='reeval'?'Declined or review triggered; re-evaluate':'Waiting for a person'],
+   [st==='approved'?'active':['executing','closed'].includes(st)?'done':'pending',ap?new Date(ap):null,acks.length?new Date(Math.min(...acks)):null,steps.length?steps.map(s=>s.sys.split(' · ')[0]+(s.ack?' '+s.ack.ref:'')).join(' · '):'Instruction is sent only after approval'],
+   [st==='executing'?'active':st==='closed'?'done':'pending',acks.length?new Date(Math.max(...acks)):null,st==='closed'?new Date(Math.max(...acks,ap||t1)):null,c.outcome?'Actual '+money(c.outcome.net)+' reconciled':st==='closed'?'Outcome reported; Finance confirms':'Awaiting the outcome from the enterprise systems']];
+  let failed=false;s.forEach((r,i)=>{if(S.or.fail!==''&&+S.or.fail===i)r[0]='failed';else if(failed&&r[0]!=='pending')r[0]='upstream';else if(failed)r[0]='upstream';if(r[0]==='failed')failed=true});
+  if(S.or.play!=null)s.forEach((r,i)=>{if(i>S.or.play)r[0]='pending';else if(i===S.or.play&&r[0]==='done')r[0]='active'});
+  return s}
+const orT=d=>d?fmtD(d)+' '+new Date(d).toISOString().slice(11,16):'—';
+const orDur=(a,b)=>{if(!a||!b)return '—';const m=Math.max(0,(b-a)/6e4);return m<60?Math.round(m)+' min':m<2880?(m/60).toFixed(1)+' h':(m/1440).toFixed(1)+' days'};
+function orFlowHTML(c){const run=orRun(c),dev=S.acct&&(S.acct.role==='Developer'||S.acct.role==='Admin')&&rbPath('mcp/calls');
+  return `<ol class="orflow" aria-label="Ten stages for ${c.id}">${OR_STAGES.map((g,i)=>{const r=run[i],stt=OR_ST[r[0]];return `<li class="orst ${r[0]}" data-stage="${g[0]}" data-state="${r[0]}"><div class="orsh"><span class="tin">${i+1}</span><b>${g[1]}</b><span class="chip ${stt[1]}">${stt[0]}</span></div><p class="note">${g[2]}</p>
+   <dl class="orkv"><div><dt>Agent or component</dt><dd>${esc(g[0]==='ml'?g[3]+' '+(c.model||'v1.3'):g[3])}</dd></div><div><dt>Source systems</dt><dd>${g[4].map(esc).join(', ')}</dd></div><div><dt>Start · end</dt><dd class="num">${orT(r[1])} · ${orT(r[2])}</dd></div><div><dt>Duration</dt><dd class="num">${orDur(r[1],r[2])}</dd></div></dl>
+   <p class="ordet">${esc(r[3])}</p><div class="orlk">${rbPath('audit/log')&&i<5?`<button class="lnk" data-act="orAudit" data-arg="${c.id}">Evidence in Audit</button>`:''}${dev&&[1,4,5,8,9].includes(i)?`<button class="lnk" data-act="go" data-arg="mcp/calls">Open live call log</button>`:''}${rbPath('integration/events')&&i>=7?`<button class="lnk" data-act="go" data-arg="integration/events">Event stream</button>`:''}</div></li>`}).join('')}</ol>`}
+function orTraceHTML(c){const calls=CALLS.filter(x=>x.caseId===c.id).slice(0,12),tid='trace-'+hashId(c.id).toLowerCase(),run=orRun(c);
+  return `<p class="note" style="margin:0 0 8px">One trace per case, one span per stage or tool call, shaped like the OpenTelemetry GenAI conventions so a real build could export it to your monitoring tools. Sensitive values are redacted.</p>
+   <div class="tw"><table class="t static tight" id="orTrace"><thead><tr><th>Span</th><th>Kind</th><th>Agent or account</th><th>Parameters</th><th>Start (UTC)</th><th>Status</th></tr></thead><tbody>
+   ${OR_STAGES.map((g,i)=>`<tr><td class="mono">${tid}/${String(i+1).padStart(2,'0')}</td><td>stage · ${g[1]}</td><td>${esc(i===7?(c.approval?c.approval.by:'Approver'):g[3])}</td><td class="mono">case_id=${c.id}</td><td class="num">${orT(run[i][1])}</td><td><span class="chip ${OR_ST[run[i][0]][1]}">${OR_ST[run[i][0]][0]}</span></td></tr>`).join('')}
+   ${calls.map((x,j)=>`<tr><td class="mono">${tid}/t${j+1}</td><td>tool call · ${esc(x.tool)}</td><td>${esc(x.agent)}</td><td class="mono">case_id=${x.caseId}, tenant=<span class="orred" data-tip="Redacted field: tenant">•••</span>${x.step===6?', approval_ref=<span class="orred" data-tip="Redacted field: approval_ref">•••</span>':''}</td><td class="num">${orT(x.ts)}</td><td>${esc(x.outcome)} · ${x.lat} ms</td></tr>`).join('')}</tbody></table></div>`}
+function renderOrch(r){const cs=orCases(),c=orCase();if(!c)return `<div class="phead"><div><h1>Process orchestration</h1></div></div><div class="empty"><b>No cases in your scope</b>Nothing to show yet.</div>`;
+  return `<div class="or"><div class="phead"><div><h1>Process orchestration <span class="chip line">Behind the screen</span></h1><p>How a recommendation is made: ten stages, the agent or service behind each, the systems it reads, its status and timing.</p></div>
+   <div class="row"><label class="sr" for="or-case">Case</label><select class="sel" id="or-case" data-ch="orCase">${cs.slice(0,200).map(x=>`<option value="${x.id}" ${x===c?'selected':''}>${x.id} · ${esc(x.product)}</option>`).join('')}</select><button class="btn" data-act="orReplay">Replay</button><label class="sr" for="or-fail">Simulate failure</label><select class="sel" id="or-fail" data-ch="orFail"><option value="">Simulate failure at stage…</option>${OR_STAGES.map((g,i)=>`<option value="${i}" ${S.or.fail!==''&&+S.or.fail===i?'selected':''}>${i+1} ${g[1]}</option>`).join('')}</select>${rbPath('product/'+c.id)?`<a class="btn" href="#/product/${c.id}" data-act="go" data-arg="product/${c.id}">Open ${c.id}</a>`:''}</div></div>
+  <div class="callout info" style="margin-bottom:14px"><b>Circularity decides and instructs.</b> The physical work, orders and stock movements happen in your enterprise systems. Timings for replay and failure simulation are simulated.</div>
+  <section class="sect" id="orFlow"><div class="sh"><h2>Stages for ${c.id}</h2><span class="note">${esc(c.product)} · ${esc(c.owner)} · ${stageChip(c)}</span></div><div id="orFlowB">${orFlowHTML(c)}</div></section>
+  <section class="sect" id="orRun"><div class="sh"><h2>Run trace</h2><span class="note">Built from the audit trail and the agent call log</span></div><div class="panel"><div class="pb">${orTraceHTML(c)}</div></div></section>
+  <section class="sect" id="orAgents"><div class="sh"><h2>Agents and services</h2></div><div class="panel"><div class="tw"><table class="t static"><thead><tr><th>Agent or service</th><th>Journey step</th><th>Scopes</th><th>Limits</th></tr></thead><tbody>${AGENTS.map(a=>`<tr><td><b>${esc(a.name)}</b></td><td>${esc(a.step)}</td><td class="mono">${a.scopes.map(esc).join(', ')}</td><td class="note">${esc(a.limit)}</td></tr>`).join('')}<tr><td><b>Gate engine</b></td><td>2–3</td><td class="mono">policy:read</td><td class="note">Deterministic rules; an agent cannot waive a failed gate.</td></tr><tr><td><b>Approval (human)</b></td><td>5</td><td class="mono">—</td><td class="note">There is no auto-approve path.</td></tr></tbody></table></div></div>
+   <div class="panel" style="margin-top:14px"><div class="pb"><h4 style="margin:0 0 6px">How these stages map to the ten-step journey</h4><p class="note" style="margin:0">1 Supply evidence = Pull data + Data preparation · 2–3 = Evaluate gates + ML predictions · 4 = Optimise pool and Recommendation · 5 = Present for approval · 6–8 = Hand off to enterprise system · 9–10 = Retrieve actual outcome and reconcile.</p>${handoffLegend()}</div></div></section></div>`}
+ACT.orCase=v=>{S.or.case=v;S.or.play=null;route(true)};
+ACT.orFail=v=>{S.or.fail=v;route(true)};
+ACT.orAudit=id=>{S.au.q=id;S.au.limit=40;ACT.go('audit/log')};
+ACT.orReplay=()=>{const c=orCase();if(!c)return;clearInterval(S.or.tm);const paint=()=>{const b=$('#orFlowB');b&&(b.innerHTML=orFlowHTML(c))};
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){S.or.play=null;paint();toast('Replay finished (reduced motion).');return}
+  S.or.play=0;paint();S.or.tm=setInterval(()=>{S.or.play++;if(S.or.play>=OR_STAGES.length){clearInterval(S.or.tm);S.or.play=null;paint();toast('Replay finished.');return}paint()},280+Math.round(Math.random()*120))};
+/*ORCH-END*/
+/*IDP-START*/
+/* ===== Identity and users (simulated): users, roles and hierarchy arrive from the customer's identity provider ===== */
+S.idp={src:'approles',lastSync:addDays(AS_OF,-.08),
+ groups:{'planner-a':'circ-planners-customer-a','planner-b':'circ-planners-customer-b','planner-c':'circ-planners-customer-c',approver:'circ-approvers',engineer:'circ-engineering',finance:'circ-finance',developer:'circ-integration-devs',executive:'circ-executives','wm-1':'circ-warehouse-1','wm-2':'circ-warehouse-2'},
+ users:[],ooo:[]};
+S.idp.users=ACCOUNTS.map(a=>({id:a.id,email:a.label.toLowerCase().replace(/ · /g,'.').replace(/\s+/g,'-')+'@example.com',acct:a.id})).concat([{id:'dep-ap',email:'approver.deputy@example.com',acct:null,role:'Approver'},{id:'dep-pl',email:'planner.deputy@example.com',acct:null,role:'Planner'}]);
+const idpRoleOf=u=>u.acct?ACCT(u.acct).role:u.role;
+const IDP_ROLES=Object.keys(ROLE_POLICY).filter(r=>r!=='Admin');
+function idpHTML(){const I=S.idp,eligible=I.users.filter(u=>idpRoleOf(u)==='Approver'&&u.acct!=='approver');
+  return `<section class="panel sect" id="axIdp"><div class="ph"><div><h3>Identity and users</h3><div class="note">Simulated. In production these come from your identity provider</div></div><span class="sp"></span><span class="chip line">Simulated</span></div><div class="pb">
+   <div class="idpg"><div class="idpc"><b>Identity provider</b><span>Microsoft Entra ID (example)</span><span class="note mono">Tenant ID 00000000-0000-0000-0000-000000000000 (placeholder)</span><span class="note">Last directory sync ${orT(I.lastSync)}</span><div class="row" style="margin-top:6px"><button class="btn sm pri" data-act="idpSync">Sync from directory</button></div></div>
+   <div class="idpc"><b>Setup order</b><ol class="idps"><li><span class="chip ok">Done</span> 1 Single sign-on (SAML or OIDC)</li><li><span class="chip ok">Done</span> 2 Provisioning (SCIM): creates, updates and removes users</li><li><span class="chip ok">Done</span> 3 Role mapping</li></ol><span class="note">SSO must work before provisioning is switched on.</span></div>
+   <div class="idpc"><label for="idp-src"><b>Role source</b></label><select id="idp-src" class="sel" data-ch="idpSrc"><option value="approles" ${I.src==='approles'?'selected':''}>Entra ID App Roles (recommended)</option><option value="groups" ${I.src==='groups'?'selected':''}>Directory groups</option></select><span class="note">App Roles keep working when a group is renamed and avoid group-overage limits.</span></div></div>
+   <h4 style="margin:14px 0 6px">${I.src==='approles'?'App Role':'Directory group'} to role mapping</h4>
+   <div class="tw"><table class="t static tight" id="idpMap"><thead><tr><th>${I.src==='approles'?'App Role':'Group'}</th><th>Role</th><th>Tenant</th><th>Site or warehouse</th><th>Members</th></tr></thead><tbody>${ACCOUNTS.filter(a=>a.role!=='Admin').map(a=>`<tr><td class="mono">${esc(I.src==='approles'?I.groups[a.id].replace('circ-','Circularity.'):I.groups[a.id])}</td><td><select class="sel" aria-label="Role for ${esc(I.groups[a.id])}" data-ch="idpMap" data-arg="${a.id}|role">${IDP_ROLES.map(r=>`<option ${r===a.role?'selected':''}>${r}</option>`).join('')}</select></td><td>${ROLE_POLICY[a.role].tenantScoped?esc(a.tenant||'—'):'All'}</td><td><select class="sel" aria-label="Site for ${esc(I.groups[a.id])}" data-ch="idpMap" data-arg="${a.id}|site"><option value="">—</option>${FACILITIES.map(f=>`<option ${f===(a.warehouse||a.site)?'selected':''}>${f}</option>`).join('')}</select></td><td class="note">1 · managed in your identity provider</td></tr>`).join('')}<tr><td class="mono">—</td><td>Admin</td><td>All</td><td>—</td><td class="note">Assigned directly, never through a group</td></tr></tbody></table></div>
+   <p class="note" style="margin:6px 0 0">Group membership is read-only here. Mapped roles only add permissions; a user's effective access is the union of their roles.</p>
+   <h4 style="margin:14px 0 6px">Users <span class="note">${I.users.length} from directory</span></h4>
+   <div class="tw"><table class="t static tight" id="idpUsers"><thead><tr><th>User</th><th>Role</th><th>Source</th></tr></thead><tbody>${I.users.map(u=>`<tr><td class="mono">${esc(u.email)}</td><td>${esc(idpRoleOf(u))}</td><td><span class="chip line">From directory</span></td></tr>`).join('')}</tbody></table></div>
+   <p class="note" style="margin:6px 0 0">There is no Add user form. Users are added in your identity provider and appear after the next sync. A user removed in the directory loses access at the next provisioning sync; without provisioning, only at their next sign-in.</p>
+   <div class="row" style="margin-top:8px">${I.users.some(u=>u.id==='dep-pl')?'<button class="btn sm" data-act="idpRemove" data-arg="dep-pl">Simulate: user removed in the directory</button>':''}</div>
+   <h4 style="margin:16px 0 6px">Approval hierarchy and delegation</h4>
+   <dl class="tikv"><div><dt>Escalation path</dt><dd>Approver → Admin</dd></div><div><dt>Limits</dt><dd>Approvals above $25k need Admin (shown only; assumed)</dd></div></dl>
+   <div class="grid g3" style="gap:0 12px;margin-top:8px"><div class="fld"><label for="ooo-to">Out-of-office delegate</label><select id="ooo-to">${eligible.map(u=>`<option value="${u.id}">${esc(u.email)}</option>`).join('')}</select><div class="hint">Only users who already hold the Approver role can be picked.</div></div><div class="fld"><label for="ooo-from">From</label><input id="ooo-from" type="date" value="2026-10-20"></div><div class="fld"><label for="ooo-until">Until</label><input id="ooo-until" type="date" value="2026-10-31"></div></div>
+   <div class="err" id="ooo-err" hidden></div><button class="btn sm" data-act="oooSave">Save delegation</button>
+   ${I.ooo.length?`<ul class="tiout" style="margin-top:8px">${I.ooo.map((o,i)=>`<li><b>Approver → ${esc(o.email)}</b><span class="note">${o.from} to ${o.until} · whoever acts first completes the item <button class="lnk" data-act="oooDel" data-arg="${i}">Remove</button></span></li>`).join('')}</ul>`:''}
+  </div></section>`}
+ACT.idpSync=()=>{S.idp.lastSync=asOfNow();rbLog('directory.synced','Directory sync (simulated): '+S.idp.users.length+' users, '+Object.keys(S.idp.groups).length+' mappings');toast('Directory synced (simulated).');route(true)};
+ACT.idpSrc=v=>{S.idp.src=v==='groups'?'groups':'approles';rbLog('identity.role_source',v);route(true)};
+ACT.idpMap=(v,el)=>{const [id,k]=el.dataset.arg.split('|'),a=ACCT(id);if(!a||a.role==='Admin')return;
+  if(k==='role'){if(!IDP_ROLES.includes(v))return;a.role=v;if(ROLE_POLICY[v].tenantScoped&&!a.tenant)a.tenant='Customer A';if(ROLE_POLICY[v].warehouseScoped&&!a.warehouse)a.warehouse=a.site&&a.site!=='Repair centre'?a.site:'Warehouse 1';if(!ROLE_POLICY[v].warehouseScoped)delete a.warehouse}
+  else{if(ROLE_POLICY[a.role].warehouseScoped){if(v==='Warehouse 1'||v==='Warehouse 2')a.warehouse=v}else a.site=v||undefined}
+  a.label=a.role+(ROLE_POLICY[a.role].tenantScoped&&a.tenant?' · '+a.tenant:'')+(a.warehouse?' · '+a.warehouse:'');
+  rbLog('identity.mapping.changed',S.idp.groups[id]+' → '+a.role+(a.warehouse||a.site?' · '+(a.warehouse||a.site):''));toast('Mapping updated. '+a.label+' changes at their next sign-in.');route(true)};
+ACT.idpRemove=id=>{const u=S.idp.users.find(x=>x.id===id);if(!u)return;S.idp.users=S.idp.users.filter(x=>x!==u);rbLog('user.deprovisioned',u.email+' removed in the directory; access removed at the provisioning sync (simulated)');toast(u.email+' removed at the next provisioning sync (simulated).');route(true)};
+ACT.oooSave=()=>{const id=($('#ooo-to')||{}).value,u=S.idp.users.find(x=>x.id===id),f=($('#ooo-from')||{}).value,t=($('#ooo-until')||{}).value,e=$('#ooo-err');
+  const bad=!u||idpRoleOf(u)!=='Approver'?'Pick a delegate who already holds the Approver role.':!f||!t||t<f?'The end date must be on or after the start date.':'';if(bad){e.textContent=bad;e.hidden=false;return}
+  S.idp.ooo.push({email:u.email,from:f,until:t});rbLog('delegation.out_of_office','Approver → '+u.email+' · '+f+' to '+t);toast('Out-of-office delegation saved.');route(true)};
+ACT.oooDel=i=>{S.idp.ooo.splice(+i,1);route(true)};
+/*IDP-END*/
 /*ASSET-START*/
 /* ===== Asset & Product Intelligence: everything about one asset, from the same seeded world ===== */
 const AS_IMG={motor:'motor',pump:'pump',control:'control',drill:'powertool',batch:'powertool',it:'it'};
@@ -2296,7 +2568,7 @@ function asEvents(c){const rec=new Date(c.received),mfg=addDays(rec,-Math.round(
    {k:'svc',t:'Service',d:n+' work order'+(n>1?'s':''),sub:asMon(addDays(dep,60))+' – '+asMon(svcEnd),src:'EAM · FSM',s:'done',note:n+' maintenance events recorded'},
    {k:'ret',t:'Returned',d:fmtDY(rec),src:'WMS',s:'done',note:'Received at '+c.location},
    {k:'ass',t:'Condition assessment',d:ins?fmtDY(ins):'Pending',src:'Inspection',s:ins&&c.assessment==='Ready'?'done':ins?'warn':'pending',note:ins?(c.assessment==='Ready'?'Inspection complete, grade '+(c.grade||'—'):'Evidence still incomplete'):'No inspection recorded yet'},
-   {k:'dec',t:'Treatment decision',d:decDone?'Executing':st==='awaiting_approval'?'Awaiting approval':st==='reeval'?'Re-evaluate':'Pending',src:'Circularity',s:decDone?'done':st==='awaiting_approval'||st==='reeval'?'warn':'pending',note:c.recommendation?'Recommended: '+(c.recommendation.plan||rid(c.recommendation.id).name):'No route recommended yet'}]}
+   {k:'dec',t:'Treatment decision',d:decDone?'Handed off':st==='awaiting_approval'?'Awaiting approval':st==='reeval'?'Re-evaluate':'Pending',src:'Circularity',s:decDone?'done':st==='awaiting_approval'||st==='reeval'?'warn':'pending',note:c.recommendation?'Recommended: '+(c.recommendation.plan||rid(c.recommendation.id).name):'No route recommended yet'}]}
 function asTimelineHTML(c,full){const ev=asEvents(c);let cur=ev.findIndex(e=>e.s!=='done');if(cur<0)cur=ev.length-1;
   return `<ol class="astl ${full?'full':''}">${ev.map((e,i)=>`<li class="${e.s} ${i===cur?'cur':''}" data-tip="${esc(e.t+' · '+e.note)}"><span class="dot">${e.s==='done'?'✓':e.s==='warn'?'●':''}</span><b>${esc(e.t)}</b><span class="d num">${esc(e.d)}</span>${e.sub?`<span class="note">${esc(e.sub)}</span>`:''}<span class="note">${esc(e.src)}</span>${full?`<span class="nt">${esc(e.note)}</span>`:''}</li>`).join('')}</ol>`}
 function asCond(c){const insEv=(c.evidence||[]).find(e=>e.k==='insp')||{state:'missing'},g=c.grade,K=c.cls,spec=c.spec||{};
@@ -2357,7 +2629,7 @@ function asRelCard(c,x){const st=ccStage(x),stl={approval:'Awaiting approval',ex
   return `<a class="asrel" href="#/product/asset/${x.id}" data-act="go" data-arg="product/asset/${x.id}">${asPhoto(x,'xs')}<span class="asrt"><b>${asSerial(x)}</b><span class="note">${esc(asModel(x))} · ${x.assetId}</span><span class="note">${x.owner===c.owner?'Same customer':'Other customer'} · ${esc(x.location)} · ${stl}</span></span><span class="chip ${x.owner===c.owner?'y':'line'}">${x.owner===c.owner?'Similar':'Related'}</span></a>`}
 function asRelated(c){const rel=assetRelated(c);return `<div class="asrels">${rel.map(x=>asRelCard(c,x)).join('')||'<div class="empty"><b>No related assets</b></div>'}</div><button class="lnk" data-act="asTab" data-arg="related" style="margin-top:8px">View all (${myCases().filter(x=>x.id!==c.id&&x.cls===c.cls).length})</button>`}
 function asOverview(c,h){const ok=asTabOK,row=(cls,ps)=>{ps=ps.filter(Boolean);return ps.length?`<div class="asg2 ${ps.length===1?'rX1':cls==='r3'&&ps.length===2?'r1b':cls}">${ps.join('')}</div>`:''};
-  return `<div class="asg">${row('r1',[ok('lifecycle')&&asPanel('Lifecycle evidence timeline',asTimelineHTML(c),'lifecycle','wide'),ok('condition')&&asPanel('Condition intelligence',asCond(c),'condition')])}
+  return `<div class="asg">${asPanel('Condition, life and commercial value',tiClv(c),null,'wide asclv')}${row('r1',[ok('lifecycle')&&asPanel('Lifecycle evidence timeline',asTimelineHTML(c),'lifecycle','wide'),ok('condition')&&asPanel('Condition intelligence',asCond(c),'condition')])}
   ${row('r2',[ok('product')&&asPanel('Product intelligence',asProduct(c,h),'product'),ok('economic')&&asPanel('Economic intelligence',asEcon(c),'economic')])}
   ${row('r3',[ok('eligibility')&&asPanel('Eligibility and compliance',asElig(c),'eligibility'),ok('data')&&asPanel('Data and evidence quality',asQuality(c),'data'),ok('related')&&asPanel('Related assets and fleet context',asRelated(c),'related')])}</div>`}
 /* ---- focused tab views + compare ---- */
@@ -2418,11 +2690,11 @@ function tiRows(c,sr){const rows=sr.el.map(x=>Object.assign({x,r:x.r},tiM(c,x)))
   const mn=a=>Math.min(...a),mx=a=>Math.max(...a),nets=rows.map(z=>z.net),ds=rows.map(z=>z.days),cs=rows.map(z=>z.co2),W=S.ti.w,ws=(W.net+W.time+W.env+W.serv)||1;
   rows.forEach(z=>{const nn=(z.net-mn(nets))/((mx(nets)-mn(nets))||1),tt=1-(z.days-mn(ds))/((mx(ds)-mn(ds))||1),ee=(z.co2-mn(cs))/((mx(cs)-mn(cs))||1),ss=(z.prob/100)*(TI_SERV[z.r.id]||0);z.fit=Math.round(100*(W.net*nn+W.time*tt+W.env*ee+W.serv*ss)/ws)});
   return rows}
-function tiElig(c,sr){return c.routes.map(r=>{const ex=sr.all.find(x=>x.r===r),restricted=ex&&ex.ex,warn=r.gates.includes('warn')||(!restricted&&r.demandStatus==='forecast'&&r.id!=='exit'&&r.id!=='material');
-  const st=restricted?['Restricted','bad',r.failReason||'Excluded in this scenario']:warn?['Conditional','warn',r.demandStatus==='forecast'?'Demand is a forecast; verify before committing':'A gate passed with a warning']:['Eligible','ok',r.unc||r.why||'All six gates passed'];
+function tiElig(c,sr){return c.routes.map(r=>{const ex=sr.all.find(x=>x.r===r),restricted=ex&&ex.ex,rc=recert(c,r),warn=r.gates.includes('warn')||!!rc||(!restricted&&r.demandStatus==='forecast'&&r.id!=='exit'&&r.id!=='material');
+  const st=restricted?['Restricted','bad',r.failReason||'Excluded in this scenario']:warn?['Conditional','warn',rc?'Needs re-certification: demand needs '+rc.need+' months, certified for '+rc.cert:r.demandStatus==='forecast'?'Demand is a forecast; verify before committing':'A gate passed with a warning']:['Eligible','ok',r.unc||r.why||'All six gates passed'];
   return{r,st,rt:rid(r.id)}}).sort((a,b)=>({ok:0,warn:1,bad:2})[a.st[1]]-({ok:0,warn:1,bad:2})[b.st[1]]||b.r.net-a.r.net)}
 function tiP1(c,sr){const el=tiElig(c,sr);
-  return asPanel('<span class="tin">1</span> Treatment eligibility and feasible pathways',el.length?`<p class="note" style="margin:0 0 8px">Based on condition, product, ownership, policy, parts and operating constraints. Select a pathway to highlight it.</p><div class="tipath">${el.map(e=>`<button class="tipw ${S.ti.focus===e.r.plan?'on':''}" data-act="tiFocus" data-arg="${esc(e.r.plan)}"><span class="tipd" style="background:${e.rt.color}"></span><span class="tipt"><b>${esc(e.r.plan)}</b><span class="note">${esc(e.st[2])}</span></span><span class="chip ${e.st[1]}">${e.st[0]}</span></button>`).join('')}</div>`:`<div class="empty"><b>No pathways evaluated</b>${c.blocked?esc(c.blocked.reason):'This asset needs evidence first.'}</div>`,null,'tix1')}
+  return asPanel('Eligibility and feasible pathways',el.length?`<p class="note" style="margin:0 0 8px">Based on condition, product, ownership, policy, parts and operating constraints. Select a pathway to highlight it.</p><div class="tipath">${el.map(e=>`<button class="tipw ${S.ti.focus===e.r.plan?'on':''}" data-act="tiFocus" data-arg="${esc(e.r.plan)}"><span class="tipd" style="background:${e.rt.color}"></span><span class="tipt"><b>${esc(e.r.plan)}</b><span class="note">${esc(e.st[2])}</span></span><span class="chip ${e.st[1]}">${e.st[0]}</span></button>`).join('')}</div>`:`<div class="empty"><b>No pathways evaluated</b>${c.blocked?esc(c.blocked.reason):'This asset needs evidence first.'}</div>`,null,'tix1')}
 function tiScatter(rows,rec){if(!rows.length)return'';const W=420,H=230,L=48,R=14,T0=12,B=34,dx=Math.max(...rows.map(r=>r.days))*1.2,ny=rows.map(r=>r.net),lo=Math.min(0,...ny),hi=Math.max(...ny)*1.15||1,X=v=>L+v/dx*(W-L-R),Y=v=>H-B-(v-lo)/((hi-lo)||1)*(H-B-T0);
   const grid=[0,.25,.5,.75,1].map(t=>{const v=lo+(hi-lo)*t;return `<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line2)"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)">${kfmt(v).replace('$','')}</text>`}).join('');
   const xt=[0,.25,.5,.75,1].map(t=>`<text x="${X(dx*t)}" y="${H-16}" text-anchor="middle" font-size="10" fill="var(--muted)">${Math.round(dx*t)}</text>`).join('');
@@ -2431,30 +2703,46 @@ function tiScatter(rows,rec){if(!rows.length)return'';const W=420,H=230,L=48,R=1
 function tiP2(c,sr,rows){const rec=c.chosen||c.recommendation,sel=S.ti.sel||[],mxn=Math.max(1,...rows.map(z=>Math.abs(z.net)));
   const body=rows.length?`<p class="note" style="margin:0 0 8px">Model-predicted outcomes for each feasible pathway${scenActive()?'. <b>Scenario applied.</b>':'.'}</p><div class="tw"><table class="t static tight tipt2"><thead><tr><th></th><th>Pathway</th><th class="r">Recovery value</th><th class="r">Cost</th><th>Net recovery</th><th class="r">Cycle (days)</th><th class="r">Success</th><th class="r">Useful life</th><th class="r">CO₂e avoided</th><th class="r">Fit</th></tr></thead><tbody>${rows.map(z=>{const isR=rec&&z.r===rec;return `<tr class="${S.ti.focus===z.r.plan?'sel':''}"><td><input type="checkbox" ${sel.includes(z.r.plan)?'checked':''} data-ch="tiSel" data-arg="${esc(z.r.plan)}" aria-label="Compare ${esc(z.r.plan)}"></td><td><b>${esc(z.r.plan)}</b>${isR?' <span class="chip y">Recommended</span>':''}</td><td class="r num">${money(z.gross)}</td><td class="r num">${money(z.cost)}</td><td><span class="tinet"><b class="num">${money(z.net)}</b><span class="bar"><i style="width:${Math.max(4,Math.abs(z.net)/mxn*100)}%;${z.net<0?'background:var(--bad)':'background:var(--ok)'}"></i></span></span></td><td class="r num">${z.days}</td><td class="r num">${z.prob}%</td><td class="r num">${z.life}</td><td class="r num">${fmtN(z.co2)} kg</td><td class="r num"><b>${z.fit}</b></td></tr>`}).join('')}</tbody></table></div><h4 style="margin:12px 0 4px">Comparison chart (net recovery vs cycle time)</h4>${tiScatter(rows,rec)}`
    :`<div class="empty"><b>No predictions yet</b>${c.blocked?esc(c.blocked.reason):'Evidence is needed before outcomes can be predicted.'}</div>`;
-  return asPanel('<span class="tin">2</span> Predicted outcomes and comparison',body,null,'tix2')}
+  return asPanel('Predicted outcomes and comparison',body,null,'tix2')}
 function tiP3(c,sr,rows){const r=c.chosen||c.recommendation;
-  if(!r)return asPanel('<span class="tin">3</span> Recommendation and rationale','<div class="best-wrap">'+bestCard(c,sr)+'</div>',null,'tix3');
+  if(!r)return asPanel('Recommendation and rationale',`<div class="empty"><b>No recommendation yet</b>${c.blocked?esc(c.blocked.reason):'Evidence is needed before a pathway can be recommended.'}</div><a class="lnk" href="#step-5" data-act="tiStep" data-arg="5">See what happens next (step 5)</a>`,null,'tix3');
   const others=rows.filter(z=>z.r!==r).sort((a,b)=>b.r.net-a.r.net),next=others[0],me=rows.find(z=>z.r===r)||tiM(c,{r,sn:r.net}),pctUp=next&&next.r.net?Math.round((r.net-next.r.net)/Math.abs(next.r.net)*100):null,W=S.ti.w,top=rows.slice().sort((a,b)=>b.fit-a.fit)[0];
   const drivers=r.terms.slice().sort((a,b)=>Math.abs(b.amt)-Math.abs(a.amt)).slice(0,2).map(t=>t.label).join(' and ').toLowerCase(),why=next?(()=>{const d=r.terms.map(t=>{const o=next.r.terms.find(u=>u.kind===t.kind);return{l:t.label,v:t.amt-(o?o.amt:0)}}).sort((a,b)=>Math.abs(b.v)-Math.abs(a.v))[0];return next.r.plan+' trails by '+money(r.net-next.r.net)+(d?', mostly on '+d.l.toLowerCase():'')+'.'})():'No other eligible pathway.';
   const cons=c.blocked?c.blocked.reason:(r.demandStatus==='forecast'?'Demand is a forecast, so a haircut is included.':(sr.all.filter(x=>x.ex).length?sr.all.filter(x=>x.ex).length+' pathway(s) withheld by a gate.':'None for this asset.'));
   const tag=z=>{const a=z.r.net>r.net?'Higher value':'Lower value',b=z.days<me.days?'Shorter cycle time':'Longer cycle time',cc=z.cost>me.cost?'Lower cost':'Higher cost';return [a+' · '+b,(z.prob<me.prob?'Higher risk':'Lower risk')+' · '+cc]};
-  return asPanel('<span class="tin">3</span> Recommendation and rationale',`<div class="tirec"><span class="chip ok">Recommended</span><div class="tirt">${esc(r.plan)}</div><div class="tirv"><span class="note">Expected net recovery</span><b class="num">${money(r.net)}</b>${pctUp!=null&&next?`<span class="${pctUp>=0?'tx-ok':'tx-bad'}">${pctUp>=0?'▲':'▼'} ${Math.abs(pctUp)}% vs next best alternative</span>`:''}</div></div>
+  return asPanel('Recommendation and rationale',`<div class="tirec"><span class="chip ok">Recommended</span><div class="tirt">${esc(r.plan)}</div><div class="tirv"><span class="note">Expected net recovery</span><b class="num">${money(r.net)}</b>${pctUp!=null&&next?`<span class="${pctUp>=0?'tx-ok':'tx-bad'}">${pctUp>=0?'▲':'▼'} ${Math.abs(pctUp)}% vs next best alternative</span>`:''}</div></div>
    <p class="ink2" style="margin:8px 0">${esc(r.why||'Highest expected net contribution among eligible pathways.')} ${me.prob}% success probability${me.days?' and about '+me.days+' days to complete':''}.</p>
    <dl class="tikv"><div><dt>Business objectives</dt><dd>Value (${W.net}%), time (${W.time}%), sustainability (${W.env}%), serviceability (${W.serv}%)</dd></div><div><dt>Key drivers</dt><dd>${esc(drivers||'—')}</dd></div><div><dt>Why not ${next?esc(next.r.plan):'others'}?</dt><dd>${esc(why)}</dd></div><div><dt>Binding constraints</dt><dd>${esc(cons)}</dd></div></dl>
    ${top&&top.r!==r?`<div class="callout" style="margin:8px 0"><b>With your objective weights</b>, ${esc(top.r.plan)} ranks first (fit ${top.fit} vs ${(rows.find(z=>z.r===r)||{fit:'—'}).fit}). The approved recommendation does not change until it is re-evaluated.</div>`:''}
    <a class="lnk" href="#explain" data-act="tiExplain">View detailed explanation</a>
    ${others.length?`<h4 style="margin:12px 0 6px">Next best alternatives</h4>${others.slice(0,2).map((z,i)=>{const t=tag(z);return `<div class="tialt"><b class="tial-n">${i+1}</b><span class="tialt-t"><b>${esc(z.r.plan)}</b><span class="note num">${money(z.net)} · ${z.days} days · ${z.prob}%</span></span><span class="tialt-g"><span class="note">${t[0]}</span><span class="note">${t[1]}</span></span></div>`}).join('')}`:''}
-   <div class="tidec">${bestCard(c,sr)}</div>`,null,'tix3')}
-function tiP4(c,sr,rows){const s=S.scen,sl=(k,l)=>`<div class="sl"><label for="sc-${k}">${l}</label><input id="sc-${k}" type="range" min="50" max="150" step="5" value="${Math.round(s[k]*100)}" data-in="scen" data-arg="${k}"><b class="num" id="scv-${k}">${tiAdj(s[k])}</b></div>`,sv=S.ti.saved[c.id]||[];
-  return asPanel('<span class="tin">4</span> Scenario simulation (what-if)',`<p class="note" style="margin:0 0 8px">Adjust the assumptions to see how the ranking would change. The approved recommendation stays as it is until re-evaluated.${can('scenario')?'':' <b>Preview only:</b> saving scenarios belongs to the Planner and Approver.'}</p>
-   <div class="tisl">${sl('purchase','Avoided purchase price')}${sl('cost','Preparation, parts and fees')}${sl('service','Service exposure')}${sl('market','Resale price and lease income')}</div>
+   ${tieBox(tieBreak(c,rows),r)}${TB_NOTE}<a class="lnk" href="#step-5" data-act="tiStep" data-arg="5">Approve and hand off in step 5 →</a>`,null,'tix3')}
+function tiP4(c,sr,rows){const s=S.scen,sl=(k,l,tip)=>`<div class="sl"${tip?` data-tip="${tip}"`:''}><label for="sc-${k}">${l}</label><input id="sc-${k}" type="range" min="50" max="150" step="5" value="${Math.round(s[k]*100)}" data-in="scen" data-arg="${k}"><b class="num" id="scv-${k}">${tiAdj(s[k])}</b></div>`,sv=S.ti.saved[c.id]||[];
+  return `<div id="tiImpact">${tiResult(c,sr)}</div><div class="tig2">`+asPanel('Assumptions and edge cases',`<p class="note" style="margin:0 0 8px">Adjust the assumptions to see how the ranking would change. The approved recommendation stays as it is until re-evaluated.${can('scenario')?'':' <b>Preview only:</b> saving scenarios belongs to the Planner and Approver.'}</p>
+   <div class="tisl">${sl('purchase','Avoided purchase price')}${sl('cost','Preparation, parts and fees')}${sl('service','Service exposure')}${sl('market','Resale price','Also scales lease income')}</div>
    <label class="tog" style="margin:4px 0 8px"><input type="checkbox" ${s.demandOff?'checked':''} data-ch="scenDemand"> Confirmed internal demand is cancelled</label>
-   <div class="callout info" id="tiImpact">${tiImpact(c,sr)}</div>
+   <div class="fld" style="margin:6px 0"><label for="ti-apply">Apply to</label><select id="ti-apply" class="sel" data-ch="tiApply"><option value="">All pathways</option>${rows.map(z=>`<option ${S.ti.apply===z.r.plan?'selected':''}>${esc(z.r.plan)}</option>`).join('')}</select><div class="hint">Stress one pathway on its own; the others stay at base.</div></div>
+   <div class="tipre" role="group" aria-label="Edge cases"><span class="note">Edge cases</span>${TI_PRESETS.map(p=>`<button class="btn sm" data-act="tiPreset" data-arg="${p[0]}" aria-pressed="${p[2]()}">${p[1]}</button>`).join('')}</div>
    <div class="row" style="margin-top:10px"><button class="btn" data-act="scenReset">Reset to base</button><button class="btn" data-act="tiSave">Save scenario</button><button class="btn pri" data-act="tiRecalc" ${c.routes.length?'':'disabled'}>Recalculate and optimise</button></div>
-   ${sv.length?`<h4 style="margin:12px 0 6px">Saved scenarios</h4>${sv.map(x=>`<div class="asrow"><span><b>${esc(x.name)}</b><div class="note">${esc(x.top)}</div></span><span class="tacts" style="display:inline-flex"><button class="tbtn" data-act="tiLoad" data-arg="${x.id}">Load</button><button class="tbtn dng" data-act="tiDelSc" data-arg="${x.id}">Delete</button></span></div>`).join('')}`:''}`,null,'tix4')}
+   ${sv.length?`<h4 style="margin:12px 0 6px">Saved scenarios</h4>${sv.map(x=>`<div class="asrow"><span><b>${esc(x.name)}</b><div class="note">${esc(x.top)}</div></span><span class="tacts" style="display:inline-flex"><button class="tbtn" data-act="tiLoad" data-arg="${x.id}">Load</button><button class="tbtn dng" data-act="tiDelSc" data-arg="${x.id}">Delete</button></span></div>`).join('')}`:''}`,null,'tix4')+tiObj(c)+`</div><div id="tiCmpW">${tiMulti(c,sr,rows)}</div>`}
 const tiAdj=v=>{const p=Math.round((v-1)*100);return(p>0?'+':'')+p+'%'};
-function tiImpact(c,sr){const r=c.chosen||c.recommendation;if(!c.routes.length)return 'No pathways to simulate until evidence arrives.';const t=sr.el[0],bn=r?r.net:0,sn=r?(scenActive()?scenNet(r):r.net):0,d=bn?Math.round((sn-bn)/Math.abs(bn)*100):0;
-  return `<b>Scenario impact (preview)</b><br>${scenActive()?'':'Base assumptions. '}${r?`Net for <b>${esc(r.plan)}</b> ${scenActive()?'moves from '+money(bn)+' to <b>'+money(sn)+'</b> ('+(d>=0?'+':'')+d+'%)':'is '+money(bn)}. `:''}${scenTopText(c,sr)}`}
+function tiChanged(){const s=S.scen,o=[];[['purchase','Avoided purchase price'],['cost','Preparation, parts and fees'],['service','Service exposure'],['market','Resale price']].forEach(k=>{if(s[k[0]]!==1)o.push(k[1]+' '+tiAdj(s[k[0]]))});
+  if(s.demandOff)o.push('Confirmed demand cancelled');if(s.certShort)o.push('Certification shorter than demand');if(S.ti.apply)o.push('Applied to '+S.ti.apply+' only');return o}
+/* the what-if result card: base, simulated, change in $ and %, with arrows and signs (never colour alone) */
+function tiResult(c,sr){const r=c.chosen||c.recommendation;if(!c.routes.length||!r)return `<div class="tiwi"><div class="empty"><b>No pathways to simulate</b>${c.blocked?esc(c.blocked.reason):'Evidence is needed first.'}</div></div>`;
+  const x=sr.all.find(y=>y.r===r),out=x&&x.ex,bn=r.net,sn=out?0:(x?x.sn:bn),d=sn-bn,dp=bn?Math.round(d/Math.abs(bn)*100):0,ar=d>0?'▲':d<0?'▼':'',cls=d>0?'tx-ok':d<0?'tx-bad':'note',top=sr.el[0],ch=tiChanged();
+  const sent=!top?'No pathway stays eligible under these assumptions.':top.r===r?`Under these assumptions ${r.plan} still ranks first.`:`${top.r.plan} would now rank first by ${money(top.sn-(out?0:sn))}.`;
+  return `<section class="tiwi" data-dir="${d>0?'up':d<0?'down':'flat'}" aria-label="What-if result"><div class="tiwih"><b>What-if result</b><span class="note">${esc(r.plan)}${out?' · not eligible in this scenario':''}</span></div>
+   <div class="tiwig"><div><span class="note">Base net</span><b class="num" id="wiBase">${money(bn)}</b></div><div><span class="note">Simulated net</span><b class="num" id="wiSim">${out?'Not eligible':money(sn)}</b></div><div><span class="note">Δ $</span><b class="num ${cls}" id="wiD">${d===0?'No change':ar+' '+(d>0?'+':'−')+money(Math.abs(d))}</b></div><div><span class="note">Δ %</span><b class="num ${cls}" id="wiP">${d===0?'No change':ar+' '+(dp>0?'+':dp<0?'−':'±')+Math.abs(dp)+'%'}</b></div></div>
+   <div class="tiwic"><span class="note">Changed from base:</span> ${ch.length?ch.map(t=>`<span class="chip line">${esc(t)}</span>`).join(' '):'<span class="note">nothing yet (base assumptions)</span>'}</div>
+   <p class="tiwis" aria-live="polite">${esc(sent)}</p></section>`}
+const tiImpact=tiResult;
+const TI_PRESETS=[['demand','Demand cancelled',()=>!!S.scen.demandOff],['parts','Parts cost +30%',()=>S.scen.cost===1.3],['resale','Resale price −20%',()=>S.scen.market===.8],['cert','Certification shorter than demand',()=>!!S.scen.certShort]];
+ACT.tiPreset=k=>{const s=S.scen;if(k==='demand')s.demandOff=!s.demandOff;if(k==='parts')s.cost=s.cost===1.3?1:1.3;if(k==='resale')s.market=s.market===.8?1:.8;if(k==='cert')s.certShort=!s.certShort;route(true)};
+ACT.tiApply=v=>{S.ti.apply=v;route(true)};
+ACT.tiDiff=v=>{S.ti.diffOnly=!!v;const w=$('#tiCmpW'),c=tiCase();if(w&&c){const sr=scenRoutes(c);w.innerHTML=tiMulti(c,sr,tiRows(c,sr))}};
+ACT.tiStep=n=>{const e=$('#step-'+n);e&&e.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})};
+ACT.tiRaw=id=>{const c=CASE_BY_ID[id];openModal('Instruction payload · '+c.id,`<p class="ink2" style="margin-top:0">${c.exec?'This is what was sent.':'This is exactly what will be sent once a person approves. Nothing has been sent yet.'}</p><pre class="code">${jsonHtml(instrPayload(c))}</pre>`,`<button class="btn" data-act="closeModal">Close</button>`)};
 function tiP5(c){const r=c.chosen||c.recommendation,u=ccUtil(),rc=u['Repair centre']/CC_CAP['Repair centre'],h=assetHealth(c),parts=asParts(c,h),inS=parts.filter(p=>p.st==='In stock').length,eam=SRC('eam')||{status:'unavailable',name:'EAM'},erp=SRC('erp')||{status:'unavailable',name:'ERP'},lith=['drill','batch','it'].includes(c.cls),d=c.demand||{};
   const items=!r?[['Evidence for a recommendation','Waiting on '+(c.blocked?c.blocked.owner:'inspection'),'Pending','warn']]:[
    ['Repair facility available','Repair centre · '+Math.round(rc*100)+'% loaded',rc>=.9?'Constrained':'Confirmed',rc>=.9?'bad':'ok'],
@@ -2464,31 +2752,110 @@ function tiP5(c){const r=c.chosen||c.recommendation,u=ccUtil(),rc=u['Repair cent
    ['Create work order in EAM',eam.name+' · '+(eam.vendor||''),eam.status==='live'?'Ready':'Blocked',eam.status==='live'?'ok':'bad'],
    [r.id==='redeploy'||r.id==='resale'?'Reserve stock in ERP':'Notify ERP finance',erp.name+' · '+(erp.vendor||''),erp.status==='live'?'Ready':'Blocked',erp.status==='live'?'ok':'bad']];
   const ready=items.filter(i=>i[3]==='ok').length;
-  return asPanel('<span class="tin">5</span> Execution readiness',`<div class="tirdy"><b class="num">${ready} of ${items.length}</b><span class="note">checks ready</span>${rbPath('integration/map')?'<a class="lnk" href="#/integration/map" data-act="go" data-arg="integration/map">View system actions</a>':''}</div>${items.map(i=>`<div class="asrow"><span><b>${i[0]}</b><div class="note">${esc(i[1])}</div></span><span class="chip ${i[3]}">${i[2]}</span></div>`).join('')}`,null,'tix5')}
+  return asPanel('Handoff readiness',`<div class="tirdy"><b class="num">${ready} of ${items.length}</b><span class="note">checks ready</span>${rbPath('integration/map')?'<a class="lnk" href="#/integration/map" data-act="go" data-arg="integration/map">View system actions</a>':''}</div>${items.map(i=>`<div class="asrow"><span><b>${i[0]}</b><div class="note">${esc(i[1])}</div></span><span class="chip ${i[3]}">${i[2]}</span></div>`).join('')}`,null,'tix5')}
 function tiCtx(c){const h=assetHealth(c),f=assetFacts(c),pick=['Asset ID','Serial number','Product','Revision','Ownership','Location','Received','Age'],facts=f.filter(x=>pick.includes(x[0]));
   return `<section class="aship ticx"><div class="asphoto">${asPhoto(c)}</div><div class="asmain"><div class="asttl"><h2>${esc(asTitle(c))}</h2><span class="chip line">${esc(CLASSES[c.cls].label)}</span>${stageChip(c)}</div><dl class="asfacts">${facts.map(x=>`<div><dt>${x[0]}</dt><dd>${esc(x[1])}</dd></div>`).join('')}<div><dt>Condition</dt><dd>${c.grade?'Grade '+c.grade+' ('+h.score+'/100)':esc(c.condition)}</dd></div><div><dt>Next inspection</dt><dd>${esc(c.nextInspection)}</dd></div></dl>
    <a class="btn sm" style="margin-top:10px" href="#/product/asset/${c.id}" data-act="go" data-arg="product/asset/${c.id}">View in Asset Intelligence →</a></div>
-   <div class="ashealth tiobj"><h3>Business objectives <span class="note">(for optimisation)</span></h3>${TI_OBJ.map(o=>`<div class="sl"><label for="tw-${o[0]}">${o[1]}</label><input id="tw-${o[0]}" type="range" min="0" max="100" step="5" value="${S.ti.w[o[0]]}" data-in="tiW" data-arg="${o[0]}"><b class="num" id="twv-${o[0]}">${S.ti.w[o[0]]}%</b></div>`).join('')}</div></section>`}
+   <div class="ashealth tist">${tiStatus(c)}</div></section>`}
+function tiObj(c){return asPanel('Business objectives <span class="note">(for the Fit score)</span>',`${TI_OBJ.map(o=>`<div class="sl"><label for="tw-${o[0]}">${o[1]}</label><input id="tw-${o[0]}" type="range" min="0" max="100" step="5" value="${S.ti.w[o[0]]}" data-in="tiW" data-arg="${o[0]}"><b class="num" id="twv-${o[0]}">${S.ti.w[o[0]]}%</b></div>`).join('')}<p class="note" style="margin:6px 0 0">The weights produce the Fit score, a second opinion next to net value. They do not change the approved recommendation.</p>`,null,'tiobj')}
+/* ===== Guided flow helpers: condition, life, demand, confidence, tie-breaker ===== */
+const DIAG={motor:['Winding insulation','grade'],pump:['Seal and bearing wear','wear'],control:['Controller self-test','test'],drill:['Battery health','pct'],batch:['Battery health','pct'],it:['Battery health','pct']};
+function caseDiag(c){if(c.assessment==='Pending'||(!c.grade&&c.assessment!=='Ready'))return null;const h=assetHealth(c),d=DIAG[c.cls]||['Condition score','pct'],ins=(c.evidence||[]).find(e=>e.k==='insp');let value;
+  if(d[1]==='grade')value='Grade '+(c.grade||'B');else if(d[1]==='wear')value=Math.max(5,100-h.score)+'%';else if(d[1]==='test'){const n=asHex(c,'st')%4;value=(c.grade==='C'||n>2?'Fail':'Pass')+' · '+n+' error'+(n===1?'':'s')}else value=asClamp(h.score-asHex(c,'bh')%12,35,98)+'%';
+  return{metric:d[0],value,source:c.cls==='motor'||c.cls==='pump'?'EAM · Diagnostic and Repair':'Inspection',at:ins&&ins.fresh||'—'}}
+/* estimated RUL is a range; the certified operating period is one firm figure, never above the estimate */
+function caseRul(c){const m=/^(\d+)\s*months/.exec(c.engLife||'');if(!m)return null;const est=+m[1],wide=c.grade==='C',lo=Math.round(est*(wide?.75:.83)),hi=Math.max(est,Math.round(est*(wide?1.2:1.11))),cert=lo>=12?Math.floor(lo/12)*12:Math.max(6,Math.floor(lo/6)*6);
+  return{estMonths:est,estLow:Math.min(lo,est),estHigh:hi,certMonths:Math.min(cert,est),basis:'Certified by Engineering after '+(c.grade?'grade '+c.grade+' inspection':'inspection'),certRef:'QMS-'+(2400+asHex(c,'qms')%600)}}
+function caseDemand(c){const d=c.demand||{};if(!d.internal&&!d.lease)return null;const n=parseInt(c.id.slice(3)),R=caseRul(c),cert=R?R.certMonths:24;
+  return{order:c.id==='RT-1048'?'SO-48102':d.internal?'SO-'+(48000+(n*7)%997):null,site:d.site,lease:d.lease,confirmed:!!d.confirmed,horizonMonths:c.id==='RT-1048'?24:asHex(c,'hz')%6===0?cert+12:Math.min(cert,24)}}
+function recert(c,r){if(!r||!['redeploy','relase'].includes(r.id))return null;const R=caseRul(c),D=caseDemand(c);if(!R||!D)return null;const need=S.scen&&S.scen.certShort?Math.max(D.horizonMonths,R.certMonths+12):D.horizonMonths;return need>R.certMonths?{need,cert:R.certMonths}:null}
+const CONF_DO={High:'Approve as normal',Medium:'Check the deciding factor before approving',Low:'Compare the alternatives before approving'};
+function tiConf(c,r){const p=tiM(c,{r,sn:r.net}).prob;return p>=85?'High':p>=70?'Medium':'Low'}
+const TB_RULES=[['risk','Risk / confidence','gap ≥ 5 points'],['demand','Demand certainty','confirmed beats forecast'],['cycle','Cycle time','gap ≥ 3 days'],['rul','Remaining useful life','gap ≥ 6 months'],['co2','Carbon','gap ≥ 10%']];
+const TB_NOTE=`<p class="note titr"><b>Tie-breaker rules.</b> When the top two pathways are within 5% or $250 (whichever is larger), compare in order: ${TB_RULES.map((t,i)=>`${i+1} ${t[1]} (${t[2]})`).join(', ')}. A factor decides only when its gap is meaningful. Fixed in this demo; configurable by Admin in production (assumed).</p>`;
+function tieBreak(c,rows){if(!rows||rows.length<2)return null;const a=rows[0],b=rows[1],gap=a.net-b.net,lim=Math.max(250,Math.abs(a.net)*.05);if(gap>lim)return{near:false,gap,a,b};
+  const R=caseRul(c),life=z=>R&&['redeploy','resale','relase'].includes(z.r.id)?R.estMonths:0,dem=z=>z.r.demandStatus==='confirmed'?1:0;
+  const F=[['risk',a.prob,b.prob,(x,y)=>Math.abs(x-y)>=5?(x>y?'a':'b'):null,v=>v+'%'],['demand',dem(a),dem(b),(x,y)=>x!==y?(x>y?'a':'b'):null,v=>v?'confirmed':'forecast'],
+   ['cycle',a.days,b.days,(x,y)=>Math.abs(x-y)>=3?(x<y?'a':'b'):null,v=>v+' days'],['rul',life(a),life(b),(x,y)=>Math.abs(x-y)>=6?(x>y?'a':'b'):null,v=>v?v+' months':'none'],
+   ['co2',a.co2,b.co2,(x,y)=>Math.abs(x-y)>=.1*Math.max(x,y,1)?(x>y?'a':'b'):null,v=>fmtN(v)+' kg']];
+  const values=F.map(f=>({k:f[0],label:TB_RULES.find(t=>t[0]===f[0])[1],a:f[4](f[1]),b:f[4](f[2]),w:f[3](f[1],f[2])})),d=values.find(v=>v.w);
+  return{near:true,gap,pct:Math.round(gap/Math.max(1,Math.abs(a.net))*100),a,b,withPlan:b.r.plan,decidedBy:d?d.k:null,preferred:d&&d.w==='b'?b:a,values}}
+function tieText(t){if(!t||!t.near)return '';const p=t.preferred,v=t.values.find(x=>x.k===t.decidedBy),me=p===t.a?'a':'b',ot=me==='a'?'b':'a';
+  return `${t.a.r.plan} and ${t.b.r.plan} are within ${money(t.gap)} (${t.pct}%). `+(v?`${p.r.plan} is preferred because ${v.label.toLowerCase()} decides: ${v[me]} against ${v[ot]}.`:'No secondary factor separates them, so net value decides.')}
+function tieBox(t,rec){if(!t||!t.near)return '';const flip=rec&&t.preferred.r!==rec;
+  return `<div class="callout ${flip?'':'info'} titie" style="margin:8px 0"><b>Close call.</b> ${esc(tieText(t))}${flip?' <b>The approved recommendation stays on net value</b> until it is re-evaluated; an Approver can override with this reason.':''}<ul class="titf">${t.values.map(v=>`<li><span aria-hidden="true">${v.w?'✓':'–'}</span> ${v.label}: ${esc(v.a)} vs ${esc(v.b)}${v.k===t.decidedBy?' <span class="chip y">decides</span>':v.w?'':' <span class="note">no meaningful gap</span>'}</li>`).join('')}</ul></div>`}
+/* step 1: why the case is in its status, and what is still outstanding */
+function tiStatus(c){const st=c.stage,x=c.exec,act=x&&x.steps.find(s=>s.state==='active'),dl=S.deleg&&S.deleg.decisions?'Approver':'Admin';
+  const why=st==='awaiting_approval'?`Awaiting approval since ${fmtD(c.submitted?c.submitted.at:addDays(AS_OF,-(asHex(c,'aw')%6+1)))} · ${c.submitted?'submitted by '+c.submitted.by:'recommended by Circularity'} · ${c.owner}`
+   :st==='approved'?`Approved by ${c.approval?c.approval.by:'Approver'}${c.approval?' on '+fmtD(c.approval.at):''} · instruction going to ${act?act.sys:x?x.steps[0].sys:'the enterprise system'}`
+   :st==='executing'?`Handed off to ${act?act.sys:'enterprise systems'} · awaiting outcome`
+   :st==='reeval'?`Re-evaluate: ${c.reevalReason||'a review was triggered'}`:st==='closed'?(c.outcome?'Outcome confirmed by Finance':'Outcome reported; waiting for Finance to confirm')
+   :c.blocked?`${c.blocked.gateName} gate: ${c.blocked.reason}`:'Waiting for evidence before a pathway can be recommended';
+  const out=[];(c.evidence||[]).filter(e=>e.state!=='ready').forEach(e=>out.push([e.label+' ('+e.state+')',e.source]));
+  if(c.assessment==='Pending')out.push(['Inspection or test report','Engineering']);
+  if(st==='awaiting_approval')out.push(['Approval',`waits on ${dl}${c.submitted?'':' (not yet submitted by the Planner)'}`]);
+  if(act)out.push(['Acknowledgement',`from ${act.sys}`]);
+  if(st==='closed'&&!c.outcome)out.push(['Outcome confirmation','Finance']);
+  return `<h3>Current status</h3><div style="margin:4px 0 6px">${stageChip(c)}</div><p class="ink2 tistw" style="margin:0 0 10px">${esc(why)}</p><h4 style="margin:0 0 4px">Outstanding <span class="note">${out.length}</span></h4>${out.length?`<ul class="tiout">${out.map(o=>`<li><b>${esc(o[0])}</b><span class="note">${esc(o[1])}</span></li>`).join('')}</ul>`:'<p class="note" style="margin:0">Nothing outstanding.</p>'}`}
+/* condition → life → value: one card on the treatment page and the asset overview */
+function tiClv(c){const D=caseDiag(c),R=caseRul(c),r=c.chosen||c.recommendation,M=caseDemand(c),rc=r&&recert(c,r),hz=M&&R?Math.min(rc?rc.need:M.horizonMonths,R.certMonths):null;
+  return `<div class="ticlv" id="tiClv"><div class="ticlvc"><span class="ticlh">A. Diagnostic condition</span>${D?`<b>${esc(D.metric)}: ${esc(D.value)}</b><span class="note">${esc(D.source)} · ${esc(D.at)}</span><span class="note">Modelled from grade, age and class</span>`:'<b>Not inspected yet</b><span class="note">Waiting for the inspection report</span>'}</div>
+   <div class="ticlvc"><span class="ticlh">B. Life after intervention</span>${R?`<span>Estimated RUL <b class="num">${R.estLow}–${R.estHigh} months</b></span><span class="note">Most likely ${R.estMonths} · modelled range</span><span class="ticert">Certified operating period <b class="num">${R.certMonths} months</b></span><span class="note">${esc(R.basis)} · ${R.certRef}</span>${R.certMonths<R.estMonths?`<span class="note">Cannot be certified for ${R.estMonths} months; limited to ${R.certMonths}.</span>`:''}`:`<b>No certified life</b><span class="note">${esc(c.engLife||'Not assessed')}</span>`}</div>
+   <div class="ticlvc"><span class="ticlh">C. Commercial value for that life</span>${r?`<b>${esc(r.plan)} · <span class="num">${money(r.net)}</span></b>${hz?`<span>Demand horizon <b class="num">${hz} months</b> <span class="note">capped at the certified period</span></span>`:''}${M&&M.order?`<span>Matched demand: pending order <b class="mono">${M.order}</b> at <b>${esc(M.site||'—')}</b> · ${M.confirmed?'confirmed':'forecast'}</span>`:M&&M.lease?`<span>Lease opportunity ${esc(M.lease)}</span>`:'<span class="note">No internal demand matched</span>'}${r.target?`<span class="note">Target: ${esc(r.target)}</span>`:''}${rc?`<span><span class="chip warn">Needs re-certification</span> <span class="note">Demand needs ${rc.need} months; certified for ${rc.cert}. The pathway is Conditional.</span></span>`:''}`:'<b>No recommendation yet</b>'}</div></div>`}
+/* step 2: the recommended outcome in one block */
+function tiOutcome(c,sr,rows){const r=c.chosen||c.recommendation;if(!r)return `<div class="panel"><div class="pb"><div class="empty"><b>No recommended outcome yet</b>${c.blocked?esc(c.blocked.reason):'Evidence is needed first.'}</div></div></div>${tiClv(c)}`;
+  const me=rows.find(z=>z.r===r)||Object.assign({r},tiM(c,{r,sn:r.net})),R=caseRul(c),M=caseDemand(c),t=tieBreak(c,rows),cf=tiConf(c,r);
+  return `<div class="tisum"><div class="tisumh"><span class="chip ok">Recommended outcome</span>${t&&t.near?'<span class="chip warn">Close call</span>':''}<span class="chip line" data-tip="${esc(CONF_DO[cf])}">Confidence: ${cf}</span></div><div class="tirt">${esc(r.plan)}</div>
+   <div class="tisumg"><div><span class="note">Net recovery</span><b class="num">${money(r.net)}</b></div><div><span class="note">Costs</span><b class="num">${money(me.cost)}</b></div><div><span class="note">Estimated RUL</span><b class="num">${R?R.estLow+'–'+R.estHigh+' mo':'—'}</b></div><div><span class="note">Certified period</span><b class="num">${R?R.certMonths+' mo':'—'}</b></div><div><span class="note">Success</span><b class="num">${me.prob}%</b></div><div><span class="note">Cycle time</span><b class="num">${me.days} days</b></div></div>
+   <p class="note" style="margin:8px 0 0">${M&&M.order?'Matched to pending order <b class="mono">'+M.order+'</b> at <b>'+esc(M.site||'—')+'</b>. ':''}${r.target?'Target: '+esc(r.target)+'. ':''}<b>Confidence ${cf}:</b> ${CONF_DO[cf].toLowerCase()}.${t&&t.near?' '+esc(tieText(t)):''}</p></div>${tiClv(c)}`}
+/* step 4: top pathways side by side, base and simulated, with the secondary factors */
+function tiMulti(c,sr,rows){if(rows.length<2)return asPanel('Compare pathways','<div class="empty"><b>Only one eligible pathway</b>Nothing to compare under these assumptions.</div>',null,'ticmpp');
+  const rec=c.chosen||c.recommendation,t=tieBreak(c,rows),sel=(S.ti.sel||[]).map(p=>rows.find(z=>z.r.plan===p)).filter(Boolean),pick=sel.length>=2?sel:rows.slice(0,3),ranked=rows.slice();
+  if(t&&t.near&&t.preferred===t.b){ranked[0]=t.b;ranked[1]=t.a}
+  const R=caseRul(c),life=z=>R&&['redeploy','resale','relase'].includes(z.r.id)?R.estLow+'–'+R.estHigh+' mo':'—',cf=rec?tiConf(c,rec):'Medium',open=cf==='Low'||!!(t&&t.near);
+  const cols=[['Cycle time',z=>z.days+' days','cycle'],['RUL',life,'rul'],['Success',z=>z.prob+'%','risk'],['Demand',z=>z.r.demandStatus==='confirmed'?'Confirmed':'Forecast','demand'],['CO₂e avoided',z=>fmtN(z.co2)+' kg','co2']],vis=cols.filter(col=>!S.ti.diffOnly||new Set(pick.map(col[1])).size>1);
+  const why=t&&t.near?tieText(t):`${ranked[0].r.plan} ranks first on net value, ahead by ${money(ranked[0].net-ranked[1].net)}.`;
+  return `<details class="panel ticmp" id="tiCmp" ${open?'open':''}><summary class="ph"><h3>Compare the top ${pick.length} pathways</h3>${open?`<span class="chip warn">${t&&t.near?'Close call':'Low confidence'}: compare before approving</span>`:'<span class="note">Select to expand</span>'}</summary><div class="pb">
+   <label class="tog" style="margin:0 0 8px"><input type="checkbox" ${S.ti.diffOnly?'checked':''} data-ch="tiDiff"> Show differences only</label>
+   <div class="tw"><table class="t static tight" id="tiMulti"><thead><tr><th>Pathway</th><th class="r">Base net</th><th class="r">Simulated net</th><th class="r">Δ</th>${vis.map(v=>`<th class="r">${v[0]}</th>`).join('')}<th class="r">Rank</th></tr></thead><tbody>${pick.map(z=>{const d=z.net-z.r.net;return `<tr data-plan="${esc(z.r.plan)}"><td><b>${esc(z.r.plan)}</b>${rec&&z.r===rec?' <span class="chip y">Recommended</span>':''}</td><td class="r num">${money(z.r.net)}</td><td class="r num"><b>${money(z.net)}</b></td><td class="r num ${d>0?'tx-ok':d<0?'tx-bad':''}">${d===0?'—':(d>0?'▲ +':'▼ −')+money(Math.abs(d))}</td>${vis.map(v=>{const dec=t&&t.near&&t.decidedBy===v[2]&&(z===t.a||z===t.b);return `<td class="r num">${dec?'<b>'+esc(v[1](z))+'</b> <span class="chip y">decides</span>':esc(v[1](z))}</td>`}).join('')}<td class="r num"><b>${ranked.indexOf(z)+1}</b></td></tr>`}).join('')}</tbody></table></div>
+   <p class="ink2" style="margin:8px 0 0">${esc(why)}</p>${TB_NOTE}</div></details>`}
+/* the instruction: previewed before approval, identical to what is sent after */
+function instrPayload(c){const r=c.chosen||c.recommendation,x=c.exec,steps=stepsOf(c),M=caseDemand(c);
+  return{decisionId:x?x.decisionId:'DI-2026-'+c.id.slice(3),approvalRef:x?x.ref:'(added on approval)',instructionVersion:x?x.instruction:1,destination:steps[0].sys,targets:steps.map(s=>s.sys),caseId:c.id,assetId:c.assetId,quantity:c.qty,action:r.id,plan:r.plan,targetSite:r.target||(M&&M.site)||null,order:M&&M.order||null,expectedNetUsd:r.net,spendAuthorityUsd:c.approval&&c.approval.spend!=null?c.approval.spend:defaultSpend(c,r),terms:c.approval&&c.approval.terms||'As approved',evidenceSnapshot:c.snapshot.id,policyVersion:'POL-3.2',modelVersion:c.model,idempotencyKey:'idem-'+hashId(c.id+(x?x.ref:'pending')).slice(0,6).toLowerCase()}}
+function tiHandoff(c){const r=c.chosen||c.recommendation;if(!r)return asPanel('Approval and enterprise handoff','<p class="note" style="margin:0">Nothing can be approved or handed off until a pathway is recommended.</p>',null,'tiho');
+  const steps=stepsOf(c),p=instrPayload(c),M=caseDemand(c),dl=S.deleg&&S.deleg.decisions,big=r.net>25000;
+  return asPanel('Approval and enterprise handoff',`<dl class="tikv"><div><dt>Required approval</dt><dd>${dl?'Approver (decisions delegated by Admin)':'Admin (decisions are not delegated)'}${big?' · above $25k also needs Admin (assumed)':''}</dd></div><div><dt>Responsible approver</dt><dd>${esc(c.approval?c.approval.by:dl?'Approver':'Admin')}</dd></div><div><dt>Target applications</dt><dd>${[...new Set(steps.map(s=>s.sys))].filter(s=>!/^Circularity|^Planning/.test(s)).map(s=>`<span class="chip line">${esc(s)}</span>`).join(' ')}</dd></div><div><dt>Instruction status</dt><dd>${c.exec?steps.filter(s=>s.state==='done').length+' of '+steps.length+' acknowledged':'Not sent · sent only after approval'}</dd></div><div><dt>Expected outcome</dt><dd>${money(r.net)} net · ${c.outcome?'actual '+money(c.outcome.net):c.stage==='closed'?'actual reported, to confirm':'actual result pending'}</dd></div></dl>
+   <h4 style="margin:12px 0 4px">${c.exec?'Instruction sent':'Instruction preview (before approval)'}</h4><div class="tw"><table class="t static tight" id="tiPrev"><thead><tr><th>Target system</th><th>Instruction</th></tr></thead><tbody>${steps.map(s=>`<tr><td><b>${esc(s.sys)}</b></td><td>${esc(s.label)}: ${esc(r.plan)} · ${c.assetId}${c.qty>1?' ×'+c.qty:''}${s.sys.indexOf('Order Management')>=0&&M&&M.order?' · against pending order '+M.order+' at '+(M.site||'—'):''}${s.sys.indexOf('transfer')>=0&&p.targetSite?' · to '+p.targetSite:''}</td></tr>`).join('')}<tr><td><b>Amounts</b></td><td>Expected net ${money(p.expectedNetUsd)} · spend authority ${money(p.spendAuthorityUsd)}</td></tr></tbody></table></div>
+   <div class="row" style="margin-top:8px"><button class="btn sm" data-act="tiRaw" data-arg="${c.id}">View raw payload</button><span class="note">There is no auto-approve path. Every handoff carries the approval reference.</span></div>`,null,'tiho')}
 function tiA(c){const sr=scenRoutes(c),rows=tiRows(c,sr);return tiP1(c,sr)+tiP2(c,sr,rows)+tiP3(c,sr,rows)}
+const TI_STEPS=['Asset and status','Recommended outcome','Why this outcome','What-if and edge cases','Approval and handoff'];
+const tiStepH=(n,t,sub)=>`<header class="tish"><span class="tin">${n}</span><div><h2>${t}</h2>${sub?`<p class="note">${sub}</p>`:''}</div></header>`;
 function caseView(c){
   const sr=scenRoutes(c),n=(S.ti.sel||[]).length;
   if(!S.ti.sel||S.ti.selFor!==c.id){const rows=tiRows(c,sr).slice().sort((a,b)=>b.net-a.net);S.ti.sel=rows.slice(0,3).map(z=>z.r.plan);S.ti.selFor=c.id;S.ti.focus=null}
+  const rows=tiRows(c,sr);
   return `<div class="ti"><nav class="crumbs ascr" aria-label="Breadcrumb"><a href="#/product/received" data-act="go" data-arg="product/received">Assets</a> <span>›</span> <span>${esc(CLASSES[c.cls].plural)}</span> <span>›</span> <span>${esc(asModel(c))}</span> <span>›</span> <a href="#/product/asset/${c.id}" data-act="go" data-arg="product/asset/${c.id}">${c.assetId}</a> <span>›</span> <b>Treatment Intelligence</b></nav>
   <div class="phead asph2"><div class="row" style="gap:14px;flex-wrap:nowrap;align-items:flex-start"><span class="asico">${ICON.analytics}</span><div><h1>Treatment Intelligence</h1><p>Evaluate, compare and optimise treatment pathways using predictive models and business constraints. <span class="note">${c.id}</span></p></div></div>
-   <div class="row asact">${canPage('product','pools')?'<div class="seg" role="group" aria-label="Mode"><button aria-pressed="true">Asset Decision Mode</button><button aria-pressed="false" data-act="tiMode">Portfolio Optimization Mode</button></div>':''}<button class="btn" data-act="tiSave" ${c.routes.length?'':'disabled'}>Save scenario</button><button class="btn" data-act="tiCompare" ${c.routes.length>1?'':'disabled'}>Compare (${(S.ti.sel||[]).length})</button><button class="btn" data-act="snapshot" data-arg="${c.id}">Evidence snapshot</button>${c.stage==='awaiting_approval'?(can('approve')?`<button class="btn pri" data-act="approve" data-arg="${c.id}|review">Review and approve →</button>`:can('submit')&&!c.submitted?`<button class="btn pri" data-act="tiSubmit" data-arg="${c.id}">Submit for review →</button>`:''):''}</div></div>
-  ${tiCtx(c)}
-  ${c.stage==='reeval'?`<div class="callout bad" style="margin-bottom:14px"><b>Review triggered: ${esc(c.reevalReason)}.</b> The earlier recommendation is on hold until it is re-evaluated. <button class="btn sm" data-act="reeval" data-arg="${c.id}" style="margin-left:8px">Run re-evaluation</button></div>`:''}
-  <div class="tig3" id="tiA">${tiA(c)}</div>
-  <div class="tig2">${tiP4(c,sr,tiRows(c,sr))}<div>${tiP5(c)}${execBlock(c)}</div></div>
-  <h2 class="tidh" id="explain">Detailed analysis</h2><p class="note" style="margin:-4px 0 10px">The evidence, predictions, gates and explanation behind the panels above.</p>
-  <div class="tidetail">${evidenceBlock(c)}${predictBlock(c)}${optionsBlock(c,sr)}${specialBlock(c)}${c.pool?poolBlock(c):''}${explainBlock(c,sr)}</div></div>`}
-function tiRefresh(){const c=tiCase();if(!c)return;const a=$('#tiA');a&&(a.innerHTML=tiA(c));const sr=scenRoutes(c),i=$('#tiImpact');i&&(i.innerHTML=tiImpact(c,sr));const o=$('#b-options');o&&(o.outerHTML=optionsBlock(c,sr))}
+   <div class="row asact">${canPage('product','pools')?'<div class="seg" role="group" aria-label="Mode"><button aria-pressed="true">Asset Decision Mode</button><button aria-pressed="false" data-act="tiMode">Portfolio Optimization Mode</button></div>':''}<button class="btn" data-act="tiSave" ${c.routes.length?'':'disabled'}>Save scenario</button><button class="btn" data-act="tiCompare" ${c.routes.length>1?'':'disabled'}>Compare (${(S.ti.sel||[]).length})</button><button class="btn" data-act="snapshot" data-arg="${c.id}">Evidence snapshot</button>${c.stage==='awaiting_approval'&&(can('approve')||can('submit'))?`<a class="btn pri" href="#step-5" data-act="tiStep" data-arg="5">${can('approve')?'Go to approval':'Go to submit'} →</a>`:''}</div></div>
+  <nav class="tistp" aria-label="Decision steps">${TI_STEPS.map((s,i)=>`<a href="#step-${i+1}" data-act="tiStep" data-arg="${i+1}"><span class="tin">${i+1}</span>${s}</a>`).join('')}</nav>
+  <section class="tistep" id="step-1" aria-labelledby="sh-1">${tiStepH(1,'Returned asset and current status','What the asset is, why it is in this status and what is still outstanding')}${tiCtx(c)}
+  ${c.stage==='reeval'?`<div class="callout bad" style="margin-bottom:14px"><b>Review triggered: ${esc(c.reevalReason)}.</b> The earlier recommendation is on hold until it is re-evaluated. <a class="lnk" href="#step-5" data-act="tiStep" data-arg="5">Re-evaluate in step 5</a></div>`:''}</section>
+  <section class="tistep" id="step-2">${tiStepH(2,'Recommended outcome','Route, value, certified life and matched demand in one place')}${tiOutcome(c,sr,rows)}</section>
+  <section class="tistep" id="step-3">${tiStepH(3,'Why this outcome','Eligibility and gates, predicted outcomes, and the reasoning behind the ranking')}<div class="tig3" id="tiA">${tiA(c)}</div>
+  <details class="tifull" id="tiFull"><summary><b>Show full analysis</b> <span class="note">Evidence, prediction, options and gates, pool and explanation</span></summary><div class="tidetail" id="explain">${evidenceBlock(c)}${predictBlock(c)}${optionsBlock(c,sr)}${specialBlock(c)}${c.pool?poolBlock(c):''}${explainBlock(c,sr)}</div></details></section>
+  <section class="tistep" id="step-4">${tiStepH(4,'What-if and edge cases','Stress the assumptions and compare the top pathways. Nothing here changes the approved recommendation.')}${tiP4(c,sr,rows)}</section>
+  <section class="tistep" id="step-5">${tiStepH(5,'Next best action: approval and enterprise handoff','Circularity recommends and sends the approved instruction; ERP, EAM and WMS carry out the work')}
+  <div class="tig2"><div>${asPanel('Decision','<div class="tidec">'+bestCard(c,sr)+'</div>',null,'tix5a')}${tiHandoff(c)}</div><div>${tiP5(c)}${execBlock(c)}</div></div></section></div>`}
+/* the result card updates on every input; the heavier panels follow once dragging pauses */
+function tiRefresh(){const c=tiCase();if(!c)return;const sr=scenRoutes(c),i=$('#tiImpact');i&&(i.innerHTML=tiResult(c,sr));clearTimeout(S.ti.rt);S.ti.rt=setTimeout(tiRefreshRest,90)}
+function tiRefreshRest(){const c=tiCase();if(!c)return;const sr=scenRoutes(c),a=$('#tiA');a&&(a.innerHTML=tiA(c));
+  const w=$('#tiCmpW');if(w){const d=$('#tiCmp'),op=d&&d.open;w.innerHTML=tiMulti(c,sr,tiRows(c,sr));const d2=$('#tiCmp');if(d2&&op)d2.open=true}const o=$('#b-options');o&&(o.outerHTML=optionsBlock(c,sr))}
 ACT.scen=(v,el)=>{const k=el.dataset.arg;S.scen[k]=v/100;const e=$('#scv-'+k);e&&(e.textContent=tiAdj(v/100));tiRefresh()};
 ACT.tiW=(v,el)=>{const k=el.dataset.arg;S.ti.w[k]=+v;const e=$('#twv-'+k);e&&(e.textContent=v+'%');tiRefresh()};
 ACT.tiFocus=p=>{S.ti.focus=S.ti.focus===p?null:p;tiRefresh()};
 ACT.tiSel=(v,el)=>{const p=el.dataset.arg,s=S.ti.sel||(S.ti.sel=[]);if(v){if(s.length>=3){toast('Compare up to three pathways. Untick one first.');el.checked=false;return}if(!s.includes(p))s.push(p)}else S.ti.sel=s.filter(x=>x!==p);const b=$('[data-act=tiCompare]');b&&(b.textContent='Compare ('+S.ti.sel.length+')');const c=tiCase();const a=$('#tiA');a&&c&&(a.innerHTML=tiA(c))};
 ACT.tiRecalc=()=>{tiRefresh();const c=tiCase(),sr=scenRoutes(c);toast(sr.el[0]?'Re-ranked. Top pathway: '+sr.el[0].r.plan+'.':'No eligible pathway under these assumptions.')};
-ACT.tiExplain=()=>{const e=$('#b-explain')||$('#explain');e&&e.scrollIntoView({behavior:'smooth',block:'start'})};
+ACT.tiExplain=()=>{const d=$('#tiFull');d&&(d.open=true);const e=$('#b-explain')||$('#explain');e&&e.scrollIntoView({behavior:'smooth',block:'start'})};
 ACT.tiMode=()=>{const c=tiCase();toast('Portfolio mode optimises across assets that compete for the same demand.');go('product/pools')};
 ACT.tiSave=()=>{if(!can('scenario'))return toast('Your role cannot save scenarios.');const c=tiCase(),sr=scenRoutes(c),s=S.scen,parts=[['purchase','purchase price'],['cost','prep and fees'],['service','service'],['market','market']].filter(x=>s[x[0]]!==1).map(x=>x[1]+' '+tiAdj(s[x[0]]));
   const arr=S.ti.saved[c.id]||(S.ti.saved[c.id]=[]),id='sc'+Date.now();arr.push({id,name:'Scenario '+(arr.length+1)+(parts.length?': '+parts.join(', '):': base'),top:sr.el[0]?sr.el[0].r.plan+' · '+money(sr.el[0].sn):'No eligible pathway',scen:Object.assign({},s),w:Object.assign({},S.ti.w)});route(true);toast('Scenario saved for '+c.id+'.')};
@@ -2528,9 +2895,9 @@ ACT.drillCsv=()=>{const rows=drillRows();buildCsv('case,month,tenant,class,route
 ACT.openClosed=id=>{closeDrawer();hideResults();const r=ROWS.find(x=>x.id===id);if(!r)return;const up=r.status==='reconciled'?r.actual-r.baseline:null;
   openDrawer(`<div class="row" style="gap:12px;margin-bottom:12px"><span class="thumb" style="width:56px;height:46px">${ICON[CLS_ICON[r.cls]]}</span><div><b style="font-size:16px">${CLASSES[r.cls].label} · ${r.assetId}</b><div class="note">${r.tenant} · ${r.site} · ${MONTHS[r.mi]}</div></div></div>
   <div class="row" style="margin-bottom:12px">${statusChip(r)}<span class="chip line">Model ${r.model}</span><span class="chip line">${r.snapshot}</span></div>
-  <table class="terms"><tr><td>Route executed</td><td>${rid(r.route).name}</td></tr><tr><td>Predicted net (P10 / P50 / P90)</td><td>${money(r.p10)} / ${money(r.p50)} / ${money(r.p90)}</td></tr><tr><td>Actual net</td><td>${r.actual==null?'Pending: not a failure':money(r.actual)}</td></tr><tr><td>Current-practice baseline (modelled)</td><td>${money(r.baseline)}</td></tr>${up!=null?`<tr class="tot"><td>Recovery vs baseline</td><td class="${up<0?'neg':'pos'}">${money(up)}</td></tr>`:''}</table>
+  <table class="terms"><tr><td>Route carried out</td><td>${rid(r.route).name}</td></tr><tr><td>Predicted net (P10 / P50 / P90)</td><td>${money(r.p10)} / ${money(r.p50)} / ${money(r.p90)}</td></tr><tr><td>Actual net</td><td>${r.actual==null?'Pending: not a failure':money(r.actual)}</td></tr><tr><td>Current-practice baseline (modelled)</td><td>${money(r.baseline)}</td></tr>${up!=null?`<tr class="tot"><td>Recovery vs baseline</td><td class="${up<0?'neg':'pos'}">${money(up)}</td></tr>`:''}</table>
   <dl class="kv" style="margin-top:14px"><dt>Days to realize</dt><dd>${r.days==null?'—':r.days+' (baseline '+r.baseDays+')'}</dd><dt>Confirmed avoided spend</dt><dd>${r.avoided?money(r.avoided):'—'}</dd><dt>CO₂e estimated / measured</dt><dd>${r.co2e} kg / ${r.co2m==null?'not measured':r.co2m+' kg'}</dd>${r.pool?`<dt>Pool effect</dt><dd>${money(r.pool.g)} greedy → ${money(r.pool.o)} pooled</dd>`:''}${r.ero?`<dt>Value erosion</dt><dd>${money(r.ero)} · ${r.comp} · ${r.equip}</dd>`:''}</dl>
-  ${r.override?`<div class="callout" style="margin-top:14px"><b>Human override</b><br>Recommended ${rid(r.override.rec).name}; executed ${rid(r.override.exec).name}.<br>Reason: ${esc(r.override.reason)}<br><span class="note">Versus the recommended route's estimated outcome (${money(r.override.cf)}): <b class="${r.override.delta<0?'neg':'pos'}">${money(r.override.delta)}</b>. Counterfactual is an estimate, not observed.</span></div>`:''}`,r.id,'Closed decision','<a class="btn" href="#/analytics" data-act="go" data-arg="analytics">Back to analytics</a>')};
+  ${r.override?`<div class="callout" style="margin-top:14px"><b>Human override</b><br>Recommended ${rid(r.override.rec).name}; carried out ${rid(r.override.exec).name}.<br>Reason: ${esc(r.override.reason)}<br><span class="note">Versus the recommended route's estimated outcome (${money(r.override.cf)}): <b class="${r.override.delta<0?'neg':'pos'}">${money(r.override.delta)}</b>. Counterfactual is an estimate, not observed.</span></div>`:''}`,r.id,'Closed decision','<a class="btn" href="#/analytics" data-act="go" data-arg="analytics">Back to analytics</a>')};
 /* ---- charts ---- */
 function waterfall(m){
   const rc=m.rc,steps=ROUTES.map(rt=>({id:rt.id,l:rt.short,v:sum(rc.filter(r=>r.route===rt.id).map(r=>r.actual-r.baseline))}));
@@ -2549,12 +2916,12 @@ function mixChart(rows){
   const raw=Math.max(1,...by.map(a=>a.length)),mx=Math.ceil(raw/40)*40,sc=v=>T+(H-T-B)*(1-v/mx);
   const bars=by.map((a,i)=>{let acc=0;return ROUTES.map(rt=>{const n=a.filter(r=>r.route===rt.id).length;const y0=sc(acc),y1=sc(acc+n);acc+=n;return n?`<rect class="clk" x="${L+i*bw+6}" y="${y1}" width="${bw-12}" height="${y0-y1}" fill="${rt.color}" stroke="var(--panel)" stroke-width=".8" data-act="drillMix" data-arg="${rt.id}|${i}" data-tip="${MONTHS[i]} · ${rt.name}: ${n} (${Math.round(n/a.length*100)}%)"/>`:''}).join('')+`<text x="${L+i*bw+bw/2}" y="${H-10}" text-anchor="middle">${MONTHS[i].slice(0,3)}</text>`}).join('');
   const grid=[0,.25,.5,.75,1].map(f=>`<line class="gl" x1="${L}" x2="${W}" y1="${sc(mx*f)}" y2="${sc(mx*f)}"/><text x="${L-6}" y="${sc(mx*f)+4}" text-anchor="end">${Math.round(mx*f)}</text>`).join('');
-  return `<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Executed route mix by month">${grid}${bars}</svg><div class="legend">${ROUTES.map(r=>`<span><i style="background:${r.color}"></i>${r.short}</span>`).join('')}</div>`}
+  return `<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Route mix by month: decisions carried out">${grid}${bars}</svg><div class="legend">${ROUTES.map(r=>`<span><i style="background:${r.color}"></i>${r.short}</span>`).join('')}</div>`}
 ACT.drillMix=a=>{const[rt,i]=a.split('|');setDrill(rid(rt).name+' · '+MONTHS[+i],r=>r.route===rt&&r.mi===+i&&(r.status==='reconciled'||r.status==='pending'))};
 function funnel(rows,m){const k=rows.length/1400,opened=rows.length+Math.round(111*k),ex=rows.length-m.canc-m.exp;
-  const st=[['Cases opened',opened,'Return signals that created a case',null],['Decision approved',rows.length,'A person approved a route',r=>true],['Executed',ex,'Not cancelled or expired',r=>r.status==='reconciled'||r.status==='pending'],['Reconciled',m.rc.length,'Actuals linked to the decision',r=>r.status==='reconciled']];
+  const st=[['Cases opened',opened,'Return signals that created a case',null],['Decision approved',rows.length,'A person approved a route',r=>true],['Carried out by enterprise systems',ex,'Reported done by ERP, EAM or WMS',r=>r.status==='reconciled'||r.status==='pending'],['Reconciled',m.rc.length,'Actuals linked to the decision',r=>r.status==='reconciled']];
   return st.map((s,i)=>`<div style="margin-bottom:12px"><div class="row between"><b>${s[0]}</b><span class="num"><b>${s[1].toLocaleString()}</b> ${i?`<span class="note">${pct(s[1]/st[i-1][1],0)} of previous</span>`:''}</span></div><div class="bar" style="height:14px;margin:4px 0;${s[3]?'cursor:pointer':''}" ${s[3]?`data-act="drillFun" data-arg="${i}"`:''}><i style="width:${s[1]/opened*100}%"></i></div><div class="note">${s[2]}</div></div>`).join('')+`<div class="callout info"><b>Not failures:</b> ${m.pend} decisions are still pending, ${m.canc} lost demand and ${m.exp} offers expired. Pending cases stay pending until their evidence is complete.</div>`}
-ACT.drillFun=a=>{const f=[null,r=>true,r=>r.status==='reconciled'||r.status==='pending',r=>r.status==='reconciled'][+a];setDrill(['','Approved decisions','Executed decisions','Reconciled decisions'][+a],f)};
+ACT.drillFun=a=>{const f=[null,r=>true,r=>r.status==='reconciled'||r.status==='pending',r=>r.status==='reconciled'][+a];setDrill(['','Approved decisions','Decisions carried out','Reconciled decisions'][+a],f)};
 function scatter(rows){
   const pts=rows.filter(r=>r.status==='reconciled'&&r.route!=='exit'&&r.p50>0&&r.actual>0&&!r.override);
   const W=520,H=420,L=48,B=40,T=10,lo=Math.log10(15),hi=Math.log10(Math.max(60000,...pts.map(p=>Math.max(p.p50,p.actual))));
@@ -2619,7 +2986,7 @@ function renderAnalytics(){
   </div><div class="note" style="margin:6px 2px 0">Step ${stp(10)} compares actuals with forecasts. Pending cases are shown as pending, never as failures. Uplift is measured against an agreed current-practice baseline (modelled), not predicted improvement.</div>`:''}
   ${aRow('minmax(0,1.6fr) minmax(0,1fr)',[['waterfall',()=>`<section class="panel"><div class="ph"><h3>Recovery waterfall: baseline to Circularity</h3>${stp(10)}</div><div class="pb">${waterfall(m)}<div class="note">Select a bar to open its cases. Bars show reconciled decisions only.</div></div></section>`],
    ['pipeline',()=>`<section class="panel"><div class="ph"><h3>Pipeline: case to reconciled</h3></div><div class="pb">${funnel(rows,m)}</div></section>`]])}
-  ${aRow('',[['mix',()=>`<section class="panel"><div class="ph"><h3>Route mix over time</h3><span class="note">executed decisions per month</span></div><div class="pb">${mixChart(rows)}</div></section>`]])}
+  ${aRow('',[['mix',()=>`<section class="panel"><div class="ph"><h3>Route mix over time</h3><span class="note">decisions carried out per month</span></div><div class="pb">${mixChart(rows)}</div></section>`]])}
   ${aRow('minmax(0,1.1fr) minmax(0,1fr)',[['predicted',()=>`<section class="panel"><div class="ph"><h3>Predicted vs actual</h3>${stp(10)}</div><div class="pb">${scatter(rows)}</div></section>`],
    ['models',()=>`<section class="panel"><div class="ph"><h3>Model versions: the learning loop</h3></div><div class="pb">${modelTable(rows)}<div class="callout" style="margin-top:12px">Overridden cases and pending cases are excluded from model error. Select a version to filter every chart on this page.</div></div></section>`]])}
   ${aRow('minmax(0,1fr) minmax(0,1fr)',[['pool',()=>`<section class="panel"><div class="ph"><h3>Pool efficiency</h3>${stp(4)}</div><div class="pb">${poolChart(rows)}</div></section>`],['overrides',()=>`<section class="panel"><div class="ph"><h3>Overrides</h3></div><div class="pb">${overrides(rows)}</div></section>`]])}
@@ -2701,12 +3068,12 @@ function flowDiagram(){
    ${box('Decision services','Evaluate routes against demand, predict outcomes with ranges, apply the six eligibility gates, recommend, and stop at human approval.',stp(3)+stp(4)+stp(5))}
    ${box('Action orchestration','Outbound API · Event trigger · File generation · Process orchestration. Every message carries the decision ID and approval reference.',stp(6)+stp(7)+stp(8))}
   </div></section>${arr('Approved instruction')}
-  <section class="zone" aria-label="Execution systems"><header>Execution systems</header><div class="zb">${out.map(x=>`<div class="fnode"><span class="dotc ${x.status==='live'?'ok':'warn'}"></span>${esc(x.name)}<span class="note" style="margin-left:auto">${x.write.length} write op${x.write.length>1?'s':''}</span></div>`).join('')}<div class="note" style="margin-top:6px">The owning system stays authoritative for physical movements and status.</div></div></section>
+  <section class="zone" aria-label="Enterprise systems"><header>Enterprise systems (carry out the work)</header><div class="zb">${out.map(x=>`<div class="fnode"><span class="dotc ${x.status==='live'?'ok':'warn'}"></span>${esc(x.name)}<span class="note" style="margin-left:auto">${x.write.length} write op${x.write.length>1?'s':''}</span></div>`).join('')}<div class="note" style="margin-top:6px">The owning system stays authoritative for physical movements and status.</div></div></section>
   </div>
   <div class="zloop"><span class="lab">Return loop</span>
    <div class="zbox"><b>Model and policy update</b><span class="note">Calibration from outcomes becomes a new model version for Context assembly and Decision services.</span><div class="row">${stp(10)}</div></div><span class="zarrl">${ICON.arrow}</span>
    <div class="zbox"><b>Feedback events</b><span class="note">Outcome capture: actual receipts, costs and avoided spend, linked to the decision.</span><div class="row">${stp(9)}</div></div><span class="zarrl">${ICON.arrow}</span>
-   <div class="zbox"><b>Execution status</b><span class="note">Acknowledgement or error from the owning system, with retries and duplicates handled.</span><div class="row">${stp(9)}</div></div></div>`;
+   <div class="zbox"><b>Handoff status</b><span class="note">Acknowledgement or error from the owning system, with retries and duplicates handled.</span><div class="row">${stp(9)}</div></div></div>`;
 }
 /* ---- live engine: ticking ages, scheduled syncs, DOM patches ---- */
 /* ---- Integration Hub extras: KPIs, health, exceptions, recent events ---- */
@@ -3642,7 +4009,7 @@ function runTool(toolId,agentId,tenant,raw){
    case 'send_instruction':{if(!c.approval||c.approval.ref!==args.approval_ref){step('Verify approval reference',false,'No approval '+args.approval_ref+' on record for '+c.id);return fail('approval_required',`No human approval ${args.approval_ref} is recorded for ${c.id}. Instructions cannot be sent without one.`,{hint:c.approval?'Recorded reference is '+c.approval.ref:'Approve the case in Product first.'})}step('Verify approval reference',true,c.approval.ref);result={case_id:c.id,decision_id:c.exec.decisionId,approval_ref:c.approval.ref,instruction_version:c.exec.instruction,destination:c.exec.steps[0].sys,idempotency_key:'idem-'+hashId(c.id+c.exec.ref).slice(0,6).toLowerCase(),deduplicated:true,note:'Instruction already delivered; repeated call created nothing new'};break}
    case 'reconcile_outcome':{const r=ROWS.find(x=>x.id===args.case_id);if(!r)return(tr.push({n:'Run tool',ok:false,detail:'Unknown closed case',ms:5}),fail('case_not_found','No closed case '+args.case_id+'. Try CS-2041.'));result=r.status==='pending'?{case_id:r.id,status:'pending',note:'Evidence incomplete. Pending cases are not treated as failures.'}:{case_id:r.id,status:r.status,route:r.route,predicted_p50:r.p50,actual:r.actual,variance:r.actual==null?null:r.actual-r.p50,model_version:r.model,evidence_snapshot:r.snapshot,linked:true};break}
   }
-  step('Run tool',true,tool.rw==='write'?'write executed within scope':'read-only',rint(14,90)*(toolId==='optimize_pool'?4:1));
+  step('Run tool',true,tool.rw==='write'?'write sent within scope':'read-only',rint(14,90)*(toolId==='optimize_pool'?4:1));
   step('Write audit record',true,'call logged with agent, tenant and case',rint(2,6));
   return{ok:true,result,trace:tr,ms:tr.reduce((s,x)=>s+x.ms,0),tool,ag,outcome:'ok',caseId:args.case_id};
 }
@@ -3768,7 +4135,7 @@ function auditEntries(){
   const out=[];
   visCases().forEach(c=>c.evidence.forEach(e=>{if(e.state==='missing')return;const p=provFor(c,e);
     out.push({id:'AU-'+p.id,kind:'fetch',ts:p.fetchedAt,source:p.sourceName,caseId:c.id,asset:c.assetId,item:e.label,key:e.k,request:p.request,result:p.status==='partial'?'Partial record':'1 record · '+(p.table||'—'),used:p.usedIn.slice(0,2).join('; '),status:p.status,p})}));
-  EVENTS.forEach(ev=>{const c=ev.caseId&&CASE_BY_ID[ev.caseId];if(c?(!tenantOK(c.owner)||(S.tenant!=='All'&&c.owner!==S.tenant)):pol().tenantScoped)return;
+  EVENTS.forEach(ev=>{const c=ev.caseId&&CASE_BY_ID[ev.caseId];if(c?(!tenantOK(c.owner)||!locOK(c)||(S.tenant!=='All'&&c.owner!==S.tenant)):pol().tenantScoped)return;
     out.push({id:'AE-'+ev.id,kind:'event',ts:new Date(ev.ts),source:ev.dest,caseId:ev.caseId||'—',asset:c?c.assetId:'—',item:ev.type,key:'event',request:(ev.dir==='out'?'Outbound ':'Inbound ')+ev.type+(ev.key&&ev.key!=='—'?' · '+ev.key:''),result:ev.ack,used:ev.decisionId?`Decision ${ev.decisionId}${ev.approval?' · '+ev.approval:''}`:ev.by?'Access control · '+ev.by:'Fabric housekeeping',status:'recorded',ev})});
   return out;
 }

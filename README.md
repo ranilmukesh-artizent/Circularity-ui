@@ -4,12 +4,12 @@
 
 Circularity is part of the Artizent Decision Intelligence Framework. This repository holds the clickable product demo: one web page that shows the whole product, for every role, on desktop, tablet and phone.
 
-[![Command Center, Approver view](docs/screenshots/rbac-approver-command.webp)](docs/screenshots/rbac-approver-command.webp)
+[![Command Center, senior view for the Executive](docs/screenshots/flow-executive-command.webp)](docs/screenshots/flow-executive-command.webp)
 
 | | |
 |---|---|
 | **Try it** | Open the hosted demo at [ranilmukesh-artizent.github.io/Circularity-ui](https://ranilmukesh-artizent.github.io/Circularity-ui/), or open `index.html` from this folder in any browser. Nothing to install. |
-| **Sign in** | Pick one of eight demo accounts. There are no passwords. |
+| **Sign in** | Pick one of eleven demo accounts. There are no passwords. In production, users and roles come from the customer's identity provider (single sign-on). |
 | **Data** | Everything is **synthetic**. The demo company is *Northfield Industrial Leasing*, with three customer tenants and eight sites. No personal or customer data is used, and none should be entered. |
 | **What changed and when** | [`CHANGES.md`](CHANGES.md) has one walk-through per release. |
 
@@ -22,7 +22,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 1. [The problem we solve](#1-the-problem-we-solve)
 2. [What Circularity does](#2-what-circularity-does)
 3. [The demo in numbers](#3-the-demo-in-numbers)
-4. [Who uses it: six roles](#4-who-uses-it-six-roles)
+4. [Who uses it: eight roles](#4-who-uses-it-eight-roles)
 5. [How a decision moves through the product](#5-how-a-decision-moves-through-the-product)
 6. [Screen by screen](#6-screen-by-screen)
 7. [Every screen for every role](#7-every-screen-for-every-role)
@@ -47,7 +47,7 @@ Leasing companies, equipment makers and large fleet owners get thousands of asse
 
 ## 2. What Circularity does
 
-Circularity sits **on top of the systems a company already runs**. It does not replace them. *"Existing lease, ERP, asset, repair, warehouse and service systems keep owning their transactions. Circularity assembles their evidence, sends approved instructions back, and reconciles what returns."*
+Circularity is **decision intelligence**: it evaluates, calculates, recommends and **sends approved instructions**. The enterprise systems a company already runs carry out the work and report the outcome; Circularity does not replace them. *"Existing lease, ERP, asset, repair, warehouse and service systems keep owning their transactions. Circularity assembles their evidence, sends approved instructions back, and reconciles what returns."*
 
 ### The ten-step journey
 
@@ -90,11 +90,13 @@ These figures come from the synthetic demo data (as of 07 Oct 2026). They show w
 | Median days to realise value | **21 days**, against 27 today (22% faster) | Analytics |
 | Recovery yield (actual against predicted) | **97%** | Finance view |
 | Connected business systems | **19** systems, **31** workflows, **96.8%** integration health | Integration |
+| Instructions with enterprise systems, awaiting an outcome | **38** (31 handed off + 7 approved and being handed off) | Command Center · Handed off |
+| Expected returns from Contract Management | **9** contracts and leases, each with a likely outcome | Product · Expected returns |
 | Governed tools for AI agents | **10** tools (4 that write, all behind a gate) | MCP and Tools |
 
 Every number is computed from the same data, so it is the same on every page. For example, *41 decisions awaiting approval* appears on the Command Center, on Product and in Analytics.
 
-## 4. Who uses it: six roles
+## 4. Who uses it: eight roles
 
 The app opens on a sign-in screen. Each role sees **only the pages, panels, figures and buttons that belong to its job**. Anything a role can never use is **not shown at all**, rather than greyed out.
 
@@ -109,14 +111,18 @@ The app opens on a sign-in screen. Each role sees **only the pages, panels, figu
 | **Engineer** | Inspects assets, records assessments and test results, and owns technical eligibility | Asset intelligence | Engineer |
 | **Finance** | Confirms outcomes and tracks recovery, avoided spend and variance; reads and comments on the audit log and Source map | Analytics | Finance |
 | **Developer** | An integration and platform engineer: connects systems, builds workflows, proposes MCP servers and governs agent tools | Integration, Source map | Developer |
-| **Admin** | Everything above, plus accounts, Approver delegations and every request | Command Center | Admin |
+| **Executive** | Senior view: value realised, portfolio health and ranked exceptions; drills into Analytics and cases, and can **Notify the owner**. Read-only otherwise | Command Center (senior view) | Executive |
+| **Warehouse Manager** | Runs one warehouse: its cases, inbound expected returns, capacity and items awaiting handoff outcomes. Requests evidence and acknowledges notifications; the WMS stays the system of record | Command Center (operational view) | Warehouse Manager · Warehouse 1 or 2 |
+| **Admin** | Everything above, plus accounts, identity and users, Approver delegations and every request. Has a **Senior / Operational** switch on the Command Center | Command Center | Admin |
 
 **Key rules**
 - **Admin is the master role.** Admin can do everything on every page and every tenant.
 - **The Approver is delegated by Admin**, scope by scope (decisions, MCP proposals, tenant access). If Admin removes a scope, its buttons, inbox items and key figure disappear for the Approver straight away.
 - **Planners see only their own customer.** To see another customer they **request access**; an Approver or Admin approves or declines it.
 - **Finance reads, confirms and comments.** It never approves.
-- **The Developer never sees case data.** No Product or Analytics pages, only integration, tools and audit.
+- **The Developer never sees case data.** No Product or Analytics pages, only integration, tools, orchestration and audit.
+- **A Warehouse Manager is locked to one warehouse** (the asset's current location) on every page, in search and in the audit log. Planners and Engineers get a **default** site filter on their queues that they can widen.
+- **Everyone sees Process orchestration**, read-only; Developer and Admin also get links to the live call log.
 
 Switch role at any time from the account menu (top right): **Switch account** or **Sign out**.
 
@@ -149,7 +155,7 @@ Every request, decision and delegation is written to the **event stream** and th
 
 ## 6. Screen by screen
 
-The left menu has seven areas. Each area has a dropdown of its sections, and every section has its own link (for example `#/integration/map`) that can be shared.
+The left menu has eight areas. Each area has a dropdown of its sections, and every section has its own link (for example `#/integration/map`) that can be shared.
 
 ### 6.1 Command Center
 
@@ -162,6 +168,8 @@ The left menu has seven areas. Each area has a dropdown of its sections, and eve
 - **Panels:** lifecycle portfolio, treatment opportunity, value at risk by reason, time to action, top 10 actions to prioritise, emerging signals, capacity and bottlenecks, value realisation (predicted against actual).
 - **Refresh**, **Share** (copies the link) and **Export** (a one-page PDF).
 
+**Senior and operational views** (Update 8). The **senior view** (Executive, and Admin's *Senior* switch) puts the value figures on top (the same figures as Finance), then portfolio health and a ranked **Exceptions** list: value at risk by reason, warehouse bottlenecks, declining metrics and deteriorating condition. Each exception has **View cases** and **Notify owner**. Operational queues are hidden unless *Show operational queues* is ticked. The **operational view** (Planner, Engineer, Warehouse Manager) starts with **Actions on me**, then **Waiting for approval** (status only) and **Handed off · awaiting outcome**, scoped to the user's site or warehouse. A notification lands in the recipient's *Actions on me*; when they acknowledge it, the exception shows *In hand by …*.
+
 | Role | Key figures | Extra panels |
 |---|---|---|
 | Planner | Assets in scope, Awaiting approval, Evidence gaps, Closing within 5 days | Portfolio, actions, signals |
@@ -169,7 +177,15 @@ The left menu has seven areas. Each area has a dropdown of its sections, and eve
 | Engineer | Inspection queue, Failed gates, Graded A or B, Parts on backorder | Portfolio, treatment opportunity, capacity |
 | Finance | Net recovery, Uplift against baseline, Recovery yield, Avoided spend, CO₂e avoided | **Outcomes to confirm**, value realisation |
 | Developer | Integration health, Sources needing attention, Failing workflows, Open conflicts, My MCP proposals | Integration health, mapping exceptions, live events |
-| Admin | Requests waiting, Potential recovery, Value at risk, Integration health, Uplift | Everything |
+| Executive | Net recovery, Uplift, Recovery yield, Avoided spend, CO₂e avoided (same as Finance) | **Exceptions** with Notify, portfolio, value realisation |
+| Warehouse Manager | Actions on me, Assets at the warehouse, Handed off, Capacity used | Exceptions (read-only), Actions on me, Handed off, capacity |
+| Admin | Requests waiting, Potential recovery, Value at risk, Integration health, Uplift | Everything; Senior / Operational switch |
+
+Planner and Engineer also get **Actions on me** as their first figure, and every role except the Executive has the *Actions on me* panel.
+
+| Executive (senior view) | Warehouse Manager (operational view) |
+|---|---|
+| [![Executive](docs/screenshots/flow-executive-command.webp)](docs/screenshots/flow-executive-command.webp) | [![Warehouse Manager](docs/screenshots/flow-wm-command.webp)](docs/screenshots/flow-wm-command.webp) |
 
 | Planner | Approver |
 |---|---|
@@ -184,7 +200,9 @@ The left menu has seven areas. Each area has a dropdown of its sections, and eve
 **For:** Planner, Approver, Engineer; Finance read-only. **Purpose:** the work list.
 
 - **Returned assets:** every asset received this cycle, with product, asset ID, owner, location, condition, assessment, status and the **best next action with its value** (for example *RT-1048 · $9,600 · Redeploy*). Counters across the top: returned, ready to evaluate, awaiting inspection, need information, awaiting approval.
-- **Expected returns:** planning signals for assets that are due back but not yet received.
+- **Expected returns:** assets due back but not yet received, **derived from contract and lease expiry in the Contract Management application** (the Lease management source). Columns: Contract ID, Customer, Asset, Lease period, Contract expiry, **Likely outcome** (return, buyout, extension or early termination, with its probability), Expected return window, Site, Planning range (also weighted by the chance of return), Source application and Status. A row opens the contract summary and a lease timeline.
+
+[![Expected returns](docs/screenshots/flow-expected-returns.webp)](docs/screenshots/flow-expected-returns.webp)
 - Search and filter by condition, location, owner and assessment. Click a row to open its decision; click an asset ID to open Asset intelligence.
 
 [![Returned assets, Planner for Customer A](docs/screenshots/readme-product-received.webp)](docs/screenshots/readme-product-received.webp)
@@ -215,17 +233,21 @@ The left menu has seven areas. Each area has a dropdown of its sections, and eve
 
 ### 6.5 Product: Treatment Intelligence (the decision page)
 
-**For:** Planner, Approver, Engineer and Finance; what each can press differs. **Purpose:** choose the best route for one asset, and get it approved.
+**For:** Planner, Approver, Engineer and Finance (Executive and Warehouse Manager read-only); what each can press differs. **Purpose:** choose the best route for one asset, and get it approved.
 
-Business-objective sliders (net recovery, turnaround time, environmental impact, serviceability), then **five panels**:
+The page reads **top to bottom in five steps**, with a sticky step bar. Each step has its own link (`#/product/RT-1048?step=3`).
 
-| Panel | What it answers |
+| Step | What it answers |
 |---|---|
-| 1. Treatment eligibility and feasible pathways | Which routes are **Eligible**, **Conditional** or **Restricted**, and why |
-| 2. Predicted outcomes and comparison | Value, cost, net, cycle time, success chance, useful life and CO₂e per route; compare up to three |
-| 3. Recommendation and rationale | The recommended route, why it wins, why the runner-up lost, and the binding constraints |
-| 4. Scenario simulation (what-if) | Drag price, cost and demand sliders; save, load and delete scenarios |
-| 5. Execution readiness | Six checks (repair capacity, parts, hazmat and battery rules, customer release, work order, ERP reservation) and the timeline |
+| 1. Returned asset and current status | What the asset is, **why** it is in its status (for example *awaiting approval since 01 Oct*) and what is **outstanding** (evidence, test report, approval and who it waits on) |
+| 2. Recommended outcome | Route, net recovery, costs, success, cycle time and a **confidence level** (High, Medium, Low, each saying what to do), plus the **condition → life → value** card: A. diagnostic condition, B. **estimated RUL as a range** next to the **certified operating period** (one firm figure), C. commercial value for that life with the matched order (for example *SO-48102 at Site 3*). A demand horizon longer than the certified period shows **Needs re-certification** and makes the route Conditional |
+| 3. Why this outcome | Eligibility and gates, predicted outcomes for every route, the rationale, and a **Close call** box when the top two are within 5% or $250, naming the secondary factor that decides (risk, demand certainty, cycle time, RUL, carbon). Full analysis is one click away |
+| 4. What-if and edge cases | A large **what-if result** card (Base net, Simulated net, Δ $, Δ %, with ▲ ▼ and the assumptions changed), sliders, **Apply to** one pathway, edge-case presets (Demand cancelled, Parts cost +30%, Resale price −20%, Certification shorter than demand), and the **top pathways side by side**. The comparison opens by itself on a close call or Low confidence |
+| 5. Next best action: approval and enterprise handoff | The role's buttons (only here), required approval and responsible approver, the **target applications**, an **instruction preview before approval** (with *View raw payload*), handoff readiness and the **Enterprise handoff** timeline |
+
+| Steps 1 and 2 | What-if | Approval and handoff |
+|---|---|---|
+| [![Steps 1 and 2](docs/screenshots/flow-case-steps-1-2.webp)](docs/screenshots/flow-case-steps-1-2.webp) | [![What-if](docs/screenshots/flow-case-whatif.webp)](docs/screenshots/flow-case-whatif.webp) | [![Handoff](docs/screenshots/flow-case-handoff.webp)](docs/screenshots/flow-case-handoff.webp) |
 
 What each role can press:
 
@@ -239,8 +261,8 @@ What each role can press:
 | Planner: Submit for review | Approver: Approve, Override, Decline |
 |---|---|
 | [![Planner case](docs/screenshots/rbac-planner-case.webp)](docs/screenshots/rbac-planner-case.webp) | [![Approver case](docs/screenshots/rbac-approver-case.webp)](docs/screenshots/rbac-approver-case.webp) |
-| **Lower panels** | **Phone** |
-| [![Treatment, lower panels](docs/screenshots/treatment-bottom.webp)](docs/screenshots/treatment-bottom.webp) | [![Treatment on phone](docs/screenshots/treatment-phone.webp)](docs/screenshots/treatment-phone.webp) |
+| **Close call (RT-1094)** | **Phone** |
+| [![Close call](docs/screenshots/flow-case-neartie.webp)](docs/screenshots/flow-case-neartie.webp) | [![Treatment on phone](docs/screenshots/flow-phone-case.webp)](docs/screenshots/flow-phone-case.webp) |
 
 ### 6.6 Analytics: reconcile and learn
 
@@ -316,36 +338,48 @@ Roles that may look but not change see a **Read-only view** banner, and every fi
 
 **Purpose:** who can do what.
 
-- **Accounts and roles:** the eight demo accounts, their role, their tenants and their landing page.
+- **Accounts and roles:** the eleven demo accounts, their role, their tenants and their landing page.
+- **Identity and users** (simulated): how users and roles arrive from the customer's identity provider (for example Microsoft Entra ID). Setup order SSO → provisioning (SCIM) → role mapping, **Sync from directory**, App Roles or directory groups mapped to role, tenant and site (editable; membership is read-only), users from the directory with `example.com` addresses (there is no *Add user*; users are added in the identity provider), a simulated leaver, the escalation path, and **out-of-office delegation** to someone who already holds the Approver role.
+
+[![Identity and users](docs/screenshots/flow-identity.webp)](docs/screenshots/flow-identity.webp)
 - **Approver delegations:** tick or untick what the Approver may decide (decisions, MCP proposals, tenant access). The change takes effect straight away.
 - **All requests:** every tenant access request and MCP server proposal, with its status and who decided.
 
 [![Access page](docs/screenshots/rbac-admin-access.webp)](docs/screenshots/rbac-admin-access.webp)
 
+### 6.11 Process orchestration ("behind the screen")
+
+**For:** every role, read-only. **Purpose:** show how a recommendation is made. Ten stages, Start → Pull data → Data preparation → Evaluate gates → ML predictions → Optimise pool → Recommendation → Present for approval → Hand off to enterprise system → Retrieve actual outcome, each with its agent or service, source systems, status (done, active, failed, upstream failed, pending), start and end time and duration, for any case you can see. **Replay** animates the stages; **Simulate failure** shows how a failure stops what follows. A **run trace**, built from the audit trail and the agent call log, has one span per stage or tool call, with sensitive values redacted. Developer and Admin get links to the live call log.
+
+[![Process orchestration](docs/screenshots/flow-orchestration.webp)](docs/screenshots/flow-orchestration.webp)
+
 ## 7. Every screen for every role
 
 `●` full use · `R` read-only · `R+C` read-only plus comments · `—` not shown. Admin has `●` everywhere.
 
-| Screen | Planner | Approver | Engineer | Finance | Developer |
-|---|---|---|---|---|---|
-| **Command Center** (own view) | ● | ● with Approvals inbox | ● | ● with Outcomes to confirm | ● integration health only |
-| Product · Returned assets, Expected returns | ● own tenant | ● | ● | R | — |
-| Product · Pool optimizer | ● own tenant | ● | — | R | — |
-| Product · Asset intelligence | ● all tabs | ● all tabs | ● no Economic tab | ● economic tabs | — |
-| Product · Treatment Intelligence | ● Submit for review | ● Approve, Override, Decline | ● Record assessment | ● Confirm outcome | — |
-| Analytics · all business sections | R | ● | — | ● | — |
-| Analytics · Engineering economics, Sustainability | — | ● | ● | ● | — |
-| Integration · Workflow studio | — | — | — | — | ● |
-| Integration · Source map | — | — | R | R+C | ● |
-| Integration · Source tables, Canonical models | — | — | R | — | ● |
-| Integration · Event stream, Conflict queue | — | R | — | — | ● |
-| Integration · Manual import | — | — | — | — | ● |
-| MCP · Catalog, Agents, Permissions, Call log, As client | — | R | R | — | ● |
-| MCP · Playground | — | — | — | — | ● |
-| MCP · Server proposals | — | ● approve or decline | R | — | ● propose |
-| Audit · Fetch log, Evidence gaps | R own tenant | R | R | R+C | R+C |
-| Access | — | — | — | — | — |
-| Request access to another tenant | ● | — | — | — | — |
+| Screen | Executive | Warehouse Mgr | Planner | Approver | Engineer | Finance | Developer |
+|---|---|---|---|---|---|---|---|
+| **Command Center** (own view) | ● senior view, Notify | ● own warehouse | ● | ● with Approvals inbox | ● | ● with Outcomes to confirm | ● integration health only |
+| Command Center · Actions on me | — | ● | ● | ● | ● | ● | ● |
+| Command Center · Exceptions | ● with Notify | R own warehouse | — | — | — | — | — |
+| Product · Returned assets, Expected returns | R | R own warehouse | ● own tenant | ● | ● | R | — |
+| Product · Pool optimizer | — | — | ● own tenant | ● | — | R | — |
+| Product · Asset intelligence | R all tabs | R some tabs | ● all tabs | ● all tabs | ● no Economic tab | ● economic tabs | — |
+| Product · Treatment Intelligence | R | ● request evidence | ● Submit for review | ● Approve, Override, Decline | ● Record assessment | ● Confirm outcome | — |
+| Analytics · all business sections | R | — | R | ● | — | ● | — |
+| Analytics · Engineering economics, Sustainability | R | — | — | ● | ● | ● | — |
+| Integration · Workflow studio | — | — | — | — | — | — | ● |
+| Integration · Source map | — | — | — | — | R | R+C | ● |
+| Integration · Source tables, Canonical models | — | — | — | — | R | — | ● |
+| Integration · Event stream, Conflict queue | — | — | — | R | — | — | ● |
+| Integration · Manual import | — | — | — | — | — | — | ● |
+| MCP · Catalog, Agents, Permissions, Call log, As client | — | — | — | R | R | — | ● |
+| MCP · Playground | — | — | — | — | — | — | ● |
+| MCP · Server proposals | — | — | — | ● approve or decline | R | — | ● propose |
+| Process orchestration | R | R | R | R | R | R | R + call log |
+| Audit · Fetch log, Evidence gaps | R | R own warehouse | R own tenant | R | R | R+C | R+C |
+| Access (incl. Identity and users) | — | — | — | — | — | — | — |
+| Request access to another tenant | — | — | ● | — | — | — | — |
 
 Opening a page your role cannot see (for example from an old bookmark) takes you to your home page with a short message saying why. A link to another tenant's case says it belongs to another tenant.
 
@@ -361,13 +395,17 @@ Opening a page your role cannot see (for example from an old bookmark) takes you
 
 **Developer.** Lands on the Source map. Sees that Market pricing is stale (expired token) and Device telemetry is not connected; opens a failing workflow on the canvas to see which step broke. Tests a tool in the MCP Playground and **proposes a new MCP server** for review.
 
-**Admin.** Sees everything. Uses the **Access** page to decide what the Approver may approve. Unticking *MCP server proposals* removes those items from the Approver's inbox straight away.
+**Executive.** Lands on the senior view: $2.43M net recovery, +$652k uplift, 97% yield, then the ranked exceptions. Clicks **View cases** on a warehouse bottleneck, then **Notify owner**; the Warehouse Manager sees it in *Actions on me* and acknowledges it, and the exception shows *In hand by Warehouse Manager · Warehouse 1*.
+
+**Warehouse Manager.** Sees only Warehouse 1: actions on them (notifications, WMS acknowledgements pending, inbound returns from Contract Management), what waits for approval and what is with the enterprise systems.
+
+**Admin.** Sees everything. Uses the **Access** page to decide what the Approver may approve and to show how users and roles come from the identity provider. Unticking *MCP server proposals* removes those items from the Approver's inbox straight away.
 
 ## 9. Trust and governance
 
 | Principle | How the product shows it |
 |---|---|
-| **People decide, systems execute** | Anything that commits stock, spend or price stops for human approval (journey step 5). Write tools for agents sit behind a gate |
+| **People decide, enterprise systems carry out the work** | Circularity recommends and sends approved instructions; ERP, EAM and WMS carry out the work and report back. Anything that commits stock, spend or price stops for human approval (journey step 5), and the Approver sees the full instruction before approving. Write tools for agents sit behind a gate |
 | **Least privilege** | Each role sees only its own pages and controls. Controls a role can never use are not shown at all |
 | **Delegated authority** | Admin delegates approval rights to the Approver per scope, and can take them back at any time |
 | **Tenant isolation** | A Planner sees only their own customer until an Approver or Admin grants access |
@@ -384,11 +422,12 @@ Opening a page your role cannot see (for example from an old bookmark) takes you
 
 ### Five-minute executive pitch
 
-1. **Sign in as Admin.** "One view of every returned asset, and what it is worth." Show the Command Center: 128 assets, value at risk, *needs attention now*.
-2. **Click the Awaiting approval slice**, then open **RT-1048**. "Every route, every gate, the reason for the recommendation." Drag one what-if slider.
-3. **Open Analytics.** "This is what the decisions actually returned: +37% over sell-or-scrap, and the model learns from every outcome."
-4. **Open Integration → Source map.** "We sit on top of the systems you already run, SAP, Maximo, Salesforce, ServiceNow, and keep them in charge of their transactions."
-5. **Switch account to Planner · Customer A.** "Each person sees only their job and their customer." Then **Approver**: "and nothing commits money without a person deciding."
+1. **Sign in as Executive.** "Value realised, portfolio health and what needs attention, without scrolling." Show the exceptions; click **View cases**, then **Notify owner**.
+2. **Open RT-1048** and scroll down the five steps. "Where it stands, what we recommend, why, what if, and who approves what goes to ERP, EAM and WMS." Drag the *Preparation, parts and fees* slider and watch the what-if card.
+3. **Open Process orchestration.** "This is how the recommendation was made, stage by stage, and which agent did what."
+4. **Open Analytics.** "This is what the decisions actually returned: +37% over sell-or-scrap, and the model learns from every outcome."
+5. **Open Integration → Source map.** "We sit on top of the systems you already run, SAP, Maximo, Salesforce, ServiceNow, and keep them in charge of their transactions."
+6. **Switch account to Planner · Customer A.** "Each person sees only their job and their customer." Then **Approver**: "and nothing commits money without a person deciding."
 
 ### Three-minute role walk-through
 
@@ -422,7 +461,7 @@ For the Product Owner and engineering.
 | **Navigation** | Hash links such as `#/product/RT-1048` or `#/integration/map`, so every page and section can be bookmarked and the back button works |
 | **Access policy** | One block in `index.html`, between `/*RBAC-START*/` and `/*RBAC-END*/`: the roles, their pages, their permissions and the demo accounts. The menu, the page guard and the control filtering all read from it |
 | **Images** | Five unbranded product photos in `assets/products/`; prompts to regenerate them are in [`IMAGE_PROMPTS.md`](IMAGE_PROMPTS.md) |
-| **Quality checks** | An automated headless-browser suite (178 checks) covers sign-in, every page for every account, hidden controls, tenant lock, approvals, comments, cross-page numbers and data integrity. A second run checks every reachable page at phone width |
+| **Quality checks** | Two automated headless-browser suites (208 role checks and 110 guided-flow checks) cover sign-in, every page for every account, hidden controls, tenant lock, approvals, comments, cross-page numbers and data integrity. A second run checks every reachable page at phone width |
 
 **Repository map**
 
@@ -431,6 +470,7 @@ index.html                      the whole app
 README.md                       this product guide
 CHANGES.md                      release walk-throughs, one per update
 docs/PLAN_RBAC_ADAPTIVE_UI.md   role design, with the Product Owner's decisions (section 9)
+docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md   guided flow, senior and operational views, handoffs (Update 8)
 docs/screenshots/               every screenshot used in the docs
 assets/products/                product photos
 IMAGE_PROMPTS.md                how the product photos were made
@@ -440,11 +480,13 @@ IMAGE_PROMPTS.md                how the product photos were made
 
 | Real in the demo | Simulated |
 |---|---|
-| Every screen, interaction and role rule | Sign-in: demo accounts, no passwords, no real authentication |
+| Every screen, interaction and role rule | Sign-in: demo accounts, no passwords, no real authentication. Identity provider, directory sync and SCIM are simulated |
 | The decision logic: routes, gates, forecasts with ranges, pool allocation | All data: companies, assets, prices, volumes and results are synthetic |
 | Numbers that reconcile across every page | Connections: vendor and product names make the demo realistic, but nothing is connected |
 | Phone, tablet, dark mode and print layouts | Live activity: syncs, workflow runs and failures are simulated on a timer |
-| | Component health, part numbers, stock and some costs are modelled from grade, age and class, and are labelled as such |
+| The decision page logic: tie-breaker, confidence levels, instruction preview | Component health, part numbers, stock and some costs are modelled from grade, age and class, and are labelled as such |
+| | Notifications (nothing leaves the app), enterprise-system acknowledgements, orchestration timings, replay and failure simulation |
+| | Diagnostic metrics, RUL ranges, certified periods, order numbers and lease outcome probabilities are modelled and labelled |
 
 Nothing is saved to a server. All changes reset on refresh.
 
@@ -455,6 +497,8 @@ Nothing is saved to a server. All changes reset on refresh.
 - roles other than Planner see all tenants
 - the Developer and Admin can reply to Finance comments
 - the Access page lists the demo accounts but does not create new ones
+
+**From Update 8, still assumed** (see `docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md`, section 10): what the Executive may open (D2), "site" means the asset's current location (D5), notification recipients (D7), the tie-breaker threshold and factor order (D8, D18), a horizon longer than the certified period is Conditional (D10), lease outcome history exists (D19), Entra ID and SCIM (D20). The user journey diagram (D15) and the "increase the count of the rows" point (D12) are still to come.
 
 **For Legal review.** The role matrix (sections 4 and 7), the governance claims (section 9) and any access or compliance wording should be reviewed by Kinective's Legal team before client use.
 

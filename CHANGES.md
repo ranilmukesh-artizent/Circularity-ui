@@ -2,9 +2,66 @@
 
 For the product overview (what Circularity does, every screen and every role) read [`README.md`](README.md). This file is the reviewer walk-through, one section per update, newest first.
 
-Open `index.html`. The app now opens on a **sign-in screen** (Update 7): pick a demo account, and it opens on that role's home page. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
+Open `index.html`. The app opens on a **sign-in screen** (Update 7): pick a demo account, and it opens on that role's home page. Update 8 adds the **Executive** and **Warehouse Manager** accounts, the guided treatment page and **Process orchestration**. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
 
-**Quick links:** [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+**Quick links:** [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+
+---
+
+## Update 8: Guided decision flow, senior and operational views, enterprise handoffs
+
+**Why:** the Product Owner asked to *structure the flow*, so a viewer sees where a user starts, how they move and what outcome they get. The plan, the decisions taken and what is still assumed are in [`docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md`](docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md). Points marked **(assumed)** follow the plan's default until the Product Owner confirms them.
+
+> **Legal review.** This update adds roles, site scoping, identity-provider settings and positioning wording ("decision intelligence, not an execution system"). Kinective's Legal team should review the role matrix and that wording before it is used with clients.
+
+### What changed, where
+
+| Area | Where | What you see |
+|---|---|---|
+| **Wording and handoffs** (R8) | Everywhere | Circularity **recommends and sends approved instructions**; ERP, EAM and WMS **carry out the work** and report back. "Executing" is now **Handed off**, "Execution timeline" is **Enterprise handoff**, "Execution readiness" is **Handoff readiness**, the agent is the **Handoff Coordinator**. Every handoff step names its target system: Redeploy → **ERP · Order Management**, Refurbish or repair → **EAM · Diagnostic and Repair**, Return to stock → **WMS putaway** (legend under each handoff and on Process orchestration). Buttons: **Simulate system acknowledgement**, **Resend instruction**. Seeded approver names are now account labels |
+| **Expected returns** (R2) | Product → Expected returns | Derived from contract and lease expiry in the **Contract Management** application: Contract ID, Customer, Asset, Lease period, Contract expiry, **Likely outcome** with probability (assumed, D19), return window, Site, Planning range (also weighted by the chance of return), Source application. A row opens the contract and a lease timeline |
+| **Guided treatment page** (R6) | Any case, e.g. `#/product/RT-1048` | Five steps top to bottom with a sticky step bar: **1** asset and status (why, and what is outstanding), **2** recommended outcome, **3** why this outcome, **4** what-if and edge cases, **5** approval and enterprise handoff. The decision buttons now live only in step 5. Links such as `#/product/RT-1048?step=4` open a step |
+| **Condition → life → value** (R5) | Step 2 and Asset intelligence → Overview | A. diagnostic condition (e.g. *Winding insulation: Grade B*), B. **estimated RUL 30–40 months** next to the **certified operating period 24 months**, C. commercial value for that life with the matched order (*SO-48102 at Site 3*). The demand horizon is capped at the certified period; if demand needs longer, **Needs re-certification** and the route becomes Conditional (assumed, D10) |
+| **What-if result** (R3) | Step 4 | A large card: **Base net · Simulated net · Δ $ · Δ %**, ▲ ▼ with signs, the assumptions changed, and one sentence on the ranking. It updates on every slider move. **Apply to** one pathway; presets **Demand cancelled**, **Parts cost +30%**, **Resale price −20%**, **Certification shorter than demand** |
+| **Tie-breaker and comparison** (R4) | Steps 2–4 | When the top two are within 5% or $250, a **Close call** box names the deciding factor in order: risk/confidence, demand certainty, cycle time, RUL, carbon (assumed, D8). The rules are on screen. The **top pathways side by side** (base, simulated, Δ, the factors, rank) open by themselves on a close call or Low confidence. Confidence shows as **High / Medium / Low**, each saying what to do. Seeded recommendations are unchanged |
+| **Instruction preview** | Step 5 | Before approval the Approver sees what each target system will receive, plus **View raw payload**; after approval the sent payload matches it |
+| **Senior view** (R1) | New **Executive** account; Admin → *Senior* switch | Value figures on top (same as Finance), portfolio health, ranked **Exceptions** (value at risk by reason, warehouse bottlenecks, declining metrics, deteriorating condition) with **View cases** and **Notify owner**. *Show operational queues* reveals them read-only |
+| **Operational view** (R1) | Planner, Engineer, new **Warehouse Manager** | **Actions on me** first, then **Waiting for approval** (status only) and **Handed off · awaiting outcome** with target system, external reference and age. Planner and Engineer default to their home site and can widen it; the Warehouse Manager is locked to one warehouse everywhere |
+| **Notify** (D7) | Exceptions | Recipient prefilled by exception type (changeable). Creates an *Actions on me* item and an audit entry, nothing leaves the app (simulated). When the recipient acknowledges, the exception shows **In hand by …** |
+| **Process orchestration** (R7) | New menu item | Ten stages, each with agent or service, source systems, status, start, end and duration, for any case you can see; **Replay**, **Simulate failure at stage**, a run trace from the audit trail and call log with redacted values, and links to Audit, the event stream and (Developer, Admin) the live call log |
+| **Identity and users** (M1) | Access → Identity and users (Admin) | Identity provider card (Microsoft Entra ID as an example, simulated), SSO → SCIM → role mapping, **Sync from directory**, App Roles or groups mapped to role and site (editable; membership read-only), directory users with `example.com` addresses, a simulated leaver, escalation path and **out-of-office delegation** to an eligible Approver. The sign-in screen explains SSO in production |
+
+### Screenshots
+
+| Executive (senior view) | Warehouse Manager (operational) | Treatment page, steps 1–2 |
+|---|---|---|
+| [![Executive](docs/screenshots/flow-executive-command.webp)](docs/screenshots/flow-executive-command.webp) | [![Warehouse Manager](docs/screenshots/flow-wm-command.webp)](docs/screenshots/flow-wm-command.webp) | [![Steps 1–2](docs/screenshots/flow-case-steps-1-2.webp)](docs/screenshots/flow-case-steps-1-2.webp) |
+| **What-if** | **Close call (RT-1094)** | **Approval and handoff** |
+| [![What-if](docs/screenshots/flow-case-whatif.webp)](docs/screenshots/flow-case-whatif.webp) | [![Close call](docs/screenshots/flow-case-neartie.webp)](docs/screenshots/flow-case-neartie.webp) | [![Handoff](docs/screenshots/flow-case-handoff.webp)](docs/screenshots/flow-case-handoff.webp) |
+| **Process orchestration** | **Expected returns** | **Identity and users** |
+| [![Orchestration](docs/screenshots/flow-orchestration.webp)](docs/screenshots/flow-orchestration.webp) | [![Expected returns](docs/screenshots/flow-expected-returns.webp)](docs/screenshots/flow-expected-returns.webp) | [![Identity](docs/screenshots/flow-identity.webp)](docs/screenshots/flow-identity.webp) |
+| **Dark mode** | **Phone** | **Planner (operational)** |
+| [![Dark](docs/screenshots/flow-dark-executive.webp)](docs/screenshots/flow-dark-executive.webp) | [![Phone](docs/screenshots/flow-phone-case.webp)](docs/screenshots/flow-phone-case.webp) | [![Planner](docs/screenshots/flow-planner-command.webp)](docs/screenshots/flow-planner-command.webp) |
+
+### Try it (three minutes)
+
+1. Sign in as **Executive**. The value figures match Finance. In **Exceptions**, press **View cases** on *Warehouse bottleneck: Warehouse 1*, then **Notify owner** and send it to *Warehouse Manager · Warehouse 1*.
+2. **Switch account** to *Warehouse Manager · Warehouse 1*. The notification is first in **Actions on me**; press **Acknowledge**. Only Warehouse 1 cases appear anywhere. Switch back to Executive: the exception says *In hand by Warehouse Manager · Warehouse 1*.
+3. Sign in as **Approver** and open **RT-1048**. Read down: status and what is outstanding → *Redeploy · $9,600*, RUL 30–40 months against 24 certified, order SO-48102 at Site 3 → why → what-if. Drag **Preparation, parts and fees**: the card shows ▼ and the new net as you drag.
+4. Open **RT-1094**: the **Close call** box explains which factor decides, and the comparison is already open.
+5. In step 5 of RT-1048, read the **instruction preview** (ERP · Order Management first), then **Approve redeployment**. The **Enterprise handoff** names each target system.
+6. Open **Process orchestration**: RT-1048's stages, then **Replay** and **Simulate failure at stage 4**.
+7. As **Admin**, open **Access → Identity and users**: change a site mapping, press **Sync from directory**, and see both in the audit log. Use the **Senior / Operational** switch on the Command Center.
+
+### Checks
+
+- Existing role suite: **208 of 208** pass (the 178 earlier checks, updated only where this plan changes a label or adds a menu group, plus the two new roles in every loop).
+- New guided-flow suite: **110 of 110** pass: wording scan on every page for every account, expected-return columns and scope, five steps in order and decision buttons only in step 5 for every case, RUL range and certified period, what-if card maths and signs (under 16 ms), tie-breaker and comparison rules, all 128 recommendations unchanged, Executive KPIs equal Finance, Notify → Actions on me → In hand, handed-off count equals the lifecycle legend (38), Warehouse Manager scope in pages, search and audit, orchestration for every account, failure propagation and redaction, identity rules, instruction preview equals the sent payload, data invariants, no console errors.
+- Phone width (390 px): no sideways scroll on the new and changed screens.
+
+### Still assumed or open
+
+D2 and D5–D20 in the plan are still waiting for the Product Owner and are built on the defaults. The user journey diagram (D15) is not in the repo yet, and the "increase the count of the rows… with the same button" point (D12) is not built until it is clarified.
 
 ---
 
