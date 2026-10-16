@@ -13,7 +13,7 @@
 1. Open the demo with presenter mode on: `index.html?presenter=1` (or the hosted link with `?presenter=1`). Presenter mode adds two small shortcuts under the sign-in form and a quick switch in the account menu. It is remembered on that browser; `?presenter=0` turns it off.
 2. Use **light mode**, a browser window of about **1440 × 900**, and 100% zoom.
 3. If you were signed in, choose **Sign out** (account menu, top right). Refresh the page to reset all demo data.
-4. Have the slides ready: the Product Owner's **Typical User Journey** diagram ([`user-journey-diagram.png`](user-journey-diagram.png)) and, as a backup, the same ten boxes tagged with the screen that shows each one ([`journey-slide.svg`](journey-slide.svg)).
+4. Have the slides ready: the Product Owner's **Typical User Journey** diagram ([`user-journey-diagram.png`](user-journey-diagram.png)) and, as a backup, the same ten boxes tagged with the screen that shows each one ([`journey-slide.svg`](journey-slide.svg)). The user flow as built, including sign-in and the executive's notification, is [`user-flow.svg`](user-flow.svg) (editable Mermaid in [`user-flow.md`](user-flow.md)).
 
 **Without presenter mode**, type the IDs instead: `exec` for senior management, `ops` for the end user, `approver`, `finance`. Any password works.
 

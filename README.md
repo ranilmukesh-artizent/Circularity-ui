@@ -453,7 +453,7 @@ Sign in as `exec`, open **Warehouse 1** in *Exceptions by warehouse*, find **RT-
 | 6–9 | Send instruction → Action & return outcome | Step 5, *Enterprise handoff*: ERP, EAM and WMS acknowledge, the outcome comes back |
 | 10 | Reconcile & learn | Finance confirms the outcome; Analytics, *Predicted vs actual* |
 
-The stops follow the Product Owner's **Typical User Journey** diagram ([`docs/demo/user-journey-diagram.png`](docs/demo/user-journey-diagram.png)); each stop shows its box numbers and the journey strip lights the same boxes. The full script, with what to say, timings, recovery steps and Q&A notes, is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md); [`docs/demo/journey-slide.svg`](docs/demo/journey-slide.svg) is the same ten boxes, each tagged with the screen that shows it.
+The stops follow the Product Owner's **Typical User Journey** diagram ([`docs/demo/user-journey-diagram.png`](docs/demo/user-journey-diagram.png)); each stop shows its box numbers and the journey strip lights the same boxes. The full script, with what to say, timings, recovery steps and Q&A notes, is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md); [`docs/demo/journey-slide.svg`](docs/demo/journey-slide.svg) is the same ten boxes, each tagged with the screen that shows it, and [`docs/demo/user-flow.svg`](docs/demo/user-flow.svg) (Mermaid source: [`docs/demo/user-flow.md`](docs/demo/user-flow.md)) is the user flow as built, from sign-in to the reconciled outcome.
 
 ### Five-minute executive pitch
 
