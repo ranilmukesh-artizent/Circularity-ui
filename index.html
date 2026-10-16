@@ -69,19 +69,19 @@ button.pill:hover{background:var(--panel2)}
 .jstrip{display:flex;align-items:stretch;gap:0;padding:10px 24px;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto}
 .dprail{display:flex;align-items:center;gap:10px;padding:8px 24px;border-bottom:1px solid var(--line);background:var(--panel2);flex-wrap:wrap}
 .dprail .dpl{font:700 11.5px var(--f-display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
-.dprail ol{list-style:none;margin:0;padding:0;display:flex;gap:2px;flex:1;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.dprail ol::-webkit-scrollbar{display:none}
-.dprail li a{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 4px;border-radius:999px;text-decoration:none;color:var(--ink2);font-size:12.5px;white-space:nowrap;border:1px solid transparent}
+.dprail ol{list-style:none;margin:0;padding:0;display:flex;gap:2px;flex:1 1 100%;order:3;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.dphint{order:4}.dprail ol::-webkit-scrollbar{display:none}
+.dprail li a{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 7px 0 4px;border-radius:999px;text-decoration:none;color:var(--ink2);font-size:12.5px;white-space:nowrap;border:1px solid transparent}
 .dprail li a:hover{background:var(--panel);border-color:var(--line)}
-.dprail li a .n{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--panel3);color:var(--ink2);font:700 11px var(--f-display)}
+.dprail li a .n{min-width:20px;padding:0 5px;height:20px;border-radius:10px;display:grid;place-items:center;background:var(--panel3);color:var(--ink2);font:700 11px var(--f-display)}
 .dprail li a[aria-current=step]{background:var(--panel);border-color:var(--ink);color:var(--ink);font-weight:600}
 .dprail li a[aria-current=step] .n{background:var(--yellow);color:#141414}
 .dprail li.done a .n{background:var(--ink);color:var(--bg)}
-.dprail li+li::before{content:'›';color:var(--muted);margin:0 1px 0 0}
-.dprail li{display:flex;align-items:center}
+.dprail li+li::before{display:none}
+.dprail li{display:flex;align-items:center}.dprail li.st a:not([aria-current]) .t{display:none}.dprail li a{font-size:12px}
 .dprail .dpnav{display:flex;gap:6px;margin-left:auto}
 .dprail .dpcase{font-size:12px;color:var(--ink2);white-space:nowrap}
 .dphint{flex-basis:100%;font-size:12.5px;color:var(--ink2);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-@media (max-width:860px){.dprail{padding:8px 12px}.dprail li a .t{display:none}.dprail li a[aria-current=step] .t{display:inline}}
+@media (max-width:1100px){.dprail li a .t{display:none}.dprail li a[aria-current=step] .t{display:inline}}@media (max-width:860px){.dprail{padding:8px 12px}}
 tr.dpfocus>td{background:var(--yellow-soft)}
 .dpstart{margin-left:6px}
 .ntcall{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.ntcall .sp{flex:1}
@@ -1563,31 +1563,37 @@ const ICON={
  play:IC('<path d="m8 5 11 7-11 7z"/>'),
  flag:IC('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>')
 };
-const JSTEPS=[[1,'Supply evidence','ext','Enterprise systems supply inspection, history, eligibility, cost and stock'],[2,'Build alternatives','built','Retrieve and link evidence, check demand, define eligible treatments'],[3,'Predict outcomes','built','Predict price, sale likelihood, timing, repair cost and claims exposure'],[4,'Optimize plan','built','Compare net value across routes, timing and capacity'],[5,'Approve plan','human','A person reviews rationale and approves options, spend and sale terms'],[6,'Send instruction','built','Send the approved plan to EAM, ERP and sales applications; track acknowledgements'],[7,'Create work','ext','EAM work order, ERP reservation, CRM sale task'],[8,'Repair & certify','ext','Repairs and final tests recorded in EAM and quality systems'],[9,'Return outcome','ext','Status, receipts and actual costs return to Circularity'],[10,'Reconcile & learn','built','Link actuals to the decision, compare with forecasts, validate model improvements']];
+const JSTEPS=[[1,'Supply evidence','ext','Enterprise systems: EAM inspection and history, PLM and quality eligibility, ERP and WMS cost and stock'],[2,'Build alternatives','built','Retrieve and link evidence, check internal and external demand, define eligible treatments'],[3,'Predict outcomes','built','Predict price, sale likelihood, timing, repair cost and success, and claims exposure'],[4,'Optimize plan','built','Compare net economic value across routes, timing and capacity; select the plan'],[5,'Plan approval','human','Human in the loop: review rationale and alternatives; approve options, spend and sale terms'],[6,'Send instruction','built','Send the approved plan to EAM, ERP and sales applications; track acknowledgements'],[7,'Create execution work','ext','EAM repair work order, ERP parts and stock reservation, sales or CRM sale task'],[8,'Repair & certify','ext','Perform repairs and final tests; record results and certification in EAM and quality systems'],[9,'Action & return outcome','ext','Process the action; send status, receipts, actual costs and proceeds to Circularity'],[10,'Reconcile & learn','built','Link actuals to the decision, compare results with forecasts, validate model improvements']];
 const stp=(n)=>{const j=JSTEPS[n-1];return `<span class="stp ${j[2]==='built'?'':j[2]}" title="Journey step ${n}: ${esc(j[1])} — ${esc(j[3])}"><b>${n}</b>${esc(j[1])}</span>`};
 /* ===== Demo path: one record through the five screen movements of the business journey ===== */
 const DEMO_ID='RT-1048';
 const dpId=()=>S.dpCase||DEMO_ID;
 const hq=k=>{const m=new RegExp('[?&]'+k+'=([^&]*)').exec(location.hash);return m?decodeURIComponent(m[1]):null};
-/* provisional stop names until the Product Owner's block diagram arrives (E7); j = the journey steps each stop covers */
+/* stops follow the Product Owner's "Typical User Journey" diagram; b = the diagram boxes each screen shows */
 const DP_STOPS=[
- {n:1,t:'Return received',h:id=>'product/received?focus='+id,j:[1,2],say:'The returned asset arrives at the warehouse and appears in Returned assets.'},
- {n:2,t:'What we know',h:id=>'product/asset/'+id+'?zone=known',j:[1],say:'Retrieved from EAM, QMS, ERP and WMS: condition, certified period, history and specs.'},
- {n:3,t:'What we predict',h:id=>'product/asset/'+id+'?zone=predicted',j:[3,4],say:'Circularity predicts remaining life and value on each route, and recommends one.'},
- {n:4,t:'Decide and approve',h:id=>'product/'+id+'?step=2',j:[5],say:'Recommended outcome, why, what-if, then one person approves.'},
- {n:5,t:'Hand off and outcome',h:id=>'product/'+id+'?step=5',j:[6,7,8,9,10],say:'ERP, EAM and WMS carry out the work; the actual result comes back.'}];
+ {n:1,b:[],t:'Returned assets',h:id=>'product/received?focus='+id,say:'Start: the returned asset is in the warehouse and appears in Returned assets.'},
+ {n:2,b:[1],t:'Supply evidence',h:id=>'product/asset/'+id+'?zone=known',say:'Enterprise systems supply the evidence: EAM inspection and history, PLM and quality eligibility, ERP and WMS cost and stock.'},
+ {n:3,b:[2,3],t:'Build alternatives · Predict outcomes',h:id=>'product/asset/'+id+'?zone=predicted',say:'Circularity links the evidence, defines the eligible treatments and predicts life, value and cost for each.'},
+ {n:4,b:[4],t:'Optimize plan',h:id=>'product/'+id+'?step=2',say:'Compare net value across routes, timing and capacity, and select the plan.'},
+ {n:5,b:[5],t:'Plan approval',h:id=>'product/'+id+'?step=5',say:'Human in the loop: review the rationale and alternatives, then approve.'},
+ {n:6,b:[6,7,8,9],t:'Send instruction → Return outcome',h:id=>'product/'+id+'?step=5&at=handoff',say:'The approved plan goes to EAM, ERP and sales; they create the work, repair and certify, and send the outcome back.'},
+ {n:7,b:[10],t:'Reconcile & learn',h:id=>'analytics/predicted?dp='+id,say:'Actuals are linked to the decision and compared with the forecast, so the models improve.',need:()=>canPage('analytics','predicted')}];
+const dpBoxes=s=>s.b.length?(s.b.length>1?s.b[0]+'–'+s.b[s.b.length-1]:String(s.b[0])):'▶';
+const dpStops=()=>DP_STOPS.filter(s=>!s.need||s.need());
 const dpVisible=id=>{const c=CASE_BY_ID[id];return !!c&&!!S.acct&&tenantOK(c.owner)&&locOK(c)&&canPage('product','case')&&canPage('product','asset')};
-function dpStop(r){const id=dpId();if(!dpVisible(id)||r.page!=='product')return 0;
+function dpStop(r){const id=dpId();if(!dpVisible(id))return 0;
+  if(r.page==='analytics')return r.a==='predicted'&&hq('dp')===id&&canPage('analytics','predicted')?7:0;
+  if(r.page!=='product')return 0;
   if(r.a==='received'||(!r.a&&S.q.view!=='expected'))return 1;
   if(r.a==='asset'&&(r.b||rbLastAsset())===id)return hq('zone')==='predicted'?3:2;
-  if(r.a===id)return hq('step')==='5'?5:4;return 0}
+  if(r.a===id)return hq('at')==='handoff'?6:hq('step')==='5'?5:4;return 0}
 function dpHint(n,c){if(!presenterOn())return '';const st=c.stage,tip=(t,id,l)=>`<span class="dphint"><span>${t}</span>${ACCT(id)&&S.acct.id!==id?`<button class="btn sm" data-act="siSwitchTo" data-arg="${id}">Presenter: continue as ${esc(l)}</button>`:''}</span>`;
-  if(n>=4&&st==='awaiting_approval'&&!can('approve'))return tip(c.submitted||!can('submit')?'An Approver approves this decision.':'Submit it for review in step 5; an Approver then approves it.','approver','Approver');
-  if(n===5&&st==='closed'&&!c.outcome&&!can('confirm'))return tip('Finance confirms the reported outcome.','finance','Finance');
+  if(n>=5&&n<=6&&st==='awaiting_approval'&&!can('approve'))return tip(c.submitted||!can('submit')?'An Approver approves this decision.':'Submit it for review in step 5; an Approver then approves it.','approver','Approver');
+  if(n>=6&&st==='closed'&&!c.outcome&&!can('confirm'))return tip('Finance confirms the reported outcome.','finance','Finance');
   return ''}
-function dpRail(r){const n=dpStop(r);if(!n)return '';const id=dpId(),c=CASE_BY_ID[id],prev=DP_STOPS[n-2],next=DP_STOPS[n];
-  return `<nav class="dprail" id="dpRail" aria-label="Demo path for ${id}"><span class="dpl">Demo path</span><span class="dpcase" data-tip="${esc(asModel(c)+' · '+c.owner)}"><b>${id}</b></span>
-   <ol>${DP_STOPS.map(s=>`<li class="${s.n<n?'done':''}"><a href="#/${s.h(id)}" ${s.n===n?'aria-current="step"':''} data-tip="${esc(s.say+' Journey step'+(s.j.length>1?'s '+s.j[0]+'–'+s.j[s.j.length-1]:' '+s.j[0])+'.')}"><span class="n">${s.n}</span><span class="t">${esc(s.t)}</span></a></li>`).join('')}</ol>
+function dpRail(r){const n=dpStop(r);if(!n)return '';const id=dpId(),c=CASE_BY_ID[id],L=dpStops(),i=L.findIndex(s=>s.n===n),prev=L[i-1],next=L[i+1];
+  return `<nav class="dprail" id="dpRail" aria-label="Demo path for ${id}, following the user journey"><span class="dpl">Demo path · user journey</span><span class="dpcase" data-tip="${esc(asModel(c)+' · '+c.owner)}"><b>${id}</b> · ${esc(asModel(c))}</span>
+   <ol>${L.map(s=>`<li class="${s.n<n?'done':''} ${s.b.length?'':'st'}"><a href="#/${s.h(id)}" ${s.n===n?'aria-current="step"':''} data-tip="${esc(s.say+(s.b.length?' Journey box'+(s.b.length>1?'es ':' ')+dpBoxes(s)+'.':''))}"><span class="n" aria-label="${s.b.length?'Journey box'+(s.b.length>1?'es ':' ')+dpBoxes(s):'Start'}">${dpBoxes(s)}</span><span class="t">${esc(s.t)}</span></a></li>`).join('')}</ol>
    <span class="dpnav">${prev?`<a class="btn sm" href="#/${prev.h(id)}" id="dpBack" aria-label="Back: ${esc(prev.t)}">← Back</a>`:''}${next?`<a class="btn sm pri" href="#/${next.h(id)}" id="dpNext" aria-label="Next: ${esc(next.t)}" data-tip="Next: ${esc(next.t)}">Next →</a>`:`<a class="btn sm" href="#/${DP_STOPS[0].h(id)}" id="dpRestart">Start again</a>`}</span>${dpHint(n,c)}</nav>`}
 function journey(on){return `<nav class="jstrip" aria-label="Where this screen sits in the user journey"><span class="jl">Journey</span>${JSTEPS.map(j=>`<span class="jstep ${j[2]==='built'?'built':j[2]} ${on.includes(j[0])?'on':''}" title="Step ${j[0]}: ${esc(j[1])}. ${esc(j[3])}"><span class="n">${j[0]}</span>${on.includes(j[0])?esc(j[1]):''}</span>`).join('')}<span class="jkey"><span><i class="y"></i>Build</span><span><i class="w"></i>Integrate</span><span><i class="b"></i>Approve</span></span></nav>`}
 const stpn=(n)=>{const j=JSTEPS[n-1];return `<span class="stp ${j[2]==='built'?'':j[2]}" title="Journey step ${n}: ${esc(j[1])}"><b>${n}</b></span>`};
@@ -1945,7 +1951,7 @@ function route(keep){
   if((r.page==='product'?r.a:null)!==S.lastCase){S.lastCase=r.page==='product'?r.a:null;S.scenOpen=false;S.scen={purchase:1,cost:1,service:1,market:1,demandOff:false};S.xtab='why';if(S.ti){S.ti.apply='';S.ti.diffOnly=false}}
   const isCase=r.page==='product'&&r.a&&/^RT-/.test(r.a)&&CASE_BY_ID[r.a];
   const j=r.page==='product'&&isCase?[2,3,4,5,6]:r.page==='command'&&!canPage('product')?[1,6,7,8,9]:PAGES[r.page].j;
-  $('#jmount').innerHTML=dpRail(r)+journey(j);
+  {const d=dpStop(r),s=d&&DP_STOPS[d-1];$('#jmount').innerHTML=dpRail(r)+journey(s&&s.b.length?s.b:j)}
   const nc=$('#navcnt');if(nc)nc.textContent=visCases().filter(c=>c.stage==='awaiting_approval').length;
   const v=$('#view');
   try{v.innerHTML=({command:renderCommand,product:renderProduct,analytics:renderAnalytics,integration:renderIntegration,mcp:renderMcp,audit:renderAudit,orchestration:renderOrch,access:renderAccess})[r.page](r)}catch(err){console.error(err);v.innerHTML=`<div class="empty"><b>This view could not be drawn</b>${esc(err.message)}. Reload the page; your data is synthetic and regenerates identically.</div>`}
@@ -2066,7 +2072,7 @@ function openCase(id){const c=CASE_BY_ID[id];if(!c)return;
    <h4 style="margin:14px 0 4px">Evidence readiness <span class="note">${ready} of ${ev.length} ready</span></h4>${ev.map(evRow).join('')}
    ${c.blocked?`<div class="callout bad" style="margin-top:12px"><b>${esc(c.blocked.gateName)} gate</b><br>${esc(c.blocked.reason)}</div>`:''}`;
   const dp=c.id===dpId()&&dpVisible(c.id);
-  openDrawer(body,`${c.id} · ${esc(c.product)}`,`Returned asset · ${c.owner}`,dp?`<button class="btn" data-act="go" data-arg="product/${c.id}">Evaluate treatments</button><button class="btn pri" data-act="go" data-arg="${DP_STOPS[1].h(c.id)}">Next: What we know ${ICON.arrow}</button>`:`<button class="btn pri" data-act="go" data-arg="product/${c.id}">${c.blocked?'Open exception':'Evaluate selected asset'} ${ICON.arrow}</button>`);
+  openDrawer(body,`${c.id} · ${esc(c.product)}`,`Returned asset · ${c.owner}`,dp?`<button class="btn" data-act="go" data-arg="product/${c.id}">Evaluate treatments</button><button class="btn pri" data-act="go" data-arg="${DP_STOPS[1].h(c.id)}">Next: ${esc(DP_STOPS[1].t)} ${ICON.arrow}</button>`:`<button class="btn pri" data-act="go" data-arg="product/${c.id}">${c.blocked?'Open exception':'Evaluate selected asset'} ${ICON.arrow}</button>`);
 }
 ACT.expDetail=a=>{const e=EXPECTED.find(x=>x.id===a),src=SRC('lease')||{vendor:'—',freshMin:0},t0=+e.lease.start,t1=+e.expiry,t2=t1+12*864e5,pos=t=>Math.round((t-t0)/(t2-t0)*100);
   openDrawer(`<div class="callout">Conditional plan derived from contract <b class="mono">${e.contract}</b> in the Contract Management application. Nothing is reserved or promised until receipt and inspection establish actual availability.</div>
@@ -2220,7 +2226,7 @@ function execBlock(c){
   const r=c.chosen||c.recommendation;if(!r)return '';
   const steps=stepsOf(c),started=!!c.exec;
   const done=steps.filter(s=>s.state==='done').length;
-  return `<div class="panel" style="margin-top:16px"><div class="ph"><h3>Enterprise handoff</h3><span class="sp"></span>${[6,7,8,9].map(stpn).join('')}</div><div class="pb">
+  return `<div class="panel" id="tiHandoff" style="margin-top:16px"><div class="ph"><h3>Enterprise handoff</h3><span class="sp"></span>${[6,7,8,9].map(stpn).join('')}</div><div class="pb">
    ${started?'':`<div class="note" style="margin-bottom:8px">Starts after approval. Circularity sends the approved instruction; the target system carries out the work and reports back.</div>`}
    ${steps.map((s,i)=>`<div class="ev ${s.state==='done'?'':s.state==='active'?'partial':'missing'}" style="${s.state==='todo'||!started?'opacity:.62':''}"><span class="ic" aria-hidden="true" style="${s.state==='todo'||!started?'background:var(--panel3);color:var(--ink)':''}">${s.state==='done'?'✓':i+1}</span><div><b>${esc(s.label)} <span class="chip ${!started||s.state==='todo'?'line':s.state==='active'?'warn':'ok'}">${!started||s.state==='todo'?'Not sent':s.state==='active'?'Sent · awaiting acknowledgement':i===3?'Done':'Acknowledged'}</span></b><small>To <b>${esc(s.sys)}</b>${s.ack?` · external ref ${esc(s.ack.ref)} from ${esc(s.ack.by)}`:''}</small></div><em>${s.ack?fmtD(s.ack.at):''}</em></div>`).join('')}
    ${started?`<div class="row" style="margin-top:12px"><button class="btn sm" data-act="advance" data-arg="${c.id}" ${done>=4?'disabled':''}>Simulate system acknowledgement</button><button class="btn sm" data-act="replay" data-arg="${c.id}">Resend instruction</button><button class="btn sm ghost" data-act="viewInstr" data-arg="${c.id}">View payload</button></div>`:''}
@@ -2297,7 +2303,7 @@ ACT.dataChecks=()=>{const res=runInvariants(),ok=res.filter(r=>r.ok).length;
 function afterRender(r,keep){if(typeof wfPaint==='function'&&S.wf&&$('#wfView'))wfPaint();$$('[data-nk="product/asset"]').forEach(a=>a.setAttribute('href',navHref(NAV[1],'asset')));if(r&&!keep&&ANCH[r.page]&&r.a)setTimeout(()=>anchorScroll(r),30);
   if(r&&!keep&&r.page==='product'&&r.a==='asset'&&hq('zone')){const z=$(hq('zone')==='predicted'?'#aszPred':'#aszKnown');if(z)setTimeout(()=>z.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}),40)}
   if(r&&!keep&&r.page==='product'&&(!r.a||r.a==='received')){const f=hq('focus'),row=f&&$('#qr-'+f);if(row)setTimeout(()=>{if(row.getBoundingClientRect().bottom>innerHeight)row.scrollIntoView({block:'center'})},40)}
-  if(r&&!keep&&r.page==='product'&&r.a&&CASE_BY_ID[r.a]){const m=/[?&](?:step=(\d)|(explain))/.exec(location.hash);if(m)setTimeout(()=>m[1]?ACT.tiStep(m[1]):ACT.tiExplain(),40)}}
+  if(r&&!keep&&r.page==='product'&&r.a&&CASE_BY_ID[r.a]){const m=/[?&](?:step=(\d)|(explain))/.exec(location.hash);if(m)setTimeout(()=>{const ho=hq('at')==='handoff'&&$('#tiHandoff');if(ho)ho.scrollIntoView({block:'start'});else if(m[1])ACT.tiStep(m[1]);else ACT.tiExplain()},40)}}
 
 /* ===== Analytics · reconcile & learn ===== */
 const kfmt=n=>{const a=Math.abs(n),s=n<0?'−':'';return a>=1e6?s+'$'+(a/1e6).toFixed(2)+'M':a>=1e3?s+'$'+Math.round(a/1e3)+'k':s+'$'+Math.round(a)};
@@ -2862,8 +2868,8 @@ function asOverview(c,h){const ok=asTabOK,z=hq('zone'),ws=c.cls==='motor'||c.cls
    ok('economic')&&asPanel('Economic intelligence',asEcon(c)+asPredRoutes(c),'economic','',provB('mod','Prediction model')),
    ok('eligibility')&&asPanel('Eligibility and gates',asElig(c),'eligibility','',provB('rul','Gate engine')),
    ok('data')&&asPanel('Data and evidence quality',asQuality(c),'data','',provB('rul','Evidence scoring'))].filter(Boolean);
-  return `<div class="aszs"><div class="asz known ${z==='known'?'on':''}" id="aszKnown" aria-labelledby="aszKh"><header class="aszh"><span class="aszk">What we know</span><h2 id="aszKh">Retrieved from enterprise systems</h2><p class="note">Facts pulled from EAM, QMS, ERP, WMS and PLM. Each card names its source. Circularity reads these; it does not change them.</p></header>${L.join('')}</div>
-   <div class="asz pred ${z==='predicted'?'on':''}" id="aszPred" aria-labelledby="aszPh"><header class="aszh"><span class="aszk">What we predict</span><h2 id="aszPh">Predicted and computed by Circularity</h2><p class="note">Model estimates and rule results, each labelled with what produced it. Recommended routes and values appear only on this side.</p></header>${Rt.join('')}</div></div>`}
+  return `<div class="aszs"><div class="asz known ${z==='known'?'on':''}" id="aszKnown" aria-labelledby="aszKh"><header class="aszh"><span class="aszk">What we know · journey box 1, supply evidence</span><h2 id="aszKh">Retrieved from enterprise systems</h2><p class="note">Facts pulled from EAM, QMS, ERP, WMS and PLM. Each card names its source. Circularity reads these; it does not change them.</p></header>${L.join('')}</div>
+   <div class="asz pred ${z==='predicted'?'on':''}" id="aszPred" aria-labelledby="aszPh"><header class="aszh"><span class="aszk">What we predict · journey boxes 2–3, build alternatives and predict outcomes</span><h2 id="aszPh">Predicted and computed by Circularity</h2><p class="note">Model estimates and rule results, each labelled with what produced it. Recommended routes and values appear only on this side.</p></header>${Rt.join('')}</div></div>`}
 /* ---- focused tab views + compare ---- */
 const asTbl=(head,rows,cls)=>`<div class="tw"><table class="t static tight ${cls||''}"><thead><tr>${head.map(h=>`<th class="${h[1]||''}">${h[0]}</th>`).join('')}</tr></thead><tbody>${rows.join('')||`<tr><td colspan="${head.length}"><div class="empty"><b>Nothing to show</b></div></td></tr>`}</tbody></table></div>`;
 function asNet(x){return x.recommendation?x.recommendation.net:null}

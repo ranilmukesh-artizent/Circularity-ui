@@ -10,7 +10,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 |---|---|
 | **Try it** | Open the hosted demo at [ranilmukesh-artizent.github.io/Circularity-ui](https://ranilmukesh-artizent.github.io/Circularity-ui/), or open `index.html` from this folder in any browser. Nothing to install. |
 | **Sign in** | A normal sign-in form. Type `exec` (senior management) or `ops` (end user) and any password, or a work email such as `planner.b@northfield.example` (full list in section 4). Sign-in is simulated: nothing is checked and nothing leaves the browser. In production, users and roles come from the customer's identity provider (single sign-on). |
-| **The demo path** | One returned motor, **RT-1048**, from *Return received* to *Hand off and outcome* in five screens with **Next** and **Back**. The click-by-click script is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). |
+| **The demo path** | One returned motor, **RT-1048**, through the ten boxes of the *Typical User Journey* (supply evidence to reconcile and learn) with **Next** and **Back**. The click-by-click script is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). |
 | **Data** | Everything is **synthetic**. The demo company is *Northfield Industrial Leasing*, with three customer tenants and eight sites. No personal or customer data is used, and none should be entered. |
 | **What changed and when** | [`CHANGES.md`](CHANGES.md) has one walk-through per release. |
 
@@ -60,11 +60,11 @@ Every returned asset follows the same ten steps. The current step is shown in th
 | 2. Build alternatives | List every route the asset could take |
 | 3. Predict outcomes | Forecast value, cost, time, success chance and CO₂e for each route, with a range |
 | 4. Optimize plan | Allocate scarce assets and parts across competing demand, so nothing is promised twice |
-| 5. Approve plan | **A person decides.** Nothing that commits stock, spend or price happens without approval |
+| 5. Plan approval | **Human in the loop: a person decides.** Nothing that commits stock, spend or price happens without approval |
 | 6. Send instruction | Send the approved instruction to the system that owns the work |
-| 7. Create work | That system creates the work order, reservation or sale |
+| 7. Create execution work | That system creates the work order, reservation or sale |
 | 8. Repair and certify | The work is done and certified |
-| 9. Return outcome | The actual result comes back |
+| 9. Action and return outcome | The action is processed and the actual result, costs and proceeds come back |
 | 10. Reconcile and learn | Compare actual with forecast, and improve the next prediction |
 
 ### Seven routes and six gates
@@ -216,7 +216,7 @@ Planner and Engineer also get **Actions on me** as their first figure, and every
 [![Expected returns](docs/screenshots/flow-expected-returns.webp)](docs/screenshots/flow-expected-returns.webp)
 - Search and filter by condition, location, owner and assessment. Click a row to open its decision; click an asset ID to open Asset intelligence.
 - **Group by product** (next to the filters) folds the list into one row per product and customer, for example *Voltara V4 motor · Customer A · 15 units · grades A–D · $85,758 predicted*. Click a group to see its units.
-- The demo record **RT-1048** is marked **Start here**, and a **Demo path** bar under the top bar walks it through five screens (section 10). Notifications sent to you appear at the top of this page as well as in *Actions on me*.
+- The demo record **RT-1048** is marked **Start here**, and a **Demo path** bar under the top bar walks it through the ten journey boxes (section 10). Notifications sent to you appear at the top of this page as well as in *Actions on me*.
 
 [![Returned assets grouped by product](docs/screenshots/demo-sku-grouped.webp)](docs/screenshots/demo-sku-grouped.webp)
 
@@ -439,19 +439,21 @@ Opening a page your role cannot see (for example from an old bookmark) takes you
 
 ## 10. Demo scripts
 
-### The Monday demo path (one record, five screens)
+### The Monday demo path (one record, the ten journey boxes)
 
 Sign in as `exec`, open **Warehouse 1** in *Exceptions by warehouse*, find **RT-1048**, press **Notify owner** and send it to *Planner · Customer A*. Then sign in as `ops`: the notification is at the top of **Returned assets**, and RT-1048 is marked *Start here*. Follow the **Demo path** bar with **Next**:
 
-| # | Stop | Screen |
+| Stop | Journey box | Screen |
 |---|---|---|
-| 1 | Return received | Returned assets, RT-1048 highlighted |
-| 2 | What we know | Asset intelligence, left side: retrieved from EAM, QMS, ERP, WMS |
-| 3 | What we predict | Asset intelligence, right side: life, value and the recommended route |
-| 4 | Decide and approve | Treatment Intelligence, step 2 onwards |
-| 5 | Hand off and outcome | Step 5: instruction to ERP, EAM and WMS, acknowledgements, outcome |
+| ▶ | Start | Returned assets, RT-1048 highlighted |
+| 1 | Supply evidence | Asset intelligence, left side: retrieved from EAM, QMS, ERP, WMS, PLM |
+| 2–3 | Build alternatives · Predict outcomes | Asset intelligence, right side: eligible treatments, life, value |
+| 4 | Optimize plan | Treatment Intelligence, step 2 (and the comparison in step 4) |
+| 5 | Plan approval | Step 5: submit, then the Approver approves |
+| 6–9 | Send instruction → Action & return outcome | Step 5, *Enterprise handoff*: ERP, EAM and WMS acknowledge, the outcome comes back |
+| 10 | Reconcile & learn | Finance confirms the outcome; Analytics, *Predicted vs actual* |
 
-The stop names are provisional until the Product Owner's block diagram arrives. The full script, with what to say, timings, recovery steps and Q&A notes, is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md); the one-slide journey is [`docs/demo/journey-slide.svg`](docs/demo/journey-slide.svg).
+The stops follow the Product Owner's **Typical User Journey** diagram ([`docs/demo/user-journey-diagram.png`](docs/demo/user-journey-diagram.png)); each stop shows its box numbers and the journey strip lights the same boxes. The full script, with what to say, timings, recovery steps and Q&A notes, is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md); [`docs/demo/journey-slide.svg`](docs/demo/journey-slide.svg) is the same ten boxes, each tagged with the screen that shows it.
 
 ### Five-minute executive pitch
 
@@ -533,7 +535,7 @@ Nothing is saved to a server. All changes reset on refresh.
 
 **From Update 8, still assumed** (see `docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md`, section 10): what the Executive may open (D2), "site" means the asset's current location (D5), notification recipients (D7), the tie-breaker threshold and factor order (D8, D18), a horizon longer than the certified period is Conditional (D10), lease outcome history exists (D19), Entra ID and SCIM (D20). The user journey diagram (D15) and the "increase the count of the rows" point (D12) are still to come.
 
-**From Update 9, still assumed** (see `docs/PLAN_DEMO_SIGNIN_SINGLE_ASSET.md`, section 10): the two lead identities and where they land (E1, E2), the hidden role list and presenter shortcuts (E3, E4), the `northfield.example` IDs (E5), RT-1048 as the one record (E6), the five stop names (E7, waiting for the block diagram), exceptions grouped by warehouse first (E8), real unit counts instead of "100 units" (E9), production system names on the badges (E10), *Inspection findings* (E11), no sixth Executive figure (E12), and hosting (E13).
+**From Update 9, still assumed** (see `docs/PLAN_DEMO_SIGNIN_SINGLE_ASSET.md`, section 10): the two lead identities and where they land (E1, E2), the hidden role list and presenter shortcuts (E3, E4), the `northfield.example` IDs (E5), RT-1048 as the one record (E6), exceptions grouped by warehouse first (E8), real unit counts instead of "100 units" (E9), production system names on the badges (E10), *Inspection findings* (E11), no sixth Executive figure (E12), and hosting (E13).
 
 **For Legal review.** The role matrix (sections 4 and 7), the governance claims (section 9) and any access or compliance wording should be reviewed by Kinective's Legal team before client use.
 

@@ -1,84 +1,111 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="t d" font-family="'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif">
-  <title id="t">One returned asset, five steps</title>
-  <desc id="d">Business journey for a returned leased asset: Return received, What we know, What we predict, Decide and approve, Hand off and outcome. The demo follows one record, RT-1048, through these five steps. Synthetic demo data.</desc>
-  <rect width="1600" height="900" fill="#FAF8F5"/>
-  <rect x="0" y="0" width="1600" height="10" fill="#FFDD00"/>
-
-  <text x="80" y="92" font-size="42" font-weight="800" fill="#141414">When a leased asset comes back,</text>
-  <text x="80" y="144" font-size="42" font-weight="800" fill="#141414">what is it worth, and what should happen to it?</text>
-  <text x="80" y="198" font-size="22" fill="#4B4541">Today separate teams sell it or scrap it, and nobody sees the value left behind. Circularity follows each returned unit through five steps.</text>
-
-  <!-- arrows -->
-  <g fill="none" stroke="#141414" stroke-width="3">
-    <path d="M374 400 H402"/><path d="M660 400 H688"/><path d="M946 400 H974"/><path d="M1232 400 H1260"/>
-  </g>
-  <g fill="#141414">
-    <path d="M402 392 L414 400 L402 408 Z"/><path d="M688 392 L700 400 L688 408 Z"/><path d="M974 392 L986 400 L974 408 Z"/><path d="M1260 392 L1272 400 L1260 408 Z"/>
-  </g>
-
-  <!-- 1 -->
-  <g>
-    <rect x="80" y="250" width="294" height="300" rx="18" fill="#FFFFFF" stroke="rgba(20,20,20,.18)" stroke-width="2"/>
-    <circle cx="124" cy="296" r="22" fill="#141414"/><text x="124" y="304" text-anchor="middle" font-size="22" font-weight="800" fill="#FFFFFF">1</text>
-    <text x="104" y="360" font-size="25" font-weight="800" fill="#141414">Return received</text>
-    <text x="104" y="398" font-size="19" fill="#4B4541">The asset arrives at</text>
-    <text x="104" y="424" font-size="19" fill="#4B4541">the warehouse and joins</text>
-    <text x="104" y="450" font-size="19" fill="#4B4541">the returned assets.</text>
-    <text x="104" y="520" font-size="16" font-weight="700" fill="#7B726D">END USER · WMS</text>
-  </g>
-  <!-- 2 -->
-  <g>
-    <rect x="416" y="250" width="244" height="300" rx="18" fill="#FFFFFF" stroke="rgba(20,20,20,.18)" stroke-width="2"/>
-    <circle cx="460" cy="296" r="22" fill="#141414"/><text x="460" y="304" text-anchor="middle" font-size="22" font-weight="800" fill="#FFFFFF">2</text>
-    <text x="440" y="360" font-size="25" font-weight="800" fill="#141414">What we know</text>
-    <text x="440" y="398" font-size="19" fill="#4B4541">Condition, certified</text>
-    <text x="440" y="424" font-size="19" fill="#4B4541">period, history and</text>
-    <text x="440" y="450" font-size="19" fill="#4B4541">specs, retrieved.</text>
-    <text x="440" y="520" font-size="16" font-weight="700" fill="#7B726D">EAM · QMS · ERP · WMS</text>
-  </g>
-  <!-- 3 -->
-  <g>
-    <rect x="702" y="250" width="244" height="300" rx="18" fill="#FBF3D8" stroke="#FFDD00" stroke-width="3"/>
-    <circle cx="746" cy="296" r="22" fill="#FFDD00"/><text x="746" y="304" text-anchor="middle" font-size="22" font-weight="800" fill="#141414">3</text>
-    <text x="726" y="360" font-size="25" font-weight="800" fill="#141414">What we predict</text>
-    <text x="726" y="398" font-size="19" fill="#4B4541">Remaining life, value</text>
-    <text x="726" y="424" font-size="19" fill="#4B4541">on each route, and the</text>
-    <text x="726" y="450" font-size="19" fill="#4B4541">best next use.</text>
-    <text x="726" y="520" font-size="16" font-weight="700" fill="#7B726D">CIRCULARITY MODELS</text>
-  </g>
-  <!-- 4 -->
-  <g>
-    <rect x="988" y="250" width="244" height="300" rx="18" fill="#FFFFFF" stroke="rgba(20,20,20,.18)" stroke-width="2"/>
-    <circle cx="1032" cy="296" r="22" fill="#141414"/><text x="1032" y="304" text-anchor="middle" font-size="22" font-weight="800" fill="#FFFFFF">4</text>
-    <text x="1012" y="360" font-size="25" font-weight="800" fill="#141414">Decide and</text>
-    <text x="1012" y="394" font-size="25" font-weight="800" fill="#141414">approve</text>
-    <text x="1012" y="432" font-size="19" fill="#4B4541">Why, what-if, and one</text>
-    <text x="1012" y="458" font-size="19" fill="#4B4541">person approves.</text>
-    <text x="1012" y="520" font-size="16" font-weight="700" fill="#7B726D">PLANNER · APPROVER</text>
-  </g>
-  <!-- 5 -->
-  <g>
-    <rect x="1274" y="250" width="246" height="300" rx="18" fill="#141414"/>
-    <circle cx="1318" cy="296" r="22" fill="#FFDD00"/><text x="1318" y="304" text-anchor="middle" font-size="22" font-weight="800" fill="#141414">5</text>
-    <text x="1298" y="360" font-size="25" font-weight="800" fill="#FFFFFF">Hand off and</text>
-    <text x="1298" y="394" font-size="25" font-weight="800" fill="#FFFFFF">outcome</text>
-    <text x="1298" y="432" font-size="19" fill="#E9E3DB">ERP, EAM and WMS do</text>
-    <text x="1298" y="458" font-size="19" fill="#E9E3DB">the work; the result</text>
-    <text x="1298" y="484" font-size="19" fill="#E9E3DB">comes back.</text>
-    <text x="1298" y="520" font-size="16" font-weight="700" fill="#9C9189">ERP · EAM · WMS · FINANCE</text>
-  </g>
-
-  <!-- retrieved vs predicted band -->
-  <rect x="416" y="580" width="244" height="44" rx="10" fill="#FFFFFF" stroke="rgba(20,20,20,.18)"/>
-  <text x="538" y="609" text-anchor="middle" font-size="18" font-weight="700" fill="#4B4541">Retrieved</text>
-  <rect x="702" y="580" width="244" height="44" rx="10" fill="#141414"/>
-  <text x="824" y="609" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">Predicted</text>
-
-  <!-- the record -->
-  <rect x="80" y="680" width="1440" height="120" rx="18" fill="#FFFFFF" stroke="rgba(20,20,20,.11)" stroke-width="2"/>
-  <text x="112" y="728" font-size="18" font-weight="700" fill="#7B726D">IN THE DEMO, ONE RECORD THROUGHOUT</text>
-  <text x="112" y="770" font-size="26" font-weight="800" fill="#141414">RT-1048 · Voltara V4 motor · Customer A · Warehouse 1</text>
-  <text x="840" y="770" font-size="22" fill="#4B4541">Grade B · 30–40 months left · Redeploy to Site 3 · $9,600</text>
-
-  <text x="80" y="860" font-size="16" fill="#7B726D">Step names are provisional until confirmed against the Product Owner's journey diagram. Demo data is synthetic.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="t d" font-family="'Inter','Segoe UI',system-ui,sans-serif">
+<title id="t">The demo follows the typical user journey</title>
+<desc id="d">The ten boxes of the Product Owner's Typical User Journey, each labelled with the screen that shows it for the demo record RT-1048. Synthetic demo data.</desc>
+<rect width="1600" height="900" fill="#EEE8E1"/>
+<text x="80" y="92" font-size="40" font-weight="800" fill="#141414">Typical user journey, one asset through the demo</text>
+<text x="80" y="138" font-size="21" fill="#4B4541">RT-1048 · Voltara V4 motor · Customer A · Warehouse 1. The tag under each box names the screen that shows it.</text>
+<text x="80" y="186" font-size="17" font-weight="700" fill="#7B726D">START · RETURNED ASSETS (RT-1048 marked Start here)</text>
+<path d="M348 325.0 L372 325.0" stroke="#141414" stroke-width="2.5" fill="none"/>
+<path d="M372 319.0 L378 325.0 L372 331.0 Z" fill="#141414"/>
+<path d="M646 325.0 L670 325.0" stroke="#141414" stroke-width="2.5" fill="none"/>
+<path d="M670 319.0 L676 325.0 L670 331.0 Z" fill="#141414"/>
+<path d="M944 325.0 L968 325.0" stroke="#141414" stroke-width="2.5" fill="none"/>
+<path d="M968 319.0 L974 325.0 L968 331.0 Z" fill="#141414"/>
+<path d="M1242 325.0 L1266 325.0" stroke="#141414" stroke-width="2.5" fill="none"/>
+<path d="M1266 319.0 L1272 325.0 L1266 331.0 Z" fill="#141414"/>
+<path d="M1272 655.0 L1248 655.0" stroke="#141414" stroke-width="2.5" fill="none"/>
+<path d="M1248 649.0 L1242 655.0 L1248 661.0 Z" fill="#141414"/>
+<path d="M974 655.0 L950 655.0" stroke="#141414" stroke-width="2.5" fill="none"/>
+<path d="M950 649.0 L944 655.0 L950 661.0 Z" fill="#141414"/>
+<path d="M676 655.0 L652 655.0" stroke="#141414" stroke-width="2.5" fill="none"/>
+<path d="M652 649.0 L646 655.0 L652 661.0 Z" fill="#141414"/>
+<path d="M378 655.0 L354 655.0" stroke="#141414" stroke-width="2.5" fill="none"/>
+<path d="M354 649.0 L348 655.0 L354 661.0 Z" fill="#141414"/>
+<path d="M1406.0 472 L1406.0 554" stroke="#141414" stroke-width="2.5" fill="none"/>
+<path d="M1400.0 554 L1406.0 560 L1412.0 554 Z" fill="#141414"/>
+<rect x="80" y="230" width="268" height="190" fill="#FFFFFF" stroke="#141414" stroke-width="2"/>
+<text x="94" y="258" font-size="14" font-weight="700" fill="#141414">ENTERPRISE SYSTEMS</text>
+<text x="94" y="294" font-size="21" font-weight="800" fill="#141414">1. Supply evidence</text>
+<text x="94" y="327" font-size="15" fill="#3B3633">EAM inspection and history, PLM</text>
+<text x="94" y="347" font-size="15" fill="#3B3633">and quality eligibility, ERP</text>
+<text x="94" y="367" font-size="15" fill="#3B3633">and WMS cost and stock</text>
+<rect x="80" y="430" width="268" height="34" rx="17" fill="#141414"/>
+<text x="214.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Asset intelligence · what we know</text>
+<rect x="378" y="230" width="268" height="190" fill="#FFDD00" stroke="#141414" stroke-width="2"/>
+<text x="392" y="258" font-size="14" font-weight="700" fill="#141414">CIRCULARITY</text>
+<text x="392" y="294" font-size="21" font-weight="800" fill="#141414">2. Build</text>
+<text x="392" y="321" font-size="21" font-weight="800" fill="#141414">alternatives</text>
+<text x="392" y="354" font-size="15" fill="#3B3633">Link evidence, check internal</text>
+<text x="392" y="374" font-size="15" fill="#3B3633">and external demand, define</text>
+<text x="392" y="394" font-size="15" fill="#3B3633">eligible treatments</text>
+<rect x="378" y="430" width="268" height="34" rx="17" fill="#141414"/>
+<text x="512.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Asset intelligence · what we predict</text>
+<rect x="676" y="230" width="268" height="190" fill="#FFDD00" stroke="#141414" stroke-width="2"/>
+<text x="690" y="258" font-size="14" font-weight="700" fill="#141414">CIRCULARITY</text>
+<text x="690" y="294" font-size="21" font-weight="800" fill="#141414">3. Predict outcomes</text>
+<text x="690" y="327" font-size="15" fill="#3B3633">Price, sale likelihood, timing,</text>
+<text x="690" y="347" font-size="15" fill="#3B3633">repair cost and success, claims</text>
+<text x="690" y="367" font-size="15" fill="#3B3633">exposure</text>
+<rect x="676" y="430" width="268" height="34" rx="17" fill="#141414"/>
+<text x="810.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Asset intelligence · what we predict</text>
+<rect x="974" y="230" width="268" height="190" fill="#FFDD00" stroke="#141414" stroke-width="2"/>
+<text x="988" y="258" font-size="14" font-weight="700" fill="#141414">CIRCULARITY</text>
+<text x="988" y="294" font-size="21" font-weight="800" fill="#141414">4. Optimize plan</text>
+<text x="988" y="327" font-size="15" fill="#3B3633">Compare net value across</text>
+<text x="988" y="347" font-size="15" fill="#3B3633">routes, timing and capacity;</text>
+<text x="988" y="367" font-size="15" fill="#3B3633">select the plan</text>
+<rect x="974" y="430" width="268" height="34" rx="17" fill="#141414"/>
+<text x="1108.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Treatment Intelligence · step 2</text>
+<rect x="1272" y="230" width="268" height="190" fill="#FFFFFF" stroke="#141414" stroke-width="2"/>
+<text x="1286" y="258" font-size="14" font-weight="700" fill="#141414">HUMAN IN THE LOOP</text>
+<text x="1286" y="294" font-size="21" font-weight="800" fill="#141414">5. Plan approval</text>
+<text x="1286" y="327" font-size="15" fill="#3B3633">Review rationale and</text>
+<text x="1286" y="347" font-size="15" fill="#3B3633">alternatives; approve options,</text>
+<text x="1286" y="367" font-size="15" fill="#3B3633">spend and terms</text>
+<rect x="1272" y="430" width="268" height="34" rx="17" fill="#141414"/>
+<text x="1406.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Step 5 · approve</text>
+<rect x="1272" y="560" width="268" height="190" fill="#FFDD00" stroke="#141414" stroke-width="2"/>
+<text x="1286" y="588" font-size="14" font-weight="700" fill="#141414">CIRCULARITY</text>
+<text x="1286" y="624" font-size="21" font-weight="800" fill="#141414">6. Send instruction</text>
+<text x="1286" y="657" font-size="15" fill="#3B3633">Send the approved plan to EAM,</text>
+<text x="1286" y="677" font-size="15" fill="#3B3633">ERP and sales; track</text>
+<text x="1286" y="697" font-size="15" fill="#3B3633">acknowledgements</text>
+<rect x="1272" y="760" width="268" height="34" rx="17" fill="#141414"/>
+<text x="1406.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Step 5 · enterprise handoff</text>
+<rect x="974" y="560" width="268" height="190" fill="#FFFFFF" stroke="#141414" stroke-width="2"/>
+<text x="988" y="588" font-size="14" font-weight="700" fill="#141414">ENTERPRISE SYSTEMS</text>
+<text x="988" y="624" font-size="21" font-weight="800" fill="#141414">7. Create execution</text>
+<text x="988" y="651" font-size="21" font-weight="800" fill="#141414">work</text>
+<text x="988" y="684" font-size="15" fill="#3B3633">EAM work order, ERP parts and</text>
+<text x="988" y="704" font-size="15" fill="#3B3633">stock reservation, CRM sale</text>
+<text x="988" y="724" font-size="15" fill="#3B3633">task</text>
+<rect x="974" y="760" width="268" height="34" rx="17" fill="#141414"/>
+<text x="1108.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Handoff · ERP, EAM acknowledge</text>
+<rect x="676" y="560" width="268" height="190" fill="#FFFFFF" stroke="#141414" stroke-width="2"/>
+<text x="690" y="588" font-size="14" font-weight="700" fill="#141414">ENTERPRISE SYSTEMS</text>
+<text x="690" y="624" font-size="21" font-weight="800" fill="#141414">8. Repair &amp; certify</text>
+<text x="690" y="657" font-size="15" fill="#3B3633">Repairs and final tests,</text>
+<text x="690" y="677" font-size="15" fill="#3B3633">recorded in EAM and quality</text>
+<text x="690" y="697" font-size="15" fill="#3B3633">systems</text>
+<rect x="676" y="760" width="268" height="34" rx="17" fill="#141414"/>
+<text x="810.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Handoff · EAM acknowledges</text>
+<rect x="378" y="560" width="268" height="190" fill="#FFFFFF" stroke="#141414" stroke-width="2"/>
+<text x="392" y="588" font-size="14" font-weight="700" fill="#141414">ENTERPRISE SYSTEMS</text>
+<text x="392" y="624" font-size="21" font-weight="800" fill="#141414">9. Action &amp; return</text>
+<text x="392" y="651" font-size="21" font-weight="800" fill="#141414">outcome</text>
+<text x="392" y="684" font-size="15" fill="#3B3633">Status, receipts, actual costs</text>
+<text x="392" y="704" font-size="15" fill="#3B3633">and proceeds sent to</text>
+<text x="392" y="724" font-size="15" fill="#3B3633">Circularity</text>
+<rect x="378" y="760" width="268" height="34" rx="17" fill="#141414"/>
+<text x="512.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Handoff · outcome reported</text>
+<rect x="80" y="560" width="268" height="190" fill="#FFDD00" stroke="#141414" stroke-width="2"/>
+<text x="94" y="588" font-size="14" font-weight="700" fill="#141414">CIRCULARITY</text>
+<text x="94" y="624" font-size="21" font-weight="800" fill="#141414">10. Reconcile &amp;</text>
+<text x="94" y="651" font-size="21" font-weight="800" fill="#141414">learn</text>
+<text x="94" y="684" font-size="15" fill="#3B3633">Link actuals to the decision,</text>
+<text x="94" y="704" font-size="15" fill="#3B3633">compare with forecasts, improve</text>
+<text x="94" y="724" font-size="15" fill="#3B3633">models</text>
+<rect x="80" y="760" width="268" height="34" rx="17" fill="#141414"/>
+<text x="214.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Finance confirms · Analytics</text>
+<text x="80" y="868" font-size="15" fill="#7B726D">Box names follow the Product Owner's Typical User Journey diagram. Demo data is synthetic; enterprise-system steps are simulated acknowledgements.</text>
 </svg>

@@ -2,7 +2,7 @@
 
 **Purpose of this file:** a self-contained brief for a fresh session. It does not assume any earlier conversation. Read it top to bottom, then start at **Phase 0**.
 
-**Status:** built on branch `feature/demo-refactor` (2026-10-16), phases 1–6, with every open decision on its default and marked **(assumed)**; see section 10 and `CHANGES.md` Update 9. Not pushed or merged. Still to do: the block diagram (E7), hosting (E13), the sales video.
+**Status:** built on branch `feature/demo-refactor` (2026-10-16), phases 1–6, with every open decision on its default and marked **(assumed)**; see section 10 and `CHANGES.md` Update 9. Not pushed or merged. Still to do: hosting (E13), the sales video. The block diagram (E7) arrived and the demo path follows it.
 
 **Original status:** draft, not started (2026-10-16). Source: the team review call of 2026-10-16 (Product Owner, a senior reviewer, and the build team), its transcript, and the first-draft spec `docs/Refactor Guided Flow.md`, which this plan refines and replaces. Open decisions are in **section 3**. Each has a recommended default; until the Product Owner answers, build the default and label it **(assumed)**.
 
@@ -283,7 +283,7 @@ Run both existing suites unchanged except where this plan deliberately changes a
 | E4 | (assumed) Quick-fill chips only with `?presenter=1`; datalist offers the demo IDs | `presenterOn`, `signInFormHTML`, `dpHint` |
 | E5 | (assumed) `@northfield.example` plus aliases `exec`, `ops`, `user` and role names; any non-empty password | `SIGNIN_IDS`, `signInResolve` |
 | E6 | (assumed) RT-1048 | `DEMO_ID` |
-| E7 | **open**: provisional names until the diagram arrives | `DP_STOPS`, `docs/demo/journey-slide.svg` |
+| E7 | **Answered 16 Oct**: the Typical User Journey diagram (`docs/demo/user-journey-diagram.png`). Seven stops: start, box 1, boxes 2–3, 4, 5, 6–9, 10; journey strip renamed to the diagram's wording | `DP_STOPS`, `JSTEPS`, `docs/demo/journey-slide.svg` |
 | E8 | (assumed) Warehouse first, one row per warehouse × type, Portfolio last | `ccExRows`, `ccExHTML` |
 | E9 | (assumed) Real counts (15 Voltara V4 motors for Customer A) | `skuStrip`, `skuUnits` |
 | E10 | (assumed) Badges name the production system; *Demo data* pill and sign-in footer say it is synthetic | `provB` |
