@@ -67,6 +67,24 @@ button.pill:hover{background:var(--panel2)}
 .iconbtn:hover{background:var(--panel2)}.iconbtn svg{width:17px;height:17px}
 /* journey strip */
 .jstrip{display:flex;align-items:stretch;gap:0;padding:10px 24px;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto}
+.dprail{display:flex;align-items:center;gap:10px;padding:8px 24px;border-bottom:1px solid var(--line);background:var(--panel2);flex-wrap:wrap}
+.dprail .dpl{font:700 11.5px var(--f-display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
+.dprail ol{list-style:none;margin:0;padding:0;display:flex;gap:2px;flex:1;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.dprail ol::-webkit-scrollbar{display:none}
+.dprail li a{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 4px;border-radius:999px;text-decoration:none;color:var(--ink2);font-size:12.5px;white-space:nowrap;border:1px solid transparent}
+.dprail li a:hover{background:var(--panel);border-color:var(--line)}
+.dprail li a .n{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--panel3);color:var(--ink2);font:700 11px var(--f-display)}
+.dprail li a[aria-current=step]{background:var(--panel);border-color:var(--ink);color:var(--ink);font-weight:600}
+.dprail li a[aria-current=step] .n{background:var(--yellow);color:#141414}
+.dprail li.done a .n{background:var(--ink);color:var(--bg)}
+.dprail li+li::before{content:'›';color:var(--muted);margin:0 1px 0 0}
+.dprail li{display:flex;align-items:center}
+.dprail .dpnav{display:flex;gap:6px;margin-left:auto}
+.dprail .dpcase{font-size:12px;color:var(--ink2);white-space:nowrap}
+.dphint{flex-basis:100%;font-size:12.5px;color:var(--ink2);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (max-width:860px){.dprail{padding:8px 12px}.dprail li a .t{display:none}.dprail li a[aria-current=step] .t{display:inline}}
+tr.dpfocus>td{background:var(--yellow-soft)}
+.dpstart{margin-left:6px}
+.ntcall{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.ntcall .sp{flex:1}
 .jstrip .jl{font-size:12px;color:var(--muted);align-self:center;padding-right:14px;white-space:nowrap}
 .jstep{display:flex;align-items:center;gap:7px;padding:5px 10px 5px 6px;border:1px solid var(--line);border-left-width:0;font-size:12px;white-space:nowrap;color:var(--muted);background:transparent;position:relative}
 .jstep:first-of-type{border-left-width:1px;border-radius:6px 0 0 6px}.jstep:last-of-type{border-radius:0 6px 6px 0}
@@ -607,7 +625,31 @@ ul.impact{margin:0 0 14px;padding-left:18px;color:var(--ink2)}ul.impact li{margi
 
 .as .aspn+.aspn{margin-top:14px}.as #asBody>.aspn{margin-bottom:14px}.as #asBody>.aspn+.aspn{margin-top:0}
 .asg2 .aspn+.aspn{margin-top:0!important}
-.asg2.r1b{grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-bottom:14px}.asg2.r1c{grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-bottom:14px}
+.asg2.r1b{grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-bottom:14px}
+.aszs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.asz{container-type:inline-size;container-name:asz;display:grid;gap:14px;align-content:start;min-width:0;border-radius:12px;padding:12px;border:1px solid var(--line2);background:var(--panel2)}
+.asz.pred{background:var(--yellow-soft);border-color:color-mix(in srgb,var(--yellow) 40%,transparent)}
+.asz.on{outline:2px solid var(--ink);outline-offset:2px}:root[data-theme="dark"] .asz.on{outline-color:var(--yellow)}
+.aszh{display:grid;gap:2px;padding:2px 4px 0}.aszh h2{font:800 17px var(--f-display);margin:0}.aszh p{margin:0}
+.aszk{font:700 11px var(--f-display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.asz .aspn{margin:0!important}
+.asz2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.aszb{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:11px;font-size:11.5px;font-weight:600;white-space:nowrap;cursor:help;flex:none}
+.aszb.ret{border:1px solid var(--line);color:var(--ink2);background:var(--panel)}
+.aszb.mod{background:var(--ink);color:var(--bg)}
+.aszb.rul{background:var(--info-soft);color:var(--info);border:1px dashed var(--line)}
+.panel>.ph .aszb{margin-left:auto}.panel>.ph .aszb+.lnk{margin-left:10px}
+.asfig{display:grid;gap:2px}.asfig b.big{font:800 22px var(--f-display)}
+.asrec{display:grid;gap:6px}.asrect{font:800 18px var(--f-display)}.asrecv{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.asrecv b{font:800 24px var(--f-display)}
+.asrh{list-style:none;margin:0;padding:0;display:grid}.asrh li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:8px 0;border-bottom:1px solid var(--line2);font-size:13px}.asrh li:last-child{border-bottom:0}.asrh .note{grid-column:1/-1}
+@container as (max-width:900px){.aszs{grid-template-columns:1fr}}
+@container asz (max-width:760px){.asz .astl{grid-template-columns:1fr;gap:0}.asz .astl li{grid-template-columns:30px 1fr auto;justify-items:start;text-align:left;align-items:center;padding:8px 0;border-bottom:1px solid var(--line2)}.asz .astl li::before{display:none}.asz .astl .dot{grid-row:span 2}.asz .astl li>.note{grid-column:2/-1}
+ .asz .aspi{grid-template-columns:1fr}.asz .asec3{grid-template-columns:1fr}}
+@container asz (max-width:560px){.asz .asecs{grid-template-columns:1fr}.asz2{grid-template-columns:1fr}.asz .ascl{flex-wrap:wrap}}
+.ticlv2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;margin:12px 0 0}
+.tiz{border:1px solid var(--line2);border-radius:12px;padding:10px;background:var(--panel2);display:grid;gap:8px;align-content:start}.tiz.pred{background:var(--yellow-soft)}
+.tizh{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap}.tizh b{font:800 14px var(--f-display)}
+.tizb{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.asg2.r1c{grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-bottom:14px}
 .asmeter{flex:1;height:8px;border-radius:5px;background:var(--panel3);overflow:hidden;min-width:60px}.asmeter i{display:block;height:100%;border-radius:5px}
 .asrow .asmeter+b{width:28px;text-align:right}
 .asgal{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.asimg.zoomg{aspect-ratio:4/3}.asimg.zoomg img{object-fit:cover;transform:scale(2.2);transform-origin:var(--op)}
@@ -667,6 +709,34 @@ ul.impact{margin:0 0 14px;padding-left:18px;color:var(--ink2)}ul.impact li{margi
 .sia b{display:block;font-size:14px}.sia .note{display:block;font-size:12.5px;margin-top:3px;line-height:1.4}
 .siav{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--yellow);color:var(--yellow-ink);font:800 12.5px var(--f-display);flex:none}
 @media (max-width:760px){.si{padding:12px}.sibox{grid-template-columns:minmax(0,1fr)}.sil{padding:20px}.sil h1{font-size:22px}.sir{padding:18px 16px}}
+.si2{display:flex;flex-direction:column;justify-content:center;padding:34px 40px}
+.si2 h2{font:800 24px var(--f-display);margin:0}
+.si2f{display:grid;gap:0;margin-top:18px;max-width:400px}
+.si2f .fld input{height:40px;font-size:14px}
+.si2f .fld input:focus{outline:2px solid var(--ink);outline-offset:1px}
+:root[data-theme="dark"] .si2f .fld input:focus{outline-color:var(--yellow)}
+.si2f .err{margin:-4px 0 12px;font-size:12.5px}
+#si-id::-webkit-calendar-picker-indicator{display:none!important;opacity:0}
+.si2b{width:100%;height:40px;justify-content:center;font-size:14px}
+.si2or{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted);font-size:12px}.si2or::before,.si2or::after{content:'';flex:1;height:1px;background:var(--line)}
+.si2b.wait{opacity:.75;cursor:progress}
+.si2help{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:-4px 0 14px;font-size:12.5px}
+.si2foot{margin:22px 0 0;font-size:12px;color:var(--muted);max-width:400px;border-top:1px solid var(--line2);padding-top:12px}
+.si2demo{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:16px;font-size:12px;color:var(--muted)}
+.si2demo button{height:26px;padding:0 10px;border:1px dashed var(--line);border-radius:999px;background:transparent;font-size:12px;color:var(--ink2)}
+.si2demo button:hover{border-color:var(--ink2);color:var(--ink)}
+.sil .sitag{margin-top:auto;font-size:12.5px;color:var(--side-mut);line-height:1.5}
+.sirl{margin-top:14px;font-size:12.5px}
+@media (max-width:760px){.si2{padding:20px 16px}}
+.skusel{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}.skusel label{display:grid;gap:2px;font-size:11.5px;color:var(--muted);font-weight:600}.skusel select{max-width:240px}.skusel #asSw{max-width:420px}
+.skus{margin:0 0 14px}.skus .pb{display:grid;gap:8px}.skuh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.skuh>b{font:800 16px var(--f-display)}.skun b{font:800 18px var(--f-display)}
+.skur{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.skur>.note{min-width:150px}
+.skuc{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:12.5px}.skuc b{font-weight:700}
+.skuc[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+tr.skug>td{background:var(--panel2);font-weight:600}tr.skug .skut{display:flex;align-items:center;gap:8px;flex-wrap:wrap}tr.skug .car{display:inline-block;width:14px;transition:transform .15s}tr.skug[aria-expanded=true] .car{transform:rotate(90deg)}
+@container as (max-width:640px){.skusel{width:100%}.skusel label{flex:1 1 100%}.skusel select,.skusel #asSw{max-width:none;width:100%}.skur>.note{min-width:0;flex-basis:100%}}
+.exw tr.exg1>td{border-top:2px solid var(--line)}.exw tbody tr:first-child>td{border-top:0}.exw tbody tr{cursor:pointer}
+.exsev{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:1px;background:var(--panel3);border:1px solid var(--line)}.exsev.High{background:var(--bad);border-color:var(--bad)}.exsev.Medium{background:var(--warn);border-color:var(--warn)}
 .acctm{position:relative}
 .acctm>summary{list-style:none;cursor:pointer}.acctm>summary::-webkit-details-marker{display:none}
 .acchip{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 10px 0 4px;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:12.5px;white-space:nowrap}
@@ -758,7 +828,7 @@ ul.impact{margin:0 0 14px;padding-left:18px;color:var(--ink2)}ul.impact li{margi
 .titf{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:2px;font-size:12.5px}
 .titr{margin:8px 0}
 .tifull{margin-top:6px}.tifull>summary{cursor:pointer;padding:10px 0}
-@container ti (max-width:900px){.ticlv{grid-template-columns:1fr}.tisumg{grid-template-columns:repeat(3,minmax(0,1fr))}.tiwig{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container ti (max-width:900px){.ticlv,.ticlv2{grid-template-columns:1fr}.tisumg{grid-template-columns:repeat(3,minmax(0,1fr))}.tiwig{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container ti (max-width:480px){.tisumg{grid-template-columns:repeat(2,minmax(0,1fr))}.tiwig b{font-size:22px}}
 @media (max-width:860px){.tistp{top:0}}
 </style>
@@ -1304,6 +1374,8 @@ function runInvariants(){
     p.supplies.forEach(s=>{if(sum(Object.values(p.optimal.alloc[s.id]||{}))>s.units)dup=true});
     t('Pool '+k+': no demand line or unit allocated twice',!dup,'optimal '+money(p.optimal.total)+' vs greedy '+money(p.greedy.total));
   });
+  if(S.acct&&canPage('command','exceptions')){const sc=ccScope(),a=ccExList(sc),b=ccExRows(sc),ta=sum(a.map(x=>x.value)),tb=sum(b.map(x=>x.value));t('Exception value by warehouse equals the ranked total',ta===tb&&a.every(x=>sum(b.filter(y=>y.base===x.id).map(y=>y.value))===x.value),kfmt(tb)+' in '+b.length+' warehouse rows')}
+  if(S.acct&&canPage('product','asset')){const c=CASE_BY_ID['RT-1048'],q=visCases().filter(x=>asModel(x)===asModel(c)&&x.owner===c.owner).length;if(tenantOK(c.owner)&&locOK(c)&&S.tenant==='All')t('SKU unit count equals Returned assets for that product and customer',skuUnits(c).length===q,asModel(c)+' · '+c.owner+': '+q+' units')}
   const rc=REC();
   t('~1,400 closed decisions',ROWS.length===1400,ROWS.length+' rows');
   t('Analytics total equals sum of case rows',Math.abs(sum(ROWS.filter(r=>r.status==='reconciled').map(r=>r.actual))-sum(ROUTES.map(rt=>sum(rc.filter(r=>r.route===rt.id).map(r=>r.actual)))))<1,money(sum(rc.map(r=>r.actual))));
@@ -1493,6 +1565,30 @@ const ICON={
 };
 const JSTEPS=[[1,'Supply evidence','ext','Enterprise systems supply inspection, history, eligibility, cost and stock'],[2,'Build alternatives','built','Retrieve and link evidence, check demand, define eligible treatments'],[3,'Predict outcomes','built','Predict price, sale likelihood, timing, repair cost and claims exposure'],[4,'Optimize plan','built','Compare net value across routes, timing and capacity'],[5,'Approve plan','human','A person reviews rationale and approves options, spend and sale terms'],[6,'Send instruction','built','Send the approved plan to EAM, ERP and sales applications; track acknowledgements'],[7,'Create work','ext','EAM work order, ERP reservation, CRM sale task'],[8,'Repair & certify','ext','Repairs and final tests recorded in EAM and quality systems'],[9,'Return outcome','ext','Status, receipts and actual costs return to Circularity'],[10,'Reconcile & learn','built','Link actuals to the decision, compare with forecasts, validate model improvements']];
 const stp=(n)=>{const j=JSTEPS[n-1];return `<span class="stp ${j[2]==='built'?'':j[2]}" title="Journey step ${n}: ${esc(j[1])} — ${esc(j[3])}"><b>${n}</b>${esc(j[1])}</span>`};
+/* ===== Demo path: one record through the five screen movements of the business journey ===== */
+const DEMO_ID='RT-1048';
+const dpId=()=>S.dpCase||DEMO_ID;
+const hq=k=>{const m=new RegExp('[?&]'+k+'=([^&]*)').exec(location.hash);return m?decodeURIComponent(m[1]):null};
+/* provisional stop names until the Product Owner's block diagram arrives (E7); j = the journey steps each stop covers */
+const DP_STOPS=[
+ {n:1,t:'Return received',h:id=>'product/received?focus='+id,j:[1,2],say:'The returned asset arrives at the warehouse and appears in Returned assets.'},
+ {n:2,t:'What we know',h:id=>'product/asset/'+id+'?zone=known',j:[1],say:'Retrieved from EAM, QMS, ERP and WMS: condition, certified period, history and specs.'},
+ {n:3,t:'What we predict',h:id=>'product/asset/'+id+'?zone=predicted',j:[3,4],say:'Circularity predicts remaining life and value on each route, and recommends one.'},
+ {n:4,t:'Decide and approve',h:id=>'product/'+id+'?step=2',j:[5],say:'Recommended outcome, why, what-if, then one person approves.'},
+ {n:5,t:'Hand off and outcome',h:id=>'product/'+id+'?step=5',j:[6,7,8,9,10],say:'ERP, EAM and WMS carry out the work; the actual result comes back.'}];
+const dpVisible=id=>{const c=CASE_BY_ID[id];return !!c&&!!S.acct&&tenantOK(c.owner)&&locOK(c)&&canPage('product','case')&&canPage('product','asset')};
+function dpStop(r){const id=dpId();if(!dpVisible(id)||r.page!=='product')return 0;
+  if(r.a==='received'||(!r.a&&S.q.view!=='expected'))return 1;
+  if(r.a==='asset'&&(r.b||rbLastAsset())===id)return hq('zone')==='predicted'?3:2;
+  if(r.a===id)return hq('step')==='5'?5:4;return 0}
+function dpHint(n,c){if(!presenterOn())return '';const st=c.stage,tip=(t,id,l)=>`<span class="dphint"><span>${t}</span>${ACCT(id)&&S.acct.id!==id?`<button class="btn sm" data-act="siSwitchTo" data-arg="${id}">Presenter: continue as ${esc(l)}</button>`:''}</span>`;
+  if(n===4&&st==='awaiting_approval'&&!can('approve'))return tip('An Approver approves this decision.','approver','Approver');
+  if(n===5&&st==='closed'&&!c.outcome&&!can('confirm'))return tip('Finance confirms the reported outcome.','finance','Finance');
+  return ''}
+function dpRail(r){const n=dpStop(r);if(!n)return '';const id=dpId(),c=CASE_BY_ID[id],prev=DP_STOPS[n-2],next=DP_STOPS[n];
+  return `<nav class="dprail" id="dpRail" aria-label="Demo path for ${id}"><span class="dpl">Demo path</span><span class="dpcase" data-tip="${esc(asModel(c)+' · '+c.owner)}"><b>${id}</b></span>
+   <ol>${DP_STOPS.map(s=>`<li class="${s.n<n?'done':''}"><a href="#/${s.h(id)}" ${s.n===n?'aria-current="step"':''} data-tip="${esc(s.say+' Journey step'+(s.j.length>1?'s '+s.j[0]+'–'+s.j[s.j.length-1]:' '+s.j[0])+'.')}"><span class="n">${s.n}</span><span class="t">${esc(s.t)}</span></a></li>`).join('')}</ol>
+   <span class="dpnav">${prev?`<a class="btn sm" href="#/${prev.h(id)}" id="dpBack">← Back</a>`:''}${next?`<a class="btn sm pri" href="#/${next.h(id)}" id="dpNext">Next: ${esc(next.t)} →</a>`:`<a class="btn sm" href="#/${DP_STOPS[0].h(id)}" id="dpRestart">Start again</a>`}</span>${dpHint(n,c)}</nav>`}
 function journey(on){return `<nav class="jstrip" aria-label="Where this screen sits in the user journey"><span class="jl">Journey</span>${JSTEPS.map(j=>`<span class="jstep ${j[2]==='built'?'built':j[2]} ${on.includes(j[0])?'on':''}" title="Step ${j[0]}: ${esc(j[1])}. ${esc(j[3])}"><span class="n">${j[0]}</span>${on.includes(j[0])?esc(j[1]):''}</span>`).join('')}<span class="jkey"><span><i class="y"></i>Build</span><span><i class="w"></i>Integrate</span><span><i class="b"></i>Approve</span></span></nav>`}
 const stpn=(n)=>{const j=JSTEPS[n-1];return `<span class="stp ${j[2]==='built'?'':j[2]}" title="Journey step ${n}: ${esc(j[1])}"><b>${n}</b></span>`};
 const CLS_ICON={motor:'motor',pump:'pump',control:'control',drill:'drill',batch:'batch',it:'it'};
@@ -1522,7 +1618,7 @@ const PERM_ACTS={
  notify:['notifyOpen','notifyOk'],ack:['notifyAck'],manageIdentity:['idpSync','idpMap','idpSrc','idpRemove','oooSave','oooDel']};
 const PERM_ALIAS={approve:'approve.decisions'};
 const ROLE_POLICY={
- Planner:{desc:'Prepares cases in their own tenant, requests evidence and submits decisions for review.',landing:'command',tenantScoped:true,
+ Planner:{desc:'Prepares cases in their own tenant, requests evidence and submits decisions for review.',landing:'product/received',tenantScoped:true,
   perms:['submit','request','reeval','execSim','scenario','requestTenant','ack'],
   pages:{command:['kpis','aome','handed','charts','actions','signals'],product:['received','expected','pools','asset','case'],analytics:['waterfall','pipeline','mix','predicted','models','pool','overrides'],audit:['log','gaps'],orchestration:RB_SECS.orchestration},asTabs:AS_TAB_IDS},
  Approver:{desc:'Approves or declines what Admin delegates: decisions and overrides, MCP server proposals and tenant access.',landing:'command',
@@ -1549,10 +1645,17 @@ const ROLE_POLICY={
 };
 /* demo accounts: synthetic labels only, never personal names */
 const ACCOUNTS=[
- {id:'planner-a',role:'Planner',tenant:'Customer A',site:'Warehouse 1',label:'Planner · Customer A'},{id:'planner-b',role:'Planner',tenant:'Customer B',site:'Warehouse 2',label:'Planner · Customer B'},{id:'planner-c',role:'Planner',tenant:'Customer C',site:'Warehouse 1',label:'Planner · Customer C'},
+ {id:'planner-a',role:'Planner',tenant:'Customer A',site:'Warehouse 1',label:'Planner · Customer A',home:'product/received?focus=RT-1048'},{id:'planner-b',role:'Planner',tenant:'Customer B',site:'Warehouse 2',label:'Planner · Customer B'},{id:'planner-c',role:'Planner',tenant:'Customer C',site:'Warehouse 1',label:'Planner · Customer C'},
  {id:'approver',role:'Approver',label:'Approver'},{id:'engineer',role:'Engineer',site:'Repair centre',label:'Engineer'},{id:'finance',role:'Finance',label:'Finance'},{id:'developer',role:'Developer',label:'Developer'},{id:'admin',role:'Admin',label:'Admin'},
  {id:'executive',role:'Executive',label:'Executive'},{id:'wm-1',role:'Warehouse Manager',warehouse:'Warehouse 1',label:'Warehouse Manager · Warehouse 1'},{id:'wm-2',role:'Warehouse Manager',warehouse:'Warehouse 2',label:'Warehouse Manager · Warehouse 2'}];
 const ACCT=id=>ACCOUNTS.find(a=>a.id===id);
+/* sign-in IDs: work email at the reserved demo domain, or a short alias. Any non-empty password is accepted (simulated). */
+const SIGNIN_DOMAIN='northfield.example';
+const SIGNIN_IDS={exec:'executive',executive:'executive',ops:'planner-a',user:'planner-a',planner:'planner-a','planner.a':'planner-a','planner.b':'planner-b','planner.c':'planner-c',
+ warehouse:'wm-1',warehouse1:'wm-1','warehouse.1':'wm-1',warehouse2:'wm-2','warehouse.2':'wm-2',approver:'approver',engineer:'engineer',finance:'finance',developer:'developer',admin:'admin'};
+const SIGNIN_LEAD=[['exec','Senior management'],['ops','End user']];
+function signInResolve(v){const m=/^([^@\s]+)(?:@([^@\s]+))?$/.exec(String(v||'').trim().toLowerCase());if(!m||(m[2]&&m[2]!==SIGNIN_DOMAIN))return null;return ACCT(SIGNIN_IDS[m[1]])||ACCT(m[1])||null}
+const signInEmail=a=>({executive:'executive','planner-a':'planner.a','planner-b':'planner.b','planner-c':'planner.c','wm-1':'warehouse1','wm-2':'warehouse2'}[a.id]||a.id)+'@'+SIGNIN_DOMAIN;
 S.acct=null;S.deleg={decisions:true,mcp:true,tenantAccess:true};S.grants={};
 const pol=()=>S.acct?ROLE_POLICY[S.acct.role]:null;
 function can(p){p=PERM_ALIAS[p]||p;const P=pol();if(!P)return false;if(P.all)return true;if(!P.perms.includes(p))return false;
@@ -1561,7 +1664,9 @@ function canPage(page,sec){const P=pol();if(!P)return false;const l=P.pages[page
 const see=(page,sec)=>canPage(page,sec);
 const asTabOK=t=>{const P=pol();return !!P&&P.asTabs.includes(t)};
 const homeFor=role=>(ROLE_POLICY[role]||ROLE_POLICY.Planner).landing;
-const HOME_LABEL={'command':'Command Center','product/asset':'Asset intelligence','analytics':'Analytics','integration/map':'Source map'};
+/* the account's own home: Planner · Customer A opens Returned assets on the demo record */
+const homeOf=a=>a?(a.home||homeFor(a.role)):'command';
+const HOME_LABEL={'command':'Command Center','product/asset':'Asset intelligence','product/received':'Returned assets','analytics':'Analytics','integration/map':'Source map'};
 const who=()=>S.acct?S.acct.label:'—';
 /* tenant scope: a Planner sees their home tenant plus any tenant an Approver or Admin granted */
 const allowedTenants=()=>{const P=pol();if(!P||!P.tenantScoped)return TENANTS.slice();return TENANTS.filter(t=>t===S.acct.tenant||(S.grants[S.acct.id]||[]).includes(t))};
@@ -1684,27 +1789,60 @@ function shell(){
   $('#thm').innerHTML=S.theme==='dark'?ICON.sun:ICON.moon;
   $('#app').classList.toggle('rail',S.navRail);const rb=$('.railbtn');rb&&(rb.setAttribute('aria-pressed',S.navRail),rb.setAttribute('aria-label',S.navRail?'Expand sidebar':'Collapse sidebar'));
 }
-/* ===== Simulated sign-in: one demo account per role, no passwords, nothing leaves the browser ===== */
+/* ===== Sign-in: a production-style form over simulated authentication; nothing leaves the browser ===== */
 const RB_AV={Planner:'PL',Approver:'AP',Engineer:'EN',Finance:'FI',Developer:'DE',Admin:'AD',Executive:'EX','Warehouse Manager':'WM'};
 function sessionLoad(){try{const raw=localStorage.getItem('circ-session');if(raw){const o=JSON.parse(raw),a=o&&ACCT(o.acct);if(a)return a}
   const old=localStorage.getItem('circ-role');if(old){localStorage.removeItem('circ-role');const a=ACCOUNTS.find(x=>x.role===old);if(a){localStorage.setItem('circ-session',JSON.stringify({acct:a.id}));return a}}}catch(e){}return null}
 function setAcct(a){S.acct=a||null;S.role=a?a.role:'';S.tenant='All';S.lastR=null;S.opScope=undefined;try{a?localStorage.setItem('circ-session',JSON.stringify({acct:a.id})):localStorage.removeItem('circ-session')}catch(e){}}
+/* presenter mode (?presenter=1, remembered on this device) shows two quiet quick-fill chips; an audience never sees role shortcuts */
+const presenterOn=()=>{try{const q=/[?&]presenter=([01])/.exec(location.search);if(q)localStorage.setItem('circ-presenter',q[1]);return localStorage.getItem('circ-presenter')==='1'}catch(e){return false}};
+const signInRolesWanted=()=>/^#\/?signin\?(?:.*&)?roles\b/.test(location.hash);
+function signInFormHTML(){const pre=presenterOn(),thm=`<button class="iconbtn" data-act="theme" aria-label="Toggle theme" id="thm">${S.theme==='dark'?ICON.sun:ICON.moon}</button>`;
+  return `<div class="si"><div class="sibox"><div class="sil"><img src="${LOGO}" alt="Artizent"><h1>Circularity<br>Decision Workbench</h1><p>Decide the best next use for every returned asset, with the evidence from your enterprise systems and the predicted value side by side.</p>
+   <div class="sitag" id="siSso">In production you sign in with your company account.</div></div>
+  <div class="sir si2"><div class="row between"><h2>Sign in</h2>${thm}</div><p class="note" style="margin:4px 0 0">Use your work email or user ID.</p>
+   <form class="si2f" id="siForm" novalidate>
+    <div class="fld"><label for="si-id">Work email or user ID</label><input id="si-id" name="username" type="text" placeholder="name@company.com" autocomplete="username" autocapitalize="none" spellcheck="false" list="si-ids" aria-describedby="si-err"></div>
+    <div class="fld"><label for="si-pw">Password</label><input id="si-pw" name="password" type="password" autocomplete="current-password" aria-describedby="si-err"></div>
+    <div class="err" id="si-err" role="alert" hidden></div>
+    <div class="si2help"><span class="note">You stay signed in on this device until you sign out.</span><span class="note">Forgot your password? Contact your administrator.</span></div>
+    <button class="btn pri si2b" type="submit">Sign in</button>
+    <div class="si2or" aria-hidden="true">or</div>
+    <button class="btn si2b" type="button" data-act="signInSso" id="siSsoBtn">Continue with single sign-on</button>
+    ${pre?`<div class="si2demo" aria-label="Presenter shortcuts"><span>Presenter:</span>${SIGNIN_LEAD.map(x=>`<button type="button" data-act="siQuick" data-arg="${x[0]}">${x[1]}</button>`).join('')}</div>`:''}
+   </form><datalist id="si-ids">${ACCOUNTS.map(a=>`<option value="${signInEmail(a)}">${esc(a.label)}</option>`).join('')}</datalist>
+   <p class="si2foot">Demo environment · synthetic data. Single sign-on is simulated: no identity provider is contacted and nothing leaves this browser.</p></div></div></div>`}
 function signInHTML(){const card=a=>{const P=ROLE_POLICY[a.role];return `<button class="sia" data-act="signIn" data-arg="${a.id}"><span class="siav" aria-hidden="true">${RB_AV[a.role]}</span><span><b>${esc(a.label)}</b><span class="note">${esc(P.desc)}</span></span></button>`};
   return `<div class="si"><div class="sibox"><div class="sil"><img src="${LOGO}" alt="Artizent"><h1>Circularity<br>Decision Workbench</h1><p>Choose a demo account. Each role sees only the pages, panels and actions that belong to its job.</p>
-   <div class="sinote"><b>Simulated sign-in.</b> These are demo accounts with synthetic labels. There are no passwords and no real authentication; all data is synthetic.</div>
-   <div class="sinote" id="siSso">In production you sign in with your company account (SSO). Users, roles and approval hierarchy come from your identity provider. This demo lets you pick a role.</div></div>
-  <div class="sir"><div class="row between"><h2>Sign in as</h2><button class="iconbtn" data-act="theme" aria-label="Toggle theme" id="thm">${S.theme==='dark'?ICON.sun:ICON.moon}</button></div><p class="note" style="margin:0">Your choice is remembered on this device until you sign out.</p>
+   <div class="sinote"><b>Internal role list.</b> For the build team only; the sign-in form is the default. All data is synthetic and there is no real authentication.</div></div>
+  <div class="sir"><div class="row between"><h2>Sign in as</h2><button class="iconbtn" data-act="theme" aria-label="Toggle theme" id="thm">${S.theme==='dark'?ICON.sun:ICON.moon}</button></div><p class="note" style="margin:0">Your choice is remembered on this device until you sign out. <a class="lnk" href="#/signin">Back to the sign-in form</a></p>
    <div class="sigrp"><h3>Planners (one per customer tenant)</h3><div class="silist">${ACCOUNTS.filter(a=>a.role==='Planner').map(card).join('')}</div></div>
    <div class="sigrp"><h3>Other roles</h3><div class="silist">${ACCOUNTS.filter(a=>a.role!=='Planner').map(card).join('')}</div></div></div></div></div>`}
-function renderSignIn(){closeDrawer(true);closeModal();const app=$('#app');app.classList.remove('rail');app.classList.add('signedout');app.innerHTML=signInHTML();document.title='Sign in · Circularity Decision Workbench';const f=$('.sia');f&&f.focus()}
-function rbGoHome(){const h='#/'+homeFor(S.acct.role);if(location.hash===h)route();else location.hash=h}
-ACT.signIn=id=>{const a=ACCT(id);if(!a)return;setAcct(a);$('#app').classList.remove('signedout');shell();const r=parse(),ok=location.hash.length>2&&canRoute(r)===true;if(ok)route();else rbGoHome();
+function renderSignIn(){closeDrawer(true);closeModal();const app=$('#app');app.classList.remove('rail');app.classList.add('signedout');const roles=signInRolesWanted();app.innerHTML=roles?signInHTML():signInFormHTML();document.title='Sign in · Circularity Decision Workbench';const f=roles?$('.sia'):$('#si-id');f&&f.focus()}
+function rbGoHome(){const h='#/'+homeOf(S.acct);if(location.hash===h)route();else location.hash=h}
+const siErr=m=>{const e=$('#si-err');if(!e)return;e.textContent=m||'';e.hidden=!m};
+document.addEventListener('submit',e=>{if(e.target&&e.target.id==='siForm'){e.preventDefault();ACT.signInCreds()}});
+ACT.signInCreds=()=>{const id=(($('#si-id')||{}).value||'').trim(),pw=($('#si-pw')||{}).value||'',a=signInResolve(id);
+  if(!id){siErr('Enter your work email or user ID.');$('#si-id').focus();return}
+  if(!a){siErr('We could not find that account. Check the email or user ID.');$('#si-id').focus();return}
+  if(!pw){siErr('Enter your password.');$('#si-pw').focus();return}
+  siErr('');ACT.signIn(a.id)};
+ACT.signInSso=()=>{const f=$('#si-id'),id=((f||{}).value||'').trim(),a=signInResolve(id),b=$('#siSsoBtn');
+  if(!id){siErr('Enter your work email to continue with single sign-on.');f&&f.focus();return}
+  if(!a){siErr('We could not find an organisation for that email. Check it, or sign in with your password.');f&&f.focus();return}
+  siErr('');if(b){b.classList.add('wait');b.disabled=true;b.textContent='Redirecting to your organisation\u2019s identity provider… (simulated)'}
+  setTimeout(()=>{if(!S.acct)ACT.signIn(a.id)},600)};
+ACT.siQuick=k=>{const f=$('#si-id'),p=$('#si-pw');if(f)f.value=k;if(p)p.value='demo-password';ACT.signInCreds()};
+ACT.signIn=id=>{const a=ACCT(id);if(!a)return;setAcct(a);$('#app').classList.remove('signedout');shell();const r=parse(),ok=location.hash.length>2&&r.page!=='signin'&&canRoute(r)===true;if(ok)route();else rbGoHome();
   toast('Signed in as '+a.label+'. '+ROLE_POLICY[a.role].desc,4200)};
-ACT.signOut=()=>{const l=who();setAcct(null);renderSignIn();toast('Signed out of '+l+'.')};
-ACT.switchAcct=()=>{setAcct(null);renderSignIn();toast('Choose an account to continue.')};
+const siClearHash=()=>{try{history.replaceState(null,'',location.pathname+location.search+'#/signin')}catch(e){}};
+ACT.signOut=()=>{const l=who();setAcct(null);siClearHash();renderSignIn();toast('Signed out of '+l+'.')};
+ACT.switchAcct=()=>{setAcct(null);siClearHash();renderSignIn();toast('Sign in with another account to continue.')};
+/* presenter mode only: switch to the other lead identity, or to the role the next demo step needs, keeping the page */
+ACT.siSwitchTo=id=>{const a=ACCT(id);if(!a||!presenterOn())return;setAcct(a);shell();const r=parse();if(location.hash.length>2&&canRoute(r)===true)route();else rbGoHome();toast('Now signed in as '+a.label+'.')};
 function acctMenuHTML(){const a=S.acct,P=pol();return `<details class="acctm"><summary class="acchip" aria-label="Signed in as ${esc(a.label)}. Account menu"><span class="siav" aria-hidden="true">${RB_AV[a.role]}</span><b>${esc(a.role)}</b>${a.tenant?`<small>${esc(a.tenant)}</small>`:''}<span aria-hidden="true">▾</span></summary>
   <div class="acmenu" role="menu"><div class="acd"><b>${esc(a.label)}</b><div class="note">${esc(P.desc)}</div>${P.tenantScoped?`<div class="note" style="margin-top:6px">Tenants: ${esc(allowedTenants().join(', '))}</div>`:''}</div>
-  ${can('requestTenant')?'<button role="menuitem" data-act="tenantReq">Request tenant access</button>':''}<button role="menuitem" data-act="switchAcct">Switch account</button><button role="menuitem" data-act="signOut">Sign out</button></div></details>`}
+  ${can('requestTenant')?'<button role="menuitem" data-act="tenantReq">Request tenant access</button>':''}${presenterOn()?SIGNIN_LEAD.map(x=>signInResolve(x[0])).filter(b=>b&&b.id!==a.id).map(b=>`<button role="menuitem" data-act="siSwitchTo" data-arg="${b.id}">Presenter: switch to ${esc(b.label)}</button>`).join(''):''}<button role="menuitem" data-act="switchAcct">Switch account</button><button role="menuitem" data-act="signOut">Sign out</button></div></details>`}
 document.addEventListener('click',e=>{const d=$('.acctm[open]');if(d&&(!e.target.closest('.acctm')||e.target.closest('.acmenu button')))d.removeAttribute('open')});
 function tenantOpts(cur){const P=pol(),sc=P&&P.tenantScoped,al=allowedTenants();
   return `<option value="All" ${cur==='All'?'selected':''}>${sc?'All my tenants':'All tenants'}</option>`+TENANTS.map(t=>al.includes(t)?`<option value="${t}" ${t===cur?'selected':''}>${t}</option>`:`<option value="${t}" disabled>${t} · locked</option>`).join('')+(sc&&can('requestTenant')&&al.length<TENANTS.length?'<option value="__req">Request access…</option>':'')}
@@ -1713,7 +1851,7 @@ let RB_SEL={key:'',sel:''};
 function rbSelector(){const d=[...rbDenied()].sort(),k=(S.acct?S.acct.id:'')+d.join();if(RB_SEL.key!==k)RB_SEL={key:k,sel:d.map(a=>`[data-act="${a}"],[data-in="${a}"],[data-ch="${a}"]`).join(',')};return RB_SEL.sel}
 function rbPrune(root){const sel=rbSelector();if(!sel)return;(root||document).querySelectorAll(sel).forEach(el=>{if(el.dataset.act){el.remove();return}if(!el.disabled){el.disabled=true;el.setAttribute('aria-readonly','true')}})}
 new MutationObserver(()=>{if(S.acct)rbPrune()}).observe(document.body,{childList:true,subtree:true});
-function rbBounce(msg){toast(msg,4200);S.bounce={from:location.hash,to:homeFor(S.acct.role),msg};const h='#/'+homeFor(S.acct.role);if(location.hash!==h)location.replace(h)}
+function rbBounce(msg){toast(msg,4200);S.bounce={from:location.hash,to:homeOf(S.acct),msg};const h='#/'+homeOf(S.acct);if(location.hash!==h)location.replace(h)}
 const rbLastAsset=()=>{const c=CASE_BY_ID[S.lastAsset];return c&&tenantOK(c.owner)?c.id:((myCases()[0]||{}).id||'RT-1048')};
 const navKids=g=>g.kids.filter(k=>canPage(g.id,k[0]));
 const navGroups=()=>NAV.filter(g=>canPage(g.id)&&navKids(g).length);
@@ -1795,7 +1933,7 @@ ACT.srcFind=id=>{hideResults();sdOpen(id)};
 document.addEventListener('click',e=>{if(!e.target.closest('.search'))hideResults()});
 function route(keep){
   if(!S.acct){renderSignIn();return}
-  const r=parse();if(!PAGES[r.page]){rbBounce('Page not found. Showing your home page.');return}
+  const r=parse();if(r.page==='signin'){rbGoHome();return}if(!PAGES[r.page]){rbBounce('Page not found. Showing your home page.');return}
   const ok=canRoute(r);if(ok!==true){rbBounce(ok==='tenant'?(pol()&&pol().warehouseScoped?'That record is at another warehouse or tenant you cannot see.':'That record belongs to a tenant you cannot see. Use the tenant menu to request access.'):'Not available for the '+S.acct.role+' view.');return}
   const y=keep?scrollY:0;
   if(r.page==='integration'&&INT_TABS.includes(r.a))S.intTab=r.a;
@@ -1807,7 +1945,7 @@ function route(keep){
   if((r.page==='product'?r.a:null)!==S.lastCase){S.lastCase=r.page==='product'?r.a:null;S.scenOpen=false;S.scen={purchase:1,cost:1,service:1,market:1,demandOff:false};S.xtab='why';if(S.ti){S.ti.apply='';S.ti.diffOnly=false}}
   const isCase=r.page==='product'&&r.a&&/^RT-/.test(r.a)&&CASE_BY_ID[r.a];
   const j=r.page==='product'&&isCase?[2,3,4,5,6]:r.page==='command'&&!canPage('product')?[1,6,7,8,9]:PAGES[r.page].j;
-  $('#jmount').innerHTML=journey(j);
+  $('#jmount').innerHTML=dpRail(r)+journey(j);
   const nc=$('#navcnt');if(nc)nc.textContent=visCases().filter(c=>c.stage==='awaiting_approval').length;
   const v=$('#view');
   try{v.innerHTML=({command:renderCommand,product:renderProduct,analytics:renderAnalytics,integration:renderIntegration,mcp:renderMcp,audit:renderAudit,orchestration:renderOrch,access:renderAccess})[r.page](r)}catch(err){console.error(err);v.innerHTML=`<div class="empty"><b>This view could not be drawn</b>${esc(err.message)}. Reload the page; your data is synthetic and regenerates identically.</div>`}
@@ -1868,6 +2006,11 @@ function kpiStrip(){
   const items=[['all','returned assets',v.length,'received this cycle'],['ready','ready to evaluate',n(c=>c.assessment==='Ready'),'evidence complete'],['awaiting','awaiting inspection',n(c=>c.assessment==='Pending'),'no route evaluated yet'],['need','need information',n(c=>c.assessment==='Review'||c.assessment==='Partial'),'exception or missing evidence'],['approval','awaiting approval',n(c=>c.stage==='awaiting_approval'),'a person decides (step 5)']];
   return `<div class="kpis" role="group" aria-label="Filter queue by status">${items.map(i=>`<button class="kpi" data-act="kpi" data-arg="${i[0]}" aria-pressed="${S.q.kpi===i[0]}"><div class="v num">${i[2]}</div><div class="l">${i[1]}</div><div class="s">${i[3]}</div></button>`).join('')}</div>`;
 }
+const qRow=c=>`<tr class="${S.sel===c.id?'sel':''} ${hq('focus')===c.id?'dpfocus':''}" id="qr-${c.id}" tabindex="0" data-act="selectCase" data-arg="${c.id}"><td><b>${c.id}</b>${c.id===dpId()&&dpVisible(c.id)?'<span class="chip y dpstart">Start here</span>':''}</td><td><div class="row" style="gap:8px;flex-wrap:nowrap">${thumb(c.cls)}<span>${esc(c.product)}${c.qty>1?` <span class="note">×${c.qty}</span>`:''}</span></div></td><td class="num nowrap"><a class="lnk" href="#/product/asset/${c.id}" data-act="go" data-arg="product/asset/${c.id}" data-tip="Open asset intelligence">${c.assetId}</a></td><td class="nowrap">${c.owner}</td><td class="num nowrap">${fmtD(c.received)}</td><td class="nowrap">${c.location}</td><td>${condChip(c)}</td><td>${assessChip(c)}</td><td>${stageChip(c)}</td><td class="r num nowrap">${c.recommendation?`<b>${money(c.recommendation.net)}</b> <span class="note">${esc(rid(c.recommendation.id).short)}</span>`:'<span class="muted">—</span>'}</td></tr>`;
+/* grouped view: one row per product and customer, expanding to its units */
+function qGroups(rows){const g={};rows.forEach(c=>{const k=asModel(c)+'|'+c.owner;(g[k]=g[k]||[]).push(c)});const open=S.q.open||(S.q.open={});
+  return Object.entries(g).sort((a,b)=>b[1].length-a[1].length||(a[0]<b[0]?-1:1)).map(([k,l])=>{const [m,o]=k.split('|'),gr=[...new Set(l.map(c=>c.grade).filter(Boolean))].sort(),net=sum(l.map(c=>(c.chosen||c.recommendation||{}).net||0)),on=!!open[k];
+   return `<tr class="skug" data-act="qGroup" data-arg="${esc(k)}" aria-expanded="${on}" tabindex="0"><td colspan="10"><span class="skut"><span class="car" aria-hidden="true">›</span><span>${esc(m)} · ${esc(o)}</span><span class="chip line">${l.length} unit${l.length===1?'':'s'}</span><span class="note">${gr.length?'grades '+(gr.length>1?gr[0]+'–'+gr[gr.length-1]:gr[0]):'not graded yet'} · ${money(net)} predicted</span></span></td></tr>`+(on?l.map(qRow).join(''):'')}).join('')}
 function queueTable(){
   const rows=queueRows(),f=S.q,shown=rows.slice(0,f.limit);
   const th=(k,l,cls='')=>`<th class="${cls}" aria-sort="${f.sortK===k?(f.sortD>0?'ascending':'descending'):'none'}"><button data-act="sort" data-arg="${k}">${l}${f.sortK===k?(f.sortD>0?' ↑':' ↓'):''}</button></th>`;
@@ -1877,11 +2020,11 @@ function queueTable(){
    <select class="sel" data-ch="qloc" aria-label="Location"><option value="">Location</option>${opts(FACILITIES,f.loc)}</select>
    <select class="sel" data-ch="qowner" aria-label="Owner"><option value="">Owner</option>${opts(TENANTS,f.owner)}</select>
    <select class="sel" data-ch="qassess" aria-label="Assessment"><option value="">Assessment</option>${opts(['Ready','Review','Pending','Partial'],f.assess)}</select>
-   <button class="btn ghost sm" data-act="clearQ">Clear filters</button></div>
+   <button class="btn ghost sm" data-act="clearQ">Clear filters</button><div class="seg" role="group" aria-label="Rows" style="margin-left:auto"><button data-act="qGroupBy" data-arg="" aria-pressed="${!f.group}">List</button><button data-act="qGroupBy" data-arg="1" aria-pressed="${!!f.group}">Group by product</button></div></div>
   <div class="tw"><table class="t"><thead><tr>${th(f.sortK==='priority'?'priority':'id','Return')}${th('product','Product')}${th('assetId','Asset ID')}${th('owner','Owner')}${th('received','Received')}${th('location','Location')}${th('condition','Condition')}${th('assessment','Assessment')}<th>Status</th>${th('net','Best next action','r')}</tr></thead><tbody>
-  ${shown.map(c=>`<tr class="${S.sel===c.id?'sel':''}" tabindex="0" data-act="selectCase" data-arg="${c.id}"><td><b>${c.id}</b></td><td><div class="row" style="gap:8px;flex-wrap:nowrap">${thumb(c.cls)}<span>${esc(c.product)}${c.qty>1?` <span class="note">×${c.qty}</span>`:''}</span></div></td><td class="num nowrap"><a class="lnk" href="#/product/asset/${c.id}" data-act="go" data-arg="product/asset/${c.id}" data-tip="Open asset intelligence">${c.assetId}</a></td><td class="nowrap">${c.owner}</td><td class="num nowrap">${fmtD(c.received)}</td><td class="nowrap">${c.location}</td><td>${condChip(c)}</td><td>${assessChip(c)}</td><td>${stageChip(c)}</td><td class="r num nowrap">${c.recommendation?`<b>${money(c.recommendation.net)}</b> <span class="note">${esc(rid(c.recommendation.id).short)}</span>`:'<span class="muted">—</span>'}</td></tr>`).join('')||`<tr><td colspan="11"><div class="empty"><b>No returns match these filters</b>Clear filters to see all ${visCases().length} returns.</div></td></tr>`}
+  ${(f.group?qGroups(rows):shown.map(qRow).join(''))||`<tr><td colspan="11"><div class="empty"><b>No returns match these filters</b>Clear filters to see all ${visCases().length} returns.</div></td></tr>`}
   </tbody></table></div>
-  <div class="filters" style="border-top:1px solid var(--line2);border-bottom:0;justify-content:space-between"><span class="note">Showing ${shown.length} of ${rows.length}. Physical inventory remains controlled by the source system.</span>${rows.length>shown.length?`<button class="btn sm" data-act="more">Show 25 more</button>`:''}</div></div>`;
+  <div class="filters" style="border-top:1px solid var(--line2);border-bottom:0;justify-content:space-between"><span class="note">${f.group?'Grouped by product and customer: '+rows.length+' units':'Showing '+shown.length+' of '+rows.length}. Physical inventory remains controlled by the source system.</span>${!f.group&&rows.length>shown.length?`<button class="btn sm" data-act="more">Show 25 more</button>`:''}</div></div>`;
 }
 function expectedTable(){const src=SRC('lease')||{vendor:'Contract Management'};
   return `<div class="callout info" style="margin-bottom:12px" id="expNote"><b>Expected returns are derived from contract and lease expiry in the Contract Management application</b> (${esc(src.vendor)}). They are planning signals; nothing is committed until the asset is received and inspected. Likely outcomes are modelled from contract terms and past outcomes (buyouts, extensions, early terminations).</div>
@@ -1894,10 +2037,14 @@ function renderProduct(r){
   if(r.a==='pools')return poolsPage();
   if(r.a&&CASE_BY_ID[r.a])return caseView(CASE_BY_ID[r.a]);
   const v=S.q.view;
-  return `<div class="phead"><div><h1>Returned assets</h1><p>Inspect the inventory, establish readiness, evaluate the best use. Each case below runs steps 2–5 of the journey; once approved, the instruction goes to your enterprise systems, which carry out the work.</p></div>
+  return `${ntCallout()}<div class="phead"><div><h1>Returned assets</h1><p>Inspect the inventory, establish readiness, evaluate the best use. Each case below runs steps 2–5 of the journey; once approved, the instruction goes to your enterprise systems, which carry out the work.</p></div>
    <div class="row"><div class="seg" role="group" aria-label="View"><button data-act="qview" data-arg="received" aria-pressed="${v==='received'}">Received</button><button data-act="qview" data-arg="expected" aria-pressed="${v==='expected'}">Expected (${EXPECTED.filter(e=>tenantOK(e.owner)&&whOK(e)).length})</button></div>${canPage('product','pools')?'<a class="btn" href="#/product/pools">Pool optimizer</a>':''}</div></div>
    ${v==='received'?kpiStrip()+'<div style="height:14px"></div>'+queueTable():expectedTable()}`;
 }
+/* notifications for this account, shown on its landing page too (the Planner no longer lands on the Command Center) */
+function ntCallout(){if(!S.acct)return '';const l=S.notes.filter(n=>n.to===S.acct.id&&n.status==='open');if(!l.length)return '';
+  return l.slice(-2).map(n=>{const id=(n.ids||[]).find(x=>x===dpId())||(n.ids||[])[0],ok=id&&CASE_BY_ID[id]&&dpVisible(id);
+   return `<div class="callout ntcall" role="status"><span><b>From ${esc(n.from)}:</b> ${esc(n.title)} · ${esc(n.msg)}</span><span class="sp"></span>${ok?`<a class="btn sm" href="#/product/received?focus=${id}">Show ${id}</a>`:''}<button class="btn sm pri" data-act="notifyAck" data-arg="${n.id}">Acknowledge</button></div>`}).join('')}
 /* queue interactions */
 ACT.kpi=a=>{S.q.kpi=a;S.q.limit=25;route(true)};
 ACT.sort=a=>{if(S.q.sortK===a)S.q.sortD*=-1;else{S.q.sortK=a;S.q.sortD=1}route(true)};
@@ -1905,7 +2052,9 @@ ACT.qtext=v=>{S.q.text=v;S.q.limit=25;const el=$('#view .panel');const sel=docum
 function refreshQueue(){const p=$('#view .panel');if(p)p.outerHTML=queueTable();}
 ACT.qcond=v=>{S.q.cond=v;route(true)};ACT.qloc=v=>{S.q.loc=v;route(true)};ACT.qowner=v=>{S.q.owner=v;route(true)};ACT.qassess=v=>{S.q.assess=v;route(true)};
 ACT.clearQ=()=>{Object.assign(S.q,{kpi:'all',text:'',cond:'',loc:'',owner:'',assess:'',limit:25});route(true)};
-ACT.more=()=>{S.q.limit+=25;route(true)};ACT.qview=a=>{go('product/'+a)};
+ACT.more=()=>{S.q.limit+=25;route(true)};
+ACT.qGroupBy=a=>{S.q.group=!!a;route(true)};
+ACT.qGroup=k=>{const o=S.q.open||(S.q.open={});o[k]=!o[k];route(true)};ACT.qview=a=>{go('product/'+a)};
 ACT.selectCase=a=>{S.sel=a;openCase(a)};
 ACT.openCase=a=>{closeDrawer();hideResults();openCase(a)};
 function openCase(id){const c=CASE_BY_ID[id];if(!c)return;
@@ -1915,7 +2064,8 @@ function openCase(id){const c=CASE_BY_ID[id];if(!c)return;
    <details class="dd" open><summary>Details</summary><dl class="kv">${Object.entries(c.spec).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}<dt>Manufacturer</dt><dd>${esc(c.mfr)} (fictional)</dd><dt>Age</dt><dd>${c.age} years</dd></dl></details>
    <h4 style="margin:14px 0 4px">Evidence readiness <span class="note">${ready} of ${ev.length} ready</span></h4>${ev.map(evRow).join('')}
    ${c.blocked?`<div class="callout bad" style="margin-top:12px"><b>${esc(c.blocked.gateName)} gate</b><br>${esc(c.blocked.reason)}</div>`:''}`;
-  openDrawer(body,`${c.id} · ${esc(c.product)}`,`Returned asset · ${c.owner}`,`<button class="btn pri" data-act="go" data-arg="product/${c.id}">${c.blocked?'Open exception':'Evaluate selected asset'} ${ICON.arrow}</button>`);
+  const dp=c.id===dpId()&&dpVisible(c.id);
+  openDrawer(body,`${c.id} · ${esc(c.product)}`,`Returned asset · ${c.owner}`,dp?`<button class="btn" data-act="go" data-arg="product/${c.id}">Evaluate treatments</button><button class="btn pri" data-act="go" data-arg="${DP_STOPS[1].h(c.id)}">Next: What we know ${ICON.arrow}</button>`:`<button class="btn pri" data-act="go" data-arg="product/${c.id}">${c.blocked?'Open exception':'Evaluate selected asset'} ${ICON.arrow}</button>`);
 }
 ACT.expDetail=a=>{const e=EXPECTED.find(x=>x.id===a),src=SRC('lease')||{vendor:'—',freshMin:0},t0=+e.lease.start,t1=+e.expiry,t2=t1+12*864e5,pos=t=>Math.round((t-t0)/(t2-t0)*100);
   openDrawer(`<div class="callout">Conditional plan derived from contract <b class="mono">${e.contract}</b> in the Contract Management application. Nothing is reserved or promised until receipt and inspection establish actual availability.</div>
@@ -2144,6 +2294,8 @@ ACT.models=()=>{const rows=MODELS.map(m=>({m,s:modelStats(m.v)}));
 ACT.dataChecks=()=>{const res=runInvariants(),ok=res.filter(r=>r.ok).length;
   openModal('Data integrity checks',`<p class="ink2" style="margin-top:0">One seeded generator feeds all four pages, so numbers reconcile everywhere. These checks run on every load.</p><div class="callout ${ok===res.length?'ok':'bad'}" style="margin-bottom:12px"><b>${ok} of ${res.length} checks pass.</b> Seed 20261007 · mulberry32</div>${res.map(r=>`<div class="ev ${r.ok?'':'missing'}"><span class="ic">${r.ok?'✓':'!'}</span><div><b>${esc(r.name)}</b><small>${esc(r.detail)}</small></div></div>`).join('')}`,`<button class="btn" data-act="closeModal">Close</button>`,true)};
 function afterRender(r,keep){if(typeof wfPaint==='function'&&S.wf&&$('#wfView'))wfPaint();$$('[data-nk="product/asset"]').forEach(a=>a.setAttribute('href',navHref(NAV[1],'asset')));if(r&&!keep&&ANCH[r.page]&&r.a)setTimeout(()=>anchorScroll(r),30);
+  if(r&&!keep&&r.page==='product'&&r.a==='asset'&&hq('zone')){const z=$(hq('zone')==='predicted'?'#aszPred':'#aszKnown');if(z)setTimeout(()=>z.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}),40)}
+  if(r&&!keep&&r.page==='product'&&(!r.a||r.a==='received')){const f=hq('focus'),row=f&&$('#qr-'+f);if(row)setTimeout(()=>{if(row.getBoundingClientRect().bottom>innerHeight)row.scrollIntoView({block:'center'})},40)}
   if(r&&!keep&&r.page==='product'&&r.a&&CASE_BY_ID[r.a]){const m=/[?&](?:step=(\d)|(explain))/.exec(location.hash);if(m)setTimeout(()=>m[1]?ACT.tiStep(m[1]):ACT.tiExplain(),40)}}
 
 /* ===== Analytics · reconcile & learn ===== */
@@ -2295,22 +2447,38 @@ function ccExList(sc){const out=[],wh=S.acct&&S.acct.warehouse,by={};
   if(!wh){const vR=visRows();[['net recovery',r=>r.status==='reconciled'?r.actual:0],['uplift vs baseline',r=>r.status==='reconciled'?r.actual-r.baseline:0],['closed decisions',()=>1]].forEach(([n,fn])=>{const s=ccSeries(fn,vR),a=s[10],b=s[9];if(b>0&&a/b-1<-.05)out.push({id:'kpi:'+n,type:'value',title:'Declining metric: '+n,value:Math.round(Math.max(0,b-a)),count:0,ids:[],trend:'▼ '+Math.abs(Math.round((a/b-1)*100))+'% last full month vs the month before',sev:a/b-1<-.15?'High':'Medium',urg:.6,go:'analytics'})})}
   const det=sc.all.filter(prevGrade);if(det.length)out.push({id:'cond',type:'evidence',title:'Deteriorating condition',value:Math.round(sum(det.map(c=>c._val||0))),count:det.length,ids:det.map(c=>c.id),trend:det.length+' graded lower than at the last inspection',sev:det.length>6?'Medium':'Low',urg:.5});
   out.forEach(x=>x.score=x.value*x.urg*({High:1.5,Medium:1,Low:.6})[x.sev]);return out.sort((a,b)=>b.score-a.score)}
-function ccExHTML(sc){const l=ccExList(sc),N=S.notes;
-  return `<section class="panel exp" id="ccEx"><div class="ph"><div><h3>Exceptions</h3><div class="note">Ranked by value × urgency. Drill into the cases, or notify the owner.</div></div><span class="sp"></span><span class="chip ${l.length?'warn':'ok'}">${l.length} open</span></div>
-  ${l.length?`<div class="tw"><table class="t cctab exl"><thead><tr><th>Exception</th><th>Severity</th><th class="r">Value</th><th class="r">Cases</th><th>Trend</th><th>Status</th><th></th></tr></thead><tbody>${l.map(x=>{const n=N.filter(y=>y.exId===x.id).slice(-1)[0];return `<tr data-ex="${esc(x.id)}"><td data-l="Exception"><b>${esc(x.title)}</b></td><td data-l="Severity"><span class="chip ${x.sev==='High'?'bad':x.sev==='Medium'?'warn':'line'}">${x.sev}</span></td><td class="r num" data-l="Value">${kfmt(x.value)}</td><td class="r num" data-l="Cases">${x.count||'—'}</td><td class="note" data-l="Trend">${esc(x.trend)}</td><td data-l="Status">${n?(n.status==='ack'?`<span class="chip ok">In hand by ${esc(n.ackBy)}</span>`:`<span class="chip line">Notified ${esc(n.toLabel)}</span>`):'<span class="note">Open</span>'}</td><td class="nowrap exa"><button class="btn sm" data-act="exView" data-arg="${esc(x.id)}">View cases</button>${can('notify')?` <button class="btn sm pri" data-act="notifyOpen" data-arg="${esc(x.id)}">Notify owner</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="pb"><div class="empty"><b>No exceptions</b>Nothing needs attention right now.</div></div>'}</section>`}
-ACT.exView=id=>{const x=ccExList(ccScope()).find(e=>e.id===id);if(!x)return;if(x.go){if(rbPath(x.go))ACT.go(x.go);else toast('Open Analytics for this metric.');return}
-  const cs=x.ids.map(i=>CASE_BY_ID[i]).filter(Boolean).sort((a,b)=>(b._val||0)-(a._val||0)),open=canPage('product','case');
-  openDrawer(`<p class="note" style="margin-top:0">${esc(x.trend)} · ${kfmt(x.value)} · ${cs.length} case${cs.length===1?'':'s'}. Senior view drills to Analytics and the case pages.</p><div class="tw"><table class="t static tight"><thead><tr><th>Return</th><th>Asset</th><th>Location</th><th>Status</th><th class="r">Value</th></tr></thead><tbody>${cs.slice(0,40).map(c=>`<tr><td>${open?`<a class="lnk" href="#/product/${c.id}" data-act="go" data-arg="product/${c.id}">${c.id}</a>`:c.id}</td><td>${esc(c.product)}</td><td>${esc(c.location)}</td><td>${stageChip(c)}</td><td class="r num">${kfmt(c._val||0)}</td></tr>`).join('')}</tbody></table></div>${cs.length>40?`<p class="note">Showing 40 of ${cs.length}.</p>`:''}`,esc(x.title),'Exception · ranked '+(ccExList(ccScope()).indexOf(x)+1),rbPath('analytics')?`<button class="btn" data-act="go" data-arg="analytics">Open Analytics</button>`:'')};
-ACT.notifyOpen=id=>{if(!can('notify'))return;const x=ccExList(ccScope()).find(e=>e.id===id);if(!x)return;const to=exOwner(x);
-  openModal('Notify the owner',`<div class="callout info" style="margin-bottom:12px"><b>${esc(x.title)}</b> · ${kfmt(x.value)}${x.count?' · '+x.count+' cases':''}</div>
+/* exceptions by warehouse: each ranked exception is split by where its items are; values still add up to the ranked total */
+const EX_WH_ORDER=['Warehouse 1','Warehouse 2','Repair centre'];
+function ccExRows(sc){const rows=[];
+  ccExList(sc).forEach(x=>{if(!x.ids.length){rows.push(Object.assign({},x,{base:x.id,wh:'Portfolio',items:[]}));return}
+    const k=x.id.indexOf('var:')===0?x.id.slice(4):null,iv=c=>k?((c._risk||{})[k]||0):(c._val||0),g={};
+    x.ids.forEach(id=>{const c=CASE_BY_ID[id];if(!c)return;const w=x.id.indexOf('cap:')===0?x.loc:c.location;(g[w]=g[w]||[]).push({c,v:iv(c)})});
+    const ws=Object.keys(g),raw=ws.map(w=>sum(g[w].map(i=>i.v))),tot=sum(raw),vals=raw.map(v=>tot?Math.round(x.value*v/tot):0);
+    if(vals.length){vals[raw.indexOf(Math.max(...raw))]+=x.value-sum(vals)}
+    ws.forEach((w,i)=>{const items=g[w].sort((a,b)=>b.v-a.v);rows.push(Object.assign({},x,{id:x.id+'@'+w,base:x.id,wh:w,loc:w,value:vals[i],count:items.length,ids:items.map(t=>t.c.id),items}))})});
+  const tot={};rows.forEach(r=>{tot[r.wh]=(tot[r.wh]||0)+r.value});
+  const gk=w=>w==='Portfolio'?-1:tot[w];
+  return rows.sort((a,b)=>a.wh===b.wh?b.value-a.value:gk(b.wh)-gk(a.wh)||EX_WH_ORDER.indexOf(a.wh)-EX_WH_ORDER.indexOf(b.wh))}
+const exFind=id=>ccExRows(ccScope()).find(e=>e.id===id);
+const exNote=x=>S.notes.filter(y=>y.exId===x.id||y.exId===x.base).slice(-1)[0];
+function ccExHTML(sc){const l=ccExRows(sc);let prev='';
+  return `<section class="panel exp" id="ccEx"><div class="ph"><div><h3>Exceptions by warehouse</h3><div class="note">Which warehouse, what item, what value. Notify the owner when something is not being actioned.</div></div><span class="sp"></span><span class="chip ${l.length?'warn':'ok'}">${l.length} open · ${kfmt(sum(l.map(x=>x.value)))}</span></div>
+  ${l.length?`<div class="tw"><table class="t cctab exl exw"><thead><tr><th>Warehouse</th><th>Exception</th><th>Items</th><th class="r">Value</th><th>Status</th><th></th></tr></thead><tbody>${l.map(x=>{const n=exNote(x),first=x.wh!==prev,top=x.items[0];prev=x.wh;
+   return `<tr data-ex="${esc(x.id)}" class="${first?'exg1':''}" data-act="exView" data-arg="${esc(x.id)}" data-tip="${esc(x.sev+' severity · '+x.trend)}"><td data-l="Warehouse">${first?`<b>${esc(x.wh)}</b>`:`<span class="note">${esc(x.wh)}</span>`}</td><td data-l="Exception"><span class="exsev ${x.sev}" aria-hidden="true"></span><span class="sr">${x.sev} severity: </span>${esc(x.title)}</td><td data-l="Items">${top?`${x.count} item${x.count===1?'':'s'} <span class="note">· top: ${top.c.id} ${esc(asModel(top.c))}</span>`:'<span class="note">Portfolio metric</span>'}</td><td class="r num" data-l="Value"><b>${kfmt(x.value)}</b></td><td data-l="Status">${n?(n.status==='ack'?`<span class="chip ok">In hand by ${esc(n.ackBy)}</span>`:`<span class="chip line">Notified ${esc(n.toLabel)}</span>`):'<span class="note">Open</span>'}</td><td class="nowrap exa"><button class="btn sm" data-act="exView" data-arg="${esc(x.id)}">${x.go?'Open Analytics':'View items'}</button>${can('notify')?` <button class="btn sm pri" data-act="notifyOpen" data-arg="${esc(x.id)}">Notify owner</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="pb"><div class="empty"><b>No exceptions</b>Nothing needs attention right now.</div></div>'}</section>`}
+/* the drill-down stays high level: warehouse, item, value */
+ACT.exView=id=>{const x=exFind(id);if(!x)return;if(x.go){if(rbPath(x.go))ACT.go(x.go);else toast('Open Analytics for this metric.');return}
+  const open=canPage('product','case');
+  openDrawer(`<p class="note" style="margin-top:0">${kfmt(x.value)} across ${x.count} item${x.count===1?'':'s'}, highest value first.</p><div class="tw"><table class="t static tight" id="exItems"><thead><tr><th>Warehouse</th><th>Item</th><th class="r">Value</th></tr></thead><tbody>${x.items.slice(0,40).map(i=>`<tr><td>${esc(x.wh)}</td><td>${open?`<a class="lnk" href="#/product/${i.c.id}" data-act="go" data-arg="product/${i.c.id}">${i.c.id}</a>`:i.c.id} ${esc(asModel(i.c))}</td><td class="r num">${kfmt(i.v)}</td></tr>`).join('')}</tbody></table></div>${x.items.length>40?`<p class="note">Showing 40 of ${x.items.length}.</p>`:''}`,esc(x.wh)+' · '+esc(x.title),'Exception by warehouse',can('notify')?`<button class="btn pri" data-act="notifyOpen" data-arg="${esc(x.id)}">Notify owner</button>`:'')};
+ACT.notifyOpen=id=>{if(!can('notify'))return;const x=exFind(id);if(!x)return;const to=exOwner(x);closeDrawer(true);
+  openModal('Notify the owner',`<div class="callout info" style="margin-bottom:12px"><b>${esc(x.wh)} · ${esc(x.title)}</b> · ${kfmt(x.value)}${x.count?' · '+x.count+' items':''}</div>
    <div class="fld"><label for="nt-to">Recipient</label><select id="nt-to">${ACCOUNTS.filter(a=>a.role!=='Executive').map(a=>`<option value="${a.id}" ${a.id===to?'selected':''}>${esc(a.label)}</option>`).join('')}</select><div class="hint">Prefilled by exception type. You can change it.</div></div>
    <div class="fld"><label for="nt-sev">Severity</label><select id="nt-sev">${['High','Medium','Low'].map(s=>`<option ${s===x.sev?'selected':''}>${s}</option>`).join('')}</select></div>
    <div class="fld"><label for="nt-msg">Message</label><textarea id="nt-msg" maxlength="300">${esc('Please look at: '+x.title.toLowerCase()+'.')}</textarea><div class="hint">Simulated: it creates an Actions on me item and an audit entry; nothing is sent outside the app. Do not enter personal data.</div><div class="err" id="nt-err" hidden></div></div>`,
    `<button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="notifyOk" data-arg="${esc(id)}">Send notification</button>`)};
-ACT.notifyOk=id=>{if(!can('notify'))return;const x=ccExList(ccScope()).find(e=>e.id===id),to=ACCT(($('#nt-to')||{}).value),msg=(($('#nt-msg')||{}).value||'').trim();
+ACT.notifyOk=id=>{if(!can('notify'))return;const x=exFind(id),to=ACCT(($('#nt-to')||{}).value),msg=(($('#nt-msg')||{}).value||'').trim();
   if(!x||!to||msg.length<5){const e=$('#nt-err');if(e){e.textContent='Add a message of at least 5 characters.';e.hidden=false}return}
-  const n={id:'NTF-'+(S.ntSeq++),exId:x.id,title:x.title,msg,sev:$('#nt-sev').value,to:to.id,toLabel:to.label,from:who(),at:asOfNow(),status:'open',ids:x.ids.slice(0,40)};S.notes.push(n);
-  rbLog('notification.sent',n.id+' · '+x.title+' → '+to.label+' (simulated)');closeModal();toast('Notification sent to '+to.label+' (simulated).',4200);route(true)};
+  const n={id:'NTF-'+(S.ntSeq++),exId:x.id,title:x.wh+' · '+x.title,msg,sev:$('#nt-sev').value,to:to.id,toLabel:to.label,from:who(),at:asOfNow(),status:'open',ids:x.ids.slice(0,40)};S.notes.push(n);
+  rbLog('notification.sent',n.id+' · '+n.title+' → '+to.label+' (simulated)');closeModal();toast('Notification sent to '+to.label+' (simulated).',4200);route(true)};
 ACT.notifyAck=id=>{const n=S.notes.find(x=>x.id===id);if(!n||!S.acct||n.to!==S.acct.id)return;n.status='ack';n.ackBy=who();n.ackAt=asOfNow();rbLog('notification.acknowledged',n.id+' · '+n.title+' · in hand by '+who());toast('Acknowledged. The sender sees it is in hand.');route(true)};
 /* Actions on me: everything whose next step belongs to this account, each with one button to the right step */
 function aomeItems(){if(!S.acct)return[];const me=S.acct,role=me.role,P=pol(),out=[],cs=opScoped(),st5=id=>'product/'+id+'?step=5';
@@ -2541,7 +2709,29 @@ function asRing(h){const cols={Excellent:'var(--ok)',Good:'#5FAE7B',Fair:'#D4A80
 function asPhoto(c,cls){const f=AS_IMG[c.cls];return `<div class="asimg ${cls||''}"><img src="assets/products/${f}.webp" alt="${esc(c.product)}, ${esc(c.mfr)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.hidden=false"><span class="asph" hidden>${thumb(c.cls)}<span>${esc(CLASSES[c.cls].label)}</span></span>${c.qty>1?`<span class="asqty">×${c.qty}</span>`:''}</div>`}
 function assetFacts(c){const d=c.demand||{};return [['Asset ID',c.assetId],['Serial number',asSerial(c)],['Product',asModel(c)],['Manufacturer',c.mfr],['Revision',asRev(c)],['Ownership',c.owner+(d.lease?' · lease '+d.lease:'')],
    ['Location',c.location],['Site demand',d.site?d.site+(d.confirmed?' · confirmed':' · forecast'):'None matched'],['Received',fmtDY(c.received)],['Age',c.age+' years'],['Engineering life',c.engLife],['Next inspection',c.nextInspection]]}
-function assetSelect(c){return `<label class="sr" for="asSw">Switch asset</label><select class="sel asw" id="asSw" data-ch="asSwitch" aria-label="Switch asset">${myCases().map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${x.id} · ${esc(x.product)} · ${x.assetId}</option>`).join('')}</select>`}
+/* one SKU, many units: Product (SKU) → Customer → Unit; each unit is its own returned asset with its own grade, life, value and route */
+S.skuF=null;
+const asRouteShort=x=>{const r=x.chosen||x.recommendation;return r?rid(r.id).short:'No route yet'};
+const asUnitLabel=x=>{const r=x.chosen||x.recommendation;return `${asSerial(x)} · ${x.assetId} · ${x.grade?'Grade '+x.grade:'Not graded'} · ${r?asRouteShort(x)+' · '+money(r.net)+' est.':'No route yet'} · ${x.location}`};
+const skuUnits=c=>myCases().filter(x=>asModel(x)===asModel(c)&&x.owner===c.owner).sort((a,b)=>a.id<b.id?-1:1);
+const skuMatch=(x,f)=>!f||(f.k==='g'?(x.grade||'—')===f.v:asRouteShort(x)===f.v);
+function assetSelect(c){const all=myCases(),m=asModel(c),cnt=(l,fn)=>l.reduce((o,x)=>{const k=fn(x);o[k]=(o[k]||0)+1;return o},{}),mc=cnt(all,asModel),cc=cnt(all.filter(x=>asModel(x)===m),x=>x.owner),f=S.skuF&&S.skuF.sku===m+'|'+c.owner?S.skuF:null,units=skuUnits(c).filter(x=>x.id===c.id||skuMatch(x,f));
+  return `<div class="skusel" role="group" aria-label="Choose a returned unit"><label for="skuM">Product (SKU)<select class="sel" id="skuM" data-ch="skuModel">${Object.keys(mc).sort().map(k=>`<option value="${esc(k)}" ${k===m?'selected':''}>${esc(k)} (${mc[k]})</option>`).join('')}</select></label>
+   <label for="skuC">Customer<select class="sel" id="skuC" data-ch="skuCust">${Object.keys(cc).sort().map(k=>`<option value="${esc(k)}" ${k===c.owner?'selected':''}>${esc(k)} (${cc[k]})</option>`).join('')}</select></label>
+   <label for="asSw">Unit${f?' <span class="note">(filtered)</span>':''}<select class="sel asw" id="asSw" data-ch="asSwitch">${units.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${esc(asUnitLabel(x))}</option>`).join('')}</select></label></div>`}
+/* SKU summary: how many units of this product came back from this customer, and how they differ */
+function skuStrip(c){const m=asModel(c),l=skuUnits(c),g={},rt={},key=m+'|'+c.owner,f=S.skuF&&S.skuF.sku===key?S.skuF:null;
+  l.forEach(x=>{const k=x.grade||'—';g[k]=(g[k]||0)+1;const rk=asRouteShort(x);rt[rk]=(rt[rk]||0)+1});
+  const cut=addDays(AS_OF,-365),closed=ROWS.filter(r=>String(r.equip).replace(/s$/,'')===m&&r.tenant===c.owner&&new Date(r.date)>=cut).length;
+  const chip=(k,v,n)=>`<button class="skuc" data-act="skuF" data-arg="${k}:${esc(v)}" aria-pressed="${!!f&&f.k===k&&f.v===v}">${esc(k==='g'?(v==='—'?'Not graded':'Grade '+v):v)} <b class="num">${n}</b></button>`;
+  return `<section class="panel skus" id="skuStrip" aria-label="Units of this product"><div class="pb"><div class="skuh"><b>${esc(m)} · ${esc(c.owner)}</b><span class="skun"><b class="num">${l.length}</b> unit${l.length===1?'':'s'} returned now</span><span class="note">${fmtN(closed)} more closed in the last 12 months</span></div>
+   <div class="skur"><span class="note">By inspection grade <span class="aszb ret" style="margin-left:4px">Retrieved</span></span>${Object.keys(g).sort().map(k=>chip('g',k,g[k])).join('')}</div>
+   <div class="skur"><span class="note">By recommended route <span class="aszb mod" style="margin-left:4px">Model</span></span>${Object.entries(rt).sort((a,b)=>b[1]-a[1]).map(([k,n])=>chip('r',k,n)).join('')}</div>
+   <p class="note" style="margin:0">Each returned unit of the same product has its own condition, life, value and route. Choose one in <b>Unit</b> above${f?'; the Unit list shows only the units that match your selection':''}.</p></div></section>`}
+ACT.skuModel=v=>{const cur=CASE_BY_ID[S.lastAsset],l=myCases().filter(x=>asModel(x)===v).sort((a,b)=>a.id<b.id?-1:1),p=(cur&&l.find(x=>x.owner===cur.owner))||l[0];S.skuF=null;if(p)go('product/asset/'+p.id)};
+ACT.skuCust=v=>{const cur=CASE_BY_ID[S.lastAsset];if(!cur)return;const l=myCases().filter(x=>asModel(x)===asModel(cur)&&x.owner===v).sort((a,b)=>a.id<b.id?-1:1);S.skuF=null;if(l[0])go('product/asset/'+l[0].id)};
+ACT.skuF=a=>{const c=CASE_BY_ID[S.lastAsset];if(!c)return;const i=a.indexOf(':'),k=a.slice(0,i),v=a.slice(i+1),sku=asModel(c)+'|'+c.owner,on=S.skuF&&S.skuF.sku===sku&&S.skuF.k===k&&S.skuF.v===v;
+  S.skuF=on?null:{sku,k,v};route(true);const n=skuUnits(c).filter(x=>skuMatch(x,S.skuF)).length;toast(on?'Showing every unit.':n+' unit'+(n===1?'':'s')+' match. Choose one in Unit.')};
 function assetHead(c,h){
   const base=location.href.split('#')[0],link=base+'#/product/asset/'+c.id;
   return `<nav class="crumbs ascr" aria-label="Breadcrumb"><a href="#/product/received" data-act="go" data-arg="product/received">Assets</a> <span>›</span> <span>${esc(CLASSES[c.cls].plural)}</span> <span>›</span> <span>${esc(asModel(c))}</span> <span>›</span> <b>${c.assetId}</b></nav>
@@ -2557,7 +2747,7 @@ function assetTabs(c){const rel=assetRelated(c);return `<div class="astabbar"><d
 function assetRelated(c){return myCases().filter(x=>x.id!==c.id&&x.cls===c.cls).sort((a,b)=>(b.owner===c.owner)-(a.owner===c.owner)||(a.location===c.location?-1:1)-(b.location===c.location?-1:1)||(a.id<b.id?-1:1)).slice(0,3)}
 
 /* ---- shared panel + timeline + condition ---- */
-const asPanel=(t,b,tab,cls)=>`<section class="panel aspn ${cls||''}"><div class="ph"><h3>${t}</h3>${tab?`<button class="lnk" data-act="asTab" data-arg="${tab}">View details</button>`:''}</div><div class="pb">${b}</div></section>`;
+const asPanel=(t,b,tab,cls,badge)=>`<section class="panel aspn ${cls||''}"><div class="ph"><h3>${t}</h3>${badge||''}${tab?`<button class="lnk" data-act="asTab" data-arg="${tab}">View details</button>`:''}</div><div class="pb">${b}</div></section>`;
 const asMon=d=>new Date(d).toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'});
 function asEvents(c){const rec=new Date(c.received),mfg=addDays(rec,-Math.round(c.age*365)),com=addDays(mfg,45+asHex(c,'cm')%76),dep=addDays(com,20+asHex(c,'dp')%40),svcEnd=addDays(rec,-20-asHex(c,'se')%40),n=Math.max(1,Math.round(c.age*1.4)+asHex(c,'wo')%3);
   const ins=c.assessment==='Pending'?null:addDays(rec,1+asHex(c,'ins')%3),st=c.stage,decDone=['executing','approved'].includes(st);
@@ -2569,7 +2759,7 @@ function asEvents(c){const rec=new Date(c.received),mfg=addDays(rec,-Math.round(
    {k:'ret',t:'Returned',d:fmtDY(rec),src:'WMS',s:'done',note:'Received at '+c.location},
    {k:'ass',t:'Condition assessment',d:ins?fmtDY(ins):'Pending',src:'Inspection',s:ins&&c.assessment==='Ready'?'done':ins?'warn':'pending',note:ins?(c.assessment==='Ready'?'Inspection complete, grade '+(c.grade||'—'):'Evidence still incomplete'):'No inspection recorded yet'},
    {k:'dec',t:'Treatment decision',d:decDone?'Handed off':st==='awaiting_approval'?'Awaiting approval':st==='reeval'?'Re-evaluate':'Pending',src:'Circularity',s:decDone?'done':st==='awaiting_approval'||st==='reeval'?'warn':'pending',note:c.recommendation?'Recommended: '+(c.recommendation.plan||rid(c.recommendation.id).name):'No route recommended yet'}]}
-function asTimelineHTML(c,full){const ev=asEvents(c);let cur=ev.findIndex(e=>e.s!=='done');if(cur<0)cur=ev.length-1;
+function asTimelineHTML(c,full,ret){const ev=asEvents(c).filter(e=>!ret||e.k!=='dec');let cur=ev.findIndex(e=>e.s!=='done');if(cur<0)cur=ev.length-1;
   return `<ol class="astl ${full?'full':''}">${ev.map((e,i)=>`<li class="${e.s} ${i===cur?'cur':''}" data-tip="${esc(e.t+' · '+e.note)}"><span class="dot">${e.s==='done'?'✓':e.s==='warn'?'●':''}</span><b>${esc(e.t)}</b><span class="d num">${esc(e.d)}</span>${e.sub?`<span class="note">${esc(e.sub)}</span>`:''}<span class="note">${esc(e.src)}</span>${full?`<span class="nt">${esc(e.note)}</span>`:''}</li>`).join('')}</ol>`}
 function asCond(c){const insEv=(c.evidence||[]).find(e=>e.k==='insp')||{state:'missing'},g=c.grade,K=c.cls,spec=c.spec||{};
   const lbl=g?({A:'Excellent condition',B:'Good condition',C:'Fair condition',D:'Poor condition'})[g]:(c.assessment==='Pending'?'Not inspected':'Assessment incomplete'),tone=g?({A:'ok',B:'ok',C:'warn',D:'bad'})[g]:'line';
@@ -2577,21 +2767,20 @@ function asCond(c){const insEv=(c.evidence||[]).find(e=>e.k==='insp')||{state:'m
   const wear=g?({A:'Minimal',B:'Light',C:'Moderate',D:'Heavy'})[g]:'—',wearT=g?({A:'ok',B:'ok',C:'warn',D:'bad'})[g]:'line';
   const cos=g?(g==='A'?['None','ok']:g==='B'?['Minor scratches','ok']:g==='C'?['Dents and scuffs','warn']:['Visible damage','bad']):['—','line'];
   const key={motor:['Insulation resistance',g?'Within limits':'Not tested'],pump:['Pressure test',g?'Holds rated pressure':'Not tested'],control:['Self-diagnostic',g?'No faults logged':'Not run'],drill:['Battery cycles',String(spec['Battery cycles']||'—')],batch:['Calibration',spec['Calibration']||'—'],it:['Battery health',spec['Battery health']||'—']}[K]||['Key test','—'];
-  const m=/^(\d+)\s*months/.exec(c.engLife||''),life=m?(+m[1]/12).toFixed(1)+' years (± '+({A:.3,B:.5,C:.8,D:1.2}[g]||.8)+')':(c.engLife||'—');
   const insD=c.assessment==='Pending'?'Not yet inspected':fmtDY(addDays(c.received,1+asHex(c,'ins')%3));
   const row=(l,v,t)=>`<div class="asrow"><span>${l}</span><b class="${t==='line'?'':'tx-'+t}">${esc(v)}</b></div>`;
   return `<div class="ascond"><div class="ascl"><div class="asclose">${asPhoto(c,'zoom')}</div><div class="ascs"><div class="note">Latest inspection</div><b class="num">${insD}</b><div class="note">Site: ${esc(c.location)}</div><span class="chip ${tone}" style="margin-top:6px">${esc(lbl)}</span></div></div>
-   <div class="asrows">${row('Functional test',test[0],test[1])}${row('Wear level',wear,wearT)}${row('Cosmetic damage',cos[0],cos[1])}${row(key[0],key[1],'ok')}${row('Predicted remaining life',life,'ok')}</div></div>`}
-/* ---- product intelligence + economic intelligence ---- */
+   <div class="asrows">${row('Functional test',test[0],test[1])}${row('Wear level',wear,wearT)}${row('Cosmetic damage',cos[0],cos[1])}${row(key[0],key[1],'ok')}</div></div>`}
+/* ---- product specs + economic intelligence ---- */
 S.at.cur='usd';
 const AS_FX=83.5;
 const asMoney=v=>S.at.cur==='local'?(v<0?'−':'')+'₹'+Math.abs(Math.round(v*AS_FX)).toLocaleString('en-IN'):money(v);
 function asParts(c,h){return h.comps.map(x=>{const v=(asHex(c,'pt'+x.n)%100)/100,q=asHex(c,'q'+x.n);return v>=.6?{n:x.n,st:'In stock',cls:'ok',q:q%24+3}:v>=.3?{n:x.n,st:'Limited',cls:'warn',q:q%4+1}:{n:x.n,st:'Backorder',cls:'bad',q:0}})}
-function asProduct(c,h){const K=CLASSES[c.cls],spec=Object.entries(c.spec||{}),parts=asParts(c,h);
+function asProduct(c,h,ret){const K=CLASSES[c.cls],spec=Object.entries(c.spec||{}),parts=asParts(c,h);
   return `<div class="aspi"><div class="aspa"><div class="row" style="flex-wrap:nowrap;gap:12px;margin-bottom:10px">${asPhoto(c,'sm')}<div><b>${esc(asTitle(c))}</b><div class="note">${esc(K.label)}</div></div></div>
    <dl class="asdl"><div><dt>Product family</dt><dd>${esc(K.plural)}</dd></div><div><dt>Product line</dt><dd>${esc(asModel(c))}</dd></div><div><dt>Revision</dt><dd>${asRev(c)} (current)</dd></div><div><dt>Category</dt><dd>${esc(K.label)}</dd></div></dl>
    <h4>Technical specifications</h4><div class="asspec">${spec.map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')||'<div class="note">No specification recorded.</div>'}</div></div>
-   <div class="aspb"><h4>Component health</h4>${h.comps.map(x=>`<div class="asrow"><span>${esc(x.n)}</span><span class="chip ${x.cls}">${x.st}</span></div>`).join('')}<button class="lnk" data-act="asTab" data-arg="product">View BOM and parts</button></div>
+   ${ret?'':`<div class="aspb"><h4>Component health <span class="note">(modelled)</span></h4>${h.comps.map(x=>`<div class="asrow"><span>${esc(x.n)}</span><span class="chip ${x.cls}">${x.st}</span></div>`).join('')}<button class="lnk" data-act="asTab" data-arg="product">View BOM and parts</button></div>`}
    <div class="aspc"><h4>Parts availability</h4>${parts.map(x=>`<div class="asrow"><span>${esc(x.n)}</span><span class="tx-${x.cls}"><b>${x.st}</b>${x.q?` <span class="note num">${x.q}</span>`:''}</span></div>`).join('')}<button class="lnk" data-act="asTab" data-arg="product">View alternative parts</button></div></div>`}
 function asEcon(c){const r=c.recommendation,K=CLASSES[c.cls],q=c.qty;
   const pos=r?sum(r.terms.filter(t=>t.amt>0).map(t=>t.amt)):Math.round(CC_EST[c.cls]*q),neg=r?sum(r.terms.filter(t=>t.amt<0).map(t=>t.amt)):0,net=r?r.net:Math.round(pos*.8),rg=r?Math.round((r.p90-r.p10)/2/Math.max(1,Math.abs(net))*100):null;
@@ -2628,10 +2817,52 @@ function asQuality(c){const ev=c.evidence||[],n=ev.length||1,cnt={ready:0,partia
 function asRelCard(c,x){const st=ccStage(x),stl={approval:'Awaiting approval',exec:'Under treatment',await_insp:'Awaiting inspection',need:'Needs information',approved:'Approved',reeval:'Re-evaluate',noroute:'No route'}[st];
   return `<a class="asrel" href="#/product/asset/${x.id}" data-act="go" data-arg="product/asset/${x.id}">${asPhoto(x,'xs')}<span class="asrt"><b>${asSerial(x)}</b><span class="note">${esc(asModel(x))} · ${x.assetId}</span><span class="note">${x.owner===c.owner?'Same customer':'Other customer'} · ${esc(x.location)} · ${stl}</span></span><span class="chip ${x.owner===c.owner?'y':'line'}">${x.owner===c.owner?'Similar':'Related'}</span></a>`}
 function asRelated(c){const rel=assetRelated(c);return `<div class="asrels">${rel.map(x=>asRelCard(c,x)).join('')||'<div class="empty"><b>No related assets</b></div>'}</div><button class="lnk" data-act="asTab" data-arg="related" style="margin-top:8px">View all (${myCases().filter(x=>x.id!==c.id&&x.cls===c.cls).length})</button>`}
-function asOverview(c,h){const ok=asTabOK,row=(cls,ps)=>{ps=ps.filter(Boolean);return ps.length?`<div class="asg2 ${ps.length===1?'rX1':cls==='r3'&&ps.length===2?'r1b':cls}">${ps.join('')}</div>`:''};
-  return `<div class="asg">${asPanel('Condition, life and commercial value',tiClv(c),null,'wide asclv')}${row('r1',[ok('lifecycle')&&asPanel('Lifecycle evidence timeline',asTimelineHTML(c),'lifecycle','wide'),ok('condition')&&asPanel('Condition intelligence',asCond(c),'condition')])}
-  ${row('r2',[ok('product')&&asPanel('Product intelligence',asProduct(c,h),'product'),ok('economic')&&asPanel('Economic intelligence',asEcon(c),'economic')])}
-  ${row('r3',[ok('eligibility')&&asPanel('Eligibility and compliance',asElig(c),'eligibility'),ok('data')&&asPanel('Data and evidence quality',asQuality(c),'data'),ok('related')&&asPanel('Related assets and fleet context',asRelated(c),'related')])}</div>`}
+/* ---- retrieved vs predicted: every card says where its figures come from ---- */
+const PROV={ret:'Retrieved',mod:'Model',rul:'Rules'};
+const provB=(k,sys)=>`<span class="aszb ${k}" data-prov="${k}" data-tip="${esc(({ret:'Retrieved from '+sys+'. Circularity reads it and does not change it.',mod:'Predicted by '+sys+'. A model output, not a recorded fact.',rul:'Computed by '+sys+' from fixed rules, not a model.'})[k])}">${PROV[k]} · ${esc(sys)}</span>`;
+const PAST_DEC={redeploy:'Reused at another site',resale:'Sold whole',intparts:'Parts recovered for internal use',relase:'Leased again',material:'Material recovered',extparts:'Parts sold',exit:'Responsible exit'};
+/* earlier lease cycles of this physical unit: closed decisions for the same asset ID, else 1–2 cycles derived from the lease history (synthetic) */
+function asReturnHistory(c){const past=ROWS.filter(x=>x.assetId===c.assetId).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(past.length)return past.map(x=>({cust:x.tenant,at:new Date(x.date),dec:PAST_DEC[x.route]||x.route,grade:x.grade,site:x.site,ref:'Closed decision '+x.id,der:false}));
+  const n=1+asHex(c,'rh')%2,rec=new Date(c.received),span=Math.max(1,c.age)*365,out=[];
+  for(let i=0;i<n;i++){const at=addDays(rec,-Math.round(span*(i+1)/(n+1.4))),h=asHex(c,'rh'+i);
+    out.push({cust:i===0?c.owner:TENANTS[h%TENANTS.length],at,dec:['Refurbished and leased again','Reused at Site '+(1+h%8),'Repaired, back in service'][h%3],grade:'ABC'[h%3],site:FACILITIES[h%FACILITIES.length],ref:'Lease LS-'+(4200+h%700),der:true})}
+  return out}
+function asReturnHistoryHTML(c){const l=asReturnHistory(c);
+  return `<p class="note" style="margin:0 0 6px">This unit has come back ${l.length} time${l.length===1?'':'s'} before this return.</p><ol class="asrh">${l.map(x=>`<li><b>Returned ${fmtDY(x.at)} by ${esc(x.cust)}</b><span class="chip line">Grade ${x.grade}</span><span>${esc(x.dec)} · ${esc(x.site)}</span><span class="note">${esc(x.ref)}${x.der?' · derived from lease history (synthetic)':''}</span></li>`).join('')}</ol>`}
+function asKnownDiag(c){const D=caseDiag(c),d=DIAG[c.cls]||['','pct'],ins=(c.evidence||[]).find(e=>e.k==='insp');
+  return D?`<div class="asfig"><span class="note">${esc(D.metric)}</span><b class="big">${esc(D.value)}</b>${c.grade?`<span>Inspection grade <b>${c.grade}</b></span>`:''}<span class="note">${esc(D.source)} · ${esc(D.at)}</span>${d[1]!=='grade'?'<span class="note">Value modelled from grade, age and class</span>':''}</div>`:'<div class="asfig"><b>Not inspected yet</b><span class="note">Waiting for the inspection report</span></div>'}
+function asKnownCert(c){const R=caseRul(c);
+  return R?`<div class="asfig"><span class="note">Certified operating period</span><b class="big num">${R.certMonths} months</b><span class="note">${esc(R.basis)}</span><span class="note mono">${R.certRef}</span></div>`:`<div class="asfig"><b>No certified period</b><span class="note">${esc(c.engLife||'Not assessed')}</span></div>`}
+function asPredRul(c,h){const R=caseRul(c);
+  return `${R?`<div class="asfig"><span class="note">Estimated remaining useful life</span><b class="big num">${R.estLow}–${R.estHigh} months</b><span class="note">Most likely ${R.estMonths} months · modelled range. The certified period on the left is the firm figure.</span></div>`:'<div class="asfig"><b>No estimate yet</b><span class="note">Needs an inspection grade</span></div>'}
+   <h4 style="font-size:12.5px;margin:10px 0 4px;color:var(--ink2)">Component health <span class="note">(modelled from grade and age)</span></h4>${h.comps.map(x=>`<div class="asrow"><span>${esc(x.n)}</span><span class="chip ${x.cls}">${x.st}</span></div>`).join('')}`}
+const asBaseline=c=>{const b=(c.routes||[]).filter(r=>['resale','exit','material'].includes(r.id)).map(r=>r.net);return b.length?Math.max(...b):null};
+function asPredRec(c){const r=c.chosen||c.recommendation;if(!r)return `<div class="empty"><b>No recommendation yet</b>${c.blocked?esc(c.blocked.reason):'Evidence is needed before any route is priced.'}</div>`;
+  const M=caseDemand(c),rc=recert(c,r),R=caseRul(c),hz=M&&R?Math.min(rc?rc.need:M.horizonMonths,R.certMonths):null,cf=tiConf(c,r),base=asBaseline(c),up=base==null||r.id==='resale'?null:r.net-base;
+  return `<div class="asrec"><div class="asrect">${esc(r.plan)}</div><div class="asrecv"><b class="num">${money(r.net)}</b><span class="note num">predicted net · P10–P90 ${money(r.p10)} to ${money(r.p90)}</span></div>
+   <div class="asrow"><span>Confidence</span><b>${cf}</b></div>
+   ${up!=null?`<div class="asrow" data-tip="Current practice: sell the asset as-is or scrap it. Uplift is the predicted gain of the recommended route over the best of those."><span>Uplift vs sell as-is or scrap</span><b class="num ${up>=0?'tx-ok':'tx-bad'}">${up>=0?'+':'−'}${money(Math.abs(up))}</b></div>`:''}
+   ${M&&M.order?`<div class="asrow"><span>Matched demand</span><b>${M.order} · ${esc(M.site||'—')} <span class="note">${M.confirmed?'confirmed':'forecast'}</span></b></div>`:M&&M.lease?`<div class="asrow"><span>Lease opportunity</span><b>${esc(M.lease)}</b></div>`:''}
+   ${hz?`<div class="asrow"><span>Demand horizon <span class="note">capped at the certified period</span></span><b class="num">${hz} months</b></div>`:''}
+   ${rc?`<div class="asrow"><span class="chip warn">Needs re-certification</span><span class="note">Demand needs ${rc.need} months; certified for ${rc.cert}</span></div>`:''}
+   <div class="row" style="margin-top:6px"><a class="btn pri sm" href="#/product/${c.id}" data-act="go" data-arg="product/${c.id}">Evaluate treatments →</a></div></div>`}
+function asPredRoutes(c){const rs=(c.routes||[]).filter(r=>!r.excluded).sort((a,b)=>b.net-a.net).slice(0,4),rec=c.chosen||c.recommendation;if(!rs.length)return '';
+  return `<h4 style="font-size:12.5px;margin:14px 0 4px;color:var(--ink2)">Predicted value by route</h4>`+asTbl([['Route'],['Net','r'],['P10 to P90','r']],rs.map(r=>`<tr class="${rec&&r===rec?'sel':''}"><td>${esc(r.plan||rid(r.id).name)}</td><td class="r num"><b>${asMoney(r.net)}</b></td><td class="r num">${asMoney(r.p10)} to ${asMoney(r.p90)}</td></tr>`))}
+function asOverview(c,h){const ok=asTabOK,z=hq('zone'),ws=c.cls==='motor'||c.cls==='pump'?'EAM':'Inspection';
+  const L=[`<div class="asz2">${asPanel('Diagnostic condition',asKnownDiag(c),null,'',provB('ret',ws))}${asPanel('Certified period',asKnownCert(c),null,'',provB('ret','QMS'))}</div>`,
+   ok('condition')&&asPanel('Inspection findings',asCond(c),'condition','',provB('ret','Inspection')),
+   ok('lifecycle')&&asPanel('Lifecycle evidence timeline',asTimelineHTML(c,false,true),'lifecycle','',provB('ret','ERP, EAM, WMS')),
+   ok('lifecycle')&&asPanel('Return history of this unit',asReturnHistoryHTML(c),null,'',provB('ret','Lease, WMS')),
+   ok('product')&&asPanel('Product specs',asProduct(c,h,true),'product','',provB('ret','PLM, ERP')),
+   ok('related')&&asPanel('Related assets and fleet context',asRelated(c),'related','',provB('ret','ERP'))].filter(Boolean);
+  const Rt=[asPanel('Recommended outcome',asPredRec(c),null,'',provB('mod','Recommendation service')),
+   asPanel('Estimated remaining useful life',asPredRul(c,h),null,'',provB('mod','RUL model '+(c.model||''))),
+   ok('economic')&&asPanel('Economic intelligence',asEcon(c)+asPredRoutes(c),'economic','',provB('mod','Prediction model')),
+   ok('eligibility')&&asPanel('Eligibility and gates',asElig(c),'eligibility','',provB('rul','Gate engine')),
+   ok('data')&&asPanel('Data and evidence quality',asQuality(c),'data','',provB('rul','Evidence scoring'))].filter(Boolean);
+  return `<div class="aszs"><div class="asz known ${z==='known'?'on':''}" id="aszKnown" aria-labelledby="aszKh"><header class="aszh"><span class="aszk">What we know</span><h2 id="aszKh">Retrieved from enterprise systems</h2><p class="note">Facts pulled from EAM, QMS, ERP, WMS and PLM. Each card names its source. Circularity reads these; it does not change them.</p></header>${L.join('')}</div>
+   <div class="asz pred ${z==='predicted'?'on':''}" id="aszPred" aria-labelledby="aszPh"><header class="aszh"><span class="aszk">What we predict</span><h2 id="aszPh">Predicted and computed by Circularity</h2><p class="note">Model estimates and rule results, each labelled with what produced it. Recommended routes and values appear only on this side.</p></header>${Rt.join('')}</div></div>`}
 /* ---- focused tab views + compare ---- */
 const asTbl=(head,rows,cls)=>`<div class="tw"><table class="t static tight ${cls||''}"><thead><tr>${head.map(h=>`<th class="${h[1]||''}">${h[0]}</th>`).join('')}</tr></thead><tbody>${rows.join('')||`<tr><td colspan="${head.length}"><div class="empty"><b>Nothing to show</b></div></td></tr>`}</tbody></table></div>`;
 function asNet(x){return x.recommendation?x.recommendation.net:null}
@@ -2641,13 +2872,13 @@ function asTabLifecycle(c){const dep=addDays(new Date(c.received),-Math.round(c.
   return asPanel('Lifecycle evidence timeline',asTimelineHTML(c,true))+asPanel('Service history',asTbl([['Work order'],['Date'],['Type'],['System'],['Cost','r'],['Status']],wo)+`<div class="note" style="margin-top:6px">Showing ${wo.length} of ${n} recorded work orders. Costs are estimates for this demo.</div>`)}
 function asTabCondition(c,h){const ev=(c.evidence||[]).filter(e=>['insp','eng','photo','svc'].includes(e.k)),pos=['36% 60%','70% 40%','20% 30%','55% 85%'];
   const chk=ev.map(e=>`<tr><td>${esc(e.label)}</td><td>${esc(e.source)}</td><td><span class="chip ${({ready:'ok',partial:'warn',stale:'warn',missing:'bad',conflict:'bad'})[e.state]||'line'}">${({ready:'Complete',partial:'Partial',stale:'Stale',missing:'Missing',conflict:'Conflict'})[e.state]||e.state}</span></td><td class="note">${esc(e.note||'Updated '+e.fresh)}</td></tr>`);
-  return `<div class="asg2 r1b">${asPanel('Condition intelligence',asCond(c))}${asPanel('Component condition',h.comps.map(x=>`<div class="asrow"><span>${esc(x.n)}</span><span class="asmeter"><i style="width:${Math.round(x.h*100)}%;background:${x.cls==='ok'?'var(--ok)':x.cls==='warn'?'#D4A800':'var(--bad)'}"></i></span><b class="num">${Math.round(x.h*100)}</b><span class="chip ${x.cls}">${x.st}</span></div>`).join(''))}</div>
+  return `<div class="asg2 r1b">${asPanel('Inspection findings',asCond(c),null,'',provB('ret','Inspection'))}${asPanel('Component condition',h.comps.map(x=>`<div class="asrow"><span>${esc(x.n)}</span><span class="asmeter"><i style="width:${Math.round(x.h*100)}%;background:${x.cls==='ok'?'var(--ok)':x.cls==='warn'?'#D4A800':'var(--bad)'}"></i></span><b class="num">${Math.round(x.h*100)}</b><span class="chip ${x.cls}">${x.st}</span></div>`).join(''))}</div>
    ${asPanel('Inspection evidence',asTbl([['Evidence'],['Source'],['State'],['Detail']],chk))}
    ${asPanel('Photos',`<div class="asgal">${pos.map((p,i)=>`<div class="asimg zoomg" style="--op:${p}"><img src="assets/products/${AS_IMG[c.cls]}.webp" alt="${esc(c.product)} view ${i+1}" loading="lazy"></div>`).join('')}</div><div class="note" style="margin-top:6px">Close-up crops of the product photo. Inspection photos attach here when they arrive from the inspection system.</div>`)}`}
 function asTabProduct(c,h){const K=CLASSES[c.cls],parts=asParts(c,h);
   const bom=h.comps.map((x,i)=>{const p=parts[i],lead=p.st==='In stock'?'2–3 days':p.st==='Limited'?'7–10 days':'21+ days',alt=asHex(c,'alt'+x.n)%3!==0;
    return `<tr><td><b>${esc(x.n)}</b></td><td class="mono">${K.pre}-${String(1000+asHex(c,'pn'+x.n)%8999)}</td><td><span class="chip ${x.cls}">${x.st}</span></td><td class="${'tx-'+p.cls}"><b>${p.st}</b></td><td class="r num">${p.q}</td><td class="num">${lead}</td><td>${alt?'<span class="chip ok">Approved alternate</span>':'<span class="chip line">None approved</span>'}</td></tr>`});
-  return asPanel('Product intelligence',asProduct(c,h))+asPanel('Bill of materials and parts',asTbl([['Component'],['Part number'],['Health'],['Availability'],['In stock','r'],['Lead time'],['Alternates']],bom)+`<div class="note" style="margin-top:6px">Component health is modelled from grade and age. Part numbers and stock are illustrative until connected to the BOM and warehouse systems.</div>`)}
+  return asPanel('Product specs',asProduct(c,h),null,'',provB('ret','PLM, ERP'))+asPanel('Bill of materials and parts',asTbl([['Component'],['Part number'],['Health'],['Availability'],['In stock','r'],['Lead time'],['Alternates']],bom)+`<div class="note" style="margin-top:6px">Component health is modelled from grade and age. Part numbers and stock are illustrative until connected to the BOM and warehouse systems.</div>`)}
 function asTabEconomic(c){const rs=(c.routes||[]).slice().sort((a,b)=>b.net-a.net),rec=c.recommendation;
   const rows=rs.map(r=>{const isR=rec&&r===rec;return `<tr class="${isR?'sel':''}"><td><b>${esc(r.plan||rid(r.id).name)}</b><div class="note">${esc(r.demandLabel||'')}</div></td><td class="r num"><b>${asMoney(r.net)}</b></td><td class="r num">${asMoney(r.p10)} to ${asMoney(r.p90)}</td><td>${isR?'<span class="chip y">Recommended</span>':r.excluded?`<span class="chip bad" data-tip="${esc(r.failReason||'')}">Excluded</span>`:'<span class="chip ok">Eligible</span>'}</td></tr>`});
   const terms=rec?rec.terms.map(t=>`<tr><td>${esc(t.label)}</td><td class="r num ${t.amt<0?'tx-bad':'tx-ok'}">${asMoney(t.amt)}</td></tr>`):[];
@@ -2669,8 +2900,8 @@ ACT.asCompare=id=>{const c=CASE_BY_ID[S.lastAsset];if(!c)return;const rel=assetR
   openModal('Compare similar assets',`<div class="tw"><table class="t static tight ascmp"><thead><tr><th></th>${cols.map((x,i)=>`<th>${asPhoto(x,'xs')}<div>${asSerial(x)}${i===0?' <span class="chip y">This asset</span>':''}</div></th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td class="note">${r[1]}</td>${cols.map(x=>`<td>${esc(val(x,r[0]))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`,`<button class="btn ghost" data-act="closeModal">Close</button>`,true)};
 function assetPage(r){const c=CASE_BY_ID[r.b||rbLastAsset()];
   if(!c)return `<div class="empty"><b>Asset not found</b>Choose a returned asset from <a href="#/product/received">Returned assets</a>.</div>`;
-  S.lastAsset=c.id;if(!asTabOK(S.at.tab))S.at.tab='overview';const h=assetHealth(c);
-  return `<div class="as">${assetHead(c,h)}${assetTabs(c)}<div id="asBody">${assetTabBody(c,h)}</div></div>`}
+  S.lastAsset=c.id;if(!asTabOK(S.at.tab)||hq('zone'))S.at.tab='overview';const h=assetHealth(c);
+  return `<div class="as">${assetHead(c,h)}${skuStrip(c)}${assetTabs(c)}<div id="asBody">${assetTabBody(c,h)}</div></div>`}
 ACT.asTab=t=>{if(!asTabOK(t)){toast('That tab is not part of the '+S.acct.role+' view.');return}S.at.tab=t;route(true)};
 ACT.asSwitch=v=>{go('product/asset/'+v)};
 ACT.asCopy=()=>{const u=location.href;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Link copied.'),()=>toast('Copy this link: '+u,6000));const d=$('.asmenu');d&&d.removeAttribute('open')};
@@ -2797,11 +3028,15 @@ function tiStatus(c){const st=c.stage,x=c.exec,act=x&&x.steps.find(s=>s.state===
   if(act)out.push(['Acknowledgement',`from ${act.sys}`]);
   if(st==='closed'&&!c.outcome)out.push(['Outcome confirmation','Finance']);
   return `<h3>Current status</h3><div style="margin:4px 0 6px">${stageChip(c)}</div><p class="ink2 tistw" style="margin:0 0 10px">${esc(why)}</p><h4 style="margin:0 0 4px">Outstanding <span class="note">${out.length}</span></h4>${out.length?`<ul class="tiout">${out.map(o=>`<li><b>${esc(o[0])}</b><span class="note">${esc(o[1])}</span></li>`).join('')}</ul>`:'<p class="note" style="margin:0">Nothing outstanding.</p>'}`}
-/* condition → life → value: one card on the treatment page and the asset overview */
-function tiClv(c){const D=caseDiag(c),R=caseRul(c),r=c.chosen||c.recommendation,M=caseDemand(c),rc=r&&recert(c,r),hz=M&&R?Math.min(rc?rc.need:M.horizonMonths,R.certMonths):null;
-  return `<div class="ticlv" id="tiClv"><div class="ticlvc"><span class="ticlh">A. Diagnostic condition</span>${D?`<b>${esc(D.metric)}: ${esc(D.value)}</b><span class="note">${esc(D.source)} · ${esc(D.at)}</span><span class="note">Modelled from grade, age and class</span>`:'<b>Not inspected yet</b><span class="note">Waiting for the inspection report</span>'}</div>
-   <div class="ticlvc"><span class="ticlh">B. Life after intervention</span>${R?`<span>Estimated RUL <b class="num">${R.estLow}–${R.estHigh} months</b></span><span class="note">Most likely ${R.estMonths} · modelled range</span><span class="ticert">Certified operating period <b class="num">${R.certMonths} months</b></span><span class="note">${esc(R.basis)} · ${R.certRef}</span>${R.certMonths<R.estMonths?`<span class="note">Cannot be certified for ${R.estMonths} months; limited to ${R.certMonths}.</span>`:''}`:`<b>No certified life</b><span class="note">${esc(c.engLife||'Not assessed')}</span>`}</div>
-   <div class="ticlvc"><span class="ticlh">C. Commercial value for that life</span>${r?`<b>${esc(r.plan)} · <span class="num">${money(r.net)}</span></b>${hz?`<span>Demand horizon <b class="num">${hz} months</b> <span class="note">capped at the certified period</span></span>`:''}${M&&M.order?`<span>Matched demand: pending order <b class="mono">${M.order}</b> at <b>${esc(M.site||'—')}</b> · ${M.confirmed?'confirmed':'forecast'}</span>`:M&&M.lease?`<span>Lease opportunity ${esc(M.lease)}</span>`:'<span class="note">No internal demand matched</span>'}${r.target?`<span class="note">Target: ${esc(r.target)}</span>`:''}${rc?`<span><span class="chip warn">Needs re-certification</span> <span class="note">Demand needs ${rc.need} months; certified for ${rc.cert}. The pathway is Conditional.</span></span>`:''}`:'<b>No recommendation yet</b>'}</div></div>`}
+/* condition → life → value on the treatment page, split into what is retrieved and what is predicted */
+function tiKnown(c){const D=caseDiag(c),R=caseRul(c),d=DIAG[c.cls]||['','pct'];
+  return `<div class="ticlvc"><span class="ticlh">Diagnostic condition</span>${D?`<b>${esc(D.metric)}: ${esc(D.value)}</b><span class="note">${esc(D.source)} · ${esc(D.at)}</span>${d[1]!=='grade'?'<span class="note">Value modelled from grade, age and class</span>':''}`:'<b>Not inspected yet</b><span class="note">Waiting for the inspection report</span>'}</div>
+   <div class="ticlvc"><span class="ticlh">Certified period</span>${R?`<span class="ticert" style="border:0;padding:0;margin:0">Certified operating period <b class="num">${R.certMonths} months</b></span><span class="note">${esc(R.basis)} · ${R.certRef}</span>`:`<b>No certified life</b><span class="note">${esc(c.engLife||'Not assessed')}</span>`}</div>`}
+function tiClv(c){return `<div class="ticlv2" id="tiClv"><div class="tiz known"><div class="tizh"><b>What we know</b>${provB('ret',c.cls==='motor'||c.cls==='pump'?'EAM, QMS':'Inspection, QMS')}</div><div class="tizb">${tiKnown(c)}</div></div>
+   <div class="tiz pred"><div class="tizh"><b>What we predict</b>${provB('mod','Circularity models')}</div><div class="tizb">${tiPredicted(c)}</div></div></div>`}
+function tiPredicted(c){const R=caseRul(c),r=c.chosen||c.recommendation,M=caseDemand(c),rc=r&&recert(c,r),hz=M&&R?Math.min(rc?rc.need:M.horizonMonths,R.certMonths):null;
+  return `<div class="ticlvc"><span class="ticlh">Life after intervention</span>${R?`<span>Estimated RUL <b class="num">${R.estLow}–${R.estHigh} months</b></span><span class="note">Most likely ${R.estMonths} · modelled range</span>${R.certMonths<R.estMonths?`<span class="note">Cannot be certified for ${R.estMonths} months; limited to the certified ${R.certMonths}.</span>`:''}`:'<b>No estimate yet</b><span class="note">Needs an inspection grade</span>'}</div>
+   <div class="ticlvc"><span class="ticlh">Commercial value for that life</span>${r?`<b>${esc(r.plan)} · <span class="num">${money(r.net)}</span></b>${hz?`<span>Demand horizon <b class="num">${hz} months</b> <span class="note">capped at the certified period</span></span>`:''}${M&&M.order?`<span>Matched demand: pending order <b class="mono">${M.order}</b> at <b>${esc(M.site||'—')}</b> · ${M.confirmed?'confirmed':'forecast'}</span>`:M&&M.lease?`<span>Lease opportunity ${esc(M.lease)}</span>`:'<span class="note">No internal demand matched</span>'}${r.target?`<span class="note">Target: ${esc(r.target)}</span>`:''}${rc?`<span><span class="chip warn">Needs re-certification</span> <span class="note">Demand needs ${rc.need} months; certified for ${rc.cert}. The pathway is Conditional.</span></span>`:''}`:'<b>No recommendation yet</b>'}</div>`}
 /* step 2: the recommended outcome in one block */
 function tiOutcome(c,sr,rows){const r=c.chosen||c.recommendation;if(!r)return `<div class="panel"><div class="pb"><div class="empty"><b>No recommended outcome yet</b>${c.blocked?esc(c.blocked.reason):'Evidence is needed first.'}</div></div></div>${tiClv(c)}`;
   const me=rows.find(z=>z.r===r)||Object.assign({r},tiM(c,{r,sn:r.net})),R=caseRul(c),M=caseDemand(c),t=tieBreak(c,rows),cf=tiConf(c,r);
