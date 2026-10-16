@@ -9,7 +9,8 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 | | |
 |---|---|
 | **Try it** | Open the hosted demo at [ranilmukesh-artizent.github.io/Circularity-ui](https://ranilmukesh-artizent.github.io/Circularity-ui/), or open `index.html` from this folder in any browser. Nothing to install. |
-| **Sign in** | Pick one of eleven demo accounts. There are no passwords. In production, users and roles come from the customer's identity provider (single sign-on). |
+| **Sign in** | A normal sign-in form. Type `exec` (senior management) or `ops` (end user) and any password, or a work email such as `planner.b@northfield.example` (full list in section 4). Sign-in is simulated: nothing is checked and nothing leaves the browser. In production, users and roles come from the customer's identity provider (single sign-on). |
+| **The demo path** | One returned motor, **RT-1048**, from *Return received* to *Hand off and outcome* in five screens with **Next** and **Back**. The click-by-click script is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). |
 | **Data** | Everything is **synthetic**. The demo company is *Northfield Industrial Leasing*, with three customer tenants and eight sites. No personal or customer data is used, and none should be entered. |
 | **What changed and when** | [`CHANGES.md`](CHANGES.md) has one walk-through per release. |
 
@@ -98,15 +99,25 @@ Every number is computed from the same data, so it is the same on every page. Fo
 
 ## 4. Who uses it: eight roles
 
-The app opens on a sign-in screen. Each role sees **only the pages, panels, figures and buttons that belong to its job**. Anything a role can never use is **not shown at all**, rather than greyed out.
+The app opens on a **sign-in form** (work email or user ID, password, *Continue with single sign-on*). Signing in goes straight to that person's home page; there is no role picker. Each role sees **only the pages, panels, figures and buttons that belong to its job**. Anything a role can never use is **not shown at all**, rather than greyed out.
 
-| Sign-in (desktop) | Sign-in (phone, dark mode) |
-|---|---|
-| [![Sign-in](docs/screenshots/rbac-signin.webp)](docs/screenshots/rbac-signin.webp) | [![Phone sign-in](docs/screenshots/rbac-phone-signin.webp)](docs/screenshots/rbac-phone-signin.webp) |
+[![Sign-in](docs/screenshots/demo-signin.webp)](docs/screenshots/demo-signin.webp)
+
+**Demo sign-in IDs** (any password; the domain `northfield.example` is reserved for examples):
+
+| Type this | Signs in as | Lands on |
+|---|---|---|
+| `exec` or `executive@northfield.example` | Executive (senior management) | Command Center, senior view |
+| `ops`, `user` or `planner.a@northfield.example` | Planner · Customer A (end user) | Returned assets, with **RT-1048** marked *Start here* |
+| `planner.b@…`, `planner.c@…` | Planner · Customer B or C | Returned assets |
+| `warehouse1@…`, `warehouse2@…` | Warehouse Manager · Warehouse 1 or 2 | Command Center, operational view |
+| `approver@…`, `engineer@…`, `finance@…`, `developer@…`, `admin@…` | That role | Its home (table below) |
+
+*Continue with single sign-on* uses the email typed above it, shows a short "redirecting to your identity provider (simulated)" step and signs in. An unknown ID shows an error and nothing else. For presenters, `index.html?presenter=1` adds two small shortcuts under the form (**Senior management**, **End user**) and a quick switch in the account menu; `?presenter=0` turns it off. The build team's role list is still at `#/signin?roles`.
 
 | Role | Their job in one line | Lands on | Demo accounts |
 |---|---|---|---|
-| **Planner** | Prepares cases in their own customer tenant, requests evidence, evaluates options and submits decisions for review | Command Center | Planner · Customer A, B or C |
+| **Planner** | Prepares cases in their own customer tenant, requests evidence, evaluates options and submits decisions for review | Returned assets (Customer A opens on RT-1048) | Planner · Customer A, B or C |
 | **Approver** | Approves or declines what Admin has delegated to them: decisions and overrides, MCP server proposals, tenant access requests | Command Center, with the approvals inbox | Approver |
 | **Engineer** | Inspects assets, records assessments and test results, and owns technical eligibility | Asset intelligence | Engineer |
 | **Finance** | Confirms outcomes and tracks recovery, avoided spend and variance; reads and comments on the audit log and Source map | Analytics | Finance |
@@ -124,7 +135,7 @@ The app opens on a sign-in screen. Each role sees **only the pages, panels, figu
 - **A Warehouse Manager is locked to one warehouse** (the asset's current location) on every page, in search and in the audit log. Planners and Engineers get a **default** site filter on their queues that they can widen.
 - **Everyone sees Process orchestration**, read-only; Developer and Admin also get links to the live call log.
 
-Switch role at any time from the account menu (top right): **Switch account** or **Sign out**.
+Switch role at any time from the account menu (top right): **Switch account** or **Sign out**. Both return to the sign-in form, and the next account lands on its own home.
 
 ## 5. How a decision moves through the product
 
@@ -168,7 +179,7 @@ The left menu has eight areas. Each area has a dropdown of its sections, and eve
 - **Panels:** lifecycle portfolio, treatment opportunity, value at risk by reason, time to action, top 10 actions to prioritise, emerging signals, capacity and bottlenecks, value realisation (predicted against actual).
 - **Refresh**, **Share** (copies the link) and **Export** (a one-page PDF).
 
-**Senior and operational views** (Update 8). The **senior view** (Executive, and Admin's *Senior* switch) puts the value figures on top (the same figures as Finance), then portfolio health and a ranked **Exceptions** list: value at risk by reason, warehouse bottlenecks, declining metrics and deteriorating condition. Each exception has **View cases** and **Notify owner**. Operational queues are hidden unless *Show operational queues* is ticked. The **operational view** (Planner, Engineer, Warehouse Manager) starts with **Actions on me**, then **Waiting for approval** (status only) and **Handed off · awaiting outcome**, scoped to the user's site or warehouse. A notification lands in the recipient's *Actions on me*; when they acknowledge it, the exception shows *In hand by …*.
+**Senior and operational views** (Update 8). The **senior view** (Executive, and Admin's *Senior* switch) puts the value figures on top (the same figures as Finance), then portfolio health and a ranked **Exceptions** list: value at risk by reason, warehouse bottlenecks, declining metrics and deteriorating condition. Since Update 9 the list is **Exceptions by warehouse**: one row per warehouse and exception type, showing **Warehouse · Exception · Items · Value · Status**, with **Notify owner** on every row. Clicking a row opens a drill-down with three columns only: **Warehouse · Item · Value**. The values add up to the same totals as before. Operational queues are hidden unless *Show operational queues* is ticked. The **operational view** (Planner, Engineer, Warehouse Manager) starts with **Actions on me**, then **Waiting for approval** (status only) and **Handed off · awaiting outcome**, scoped to the user's site or warehouse. A notification lands in the recipient's *Actions on me*; when they acknowledge it, the exception shows *In hand by …*.
 
 | Role | Key figures | Extra panels |
 |---|---|---|
@@ -204,6 +215,10 @@ Planner and Engineer also get **Actions on me** as their first figure, and every
 
 [![Expected returns](docs/screenshots/flow-expected-returns.webp)](docs/screenshots/flow-expected-returns.webp)
 - Search and filter by condition, location, owner and assessment. Click a row to open its decision; click an asset ID to open Asset intelligence.
+- **Group by product** (next to the filters) folds the list into one row per product and customer, for example *Voltara V4 motor · Customer A · 15 units · grades A–D · $85,758 predicted*. Click a group to see its units.
+- The demo record **RT-1048** is marked **Start here**, and a **Demo path** bar under the top bar walks it through five screens (section 10). Notifications sent to you appear at the top of this page as well as in *Actions on me*.
+
+[![Returned assets grouped by product](docs/screenshots/demo-sku-grouped.webp)](docs/screenshots/demo-sku-grouped.webp)
 
 [![Returned assets, Planner for Customer A](docs/screenshots/readme-product-received.webp)](docs/screenshots/readme-product-received.webp)
 
@@ -218,6 +233,10 @@ Planner and Engineer also get **Actions on me** as their first figure, and every
 **For:** Planner, Approver, Engineer and Finance, each with their own tabs. **Purpose:** everything known about one asset, on one page.
 
 - Product photo, twelve key facts and an **overall health score**.
+- **Product (SKU) → Customer → Unit** selectors. One customer can return many units of the same product (Customer A has 15 Voltara V4 motors back now); each unit has its own serial number, grade, life, value and route. A strip above the tabs counts the units by inspection grade and by recommended route; click a count to filter the *Unit* list.
+- **Overview is split in two.** Left, **What we know: retrieved from enterprise systems**: diagnostic condition (EAM), certified period (QMS), inspection findings, lifecycle evidence timeline, the **return history of this unit**, **Product specs** and related assets. Right, **What we predict: predicted and computed by Circularity**: recommended outcome with value, confidence and uplift, estimated remaining useful life, economic intelligence with predicted value by route, eligibility gates and data quality. Every card carries a badge: **Retrieved · system**, **Model · name** or **Rules · name**. No route or predicted value appears on the retrieved side.
+
+[![Asset Overview: retrieved on the left, predicted on the right](docs/screenshots/demo-asset-zones.webp)](docs/screenshots/demo-asset-zones.webp)
 - **Compare similar assets** (up to four side by side) and **Evaluate treatments →**.
 - **Eight tabs:** Overview, Lifecycle, Condition, Product and Components, Economic Analysis, Eligibility and Compliance, Data and Evidence, Related Assets.
 
@@ -385,7 +404,7 @@ Opening a page your role cannot see (for example from an old bookmark) takes you
 
 ## 8. A day in each role
 
-**Planner (Customer A).** Signs in to a Command Center scoped to Customer A. Under Product → Returned assets: 64 assets returned this cycle, 21 waiting for approval. Opens **RT-1048**, an industrial motor whose best route is *Redeploy* for $9,600. Checks the eligibility gates, compares it against resale, drags the price slider to test a drop in demand, saves the scenario and presses **Submit for review**. Needs Customer B's motors for a shared pool, so picks **Request access…** in the tenant menu.
+**Planner (Customer A).** Signs in straight to Returned assets, scoped to Customer A: 64 assets returned this cycle, 21 waiting for approval. Opens **RT-1048**, an industrial motor whose best route is *Redeploy* for $9,600. Checks the eligibility gates, compares it against resale, drags the price slider to test a drop in demand, saves the scenario and presses **Submit for review**. Needs Customer B's motors for a shared pool, so picks **Request access…** in the tenant menu.
 
 **Approver.** Lands on the **Approvals inbox**: the Planner's tenant access request and a Developer's MCP server proposal. Approves the access request with a note. Opens RT-1048, sees who submitted it and when, and either **Approves**, **Overrides** with another route, or **Declines** with a reason that the Planner will see.
 
@@ -419,6 +438,20 @@ Opening a page your role cannot see (for example from an old bookmark) takes you
 > These describe how the demo behaves. They are not a statement of certification or regulatory compliance. Please have Kinective's Legal team review this section before it is used with clients.
 
 ## 10. Demo scripts
+
+### The Monday demo path (one record, five screens)
+
+Sign in as `exec`, open **Warehouse 1** in *Exceptions by warehouse*, find **RT-1048**, press **Notify owner** and send it to *Planner · Customer A*. Then sign in as `ops`: the notification is at the top of **Returned assets**, and RT-1048 is marked *Start here*. Follow the **Demo path** bar with **Next**:
+
+| # | Stop | Screen |
+|---|---|---|
+| 1 | Return received | Returned assets, RT-1048 highlighted |
+| 2 | What we know | Asset intelligence, left side: retrieved from EAM, QMS, ERP, WMS |
+| 3 | What we predict | Asset intelligence, right side: life, value and the recommended route |
+| 4 | Decide and approve | Treatment Intelligence, step 2 onwards |
+| 5 | Hand off and outcome | Step 5: instruction to ERP, EAM and WMS, acknowledgements, outcome |
+
+The stop names are provisional until the Product Owner's block diagram arrives. The full script, with what to say, timings, recovery steps and Q&A notes, is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md); the one-slide journey is [`docs/demo/journey-slide.svg`](docs/demo/journey-slide.svg).
 
 ### Five-minute executive pitch
 
@@ -461,7 +494,7 @@ For the Product Owner and engineering.
 | **Navigation** | Hash links such as `#/product/RT-1048` or `#/integration/map`, so every page and section can be bookmarked and the back button works |
 | **Access policy** | One block in `index.html`, between `/*RBAC-START*/` and `/*RBAC-END*/`: the roles, their pages, their permissions and the demo accounts. The menu, the page guard and the control filtering all read from it |
 | **Images** | Five unbranded product photos in `assets/products/`; prompts to regenerate them are in [`IMAGE_PROMPTS.md`](IMAGE_PROMPTS.md) |
-| **Quality checks** | Two automated headless-browser suites (208 role checks and 110 guided-flow checks) cover sign-in, every page for every account, hidden controls, tenant lock, approvals, comments, cross-page numbers and data integrity. A second run checks every reachable page at phone width |
+| **Quality checks** | Three automated headless-browser suites (208 role checks, 110 guided-flow checks and 88 demo-path checks) cover sign-in, every page for every account, hidden controls, tenant lock, approvals, comments, cross-page numbers and data integrity. A second run checks every reachable page at phone width |
 
 **Repository map**
 
@@ -480,7 +513,7 @@ IMAGE_PROMPTS.md                how the product photos were made
 
 | Real in the demo | Simulated |
 |---|---|
-| Every screen, interaction and role rule | Sign-in: demo accounts, no passwords, no real authentication. Identity provider, directory sync and SCIM are simulated |
+| Every screen, interaction and role rule | Sign-in: the form accepts any password for the demo IDs; single sign-on, the identity provider, directory sync and SCIM are simulated |
 | The decision logic: routes, gates, forecasts with ranges, pool allocation | All data: companies, assets, prices, volumes and results are synthetic |
 | Numbers that reconcile across every page | Connections: vendor and product names make the demo realistic, but nothing is connected |
 | Phone, tablet, dark mode and print layouts | Live activity: syncs, workflow runs and failures are simulated on a timer |
@@ -499,6 +532,8 @@ Nothing is saved to a server. All changes reset on refresh.
 - the Access page lists the demo accounts but does not create new ones
 
 **From Update 8, still assumed** (see `docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md`, section 10): what the Executive may open (D2), "site" means the asset's current location (D5), notification recipients (D7), the tie-breaker threshold and factor order (D8, D18), a horizon longer than the certified period is Conditional (D10), lease outcome history exists (D19), Entra ID and SCIM (D20). The user journey diagram (D15) and the "increase the count of the rows" point (D12) are still to come.
+
+**From Update 9, still assumed** (see `docs/PLAN_DEMO_SIGNIN_SINGLE_ASSET.md`, section 10): the two lead identities and where they land (E1, E2), the hidden role list and presenter shortcuts (E3, E4), the `northfield.example` IDs (E5), RT-1048 as the one record (E6), the five stop names (E7, waiting for the block diagram), exceptions grouped by warehouse first (E8), real unit counts instead of "100 units" (E9), production system names on the badges (E10), *Inspection findings* (E11), no sixth Executive figure (E12), and hosting (E13).
 
 **For Legal review.** The role matrix (sections 4 and 7), the governance claims (section 9) and any access or compliance wording should be reviewed by Kinective's Legal team before client use.
 

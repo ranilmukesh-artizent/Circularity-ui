@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="t d" font-family="'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif">
+  <title id="t">One returned asset, five steps</title>
+  <desc id="d">Business journey for a returned leased asset: Return received, What we know, What we predict, Decide and approve, Hand off and outcome. The demo follows one record, RT-1048, through these five steps. Synthetic demo data.</desc>
+  <rect width="1600" height="900" fill="#FAF8F5"/>
+  <rect x="0" y="0" width="1600" height="10" fill="#FFDD00"/>
+
+  <text x="80" y="92" font-size="42" font-weight="800" fill="#141414">When a leased asset comes back,</text>
+  <text x="80" y="144" font-size="42" font-weight="800" fill="#141414">what is it worth, and what should happen to it?</text>
+  <text x="80" y="198" font-size="22" fill="#4B4541">Today separate teams sell it or scrap it, and nobody sees the value left behind. Circularity follows each returned unit through five steps.</text>
+
+  <!-- arrows -->
+  <g fill="none" stroke="#141414" stroke-width="3">
+    <path d="M374 400 H402"/><path d="M660 400 H688"/><path d="M946 400 H974"/><path d="M1232 400 H1260"/>
+  </g>
+  <g fill="#141414">
+    <path d="M402 392 L414 400 L402 408 Z"/><path d="M688 392 L700 400 L688 408 Z"/><path d="M974 392 L986 400 L974 408 Z"/><path d="M1260 392 L1272 400 L1260 408 Z"/>
+  </g>
+
+  <!-- 1 -->
+  <g>
+    <rect x="80" y="250" width="294" height="300" rx="18" fill="#FFFFFF" stroke="rgba(20,20,20,.18)" stroke-width="2"/>
+    <circle cx="124" cy="296" r="22" fill="#141414"/><text x="124" y="304" text-anchor="middle" font-size="22" font-weight="800" fill="#FFFFFF">1</text>
+    <text x="104" y="360" font-size="25" font-weight="800" fill="#141414">Return received</text>
+    <text x="104" y="398" font-size="19" fill="#4B4541">The asset arrives at</text>
+    <text x="104" y="424" font-size="19" fill="#4B4541">the warehouse and joins</text>
+    <text x="104" y="450" font-size="19" fill="#4B4541">the returned assets.</text>
+    <text x="104" y="520" font-size="16" font-weight="700" fill="#7B726D">END USER · WMS</text>
+  </g>
+  <!-- 2 -->
+  <g>
+    <rect x="416" y="250" width="244" height="300" rx="18" fill="#FFFFFF" stroke="rgba(20,20,20,.18)" stroke-width="2"/>
+    <circle cx="460" cy="296" r="22" fill="#141414"/><text x="460" y="304" text-anchor="middle" font-size="22" font-weight="800" fill="#FFFFFF">2</text>
+    <text x="440" y="360" font-size="25" font-weight="800" fill="#141414">What we know</text>
+    <text x="440" y="398" font-size="19" fill="#4B4541">Condition, certified</text>
+    <text x="440" y="424" font-size="19" fill="#4B4541">period, history and</text>
+    <text x="440" y="450" font-size="19" fill="#4B4541">specs, retrieved.</text>
+    <text x="440" y="520" font-size="16" font-weight="700" fill="#7B726D">EAM · QMS · ERP · WMS</text>
+  </g>
+  <!-- 3 -->
+  <g>
+    <rect x="702" y="250" width="244" height="300" rx="18" fill="#FBF3D8" stroke="#FFDD00" stroke-width="3"/>
+    <circle cx="746" cy="296" r="22" fill="#FFDD00"/><text x="746" y="304" text-anchor="middle" font-size="22" font-weight="800" fill="#141414">3</text>
+    <text x="726" y="360" font-size="25" font-weight="800" fill="#141414">What we predict</text>
+    <text x="726" y="398" font-size="19" fill="#4B4541">Remaining life, value</text>
+    <text x="726" y="424" font-size="19" fill="#4B4541">on each route, and the</text>
+    <text x="726" y="450" font-size="19" fill="#4B4541">best next use.</text>
+    <text x="726" y="520" font-size="16" font-weight="700" fill="#7B726D">CIRCULARITY MODELS</text>
+  </g>
+  <!-- 4 -->
+  <g>
+    <rect x="988" y="250" width="244" height="300" rx="18" fill="#FFFFFF" stroke="rgba(20,20,20,.18)" stroke-width="2"/>
+    <circle cx="1032" cy="296" r="22" fill="#141414"/><text x="1032" y="304" text-anchor="middle" font-size="22" font-weight="800" fill="#FFFFFF">4</text>
+    <text x="1012" y="360" font-size="25" font-weight="800" fill="#141414">Decide and</text>
+    <text x="1012" y="394" font-size="25" font-weight="800" fill="#141414">approve</text>
+    <text x="1012" y="432" font-size="19" fill="#4B4541">Why, what-if, and one</text>
+    <text x="1012" y="458" font-size="19" fill="#4B4541">person approves.</text>
+    <text x="1012" y="520" font-size="16" font-weight="700" fill="#7B726D">PLANNER · APPROVER</text>
+  </g>
+  <!-- 5 -->
+  <g>
+    <rect x="1274" y="250" width="246" height="300" rx="18" fill="#141414"/>
+    <circle cx="1318" cy="296" r="22" fill="#FFDD00"/><text x="1318" y="304" text-anchor="middle" font-size="22" font-weight="800" fill="#141414">5</text>
+    <text x="1298" y="360" font-size="25" font-weight="800" fill="#FFFFFF">Hand off and</text>
+    <text x="1298" y="394" font-size="25" font-weight="800" fill="#FFFFFF">outcome</text>
+    <text x="1298" y="432" font-size="19" fill="#E9E3DB">ERP, EAM and WMS do</text>
+    <text x="1298" y="458" font-size="19" fill="#E9E3DB">the work; the result</text>
+    <text x="1298" y="484" font-size="19" fill="#E9E3DB">comes back.</text>
+    <text x="1298" y="520" font-size="16" font-weight="700" fill="#9C9189">ERP · EAM · WMS · FINANCE</text>
+  </g>
+
+  <!-- retrieved vs predicted band -->
+  <rect x="416" y="580" width="244" height="44" rx="10" fill="#FFFFFF" stroke="rgba(20,20,20,.18)"/>
+  <text x="538" y="609" text-anchor="middle" font-size="18" font-weight="700" fill="#4B4541">Retrieved</text>
+  <rect x="702" y="580" width="244" height="44" rx="10" fill="#141414"/>
+  <text x="824" y="609" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">Predicted</text>
+
+  <!-- the record -->
+  <rect x="80" y="680" width="1440" height="120" rx="18" fill="#FFFFFF" stroke="rgba(20,20,20,.11)" stroke-width="2"/>
+  <text x="112" y="728" font-size="18" font-weight="700" fill="#7B726D">IN THE DEMO, ONE RECORD THROUGHOUT</text>
+  <text x="112" y="770" font-size="26" font-weight="800" fill="#141414">RT-1048 · Voltara V4 motor · Customer A · Warehouse 1</text>
+  <text x="840" y="770" font-size="22" fill="#4B4541">Grade B · 30–40 months left · Redeploy to Site 3 · $9,600</text>
+
+  <text x="80" y="860" font-size="16" fill="#7B726D">Step names are provisional until confirmed against the Product Owner's journey diagram. Demo data is synthetic.</text>
+</svg>

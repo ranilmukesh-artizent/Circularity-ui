@@ -2,7 +2,9 @@
 
 **Purpose of this file:** a self-contained brief for a fresh session. It does not assume any earlier conversation. Read it top to bottom, then start at **Phase 0**.
 
-**Status:** draft, not started (2026-10-16). Source: the team review call of 2026-10-16 (Product Owner, a senior reviewer, and the build team), its transcript, and the first-draft spec `docs/Refactor Guided Flow.md`, which this plan refines and replaces. Open decisions are in **section 3**. Each has a recommended default; until the Product Owner answers, build the default and label it **(assumed)**.
+**Status:** built on branch `feature/demo-refactor` (2026-10-16), phases 1–6, with every open decision on its default and marked **(assumed)**; see section 10 and `CHANGES.md` Update 9. Not pushed or merged. Still to do: the block diagram (E7), hosting (E13), the sales video.
+
+**Original status:** draft, not started (2026-10-16). Source: the team review call of 2026-10-16 (Product Owner, a senior reviewer, and the build team), its transcript, and the first-draft spec `docs/Refactor Guided Flow.md`, which this plan refines and replaces. Open decisions are in **section 3**. Each has a recommended default; until the Product Owner answers, build the default and label it **(assumed)**.
 
 **Builds on:** `docs/PLAN_RBAC_ADAPTIVE_UI.md` (roles, policy, sign-in, rules in section 7, harness in section 8) and `docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md` (Update 8: guided treatment page, Executive and Warehouse Manager, exceptions, Notify, orchestration, identity). **Branch:** `feature/demo-refactor`, cut from `feature/guided-flow` at `868f530`. Neither earlier branch is merged into `main` yet (section 4.8).
 
@@ -275,7 +277,19 @@ Run both existing suites unchanged except where this plan deliberately changes a
 
 | # | Answer | Where it lands |
 |---|---|---|
-| E1–E13 | pending | |
+| E1 | (assumed) Executive and Planner · Customer A | `SIGNIN_LEAD`, presenter chips, demo script |
+| E2 | (assumed) Planners land on Returned assets; Customer A on `?focus=RT-1048` | `ROLE_POLICY.Planner.landing`, `ACCOUNTS[planner-a].home`, `homeOf` |
+| E3 | (assumed) Role grid only at `#/signin?roles`; Ctrl+Shift+R not used (it is the browser's hard reload) | `signInRolesWanted`, `renderSignIn` |
+| E4 | (assumed) Quick-fill chips only with `?presenter=1`; datalist offers the demo IDs | `presenterOn`, `signInFormHTML`, `dpHint` |
+| E5 | (assumed) `@northfield.example` plus aliases `exec`, `ops`, `user` and role names; any non-empty password | `SIGNIN_IDS`, `signInResolve` |
+| E6 | (assumed) RT-1048 | `DEMO_ID` |
+| E7 | **open**: provisional names until the diagram arrives | `DP_STOPS`, `docs/demo/journey-slide.svg` |
+| E8 | (assumed) Warehouse first, one row per warehouse × type, Portfolio last | `ccExRows`, `ccExHTML` |
+| E9 | (assumed) Real counts (15 Voltara V4 motors for Customer A) | `skuStrip`, `skuUnits` |
+| E10 | (assumed) Badges name the production system; *Demo data* pill and sign-in footer say it is synthetic | `provB` |
+| E11 | (assumed) *Inspection findings* | `asOverview`, `asTabCondition` |
+| E12 | (assumed) No sixth figure; the count and total are in the Exceptions header | `ccExHTML` |
+| E13 | **open**: nothing merged or pushed; a zip can be shared until then | — |
 
 **Still open from earlier plans:** the user journey diagram (was D15; now E7), "increase the count of the rows… with the same button" (D12), and D2, D5–D20 of the guided-flow plan.
 

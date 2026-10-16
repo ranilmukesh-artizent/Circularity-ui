@@ -1582,13 +1582,13 @@ function dpStop(r){const id=dpId();if(!dpVisible(id)||r.page!=='product')return 
   if(r.a==='asset'&&(r.b||rbLastAsset())===id)return hq('zone')==='predicted'?3:2;
   if(r.a===id)return hq('step')==='5'?5:4;return 0}
 function dpHint(n,c){if(!presenterOn())return '';const st=c.stage,tip=(t,id,l)=>`<span class="dphint"><span>${t}</span>${ACCT(id)&&S.acct.id!==id?`<button class="btn sm" data-act="siSwitchTo" data-arg="${id}">Presenter: continue as ${esc(l)}</button>`:''}</span>`;
-  if(n===4&&st==='awaiting_approval'&&!can('approve'))return tip('An Approver approves this decision.','approver','Approver');
+  if(n>=4&&st==='awaiting_approval'&&!can('approve'))return tip(c.submitted||!can('submit')?'An Approver approves this decision.':'Submit it for review in step 5; an Approver then approves it.','approver','Approver');
   if(n===5&&st==='closed'&&!c.outcome&&!can('confirm'))return tip('Finance confirms the reported outcome.','finance','Finance');
   return ''}
 function dpRail(r){const n=dpStop(r);if(!n)return '';const id=dpId(),c=CASE_BY_ID[id],prev=DP_STOPS[n-2],next=DP_STOPS[n];
   return `<nav class="dprail" id="dpRail" aria-label="Demo path for ${id}"><span class="dpl">Demo path</span><span class="dpcase" data-tip="${esc(asModel(c)+' · '+c.owner)}"><b>${id}</b></span>
    <ol>${DP_STOPS.map(s=>`<li class="${s.n<n?'done':''}"><a href="#/${s.h(id)}" ${s.n===n?'aria-current="step"':''} data-tip="${esc(s.say+' Journey step'+(s.j.length>1?'s '+s.j[0]+'–'+s.j[s.j.length-1]:' '+s.j[0])+'.')}"><span class="n">${s.n}</span><span class="t">${esc(s.t)}</span></a></li>`).join('')}</ol>
-   <span class="dpnav">${prev?`<a class="btn sm" href="#/${prev.h(id)}" id="dpBack">← Back</a>`:''}${next?`<a class="btn sm pri" href="#/${next.h(id)}" id="dpNext">Next: ${esc(next.t)} →</a>`:`<a class="btn sm" href="#/${DP_STOPS[0].h(id)}" id="dpRestart">Start again</a>`}</span>${dpHint(n,c)}</nav>`}
+   <span class="dpnav">${prev?`<a class="btn sm" href="#/${prev.h(id)}" id="dpBack" aria-label="Back: ${esc(prev.t)}">← Back</a>`:''}${next?`<a class="btn sm pri" href="#/${next.h(id)}" id="dpNext" aria-label="Next: ${esc(next.t)}" data-tip="Next: ${esc(next.t)}">Next →</a>`:`<a class="btn sm" href="#/${DP_STOPS[0].h(id)}" id="dpRestart">Start again</a>`}</span>${dpHint(n,c)}</nav>`}
 function journey(on){return `<nav class="jstrip" aria-label="Where this screen sits in the user journey"><span class="jl">Journey</span>${JSTEPS.map(j=>`<span class="jstep ${j[2]==='built'?'built':j[2]} ${on.includes(j[0])?'on':''}" title="Step ${j[0]}: ${esc(j[1])}. ${esc(j[3])}"><span class="n">${j[0]}</span>${on.includes(j[0])?esc(j[1]):''}</span>`).join('')}<span class="jkey"><span><i class="y"></i>Build</span><span><i class="w"></i>Integrate</span><span><i class="b"></i>Approve</span></span></nav>`}
 const stpn=(n)=>{const j=JSTEPS[n-1];return `<span class="stp ${j[2]==='built'?'':j[2]}" title="Journey step ${n}: ${esc(j[1])}"><b>${n}</b></span>`};
 const CLS_ICON={motor:'motor',pump:'pump',control:'control',drill:'drill',batch:'batch',it:'it'};
@@ -2009,7 +2009,8 @@ function kpiStrip(){
 const qRow=c=>`<tr class="${S.sel===c.id?'sel':''} ${hq('focus')===c.id?'dpfocus':''}" id="qr-${c.id}" tabindex="0" data-act="selectCase" data-arg="${c.id}"><td><b>${c.id}</b>${c.id===dpId()&&dpVisible(c.id)?'<span class="chip y dpstart">Start here</span>':''}</td><td><div class="row" style="gap:8px;flex-wrap:nowrap">${thumb(c.cls)}<span>${esc(c.product)}${c.qty>1?` <span class="note">×${c.qty}</span>`:''}</span></div></td><td class="num nowrap"><a class="lnk" href="#/product/asset/${c.id}" data-act="go" data-arg="product/asset/${c.id}" data-tip="Open asset intelligence">${c.assetId}</a></td><td class="nowrap">${c.owner}</td><td class="num nowrap">${fmtD(c.received)}</td><td class="nowrap">${c.location}</td><td>${condChip(c)}</td><td>${assessChip(c)}</td><td>${stageChip(c)}</td><td class="r num nowrap">${c.recommendation?`<b>${money(c.recommendation.net)}</b> <span class="note">${esc(rid(c.recommendation.id).short)}</span>`:'<span class="muted">—</span>'}</td></tr>`;
 /* grouped view: one row per product and customer, expanding to its units */
 function qGroups(rows){const g={};rows.forEach(c=>{const k=asModel(c)+'|'+c.owner;(g[k]=g[k]||[]).push(c)});const open=S.q.open||(S.q.open={});
-  return Object.entries(g).sort((a,b)=>b[1].length-a[1].length||(a[0]<b[0]?-1:1)).map(([k,l])=>{const [m,o]=k.split('|'),gr=[...new Set(l.map(c=>c.grade).filter(Boolean))].sort(),net=sum(l.map(c=>(c.chosen||c.recommendation||{}).net||0)),on=!!open[k];
+  const pv=l=>sum(l.map(c=>(c.chosen||c.recommendation||{}).net||0));
+  return Object.entries(g).sort((a,b)=>b[1].length-a[1].length||pv(b[1])-pv(a[1])).map(([k,l])=>{const [m,o]=k.split('|'),gr=[...new Set(l.map(c=>c.grade).filter(Boolean))].sort(),net=sum(l.map(c=>(c.chosen||c.recommendation||{}).net||0)),on=!!open[k];
    return `<tr class="skug" data-act="qGroup" data-arg="${esc(k)}" aria-expanded="${on}" tabindex="0"><td colspan="10"><span class="skut"><span class="car" aria-hidden="true">›</span><span>${esc(m)} · ${esc(o)}</span><span class="chip line">${l.length} unit${l.length===1?'':'s'}</span><span class="note">${gr.length?'grades '+(gr.length>1?gr[0]+'–'+gr[gr.length-1]:gr[0]):'not graded yet'} · ${money(net)} predicted</span></span></td></tr>`+(on?l.map(qRow).join(''):'')}).join('')}
 function queueTable(){
   const rows=queueRows(),f=S.q,shown=rows.slice(0,f.limit);
@@ -2455,7 +2456,7 @@ function ccExRows(sc){const rows=[];
     x.ids.forEach(id=>{const c=CASE_BY_ID[id];if(!c)return;const w=x.id.indexOf('cap:')===0?x.loc:c.location;(g[w]=g[w]||[]).push({c,v:iv(c)})});
     const ws=Object.keys(g),raw=ws.map(w=>sum(g[w].map(i=>i.v))),tot=sum(raw),vals=raw.map(v=>tot?Math.round(x.value*v/tot):0);
     if(vals.length){vals[raw.indexOf(Math.max(...raw))]+=x.value-sum(vals)}
-    ws.forEach((w,i)=>{const items=g[w].sort((a,b)=>b.v-a.v);rows.push(Object.assign({},x,{id:x.id+'@'+w,base:x.id,wh:w,loc:w,value:vals[i],count:items.length,ids:items.map(t=>t.c.id),items}))})});
+    ws.forEach((w,i)=>{const items=g[w].sort((a,b)=>b.v-a.v);rows.push(Object.assign({},x,{id:x.id+'@'+w,base:x.id,wh:w,loc:w,title:x.title.replace(': '+w,''),value:vals[i],count:items.length,ids:items.map(t=>t.c.id),items}))})});
   const tot={};rows.forEach(r=>{tot[r.wh]=(tot[r.wh]||0)+r.value});
   const gk=w=>w==='Portfolio'?-1:tot[w];
   return rows.sort((a,b)=>a.wh===b.wh?b.value-a.value:gk(b.wh)-gk(a.wh)||EX_WH_ORDER.indexOf(a.wh)-EX_WH_ORDER.indexOf(b.wh))}
