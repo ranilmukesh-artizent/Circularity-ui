@@ -10,7 +10,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 |---|---|
 | **Try it** | Open the hosted demo at [ranilmukesh-artizent.github.io/Circularity-ui](https://ranilmukesh-artizent.github.io/Circularity-ui/), or open `index.html` from this folder in any browser. Nothing to install. |
 | **Sign in** | A normal sign-in form. Type `exec` (senior management) or `ops` (end user) and any password, or a work email such as `planner.b@northfield.example` (full list in section 4). Sign-in is simulated: nothing is checked and nothing leaves the browser. In production, users and roles come from the customer's identity provider (single sign-on). |
-| **The demo path** | One returned motor, **RT-1048**, through the ten boxes of the *Typical User Journey* (supply evidence to reconcile and learn) with **Next** and **Back**. The click-by-click script is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). |
+| **The journey** | Sign in, open **Returned assets**, pick one asset and follow it through the ten steps of the *Typical User Journey* (supply evidence to reconcile and learn). Every step is clickable in the strip under the top bar, and a bar at the bottom says what the step established and what comes next. The demo record is the returned motor **RT-1048**; the click-by-click script is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). |
 | **Data** | Everything is **synthetic**. The demo company is *Northfield Industrial Leasing*, with three customer tenants and eight sites. No personal or customer data is used, and none should be entered. |
 | **What changed and when** | [`CHANGES.md`](CHANGES.md) has one walk-through per release. |
 
@@ -216,7 +216,7 @@ Planner and Engineer also get **Actions on me** as their first figure, and every
 [![Expected returns](docs/screenshots/flow-expected-returns.webp)](docs/screenshots/flow-expected-returns.webp)
 - Search and filter by condition, location, owner and assessment. Click a row to open its decision; click an asset ID to open Asset intelligence.
 - **Group by product** (next to the filters) folds the list into one row per product and customer, for example *Voltara V4 motor · Customer A · 15 units · grades A–D · $85,758 predicted*. Click a group to see its units.
-- The demo record **RT-1048** is marked **Start here**, and a **Demo path** bar under the top bar walks it through the ten journey boxes (section 10). Notifications sent to you appear at the top of this page as well as in *Actions on me*.
+- This is **Start** of the journey. The demo record **RT-1048** is marked **Start here**; the **journey strip** under the top bar links to its ten steps, and the guide bar at the bottom continues to step 1 (section 10). Opening any other asset gives that asset its own strip. Notifications sent to you appear at the top of this page as well as in *Actions on me*.
 
 [![Returned assets grouped by product](docs/screenshots/demo-sku-grouped.webp)](docs/screenshots/demo-sku-grouped.webp)
 
@@ -232,9 +232,10 @@ Planner and Engineer also get **Actions on me** as their first figure, and every
 
 **For:** Planner, Approver, Engineer and Finance, each with their own tabs. **Purpose:** everything known about one asset, on one page.
 
-- Product photo, twelve key facts and an **overall health score**.
+- Product photo, key facts (including **Received under GR-…**, the WMS receipt, and the lease the unit came back from) and an **overall health score**.
 - **Product (SKU) → Customer → Unit** selectors. One customer can return many units of the same product (Customer A has 15 Voltara V4 motors back now); each unit has its own serial number, grade, life, value and route. A strip above the tabs counts the units by inspection grade and by recommended route; click a count to filter the *Unit* list.
-- **Overview is split in two.** Left, **What we know: retrieved from enterprise systems**: diagnostic condition (EAM), certified period (QMS), inspection findings, lifecycle evidence timeline, the **return history of this unit**, **Product specs** and related assets. Right, **What we predict: predicted and computed by Circularity**: recommended outcome with value, confidence and uplift, estimated remaining useful life, economic intelligence with predicted value by route, eligibility gates and data quality. Every card carries a badge: **Retrieved · system**, **Model · name** or **Rules · name**. No route or predicted value appears on the retrieved side.
+- **Overview is split in two.** Left, **What we know: retrieved from enterprise systems**: diagnostic condition (EAM), certified period (QMS), inspection findings, lifecycle evidence timeline, the **return history of this unit**, **Product specs** and related assets. Right, **What we predict: predicted and computed by Circularity**, in journey order: **Commercial value**, eligibility gates and **Matched demand** (step 2: for RT-1048, order SO-48102 at Site 3 and re-lease opportunity LS-5530), estimated remaining useful life and economic intelligence with predicted value by route (step 3), and data quality. Every card carries a badge: **Retrieved · system**, **Model · name** or **Rules · name**. No route or predicted value appears on the retrieved side.
+- **Commercial value builds with the journey.** Its chip reads **Pending evaluation** (nothing recommended yet), **Predicted, not committed** (awaiting approval), **Committed** against the order the enterprise system returned (for example *Sales order SO-48102*), and finally **Predicted vs actual** with the variance and a link to step 10. Opened from **step 1** of the journey, the predicted side waits (*Not evaluated yet*, with *Continue to step 2* and *Show the predictions now*).
 
 [![Asset Overview: retrieved on the left, predicted on the right](docs/screenshots/demo-asset-zones.webp)](docs/screenshots/demo-asset-zones.webp)
 - **Compare similar assets** (up to four side by side) and **Evaluate treatments →**.
@@ -259,10 +260,10 @@ The page reads **top to bottom in five steps**, with a sticky step bar. Each ste
 | Step | What it answers |
 |---|---|
 | 1. Returned asset and current status | What the asset is, **why** it is in its status (for example *awaiting approval since 01 Oct*) and what is **outstanding** (evidence, test report, approval and who it waits on) |
-| 2. Recommended outcome | Route, net recovery, costs, success, cycle time and a **confidence level** (High, Medium, Low, each saying what to do), plus the **condition → life → value** card: A. diagnostic condition, B. **estimated RUL as a range** next to the **certified operating period** (one firm figure), C. commercial value for that life with the matched order (for example *SO-48102 at Site 3*). A demand horizon longer than the certified period shows **Needs re-certification** and makes the route Conditional |
+| 2. Recommended outcome | Route, net recovery, costs, success, cycle time and a **confidence level** (High, Medium, Low, each saying what to do); **All pathways**, every route built for the asset with its net, P10–P90 and *Recommended*, *Eligible* or *Withheld* with the gate's reason (journey step 4); then the **condition → life → value** card: A. diagnostic condition, B. **estimated RUL as a range** next to the **certified operating period** (one firm figure), C. commercial value for that life with the matched order (for example *SO-48102 at Site 3*). A demand horizon longer than the certified period shows **Needs re-certification** and makes the route Conditional |
 | 3. Why this outcome | Eligibility and gates, predicted outcomes for every route, the rationale, and a **Close call** box when the top two are within 5% or $250, naming the secondary factor that decides (risk, demand certainty, cycle time, RUL, carbon). Full analysis is one click away |
 | 4. What-if and edge cases | A large **what-if result** card (Base net, Simulated net, Δ $, Δ %, with ▲ ▼ and the assumptions changed), sliders, **Apply to** one pathway, edge-case presets (Demand cancelled, Parts cost +30%, Resale price −20%, Certification shorter than demand), and the **top pathways side by side**. The comparison opens by itself on a close call or Low confidence |
-| 5. Next best action: approval and enterprise handoff | The role's buttons (only here), required approval and responsible approver, the **target applications**, an **instruction preview before approval** (with *View raw payload*), handoff readiness and the **Enterprise handoff** timeline |
+| 5. Next best action: approval and enterprise handoff | The role's buttons (only here), required approval and responsible approver, the **target applications**, an **instruction preview before approval** (with *View raw payload*), handoff readiness and the **Enterprise handoff** timeline, where each acknowledgement shows the reference its system returned (*Sales order SO-48102*, *Work order WO-…*, *Transfer TR-…*, *Fulfilment FUL-…*). Below it, **Reconcile and learn** (journey step 10): once Finance confirms, every cost line's predicted and actual amount, the difference and the model that learns from it |
 
 | Steps 1 and 2 | What-if | Approval and handoff |
 |---|---|---|
@@ -439,21 +440,27 @@ Opening a page your role cannot see (for example from an old bookmark) takes you
 
 ## 10. Demo scripts
 
-### The Monday demo path (one record, the ten journey boxes)
+### The Monday demo path (one record, the ten journey steps)
 
-Sign in as `exec`, open **Warehouse 1** in *Exceptions by warehouse*, find **RT-1048**, press **Notify owner** and send it to *Planner · Customer A*. Then sign in as `ops`: the notification is at the top of **Returned assets**, and RT-1048 is marked *Start here*. Follow the **Demo path** bar with **Next**:
+Sign in as `ops`: you land on **Returned assets**, with RT-1048 marked *Start here*. The **journey strip** under the top bar has **▶ Start** and the ten steps; each one is a link, with **Back** and **Next**. Filled boxes are done for the asset, the ringed box is where it is now, dimmed boxes are still to come. The guide bar at the bottom says what the step established, what the next step answers, and has **Continue**.
 
-| Stop | Journey box | Screen |
-|---|---|---|
-| ▶ | Start | Returned assets, RT-1048 highlighted |
-| 1 | Supply evidence | Asset intelligence, left side: retrieved from EAM, QMS, ERP, WMS, PLM |
-| 2–3 | Build alternatives · Predict outcomes | Asset intelligence, right side: eligible treatments, life, value |
-| 4 | Optimize plan | Treatment Intelligence, step 2 (and the comparison in step 4) |
-| 5 | Plan approval | Step 5: submit, then the Approver approves |
-| 6–9 | Send instruction → Action & return outcome | Step 5, *Enterprise handoff*: ERP, EAM and WMS acknowledge, the outcome comes back |
-| 10 | Reconcile & learn | Finance confirms the outcome; Analytics, *Predicted vs actual* |
+| Step | Screen (link) |
+|---|---|
+| ▶ Start | Returned assets (`#/product/received?focus=RT-1048`) |
+| 1 Supply evidence | Asset Intelligence, retrieved side; the predicted side waits (`#/product/asset/RT-1048?zone=known&jstep=1`) |
+| 2 Build alternatives | Eligibility and gates, Matched demand (`…?zone=predicted&jstep=2`) |
+| 3 Predict outcomes | Remaining life, economic intelligence (`…?zone=predicted&jstep=3`) |
+| 4 Optimize plan | Treatment Intelligence step 2, All pathways (`#/product/RT-1048?step=2&jstep=4`) |
+| 5 Plan approval | The decision card: submit, then the Approver approves (`…?step=5&jstep=5`) |
+| 6 Send instruction | The instruction preview, or what was sent (`…?step=5&at=handoff&jstep=6`) |
+| 7 Create execution work | Handoff rows 1–2: ERP returns SO-48102, EAM a work order (`jstep=7`) |
+| 8 Repair & certify | Handoff row 2: repaired, tested and certified (`jstep=8`) |
+| 9 Action & return outcome | Handoff rows 3–4: WMS transfer, ERP order fulfilled (`jstep=9`) |
+| 10 Reconcile & learn | Reconcile and learn: predicted vs actual by cost line (`…?step=5&at=reconcile&jstep=10`) |
 
-The stops follow the Product Owner's **Typical User Journey** diagram ([`docs/demo/user-journey-diagram.png`](docs/demo/user-journey-diagram.png)); each stop shows its box numbers and the journey strip lights the same boxes. The full script, with what to say, timings, recovery steps and Q&A notes, is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md); [`docs/demo/journey-slide.svg`](docs/demo/journey-slide.svg) is the same ten boxes, each tagged with the screen that shows it, and [`docs/demo/user-flow.svg`](docs/demo/user-flow.svg) (Mermaid source: [`docs/demo/user-flow.md`](docs/demo/user-flow.md)) is the user flow as built, from sign-in to the reconciled outcome.
+The Executive's **Exceptions by warehouse** is a side dashboard, not a step: problems in steps 1–5 surface there, and *Notify owner* sends them to the person who acts. The steps follow the Product Owner's **Typical User Journey** diagram ([`docs/demo/user-journey-diagram.png`](docs/demo/user-journey-diagram.png)). The full script, with what to say, timings, recovery steps and Q&A notes, is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md); [`docs/demo/user-flow.svg`](docs/demo/user-flow.svg) ([PNG](docs/demo/user-flow.png), Mermaid source [`docs/demo/user-flow.md`](docs/demo/user-flow.md)) is the user flow, and [`docs/demo/journey-slide.svg`](docs/demo/journey-slide.svg) ([PNG](docs/demo/journey-slide.png)) tags each box with the screen that shows it.
+
+[![Journey step 4: all pathways](docs/screenshots/iter2-step4-pathways.webp)](docs/screenshots/iter2-step4-pathways.webp)
 
 ### Five-minute executive pitch
 
@@ -536,6 +543,8 @@ Nothing is saved to a server. All changes reset on refresh.
 **From Update 8, still assumed** (see `docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md`, section 10): what the Executive may open (D2), "site" means the asset's current location (D5), notification recipients (D7), the tie-breaker threshold and factor order (D8, D18), a horizon longer than the certified period is Conditional (D10), lease outcome history exists (D19), Entra ID and SCIM (D20). The user journey diagram (D15) and the "increase the count of the rows" point (D12) are still to come.
 
 **From Update 9, still assumed** (see `docs/PLAN_DEMO_SIGNIN_SINGLE_ASSET.md`, section 10): the two lead identities and where they land (E1, E2), the hidden role list and presenter shortcuts (E3, E4), the `northfield.example` IDs (E5), RT-1048 as the one record (E6), exceptions grouped by warehouse first (E8), real unit counts instead of "100 units" (E9), production system names on the badges (E10), *Inspection findings* (E11), no sixth Executive figure (E12), and hosting (E13).
+
+**From Update 10, still assumed** (see `docs/feature-demo-refractor-iter-two.md`, section 4): the Executive still lands on the Command Center (H1), one journey strip replaces the demo rail (H2), the screen for each step (H3), the predicted side collapsed from step 1 (H4), a WMS receipt instead of an intake work order (H5), no separate QMS row (H6), which model learns from which cost line (H7), the size of the synthetic differences and RT-1048's preparation overrun (H8), case-level line items only (H9), and the replaced flow diagram (H10).
 
 **For Legal review.** The role matrix (sections 4 and 7), the governance claims (section 9) and any access or compliance wording should be reviewed by Kinective's Legal team before client use.
 

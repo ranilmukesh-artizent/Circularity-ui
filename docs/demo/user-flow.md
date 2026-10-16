@@ -1,48 +1,54 @@
-# User flow (as built)
+# User flow
 
-How a user moves through the current Circularity demo for one returned asset, **RT-1048** (Voltara V4 motor, Customer A, Warehouse 1). The box numbers match the Product Owner's *Typical User Journey* ([`user-journey-diagram.png`](user-journey-diagram.png)). A slide version is [`user-flow.svg`](user-flow.svg).
+How a user moves through the Circularity demo for one returned asset, **RT-1048** (Voltara V4 motor, Customer A, Warehouse 1): **Sign in → Returned assets → steps 1 to 10**. The step numbers and names are the Product Owner's *Typical User Journey* ([`user-journey-diagram.png`](user-journey-diagram.png)), exactly. A slide version is [`user-flow.svg`](user-flow.svg), with a PNG copy, [`user-flow.png`](user-flow.png), for previewers that do not draw SVG text.
 
-Yellow: Circularity. White: people and enterprise systems. The line under each title names the screen in the app. All data is synthetic; enterprise-system steps are simulated acknowledgements.
+The **Exceptions dashboard** is not a step. It is a side dashboard for Executives and Planners: a problem in steps 1–5 (a gate failure, missing evidence, a delayed approval, a capacity problem) surfaces there, and *Notify owner* sends it to the person who acts, who then opens that asset's journey.
+
+Yellow: Circularity. White: people and enterprise systems. Dashed: beside the journey, not a step. The line under each title names the screen in the app. All data is synthetic; enterprise-system steps are simulated acknowledgements.
 
 ```mermaid
 flowchart LR
-  S["<b>ANY USER</b><br/>Sign in<br/><i>Sign-in form</i><br/>work email, user ID or single sign-on (simulated)"]
-  X["<b>SENIOR MANAGEMENT</b><br/>Exceptions by warehouse<br/><i>Executive Command Center</i><br/>warehouse · item · value"]
-  R["<b>END USER · PLANNER</b><br/>Returned assets<br/><i>Returned assets</i><br/>RT-1048 marked Start here; 15 units of one SKU"]
-  B1["<b>ENTERPRISE SYSTEMS</b><br/>1. Supply evidence<br/><i>Asset intelligence · what we know</i><br/>EAM Grade B · QMS certified 24 months · ERP/WMS/PLM history and specs"]
-  B23["<b>CIRCULARITY</b><br/>2–3. Build alternatives & predict outcomes<br/><i>Asset intelligence · what we predict</i><br/>eligible treatments · life 30–40 months · Redeploy $9,600"]
-  B4["<b>CIRCULARITY</b><br/>4. Optimize plan<br/><i>Treatment Intelligence · steps 2–4</i><br/>recommended outcome, why, what-if, compare"]
-  B5["<b>HUMAN IN THE LOOP</b><br/>5. Plan approval<br/><i>Treatment Intelligence · step 5</i><br/>Planner submits · Approver approves"]
-  B6["<b>CIRCULARITY</b><br/>6. Send instruction<br/><i>Step 5 · enterprise handoff</i><br/>approved plan to ERP, EAM and WMS"]
-  B79["<b>ENTERPRISE SYSTEMS</b><br/>7–9. Create work, repair, return outcome<br/><i>Step 5 · system acknowledgements</i><br/>ERP order · EAM work order · WMS transfer · ERP fulfilled"]
-  B10["<b>FINANCE · CIRCULARITY</b><br/>10. Reconcile & learn<br/><i>Analytics · predicted vs actual</i><br/>Finance confirms the outcome; models improve"]
+  S["<b>ANY USER</b><br/>Sign in<br/><i>Sign-in form</i>"]
+  R["<b>END USER · PLANNER</b><br/>Returned assets<br/><i>Returned assets</i><br/>pick one asset: RT-1048, Start here"]
+  X["<b>SIDE DASHBOARD · EXECUTIVE, PLANNER</b><br/>Exceptions dashboard<br/><i>Command Center · exceptions by warehouse</i><br/>problems in steps 1–5 surface here"]
+  B1["<b>ENTERPRISE SYSTEMS</b><br/>1. Supply evidence<br/><i>Asset Intelligence · what we know</i><br/>EAM Grade B · QMS certified 24 months · ERP/WMS cost and stock"]
+  B2["<b>CIRCULARITY</b><br/>2. Build alternatives<br/><i>Asset Intelligence · eligibility, demand</i><br/>6 of 7 routes eligible · SO-48102 at Site 3"]
+  B3["<b>CIRCULARITY</b><br/>3. Predict outcomes<br/><i>Asset Intelligence · life and value</i><br/>life 30–40 months · value by route"]
+  B4["<b>CIRCULARITY</b><br/>4. Optimize plan<br/><i>Treatment Intelligence · step 2</i><br/>every route compared, withheld ones with the reason"]
+  B5["<b>HUMAN IN THE LOOP</b><br/>5. Plan approval<br/><i>Treatment Intelligence · step 5</i><br/>approve, override or decline"]
+  B6["<b>CIRCULARITY</b><br/>6. Send instruction<br/><i>Step 5 · instruction</i><br/>approved plan to ERP, EAM and WMS"]
+  B7["<b>ENTERPRISE SYSTEMS</b><br/>7. Create execution work<br/><i>Handoff rows 1–2</i><br/>ERP sales order SO-48102 · EAM work order"]
+  B8["<b>ENTERPRISE SYSTEMS</b><br/>8. Repair & certify<br/><i>Handoff row 2</i><br/>repaired, tested, certified; QMS record updated"]
+  B9["<b>ENTERPRISE SYSTEMS</b><br/>9. Action & return outcome<br/><i>Handoff rows 3–4</i><br/>WMS transfer · ERP order fulfilled"]
+  B10["<b>CIRCULARITY</b><br/>10. Reconcile & learn<br/><i>Step 10 · reconcile and learn</i><br/>predicted vs actual by cost line, against the order"]
 
-  S -- "Senior manager signs in" --> X
-  S -. "End user signs in" .-> R
-  X -- "Notify owner" --> R
-  R -- "Next" --> B1
-  B1 -- "Next" --> B23
-  B23 -- "Next" --> B4
-  B4 -- "Next" --> B5
-  B5 -- "Approve" --> B6
-  B6 -- "Sent" --> B79
-  B79 -- "Outcome reported" --> B10
+  S --> R
+  R -- "Open the asset" --> B1
+  B1 --> B2 --> B3 --> B4 --> B5
+  B5 -- "Approved" --> B6
+  B6 --> B7 --> B8 --> B9 --> B10
+  X -. "Notify owner" .-> R
 
   classDef circ fill:#FFDD00,stroke:#141414,color:#141414
   classDef other fill:#FFFFFF,stroke:#141414,color:#141414
-  class B23,B4,B6,B10 circ
-  class S,X,R,B1,B5,B79 other
+  classDef side fill:#FFFFFF,stroke:#141414,color:#141414,stroke-dasharray:6 4
+  class B2,B3,B4,B6,B10 circ
+  class S,R,B1,B5,B7,B8,B9 other
+  class X side
 ```
 
-| Step | Who | Screen | What happens |
+| Step | Who | Screen (link pattern) | What happens |
 |---|---|---|---|
 | Sign in | Any user | Sign-in form | `exec` lands on the Executive Command Center; `ops` lands on Returned assets |
-| Exceptions | Senior management | Executive Command Center | Exceptions by warehouse (warehouse · item · value); **Notify owner** sends RT-1048 to Planner · Customer A |
-| Start | End user (Planner) | Returned assets | The notification is at the top; RT-1048 is marked *Start here* |
-| 1 | Enterprise systems | Asset intelligence, retrieved side | Condition (EAM), certified period (QMS), lifecycle, return history, specs |
-| 2–3 | Circularity | Asset intelligence, predicted side | Eligible treatments, remaining life, value by route, recommended outcome |
-| 4 | Circularity | Treatment Intelligence, steps 2–4 | Recommended outcome, why, what-if, pathways compared |
-| 5 | Human in the loop | Treatment Intelligence, step 5 | Planner submits; Approver reads the instruction preview and approves |
-| 6 | Circularity | Step 5, enterprise handoff | Approved instruction sent to ERP, EAM and WMS |
-| 7–9 | Enterprise systems | Step 5, acknowledgements | Work created, repaired and certified, outcome reported |
-| 10 | Finance, Circularity | Analytics, predicted vs actual | Finance confirms the outcome; actuals compared with forecasts |
+| Start | End user (Planner) | Returned assets (`product/received?focus=RT-1048`) | What has come back; RT-1048 is marked *Start here* |
+| 1 | Enterprise systems | Asset Intelligence, retrieved side (`?zone=known&jstep=1`) | Condition (EAM), certified period (QMS), lifecycle, return history, specs. The predicted side waits: *not evaluated yet* |
+| 2 | Circularity | Asset Intelligence, eligibility and demand (`?zone=predicted&jstep=2`) | Six gates, 6 of 7 routes eligible, matched demand SO-48102 at Site 3, re-lease opportunity LS-5530 |
+| 3 | Circularity | Asset Intelligence, life and value (`?zone=predicted&jstep=3`) | Remaining life 30–40 months, value by route |
+| 4 | Circularity | Treatment Intelligence, step 2 (`product/RT-1048?step=2&jstep=4`) | Recommended outcome and **all pathways**: every route, net, P10–P90, eligible or withheld with the reason |
+| 5 | Human in the loop | Treatment Intelligence, step 5 (`?step=5&jstep=5`) | Planner submits; Approver approves, overrides or declines |
+| 6 | Circularity | Step 5, instruction (`?step=5&at=handoff&jstep=6`) | The approved instruction goes to ERP, EAM and WMS |
+| 7 | Enterprise systems | Handoff rows 1–2 (`jstep=7`) | ERP returns the sales order (SO-48102); EAM returns the work order |
+| 8 | Enterprise systems | Handoff row 2 (`jstep=8`) | EAM: repaired, tested and certified; QMS record updated |
+| 9 | Enterprise systems | Handoff rows 3–4 (`jstep=9`) | WMS transfer to Site 3; ERP reports the order fulfilled with actual costs |
+| 10 | Circularity, Finance | Step 10, reconcile and learn (`?step=5&at=reconcile&jstep=10`) | Finance confirms; predicted vs actual by cost line, each line naming the model that learns from it |
+| Side | Executive, Planner | Command Center, exceptions by warehouse | Problems in steps 1–5; *Notify owner* sends them to the person who acts |
