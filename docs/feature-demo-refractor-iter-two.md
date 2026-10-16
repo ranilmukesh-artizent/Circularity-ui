@@ -2,7 +2,7 @@
 
 **Purpose of this file:** a self-contained brief for a fresh session. It does not assume any earlier conversation. Read it top to bottom, then start at **Phase 0**.
 
-**Status:** draft, not started (2026-10-16). Source: a follow-up review call with the Product Owner on 2026-10-16 (Tamil and English; the translated notes are in the appendix), and a first-draft write-up of that call that this plan checks and replaces. Open decisions are in **section 4**. Each has a recommended default; until the Product Owner answers, build the default and label it **(assumed)**.
+**Status:** built on `feature/demo-refactor` (2026-10-16), not pushed; every section 4 decision is on its default and marked **(assumed)** (section 10). `CHANGES.md` Update 10 is the reviewer walk-through. Source: a follow-up review call with the Product Owner on 2026-10-16 (Tamil and English; the translated notes are in the appendix), and a first-draft write-up of that call that this plan checks and replaces. Open decisions are in **section 4**. Each has a recommended default; until the Product Owner answers, build the default and label it **(assumed)**.
 
 **Builds on:** `docs/PLAN_DEMO_SIGNIN_SINGLE_ASSET.md` (iteration one: sign-in form, demo path, retrieved vs predicted, exceptions by warehouse, SKU units; `CHANGES.md` Update 9), which builds on `docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md` and `docs/PLAN_RBAC_ADAPTIVE_UI.md`. **Branch:** keep working on `feature/demo-refactor` (iteration one is committed there and not pushed: `60eca63`, `afc68b1`, `dcc1f0d`).
 
@@ -262,11 +262,20 @@ Run the three existing suites; change expectations only where this plan changes 
 
 ## 10. Product Owner decisions
 
-*To be filled in.* One row per section 4 question: the answer and where it lands. Unanswered points stay **(assumed)**.
+No answers yet: each row is built on the recommended default and stays **(assumed)** until the Product Owner confirms it on Monday. "Where it lands" names the code (search `index.html` by name) and the visible change.
 
 | # | Answer | Where it lands |
 |---|---|---|
-| H1–H10 | pending | |
+| H1 | Pending (assumed: yes, the Executive still lands on the Command Center) | `homeOf` unchanged; the flow diagram shows Exceptions as a dashed side dashboard (`docs/demo/user-flow.svg`) |
+| H2 | Pending (assumed: one strip replaces the rail) | `jgStrip` (Start + ten links, Back, Next); `DP_STOPS` and `dpRail` removed; non-journey pages keep `journey()` |
+| H3 | Pending (assumed: the map in 5.2) | `JG` (links, `?jstep=N`) and `JG_TGT` (targets); `afterRender` scrolls and adds `.jghl`; new ids `#asEligCard`, `#asDemandCard`, `#asRulCard`, `#asEconCard`, `#tiAllPaths`, `#tiDecision`, `#tiInstr`, `#tiHo1…4`, `#tiReconcile` |
+| H4 | Pending (assumed: collapsed, not hidden, from step 1) | `asCollapsed` with *Continue to step 2* and *Show the predictions now* (`ACT.asShowPred`); other entries unchanged |
+| H5 | Pending (assumed: WMS receipt, no intake work order) | `asReceipt` (*Received under GR-…*); `asLease` for the lease that ended; LS-5530 only as the re-lease opportunity (`asDemand`) |
+| H6 | Pending (assumed: no new QMS row) | `ACK_NOTE['Refurbishment work order']`: *repaired, tested and certified; QMS record updated*; step 8 points at handoff row 2 |
+| H7 | Pending (assumed: the map in section 4) | `LEARN` (prep, fees → prep-cost-time; sale, parts, material, lease, residual → resale-price; service → service-exposure; risk → repair-success) and `LEARN_RET` (purchase, avoid → ERP price, retrieved; credit → vendor contract, retrieved) |
+| H8 | Pending (assumed: ±25%, deterministic, RT-1048 repair over estimate) | `lineActuals` (from `hashId(case + line)`); `LEARN_PIN` pins RT-1048's preparation line 15% over: actual $9,230 vs $9,600 |
+| H9 | Pending (assumed: case level only) | `tiReconcile` on the decision page, with a link to Analytics *Predicted vs actual* (unchanged) |
+| H10 | Pending (assumed: replace) | `docs/demo/user-flow.svg`, `user-flow.md`, PNG exports of the flow and the journey slide |
 
 ---
 
