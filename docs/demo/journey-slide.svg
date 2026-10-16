@@ -39,7 +39,7 @@
 <text x="392" y="374" font-size="15" fill="#3B3633">and external demand, define</text>
 <text x="392" y="394" font-size="15" fill="#3B3633">eligible treatments</text>
 <rect x="378" y="430" width="268" height="34" rx="17" fill="#141414"/>
-<text x="512.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Asset intelligence · what we predict</text>
+<text x="512.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Asset intelligence · eligibility, demand</text>
 <rect x="676" y="230" width="268" height="190" fill="#FFDD00" stroke="#141414" stroke-width="2"/>
 <text x="690" y="258" font-size="14" font-weight="700" fill="#141414">CIRCULARITY</text>
 <text x="690" y="294" font-size="21" font-weight="800" fill="#141414">3. Predict outcomes</text>
@@ -47,7 +47,7 @@
 <text x="690" y="347" font-size="15" fill="#3B3633">repair cost and success, claims</text>
 <text x="690" y="367" font-size="15" fill="#3B3633">exposure</text>
 <rect x="676" y="430" width="268" height="34" rx="17" fill="#141414"/>
-<text x="810.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Asset intelligence · what we predict</text>
+<text x="810.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Asset intelligence · life and value</text>
 <rect x="974" y="230" width="268" height="190" fill="#FFDD00" stroke="#141414" stroke-width="2"/>
 <text x="988" y="258" font-size="14" font-weight="700" fill="#141414">CIRCULARITY</text>
 <text x="988" y="294" font-size="21" font-weight="800" fill="#141414">4. Optimize plan</text>
@@ -71,7 +71,7 @@
 <text x="1286" y="677" font-size="15" fill="#3B3633">ERP and sales; track</text>
 <text x="1286" y="697" font-size="15" fill="#3B3633">acknowledgements</text>
 <rect x="1272" y="760" width="268" height="34" rx="17" fill="#141414"/>
-<text x="1406.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Step 5 · enterprise handoff</text>
+<text x="1406.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Step 5 · instruction</text>
 <rect x="974" y="560" width="268" height="190" fill="#FFFFFF" stroke="#141414" stroke-width="2"/>
 <text x="988" y="588" font-size="14" font-weight="700" fill="#141414">ENTERPRISE SYSTEMS</text>
 <text x="988" y="624" font-size="21" font-weight="800" fill="#141414">7. Create execution</text>
@@ -80,7 +80,7 @@
 <text x="988" y="704" font-size="15" fill="#3B3633">stock reservation, CRM sale</text>
 <text x="988" y="724" font-size="15" fill="#3B3633">task</text>
 <rect x="974" y="760" width="268" height="34" rx="17" fill="#141414"/>
-<text x="1108.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Handoff · ERP, EAM acknowledge</text>
+<text x="1108.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Handoff rows 1–2 · SO, WO</text>
 <rect x="676" y="560" width="268" height="190" fill="#FFFFFF" stroke="#141414" stroke-width="2"/>
 <text x="690" y="588" font-size="14" font-weight="700" fill="#141414">ENTERPRISE SYSTEMS</text>
 <text x="690" y="624" font-size="21" font-weight="800" fill="#141414">8. Repair &amp; certify</text>
@@ -88,7 +88,7 @@
 <text x="690" y="677" font-size="15" fill="#3B3633">recorded in EAM and quality</text>
 <text x="690" y="697" font-size="15" fill="#3B3633">systems</text>
 <rect x="676" y="760" width="268" height="34" rx="17" fill="#141414"/>
-<text x="810.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Handoff · EAM acknowledges</text>
+<text x="810.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Handoff row 2 · certified</text>
 <rect x="378" y="560" width="268" height="190" fill="#FFFFFF" stroke="#141414" stroke-width="2"/>
 <text x="392" y="588" font-size="14" font-weight="700" fill="#141414">ENTERPRISE SYSTEMS</text>
 <text x="392" y="624" font-size="21" font-weight="800" fill="#141414">9. Action &amp; return</text>
@@ -97,7 +97,7 @@
 <text x="392" y="704" font-size="15" fill="#3B3633">and proceeds sent to</text>
 <text x="392" y="724" font-size="15" fill="#3B3633">Circularity</text>
 <rect x="378" y="760" width="268" height="34" rx="17" fill="#141414"/>
-<text x="512.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Handoff · outcome reported</text>
+<text x="512.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Handoff rows 3–4 · outcome</text>
 <rect x="80" y="560" width="268" height="190" fill="#FFDD00" stroke="#141414" stroke-width="2"/>
 <text x="94" y="588" font-size="14" font-weight="700" fill="#141414">CIRCULARITY</text>
 <text x="94" y="624" font-size="21" font-weight="800" fill="#141414">10. Reconcile &amp;</text>
@@ -106,6 +106,6 @@
 <text x="94" y="704" font-size="15" fill="#3B3633">compare with forecasts, improve</text>
 <text x="94" y="724" font-size="15" fill="#3B3633">models</text>
 <rect x="80" y="760" width="268" height="34" rx="17" fill="#141414"/>
-<text x="214.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Finance confirms · Analytics</text>
+<text x="214.0" y="783" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Step 10 · cost-line actuals</text>
 <text x="80" y="868" font-size="15" fill="#7B726D">Box names follow the Product Owner's Typical User Journey diagram. Demo data is synthetic; enterprise-system steps are simulated acknowledgements.</text>
 </svg>
