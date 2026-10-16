@@ -2,9 +2,64 @@
 
 For the product overview (what Circularity does, every screen and every role) read [`README.md`](README.md). This file is the reviewer walk-through, one section per update, newest first.
 
-Open `index.html`. The app opens on a **sign-in screen** (Update 7): pick a demo account, and it opens on that role's home page. Update 8 adds the **Executive** and **Warehouse Manager** accounts, the guided treatment page and **Process orchestration**. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
+Open `index.html`. The app opens on a **sign-in form** (Update 9): type `exec` or `ops` and any password, and it opens on that person's home page. Update 8 adds the **Executive** and **Warehouse Manager** accounts, the guided treatment page and **Process orchestration**. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
 
-**Quick links:** [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+**Quick links:** [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+
+---
+
+## Update 9: Sign-in form, one-asset demo path, retrieved vs predicted
+
+**Why:** the review call of 16 Oct 2026, ahead of the stakeholder demo on Monday 19 Oct. The Product Owner did not want a role picker on entry, wanted two perspectives (senior management and end user), one record shown from start to finish in line with the business journey, and the data *retrieved* from enterprise systems kept visibly apart from what Circularity *predicts*. The plan, the decisions and what is still assumed are in [`docs/PLAN_DEMO_SIGNIN_SINGLE_ASSET.md`](docs/PLAN_DEMO_SIGNIN_SINGLE_ASSET.md); it refines the first draft in `docs/Refactor Guided Flow.md`. Points marked **(assumed)** follow the plan's default until the Product Owner confirms them.
+
+> **Legal review.** This update changes the sign-in experience (simulated credentials and single sign-on wording) and how predictions are labelled against source data. Kinective's Legal team should review that wording before it is relied on or used with clients.
+
+### What changed, where
+
+| Area | Where | What you see |
+|---|---|---|
+| **Sign-in form** (F1, F2) | Opening the app | A standard form: **Work email or user ID**, **Password**, **Sign in**, **Continue with single sign-on**, and a footer saying the environment is a demo with synthetic data and simulated single sign-on. No role list. `exec` lands on the **Executive Command Center**; `ops` lands on **Returned assets** for Customer A with **RT-1048** ready (assumed, E1, E2). Every account has an ID at `northfield.example` (assumed, E5; list in README section 4). Unknown IDs show an inline error. **Switch account** and **Sign out** return to the form, and the next account lands on its own home |
+| **Presenter mode** (E4) | `index.html?presenter=1` | Two quiet shortcuts under the form (**Senior management**, **End user**), a quick switch in the account menu, and at the approval and outcome stops a button to continue as the Approver or Finance. Off by default, so an audience never sees role shortcuts (assumed). The build team's role list is at `#/signin?roles` (assumed, E3) |
+| **Demo path** (F3, F4) | Bar under the top bar for RT-1048 | Follows the Product Owner's **Typical User Journey** diagram box by box: **▶ Returned assets → 1 Supply evidence → 2–3 Build alternatives · Predict outcomes → 4 Optimize plan → 5 Plan approval → 6–9 Send instruction → Return outcome → 10 Reconcile & learn**, with **Back** and **Next**. Each stop shows its box numbers, and the journey strip below lights exactly those boxes. Stops are links: `#/product/received?focus=RT-1048`, `#/product/asset/RT-1048?zone=known`, `…?zone=predicted`, `#/product/RT-1048?step=2`, `…?step=5`, `…?step=5&at=handoff`, `#/analytics/predicted?dp=RT-1048` (the last stop is skipped for roles without Analytics) |
+| **Journey strip** (F4) | Every page | The ten steps now use the diagram's wording: *Plan approval*, *Create execution work*, *Action & return outcome*, with the diagram's descriptions in the tooltips |
+| **Exceptions by warehouse** (F5) | Executive Command Center | One row per warehouse and exception type: **Warehouse · Exception · Items** (count and top item, e.g. *RT-1065 Voltara V4 motor*) **· Value · Status**, with **Notify owner** on every row. Severity is a small marker, the trend is in the tooltip. A row opens a drawer with three columns only: **Warehouse · Item · Value**. Totals equal the ranked list (a new data check) (assumed, E8). Notifications also appear at the top of the recipient's Returned assets, with a link to the item |
+| **One SKU, many units** (F6) | Asset intelligence | **Product (SKU) → Customer → Unit** instead of one flat list of 128 returns. A unit reads *SN6399949 · MTR-2041 · Grade B · Redeploy · $9,600 est. · Warehouse 1*. A strip counts this customer's units by grade and by recommended route (**15 Voltara V4 motors** back from Customer A now, plus the closed ones in the last 12 months); click a count to filter the Unit list. Real counts, not an invented "100 units" (assumed, E9) |
+| **Return history** (F6) | Asset intelligence, left side | Earlier returns of the same physical unit: when, by whom, grade and what was done. From closed decisions where they exist, otherwise derived from the lease history and labelled *synthetic* |
+| **Group by product** (F6) | Returned assets | A **List / Group by product** switch: one row per product and customer with unit count, grade range and predicted value, expanding to its units |
+| **Retrieved vs predicted** (F7, F8) | Asset intelligence → Overview | Two labelled sides. **What we know · Retrieved from enterprise systems**: diagnostic condition (EAM), certified period (QMS), inspection findings, lifecycle timeline, return history, product specs, related assets. **What we predict · Predicted and computed by Circularity**: recommended outcome (route, value, P10–P90, confidence, uplift vs sell as-is or scrap, matched order), estimated remaining useful life with component health, economic intelligence with predicted value by route, eligibility gates, data quality. Every card has one badge: **Retrieved · system**, **Model · name** or **Rules · name** (assumed, E10). The old *Condition, life and commercial value* card is gone, so *Refurbish, then sell* or *Redeploy* never appears under an EAM source |
+| **Step 2 split** (F7) | Treatment Intelligence, step 2 | The A/B/C card is now **What we know** (diagnostic condition, certified operating period) beside **What we predict** (estimated RUL, commercial value for that life). Estimated and certified life are still shown as separate figures |
+| **Renames** (F9) | Asset intelligence | *Product intelligence* → **Product specs**; *Condition intelligence* → **Inspection findings** (assumed, E11). *Predicted remaining life* moved out of the inspection card to the prediction side |
+
+### Screenshots
+
+| Sign-in | Returned assets, demo path | Asset Overview: retrieved and predicted |
+|---|---|---|
+| [![Sign-in](docs/screenshots/demo-signin.webp)](docs/screenshots/demo-signin.webp) | [![Returned assets](docs/screenshots/demo-returned.webp)](docs/screenshots/demo-returned.webp) | [![Zones](docs/screenshots/demo-asset-zones.webp)](docs/screenshots/demo-asset-zones.webp) |
+| **Step 2: what we know, what we predict** | **Exceptions by warehouse** | **Drill-down: warehouse, item, value** |
+| [![Step 2](docs/screenshots/demo-step2.webp)](docs/screenshots/demo-step2.webp) | [![Exceptions](docs/screenshots/demo-exec-exceptions.webp)](docs/screenshots/demo-exec-exceptions.webp) | [![Drawer](docs/screenshots/demo-exec-drawer.webp)](docs/screenshots/demo-exec-drawer.webp) |
+| **Demo path at boxes 6–9 (handoff)** | **Demo path at box 10** | |
+| [![Handoff](docs/screenshots/demo-path-handoff.webp)](docs/screenshots/demo-path-handoff.webp) | [![Reconcile](docs/screenshots/demo-path-learn.webp)](docs/screenshots/demo-path-learn.webp) | |
+| **Group by product** | **Dark mode** | **Phone** |
+| [![Grouped](docs/screenshots/demo-sku-grouped.webp)](docs/screenshots/demo-sku-grouped.webp) | [![Dark](docs/screenshots/demo-dark-asset.webp)](docs/screenshots/demo-dark-asset.webp) | [![Phone](docs/screenshots/demo-phone-asset.webp)](docs/screenshots/demo-phone-asset.webp) |
+
+### Try it (three minutes)
+
+1. Open the app and sign in with `exec` and any password. In **Exceptions by warehouse**, click a **Warehouse 1** row that lists RT-1048: the drawer shows only warehouse, item and value. Press **Notify owner**, choose *Planner · Customer A*, send.
+2. **Sign out** and sign in with `ops`. The notification is at the top of **Returned assets**; RT-1048 is marked **Start here**.
+3. Press **Next** on the demo path and watch the box numbers: 1 on the left side of Asset intelligence (retrieved from EAM, QMS, ERP, WMS), 2–3 on the right side (predicted), 4 on the decision page, 5 the approval, 6–9 the handoff, 10 Analytics.
+4. On Asset intelligence, change **Unit** to another Voltara V4 motor: grade, life, value and route change with it. Click *Grade C* in the strip to narrow the list.
+5. On Returned assets, press **Group by product**.
+
+### Checks
+
+- Role suite: **208 of 208** pass. Changed expectations: Planner accounts now land on Returned assets; the sign-in check looks for the form instead of the role cards.
+- Guided-flow suite: **110 of 110** pass. Changed expectations: the exception drill-down lists items by warehouse; the sign-in note now reads "In production you sign in with your company account."
+- New demo suite: **91 of 91** pass: the form, errors, every sign-in ID landing on its home, single sign-on, the hidden role list and presenter mode, sign-out; the seven stops in journey order with Next and Back for four accounts, the journey strip lighting the stop's boxes, boxes 1–10 each covered once, the diagram's box names, no rail off the path or for another tenant; zones, badges and renames, and **no route name or route value on the retrieved side for any of the 128 cases**; exception totals by warehouse, the three-column drawer, Notify → Returned assets → Actions on me → In hand, Warehouse Manager scope; the Product → Customer → Unit selects (15 units), switching units, filters, tenant and warehouse scope, grouping; the whole RT-1048 journey in presenter mode (submit, approve, four acknowledgements, Finance confirms); all data checks; no console errors.
+- Phone width (390 px): no sideways scroll on the sign-in form, the Executive Command Center with the drawer open, all seven demo stops, grouped Returned assets and the Warehouse Manager views.
+
+### Still assumed or open
+
+E1–E6 and E8–E12 are built on the plan's defaults (see the plan, section 10). E7 is answered: the Product Owner's diagram is in [`docs/demo/user-journey-diagram.png`](docs/demo/user-journey-diagram.png) and the demo path follows it. Hosting before Monday (E13) is waiting for a go-ahead: nothing has been merged or pushed. A recorded video for the sales meeting is still to be made after the dry run.
 
 ---
 
