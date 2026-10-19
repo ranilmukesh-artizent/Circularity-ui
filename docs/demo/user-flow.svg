@@ -1,19 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1080" width="1600" height="1080" role="img" aria-labelledby="t d" font-family="Arial,'Segoe UI',Helvetica,sans-serif">
 <title id="t">Circularity user flow, version 2</title>
-<desc id="d">How a user moves through the Circularity demo for one returned asset, RT-1048: sign in, open Returned assets and pick the asset, then follow journey steps 1 to 10, numbered and named like the Product Owner's Typical User Journey. The Exceptions dashboard is a side dashboard for Executives and Planners, not a step in the journey. Asset Intelligence fills in its commercial value as the steps run. Synthetic demo data.</desc>
+<desc id="d">How a user moves through the Circularity demo for one returned asset, RT-1048: sign in, open Returned assets and pick the asset, then follow journey steps 1 to 10, numbered and named like the Product Owner's Typical User Journey. Asset Intelligence fills in its commercial value as the steps run. Synthetic demo data.</desc>
 <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#141414"/></marker></defs>
 <rect width="1600" height="1080" fill="#EEE8E1"/>
 <text x="70" y="64" font-size="38" font-weight="700" fill="#141414">User Flow</text>
-<text x="70" y="98" font-size="17" fill="#4B4541">Sign in, pick one returned asset, follow its journey. RT-1048 (Voltara V4 motor, Customer A, Warehouse 1). Steps match the Typical User Journey.</text>
+<text x="70" y="98" font-size="17" fill="#4B4541">The planner signs in, picks one returned asset and follows its journey. RT-1048 (Voltara V4 motor, Customer A, Warehouse 1). Steps match the Typical User Journey.</text>
 <rect x="70" y="128" width="268" height="132" fill="#FFFFFF" stroke="#141414" stroke-width="1.6"/>
-<text x="82" y="150" font-size="12.5" font-weight="700" fill="#141414">ANY USER</text>
+<text x="82" y="150" font-size="12.5" font-weight="700" fill="#141414">PLANNER</text>
 <text x="82" y="174" font-size="17" font-weight="700" fill="#141414">Sign in</text>
 <text x="82" y="194" font-size="13" fill="#141414">Work email, user ID or single</text>
 <text x="82" y="211" font-size="13" fill="#141414">sign-on (simulated)</text>
 <rect x="70" y="234" width="268" height="26" fill="#141414"/>
 <text x="204.0" y="252" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFDD00">Sign-in form</text>
 <rect x="368" y="128" width="268" height="132" fill="#FFFFFF" stroke="#141414" stroke-width="1.6"/>
-<text x="380" y="150" font-size="12.5" font-weight="700" fill="#141414">END USER · PLANNER</text>
+<text x="380" y="150" font-size="12.5" font-weight="700" fill="#141414">PLANNER</text>
 <text x="380" y="174" font-size="17" font-weight="700" fill="#141414">Returned assets</text>
 <text x="380" y="194" font-size="13" fill="#141414">What has come back; pick one</text>
 <text x="380" y="211" font-size="13" fill="#141414">asset: RT-1048, Start here</text>
@@ -22,15 +22,6 @@
 <path d="M338 194 L366 194" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
 <path d="M420 260 L420 280 L204 280 L204 298" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
 <text x="312" y="274" text-anchor="middle" font-size="13" font-style="italic" fill="#4B4541">Open the asset · step 1</text>
-<rect x="740" y="128" width="790" height="132" fill="#FFFFFF" stroke="#141414" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="752" y="150" font-size="12.5" font-weight="700" fill="#141414">SIDE DASHBOARD · EXECUTIVE, PLANNER</text>
-<text x="752" y="174" font-size="17" font-weight="700" fill="#141414">Exceptions dashboard (not a journey step)</text>
-<text x="752" y="194" font-size="13" fill="#141414">A gate failure, missing evidence, a delayed approval or a capacity problem in steps 1–5</text>
-<text x="752" y="211" font-size="13" fill="#141414">surfaces here. Notify owner sends it to the person who acts, who opens that asset’s journey.</text>
-<rect x="740" y="234" width="790" height="26" fill="#141414"/>
-<text x="1135.0" y="252" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFDD00">Executive Command Center · exceptions by warehouse</text>
-<path d="M738 194 L638 194" fill="none" stroke="#141414" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#ah)"/>
-<text x="688" y="186" text-anchor="middle" font-size="13" font-style="italic" fill="#4B4541">Notify owner</text>
 <path d="M204.0 536 L204.0 558 L502.0 558 L502.0 538" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
 <path d="M502.0 300 L502.0 284 L800.0 284 L800.0 298" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
 <path d="M800.0 536 L800.0 558 L1098.0 558 L1098.0 538" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
@@ -48,22 +39,26 @@
 <text x="96" y="384" font-size="13.5" fill="#141414">EAM: inspection and history</text>
 <text x="96" y="402" font-size="13.5" fill="#141414">(Grade B)</text>
 <circle cx="87" cy="415.5" r="2.2" fill="#141414"/>
-<text x="96" y="420" font-size="13.5" fill="#141414">PLM / quality: eligibility (QMS</text>
-<text x="96" y="438" font-size="13.5" fill="#141414">certified 24 months)</text>
-<circle cx="87" cy="451.5" r="2.2" fill="#141414"/>
-<text x="96" y="456" font-size="13.5" fill="#141414">ERP / WMS: cost and stock</text>
+<text x="96" y="420" font-size="13.5" fill="#141414">QMS: certified 24 months</text>
+<circle cx="87" cy="433.5" r="2.2" fill="#141414"/>
+<text x="96" y="438" font-size="13.5" fill="#141414">OMS: RMA · procurement: part</text>
+<text x="96" y="456" font-size="13.5" fill="#141414">prices</text>
+<circle cx="87" cy="469.5" r="2.2" fill="#141414"/>
+<text x="96" y="474" font-size="13.5" fill="#141414">PLM / ERP / WMS: catalogue, cost,</text>
+<text x="96" y="492" font-size="13.5" fill="#141414">stock</text>
 <rect x="70" y="506" width="268" height="30" fill="#141414"/>
-<text x="204.0" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Asset Intelligence · what we know</text>
+<text x="204.0" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Asset Intelligence · retrieved data</text>
 <rect x="368" y="300" width="268" height="236" fill="#FFDD00" stroke="#141414" stroke-width="1.6"/>
 <text x="380" y="324" font-size="13.5" font-weight="700" fill="#141414">CIRCULARITY</text>
 <text x="380" y="356" font-size="17.5" font-weight="700" fill="#141414">2. Build alternatives</text>
 <circle cx="385" cy="379.5" r="2.2" fill="#141414"/>
 <text x="394" y="384" font-size="13.5" fill="#141414">Retrieve and link evidence</text>
 <circle cx="385" cy="397.5" r="2.2" fill="#141414"/>
-<text x="394" y="402" font-size="13.5" fill="#141414">Check internal and external</text>
-<text x="394" y="420" font-size="13.5" fill="#141414">demand (SO-48102 at Site 3)</text>
-<circle cx="385" cy="433.5" r="2.2" fill="#141414"/>
-<text x="394" y="438" font-size="13.5" fill="#141414">6 of 7 routes eligible</text>
+<text x="394" y="402" font-size="13.5" fill="#141414">Customer A contract demand</text>
+<text x="394" y="420" font-size="13.5" fill="#141414">SO-48102 (accepts certified</text>
+<text x="394" y="438" font-size="13.5" fill="#141414">refurbished)</text>
+<circle cx="385" cy="451.5" r="2.2" fill="#141414"/>
+<text x="394" y="456" font-size="13.5" fill="#141414">6 of 7 routes eligible</text>
 <rect x="368" y="506" width="268" height="30" fill="#141414"/>
 <text x="502.0" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Asset Intelligence · eligibility, demand</text>
 <rect x="666" y="300" width="268" height="236" fill="#FFDD00" stroke="#141414" stroke-width="1.6"/>
@@ -117,10 +112,11 @@
 <text x="976" y="664" font-size="13.5" font-weight="700" fill="#141414">ENTERPRISE SYSTEMS</text>
 <text x="976" y="696" font-size="17.5" font-weight="700" fill="#141414">7. Create execution work</text>
 <circle cx="981" cy="719.5" r="2.2" fill="#141414"/>
-<text x="990" y="724" font-size="13.5" fill="#141414">ERP: redeployment order SO-48102</text>
-<circle cx="981" cy="737.5" r="2.2" fill="#141414"/>
-<text x="990" y="742" font-size="13.5" fill="#141414">EAM: refurbishment work order</text>
-<text x="990" y="760" font-size="13.5" fill="#141414">(WO)</text>
+<text x="990" y="724" font-size="13.5" fill="#141414">ERP: Customer A contract</text>
+<text x="990" y="742" font-size="13.5" fill="#141414">replacement order SO-48102</text>
+<circle cx="981" cy="755.5" r="2.2" fill="#141414"/>
+<text x="990" y="760" font-size="13.5" fill="#141414">EAM: refurbishment work order</text>
+<text x="990" y="778" font-size="13.5" fill="#141414">(WO)</text>
 <rect x="964" y="846" width="268" height="30" fill="#141414"/>
 <text x="1098.0" y="866" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Handoff rows 1–2</text>
 <rect x="666" y="640" width="268" height="236" fill="#FFFFFF" stroke="#141414" stroke-width="1.6"/>
@@ -174,6 +170,5 @@
 <rect x="70" y="1022" width="18" height="18" fill="#FFDD00" stroke="#141414"/><text x="96" y="1036" font-size="14" fill="#141414">Circularity</text>
 <rect x="200" y="1022" width="18" height="18" fill="#FFFFFF" stroke="#141414"/><text x="226" y="1036" font-size="14" fill="#141414">People and enterprise systems</text>
 <rect x="460" y="1022" width="40" height="18" fill="#141414"/><text x="508" y="1036" font-size="14" fill="#141414">Screen in the app</text>
-<rect x="660" y="1022" width="40" height="18" fill="none" stroke="#141414" stroke-dasharray="5 4"/><text x="708" y="1036" font-size="14" fill="#141414">Beside the journey, not a step</text>
 <text x="70" y="1064" font-size="13" fill="#7B726D">Every step in the app's journey strip is clickable. Circularity sends the approved instruction; the enterprise systems carry out the work and return references. All data is synthetic.</text>
 </svg>

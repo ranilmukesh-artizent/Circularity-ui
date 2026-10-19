@@ -2,22 +2,21 @@
 
 How a user moves through the Circularity demo for one returned asset, **RT-1048** (Voltara V4 motor, Customer A, Warehouse 1): **Sign in → Returned assets → steps 1 to 10**. The step numbers and names are the Product Owner's *Typical User Journey* ([`user-journey-diagram.png`](user-journey-diagram.png)), exactly. A slide version is [`user-flow.svg`](user-flow.svg), with a PNG copy, [`user-flow.png`](user-flow.png), for previewers that do not draw SVG text.
 
-The **Exceptions dashboard** is not a step. It is a side dashboard for Executives and Planners: a problem in steps 1–5 (a gate failure, missing evidence, a delayed approval, a capacity problem) surfaces there, and *Notify owner* sends it to the person who acts, who then opens that asset's journey.
+The diagram shows the planner's path only. The Executive's *Exceptions by warehouse* is a separate Command Center page, not part of this flow (it was removed from the diagram after the 19 Oct review because it confused the sequence).
 
-Yellow: Circularity. White: people and enterprise systems. Dashed: beside the journey, not a step. The line under each title names the screen in the app. All data is synthetic; enterprise-system steps are simulated acknowledgements.
+Yellow: Circularity. White: people and enterprise systems. The line under each title names the screen in the app. All data is synthetic; enterprise-system steps are simulated acknowledgements.
 
 ```mermaid
 flowchart LR
-  S["<b>ANY USER</b><br/>Sign in<br/><i>Sign-in form</i>"]
-  R["<b>END USER · PLANNER</b><br/>Returned assets<br/><i>Returned assets</i><br/>pick one asset: RT-1048, Start here"]
-  X["<b>SIDE DASHBOARD · EXECUTIVE, PLANNER</b><br/>Exceptions dashboard<br/><i>Command Center · exceptions by warehouse</i><br/>problems in steps 1–5 surface here"]
-  B1["<b>ENTERPRISE SYSTEMS</b><br/>1. Supply evidence<br/><i>Asset Intelligence · what we know</i><br/>EAM Grade B · QMS certified 24 months · ERP/WMS cost and stock"]
-  B2["<b>CIRCULARITY</b><br/>2. Build alternatives<br/><i>Asset Intelligence · eligibility, demand</i><br/>6 of 7 routes eligible · SO-48102 at Site 3"]
+  S["<b>PLANNER</b><br/>Sign in<br/><i>Sign-in form</i>"]
+  R["<b>PLANNER</b><br/>Returned assets<br/><i>Returned assets</i><br/>pick one asset: RT-1048, Start here"]
+  B1["<b>ENTERPRISE SYSTEMS</b><br/>1. Supply evidence<br/><i>Asset Intelligence · retrieved data</i><br/>EAM Grade B · QMS certified 24 months · OMS RMA · procurement part prices · PLM/ERP/WMS catalogue, cost, stock"]
+  B2["<b>CIRCULARITY</b><br/>2. Build alternatives<br/><i>Asset Intelligence · eligibility, demand</i><br/>6 of 7 routes eligible · Customer A contract demand SO-48102 (accepts certified refurbished)"]
   B3["<b>CIRCULARITY</b><br/>3. Predict outcomes<br/><i>Asset Intelligence · life and value</i><br/>life 30–40 months · value by route"]
   B4["<b>CIRCULARITY</b><br/>4. Optimize plan<br/><i>Treatment Intelligence · step 2</i><br/>every route compared, withheld ones with the reason"]
   B5["<b>HUMAN IN THE LOOP</b><br/>5. Plan approval<br/><i>Treatment Intelligence · step 5</i><br/>approve, override or decline"]
   B6["<b>CIRCULARITY</b><br/>6. Send instruction<br/><i>Step 5 · instruction</i><br/>approved plan to ERP, EAM and WMS"]
-  B7["<b>ENTERPRISE SYSTEMS</b><br/>7. Create execution work<br/><i>Handoff rows 1–2</i><br/>ERP sales order SO-48102 · EAM work order"]
+  B7["<b>ENTERPRISE SYSTEMS</b><br/>7. Create execution work<br/><i>Handoff rows 1–2</i><br/>ERP Customer A contract replacement order SO-48102 · EAM work order"]
   B8["<b>ENTERPRISE SYSTEMS</b><br/>8. Repair & certify<br/><i>Handoff row 2</i><br/>repaired, tested, certified; QMS record updated"]
   B9["<b>ENTERPRISE SYSTEMS</b><br/>9. Action & return outcome<br/><i>Handoff rows 3–4</i><br/>WMS transfer · ERP order fulfilled"]
   B10["<b>CIRCULARITY</b><br/>10. Reconcile & learn<br/><i>Step 10 · reconcile and learn</i><br/>predicted vs actual by cost line, against the order"]
@@ -27,14 +26,11 @@ flowchart LR
   B1 --> B2 --> B3 --> B4 --> B5
   B5 -- "Approved" --> B6
   B6 --> B7 --> B8 --> B9 --> B10
-  X -. "Notify owner" .-> R
 
   classDef circ fill:#FFDD00,stroke:#141414,color:#141414
   classDef other fill:#FFFFFF,stroke:#141414,color:#141414
-  classDef side fill:#FFFFFF,stroke:#141414,color:#141414,stroke-dasharray:6 4
   class B2,B3,B4,B6,B10 circ
   class S,R,B1,B5,B7,B8,B9 other
-  class X side
 ```
 
 | Step | Who | Screen (link pattern) | What happens |
@@ -51,4 +47,3 @@ flowchart LR
 | 8 | Enterprise systems | Handoff row 2 (`jstep=8`) | EAM: repaired, tested and certified; QMS record updated |
 | 9 | Enterprise systems | Handoff rows 3–4 (`jstep=9`) | WMS transfer to Site 3; ERP reports the order fulfilled with actual costs |
 | 10 | Circularity, Finance | Step 10, reconcile and learn (`?step=5&at=reconcile&jstep=10`) | Finance confirms; predicted vs actual by cost line, each line naming the model that learns from it |
-| Side | Executive, Planner | Command Center, exceptions by warehouse | Problems in steps 1–5; *Notify owner* sends them to the person who acts |
