@@ -4,7 +4,7 @@
 **Length:** about 9 minutes live, plus questions. The recorded video follows the same order in about 4 minutes; its narration is in [`VOICEOVER_SCRIPT.md`](VOICEOVER_SCRIPT.md).
 **Record used throughout:** **RT-1048**, a Voltara V4 motor returned by Customer A to Warehouse 1. It is the *happy path*: every signal is in, so it is not waiting in a queue.
 
-> All data in the demo is synthetic. Sign-in and single sign-on are simulated. Claims about integration effort, timelines and model accuracy (the Q&A notes below), the wording about which model learns from which cost line, and who certifies equipment, should be reviewed before they are used with a client; wording about authentication, data provenance, model outputs and accountability should be reviewed by Kinective's Legal team.
+> All data in the demo is synthetic. Sign-in and single sign-on are simulated. Claims about integration effort, timelines and model accuracy (the Q&A notes below), the wording about which model learns from which cost line, and who certifies equipment, should be reviewed before they are used with a client; wording about authentication, data provenance, model outputs and accountability should be reviewed by the Legal team.
 
 ---
 

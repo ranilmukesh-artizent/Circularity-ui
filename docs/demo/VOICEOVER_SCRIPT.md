@@ -4,7 +4,7 @@
 
 **Voice:** calm, plain English, about 150 words a minute. Say the numbers as written ("nine thousand six hundred dollars"). No product claims beyond what is on screen.
 
-> Synthetic data only. Before the video is shared with any client, the narration about certification, cost sources, model learning and integration effort should be reviewed, and wording about data provenance and accountability should be reviewed by Kinective's Legal team.
+> Synthetic data only. Before the video is shared with any client, the narration about certification, cost sources, model learning and integration effort should be reviewed, and wording about data provenance and accountability should be reviewed by the Legal team.
 
 ---
 

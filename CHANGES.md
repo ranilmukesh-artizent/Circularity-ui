@@ -12,7 +12,7 @@ Open `index.html`. The app opens on a **sign-in form** (Update 9): type `exec` o
 
 **Why:** the Product Owner's review of the Command Center and Asset Intelligence, and the recorded *Circularity Deck Finalization* call, both on 19 Oct 2026, ahead of the demo video (20–21 Oct) and the presentation (22 Oct). The plan, its check of the call notes and the open decisions are in [`docs/feature-demo-refactor-iter-three.md`](docs/feature-demo-refactor-iter-three.md). Points marked **(assumed)** follow the plan's defaults (J1–J10) until the Product Owner confirms them.
 
-> **Legal review.** This update changes wording about redeployment under customer contracts, who certifies equipment (the EAM and quality systems, not Circularity), where costs come from, and what the Command Center figures mean. Kinective's Legal team should review that wording before it is relied on or used with clients. All data stays synthetic.
+> **Legal review.** This update changes wording about redeployment under customer contracts, who certifies equipment (the EAM and quality systems, not Circularity), where costs come from, and what the Command Center figures mean. The Legal team should review that wording before it is relied on or used with clients. All data stays synthetic.
 
 ### What changed, where
 
@@ -73,7 +73,7 @@ J1–J10 are built on the plan's defaults (section 4 of the plan). Not code, for
 
 **Why:** the follow-up review call with the Product Owner on 16 Oct 2026, ahead of the in-person review on Monday 19 Oct. The asks: do not land the asset journey on Exceptions; make every one of the ten steps clickable and guiding ("after looking at this, where do I go next?"); show **every** option at step 4; let Asset Intelligence fill in its commercial value step by step, tied to the Sales Order or Work Order; and learn from **each cost line**, not only the net. The plan, its check of the first-draft notes and the open decisions are in [`docs/feature-demo-refractor-iter-two.md`](docs/feature-demo-refractor-iter-two.md). Points marked **(assumed)** follow the plan's default (H1–H10) until the Product Owner confirms them.
 
-> **Legal review.** This update adds wording about which model learns from which cost line, and about what the enterprise systems decide and return. Kinective's Legal team should review that wording before it is relied on or used with clients. All data stays synthetic.
+> **Legal review.** This update adds wording about which model learns from which cost line, and about what the enterprise systems decide and return. The Legal team should review that wording before it is relied on or used with clients. All data stays synthetic.
 
 ### What changed, where
 
@@ -131,7 +131,7 @@ H1–H10 are built on the plan's defaults (section 4 of the plan; answers go in 
 
 **Why:** the review call of 16 Oct 2026, ahead of the stakeholder demo on Monday 19 Oct. The Product Owner did not want a role picker on entry, wanted two perspectives (senior management and end user), one record shown from start to finish in line with the business journey, and the data *retrieved* from enterprise systems kept visibly apart from what Circularity *predicts*. The plan, the decisions and what is still assumed are in [`docs/PLAN_DEMO_SIGNIN_SINGLE_ASSET.md`](docs/PLAN_DEMO_SIGNIN_SINGLE_ASSET.md); it refines the first draft in `docs/Refactor Guided Flow.md`. Points marked **(assumed)** follow the plan's default until the Product Owner confirms them.
 
-> **Legal review.** This update changes the sign-in experience (simulated credentials and single sign-on wording) and how predictions are labelled against source data. Kinective's Legal team should review that wording before it is relied on or used with clients.
+> **Legal review.** This update changes the sign-in experience (simulated credentials and single sign-on wording) and how predictions are labelled against source data. The Legal team should review that wording before it is relied on or used with clients.
 
 ### What changed, where
 
@@ -186,7 +186,7 @@ E1–E6 and E8–E12 are built on the plan's defaults (see the plan, section 10)
 
 **Why:** the Product Owner asked to *structure the flow*, so a viewer sees where a user starts, how they move and what outcome they get. The plan, the decisions taken and what is still assumed are in [`docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md`](docs/PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md). Points marked **(assumed)** follow the plan's default until the Product Owner confirms them.
 
-> **Legal review.** This update adds roles, site scoping, identity-provider settings and positioning wording ("decision intelligence, not an execution system"). Kinective's Legal team should review the role matrix and that wording before it is used with clients.
+> **Legal review.** This update adds roles, site scoping, identity-provider settings and positioning wording ("decision intelligence, not an execution system"). The Legal team should review the role matrix and that wording before it is used with clients.
 
 ### What changed, where
 
@@ -249,7 +249,7 @@ D2 and D5–D20 in the plan are still waiting for the Product Owner and are buil
 
 **Simulated sign-in.** There are eight demo accounts: three Planners (one per customer tenant), Approver, Engineer, Finance, Developer and Admin. There are no passwords and no real authentication. Labels are synthetic. The choice is remembered on this device until you sign out. An old saved role from earlier versions is carried over automatically.
 
-> Access control is close to compliance. The role matrix below, and any wording about access, should be reviewed by Kinective's Legal team before it is relied on.
+> Access control is close to compliance. The role matrix below, and any wording about access, should be reviewed by the Legal team before it is relied on.
 
 ### What each role sees
 

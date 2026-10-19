@@ -10,7 +10,7 @@
 
 **Dates (from the call):** demo video recorded with an AI voiceover by **20–21 Oct**; presentation **22 Oct**; backend majority by **31 Oct**; trial run ready by **15 Nov**.
 
-> **Compliance note.** This iteration changes wording about redeployment under customer contracts, who certifies equipment (the enterprise EAM or quality system, not Circularity), where costs come from, and what the Command Center figures mean. Per Kinective policy, that wording should be reviewed by Kinective's Legal team before it is relied on or used with clients. The demo stays synthetic: no real names, emails or customer data. Prospect company names from the call are not put into the app.
+> **Compliance note.** This iteration changes wording about redeployment under customer contracts, who certifies equipment (the enterprise EAM or quality system, not Circularity), where costs come from, and what the Command Center figures mean. Per policy, that wording should be reviewed by the Legal team before it is relied on or used with clients. The demo stays synthetic: no real names, emails or customer data. Prospect company names from the call are not put into the app.
 
 ---
 

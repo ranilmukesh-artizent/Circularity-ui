@@ -8,7 +8,7 @@
 
 **Deadline:** an in-person review with the Product Owner on **Monday morning (19 Oct 2026)**. The stakeholder meeting moved to Monday or Tuesday next week. Section 8 gives a short order if time runs out.
 
-> **Compliance note.** This iteration adds wording about model learning (which model learns from which cost line) and about what enterprise systems decide. Per Kinective policy, wording about model outputs, data provenance and accountability should be reviewed by Kinective's Legal team before it is relied on or used with clients. The demo stays synthetic: no real names, emails or customer data. Participants are referred to by role.
+> **Compliance note.** This iteration adds wording about model learning (which model learns from which cost line) and about what enterprise systems decide. Per policy, wording about model outputs, data provenance and accountability should be reviewed by the Legal team before it is relied on or used with clients. The demo stays synthetic: no real names, emails or customer data. Participants are referred to by role.
 
 > **About the first-draft notes.** The call transcript is reliable for *what was asked*. The first write-up of it, however, added details that are **not in the app** and quoted wrong line numbers (section 3). This plan uses only what was checked in `index.html`, `docs/demo/user-flow.svg` and the Product Owner's diagram (`docs/demo/user-journey-diagram.png`) on 2026-10-16.
 
