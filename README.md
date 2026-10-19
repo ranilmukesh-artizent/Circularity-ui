@@ -453,9 +453,9 @@ Sign in as `ops`: you land on **Returned assets**, with RT-1048 marked *Start he
 |---|---|
 | ▶ Start | Returned assets (`#/product/received?focus=RT-1048`) |
 | 1 Supply evidence | Asset Intelligence, retrieved side; the predicted side waits (`#/product/asset/RT-1048?zone=known&jstep=1`) |
-| 2 Build alternatives | Eligibility and gates, Matched demand (`…?zone=predicted&jstep=2`) |
-| 3 Predict outcomes | Remaining life, economic intelligence (`…?zone=predicted&jstep=3`) |
-| 4 Optimize plan | Treatment Intelligence step 2, All pathways (`#/product/RT-1048?step=2&jstep=4`) |
+| 2 Build alternatives | Treatment Intelligence, All pathways: every route, eligible or withheld (`#/product/RT-1048?step=2&jstep=2`) |
+| 3 Predict outcomes | The recommended path, just below (`…?step=2&jstep=3`) |
+| 4 Optimize plan | Why this outcome and the what-if (`…?step=3&jstep=4`) |
 | 5 Plan approval | The decision card: submit, then the Approver approves (`…?step=5&jstep=5`) |
 | 6 Send instruction | The instruction preview, or what was sent (`…?step=5&at=handoff&jstep=6`) |
 | 7 Create execution work | Handoff rows 1–2: ERP returns SO-48102, EAM a work order (`jstep=7`) |

@@ -61,21 +61,25 @@ Show **User Flow** ([`user-flow.png`](user-flow.png)): the planner signs in, ope
 
    > "That is how we get the cost: the product value from the catalogue, the return authorisation from order management, what needs repairing from diagnostics, and the part prices from the supplier contracts."
 
-### Steps 2 and 3 · Build alternatives, predict outcomes
+### Step 2 · Build alternatives: every possible outcome
 
-4. **Continue to step 2**: the **Predictions** page opens, with *Eligibility and gates* and *Matched demand* outlined.
+4. **Continue to step 2**: Treatment Intelligence opens on **All pathways** (7 routes · 6 eligible · 1 withheld).
 
-   > "Six of seven routes are eligible. And there is demand: Customer A's contract needs a replacement at Site 3, order SO-48102. The contract accepts a certified refurbished motor; if it asked for a new one, we could not use this unit. It needs 24 months of certified life, and this motor has 24."
+   > "Every option is here: redeploy to Customer A at $9,600, sell, re-lease, recover parts, recover material, a responsible exit, and the one a gate withheld, with its reason. Redeploy works because Customer A's contract needs a replacement at Site 3, order SO-48102, and accepts a certified refurbished motor; if it asked for a new one, we could not use this unit."
 
-5. **Continue to step 3**: life and economics are outlined.
+### Step 3 · Predict outcomes: the recommended path
 
-   > "Thirty to forty months of life, and a value for every route. The preparation cost, $1,800, is the contracted parts plus predicted labour and transfer."
+5. **Continue to step 3**: the **recommended path**, just below the table, is outlined.
 
-### Step 4 · Optimize plan
+   > "Circularity recommends redeploying: $9,600 predicted, $4,800 ahead of selling, high confidence. Thirty to forty months of life, certified for the 24 the contract needs."
 
-6. **Continue to step 4**: Treatment Intelligence step 2, **Possible outcomes**: the **All pathways** table first, then the recommended one.
+### Step 4 · Optimize plan: why, and what would change it
 
-   > "Every option is here: redeploy to Customer A at $9,600, sell, re-lease, recover parts, recover material, a responsible exit, and the one a gate withheld, with its reason."
+6. **Continue to step 4**: *Why this outcome* and the *what-if* are outlined.
+
+   > "Why it wins, and what would change the ranking: if the confirmed demand were cancelled, selling would come first. Here we can stress the assumptions." (Edge cases, part 2, are on this screen.)
+
+   *Optional, if asked about cost:* the asset page links to **See what Circularity predicts for this asset**, where *How the preparation cost is built* shows $1,800 = contracted parts + predicted labour and transfer.
 
 ### Step 5 · Plan approval
 
