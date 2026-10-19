@@ -53,7 +53,7 @@ Show **User Flow** ([`user-flow.png`](user-flow.png)): the planner signs in, ope
 
 ### Step 1 · Supply evidence
 
-3. Asset Intelligence opens on **Retrieved data**. The left menu has two pages: **Retrieved data** and **Predictions**; nothing predicted is on this page.
+3. Asset Intelligence opens on **Retrieved data**; nothing predicted is on this page. The bar at the bottom moves on to **Predictions**.
 
    > "Step one is what the enterprise systems tell us. Grade B from the EAM diagnostics. Certified for 24 months in QMS: the diagnostic and quality process certifies the motor, after any part is replaced; Circularity reads that certificate, it does not certify anything. And the cost inputs."
 
@@ -73,7 +73,7 @@ Show **User Flow** ([`user-flow.png`](user-flow.png)): the planner signs in, ope
 
 ### Step 4 · Optimize plan
 
-6. **Continue to step 4**: **All pathways**.
+6. **Continue to step 4**: Treatment Intelligence step 2, **Possible outcomes**: the **All pathways** table first, then the recommended one.
 
    > "Every option is here: redeploy to Customer A at $9,600, sell, re-lease, recover parts, recover material, a responsible exit, and the one a gate withheld, with its reason."
 
