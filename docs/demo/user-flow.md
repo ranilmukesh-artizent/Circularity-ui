@@ -11,9 +11,9 @@ flowchart LR
   S["<b>PLANNER</b><br/>Sign in<br/><i>Sign-in form</i>"]
   R["<b>PLANNER</b><br/>Returned assets<br/><i>Returned assets</i><br/>pick one asset: RT-1048, Start here"]
   B1["<b>ENTERPRISE SYSTEMS</b><br/>1. Supply evidence<br/><i>Asset Intelligence · retrieved data</i><br/>EAM Grade B · QMS certified 24 months · OMS RMA · procurement part prices · PLM/ERP/WMS catalogue, cost, stock"]
-  B2["<b>CIRCULARITY</b><br/>2. Build alternatives<br/><i>Asset Intelligence · eligibility, demand</i><br/>6 of 7 routes eligible · Customer A contract demand SO-48102 (accepts certified refurbished)"]
-  B3["<b>CIRCULARITY</b><br/>3. Predict outcomes<br/><i>Asset Intelligence · life and value</i><br/>life 30–40 months · value by route"]
-  B4["<b>CIRCULARITY</b><br/>4. Optimize plan<br/><i>Treatment Intelligence · step 2</i><br/>every route compared, withheld ones with the reason"]
+  B2["<b>CIRCULARITY</b><br/>2. Build alternatives<br/><i>Treatment Intelligence · all pathways</i><br/>every route, eligible or withheld · 6 of 7 routes eligible · Customer A contract demand SO-48102 (accepts certified refurbished)"]
+  B3["<b>CIRCULARITY</b><br/>3. Predict outcomes<br/><i>Treatment Intelligence · recommended path</i><br/>Redeploy, $9,600 · life 30–40 months, certified 24"]
+  B4["<b>CIRCULARITY</b><br/>4. Optimize plan<br/><i>Treatment Intelligence · why and what-if</i><br/>why it wins, what would change the ranking"]
   B5["<b>HUMAN IN THE LOOP</b><br/>5. Plan approval<br/><i>Treatment Intelligence · step 5</i><br/>approve, override or decline"]
   B6["<b>CIRCULARITY</b><br/>6. Send instruction<br/><i>Step 5 · instruction</i><br/>approved plan to ERP, EAM and WMS"]
   B7["<b>ENTERPRISE SYSTEMS</b><br/>7. Create execution work<br/><i>Handoff rows 1–2</i><br/>ERP Customer A contract replacement order SO-48102 · EAM work order"]
@@ -38,9 +38,9 @@ flowchart LR
 | Sign in | Any user | Sign-in form | `exec` lands on the Executive Command Center; `ops` lands on Returned assets |
 | Start | End user (Planner) | Returned assets (`product/received?focus=RT-1048`) | What has come back; RT-1048 is marked *Start here* |
 | 1 | Enterprise systems | Asset Intelligence, retrieved side (`?zone=known&jstep=1`) | Condition (EAM), certified period (QMS), lifecycle, return history, specs. The predicted side waits: *not evaluated yet* |
-| 2 | Circularity | Asset Intelligence, eligibility and demand (`?zone=predicted&jstep=2`) | Six gates, 6 of 7 routes eligible, matched demand SO-48102 at Site 3, re-lease opportunity LS-5530 |
-| 3 | Circularity | Asset Intelligence, life and value (`?zone=predicted&jstep=3`) | Remaining life 30–40 months, value by route |
-| 4 | Circularity | Treatment Intelligence, step 2 (`product/RT-1048?step=2&jstep=4`) | Recommended outcome and **all pathways**: every route, net, P10–P90, eligible or withheld with the reason |
+| 2 | Circularity | Treatment Intelligence, All pathways (`product/RT-1048?step=2&jstep=2`) | Every route, net, P10–P90, eligible or withheld with the reason: 7 routes, 6 eligible; contract demand SO-48102 |
+| 3 | Circularity | Treatment Intelligence, recommended path (`?step=2&jstep=3`) | Redeploy RT-1048, $9,600, confidence High, life 30–40 months, certified 24 |
+| 4 | Circularity | Treatment Intelligence, why and what-if (`?step=3&jstep=4`) | Recommended outcome and **all pathways**: every route, net, P10–P90, eligible or withheld with the reason |
 | 5 | Human in the loop | Treatment Intelligence, step 5 (`?step=5&jstep=5`) | Planner submits; Approver approves, overrides or declines |
 | 6 | Circularity | Step 5, instruction (`?step=5&at=handoff&jstep=6`) | The approved instruction goes to ERP, EAM and WMS |
 | 7 | Enterprise systems | Handoff rows 1–2 (`jstep=7`) | ERP returns the sales order (SO-48102); EAM returns the work order |

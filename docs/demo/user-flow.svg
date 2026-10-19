@@ -44,7 +44,7 @@
 <circle cx="385" cy="451.5" r="2.2" fill="#141414"/>
 <text x="394" y="456" font-size="13.5" fill="#141414">6 of 7 routes eligible</text>
 <rect x="368" y="506" width="268" height="30" fill="#141414"/>
-<text x="502.0" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Asset Intelligence · eligibility, demand</text>
+<text x="502.0" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Treatment Intelligence · all pathways</text>
 <rect x="666" y="300" width="268" height="236" fill="#FFDD00" stroke="#141414" stroke-width="1.6"/>
 <text x="678" y="324" font-size="13.5" font-weight="700" fill="#141414">CIRCULARITY</text>
 <text x="678" y="356" font-size="17.5" font-weight="700" fill="#141414">3. Predict outcomes</text>
@@ -55,9 +55,9 @@
 <text x="692" y="420" font-size="13.5" fill="#141414">Repair cost and success, claims</text>
 <text x="692" y="438" font-size="13.5" fill="#141414">exposure</text>
 <circle cx="683" cy="451.5" r="2.2" fill="#141414"/>
-<text x="692" y="456" font-size="13.5" fill="#141414">Life 30–40 months; value by route</text>
+<text x="692" y="456" font-size="13.5" fill="#141414">Recommended: Redeploy, $9,600</text>
 <rect x="666" y="506" width="268" height="30" fill="#141414"/>
-<text x="800.0" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Asset Intelligence · life and value</text>
+<text x="800.0" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Treatment Intelligence · recommended</text>
 <rect x="964" y="300" width="268" height="236" fill="#FFDD00" stroke="#141414" stroke-width="1.6"/>
 <text x="976" y="324" font-size="13.5" font-weight="700" fill="#141414">CIRCULARITY</text>
 <text x="976" y="356" font-size="17.5" font-weight="700" fill="#141414">4. Optimize plan</text>
@@ -65,12 +65,12 @@
 <text x="990" y="384" font-size="13.5" fill="#141414">Compare net value across every</text>
 <text x="990" y="402" font-size="13.5" fill="#141414">route</text>
 <circle cx="981" cy="415.5" r="2.2" fill="#141414"/>
-<text x="990" y="420" font-size="13.5" fill="#141414">Withheld routes shown with the</text>
-<text x="990" y="438" font-size="13.5" fill="#141414">reason</text>
+<text x="990" y="420" font-size="13.5" fill="#141414">Why it wins; what would change</text>
+<text x="990" y="438" font-size="13.5" fill="#141414">the ranking (what-if)</text>
 <circle cx="981" cy="451.5" r="2.2" fill="#141414"/>
-<text x="990" y="456" font-size="13.5" fill="#141414">Recommended: Redeploy, $9,600</text>
+<text x="990" y="456" font-size="13.5" fill="#141414">Edge cases tested</text>
 <rect x="964" y="506" width="268" height="30" fill="#141414"/>
-<text x="1098.0" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Treatment Intelligence · step 2</text>
+<text x="1098.0" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Treatment Intelligence · why, what-if</text>
 <rect x="1262" y="300" width="268" height="236" fill="#FFFFFF" stroke="#141414" stroke-width="1.6"/>
 <text x="1274" y="324" font-size="13.5" font-weight="700" fill="#141414">HUMAN IN THE LOOP</text>
 <text x="1274" y="356" font-size="17.5" font-weight="700" fill="#141414">5. Plan approval</text>

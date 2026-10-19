@@ -39,7 +39,7 @@
 <text x="392" y="374" font-size="15" fill="#3B3633">and external demand, define</text>
 <text x="392" y="394" font-size="15" fill="#3B3633">eligible treatments</text>
 <rect x="378" y="430" width="268" height="34" rx="17" fill="#141414"/>
-<text x="512.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Asset intelligence · eligibility, demand</text>
+<text x="512.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Treatment Intelligence · all pathways</text>
 <rect x="676" y="230" width="268" height="190" fill="#FFDD00" stroke="#141414" stroke-width="2"/>
 <text x="690" y="258" font-size="14" font-weight="700" fill="#141414">CIRCULARITY</text>
 <text x="690" y="294" font-size="21" font-weight="800" fill="#141414">3. Predict outcomes</text>
@@ -47,7 +47,7 @@
 <text x="690" y="347" font-size="15" fill="#3B3633">repair cost and success, claims</text>
 <text x="690" y="367" font-size="15" fill="#3B3633">exposure</text>
 <rect x="676" y="430" width="268" height="34" rx="17" fill="#141414"/>
-<text x="810.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Asset intelligence · life and value</text>
+<text x="810.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Treatment Intelligence · recommended</text>
 <rect x="974" y="230" width="268" height="190" fill="#FFDD00" stroke="#141414" stroke-width="2"/>
 <text x="988" y="258" font-size="14" font-weight="700" fill="#141414">CIRCULARITY</text>
 <text x="988" y="294" font-size="21" font-weight="800" fill="#141414">4. Optimize plan</text>
@@ -55,7 +55,7 @@
 <text x="988" y="347" font-size="15" fill="#3B3633">routes, timing and capacity;</text>
 <text x="988" y="367" font-size="15" fill="#3B3633">select the plan</text>
 <rect x="974" y="430" width="268" height="34" rx="17" fill="#141414"/>
-<text x="1108.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Treatment Intelligence · step 2</text>
+<text x="1108.0" y="453" text-anchor="middle" font-size="14.5" font-weight="600" fill="#FFDD00">Treatment Intelligence · why, what-if</text>
 <rect x="1272" y="230" width="268" height="190" fill="#FFFFFF" stroke="#141414" stroke-width="2"/>
 <text x="1286" y="258" font-size="14" font-weight="700" fill="#141414">HUMAN IN THE LOOP</text>
 <text x="1286" y="294" font-size="21" font-weight="800" fill="#141414">5. Plan approval</text>
