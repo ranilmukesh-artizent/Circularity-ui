@@ -86,7 +86,7 @@ If there is no answer, build the default and mark it **(assumed)**.
 | J1 | Hide *Uplift vs baseline*, or rename it? | **Hide** on the Command Center (flag `FEAT.uplift`), and the *Uplift vs sell as-is or scrap* line on Asset Intelligence. Plain alternatives to choose from: **Extra value recovered** (*$652k more than selling as-is or scrapping*), **Value recovered** (actual net, already shown as *Net recovery*), **New purchases avoided** (already shown as *Avoided spend*). Analytics keeps its waterfall unchanged |
 | J2 | What does `#/command` open? | The **overview** (key figures, with definitions). Each other entry opens its own page; sections a role does not have are not listed |
 | J3 | Keep *Returned assets* in the Product menu? | **Yes.** It is where the journey starts. Only Pool optimizer is hidden; Asset intelligence moves to the top. The *Product* heading still opens Returned assets |
-| J4 | Asset Intelligence layout | The tab list becomes a **left section menu**; Overview stacks **Retrieved** above **Predicted**, each full width, cards two across. Phone: the menu becomes a scrollable row |
+| J4 | Asset Intelligence layout | **Answered 19 Oct:** the left menu holds only **Retrieved data** and **Predictions**, each a separate page (not one scroll). Detail views open from *View details* under their page; *Compare similar assets* moves to Actions. Phone: the menu becomes a row |
 | J5 | Redeploy wording | *Redeploy RT-1048 to Customer A (Site 3)* against **contract replacement order SO-48102**, which **accepts a certified refurbished unit** for **24 months**; a new-only demand line is never matched |
 | J6 | Critical part unavailable preset | Withholds redeploy, re-lease and whole-unit sale (*critical component failed; no replacement in supplier contracts, so EAM/QMS cannot re-certify its life*); RT-1048's top route becomes *Recover parts* |
 | J7 | Languages | English plus a **navigation preview** in Japanese, German, French and Finnish (menu, journey step names, guide labels), marked *preview, not reviewed by a native speaker*. Full translation needs a string catalogue (backend phase) |
@@ -189,7 +189,7 @@ Run the five existing suites; change expectations only where this plan changes b
 | J1 | Pending (assumed: hide) | `FEAT.uplift=false`: `ccKeys` drops the tile; the Finance subtitle and the asset value card follow the flag |
 | J2 | Pending (assumed: overview) | `renderCommand(r)`, `ccSec`, `ccSecOK`, `CC_DESC`, `ccDefsHTML`; `navKids` lists only the role's sections |
 | J3 | Pending (assumed: keep Returned assets) | `NAV` Product order; the heading still links to Returned assets |
-| J4 | Pending (assumed: left menu, stacked) | `assetTabs` (`.asside`), `.asbody2`, `.aszs`/`.asz` grid, `aszw` wide cards |
+| J4 | **Answered:** two separate pages, Retrieved data and Predictions | `AS_PAGES`, `AS_PARENT`, `asPageOf`, `assetTabs`, `ACT.asZone`, `asOverview` (one zone per page), `assetTabBody` (detail crumb); `?zone=known` / `?zone=predicted` |
 | J5 | Pending (assumed: customer contract wording) | RT-1048 seed (`demandLabel`, `target`, `why`, `facts`), `bestCard`, `tiPredicted`, `tiOutcome`, `tiHandoff`, `jgEst`, `asDemand`, `assetFacts` |
 | J6 | Pending (assumed: withhold redeploy, re-lease, whole sale) | `SCEN_WHY`, `scenRoutes`, `TI_PRESETS` (`ecm`, `newonly`) |
 | J7 | Pending (assumed: navigation preview) | `I18N_KEYS`, `I18N`, `tr`, `RG_CONT` |

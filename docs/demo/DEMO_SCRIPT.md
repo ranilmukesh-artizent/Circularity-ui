@@ -53,7 +53,7 @@ Show **User Flow** ([`user-flow.png`](user-flow.png)): the planner signs in, ope
 
 ### Step 1 · Supply evidence
 
-3. Asset Intelligence opens. The section menu is on the left; **Retrieved from enterprise systems** comes first; **Predictions** sit below it and wait (*Not evaluated yet*).
+3. Asset Intelligence opens on **Retrieved data**. The left menu has two pages: **Retrieved data** and **Predictions**; nothing predicted is on this page.
 
    > "Step one is what the enterprise systems tell us. Grade B from the EAM diagnostics. Certified for 24 months in QMS: the diagnostic and quality process certifies the motor, after any part is replaced; Circularity reads that certificate, it does not certify anything. And the cost inputs."
 
@@ -63,7 +63,7 @@ Show **User Flow** ([`user-flow.png`](user-flow.png)): the planner signs in, ope
 
 ### Steps 2 and 3 · Build alternatives, predict outcomes
 
-4. **Continue to step 2**: *Eligibility and gates* and *Matched demand* are outlined.
+4. **Continue to step 2**: the **Predictions** page opens, with *Eligibility and gates* and *Matched demand* outlined.
 
    > "Six of seven routes are eligible. And there is demand: Customer A's contract needs a replacement at Site 3, order SO-48102. The contract accepts a certified refurbished motor; if it asked for a new one, we could not use this unit. It needs 24 months of certified life, and this motor has 24."
 
