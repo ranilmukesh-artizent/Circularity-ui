@@ -6,7 +6,7 @@
 
 **Builds on:** `docs/PLAN_RBAC_ADAPTIVE_UI.md` (role-adaptive UI, branch `feature/rbac-adaptive-ui`, not merged into `main` at the time of writing). This plan reuses its access policy, sign-in, requests and Command Center layouts. **Branch from `feature/rbac-adaptive-ui`** (or from `main` once that PR is merged).
 
-> **Compliance note.** This work touches access control (new roles, site scoping, identity provider settings) and product positioning ("decision intelligence, not an execution system"). Per Kinective policy, the role matrix, any wording about access, identity, security or regulation, and the positioning statements should be reviewed by Kinective's Legal team before they are relied on or used with clients.
+> **Compliance note.** This work touches access control (new roles, site scoping, identity provider settings) and product positioning ("decision intelligence, not an execution system"). Per policy, the role matrix, any wording about access, identity, security or regulation, and the positioning statements should be reviewed by the Legal team before they are relied on or used with clients.
 
 ---
 
@@ -443,9 +443,9 @@ A web research pass checked the plan against published guidance: 20 sources fetc
 
 **Gaps in the evidence.** No source survived verification on (a) guided top-to-bottom case page layouts, or (b) how other products build "behind the screen" agent views. Those parts of R6 and R7 rest on the Product Owner's brief and our own design.
 
-**Tension to resolve.** OWASP's "log full parameters" pulls against redacting PII. Kinective policy also forbids processing end-customer PII. The demo uses synthetic data only. A production design needs field-level redaction or tokenisation, decided with security and Legal.
+**Tension to resolve.** OWASP's "log full parameters" pulls against redacting PII. Internal policy also forbids processing end-customer PII. The demo uses synthetic data only. A production design needs field-level redaction or tokenisation, decided with security and Legal.
 
-> **Legal review.** Sections 13.4 to 13.6 touch security, identity and a patent document. Kinective's Legal team should review them before anyone relies on them; the patent reference is background only and must not be used as a design source without that review.
+> **Legal review.** Sections 13.4 to 13.6 touch security, identity and a patent document. The Legal team should review them before anyone relies on them; the patent reference is background only and must not be used as a design source without that review.
 
 ---
 

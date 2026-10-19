@@ -1,27 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1080" width="1600" height="1080" role="img" aria-labelledby="t d" font-family="Arial,'Segoe UI',Helvetica,sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 790" width="1600" height="790" role="img" aria-labelledby="t d" font-family="Arial,'Segoe UI',Helvetica,sans-serif">
 <title id="t">Circularity user flow, version 2</title>
-<desc id="d">How a user moves through the Circularity demo for one returned asset, RT-1048: sign in, open Returned assets and pick the asset, then follow journey steps 1 to 10, numbered and named like the Product Owner's Typical User Journey. Asset Intelligence fills in its commercial value as the steps run. Synthetic demo data.</desc>
+<desc id="d">Journey steps 1 to 10 for one returned asset, RT-1048, numbered and named like the Product Owner's Typical User Journey. Synthetic demo data.</desc>
 <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#141414"/></marker></defs>
-<rect width="1600" height="1080" fill="#EEE8E1"/>
+<rect width="1600" height="790" fill="#EEE8E1"/>
 <text x="70" y="64" font-size="38" font-weight="700" fill="#141414">User Flow</text>
-<text x="70" y="98" font-size="17" fill="#4B4541">The planner signs in, picks one returned asset and follows its journey. RT-1048 (Voltara V4 motor, Customer A, Warehouse 1). Steps match the Typical User Journey.</text>
-<rect x="70" y="128" width="268" height="132" fill="#FFFFFF" stroke="#141414" stroke-width="1.6"/>
-<text x="82" y="150" font-size="12.5" font-weight="700" fill="#141414">PLANNER</text>
-<text x="82" y="174" font-size="17" font-weight="700" fill="#141414">Sign in</text>
-<text x="82" y="194" font-size="13" fill="#141414">Work email, user ID or single</text>
-<text x="82" y="211" font-size="13" fill="#141414">sign-on (simulated)</text>
-<rect x="70" y="234" width="268" height="26" fill="#141414"/>
-<text x="204.0" y="252" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFDD00">Sign-in form</text>
-<rect x="368" y="128" width="268" height="132" fill="#FFFFFF" stroke="#141414" stroke-width="1.6"/>
-<text x="380" y="150" font-size="12.5" font-weight="700" fill="#141414">PLANNER</text>
-<text x="380" y="174" font-size="17" font-weight="700" fill="#141414">Returned assets</text>
-<text x="380" y="194" font-size="13" fill="#141414">What has come back; pick one</text>
-<text x="380" y="211" font-size="13" fill="#141414">asset: RT-1048, Start here</text>
-<rect x="368" y="234" width="268" height="26" fill="#141414"/>
-<text x="502.0" y="252" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFDD00">Returned assets</text>
-<path d="M338 194 L366 194" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
-<path d="M420 260 L420 280 L204 280 L204 298" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
-<text x="312" y="274" text-anchor="middle" font-size="13" font-style="italic" fill="#4B4541">Open the asset · step 1</text>
+<text x="70" y="98" font-size="17" fill="#4B4541">Journey steps 1 to 10 for one returned asset, RT-1048 (Voltara V4 motor, Customer A, Warehouse 1). Steps match the Typical User Journey.</text>
+<g transform="translate(0,-160)">
 <path d="M204.0 536 L204.0 558 L502.0 558 L502.0 538" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
 <path d="M502.0 300 L502.0 284 L800.0 284 L800.0 298" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
 <path d="M800.0 536 L800.0 558 L1098.0 558 L1098.0 538" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
@@ -154,21 +138,5 @@
 <text x="96" y="796" font-size="13.5" fill="#141414">learns</text>
 <rect x="70" y="846" width="268" height="30" fill="#141414"/>
 <text x="204.0" y="866" text-anchor="middle" font-size="13" font-weight="700" fill="#FFDD00">Step 10 · reconcile and learn</text>
-<rect x="70" y="922" width="1460" height="82" fill="#FFFFFF" stroke="#141414" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="84" y="946" font-size="13" font-weight="700" fill="#141414">ASSET INTELLIGENCE FILLS IN AS YOU GO · commercial value on the predicted side</text>
-<rect x="84" y="958" width="340" height="36" rx="18" fill="#EEE8E1" stroke="#141414"/>
-<text x="254.0" y="981" text-anchor="middle" font-size="13.5" fill="#141414"><tspan font-weight="700">Pending evaluation</tspan> · before step 4</text>
-<path d="M426 976 L444 976" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
-<rect x="446" y="958" width="340" height="36" rx="18" fill="#FFDD00" stroke="#141414"/>
-<text x="616.0" y="981" text-anchor="middle" font-size="13.5" fill="#141414"><tspan font-weight="700">Predicted, not committed</tspan> · after step 4</text>
-<path d="M788 976 L806 976" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
-<rect x="808" y="958" width="340" height="36" rx="18" fill="#FFDD00" stroke="#141414"/>
-<text x="978.0" y="981" text-anchor="middle" font-size="13.5" fill="#141414"><tspan font-weight="700">Committed against the SO or WO</tspan> · after step 6</text>
-<path d="M1150 976 L1168 976" fill="none" stroke="#141414" stroke-width="1.6" marker-end="url(#ah)"/>
-<rect x="1170" y="958" width="340" height="36" rx="18" fill="#FFDD00" stroke="#141414"/>
-<text x="1340.0" y="981" text-anchor="middle" font-size="13.5" fill="#141414"><tspan font-weight="700">Predicted vs actual, by order</tspan> · after step 10</text>
-<rect x="70" y="1022" width="18" height="18" fill="#FFDD00" stroke="#141414"/><text x="96" y="1036" font-size="14" fill="#141414">Circularity</text>
-<rect x="200" y="1022" width="18" height="18" fill="#FFFFFF" stroke="#141414"/><text x="226" y="1036" font-size="14" fill="#141414">People and enterprise systems</text>
-<rect x="460" y="1022" width="40" height="18" fill="#141414"/><text x="508" y="1036" font-size="14" fill="#141414">Screen in the app</text>
-<text x="70" y="1064" font-size="13" fill="#7B726D">Every step in the app's journey strip is clickable. Circularity sends the approved instruction; the enterprise systems carry out the work and return references. All data is synthetic.</text>
+</g>
 </svg>

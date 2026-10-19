@@ -14,7 +14,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 | **Data** | Everything is **synthetic**. The demo company is *Northfield Industrial Leasing*, with three customer tenants and eight sites. No personal or customer data is used, and none should be entered. |
 | **What changed and when** | [`CHANGES.md`](CHANGES.md) has one walk-through per release. |
 
-> **Note for reviewers.** Access control is close to compliance. The role matrix, the access wording and any regulatory claims in this document should be reviewed by Kinective's Legal team before anyone relies on them or uses them in a client commitment.
+> **Note for reviewers.** Access control is close to compliance. The role matrix, the access wording and any regulatory claims in this document should be reviewed by the Legal team before anyone relies on them or uses them in a client commitment.
 
 ---
 
@@ -441,7 +441,7 @@ Opening a page your role cannot see (for example from an old bookmark) takes you
 | **Honest forecasts** | Predictions show a range. Pending cases are shown as pending, never as failures. Modelled figures say they are modelled |
 | **One version of the truth** | Every page computes from the same data, so figures match everywhere |
 
-> These describe how the demo behaves. They are not a statement of certification or regulatory compliance. Please have Kinective's Legal team review this section before it is used with clients.
+> These describe how the demo behaves. They are not a statement of certification or regulatory compliance. Please have the Legal team review this section before it is used with clients.
 
 ## 10. Demo scripts
 
@@ -555,6 +555,6 @@ Nothing is saved to a server. All changes reset on refresh.
 
 **From Update 11, still assumed** (see `docs/feature-demo-refactor-iter-three.md`, section 4): uplift hidden with plain alternatives proposed (J1), `#/command` opens Key figures (J2), Returned assets stays in the Product menu (J3), the Asset Intelligence layout (J4), the redeploy wording (J5), what *Critical part unavailable* withholds (J6), preview languages (J7), time zones and currencies (J8), cost inputs (J9) and signals (J10).
 
-**For Legal review.** The role matrix (sections 4 and 7), the governance claims (section 9) and any access or compliance wording should be reviewed by Kinective's Legal team before client use.
+**For Legal review.** The role matrix (sections 4 and 7), the governance claims (section 9) and any access or compliance wording should be reviewed by the Legal team before client use.
 
 **Before a production build.** Real sign-in (single sign-on), server-side enforcement of the same access policy, persistent storage, live connectors and a security review.

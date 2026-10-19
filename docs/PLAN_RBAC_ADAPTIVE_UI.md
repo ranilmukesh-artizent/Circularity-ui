@@ -4,7 +4,7 @@
 
 **Status:** implemented on branch `feature/rbac-adaptive-ui` (phases 0 to 6, 2026-10-14). The Product Owner's answers are in **section 9**; points still marked **(assumed)** are open. Code map: the policy lives between `/*RBAC-START*/` and `/*RBAC-END*/` in `index.html` (`ROLE_POLICY`, `PERM_ACTS`, `ACCOUNTS`, `can`, `canPage`, `canRoute`, `homeFor`); sign-in, requests, the Command Center layouts (`CC_LAYOUT`) and comments follow it. The user-facing walk-through is **Update 7** in `CHANGES.md`.
 
-> Compliance note: access control is a compliance-adjacent topic. Per Kinective policy, the role matrix and any wording about access, security or regulation should be reviewed by Kinective's Legal team before it is relied on or acted on.
+> Compliance note: access control is a compliance-adjacent topic. Per policy, the role matrix and any wording about access, security or regulation should be reviewed by the Legal team before it is relied on or acted on.
 
 ---
 

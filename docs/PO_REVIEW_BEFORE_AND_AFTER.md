@@ -2,7 +2,7 @@
 
 **For:** the Product Owner review, 2026-10-15 · **Branch:** `feature/guided-flow` (commit `408da8e`) · **Full detail:** [`CHANGES.md` → Update 8](../CHANGES.md) · **Plan and open questions:** [`PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md`](PLAN_GUIDED_FLOW_AND_EXEC_VIEWS.md)
 
-> All data is synthetic. Kinective's Legal team should review the new roles, the identity wording and the positioning statement ("decision intelligence, not an execution system") before they are used with clients.
+> All data is synthetic. The Legal team should review the new roles, the identity wording and the positioning statement ("decision intelligence, not an execution system") before they are used with clients.
 
 ## In one line
 

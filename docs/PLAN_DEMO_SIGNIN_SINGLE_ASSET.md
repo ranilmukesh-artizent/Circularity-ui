@@ -10,7 +10,7 @@
 
 **Deadline:** the demo to a senior stakeholder is on **Monday 19 Oct 2026**. The Product Owner asked for the flow to be "channelized and sequenced… ready by tomorrow" (Sat 17 Oct) for a dry run. Section 7 gives a short order if time runs out.
 
-> **Compliance note.** This work changes the sign-in experience (simulated credentials and SSO wording) and how predictions are labelled against source data. Per Kinective policy, wording about authentication, identity, data provenance and model outputs should be reviewed by Kinective's Legal team before it is relied on or used with clients. The demo stays synthetic: no real names, emails or customer data.
+> **Compliance note.** This work changes the sign-in experience (simulated credentials and SSO wording) and how predictions are labelled against source data. Per policy, wording about authentication, identity, data provenance and model outputs should be reviewed by the Legal team before it is relied on or used with clients. The demo stays synthetic: no real names, emails or customer data.
 
 > **About the source transcript.** The meeting transcript's audio lines are reliable. Its *screen descriptions* were generated automatically, and several values in them do not match the app (for example "482 assets", "+$612k", "Exceptions 2621", "RUL 6.4 years", "$1,480"). This plan uses values checked in the app on 2026-10-16. Section 13 lists the corrections. Participants are referred to by role, never by name.
 
