@@ -172,7 +172,7 @@ The left menu has eight areas. Each area has a dropdown of its sections, and eve
 
 **For:** every role, with a different view for each. **Purpose:** what needs attention now, and what is it worth?
 
-- **One section per page** (Update 11): each Command Center entry in the sidebar opens its own page, and a role sees only the sections its view has. `#/command` opens **Key figures**, with *What these figures mean*, a plain definition of every figure.
+- **One section per page** (Update 11): each Command Center entry in the sidebar opens its own page, and a role sees only the sections its view has. `#/command` opens **Key figures**, which also holds the portfolio charts and value realisation (they are not separate sidebar entries), and *What these figures mean*, a plain definition of every figure.
 - A **data health strip** (how many sources are live, stale or disconnected).
 - **Filters** for tenant, site, asset class, route and time horizon. They apply to every number on the page.
 - **Needs attention now:** plain-language alerts, such as *"41 decisions await approval"*. Click one to filter.

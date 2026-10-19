@@ -187,7 +187,7 @@ Run the five existing suites; change expectations only where this plan changes b
 | # | Answer | Where it lands |
 |---|---|---|
 | J1 | Pending (assumed: hide) | `FEAT.uplift=false`: `ccKeys` drops the tile; the Finance subtitle and the asset value card follow the flag |
-| J2 | Pending (assumed: overview) | `renderCommand(r)`, `ccSec`, `ccSecOK`, `CC_DESC`, `ccDefsHTML`; `navKids` lists only the role's sections |
+| J2 | **Answered 19 Oct:** overview, which also holds Portfolio charts and Value realisation (removed from the sidebar) | `renderCommand(r)`, `ccSec`, `ccSecOK`, `CC_DESC`, `ccDefsHTML`; `navKids` lists only the role's sections |
 | J3 | Pending (assumed: keep Returned assets) | `NAV` Product order; the heading still links to Returned assets |
 | J4 | **Answered:** two separate pages, Retrieved data and Predictions | `AS_PAGES`, `AS_PARENT`, `asPageOf`, `assetTabs`, `ACT.asZone`, `asOverview` (one zone per page), `assetTabBody` (detail crumb); `?zone=known` / `?zone=predicted` |
 | J5 | Pending (assumed: customer contract wording) | RT-1048 seed (`demandLabel`, `target`, `why`, `facts`), `bestCard`, `tiPredicted`, `tiOutcome`, `tiHandoff`, `jgEst`, `asDemand`, `assetFacts` |

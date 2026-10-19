@@ -129,7 +129,7 @@ Show **User Flow** ([`user-flow.png`](user-flow.png)): the planner signs in, ope
 
 18. Account menu → **Presenter: switch to Executive** (or sign in as `exec`). The **Command Center** opens on **Key figures**.
 
-    > "For senior management. Each section is its own page in the sidebar: key figures, exceptions, portfolio charts, value realisation. *What these figures mean* explains every number."
+    > "For senior management. The first page has the key figures, the portfolio charts and value realisation; exceptions are their own page in the sidebar. *What these figures mean* explains every number."
 
 19. Sidebar → **Exceptions**: click a **Warehouse 1** row, then **Notify owner** to *Planner · Customer A*.
 
