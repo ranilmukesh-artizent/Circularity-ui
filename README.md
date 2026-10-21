@@ -13,6 +13,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 | **The journey** | Sign in, open **Returned assets**, pick one asset and follow it through the ten steps of the *Typical User Journey* (supply evidence to reconcile and learn). Every step is clickable in the strip under the top bar, and a bar at the bottom says what the step established and what comes next. The demo record is the returned motor **RT-1048**; the click-by-click script is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). |
 | **Data** | Everything is **synthetic**. The demo company is *Northfield Industrial Leasing*, with three customer tenants and eight sites. No personal or customer data is used, and none should be entered. |
 | **What changed and when** | [`CHANGES.md`](CHANGES.md) has one walk-through per release. |
+| **Agent-first (branch `feature/agent-first`)** | Every role lands on **Home**; **Ask** (Ctrl+J) and the command bar (Ctrl+K) work on every page; a rule-based agent prepares decisions, mappings and workflows as reviewable cards, and a person commits. See [section 15](#15-the-agent-first-product). Add `?agent=0` for the 22 Oct demo build. |
 
 > **Note for reviewers.** Access control is close to compliance. The role matrix, the access wording and any regulatory claims in this document should be reviewed by the Legal team before anyone relies on them or uses them in a client commitment.
 
@@ -34,6 +35,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 12. [How it is built](#12-how-it-is-built)
 13. [What is real and what is simulated](#13-what-is-real-and-what-is-simulated)
 14. [Open points](#14-open-points)
+15. [The agent-first product](#15-the-agent-first-product)
 
 ---
 
@@ -558,3 +560,23 @@ Nothing is saved to a server. All changes reset on refresh.
 **For Legal review.** The role matrix (sections 4 and 7), the governance claims (section 9) and any access or compliance wording should be reviewed by the Legal team before client use.
 
 **Before a production build.** Real sign-in (single sign-on), server-side enforcement of the same access policy, persistent storage, live connectors and a security review.
+
+---
+
+## 15. The agent-first product
+
+On branch `feature/agent-first` the workbench becomes agent-first and human-governed: you state a goal or press ✦ on any object, the agent investigates with the product's own actions, the rules validate the result, an authorised person approves anything consequential, and every step is traceable. The PR is [`docs/PR_AGENT_FIRST_WORKBENCH.md`](docs/PR_AGENT_FIRST_WORKBENCH.md); the build plan and its assumptions are in [`docs/PLAN_AGENT_FIRST_WORKBENCH.md`](docs/PLAN_AGENT_FIRST_WORKBENCH.md); the walk-through is [CHANGES Update 12](CHANGES.md).
+
+| | |
+|---|---|
+| **Home** | Every role lands on `#/home`: a briefing built from the data, starter prompts, *Needs you*, what the agent prepared (with trace and undo), watch rules, pinned cards and the role's key figures, each with *Explain this number* |
+| **Ask Circularity** | Ctrl+J or **Ask** in the top bar. The agent streams each action it calls (Retrieved, Model or Rules), then answers with cards: decision packet, route comparison, why and why not, what-if, risks, plan preview, approval card, reconciliation, tables, charts, diagnoses and diffs. It always says *Agent: rule-based. No language model connected.* |
+| **A person commits** | Anything that changes data shows a plan preview first. Decisions are approved only in the approval card, which shows the agent's drafted rationale, your approval limit and the raw instruction. Above the limit a decision escalates to Admin; nobody approves what they submitted unless Admin allows it |
+| **Autonomy** | Admin sets, per role and action type, Off, Suggest, Prepare or Act and notify (capped by the action's risk tier) in Access, along with approval limits, run limits and a kill switch per agent |
+| **Assists** | Field mapping suggestions with a sample preview and gap check, feed diagnosis, setup from a sample, table links and descriptions, workflow drafts, fixes, diagnoses and clones, conflict suggestions, import cleaning, event explanations, approval cards with batch review, bulk plans on Returned assets, the asset summary that keeps retrieved and predicted apart, and an evidence pack |
+| **Ten stages** | Lease ends · Return authorised · Pickup and transit · Received · Inspect and grade · Decide · Approve · Execute · Outcome · Reconcile and learn (labels assumed until the Product Owner signs them off). The case run view shows each stage's nine fields with Next, Back, Replay and Reset |
+| **State** | Everything you do is kept in this browser and survives a refresh; two tabs stay in step; *Reset all* or *Reset case* (presenter tools, `?presenter=1`) restores the seed |
+| **Checks** | The Demo data checks include 53 intent tests and 7 safety tests (approving from text, cross-tenant requests, waiving a gate, instructions hidden in notes and CSV cells, agent-prepared commits) |
+
+> **Legal review.** Autonomy, approval limits, attribution, audit and evidence-pack wording, personal-data handling in field mapping and local persistence should be reviewed by the Legal team before they are relied on or shown to clients.
+
