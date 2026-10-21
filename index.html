@@ -943,6 +943,7 @@ body.afpon .app{margin-right:var(--afpw)}
 
 body.afpon #asOfPill,body.afpon .rgm{display:none}
 @media (max-width:1300px){.afjd:not(.on):not(.cur) .t{visibility:hidden}}
+.afauto select{min-width:120px;height:30px;font-size:12.5px}.afauto td,.afauto th{white-space:nowrap}.axrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}.axrl input{height:30px;border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:0 8px}
 /*AF-CSS-END*/
 </style>
 </head>
@@ -4763,12 +4764,14 @@ function invoke(id,input,o){
   if(A.risk!=='read'){
     if(key)AF.keys.add(key);
     if(ctx.replay){AF.seq=Math.max(AF.seq,ctx.seq||0)}
-    else{const e={seq:++AF.seq,id,input:afClean(input),actor:ctx.actor.id,by:ctx.by,role:ctx.actor.role,prep:ctx.preparer||null,run:ctx.runId||null,at:ctx.now.toISOString(),wall:ctx.wall,key};AF.journal.push(e);res.seq=e.seq;afSave()}
+    else{const e={seq:++AF.seq,id,input:afClean(input),actor:ctx.actor.id,by:ctx.by,role:ctx.actor.role,prep:ctx.preparer||null,run:ctx.runId||null,at:ctx.now.toISOString(),wall:ctx.wall,key,out:afOutRef(res.output),auto:ctx.autonomous?1:undefined};AF.journal.push(e);res.seq=e.seq;afSave()}
     afEmit('action',{A,input,out:res.output,ctx,seq:res.seq||ctx.seq});
     if(!ctx.replay&&!AF.batch&&A.render&&(typeof A.render!=='function'||A.render(input,res.output)))afRender();
   }
   return res}
 function afFail(A,ctx,r){if(!ctx.replay){AF.fails.unshift({at:Date.now(),id:A?A.id:'?',code:r.error.code,prep:ctx.preparer||null});AF.fails.length=Math.min(AF.fails.length,200)}return r}
+/* the few output fields kept with a journal entry, so later steps can be linked to it */
+function afOutRef(o){if(!o||typeof o!=='object')return undefined;const r={};['id','ref','case_id','source_id'].forEach(k=>{if(o[k]!=null)r[k]=o[k]});return Object.keys(r).length?r:undefined}
 /* inputs are stored, so they must be plain data; anything that looks like a secret is never kept */
 function afClean(i){return JSON.parse(JSON.stringify(i,(k,v)=>/secret|password|token/i.test(k)?undefined:v))}
 /* re-render from events; while someone is typing in the page, wait until they leave the field */
@@ -5608,7 +5611,7 @@ defAction('receiving.plan',{title:'Draft a receiving plan',desc:'Expected return
     const rows=Object.values(by).map(x=>{const cap=x.wh==='Warehouse 2'?6:x.wh==='Repair centre'?4:8;return Object.assign(x,{cap,load:Math.round(x.n/cap*100)})}).sort((a,b)=>b.load-a.load);
     return{total:l.length,rows,over:rows.filter(x=>x.load>100).map(x=>x.wh+' '+x.week)}}});
 defAction('access.lookup',{title:'Who can do what',desc:'Accounts that hold a permission, with their approval limit.',risk:'read',input:{perm:{t:'string',req:true},amount:{t:'number'}},
-  handler:i=>{const rows=ACCOUNTS.filter(a=>{const P=ROLE_POLICY[a.role];if(!P)return false;const has=P.all||(P.perms||[]).includes(PERM_ALIAS[i.perm]||i.perm);if(!has)return false;if(a.role==='Approver'&&i.perm==='approve'&&!S.deleg.decisions)return false;const lim=typeof afLimitFor==='function'?afLimitFor(a):null;return !i.amount||lim==null||lim>=i.amount})
+  handler:i=>{const rows=ACCOUNTS.filter(a=>{const P=ROLE_POLICY[a.role];if(!P)return false;const has=P.all||(P.perms||[]).includes(PERM_ALIAS[i.perm]||i.perm);if(!has)return false;if(a.role==='Approver'&&i.perm==='approve'&&!S.deleg.decisions)return false;const lim=typeof afLimitFor==='function'?afLimitFor(a):null;return !i.amount||lim==null||lim>i.amount})
     .map(a=>({id:a.id,label:a.label,role:a.role,limit:typeof afLimitFor==='function'?afLimitFor(a):null,how:a.role==='Admin'?'Master role':a.role==='Approver'?'Delegated by Admin':'Granted by Admin'}));return{perm:i.perm,amount:i.amount||0,rows}}});
 /* ---- more reads and intents: similar assets ---- */
 defAction('asset.compare',{title:'Compare similar assets',desc:'Other units of the same model and class in your scope, with grade, life, value and route.',risk:'read',scope:'case',input:{case_id:{t:'string',req:true}},
@@ -5913,6 +5916,129 @@ function afDecorate(r){if(!r)return;
 if(AF_ON){const sh0=shell;shell=function(){sh0();const t=$('.top .tools');if(t&&!$('#afAskBtn')){const am=t.querySelector('.acctm');(am||t.lastElementChild).insertAdjacentHTML('beforebegin',afTopTools())}
   if(AF.ui.panelW)document.documentElement.style.setProperty('--afpw',AF.ui.panelW+'px');if(AF.ui.panelOpen)setTimeout(()=>afPanelOpen(true),0)};
   afOn('ready',()=>{})}
+/* ===== Trust and governance (PR: Trust and governance): autonomy per role and action type capped by the risk tier, approval limits,
+   the self-approval rule, undo within its rules, attribution, agent identities with kill switches, and the hard rules ===== */
+const AF_LEVELS=[['off','Off','The agent never offers this action'],['suggest','Suggest','The agent offers it as a button; you start it'],['prepare','Prepare','The agent fills it in and shows a plan preview; you confirm'],['act','Act and notify','The agent runs it, tells you and offers Undo (act tier only)']];
+const AF_AUTO_TYPES=[
+ {k:'evidence',t:'Request evidence',acts:['evidence.request'],def:'prepare',max:'act'},
+ {k:'notify',t:'Send notifications and escalations',acts:['notify.send','escalation.send','notify.acknowledge'],def:'prepare',max:'act'},
+ {k:'sync',t:'Sync a source',acts:['source.sync','source.reconnect'],def:'prepare',max:'act'},
+ {k:'wfdraft',t:'Save a workflow draft',acts:['workflow.save','workflow.create','workflow.duplicate'],def:'prepare',max:'act'},
+ {k:'config',t:'Apply field mappings, update tables, resolve conflicts, commit imports',acts:['tables.update','conflict.resolve','conflict.escalate','import.commit','mapping.apply'],def:'prepare',max:'prepare'},
+ {k:'decisions',t:'Approve, override or decline decisions; confirm outcomes',acts:['decision.approve','decision.override','decision.decline','outcome.confirm','decision.submit','case.reevaluate','evidence.recordResult','instruction.resend'],def:'prepare',max:'prepare'},
+ {k:'platform',t:'Publish workflows, change source connections, change access',acts:['workflow.publish','workflow.setStatus','workflow.delete','workflow.run','source.update','source.delete','credentials.rotate','access.decideRequest','access.setDelegation','access.mapIdentity','access.removeUser','access.setRoleSource','access.setOutOfOffice','access.clearOutOfOffice','access.syncDirectory'],def:'prepare',max:'prepare'}];
+const AF_LV_RANK={off:0,suggest:1,prepare:2,act:3};
+AF.cfg={auto:{},limits:{Approver:Infinity,Admin:Infinity,Planner:0},self:false,off:{},max:{actions:50,bulk:100}};
+const afAutoType=id=>AF_AUTO_TYPES.find(t=>t.acts.includes(id));
+function afAutoLevel(role,k){const t=AF_AUTO_TYPES.find(x=>x.k===k);if(!t)return 'prepare';const v=(AF.cfg.auto[role]||{})[k]||t.def;return AF_LV_RANK[v]>AF_LV_RANK[t.max]?t.max:v}
+function afLimitFor(a){if(!a)return 0;const v=AF.cfg.limits[a.role];return v==null?(a.role==='Approver'||a.role==='Admin'?Infinity:0):v}
+/* a Planner may approve once Admin raises the Planner limit above $0 */
+const can0=can;can=function(p){const q=PERM_ALIAS[p]||p;if(q==='approve.decisions'&&S.acct&&S.acct.role==='Planner'&&afLimitFor(S.acct)>0)return true;return can0(p)};
+/* the agent's freedom per action: kill switch, autonomy level, and act-tier confirmation */
+function afAgentAllowed(A,input,ctx){const ag=AGENTS.find(x=>x.id===ctx.preparer);if(ag&&AF.cfg.off[ag.id])return afErr('out_of_scope',ag.name+' is stopped by Admin, so it cannot prepare anything.');
+  const t=afAutoType(A.id);if(t){const lv=afAutoLevel(ctx.actor.role,t.k);if(lv==='off')return afErr('out_of_scope','The agent may not '+(A.verb||A.title.toLowerCase())+' for the '+ctx.actor.role+' role (autonomy: Off).');
+    if(A.risk==='act'&&!ctx.confirmed&&!(lv==='act'&&ctx.autonomous))return afErr('approval_required','Confirm the plan first: '+A.title.toLowerCase()+' is set to '+AF_LEVELS.find(l=>l[0]===lv)[1]+' for your role.')}
+  return null}
+/* approval limits and self-approval, checked in invoke for people and agents alike */
+function afPolicy(A,input,ctx){if(A.id!=='decision.approve'&&A.id!=='decision.override')return null;const c=CASE_BY_ID[input.case_id];if(!c)return null;
+  const r=c.routes.find(x=>x.plan===input.route)||c.recommendation,val=Math.max(Math.abs(r?r.net:0),+input.spend||0),lim=afLimitFor(ctx.actor);
+  if(c.submitted&&c.submitted.byId===ctx.actor.id&&!AF.cfg.self)return afErr('out_of_scope','You submitted '+c.id+', so another person must approve it. Admin can allow self-approval within a limit.');
+  if(val>lim)return afErr('limit_exceeded',c.id+' is worth '+money(val)+', above your approval limit of '+money(lim)+'. It escalates to Admin.',{escalate:'admin'});
+  return null}
+/* the submitter's account, for the self-approval rule */
+afOn('action',p=>{if(p.A.id==='decision.submit'){const c=CASE_BY_ID[p.input.case_id];if(c&&c.submitted)c.submitted.byId=p.ctx.actor.id}});
+/* settings Admin changes in Access (commit tier: always a person, always audited) */
+defAction('access.setAutonomy',{title:'Change agent autonomy',verb:'change autonomy',desc:'Set how far the agent may go for one role and action type, up to the cap of its risk tier.',risk:'commit',perm:'manageAccess',
+  input:{role:{t:'string',req:true},type:{t:'string',req:true},level:{t:'string',req:true}},
+  guard:i=>{const t=AF_AUTO_TYPES.find(x=>x.k===i.type);return !ROLE_POLICY[i.role]?['not_found','Unknown role.']:!t?['not_found','Unknown action type.']:!AF_LV_RANK.hasOwnProperty(i.level)?['validation_error','Unknown level.']:AF_LV_RANK[i.level]>AF_LV_RANK[t.max]?['conflict',t.t+' is capped at '+AF_LEVELS.find(l=>l[0]===t.max)[1]+' by its risk tier.']:null},
+  handler:i=>{(AF.cfg.auto[i.role]||(AF.cfg.auto[i.role]={}))[i.type]=i.level;rbLog('agent.autonomy.changed',i.role+' · '+AF_AUTO_TYPES.find(x=>x.k===i.type).t+' → '+AF_LEVELS.find(l=>l[0]===i.level)[1]);return{role:i.role,type:i.type,level:i.level}}});
+defAction('access.setLimit',{title:'Change approval limit',verb:'change approval limits',desc:'Set the approval limit in dollars for a role; empty means unlimited.',risk:'commit',perm:'manageAccess',
+  input:{role:{t:'string',req:true},amount:{t:'number',req:false}},guard:i=>!ROLE_POLICY[i.role]?['not_found','Unknown role.']:i.amount!=null&&i.amount<0?['validation_error','A limit cannot be negative.']:null,
+  handler:i=>{AF.cfg.limits[i.role]=i.amount==null?Infinity:i.amount;rbLog('approval.limit.changed',i.role+' → '+(i.amount==null?'unlimited':money(i.amount)));return{role:i.role,limit:i.amount==null?null:i.amount}}});
+defAction('access.setSelfApprove',{title:'Change the self-approval rule',verb:'change the self-approval rule',desc:'Allow or stop a person approving a decision they submitted, within their limit.',risk:'commit',perm:'manageAccess',
+  input:{on:{t:'boolean',req:true}},handler:i=>{AF.cfg.self=!!i.on;rbLog('approval.self.changed',i.on?'Self-approval allowed within the limit':'Self-approval not allowed');return{on:!!i.on}}});
+defAction('agent.setEnabled',{title:'Start or stop an agent',verb:'start or stop agents',desc:'Kill switch for one agent: a stopped agent cannot be called by the runtime.',risk:'commit',perm:'manageAccess',
+  input:{id:{t:'string',req:true},on:{t:'boolean',req:true}},guard:i=>!AGENTS.some(a=>a.id===i.id)?['not_found','Unknown agent.']:null,
+  handler:i=>{if(i.on)delete AF.cfg.off[i.id];else AF.cfg.off[i.id]=true;const a=AGENTS.find(x=>x.id===i.id);rbLog('agent.'+(i.on?'started':'stopped'),a.name);return{id:i.id,on:!!i.on}}});
+defAction('access.setRunLimits',{title:'Change agent run limits',verb:'change run limits',desc:'Maximum actions per agent run and items per bulk plan.',risk:'commit',perm:'manageAccess',
+  input:{actions:{t:'number',req:true},bulk:{t:'number',req:true}},guard:i=>i.actions<1||i.bulk<1||i.actions>500||i.bulk>1000?['validation_error','Use 1–500 actions and 1–1,000 items.']:null,
+  handler:i=>{AF.cfg.max={actions:i.actions,bulk:i.bulk};AF_MAX.actions=i.actions;AF_MAX.bulk=i.bulk;rbLog('agent.limits.changed',i.actions+' actions per run · '+i.bulk+' items per bulk plan');return{actions:i.actions,bulk:i.bulk}}});
+/* ---- undo: draft and act changes until a downstream system acknowledges them; commits need a compensating action ---- */
+const AF_DOWNSTREAM={'evidence.request':['evidence.recordResult'],'decision.submit':['decision.approve','decision.override','decision.decline'],'decision.prepare':['decision.approve','decision.override'],'case.reevaluate':['decision.approve','decision.override','decision.submit'],
+ 'notify.send':['notify.acknowledge'],'escalation.send':['notify.acknowledge'],'workflow.save':['workflow.publish'],'workflow.create':['workflow.publish'],'evidence.recordResult':['decision.approve','decision.override','decision.submit']};
+function afUndoBlock(e){const A=ACTIONS[e.id];if(!A)return 'Unknown action.';if(AF.undone.has(e.seq))return 'Already undone.';
+  if(A.risk==='commit'||A.risk==='system')return 'Committed: only a compensating action is possible now (for example, recall the instruction in the target system).';
+  if(A.risk==='read')return 'Nothing to undo.';
+  if(e.id==='source.sync'||e.id==='source.reconnect'||e.id==='workflow.run'||e.id==='instruction.resend')return 'A sync, run or resend cannot be undone; the target system already answered.';
+  const later=AF.journal.filter(x=>x.seq>e.seq&&!AF.undone.has(x.seq)),dn=AF_DOWNSTREAM[e.id]||[];
+  const hit=later.find(x=>dn.includes(x.id)&&(e.input.case_id?x.input.case_id===e.input.case_id:(e.out&&x.input.id===e.out.id)));
+  if(hit)return 'A downstream step has acknowledged it ('+(ACTIONS[hit.id]||{title:hit.id}).title.toLowerCase()+' by '+hit.by+'); only a compensating action is possible.';
+  return null}
+function afRunUndoBlock(runId){const l=AF.journal.filter(e=>e.run===runId&&!AF.undone.has(e.seq));if(!l.length)return 'Nothing in this run changed any data.';const b=l.map(afUndoBlock).find(Boolean);return b||null}
+ACT.afUndoRun=id=>{const b=afRunUndoBlock(id);if(b){toast(b,4200);return}const l=AF.journal.filter(e=>e.run===id&&!AF.undone.has(e.seq));afRespond(id,'undone');
+  openModal('Undo this run',`<p style="margin-top:0">This reverses ${l.length} change${l.length>1?'s':''} the agent prepared in ${esc(id)} and rebuilds the page from the journal:</p><ul>${l.map(e=>`<li>${esc((ACTIONS[e.id]||{title:e.id}).title)} ${esc(e.input.case_id||e.input.source_id||'')}</li>`).join('')}</ul>`,`<button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="afUndoRunOk" data-arg="${esc(id)}">Undo the run</button>`)};
+ACT.afUndoRunOk=id=>{const l=AF.journal.filter(e=>e.run===id&&!AF.undone.has(e.seq)).map(e=>e.seq);closeModal();afUndo(l)};
+/* ---- Act and notify: when every step of a plan is allowed to run on its own, the agent runs it and offers Undo ---- */
+function afAutoRun(run,out){const pl=(out.cards||[]).find(c=>c.type==='plan');if(!pl||AF.evalMode||!S.acct)return out;const role=S.acct.role;
+  const auto=pl.data.steps.every(s=>{const A=ACTIONS[s.action],t=afAutoType(s.action);return A&&A.risk==='act'&&t&&afAutoLevel(role,t.k)==='act'});if(!auto)return out;
+  let ok=0;afBatch(()=>pl.data.steps.forEach(s=>{const r=invoke(s.action,s.input,{preparer:afAgentFor(s.action),autonomous:true,runId:run.id});s.done=r.ok?'ok':'bad';if(!r.ok)s.err=r.error.message;else{ok++;s.seq=r.seq}}));
+  pl.data.status='auto';run.result='auto';return Object.assign({},out,{text:'Done: '+ok+' of '+pl.data.steps.length+' step'+(pl.data.steps.length>1?'s':'')+' ran on their own because your role allows Act and notify for '+afAutoType(pl.data.steps[0].action).t.toLowerCase()+'. You can undo the run until a downstream system acknowledges it.',next:[{label:'Undo this run',undoRun:run.id}]})}
+const afIntentRun0=afIntentRun;afIntentRun=function(I,p,ctx,R){return afAutoRun(R.run,afIntentRun0(I,p,ctx,R))};
+/* the plan card says how autonomy shapes it; Suggest shows a lighter card with Start */
+AF_CARDS.plan=(base=>(d,o)=>{if(d.status==='auto')return afHead('Done for you · '+esc(d.title),['Prepared by agent'],'Act and notify: the agent ran it and told you')+`<ol class="afplan">${d.steps.map(s=>`<li><b>${esc(s.label)}</b><span class="chip ${s.done==='ok'?'ok':'bad'}">${s.done==='ok'?'Done':esc(s.err||'Refused')}</span><span class="note">${esc(s.undo||'')}</span></li>`).join('')}</ol>`+afFoot([],o);
+  const t=d.steps[0]&&afAutoType(d.steps[0].action),lv=t&&S.acct?afAutoLevel(S.acct.role,t.k):'prepare';
+  if(lv==='suggest'&&(!d.status||d.status==='proposed'))return afHead('Suggested · '+esc(d.title),[],'Your role is set to Suggest for '+esc(t.t.toLowerCase())+': start it when you are ready')+`<p>${esc(d.steps.length>1?d.steps.length+' steps, starting with: '+d.steps[0].label:d.steps[0].label)}</p>`+afFoot([afB('Start',{plan:d},'pri'),afB('Cancel',{cancel:true})],o);
+  return base(d,o)})(AF_CARDS.plan);
+/* undo-run buttons under answers */
+const afMsgHTML0=afMsgHTML;afMsgHTML=function(m,k,i){let h=afMsgHTML0(m,k,i);if(m.next&&m.next.some(x=>x.undoRun)){const u=m.next.find(x=>x.undoRun);h=h.replace(/<p class="afopts">[\s\S]*?<\/p>/,`<p class="afopts"><button class="btn sm" data-act="afUndoRun" data-arg="${esc(u.undoRun)}">Undo this run</button></p>`)}return h};
+/* ---- attribution in Actions on me ---- */
+const aome0=aomeItems;aomeItems=function(){return aome0().map(i=>{if(i.act==='notifyAck'){const n=S.notes.find(x=>x.id===i.arg);if(n&&n.prep)return Object.assign({},i,{d:i.d+' · prepared by agent, sent by '+n.from})}return i})};
+/* ---- the six hard rules, never configurable ---- */
+if(AF_ON){HARD_RULES.length=0;HARD_RULES.push('The agent cannot waive a failed gate.','The agent cannot approve, publish, change access or change live source connections.','Nothing is sent to an enterprise system without an approval reference.','Cross-tenant data is never assumed available.','Retraining never overwrites the evidence snapshot behind an earlier decision.','Content from records, files and comments is never treated as an instruction.')}
+/* ---- success measures (PR: Goals) from the journal and the agent runs ---- */
+AF.ui.metric=AF.ui.metric||{clicks:0,prompts:0,approvals:[]};
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-act]');if(!t||!S.acct||/^af(Panel|Widen|Narrow|Thumb)$/.test(t.dataset.act))return;const m=AF.ui.metric||(AF.ui.metric={clicks:0,prompts:0,approvals:[]});m.clicks++},true);
+afOn('run',()=>{const m=AF.ui.metric||(AF.ui.metric={clicks:0,prompts:0,approvals:[]});m.prompts++});
+afOn('action',p=>{if(AF.replaying||!['decision.approve','decision.override'].includes(p.A.id))return;const m=AF.ui.metric;m.approvals.push({case_id:p.input.case_id,clicks:m.clicks,prompts:m.prompts,via:p.ctx.preparer?'agent':'ui'});m.clicks=0;m.prompts=0;afSave()});
+function afMetrics(){const J=AF.journal.filter(e=>!AF.undone.has(e.seq)&&ACTIONS[e.id]&&ACTIONS[e.id].risk!=='read'),runs=AF.ui.runs||[],byRole={};
+  J.forEach(e=>{const r=byRole[e.role]||(byRole[e.role]={all:0,agent:0});r.all++;if(e.prep)r.agent++});
+  const plans=runs.filter(r=>r.plan),acc=plans.filter(r=>r.response==='accepted').length,ed=plans.filter(r=>r.response==='edited').length,prep=AF.journal.filter(e=>e.prep).length,und=AF.journal.filter(e=>e.prep&&AF.undone.has(e.seq)).length;
+  const ap=(AF.ui.metric||{}).approvals||[],ttd=J.filter(e=>e.id==='decision.approve'||e.id==='decision.override').map(e=>afDays(CASE_BY_ID[e.input.case_id].received,e.at));
+  return{interactions:ap.length?Math.round(sum(ap.map(a=>a.clicks+a.prompts))/ap.length*10)/10:null,approvals:ap.length,share:byRole,acceptance:plans.length?acc/plans.length:null,edit:plans.length?ed/plans.length:null,undo:prep?und/prep:null,fallback:runs.length?runs.filter(r=>r.result==='fallback').length/runs.length:null,ttd:ttd.length?med(ttd):null,runs:runs.length,
+   ms:runs.length?Math.round(sum(runs.map(r=>r.ms||0))/runs.length):null}}
+/* ---- Access: autonomy matrix, approval limits, agents and kill switches, hard rules, metrics ---- */
+if(AF_ON){RB_SECS.access.push('autonomy','limits','agentsx','metrics');const nv=NAV.find(g=>g.id==='access');nv.kids.push(['autonomy','Agent autonomy','How far the agent may go, by role'],['limits','Approval limits','Dollar limits and self-approval'],['agentsx','Agents and kill switches','Agent identities, scopes and limits'],['metrics','Agent metrics','Success measures from the journal']);
+  Object.assign(ANCH.access,{autonomy:()=>$('#axAuto'),limits:()=>$('#axLimits'),agentsx:()=>$('#axAgents'),metrics:()=>$('#axMetrics')});
+  const ra0=renderAccess;renderAccess=function(){return ra0()+afAccessHTML()}}
+const pctTxt=v=>v==null?'—':Math.round(v*100)+'%';
+function afAccessHTML(){const roles=Object.keys(ROLE_POLICY),M=afMetrics();
+  const cell=(r,t)=>{const v=afAutoLevel(r,t.k);return `<td><label class="sr" for="au-${r}-${t.k}">${esc(r)}: ${esc(t.t)}</label><select id="au-${esc(r)}-${t.k}" class="sel" data-ch="afAuto" data-arg="${esc(r)}|${t.k}">${AF_LEVELS.filter(l=>AF_LV_RANK[l[0]]<=AF_LV_RANK[t.max]).map(l=>`<option value="${l[0]}" ${l[0]===v?'selected':''}>${l[1]}</option>`).join('')}</select></td>`};
+  return `<section class="panel sect" id="axAuto"><div class="ph"><h3>Agent autonomy</h3><span class="note">Role by action type, capped by the action's risk tier. Reads, drafts and what-ifs are always allowed.</span></div>
+   <div class="tw"><table class="t static tight afauto"><thead><tr><th>Action type</th><th>Cap</th>${roles.map(r=>`<th>${esc(r)}</th>`).join('')}</tr></thead><tbody>${AF_AUTO_TYPES.map(t=>`<tr><td><b>${esc(t.t)}</b></td><td class="note">${AF_LEVELS.find(l=>l[0]===t.max)[1]}</td>${roles.map(r=>cell(r,t)).join('')}</tr>`).join('')}</tbody></table></div>
+   <div class="pb note">${AF_LEVELS.map(l=>'<b>'+l[1]+'</b>: '+esc(l[2])).join(' · ')}. Defaults: Prepare everywhere (assumed, PR open decision). Every change is a commit by a person and goes to the audit log.</div></section>
+  <section class="panel sect" id="axLimits"><div class="ph"><h3>Approval limits</h3><span class="note">A decision above the approver's limit escalates to Admin</span></div><div class="pb">
+   <div class="tw"><table class="t static tight"><thead><tr><th>Role</th><th>Limit (USD)</th><th></th></tr></thead><tbody>${['Approver','Admin','Planner'].map(r=>{const v=AF.cfg.limits[r];return `<tr><td><b>${r}</b>${r==='Planner'?'<div class="note">$0 means Planners cannot approve. Raise it to let them approve within the limit.</div>':''}</td><td><label class="sr" for="lim-${r}">${r} limit</label><input id="lim-${r}" type="number" min="0" step="500" value="${v===Infinity||v==null?'':v}" placeholder="Unlimited" style="width:140px"></td><td><button class="btn sm" data-act="afLimit" data-arg="${r}">Save</button></td></tr>`}).join('')}</tbody></table></div>
+   <label class="tog" style="margin-top:10px"><input type="checkbox" data-ch="afSelf" ${AF.cfg.self?'checked':''}> Allow a person to approve a decision they submitted, within their limit</label>
+   <div class="axrl"><label for="rl-a">Max actions per agent run</label><input id="rl-a" type="number" min="1" max="500" value="${AF.cfg.max.actions}" style="width:90px"><label for="rl-b">Max items per bulk plan</label><input id="rl-b" type="number" min="1" max="1000" value="${AF.cfg.max.bulk}" style="width:90px"><button class="btn sm" data-act="afRunLim">Save</button></div></div></section>
+  <section class="panel sect" id="axAgents"><div class="ph"><h3>Agents and kill switches</h3><span class="note">Each agent acts as the signed-in person and never has more rights</span></div><div class="tw"><table class="t static tight"><thead><tr><th>Agent</th><th>Scopes</th><th>Limits</th><th class="r">Prepared</th><th>Status</th></tr></thead><tbody>
+   ${AGENTS.map(a=>{const off=!!AF.cfg.off[a.id],n=AF.journal.filter(e=>e.prep===a.id).length;return `<tr><td><b>${esc(a.name)}</b><div class="note mono">${esc(a.id)}</div></td><td class="mono note">${a.scopes.map(esc).join(', ')}</td><td class="note">${esc(a.limit)}</td><td class="r num">${n}</td><td><label class="tog"><input type="checkbox" data-ch="afKill" data-arg="${a.id}" ${off?'':'checked'}> ${off?'<span class="chip bad">Stopped</span>':'<span class="chip ok">Running</span>'}</label></td></tr>`}).join('')}</tbody></table></div>
+   <div class="pb"><h4 style="margin:0 0 6px">Hard rules (never configurable)</h4><ul style="margin:0;padding-left:18px">${HARD_RULES.map(h=>`<li>${esc(h)}</li>`).join('')}</ul></div></section>
+  <section class="panel sect" id="axMetrics"><div class="ph"><h3>Agent metrics</h3><span class="note">Success measures, counted from the journal and agent runs in this browser</span></div><div class="tw"><table class="t static tight"><thead><tr><th>Measure</th><th>Now</th><th>Baseline (21 Oct, before the agent)</th></tr></thead><tbody>
+   <tr><td>Interactions to approve a recommended decision</td><td class="num">${M.interactions==null?'—':M.interactions+' over '+M.approvals+' approval'+(M.approvals>1?'s':'')}</td><td class="num">7</td></tr>
+   <tr><td>Share of changes started through the agent</td><td>${Object.entries(M.share).map(([r,v])=>esc(r)+' '+pctTxt(v.agent/Math.max(1,v.all))).join(' · ')||'—'}</td><td>0%</td></tr>
+   <tr><td>Proposal acceptance (no edit)</td><td>${pctTxt(M.acceptance)}</td><td>—</td></tr><tr><td>Edit rate</td><td>${pctTxt(M.edit)}</td><td>—</td></tr><tr><td>Undo rate</td><td>${pctTxt(M.undo)}</td><td>—</td></tr>
+   <tr><td>Fallback rate (“I can't do that yet”)</td><td>${pctTxt(M.fallback)} of ${M.runs} runs</td><td>—</td></tr><tr><td>Time to decision (received to approval, median)</td><td>${M.ttd==null?'—':M.ttd+' days'}</td><td>—</td></tr><tr><td>Agent response time (mean)</td><td>${M.ms==null?'—':M.ms+' ms'}</td><td>—</td></tr></tbody></table></div></section>`}
+ACT.afAuto=(v,el)=>{const [role,type]=el.dataset.arg.split('|'),r=invoke('access.setAutonomy',{role,type,level:v});if(!r.ok){toast(r.error.message,4200);route(true);return}toast(role+': '+AF_AUTO_TYPES.find(t=>t.k===type).t.toLowerCase()+' → '+AF_LEVELS.find(l=>l[0]===v)[1]+'.')};
+ACT.afLimit=role=>{const v=($('#lim-'+role)||{}).value,r=invoke('access.setLimit',{role,amount:v===''?null:+v});if(!r.ok)return toast(r.error.message,4200);toast(role+' approval limit: '+(r.output.limit==null?'unlimited':money(r.output.limit))+'.')};
+ACT.afSelf=v=>{const r=invoke('access.setSelfApprove',{on:!!v});if(r.ok)toast(v?'Self-approval allowed within the limit.':'Self-approval not allowed.')};
+ACT.afKill=(v,el)=>{const id=el.dataset.arg,r=invoke('agent.setEnabled',{id,on:!!v});if(!r.ok){toast(r.error.message);route(true);return}toast((AGENTS.find(a=>a.id===id)||{name:id}).name+(v?' is running again.':' is stopped. The runtime will not call it.'))};
+ACT.afRunLim=()=>{const r=invoke('access.setRunLimits',{actions:+($('#rl-a')||{}).value,bulk:+($('#rl-b')||{}).value});if(!r.ok)return toast(r.error.message,4200);toast('Run limits saved.')};
+/* the approval adapter: above the limit it escalates to Admin */
+const ca0=ACT.confirmApprove;ACT.confirmApprove=id=>{const c=CASE_BY_ID[id],plan=($('#ap-route')||{}).value,why=(($('#ap-why')||{}).value||'').trim();const before=c.stage;
+  const lim=afLimitFor(S.acct),r=c.routes.find(x=>x.plan===plan)||c.recommendation,val=Math.max(Math.abs(r?r.net:0),+(($('#ap-spend')||{}).value||0));
+  if(val>lim&&why.length>=15&&($('#ap-ack')||{}).checked){const e=$('#ap-err');if(e){e.textContent=id+' is worth '+money(val)+', above your approval limit of '+money(lim)+'. It has been escalated to Admin.';e.hidden=false}
+    invoke('escalation.send',{case_id:id,to:'admin',msg:id+' needs approval above the '+S.acct.role+' limit of '+money(lim)+' ('+money(val)+'): '+why.slice(0,180),blocker:'Above approval limit'});return}
+  ca0(id)};
 /* ===== Data checks for the agent-first layer, added to the Demo data checks (runInvariants) ===== */
 const AF_CHECKS=[];
 const afCheck=(name,fn)=>AF_CHECKS.push({name,fn});
@@ -5949,7 +6075,7 @@ const AF_EVALS=[
  {q:'Received cases at Warehouse 2 missing inspection',as:'admin',intent:'queue.filter',card:'table',t:r=>r.cards[0].data.rows.every(x=>/Warehouse 2/.test(x.cells[2]))},
  {q:'Which cases are missing evidence?',as:'planner-a',intent:'queue.filter',card:'table'},
  {q:'Which cases should I look at first?',as:'planner-a',intent:'queue.triage',card:'table',t:r=>r.cards[0].data.rows.length>0&&r.cards[0].data.rows.every(x=>x.cells[3])},
- {q:'Request inspection for all of them at Warehouse 1',as:'planner-a',intent:'queue.bulk',card:'plan'},
+ {q:'Request inspection for all of them at Warehouse 1',as:'planner-a',intent:'queue.bulk',card:'plan',when:()=>CASES.some(c=>c.owner==='Customer A'&&c.location==='Warehouse 1'&&c.blocked&&!c.requested)},
  {q:"What's waiting for my approval?",as:'approver',intent:'approvals.inbox',card:'table'},
  {q:'Which outcomes need confirming?',as:'finance',intent:'outcome.list',card:'table'},
  {q:'Compare predicted and actual for RT-1048',as:'finance',intent:'outcome.reconcile',card:()=>CASE_BY_ID['RT-1048'].outcome?'reconcile':'stages'},

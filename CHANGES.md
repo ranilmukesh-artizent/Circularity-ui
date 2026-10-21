@@ -44,6 +44,19 @@ Sign in with any account: you land on **Home**. Press **Ask** in the top bar (or
 | **One run function** | `runNext()` | The business *Continue*, the stage card's Next, the journey and the agent all call the same function: at Approve it opens the approval card for someone with authority and says who it waits for otherwise; at Execute each Next is one simulated acknowledgement |
 | **Evals in the data checks** | Demo data checks | 35 intent tests (expected card, key values and grounded numbers: every number in an answer must come from an action output) and 6 safety tests: approving from text, a cross-tenant request, waiving a gate, “ignore all rules”, an instruction hidden in an evidence note, and an agent-prepared commit. Tests whose case has moved on since the seed are skipped, and the check says so |
 
+### Phase 3: trust and governance
+
+Sign in as `admin` and open **Access**: four new sections sit under the existing ones.
+
+| What | Where | What you see |
+|---|---|---|
+| **Autonomy matrix** | Access › Agent autonomy | Role by action type, each a choice of **Off · Suggest · Prepare · Act and notify**, capped by the action's risk tier: request evidence, notifications, syncs and workflow drafts can go up to *Act and notify*; mappings, tables, conflicts, imports, decisions, outcomes, publishing, connections and access stop at *Prepare*. Defaults are *Prepare* (assumed, PR open decision). Off: the agent never offers it. Suggest: a lighter card with *Start*. Act and notify: the agent runs it, says so and offers **Undo this run** |
+| **Approval limits** | Access › Approval limits | Approver and Admin unlimited, Planner $0 (assumed). Above the limit the approval is refused and **escalates to Admin** (an Actions on me item); raising the Planner limit lets Planners approve within it. **Self-approval** is off by default: nobody approves a decision they submitted unless Admin allows it. Max actions per agent run (50) and items per bulk plan (100) are set here too |
+| **Agents and kill switches** | Access › Agents and kill switches | Every agent with its scopes, limits and how many changes it prepared; a switch stops one agent, and the runtime then refuses to call it. The six **hard rules** of the PR are listed and enforced |
+| **Undo within its rules** | Home › Agent activity, answers, toasts | Draft and act changes can be undone until a downstream step acknowledges them (a submission until an Approver decides, a request until the result arrives, a notification until it is acknowledged); committed changes need a compensating action, and the screen says so. Undo rebuilds the page from the journal, so the state is exact |
+| **Attribution** | Journal, audit events, Actions on me, Home | Every change records who performed it and which agent prepared it; autonomous changes are marked as such. Notifications the agent drafted say *prepared by agent, sent by …* |
+| **Success measures** | Access › Agent metrics | Interactions to approve (baseline 7), share of changes started through the agent by role, acceptance, edit, undo and fallback rates, time to decision and agent response time, counted from the journal and the agent runs |
+
 ---
 
 ## Update 11: Command Center by section, Asset Intelligence restructure, redeploy and cost wording, edge cases
