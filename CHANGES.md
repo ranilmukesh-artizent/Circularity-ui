@@ -57,6 +57,27 @@ Sign in as `admin` and open **Access**: four new sections sit under the existing
 | **Attribution** | Journal, audit events, Actions on me, Home | Every change records who performed it and which agent prepared it; autonomous changes are marked as such. Notifications the agent drafted say *prepared by agent, sent by …* |
 | **Success measures** | Access › Agent metrics | Interactions to approve (baseline 7), share of changes started through the agent by role, acceptance, edit, undo and fallback rates, time to decision and agent response time, counted from the journal and the agent runs |
 
+### Phase 4: AI assists in every module
+
+Each assist returns a reviewable diff; a person accepts it item by item; an accepted change is saved as a new version marked **AI-suggested, accepted by <role>**. Nothing saves on its own, and the agent never publishes, removes fixed steps or bypasses the approval step.
+
+| Module | Assist | What you see |
+|---|---|---|
+| **Source map** | ✦ Suggest mappings (Field mapping tab, panel) | Unmapped source fields with masked samples, a proposed canonical field, a transform from the existing set (unit conversion, currency at a dated rate, lakh expansion, local time to UTC, code table, pass-through), a reason and a High / Medium / Low tier. Preview on up to 20 sample rows with the count that would fail validation; a gap check (required fields still unmapped, source fields unused). Fields that look like personal data are flagged and excluded. Refine in chat (“this price is in lakh INR”). *Accept all high* then *Save accepted as a new version* |
+| | ✦ Diagnose (stale or unavailable tiles) | What failed, the evidence (status, last run, credential age, mapping), the likely cause and a fix through a plan preview (refresh the token, rotate credentials, suggest mappings) |
+| | Set up from a sample | Paste a JSON payload or a CSV header: a draft connection and draft mapping that stay drafts until a Developer saves them |
+| **Source tables** | ✦ Suggest links · Describe tables | Foreign keys with evidence (same column name, share of matching sample values) and confidence, accepted one at a time; draft hover descriptions for tables and columns |
+| **Workflow studio** | ✦ Assist; drafting from the panel | *Build an ingest for …* drafts a workflow from the palette steps only (fixed steps kept, new steps shown as ghosts, checks run); *Fix the errors* proposes the smallest change per error and applies it to the canvas as unsaved; *Why is this workflow failing?* names the failing step, the blocked steps, the cause and a fix; *Explain this workflow*; *Same as WF-… for <source>* clones and adapts; dropping a step suggests what usually follows |
+| **Conflict queue** | ✦ Suggest a resolution | The source with authority, the routes it is holding, Accept through a plan preview or Escalate |
+| **Manual import** | ✦ Clean this file | Normalisations as a diff (grade codes, date formats) and rejected rows with reasons; applying it re-validates; commit still loads only valid rows. A cell that reads like an instruction stays data |
+| **Event stream** | ✦ on every event | Duplicates, late arrivals, retries, out-of-order and stale feeds explained in one line |
+| **MCP & Tools** | Catalog, test bench, proposal review | The tool catalog is generated from the action registry (commit actions exposed only as `.prepare`); the Playground gains an **agent test bench** over the intent catalog; ✦ Review assist on MCP proposals (write access, missing approval step, data touched) |
+| **Audit & provenance** | Performer, preparer, run · *Prepared by agent* filter · evidence pack | Every event entry says who performed it, which agent prepared it and the run ID; a filter shows only agent-prepared entries; the case page offers **Evidence pack (simulated)**: snapshot, evidence, decision, approval, instructions, acknowledgements, outcome, run and events as one file |
+| **Command Center** | Explain links, Prepare the top items, exceptions | Explain this number for each figure; *Prepare the top items* on Actions to prioritise; exceptions offer *Draft a notification to the owner* and *Chase evidence for these items* (plan preview listing each item); plain-language filters land on the Command Center filters |
+| **Approvals inbox** | Approval cards, batch review | Submitted decisions as approval cards by value and deadline, each with its pre-approval check; *Review all in turn* lists every item with the instructions it would send and opens each approval form separately; above-limit items say they escalate |
+| **Returned assets** | Selection, bulk plan, filters | Tick rows, then *Request evidence* or *Prepare decisions*: one plan preview listing every case; a plain-language query offers *Apply to the table* |
+| **Expected returns, Asset intelligence, Treatment, Analytics** | Stage chip, summary, override reason, ✦ | Expected returns show their case-run stage; *Summarise this asset* keeps retrieved and predicted statements apart, each labelled, with Data Trace; choosing another route in the approval form drafts the override reason to edit; Analytics sections have ✦ Explain |
+
 ---
 
 ## Update 11: Command Center by section, Asset Intelligence restructure, redeploy and cost wording, edge cases
