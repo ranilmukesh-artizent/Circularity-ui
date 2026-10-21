@@ -853,6 +853,9 @@ tr.skug>td{background:var(--panel2);font-weight:600}tr.skug .skut{display:flex;a
 @container ti (max-width:900px){.ticlv,.ticlv2{grid-template-columns:1fr}.tisumg{grid-template-columns:repeat(3,minmax(0,1fr))}.tiwig{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container ti (max-width:480px){.tisumg{grid-template-columns:repeat(2,minmax(0,1fr))}.tiwig b{font-size:22px}}
 @media (max-width:860px){.tistp{top:0}}
+/*AF-CSS-START*/
+
+/*AF-CSS-END*/
 </style>
 </head>
 <body>
@@ -865,7 +868,7 @@ tr.skug>td{background:var(--panel2);font-weight:600}tr.skug .skut{display:flex;a
 <script>
 /* ===== Seeded world: one generator feeds every page ===== */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-const RNG=mulberry32(20261007);
+let RNG=mulberry32(20261007);
 const rnd=()=>RNG();
 const rint=(a,b)=>Math.floor(a+rnd()*(b-a+1));
 const pick=a=>a[Math.floor(rnd()*a.length)];
@@ -1511,7 +1514,7 @@ const MAPPINGS={
 };
 /* events: tie to real cases */
 const EVENTS=[];let EV_SEQ=9000;
-function pushEvent(e){e.id='EV-'+(++EV_SEQ);e.ts=e.ts||new Date(AS_OF.getTime());EVENTS.unshift(e);return e}
+function pushEvent(e){e.id='EV-'+(++EV_SEQ);e.ts=e.ts||(AF_CUR?AF_CUR.now:new Date(AS_OF.getTime()));if(AF_CUR){if(!e.by)e.by=AF_CUR.by;e.prep=AF_CUR.preparer||null;e.run=AF_CUR.runId||null;e.akey=AF_CUR.key}EVENTS.unshift(e);return e}
 (function genEvents(){
   const exe=CASES.filter(c=>c.exec);const evs=[];
   exe.forEach(c=>{
@@ -1602,6 +1605,8 @@ const ICON={
  play:IC('<path d="m8 5 11 7-11 7z"/>'),
  flag:IC('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>')
 };
+/* the agent-first product (PR) is on by default on this branch; ?agent=0 restores the demo build, remembered on this device */
+const AF_ON=(()=>{try{const q=/[?&]agent=([01])/.exec(location.search);if(q)localStorage.setItem('circ-agent',q[1]);return localStorage.getItem('circ-agent')!=='0'}catch(e){return true}})();
 const JSTEPS=[[1,'Supply evidence','ext','Enterprise systems: EAM inspection and history, PLM and quality eligibility, ERP and WMS cost and stock'],[2,'Build alternatives','built','Retrieve and link evidence, check internal and external demand, define eligible treatments'],[3,'Predict outcomes','built','Predict price, sale likelihood, timing, repair cost and success, and claims exposure'],[4,'Optimize plan','built','Compare net economic value across routes, timing and capacity; select the plan'],[5,'Plan approval','human','Human in the loop: review rationale and alternatives; approve options, spend and sale terms'],[6,'Send instruction','built','Send the approved plan to EAM, ERP and sales applications; track acknowledgements'],[7,'Create execution work','ext','EAM repair work order, ERP parts and stock reservation, sales or CRM sale task'],[8,'Repair & certify','ext','Perform repairs and final tests; record results and certification in EAM and quality systems'],[9,'Action & return outcome','ext','Process the action; send status, receipts, actual costs and proceeds to Circularity'],[10,'Reconcile & learn','built','Link actuals to the decision, compare results with forecasts, validate model improvements']];
 const stp=(n)=>{const j=JSTEPS[n-1];return `<span class="stp ${j[2]==='built'?'':j[2]}" title="Journey step ${n}: ${esc(j[1])} — ${esc(j[3])}"><b>${n}</b>${esc(j[1])}</span>`};
 /* ===== Demo path: one record through the five screen movements of the business journey ===== */
@@ -1695,7 +1700,7 @@ applyTheme();
 /* ===== Roles, demo accounts and the access policy: the only place that decides who sees and does what ===== */
 const AS_TAB_IDS=['overview','lifecycle','condition','product','economic','eligibility','data','related'];
 /* features hidden for now but kept in the code: set to true to show them again */
-const FEAT={uplift:false,pools:false};
+const FEAT={uplift:false,pools:false,agent:AF_ON};
 const RB_SECS={command:['kpis','exceptions','aome','handed','approvals','outcomes','charts','actions','signals','value','health'],product:['received','expected','pools','asset','case'],
  analytics:['waterfall','pipeline','mix','predicted','models','pool','overrides','eng','sustain'],integration:['studio','map','tables','models','events','conflicts','import'],
  mcp:['catalog','agents','playground','perms','calls','client','proposals'],audit:['log','gaps'],orchestration:['flow','run','agents'],access:['accounts','identity','delegations','requests']};
@@ -1810,7 +1815,7 @@ const NAV=[
  {id:'command',label:'Command Center',sub:'Overview and priorities',icon:'command',kids:[['kpis','Key figures','Headline numbers for your role'],['exceptions','Exceptions','Ranked issues to drill into or notify'],['aome','Actions on me','What waits on you'],['handed','Handed off','With enterprise systems, awaiting outcome'],['approvals','Approvals inbox','Requests waiting for your decision','inbox'],['outcomes','Outcomes to confirm','Results that need Finance'],['charts','Portfolio charts','Lifecycle, treatments, risk, time to action'],['actions','Actions to prioritise','Ranked opportunities to act on'],['signals','Signals and capacity','What needs attention'],['value','Value realisation','Predicted vs actual recovery'],['health','Integration health','Sources, workflows and events']]},
  {id:'product',label:'Product',sub:'Decision Workbench',icon:'product',mode:1,kids:[['asset','Asset intelligence','Lifecycle, condition and economics of one asset'],['received','Returned assets','Inspect inventory and evaluate use'],['expected','Expected returns','Planning signals, not yet received'],['pools','Pool optimizer','Allocate scarce assets across demand']]},
  {id:'analytics',label:'Analytics',sub:'Reconcile & learn',icon:'analytics',kids:[['waterfall','Recovery waterfall','Baseline to Circularity uplift'],['pipeline','Pipeline','Case to reconciled'],['mix','Route mix','How routes change over time'],['predicted','Predicted vs actual','Forecast against outcome'],['models','Model versions','The learning loop'],['pool','Pool efficiency','Allocation results'],['overrides','Overrides','When people changed the plan'],['eng','Engineering economics','Parts and economics'],['sustain','Sustainability','Estimated vs measured CO₂e']]},
- {id:'integration',label:'Integration',sub:'Connection Fabric',icon:'integration',mode:1,kids:[['studio','Workflow studio','Build pipelines and workflows','wffail'],['map','Source map','Connect and monitor systems','srcissue'],['tables','Source tables','Tables and how they link'],['models','Canonical models','Versioned shared models'],['events','Event stream','Live message stream'],['conflicts','Conflict queue','Systems that disagree','conf'],['import','Manual import','Controlled CSV import']]},
+ {id:'integration',label:'Integration',sub:'Connection Fabric',icon:'integration',mode:1,kids:[['studio','Workflow studio','Build pipelines and workflows','wffail'],['map','Source map','Connect and monitor systems','srcissue'],['tables','Source tables','Tables and how they link'],['models','Canonical models','Versioned shared models'],['events','Event stream','Simulated message stream'],['conflicts','Conflict queue','Systems that disagree','conf'],['import','Manual import','Controlled CSV import']]},
  {id:'mcp',label:'MCP & Tools',sub:'Agents within permissions',icon:'mcp',kids:[['catalog','Tool catalog','Governed tools'],['agents','Agent registry','Who can call what'],['playground','Playground','Try a tool call'],['perms','Permission matrix','Agent permissions by tenant'],['calls','Call log and gate','Every call, and the write gate'],['client','As MCP client','Consume enterprise MCP servers'],['proposals','Server proposals','New MCP servers waiting for review']]},
  {id:'orchestration',label:'Process orchestration',sub:'How a recommendation is made',icon:'orch',kids:[['flow','Stages','Ten stages from start to outcome'],['run','Case run','One case, stage by stage'],['agents','Agents and services','Who does what, with which systems']]},
  {id:'audit',label:'Audit & provenance',sub:'What was fetched, from where',icon:'audit',kids:[['log','Fetch log','Every fetch with its source'],['gaps','Evidence gaps','Evidence with no provenance']]},
@@ -1989,7 +1994,7 @@ CLIENT_SERVERS.push({id:'prop-REQ-302',name:'Supplier catalogue MCP server',owne
 const canDecide=r=>r.status==='pending'&&can('approve.'+REQ_SCOPE[r.kind]);
 const myReqs=()=>S.reqs.filter(r=>S.acct&&r.byId===S.acct.id);
 const inboxReqs=()=>S.reqs.filter(canDecide);
-function rbLog(type,note){pushEvent({dir:'in',type,caseId:null,decisionId:null,approval:null,ver:null,dest:'Circularity · access control',ack:'acknowledged',key:'acc-'+hashId(type+note+Date.now()).slice(0,6).toLowerCase(),note,by:who(),ts:asOfNow()})}
+function rbLog(type,note){pushEvent({dir:'in',type,caseId:null,decisionId:null,approval:null,ver:null,dest:'Circularity · access control',ack:'acknowledged',key:'acc-'+hashId(type+note+(AF_CUR?AF_CUR.key:Date.now())).slice(0,6).toLowerCase(),note,by:AF_CUR?AF_CUR.by:who(),ts:AF_CUR?AF_CUR.now:asOfNow()})}
 const reqStChip=r=>({pending:'<span class="chip warn">Pending review</span>',approved:'<span class="chip ok">Approved</span>',declined:'<span class="chip bad">Declined</span>'})[r.status];
 function reqSummary(r){if(r.kind==='tenant')return `<b>Access to ${esc(r.tenant)}</b><div class="note">${esc(r.reason)}</div>`;const v=r.server;
   return `<b>${esc(v.name)}</b> <span class="chip ${v.access==='write'?'dk':'ok'}">${v.access==='write'?'Read and write':'Read only'}</span><div class="note">${esc(v.owner)} (fictional) · ${esc(v.purpose)}</div><div class="note">Tools: <span class="mono">${v.tools.map(esc).join(', ')}</span> · Data: ${esc(v.data)}</div>`}
@@ -2351,7 +2356,7 @@ function execBlock(c){
   const done=steps.filter(s=>s.state==='done').length;
   return `<div class="panel" id="tiHandoff" style="margin-top:16px"><div class="ph"><h3>Enterprise handoff</h3><span class="sp"></span>${[6,7,8,9].map(stpn).join('')}</div><div class="pb">
    ${started?'':`<div class="note" style="margin-bottom:8px">Starts after approval. Circularity sends the approved instruction; the target system carries out the work and reports back.</div>`}
-   ${steps.map((s,i)=>`<div class="ev ${s.state==='done'?'':s.state==='active'?'partial':'missing'}" id="tiHo${i+1}" style="${s.state==='todo'||!started?'opacity:.62':''}"><span class="ic" aria-hidden="true" style="${s.state==='todo'||!started?'background:var(--panel3);color:var(--ink)':''}">${s.state==='done'?'✓':i+1}</span><div><b>${esc(s.label)} <span class="chip ${!started||s.state==='todo'?'line':s.state==='active'?'warn':'ok'}">${!started||s.state==='todo'?'Not sent':s.state==='active'?'Sent · awaiting acknowledgement':i===3?'Done':'Acknowledged'}</span></b><small>To <b>${esc(s.sys)}</b>${s.ack?` · <span class="hoRef">${esc(hoKind(s)[1])} <span class="mono hoN">${esc(s.ack.ref)}</span></span> returned by ${esc(s.ack.by)}${ackNote(s)?` · ${esc(ackNote(s))}`:''}`:''}</small></div><em>${s.ack?fmtD(s.ack.at):''}</em></div>`).join('')}
+   ${steps.map((s,i)=>`<div class="ev ${s.state==='done'?'':s.state==='active'?'partial':'missing'}" id="tiHo${i+1}" style="${s.state==='todo'||!started?'opacity:.62':''}"><span class="ic" aria-hidden="true" style="${s.state==='todo'||!started?'background:var(--panel3);color:var(--ink)':''}">${s.state==='done'?'✓':i+1}</span><div><b>${esc(s.label)} <span class="chip ${!started||s.state==='todo'?'line':s.state==='active'?'warn':'ok'}">${!started||s.state==='todo'?'Not sent':s.state==='active'?'Sent (simulated) · awaiting acknowledgement':i===3?'Done (simulated)':'Acknowledged (simulated)'}</span></b><small>To <b>${esc(s.sys)}</b>${s.ack?` · <span class="hoRef">${esc(hoKind(s)[1])} <span class="mono hoN">${esc(s.ack.ref)}</span></span> returned by ${esc(s.ack.by)}${ackNote(s)?` · ${esc(ackNote(s))}`:''}`:''}</small></div><em>${s.ack?fmtD(s.ack.at):''}</em></div>`).join('')}
    ${started?`<div class="row" style="margin-top:12px"><button class="btn sm" data-act="advance" data-arg="${c.id}" ${done>=4?'disabled':''}>Simulate system acknowledgement</button><button class="btn sm" data-act="replay" data-arg="${c.id}">Resend instruction</button><button class="btn sm ghost" data-act="viewInstr" data-arg="${c.id}">View payload</button></div>`:''}
    <div class="note" style="margin-top:10px">Circularity sends the approved instruction. ${esc([...new Set(steps.map(s=>s.sys.split(' · ')[0]))].filter(x=>x!=='Circularity'&&x!=='Planning').join(' / '))} carries out the work and reports back; those systems stay the record for orders, stock and repairs.</div>${handoffLegend()}
    ${c.stage==='closed'?`<div class="callout ${c.outcome?'ok':''}" style="margin-top:12px">${c.outcome?`<b>Outcome confirmed.</b> Predicted ${money(r.net)} · actual ${money(c.outcome.net)} · variance ${money(c.outcome.net-r.net)}${c.outcome.order?' against '+esc(c.outcome.order):''}. Linked to ${c.exec.decisionId} for learning. <a class="lnk" href="#/${JG[10].h(c.id)}">Line by line (step 10)</a>`:`<b>Outcome reported by source systems.</b> Finance confirms the economic result.${can('confirm')?`<div style="margin-top:8px"><button class="btn sm pri" data-act="confirmOutcome" data-arg="${c.id}">Confirm outcome ${stp(10)}</button></div>`:''}`}</div>`:''}
@@ -2367,7 +2372,7 @@ ACT.approve=(arg)=>{
    <div class="fld"><label for="ap-why">Rationale <span class="muted">(required)</span></label><textarea id="ap-why" placeholder="Why is this the right action? Mention anything the model cannot see."></textarea><div class="err" id="ap-err" hidden></div></div>
    <div class="grid g2"><div class="fld"><label for="ap-spend">Spend authority (USD)</label><input id="ap-spend" type="number" min="0" value="${defaultSpend(c,rec)}"><div class="hint">Instruction cannot commit beyond this amount.</div></div><div class="fld"><label for="ap-terms">Spend and sale terms</label><input id="ap-terms" type="text" value="${esc(terms(rec))}"></div></div>
    <label class="tog"><input type="checkbox" id="ap-ack"> I reviewed evidence snapshot ${c.snapshot.id} and the excluded routes</label>`,
-   `<button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="confirmApprove" data-arg="${id}">${ICON.check} Approve and send instruction</button>`,true);
+   `<button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="confirmApprove" data-arg="${id}">${ICON.check} Approve and hand off (simulated)</button>`,true);
   if(mode==='review')setTimeout(()=>{const s=$('#ap-route');s&&s.focus()},60);
   window._terms=terms;
 };
@@ -2515,7 +2520,7 @@ function ccSignalsHTML(sc){return ccSignals(sc).filter(s=>s.act.indexOf('go:')!=
 function ccCapHTML(sc){return Object.keys(CC_CAP).map(k=>{const u=sc.util[k]||0,p=u/CC_CAP[k],cl=p>=.9?'var(--bad)':p>=.75?'#D4A800':'var(--ok)',msg=p>=.9?'Over limit risk':p>=.75?'Tight':'Within limit';
   return `<div class="cccp" data-tip="${esc((CAP_LBL[k]||k)+': '+u+' of '+CC_CAP[k]+' planned slots. Capacity values are configured planning figures in this demo.')}"><span class="ccvl">${CAP_LBL[k]||k}</span><span class="ccvb"><i style="width:${Math.min(100,p*100)}%;background:${cl}"></i></span><b class="num">${Math.round(p*100)}%</b><span class="note" style="color:${p>=.75?cl:'var(--muted)'}">${msg}</span></div>`}).join('')}
 function ccHealthHTML(){const t=hhTotals(),st={live:0,stale:0,manual:0,unavailable:0};SOURCES.forEach(s=>st[s.status]++);
-  return `<span class="livedot"><i></i>Live</span><span><b class="num">${t.pct.toFixed(1)}%</b> integration health</span><span class="note">${st.live} sources live${st.stale?' · <b style="color:var(--warn)">'+st.stale+' stale</b>':''}${st.unavailable?' · <b style="color:var(--bad)">'+st.unavailable+' not connected</b>':''}${st.manual?' · '+st.manual+' manual':''}</span>${rbPath('integration/map')?'<a class="lnk" href="#/integration/map" data-act="ccGoMap">View connections</a>':''}`}
+  return `<span class="livedot"><i></i>Simulated live</span><span><b class="num">${t.pct.toFixed(1)}%</b> integration health</span><span class="note">${st.live} sources live${st.stale?' · <b style="color:var(--warn)">'+st.stale+' stale</b>':''}${st.unavailable?' · <b style="color:var(--bad)">'+st.unavailable+' not connected</b>':''}${st.manual?' · '+st.manual+' manual':''}</span>${rbPath('integration/map')?'<a class="lnk" href="#/integration/map" data-act="ccGoMap">View connections</a>':''}`}
 function ccInsightsHTML(sc){const o=[],cl=sc.all.filter(c=>c._st==='approval'&&c._left<5).length,ap=sc.all.filter(c=>c._st==='approval').length;
   if(ap)o.push(['stage:approval',ap+' decisions await approval'+(cl?', '+cl+' close within 5 days':'')]);
   const by={};sc.all.forEach(c=>Object.keys(c._risk).forEach(k=>by[k]=(by[k]||0)+c._risk[k]));const tot=sum(Object.values(by)),top=Object.entries(by).sort((a,b)=>b[1]-a[1])[0];
@@ -2713,7 +2718,7 @@ function renderCommand(r){
    <div id="ccTab">${ccTableHTML(sc)}</div></section>`:''}
   ${rowS.length?`<div class="ccgrid3" ${sec==='signals'?'id="ccSignals"':''} data-n="${rowS.length}">${rowS.map(x=>RW[x]()).join('')}</div>`:''}
   ${sec==='kpis'?ccDefsHTML():''}
-  ${sec==='health'&&L.health==='full'?`<div class="sect" id="ccDevHealth"><div class="sh"><h2>Integration health</h2><span class="livedot"><i></i>Live</span><span class="grow"></span><a class="btn sm" href="#/integration/map">Open Source map</a></div><div class="grid g3 smside" id="smSide" style="align-items:start">${smSideHTML()}</div></div>`:''}
+  ${sec==='health'&&L.health==='full'?`<div class="sect" id="ccDevHealth"><div class="sh"><h2>Integration health</h2><span class="livedot"><i></i>Simulated live</span><span class="grow"></span><a class="btn sm" href="#/integration/map">Open Source map</a></div><div class="grid g3 smside" id="smSide" style="align-items:start">${smSideHTML()}</div></div>`:''}
   <p class="note ccfoot">${L.health==='full'&&!L.ops?`Figures come from the ${SOURCES.length} connected sources, ${(S.wf?S.wf.list.length:0)} workflows and the live event stream.`:`Every figure here is computed from the same ${visCases().length} live returns and ${visRows().length.toLocaleString()} closed decisions as Product and Analytics${S.acct.tenant?' for your tenants':''}. Select any chart, bar or signal to filter. Capacity figures are configured planning values.`}</p></div>`}
 ACT.ccF=(v,el)=>{S.cc[el.dataset.k]=v;route(true)};
 ACT.ccMonths=v=>{S.cc.months=+v;route(true)};ACT.ccMonthsBtn=v=>{S.cc.months=+v;route(true)};
@@ -3246,7 +3251,7 @@ const LEARN_RET={purchase:'ERP price (retrieved)',avoid:'ERP price (retrieved)',
 /* the demo record's preparation line comes out over estimate, so the story matches the review call (H8, assumed) */
 const LEARN_PIN={'RT-1048|prep':.15};
 const learnVer=(c,m)=>{const p=(c.predictions||[]).find(x=>x.model===m);return p?p.ver:MODELS[MODELS.length-1].v};
-function lineActuals(c,r){return r.terms.map(t=>{const m=LEARN[t.kind]||null,u=parseInt(hashId(c.id+'|'+t.label),16)%2001/1000-1,f=LEARN_PIN[c.id+'|'+t.kind]!=null?LEARN_PIN[c.id+'|'+t.kind]:u*.25,act=m?Math.round(t.amt*(1+f)/10)*10:t.amt;
+function lineActuals(c,r){return r.terms.map(t=>{const m=LEARN[t.kind]||null,u=parseInt(hashId(c.id+'|'+t.label),16)%2001/1000-1,f=LEARN_PIN[c.id+'|'+t.kind]!=null?LEARN_PIN[c.id+'|'+t.kind]:u*.25,act=LINE_EXACT[c.id+'|'+t.label]!=null?LINE_EXACT[c.id+'|'+t.label]:m?Math.round(t.amt*(1+f)/10)*10:t.amt;
   return{label:t.label,kind:t.kind,pred:t.amt,act,model:m,ver:m?learnVer(c,m):null,src:m?null:LEARN_RET[t.kind]||'Fixed amount (retrieved)'}})}
 function rcStory(o){const l=o.lines.filter(x=>x.act!==x.pred).sort((a,b)=>Math.abs(b.act-b.pred)-Math.abs(a.act-a.pred))[0];if(!l)return 'Every line came in as predicted.';const x=l.act-l.pred,cost=l.pred<0;
   return `The largest difference is ${jgLc(l.label)}: ${money(Math.abs(x))} ${cost?(x<0?'more':'less')+' cost':(x<0?'less':'more')+' value'} than predicted, so ${l.model} ${l.ver} learns most from this outcome.`}
@@ -3436,7 +3441,7 @@ ACT.fReset=()=>{S.fA={tenant:'',cls:'',route:'',from:0,to:11,model:''};S.drill=n
 ACT.drillAvoid=()=>setDrill('Confirmed avoided spend',r=>r.avoided>0);ACT.drillPend=()=>setDrill('Pending outcomes',r=>r.status==='pending');
 
 /* ===== Integration · Connection Fabric ===== */
-const stChip=s=>({live:'<span class="chip ok">Live</span>',manual:'<span class="chip dk">Manual import</span>',unavailable:'<span class="chip bad">Unavailable</span>',stale:'<span class="chip warn">Stale</span>'})[s];
+const stChip=s=>({live:'<span class="chip ok" data-tip="Stand-in adapter: no real system is connected">Simulated feed</span>',manual:'<span class="chip dk">Manual import</span>',unavailable:'<span class="chip bad">Unavailable</span>',stale:'<span class="chip warn">Stale</span>'})[s];
 const ackKind=a=>/^acknowledged$/.test(a)?'ok':/conflict|stale|failed/.test(a)?'bad':/sent/.test(a)?'line':'warn';
 const canMgr=()=>can('manageIntegrations');
 const NOMGR='Only the Developer or Admin changes integrations.',NOWF='Only the Developer or Admin changes workflows.';
@@ -3485,10 +3490,10 @@ function intMap(){
    <input type="search" id="smQ" class="smq" placeholder="Search system, vendor or owner" value="${esc(f.q)}" data-in="smQ" aria-label="Search sources">
    <label class="sr" for="smCat">Category</label><select class="sel" id="smCat" data-ch="smCat"><option value="">All categories</option>${Object.keys(SRC_CATS).map(c=>`<option value="${c}" ${f.cat===c?'selected':''}>${SRC_CATS[c]}</option>`).join('')}</select>
    <label class="sr" for="smMeth">Connection method</label><select class="sel" id="smMeth" data-ch="smMeth"><option value="">All methods</option>${Object.keys(CONN_METHODS).map(c=>`<option value="${c}" ${f.me===c?'selected':''}>${CONN_METHODS[c].label}</option>`).join('')}</select><button class="btn" data-act="srcSyncAll">Sync all</button><button class="btn pri" data-act="srcAdd" data-arg="">+ Add source</button></div>
-  <p class="note" style="margin:0 0 4px">Each system is configured on its own. Each source shows how it connects: native connector, JDBC, API extractor, event API, Delta Sharing or flat file. Select one to edit it. <span class="livedot"><i></i>Live</span></p>
+  <p class="note" style="margin:0 0 4px">Each system is configured on its own. Each source shows how it connects: native connector, JDBC, API extractor, event API, Delta Sharing or flat file. Select one to edit it. <span class="livedot"><i></i>Simulated live</span></p>
   <div id="smGrid">${smGridHTML()}</div>
   ${dep.length?`<div class="callout bad" style="margin-top:14px"><b>Integration dependencies.</b> ${dep.map(s=>`<button class="lnk" data-act="adapter" data-arg="${s.id}">${esc(s.name)} (${esc(s.vendor)})</button> is ${s.status==='unavailable'?'not connected':s.status==='stale'?'stale':'a manual import'}`).join('; ')}. Circularity names these as dependencies rather than inventing data.</div>`:''}
-  <div class="sect"><div class="sh"><h2>Live sync activity</h2><span class="livedot"><i></i>Streaming</span></div><div class="panel" id="smLog" aria-live="off">${smLogHTML()}</div></div>
+  <div class="sect"><div class="sh"><h2>Sync activity (simulated)</h2><span class="livedot"><i></i>Simulated stream</span></div><div class="panel" id="smLog" aria-live="off">${smLogHTML()}</div></div>
   <div class="grid g3 smside" id="smSide" style="margin-top:16px;align-items:start">${smSideHTML()}</div>
   <div class="sect"><div class="sh"><h2>How data flows</h2></div>${flowDiagram()}</div>`}
 function flowDiagram(){
@@ -3536,7 +3541,7 @@ function smSideRefresh(){const h=$('#ccHealth');h&&(h.innerHTML=ccHealthHTML());
 function smRefresh(){const g=$('#smGrid');if(g){g.innerHTML=smGridHTML();const c=$('#smChips');c&&(c.innerHTML=smChipsHTML())}smSideRefresh()}
 function smPatch(s){const el=$(`.tile[data-sid="${s.id}"]`);if(el&&!el.matches(':focus-within'))el.outerHTML=srcTile(s);else if(el){const f=document.activeElement&&document.activeElement.dataset;el.outerHTML=srcTile(s);const n=$(`.tile[data-sid="${s.id}"] [data-act="${f&&f.act}"]`);n&&n.focus()}const c=$('#smChips');c&&(c.innerHTML=smChipsHTML())}
 function smLogAdd(s,text,kind){S.smLog.unshift({ts:Date.now(),id:s.id,text,kind:kind||'ok'});S.smLog.length=Math.min(S.smLog.length,16);const el=$('#smLog');if(el)el.innerHTML=smLogHTML();smSideRefresh()}
-function srcEvent(s,type,ack,note){pushEvent({dir:'in',type,caseId:null,decisionId:null,approval:null,ver:null,dest:s.name+' · '+s.vendor,ack:ack||'acknowledged',key:'cfg-'+hashId(s.id+type+Date.now()).slice(0,6).toLowerCase(),note,ts:asOfNow()})}
+function srcEvent(s,type,ack,note){pushEvent({dir:'in',type,caseId:null,decisionId:null,approval:null,ver:null,dest:s.name+' · '+s.vendor,ack:ack||'acknowledged',key:'cfg-'+hashId(s.id+type+(AF_CUR?AF_CUR.key:Date.now())).slice(0,6).toLowerCase(),note,ts:AF_CUR?AF_CUR.now:asOfNow(),sim:true})}
 function startSync(s,auto){
   if(!s||s.syncing)return;
   if(s.status==='unavailable'){if(!auto)toast(s.name+' is not connected. Open it and complete the connection first.');return}
@@ -3941,9 +3946,9 @@ function wfBodyHTML(){const l=wfFilter();return l.map(wfRowHTML).join('')||`<tr>
 function wfRunsHTML(){const r=S.wf.runs.slice(0,12);return r.length?`<table class="t static tight"><thead><tr><th>Run</th><th>Workflow</th><th>Trigger</th><th>Started</th><th class="r">Duration</th><th class="r">Records</th><th>Result</th></tr></thead><tbody>${r.map(x=>`<tr><td class="mono">${x.id}</td><td>${esc(x.name)}</td><td>${x.trig}</td><td class="num nowrap">${new Date(x.ts).toTimeString().slice(0,8)}</td><td class="r num">${x.dur} s</td><td class="r num">${fmtN(x.rows)}</td><td><span class="chip ${WF_STC[x.state]}">${WF_STL[x.state]}</span>${x.note?`<div class="note">${esc(x.note)}</div>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty"><b>No runs yet</b>Runs appear here as workflows fire on their triggers.</div>'}
 function wfListHTML(){const f=S.wf.f;
  return `<div class="smbar"><div class="row smchips" id="wfChips">${wfChipsHTML()}</div><span class="grow"></span><input type="search" class="smq" placeholder="Search workflow, owner or system" value="${esc(f.q)}" data-in="wfQ" aria-label="Search workflows"><label class="sr" for="wfTypeF">Type</label><select class="sel" id="wfTypeF" data-ch="wfTypeF"><option value="">All types</option>${['Ingest','Outbound','Decision'].map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('')}</select><button class="btn pri" data-act="wfNew">+ New workflow</button></div>
- <p class="note" style="margin:0 0 10px">Each workflow stands alone: one source system in and one canonical model out, or one target system per outbound instruction. Open one to edit it on the canvas. <span class="livedot"><i></i>Live</span></p>
+ <p class="note" style="margin:0 0 10px">Each workflow stands alone: one source system in and one canonical model out, or one target system per outbound instruction. Open one to edit it on the canvas. <span class="livedot"><i></i>Simulated live</span></p>
  <div class="panel"><div class="tw"><table class="t wftbl"><thead><tr><th>Workflow</th><th>Type</th><th>System</th><th>Trigger</th><th>Status</th><th>Last run</th><th class="r">24 h success</th><th>Owner</th><th>Actions</th></tr></thead><tbody id="wfBody">${wfBodyHTML()}</tbody></table></div></div>
- <div class="sect"><div class="sh"><h2>Recent runs</h2><span class="livedot"><i></i>Streaming</span></div><div class="panel"><div class="tw" id="wfRuns">${wfRunsHTML()}</div></div></div>`}
+ <div class="sect"><div class="sh"><h2>Recent runs</h2><span class="livedot"><i></i>Simulated stream</span></div><div class="panel"><div class="tw" id="wfRuns">${wfRunsHTML()}</div></div></div>`}
 function wfRowPatch(w){const r=$(`tr[data-wid="${w.id}"]`);if(r){const t=document.createElement('tbody');t.innerHTML=wfRowHTML(w);r.replaceWith(t.firstElementChild)}const c=$('#wfChips');c&&(c.innerHTML=wfChipsHTML())}
 function wfListRefresh(){const b=$('#wfBody');if(b){b.innerHTML=wfBodyHTML();const c=$('#wfChips');c&&(c.innerHTML=wfChipsHTML());const r=$('#wfRuns');r&&(r.innerHTML=wfRunsHTML())}}
 function wfTick(now){wfInit();$$('[data-wage]').forEach(el=>{const w=WFW(el.dataset.wage);w&&w.last&&(el.textContent=ageShort(now-w.last.ts))});
@@ -4473,7 +4478,7 @@ function renderMcp(){
   const dir=S.mcpDir;
   const head=`<div class="phead"><div><h1>MCP and tools</h1><p>Agents and other platforms reach Circularity through governed tools. Agents assemble evidence, find opportunities, request gaps, coordinate approved instructions and reconcile results, always within their permissions.</p></div><div class="seg" role="group" aria-label="Direction"><button data-act="mcpDir" data-arg="server" aria-pressed="${dir==='server'}">Circularity as MCP server</button><button data-act="mcpDir" data-arg="client" aria-pressed="${dir==='client'}">As MCP client</button></div></div>`;
   const ro=can('useTools')?'':'<div class="callout info" style="margin-bottom:16px"><b>Read-only view.</b> The Developer manages agents, tools and MCP servers. '+(can('approve.mcp')?'You decide server proposals.':'')+'</div>';
-  if(dir==='client')return head+ro+`<p class="ink2" style="margin-top:0;max-width:75ch">Circularity can consume enterprise MCP servers instead of custom adapters where they exist. Anything an adapter reads or writes still lands in the same canonical models and tenant boundaries.</p><div class="grid g2">${CLIENT_SERVERS.map(s=>`<div class="panel"><div class="ph"><h3>${s.name}</h3><span class="chip ${s.status==='connected'?'ok':s.status==='token expired'?'warn':'line'}">${s.status}</span></div><div class="pb"><div class="note" style="margin-bottom:8px">${s.owner} (fictional) · used in ${s.used}</div><div class="row" style="gap:5px">${s.tools.map(x=>`<span class="chip line mono" style="font-size:11px">${x}</span>`).join('')}</div></div></div>`).join('')}</div><div class="callout info" style="margin-top:14px">Consumed tools are called with the same approval rules. A write through an enterprise MCP server still needs the human approval reference from step 5.</div>${canPage('mcp','proposals')?mcpPropHTML():''}`;
+  if(dir==='client')return head+ro+`<p class="ink2" style="margin-top:0;max-width:75ch">Circularity can consume enterprise MCP servers instead of custom adapters where they exist. Anything an adapter reads or writes still lands in the same canonical models and tenant boundaries.</p><div class="grid g2">${CLIENT_SERVERS.map(s=>`<div class="panel"><div class="ph"><h3>${s.name}</h3><span class="chip ${s.status==='connected'?'ok':s.status==='token expired'?'warn':'line'}">${s.status==='connected'?'connected (simulated)':esc(s.status)}</span></div><div class="pb"><div class="note" style="margin-bottom:8px">${s.owner} (fictional) · used in ${s.used}</div><div class="row" style="gap:5px">${s.tools.map(x=>`<span class="chip line mono" style="font-size:11px">${x}</span>`).join('')}</div></div></div>`).join('')}</div><div class="callout info" style="margin-top:14px">Consumed tools are called with the same approval rules. A write through an enterprise MCP server still needs the human approval reference from step 5.</div>${canPage('mcp','proposals')?mcpPropHTML():''}`;
   const ten=S.mcpPerm,wr=TOOLS.filter(t=>t.rw==='write');
   const held=CALLS.filter(c=>c.outcome==='held for approval').slice(0,4);
   const cf=S.callF||'all',calls=CALLS.filter(c=>cf==='all'||(cf==='issues'&&c.outcome!=='ok')).slice(0,30);
@@ -4605,9 +4610,578 @@ ACT.auEntry=id=>{const x=auditEntries().find(e=>e.id===id);if(!x){toast('Entry n
   <h4 style="margin:18px 0 6px">Processing</h4><ol style="margin:0;padding-left:18px">${p.processing.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
   <h4 style="margin:18px 0 6px">Where this data was used</h4><ul style="margin:0;padding-left:18px">${p.usedIn.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>${cmHTML('au:'+x.id,'audit entry')}`,esc(x.item),`${x.caseId} · ${x.asset} · ${isoT(x.ts)}`,`<button class="btn pri" data-act="trace" data-arg="${x.caseId}|${x.key}">View Data Trace</button>${rbPath('product/'+x.caseId)?`<a class="btn" href="#/product/${x.caseId}" data-act="go" data-arg="product/${x.caseId}">Open ${x.caseId}</a>`:''}`)};
 
+/*AF-START*/
+/* ===== Agent-first foundation (PR: Architecture, Actions layer) =====
+   One registry of named actions. Buttons and the agent both call invoke(), which checks permission, tenant and
+   location scope, the agent rules, state guards and idempotency, runs a handler that never reads the page,
+   writes the change to the journal, and emits an event the screens re-render from.
+   State persists as that journal: the seed is deterministic, so replaying the journal on load rebuilds every change. */
+var AF_CUR=null;
+const AF={journal:[],keys:new Set(),seq:0,bus:{},replaying:false,batch:0,undone:new Set(),stale:false,fails:[],ui:{}};
+const AF_KEY='circ-af-v1';
+const AF_SYS={id:'system',role:'System',label:'Simulated enterprise adapter'};
+const RISK_LABEL={read:'Read',draft:'Draft',act:'Act',commit:'Commit',system:'System only'};
+function afOn(t,f){(AF.bus[t]||(AF.bus[t]=[])).push(f)}
+function afEmit(t,p){[].concat(AF.bus[t]||[],AF.bus['*']||[]).forEach(f=>{try{f(p,t)}catch(e){console.error(e)}})}
+/* the generator behind rnd() is swapped for one seeded from the action key, so an action gives the same result on every replay and the seed itself never shifts */
+function seeded(key,fn){const prev=RNG;RNG=mulberry32(parseInt(hashId(String(key)),16));try{return fn()}finally{RNG=prev}}
+const ACTIONS={};
+function defAction(id,o){return ACTIONS[id]=Object.assign({id,title:id,desc:'',risk:'read',perm:null,scope:'none',input:{},render:true,reversible:false,undo:null,emits:[]},o)}
+const afErr=(code,message,extra)=>Object.assign({ok:false,error:{code,message}},extra||{});
+const AF_ERR={validation_error:'Check the input',out_of_scope:'Not allowed for this account',tenant_boundary:'Outside your tenant or warehouse',approval_required:'A person must approve this',limit_exceeded:'Above the approval limit',not_found:'Not found',conflict:'Not possible in the current state',duplicate:'Already done'};
+function afValidate(A,input){for(const [k,v] of Object.entries(A.input||{})){const x=input[k],t=v.t;
+    if(v.req&&(x===undefined||x===null||x===''))return 'Missing "'+k+'".';
+    if(x!==undefined&&x!==null&&t&&(t==='array'?!Array.isArray(x):t==='object'?(typeof x!=='object'||Array.isArray(x)):typeof x!==t))return '"'+k+'" must be '+(t==='array'?'a list':t==='object'?'an object':'a '+t)+'.';
+    if(v.min!=null&&typeof x==='string'&&x.trim().length<v.min)return v.minText||('"'+k+'" needs at least '+v.min+' characters.')}
+  return ''}
+function afScopeErr(c){return afErr('tenant_boundary',pol()&&pol().warehouseScoped?c.id+' is at '+c.location+', outside your warehouse.':c.id+' belongs to '+c.owner+', a tenant you cannot see. Request tenant access first.')}
+function afCaseOf(i){return i&&i.case_id?CASE_BY_ID[i.case_id]:null}
+/* agent rules: the agent acts as the signed-in person and never commits (PR: Trust and governance). Phase 3 adds autonomy and kill switches. */
+function afAgentGate(A,input,ctx){if(A.risk==='commit')return afErr('approval_required','A person must press the final button for '+A.title.toLowerCase()+'. The agent can only prepare it.');
+  if(A.risk==='system')return afErr('out_of_scope','Only a simulated enterprise system acknowledges instructions.');
+  if(typeof afAgentAllowed==='function'){const g=afAgentAllowed(A,input,ctx);if(g)return g}
+  return null}
+function invoke(id,input,o){
+  const A=ACTIONS[id];input=input||{};
+  const ctx=Object.assign({actor:S.acct,preparer:null,runId:null,via:'ui',confirmed:false,replay:false},o||{});
+  if(!A)return afErr('not_found','No action '+id+'.');
+  const sys=ctx.via==='system';
+  if(!ctx.replay){
+    const bad=afValidate(A,input);if(bad)return afFail(A,ctx,afErr('validation_error',bad));
+    if(!ctx.actor)return afFail(A,ctx,afErr('out_of_scope','Sign in first.'));
+    if(A.risk==='system'&&!sys)return afFail(A,ctx,afErr('out_of_scope','Only a simulated enterprise system acknowledges instructions.'));
+    if(A.perm&&ctx.actor!==AF_SYS&&!can(A.perm))return afFail(A,ctx,afErr('out_of_scope','The '+ctx.actor.role+' view cannot '+(A.verb||A.title.toLowerCase())+'.'));
+    if(A.scope==='case'&&ctx.actor!==AF_SYS){const c=afCaseOf(input);if(!c)return afFail(A,ctx,afErr('not_found','No live case '+(input.case_id||'')+'.'));if(!tenantOK(c.owner)||!locOK(c))return afFail(A,ctx,afScopeErr(c))}
+    if(ctx.preparer){const g=afAgentGate(A,input,ctx);if(g)return afFail(A,ctx,g)}
+    if(A.guard){const g=A.guard(input,ctx);if(g)return afFail(A,ctx,afErr(g[0],g[1]))}
+    if(typeof afPolicy==='function'){const g=afPolicy(A,input,ctx);if(g)return afFail(A,ctx,g)}
+    afSyncIn();
+  }
+  const key=A.idem?id+':'+A.idem(input,ctx):null;
+  if(key&&AF.keys.has(key))return ctx.replay?{ok:true,dup:true}:afFail(A,ctx,afErr('duplicate',(A.dupText||'Already done')+'. Nothing was created twice.'));
+  ctx.now=ctx.replay?new Date(ctx.at):asOfNow();ctx.wall=ctx.replay?ctx.wall||Date.now():Date.now();ctx.by=ctx.actor?ctx.actor.label:'—';
+  ctx.key=key||id+'#'+(ctx.replay?ctx.seq:AF.seq+1);
+  const prev=AF_CUR;AF_CUR=ctx;let out;
+  try{out=A.risk==='read'?A.handler(input,ctx):seeded(ctx.key,()=>A.handler(input,ctx))}
+  catch(e){AF_CUR=prev;console.error(e);return afFail(A,ctx,afErr('conflict',e.message||String(e)))}
+  AF_CUR=prev;
+  if(out&&out.ok===false)return afFail(A,ctx,out);
+  const res={ok:true,output:out||{},key,action:id};
+  if(A.risk!=='read'){
+    if(key)AF.keys.add(key);
+    if(ctx.replay){AF.seq=Math.max(AF.seq,ctx.seq||0)}
+    else{const e={seq:++AF.seq,id,input:afClean(input),actor:ctx.actor.id,by:ctx.by,role:ctx.actor.role,prep:ctx.preparer||null,run:ctx.runId||null,at:ctx.now.toISOString(),wall:ctx.wall,key};AF.journal.push(e);res.seq=e.seq;afSave()}
+    afEmit('action',{A,input,out:res.output,ctx,seq:res.seq||ctx.seq});
+    if(!ctx.replay&&!AF.batch&&A.render&&(typeof A.render!=='function'||A.render(input,res.output)))afRender();
+  }
+  return res}
+function afFail(A,ctx,r){if(!ctx.replay){AF.fails.unshift({at:Date.now(),id:A?A.id:'?',code:r.error.code,prep:ctx.preparer||null});AF.fails.length=Math.min(AF.fails.length,200)}return r}
+/* inputs are stored, so they must be plain data; anything that looks like a secret is never kept */
+function afClean(i){return JSON.parse(JSON.stringify(i,(k,v)=>/secret|password|token/i.test(k)?undefined:v))}
+/* re-render from events; while someone is typing in the page, wait until they leave the field */
+function afRender(){if(!S.acct||!$('#view'))return;const a=document.activeElement;if(a&&$('#view').contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.type!=='checkbox'&&a.type!=='radio'){AF.stale=true;return}AF.stale=false;route(true)}
+document.addEventListener('focusout',e=>{if(AF.stale&&e.target&&$('#view')&&$('#view').contains(e.target))setTimeout(()=>{if(AF.stale)afRender()},0)});
+/* run several actions as one batch and draw once at the end (bulk plans, agent runs) */
+function afBatch(fn){AF.batch++;try{return fn()}finally{AF.batch--;if(!AF.batch)afRender()}}
+/* ---- persistence: one versioned key; journal + undo marks + UI memory (threads, autonomy, pins...) ---- */
+function afState(){return{v:1,journal:AF.journal,undone:[...AF.undone],ui:AF.ui}}
+function afSave(){try{localStorage.setItem(AF_KEY,JSON.stringify(afState()))}catch(e){}}
+function afLoad(){try{const o=JSON.parse(localStorage.getItem(AF_KEY)||'null');if(o&&o.v===1&&Array.isArray(o.journal))return o}catch(e){}return null}
+function afReplayEntry(e){if(AF.undone.has(e.seq)){AF.seq=Math.max(AF.seq,e.seq);return}
+  const actor=e.actor==='system'?AF_SYS:ACCT(e.actor)||{id:e.actor,label:e.by,role:e.role};
+  const r=invoke(e.id,e.input,{replay:true,actor,preparer:e.prep,runId:e.run,at:e.at,wall:e.wall,seq:e.seq,via:e.actor==='system'?'system':'ui'});
+  if(!r.ok)console.warn('Replay skipped',e.seq,e.id,r.error&&r.error.message)}
+function afBoot(){AF.seed={assess:CASES.map(c=>c.assessment)};const o=afLoad();if(!o)return;AF.ui=o.ui||{};AF.undone=new Set(o.undone||[]);AF.journal=o.journal;AF.replaying=true;
+  try{AF.journal.forEach(afReplayEntry)}finally{AF.replaying=false}
+  afEmit('boot',{})}
+/* another tab wrote first: replay what it appended, or rebuild if the two histories differ */
+function afSyncIn(){const o=afLoad();if(!o)return;const th=o.journal,mine=AF.journal;if(th.length<=mine.length)return;
+  if(mine.some((x,i)=>th[i].seq!==x.seq))return;AF.replaying=true;try{th.slice(mine.length).forEach(e=>{AF.journal.push(e);afReplayEntry(e)})}finally{AF.replaying=false}}
+window.addEventListener('storage',e=>{if(e.key!==AF_KEY)return;const o=afLoad();
+  if(!o){afReloadKeep();return}
+  const th=o.journal,mine=AF.journal,und=[...AF.undone].sort().join()!==(o.undone||[]).slice().sort().join();
+  if(und||th.length<mine.length||mine.some((x,i)=>!th[i]||th[i].seq!==x.seq)){afReloadKeep();return}
+  AF.ui=o.ui||AF.ui;
+  if(th.length>mine.length){AF.replaying=true;try{th.slice(mine.length).forEach(x=>{AF.journal.push(x);afReplayEntry(x)})}finally{AF.replaying=false}afEmit('sync',{n:th.length-mine.length});if(S.acct&&!$('#modal').classList.contains('on'))afRender()}
+  else afEmit('sync',{n:0})});
+/* rebuild = keep where the person is, reload, replay; the seed makes this cheap and exact */
+function afReloadKeep(){try{sessionStorage.setItem('circ-af-keep',JSON.stringify({h:location.hash,y:scrollY,p:AF.ui.panelOpen?1:0}))}catch(e){}location.reload()}
+function afRestoreKeep(){try{const k=JSON.parse(sessionStorage.getItem('circ-af-keep')||'null');sessionStorage.removeItem('circ-af-keep');return k}catch(e){return null}}
+/* reset all, or one case: drop its entries (and anything that depends on them) and rebuild */
+function afReset(caseId){if(!caseId){try{localStorage.removeItem(AF_KEY)}catch(e){}afReloadKeep();return}
+  AF.journal=AF.journal.filter(e=>!(e.input&&e.input.case_id===caseId));afSave();afReloadKeep()}
+/* undo: mark journal entries as undone and rebuild without them */
+function afUndo(seqs){seqs.forEach(s=>AF.undone.add(s));afSave();afReloadKeep()}
+/* the UI memory part of the stored state */
+function afUi(k,v){if(v===undefined)return AF.ui[k];AF.ui[k]=v;afSave();return v}
+/* the money an action moves, for plan previews and approval limits */
+function afMoney(c){const r=c&&(c.chosen||c.recommendation);return r?Math.abs(r.net):0}
+/* after the first draw on load: return to where the person was before a rebuild */
+function afAfterBoot(){const k=afRestoreKeep();if(k&&k.y)setTimeout(()=>window.scrollTo(0,k.y),60);afEmit('ready',{keep:k})}
+/* ===== ACT inventory (PR phase 0): every button handler, classified. Adapters change state and must go through invoke();
+   dialogs open a form; drafts edit an unsaved editor (Save is the action); sim drives a simulation; everything else is view state. ===== */
+const ACT_INVENTORY={
+ adapter:{confirmApprove:['decision.approve','decision.override'],declineDecisionOk:['decision.decline'],confirmOutcome:['outcome.confirm'],advance:['adapter.acknowledge'],replay:['instruction.resend'],
+  reqEvidence:['evidence.request'],simResult:['evidence.recordResult'],reeval:['case.reevaluate'],tiSubmit:['decision.submit'],tiSave:['scenario.save'],tiDelSc:['scenario.delete'],
+  notifyOk:['notify.send'],notifyAck:['notify.acknowledge'],cmAdd:['comment.add'],tenantReqOk:['access.requestTenant'],mcpProposeOk:['mcp.propose'],reqDecideOk:['access.decideRequest'],delegToggle:['access.setDelegation'],
+  idpSync:['access.syncDirectory'],idpMap:['access.mapIdentity'],idpRemove:['access.removeUser'],idpSrc:['access.setRoleSource'],oooSave:['access.setOutOfOffice'],oooDel:['access.clearOutOfOffice'],
+  srcSync:['source.sync'],srcSyncAll:['source.sync'],reconnect:['source.reconnect'],sdRotateOk:['credentials.rotate'],srcDelOk:['source.delete'],sdSave:['source.update'],resolveConf:['conflict.resolve'],escConf:['conflict.escalate'],csvCommit:['import.commit'],
+  tgAddOk:['tables.update'],tgEditOk:['tables.update'],tgDel:['tables.update'],tgFkOk:['tables.update'],tgFkDel:['tables.update'],
+  wfSave:['workflow.save'],wfPublish:['workflow.publish','workflow.setStatus'],wfToggle:['workflow.setStatus'],wfRunNow:['workflow.run'],wfDup:['workflow.duplicate'],wfDelOk:['workflow.delete'],wfNewOk:['workflow.create']},
+ dialog:['approve','declineDecision','notifyOpen','tenantReq','mcpPropose','reqDecide','srcDel','sdRotate','srcAdd','tgAdd','tgEdit','tgFkNew','wfNew','wfDelAsk','viewInstr','snapshot','sources','models','dataChecks','exView','schema','trace','auEntry','evDetail','expDetail','openCase','openClosed','adapter','srcEdit','tiExplain','tiRaw','tiCompare','asCompare','ccShare'],
+ draft:['sdF','sdC','sdOp','sdOpAdd','sdOpDel','sdMap','sdMapAdd','sdMapDel','sdRevert','sdTab','sdTest','tgFkF','tgFkWhy','taN','tgAlign','wfConnTo','wfDel','wfDelEdge','wfDiscard','wfReset','wfName','wfOwn','wfMin','wfTrig','nwF','nwName','csvSample','csvText','csvFile','csvValidate','apRoute','srcDelType'],
+ sim:['wfFail','wfRun','wfApprove','wfRunClear','pgRun','tryTool','orFail','orReplay','testConn']};
+const actKind=k=>ACT_INVENTORY.adapter[k]?'adapter':ACT_INVENTORY.dialog.includes(k)?'dialog':ACT_INVENTORY.draft.includes(k)?'draft':ACT_INVENTORY.sim.includes(k)?'sim':'view';
+/* ===== Domain actions: the same rules the screens used, now as pure handlers (input + context, no page reads) ===== */
+const cnum=c=>parseInt(c.id.slice(3));
+const cyc=c=>c.cycle||0;
+/* stage keys: <case>:<stage>[:<step>] so a repeat is a no-op (PR: Case run orchestration) */
+const skey=(c,stage,x)=>c.id+':'+stage+(x!=null?':'+x:'');
+/* ---- decision flow ---- */
+defAction('decision.submit',{title:'Submit for review',verb:'submit decisions',desc:'Send a prepared recommendation to the Approver queue. Use when the Planner has reviewed the decision packet.',risk:'draft',perm:'submit',scope:'case',
+  input:{case_id:{t:'string',req:true,ex:'RT-1049'}},emits:['decision.submitted'],reversible:true,
+  guard:i=>{const c=afCaseOf(i);return c.stage!=='awaiting_approval'?['conflict',c.id+' is not awaiting approval.']:c.submitted?['duplicate',c.id+' is already submitted']:null},
+  idem:i=>skey(CASE_BY_ID[i.case_id],7,'submit:'+cyc(CASE_BY_ID[i.case_id])),
+  handler:(i,x)=>{const c=CASE_BY_ID[i.case_id];c.submitted={by:x.by,at:x.now};
+    pushEvent({dir:'out',type:'decision.submitted',caseId:c.id,decisionId:'DI-2026-'+c.id.slice(3),approval:null,ver:null,dest:'Approver queue',ack:'acknowledged',key:'sub-'+hashId(c.id+cyc(c)).slice(0,6).toLowerCase(),note:'Submitted for review by '+x.by,by:x.by,ts:x.now});
+    return{case_id:c.id,submitted_by:x.by}}});
+const apGuard=i=>{const c=afCaseOf(i);if(c.stage!=='awaiting_approval')return['conflict',c.id+' is not awaiting approval.'];
+  const t=c.routes.find(r=>r.plan===i.route);if(i.route&&!t)return['not_found','No route "'+i.route+'" on '+c.id+'.'];
+  if(t&&t.excluded)return['conflict','An excluded route cannot be approved: '+GATES[t.failGate]+' failed. Failed gates are resolved by engineering and policy owners, never waived.'];
+  if(!c.recommendation)return['conflict','No eligible route to approve.'];return null};
+function approveHandler(i,x){const c=CASE_BY_ID[i.case_id],t=c.routes.find(r=>r.plan===i.route)||c.recommendation,isOv=t!==c.recommendation;
+  const ref=approvalRef(c.id)+(cyc(c)?'-'+(cyc(c)+1):'');
+  c.chosen=t;c.stage='approved';mkExec(c,0,1);
+  c.approval={ref,by:x.by,at:x.now,rationale:i.rationale,spend:+i.spend||0,terms:i.terms||'',prep:x.preparer||null};
+  if(isOv)c.override={rec:c.recommendation.plan,chosen:t.plan,reason:i.rationale};
+  c.exec.ref=ref;c.exec.approver=x.by;c.exec.approvedAt=x.now;c.exec.steps[0].state='active';
+  const e=c.exec;pushEvent({dir:'out',type:'instruction.sent',caseId:c.id,decisionId:e.decisionId,approval:ref,ver:1,dest:e.steps[0].sys,ack:'sent (simulated) · awaiting ack',key:'idem-'+hashId(c.id+ref).slice(0,6).toLowerCase(),retries:0,note:isOv?'Override approved with reason':'',sim:true});
+  return{case_id:c.id,ref,route:t.plan,net:t.net,override:isOv,sent_to:e.steps[0].sys}}
+const apInput={case_id:{t:'string',req:true,ex:'RT-1048'},route:{t:'string',req:false,ex:'Redeploy RT-1048'},rationale:{t:'string',req:true,min:15,minText:'Add a rationale of at least 15 characters.'},reviewed:{t:'boolean',req:true},spend:{t:'number',req:false},terms:{t:'string',req:false}};
+const apReviewed=i=>i.reviewed!==true?['validation_error','Confirm that you reviewed the evidence snapshot.']:null;
+defAction('decision.approve',{title:'Approve decision',verb:'approve decisions',desc:'Approve the recommended route. Creates the approval reference and the instruction; only a person can do this.',risk:'commit',perm:'approve',scope:'case',input:apInput,emits:['instruction.sent'],
+  guard:(i,x)=>apReviewed(i)||apGuard(i,x)||(i.route&&CASE_BY_ID[i.case_id].recommendation&&i.route!==CASE_BY_ID[i.case_id].recommendation.plan?['conflict','That route is not the recommendation; use Override.']:null),
+  idem:i=>skey(CASE_BY_ID[i.case_id],7,cyc(CASE_BY_ID[i.case_id])),dupText:'This decision is already approved',handler:approveHandler});
+defAction('decision.override',{title:'Override decision',verb:'override decisions',desc:'Approve a different eligible route than the recommendation, with a reason. Only a person can do this.',risk:'commit',perm:'approve',scope:'case',input:apInput,emits:['instruction.sent'],
+  guard:(i,x)=>apReviewed(i)||apGuard(i,x),idem:i=>skey(CASE_BY_ID[i.case_id],7,cyc(CASE_BY_ID[i.case_id])),dupText:'This decision is already approved',handler:approveHandler});
+defAction('decision.decline',{title:'Decline decision',verb:'decline decisions',desc:'Send the recommendation back for re-evaluation with a reason. Nothing is sent to any system.',risk:'commit',perm:'approve',scope:'case',
+  input:{case_id:{t:'string',req:true},reason:{t:'string',req:true,min:10,minText:'Add a reason of at least 10 characters.'}},emits:['decision.declined'],
+  guard:i=>{const c=afCaseOf(i);return c.stage!=='awaiting_approval'?['conflict',c.id+' is not awaiting approval.']:null},
+  idem:i=>skey(CASE_BY_ID[i.case_id],7,'decline:'+cyc(CASE_BY_ID[i.case_id])),
+  handler:(i,x)=>{const c=CASE_BY_ID[i.case_id];c.stage='reeval';c.reevalReason='Declined by '+x.by+': '+i.reason;c.submitted=null;c.cycle=cyc(c)+1;
+    pushEvent({dir:'in',type:'decision.declined',caseId:c.id,decisionId:'DI-2026-'+c.id.slice(3),approval:null,ver:null,dest:'Circularity',ack:'acknowledged',key:'dcl-'+hashId(c.id+c.cycle).slice(0,6).toLowerCase(),note:i.reason,by:x.by,ts:x.now});
+    return{case_id:c.id,stage:'reeval'}}});
+defAction('outcome.confirm',{title:'Confirm outcome',verb:'confirm outcomes',desc:'Finance confirms the reported actual outcome; links actual cost lines to the decision for learning.',risk:'commit',perm:'confirm',scope:'case',
+  input:{case_id:{t:'string',req:true}},emits:['outcome.confirmed'],
+  guard:i=>{const c=afCaseOf(i);return c.outcome?['duplicate','The outcome is already confirmed']:c.stage!=='closed'?['conflict','The outcome has not been reported yet; '+c.id+' is still with the enterprise systems.']:null},
+  idem:i=>skey(CASE_BY_ID[i.case_id],9,cyc(CASE_BY_ID[i.case_id])),
+  handler:(i,x)=>{const c=CASE_BY_ID[i.case_id],r=c.chosen||c.recommendation,lines=lineActuals(c,r),vo=valueOrder(c);c.outcome={net:sum(lines.map(l=>l.act)),lines,order:vo?vo.ref:null,by:x.by,at:x.now};
+    pushEvent({dir:'in',type:'outcome.confirmed',caseId:c.id,decisionId:c.exec.decisionId,approval:c.exec.ref,ver:c.exec.instruction,dest:'ERP · finance',ack:'acknowledged',key:'idem-'+hashId(c.id+'fin').slice(0,6),retries:0,ref:vo?vo.ref:null,note:'Actual '+money(c.outcome.net)+' against predicted '+money(r.net)+(vo?' on '+vo.ref:'')+'; '+lines.filter(l=>l.model).length+' cost lines to the models'});
+    return{case_id:c.id,actual:c.outcome.net,predicted:r.net,variance:c.outcome.net-r.net}}});
+/* the simulated enterprise systems acknowledge one step at a time; never the agent */
+defAction('adapter.acknowledge',{title:'Acknowledge instruction step',verb:'simulate acknowledgements',desc:'A simulated enterprise system acknowledges the active instruction step and returns its reference.',risk:'system',perm:'execSim',scope:'case',
+  input:{case_id:{t:'string',req:true},step:{t:'number',req:false}},emits:['stock.reserved','workorder.created','movement.confirmed','outcome.reported'],
+  guard:i=>{const c=afCaseOf(i),x=c.exec;if(!x)return['conflict','Nothing has been sent for '+c.id+' yet.'];const a=x.steps.findIndex(s=>s.state==='active');
+    return a<0?['conflict','Every step for '+c.id+' is already acknowledged.']:i.step!=null&&i.step!==a?['duplicate','Step '+(i.step+1)+' is already acknowledged']:null},
+  idem:i=>{const c=CASE_BY_ID[i.case_id],x=c.exec,a=x?x.steps.findIndex(s=>s.state==='active'):-1;return skey(c,a>=3?9:8,(x?x.ref:'')+':'+a)},
+  render:i=>{const r=parse();return !(r.page==='integration'||r.page==='access'||r.page==='mcp')},
+  handler:(i,x)=>{const c=CASE_BY_ID[i.case_id],e=c.exec,k=e.steps.findIndex(s=>s.state==='active'),s=e.steps[k];
+    s.state='done';s.ack={by:s.sys.split(' · ')[0],ref:ackRef(c,s,40000+cnum(c)*7+k*13+cyc(c)*101),at:x.now,sim:true};
+    if(e.steps[k+1])e.steps[k+1].state='active';
+    const types=['stock.reserved','workorder.created','movement.confirmed','outcome.reported'];
+    pushEvent({dir:'in',type:types[k],caseId:c.id,decisionId:e.decisionId,approval:e.ref,ver:e.instruction,dest:s.sys,ack:'acknowledged (simulated)',key:'idem-'+hashId(c.id+types[k]+e.ref).slice(0,6).toLowerCase(),retries:0,ref:s.ack.ref,note:refLabel(s)+' returned by '+s.ack.by+(ackNote(s)?': '+ackNote(s):''),sim:true});
+    if(k===0)c.stage='executing';if(k===3)c.stage='closed';
+    return{case_id:c.id,step:k,label:s.label,by:s.ack.by,ref:s.ack.ref,ref_label:refLabel(s)}}});
+defAction('instruction.resend',{title:'Resend instruction',verb:'resend instructions',desc:'Send the approved instruction again. Idempotent: the same key means no second reservation or work order.',risk:'act',perm:'execSim',scope:'case',
+  input:{case_id:{t:'string',req:true}},emits:['instruction.sent'],
+  guard:i=>afCaseOf(i).exec?null:['conflict','Nothing to resend: no instruction has been sent.'],
+  idem:i=>skey(CASE_BY_ID[i.case_id],8,'resend:'+(CASE_BY_ID[i.case_id].exec||{}).ref),dupText:'Already resent; the target system ignored the duplicate',
+  handler:(i,x)=>{const c=CASE_BY_ID[i.case_id],e=c.exec;pushEvent({dir:'out',type:'instruction.sent',caseId:c.id,decisionId:e.decisionId,approval:e.ref,ver:e.instruction,dest:e.steps[0].sys,ack:'duplicate · deduplicated',key:'idem-'+hashId(c.id+e.ref).slice(0,6).toLowerCase(),retries:1,note:'Repeated message ignored: same idempotency key, no second reservation or work order',sim:true});return{case_id:c.id,deduplicated:true}}});
+/* ---- evidence ---- */
+defAction('evidence.request',{title:'Request evidence',verb:'request evidence',desc:'Ask the owning system or team for missing evidence (inspection, test, photos, assessment). Creates a request, not a decision.',risk:'act',perm:'request',scope:'case',
+  input:{case_id:{t:'string',req:true,ex:'RT-1051'}},emits:['evidence.requested'],reversible:true,
+  guard:i=>{const c=afCaseOf(i);return !c.blocked?['conflict',c.id+' has no missing evidence to request.']:c.requested?['duplicate',c.blocked.action+' was already sent ('+c.requested.ref+')']:null},
+  idem:i=>skey(CASE_BY_ID[i.case_id],5,'request:'+cyc(CASE_BY_ID[i.case_id])),
+  handler:(i,x)=>{const c=CASE_BY_ID[i.case_id];c.reqN=(c.reqN||0)+1;c.requested={ref:'WO-'+(60000+cnum(c)*3+c.reqN),at:x.now,by:x.by};
+    pushEvent({dir:'out',type:'evidence.requested',caseId:c.id,decisionId:null,approval:null,ver:1,dest:c.blocked.owner,ack:'sent (simulated) · awaiting ack',key:'idem-'+hashId(c.id+'req'+c.reqN).slice(0,6),retries:0,note:c.blocked.action,sim:true});
+    c.evidence.filter(e=>e.state==='missing'||e.state==='partial').forEach(e=>e.note=(e.note?e.note+' · ':'')+'requested '+c.requested.ref);
+    return{case_id:c.id,ref:c.requested.ref,what:c.blocked.action,to:c.blocked.owner}}});
+defAction('evidence.recordResult',{title:'Record inspection result',verb:'record results',desc:'Record the inspection or test result (simulated), rebuild routes and rank them.',risk:'act',perm:'assess',scope:'case',
+  input:{case_id:{t:'string',req:true,ex:'RT-1051'}},emits:['inspection.result'],
+  guard:i=>{const c=afCaseOf(i);return !c.blocked&&c.assessment==='Ready'?['duplicate',c.id+' is already assessed']:null},
+  idem:i=>skey(CASE_BY_ID[i.case_id],5,'result'),
+  handler:(i,x)=>{const c=CASE_BY_ID[i.case_id];c.grade=c.hero?'B':wpick([['A',22],['B',41],['C',25],['D',12]]);c.condition='Grade '+c.grade;c.assessment='Ready';c.readiness='ready';c.blocked=null;c.engLife=c.grade==='D'?'Below minimum':(c.hero?30:rint(12,48))+' months';c.nextInspection='Mar 2027';
+    c.evidence.forEach(e=>{e.state='ready';e.note='';e.fresh='just now'});if(c.hero)c.demand={internal:true,confirmed:true,site:'Site 4',lease:null,parts:true};
+    c.routes=buildRoutes(c);rankRoutes(c);c.requested=null;c.predictions=null;
+    if(c.recommendation){c.stage='awaiting_approval';c.snapshot={id:'EVS-'+hashId(c.id+'new'),takenAt:x.now,items:c.evidence.length}}else c.stage='none';
+    pushEvent({dir:'in',type:'inspection.result',caseId:c.id,decisionId:null,approval:null,ver:null,dest:'Inspection',ack:'acknowledged (simulated)',key:'idem-'+hashId(c.id+'res').slice(0,6),retries:0,note:'Grade '+c.grade,sim:true});
+    return{case_id:c.id,grade:c.grade,recommendation:c.recommendation?c.recommendation.plan:null,net:c.recommendation?c.recommendation.net:null}}});
+defAction('case.reevaluate',{title:'Re-evaluate case',verb:'re-run evaluations',desc:'Re-run route building and ranking after a decline or a changed condition, with a new evidence snapshot.',risk:'act',perm:'reeval',scope:'case',
+  input:{case_id:{t:'string',req:true}},emits:['decision.reevaluated'],
+  guard:i=>afCaseOf(i).stage!=='reeval'?['conflict',i.case_id+' is not waiting for re-evaluation.']:null,
+  idem:i=>skey(CASE_BY_ID[i.case_id],6,'reeval:'+cyc(CASE_BY_ID[i.case_id])),
+  handler:(i,x)=>{const c=CASE_BY_ID[i.case_id],was=c.recommendation&&c.recommendation.plan;if(!c.hero){c.routes=buildRoutes(c);rankRoutes(c)}else rankRoutes(c);
+    c.stage=c.recommendation?'awaiting_approval':'none';c.reevalReason=null;c.snapshot={id:'EVS-'+hashId(c.id+'re'+cyc(c)),takenAt:x.now,items:c.evidence.length};
+    pushEvent({dir:'in',type:'decision.reevaluated',caseId:c.id,decisionId:'DI-2026-'+c.id.slice(3),approval:null,ver:null,dest:'Circularity',ack:'acknowledged',key:'rev-'+hashId(c.id+cyc(c)).slice(0,6).toLowerCase(),note:c.recommendation?c.recommendation.plan+' · '+money(c.recommendation.net):'No eligible route',by:x.by,ts:x.now});
+    return{case_id:c.id,was,now:c.recommendation?c.recommendation.plan:null,net:c.recommendation?c.recommendation.net:null}}});
+/* ---- scenarios (saved what-ifs; the approved decision never changes this way) ---- */
+defAction('scenario.save',{title:'Save scenario',verb:'save scenarios',desc:'Save the current what-if assumptions for a case. Never changes the decision.',risk:'draft',perm:'scenario',scope:'case',reversible:true,
+  input:{case_id:{t:'string',req:true},scen:{t:'object',req:true},w:{t:'object',req:false},name:{t:'string',req:true},top:{t:'string',req:false}},
+  handler:(i,x)=>{const arr=S.ti.saved[i.case_id]||(S.ti.saved[i.case_id]=[]),id='sc'+hashId(x.key).slice(0,6).toLowerCase();arr.push({id,name:i.name,top:i.top||'',scen:Object.assign({},i.scen),w:Object.assign({},i.w||S.ti.w),by:x.by,prep:x.preparer||null});return{case_id:i.case_id,id,name:i.name}}});
+defAction('scenario.delete',{title:'Delete scenario',verb:'delete scenarios',desc:'Remove a saved what-if scenario.',risk:'draft',perm:'scenario',scope:'case',
+  input:{case_id:{t:'string',req:true},id:{t:'string',req:true}},
+  handler:i=>{S.ti.saved[i.case_id]=(S.ti.saved[i.case_id]||[]).filter(y=>y.id!==i.id);return{case_id:i.case_id,id:i.id}}});
+/* ---- notifications, comments ---- */
+defAction('notify.send',{title:'Send notification',verb:'send notifications',desc:'Notify an owner about an exception. Simulated: creates an Actions on me item and an audit entry.',risk:'act',perm:'notify',
+  input:{ex_id:{t:'string',req:true},title:{t:'string',req:true},to:{t:'string',req:true},sev:{t:'string',req:true},msg:{t:'string',req:true,min:5,minText:'Add a message of at least 5 characters.'},ids:{t:'array',req:false}},emits:['notification.sent'],reversible:true,
+  guard:i=>!ACCT(i.to)?['not_found','Unknown recipient.']:null,
+  idem:i=>'ntf:'+hashId(i.ex_id+'|'+i.to+'|'+i.msg),dupText:'The same notification was already sent',
+  handler:(i,x)=>{const to=ACCT(i.to),n={id:'NTF-'+(S.ntSeq++),exId:i.ex_id,title:i.title,msg:i.msg,sev:i.sev,to:to.id,toLabel:to.label,from:x.by,at:x.now,status:'open',ids:(i.ids||[]).slice(0,40),prep:x.preparer||null};S.notes.push(n);
+    rbLog('notification.sent',n.id+' · '+n.title+' → '+to.label+' (simulated)');return{id:n.id,to:to.label}}});
+defAction('notify.acknowledge',{title:'Acknowledge notification',verb:'acknowledge notifications',desc:'Mark a notification addressed to you as in hand.',risk:'act',perm:'ack',
+  input:{id:{t:'string',req:true}},emits:['notification.acknowledged'],
+  guard:(i,x)=>{const n=S.notes.find(y=>y.id===i.id);return !n?['not_found','No notification '+i.id+'.']:n.to!==x.actor.id?['out_of_scope','That notification is addressed to '+n.toLabel+'.']:n.status==='ack'?['duplicate','Already acknowledged']:null},
+  idem:i=>'ntf-ack:'+i.id,
+  handler:(i,x)=>{const n=S.notes.find(y=>y.id===i.id);n.status='ack';n.ackBy=x.by;n.ackAt=x.now;rbLog('notification.acknowledged',n.id+' · '+n.title+' · in hand by '+x.by);return{id:n.id}}});
+defAction('comment.add',{title:'Add comment',verb:'comment',desc:'Post a comment on a source, audit entry or other record. Comments are data, never instructions.',risk:'act',perm:'comment',render:false,
+  input:{key:{t:'string',req:true},text:{t:'string',req:true,min:2,minText:'Write a comment first.'}},
+  handler:(i,x)=>{(S.cm[i.key]||(S.cm[i.key]=[])).push({by:x.by,at:x.now,text:i.text.slice(0,500),prep:x.preparer||null});return{key:i.key}}});
+/* ---- access: requests, delegations, identity ---- */
+defAction('access.requestTenant',{title:'Request tenant access',verb:'request tenant access',desc:'Ask an Approver or Admin for access to another tenant for this session.',risk:'draft',perm:'requestTenant',
+  input:{tenant:{t:'string',req:true},reason:{t:'string',req:true,min:10,minText:'Add a reason of at least 10 characters.'}},
+  guard:(i,x)=>!TENANTS.includes(i.tenant)?['not_found','Unknown tenant.']:S.reqs.some(r=>r.kind==='tenant'&&r.status==='pending'&&r.byId===x.actor.id&&r.tenant===i.tenant)?['duplicate','A request for '+i.tenant+' is already waiting']:null,
+  handler:(i,x)=>{const r={id:'REQ-'+(REQ_SEQ++),kind:'tenant',status:'pending',by:x.by,byId:x.actor.id,at:x.now,tenant:i.tenant,reason:i.reason};S.reqs.unshift(r);rbLog('access.requested',r.by+' → '+i.tenant+' · '+i.reason);return{id:r.id}}});
+defAction('mcp.propose',{title:'Propose MCP server',verb:'propose MCP servers',desc:'Submit a new MCP server for review by an Approver or Admin.',risk:'draft',perm:'proposeMcp',
+  input:{name:{t:'string',req:true,min:4,minText:'Enter a server name.'},owner:{t:'string',req:true},purpose:{t:'string',req:true,min:10,minText:'Describe the purpose in at least 10 characters.'},tools:{t:'array',req:true},access:{t:'string',req:true},data:{t:'string',req:true}},
+  guard:i=>!i.tools.length?['validation_error','List at least one tool.']:S.reqs.some(r=>r.kind==='mcp'&&r.status==='pending'&&r.server.name.toLowerCase()===i.name.toLowerCase())?['duplicate','A proposal with this name is already waiting']:null,
+  handler:(i,x)=>{const r={id:'REQ-'+(REQ_SEQ++),kind:'mcp',status:'pending',by:x.by,byId:x.actor.id,at:x.now,server:{name:i.name,owner:i.owner,purpose:i.purpose,tools:i.tools.slice(),access:i.access,data:i.data}};S.reqs.unshift(r);rbLog('mcp.proposal.submitted',r.server.name+' · '+r.server.access);return{id:r.id}}});
+defAction('access.decideRequest',{title:'Decide access request',verb:'decide requests',desc:'Approve or decline a tenant-access request or an MCP server proposal.',risk:'commit',perm:null,
+  input:{id:{t:'string',req:true},decision:{t:'string',req:true},note:{t:'string',req:false}},
+  guard:i=>{const r=S.reqs.find(y=>y.id===i.id);return !r?['not_found','No request '+i.id+'.']:!canDecide(r)?['out_of_scope','This request is not yours to decide.']:i.decision==='decline'&&(i.note||'').trim().length<5?['validation_error','Add a short reason so the requester knows what to change.']:null},
+  idem:i=>'req:'+i.id,
+  handler:(i,x)=>{const r=S.reqs.find(y=>y.id===i.id),note=(i.note||'').trim();r.status=i.decision==='approve'?'approved':'declined';r.decidedBy=x.by;r.decidedAt=x.now;r.note=note;
+    if(r.kind==='tenant'&&r.status==='approved'){const g=S.grants[r.byId]||(S.grants[r.byId]=[]);if(!g.includes(r.tenant))g.push(r.tenant)}
+    if(r.kind==='mcp'&&r.status==='approved')CLIENT_SERVERS.push({id:'prop-'+r.id,name:r.server.name,owner:r.server.owner,status:'approved',tools:r.server.tools.slice(),used:'Approved from '+r.id+' · not yet connected'});
+    rbLog(r.kind==='tenant'?'access.'+(r.status==='approved'?'granted':'declined'):'mcp.proposal.'+r.status,(r.kind==='tenant'?r.by+' → '+r.tenant:r.server.name)+(note?' · '+note:''));
+    return{id:r.id,status:r.status}}});
+defAction('access.setDelegation',{title:'Change Approver delegation',verb:'change delegations',desc:'Allow or stop the Approver deciding a kind of request.',risk:'commit',perm:'manageAccess',
+  input:{k:{t:'string',req:true},on:{t:'boolean',req:true}},guard:i=>!DELEG.some(d=>d[0]===i.k)?['not_found','Unknown delegation.']:null,
+  handler:i=>{const d=DELEG.find(y=>y[0]===i.k);S.deleg[i.k]=!!i.on;rbLog('delegation.changed','Approver '+(i.on?'may now decide ':'may no longer decide ')+dlab(d));return{k:i.k,on:!!i.on}}});
+defAction('access.syncDirectory',{title:'Sync the directory',verb:'sync the directory',desc:'Pull users and group mappings from the identity provider (simulated).',risk:'act',perm:'manageIdentity',
+  handler:(i,x)=>{S.idp.lastSync=x.now;rbLog('directory.synced','Directory sync (simulated): '+S.idp.users.length+' users, '+Object.keys(S.idp.groups).length+' mappings');return{users:S.idp.users.length}}});
+defAction('access.mapIdentity',{title:'Change role mapping',verb:'change role mappings',desc:'Change which role or site an identity group maps to.',risk:'commit',perm:'manageIdentity',
+  input:{acct:{t:'string',req:true},field:{t:'string',req:true},value:{t:'string',req:false}},
+  guard:i=>{const a=ACCT(i.acct);return !a?['not_found','Unknown account.']:a.role==='Admin'?['conflict','The Admin mapping cannot be changed here.']:i.field==='role'&&!IDP_ROLES.includes(i.value)?['validation_error','Unknown role.']:null},
+  handler:i=>{const a=ACCT(i.acct),v=i.value;
+    if(i.field==='role'){a.role=v;if(ROLE_POLICY[v].tenantScoped&&!a.tenant)a.tenant='Customer A';if(ROLE_POLICY[v].warehouseScoped&&!a.warehouse)a.warehouse=a.site&&a.site!=='Repair centre'?a.site:'Warehouse 1';if(!ROLE_POLICY[v].warehouseScoped)delete a.warehouse}
+    else{if(ROLE_POLICY[a.role].warehouseScoped){if(v==='Warehouse 1'||v==='Warehouse 2')a.warehouse=v}else a.site=v||undefined}
+    a.label=a.role+(ROLE_POLICY[a.role].tenantScoped&&a.tenant?' · '+a.tenant:'')+(a.warehouse?' · '+a.warehouse:'');
+    rbLog('identity.mapping.changed',S.idp.groups[a.id]+' → '+a.role+(a.warehouse||a.site?' · '+(a.warehouse||a.site):''));return{acct:a.id,label:a.label}}});
+defAction('access.removeUser',{title:'Remove directory user',verb:'remove users',desc:'Remove a user at the next provisioning sync (simulated).',risk:'commit',perm:'manageIdentity',
+  input:{id:{t:'string',req:true}},guard:i=>!S.idp.users.some(u=>u.id===i.id)?['not_found','No such user.']:null,idem:i=>'idp-rm:'+i.id,
+  handler:i=>{const u=S.idp.users.find(y=>y.id===i.id);S.idp.users=S.idp.users.filter(y=>y!==u);rbLog('user.deprovisioned',u.email+' removed in the directory; access removed at the provisioning sync (simulated)');return{email:u.email}}});
+defAction('access.setRoleSource',{title:'Set role source',verb:'change the role source',desc:'Read roles from app roles or from directory groups.',risk:'commit',perm:'manageIdentity',
+  input:{src:{t:'string',req:true}},handler:i=>{S.idp.src=i.src==='groups'?'groups':'approles';rbLog('identity.role_source',i.src);return{src:S.idp.src}}});
+defAction('access.setOutOfOffice',{title:'Add out-of-office delegation',verb:'change delegations',desc:'Let another Approver decide while the Approver is away.',risk:'commit',perm:'manageIdentity',
+  input:{to:{t:'string',req:true},from:{t:'string',req:true},until:{t:'string',req:true}},
+  guard:i=>{const u=S.idp.users.find(y=>y.id===i.to);return !u||idpRoleOf(u)!=='Approver'?['validation_error','Pick a delegate who already holds the Approver role.']:i.until<i.from?['validation_error','The end date must be on or after the start date.']:null},
+  handler:i=>{const u=S.idp.users.find(y=>y.id===i.to);S.idp.ooo.push({email:u.email,from:i.from,until:i.until});rbLog('delegation.out_of_office','Approver → '+u.email+' · '+i.from+' to '+i.until);return{email:u.email}}});
+defAction('access.clearOutOfOffice',{title:'Remove out-of-office delegation',verb:'change delegations',desc:'Remove an out-of-office delegation.',risk:'commit',perm:'manageIdentity',
+  input:{index:{t:'number',req:true}},handler:i=>{const d=S.idp.ooo.splice(i.index,1)[0];if(d)rbLog('delegation.out_of_office.removed',d.email);return{removed:!!d}}});
+/* ---- integration: sources, credentials, conflicts, import ---- */
+const srcReq={source_id:{t:'string',req:true,ex:'erp'}};
+const srcGuard=i=>SRC(i.source_id)?null:['not_found','No source '+i.source_id+'.'];
+defAction('source.sync',{title:'Sync a source',verb:'sync sources',desc:'Pull the latest records from a connected source now. Simulated adapter.',risk:'act',perm:'manageIntegrations',input:srcReq,render:false,
+  guard:i=>{const s=SRC(i.source_id);return !s?['not_found','No source '+i.source_id+'.']:s.syncing?['duplicate',s.name+' is already syncing']:s.status==='unavailable'?['conflict',s.name+' is not connected. Open it and complete the connection first.']:s.status==='manual'?['conflict',s.name+' is a manual import. Use the Manual import tab to load a file.']:null},
+  handler:(i,x)=>{const s=SRC(i.source_id);if(x.replay){if(s.status==='live'){s.lastSync=x.wall;s.freshMin=(Date.now()-x.wall)/60000;s.fresh=srcAge(s.freshMin)}return{source_id:s.id}}
+    startSync(s,false);return{source_id:s.id,name:s.name}}});
+defAction('source.reconnect',{title:'Refresh token and re-sync',verb:'reconnect sources',desc:'Refresh the feed token of a stale source and re-sync it (simulated).',risk:'act',perm:'manageIntegrations',input:srcReq,render:false,guard:srcGuard,
+  handler:(i,x)=>{const s=SRC(i.source_id);s.status='live';s.credAt=x.wall;s.lastSync=x.wall-60000;s.freshMin=1;s.fresh='1 min';s.compl=Math.max(s.compl,93);s.conf=Math.max(s.conf,90);s.c0=s.compl;s.k0=s.conf;if(s.note)s.note='';
+    const [a,b]=s.cfgVer.split('.');s.cfgVer=a+'.'+(+b+1);s.audit.unshift({ver:s.cfgVer,who:x.by,ts:x.wall,change:'Token refreshed and feed re-synced',prep:x.preparer||null});
+    srcEvent(s,'feed.restored','acknowledged','Token refreshed; latest records re-pulled (simulated)');smLogAdd(s,'Token refreshed. Feed restored.');
+    if(!x.replay)setTimeout(()=>startSync(s,false),300);return{source_id:s.id,ver:s.cfgVer}}});
+defAction('credentials.rotate',{title:'Rotate credentials',verb:'rotate credentials',desc:'Replace the secret for a source connection (simulated; the secret is never stored here).',risk:'commit',perm:'manageIntegrations',render:false,
+  input:{source_id:{t:'string',req:true},days:{t:'number',req:true}},guard:srcGuard,
+  handler:(i,x)=>{const s=SRC(i.source_id);s.credAt=x.wall;s.credDays=i.days;const [a,b]=s.cfgVer.split('.');s.cfgVer=a+'.'+(+b+1);s.audit.unshift({ver:s.cfgVer,who:x.by,ts:x.wall,change:'Credentials rotated'});
+    srcEvent(s,'credential.rotated','acknowledged','Secret rotated; old secret revoked (simulated)');smLogAdd(s,'Credentials rotated');return{source_id:s.id,ver:s.cfgVer,stale:s.status==='stale'}}});
+defAction('source.delete',{title:'Delete source',verb:'delete sources',desc:'Disconnect a source and remove its field mapping. Workflows that use it fail validation.',risk:'commit',perm:'manageIntegrations',input:srcReq,render:false,guard:srcGuard,
+  handler:(i,x)=>{const k=SOURCES.findIndex(y=>y.id===i.source_id),s=SOURCES[k];SOURCES.splice(k,1);delete MAPPINGS[i.source_id];
+    srcEvent(s,'connector.deleted','acknowledged',s.vendor+' disconnected and removed from the Source map');S.smLog.unshift({ts:x.wall,id:s.id,text:'Connection deleted',kind:'bad'});return{source_id:s.id,name:s.name,vendor:s.vendor}}});
+/* create or edit a connection and its field mapping; validation stays in the drawer, the change happens here */
+defAction('source.update',{title:'Save source configuration',verb:'change source connections',desc:'Save a new or changed connection, operations and field mapping as a new configuration version.',risk:'commit',perm:'manageIntegrations',render:false,
+  input:{mode:{t:'string',req:true},id:{t:'string',req:false},d:{t:'object',req:true},maps:{t:'array',req:true},ops:{t:'object',req:true},note:{t:'string',req:false}},
+  guard:i=>i.mode==='edit'&&!SRC(i.id)?['not_found','No source '+i.id+'.']:null,
+  handler:(i,x)=>{const d=i.d,s0=i.mode==='edit'?SRC(i.id):null,off=!!s0&&s0.status==='unavailable'&&/^Pending/.test(d.auth),read=i.ops.read.map(y=>y.trim()).filter(Boolean),write=i.ops.write.map(y=>y.trim()).filter(Boolean),csv=d.method==='file',maps=i.maps.map(m=>m.map(y=>String(y).trim()));
+    const cm=CONN_METHODS[d.method],iv=cm.sched?+d.interval:0;
+    const base={name:d.name.trim(),vendor:d.vendor,ver:String(d.ver||'').trim(),env:d.env,url:off?'':buildUrl(d),method:d.method,cfg:Object.assign({},d.cfg),mode:off?'Not connected':methodMode(d.method,iv),interval:iv,auth:d.auth,owner:String(d.owner||'').trim()||'Unassigned',read,write,rw:csv?'Read (import)':off?'—':write.length?(read.length?'Read / write':'Write'):'Read'};
+    const why=i.note?' ('+i.note+')':'';
+    if(i.mode==='new'){const t=SRC_TYPES[d.type],sd0=SRC_SEED[d.type];let id=d.type,n=2;while(SRC(id))id=d.type+'_'+n++;
+      const s=Object.assign({id,type:d.type,cat:t.cat,short:t.short,status:csv?'manual':'live',freshMin:null,compl:0,conf:0,c0:0,k0:0,inputs:sd0.inputs,authority:sd0.authority.slice(),step:sd0.step.slice(),records:0,cfgVer:'1.0',lastSync:csv?x.wall:null,fresh:csv?'just now':'—',updatedBy:x.by,updatedAt:x.wall,credAt:x.wall,credDays:180,runs:[],audit:[{ver:'1.0',who:x.by,ts:x.wall,change:'Connection created'+why,prep:x.preparer||null}]},base);
+      SOURCES.push(s);MAPPINGS[id]=maps;rebuildLookups();wfAddForSource(s);srcEvent(s,'connector.created','acknowledged',s.vendor+' connected as '+s.name+' via '+cm.label+' ('+s.env+')');smLogAdd(s,'Connection created via '+cm.label+'. Initial sync starting.');
+      return{mode:'new',source_id:id,name:s.name,vendor:s.vendor,csv}}
+    const s=s0,ch=[],cmp=(k,l)=>{if(String(s[k])!==String(base[k]))ch.push(l)};
+    cmp('name','display name');cmp('vendor','vendor product');cmp('ver','version');cmp('env','environment');cmp('method','connection method');cmp('url','endpoint');cmp('auth','authentication');cmp('interval','schedule');cmp('owner','owner');
+    if(JSON.stringify(s.cfg)!==JSON.stringify(base.cfg)&&s.method===base.method)ch.push('method settings');
+    if(read.join('|')!==s.read.join('|')||write.join('|')!==s.write.join('|'))ch.push('operations');
+    if(JSON.stringify(maps)!==JSON.stringify(MAPPINGS[s.id]||[]))ch.push('field mapping ('+maps.length+' rows)');
+    const wasOff=s.status==='unavailable'&&!off&&!csv;
+    if(!ch.length&&!wasOff&&!(csv&&s.status!=='manual')&&!(!csv&&s.status==='manual'))return afErr('conflict','No changes to save.');
+    Object.assign(s,base);MAPPINGS[s.id]=maps;
+    if(wasOff){s.status='live';ch.push('connected')}else if(csv&&s.status!=='manual'){s.status='manual';ch.push('switched to flat file import')}else if(!csv&&s.status==='manual'){s.status='live';ch.push('switched to a live feed')}
+    const [a,b]=s.cfgVer.split('.');s.cfgVer=a+'.'+(+b+1);s.updatedAt=x.wall;s.updatedBy=x.by;s.audit.unshift({ver:s.cfgVer,who:x.by,ts:x.wall,change:'Updated '+ch.join(', ')+why,prep:x.preparer||null});
+    rebuildLookups();srcEvent(s,'connector.updated','acknowledged','Config v'+s.cfgVer+': '+ch.join(', ')+why);smLogAdd(s,'Configuration saved · v'+s.cfgVer+' ('+ch.join(', ')+')');
+    return{mode:'edit',source_id:s.id,name:s.name,ver:s.cfgVer,changes:ch,wasOff}}});
+defAction('conflict.resolve',{title:'Resolve conflict',verb:'resolve conflicts',desc:'Resolve a source conflict by the authoritative source for that field.',risk:'act',perm:'manageIntegrations',
+  input:{id:{t:'string',req:true}},guard:i=>{const c=CONFLICTS.find(y=>y.id===i.id);return !c?['not_found','No conflict '+i.id+'.']:c.status!=='open'?['duplicate',i.id+' is already resolved']:null},idem:i=>'conf:'+i.id,
+  handler:(i,x)=>{const c=CONFLICTS.find(y=>y.id===i.id);c.status='resolved';c.by=x.by;c.prep=x.preparer||null;pushEvent({dir:'in',type:'conflict.resolved',caseId:null,decisionId:null,approval:null,ver:null,dest:c.a.src+' vs '+c.b.src,ack:'acknowledged',key:'conf-'+c.id.toLowerCase(),note:c.kind+' conflict on '+c.asset+' resolved by source authority '+c.authority});return{id:c.id,authority:c.authority,kind:c.kind}}});
+defAction('conflict.escalate',{title:'Escalate conflict',verb:'escalate conflicts',desc:'Escalate a conflict to the data owner; it stays open and dependent routes stay held.',risk:'act',perm:'manageIntegrations',render:false,
+  input:{id:{t:'string',req:true}},guard:i=>!CONFLICTS.some(y=>y.id===i.id)?['not_found','No conflict '+i.id+'.']:null,idem:i=>'conf-esc:'+i.id,
+  handler:(i,x)=>{const c=CONFLICTS.find(y=>y.id===i.id);c.escalated={by:x.by,at:x.now};pushEvent({dir:'out',type:'conflict.escalated',caseId:null,decisionId:null,approval:null,ver:null,dest:c.authority+' data owner',ack:'sent (simulated)',key:'esc-'+c.id.toLowerCase(),note:c.kind+' conflict on '+c.asset+' escalated',sim:true});return{id:c.id}}});
+defAction('import.commit',{title:'Load imported rows',verb:'import data',desc:'Load the valid rows of a controlled CSV import as manual evaluation data. Never partial rows; never an outbound instruction.',risk:'act',perm:'manageIntegrations',
+  input:{ok:{t:'number',req:true},err:{t:'number',req:true},hash:{t:'string',req:true}},guard:i=>i.ok<1?['conflict','No valid rows to load.']:null,idem:i=>'imp:'+i.hash,dupText:'These rows were already loaded',
+  handler:(i,x)=>{if(S.csv)S.csv.committed=true;(S.imports||(S.imports=[])).push({at:x.now,ok:i.ok,err:i.err,by:x.by});pushEvent({dir:'in',type:'import.evaluated',caseId:null,decisionId:null,approval:null,ver:null,dest:'Controlled CSV import',ack:'acknowledged',key:'imp-'+i.hash.slice(0,6).toLowerCase(),note:i.ok+' rows loaded as manual evaluation data; no outbound instruction possible'});return{ok:i.ok}}});
+/* ---- source tables (one model per source) ---- */
+defAction('tables.update',{title:'Update source tables',verb:'change source tables',desc:'Add, edit or delete a table, or add or remove a foreign key, in a source table model.',risk:'act',perm:'manageIntegrations',
+  input:{src:{t:'string',req:true},op:{t:'string',req:true},table:{t:'object',req:false},name:{t:'string',req:false},fk:{t:'array',req:false},index:{t:'number',req:false}},
+  guard:i=>!tgModel(i.src)?['not_found','No table model for '+i.src+'.']:null,
+  handler:(i,x)=>{const m=tgModel(i.src);
+    if(i.op==='add'){const t=i.table;if(m.t.some(y=>y.n.toLowerCase()===t.n.toLowerCase()))return afErr('duplicate',t.n+' is already in this model');m.t.push(Object.assign({},t,{cols:t.cols.map(c=>c.slice()),prep:x.preparer||null}));return{op:'add',name:t.n}}
+    if(i.op==='edit'){const t=m.t.find(y=>y.n===i.name);if(!t)return afErr('not_found','No table '+i.name+'.');const old={};t.cols.forEach(c=>old[c[0]]=c[1]);const cols=i.table.cols;t.cols=cols.map(c=>[c,old[c]||'']);t.desc=i.table.desc||t.desc;if(i.table.cl)t.cl=i.table.cl;
+      m.fk=m.fk.filter(f=>[f[0],f[1]].every(r=>{const [tn,cn]=r.split('.');return tn!==i.name||cols.includes(cn)}));return{op:'edit',name:i.name}}
+    if(i.op==='delete'){const k=m.t.findIndex(y=>y.n===i.name);if(k<0)return afErr('not_found','No table '+i.name+'.');m.t.splice(k,1);const gone=m.fk.filter(f=>f[0].split('.')[0]===i.name||f[1].split('.')[0]===i.name);m.fk=m.fk.filter(f=>!gone.includes(f));return{op:'delete',name:i.name,fks:gone.length}}
+    if(i.op==='fkAdd'){const f=i.fk;if(m.fk.some(y=>y[0]===f[0]&&y[1]===f[1]))return afErr('duplicate','That foreign key already exists');m.fk.push([f[0],f[1],f[2]||'Foreign key link']);return{op:'fkAdd',from:f[0],to:f[1]}}
+    if(i.op==='fkDel'){const f=m.fk.splice(i.index,1)[0];return f?{op:'fkDel',from:f[0],to:f[1]}:afErr('not_found','No such foreign key.')}
+    if(i.op==='describe'){const t=m.t.find(y=>y.n===i.name);if(!t)return afErr('not_found','No table '+i.name+'.');if(i.table.desc)t.desc=i.table.desc;if(i.table.colDesc)t.cols.forEach(c=>{if(i.table.colDesc[c[0]])c[1]=i.table.colDesc[c[0]]});return{op:'describe',name:i.name}}
+    return afErr('validation_error','Unknown table operation '+i.op+'.')}});
+/* ---- workflows ---- */
+const wfReq={id:{t:'string',req:true}};
+const wfGuard=i=>{wfInit();return WFW(i.id)?null:['not_found','No workflow '+i.id+'.']};
+const wfBump=w=>{const [a,b]=w.ver.split('.');w.ver=a+'.'+(+b+1)};
+defAction('workflow.save',{title:'Save workflow',verb:'change workflows',desc:'Save a workflow draft as a new version. Does not publish it.',risk:'act',perm:'manageWorkflows',
+  input:{id:{t:'string',req:true},name:{t:'string',req:true},owner:{t:'string',req:false},trig:{t:'object',req:false},graph:{t:'object',req:true},note:{t:'string',req:false}},guard:i=>wfGuard(i)||(!i.name.trim()?['validation_error','Enter a workflow name before saving.']:null),
+  handler:(i,x)=>{wfInit();const w=WFW(i.id);w.graph=JSON.parse(JSON.stringify(i.graph));w.name=i.name.trim();if(i.owner!=null)w.owner=i.owner;if(i.trig)w.trig=Object.assign({},i.trig);wfBump(w);w.updated=x.wall;w.dirty=false;w.warned=false;w.saved=wfSnap(w);
+    (w.hist||(w.hist=[])).unshift({ver:w.ver,by:x.by,at:x.now,note:i.note||'Saved',prep:x.preparer||null});return{id:w.id,ver:w.ver,name:w.name}}});
+defAction('workflow.publish',{title:'Publish workflow',verb:'publish workflows',desc:'Publish a validated workflow so it runs on its trigger. Only a person can publish.',risk:'commit',perm:'manageWorkflows',
+  input:{id:{t:'string',req:true},graph:{t:'object',req:false}},guard:i=>{const g=wfGuard(i);if(g)return g;wfInit();const w=WFW(i.id);if(w.status==='published')return['duplicate',w.name+' is already published'];const er=wfValidate(i.graph||wfGraphOf(w),w.kind).filter(e=>e.sev==='error');return er.length?['conflict','Cannot publish: '+er.length+' error'+(er.length>1?'s':'')+' in the checks. Fix them first.']:null},
+  handler:(i,x)=>{wfInit();const w=WFW(i.id);if(i.graph&&(w.dirty||JSON.stringify(i.graph)!==JSON.stringify(w.graph))){w.graph=JSON.parse(JSON.stringify(i.graph));w.saved=wfSnap(w);wfBump(w);w.dirty=false}
+    w.status='published';w.updated=x.wall;(w.hist||(w.hist=[])).unshift({ver:w.ver,by:x.by,at:x.now,note:'Published'});return{id:w.id,ver:w.ver,name:w.name,trig:trigText(w.trig)}}});
+defAction('workflow.setStatus',{title:'Pause, resume or unpublish a workflow',verb:'change workflow status',desc:'Pause, resume or unpublish a published workflow.',risk:'commit',perm:'manageWorkflows',
+  input:{id:{t:'string',req:true},status:{t:'string',req:true}},guard:i=>wfGuard(i)||(!['draft','paused','published'].includes(i.status)?['validation_error','Unknown status.']:i.status==='published'&&wfValidate(wfGraphOf(WFW(i.id)),WFW(i.id).kind).some(e=>e.sev==='error')?['conflict','Cannot publish '+WFW(i.id).name+': '+wfValidate(wfGraphOf(WFW(i.id)),WFW(i.id).kind).find(e=>e.sev==='error').msg]:null),
+  handler:(i,x)=>{wfInit();const w=WFW(i.id),was=w.status;w.status=i.status;w.updated=x.wall;return{id:w.id,was,status:w.status,name:w.name}}});
+defAction('workflow.create',{title:'Create workflow draft',verb:'create workflows',desc:'Create a new workflow draft: ingest, outbound, decision or blank.',risk:'act',perm:'manageWorkflows',
+  input:{type:{t:'string',req:true},src:{t:'string',req:false},ch:{t:'string',req:false},name:{t:'string',req:false},graph:{t:'object',req:false},desc:{t:'string',req:false}},
+  guard:i=>(i.type==='ingest'||i.type==='out')&&!SRC(i.src)?['validation_error','Choose a system first.']:null,
+  handler:(i,x)=>{wfInit();const s=SRC(i.src);let k=100;while(S.wf.list.some(y=>y.id==='WF-'+k))k++;k=Math.max(k,100+S.wf.list.length);while(S.wf.list.some(y=>y.id==='WF-'+k))k++;
+    const nm=(i.name||'').trim()||(i.type==='ingest'?'Ingest · '+s.vendor:i.type==='out'?'Outbound · '+s.vendor:i.type==='dec'?'Decision workflow':'New pipeline');
+    const base=i.type==='ingest'?{cat:'Ingest',kind:'pipe',tpl:{k:'ingest',src:s.id},src:s.id,owner:s.owner,trig:s.interval?{t:'schedule',min:s.interval}:{t:'event'},desc:s.name+' into the '+SRC_TYPES[s.type].target+' model through validation and field mapping.'}
+     :i.type==='out'?{cat:'Outbound',kind:'pipe',tpl:{k:'out',src:s.id,ch:i.ch},src:s.id,owner:s.owner,trig:{t:'approval'},desc:'Approved instruction to '+s.name+'.'}
+     :i.type==='dec'?{cat:'Decision',kind:'dec',tpl:{k:'dec',id:'standard'},src:null,owner:'Decision Services',trig:{t:'case'},desc:WF_DEC.standard.desc}
+     :{cat:'Ingest',kind:'pipe',tpl:{k:'blank'},src:null,owner:'Unassigned',trig:{t:'manual'},desc:'Blank pipeline. Drag steps from the left and connect them.'};
+    const w=Object.assign({id:'WF-'+k,name:nm,status:'draft',ver:'0.1',graph:null,saved:null,dirty:false,running:false,updated:x.wall,runsN:0,okN:0,last:null,prep:x.preparer||null},base);
+    if(i.desc)w.desc=i.desc;if(i.graph){w.graph=JSON.parse(JSON.stringify(i.graph));w.saved=wfSnap(w)}
+    S.wf.list.push(w);return{id:w.id,name:nm}}});
+defAction('workflow.duplicate',{title:'Duplicate workflow',verb:'create workflows',desc:'Copy a workflow as a new draft (clone and adapt).',risk:'act',perm:'manageWorkflows',input:Object.assign({name:{t:'string',req:false}},wfReq),guard:wfGuard,
+  handler:(i,x)=>{wfInit();const w=WFW(i.id);let n=100;while(S.wf.list.some(y=>y.id==='WF-'+n))n++;
+    const c=Object.assign({},w,{id:'WF-'+n,name:i.name||w.name+' (copy)',status:'draft',ver:'0.1',graph:JSON.parse(JSON.stringify(wfGraphOf(w))),dirty:false,running:false,last:null,runsN:0,okN:0,trig:Object.assign({},w.trig),updated:x.wall,warned:false,hist:[],prep:x.preparer||null});c.saved=wfSnap(c);S.wf.list.push(c);return{id:c.id,name:c.name}}});
+defAction('workflow.delete',{title:'Delete workflow',verb:'delete workflows',desc:'Delete a workflow.',risk:'commit',perm:'manageWorkflows',input:wfReq,guard:wfGuard,
+  handler:i=>{wfInit();const k=S.wf.list.findIndex(y=>y.id===i.id),w=S.wf.list[k];S.wf.list.splice(k,1);if(S.wf.cur===w){S.wf.cur=null;S.wf.sel=null}return{id:w.id,name:w.name}}});
+defAction('workflow.run',{title:'Run workflow now',verb:'run workflows',desc:'Start a manual run of a workflow (simulated).',risk:'act',perm:'manageWorkflows',input:wfReq,render:false,
+  guard:i=>{const g=wfGuard(i);if(g)return g;wfInit();const w=WFW(i.id);if(w.running)return['duplicate',w.name+' is already running'];if(w.status==='draft'){const o=wfSimOutcome(w);if(o.state==='failed')return['conflict',w.name+' is a draft with errors: '+o.note]}return null},
+  handler:(i,x)=>{wfInit();const w=WFW(i.id);if(!x.replay)wfStartRun(w,'Manual');return{id:w.id,name:w.name}}});
+/* exact per-line actuals where the seed has them (PR hazard: lines no longer have to round to $10) */
+var LINE_EXACT={'RT-1049|Expected sale proceeds':231,'RT-1049|Fees and freight':-36,'RT-1049|Unsold-risk allowance':-18,'RT-1049|Light refurbishment (chuck, brushes)':-57};
+/* ===== Read actions: typed answers built from the same functions the screens use. The agent's numbers come only from these outputs. ===== */
+const AF_STAGE={awaiting_approval:'Awaiting approval',approved:'Approved · handing off',executing:'Handed off',reeval:'Re-evaluate',closed:'Closed',none:'Needs evidence'};
+const afStageLabel=c=>c.stage==='none'?(c.blocked?'Needs evidence':'Needs review'):AF_STAGE[c.stage]||c.stage;
+const afDays=(a,b)=>Math.max(0,Math.round((new Date(b||AS_OF)-new Date(a))/864e5));
+/* ranked rows under the base assumptions, whatever the sliders on screen say */
+function afBaseRows(c){const keep=S.scen,ka=S.ti.apply;try{S.scen={purchase:1,cost:1,service:1,market:1,demandOff:false};S.ti.apply='';return tiRows(c,scenRoutes(c))}finally{S.scen=keep;S.ti.apply=ka}}
+function afRec(c){const r=c.chosen||c.recommendation;return r?{plan:r.plan,route:r.id,net:r.net,p10:r.p10,p90:r.p90,conf:tiConf(c,r),demand:r.demandStatus}:null}
+/* why a case deserves attention first: value at stake, waiting time, missing evidence, a closing window */
+function afPriority(c){const r=c.recommendation,why=[];let s=0;const age=afDays(c.received,asOfNow());
+  if(r&&c.stage==='awaiting_approval'){s+=r.net;why.push(money(r.net)+' waiting for a decision')}
+  if(c.blocked){const v=c.facts&&/\$([\d,]+)–\$([\d,]+)/.exec(c.facts.join(' '));s+=v?+v[1].replace(/,/g,''):500;why.push('missing: '+jgLc(c.blocked.action.replace(/^Request /,'')))}
+  if(c.stage==='reeval'){s+=r?r.net*.6:300;why.push('declined or changed: re-evaluate')}
+  if(c.submitted)why.push('submitted by '+c.submitted.by);
+  s*=1+Math.min(age,14)/14;if(age>=5)why.push('received '+age+' days ago');
+  if(r&&r.demandStatus==='confirmed'&&c.timing&&/Day/.test(c.timing)){s*=1.15;why.push('confirmed demand, '+c.timing)}
+  return{score:Math.round(s),why}}
+function afCaseRow(c){const ev=c.evidence||[],miss=ev.filter(e=>e.state!=='ready');return{id:c.id,asset:c.assetId,product:asModel(c),cls:c.cls,qty:c.qty,owner:c.owner,location:c.location,stage:c.stage,stage_label:afStageLabel(c),grade:c.grade,assessment:c.assessment,
+  received:new Date(c.received).toISOString().slice(0,10),evidence_ready:ev.length-miss.length,evidence_total:ev.length,missing:miss.map(e=>e.label),blocked:c.blocked?{gate:c.blocked.gateName,reason:c.blocked.reason,action:c.blocked.action,owner:c.blocked.owner}:null,
+  recommendation:afRec(c),submitted:c.submitted?c.submitted.by:null,approval:c.approval?c.approval.ref:null,run:typeof afRunOf==='function'?afRunOf(c):null}}
+const caseFilterIn={location:{t:'string'},owner:{t:'string'},stage:{t:'string'},missing:{t:'boolean'},evidence:{t:'string'},product:{t:'string'},cls:{t:'string'},received_within_days:{t:'number'},assessment:{t:'string'},route:{t:'string'},q:{t:'string'},sort:{t:'string'},limit:{t:'number'}};
+function afCasesIn(i){const q=(i.q||'').toLowerCase();return visCases().filter(c=>(!i.location||c.location===i.location)&&(!i.owner||c.owner===i.owner)&&(!i.stage||c.stage===i.stage||afStageLabel(c)===i.stage)&&(!i.cls||c.cls===i.cls)
+  &&(!i.product||asModel(c).toLowerCase().includes(i.product.toLowerCase())||c.product.toLowerCase().includes(i.product.toLowerCase()))&&(i.missing==null||(!!c.blocked||(c.evidence||[]).some(e=>e.state!=='ready'))===i.missing)
+  &&(!i.evidence||(c.evidence||[]).some(e=>e.k===i.evidence&&e.state!=='ready'))&&(!i.assessment||c.assessment===i.assessment)&&(!i.received_within_days||afDays(c.received,asOfNow())<=i.received_within_days)
+  &&(!i.route||(c.recommendation&&c.recommendation.id===i.route))&&(!q||(c.id+' '+c.assetId+' '+asModel(c)+' '+c.owner+' '+c.location).toLowerCase().includes(q)))}
+defAction('cases.list',{title:'List returned assets',desc:'List returned-asset cases in your scope with filters (warehouse, owner, stage, missing evidence, product, received within N days) and a sort.',risk:'read',input:caseFilterIn,
+  handler:i=>{let l=afCasesIn(i);const total=l.length;
+    if(i.sort==='priority')l=l.map(c=>({c,p:afPriority(c)})).sort((a,b)=>b.p.score-a.p.score).map(x=>Object.assign(afCaseRow(x.c),{priority:x.p.score,why:x.p.why}));
+    else{if(i.sort==='value')l.sort((a,b)=>((b.recommendation||{}).net||0)-((a.recommendation||{}).net||0));else if(i.sort==='received')l.sort((a,b)=>new Date(a.received)-new Date(b.received));l=l.map(afCaseRow)}
+    const f=Object.entries(i).filter(([k,v])=>v!=null&&v!==''&&!['sort','limit'].includes(k)).map(([k,v])=>({k,v}));
+    return{rows:l.slice(0,i.limit||25),total,filters:f}}});
+defAction('case.get',{title:'Get a case',desc:'Get one case: asset, owner, location, stage, grade, evidence status, recommendation and where it is in its journey.',risk:'read',scope:'case',input:{case_id:{t:'string',req:true,ex:'RT-1048'}},
+  handler:i=>{const c=CASE_BY_ID[i.case_id],R=caseRul(c);return Object.assign(afCaseRow(c),{age_years:c.age,mfr:c.mfr,life:c.engLife,cert_months:R?R.certMonths:null,est_life:R?R.estLow+'–'+R.estHigh+' months':null,timing:c.timing||null,facts:(c.facts||[]).slice(),snapshot:c.snapshot?c.snapshot.id:null,priority:afPriority(c)})}});
+defAction('case.evidence',{title:'Get case evidence',desc:'Evidence items for a case with source system, record, freshness and state.',risk:'read',scope:'case',input:{case_id:{t:'string',req:true}},
+  handler:i=>{const c=CASE_BY_ID[i.case_id];return{case_id:c.id,items:(c.evidence||[]).map(e=>{const p=provFor(c,e);return{k:e.k,label:e.label,state:e.state,source:e.source,system:p.sourceName,record:p.record||null,fetched:p.fetchedAt?new Date(p.fetchedAt).toISOString():null,fresh:e.fresh,note:e.note||'',badge:'Retrieved'}})}}});
+defAction('case.routes',{title:'Compare routes',desc:'Every route for a case: eligible ones ranked by predicted net with range and demand; excluded ones with the gate that failed; the tie-break if two are close.',risk:'read',scope:'case',input:{case_id:{t:'string',req:true}},
+  handler:i=>{const c=CASE_BY_ID[i.case_id],el=c.routes.filter(r=>!r.excluded).sort((a,b)=>b.net-a.net),tb=tieBreak(c,afBaseRows(c));
+    return{case_id:c.id,recommended:afRec(c),blocked:c.blocked?{gate:c.blocked.gateName,reason:c.blocked.reason}:null,
+      eligible:el.map((r,k)=>({rank:k+1,plan:r.plan,route:r.id,net:r.net,p10:r.p10,p90:r.p90,demand:r.demandLabel,demand_status:r.demandStatus,gates_passed:r.gates.filter(g=>g==='pass').length,terms:r.terms.map(t=>({label:t.label,amt:t.amt,kind:t.kind})),why:r.why||''})),
+      excluded:c.routes.filter(r=>r.excluded).map(r=>({plan:r.plan,route:r.id,gate:GATES[r.failGate]||'Demand fit',reason:r.failReason})),
+      tie:tb&&tb.near?{gap:tb.gap,text:tieText(tb),preferred:tb.preferred.r.plan,decided_by:tb.decidedBy}:null,
+      flips:flips(c).slice(0,3).map(f=>({txt:f.txt,to:f.to}))}}});
+defAction('case.whatIf',{title:'What-if',desc:'Re-rank a case under changed assumptions (purchase price, prep and fees, service, market as multipliers; confirmed demand off). Never stored; the approved decision is unchanged.',risk:'read',scope:'case',
+  input:{case_id:{t:'string',req:true},purchase:{t:'number'},cost:{t:'number'},service:{t:'number'},market:{t:'number'},demandOff:{t:'boolean'}},
+  handler:i=>{const c=CASE_BY_ID[i.case_id],keep=S.scen,keepA=S.ti.apply;
+    try{S.scen={purchase:i.purchase||1,cost:i.cost||1,service:i.service||1,market:i.market||1,demandOff:!!i.demandOff};S.ti.apply='';const sr=scenRoutes(c);S.scen={purchase:1,cost:1,service:1,market:1,demandOff:false};const b=scenRoutes(c);
+      const base=b.el[0],sim=sr.el[0],rows=sr.all.filter(x=>!x.r.excluded).map(x=>({plan:x.r.plan,base:x.r.net,sim:x.sn,eligible:!x.ex,why:x.why||''})).sort((a,b)=>b.sim-a.sim);
+      return{case_id:c.id,assumptions:{purchase:i.purchase||1,cost:i.cost||1,service:i.service||1,market:i.market||1,demandOff:!!i.demandOff},base:base?{plan:base.r.plan,net:base.sn}:null,sim:sim?{plan:sim.r.plan,net:sim.sn}:null,
+        rank_changed:!!(base&&sim&&base.r!==sim.r),change:base&&sim?sim.sn-base.sn:0,rows,decision_unchanged:true}}
+    finally{S.scen=keep;S.ti.apply=keepA}}});
+defAction('demand.find',{title:'Find demand',desc:'Internal and external demand matching a case, confirmed separated from forecast.',risk:'read',scope:'case',input:{case_id:{t:'string',req:true}},
+  handler:i=>{const c=CASE_BY_ID[i.case_id],M=caseDemand(c);return{case_id:c.id,matched:M?{order:M.order||null,site:M.site||null,confirmed:!!M.confirmed,lease:M.lease||null}:null,
+    demand:c.routes.filter(r=>r.demandLabel&&!/^—|No /.test(r.demandLabel)).map(r=>({route:r.id,plan:r.plan,demand:r.demandLabel,status:r.demandStatus,eligible:!r.excluded}))}}});
+defAction('pool.optimize',{title:'Optimise a pool',desc:'Allocate scarce assets across competing demand without double allocation; compares with deciding each asset alone.',risk:'read',scope:'case',input:{case_id:{t:'string',req:true}},
+  guard:i=>afCaseOf(i).pool?null:['not_found',i.case_id+' is not in a pool.'],
+  handler:i=>{const c=CASE_BY_ID[i.case_id],p=POOLS[c.id]||c.poolResult||solvePool(c.pool);return{case_id:c.id,greedy:p.greedy.total,optimal:p.optimal.total,uplift:p.uplift,allocation:p.optimal.alloc,note:c.pool.note||''}}});
+/* analytics: closed decisions in scope, by month; used for "why did recovery drop" and "explain this number" */
+function afMonthAgg(rows,mi){const r=rows.filter(x=>x.mi===mi&&x.status==='reconciled');const by={};ROUTES.forEach(t=>by[t.id]=sum(r.filter(x=>x.route===t.id).map(x=>x.actual)));return{n:r.length,total:sum(r.map(x=>x.actual)),base:sum(r.map(x=>x.baseline)),by}}
+defAction('analytics.query',{title:'Query analytics',desc:'Recovery, avoided spend, uplift, cycle time or variance over closed decisions in scope, by month and route, with the method and baseline.',risk:'read',
+  input:{metric:{t:'string',req:true,ex:'recovery'},month:{t:'number'},compare:{t:'number'},by:{t:'string'}},
+  handler:i=>{const rows=visRows(),m=i.month!=null?i.month:11,p=i.compare!=null?i.compare:m-1,a=afMonthAgg(rows,m),b=afMonthAgg(rows,p);
+    const drivers=ROUTES.map(t=>({route:t.name,now:a.by[t.id],before:b.by[t.id],change:a.by[t.id]-b.by[t.id]})).filter(d=>d.now||d.before).sort((x,y)=>x.change-y.change);
+    const mm=metrics(rows);
+    return{metric:i.metric,month:MONTHS[m],compare:MONTHS[p],now:i.metric==='uplift'?a.total-a.base:a.total,before:i.metric==='uplift'?b.total-b.base:b.total,count_now:a.n,count_before:b.n,drivers,
+      method:'Sum of actual net recovery on reconciled closed decisions in your tenants; pending, cancelled and expired decisions are excluded.',baseline:'Sell-or-scrap baseline per decision',
+      totals:{recovery:mm.act,baseline:mm.base,uplift:mm.uplift,avoided:mm.avoided,cycle_days:mm.days,pending:mm.pend},series:MONTHS.map((l,k)=>({month:l,value:afMonthAgg(rows,k).total}))}}});
+defAction('audit.search',{title:'Search the audit trail',desc:'What happened to a case or record: events and actions with time, performer, preparer and reference.',risk:'read',
+  input:{case_id:{t:'string'},q:{t:'string'},since_days:{t:'number'},prepared_by_agent:{t:'boolean'},limit:{t:'number'}},
+  guard:i=>{if(!i.case_id)return null;const c=CASE_BY_ID[i.case_id];return c&&(!tenantOK(c.owner)||!locOK(c))?['tenant_boundary',afScopeErr(c).error.message]:null},
+  handler:i=>{const since=i.since_days?addDays(asOfNow(),-i.since_days):null,q=(i.q||'').toLowerCase();
+    const l=EVENTS.filter(e=>(!i.case_id||e.caseId===i.case_id)&&(!since||new Date(e.ts)>=since)&&(!i.prepared_by_agent||e.prep)&&(!q||(e.type+' '+(e.note||'')+' '+(e.dest||'')).toLowerCase().includes(q))&&(!e.caseId||(CASE_BY_ID[e.caseId]?tenantOK(CASE_BY_ID[e.caseId].owner)&&locOK(CASE_BY_ID[e.caseId]):true)))
+      .sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+    return{case_id:i.case_id||null,total:l.length,items:l.slice(-(i.limit||30)).map(e=>({id:e.id,ts:new Date(e.ts).toISOString(),type:e.type,by:e.by||e.dest||'',prep:e.prep||null,run:e.run||null,note:e.note||'',ref:e.ref||e.approval||null,sim:!!e.sim||/simulated/.test(e.ack||''),dir:e.dir}))}}});
+defAction('sources.health',{title:'Source health',desc:'Each connected source with status, freshness, mapping coverage, credential age and its last sync result.',risk:'read',
+  input:{source_id:{t:'string'}},
+  handler:i=>({sources:SOURCES.filter(s=>!i.source_id||s.id===i.source_id).map(s=>{const cred=Math.floor((Date.now()-s.credAt)/864e5),maps=(MAPPINGS[s.id]||[]).length,last=s.runs&&s.runs[0],iss=[];
+    if(s.status==='stale')iss.push('Feed token expired; last fresh data still in use');if(s.status==='unavailable')iss.push('Not connected');if(s.status!=='unavailable'&&!maps)iss.push('No field mapping');if(cred>s.credDays-14)iss.push('Credentials expire in '+Math.max(0,s.credDays-cred)+' days');if(last&&last.result==='failed')iss.push('Last sync failed: '+last.note);
+    return{id:s.id,name:s.name,vendor:s.vendor,status:s.status,fresh:srcAgeText(s),mappings:maps,cred_days:cred,cred_limit:s.credDays,last:last?{result:last.result,note:last.note,rows:last.rows}:null,issues:iss}})})});
+defAction('workflow.validate',{title:'Validate workflow',desc:'Run the workflow checks: errors and warnings with the step they belong to.',risk:'read',input:{id:{t:'string',req:true}},guard:wfGuard,
+  handler:i=>{const w=WFW(i.id),v=wfValidate(wfGraphOf(w),w.kind);return{id:w.id,name:w.name,errors:v.filter(x=>x.sev==='error').map(x=>({msg:x.msg,node:x.node||null})),warnings:v.filter(x=>x.sev!=='error').map(x=>({msg:x.msg,node:x.node||null}))}}});
+/* ===== UI adapters: each button reads its form, calls invoke() and reports the result. Handlers above never touch the page. ===== */
+const afShowErr=(sel,r)=>{const e=sel&&$(sel);if(e){e.textContent=r.error.message;e.hidden=false}else toast(r.error.message,4200);return r};
+const afToast=r=>{if(!r.ok)toast(r.error.message,4200);return r};
+/* the simulated enterprise system acknowledges the first step shortly after approval */
+function afAutoAck(id,step,ms){setTimeout(()=>{const c=CASE_BY_ID[id];if(c&&c.exec&&c.exec.steps[step]&&c.exec.steps[step].state==='active')invoke('adapter.acknowledge',{case_id:id,step},{via:'system',actor:AF_SYS})},ms==null?1600:ms)}
+ACT.confirmApprove=id=>{const c=CASE_BY_ID[id],plan=($('#ap-route')||{}).value,ov=!!(c.recommendation&&plan&&plan!==c.recommendation.plan);
+  const r=invoke(ov?'decision.override':'decision.approve',{case_id:id,route:plan,rationale:(($('#ap-why')||{}).value||'').trim(),reviewed:!!($('#ap-ack')||{}).checked,spend:+(($('#ap-spend')||{}).value||0),terms:($('#ap-terms')||{}).value||''});
+  if(!r.ok)return afShowErr(r.error.code==='validation_error'?'#ap-err':null,r);
+  closeModal();toast(`${r.output.ref} created. Instruction handed to ${r.output.sent_to.split(' · ')[0]} (simulated).`);afAutoAck(id,0)};
+ACT.advance=id=>{const r=invoke('adapter.acknowledge',{case_id:id},{via:'system'});if(!r.ok)return afToast(r);const o=r.output;if(parse().a===id)toast(`${o.label}: acknowledged by ${o.by} · ${o.ref_label} (simulated)`)};
+ACT.replay=id=>{const r=invoke('instruction.resend',{case_id:id});if(!r.ok)return afToast(r);toast('Duplicate delivery ignored. The idempotency key already exists, so nothing was created twice.',4200)};
+ACT.confirmOutcome=id=>{const r=invoke('outcome.confirm',{case_id:id});if(!r.ok)return afToast(r);toast('Outcome confirmed and linked to the decision.')};
+ACT.reqEvidence=id=>{const r=invoke('evidence.request',{case_id:id});if(!r.ok)return afToast(r);toast(`${r.output.what} sent to ${r.output.to} (${r.output.ref}, simulated).`)};
+ACT.simResult=id=>{const r=invoke('evidence.recordResult',{case_id:id});if(!r.ok)return afToast(r);const o=r.output;toast(o.recommendation?`${id} is ready. Recommendation: ${o.recommendation} at ${money(o.net)}.`:`${id} assessed, but no route passes every gate.`,4200)};
+ACT.reeval=id=>{const r=invoke('case.reevaluate',{case_id:id});if(!r.ok)return afToast(r);const o=r.output;toast(o.now?`Re-evaluated. New recommendation: ${o.now} at ${money(o.net)}${o.was&&o.was!==o.now?` (was ${o.was})`:''}.`:'Re-evaluated. No route passes every gate.',4200)};
+ACT.tiSubmit=id=>{const r=invoke('decision.submit',{case_id:id});if(!r.ok)return r;toast(id+' submitted for review. An Approver approves, overrides or declines it.',4200)};
+ACT.declineDecisionOk=id=>{const r=invoke('decision.decline',{case_id:id,reason:(($('#dc-why')||{}).value||'').trim()});if(!r.ok)return afShowErr(r.error.code==='validation_error'?'#dc-err':null,r);closeModal();toast(id+' declined and sent back for re-evaluation.',4200)};
+ACT.tiSave=()=>{if(!can('scenario'))return toast('Your role cannot save scenarios.');const c=tiCase(),sr=scenRoutes(c),s=S.scen,parts=[['purchase','purchase price'],['cost','prep and fees'],['service','service'],['market','market']].filter(x=>s[x[0]]!==1).map(x=>x[1]+' '+tiAdj(s[x[0]]));
+  const n=(S.ti.saved[c.id]||[]).length;const r=invoke('scenario.save',{case_id:c.id,name:'Scenario '+(n+1)+(parts.length?': '+parts.join(', '):': base'),top:sr.el[0]?sr.el[0].r.plan+' · '+money(sr.el[0].sn):'No eligible pathway',scen:Object.assign({},s),w:Object.assign({},S.ti.w)});
+  if(!r.ok)return afToast(r);toast('Scenario saved for '+c.id+'.')};
+ACT.tiDelSc=id=>{const c=tiCase();afToast(invoke('scenario.delete',{case_id:c.id,id}))};
+ACT.notifyOk=id=>{if(!can('notify'))return;const x=exFind(id),to=(($('#nt-to')||{}).value)||'',msg=(($('#nt-msg')||{}).value||'').trim();
+  if(!x)return toast('That exception is no longer open.');
+  const r=invoke('notify.send',{ex_id:x.id,title:x.wh+' · '+x.title,to,sev:($('#nt-sev')||{}).value||x.sev,msg,ids:x.ids.slice(0,40)});
+  if(!r.ok)return afShowErr(r.error.code==='validation_error'?'#nt-err':null,r);closeModal();toast('Notification sent to '+r.output.to+' (simulated).',4200)};
+ACT.notifyAck=id=>{const r=invoke('notify.acknowledge',{id});if(r.ok)toast('Acknowledged. The sender sees it is in hand.')};
+ACT.cmAdd=k=>{if(!can('comment'))return;const r=invoke('comment.add',{key:k,text:(($('#cmText')||{}).value||'').trim()});if(!r.ok)return afShowErr('#cmErr',r);
+  const b=$('#cmBox');b&&(b.outerHTML=cmHTML(k,b.dataset.label));toast('Comment posted.');if(k.indexOf('src:')===0&&S.sd)sdRender()};
+ACT.tenantReqOk=()=>{const r=invoke('access.requestTenant',{tenant:($('#tr-t')||{}).value||'',reason:(($('#tr-why')||{}).value||'').trim()});if(!r.ok)return afShowErr('#tr-err',r);closeModal();toast(r.output.id+' sent. An Approver or Admin decides.',4200)};
+ACT.mcpProposeOk=()=>{const v=k=>(($('#mp-'+k)||{}).value||'').trim();
+  const r=invoke('mcp.propose',{name:v('n'),owner:v('o'),purpose:v('p'),tools:v('t').split(',').map(x=>x.trim()).filter(Boolean),access:v('a')||'read',data:v('d')});
+  if(!r.ok){if(r.error.code==='validation_error'&&/"owner"/.test(r.error.message))r.error.message='Enter the vendor or owner.';if(r.error.code==='validation_error'&&/"data"/.test(r.error.message))r.error.message='Say what data it touches.';return afShowErr('#mp-err',r)}
+  closeModal();toast(r.output.id+' submitted. It waits for an Approver or Admin.',4200)};
+ACT.reqDecideOk=arg=>{const [id,dec]=arg.split('|'),r=invoke('access.decideRequest',{id,decision:dec,note:(($('#rq-note')||{}).value||'').trim()});
+  if(!r.ok){if(r.error.code==='validation_error')return afShowErr('#rq-err',r);return}const q=S.reqs.find(x=>x.id===id);
+  closeModal();toast(id+' '+r.output.status+'.'+(q.kind==='tenant'&&q.status==='approved'?' '+q.by+' can now open '+q.tenant+'.':''),4200)};
+ACT.delegToggle=(v,el)=>{const k=el.dataset.arg,d=DELEG.find(x=>x[0]===k),r=invoke('access.setDelegation',{k,on:!!v});if(!r.ok){afToast(r);route(true);return}toast(v?'The Approver can now decide '+dlab(d)+'.':d[1]+' are now decided by Admin only.',4200)};
+ACT.idpSync=()=>{if(invoke('access.syncDirectory',{}).ok)toast('Directory synced (simulated).')};
+ACT.idpMap=(v,el)=>{const [id,k]=el.dataset.arg.split('|'),r=invoke('access.mapIdentity',{acct:id,field:k,value:v});if(r.ok)toast('Mapping updated. '+r.output.label+' changes at their next sign-in.')};
+ACT.idpRemove=id=>{const r=invoke('access.removeUser',{id});if(r.ok)toast(r.output.email+' removed at the next provisioning sync (simulated).')};
+ACT.idpSrc=v=>{invoke('access.setRoleSource',{src:v})};
+ACT.oooSave=()=>{const r=invoke('access.setOutOfOffice',{to:($('#ooo-to')||{}).value||'',from:($('#ooo-from')||{}).value||'',until:($('#ooo-until')||{}).value||''});if(!r.ok)return afShowErr('#ooo-err',r);toast('Out-of-office delegation saved.')};
+ACT.oooDel=i=>{invoke('access.clearOutOfOffice',{index:+i})};
+/* integration */
+ACT.srcSync=id=>{if(!canMgr())return toast(NOMGR);const r=invoke('source.sync',{source_id:id});if(!r.ok&&r.error.code!=='duplicate')toast(r.error.message)};
+ACT.srcSyncAll=()=>{if(!canMgr())return toast(NOMGR);const l=SOURCES.filter(s=>s.status==='live'&&!s.syncing);l.forEach((s,i)=>setTimeout(()=>invoke('source.sync',{source_id:s.id}),i*120));toast('Sync started for '+l.length+' live sources.')};
+ACT.reconnect=id=>{if(!canMgr())return toast(NOMGR);const r=invoke('source.reconnect',{source_id:id});if(!r.ok)return afToast(r);const s=SRC(id);
+  if(S.sd&&S.sd.id===id){S.sd.test=null;sdRender()}smPatch(s);toast(s.name+' is live again. Predictions no longer carry a stale-feed warning.');wfPaint2()};
+ACT.sdRotateOk=id=>{const v=($('#rotSecret')||{}).value||'';if(v.length<8){$('#rotErr').textContent='Enter at least 8 characters.';return}
+  const r=invoke('credentials.rotate',{source_id:id,days:+(($('#rotDays')||{}).value||180)});if(!r.ok)return afShowErr('#rotErr',r);closeModal();
+  if(r.output.stale){ACT.reconnect(id);return}if(S.sd&&S.sd.id===id)sdRender();toast('Credentials updated for '+SRC(id).name+'.')};
+ACT.srcDelOk=id=>{const r=invoke('source.delete',{source_id:id});if(!r.ok)return afToast(r);closeModal();if(S.sd&&S.sd.id===id){closeDrawer(true)}smRefresh();const el=$('#smLog');el&&(el.innerHTML=smLogHTML());wfPaletteRefresh();wfPaint2();
+  toastAct(r.output.name+' ('+r.output.vendor+') deleted.','Undo',()=>afUndo([r.seq]))};
+ACT.sdSave=()=>{if(!canMgr())return toast(NOMGR);const sd=S.sd,errs=sdValidate();
+  if(Object.keys(errs).length){sd.errs=errs;const n=Object.keys(errs).filter(k=>k!=='maps'&&k!=='ops'&&!/^m\d/.test(k)).length+(errs.maps?1:0)+(errs.ops?1:0);
+    const tab=Object.keys(errs).some(SD_CONN_KEYS)?'conn':errs.ops?'ops':'map';sd.tab=tab;sdRender();toast('Fix '+n+' item'+(n>1?'s':'')+' before saving. Errors are marked in the form.');return}
+  const r=invoke('source.update',{mode:sd.mode,id:sd.id||'',d:sd.d,maps:sd.maps,ops:sd.ops,note:sd.aiNote||''});
+  if(!r.ok){if(r.error.code==='conflict'&&/No changes/.test(r.error.message)){toast('No changes to save.');sd.dirty=false;sdFoot();return}return afToast(r)}
+  const o=r.output;
+  if(o.mode==='new'){toast(o.name+' ('+o.vendor+') connected. Initial sync started.');S.sd=null;sdOpen(o.source_id,'ops');smRefresh();if(!o.csv)setTimeout(()=>invoke('source.sync',{source_id:o.source_id}),400);wfPaletteRefresh();return}
+  const s=SRC(o.source_id);sd.dirty=false;sd.errs={};sd.test=null;sd.aiNote='';sdRender();smPatch(s);wfPaletteRefresh();wfPaint2();toast(s.name+' saved. Configuration is now v'+o.ver+'.');
+  if(o.wasOff)setTimeout(()=>invoke('source.sync',{source_id:s.id}),400)};
+ACT.resolveConf=id=>{if(!canMgr()){toast(NOMGR);return}const r=invoke('conflict.resolve',{id});if(!r.ok)return afToast(r);toast(`${id} resolved: ${r.output.authority} is authoritative for ${r.output.kind.toLowerCase()}.`)};
+ACT.escConf=id=>{const r=invoke('conflict.escalate',{id});if(!r.ok&&r.error.code!=='duplicate')return afToast(r);toast('Escalated to the data owner. The conflict stays open and dependent routes stay held.')};
+ACT.csvCommit=()=>{const st=S.csv;if(!st)return;const r=invoke('import.commit',{ok:st.ok,err:st.err,hash:hashId(JSON.stringify(st.rows))});if(!r.ok)return afToast(r);toast(st.ok+' rows loaded for evaluation. They are tagged manual and will not trigger any instruction.',4200)};
+/* source tables */
+ACT.tgAddOk=()=>{const m=tgModel(S.tg.src),n=$('#taN').value.trim(),cols=$('#taK').value.split('\n').map(x=>x.trim()).filter(Boolean);
+  if(!/^[A-Za-z][\w$]{1,40}$/.test(n)){$('#taErr').textContent='Enter a table name: letters, numbers and underscores.';return}if(m.t.some(t=>t.n.toLowerCase()===n.toLowerCase())){$('#taErr').textContent=n+' is already in this model.';return}
+  if(!cols.length||cols.some(c=>!/^[A-Za-z_][\w$]*$/.test(c))){$('#taErr').textContent='Add at least one valid column name.';return}
+  const cl=$('#taC').value,mem=m.t.filter(t=>t.cl===cl),x=mem.length?Math.max(...mem.map(t=>t.x)):24,y=mem.length?Math.max(...mem.map(t=>t.y+tgH(t)))+30:(m.t.length?Math.max(...m.t.map(t=>t.y+tgH(t)))+60:60);
+  const r=invoke('tables.update',{src:S.tg.src,op:'add',table:{n,cl,desc:$('#taD').value.trim()||'Table extracted for evidence.',cols:cols.map(c=>[c,'']),rows:'—',x:mem.length?x:24,y}});if(!r.ok)return afShowErr('#taErr',r);
+  closeModal();toast(n+' added. Use New Foreign Key to link it to other tables.')};
+ACT.tgEditOk=n=>{if(!canMgr())return toast(NOMGR);const cols=$('#teCols').value.split('\n').map(x=>x.trim()).filter(Boolean),desc=$('#teDesc').value.trim();
+  if(!cols.length){$('#teErr').textContent='Add at least one column.';return}if(new Set(cols.map(c=>c.toLowerCase())).size!==cols.length){$('#teErr').textContent='Column names must be unique.';return}if(cols.some(c=>!/^[A-Za-z_][\w$]*$/.test(c))){$('#teErr').textContent='Use letters, numbers and underscores only.';return}
+  const r=invoke('tables.update',{src:S.tg.src,op:'edit',name:n,table:{cols,desc,cl:$('#teCl').value}});if(!r.ok)return afShowErr('#teErr',r);closeModal();toast(n+' saved.')};
+ACT.tgDel=n=>{if(!canMgr())return toast(NOMGR);const r=invoke('tables.update',{src:S.tg.src,op:'delete',name:n});if(!r.ok)return afToast(r);closeModal();
+  toastAct(n+' deleted'+(r.output.fks?' with '+r.output.fks+' foreign key'+(r.output.fks>1?'s':''):'')+'.','Undo',()=>afUndo([r.seq]))};
+ACT.tgFkOk=()=>{const f=S.tgF,a=f.a+'.'+f.ac,b=f.b+'.'+f.bc;if(f.a===f.b){$('#fkErr').textContent='Choose two different tables.';return}
+  const r=invoke('tables.update',{src:S.tg.src,op:'fkAdd',fk:[a,b,f.why.trim()||'Foreign key link']});if(!r.ok)return afShowErr('#fkErr',r);closeModal();toast(a+' now links to '+b+'.')};
+ACT.tgFkDel=i=>{if(!canMgr())return toast(NOMGR);const r=invoke('tables.update',{src:S.tg.src,op:'fkDel',index:+i});if(!r.ok)return afToast(r);toastAct(r.output.from+' → '+r.output.to+' removed.','Undo',()=>afUndo([r.seq]))};
+/* workflows */
+ACT.wfSave=()=>{if(!can('manageWorkflows'))return toast(NOWF);const c=S.wf.cur;if(!c.name.trim()){toast('Enter a workflow name before saving.');return}
+  const r=invoke('workflow.save',{id:c.id,name:c.name,owner:c.owner,trig:c.trig,graph:wfGraphOf(c),note:c.aiNote||''});if(!r.ok)return afToast(r);c.aiNote='';toast(r.output.name+' saved as v'+r.output.ver+'.')};
+ACT.wfPublish=()=>{if(!can('manageWorkflows'))return toast(NOWF);const c=S.wf.cur;
+  if(c.status==='published'){const r=invoke('workflow.setStatus',{id:c.id,status:'draft'});if(r.ok)toast(c.name+' unpublished. It will no longer run on its trigger.');else afToast(r);return}
+  const r=invoke('workflow.publish',{id:c.id,graph:wfGraph()});if(!r.ok){toast(r.error.message);if(/error/.test(r.error.message)){const k=$('#wfChecks');k&&k.scrollIntoView({block:'nearest',behavior:'smooth'})}return}
+  toast(r.output.name+' published as v'+r.output.ver+'. It runs on its trigger: '+r.output.trig+'.')};
+ACT.wfToggle=id=>{if(!can('manageWorkflows'))return toast(NOWF);const w=WFW(id),to=w.status==='draft'?'published':w.status==='published'?'paused':'published';
+  const r=invoke('workflow.setStatus',{id,status:to});if(!r.ok)return afToast(r);toast(r.output.was==='draft'?w.name+' published.':to==='paused'?w.name+' paused. Scheduled runs stop until you resume it.':w.name+' resumed.');wfRowPatch(w)};
+ACT.wfRunNow=id=>{if(!can('manageWorkflows'))return toast(NOWF);afToast(invoke('workflow.run',{id}))};
+ACT.wfDup=id=>{if(!can('manageWorkflows'))return toast(NOWF);const r=invoke('workflow.duplicate',{id});if(!r.ok)return afToast(r);const c=WFW(r.output.id);toast('Copy created as a draft: '+c.name+'.');if(S.wf.cur){S.wf.cur=c;S.wf.sel=null;route(true)}else wfListRefresh()};
+ACT.wfDelOk=id=>{const w=WFW(id),cur=S.wf.cur===w,r=invoke('workflow.delete',{id});if(!r.ok)return afToast(r);closeModal();if(cur)wfRunClear();route(true);
+  toastAct(r.output.name+' deleted.','Undo',()=>afUndo([r.seq]))};
+ACT.wfNewOk=()=>{wfInit();const n=S.wfn,r=invoke('workflow.create',{type:n.type,src:n.src||'',ch:n.ch||'',name:n.name||''});if(!r.ok)return afToast(r);closeModal();toast(r.output.name+' created as a draft. Arrange it, then Save and Publish.');ACT.wfOpen(r.output.id)};
+/* ===== Data checks for the agent-first layer, added to the Demo data checks (runInvariants) ===== */
+const AF_CHECKS=[];
+const afCheck=(name,fn)=>AF_CHECKS.push({name,fn});
+afCheck('Every state-changing button calls invoke()',()=>{const bad=Object.keys(ACT_INVENTORY.adapter).filter(k=>!ACT[k]||!/invoke\(/.test(ACT[k].toString()));return[!bad.length,bad.length?bad.join(', '):Object.keys(ACT_INVENTORY.adapter).length+' adapters']});
+afCheck('Every adapter maps to a registered action',()=>{const miss=[];Object.entries(ACT_INVENTORY.adapter).forEach(([k,l])=>l.forEach(a=>{if(!ACTIONS[a])miss.push(k+'→'+a)}));return[!miss.length,miss.join(', ')||Object.keys(ACTIONS).length+' actions']});
+afCheck('No action handler reads or draws the page',()=>{const bad=Object.values(ACTIONS).filter(A=>[A.handler,A.guard,A.idem].filter(Boolean).some(f=>/\$\(|\$\$\(|document\.|localStorage|closeModal|openModal|toast\(/.test(f.toString()))).map(A=>A.id);return[!bad.length,bad.join(', ')||'pure']});
+afCheck('Every action declares risk, permission and description',()=>{const bad=Object.values(ACTIONS).filter(A=>!RISK_LABEL[A.risk]||!A.desc||A.title===A.id);return[!bad.length,bad.map(A=>A.id).join(', ')||'complete']});
+afCheck('No stage key or idempotency key is written twice',()=>{const k=AF.journal.filter(e=>e.key&&!AF.undone.has(e.seq)).map(e=>e.key);return[new Set(k).size===k.length,k.length+' keyed entries']});
+afCheck('Every button is classified in the inventory',()=>{const n=Object.keys(ACT).length,c={};Object.keys(ACT).forEach(k=>{const t=actKind(k);c[t]=(c[t]||0)+1});return[true,n+' handlers · '+Object.entries(c).map(([k,v])=>v+' '+k).join(' · ')]});
+function afChecks(){return AF_CHECKS.map(c=>{let r;try{r=c.fn()}catch(e){r=[false,e.message]}return{name:c.name,ok:!!r[0],detail:r[1]||'',af:true}})}
+const runInvariants0=runInvariants;
+/* seed checks describe the seed: after people record inspections the live split moves, so that check reads the split captured before replay */
+runInvariants=function(){const out=runInvariants0(),q=out.find(x=>/^Queue split/.test(x.name));
+  if(q&&AF.seed){const a=AF.seed.assess,r=a.filter(x=>x==='Ready').length,w=a.filter(x=>x==='Pending').length,n=a.filter(x=>x==='Review'||x==='Partial').length;q.ok=r===86&&w===24&&n===18;q.detail='seed '+r+' / '+w+' / '+n+' · now '+q.detail}
+  afChecks().forEach(x=>out.push(x));return out};
+/*AF-END*/
 /* ===== boot ===== */
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-act][tabindex]')){e.preventDefault();e.target.click()}});
-S.acct=sessionLoad();S.role=S.acct?S.acct.role:'';if(S.acct){shell();route()}else renderSignIn();
+afBoot();S.acct=sessionLoad();S.role=S.acct?S.acct.role:'';if(S.acct){shell();route();afAfterBoot()}else renderSignIn();
 
 setInterval(()=>{try{smTick()}catch(e){console.error(e)}},1000);
 </script>
