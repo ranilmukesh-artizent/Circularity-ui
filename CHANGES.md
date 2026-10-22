@@ -4,7 +4,82 @@ For the product overview (what Circularity does, every screen and every role) re
 
 Open `index.html`. The app opens on a **sign-in form** (Update 9): type `exec` or `ops` and any password, and it opens on that person's home page. With `ops`, pick a returned asset and follow its ten journey steps (Update 10). Update 8 adds the **Executive** and **Warehouse Manager** accounts, the guided treatment page and **Process orchestration**. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
 
-**Quick links:** [Update 12: Agent-first workbench](#update-12-agent-first-workbench-branch-feature-agent-first) · [Update 11: Command Center by section, Asset Intelligence restructure](#update-11-command-center-by-section-asset-intelligence-restructure-redeploy-and-cost-wording-edge-cases) · [Update 10: Journey-led flow, line-item learning](#update-10-journey-led-flow-step-guidance-value-that-builds-line-item-learning) · [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+**Quick links:** [Update 13: Live run board and live wording](#update-13-live-run-board-and-live-wording-branch-feature-live-run) · [Update 12: Agent-first workbench](#update-12-agent-first-workbench-branch-feature-agent-first) · [Update 11: Command Center by section, Asset Intelligence restructure](#update-11-command-center-by-section-asset-intelligence-restructure-redeploy-and-cost-wording-edge-cases) · [Update 10: Journey-led flow, line-item learning](#update-10-journey-led-flow-step-guidance-value-that-builds-line-item-learning) · [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+
+---
+
+## Update 13: Live run board and live wording (branch `feature/live-run`)
+
+**Why:** the review of the agent-first build on 22 Oct asked for three things: the stage animation on Process orchestration should play by itself, slowly, without scrolling; the step box itself should expand instead of opening a separate panel; and the interface should stop saying *demo*, *simulated* or *mock* and read like a live application. The plan, decisions L5 to L11 and the build report are in [`docs/PLAN_LIVE_RUN_AND_LIVE_UI.md`](docs/PLAN_LIVE_RUN_AND_LIVE_UI.md). L9 to L11 are built on their defaults and marked **(assumed)** there.
+
+> **Legal review.** The interface no longer tells a viewer that the data, systems and acknowledgements are simulated, so the product now looks like a live, connected application although nothing is connected and all data is synthetic. Before it is shown to clients or prospects, Kinective's Legal team should review how it is presented (sales meetings, recorded videos), and nobody should state or imply that a named vendor product (SAP, IBM Maximo, Salesforce, MasterControl …) is connected when it is not. This file, the README and the plans keep saying plainly what is synthetic.
+
+### The live run board (Process orchestration)
+
+Open **Process orchestration** (or `#/orchestration/run?case=RT-1049`) as any role.
+
+| What | Where | What you see |
+|---|---|---|
+| **One board at the top** | `lrBoardHTML`, `renderOrch` (AF block) | Ten boxes in two rows of five under a one-line header (title, case selector, **Replay**, **Open case**). It replaces the case run view's boxes, the nine-field stage panel and the classic stage list further down the page. Two columns under 1,100 px, one on a phone |
+| **Plays by itself** | `lrStart`, `lrTick`, `LR_PACE` | Opening the page, changing the case or pressing **Replay** plays the run from *Lease ends* to the stage the case has reached, about 5 s a stage (RT-1048: 7 stages in 41 s). Each box opens, each line spins for 0.9 to 1.4 s, then lands with a tick, its record and its latency; the box settles and the next opens. The page never scrolls and is never redrawn while it plays: only classes and counters change |
+| **The box drills down in place** | `.lrb`, `.lrbody` | The open box's body spans its row right under it (at most 260 px, its own scroll). One box open at a time; click any box to open it (playback pauses), Esc closes it; `aria-expanded` on each box |
+| **Where it fetched from and what it got** | `afStageLines(c, n)` | Three to five lines per stage from the case's own records: *Oracle Lease and Finance Management · Read lease contract · LC-4739, ended 11 Aug 2026*, *Optoro · Read return authorisation · RMA-56509*, *SafetyCulture · Fetched inspection report · INS-96879 · grade B*, *MasterControl · Fetched certification records · QMS-2906, certified 24 months*, *Salesforce Sales Cloud · Matched demand · SO-48102 (confirmed)*, *Gate engine · Ran 6 gates on 7 routes*, acknowledgements with their work-order and transfer numbers. Latencies come from `hashId`, so they are the same on every load |
+| **Counters** | Board header | Progress bar, elapsed time (`00:24`), a pulsing **Live** dot, **tools called** and **audit entries** with the last audit ID (`AU-PRV-…` from provenance, `AE-EV-…` from events; each one exists in Audit & provenance). Each finished box shows its own count |
+| **Waiting, blocked, queued** | Same lines | A waiting stage pulses its last line (*Waiting for the Approver*); a held gate shows the reason in red with the owner and the escalation card inside the box; stages not reached show *Will …* lines greyed |
+| **Next step in the box** | `ACT.afRunNext` → `runNext()` | The current stage's box ends with its next step (*Request inspection →*, *Open the approval card →*, *Check for the next acknowledgement →*) for someone allowed to take it; after it runs, the board plays on from that stage |
+| **Controls** | Board header | **Pause / Resume**, **1× / 2×**, **Skip to now**, **Replay**. With reduced motion the board shows the end state at once and runs no timers. Leaving the page stops the timer; coming back plays again. A polite status line announces each completed stage |
+| **Run details** | `#lrDetails` | Approval and execution, Action calls and Events for this run, collapsed under the board. The run trace and Agents and services stay below |
+| **Failure drill** | Presenter menu (`?presenter=1`) | Fails one stage (*No response · timed out after 30 s*) and queues the rest. It used to be the *Simulate failure at stage…* select in the page header |
+
+With `?agent=0` (the 22 Oct demo build) Process orchestration keeps its earlier stage list, with the new wording.
+
+[![Live run board, playing](docs/screenshots/live-run-board.webp)](docs/screenshots/live-run-board.webp)
+
+| A stage opened in place | Dark mode | Phone |
+|---|---|---|
+| [![Stage 5 open](docs/screenshots/live-run-expanded.webp)](docs/screenshots/live-run-expanded.webp) | [![Dark](docs/screenshots/live-run-dark.webp)](docs/screenshots/live-run-dark.webp) | [![Phone](docs/screenshots/live-run-phone.webp)](docs/screenshots/live-run-phone.webp) |
+
+### Live wording
+
+No text, tooltip, `aria-label`, toast, card badge or downloaded file says simulated, synthetic, demo, mock, stand-in, POC, seed, rule-based, fictional or *not a legal record*, for any role, page or theme. Internal names (`execSim`, `sim:true`, `FEAT`) and code comments are unchanged.
+
+| Where | Before | After |
+|---|---|---|
+| Top bar | *Demo data* pill; *As of 07 Oct 2026* | **Data checks** (green dot, same modal); **Live · updated 1 min ago** (ticks; the data stays dated 7 Oct) |
+| Sidebar footer | *Synthetic data, seed 20261007* | *Production · all systems operational* |
+| Sign-in | Footer about simulated SSO and synthetic data | Removed; the SSO step says *Redirecting to your organisation's identity provider…* |
+| Integration and MCP | *Simulated feed*, *Simulated live*, *Simulated stream*, *Sync activity (simulated)*, *connected (simulated)*, *synthetic data*, *(fictional)* owners and vendors | *Live*, *Streaming*, *Sync activity*, *connected*, *connected data*; suffixes removed |
+| Handoff | *Sent (simulated)*, *Acknowledged (simulated)*, *Done (simulated)*, *Simulate system acknowledgement*, *Approve and hand off (simulated)* | *Sent · awaiting acknowledgement*, *Acknowledged*, *Done*, **Check for acknowledgement**, **Approve and send instruction** (L11) |
+| Events, audit log, toasts | `acknowledged (simulated)`, `sent (simulated) · awaiting ack`, “… (simulated).” | `acknowledged`, `sent · awaiting ack`, the same sentence without the suffix |
+| Identity | *Simulated. In production these come from your identity provider*; *Simulate: user removed in the directory* | *Synced from your identity provider* (SCIM chip); **Apply directory removal** |
+| Cards and agent | *Simulated* badge; *Agent: rule-based. No language model connected.* | Badge removed; **Circularity Agent** with a green status dot (L9) |
+| What-if | *Simulated net*, *Simulated* | **Scenario net**, **Scenario** (L10) |
+| Workflow studio | *Run simulation* | **Test run** |
+| Evidence pack | `simulated:true` and a disclaimer; file `evidence-pack-RT-1048-simulated.json` | `generated_by: "Circularity"`, `generated_at`; file `evidence-pack-RT-1048.json` |
+| Data checks | *Seed 20261007 · mulberry32*; details mention *seed* | *All checks run on every load*; *baseline* |
+| Presenter menu (`?presenter=1` only) | — | *Synthetic data · nothing is connected* (L5) and the Failure drill |
+
+### Tests
+
+The harness from earlier sessions (`run.py`, `pt.py`, `aft.py`, `regress.sh`; see the plan, section 6.1) was copied into this session's scratchpad. Two new suites:
+
+- **`live.js`** (wording scan): every account plus signed out, every reachable route, a case page, the run board, the data checks modal, the command bar, the notify and approval forms, the source and provenance drawers, the Ask panel with two answers, pages after actions that write events, the evidence-pack file, dark mode and presenter mode (which may only say it in the Presenter menu). 389 routes; **8 checks pass in both builds** (`?agent=1` and `?agent=0`), no hits.
+- **`run.js`** (live run board): **52 checks**: plays without a click; about 5 s a stage; stage 1 completes and stage 2 runs; one box open; spinner then tick; counters match the lines; every audit ID exists in the audit log; Pause, Resume, 2×, Skip to now; a redraw does not restart the run; the page never scrolls; click opens and Esc closes; three to five lines per stage from known systems for six cases; board and journey indicator agree for six cases; reduced motion; Run details collapsed with three panels; Next in the box; escalation in the box; the failure drill; playback stops when you leave and restarts when you come back; data checks; no errors.
+
+Expectation updates in the existing suites (the checks were rewritten, not weakened): `demo.js` (the sign-in footer is gone and no simulation wording is allowed), `iter3.js` (the time zone shows in the region menu; the top bar shows the live indicator), `af2.js` (*Circularity Agent* label with its dot; no *Simulated* tag on the lease panel), `af4.js` (evidence pack has `generated_by` and `generated_at`, no `simulated`), `af5.js` (board instead of the run view, nine-field panel and `#orFlow`; opening a box instead of *Back*).
+
+| Suite | Checks | Result |
+|---|---|---|
+| rbac, gf_run, demo, iter2, iter3 (`?agent=0`) | 208, 110, 91, 51, 61 | all pass |
+| af1a, af1b, af2, af3a, af3b, af4, af5 | 42, 10, 92, 39, 7, 61, 50 | all pass |
+| live (both builds), run | 8 + 8, 52 | all pass |
+| ovd, afovd (390 px, no sideways scrolling) | 25, 15 | all pass |
+
+### Screenshots
+
+All 39 screenshots the README shows were retaken with this build (they showed the *Demo data* pill and the *As of* date), and five were added: `live-run-board.webp`, `live-run-expanded.webp`, `live-run-dark.webp`, `live-run-phone.webp`, `live-home.webp`. Screenshots referenced only by older updates below stay as the record of those releases.
+
+[![Home with the Circularity Agent label and the live indicator](docs/screenshots/live-home.webp)](docs/screenshots/live-home.webp)
 
 ---
 

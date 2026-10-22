@@ -2,7 +2,7 @@
 
 **Purpose of this file:** a self-contained brief for a fresh session. It does not assume any earlier conversation. Read it top to bottom, then start at **Phase 0**.
 
-**Status:** draft, not started (22 Oct 2026). Decisions L5–L8 answered by the user on 22 Oct (section 10); L9–L11 are built on their defaults and marked **(assumed)**.
+**Status:** **built** on `feature/live-run` (22 Oct 2026), phases 0–4 committed locally, not pushed or merged. Decisions L5–L8 answered by the user on 22 Oct (section 10); L9–L11 built on their defaults and marked **(assumed)**. Build report: section 12.
 
 **Source:** the user's review of the agent-first build on 22 Oct 2026 (three asks, plus a screenshot of the case run view: `image copy.png` in the repo root, not committed).
 
@@ -254,12 +254,35 @@ Earlier rules apply unchanged: palette tokens only, prefixed class names (new pr
 | L6 | **Answered 22 Oct:** new branch `feature/live-run` from `main`, commit locally, do not merge before the presentation | Git |
 | L7 | **Answered 22 Oct:** about 5 s per stage, fluid animations, counters for tools called and audit entries | `LR_PACE`, board header |
 | L8 | **Answered 22 Oct:** live indicator, keep the data dates | Top-bar pill (`rgAsOf`) |
-| L9 | (assumed) “Circularity Agent” with a status dot | `PROVIDERS.rule.label` |
-| L10 | (assumed) “Scenario net” | What-if card and step 4 |
-| L11 | (assumed) *Check for acknowledgement*; *Failure drill* presenter-only | `execBlock`, `afNextStep`, Presenter menu |
+| L9 | **Built (assumed):** “Circularity Agent” with a green status dot; the tooltip about the language-model provider is gone | `PROVIDERS.rule.label`, `afProvLabel` |
+| L10 | **Built (assumed):** “Scenario net” on the what-if card and step 4, “Scenario” on the agent's what-if card | What-if card, step 4, `AF_CARDS.whatif` |
+| L11 | **Built (assumed):** *Check for acknowledgement* (button) and *Check for the next acknowledgement* (next step); *Failure drill* only in the Presenter menu, on Process orchestration | `execBlock`, `afNextStep`, `afPresenterHTML` |
 
 ---
 
 ## 11. Prompt to paste into a fresh session
 
 > Read `docs/PLAN_LIVE_RUN_AND_LIVE_UI.md` fully, then `docs/PLAN_AGENT_FIRST_WORKBENCH.md` sections 2, 3 and 15. Skim `index.html` around `/*ORCH-START*/`, `afRunViewHTML`, `afStagePanel`, `afStageStates`, `provFor`, `stChip`, `shell` and `execBlock`. Work on branch `feature/live-run`. Rebuild the harness from section 6.1, run Phase 0, then one phase at a time in section 5's order, running the tests in section 6 after each and committing with a detailed message. Do not push or merge until asked.
+
+---
+
+## 12. Build report (22 Oct 2026)
+
+| Phase | Commit | What |
+|---|---|---|
+| 0 Baseline | — | Harness copied from the agent-first session's scratchpad into this session's (`h/`, `tools/`); a second copy `h2/` with its own Chrome profile for screenshots. Baseline on `7f897b5`: rbac 208, gf_run 110, demo 91, iter2 51, iter3 61, af1a 42, af1b 10, af2 92, af3a 39, af3b 7, af4 61, af5 50, ovd 25, afovd 15, all pass. `run.py` gained a `src_override.txt` so a running suite can be pinned to a frozen copy while `index.html` is edited |
+| 1 Live wording | `cc66992` | Section 4.5 everywhere (114 replacements), plus “(fictional)”, “illustrative until connected” and “seed” in data-check details, which the plan's regex did not list. Failure select moved to the Presenter menu early, because its label was part of the wording scan |
+| 2–3 Board and auto-play | `4dd43eb` | Built together: the board's drawing and its playback share one state model (`S.lr`, `lrView()` as a pure function of elapsed time), so a page redraw never restarts a run. `display:contents` boxes with CSS `order` put the open body directly under its row at 5, 2 and 1 columns |
+| 4 Docs and screenshots | this commit | README (intro row, 6.11, 11, 13, 15), CHANGES Update 13, `docs/demo/DEMO_SCRIPT.md` (button name), this section; 39 README screenshots retaken and five added |
+
+**Tests at the end:** every suite in 6.1 passes, with the expectation updates of 6.2 (listed in CHANGES Update 13), plus `live.js` (8 checks, 389 routes, both builds, no hits) and `run.js` (52 checks).
+
+**Deviations from the plan**
+- **Pace:** the spinner times of 0.9–1.4 s per line make a five-line stage about 7 s and a three-line stage about 4 s; RT-1048 plays 7 stages in 41 s (5.8 s a stage). `LR_PACE` holds the numbers if the presenter wants it faster.
+- **Timer:** a 100 ms `setInterval` clock plus CSS transitions, not `requestAnimationFrame`, because headless tests run on virtual time and `requestAnimationFrame` does not advance there.
+- **Audit entries:** only lines backed by a real record carry an audit ID (provenance fetches and case events). Stages 2 and 3 read lease and logistics facts that have no audit record, so they show *0 audit entries*.
+- **Nav:** the Process orchestration sub-items *Live run*, *Stages* and *Case run* all open the board without scrolling (no anchor). Consolidating them is left for a later pass.
+- **Demo build (`?agent=0`):** keeps the classic stage list; the failure drill lives only in the agent build's Presenter menu, so the demo build has none.
+
+**Harness note for the next session:** this session's scratchpad holds `h/src/live.js`, `h/src/run.js`, `tools/all.sh` (all suites in order: legacy with `circ-agent=0`, then af1a → af1b → af2 → af3a → af3b → af4 → af5, extra names appended, then ovd and afovd) and `h2/shots13.py` (every README screenshot with its route, account, size and post-load hook; `NOSCROLL` and `TOSTEP(k)` avoid blank headless screenshots on routes that scroll to an anchor).
+

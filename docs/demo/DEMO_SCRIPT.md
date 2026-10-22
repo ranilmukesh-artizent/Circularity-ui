@@ -87,7 +87,7 @@ Show **User Flow** ([`user-flow.png`](user-flow.png)): the planner signs in, ope
 
 ### Steps 6 to 9 · Send instruction, create work, repair and certify, return the outcome
 
-8. **Continue to step 6**, then step 7: **Simulate system acknowledgement**. Row 1: *Sales order SO-48102 returned by ERP*.
+8. **Continue to step 6**, then step 7: **Check for acknowledgement**. Row 1: *Sales order SO-48102 returned by ERP*.
 9. Step 8: press it again. Row 2: *Work order WO-… returned by EAM · repaired, tested and certified; QMS record updated*.
 10. Step 9: press it twice more (WMS transfer, ERP order fulfilled).
 

@@ -14,6 +14,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 | **Data** | Everything is **synthetic**. The demo company is *Northfield Industrial Leasing*, with three customer tenants and eight sites. No personal or customer data is used, and none should be entered. |
 | **What changed and when** | [`CHANGES.md`](CHANGES.md) has one walk-through per release. |
 | **Agent-first (branch `feature/agent-first`)** | Every role lands on **Home**; **Ask** (Ctrl+J) and the command bar (Ctrl+K) work on every page; a rule-based agent prepares decisions, mappings and workflows as reviewable cards, and a person commits. See [section 15](#15-the-agent-first-product). Add `?agent=0` for the 22 Oct demo build. |
+| **Live run board and live UI (branch `feature/live-run`)** | **Process orchestration** plays each case's run by itself at the top of the page: each stage's box opens in place and shows, line by line, which system it read and what it got, with counters for tools called and audit entries. The interface no longer shows *simulated*, *synthetic* or *demo* labels; only the Presenter menu (`?presenter=1`) says the data is synthetic. See [section 6.11](#611-process-orchestration-behind-the-screen), [section 13](#13-what-is-real-and-what-is-simulated) and [CHANGES Update 13](CHANGES.md). |
 
 > **Note for reviewers.** Access control is close to compliance. The role matrix, the access wording and any regulatory claims in this document should be reviewed by the Legal team before anyone relies on them or uses them in a client commitment.
 
@@ -115,7 +116,7 @@ The app opens on a **sign-in form** (work email or user ID, password, *Continue 
 | `warehouse1@…`, `warehouse2@…` | Warehouse Manager · Warehouse 1 or 2 | Command Center, operational view |
 | `approver@…`, `engineer@…`, `finance@…`, `developer@…`, `admin@…` | That role | Its home (table below) |
 
-*Continue with single sign-on* uses the email typed above it, shows a short "redirecting to your identity provider (simulated)" step and signs in. An unknown ID shows an error and nothing else. For presenters, `index.html?presenter=1` adds two small shortcuts under the form (**Senior management**, **End user**) and a quick switch in the account menu; `?presenter=0` turns it off. The build team's role list is still at `#/signin?roles`.
+*Continue with single sign-on* uses the email typed above it, shows a short "redirecting to your identity provider" step and signs in (nothing is contacted). An unknown ID shows an error and nothing else. For presenters, `index.html?presenter=1` adds two small shortcuts under the form (**Senior management**, **End user**) and a quick switch in the account menu; `?presenter=0` turns it off. The build team's role list is still at `#/signin?roles`.
 
 | Role | Their job in one line | Lands on | Demo accounts |
 |---|---|---|---|
@@ -269,7 +270,7 @@ The page reads **top to bottom in five steps**, with a sticky step bar. Each ste
 | 1. Returned asset and current status | What the asset is, **why** it is in its status (for example *awaiting approval since 01 Oct*) and what is **outstanding** (evidence, test report, approval and who it waits on) |
 | 2. Possible outcomes and the recommended one | First **All pathways**, every route built for the asset with its net, P10–P90 and *Recommended*, *Eligible* or *Withheld* with the gate's reason (journey step 4); then the recommended route, net recovery, costs, success, cycle time and a **confidence level** (High, Medium, Low, each saying what to do); then the **condition → life → value** card: A. diagnostic condition, B. **estimated RUL as a range** next to the **certified operating period** (one firm figure), C. commercial value for that life with the matched order (for example *SO-48102 at Site 3*). A demand horizon longer than the certified period shows **Needs re-certification** and makes the route Conditional |
 | 3. Why this outcome | Eligibility and gates, predicted outcomes for every route, the rationale, and a **Close call** box when the top two are within 5% or $250, naming the secondary factor that decides (risk, demand certainty, cycle time, RUL, carbon). Full analysis is one click away |
-| 4. What-if and edge cases | A large **what-if result** card (Base net, Simulated net, Δ $, Δ %, with ▲ ▼ and the assumptions changed), sliders, **Apply to** one pathway, edge-case presets (Demand cancelled, Parts cost +30%, Resale price −20%, Certification shorter than demand, **Critical part unavailable**, **Customer requires a new unit**, each withholding routes with the reason), and the **top pathways side by side**. The comparison opens by itself on a close call or Low confidence |
+| 4. What-if and edge cases | A large **what-if result** card (Base net, Scenario net, Δ $, Δ %, with ▲ ▼ and the assumptions changed), sliders, **Apply to** one pathway, edge-case presets (Demand cancelled, Parts cost +30%, Resale price −20%, Certification shorter than demand, **Critical part unavailable**, **Customer requires a new unit**, each withholding routes with the reason), and the **top pathways side by side**. The comparison opens by itself on a close call or Low confidence |
 | 5. Next best action: approval and enterprise handoff | The role's buttons (only here), required approval and responsible approver, the **target applications**, an **instruction preview before approval** (with *View raw payload*), handoff readiness and the **Enterprise handoff** timeline, where each acknowledgement shows the reference its system returned (*Sales order SO-48102*, *Work order WO-…*, *Transfer TR-…*, *Fulfilment FUL-…*). Below it, **Reconcile and learn** (journey step 10): once Finance confirms, every cost line's predicted and actual amount, the difference and the model that learns from it |
 
 | Steps 1 and 2 | What-if | Approval and handoff |
@@ -366,7 +367,7 @@ Roles that may look but not change see a **Read-only view** banner, and every fi
 **Purpose:** who can do what.
 
 - **Accounts and roles:** the eleven demo accounts, their role, their tenants and their landing page.
-- **Identity and users** (simulated): how users and roles arrive from the customer's identity provider (for example Microsoft Entra ID). Setup order SSO → provisioning (SCIM) → role mapping, **Sync from directory**, App Roles or directory groups mapped to role, tenant and site (editable; membership is read-only), users from the directory with `example.com` addresses (there is no *Add user*; users are added in the identity provider), a simulated leaver, the escalation path, and **out-of-office delegation** to someone who already holds the Approver role.
+- **Identity and users** (simulated): how users and roles arrive from the customer's identity provider (for example Microsoft Entra ID). Setup order SSO → provisioning (SCIM) → role mapping, **Sync from directory**, App Roles or directory groups mapped to role, tenant and site (editable; membership is read-only), users from the directory with `example.com` addresses (there is no *Add user*; users are added in the identity provider), a leaver (*Apply directory removal*), the escalation path, and **out-of-office delegation** to someone who already holds the Approver role.
 
 [![Identity and users](docs/screenshots/flow-identity.webp)](docs/screenshots/flow-identity.webp)
 - **Approver delegations:** tick or untick what the Approver may decide (decisions, MCP proposals, tenant access). The change takes effect straight away.
@@ -376,9 +377,26 @@ Roles that may look but not change see a **Read-only view** banner, and every fi
 
 ### 6.11 Process orchestration ("behind the screen")
 
-**For:** every role, read-only. **Purpose:** show how a recommendation is made. Ten stages, Start → Pull data → Data preparation → Evaluate gates → ML predictions → Optimise pool → Recommendation → Present for approval → Hand off to enterprise system → Retrieve actual outcome, each with its agent or service, source systems, status (done, active, failed, upstream failed, pending), start and end time and duration, for any case you can see. **Replay** animates the stages; **Simulate failure** shows how a failure stops what follows. A **run trace**, built from the audit trail and the agent call log, has one span per stage or tool call, with sensitive values redacted. Developer and Admin get links to the live call log.
+**For:** every role, read-only (Planners, Approvers and others can take their own next step from the open box). **Purpose:** show how a case moves through its ten stages and what each stage did.
 
-[![Process orchestration](docs/screenshots/flow-orchestration.webp)](docs/screenshots/flow-orchestration.webp)
+**The live run board** (Update 13) sits at the top of the page, under a one-line header with the case selector:
+
+- **It plays by itself.** Opening the page, choosing another case or pressing **Replay** plays the case's run from *Lease ends* to the stage it has reached, about 5 seconds a stage: the box opens, each activity line shows a spinner, then a tick, the record it got and its latency; the box settles and the next one opens. The page never scrolls on its own. **Pause**, **1× / 2×**, **Skip to now** and **Replay** sit on the board; with reduced motion the end state shows at once.
+- **Each box drills down in place.** Its body spans the row right under it and lists three to five lines, for example *MasterControl · Fetched certification records · POL-68412 · QMS-2906, certified 24 months · 214 ms*, then the stage's result and, for the current stage, the next step with its button (or who it waits for, with the escalation card). Stages not reached show their lines greyed as *Will …*. Click any box to open it; Esc closes it.
+- **Counters:** a progress bar, elapsed time, **tools called** and **audit entries** (the audit and event IDs, such as `AU-PRV-52CCC7`, each of which exists in Audit & provenance). Each finished box shows its own count.
+- Every line comes from the case record, its provenance and its events, the same run store that drives the journey indicator, Home and the agent, so they always agree.
+
+Below the board: **Run details** (collapsed: approval and execution, action calls, events for this run), the **run trace** (one span per stage, recorded action and agent call, with sensitive values redacted) and **Agents and services**. Presenters get a **Failure drill** in the Presenter menu (`?presenter=1`) that fails one stage and queues the rest. With `?agent=0` the page keeps the earlier stage list.
+
+| Playing | A stage opened in place |
+|---|---|
+| [![Live run board, playing](docs/screenshots/live-run-board.webp)](docs/screenshots/live-run-board.webp) | [![Live run board, stage 5 open](docs/screenshots/live-run-expanded.webp)](docs/screenshots/live-run-expanded.webp) |
+
+| Dark mode | Phone |
+|---|---|
+| [![Live run board, dark mode](docs/screenshots/live-run-dark.webp)](docs/screenshots/live-run-dark.webp) | [![Live run board on a phone](docs/screenshots/live-run-phone.webp)](docs/screenshots/live-run-phone.webp) |
+
+[![Process orchestration, full page](docs/screenshots/flow-orchestration.webp)](docs/screenshots/flow-orchestration.webp)
 
 ## 7. Every screen for every role
 
@@ -488,7 +506,7 @@ For a technical audience, follow the [two-minute demo script](CHANGES.md#two-min
 
 ## 11. Phone, tablet, dark mode, print and region
 
-**Region** (Update 11): the globe menu in the top bar sets the language (English; Japanese, German, French and Finnish as a preview of the menu, journey steps and guide), the time zone (the *As of* pill and the Command Center clock) and the local currency used by Asset Intelligence (₹, ¥, €; illustrative rates).
+**Region** (Update 11): the globe menu in the top bar sets the language (English; Japanese, German, French and Finnish as a preview of the menu, journey steps and guide), the time zone (shown in the region menu and on the Command Center clock; the top bar shows a live indicator, *Live · updated N min ago*) and the local currency used by Asset Intelligence (₹, ¥, €; illustrative rates).
 
 - **Phone and tablet:** every page works at phone width (390 px) with no sideways scrolling. Key figures swipe, panels stack, tables scroll inside their panel, and the side menu becomes a scrolling bar with a second row for sections.
 - **Dark mode:** the moon button in the top bar.
@@ -541,6 +559,10 @@ IMAGE_PROMPTS.md                how the product photos were made
 
 Nothing is saved to a server. All changes reset on refresh.
 
+**What the interface says** (Update 13, branch `feature/live-run`): the screens no longer label any of this as simulated, synthetic or demo. The top bar shows *Live · updated N min ago* and *Data checks*, the sidebar says *Production · all systems operational*, sources show *Live* and *Streaming*, handoffs show *Acknowledged*, and the agent is *Circularity Agent*. The table above still holds: nothing is connected and all data is synthetic. The only place the product itself says so is the **Presenter** menu (`?presenter=1`): *Synthetic data · nothing is connected*.
+
+> **Legal review.** Because the interface now reads as a live, connected application, Kinective's Legal team should review how it is presented to clients and prospects (sales meetings, recorded videos) before it is shown. Nobody should state or imply that a named vendor product (SAP, IBM Maximo, Salesforce, MasterControl …) is connected when it is not.
+
 ## 14. Open points
 
 **Still to confirm with the Product Owner.** These follow the draft plan until confirmed (see `docs/PLAN_RBAC_ADAPTIVE_UI.md`, section 9):
@@ -570,12 +592,12 @@ On branch `feature/agent-first` the workbench becomes agent-first and human-gove
 | | |
 |---|---|
 | **Home** | Every role lands on `#/home`: a briefing built from the data, starter prompts, *Needs you*, what the agent prepared (with trace and undo), watch rules, pinned cards and the role's key figures, each with *Explain this number* |
-| **Ask Circularity** | Ctrl+J or **Ask** in the top bar. The agent streams each action it calls (Retrieved, Model or Rules), then answers with cards: decision packet, route comparison, why and why not, what-if, risks, plan preview, approval card, reconciliation, tables, charts, diagnoses and diffs. It always says *Agent: rule-based. No language model connected.* |
+| **Ask Circularity** | Ctrl+J or **Ask** in the top bar. The agent streams each action it calls (Retrieved, Model or Rules), then answers with cards: decision packet, route comparison, why and why not, what-if, risks, plan preview, approval card, reconciliation, tables, charts, diagnoses and diffs. On `feature/agent-first` it always said *Agent: rule-based. No language model connected.*; from Update 13 the label is **Circularity Agent** with a status dot (the reasoning is still rule-based) |
 | **A person commits** | Anything that changes data shows a plan preview first. Decisions are approved only in the approval card, which shows the agent's drafted rationale, your approval limit and the raw instruction. Above the limit a decision escalates to Admin; nobody approves what they submitted unless Admin allows it |
 | **Autonomy** | Admin sets, per role and action type, Off, Suggest, Prepare or Act and notify (capped by the action's risk tier) in Access, along with approval limits, run limits and a kill switch per agent |
 | **Assists** | Field mapping suggestions with a sample preview and gap check, feed diagnosis, setup from a sample, table links and descriptions, workflow drafts, fixes, diagnoses and clones, conflict suggestions, import cleaning, event explanations, approval cards with batch review, bulk plans on Returned assets, the asset summary that keeps retrieved and predicted apart, and an evidence pack |
-| **Ten stages** | Lease ends · Return authorised · Pickup and transit · Received · Inspect and grade · Decide · Approve · Execute · Outcome · Reconcile and learn (labels assumed until the Product Owner signs them off). The case run view shows each stage's nine fields with Next, Back, Replay and Reset |
-| **State** | Everything you do is kept in this browser and survives a refresh; two tabs stay in step; *Reset all* or *Reset case* (presenter tools, `?presenter=1`) restores the seed |
+| **Ten stages** | Lease ends · Return authorised · Pickup and transit · Received · Inspect and grade · Decide · Approve · Execute · Outcome · Reconcile and learn (labels assumed until the Product Owner signs them off). Process orchestration shows them on the **live run board** (section 6.11), where each box opens in place and the run plays by itself; *Reset case* is in the Presenter menu |
+| **State** | Everything you do is kept in this browser and survives a refresh; two tabs stay in step; *Reset all* or *Reset case* (presenter tools, `?presenter=1`) restores the starting state |
 | **Checks** | The Demo data checks include 53 intent tests and 7 safety tests (approving from text, cross-tenant requests, waiving a gate, instructions hidden in notes and CSV cells, agent-prepared commits) |
 
 > **Legal review.** Autonomy, approval limits, attribution, audit and evidence-pack wording, personal-data handling in field mapping and local persistence should be reviewed by the Legal team before they are relied on or shown to clients.
