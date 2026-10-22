@@ -338,10 +338,12 @@ Roles that may look but not change see a **Read-only view** banner, and every fi
 
 **For:** Developer and Admin; Approver and Engineer read-only. **Purpose:** let AI agents and other platforms work with Circularity safely, through governed tools (MCP is the Model Context Protocol, an open standard for connecting AI agents to tools).
 
+Each section is its own page (Update 14): pick it in the sidebar or in the tabs under the page title. The page opens on the tool catalog.
+
 | Section | What it shows |
 |---|---|
 | Tool catalog | 10 tools, such as `get_case_evidence`, `predict_outcomes`, `optimize_pool` and `send_instruction`. Six only read; four write, and those need a specific agent or a human approval |
-| Agent registry | Five agents (Evidence Assembler, Opportunity Finder, Gap Requester, Execution Coordinator, Reconciler), each with its authority and calls this month |
+| Agent registry | Nine agents (Evidence Assembler, Opportunity Finder, Gap Requester, Handoff Coordinator, Reconciler, Briefing Agent, Analytics Explainer, Integration Assistant, Audit Assistant), each with its scopes, tools, authority and calls this month. The live run board on Process orchestration shows which of them acted at each stage |
 | Playground | Try a tool call (Developer and Admin) |
 | Permission matrix | Which agent may call what, per customer tenant |
 | Call log and gate | Every call, including the ones held or denied |
@@ -350,7 +352,9 @@ Roles that may look but not change see a **Read-only view** banner, and every fi
 
 **Hard rules, shown on the page:** an agent cannot waive a failed gate, and it cannot make a commercial commitment beyond its authority.
 
-[![MCP and Tools](docs/screenshots/readme-mcp.webp)](docs/screenshots/readme-mcp.webp)
+| Tool catalog | Agent registry |
+|---|---|
+| [![MCP and Tools, tool catalog](docs/screenshots/readme-mcp.webp)](docs/screenshots/readme-mcp.webp) | [![Agent registry](docs/screenshots/mcp-agents.webp)](docs/screenshots/mcp-agents.webp) |
 
 ### 6.9 Audit and provenance
 
@@ -364,7 +368,7 @@ Roles that may look but not change see a **Read-only view** banner, and every fi
 
 ### 6.10 Access (Admin only)
 
-**Purpose:** who can do what.
+**Purpose:** who can do what. Each section is its own page (Update 14), picked in the sidebar or the tabs under the title; Access opens on Accounts and roles. With the agent-first build, four more pages follow: Agent autonomy, Approval limits, Agents and kill switches, Agent metrics.
 
 - **Accounts and roles:** the eleven demo accounts, their role, their tenants and their landing page.
 - **Identity and users** (simulated): how users and roles arrive from the customer's identity provider (for example Microsoft Entra ID). Setup order SSO → provisioning (SCIM) → role mapping, **Sync from directory**, App Roles or directory groups mapped to role, tenant and site (editable; membership is read-only), users from the directory with `example.com` addresses (there is no *Add user*; users are added in the identity provider), a leaver (*Apply directory removal*), the escalation path, and **out-of-office delegation** to someone who already holds the Approver role.
@@ -382,11 +386,15 @@ Roles that may look but not change see a **Read-only view** banner, and every fi
 **The live run board** (Update 13) sits at the top of the page, under a one-line header with the case selector:
 
 - **It plays by itself.** Opening the page, choosing another case or pressing **Replay** plays the case's run from *Lease ends* to the stage it has reached, about 5 seconds a stage: the box opens, each activity line shows a spinner, then a tick, the record it got and its latency; the box settles and the next one opens. The page never scrolls on its own. **Pause**, **1× / 2×**, **Skip to now** and **Replay** sit on the board; with reduced motion the end state shows at once.
-- **Each box drills down in place.** Its body spans the row right under it and lists three to five lines, for example *MasterControl · Fetched certification records · POL-68412 · QMS-2906, certified 24 months · 214 ms*, then the stage's result and, for the current stage, the next step with its button (or who it waits for, with the escalation card). Stages not reached show their lines greyed as *Will …*. Click any box to open it; Esc closes it.
-- **Counters:** a progress bar, elapsed time, **tools called** and **audit entries** (the audit and event IDs, such as `AU-PRV-52CCC7`, each of which exists in Audit & provenance). Each finished box shows its own count.
+- **Each box drills down in place.** Its body spans the row right under it and lists what each **Circularity agent** did (Update 14): the agent, the MCP tool it called and the system it reached, what it got, the model it used, the provenance or event ID and the latency, for example *✦ Opportunity Finder · Decided: recommend Redeploy RT-1048 · $9,600 · `optimize_pool` → Circularity* or *✦ Evidence Assembler · Fetched certification records · POL-68412 · QMS-2906, certified 24 months · `get_case_evidence` → MasterControl · AU-PRV-3B8617*. People appear by role where a person acts (Planner submits, Approver approves, Finance confirms). Then the stage's result and, for the current stage, the next step with its button (or who it waits for, with the escalation card). Stages not reached show their lines greyed as *Will …*. Click any box to open it; Esc closes it.
+- **Agents by stage:** Evidence Assembler and Briefing Agent open the case; Evidence Assembler and Opportunity Finder authorise the return; Handoff Coordinator tracks transit; Evidence Assembler, Gap Requester and Briefing Agent receive it; Evidence Assembler grades it (and Gap Requester asks for what is missing); Opportunity Finder decides; Audit Assistant and Handoff Coordinator prepare the approval; Handoff Coordinator executes; Reconciler collects the outcome; Reconciler and Analytics Explainer learn. Each box names its lead agent.
+- **Models where they are used:** *Inspect and grade* uses **condition-vision v2.1** (deep learning, CNN EfficientNet-B3, accuracy 94.2%) and **rul-survival v1.4** (XGBoost survival, C-index 0.81); *Decide* uses **demand-match v2.0** (transformer embedding ranker), **resale-price v1.3** (XGBoost regressor; MAE, MAPE and P10–P90 coverage computed from the reconciled decisions, the same figures as Analytics › Model versions), **prep-cost-time v1.3** (LightGBM), **service-exposure v1.2** (LightGBM Tweedie) and **repair-success v1.1** (XGBoost classifier); *Reconcile and learn* validates resale-price against the outcome. Each stage that uses a model shows a model card: algorithm, task, validation and training data. Algorithm names and validation figures other than resale-price's are configured values (assumed).
+- **Counters:** a progress bar, elapsed time, **agents**, **tool calls**, **model calls** and **audit entries** (the audit and event IDs, such as `AU-PRV-52CCC7`, each of which exists in Audit & provenance). Each finished box shows its own count.
 - Every line comes from the case record, its provenance and its events, the same run store that drives the journey indicator, Home and the agent, so they always agree.
 
 Below the board: **Run details** (collapsed: approval and execution, action calls, events for this run), the **run trace** (one span per stage, recorded action and agent call, with sensitive values redacted) and **Agents and services**. Presenters get a **Failure drill** in the Presenter menu (`?presenter=1`) that fails one stage and queues the rest. With `?agent=0` the page keeps the earlier stage list.
+
+[![The Decide stage: the Opportunity Finder's tool calls and the models it used](docs/screenshots/live-run-decide.webp)](docs/screenshots/live-run-decide.webp)
 
 | Playing | A stage opened in place |
 |---|---|

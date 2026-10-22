@@ -286,3 +286,15 @@ Earlier rules apply unchanged: palette tokens only, prefixed class names (new pr
 
 **Harness note for the next session:** this session's scratchpad holds `h/src/live.js`, `h/src/run.js`, `tools/all.sh` (all suites in order: legacy with `circ-agent=0`, then af1a → af1b → af2 → af3a → af3b → af4 → af5, extra names appended, then ovd and afovd) and `h2/shots13.py` (every README screenshot with its route, account, size and post-load hook; `NOSCROLL` and `TOSTEP(k)` avoid blank headless screenshots on routes that scroll to an anchor).
 
+---
+
+## 13. Follow-up after the second review (22 Oct 2026, CHANGES Update 14)
+
+| Ask | Built |
+|---|---|
+| The board looked like manual software; each step should be done by a Circularity agent | `afStageLines` rewritten: every line before approval is an agent's MCP tool call (agent, tool, system, result, provenance or event ID, latency); people appear only where a person acts (submit, approve, confirm). Lead agent on each box, agent list in the open box, *orchestrated by Circularity Agent*, counters for agents, tool calls and model calls. `AF_STAGE_AGENT` (also used by the run trace) follows the same mapping |
+| Show the ML/DL models where they come into play, with their error | `LR_MODELS`: condition-vision (CNN), rul-survival (XGBoost AFT) at Inspect and grade; demand-match (transformer ranker), resale-price (XGBoost), prep-cost-time and service-exposure (LightGBM), repair-success (XGBoost classifier) at Decide; validation at Reconcile and learn. resale-price's MAE, MAPE and coverage are computed from reconciled decisions; the other algorithm names and figures are configured values **(assumed)** until data science confirms them |
+| MCP & Tools and Access were one long scroll | `SEC_PAGED` + `secPage()`: one section per route with a tab row, in both builds |
+
+Tests: `run.js` 75 checks; `rbac.js` checks Access sections and the Playground on their own pages. Every suite passes.
+

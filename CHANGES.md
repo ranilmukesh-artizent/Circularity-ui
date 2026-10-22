@@ -4,7 +4,60 @@ For the product overview (what Circularity does, every screen and every role) re
 
 Open `index.html`. The app opens on a **sign-in form** (Update 9): type `exec` or `ops` and any password, and it opens on that person's home page. With `ops`, pick a returned asset and follow its ten journey steps (Update 10). Update 8 adds the **Executive** and **Warehouse Manager** accounts, the guided treatment page and **Process orchestration**. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
 
-**Quick links:** [Update 13: Live run board and live wording](#update-13-live-run-board-and-live-wording-branch-feature-live-run) · [Update 12: Agent-first workbench](#update-12-agent-first-workbench-branch-feature-agent-first) · [Update 11: Command Center by section, Asset Intelligence restructure](#update-11-command-center-by-section-asset-intelligence-restructure-redeploy-and-cost-wording-edge-cases) · [Update 10: Journey-led flow, line-item learning](#update-10-journey-led-flow-step-guidance-value-that-builds-line-item-learning) · [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+**Quick links:** [Update 14: Agentic run board, model cards, MCP and Access pages](#update-14-agentic-run-board-model-cards-mcp-and-access-pages-branch-feature-live-run) · [Update 13: Live run board and live wording](#update-13-live-run-board-and-live-wording-branch-feature-live-run) · [Update 12: Agent-first workbench](#update-12-agent-first-workbench-branch-feature-agent-first) · [Update 11: Command Center by section, Asset Intelligence restructure](#update-11-command-center-by-section-asset-intelligence-restructure-redeploy-and-cost-wording-edge-cases) · [Update 10: Journey-led flow, line-item learning](#update-10-journey-led-flow-step-guidance-value-that-builds-line-item-learning) · [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+
+---
+
+## Update 14: Agentic run board, model cards, MCP and Access pages (branch `feature/live-run`)
+
+**Why:** the second review on 22 Oct: the run board read like manual software rather than work done by Circularity's agents; every stage should show which agent acted, and the stages that use machine-learning or deep-learning models should name the model and its error. MCP & Tools and Access were one long scroll each, unlike the other sidebar sections.
+
+> **Legal review.** The board now names agents, tools, model algorithms and validation figures, and the vendor systems they reach. The resale-price figures are computed from the reconciled decisions; the other algorithm names and validation figures are configured values (assumed) until the data science team confirms them. Kinective's Legal team should review how these claims are presented before the product is shown to clients, together with the note in Update 13.
+
+### Every stage is done by a Circularity agent
+
+| What | Where | What you see |
+|---|---|---|
+| **Agent on every line** | `afStageLines(c, n)` | Each line names the agent (✦ Evidence Assembler, Opportunity Finder, Gap Requester, Handoff Coordinator, Reconciler, Briefing Agent, Analytics Explainer, Audit Assistant), the MCP tool it called and the system it reached (`get_case_evidence` → MasterControl, `find_demand` → Salesforce Sales Cloud, `send_instruction` → SAP S/4HANA), what it got, its provenance or event ID and the latency. People appear by role only where a person acts: the Planner submits, the Approver approves, Finance confirms |
+| **Agents by stage** | `AF_STAGE_AGENT` (also the run trace) | 1 Evidence Assembler, Briefing Agent · 2 Evidence Assembler, Opportunity Finder · 3 Handoff Coordinator, Evidence Assembler · 4 Evidence Assembler, Gap Requester, Briefing Agent · 5 Evidence Assembler (Gap Requester when evidence is missing) · 6 Opportunity Finder · 7 Audit Assistant, Handoff Coordinator, then the Approver · 8 Handoff Coordinator · 9 Reconciler, then Finance · 10 Reconciler, Analytics Explainer, Opportunity Finder |
+| **The agent decides, the person approves** | Stage 6 and 7 | *✦ Opportunity Finder · Decided: recommend Redeploy RT-1048 · $9,600 (P10–P90 $8,371–$10,608) · snapshot EVS-…*; *✦ Audit Assistant · Pre-approval check · 6 of 6 gates passed · 10 provenance records*; *✦ Handoff Coordinator · Drafted the rationale*; then *Approver · Waiting for the Approver* |
+| **Lead agent on each box** | Box tile | *✦ Evidence Assembler +1*, *✦ Opportunity Finder*; the open box lists every agent that acted |
+| **Counters** | Board header | *orchestrated by ✦ Circularity Agent*; **agents**, **tool calls**, **model calls** and **audit entries** rise as lines land (RT-1048: 6 agents, 28 tool calls, 4 model calls, 10 audit entries) |
+
+### Models where they are used
+
+| Stage | Model | Algorithm | Validation shown |
+|---|---|---|---|
+| 5 Inspect and grade | condition-vision v2.1 | Deep learning: CNN (EfficientNet-B3), grades the inspection photos and checks them against the inspector's grade | accuracy 94.2% · macro-F1 0.91 (assumed) |
+| 5 Inspect and grade | rul-survival v1.4 | XGBoost survival (AFT), remaining-life range | C-index 0.81 · MAE 3.9 months (assumed) |
+| 6 Decide | demand-match v2.0 | Deep learning: transformer embedding ranker, matches the asset to open demand | precision@3 0.92 · recall@10 0.88 (assumed) |
+| 6 Decide | resale-price v1.3 | XGBoost regressor, P10–P90 | **MAE, MAPE and P10–P90 coverage computed from the reconciled decisions of that version** (same source as Analytics › Model versions) |
+| 6 Decide | prep-cost-time v1.3, service-exposure v1.2, repair-success v1.1 | LightGBM regressor, LightGBM (Tweedie), XGBoost classifier | MAE $214 · MAPE 7.9%; MAE $186; AUC 0.88 · Brier 0.09 (assumed) |
+| 10 Reconcile and learn | resale-price | Analytics Explainer calls `get_model_validation`; the outcome joins the validation set; the Reconciler queues learning records for retraining | — |
+
+Each stage that uses a model shows a **Models used at this stage** card (model and version, *Machine learning* or *Deep learning*, algorithm, task, validation, training data). Lines that used a model carry the model tag, for example *`predict_outcomes` → Circularity ML · resale-price v1.3 · XGBoost regressor*. Model versions follow the case (`learnVer`), so they match the decision page.
+
+### MCP & Tools and Access: one section per page
+
+| What | Where | What you see |
+|---|---|---|
+| **Pages, not one scroll** | `SEC_PAGED`, `secPage()` in `route()` | Each sidebar section of MCP & Tools (Tool catalog, Agent registry, Playground, Permission matrix, Call log and gate, As MCP client, Server proposals) and of Access (Accounts and roles, Identity and users, Approver delegations, All requests and, in the agent-first build, Agent autonomy, Approval limits, Agents and kill switches, Agent metrics) is its own page, like Integration. A tab row under the title switches between them; switching never scrolls. MCP & Tools opens on the tool catalog; Access on Accounts and roles. The *server / client* toggle became the *As MCP client* tab |
+| **Same in both builds** | Shared code | Works with `?agent=0` too (that build has four Access pages) |
+
+### Tests
+
+`run.js` grows to **75 checks**: every line before approval is an agent tool call or a named person; every agent, tool and model exists (`AGENTS`, `LR_MODELS`); the Opportunity Finder does the Decide stage; stage 6 shows XGBoost, LightGBM and the transformer ranker with computed MAE, MAPE and coverage; stage 5 shows the CNN and the life model; agents and model calls are counted; each of the seven MCP pages and eight Access pages shows only its own section with the right tab selected; switching sections does not scroll. Expectation updates: `rbac.js` (Access sections and the Playground are checked on their own pages).
+
+| Suite | Checks | Result |
+|---|---|---|
+| rbac, gf_run, demo, iter2, iter3 (`?agent=0`) | 208, 110, 91, 51, 61 | all pass |
+| af1a, af1b, af2, af3a, af3b, af4, af5 | 42, 10, 92, 39, 7, 61, 50 | all pass |
+| live (both builds), run | 8 + 8, 75 | all pass |
+| ovd, afovd (390 px) | 25, 15 | all pass |
+
+Screenshots retaken: `live-run-board`, `live-run-expanded`, `live-run-dark`, `live-run-phone`, `flow-orchestration`, `readme-mcp` (now the tool catalog page), `rbac-admin-access` (Accounts and roles), `flow-identity`; added `live-run-decide.webp` (the Decide stage with its model cards) and `mcp-agents.webp` (Agent registry page).
+
+[![The Decide stage: the Opportunity Finder's tool calls and the models it used](docs/screenshots/live-run-decide.webp)](docs/screenshots/live-run-decide.webp)
 
 ---
 
