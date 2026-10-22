@@ -33,6 +33,8 @@ class Rec:
         await s.page.evaluate('''r=>{const d=document.createElement('div');d.textContent=r;d.style.cssText='position:fixed;left:50%;top:74px;transform:translateX(-50%);background:#141414;color:#FFDD00;font:700 17px Inter,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:10px 22px;border-radius:999px;z-index:2147483646;box-shadow:0 6px 18px rgba(0,0,0,.25);transition:opacity .5s';document.documentElement.appendChild(d);setTimeout(()=>d.style.opacity='0',2600);setTimeout(()=>d.remove(),3200)}''', role)
     def now(s):
         return time.monotonic() - s.t0
+    async def cut(s, coro):
+        a = s.now(); await coro; s.cuts.append([round(a, 2), round(s.now(), 2)])
     def say(s, k):
         t = s.now(); s.tl.append([k, round(t, 2)]); print(f'{t:7.1f}s  {k}', flush=True); return t + DUR[k]
     async def until(s, t, pad=0.5):
@@ -83,8 +85,24 @@ class Rec:
         await asyncio.sleep(0.6)
 
 
+async def glide_to(R, text, ms=1800, off=110):
+    y = await R.page.evaluate('''([t,o])=>{const h=[...document.querySelectorAll("#view h1,#view h2,#view h3,#view h4")].find(x=>x.textContent.trim().startsWith(t));return h?h.getBoundingClientRect().top+scrollY-o:null}''', [text, off])
+    if y is None:
+        print(f'  WARN heading {text!r} not found', flush=True); return
+    await R.page.evaluate('''([y,ms])=>new Promise(r=>{const s0=scrollY,d=y-s0,t0=performance.now();const f=t=>{const p=Math.min(1,(t-t0)/ms),e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;scrollTo(0,s0+d*e);p<1?requestAnimationFrame(f):r()};requestAnimationFrame(f)})''', [y, ms])
+    await asyncio.sleep(0.3)
+
+async def glide_in(R, root, frac=1.0, ms=4000):
+    await R.page.evaluate('''([q,f,ms])=>new Promise(r=>{const Q=document.querySelector(q);if(!Q)return r();const el=[Q,...Q.querySelectorAll("*")].find(x=>x.scrollHeight>x.clientHeight+60&&/auto|scroll/.test(getComputedStyle(x).overflowY));if(!el)return r();const s0=el.scrollTop,d=(el.scrollHeight-el.clientHeight)*f-s0,t0=performance.now();const g=t=>{const p=Math.min(1,(t-t0)/ms);el.scrollTop=s0+d*(p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2);p<1?requestAnimationFrame(g):r()};requestAnimationFrame(g)})''', [root, frac, ms])
+
+async def to_top(page):
+    await page.evaluate('()=>window.scrollTo({top:0,behavior:"smooth"})'); await asyncio.sleep(0.7)
+
+async def lr_settled(R, timeout=60000):
+    await R.page.wait_for_function('()=>S.lr&&S.lr.t>=S.lr.total', timeout=timeout)
+    await asyncio.sleep(0.5)
+
 async def main():
-    only = sys.argv[sys.argv.index('--only') + 1] if '--only' in sys.argv else None
     out = D / 'rec'; out.mkdir(exist_ok=True)
     for f in out.glob('*.webm'): f.unlink()
     async with async_playwright() as p:
@@ -92,167 +110,166 @@ async def main():
         ctx = await br.new_context(viewport={'width': 1440, 'height': 900}, record_video_dir=str(out), record_video_size={'width': 1440, 'height': 900},
                                    color_scheme='light', reduced_motion='no-preference', locale='en-GB', timezone_id='UTC')
         await ctx.add_init_script(CURSOR_JS)
-        page = await ctx.new_page()
-        R = Rec(page)
+        page = await ctx.new_page(); R = Rec(page)
         page.on('pageerror', lambda e: print('PAGE ERROR', e, flush=True))
 
-        # 0 · title
+        # title
         await page.goto(CARD('title')); await asyncio.sleep(0.8)
-        await R.until(R.say('c0'), 0.8)
+        await R.until(R.say('c0'), 0.6)
 
-        # 1 · executive: the outcome first
+        # executive outcome
         a0 = R.now()
         await page.goto(APP); await page.evaluate('()=>{try{localStorage.clear();sessionStorage.removeItem("__curpos")}catch(e){}}'); await page.reload()
         R.cuts.append([round(a0, 2), round(R.now(), 2)])
         await R.switch('exec', 'Executive', out=False)
-        e = R.say('c1a')
-        await R.point('#view .afbrief, #view .panel', 0)
-        await asyncio.sleep(3.5)
+        e = R.say('c1')
+        await R.point('#view .afc', 0); await asyncio.sleep(5.0)
         await R.point('text=Key figures')
+        await R.until(e, 0.3)
+
+        # plug and play: Connection Fabric, an agent diagnosing a feed, Workflow Studio drafting with AI
+        await R.switch('admin', 'Admin · IT')
+        await R.nav('integration')
+        await R.click('[data-act="intTab"][data-arg="map"]', after=0.6)
+        e = R.say('c2a')
+        await R.point('#view .phead p'); await asyncio.sleep(3.0)
+        await R.point('text=/integration health/i'); await asyncio.sleep(2.0)
+        await glide_to(R, 'Connection Fabric', 1600, -260)
         await R.until(e, 0.2)
-        e = R.say('c1b')
-        await R.click('#view button:has-text("Brief me")', after=0.3)
-        await R.until(e, 1.6)
-        await page.keyboard.press('Escape'); await asyncio.sleep(0.6)
-
-        # 2 · where the value leaks
-        await page.goto(CARD('journey')); await asyncio.sleep(0.6)
-        await R.until(R.say('c2'), 1.0)
-
-        # 3 · planner: one asset, decided by agents
-        a0 = R.now(); await page.goto(APP + '#/home'); await asyncio.sleep(1.2); R.cuts.append([round(a0, 2), round(R.now(), 2)])
-        await R.switch('ops', 'Planner')
-        e = R.say('c3a')
-        await R.point('text=RT-1048 · submit for review')
-        await R.until(e, 0.3)
-        await R.open_case('RT-1048')
-        e = R.say('c3b')
-        await R.point('#view .afrec, #view .afc', 0); await asyncio.sleep(5.5)
-        await R.point('text=ALTERNATIVES'); await asyncio.sleep(4.0)
-        await R.point('text=NOT ELIGIBLE'); await asyncio.sleep(3.0)
-        await R.point('#view .afgates', 0)
-        await R.until(e, 0.3)
-        await R.click('#view [data-act="afAssist"]', after=1.0)
-        e = R.say('c3c')
-        await R.type('#afq', 'What should we do with RT-1048, and why?', delay=35)
-        await page.keyboard.press('Enter'); await asyncio.sleep(0.4)
-        if await page.locator('#askp .aflines li').count() == 0:
+        await R.click('#view [data-act="afAssist"][data-arg="source|mkt"]:has-text("Diagnose")', after=0.8)
+        e = R.say('c2b')
+        await R.type('#afq', 'Why is the Market pricing feed stale, and how do I fix it?', delay=26)
+        await page.keyboard.press('Enter'); await asyncio.sleep(0.5)
+        if await page.locator('#askp .afm.a').count() == 0:
             await R.click('#askp .afcomp button:has-text("Ask")', after=0.3)
-        await R.until(e, 2.0)
-        await page.keyboard.press('Escape'); await asyncio.sleep(0.5)
-        e = R.say('c3d')
-        await R.point('text=AFTER APPROVAL'); await asyncio.sleep(3.0)
-        await R.click('#view .afc [data-act="afDo"]:has-text("Submit for review")', after=0.5)
-        await R.until(e, 1.0)
-
-        # 4 · approver commits
-        await R.switch('approver', 'Approver')
-        e = R.say('c4p')
-        await R.open_case('RT-1048')
-        await R.until(e, 0.2)
-        await R.click('#view .afc [data-act="afDo"]:has-text("Approve")', after=1.0)
-        e = R.say('c4a')
-        await R.point('#modal .mb p', 0); await asyncio.sleep(3.5)
-        await R.point('#modal textarea, #ap-why', 0); await asyncio.sleep(2.5)
-        await R.point('#modal :text("Raw instruction")')
-        await R.until(e, 0.2)
-        e = R.say('c4b')
-        await R.click('#modal label:has-text("I reviewed evidence snapshot") input', after=0.6)
-        await R.click('#modal [data-act="confirmApprove"]', after=1.2)
         await R.until(e, 1.4)
+        await page.keyboard.press('Escape'); await asyncio.sleep(0.4)
+        await to_top(page)
+        await R.click('[data-act="intTab"][data-arg="studio"]', after=0.8)
+        await R.click('#afAskBtn', after=0.6)
+        e = R.say('c2c')
+        await R.type('#afq', 'Draft a workflow that ingests inspection results from SafetyCulture into the condition model every 15 minutes', delay=16)
+        await page.keyboard.press('Enter'); await asyncio.sleep(2.5)
+        await R.point('#askp .afc', 0); await asyncio.sleep(1.5)
+        await R.click('#askp [data-act="afDo"]:has-text("Accept all")', after=0.8)
+        await R.until(e, 0.3)
+        await page.keyboard.press('Escape'); await asyncio.sleep(0.4)
 
-        # 5 · agents carry it through: the live run board
-        await R.nav('orchestration')
+        # step 1: Asset & Product Intelligence
+        await R.switch('ops', 'Planner')
+        await R.nav('product')
+        await R.click('#view a[href="#/product/asset/RT-1048"]', after=1.4)
+        e = R.say('c3a')
+        await R.point('#view h1'); await asyncio.sleep(2.0)
+        await glide_to(R, 'Retrieved from enterprise systems', 2200)
+        await asyncio.sleep(2.5)
+        await glide_to(R, 'Lease end, return and transit', 1500)
+        await R.until(e, 0.2)
+        e = R.say('c3b')
+        await glide_to(R, 'Diagnostic condition', 1800); await asyncio.sleep(0.8)
+        await glide_to(R, 'Inspection findings', 1500); await asyncio.sleep(0.8)
+        await glide_to(R, 'Lifecycle evidence timeline', 1500)
+        await R.until(e, 0.3)
+
+        # steps 2-4: Treatment Intelligence, evidence snapshot, pathways, why, what-if
+        await to_top(page)
+        await R.click('#view details.asmenu > summary', after=0.6)
+        await R.click('#view details.asmenu [data-act="go"][data-arg="product/RT-1048"]', after=1.4)
+        e = R.say('c4a')
+        await R.point('#view .afrec', 0); await asyncio.sleep(1.5)
+        await R.click('#view [data-act="snapshot"]', after=1.0)
+        await glide_in(R, '#drawer', 0.55, 4500)
+        await R.until(e, 0.2)
+        await page.keyboard.press('Escape'); await asyncio.sleep(0.5)
+        await page.evaluate('()=>{try{closeDrawer(true)}catch(e){}}'); await asyncio.sleep(0.4)
+        await R.click('#view .afc [data-act="afDo"]:has-text("Full analysis")', after=0.8)
+        e = R.say('c4b')
+        await glide_to(R, 'All pathways', 2000)
+        await R.point('#view table', 0)
+        await R.until(e, 0.2)
+        e = R.say('c4c')
+        await glide_to(R, 'Why this outcome', 2000); await asyncio.sleep(2.5)
+        await glide_to(R, 'Predicted outcomes and comparison', 1800)
+        await R.until(e, 0.2)
+        e = R.say('c4d')
+        await glide_to(R, 'What-if and edge cases', 2000)
+        await R.click('#view [data-act="tiPreset"][data-arg="demand"]', after=1.0)
+        await R.point('#view .tiwi, #view #wiSim', 0)
+        await R.until(e, 0.8)
+        await R.click('#view [data-act="tiPreset"][data-arg="demand"]', after=0.5)
+
+        # step 5: submit, then the approver commits
         e = R.say('c5a')
-        await asyncio.sleep(3.0)
-        await R.point('#lrBoard .lrb.open .lrl', 0)
+        await glide_to(R, 'Next best action', 1800)
+        sub = '#jgmount [data-act]:has-text("Submit RT-1048 for review"):visible'
+        if await page.locator(sub).count():
+            await R.click(sub, after=0.8)
+        else:
+            print('  WARN bottom-bar submit missing; using the packet button', flush=True)
+            await to_top(page); await R.click('#view .afc [data-act="afDo"]:has-text("Submit for review")', after=0.8)
         await R.until(e, 0.4)
-        e = R.say('c5a2')
-        await R.point('#lrAgents'); await asyncio.sleep(1.5)
-        await R.point('#lrTools'); await asyncio.sleep(1.5)
-        await R.point('#lrAud')
-        await R.click('#lrBoard [data-act="lrSpeed"][data-arg="2"]', after=0.5)
-        await R.until(e, 1.0)
-        await R.click('#lrBoard [data-act="lrSkip"]', after=0.6)
-        await R.click('#lrBoard .lrb[data-n="5"] .lrh', after=0.4)
+        await R.switch('approver', 'Approver')
+        await R.open_case('RT-1048')
+        await R.click('#view .afc [data-act="afDo"]:has-text("Approve")', after=1.0)
         e = R.say('c5b')
-        await R.scroll_to('#lrBody-5', 'center')
-        await R.point('#lrBody-5 .lrmd', 0); await asyncio.sleep(3.0)
-        await R.point('#lrBody-5 .lrmods')
-        await R.until(e, 0.3)
+        await R.point('#modal .mb p', 0); await asyncio.sleep(3.0)
+        await R.point('#modal textarea', 0); await asyncio.sleep(2.0)
+        await R.click('#modal label:has-text("I reviewed evidence snapshot") input', after=0.5)
+        await R.click('#modal [data-act="confirmApprove"]', after=0.8)
+        await R.until(e, 0.6)
+
+        # steps 6-9: agents on the live run board
+        await R.nav('orchestration')
+        e = R.say('c6a')
+        await asyncio.sleep(3.5)
+        await R.point('#lrBoard .lrb.open .lrl', 0); await asyncio.sleep(2.5)
+        await R.point('#lrAgents')
+        await R.until(e, 0.2)
+        await R.click('#lrBoard [data-act="lrSkip"]', after=0.5)
+        await R.click('#lrBoard .lrb[data-n="6"] .lrh', after=0.3)
+        e = R.say('c6b')
+        await R.scroll_to('#lrBody-6 .lrmods', 'center')
+        await R.point('#lrBody-6 .lrmc .num', 1); await asyncio.sleep(1.8)
         await R.scroll_to('#lrBoard', 'start')
-        await R.click('#lrBoard .lrb[data-n="6"] .lrh', after=0.4)
-        e = R.say('c5c')
-        await R.scroll_to('#lrBody-6', 'start')
-        await R.point('#lrBody-6 .lrl', 5); await asyncio.sleep(2.5)
-        await R.point('#lrBody-6 .lrmods'); await asyncio.sleep(2.0)
-        await R.point('#lrBody-6 .lrmc .num', 1)
-        await R.until(e, 0.3)
-        await R.scroll_to('#lrBoard', 'start')
+        await R.click('#lrBoard .lrb[data-n="5"] .lrh', after=0.4)
+        await R.point('#lrBody-5 .lrmd', 0)
+        await R.until(e, 0.2)
         await R.click('#lrBoard .lrb[data-n="8"] .lrh', after=0.4)
-        e = R.say('c5d')
+        e = R.say('c6c')
         for i in range(3):
             btn = '#lrBoard .lrb.open [data-act="afRunNext"]'
             await page.wait_for_selector(btn, timeout=20000)
-            await R.click(btn, after=0.4)
-            await R.lr_settled()
-        await R.until(e, 0.8)
-        await R.switch('finance', 'Finance')
-        await R.nav('orchestration')
-        await asyncio.sleep(1.5)
-        await R.click('#lrBoard [data-act="lrSkip"]', after=0.6)
-        e = R.say('c5e')
-        await R.click('#lrBoard .lrb.open [data-act="afRunNext"]', after=0.4)
-        await R.lr_settled()
-        await R.until(e, 0.2)
-        await R.scroll_to('#lrBody-10', 'center')
-        e = R.say('c5f')
-        await R.point('#lrBody-10 .lrres')
-        await R.until(e, 1.2)
-
-        # 6 · fits the landscape you already run
-        await page.evaluate('()=>window.scrollTo({top:0,behavior:"smooth"})'); await asyncio.sleep(0.6)
-        await R.switch('admin', 'Admin · IT')
-        await R.nav('integration')
-        await R.click('[data-act="intTab"][data-arg="map"]', after=0.8)
-        e = R.say('c6a')
-        await R.point('#view .phead p'); await asyncio.sleep(4.0)
-        await R.point('text=Integration health')
+            await R.click(btn, after=0.3)
+            await lr_settled(R)
         await R.until(e, 0.3)
-        await R.nav('mcp')
-        await R.click('#view .tabs [data-arg="mcp/client"]', after=0.6)
-        e = R.say('c6b')
-        await asyncio.sleep(4.0)
-        await R.click('#view .tabs [data-arg="mcp/agents"]', after=0.6)
-        await R.point('#mcpAgents .panel', 1)
-        await R.until(e, 0.6)
-        await R.nav('access')
-        await R.click('#view .tabs [data-arg="access/autonomy"]', after=0.6)
-        e = R.say('c6c')
-        await R.point('#axAuto select', 0); await asyncio.sleep(4.0)
-        await R.click('#view .tabs [data-arg="access/agentsx"]', after=0.6)
-        await R.point('#axAgents input[type=checkbox]', 0)
-        await R.until(e, 0.6)
 
-        # 7 · it learns, and it proves it
-        await R.switch('finance', 'Finance')
-        await R.nav('analytics')
+        # Finance confirms the outcome off camera; back on the approver's board
+        async def offcam():
+            await R.sign_out(); await R.sign_in('finance'); await R.nav('orchestration'); await asyncio.sleep(1.0)
+            await R.click('#lrBoard [data-act="lrSkip"]', after=0.4)
+            await R.click('#lrBoard .lrb.open [data-act="afRunNext"]', after=0.4); await lr_settled(R)
+            await R.sign_out(); await R.sign_in('approver'); await R.nav('orchestration'); await asyncio.sleep(0.8)
+            await R.click('#lrBoard [data-act="lrSkip"]', after=0.4)
+            await page.evaluate('()=>ACT.afRunSel(10)'); await asyncio.sleep(0.3)
+            await R.scroll_to('#lrBody-10', 'center')
+        await R.cut(offcam())
+
+        # step 10: reconcile and learn
         e = R.say('c7')
-        await R.point('text=additional net recovery vs baseline'); await asyncio.sleep(3.5)
-        await R.point('text=confirmed avoided spend'); await asyncio.sleep(2.5)
-        await R.point('text=median days to realize')
-        await R.until(e, 0.4)
-        e = R.say('c7b')
-        await page.evaluate('()=>{const h=[...document.querySelectorAll("#view h2,#view h3")].find(x=>/Predicted vs actual/.test(x.textContent));h&&h.scrollIntoView({behavior:"smooth",block:"start"})}')
-        await R.until(e, 1.0)
+        await R.point('#lrBody-10 .lrres'); await asyncio.sleep(3.0)
+        await to_top(page)
+        await R.click('#view a.btn:has-text("Open RT-1048")', after=1.4)
+        await R.click('#view .afc [data-act="afDo"]:has-text("Full analysis")', after=0.6)
+        await glide_to(R, 'Reconcile and learn', 2400)
+        await R.until(e, 0.8)
 
-        # 8 · close
+        # close
         await page.goto(CARD('close')); await asyncio.sleep(0.6)
-        await R.until(R.say('c8'), 2.0)
+        await R.until(R.say('c8'), 1.8)
 
         total = R.now()
         (D / 'timeline.json').write_text(json.dumps({'clips': R.tl, 'cuts': R.cuts, 'total': round(total, 2)}, indent=1))
         await page.close(); await ctx.close(); await br.close()
-        print('recorded', round(total, 1), 's')
+        print('recorded', round(total, 1), 's', 'after cuts', round(total - sum(b - a for a, b in R.cuts), 1))
 
 asyncio.run(main())
