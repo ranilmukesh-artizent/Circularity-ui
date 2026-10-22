@@ -951,17 +951,50 @@ body.afpon #asOfPill,body.afpon .rgm{display:none}
 .afbulk{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:44;background:var(--ink);color:var(--bg);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:center;box-shadow:var(--shadow)}.afbulk .btn{background:var(--panel);color:var(--ink)}
 .afsel{margin-right:6px;vertical-align:-2px}.afbench{margin-top:12px}.tbtn.afdx{font-weight:600}
 .afapq{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}.afbatch{border-bottom:1px solid var(--line2);padding:8px 0;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
-.afrtl{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0;padding:0;list-style:none}
-.afrs{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px}
-.afrs .tin{width:20px;height:20px;border-radius:50%;background:var(--panel3);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
-.afrs.done .tin{background:var(--ok-soft);color:var(--ok)}.afrs.failed .tin,.afrs.warning .tin{background:var(--bad-soft);color:var(--bad)}.afrs.running .tin,.afrs.waiting .tin,.afrs.person .tin{background:var(--warn-soft);color:var(--warn)}
-.afrs.on{outline:2px solid var(--ink);outline-offset:1px}.afrs.cur{background:var(--yellow-soft)}.afrs b{font-size:12.5px}
-.afrc{margin-top:12px;gap:8px;align-items:center}
-.afrv{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;margin-top:16px}.afrv .panel{margin-bottom:16px}
-.afnine{display:grid;grid-template-columns:1fr;gap:8px;margin:0}.afnine dt{font:700 11.5px var(--f-display);color:var(--ink2);text-transform:uppercase;letter-spacing:.03em}.afnine dd{margin:2px 0 0}
 .afpres{position:relative}.afpres summary{list-style:none;cursor:pointer}.afpres summary::-webkit-details-marker{display:none}
-@media (max-width:900px){.afrtl{grid-template-columns:repeat(2,minmax(0,1fr))}.afrv{grid-template-columns:1fr}}
 .afauto td,.afauto th{position:relative}.afc .tw,.afp .tw{position:relative}
+/* live run board (prefix lr): ten boxes; the open box's body spans its row, right under it (display:contents + order) */
+.lrph{align-items:center;margin-bottom:12px}.lrph h1{font-size:22px}
+.lrbw{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);margin-bottom:14px}
+.lrhd{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+.lrt{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;min-width:0}.lrt h2{font-size:16px;margin:0}
+.lrctl{gap:6px;align-items:center;flex-wrap:wrap}.lrctl .seg button{height:28px;padding:0 10px}
+.lrbar{height:4px;background:var(--panel3);border-radius:2px;margin:10px 0 6px;overflow:hidden}.lrbar i{display:block;height:100%;background:var(--yellow);transition:width .1s linear}
+.lrmeta{display:flex;flex-wrap:wrap;gap:2px 14px;align-items:baseline;font-size:12.5px;color:var(--ink2)}.lrmeta b{color:var(--ink)}.lrann{margin-left:auto}
+.lrg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:10px}
+.lrb{display:contents}
+.lrh{order:var(--o5);width:100%;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px;cursor:pointer;color:var(--ink);transition:background .3s,border-color .3s,opacity .3s}
+.lrh b{font-size:12.5px}.lrh .lrc{font-size:11px;min-height:1em}.lrh:hover{border-color:var(--ink)}
+.lrh .tin{width:20px;height:20px;border-radius:50%;background:var(--panel3);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.lrb.done .tin{background:var(--ok-soft);color:var(--ok)}.lrb.failed .tin,.lrb.warning .tin{background:var(--bad-soft);color:var(--bad)}.lrb.running .tin,.lrb.waiting .tin,.lrb.person .tin,.lrb.play .tin{background:var(--warn-soft);color:var(--warn)}
+.lrb.ahead .lrh,.lrb.queued .lrh,.lrb.skipped .lrh{opacity:.6}
+.lrb.cur .lrh{background:var(--yellow-soft)}.lrb.play .lrh{border-color:var(--yellow);background:var(--yellow-soft)}
+.lrb.open .lrh{outline:2px solid var(--ink);outline-offset:1px}
+.lrbody{order:var(--b5);grid-column:1/-1;display:none;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:10px 12px;max-height:260px;overflow:auto}
+.lrb.open .lrbody{display:block}
+.lrbh{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-bottom:6px}
+.lrls{list-style:none;margin:0;padding:0}
+.lrl{display:grid;grid-template-columns:18px minmax(120px,max-content) minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--line2);font-size:12.5px}
+.lrl .lrs{font-weight:600}.lrl .lrw{color:var(--ink2);min-width:0}.lrl .lrw b{color:var(--ink);font-weight:600}.lrl .lrm{font-size:11px;color:var(--muted)}
+.lrl.s-hid{display:none}.lrl.s-queued,.lrl.s-queued .lrw b{color:var(--muted);font-weight:500}.lrl.s-fail,.lrl.s-fail .lrw,.lrl.s-fail .lrw b{color:var(--bad)}
+.lrl.s-queued .lrm,.lrl.s-wait .lrm,.lrl.s-fail .lrm,.lrl.s-spin .lrm{visibility:hidden}
+.lri{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;align-self:center;box-sizing:border-box}
+.s-done .lri{background:var(--ok-soft);color:var(--ok)}.s-done .lri::before{content:'\2713'}
+.s-spin .lri{border:2px solid var(--line);border-top-color:var(--ink)}
+.s-wait .lri{background:var(--yellow-soft);color:var(--ink)}.s-wait .lri::before{content:'\2026'}
+.s-fail .lri{background:var(--bad-soft);color:var(--bad)}.s-fail .lri::before{content:'!'}
+.s-queued .lri{border:1px dashed var(--line)}
+.lrres{margin:8px 0 0;font-size:12.5px}.lrb.play .lrres,.lrb.play .lrnx,.lrb.play .lrbody>.afc{display:none}.lrnx{margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px}.lrbody .afc{margin:8px 0 0}
+.lrdet{margin:0 0 14px}.lrdet>summary{cursor:pointer;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}.lrdet[open]>summary{margin-bottom:12px}
+.lrdg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start}.lrdg .panel{margin:0}
+@media (prefers-reduced-motion:no-preference){
+ .lrb.open .lrbody{animation:lrgrow .4s ease}@keyframes lrgrow{from{max-height:0;opacity:.3}to{max-height:260px;opacity:1}}
+ .lrbw.playing .lrl:not(.s-hid){animation:lrin .35s ease both}@keyframes lrin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+ .s-spin .lri{animation:spn .8s linear infinite}.s-wait .lri,.lrb.play .tin{animation:afpulse 1s infinite alternate}}
+@media (prefers-reduced-motion:reduce){.lrbar i,.lrh{transition:none}}
+@media (max-width:1100px){.lrg{grid-template-columns:repeat(2,minmax(0,1fr))}.lrh{order:var(--o2)}.lrbody{order:var(--b2)}}
+@media (max-width:700px){.lrg{grid-template-columns:1fr}.lrh{order:var(--o1)}.lrbody{order:var(--b1)}.lrl{grid-template-columns:18px minmax(0,1fr)}.lrl .lrw,.lrl .lrm{grid-column:2}.lrann{margin-left:0}
+ .lrh{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:8px;padding:6px 8px}.lrh .lrc{flex-basis:100%;padding-left:28px}.lrh .lrc:empty{display:none}}
 /*AF-CSS-END*/
 </style>
 </head>
@@ -6359,42 +6392,156 @@ function afDecorate5(r){
 if(AF_ON){const dec5=afDecorate;afDecorate=function(r){dec5(r);try{afDecorate5(r)}catch(e){console.error(e)}}}
 /* Command Center filters from plain language */
 const afAF0=afApplyFilters;afApplyFilters=function(f){if(parse().page==='command'){S.cc=Object.assign(S.cc||{},{site:f.location||'',cls:f.cls||''});route(true);toast('Filters applied to the Command Center.');return}afAF0(f)};
-/* ===== Case run view (PR: Case run orchestration): the ten stages of one case, each with its nine-field panel, the event feed,
-   evidence, action calls, approval and execution status; Next, Back, Replay and Reset. One run store drives this view,
-   the journey indicator, Home and the agent. ===== */
+/* ===== Live run board (PLAN_LIVE_RUN_AND_LIVE_UI): the one stage display on Process orchestration. Each of the ten boxes drills
+   down in place and the run plays by itself, line by line, from the run store and the case's own records. One run store drives
+   this board, the journey indicator, Home and the agent. ===== */
 const AF_STAGE_ACTIONS={5:['evidence.request','evidence.recordResult'],6:['decision.prepare','case.reevaluate','scenario.save','scenario.delete'],7:['decision.submit','decision.approve','decision.override','decision.decline','escalation.send'],8:['instruction.resend'],9:['outcome.confirm'],10:[]};
 const AF_STAGE_AGENT={1:'Lease adapter · Briefing Agent',2:'Lease and ERP adapters',3:'TMS / 3PL adapter',4:'WMS adapter',5:'Gap Requester · Inspection (Engineer)',6:'Evidence Assembler · Opportunity Finder · gate engine and ranking rules',7:'Handoff Coordinator drafts · a person approves',8:'Handoff Coordinator · ERP, EAM and WMS adapters',9:'Reconciler · Finance confirms',10:'Reconciler · learning records (proposed)'};
 function afStageOfEntry(e){if(e.id==='adapter.acknowledge'){const s=(e.out&&e.out.step!=null)?e.out.step:null;return s===3?9:8}for(const k of Object.keys(AF_STAGE_ACTIONS))if(AF_STAGE_ACTIONS[k].includes(e.id))return +k;return null}
-function afStagePanel(c,n){const run=afRun(c),s=run.stages[n-1],St=AF_STAGES[n-1],L=afLease(c),cur=run.stage===n,nx=cur?afNextStep(c):null;
-  const ents=afCaseJournal(c.id).filter(e=>afStageOfEntry(e)===n||(e.id==='adapter.acknowledge'&&n===8&&afStageOfEntry(e)===8));
-  const evid=n<=3?[['Lease',L.lease+' ended '+fmtDY(L.end)],['Return authorisation',L.rma],['Pickup',fmtD(L.pickup)+' · '+L.carrier]]:n<=6?(c.evidence||[]).map(e=>[e.label,e.state+' · '+e.source+(e.fresh?' · '+e.fresh:'')]):n===7?[['Evidence snapshot',c.snapshot?c.snapshot.id:'—'],['Drafted rationale',c.packet?'Yes (agent)':'Not yet']]:n<=9?(c.exec?c.exec.steps.map(x=>[x.label,x.sys+(x.ack?' · '+x.ack.ref:'')]):[]):(c.outcome?c.outcome.lines.map(l=>[l.label,money(l.pred)+' → '+money(l.act)]):[]);
-  const r=c.recommendation,val=n===5?(c.blocked?[[c.blocked.gateName+' gate','held: '+c.blocked.reason]]:[['Evidence','complete']]):n===6?(r?GATES.map((g,i)=>[g,r.gates[i]==='pass'?'passed':r.gates[i]==='fail'?'failed':'not reached']):[['Gates',c.routes.length?'every route failed a gate':'waiting for evidence']]):n===7?[['Approval limit',S.acct?(afLimitFor(S.acct)===Infinity?'unlimited':money(afLimitFor(S.acct))):'—'],['Self-approval',AF.cfg.self?'allowed within the limit':'not allowed']]:n===8?[['Approval reference',c.approval?c.approval.ref:'none (nothing can be sent)'],['Idempotency','repeats are de-duplicated']]:n===9?[['Finance confirmation',c.outcome?'confirmed':'required']]:[['Source availability',SOURCES.filter(x=>x.status==='stale'||x.status==='unavailable').map(x=>x.name+' '+x.status).join(', ')||'all sources available']];
-  const warn=n>=1&&n<=6&&SOURCES.some(x=>(x.status==='stale'||x.status==='unavailable')&&x.step&&x.step.includes(1));
-  return `<section class="panel afsp" id="afStage" aria-live="polite"><div class="ph"><h3>Stage ${n} · ${esc(St.t)}</h3><span class="chip ${RUN_ST[s.state][1]}">${esc(RUN_ST[s.state][0])}</span>${cur?'<span class="chip y">Current</span>':''}</div><div class="pb"><dl class="afnine">
-   <div><dt>1 · Stage and purpose</dt><dd>${esc(St.t)}: triggered by ${esc(St.trig.toLowerCase())}. ${esc(St.agent)}.</dd></div>
-   <div><dt>2 · Agent or workflow</dt><dd>${esc(AF_STAGE_AGENT[n])}</dd></div>
-   <div><dt>3 · Activity</dt><dd>${ents.length?ents.map(e=>esc((ACTIONS[e.id]||{title:e.id}).title)+' · by '+esc(e.by)+(e.prep?' (prepared by agent)':'')+' · '+esc(fmtD(e.at))).join('<br>'):esc(s.by||'No recorded activity yet')}</dd></div>
-   <div><dt>4 · Evidence with provenance</dt><dd>${evid.length?evid.slice(0,6).map(x=>'<b>'+esc(x[0])+'</b> '+esc(x[1])).join('<br>')+(evid.length>6?'<br><span class="note">'+(evid.length-6)+' more</span>':''):'—'}${n<=4?' '+afSimTag():''}</dd></div>
-   <div><dt>5 · Actions or systems called</dt><dd>${ents.length?[...new Set(ents.map(e=>e.id))].map(id=>'<span class="mono">'+esc(id)+'</span>').join(', ')+' · ':''}${St.sys.map(esc).join(', ')} ${afSimTag()}</dd></div>
-   <div><dt>6 · Result</dt><dd>${esc(s.result||'—')}</dd></div>
-   <div><dt>7 · Validation</dt><dd>${val.map(x=>'<b>'+esc(x[0])+'</b> '+esc(x[1])).join('<br>')}${warn&&n===1?'<br><span class="note">Warning: a source is stale or unavailable; the stage uses the last fresh data and says so.</span>':''}</dd></div>
-   <div><dt>8 · State change</dt><dd>${esc(RUN_ST[s.state][0])} · case stage ${esc(afStageLabel(c).toLowerCase())}</dd></div>
-   <div><dt>9 · Next step</dt><dd>${cur?esc(nx.label)+(nx.role&&nx.kind!=='act'?' ('+esc(nx.role)+')':''):s.state==='done'?'Done; continues at stage '+Math.min(run.stage,10):'After stage '+(n-1)}</dd></div></dl>
-   ${cur&&(nx.kind==='wait'||nx.kind==='blocked')?`<div class="callout ${nx.kind==='blocked'?'bad':''}" style="margin-top:10px"><b>${nx.kind==='blocked'?'Blocked':'Waiting'}:</b> ${esc(nx.label)}${nx.role?' Owner: '+esc(nx.role)+'.':''}</div>${afCardHTML(afEscalation(c,nx))}`:''}</div></section>`}
-function afRunViewHTML(c){const run=afRun(c),sel=Math.min(Math.max(1,S.or.sel||Math.min(run.stage,10)),10),nx=afNextStep(c),pres=presenterOn()||(pol()&&pol().all);
-  const ents=afCaseJournal(c.id),calls=(AF.ui.runs||[]).flatMap(r=>(r.calls||[]).filter(k=>k.input.includes(c.id)).map(k=>Object.assign({run:r.id},k))).slice(0,12),evs=EVENTS.filter(e=>e.caseId===c.id).slice(0,14);
-  return `<section class="sect" id="afRunView"><div class="sh"><h2>Case run · ${esc(run.id)}</h2><span class="note">${esc(c.id)} · ${run.stage>10?'complete':'stage '+run.stage+' of 10, '+esc(AF_STAGES[run.stage-1].t.toLowerCase())} · ${afProvLabel()}</span></div>
-   <div class="panel"><div class="pb"><ol class="afrtl" aria-label="Ten stages for ${c.id}">${run.stages.map(s=>`<li><button class="afrs ${s.state} ${s.n===sel?'on':''} ${s.n===run.stage?'cur':''}" data-act="afRunSel" data-arg="${s.n}" aria-pressed="${s.n===sel}" aria-label="Stage ${s.n}: ${esc(s.t)}, ${esc(RUN_ST[s.state][0])}"><span class="tin">${s.n}</span><b>${esc(s.t)}</b><span class="chip ${RUN_ST[s.state][1]}">${esc(RUN_ST[s.state][0])}</span></button></li>`).join('')}</ol>
-   <div class="row afrc"><button class="btn" data-act="afRunBack" ${sel<=1?'disabled':''}>← Back</button><button class="btn pri" data-act="afRunNext" data-arg="${c.id}" ${nx.kind==='done'?'disabled':''} data-tip="${esc(nx.label)}">Next →</button><button class="btn" data-act="afRunReplay" data-arg="${c.id}">Replay</button>${pres?`<button class="btn ghost" data-act="afRunReset" data-arg="${c.id}">Reset case</button>`:''}<span class="note">Next: ${esc(nx.label)}</span></div></div></div>
-   <div class="afrv">${afStagePanel(c,sel)}<div>
+/* pace (L7): about 5 s a stage; per-line spinner time and latency come from hashId, so every reload plays the same */
+const LR_PACE={open:400,gap:150,settle:300,min:900,span:500,tick:100};
+const lrH=(c,k)=>parseInt(hashId(c.id+'|lr|'+k),16);
+const lrVendor=id=>{const s=SRC(id);return s?s.vendor:id};
+/* the system behind an execution step ('EAM · Diagnostic and Repair' → its connected vendor) */
+const lrSys=sys=>{const p=String(sys||'').split(' · ')[0],s=SOURCES.find(x=>x.name===p||x.short===p);return s?s.vendor:p};
+/* the activity lines of one stage: [system] verb · what · latency, built from the case record and its provenance */
+function afStageLines(c,n){const run=afRun(c),s=run.stages[n-1],L=afLease(c),evs=c.evidence||[],ev=k=>evs.find(e=>e.k===k),r=c.recommendation,steps=c.exec?c.exec.steps:[];
+  const cevs=EVENTS.filter(e=>e.caseId===c.id),evIds=f=>cevs.filter(f).map(e=>'AE-'+e.id);
+  const D=(sys,verb,what,o)=>Object.assign({sys,verb,what:what||'',ms:40+lrH(c,n+'|'+verb)%460,tool:true,audit:[],st:'done'},o||{});
+  const Q=(sys,verb,what)=>D(sys,verb,what,{st:'queued'});
+  const F=(k,verb,what,o)=>{const e=ev(k);if(!e)return null;const p=provFor(c,e);
+    if(p.status==='unavailable')return o&&o.need?D(p.sourceName,verb,'no record yet: '+e.label.toLowerCase(),{st:o.need,audit:[]}):null;
+    return D(p.vendor||p.sourceName,verb,(p.record?p.record+' · ':'')+(what||p.value),{audit:['AU-'+p.id]})};
+  let out=[];
+  if(n===1)out=[D(lrVendor('lease'),'Read lease contract',L.lease+', ended '+fmtDY(L.end)),D(lrVendor('crm'),'Read customer intent',L.intent),
+    D(lrVendor('eam'),'Read usage',L.usage.replace(/^\d+/,m=>(+m).toLocaleString('en-US'))),F('id','Verified identity and configuration'),D('Circularity','Opened case',c.id,{tool:false})];
+  else if(n===2)out=[D(lrVendor('rl'),'Read return authorisation',L.rma+' · authorised '+fmtD(L.auth)),D(lrVendor('erp'),'Read book value and acquisition date',money(L.book)+' · acquired '+fmtDY(L.acq)),
+    L.repl?D(lrVendor('erp'),'Linked replacement order',L.repl):null,L.fee?D(lrVendor('lease'),'Posted early-return fee',money(L.fee)):null];
+  else if(n===3)out=[D(lrVendor('rl'),'Tracked pickup',fmtD(L.pickup)+', '+L.carrier),D(lrVendor('rl'),'Arrival confirmed',fmtD(L.eta)),D(lrVendor('erp'),'Freight cost posted',money(L.freight))];
+  else if(n===4){const miss=evs.filter(e=>e.state!=='ready');out=[F('ret','Goods receipt',c.location+', '+fmtD(c.received)),
+    D('Circularity','Evidence check',(evs.length-miss.length)+' of '+evs.length+' present'+(miss.length?'; missing: '+miss.slice(0,2).map(e=>e.label.toLowerCase()).join(', ')+(miss.length>2?' and '+(miss.length-2)+' more':''):''),{tool:false}),
+    D('Circularity','Holding-cost clock started',afDays(c.received,asOfNow())+' days so far',{tool:false})]}
+  else if(n===5){const R=caseRul(c),need=s.state==='running'?'wait':s.state==='warning'?'fail':null,o={need};
+    out=[F('insp','Fetched inspection report',c.grade?'grade '+c.grade:null,o),F('photo','Fetched photos',null,o),F('svc','Fetched service history',null,o),F('eng','Fetched life assessment',null,o),F('pol','Fetched certification records',R?R.certRef+', certified '+R.certMonths+' months':null,o)].filter(Boolean);
+    if(need){out=out.filter(x=>x.st==='done').slice(0,3).concat(out.filter(x=>x.st!=='done').slice(0,1));
+      out.push(c.requested?D(c.blocked.owner,c.blocked.action,(c.requested.ref?c.requested.ref+' · ':'')+'waiting for '+c.blocked.owner,{st:'wait',tool:false,audit:evIds(e=>e.type==='evidence.requested')}):D(c.blocked.gateName+' gate','Held',c.blocked.reason,{st:'fail',tool:false}))}
+    else{const ins=evIds(e=>e.type==='inspection.result');if(ins.length&&out[0])out[0].audit=out[0].audit.concat(ins)}}
+  else if(n===6){if(s.state==='queued')out=[Q(lrVendor('crm'),'Will match demand'),Q(lrVendor('mkt'),'Will fetch comparable sales'),Q('Gate engine','Will run '+GATES.length+' gates on every route'),Q('Models '+(c.model||'v1.3'),'Will predict and rank the routes')];
+    else{const cd=caseDemand(c),ex=c.routes.filter(x=>x.excluded).length,stale=(SRC('mkt')||{}).status==='stale';
+      out=[cd?F('dem','Matched demand',cd.order+' ('+(cd.confirmed?'confirmed':'forecast')+')'):D(lrVendor('crm'),'Checked demand','no open internal requirement'),
+        F('mkt','Fetched comparable sales',null),F('cost','Fetched planned purchase cost',null),
+        D('Gate engine','Ran '+GATES.length+' gates on '+c.routes.length+' routes',ex?ex+' excluded':'none excluded',{tool:false}),
+        s.state==='done'?D('Models '+(c.model||'v1.3'),'Predicted and ranked','recommended '+r.plan+', '+money(r.net)):s.state==='failed'?D('Gate engine','Every route failed a gate','human review needed',{st:'fail',tool:false}):D('Planner','Re-evaluate',c.reevalReason||'review triggered',{st:'wait',tool:false})];
+      if(stale&&out[1])out[1].what+=' · last fresh data'}}
+  else if(n===7){if(s.state==='queued')out=[Q('Circularity Agent','Will run the pre-approval check'),Q('Circularity Agent','Will draft the rationale'),Q('Approver','Will approve, edit or decline')];
+    else out=[D('Circularity Agent','Pre-approval check',c.snapshot?'evidence snapshot '+c.snapshot.id:'gates, limits and evidence',{tool:false}),D('Circularity Agent','Drafted the rationale',r?r.plan:'',{tool:false}),
+      c.submitted?D('Planner','Submitted for review','by '+c.submitted.by,{tool:false}):null,
+      s.state==='done'?D('Approver',c.override?'Override approved':'Approved',c.approval.ref+' · '+c.approval.by,{tool:false}):D('Approver','Waiting for the Approver',c.submitted?'submitted by '+c.submitted.by:'waiting for the Planner to submit',{st:'wait',tool:false})]}
+  else if(n===8){if(!c.exec)out=[Q(lrVendor('erp'),'Will send the order instruction'),Q(lrVendor('eam'),'Will send the work order'),Q(lrVendor('wms'),'Will send the stock movement')];
+    else out=steps.slice(0,3).map(t=>t.state==='done'?D(lrSys(t.sys),t.label+' acknowledged',t.ack?t.ack.ref:'',{audit:evIds(e=>e.dest===t.sys)}):t.state==='active'?D(lrSys(t.sys),t.label+' sent','awaiting acknowledgement',{st:'wait'}):Q(lrSys(t.sys),'Will send: '+t.label.toLowerCase()))}
+  else if(n===9){const t=steps[3];if(s.state==='queued')out=[Q(lrVendor('erp'),'Will collect the actual result'),Q('Finance','Will confirm the outcome')];
+    else out=[t&&t.ack?D(lrSys(t.sys),'Actual result reported',t.ack.ref+(c.outcome?' · '+money(c.outcome.net):''),{audit:evIds(e=>e.dest===t.sys)}):D(lrSys(t?t.sys:'ERP'),'Waiting for the actual result','',{st:'wait'}),
+      c.outcome?D('Circularity','Matched the result to the decision','DI-2026-'+c.id.slice(3),{tool:false}):null,
+      c.outcome?D('Finance','Confirmed the outcome',money(c.outcome.net)+' · '+(c.outcome.by||'Finance'),{tool:false}):t&&t.ack?D('Finance','Waiting for Finance to confirm','',{st:'wait',tool:false}):null]}
+  else{if(!c.outcome)out=[Q('Circularity','Will compare predicted and actual'),Q('Circularity','Will propose learning records'),Q('Circularity','Will carry forward open demand')];
+    else{const ls=c.outcome.lines||[],cd=caseDemand(c);out=[D('Circularity','Compared '+ls.length+' cost lines','predicted against actual',{tool:false}),D('Circularity','Proposed '+ls.filter(l=>l.model).length+' learning records','for review',{tool:false}),D('Circularity','Carried forward open demand',cd&&!cd.confirmed?cd.order:'none open',{tool:false})]}}
+  out=out.filter(Boolean);return out.filter(x=>x.st==='done').concat(out.filter(x=>x.st!=='done')).slice(0,5)}
+/* the board's model: ten stages with their lines; a presenter's failure drill fails one stage and queues the rest */
+function lrModel(c){const run=afRun(c),f=S.or.fail===''||S.or.fail==null?-1:+S.or.fail;
+  const st=run.stages.map((s,i)=>({n:i+1,t:s.t,state:s.state,result:s.result||'',by:s.by||'',at:s.at,blocked:s.blocked,lines:afStageLines(c,i+1)}));
+  let cur=Math.min(run.stage,10);
+  if(f>=0&&f<cur){const x=st[f],last=x.lines[x.lines.length-1];x.state='failed';x.result='No response from '+(last?last.sys:'the source')+'; the stage timed out after 30 s';
+    if(last)Object.assign(last,{st:'fail',what:'no response · timed out after 30 s',audit:[]});
+    st.slice(f+1).forEach(y=>{y.state='queued';y.lines.forEach(l=>{l.st='queued'})});cur=f+1}
+  return{run,st,cur}}
+/* the timeline: stages 1..cur play in order; every line spins, then lands */
+function lrTimeline(c,m){let T=0;const P=LR_PACE,segs=[];
+  for(let n=1;n<=m.cur;n++){const s={n,start:T,lines:[]};T+=P.open;
+    m.st[n-1].lines.forEach((l,i)=>{const d=P.min+lrH(c,'t'+n+'|'+i)%P.span;s.lines.push({start:T,land:T+d});T+=d+P.gap});
+    s.end=T;if(n<m.cur)T+=P.settle;segs.push(s)}
+  return{segs,total:T}}
+S.lr=null;
+function lrSig(c){return c.id+'|'+afRun(c).stages.map(s=>s.state).join()+'|'+S.or.fail}
+function lrBuild(c){const m=lrModel(c),tl=lrTimeline(c,m);Object.assign(S.lr,{cid:c.id,sig:lrSig(c),m,segs:tl.segs,total:tl.total})}
+function lrStart(c,from){lrStop();S.lr={t:0,speed:(S.lr&&S.lr.speed)||1,open:undefined,ann:0};lrBuild(c);
+  if(afReduced()){S.lr.t=S.lr.total;S.lr.playing=false;S.lr.ann=S.lr.m.cur}else{S.lr.t=from||0;S.lr.playing=true;lrEnsure()}}
+function lrStop(){if(S.lr&&S.lr.iv){clearInterval(S.lr.iv);S.lr.iv=null}}
+function lrEnsure(){if(S.lr&&!S.lr.iv)S.lr.iv=setInterval(lrTick,LR_PACE.tick)}
+/* keep the board in step with the case: a new case starts a new run; a case that moved on plays from the stage it left */
+function lrSync(c){if(!S.lr||S.lr.cid!==c.id){lrStart(c);return}if(S.lr.sig===lrSig(c))return;
+  const was=S.lr.m.cur,ended=S.lr.t>=S.lr.total;lrBuild(c);
+  if(afReduced()){S.lr.t=S.lr.total;S.lr.playing=false;S.lr.ann=S.lr.m.cur;S.lr.open=undefined;return}
+  const sg=S.lr.segs[Math.min(was,S.lr.segs.length)-1];S.lr.t=ended&&sg?Math.min(sg.start,S.lr.total):Math.min(S.lr.t,S.lr.total);S.lr.playing=true;S.lr.open=undefined;S.lr.ann=Math.min(S.lr.ann,was-1);lrEnsure()}
+/* what each box and line shows at time t (also used to draw the board, so a redraw never restarts the run) */
+function lrView(){const L=S.lr,t=L.t,ended=t>=L.total,cur=L.m.cur;
+  const playN=ended?cur:(L.segs.find(s=>t>=s.start&&t<(s.n<cur?s.end+LR_PACE.settle:Infinity))||{n:cur}).n;
+  const open=L.open===undefined?playN:L.open;let tools=0,aud=[];
+  const boxes=L.m.st.map((s,i)=>{const sg=L.segs[i],pin=L.open===s.n,phase=!sg?'queued':ended||t>=sg.end?'played':t>=sg.start?'playing':'ahead';
+    const lines=s.lines.map((l,j)=>{let st=l.st;if(!pin&&sg&&phase!=='played'){const x=sg.lines[j];st=phase==='ahead'||t<x.start?'hid':t<x.land?'spin':l.st}
+      if(sg&&t>=sg.lines[j].land&&l.st==='done'){if(l.tool)tools++;aud=aud.concat(l.audit)}return st});
+    const fin=s.lines.filter(l=>l.st==='done');
+    return{n:s.n,phase,state:phase==='played'||phase==='queued'||pin?s.state:phase==='playing'?'play':'ahead',open:open===s.n,lines,
+     cnt:lrN(fin.filter(l=>l.tool).length,'tool')+' · '+lrN(fin.reduce((a,l)=>a+l.audit.length,0),'audit entry','audit entries')}});
+  return{boxes,tools,aud,ended,playN,open}}
+const lrN=(k,one,many)=>k+' '+(k===1?one:many||one+'s');
+const lrChip=b=>b.state==='play'?['Running','warn']:b.state==='ahead'?['Pending','line']:RUN_ST[b.state]||['—','line'];
+const lrClock=ms=>{const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+function lrLineHTML(l,st){return `<li class="lrl s-${st}"><span class="lri" aria-hidden="true"></span><span class="lrs">${esc(l.sys)}</span><span class="lrw"><b>${esc(l.verb)}</b>${l.what?' · '+esc(l.what):''}${l.audit.length?` <span class="mono note">${esc(l.audit[0])}</span>`:''}</span><span class="lrm num">${l.ms} ms</span></li>`}
+function lrBodyHTML(c,s,b,prev){const nx=s.n===S.lr.m.cur&&S.or.fail===''?afNextStep(c):null,act=nx&&['act','approve','ack'].includes(nx.kind);
+  const ch=lrChip(b);return `<div class="lrbh"><b>Stage ${s.n} · ${esc(s.t)}</b><span class="chip lrbc ${ch[1]}">${esc(ch[0])}</span>${s.at?`<span class="note num">${esc(fmtDY(s.at))}${prev&&s.at?' · took '+esc(orDur(new Date(prev),new Date(s.at))):''}</span>`:''}${s.by?`<span class="note">by ${esc(s.by)}</span>`:''}</div>
+   <ol class="lrls">${s.lines.map((l,j)=>lrLineHTML(l,b.lines[j])).join('')}</ol>
+   <p class="lrres"><b>Result</b> ${esc(s.result||'—')}</p>
+   ${act?`<div class="lrnx"><button class="btn pri sm" data-act="afRunNext" data-arg="${c.id}">${esc(nx.label)} →</button></div>`:nx&&(nx.kind==='wait'||nx.kind==='blocked')?`<div class="lrnx"><span class="chip ${nx.kind==='blocked'?'bad':'y'}">${nx.kind==='blocked'?'Blocked':'Waiting'}</span><span>${esc(nx.label)}${nx.role?' Owner: '+esc(nx.role)+'.':''}</span></div>${afCardHTML(afEscalation(c,nx))}`:''}`}
+function lrBoardHTML(c){const L=S.lr,V=lrView(),run=L.m.run;let prev=null;
+  const pos=n=>`--o5:${2*n};--b5:${2*Math.ceil(n/5)*5+1};--o2:${2*n};--b2:${2*Math.ceil(n/2)*2+1};--o1:${2*n};--b1:${2*n+1}`;
+  return `<section class="sect lrbw ${L.playing?'playing':''}" id="lrBoard" data-case="${c.id}" aria-label="Live run for ${c.id}">
+   <div class="lrhd"><div class="lrt"><span class="livedot"><i></i>Live</span><h2>Run ${esc(run.id)}</h2><span class="note">${esc(c.id)} · ${esc(c.product)} · ${run.stage>10?'complete':'stage '+run.stage+' of 10'}</span></div>
+    <div class="row lrctl"><button class="btn sm" id="lrPlay" data-act="lrPlay" ${V.ended?'disabled':''}>${L.playing?'Pause':'Resume'}</button><div class="seg" role="group" aria-label="Playback speed"><button data-act="lrSpeed" data-arg="1" aria-pressed="${L.speed===1}">1×</button><button data-act="lrSpeed" data-arg="2" aria-pressed="${L.speed===2}">2×</button></div><button class="btn sm" data-act="lrSkip" ${V.ended?'disabled':''}>Skip to now</button><button class="btn sm" data-act="lrReplay">Replay</button></div></div>
+   <div class="lrbar" aria-hidden="true"><i id="lrProg" style="width:${(L.total?100*L.t/L.total:100).toFixed(1)}%"></i></div>
+   <div class="lrmeta"><span class="num" id="lrTime">${lrClock(L.t)}</span><span><b class="num" id="lrTools">${V.tools}</b> tools called</span><span><b class="num" id="lrAud">${V.aud.length}</b> audit entries</span><span class="mono note" id="lrLast">${esc(V.aud[V.aud.length-1]||'')}</span><span class="note lrann" id="lrAnn" role="status" aria-live="polite">${esc(L.annText||'')}</span></div>
+   <div class="lrg">${L.m.st.map((s,i)=>{const b=V.boxes[i],ch=lrChip(b),h=`<div class="lrb ${b.state} ${b.open?'open':''} ${s.n===L.m.cur&&b.state!=='ahead'?'cur':''}" data-n="${s.n}" style="${pos(s.n)}">
+     <button class="lrh" data-act="lrOpen" data-arg="${s.n}" aria-expanded="${b.open}" aria-controls="lrBody-${s.n}" aria-label="Stage ${s.n}: ${esc(s.t)}, ${esc(ch[0])}"><span class="tin">${s.n}</span><b>${esc(s.t)}</b><span class="chip ${ch[1]}">${esc(ch[0])}</span><span class="lrc note">${b.phase==='played'?esc(b.cnt):''}</span></button>
+     <div class="lrbody" id="lrBody-${s.n}">${lrBodyHTML(c,s,b,prev)}</div></div>`;if(s.at)prev=s.at;return h}).join('')}</div></section>`}
+/* paint: change only what moved (classes, counters, the progress bar); never redraw the page, never scroll */
+function lrPaint(){const B=$('#lrBoard');if(!B||!S.lr)return;const L=S.lr,V=lrView();
+  B.classList.toggle('playing',!!L.playing);
+  V.boxes.forEach(b=>{const el=B.querySelector(`.lrb[data-n="${b.n}"]`);if(!el)return;const cls=`lrb ${b.state}${b.open?' open':''}${b.n===L.m.cur&&b.state!=='ahead'?' cur':''}`;if(el.className!==cls)el.className=cls;
+    const h=el.querySelector('.lrh'),ch=lrChip(b),c=h.querySelector('.chip'),bc=el.querySelector('.lrbc');if(c.textContent!==ch[0]){c.textContent=ch[0];c.className='chip '+ch[1];h.setAttribute('aria-label',`Stage ${b.n}: ${L.m.st[b.n-1].t}, ${ch[0]}`)}if(bc&&bc.textContent!==ch[0]){bc.textContent=ch[0];bc.className='chip lrbc '+ch[1]}
+    if(h.getAttribute('aria-expanded')!==String(b.open))h.setAttribute('aria-expanded',b.open);
+    const cn=h.querySelector('.lrc'),ct=b.phase==='played'?b.cnt:'';if(cn.textContent!==ct)cn.textContent=ct;
+    el.querySelectorAll('.lrl').forEach((li,j)=>{const k='lrl s-'+b.lines[j];if(li.className!==k)li.className=k})});
+  const set=(id,v)=>{const e=document.getElementById(id);if(e&&e.textContent!==String(v))e.textContent=v};
+  set('lrTime',lrClock(L.t));set('lrTools',V.tools);set('lrAud',V.aud.length);set('lrLast',V.aud[V.aud.length-1]||'');
+  const p=$('#lrProg');p&&(p.style.width=(L.total?100*L.t/L.total:100).toFixed(1)+'%');
+  const pb=$('#lrPlay');if(pb){pb.textContent=L.playing?'Pause':'Resume';pb.disabled=V.ended}const sk=B.querySelector('[data-act="lrSkip"]');sk&&(sk.disabled=V.ended);
+  B.querySelectorAll('[data-act="lrSpeed"]').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.arg===L.speed));
+  /* announce each stage as it completes, not each line */
+  const done=V.boxes.filter(b=>b.phase==='played').map(b=>b.n),hi=done.length?Math.max(...done):0;
+  if(hi>L.ann){L.ann=hi;const s=L.m.st[hi-1];L.annText=hi===L.m.cur?`Stage ${hi}, ${s.t}: ${RUN_ST[s.state][0].toLowerCase()}`:`Stage ${hi}, ${s.t}, completed`;set('lrAnn',L.annText)}}
+function lrTick(){const L=S.lr,B=$('#lrBoard');if(!L||!B||B.dataset.case!==L.cid){lrStop();return}
+  if(L.playing){L.t=Math.min(L.total,L.t+LR_PACE.tick*L.speed);if(L.t>=L.total){L.playing=false;L.open=undefined}}
+  lrPaint();if(!L.playing)lrStop()}
+ACT.lrOpen=n=>{if(!S.lr)return;n=+n;const V=lrView();if(V.open===n){S.lr.open=null}else{S.lr.open=n}S.lr.playing=false;lrStop();lrPaint()};
+ACT.afRunSel=n=>{if(!S.lr)return;S.lr.open=+n;S.lr.playing=false;lrStop();lrPaint()};
+ACT.lrPlay=()=>{const L=S.lr;if(!L||L.t>=L.total)return;L.playing=!L.playing;if(L.playing){L.open=undefined;lrEnsure()}else lrStop();lrPaint()};
+ACT.lrSpeed=v=>{if(!S.lr)return;S.lr.speed=+v===2?2:1;lrPaint()};
+ACT.lrSkip=()=>{const L=S.lr;if(!L)return;L.t=L.total;L.playing=false;L.open=undefined;lrStop();lrPaint()};
+ACT.lrReplay=()=>{const c=orCase();if(!c)return;if(!S.lr||S.lr.cid!==c.id)lrStart(c);if(afReduced()){S.lr.t=S.lr.total;S.lr.playing=false;S.lr.open=undefined;lrPaint();toast('Replay: stored results only, nothing was written.');return}
+  Object.assign(S.lr,{t:0,playing:true,open:undefined,ann:0,annText:''});lrEnsure();lrPaint()};
+ACT.afRunReplay=()=>ACT.lrReplay();
+ACT.afRunNext=id=>{const r=runNext(id);if(!r.ok){toast(r.error.message,4200);afRender();return}if(r.step&&r.step.kind!=='approve')toast('Stage '+r.step.n+': '+r.step.label+' · done.');afRender()};
+ACT.afRunReset=id=>{openModal('Reset '+esc(id),`<p style="margin-top:0">This restores ${esc(id)} and its run to the starting state by removing its entries from the journal. Other cases keep their changes.</p>`,`<button class="btn" data-act="closeModal">Cancel</button><button class="btn danger" data-act="afRunResetOk" data-arg="${esc(id)}">Reset ${esc(id)}</button>`)};
+ACT.afRunResetOk=id=>{closeModal();afReset(id)};
+/* Run details: approval and execution, action calls and events, collapsed under the board */
+function lrDetailsHTML(c){const ents=afCaseJournal(c.id),calls=(AF.ui.runs||[]).flatMap(r=>(r.calls||[]).filter(k=>k.input.includes(c.id)).map(k=>Object.assign({run:r.id},k))).slice(0,12),evs=EVENTS.filter(e=>e.caseId===c.id).slice(0,14);
+  return `<details class="lrdet" id="lrDetails"><summary>Run details <span class="note">approval and execution, action calls, events</span></summary><div class="lrdg">
     <section class="panel"><div class="ph"><h3>Approval and execution</h3></div><div class="pb"><dl class="afkv"><div><dt>Approval</dt><dd>${c.approval?esc(c.approval.ref)+' · '+esc(c.approval.by):c.stage==='awaiting_approval'?'Waiting'+(c.submitted?' (submitted by '+esc(c.submitted.by)+')':' for submission'):'—'}</dd></div><div><dt>Execution</dt><dd>${c.exec?c.exec.steps.map(s=>esc(s.label)+' '+(s.state==='done'?'✓':s.state==='active'?'…':'·')).join(' · '):'Not started'}</dd></div><div><dt>Outcome</dt><dd>${c.outcome?money(c.outcome.net)+' confirmed':'—'}</dd></div></dl></div></section>
     <section class="panel"><div class="ph"><h3>Action calls</h3><span class="note">Input and output per call</span></div><div class="tw"><table class="t static tight"><thead><tr><th>Action</th><th>By</th><th>Input</th><th>Result</th></tr></thead><tbody>${ents.slice(-10).reverse().map(e=>`<tr><td class="mono">${esc(e.id)}</td><td>${esc(e.by)}${e.prep?' '+afBadge('Prepared by agent'):''}</td><td class="mono note">${esc(afSummary(e.input))}</td><td class="note">${esc(e.out?Object.entries(e.out).map(([k,v])=>k+'='+v).join(', '):'ok')}</td></tr>`).join('')}${calls.map(k=>`<tr><td class="mono">${esc(k.action)}</td><td>${esc(k.run)} ${afBadge(k.badge)}</td><td class="mono note">${esc(k.input)}</td><td class="note">${esc(k.msg)}</td></tr>`).join('')||(ents.length?'':'<tr><td colspan="4" class="note">No calls recorded for this case yet.</td></tr>')}</tbody></table></div></section>
-    <section class="panel"><div class="ph"><h3>Events for this run</h3><span class="note">Only this case</span></div><div class="pb"><ol class="aftl">${evs.map(e=>`<li><span class="num note">${esc(fmtD(e.ts))}</span><b class="mono">${esc(e.type)}</b>${e.sim?' '+afSimTag():''}<span class="note">${esc(e.note||e.ack||'')}</span></li>`).join('')||'<li class="note">No events yet.</li>'}</ol></div></section></div></div></section>`}
-ACT.afRunSel=n=>{S.or.sel=+n;afRender()};ACT.afRunBack=()=>{const c=orCase(),r=afRun(c);S.or.sel=Math.max(1,(S.or.sel||Math.min(r.stage,10))-1);afRender()};
-ACT.afRunNext=id=>{const r=runNext(id);const c=CASE_BY_ID[id];S.or.sel=Math.min(afRun(c).stage,10);if(!r.ok){toast(r.error.message,4200);afRender();return}if(r.step&&r.step.kind!=='approve')toast('Stage '+r.step.n+': '+r.step.label+' · done.');afRender()};
-ACT.afRunReplay=id=>{const c=CASE_BY_ID[id],run=afRun(c),last=Math.min(run.stage,10);clearInterval(S.or.rt);if(afReduced()){S.or.sel=last;afRender();toast('Replay: stored results only, nothing was written.');return}let n=1;S.or.sel=1;afRender();S.or.rt=setInterval(()=>{n++;if(n>last){clearInterval(S.or.rt);toast('Replay finished: stored results only, nothing was written.');return}S.or.sel=n;afRender()},360)};
-ACT.afRunReset=id=>{openModal('Reset '+esc(id),`<p style="margin-top:0">This restores ${esc(id)} and its run to the seeded state by removing its entries from the journal. Other cases keep their changes.</p>`,`<button class="btn" data-act="closeModal">Cancel</button><button class="btn danger" data-act="afRunResetOk" data-arg="${esc(id)}">Reset ${esc(id)}</button>`)};
-ACT.afRunResetOk=id=>{closeModal();afReset(id)};
+    <section class="panel"><div class="ph"><h3>Events for this run</h3><span class="note">Only this case</span></div><div class="pb"><ol class="aftl">${evs.map(e=>`<li><span class="num note">${esc(fmtD(e.ts))}</span><b class="mono">${esc(e.type)}</b><span class="note">${esc(e.note||e.ack||'')}</span></li>`).join('')||'<li class="note">No events yet.</li>'}</ol></div></section></div></details>`}
+/* Esc closes the open box (unless a dialog, the panel or the command bar has focus) */
+document.addEventListener('keydown',e=>{if(e.key!=='Escape'||!S.lr||!$('#lrBoard'))return;if($('#modal.on')||($('#askp')&&!$('#askp').hidden)||$('.afk.on'))return;if(lrView().open==null)return;S.lr.open=null;S.lr.playing=false;lrStop();lrPaint()});
+/* leaving Process orchestration stops the run; coming back plays it again */
+{const ar0=afterRender;afterRender=function(r){if(r&&r.page!=='orchestration'&&S.lr){lrStop();S.lr=null}return ar0.apply(this,arguments)}}
 /* the classic stage list follows the ten stages too; its states and times come from the run */
 if(AF_ON){OR_STAGES.length=0;AF_STAGES.forEach(s=>OR_STAGES.push([s.k,s.t,s.trig+': '+s.agent.charAt(0).toLowerCase()+s.agent.slice(1),AF_STAGE_AGENT[s.n],s.sys]));
   orRun=function(c){const run=afRun(c),m={done:'done',running:'active',waiting:'active',person:'active',warning:'active',failed:'failed',queued:'pending',skipped:'pending'};let prev=null;
@@ -6408,9 +6555,13 @@ if(AF_ON){OR_STAGES.length=0;AF_STAGES.forEach(s=>OR_STAGES.push([s.k,s.t,s.trig
      ${run.stages.map((s,i)=>`<tr><td class="mono">${tid}/${String(i+1).padStart(2,'0')}</td><td>stage · ${esc(s.t)}</td><td>${esc(s.by||AF_STAGE_AGENT[s.n])}</td><td class="mono">case_id=${c.id}</td><td class="num">${s.at?orT(new Date(s.at)):'—'}</td><td><span class="chip ${RUN_ST[s.state][1]}">${esc(RUN_ST[s.state][0])}</span></td></tr>`).join('')}
      ${ents.map((e,j)=>`<tr><td class="mono">${tid}/a${j+1}</td><td>execute_tool · ${esc(e.id)}</td><td>${esc(e.by)}${e.prep?' · '+esc(e.prep):''}</td><td class="mono">case_id=${c.id}${e.run?', run='+esc(e.run):''}, tenant=<span class="orred" data-tip="Redacted field: tenant">•••</span></td><td class="num">${orT(new Date(e.at))}</td><td><span class="chip ok">ok</span></td></tr>`).join('')}
      ${calls.map((k,j)=>`<tr><td class="mono">${tid}/g${j+1}</td><td>invoke_agent → execute_tool · ${esc(k.action)}</td><td>${esc(k.run)}</td><td class="mono">${esc(k.input).replace(/tenant=[^,]+/,'tenant=•••')}</td><td class="num">${k.ms} ms</td><td><span class="chip ${k.ok?'ok':'bad'}">${k.ok?'ok':esc(k.code||'error')}</span></td></tr>`).join('')}</tbody></table></div>`};
-  const ro0=renderOrch;renderOrch=function(r){const id=hq('case');if(id&&CASE_BY_ID[id]&&orCases().some(x=>x.id===id)&&S.or.case!==id){S.or.case=id;S.or.sel=null}const h=ro0(r),c=orCase();if(!c)return h;const i=h.indexOf('<section class="sect" id="orFlow"');return i<0?h+afRunViewHTML(c):h.slice(0,i)+afRunViewHTML(c)+h.slice(i)};
-  const oc0=ACT.orCase;ACT.orCase=v=>{S.or.sel=null;oc0(v)};
-  RB_SECS.orchestration.push('caserun');const nv=NAV.find(g=>g.id==='orchestration');nv.kids.unshift(['caserun','Case run view','Ten stages, stage panels, Next and Replay']);Object.values(ROLE_POLICY).forEach(P=>{if(!P.all&&P.pages.orchestration&&!P.pages.orchestration.includes('caserun'))P.pages.orchestration.push('caserun')});ANCH.orchestration.caserun=()=>$('#afRunView')}
+  const ro0=renderOrch;renderOrch=function(r){const id=hq('case');if(id&&CASE_BY_ID[id]&&orCases().some(x=>x.id===id)&&S.or.case!==id)S.or.case=id;const h=ro0(r),c=orCase();if(!c)return h;
+    lrSync(c);const cs=orCases(),k=h.indexOf('<section class="sect" id="orRun"');
+    return `<div class="or"><div class="phead lrph"><h1>Process orchestration <span class="chip line">Behind the screen</span></h1><div class="row"><label class="sr" for="or-case">Case</label><select class="sel" id="or-case" data-ch="orCase">${cs.slice(0,200).map(x=>`<option value="${x.id}" ${x===c?'selected':''}>${x.id} · ${esc(x.product)}</option>`).join('')}</select><button class="btn" data-act="orReplay">Replay</button>${rbPath('product/'+c.id)?`<a class="btn" href="#/product/${c.id}" data-act="go" data-arg="product/${c.id}">Open ${c.id}</a>`:''}</div></div>
+     ${lrBoardHTML(c)}${lrDetailsHTML(c)}<div class="callout info" style="margin-bottom:14px"><b>Circularity decides and instructs.</b> The physical work, orders and stock movements happen in your enterprise systems.</div>${h.slice(k)}`};
+  ACT.orReplay=()=>ACT.lrReplay();
+  const oc0=ACT.orCase;ACT.orCase=v=>{lrStop();S.lr=null;oc0(v)};
+  RB_SECS.orchestration.push('caserun');const nv=NAV.find(g=>g.id==='orchestration');nv.kids.unshift(['caserun','Live run','Ten stages that play in place']);Object.values(ROLE_POLICY).forEach(P=>{if(!P.all&&P.pages.orchestration&&!P.pages.orchestration.includes('caserun'))P.pages.orchestration.push('caserun')});ANCH.orchestration.caserun=ANCH.orchestration.flow=ANCH.orchestration.run=()=>null}
 /* ---- presenter tools: Quiet mode, reset, jump a case to a stage ---- */
 if(AF_ON){const smt0=smTick;smTick=function(){if(AF.ui.quiet){SM.next=Date.now()+60000}smt0()};
   const wft0=wfTick;wfTick=function(now){if(AF.ui.quiet&&typeof WFN!=='undefined')WFN.next=now+60000;wft0(now)}}
