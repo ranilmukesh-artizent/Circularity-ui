@@ -4,7 +4,72 @@ For the product overview (what Circularity does, every screen and every role) re
 
 Open `index.html`. The app opens on a **sign-in form** (Update 9): type `exec` or `ops` and any password, and it opens on that person's home page. With `ops`, pick a returned asset and follow its ten journey steps (Update 10). Update 8 adds the **Executive** and **Warehouse Manager** accounts, the guided treatment page and **Process orchestration**. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
 
-**Quick links:** [Update 14: Agentic run board, model cards, MCP and Access pages](#update-14-agentic-run-board-model-cards-mcp-and-access-pages-branch-feature-live-run) · [Update 13: Live run board and live wording](#update-13-live-run-board-and-live-wording-branch-feature-live-run) · [Update 12: Agent-first workbench](#update-12-agent-first-workbench-branch-feature-agent-first) · [Update 11: Command Center by section, Asset Intelligence restructure](#update-11-command-center-by-section-asset-intelligence-restructure-redeploy-and-cost-wording-edge-cases) · [Update 10: Journey-led flow, line-item learning](#update-10-journey-led-flow-step-guidance-value-that-builds-line-item-learning) · [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+**Quick links:** [Update 15: DI Framework overview, Reconcile and Resolve](#update-15-decision-intelligence-framework-overview-reconcile-and-resolve-pr-13) · [Update 14: Agentic run board, model cards, MCP and Access pages](#update-14-agentic-run-board-model-cards-mcp-and-access-pages-branch-feature-live-run) · [Update 13: Live run board and live wording](#update-13-live-run-board-and-live-wording-branch-feature-live-run) · [Update 12: Agent-first workbench](#update-12-agent-first-workbench-branch-feature-agent-first) · [Update 11: Command Center by section, Asset Intelligence restructure](#update-11-command-center-by-section-asset-intelligence-restructure-redeploy-and-cost-wording-edge-cases) · [Update 10: Journey-led flow, line-item learning](#update-10-journey-led-flow-step-guidance-value-that-builds-line-item-learning) · [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+
+---
+
+## Update 15: Decision Intelligence Framework overview, Reconcile and Resolve (PR #13)
+
+**Why:** Circularity is one of three decision applications in the Artizent Decision Intelligence Framework, and the other two, from other teams, had no front end that matched it. Reconcile existed as a page with its own colours that called a local backend; Resolve existed only as a concept deck. Both needed to look and behave like Circularity, use the same data, and be reachable from one home page on the hosted demo.
+
+**Where:** a new `framework/` folder, hosted at [/framework/](https://ranilmukesh-artizent.github.io/Circularity-ui/framework/). The product guide is [README section 16](README.md#16-the-decision-intelligence-framework-reconcile-and-resolve).
+
+### The framework overview (`framework/index.html`)
+
+| What | What you see |
+|---|---|
+| **Hero** | *One framework. Three decision capabilities.* Systems, data, signals and events flow into three stacked layers, which connect to Recover, Resolve and Reconcile; the lines are animated and stay attached at any width |
+| **Three app cards** | Recover opens Circularity on its Home page (`index.html#/home`), Resolve opens `resolve.html`, Reconcile opens `reconcile.html`. No app is marked as the current focus. The *Recover* items in the Reconcile and Resolve sidebars open Home too |
+| **The foundation** | *Built around your enterprise, not in place of it*, with four figures. The mockup's flow diagram is left out on purpose |
+| **Shell** | Artizent logo, sidebar, search (Ctrl or ⌘ K), dark mode shared with Circularity, phone layout |
+
+### Reconcile (`framework/reconcile.html`)
+
+| What | What you see |
+|---|---|
+| **Rebuilt, no backend** | The earlier page called `/api/v1/reconcile` on a local server. It is now front-end only: the dataset, the contract checks, the case state machine, the audit trail and the outbound queue run in the page |
+| **Same data** | All 128 Circularity return cases are billed, with the same carriers, freight, RMAs and customers; each bill links to its RT case in Circularity |
+| **Settlements** | Bill queue, N-way match, evidence studio (drag a time and the amounts recalculate; mark no-slot days for demurrage), line-by-line result with clause, owner and next step, *Apply decision*, printable proforma and dispute memo |
+| **Cases, Prevention, Insights** | Status-checked decisions with audit; trucks against free time with a clock you can scrub or play, and an event lab that prices detention on release; trend, repeat causes, carrier scorecard, integrations, outbound queue and evidence documents with SHA-256 fingerprints |
+| **Eight demo bills** | INV-VF-20931, INV-NL-11872, INV-NL-11880, INV-CH-55410, INV-NL-11893, INV-VF-20958, INV-NL-11886 and INV-CH-55402: partial detention, missing release, late arrival, demurrage, overtime, duplicate, wrong fuel index and a clean match |
+
+### Resolve (`framework/resolve.html`)
+
+| What | What you see |
+|---|---|
+| **From the concept deck** | The deck's three screens (story, *Enterprise at a glance*, the incident with its next best action) became working pages |
+| **Enterprise Pulse** | Command band with impact, units, sites and resolution ring; severity filters; a live network map of the enterprise; ranked incidents with preview; trend, function and region charts |
+| **Incident workspace** | Overview, Ripple impact, Options & simulation, Action plan and How it works, with the Next best action card beside every tab |
+| **Calculated recommendation** | For SUP-001, 600 simulated futures per plan and 1,428 plans ranked by risk-adjusted net value. The result: transfer 200, expedite 200 by road, release 60 recovered sets from Recover and re-sequence Plant A for two days; about $610K protected for $83K, no stoppage in 96% of runs |
+| **Approve and execute** | Seven steps written to the simulated systems one by one; the incident moves to *Monitoring* and joins the decision log |
+| **Across the framework** | Incidents link to Recover (RT-1027, RT-1048, RT-1052) and to Reconcile (MOV-2614 and the Vizag container) |
+| **More pages** | Incidents, six function lenses, Decisions, Learning |
+
+### Circularity and hosting
+
+| What | Where | Change |
+|---|---|---|
+| **Link to the framework** | `index.html`, sign-in panel and sidebar footer | *Part of the Artizent Decision Intelligence Framework →* and *DI Framework overview →*, both to `framework/`. Nothing else in Circularity changed |
+| **One deploy per push** | `.github/workflows/main.yml` | Removed: it was identical to `static.yml`, so every push to `main` deployed Pages twice |
+| **README** | `README.md` | Framework row at the top, section 16, hosting and repository map |
+
+### Fixed during review
+
+- **Resolve: Incidents page empty after visiting Enterprise Pulse.** The two pages share element IDs, and the hidden Pulse page kept its markup, so the list was written into it. Switching pages now clears the pages you leave. The function pages had the same problem and are fixed too.
+
+### Tests
+
+Checked by hand in headless Chrome; there is no automated suite for the framework pages yet.
+
+| Check | Result |
+|---|---|
+| JavaScript errors on every page and route (all 70 Resolve routes, all four Reconcile pages, with each customer filter) | none |
+| Rows rendered on each Resolve page after moving between pages | every page shows its own rows |
+| Every rendered link and image, served under `/Circularity-ui/` as on Pages | all return 200 |
+| Network or API calls in any framework page | none |
+| Light and dark mode, 390 px phone width | checked |
+
+> **Legal review.** Reconcile's contract clauses, rates and dispute wording, and Resolve's model, confidence and economic figures, are invented for the demo. The pages label themselves as simulated, but Kinective's Legal team should review how they are presented before they are shown to clients or prospects, together with the notes in Updates 13 and 14.
 
 ---
 

@@ -505,7 +505,7 @@ table.t tr.sel td{background:color-mix(in srgb,var(--res-soft) 70%,var(--panel))
       <div class="grp-h">Framework</div>
       <nav class="nav">
         <a href="index.html"><svg class="ic"><use href="#i-overview"/></svg>Overview</a>
-        <a href="../index.html"><svg class="ic"><use href="#i-recover"/></svg>Recover</a>
+        <a href="../index.html#/home"><svg class="ic"><use href="#i-recover"/></svg>Recover</a>
         <a href="reconcile.html"><svg class="ic"><use href="#i-reconcile"/></svg>Reconcile</a>
       </nav>
     </div>
@@ -893,7 +893,7 @@ function rippleFor(i){if(i.id==='SUP-001')return[
 function rippleHtml(i){const r=rippleFor(i);return `<div class="ripple" style="--n:${r.length}">${r.map(x=>`<div class="rp ${x[2]}"><span class="day">${x[3]}</span><span class="ri"><svg class="ic"><use href="#${x[1]}"/></svg></span><b>${x[0]}</b><span>${esc(x[4])}</span><strong>${esc(x[5])}</strong>${x[6]?`<span class="note">${esc(x[6])}</span>`:''}</div>`).join('')}</div>`}
 function statsHtml(i){return `<div class="istats"><div><span class="si"><svg class="ic"><use href="#i-production"/></svg></span><span><b>${i.sites}</b><small>Sites affected</small></span></div><div><span class="si"><svg class="ic"><use href="#i-units"/></svg></span><span><b>${i.units?fmtN(i.units):'—'}</b><small>${esc(i.unitL||'units')} at risk</small></span></div><div><span class="si"><svg class="ic"><use href="#i-users"/></svg></span><span><b>${i.ordersN||'—'}</b><small>Customer orders at risk</small></span></div><div><span class="si"><svg class="ic"><use href="#i-dollar"/></svg></span><span><b>${mK(i.imp)}</b><small>Potential revenue exposure</small></span></div></div>`}
 function relHtml(i){if(!i.rel)return'';const map={recover:['../index.html','i-recover','#8A6400','Recover'],reconcile:['reconcile.html','i-reconcile','#2D6A57','Reconcile'],inc:[null,'i-resolve','#2F5D8A','Resolve']};
-  return `<div class="panel"><div class="ph"><h3>Connected across the framework</h3><span class="note">The same data fabric, read by Recover and Reconcile</span></div><div class="pb" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">${i.rel.map(r=>{const m=map[r[2]],href=r[2]==='inc'?'#/incident/'+r[0]:r[2]==='recover'&&/^RT-/.test(r[0])?m[0]+'#/product/asset/'+r[0]:r[2]==='reconcile'?m[0]+(r[0].startsWith('MOV')?'#/prevention':'#/prevention'):m[0];
+  return `<div class="panel"><div class="ph"><h3>Connected across the framework</h3><span class="note">The same data fabric, read by Recover and Reconcile</span></div><div class="pb" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">${i.rel.map(r=>{const m=map[r[2]],href=r[2]==='inc'?'#/incident/'+r[0]:r[2]==='recover'&&/^RT-/.test(r[0])?m[0]+'#/product/asset/'+r[0]:r[2]==='reconcile'?m[0]+'#/prevention':r[2]==='recover'?m[0]+'#/home':m[0];
     return `<a class="xlink" href="${href}"><span class="av" style="background:${m[2]}"><svg class="ic"><use href="#${m[1]}"/></svg></span><span><b>${m[3]} · ${esc(r[0])}</b><small>${esc(r[1])}</small></span><svg class="ic go"><use href="#i-ext"/></svg></a>`}).join('')}</div></div>`}
 function tabOverview(i){const el=$('#iwm');
   el.innerHTML=`<div class="panel"><div class="ph"><h3>Ripple impact across the enterprise</h3><a class="btn sm ghost" href="#/incident/${i.id}/ripple">Details<svg class="ic"><use href="#i-chev"/></svg></a></div>${rippleHtml(i)}${statsHtml(i)}</div>
