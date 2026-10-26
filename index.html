@@ -751,6 +751,8 @@ ul.impact{margin:0 0 14px;padding-left:18px;color:var(--ink2)}ul.impact li{margi
 .si2demo button{height:26px;padding:0 10px;border:1px dashed var(--line);border-radius:999px;background:transparent;font-size:12px;color:var(--ink2)}
 .si2demo button:hover{border-color:var(--ink2);color:var(--ink)}
 .sil .sitag{margin-top:auto;font-size:12.5px;color:var(--side-mut);line-height:1.5}
+.sifw{margin-top:18px;font-size:12.5px;font-weight:600;color:var(--yellow);text-decoration:none}.sifw:hover{text-decoration:underline}
+.side-foot .sfw{display:block;margin-top:8px;color:var(--yellow);font-weight:600;text-decoration:none}.side-foot .sfw:hover{text-decoration:underline}
 .sirl{margin-top:14px;font-size:12.5px}
 @media (max-width:760px){.si2{padding:20px 16px}}
 .skusel{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}.skusel label{display:grid;gap:2px;font-size:11.5px;color:var(--muted);font-weight:600}.skusel select{max-width:240px}.skusel #asSw{max-width:420px}
@@ -2053,7 +2055,7 @@ document.addEventListener('click',e=>{const d=$('.rgm[open]');if(d&&!e.target.cl
 function shell(){
   $('#app').innerHTML=`<aside class="side"><div class="brand"><img src="${LOGO}" alt="Artizent"><small>Decision Intelligence Framework<br>Circularity</small></div>
   ${navHTML()}
-  <button class="railbtn" data-act="navRail" aria-pressed="false" aria-label="Collapse sidebar">${ICON.railc}</button><div class="side-foot"><b>Northfield Industrial Leasing</b><br>3 customer tenants · 8 sites<br><span class="note" style="color:var(--side-mut)">Production · all systems operational</span></div></aside>
+  <button class="railbtn" data-act="navRail" aria-pressed="false" aria-label="Collapse sidebar">${ICON.railc}</button><div class="side-foot"><b>Northfield Industrial Leasing</b><br>3 customer tenants · 8 sites<br><span class="note" style="color:var(--side-mut)">Production · all systems operational</span><a class="sfw" href="framework/">DI Framework overview &rarr;</a></div></aside>
   <div class="main"><header class="top" role="banner">
    <div class="search"><label class="sr" for="gs">Search cases</label>${ICON.search}<input id="gs" type="search" placeholder="${canPage('product','case')?'Search return, asset, or closed case ID':'Search sources by system or vendor'}" autocomplete="off" data-in="gsearch"><div class="results" id="results" hidden></div></div>
    <div class="tools">${canPage('product')?`<label class="sr" for="tsel">Tenant</label><select class="sel" id="tsel" data-ch="tenant">${tenantOpts(S.tenant)}</select>`:''}
@@ -2076,6 +2078,7 @@ const presenterOn=()=>{try{const q=/[?&]presenter=([01])/.exec(location.search);
 const signInRolesWanted=()=>/^#\/?signin\?(?:.*&)?roles\b/.test(location.hash);
 function signInFormHTML(){const pre=presenterOn(),thm=`<button class="iconbtn" data-act="theme" aria-label="Toggle theme" id="thm">${S.theme==='dark'?ICON.sun:ICON.moon}</button>`;
   return `<div class="si"><div class="sibox"><div class="sil"><img src="${LOGO}" alt="Artizent"><h1>Circularity<br>Decision Workbench</h1><p>Decide the best next use for every returned asset, with the evidence from your enterprise systems and the predicted value side by side.</p>
+   <a class="sifw" href="framework/">Part of the Artizent Decision Intelligence Framework &rarr;</a>
    <div class="sitag" id="siSso">In production you sign in with your company account.</div></div>
   <div class="sir si2"><div class="row between"><h2>Sign in</h2>${thm}</div><p class="note" style="margin:4px 0 0">Use your work email or user ID.</p>
    <form class="si2f" id="siForm" novalidate>

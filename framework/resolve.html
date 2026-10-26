@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Artizent Resolve</title>
+<script>
+/* saved theme before first paint; same key as the framework overview, Reconcile and Circularity */
+(function(){var t=null;try{t=localStorage.getItem('circ-theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<style>
+/* tokens shared with index.html, reconcile.html and ../index.html (Circularity) */
+:root{
+  --bg:#FAF8F5;--panel:#FFFFFF;--panel2:#F4F1EB;--panel3:#EDE8DF;--ink:#141414;--ink2:#4B4541;--muted:#7B726D;
+  --line:rgba(20,20,20,.11);--line2:rgba(20,20,20,.06);--yellow:#FFDD00;--yellow-soft:#FBF3D8;
+  --ok:#17703F;--ok-soft:#E2F0E7;--warn:#8A6400;--warn-soft:#FBF0CC;--bad:#B3382C;--bad-soft:#F8E3DF;--info:#3A3E46;--info-soft:#EAE5DC;
+  --side:#141414;--side-ink:#E9E3DB;--side-mut:#9C9189;--shadow:0 1px 2px rgba(20,20,20,.05),0 10px 30px rgba(20,20,20,.07);
+  --shadow-lg:0 2px 4px rgba(20,20,20,.04),0 18px 44px rgba(20,20,20,.12);
+  --f-display:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;--f-body:'Inter','Segoe UI',system-ui,sans-serif;--f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --res:#2F5D8A;--res-soft:#E8EFF7;--res-2:#4F7FB0;--rec:#8A6400;--rcn:#2D6A57;--track:#EDE8DF;
+  /* severity: an ordered warm ramp, always shown with its label */
+  --s0:#8E1B1F;--s1:#C8402B;--s2:#D97F14;--s3:#C9A100;--s4:#9C9189;
+  --s0-soft:#F6DEDC;--s1-soft:#F9E3DC;--s2-soft:#FBEBD6;--s3-soft:#FAF1CF;--s4-soft:#EFEBE5;
+  --c-onhand:#5E5652;--c-in:#2F5D8A;--c-risk:#C8402B;
+}
+:root[data-theme="dark"]{
+  --bg:#111112;--panel:#1D1D20;--panel2:#26262A;--panel3:#303036;--ink:#F6F3EE;--ink2:#D3CAC0;--muted:#A0958B;
+  --line:rgba(255,255,255,.13);--line2:rgba(255,255,255,.07);--yellow-soft:rgba(255,221,0,.13);
+  --ok:#62D393;--ok-soft:rgba(98,211,147,.14);--warn:#FFDD00;--warn-soft:rgba(255,221,0,.13);--bad:#FF8F80;--bad-soft:rgba(255,143,128,.14);--info:#D3CAC0;--info-soft:rgba(211,202,192,.1);
+  --side:#000;--shadow:0 1px 2px rgba(0,0,0,.4),0 14px 34px rgba(0,0,0,.4);--shadow-lg:0 2px 4px rgba(0,0,0,.4),0 18px 44px rgba(0,0,0,.5);
+  --res:#8DB6E0;--res-soft:rgba(141,182,224,.12);--res-2:#A9C8E8;--rec:#E8C64A;--rcn:#7DCDB0;--track:#303036;
+  --s0:#FF6B6B;--s1:#FF8A5C;--s2:#F5A84A;--s3:#F2D34B;--s4:#A0958B;
+  --s0-soft:rgba(255,107,107,.15);--s1-soft:rgba(255,138,92,.14);--s2-soft:rgba(245,168,74,.14);--s3-soft:rgba(242,211,75,.13);--s4-soft:rgba(160,149,139,.14);
+  --c-onhand:#B9AEA3;--c-in:#8DB6E0;--c-risk:#FF8A5C;
+}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+html,body{margin:0;min-height:100%}body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--f-body);font-feature-settings:'cv11' 1;transition:background .2s,color .2s}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}a{color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+:root[data-theme="dark"] :focus-visible{outline-color:var(--yellow)}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+h1,h2,h3,h4{font-family:var(--f-display);margin:0;letter-spacing:-.015em;line-height:1.2}
+h1{font-size:28px;font-weight:800;letter-spacing:-.025em}h2{font-size:17px;font-weight:700}h3{font-size:14.5px;font-weight:700}
+.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.num,.r{font-variant-numeric:tabular-nums}.mono{font-family:var(--f-mono);font-size:12px}
+.note{font-size:12.5px;color:var(--muted)}
+.eyebrow{font:600 11px/1 var(--f-body);letter-spacing:.16em;text-transform:uppercase;color:var(--res)}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.side{background:var(--side);color:var(--side-ink);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;z-index:40}
+.brand{display:block;padding:22px 22px 18px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand img{width:150px;display:block}
+.brand small{display:block;margin-top:8px;font-size:8.6px;font-weight:600;letter-spacing:.1em;white-space:nowrap;text-transform:uppercase;color:var(--side-mut)}.brand small b{color:var(--yellow);font-weight:600}
+.appsw{display:flex;align-items:center;gap:12px;margin:14px 12px 4px;padding:12px;border-radius:12px;background:linear-gradient(140deg,rgba(141,182,224,.18),rgba(141,182,224,.04));border:1px solid rgba(141,182,224,.26)}
+.appsw .tile{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:rgba(141,182,224,.16);color:#A9C8E8}
+.appsw b{display:block;font:700 14.5px var(--f-display);color:#fff}.appsw small{display:block;font-size:11.5px;color:var(--side-mut);line-height:1.3}
+.grp{padding:12px 12px 8px;border-bottom:1px solid rgba(255,255,255,.08)}
+.grp-h{font-size:12px;font-weight:500;color:var(--side-mut);padding:4px 12px 8px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:8px;text-decoration:none;color:var(--side-ink);font-size:13.5px;font-weight:500;position:relative;border:1px solid transparent;transition:background .15s,color .15s}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a .ic{opacity:.82}
+.nav a[aria-current="page"]{background:linear-gradient(90deg,rgba(255,221,0,.22),rgba(255,221,0,.07));border-color:rgba(255,221,0,.28);color:#fff}
+.nav a[aria-current="page"] .ic{color:var(--yellow);opacity:1}
+.nav a[aria-current="page"]::before{content:"";position:absolute;left:-13px;top:8px;bottom:8px;width:4px;background:var(--yellow);border-radius:0 3px 3px 0}
+.nav .cnt{margin-left:auto;min-width:20px;text-align:center;background:#C8402B;color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:0 6px;line-height:18px}
+.nav .dotn{margin-left:auto;width:7px;height:7px;border-radius:50%}
+.side-foot{margin-top:auto;padding:14px 14px 16px;display:grid;gap:10px}
+.motto{border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px 14px;font:700 13px/1.55 var(--f-display);color:#fff;background:radial-gradient(120% 120% at 0% 0%,rgba(255,221,0,.10),transparent 60%)}
+.motto span{display:block}.motto span:nth-child(3){color:var(--yellow)}
+.motto small{display:block;font:500 11.5px/1.45 var(--f-body);color:var(--side-mut);margin-top:6px}
+.motto button{margin-top:6px;border:0;background:none;padding:0;color:var(--yellow);font:600 12px var(--f-body)}
+.main{min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:12px;padding:10px 28px;min-height:64px}
+.crumb{display:flex;align-items:center;gap:9px;font-size:13.5px;white-space:nowrap;min-width:0}
+.crumb a{text-decoration:none;color:var(--muted)}.crumb a:hover{color:var(--ink)}.crumb b{font-family:var(--f-display);font-weight:700;overflow:hidden;text-overflow:ellipsis}.crumb i{color:var(--line);font-style:normal}
+.when{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:12.5px;white-space:nowrap;margin-left:auto}
+.when .lv{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ok)}
+.when .lv i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 20%,transparent)}
+@media (prefers-reduced-motion:no-preference){.when .lv i{animation:lvp 1.8s ease-in-out infinite}}
+@keyframes lvp{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 0%,transparent)}}
+.search{position:relative;flex:1;max-width:380px}
+.search input{width:100%;height:38px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:0 12px 0 38px;font-size:13px}
+.search input:focus{outline:none;border-color:color-mix(in srgb,var(--res) 55%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--res) 16%,transparent)}
+.search>.ic{position:absolute;left:12px;top:10px;color:var(--muted)}
+.results{position:absolute;top:44px;left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);padding:6px;max-height:380px;overflow:auto;z-index:50}
+.results button{display:flex;width:100%;gap:10px;align-items:center;text-align:left;border:0;background:none;padding:8px 10px;border-radius:7px;font-size:13px}
+.results button[aria-selected=true],.results button:hover{background:var(--panel2)}
+.results button small{margin-left:auto;color:var(--muted);font-size:11.5px;white-space:nowrap;padding-left:8px}
+.results .none{padding:10px;color:var(--muted);font-size:13px}
+.ibtn{position:relative;width:38px;height:38px;display:grid;place-items:center;border:0;background:transparent;border-radius:10px;color:var(--ink2);flex:none}
+.ibtn:hover{background:var(--panel2)}
+.ibtn .moon{display:none}:root[data-theme="dark"] .ibtn .sun{display:none}:root[data-theme="dark"] .ibtn .moon{display:block}
+.ibtn.menu{display:none}
+.page{padding:22px 28px 64px;display:flex;flex-direction:column;gap:18px;max-width:1600px;width:100%}
+.view{display:none;flex-direction:column;gap:18px}.view.on{display:flex}
+
+/* ---------- components ---------- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.panel>.ph{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.panel>.ph h2,.panel>.ph h3{flex:1;min-width:0}.panel>.pb{padding:16px 18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--line);background:var(--panel);font-weight:600;font-size:13px;white-space:nowrap;text-decoration:none;transition:background .15s,box-shadow .15s,transform .15s,filter .15s}
+.btn:hover{background:var(--panel2)}.btn .ic{width:16px;height:16px}
+.btn.pri{background:var(--yellow);border-color:var(--yellow);color:#141414;box-shadow:0 4px 14px rgba(201,160,0,.25)}.btn.pri:hover{filter:brightness(.96);background:var(--yellow)}
+.btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}.btn.dark:hover{filter:brightness(1.2)}
+.btn.sm{height:30px;padding:0 11px;font-size:12.5px;border-radius:8px}
+.btn.ghost{border-color:transparent;background:transparent}.btn.ghost:hover{background:var(--panel2)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:11px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--info-soft);color:var(--info)}
+.chip .ic{width:13px;height:13px;stroke-width:2.2}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}.chip.warn{background:var(--warn-soft);color:var(--warn)}.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.y{background:var(--yellow);color:#141414}.chip.line{background:transparent;border:1px solid var(--line);color:var(--ink2)}.chip.blue{background:var(--res-soft);color:var(--res)}
+.code{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:5px;font:600 11px var(--f-mono);background:var(--panel2);border:1px solid var(--line2);color:var(--ink2);white-space:nowrap}
+.sev{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px 0 7px;border-radius:11px;font-size:12px;font-weight:700;white-space:nowrap}
+.sev i{width:8px;height:8px;border-radius:50%;flex:none}
+.sev.s0{background:var(--s0);color:#fff}.sev.s0 i{background:#fff}
+:root[data-theme="dark"] .sev.s0{color:#1d0a0a}:root[data-theme="dark"] .sev.s0 i{background:#1d0a0a}
+.sev.s1{background:var(--s1-soft);color:var(--s1)}.sev.s1 i{background:var(--s1)}
+.sev.s2{background:var(--s2-soft);color:color-mix(in srgb,var(--s2) 75%,var(--ink))}.sev.s2 i{background:var(--s2)}
+.sev.s3{background:var(--s3-soft);color:color-mix(in srgb,var(--s3) 55%,var(--ink))}.sev.s3 i{background:var(--s3)}
+.sev.s4{background:var(--s4-soft);color:var(--ink2)}.sev.s4 i{background:var(--s4)}
+.st{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.st i{width:8px;height:8px;border-radius:50%;flex:none}
+.st.action{color:var(--bad)}.st.action i{background:var(--bad);box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 18%,transparent)}
+.st.progress{color:var(--ok)}.st.progress i{background:var(--ok)}
+.st.analysis{color:var(--ink2)}.st.analysis i{background:var(--muted)}
+.st.monitoring{color:var(--res)}.st.monitoring i{background:var(--res)}
+.st.executing{color:var(--warn)}.st.executing i{background:#D4A800}
+.st.resolved{color:var(--ok)}.st.resolved i{background:var(--ok)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;height:32px;padding:0 12px;font-weight:600;font-size:12.5px;color:var(--ink2);border-right:1px solid var(--line2);white-space:nowrap}
+.seg button:last-child{border-right:0}.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.fbtn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:15px;border:1px solid var(--line);background:var(--panel);font-size:12.5px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.fbtn b{font-weight:700;color:var(--muted);font-size:11.5px}
+.fbtn i{width:8px;height:8px;border-radius:50%}
+.fbtn[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}.fbtn[aria-pressed=true] b{color:inherit;opacity:.75}
+.sel{height:30px;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:0 8px;font-size:12.5px;font-weight:500}
+.tw{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{text-align:left;font-weight:600;font-size:12px;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--panel)}
+table.t td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:middle}
+table.t tr:last-child td{border-bottom:0}
+table.t .r{text-align:right}
+table.t tbody tr.click{cursor:pointer}table.t tbody tr.click:hover td{background:var(--panel2)}
+table.t tr.sel td{background:color-mix(in srgb,var(--res-soft) 70%,var(--panel))}
+.sub2{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-weight:400}
+.empty{color:var(--muted);padding:32px 16px;text-align:center;font-size:13px}
+.lg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.minibar{display:block;height:5px;border-radius:3px;background:var(--track);overflow:hidden}.minibar i{display:block;height:100%;border-radius:3px}
+.kv{display:grid;grid-template-columns:minmax(110px,150px) minmax(0,1fr);gap:0}
+.kv dt,.kv dd{margin:0;padding:8px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.kv dt{color:var(--muted)}.kv dd{font-weight:500}
+.kv dt:nth-last-child(2),.kv dd:last-child{border-bottom:0}
+.av{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none;color:#fff}
+.av .ic{width:16px;height:16px}
+
+/* ---------- pulse: command band ---------- */
+.cmd{position:relative;overflow:hidden;border-radius:18px;background:#121214;color:#F3EEE7;border:1px solid #232327;box-shadow:var(--shadow-lg)}
+.cmd::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  radial-gradient(50% 70% at 50% 120%,rgba(255,200,40,.16),transparent 70%),
+  radial-gradient(40% 50% at 0% 0%,rgba(141,182,224,.10),transparent 70%),
+  radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.2px) 0 0/22px 22px}
+.cmd>*{position:relative}
+.cmd-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;padding:24px 26px 6px;align-items:start}
+.cmd .eyebrow{color:#FFDD00}
+.cmd h1{color:#fff;margin-top:10px}
+.cmd p{margin:6px 0 0;color:#B8AEA4;font-size:14px}
+.ring{display:flex;align-items:center;gap:14px;padding:12px 16px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.035)}
+.ring svg{width:64px;height:64px}
+.ring b{display:block;font:800 18px var(--f-display);color:#fff}.ring small{display:block;font-size:12px;color:#B8AEA4}
+.sevrow{display:flex;gap:8px;flex-wrap:wrap;padding:14px 26px 0}
+.sevc{display:flex;flex-direction:column;gap:2px;min-width:104px;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.035);text-align:left;color:inherit;transition:background .15s,border-color .15s}
+.sevc:hover{background:rgba(255,255,255,.07)}
+.sevc[aria-pressed=true]{border-color:#FFDD00;background:rgba(255,221,0,.08)}
+.sevc b{font:800 26px/1.05 var(--f-display);font-variant-numeric:tabular-nums}
+.sevc span{font-size:12px;color:#B8AEA4;display:flex;align-items:center;gap:6px}
+.sevc span i{width:8px;height:8px;border-radius:50%}
+.sevc.total{background:linear-gradient(140deg,#B3382C,#7E1C1A);border-color:transparent}.sevc.total span{color:#FFD9D2}
+.sevc.total[aria-pressed=true]{box-shadow:0 0 0 2px #FFDD00}
+.kfig{display:flex;flex-direction:column;gap:2px;padding:10px 16px;border-left:1px solid rgba(255,255,255,.1)}
+.kfig b{font:800 24px/1.1 var(--f-display);color:#fff;font-variant-numeric:tabular-nums}
+.kfig span{font-size:12px;color:#B8AEA4}.kfig em{font-style:normal;font-size:11.5px;font-weight:700;color:#FF8F80}
+.net{padding:4px 12px 4px}
+.net svg{display:block;width:100%;height:auto;overflow:visible}
+.net .tier{fill:#7E766F;font:600 10.5px var(--f-body);letter-spacing:.14em;text-transform:uppercase}
+.net .edge{fill:none;stroke:rgba(255,255,255,.13);stroke-width:1.2}
+.net .flow{fill:none;stroke:rgba(255,221,0,.55);stroke-width:1.6;stroke-dasharray:2 14}
+@media (prefers-reduced-motion:no-preference){.net .flow{animation:flow 2.2s linear infinite}.net .pulse{animation:pls 2.4s ease-out infinite}}
+@keyframes flow{to{stroke-dashoffset:-32}}
+@keyframes pls{0%{r:9;opacity:.75}100%{r:26;opacity:0}}
+.net .node{cursor:pointer}
+.net .node .core{stroke:#121214;stroke-width:2.5}
+.net .node text{fill:#E9E3DB;font:600 11.5px var(--f-body)}
+.net .node text.s{fill:#8E857D;font:500 10.5px var(--f-body)}
+.net .node .tag{font:700 9.5px var(--f-mono)}
+.net .node:hover .core,.net .node:focus .core{stroke:#FFDD00}
+.nettip{position:absolute;pointer-events:none;background:#F6F3EE;color:#141414;border-radius:10px;padding:9px 12px;font-size:12px;box-shadow:0 12px 30px rgba(0,0,0,.4);transform:translate(-50%,-115%);white-space:nowrap;z-index:5}
+.nettip b{display:block;font-size:12.5px}
+.cmd-foot{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:6px 26px 18px;font-size:12px;color:#8E857D}
+.cmd-foot .lg span{color:#B8AEA4}
+.cmd-foot .tagline{font:700 11.5px var(--f-body);letter-spacing:.18em;text-transform:uppercase;color:#FFDD00}
+
+/* ---------- pulse: incidents + preview ---------- */
+.pulse2{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line2)}
+.toolbar .sp{flex:1}
+.itbl td:first-child{position:relative}
+.itbl tr td:first-child::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--sevc,transparent)}
+.itbl .idl{font:700 12.5px var(--f-mono);color:var(--res);white-space:nowrap}
+.itbl .ttl{font-weight:600}
+.itbl .fn{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.itbl .fn .ic{width:16px;height:16px;color:var(--muted)}
+.itbl .imp{font-weight:700;font-variant-numeric:tabular-nums}
+.itbl .chev{color:var(--muted)}
+.pv{position:sticky;top:82px;overflow:hidden}
+.pv-h{padding:16px 18px;border-radius:14px 14px 0 0;color:#fff;display:flex;gap:10px;align-items:flex-start}
+.pv-h.s0{background:linear-gradient(135deg,#9E2321,#6E1414)}.pv-h.s1{background:linear-gradient(135deg,#C8402B,#8E2A1C)}.pv-h.s2{background:linear-gradient(135deg,#C46F0F,#8A4C08)}.pv-h.s3{background:linear-gradient(135deg,#A88600,#6E5800)}.pv-h.s4{background:linear-gradient(135deg,#6E665F,#45403B)}
+.pv-h .t{flex:1;min-width:0}.pv-h b{font:800 15px var(--f-display);display:block}.pv-h small{display:block;opacity:.85;font-size:12.5px;margin-top:2px}
+.pv-h .code{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.2);color:#fff}
+.pv-b{padding:4px 18px 18px;display:flex;flex-direction:column;gap:14px}
+.pv h4{font:700 11.5px var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px}
+.ifig{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ifig div{padding:9px 10px;border-radius:10px;background:var(--panel2)}
+.ifig b{display:block;font:800 16px var(--f-display);font-variant-numeric:tabular-nums}.ifig small{display:block;font-size:11px;color:var(--muted);line-height:1.3}
+.eff{margin:0;padding:0;list-style:none;display:grid;gap:5px;font-size:13px}
+.eff li{display:flex;gap:8px;align-items:flex-start}.eff li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--s1);margin-top:7px;flex:none}
+.ract{display:grid;gap:6px}
+.ract div{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:8px;align-items:center;font-size:13px;padding:7px 8px;border:1px solid var(--line2);border-radius:9px}
+.ract .n{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px var(--f-display);background:var(--yellow);color:#141414}
+.ract em{font-style:normal;color:var(--muted);font-size:12px;white-space:nowrap}
+
+/* charts */
+.charts3{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);gap:18px}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .gl line{stroke:var(--line2)}
+.chart .ax{fill:var(--muted);font-size:11px;font-family:var(--f-body)}
+.chart .lbl{fill:var(--ink2);font-size:11.5px;font-weight:600;font-family:var(--f-body)}
+.chart .hit{fill:transparent}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:8px 10px;border-radius:9px;box-shadow:var(--shadow-lg);white-space:nowrap;transform:translate(-50%,-112%);z-index:5;line-height:1.45}
+.tip b{display:block;font-size:12.5px}
+.tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+.hbars{display:grid;gap:9px}
+.hbar{display:grid;grid-template-columns:96px minmax(0,1fr) 26px;gap:10px;align-items:center;font-size:12.5px}
+.hbar .k{color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbar .tr{height:12px;background:var(--panel2);border-radius:4px;display:flex;gap:2px;overflow:hidden}
+.hbar .tr i{display:block;height:100%}
+.hbar .tr i:last-child{border-radius:0 4px 4px 0}
+.hbar .v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------- incident workspace ---------- */
+.ihead{padding:20px 22px 0}
+.ihead .crumbs{font-size:12.5px;color:var(--muted);margin-bottom:10px}.ihead .crumbs a{text-decoration:none;color:var(--muted)}.ihead .crumbs a:hover{color:var(--ink)}
+.ititle{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.ititle .idb{font:800 14px var(--f-mono);color:#fff;padding:4px 9px;border-radius:7px}
+.ititle h1{font-size:24px}
+.ihead p{margin:8px 0 0;color:var(--ink2);max-width:90ch}
+.imeta{display:flex;flex-wrap:wrap;margin-top:16px;border-top:1px solid var(--line2)}
+.imeta>div{padding:11px 18px 12px 0;margin-right:18px;border-right:1px solid var(--line2)}
+.imeta>div:last-child{border-right:0}
+.imeta .k{font-size:11.5px;color:var(--muted)}.imeta .v{font-weight:700;font-size:13.5px;margin-top:2px}
+.tabs{display:flex;gap:4px;padding:0 16px;border-top:1px solid var(--line2);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{display:inline-flex;align-items:center;gap:7px;padding:13px 10px 12px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current=page]{color:var(--ink);border-bottom-color:var(--yellow)}
+.tabs a .code{height:18px;font-size:10.5px}
+.iw{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:18px;align-items:start}
+.iw-main{display:flex;flex-direction:column;gap:18px;min-width:0}
+.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.g2b{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.4fr);gap:18px}
+/* ripple chain */
+.ripple{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:22px;padding:18px;position:relative}
+.rp{position:relative;border:1px solid var(--line);border-radius:12px;padding:12px 12px 12px;background:var(--panel);display:flex;flex-direction:column;gap:3px;min-height:128px}
+.rp.hot{border-color:color-mix(in srgb,var(--s1) 45%,transparent);background:linear-gradient(180deg,var(--s1-soft),var(--panel) 75%)}
+.rp.warm{border-color:color-mix(in srgb,var(--s2) 40%,transparent);background:linear-gradient(180deg,var(--s2-soft),var(--panel) 75%)}
+.rp .ri{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--panel2);color:var(--ink2);margin-bottom:4px}
+.rp.hot .ri{background:var(--s1);color:#fff}.rp.warm .ri{background:var(--s2);color:#fff}
+.rp b{font-size:13px}.rp span{font-size:12px;color:var(--ink2);line-height:1.4}.rp strong{font-size:12.5px}
+.rp .day{position:absolute;top:10px;right:10px;font:600 10.5px var(--f-mono);color:var(--muted)}
+.rp:not(:last-child)::after{content:"";position:absolute;right:-18px;top:50%;width:14px;height:2px;background:var(--s1);opacity:.7}
+.rp:not(:last-child)::before{content:"";position:absolute;right:-19px;top:calc(50% - 4px);width:7px;height:7px;border-top:2px solid var(--s1);border-right:2px solid var(--s1);transform:rotate(45deg);opacity:.7}
+.istats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line2)}
+.istats div{display:flex;gap:12px;align-items:center;padding:14px 18px;border-right:1px solid var(--line2)}
+.istats div:last-child{border-right:0}
+.istats .si{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--res-soft);color:var(--res)}
+.istats b{display:block;font:800 20px var(--f-display);font-variant-numeric:tabular-nums}.istats small{display:block;font-size:12px;color:var(--muted)}
+/* NBA rail */
+.nba{position:sticky;top:82px;display:flex;flex-direction:column;overflow:hidden;border:0;background:var(--panel);box-shadow:var(--shadow-lg)}
+.nba::before{content:"";position:absolute;inset:0;border-radius:14px;padding:1.5px;background:linear-gradient(160deg,#FFDD00,rgba(255,221,0,.15) 30%,var(--line) 60%,rgba(47,93,138,.5));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.nba-h{padding:18px 18px 14px;background:linear-gradient(180deg,color-mix(in srgb,var(--yellow) 10%,var(--panel)),var(--panel))}
+.nba-h .row{display:flex;align-items:center;gap:10px}
+.nba-h .badge{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--ok);color:#fff}
+:root[data-theme="dark"] .nba-h .badge{color:#0d1f15}
+.nba-h h3{flex:1;font-size:15px}
+.nba-h .what{margin-top:12px;font:700 15.5px/1.4 var(--f-display);letter-spacing:-.01em}
+.nba-h p{margin:6px 0 0;font-size:12.5px;color:var(--ink2)}
+.nba-b{padding:4px 18px 16px;display:flex;flex-direction:column;gap:16px;max-height:calc(100vh - 250px);overflow:auto;scrollbar-width:thin}
+.nba h4{font:700 11.5px var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px}
+.outc{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.outc div{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border-radius:10px;background:var(--panel2)}
+.outc .oi{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--ok-soft);color:var(--ok);flex:none}
+.outc .oi .ic{width:14px;height:14px}
+.outc b{display:block;font:800 14px var(--f-display);font-variant-numeric:tabular-nums}.outc small{display:block;font-size:11.5px;color:var(--muted);line-height:1.3}
+.conf{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--line)}
+.conf svg{width:46px;height:46px;flex:none}
+.conf b{display:block;font-size:13px}.conf small{color:var(--muted);font-size:12px}
+.plan{list-style:none;margin:0;padding:0;position:relative}
+.plan li{position:relative;display:grid;grid-template-columns:74px minmax(0,1fr);gap:8px;padding:0 0 12px;font-size:12.5px}
+.plan li::before{content:"";position:absolute;left:79px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.plan li::after{content:"";position:absolute;left:83px;top:16px;bottom:0;width:1px;background:var(--line)}
+.plan li:last-child::after{display:none}
+.plan li:last-child::before{background:var(--muted);box-shadow:0 0 0 3px var(--panel2)}
+.plan .w{font-weight:700;color:var(--ink2);text-align:right;padding-right:12px}
+.plan .d{padding-left:16px}
+.econ{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.econ div{padding:10px 10px;border-right:1px solid var(--line2)}.econ div:last-child{border-right:0;background:var(--ok-soft)}
+.econ b{display:block;font:800 17px var(--f-display);font-variant-numeric:tabular-nums}.econ div:last-child b{color:var(--ok)}
+.econ small{display:block;font-size:11px;color:var(--muted);line-height:1.3}
+.risk{list-style:none;margin:0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--warn-soft) 70%,var(--panel));display:grid;gap:5px;font-size:12.5px}
+.risk li{display:flex;justify-content:space-between;gap:10px}.risk em{font-style:normal;font-weight:600;color:var(--warn);white-space:nowrap}
+.pipe{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:11.5px}
+.pipe span{padding:3px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line2);font-weight:600;color:var(--ink2)}
+.pipe span.on{background:var(--yellow);border-color:var(--yellow);color:#141414}
+.pipe i{color:var(--muted);font-style:normal}
+.nba-f{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--line2);background:var(--panel2);flex-wrap:wrap}
+.nba-f .btn.pri{flex:1}
+.decided{padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-size:12.5px;font-weight:600;display:flex;gap:8px;align-items:center}
+/* scenario lab */
+.lab{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px}
+.lev{display:grid;gap:14px}
+.lv2{display:grid;gap:6px}
+.lv2 .top2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px}
+.lv2 .top2 b{font-weight:600}.lv2 .top2 output{font:800 15px var(--f-display);font-variant-numeric:tabular-nums}
+.lv2 input[type=range]{width:100%;accent-color:#2F5D8A}
+.lv2 small{color:var(--muted);font-size:12px}
+.lab .seg{display:grid;grid-template-columns:1fr 1fr;max-width:100%}.lab .seg button{white-space:normal;height:auto;min-height:32px;padding:6px 10px;line-height:1.3}
+.tg{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:13px}
+.tg small{display:block;color:var(--muted);font-size:12px}
+.sw{position:relative;width:40px;height:22px;flex:none}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.sw span{position:absolute;inset:0;border-radius:11px;background:var(--panel3);transition:background .15s;cursor:pointer}
+.sw span::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .15s}
+.sw input:checked+span{background:var(--res)}.sw input:checked+span::after{transform:translateX(18px)}
+.sw input:focus-visible+span{outline:2px solid var(--ink);outline-offset:2px}
+.res4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.res4 div{padding:11px 12px;border-radius:10px;background:var(--panel2)}
+.res4 b{display:block;font:800 19px var(--f-display);font-variant-numeric:tabular-nums}.res4 small{display:block;font-size:11.5px;color:var(--muted)}
+.res4 .good b{color:var(--ok)}.res4 .bad b{color:var(--bad)}
+.cmpbar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);font-size:12.5px}
+.opt tr.best td{background:color-mix(in srgb,var(--yellow-soft) 80%,var(--panel))}
+/* execution */
+.steps{list-style:none;margin:0;padding:0}
+.step{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line2);align-items:start}
+.step:last-child{border-bottom:0}
+.step .si{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line);color:var(--muted);font:800 12px var(--f-display);background:var(--panel)}
+.step.done .si{background:var(--ok);border-color:var(--ok);color:#fff}
+:root[data-theme="dark"] .step.done .si{color:#0d1f15}
+.step.run .si{border-color:#D4A800;color:var(--warn);background:var(--yellow-soft)}
+@media (prefers-reduced-motion:no-preference){.step.run .si{animation:spinb 1.2s linear infinite}}
+@keyframes spinb{50%{box-shadow:0 0 0 5px rgba(212,168,0,.18)}}
+.step b{font-size:13.5px}.step .sys{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.step .wb{margin-top:6px;font:500 11.5px var(--f-mono);color:var(--ok)}
+.step .when2{font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+/* timeline / pipeline */
+.flowx{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:0;padding:18px}
+.fx{position:relative;padding:0 6px;text-align:center}
+.fx::before{content:"";position:absolute;top:21px;left:-50%;right:50%;height:2px;background:linear-gradient(90deg,var(--res),var(--res-2))}
+.fx:first-child::before{display:none}
+.fx .b{position:relative;width:44px;height:44px;margin:0 auto 8px;border-radius:12px;display:grid;place-items:center;background:var(--res-soft);color:var(--res);border:1px solid color-mix(in srgb,var(--res) 25%,transparent)}
+.fx.nbaS .b{background:var(--yellow);color:#141414;border-color:var(--yellow)}
+.fx b{display:block;font-size:12.5px}.fx small{display:block;font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:3px}
+.tl{list-style:none;margin:0;padding:6px 18px 12px}
+.tl li{display:grid;grid-template-columns:86px 20px minmax(0,1fr);gap:10px;padding:8px 0;font-size:13px;position:relative}
+.tl .t{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px;text-align:right;padding-top:1px}
+.tl .d{width:10px;height:10px;border-radius:50%;margin:4px 0 0 5px;background:var(--res);position:relative}
+.tl li:not(:last-child) .d::after{content:"";position:absolute;left:4px;top:12px;width:2px;height:calc(100% + 22px);background:var(--line)}
+.tl .d.sig{background:var(--s1)}.tl .d.ag{background:#D4A800}.tl .d.hu{background:var(--ink)}
+.tl small{display:block;color:var(--muted);font-size:12px}
+/* function lenses, decisions, learning */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.kpi{padding:16px 18px;border-right:1px solid var(--line2)}
+.kpi:last-child{border-right:0}
+.kpi .l{font-size:12.5px;color:var(--ink2);font-weight:500}.kpi .v{font:800 26px/1.15 var(--f-display);letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}.kpi .s{font-size:12px;color:var(--muted);margin-top:3px}
+.phead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.phead p{margin:6px 0 0;color:var(--ink2);max-width:80ch}
+.heat td.h{text-align:center;font-weight:700;font-variant-numeric:tabular-nums;border-radius:0}
+.mcard{display:grid;gap:4px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.mcard b{font-size:13.5px}.mcard .big{font:800 22px var(--f-display);font-variant-numeric:tabular-nums}
+.mgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:90;background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);transition:opacity .2s,transform .2s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:rgba(10,10,10,.55);backdrop-filter:blur(3px)}
+.mbox{width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);padding:22px}
+.mbox h3{font-size:17px}.mbox>p{color:var(--ink2);font-size:13px;margin:6px 0 16px}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.fld{display:grid;gap:5px;font-size:12px;font-weight:600;color:var(--ink2)}
+.fld textarea,.fld select{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:8px 10px;font-weight:500;font-size:13px;width:100%}
+.navscrim{display:none}
+.link{color:var(--res);font-weight:600;text-decoration:none}.link:hover{text-decoration:underline}
+.xlink{display:flex;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:12px;text-decoration:none;background:var(--panel);transition:border-color .15s,box-shadow .15s}
+.xlink:hover{border-color:color-mix(in srgb,var(--res) 40%,transparent);box-shadow:var(--shadow)}
+.xlink .av{width:34px;height:34px;border-radius:10px}
+.xlink b{display:block;font-size:13px}.xlink small{display:block;font-size:12px;color:var(--muted)}
+.xlink .ic.go{margin-left:auto;color:var(--muted)}
+
+.prevg>*,.iw>*,.pulse2>*,.g2>*,.g2b>*,.lab>*,.charts3>*{min-width:0}
+@media (max-width:1440px){.iw{grid-template-columns:minmax(0,1fr) 360px}.pulse2{grid-template-columns:minmax(0,1fr) 370px}.ifig{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:1280px){.iw,.pulse2{grid-template-columns:1fr}.nba,.pv{position:static}.nba-b{max-height:none}.charts3{grid-template-columns:1fr 1fr}.charts3>:first-child{grid-column:1/-1}.lab{grid-template-columns:1fr}.flowx{grid-template-columns:repeat(9,minmax(92px,1fr));overflow-x:auto}.mgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:1100px){.cmd-top{grid-template-columns:1fr}.g2,.g2b{grid-template-columns:1fr}.istats{grid-template-columns:repeat(2,minmax(0,1fr))}.istats div:nth-child(2){border-right:0}.istats div:nth-child(-n+2){border-bottom:1px solid var(--line2)}.ripple{grid-template-columns:repeat(var(--n),minmax(150px,1fr));overflow-x:auto}}
+@media (max-width:960px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;left:0;top:0;bottom:0;width:272px;transform:translateX(-100%);transition:transform .25s ease;box-shadow:0 0 40px rgba(0,0,0,.4)}
+  .app.nav-open .side{transform:none}
+  .app.nav-open .navscrim{display:block;position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.45)}
+  .ibtn.menu{display:grid}
+  .top{padding:10px 16px;gap:8px}.page{padding:16px 16px 40px}
+  .when .dt{display:none}.charts3{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:nth-child(2){border-right:0}.kpi:nth-child(-n+2){border-bottom:1px solid var(--line2)}
+}
+@media (max-width:720px){
+  .crumb .hide-s{display:none}.search{display:none}
+  h1{font-size:23px}.cmd-top{padding:20px 18px 4px}.sevrow{padding:12px 18px 0}.cmd-foot{padding:6px 18px 16px}
+  .sevc{min-width:0;flex:1 1 calc(33% - 8px)}
+  .kfigs{flex-wrap:wrap}.kfig{border-left:0;padding:8px 0;flex:1 1 45%}
+  .net{overflow-x:auto}.net svg{min-width:760px}
+  .outc,.res4{grid-template-columns:1fr 1fr}.econ b{font-size:15px}
+  .ihead{padding:16px 16px 0}.ititle h1{font-size:20px}
+  .mgrid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+  <symbol id="i-supply" viewBox="0 0 24 24"><path d="M3 21V9l6 4V9l6 4V5h6v16z"/><path d="M7 17h2M12 17h2M17 17h1"/></symbol>
+  <symbol id="i-production" viewBox="0 0 24 24"><path d="M2 20h20M4 20V10l5 3V8l5 3V4h4v16"/><circle cx="16" cy="15" r="1.5"/></symbol>
+  <symbol id="i-logistics" viewBox="0 0 24 24"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></symbol>
+  <symbol id="i-inventory" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></symbol>
+  <symbol id="i-quality" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-customer" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-finance" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9.5a3 3 0 0 0-3-1.5c-1.7 0-3 .9-3 2s1.3 1.8 3 2 3 .9 3 2-1.3 2-3 2a3 3 0 0 1-3-1.5M12 6v2M12 16v2"/></symbol>
+  <symbol id="i-decide" viewBox="0 0 24 24"><path d="M12 22V12M12 12 5 5M12 12l7-7M5 5v5M5 5h5M19 5v5M19 5h-5"/></symbol>
+  <symbol id="i-learn" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-overview" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h4M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-recover" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-15-6.7L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/><path d="M21 21v-5h-5"/></symbol>
+  <symbol id="i-resolve" viewBox="0 0 24 24"><circle cx="12" cy="18" r="2.6"/><circle cx="6" cy="5.5" r="2.6"/><circle cx="18" cy="5.5" r="2.6"/><path d="M7.4 7.8 11 14.5M16.6 7.8 13 14.5"/></symbol>
+  <symbol id="i-reconcile" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V5a2 2 0 0 1 2-2h11"/><path d="m11.5 14.5 2 2 4-4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-units" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-dollar" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16"/></symbol>
+  <symbol id="i-model" viewBox="0 0 24 24"><circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><path d="M7 6.8 10.3 11M7 17.2l3.3-4.2M14 12h3"/></symbol>
+  <symbol id="i-agent" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 12h.01M15 12h.01M9 16h6"/></symbol>
+  <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M6 14c0-4 12-1 12-4"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h.01M16 8h.01M12 12h.01M8 16h.01M16 16h.01"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m7 4 13 8-13 8z"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+</svg>
+
+<div class="app" id="app">
+  <aside class="side" aria-label="Primary">
+    <a class="brand" href="index.html" aria-label="Artizent — Decision Intelligence Framework overview">
+      <img src="artizent-logo.png" alt="Artizent">
+      <small>Decision Intelligence <b>Framework</b></small>
+    </a>
+    <div class="appsw"><span class="tile"><svg class="ic"><use href="#i-resolve"/></svg></span><span><b>Resolve</b><small>Decision intelligence for operational recovery</small></span></div>
+    <div class="grp">
+      <nav class="nav" id="nav">
+        <a href="#/pulse" data-v="pulse"><svg class="ic"><use href="#i-home"/></svg>Enterprise Pulse</a>
+        <a href="#/incidents" data-v="incidents"><svg class="ic"><use href="#i-plus"/></svg>Incidents<span class="cnt" id="nc-inc"></span></a>
+      </nav>
+    </div>
+    <div class="grp">
+      <div class="grp-h">Functions</div>
+      <nav class="nav" id="navfn"></nav>
+    </div>
+    <div class="grp">
+      <nav class="nav">
+        <a href="#/decisions" data-v="decisions"><svg class="ic"><use href="#i-decide"/></svg>Decisions</a>
+        <a href="#/learning" data-v="learning"><svg class="ic"><use href="#i-learn"/></svg>Learning</a>
+      </nav>
+    </div>
+    <div class="grp">
+      <div class="grp-h">Framework</div>
+      <nav class="nav">
+        <a href="index.html"><svg class="ic"><use href="#i-overview"/></svg>Overview</a>
+        <a href="../index.html"><svg class="ic"><use href="#i-recover"/></svg>Recover</a>
+        <a href="reconcile.html"><svg class="ic"><use href="#i-reconcile"/></svg>Reconcile</a>
+      </nav>
+    </div>
+    <div class="side-foot">
+      <div class="motto"><span>Anticipate.</span><span>Prioritise.</span><span>Resolve.</span><span>Grow.</span><small>Simulated data as of 7 Oct 2026, 09:00 IST. No live systems are connected.</small><button id="resetBtn">Reset demo data</button></div>
+    </div>
+  </aside>
+  <div class="navscrim" id="navscrim"></div>
+
+  <div class="main">
+    <header class="top">
+      <button class="ibtn menu" id="menuBtn" aria-label="Open navigation" aria-expanded="false"><svg class="ic"><use href="#i-menu"/></svg></button>
+      <div class="crumb"><a class="hide-s" href="index.html">DI Framework</a><i class="hide-s">/</i><a href="#/pulse">Resolve</a><i>/</i><b id="crumbT">Enterprise Pulse</b></div>
+      <span class="when"><span class="dt">7 Oct 2026 · 09:00 IST</span><span class="lv"><i></i>Live (simulated)</span></span>
+      <div class="search" role="search">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <label class="sr" for="q">Search</label>
+        <input id="q" type="search" autocomplete="off" placeholder="Search incidents, SKUs, suppliers, orders…" aria-controls="qres" aria-expanded="false">
+        <div class="results" id="qres" role="listbox" hidden></div>
+      </div>
+      <button class="ibtn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic sun"><use href="#i-moon"/></svg><svg class="ic moon"><use href="#i-sun"/></svg></button>
+    </header>
+
+    <main class="page">
+      <section class="view" id="v-pulse"></section>
+      <section class="view" id="v-incidents"></section>
+      <section class="view" id="v-fn"></section>
+      <section class="view" id="v-incident"></section>
+      <section class="view" id="v-decisions"></section>
+      <section class="view" id="v-learning"></section>
+    </main>
+  </div>
+</div>
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true"><div class="mbox" id="mbox"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Artizent Resolve — front end over a simulated backend.
+   Incidents, ripple models, the recovery simulation, the optimizer and
+   the execution run all live in this page. No network calls are made.
+   ===================================================================== */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const fmtN=n=>Math.round(n).toLocaleString('en-US');
+const money=n=>'$'+Math.round(n).toLocaleString('en-US');
+const mK=n=>{const a=Math.abs(n),s=n<0?'−':'';return a>=1e6?s+'$'+(a/1e6).toFixed(2).replace(/0$/,'')+'M':a>=1e3?s+'$'+Math.round(a/1e3)+'K':s+'$'+Math.round(a)};
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const AS_OF='2026-10-07T09:00';
+
+/* ---------------- reference data (same enterprise as Circularity and Reconcile) ---------------- */
+const SEV=[['Showstopper','s0'],['Critical','s1'],['High','s2'],['Medium','s3'],['Low','s4']];
+const STAT={action:'Action required',progress:'In progress',analysis:'In analysis',monitoring:'Monitoring',executing:'Executing',resolved:'Resolved'};
+const FN={supply:['Supply','i-supply'],production:['Production','i-production'],logistics:['Logistics','i-logistics'],inventory:['Inventory','i-inventory'],quality:['Quality','i-quality'],customer:['Customer / Orders','i-customer'],finance:['Finance','i-finance']};
+const NAV_FN=['supply','production','logistics','inventory','quality','customer'];
+const REGIONS=['West','South','East','International'];
+/* Northfield network: tiers drawn in the Enterprise Pulse map */
+const NODES=[
+  {id:'halv',n:'Halvorsen Steel',s:'Tier 2 · forged rings',tier:0,y:.18},
+  {id:'cu',n:'Copper (LME)',s:'Winding wire',tier:0,y:.5},
+  {id:'cell',n:'Cellcore',s:'Battery cells',tier:0,y:.82},
+  {id:'mer',n:'Meridian Bearings',s:'Tier 1 · BRG-6318',tier:1,y:.12},
+  {id:'arc',n:'Arcadia Bearings',s:'Qualified alternate',tier:1,y:.34,alt:1},
+  {id:'kel',n:'Kestrel Electronics',s:'Drive boards',tier:1,y:.56},
+  {id:'orb',n:'Orbis Modules',s:'PLC modules · EUR',tier:1,y:.78},
+  {id:'pa',n:'Plant A · Chakan',s:'Voltara V4 motors',tier:2,y:.2},
+  {id:'pb',n:'Plant B · Sriperumbudur',s:'Kestrel D4 · Orbis PLC',tier:2,y:.5},
+  {id:'pc',n:'Plant C · Sanand',s:'Halden HX pumps',tier:2,y:.8},
+  {id:'w1',n:'Warehouse 1',s:'Pune',tier:3,y:.1},
+  {id:'w2',n:'Warehouse 2',s:'Chennai',tier:3,y:.33},
+  {id:'rc',n:'Repair centre',s:'Hosur · Recover',tier:3,y:.56},
+  {id:'vz',n:'Vizag Port Yard',s:'Export · import',tier:3,y:.76},
+  {id:'cp',n:'Chennai Port',s:'Customs',tier:3,y:.95},
+  {id:'ca',n:'Customer A',s:'Pune Works · Nashik',tier:4,y:.2},
+  {id:'cb',n:'Customer B',s:'Chennai Foundry',tier:4,y:.5},
+  {id:'cc',n:'Customer C',s:'Indore Packaging',tier:4,y:.8}];
+const EDGES=[['halv','mer'],['cu','kel'],['cu','mer'],['cell','pc'],['mer','pa'],['mer','pc'],['arc','pa'],['kel','pb'],['orb','pb'],['pa','w1'],['pa','w2'],['pb','w2'],['pb','rc'],['pc','w1'],['pc','vz'],['vz','pb'],['cp','pb'],['w1','ca'],['w2','cb'],['rc','ca'],['w1','cc'],['vz','cc'],['w2','pa']];
+const TIERS=['Sub-suppliers','Suppliers','Plants','Distribution','Customers'];
+
+/* the twelve open incidents */
+const INC0=[
+ {id:'SUP-001',t:'Supplier delay — critical component (bearing assembly)',fn:'supply',sev:0,st:'action',eta:'2–3 days',imp:612000,units:200,unitL:'motors',region:'International',nodes:['mer','halv','pa','pc','rc'],
+  primary:'Production (3 plants)',owner:'Procurement',stage:'Supplier',det:'2026-10-07T06:42',src:'Supplier portal, SAP S/4HANA ASN, Ariba, news, risk model',
+  desc:'Meridian Bearings is late delivering BRG-6318 bearing assemblies for Voltara V4 motors because its sub-supplier Halvorsen Steel is short of forged rings. The current shipment is 5 days behind schedule.',
+  facts:[['Supplier','Meridian Bearings (Tier 1)'],['Sub-supplier','Halvorsen Steel · forged rings'],['Component','Bearing assembly BRG-6318'],['Current status','5 days behind schedule','bad'],['Original ETA','9 Oct 2026'],['Revised ETA','14 Oct 2026'],['Units affected','1,200 (this shipment)'],['Plants impacted','3'],['Owner','Procurement'],['Detection source','Supplier portal, SAP S/4HANA ASN, news, risk model']],
+  effects:['Line stoppage at Plant A from 9 Oct','8 customer orders shipped late','Expedited freight cost','$612K revenue at risk','Pressure on the alternate supplier'],
+  acts:[['Engage alternate supplier (Arcadia Bearings)','2–3 days','Initiate'],['Transfer stock from Warehouse 2','1 day','Evaluate'],['Re-sequence production at Plant A','Immediate','Plan']],
+  plants:[['Plant A · Chakan','West',200,'High','Voltara V4 55 kW, V4 75 kW'],['Plant C · Sanand','West',60,'Medium','Halden HX axial pumps'],['Repair centre','South',40,'Low','Refurbishment kits']],
+  orders:[['SO-45871','Customer A','Pune Works',12,'10 Oct','High'],['SO-45892','Customer A','Nashik Plant',8,'11 Oct','High'],['SO-45901','Customer B','Chennai Foundry',6,'12 Oct','Medium'],['SO-45910','Customer B','Coimbatore Mill',4,'13 Oct','Medium'],['SO-45927','Customer C','Indore Packaging',3,'15 Oct','Low']],
+  ordersN:8,model:true,
+  rel:[['LOG-008','Dock congestion at Warehouse 2 can slow the transfer','inc'],['RT-1027','Recover: harvested Voltara bearings can supply up to 60 sets','recover'],['MOV-2614','Reconcile: Warehouse 2 dock is over free time this morning','reconcile']]},
+ {id:'LOG-004',t:'Port congestion — vessel delayed at Vizag',fn:'logistics',sev:0,st:'progress',eta:'3–5 days',imp:418000,units:2600,unitL:'units inbound',region:'East',nodes:['vz','pb','cc'],
+  primary:'Inbound components',owner:'Logistics',stage:'Inbound logistics',det:'2026-10-06T17:20',src:'Vizag terminal system, carrier EDI 214, AIS vessel feed',
+  desc:'MV Coral Dawn is waiting for a berth at Vizag; the terminal reports 3–5 days of queue. Two Orbis PLC module containers for Plant B are on board, and an outbound resale container reaches its last free day today.',
+  effects:['Plant B PLC module cover drops to 2 days','Demurrage on 2 containers from 8 Oct','Customer C export lot delayed'],
+  acts:[['Re-route 1 container via Chennai Port','1 day','Initiate'],['Book priority berth slot','2 days','Evaluate'],['Pull PLC modules from Warehouse 2','Immediate','Plan']],
+  rel:[['CSTU 418377-2','Reconcile: last free day today, demurrage from 8 Oct','reconcile'],['RT-1052','Recover: resale lot BAT-0126 waits on this vessel','recover']]},
+ {id:'PRO-007',t:'Line down — drive electronics shortage',fn:'production',sev:1,st:'action',eta:'1–2 days',imp:334000,units:160,unitL:'units/day',region:'South',nodes:['pb','kel'],
+  primary:'Plant B line 2',owner:'Plant B operations',stage:'Manufacturing',det:'2026-10-07T05:55',src:'Plant MES, IBM Maximo, SAP S/4HANA',
+  desc:'Line 2 at Plant B stopped at 05:40 after Kestrel Electronics shipped drive boards with the wrong revision. 160 Kestrel Drive D4 units per day are lost while the line is down.',
+  acts:[['Swap to revision C boards from quarantine','Immediate','Initiate'],['Run line 2 on Orbis PLC builds','Immediate','Evaluate'],['Air-freight correct boards','1–2 days','Plan']]},
+ {id:'QAL-002',t:'Quality hold — Kestrel Drive D4 firmware failures (12%)',fn:'quality',sev:1,st:'analysis',eta:'3–4 days',imp:296000,units:540,unitL:'units on hold',region:'South',nodes:['pb','rc'],
+  primary:'Multiple SKUs',owner:'Quality assurance',stage:'Quality',det:'2026-10-06T14:05',src:'MasterControl, field returns (Recover), ServiceNow FSM',
+  desc:'End-of-line tests and field returns show a 12% failure rate on Kestrel Drive D4 firmware 4.2. 540 finished units are on quality hold at Plant B and Warehouse 2.',
+  acts:[['Re-flash with firmware 4.1 and retest','2 days','Initiate'],['Release units that pass the new test','3 days','Evaluate'],['Notify Customer B service teams','Immediate','Plan']],
+  rel:[['Kestrel Drive D4','Recover: drive electronics are a repeat failure mode in returns','recover']]},
+ {id:'INV-006',t:'Safety stock breach — Halden HX seal kits',fn:'inventory',sev:2,st:'progress',eta:'2–3 days',imp:214000,units:380,unitL:'kits',region:'West',nodes:['w1','pc'],
+  primary:'Customer orders',owner:'Inventory planning',stage:'Inventory & distribution',det:'2026-10-06T21:30',src:'Manhattan Active WM, SAP S/4HANA MRP',
+  desc:'Warehouse 1 holds 3 days of Halden HX seal kits against a 7-day safety stock. Service demand from Customer A pumps rose 40% over two weeks.',
+  acts:[['Rebalance kits from Warehouse 2','1 day','Initiate'],['Use recovered seals from Recover','2 days','Evaluate'],['Raise safety stock to 9 days','Immediate','Plan']],
+  rel:[['Halden HX','Recover: bearings and seals harvested from returned pumps','recover']]},
+ {id:'ORD-003',t:'Large customer order at risk — Customer A expansion',fn:'customer',sev:2,st:'action',eta:'3–5 days',imp:188000,units:40,unitL:'motors',region:'West',nodes:['ca','pa','w1'],
+  primary:'40 Voltara V4 motors',owner:'Customer operations',stage:'Customers & service',det:'2026-10-07T07:10',src:'Salesforce, SAP S/4HANA order book',
+  desc:'Customer A ordered 40 Voltara V4 motors for the Pune Works expansion, due 14 Oct. The bearing delay in SUP-001 puts 26 of them at risk.',
+  acts:[['Offer redeployed V4 motors from Recover','2 days','Initiate'],['Split delivery 14 + 26','Immediate','Evaluate'],['Confirm revised date with Customer A','Immediate','Plan']],
+  rel:[['SUP-001','The bearing delay drives this risk','inc'],['RT-1048','Recover: MTR-2041 is recommended for redeployment against this order','recover']]},
+ {id:'SUP-009',t:'Raw material price increase — copper +9%',fn:'supply',sev:2,st:'monitoring',eta:'7–10 days',imp:142000,units:0,unitL:'',region:'International',nodes:['cu','kel','mer'],
+  primary:'Cost of goods',owner:'Procurement',stage:'Supplier',det:'2026-10-05T10:00',src:'LME index, Ariba contracts',
+  desc:'LME copper rose 9% in ten days. Winding wire contracts reprice on 15 Oct, adding an estimated $142K to Q4 cost of goods.',
+  acts:[['Lock Q4 wire price with hedge','3 days','Initiate'],['Increase recycled copper share via Recover','2 weeks','Evaluate'],['Update standard costs','1 week','Plan']]},
+ {id:'LOG-008',t:'Dock congestion — Warehouse 2 over free time',fn:'logistics',sev:3,st:'analysis',eta:'1–2 days',imp:121000,units:7,unitL:'trucks',region:'South',nodes:['w2'],
+  primary:'Inbound returns & transfers',owner:'Warehouse Manager · Warehouse 2',stage:'Inventory & distribution',det:'2026-10-07T08:31',src:'Manhattan Active WM, ShipLane TMS, Reconcile',
+  desc:'Two of four dock doors at Warehouse 2 are blocked by quality-hold pallets from QAL-002. Trucks are exceeding free time and detention is accruing.',
+  acts:[['Move hold pallets to the yard','Immediate','Initiate'],['Re-slot inbound appointments','1 day','Evaluate'],['Open a third shift for unloading','1 day','Plan']],
+  rel:[['MOV-2614','Reconcile: Coastal Haulage truck already over free time','reconcile'],['QAL-002','Hold pallets block the doors','inc']]},
+ {id:'PRO-012',t:'Equipment failure — paint-line oven, 2-day downtime',fn:'production',sev:3,st:'progress',eta:'4–6 days',imp:108000,units:1200,unitL:'units',region:'West',nodes:['pc'],
+  primary:'Plant C · Halden HX',owner:'Maintenance',stage:'Manufacturing',det:'2026-10-06T11:45',src:'IBM Maximo, plant MES',
+  desc:'The paint-line oven at Plant C failed a burner inspection. Maximo work order WO-90417 schedules repair for 2 days; 1,200 pump housings queue behind it.',
+  acts:[['Subcontract painting to approved vendor','1 day','Initiate'],['Prioritise housings for open orders','Immediate','Evaluate'],['Expedite burner part','2 days','Plan']]},
+ {id:'FIN-001',t:'FX volatility — EUR cost of Orbis PLC modules',fn:'finance',sev:3,st:'monitoring',eta:'7–10 days',imp:97000,units:0,unitL:'',region:'International',nodes:['orb'],
+  primary:'Multiple suppliers',owner:'Treasury',stage:'Supplier',det:'2026-10-04T09:00',src:'Treasury system, SAP S/4HANA',
+  desc:'EUR/INR moved 3.1% this month. Open purchase orders for Orbis PLC modules are unhedged above the policy threshold.',
+  acts:[['Hedge 60% of open EUR exposure','2 days','Initiate'],['Shift Q1 volume to INR contract','1 month','Evaluate'],['Review price clauses','2 weeks','Plan']]},
+ {id:'SHI-005',t:'Customs clearance delay — Corvid C14 battery packs',fn:'logistics',sev:4,st:'progress',eta:'3–5 days',imp:64000,units:900,unitL:'packs',region:'South',nodes:['cp'],
+  primary:'Outbound orders',owner:'Trade compliance',stage:'Inbound logistics',det:'2026-10-05T15:20',src:'Customs broker, carrier EDI 214',
+  desc:'Customs at Chennai Port requested an updated UN38.3 certificate for 900 Corvid C14 battery packs.',
+  acts:[['Submit updated certificate','1 day','Initiate'],['Release packs for priority orders','2 days','Evaluate'],['Update certificate library','1 week','Plan']]},
+ {id:'MKT-011',t:'Demand spike — Customer C tool-fleet promotion',fn:'customer',sev:4,st:'monitoring',eta:'5–7 days',imp:58000,units:310,unitL:'Brava packs',region:'East',nodes:['cc'],
+  primary:'Inventory availability',owner:'Demand planning',stage:'Customers & service',det:'2026-10-06T09:30',src:'Salesforce, demand sensing model',
+  desc:'Customer C launched a Brava 36 V fleet promotion; demand sensing projects 310 extra packs over the next 3 weeks.',
+  acts:[['Pull forward Cellcore order','5 days','Initiate'],['Allocate refurbished packs from Recover','1 week','Evaluate'],['Cap promotion volume per site','Immediate','Plan']],
+  rel:[['RT-1052','Recover: refurbished BAT-0126 packs could cover part of the spike','recover']]}
+];
+</script>
+<script>
+"use strict";
+/* ---------------- recovery model for SUP-001: Monte Carlo + optimizer ---------------- */
+const MOD={need:400,daily:80,rev:1380,wh2:260,floor:60,trCost:24,
+  air:{u:395,fix:14000,day:2,lateP:.18,l:'Air'},road:{u:160,fix:3000,day:4,lateP:.25,l:'Road'},
+  rcCost:45,rcYield:.85,rcDay:3,rcMax:60,rsCost:40000,rsCut:120,breach:40000,slipP:.25,slipDays:2,N:600};
+function simPlan(p,N,seed){N=N||MOD.N;const r=mulberry32(seed||11),loss=new Float64Array(N),rec=new Float64Array(N);let ok=0,suSum=0;
+  for(let s=0;s<N;s++){const slip=r()<MOD.slipP,last=6+(slip?MOD.slipDays:0),arr=new Array(last+5).fill(0);const add=(d,u)=>{arr[Math.min(d,arr.length-1)]+=u};
+    if(p.tr)add(1+(r()<.06?1:0),p.tr);
+    if(p.ex){const m=MOD[p.mode];add(m.day+(r()<m.lateP?1+Math.floor(r()*2):0),p.ex)}
+    if(p.rc){let y=0;for(let i=0;i<p.rc;i++)if(r()<MOD.rcYield)y++;add(MOD.rcDay,y)}
+    let stock=0,short=0,cut=p.rs?MOD.rsCut:0,full=1,firstShort=-1;
+    for(let d=0;d<arr.length;d++){stock+=arr[d];if(d>=2&&d<=last){let dem=MOD.daily+Math.round((r()-.5)*16);if(cut>0&&d<=3){const c=Math.min(cut,60);dem-=c;cut-=c}const u=Math.min(stock,dem);stock-=u;if(dem>u){short+=dem-u;if(firstShort<0)firstShort=d}}}
+    loss[s]=short*MOD.rev;if(short===0)ok++;suSum+=short;rec[s]=short===0?0:Math.max(1,Math.min(last+1,Math.ceil(short/MOD.daily)))}
+  const el=loss.reduce((a,b)=>a+b,0)/N;
+  const cost=p.tr*MOD.trCost+(p.ex?p.ex*MOD[p.mode].u+MOD[p.mode].fix:0)+p.rc*MOD.rcCost+(p.rs?MOD.rsCost:0)+(p.tr>MOD.wh2-MOD.floor?MOD.breach*(p.tr-(MOD.wh2-MOD.floor))/MOD.floor:0);
+  const sorted=[...rec].sort((a,b)=>a-b);
+  return{el,cost,conf:ok/N,loss,rec,short:suSum/N,p50:sorted[Math.floor(N*.5)],p90:sorted[Math.floor(N*.9)]}}
+const BASE=simPlan({tr:0,ex:0,mode:'air',rc:0,rs:false});
+function evalPlan(p){const s=simPlan(p),prot=BASE.el-s.el,net=prot-s.cost,sd=Math.sqrt(s.loss.reduce((a,b)=>a+(b-s.el)**2,0)/s.loss.length);
+  return Object.assign({},p,{prot,net,cost:s.cost,conf:s.conf,risk:net-.3*sd,el:s.el,rec:s.rec,p50:s.p50,p90:s.p90,short:s.short,
+    secured:p.tr+p.ex+Math.round(p.rc*MOD.rcYield)+(p.rs?MOD.rsCut:0),breach:p.tr>MOD.wh2-MOD.floor})}
+let OPT=null;
+function optimize(){if(OPT)return OPT;const all=[];
+  for(let tr=0;tr<=260;tr+=20)for(let ex=0;ex<=320;ex+=40)for(const mode of['air','road'])for(const rc of[0,30,60])for(const rs of[false,true]){if(!ex&&mode==='road')continue;const e=evalPlan({tr,ex,mode,rc,rs});delete e.rec;all.push(e)}
+  all.sort((a,b)=>b.risk-a.risk);OPT={best:all[0],all,n:all.length};return OPT}
+const planKey=p=>`${p.tr}|${p.ex}|${p.mode}|${p.rc}|${p.rs}`;
+function planText(p){const a=[];if(p.tr)a.push(`Transfer ${p.tr} from Warehouse 2`);if(p.ex)a.push(`expedite ${p.ex} from Arcadia Bearings by ${MOD[p.mode].l.toLowerCase()}`);if(p.rc)a.push(`release ${p.rc} recovered sets from Recover`);if(p.rs)a.push('re-sequence Plant A for 2 days');
+  if(!a.length)return 'Wait for Meridian Bearings';const s=a.join(' + ');return s[0].toUpperCase()+s.slice(1)}
+</script>
+<script>
+"use strict";
+/* ---------------- state ---------------- */
+const KEY='rsv-demo-v1';
+function freshState(){return{inc:INC0.map(i=>({id:i.id,st:i.st})),decisions:[],runs:{},journal:[]}}
+let ST;try{const s=localStorage.getItem(KEY);if(s){const d=JSON.parse(s);if(d&&d.inc&&d.inc.length===INC0.length)ST=d}}catch(e){}
+if(!ST)ST=freshState();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
+const S={view:'pulse',fn:null,sel:'SUP-001',inc:null,tab:'overview',fSev:null,fFn:'',fReg:'',fSt:'',plan:null};
+const T0=Date.now();
+const nowT=()=>{const m=540+Math.floor((Date.now()-T0)/60000);return '2026-10-07T'+pad(Math.floor(m/60))+':'+pad(m%60)};
+const tOf=iso=>iso.slice(11,16);const dOf=iso=>{const d=+iso.slice(8,10),m=+iso.slice(5,7);return d+' '+['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]};
+/* derive full incident records: static facts + live status + generated detail */
+function incById(id){return INC.find(i=>i.id===id)}
+let INC=[];
+function buildInc(){INC=INC0.map(b=>{const i=Object.assign({},b),st=ST.inc.find(x=>x.id===b.id);i.st=st?st.st:b.st;
+    if(i.id==='SUP-001'){i.imp=Math.round(BASE.el/1000)*1000}
+    i.sites=i.nodes.filter(n=>['pa','pb','pc','w1','w2','rc','vz','cp'].includes(n)).length||1;
+    if(!i.facts)i.facts=[['Function',FN[i.fn][0]],['Stage',i.stage],['Primary impact',i.primary],['Units at risk',i.units?fmtN(i.units)+' '+i.unitL:'—'],['Region',i.region],['Owner',i.owner],['Detection source',i.src]];
+    if(!i.effects)i.effects=[`${i.primary} affected`,`${mK(i.imp)} potential impact`,`Resolution expected in ${i.eta}`];
+    i.nba=i.model?null:genNBA(i);return i})}
+function genNBA(i){const r=mulberry32(i.id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)),cost=Math.round(i.imp*(.12+r()*.1)/1000)*1000,prot=Math.round(i.imp*(.82+r()*.1)/1000)*1000;
+  const conf=Math.round(70+r()*18);
+  return{title:i.acts.map(a=>a[0]).slice(0,2).join(' + '),why:`Protects ${mK(prot)} of the ${mK(i.imp)} at risk for ${mK(cost)}, and keeps the other options open if conditions change.`,
+    cost,prot,net:prot-cost,conf,days:i.eta,
+    outcome:[[i.units?fmtN(Math.round(i.units*.9))+' / '+fmtN(i.units):'Cost locked','i-units',i.units?i.unitL+' secured':'exposure capped'],[mK(prot),'i-dollar','value protected'],[i.eta,'i-clock','to full recovery'],[`${conf}%`,'i-shield','decision confidence']],
+    plan:[['Immediately',i.acts[0][0]],['Same day',`Confirm with ${i.owner}`],[i.acts[1]?i.acts[1][1]:'1 day',i.acts[1]?i.acts[1][0]:'Monitor'],['Then','Verify outcome and close the incident']],
+    risk:[['Execution slips by a day','moderate'],['Further upstream delay','low']],
+    alts:[[i.acts[0][0],'Recommended',conf,prot-cost],[i.acts[2]?i.acts[2][0]:'Wait and monitor','Viable',conf-12,Math.round((prot-cost)*.7)],['Do nothing','Baseline',35,-i.imp]]}}
+function nbaFor(i){if(!i.model)return i.nba;const o=optimize(),b=o.best;
+  const alts=[];const seen=new Set();for(const x of o.all){const k=`${!!x.tr}|${!!x.ex}|${x.mode}|${!!x.rc}|${x.rs}`;if(seen.has(k))continue;seen.add(k);alts.push(x);if(alts.length>=4)break}
+  return{model:true,best:b,title:planText(b),why:`Of ${o.n} plans simulated ${MOD.N} times each, this one keeps Plant A running in ${Math.round(b.conf*100)}% of runs for the lowest risk-adjusted cost. Warehouse 2 stays above its safety stock.`,
+    cost:b.cost,prot:b.prot,net:b.net,conf:Math.round(b.conf*100),
+    outcome:[[`${Math.min(MOD.need,b.secured)} / ${MOD.need}`,'i-units','assemblies secured for Plant A'],['+'+mK(b.cost),'i-dollar','incremental recovery cost'],[mK(b.prot),'i-shield','revenue exposure protected'],[b.p90===0?'No stoppage':`${b.p90} days`,'i-clock',b.p90===0?`in ${Math.round(b.conf*100)}% of runs`:'disrupted production (P90)'],['Line continuity','i-production','no interruption expected'],[`${MOD.wh2-b.tr} left`,'i-inventory','Warehouse 2 safety stock kept'],[`${INC0[0].ordersN} orders`,'i-users','on track'],[b.conf>=.9?'High':b.conf>=.75?'Medium':'Low','i-target',`decision confidence (${Math.round(b.conf*100)}%)`]],
+    plan:[['Immediately',`Approve transfer of ${b.tr} assemblies from Warehouse 2`],['Today',b.rc?`Release ${b.rc} recovered sets from the Repair centre for requalification`:'Confirm Plant A schedule'],['1 day',`Place expedite order for ${b.ex} with Arcadia Bearings (${MOD[b.mode].l.toLowerCase()})`],[`${MOD[b.mode].day}–${MOD[b.mode].day+1} days`,'Units arrive, inspected and delivered to Plant A'],['Day 7','Meridian shipment arrives; production back to normal']],
+    risk:[['Arcadia on-time performance',`${Math.round((1-MOD[b.mode].lateP)*100)}% on time · moderate`],['Further delay at Halvorsen Steel',`${Math.round(MOD.slipP*100)}% chance · low`],['Recovered-set yield after test',`${Math.round(MOD.rcYield*100)}% · low`]],
+    alts:alts.map((x,k)=>[planText(x),k===0?'Recommended':'Viable',Math.round(x.conf*100),x.net,x])}}
+
+/* ---------------- shell ---------------- */
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3000)}
+function applyTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('circ-theme',t)}catch(e){}}
+$('#themeBtn').onclick=()=>{applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');render()};
+const appEl=$('#app');function setNav(o){appEl.classList.toggle('nav-open',o);$('#menuBtn').setAttribute('aria-expanded',o)}
+$('#menuBtn').onclick=()=>setNav(!appEl.classList.contains('nav-open'));$('#navscrim').onclick=()=>setNav(false);
+$('#navfn').innerHTML=NAV_FN.map(f=>`<a href="#/fn/${f}" data-v="fn-${f}"><svg class="ic"><use href="#${FN[f][1]}"/></svg>${FN[f][0]}<span class="dotn" id="nd-${f}"></span></a>`).join('');
+$('#resetBtn').onclick=()=>modal(`<h3>Reset demo data?</h3><p>Approved actions, execution runs and decisions made in this browser are cleared.</p><div class="mfoot"><button class="btn" data-close>Cancel</button><button class="btn pri" id="mok">Reset</button></div>`,()=>{$('#mok').onclick=()=>{try{localStorage.removeItem(KEY)}catch(e){}ST=freshState();Object.values(RUNT).forEach(clearInterval);buildInc();closeModal();render();toast('Demo data restored')}});
+let lastFocus=null;
+function modal(html,after){lastFocus=document.activeElement;$('#mbox').innerHTML=html;$('#modal').hidden=false;$$('#mbox [data-close]').forEach(x=>x.onclick=closeModal);after&&after();const f=$('#mbox').querySelector('textarea,select,.btn.pri');f&&f.focus()}
+function closeModal(){$('#modal').hidden=true;$('#mbox').innerHTML='';lastFocus&&lastFocus.focus&&lastFocus.focus()}
+$('#modal').addEventListener('mousedown',e=>{if(e.target.id==='modal')closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('#modal').hidden)closeModal();setNav(false)}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('#q').focus()}});
+function route(){const h=location.hash.replace(/^#\/?/,'').split('/');let v=h[0]||'pulse';
+  if(v==='incident'&&incById(h[1])){S.inc=h[1];S.tab=h[2]||'overview';S.sel=h[1]}else if(v==='fn'&&FN[h[1]]){S.fn=h[1]}else if(!['pulse','incidents','decisions','learning'].includes(v))v='pulse';
+  /* views share element ids (#itbl, #icount, filters), so only the active one keeps its markup */
+  S.view=v;$$('.view').forEach(x=>{const on=x.id==='v-'+v;x.classList.toggle('on',on);if(!on)x.innerHTML=''});
+  $$('.side .nav a').forEach(a=>{const on=a.dataset.v===v||(v==='fn'&&a.dataset.v==='fn-'+S.fn)||(v==='incident'&&a.dataset.v==='incidents');on?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current')});
+  const T={pulse:'Enterprise Pulse',incidents:'Incidents',decisions:'Decisions',learning:'Learning',fn:FN[S.fn]?FN[S.fn][0]:'',incident:S.inc};$('#crumbT').textContent=T[v];document.title=T[v]+' · Artizent Resolve';
+  setNav(false);render();window.scrollTo(0,0)}
+window.addEventListener('hashchange',route);
+/* search */
+const q=$('#q'),qres=$('#qres');let hits=[],cur=0;
+function sIndex(){const o=[];INC.forEach(i=>o.push({t:i.id,s:i.t,k:[i.id,i.t,i.desc,i.primary,i.owner,(i.facts||[]).map(f=>f[1]).join(' '),(i.orders||[]).map(x=>x.join(' ')).join(' ')].join(' '),go:()=>location.hash='#/incident/'+i.id}));
+  NODES.forEach(n=>o.push({t:n.n,s:n.s,k:n.n+' '+n.s,go:()=>{const i=INC.find(x=>x.nodes.includes(n.id));location.hash=i?'#/incident/'+i.id:'#/pulse'}}));return o}
+function renderQ(){const v=q.value.trim().toLowerCase();if(!v){qres.hidden=true;q.setAttribute('aria-expanded','false');return}
+  hits=sIndex().filter(x=>x.k.toLowerCase().includes(v)).slice(0,9);cur=0;
+  qres.innerHTML=hits.length?hits.map((x,k)=>`<button role="option" data-k="${k}" aria-selected="${k===0}"><span class="code">${esc(x.t)}</span><small>${esc(x.s)}</small></button>`).join(''):'<div class="none">Nothing matches.</div>';qres.hidden=false;q.setAttribute('aria-expanded','true')}
+function pick(k){const h=hits[k];if(!h)return;q.value='';renderQ();q.blur();h.go()}
+q.addEventListener('input',renderQ);
+q.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!hits.length)return;cur=(cur+(e.key==='ArrowDown'?1:-1)+hits.length)%hits.length;$$('#qres button').forEach((b,k)=>b.setAttribute('aria-selected',k===cur))}else if(e.key==='Enter'){e.preventDefault();pick(cur)}else if(e.key==='Escape'){q.value='';renderQ()}});
+qres.addEventListener('mousedown',e=>{const b=e.target.closest('button');if(b){e.preventDefault();pick(+b.dataset.k)}});
+q.addEventListener('blur',()=>setTimeout(()=>{qres.hidden=true},120));
+
+/* shared bits */
+const sevChip=s=>`<span class="sev ${SEV[s][1]}"><i></i>${SEV[s][0]}</span>`;
+const stChip=s=>`<span class="st ${s}"><i></i>${STAT[s]}</span>`;
+const fnCell=f=>`<span class="fn"><svg class="ic"><use href="#${FN[f][1]}"/></svg>${FN[f][0]}</span>`;
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function counts(){$('#nc-inc').textContent=INC.filter(i=>i.st!=='resolved').length;
+  NAV_FN.forEach(f=>{const w=INC.filter(i=>i.fn===f&&i.st!=='resolved').reduce((m,i)=>Math.min(m,i.sev),9);const d=$('#nd-'+f);d.style.background=w<9?`var(--s${w})`:'transparent'})}
+function render(){counts();({pulse:renderPulse,incidents:renderIncidents,fn:renderFn,incident:renderIncident,decisions:renderDecisions,learning:renderLearning})[S.view]()}
+function tipOn(el,html,x,y){let t=el.querySelector('.tip');if(!t){t=document.createElement('div');t.className='tip';el.appendChild(t)}t.innerHTML=html;t.hidden=false;t.style.left=x+'px';t.style.top=y+'px'}
+function tipOff(el){const t=el.querySelector('.tip');if(t)t.hidden=true}
+</script>
+<script>
+"use strict";
+/* =================== ENTERPRISE PULSE =================== */
+function trend(){const r=mulberry32(3031),days=[];
+  for(let d=29;d>=0;d--){const dt=new Date(Date.UTC(2026,9,7-d)),k=Math.max(0,29-d);
+    const base=[r()<.12?1:0,Math.round(r()*1.4),Math.round(1+r()*2+k/14),Math.round(1+r()*2),Math.round(r()*2)];
+    if(d===0){base[0]=2;base[1]=2;base[2]=3;base[3]=3;base[4]=2}
+    days.push({d:dt.getUTCDate()+' '+['Sep','Oct'][dt.getUTCMonth()-8],v:base})}return days}
+function ring(p,col,bg){const R=26,C=2*Math.PI*R;return `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="${R}" fill="none" stroke="${bg}" stroke-width="7"/><circle cx="32" cy="32" r="${R}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C*p} ${C}" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle" style="font:800 14px var(--f-display);fill:currentColor">${Math.round(p*100)}%</text></svg>`}
+function renderPulse(){const open=INC.filter(i=>i.st!=='resolved'),imp=open.reduce((s,i)=>s+i.imp,0),units=open.reduce((s,i)=>s+(i.units||0),0);
+  const sites=new Set(open.flatMap(i=>i.nodes.filter(n=>['pa','pb','pc','w1','w2','rc','vz','cp','ca','cb','cc'].includes(n)))).size;
+  const active=INC.filter(i=>['progress','executing','monitoring','resolved'].includes(i.st)||ST.decisions.some(d=>d.inc===i.id)).length;
+  const sc=SEV.map((s,k)=>open.filter(i=>i.sev===k).length);
+  $('#v-pulse').innerHTML=`
+  <section class="cmd" aria-labelledby="h-pulse">
+    <div class="cmd-top">
+      <div><div class="eyebrow">Resolve · Enterprise Pulse</div><h1 id="h-pulse">Enterprise at a glance</h1><p>${open.length} active incidents across the supply chain, ranked by enterprise impact. From signals to a more resilient enterprise.</p></div>
+      <div class="kfigs" style="display:flex;align-items:stretch;gap:0;flex-wrap:wrap">
+        <div class="kfig"><b>${mK(imp)}</b><span>Potential financial impact</span><em>▲ 12% since yesterday</em></div>
+        <div class="kfig"><b>${fmtN(units)}</b><span>Units at risk</span></div>
+        <div class="kfig"><b>${sites}</b><span>Sites impacted</span></div>
+        <div class="ring" style="margin-left:14px">${ring(active/INC.length,'#FFDD00','rgba(255,255,255,.12)')}<div><b>${active} of ${INC.length}</b><small>incidents with active<br>recovery actions</small></div></div>
+      </div>
+    </div>
+    <div class="sevrow" role="group" aria-label="Filter by severity">
+      <button class="sevc total" data-sev="" aria-pressed="${S.fSev===null}"><b>${open.length}</b><span>Active incidents</span></button>
+      ${SEV.map((s,k)=>`<button class="sevc" data-sev="${k}" aria-pressed="${S.fSev===k}"><b>${sc[k]}</b><span><i style="background:var(--${s[1]})"></i>${s[0]}</span></button>`).join('')}
+    </div>
+    <div class="net" id="net"></div>
+    <div class="cmd-foot"><div class="lg">${SEV.slice(0,4).map(s=>`<span><i style="background:var(--${s[1]});border-radius:50%"></i>${s[0]}</span>`).join('')}<span><i style="background:rgba(255,221,0,.6);height:2px;vertical-align:3px"></i>Material flow</span></div><span class="tagline">From fragmented signals to one enterprise decision</span></div>
+  </section>
+  <div class="pulse2">
+    <div class="panel"><div class="ph"><h3>Incidents</h3><span class="note" id="icount"></span><a class="btn sm ghost" href="#/incidents">Open full list<svg class="ic"><use href="#i-chev"/></svg></a></div>${filterBar()}<div class="tw" id="itbl"></div></div>
+    <div class="panel pv" id="pv"></div>
+  </div>
+  <div class="charts3">
+    <div class="panel"><div class="ph"><h3>Incident trend</h3><span class="note">New incidents per day, last 30 days</span></div><div class="pb"><div class="chart" id="ctrend"></div><div class="lg" style="margin-top:10px">${SEV.map(s=>`<span><i style="background:var(--${s[1]})"></i>${s[0]}</span>`).join('')}</div></div></div>
+    <div class="panel"><div class="ph"><h3>Incidents by function</h3></div><div class="pb"><div class="hbars" id="cfn"></div></div></div>
+    <div class="panel"><div class="ph"><h3>Incidents by region</h3></div><div class="pb"><div class="hbars" id="creg"></div></div></div>
+  </div>`;
+  $$('#v-pulse .sevc').forEach(b=>b.onclick=()=>{S.fSev=b.dataset.sev===''?null:+b.dataset.sev;renderPulse()});
+  drawNet();bindFilters(renderPulse);drawTable($('#itbl'),true);drawPreview();
+  drawTrend($('#ctrend'));drawHB($('#cfn'),Object.keys(FN).map(f=>[FN[f][0],open.filter(i=>i.fn===f)]).filter(x=>x[1].length).sort((a,b)=>b[1].length-a[1].length));
+  drawHB($('#creg'),REGIONS.map(r=>[r,open.filter(i=>i.region===r)]).sort((a,b)=>b[1].length-a[1].length))}
+function filterBar(){return `<div class="toolbar"><select class="sel" id="fFn" aria-label="Function"><option value="">All functions</option>${Object.keys(FN).map(f=>`<option value="${f}" ${S.fFn===f?'selected':''}>${FN[f][0]}</option>`).join('')}</select>
+  <select class="sel" id="fReg" aria-label="Region"><option value="">All regions</option>${REGIONS.map(r=>`<option ${S.fReg===r?'selected':''}>${r}</option>`).join('')}</select>
+  <select class="sel" id="fSt" aria-label="Status"><option value="">All statuses</option>${Object.keys(STAT).map(s=>`<option value="${s}" ${S.fSt===s?'selected':''}>${STAT[s]}</option>`).join('')}</select><span class="sp"></span>
+  ${S.fSev!==null||S.fFn||S.fReg||S.fSt?'<button class="btn sm ghost" id="fClr">Clear filters</button>':''}</div>`}
+function bindFilters(re){const f=$('#fFn');if(!f)return;f.onchange=e=>{S.fFn=e.target.value;re()};$('#fReg').onchange=e=>{S.fReg=e.target.value;re()};$('#fSt').onchange=e=>{S.fSt=e.target.value;re()};const c=$('#fClr');if(c)c.onclick=()=>{S.fSev=null;S.fFn=S.fReg=S.fSt='';re()}}
+function filtered(){return INC.filter(i=>(S.fSev===null||i.sev===S.fSev)&&(!S.fFn||i.fn===S.fFn)&&(!S.fReg||i.region===S.fReg)&&(!S.fSt||i.st===S.fSt)).sort((a,b)=>(a.st==='resolved')-(b.st==='resolved')||a.sev-b.sev||b.imp-a.imp)}
+function drawTable(el,preview,list){list=list||filtered();if($('#icount'))$('#icount').textContent=`${list.length} of ${INC.length}`;
+  el.innerHTML=list.length?`<table class="t itbl"><thead><tr>${preview?'':'<th>#</th>'}<th>ID</th><th>Title</th><th>Function</th>${preview?'':'<th>Primary impact</th>'}<th class="r">Potential impact</th><th>Severity</th><th>Status</th><th>ETA</th><th></th></tr></thead><tbody>${list.map((i,k)=>`<tr class="click ${preview&&i.id===S.sel?'sel':''}" data-id="${i.id}" tabindex="0" style="--sevc:var(--s${i.sev})">${preview?'':`<td class="note">${k+1}</td>`}<td><span class="idl">${i.id}</span></td><td class="ttl" style="min-width:200px">${esc(i.t)}</td><td>${fnCell(i.fn)}</td>${preview?'':`<td>${esc(i.primary)}</td>`}<td class="r imp">${mK(i.imp)}</td><td>${sevChip(i.sev)}</td><td>${stChip(i.st)}</td><td class="num" style="white-space:nowrap">${esc(i.eta)}</td><td class="chev"><svg class="ic"><use href="#i-chev"/></svg></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No incidents match these filters.</div>';
+  el.onclick=e=>{const r=e.target.closest('tr[data-id]');if(!r)return;if(preview&&innerWidth>1280&&e.detail<2&&S.sel!==r.dataset.id){S.sel=r.dataset.id;$$('#itbl tr.sel').forEach(x=>x.classList.remove('sel'));r.classList.add('sel');drawPreview();return}location.hash='#/incident/'+r.dataset.id};
+  el.onkeydown=e=>{if(e.key==='Enter'&&e.target.matches('tr[data-id]'))location.hash='#/incident/'+e.target.dataset.id}}
+function drawPreview(){const i=incById(S.sel)||INC[0],el=$('#pv');if(!el)return;const n=nbaFor(i);
+  el.innerHTML=`<div class="pv-h ${SEV[i.sev][1]}"><div class="t"><span class="code">${i.id}</span><b style="margin-top:8px">${esc(i.t)}</b><small>${SEV[i.sev][0]} · ${STAT[i.st]} · ETA ${esc(i.eta)}</small></div></div>
+  <div class="pv-b"><div style="padding-top:12px;font-size:13px;color:var(--ink2)">${esc(i.desc)}</div>
+   <div><h4>Enterprise impact</h4><div class="ifig"><div><b>${i.sites}</b><small>Sites affected</small></div><div><b>${i.units?fmtN(i.units):'—'}</b><small>${esc(i.unitL||'Units')} at risk</small></div><div><b>${i.ordersN||(i.fn==='customer'?3:'—')}</b><small>Customer orders</small></div><div><b>${mK(i.imp)}</b><small>Potential impact</small></div></div></div>
+   <div><h4>Top downstream effects</h4><ul class="eff">${i.effects.map(e=>`<li>${esc(e)}</li>`).join('')}</ul></div>
+   <div><h4>Recommended actions</h4><div class="ract">${i.acts.map((a,k)=>`<div><span class="n">${k+1}</span><span>${esc(a[0])}</span><em>${esc(a[1])}</em><span class="chip ${k===0?'y':'line'}">${a[2]}</span></div>`).join('')}</div></div>
+   <div style="display:flex;gap:8px"><a class="btn dark" style="flex:1" href="#/incident/${i.id}">Open incident workspace<svg class="ic"><use href="#i-chev"/></svg></a></div>
+   <div class="note">Next best action: <b style="color:var(--ink)">${esc(n.title)}</b></div></div>`}
+function drawNet(){const el=$('#net'),W=1100,H=330,X=[60,285,515,735,1030],P={t:42,b:18};
+  const pos={};NODES.forEach(n=>pos[n.id]=[X[n.tier],P.t+(H-P.t-P.b)*n.y]);
+  const open=INC.filter(i=>i.st!=='resolved'),worst={};open.forEach(i=>i.nodes.forEach(n=>{if(worst[n]===undefined||i.sev<worst[n].sev)worst[n]=i}));
+  let h=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Northfield supply network with incidents marked on affected nodes">`;
+  TIERS.forEach((t,k)=>h+=`<text class="tier" x="${X[k]}" y="14" text-anchor="middle">${t}</text>`);
+  EDGES.forEach(([a,b],k)=>{const [x1,y1]=pos[a],[x2,y2]=pos[b],mx=(x1+x2)/2,d=`M${x1} ${y1} C${mx} ${y1},${mx} ${y2},${x2} ${y2}`;const hot=worst[a]&&worst[b];
+    h+=`<path class="edge" d="${d}" ${hot?`style="stroke:color-mix(in srgb,var(--s${Math.min(worst[a].sev,worst[b].sev)}) 55%,transparent)"`:''}/><path class="flow" d="${d}" style="animation-delay:${-(k*.37)%2.2}s${NODES.find(n=>n.id===a).alt?';stroke:rgba(141,182,224,.6)':''}"/>`});
+  NODES.forEach(n=>{const [x,y]=pos[n.id],w=worst[n.id],c=w?`var(--s${w.sev})`:n.alt?'#8DB6E0':'#5E5652',left=n.tier===4?1:0;
+    h+=`<g class="node" tabindex="0" data-n="${n.id}" ${w?`data-inc="${w.id}"`:''} role="button" aria-label="${esc(n.n)}${w?': '+esc(w.id)+' '+SEV[w.sev][0]:''}">
+      ${w&&w.sev<=1?`<circle class="pulse" cx="${x}" cy="${y}" r="9" fill="none" style="stroke:${c}" stroke-width="2"/>`:''}
+      <circle cx="${x}" cy="${y}" r="${w?13:10}" style="fill:${c};opacity:.18"/>
+      <circle class="core" cx="${x}" cy="${y}" r="${w?7.5:5.5}" style="fill:${c}"/>
+      <text x="${x+(left?-16:16)}" y="${y-1}" text-anchor="${left?'end':'start'}">${esc(n.n)}</text>
+      <text class="s" x="${x+(left?-16:16)}" y="${y+13}" text-anchor="${left?'end':'start'}">${esc(n.s)}</text>
+      ${w?`<text class="tag" x="${x}" y="${y-17}" text-anchor="middle" style="fill:${c}">${w.id}</text>`:''}</g>`});
+  h+='</svg><div class="nettip" hidden></div>';el.innerHTML=h;const tip=el.querySelector('.nettip');
+  el.onmousemove=e=>{const g=e.target.closest('.node');if(!g){tip.hidden=true;return}const n=NODES.find(x=>x.id===g.dataset.n),is=open.filter(i=>i.nodes.includes(n.id)),r=el.getBoundingClientRect(),c=g.querySelector('.core').getBoundingClientRect();
+    tip.innerHTML=`<b>${esc(n.n)}</b>${esc(n.s)}${is.length?'<br>'+is.map(i=>`${i.id} · ${SEV[i.sev][0]} · ${mK(i.imp)}`).join('<br>'):'<br>No open incidents'}`;tip.hidden=false;tip.style.left=(c.left-r.left+c.width/2)+'px';tip.style.top=(c.top-r.top)+'px'};
+  el.onmouseleave=()=>tip.hidden=true;
+  const go=g=>{if(g&&g.dataset.inc)location.hash='#/incident/'+g.dataset.inc};
+  el.onclick=e=>go(e.target.closest('.node'));el.onkeydown=e=>{if(e.key==='Enter')go(e.target.closest('.node'))}}
+function drawTrend(el){const d=trend(),W=560,H=200,P={l:26,r:6,t:10,b:24},mx=Math.max(...d.map(x=>x.v.reduce((a,b)=>a+b,0))),bw=(W-P.l-P.r)/d.length,y=v=>P.t+(H-P.t-P.b)*(1-v/mx);
+  let h=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="New incidents per day for the last 30 days, stacked by severity"><g class="gl">`;
+  for(let v=0;v<=mx;v+=Math.max(1,Math.ceil(mx/4)))h+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${P.l-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`;
+  h+='</g>';d.forEach((x,i)=>{let acc=0;const x0=P.l+i*bw+1.5,w=bw-3;h+=`<g data-i="${i}"><rect class="hit" x="${P.l+i*bw}" y="${P.t}" width="${bw}" height="${H-P.t-P.b}"/>`;
+    for(let s=4;s>=0;s--){const v=x.v[s];if(!v)continue;const y1=y(acc+v),y0=y(acc);h+=`<rect x="${x0}" y="${y1+1}" width="${w}" height="${Math.max(0,y0-y1-1)}" rx="1.5" style="fill:var(--s${s})"/>`;acc+=v}
+    if(i%5===4||i===d.length-1)h+=`<text class="ax" x="${x0+w/2}" y="${H-6}" text-anchor="middle">${x.d}</text>`;h+='</g>'});
+  el.innerHTML=h+'</svg>';
+  el.querySelector('svg').onmousemove=e=>{const g=e.target.closest('g[data-i]');if(!g){tipOff(el);return}const x=d[+g.dataset.i],r=el.getBoundingClientRect(),b=g.querySelector('.hit').getBoundingClientRect();
+    tipOn(el,`<b>${x.d}</b>${SEV.map((s,k)=>x.v[k]?`<i style="background:var(--${s[1]})"></i>${s[0]} ${x.v[k]}<br>`:'').join('')||'No new incidents'}`,b.left-r.left+b.width/2,40)};
+  el.querySelector('svg').onmouseleave=()=>tipOff(el)}
+function drawHB(el,rows){const mx=Math.max(1,...rows.map(r=>r[1].length));
+  el.innerHTML=rows.map(([k,is])=>`<div class="hbar" title="${esc(k)}: ${is.map(i=>i.id).join(', ')}"><span class="k">${esc(k)}</span><span class="tr" style="width:${is.length/mx*100}%">${is.slice().sort((a,b)=>a.sev-b.sev).map(i=>`<i style="flex:1;background:var(--s${i.sev})"></i>`).join('')}</span><span class="v">${is.length}</span></div>`).join('')}
+
+/* =================== INCIDENTS (full list) =================== */
+function renderIncidents(){$('#v-incidents').innerHTML=`<div class="phead"><div><div class="eyebrow">Resolve · Incidents</div><h1 style="margin-top:8px">Every open incident, ranked by enterprise impact</h1><p>Signals from supply, production, logistics, inventory, quality and customers, joined into one list. Severity reflects consequence, not just the size of the signal.</p></div></div>
+  <div class="panel"><div class="ph"><h3>Incidents</h3><span class="note" id="icount"></span><div class="filters" style="display:flex;gap:6px;flex-wrap:wrap"><button class="fbtn" data-sev="" aria-pressed="${S.fSev===null}">All</button>${SEV.map((s,k)=>`<button class="fbtn" data-sev="${k}" aria-pressed="${S.fSev===k}"><i style="background:var(--${s[1]})"></i>${s[0]} <b>${INC.filter(i=>i.sev===k).length}</b></button>`).join('')}</div></div>${filterBar()}<div class="tw" id="itbl"></div></div>`;
+  $$('#v-incidents .fbtn').forEach(b=>b.onclick=()=>{S.fSev=b.dataset.sev===''?null:+b.dataset.sev;renderIncidents()});bindFilters(renderIncidents);drawTable($('#itbl'),false)}
+</script>
+<script>
+"use strict";
+/* =================== INCIDENT WORKSPACE =================== */
+const TABS=[['overview','Overview'],['ripple','Ripple impact'],['options','Options & simulation'],['plan','Action plan'],['how','How it works']];
+function renderIncident(){const i=incById(S.inc),n=nbaFor(i),run=ST.runs[i.id],dec=ST.decisions.find(d=>d.inc===i.id);
+  const tab=TABS.find(t=>t[0]===S.tab)?S.tab:'overview';
+  $('#v-incident').innerHTML=`<div class="panel"><div class="ihead">
+    <div class="crumbs"><a href="#/incidents">Incidents</a> › ${i.id}</div>
+    <div class="ititle"><span class="idb" style="background:var(--s${i.sev})">${i.id}</span><h1>${esc(i.t)}</h1>${sevChip(i.sev)}</div>
+    <p>${esc(i.desc)}</p>
+    <div class="imeta"><div><div class="k">Status</div><div class="v">${stChip(i.st)}</div></div><div><div class="k">ETA to resolve</div><div class="v">${esc(i.eta)}</div></div><div><div class="k">Function</div><div class="v">${FN[i.fn][0]}</div></div><div><div class="k">Owner</div><div class="v">${esc(i.owner)}</div></div><div><div class="k">Detected</div><div class="v">${dOf(i.det)}, ${tOf(i.det)}</div></div><div><div class="k">Potential impact</div><div class="v">${mK(i.imp)}</div></div></div></div>
+    <nav class="tabs" aria-label="Incident sections">${TABS.map(t=>`<a href="#/incident/${i.id}/${t[0]}" ${t[0]===tab?'aria-current="page"':''}>${t[1]}${t[0]==='plan'&&run?` <span class="code">${run.done<run.n?'running':'done'}</span>`:''}</a>`).join('')}</nav></div>
+  <div class="iw"><div class="iw-main" id="iwm"></div><aside class="panel nba" id="nba" aria-label="Next best action"></aside></div>`;
+  ({overview:tabOverview,ripple:tabRipple,options:tabOptions,plan:tabPlan,how:tabHow})[tab](i,n);drawNBA(i,n)}
+function rippleFor(i){if(i.id==='SUP-001')return[
+  ['Supplier','i-supply','hot','Day 0','Meridian Bearings','Delay: 5 days','Halvorsen Steel short of forged rings'],
+  ['Inventory','i-inventory','hot','Day 2','Stock depletion','400 assemblies short','Plant A cover ends 9 Oct'],
+  ['Production','i-production','hot','Day 2','3 plants affected','200 motors at risk','Plant A line 1 stops first'],
+  ['Customer / Orders','i-users','hot','Day 3',`${i.ordersN} orders at risk`,mK(i.imp)+' revenue exposure','Customer A, B and C'],
+  ['Logistics','i-logistics','warm','Day 1','Expedite required','Est. +$40–120K','Arcadia air or road freight']];
+  const ic=['i-alert','i-inventory','i-users','i-dollar'],days=['Day 1','Day 2','Day 4','Day 6'];
+  const out=[[FN[i.fn][0],FN[i.fn][1],'hot','Day 0',i.primary,i.units?fmtN(i.units)+' '+i.unitL:mK(i.imp),i.stage]];
+  i.effects.forEach((e,k)=>{const last=k===i.effects.length-1;out.push([last?'Enterprise exposure':k?'Second-order effect':'First-order effect',last?'i-dollar':ic[k],k<1?'hot':'warm',days[k],e,last?mK(i.imp)+' at risk':'',''])});
+  return out}
+function rippleHtml(i){const r=rippleFor(i);return `<div class="ripple" style="--n:${r.length}">${r.map(x=>`<div class="rp ${x[2]}"><span class="day">${x[3]}</span><span class="ri"><svg class="ic"><use href="#${x[1]}"/></svg></span><b>${x[0]}</b><span>${esc(x[4])}</span><strong>${esc(x[5])}</strong>${x[6]?`<span class="note">${esc(x[6])}</span>`:''}</div>`).join('')}</div>`}
+function statsHtml(i){return `<div class="istats"><div><span class="si"><svg class="ic"><use href="#i-production"/></svg></span><span><b>${i.sites}</b><small>Sites affected</small></span></div><div><span class="si"><svg class="ic"><use href="#i-units"/></svg></span><span><b>${i.units?fmtN(i.units):'—'}</b><small>${esc(i.unitL||'units')} at risk</small></span></div><div><span class="si"><svg class="ic"><use href="#i-users"/></svg></span><span><b>${i.ordersN||'—'}</b><small>Customer orders at risk</small></span></div><div><span class="si"><svg class="ic"><use href="#i-dollar"/></svg></span><span><b>${mK(i.imp)}</b><small>Potential revenue exposure</small></span></div></div>`}
+function relHtml(i){if(!i.rel)return'';const map={recover:['../index.html','i-recover','#8A6400','Recover'],reconcile:['reconcile.html','i-reconcile','#2D6A57','Reconcile'],inc:[null,'i-resolve','#2F5D8A','Resolve']};
+  return `<div class="panel"><div class="ph"><h3>Connected across the framework</h3><span class="note">The same data fabric, read by Recover and Reconcile</span></div><div class="pb" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">${i.rel.map(r=>{const m=map[r[2]],href=r[2]==='inc'?'#/incident/'+r[0]:r[2]==='recover'&&/^RT-/.test(r[0])?m[0]+'#/product/asset/'+r[0]:r[2]==='reconcile'?m[0]+(r[0].startsWith('MOV')?'#/prevention':'#/prevention'):m[0];
+    return `<a class="xlink" href="${href}"><span class="av" style="background:${m[2]}"><svg class="ic"><use href="#${m[1]}"/></svg></span><span><b>${m[3]} · ${esc(r[0])}</b><small>${esc(r[1])}</small></span><svg class="ic go"><use href="#i-ext"/></svg></a>`}).join('')}</div></div>`}
+function tabOverview(i){const el=$('#iwm');
+  el.innerHTML=`<div class="panel"><div class="ph"><h3>Ripple impact across the enterprise</h3><a class="btn sm ghost" href="#/incident/${i.id}/ripple">Details<svg class="ic"><use href="#i-chev"/></svg></a></div>${rippleHtml(i)}${statsHtml(i)}</div>
+  <div class="g2b"><div class="panel"><div class="ph"><h3>Incident summary</h3></div><div class="pb" style="padding-top:6px"><dl class="kv">${i.facts.map(f=>`<dt>${esc(f[0])}</dt><dd ${f[2]==='bad'?'style="color:var(--bad)"':''}>${f[2]==='bad'?'<span class="st action"><i></i>'+esc(f[1])+'</span>':f[0]==='Severity'?sevChip(i.sev):esc(f[1])}</dd>`).join('')}<dt>Severity</dt><dd>${sevChip(i.sev)}</dd></dl></div></div>
+    ${i.plants?`<div style="display:flex;flex-direction:column;gap:18px;min-width:0"><div class="panel"><div class="ph"><h3>Impacted plants</h3></div><div class="tw"><table class="t"><thead><tr><th>Plant</th><th>Region</th><th class="r">Units at risk</th><th>Risk to schedule</th><th>Key products</th></tr></thead><tbody>${i.plants.map(p=>`<tr><td style="white-space:nowrap"><b>${esc(p[0])}</b></td><td>${p[1]}</td><td class="r">${fmtN(p[2])}</td><td>${{High:'<span class="st action"><i></i>High</span>',Medium:'<span class="st executing"><i></i>Medium</span>',Low:'<span class="st analysis"><i></i>Low</span>'}[p[3]]}</td><td>${esc(p[4])}</td></tr>`).join('')}</tbody></table></div></div>
+      <div class="panel"><div class="ph"><h3>At-risk customer orders</h3><span class="note">Top 5 of ${i.ordersN}</span></div><div class="tw"><table class="t"><thead><tr><th>Order</th><th>Customer</th><th class="r">Motors</th><th>Commit</th><th>Priority</th></tr></thead><tbody>${i.orders.map(o=>`<tr><td class="mono">${o[0]}</td><td><b>${o[1]}</b><span class="sub2">${o[2]}</span></td><td class="r">${o[3]}</td><td>${o[4]}</td><td>${{High:'<span class="st action"><i></i>High</span>',Medium:'<span class="st executing"><i></i>Medium</span>',Low:'<span class="st analysis"><i></i>Low</span>'}[o[5]]}</td></tr>`).join('')}</tbody></table></div></div></div></div>
+    <div class="g2"><div class="panel"><div class="ph"><h3>Inventory position · BRG-6318</h3><span class="note">Units by location</span></div><div class="pb"><div class="chart" id="cinv"></div><div class="lg" style="margin-top:8px"><span><i style="background:var(--c-onhand)"></i>On hand</span><span><i style="background:var(--c-in)"></i>Incoming (confirmed)</span><span><i style="background:var(--c-risk)"></i>At risk</span></div></div></div>
+      <div class="panel"><div class="ph"><h3>Demand vs. available supply · Plant A</h3><span class="note">Cumulative assemblies</span></div><div class="pb"><div class="chart" id="cdem"></div><div class="lg" style="margin-top:8px"><span><i style="background:var(--ink);height:2px;vertical-align:3px"></i>Projected demand</span><span><i style="background:var(--c-in);height:2px;vertical-align:3px"></i>Available supply</span><span><i style="background:var(--ok);height:2px;vertical-align:3px"></i>With next best action</span><span><i style="background:var(--c-risk);opacity:.3"></i>Shortfall</span></div></div></div></div>`:`<div class="panel"><div class="ph"><h3>Downstream effects and recommended actions</h3></div><div class="pb" style="display:grid;gap:16px"><ul class="eff">${i.effects.map(e=>`<li>${esc(e)}</li>`).join('')}</ul><div class="ract">${i.acts.map((a,k)=>`<div><span class="n">${k+1}</span><span>${esc(a[0])}</span><em>${esc(a[1])}</em><span class="chip ${k===0?'y':'line'}">${a[2]}</span></div>`).join('')}</div></div></div></div>`}
+    ${relHtml(i)}`;
+  if(i.plants){drawInv($('#cinv'));drawDem($('#cdem'))}}
+function drawInv(el){const D=[['Plant A',160,0,400],['Plant C',90,0,60],['Repair centre',40,0,40],['Warehouse 2',260,0,0],['Network',550,1200,500]],W=520,H=210,P={l:40,r:6,t:10,b:26},mx=1400,gw=(W-P.l-P.r)/D.length,bw=gw/4.2,y=v=>P.t+(H-P.t-P.b)*(1-v/mx),cols=['--c-onhand','--c-in','--c-risk'],names=['On hand','Incoming','At risk'];
+  let h=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="BRG-6318 on hand, incoming and at risk by location"><g class="gl">`;for(let v=0;v<=mx;v+=350)h+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${P.l-6}" y="${y(v)+4}" text-anchor="end">${fmtN(v)}</text>`;h+='</g>';
+  D.forEach((d,i)=>{const gx=P.l+i*gw+gw*.12;h+=`<g data-i="${i}"><rect class="hit" x="${P.l+i*gw}" y="${P.t}" width="${gw}" height="${H-P.t-P.b}"/>`;[1,2,3].forEach((k,j)=>{const v=d[k],x=gx+j*(bw+2),t=y(v),r=Math.min(3,bw/2);if(v>0)h+=`<path d="M${x} ${H-P.b}V${t+r}Q${x} ${t} ${x+r} ${t}H${x+bw-r}Q${x+bw} ${t} ${x+bw} ${t+r}V${H-P.b}Z" style="fill:var(${cols[j]})"/>`});
+    h+=`<text class="ax" x="${P.l+i*gw+gw/2}" y="${H-8}" text-anchor="middle">${d[0]}</text></g>`});
+  el.innerHTML=h+'</svg>';const s=el.querySelector('svg');s.onmousemove=e=>{const g=e.target.closest('g[data-i]');if(!g){tipOff(el);return}const d=D[+g.dataset.i],r=el.getBoundingClientRect(),b=g.querySelector('.hit').getBoundingClientRect();tipOn(el,`<b>${d[0]}</b>${names.map((n,j)=>`<i style="background:var(${cols[j]})"></i>${n} ${fmtN(d[j+1])}`).join('<br>')}`,b.left-r.left+b.width/2,50)};s.onmouseleave=()=>tipOff(el)}
+function drawDem(el){const days=[];for(let d=1;d<=20;d++)days.push(d);const n=nbaFor(incById('SUP-001')).best;
+  const dem=days.map(d=>Math.max(0,(d-2))*80+160),sup=days.map(d=>160+(d>=14?1200:0)),act=days.map(d=>160+(d>=8?n.tr:0)+(d>=7+MOD[n.mode].day?n.ex:0)+(d>=10?Math.round(n.rc*MOD.rcYield):0)+(n.rs&&d>=9?MOD.rsCut:0)+(d>=14?1200:0));
+  const W=520,H=210,P={l:40,r:8,t:10,b:26},mx=1600,x=d=>P.l+(d-1)/19*(W-P.l-P.r),y=v=>P.t+(H-P.t-P.b)*(1-Math.min(v,mx)/mx);
+  const line=a=>a.map((v,k)=>`${k?'L':'M'}${x(days[k]).toFixed(1)} ${y(v).toFixed(1)}`).join('');
+  let area='';days.forEach((d,k)=>{});const sf=days.map((d,k)=>[d,dem[k],sup[k]]).filter(z=>z[1]>z[2]);
+  if(sf.length){area=`M${x(sf[0][0])} ${y(sf[0][2])}`+sf.map(z=>`L${x(z[0])} ${y(z[1])}`).join('')+sf.slice().reverse().map(z=>`L${x(z[0])} ${y(z[2])}`).join('')+'Z'}
+  let h=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative demand and supply for Plant A, 1 to 20 October"><g class="gl">`;for(let v=0;v<=mx;v+=400)h+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${P.l-6}" y="${y(v)+4}" text-anchor="end">${fmtN(v)}</text>`;
+  h+='</g>'+[1,5,10,15,20].map(d=>`<text class="ax" x="${x(d)}" y="${H-8}" text-anchor="middle">${d} Oct</text>`).join('');
+  h+=`<path d="${area}" style="fill:var(--c-risk);opacity:.16"/><line x1="${x(7)}" x2="${x(7)}" y1="${P.t}" y2="${H-P.b}" style="stroke:var(--muted)" stroke-dasharray="3 3"/><text class="lbl" x="${x(7)+4}" y="${P.t+10}">Today</text>`;
+  h+=`<path d="${line(dem)}" fill="none" style="stroke:var(--ink)" stroke-width="2"/><path d="${line(sup)}" fill="none" style="stroke:var(--c-in)" stroke-width="2"/><path d="${line(act)}" fill="none" style="stroke:var(--ok)" stroke-width="2" stroke-dasharray="5 3"/>`;
+  h+=`<line class="xh" x1="0" x2="0" y1="${P.t}" y2="${H-P.b}" style="stroke:var(--ink2)" opacity="0"/><rect class="hit" x="${P.l}" y="${P.t}" width="${W-P.l-P.r}" height="${H-P.t-P.b}"/></svg>`;el.innerHTML=h;
+  const s=el.querySelector('svg'),xh=s.querySelector('.xh');s.onmousemove=e=>{const r=s.getBoundingClientRect(),vx=(e.clientX-r.left)/r.width*W,d=Math.max(1,Math.min(20,Math.round((vx-P.l)/(W-P.l-P.r)*19+1))),k=d-1;xh.setAttribute('x1',x(d));xh.setAttribute('x2',x(d));xh.setAttribute('opacity',.5);
+    tipOn(el,`<b>${d} Oct</b><i style="background:var(--ink)"></i>Demand ${fmtN(dem[k])}<br><i style="background:var(--c-in)"></i>Supply ${fmtN(sup[k])}<br><i style="background:var(--ok)"></i>With action ${fmtN(act[k])}${dem[k]>sup[k]?`<br>Shortfall ${fmtN(dem[k]-sup[k])}`:''}`,x(d)/W*r.width,40)};s.onmouseleave=()=>{xh.setAttribute('opacity',0);tipOff(el)}}
+function tabRipple(i){const r=rippleFor(i);
+  $('#iwm').innerHTML=`<div class="panel"><div class="ph"><h3>How the disruption propagates</h3><span class="note">Each step is a modelled consequence, with the day it lands</span></div>${rippleHtml(i)}${statsHtml(i)}</div>
+  <div class="panel"><div class="ph"><h3>Propagation detail</h3></div><div class="tw"><table class="t"><thead><tr><th>Stage</th><th>Effect</th><th>Lands</th><th>Magnitude</th><th>Signal source</th></tr></thead><tbody>${r.map(x=>`<tr><td><b>${x[0]}</b></td><td>${esc(x[4])}</td><td class="mono">${x[3]}</td><td>${esc(x[5])}</td><td class="note">${esc(x[0]==='Supplier'?'Supplier portal · Ariba':x[0]==='Inventory'?'SAP S/4HANA MRP':x[0]==='Production'?'Plant MES':x[0]==='Logistics'?'ShipLane TMS':'Salesforce · order book')}</td></tr>`).join('')}</tbody></table></div></div>
+  <div class="panel"><div class="ph"><h3>Top downstream effects</h3></div><div class="pb"><ul class="eff">${i.effects.map(e=>`<li>${esc(e)}</li>`).join('')}</ul></div></div>${relHtml(i)}`}
+/* ---- options & scenario lab ---- */
+function tabOptions(i,n){const el=$('#iwm');
+  if(!i.model){el.innerHTML=`<div class="panel"><div class="ph"><h3>Options evaluated</h3><span class="note">${n.alts.length} options</span></div><div class="tw"><table class="t opt"><thead><tr><th>Option</th><th>Assessment</th><th class="r">Confidence</th><th class="r">Net value</th></tr></thead><tbody>${n.alts.map((a,k)=>`<tr class="${k===0?'best':''}"><td><b>${esc(a[0])}</b></td><td>${a[1]==='Recommended'?'<span class="chip y">Recommended</span>':a[1]==='Baseline'?'<span class="chip line">Baseline</span>':'<span class="chip blue">Viable</span>'}</td><td class="r">${a[2]}%</td><td class="r" style="font-weight:700;color:${a[3]<0?'var(--bad)':'var(--ok)'}">${mK(a[3])}</td></tr>`).join('')}</tbody></table></div></div>
+   <div class="panel pb note">The interactive scenario lab is available for incidents with a calibrated recovery model. Open <a class="link" href="#/incident/SUP-001/options">SUP-001</a> to try it.</div>`;return}
+  const b=n.best;if(!S.plan)S.plan={tr:b.tr,ex:b.ex,mode:b.mode,rc:b.rc,rs:b.rs};const p=S.plan;
+  el.innerHTML=`<div class="panel"><div class="ph"><h3>Scenario lab</h3><span class="note">Move the levers; ${MOD.N} simulated futures re-run instantly</span><button class="btn sm ghost" id="pReset"><svg class="ic"><use href="#i-reset"/></svg>Recommended plan</button></div>
+    <div class="pb lab"><div class="lev">
+      <div class="lv2"><div class="top2"><b>Transfer from Warehouse 2</b><output id="o-tr">${p.tr}</output></div><input type="range" id="l-tr" min="0" max="260" step="20" value="${p.tr}" aria-label="Units transferred from Warehouse 2"><small>On hand 260 · safety stock floor 60 · arrives in 1 day by truck</small></div>
+      <div class="lv2"><div class="top2"><b>Expedite from Arcadia Bearings</b><output id="o-ex">${p.ex}</output></div><input type="range" id="l-ex" min="0" max="320" step="40" value="${p.ex}" aria-label="Units expedited from Arcadia Bearings"><div class="seg" role="group" aria-label="Freight mode" style="align-self:start"><button data-m="air" aria-pressed="${p.mode==='air'}">Air · 2 days · $395/unit</button><button data-m="road" aria-pressed="${p.mode==='road'}">Road · 4 days · $160/unit</button></div></div>
+      <div class="lv2"><div class="top2"><b>Recovered sets from Recover</b><output id="o-rc">${p.rc}</output></div><input type="range" id="l-rc" min="0" max="60" step="30" value="${p.rc}" aria-label="Recovered bearing sets from Recover"><small>Harvested from returned Voltara motors (RT-1027 and pool) · 85% pass requalification · ready day 3</small></div>
+      <label class="tg"><span><b>Re-sequence Plant A for 2 days</b><small>Builds Halden HX pumps first; frees 120 assemblies; delays 2 orders</small></span><span class="sw"><input type="checkbox" id="l-rs" ${p.rs?'checked':''}><span></span></span></label>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px"><div class="res4" id="lres"></div><div class="chart" id="chist"></div><div class="cmpbar" id="lcmp"></div></div></div></div>
+    <div class="panel"><div class="ph"><h3>Optimizer · top plans</h3><span class="note">${optimize().n} combinations ranked by risk-adjusted net value</span></div><div class="tw" id="otbl"></div></div>`;
+  const upd=()=>{const e=evalPlan(p),isBest=planKey(p)===planKey(b);
+    $('#o-tr').textContent=p.tr;$('#o-ex').textContent=p.ex;$('#o-rc').textContent=p.rc;
+    $('#lres').innerHTML=`<div class="${e.conf>=.9?'good':e.conf<.6?'bad':''}"><b>${Math.round(e.conf*100)}%</b><small>Runs with no stoppage</small></div><div><b>${mK(e.prot)}</b><small>Revenue protected</small></div><div><b>${mK(e.cost)}</b><small>Recovery cost</small></div><div class="${e.net>=b.net-1?'good':''}"><b>${mK(e.net)}</b><small>Net value</small></div>`;
+    drawHist($('#chist'),e);
+    $('#lcmp').innerHTML=isBest?`<svg class="ic" style="color:var(--ok)"><use href="#i-check"/></svg><span>This is the recommended plan.</span>`:`<svg class="ic" style="color:var(--warn)"><use href="#i-sliders"/></svg><span>Compared with the recommended plan: net value <b>${e.net>=b.net?'+':'−'}${mK(Math.abs(e.net-b.net))}</b>, no-stoppage runs <b>${Math.round((e.conf-b.conf)*100)>=0?'+':''}${Math.round((e.conf-b.conf)*100)} pts</b>.${e.breach?' <b style="color:var(--bad)">Warehouse 2 drops below safety stock.</b>':''}</span>`};
+  ['tr','ex','rc'].forEach(k=>$('#l-'+k).oninput=e=>{p[k]=+e.target.value;upd()});
+  $('#l-rs').onchange=e=>{p.rs=e.target.checked;upd()};
+  $$('.lab .seg button').forEach(x=>x.onclick=()=>{p.mode=x.dataset.m;$$('.lab .seg button').forEach(y=>y.setAttribute('aria-pressed',y===x));upd()});
+  $('#pReset').onclick=()=>{S.plan=null;tabOptions(i,n)};upd();
+  const top=optimize().all.slice(0,8);
+  $('#otbl').innerHTML=`<table class="t opt"><thead><tr><th>#</th><th>Plan</th><th class="r">No-stoppage runs</th><th class="r">Protected</th><th class="r">Cost</th><th class="r">Net value</th><th></th></tr></thead><tbody>${top.map((x,k)=>`<tr class="${k===0?'best':''}"><td class="note">${k+1}</td><td><b>${esc(planText(x))}</b>${k===0?' <span class="chip y">Next best action</span>':''}</td><td class="r">${Math.round(x.conf*100)}%</td><td class="r">${mK(x.prot)}</td><td class="r">${mK(x.cost)}</td><td class="r" style="font-weight:700">${mK(x.net)}</td><td><button class="btn sm ghost" data-k="${k}">Load</button></td></tr>`).join('')}</tbody></table>`;
+  $('#otbl').onclick=e=>{const x=e.target.closest('[data-k]');if(!x)return;const o=top[+x.dataset.k];S.plan={tr:o.tr,ex:o.ex,mode:o.mode,rc:o.rc,rs:o.rs};tabOptions(i,n);window.scrollTo({top:0,behavior:'smooth'})}}
+function drawHist(el,e){const N=e.rec.length,bins=[0,0,0,0,0,0,0,0,0,0];e.rec.forEach(v=>bins[Math.min(9,Math.round(v))]++);
+  const W=480,H=150,P={l:8,r:8,t:18,b:28},bw=(W-P.l-P.r)/bins.length,mx=Math.max(...bins),y=v=>P.t+(H-P.t-P.b)*(1-v/mx);
+  let h=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribution of days until Plant A is fully supplied across simulated runs">`;
+  bins.forEach((v,k)=>{const x=P.l+k*bw+3,w=bw-6,t=y(v),r=Math.min(3,w/2);if(v)h+=`<path d="M${x} ${H-P.b}V${t+r}Q${x} ${t} ${x+r} ${t}H${x+w-r}Q${x+w} ${t} ${x+w} ${t+r}V${H-P.b}Z" style="fill:${k===0?'var(--ok)':k<=2?'#D4A800':'var(--c-risk)'}"/><text class="lbl" x="${x+w/2}" y="${t-5}" text-anchor="middle">${Math.round(v/N*100)}%</text>`;
+    h+=`<text class="ax" x="${x+w/2}" y="${H-12}" text-anchor="middle">${k===0?'None':k+' d'}</text>`});
+  el.innerHTML=h+`<text class="ax" x="${W/2}" y="${H}" text-anchor="middle">Days of disrupted production at Plant A, across ${N} simulated futures</text></svg>`}
+/* ---- action plan & execution ---- */
+const RUNT={};
+function stepsFor(i,n){if(i.model){const b=n.best;return[
+  ['Approve transfer order',`Stock transport order for ${b.tr} × BRG-6318, Warehouse 2 → Plant A`,['SAP S/4HANA'],`STO 4500018832 created · ${b.tr} units reserved`],
+  ['Book transfer truck','Northline 3PL, Chennai → Chakan, pickup 13:00',['ShipLane TMS'],'Load LD-77231 tendered and accepted'],
+  b.ex?['Place expedite order',`${b.ex} × BRG-6318 from Arcadia Bearings, ${MOD[b.mode].l.toLowerCase()} freight`,['SAP Ariba','ShipLane TMS'],`PO 4100772419 issued · ${MOD[b.mode].l} booking AWB 176-44021930`]:null,
+  b.rc?['Release recovered sets',`${b.rc} harvested bearing sets to requalification at the Repair centre`,['Recover','IBM Maximo'],`Work order WO-90452 opened · linked to RT-1027 harvest`]:null,
+  b.rs?['Re-sequence Plant A','Build Halden HX pumps on line 1 for 2 days',['Plant MES'],'Schedule v14 published to line 1']:null,
+  ['Notify customers','Revised confirmations for 2 Customer A orders',['Salesforce'],'Customer A notified · SO-45871, SO-45892'],
+  ['Monitor outcome','Track arrivals against the plan; re-plan if Arcadia slips',['Resolve'],'Watchers set on ASN, AWB and STO']].filter(Boolean)}
+  return n.plan.map((p,k)=>[p[1].split(' ').slice(0,4).join(' '),p[1],[['SAP S/4HANA'],['ShipLane TMS'],['IBM Maximo'],['Resolve']][k%4],k===n.plan.length-1?'Watchers set':'Completed in source system'])}
+function tabPlan(i,n){const steps=stepsFor(i,n),run=ST.runs[i.id];
+  $('#iwm').innerHTML=`<div class="panel"><div class="ph"><h3>Action plan</h3>${run?`<span class="note">${run.done<steps.length?'Executing':'All steps complete'} · approved ${dOf(run.at)}, ${tOf(run.at)}</span>`:'<span class="note">Runs when you approve the next best action</span>'}</div>
+   <ol class="steps">${steps.map((s,k)=>{const stt=!run?'':k<run.done?'done':k===run.done?'run':'';return `<li class="step ${stt}"><span class="si">${stt==='done'?'<svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg>':k+1}</span><div><b>${esc(s[0])}</b><div class="note">${esc(s[1])}</div><div class="sys">${s[2].map(x=>`<span class="code">${esc(x)}</span>`).join('')}</div>${stt==='done'?`<div class="wb">✓ ${esc(s[3])}</div>`:''}</div><span class="when2">${stt==='done'&&run.t[k]?tOf(run.t[k]):stt==='run'?'Running…':!run?'Queued':'Waiting'}</span></li>`}).join('')}</ol></div>
+   ${!run?`<div class="panel pb" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><svg class="ic" style="color:var(--res)"><use href="#i-agent"/></svg><span style="flex:1;min-width:240px;font-size:13px">The Resolve agent prepares every step; nothing is written to SAP, Ariba, TMS or Maximo until a person approves the action.</span><button class="btn pri" id="planApprove"><svg class="ic"><use href="#i-check"/></svg>Approve and execute</button></div>`:''}`;
+  const a=$('#planApprove');if(a)a.onclick=()=>approve(i)}
+function approve(i,withChallenge){const n=nbaFor(i),steps=stepsFor(i,n),at=nowT();
+  ST.runs[i.id]={at,done:0,t:[],n:steps.length};ST.inc.find(x=>x.id===i.id).st='executing';
+  ST.decisions.unshift({inc:i.id,at,title:n.title,conf:n.conf,prot:n.prot,cost:n.cost,net:n.net,by:'You · Supply chain lead',alts:n.alts.length,note:withChallenge||''});
+  ST.journal.unshift({at,inc:i.id,k:'hu',t:`Next best action approved: ${n.title}`});save();buildInc();toast(`${i.id}: action approved, executing ${steps.length} steps`);
+  runSteps(i.id);if(S.view==='incident'){location.hash='#/incident/'+i.id+'/plan';render()}}
+function runSteps(id){clearInterval(RUNT[id]);const r=ST.runs[id];if(!r||r.done>=r.n)return;
+  RUNT[id]=setInterval(()=>{const r=ST.runs[id];if(!r){clearInterval(RUNT[id]);return}r.t[r.done]=nowT();r.done++;
+    if(r.done>=r.n){clearInterval(RUNT[id]);ST.inc.find(x=>x.id===id).st='monitoring';ST.journal.unshift({at:nowT(),inc:id,k:'ag',t:'All plan steps written back; now monitoring the outcome'});buildInc();toast(`${id}: plan executed, monitoring outcome`)}
+    save();if(S.view==='incident'&&S.inc===id)renderIncident();else counts()},1400)}
+function drawNBA(i,n){const el=$('#nba'),dec=ST.decisions.find(d=>d.inc===i.id),cR=n.conf/100;
+  el.innerHTML=`<div class="nba-h"><div class="row"><span class="badge"><svg class="ic"><use href="#i-target"/></svg></span><h3>Next best action</h3><span class="chip y">Recommended</span></div>
+    <div class="what">${esc(n.title)}</div><p>${esc(n.why)}</p></div>
+  <div class="nba-b">
+    <div><h4>Expected outcome</h4><div class="outc">${n.outcome.map(o=>`<div><span class="oi"><svg class="ic"><use href="#${o[1]}"/></svg></span><span><b>${esc(o[0])}</b><small>${esc(o[2])}</small></span></div>`).join('')}</div></div>
+    <div class="conf"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--track)" stroke-width="8"/><circle cx="32" cy="32" r="26" fill="none" stroke="${cR>=.9?'var(--ok)':cR>=.75?'#D4A800':'var(--bad)'}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${163.4*cR} 164" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle" style="font:800 15px var(--f-display);fill:var(--ink)">${n.conf}</text></svg><div><b>${n.conf>=90?'High':n.conf>=75?'Medium':'Low'} decision confidence</b><small>${i.model?`Share of ${MOD.N} simulated futures with no stoppage at Plant A`:'Model agreement across scenarios'}</small></div></div>
+    <div><h4>Action plan &amp; timeline</h4><ul class="plan">${n.plan.map(p=>`<li><span class="w">${esc(p[0])}</span><span class="d">${esc(p[1])}</span></li>`).join('')}</ul></div>
+    <div><h4>Economic impact</h4><div class="econ"><div><b>${mK(n.prot)}</b><small>Revenue at risk avoided</small></div><div><b>${mK(n.cost)}</b><small>Incremental recovery cost</small></div><div><b>${mK(n.net)}</b><small>Net value protected</small></div></div></div>
+    <div><h4>Residual risk</h4><ul class="risk">${n.risk.map(r=>`<li><span>${esc(r[0])}</span><em>${esc(r[1])}</em></li>`).join('')}</ul></div>
+    <div><h4>How Resolve determined this</h4><div class="pipe">${['Signals','Models','Agents','Scenarios','Simulation','Optimization','Economics','NBA'].map((s,k,a)=>`<span class="${s==='NBA'?'on':''}">${s}</span>${k<a.length-1?'<i>→</i>':''}`).join('')}</div><a class="link" style="display:inline-block;margin-top:8px;font-size:12.5px" href="#/incident/${i.id}/how">See each stage for ${i.id} →</a></div>
+    <div><h4>Alternatives evaluated</h4><div style="display:grid;gap:6px">${n.alts.slice(1).map(a=>`<div style="display:flex;gap:8px;justify-content:space-between;font-size:12.5px;padding:7px 10px;border:1px solid var(--line2);border-radius:8px"><span>${esc(a[0])}</span><b style="white-space:nowrap">${a[2]}% · ${mK(a[3])}</b></div>`).join('')}</div>${i.model?`<a class="link" style="display:inline-block;margin-top:8px;font-size:12.5px" href="#/incident/${i.id}/options">Open the scenario lab →</a>`:''}</div>
+  </div>
+  <div class="nba-f">${dec?`<div class="decided" style="flex:1"><svg class="ic"><use href="#i-check"/></svg>Approved ${tOf(dec.at)} · ${i.st==='executing'?'executing':'monitoring outcome'}</div><a class="btn" href="#/incident/${i.id}/plan">View plan</a>`:`<button class="btn" id="nbaChal">Challenge</button><a class="btn" href="#/incident/${i.id}/options">Simulate</a><button class="btn pri" id="nbaGo"><svg class="ic"><use href="#i-check"/></svg>Approve</button>`}</div>`;
+  const g=$('#nbaGo');if(g)g.onclick=()=>approve(i);
+  const c=$('#nbaChal');if(c)c.onclick=()=>modal(`<h3>Challenge the recommendation</h3><p>Your challenge is recorded and the agents re-plan with it as a constraint. The current recommendation stays until a new one is approved.</p>
+    <label class="fld">What should change?<select id="chs"><option>Keep Warehouse 2 stock untouched</option><option>Cap recovery cost at $60K</option><option>No re-sequencing at Plant A</option><option>Avoid air freight</option></select></label>
+    <label class="fld" style="margin-top:10px">Reason (kept in the decision log)<textarea id="chr" rows="3"></textarea></label><div class="mfoot"><button class="btn" data-close>Cancel</button><button class="btn pri" id="mok">Record challenge</button></div>`,()=>{$('#mok').onclick=()=>{const r=$('#chr').value.trim();if(!r){$('#chr').focus();toast('Add a reason for the decision log');return}
+      ST.journal.unshift({at:nowT(),inc:i.id,k:'hu',t:`Challenged: ${$('#chs').value}. ${r}`});save();closeModal();toast('Challenge recorded; agents will re-plan with the constraint')}})}
+/* ---- how it works ---- */
+function tabHow(i,n){const stages=[['Signals','i-signal',i.model?'Supplier portal flag, ASN revision in SAP S/4HANA, Halvorsen news item':i.src],['Models','i-model',i.model?'Supplier ETA model v2.3: revised ETA 14 Oct (±1 day)':'Impact and ETA models scored the event'],['Agents','i-agent',i.model?'Sourcing, inventory and production agents proposed 6 levers':'Agents proposed '+i.acts.length+' actions'],['Scenarios','i-branch',i.model?`${optimize().n} lever combinations generated`:'3 combinations'],['Simulation','i-dice',i.model?`${MOD.N} futures per plan: lateness, slip, yield, demand`:'Stress-tested against delays'],['Optimization','i-sliders','Ranked by risk-adjusted net value'],['Economics','i-dollar',`${mK(n.prot)} protected for ${mK(n.cost)}`],['Next best action','i-target',`${n.conf}% confidence`],['Learning','i-learn','Predicted vs. actual tracked after closure']];
+  const J=ST.journal.filter(x=>x.inc===i.id);
+  const base=[[i.det,'sig',`Signal: ${i.src.split(',')[0]}`,'Detected and linked to the network'],[i.det.slice(0,11)+pad(+i.det.slice(11,13))+':'+pad(Math.min(59,+i.det.slice(14,16)+4)),'ag','Ripple model run','Downstream effects and exposure estimated'],[i.det.slice(0,11)+pad(Math.min(23,+i.det.slice(11,13)+1))+':'+i.det.slice(14,16),'ag','Agents proposed recovery actions',`${i.acts.length} actions, ${n.alts.length} viable plans`],[AS_OF,'','Next best action published',n.title]];
+  $('#iwm').innerHTML=`<div class="panel"><div class="ph"><h3>From signals to a decision</h3><span class="note">What happened at each stage for ${i.id}</span></div><div class="flowx">${stages.map((s,k)=>`<div class="fx ${k===7?'nbaS':''}"><span class="b"><svg class="ic"><use href="#${s[1]}"/></svg></span><b>${s[0]}</b><small>${esc(s[2])}</small></div>`).join('')}</div></div>
+  <div class="panel"><div class="ph"><h3>Incident timeline</h3><span class="note">Signals, agents and people</span></div><ul class="tl">${[...J.map(j=>[j.at,j.k,j.t,'']),...base.slice().reverse()].map(e=>`<li><span class="t">${dOf(e[0])}, ${tOf(e[0])}</span><span class="d ${e[1]}"></span><span>${esc(e[2])}${e[3]?`<small>${esc(e[3])}</small>`:''}</span></li>`).join('')}</ul>
+  <div class="pb" style="padding-top:0"><div class="lg"><span><i style="background:var(--s1);border-radius:50%"></i>Signal</span><span><i style="background:#D4A800;border-radius:50%"></i>Agent</span><span><i style="background:var(--ink);border-radius:50%"></i>Person</span><span><i style="background:var(--res);border-radius:50%"></i>Resolve</span></div></div></div>`}
+</script>
+<script>
+"use strict";
+/* =================== FUNCTION LENSES =================== */
+const FNB={
+  supply:{title:'Supplier risk, before it reaches the line',kpi:[['Suppliers watched','42','7 critical-path'],['On-time in full','86%','last 30 days'],['At-risk spend','$1.9M','next 30 days'],['Alternates qualified','11','of 15 critical parts']],
+    cols:['Supplier','Tier','Parts','OTIF','Risk','Open incidents'],rows:[['Meridian Bearings','Tier 1','BRG-6318 bearing assemblies','71%',86,'SUP-001'],['Halvorsen Steel','Tier 2','Forged rings','64%',81,'SUP-001'],['Kestrel Electronics','Tier 1','Drive boards rev C','79%',74,'PRO-007'],['Orbis Modules','Tier 1','PLC modules (EUR)','92%',41,'FIN-001'],['Cellcore','Tier 1','Battery cells','90%',38,'MKT-011'],['Arcadia Bearings','Alternate','BRG-6318 (qualified)','88%',29,'—'],['Copper (LME)','Commodity','Winding wire','—',62,'SUP-009']]},
+  production:{title:'Plant health and line continuity',kpi:[['Plants','3','plus Repair centre'],['Lines running','7 / 9','2 stopped or at risk'],['Schedule adherence','91%','this week'],['Units at risk','1,560','next 7 days']],
+    cols:['Plant','Product lines','Utilisation','Status','Constraint','Open incidents'],rows:[['Plant A · Chakan','Voltara V4 motors',91,'At risk from 9 Oct','BRG-6318 cover 2 days','SUP-001'],['Plant B · Sriperumbudur','Kestrel Drive D4 · Orbis PLC',63,'Line 2 down','Drive boards rev B','PRO-007'],['Plant C · Sanand','Halden HX pumps',78,'Paint oven down','WO-90417, 2 days','PRO-012'],['Repair centre · Hosur','Refurbishment (Recover)',88,'Running','Requalification booked to 9 Oct','—']]},
+  logistics:{title:'Lanes, ports and docks',kpi:[['Shipments in flight','64','inbound and outbound'],['Carrier on-time','88%','last 30 days'],['Detention exposure','$40','today, from Reconcile'],['Port dwell, Vizag','4.6 days','vs 2.1 normal']],
+    cols:['Carrier or node','Mode','On-time','Shipments','Status','Open incidents'],rows:[['Velo Freight','Road',89,46,'Normal','—'],['Northline 3PL','Road · field service',84,41,'Normal','—'],['Coastal Haulage','Road · port drayage',81,44,'Over free time at Warehouse 2','LOG-008'],['Vizag Port Yard','Port',52,9,'Berth queue 3–5 days','LOG-004'],['Chennai Port','Port · customs',76,6,'Certificate query','SHI-005']]},
+  inventory:{title:'Days of cover across the network',kpi:[['SKUs below safety stock','6','of 1,240 tracked'],['Network days of cover','18.4','target 21'],['Excess stock','$0.7M','candidates for rebalancing'],['Recovered parts available','312','from Recover']],heat:true,
+    cols:['SKU','Plant A','Plant C','Warehouse 1','Warehouse 2','Repair centre'],rows:[['BRG-6318 bearing assembly',2,4,0,13,6],['Halden HX seal kit',0,9,3,11,5],['Kestrel D4 drive board',0,0,6,8,2],['Orbis PLC module',0,0,12,2,0],['Brava 36 V pack',0,14,18,9,7],['Corvid C14 battery',0,0,5,16,4]]},
+  quality:{title:'Holds, failures and field signals',kpi:[['Units on hold','540','QAL-002'],['First-pass yield','96.1%','down 1.4 pts'],['Field failure signals','23','from Recover returns'],['Open deviations','4','MasterControl']],
+    cols:['Product','Failure mode','Rate','Units on hold','Source','Open incidents'],rows:[['Kestrel Drive D4','Firmware 4.2 fault','12%',540,'End-of-line test · Recover returns','QAL-002'],['Halden HX axial pump','Seal wear','3.1%',0,'Recover returns','INV-006'],['Voltara V4 motor','Bearing noise','0.8%',0,'Field service','—'],['Corvid C14','Battery swelling','1.9%',0,'Recover returns','—']]},
+  customer:{title:'Orders and commitments at risk',kpi:[['Open orders','184','next 30 days'],['Orders at risk','11','$0.39M revenue'],['On-time delivery','93%','last 30 days'],['Customers affected','3','A, B and C']],
+    cols:['Order','Customer','Product','Units','Commit','Risk'],rows:[['SO-45871','Customer A · Pune Works','Voltara V4 55 kW',12,'10 Oct','SUP-001'],['SO-45892','Customer A · Nashik Plant','Voltara V4 55 kW',8,'11 Oct','SUP-001'],['SO-46010','Customer A · Pune Works','Voltara V4 (expansion)',40,'14 Oct','ORD-003'],['SO-45901','Customer B · Chennai Foundry','Voltara V4 75 kW',6,'12 Oct','SUP-001'],['SO-45944','Customer B · Coimbatore Mill','Kestrel Drive D4',30,'13 Oct','QAL-002'],['SO-45980','Customer C · Indore Packaging','Brava 36 V fleet',120,'20 Oct','MKT-011']]}};
+function renderFn(){const f=S.fn,B=FNB[f],is=INC.filter(i=>i.fn===f);
+  const cell=(c,v)=>{if(c==='Risk'&&typeof v==='number')return `<div style="display:flex;align-items:center;gap:8px;min-width:110px"><span class="minibar" style="flex:1"><i style="width:${v}%;background:${v>=75?'var(--s1)':v>=50?'var(--s2)':'var(--ok)'}"></i></span><b class="num">${v}</b></div>`;
+    if((c==='Utilisation'||c==='On-time')&&typeof v==='number')return `<div style="display:flex;align-items:center;gap:8px;min-width:110px"><span class="minibar" style="flex:1"><i style="width:${v}%;background:${v>=85?'var(--ok)':v>=70?'#D4A800':'var(--s1)'}"></i></span><b class="num">${v}%</b></div>`;
+    if(/^[A-Z]{3}-\d{3}$/.test(v))return `<a class="link mono" href="#/incident/${v}">${v}</a>`;return esc(v)};
+  const heat=v=>{const t=v===0?'var(--s1-soft)':v<5?'var(--s2-soft)':v<10?'var(--s3-soft)':'var(--ok-soft)',c=v===0?'var(--s1)':v<5?'color-mix(in srgb,var(--s2) 75%,var(--ink))':v<10?'var(--ink2)':'var(--ok)';return `<td class="h" style="background:${t};color:${c}">${v===0?'—':v+' d'}</td>`};
+  $('#v-fn').innerHTML=`<div class="phead"><div><div class="eyebrow">Resolve · ${FN[f][0]}</div><h1 style="margin-top:8px">${B.title}</h1></div></div>
+  <div class="kpis">${B.kpi.map(k=>`<div class="kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('')}</div>
+  <div class="panel"><div class="ph"><h3>${{supply:'Supplier risk board',production:'Plant status',logistics:'Carriers and nodes',inventory:'Days of cover by location',quality:'Quality signals',customer:'Orders at risk'}[f]}</h3>${f==='logistics'?'<a class="btn sm" href="reconcile.html#/prevention"><svg class="ic"><use href="#i-reconcile"/></svg>Open Reconcile prevention</a>':''}${f==='inventory'?'<span class="note">Days of cover; — means none on hand</span>':''}</div><div class="tw"><table class="t ${B.heat?'heat':''}"><thead><tr>${B.cols.map((c,k)=>`<th ${B.heat&&k?'style="text-align:center"':''}>${c}</th>`).join('')}</tr></thead><tbody>${B.rows.map(r=>`<tr>${r.map((v,k)=>B.heat&&k?heat(v):k===0?`<td><b>${esc(v)}</b></td>`:`<td>${cell(B.cols[k],v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
+  <div class="panel"><div class="ph"><h3>${FN[f][0]} incidents</h3><span class="note" id="icount"></span></div><div class="tw" id="itbl"></div></div>`;
+  drawTable($('#itbl'),false,is.sort((a,b)=>a.sev-b.sev))}
+
+/* =================== DECISIONS =================== */
+const PAST=[['SUP-118','Supplier insolvency — Halden pump castings','Dual-source castings from Plant C foundry partner',84,410000,96000,'2026-09-28','Ops director'],['LOG-097','Monsoon road closure — Nashik corridor','Re-route via Sinnar; hold non-urgent loads',79,220000,31000,'2026-09-19','Logistics lead'],['QAL-031','Voltara V4 insulation test drift','Recalibrate tester; retest 3 days of output',88,180000,12000,'2026-09-14','Quality lead'],['INV-044','Brava pack overstock at Warehouse 2','Rebalance 400 packs to Warehouse 1 and Recover pool',81,95000,8000,'2026-09-08','Inventory planner'],['PRO-061','Plant B compressor failure','Rent compressor; expedite repair via Maximo',76,260000,44000,'2026-08-30','Plant B manager'],['ORD-019','Customer B rush order — Kestrel D4','Split ship from two plants',83,140000,18000,'2026-08-21','Customer operations']];
+function renderDecisions(){const mine=ST.decisions;
+  $('#v-decisions').innerHTML=`<div class="phead"><div><div class="eyebrow">Resolve · Decisions</div><h1 style="margin-top:8px">Every decision, with its economics on record</h1><p>Approved next best actions, the alternatives they beat, who approved them and what they were expected to protect.</p></div></div>
+  <div class="kpis"><div class="kpi"><div class="l">Decisions, last 60 days</div><div class="v">${PAST.length+mine.length}</div><div class="s">${mine.length} made today</div></div><div class="kpi"><div class="l">Value protected (expected)</div><div class="v">${mK(PAST.reduce((s,p)=>s+p[4]-p[5],0)+mine.reduce((s,d)=>s+d.net,0))}</div><div class="s">net of recovery cost</div></div><div class="kpi"><div class="l">Average confidence</div><div class="v">${Math.round((PAST.reduce((s,p)=>s+p[3],0)+mine.reduce((s,d)=>s+d.conf,0))/(PAST.length+mine.length))}%</div><div class="s">at the time of decision</div></div><div class="kpi"><div class="l">Median time to decide</div><div class="v">38 min</div><div class="s">from detection to approval</div></div></div>
+  <div class="panel"><div class="ph"><h3>Decision log</h3></div><div class="tw"><table class="t"><thead><tr><th>When</th><th>Incident</th><th>Decision</th><th class="r">Confidence</th><th class="r">Protected</th><th class="r">Cost</th><th>Approved by</th><th>Status</th></tr></thead><tbody>
+  ${mine.map(d=>{const i=incById(d.inc);return `<tr class="click" data-id="${d.inc}"><td class="num">${dOf(d.at)}, ${tOf(d.at)}</td><td><a class="link mono" href="#/incident/${d.inc}">${d.inc}</a><span class="sub2">${esc(i.t)}</span></td><td style="max-width:360px"><b>${esc(d.title)}</b></td><td class="r">${d.conf}%</td><td class="r">${mK(d.prot)}</td><td class="r">${mK(d.cost)}</td><td>${esc(d.by)}</td><td>${stChip(i.st)}</td></tr>`}).join('')}
+  ${PAST.map(p=>`<tr><td class="num">${dOf(p[6]+'T00:00')}</td><td><span class="mono">${p[0]}</span><span class="sub2">${esc(p[1])}</span></td><td style="max-width:360px"><b>${esc(p[2])}</b></td><td class="r">${p[3]}%</td><td class="r">${mK(p[4])}</td><td class="r">${mK(p[5])}</td><td>${p[7]}</td><td>${stChip('resolved')}</td></tr>`).join('')}</tbody></table></div></div>`;
+  $('#v-decisions tbody').onclick=e=>{const r=e.target.closest('tr[data-id]');if(r&&!e.target.closest('a'))location.hash='#/incident/'+r.dataset.id}}
+
+/* =================== LEARNING =================== */
+const CLOSED=[['SUP-118',4,5,96,104],['LOG-097',2,2,31,29],['QAL-031',3,3,12,14],['INV-044',2,1,8,7],['PRO-061',3,4,44,51],['ORD-019',2,2,18,17],['SUP-102',6,8,120,151],['LOG-090',1,1,9,9],['PRO-055',5,4,62,58],['QAL-027',4,5,22,25],['INV-039',2,3,11,13],['LOG-085',3,3,27,24],['SUP-097',7,7,88,92],['FIN-014',10,9,40,36]];
+function renderLearning(){const mae=CLOSED.reduce((s,c)=>s+Math.abs(c[2]-c[1]),0)/CLOSED.length,bias=CLOSED.reduce((s,c)=>s+(c[2]-c[1]),0)/CLOSED.length,ce=CLOSED.reduce((s,c)=>s+Math.abs(c[4]-c[3])/c[3],0)/CLOSED.length;
+  $('#v-learning').innerHTML=`<div class="phead"><div><div class="eyebrow">Resolve · Learning</div><h1 style="margin-top:8px">Predicted vs. actual, every time</h1><p>When an incident closes, Resolve compares what it predicted with what happened and feeds the difference back into its models.</p></div></div>
+  <div class="mgrid">${[['Supplier ETA model','v2.3',`${mae.toFixed(1)} days`,'mean absolute error',`bias +${bias.toFixed(1)} days · recalibrated 2 Oct`],['Ripple propagation model','v1.6','0.86','precision on downstream effects','18 closed incidents scored'],['Recovery cost model','v1.2',`±${Math.round(ce*100)}%`,'average cost error','air freight premium updated'],['Demand sensing','v3.1','7.8%','MAPE, 3-week horizon','promotion uplift feature added']].map(m=>`<div class="mcard"><span class="note">${m[0]} · <span class="mono">${m[1]}</span></span><span class="big">${m[2]}</span><b>${m[3]}</b><span class="note">${m[4]}</span></div>`).join('')}</div>
+  <div class="g2"><div class="panel"><div class="ph"><h3>Recovery days: predicted vs. actual</h3><span class="note">${CLOSED.length} closed incidents</span></div><div class="pb"><div class="chart" id="cscat"></div></div></div>
+   <div class="panel"><div class="ph"><h3>Learning records</h3></div><ul class="tl">${[['2 Oct','Supplier ETA model now adds +1.2 days for Tier-2 forging shortages','From SUP-102 and SUP-118'],['28 Sep','Air-freight premium in the recovery cost model raised 8%','From PRO-061'],['21 Sep','Monsoon closures added as a route risk feature','From LOG-097'],['14 Sep','Recovered parts from Recover added as a sourcing lever','From INV-044; first used in SUP-001'],['3 Sep','Promotion uplift added to demand sensing','From ORD-019']].map(l=>`<li><span class="t">${l[0]}</span><span class="d"></span><span>${esc(l[1])}<small>${esc(l[2])}</small></span></li>`).join('')}</ul></div></div>
+  <div class="panel"><div class="ph"><h3>Closed incidents</h3></div><div class="tw"><table class="t"><thead><tr><th>Incident</th><th class="r">Predicted days</th><th class="r">Actual days</th><th class="r">Predicted cost</th><th class="r">Actual cost</th><th>Error</th></tr></thead><tbody>${CLOSED.map(c=>{const e=c[2]-c[1];return `<tr><td class="mono">${c[0]}</td><td class="r">${c[1]}</td><td class="r">${c[2]}</td><td class="r">$${c[3]}K</td><td class="r">$${c[4]}K</td><td>${e===0?'<span class="chip ok">On target</span>':e>0?`<span class="chip warn">${e} day${e>1?'s':''} late</span>`:`<span class="chip blue">${-e} day${e<-1?'s':''} early</span>`}</td></tr>`}).join('')}</tbody></table></div></div>`;
+  drawScatter($('#cscat'))}
+function drawScatter(el){const W=460,H=250,P={l:34,r:10,t:10,b:30},mx=11,x=v=>P.l+v/mx*(W-P.l-P.r),y=v=>P.t+(H-P.t-P.b)*(1-v/mx);
+  let h=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Predicted against actual recovery days for closed incidents"><g class="gl">`;for(let v=0;v<=10;v+=2)h+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${P.l-6}" y="${y(v)+4}" text-anchor="end">${v}</text><text class="ax" x="${x(v)}" y="${H-14}" text-anchor="middle">${v}</text>`;
+  h+=`</g><line x1="${x(0)}" y1="${y(0)}" x2="${x(10.5)}" y2="${y(10.5)}" style="stroke:var(--muted)" stroke-dasharray="4 4"/><text class="lbl" x="${x(8.2)}" y="${y(9.2)}">perfect</text><text class="ax" x="${W/2}" y="${H-1}" text-anchor="middle">Predicted days</text>`;
+  CLOSED.forEach((c,k)=>{const j=(k%3-1)*.12;h+=`<g data-k="${k}"><circle cx="${x(c[1]+j)}" cy="${y(c[2])}" r="12" fill="transparent"/><circle cx="${x(c[1]+j)}" cy="${y(c[2])}" r="5.5" style="fill:${c[2]>c[1]?'var(--s2)':c[2]<c[1]?'var(--res)':'var(--ok)'};stroke:var(--panel)" stroke-width="2"/></g>`});
+  el.innerHTML=h+'</svg>';const s=el.querySelector('svg');s.onmousemove=e=>{const g=e.target.closest('g[data-k]');if(!g){tipOff(el);return}const c=CLOSED[+g.dataset.k],r=el.getBoundingClientRect(),b=g.getBoundingClientRect();tipOn(el,`<b>${c[0]}</b>Predicted ${c[1]} d · actual ${c[2]} d`,b.left-r.left+b.width/2,b.top-r.top)};s.onmouseleave=()=>tipOff(el)}
+
+/* boot */
+buildInc();
+Object.keys(ST.runs).forEach(id=>{const r=ST.runs[id];if(r.done<r.n)runSteps(id)});
+if(!location.hash)history.replaceState(null,'','#/pulse');
+route();
+</script>
+</body>
+</html>
