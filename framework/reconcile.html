@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Artizent Reconcile</title>
+<script>
+/* apply the saved theme before first paint; same key as the framework overview and Circularity */
+(function(){var t=null;try{t=localStorage.getItem('circ-theme')}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light')})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<style>
+/* tokens shared with index.html (framework overview) and ../index.html (Circularity) */
+:root{
+  --bg:#FAF8F5;--panel:#FFFFFF;--panel2:#F4F1EB;--panel3:#EDE8DF;--ink:#141414;--ink2:#4B4541;--muted:#7B726D;
+  --line:rgba(20,20,20,.11);--line2:rgba(20,20,20,.06);--yellow:#FFDD00;--yellow-soft:#FBF3D8;
+  --ok:#17703F;--ok-soft:#E2F0E7;--warn:#8A6400;--warn-soft:#FBF0CC;--bad:#B3382C;--bad-soft:#F8E3DF;--info:#3A3E46;--info-soft:#EAE5DC;
+  --side:#141414;--side-ink:#E9E3DB;--side-mut:#9C9189;--shadow:0 1px 2px rgba(20,20,20,.05),0 10px 30px rgba(20,20,20,.07);
+  --shadow-lg:0 2px 4px rgba(20,20,20,.04),0 18px 44px rgba(20,20,20,.12);
+  --f-display:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;--f-body:'Inter','Segoe UI',system-ui,sans-serif;--f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --gold:#8A6400;--rcn:#2D6A57;--rcn-soft:#E3F0EA;--res:#2F5D8A;--res-soft:#E8EFF7;
+  --band-ok:rgba(23,112,63,.16);--band-bill:rgba(212,168,0,.42);--track:#EDE8DF;
+}
+:root[data-theme="dark"]{
+  --bg:#111112;--panel:#1D1D20;--panel2:#26262A;--panel3:#303036;--ink:#F6F3EE;--ink2:#D3CAC0;--muted:#A0958B;
+  --line:rgba(255,255,255,.13);--line2:rgba(255,255,255,.07);--yellow-soft:rgba(255,221,0,.13);
+  --ok:#62D393;--ok-soft:rgba(98,211,147,.14);--warn:#FFDD00;--warn-soft:rgba(255,221,0,.13);--bad:#FF8F80;--bad-soft:rgba(255,143,128,.14);--info:#D3CAC0;--info-soft:rgba(211,202,192,.1);
+  --side:#000;--shadow:0 1px 2px rgba(0,0,0,.4),0 14px 34px rgba(0,0,0,.4);--shadow-lg:0 2px 4px rgba(0,0,0,.4),0 18px 44px rgba(0,0,0,.5);
+  --gold:#E8C64A;--rcn:#7DCDB0;--rcn-soft:rgba(125,205,176,.12);--res:#8DB6E0;--res-soft:rgba(141,182,224,.12);
+  --band-ok:rgba(98,211,147,.2);--band-bill:rgba(255,221,0,.36);--track:#303036;
+}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+html,body{margin:0;min-height:100%}body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--f-body);font-feature-settings:'cv11' 1;transition:background .2s,color .2s}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}a{color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+:root[data-theme="dark"] :focus-visible{outline-color:var(--yellow)}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+h1,h2,h3,h4{font-family:var(--f-display);margin:0;letter-spacing:-.015em;line-height:1.2}
+h1{font-size:27px;font-weight:800;letter-spacing:-.025em}h2{font-size:17px;font-weight:700}h3{font-size:14.5px;font-weight:700}
+.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.num,.r{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono);font-size:12px}
+.note{font-size:12.5px;color:var(--muted)}
+.eyebrow{font:600 11px/1 var(--f-body);letter-spacing:.16em;text-transform:uppercase;color:var(--rcn)}
+
+/* shell */
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.side{background:var(--side);color:var(--side-ink);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;z-index:40}
+.brand{display:block;padding:22px 22px 18px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand img{width:150px;display:block}
+.brand small{display:block;margin-top:8px;font-size:8.6px;font-weight:600;letter-spacing:.1em;white-space:nowrap;text-transform:uppercase;color:var(--side-mut)}.brand small b{color:var(--yellow);font-weight:600}
+.appsw{display:flex;align-items:center;gap:12px;margin:14px 12px 4px;padding:12px;border-radius:12px;background:linear-gradient(140deg,rgba(125,205,176,.16),rgba(125,205,176,.04));border:1px solid rgba(125,205,176,.24)}
+.appsw .tile{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:rgba(125,205,176,.16);color:#7DCDB0}
+.appsw b{display:block;font:700 14.5px var(--f-display);color:#fff}.appsw small{display:block;font-size:11.5px;color:var(--side-mut);line-height:1.3}
+.grp{padding:12px 12px 8px;border-bottom:1px solid rgba(255,255,255,.08)}
+.grp-h{font-size:12px;font-weight:500;color:var(--side-mut);padding:4px 12px 8px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;text-decoration:none;color:var(--side-ink);font-size:13.5px;font-weight:500;position:relative;border:1px solid transparent;transition:background .15s,color .15s}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a .ic{opacity:.82}
+.nav a[aria-current="page"]{background:linear-gradient(90deg,rgba(255,221,0,.22),rgba(255,221,0,.07));border-color:rgba(255,221,0,.28);color:#fff}
+.nav a[aria-current="page"] .ic{color:var(--yellow);opacity:1}
+.nav a[aria-current="page"]::before{content:"";position:absolute;left:-13px;top:8px;bottom:8px;width:4px;background:var(--yellow);border-radius:0 3px 3px 0}
+.nav .cnt{margin-left:auto;min-width:20px;text-align:center;background:var(--yellow);color:#141414;font-size:11px;font-weight:700;border-radius:10px;padding:0 6px;line-height:18px}
+.nav .cnt.dim{background:rgba(255,255,255,.12);color:var(--side-ink)}
+.side-foot{margin-top:auto;padding:14px 14px 16px}
+.simcard{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.035);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--side-mut);line-height:1.5}
+.simcard b{display:flex;align-items:center;gap:8px;color:#fff;font-size:12.5px;margin-bottom:4px}
+.simcard b i{width:8px;height:8px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(255,221,0,.14)}
+.simcard button{margin-top:8px;border:0;background:none;padding:0;color:var(--yellow);font-size:12px;font-weight:600}
+.main{min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:12px;padding:10px 28px;min-height:64px}
+.crumb{display:flex;align-items:center;gap:9px;font-size:13.5px;white-space:nowrap}
+.crumb a{text-decoration:none;color:var(--muted)}.crumb a:hover{color:var(--ink)}.crumb b{font-family:var(--f-display);font-weight:700}.crumb i{color:var(--line);font-style:normal}
+.search{position:relative;flex:1;max-width:400px;margin-left:auto}
+.search input{width:100%;height:38px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:0 12px 0 38px;font-size:13px}
+.search input:focus{outline:none;border-color:color-mix(in srgb,var(--gold) 55%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--yellow) 22%,transparent)}
+.search>.ic{position:absolute;left:12px;top:10px;color:var(--muted)}
+.results{position:absolute;top:44px;left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);padding:6px;max-height:360px;overflow:auto;z-index:50}
+.results button{display:flex;width:100%;gap:10px;align-items:center;text-align:left;border:0;background:none;padding:8px 10px;border-radius:7px;font-size:13px}
+.results button[aria-selected=true],.results button:hover{background:var(--panel2)}
+.results button small{margin-left:auto;color:var(--muted);font-size:11.5px;white-space:nowrap}
+.results .none{padding:10px;color:var(--muted);font-size:13px}
+.ibtn{position:relative;width:38px;height:38px;display:grid;place-items:center;border:0;background:transparent;border-radius:10px;color:var(--ink2);flex:none}
+.ibtn:hover{background:var(--panel2)}
+.ibtn .moon{display:none}:root[data-theme="dark"] .ibtn .sun{display:none}:root[data-theme="dark"] .ibtn .moon{display:block}
+.ibtn.menu{display:none}
+.tsel{height:38px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:0 10px;font-size:13px;font-weight:500}
+.page{padding:22px 28px 60px;display:flex;flex-direction:column;gap:18px;max-width:1560px;width:100%}
+.phead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.phead p{margin:6px 0 0;color:var(--ink2);max-width:76ch}
+.phead .asof{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.view{display:none;flex-direction:column;gap:18px}.view.on{display:flex}
+
+/* components */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.panel>.ph{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.panel>.ph h2,.panel>.ph h3{flex:1;min-width:0}.panel>.pb{padding:16px 18px}
+.grid{display:grid;gap:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font-weight:600;font-size:13px;white-space:nowrap;text-decoration:none;transition:background .15s,box-shadow .15s,transform .15s}
+.btn:hover{background:var(--panel2)}.btn .ic{width:16px;height:16px}
+.btn.pri{background:var(--yellow);border-color:var(--yellow);color:#141414;box-shadow:0 4px 14px rgba(201,160,0,.25)}.btn.pri:hover{filter:brightness(.96);background:var(--yellow)}
+.btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.sm{height:30px;padding:0 11px;font-size:12.5px;border-radius:7px}
+.btn.ghost{border-color:transparent;background:transparent}.btn.ghost:hover{background:var(--panel2)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:11px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--info-soft);color:var(--info)}
+.chip .ic{width:13px;height:13px;stroke-width:2.2}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}.chip.warn{background:var(--warn-soft);color:var(--warn)}.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.y{background:var(--yellow);color:#141414}.chip.line{background:transparent;border:1px solid var(--line);color:var(--ink2)}.chip.rc{background:var(--rcn-soft);color:var(--rcn)}.chip.blue{background:var(--res-soft);color:var(--res)}
+.code{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:5px;font:600 11px var(--f-mono);background:var(--panel2);border:1px solid var(--line2);color:var(--ink2)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;height:32px;padding:0 12px;font-weight:600;font-size:12.5px;color:var(--ink2);border-right:1px solid var(--line2);white-space:nowrap}
+.seg button:last-child{border-right:0}.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.kpi{padding:16px 18px;border:0;border-right:1px solid var(--line2);text-align:left;background:none;position:relative}
+.kpi:last-child{border-right:0}button.kpi:hover{background:var(--panel2)}
+.kpi[aria-pressed=true]{background:var(--yellow-soft);box-shadow:inset 0 -3px 0 var(--yellow)}
+.kpi .l{font-size:12.5px;color:var(--ink2);font-weight:500}.kpi .v{font:800 27px/1.15 var(--f-display);letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}.kpi .s{font-size:12px;color:var(--muted);margin-top:3px}
+.kpi .v.ok{color:var(--ok)}.kpi .v.warn{color:var(--warn)}
+.tw{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{text-align:left;font-weight:600;font-size:12px;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--panel)}
+table.t td{padding:11px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
+table.t tr:last-child td{border-bottom:0}
+table.t .r{text-align:right}
+table.t tbody tr.click{cursor:pointer}table.t tbody tr.click:hover td{background:var(--panel2)}
+table.t tr.sel td{background:var(--yellow-soft)}
+table.t tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
+.sub2{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-weight:400}
+.minibar{display:block;height:5px;border-radius:3px;background:var(--track);margin-top:6px;overflow:hidden;min-width:60px}.minibar i{display:block;height:100%;background:var(--ok);border-radius:3px}
+.empty{color:var(--muted);padding:32px 16px;text-align:center;font-size:13px}
+.split{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--track);gap:2px}
+.split i{display:block;height:100%}
+.lg{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.fbtn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:15px;border:1px solid var(--line);background:var(--panel);font-size:12.5px;font-weight:600;color:var(--ink2)}
+.fbtn b{font-weight:700;color:var(--muted);font-size:11.5px}
+.fbtn[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}.fbtn[aria-pressed=true] b{color:inherit;opacity:.75}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--muted);flex:none}
+.dot.ok{background:var(--ok)}.dot.warn{background:#D4A800}.dot.bad{background:var(--bad)}.dot.info{background:var(--res)}
+
+/* settlements workbench */
+.wb{display:grid;grid-template-columns:380px minmax(0,1fr);gap:18px;align-items:start}
+.queue{position:sticky;top:82px}
+.queue .ph{gap:8px}
+.queue .filters{padding:12px 14px;border-bottom:1px solid var(--line2)}
+.qlist{max-height:calc(100vh - 250px);overflow:auto;scrollbar-width:thin}
+.qrow{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:4px 12px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line2);background:none;padding:12px 14px;position:relative}
+.qrow:hover{background:var(--panel2)}
+.qrow[aria-current=true]{background:var(--yellow-soft)}
+.qrow[aria-current=true]::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;background:var(--yellow);border-radius:0 3px 3px 0}
+.qrow .av{grid-row:span 2}
+.qrow b{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qrow .amt{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;font-size:13px}
+.qrow .meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qrow .var{text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted)}.qrow .var.pos{color:var(--warn);font-weight:600}
+.qrow .tags{grid-column:2/-1;display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.qsec{padding:8px 14px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--panel2);border-bottom:1px solid var(--line2);position:sticky;top:0;z-index:1}
+.av{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font:800 12.5px var(--f-display);color:#fff;flex:none}
+.av.VF{background:linear-gradient(140deg,#3A6EA5,#21436B)}.av.NL{background:linear-gradient(140deg,#5E5652,#2E2A28)}.av.CH{background:linear-gradient(140deg,#2D7A60,#1B4A3A)}
+.av.lg{width:48px;height:48px;border-radius:13px;font-size:15px}
+.detail{display:flex;flex-direction:column;gap:16px;min-width:0}
+.bhead{display:flex;gap:16px;align-items:flex-start;padding:20px 22px;flex-wrap:wrap}
+.bhead .t{flex:1;min-width:240px}
+.bhead h2{font-size:21px;font-weight:800;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bhead .t p{margin:4px 0 0;color:var(--ink2);font-size:13px}
+.bhead .tot{text-align:right}.bhead .tot .big{font:800 30px/1 var(--f-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.bhead .tot .note{margin-top:6px}
+.facts{display:flex;flex-wrap:wrap;border-top:1px solid var(--line2)}
+.facts>div{padding:11px 18px;border-right:1px solid var(--line2);min-width:120px;flex:1 1 auto}
+.facts>div:last-child{border-right:0}
+.facts .k{font-size:11.5px;color:var(--muted)}.facts .v{font-weight:600;font-size:13px;margin-top:1px;white-space:nowrap}
+.facts a{color:var(--res);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px}.facts a:hover{text-decoration:underline}
+.facts a .ic{width:13px;height:13px}
+/* n-way match */
+.nway{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;padding:18px 18px 16px;position:relative}
+.nw{position:relative;padding:0 8px;text-align:center}
+.nw::before{content:"";position:absolute;top:19px;left:-50%;right:50%;height:2px;background:var(--line)}
+.nw:first-child::before{display:none}
+.nw.ok::before{background:color-mix(in srgb,var(--ok) 45%,transparent)}
+.nw .b{position:relative;width:40px;height:40px;margin:0 auto 8px;border-radius:50%;display:grid;place-items:center;background:var(--panel);border:2px solid var(--line);color:var(--ink2)}
+.nw.ok .b{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
+.nw.warn .b{border-color:#D4A800;color:var(--warn);background:var(--warn-soft)}
+.nw.bad .b{border-color:var(--bad);color:var(--bad);background:var(--bad-soft)}
+.nw .b .ic{width:18px;height:18px}
+.nw .st{position:absolute;right:-4px;bottom:-4px;width:17px;height:17px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:10px;font-weight:800;border:2px solid var(--panel)}
+.nw.ok .st{background:var(--ok)}.nw.warn .st{background:#D4A800;color:#141414}.nw.bad .st{background:var(--bad)}
+:root[data-theme="dark"] .nw.ok .st,:root[data-theme="dark"] .nw.bad .st{color:#111}
+.nw b{display:block;font-size:12.5px;font-weight:700}.nw small{display:block;font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:2px}
+.nw .src{font-size:10.5px;color:var(--muted);margin-top:4px;font-family:var(--f-mono)}
+/* evidence studio */
+.studio .ph .chip{margin-left:4px}
+#tl{width:100%;height:auto;display:block;touch-action:none;user-select:none;overflow:visible}
+#tl .axis{stroke:var(--line);stroke-width:2}
+#tl .tick{stroke:var(--muted);opacity:.6}
+#tl .tk{fill:var(--muted);font-size:14px;font-family:var(--f-body)}
+#tl .lab{fill:var(--ink);font-size:16px;font-weight:600;font-family:var(--f-body)}
+#tl .src{fill:var(--muted);font-size:13px;font-family:var(--f-mono)}
+#tl .bandA{fill:var(--band-ok)}#tl .bandB{fill:var(--band-bill)}
+#tl .bandT{font-size:11.5px;font-weight:600;font-family:var(--f-body)}
+#tl .pin{cursor:grab}#tl .pin:active{cursor:grabbing}
+#tl .ring{stroke:var(--panel);stroke-width:3}
+#tl .ro .pin{cursor:default}
+.tray{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+.days{display:flex;gap:8px;flex-wrap:wrap}
+.day{width:96px;padding:10px 8px;border:1px solid var(--line);border-radius:10px;text-align:center;font-size:12px;background:var(--panel);position:relative}
+.day b{display:block;font:800 20px/1.2 var(--f-display)}.day small{display:block;color:var(--muted);font-size:11px;line-height:1.3}
+.day.free{background:var(--panel2);color:var(--muted)}
+.day.chg{border-color:color-mix(in srgb,#D4A800 55%,transparent);background:color-mix(in srgb,var(--warn-soft) 70%,var(--panel))}
+.day.chg.t2{background:color-mix(in srgb,var(--bad-soft) 70%,var(--panel));border-color:color-mix(in srgb,var(--bad) 45%,transparent)}
+.day.edit{cursor:pointer}.day.edit:hover{box-shadow:0 0 0 2px var(--yellow)}
+.day.ex{background:repeating-linear-gradient(135deg,var(--panel2) 0 6px,var(--panel) 6px 12px);border-style:dashed;border-color:var(--ok)}
+.day.ex small{color:var(--ok);font-weight:600}
+.day .lfd{position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;background:var(--ink);color:var(--bg);padding:1px 6px;border-radius:6px;white-space:nowrap}
+/* result lines */
+tr.line{cursor:pointer}tr.line:hover td{background:var(--panel2)}
+tr.line td:first-child{position:relative;padding-left:30px}
+tr.line td:first-child::before{content:"";position:absolute;left:12px;top:18px;width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+tr.line.open td:first-child::before{transform:rotate(45deg);top:15px}
+tr.det td{background:var(--panel2);padding:16px 18px 18px 30px}
+.dcols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px}
+.dcols h4{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-family:var(--f-body)}
+.fl{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.fl li{display:flex;gap:9px;align-items:flex-start;font-size:13px}
+.fl li .dot{margin-top:6px}
+.fl li span.src{margin-left:auto;font:500 11px var(--f-mono);color:var(--muted);white-space:nowrap;padding-left:10px}
+.clause{margin-top:12px;padding:11px 13px;border:1px solid var(--line);border-left:3px solid var(--rcn);border-radius:8px;background:var(--panel);font-size:12.5px;color:var(--ink2)}
+.clause b{display:block;color:var(--ink);font-size:12.5px;margin-bottom:2px}
+.own{margin-top:12px;display:grid;gap:4px;font-size:13px}.own b{font-weight:600}
+.alert{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border:1px solid color-mix(in srgb,var(--bad) 40%,transparent);background:var(--bad-soft);border-radius:10px;font-size:13px}
+.alert .ic{color:var(--bad);margin-top:1px}.alert b{color:var(--bad)}
+.alert.info{border-color:color-mix(in srgb,var(--rcn) 35%,transparent);background:var(--rcn-soft)}.alert.info .ic,.alert.info b{color:var(--rcn)}
+.decide{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 18px;border-top:1px solid var(--line2);background:linear-gradient(180deg,var(--panel),var(--panel2));border-radius:0 0 12px 12px}
+.decide .rec{flex:1;min-width:240px}
+.decide .rec small{display:block;font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.decide .rec b{display:block;font-size:14.5px;margin-top:2px}
+.agent{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--ink2);padding:12px 18px;border-top:1px solid var(--line2)}
+.agent .ic{color:var(--rcn);margin-top:1px}
+.log{display:grid;gap:0}
+.log .e{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;padding:9px 0;border-bottom:1px solid var(--line2);font-size:12.5px}
+.log .e:last-child{border-bottom:0}
+.log .t{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+.log b{font-weight:600}.log .who{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+
+/* cases */
+.stbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stc{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px 16px;text-align:left;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px}
+.stc:hover{border-color:color-mix(in srgb,var(--ink) 25%,transparent)}
+.stc[aria-pressed=true]{background:var(--yellow-soft);border-color:color-mix(in srgb,#D4A800 60%,transparent)}
+.stc .l{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink2)}
+.stc .v{font:800 24px/1.1 var(--f-display);font-variant-numeric:tabular-nums}.stc .s{font-size:12px;color:var(--muted)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--panel);border-left:1px solid var(--line);box-shadow:var(--shadow-lg);z-index:70;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease}
+.drawer.on{transform:none}
+.drawer .dh{display:flex;gap:12px;align-items:flex-start;padding:18px 18px 14px;border-bottom:1px solid var(--line2)}
+.drawer .dh .t{flex:1}.drawer .db{padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:16px}
+.amts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.amts div{padding:10px 12px;border-right:1px solid var(--line2)}.amts div:last-child{border-right:0}
+.amts small{display:block;font-size:11.5px;color:var(--muted)}.amts b{font:800 18px var(--f-display);font-variant-numeric:tabular-nums}
+.hist{list-style:none;margin:0;padding:0;position:relative}
+.hist li{position:relative;padding:0 0 14px 22px;font-size:13px}
+.hist li::before{content:"";position:absolute;left:4px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--panel);border:2px solid var(--muted)}
+.hist li::after{content:"";position:absolute;left:8px;top:17px;bottom:0;width:1px;background:var(--line)}
+.hist li:last-child::after{display:none}
+.hist li.cur::before{border-color:#D4A800;background:var(--yellow)}
+.hist small{display:block;color:var(--muted);font-size:11.5px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.scrim{position:fixed;inset:0;background:rgba(10,10,10,.5);z-index:65;display:none}
+.scrim.on{display:block}
+
+/* prevention */
+.scrub{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 18px}
+.scrub input[type=range]{flex:1;min-width:220px;accent-color:#D4A800}
+.scrub .clock{font:800 22px var(--f-display);font-variant-numeric:tabular-nums;min-width:74px}
+.mv{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.4fr) minmax(0,1fr) auto;gap:16px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line2)}
+.mv:last-child{border-bottom:0}
+.mv b{font-size:13.5px}.mv .meta{font-size:12px;color:var(--muted)}
+.gauge{height:10px;border-radius:5px;background:var(--track);overflow:hidden;display:flex;gap:2px}
+.gauge i{display:block;height:100%}
+.gauge .u{background:var(--ok)}.gauge .w{background:#D4A800}.gauge .x{background:var(--bad)}
+.mv .gl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:5px;gap:8px}
+.mv .gl b{font-size:12px}
+.elab{display:grid;gap:12px}
+.fld{display:grid;gap:5px;font-size:12px;font-weight:600;color:var(--ink2)}
+.fld input,.fld select{height:36px;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:0 10px;font-weight:500;font-size:13px;width:100%}
+.fld textarea{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:8px 10px;font-weight:500;font-size:13px;width:100%;resize:vertical}
+.evbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.evbtns button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);text-align:left;font-size:12.5px;font-weight:600}
+.evbtns button small{font-weight:400;color:var(--muted);font-size:11.5px}
+.evbtns button[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);background:var(--yellow-soft)}
+.evbtns button[disabled]{opacity:.45;cursor:not-allowed}
+.proposal{border:1px solid color-mix(in srgb,var(--rcn) 35%,transparent);background:var(--rcn-soft);border-radius:10px;padding:12px 14px;font-size:13px}
+.proposal b{color:var(--rcn)}
+
+/* insights */
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .gridl line{stroke:var(--line2)}
+.chart .ax{fill:var(--muted);font-size:11.5px;font-family:var(--f-body)}
+.chart .bar{fill:var(--rcn)}
+.chart .bar.hl,.chart .hit:hover+.bar{fill:color-mix(in srgb,var(--rcn) 70%,var(--ink))}
+.chart .val{fill:var(--ink2);font-size:11.5px;font-weight:600;font-family:var(--f-body)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:7px 10px;border-radius:8px;box-shadow:var(--shadow-lg);white-space:nowrap;transform:translate(-50%,-110%);z-index:5}
+.tip b{display:block;font-size:12.5px}
+.hb{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr) 82px;gap:8px 12px;align-items:center;font-size:12.5px;position:relative}
+.hb .k b{display:block;font-weight:600}.hb .k small{color:var(--muted);font-size:11.5px}
+.hb .track{height:14px;background:var(--panel2);border-radius:4px;position:relative}
+.hb .track i{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;background:var(--rcn)}
+.hb .v{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.drop{border:1.5px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px;background:var(--panel2);transition:border-color .15s,background .15s}
+.drop.over{border-color:#D4A800;background:var(--yellow-soft)}
+.drop b{color:var(--ink)}
+.linkbtn{border:0;background:none;padding:0;color:var(--res);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+
+/* modal + documents */
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:rgba(10,10,10,.55);backdrop-filter:blur(3px)}
+.mbox{width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);padding:22px}
+.mbox.wide{width:min(820px,100%);padding:0}
+.mbox h3{font-size:17px}.mbox>p{color:var(--ink2);font-size:13px;margin:6px 0 16px}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.mbar{display:flex;align-items:center;gap:8px;padding:12px 14px 12px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+.mbar b{flex:1;font-family:var(--f-display)}
+.doc{background:#fff;color:#141414;margin:20px;border:1px solid rgba(20,20,20,.12);border-radius:6px;font-size:12.5px}
+.doc .dhd{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#141414;color:#E9E3DB;padding:16px 22px;border-radius:6px 6px 0 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.doc .dhd img{width:120px;display:block}.doc .dhd small{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#C9BFB5}
+.doc .dbd{padding:20px 22px}
+.doc h4{font:800 19px var(--f-display);margin:0 0 2px}
+.doc .dmeta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 18px;margin:14px 0 16px;padding:12px 0;border-top:1px solid #E7E1D8;border-bottom:1px solid #E7E1D8}
+.doc .dmeta small{display:block;color:#7B726D;font-size:11px}.doc .dmeta b{font-size:12.5px}
+.doc table{width:100%;border-collapse:collapse}.doc th{text-align:left;font-size:11px;color:#7B726D;border-bottom:1px solid #DDD5CA;padding:6px 8px}.doc td{padding:7px 8px;border-bottom:1px solid #EFEAE2;vertical-align:top}
+.doc .r{text-align:right;font-variant-numeric:tabular-nums}
+.doc tfoot td{font-weight:800;border-top:2px solid #141414;border-bottom:0}
+.doc .dnote{margin-top:14px;font-size:11.5px;color:#4B4541;line-height:1.55}
+.doc .stamp{display:inline-block;border:2px solid #17703F;color:#17703F;font-weight:800;font-size:11px;letter-spacing:.1em;padding:3px 8px;border-radius:4px;transform:rotate(-2deg)}
+.doc .stamp.d{border-color:#B3382C;color:#B3382C}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:90;background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);transition:opacity .2s,transform .2s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.navscrim{display:none}
+.prevg>*,.casesg>*,.ins2>*,.wb>*{min-width:0}
+#studio{overflow-x:auto}
+
+@media (max-width:1380px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.kpi:nth-child(3){border-right:0}.kpi:nth-child(-n+3){border-bottom:1px solid var(--line2)}}
+@media (max-width:1240px){.wb{grid-template-columns:1fr}.queue{position:static}.qlist{max-height:380px}.ins2{grid-template-columns:1fr!important}}
+@media (max-width:1100px){.stbar{grid-template-columns:repeat(2,minmax(0,1fr))}.mv{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.prevg{grid-template-columns:1fr!important}.casesg{grid-template-columns:1fr!important}}
+@media (max-width:960px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;left:0;top:0;bottom:0;width:272px;transform:translateX(-100%);transition:transform .25s ease;box-shadow:0 0 40px rgba(0,0,0,.4)}
+  .app.nav-open .side{transform:none}
+  .app.nav-open .navscrim{display:block;position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.45)}
+  .ibtn.menu{display:grid}
+  .top{padding:10px 16px;gap:8px}.page{padding:16px 16px 40px}
+  .dcols{grid-template-columns:1fr}
+  .nway{grid-template-columns:repeat(5,minmax(96px,1fr));overflow-x:auto}
+}
+@media (max-width:720px){
+  .crumb .hide-s{display:none}.tsel{max-width:120px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{border-bottom:1px solid var(--line2)}.kpi:nth-child(3){border-right:1px solid var(--line2)}.kpi:nth-child(2n){border-right:0}
+  .stbar{grid-template-columns:1fr 1fr}.mv{grid-template-columns:1fr}
+  .bhead{padding:16px}.bhead .tot{text-align:left}
+  .hb{grid-template-columns:minmax(0,1fr) 70px}.hb .track{grid-column:1/-1;grid-row:2}
+  .doc .dmeta{grid-template-columns:1fr 1fr}.evbtns{grid-template-columns:1fr}
+  h1{font-size:23px}
+  #pkpis,#ikpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #tl{min-width:680px}
+  .docf{grid-template-columns:1fr!important}
+}
+@media (max-width:480px){.search{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media print{
+  body *{visibility:hidden}
+  .modal,.modal *{visibility:visible}
+  .modal{position:absolute;inset:0;background:none;display:block;padding:0}
+  .mbox{box-shadow:none;border:0;max-height:none;width:100%}
+  .mbar{display:none}.doc{margin:0;border:0}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-bills" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
+  <symbol id="i-cases" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4M12 16h.01"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16"/><rect x="5" y="11" width="3" height="9" rx="1"/><rect x="10.5" y="6" width="3" height="14" rx="1"/><rect x="16" y="13" width="3" height="7" rx="1"/></symbol>
+  <symbol id="i-overview" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h4M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-recover" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-15-6.7L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/><path d="M21 21v-5h-5"/></symbol>
+  <symbol id="i-resolve" viewBox="0 0 24 24"><circle cx="12" cy="18" r="2.6"/><circle cx="6" cy="5.5" r="2.6"/><circle cx="18" cy="5.5" r="2.6"/><path d="M7.4 7.8 11 14.5M16.6 7.8 13 14.5"/></symbol>
+  <symbol id="i-reconcile" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V5a2 2 0 0 1 2-2h11"/><path d="m11.5 14.5 2 2 4-4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-contract" viewBox="0 0 24 24"><path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M15 3v5h5M8 12h6M8 16h3"/><path d="m14 17 1.5 1.5L19 15"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+  <symbol id="i-proforma" viewBox="0 0 24 24"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6M9 13h6M9 17h6M9 9h2"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+  <symbol id="i-gavel" viewBox="0 0 24 24"><path d="m14 13-7.5 7.5a2.12 2.12 0 0 1-3-3L11 10"/><path d="m16 16 6-6M8 8l6-6M9 7l8 8M21 11l-8-8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M12 22v-5M9 8V2M15 8V2M18 8v5a6 6 0 0 1-12 0V8z"/></symbol>
+  <symbol id="i-agent" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 12h.01M15 12h.01M9 16h6"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m7 4 13 8-13 8z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 4h3v16H7zM14 4h3v16h-3z"/></symbol>
+</svg>
+
+<div class="app" id="app">
+  <aside class="side" aria-label="Primary">
+    <a class="brand" href="index.html" aria-label="Artizent — Decision Intelligence Framework overview">
+      <img src="artizent-logo.png" alt="Artizent">
+      <small>Decision Intelligence <b>Framework</b></small>
+    </a>
+    <div class="appsw"><span class="tile"><svg class="ic"><use href="#i-reconcile"/></svg></span><span><b>Reconcile</b><small>Pre-invoice validation &amp; matching</small></span></div>
+    <div class="grp">
+      <div class="grp-h">Reconcile</div>
+      <nav class="nav" id="nav">
+        <a href="#/settlements" data-v="settlements"><svg class="ic"><use href="#i-bills"/></svg>Settlements<span class="cnt" id="nc-settlements"></span></a>
+        <a href="#/cases" data-v="cases"><svg class="ic"><use href="#i-cases"/></svg>Cases<span class="cnt dim" id="nc-cases"></span></a>
+        <a href="#/prevention" data-v="prevention"><svg class="ic"><use href="#i-shield"/></svg>Prevention<span class="cnt" id="nc-prevention"></span></a>
+        <a href="#/insights" data-v="insights"><svg class="ic"><use href="#i-chart"/></svg>Insights</a>
+      </nav>
+    </div>
+    <div class="grp">
+      <div class="grp-h">Framework</div>
+      <nav class="nav">
+        <a href="index.html"><svg class="ic"><use href="#i-overview"/></svg>Overview</a>
+        <a href="../index.html"><svg class="ic"><use href="#i-recover"/></svg>Recover</a>
+        <a href="resolve.html"><svg class="ic"><use href="#i-resolve"/></svg>Resolve</a>
+      </nav>
+    </div>
+    <div class="side-foot">
+      <div class="simcard"><b><i></i>Simulated data</b>Demo dataset as of 7 Oct 2026, 09:00. No live systems are connected; every check runs in this page.<br><button id="resetBtn">Reset demo data</button></div>
+    </div>
+  </aside>
+  <div class="navscrim" id="navscrim"></div>
+
+  <div class="main">
+    <header class="top">
+      <button class="ibtn menu" id="menuBtn" aria-label="Open navigation" aria-expanded="false"><svg class="ic"><use href="#i-menu"/></svg></button>
+      <div class="crumb"><a class="hide-s" href="index.html">DI Framework</a><i class="hide-s">/</i><a href="#/settlements">Reconcile</a><i>/</i><b id="crumbT">Settlements</b></div>
+      <div class="search" role="search">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <label class="sr" for="q">Search</label>
+        <input id="q" type="search" autocomplete="off" placeholder="Search bills, RT cases, BOLs, cases…" aria-controls="qres" aria-expanded="false">
+        <div class="results" id="qres" role="listbox" hidden></div>
+      </div>
+      <label class="sr" for="tenant">Customer</label>
+      <select class="tsel" id="tenant"><option value="">All customers</option><option>Customer A</option><option>Customer B</option><option>Customer C</option></select>
+      <button class="ibtn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic sun"><use href="#i-moon"/></svg><svg class="ic moon"><use href="#i-sun"/></svg></button>
+    </header>
+
+    <main class="page">
+      <!-- ================= SETTLEMENTS ================= -->
+      <section class="view" id="v-settlements">
+        <div class="phead">
+          <div><div class="eyebrow">Reconcile · Settlements</div><h1 style="margin-top:8px">Carrier bills, checked before they are paid</h1>
+          <p>Every bill is matched against the contract, the booking, recorded events and the pre-bill. Clean bills post automatically; the rest wait here with the evidence.</p></div>
+          <div class="asof"><svg class="ic"><use href="#i-clock"/></svg>1 Sep – 7 Oct 2026 · as of 09:00</div>
+        </div>
+        <div class="kpis" id="kpis"></div>
+        <div class="panel pb" style="padding:14px 18px">
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:10px" id="splitTxt"></div>
+          <div class="split" id="splitBar" role="img"></div>
+          <div class="lg" style="margin-top:10px"><span><i style="background:var(--ok)"></i>Supported by contract and evidence</span><span><i style="background:#D4A800"></i>Challenged, disputed or held for proof</span></div>
+        </div>
+        <div class="wb">
+          <div class="panel queue">
+            <div class="ph"><h3>Bill queue</h3><span class="note" id="qcount"></span></div>
+            <div class="filters" id="qfilters"></div>
+            <div class="qlist" id="qlist"></div>
+          </div>
+          <div class="detail" id="detail"></div>
+        </div>
+      </section>
+
+      <!-- ================= CASES ================= -->
+      <section class="view" id="v-cases">
+        <div class="phead">
+          <div><div class="eyebrow">Reconcile · Cases</div><h1 style="margin-top:8px">Exceptions, worked to an outcome</h1>
+          <p>Each challenged or unproven charge becomes a case with an owner. Every decision is checked against the case state and written to the audit trail.</p></div>
+        </div>
+        <div class="stbar" id="stbar"></div>
+        <div class="grid casesg" style="grid-template-columns:minmax(0,1fr) 340px;align-items:start">
+          <div class="panel">
+            <div class="ph"><h3>All cases</h3><div class="filters" id="cfilters"></div></div>
+            <div class="tw" id="clist"></div>
+          </div>
+          <div class="panel"><div class="ph"><h3>Recent changes</h3><span class="note">Audit trail</span></div><div class="pb"><div class="log" id="audit"></div></div></div>
+        </div>
+      </section>
+
+      <!-- ================= PREVENTION ================= -->
+      <section class="view" id="v-prevention">
+        <div class="phead">
+          <div><div class="eyebrow">Reconcile · Prevention</div><h1 style="margin-top:8px">Stop the charge before it is billed</h1>
+          <p>Live movements at our docks and the port, measured against each carrier's free time. Scrub the clock to see what today will cost if nothing changes.</p></div>
+        </div>
+        <div class="panel">
+          <div class="scrub">
+            <button class="btn sm" id="playBtn" aria-label="Play the day"><svg class="ic"><use href="#i-play"/></svg>Play</button>
+            <span class="clock" id="clock">09:00</span>
+            <label class="sr" for="asof">Evaluate as of</label>
+            <input type="range" id="asof" min="360" max="1200" step="5" value="540">
+            <span class="note">Tue 7 Oct 2026 · 06:00 – 20:00 IST</span>
+          </div>
+        </div>
+        <div class="kpis" id="pkpis" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
+        <div class="grid prevg" style="grid-template-columns:minmax(0,1fr) 380px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div class="panel"><div class="ph"><h3>Movements at our docks today</h3><button class="btn sm" id="notifyAll"><svg class="ic"><use href="#i-inbox"/></svg>Send alerts to TMS</button></div><div id="mvlist"></div></div>
+            <div class="panel"><div class="ph"><h3>Containers at Vizag Port Yard</h3><span class="note">Demurrage watch</span></div><div class="tw" id="dmlist"></div></div>
+          </div>
+          <div class="panel"><div class="ph"><h3>Event lab</h3><span class="note">Record a gate or dock event</span></div><div class="pb elab" id="lab"></div></div>
+        </div>
+      </section>
+
+      <!-- ================= INSIGHTS ================= -->
+      <section class="view" id="v-insights">
+        <div class="phead">
+          <div><div class="eyebrow">Reconcile · Insights</div><h1 style="margin-top:8px">Where the money leaks, and why</h1>
+          <p>Trends, repeat causes by facility, carrier performance, and the systems Reconcile reads from and writes to.</p></div>
+        </div>
+        <div class="kpis" id="ikpis" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
+        <div class="grid ins2" style="grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)">
+          <div class="panel"><div class="ph"><h3>Variance stopped before payment</h3><span class="note">By month, Oct 2025 – Sep 2026</span></div><div class="pb"><div class="chart" id="trend"></div></div></div>
+          <div class="panel"><div class="ph"><h3>Repeat causes by facility</h3><span class="note">Challenged value, this period</span></div><div class="pb" id="causes"></div></div>
+        </div>
+        <div class="panel"><div class="ph"><h3>Carrier scorecard</h3><span class="note">This period</span></div><div class="tw" id="scorecard"></div></div>
+        <div class="grid ins2" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+          <div class="panel"><div class="ph"><h3>Integrations</h3><span class="note">Read and write paths</span></div><div class="tw" id="integ"></div></div>
+          <div class="panel"><div class="ph"><h3>Outbound queue</h3><span class="note" id="obnote"></span></div><div class="tw" id="outbox" style="max-height:420px;overflow:auto"></div></div>
+        </div>
+        <div class="panel"><div class="ph"><h3>Evidence documents</h3><span class="note">Files stay in this browser; only their fingerprint is recorded</span></div>
+          <div class="pb" style="display:grid;gap:14px">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px" class="docf">
+              <label class="fld">Attach to bill<select id="docBill"></select></label>
+              <label class="fld">Document kind<select id="docKind"><option>Proof of delivery</option><option>Gate ticket</option><option>Signed BOL</option><option>Terminal slot record</option><option>OTP sign-off record</option><option>Carrier response</option></select></label>
+            </div>
+            <div class="drop" id="drop"><svg class="ic" style="width:22px;height:22px"><use href="#i-upload"/></svg><div style="margin-top:6px"><b>Drop a file here</b> or <button class="linkbtn" id="pick">browse</button></div><div class="note" style="margin-top:4px">A SHA-256 fingerprint is computed locally and linked to the bill.</div><input type="file" id="docfile" hidden></div>
+            <div class="tw" id="docs"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="scrim" id="dscrim"></div>
+<aside class="drawer" id="drawer" aria-label="Case details" aria-hidden="true"></aside>
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true"><div class="mbox" id="mbox"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Artizent Reconcile — front end over a simulated backend.
+   Everything below runs in this page: the dataset, the contract engine,
+   case state machine, audit trail and outbound queue. No network calls.
+   ===================================================================== */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const r2=n=>Math.round(n*100)/100;
+const money=n=>(n<0?'−':'')+'$'+Math.abs(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0=n=>(n<0?'−':'')+'$'+Math.round(Math.abs(n||0)).toLocaleString('en-US');
+const fmt=m=>pad(Math.floor(((m%1440)+1440)%1440/60))+':'+pad(Math.round(((m%1440)+1440)%1440%60));
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtD=d=>{const [y,m,dd]=d.split('-');return +dd+' '+MON[+m-1]};
+const addD=(d,n)=>{const x=new Date(d+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)};
+const dow=d=>new Date(d+'T00:00:00Z').toLocaleDateString('en-US',{weekday:'short',timeZone:'UTC'});
+const label=s=>String(s).replace(/_/g,' ').toLowerCase().replace(/^./,c=>c.toUpperCase());
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let RNG=mulberry32(20261007);const rnd=()=>RNG(),rint=(a,b)=>Math.floor(a+rnd()*(b-a+1)),pickR=a=>a[Math.floor(rnd()*a.length)];
+
+/* ---------------- reference data (aligned with the Circularity workbench) ---------------- */
+const AS_OF_DAY='2026-10-07',AS_OF_MIN=540;
+const TENANT_SITES={'Customer A':['Pune Works','Nashik Plant','Hosur Assembly'],'Customer B':['Chennai Foundry','Coimbatore Mill','Surat Textiles'],'Customer C':['Indore Packaging','Vizag Port Yard']};
+const CLS={motor:'Industrial motor',pump:'Hydraulic pump',control:'Control unit',drill:'Power tool',batch:'Tool-fleet batch',it:'IT electronics'};
+const CARR={
+  VF:{name:'Velo Freight',scac:'VELF',contract:'VF-MSA-2026-02',inv:20800,det:{free:120,rate:75,inc:15,cap:600,grace:15}},
+  NL:{name:'Northline 3PL',scac:'NLTL',contract:'NL-MSA-2025-11',inv:11780,det:{free:120,rate:72,inc:15,cap:576,grace:15},svc:{pkgH:4,pkg:520,ot:95,inc:30}},
+  CH:{name:'Coastal Haulage',scac:'CSTH',contract:'CH-MSA-2026-01',inv:55300,det:{free:120,rate:80,inc:15,cap:640,grace:15},dem:{t1:150,t1d:3,t2:225}}
+};
+/* weekly fuel-surcharge index, by Monday of the pickup week */
+const FUEL=[['2026-08-10',17.1],['2026-08-17',17.0],['2026-08-24',16.9],['2026-08-31',16.8],['2026-09-07',16.8],['2026-09-14',16.6],['2026-09-21',16.5],['2026-09-28',16.5],['2026-10-05',16.2]];
+const fuelFor=d=>{let v=FUEL[0];for(const f of FUEL)if(f[0]<=d)v=f;return v};
+const ACTIONS={APPROVE:['Approve','ok',0],PARTIAL_APPROVE:['Partial approve','warn',1],DISPUTE:['Dispute','bad',2],REQUEST_MISSING_PROOF:['Proof needed','blue',3],HITL_REVIEW:['Needs review','bad',4]};
+const REC={APPROVE:['Approve','ok'],PARTIAL:['Partial approve','warn'],REQUEST_MISSING_PROOF:['Proof needed','blue'],HITL_REVIEW:['Needs review','bad']};
+const REASONS={NONE:'Matches contract',CLOCK_START:'Clock started before the appointment',ROUNDING:'Rounded up to whole hours',CARRIER_LATE:'Carrier arrived late',MISSING_RELEASE:'Release not recorded',MISSING_ARRIVAL:'Gate arrival not recorded',MISSING_SIGNOFF:'Customer sign-off missing',MISSING_GATEOUT:'Gate-out not recorded',NO_SLOTS:'Terminal offered no pickup slots',FSC_INDEX:'Wrong fuel index week',LANE_RATE:'Superseded lane rate',DUPLICATE:'Duplicate of an earlier bill',OVERTIME:'Overtime over-counted'};
+const STATUS={DISPUTE_REVIEW:['Dispute review','warn'],CONTRACT_REVIEW:['Contract review','warn'],AWAITING_EVIDENCE:['Awaiting evidence','blue'],DISPUTED:['Disputed','bad'],CARRIER_RESPONDED:['Carrier responded','blue'],AGREED:['Agreed','ok'],READY_TO_POST:['Ready to post','ok'],PAID:['Paid','ok']};
+const OPEN_ST=['DISPUTE_REVIEW','CONTRACT_REVIEW','AWAITING_EVIDENCE','DISPUTED','CARRIER_RESPONDED'];
+const DECISIONS={
+  ACCEPT:{l:'Accept supported',to:'READY_TO_POST',from:['DISPUTE_REVIEW','CONTRACT_REVIEW','AWAITING_EVIDENCE','CARRIER_RESPONDED'],hint:'Post the supported amount and close the challenge.'},
+  DISPUTE:{l:'Dispute with carrier',to:'DISPUTED',from:['DISPUTE_REVIEW','CONTRACT_REVIEW'],reason:true,hint:'Formally contest the difference. The memo and evidence go to the carrier portal.'},
+  REQUEST_PROOF:{l:'Request proof',to:'AWAITING_EVIDENCE',from:['DISPUTE_REVIEW','CONTRACT_REVIEW'],reason:true,hint:'Ask the carrier for the missing record before deciding.'},
+  CARRIER_RESPONSE:{l:'Record carrier reply',to:'CARRIER_RESPONDED',from:['DISPUTED','AWAITING_EVIDENCE'],reason:true,hint:"Record what the carrier sent back."},
+  AGREE:{l:'Agree settlement',to:'AGREED',from:['DISPUTED','CARRIER_RESPONDED'],amount:'supported',ref:true,hint:'Record the amount both sides agreed.'},
+  WRITE_OFF:{l:'Write off difference',to:'READY_TO_POST',from:['DISPUTED','CARRIER_RESPONDED'],reason:true,hint:'Pay what the carrier claimed. Amounts over $250 need a Finance approver.'},
+  OVERRIDE:{l:'Override amount',to:'READY_TO_POST',from:['DISPUTE_REVIEW','CONTRACT_REVIEW','CARRIER_RESPONDED'],amount:'',reason:true,hint:'Set the payable amount by hand. The override is flagged in the audit trail.'},
+  MARK_PAID:{l:'Mark paid',to:'PAID',from:['READY_TO_POST','AGREED'],ref:true,hint:'Record payment from SAP S/4HANA.'}
+};
+const ACTOR={agent:['Reconcile agent','Agent'],audit:['Freight audit','Finance'],fin:['Finance approver','Finance'],wm1:['Warehouse Manager · Warehouse 1','Warehouse'],wm2:['Warehouse Manager · Warehouse 2','Warehouse'],coord:['Logistics coordinator','Logistics'],you:['You · Freight audit','Finance']};
+const INTEG=[
+  ['Carrier EDI gateway','Inbound','Carrier invoices (EDI 210) and shipment status (EDI 214)','live','2 min'],
+  ['ShipLane TMS','Inbound · Outbound','Bookings, appointments, lane rates; receives prevention alerts and pre-bills','live','4 min'],
+  ['Manhattan Active WM','Inbound','Gate arrival, dock check-in and release (signed BOL) events','live','1 min'],
+  ['ServiceNow Field Service','Inbound','Technician check-in and customer OTP sign-off','live','3 min'],
+  ['Optoro returns','Inbound','Return shipments, RMAs and carrier status for RT cases','live','5 min'],
+  ['Vizag terminal community system','Inbound','Container availability, last free day and pickup slot offers','stale','19 h'],
+  ['SAP S/4HANA','Outbound','Posts supported amounts and agreed settlements for payment','live','2 min'],
+  ['Carrier portal','Outbound','Dispute memos, proof requests and settlement confirmations','live','6 min']
+];
+
+/* return shipments from the Circularity workbench: id, asset, class, qty, customer, received at, carrier, pickup, eta, freight, rma */
+const RT=[
+['RT-1001','MTR-2384','motor',1,'B','Warehouse 2','VF','09-20','10-05',201,'56588'],['RT-1002','PMP-0320','pump',1,'A','Warehouse 1','VF','09-16','10-05',184,'56435'],['RT-1003','PMP-0060','pump',1,'A','Repair centre','NL','09-28','10-05',239,'56506'],['RT-1004','DRL-2359','drill',1,'B','Repair centre','VF','09-16','10-01',46,'56449'],
+['RT-1005','CTL-2134','control',1,'B','Repair centre','VF','09-08','09-30',89,'55860'],['RT-1006','CTL-0454','control',1,'C','Warehouse 1','VF','09-14','10-05',84,'55871'],['RT-1007','DRL-0342','drill',1,'B','Warehouse 2','NL','09-22','09-29',67,'56182'],['RT-1008','CTL-1284','control',1,'B','Warehouse 2','CH','09-28','10-01',94,'56161'],
+['RT-1009','PMP-0268','pump',1,'A','Warehouse 2','VF','09-06','09-27',237,'55900'],['RT-1010','ITE-1712','it',11,'B','Warehouse 1','NL','09-07','10-02',168,'56346'],['RT-1011','MTR-1142','motor',1,'B','Repair centre','VF','09-13','09-30',200,'55895'],['RT-1012','DRL-2309','drill',1,'C','Warehouse 1','NL','09-12','10-02',45,'56392'],
+['RT-1013','PMP-2320','pump',1,'C','Repair centre','CH','08-22','09-28',238,'56545'],['RT-1014','DRL-1840','drill',1,'B','Warehouse 1','VF','09-12','09-30',75,'56606'],['RT-1015','PMP-1145','pump',1,'B','Repair centre','VF','09-18','10-03',216,'55887'],['RT-1016','MTR-0601','motor',1,'A','Warehouse 1','NL','08-23','10-02',205,'56508'],
+['RT-1017','ITE-1456','it',10,'A','Warehouse 1','CH','09-18','10-04',184,'56425'],['RT-1018','PMP-1173','pump',1,'B','Repair centre','NL','09-21','09-28',231,'56134'],['RT-1019','DRL-0491','drill',1,'C','Warehouse 1','NL','08-29','10-03',44,'56135'],['RT-1020','BAT-1743','batch',7,'B','Warehouse 1','VF','09-10','10-03',126,'56179'],
+['RT-1021','PMP-0144','pump',1,'A','Warehouse 2','VF','08-20','10-05',183,'56186'],['RT-1022','PMP-0829','pump',1,'B','Warehouse 1','VF','09-16','09-28',230,'56493'],['RT-1023','PMP-1901','pump',1,'B','Repair centre','CH','09-24','10-02',185,'56564'],['RT-1024','CTL-0333','control',1,'A','Warehouse 2','CH','09-07','10-02',52,'56415'],
+['RT-1025','BAT-1369','batch',13,'B','Warehouse 1','NL','09-11','09-30',203,'56054'],['RT-1026','DRL-0244','drill',1,'A','Repair centre','NL','09-07','10-04',82,'56601'],['RT-1027','MTR-1982','motor',1,'A','Repair centre','VF','09-01','09-23',193,'56684'],['RT-1028','BAT-2016','batch',9,'A','Warehouse 1','CH','08-24','10-01',128,'56423'],
+['RT-1029','DRL-2581','drill',1,'B','Warehouse 1','NL','09-06','10-01',59,'56466'],['RT-1030','ITE-0567','it',1,'A','Repair centre','VF','08-21','09-27',65,'56468'],['RT-1031','MTR-1262','motor',1,'B','Warehouse 1','NL','09-10','10-01',202,'56385'],['RT-1032','CTL-1319','control',1,'A','Warehouse 1','CH','08-24','10-05',55,'56566'],
+['RT-1033','CTL-0301','control',1,'B','Warehouse 2','VF','09-04','09-26',52,'55875'],['RT-1034','ITE-2396','it',12,'A','Warehouse 2','NL','08-22','10-01',184,'56048'],['RT-1035','CTL-2483','control',1,'A','Warehouse 1','VF','09-19','09-30',82,'56309'],['RT-1036','ITE-0396','it',1,'A','Warehouse 2','NL','09-09','09-30',75,'56202'],
+['RT-1037','ITE-1435','it',18,'A','Repair centre','VF','09-07','10-04',222,'56651'],['RT-1038','MTR-0602','motor',1,'C','Warehouse 1','CH','08-24','09-30',205,'56360'],['RT-1039','ITE-1947','it',1,'A','Warehouse 2','CH','08-28','09-29',42,'55869'],['RT-1040','CTL-0755','control',1,'B','Warehouse 2','NL','08-28','10-06',86,'56289'],
+['RT-1041','PMP-0622','pump',1,'B','Repair centre','VF','09-05','10-04',229,'55924'],['RT-1042','DRL-1543','drill',2,'A','Warehouse 1','NL','09-13','09-30',69,'56631'],['RT-1043','DRL-0926','drill',1,'A','Warehouse 1','VF','09-11','09-27',79,'56182'],['RT-1044','BAT-0119','batch',8,'C','Repair centre','CH','09-18','09-29',155,'56261'],
+['RT-1045','ITE-0969','it',1,'B','Warehouse 1','CH','09-05','10-01',69,'56448'],['RT-1046','DRL-0815','drill',1,'A','Warehouse 2','CH','09-11','09-28',56,'56651'],['RT-1047','PMP-1449','pump',1,'C','Warehouse 2','NL','08-28','10-01',199,'56442'],['RT-1048','MTR-2041','motor',1,'A','Warehouse 1','VF','08-21','10-03',206,'56509'],
+['RT-1049','DRL-0812','drill',1,'A','Repair centre','NL','08-25','10-02',57,'56348'],['RT-1050','CTL-0318','control',1,'B','Warehouse 2','NL','09-14','10-03',83,'56178'],['RT-1051','PMP-0470','pump',1,'A','Warehouse 1','NL','08-25','10-04',212,'55907'],['RT-1052','BAT-0126','batch',20,'C','Warehouse 2','NL','09-20','10-03',224,'56488'],
+['RT-1053','DRL-2264','drill',5,'A','Warehouse 1','CH','08-23','10-01',147,'56217'],['RT-1054','BAT-0582','batch',9,'A','Warehouse 1','CH','09-03','09-27',139,'55978'],['RT-1055','MTR-0985','motor',1,'A','Warehouse 2','NL','09-16','10-06',216,'56671'],['RT-1056','ITE-1406','it',1,'B','Warehouse 2','CH','09-14','10-04',45,'56608'],
+['RT-1057','DRL-0636','drill',1,'B','Repair centre','CH','09-21','09-30',62,'56525'],['RT-1058','MTR-2274','motor',1,'A','Warehouse 2','CH','09-15','10-05',207,'56458'],['RT-1059','DRL-1173','drill',1,'B','Warehouse 1','VF','08-22','10-04',52,'56347'],['RT-1060','MTR-1712','motor',1,'C','Repair centre','CH','09-11','09-30',236,'56495'],
+['RT-1061','DRL-2474','drill',1,'B','Repair centre','VF','09-03','10-02',67,'56438'],['RT-1062','MTR-2057','motor',1,'A','Warehouse 2','NL','09-13','09-30',238,'56133'],['RT-1063','ITE-1945','it',1,'B','Repair centre','VF','09-23','10-03',41,'56340'],['RT-1064','DRL-0975','drill',1,'A','Warehouse 2','VF','08-25','10-01',72,'56387'],
+['RT-1065','MTR-2430','motor',1,'A','Warehouse 1','NL','08-20','09-29',203,'56126'],['RT-1066','DRL-0644','drill',1,'A','Warehouse 2','VF','08-28','09-29',90,'56457'],['RT-1067','PMP-2495','pump',1,'A','Warehouse 1','CH','08-30','09-27',229,'56540'],['RT-1068','BAT-1365','batch',23,'A','Warehouse 1','CH','08-14','09-30',212,'56035'],
+['RT-1069','BAT-2081','batch',23,'C','Warehouse 1','VF','09-24','10-05',195,'56650'],['RT-1070','ITE-0758','it',15,'A','Warehouse 1','NL','09-11','09-30',188,'56064'],['RT-1071','BAT-2129','batch',20,'B','Repair centre','NL','08-26','10-01',229,'56293'],['RT-1072','MTR-1244','motor',1,'B','Repair centre','VF','09-03','10-03',187,'56654'],
+['RT-1073','MTR-1108','motor',1,'A','Repair centre','CH','08-30','09-29',200,'56087'],['RT-1074','DRL-0747','drill',1,'A','Warehouse 2','CH','08-29','09-29',41,'56020'],['RT-1075','MTR-2375','motor',1,'B','Warehouse 1','VF','09-07','10-03',230,'55833'],['RT-1076','CTL-0832','control',1,'A','Warehouse 1','VF','08-24','10-02',67,'55822'],
+['RT-1077','MTR-0438','motor',1,'A','Warehouse 1','VF','09-10','10-04',188,'56175'],['RT-1078','CTL-1079','control',1,'A','Warehouse 1','VF','09-05','10-01',65,'55972'],['RT-1079','MTR-1965','motor',1,'A','Repair centre','NL','08-26','10-06',210,'56601'],['RT-1080','DRL-0332','drill',2,'A','Warehouse 1','VF','09-25','09-29',95,'56053'],
+['RT-1081','PMP-0984','pump',1,'B','Warehouse 1','VF','08-19','09-30',201,'56324'],['RT-1082','DRL-0121','drill',5,'A','Warehouse 2','CH','09-15','10-01',145,'55847'],['RT-1083','BAT-0871','batch',24,'A','Repair centre','CH','09-07','10-03',219,'56118'],['RT-1084','MTR-1597','motor',1,'B','Warehouse 1','CH','09-15','10-03',214,'55861'],
+['RT-1085','CTL-2294','control',1,'C','Warehouse 1','NL','09-08','10-04',73,'56352'],['RT-1086','MTR-0756','motor',1,'B','Warehouse 2','NL','09-23','10-05',228,'56203'],['RT-1087','DRL-1799','drill',1,'C','Warehouse 2','CH','09-20','10-04',71,'55918'],['RT-1088','MTR-0317','motor',1,'A','Warehouse 1','CH','09-27','10-03',198,'56625'],
+['RT-1089','MTR-1260','motor',1,'B','Warehouse 2','NL','09-27','10-01',197,'55808'],['RT-1090','DRL-2452','drill',1,'A','Warehouse 2','VF','08-23','10-02',71,'56058'],['RT-1091','DRL-0224','drill',1,'B','Repair centre','NL','09-24','10-01',44,'55851'],['RT-1092','DRL-1103','drill',1,'C','Repair centre','NL','09-20','10-02',49,'56636'],
+['RT-1093','ITE-1952','it',1,'A','Warehouse 2','CH','09-26','10-06',50,'56429'],['RT-1094','BAT-0421','batch',9,'A','Repair centre','VF','08-26','09-29',123,'56382'],['RT-1095','PMP-2121','pump',1,'B','Warehouse 1','NL','09-14','09-29',204,'56311'],['RT-1096','MTR-1514','motor',1,'A','Warehouse 1','NL','08-29','10-05',221,'56464'],
+['RT-1097','CTL-1692','control',1,'B','Warehouse 2','VF','09-04','10-05',78,'56381'],['RT-1098','PMP-1621','pump',1,'C','Repair centre','CH','09-10','09-28',219,'56046'],['RT-1099','MTR-0299','motor',1,'B','Warehouse 1','CH','08-24','09-29',188,'55959'],['RT-1100','DRL-0053','drill',1,'A','Warehouse 2','CH','09-12','10-03',89,'56548'],
+['RT-1101','ITE-0345','it',1,'B','Repair centre','VF','09-13','09-28',42,'55909'],['RT-1102','BAT-1840','batch',17,'A','Repair centre','NL','09-23','09-28',168,'56542'],['RT-1103','PMP-2143','pump',1,'A','Warehouse 2','CH','09-08','09-30',216,'56271'],['RT-1104','ITE-0388','it',14,'B','Warehouse 2','NL','09-01','09-27',179,'55876'],
+['RT-1105','PMP-1550','pump',1,'B','Warehouse 2','VF','09-02','10-01',238,'56285'],['RT-1106','MTR-2222','motor',1,'A','Warehouse 1','CH','09-01','09-30',207,'55814'],['RT-1107','CTL-1594','control',1,'A','Warehouse 1','CH','09-18','10-02',96,'55831'],['RT-1108','DRL-2296','drill',1,'A','Warehouse 1','NL','09-12','09-27',69,'56336'],
+['RT-1109','DRL-1902','drill',4,'A','Repair centre','VF','09-27','10-06',106,'56149'],['RT-1110','MTR-0684','motor',1,'B','Warehouse 1','CH','08-22','09-28',216,'56011'],['RT-1111','MTR-1566','motor',1,'A','Repair centre','NL','09-14','10-05',223,'56306'],['RT-1112','MTR-1404','motor',1,'A','Warehouse 2','CH','09-12','10-01',234,'56125'],
+['RT-1113','PMP-0694','pump',1,'B','Warehouse 1','VF','09-02','09-30',213,'56512'],['RT-1114','MTR-2292','motor',1,'B','Repair centre','VF','09-28','10-03',232,'56059'],['RT-1115','CTL-0735','control',1,'C','Warehouse 1','NL','09-05','09-28',47,'56350'],['RT-1116','BAT-1289','batch',8,'A','Warehouse 2','VF','09-26','10-04',135,'56245'],
+['RT-1117','DRL-1510','drill',1,'B','Warehouse 2','NL','08-25','10-02',73,'56620'],['RT-1118','PMP-1443','pump',1,'A','Warehouse 1','CH','08-31','09-30',196,'55923'],['RT-1119','DRL-1682','drill',2,'B','Repair centre','CH','09-25','10-01',76,'56470'],['RT-1120','PMP-0592','pump',1,'A','Warehouse 1','CH','09-24','10-04',235,'56294'],
+['RT-1121','BAT-1906','batch',23,'A','Warehouse 2','VF','09-26','10-06',220,'56683'],['RT-1122','PMP-1209','pump',1,'A','Warehouse 1','VF','09-10','09-28',193,'55828'],['RT-1123','PMP-1018','pump',1,'A','Warehouse 1','CH','09-15','09-30',238,'56341'],['RT-1124','ITE-0480','it',1,'B','Warehouse 1','NL','09-20','10-02',43,'56494'],
+['RT-1125','PMP-0939','pump',1,'B','Warehouse 2','CH','09-23','10-01',216,'56223'],['RT-1126','PMP-2294','pump',1,'A','Warehouse 2','CH','08-31','10-04',181,'55904'],['RT-1127','CTL-1372','control',1,'B','Warehouse 1','VF','08-22','09-30',42,'56429'],['RT-1128','DRL-1746','drill',1,'B','Warehouse 1','CH','08-31','09-29',59,'56082']];
+
+/* ---------------- contract engine ---------------- */
+const DET_FIELDS=[['appt','Appointment','TMS','var(--ink)'],['arrival','Gate arrival','WMS · gate','var(--res)'],['checkin','Dock check-in','WMS · dock','var(--muted)'],['release','Release · BOL signed','WMS · dock','var(--rcn)']];
+const SVC_FIELDS=[['checkin','Technician check-in','FSM','var(--res)'],['signoff','Customer OTP sign-off','FSM','var(--rcn)']];
+function clauseText(b,id){const C=CARR[b.carrier],d=C.det;
+  return {'3.1':['3.1 Lane rates','Lane rates follow rate card RC-2026.2, effective 1 Jul 2026. Earlier cards are superseded.'],
+  '4.1':['4.1 Fuel surcharge','Fuel surcharge is the linehaul multiplied by the published weekly index for the week of pickup.'],
+  '7.2':['7.2 Detention clock',`Detention starts at the later of the appointment and gate arrival, and ends when the bill of lading is signed. The first ${d.free} minutes are free; after that ${money0(d.rate)} per hour in ${d.inc}-minute steps, capped at ${money0(d.cap)} per stop.`],
+  '7.4':['7.4 Late arrival',`A carrier arriving more than ${d.grace} minutes after the appointment forfeits detention for that stop.`],
+  '7.6':['7.6 Proof of detention','Detention must be supported by gate and release records from the receiving site.'],
+  '9.1':['9.1 Demurrage',C.dem?`Days after the last free day until gate-out are chargeable: ${money0(C.dem.t1)} per day for the first ${C.dem.t1d} days, ${money0(C.dem.t2)} per day after that.`:''],
+  '9.3':['9.3 Terminal unavailability','A day on which the terminal offered no pickup slots is not chargeable.'],
+  '11.2':['11.2 Field service package',C.svc?`De-installation is a ${C.svc.pkgH}-hour package at ${money0(C.svc.pkg)}. Time beyond the package is billed at ${money0(C.svc.ot)} per hour in ${C.svc.inc}-minute steps, from technician check-in to customer OTP sign-off.`:''],
+  '12.5':['12.5 Duplicate billing','A charge already invoiced for the same bill of lading and stop is not payable again.']}[id]}
+function mk(code,desc,pre,claimed,sup,o){sup=Math.min(r2(sup),r2(claimed));const variance=r2(claimed-sup);
+  let action=o.action||(variance<=0.004?'APPROVE':sup>0?'PARTIAL_APPROVE':'DISPUTE');
+  return Object.assign({code,desc,pre,claimed:r2(claimed),supported:sup,variance,action,reason:variance<=0.004&&!o.reason?'NONE':(o.reason||'NONE'),facts:[],clause:null,findings:'',owner:'Freight audit (Finance)',next:'Post with the bill'},o,{action,supported:sup,variance})}
+function detLine(b){const C=CARR[b.carrier],d=C.det,a=b.acc,e=a.ev,site=a.site,claimed=a.claimed;
+  const facts=DET_FIELDS.map(([k,l,src])=>({t:e[k]==null?`${l}: not recorded`:`${l} ${fmt(e[k])}`,src:e[k]==null?'—':src,miss:e[k]==null}));
+  const own={owner:'Freight audit (Finance)',next:'Post supported amount; dispute the difference'};
+  if(e.arrival==null||e.release==null){const k=e.release==null?'MISSING_RELEASE':'MISSING_ARRIVAL';
+    return mk('DET',`Detention · ${site}`,a.pre??null,claimed,0,{action:'REQUEST_MISSING_PROOF',reason:k,facts,clause:'7.6',
+      findings:`${e.release==null?'No signed-BOL release':'No gate arrival'} was recorded at ${site} for this stop, so the detention clock cannot be measured. Payment is held until the carrier or the site supplies the record.`,
+      owner:`Carrier · ${C.name}`,next:'Proof requested through the carrier portal; site asked to check the gate log'})}
+  const late=e.arrival-e.appt;
+  if(late>d.grace)return mk('DET',`Detention · ${site}`,a.pre??null,claimed,0,{reason:'CARRIER_LATE',facts,clause:'7.4',band:null,
+    findings:`Gate arrival ${fmt(e.arrival)} was ${late} minutes after the ${fmt(e.appt)} appointment, beyond the ${d.grace}-minute grace. Detention is forfeited for this stop.`,...own});
+  const start=Math.max(e.appt,e.arrival),el=e.release-start,bill=Math.max(0,el-d.free),rd=Math.ceil(bill/d.inc)*d.inc,amt=Math.min(d.cap,rd/60*d.rate);
+  const cs=a.method==='arrival'&&e.arrival<e.appt;
+  return mk('DET',`Detention · ${site}`,a.pre??null,claimed,amt,{reason:claimed>amt+.004?(cs?'CLOCK_START':'ROUNDING'):'NONE',facts,clause:'7.2',
+    band:{s:start,mid:Math.min(e.release,start+d.free),e:e.release,a:`Free ${d.free} min`,b:`Billable ${rd} min`},
+    findings:`Clock starts ${fmt(start)} (later of appointment ${fmt(e.appt)} and gate arrival ${fmt(e.arrival)}) and stops at release ${fmt(e.release)}: ${el} min elapsed, ${d.free} free, ${bill} billable, rounded to ${rd} min at ${money0(d.rate)}/h = ${money(amt)}.`+(claimed>amt+.004?` The carrier billed ${money(claimed)}${a.basis?' ('+a.basis+')':''}.`:''),...own})}
+function demLines(b){const C=CARR[b.carrier],m=C.dem,a=b.acc,e=a.ev,claimed=a.claimed,facts=[];
+  facts.push({t:`Container available ${fmtD(e.avail)}`,src:'Terminal'},{t:`Last free day ${fmtD(e.lfd)}`,src:'Terminal'});
+  if(!e.gateOut){facts.push({t:'Gate-out not recorded',src:'—',miss:true});
+    return [mk('DEM',`Demurrage · ${e.cntr}`,a.pre??null,claimed,0,{action:'REQUEST_MISSING_PROOF',reason:'MISSING_GATEOUT',facts,clause:'9.1',findings:'The terminal has no gate-out for this container, so chargeable days cannot be counted.',owner:`Carrier · ${C.name}`,next:'Request the gate-out ticket'})]}
+  facts.push({t:`Gate-out ${fmtD(e.gateOut)}`,src:'Terminal'});
+  const days=[];for(let d=addD(e.lfd,1);d<=e.gateOut;d=addD(d,1))days.push(d);
+  const ex=days.filter(d=>e.noSlot.includes(d)),n=days.length-ex.length;
+  ex.forEach(d=>facts.push({t:`${dow(d)} ${fmtD(d)}: terminal offered no pickup slots`,src:'Terminal'}));
+  const amt=Math.min(n,m.t1d)*m.t1+Math.max(0,n-m.t1d)*m.t2;
+  return [mk('DEM',`Demurrage · ${e.cntr}`,a.pre??null,claimed,amt,{reason:claimed>amt+.004?(ex.length?'NO_SLOTS':'ROUNDING'):'NONE',facts,clause:ex.length?'9.3':'9.1',
+    findings:`${days.length} days after the last free day until gate-out; ${ex.length} excused because the terminal offered no slots; ${n} chargeable = ${money(amt)}.`+(claimed>amt+.004?` The carrier billed ${days.length} days (${money(claimed)}).`:''),
+    owner:'Logistics coordinator · Vizag',next:ex.length?'Dispute the excused days with the terminal slot record attached':'Post with the bill'})]}
+function svcLines(b){const C=CARR[b.carrier],s=C.svc,a=b.acc,e=a.ev,L=[];
+  const facts=SVC_FIELDS.map(([k,l,src])=>({t:e[k]==null?`${l}: not recorded`:`${l} ${fmt(e[k])}`,src:e[k]==null?'—':src,miss:e[k]==null}));
+  L.push(mk('SVC',`De-installation package · ${a.site}`,s.pkg,a.claimedPkg,e.checkin!=null?s.pkg:0,{facts:facts.slice(0,1),clause:'11.2',findings:`Fixed ${s.pkgH}-hour package at ${money0(s.pkg)}; technician check-in recorded.`}));
+  if(e.signoff==null)L.push(mk('SVC-OT','Service overtime',null,a.claimed,0,{action:'REQUEST_MISSING_PROOF',reason:'MISSING_SIGNOFF',facts,clause:'11.2',findings:'No customer OTP sign-off was captured, so time on site cannot be measured.',owner:`Carrier · ${C.name}`,next:'Ask the field team for the signed job sheet'}));
+  else{const act=(e.signoff-e.checkin)/60,ot=Math.max(0,act-s.pkgH),rh=Math.ceil(ot*60/s.inc)*s.inc/60,amt=rh*s.ot;
+    L.push(mk('SVC-OT','Service overtime',null,a.claimed,amt,{reason:a.claimed>amt+.004?'OVERTIME':'NONE',facts,clause:'11.2',
+      band:{s:e.checkin,mid:Math.min(e.signoff,e.checkin+s.pkgH*60),e:e.signoff,a:`Package ${s.pkgH} h`,b:`Overtime ${rh.toFixed(1)} h`},
+      findings:`On site ${fmt(e.checkin)}–${fmt(e.signoff)} = ${act.toFixed(2)} h; package ${s.pkgH} h; overtime ${ot.toFixed(2)} h rounded to ${rh.toFixed(1)} h at ${money0(s.ot)}/h = ${money(amt)}.`+(a.claimed>amt+.004?` The carrier billed ${a.basis||money(a.claimed)}.`:'')}))}
+  return L}
+function evaluate(b){const L=[],alerts=[];
+  if(b.lh){const sup=b.lh.rate,cl=b.lh.claimed;
+    L.push(mk('LH',`Linehaul · ${b.origin} → ${b.dest}`,b.lh.rate,cl,sup,{reason:cl>sup+.004?'LANE_RATE':'NONE',clause:'3.1',
+      facts:[{t:`Lane rate ${money(sup)} on RC-2026.2`,src:'TMS'},{t:`Booked load ${b.load}`,src:'TMS'}],
+      findings:cl>sup+.004?`Billed ${money(cl)}, the lane rate from the superseded 2025 rate card. RC-2026.2 has ${money(sup)}.`:`Billed at the contracted lane rate ${money(sup)}.`,
+      owner:cl>sup+.004?'Procurement · carrier contracts':'Freight audit (Finance)',next:cl>sup+.004?'Short-pay to the current rate; remind the carrier of RC-2026.2':'Post with the bill'}));
+    const [wk,idx]=fuelFor(b.pickup),sup2=r2(sup*idx/100),cl2=r2(cl*b.fscPct/100);
+    L.push(mk('FSC','Fuel surcharge',sup2,cl2,sup2,{reason:cl2>sup2+.004?(b.fscPct!==idx?'FSC_INDEX':'LANE_RATE'):'NONE',clause:'4.1',
+      facts:[{t:`Pickup ${fmtD(b.pickup)}, index week of ${fmtD(wk)}: ${idx.toFixed(1)}%`,src:'Fuel index'},{t:`Carrier applied ${b.fscPct.toFixed(1)}%`+(b.lh.claimed!==b.lh.rate?` on ${money(b.lh.claimed)}`:''),src:'EDI 210'}],
+      findings:cl2>sup2+.004?`${b.fscPct!==idx?`Carrier used ${b.fscPct.toFixed(1)}%, not the ${idx.toFixed(1)}% index for the pickup week`:'Surcharge was applied to the superseded lane rate'}; supported ${money(sup2)}.`:`${idx.toFixed(1)}% of ${money(sup)} = ${money(sup2)}.`}))}
+  if(b.acc){if(b.acc.type==='DET')L.push(detLine(b));if(b.acc.type==='DEM')L.push(...demLines(b));if(b.acc.type==='SVC')L.push(...svcLines(b))}
+  if(b.dupOf){alerts.push(`This bill repeats ${b.dupOf}: same BOL ${b.bol}, same stop and charges. Nothing on it is payable until a person confirms it is not a duplicate.`);
+    L.forEach(l=>{l.supported=0;l.variance=l.claimed;l.action='HITL_REVIEW';l.reason='DUPLICATE';l.clause='12.5';l.band=null;l.owner='Finance approver';l.next='Confirm the duplicate and reject the bill';l.findings=`Already invoiced on ${b.dupOf}. `+l.findings})}
+  const claimed=r2(L.reduce((s,l)=>s+l.claimed,0)),supported=r2(L.reduce((s,l)=>s+l.supported,0)),variance=r2(claimed-supported);
+  const worst=L.reduce((w,l)=>ACTIONS[l.action][2]>ACTIONS[w][2]?l.action:w,'APPROVE');
+  const rec=worst==='HITL_REVIEW'?'HITL_REVIEW':worst==='REQUEST_MISSING_PROOF'?'REQUEST_MISSING_PROOF':worst==='APPROVE'?'APPROVE':'PARTIAL';
+  const pre=L.every(l=>l.pre==null)?null:r2(L.reduce((s,l)=>s+(l.pre??0),0));
+  return {lines:L,alerts,claimed,supported,variance,rec,pre}}
+
+/* ---------------- dataset ---------------- */
+function carrierHourClaim(C,e){const el=e.release-e.arrival,b=Math.max(0,el-C.det.free);return Math.min(C.det.cap,Math.ceil(b/60)*C.det.rate)}
+function buildDB(){RNG=mulberry32(20261007);
+  const db={bills:[],cases:[],audit:[],outbox:[],docs:[],live:[],dem:[],seq:{case:2400,ob:5100},v:3};
+  const seq={VF:CARR.VF.inv,NL:CARR.NL.inv,CH:CARR.CH.inv};
+  const nextInv=c=>`INV-${c}-${++seq[c]}`;
+  const byRT={};RT.forEach(r=>byRT[r[0]]=r);
+  const base=(r,o)=>{const tenant='Customer '+r[4],sites=TENANT_SITES[tenant];
+    return Object.assign({id:null,carrier:r[6],rt:r[0],asset:r[1],cls:r[2],qty:r[3],tenant,origin:sites[(+r[0].slice(3))%sites.length],dest:r[5],
+      pickup:'2026-'+r[7],eta:'2026-'+r[8],billed:null,rma:'RMA-'+r[10],bol:`BOL-${r[6]}-${48000+(+r[0].slice(3))*7%1000}`,load:`LD-${70000+(+r[0].slice(3))*13%10000}`,
+      lh:{rate:r[9],claimed:r[9]},fscPct:fuelFor('2026-'+r[7])[1],acc:null,dupOf:null,state:'open',featured:false,story:'',touchless:false,resolution:''},o||{})};
+  /* featured bills: the stories a reviewer works through first */
+  const F=[];
+  const r48=byRT['RT-1048'];
+  F.push(base(r48,{id:'INV-VF-20931',billed:'2026-10-05',featured:1,story:'Carrier started the clock at gate arrival and billed whole hours.',
+    acc:{type:'DET',site:'Warehouse 1 dock',date:'2026-10-03',method:'arrival',basis:'3 h from gate arrival 08:52, rounded to whole hours',ev:{appt:540,arrival:532,checkin:546,release:785}}}));
+  F.push(base(byRT['RT-1051'],{id:'INV-NL-11872',billed:'2026-10-06',featured:2,story:'Release is missing from the warehouse system.',
+    acc:{type:'DET',site:'Warehouse 1 dock',date:'2026-10-04',basis:'2 h 05 min billed',claimed:150,ev:{appt:600,arrival:594,checkin:611,release:null}}}));
+  F.push(base(byRT['RT-1062'],{id:'INV-NL-11880',billed:'2026-10-02',featured:3,story:'Truck arrived 47 minutes late, then billed detention.',
+    acc:{type:'DET',site:'Warehouse 2 dock',date:'2026-09-30',claimed:112.5,basis:'1 h 34 min billed',ev:{appt:600,arrival:647,checkin:655,release:888}}}));
+  F.push(base(byRT['RT-1044'],{id:'INV-CH-55410',billed:'2026-10-03',featured:4,origin:'Repair centre',dest:'Vizag Port Yard',lh:{rate:388,claimed:388},pickup:'2026-09-19',bol:'BOL-CH-EX2210',load:'LD-77104',
+    story:'Export lot for resale: the terminal offered no slots on two days.',acc:{type:'DEM',site:'Vizag Port Yard',ev:{cntr:'CSTU 418220-6',avail:'2026-09-22',lfd:'2026-09-25',gateOut:'2026-10-01',noSlot:['2026-09-27','2026-09-28']},claimed:1125}}));
+  F.push(base(r48,{id:'INV-NL-11893',carrier:'NL',billed:'2026-10-04',featured:5,lh:null,bol:'JOB-FS-31048',load:'WO-88213',dest:'Pune Works',origin:'Pune Works',
+    story:'De-installation ran over the package; carrier billed 3 hours of overtime.',acc:{type:'SVC',site:'Pune Works',date:'2026-08-20',claimedPkg:520,claimed:285,basis:'3.0 h overtime ($285.00)',ev:{checkin:510,signoff:850}}}));
+  F.push(base(r48,{id:'INV-VF-20958',billed:'2026-10-06',featured:6,dupOf:'INV-VF-20931',story:'Same BOL and detention billed a second time.',
+    acc:{type:'DET',site:'Warehouse 1 dock',date:'2026-10-03',method:'arrival',basis:'3 h from gate arrival 08:52',ev:{appt:540,arrival:532,checkin:546,release:785}}}));
+  F.push(base(byRT['RT-1065'],{id:'INV-NL-11886',billed:'2026-10-01',featured:7,fscPct:18.0,story:'Fuel surcharge used an old index week.'}));
+  F.push(base(byRT['RT-1067'],{id:'INV-CH-55402',billed:'2026-09-30',featured:8,story:'Clean detention, matched to the minute.',
+    acc:{type:'DET',site:'Warehouse 1 dock',date:'2026-09-27',ev:{appt:780,arrival:771,checkin:786,release:990}}}));
+  F.forEach(b=>{if(b.acc){if(b.acc.type==='DET'&&b.acc.claimed==null){const C=CARR[b.carrier];b.acc.claimed=b.acc.method==='arrival'?carrierHourClaim(C,b.acc.ev):evaluate(Object.assign({},b,{acc:Object.assign({},b.acc,{claimed:1e9})})).lines.find(l=>l.code==='DET').supported}
+    b.acc.ev0=JSON.parse(JSON.stringify(b.acc.ev))}});
+  /* generated bills for every other return shipment */
+  const skip=new Set(['RT-1048','RT-1051','RT-1062','RT-1065','RT-1067']);
+  const G=[];
+  RT.forEach(r=>{if(skip.has(r[0]))return;const b=base(r);
+    b.billed=addD(b.eta,1+rint(0,2));if(b.billed>AS_OF_DAY)b.billed=AS_OF_DAY;
+    if(rnd()<.07)b.lh.claimed=b.lh.rate+rint(3,7)*5;
+    if(rnd()<.08)b.fscPct=18.0;
+    if(rnd()<.27){const appt=rint(16,30)*30,arrival=appt+rint(-25,12),dwell=rint(70,280),m=rnd(),C=CARR[b.carrier];
+      const ev={appt,arrival,checkin:Math.max(appt,arrival)+rint(4,25),release:Math.max(appt,arrival)+dwell};
+      b.acc={type:'DET',site:b.dest+' dock',date:b.eta,ev};
+      if(m<.66)b.acc.method='contract';else if(m<.92){b.acc.method='arrival';b.acc.basis='from gate arrival, rounded to whole hours'}else{b.acc.method='missing';ev.release=null;b.acc.claimed=C.det.rate*rint(1,3)}
+      if(b.acc.claimed==null){if(b.acc.method==='arrival')b.acc.claimed=carrierHourClaim(C,ev);else b.acc.claimed=evaluate(Object.assign({},b,{acc:Object.assign({},b.acc,{claimed:1e9})})).lines.find(l=>l.code==='DET').supported}
+      if(b.acc.claimed<=0)b.acc=null;else b.acc.ev0=JSON.parse(JSON.stringify(ev))}
+    G.push(b)});
+  G.sort((a,b)=>a.billed<b.billed?-1:1).forEach(b=>b.id=nextInv(b.carrier));
+  db.bills=[...F,...G];
+  /* settle history: clean bills post automatically; older exceptions already became cases */
+  const t=(d,m)=>d+'T'+fmt(m);
+  db.bills.forEach(b=>{const R=evaluate(b);
+    if(b.featured)return;
+    if(R.rec==='APPROVE'){b.state='done';b.touchless=true;b.resolution='Approved automatically and posted to SAP S/4HANA';b.doneAt=t(b.billed,b.billed===AS_OF_DAY?rint(380,520):rint(420,1020));return}
+    if(b.billed>='2026-10-06')return;
+    b.state='done';b.doneAt=t(addD(b.billed,1),rint(540,1020));b.resolution=`Supported ${money(R.supported)} posted; ${R.lines.filter(l=>l.variance>0).length} exception${R.lines.filter(l=>l.variance>0).length>1?'s':''} opened as cases`;
+    R.lines.filter(l=>l.variance>0.004).forEach(l=>{const c=openCase(db,b,l,b.doneAt,'audit');
+      if(b.billed>='2026-10-04')return;
+      const roll=rnd(),d1=addD(b.billed,2+rint(0,3));
+      if(l.action==='REQUEST_MISSING_PROOF'){if(roll<.5){move(db,c,'CARRIER_RESPONDED',d1+'T11:20','carrier','Carrier uploaded the gate ticket')}if(roll<.25)move(db,c,'READY_TO_POST',addD(d1,1)+'T10:05','audit','Release confirmed from gate ticket; supported amount accepted',{supported:l.claimed})}
+      else{move(db,c,'DISPUTED',d1+'T10:40','audit',`Disputed: ${REASONS[l.reason].toLowerCase()} (clause ${l.clause})`);
+        if(roll<.75)move(db,c,'CARRIER_RESPONDED',addD(d1,2)+'T15:10','carrier',roll<.5?'Carrier accepted the contract calculation':'Carrier asked for the gate log');
+        if(roll<.5){move(db,c,'AGREED',addD(d1,3)+'T12:00','fin','Settled at the supported amount',{agreed:l.supported,ref:'AGR-'+(3300+c.n)})}
+        if(roll<.3)move(db,c,'PAID',addD(d1,5)+'T09:30','fin','Paid by SAP S/4HANA',{paid:l.supported,ref:'PAY-'+(91200+c.n)})}})});
+  /* outbound queue history */
+  db.bills.filter(b=>b.state==='done').sort((a,b)=>a.doneAt<b.doneAt?1:-1).slice(0,12).forEach(b=>{const R=evaluate(b);
+    db.outbox.push({id:++db.seq.ob,at:b.doneAt,target:'SAP S/4HANA',kind:'Post supported amount',ref:b.id,amount:R.supported,status:'Delivered'})});
+  db.outbox.push({id:++db.seq.ob,at:'2026-10-06T16:42',target:'Carrier portal',kind:'Dispute memo',ref:db.cases.find(c=>c.status==='DISPUTED')?.bill||'INV-VF-20841',status:'Delivered'});
+  db.outbox.push({id:++db.seq.ob,at:'2026-10-07T08:55',target:'ShipLane TMS',kind:'Prevention alert',ref:'MOV-2614',status:'Retrying',note:'TMS returned 503; retry 3 of 5'});
+  db.outbox.sort((a,b)=>a.at<b.at?1:-1);
+  /* evidence documents already on file */
+  const doc=(bill,kind,file,by,at,h)=>db.docs.push({bill,kind,file,by,at,sha:h});
+  doc('INV-VF-20931','Gate ticket','WH1-gate-2026-10-03-0852.pdf','Manhattan Active WM','2026-10-03T08:53','9f2c1ab07e45d1c38b6e0a7f4c2d91e5b3a8c7d6e1f0a9b8c7d6e5f4a3b2c1d0');
+  doc('INV-VF-20931','Signed BOL','BOL-VF-48336-signed.pdf','Manhattan Active WM','2026-10-03T13:06','4ab19c0d7e2f8a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b');
+  doc('INV-CH-55410','Terminal slot record','Vizag-slots-27-28-Sep.png','Logistics coordinator','2026-09-28T18:20','c7d81e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d');
+  doc('INV-NL-11893','OTP sign-off record','WO-88213-signoff.json','ServiceNow Field Service','2026-08-20T14:10','1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3');
+  /* live movements today, for prevention */
+  const L=(id,rt,carrier,site,kind,appt,arrival,checkin,tenant)=>db.live.push({id,rt,carrier,site,kind,appt,arrival,checkin,release:null,tenant,notified:false,events:[]});
+  L('MOV-2611','RT-1003','NL','Warehouse 1','Inbound return · PMP-0060',480,472,481,'Customer A');
+  L('MOV-2612','RT-1055','NL','Warehouse 2','Inbound return · MTR-0985',450,446,458,'Customer A');
+  L('MOV-2613','RT-1063','VF','Repair centre','Inbound return · ITE-1945',510,503,512,'Customer B');
+  L('MOV-2614','RT-1058','CH','Warehouse 2','Inbound return · MTR-2274',390,398,409,'Customer A');
+  L('MOV-2615','RT-1069','VF','Warehouse 1','Inbound return · BAT-2081 (23)',600,null,null,'Customer C');
+  L('MOV-2616','RT-1060','CH','Repair centre','Redeploy delivery · MTR-1712',690,null,null,'Customer C');
+  L('MOV-2617','RT-1056','CH','Warehouse 2','Inbound return · ITE-1406',525,520,534,'Customer B');
+  db.dem.push({cntr:'CSTU 418377-2',rt:'RT-1052',carrier:'CH',lot:'Resale lot · BAT-0126 (20)',avail:'2026-10-03',lfd:'2026-10-07',slots:'2 slots offered today',tenant:'Customer C'});
+  db.dem.push({cntr:'CSTU 418390-1',rt:'RT-1069',carrier:'CH',lot:'Parts export · BAT-2081',avail:'2026-10-05',lfd:'2026-10-08',slots:'No slots offered today',tenant:'Customer C'});
+  /* agent and people activity seen this morning */
+  const A=(at,k,entity,text)=>db.audit.push({at,actor:ACTOR[k]?ACTOR[k][0]:k,role:ACTOR[k]?ACTOR[k][1]:'Carrier',entity,text});
+  A('2026-10-07T08:41','agent','INV-VF-20958','Flagged as a possible duplicate of INV-VF-20931 (same BOL, stop and charges)');
+  A('2026-10-07T08:36','agent','INV-NL-11872','Asked Manhattan Active WM for the release event; none found for BOL-NL-48357');
+  A('2026-10-07T08:30','agent','Queue',`Matched ${db.bills.filter(b=>b.touchless).length} clean bills to contract, booking and events; posted without review`);
+  A('2026-10-07T08:12','wm1','MOV-2611','Dock 4 assigned to Northline 3PL');
+  db.audit.sort((a,b)=>a.at<b.at?1:-1);
+  return db}
+function openCase(db,b,l,at,who){const n=++db.seq.case;
+  const st=l.action==='REQUEST_MISSING_PROOF'?'AWAITING_EVIDENCE':l.action==='HITL_REVIEW'?'CONTRACT_REVIEW':'DISPUTE_REVIEW';
+  const c={id:'CS-'+n,n,bill:b.id,carrier:b.carrier,rt:b.rt,tenant:b.tenant,facility:(b.acc&&b.acc.site||b.dest).replace(' dock',''),code:l.code,desc:l.desc,reason:l.reason,clause:l.clause,
+    claimed:l.claimed,supported:l.supported,agreed:null,paid:null,ref:null,owner:l.owner,status:st,opened:at,history:[]};
+  c.history.push({at,actor:ACTOR[who][0],status:st,text:`Opened from ${b.id}: ${REASONS[l.reason]||label(l.reason)}`});
+  db.cases.push(c);return c}
+function move(db,c,to,at,who,text,o){Object.assign(c,o||{});c.status=to;
+  const actor=who==='carrier'?`Carrier · ${CARR[c.carrier].name}`:ACTOR[who][0];c.history.push({at,actor,status:to,text});
+  if(o&&o.ref&&to==='PAID')c.paidRef=o.ref}
+</script>
+<script>
+"use strict";
+/* ---------------- state ---------------- */
+const KEY='rcn-demo-v3';
+let DB;
+try{const s=localStorage.getItem(KEY);if(s){const d=JSON.parse(s);if(d&&d.v===3)DB=d}}catch(e){}
+if(!DB)DB=buildDB();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
+const S={view:'settlements',tenant:'',sel:null,qf:'open',cf:'open',open:{},asof:AS_OF_MIN,lab:null,labEv:'arrival',play:null};
+const T0=Date.now();
+const nowISO=()=>{const m=AS_OF_MIN+Math.floor((Date.now()-T0)/60000);return AS_OF_DAY+'T'+fmt(Math.min(m,1439))};
+const tOf=iso=>iso.slice(11,16);
+const dOf=iso=>fmtD(iso.slice(0,10));
+const inT=x=>!S.tenant||x.tenant===S.tenant;
+const billBy=id=>DB.bills.find(b=>b.id===id);
+function audit(k,entity,text){const a=ACTOR[k];DB.audit.unshift({at:nowISO(),actor:a?a[0]:k,role:a?a[1]:'',entity,text})}
+function outbox(target,kind,ref,amount,status){DB.outbox.unshift({id:++DB.seq.ob,at:nowISO(),target,kind,ref,amount:amount??null,status:status||'Delivered'})}
+
+/* ---------------- shell ---------------- */
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3000)}
+function applyTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('circ-theme',t)}catch(e){}}
+$('#themeBtn').onclick=()=>{applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');if(S.view==='insights')renderInsights()};
+$$('[data-soon]').forEach(n=>n.addEventListener('click',e=>{e.preventDefault();toast(`${n.dataset.soon} isn't connected in this preview yet.`)}));
+const appEl=$('#app');function setNav(o){appEl.classList.toggle('nav-open',o);$('#menuBtn').setAttribute('aria-expanded',o)}
+$('#menuBtn').onclick=()=>setNav(!appEl.classList.contains('nav-open'));$('#navscrim').onclick=()=>setNav(false);
+$('#tenant').onchange=e=>{S.tenant=e.target.value;const v=visibleBills();if(S.sel&&!v.find(b=>b.id===S.sel))S.sel=null;render()};
+$('#resetBtn').onclick=()=>modal(`<h3>Reset demo data?</h3><p>Decisions, cases, uploaded document fingerprints and audit entries made in this browser are cleared, and the original dataset is restored.</p><div class="mfoot"><button class="btn" data-close>Cancel</button><button class="btn pri" id="mok">Reset</button></div>`,()=>{$('#mok').onclick=()=>{try{localStorage.removeItem(KEY)}catch(e){}DB=buildDB();S.sel=null;S.open={};closeModal();render();toast('Demo data restored')}});
+const TITLES={settlements:'Settlements',cases:'Cases',prevention:'Prevention',insights:'Insights'};
+function route(){const h=location.hash.replace(/^#\/?/,'').split('/');const v=TITLES[h[0]]?h[0]:'settlements';S.view=v;
+  if(v==='settlements'&&h[1])S.sel=decodeURIComponent(h[1]);
+  $$('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));$$('#nav a').forEach(a=>a.toggleAttribute('aria-current',a.dataset.v===v));
+  $$('#nav a[aria-current]').forEach(a=>a.setAttribute('aria-current','page'));$('#crumbT').textContent=TITLES[v];document.title=TITLES[v]+' · Artizent Reconcile';setNav(false);render();window.scrollTo(0,0)}
+window.addEventListener('hashchange',route);
+
+/* modal + drawer */
+let lastFocus=null;
+function modal(html,after,wide){lastFocus=document.activeElement;const b=$('#mbox');b.className='mbox'+(wide?' wide':'');b.innerHTML=html;$('#modal').hidden=false;
+  $$('#mbox [data-close]').forEach(x=>x.onclick=closeModal);after&&after();const f=b.querySelector('textarea,input,select,.btn.pri,.btn');f&&f.focus()}
+function closeModal(){$('#modal').hidden=true;$('#mbox').innerHTML='';lastFocus&&lastFocus.focus&&lastFocus.focus()}
+$('#modal').addEventListener('mousedown',e=>{if(e.target.id==='modal')closeModal()});
+function closeDrawer(){$('#drawer').classList.remove('on');$('#drawer').setAttribute('aria-hidden','true');$('#dscrim').classList.remove('on')}
+$('#dscrim').onclick=closeDrawer;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('#modal').hidden)closeModal();else closeDrawer();setNav(false)}});
+
+/* search */
+const q=$('#q'),qres=$('#qres');let hits=[],cur=0;
+function sIndex(){const out=[];
+  DB.bills.filter(inT).forEach(b=>out.push({t:b.id,s:`${CARR[b.carrier].name} · ${b.rt} · ${b.bol}`,k:[b.id,b.rt,b.bol,b.rma,b.asset,CARR[b.carrier].name,b.origin,b.dest].join(' '),go:()=>{location.hash='#/settlements/'+b.id}}));
+  DB.cases.filter(inT).forEach(c=>out.push({t:c.id,s:`${STATUS[c.status][0]} · ${c.bill} · ${c.code}`,k:[c.id,c.bill,c.rt,c.code].join(' '),go:()=>{location.hash='#/cases';setTimeout(()=>openDrawer(c.id),0)}}));
+  return out}
+function renderQ(){const v=q.value.trim().toLowerCase();if(!v){qres.hidden=true;q.setAttribute('aria-expanded','false');return}
+  hits=sIndex().filter(x=>x.k.toLowerCase().includes(v)).slice(0,9);cur=0;
+  qres.innerHTML=hits.length?hits.map((x,k)=>`<button role="option" data-k="${k}" aria-selected="${k===0}"><span class="code">${esc(x.t)}</span><small>${esc(x.s)}</small></button>`).join(''):'<div class="none">No bills or cases match.</div>';
+  qres.hidden=false;q.setAttribute('aria-expanded','true')}
+function pick(k){const h=hits[k];if(!h)return;q.value='';renderQ();q.blur();h.go()}
+q.addEventListener('input',renderQ);
+q.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!hits.length)return;cur=(cur+(e.key==='ArrowDown'?1:-1)+hits.length)%hits.length;$$('#qres button').forEach((b,k)=>b.setAttribute('aria-selected',k===cur))}else if(e.key==='Enter'){e.preventDefault();pick(cur)}else if(e.key==='Escape'){q.value='';renderQ()}});
+qres.addEventListener('mousedown',e=>{const b=e.target.closest('button');if(b){e.preventDefault();pick(+b.dataset.k)}});
+q.addEventListener('blur',()=>setTimeout(()=>{qres.hidden=true},120));
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();q.focus()}});
+
+/* ---------------- shared bits ---------------- */
+const chipA=a=>`<span class="chip ${ACTIONS[a][1]}">${ACTIONS[a][0]}</span>`;
+const chipR=r=>`<span class="chip ${REC[r][1]}">${REC[r][0]}</span>`;
+const chipS=s=>`<span class="chip ${STATUS[s][1]}">${STATUS[s][0]}</span>`;
+const av=(c,cls)=>`<span class="av ${c} ${cls||''}" aria-hidden="true">${c}</span>`;
+const visibleBills=()=>DB.bills.filter(inT);
+function counts(){const bs=visibleBills();
+  $('#nc-settlements').textContent=bs.filter(b=>b.state==='open').length||'';
+  $('#nc-cases').textContent=DB.cases.filter(c=>inT(c)&&OPEN_ST.includes(c.status)).length||'';
+  const risk=DB.live.filter(m=>inT(m)&&['warn','bad'].includes(liveState(m,AS_OF_MIN).lvl)).length;$('#nc-prevention').textContent=risk||''}
+function render(){counts();({settlements:renderSettlements,cases:renderCases,prevention:renderPrevention,insights:renderInsights})[S.view]()}
+</script>
+<script>
+"use strict";
+/* =================== SETTLEMENTS =================== */
+const QF=[['open','Open'],['HITL_REVIEW','Needs review'],['REQUEST_MISSING_PROOF','Proof needed'],['PARTIAL','Partial'],['APPROVE','Approve'],['done','Settled']];
+function renderSettlements(){const bs=visibleBills(),E=new Map(bs.map(b=>[b.id,evaluate(b)]));
+  const tot=bs.reduce((a,b)=>{const r=E.get(b.id);a.c+=r.claimed;a.s+=r.supported;a.v+=r.variance;return a},{c:0,s:0,v:0});
+  const touch=bs.filter(b=>b.touchless).length,open=bs.filter(b=>b.state==='open'),openAmt=open.reduce((s,b)=>s+E.get(b.id).claimed,0);
+  const prevented=DB.cases.filter(c=>inT(c)&&['AGREED','PAID'].includes(c.status)).reduce((s,c)=>s+(c.claimed-(c.agreed??c.supported)),0);
+  const sp=tot.c?tot.s/tot.c*100:0;
+  $('#kpis').innerHTML=[
+    ['', 'Billed by carriers',money0(tot.c),`${bs.length} bills · ${new Set(bs.map(b=>b.rt)).size} RT cases`,''],
+    ['','Supported by evidence',money0(tot.s),`${sp.toFixed(1)}% of billed`,'ok'],
+    ['','Held back',money0(tot.v),`${bs.reduce((n,b)=>n+E.get(b.id).lines.filter(l=>l.variance>0).length,0)} challenged lines`,'warn'],
+    ['','Touchless',`${bs.length?Math.round(touch/bs.length*100):0}%`,`${touch} bills posted with no review`,''],
+    ['','Waiting for you',String(open.length),`${money0(openAmt)} claimed`,'']
+  ].map(k=>`<div class="kpi"><div class="l">${k[1]}</div><div class="v ${k[4]}">${k[2]}</div><div class="s">${k[3]}</div></div>`).join('');
+  $('#splitTxt').innerHTML=`<span><b class="num">${money(tot.s)}</b> supported</span><span class="note">${money0(prevented)} already recovered through agreed settlements</span><span><b class="num">${money(tot.v)}</b> challenged</span>`;
+  $('#splitBar').innerHTML=`<i style="width:${sp}%;background:var(--ok)"></i><i style="flex:1;background:#D4A800"></i>`;$('#splitBar').setAttribute('aria-label',`${sp.toFixed(1)}% of billed is supported`);
+  /* queue */
+  const fc=f=>bs.filter(b=>f==='open'?b.state==='open':f==='done'?b.state==='done':b.state==='open'&&E.get(b.id).rec===f).length;
+  $('#qfilters').innerHTML=QF.map(([k,l])=>`<button class="fbtn" data-f="${k}" aria-pressed="${S.qf===k}">${l} <b>${fc(k)}</b></button>`).join('');
+  $('#qfilters').onclick=e=>{const b=e.target.closest('[data-f]');if(b){S.qf=b.dataset.f;renderSettlements()}};
+  let list=bs.filter(b=>S.qf==='open'?b.state==='open':S.qf==='done'?b.state==='done':b.state==='open'&&E.get(b.id).rec===S.qf);
+  const pri={HITL_REVIEW:0,REQUEST_MISSING_PROOF:1,PARTIAL:2,APPROVE:3};
+  list.sort((a,b)=>a.state!==b.state?(a.state==='open'?-1:1):a.state==='open'?(pri[E.get(a.id).rec]-pri[E.get(b.id).rec]||(a.featured||99)-(b.featured||99)):(a.billed<b.billed?1:-1));
+  if(!S.sel||!bs.find(b=>b.id===S.sel))S.sel=(list[0]||bs[0]||{}).id||null;
+  $('#qcount').textContent=`${list.length} of ${bs.length}`;
+  let h='';
+  list.slice(0,80).forEach(b=>{const R=E.get(b.id);
+    const types=[b.lh?'LH':'',b.lh?'FSC':'',b.acc?b.acc.type:''].filter(Boolean);
+    h+=`<button class="qrow" data-id="${b.id}" aria-current="${b.id===S.sel}">${av(b.carrier,'av')}<b>${esc(b.id)}</b><span class="amt">${money(R.claimed)}</span>
+      <span class="meta">${esc(CARR[b.carrier].name)} · ${esc(b.rt)} · ${fmtD(b.billed)}</span><span class="var ${R.variance>0?'pos':''}">${R.variance>0?'−'+money(R.variance):'matched'}</span>
+      <span class="tags">${b.state==='open'?chipR(R.rec):`<span class="chip line">${b.touchless?'Touchless':'Settled'}</span>`}${types.map(t=>`<span class="code">${t}</span>`).join('')}</span></button>`});
+  $('#qlist').innerHTML=h||'<div class="empty">No bills in this view.</div>';
+  if(list.length>80)$('#qlist').insertAdjacentHTML('beforeend',`<div class="empty">Showing 80 of ${list.length}. Use search to find others.</div>`);
+  $('#qlist').onclick=e=>{const r=e.target.closest('.qrow');if(r){S.sel=r.dataset.id;S.open={};history.replaceState(null,'','#/settlements/'+r.dataset.id);renderSettlements();if(innerWidth<1240)$('#detail').scrollIntoView({behavior:'smooth',block:'start'})}};
+  renderDetail()}
+
+function renderDetail(){const b=billBy(S.sel),box=$('#detail');if(!b){box.innerHTML='<div class="panel empty">No bills for this customer.</div>';return}
+  const R=evaluate(b),C=CARR[b.carrier],open=b.state==='open';
+  const edited=b.acc&&b.acc.ev0&&JSON.stringify(b.acc.ev)!==JSON.stringify(b.acc.ev0);
+  const lane=b.lh?`${esc(b.origin)} → ${esc(b.dest)}`:esc(b.acc.site);
+  let h=`<div class="panel"><div class="bhead">${av(b.carrier,'lg')}<div class="t"><h2>${esc(b.id)} ${open?chipR(R.rec):`<span class="chip ok"><svg class="ic"><use href="#i-check"/></svg>Settled</span>`}</h2>
+    <p>${esc(C.name)} · contract ${esc(C.contract)} · billed ${fmtD(b.billed)} over EDI 210${b.story&&open?` · <span class="note">${esc(b.story)}</span>`:''}</p></div>
+    <div class="tot"><div class="note" style="margin:0 0 6px">Carrier claimed</div><div class="big">${money(R.claimed)}</div><div class="note">Supported <b style="color:var(--ok)">${money(R.supported)}</b>${R.variance>0?` · held <b style="color:var(--warn)">${money(R.variance)}</b>`:''}</div></div></div>
+    <div class="facts">
+      <div><div class="k">Return case</div><div class="v"><a href="../index.html#/product/asset/${esc(b.rt)}" title="Open in Recover">${esc(b.rt)}<svg class="ic"><use href="#i-ext"/></svg></a></div></div>
+      <div><div class="k">Asset</div><div class="v">${esc(b.asset)} · ${esc(CLS[b.cls])}${b.qty>1?' ×'+b.qty:''}</div></div>
+      <div><div class="k">Customer</div><div class="v">${esc(b.tenant)}</div></div>
+      <div><div class="k">${b.lh?'Lane':'Site'}</div><div class="v">${lane}</div></div>
+      <div><div class="k">${b.lh?'BOL':'Job'}</div><div class="v mono">${esc(b.bol)}</div></div>
+      <div><div class="k">${b.lh?'Pickup':'Visit'}</div><div class="v">${fmtD(b.lh?b.pickup:b.acc.date)}</div></div>
+      <div><div class="k">RMA</div><div class="v mono">${esc(b.rma)}</div></div>
+    </div></div>`;
+  R.alerts.forEach(a=>h+=`<div class="alert"><svg class="ic"><use href="#i-alert"/></svg><div><b>Possible duplicate.</b> ${esc(a)}</div></div>`);
+  h+=nwayHtml(b,R);
+  if(b.acc)h+=`<div class="panel studio"><div class="ph"><h3>Evidence</h3>${edited?'<span class="chip y">What-if: edited</span>':''}<span class="note" id="shint"></span>${edited&&open?`<button class="btn sm ghost" id="evReset"><svg class="ic"><use href="#i-reset"/></svg>Recorded evidence</button>`:''}</div><div class="pb" id="studio"></div></div>`;
+  h+=`<div class="panel"><div class="ph"><h3>Line-by-line result</h3><span class="note">Select a line for the evidence, clause and owner</span></div><div class="tw" id="res"></div>${decisionHtml(b,R)}</div>`;
+  box.innerHTML=h;
+  if(b.acc)drawStudio(b);renderResult(b);bindDecision(b,R);
+  const rs=$('#evReset');if(rs)rs.onclick=()=>{b.acc.ev=JSON.parse(JSON.stringify(b.acc.ev0));save();renderSettlements();toast('Back to the recorded evidence')}}
+
+function nwayHtml(b,R){const C=CARR[b.carrier],acc=R.lines.find(l=>['DET','DEM','SVC-OT'].includes(l.code));
+  const rateBad=R.lines.some(l=>['LANE_RATE','FSC_INDEX'].includes(l.reason));
+  const evSt=!b.acc?['ok','No accessorial events needed']:acc&&acc.action==='REQUEST_MISSING_PROOF'?['bad',REASONS[acc.reason]]:acc&&acc.reason==='CARRIER_LATE'?['warn','Late gate arrival']:['ok',b.acc.type==='DEM'?'Terminal records complete':'All timestamps present'];
+  const evSrc=!b.acc?'—':b.acc.type==='DEM'?'Vizag terminal':b.acc.type==='SVC'?'ServiceNow FSM':'Manhattan WM';
+  const n=[
+    ['i-contract','Contract',rateBad?'warn':'ok',rateBad?'Rate differs from RC-2026.2':`${C.contract} in force`,'Contract store'],
+    ['i-truck','Booking',b.dupOf?'warn':'ok',b.dupOf?`Load ${b.load} already billed`:`Load ${b.load} booked`,'ShipLane TMS'],
+    ['i-pulse','Events',evSt[0],evSt[1],evSrc],
+    ['i-proforma','Pre-bill',R.pre==null?'warn':'ok',R.pre==null?'No pre-bill for accessorials':`Proforma ${money(R.pre)}`,'Reconcile'],
+    ['i-bills','Carrier bill',R.variance>0?(R.rec==='APPROVE'?'ok':'warn'):'ok',R.variance>0?`${money(R.variance)} above evidence`:'Matches evidence','EDI 210']];
+  const sym={ok:'✓',warn:'!',bad:'×'};
+  return `<div class="panel"><div class="ph"><h3>N-way match</h3><span class="note">${n.filter(x=>x[2]==='ok').length} of 5 records agree</span></div><div class="nway">${n.map(x=>`<div class="nw ${x[2]}"><div class="b"><svg class="ic"><use href="#${x[0]}"/></svg><span class="st">${sym[x[2]]}</span></div><b>${x[1]}</b><small>${esc(x[3])}</small><div class="src">${esc(x[4])}</div></div>`).join('')}</div></div>`}
+
+/* ---- evidence studio: timeline (detention, field service) or day strip (demurrage) ---- */
+let AX=null;
+function tlFields(b){return b.acc.type==='SVC'?SVC_FIELDS:DET_FIELDS}
+function drawStudio(b){const box=$('#studio'),open=b.state==='open';
+  if(b.acc.type==='DEM'){box.innerHTML=dayStrip(b);$('#shint').textContent=open?'Select a chargeable day to mark that the terminal offered no pickup slots.':'';
+    if(open)box.onclick=e=>{const d=e.target.closest('.day.edit');if(!d)return;const ev=b.acc.ev,k=d.dataset.d;ev.noSlot=ev.noSlot.includes(k)?ev.noSlot.filter(x=>x!==k):[...ev.noSlot,k];save();renderSettlements()};return}
+  $('#shint').textContent=open?'Drag a marker to test a different time. Double-click a marker to remove the record.':'Recorded evidence (read-only once settled).';
+  box.innerHTML=`<svg id="tl" viewBox="0 0 1000 190" role="img" aria-label="Evidence timeline" class="${open?'':'ro'}"></svg><div class="tray" id="tray"></div><div class="lg" style="margin-top:10px" id="tlg"></div>`;
+  fitAxis(b);drawTimeline(b);if(open)bindTimeline(b)}
+function fitAxis(b){const ev=b.acc.ev,ms=tlFields(b).map(f=>ev[f[0]]).filter(v=>v!=null);
+  if(!ms.length){AX={a:360,b:1080};return}let a=Math.floor((Math.min(...ms)-75)/60)*60,z=Math.ceil((Math.max(...ms)+75)/60)*60;if(z-a<360){const c=(a+z)/2;a=Math.floor((c-180)/60)*60;z=a+360}AX={a:Math.max(0,a),b:Math.min(1440,z)}}
+const X=m=>40+(m-AX.a)/(AX.b-AX.a)*920;
+function drawTimeline(b){const ev=b.acc.ev,F=tlFields(b),svg=$('#tl');if(!svg)return;
+  const line=evaluate(b).lines.find(l=>l.band!==undefined&&(l.code==='DET'||l.code==='SVC-OT'));const band=line&&line.band;
+  let h=`<line class="axis" x1="40" y1="128" x2="960" y2="128" stroke-linecap="round"/>`;
+  if(band){h+=`<rect class="bandA" x="${X(band.s)}" y="116" width="${Math.max(0,X(band.mid)-X(band.s))}" height="24" rx="5"/>`;
+    if(band.e>band.mid)h+=`<rect class="bandB" x="${X(band.mid)}" y="116" width="${X(band.e)-X(band.mid)}" height="24" rx="5"/>`}
+  for(let m=Math.ceil(AX.a/60)*60;m<=AX.b;m+=60)h+=`<line class="tick" x1="${X(m)}" y1="134" x2="${X(m)}" y2="140"/><text class="tk" x="${X(m)}" y="162" text-anchor="middle">${fmt(m)}</text>`;
+  const pres=F.filter(f=>ev[f[0]]!=null).map(f=>({f,m:ev[f[0]]})).sort((p,q)=>p.m-q.m);
+  const gap=190,n=pres.length,lx=pres.map(p=>Math.max(95,X(p.m)));for(let i=1;i<n;i++)lx[i]=Math.max(lx[i],lx[i-1]+gap);
+  const over=n?lx[n-1]-905:0;if(over>0){lx[n-1]-=over;for(let i=n-2;i>=0;i--)lx[i]=Math.min(lx[i],lx[i+1]-gap)}
+  pres.forEach((p,j)=>{const [k,l,src,c]=p.f,x=X(p.m),lxj=lx[j];
+    h+=`<g class="pin" data-k="${k}"><path d="M${x} 120 C${x} 92,${lxj} 92,${lxj} 70" fill="none" style="stroke:${c}" stroke-width="1.6"/>
+      <rect x="${x-14}" y="112" width="28" height="32" fill="transparent"/>
+      <circle class="ring" cx="${x}" cy="128" r="8.5" style="fill:${c}"/>
+      <text class="lab" x="${lxj}" y="22" text-anchor="middle">${esc(l)}</text>
+      <text x="${lxj}" y="46" text-anchor="middle" style="fill:${c};font:800 19px var(--f-display)">${fmt(p.m)}</text>
+      <text class="src" x="${lxj}" y="66" text-anchor="middle">${esc(src)}</text></g>`});
+  svg.innerHTML=h;
+  const miss=F.filter(f=>ev[f[0]]==null),open=b.state==='open';
+  $('#tray').innerHTML=miss.map(f=>`<span class="chip bad"><svg class="ic"><use href="#i-alert"/></svg>${esc(f[1])} not recorded</span>${open?`<button class="btn sm" data-add="${f[0]}">Add as what-if</button>`:''}`).join('');
+  $('#tlg').innerHTML=band?`<span><i style="background:var(--band-ok)"></i>${esc(band.a)}</span><span><i style="background:var(--band-bill)"></i>${esc(band.b)}</span>`:(line&&line.reason==='DUPLICATE'?'<span>No billable band: this stop was already billed on '+esc(b.dupOf)+'.</span>':line&&line.reason==='CARRIER_LATE'?'<span>No detention band: the carrier arrived after the grace period.</span>':'<span>The free and billable bands appear once both ends of the clock are recorded.</span>')}
+function bindTimeline(b){const svg=$('#tl');let drag=null;
+  const mAt=e=>{const r=svg.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*1000;let m=AX.a+(x-40)/920*(AX.b-AX.a);m=Math.round(m/5)*5;return Math.max(AX.a,Math.min(AX.b,m))};
+  svg.onpointerdown=e=>{const g=e.target.closest('.pin');if(!g)return;drag=g.dataset.k;svg.setPointerCapture(e.pointerId);e.preventDefault()};
+  svg.onpointermove=e=>{if(!drag)return;b.acc.ev[drag]=mAt(e);drawTimeline(b);renderResult(b)};
+  svg.onpointerup=()=>{if(drag){drag=null;save();renderSettlements()}};
+  svg.ondblclick=e=>{const g=e.target.closest('.pin');if(!g)return;b.acc.ev[g.dataset.k]=null;save();renderSettlements()};
+  $('#tray').onclick=e=>{const x=e.target.closest('[data-add]');if(!x)return;const k=x.dataset.add,ev=b.acc.ev,F=tlFields(b),i=F.findIndex(f=>f[0]===k);
+    const prev=F.slice(0,i).map(f=>ev[f[0]]).filter(v=>v!=null).pop();ev[k]=prev!=null?prev+(k==='release'||k==='signoff'?150:15):(AX.a+AX.b)/2;save();renderSettlements()}}
+function dayStrip(b){const e=b.acc.ev,m=CARR[b.carrier].dem,days=[],open=b.state==='open';for(let d=e.avail;d<=(e.gateOut||e.lfd);d=addD(d,1))days.push(d);
+  let n=0;
+  return `<div class="days">${days.map(d=>{const free=d<=e.lfd,ex=!free&&e.noSlot.includes(d);if(!free&&!ex)n++;const t2=!free&&!ex&&n>m.t1d;
+    const cls=free?'free':ex?'ex':'chg'+(t2?' t2':'');
+    return `<div class="day ${cls} ${!free&&open?'edit':''}" data-d="${d}" ${!free&&open?'role="button" tabindex="0"':''}>${d===e.lfd?'<span class="lfd">Last free day</span>':''}<small>${dow(d)}</small><b>${+d.slice(8)}</b><small>${free?'Free':ex?'No slots · excused':(t2?money0(m.t2):money0(m.t1))+' · day '+n}</small></div>`}).join('')}
+    ${e.gateOut?`<div class="day free"><small>${dow(e.gateOut)}</small><b>✓</b><small>Gate-out ${fmtD(e.gateOut)}</small></div>`:''}</div>
+    <div class="lg" style="margin-top:12px"><span><i style="background:var(--panel2);border:1px solid var(--line)"></i>Free time</span><span><i style="background:var(--warn-soft);border:1px solid #D4A800"></i>Tier 1 · ${money0(m.t1)}/day</span><span><i style="background:var(--bad-soft);border:1px solid var(--bad)"></i>Tier 2 · ${money0(m.t2)}/day</span><span><i style="border:1px dashed var(--ok)"></i>Excused: no slots offered</span></div>`}
+
+function renderResult(b){const R=evaluate(b),el=$('#res');if(!el)return;
+  el.innerHTML=`<table class="t"><thead><tr><th>Charge</th><th class="r">Pre-bill</th><th class="r">Claimed</th><th class="r">Supported</th><th class="r">Variance</th><th>Decision</th></tr></thead><tbody>`+
+  R.lines.map((l,i)=>{const ratio=l.claimed?Math.min(100,l.supported/l.claimed*100):100,op=!!S.open[b.id+i],cl=l.clause&&clauseText(b,l.clause);
+    return `<tr class="line ${op?'open':''}" data-i="${i}" tabindex="0" aria-expanded="${op}"><td><b>${esc(l.code)}</b> <span class="sub2" style="display:inline">${esc(l.desc)}</span><span class="sub2">${esc(REASONS[l.reason]||'')}</span></td>
+      <td class="r">${l.pre==null?'<span class="note">—</span>':money(l.pre)}</td><td class="r">${money(l.claimed)}</td>
+      <td class="r">${money(l.supported)}<span class="minibar"><i style="width:${ratio}%"></i></span></td>
+      <td class="r" style="${l.variance>0?'color:var(--warn);font-weight:700':''}">${l.variance>0?money(l.variance):'—'}</td><td>${chipA(l.action)}</td></tr>
+      <tr class="det" ${op?'':'hidden'}><td colspan="6"><div class="dcols"><div><h4>Evidence</h4><ul class="fl">${l.facts.map(f=>`<li><span class="dot ${f.miss?'bad':'ok'}"></span><span>${esc(f.t)}</span><span class="src">${esc(f.src)}</span></li>`).join('')||'<li class="note">No event records apply to this charge.</li>'}</ul>
+        ${cl?`<div class="clause"><b>${esc(CARR[b.carrier].contract)} · ${esc(cl[0])}</b>${esc(cl[1])}</div>`:''}</div>
+        <div><h4>How it was worked out</h4><div style="font-size:13px">${esc(l.findings)}</div><div class="own"><span><b>Owner:</b> ${esc(l.owner)}</span><span><b>Next step:</b> ${esc(l.next)}</span></div></div></div></td></tr>`}).join('')+
+  `</tbody><tfoot><tr><td>Total</td><td class="r">${R.pre==null?'—':money(R.pre)}</td><td class="r">${money(R.claimed)}</td><td class="r">${money(R.supported)}</td><td class="r" style="${R.variance>0?'color:var(--warn)':''}">${R.variance>0?money(R.variance):'—'}</td><td>${chipR(R.rec)}</td></tr></tfoot></table>`;
+  el.onclick=e=>{const tr=e.target.closest('tr.line');if(!tr)return;const k=b.id+tr.dataset.i;S.open[k]=!S.open[k];renderResult(b)};
+  el.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('tr.line')){e.preventDefault();e.target.click();const t=$(`#res tr.line[data-i="${e.target.dataset.i}"]`);t&&t.focus()}};
+  const dc=$('#decRec');if(dc){dc.innerHTML=recText(b,R)}}
+function recText(b,R){const exc=R.lines.filter(l=>l.variance>0);
+  if(R.rec==='APPROVE')return `<small>Recommended</small><b>Approve ${money(R.supported)} and post to SAP S/4HANA</b>`;
+  if(R.rec==='HITL_REVIEW')return `<small>Recommended</small><b>Hold the whole bill for a Finance approver</b>`;
+  if(R.rec==='REQUEST_MISSING_PROOF')return `<small>Recommended</small><b>Post ${money(R.supported)}, request proof for ${money(R.variance)}</b>`;
+  return `<small>Recommended</small><b>Post ${money(R.supported)}, challenge ${money(R.variance)} on ${exc.length} line${exc.length>1?'s':''}</b>`}
+function decisionHtml(b,R){
+  if(b.state!=='open'){const cs=DB.cases.filter(c=>c.bill===b.id);
+    return `<div class="decide"><div class="rec"><small>Outcome · ${dOf(b.doneAt)}, ${tOf(b.doneAt)}</small><b>${esc(b.resolution)}</b></div>${cs.map(c=>`<a class="btn sm" href="#/cases" data-case="${c.id}">${c.id} · ${STATUS[c.status][0]}</a>`).join('')}<button class="btn sm" id="proBtn"><svg class="ic"><use href="#i-proforma"/></svg>Proforma</button></div>`}
+  const pl=b.acc&&b.acc.ev0&&JSON.stringify(b.acc.ev)!==JSON.stringify(b.acc.ev0);
+  return `<div class="agent"><svg class="ic"><use href="#i-agent"/></svg><span>Reconcile agent checked ${R.lines.length} line${R.lines.length>1?'s':''} against ${esc(CARR[b.carrier].contract)}, the TMS booking and ${b.acc?'the event records':'the fuel index'}.${pl?' <b>You have changed the evidence;</b> the decision will record it as a correction.':''} Nothing is posted until you apply a decision.</span></div>
+  <div class="decide"><div class="rec" id="decRec">${recText(b,R)}</div>
+    <button class="btn" id="proBtn"><svg class="ic"><use href="#i-proforma"/></svg>Proforma</button>
+    <button class="btn" id="memoBtn" ${R.variance>0?'':'disabled'}><svg class="ic"><use href="#i-gavel"/></svg>Dispute memo</button>
+    <button class="btn pri" id="applyBtn"><svg class="ic"><use href="#i-check"/></svg>Apply decision</button></div>`}
+function bindDecision(b){const p=$('#proBtn');if(p)p.onclick=()=>docModal(b,'proforma');const m=$('#memoBtn');if(m)m.onclick=()=>docModal(b,'memo');
+  $$('#detail [data-case]').forEach(a=>a.onclick=()=>setTimeout(()=>openDrawer(a.dataset.case),0));
+  const a=$('#applyBtn');if(a)a.onclick=()=>applyDecision(b)}
+function applyDecision(b){const R=evaluate(b),at=nowISO(),corr=b.acc&&b.acc.ev0&&JSON.stringify(b.acc.ev)!==JSON.stringify(b.acc.ev0);
+  if(corr)audit('you',b.id,'Evidence corrected before decision: '+tlDiff(b));
+  const exc=b.dupOf?[{code:'DUP',desc:'Whole bill · possible duplicate',claimed:R.claimed,supported:0,action:'HITL_REVIEW',reason:'DUPLICATE',clause:'12.5',owner:'Finance approver'}]:R.lines.filter(l=>l.variance>0.004),made=exc.map(l=>openCase(DB,b,l,at,'you'));
+  if(R.supported>0)outbox('SAP S/4HANA','Post supported amount',b.id,R.supported);
+  made.forEach(c=>{if(c.status==='AWAITING_EVIDENCE')outbox('Carrier portal','Proof request',c.id)});
+  b.state='done';b.doneAt=at;b.touchless=false;
+  b.resolution=R.rec==='APPROVE'?`Approved ${money(R.supported)} and posted to SAP S/4HANA`:R.rec==='HITL_REVIEW'?`Held for a Finance approver; ${made.length} case${made.length>1?'s':''} opened`:`Posted ${money(R.supported)}; ${money(R.variance)} challenged in ${made.length} case${made.length>1?'s':''}`;
+  audit('you',b.id,b.resolution);save();
+  const next=visibleBills().find(x=>x.state==='open'&&x.id!==b.id);
+  toast(made.length?`${b.id} settled · ${made.map(c=>c.id).join(', ')} opened`:`${b.id} approved and posted`);
+  S.sel=next?next.id:b.id;history.replaceState(null,'','#/settlements/'+S.sel);render()}
+function tlDiff(b){const a=b.acc.ev,o=b.acc.ev0;if(b.acc.type==='DEM')return `no-slot days ${a.noSlot.map(fmtD).join(', ')||'none'}`;
+  return tlFields(b).filter(f=>a[f[0]]!==o[f[0]]).map(f=>`${f[1].toLowerCase()} ${o[f[0]]==null?'—':fmt(o[f[0]])} → ${a[f[0]]==null?'removed':fmt(a[f[0]])}`).join('; ')}
+
+/* proforma / dispute memo documents, printable */
+function docModal(b,kind){const R=evaluate(b),C=CARR[b.carrier],memo=kind==='memo',L=memo?R.lines.filter(l=>l.variance>0):R.lines;
+  const no=(memo?'DM-':'PF-')+b.id.slice(4);
+  const html=`<div class="mbar"><b>${memo?'Dispute memo':'Proforma'} · ${esc(no)}</b><button class="btn sm" id="prt"><svg class="ic"><use href="#i-print"/></svg>Print or save PDF</button><button class="ibtn" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="doc"><div class="dhd"><img src="artizent-logo.png" alt="Artizent"><small>Reconcile · ${memo?'Dispute memo':'Pre-invoice proforma'}</small></div><div class="dbd">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div><h4>${memo?'Charges disputed':'Supported charges'}</h4><div style="color:#7B726D">${esc(no)} · issued ${dOf(nowISO())} 2026</div></div><span class="stamp ${memo?'d':''}">${memo?'DISPUTED':'EVIDENCE-BACKED'}</span></div>
+    <div class="dmeta"><div><small>To</small><b>${esc(C.name)} (${C.scac})</b></div><div><small>Contract</small><b>${esc(C.contract)}</b></div><div><small>Carrier bill</small><b>${esc(b.id)}</b></div>
+      <div><small>${b.lh?'BOL':'Job'}</small><b>${esc(b.bol)}</b></div><div><small>${b.lh?'Lane':'Site'}</small><b>${b.lh?esc(b.origin)+' → '+esc(b.dest):esc(b.acc.site)}</b></div><div><small>Reference</small><b>${esc(b.rt)} · ${esc(b.rma)}</b></div></div>
+    <table><thead><tr><th>Charge</th><th>Basis</th><th class="r">Claimed</th><th class="r">${memo?'Supported':'Payable'}</th>${memo?'<th class="r">Disputed</th>':''}</tr></thead><tbody>
+    ${L.map(l=>`<tr><td><b>${esc(l.code)}</b><br><span style="color:#7B726D">${esc(l.desc)}</span></td><td style="max-width:320px">${esc(l.findings)}${l.clause?`<br><span style="color:#7B726D">Clause ${esc(clauseText(b,l.clause)[0])}</span>`:''}</td><td class="r">${money(l.claimed)}</td><td class="r">${money(l.supported)}</td>${memo?`<td class="r"><b>${money(l.variance)}</b></td>`:''}</tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="2">Total</td><td class="r">${money(L.reduce((s,l)=>s+l.claimed,0))}</td><td class="r">${money(L.reduce((s,l)=>s+l.supported,0))}</td>${memo?`<td class="r">${money(L.reduce((s,l)=>s+l.variance,0))}</td>`:''}</tr></tfoot></table>
+    <div class="dnote">${memo?`We will pay the supported amount. Please issue a credit note for the disputed amount, or reply through the carrier portal with records that change the calculation within 10 business days. Evidence: ${[...new Set(L.flatMap(l=>l.facts.map(f=>f.src)).filter(s=>s!=='—'))].join(', ')||'contract terms'}.`:`This proforma shows what the evidence supports before the carrier invoice is approved. Amounts follow ${esc(C.contract)} and recorded events; they post to SAP S/4HANA when the bill is settled.`}<br>Prepared by Artizent Reconcile from simulated demo data.</div>
+  </div></div>`;
+  modal(html,()=>{$('#prt').onclick=()=>window.print()},true);
+  if(memo&&b.state==='open'){}}
+</script>
+<script>
+"use strict";
+/* =================== CASES =================== */
+const CGRP={open:OPEN_ST,closed:['AGREED','READY_TO_POST','PAID'],decide:['DISPUTE_REVIEW','CONTRACT_REVIEW'],carrier:['DISPUTED','AWAITING_EVIDENCE'],all:Object.keys(STATUS)};
+const inG=(c,f)=>(CGRP[f]||[f]).includes(c.status);
+const CF=[['open','Open'],['DISPUTE_REVIEW','Dispute review'],['AWAITING_EVIDENCE','Awaiting evidence'],['DISPUTED','Disputed'],['CARRIER_RESPONDED','Carrier responded'],['CONTRACT_REVIEW','Contract review'],['closed','Closed'],['all','All']];
+function renderCases(){const cs=DB.cases.filter(inT);
+  const grp=[['To decide',CGRP.decide,'warn','decide'],['With carrier',CGRP.carrier,'bad','carrier'],['Carrier replied',['CARRIER_RESPONDED'],'info','CARRIER_RESPONDED'],['Closed',['AGREED','READY_TO_POST','PAID'],'ok','closed']];
+  $('#stbar').innerHTML=grp.map(g=>{const x=cs.filter(c=>g[1].includes(c.status)),v=x.reduce((s,c)=>s+(c.claimed-c.supported),0);
+    return `<button class="stc" data-f="${g[3]}" aria-pressed="${S.cf===g[3]}"><span class="l"><span class="dot ${g[2]}"></span>${g[0]}</span><span class="v">${x.length}</span><span class="s">${money0(v)} at stake</span></button>`}).join('');
+  $('#stbar').onclick=e=>{const b=e.target.closest('[data-f]');if(b){S.cf=b.dataset.f;renderCases()}};
+  const fil=c=>inG(c,S.cf);
+  $('#cfilters').innerHTML=CF.map(([k,l])=>`<button class="fbtn" data-f="${k}" aria-pressed="${S.cf===k}">${l} <b>${cs.filter(c=>inG(c,k)).length}</b></button>`).join('');
+  $('#cfilters').onclick=e=>{const b=e.target.closest('[data-f]');if(b){S.cf=b.dataset.f;renderCases()}};
+  const list=cs.filter(fil).sort((a,b)=>a.opened<b.opened?1:-1);
+  const age=c=>Math.max(0,Math.round((new Date(AS_OF_DAY)-new Date(c.opened.slice(0,10)))/864e5));
+  $('#clist').innerHTML=list.length?`<table class="t"><thead><tr><th>Case</th><th>Charge</th><th>Status</th><th class="r">Claimed</th><th class="r">Supported</th><th class="r">At stake</th><th>Owner</th><th class="r">Age</th></tr></thead><tbody>${list.map(c=>`<tr class="click" data-id="${c.id}" tabindex="0"><td><b>${c.id}</b><span class="sub2">${esc(c.bill)} · ${esc(CARR[c.carrier].name)}</span></td>
+    <td><span class="code">${esc(c.code)}</span><span class="sub2">${esc(REASONS[c.reason]||'')}</span></td><td>${chipS(c.status)}</td><td class="r">${money(c.claimed)}</td><td class="r">${money(c.agreed??c.supported)}</td>
+    <td class="r" style="${OPEN_ST.includes(c.status)?'color:var(--warn);font-weight:700':''}">${money(c.claimed-(c.agreed??c.supported))}</td><td>${esc(c.owner)}</td><td class="r">${age(c)} d</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No cases in this view.</div>';
+  $('#clist').onclick=e=>{const r=e.target.closest('tr[data-id]');if(r)openDrawer(r.dataset.id)};
+  $('#clist').onkeydown=e=>{if(e.key==='Enter'&&e.target.matches('tr[data-id]'))openDrawer(e.target.dataset.id)};
+  renderAudit()}
+function renderAudit(){const rows=DB.audit.filter(a=>{const b=billBy(a.entity)||DB.cases.find(c=>c.id===a.entity);return !S.tenant||!b||b.tenant===S.tenant}).slice(0,16);
+  $('#audit').innerHTML=rows.length?rows.map(a=>`<div class="e"><span class="t">${tOf(a.at)}<span class="sub2">${dOf(a.at)}</span></span><div><b>${esc(a.entity)}</b> ${esc(a.text)}<span class="who">${esc(a.actor)}</span></div></div>`).join(''):'<div class="note">No changes yet.</div>'}
+function openDrawer(id){const c=DB.cases.find(x=>x.id===id);if(!c)return;const b=billBy(c.bill),cl=c.clause&&clauseText(b,c.clause);
+  const allowed=Object.entries(DECISIONS).filter(([k,d])=>d.from.includes(c.status));
+  $('#drawer').innerHTML=`<div class="dh">${av(c.carrier)}<div class="t"><h2 style="font-size:18px">${c.id} ${chipS(c.status)}</h2><div class="note">${esc(c.desc)} · <a href="#/settlements/${esc(c.bill)}" style="color:var(--res)">${esc(c.bill)}</a> · ${esc(c.rt)}</div></div><button class="ibtn" id="dx" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button></div>
+   <div class="db"><div class="amts"><div><small>Claimed</small><b>${money(c.claimed)}</b></div><div><small>${c.agreed!=null?'Agreed':'Supported'}</small><b style="color:var(--ok)">${money(c.agreed??c.supported)}</b></div><div><small>At stake</small><b style="color:var(--warn)">${money(c.claimed-(c.agreed??c.supported))}</b></div></div>
+   <div><h3 style="margin-bottom:6px">Why it was opened</h3><div style="font-size:13px">${esc(REASONS[c.reason]||label(c.reason))}. Owner: <b>${esc(c.owner)}</b>.</div>${cl?`<div class="clause"><b>${esc(CARR[c.carrier].contract)} · ${esc(cl[0])}</b>${esc(cl[1])}</div>`:''}</div>
+   <div><h3 style="margin-bottom:8px">Decisions</h3>${allowed.length?`<div class="acts">${allowed.map(([k,d])=>`<button class="btn sm ${k==='ACCEPT'||k==='AGREE'||k==='MARK_PAID'?'pri':''}" data-dec="${k}">${d.l}</button>`).join('')}</div><div class="note" style="margin-top:6px">Only decisions valid for “${STATUS[c.status][0]}” are offered.</div>`:'<div class="note">This case is closed.</div>'}</div>
+   <div><h3 style="margin-bottom:10px">History</h3><ul class="hist">${c.history.slice().reverse().map((h,i)=>`<li class="${i===0?'cur':''}"><b>${STATUS[h.status][0]}</b> · ${esc(h.text)}<small>${dOf(h.at)}, ${tOf(h.at)} · ${esc(h.actor)}</small></li>`).join('')}</ul></div></div>`;
+  $('#drawer').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');$('#dscrim').classList.add('on');$('#dx').onclick=closeDrawer;$('#dx').focus();
+  $('#drawer').querySelector('.acts')?.addEventListener('click',e=>{const x=e.target.closest('[data-dec]');if(x)decide(c,x.dataset.dec)})}
+function decide(c,k){const d=DECISIONS[k],stake=c.claimed-(c.agreed??c.supported);
+  modal(`<h3>${d.l} · ${c.id}</h3><p>${esc(d.hint)} ${esc(c.code)}: claimed ${money(c.claimed)}, supported ${money(c.supported)}.</p>
+   ${d.amount!==undefined?`<label class="fld" style="margin-bottom:10px">Amount ($)<input id="ma" type="number" step="0.01" min="0" value="${d.amount==='supported'?c.supported:''}"></label>`:''}
+   ${d.ref?`<label class="fld" style="margin-bottom:10px">Reference<input id="mf" placeholder="${k==='MARK_PAID'?'SAP payment document':'Agreement id'}"></label>`:''}
+   ${d.reason?`<label class="fld">Reason (kept in the audit trail)<textarea id="mr" rows="3"></textarea></label>`:''}
+   ${k==='WRITE_OFF'&&stake>250?`<div class="alert" style="margin-top:12px"><svg class="ic"><use href="#i-alert"/></svg><div><b>Approval needed.</b> ${money(stake)} is over the $250 write-off limit; this records a request to a Finance approver.</div></div>`:''}
+   <div class="mfoot"><button class="btn" data-close>Cancel</button><button class="btn pri" id="mok">Confirm</button></div>`,()=>{$('#mok').onclick=()=>{
+    const reason=$('#mr')?$('#mr').value.trim():'';if(d.reason&&!reason){$('#mr').focus();toast('Add a reason for the audit trail');return}
+    const amt=$('#ma')&&$('#ma').value!==''?+$('#ma').value:null,ref=$('#mf')?$('#mf').value.trim():'';
+    const o={};if(k==='AGREE'){o.agreed=amt??c.supported;o.ref=ref||null}if(k==='OVERRIDE'&&amt!=null)o.supported=Math.min(amt,c.claimed);if(k==='MARK_PAID'){o.paid=c.agreed??c.supported;o.ref=ref||null}
+    if(k==='ACCEPT'&&c.status==='AWAITING_EVIDENCE')o.supported=c.supported;
+    if(k==='WRITE_OFF'){o.supported=c.claimed}
+    const text=`${d.l}${amt!=null?' '+money(amt):''}${ref?' · '+ref:''}${reason?': '+reason:''}`;
+    move(DB,c,d.to,nowISO(),'you',text,o);audit('you',c.id,text);
+    if(k==='DISPUTE')outbox('Carrier portal','Dispute memo',c.id,c.claimed-c.supported);
+    if(k==='REQUEST_PROOF')outbox('Carrier portal','Proof request',c.id);
+    if(['ACCEPT','AGREE','WRITE_OFF','OVERRIDE'].includes(k))outbox('SAP S/4HANA','Post settlement',c.id,o.agreed??o.supported??c.supported);
+    save();closeModal();toast(`${c.id}: ${STATUS[d.to][0].toLowerCase()}`);render();openDrawer(c.id)}})}
+
+/* =================== PREVENTION =================== */
+function liveState(m,t){const C=CARR[m.carrier],d=C.det;
+  if(m.release!=null)return{lvl:'done',txt:'Released',left:null,used:0,exp:0};
+  if(m.arrival==null||m.arrival>t){const late=t-m.appt;return late>d.grace?{lvl:'warn',txt:`Carrier ${late} min late`,left:null,used:0,exp:0,late:true}:{lvl:'ok',txt:`Due ${fmt(m.appt)}`,left:null,used:0,exp:0,sched:true}}
+  if(m.arrival-m.appt>d.grace)return{lvl:'ok',txt:'Arrived late · detention forfeited',left:null,used:0,exp:0,forfeit:true};
+  const start=Math.max(m.appt,m.arrival),used=Math.max(0,t-start),left=d.free-used,bill=Math.max(0,-left),exp=Math.min(d.cap,Math.ceil(bill/d.inc)*d.inc/60*d.rate);
+  return{lvl:left<=0?'bad':left<=30?'warn':'ok',txt:left<=0?`${-left} min over free time`:`${left} min of free time left`,left,used,exp,start}}
+function renderPrevention(){const t=S.asof,ms=DB.live.filter(inT),st=ms.map(m=>[m,liveState(m,t)]);
+  $('#clock').textContent=fmt(t);$('#asof').value=t;
+  const atRisk=st.filter(x=>x[1].lvl==='warn').length,over=st.filter(x=>x[1].lvl==='bad').length,exp=st.reduce((s,x)=>s+x[1].exp,0);
+  const dm=DB.dem.filter(inT);
+  $('#pkpis').innerHTML=[['On the dock',st.filter(x=>x[1].used>0||x[1].left!=null).length,'trucks inside free time or over',''],['At risk',atRisk,'30 min or less left, or carrier late','warn'],['Over free time',over,'detention running now',over?'warn':''],['Exposure if nothing changes',money0(exp),`plus ${dm.length} container${dm.length!==1?'s':''} at the port`,'']]
+    .map(k=>`<div class="kpi"><div class="l">${k[0]}</div><div class="v ${k[3]}">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
+  $('#mvlist').innerHTML=st.length?st.sort((a,b)=>({bad:0,warn:1,ok:2,done:3}[a[1].lvl]-{bad:0,warn:1,ok:2,done:3}[b[1].lvl])).map(([m,s])=>{const C=CARR[m.carrier],d=C.det;
+    const used=Math.min(s.used,d.free),overM=Math.max(0,s.used-d.free);
+    const g=s.left==null?`<div class="gauge"><i style="width:100%;background:var(--panel3)"></i></div>`:`<div class="gauge"><i class="${s.lvl==='ok'?'u':s.lvl==='warn'?'w':'x'}" style="width:${Math.min(100,used/d.free*100)}%"></i>${overM?`<i class="x" style="width:${Math.min(60,overM/d.free*100)}%"></i>`:''}</div>`;
+    return `<div class="mv"><div style="display:flex;gap:12px;align-items:center">${av(m.carrier)}<div><b>${m.id}</b> <span class="note">· ${esc(m.rt)}</span><div class="meta">${esc(C.name)} · ${esc(m.site)}</div><div class="meta">${esc(m.kind)}</div></div></div>
+      <div>${g}<div class="gl"><span>Appt ${fmt(m.appt)}${m.arrival!=null&&m.arrival<=t?` · in ${fmt(m.arrival)}`:''}</span><b style="color:${s.lvl==='bad'?'var(--bad)':s.lvl==='warn'?'var(--warn)':'var(--ink2)'}">${esc(s.txt)}</b></div></div>
+      <div><div class="meta">${s.exp?'Detention if released now':m.release!=null?'Released at '+fmt(m.release):'Owner'}</div><b>${s.exp?money(s.exp):m.release!=null?'':esc(m.site==='Repair centre'?'Repair centre lead':'Warehouse Manager · '+m.site)}</b><div class="meta">${s.lvl==='bad'?'Release now or log a carrier delay':s.lvl==='warn'&&s.late?'Ask carrier for a new ETA':s.lvl==='warn'?'Prioritise unloading on the next door':''}</div></div>
+      <div class="acts">${m.release==null?`<button class="btn sm" data-lab="${m.id}">Record event</button>`:''}${s.lvl!=='ok'&&m.release==null?`<button class="btn sm ${m.notified?'':'pri'}" data-alert="${m.id}" ${m.notified?'disabled':''}>${m.notified?'Alert sent':'Alert TMS'}</button>`:''}</div></div>`}).join(''):'<div class="empty">No movements for this customer today.</div>';
+  $('#mvlist').onclick=e=>{const a=e.target.closest('[data-alert]'),l=e.target.closest('[data-lab]');
+    if(a){const m=DB.live.find(x=>x.id===a.dataset.alert);m.notified=true;outbox('ShipLane TMS','Prevention alert',m.id);audit('agent',m.id,`Alert sent to ShipLane TMS: ${liveState(m,S.asof).txt}`);save();renderPrevention();counts();toast(`Alert for ${m.id} queued to ShipLane TMS`)}
+    if(l){S.lab=l.dataset.lab;renderLab();$('#lab').scrollIntoView({behavior:'smooth',block:'nearest'})}};
+  $('#dmlist').innerHTML=dm.length?`<table class="t static"><thead><tr><th>Container</th><th>Lot</th><th>Last free day</th><th>Terminal</th><th class="r">Cost per day after</th></tr></thead><tbody>${dm.map(c=>{const dl=Math.round((new Date(c.lfd)-new Date(AS_OF_DAY))/864e5);
+    return `<tr><td><b class="mono">${esc(c.cntr)}</b><span class="sub2">${esc(CARR[c.carrier].name)} · ${esc(c.rt)}</span></td><td>${esc(c.lot)}</td><td>${fmtD(c.lfd)} ${dl<=0?'<span class="chip bad">Today</span>':dl===1?'<span class="chip warn">Tomorrow</span>':''}</td><td>${esc(c.slots)}${/No slots/.test(c.slots)?' <span class="chip ok">Excusable</span>':''}</td><td class="r">${money0(CARR.CH.dem.t1)}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No containers at the port for this customer.</div>';
+  renderLab()}
+function renderLab(){const ms=DB.live.filter(m=>inT(m)&&m.release==null);if(!S.lab||!ms.find(m=>m.id===S.lab))S.lab=(ms[0]||{}).id;
+  const m=DB.live.find(x=>x.id===S.lab),el=$('#lab');
+  if(!m){el.innerHTML='<div class="note">Every movement for this customer has been released.</div>'+(DB.live.some(x=>x.proposal&&inT(x))?proposals():'');return}
+  const nextEv=m.arrival==null?'arrival':m.checkin==null?'checkin':'release';if(!['arrival','checkin','release'].includes(S.labEv)||(S.labEv==='arrival'&&m.arrival!=null)||(S.labEv==='checkin'&&m.checkin!=null)||(S.labEv!=='arrival'&&m.arrival==null))S.labEv=nextEv;
+  const E=[['arrival','Gate arrival','Manhattan WM · gate',m.arrival,'gate arrival'],['checkin','Dock check-in','Manhattan WM · dock',m.checkin,'dock check-in'],['release','Release · BOL signed','Manhattan WM · dock',null,'release (BOL signed)']];
+  el.innerHTML=`<label class="fld">Movement<select id="labM">${ms.map(x=>`<option value="${x.id}" ${x.id===m.id?'selected':''}>${x.id} · ${esc(CARR[x.carrier].name)} · ${esc(x.site)}</option>`).join('')}</select></label>
+   <div class="evbtns">${E.map(([k,l,src,v])=>`<button data-ev="${k}" aria-pressed="${S.labEv===k}" ${v!=null||(k==='release'&&m.arrival==null)||(k==='checkin'&&m.arrival==null)?'disabled':''}>${l}<small>${v!=null?'Recorded '+fmt(v):esc(src)}</small></button>`).join('')}</div>
+   <label class="fld">Time<input id="labT" type="time" value="${fmt(Math.max(S.asof,(m.checkin??m.arrival??0)+5))}" step="300"></label>
+   <button class="btn pri" id="labGo"><svg class="ic"><use href="#i-check"/></svg>Record ${E.find(e=>e[0]===S.labEv)[4]}</button>
+   <div class="note">Recording a release prices detention automatically and sends a pre-bill to ShipLane TMS, so the carrier invoice is checked against it later.</div>${proposals()}`;
+  $('#labM').onchange=e=>{S.lab=e.target.value;S.labEv='';renderLab()};
+  el.querySelector('.evbtns').onclick=e=>{const b=e.target.closest('[data-ev]');if(b&&!b.disabled){S.labEv=b.dataset.ev;renderLab()}};
+  $('#labGo').onclick=()=>{const v=$('#labT').value;if(!v)return;const mm=+v.slice(0,2)*60+ +v.slice(3,5),prev=m.checkin??m.arrival;
+    if(S.labEv!=='arrival'&&prev!=null&&mm<prev){toast('That time is before the previous event');return}
+    m[S.labEv]=mm;audit('wm'+(m.site==='Warehouse 2'?'2':'1'),m.id,`${E.find(e=>e[0]===S.labEv)[1]} recorded at ${fmt(mm)}`);
+    if(S.labEv==='release'){const C=CARR[m.carrier],fake={carrier:m.carrier,lh:null,acc:{type:'DET',site:m.site+' dock',claimed:1e9,ev:{appt:m.appt,arrival:m.arrival,checkin:m.checkin,release:mm}}};
+      const l=evaluate(fake).lines[0];m.proposal={amt:l.supported,txt:l.findings.replace(/ The carrier billed.*$/,''),carrier:C.name};outbox('ShipLane TMS','Pre-bill',m.id,l.supported);
+      audit('agent',m.id,`Detention pre-billed at ${money(l.supported)}`);toast(`${m.id} released · pre-bill ${money(l.supported)}`)}
+    else toast(`${m.id}: ${E.find(e=>e[0]===S.labEv)[4]} recorded`);
+    save();renderPrevention();counts()}}
+function proposals(){const ps=DB.live.filter(m=>inT(m)&&m.proposal);return ps.length?`<div style="display:grid;gap:8px;margin-top:4px">${ps.map(m=>`<div class="proposal"><b>${m.id} pre-billed ${money(m.proposal.amt)}</b><div class="note" style="margin-top:3px">${esc(m.proposal.txt)}</div></div>`).join('')}</div>`:''}
+$('#asof').oninput=e=>{S.asof=+e.target.value;renderPrevention()};
+$('#playBtn').onclick=()=>{const b=$('#playBtn');if(S.play){clearInterval(S.play);S.play=null;b.innerHTML='<svg class="ic"><use href="#i-play"/></svg>Play';return}
+  b.innerHTML='<svg class="ic"><use href="#i-pause"/></svg>Pause';if(S.asof>=1200)S.asof=360;
+  S.play=setInterval(()=>{S.asof=Math.min(1200,S.asof+5);if(S.view==='prevention')renderPrevention();if(S.asof>=1200){clearInterval(S.play);S.play=null;b.innerHTML='<svg class="ic"><use href="#i-play"/></svg>Play'}},90)};
+$('#notifyAll').onclick=()=>{const ms=DB.live.filter(m=>inT(m)&&m.release==null&&!m.notified&&['warn','bad'].includes(liveState(m,S.asof).lvl));if(!ms.length){toast('Nothing at risk to alert');return}
+  ms.forEach(m=>{m.notified=true;outbox('ShipLane TMS','Prevention alert',m.id)});audit('you','Prevention',`${ms.length} alert${ms.length>1?'s':''} sent to ShipLane TMS`);save();renderPrevention();toast(`${ms.length} alert${ms.length>1?'s':''} queued to ShipLane TMS`)};
+
+/* =================== INSIGHTS =================== */
+const MONTHS=['Oct 25','Nov 25','Dec 25','Jan 26','Feb 26','Mar 26','Apr 26','May 26','Jun 26','Jul 26','Aug 26','Sep 26'];
+function trendData(){const r=mulberry32(7106+(S.tenant?S.tenant.charCodeAt(9):0)),k=S.tenant?{'Customer A':.5,'Customer B':.36,'Customer C':.14}[S.tenant]:1;
+  return MONTHS.map((m,i)=>{const billed=(31000+i*1450+r()*5200)*k,caught=billed*(.032+r()*.018+(i>6?.008:0));return{m,billed,caught}})}
+function renderInsights(){const bs=visibleBills(),E=new Map(bs.map(b=>[b.id,evaluate(b)])),cs=DB.cases.filter(inT);
+  const tc=bs.reduce((s,b)=>s+E.get(b.id).claimed,0),tv=bs.reduce((s,b)=>s+E.get(b.id).variance,0),closed=cs.filter(c=>['AGREED','PAID','READY_TO_POST'].includes(c.status));
+  const won=closed.filter(c=>(c.agreed??c.supported)<c.claimed-.004).length,td=trendData(),yr=td.reduce((s,x)=>s+x.caught,0);
+  $('#ikpis').innerHTML=[['Touchless rate',`${bs.length?Math.round(bs.filter(b=>b.touchless).length/bs.length*100):0}%`,'bills posted with no review'],['Challenged this period',money0(tv),`${tc?(tv/tc*100).toFixed(1):0}% of ${money0(tc)} billed`],['Stopped in 12 months',money0(yr),'variance not paid'],['Disputes upheld',closed.length?`${Math.round(won/closed.length*100)}%`:'—',`${won} of ${closed.length} closed cases`]]
+    .map(k=>`<div class="kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
+  barChart($('#trend'),td);
+  /* repeat causes */
+  const g={};cs.forEach(c=>{const k=c.facility+'|'+c.reason;(g[k]=g[k]||{f:c.facility,r:c.reason,n:0,v:0}).n++;g[k].v+=c.claimed-c.supported});
+  const rows=Object.values(g).sort((a,b)=>b.v-a.v).slice(0,8),mx=Math.max(1,...rows.map(r=>r.v));
+  $('#causes').innerHTML=rows.length?`<div style="display:grid;gap:12px">${rows.map(r=>`<div class="hb" title="${esc(r.f)}: ${esc(REASONS[r.r])} · ${r.n} case${r.n>1?'s':''} · ${money(r.v)}"><div class="k"><b>${esc(r.f)}</b><small>${esc(REASONS[r.r]||r.r)} · ${r.n} case${r.n>1?'s':''}${r.n>=3?' · <span style="color:var(--bad);font-weight:600">repeated</span>':''}</small></div><div class="track"><i style="width:${r.v/mx*100}%"></i></div><div class="v">${money0(r.v)}</div></div>`).join('')}</div>`:'<div class="empty">No challenged charges yet.</div>';
+  /* scorecard */
+  const sc=Object.keys(CARR).map(k=>{const b=bs.filter(x=>x.carrier===k),c=b.reduce((s,x)=>s+E.get(x.id).claimed,0),v=b.reduce((s,x)=>s+E.get(x.id).variance,0),cc=cs.filter(x=>x.carrier===k);
+    const ag=cc.filter(x=>x.history.some(h=>h.status==='AGREED')).map(x=>(new Date(x.history.find(h=>h.status==='AGREED').at)-new Date(x.opened))/864e5);
+    return{k,n:b.length,c,v,tp:b.length?b.filter(x=>x.touchless).length/b.length*100:0,cases:cc.length,days:ag.length?ag.reduce((s,x)=>s+x,0)/ag.length:null}});
+  $('#scorecard').innerHTML=`<table class="t static"><thead><tr><th>Carrier</th><th class="r">Bills</th><th class="r">Billed</th><th class="r">Challenged</th><th style="min-width:160px">Variance rate</th><th class="r">Touchless</th><th class="r">Cases</th><th class="r">Days to agree</th></tr></thead><tbody>${sc.map(s=>{const vr=s.c?s.v/s.c*100:0;
+    return `<tr><td><div style="display:flex;gap:10px;align-items:center">${av(s.k)}<div><b>${esc(CARR[s.k].name)}</b><span class="sub2">${esc(CARR[s.k].contract)}</span></div></div></td><td class="r">${s.n}</td><td class="r">${money0(s.c)}</td><td class="r">${money0(s.v)}</td>
+    <td><div style="display:flex;align-items:center;gap:8px"><span class="minibar" style="flex:1;margin:0"><i style="width:${Math.min(100,vr*5)}%;background:${vr>6?'var(--bad)':vr>3?'#D4A800':'var(--ok)'}"></i></span><b class="num" style="font-size:12.5px">${vr.toFixed(1)}%</b></div></td><td class="r">${s.tp.toFixed(0)}%</td><td class="r">${s.cases}</td><td class="r">${s.days==null?'—':s.days.toFixed(1)}</td></tr>`}).join('')}</tbody></table>`;
+  $('#integ').innerHTML=`<table class="t static"><thead><tr><th>System</th><th>Direction</th><th>Status</th></tr></thead><tbody>${INTEG.map(i=>`<tr><td><b>${esc(i[0])}</b><span class="sub2">${esc(i[2])}</span></td><td style="white-space:nowrap">${esc(i[1])}</td><td style="white-space:nowrap"><span class="chip ${i[3]==='live'?'ok':'warn'}"><span class="dot ${i[3]==='live'?'ok':'warn'}"></span>${i[3]==='live'?'Live':'Stale'}</span><span class="sub2">${i[3]==='live'?'synced '+esc(i[4])+' ago':'last offer '+esc(i[4])+' ago; slot data may lag'}</span></td></tr>`).join('')}</tbody></table>`;
+  const ob=DB.outbox.filter(o=>{const b=billBy(o.ref)||DB.cases.find(c=>c.id===o.ref)||DB.live.find(m=>m.id===o.ref);return !S.tenant||!b||b.tenant===S.tenant});
+  $('#obnote').textContent=`${ob.filter(o=>o.status!=='Delivered').length} pending`;
+  $('#outbox').innerHTML=`<table class="t static"><thead><tr><th>#</th><th>Target</th><th>Message</th><th class="r">Amount</th><th>Status</th></tr></thead><tbody>${ob.slice(0,30).map(o=>`<tr><td class="mono">${o.id}<span class="sub2">${dOf(o.at)} ${tOf(o.at)}</span></td><td>${esc(o.target)}</td><td>${esc(o.kind)}<span class="sub2 mono">${esc(o.ref)}</span></td><td class="r">${o.amount==null?'—':money(o.amount)}</td><td>${o.status==='Delivered'?'<span class="chip ok">Delivered</span>':`<span class="chip warn">${esc(o.status)}</span>${o.note?`<span class="sub2">${esc(o.note)}</span>`:''}`}</td></tr>`).join('')}</tbody></table>`;
+  renderDocs()}
+function barChart(el,data){const W=640,H=250,P={l:52,r:8,t:16,b:30},mx=Math.ceil(Math.max(...data.map(d=>d.caught))/500)*500,bw=(W-P.l-P.r)/data.length,y=v=>P.t+(H-P.t-P.b)*(1-v/mx);
+  let h=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Variance stopped before payment by month"><g class="gridl">`;
+  for(let i=0;i<=4;i++){const v=mx*i/4;h+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${P.l-8}" y="${y(v)+4}" text-anchor="end">${money0(v)}</text>`}
+  h+='</g>';data.forEach((d,i)=>{const x=P.l+i*bw+bw*.18,w=bw*.64,top=y(d.caught),r=Math.min(4,w/2);
+    h+=`<g data-i="${i}"><rect class="hit" x="${P.l+i*bw}" y="${P.t}" width="${bw}" height="${H-P.t-P.b}" fill="transparent"/><path class="bar" d="M${x} ${H-P.b}V${top+r}Q${x} ${top} ${x+r} ${top}H${x+w-r}Q${x+w} ${top} ${x+w} ${top+r}V${H-P.b}Z"/>
+      <text class="ax" x="${x+w/2}" y="${H-P.b+18}" text-anchor="middle">${d.m.slice(0,3)}</text></g>`});
+  const last=data[data.length-1];h+=`<text class="val" x="${P.l+(data.length-1)*bw+bw/2}" y="${y(last.caught)-7}" text-anchor="middle">${money0(last.caught)}</text></svg><div class="tip" hidden></div>`;
+  el.innerHTML=h;const tip=el.querySelector('.tip'),svg=el.querySelector('svg');
+  svg.onmousemove=e=>{const g=e.target.closest('g[data-i]');$$('#trend .bar').forEach(b=>b.classList.remove('hl'));if(!g){tip.hidden=true;return}
+    const d=data[+g.dataset.i];g.querySelector('.bar').classList.add('hl');const r=el.getBoundingClientRect(),br=g.querySelector('.bar').getBoundingClientRect();
+    tip.innerHTML=`<b>${d.m}</b>${money0(d.caught)} stopped · ${(d.caught/d.billed*100).toFixed(1)}% of ${money0(d.billed)} billed`;tip.hidden=false;tip.style.left=(br.left-r.left+br.width/2)+'px';tip.style.top=(br.top-r.top)+'px'};
+  svg.onmouseleave=()=>{tip.hidden=true;$$('#trend .bar').forEach(b=>b.classList.remove('hl'))}}
+function renderDocs(){const bs=visibleBills().filter(b=>b.acc||b.featured),sel=$('#docBill'),cur=sel.value;
+  sel.innerHTML=bs.slice(0,60).map(b=>`<option value="${b.id}" ${b.id===(cur||S.sel)?'selected':''}>${b.id} · ${esc(CARR[b.carrier].name)} · ${esc(b.rt)}</option>`).join('');
+  const ds=DB.docs.filter(d=>{const b=billBy(d.bill);return !S.tenant||!b||b.tenant===S.tenant});
+  $('#docs').innerHTML=ds.length?`<table class="t static"><thead><tr><th>Document</th><th>Bill</th><th>SHA-256</th><th>Added by</th></tr></thead><tbody>${ds.slice().reverse().map(d=>`<tr><td><b>${esc(d.file)}</b><span class="sub2">${esc(d.kind)}${d.size?' · '+d.size:''}</span></td><td class="mono">${esc(d.bill)}</td><td class="mono" title="${esc(d.sha)}">${esc(d.sha.slice(0,16))}…</td><td>${esc(d.by)}<span class="sub2">${dOf(d.at)}, ${tOf(d.at)}</span></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No documents yet.</div>'}
+async function addDoc(f){const bill=$('#docBill').value;if(!bill){toast('Pick a bill first');return}
+  let sha='unavailable';try{if(crypto&&crypto.subtle){const buf=await crypto.subtle.digest('SHA-256',await f.arrayBuffer());sha=[...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(e){}
+  const kb=f.size<1024*1024?Math.max(1,Math.round(f.size/1024))+' KB':(f.size/1048576).toFixed(1)+' MB';
+  DB.docs.push({bill,kind:$('#docKind').value,file:f.name,by:'You · Freight audit',at:nowISO(),sha,size:kb});audit('you',bill,`${$('#docKind').value} attached: ${f.name}`);save();renderDocs();toast(`${f.name} linked to ${bill}`)}
+(()=>{const drop=$('#drop');$('#pick').onclick=()=>$('#docfile').click();$('#docfile').onchange=e=>{e.target.files[0]&&addDoc(e.target.files[0]);e.target.value=''};
+  ['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over')}));
+  ['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
+  drop.addEventListener('drop',e=>e.dataTransfer.files[0]&&addDoc(e.dataTransfer.files[0]))})();
+
+/* boot */
+if(!location.hash)history.replaceState(null,'','#/settlements');
+route();
+</script>
+</body>
+</html>
