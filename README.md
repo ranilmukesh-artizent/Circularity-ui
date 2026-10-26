@@ -9,7 +9,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 | | |
 |---|---|
 | **Try it** | Open the hosted demo at [ranilmukesh-artizent.github.io/Circularity-ui](https://ranilmukesh-artizent.github.io/Circularity-ui/), or open `index.html` from this folder in any browser. Nothing to install. |
-| **Framework** | Circularity is **Recover**, one of three apps in the Artizent Decision Intelligence Framework. The framework overview at [/framework/](https://ranilmukesh-artizent.github.io/Circularity-ui/framework/) links to **Recover**, **Reconcile** (pre-invoice validation of carrier bills) and **Resolve** (operational recovery). All three share this demo's data and run fully in the browser on simulated data. |
+| **Framework** | Circularity is **Recover**, one of three apps in the Artizent Decision Intelligence Framework. The framework overview at [/framework/](https://ranilmukesh-artizent.github.io/Circularity-ui/framework/) links to **Recover**, **Reconcile** (pre-invoice validation of carrier bills) and **Resolve** (operational recovery). All three share this demo's data and run fully in the browser on simulated data. See [section 16](#16-the-decision-intelligence-framework-reconcile-and-resolve). |
 | **Sign in** | A normal sign-in form. Type `exec` (senior management) or `ops` (end user) and any password, or a work email such as `planner.b@northfield.example` (full list in section 4). Sign-in is simulated: nothing is checked and nothing leaves the browser. In production, users and roles come from the customer's identity provider (single sign-on). |
 | **The journey** | Sign in, open **Returned assets**, pick one asset and follow it through the ten steps of the *Typical User Journey* (supply evidence to reconcile and learn). Every step is clickable in the strip under the top bar, and a bar at the bottom says what the step established and what comes next. The demo record is the returned motor **RT-1048**; the click-by-click script is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). |
 | **Data** | Everything is **synthetic**. The demo company is *Northfield Industrial Leasing*, with three customer tenants and eight sites. No personal or customer data is used, and none should be entered. |
@@ -38,6 +38,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 13. [What is real and what is simulated](#13-what-is-real-and-what-is-simulated)
 14. [Open points](#14-open-points)
 15. [The agent-first product](#15-the-agent-first-product)
+16. [The Decision Intelligence Framework: Reconcile and Resolve](#16-the-decision-intelligence-framework-reconcile-and-resolve)
 
 ---
 
@@ -531,9 +532,9 @@ For the Product Owner and engineering.
 
 | | |
 |---|---|
-| **Shape** | One self-contained file, `index.html`. No build step, no framework, no backend; the only external request is for Google Fonts |
+| **Shape** | One self-contained file, `index.html`. No build step, no framework, no backend; the only external request is for Google Fonts. The framework pages in `framework/` (section 16) are three more files built the same way |
 | **Run locally** | Open `index.html`, or serve the folder (`python -m http.server`) and open `http://localhost:8000` |
-| **Hosting** | GitHub Pages, deployed automatically from `main` by `.github/workflows/static.yml` |
+| **Hosting** | GitHub Pages, deployed automatically from `main` by `.github/workflows/static.yml` (the identical `main.yml` was removed in PR #13, so each push deploys once). The workflow publishes the whole repository, so anything committed is public. The framework is at `/framework/` |
 | **Data** | A seeded synthetic world (seed 20261007): 128 live cases, about 1,400 closed decisions, 19 sources, 31 workflows. Built-in integrity checks make sure the numbers reconcile across pages |
 | **State** | In memory; resets on refresh. Only the theme, the menu state and the signed-in demo account are remembered on the device |
 | **Navigation** | Hash links such as `#/product/RT-1048` or `#/integration/map`, so every page and section can be bookmarked and the back button works |
@@ -544,7 +545,11 @@ For the Product Owner and engineering.
 **Repository map**
 
 ```
-index.html                      the whole app
+index.html                      the whole app (Recover)
+framework/index.html            DI Framework overview: Recover, Resolve and Reconcile
+framework/reconcile.html        Reconcile: pre-invoice validation of carrier bills
+framework/resolve.html          Resolve: operational recovery
+framework/artizent-logo.png     logo used by the framework pages
 README.md                       this product guide
 CHANGES.md                      release walk-throughs, one per update
 docs/PLAN_RBAC_ADAPTIVE_UI.md   role design, with the Product Owner's decisions (section 9)
@@ -611,3 +616,65 @@ On branch `feature/agent-first` the workbench becomes agent-first and human-gove
 
 > **Legal review.** Autonomy, approval limits, attribution, audit and evidence-pack wording, personal-data handling in field mapping and local persistence should be reviewed by the Legal team before they are relied on or shown to clients.
 
+---
+
+## 16. The Decision Intelligence Framework: Reconcile and Resolve
+
+Circularity is **Recover**, one of three decision applications that read the same enterprise data. The `framework/` folder (PR #13) adds the framework overview and front ends for the other two, **Reconcile** and **Resolve**. Like Circularity, each is one HTML file with no build step and no backend: the data, rules, simulations and state live in the page, and the only external request is Google Fonts. The walk-through is [CHANGES Update 15](CHANGES.md).
+
+| Page | Hosted at | What it is |
+|---|---|---|
+| **Overview** | [/framework/](https://ranilmukesh-artizent.github.io/Circularity-ui/framework/) | *One framework. Three decision capabilities.* Systems, data, signals and events flow into one shared decision layer; cards open **Recover** (this app, on its Home page `index.html#/home`), **Resolve** and **Reconcile**. Searchable, light and dark |
+| **Reconcile** | [/framework/reconcile.html](https://ranilmukesh-artizent.github.io/Circularity-ui/framework/reconcile.html) | Checks every carrier bill against the contract, the booking, recorded events and the pre-bill before it is paid |
+| **Resolve** | [/framework/resolve.html](https://ranilmukesh-artizent.github.io/Circularity-ui/framework/resolve.html) | Brings operational incidents and their enterprise consequences into one prioritised view and recommends one next best action |
+
+All four pages link to each other: the overview and both apps have a *Framework* menu, and Circularity links to the overview from the sign-in panel and the sidebar footer. Every *Recover* link opens Circularity on **Home** (`index.html#/home`, the agent-first landing page); links to a specific case open that case (`index.html#/product/asset/RT-…`). If you are not signed in, Circularity shows its sign-in form first and then opens Home. The light or dark choice carries across all four (they share the `circ-theme` key).
+
+### One set of data
+
+The framework pages use Circularity's synthetic world: *Northfield*, Customers A, B and C and their sites, Warehouse 1, Warehouse 2, the Repair centre, Vizag Port Yard, the carriers Velo Freight, Northline 3PL and Coastal Haulage, and the as-of time **7 Oct 2026, 09:00**.
+
+- **Reconcile** bills all **128 return cases** (RT-1001 to RT-1128) with the carrier, pickup and freight from Circularity's logistics facts. Each bill links to its RT case in Circularity (`../index.html#/product/asset/RT-…`).
+- **Resolve** links incidents across the framework: SUP-001 can use bearings harvested from **RT-1027** in Recover, ORD-003 can use **RT-1048** (recommended for redeployment), LOG-004 ties to the resale lot **RT-1052** and to the Reconcile container at its last free day, and LOG-008 ties to the Reconcile truck **MOV-2614**, which is over its free time.
+
+### Reconcile
+
+| Page | What you see |
+|---|---|
+| **Settlements** | Figures for billed, supported, held back, touchless and waiting; a bill queue with filters (needs review, proof needed, partial, approve, settled). Each bill shows an **N-way match** (contract, booking, events, pre-bill, carrier bill), an **evidence studio** (a timeline you can drag to test a different time, or a demurrage day strip where you mark days the terminal offered no slots), a **line-by-line result** with evidence, contract clause, owner and next step, and **Apply decision**, a printable **Proforma** and a **Dispute memo** |
+| **Cases** | Every challenged or unproven charge becomes a case. Only the decisions valid for its status are offered (accept, dispute, request proof, record carrier reply, agree settlement, write off, override, mark paid); each one is written to the audit trail |
+| **Prevention** | Trucks at our docks today against each carrier's free time, with a clock you can scrub from 06:00 to 20:00 or play; alerts to the TMS; containers at Vizag Port Yard near their last free day; an **event lab** where recording a release prices detention automatically |
+| **Insights** | Variance stopped per month, repeat causes by facility, a carrier scorecard, integrations, the outbound queue and evidence documents (files stay in the browser; only a SHA-256 fingerprint is recorded) |
+
+**The checks** run in the page: lane rate against rate card RC-2026.2; fuel surcharge against the weekly index for the pickup week; **detention** from the later of appointment and gate arrival to the signed BOL, 120 free minutes, then 15-minute steps up to a cap, forfeited if the carrier is more than 15 minutes late, and held for proof if a record is missing; **demurrage** in two tiers after the last free day, with no-slot days excused; **field service** as a fixed package plus overtime in 30-minute steps; and **duplicate bills**.
+
+**Eight bills to demo:** INV-VF-20931 (clock started early, rounded to whole hours), INV-NL-11872 (release missing, proof needed), INV-NL-11880 (carrier 47 minutes late), INV-CH-55410 (demurrage with two no-slot days), INV-NL-11893 (overtime over-counted), INV-VF-20958 (duplicate of INV-VF-20931), INV-NL-11886 (wrong fuel index week), INV-CH-55402 (clean, matched to the minute).
+
+### Resolve
+
+| Page | What you see |
+|---|---|
+| **Enterprise Pulse** | A command band with potential impact, units at risk, sites impacted and resolution progress; severity filters; a **live network map** (sub-suppliers, suppliers, plants, distribution, customers) where affected nodes glow by severity and open their incident; the ranked incident list with a preview; trend, function and region charts |
+| **Incidents** and six **function** pages | Supply, Production, Logistics, Inventory, Quality and Customer / Orders, each with its own figures and board (supplier risk, plant status, carriers and ports, days of cover, quality signals, orders at risk) |
+| **Incident workspace** | Five tabs: **Overview** (ripple chain with the day each effect lands, summary, impacted plants, at-risk orders, inventory and demand-versus-supply charts), **Ripple impact**, **Options & simulation**, **Action plan** and **How it works** (Signals → Models → Agents → Scenarios → Simulation → Optimization → Economics → Next best action → Learning, plus the timeline). The **Next best action** card stays beside every tab: outcome, confidence, plan, economics, residual risk, alternatives, and *Approve*, *Challenge* and *Simulate* |
+| **Decisions** and **Learning** | The decision log with its economics, and predicted versus actual for closed incidents, model accuracy and learning records |
+
+**SUP-001 is fully modelled.** The scenario lab runs **600 simulated futures** per plan (late deliveries, a further supplier slip, test yield, demand noise), and the optimizer ranks **1,428 plans** by risk-adjusted net value. The recommendation is calculated, not written in: transfer 200 assemblies from Warehouse 2, expedite 200 by road, release 60 recovered sets from Recover and re-sequence Plant A for two days. It protects about $610K for $83K, with no stoppage in 96% of runs. Moving the levers reruns the simulation. The other 11 incidents show a ranked options table built from their recommended actions; they have no scenario lab.
+
+**Approve** writes the plan's steps to the simulated systems one by one (SAP S/4HANA, SAP Ariba, ShipLane TMS, IBM Maximo, Salesforce), moves the incident to *Monitoring* and adds it to the decision log.
+
+### State
+
+Decisions, cases, approvals and runs are kept in this browser (`rcn-demo-v3` for Reconcile, `rsv-demo-v1` for Resolve) and survive a refresh. **Reset demo data** in each app's sidebar restores the starting state.
+
+### What is real and what is simulated
+
+Unlike Circularity (section 13), the framework pages say plainly that they are simulated: *Simulated data* in the sidebar and *Live (simulated)* in Resolve's top bar. Everything is invented for the demo: contracts, clauses and rates, supplier and plant names (Plant A · Chakan, Plant B · Sriperumbudur and Plant C · Sanand are new; Circularity has customer sites only), incidents, model figures and outcomes. Vendor and product names make the screens realistic, but nothing is connected and no network calls are made.
+
+### Open points
+
+- Reconcile and Resolve are owned by other teams. These front ends are concept builds for their review; Reconcile replaces an earlier page that called a local backend, and now runs entirely on simulated data.
+- Only SUP-001 has a calibrated recovery model and scenario lab.
+- The framework pages were checked by hand in a headless browser (section 12's automated suites cover Circularity only).
+
+> **Legal review.** The contract clauses, rates and dispute wording in Reconcile and the model, confidence and economic claims in Resolve are invented for the demo. Kinective's Legal team should review how they are presented before they are shown to clients or prospects, and nobody should imply that a named vendor product is connected.
