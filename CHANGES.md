@@ -4,7 +4,62 @@ For the product overview (what Circularity does, every screen and every role) re
 
 Open `index.html`. The app opens on a **sign-in form** (Update 9): type `exec` or `ops` and any password, and it opens on that person's home page. With `ops`, pick a returned asset and follow its ten journey steps (Update 10). Update 8 adds the **Executive** and **Warehouse Manager** accounts, the guided treatment page and **Process orchestration**. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
 
-**Quick links:** [Update 16: Execution detail and cost trace](#update-16-execution-detail-and-cost-trace-branch-featureexecution-detail) · [Update 15: DI Framework overview, Reconcile and Resolve](#update-15-decision-intelligence-framework-overview-reconcile-and-resolve-pr-13) · [Update 14: Agentic run board, model cards, MCP and Access pages](#update-14-agentic-run-board-model-cards-mcp-and-access-pages-branch-feature-live-run) · [Update 13: Live run board and live wording](#update-13-live-run-board-and-live-wording-branch-feature-live-run) · [Update 12: Agent-first workbench](#update-12-agent-first-workbench-branch-feature-agent-first) · [Update 11: Command Center by section, Asset Intelligence restructure](#update-11-command-center-by-section-asset-intelligence-restructure-redeploy-and-cost-wording-edge-cases) · [Update 10: Journey-led flow, line-item learning](#update-10-journey-led-flow-step-guidance-value-that-builds-line-item-learning) · [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+**Quick links:** [Update 18: Decision Workbench stage pages](#update-18-decision-workbench-stage-pages-branch-featureworkbench-ux) · [Update 17: Sidebar, Home and Connection Fabric revamp](#update-17-sidebar-home-and-connection-fabric-revamp-branch-featurefabric-revamp) · [Update 16: Execution detail and cost trace](#update-16-execution-detail-and-cost-trace-branch-featureexecution-detail) · [Update 15: DI Framework overview, Reconcile and Resolve](#update-15-decision-intelligence-framework-overview-reconcile-and-resolve-pr-13) · [Update 14: Agentic run board, model cards, MCP and Access pages](#update-14-agentic-run-board-model-cards-mcp-and-access-pages-branch-feature-live-run) · [Update 13: Live run board and live wording](#update-13-live-run-board-and-live-wording-branch-feature-live-run) · [Update 12: Agent-first workbench](#update-12-agent-first-workbench-branch-feature-agent-first) · [Update 11: Command Center by section, Asset Intelligence restructure](#update-11-command-center-by-section-asset-intelligence-restructure-redeploy-and-cost-wording-edge-cases) · [Update 10: Journey-led flow, line-item learning](#update-10-journey-led-flow-step-guidance-value-that-builds-line-item-learning) · [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+
+---
+
+## Update 18: Decision Workbench stage pages (branch `feature/workbench-ux`)
+
+**Why:** everyone who used the workbench said the ten stages were hard to follow. Stages 1–5 opened the same 3.9-screen Asset intelligence page, and stages 6–10 scrolled one 10.8-screen Treatment Intelligence page; the only cue that the stage had changed was a yellow outline. Each stage now has its own short page that leads with *what happened*, and a case Overview links them. Plan and decisions: [`docs/PLAN_DECISION_WORKBENCH_STAGE_PAGES.md`](docs/PLAN_DECISION_WORKBENCH_STAGE_PAGES.md).
+
+**Where to look:** sign in as `ops` and open RT-1048 from Returned assets. It opens on its current stage (7, Approve). Use the stage bar, *Next* or Alt+→ to move, and *Overview* for the hub. `?stages=0` before the `#` restores the previous flow on this device; `?stages=1` brings the stage pages back.
+
+| Overview | Stage 1 · Lease ends | Stage 5 · Inspect and grade |
+|---|---|---|
+| [![Overview](docs/screenshots/stage-light-overview.webp)](docs/screenshots/stage-light-overview.webp) | [![Stage 1](docs/screenshots/stage-light-1.webp)](docs/screenshots/stage-light-1.webp) | [![Stage 5](docs/screenshots/stage-light-5.webp)](docs/screenshots/stage-light-5.webp) |
+| **Stage 6 · Decide** | **Stage 7 · Approve (Approver)** | **Stage 8 · Execute (not reached yet)** |
+| [![Stage 6](docs/screenshots/stage-light-6.webp)](docs/screenshots/stage-light-6.webp) | [![Stage 7](docs/screenshots/stage-light-7-approver.webp)](docs/screenshots/stage-light-7-approver.webp) | [![Stage 8](docs/screenshots/stage-light-8.webp)](docs/screenshots/stage-light-8.webp) |
+| **Stage 8 · Execute (done)** | **Stage 9 · Outcome** | **Stage 10 · Reconcile and learn** |
+| [![Stage 8 done](docs/screenshots/stage-light-8-done.webp)](docs/screenshots/stage-light-8-done.webp) | [![Stage 9](docs/screenshots/stage-light-9-done.webp)](docs/screenshots/stage-light-9-done.webp) | [![Stage 10](docs/screenshots/stage-light-10-done.webp)](docs/screenshots/stage-light-10-done.webp) |
+| **Overview after the outcome (dark)** | **Stage 6 (dark)** | **Phone: stage sheet** |
+| [![Overview dark](docs/screenshots/stage-dark-overview-done.webp)](docs/screenshots/stage-dark-overview-done.webp) | [![Stage 6 dark](docs/screenshots/stage-dark-6.webp)](docs/screenshots/stage-dark-6.webp) | [![Phone sheet](docs/screenshots/stage-phone-sheet.webp)](docs/screenshots/stage-phone-sheet.webp) |
+
+Every stage, the Overview and Full analysis are in `docs/screenshots/stage-light-*`, `stage-dark-*` and `stage-phone-*` (47 shots).
+
+| What | Where | What you see |
+|---|---|---|
+| **Stage pages** | `#/product/RT-1048/stage/1` … `/stage/10` | One page per stage, all built on the same frame: caption (*Decide · Stage 6 of 10*), the stage name as the title, a status tag in words and shape, when and by whom, the stage's systems with their logos, and ✦ *Ask about this stage*. Then **What happened** (the result in one sentence, the key facts, each with its provenance, and the documents with *Copy*), **What it means** (one line linking the stage to the decision), and **What you do now** or **What happens next** (one primary action, or who it waits on and since when, with *Notify the owner*). The details sit in tabs below; *Established so far* recaps the earlier stages |
+| **Not reached yet** | A future stage | **What will happen**: what starts it, what the agent does, what a person does and which systems take part. No results are invented |
+| **Stage bar** | Top of every case page | Four phases (*Arrive*, *Decide*, *Approve*, *Execute and learn*) over ten chips. Each chip has a state in words (*Done*, *Waiting*, *Blocked*, *Not reached*) and a shape (✓ ⏳ ! ○). The stage in view is raised with a yellow underline (`aria-current="step"`); the stage the case is at has an amber outline. On a phone it folds into *Stage 6 of 10 · Decide ▾* with a sheet |
+| **Footer** | Bottom of every stage | *← 5 Inspect and grade* · *Stage 6 of 10* · *Overview* · *Agent suggests* · *7 Approve →*. The buttons name the stage. Alt+← and Alt+→ do the same |
+| **Overview** | `#/product/RT-1048/overview` | The asset, the decision at a glance (*Redeploy · $9,600*, or *$9,230 actual · −$370 against prediction*), a card per stage grouped by phase, and on the right *Needs you*, *Agent suggests*, *Predicted against actual*, Asset intelligence, Full analysis, *See it run* and the evidence pack |
+| **Full analysis** | `#/product/RT-1048/full` | The previous Treatment Intelligence page, unchanged and fully open, for review and print. Its sections lose their numbers, so *stage* means only the ten stages |
+| **Opening a case** | Returned assets, search, Home, alerts | `#/product/RT-1048` opens the stage that is yours: Planner and Admin the current stage, Approver stage 7 when it is waiting, Engineer stage 5, Finance stage 9 or 10, Warehouse Manager stage 4 or 8, Executive the Overview |
+| **Old links** | Bookmarks, the journey strip elsewhere | `…asset/ID?jstep=1–5` open stages 1–5; `?step=1` the Overview; `?step=2`, `3`, `4` stage 6 on *Compare outcomes*, *Why* or *What-if*; `?step=5` stage 7 (stage 8 once the case is executing); `at=handoff` stage 8 (`jstep=9` stage 9); `at=reconcile` stage 10; `?explain` stage 6 on *Why*. The redirect replaces the history entry, so Back works |
+| **Accessibility** | Every stage | Focus moves to the stage title, the browser title becomes *Stage 6 · Decide · RT-1048* and a polite live region announces it. Back and Forward restore the stage's scroll. Status is never colour alone. `prefers-reduced-motion` turns off the stage transition |
+
+**Measured (1440 × 900, Planner · Customer A, RT-1048):**
+
+| Stage | Before | After (details closed) | Result and action end at |
+|---|---|---|---|
+| 1–5 | the same 3,501 px page (3.9 screens); the stage's box started at 800–914 px | 915–1,017 px (1.0–1.1 screens), five different pages | 708–755 px |
+| 6 | 9,700 px (10.8 screens) | 1,084 px (1.2 screens) | 821 px |
+| 7–10 | the same 9,700 px page; the stage started 6,161–9,393 px down | 915–991 px (1.0–1.1 screens) | 625–729 px |
+
+The footer starts at 845 px, so the result and the action are on the first screen for every stage.
+
+### What did not change
+
+Every route, value, gate, approval rule, role rule, agent intent and guard rail. RT-1048 still shows $9,600 predicted and $9,230 actual. Asset intelligence is still the asset record. The demo build (`?agent=0`) and the previous look (`?fabric=0`) are unchanged. No new random draws: the seeded data is the same.
+
+### Deliberate changes
+
+- **`#/product/ID` opens your stage**, and the Overview has its own address, `#/product/ID/overview` (the plan had the Overview at `#/product/ID`). This way every link that opens a case lands on the role's stage (D11) without changing those links.
+- **`?step=5` opens stage 8 once the case is executing.** The escalation alerts use this link, and the escalated step lives on stage 8.
+- **Stage 9 has its own delivery summary and document list.** The handoff panel (`#tiHandoff`, `#tiHo1`–`#tiHo6`) stays on stage 8 only, so no panel appears on two stage pages.
+- **Stage 8's *Instruction* tab** shows the instruction table and the raw payload; route and timing and *What happens if* moved to their own tab.
+- **No *Confirm receipt* button on stage 4.** No such action exists, and the plan says nothing is invented. Stage 4 offers *Request evidence* when evidence is missing; otherwise it says that the receipt is recorded in WMS.
+- **Test expectations that moved** (none removed or weakened): `af1b` reads the restored state on Full analysis; `af2` looks for the packet on stage 6, the open sections on Full analysis, and a journey link landing on stage 6; `exec` reads the escalation and the handoff documents on stage 8. The journey chips keep the run state as a class, so `af5` and `run` still compare the stage bar with the run view.
 
 ---
 
