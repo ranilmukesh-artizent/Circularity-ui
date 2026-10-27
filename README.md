@@ -17,6 +17,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 | **Agent-first (branch `feature/agent-first`)** | Every role lands on **Home**; **Ask** (Ctrl+J) and the command bar (Ctrl+K) work on every page; a rule-based agent prepares decisions, mappings and workflows as reviewable cards, and a person commits. See [section 15](#15-the-agent-first-product). Add `?agent=0` for the 22 Oct demo build. |
 | **Live run board and live UI (branch `feature/live-run`)** | **Process orchestration** plays each case's run by itself at the top of the page: each stage's box opens in place and shows, line by line, which system it read and what it got, with counters for tools called and audit entries. The interface no longer shows *simulated*, *synthetic* or *demo* labels; only the Presenter menu (`?presenter=1`) says the data is synthetic. See [section 6.11](#611-process-orchestration-behind-the-screen), [section 13](#13-what-is-real-and-what-is-simulated) and [CHANGES Update 13](CHANGES.md). |
 | **Execution detail and cost trace (branch `feature/execution-detail`)** | Every decision says where the unit goes (order line, customer site, staging warehouse), who acts in which system, the document each step creates and its time limit, and where every cost and value comes from, line by line in ₹ and $. Orders live in IBM Sterling OMS, transport in ShipLane TMS; SAP S/4HANA is finance only. See [section 6.5](#65-product-treatment-intelligence-the-decision-page) and [CHANGES Update 16](CHANGES.md#update-16-execution-detail-and-cost-trace-branch-featureexecution-detail). |
+| **Sidebar, Home and Connection Fabric revamp (branch `feature/fabric-revamp`)** | A menu with sections, a white menu in light mode and navy in dark, one icon set and vendor logos. A new Home with five Ask modes and role-aware tiles, and five new pages: My Tasks, Alerts, Reports, Data Checks, Settings. Connection Fabric gains an Overview (catalogue), a workflow list and a page per workflow, a Source Map graph, list and matrix, Monitor, and flows that connect, test, sync, pause and disconnect. `?fabric=0` restores the previous look. See [section 6.7](#67-integration-the-connection-fabric) and [CHANGES Update 17](CHANGES.md#update-17-sidebar-home-and-connection-fabric-revamp-branch-featurefabric-revamp). |
 
 > **Note for reviewers.** Access control is close to compliance. The role matrix, the access wording and any regulatory claims in this document should be reviewed by the Legal team before anyone relies on them or uses them in a client commitment.
 
@@ -334,6 +335,8 @@ What each role can press:
 
 | Tab | What it does |
 |---|---|
+| **Overview** | The catalogue: 20 connected systems, 15 available ones (Workday, Jira, Confluence, PostgreSQL, MySQL, SQL Server, Amazon S3, Azure Blob, Excel and SharePoint, Dynamics 365, Oracle EBS, NetSuite, Teams, Google Drive, Snowflake), four recommendations ranked from open gaps, and a drawer per system with health, usage, mapping, sync history and security. *Connect* runs auth, consent, scopes, a connection test, suggested mappings and a first sync |
+| **Monitor** | Sync success, latency, failed records and freshness against SLA, per source and per workflow |
 | **Workflow studio** | 31 workflows: one ingest workflow per source, one outbound workflow per system we write to, and three decision workflows. Edit on an Airflow-style canvas, run, simulate a failure, publish |
 | **Source map** | 19 systems, each named by product (SAP S/4HANA, IBM Maximo, Salesforce, ServiceNow and others), with how it connects (native connector, JDBC, API, event API, Delta Sharing, flat file), freshness, completeness and confidence. Add, edit, sync, delete with undo |
 | **Source tables** | The tables Circularity reads from a system and how they link, as a graph or a list |
@@ -343,6 +346,8 @@ What each role can press:
 | **Manual import** | Controlled CSV import where no API exists yet |
 
 Roles that may look but not change see a **Read-only view** banner, and every field is locked.
+
+Since the revamp (Update 17) the list has tiles, filters, failing rows with *Investigate*, and each workflow has its own page (`#/integration/studio/WF-101`) with record counts, an error-handler branch, runs and data quality. The Source map opens as a graph (systems → canonical models → decisions), with List and Matrix views. Counts now read 35 workflows and 21 sources.
 
 | Source map (Developer) | Workflow studio (Developer) |
 |---|---|

@@ -8,6 +8,70 @@ Open `index.html`. The app opens on a **sign-in form** (Update 9): type `exec` o
 
 ---
 
+## Update 17: Sidebar, Home and Connection Fabric revamp (branch `feature/fabric-revamp`)
+
+**Why:** six design mockups asked for a new menu, a new Home, a navy dark mode and a white light-mode menu, one icon set, real vendor logos, a component kit, and Connection Fabric pages that feel like a real integration product (a catalogue, a workflow list and page, a source map graph, flows that connect, test, sync, pause and disconnect). Every agent feature had to stay. The plan, decisions W1–W20 and the build report are in [`docs/PLAN_SIDEBAR_AND_CONNECTION_FABRIC_REVAMP.md`](docs/PLAN_SIDEBAR_AND_CONNECTION_FABRIC_REVAMP.md).
+
+**Where to look:** sign in as `admin`. Home is the landing page; Connection Fabric is in the menu under *Integration*. `?fabric=0` before the `#` restores the previous look on this device; `?fabric=1` brings it back.
+
+| Home (Admin) | Home (Developer, dark) | Home (phone) |
+|---|---|---|
+| [![Home](docs/screenshots/fabric-home-admin.webp)](docs/screenshots/fabric-home-admin.webp) | [![Home dark](docs/screenshots/fabric-home-dark.webp)](docs/screenshots/fabric-home-dark.webp) | [![Home phone](docs/screenshots/fabric-home-phone.webp)](docs/screenshots/fabric-home-phone.webp) |
+| **Connection Fabric › Overview** | **The detail drawer** | **Connect an integration** |
+| [![Overview](docs/screenshots/fabric-overview.webp)](docs/screenshots/fabric-overview.webp) | [![Drawer](docs/screenshots/fabric-overview-drawer.webp)](docs/screenshots/fabric-overview-drawer.webp) | [![Connect](docs/screenshots/fabric-connect.webp)](docs/screenshots/fabric-connect.webp) |
+| **Workflow Studio** | **A workflow's page** | **Investigate a failure** |
+| [![Workflows](docs/screenshots/fabric-workflows.webp)](docs/screenshots/fabric-workflows.webp) | [![Workflow](docs/screenshots/fabric-workflow-page.webp)](docs/screenshots/fabric-workflow-page.webp) | [![Investigate](docs/screenshots/fabric-investigate.webp)](docs/screenshots/fabric-investigate.webp) |
+| **Source Map (graph)** | **Source Map (matrix)** | **Monitor** |
+| [![Source map](docs/screenshots/fabric-source-map.webp)](docs/screenshots/fabric-source-map.webp) | [![Matrix](docs/screenshots/fabric-source-matrix.webp)](docs/screenshots/fabric-source-matrix.webp) | [![Monitor](docs/screenshots/fabric-monitor.webp)](docs/screenshots/fabric-monitor.webp) |
+| **Collapsed menu (dark)** | **My Tasks** | **Alerts** |
+| [![Rail](docs/screenshots/fabric-menu-rail.webp)](docs/screenshots/fabric-menu-rail.webp) | [![Tasks](docs/screenshots/fabric-tasks.webp)](docs/screenshots/fabric-tasks.webp) | [![Alerts](docs/screenshots/fabric-alerts.webp)](docs/screenshots/fabric-alerts.webp) |
+| **Reports** | **Data Checks** | **Settings (dark)** |
+| [![Reports](docs/screenshots/fabric-reports.webp)](docs/screenshots/fabric-reports.webp) | [![Checks](docs/screenshots/fabric-checks.webp)](docs/screenshots/fabric-checks.webp) | [![Settings](docs/screenshots/fabric-settings.webp)](docs/screenshots/fabric-settings.webp) |
+| **Phone: menu** | **Phone: Source Map** | **Phone: workflow (read-only)** |
+| [![Phone menu](docs/screenshots/fabric-phone-menu.webp)](docs/screenshots/fabric-phone-menu.webp) | [![Phone map](docs/screenshots/fabric-phone-map.webp)](docs/screenshots/fabric-phone-map.webp) | [![Phone workflow](docs/screenshots/fabric-phone-workflow.webp)](docs/screenshots/fabric-phone-workflow.webp) |
+
+| What | Where | What you see |
+|---|---|---|
+| **Menu** | Every page | Home, Command Center, My Tasks and Alerts (with counts); *Product*: Decision Workbench, Analytics, Reports, Data Checks; *Integration*: Connection Fabric with nine pages; then MCP & Tools, Process Orchestration, Audit & Provenance, Access & Governance, Settings. Search in the menu (Ctrl+K). Company card (tenant, DI Framework overview) and user card (sign out). « collapses it to a rail with labels and a red dot on Alerts. On a phone it is a drawer behind the menu button |
+| **Themes** | Moon or sun in the top bar | Light: white menu, yellow active row. Dark: navy (#0B1220 page, #111A2E panels, #0D1526 menu). Yellow stays the only action colour |
+| **Top bar** | Every page | One search that finds cases, sources, workflows and pages, and asks (*Ask: …*, or press Enter on a question). *Live* dropdown with *Pause live updates*. The bell holds alerts and agent runs. ✦ opens Ask (Ctrl+J). *Data checks* moved to the menu and Quick actions |
+| **Home** | `#/home` | Greeting and date, the Briefing as one line, the Ask box with five modes (Ask, Analyze, Find, Notify, Automate), five KPI tiles for your role (deltas and sparklines only where 30-day history exists), Agent activity (Live, Today, This week, with *Show trace* and *Undo*), Workflow health (Developer, Admin) or your role's ring, six key figures with a period picker and ✦ *Explain this number*, right column (Needs you, Activity, Watchlist, Notifications), an attention card, Quick actions (gear to choose), Pinned, Classic modules (Grid, List, Customize, remembered per account) |
+| **New pages** | Menu | **My Tasks** (grouped, ✦ *Do it for me*), **Alerts** (escalations, failing workflows, stale sources, expiring credentials, conflicts, notifications; acknowledge, assign, ✦ *Explain*), **Reports** (six, CSV or PDF, ✦ *Summarise*), **Data Checks** (each check, its owner, ✦ *Explain*), **Settings** (profile, theme, menu, region, notifications, agent autonomy, presenter options) |
+| **Overview** | Connection Fabric › Overview | 20 connected, 4 needing attention, 15 available (36 in all); search that also understands *connect our HR system*; category pills; four recommendations with ✦ *Why recommended*; All integrations with a category list. A row opens the drawer: Overview (health, details, *Connected by* as a role, usage 7D/30D/90D, permissions, troubleshooting, *Test connection*), Configuration, Data Mapping (✦ *Suggest mappings*), Sync & History, Security; Sync now · Pause · Edit · Disconnect |
+| **Workflow Studio** | Connection Fabric › Workflow Studio | Tiles, filters, Open + ⋯ (Run now, Pause, Duplicate, Export JSON, Delete), failing rows in red with the reason and *Investigate*, bulk bar, 20 per page, a right column with *Needs attention*, the health ring and recent activity |
+| **A workflow's page** | `#/integration/studio/WF-101` | Header with Validate, Test run, Run now and ✦ Assist; tabs Workflow studio, Settings, History, Documentation; grouped palette; white cards with logos, status and record counts; error-handler, audit and event-stream branches; undo, redo, auto layout, minimap, Overview · Details · Data flow; recent runs; data quality with *View failed records*; details, tags, related systems, quick actions |
+| **Source Map** | Connection Fabric › Source Map | Graph (systems → canonical models → models and decisions; select a node to highlight its paths; field-link counts), List (the source cards as before), Matrix (systems × models, red where stale or unmapped), the system tree and the detail panel |
+| **Monitor** | Connection Fabric › Monitor | Sync success, latency, failed records, freshness against SLA; the 24-hour bars with ✦ explanations of dips; per source and per workflow |
+| **Flows** | Overview, drawer, Workflow Studio | Connect Workday HCM (auth and consent, scopes, test, suggested mappings, first sync; it appears as connected with a draft ingest workflow); pause and resume (*Paused upstream*); disconnect with a typed name, then *Reconnect*; *Re-authenticate*; investigate Ingest · Fixably, apply the fix, *Run now*; view failed records; export JSON; save as template. ShipLane TMS's credential expires in five days and shows in Alerts and Needs attention |
+| **Logos** | Every system | Simplified full-colour marks drawn inline (no external calls). `FEAT.logos=false` brings back the two-letter badges |
+
+### What did not change
+
+Every decision, value, route, gate, approval, role rule and URL; the agent, its intents and guard rails; the run board; the execution detail work. The demo build (`?agent=0`) looks as before. No new random draws: the seeded data is the same.
+
+### Deliberate changes
+
+- *Data checks* left the top bar (W17); it is in the menu, on Home's Quick actions and on its own page.
+- The inbox in the top bar merged into the bell.
+- Every workflow now has the error-handler and audit branches, and ingest workflows publish to the event stream; validation accepts them and checks they follow the right step.
+- `#/integration` opens Overview.
+- ShipLane TMS's client secret is issued for a term that ends five days after load, so the credential-expiry flow always has an example.
+
+### Tests
+
+| Suite | Before | After |
+|---|---|---|
+| 16 existing suites | 945 pass | 945 pass |
+| `fabric.js` (new, plan section 9) | — | 172 pass |
+| `smoke.js` (new: every page, every role) | — | 85 pass |
+| `video.js` (new: the demo recorder's selectors) | — | 17 pass |
+
+One existing check was replaced because W17 moved the control: `live` looked for the top-bar *Data checks* pill; it now checks *Data Checks* is in the menu and the pill is gone.
+
+> **Legal review.** The catalogue uses real vendors' names and simplified versions of their logos, and the featured banner says *Role-based access and audit on every connection*. Kinective's Legal team should review the use of third-party marks and that claim before the page is shown to clients or prospects.
+
+---
+
 ## Update 16: Execution detail and cost trace (branch `feature/execution-detail`)
 
 **Why:** the Product Owner's review of RT-1048 asked the decision to reflect reality: where the unit goes, how, who acts in which system, which documents, what happens if nobody acts, and where every cost and value comes from. The plan and the decisions are in [`docs/PLAN_EXECUTION_DETAIL_AND_COST_TRACE.md`](docs/PLAN_EXECUTION_DETAIL_AND_COST_TRACE.md).
