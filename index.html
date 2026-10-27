@@ -1364,6 +1364,7 @@ html.fr .wf[data-view="overview"] .frn .sb,html.fr .wf[data-view="overview"] .fr
  .frtree{max-height:260px}.frgv{height:480px}.frauth{grid-template-columns:minmax(0,1fr)}.frwfh .wfname input{min-width:0;width:100%;font-size:18px}.frust{grid-template-columns:minmax(0,1fr)}}
 .frao input:focus-visible,.frchk input:focus-visible{outline-offset:2px;border-radius:50%}
 .frwft .frinv{padding:0 10px}
+.frwft td:last-child:has(details.frmenu[open]){z-index:30}
 /*FR-CSS-END*/
 </style>
 </head>
@@ -7946,6 +7947,12 @@ function frIntRow(x){const s=x.src;return `<tr data-int="${esc(x.id)}" ${s?`data
 function frSrcMenu(s){if(!canMgr())return `<button class="btn sm" data-act="frOpenSrc" data-arg="${s.id}">View</button>`;
   return `<details class="frmenu"><summary class="iconbtn sm" aria-label="Actions for ${esc(s.vendor)}">${ICON.more}</summary><div class="frdd" role="menu"><button role="menuitem" data-act="frOpenSrc" data-arg="${s.id}">${ICON.eye}<span>Open</span></button>${s.status==='unavailable'?`<button role="menuitem" data-act="reconnect" data-arg="${s.id}">${ICON.unplug}<span>${s.disconnected?'Reconnect':'Connect'}</span></button>`:`<button role="menuitem" data-act="srcSync" data-arg="${s.id}" ${s.syncing||s.paused||s.status==='manual'?'disabled':''}>${ICON.sync}<span>Sync now</span></button><button role="menuitem" data-act="frSrcPause" data-arg="${s.id}">${s.paused?ICON.play:ICON.pause}<span>${s.paused?'Resume':'Pause'}</span></button><button role="menuitem" data-act="frDisc" data-arg="${s.id}">${ICON.unplug}<span>Disconnect</span></button>`}<button role="menuitem" data-act="afAssist" data-arg="source|${s.id}">${ICON.spark}<span>Diagnose</span></button></div></details>`}
 document.addEventListener('click',e=>{$$('details.frmenu[open]').forEach(d=>{if(!d.contains(e.target)||e.target.closest('[role=menuitem]'))d.removeAttribute('open')})});
+/* an open ⋯ menu floats above the page next to its button, so pinned table cells and scroll areas never cover or clip it; it flips up near the bottom */
+function frMenuPlace(d){const m=d.querySelector('.frdd'),b=d.querySelector('summary');if(!m||!b)return;if(!d.open){m.removeAttribute('style');return}
+  Object.assign(m.style,{position:'fixed',zIndex:300,right:'auto',bottom:'auto',top:'0px',left:'0px',visibility:'hidden'});const r=b.getBoundingClientRect(),w=m.offsetWidth,h=m.offsetHeight;
+  let top=r.bottom+6;if(top+h>innerHeight-8)top=Math.max(8,r.top-h-6);m.style.left=Math.min(innerWidth-w-8,Math.max(8,r.right-w))+'px';m.style.top=top+'px';m.style.visibility=''}
+document.addEventListener('toggle',e=>{const d=e.target;if(!d.classList||!d.classList.contains('frmenu'))return;if(d.open)$$('details.frmenu[open]').forEach(x=>{if(x!==d)x.removeAttribute('open')});frMenuPlace(d)},true);
+['scroll','resize'].forEach(ev=>window.addEventListener(ev,e=>{if(e.target&&e.target.closest&&e.target.closest('.frdd'))return;$$('details.frmenu[open]').forEach(d=>d.removeAttribute('open'))},true));
 ACT.frOvQ=v=>{S.frOv.q=v;const b=$('#frIntBody');if(!b)return;const f=S.frOv,q=v.trim().toLowerCase(),l=frIntegrations().filter(x=>(!f.cat||x.cat===f.cat)&&(!q||(x.vendor+' '+x.name+' '+x.cat+' '+x.owner).toLowerCase().includes(q)));b.innerHTML=l.map(frIntRow).join('')||'<tr><td colspan="6"><div class="empty"><b>No integration matches</b>Press Enter to ask the agent to set it up.</div></td></tr>'};
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'||!e.target||e.target.id!=='frOvQ')return;const q=e.target.value.trim();if(!q)return;e.preventDefault();
   if(/^(connect|add|set ?up|integrate|hook up|link)\b/i.test(q)){const t=q.toLowerCase(),m=frAvail().find(c=>t.includes(c.vendor.toLowerCase().split(' ')[0].toLowerCase())||t.includes(frTypeOf(c.type).label.toLowerCase())||t.includes(frTypeOf(c.type).short.toLowerCase()));
@@ -8077,6 +8084,10 @@ if(FR_ON){wfListHTML=frWfList;wfRowHTML=frWfRow;wfBodyHTML=frWfBody;wfChipsHTML=
   const wlr=wfListRefresh;wfListRefresh=function(){wlr();const p=$('#frWfPager');p&&(p.innerHTML=frWfPager());const s=$('#frWfSide');s&&(s.innerHTML=frWfSide())};
   ACT.wfQ=v=>{S.wf.f.q=v;S.wf.f.pg=0;const b=$('#wfBody');b&&(b.innerHTML=frWfBody());const p=$('#frWfPager');p&&(p.innerHTML=frWfPager())};
   ACT.wfSt=v=>{S.wf.f.st=S.wf.f.st===v?'':v;S.wf.f.pg=0;route(true)}}
+/* live runs re-draw a row; a row whose ⋯ menu is open waits until the menu closes, so the menu never vanishes under the pointer */
+let wfRowPatch0=wfRowPatch;
+if(FR_ON){wfRowPatch=function(w){const r=$(`tr[data-wid="${w.id}"]`);if(r&&r.querySelector('details.frmenu[open]')){w.frPatchLater=true;const c=$('#wfChips');c&&(c.innerHTML=wfChipsHTML());return}return wfRowPatch0(w)};
+  document.addEventListener('toggle',e=>{const d=e.target;if(!d.classList||!d.classList.contains('frmenu')||d.open)return;const tr=d.closest('tr[data-wid]'),w=tr&&WFW(tr.dataset.wid);if(w&&w.frPatchLater){w.frPatchLater=false;setTimeout(()=>wfRowPatch0(w),0)}},true)}
 ACT.frWfSys=v=>{S.wf.f.sys=v;S.wf.f.pg=0;route(true)};ACT.frWfSort=v=>{S.wf.f.sort=v;route(true)};ACT.frWfPg=p=>{S.wf.f.pg=+p;route(true)};
 ACT.frWfPick=(on,el)=>{on?S.frWfSel.add(el.dataset.arg):S.frWfSel.delete(el.dataset.arg);const b=$('#frWfBulk');if(b){b.innerHTML=frWfBulk();b.hidden=!S.frWfSel.size}};
 ACT.frWfAll=on=>{$$('#wfBody input[data-ch=frWfPick]').forEach(c=>{c.checked=on;on?S.frWfSel.add(c.dataset.arg):S.frWfSel.delete(c.dataset.arg)});const b=$('#frWfBulk');if(b){b.innerHTML=frWfBulk();b.hidden=!S.frWfSel.size}};
