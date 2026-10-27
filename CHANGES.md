@@ -10,7 +10,7 @@ Open `index.html`. The app opens on a **sign-in form** (Update 9): type `exec` o
 
 ## Update 17: Sidebar, Home and Connection Fabric revamp (branch `feature/fabric-revamp`)
 
-**Why:** six design mockups asked for a new menu, a new Home, a navy dark mode and a white light-mode menu, one icon set, real vendor logos, a component kit, and Connection Fabric pages that feel like a real integration product (a catalogue, a workflow list and page, a source map graph, flows that connect, test, sync, pause and disconnect). Every agent feature had to stay. The plan, decisions W1–W20 and the build report are in [`docs/PLAN_SIDEBAR_AND_CONNECTION_FABRIC_REVAMP.md`](docs/PLAN_SIDEBAR_AND_CONNECTION_FABRIC_REVAMP.md).
+**Why:** six design mockups asked for a new menu, a new Home, a distinctive dark mode and a white light-mode menu, one icon set, real vendor logos, a component kit, and Connection Fabric pages that feel like a real integration product (a catalogue, a workflow list and page, a source map graph, flows that connect, test, sync, pause and disconnect). Every agent feature had to stay. The plan, decisions W1–W20 and the build report are in [`docs/PLAN_SIDEBAR_AND_CONNECTION_FABRIC_REVAMP.md`](docs/PLAN_SIDEBAR_AND_CONNECTION_FABRIC_REVAMP.md).
 
 **Where to look:** sign in as `admin`. Home is the landing page; Connection Fabric is in the menu under *Integration*. `?fabric=0` before the `#` restores the previous look on this device; `?fabric=1` brings it back.
 
@@ -33,7 +33,7 @@ Open `index.html`. The app opens on a **sign-in form** (Update 9): type `exec` o
 | What | Where | What you see |
 |---|---|---|
 | **Menu** | Every page | Home, Command Center, My Tasks and Alerts (with counts); *Product*: Decision Workbench, Analytics, Reports, Data Checks; *Integration*: Connection Fabric with nine pages; then MCP & Tools, Process Orchestration, Audit & Provenance, Access & Governance, Settings. Search in the menu (Ctrl+K). Company card (tenant, DI Framework overview) and user card (sign out). « collapses it to a rail with labels and a red dot on Alerts. On a phone it is a drawer behind the menu button |
-| **Themes** | Moon or sun in the top bar | Light: white menu, yellow active row. Dark: navy (#0B1220 page, #111A2E panels, #0D1526 menu). Yellow stays the only action colour |
+| **Themes** | Moon or sun in the top bar | Light: white menu, yellow active row, warm neutral text. Dark: warm charcoal, not pitch black: page #0E0E0D, panels #181816 and #1F1F1D, menu #0A0A09 (one step deeper), solid warm borders #2C2B28, text #F3F2EE / #CBC8C1 / #A19D95. Yellow is only for actions, active markers and focus; warnings are amber (#E5A543), no longer yellow; category hues are muted. The same dark palette now applies to the previous look (`?fabric=0`), the demo build and the three framework pages |
 | **Top bar** | Every page | One search that finds cases, sources, workflows and pages, and asks (*Ask: …*, or press Enter on a question). *Live* dropdown with *Pause live updates*. The bell holds alerts and agent runs. ✦ opens Ask (Ctrl+J). *Data checks* moved to the menu and Quick actions |
 | **Home** | `#/home` | Greeting and date, the Briefing as one line, the Ask box with five modes (Ask, Analyze, Find, Notify, Automate), five KPI tiles for your role (deltas and sparklines only where 30-day history exists), Agent activity (Live, Today, This week, with *Show trace* and *Undo*), Workflow health (Developer, Admin) or your role's ring, six key figures with a period picker and ✦ *Explain this number*, right column (Needs you, Activity, Watchlist, Notifications), an attention card, Quick actions (gear to choose), Pinned, Classic modules (Grid, List, Customize, remembered per account) |
 | **New pages** | Menu | **My Tasks** (grouped, ✦ *Do it for me*), **Alerts** (escalations, failing workflows, stale sources, expiring credentials, conflicts, notifications; acknowledge, assign, ✦ *Explain*), **Reports** (six, CSV or PDF, ✦ *Summarise*), **Data Checks** (each check, its owner, ✦ *Explain*), **Settings** (profile, theme, menu, region, notifications, agent autonomy, presenter options) |
@@ -55,6 +55,7 @@ Every decision, value, route, gate, approval, role rule and URL; the agent, its 
 - The inbox in the top bar merged into the bell.
 - Every workflow now has the error-handler and audit branches, and ingest workflows publish to the event stream; validation accepts them and checks they follow the right step.
 - `#/integration` opens Overview.
+- Dark mode is warm charcoal everywhere (W21, replacing the navy of W4). In dark mode, warnings and meter bars are no longer yellow: warnings are amber and meters use the secondary text colour, so yellow means *act here*.
 - ShipLane TMS's client secret is issued for a term that ends five days after load, so the credential-expiry flow always has an example.
 
 ### Tests

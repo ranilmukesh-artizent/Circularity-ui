@@ -1,4 +1,4 @@
-# Plan: sidebar, Home and Connection Fabric revamp (new menu, new Home, component kit, navy and white themes, real icons and logos, near-real integration flows)
+# Plan: sidebar, Home and Connection Fabric revamp (new menu, new Home, component kit, warm charcoal and white themes, real icons and logos, near-real integration flows)
 
 **Purpose of this file.** It records what the six design mockups in `images-for-pasting/` ask for, how today's UI differs, the decisions taken, and the design and phases to build it, without losing any agent feature. A fresh session can build the work from it.
 
@@ -75,10 +75,10 @@
 | W1 | **Logos:** full-colour, as inline SVG inside the page. They work offline and on GitHub Pages, with no external calls. approved | Decided |
 | W2 | **Systems the app doesn't have** (Workday, Jira, Confluence, PostgreSQL, MySQL, SQL Server, Amazon S3, Azure Blob, Excel/SharePoint, Dynamics 365, Oracle EBS, NetSuite, Microsoft Teams, Google Drive, Snowflake) appear in the catalogue as **Available**, not connected. Connected sources, workflows and decision figures do not change | Decided |
 | W3 | **Numbers are derived from app data.** Every tile, ring, chart and count is computed from `SOURCES`, `S.wf`, `MAPPINGS`, the table models and the health history, so all pages agree. The mockups are layout, not data | Decided |
-| W4 | **New look for the whole app:** navy-tinted dark mode and a white menu in light mode, on every page | Decided |
+| W4 | **New look for the whole app:** a new dark mode and a white menu in light mode, on every page. The dark mode was first built navy; W21 replaces navy with warm charcoal | Decided, revised by W21 |
 | W5 | **My Tasks, Alerts, Reports, Data Checks and Settings become real pages**, built from what exists (see 5.5) | Decided |
-| W6 | **Artizent yellow stays the accent:** primary buttons, active markers and focus rings. Navy is only the dark-mode surface | Decided |
-| W7 | **Workflow canvas uses the mockup's white cards** (navy in dark mode), with logos or step icons, per-node status, records in and out, an error-handler branch and a minimap; yellow marks selection, red marks failure | Decided |
+| W6 | **Artizent yellow stays the accent:** primary buttons, active markers and focus rings. Charcoal is only the dark-mode surface; warnings are amber, not yellow | Decided |
+| W7 | **Workflow canvas uses the mockup's white cards** (charcoal in dark mode), with logos or step icons, per-node status, records in and out, an error-handler branch and a minimap; yellow marks selection, red marks failure | Decided |
 | W8 | **Branch from `main`** once PR #15 is merged (it is) | Decided |
 | W9 | **Monitor** = integration health over time: sync success, latency, failed records, freshness against SLA, per source and per workflow | Assumed |
 | W10 | **Reports** = six exportable reports: predicted vs actual, evidence packs, recovery waterfall, carbon avoided, integration health, audit extract (CSV or PDF via print) | Assumed |
@@ -91,6 +91,7 @@
 | W17 | **Top bar as in the mockup:** one search that finds records and also asks (a question opens the Ask panel; a command runs from the command bar); tenant; a *Live* dropdown (live, or pause live updates for a presentation); region; the bell (Alerts); theme; account menu. *Data checks* moves to the menu and Quick actions; the inbox merges into the bell. A compact ✦ Ask icon stays beside the bell so Ask is one click away on every page | Assumed |
 | W18 | **Hero:** an original illustration drawn as SVG in our palette (no stock photo), with the tagline *From data to decisions, with clarity.* It is hidden on phones and in Technical mode | Assumed |
 | W19 | **Home stays role-aware:** the five KPI tiles, the middle panels and Quick actions change by role (table in 5.13). *Workflow health* appears for Developer and Admin only | Assumed |
+| W21 | **Dark mode is warm charcoal, not navy and not pitch black** (27 Oct 2026, after reviewing the built navy theme and the pre-agent build's warm black). Page #0E0E0D, panels #181816 / #1F1F1D / #292926, menu #0A0A09, borders #2C2B28, text #F3F2EE / #CBC8C1 / #A19D95, amber warnings #E5A543, muted category hues. Brand yellow stays #FFDD00, the yellow in the logo artwork. Applies to the revamp, the previous look, the demo build and the framework pages | Decided |
 | W20 | **Briefing and Needs you are kept:** Briefing becomes the line under the greeting (*Your AI agents are ready. 2 access requests to decide; 3 workflows need attention.*); Needs you becomes the first tab of the right column, open by default when it has items | Assumed |
 
 ## 5. Design
@@ -100,18 +101,18 @@
 **New tokens**
 - `--side-bg`, `--side-ink`, `--side-mut`, `--side-act` (active row), `--side-line` for the menu.
 - `--surface-raised` for drawers and floating panels.
-- `--navy-900` to `--navy-600` for the dark mode.
+- `--char-950` to `--char-600` for the dark mode (W21).
 
 **Values**
 
 | Theme | Page | Panels | Menu |
 |---|---|---|---|
 | Light | `#FAF8F5`, as today | white | white menu, ink text, yellow left bar and soft yellow fill on the active row |
-| Dark | `#0B1220` | `#111A2E` / `#16213A` | `#0D1526` |
+| Dark (W21) | `#0E0E0D` | `#181816` / `#1F1F1D` | `#0A0A09` |
 
 - **Dark lines and muted text:** blue-grey at the same contrast as today.
 - **Yellow accent:** unchanged in both themes.
-- **Charts:** chart colours are re-checked in navy. The run board and the Analytics charts keep their meaning.
+- **Charts:** chart colours are re-checked on charcoal. The run board and the Analytics charts keep their meaning.
 - **Contrast:** every pair of text and background meets WCAG AA. A token table goes in the build report.
 
 ### 5.2 Icons (V3, W13)
@@ -416,7 +417,7 @@ Every decision, value, route, gate, role rule and URL that exists today. The age
 | # | Phase |
 |---|---|
 | 0 | Baseline: all suites green on `main` |
-| 1 | Theme tokens (navy dark, white menu in light), the Lucide icon set and the component kit (5.12) |
+| 1 | Theme tokens (charcoal dark, white menu in light), the Lucide icon set and the component kit (5.12) |
 | 2 | The menu: sections, search, new items, counts, rail with tooltips, company and user cards, phone drawer, breadcrumbs |
 | 3 | Top bar (W17) and the new Home (5.13) for all eight roles |
 | 3b | New pages: My Tasks, Alerts, Reports, Data Checks, Settings |
@@ -505,7 +506,7 @@ Every decision, value, route, gate, role rule and URL that exists today. The age
 | Ask | Section | Match |
 |---|---|---|
 | V1 New menu | 5.4 | Yes |
-| V2 Four modes, navy and white | 5.1, 5.4 | Yes |
+| V2 Four modes, dark and white | 5.1, 5.4 | Yes; dark is charcoal, not the mockup's navy (W21) |
 | V3 Real icons | 5.2 | Yes |
 | V4 Real logos | 5.3 | Yes|
 | V5 Catalogue Overview | 5.6 | Yes; 36 integrations, not 82 (W15) |
@@ -530,7 +531,7 @@ Every decision, value, route, gate, role rule and URL that exists today. The age
 
 | # | Built |
 |---|---|
-| 1 | Navy dark theme, white menu in light mode, new tokens (`--side-*`, `--surface-raised`, `--navy-*`, category hues `--h-*`). Lucide icons under the old keys plus the new ones. Component kit: `frIt`, `frKpi`, `frSpark`, `frDelta`, `frSt`, `frSeg`, `frTl`, `frQa`, `frAttn`, `frRing`, `frPanel`, `frHead` |
+| 1 | Warm charcoal dark theme (W21; first built navy), white menu in light mode, new tokens (`--side-*`, `--surface-raised`, `--char-*`, category hues `--h-*`). Lucide icons under the old keys plus the new ones. Component kit: `frIt`, `frKpi`, `frSpark`, `frDelta`, `frSt`, `frSeg`, `frTl`, `frQa`, `frAttn`, `frRing`, `frPanel`, `frHead` |
 | 2 | Menu with Product and Integration headings, single-line items, menu search (opens the command bar, Ctrl+K), My Tasks and Alerts with counts, Connection Fabric with nine pages, company card (tenant, *DI Framework overview*) and user card (sign-out). Collapsed rail with hover labels (the flyout), focus labels and the Alerts dot. Phone drawer with a menu button. Breadcrumbs on Connection Fabric |
 | 3 | Top bar: one search that finds and asks, tenant, *Live* dropdown with *Pause live updates*, region, the bell (alerts and agent runs), a compact ✦ Ask, theme, account. Home: date and greeting, the Briefing as a line, hero and tagline (not on phones or in Technical mode), the Ask box with five modes, five KPI tiles per role, Agent activity timeline (Live, Today, This week), the role's middle panel, six key figures with a period picker, right column (Needs you, Activity, Watchlist, Notifications), attention card, Quick actions with a gear, Pinned, Classic modules with Grid, List and Customize |
 | 3b | My Tasks, Alerts, Reports (six), Data Checks, Settings |
@@ -552,13 +553,15 @@ Every decision, value, route, gate, role rule and URL that exists today. The age
 |---|---|---|
 | Light | `--ink` #141414 on `--bg` #FAF8F5 | 17.4 |
 | Light | `--muted` #7B726D on `--panel` #FFFFFF | 4.7 |
-| Light | `--side-ink` #1E2536 on `--side-bg` #FFFFFF | 15.3 |
-| Light | `--side-mut` #5F6B7E on `--side-bg` #FFFFFF | 5.4 |
+| Light | `--side-ink` #1A1917 on `--side-bg` #FFFFFF | 17.6 |
 | Light | `--side-ink` on `--side-act` #FFF6CC (active row) | 14.1 |
-| Dark | `--ink` #EEF2F8 on `--bg` #0B1220 | 16.7 |
-| Dark | `--ink2` #C4CDDC on `--panel` #111A2E | 10.8 |
-| Dark | `--muted` #97A3BA on `--panel2` #16213A | 6.3 |
-| Dark | `--side-mut` #97A3BA on `--side-bg` #0D1526 | 7.2 |
+| Light | `--side-mut` #6B665E on `--side-bg` #FFFFFF | 5.7 |
+| Dark | `--ink` #F3F2EE on `--bg` #0E0E0D | 17.2 |
+| Dark | `--ink2` #CBC8C1 on `--panel` #181816 | 10.6 |
+| Dark | `--muted` #A19D95 on `--panel2` #1F1F1D | 6.1 |
+| Dark | `--muted` #A19D95 on `--panel3` #292926 | 5.4 |
+| Dark | `--side-mut` #A19D95 on `--side-bg` #0A0A09 | 7.3 |
+| Dark | `--warn` #E5A543 / `--bad` #EC7A6E on `--panel` | 8.3 / 6.4 |
 | Both | #141414 on `--yellow` #FFDD00 (primary button) | 13.7 |
 
 `fabric.js` measures the same pairs from the live tokens.
