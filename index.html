@@ -1366,6 +1366,168 @@ html.fr .wf[data-view="overview"] .frn .sb,html.fr .wf[data-view="overview"] .fr
 .frwft .frinv{padding:0 10px}
 .frwft td:last-child:has(details.frmenu[open]){z-index:30}
 /*FR-CSS-END*/
+/*ST-CSS-START*/
+/* ===== Stage pages (PLAN_DECISION_WORKBENCH_STAGE_PAGES): stage bar, stage page frame, Overview, footer; scoped to html.st so ?stages=0 restores the previous flow ===== */
+/* ---- status tags: a word and a shape, never colour alone ---- */
+.sttag{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--f-body);padding:3px 10px 3px 7px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);white-space:nowrap;vertical-align:middle}
+.sttag i{font-style:normal;font-size:11px;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;line-height:1}
+.sttag.big{font-size:13px;padding:5px 12px 5px 8px}
+.sttag.st-done{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,transparent);background:var(--ok-soft)}.sttag.st-done i{background:var(--ok);color:#fff}
+.sttag.st-wait{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:var(--warn-soft)}.sttag.st-wait i{background:transparent}
+.sttag.st-block{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:var(--bad-soft)}.sttag.st-block i{background:var(--bad);color:#fff;font-weight:800}
+.sttag.st-cur{color:var(--ink);border-color:var(--ink2)}.sttag.st-cur i{color:var(--ink)}
+.sttag.st-todo{color:var(--muted);border-style:dashed;background:transparent}
+/* ---- the stage bar ---- */
+html.st .stbar{position:sticky;top:57px;z-index:24;background:var(--panel);border-bottom:1px solid var(--line);padding:8px 24px 10px;box-shadow:0 6px 14px -12px rgba(0,0,0,.35)}
+.stbt{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.stov span{white-space:nowrap}
+.stov{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink2);text-decoration:none;padding:3px 9px 3px 6px;border-radius:8px;border:1px solid transparent}
+.stov svg{width:15px;height:15px}.stov:hover{background:var(--panel2)}.stov.on{border-color:var(--yellow);background:var(--yellow-soft);color:var(--ink)}
+.stnow{margin-left:auto;font-size:12px}
+.stmob{display:none}
+.stphs{display:grid;grid-template-columns:5.4fr 1.1fr 1.1fr 3.2fr;gap:10px}
+.stph{min-width:0}
+.stphl{display:block;font:700 10.5px var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--c);padding:0 2px 4px;border-bottom:2px solid color-mix(in srgb,var(--c) 45%,transparent);margin-bottom:6px}
+.stph li{display:flex}.stph li>.stc{flex:1}
+.stph ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(var(--k),minmax(0,1fr));gap:6px}
+.stc{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:6px;align-items:center;padding:5px 7px;min-height:44px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);text-decoration:none;min-width:0;position:relative;transition:transform .12s,box-shadow .12s}
+.stc:hover{border-color:var(--ink2)}
+html.st .stc{text-align:left}html.st .stc .t{display:-webkit-box!important;visibility:visible!important}html.st .stc .n{display:none}
+.stc .stci{grid-row:1/span 2;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;border:1.5px solid var(--line);color:var(--muted);background:var(--panel)}
+.stc .n{display:none}
+.stc .t{white-space:normal;font-size:11.5px;font-weight:600;line-height:1.15;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.stc .sts{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stc.st-done .stci{background:var(--ok);border-color:var(--ok);color:#fff}
+.stc.st-wait .stci{border-color:var(--warn);color:var(--warn);background:var(--warn-soft)}.stc.st-wait .sts{color:var(--warn)}
+.stc.st-block .stci{background:var(--bad);border-color:var(--bad);color:#fff}.stc.st-block .sts{color:var(--bad)}
+.stc.st-cur .stci{border-color:var(--ink);color:var(--ink)}
+.stc.st-todo{background:transparent;border-style:dashed}.stc.st-todo .t{color:var(--ink2)}
+.stc.cur::before{content:'';position:absolute;inset:-1px;border-radius:9px;border:1.5px solid var(--warn);pointer-events:none}
+.stc.st-done.cur::before{display:none}
+.stc.on{box-shadow:0 0 0 2px var(--yellow),0 6px 16px -8px rgba(0,0,0,.45);transform:translateY(-1px);border-color:var(--yellow)}
+.stc.on::after{content:'';position:absolute;left:12px;right:12px;bottom:-7px;height:3px;border-radius:2px;background:var(--yellow)}
+/* ---- the stage page ---- */
+.stpage{max-width:1320px}
+@media (prefers-reduced-motion:no-preference){html.st .stpage{animation:stin .22s ease-out}@keyframes stin{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}}
+.stbc a{color:var(--muted);text-decoration:none}.stbc a:hover{color:var(--ink);text-decoration:underline}
+.sthead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:2px 0 14px}
+.stcap{margin:0 0 2px;font-size:12.5px;color:var(--muted);font-weight:600}
+.stphase{color:var(--c);font:800 11.5px var(--f-display);text-transform:uppercase;letter-spacing:.09em}
+.sthead h1{margin:0;font:800 30px/1.15 var(--f-display);letter-spacing:-.01em}
+.sthead h1:focus,.sthead h1:focus-visible{outline:none}
+.stsub{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 0}
+.stline{font-size:13.5px;color:var(--ink2)}
+.stlogos{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+.stsy{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink2);border:1px solid var(--line);border-radius:999px;padding:2px 9px 2px 3px;background:var(--panel)}
+.stsy .vlg,.stsy .vlogo,.stsy .frit{width:20px;height:20px;flex:none}.stsy .frit svg{width:12px;height:12px}.stsy .frit{border-radius:50%}
+.stsy:not(:has(.vlg,.vlogo,.frit)){padding-left:9px}
+.stha{flex:none;gap:8px}
+.stgrid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:16px;align-items:start}
+.stwh{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px 16px;box-shadow:var(--shadow);overflow:hidden}
+.stwh::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--c)}
+.stwh.will .stfacts{grid-template-columns:1fr 1fr}.stwh.will .stfacts dd{font-weight:500;font-size:13.5px}
+.stwh.will{background:transparent;border-style:dashed;box-shadow:none}.stwh.will::before{background:var(--line)}
+.stwhh{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stwh h2,.stside h2{margin:0;font:700 12px var(--f-display);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.stres{margin:8px 0 14px;font:700 19px/1.35 var(--f-display);color:var(--ink)}
+.stfacts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));grid-auto-flow:row dense;gap:8px;margin:0}
+.stfacts>div.wide{grid-column:span 2}
+.stfacts>div{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;min-width:0}
+.stfacts dt{font-size:11.5px;color:var(--muted);margin:0}
+.stfacts dd{margin:2px 0 4px;font-weight:700;font-size:14px;overflow-wrap:anywhere}
+.stpv{display:block;min-width:0}.stpv .aszb{font-size:10.5px;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:top;background:transparent!important;border:1px solid var(--line)!important;color:var(--muted)!important;font-weight:600}
+.stpv .aszb.rec{color:var(--ink2)!important}.stpv .aszb.mod{color:var(--h-agent)!important}.stpv .aszb.rul{color:var(--h-money)!important}.stpv .aszb.ret{color:var(--h-int)!important}
+.stdocs{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 0}
+.stdoc{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:7px;padding:2px 4px 2px 8px;font-size:12.5px;background:var(--panel)}
+.stcp{font-size:11.5px;padding:1px 5px}
+.stside{display:flex;flex-direction:column;gap:12px;min-width:0}
+.stmean{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.stmean p{margin:6px 0 0;font-size:14px;line-height:1.45;color:var(--ink)}
+.stdo{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.stdo.act{border:1.5px solid var(--yellow);background:linear-gradient(180deg,var(--yellow-soft),var(--panel) 70%)}
+.stdo p{font-size:13.5px}.stact .btn.lg{width:100%;justify-content:center;margin-top:8px}.stact .row .btn{flex:1;justify-content:center}.stact .note{margin:8px 0 0}
+.stwait{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}
+.strecap{margin:14px 0 0;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.strecap summary{cursor:pointer;padding:10px 16px;font-size:13.5px;list-style:none;display:flex;gap:8px;align-items:center}
+.strecap summary::before{content:'›';display:inline-block;transition:transform .15s;color:var(--muted);font-weight:700}.strecap[open] summary::before{transform:rotate(90deg)}
+.strecap ol{list-style:none;margin:0;padding:0 16px 10px}
+.strecap li{display:grid;grid-template-columns:26px 160px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid var(--line2);font-size:13px}
+.strecap li .n{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-size:11px;font-weight:700;border:1.5px solid var(--line)}
+.strecap li.st-done .n{background:var(--ok);border-color:var(--ok);color:#fff}
+.stdet{margin:16px 0 0}
+.sttabs{margin-bottom:10px;flex-wrap:wrap}
+.stacc{border:0;min-width:0}.stacc>summary{display:none}.stpn{min-width:0;overflow-x:auto}
+.stpn .tikv dd{display:flex;flex-wrap:wrap;gap:4px}.stpn .tikv .chip{white-space:normal;max-width:100%}
+.stacc:not([open]){display:none}
+.stpn>.panel:first-child,.stpn>section:first-child{margin-top:0}
+.stpn .stpad,.stpn>.stkv,.stpn>.stsys,.stpn>.sttl,.stpn>.stpva{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0}
+.stpn .tistep{margin:0;padding:0;border:0}
+.stkv{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 18px}
+.stkv dt{font-size:11.5px;color:var(--muted)}.stkv dd{margin:2px 0 0;font-weight:600}
+.stsys{list-style:none;display:grid;gap:8px}.stsys li{display:flex;align-items:center;gap:10px}.stsys li>span{flex:1;display:flex;flex-direction:column}
+.strat{margin:0;padding:12px 16px;border-left:4px solid var(--c);background:var(--panel2);border-radius:0 10px 10px 0;font-size:14px;line-height:1.5}
+/* the instruction plan as a vertical timeline */
+.sttl{list-style:none;padding:14px 16px;margin:0;position:relative}
+.sttl li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;position:relative;padding-bottom:14px}
+.sttl li:not(:last-child)::before{content:'';position:absolute;left:14px;top:30px;bottom:0;width:2px;background:var(--line)}
+.sttl li.st-done:not(:last-child)::before{background:var(--ok)}
+.sttn{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12px;border:2px solid var(--line);background:var(--panel);color:var(--muted)}
+.sttl li.st-done .sttn{background:var(--ok);border-color:var(--ok);color:#fff}.sttl li.st-wait .sttn{border-color:var(--warn);color:var(--warn);background:var(--warn-soft)}
+.sttb p{margin:3px 0}.sttm{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12px;color:var(--ink2)}.sttm .vlg,.sttm .vlogo{width:18px;height:18px}
+/* predicted against actual */
+.stpva{display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end}
+.stpva>div{display:flex;flex-direction:column;gap:3px;min-width:0}.stpva b{font:800 20px var(--f-display)}
+.stpva i{display:block;height:8px;border-radius:4px;background:var(--ink2);opacity:.5}.stpva i.a{background:var(--ok);opacity:1}
+.stpvd.neg b{color:var(--bad)}.stpvd.pos b{color:var(--ok)}
+/* ---- the footer ---- */
+html.st .stfoot{display:flex;align-items:center;gap:12px;padding:10px 24px;grid-template-columns:none}
+.stfoot .stpos{font:700 12px var(--f-display);color:var(--muted);white-space:nowrap}
+.stfoot .stsug{flex:1;margin:0;font-size:13px;color:var(--ink2);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stfoot .stsug .btn{margin-left:6px}.stfoot .stsug b{color:var(--ink)}.stfoot .jgk svg{width:13px;height:13px;vertical-align:-2px}
+.stfoot .sp{flex:1}
+.stfoot #jgBack,.stfoot #jgContinue{white-space:nowrap}
+html.st .stfoot a,html.st .stbar a,html.st .stcard,html.st .stbc a{text-decoration:none}
+.stovr .ph h3 svg{width:15px;height:15px;vertical-align:-2px}
+/* ---- the case Overview ---- */
+.stovh{justify-content:flex-start;align-items:center}
+.stovh .asimg.stph{width:92px;height:76px;border-radius:12px;flex:none}
+.stgl{font-size:15px}.stgl b{font-family:var(--f-display)}
+.stovg{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+.stovp{margin:0 0 14px}.stovp h2{margin:0 0 8px;font-size:11.5px;display:block;padding-bottom:5px;border-bottom:2px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.stcards{list-style:none;margin:0;padding:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+.stcard{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;height:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);text-decoration:none;position:relative}
+.stcard:hover{border-color:var(--ink2);box-shadow:var(--shadow)}
+.stcard.cur{border:1.5px solid var(--warn)}
+.stcard.st-todo{background:transparent;border-style:dashed}
+.stcn{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;border:2px solid var(--line);color:var(--muted)}
+.stcard.st-done .stcn{background:var(--ok);border-color:var(--ok);color:#fff}.stcard.st-wait .stcn{border-color:var(--warn);color:var(--warn)}.stcard.st-block .stcn{background:var(--bad);border-color:var(--bad);color:#fff}
+.stcb{display:flex;flex-direction:column;gap:1px;min-width:0}.stcr{font-size:13px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stgo{display:none}.stcard:hover .stgo{color:var(--ink)}
+.stovr{display:flex;flex-direction:column;gap:12px}.stovr .panel{margin:0}
+.stlinks{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.stfb{margin-bottom:12px}
+html.st .stfull .tistp .tin,html.st .stfull .tish .tin{display:none}
+/* ---- dark ---- */
+html.st[data-theme="dark"] .stc.on{box-shadow:0 0 0 2px var(--yellow)}
+/* ---- narrow screens: the bar collapses to one line with a sheet; parts stack; tabs become accordions ---- */
+@media (max-width:1400px){.stph ol{gap:4px}.stphs{gap:6px}html.st .stc{padding:4px 5px;column-gap:4px}html.st .stc .stci{width:16px;height:16px;font-size:9.5px}html.st .stc .t{font-size:11px}html.st .stc .sts{font-size:10px}}
+@media (max-width:1100px){.stgrid{grid-template-columns:1fr}.stovg{grid-template-columns:1fr}}
+@media (max-width:860px){html.st .stbar{top:0;position:sticky;padding:8px 14px}html.st .stfoot{padding:10px 14px}}
+@media (max-width:700px){
+ .stmob{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font:700 13px var(--f-body);border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel2);color:var(--ink)}
+ .stnow{display:none}.stphs{display:none;grid-template-columns:1fr;gap:10px;padding-top:6px}.stbar.open .stphs{display:grid}
+ .stph ol{grid-template-columns:1fr}.stc .sts{display:inline}
+ .sthead{flex-direction:column;gap:10px}.sthead h1{font-size:24px}.stha{flex-wrap:wrap}
+ .stres{font-size:16.5px}.stfacts{grid-template-columns:1fr 1fr}
+ .sttabs{display:none}.stacc{display:block!important;border:1px solid var(--line);border-radius:12px;margin:0 0 8px;background:var(--panel)}
+ .stacc>summary{display:block;padding:11px 14px;font-weight:600;cursor:pointer}.stacc .stpn{padding:0}
+ .strecap li{grid-template-columns:24px minmax(0,1fr) auto}.strecap li .note{grid-column:2/-1}
+ html.st .stfoot{flex-wrap:wrap;gap:8px}.stfoot .stsug,.stfoot .stpos,.stfoot .btn.ghost{display:none}.stfoot .stfn{display:inline-block;max-width:30vw;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+ .stfoot #jgContinue{margin-left:auto}
+ .stcard{grid-template-columns:30px minmax(0,1fr) auto}.stcard .stgo{display:none}
+ .stpva{grid-template-columns:1fr 1fr}.stpvd{grid-column:1/-1}
+}
+/*ST-CSS-END*/
 </style>
 </head>
 <body>
@@ -8400,6 +8562,278 @@ ACT.frCxWf=()=>{const id=S.frCx&&S.frCx.wf;closeModal();S.frCx=null;if(id)ACT.wf
 ['frSrcPause','frDisc','frDiscOk','frDiscT','frConnectStart','frCxNext','frCxAllow','frCxTest','frCxSuggest','frCxAll','frCxDone','frReauth','frSdTest','frNewInt','frNewBlank','frSmMap'].forEach(a=>{if(!PERM_ACTS.manageIntegrations.includes(a))PERM_ACTS.manageIntegrations.push(a)});
 ['frWfBulk','frWfTpl','frTplUse','frReproc','frFixApply','frAutoLayout','frUndo','frRedo','frWfSet'].forEach(a=>{if(!PERM_ACTS.manageWorkflows.includes(a))PERM_ACTS.manageWorkflows.push(a)});
 /*FR-END*/
+/*ST-START*/
+/* ===== Decision Workbench stage pages (docs/PLAN_DECISION_WORKBENCH_STAGE_PAGES.md): one page per stage, a case Overview, Full analysis.
+   #/product/ID/stage/n?tab=k is a stage, #/product/ID/overview the hub, #/product/ID/full the long page; #/product/ID and every old link
+   (jstep, step, at, explain) redirect to the matching stage. Content moves from Asset intelligence and Treatment Intelligence; nothing new
+   is computed and no rnd() is called. On with the revamp; ?stages=0 restores the previous flow, remembered on this device ===== */
+const ST_ON=FR_ON&&(()=>{try{const q=/[?&]stages=([01])/.exec(location.search);if(q)localStorage.setItem('circ-stages',q[1]);return localStorage.getItem('circ-stages')!=='0'}catch(e){return true}})();
+FEAT.stages=ST_ON;
+if(ST_ON)document.documentElement.classList.add('st');
+/* four phases over the ten stages (D5); the hue marks the caption only */
+const ST_PH=[{k:'arrive',t:'Arrive',n:[1,2,3,4,5],h:'re'},{k:'decide',t:'Decide',n:[6],h:'dec'},{k:'approve',t:'Approve',n:[7],h:'agent'},{k:'exec',t:'Execute and learn',n:[8,9,10],h:'int'}];
+const stPhase=n=>ST_PH.find(p=>p.n.includes(n));
+/* the systems each stage names (AF_STAGES.sys), mapped onto the connected sources for their logos */
+const ST_SYS={'Lease management':'lease','CRM':'crm','Customer portal':'crm','ERP finance':'erp','ERP':'erp','Finance':'erp','ERP procurement':'proc','TMS / 3PL':'tms','WMS':'wms','Repair orders':'repair','Repair':'repair','Inspection':'insp','PLM':'plm','EAM':'eam','Remarketing':'dlr'};
+const stHref=(id,n,tab)=>'product/'+id+(n==='overview'?'/overview':n==='full'?'/full':'/stage/'+n+(tab?'?tab='+tab:''));
+const stT=n=>AF_STAGES[n-1].t;
+const stLc=t=>t?t.charAt(0).toLowerCase()+t.slice(1):t;
+const stWhen=d=>d?fmtD(d)+(new Date(d).getUTCHours()||new Date(d).getUTCMinutes()?' '+String(new Date(d).getUTCHours()).padStart(2,'0')+':'+String(new Date(d).getUTCMinutes()).padStart(2,'0'):''):'';
+/* where a case opens for each role (6.7, D11, D19) */
+function stLand(c){const n=Math.min(afRun(c).stage,10),R=S.acct?S.acct.role:'';
+  if(R==='Executive')return 'overview';if(R==='Engineer')return 5;if(R==='Finance')return n>=9?n:9;if(R==='Warehouse Manager')return n>=8?8:4;return n}
+/* which page a product URL means: a stage, the Overview or Full analysis; old links map onto them (6.8) */
+function stResolve(r){if(r.page!=='product')return null;
+  if(r.a==='asset'){const js=parseInt(hq('jstep'));return r.b&&CASE_BY_ID[r.b]&&js>=1&&js<=5?{id:r.b,kind:'stage',n:js,tab:null,redir:true}:null}
+  const c=CASE_BY_ID[r.a];if(!c)return null;const id=c.id;
+  if(r.b==='stage'){const n=parseInt(r.c);if(n>=1&&n<=10)return{id,kind:'stage',n,tab:hq('tab')};const l=stLand(c);return l==='overview'?{id,kind:'overview',redir:true}:{id,kind:'stage',n:l,redir:true}}
+  if(r.b==='overview')return{id,kind:'overview'};
+  if(r.b==='full')return{id,kind:'full'};
+  const js=parseInt(hq('jstep')),st=hq('step'),at=hq('at'),T={'2':'compare','3':'why','4':'whatif'};
+  if(js>=1&&js<=10)return{id,kind:'stage',n:js,tab:js===6&&T[st]&&st!=='2'?T[st]:null,redir:true};
+  if(at==='reconcile')return{id,kind:'stage',n:10,redir:true};
+  if(at==='handoff')return{id,kind:'stage',n:8,redir:true};
+  if(st==='5')return{id,kind:'stage',n:c.exec?8:7,redir:true};
+  if(T[st])return{id,kind:'stage',n:6,tab:T[st],redir:true};
+  if(st==='1')return{id,kind:'overview',redir:true};
+  if(/[?&]explain\b/.test(location.hash))return{id,kind:'stage',n:6,tab:'why',redir:true};
+  const l=stLand(c);return l==='overview'?{id,kind:'overview',redir:true}:{id,kind:'stage',n:l,redir:true}}
+/* the state of one stage in words and shape (6.2): Done, Current, Waiting on…, Blocked, Not reached */
+function stState(c,n,run){run=run||afRun(c);const s=run.stages[n-1],x=c.exec,st=x?x.steps:[],cur=run.stage===n;
+  const W=(who,since)=>({k:'wait',icon:'⏳',word:'Waiting on '+(S.acct&&S.acct.role===who?'you':who),who,since});
+  if(s.state==='done')return{k:'done',icon:'✓',word:'Done',since:s.at||null,who:s.by||''};
+  if(s.state==='queued'||s.state==='skipped')return{k:'todo',icon:'○',word:'Not reached'};
+  if(s.state==='warning'||s.state==='failed'){const b=s.blocked||{};return{k:'block',icon:'!',word:'Blocked',who:b.owner||'',why:b.reason||s.result}}
+  if(n===5&&s.state==='running')return W(c.blocked?c.blocked.owner:'Engineering',c.requested?c.requested.at:null);
+  if(n===7)return c.submitted?W(S.deleg.decisions?'Approver':'Admin',c.submitted.at):W('Planner',c.packet?c.packet.at:null);
+  if(n===8||(n===9&&s.state==='running')){const i=st.findIndex(y=>y.state!=='done'),a=st[i];return a?W(exApp(a),i>0&&st[i-1].ack?st[i-1].ack.at:x.approvedAt||(c.approval&&c.approval.at)):{k:'cur',icon:'●',word:'Current'}}
+  if(n===9&&s.state==='person'){const l=st[st.length-1];return W('Finance',l&&l.ack?l.ack.at:null)}
+  return cur?{k:'cur',icon:'●',word:'Current'}:{k:'todo',icon:'○',word:'Not reached'}}
+const stTag=(t,big)=>`<span class="sttag st-${t.k}${big?' big':''}"><i aria-hidden="true">${t.icon}</i>${esc(t.word)}</span>`;
+const stSentence=(c,n,t)=>'Stage '+n+', '+stT(n)+': '+(t.k==='wait'?'waiting on '+t.who+(t.since?' since '+stWhen(t.since):''):t.k==='done'?'done'+(t.since?' '+stWhen(t.since):''):t.k==='block'?'blocked: '+(t.why||''):t.k==='cur'?'the case is here now':'not reached yet');
+/* ---- the stage bar (#jgNav): four phases, ten chips, states in words; aria-current marks the stage in view ---- */
+function stBar(c,view){const run=afRun(c),p=run.stage,id=c.id,on=view.kind==='stage'?view.n:0;
+  const chip=n=>{const t=stState(c,n,run);return `<li><a class="afjd stc st-${t.k} ${run.stages[n-1].state} ${n===on?'on':''} ${n===p?'cur':''}" href="#/${stHref(id,n)}" ${n===on?'aria-current="step"':''} aria-label="${esc(stSentence(c,n,t))}" data-tip="${esc(stSentence(c,n,t))}"><span class="stci" aria-hidden="true">${t.icon}</span><span class="n">${n}</span><span class="t">${esc(stT(n))}</span><span class="sts">${esc(t.k==='wait'?'Waiting':t.word)}</span></a></li>`};
+  const now=p>10?'Every stage is done':'Case at Stage '+p+' of 10 · '+stT(p)+' · '+stState(c,p,run).word;
+  return `<nav class="stbar" id="jgNav" aria-label="Stages of ${id}: ${esc(now)}"><div class="stbt"><a class="stov ${view.kind==='overview'?'on':''}" href="#/${stHref(id,'overview')}" ${view.kind==='overview'?'aria-current="page"':''}>${ICON.home||''}<span>Overview · <b>${id}</b></span></a>
+   <span class="stnow note">${esc(now)}</span>
+   <button class="stmob" data-act="stSheet" aria-expanded="false" aria-controls="stPh">${on?'Stage '+on+' of 10 · '+esc(stT(on)):view.kind==='full'?'Full analysis':'Overview'} <span aria-hidden="true">▾</span></button></div>
+   <div class="stphs" id="stPh">${ST_PH.map(ph=>`<div class="stph" style="--c:var(--h-${ph.h});--k:${ph.n.length}"><span class="stphl">${esc(ph.t)}</span><ol>${ph.n.map(chip).join('')}</ol></div>`).join('')}</div></nav>`}
+ACT.stSheet=(a,el)=>{const b=$('.stbar');if(!b)return;const o=!b.classList.contains('open');b.classList.toggle('open',o);const m=$('.stmob');m&&m.setAttribute('aria-expanded',o)};
+/* ---- system logos and provenance chips ---- */
+function stLogos(n){const seen=new Set();return AF_STAGES[n-1].sys.map(s=>{const src=SRC(ST_SYS[s]);if(!src){if(s==='Circularity')return `<span class="stsy">${frIt('spark','agent','xs')}<span>Circularity</span></span>`;return `<span class="stsy"><span>${esc(s)}</span></span>`}
+  if(seen.has(src.id))return '';seen.add(src.id);return `<span class="stsy" data-tip="${esc(s+' · '+src.vendor)}">${vlogo(src)}<span>${esc(s)}</span></span>`}).join('')}
+/* a fact's provenance: retrieved from a connected source (with its freshness), computed by rules, predicted by a model, or recorded in Circularity */
+function stProv(k,sys){if(k==='rec')return `<span class="aszb rec" data-prov="rec" data-tip="Recorded in Circularity when it happened: who acted and when.">Recorded · Circularity</span>`;const src=SRC(ST_SYS[sys]||sys);return provB(k,src?src.vendor+(k==='ret'&&src.freshMin!=null?' · '+srcAge(src.freshMin)+' ago':''):sys)}
+const stDoc=ref=>ref?`<span class="stdoc"><span class="mono">${esc(ref)}</span><button class="lnk stcp" data-act="stCopy" data-arg="${esc(ref)}" aria-label="Copy ${esc(ref)}">Copy</button></span>`:'';
+ACT.stCopy=v=>{(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast(v+' copied.'),()=>toast('Copy: '+v,5000))};
+/* ---- what each stage established (B), what it means (C), what the person does now (D) and its details (E) ---- */
+function stData(c,n){const L=afLease(c),run=afRun(c),s=run.stages[n-1],r=c.chosen||c.recommendation,M=caseDemand(c),R=caseRul(c),x=c.exec,st=x?x.steps:[],miss=(c.evidence||[]).filter(e=>e.state!=='ready');
+  const F=(l,v,k,sys)=>({l,v,p:stProv(k,sys)}),o={res:'',facts:[],docs:[],mean:'',when:s.at,who:s.by||'',tabs:[]};
+  const el=c.routes.filter(z=>!z.excluded).sort((a,b)=>b.net-a.net),ex=c.routes.filter(z=>z.excluded),nx=r?el.find(z=>z!==r):null;
+  if(n===1){o.res=`Lease ${L.lease} ended on ${fmtDY(L.end)}; ${c.owner} chose to ${L.intent}.`;
+    o.facts=[F('Lease contract',L.lease,'ret','Lease management'),F('Ended',fmtDY(L.end),'ret','Lease management'),F('Lessee',c.owner,'ret','CRM'),F('Customer intent',L.intent,'ret','Customer portal'),F('Usage',L.usage,'ret','Lease management')];
+    o.docs=[L.lease];o.who='Lease management';
+    o.mean=`A return is expected, so the agent opened ${c.id} and demand matching began${M&&M.order?'; '+c.owner+'\'s contract order '+M.order+' is the demand it found':''}.`;
+    o.tabs=[['lease','Lease record',afLeaseHTML(c)],['customer','Customer',stKv([['Customer',c.owner],['Customer site',locName(L.lane.from)],['Intent',L.intent],['Usage',L.usage],['Asset',c.assetId+' · '+asSerial(c)],['Product',asModel(c)+' · '+c.mfr]])],['systems','Systems',stSysTab(1)]]}
+  else if(n===2){o.res=`Return authorised under ${L.rma} on ${fmtDY(L.auth)}${L.fee?', with an early-return fee of '+money(L.fee):', with no fee'}.`;
+    o.facts=[F('Authorisation',L.rma,'ret','Lease management'),F('Authorised',fmtDY(L.auth),'ret','Lease management'),F('Fees',L.fee?money(L.fee):'None','ret','ERP finance'),F('Replacement order',L.repl||'None','ret','ERP'),F('Book value',money(L.book),'ret','ERP finance')];
+    o.docs=[L.rma,L.repl].filter(Boolean);o.who='Lease management';
+    o.mean=`Book value ${money(L.book)} is the baseline the decision must beat${r?'; the recommended '+r.plan+' predicts '+money(r.net):''}.`;
+    o.tabs=[['auth','Authorisation',stKv([['Return authorisation',L.rma],['Authorised on',fmtDY(L.auth)],['Early-return fee',L.fee?money(L.fee):'None'],['Replacement order',L.repl||'None']])],['finance','Finance',stKv([['Book value',money(L.book)],['Acquired',fmtDY(L.acq)],['Age',c.age+' years'],['Quantity',String(c.qty)]])]]}
+  else if(n===3){o.res=`Picked up on ${fmtD(L.pickup)} at ${locName(L.lane.from)} by ${L.carrier}; arrived at ${locName(L.lane.to)} on ${fmtD(L.eta)}.`;
+    o.facts=[F('Picked up',fmtDY(L.pickup),'ret','TMS / 3PL'),F('Carrier',L.carrier,'ret','TMS / 3PL'),F('Arrived',fmtDY(L.eta),'ret','WMS'),F('Freight',money(L.freight)+' ('+inr(L.lane.inr)+')','ret','TMS / 3PL'),F('Lane',L.lane.from+' → '+L.lane.to,'rul','Rate card '+RATE_CARD.id)];
+    o.docs=[RATE_CARD.id];o.who=L.carrier;
+    o.mean=`Freight of ${money(L.freight)} is already spent; from arrival the unit carries holding cost until a route moves it.`;
+    o.tabs=[['route','Route',stKv([['From',L.lane.from+' · '+locName(L.lane.from)],['To',L.lane.to+' · '+locName(L.lane.to)],['Distance',exNum(L.lane.km)+' km'],['Mode',L.lane.mode],['Carrier',L.carrier]])],['cost','Cost trace',stKv([['Calculation',L.lane.calc],['Freight in rupees',inr(L.lane.inr)],['Freight in dollars',money(L.freight)+' at ₹'+EX_FX],['Rate card',RATE_CARD.id+' · '+RATE_CARD.carrier]])]]}
+  else if(n===4){const hold=r&&r.terms.find(t=>/Holding/i.test(t.label)),code=FAC_LOC[c.location],Lc=LOCS[code]||{};
+    o.res=`Received at ${c.location} on ${fmtDY(c.received)}; ${miss.length?miss.length+' evidence item'+(miss.length>1?'s are':' is')+' still missing':'every evidence item arrived'}.`;
+    o.facts=[F('Received',fmtDY(c.received),'ret','WMS'),F('Warehouse',c.location+(Lc.bin?' · bin '+Lc.bin:''),'ret','WMS'),F('Holding clock',afDays(c.received,asOfNow())+' days','rul','Circularity'),F('Evidence',((c.evidence||[]).length-miss.length)+' of '+(c.evidence||[]).length+' complete','rul','Evidence scoring')];
+    if(hold)o.facts.push(F('Holding and risk cost',money(hold.amt),'mod','Prediction model'));
+    o.docs=[asRMA(c)];o.who='WMS';
+    o.mean=miss.length?`Missing ${miss.map(e=>stLc(e.label)).join(', ')}${c.blocked?' holds back every route until '+stLc(c.blocked.action):' narrows what can be priced'}.`:`Evidence is complete, so every route can be built and priced.`;
+    o.tabs=[['evidence','Evidence checklist',`<div id="aszKnown">${asPanel('Evidence readiness',stEvTable(c),null,'',provB('rul','Evidence scoring'))}</div>`],['location','Location',stKv([['Facility',c.location],['Code',code||'—'],['City',Lc.city||'—'],['Bin',Lc.bin||'—'],['Receiving days',(Lc.days||[]).map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')||'—']])],['holding','Holding cost',stKv([['Days since receipt',String(afDays(c.received,asOfNow()))],['Holding and risk cost in the recommended route',hold?money(hold.amt):'Not priced yet'],['Cost inputs','See below']])+asPanel('Cost inputs',asCostInputs(c,assetHealth(c)),null,'',provB('ret','OMS, PLM, EAM, procurement'),'asCostCard')]]}
+  else if(n===5){const ws=c.cls==='motor'||c.cls==='pump'?'EAM':'Inspection',ins=(c.evidence||[]).find(e=>e.k==='insp'),prep=asPrepCost(c);
+    o.res=s.state==='done'?(c.grade?`Graded ${c.grade} by ${ws==='EAM'?'EAM inspection':'inspection'}${R?'; certified for '+R.certMonths+' months':''}.`:`Assessed: ${c.assessment}.`):c.requested?`${c.blocked.action} requested (${c.requested.ref}); waiting for ${c.blocked.owner}.`:`${c.blocked?c.blocked.reason:'Not inspected yet'}.`;
+    o.facts=[F('Grade',c.grade?'Grade '+c.grade:'Not graded','ret',ws==='EAM'?'EAM':'Inspection'),F('Condition',c.condition,'ret','Inspection'),F('Inspection',ins?({ready:'Complete',partial:'Partial',stale:'Stale',missing:'Missing',conflict:'Conflict'})[ins.state]||ins.state:'—','ret','Inspection')];
+    if(R)o.facts.push(F('Certified period',R.certMonths+' months · '+R.certRef,'ret','QMS'));if(c.engLife)o.facts.push(F('Engineering life',c.engLife,'ret','PLM'));if(prep)o.facts.push(F('Repair estimate',money(prep),'mod','Prediction model'));
+    o.docs=[R?R.certRef:null,c.requested?c.requested.ref:null].filter(Boolean);
+    o.mean=c.blocked&&!c.recommendation?`No route can be priced until ${stLc(c.blocked.action)}: ${stLc(c.blocked.reason)}.`:`${c.grade?'Grade '+c.grade:'The assessment'}${R?' and a '+R.certMonths+'-month certified life':''} leave ${el.length} route${el.length===1?'':'s'} eligible${el[0]?' ('+el.slice(0,3).map(z=>z.plan).join(', ')+')':''}${ex.length?'; '+ex.map(z=>z.plan+' is withheld ('+stLc(z.failReason||'a gate failed')+')').slice(0,2).join('; '):''}.`;
+    o.tabs=[['findings','Findings',asPanel('Inspection findings',asCond(c),null,'',provB('ret','Inspection'))],['diag','Diagnostic condition',asPanel('Diagnostic condition',asKnownDiag(c),null,'',provB('ret',ws))],['cert','Certified period',asPanel('Certified period',asKnownCert(c),null,'',provB('ret','QMS'))],['photos','Photos',asPanel('Photos',`<div class="asgal">${['36% 60%','70% 40%','20% 30%','55% 85%'].map((p,i)=>`<div class="asimg zoomg" style="--op:${p}"><img src="assets/products/${AS_IMG[c.cls]}.webp" alt="${esc(c.product)} view ${i+1}" loading="lazy"></div>`).join('')}</div><p class="note" style="margin:6px 0 0">Close-up crops of the product photo. Inspection photos attach here when they arrive from the inspection system.</p>`)]]}
+  else if(n===6){const sr=scenRoutes(c);if(!S.ti.sel||S.ti.selFor!==c.id){const rw=tiRows(c,sr).slice().sort((a,b)=>b.net-a.net);S.ti.sel=rw.slice(0,3).map(z=>z.r.plan);S.ti.selFor=c.id;S.ti.focus=null}const rows=tiRows(c,sr);
+    if(c.recommendation){const q=c.recommendation,cf=tiConf(c,q);
+      o.res=`Recommended: ${q.plan}, ${money(q.net)} predicted net.`;
+      o.facts=[F('Predicted net',money(q.net),'mod','Prediction model'),F('Range (P10–P90)',money(q.p10)+' to '+money(q.p90)+' · confidence '+cf.toLowerCase(),'mod','Prediction model'),F('Gates',q.gates.every(g=>g==='pass')?'All six passed':q.gates.filter(g=>g==='pass').length+' of six passed','rul','Gate engine')];
+      const alt=el.filter(z=>z!==q).slice(0,3);if(alt.length)o.facts.push(F('Alternatives',alt.map(z=>z.plan+' '+money(z.net)).join(' · '),'mod','Prediction model'));
+      if(ex.length)o.facts.push(F('Not eligible',ex.map(z=>z.plan).join(', '),'rul','Gate engine'));
+      o.docs=[c.snapshot?c.snapshot.id:null,c.model?'Model '+c.model:null].filter(Boolean);o.who=c.packet?(c.packet.prep?'Agent, for '+c.packet.by:c.packet.by):'Decision engine';o.when=c.packet?c.packet.at:s.at;
+      o.mean=nx?`${q.plan} beats ${nx.plan} by ${money(q.net-nx.net)}${q.id==='redeploy'&&M&&M.avoidedPo?' because it replaces the planned purchase '+M.avoidedPo:''}.`:`${q.plan} is the only eligible route.`}
+    else{o.res=s.result+'.';o.facts=[F('Routes built',String(c.routes.length),'rul','Gate engine'),F('Eligible',String(el.length),'rul','Gate engine')]}
+    o.tabs=[['packet','Decision packet',`<div id="afPacket">${afCasePacket(c)}</div>`],['compare','Compare outcomes',`<section class="tistep" id="step-2">${tiOutcome(c,sr,rows)}</section>`],
+     ['why','Why this outcome',`<section class="tistep" id="step-3"><div class="tig3" id="tiA">${tiA(c)}</div><div class="tidetail" id="explain">${explainBlock(c,sr)}</div></section>`],['evidence','Evidence',`<div class="tidetail">${evidenceBlock(c)}${specialBlock(c)}</div>`],
+     ['whatif','What-if and edge cases',`<section class="tistep" id="step-4">${tiP4(c,sr,rows)}</section>`],['predicted','How it was predicted',`<div class="tidetail">${predictBlock(c)}${optionsBlock(c,sr)}</div>`],['demand','Demand',asPanel('Matched demand',asDemand(c),null,'',provB('rul','Demand matching'))]]}
+  else if(n===7){const p=r?instrPayload(c):null,lim=c.approval?null:afLimitFor({role:S.deleg.decisions?'Approver':'Admin'}),apps=r?[...new Set(stepsOf(c).map(exApp))].filter(a=>!/^Circularity|^Planning/.test(a)):[];
+    o.res=c.approval?`${c.override?'Override approved':'Approved'} by ${c.approval.by} under ${c.approval.ref}: ${r.plan}.`:c.submitted?`Submitted by ${c.submitted.by} on ${fmtD(c.submitted.at)}; waiting for ${S.deleg.decisions?'the Approver':'Admin'}.`:r?`The decision packet is ready; it waits for the Planner to submit it.`:'Waits for a recommended route.';
+    if(r){o.facts=[F('Route',r.plan+' · '+money(r.net),'mod','Prediction model')];
+      if(c.submitted)o.facts.push(F('Submitted',c.submitted.by+' · '+stWhen(c.submitted.at),'rec','Circularity'));
+      if(c.approval)o.facts.push(F('Approved',c.approval.by+' · '+stWhen(c.approval.at),'rec','Circularity'),F('Spend authority',money(c.approval.spend!=null?c.approval.spend:defaultSpend(c,r)),'rec','Circularity'));
+      else o.facts.push(F('Approval limit',lim===Infinity?'Unlimited for the '+(S.deleg.decisions?'Approver':'Admin'):money(lim),'rul','Approval policy'),F('Pre-approval check',r.gates.every(g=>g==='pass')?'All six gates passed; evidence snapshot '+(c.snapshot?c.snapshot.id:'—'):'Gate notes to read','rul','Gate engine'))}
+    o.docs=[c.approval?c.approval.ref:null,p?p.decisionId:null].filter(Boolean);o.when=c.approval?c.approval.at:c.submitted?c.submitted.at:null;o.who=c.approval?c.approval.by:c.submitted?c.submitted.by:'';
+    o.mean=r?`Approval sends ${stepsOf(c).length} instructions to ${apps.join(', ')}${M&&M.order&&r.id==='redeploy'?', allocates the unit to '+M.order+' line '+M.line:''} and commits up to ${money(p.spendAuthorityUsd)} of spend.`:'';
+    const rat=c.approval?c.approval.rationale:c.packet?c.packet.rationale:afDraftRationale(c),jr=afCaseJournal(c.id).slice(-8).reverse();
+    o.tabs=r?[['rationale','Rationale',`<div class="stpad"><p class="note" style="margin-top:0">${c.approval?'The rationale recorded with the approval.':afBadge('Prepared by agent')+' The drafted rationale the Approver edits or acknowledges.'}</p><blockquote class="strat">${esc(rat||'—')}</blockquote></div>`],
+      ['checks','Checks',`<section class="tistep" id="step-5">${asPanel('Decision',`<div class="tidec">${bestCard(c,scenRoutes(c))}</div>`,null,'tix5a',null,'tiDecision')}</section>`],
+      ['history','History',jr.length?frTl(jr.map(e=>({ic:'clock',h:'neutral',t:esc((ACTIONS[e.id]||{title:e.id}).title),s:esc(e.by+(e.prep?' · prepared by the agent':'')),ago:stWhen(e.at)}))):`<p class="note stpad">No recorded actions on ${c.id} yet.</p>`]]:[]}
+  else if(n===8){const pl=r?exPlan(c,r,asOfNow()):[],mv=r?exMove(c,r):null,i=st.findIndex(y=>y.state!=='done'),a=st[i];
+    o.res=x?(a?`${st.filter(y=>y.state==='done').length} of ${st.length} instructions acknowledged; ${stLc(a.label)} is with ${exApp(a)}.`:`All ${st.length} instructions acknowledged.`):'Instructions go out only after approval.';
+    if(x){o.facts=[F('Instruction',x.ref,'rec','Circularity'),F('Acknowledged',st.filter(y=>y.state==='done').length+' of '+st.length,'ret','ERP')];if(a)o.facts.push(F('Running',a.label+' · '+exApp(a),'ret',ST_SYS[a.sys.split(' · ')[0]]||'ERP'));
+      if(mv&&mv.eta)o.facts.push(F('Arrives',exTs(mv.eta)+(mv.slack!=null?' · '+(mv.slack<0?Math.abs(mv.slack)+' days late':mv.slack+' days early'):''),'rul','Route planner'));
+      o.docs=st.filter(y=>y.ack).map(y=>y.ack.ref);o.who='Enterprise adapters';o.when=x.approvedAt||(c.approval&&c.approval.at)}
+    o.mean=x?(a?`Step ${i+1} of ${st.length} is running${mv&&mv.eta?'; the unit arrives '+exTs(mv.eta):''}.`:`Every instruction is acknowledged; the outcome comes back next.`):'';
+    o.tabs=r?[['plan','Plan',stPlanTl(c,pl)],['route','Route and timing',mv&&mv.legs.length?`<div class="stpad">${exMoveHTML(c,r)}<h4 style="margin:12px 0 4px">What happens if</h4>${exWhatIfHTML(c,r)}</div>`:`<p class="note stpad">No transport for this route.</p>`],['acks','Messages and acknowledgements',execBlock(c)],['instr','Instruction',tiHandoff(c).replace(/<h4 style="margin:12px 0 4px">Route and timing<\/h4>[\s\S]*?(?=<div class="row" style="margin-top:8px"><button class="btn sm" data-act="tiRaw")/,'')]]:[]}
+  else if(n===9){const o9=c.outcome,l=st[st.length-1],d=exDelivered(c),dl=v=>(v>=0?'+':'−')+money(Math.abs(v)),mv=d?exMove(c,r):null,ds=d?'delivered to '+locName(mv.to)+' against '+M.order+' line '+M.line:'';
+    o.res=o9?`Actual ${money(o9.net)} confirmed by ${o9.by||'Finance'}${ds?'; '+ds:''}.`:l&&l.ack?`Outcome reported (${l.ack.ref})${ds?'; '+ds:''}; waiting for Finance to confirm it.`:'The outcome comes back once every instruction is acknowledged.';
+    if(o9)o.facts=[F('Actual net',money(o9.net),'ret','ERP finance'),F('Predicted net',money(r.net),'mod','Prediction model'),F('Variance',dl(o9.net-r.net),'rul','Reconciler'),F('Confirmed by',(o9.by||'Finance')+(o9.at?' · '+stWhen(o9.at):''),'rec','Circularity')];
+    else if(l&&l.ack)o.facts=[F('Reported',l.ack.ref+' · '+stWhen(l.ack.at),'ret','ERP finance'),F('Predicted net',money(r.net),'mod','Prediction model')];
+    if(o9&&o9.order||valueOrder(c))o.facts.push(F('Order',(o9&&o9.order)||valueOrder(c).ref,'ret','ERP'));
+    o.docs=[l&&l.ack?l.ack.ref:null,o9&&o9.order].filter(Boolean);
+    o.mean=o9?(o9.net>=r.net?`The decision delivered ${dl(o9.net-r.net)} more than it promised.`:`The decision delivered ${money(r.net-o9.net)} less than the ${money(r.net)} it promised; stage 10 shows which lines moved.`):'';
+    o.tabs=r?[['delivery','Delivery',d?stDelivery(c,r,d):`<p class="note stpad">${r.id==='redeploy'?'Delivery is confirmed by proof of delivery in stage 8.':'This route has no delivery to a customer site.'}</p>`],['costs','Actual costs',o9?stPva(r.net,o9.net)+stLines(o9,false):`<p class="note stpad">Actual costs arrive with the outcome report and Finance's confirmation.</p>`],['docs','Documents',stDocsTab(c)]]:[]}
+  else{const o10=c.outcome,dl=v=>v===0?'—':(v>0?'+':'−')+money(Math.abs(v));
+    o.res=o10?`Predicted ${money(r.net)}, actual ${money(o10.net)}: ${dl(o10.net-r.net)}.`:'Reconciles once Finance confirms the outcome.';
+    if(o10){const ln=o10.lines.filter(z=>z.model);o.facts=[F('Predicted',money(r.net),'mod','Prediction model'),F('Actual',money(o10.net),'ret','ERP finance'),F('Variance',dl(o10.net-r.net),'rul','Reconciler'),F('Lines reconciled',String(o10.lines.length),'rul','Reconciler'),F('Learning records',ln.length+' · model '+(c.model||'—'),'rec','Circularity')];
+      o.docs=[x?x.decisionId:null].filter(Boolean);o.who='Reconciler';o.mean=rcStory(o10)}
+    o.tabs=r?[['lines','Lines',tiReconcile(c)],['learn','Learning record',o10?stLines(o10,true):`<p class="note stpad">Each cost line becomes a learning record once the outcome is confirmed.</p>`],['carried','Carried forward',stCarried(c)]]:[]}
+  return o}
+const stKv=rows=>`<dl class="stkv stpad">${rows.map(r=>`<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>`;
+function stSysTab(n){return `<ul class="stsys stpad">${AF_STAGES[n-1].sys.map(s=>{const src=SRC(ST_SYS[s]);return `<li>${src?vlogo(src):''}<span><b>${esc(s)}</b><span class="note">${src?esc(src.vendor)+' · '+esc(src.mode):'Circularity'}</span></span>${src?frSt(src.status==='live'?'live':src.status==='stale'?'stale':src.status==='manual'?'manual':'unavailable'):''}</li>`}).join('')}</ul>`}
+function stEvTable(c){const ev=c.evidence||[],stl={ready:['Complete','ok'],partial:['Partial','warn'],stale:['Stale','warn'],missing:['Missing','bad'],conflict:['Conflict','bad']};
+  return `<div class="tw"><table class="t static tight"><thead><tr><th>Evidence</th><th>Source</th><th>State</th><th>Updated</th></tr></thead><tbody>${ev.map(e=>`<tr><td><b>${esc(e.label)}</b>${e.note?`<div class="note">${esc(e.note)}</div>`:''}</td><td>${esc(e.source)}</td><td><span class="chip ${(stl[e.state]||['','line'])[1]}">${(stl[e.state]||[e.state])[0]}</span></td><td class="num">${e.state==='missing'?'—':esc(e.fresh||'')}</td></tr>`).join('')}</tbody></table></div>`}
+/* the instruction plan as a vertical timeline: system, document, owner, time limit and acknowledgement per step */
+function stPlanTl(c,pl){return pl.length?`<ol class="sttl">${pl.map(s=>{const k=s.state==='done'?'done':s.state==='active'?'wait':'todo',src=SOURCES.find(z=>z.vendor===s.app);
+  return `<li class="st-${k}"><span class="sttn" aria-hidden="true">${s.state==='done'?'✓':s.n}</span><div class="sttb"><b>${esc(s.label)}</b> ${stTag(k==='done'?{k,icon:'✓',word:'Acknowledged'}:k==='wait'?{k,icon:'⏳',word:'With '+s.app}:{k,icon:'○',word:c.exec?'Not sent yet':'Sent after approval'})}<p class="note">${esc(s.act)}</p>
+   <p class="sttm">${src?vlogo(src):''}<span>${esc(s.app)}</span><span class="mono">${s.docs.map(esc).join(' · ')}</span><span>${esc(s.owner)}</span><span>Limit ${esc(s.lim)}</span></p>${exClockChip(s.clock)}</div></li>`}).join('')}</ol>`:'<p class="note stpad">No plan yet.</p>'}
+/* predicted against actual: two columns and the variance bar */
+function stPva(pred,act){const mx=Math.max(Math.abs(pred),Math.abs(act))||1,d=act-pred,w=v=>Math.round(Math.abs(v)/mx*100);
+  return `<div class="stpva" role="img" aria-label="Predicted ${money(pred)}, actual ${money(act)}, variance ${(d<0?'−':'+')+money(Math.abs(d))}"><div><span class="note">Predicted</span><b class="num">${money(pred)}</b><i style="width:${w(pred)}%"></i></div><div><span class="note">Actual</span><b class="num">${money(act)}</b><i class="a" style="width:${w(act)}%"></i></div><div class="stpvd ${d<0?'neg':'pos'}"><span class="note">Variance</span><b class="num">${(d<0?'−':'+')+money(Math.abs(d))}</b></div></div>`}
+function stLines(o,learn){const l=learn?o.lines.filter(z=>z.model):o.lines;return `<div class="tw stpad"><table class="t static tight"><thead><tr><th>${learn?'Learning record':'Cost line'}</th><th class="r">Predicted</th><th class="r">Actual</th>${learn?'<th>Model</th>':''}</tr></thead><tbody>${l.map(z=>`<tr><td>${esc(z.label)}</td><td class="r num">${money(z.pred)}</td><td class="r num">${money(z.act)}</td>${learn?`<td class="mono">${esc(z.model)} ${esc(z.ver||'')}</td>`:''}</tr>`).join('')}</tbody></table></div>`}
+/* the delivery against the order line: where, when against the need-by date, by whom, with the proof of delivery */
+function stDelivery(c,r,d){const m=exMove(c,r),M=caseDemand(c),L=m.legs[m.legs.length-1],pod=(c.exec?c.exec.steps:[]).find(y=>y.k==='pod');
+  return `<div class="stpad"><p style="margin-top:0">${esc(d.charAt(0).toUpperCase()+d.slice(1))}.</p>${stKv([['Delivered to',locName(m.to)],['Order line',M.order+' line '+M.line],['Arrival',exTs(m.eta)],['Need-by',fmtDY(M.needBy)],['Slack',m.slack==null?'—':m.slack<0?Math.abs(m.slack)+' days late':m.slack+' days early'],['Last leg',L.from+' → '+L.to+' · '+L.carrier],['Proof of delivery',pod&&pod.ack?pod.ack.ref:'Not yet']]).replace('stkv stpad','stkv')}</div>`}
+/* every document the enterprise systems returned for this case, newest last */
+function stDocsTab(c){const st=c.exec?c.exec.steps.filter(y=>y.ack):[];return st.length?`<div class="tw stpad"><table class="t static tight"><thead><tr><th>Document</th><th>Step</th><th>System</th><th>Returned</th></tr></thead><tbody>${st.map(y=>`<tr><td>${stDoc(y.ack.ref)}</td><td>${esc(y.label)}</td><td>${esc(exApp(y))}</td><td class="num">${esc(stWhen(y.ack.at))} · ${esc(y.ack.by)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note stpad">Documents arrive as the enterprise systems acknowledge each instruction in stage 8.</p>'}
+function stCarried(c){const M=caseDemand(c),r=c.chosen||c.recommendation,met=r&&r.id==='redeploy'&&M&&M.order;
+  return `<div class="stpad">${M&&M.order?`<p style="margin-top:0">${met?`${esc(M.order)} line ${M.line} is filled by ${c.id}; nothing is carried forward from it.`:`${esc(M.order)} line ${M.line} stays open and is carried forward to the next matching return.`}</p>`:'<p class="note" style="margin-top:0">No contract demand was matched for this case, so nothing is carried forward.</p>'}${M&&M.lease?`<p class="note">Re-lease opportunity ${esc(M.lease)} stays open in CRM.</p>`:''}</div>`}
+/* D: what this person does now, or who it waits on (6.7); one primary action per page */
+function stDo(c,n,t){const r=c.chosen||c.recommendation,id=c.id,cons=(b,l)=>`<div class="stact">${b}<p class="note">${l}</p></div>`,wait=(who,since,extra)=>`<p class="stwait">${stTag({k:'wait',icon:'⏳',word:'Waiting on '+who})}${since?` <span class="note">since ${esc(stWhen(since))}</span>`:''}</p>${extra||''}${stNotifyBtn(c,who)}`;
+  if(t.k==='todo'){const p=afRun(c).stage;return {h:'What happens next',b:`<p style="margin-top:0">Starts on <b>${esc(stLc(AF_STAGES[n-1].trig))}</b>. ${esc(AF_STAGES[n-1].person)}.</p><p class="note">${id} is at stage ${Math.min(p,10)}, ${esc(stLc(stT(Math.min(p,10))))}. <a class="lnk" href="#/${stHref(id,Math.min(p,10))}">Go to stage ${Math.min(p,10)}</a></p>`}}
+  if(n<=3)return {h:'What you do now',b:`<p style="margin-top:0"><b>Nothing for you.</b> ${n===1?'Opened by the agent from Lease management.':n===2?'Recorded by the agent from Lease management and ERP finance.':'Tracked by the agent from the carrier\'s TMS.'}</p>`};
+  if(n===4){if(c.blocked&&!c.requested&&!c.recommendation&&can('request'))return {h:'What you do now',pri:1,b:cons(`<button class="btn pri lg" data-act="reqEvidence" data-arg="${id}">${esc(c.blocked.action)}</button>`,`Sends the request to ${esc(c.blocked.owner)}; the case continues when it arrives.`)};
+    return {h:'What you do now',b:`<p style="margin-top:0"><b>Nothing required.</b> Receipt is recorded in WMS${(c.evidence||[]).some(e=>e.state!=='ready')?'; the missing evidence is requested in stage 5':''}.</p>`}}
+  if(n===5){if(t.k==='done')return {h:'What you do now',b:`<p style="margin-top:0"><b>Nothing required.</b> The result is recorded${c.grade?': grade '+c.grade:''}.</p>`};
+    if(c.requested&&can('assess'))return {h:'What you do now',pri:1,b:cons(`<button class="btn pri lg" data-act="simResult" data-arg="${id}">Record the result</button>`,'Records the inspection result from the inspection system; the routes are built next.')};
+    if(!c.requested&&can('request'))return {h:'What you do now',pri:1,b:cons(`<button class="btn pri lg" data-act="reqEvidence" data-arg="${id}">${esc(c.blocked?c.blocked.action:'Request the test')}</button>`,`Sends the request to ${esc(c.blocked?c.blocked.owner:'Engineering')}.`)};
+    return {h:'What happens next',b:wait(c.blocked?c.blocked.owner:'Engineer',c.requested?c.requested.at:null)}}
+  if(n===6){if(t.k==='block')return {h:'What happens next',b:`<p style="margin-top:0">${esc(t.why||'')}</p>${can('reeval')&&c.stage==='reeval'?cons(`<button class="btn pri lg" data-act="reeval" data-arg="${id}">Re-evaluate ${id}</button>`,'Rebuilds every route on fresh evidence.'):''}`,pri:can('reeval')&&c.stage==='reeval'?1:0};
+    if(c.stage==='awaiting_approval'&&!c.submitted&&can('submit'))return {h:'What you do now',pri:1,b:cons(`<button class="btn pri lg" data-act="tiSubmit" data-arg="${id}">Submit ${id} for review</button>`,`The ${S.deleg.decisions?'Approver':'Admin'} gets it in their inbox and approves, edits or declines it in stage 7.`)};
+    if(c.stage==='awaiting_approval'&&!c.submitted)return {h:'What happens next',b:wait('Planner',c.packet?c.packet.at:null,'<p class="note">The Planner reviews the packet and submits it for approval.</p>')};
+    return {h:'What happens next',b:`<p style="margin-top:0"><b>Decided.</b> ${c.submitted&&!c.approval?'Submitted by '+esc(c.submitted.by)+'; the approval is in stage 7.':c.approval?'Approved in stage 7.':''} <a class="lnk" href="#/${stHref(id,7)}">Open stage 7</a></p>`}}
+  if(n===7){if(c.stage==='awaiting_approval'&&can('approve'))return {h:'What you do now',pri:1,b:`<div class="stact"><button class="btn pri lg" data-act="approve" data-arg="${id}">${ICON.check||''} Approve ${esc(r.plan)}</button><div class="row" style="gap:8px;margin-top:8px"><button class="btn" data-act="approve" data-arg="${id}|review">Edit route</button><button class="btn" data-act="declineDecision" data-arg="${id}">Decline</button></div><p class="note">Opens the approval card with the agent's drafted rationale. Approving sends the instructions to the enterprise systems.</p></div>`};
+    if(c.stage==='awaiting_approval'&&!c.submitted&&can('submit'))return {h:'What you do now',pri:1,b:cons(`<button class="btn pri lg" data-act="tiSubmit" data-arg="${id}">Submit ${id} for review</button>`,`The ${S.deleg.decisions?'Approver':'Admin'} gets it in their inbox.`)};
+    if(t.k==='wait')return {h:'What happens next',b:wait(t.who,t.since,`<p class="note">The ${esc(t.who)} approves, edits or declines it.</p>`)};
+    return {h:'What happens next',b:`<p style="margin-top:0"><b>Approved.</b> The instructions went to the enterprise systems. <a class="lnk" href="#/${stHref(id,8)}">Follow them in stage 8</a></p>`}}
+  if(n===8){if(t.k==='done')return {h:'What happens next',b:`<p style="margin-top:0"><b>Every instruction is acknowledged.</b> <a class="lnk" href="#/${stHref(id,9)}">See the outcome in stage 9</a></p>`};
+    const x=c.exec,a=x&&x.steps.find(y=>y.state==='active'),k=a&&exClock(c,a,asOfNow());
+    if(can('execSim'))return {h:'What you do now',pri:1,b:cons(`<button class="btn pri lg" data-act="advance" data-arg="${id}">Check for the next acknowledgement</button>`,`You handle exceptions only${k&&k.level?': this step passed its '+esc(k.lim)+' limit and escalated to '+esc(k.to):''}. The systems do the work and report back.`)};
+    return {h:'What happens next',b:wait(t.who||'the enterprise systems',t.since,`<p class="note">You handle exceptions only.${k&&k.level?' This step passed its limit and escalated to '+esc(k.to)+'.':''}</p>`)}}
+  if(n===9){if(c.outcome)return {h:'What happens next',b:`<p style="margin-top:0"><b>Confirmed.</b> <a class="lnk" href="#/${stHref(id,10)}">Reconcile it line by line in stage 10</a></p>`};
+    if(c.stage==='closed'&&can('confirm'))return {h:'What you do now',pri:1,b:cons(`<button class="btn pri lg" data-act="confirmOutcome" data-arg="${id}">Confirm the outcome</button>`,'Records the actual costs and value; stage 10 compares them with the prediction.')};
+    if(t.k==='wait')return {h:'What happens next',b:wait(t.who,t.since)};
+    return {h:'What happens next',b:'<p style="margin-top:0">The outcome comes back once every instruction is acknowledged.</p>'}}
+  if(c.outcome)return {h:'What you do now',b:`<p style="margin-top:0"><b>Review the variances</b> in the lines below.</p>${canPage('analytics','predicted')?`<a class="btn" href="#/analytics/predicted?dp=${id}">Open in Analytics</a>`:''}`};
+  return {h:'What happens next',b:'<p style="margin-top:0">Reconciles once Finance confirms the outcome.</p>'}}
+/* Notify the owner: the agent drafts an escalation to whoever the stage waits on */
+const stNotifyBtn=(c,who)=>/Approver|Admin|Planner|Finance|Engineer|Inspection|Engineering/.test(who||'')?`<button class="btn sm" data-act="stNotify" data-arg="${c.id}|${esc(who)}">Notify the owner</button>`:'';
+ACT.stNotify=arg=>{const [id,who]=arg.split('|'),c=CASE_BY_ID[id];if(!c)return;AF.ctxOverride={kind:'case',id};AF.ui.widen=false;afPanelOpen(true);
+  afThread(afThreadKey()).push({who:'agent',run:null,text:'A drafted note to the '+who+' about '+id+'. Edit it, then send it.',cards:[afEscalation(c,{role:/Engineering|Inspection/.test(who)?'Engineer':who,label:stT(afRun(c).stage>10?10:afRun(c).stage)})],next:[],calls:[],at:asOfNow().toISOString()});afSave();afRefreshPanel()};
+/* ---- one stage page (6.3) ---- */
+function stPage(c,n,tab){const run=afRun(c),t=stState(c,n,run),ph=stPhase(n),d=stData(c,n),S1=AF_STAGES[n-1],reached=t.k!=='todo';
+  const line=t.k==='done'?[d.when?stWhen(d.when):'',d.who?'by '+d.who:''].filter(Boolean).join(' · '):t.k==='wait'?(t.since?'since '+stWhen(t.since)+' · ':'')+S1.person:t.k==='block'?`Blocked: ${t.why||''}`:t.k==='cur'?'The case is here now':`Starts on ${stLc(S1.trig)}`;
+  const D=stDo(c,n,t),tabs=d.tabs,cur=tabs.find(x=>x[0]===tab)?tab:(S.stTabs&&S.stTabs[c.id+'|'+n]&&tabs.find(x=>x[0]===S.stTabs[c.id+'|'+n])?S.stTabs[c.id+'|'+n]:tabs[0]&&tabs[0][0]);
+  const what=reached?`<section class="stwh" id="stWhat" aria-labelledby="stWhatH"><div class="stwhh"><h2 id="stWhatH">What happened</h2>${stTag(t)}</div><p class="stres" id="stRes">${esc(d.res)}</p>
+     ${d.facts.length?`<dl class="stfacts">${d.facts.map(f=>`<div${String(f.v).length>34?' class="wide"':''}><dt>${esc(f.l)}</dt><dd>${esc(f.v)}</dd><span class="stpv">${f.p}</span></div>`).join('')}</dl>`:''}
+     ${d.docs.length?`<p class="stdocs"><span class="note">Documents</span>${d.docs.map(stDoc).join('')}</p>`:''}</section>`
+    :`<section class="stwh will" id="stWhat" aria-labelledby="stWhatH"><div class="stwhh"><h2 id="stWhatH">What will happen</h2>${stTag(t)}</div><p class="stres" id="stRes">${esc(JSTEPS_AF[n-1][3])}.</p>
+     <dl class="stfacts"><div><dt>Starts on</dt><dd>${esc(S1.trig)}</dd></div><div><dt>The agent</dt><dd>${esc(S1.agent)}</dd></div><div><dt>A person</dt><dd>${esc(S1.person)}</dd></div><div><dt>Systems</dt><dd>${esc(S1.sys.join(', '))}</dd></div></dl></section>`;
+  const prev=[];for(let i=1;i<n;i++){const s=run.stages[i-1];prev.push(`<li class="st-${stState(c,i,run).k}"><span class="n">${i}</span><b>${esc(stT(i))}</b><span class="note">${esc(s.state==='queued'?'Not reached':s.result||'')}</span><a class="lnk" href="#/${stHref(c.id,i)}">View</a></li>`)}
+  return `<div class="stpage" data-stage="${n}" data-phase="${ph.k}" style="--c:var(--h-${ph.h})">
+   <nav class="frbc stbc" aria-label="Breadcrumb"><a href="#/product/received" data-act="go" data-arg="product/received">Returned assets</a>${ICON.chevR||'›'}<a href="#/${stHref(c.id,'overview')}">${c.id} · ${esc(asModel(c))}</a>${ICON.chevR||'›'}<b>Stage ${n}</b></nav>
+   <header class="sthead"><div class="sthl"><p class="stcap"><span class="stphase">${esc(ph.t)}</span> · Stage ${n} of 10</p><h1 id="stH1" tabindex="-1">${esc(S1.t)}</h1>
+     <p class="stsub">${stTag(t,1)}<span class="stline">${esc(line)}</span></p><p class="stlogos">${stLogos(n)}</p></div>
+    <div class="row stha"><button class="btn afai2" data-act="stAsk" data-arg="${c.id}|${n}">${ICON.spark} Ask about this stage</button>${n===6||n===7?`<button class="btn" id="afPackBtn" data-act="afPack" data-arg="${c.id}">Evidence pack</button>`:''}</div></header>
+   <div class="stgrid">${what}<div class="stside">${d.mean&&reached?`<section class="stmean" id="stMean" aria-labelledby="stMeanH">${frIt('spark',ph.h,'sm')}<div><h2 id="stMeanH">What it means</h2><p>${esc(d.mean)}</p></div></section>`:''}
+     <section class="stdo ${D.pri?'act':''}" id="stDo" aria-labelledby="stDoH"><h2 id="stDoH">${D.h}</h2>${D.b}</section></div></div>
+   ${n>1?`<details class="strecap" id="stRecap"><summary><b>Established so far</b> <span class="note">stages 1–${n-1}</span></summary><ol>${prev.join('')}</ol></details>`:''}
+   ${tabs.length?`<section class="stdet" id="stDet" aria-label="Details"><div class="frseg sttabs" role="tablist" aria-label="Details of stage ${n}">${tabs.map(x=>`<button role="tab" id="stt-${x[0]}" aria-controls="stp-${x[0]}" aria-selected="${x[0]===cur}" tabindex="${x[0]===cur?0:-1}" data-act="stTab" data-arg="${x[0]}">${esc(x[1])}</button>`).join('')}</div>
+     ${tabs.map(x=>`<details class="stacc" id="stp-${x[0]}" data-k="${x[0]}" ${x[0]===cur?'open':''}><summary>${esc(x[1])}</summary><div class="stpn" role="tabpanel" aria-labelledby="stt-${x[0]}">${x[2]}</div></details>`).join('')}</section>`:''}
+  </div>`}
+ACT.stTab=k=>{const v=S.stView;if(!v||v.kind!=='stage')return;v.tab=k;(S.stTabs||(S.stTabs={}))[v.id+'|'+v.n]=k;
+  $$('.sttabs [role=tab]').forEach(b=>{const on=b.dataset.arg===k;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1});$$('.stacc').forEach(d=>{d.open=d.dataset.k===k});
+  try{history.replaceState(null,'','#/'+stHref(v.id,v.n,k))}catch(e){}};
+ACT.stAsk=arg=>{const [id,n]=arg.split('|');ACT.afAssist('case|'+id);setTimeout(()=>{const t=$('#askp textarea, #askp input[type=text]');if(t&&!t.value){t.value='What happened in stage '+n+' ('+stT(+n)+') for '+id+'?';t.focus()}},0)};
+/* ---- the case Overview (6.5): one card per stage, grouped by phase; the decision or outcome at a glance ---- */
+function stOverview(c){const run=afRun(c),r=c.chosen||c.recommendation,o=c.outcome,nx=afNextStep(c),id=c.id,ss=afStageStates(c);
+  const glance=o?`<span class="stgl"><b class="num">${money(o.net)}</b> actual · <span class="${o.net-r.net<0?'tx-bad':'tx-ok'}">${(o.net-r.net<0?'−':'+')+money(Math.abs(o.net-r.net))}</span> against prediction</span>`:r?`<span class="stgl"><b>${esc(r.plan)}</b> · <b class="num">${money(r.net)}</b>${c.approval?' · Approved '+fmtD(c.approval.at):c.submitted?' · Submitted, waiting for approval':' · Recommended'}</span>`:`<span class="stgl">${esc(ss[run.stage>10?9:run.stage-1].result||'No route yet')}</span>`;
+  const card=n=>{const t=stState(c,n,run),s=ss[n-1];return `<li><a class="stcard st-${t.k} ${n===run.stage?'cur':''}" href="#/${stHref(id,n)}" aria-label="${esc(stSentence(c,n,t))}. Open stage ${n}."><span class="stcn">${n}</span><span class="stcb"><b>${esc(stT(n))}</b><span class="stcr">${esc(t.k==='todo'?'Not reached yet':t.k==='block'?(t.why||s.result):s.result||'')}</span><span class="note">${esc(t.k==='wait'?'Waiting on '+t.who+(t.since?' since '+stWhen(t.since):''):t.k==='done'?[s.at?stWhen(s.at):'',s.by||''].filter(Boolean).join(' · '):t.k==='todo'?'Starts on '+stLc(AF_STAGES[n-1].trig):'')}</span></span>${stTag(t)}<span class="stgo" aria-hidden="true">Open →</span></a></li>`};
+  const mine=(nx.kind==='act'||nx.kind==='approve'||nx.kind==='ack');
+  return `<div class="stpage stovw" data-stage="overview">
+   <nav class="frbc stbc" aria-label="Breadcrumb"><a href="#/product/received" data-act="go" data-arg="product/received">Returned assets</a>${ICON.chevR||'›'}<b>${id} · Overview</b></nav>
+   <header class="sthead stovh">${asPhoto(c,'stph').replace(' loading="lazy"','')}<div class="sthl"><p class="stcap">Case overview · ${esc(c.owner)} · ${esc(c.location)}</p><h1 id="stH1" tabindex="-1">${id} · ${esc(asModel(c))}</h1><p class="stsub">${glance}</p><p class="note">${esc(c.assetId)} · ${asSerial(c)} · received ${fmtDY(c.received)} · ${run.stage>10?'every stage done':'at stage '+run.stage+', '+stLc(stT(run.stage))}</p></div></header>
+   <div class="stovg"><div class="stovl">${ST_PH.map(ph=>`<section class="stovp" style="--c:var(--h-${ph.h})" aria-labelledby="stph-${ph.k}"><h2 id="stph-${ph.k}" class="stphase">${esc(ph.t)}</h2><ol class="stcards">${ph.n.map(card).join('')}</ol></section>`).join('')}</div>
+    <aside class="stovr"><section class="panel frp"><div class="ph"><h3>Needs you</h3></div><div class="pb">${mine?`<p class="note" style="margin-top:0">Stage ${nx.n} · ${esc(stT(nx.n))}</p>${afB(esc(nx.label),nx.kind==='approve'?{approve:id}:{next:id},'pri')}`:`<p class="note" style="margin:0">Nothing on ${id} waits on you.${nx.kind!=='done'?' '+esc(nx.label)+'.':''}</p>`}</div></section>
+     <section class="panel frp"><div class="ph"><h3>${ICON.spark} Agent suggests</h3></div><div class="pb"><p style="margin:0 0 8px">${nx.kind==='done'?'Every stage is done.':esc(nx.label)}${nx.role&&nx.kind!=='act'?' <span class="note">('+esc(nx.role)+')</span>':''}</p><button class="btn sm afai2" data-act="afAssist" data-arg="case|${id}">${ICON.spark} Ask about ${id}</button></div></section>
+     ${o?frPanel('Predicted against actual',stPva(r.net,o.net)):''}
+     <section class="panel frp"><div class="ph"><h3>More on ${id}</h3></div><div class="pb stlinks"><a class="lnk" href="#/product/asset/${id}">Asset intelligence</a><a class="lnk" href="#/${stHref(id,'full')}">Full analysis</a>${canPage('orchestration','run')?`<a class="lnk" href="#/orchestration/run?case=${id}">See it run</a>`:''}<button class="btn sm" id="afPackBtn" data-act="afPack" data-arg="${id}">Evidence pack</button></div></section></aside></div></div>`}
+/* ---- Full analysis (6.6): today's Treatment Intelligence page, unchanged, with every section open; sections lose their numbers (D12) ---- */
+function stFull(c){let h=caseView(c).replace('<details class="affull" id="afFull" ','<details class="affull" id="afFull" open ').replace('<details class="affull" id="afFull">','<details class="affull" id="afFull" open>');
+  return `<div class="stfull"><div class="callout info stfb" role="note"><b>Full analysis.</b> Everything on one page, for review and print. <a class="lnk" href="#/${stHref(c.id,6)}">Back to stage 6</a> · <a class="lnk" href="#/${stHref(c.id,'overview')}">Overview</a></div>${h}</div>`}
+/* ---- the footer (#jgGuide): named Back and Next, the position, the Overview and the agent's suggestion ---- */
+function stFoot(c,v){const id=c.id,nx=afNextStep(c);if(v.kind!=='stage')return `<aside class="jgg stfoot" id="jgGuide" aria-label="Stage navigation"><span class="stpos">${v.kind==='full'?'Full analysis':'Overview'} · ${id}</span><span class="sp"></span><a class="btn ${v.kind==='full'?'':'pri'}" id="jgContinue" href="#/${stHref(id,v.kind==='full'?6:Math.min(afRun(c).stage,10))}">${v.kind==='full'?'Back to stage 6':'Open stage '+Math.min(afRun(c).stage,10)+' · '+esc(stT(Math.min(afRun(c).stage,10)))} →</a></aside>`;
+  const n=v.n,pri=!!v.pri,sug=nx.kind==='done'?'Every stage is done':nx.label,btn=pri?'':(nx.kind==='act'||nx.kind==='ack')&&nx.n!==n?afB(esc(nx.label),{next:id},'',''):nx.kind==='approve'&&n!==7?afB('Open the approval card',{approve:id}):'';
+  return `<aside class="jgg stfoot" id="jgGuide" aria-label="Stage navigation" data-state="${stState(c,n).k}">${n>1?`<a class="btn" id="jgBack" href="#/${stHref(id,n-1)}" aria-label="Back to stage ${n-1}, ${esc(stT(n-1))}">← <span class="stfn">${n-1} ${esc(stT(n-1))}</span></a>`:'<span></span>'}
+   <span class="stpos">Stage ${n} of 10</span><a class="btn ghost sm" href="#/${stHref(id,'overview')}">Overview</a>
+   <p class="stsug"><span class="jgk">${ICON.spark} Agent suggests</span> <b>${esc(sug)}</b>${nx.n&&nx.n!==n&&nx.kind!=='done'?` <span class="note">(stage ${nx.n})</span>`:''} ${btn}</p>
+   ${n<10?`<a class="btn ${pri?'':'pri'}" id="jgContinue" href="#/${stHref(id,n+1)}" aria-label="Next: stage ${n+1}, ${esc(stT(n+1))}"><span class="stfn">${n+1} ${esc(stT(n+1))}</span> →</a>`:`<a class="btn ${pri?'':'pri'}" id="jgContinue" href="#/${stHref(id,'overview')}">Overview →</a>`}</aside>`}
+/* ---- wiring: resolve the URL, redirect old links (replacing the history entry), draw through the normal route so roles, the menu and the agent all apply ---- */
+if(ST_ON){
+  const pz0=parse;parse=function(){const r=pz0();if(r.c===undefined){const h=location.hash.replace(/^#\/?/,'').split('?')[0].split('/').filter(Boolean);r.c=r.a===h[1]&&r.b===h[2]?h[3]||null:null}return r};
+  const rp0=renderProduct;renderProduct=function(r){const v=S.stView,c=v&&CASE_BY_ID[v.id];if(!c)return rp0(r);
+    if(v.kind==='full')return stFull(c);if(v.kind==='overview')return stOverview(c);const h=stPage(c,v.n,v.tab);v.pri=/class="stdo act"/.test(h);return h};
+  const js0=jgStrip;jgStrip=function(r,id){const v=S.stView;return v&&v.id===id&&CASE_BY_ID[id]?stBar(CASE_BY_ID[id],v):js0(r,id)};
+  const jg0=jgGuide;jgGuide=function(r,id){const v=S.stView;return v&&v.id===id&&CASE_BY_ID[id]?stFoot(CASE_BY_ID[id],v):jg0(r,id)};
+  const ja0=jgAt;jgAt=function(r){return S.stView?-1:ja0(r)};
+  const jc0=jgCase;jgCase=function(r){const v=S.stView;return v&&dpVisible(v.id)?v.id:jc0(r)};
+  const rt3=route;route=function(keep){const r=parse(),prev=S.stView;
+    const t=S.acct?stResolve(r):null;
+    S.stView=t&&dpVisible(t.id)?t:null;
+    if(S.stView&&t.redir){const to='#/'+stHref(t.id,t.kind==='stage'?t.n:t.kind,t.tab);if(location.hash!==to)try{history.replaceState(null,'',to)}catch(e){}}
+    const same=!!(prev&&S.stView&&prev.id===S.stView.id&&prev.kind===S.stView.kind&&prev.n===S.stView.n);
+    if(same&&!S.stView.tab&&prev.tab)S.stView.tab=prev.tab;
+    rt3(keep);
+    const v=S.stView;if(!v||!S.acct)return;const c=CASE_BY_ID[v.id];
+    document.title=(v.kind==='stage'?'Stage '+v.n+' · '+stT(v.n):v.kind==='full'?'Full analysis':'Overview')+' · '+v.id;
+    if(!keep&&!same){const h=$('#stH1');if(h)try{h.focus({preventScroll:true})}catch(e){h.focus()}const y=S.stBack&&(S.stScroll||{})[location.hash];window.scrollTo(0,y||0);S.stBack=false;
+      let lv=$('#stLive');if(!lv){document.body.insertAdjacentHTML('beforeend','<div id="stLive" class="sr" aria-live="polite"></div>');lv=$('#stLive')}lv.textContent=document.title.replace(/ · /g,', ')}};
+  /* Back and Forward restore the stage's scroll position; any other move starts at the top */
+  S.stScroll={};window.addEventListener('scroll',()=>{if(S.stView)S.stScroll[location.hash]=scrollY},{passive:true});
+  if(window.navigation&&navigation.addEventListener)navigation.addEventListener('navigate',e=>{S.stBack=e.navigationType==='traverse'});
+  /* Alt+← and Alt+→ move between stages */
+  document.addEventListener('keydown',e=>{const v=S.stView;if(!v||v.kind!=='stage'||!e.altKey||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight'))return;const n=v.n+(e.key==='ArrowRight'?1:-1);if(n<1||n>10)return;e.preventDefault();go(stHref(v.id,n))});
+  /* the tabs become accordions on phones: opening one there selects it */
+  document.addEventListener('toggle',e=>{const d=e.target;if(!d||!d.classList||!d.classList.contains('stacc')||!d.open||innerWidth>700)return;const v=S.stView;if(v){v.tab=d.dataset.k;(S.stTabs||(S.stTabs={}))[v.id+'|'+v.n]=v.tab}},true);
+  document.addEventListener('click',e=>{const b=$('.stbar.open');if(b&&!e.target.closest('.stbar'))ACT.stSheet()});
+}
+/*ST-END*/
 /* ===== boot ===== */
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-act][tabindex]')){e.preventDefault();e.target.click()}});
 afBoot();S.acct=sessionLoad();S.role=S.acct?S.acct.role:'';if(S.acct){shell();route();afAfterBoot()}else renderSignIn();
