@@ -16,6 +16,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 | **What changed and when** | [`CHANGES.md`](CHANGES.md) has one walk-through per release. |
 | **Agent-first (branch `feature/agent-first`)** | Every role lands on **Home**; **Ask** (Ctrl+J) and the command bar (Ctrl+K) work on every page; a rule-based agent prepares decisions, mappings and workflows as reviewable cards, and a person commits. See [section 15](#15-the-agent-first-product). Add `?agent=0` for the 22 Oct demo build. |
 | **Live run board and live UI (branch `feature/live-run`)** | **Process orchestration** plays each case's run by itself at the top of the page: each stage's box opens in place and shows, line by line, which system it read and what it got, with counters for tools called and audit entries. The interface no longer shows *simulated*, *synthetic* or *demo* labels; only the Presenter menu (`?presenter=1`) says the data is synthetic. See [section 6.11](#611-process-orchestration-behind-the-screen), [section 13](#13-what-is-real-and-what-is-simulated) and [CHANGES Update 13](CHANGES.md). |
+| **Execution detail and cost trace (branch `feature/execution-detail`)** | Every decision says where the unit goes (order line, customer site, staging warehouse), who acts in which system, the document each step creates and its time limit, and where every cost and value comes from, line by line in ₹ and $. Orders live in IBM Sterling OMS, transport in ShipLane TMS; SAP S/4HANA is finance only. See [section 6.5](#65-product-treatment-intelligence-the-decision-page) and [CHANGES Update 16](CHANGES.md#update-16-execution-detail-and-cost-trace-branch-featureexecution-detail). |
 
 > **Note for reviewers.** Access control is close to compliance. The role matrix, the access wording and any regulatory claims in this document should be reviewed by the Legal team before anyone relies on them or uses them in a client commitment.
 
@@ -294,6 +295,21 @@ What each role can press:
 | **Close call (RT-1094)** | **Phone** |
 | [![Close call](docs/screenshots/flow-case-neartie.webp)](docs/screenshots/flow-case-neartie.webp) | [![Treatment on phone](docs/screenshots/flow-phone-case.webp)](docs/screenshots/flow-phone-case.webp) |
 
+**Execution detail and cost trace** (Update 16). For RT-1048 the packet and step 5 now show:
+
+| What | Example (RT-1048) |
+|---|---|
+| **Destination** | SO-48102 line 10 in IBM Sterling OMS · Customer A · Chennai Foundry (`LOC-CHN-03`, Site 3) · need-by 17 Oct 2026 · replaces planned PO-49048 |
+| **The plan** | Six steps, each with its system, document, owner and time limit: allocate in OMS (SO-48102 line 10), refurbish in IBM Maximo (WO-47349), book transport in ShipLane TMS (LD-47388), warehouse moves in Manhattan Active WM (TR-47362, OBD-47363), delivery confirmed in OMS (FUL-47375), actual costs posted in SAP S/4HANA (FI-47401). Numbers are planned before approval and confirmed on acknowledgement |
+| **Route and timing** | WH-PNQ-01 Pune → RC-HSR-01 Hosur (930 km, ETD 8 Oct) → WH-MAA-02 Chennai (260 km, 12 Oct) → LOC-CHN-03 (34 km, ETA 13 Oct 08:36), Northline 3PL on rate card RC-2026.2; 4 days of slack. Staging is the warehouse nearest the ship-to, with the reason |
+| **Where every number comes from** | *Source* next to each term opens a drawer: the lines, their method (Retrieved, Contracted or Modelled), the system and record, the calculation in ₹ and $ at ₹83.5, and why. Preparation $1,800 = seven parts ₹83,500 + labour 22 h × ₹850 + machine time ₹9,800 + three legs ₹29,800 + packing ₹8,500 |
+| **Time limits** | A step past its limit escalates to the Approver, then Admin, and shows on the plan, the run board, *Needs you* and the audit trail (seeded on RT-1009) |
+| **What happens if** | The time limit (enforced), and guidance for low confidence, approval expiry, a cancelled order line and a gate failing after approval |
+
+| Decision packet | Where this number comes from | Escalation (RT-1009) |
+|---|---|---|
+| [![Packet](docs/screenshots/exec-packet.webp)](docs/screenshots/exec-packet.webp) | [![Drawer](docs/screenshots/exec-source-drawer.webp)](docs/screenshots/exec-source-drawer.webp) | [![Escalation](docs/screenshots/exec-escalation.webp)](docs/screenshots/exec-escalation.webp) |
+
 ### 6.6 Analytics: reconcile and learn
 
 **For:** Approver, Finance and Admin see every section. The Planner sees the seven business sections, read-only. The Engineer sees Engineering economics and Sustainability. **Purpose:** did the decisions deliver, and is the model getting better?
@@ -570,6 +586,7 @@ IMAGE_PROMPTS.md                how the product photos were made
 | The decision page logic: tie-breaker, confidence levels, instruction preview | Component health, part numbers, stock and some costs are modelled from grade, age and class, and are labelled as such |
 | | Notifications (nothing leaves the app), enterprise-system acknowledgements, orchestration timings, replay and failure simulation |
 | | Diagnostic metrics, RUL ranges, certified periods, order numbers and lease outcome probabilities are modelled and labelled |
+| | Locations, distances, lane rates, part prices, labour and machine rates, standard hours, time limits and escalations (Update 16) are invented for the demo; the arithmetic that ties them to each decision is real |
 
 Nothing is saved to a server. All changes reset on refresh.
 
@@ -592,6 +609,8 @@ Nothing is saved to a server. All changes reset on refresh.
 **From Update 10, still assumed** (see `docs/feature-demo-refractor-iter-two.md`, section 4): the Executive still lands on the Command Center (H1), one journey strip replaces the demo rail (H2), the screen for each step (H3), the predicted side collapsed from step 1 (H4), a WMS receipt instead of an intake work order (H5), no separate QMS row (H6), which model learns from which cost line (H7), the size of the synthetic differences and RT-1048's preparation overrun (H8), case-level line items only (H9), and the replaced flow diagram (H10).
 
 **From Update 11, still assumed** (see `docs/feature-demo-refactor-iter-three.md`, section 4): uplift hidden with plain alternatives proposed (J1), `#/command` opens Key figures (J2), Returned assets stays in the Product menu (J3), the Asset Intelligence layout (J4), the redeploy wording (J5), what *Critical part unavailable* withholds (J6), preview languages (J7), time zones and currencies (J8), cost inputs (J9) and signals (J10).
+
+**From Update 16, still assumed** (see `docs/PLAN_EXECUTION_DETAIL_AND_COST_TRACE.md`, section 4): owner roles per step (K9), time-limit lengths (K10), Site 3's receiving days (K11), the class bills of materials (K12), the rupee rates (K13), certification inside the Maximo work order (K14), Northline 3PL on the outbound legs (K15).
 
 **For Legal review.** The role matrix (sections 4 and 7), the governance claims (section 9) and any access or compliance wording should be reviewed by the Legal team before client use.
 

@@ -4,7 +4,65 @@ For the product overview (what Circularity does, every screen and every role) re
 
 Open `index.html`. The app opens on a **sign-in form** (Update 9): type `exec` or `ops` and any password, and it opens on that person's home page. With `ops`, pick a returned asset and follow its ten journey steps (Update 10). Update 8 adds the **Executive** and **Warehouse Manager** accounts, the guided treatment page and **Process orchestration**. Updates 1 and 2 live under **Integration** in the left menu, on the tabs along the top.
 
-**Quick links:** [Update 15: DI Framework overview, Reconcile and Resolve](#update-15-decision-intelligence-framework-overview-reconcile-and-resolve-pr-13) · [Update 14: Agentic run board, model cards, MCP and Access pages](#update-14-agentic-run-board-model-cards-mcp-and-access-pages-branch-feature-live-run) · [Update 13: Live run board and live wording](#update-13-live-run-board-and-live-wording-branch-feature-live-run) · [Update 12: Agent-first workbench](#update-12-agent-first-workbench-branch-feature-agent-first) · [Update 11: Command Center by section, Asset Intelligence restructure](#update-11-command-center-by-section-asset-intelligence-restructure-redeploy-and-cost-wording-edge-cases) · [Update 10: Journey-led flow, line-item learning](#update-10-journey-led-flow-step-guidance-value-that-builds-line-item-learning) · [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+**Quick links:** [Update 16: Execution detail and cost trace](#update-16-execution-detail-and-cost-trace-branch-featureexecution-detail) · [Update 15: DI Framework overview, Reconcile and Resolve](#update-15-decision-intelligence-framework-overview-reconcile-and-resolve-pr-13) · [Update 14: Agentic run board, model cards, MCP and Access pages](#update-14-agentic-run-board-model-cards-mcp-and-access-pages-branch-feature-live-run) · [Update 13: Live run board and live wording](#update-13-live-run-board-and-live-wording-branch-feature-live-run) · [Update 12: Agent-first workbench](#update-12-agent-first-workbench-branch-feature-agent-first) · [Update 11: Command Center by section, Asset Intelligence restructure](#update-11-command-center-by-section-asset-intelligence-restructure-redeploy-and-cost-wording-edge-cases) · [Update 10: Journey-led flow, line-item learning](#update-10-journey-led-flow-step-guidance-value-that-builds-line-item-learning) · [Update 9: Sign-in, demo path, retrieved vs predicted](#update-9-sign-in-form-one-asset-demo-path-retrieved-vs-predicted) · [Update 8: Guided flow and senior views](#update-8-guided-decision-flow-senior-and-operational-views-enterprise-handoffs) · [Update 7: Role-based views](#update-7-role-based-views-sign-in-as-a-role) · [Update 6: Treatment intelligence](#update-6-treatment-intelligence) · [Update 5: Asset intelligence](#update-5-asset--product-intelligence) · [Update 4: Sidebar sections](#update-4-sidebar-with-sections) · [Update 3: Command Center](#update-3-command-center-new-home-page) · [Update 1](#update-1-separate-systems-and-crud) · [Update 2](#update-2-live-connections-workflow-states-tables-and-health) · [Demo script](#two-minute-demo-script) · [Good to know](#good-to-know)
+
+---
+
+## Update 16: Execution detail and cost trace (branch `feature/execution-detail`)
+
+**Why:** the Product Owner's review of RT-1048 asked the decision to reflect reality: where the unit goes, how, who acts in which system, which documents, what happens if nobody acts, and where every cost and value comes from. The plan and the decisions are in [`docs/PLAN_EXECUTION_DETAIL_AND_COST_TRACE.md`](docs/PLAN_EXECUTION_DETAIL_AND_COST_TRACE.md).
+
+**Where to look:** sign in as `approver` and open `#/product/RT-1048`. The decision packet is at the top; step 5 has the handoff; *Asset intelligence › Predictions* has the order line.
+
+| Decision packet | Handoff: plan, route and timing | Where this number comes from |
+|---|---|---|
+| [![Packet](docs/screenshots/exec-packet.webp)](docs/screenshots/exec-packet.webp) | [![Handoff](docs/screenshots/exec-handoff.webp)](docs/screenshots/exec-handoff.webp) | [![Drawer](docs/screenshots/exec-source-drawer.webp)](docs/screenshots/exec-source-drawer.webp) |
+| **Escalation (RT-1009)** | **Needs you: Approver** | **Phone** |
+| [![Escalation](docs/screenshots/exec-escalation.webp)](docs/screenshots/exec-escalation.webp) | [![Needs you](docs/screenshots/exec-needs-you.webp)](docs/screenshots/exec-needs-you.webp) | [![Phone](docs/screenshots/exec-phone-handoff.webp)](docs/screenshots/exec-phone-handoff.webp) |
+
+| What | Where | What you see |
+|---|---|---|
+| **One demand** | Packet, Predictions page, matched demand, handoff, payload | **SO-48102 line 10** in IBM Sterling OMS · Customer A · Chennai Foundry (`LOC-CHN-03`, Site 3) · need-by 17 Oct 2026 · replaces planned PO-49048. DEM-9902 is gone |
+| **Orders in OMS, finance in ERP** | Integration › Source map | New sources **IBM Sterling OMS** (orders, ship-to, need-by, fulfilment) and **ShipLane TMS** (lanes, loads, ETD and ETA). SAP S/4HANA is finance only. No *ERP · Order Management* label is left |
+| **A plan per route** | Packet *After approval*, handoff instruction table | Each step names the action, the system, the document (*to be created* until it is acknowledged), the owner and the time limit. RT-1048 has six steps: OMS allocation, Maximo work order, TMS transport, WM moves, OMS delivery, SAP cost posting. The acknowledgement confirms the planned number (WO-47349, LD-47388, TR-47362, FUL-47375, FI-47401) |
+| **Route and timing** | Handoff *Route and timing*, packet *Where and when* | WH-PNQ-01 → RC-HSR-01 → WH-MAA-02 → LOC-CHN-03 with Northline 3PL: ETD 8 Oct, refurbished 11 Oct, ETA 13 Oct 08:36, 4 days of slack. Staging is the warehouse nearest the ship-to, with the reason |
+| **Where every number comes from** | *Source* on every term: packet, *What influenced this decision*, *How the recommended net is built*, the preparation build, Reconcile and learn | A drawer with the lines, method (Retrieved, Contracted, Modelled), source, calculation in ₹ and $, and why; after the outcome, the actual line by line |
+| **Preparation, line by line** | Asset intelligence › Economic, Predictions | RT-1048: seven parts ₹83,500 ($1,000); labour 22 h × ₹850, machine time ₹9,800, three legs ₹29,800, packing ₹8,500 = ₹66,800 ($800); total ₹1,50,300 ($1,800) |
+| **Time limits that act** | Plan, run board stage 8, Needs you, audit trail | A step past its limit escalates to the Approver, then Admin, once each, with the reason. RT-1009's Maximo work order is the seeded example |
+| **What happens if** | Packet, handoff | The time limit (enforced) and four guidance cases: low confidence, not approved by expiry, the order line cancelled (with the next route and its value), a gate failing after approval |
+| **Outcome reported** | Delivery event, run stage 9, journey step 9, Reconcile and learn | *Delivered to Chennai Foundry (Site 3) for Customer A against SO-48102 line 10, WH-PNQ-01 → RC-HSR-01 → WH-MAA-02 → LOC-CHN-03, ETD …, ETA 13 Oct 08:36* |
+| **Actual, explained** | Reconcile and learn, the drawer | RT-1048's $2,070 preparation actual: +6 labour hours, a shaft repair sleeve, a waiting charge from Reconcile. The actual net stays $9,230 |
+| **Evidence pack** | *Evidence pack* | Adds the execution plan, the move, every cost line and *What happens if* |
+
+### Framework pages
+
+| What | Where | Change |
+|---|---|---|
+| **Outbound pre-bill** | Reconcile, INV-NL-11902 | RT-1048's three legs, each checked against lane rate card RC-2026.2: $237.13 + $76.65 + $43.11 = $356.89 (₹29,800, the same as in Circularity) |
+| **One rate card** | Reconcile, all 128 inbound bills | Inbound freight now comes off the same card Circularity uses ($43–$369) |
+| **Chennai Foundry is Customer A's** | Reconcile, Resolve | As in Circularity (Site 3). Customer A returns from Pune Works, Chennai Foundry, Hosur Assembly and Nashik Plant |
+
+### What did not change
+
+Route values, rankings, gates, approvals, roles, RT-1048's $9,600 (P10–P90 $8,371–$10,608) and $9,230 actual, and Analytics totals. No new random draws: the seeded data is the same.
+
+### Deliberate changes
+
+- The inbound return freight (run stage 3) now comes off the lane rate card: RT-1048's is $43 (Pune Works → Warehouse 1, minimum charge), was $206.
+- Generated cases keep their nets; their document numbers now follow the kind of step, so some non-redeploy references differ from before.
+- The Hosur–Chennai leg is 260 km (road distance), not the 160 km in the review draft.
+- Site 3 receives Tue/Thu/Sat (assumed, K11), because 13 Oct 2026 is a Tuesday.
+
+### Tests
+
+| Suite | Before | After |
+|---|---|---|
+| 16 existing suites | 945 pass | 945 pass |
+| `exec.js` (new) | — | 46 pass |
+
+Six existing checks assumed four steps or the old labels and were updated, not weakened: `gf_run` (IBM Sterling OMS instead of *ERP · Order Management*), `iter2` (`order.allocated`; LD, TR, FUL and FI references on a six-step plan), `iter3` (*Labour, machine and transfer*; return authorisation from IBM Sterling OMS), `af1a` (five more acknowledgements close the plan), `af2` (one *Next* per remaining step), `af5` (one system acknowledgement per planned step). Reconcile and Resolve were checked by hand in headless Chrome: no errors.
+
+> **Legal review.** Contract prices, labour, machine and carrier rates, time limits and escalation rules are invented for the demo, and K9–K15 are assumed. Kinective's Legal team should review how they are presented before they are shown to clients or prospects.
 
 ---
 
