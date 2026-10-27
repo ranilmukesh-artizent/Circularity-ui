@@ -581,10 +581,10 @@ const NODES=[
   {id:'rc',n:'Repair centre',s:'Hosur · Recover',tier:3,y:.56},
   {id:'vz',n:'Vizag Port Yard',s:'Export · import',tier:3,y:.76},
   {id:'cp',n:'Chennai Port',s:'Customs',tier:3,y:.95},
-  {id:'ca',n:'Customer A',s:'Pune Works · Nashik',tier:4,y:.2},
-  {id:'cb',n:'Customer B',s:'Chennai Foundry',tier:4,y:.5},
+  {id:'ca',n:'Customer A',s:'Pune Works · Chennai Foundry',tier:4,y:.2},
+  {id:'cb',n:'Customer B',s:'Coimbatore Mill · Surat',tier:4,y:.5},
   {id:'cc',n:'Customer C',s:'Indore Packaging',tier:4,y:.8}];
-const EDGES=[['halv','mer'],['cu','kel'],['cu','mer'],['cell','pc'],['mer','pa'],['mer','pc'],['arc','pa'],['kel','pb'],['orb','pb'],['pa','w1'],['pa','w2'],['pb','w2'],['pb','rc'],['pc','w1'],['pc','vz'],['vz','pb'],['cp','pb'],['w1','ca'],['w2','cb'],['rc','ca'],['w1','cc'],['vz','cc'],['w2','pa']];
+const EDGES=[['halv','mer'],['cu','kel'],['cu','mer'],['cell','pc'],['mer','pa'],['mer','pc'],['arc','pa'],['kel','pb'],['orb','pb'],['pa','w1'],['pa','w2'],['pb','w2'],['pb','rc'],['pc','w1'],['pc','vz'],['vz','pb'],['cp','pb'],['w1','ca'],['w2','cb'],['w2','ca'],['rc','ca'],['w1','cc'],['vz','cc'],['w2','pa']];
 const TIERS=['Sub-suppliers','Suppliers','Plants','Distribution','Customers'];
 
 /* the twelve open incidents */
@@ -596,7 +596,7 @@ const INC0=[
   effects:['Line stoppage at Plant A from 9 Oct','8 customer orders shipped late','Expedited freight cost','$612K revenue at risk','Pressure on the alternate supplier'],
   acts:[['Engage alternate supplier (Arcadia Bearings)','2–3 days','Initiate'],['Transfer stock from Warehouse 2','1 day','Evaluate'],['Re-sequence production at Plant A','Immediate','Plan']],
   plants:[['Plant A · Chakan','West',200,'High','Voltara V4 55 kW, V4 75 kW'],['Plant C · Sanand','West',60,'Medium','Halden HX axial pumps'],['Repair centre','South',40,'Low','Refurbishment kits']],
-  orders:[['SO-45871','Customer A','Pune Works',12,'10 Oct','High'],['SO-45892','Customer A','Nashik Plant',8,'11 Oct','High'],['SO-45901','Customer B','Chennai Foundry',6,'12 Oct','Medium'],['SO-45910','Customer B','Coimbatore Mill',4,'13 Oct','Medium'],['SO-45927','Customer C','Indore Packaging',3,'15 Oct','Low']],
+  orders:[['SO-45871','Customer A','Pune Works',12,'10 Oct','High'],['SO-45892','Customer A','Nashik Plant',8,'11 Oct','High'],['SO-45901','Customer A','Chennai Foundry',6,'12 Oct','Medium'],['SO-45910','Customer B','Coimbatore Mill',4,'13 Oct','Medium'],['SO-45927','Customer C','Indore Packaging',3,'15 Oct','Low']],
   ordersN:8,model:true,
   rel:[['LOG-008','Dock congestion at Warehouse 2 can slow the transfer','inc'],['RT-1027','Recover: harvested Voltara bearings can supply up to 60 sets','recover'],['MOV-2614','Reconcile: Warehouse 2 dock is over free time this morning','reconcile']]},
  {id:'LOG-004',t:'Port congestion — vessel delayed at Vizag',fn:'logistics',sev:0,st:'progress',eta:'3–5 days',imp:418000,units:2600,unitL:'units inbound',region:'East',nodes:['vz','pb','cc'],
@@ -1024,7 +1024,7 @@ const FNB={
   quality:{title:'Holds, failures and field signals',kpi:[['Units on hold','540','QAL-002'],['First-pass yield','96.1%','down 1.4 pts'],['Field failure signals','23','from Recover returns'],['Open deviations','4','MasterControl']],
     cols:['Product','Failure mode','Rate','Units on hold','Source','Open incidents'],rows:[['Kestrel Drive D4','Firmware 4.2 fault','12%',540,'End-of-line test · Recover returns','QAL-002'],['Halden HX axial pump','Seal wear','3.1%',0,'Recover returns','INV-006'],['Voltara V4 motor','Bearing noise','0.8%',0,'Field service','—'],['Corvid C14','Battery swelling','1.9%',0,'Recover returns','—']]},
   customer:{title:'Orders and commitments at risk',kpi:[['Open orders','184','next 30 days'],['Orders at risk','11','$0.39M revenue'],['On-time delivery','93%','last 30 days'],['Customers affected','3','A, B and C']],
-    cols:['Order','Customer','Product','Units','Commit','Risk'],rows:[['SO-45871','Customer A · Pune Works','Voltara V4 55 kW',12,'10 Oct','SUP-001'],['SO-45892','Customer A · Nashik Plant','Voltara V4 55 kW',8,'11 Oct','SUP-001'],['SO-46010','Customer A · Pune Works','Voltara V4 (expansion)',40,'14 Oct','ORD-003'],['SO-45901','Customer B · Chennai Foundry','Voltara V4 75 kW',6,'12 Oct','SUP-001'],['SO-45944','Customer B · Coimbatore Mill','Kestrel Drive D4',30,'13 Oct','QAL-002'],['SO-45980','Customer C · Indore Packaging','Brava 36 V fleet',120,'20 Oct','MKT-011']]}};
+    cols:['Order','Customer','Product','Units','Commit','Risk'],rows:[['SO-45871','Customer A · Pune Works','Voltara V4 55 kW',12,'10 Oct','SUP-001'],['SO-45892','Customer A · Nashik Plant','Voltara V4 55 kW',8,'11 Oct','SUP-001'],['SO-46010','Customer A · Pune Works','Voltara V4 (expansion)',40,'14 Oct','ORD-003'],['SO-45901','Customer A · Chennai Foundry','Voltara V4 75 kW',6,'12 Oct','SUP-001'],['SO-45944','Customer B · Coimbatore Mill','Kestrel Drive D4',30,'13 Oct','QAL-002'],['SO-45980','Customer C · Indore Packaging','Brava 36 V fleet',120,'20 Oct','MKT-011']]}};
 function renderFn(){const f=S.fn,B=FNB[f],is=INC.filter(i=>i.fn===f);
   const cell=(c,v)=>{if(c==='Risk'&&typeof v==='number')return `<div style="display:flex;align-items:center;gap:8px;min-width:110px"><span class="minibar" style="flex:1"><i style="width:${v}%;background:${v>=75?'var(--s1)':v>=50?'var(--s2)':'var(--ok)'}"></i></span><b class="num">${v}</b></div>`;
     if((c==='Utilisation'||c==='On-time')&&typeof v==='number')return `<div style="display:flex;align-items:center;gap:8px;min-width:110px"><span class="minibar" style="flex:1"><i style="width:${v}%;background:${v>=85?'var(--ok)':v>=70?'#D4A800':'var(--s1)'}"></i></span><b class="num">${v}%</b></div>`;
