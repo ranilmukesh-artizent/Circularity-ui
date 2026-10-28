@@ -238,3 +238,39 @@ Harness: the session scratchpad of 353d552e (`tools/all.sh`, `aft.py --w 1464 --
 - G4 not needed (Planner submits, Approver approves). G7 solved by the stage 9 button; Finance confirms off camera. G8 not built (D4: keep vendor names).
 
 **Video.** `docs/demo/video/circularity-cxo-demo.mp4` + `.srt` (5:15, 1440 × 900), from `pipeline/record_cxo.py`, `narration_cxo.json` (Kokoro `am_michael`), `card_close_cxo.html`; `tts.py`/`mux.py` take `--src narration_cxo.json`. Checked frame by frame at each line's start and end; no scroll in any scene; no overlapping lines. Not committed (size). Known: the app's live simulation raises the failing-workflow count over the take (7 failing on the Fabric screens).
+
+### 14.1 Revision after review (28 Oct 2026, user and PO)
+
+- **Landing:** Recover in our words; Resolve and Reconcile read as their cards on `framework/index.html` say (PO).
+- **Agent as the subject:** every line says what our agent did (collected, predicted with ML models, drafted, set up, built the chart).
+- **Agent panel on most pages:** asset summary (retrieved vs predicted), stage 5 and stage 10 **"what our agent did at this stage"** cards (new: `ACT.stAsk` override, `AF_CARDS.cxstage`, built from `stData`), the stage 6 Explain view, the approval rationale, the source-map diagnosis of the stale market feed, the 12 suggested table links, the workflow draft and change, the analytics answer.
+- **Stages 1–3** each get their own short beat, then 4 and 5.
+- **Run replay at 2×** on the run board after stage 10 (caption "Replay · 2× speed"; *Skip to now* when the line ends).
+- **Connection Fabric:** about 10 s each for Overview, Source Map, Source Tables, Canonical Models and Workflow Studio. The Source Map gets **Expand map** (new, hides the duplicate system list), zooms out to the whole map, picks MRO and ERP to light their data paths, and scrolls the full graph.
+- **ERP wording:** never "you don't need an ERP"; it is "we sit on top of your ERP, order management and MRO workshop".
+- **Length:** 7:27, over the 5–6 minute target; cut options are in the session report.
+
+## 15. Session record and open items (28 Oct 2026)
+
+**In the repository (branch `feature/cxo-demo`):**
+- `index.html`: the MRO edits and the CX block.
+- `docs/PLAN_CXO_DEMO_VIDEO.md`: this file.
+- `docs/demo/VIDEO_SCRIPT_CXO.md`: the script.
+- `docs/demo/video/circularity-cxo-demo.mp4` and `.srt`: the video.
+- `docs/demo/video/pipeline/`: `record_cxo.py`, `narration_cxo.json`, `durations_cxo.json`, `card_close_cxo.html`, `tts.py`/`mux.py` with `--src`, and `check/` (`frames.py`, `strip.py`, `flow.py`, `survey.py`).
+- `docs/demo/video/HANDOFF.md` section 9: how to regenerate, take checks, gotchas, and every temporary path.
+- `docs/screenshots/cx-*.webp`.
+- CHANGES Update 19 and a README row.
+
+**Outside the repository:** session scratchpad `C:\Users\ranilmj\AppData\Local\Temp\claude\C--repos-astra-prism-DI-ayush-ui-Circularity-ui\c9766b7b-e35b-47e0-9ba2-2a646934cf3e\scratchpad`. It holds the CX source (`cx/`), the patch and inject scripts (`tools/`), probes, screenshots, the UI review page and the regression log; HANDOFF section 9 lists each one. The deep-research run is `wf_acc2363f-521`; its findings are in section 3.
+
+**Open items:**
+- Length is 7:27, against the 5–6 minute target. Cut options were offered to the user: shorter module reading, drop the asset summary, merge stages 3–4, shorter Fabric lines, drop the stage 10 card, tighter pauses.
+- Should Recover also be read from its card on the landing page?
+- Should the replay come right after approval instead of after stage 10?
+- `docs/demo/user-flow.md`/`.svg` still show EAM doing repair work; redraw them with the app's ten stages and MRO.
+- G8 (generic vendor labels) was not built, because D4 says keep vendor names.
+- The live simulation's failing-workflow count drifts during a take.
+- Legal review of the video and script.
+
+**Regression (28 Oct, final):** the headless harness passes 22 suites, **1,324 checks, 0 failures**. Five expectations moved from EAM to MRO wording: `iter2` ×2, `iter3` ×2, `exec` (originals in the harness scratchpad `orig_cx/`). Run `stages` at a true 1440 × 900 (`--w 1464 --h 999`); at the default 1416 × 801 window stages 3, 4 and 6 overflow by a few pixels, and they do so with `?cx=0` too.

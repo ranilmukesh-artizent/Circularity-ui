@@ -1,6 +1,6 @@
 # Video script: the CXO demo (draft 1, 28 Oct 2026)
 
-For senior executives (CEO, COO, CFO, CIO; 50+, decades in operations). Plan and research: [`../PLAN_CXO_DEMO_VIDEO.md`](../PLAN_CXO_DEMO_VIDEO.md). **Recorded 28 Oct 2026** as `video/circularity-cxo-demo.mp4`. The spoken text of record is [`video/pipeline/narration_cxo.json`](video/pipeline/narration_cxo.json); it differs from draft 1 below in x0 (shorter), x1 (Planner sign-in), x2a (64 for Customer A), x4e (the planner submits), x5 (a second person), x6a (order management, carrier), x7 (the worn shaft sleeve), x8d and x9b. Legal should review the final wording before it is shown outside the team.
+For senior executives (CEO, COO, CFO, CIO; 50+, decades in operations). Plan and research: [`../PLAN_CXO_DEMO_VIDEO.md`](../PLAN_CXO_DEMO_VIDEO.md). **Recorded 28 Oct 2026, revised the same day after the PO's review (section 14.1 of the plan)**, as `video/circularity-cxo-demo.mp4`. The spoken text of record is [`video/pipeline/narration_cxo.json`](video/pipeline/narration_cxo.json); it differs from draft 1 below in x0 (shorter), x1 (Planner sign-in), x2a (64 for Customer A), x4e (the planner submits), x5 (a second person), x6a (order management, carrier), x7 (the worn shaft sleeve), x8d and x9b. Legal should review the final wording before it is shown outside the team.
 
 ## How it should sound
 

@@ -19,401 +19,401 @@ Reconcile validates commercial and operational evidence across records, identifi
 Let's start with Recover.
 
 6
-00:00:36,870 --> 00:00:41,030
+00:00:36,840 --> 00:00:41,000
 We'll sign in as the planner who looks after returns at this site.
 
 7
-00:00:43,680 --> 00:00:47,599
+00:00:43,560 --> 00:00:47,479
 This cycle, sixty-four assets came back for this customer.
 
 8
-00:00:47,599 --> 00:00:51,720
+00:00:47,479 --> 00:00:51,600
 Our agent has already sorted them, and marked where to start.
 
 9
-00:00:51,920 --> 00:00:56,307
+00:00:51,800 --> 00:00:56,187
 Take this one, a fifty-five kilowatt motor back from a lease.
 
 10
-00:00:56,307 --> 00:01:02,850
+00:00:56,187 --> 00:01:02,730
 Our agent pulled its owner, grade, certificate and history from the systems that hold them.
 
 11
-00:01:02,850 --> 00:01:04,720
+00:01:02,730 --> 00:01:04,600
 Nobody keyed any of it in.
 
 12
-00:01:04,820 --> 00:01:07,893
-Ask the agent, and it sums the motor up:
+00:01:04,710 --> 00:01:09,780
+Ask the agent to summarise it, and it keeps facts and predictions apart:
 
 13
-00:01:07,893 --> 00:01:13,500
-grade B, all ten pieces of evidence in, and its recommendation, redeploy.
+00:01:09,780 --> 00:01:16,400
+grade B from the workshop inspection, and its prediction, thirty to forty months of life left.
 
 14
-00:01:16,540 --> 00:01:18,587
+00:01:18,450 --> 00:01:20,497
 Its journey has ten stages.
 
 15
-00:01:18,587 --> 00:01:21,620
+00:01:20,497 --> 00:01:23,530
 Our agent ran the first five on its own.
 
 16
-00:01:22,660 --> 00:01:23,395
+00:01:24,600 --> 00:01:25,335
 Stage one.
 
 17
-00:01:23,395 --> 00:01:24,571
+00:01:25,335 --> 00:01:26,511
 The lease ended.
 
 18
-00:01:24,571 --> 00:01:28,100
+00:01:26,511 --> 00:01:30,040
 Our agent read the contract and opened the case.
 
 19
-00:01:29,180 --> 00:01:29,924
+00:01:31,110 --> 00:01:31,854
 Stage two.
 
 20
-00:01:29,924 --> 00:01:37,290
+00:01:31,854 --> 00:01:39,220
 Order management authorised the return, and our agent found a customer order that needs this motor.
 
 21
-00:01:38,360 --> 00:01:39,177
+00:01:40,310 --> 00:01:41,127
 Stage three.
 
 22
-00:01:39,177 --> 00:01:43,740
+00:01:41,127 --> 00:01:45,690
 The carrier booked the pickup, and our agent tracked it in transit.
 
 23
-00:01:44,830 --> 00:01:45,578
+00:01:46,780 --> 00:01:47,528
 Stage four.
 
 24
-00:01:45,578 --> 00:01:51,020
+00:01:47,528 --> 00:01:52,970
 The warehouse received it, and our agent checked that the evidence was complete.
 
 25
-00:01:52,090 --> 00:01:52,911
+00:01:54,040 --> 00:01:54,861
 Stage five.
 
 26
-00:01:52,911 --> 00:01:55,972
+00:01:54,861 --> 00:01:57,922
 The MRO workshop inspected and graded it.
 
 27
-00:01:55,972 --> 00:02:00,004
+00:01:57,922 --> 00:02:01,954
 Ask the agent about this stage, and it shows its work:
 
 28
-00:02:00,004 --> 00:02:07,620
+00:02:01,954 --> 00:02:09,570
 the grade from the workshop system, the certificate from quality, and why that leaves six routes open.
 
 29
-00:02:09,660 --> 00:02:11,588
+00:02:11,630 --> 00:02:13,558
 Stage six is the decision.
 
 30
-00:02:11,588 --> 00:02:19,450
+00:02:13,558 --> 00:02:21,420
 Our agent built seven possible routes, checked each one for eligibility, and ruled one out before pricing.
 
 31
-00:02:19,650 --> 00:02:24,060
+00:02:21,620 --> 00:02:26,030
 Then it predicted each outcome with its machine-learning models.
 
 32
-00:02:24,060 --> 00:02:25,369
+00:02:26,030 --> 00:02:27,339
 The recommendation:
 
 33
-00:02:25,369 --> 00:02:28,883
+00:02:27,339 --> 00:02:30,853
 redeploy against this customer's replacement order.
 
 34
-00:02:28,883 --> 00:02:34,050
+00:02:30,853 --> 00:02:36,020
 Ninety-six hundred dollars net, forty-eight hundred better than selling it.
 
 35
-00:02:36,170 --> 00:02:38,679
+00:02:38,150 --> 00:02:40,659
 Ask it why, and the agent explains.
 
 36
-00:02:38,679 --> 00:02:46,852
+00:02:40,659 --> 00:02:48,832
 It saves buying a new motor for that order, the refurbishment is modest, and the certificate covers the full term.
 
 37
-00:02:46,852 --> 00:02:49,361
+00:02:48,832 --> 00:02:51,341
 On the right, the evidence it used:
 
 38
-00:02:49,361 --> 00:02:52,730
+00:02:51,341 --> 00:02:54,710
 each figure, the system it came from, and when.
 
 39
-00:02:52,930 --> 00:02:53,942
+00:02:54,920 --> 00:02:55,932
 Now stress it.
 
 40
-00:02:53,942 --> 00:02:56,833
+00:02:55,932 --> 00:02:58,823
 Put the workshop cost up thirty percent:
 
 41
-00:02:56,833 --> 00:02:59,508
+00:02:58,823 --> 00:03:01,498
 the agent still ranks redeploy first.
 
 42
-00:02:59,508 --> 00:03:03,266
+00:03:01,498 --> 00:03:05,256
 Cancel the customer's order, and the agent re-ranks.
 
 43
-00:03:03,266 --> 00:03:07,820
+00:03:05,256 --> 00:03:09,810
 Selling becomes the better route, and it tells you by how much.
 
 44
-00:03:08,430 --> 00:03:11,917
+00:03:10,420 --> 00:03:13,907
 You see the agent's reasoning, not just its answer.
 
 45
-00:03:11,917 --> 00:03:14,720
+00:03:13,907 --> 00:03:16,710
 The planner is satisfied, and submits it.
 
 46
-00:03:16,440 --> 00:03:19,758
+00:03:18,440 --> 00:03:21,758
 Stage seven is where a second person decides.
 
 47
-00:03:19,758 --> 00:03:22,118
+00:03:21,758 --> 00:03:24,118
 Our agent drafted the rationale.
 
 48
-00:03:22,118 --> 00:03:26,027
+00:03:24,118 --> 00:03:28,027
 The approver reads it, checks their limit, and signs.
 
 49
-00:03:26,027 --> 00:03:29,050
+00:03:28,027 --> 00:03:31,050
 Nothing goes out until a person approves.
 
 50
-00:03:30,690 --> 00:03:32,318
+00:03:32,680 --> 00:03:34,308
 Stages eight and nine.
 
 51
-00:03:32,318 --> 00:03:36,093
+00:03:34,308 --> 00:03:38,083
 Our agent sends the work to the systems that do it:
 
 52
-00:03:36,093 --> 00:03:42,309
+00:03:38,083 --> 00:03:44,299
 the customer order, the MRO refurbishment work order, the warehouse and the carrier.
 
 53
-00:03:42,309 --> 00:03:46,750
+00:03:44,299 --> 00:03:48,740
 Each one reports back, and the agent tracks every reference.
 
 54
-00:03:46,970 --> 00:03:47,705
+00:03:48,950 --> 00:03:49,685
 Stage ten.
 
 55
-00:03:47,705 --> 00:03:49,618
+00:03:49,685 --> 00:03:51,598
 Our agent closes the loop:
 
 56
-00:03:49,618 --> 00:03:53,809
+00:03:51,598 --> 00:03:55,789
 predicted, ninety-six hundred; actual, ninety-two thirty.
 
 57
-00:03:53,809 --> 00:03:55,501
+00:03:55,789 --> 00:03:57,481
 Ask it what it learned.
 
 58
-00:03:55,501 --> 00:04:06,900
+00:03:57,481 --> 00:04:08,880
 The biggest difference was in the workshop, a shaft sleeve found worn at strip-down, and it feeds that line back to the model that estimates workshop cost.
 
 59
-00:04:11,110 --> 00:04:16,621
+00:04:13,080 --> 00:04:18,591
 And this is how our agents ran all ten stages, replayed at twice the speed.
 
 60
-00:04:16,621 --> 00:04:19,266
+00:04:18,591 --> 00:04:21,236
 Five agents, each with a narrow job:
 
 61
-00:04:19,266 --> 00:04:27,055
+00:04:21,236 --> 00:04:29,025
 gathering evidence, matching demand, preparing the decision, sending the work out, reconciling the result.
 
 62
-00:04:27,055 --> 00:04:29,701
+00:04:29,025 --> 00:04:31,671
 Every tool call is named and logged.
 
 63
-00:04:29,701 --> 00:04:32,640
+00:04:31,671 --> 00:04:34,610
 People made the two calls that mattered.
 
 64
-00:04:34,160 --> 00:04:38,422
+00:04:36,120 --> 00:04:40,382
 All of this runs on top of the systems you already have:
 
 65
-00:04:38,422 --> 00:04:43,598
+00:04:40,382 --> 00:04:45,558
 your ERP, order management, the MRO workshop, warehouse and quality.
 
 66
-00:04:43,598 --> 00:04:46,794
+00:04:45,558 --> 00:04:48,754
 We don't replace them; we connect to them.
 
 67
-00:04:46,794 --> 00:04:49,078
+00:04:48,754 --> 00:04:51,038
 This is the Connection Fabric:
 
 68
-00:04:49,078 --> 00:04:51,970
+00:04:51,038 --> 00:04:53,930
 twenty systems, connected as they are.
 
 69
-00:04:53,460 --> 00:04:57,332
+00:04:55,420 --> 00:04:59,292
 The source map shows how data flows between them.
 
 70
-00:04:57,332 --> 00:05:02,627
+00:04:59,292 --> 00:05:04,587
 Pick the MRO workshop, and our agent lights up where its data goes:
 
 71
-00:05:02,627 --> 00:05:06,342
+00:05:04,587 --> 00:05:08,302
 the condition grading and workshop cost models.
 
 72
-00:05:06,342 --> 00:05:10,530
+00:05:08,302 --> 00:05:12,490
 Pick the ERP, and you see the demand and price paths.
 
 73
-00:05:10,630 --> 00:05:16,435
+00:05:13,670 --> 00:05:19,475
 Every system reaches one of seven shared models, and from there, the decision.
 
 74
-00:05:16,435 --> 00:05:19,933
+00:05:19,475 --> 00:05:22,973
 When a feed goes stale, our agent diagnoses it.
 
 75
-00:05:19,933 --> 00:05:24,920
+00:05:22,973 --> 00:05:27,960
 Here, an expired token on the market price feed, and how to fix it.
 
 76
-00:05:26,960 --> 00:05:27,987
+00:05:30,000 --> 00:05:31,027
 Source tables.
 
 77
-00:05:27,987 --> 00:05:33,928
+00:05:31,027 --> 00:05:36,968
 Our agent read each system's own tables, as they are, and proposed how they link:
 
 78
-00:05:33,928 --> 00:05:37,009
+00:05:36,968 --> 00:05:40,049
 twelve links here, each with its evidence.
 
 79
-00:05:37,009 --> 00:05:40,530
+00:05:40,049 --> 00:05:43,570
 Your team accepts them, or changes them by hand.
 
 80
-00:05:42,440 --> 00:05:43,715
+00:05:45,500 --> 00:05:46,775
 Canonical models.
 
 81
-00:05:43,715 --> 00:05:49,490
+00:05:46,775 --> 00:05:52,550
 One shared language for an asset, its condition, the demand and the decision.
 
 82
-00:05:49,490 --> 00:05:57,590
+00:05:52,550 --> 00:06:00,650
 Our agent maps every system's fields into it, so a grade in one system means the same as a grade in another.
 
 83
-00:05:59,110 --> 00:06:00,253
+00:06:02,150 --> 00:06:03,293
 Workflow Studio.
 
 84
-00:06:00,253 --> 00:06:05,112
+00:06:03,293 --> 00:06:08,152
 The pipelines that bring data in and send approved instructions out.
 
 85
-00:06:05,112 --> 00:06:10,400
+00:06:08,152 --> 00:06:13,440
 Our agent set these up, and your team approved them before they went live.
 
 86
-00:06:10,500 --> 00:06:11,509
+00:06:13,540 --> 00:06:14,549
 Need a new one?
 
 87
-00:06:11,509 --> 00:06:12,788
+00:06:14,549 --> 00:06:15,828
 Ask in plain words.
 
 88
-00:06:12,788 --> 00:06:17,430
+00:06:15,828 --> 00:06:20,470
 Our agent drafts the steps, checks them, and builds it on the canvas.
 
 89
-00:06:20,890 --> 00:06:22,504
+00:06:23,590 --> 00:06:25,204
 Change it the same way.
 
 90
-00:06:22,504 --> 00:06:26,996
+00:06:25,204 --> 00:06:29,696
 Every five minutes, and flag any unit that fails its bench test.
 
 91
-00:06:26,996 --> 00:06:30,505
+00:06:29,696 --> 00:06:33,205
 The agent shows the change first, then applies it.
 
 92
-00:06:30,505 --> 00:06:32,470
+00:06:33,205 --> 00:06:35,170
 A person still publishes it.
 
 93
-00:06:34,210 --> 00:06:36,263
+00:06:36,900 --> 00:06:38,953
 And how do you know it works?
 
 94
-00:06:36,263 --> 00:06:40,157
+00:06:38,953 --> 00:06:42,847
 Our agent builds this chart from every closed decision.
 
 95
-00:06:40,157 --> 00:06:41,290
+00:06:42,847 --> 00:06:43,980
 Each dot is one:
 
 96
-00:06:41,290 --> 00:06:44,830
+00:06:43,980 --> 00:06:47,520
 what it predicted, against what actually happened.
 
 97
-00:06:45,040 --> 00:06:51,796
+00:06:47,720 --> 00:06:54,476
 With each model version, the error comes down, from about eighteen percent to twelve and a half.
 
 98
-00:06:51,796 --> 00:06:56,370
+00:06:54,476 --> 00:06:59,050
 Ask the agent what changed, and it shows you, version by version.
 
 99
-00:06:58,040 --> 00:06:59,103
+00:07:00,670 --> 00:07:01,733
 So, to sum up.
 
 100
-00:06:59,103 --> 00:07:03,050
+00:07:01,733 --> 00:07:05,680
 It works wherever assets come back, in any industry.
 
 101
-00:07:03,050 --> 00:07:12,160
+00:07:05,680 --> 00:07:14,790
 It sits on top of your ERP, your order management and your MRO workshop, and makes better use of what they already know.
 
 102
-00:07:12,570 --> 00:07:14,510
+00:07:15,210 --> 00:07:17,150
 The agents do the groundwork:
 
 103
-00:07:14,510 --> 00:07:17,253
+00:07:17,150 --> 00:07:19,893
 the evidence, the options, the paperwork.
 
 104
-00:07:17,253 --> 00:07:19,327
+00:07:19,893 --> 00:07:21,967
 Your people make the decisions.
 
 105
-00:07:19,327 --> 00:07:22,940
+00:07:21,967 --> 00:07:25,580
 And every decision gets a little better than the last.

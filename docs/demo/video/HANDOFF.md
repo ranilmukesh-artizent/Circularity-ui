@@ -1,5 +1,7 @@
 # Handoff: the narrated demo video (Circularity, agentic decision layer)
 
+> **28 Oct 2026: there is a newer video.** The current deliverable is **`circularity-cxo-demo.mp4`** (7:27). It is built by `pipeline/record_cxo.py` + `narration_cxo.json` + `card_close_cxo.html`, and section 9 below covers it. Sections 1–8 describe the earlier 4:11 cut, whose `record.py` no longer matches the UI (stage pages, PR #18).
+
 **Read this first if you are continuing the demo-video work.** It covers only the video: what the user asked for, what exists, where every file is, how the video is generated, what went wrong along the way, and what is still open. Written 22 Oct 2026 at the end of the session that built it.
 
 **Current deliverable:** [`circularity-agentic-demo.mp4`](circularity-agentic-demo.mp4) (4:11, 1440 × 900, H.264 30 fps, AAC 48 kHz mono, about 44 MB) with subtitles [`circularity-agentic-demo.srt`](circularity-agentic-demo.srt). Generated entirely from the app's own UI (`index.html` on branch `feature/live-run`) plus three HTML title cards, with a synthetic voice-over.
@@ -229,3 +231,78 @@ vid\Scripts\python mux.py circularity-agentic-demo.mp4
 6. **Possible additions if time allows (≤ 5 min total):** Source tables or Canonical models to underline plug and play; *Suggest field mappings* with sample preview; Agent autonomy (was in v1); Event stream (idempotent instructions). Each costs 8–12 s.
 7. **Deck alignment:** the deck's slide 3 sample (gearbox, $735) differs from the video's RT-1048 ($9,600 motor); the PO may want the slide updated to the video's record.
 8. **If the UI changes:** re-run the selector checks (section 8 list) before a full take; a failed take costs about 3–6 minutes.
+
+
+---
+
+## 9. The CXO cut (28 Oct 2026, branch `feature/cxo-demo`)
+
+**Deliverable:** `circularity-cxo-demo.mp4` + `.srt` (7:27, 1440 × 900). Plan, research, decisions and build report: [`../../PLAN_CXO_DEMO_VIDEO.md`](../../PLAN_CXO_DEMO_VIDEO.md) (sections 14, 14.1 and 15). Script draft and the differences from it: [`../VIDEO_SCRIPT_CXO.md`](../VIDEO_SCRIPT_CXO.md). The spoken text of record is `pipeline/narration_cxo.json`.
+
+**Order:**
+1. DI landing (`framework/index.html`): Recover in our words; Resolve and Reconcile read from their cards.
+2. Recover → sign in as the **Planner** (`ops`).
+3. Returned assets → RT-1048 asset page, photo lightbox, agent summary.
+4. Overview, then stages 1–5, one beat each. Stage 5 shows the *what our agent did* card.
+5. Stage 6: ✦ Explain, with the workshop cost slider at +30% and *Customer order cancelled*. The Planner submits.
+6. Cut to the **Approver**, who approves on stage 7.
+7. Stage 8 acknowledgements, then stage 9.
+8. Off camera, Finance confirms and the **Admin** signs in.
+9. Stage 10 with its agent card, then the run board **Replay at 2×**.
+10. Connection Fabric (Admin), about 10–15 s per tab:
+    - Overview.
+    - Source Map: *Expand map*, zoom out, pick MRO and ERP, scroll, ✦ *Diagnose* the stale market feed.
+    - Source Tables: ✦ *Suggest links*.
+    - Canonical Models.
+    - Workflow Studio: Ask to draft a workflow → *Accept* → the canvas builds; Ask to change it → *Apply*.
+11. Analytics predicted vs actual, then ✦ *What changed and why?*
+12. Close card.
+
+**Narration rules (from the user and the PO):**
+- Every on-screen action is narrated as **our agent's** work.
+- Agent answers are shown in the side panel on most pages.
+- Never say they don't need an ERP; we **sit on top** of ERP, order management and the MRO workshop.
+- Real vendor names stay on screen. They are never named in the narration.
+
+**Regenerate** (from `docs/demo/video/pipeline`):
+
+| Step | Command |
+|---|---|
+| Voice | `%TEMP%\cvlv\Scripts\python tts.py --src narration_cxo.json` (Kokoro `am_michael` → `audio/x*.wav`, `durations_cxo.json`) |
+| Record | `<venv>\python record_cxo.py` (≈ 8 min real time → `rec_cxo/*.webm`, `timeline_cxo.json`) |
+| Mix | `<venv>\python mux.py ../circularity-cxo-demo.mp4 --src narration_cxo.json` |
+| Check | `<venv>\python check/frames.py <mp4>` (contact sheets at each line's start and end); `check/strip.py <mp4> FROM TO STEP out.png` (a frame every STEP seconds) |
+| UI check | `check/flow.py` (walks the demo flow, saves screenshots); `check/survey.py` (page height of every screen) |
+
+`<venv>` has `playwright`, `imageio-ffmpeg` and `pillow`. `audio/`, `rec_cxo/` and `timeline_cxo.json` are generated and git-ignored.
+
+**Check every take:**
+- The recorder log has no `WARN` or `OVER` that matters.
+- `frames.py` prints no `OVERLAP`.
+- Look at every contact sheet.
+- `timeline_cxo.json` `scrolls` lists the scenes that scrolled. Only the source map should.
+
+**Gotchas found:**
+- The Planner sees 64 returns (Customer A), not 128.
+- The sixth acknowledgement sits on the stage 9 page. A `cxRunNext` button was added there.
+- Finance must confirm the outcome before stage 10.
+- The asset-page suggestion is *Summarise this asset*, not *Explain*.
+- The run board replay at 2× takes 31 s. The recorder presses *Skip to now* when the line ends.
+- The app's live simulation adds failing workflows over time.
+- Something auto-committed the raw `.webm` while it was being recorded. It is now git-ignored.
+- Long bash heredocs get truncated here; write scripts to files.
+
+**Session scratchpad (temporary; may be cleaned by the OS):** `C:\Users\ranilmj\AppData\Local\Temp\claude\C--repos-astra-prism-DI-ayush-ui-Circularity-ui\c9766b7b-e35b-47e0-9ba2-2a646934cf3e\scratchpad`
+- `cx/cx.js`, `cx/cx.css`: the CX block source, injected by `tools/cxinject.py`. **A fresh session should edit `index.html` directly**; the block is between `/*CX-START*/` and `/*CX-END*/`.
+- `tools/cx_mro.py`: the 44 MRO text edits (already applied).
+- `tools/docs19.py`: this documentation update.
+- `survey.py`, `probe2.py`…`probe9.py`, `peek*.py`, `shotmap.py`: screen survey and interaction probes.
+- `shots/`, `shots2/`, `shots3/`: screenshots.
+- `review.html`: the UI review page shown to the user.
+- `frames/`, `sheet*.png`, `strip/`, `s_*.png`: frame checks.
+- `regress_cx.txt`: the regression run.
+
+**Python environments:**
+- Playwright, ffmpeg and Pillow: `C:\Users\ranilmj\AppData\Local\Temp\claude\C--repos-astra-prism-DI-ayush-ui-Circularity-ui\08dcd09d-2067-4cc6-a6d4-e10f79a1014b\scratchpad\venv\vid`
+- Kokoro: `%TEMP%\cvlv`
+- Regression harness: `…\353d552e-f3fc-4810-b7ea-c14cf9207f66\scratchpad\tools\all.sh`
