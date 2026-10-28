@@ -1531,6 +1531,58 @@ html.st[data-theme="dark"] .stc.on{box-shadow:0 0 0 2px var(--yellow)}
  .stpva{grid-template-columns:1fr 1fr}.stpvd{grid-column:1/-1}
 }
 /*ST-CSS-END*/
+/*CX-CSS-START*/
+/* CXO demo: Explain view, photo lightbox, workflow reveal, analytics focus (docs/PLAN_CXO_DEMO_VIDEO.md) */
+.cxx{position:fixed;inset:0;z-index:400;background:rgba(14,14,13,.46);display:grid;place-items:center;padding:20px}
+body.cxopen{overflow:hidden}
+.cxxw{width:min(1380px,100%);height:min(856px,100%);background:var(--bg);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.3);display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden}
+.cxxh{display:flex;align-items:center;gap:12px;padding:14px 22px;border-bottom:1px solid var(--line);background:var(--panel)}
+.cxxh h2{font-size:21px;margin-top:2px}.cxxh .sp{flex:1}
+.cxxb{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;padding:14px 18px 16px;min-height:0}
+.cxl{display:grid;grid-template-rows:auto minmax(0,1fr);gap:14px;min-height:0}
+.cxp{padding:14px 16px;margin:0;min-height:0}
+.cxph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}.cxph h3{font-size:15px}
+.cxds{display:grid;gap:6px}
+.cxd{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 92px;gap:12px;align-items:center;padding:6px 8px;border-radius:8px;transition:background .2s}
+.cxd:hover{background:var(--panel2)}
+.cxdl{display:flex;flex-direction:column;min-width:0}.cxdl b{font-size:13.5px}.cxdl .note{font-size:12px;line-height:1.35}
+.cxdb{height:12px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.cxbar{display:block;height:100%;border-radius:6px;background:var(--ink)}.cxbar.neg{background:var(--bad)}
+.cxda{text-align:right;font-size:14px}.cxda.neg{color:var(--bad)}
+.cxtot{border-top:1px solid var(--line);border-radius:0;margin-top:2px;padding-top:9px}.cxtot .cxda{font-size:17px}
+.cxnx{margin:10px 8px 0;font-size:12.5px}
+.cxwi{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.cxwi .tisl{display:grid;gap:4px}.cxsl label{font-size:13px}
+.cxpre{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cxpre .btn[aria-pressed="true"]{background:var(--yellow);color:var(--yellow-ink);border-color:var(--yellow)}
+#cxImpact .tiwi{margin:0}
+#cxImpact .tiwig{grid-template-columns:1fr 1fr;gap:8px}#cxImpact .tiwig>div{padding:8px 12px;min-width:0}#cxImpact .tiwig b{font-size:22px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+#cxImpact .tiwis{font-size:15px;font-weight:700;margin:8px 0 0}
+.cxr{padding:14px 14px 10px;margin:0;display:flex;flex-direction:column;min-height:0}
+.cxevs{list-style:none;margin:0;padding:0;display:grid;gap:3px;overflow:auto;min-height:0}
+.cxev{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px;padding:5px 8px;border-radius:8px;transition:background .25s,box-shadow .25s;font-size:12.5px;line-height:1.3}
+.cxev.hot{background:var(--yellow-soft);box-shadow:inset 3px 0 0 var(--yellow)}
+.cxevi{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;margin-top:1px}
+.cxevi.ok{background:var(--ok-soft);color:var(--ok)}.cxevi.warn{background:var(--warn-soft);color:var(--warn)}
+.cxevv{color:var(--ink2)}.cxevm{font-size:10.5px;color:var(--muted);margin-top:1px}
+.cxxbtn{margin-right:6px}
+.cxnext{display:block;width:100%;margin-top:10px;padding:12px 16px;font-weight:700}
+.cxlb{position:fixed;inset:0;z-index:420;background:rgba(14,14,13,.78);display:grid;place-items:center;cursor:zoom-out}
+.cxlb figure{margin:0;max-width:min(980px,92vw);text-align:center}
+.cxlb img{max-width:100%;max-height:76vh;border-radius:14px;background:#fff;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+.cxlb figcaption{color:#F3F2EE;margin-top:12px;font-weight:600}.cxlb figcaption .note{color:#CBC8C1;font-weight:400}
+.wfn.cxhide,#wfEg.cxhide{opacity:0}
+.wfn.cxin{animation:cxIn .45s cubic-bezier(.3,.7,.2,1)}
+@keyframes cxIn{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+#wfEg{transition:opacity .5s}
+#view .wfn.cxnew{box-shadow:0 0 0 3px var(--yellow),0 0 0 8px rgba(255,221,0,.3)!important;border-color:var(--yellow)!important;animation:cxIn .45s cubic-bezier(.3,.7,.2,1)}
+#view .frwfg.cxwide{grid-template-columns:minmax(0,1fr)!important}#view .frwfg.cxwide>.frwfr,#view .frwfg.cxwide .wfpal{display:none!important}#view .frwfg.cxwide .wf{grid-template-columns:minmax(0,1fr)!important}
+.cxwb{margin-left:auto}
+#view .frsmg.cxwide{grid-template-columns:minmax(0,1fr) 330px!important}#view .frsmg.cxwide>aside:first-child{display:none!important}
+.cxfocus{scroll-margin-top:90px}
+@media (max-width:900px){.cxxb{grid-template-columns:1fr;overflow:auto}.cxwi{grid-template-columns:1fr}.cxd{grid-template-columns:1fr 70px}.cxdb{display:none}}
+@media (prefers-reduced-motion:reduce){.wfn.cxin,.wfn.cxnew{animation:none}.cxev,.cxd{transition:none}}
+/*CX-CSS-END*/
 </style>
 </head>
 <body>
@@ -1608,10 +1660,10 @@ function evidenceFor(c){
   const base=[
    ['ret','Return record available','WMS · reverse logistics'],
    ['id','Identity and configuration verified','PLM'],
-   ['insp','Inspection report available','Inspection'],
+   ['insp','Inspection report available',c.cls==='motor'||c.cls==='pump'?'MRO':'Inspection'],
    ['svc','Service history retrieved','EAM'],
    ['eng','Engineering assessment available','Engineering'],
-   ['photo','Photos available','Inspection'],
+   ['photo','Photos available',c.cls==='motor'||c.cls==='pump'?'MRO':'Inspection'],
    ['dem','Demand evidence linked','CRM'],
    ['mkt','Market comparables current','Market pricing'],
    ['cost','Cost and stock data available','ERP finance'],
@@ -1707,7 +1759,7 @@ const G_STD=['Inspection passed; 36 months engineering life','Prep scope approve
   const ep=fail(mkRoute({id:'extparts',plan:'Sell parts externally',demandLabel:'No accepting buyer',demandStatus:'forecast',terms:[T('Parts sale proceeds',2100,'parts'),T('Extraction and selling',-520,'fees')],unc:'Buyer acceptance',why:'',sigma:.24}),3,'No confirmed buyer for 55 kW IE3 stator assemblies within the 30-day window');
   c.routes=[rd,sb,rl,ip,mr,ex,ep];
   c.predictions=[
-   {src:'Order Management (RMA) + PLM catalogue + EAM diagnostics + supplier contracts',inputs:'Catalogue value, RMA receipt, EAM repair scope, contracted part prices and transfer quote',model:'prep-cost-time',ver:'v1.3',result:'$1,800 cost · ready Day 4',range:'range Day 3–7',conf:'High'},
+   {src:'Order Management (RMA) + PLM catalogue + MRO diagnostics + supplier contracts',inputs:'Catalogue value, RMA receipt, MRO repair scope, contracted part prices and transfer quote',model:'prep-cost-time',ver:'v1.3',result:'$1,800 cost · ready Day 4',range:'range Day 3–7',conf:'High'},
    {src:'EAM + PLM + Site 3 duty',inputs:'Failure history, compatible specification and receiving duty',model:'service-exposure',ver:'v1.2',result:'$900 additional expected service cost',range:'over 30 months',conf:'Medium'},
    {src:'Sales records + market demand + PLM',inputs:'48 comparable sales, grade, age and current enquiries',model:'resale-price',ver:'v1.3',result:'$4,800 expected net sale recovery',range:'P10–P90 $3,900–$5,600',conf:'High'}];
   c.facts=['IBM Sterling OMS: contract replacement order SO-48102 line 10 for Customer A at Site 3 (Chennai Foundry) accepts a certified refurbished motor; a new one would cost $12,000','Planning/WMS: needed at Customer A Site 3 in 10 days; RT-1062 needed at Site 5','Baseline: buy a new motor for Customer A'];
@@ -1890,7 +1942,7 @@ function exStage(to){const ws=Object.keys(LOCS).filter(k=>LOCS[k].kind==='Wareho
 /* the step catalogue: system, document it returns, owner role, time limit in working hours (null: on the event) and the event it emits (K3) */
 const EX_STEP={
  order:{label:'Allocate to the order line',sys:'OMS · order allocation',doc:['SO','Sales order'],owner:'Customer operations · order desk',lim:4,ev:'order.allocated',off:0,note:'unit allocated to the order line; planned purchase cancelled in SAP Ariba',why:'The order desk owns order lines in OMS'},
- repair:{label:'Refurbishment work order',sys:'EAM · Diagnostic and Repair',doc:['WO','Work order'],owner:'Repair centre lead (Engineer)',lim:4,ev:'workorder.created',off:13,note:'repaired, tested and certified; QMS record updated',why:'The Repair centre lead plans the work order and its operations in Maximo'},
+ repair:{label:'Refurbishment work order',sys:'MRO · Depot repair',doc:['WO','Work order'],owner:'Repair centre lead (Engineer)',lim:4,ev:'workorder.created',off:13,note:'repaired, tested and certified; QMS record updated',why:'The Repair centre lead plans the repair order and its operations in Oracle Depot Repair'},
  transport:{label:'Book transport',sys:'TMS · load booking',doc:['LD','Load'],owner:'Transport planner',lim:4,ev:'load.booked',off:52,note:'load tendered to and accepted by the carrier',why:'The Transport planner books loads on contracted lanes in ShipLane TMS'},
  move:{label:'Warehouse moves and outbound delivery',sys:'WMS · transfer',doc:['TR','Transfer'],owner:'Warehouse Manager',lim:2,ev:'movement.confirmed',off:26,note:'picked, staged and shipped against the load',why:'The Warehouse Manager of the shipping warehouse confirms picks, staging and dispatch'},
  pod:{label:'Delivery confirmed',sys:'OMS · order fulfilled',doc:['FUL','Fulfilment'],owner:'Customer operations',lim:null,ev:'delivery.confirmed',off:39,note:'proof of delivery signed at the site; order line fulfilled',why:'Customer operations closes the order line on proof of delivery'},
@@ -1902,7 +1954,7 @@ const EX_STEP={
  receipt:{label:'Outcome reported',sys:'ERP · receipts',doc:['INV','Invoice'],owner:'Finance',lim:16,ev:'outcome.reported',off:65,note:'receipts posted',why:'Receipts post in SAP S/4HANA'},
  putaway:{label:'Putaway after refurbishment',sys:'WMS · putaway',doc:['PA','Putaway'],owner:'Warehouse Manager',lim:2,ev:'movement.confirmed',off:26,note:'refurbished unit put away',why:'The receiving warehouse puts the unit away until the lease starts'},
  lease:{label:'Lease contract',sys:'Lease · contract',doc:['LS','Lease contract'],owner:'Lease administration',lim:16,ev:'contract.signed',off:39,note:'lease contract signed',why:'Lease administration issues the contract in Oracle Lease'},
- teardown:{label:'Teardown work order',sys:'EAM · Diagnostic and Repair',doc:['WO','Work order'],owner:'Repair centre lead (Engineer)',lim:4,ev:'workorder.created',off:13,note:'teardown done; recovered parts tested and certified',why:'Teardown and part testing run as a Maximo work order'},
+ teardown:{label:'Teardown work order',sys:'MRO · Depot repair',doc:['WO','Work order'],owner:'Repair centre lead (Engineer)',lim:4,ev:'workorder.created',off:13,note:'teardown done; recovered parts tested and certified',why:'Teardown and part testing run as a repair order in Oracle Depot Repair'},
  partsput:{label:'Parts putaway',sys:'WMS · putaway',doc:['PA','Putaway'],owner:'Warehouse Manager',lim:2,ev:'movement.confirmed',off:26,note:'recovered parts put away',why:'Recovered parts go into service stock'},
  partsxfer:{label:'Parts allocation',sys:'ERP · stock transfer',doc:['TR','Transfer'],owner:'Materials planner',lim:8,ev:'stock.transferred',off:39,note:'parts allocated to open service orders',why:'The Materials planner allocates stock to service orders'},
  resparts:{label:'Reserve parts',sys:'WMS · reservation',doc:['RSV','Reservation'],owner:'Warehouse Manager',lim:2,ev:'stock.reserved',off:26,note:'parts reserved',why:'Parts are held for the buyer'},
@@ -1969,7 +2021,7 @@ const EX_BOM={
  batch:[['Driver motor','BR-DM-18','Drivers',1800,1],['Battery pack 18 V 2 Ah','BR-BP-2','Battery packs',3200,1],['Chuck','BR-CH-10','Chucks',650,1],['Housing shell','BR-HS-18','Housings',600,1],['Charger','BR-CG-18','Chargers',1900,1]],
  it:[['Battery 4-cell','LD-BAT-4C','Battery',4200,1],['Display panel 14 in','LD-LCD-14','Display',7800,1],['Keyboard','LD-KB-14','Keyboard',1900,1],['SSD 512 GB','LD-SSD-512','Storage',3600,1],['Chassis bottom cover','LD-CH-14','Chassis',1500,1],['Data erasure licence','LD-ERASE','Storage',350,1]]
 };
-/* labour (RC-HSR-01 rates in Maximo), standard hours, machine operations and packing per class (K13, assumed) */
+/* labour (RC-HSR-01 rates in the MRO workshop system), standard hours, machine operations and packing per class (K13, assumed) */
 const EX_LAB={motor:[850,22,'Electromechanical technician'],pump:[850,14,'Hydraulics technician'],control:[950,6,'Electronics technician'],drill:[520,1.2,'Bench technician'],batch:[520,.8,'Bench technician'],it:[520,1,'Bench technician']};
 const EX_OPS={motor:[['Bake oven',8,350],['Balancing',1,1600],['Load test bench',3,1400],['Surge and insulation test',1,1200]],pump:[['Test rig',2,1800],['Flushing rig',1,900]],control:[['Burn-in rack',8,120],['Functional test station',1,1100]],drill:[['Battery cycler',2,90],['Function test',.25,400]],batch:[['Battery cycler',2,90],['Function test',.25,400]],it:[['Imaging station',.5,300],['Battery test',1,90]]};
 const EX_PACK={motor:8500,pump:3800,control:1200,drill:150,batch:120,it:180};
@@ -2013,10 +2065,10 @@ function exTrace(c,r,t){const B=exInr(t.amt),M=caseDemand(c),g=c.grade||'C',m=/(
   const pos=r.terms.filter(x=>x.amt>0).sort((a,b)=>b.amt-a.amt)[0];
   if(t.kind==='purchase'){Object.assign(o,{method:'Contracted',sys:'SAP Ariba',rec:M&&M.avoidedPo?M.avoidedPo:'Catalogue '+exDocNum(c,'order')});L('New '+mod+(c.qty>1?' × '+c.qty:''),c.qty+' × '+inr(B/c.qty)+' contract price',B,'Contracted','SAP Ariba',M&&M.avoidedPo?'Planned '+M.avoidedPo:'Contract catalogue');
     o.why=M&&M.order?`The purchase this redeployment avoids: planned ${M.avoidedPo} raised for ${M.order} line ${M.line}. Contract price, not list price.`:'Contract price of an equivalent new unit.'}
-  else if(t.kind==='prep'&&exPrepParts(c,r)){const P=exPrepParts(c,r),sc=asSC(c);Object.assign(o,{method:'Modelled',sys:'IBM Maximo · ShipLane TMS · SAP Ariba',rec:P.mode==='refurb'?'Work order '+exDocRef(c,{k:'repair'}):'Work order '+exDocRef(c,{k:'teardown'})});
-    P.parts.forEach(p=>L(p.name+' · '+p.pn,p.qty+' × '+inr(p.unit),p.qty*p.unit,'Contracted','SAP Ariba',sc,'In the repair scope: '+p.comp.toLowerCase()+(EX_SCOPE[c.id]?' (Maximo diagnosis)':' rated '+((c.grade?assetHealth(c).comps.find(x=>x.n===p.comp):null)||{st:'replace on condition'}).st.toLowerCase())));
-    L('Labour · '+P.role,P.labH+' h × '+inr(P.rate),P.lab,'Modelled','IBM Maximo','Operations on '+exDocRef(c,{k:P.mode==='refurb'?'repair':'teardown'}),'Standard '+P.std+' h for the operations; hours solved last so the lines add up to the predicted '+inr(B));
-    P.ops.forEach(x=>L('Machine · '+x.name,x.h+' h × '+inr(x.rate),x.inr,'Contracted','IBM Maximo','RC-HSR-01 machine rate','Required test or process for '+CLASSES[c.cls].label.toLowerCase()+'s'));
+  else if(t.kind==='prep'&&exPrepParts(c,r)){const P=exPrepParts(c,r),sc=asSC(c);Object.assign(o,{method:'Modelled',sys:'Oracle Depot Repair · ShipLane TMS · SAP Ariba',rec:P.mode==='refurb'?'Work order '+exDocRef(c,{k:'repair'}):'Work order '+exDocRef(c,{k:'teardown'})});
+    P.parts.forEach(p=>L(p.name+' · '+p.pn,p.qty+' × '+inr(p.unit),p.qty*p.unit,'Contracted','SAP Ariba',sc,'In the repair scope: '+p.comp.toLowerCase()+(EX_SCOPE[c.id]?' (workshop diagnosis)':' rated '+((c.grade?assetHealth(c).comps.find(x=>x.n===p.comp):null)||{st:'replace on condition'}).st.toLowerCase())));
+    L('Labour · '+P.role,P.labH+' h × '+inr(P.rate),P.lab,'Modelled','Oracle Depot Repair','Operations on '+exDocRef(c,{k:P.mode==='refurb'?'repair':'teardown'}),'Standard '+P.std+' h for the operations; hours solved last so the lines add up to the predicted '+inr(B));
+    P.ops.forEach(x=>L('Machine · '+x.name,x.h+' h × '+inr(x.rate),x.inr,'Contracted','Oracle Depot Repair','RC-HSR-01 machine rate','Required test or process for '+CLASSES[c.cls].label.toLowerCase()+'s'));
     P.legs.forEach(l=>L('Transport leg '+l.n+' · '+l.from+' → '+l.to,l.calc+(l.share<1?' · shared load '+Math.round(l.share*100)+'%':''),l.inr,'Contracted','ShipLane TMS',RATE_CARD.id+' · '+RATE_CARD.carrier,'Contracted lane rate'));
     if(P.pack)L('Packing and handling',CLASSES[c.cls].label+' crate, lashing and handling',P.pack,'Contracted','Manhattan Active WM','Packing rate card','Standard pack for the class');
     o.why=P.mode==='refurb'?`Refurbishment at RC-HSR-01 Hosur: ${P.parts.length} parts at contract prices, ${P.labH} labour hours, ${P.ops.length} machine operations${P.legs.length?', '+P.legs.length+' transport leg'+(P.legs.length>1?'s':'')+' on '+RATE_CARD.id:''} and packing.`:`Teardown and part testing at RC-HSR-01: ${P.labH} labour hours and the final test.`}
@@ -2037,9 +2089,9 @@ function exTrace(c,r,t){const B=exInr(t.amt),M=caseDemand(c),g=c.grade||'C',m=/(
   else{Object.assign(o,{method:t.kind==='na'?'Modelled':'Contracted',sys:t.kind==='credit'||t.kind==='fees'?'Approved vendor rate card':t.kind==='avoid'?'Disposal cost table':'Circularity',rec:t.kind==='na'?'—':'Rate card'});L(t.label,t.kind==='na'?'route not viable':'contracted rate',B,o.method,o.sys,o.rec);o.why=t.kind==='na'?'The route is not viable, so it carries no value.':'Contracted rate from the approved vendor.'}
   o.lines.forEach(x=>x.inr=Math.round(x.inr));const d=B-sum(o.lines.map(x=>x.inr));if(d&&o.lines.length)o.lines[o.lines.length-1].inr+=d;o.sign=sgn;return o}
 /* the actual behind a cost line, once Finance confirms it (N6, N8): RT-1048's preparation came in 15% over (LEARN_PIN), explained line by line */
-const EX_ACT={'RT-1048|prep':[['Labour over standard','+6 h × ₹850 on WO-47349',5100,'IBM Maximo','Time confirmations on WO-47349'],['Shaft repair sleeve, found worn at strip-down','1 × ₹9,930 · VLT-SRS-250M',9930,'IBM Maximo · SAP Ariba','Parts issue on WO-47349 · '+'SC-7409'],['Waiting charge at LOC-CHN-03','75 min billable × $72/h = $90.00 at ₹83.5',7515,'Reconcile · Northline 3PL bill','Detention clause 7.2, checked against gate and release times']]};
+const EX_ACT={'RT-1048|prep':[['Labour over standard','+6 h × ₹850 on WO-47349',5100,'Oracle Depot Repair','Time confirmations on WO-47349'],['Shaft repair sleeve, found worn at strip-down','1 × ₹9,930 · VLT-SRS-250M',9930,'Oracle Depot Repair · SAP Ariba','Parts issue on WO-47349 · '+'SC-7409'],['Waiting charge at LOC-CHN-03','75 min billable × $72/h = $90.00 at ₹83.5',7515,'Reconcile · Northline 3PL bill','Detention clause 7.2, checked against gate and release times']]};
 function exActual(c,l){const k=c.id+'|'+l.kind,d=exInr(l.act)-exInr(l.pred);if(!d)return[];if(EX_ACT[k])return EX_ACT[k];const P=l.kind==='prep'?exPrepParts(c,c.chosen||c.recommendation):null;
-  return P?[[d>0?'Labour over standard':'Labour under standard',(d>0?'+':'−')+Math.round(Math.abs(d)/P.rate*10)/10+' h × '+inr(P.rate),d,'IBM Maximo','Time confirmations']]:[['Difference reported by '+(l.model?'the outcome report':'the source system'),'actual '+inr(exInr(l.act))+' against '+inr(exInr(l.pred)),d,'SAP S/4HANA','Finance document '+exDocRef(c,{k:'finance'})]]}
+  return P?[[d>0?'Labour over standard':'Labour under standard',(d>0?'+':'−')+Math.round(Math.abs(d)/P.rate*10)/10+' h × '+inr(P.rate),d,'Oracle Depot Repair','Time confirmations']]:[['Difference reported by '+(l.model?'the outcome report':'the source system'),'actual '+inr(exInr(l.act))+' against '+inr(exInr(l.pred)),d,'SAP S/4HANA','Finance document '+exDocRef(c,{k:'finance'})]]}
 /* the execution plan for display, the packet and the payload: one row per step (N2, N4, N5) */
 function exPlan(c,r,now){r=r||c.chosen||c.recommendation;if(!r)return[];const st=c.exec&&(c.chosen||c.recommendation)===r?c.exec.steps:stepsFor(r,-1),M=caseDemand(c),mv=exMove(c,r),P=exPrepParts(c,r);
   return st.map((s,i)=>{const d=EX_STEP[s.k]||{},ref=s.ack?s.ack.ref:exDocRef(c,s),k=exClock(c,s,now);let act=s.label+': '+r.plan,docs=[ref],why=d.why||'';
@@ -2077,10 +2129,10 @@ function exWhatIfHTML(c,r){const w=exWhatIf(c,r);return w.length?`<ul class="exw
 /* the order line and delivery, in one sentence (N6) */
 function exDelivered(c){const r=c.chosen||c.recommendation,M=caseDemand(c),m=r&&exMove(c,r);if(!r||r.id!=='redeploy'||!M||!M.order||!m)return '';
   return `delivered to ${locName(m.to)} for ${c.owner} against ${M.order} line ${M.line}, ${m.stops.join(' → ')}, ETD ${exTs(m.legs[0].etd)}, ETA ${exTs(m.eta)}${m.slack!=null?' ('+(m.slack<0?Math.abs(m.slack)+' days late':m.slack+' days before the need-by date')+')':''}`}
-const HANDOFF_MODEL=[['Redeploy','OMS · IBM Sterling OMS','Allocates the unit to the pending order line; confirms delivery against it'],['Refurbish or repair','EAM · IBM Maximo','Work order for refurbishment, repair or teardown, with parts, operations and hours'],['Move','TMS · ShipLane TMS','Books each leg with the contracted carrier on the lane rate card'],['Stage and ship','WMS · Manhattan Active WM','Putaway, reservation, transfers, staging and outbound delivery'],['Post actual cost','ERP · SAP S/4HANA','Finance only: actual cost posting against the decision']];
+const HANDOFF_MODEL=[['Redeploy','OMS · IBM Sterling OMS','Allocates the unit to the pending order line; confirms delivery against it'],['Inspect, repair or refurbish','MRO · Oracle Depot Repair','Work order for refurbishment, repair or teardown, with parts, operations and hours'],['Move','TMS · ShipLane TMS','Books each leg with the contracted carrier on the lane rate card'],['Stage and ship','WMS · Manhattan Active WM','Putaway, reservation, transfers, staging and outbound delivery'],['Post actual cost','ERP · SAP S/4HANA','Finance only: actual cost posting against the decision']];
 function handoffLegend(){return `<div class="tw" style="margin-top:10px"><table class="t static"><thead><tr><th>Decision</th><th>Instruction goes to</th><th>What that system does</th></tr></thead><tbody>${HANDOFF_MODEL.map(h=>`<tr><td><b>${h[0]}</b></td><td>${h[1]}</td><td class="note">${h[2]}</td></tr>`).join('')}</tbody></table></div>`}
 function stepsFor(r,done){return exKinds(r).map((k,i)=>{const d=EX_STEP[k];return{k,label:d.label,sys:d.sys,state:i<done?'done':i===done?'active':'todo',ack:null}})}
-/* the reference each enterprise system returns when it acknowledges a handoff: the document type follows the kind of step (SO from OMS, WO from EAM, LD from TMS, TR from WMS, FI from ERP finance...) */
+/* the reference each enterprise system returns when it acknowledges a handoff: the document type follows the kind of step (SO from OMS, WO from MRO, LD from TMS, TR from WMS, FI from ERP finance...) */
 function hoKind(s){const d=EX_STEP[s&&s.k];if(d)return d.doc;const y=s.sys,l=s.label;
   if(/Outcome reported/.test(l))return /fulfilled|EAM/.test(y)?['FUL','Fulfilment']:['INV','Invoice'];
   if(/Order Management|CRM · sale/.test(y))return ['SO','Sales order'];if(/^EAM/.test(y))return ['WO','Work order'];if(/Lease · contract/.test(y))return ['LS','Lease contract'];
@@ -2103,7 +2155,7 @@ function mkExec(c,done,v){
   c.exec={ref:approvalRef(c.id),decisionId:'DI-2026-'+c.id.slice(3),instruction:v||1,steps,dest:steps[0].sys.split(' · ')[0]+' / '+steps[1].sys.split(' · ')[0],approvedAt:addDays(AS_OF,-(done+1)*.6),approver:pick(['Approver','Approver · Customer A','Approver · Customer B','Approver · Customer C'])};
   c.approval={ref:c.exec.ref,by:c.exec.approver,at:c.exec.approvedAt,rationale:'Recommendation accepted; evidence snapshot reviewed.'};
   if(steps[done])steps[done].activeAt=done?steps[done-1].ack.at:c.exec.approvedAt;
-  /* the escalation exemplar (K3): RT-1009's refurbishment work order has sat with Maximo since noon yesterday, past its 4 working-hour limit */
+  /* the escalation exemplar (K3): RT-1009's refurbishment work order has sat with the MRO workshop since noon yesterday, past its 4 working-hour limit */
   if(c.id==='RT-1009'&&steps[done]&&steps[done].k==='repair')steps[done].activeAt=new Date('2026-10-06T12:00:00Z');
 }
 const SITE_IDS=SITES.map(s=>s.id);
@@ -2356,7 +2408,7 @@ const SRC_TYPES={
  tms:{label:'Transport management',short:'TMS',cat:'internal',target:'Outcome',vendors:['ShipLane TMS','Oracle Transportation Management','Blue Yonder TMS','SAP Transportation Management']},
  rl:{label:'Reverse logistics',short:'Returns',cat:'internal',target:'Asset & component',vendors:['Optoro','Happy Returns','Narvar Returns','Blue Yonder Returns']},
  insp:{label:'Inspection',short:'Inspection',cat:'internal',target:'Condition & eligibility',vendors:['SafetyCulture','Fluke Connect','GoCanvas','Intelex Inspections']},
- repair:{label:'Repair management',short:'Repair',cat:'internal',target:'Condition & eligibility',vendors:['Fixably','RepairShopr','ServiceMax Repair','Oracle Depot Repair']},
+ repair:{label:'MRO and workshop',short:'MRO',cat:'internal',target:'Condition & eligibility',vendors:['Oracle Depot Repair','ServiceMax Repair','RepairShopr','Fixably']},
  iot:{label:'Device telemetry',short:'Telemetry',cat:'streaming',target:'Outcome',vendors:['AWS IoT Core','Azure IoT Hub','PTC ThingWorx','Siemens Insights Hub']},
  mkt:{label:'Market pricing',short:'Market',cat:'external',target:'Demand opportunity',vendors:['Ritchie Bros. Market Data','Machinery Trader Values','EquipmentWatch','IronPlanet Insights']},
  dlr:{label:'Dealer network',short:'Dealers',cat:'external',target:'Demand opportunity',vendors:['Machinio','Dealer Spike','TractorHouse Dealer Feed']},
@@ -2382,7 +2434,7 @@ const SOURCES=[
  {id:'tms',type:'tms',vendor:'ShipLane TMS',ver:'TMS API v3',url:'https://api.shiplane.example/v3',status:'live',mode:'API + webhook',interval:0,auth:'OAuth 2.0 client credentials',freshMin:4,compl:93,conf:91,rw:'Read / write',inputs:'Lane rate cards, carrier bookings, loads, ETD and ETA, proof of delivery',read:['GET /lanes','GET /rate-cards/{id}','GET /loads/{id}'],write:['POST /loads','PATCH /loads/{id}'],step:[6,7,9],authority:['Lane rate','Carrier booking','ETA'],owner:'Transport Planning',records:44210},
  {id:'rl',type:'rl',vendor:'Optoro',ver:'Returns API v1',url:'https://api.optoro.com/v1',status:'live',mode:'API + webhook',interval:0,auth:'API key',freshMin:5,compl:91,conf:87,rw:'Read / write',inputs:'Return receipts, disposition decisions, inbound shipments, carrier status',read:['GET /returns','GET /dispositions','GET /shipments'],write:['POST /return-authorizations'],step:[1,6,9],authority:['Return receipt','Disposition'],owner:'Reverse Logistics',records:17934},
  {id:'insp',type:'insp',vendor:'SafetyCulture',ver:'iAuditor API',url:'https://api.safetyculture.io',status:'live',mode:'API + webhook',interval:0,auth:'OAuth 2.0 client credentials',freshMin:9,compl:91,conf:90,rw:'Read / write',inputs:'Inspection reports, condition grades, photos, checklist results',read:['GET /audits/search','GET /audits/{audit_id}','GET /media/{media_id}'],write:['POST /inspections/start','POST /actions'],step:[1,8],authority:['Condition','Inspection result'],owner:'Quality Assurance',records:73025},
- {id:'repair',type:'repair',vendor:'Fixably',ver:'API v3',url:'https://api.fixably.com/v3',status:'live',mode:'API + webhook',interval:0,auth:'API key',freshMin:14,compl:84,conf:86,rw:'Read / write',inputs:'Repair scope, parts used, repair cost, resulting state, test results',read:['GET /repairs','GET /repairs/{id}/parts'],write:['POST /repairs'],step:[1,8],authority:['Repair cost','Resulting state'],owner:'Repair Centre',records:20411},
+ {id:'repair',type:'repair',vendor:'Oracle Depot Repair',ver:'EBS 12.2.13',url:'https://ebs.northfield.example/webservices/rest/csd',status:'live',mode:'API + events',interval:0,auth:'OAuth 2.0 client credentials',freshMin:14,compl:91,conf:89,rw:'Read / write',inputs:'Receiving inspection and grade, teardown findings, repair and refurbishment work orders, operations and hours, parts used, bench test results, release to service',read:['GET /repair-orders?serial={sn}','GET /repair-orders/{id}/tasks','GET /repair-orders/{id}/test-results'],write:['POST /repair-orders'],step:[5,8,9],authority:['Inspection grade','Repair scope and hours','Bench test result','Release to service'],owner:'Repair Centre',records:20411},
  {id:'iot',type:'iot',vendor:'AWS IoT Core',ver:'Not provisioned',url:'',status:'unavailable',mode:'Not connected',interval:0,auth:'Pending security review',freshMin:null,compl:0,conf:0,rw:'—',inputs:'Operating hours, duty cycle, vibration and temperature events',read:[],write:[],step:[1,9],authority:['Duty','Operating hours'],owner:'IoT Platform',records:0,note:'Integration dependency. Sustainability uses estimated factors and says so; no measured telemetry is inferred.'},
  {id:'mkt',type:'mkt',vendor:'Ritchie Bros. Market Data',ver:'Comparables API v2',url:'https://api.rbauction.example/v2',status:'stale',mode:'Polling · 60 min',interval:60,auth:'API key',freshMin:1140,compl:71,conf:58,rw:'Read',inputs:'Comparable transactions, realised prices, time-to-sale, buyer demand',read:['GET /comparables','GET /price-index'],write:[],step:[1],authority:['Market price'],owner:'Remarketing',records:402118,note:'Feed token expired 6 Oct; pricing falls back to the last fresh comparables and says so on every prediction.'},
  {id:'dlr',type:'dlr',vendor:'Machinio',ver:'Dealer API v1',url:'https://api.machinio.com/v1',status:'live',mode:'API + events',interval:0,auth:'API key',freshMin:18,compl:82,conf:78,rw:'Read',inputs:'Dealer offers, listing demand, fees, time-to-sale',read:['GET /listings','GET /offers'],write:[],step:[1],authority:['Dealer offer'],owner:'Remarketing',records:56780},
@@ -2394,12 +2446,12 @@ function srcAge(m){return m<1?'just now':m<60?Math.round(m)+' min':m<2880?Math.r
 const SRC=id=>SOURCES.find(x=>x.id===id);
 const CANON=[
  {n:'Asset & component',v:'2.3',fields:['asset_id','source_refs[]','owner_tenant','parent_asset','configuration','bom_ref','location','availability'],purpose:'Stable identity across applications, source-system connections, ownership, parent asset, BOM, location and availability.',sources:['EAM','PLM','WMS','CRM']},
- {n:'Condition & eligibility',v:'2.1',fields:['inspection_ref','grade','life_assessment','duty_assumptions','qualification','certificates[]','policy_version'],purpose:'Inspection evidence, grade, approved life assessment, qualification, compatibility, certificates and the policy version applied.',sources:['Inspection','QMS','EAM']},
+ {n:'Condition & eligibility',v:'2.1',fields:['inspection_ref','grade','life_assessment','duty_assumptions','qualification','certificates[]','policy_version'],purpose:'Inspection evidence, grade, approved life assessment, qualification, compatibility, certificates and the policy version applied.',sources:['MRO','Inspection','QMS','EAM']},
  {n:'Demand opportunity',v:'1.8',fields:['demand_id','type','receiving_asset','buyer','spec','qty','location','need_by','horizon','status(confirmed|forecast)'],purpose:'Demand identity and type, specification, quantity, location, timing, service horizon and confirmed or forecast status.',sources:['CRM','ERP','EAM','Markets']},
- {n:'Intervention',v:'1.5',fields:['process','predicted_condition','cost','duration','success_p','capacity','required_tests[]'],purpose:'Approved process, predicted resulting condition, cost, duration, success uncertainty, capacity and required tests.',sources:['Inspection','EAM','QMS']},
+ {n:'Intervention',v:'1.5',fields:['process','predicted_condition','cost','duration','success_p','capacity','required_tests[]'],purpose:'Approved process, predicted resulting condition, cost, duration, success uncertainty, capacity and required tests.',sources:['MRO','Inspection','QMS']},
  {n:'Route candidate',v:'2.0',fields:['components[]','channel','demand_id','intervention_ref','timing','expected_net','cost_breakdown','baseline','exclusions[]'],purpose:'Asset or component combination, channel, demand, intervention, timing, expected contribution, cost breakdown, baseline and exclusions.',sources:['Circularity']},
  {n:'Decision',v:'2.2',fields:['decision_id','route','allocation','alternatives[]','evidence_snapshot','approval_ref','model_version','policy_version','expires_at'],purpose:'Selected route and allocation, alternatives, evidence snapshot, approval reference, model and policy versions and expiry.',sources:['Circularity']},
- {n:'Outcome',v:'1.6',fields:['decision_id','action_taken','execution_ref','receipts','costs','avoided_spend','service_results','environmental_evidence'],purpose:'Action actually taken, external system reference, actual receipts and costs, confirmed avoided expenditure, service results and environmental evidence.',sources:['ERP','EAM','WMS','Partners']}
+ {n:'Outcome',v:'1.6',fields:['decision_id','action_taken','execution_ref','receipts','costs','avoided_spend','service_results','environmental_evidence'],purpose:'Action actually taken, external system reference, actual receipts and costs, confirmed avoided expenditure, service results and environmental evidence.',sources:['ERP','MRO','WMS','Partners']}
 ];
 const MAPPINGS={
  crm:[['Opportunity.StageName','Proposal','demand.status','forecast','Stage map: Proposal → forecast'],['Opportunity.Amount','2400','demand.lease_rate','$2,400 / month','Currency + period normalised'],['Account.Id','001Hs00003AbCdE','asset.owner_tenant','Customer A','Tenant key lookup'],['Opportunity.CloseDate','31/12/2026','demand.need_by','2026-12-31','Date format']],
@@ -2569,7 +2621,7 @@ const JG_AFTER=['','the asset is received','the evidence is complete (step 1)','
 function jgEst(c,n){const R=caseRul(c),r=c.chosen||c.recommendation,x=c.exec,st=x?x.steps:[],M=caseDemand(c),ref=i=>st[i]&&st[i].ack?refLabel(st[i]):'';
   if(n===0)return `${visCases().length} returned assets in your view. ${c.id} is selected: ${asModel(c)}, ${c.owner}, ${c.location}.`;
   if(n===1){const k=asReturnHistory(c).length,miss=(c.evidence||[]).filter(e=>e.state!=='ready').length;
-    return `${c.grade?'Grade '+c.grade+' from '+(c.cls==='motor'||c.cls==='pump'?'EAM':'inspection'):'Not graded yet'}${R?', certified for '+R.certMonths+' months ('+R.certRef+')':''}, received at ${c.location}, returned ${k===1?'once':k===2?'twice':k+' times'} before${miss?'; '+miss+' evidence item'+(miss>1?'s':'')+' not complete yet':''}.`}
+    return `${c.grade?'Grade '+c.grade+' from '+(c.cls==='motor'||c.cls==='pump'?'the MRO workshop':'inspection'):'Not graded yet'}${R?', certified for '+R.certMonths+' months ('+R.certRef+')':''}, received at ${c.location}, returned ${k===1?'once':k===2?'twice':k+' times'} before${miss?'; '+miss+' evidence item'+(miss>1?'s':'')+' not complete yet':''}.`}
   if(n===2){const ex=c.routes.filter(z=>z.excluded),dem=M&&M.order?(M.confirmed?'confirmed':'forecast')+' contract demand '+M.order+' from '+c.owner+' at '+(M.site||'another site')+' (accepts certified refurbished)'+(M.lease?', re-lease opportunity '+M.lease:''):M&&M.lease?'re-lease opportunity '+M.lease:'no internal demand matched';
     return `${c.routes.length-ex.length} of ${c.routes.length} routes eligible${ex.map(z=>'; '+z.plan+' withheld ('+jgLc(z.failReason||'a gate failed')+')').join('')}; ${dem}.`}
   if(n===3){const q=c.recommendation,nx=c.routes.filter(z=>!z.excluded&&z!==q).sort((a,b)=>b.net-a.net)[0];
@@ -3052,8 +3104,8 @@ function kpiStrip(){
 }
 /* signals arrive one by one (receipt, diagnostics, certification); the economic path is shown only when they are ready */
 function sigOf(c){const ins=((c.evidence||[]).find(x=>x.k==='insp')||{}).state,rec=!!c.recommendation,diag=rec||(c.assessment!=='Pending'&&ins==='ready'&&c.grade)?'done':c.assessment==='Pending'?'todo':'part',cert=rec||(diag==='done'&&caseRul(c))?'done':'todo';
-  return [['Received','WMS receipt and RMA','done'],['Diagnostics','EAM inspection',diag],['Certification','QMS certified period',cert],['Economic path','Circularity',rec?'done':c.blocked?'block':'todo']]}
-function sigHTML(c){const s=sigOf(c),n=s.filter(x=>x[2]==='done').length,nx=s.find(x=>x[2]!=='done'),W={Diagnostics:['EAM diagnostics','awaiting EAM'],Certification:['QMS certification','awaiting QMS'],'Economic path':['economic path','pricing']},
+  return [['Received','WMS receipt and RMA','done'],['Diagnostics','MRO inspection',diag],['Certification','QMS certified period',cert],['Economic path','Circularity',rec?'done':c.blocked?'block':'todo']]}
+function sigHTML(c){const s=sigOf(c),n=s.filter(x=>x[2]==='done').length,nx=s.find(x=>x[2]!=='done'),W={Diagnostics:['MRO diagnostics','awaiting MRO'],Certification:['QMS certification','awaiting QMS'],'Economic path':['economic path','pricing']},
   full=nx?(nx[2]==='block'?'blocked at the '+c.blocked.gateName.toLowerCase()+' gate':'awaiting '+W[nx[0]][0]):'economic path ready',short=nx?(nx[2]==='block'?'blocked':W[nx[0]][1]):'ready';
   return `<span class="sg" data-sig="${n}" aria-label="Signals ${n} of 4, ${esc(full)}" data-tip="${esc(n+' of 4 · '+full+'. '+s.map(x=>x[0]+' ('+x[1]+'): '+({done:'ready',part:'partial',todo:'waiting',block:'blocked'})[x[2]]).join(' · '))}"><span class="sgb" aria-hidden="true">${s.map(x=>`<i class="${x[2]}"></i>`).join('')}</span><span class="note nowrap">${n}/4 · ${short}</span></span>`}
 const qRow=c=>`<tr class="${S.sel===c.id?'sel':''} ${hq('focus')===c.id?'dpfocus':''}" id="qr-${c.id}" tabindex="0" data-act="selectCase" data-arg="${c.id}"><td><b>${c.id}</b>${c.id===dpId()&&dpVisible(c.id)?'<span class="chip y dpstart">Start here</span>':''}</td><td><div class="row" style="gap:8px;flex-wrap:nowrap">${thumb(c.cls)}<span>${esc(c.product)}${c.qty>1?` <span class="note">×${c.qty}</span>`:''}</span></div></td><td class="num nowrap"><a class="lnk" href="#/product/asset/${c.id}" data-act="go" data-arg="product/asset/${c.id}" data-tip="Open asset intelligence">${c.assetId}</a></td><td class="nowrap">${c.owner}</td><td class="num nowrap">${fmtD(c.received)}</td><td class="nowrap">${c.location}</td><td>${condChip(c)}</td><td>${assessChip(c)}</td><td>${stageChip(c)}${sigHTML(c)}</td><td class="r num nowrap">${c.recommendation?`<b>${money(c.recommendation.net)}</b> <span class="note">${esc(rid(c.recommendation.id).short)}</span>`:'<span class="note">Not priced yet</span>'}</td></tr>`;
@@ -3157,7 +3209,7 @@ function evidenceBlock(c){
 function predictBlock(c){
   if(!c.predictions&&c.recommendation){
     const r=c.recommendation,sale=c.routes.find(x=>x.id==='resale'&&!x.excluded),pr=r.terms.find(t=>t.kind==='prep'),sv=r.terms.find(t=>t.kind==='service');
-    c.predictions=[{src:'Order Management (RMA) + PLM catalogue + EAM diagnostics + supplier contracts',inputs:'Catalogue value, RMA receipt, EAM repair scope, contracted part prices and transfer quote',model:'prep-cost-time',ver:'v1.3',result:pr?money(-pr.amt)+' cost · ready Day '+rint(3,9):'No intervention needed',range:pr?'range Day 3–'+rint(9,14):'',conf:'Medium'},
+    c.predictions=[{src:'Order Management (RMA) + PLM catalogue + MRO diagnostics + supplier contracts',inputs:'Catalogue value, RMA receipt, MRO repair scope, contracted part prices and transfer quote',model:'prep-cost-time',ver:'v1.3',result:pr?money(-pr.amt)+' cost · ready Day '+rint(3,9):'No intervention needed',range:pr?'range Day 3–'+rint(9,14):'',conf:'Medium'},
       {src:'EAM + PLM + receiving duty',inputs:'Failure history, compatible specification and duty',model:'service-exposure',ver:'v1.2',result:sv?money(-sv.amt)+' expected service cost':'No service exposure modelled',range:'over 30 months',conf:'Medium'},
       {src:'Sales records + market demand',inputs:rint(14,52)+' comparable sales, grade '+(c.grade||'—')+', age '+c.age+' years',model:'resale-price',ver:'v1.3',result:sale?money(sale.net)+' expected net sale recovery':'No eligible sale route',range:sale?'P10–P90 '+money(sale.p10)+'–'+money(sale.p90):'',conf:(SRC('mkt')||{}).status==='stale'?'Reduced · market feed stale':'High'}];
   }
@@ -3220,7 +3272,7 @@ function poolsPage(){
 function explainBlock(c,sr){
   if(!c.recommendation)return '';
   const t=S.xtab,r=c.recommendation;
-  const srcMap={purchase:'SAP Ariba contract price · planned purchase',prep:'Maximo scope and hours · Ariba part prices · TMS lanes',service:'Maximo failure history · FSM labour rate',residual:'Valuation model v1.3',sale:'Sales records + market',parts:'Parts demand + BOM',lease:'CRM pipeline',material:'Recycler rates',fees:'TMS lane rate card · channel fees',risk:'Calibrated risk allowance',credit:'Vendor rate card',avoid:'Disposal cost table'};
+  const srcMap={purchase:'SAP Ariba contract price · planned purchase',prep:'MRO scope and hours · Ariba part prices · TMS lanes',service:'Maximo failure history · FSM labour rate',residual:'Valuation model v1.3',sale:'Sales records + market',parts:'Parts demand + BOM',lease:'CRM pipeline',material:'Recycler rates',fees:'TMS lane rate card · channel fees',risk:'Calibrated risk allowance',credit:'Vendor rate card',avoid:'Disposal cost table'};
   const tot=sum(r.terms.map(x=>Math.abs(x.amt)))||1;
   let body='';
   if(t==='why'){body=`<p class="ink2" style="margin:0 0 10px">What influenced the ${money(r.net)} for <b>${esc(r.plan)}</b>. Bar length is each input's share of the total movement.</p>${r.terms.map(x=>`<div class="sl" style="grid-template-columns:minmax(160px,1.2fr) 2fr 90px"><span>${esc(x.label)}<div class="note">${esc(srcMap[x.kind]||'')} · ${exSrcBtn(c,r,r.terms.indexOf(x))}</div></span><div class="bar"><i style="width:${Math.max(3,Math.abs(x.amt)/tot*100)}%;${x.amt<0?'background:var(--bad)':''}"></i></div><b class="num right ${x.amt<0?'neg':''}">${x.amt<0?'−':'+'}${money(Math.abs(x.amt)).replace('−','')}</b></div>`).join('')}`}
@@ -3661,15 +3713,15 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLower
 /* ===== Process orchestration ("behind the screen"): how agents and services produce a recommendation ===== */
 const OR_STAGES=[
  ['start','Start','A return is received, or a contract nears expiry','Return intake (event)',['WMS','Contract Management']],
- ['pull','Pull data','Fetch evidence from the systems of record','Evidence Assembler',['EAM','ERP','CRM','WMS','Telemetry']],
+ ['pull','Pull data','Fetch evidence from the systems of record','Evidence Assembler',['EAM','MRO','ERP','CRM','WMS','Telemetry']],
  ['prep','Data preparation','Validate, link identities and resolve conflicts','Data preparation service',['Canonical models','Conflict queue']],
  ['gates','Evaluate gates','Six eligibility gates per pathway','Gate engine',['Policy','QMS','Contract Management']],
  ['ml','ML predictions','Price, cost, condition and success per pathway','Prediction models',['Market data','EAM history']],
  FEAT.pools?['opt','Optimise pool','Allocate scarce assets across competing demand','Opportunity Finder · optimize_pool',['ERP demand','CRM pipeline']]:['opt','Optimise plan','Compare pathways, timing and capacity against competing demand','Opportunity Finder',['ERP demand','CRM pipeline']],
  ['rec','Recommendation','Rank pathways and explain the choice','Recommendation service',['Circularity']],
  ['appr','Present for approval','A person approves, overrides or declines','Approval (human)',['Circularity']],
- ['hand','Hand off to enterprise system','Send the approved instruction with its approval reference','Handoff Coordinator · send_instruction',['OMS','EAM','TMS','WMS']],
- ['out','Retrieve actual outcome','Collect the reported result and reconcile it','Reconciler · reconcile_outcome',['OMS','ERP finance','EAM']]];
+ ['hand','Hand off to enterprise system','Send the approved instruction with its approval reference','Handoff Coordinator · send_instruction',['OMS','MRO','TMS','WMS']],
+ ['out','Retrieve actual outcome','Collect the reported result and reconcile it','Reconciler · reconcile_outcome',['OMS','ERP finance','MRO']]];
 const OR_ST={done:['Done','ok'],active:['Active','warn'],failed:['Failed','bad'],upstream:['Upstream failed','line'],pending:['Pending','line']};
 S.or={case:null,fail:'',play:null};
 function orCases(){return canPage('product','case')?myCases():visCases()}
@@ -3888,7 +3940,7 @@ function asCostInputs(c,h){const pp=asPartPrices(c,h),row=(l,src,v)=>`<div class
 function asCostBuild(c,h){const r=c.chosen||c.recommendation,prep=asPrepCost(c);if(!r||!prep)return '';const P=exPrepParts(c,r),i=r.terms.findIndex(t=>t.kind==='prep'&&t.amt<0),head=`<h4 style="font-size:12.5px;margin:14px 0 4px;color:var(--ink2)">How the preparation cost is built <span class="note">(${esc(r.plan)})</span></h4>`;
   if(!P){const parts=sum(asPartPrices(c,h).map(p=>p.price)),lab=prep-parts;return head+`<div class="ascb" id="asCostBuild"><div class="asrow"><span>Contracted parts <span class="note">supplier contract ${asSC(c)}, retrieved</span></span><b class="num">${asMoney(parts)}</b></div><div class="asrow"><span>Labour, machine and transfer <span class="note">prep-cost-time ${learnVer(c,'prep-cost-time')}, predicted</span></span><b class="num">${asMoney(lab)}</b></div><div class="asrow"><span><b>Preparation cost</b></span><b class="num">${asMoney(prep)}</b></div></div>`}
   const u=v=>asMoney(v/EX_FX),row=(l,n,v,cl)=>`<div class="asrow${cl?' '+cl:''}"><span>${l} <span class="note">${n}</span></span><b class="num">${u(v)}</b></div>`,mc=sum(P.ops.map(o=>o.inr)),tr=sum(P.legs.map(l=>l.inr)),rest=P.B-P.P;
-  return head+`<div class="ascb" id="asCostBuild">${row('Contracted parts',P.parts.length+' part'+(P.parts.length===1?'':'s')+' · SAP Ariba '+asSC(c)+' · '+inr(P.P),P.P)}${row('Labour, machine and transfer',inr(rest),rest)}${row('Labour',P.labH+' h × '+inr(P.rate)+' · IBM Maximo, standard '+P.std+' h, solved last',P.lab,'ascbs')}${P.ops.length?row('Machine time',P.ops.map(o=>o.name.toLowerCase()+' '+o.h+' h').join(', '),mc,'ascbs'):''}${P.legs.length?row('Transport',P.legs.length+' leg'+(P.legs.length>1?'s':'')+' · ShipLane TMS '+RATE_CARD.id,tr,'ascbs'):''}${P.pack?row('Packing and handling','Manhattan Active WM',P.pack,'ascbs'):''}<div class="asrow"><span><b>Preparation cost</b> <span class="note">${inr(P.B)} at ₹${EX_FX}</span></span><b class="num">${asMoney(prep)}</b></div></div><p class="note" style="margin:4px 0 0">${exSrcBtn(c,r,i,'Where each line comes from')}</p>`}
+  return head+`<div class="ascb" id="asCostBuild">${row('Contracted parts',P.parts.length+' part'+(P.parts.length===1?'':'s')+' · SAP Ariba '+asSC(c)+' · '+inr(P.P),P.P)}${row('Labour, machine and transfer',inr(rest),rest)}${row('Labour',P.labH+' h × '+inr(P.rate)+' · Oracle Depot Repair, standard '+P.std+' h, solved last',P.lab,'ascbs')}${P.ops.length?row('Machine time',P.ops.map(o=>o.name.toLowerCase()+' '+o.h+' h').join(', '),mc,'ascbs'):''}${P.legs.length?row('Transport',P.legs.length+' leg'+(P.legs.length>1?'s':'')+' · ShipLane TMS '+RATE_CARD.id,tr,'ascbs'):''}${P.pack?row('Packing and handling','Manhattan Active WM',P.pack,'ascbs'):''}<div class="asrow"><span><b>Preparation cost</b> <span class="note">${inr(P.B)} at ₹${EX_FX}</span></span><b class="num">${asMoney(prep)}</b></div></div><p class="note" style="margin:4px 0 0">${exSrcBtn(c,r,i,'Where each line comes from')}</p>`}
 /* ---- eligibility, evidence quality, related assets ---- */
 function asElig(c){const d=c.demand||{},spec=c.spec||{},r=c.recommendation||(c.routes||[])[0],g=r?r.gates:null,yr=new Date(c.received).getUTCFullYear()-Math.max(0,Math.round(c.age))+Math.min(6,Math.round(CLASSES[c.cls].tau/2));
   const warrOk=yr>=new Date(AS_OF).getUTCFullYear(),sil=/SIL/.test(spec['Safety rating']||''),lith=['drill','batch','it'].includes(c.cls),erase=c.cls==='it'&&spec['Data erasure']==='Pending';
@@ -3956,7 +4008,7 @@ function asDemand(c){const d=c.demand||{},M=caseDemand(c),R=caseRul(c),rows=[],r
   return rows.length?rows.join('')+'<p class="note" style="margin:6px 0 0">Matched by Circularity from orders, contracts and opportunities in ERP and CRM. The routes that use this demand are priced in step 3.</p>':'<div class="empty"><b>No contract demand matched</b>Only external market routes apply.</div>'}
 function asPredRoutes(c){const rs=(c.routes||[]).filter(r=>!r.excluded).sort((a,b)=>b.net-a.net).slice(0,4),rec=c.chosen||c.recommendation;if(!rs.length)return '';
   return `<h4 style="font-size:12.5px;margin:14px 0 4px;color:var(--ink2)">Predicted value by route</h4>`+asTbl([['Route'],['Net','r'],['P10 to P90','r']],rs.map(r=>`<tr class="${rec&&r===rec?'sel':''}"><td>${esc(r.plan||rid(r.id).name)}</td><td class="r num"><b>${asMoney(r.net)}</b></td><td class="r num">${asMoney(r.p10)} to ${asMoney(r.p90)}</td></tr>`))}
-function asOverview(c,h){const ok=asTabOK,z=hq('zone'),ws=c.cls==='motor'||c.cls==='pump'?'EAM':'Inspection';
+function asOverview(c,h){const ok=asTabOK,z=hq('zone'),ws=c.cls==='motor'||c.cls==='pump'?'MRO':'Inspection';
   const L=[`<div class="asz2 aszw">${asPanel('Diagnostic condition',asKnownDiag(c),null,'',provB('ret',ws))}${asPanel('Certified period',asKnownCert(c),null,'',provB('ret','QMS'))}</div>`,
    ok('condition')&&asPanel('Inspection findings',asCond(c),'condition','',provB('ret','Inspection')),
    asPanel('Cost inputs',asCostInputs(c,h),null,'',provB('ret','OMS, PLM, EAM, procurement'),'asCostCard'),
@@ -3971,7 +4023,7 @@ function asOverview(c,h){const ok=asTabOK,z=hq('zone'),ws=c.cls==='motor'||c.cls
    ok('data')&&asPanel('Data and evidence quality',asQuality(c),'data','',provB('rul','Evidence scoring')),
    ok('economic')&&asPanel('Economic intelligence',asEcon(c)+asCostBuild(c,h)+asPredRoutes(c),'economic','aszw',provB('mod','Prediction model'),'asEconCard')].filter(Boolean);
   const pg=asPageOf();
-  return `<div class="aszs">${pg==='known'?`<div class="asz known ${z==='known'?'on':''}" id="aszKnown" aria-labelledby="aszKh"><header class="aszh"><span class="aszk">Retrieved data · journey step 1, supply evidence</span><h2 id="aszKh">Retrieved from enterprise systems</h2><p class="note">Facts pulled from EAM, QMS, ERP, WMS and PLM. Each card names its source. Circularity reads these; it does not change them.</p><button class="lnk aszsw" data-act="asZone" data-arg="pred">See what Circularity predicts for this asset →</button></header>${L.join('')}</div>`:`<div class="asz pred ${z==='predicted'?'on':''}" id="aszPred" aria-labelledby="aszPh"><header class="aszh"><span class="aszk">Predictions · eligibility, demand, life and value for this asset</span><h2 id="aszPh">Predicted and computed by Circularity</h2><p class="note">Model estimates and rule results, each labelled with what produced it. Recommended routes and values appear only on this page.</p><button class="lnk aszsw" data-act="asZone" data-arg="known">← Retrieved data</button></header>${Rt.join('')}</div>`}</div>`}
+  return `<div class="aszs">${pg==='known'?`<div class="asz known ${z==='known'?'on':''}" id="aszKnown" aria-labelledby="aszKh"><header class="aszh"><span class="aszk">Retrieved data · journey step 1, supply evidence</span><h2 id="aszKh">Retrieved from enterprise systems</h2><p class="note">Facts pulled from MRO, EAM, QMS, ERP, WMS and PLM. Each card names its source. Circularity reads these; it does not change them.</p><button class="lnk aszsw" data-act="asZone" data-arg="pred">See what Circularity predicts for this asset →</button></header>${L.join('')}</div>`:`<div class="asz pred ${z==='predicted'?'on':''}" id="aszPred" aria-labelledby="aszPh"><header class="aszh"><span class="aszk">Predictions · eligibility, demand, life and value for this asset</span><h2 id="aszPh">Predicted and computed by Circularity</h2><p class="note">Model estimates and rule results, each labelled with what produced it. Recommended routes and values appear only on this page.</p><button class="lnk aszsw" data-act="asZone" data-arg="known">← Retrieved data</button></header>${Rt.join('')}</div>`}</div>`}
 /* ---- focused tab views + compare ---- */
 const asTbl=(head,rows,cls)=>`<div class="tw"><table class="t static tight ${cls||''}"><thead><tr>${head.map(h=>`<th class="${h[1]||''}">${h[0]}</th>`).join('')}</tr></thead><tbody>${rows.join('')||`<tr><td colspan="${head.length}"><div class="empty"><b>Nothing to show</b></div></td></tr>`}</tbody></table></div>`;
 function asNet(x){return x.recommendation?x.recommendation.net:null}
@@ -4103,7 +4155,7 @@ function tiObj(c){return asPanel('Business objectives <span class="note">(for th
 const DIAG={motor:['Winding insulation','grade'],pump:['Seal and bearing wear','wear'],control:['Controller self-test','test'],drill:['Battery health','pct'],batch:['Battery health','pct'],it:['Battery health','pct']};
 function caseDiag(c){if(c.assessment==='Pending'||(!c.grade&&c.assessment!=='Ready'))return null;const h=assetHealth(c),d=DIAG[c.cls]||['Condition score','pct'],ins=(c.evidence||[]).find(e=>e.k==='insp');let value;
   if(d[1]==='grade')value='Grade '+(c.grade||'B');else if(d[1]==='wear')value=Math.max(5,100-h.score)+'%';else if(d[1]==='test'){const n=asHex(c,'st')%4;value=(c.grade==='C'||n>2?'Fail':'Pass')+' · '+n+' error'+(n===1?'':'s')}else value=asClamp(h.score-asHex(c,'bh')%12,35,98)+'%';
-  return{metric:d[0],value,source:c.cls==='motor'||c.cls==='pump'?'EAM · Diagnostic and Repair':'Inspection',at:ins&&ins.fresh||'—'}}
+  return{metric:d[0],value,source:c.cls==='motor'||c.cls==='pump'?'MRO · Depot repair':'Inspection',at:ins&&ins.fresh||'—'}}
 /* estimated RUL is a range; the certified operating period is one firm figure, never above the estimate */
 function caseRul(c){const m=/^(\d+)\s*months/.exec(c.engLife||'');if(!m)return null;const est=+m[1],wide=c.grade==='C',lo=Math.round(est*(wide?.75:.83)),hi=Math.max(est,Math.round(est*(wide?1.2:1.11))),cert=lo>=12?Math.floor(lo/12)*12:Math.max(6,Math.floor(lo/6)*6);
   return{estMonths:est,estLow:Math.min(lo,est),estHigh:hi,certMonths:Math.min(cert,est),basis:'Certified in QMS by the EAM diagnostic and quality process after '+(c.grade?'grade '+c.grade+' inspection':'inspection')+' and any part replacement',certRef:'QMS-'+(2400+asHex(c,'qms')%600)}}
@@ -6109,11 +6161,11 @@ const AF_STAGES=[
  {n:2,k:'rma',t:'Return authorised',trig:'Return authorisation',agent:'Records fees, replacement order, book value and acquisition date',person:'Nothing required',sys:['Lease management','ERP finance']},
  {n:3,k:'transit',t:'Pickup and transit',trig:'Pickup booked',agent:'Tracks pickup date, ETA and freight cost',person:'Nothing required',sys:['TMS / 3PL']},
  {n:4,k:'received',t:'Received',trig:'Goods receipt',agent:'Starts the holding-cost clock; checks which evidence is still missing',person:'Confirms receipt if needed',sys:['WMS']},
- {n:5,k:'inspect',t:'Inspect and grade',trig:'Inspection result',agent:'Requests missing tests; reads grade, faults, repair estimate and test criteria',person:'Engineer records results',sys:['Repair orders','Inspection','PLM']},
+ {n:5,k:'inspect',t:'Inspect and grade',trig:'Inspection result',agent:'Requests missing tests; reads grade, faults, repair estimate and test criteria',person:'Engineer records results',sys:['MRO','Inspection','PLM']},
  {n:6,k:'decide',t:'Decide',trig:'Evidence complete',agent:'Gathers demand and prices, builds every candidate outcome, runs the gates, predicts and ranks; builds the decision packet',person:'Planner reviews, asks why, tries what-ifs, submits',sys:['CRM','EAM','ERP procurement','PLM','Remarketing']},
  {n:7,k:'approve',t:'Approve',trig:'Packet submitted',agent:'Runs a pre-approval check; drafts the rationale',person:'Approver approves, edits or declines',sys:['Circularity']},
- {n:8,k:'execute',t:'Execute',trig:'Approval',agent:'Sends the route\'s instructions in sequence; tracks acknowledgements; flags delays',person:'Handles exceptions only',sys:['ERP','EAM','WMS','Repair','Finance']},
- {n:9,k:'outcome',t:'Outcome',trig:'Final acknowledgement',agent:'Collects actual costs and realised value',person:'Finance confirms where required',sys:['ERP finance','Repair']},
+ {n:8,k:'execute',t:'Execute',trig:'Approval',agent:'Sends the route\'s instructions in sequence; tracks acknowledgements; flags delays',person:'Handles exceptions only',sys:['OMS','MRO','TMS','WMS','ERP finance']},
+ {n:9,k:'outcome',t:'Outcome',trig:'Final acknowledgement',agent:'Collects actual costs and realised value',person:'Finance confirms where required',sys:['OMS','MRO','ERP finance']},
  {n:10,k:'learn',t:'Reconcile and learn',trig:'Outcome confirmed',agent:'Compares predicted and actual line by line; creates learning records; carries forward open demand',person:'Reviews variances',sys:['Circularity']}];
 const RUN_ST={done:['Completed','ok'],running:['Running','warn'],waiting:['Waiting for approval','y'],person:['Waiting for a person','y'],warning:['Warning','warn'],failed:['Failed','bad'],queued:['Queued','line'],skipped:['Skipped','line']};
 /* stages 1–3: lease and logistics facts, derived from the case id; every value is simulated */
@@ -7094,7 +7146,7 @@ ACT.afPack=id=>{const p=afEvidencePack(id);if(!p)return;const blob=new Blob([JSO
 defAction('asset.summary',{title:'Summarise an asset',desc:'A summary of one asset with every statement labelled Retrieved (and its system) or Predicted (and its model or rule).',risk:'read',scope:'case',input:{case_id:{t:'string',req:true}},
   handler:i=>{const c=CASE_BY_ID[i.case_id],R=caseRul(c),M=caseDemand(c),r=c.recommendation,ret=[],pred=[];
     ret.push({text:asModel(c)+' '+c.assetId+', '+c.age+' years old, from '+c.owner,src:'EAM · asset registry'});ret.push({text:'At '+c.location+' since '+fmtD(c.received),src:'WMS'});
-    if(c.grade)ret.push({text:'Grade '+c.grade+(c.condition&&!/^Grade/.test(c.condition)?' ('+c.condition+')':''),src:c.cls==='motor'||c.cls==='pump'?'EAM inspection':'Inspection'});
+    if(c.grade)ret.push({text:'Grade '+c.grade+(c.condition&&!/^Grade/.test(c.condition)?' ('+c.condition+')':''),src:c.cls==='motor'||c.cls==='pump'?'MRO inspection':'Inspection'});
     if(R)ret.push({text:'Certified for '+R.certMonths+' months ('+R.certRef+')',src:'QMS'});const miss=(c.evidence||[]).filter(e=>e.state!=='ready');ret.push({text:miss.length?miss.length+' evidence item'+(miss.length>1?'s':'')+' not complete: '+miss.map(e=>jgLc(e.label)).join(', '):'All 10 evidence items complete',src:'Evidence bundle'});
     if(R)pred.push({text:'Estimated remaining life '+R.estLow+'–'+R.estHigh+' months',src:'Model · rul'});if(M&&M.order)pred.push({text:'Matched to '+(M.confirmed?'confirmed':'forecast')+' demand '+M.order,src:'Rules · demand fit'});
     if(r)pred.push({text:'Recommended: '+r.plan+', '+money(r.net)+' predicted net (P10–P90 '+money(r.p10)+'–'+money(r.p90)+')',src:'Model · '+(c.model||'v1.3')+' and ranking rules'});else if(c.blocked)pred.push({text:'No prediction yet: '+c.blocked.reason,src:'Gate engine'});
@@ -7262,7 +7314,7 @@ function afStageLines(c,n){const run=afRun(c),s=run.stages[n-1],L=afLease(c),evs
       A('coordinator','request_approval','Circularity','Drafted the rationale',r?r.plan+' · '+money(r.net):''),
       c.submitted?P('Planner','Submitted for review','by '+c.submitted.by):null,
       s.state==='done'?P('Approver',c.override?'Override approved':'Approved',c.approval.ref+' · '+c.approval.by):P('Approver','Waiting for the Approver',c.submitted?'submitted by '+c.submitted.by:'waiting for the Planner to submit',{st:'wait'})]}
-  else if(n===8){const now=asOfNow();if(!c.exec&&!r)out=[Q('coordinator','send_instruction',lrVendor('oms'),'Will send the order instruction'),Q('coordinator','send_instruction',lrVendor('eam'),'Will send the work order'),Q('coordinator','send_instruction',lrVendor('wms'),'Will send the stock movement')];
+  else if(n===8){const now=asOfNow();if(!c.exec&&!r)out=[Q('coordinator','send_instruction',lrVendor('oms'),'Will send the order instruction'),Q('coordinator','send_instruction',lrVendor('repair'),'Will send the repair order'),Q('coordinator','send_instruction',lrVendor('wms'),'Will send the stock movement')];
     else if(!c.exec)out=stepsFor(r,-1).slice(0,-1).map(t=>Q('coordinator','send_instruction',lrSys(t.sys),'Will send: '+t.label.toLowerCase(),exDocRef(c,t)+' to be created · '+stepOwner(c,t)));
     else{out=steps.slice(0,-1).map(t=>t.state==='done'?A('coordinator','send_instruction',lrSys(t.sys),t.label+' acknowledged',(t.ack?t.ack.ref+' · ':'')+stepOwner(c,t),{audit:evIds(e=>e.dest===t.sys)}):t.state==='active'?A('coordinator','send_instruction',lrSys(t.sys),t.label+' sent','awaiting acknowledgement · '+stepOwner(c,t)+' · due '+exTs((exClock(c,t,now)||{due:now}).due),{st:'wait'}):Q('coordinator','send_instruction',lrSys(t.sys),'Will send: '+t.label.toLowerCase(),exDocRef(c,t)+' to be created'));
       const a=steps.find(t=>t.state==='active'),k=a&&exClock(c,a,now);if(k&&k.level)out.unshift(P(k.to,'Escalated: '+jgLc(a.label),exApp(a)+' passed its '+k.lim+' limit at '+exTs(k.level===2?k.due2:k.due)+' · owner '+stepOwner(c,a),{st:'wait',audit:evIds(e=>e.type==='handoff.escalated')}))}}
@@ -8035,8 +8087,8 @@ const logoKey=v=>{const m=LOGO_KEY.find(x=>x[0].test(v||''));return m?m[1]:null}
 const vlogo0=vlogo;
 if(FR_ON)vlogo=s=>{const k=FEAT.logos&&logoKey(s.vendor);return k&&SYSLOGO[k]?`<span class="vlg" data-logo="${k}" aria-hidden="true"><svg viewBox="0 0 32 32">${SYSLOGO[k]}</svg></span>`:vlogo0(s)};
 /* ---- catalogue (W2, W15): today's sources plus the systems the app does not have yet, which stay Available until connected through the flow in 5.10 ---- */
-const FR_CATS=['CRM','ERP','OMS','EAM','WMS','TMS','Databases','Collaboration','Storage','Analytics','Security','Custom'];
-const FR_CATOF={crm:'CRM',lease:'ERP',erp:'ERP',proc:'ERP',oms:'OMS',rl:'OMS',eam:'EAM',fsm:'EAM',plm:'EAM',bom:'EAM',qms:'EAM',eng:'EAM',insp:'EAM',repair:'EAM',wms:'WMS',tms:'TMS',iot:'Custom',mkt:'Analytics',dlr:'Analytics',esg:'Analytics',rcy:'Custom',hr:'Custom',collab:'Collaboration',db:'Databases',store:'Storage',dw:'Analytics'};
+const FR_CATS=['CRM','ERP','OMS','MRO','EAM','WMS','TMS','Databases','Collaboration','Storage','Analytics','Security','Custom'];
+const FR_CATOF={crm:'CRM',lease:'ERP',erp:'ERP',proc:'ERP',oms:'OMS',rl:'OMS',eam:'EAM',fsm:'EAM',plm:'EAM',bom:'EAM',qms:'EAM',eng:'EAM',insp:'MRO',repair:'MRO',wms:'WMS',tms:'TMS',iot:'Custom',mkt:'Analytics',dlr:'Analytics',esg:'Analytics',rcy:'Custom',hr:'Custom',collab:'Collaboration',db:'Databases',store:'Storage',dw:'Analytics'};
 const FR_XTYPES={hr:{label:'HR system',short:'HR',cat:'internal',target:'Asset & component',vendors:['Workday HCM']},collab:{label:'Collaboration',short:'Collab',cat:'internal',target:'Outcome',vendors:['Atlassian Jira','Atlassian Confluence','Microsoft Teams']},
  db:{label:'Database',short:'Database',cat:'internal',target:'Asset & component',vendors:['PostgreSQL','MySQL','Microsoft SQL Server']},store:{label:'File storage',short:'Storage',cat:'internal',target:'Asset & component',vendors:['Amazon S3','Azure Blob Storage','Microsoft Excel and SharePoint','Google Drive']},
  dw:{label:'Data warehouse',short:'Warehouse',cat:'external',target:'Outcome',vendors:['Snowflake']}};
@@ -8294,7 +8346,7 @@ if(FR_ON){const wp0=wfPaint;wfPaint=function(){const w=S.wf&&S.wf.cur;if(w&&$('#
   wp0();if(w&&S.frWfView==='flow'&&w.frCnt){const g=wfGraph(),by={};g.nodes.forEach(n=>by[n.id]=n);const eg=$('#wfEg');eg&&eg.insertAdjacentHTML('beforeend',g.edges.map(e=>{const a=by[e.a],b=by[e.b],c=w.frCnt[e.a];if(!a||!b||!c)return'';const x=(a.x+WF_W+b.x)/2,y=(a.y+b.y)/2+WF_H/2-6;return `<g class="frel"><rect x="${x-26}" y="${y-9}" width="52" height="16" rx="8"/><text x="${x}" y="${y+3}" text-anchor="middle">${fmtN(c.out)}</text></g>`}).join(''))}
   const p=$('#frRuns');p&&w&&(p.innerHTML=frRunsTable(w,5));const q=$('#frDq');q&&w&&(q.innerHTML=frDqHTML(w))}}
 /* grouped palette: Sources by type, Transform, Orchestration, the fixed Circularity steps, and the rest */
-const FR_SRCG=[['CRM',['crm'],'CRM (Salesforce, Dynamics)'],['ERP',['lease','erp','proc'],'ERP (SAP, Oracle)'],['OMS',['oms','rl'],'OMS and returns'],['EAM',['eam','fsm','plm','bom','qms','eng','insp','repair'],'EAM, service and quality'],['WMS',['wms'],'WMS'],['TMS',['tms'],'TMS'],['Database',['db'],'Database (SQL)'],['File',['rcy','store'],'File (SFTP, storage)'],['API',['mkt','dlr','esg','dw'],'API (REST, partners)'],['Streaming',['iot'],'Streaming (IoT, events)']];
+const FR_SRCG=[['CRM',['crm'],'CRM (Salesforce, Dynamics)'],['ERP',['lease','erp','proc'],'ERP (SAP, Oracle)'],['OMS',['oms','rl'],'OMS and returns'],['MRO',['repair','insp'],'MRO and workshop'],['EAM',['eam','fsm','plm','bom','qms','eng'],'EAM, service and quality'],['WMS',['wms'],'WMS'],['TMS',['tms'],'TMS'],['Database',['db'],'Database (SQL)'],['File',['rcy','store'],'File (SFTP, storage)'],['API',['mkt','dlr','esg','dw'],'API (REST, partners)'],['Streaming',['iot'],'Streaming (IoT, events)']];
 function frPalHTML(){if(S.wf.kind!=='pipe')return wfPalHTML0();const q=(S.frPalQ||'').trim().toLowerCase(),dot=x=>({live:'ok',stale:'warn',manual:'',unavailable:'bad'})[x.status];
   const it=(key,label,sub,ic,d)=>!q||(label+' '+sub).toLowerCase().includes(q)?`<button class="wfp frp2" data-pal="${key}" aria-label="Add ${esc(label)}">${ic}<span class="tx"><span class="lb">${esc(label)}</span><span class="sb">${esc(sub)}</span></span>${d!=null?`<span class="dotc ${d}"></span>`:''}</button>`:'';
   const grp=(k,h,body)=>{const o=q?true:S.wf.pal[k]===undefined?['src_CRM','frT','frO'].includes(k):S.wf.pal[k];return body.replace(/\s/g,'')?`<div class="sec"><button class="wfh" data-act="wfSec" data-arg="${k}" aria-expanded="${o}"><span>${h}</span></button>${o?body:''}</div>`:''};
@@ -8577,7 +8629,7 @@ if(ST_ON)document.documentElement.classList.add('st');
 const ST_PH=[{k:'arrive',t:'Arrive',n:[1,2,3,4,5],h:'re'},{k:'decide',t:'Decide',n:[6],h:'dec'},{k:'approve',t:'Approve',n:[7],h:'agent'},{k:'exec',t:'Execute and learn',n:[8,9,10],h:'int'}];
 const stPhase=n=>ST_PH.find(p=>p.n.includes(n));
 /* the systems each stage names (AF_STAGES.sys), mapped onto the connected sources for their logos */
-const ST_SYS={'Lease management':'lease','CRM':'crm','Customer portal':'crm','ERP finance':'erp','ERP':'erp','Finance':'erp','ERP procurement':'proc','TMS / 3PL':'tms','WMS':'wms','Repair orders':'repair','Repair':'repair','Inspection':'insp','PLM':'plm','EAM':'eam','Remarketing':'dlr'};
+const ST_SYS={'Lease management':'lease','CRM':'crm','Customer portal':'crm','ERP finance':'erp','ERP':'erp','Finance':'erp','ERP procurement':'proc','TMS / 3PL':'tms','WMS':'wms','Repair orders':'repair','Repair':'repair','MRO':'repair','OMS':'oms','TMS':'tms','Inspection':'insp','PLM':'plm','EAM':'eam','Remarketing':'dlr'};
 const stHref=(id,n,tab)=>'product/'+id+(n==='overview'?'/overview':n==='full'?'/full':'/stage/'+n+(tab?'?tab='+tab:''));
 const stT=n=>AF_STAGES[n-1].t;
 const stLc=t=>t?t.charAt(0).toLowerCase()+t.slice(1):t;
@@ -8627,7 +8679,7 @@ ACT.stSheet=(a,el)=>{const b=$('.stbar');if(!b)return;const o=!b.classList.conta
 function stLogos(n){const seen=new Set();return AF_STAGES[n-1].sys.map(s=>{const src=SRC(ST_SYS[s]);if(!src){if(s==='Circularity')return `<span class="stsy">${frIt('spark','agent','xs')}<span>Circularity</span></span>`;return `<span class="stsy"><span>${esc(s)}</span></span>`}
   if(seen.has(src.id))return '';seen.add(src.id);return `<span class="stsy" data-tip="${esc(s+' · '+src.vendor)}">${vlogo(src)}<span>${esc(s)}</span></span>`}).join('')}
 /* a fact's provenance: retrieved from a connected source (with its freshness), computed by rules, predicted by a model, or recorded in Circularity */
-function stProv(k,sys){if(k==='rec')return `<span class="aszb rec" data-prov="rec" data-tip="Recorded in Circularity when it happened: who acted and when.">Recorded · Circularity</span>`;const src=SRC(ST_SYS[sys]||sys);return provB(k,src?src.vendor+(k==='ret'&&src.freshMin!=null?' · '+srcAge(src.freshMin)+' ago':''):sys)}
+function stProv(k,sys){if(k==='rec')return `<span class="aszb rec" data-prov="rec" data-tip="Recorded in Circularity when it happened: who acted and when.">Recorded · Circularity</span>`;const src=SRC(ST_SYS[sys]||sys);return provB(k,src?src.vendor+(k==='ret'&&src.freshMin!=null?' · '+srcAge(src.freshMin)+(src.freshMin<1?'':' ago'):''):sys)}
 const stDoc=ref=>ref?`<span class="stdoc"><span class="mono">${esc(ref)}</span><button class="lnk stcp" data-act="stCopy" data-arg="${esc(ref)}" aria-label="Copy ${esc(ref)}">Copy</button></span>`:'';
 ACT.stCopy=v=>{(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast(v+' copied.'),()=>toast('Copy: '+v,5000))};
 /* ---- what each stage established (B), what it means (C), what the person does now (D) and its details (E) ---- */
@@ -8656,9 +8708,9 @@ function stData(c,n){const L=afLease(c),run=afRun(c),s=run.stages[n-1],r=c.chose
     o.docs=[asRMA(c)];o.who='WMS';
     o.mean=miss.length?`Missing ${miss.map(e=>stLc(e.label)).join(', ')}${c.blocked?' holds back every route until '+stLc(c.blocked.action):' narrows what can be priced'}.`:`Evidence is complete, so every route can be built and priced.`;
     o.tabs=[['evidence','Evidence checklist',`<div id="aszKnown">${asPanel('Evidence readiness',stEvTable(c),null,'',provB('rul','Evidence scoring'))}</div>`],['location','Location',stKv([['Facility',c.location],['Code',code||'—'],['City',Lc.city||'—'],['Bin',Lc.bin||'—'],['Receiving days',(Lc.days||[]).map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')||'—']])],['holding','Holding cost',stKv([['Days since receipt',String(afDays(c.received,asOfNow()))],['Holding and risk cost in the recommended route',hold?money(hold.amt):'Not priced yet'],['Cost inputs','See below']])+asPanel('Cost inputs',asCostInputs(c,assetHealth(c)),null,'',provB('ret','OMS, PLM, EAM, procurement'),'asCostCard')]]}
-  else if(n===5){const ws=c.cls==='motor'||c.cls==='pump'?'EAM':'Inspection',ins=(c.evidence||[]).find(e=>e.k==='insp'),prep=asPrepCost(c);
-    o.res=s.state==='done'?(c.grade?`Graded ${c.grade} by ${ws==='EAM'?'EAM inspection':'inspection'}${R?'; certified for '+R.certMonths+' months':''}.`:`Assessed: ${c.assessment}.`):c.requested?`${c.blocked.action} requested (${c.requested.ref}); waiting for ${c.blocked.owner}.`:`${c.blocked?c.blocked.reason:'Not inspected yet'}.`;
-    o.facts=[F('Grade',c.grade?'Grade '+c.grade:'Not graded','ret',ws==='EAM'?'EAM':'Inspection'),F('Condition',c.condition,'ret','Inspection'),F('Inspection',ins?({ready:'Complete',partial:'Partial',stale:'Stale',missing:'Missing',conflict:'Conflict'})[ins.state]||ins.state:'—','ret','Inspection')];
+  else if(n===5){const ws=c.cls==='motor'||c.cls==='pump'?'MRO':'Inspection',ins=(c.evidence||[]).find(e=>e.k==='insp'),prep=asPrepCost(c);
+    o.res=s.state==='done'?(c.grade?`Graded ${c.grade} by ${ws==='MRO'?'MRO workshop inspection':'inspection'}${R?'; certified for '+R.certMonths+' months':''}.`:`Assessed: ${c.assessment}.`):c.requested?`${c.blocked.action} requested (${c.requested.ref}); waiting for ${c.blocked.owner}.`:`${c.blocked?c.blocked.reason:'Not inspected yet'}.`;
+    o.facts=[F('Grade',c.grade?'Grade '+c.grade:'Not graded','ret',ws==='MRO'?'MRO':'Inspection'),F('Condition',c.condition,'ret','Inspection'),F('Inspection',ins?({ready:'Complete',partial:'Partial',stale:'Stale',missing:'Missing',conflict:'Conflict'})[ins.state]||ins.state:'—','ret','Inspection')];
     if(R)o.facts.push(F('Certified period',R.certMonths+' months · '+R.certRef,'ret','QMS'));if(c.engLife)o.facts.push(F('Engineering life',c.engLife,'ret','PLM'));if(prep)o.facts.push(F('Repair estimate',money(prep),'mod','Prediction model'));
     o.docs=[R?R.certRef:null,c.requested?c.requested.ref:null].filter(Boolean);
     o.mean=c.blocked&&!c.recommendation?`No route can be priced until ${stLc(c.blocked.action)}: ${stLc(c.blocked.reason)}.`:`${c.grade?'Grade '+c.grade:'The assessment'}${R?' and a '+R.certMonths+'-month certified life':''} leave ${el.length} route${el.length===1?'':'s'} eligible${el[0]?' ('+el.slice(0,3).map(z=>z.plan).join(', ')+')':''}${ex.length?'; '+ex.map(z=>z.plan+' is withheld ('+stLc(z.failReason||'a gate failed')+')').slice(0,2).join('; '):''}.`;
@@ -8837,6 +8889,126 @@ if(ST_ON){
   document.addEventListener('click',e=>{const b=$('.stbar.open');if(b&&!e.target.closest('.stbar'))ACT.stSheet()});
 }
 /*ST-END*/
+/*CX-START*/
+/* ===== CXO demo (docs/PLAN_CXO_DEMO_VIDEO.md): the stage 6 Explain view (why, what-if and the evidence snapshot on one screen),
+   the workflow canvas drawn step by step after an agent draft is accepted, workflow changes asked for in chat, the Analytics
+   predicted-vs-actual focus and the product photo lightbox. Nothing new is computed and no rnd() is called. ?cx=0 turns it off ===== */
+/* motors and pumps are inspected in the MRO workshop (section 6): their inspection and photo records trace to the MRO source */
+{const pf0=provFor;provFor=function(c,e){if(c&&(c.cls==='motor'||c.cls==='pump')&&(e.k==='insp'||e.k==='photo')&&PMAP[e.k]&&SRC('repair')){const m=PMAP[e.k];
+  PMAP[e.k]=Object.assign({},m,{s:'repair',t:e.k==='insp'?'repair_inspections':'repair_attachments',q:c=>e.k==='insp'?`GET /repair-orders?serial=${c.serial||c.assetId}&task=receiving-inspection`:`GET /repair-orders/attachments?serial=${c.serial||c.assetId}`});
+  try{return pf0(c,e)}finally{PMAP[e.k]=m}}return pf0(c,e)}}
+const CX_ON=ST_ON&&(()=>{try{const q=/[?&]cx=([01])/.exec(location.search);if(q)localStorage.setItem('circ-cx',q[1]);return localStorage.getItem('circ-cx')!=='0'}catch(e){return true}})();
+FEAT.cx=CX_ON;
+if(CX_ON){document.documentElement.classList.add('cx');
+/* the evidence each driver or assumption rests on: moving a slider lights these rows */
+const CX_EV={purchase:['cost','dem'],prep:['insp','photo'],cost:['insp','photo'],service:['svc','eng'],residual:['mkt'],market:['mkt'],sale:['mkt'],demand:['dem'],gates:['pol','id','eng']};
+const CX_DRV={purchase:['Avoids a new purchase','Planned purchase at the procurement contract price'],prep:['Workshop refurbishment and transfer','Repair scope and hours from the MRO workshop; parts at contract prices'],
+  service:['Expected service cost','Failure history for this class at this duty'],residual:['Value left at the end of the term','Market comparables for this grade and age'],sale:['Sale proceeds','Market comparables for this grade and age']};
+const CX_SL=[['purchase','Avoided purchase price'],['cost','Workshop, parts and fees'],['service','Service exposure'],['market','Resale price']];
+const cxCase=()=>{const m=/#\/product\/(?:asset\/)?([^/?]+)/.exec(location.hash);return m&&CASE_BY_ID[decodeURIComponent(m[1])]};
+const cxT=d=>new Date(d).toISOString().slice(11,16)+' UTC';
+function cxDrivers(c,r){const t=r.terms||[],mx=Math.max(1,...t.map(x=>Math.abs(x.amt)));
+  return t.map(x=>{const d=CX_DRV[x.kind]||[x.label,''],ev=CX_EV[x.kind]||[],w=Math.max(4,Math.round(Math.abs(x.amt)/mx*100));
+    return `<div class="cxd" data-ev="${ev.join(' ')}"><div class="cxdl"><b>${esc(x.kind==='service'?d[0]+' · '+((x.label.match(/\(([^)]+)\)/)||[])[1]||'term'):d[0])}</b><span class="note">${esc(d[1])}</span></div>
+      <div class="cxdb"><span class="cxbar ${x.amt<0?'neg':'pos'}" style="width:${w}%"></span></div><b class="num cxda ${x.amt<0?'neg':'pos'}">${x.amt<0?'−':'+'}${money(Math.abs(x.amt))}</b></div>`}).join('')+
+   `<div class="cxd cxtot"><div class="cxdl"><b>Predicted net</b><span class="note">P10–P90 ${money(r.p10)} to ${money(r.p90)} · confidence ${esc(tiConf(c,r).toLowerCase())}</span></div><div></div><b class="num cxda">${money(r.net)}</b></div>`}
+function cxEvidence(c){return c.evidence.map(e=>{const p=provFor(c,e),ok=p.status==='available';
+  return `<li class="cxev" data-k="${e.k}"><span class="cxevi ${e.state==='ready'?'ok':'warn'}" aria-hidden="true">${e.state==='ready'?'✓':'!'}</span><div><b>${esc(e.label)}</b><div class="cxevv">${ok?esc(p.value):'—'}</div>
+    <div class="cxevm mono">${esc(p.vendor||p.sourceName||e.source)}${ok?' · '+esc(p.record||'—')+' · '+cxT(p.fetchedAt):''}</div></div></li>`}).join('')}
+function cxSliders(){const s=S.scen;return CX_SL.map(([k,l])=>`<div class="sl cxsl"><label for="cx-sc-${k}">${l}</label><input id="cx-sc-${k}" type="range" min="50" max="150" step="5" value="${Math.round(s[k]*100)}" data-in="cxScen" data-arg="${k}"><b class="num" id="cx-scv-${k}">${tiAdj(s[k])}</b></div>`).join('')}
+function cxPresets(){const s=S.scen;return `<button class="btn sm" data-act="cxPreset" data-arg="parts" aria-pressed="${s.cost===1.3}">Workshop cost +30%</button><button class="btn sm" data-act="cxPreset" data-arg="demand" aria-pressed="${!!s.demandOff}">Customer order cancelled</button><button class="btn sm" data-act="cxPreset" data-arg="resale" aria-pressed="${s.market===.8}">Resale price −20%</button><button class="btn sm" data-act="cxPreset" data-arg="reset">Reset to base</button>`}
+function cxExplainHTML(c){const r=c.recommendation,nx=c.routes.filter(x=>!x.excluded&&x!==r).sort((a,b)=>b.net-a.net)[0],ex=c.routes.filter(x=>x.excluded),sn=c.snapshot;
+  return `<div class="cxxw"><header class="cxxh"><div><span class="note">${esc(c.id)} · ${esc(c.product)} · Stage 6 · Decide</span><h2>Why ${esc(r.plan)} · ${money(r.net)}</h2></div><span class="sp"></span>${afBadge('Prepared by agent')}<button class="btn" data-act="cxClose" aria-label="Close">Close</button></header>
+   <div class="cxxb"><div class="cxl">
+    <section class="panel cxp"><div class="cxph"><h3>Why this outcome</h3><span class="note">${esc(r.why||'')}</span></div><div class="cxds">${cxDrivers(c,r)}</div>
+     <p class="cxnx note">${nx?`Next best: <b>${esc(nx.plan)}</b>, ${money(nx.net)}, ${money(r.net-nx.net)} less. `:''}${ex.length?`Withheld before pricing: ${ex.map(x=>esc(x.plan)+' ('+esc(String(x.failReason||'a gate failed').replace(/^./,m=>m.toLowerCase()))+')').join('; ')}. `:''}All six eligibility checks passed.</p></section>
+    <section class="panel cxp"><div class="cxph"><h3>What if</h3><span class="note">Stress the assumptions. The recommendation on record does not change until it is re-evaluated.</span></div>
+     <div class="cxwi"><div><div class="tisl">${cxSliders()}</div><div class="cxpre" role="group" aria-label="Edge cases">${cxPresets()}</div></div><div id="cxImpact">${tiResult(c,scenRoutes(c))}</div></div></section>
+   </div>
+   <aside class="panel cxr" aria-label="Evidence snapshot"><div class="cxph"><h3>Evidence snapshot</h3><span class="note">${sn?esc(sn.id)+' · frozen '+isoT(snapTime(c)):'No snapshot yet'}. Each figure, the system it came from and when.</span></div><ul class="cxevs">${cxEvidence(c)}</ul></aside></div></div>`}
+let cxHotT=0;
+function cxHot(keys){$$('#cxX .cxev').forEach(li=>li.classList.toggle('hot',keys.includes(li.dataset.k)));clearTimeout(cxHotT);cxHotT=setTimeout(()=>$$('#cxX .cxev.hot').forEach(li=>li.classList.remove('hot')),4200)}
+function cxRefresh(){const c=cxCase(),x=$('#cxX');if(!c||!x)return;$('#cxImpact').innerHTML=tiResult(c,scenRoutes(c));
+  CX_SL.forEach(([k])=>{const i=$('#cx-sc-'+k),b=$('#cx-scv-'+k);if(i)i.value=Math.round(S.scen[k]*100);if(b)b.textContent=tiAdj(S.scen[k])});$('#cxX .cxpre').innerHTML=cxPresets()}
+ACT.cxExplain=id=>{const c=CASE_BY_ID[id]||cxCase();if(!c||!c.recommendation)return toast('No recommendation to explain yet.');let x=$('#cxX');if(!x){x=document.createElement('div');x.id='cxX';x.className='cxx';x.setAttribute('role','dialog');x.setAttribute('aria-modal','true');x.setAttribute('aria-label','Explain this decision');document.body.appendChild(x)}
+  x.innerHTML=cxExplainHTML(c);document.body.classList.add('cxopen');setTimeout(()=>{const b=$('#cxX [data-act="cxClose"]');b&&b.focus()},30)};
+ACT.cxClose=()=>{const x=$('#cxX');if(!x)return;x.remove();document.body.classList.remove('cxopen');route(true)};
+ACT.cxScen=(v,el)=>{const k=el.dataset.arg;S.scen[k]=v/100;const b=$('#cx-scv-'+k);b&&(b.textContent=tiAdj(v/100));cxHot(CX_EV[k]||[]);const c=cxCase();if(c)$('#cxImpact').innerHTML=tiResult(c,scenRoutes(c))};
+ACT.cxPreset=k=>{const s=S.scen;if(k==='reset'){Object.assign(s,{purchase:1,cost:1,service:1,market:1,demandOff:false,partUnavail:false,newOnly:false,certShort:false});S.ti.apply='';cxHot([])}
+  else if(k==='parts'){s.cost=s.cost===1.3?1:1.3;cxHot(CX_EV.cost)}else if(k==='demand'){s.demandOff=!s.demandOff;cxHot(CX_EV.demand)}else if(k==='resale'){s.market=s.market===.8?1:.8;cxHot(CX_EV.market)}cxRefresh()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#cxLb')){$('#cxLb').remove();return}if($('#cxX'))ACT.cxClose()}});
+document.addEventListener('mouseover',e=>{const d=e.target.closest&&e.target.closest('#cxX .cxd[data-ev]');if(d&&d.dataset.ev)cxHot(d.dataset.ev.split(' '))});
+/* the product photo, large: click any product photo on a case page */
+document.addEventListener('click',e=>{const lb=e.target.closest&&e.target.closest('#cxLb');if(lb){lb.remove();return}
+  const im=e.target.closest&&e.target.closest('#view img[src*="assets/products/"]');if(!im||e.target.closest('a,button'))return;const c=cxCase();
+  const d=document.createElement('div');d.id='cxLb';d.className='cxlb';d.setAttribute('role','dialog');d.setAttribute('aria-label','Product photo');
+  d.innerHTML=`<figure><img src="${esc(im.getAttribute('src'))}" alt="${esc(im.alt||'Product photo')}"><figcaption>${c?esc(c.product)+' · '+esc(c.assetId)+' · '+esc(c.id)+(c.grade?' · Grade '+esc(c.grade):''):''}<span class="note"> · Click or Esc to close</span></figcaption></figure>`;document.body.appendChild(d)},true);
+/* workflow changes asked for in chat: a new step and the trigger, shown first, applied to the canvas only on confirm, never published by the agent */
+XF.push({id:'x_flag',label:'Flag failed bench tests',sub:'Hold the unit, notify the workshop lead',desc:'Units whose bench test fails are flagged, held from release and routed to the workshop lead with the test result attached.'});
+const CX_NUM={one:1,two:2,five:5,ten:10,fifteen:15,twenty:20,thirty:30,sixty:60};
+defIntent({id:'workflow.edit',area:'integration',ctx:'workflow',title:'Change this workflow',m:[[RX('(run|trigger|schedule)[^.]*every|every (\\d+|one|two|five|ten|fifteen|twenty|thirty|sixty) ?min|add (a )?step|flag (any|units?|failed)|bench test|change (the )?(trigger|schedule)'),2.7]]});
+AF_INTENT_RUN['workflow.edit']=(p,ctx,R)=>{const w=afWfOf(p,ctx);if(!w)return{text:'Open a workflow first, or name it (for example WF-101).',cards:[]};const t=String(p.raw||'').toLowerCase(),ch=[];
+  const g=JSON.parse(JSON.stringify(wfGraphOf(w)));let trig=null;const mt=/every (\d+|one|two|five|ten|fifteen|twenty|thirty|sixty) ?(min|minute)/.exec(t);
+  if(mt){const n=+mt[1]||CX_NUM[mt[1]];trig={t:'schedule',min:n};ch.push({what:'Trigger',from:trigText(w.trig),to:'Every '+n+' min'})}
+  if(/flag|bench|fail/.test(t)&&!g.nodes.some(n=>n.ref==='x_flag')){const m=g.nodes.find(n=>n.k==='map'),pe=m&&g.edges.find(e=>e.b===m.id);
+    if(m&&pe){const free=dy=>!g.nodes.some(n=>Math.abs(n.x-m.x)<WF_W+16&&Math.abs(n.y-(m.y+dy))<WF_H+16)&&m.y+dy>=10,dy=[-110,110,-190,190,260].find(free)||130;g.nodes.push(Object.assign(_n('cxf','xf','x_flag',m.x,m.y+dy),{ai:1}));pe.b='cxf';g.edges.push({id:'ecxf',a:'cxf',b:m.id,locked:false});ch.push({what:'New step',from:'—',to:'Flag failed bench tests, before the field mapping'})}}
+  const v=wfValidate(g,w.kind).filter(x=>x.sev==='error'),d={id:w.id,name:w.name,ver:w.ver,graph:g,trig,changes:ch,errors:v.map(x=>x.msg)};(AF.drafts||(AF.drafts={}))['wfedit:'+w.id]=d;
+  return ch.length?{text:ch.length+' change'+(ch.length>1?'s':'')+' to '+w.name+'. Nothing is applied until you confirm, and it stays a draft until a person publishes it.',cards:[{type:'wfedit',data:d}]}:{text:'I can change the trigger ("every 5 minutes") or add a step that flags failed bench tests.',cards:[]}};
+AF_CARDS.wfedit=(d,o)=>afHead('Change · '+esc(d.name),['Draft','Rules'],`v${esc(d.ver)} → v${esc(cxBump(d.ver))} · checks: ${d.errors.length?d.errors.length+' error'+(d.errors.length>1?'s':''):'no errors'}`)+
+  `<ol class="afplan">${d.changes.map(x=>`<li><b>${esc(x.what)}</b><span class="note">${esc(x.from)} → ${esc(x.to)}</span></li>`).join('')}</ol>`+afFoot([afB('Apply to the canvas',{cxWfEdit:d.id},'pri'),afB('Discard',{cancel:true})],o);
+ACT.cxRunNext=id=>{const r=runNext(id);if(!r.ok)toast(r.error.message,4200);else if(r.step&&r.step.kind!=='approve')toast('Stage '+r.step.n+': '+r.step.label+' · done.');route(true)};
+ACT.cxMapWide=()=>{S.cxMapWide=!S.cxMapWide;route(true)};
+ACT.cxWide=()=>{S.cxWide=!S.cxWide;route(true)};
+const cxBump=v=>{const m=/^(\d+)\.(\d+)$/.exec(String(v||'0.1'));return m?m[1]+'.'+(+m[2]+1):v};
+function cxMark(){const x=S.cxNew;if(!x||Date.now()>x.until)return;const n=$(`#view .wfn[data-id="${x.id}"]`);n&&n.classList.add('cxnew')}
+/* draw a workflow canvas step by step, left to right */
+function cxReveal(hl){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const ns=$$('#view .wfn').sort((a,b)=>parseFloat(a.style.left)-parseFloat(b.style.left)||parseFloat(a.style.top)-parseFloat(b.style.top)),eg=$('#wfEg');
+  if(hl){S.cxNew={id:hl,until:Date.now()+9000};cxMark();return}
+  ns.forEach(n=>n.classList.add('cxhide'));eg&&eg.classList.add('cxhide');ns.forEach((n,i)=>setTimeout(()=>{n.classList.remove('cxhide');n.classList.add('cxin')},350+i*330));setTimeout(()=>{eg&&eg.classList.remove('cxhide');ns.forEach(n=>n.classList.remove('cxin'))},400+ns.length*330)}
+const cxAfDo0=ACT.afDo;ACT.afDo=(id,el)=>{const p=AF.btns[id];
+  if(p&&p.cxWfEdit){const d=AF.drafts&&AF.drafts['wfedit:'+p.cxWfEdit],w=WFW(p.cxWfEdit);if(!d||!w)return;w.graph=JSON.parse(JSON.stringify(d.graph));if(d.trig)w.trig=d.trig;w.ver=cxBump(w.ver);w.aiNote=afAccepted();w.dirty=true;w.updated=asOfNow().toISOString();
+    afRespond(afCurRunId(el),'accepted');afPanelOpen(false);S.cxWide=true;go('integration/studio');setTimeout(()=>{ACT.wfOpen(w.id);setTimeout(()=>cxReveal('cxf'),160);toast('Change applied to the canvas as v'+w.ver+'. It stays a draft until a person publishes it.',4200)},40);return}
+  if(p&&p.invoke&&p.invoke.action==='workflow.create'){wfInit();const had=new Set(S.wf.list.map(w=>w.id));cxAfDo0(id,el);const nw=S.wf.list.find(w=>!had.has(w.id));
+    if(nw){afPanelOpen(false);S.cxWide=true;go('integration/studio');setTimeout(()=>{ACT.wfOpen(nw.id);setTimeout(()=>cxReveal(),100)},60)}return}
+  return cxAfDo0(id,el)};
+/* the agent beside the predicted-vs-actual chart: what changed across model versions, from the reconciled decisions the chart plots */
+defIntent({id:'analytics.accuracy',area:'analytics',ctx:'kpi',title:'How accurate are the predictions',m:[[RX('what changed|how accurate|forecast accuracy|predicted (vs\.?|versus|against) actual|learning loop|model (error|versions?)'),2.9]]});
+defAction('analytics.models',{title:'Model versions against outcomes',desc:'Error, bias and P10–P90 coverage of each prediction-model version over reconciled decisions; overrides and pending cases excluded.',risk:'read',input:{},
+  handler:()=>{const ms=MODELS.map(m=>({m,s:modelStats(m.v)})).filter(x=>x.s),rc=REC().filter(x=>x.route!=='exit'&&!x.override),band=10,inb=rc.filter(x=>Math.abs(x.actual-x.p50)/Math.max(Math.abs(x.p50),1)<=band/100).length;
+    return{decisions:rc.length,band_pct:band,within_band:inb,within_band_pct:Math.round(inb/Math.max(1,rc.length)*100),target_coverage_pct:80,versions:ms.map(({m,s})=>({version:m.v,released:m.released,decisions:s.n,error_pct:+(s.mape*100).toFixed(1),bias_pct:+(s.bias*100).toFixed(1),coverage_pct:Math.round(s.cov*100)}))}}});
+AF_AGENT_OF['analytics.models']='analyst';AF_BADGE['analytics.models']='Retrieved';{const a=AGENTS.find(x=>x.id==='analyst');a&&!a.tools.includes('analytics.models')&&a.tools.push('analytics.models')}
+AF_INTENT_RUN['analytics.accuracy']=(p,ctx,R)=>{const r=R.call('analytics.models',{});if(!r.ok)return afFail1(r);const o=r.output,a=o.versions[0],b=o.versions[o.versions.length-1];
+  return{text:`Every reconciled decision is scored against its prediction. Error fell from ${a.error_pct}% on ${a.version} to ${b.error_pct}% on ${b.version}, and ${o.within_band_pct}% of ${o.decisions.toLocaleString('en-US')} decisions landed within ±${o.band_pct}%.`,cards:[{type:'cxacc',data:o}]}};
+AF_CARDS.cxacc=(d,o)=>{const a=d.versions[0],b=d.versions[d.versions.length-1];return afHead('Predicted vs actual · what changed',['Retrieved','Model'],d.decisions.toLocaleString('en-US')+' reconciled decisions; overrides and pending cases excluded')+
+  `<div class="tw"><table class="t static tight"><thead><tr><th>Version</th><th>Released</th><th class="r">Decisions</th><th class="r">Error</th><th class="r">Bias</th><th class="r">P10–P90 coverage</th></tr></thead><tbody>${d.versions.map(v=>`<tr><td><b>${esc(v.version)}</b></td><td>${fmtDY(new Date(v.released))}</td><td class="r num">${v.decisions}</td><td class="r num">${v.error_pct}%</td><td class="r num ${v.bias_pct<0?'neg':''}">${v.bias_pct}%</td><td class="r num">${v.coverage_pct}%</td></tr>`).join('')}</tbody></table></div>
+  <ul class="afcite"><li><b>Less optimistic</b> <span>${esc(a.version)} over-predicted by ${Math.abs(a.bias_pct)}%; ${esc(b.version)} is within ${Math.abs(b.bias_pct)}%.</span></li><li><b>Honest ranges</b> <span>The P10–P90 range now holds ${b.coverage_pct}% of actual results against an ${d.target_coverage_pct}% target, up from ${a.coverage_pct}%.</span></li><li><b>How</b> <span>Each release retrained on the cost lines reconciled at stage 10 since the one before. Nothing is retrained without a person approving the new version.</span></li></ul>`+afFoot([afB('Open model versions',{go:'analytics/models'})],o)};
+/* ✦ Ask about this stage: the agent answers for that stage, from the stage's own record (what it did, what it found, from which systems, what it means) */
+const cxTxt=h=>{const d=document.createElement('div');d.innerHTML=String(h||'');return d.textContent.trim()};
+function cxStageCard(c,n){const S1=AF_STAGES[n-1],d=stData(c,n),t=stState(c,n);
+  return{id:c.id,n,t:S1.t,did:S1.agent,state:t.k,res:cxTxt(d.res),mean:cxTxt(d.mean),facts:(d.facts||[]).slice(0,5).map(f=>({l:f.l,v:cxTxt(f.v),p:f.p})),sys:S1.sys||[]}}
+AF_CARDS.cxstage=(d,o)=>afHead('Stage '+d.n+' · '+esc(d.t)+' · what our agent did',['Retrieved','Rules'],esc(d.id)+(d.sys.length?' · read from '+esc(d.sys.join(', ')):''))+
+  `<p><b>Its job here:</b> ${esc(d.did)}.</p>${d.res?`<p><b>What it found:</b> ${esc(d.res)}</p>`:''}${d.facts.length?`<ul class="afcite">${d.facts.map(f=>`<li><b>${esc(f.l)}</b> <span>${esc(f.v)}</span> ${f.p||''}</li>`).join('')}</ul>`:''}${d.mean?`<p><b>Why it matters:</b> ${esc(d.mean)}</p>`:''}`+afFoot([],o);
+ACT.stAsk=arg=>{const [id,n]=arg.split('|'),c=CASE_BY_ID[id];if(!c)return;AF.ctxOverride={kind:'case',id};AF.ui.widen=false;afPanelOpen(true);const th=afThread(afThreadKey()),d=cxStageCard(c,+n);
+  th.push({who:'agent',run:null,text:'Here is what our agent did at stage '+n+', '+d.t.toLowerCase()+', for '+id+'.',cards:[{type:'cxstage',data:d}],next:[{label:'Explain '+id,ask:'Explain '+id},{label:'What should we do with '+id+', and why?',ask:'What should we do with '+id+', and why?'}],calls:[],at:asOfNow().toISOString(),assist:true});afSave();afRefreshPanel()};
+/* the agent's own test bench covers the two new intents (data check: every intent in the catalog has a test) */
+AF_EVALS.push({q:()=>'In workflow '+(wfInit(),S.wf.list[0].id)+', run it every five minutes and flag any unit that fails its bench test',as:'admin',intent:'workflow.edit',card:'wfedit',t:r=>r.cards[0].data.changes.length>=1&&r.cards[0].data.errors.length===0},
+  {q:'Predicted vs actual: what changed across the model versions?',as:'admin',intent:'analytics.accuracy',card:'cxacc',t:r=>r.cards[0].data.versions.length===MODELS.length});
+/* after every render: the Explain button on stage 6, the predicted-vs-actual chart first on its deep link */
+function cxAfter(){const h=location.hash;
+  if(/^#\/product\/[^/]+\/stage\/6/.test(h)&&!$('#view [data-act="cxExplain"]')){const c=cxCase(),ev=$$('#view button').find(b=>/^Evidence pack$/.test(b.textContent.trim()))||$$('#view button').find(b=>/Ask about this stage/.test(b.textContent));
+    if(c&&c.recommendation&&ev)ev.insertAdjacentHTML('beforebegin',`<button class="btn pri cxxbtn" data-act="cxExplain" data-arg="${esc(c.id)}">✦ Explain this decision</button>`)}
+  if(/^#\/integration\/studio\/WF-/.test(h)){const g=$('#view .frwfg'),tb=$('#view .frcvt');if(tb&&!$('#view [data-act="cxWide"]'))tb.insertAdjacentHTML('beforeend',`<button class="btn sm cxwb" data-act="cxWide" aria-pressed="${!!S.cxWide}">${S.cxWide?'Show panels':'Expand canvas'}</button>`);
+    if(g&&g.classList.contains('cxwide')!==!!S.cxWide){g.classList.toggle('cxwide',!!S.cxWide);if($('#wfView'))ACT.wfZoom('0')}cxMark()}
+  if(/^#\/product\/[^/]+\/stage\/9/.test(h)&&!$('#view [data-act="cxRunNext"]')){const c=cxCase(),nx=c&&afNextStep(c);
+    if(nx&&nx.kind==='ack'){const hd=$$('#view h2,#view h3,#view h4,#view .stlab,#view span,#view div').find(x=>x.children.length===0&&/^What (you do now|happens next)$/i.test(x.textContent.trim())),card=hd&&hd.parentElement;
+      card&&card.insertAdjacentHTML('beforeend',`<button class="btn pri cxnext" data-act="cxRunNext" data-arg="${esc(c.id)}">${esc(nx.label)}</button>`)}}
+  if(/^#\/integration\/map/.test(h)){const g=$('#view .frsmg'),tb=$('#view .frgtool');if(tb&&!$('#view [data-act="cxMapWide"]'))tb.insertAdjacentHTML('beforeend',`<button class="btn sm cxwb" data-act="cxMapWide" aria-pressed="${!!S.cxMapWide}">${S.cxMapWide?'Show system list':'Expand map'}</button>`);
+    if(g&&g.classList.contains('cxwide')!==!!S.cxMapWide){g.classList.toggle('cxwide',!!S.cxMapWide);setTimeout(()=>{try{ACT.frSmZ('0')}catch(e){}},30)}}
+  if(/^#\/analytics\/predicted/.test(h)){const hd=$$('#view h2,#view h3').find(x=>x.textContent.trim().startsWith('Predicted vs actual')),row=hd&&hd.closest('.grid'),ph=$('#view .phead');
+    if(row&&ph&&ph.nextElementSibling!==row){ph.after(row);row.classList.add('cxfocus')}}}
+const cxRt=route;route=function(keep){const x=cxRt.apply(this,arguments);try{cxAfter()}catch(e){console.error(e)}return x};
+}
+/*CX-END*/
 /* ===== boot ===== */
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-act][tabindex]')){e.preventDefault();e.target.click()}});
 afBoot();S.acct=sessionLoad();S.role=S.acct?S.acct.role:'';if(S.acct){shell();route();afAfterBoot()}else renderSignIn();

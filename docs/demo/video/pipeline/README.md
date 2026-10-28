@@ -1,3 +1,9 @@
+# Regenerating the demo videos
+
+**Current video: `../circularity-cxo-demo.mp4` (CXO cut, 7:27).** Build it with `record_cxo.py` + `narration_cxo.json` + `card_close_cxo.html`; `tts.py` and `mux.py` take `--src narration_cxo.json`. The steps, take checks (`check/frames.py`, `check/strip.py`) and gotchas are in [`../HANDOFF.md`](../HANDOFF.md) section 9.
+
+The rest of this file is about the earlier 4:11 cut (`record.py`, `narration.json`), which no longer matches the UI.
+
 # Regenerating the demo video
 
 `../circularity-agentic-demo.mp4` (4:11, 1440 × 900, H.264/AAC) and `../circularity-agentic-demo.srt` are generated from the live UI in `index.html`, following the ten steps of `../../user-flow.svg`. Nothing is edited by hand.
