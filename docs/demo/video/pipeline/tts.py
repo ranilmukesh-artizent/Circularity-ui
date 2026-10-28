@@ -7,14 +7,16 @@ import numpy as np, soundfile as sf
 from kokoro_onnx import Kokoro
 
 D = Path(__file__).resolve().parent
-args = [a for a in sys.argv[1:] if not a.startswith('--')]
+opt = lambda k: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else None
+SRC = opt('--src') or 'narration.json'
+args = [a for i, a in enumerate(sys.argv[1:], 1) if not a.startswith('--') and sys.argv[i - 1] not in ('--only', '--src')]
 K = Path(args[0]) if args else Path(os.environ['TEMP']) / 'cvlv' / 'kokoro'
-only = sys.argv[sys.argv.index('--only') + 1].split(',') if '--only' in sys.argv else None
+only = opt('--only').split(',') if opt('--only') else None
 VOICE, SPEED, TAIL = 'am_michael', 0.94, 0.15
 
 k = Kokoro(str(K / 'kokoro-v1.0.onnx'), str(K / 'voices-v1.0.bin'))
-N = json.loads((D / 'narration.json').read_text(encoding='utf-8'))
-dp = D / 'durations.json'
+N = json.loads((D / SRC).read_text(encoding='utf-8'))
+dp = D / SRC.replace('narration', 'durations')
 dur = json.loads(dp.read_text()) if dp.exists() else {}
 (D / 'audio').mkdir(exist_ok=True)
 for key, text in N.items():

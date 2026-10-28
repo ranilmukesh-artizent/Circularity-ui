@@ -1,4 +1,4 @@
-"""Mix the narration clips at their recorded start times onto the screen recording; write MP4 and SRT. python mux.py OUT.mp4"""
+"""Mix the narration clips at their recorded start times onto the screen recording; write MP4 and SRT. python mux.py OUT.mp4 [--src narration_cxo.json]"""
 import json, re, subprocess, sys
 from pathlib import Path
 import imageio_ffmpeg
@@ -6,10 +6,12 @@ import imageio_ffmpeg
 D = Path(__file__).resolve().parent
 FF = imageio_ffmpeg.get_ffmpeg_exe()
 out = Path(sys.argv[1])
-tl = json.loads((D / 'timeline.json').read_text())
-N = json.loads((D / 'narration.json').read_text(encoding='utf-8'))
-DUR = json.loads((D / 'durations.json').read_text())
-vid = sorted((D / 'rec').glob('*.webm'), key=lambda p: p.stat().st_size)[-1]
+SRC = sys.argv[sys.argv.index('--src') + 1] if '--src' in sys.argv else 'narration.json'
+TAG = '' if SRC == 'narration.json' else '_' + SRC.split('_', 1)[1].split('.')[0]
+tl = json.loads((D / f'timeline{TAG}.json').read_text())
+N = json.loads((D / SRC).read_text(encoding='utf-8'))
+DUR = json.loads((D / SRC.replace('narration', 'durations')).read_text())
+vid = sorted((D / f'rec{TAG}').glob('*.webm'), key=lambda p: p.stat().st_size)[-1]
 cuts = tl.get('cuts', [])
 shift = lambda t: t - sum(min(b, t) - a for a, b in cuts if a < t)
 clips = [[k, round(shift(t), 3)] for k, t in tl['clips']]
@@ -33,7 +35,7 @@ def ts(x):
     return f'{h:02d}:{m:02d}:{int(s):02d},{int(round((s - int(s)) * 1000)):03d}'.replace(',1000', ',999')
 srt, n = [], 1
 for k, t in clips:
-    text = N[k].replace(' I D ', ' ID ').replace('E R P', 'ERP')
+    text = N[k].replace(' I D ', ' ID ').replace('E R P', 'ERP').replace('M R O', 'MRO')
     parts = [p.strip() for p in re.split(r'(?<=[.:?!])\s+', text) if p.strip()]
     tot = sum(len(p) for p in parts); cur = t
     for p in parts:

@@ -1,0 +1,419 @@
+1
+00:00:00,000 --> 00:00:02,392
+One platform, three applications.
+
+2
+00:00:02,392 --> 00:00:08,117
+Recover, the first, decides the best next life for every asset that comes back.
+
+3
+00:00:08,117 --> 00:00:21,525
+Resolve brings signals, alternatives, constraints and dependencies into one decision flow, prioritises what matters, coordinates actions across teams and systems, and tracks resolution.
+
+4
+00:00:21,525 --> 00:00:35,078
+Reconcile validates commercial and operational evidence across records, identifies mismatches early, and generates evidence-backed proformas before invoices are issued and disputes arise.
+
+5
+00:00:35,078 --> 00:00:36,890
+Let's start with Recover.
+
+6
+00:00:36,870 --> 00:00:41,030
+We'll sign in as the planner who looks after returns at this site.
+
+7
+00:00:43,680 --> 00:00:47,599
+This cycle, sixty-four assets came back for this customer.
+
+8
+00:00:47,599 --> 00:00:51,720
+Our agent has already sorted them, and marked where to start.
+
+9
+00:00:51,920 --> 00:00:56,307
+Take this one, a fifty-five kilowatt motor back from a lease.
+
+10
+00:00:56,307 --> 00:01:02,850
+Our agent pulled its owner, grade, certificate and history from the systems that hold them.
+
+11
+00:01:02,850 --> 00:01:04,720
+Nobody keyed any of it in.
+
+12
+00:01:04,820 --> 00:01:07,893
+Ask the agent, and it sums the motor up:
+
+13
+00:01:07,893 --> 00:01:13,500
+grade B, all ten pieces of evidence in, and its recommendation, redeploy.
+
+14
+00:01:16,540 --> 00:01:18,587
+Its journey has ten stages.
+
+15
+00:01:18,587 --> 00:01:21,620
+Our agent ran the first five on its own.
+
+16
+00:01:22,660 --> 00:01:23,395
+Stage one.
+
+17
+00:01:23,395 --> 00:01:24,571
+The lease ended.
+
+18
+00:01:24,571 --> 00:01:28,100
+Our agent read the contract and opened the case.
+
+19
+00:01:29,180 --> 00:01:29,924
+Stage two.
+
+20
+00:01:29,924 --> 00:01:37,290
+Order management authorised the return, and our agent found a customer order that needs this motor.
+
+21
+00:01:38,360 --> 00:01:39,177
+Stage three.
+
+22
+00:01:39,177 --> 00:01:43,740
+The carrier booked the pickup, and our agent tracked it in transit.
+
+23
+00:01:44,830 --> 00:01:45,578
+Stage four.
+
+24
+00:01:45,578 --> 00:01:51,020
+The warehouse received it, and our agent checked that the evidence was complete.
+
+25
+00:01:52,090 --> 00:01:52,911
+Stage five.
+
+26
+00:01:52,911 --> 00:01:55,972
+The MRO workshop inspected and graded it.
+
+27
+00:01:55,972 --> 00:02:00,004
+Ask the agent about this stage, and it shows its work:
+
+28
+00:02:00,004 --> 00:02:07,620
+the grade from the workshop system, the certificate from quality, and why that leaves six routes open.
+
+29
+00:02:09,660 --> 00:02:11,588
+Stage six is the decision.
+
+30
+00:02:11,588 --> 00:02:19,450
+Our agent built seven possible routes, checked each one for eligibility, and ruled one out before pricing.
+
+31
+00:02:19,650 --> 00:02:24,060
+Then it predicted each outcome with its machine-learning models.
+
+32
+00:02:24,060 --> 00:02:25,369
+The recommendation:
+
+33
+00:02:25,369 --> 00:02:28,883
+redeploy against this customer's replacement order.
+
+34
+00:02:28,883 --> 00:02:34,050
+Ninety-six hundred dollars net, forty-eight hundred better than selling it.
+
+35
+00:02:36,170 --> 00:02:38,679
+Ask it why, and the agent explains.
+
+36
+00:02:38,679 --> 00:02:46,852
+It saves buying a new motor for that order, the refurbishment is modest, and the certificate covers the full term.
+
+37
+00:02:46,852 --> 00:02:49,361
+On the right, the evidence it used:
+
+38
+00:02:49,361 --> 00:02:52,730
+each figure, the system it came from, and when.
+
+39
+00:02:52,930 --> 00:02:53,942
+Now stress it.
+
+40
+00:02:53,942 --> 00:02:56,833
+Put the workshop cost up thirty percent:
+
+41
+00:02:56,833 --> 00:02:59,508
+the agent still ranks redeploy first.
+
+42
+00:02:59,508 --> 00:03:03,266
+Cancel the customer's order, and the agent re-ranks.
+
+43
+00:03:03,266 --> 00:03:07,820
+Selling becomes the better route, and it tells you by how much.
+
+44
+00:03:08,430 --> 00:03:11,917
+You see the agent's reasoning, not just its answer.
+
+45
+00:03:11,917 --> 00:03:14,720
+The planner is satisfied, and submits it.
+
+46
+00:03:16,440 --> 00:03:19,758
+Stage seven is where a second person decides.
+
+47
+00:03:19,758 --> 00:03:22,118
+Our agent drafted the rationale.
+
+48
+00:03:22,118 --> 00:03:26,027
+The approver reads it, checks their limit, and signs.
+
+49
+00:03:26,027 --> 00:03:29,050
+Nothing goes out until a person approves.
+
+50
+00:03:30,690 --> 00:03:32,318
+Stages eight and nine.
+
+51
+00:03:32,318 --> 00:03:36,093
+Our agent sends the work to the systems that do it:
+
+52
+00:03:36,093 --> 00:03:42,309
+the customer order, the MRO refurbishment work order, the warehouse and the carrier.
+
+53
+00:03:42,309 --> 00:03:46,750
+Each one reports back, and the agent tracks every reference.
+
+54
+00:03:46,970 --> 00:03:47,705
+Stage ten.
+
+55
+00:03:47,705 --> 00:03:49,618
+Our agent closes the loop:
+
+56
+00:03:49,618 --> 00:03:53,809
+predicted, ninety-six hundred; actual, ninety-two thirty.
+
+57
+00:03:53,809 --> 00:03:55,501
+Ask it what it learned.
+
+58
+00:03:55,501 --> 00:04:06,900
+The biggest difference was in the workshop, a shaft sleeve found worn at strip-down, and it feeds that line back to the model that estimates workshop cost.
+
+59
+00:04:11,110 --> 00:04:16,621
+And this is how our agents ran all ten stages, replayed at twice the speed.
+
+60
+00:04:16,621 --> 00:04:19,266
+Five agents, each with a narrow job:
+
+61
+00:04:19,266 --> 00:04:27,055
+gathering evidence, matching demand, preparing the decision, sending the work out, reconciling the result.
+
+62
+00:04:27,055 --> 00:04:29,701
+Every tool call is named and logged.
+
+63
+00:04:29,701 --> 00:04:32,640
+People made the two calls that mattered.
+
+64
+00:04:34,160 --> 00:04:38,422
+All of this runs on top of the systems you already have:
+
+65
+00:04:38,422 --> 00:04:43,598
+your ERP, order management, the MRO workshop, warehouse and quality.
+
+66
+00:04:43,598 --> 00:04:46,794
+We don't replace them; we connect to them.
+
+67
+00:04:46,794 --> 00:04:49,078
+This is the Connection Fabric:
+
+68
+00:04:49,078 --> 00:04:51,970
+twenty systems, connected as they are.
+
+69
+00:04:53,460 --> 00:04:57,332
+The source map shows how data flows between them.
+
+70
+00:04:57,332 --> 00:05:02,627
+Pick the MRO workshop, and our agent lights up where its data goes:
+
+71
+00:05:02,627 --> 00:05:06,342
+the condition grading and workshop cost models.
+
+72
+00:05:06,342 --> 00:05:10,530
+Pick the ERP, and you see the demand and price paths.
+
+73
+00:05:10,630 --> 00:05:16,435
+Every system reaches one of seven shared models, and from there, the decision.
+
+74
+00:05:16,435 --> 00:05:19,933
+When a feed goes stale, our agent diagnoses it.
+
+75
+00:05:19,933 --> 00:05:24,920
+Here, an expired token on the market price feed, and how to fix it.
+
+76
+00:05:26,960 --> 00:05:27,987
+Source tables.
+
+77
+00:05:27,987 --> 00:05:33,928
+Our agent read each system's own tables, as they are, and proposed how they link:
+
+78
+00:05:33,928 --> 00:05:37,009
+twelve links here, each with its evidence.
+
+79
+00:05:37,009 --> 00:05:40,530
+Your team accepts them, or changes them by hand.
+
+80
+00:05:42,440 --> 00:05:43,715
+Canonical models.
+
+81
+00:05:43,715 --> 00:05:49,490
+One shared language for an asset, its condition, the demand and the decision.
+
+82
+00:05:49,490 --> 00:05:57,590
+Our agent maps every system's fields into it, so a grade in one system means the same as a grade in another.
+
+83
+00:05:59,110 --> 00:06:00,253
+Workflow Studio.
+
+84
+00:06:00,253 --> 00:06:05,112
+The pipelines that bring data in and send approved instructions out.
+
+85
+00:06:05,112 --> 00:06:10,400
+Our agent set these up, and your team approved them before they went live.
+
+86
+00:06:10,500 --> 00:06:11,509
+Need a new one?
+
+87
+00:06:11,509 --> 00:06:12,788
+Ask in plain words.
+
+88
+00:06:12,788 --> 00:06:17,430
+Our agent drafts the steps, checks them, and builds it on the canvas.
+
+89
+00:06:20,890 --> 00:06:22,504
+Change it the same way.
+
+90
+00:06:22,504 --> 00:06:26,996
+Every five minutes, and flag any unit that fails its bench test.
+
+91
+00:06:26,996 --> 00:06:30,505
+The agent shows the change first, then applies it.
+
+92
+00:06:30,505 --> 00:06:32,470
+A person still publishes it.
+
+93
+00:06:34,210 --> 00:06:36,263
+And how do you know it works?
+
+94
+00:06:36,263 --> 00:06:40,157
+Our agent builds this chart from every closed decision.
+
+95
+00:06:40,157 --> 00:06:41,290
+Each dot is one:
+
+96
+00:06:41,290 --> 00:06:44,830
+what it predicted, against what actually happened.
+
+97
+00:06:45,040 --> 00:06:51,796
+With each model version, the error comes down, from about eighteen percent to twelve and a half.
+
+98
+00:06:51,796 --> 00:06:56,370
+Ask the agent what changed, and it shows you, version by version.
+
+99
+00:06:58,040 --> 00:06:59,103
+So, to sum up.
+
+100
+00:06:59,103 --> 00:07:03,050
+It works wherever assets come back, in any industry.
+
+101
+00:07:03,050 --> 00:07:12,160
+It sits on top of your ERP, your order management and your MRO workshop, and makes better use of what they already know.
+
+102
+00:07:12,570 --> 00:07:14,510
+The agents do the groundwork:
+
+103
+00:07:14,510 --> 00:07:17,253
+the evidence, the options, the paperwork.
+
+104
+00:07:17,253 --> 00:07:19,327
+Your people make the decisions.
+
+105
+00:07:19,327 --> 00:07:22,940
+And every decision gets a little better than the last.
