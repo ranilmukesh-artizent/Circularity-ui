@@ -1051,6 +1051,14 @@ html.fr .nav svg{width:18px;height:18px;opacity:1;color:var(--side-mut)}
 html.fr .nav a[aria-current="page"] svg{color:var(--side-ink)}html.fr[data-theme="dark"] .nav a[aria-current="page"] svg{color:var(--yellow)}
 .frsec{font:600 11px var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--side-mut);padding:12px 10px 6px;border-top:1px solid var(--side-line);margin-top:6px}
 .frsec.frdiv{padding:0;margin:8px 0 6px}
+html.fr .frmore{margin-top:8px;border-top:1px solid var(--side-line);padding-top:6px}
+html.fr .frmore summary{list-style:none;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--side-mut);font-size:14px;font-weight:500}
+html.fr .frmore summary::-webkit-details-marker{display:none}
+html.fr .frmore summary:hover{color:var(--side-ink);background:var(--side-hov)}
+html.fr .frmore summary svg{width:18px;height:18px;flex:none}
+html.fr .frmore .nsub{margin:2px 0 6px 19px}
+html.fr .rail .frmore .nsub{display:none}
+html.fr .rail .frmore .ngl{display:none}
 html.fr .chev{color:var(--side-mut);width:26px;height:26px}html.fr .chev::before{display:none}
 html.fr .chev svg{width:15px;height:15px;transition:transform .15s}html.fr .chev[aria-expanded="true"] svg{transform:rotate(90deg)}
 html.fr .chev:hover{background:var(--side-hov);color:var(--side-ink)}
@@ -1190,6 +1198,87 @@ html.fr .frhpr .btn.pri{width:46px;height:40px;padding:0;border-radius:9px}html.
 .frcus{list-style:none;padding:0;margin:0;display:grid;gap:6px}.frcus li{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:8px}
 .frchk{display:grid;gap:8px}
 #frModules .sh{align-items:flex-end}
+html.fr .asact .afai2{display:none}
+html.fr .aship{grid-template-columns:150px minmax(0,1fr) 250px}
+.aflease.asfold>.ph::after{content:'▾';margin-left:12px;color:var(--ink2);font-size:14px;transition:transform .15s}.aflease.asfold.open>.ph::after{transform:rotate(180deg)}
+.aflease.asfold:not(.open)>.pb{display:none}
+html.fr .ashealth .frleg,html.fr .ashealth li{white-space:nowrap}
+/* ===== Asset intelligence, organised: one header row, one identity card, one zone switch, folded detail ===== */
+.aspn.asfold:not(.open)>.pb{display:none}
+.aspn.asfold>.ph,.aflease.asfold>.ph{cursor:pointer;align-items:center}
+.asfc{margin-left:auto;color:var(--ink2);transition:transform .15s;font-size:14px}.aspn.asfold.open>.ph .asfc,.skus[open] .asfc{transform:rotate(180deg)}
+.aspn.asfold>.ph .lnk+.asfc,.aspn.asfold>.ph .aszb+.asfc{margin-left:12px}
+html.fr .aship{grid-template-columns:150px minmax(0,1fr) 220px;padding:14px 16px;gap:14px}
+html.fr .aship .asphoto{max-height:150px;overflow:hidden;border-radius:10px}
+html.fr .asfacts{grid-template-columns:repeat(4,minmax(0,1fr))}
+.asmore{margin-top:10px}.asmore>summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink2);list-style:none}.asmore>summary::-webkit-details-marker{display:none}.asmore>summary::after{content:' ▾'}.asmore[open]>summary::after{content:' ▴'}.asmore .asfacts{margin-top:10px}
+html.fr .skus>summary{list-style:none;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:12px 16px;cursor:pointer}.skus>summary::-webkit-details-marker{display:none}
+html.fr .skus .pb{padding:0 16px 14px}
+html.fr .asact{flex-wrap:wrap;align-items:flex-end}
+html.fr .asph2{flex-wrap:wrap;gap:12px}
+.asmenu-list .asnt{display:block;padding:8px 12px;text-decoration:none;color:var(--ink)}
+html.fr .asz,html.fr .asz.pred{background:none;border:0;padding:0;outline:0!important}
+.aszbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0}
+.asz.known .aszb.ret{border:0;background:none;color:var(--muted);padding:0;font-weight:500}
+.asphoto{align-self:start}
+html.fr .cchealth{display:none}
+html.fr .ccbarf{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+html.fr .ccbarf .ccf{display:flex;flex-direction:row;align-items:center;gap:6px;min-width:0}
+html.fr .ccbarf .ccf>span{font-size:12px;color:var(--muted);white-space:nowrap}
+html.fr .ccbarf .ccf:first-child{display:none}
+html.fr .ccbarf .sel{width:auto;min-width:120px}
+/* refinement: the journey vocabulary and duplicate wayfinding leave the page; the sidebar names the place */
+html.fr .bh .stp,html.fr .ph .stp,html.fr .sh .stp,html.fr .phead .stp,html.fr .ccsec .stp{display:none}
+html.fr nav.crumbs,html.fr .crumbs{display:none}
+/* ===== single navigation (Recover reference): one dark sidebar, one slim header. No journey strip, section tabs or sub-navigation ===== */
+html.fr{--side-bg:#221C11;--side-ink:#F0E9D8;--side-mut:#AFA48C;--side-act:#33291A;--side-line:rgba(240,233,216,.1);--side-hov:#2C2314}
+html.fr[data-theme="dark"]{--side-bg:#120F09;--side-act:#2A2216;--side-hov:#1F1A10}
+html.fr .app{grid-template-columns:270px minmax(0,1fr)}
+html.fr .frbrand{padding:6px 14px 8px 20px}
+html.fr .frbrand img.frlg{width:128px}html.fr .frbrand img.frlg.dk{display:block}html.fr .frbrand img.frlg.lt{display:none}
+.frproduct{padding:2px 20px 12px}.frpname{font:800 32px var(--f-display);color:#F2C14E;letter-spacing:-.01em;line-height:1.1}.frpsub{font-size:13px;color:var(--side-mut);margin:6px 0 0;line-height:1.4}
+html.fr .nav a{font-size:15.5px;font-weight:600;padding:10px 12px;gap:12px;border-radius:10px}html.fr .frbc{display:none}html.fr .nav .ngl{overflow:visible;text-overflow:clip}html.fr .nav .ngh{padding-right:8px}
+html.fr .nav svg{width:22px;height:22px}
+html.fr .nav a[aria-current="page"]{background:var(--side-act);box-shadow:inset 3px 0 0 #F2C14E}
+html.fr .nav a[aria-current="page"]::before{display:none}
+html.fr .nav a[aria-current="page"] svg,html.fr[data-theme="dark"] .nav a[aria-current="page"] svg{color:#F2C14E}
+html.fr .nav .cnt{min-width:24px;height:24px;border-radius:12px;background:#A8621C;color:#fff;font:600 12px var(--f-mono);display:inline-grid;place-items:center;padding:0 7px}
+html.fr .nav .cnt[hidden]{display:none}
+html.fr .nav .cnt.bad{background:#B3261E;color:#fff}
+html.fr .frsec{border-top:0;margin-top:12px;padding:10px 12px 6px;font-size:12px;color:var(--side-mut)}
+html.fr .nav .nsub a.nsl{font-size:14px;padding:6px 10px}
+html.fr .nav .nsub a.nsl[aria-current="true"],html.fr[data-theme="dark"] .nav .nsub a.nsl[aria-current="true"]{color:#F2C14E}
+.frfoot{border-top:0;padding:0}.frcoline{font-size:12.5px;color:var(--side-mut);padding:10px 20px 6px;line-height:1.5}
+html.fr .top.frtop{padding:12px 24px;gap:14px;background:var(--panel);backdrop-filter:none}
+.frstat{flex:1;min-width:0;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.fr .frsearch{display:none}
+html.fr .top .frask{display:inline-flex;align-items:center;gap:8px;height:40px;width:auto;padding:0 16px;border-radius:8px;font-weight:600;font-size:15px}
+html.fr .top .frask svg{width:18px;height:18px}
+html.fr #jmount,html.fr #subnav,html.fr #view .tabs[aria-label$=" sections"],html.fr #view .tabs.frtabs2{display:none!important}
+@media (min-width:861px){html.fr .app.rail{grid-template-columns:72px minmax(0,1fr)}html.fr .rail .frproduct,html.fr .rail .frcoline{display:none}}
+.wfai{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.wfaih{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}.wfaih svg{width:20px;height:20px;color:var(--ink2);flex:none;margin-top:2px}
+.wfaih b{display:block;font-size:15px}.wfaib{display:flex;gap:10px;align-items:stretch}
+.wfaib textarea{flex:1;resize:vertical;min-height:52px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:var(--bg,#fff);color:var(--ink)}
+.wfaib .btn{align-self:stretch;display:flex;gap:6px;align-items:center}.wfaib .btn svg{width:16px;height:16px}
+.wfaix{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.wfaiex{border:1px solid var(--line);background:transparent;color:var(--ink2);border-radius:999px;padding:5px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+.wfaiex:hover{background:var(--panel2,rgba(0,0,0,.04));color:var(--ink)}
+#wfAiMsg:empty{display:none}#wfAiMsg{margin:10px 0 0}
+.frpref{display:grid;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.frpref .frlive,.frpref .rgm{position:relative}
+.frpref summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer}
+.frpref .frdd,.frpref .rgm-list{position:static;box-shadow:none;border:0;padding:6px 0 0;min-width:0;width:100%}
+.frk3{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.frmoredet{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.frmoredet>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;cursor:pointer}
+.frmoredet>summary::-webkit-details-marker{display:none}
+.frmoredet>summary span{display:flex;flex-direction:column}
+.frmoredet>summary small{color:var(--muted);font-size:12px;font-weight:400}
+.frmoredet>summary svg{width:18px;height:18px;color:var(--ink2);transition:transform .15s}
+.frmoredet[open]>summary svg{transform:rotate(180deg)}
+.frmoredet[open]>summary{border-bottom:1px solid var(--line)}
+.frmoredet>.frh2{padding:14px}
 @media (max-width:1280px){.frhg2{grid-template-columns:minmax(0,1fr)}.frhside{position:static;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}.frhr{width:300px}}
 @media (max-width:1100px){.frh2{grid-template-columns:minmax(0,1fr)}.frkpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:860px){
@@ -1583,6 +1672,26 @@ body.cxopen{overflow:hidden}
 @media (max-width:900px){.cxxb{grid-template-columns:1fr;overflow:auto}.cxwi{grid-template-columns:1fr}.cxd{grid-template-columns:1fr 70px}.cxdb{display:none}}
 @media (prefers-reduced-motion:reduce){.wfn.cxin,.wfn.cxnew{animation:none}.cxev,.cxd{transition:none}}
 /*CX-CSS-END*/
+
+/* Connections vs Workflow Studio split */
+#frMon .note svg{width:14px;height:14px;vertical-align:-2px}
+.frwfm #wfChips .frsub,.frwfm #wfChips .frn,.frwfm #wfChips small{display:none}
+.frwft th:nth-child(3),.frwft td:nth-child(3),.frwft th:nth-child(9),.frwft td:nth-child(9){display:none}
+
+/* Recover-style master / detail (My Tasks, Contract refresh) */
+.frmd{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:16px;align-items:start}
+.frmdl{padding:10px;display:grid;gap:8px;position:sticky;top:76px;max-height:calc(100vh - 96px);overflow:auto;align-content:start}
+.frfil{display:flex;gap:6px;flex-wrap:wrap;padding:2px 2px 6px}.frfil .chip{cursor:pointer}.frfil .chip[aria-pressed=true]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.frci{text-align:left;display:grid;gap:4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;font:inherit;color:inherit}
+.frci:hover{background:var(--panel2)}.frci[aria-current=true]{border-color:var(--ink);box-shadow:inset 3px 0 0 var(--yellow);background:var(--yellow-soft)}
+.frci .r1{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.frci .r3{display:flex;gap:6px;flex-wrap:wrap}
+.frstk{display:grid;gap:16px;min-width:0}.frlab{display:block;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.frh2{font-family:var(--f-display);font-size:20px;margin:2px 0 0}.frnba{background:var(--panel2);border-radius:10px;padding:10px 12px}.frnba p{margin:4px 0 0}
+.frfacts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:4px 0 14px}.frfacts b{display:block;font-size:16px;margin-top:2px}
+.frlevs{display:grid;gap:14px}.frlev{display:grid;gap:4px}.frlev input{width:100%;accent-color:var(--ink)}
+.frbanner{padding:10px 14px;border-radius:10px;background:var(--ok-soft);color:var(--ok)}
+.frtrail{list-style:none;margin:0;padding:0;display:grid;gap:12px}.frtrail li{display:flex;gap:12px}.frtrail .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--panel);display:grid;place-items:center;font-size:12px;font-weight:700}.frtrail p{margin:2px 0 0}
+@media (max-width:1000px){.frmd{grid-template-columns:minmax(0,1fr)}.frmdl{position:static;max-height:none}.frfacts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -2667,7 +2776,11 @@ applyTheme();
 /* ===== Roles, demo accounts and the access policy: the only place that decides who sees and does what ===== */
 const AS_TAB_IDS=['overview','lifecycle','condition','product','economic','eligibility','data','related'];
 /* features hidden for now but kept in the code: set to true to show them again */
-const FEAT={uplift:false,pools:false,agent:AF_ON};
+const FEAT_BASE={uplift:false,pools:false};
+const FEAT={agent:AF_ON,pools:false};
+/* Admin is the master role: it also sees the uplift figures that are off for other roles. The Pool optimizer is removed for everyone */
+const isMaster=()=>{try{return !!(S.acct&&S.acct.role==='Admin')}catch(e){return false}};
+['uplift'].forEach(k=>Object.defineProperty(FEAT,k,{get:()=>FEAT_BASE[k]||isMaster(),enumerable:true,configurable:true}));
 const RB_SECS={command:['kpis','exceptions','aome','handed','approvals','outcomes','charts','actions','signals','value','health'],product:['received','expected','pools','asset','case'],
  analytics:['waterfall','pipeline','mix','predicted','models','pool','overrides','eng','sustain'],integration:['studio','map','tables','models','events','conflicts','import'],
  mcp:['catalog','agents','playground','perms','calls','client','proposals'],audit:['log','gaps'],orchestration:['flow','run','agents'],access:['accounts','identity','delegations','requests']};
@@ -2776,7 +2889,7 @@ ACT.closeDrawer=closeDrawer;ACT.closeModal=closeModal;
 function parse(){const h=location.hash.replace(/^#\/?/,'').split('?')[0].split('/').filter(Boolean);return{page:h[0]||'command',a:h[1]||null,b:h[2]||null}}
 function go(path){if(location.hash==='#/'+path)route();else location.hash='#/'+path}
 ACT.go=a=>{closeDrawer();closeModal();go(a)};
-const PAGES={command:{t:'Command Center',sub:'Overview and priorities',icon:'command',j:[2,3,4,5,10]},product:{t:'Product',sub:'Decision Workbench',icon:'product',j:[2,3,4,5]},analytics:{t:'Analytics',sub:'Reconcile & learn',icon:'analytics',j:[10]},integration:{t:'Integration',sub:'Connection Fabric',icon:'integration',j:[1,6,7,8,9]},mcp:{t:'MCP & Tools',sub:'Agents within permissions',icon:'mcp',j:[2,3,4,5,6,10]},audit:{t:'Audit & provenance',sub:'What was fetched, from where',icon:'audit',j:[1,2,3,6,9,10]},orchestration:{t:'Process orchestration',sub:'How a recommendation is made',icon:'orch',j:[1,2,3,4,5,6,7,8,9,10]},access:{t:'Access',sub:'Accounts, delegations, requests',icon:'access',j:[5]}};
+const PAGES={command:{t:'Command Center',sub:'Overview and priorities',icon:'command',j:[2,3,4,5,10]},product:{t:'Product',sub:'Decision Workbench',icon:'product',j:[2,3,4,5]},analytics:{t:'Analytics',sub:'Reconcile & learn',icon:'analytics',j:[10]},integration:{t:'Connections',sub:'Your data sources',icon:'integration',j:[1,6,7,8,9]},mcp:{t:'Agent tools',sub:'Agents within permissions',icon:'mcp',j:[2,3,4,5,6,10]},audit:{t:'Audit & history',sub:'What was fetched, from where',icon:'audit',j:[1,2,3,6,9,10]},orchestration:{t:'Agent runs',sub:'How a recommendation is made',icon:'orch',j:[1,2,3,4,5,6,7,8,9,10]},access:{t:'Access',sub:'Accounts, delegations, requests',icon:'access',j:[5]}};
 /* ===== Sidebar with sections: dropdowns, hover flyout, collapsible rail, deep links ===== */
 const NAV=[
  {id:'command',label:'Command Center',sub:'Overview and priorities',icon:'command',kids:[['kpis','Key figures','Headline numbers for your role'],['exceptions','Exceptions','Ranked issues to drill into or notify'],['aome','Actions on me','What waits on you'],['handed','Handed off','With enterprise systems, awaiting outcome'],['approvals','Approvals inbox','Requests waiting for your decision','inbox'],['outcomes','Outcomes to confirm','Results that need Finance'],['charts','Portfolio charts','Lifecycle, treatments, risk, time to action'],['actions','Actions to prioritise','Ranked opportunities to act on'],['signals','Signals and capacity','What needs attention'],['value','Value realisation','Predicted vs actual recovery'],['health','Integration health','Sources, workflows and events']]},
@@ -2814,7 +2927,7 @@ function navSync(r){const key=navActiveKey(r);
   $$('.ng').forEach(g=>{const on=g.dataset.g===r.page;g.classList.toggle('active',on);const o=navIsOpen(g.dataset.g),s=$('#ns-'+g.dataset.g),c=g.querySelector('.chev');s&&(s.hidden=!o);c&&c.setAttribute('aria-expanded',o)});
   $$('.nsl,.nfi').forEach(a=>a.setAttribute('aria-current',a.dataset.nk===key?'true':'false'));
   const sn=$('#subnav'),g=NAV.find(x=>x.id===r.page);if(sn)sn.innerHTML=g&&canPage(g.id)?`<span class="snt">${tr(g.label)}</span>${navKids(g).map(k=>`<a class="snl" href="${navHref(g,k[0])}" data-nk="${g.id}/${k[0]}" aria-current="${g.id+'/'+k[0]===key}">${tr(k[1])}</a>`).join('')}`:'';
-  $$('[data-nk="product/asset"]').forEach(a=>a.setAttribute('href',navHref(NAV[1],'asset')));
+  $$('[data-nk="product/asset"]').forEach(a=>a.setAttribute('href',navHref(NAV.find(x=>x.id==='product'),'asset')));
   navBadges()}
 function navBadges(){const conf=CONFLICTS.filter(c=>c.status==='open').length,iss=SOURCES.filter(s=>s.status==='stale'||s.status==='unavailable').length,wf=S.wf?S.wf.list.filter(w=>w.status==='published'&&w.last&&w.last.state==='failed').length:0,inbox=S.acct?inboxReqs().length:0,v={conf,srcissue:iss,wffail:wf,inbox};
   $$('[data-nb]').forEach(el=>{const n=v[el.dataset.nb]||0;el.textContent=n||'';el.hidden=!n;el.classList.toggle('bad',el.dataset.nb!=='conf'||n>0)});
@@ -2831,7 +2944,9 @@ function navFlyShow(gid,el){const g=NAV.find(x=>x.id===gid);if(!g||innerWidth<=8
   const key=navActiveKey(parse()),v={conf:CONFLICTS.filter(c=>c.status==='open').length,srcissue:SOURCES.filter(s=>s.status==='stale'||s.status==='unavailable').length,wffail:S.wf?S.wf.list.filter(w=>w.status==='published'&&w.last&&w.last.state==='failed').length:0,inbox:inboxReqs().length};
   f.innerHTML=`<div class="nfh"><b>${tr(g.label)}</b><span class="note">${tr(g.sub)}</span></div>${navKids(g).map(k=>`<a class="nfi" role="menuitem" href="${navHref(g,k[0])}" data-nk="${g.id}/${k[0]}" aria-current="${g.id+'/'+k[0]===key}"><span class="nft">${tr(k[1])}${k[3]&&v[k[3]]?`<span class="cnt2">${v[k[3]]}</span>`:''}</span><span class="note">${k[2]||''}</span></a>`).join('')}`;
   const r=el.getBoundingClientRect(),sb=$('.side').getBoundingClientRect();f.style.left=(sb.right+6)+'px';f.classList.add('on');f.style.top=Math.max(8,Math.min(r.top-4,innerHeight-f.offsetHeight-8))+'px'}
+/* hover flyout switched off: the sidebar sections are the only dropdown
 document.addEventListener('mouseover',e=>{const g=e.target.closest&&e.target.closest('.ng');if(!g||!$('.side')||!$('.side').contains(g))return;clearTimeout(NF.t);clearTimeout(NF.s);NF.s=setTimeout(()=>navFlyShow(g.dataset.g,g.querySelector('.ngr')),110)});
+*/
 document.addEventListener('mouseout',e=>{const side=$('.side');if(!side||!e.target.closest||!e.target.closest('.side'))return;if(!e.relatedTarget||!(e.relatedTarget.closest&&(e.relatedTarget.closest('.ng')||e.relatedTarget.closest('#nfly'))))navFlyHide()});
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('.nsl,.nfi,.snl');if(!a)return;navFlyHide(true);const h=a.getAttribute('href');if(h===location.hash){e.preventDefault();route()}});
 document.addEventListener('keydown',e=>{const g=e.target.closest&&e.target.closest('.ngr');if(g&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){const id=g.parentNode.dataset.g;if(e.key==='ArrowRight'){if(!navIsOpen(id))ACT.navToggle(id);const f=$('#ns-'+id+' a');f&&f.focus()}else if(navIsOpen(id))ACT.navToggle(id);e.preventDefault()}
@@ -2937,7 +3052,7 @@ ACT.switchAcct=()=>{setAcct(null);siClearHash();renderSignIn();toast('Sign in wi
 ACT.siSwitchTo=id=>{const a=ACCT(id);if(!a||!presenterOn())return;setAcct(a);shell();const r=parse();if(location.hash.length>2&&canRoute(r)===true)route();else rbGoHome();toast('Now signed in as '+a.label+'.')};
 function acctMenuHTML(){const a=S.acct,P=pol();return `<details class="acctm"><summary class="acchip" aria-label="Signed in as ${esc(a.label)}. Account menu"><span class="siav" aria-hidden="true">${RB_AV[a.role]}</span><b>${esc(a.role)}</b>${a.tenant?`<small>${esc(a.tenant)}</small>`:''}<span aria-hidden="true">▾</span></summary>
   <div class="acmenu" role="menu"><div class="acd"><b>${esc(a.label)}</b><div class="note">${esc(P.desc)}</div>${P.tenantScoped?`<div class="note" style="margin-top:6px">Tenants: ${esc(allowedTenants().join(', '))}</div>`:''}</div>
-  ${can('requestTenant')?'<button role="menuitem" data-act="tenantReq">Request tenant access</button>':''}${presenterOn()?SIGNIN_LEAD.map(x=>signInResolve(x[0])).filter(b=>b&&b.id!==a.id).map(b=>`<button role="menuitem" data-act="siSwitchTo" data-arg="${b.id}">Presenter: switch to ${esc(b.label)}</button>`).join(''):''}<button role="menuitem" data-act="switchAcct">Switch account</button><button role="menuitem" data-act="signOut">Sign out</button></div></details>`}
+  ${typeof FR_ON!=='undefined'&&FR_ON&&typeof frPrefsHTML==='function'?frPrefsHTML():''}${can('requestTenant')?'<button role="menuitem" data-act="tenantReq">Request tenant access</button>':''}${presenterOn()?SIGNIN_LEAD.map(x=>signInResolve(x[0])).filter(b=>b&&b.id!==a.id).map(b=>`<button role="menuitem" data-act="siSwitchTo" data-arg="${b.id}">Presenter: switch to ${esc(b.label)}</button>`).join(''):''}<button role="menuitem" data-act="switchAcct">Switch account</button><button role="menuitem" data-act="signOut">Sign out</button></div></details>`}
 document.addEventListener('click',e=>{const d=$('.acctm[open]');if(d&&(!e.target.closest('.acctm')||e.target.closest('.acmenu button')))d.removeAttribute('open')});
 function tenantOpts(cur){const P=pol(),sc=P&&P.tenantScoped,al=allowedTenants();
   return `<option value="All" ${cur==='All'?'selected':''}>${sc?'All my tenants':'All tenants'}</option>`+TENANTS.map(t=>al.includes(t)?`<option value="${t}" ${t===cur?'selected':''}>${t}</option>`:`<option value="${t}" disabled>${t} · locked</option>`).join('')+(sc&&can('requestTenant')&&al.length<TENANTS.length?'<option value="__req">Request access…</option>':'')}
@@ -3400,7 +3515,7 @@ ACT.models=()=>{const rows=MODELS.map(m=>({m,s:modelStats(m.v)}));
   openDrawer(`<p class="ink2" style="margin-top:0">Each prediction names its model version. Error shrinks as outcomes feed back; early versions were optimistic.</p><table class="t static"><thead><tr><th>Version</th><th class="r">Closed</th><th class="r">Error (MAPE)</th><th class="r">Bias</th><th class="r">P10–P90 coverage</th></tr></thead><tbody>${rows.map(({m,s})=>`<tr><td><b>${m.v}</b><div class="note">${fmtDY(m.released)}</div></td><td class="r num">${s.n}</td><td class="r num">${pct(s.mape,1)}</td><td class="r num ${s.bias<0?'neg':''}">${(s.bias*100).toFixed(1)}%</td><td class="r num">${pct(s.cov)}</td></tr>`).join('')}</tbody></table><div class="note" style="margin:10px 0">Negative bias: the model over-predicted. Overrides and pending cases are excluded.</div>`,'Model versions and validation','Compared with actual outcomes',rbPath('analytics')?'<a class="btn pri" href="#/analytics" data-act="go" data-arg="analytics">Open Analytics</a>':'')};
 ACT.dataChecks=()=>{const res=runInvariants(),ok=res.filter(r=>r.ok).length;
   openModal('Data integrity checks',`<p class="ink2" style="margin-top:0">One data model feeds every page, so numbers reconcile everywhere.</p><div class="callout ${ok===res.length?'ok':'bad'}" style="margin-bottom:12px"><b>${ok} of ${res.length} checks pass.</b> All checks run on every load</div>${res.map(r=>`<div class="ev ${r.ok?'':'missing'}"><span class="ic">${r.ok?'✓':'!'}</span><div><b>${esc(r.name)}</b><small>${esc(r.detail)}</small></div></div>`).join('')}`,`<button class="btn" data-act="closeModal">Close</button>`,true)};
-function afterRender(r,keep){if(typeof wfPaint==='function'&&S.wf&&$('#wfView'))wfPaint();$$('[data-nk="product/asset"]').forEach(a=>a.setAttribute('href',navHref(NAV[1],'asset')));if(r&&!keep&&ANCH[r.page]&&!SEC_PAGED[r.page]&&r.a)setTimeout(()=>anchorScroll(r),30);
+function afterRender(r,keep){if(typeof wfPaint==='function'&&S.wf&&$('#wfView'))wfPaint();$$('[data-nk="product/asset"]').forEach(a=>a.setAttribute('href',navHref(NAV.find(x=>x.id==='product'),'asset')));if(r&&!keep&&ANCH[r.page]&&!SEC_PAGED[r.page]&&r.a)setTimeout(()=>anchorScroll(r),30);
   const js=r&&parseInt(hq('jstep')),jsOK=!!(r&&js>=1&&js<=10&&jgCase(r)&&jgAt(r)===js);
   if(jsOK){const T=JG_TGT[js].map(x=>$(x)).filter(Boolean),f=(T.length?T:[$(js===1?'#aszKnown':js<=4?'#step-2':'#step-5')].filter(Boolean)).sort((a,b)=>a.compareDocumentPosition(b)&4?-1:1);f.forEach(e=>e.classList.add('jghl'));if(!keep&&f[0])setTimeout(()=>f[0].scrollIntoView({block:'start'}),40);return}
   if(r&&!keep&&r.page==='product'&&r.a==='asset'&&hq('zone')){const z=$(hq('zone')==='predicted'?'#aszPred':'#aszKnown');if(z)setTimeout(()=>z.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}),40)}
@@ -3673,7 +3788,7 @@ function renderCommand(r){
     <div class="ccrs"><div data-tip="Actual net recovery on reconciled decisions in the period. Same as Analytics when filters match."><b class="num">${kfmt(m.act)}</b><span>Net recovery</span></div><div data-tip="Actual ÷ predicted net recovery on reconciled decisions."><b class="num">${m.rc.length&&sum(m.rc.map(r=>r.p50))?Math.round(m.act/sum(m.rc.map(r=>r.p50))*100):0}%</b><span>Recovery yield</span></div><div data-tip="Median days from decision to reconciled outcome."><b class="num">${m.days?m.days.toFixed(0):'—'} days</b><span>Cycle time</span></div><div data-tip="Estimated embodied-carbon avoided on reconciled decisions."><b class="num">${(sum(m.rc.map(r=>r.co2e))/1000).toFixed(0)} t</b><span>CO₂e avoided</span></div></div>${ccComboHTML(rows)}</div></section>`};
   const charts=(L.charts||[]),row=(L.row||[]),rowS=sec==='kpis'?row.filter(x=>x==='value'):sec==='signals'?row.filter(x=>x!=='value'):[];
   return `<div class="cc" data-sec="${sec}">
-  <div class="phead"><div><nav class="crumbs ccsec" aria-label="Command Center section"><span>Command Center</span> <span>›</span> <b id="ccSecName">${esc(ccSecLabel(sec))}</b></nav><h1>Circularity Command Center <span class="chip line ccrole">${esc(S.acct.role)} view</span></h1><p>${esc(sec==='kpis'?L.sub:CC_DESC[sec])}</p></div>
+  <div class="phead"><div><nav class="crumbs ccsec" aria-label="Command Center section"><span>Command Center</span> <span>›</span> <b id="ccSecName">${esc(ccSecLabel(sec))}</b></nav><h1>Command Center <span class="chip line ccrole">${esc(S.acct.role)} view</span></h1><p>${esc(sec==='kpis'?L.sub:CC_DESC[sec])}</p></div>
    <div class="row ccact">${adm?`<div class="seg" role="group" aria-label="Command Center view"><button data-act="ccMode" data-arg="operational" aria-pressed="${S.ccMode!=='senior'}">Operational</button><button data-act="ccMode" data-arg="senior" aria-pressed="${S.ccMode==='senior'}">Senior</button></div>`:''}<span class="note ccrf">Last refreshed<br><b class="num" data-cc-clock>${ccClockText()}</b></span><button class="iconbtn" data-act="ccRefresh" aria-label="Refresh data" data-tip="Refresh">${ICON.refresh}</button><button class="btn" data-act="ccShare">${ICON.share}Share</button><button class="btn pri" data-act="ccExport">${ICON.export}Export</button></div></div>
   ${sec==='kpis'&&L.health?`<div class="cchealth" id="ccHealth">${ccHealthHTML()}</div>`:''}
   ${(L.ops||L.fin)&&['kpis','actions'].includes(sec)?ccFilters(sc):''}
@@ -3753,8 +3868,8 @@ function orTraceHTML(c){const calls=CALLS.filter(x=>x.caseId===c.id).slice(0,12)
    <div class="tw"><table class="t static tight" id="orTrace"><thead><tr><th>Span</th><th>Kind</th><th>Agent or account</th><th>Parameters</th><th>Start (UTC)</th><th>Status</th></tr></thead><tbody>
    ${OR_STAGES.map((g,i)=>`<tr><td class="mono">${tid}/${String(i+1).padStart(2,'0')}</td><td>stage · ${g[1]}</td><td>${esc(i===7?(c.approval?c.approval.by:'Approver'):g[3])}</td><td class="mono">case_id=${c.id}</td><td class="num">${orT(run[i][1])}</td><td><span class="chip ${OR_ST[run[i][0]][1]}">${OR_ST[run[i][0]][0]}</span></td></tr>`).join('')}
    ${calls.map((x,j)=>`<tr><td class="mono">${tid}/t${j+1}</td><td>tool call · ${esc(x.tool)}</td><td>${esc(x.agent)}</td><td class="mono">case_id=${x.caseId}, tenant=<span class="orred" data-tip="Redacted field: tenant">•••</span>${x.step===6?', approval_ref=<span class="orred" data-tip="Redacted field: approval_ref">•••</span>':''}</td><td class="num">${orT(x.ts)}</td><td>${esc(x.outcome)} · ${x.lat} ms</td></tr>`).join('')}</tbody></table></div>`}
-function renderOrch(r){const cs=orCases(),c=orCase();if(!c)return `<div class="phead"><div><h1>Process orchestration</h1></div></div><div class="empty"><b>No cases in your scope</b>Nothing to show yet.</div>`;
-  return `<div class="or"><div class="phead"><div><h1>Process orchestration <span class="chip line">Behind the screen</span></h1><p>How a recommendation is made: ten stages, the agent or service behind each, the systems it reads, its status and timing.</p></div>
+function renderOrch(r){const cs=orCases(),c=orCase();if(!c)return `<div class="phead"><div><h1>Agent runs</h1></div></div><div class="empty"><b>No cases in your scope</b>Nothing to show yet.</div>`;
+  return `<div class="or"><div class="phead"><div><h1>Agent runs </h1><p>How a recommendation is made: ten stages, the agent or service behind each, the systems it reads, its status and timing.</p></div>
    <div class="row"><label class="sr" for="or-case">Case</label><select class="sel" id="or-case" data-ch="orCase">${cs.slice(0,200).map(x=>`<option value="${x.id}" ${x===c?'selected':''}>${x.id} · ${esc(x.product)}</option>`).join('')}</select><button class="btn" data-act="orReplay">Replay</button>${rbPath('product/'+c.id)?`<a class="btn" href="#/product/${c.id}" data-act="go" data-arg="product/${c.id}">Open ${c.id}</a>`:''}</div></div>
   <div class="callout info" style="margin-bottom:14px"><b>Circularity decides and instructs.</b> The physical work, orders and stock movements happen in your enterprise systems.</div>
   <section class="sect" id="orFlow"><div class="sh"><h2>Stages for ${c.id}</h2><span class="note">${esc(c.product)} · ${esc(c.owner)} · ${stageChip(c)}</span></div><div id="orFlowB">${orFlowHTML(c)}</div></section>
@@ -3812,7 +3927,7 @@ ACT.oooDel=i=>{S.idp.ooo.splice(+i,1);route(true)};
 const AS_IMG={motor:'motor',pump:'pump',control:'control',drill:'powertool',batch:'powertool',it:'it'};
 const AS_TABS=[['overview','Overview'],['lifecycle','Lifecycle'],['condition','Condition'],['product','Product & Components'],['economic','Economic Analysis'],['eligibility','Eligibility & Compliance'],['data','Data & Evidence'],['related','Related Assets']];
 const AS_COMPS={motor:['Stator winding','Rotor and shaft','Bearings','Housing and frame','Terminal box'],pump:['Pistons and barrel','Shaft seal','Bearings','Housing','Ports and fittings'],control:['Processor module','I/O modules','Power supply','Connectors','Firmware'],drill:['Motor','Gearbox','Chuck','Housing','Battery'],batch:['Drivers','Battery packs','Chucks','Housings','Chargers'],it:['Battery','Display','Keyboard','Storage','Chassis']};
-S.at={tab:'overview'};
+S.at={tab:'overview',fold:{}};
 const asHex=(c,k)=>parseInt(hashId(c.id+k),16)||0;
 const asSerial=c=>'SN'+String(asHex(c,'sn')).slice(0,7).padStart(7,'0');
 const asRev=c=>'Rev '+'ABCDE'[asHex(c,'rv')%5];
@@ -3848,10 +3963,9 @@ function skuStrip(c){const m=asModel(c),l=skuUnits(c),g={},rt={},key=m+'|'+c.own
   l.forEach(x=>{const k=x.grade||'—';g[k]=(g[k]||0)+1;const rk=asRouteShort(x);rt[rk]=(rt[rk]||0)+1});
   const cut=addDays(AS_OF,-365),closed=ROWS.filter(r=>String(r.equip).replace(/s$/,'')===m&&r.tenant===c.owner&&new Date(r.date)>=cut).length;
   const chip=(k,v,n)=>`<button class="skuc" data-act="skuF" data-arg="${k}:${esc(v)}" aria-pressed="${!!f&&f.k===k&&f.v===v}">${esc(k==='g'?(v==='—'?'Not graded':'Grade '+v):v)} <b class="num">${n}</b></button>`;
-  return `<section class="panel skus" id="skuStrip" aria-label="Units of this product"><div class="pb"><div class="skuh"><b>${esc(m)} · ${esc(c.owner)}</b><span class="skun"><b class="num">${l.length}</b> unit${l.length===1?'':'s'} returned now</span><span class="note">${fmtN(closed)} more closed in the last 12 months</span></div>
-   <div class="skur"><span class="note">By inspection grade <span class="aszb ret" style="margin-left:4px">Retrieved</span></span>${Object.keys(g).sort().map(k=>chip('g',k,g[k])).join('')}</div>
-   <div class="skur"><span class="note">By recommended route <span class="aszb mod" style="margin-left:4px">Model</span></span>${Object.entries(rt).sort((a,b)=>b[1]-a[1]).map(([k,n])=>chip('r',k,n)).join('')}</div>
-   <p class="note" style="margin:0">Each returned unit of the same product has its own condition, life, value and route. Choose one in <b>Unit</b> above${f?'; the Unit list shows only the units that match your selection':''}.</p></div></section>`}
+  return `<details class="panel skus" id="skuStrip" aria-label="Units of this product" ${f?'open':''}><summary class="skuh"><b>${esc(m)} · ${esc(c.owner)}</b><span class="skun"><b class="num">${l.length}</b> unit${l.length===1?'':'s'} returned now</span><span class="note">${fmtN(closed)} closed in the last 12 months</span><span class="asfc" aria-hidden="true">▾</span></summary><div class="pb">
+   <div class="skur"><span class="note">By inspection grade</span>${Object.keys(g).sort().map(k=>chip('g',k,g[k])).join('')}</div>
+   <div class="skur"><span class="note">By recommended route</span>${Object.entries(rt).sort((a,b)=>b[1]-a[1]).map(([k,n])=>chip('r',k,n)).join('')}</div></div></details>`}
 ACT.skuModel=v=>{const cur=CASE_BY_ID[S.lastAsset],l=myCases().filter(x=>asModel(x)===v).sort((a,b)=>a.id<b.id?-1:1),p=(cur&&l.find(x=>x.owner===cur.owner))||l[0];S.skuF=null;if(p)go('product/asset/'+p.id)};
 ACT.skuCust=v=>{const cur=CASE_BY_ID[S.lastAsset];if(!cur)return;const l=myCases().filter(x=>asModel(x)===asModel(cur)&&x.owner===v).sort((a,b)=>a.id<b.id?-1:1);S.skuF=null;if(l[0])go('product/asset/'+l[0].id)};
 ACT.skuF=a=>{const c=CASE_BY_ID[S.lastAsset];if(!c)return;const i=a.indexOf(':'),k=a.slice(0,i),v=a.slice(i+1),sku=asModel(c)+'|'+c.owner,on=S.skuF&&S.skuF.sku===sku&&S.skuF.k===k&&S.skuF.v===v;
@@ -3859,12 +3973,12 @@ ACT.skuF=a=>{const c=CASE_BY_ID[S.lastAsset];if(!c)return;const i=a.indexOf(':')
 function assetHead(c,h){
   const base=location.href.split('#')[0],link=base+'#/product/asset/'+c.id;
   return `<nav class="crumbs ascr" aria-label="Breadcrumb"><a href="#/product/received" data-act="go" data-arg="product/received">Assets</a> <span>›</span> <span>${esc(CLASSES[c.cls].plural)}</span> <span>›</span> <span>${esc(asModel(c))}</span> <span>›</span> <b>${c.assetId}</b></nav>
-  <div class="phead asph2"><div class="row" style="gap:14px;flex-wrap:nowrap;align-items:flex-start"><span class="asico">${ICON.product}</span><div><h1>Asset &amp; Product Intelligence</h1><p>Unified lifecycle view with evidence from enterprise systems to support circularity decisions.</p></div></div>
-   <div class="row asact">${assetSelect(c)}<a class="btn" href="${link}" target="_blank" rel="noopener">Open in new tab</a>
-    <details class="asmenu"><summary class="btn pri">Actions <span aria-hidden="true">▾</span></summary><div class="asmenu-list" role="menu"><button role="menuitem" data-act="go" data-arg="product/${c.id}">Open decision analysis</button><button role="menuitem" data-act="snapshot" data-arg="${c.id}">Evidence snapshot</button><button role="menuitem" data-act="asCopy">Copy link</button><button role="menuitem" data-act="asCompare">Compare similar assets</button><button role="menuitem" data-act="asPrint">Print or save as PDF</button></div></details></div></div>
+  <div class="phead asph2"><div class="row" style="gap:14px;flex-wrap:nowrap;align-items:flex-start"><span class="asico">${ICON.product}</span><div><h1>Asset intelligence</h1><p>One returned asset: what the systems say, and what Circularity predicts.</p></div></div>
+   <div class="row asact">${assetSelect(c)}
+    <details class="asmenu"><summary class="btn pri">Actions <span aria-hidden="true">▾</span></summary><div class="asmenu-list" role="menu"><button role="menuitem" data-act="go" data-arg="product/${c.id}">Open decision analysis</button><button role="menuitem" data-act="snapshot" data-arg="${c.id}">Evidence snapshot</button><button role="menuitem" data-act="asCopy">Copy link</button><a role="menuitem" class="asnt" href="${link}" target="_blank" rel="noopener">Open in new tab</a><button role="menuitem" data-act="asCompare">Compare similar assets</button><button role="menuitem" data-act="asPrint">Print or save as PDF</button></div></details></div></div>
   <section class="aship"><div class="asphoto">${asPhoto(c)}</div>
    <div class="asmain"><div class="asttl"><h2>${esc(asTitle(c))}</h2><span class="note">${esc(Object.values(c.spec||{}).slice(0,3).join(' · '))}</span><span class="chip line">${esc(CLASSES[c.cls].label)}</span>${stageChip(c)}</div>
-    <dl class="asfacts">${assetFacts(c).map(f=>`<div><dt>${f[0]}</dt><dd>${esc(f[1])}</dd></div>`).join('')}</dl></div>
+    ${(()=>{const K=['Asset ID','Serial number','Ownership','Location','Received','Age','Engineering life','Contract demand'],all=assetFacts(c),F=x=>`<div><dt>${x[0]}</dt><dd>${esc(x[1])}</dd></div>`;return `<dl class="asfacts">${all.filter(x=>K.includes(x[0])).map(F).join('')}</dl><details class="asmore"><summary>More details</summary><dl class="asfacts">${all.filter(x=>!K.includes(x[0])).map(F).join('')}</dl></details>`})()}</div>
    <div class="ashealth"><h3>Overall asset health</h3>${asRing(h)}<div class="note" style="margin-top:6px">${h.est?'Estimated: no inspection grade yet.':'Grade '+c.grade+' · modelled from grade, age and class life.'}</div></div></section>`}
 /* the asset page has two pages: what the enterprise systems supplied, and what Circularity predicts; detail views sit under one of them */
 const AS_PAGES=[['known','Retrieved data','From EAM, QMS, ERP, WMS, PLM'],['pred','Predictions','Computed by Circularity']];
@@ -3874,7 +3988,10 @@ ACT.asZone=z=>{const c=CASE_BY_ID[S.lastAsset];if(!c)return;S.at.tab=z==='pred'?
 function assetRelated(c){return myCases().filter(x=>x.id!==c.id&&x.cls===c.cls).sort((a,b)=>(b.owner===c.owner)-(a.owner===c.owner)||(a.location===c.location?-1:1)-(b.location===c.location?-1:1)||(a.id<b.id?-1:1)).slice(0,3)}
 
 /* ---- shared panel + timeline + condition ---- */
-const asPanel=(t,b,tab,cls,badge,id)=>`<section class="panel aspn ${cls||''}"${id?` id="${id}"`:''}><div class="ph"><h3>${t}</h3>${badge||''}${tab?`<button class="lnk" data-act="asTab" data-arg="${tab}">View details</button>`:''}</div><div class="pb">${b}</div></section>`;
+const asPanel=(t,b,tab,cls,badge,id)=>{const fold=/\basfold\b/.test(cls||''),open=fold&&S.at.fold&&S.at.fold[t];
+  return `<section class="panel aspn ${cls||''} ${open?'open':''}"${id?` id="${id}"`:''}><div class="ph" ${fold?`data-act="asFold" data-arg="${esc(t)}" role="button" tabindex="0" aria-expanded="${!!open}"`:''}><h3>${t}</h3>${badge||''}${tab?`<button class="lnk" data-act="asTab" data-arg="${tab}">View details</button>`:''}${fold?'<span class="asfc" aria-hidden="true">▾</span>':''}</div><div class="pb">${b}</div></section>`};
+ACT.asFold=(t,el)=>{S.at.fold=S.at.fold||{};S.at.fold[t]=!S.at.fold[t];const p=el&&el.closest&&el.closest('.aspn');if(p){p.classList.toggle('open',!!S.at.fold[t]);const h=p.querySelector('.ph');h&&h.setAttribute('aria-expanded',!!S.at.fold[t])}};
+document.addEventListener('keydown',e=>{const h=e.target&&e.target.closest&&e.target.closest('.asfold>.ph');if(h&&e.target===h&&(e.key==='Enter'||e.key===' ')){e.preventDefault();ACT.asFold(h.dataset.arg,h)}});
 const asMon=d=>new Date(d).toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'});
 function asEvents(c){const rec=new Date(c.received),mfg=addDays(rec,-Math.round(c.age*365)),com=addDays(mfg,45+asHex(c,'cm')%76),dep=addDays(com,20+asHex(c,'dp')%40),svcEnd=addDays(rec,-20-asHex(c,'se')%40),n=Math.max(1,Math.round(c.age*1.4)+asHex(c,'wo')%3);
   const ins=c.assessment==='Pending'?null:addDays(rec,1+asHex(c,'ins')%3),st=c.stage,decDone=['executing','approved'].includes(st);
@@ -4008,22 +4125,23 @@ function asDemand(c){const d=c.demand||{},M=caseDemand(c),R=caseRul(c),rows=[],r
   return rows.length?rows.join('')+'<p class="note" style="margin:6px 0 0">Matched by Circularity from orders, contracts and opportunities in ERP and CRM. The routes that use this demand are priced in step 3.</p>':'<div class="empty"><b>No contract demand matched</b>Only external market routes apply.</div>'}
 function asPredRoutes(c){const rs=(c.routes||[]).filter(r=>!r.excluded).sort((a,b)=>b.net-a.net).slice(0,4),rec=c.chosen||c.recommendation;if(!rs.length)return '';
   return `<h4 style="font-size:12.5px;margin:14px 0 4px;color:var(--ink2)">Predicted value by route</h4>`+asTbl([['Route'],['Net','r'],['P10 to P90','r']],rs.map(r=>`<tr class="${rec&&r===rec?'sel':''}"><td>${esc(r.plan||rid(r.id).name)}</td><td class="r num"><b>${asMoney(r.net)}</b></td><td class="r num">${asMoney(r.p10)} to ${asMoney(r.p90)}</td></tr>`))}
+function asZoneBar(z){return `<header class="aszh aszbar">${frSeg('aszone',[['known','Retrieved data'],['pred','Predictions']],z,'asZone','Asset information')}<span class="note">${z==='known'?'Facts from the enterprise systems. Circularity reads them and never changes them.':'Estimates and rule results from Circularity, each labelled with what produced it.'}</span></header>`}
 function asOverview(c,h){const ok=asTabOK,z=hq('zone'),ws=c.cls==='motor'||c.cls==='pump'?'MRO':'Inspection';
   const L=[`<div class="asz2 aszw">${asPanel('Diagnostic condition',asKnownDiag(c),null,'',provB('ret',ws))}${asPanel('Certified period',asKnownCert(c),null,'',provB('ret','QMS'))}</div>`,
    ok('condition')&&asPanel('Inspection findings',asCond(c),'condition','',provB('ret','Inspection')),
    asPanel('Cost inputs',asCostInputs(c,h),null,'',provB('ret','OMS, PLM, EAM, procurement'),'asCostCard'),
-   ok('lifecycle')&&asPanel('Lifecycle evidence timeline',asTimelineHTML(c,false,true),'lifecycle','aszw',provB('ret','ERP, EAM, WMS')),
-   ok('lifecycle')&&asPanel('Return history of this unit',asReturnHistoryHTML(c),null,'',provB('ret','Lease, WMS')),
-   ok('related')&&asPanel('Related assets and fleet context',asRelated(c),'related','',provB('ret','ERP')),
-   ok('product')&&asPanel('Product specs',asProduct(c,h,true),'product','aszw',provB('ret','PLM, ERP'))].filter(Boolean);
+   ok('lifecycle')&&asPanel('Lifecycle evidence timeline',asTimelineHTML(c,false,true),'lifecycle','aszw asfold',provB('ret','ERP, EAM, WMS')),
+   ok('lifecycle')&&asPanel('Return history of this unit',asReturnHistoryHTML(c),null,'asfold',provB('ret','Lease, WMS')),
+   ok('related')&&asPanel('Related assets and fleet context',asRelated(c),'related','asfold',provB('ret','ERP')),
+   ok('product')&&asPanel('Product specs',asProduct(c,h,true),'product','aszw asfold',provB('ret','PLM, ERP'))].filter(Boolean);
   const Rt=[asPanel('Commercial value',asPredRec(c),null,'aszw',provB('mod','Recommendation service'),'asValueCard'),
    ok('eligibility')&&asPanel('Eligibility and gates',asElig(c),'eligibility','',provB('rul','Gate engine'),'asEligCard'),
    asPanel('Matched demand',asDemand(c),null,'',provB('rul','Demand matching'),'asDemandCard'),
    asPanel('Estimated remaining useful life',asPredRul(c,h),null,'',provB('mod','RUL model '+(c.model||'')),'asRulCard'),
-   ok('data')&&asPanel('Data and evidence quality',asQuality(c),'data','',provB('rul','Evidence scoring')),
-   ok('economic')&&asPanel('Economic intelligence',asEcon(c)+asCostBuild(c,h)+asPredRoutes(c),'economic','aszw',provB('mod','Prediction model'),'asEconCard')].filter(Boolean);
+   ok('data')&&asPanel('Data and evidence quality',asQuality(c),'data','asfold',provB('rul','Evidence scoring')),
+   ok('economic')&&asPanel('Economic intelligence',asEcon(c)+asCostBuild(c,h)+asPredRoutes(c),'economic','aszw asfold',provB('mod','Prediction model'),'asEconCard')].filter(Boolean);
   const pg=asPageOf();
-  return `<div class="aszs">${pg==='known'?`<div class="asz known ${z==='known'?'on':''}" id="aszKnown" aria-labelledby="aszKh"><header class="aszh"><span class="aszk">Retrieved data · journey step 1, supply evidence</span><h2 id="aszKh">Retrieved from enterprise systems</h2><p class="note">Facts pulled from MRO, EAM, QMS, ERP, WMS and PLM. Each card names its source. Circularity reads these; it does not change them.</p><button class="lnk aszsw" data-act="asZone" data-arg="pred">See what Circularity predicts for this asset →</button></header>${L.join('')}</div>`:`<div class="asz pred ${z==='predicted'?'on':''}" id="aszPred" aria-labelledby="aszPh"><header class="aszh"><span class="aszk">Predictions · eligibility, demand, life and value for this asset</span><h2 id="aszPh">Predicted and computed by Circularity</h2><p class="note">Model estimates and rule results, each labelled with what produced it. Recommended routes and values appear only on this page.</p><button class="lnk aszsw" data-act="asZone" data-arg="known">← Retrieved data</button></header>${Rt.join('')}</div>`}</div>`}
+  return `<div class="aszs">${pg==='known'?`<div class="asz known ${z==='known'?'on':''}" id="aszKnown" aria-labelledby="aszKh">${asZoneBar('known')}${L.join('')}</div>`:`<div class="asz pred ${z==='predicted'?'on':''}" id="aszPred" aria-labelledby="aszPh">${asZoneBar('pred')}${Rt.join('')}</div>`}</div>`}
 /* ---- focused tab views + compare ---- */
 const asTbl=(head,rows,cls)=>`<div class="tw"><table class="t static tight ${cls||''}"><thead><tr>${head.map(h=>`<th class="${h[1]||''}">${h[0]}</th>`).join('')}</tr></thead><tbody>${rows.join('')||`<tr><td colspan="${head.length}"><div class="empty"><b>Nothing to show</b></div></td></tr>`}</tbody></table></div>`;
 function asNet(x){return x.recommendation?x.recommendation.net:null}
@@ -5462,7 +5580,7 @@ ACT.mcpDir=a=>{go(a==='client'?'mcp/client':'mcp')};ACT.mcpPerm=v=>{S.mcpPerm=v;
 ACT.tryTool=a=>{S.mcpTool=a;S.mcpAgent=null;S.pgInput=null;S.pgOut=null;route(true);const p=$('#pg');p&&p.scrollIntoView({behavior:'smooth'})};
 function renderMcp(){
   const dir=S.mcpDir;
-  const head=`<div class="phead"><div><h1>MCP and tools</h1><p>Agents and other platforms reach Circularity through governed tools. Agents assemble evidence, find opportunities, request gaps, coordinate approved instructions and reconcile results, always within their permissions.</p></div></div>`;
+  const head=`<div class="phead"><div><h1>Agent tools</h1><p>Agents and other platforms reach Circularity through governed tools. Agents assemble evidence, find opportunities, request gaps, coordinate approved instructions and reconcile results, always within their permissions.</p></div></div>`;
   const ro=can('useTools')?'':'<div class="callout info" style="margin-bottom:16px"><b>Read-only view.</b> The Developer manages agents, tools and MCP servers. '+(can('approve.mcp')?'You decide server proposals.':'')+'</div>';
   if(dir==='client')return head+ro+`<div id="mcpClient"><p class="ink2" style="margin-top:0;max-width:75ch">Circularity can consume enterprise MCP servers instead of custom adapters where they exist. Anything an adapter reads or writes still lands in the same canonical models and tenant boundaries.</p><div class="grid g2">${CLIENT_SERVERS.map(s=>`<div class="panel"><div class="ph"><h3>${s.name}</h3><span class="chip ${s.status==='connected'?'ok':s.status==='token expired'?'warn':'line'}">${s.status==='connected'?'connected':esc(s.status)}</span></div><div class="pb"><div class="note" style="margin-bottom:8px">${s.owner} · used in ${s.used}</div><div class="row" style="gap:5px">${s.tools.map(x=>`<span class="chip line mono" style="font-size:11px">${x}</span>`).join('')}</div></div></div>`).join('')}</div><div class="callout info" style="margin-top:14px">Consumed tools are called with the same approval rules. A write through an enterprise MCP server still needs the human approval reference from step 5.</div></div>${canPage('mcp','proposals')?mcpPropHTML():''}`;
   const ten=S.mcpPerm,wr=TOOLS.filter(t=>t.rw==='write');
@@ -5576,7 +5694,7 @@ const stC=s=>({available:'<span class="chip ok">Full</span>',partial:'<span clas
 function renderAudit(){
   const f=S.au,all=auditFiltered(),gaps=auditGaps(),shown=all.slice(0,f.limit),src=[...new Set(auditEntries().map(x=>x.source))].sort();
   const fetches=all.filter(x=>x.kind==='fetch').length;let lastDay='';
-  return `<div class="phead"><div><h1>Audit &amp; provenance</h1><p>A chronological record of what data was fetched, from exactly which source, when, with what request, and where it was used. Select any entry for its full provenance.</p></div><div class="row"><button class="btn" data-act="auCsv">Export log (CSV)</button></div></div>
+  return `<div class="phead"><div><h1>Audit &amp; history</h1><p>A chronological record of what data was fetched, from exactly which source, when, with what request, and where it was used. Select any entry for its full provenance.</p></div><div class="row"><button class="btn" data-act="auCsv">Export log (CSV)</button></div></div>
   <div class="grid g4" style="margin-bottom:14px">${[[all.length.toLocaleString(),'audit entries in view'],[fetches.toLocaleString(),'data fetches recorded'],[auditEntries().filter(x=>x.status==='partial').length,'with partial provenance'],[gaps.length,'evidence gaps with no provenance']].map(x=>`<div class="panel flat" style="padding:12px"><div class="num" style="font:800 24px var(--f-display)">${x[0]}</div><div class="note">${x[1]}</div></div>`).join('')}</div>
   <div class="panel"><div class="filters"><input type="search" placeholder="Search case, asset, source, request or where used" value="${esc(f.q)}" data-in="auQ" aria-label="Search audit log"><select class="sel" data-ch="auSrc" aria-label="Source"><option value="">All sources</option>${src.map(s=>`<option ${s===f.src?'selected':''}>${esc(s)}</option>`).join('')}</select><select class="sel" data-ch="auType" aria-label="Entry type"><option value="">All entries</option><option value="fetch" ${f.type==='fetch'?'selected':''}>Data fetches</option><option value="event" ${f.type==='event'?'selected':''}>Instructions and events</option></select><select class="sel" data-ch="auStatus" aria-label="Provenance"><option value="">Any provenance</option><option value="available" ${f.status==='available'?'selected':''}>Full</option><option value="partial" ${f.status==='partial'?'selected':''}>Partial</option><option value="recorded" ${f.status==='recorded'?'selected':''}>System events</option></select><button class="btn sm" data-act="auDir">${f.dir<0?'Newest first':'Oldest first'}</button><button class="btn ghost sm" data-act="auClear">Clear</button></div>
   <div class="tw" style="max-height:640px;overflow:auto"><table class="t"><thead><tr><th>Fetched / recorded (UTC)</th><th>Source</th><th>Case · item</th><th>Request / query</th><th>Result</th><th>Where it was used</th><th>Provenance</th></tr></thead><tbody>
@@ -5959,7 +6077,7 @@ defAction('workflow.setStatus',{title:'Pause, resume or unpublish a workflow',ve
   input:{id:{t:'string',req:true},status:{t:'string',req:true}},guard:i=>wfGuard(i)||(!['draft','paused','published'].includes(i.status)?['validation_error','Unknown status.']:i.status==='published'&&wfValidate(wfGraphOf(WFW(i.id)),WFW(i.id).kind).some(e=>e.sev==='error')?['conflict','Cannot publish '+WFW(i.id).name+': '+wfValidate(wfGraphOf(WFW(i.id)),WFW(i.id).kind).find(e=>e.sev==='error').msg]:null),
   handler:(i,x)=>{wfInit();const w=WFW(i.id),was=w.status;w.status=i.status;w.updated=x.wall;return{id:w.id,was,status:w.status,name:w.name}}});
 defAction('workflow.create',{title:'Create workflow draft',verb:'create workflows',desc:'Create a new workflow draft: ingest, outbound, decision or blank.',risk:'act',perm:'manageWorkflows',
-  input:{type:{t:'string',req:true},src:{t:'string',req:false},ch:{t:'string',req:false},name:{t:'string',req:false},graph:{t:'object',req:false},desc:{t:'string',req:false}},
+  input:{type:{t:'string',req:true},src:{t:'string',req:false},ch:{t:'string',req:false},name:{t:'string',req:false},graph:{t:'object',req:false},desc:{t:'string',req:false},trig:{t:'object',req:false}},
   guard:i=>(i.type==='ingest'||i.type==='out')&&!SRC(i.src)?['validation_error','Choose a system first.']:null,
   handler:(i,x)=>{wfInit();const s=SRC(i.src);let k=100;while(S.wf.list.some(y=>y.id==='WF-'+k))k++;k=Math.max(k,100+S.wf.list.length);while(S.wf.list.some(y=>y.id==='WF-'+k))k++;
     const nm=(i.name||'').trim()||(i.type==='ingest'?'Ingest · '+s.vendor:i.type==='out'?'Outbound · '+s.vendor:i.type==='dec'?'Decision workflow':'New pipeline');
@@ -5968,7 +6086,7 @@ defAction('workflow.create',{title:'Create workflow draft',verb:'create workflow
      :i.type==='dec'?{cat:'Decision',kind:'dec',tpl:{k:'dec',id:'standard'},src:null,owner:'Decision Services',trig:{t:'case'},desc:WF_DEC.standard.desc}
      :{cat:'Ingest',kind:'pipe',tpl:{k:'blank'},src:null,owner:'Unassigned',trig:{t:'manual'},desc:'Blank pipeline. Drag steps from the left and connect them.'};
     const w=Object.assign({id:'WF-'+k,name:nm,status:'draft',ver:'0.1',graph:null,saved:null,dirty:false,running:false,updated:x.wall,runsN:0,okN:0,last:null,prep:x.preparer||null},base);
-    if(i.desc)w.desc=i.desc;if(i.graph){w.graph=JSON.parse(JSON.stringify(i.graph));w.saved=wfSnap(w)}
+    if(i.desc)w.desc=i.desc;if(i.trig)w.trig=i.trig;if(i.graph){w.graph=JSON.parse(JSON.stringify(i.graph));w.saved=wfSnap(w)}
     S.wf.list.push(w);return{id:w.id,name:nm}}});
 defAction('workflow.duplicate',{title:'Duplicate workflow',verb:'create workflows',desc:'Copy a workflow as a new draft (clone and adapt).',risk:'act',perm:'manageWorkflows',input:Object.assign({name:{t:'string',req:false}},wfReq),guard:wfGuard,
   handler:(i,x)=>{wfInit();const w=WFW(i.id);let n=100;while(S.wf.list.some(y=>y.id==='WF-'+n))n++;
@@ -6802,8 +6920,8 @@ function afCasePacket(c){if(!tenantOK(c.owner)||!locOK(c))return '';
 /* ---- what-if from text moves the visible sliders on the case page; the decision never changes ---- */
 function afWhatIfToSliders(o){const r=parse();if(r.page!=='product'||r.a!==o.case_id)return;const a=o.assumptions;S.scen=Object.assign({},S.scen,{purchase:a.purchase,cost:a.cost,service:a.service,market:a.market,demandOff:a.demandOff});S.scenOpen=true;setTimeout(()=>{afRender();const d=$('#afFull');if(d)d.open=true},0)}
 /* ---- after every draw: lease facts, ✦ buttons, Explain links on figures, panel context ---- */
-function afLeaseHTML(c){const L=afLease(c),run=afRun(c),st=run.stages;
-  return `<section class="panel aflease" id="afLease"><div class="ph"><h3>Lease end, return and transit</h3><span class="sp"></span>${afBadge('Retrieved')}${afSimTag()}</div><div class="pb afl3">
+function afLeaseHTML(c){const L=afLease(c),run=afRun(c),st=run.stages,fold=parse().a==='asset',open=fold&&S.at.fold&&S.at.fold['Lease end, return and transit'];
+  return `<section class="panel aflease ${fold?'aspn asfold':''} ${open?'open':''}" id="afLease"><div class="ph" ${fold?`data-act="asFold" data-arg="Lease end, return and transit" role="button" tabindex="0" aria-expanded="${!!open}"`:''}><h3>Lease end, return and transit</h3><span class="sp"></span>${afBadge('Retrieved')}${afSimTag()}</div><div class="pb afl3">
    <div><h5>1 · Lease ends</h5><dl class="afkv"><div><dt>Lease</dt><dd>${esc(L.lease)}</dd></div><div><dt>Ended</dt><dd>${fmtDY(L.end)}</dd></div><div><dt>Customer intent</dt><dd>${esc(L.intent)}</dd></div><div><dt>Usage</dt><dd>${esc(L.usage)}</dd></div></dl><p class="note">Lease management · CRM</p></div>
    <div><h5>2 · Return authorised</h5><dl class="afkv"><div><dt>Authorisation</dt><dd>${esc(L.rma)} · ${fmtD(L.auth)}</dd></div><div><dt>Fees</dt><dd>${L.fee?money(L.fee):'None'}</dd></div><div><dt>Replacement order</dt><dd>${esc(L.repl||'None')}</dd></div><div><dt>Book value</dt><dd>${money(L.book)} · acquired ${fmtDY(L.acq)}</dd></div></dl><p class="note">Lease management · ERP finance</p></div>
    <div><h5>3 · Pickup and transit</h5><dl class="afkv"><div><dt>Picked up</dt><dd>${fmtD(L.pickup)} · ${esc(L.carrier)}</dd></div><div><dt>Arrived</dt><dd>${fmtD(L.eta)}</dd></div><div><dt>Freight</dt><dd>${money(L.freight)}</dd></div><div><dt>Received</dt><dd>${esc(c.location)} · ${fmtD(c.received)}</dd></div></dl><p class="note">TMS / 3PL · WMS</p></div></div></section>`}
@@ -7444,7 +7562,7 @@ if(AF_ON){OR_STAGES.length=0;AF_STAGES.forEach(s=>OR_STAGES.push([s.k,s.t,s.trig
      ${calls.map((k,j)=>`<tr><td class="mono">${tid}/g${j+1}</td><td>invoke_agent → execute_tool · ${esc(k.action)}</td><td>${esc(k.run)}</td><td class="mono">${esc(k.input).replace(/tenant=[^,]+/,'tenant=•••')}</td><td class="num">${k.ms} ms</td><td><span class="chip ${k.ok?'ok':'bad'}">${k.ok?'ok':esc(k.code||'error')}</span></td></tr>`).join('')}</tbody></table></div>`};
   const ro0=renderOrch;renderOrch=function(r){const id=hq('case');if(id&&CASE_BY_ID[id]&&orCases().some(x=>x.id===id)&&S.or.case!==id)S.or.case=id;const h=ro0(r),c=orCase();if(!c)return h;
     lrSync(c);const cs=orCases(),k=h.indexOf('<section class="sect" id="orRun"');
-    return `<div class="or"><div class="phead lrph"><h1>Process orchestration <span class="chip line">Behind the screen</span></h1><div class="row"><label class="sr" for="or-case">Case</label><select class="sel" id="or-case" data-ch="orCase">${cs.slice(0,200).map(x=>`<option value="${x.id}" ${x===c?'selected':''}>${x.id} · ${esc(x.product)}</option>`).join('')}</select><button class="btn" data-act="orReplay">Replay</button>${rbPath('product/'+c.id)?`<a class="btn" href="#/product/${c.id}" data-act="go" data-arg="product/${c.id}">Open ${c.id}</a>`:''}</div></div>
+    return `<div class="or"><div class="phead lrph"><h1>Agent runs </h1><div class="row"><label class="sr" for="or-case">Case</label><select class="sel" id="or-case" data-ch="orCase">${cs.slice(0,200).map(x=>`<option value="${x.id}" ${x===c?'selected':''}>${x.id} · ${esc(x.product)}</option>`).join('')}</select><button class="btn" data-act="orReplay">Replay</button>${rbPath('product/'+c.id)?`<a class="btn" href="#/product/${c.id}" data-act="go" data-arg="product/${c.id}">Open ${c.id}</a>`:''}</div></div>
      ${lrBoardHTML(c)}${lrDetailsHTML(c)}<div class="callout info" style="margin-bottom:14px"><b>Circularity decides and instructs.</b> The physical work, orders and stock movements happen in your enterprise systems.</div>${h.slice(k)}`};
   ACT.orReplay=()=>ACT.lrReplay();
   const oc0=ACT.orCase;ACT.orCase=v=>{lrStop();S.lr=null;oc0(v)};
@@ -7710,52 +7828,80 @@ const frPanel=(title,body,o={})=>`<section class="panel frp ${o.cls||''}" ${o.id
 const frHead=(title,sub,right,crumb)=>`${crumb?`<nav class="frbc" aria-label="Breadcrumb">${crumb.map((c,i)=>i<crumb.length-1?`<span>${esc(c)}</span>${ICON.chevR}`:`<b>${esc(c)}</b>`).join('')}</nav>`:''}<div class="phead frph"><div><h1>${title}</h1>${sub?`<p>${sub}</p>`:''}</div>${right?`<div class="row">${right}</div>`:''}</div>`;
 const frLs=(k,v)=>{const key='circ-fr-'+k+(S.acct?'-'+S.acct.id:'');try{if(v===undefined)return JSON.parse(localStorage.getItem(key)||'null');localStorage.setItem(key,JSON.stringify(v))}catch(e){return null}return v};
 /* ---- the menu (5.4): sections, single-line items, search, five new pages, Connection Fabric with nine pages, company and user cards ---- */
-const FR_PAGES={tasks:{t:'My Tasks',sub:'Everything whose next step is yours',icon:'tasks'},alerts:{t:'Alerts',sub:'Escalations, failures and notifications',icon:'bell'},reports:{t:'Reports',sub:'Exportable reports',icon:'report'},checks:{t:'Data Checks',sub:'What is checked and the last result',icon:'checks'},settings:{t:'Settings',sub:'Profile, theme, region and agent options',icon:'settings'}};
-const FR_INT_KIDS=[['overview','Overview','Catalogue, health and recommendations'],['studio','Workflow Studio','Build pipelines and workflows','wffail'],['map','Source Map','Systems, tables and field links','srcissue'],['tables','Source Tables','Tables and how they link'],['models','Canonical Models','Versioned shared models'],['events','Event Streams','Live message stream'],['conflicts','Conflict Queue','Systems that disagree','conf'],['import','Manual Import','Controlled CSV import'],['monitor','Monitor','Integration health over time against SLA']];
+const FR_PAGES={tasks:{t:'My Tasks',sub:'Everything whose next step is yours',icon:'tasks'},contracts:{t:'Contract refresh',sub:'One proposal per expiring contract, built ahead',icon:'refresh'},alerts:{t:'Alerts',sub:'Escalations, failures and notifications',icon:'bell'},reports:{t:'Reports',sub:'Exportable reports',icon:'report'},checks:{t:'Data Checks',sub:'What is checked and the last result',icon:'checks'},settings:{t:'Settings',sub:'Profile, theme, region and agent options',icon:'settings'}};
+const FR_INT_KIDS=[['overview','Overview','Catalogue, health and recommendations'],['studio','Workflows','Build and run data workflows','wffail'],['map','Source Map','Systems, tables and field links','srcissue'],['tables','Source Tables','Tables and how they link'],['models','Data Models','Versioned shared models'],['events','Events','Live message stream'],['conflicts','Conflict Queue','Systems that disagree','conf'],['import','Manual Import','Controlled CSV import'],['monitor','Monitor','Integration health over time against SLA']];
 if(FR_ON){
   Object.entries(FR_PAGES).forEach(([k,p])=>{PAGES[k]=Object.assign({j:[]},p);RB_SECS[k]=[];Object.values(ROLE_POLICY).forEach(P=>{if(!P.all)P.pages[k]=[]})});
   ['overview','monitor'].forEach(k=>{if(!RB_SECS.integration.includes(k))RB_SECS.integration.push(k);if(!INT_TABS.includes(k))INT_TABS.push(k)});
   Object.values(ROLE_POLICY).forEach(P=>{const l=P.pages.integration;if(l&&l!==RB_SECS.integration&&l.includes('map'))['overview','monitor'].forEach(k=>{if(!l.includes(k))l.push(k)})});
-  const g=id=>NAV.find(x=>x.id===id),ren={product:'Decision Workbench',integration:'Connection Fabric',orchestration:'Process Orchestration',audit:'Audit & Provenance',access:'Access & Governance'};
+  const g=id=>NAV.find(x=>x.id===id),ren={product:'Returns',integration:'Connections',orchestration:'Agent Runs',audit:'Audit & History',access:'Access'};
   Object.entries(ren).forEach(([id,l])=>{const o=g(id).label;Object.values(I18N).forEach(m=>{if(m[o]&&!m[l])m[l]=m[o]});g(id).label=l});
   g('integration').kids=FR_INT_KIDS;g('home').leaf=true;
   const leaf=(id,sec)=>({id,label:FR_PAGES[id].t,sub:FR_PAGES[id].sub,icon:FR_PAGES[id].icon,kids:[],leaf:true,sec});
-  const order=[g('home'),g('command'),leaf('tasks'),leaf('alerts'),Object.assign(g('product'),{sec:'Product'}),Object.assign(g('analytics'),{sec:'Product'}),leaf('reports','Product'),leaf('checks','Product'),Object.assign(g('integration'),{sec:'Integration'}),Object.assign(g('mcp'),{sec:'More'}),Object.assign(g('orchestration'),{sec:'More'}),Object.assign(g('audit'),{sec:'More'}),Object.assign(g('access'),{sec:'More'}),leaf('settings','More')];
+  const order=[g('home'),g('command'),leaf('tasks'),leaf('contracts'),leaf('alerts'),Object.assign(g('product'),{sec:'Product'}),Object.assign(g('analytics'),{sec:'Product'}),leaf('reports','Product'),leaf('checks','Product'),Object.assign(g('integration'),{sec:'Integration'}),Object.assign(g('mcp'),{sec:'More'}),Object.assign(g('orchestration'),{sec:'More'}),Object.assign(g('audit'),{sec:'More'}),Object.assign(g('access'),{sec:'More'}),leaf('settings','More')];
   NAV.splice(0,NAV.length,...order.filter(Boolean));
   HOME_LABEL.home='Home';
+  Object.entries(ROLE_POLICY).forEach(([r,P])=>{if(!P.all&&!['Planner','Approver','Finance','Executive'].includes(r))delete P.pages.contracts});
 }
 const frVisible=x=>canPage(x.id)&&(x.leaf||navKids(x).length);
-function frCounts(){return{tasks:S.acct?aomeItems().length:0,alerts:S.acct?frAlerts().filter(a=>!a.ack).length:0}}
-function frNavHTML(){let sec='';const out=[];const n=frCounts();
-  NAV.filter(frVisible).forEach(g=>{const kids=g.leaf?[]:navKids(g),open=navIsOpen(g.id),L=tr(g.label);
-    if((g.sec||'')!==sec){sec=g.sec||'';out.push(sec==='More'?'<div class="frsec frdiv" role="presentation"></div>':`<div class="frsec" role="presentation">${esc(tr(sec))}</div>`)}
-    const cnt=g.id==='tasks'?`<span class="cnt" id="frcTasks" ${n.tasks?'':'hidden'}>${n.tasks||''}</span>`:g.id==='alerts'?`<span class="cnt bad" id="frcAlerts" ${n.alerts?'':'hidden'}>${n.alerts||''}</span>`:g.id==='product'?'<span class="cnt" id="navcnt"></span>':g.id==='command'&&canPage('command','approvals')?'<span class="cnt" id="navinb" hidden></span>':g.id==='integration'?'<span class="cnt" id="navint"></span>':'';
-    const href=g.leaf?'#/'+g.id:navHref(g,g.mode?(kids.some(k=>k[0]==='received')?'received':kids[0][0]):'');
-    out.push(`<div class="ng ${g.leaf?'leaf':''}" data-g="${g.id}"><div class="ngr"><a class="ngh" href="${href}" data-nav="${g.id}" data-label="${esc(L)}" aria-label="${esc(L)}">${ICON[g.icon]||''}<span class="ngl">${esc(L)}</span>${cnt}</a>${kids.length?`<button class="chev" data-act="navToggle" data-arg="${g.id}" aria-expanded="${open}" aria-controls="ns-${g.id}" aria-label="${esc(L)}: show sections">${ICON.chevR}</button>`:''}</div>
-     ${kids.length?`<div class="nsub" id="ns-${g.id}" role="group" aria-label="${esc(L)} sections" ${open?'':'hidden'}>${kids.map(k=>`<a class="nsl" href="${navHref(g,k[0])}" data-nk="${g.id}/${k[0]}">${tr(k[1])}${k[3]?`<span class="cnt2" data-nb="${k[3]}"></span>`:''}</a>`).join('')}</div>`:''}</div>`)});
+function frCounts(){return{tasks:S.acct?frTaskList().length:0,alerts:S.acct?frAlerts().filter(a=>!a.ack).length:0}}
+/* ---- menu (reference layout): every page the role may open is one click away, in three short sections, with badges. Sub-links show only under the page you are on ---- */
+const FR_SECS=[
+ {t:'Decide',items:['home','command','tasks','contracts','alerts','product']},
+ {t:'Understand',items:['analytics','reports','checks','orchestration']},
+ {t:'Set up',items:['integration','mcp','audit','access','settings']}];
+const FR_LBL={home:'Home',command:'Command Center',tasks:'My Tasks',contracts:'Contract refresh',alerts:'Alerts',product:'Returns',analytics:'Analytics',reports:'Reports',checks:'Data Checks',orchestration:'Agent Runs',integration:'Connections',studio:'Workflow Studio',mcp:'Agent Tools',audit:'Audit & History',access:'Access',settings:'Settings'};
+const frPg=id=>NAV.find(x=>x.id===id);
+const frItemOf=r=>r.page;
+function frItem(id){
+ if(id==='studio'){if(!canPage('integration','studio'))return null;return{id,icon:ICON.workflow?'workflow':'orch',label:FR_LBL.studio,href:'#/integration/studio',kids:[]}}
+ const g=frPg(id);if(!g||!frVisible(g))return null;
+ if(id==='checks'&&!['Admin','Developer','Engineer'].includes(S.acct.role))return null;
+ const ks=g.leaf||!['product','integration'].includes(id)?[]:navKids(g);
+ return{id,icon:g.icon,label:FR_LBL[id]||g.label,href:g.leaf?'#/'+id:navHref(g,g.mode?(ks.some(x=>x[0]==='received')?'received':(ks[0]||[''])[0]):''),kids:ks.map(k=>({href:navHref(g,k[0]),t:tr(k[1]),nk:g.id+'/'+k[0],nb:k[3]})),g}}
+function frNavHTML(){const n=frCounts(),cur=frItemOf(parse()),out=[];
+  const badge=id=>id==='tasks'?`<span class="cnt" id="frcTasks" ${n.tasks?'':'hidden'}>${n.tasks||''}</span>`:id==='alerts'?`<span class="cnt bad" id="frcAlerts" ${n.alerts?'':'hidden'}>${n.alerts||''}</span>`:id==='product'?'<span class="cnt" id="navcnt"></span>':id==='command'&&canPage('command','approvals')?'<span class="cnt" id="navinb" hidden></span>':id==='integration'?'<span class="cnt" id="navint"></span>':id==='studio'?'<span class="cnt bad" data-nb="wffail" hidden></span>':'';
+  FR_SECS.forEach(S2=>{const items=S2.items.map(frItem).filter(Boolean);if(!items.length)return;
+    out.push(`<div class="frsec" role="presentation">${esc(tr(S2.t))}</div>`);
+    items.forEach(it=>{const open=it.id===cur&&it.kids.length,L=tr(it.label);
+     out.push(`<div class="ng ${it.kids.length?'':'leaf'} ${it.id===cur?'active':''}" data-g="${it.id}"><div class="ngr"><a class="ngh" href="${it.href}" data-nav="${it.id}" data-label="${esc(L)}" aria-label="${esc(L)}" title="${esc(L)}">${ICON[it.icon]||''}<span class="ngl">${esc(L)}</span>${badge(it.id)}</a>${it.kids.length?`<button class="chev" data-act="navToggle" data-arg="${it.id}" aria-expanded="${!!open}" aria-controls="ns-${it.id}" aria-label="${esc(L)}: show sections">${ICON.chevR}</button>`:''}</div>
+      ${it.kids.length?`<div class="nsub" id="ns-${it.id}" role="group" aria-label="${esc(L)} sections" ${open?'':'hidden'}>${it.kids.map(k=>`<a class="nsl" href="${k.href}" data-nk="${k.nk}">${k.t}${k.nb?`<span class="cnt2" data-nb="${k.nb}"></span>`:''}</a>`).join('')}</div>`:''}</div>`)})});
   return `<nav class="nav frnav" aria-label="Pages">${out.join('')}</nav>`}
-function frSideHTML(){const a=S.acct;
+if(FR_ON){
+navSync=function(r){const key=navActiveKey(r),cur=frItemOf(r);
+  FR_SECS.forEach(S2=>S2.items.forEach(id=>{S.navOpen[id]=id===cur}));
+  $$('.ngh').forEach(a=>a.setAttribute('aria-current',a.dataset.nav===cur?'page':'false'));
+  $$('.ng').forEach(g=>{const on=g.dataset.g===cur;g.classList.toggle('active',on);const o=navIsOpen(g.dataset.g),s=$('#ns-'+g.dataset.g),c=g.querySelector('.chev');s&&(s.hidden=!o);c&&c.setAttribute('aria-expanded',o)});
+  $$('.nsl,.nfi').forEach(a=>a.setAttribute('aria-current',a.dataset.nk&&a.dataset.nk===key?'true':'false'));
+  const sn=$('#subnav'),g=frPg(r.page);if(sn)sn.innerHTML=g&&canPage(g.id)&&navKids(g).length?`<span class="snt">${tr(FR_LBL[g.id]||g.label)}</span>${navKids(g).map(k=>`<a class="snl" href="${navHref(g,k[0])}" data-nk="${g.id}/${k[0]}" aria-current="${g.id+'/'+k[0]===key}">${tr(k[1])}</a>`).join('')}`:'';
+  $$('[data-nk="product/asset"]').forEach(a=>a.setAttribute('href',navHref(frPg('product'),'asset')));
+  navBadges()};
+navFlyShow=function(gid,el){const it=frItem(gid);if(!it||innerWidth<=860)return;const rail=$('.app').classList.contains('rail');if(!rail&&navIsOpen(gid))return;
+  let f=$('#nfly');if(!f){f=document.createElement('div');f.id='nfly';f.className='nfly';f.setAttribute('role','menu');document.body.appendChild(f);f.addEventListener('mouseenter',()=>clearTimeout(NF.t));f.addEventListener('mouseleave',()=>navFlyHide())}
+  const key=navActiveKey(parse());
+  f.innerHTML=`<div class="nfh"><b>${esc(tr(it.label))}</b></div>${it.kids.length?it.kids.map(k=>`<a class="nfi" role="menuitem" href="${k.href}" data-nk="${k.nk}" aria-current="${k.nk===key}"><span class="nft">${k.t}</span></a>`).join(''):`<a class="nfi" role="menuitem" href="${it.href}"><span class="nft">${esc(tr(it.label))}</span></a>`}`;
+  const r=el.getBoundingClientRect(),sb=$('.side').getBoundingClientRect();f.style.left=(sb.right+6)+'px';f.classList.add('on');f.style.top=Math.max(8,Math.min(r.top-4,innerHeight-f.offsetHeight-8))+'px'};
+}
+function frSideHTML(){
   return `<aside class="side frside"><div class="frbrand"><a href="#/home" data-act="go" data-arg="home" aria-label="Artizent Circularity home"><img class="frlg dk" src="${LOGO}" alt="Artizent"><img class="frlg lt" src="${LOGO_INK}" alt="Artizent"></a><button class="railbtn" data-act="navRail" aria-pressed="false" aria-label="Collapse sidebar">${ICON.railc}</button></div>
-   <button class="frms" data-act="frCmd" aria-label="Search, run a command or ask (Ctrl+K)" data-label="Search">${ICON.search}<span>Search…</span><kbd>Ctrl K</kbd></button>
+   <div class="frproduct"><div class="frpname">Circularity</div><p class="frpsub">Decision intelligence · returned industrial assets</p></div>
    ${frNavHTML()}
-   <div class="frfoot"><details class="side-foot frco"><summary data-label="Northfield Industrial Leasing">${ICON.building}<span class="frcot"><b>Northfield Industrial Leasing</b><small>Production · 8 sites</small></span>${ICON.chevD}</summary>
-     <div class="frcom"><p>3 customer tenants · 8 sites<br>Production · all systems operational</p>${canPage('product')?`<label for="frTen">Tenant</label><select class="sel" id="frTen" data-ch="tenant">${tenantOpts(S.tenant)}</select>`:''}<a class="sfw" href="framework/">DI Framework overview &rarr;</a></div></details>
-    <div class="fruser" data-label="${esc(a.label)}"><span class="siav" aria-hidden="true">${RB_AV[a.role]}</span><span class="frut"><b>${esc(a.role)}</b><small>${esc(signInEmail(a))}</small></span><button class="iconbtn sm" data-act="signOut" aria-label="Sign out" data-tip="Sign out">${ICON.logout}</button></div></div></aside>`}
+   <div class="frfoot"><div class="frcoline">Northfield Industrial Leasing<br>3 customer tenants · 8 sites</div></div></aside>`}
 ACT.frCmd=()=>{if(typeof afCmdOpen==='function')afCmdOpen()};
 ACT.frNavM=()=>{const on=!$('.app').classList.contains('navm');$('.app').classList.toggle('navm',on);const b=$('#frHam');b&&b.setAttribute('aria-expanded',on)};
 document.addEventListener('click',e=>{const app=$('.app.navm');if(!app)return;if(e.target.closest('.nsl,.ngh,.frside a')||e.target.classList.contains('frscrim'))app.classList.remove('navm')});
 /* ---- the top bar (W17): one search that finds and asks, tenant, Live, region, the bell, ✦ Ask, theme and the account ---- */
 S.frPause=false;
+function frPrefsHTML(){return `<div class="frpref"><details class="frlive" id="frLive"><summary class="pill live" id="asOfPill" aria-label="Live updates" data-tip="Data refreshes continuously from the connected systems"><span class="dot"></span><span id="liveAgo">${S.frPause?'Paused · live updates off':liveAgo()}</span></summary><div class="frdd" role="menu"><button role="menuitemradio" aria-checked="${!S.frPause}" data-act="frLive" data-arg="on">${ICON.activity}<span><b>Live</b><small>Refresh continuously from the connected systems</small></span></button><button role="menuitemradio" aria-checked="${S.frPause}" data-act="frLive" data-arg="off">${ICON.pause}<span><b>Pause live updates</b><small>Hold the screen still, for example while presenting</small></span></button></div></details>${rgMenuHTML()}</div>`}
 function frTopHTML(){const ten=canPage('product')?`<label class="sr" for="tsel">Tenant</label><select class="sel" id="tsel" data-ch="tenant">${tenantOpts(S.tenant)}</select>`:'';
   return `<button class="iconbtn frham" id="frHam" data-act="frNavM" aria-label="Menu" aria-expanded="false">${ICON.menu}</button>
-   <div class="search frsearch"><label class="sr" for="gs">Search or ask</label>${ICON.search}<input id="gs" type="search" placeholder="Search returns, assets, workflows, or ask anything…" autocomplete="off" data-in="gsearch" aria-describedby="gsk"><kbd id="gsk" aria-label="Shortcut Ctrl K">Ctrl K</kbd><div class="results" id="results" hidden></div></div>
+   <div class="search frsearch"><label class="sr" for="gs">Search or ask</label>${ICON.search}<input id="gs" type="search" placeholder="Search" autocomplete="off" data-in="gsearch"><div class="results" id="results" hidden></div></div>
+   <span class="frstat" id="frStat" aria-live="polite">${S.frPause?'Paused · live updates off':liveAgo()}</span>
    <div class="tools">${ten}
-    <details class="frlive" id="frLive"><summary class="pill live" id="asOfPill" aria-label="Live updates" data-tip="Data refreshes continuously from the connected systems"><span class="dot"></span><span id="liveAgo">${S.frPause?'Paused · live updates off':liveAgo()}</span></summary><div class="frdd" role="menu"><button role="menuitemradio" aria-checked="${!S.frPause}" data-act="frLive" data-arg="on">${ICON.activity}<span><b>Live</b><small>Refresh continuously from the connected systems</small></span></button><button role="menuitemradio" aria-checked="${S.frPause}" data-act="frLive" data-arg="off">${ICON.pause}<span><b>Pause live updates</b><small>Hold the screen still, for example while presenting</small></span></button></div></details>
-    ${rgMenuHTML()}
-    <details class="frbell" id="frBell"><summary class="iconbtn" aria-label="Alerts">${ICON.bell}<span class="afcnt" id="frBellN" hidden></span></summary><div class="frdd frbellp" id="frBellP"></div></details>
-    ${typeof afTopTools==='function'?`<button class="iconbtn afask frask" id="afAskBtn" data-act="afPanel" aria-expanded="false" aria-controls="askp" aria-label="Ask Circularity (Ctrl+J)" data-tip="Ask Circularity (Ctrl+J)">${ICON.spark}</button>`:''}
+    ${typeof afTopTools==='function'?`<button class="btn afask frask" id="afAskBtn" data-act="afPanel" aria-expanded="false" aria-controls="askp" aria-label="Ask Circularity (Ctrl+J)" data-tip="Ask Circularity (Ctrl+J)">${ICON.spark}<span>Ask</span></button>`:''}
     <button class="iconbtn" data-act="theme" aria-label="Toggle theme" id="thm"></button>
     ${acctMenuHTML()}</div>`}
+setInterval(()=>{const e=document.getElementById('frStat');if(e)e.textContent=S.frPause?'Paused · live updates off':liveAgo()},15000);
 ACT.frLive=v=>{S.frPause=v==='off';const d=$('#frLive');d&&(d.open=false);const e=$('#liveAgo');e&&(e.textContent=S.frPause?'Paused · live updates off':liveAgo());$('#asOfPill')&&$('#asOfPill').classList.toggle('paused',S.frPause);toast(S.frPause?'Live updates paused. The screen holds still until you turn them back on.':'Live updates on.')};
 if(FR_ON){const st0=smTick;smTick=function(){if(S.frPause)return;return st0.apply(this,arguments)};
   setInterval(()=>{const e=document.getElementById('liveAgo');if(e&&S.frPause)e.textContent='Paused · live updates off'},15000)}
@@ -7764,7 +7910,7 @@ function frBellHTML(){const al=frAlerts().filter(a=>!a.ack),runs=typeof afInboxH
 function frBellRefresh(){const n=frCounts().alerts,b=$('#frBellN');if(b){b.textContent=n||'';b.hidden=!n}const s=$('#frBell summary');s&&s.setAttribute('aria-label','Alerts: '+n+' open');const p=$('#frBellP');if(p&&$('#frBell').open)p.innerHTML=frBellHTML()}
 document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='frBell'&&e.target.open){const p=$('#frBellP');p&&(p.innerHTML=frBellHTML())}},true);
 document.addEventListener('click',e=>{['#frBell','#frLive','.frco'].forEach(s=>{const d=$(s+'[open]');if(d&&!e.target.closest(s))d.removeAttribute('open')})});
-function frCountsRefresh(){if(!S.acct)return;const n=frCounts();[['#frcTasks',n.tasks],['#frcAlerts',n.alerts]].forEach(([s,v])=>{const e=$(s);if(e){e.textContent=v||'';e.hidden=!v}});frBellRefresh()}
+function frCountsRefresh(){if(!S.acct)return;const n=frCounts();{const h=$('#frcHome'),t=n.tasks+n.alerts;if(h){h.textContent=t||'';h.hidden=!t}}[['#frcTasks',n.tasks],['#frcAlerts',n.alerts]].forEach(([s,v])=>{const e=$(s);if(e){e.textContent=v||'';e.hidden=!v}});frBellRefresh()}
 if(FR_ON){
   const sh2=shell;shell=function(){sh2();const app=$('#app');
     $('.side',app).outerHTML=frSideHTML();
@@ -7927,13 +8073,14 @@ ACT.frWatchAdd=()=>{afPanelOpen(true);const q=$('#afq');if(q){q.value='Tell me w
 function frAttnCard(){const role=S.acct.role,al=frAlerts().filter(a=>!a.ack);
   if(role==='Developer'||role==='Admin'){const f=al.filter(a=>a.kind==='wf'||a.kind==='src');if(f.length)return frAttn(f.length+' integration issue'+(f.length>1?'s':'')+' need attention','Resolve failing workflows and stale sources to keep data fresh and decisions current.','View issues','go','alerts')}
   const e=al.filter(a=>a.kind==='esc'||a.kind==='note');if(e.length)return frAttn(e.length+' item'+(e.length>1?'s':'')+' need attention','Escalations and notifications waiting for an owner.','View issues','go','alerts');
-  const need=aomeItems().length;return need?frAttn(need+' task'+(need>1?'s':'')+' wait on you','Open My Tasks to clear the oldest first.','My Tasks','go','tasks'):''}
+  const need=frTaskList().length;return need?frAttn(need+' task'+(need>1?'s':'')+' wait on you','Open My Tasks to clear the oldest first.','My Tasks','go','tasks'):''}
 /* ---- classic modules: Grid · List · Customize, remembered per account ---- */
 function frMods(){const all=NAV.filter(g=>g.id!=='home'&&frVisible(g)),cfg=frLs('mods')||{},ord=cfg.order||[],hid=cfg.hide||[];
   return all.sort((a,b)=>(ord.indexOf(a.id)+1||99)-(ord.indexOf(b.id)+1||99)).filter(g=>!hid.includes(g.id))}
 const FR_MODH={command:'dec',tasks:'dec',alerts:'alert',product:'ev',analytics:'money',reports:'re',checks:'int',integration:'int',mcp:'agent',orchestration:'insp',audit:'re',access:'alert',settings:'neutral'};
 function frModsHTML(){const v=(frLs('mods')||{}).view||'grid';
   return `<div class="frmods ${v}">${frMods().map(g=>`<a class="frmod" href="#/${g.leaf?g.id:navHref(g,'').slice(2)}" data-act="go" data-arg="${g.leaf?g.id:navHref(g,'').slice(2)}">${frIt(g.icon,FR_MODH[g.id])}<span><b>${esc(tr(g.label))}</b><span class="note">${esc(tr(g.sub))}</span></span>${ICON.arrow}</a>`).join('')}</div>`}
+document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='frMoreDet')frLs('moredet',{open:e.target.open})},true);
 ACT.frModV=v=>{const c=frLs('mods')||{};c.view=v;frLs('mods',c);route(true)};
 ACT.frModCfg=()=>{const all=NAV.filter(g=>g.id!=='home'&&frVisible(g)),c=frLs('mods')||{},hid=c.hide||[],ord=frMods().map(g=>g.id).concat(all.map(g=>g.id).filter(id=>hid.includes(id)));
   openModal('Customize modules',`<p class="note" style="margin-top:0">Show, hide and reorder the module cards on your Home. Remembered for this account.</p><ul class="frcus">${ord.map((id,i)=>{const g=all.find(x=>x.id===id);return g?`<li><label class="tog"><input type="checkbox" data-ch="frModT" data-arg="${id}" ${hid.includes(id)?'':'checked'}> ${esc(tr(g.label))}</label><span class="row"><button class="iconbtn sm" data-act="frModMv" data-arg="${id}|-1" aria-label="Move ${esc(g.label)} up" ${i?'':'disabled'}>↑</button><button class="iconbtn sm" data-act="frModMv" data-arg="${id}|1" aria-label="Move ${esc(g.label)} down" ${i<ord.length-1?'':'disabled'}>↓</button></span></li>`:''}).join('')}</ul>`,'<button class="btn" data-act="frModReset">Reset</button><button class="btn pri" data-act="frModDone">Done</button>')};
@@ -7946,30 +8093,95 @@ function frHome(){const a=S.acct,role=a.role,tech=afTech(),now=asOfNow(),h=+new 
   const lines=afBriefing(),pins=AF.ui.pins||[],date=new Intl.DateTimeFormat('en-GB',{weekday:'long',day:'numeric',month:'short',year:'numeric',timeZone:S.rg.tz}).format(now),kp=frKpis(role);
   const brief=`<div class="afc afc-briefing frbrief" data-card="briefing"><p>Your AI agents are ready.${lines.length?'':' Nothing needs you right now.'}</p>${lines.length?`<ul class="afbr">${lines.map((l,i)=>`<li ${i>2?'class="frmore"':''}><a href="#/${esc(l.go)}" data-act="go" data-arg="${esc(l.go)}">${esc(l.text)}</a></li>`).join('')}</ul>${lines.length>3?`<button class="lnk" data-act="frBriefAll" aria-expanded="false">${lines.length-3} more</button>`:''}`:''}</div>`;
   return `<div class="afh frhome"><header class="frhh"><div class="frhg"><span class="sr">${tr('Home')}</span><span class="note">${esc(date)}</span><h1>${greet}, ${esc(role)}</h1>${brief}</div>
-    ${tech?'':`<div class="frhr">${FR_HERO}<p class="frtag">“From data to decisions,<br>with clarity.”</p></div>`}
-    <div class="frhm">${afProvLabel()}${canPage('orchestration')?`<div class="seg" role="group" aria-label="Experience mode"><button aria-pressed="${!tech}" data-act="afMode" data-arg="business">Business</button><button aria-pressed="${tech}" data-act="afMode" data-arg="technical">Technical</button></div>`:''}</div></header>
+    ${['Admin','Developer'].includes(role)?`<div class="frhm">${afProvLabel()}`:'<div class="frhm" hidden>'}${['Admin','Developer'].includes(role)&&canPage('orchestration')?`<div class="seg" role="group" aria-label="Experience mode"><button aria-pressed="${!tech}" data-act="afMode" data-arg="business">Business</button><button aria-pressed="${tech}" data-act="afMode" data-arg="technical">Technical</button></div>`:''}</div></header>
    <div class="frhg2"><div class="frhmain">
     ${frAskHTML()}
-    <div class="frkpis" id="frKpis">${kp.map(frKpi).join('')}</div>
+    <div class="frkpis frk3" id="frKpis">${kp.slice(0,3).map(frKpi).join('')}</div>
+    <details class="frmoredet" id="frMoreDet" ${(frLs('moredet')||{}).open?'open':''}><summary><span><b>More detail</b><small>Agent activity, decisions by stage and key figures</small></span>${ICON.chevD}</summary>
     <div class="frh2">${frPanel('Agent activity',frActBody(),{id:'afActivity',sub:'What your agents and workflows are doing across systems',right:`<a class="lnk" href="#/audit/log" data-act="go" data-arg="audit/log">View all →</a>`})}
      <div class="frhst">${frMiddle(role)}
       ${frPanel('Key figures',frFigures(),{id:'afFigures',right:`<label class="sr" for="frPer">Period</label><select class="sel" id="frPer" data-ch="frPer">${[['30','Last 30 days'],['90','Last 90 days'],['365','Last 12 months']].map(o=>`<option value="${o[0]}" ${(AF.ui.frPer||'30')===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`})}</div></div>
-    <section class="sect" id="frModules"><div class="sh"><div><h2>Classic modules</h2><p class="note" style="margin:2px 0 0">Jump into any module or let an agent guide you.</p></div><div class="row">${frSeg('mods',[['grid','Grid','grid'],['list','List','list']],(frLs('mods')||{}).view||'grid','frModV','Module view')}<button class="btn sm" data-act="frModCfg">Customize</button></div></div>${frModsHTML()}</section></div>
-   <aside class="frhside">${frRightTabs()}${frAttnCard()}${frPanel('Quick actions',frQaHTML(),{id:'frQa',right:`<button class="iconbtn sm" data-act="frQaCfg" aria-label="Choose quick actions">${ICON.settings}</button>`})}
+    </details></div>
+   <aside class="frhside">${frRightTabs()}${frAttnCard()}
     ${pins.length?frPanel('Pinned',`<div class="afpins">${pins.map((x,i)=>afCardHTML(x.card)+`<p class="afcardx"><button class="lnk" data-act="afUnpin" data-arg="${i}">Unpin</button></p>`).join('')}</div>`):''}</aside></div></div>`}
 if(FR_ON){renderHome=frHome;ANCH.home.brief=()=>$('#view .afc-briefing')}
 /* ===== New pages (5.5): My Tasks, Alerts, Reports, Data Checks, Settings; each built from what already exists ===== */
 /* ---- My Tasks: Needs you, grouped, with filters and ✦ Do it for me ---- */
 const FR_TG=[['decide','Decide','tasks','dec','Prepare decisions for these cases'],['evidence','Supply evidence','search','ev','Chase evidence for these items'],['confirm','Confirm','checks','re',"What's waiting for me?"],['integration','Fix integration','unplug','int','Which sources need attention']];
 const frTaskGroup=i=>{const t=(i.t+' '+i.btn+' '+(i.go||'')).toLowerCase();return /integration|source map|stale|unavailable/.test(t)?'integration':/evidence|inspection|record|result|receiving|wms/.test(t)?'evidence':/confirm|acknowledge|outcome|check/.test(t)?'confirm':'decide'};
-function frTasks(){const l=aomeItems().map(i=>Object.assign({g:frTaskGroup(i)},i)),f=S.frTaskF||'all',vis=l.filter(i=>f==='all'||i.g===f);
-  const row=i=>{const cid=(/^(RT-\d{4})/.exec(i.t)||[])[1];return `<li class="aor"><span class="aot"><b>${esc(i.t)}</b><span class="note">${esc(i.d)}</span></span><span class="row">${cid?`<button class="afai" data-act="afAssist" data-arg="case|${cid}" aria-label="Ask about ${cid}">✦</button>`:''}${i.act?`<button class="btn sm pri" data-act="${i.act}" data-arg="${esc(i.arg)}">${esc(i.btn)}</button>`:`<a class="btn sm pri" href="#/${esc(i.go)}" data-act="go" data-arg="${esc(i.go)}">${esc(i.btn)} →</a>`}</span></li>`};
-  return `<div class="frpage" id="frTasks">${frHead('My Tasks','Everything whose next step is yours, grouped by what it asks of you. The same list feeds Home › Needs you.',`<span class="chip ${l.length?'warn':'ok'}" id="frTasksN">${l.length} open</span>`)}
-   <div class="frkpis fr4">${FR_TG.map(g=>{const n=l.filter(i=>i.g===g[0]).length;return frKpi({ic:g[2],h:g[3],v:n,n,l:g[1],k:g[0]})}).join('')}</div>
-   <div class="frbar">${frSeg('tasks',[['all','All ('+l.length+')']].concat(FR_TG.map(g=>[g[0],g[1]+' ('+l.filter(i=>i.g===g[0]).length+')'])),f,'frTaskF','Task group')}</div>
-   ${FR_TG.filter(g=>f==='all'||f===g[0]).map(g=>{const it=vis.filter(i=>i.g===g[0]);return it.length?frPanel(esc(g[1]),`<ul class="aol">${it.map(row).join('')}</ul>`,{right:`<button class="btn sm" data-act="frTaskDo" data-arg="${g[0]}">${ICON.spark} Do it for me</button>`,sub:it.length+' item'+(it.length>1?'s':'')}):''}).join('')||'<div class="empty"><b>Nothing waits on you</b>New items appear here when a step becomes yours.</div>'}</div>`}
+const FR_DEMO_T=[
+ {t:'RT-2041 · Cordless drill, 3 years old',d:'Decision ready for review · reuse vs refurbish · Customer A',btn:'Review decision',go:'product/received',pg:'product',g:'decide'},
+ {t:'RT-2047 · Rotary hammer, Frankfurt',d:'Two options within 4% net value · needs your call before the 48 h handoff clock',btn:'Review decision',go:'product/received',pg:'product',g:'decide'},
+ {t:'FC-2304 · Redline Construction refresh',d:'Proposal ready · $2,610 below new · contract ends 18 Feb',btn:'Open proposal',go:'contracts',pg:'contracts',g:'decide'},
+ {t:'FC-2318 · Canyon Builders refresh',d:'Proposal ready · 4 like-life swaps · contract ends 25 Feb',btn:'Open proposal',go:'contracts',pg:'contracts',g:'decide'},
+ {t:'RT-2052 · Evidence missing: inspection record',d:'Workbench grade not posted for BRK-18802 · requested from Atlanta repair center',btn:'Request evidence',go:'product/received',pg:'product',g:'evidence'},
+ {t:'RT-2058 · Receiving record needed',d:'Serial CMH-41120 scanned in, no WMS receiving record yet',btn:'Add record',go:'product/received',pg:'product',g:'evidence'},
+ {t:'Confirm outcome · RT-1987',d:'Sold at $412 against $430 forecast (−4.2%) · confirm to feed the learning memory',btn:'Confirm outcome',go:'command/outcomes',pg:'command',g:'confirm'},
+ {t:'Acknowledge escalation · RT-2012',d:'Handoff clock passed 24 h with no action · reassigned to you',btn:'Acknowledge',go:'alerts',pg:'alerts',g:'confirm'},
+ {t:'Oracle Depot Repair feed failing',d:'Validation exhausted 3 retries (connection reset) · integration needs attention',btn:'Open Source Map',go:'integration/map',pg:'integration',g:'integration'},
+ {t:'Ritchie Bros. pricing token expired',d:'Market pricing is stale · predictions use older comparables until renewed',btn:'Renew credential',go:'integration/overview',pg:'integration',g:'integration'}];
+const frTaskList=()=>{const l=aomeItems().map(i=>Object.assign({g:frTaskGroup(i)},i));FR_DEMO_T.forEach(x=>{if(canPage(x.pg)&&(x.pg!=='command'||canPage('command','outcomes')||S.acct.role==='Admin')&&!l.some(y=>y.t===x.t))l.push(Object.assign({demo:1},x))});return l};
+function frTasks(){const l=frTaskList(),f=S.frTaskF||'all',vis=l.filter(i=>f==='all'||i.g===f);
+  if(!vis.find(i=>i.t===S.frTaskSel))S.frTaskSel=vis[0]&&vis[0].t;const sel=vis.find(i=>i.t===S.frTaskSel),G=g=>FR_TG.find(x=>x[0]===g);
+  const chips=[['all','All']].concat(FR_TG.map(g=>[g[0],g[1]])).map(c=>`<button type="button" class="chip" data-act="frTaskF" data-arg="${c[0]}" aria-pressed="${f===c[0]}">${c[1]} ${c[0]==='all'?l.length:l.filter(i=>i.g===c[0]).length}</button>`).join('');
+  const item=i=>`<button type="button" class="frci" data-act="frTaskSel" data-arg="${esc(i.t)}" aria-current="${i.t===S.frTaskSel}"><span class="r1"><b>${esc(i.t)}</b></span><span class="note">${esc(i.d)}</span><span class="r3"><span class="chip">${esc(G(i.g)[1])}</span></span></button>`;
+  const det=sel?(()=>{const cid=(/^(RT-\d{4})/.exec(sel.t)||[])[1],g=G(sel.g);return `<section class="panel frp"><div class="ph"><div><span class="frlab">${esc(g[1])} · waiting on you</span><h2 class="frh2">${esc(sel.t)}</h2></div><span class="chip warn">Open</span></div><div class="pb"><p class="note" style="margin:0 0 12px">${esc(sel.d)}</p>
+    <div class="frnba"><span class="frlab">Next step</span><p>${esc(g[4])}.</p></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px">${sel.act?`<button class="btn pri" data-act="${sel.act}" data-arg="${esc(sel.arg)}">${esc(sel.btn)}</button>`:`<a class="btn pri" href="#/${esc(sel.go)}" data-act="go" data-arg="${esc(sel.go)}">${esc(sel.btn)} →</a>`}${cid?`<button class="btn" data-act="afAssist" data-arg="case|${cid}">${ICON.spark} Ask why</button>`:''}<button class="btn" data-act="frTaskDo" data-arg="${g[0]}">${ICON.spark} Do it for me</button></div></div></section>`})():`<section class="panel frp"><div class="pb"><div class="empty"><b>Nothing waits on you</b>New items appear here when a step becomes yours.</div></div></section>`;
+  return `<div class="frpage" id="frTasks">${frHead('My Tasks','Everything whose next step is yours. The same list feeds Home › Needs you.',`<span class="chip ${l.length?'warn':'ok'}" id="frTasksN">${l.length} open</span>`)}
+   <div class="frmd"><section class="panel frmdl" aria-label="Tasks"><div class="frfil">${chips}</div>${vis.map(item).join('')||'<p class="note" style="padding:10px">No tasks in this group.</p>'}</section><div>${det}</div></div></div>`}
+ACT.frTaskSel=t=>{S.frTaskSel=t;route(true)};
 ACT.frTaskF=f=>{S.frTaskF=f;route(true)};
 ACT.frTaskDo=g=>{const G=FR_TG.find(x=>x[0]===g);if(G)afPanelAsk(G[4])};
+
+/* ---- Contract refresh (from Recover): one proposal per expiring contract, built 90 days ahead ---- */
+const CR_DATA=[{id:'FC-2291',cust:'Granite Civil',site:'UK · Birmingham',n:14,ends:'12 Feb 2027',fee:1520,nfee:1460,p0:81,p1:90,save:1140,mix:[9,3,2]},{id:'FC-2304',cust:'Redline Construction',site:'Germany · Frankfurt',n:31,ends:'18 Feb 2027',fee:3410,nfee:3290,p0:78,p1:88,save:2610,mix:[22,6,3]},{id:'FC-2310',cust:'Metro Utilities',site:'US · Houston',n:8,ends:'20 Feb 2027',fee:880,nfee:860,p0:84,p1:89,save:380,mix:[6,2,0]},{id:'FC-2318',cust:'Canyon Builders',site:'Australia · Sydney',n:22,ends:'25 Feb 2027',fee:2420,nfee:2350,p0:76,p1:86,save:1520,mix:[15,4,3]},{id:'FC-2322',cust:'Harbor Logistics',site:'France · Lyon',n:11,ends:'1 Mar 2027',fee:1260,nfee:1230,p0:80,p1:87,save:760,mix:[9,2,0]}];
+S.cr=S.cr||{sel:'FC-2304',f:'open',tab:'proposal',sent:{},sim:{}};
+const crBase=()=>({thr:25,upg:1,disc:10}),crMoney=v=>'$'+Math.round(v).toLocaleString('en-US'),CR_ROWS={};
+function crRng(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return()=>{h=Math.imul(h^h>>>15,2246822507);h=Math.imul(h^h>>>13,3266489909);h^=h>>>16;return(h>>>0)/4294967296}}
+function crRows(r){if(CR_ROWS[r.id])return CR_ROWS[r.id];const g=crRng(r.id),ty=[['CMH','Combihammer'],['BRK','Breaker'],['DCD','Core drill rig'],['CRH','Rotary hammer'],['AG','Angle grinder'],['LSR','Construction laser']],sites=['Atlanta','Denver','Phoenix','Chicago','Houston'],out=[];
+  for(let i=0;i<r.n;i++){const t=ty[Math.floor(g()*ty.length)],id=t[0]+'-'+(40000+Math.floor(g()*9999));
+    if(i<r.mix[1])out.push([id,t[1],12+Math.floor(g()*12),'Like-life swap','RF-'+(7700+Math.floor(g()*99))+' · '+(56+Math.floor(g()*12))+'%','Worn · refurbished match from '+sites[Math.floor(g()*5)]+' returns']);
+    else if(i<r.mix[1]+r.mix[2])out.push([id,t[1],30+Math.floor(g()*10),'Upgrade','Current model','Older model, parts ending 2027']);
+    else out.push([id,t[1],32+Math.floor(g()*38),'Keep','—','Good condition'])}
+  return CR_ROWS[r.id]=out}
+function crEval(r,p){const rows=crRows(r),per=r.fee/r.n,fd=(r.fee-r.nfee)/Math.max(1,r.mix[1]),sv=r.save/Math.max(1,r.mix[1]);
+  const acts=rows.map(x=>x[3]==='Upgrade'&&p.upg?'Upgrade':x[2]<p.thr?'Like-life swap':'Keep'),sw=acts.filter(a=>a==='Like-life swap').length,u=acts.filter(a=>a==='Upgrade').length;
+  const nfee=r.fee-fd*sw*(p.disc/10)+(u-r.mix[2])*per*.2,life=rows.map((x,i)=>acts[i]==='Upgrade'?100:acts[i]==='Like-life swap'?(x[3]==='Like-life swap'?parseInt(x[4].split('· ')[1]):60):x[2]),avg=life.reduce((a,b)=>a+b,0)/life.length,spread=Math.sqrt(life.reduce((a,b)=>a+(b-avg)*(b-avg),0)/life.length),ren=Math.min(95,r.p0+(r.p1-r.p0)*Math.min(1.15,(sw+u)/Math.max(1,r.mix[1]+r.mix[2]))*(.7+.03*p.disc));
+  return{acts,sw,u,nfee,save:sw*sv,avg,spread,ren,low:life.filter(v=>v<30).length}}
+function crSteps(r){const sent=S.cr.sent[r.id],f=n=>n.toLocaleString('en-US');return[
+  ['Intake agent','Contract '+r.id+' ends '+r.ends+'; picked up 90 days ahead from the fleet contract system.',r.n+' tools on contract, fee $'+f(r.fee)+' a month'],
+  ['Condition and life agent','Remaining life per tool from hours, faults and repairs over the last 12 months.',r.mix[1]+' tools worn below 25% life, '+r.mix[2]+' older models with parts ending 2027'],
+  ['Demand discovery agent','Matched each worn tool to a refurbished return with a life close to the rest of the fleet.',r.mix[1]+' like-life matches reserved'],
+  ['Valuation agent','Priced the proposal: fee, saving against new tools, likelihood to renew.','Fee $'+f(r.fee)+' → $'+f(r.nfee)+' · $'+f(r.save)+' below new · renew '+r.p0+'% → '+r.p1+'%'],
+  ['Disposition agent','One proposal: keep '+r.mix[0]+', like-life swap '+r.mix[1]+(r.mix[2]?', upgrade '+r.mix[2]:'')+'.','Proposal ready for one approval'],
+  ['Follow-through agent',sent?'Proposal emailed; contract lines drafted; refurbished tools reserved.':'Waiting for approval. Will email the proposal and draft the contract lines.',sent?'Sent':'Drafted, not sent']]}
+function frContracts(){const C=S.cr,xs=CR_DATA.filter(r=>C.f==='all'||(C.f==='sent'?C.sent[r.id]:!C.sent[r.id]));
+  if(!xs.find(r=>r.id===C.sel)&&xs[0])C.sel=xs[0].id;const r=CR_DATA.find(x=>x.id===C.sel)||CR_DATA[0],sent=C.sent[r.id],canAp=can('approve.decisions')||S.acct.role==='Admin';
+  const open=CR_DATA.filter(x=>!C.sent[x.id]),tot=open.reduce((a,x)=>a+x.save,0);
+  const pill=x=>C.sent[x.id]?'<span class="chip ok">Proposal sent</span>':'<span class="chip warn">Proposal ready</span>';
+  const fl=[['open','Ending in 90 days'],['sent','Sent'],['all','All']].map(f=>`<button type="button" class="chip" data-act="crF" data-arg="${f[0]}" aria-pressed="${C.f===f[0]}">${f[1]}</button>`).join('');
+  const list=xs.map(x=>`<button type="button" class="frci" data-act="crSel" data-arg="${x.id}" aria-current="${x.id===r.id}"><span class="r1"><b>${esc(x.cust)}</b><span class="num good">${crMoney(x.save)}</span></span><span class="note">${x.id} · ${x.n} tools · ends ${x.ends.slice(0,-5)}</span><span class="note">Keep ${x.mix[0]} · like-life ${x.mix[1]}${x.mix[2]?' · upgrade '+x.mix[2]:''}</span><span class="r3">${pill(x)}</span></button>`).join('')||'<p class="note" style="padding:10px">Nothing matches this filter.</p>';
+  const rows=crRows(r),col={Keep:'var(--ok)','Like-life swap':'var(--warn)',Upgrade:'var(--info)'};
+  let body;
+  if(C.tab==='agents')body=frPanel('How the agents built this proposal',`<ol class="frtrail">${crSteps(r).map((x,i)=>`<li><span class="n">${i+1}</span><div><b>${x[0]}</b><p class="note">${esc(x[1])}</p><p><b>${esc(x[2])}</b></p></div></li>`).join('')}</ol>`,{sub:'What each agent read and concluded'});
+  else if(C.tab==='sim'){const p=C.sim[r.id]||crBase(),b=crEval(r,crBase()),t=crEval(r,p),lev=(k,lbl,min,max,step,note,fmt)=>`<div class="frlev"><label for="cr-${k}">${lbl} <b class="num">${fmt(p[k])}</b></label><input type="range" id="cr-${k}" data-in="crSim" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${p[k]}"><span class="note">${note}</span></div>`,kp=(l,v0,v1,f,gd)=>frKpi({ic:'activity',h:'int',v:f(v1),n:0,l:l,sub:'today '+f(v0)});
+    body=frPanel('Test this proposal',`<div class="frlevs">${lev('thr','Swap a tool when life left is below',10,45,5,'Quality’s rule today: 25%',v=>v+'%')}${lev('disc','Fee reduction on like-life tools',0,20,1,'Fleet rate card v4 today: 10%',v=>v+'%')}${lev('upg','Upgrade older models whose parts end in 2027',0,1,1,'0 = keep or swap them instead',v=>v?'Yes':'No')}</div>
+      <div class="frkpis fr4" style="margin-top:14px">${kp('Like-life swaps',b.sw,t.sw,String)}${kp('Monthly fee',b.nfee,t.nfee,crMoney)}${kp('Below new, one-off',b.save,t.save,crMoney)}${kp('Likely to renew',b.ren,t.ren,v=>Math.round(v)+'%')}</div>
+      <p class="note" style="margin-top:10px">Average life left ${Math.round(b.avg)}% → ${Math.round(t.avg)}% · spread ±${Math.round(b.spread)} → ±${Math.round(t.spread)} points · tools still below 30%: ${b.low} → ${t.low}. A tight spread means the contract can be refreshed again as one block.</p>`,{sub:'Change the rules; the agents rebuild the proposal against the fleet’s own usage. Nothing is sent until you approve.',right:`<button class="btn sm" data-act="crReset">Reset to today</button>`})}
+  else body=(sent?`<div class="frbanner ok"><b>Sent.</b> Refresh proposal for ${r.id} emailed to ${esc(r.cust)}; contract lines drafted in the fleet contract system and ${r.mix[1]} refurbished tools reserved. Circularity follows up until the customer signs.</div>`:'')+
+    frPanel(`${sent?'Approved proposal':'Next best action'}: keep ${r.mix[0]}, like-life swap ${r.mix[1]}${r.mix[2]?', upgrade '+r.mix[2]:''}`,`<div class="tw"><table class="t static tight"><thead><tr><th>Tool</th><th>Type</th><th>Life left</th><th>Action</th><th>Replacement</th><th>Why</th></tr></thead><tbody>${rows.map(x=>`<tr><td class="num">${x[0]}</td><td>${x[1]}</td><td class="num">${x[2]}%</td><td><span class="chip" style="color:${col[x[3]]}">${x[3]}</span></td><td class="num">${x[4]}</td><td class="note">${x[5]}</td></tr>`).join('')}</tbody></table></div>
+      <p class="note" style="margin-top:8px">Swaps come from refurbished returns with a similar life to the rest of the fleet (about 60% left), so the whole contract ages evenly. ${crMoney(r.save)} less than new · one approval, was 4 applications.</p>
+      ${sent?'':`<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px">${canAp?`<button class="btn pri" data-act="crSend" data-arg="${r.id}">Approve and send the refresh proposal</button>`:`<span class="note">Approval sits with the Approver role.</span>`}<button class="btn" data-act="crTab" data-arg="sim">Test this proposal</button></div>`}`,{sub:'Against the fleet’s own usage · evidence: tool telemetry, service records, refurbished stock, rate card v4, 2 years of contract history'});
+  return `<div class="frpage" id="frContracts">${frHead('Contract refresh','One proposal per expiring contract, built 90 days ahead from the fleet contract system. Review it, test it, approve once.',`<span class="chip ${open.length?'warn':'ok'}">${open.length} ready · ${crMoney(tot)} below new</span>`)}
+   <div class="frmd"><section class="panel frmdl" aria-label="Contracts"><div class="frfil">${fl}</div>${list}</section>
+   <div class="frstk"><section class="panel frp"><div class="ph"><div><span class="frlab">${r.id} · fleet contract · ${esc(r.site)} · ends ${r.ends}</span><h2 class="frh2">${esc(r.cust)} · refresh proposal</h2></div>${pill(r)}</div><div class="pb">
+     <div class="frfacts"><div><span class="frlab">Tools</span><b>${r.n}</b></div><div><span class="frlab">Fee today</span><b>${crMoney(r.fee)} a month</b></div><div><span class="frlab">Proposed fee</span><b>${crMoney(r.nfee)} a month</b></div><div><span class="frlab">Likely to renew</span><b>${r.p0}% → ${r.p1}%</b></div></div>
+     ${frSeg('crtab',[['proposal','Proposal'],['sim','Test this proposal'],['agents','Agent trail']],C.tab,'crTab','Contract sections')}</div></section>${body}</div></div></div>`}
+ACT.crF=f=>{S.cr.f=f;route(true)};ACT.crSel=id=>{S.cr.sel=id;route(true)};ACT.crTab=t=>{S.cr.tab=t;route(true)};
+ACT.crReset=()=>{delete S.cr.sim[S.cr.sel];route(true)};
+ACT.crSend=id=>{if(!(can('approve.decisions')||S.acct.role==='Admin'))return toast('Approval sits with the Approver role.');S.cr.sent[id]=1;S.cr.f='all';const r=CR_DATA.find(x=>x.id===id);toast('Proposal for '+(r?r.cust:id)+' sent');route(true)};
+document.addEventListener('input',e=>{const el=e.target;if(el&&el.dataset&&el.dataset.in==='crSim'){const id=S.cr.sel,p=Object.assign({},S.cr.sim[id]||crBase());p[el.dataset.k]=+el.value;S.cr.sim[id]=p;const y=window.scrollY;route(true);window.scrollTo(0,y);const n=document.getElementById('cr-'+el.dataset.k);n&&n.focus()}});
 /* ---- Alerts ---- */
 const FR_AK=[['all','All'],['esc','Escalations'],['wf','Workflows'],['src','Sources'],['cred','Credentials'],['conf','Conflicts'],['note','Notifications']];
 S.frAssign=S.frAssign||{};
@@ -8037,7 +8249,7 @@ ACT.frRail=v=>{if((v==='rail')!==S.navRail)ACT.navRail();route(true)};
 ACT.frNotif=(on,el)=>{const n=frLs('notif')||{};n[el.dataset.arg]=!!on;frLs('notif',n);toast(on?'You will be notified.':'Turned off.')};
 ACT.frPres=on=>{try{localStorage.setItem('circ-presenter',on?'1':'0')}catch(e){}shell();route(true)};
 ACT.frPause=on=>ACT.frLive(on?'off':'on');
-if(FR_ON){const RP={tasks:frTasks,alerts:frAlertsPage,reports:frReports,checks:frChecks,settings:frSettings};
+if(FR_ON){const RP={tasks:frTasks,contracts:frContracts,alerts:frAlertsPage,reports:frReports,checks:frChecks,settings:frSettings};
   const rt1=route;route=function(keep){const r=parse();if(!S.acct||!RP[r.page])return rt1(keep);
     if(!canPage(r.page)){rbBounce('Not available for the '+S.acct.role+' view.');return}
     S.lastR=r;navSync(r);const v=$('#view');try{v.innerHTML=RP[r.page](r)}catch(err){console.error(err);v.innerHTML=`<div class="empty"><b>This view could not be drawn</b>${esc(err.message)}. Reload the page; your data is unchanged.</div>`}
@@ -8123,11 +8335,11 @@ function frSeries(s,n){if(!s||s.status==='unavailable')return Array(n).fill(0);c
 const frSuccess=s=>s.status==='unavailable'?0:s.status==='stale'?95.6:+(99.9-(parseInt(hashId(s.id+'ok'),16)%9)/10-(s.conf<85?1.2:0)).toFixed(1);
 const frFailedRecs=(s,n)=>Math.round(sum(frSeries(s,n))*(100-frSuccess(s))/100);
 /* ===== Connection Fabric (5.6–5.9): the page frame with breadcrumb and tabs, Overview (the catalogue) and the detail drawer ===== */
-const FR_INT_SUB={overview:'Connect, sync and orchestrate data across your enterprise systems. Existing systems keep owning their transactions; Circularity assembles their evidence and sends approved instructions back.',studio:'Build and run the workflows that bring each system’s data into the canonical models and send approved instructions back.',map:'How every connected system, its tables and its fields reach the canonical models and the decisions.',tables:'The tables each system exposes and how they link.',models:'Versioned canonical models every adapter maps into.',events:'Every message in and out, with its acknowledgement.',conflicts:'Where two systems disagree, and which one has authority.',import:'Controlled CSV import for partners with no supported API.',monitor:'Integration health over time: sync success, latency, failed records and freshness against SLA, per source and per workflow.'};
+const FR_INT_SUB={overview:'The enterprise systems that feed Circularity: what is connected, how healthy each feed is, and what needs attention. Existing systems keep owning their transactions.',studio:'Workflows that bring each connected system’s data in, run the decision, and send approved instructions back out.',map:'How every connected system, its tables and its fields reach the canonical models and the decisions.',tables:'The tables each system exposes and how they link.',models:'Versioned canonical models every adapter maps into.',events:'Every message in and out, with its acknowledgement.',conflicts:'Where two systems disagree, and which one has authority.',import:'Controlled CSV import for partners with no supported API.',monitor:'Health of every connected system over time: sync success, latency, failed records and freshness against SLA. Workflow runs are in Workflow Studio.'};
 function frIntegration(r){const T=FR_INT_KIDS.filter(t=>canPage('integration',t[0])),tab=T.some(t=>t[0]===S.intTab)?S.intTab:T[0][0],cur=T.find(t=>t[0]===tab),open=CONFLICTS.filter(c=>c.status==='open').length;
   if(tab==='studio'){wfInit();if(S.wf.cur)return frWfPage()}
   const right=`<button class="btn" data-act="frGuide">${ICON.book} Integration guide</button>${tab==='overview'&&canMgr()?`<button class="btn pri" data-act="frNewInt">${ICON.plus} New integration</button>`:tab==='map'&&canMgr()?`<button class="btn pri" data-act="frNewInt">${ICON.plus} Add source</button>`:''}`;
-  return `${frHead('Connection Fabric',FR_INT_SUB[tab],right,['Integration','Connection Fabric',cur[1]])}
+  return `${frHead('Connections',FR_INT_SUB[tab],right,['Connections',cur[1]])}
   <div class="tabs frtabs2" role="tablist">${T.map(t=>`<button role="tab" aria-selected="${tab===t[0]}" data-act="intTab" data-arg="${t[0]}">${t[0]==='conflicts'?'Conflict Queue ('+open+')':t[1]}</button>`).join('')}</div>
   ${canMgr()?'':`<div class="callout info" style="margin-bottom:14px"><b>Read-only view.</b> Only the Developer or Admin changes connections, tables, conflicts and workflows.${can('comment')&&canPage('integration','map')?' You can comment on a source: open it and choose the Comments tab.':''}</div>`}
   ${tab==='overview'?frOverview():tab==='studio'?wfHTML():tab==='map'?frSourceMap():tab==='tables'?frTilesTables()+tgHTML():tab==='models'?frTilesModels()+intModels():tab==='events'?frTilesEvents()+evTable():tab==='conflicts'?frTilesConf()+intConflicts():tab==='import'?intImport():frMonitor()}`}
@@ -8149,10 +8361,9 @@ function frOverview(){const all=frIntegrations(),f=S.frOv,q=f.q.trim().toLowerCa
   const recs=frRecs();
   return `<div id="frOverview"><div class="frkpis fr3">${frKpi({ic:'sync',h:'int',v:conn.length,n:conn.length,l:'Connected',sub:'systems sending data',k:'connected'})}${frKpi({ic:'alert',h:'dec',v:attn.length,n:attn.length,l:'Needs attention',sub:'stale, failing, expiring or not connected',k:'attention'})}${frKpi({ic:'grid',h:'money',v:av.length,n:av.length,l:'Available',sub:'in the catalogue, not yet connected',k:'available'})}</div>
    <div class="frbar"><div class="frsrch">${ICON.search}<label class="sr" for="frOvQ">Search integrations</label><input id="frOvQ" type="search" placeholder="Search integrations, or say “connect our HR system”" value="${esc(f.q)}" data-in="frOvQ" autocomplete="off"></div>
-    <label class="sr" for="frOvC">Category</label><select class="sel" id="frOvC" data-ch="frOvCat"><option value="">All categories</option>${cats.map(c=>`<option value="${c[0]}" ${f.cat===c[0]?'selected':''}>${c[0]}</option>`).join('')}</select></div>
-   <div class="frpills" role="group" aria-label="Category">${[['','All',all.length]].concat(cats.map(c=>[c[0],c[0],c[1]])).map(c=>`<button class="frpill" aria-pressed="${f.cat===c[0]}" data-act="frOvCat" data-arg="${c[0]}">${c[1]} <span>${c[2]}</span></button>`).join('')}</div>
-   <section class="frfeat"><div><span class="frfk">Featured</span><h2>Build a connected enterprise</h2><p>Bring every system that holds evidence about an asset into one governed fabric, and send approved instructions back to the system that does the work.</p><button class="btn pri" data-act="frOvExplore">Explore integrations →</button></div>
-    <ul>${[['shield','Role-based access and audit on every connection','Who can read, write and change each connection, recorded in the audit log'],['sync','Real-time sync','Event-driven and scheduled, with retries and replay'],['building','Multi-tenant','Each customer’s data stays inside its tenant']].map(x=>`<li>${ICON[x[0]]}<span><b>${x[1]}</b><small>${x[2]}</small></span></li>`).join('')}</ul></section>
+    </div>
+   
+   
    <div class="sh"><div><h2>Recommended for you</h2><p class="note" style="margin:2px 0 0">Ranked by the agent from open gaps in your evidence and workflows.</p></div></div>
    <div class="frrecs">${recs.map(x=>`<article class="frrec">${x.s?vlogo(x.s):vlogo({vendor:x.v})}<div class="frrech"><b>${esc(x.v)}</b><span class="note">${esc(x.t)}</span></div><p>${esc(x.line)}</p><div class="frrecf">${frSt(x.st)}<span class="row"><button class="lnk" data-act="frWhy" data-arg="${esc(x.v)}|${esc(x.why)}">${ICON.spark} Why recommended</button><button class="btn sm ${x.btn==='Connect'?'pri':''}" data-act="${x.act}" data-arg="${esc(x.arg)}">${x.btn}</button></span></div></article>`).join('')}</div>
    <div class="sh" id="frAllInt"><div><h2>All integrations</h2><p class="note" style="margin:2px 0 0">${conn.length} connected · ${av.length} available · ${all.length} in the catalogue</p></div></div>
@@ -8286,7 +8497,7 @@ function frWfSide(){const c={published:0,draft:0,paused:0,failing:0};S.wf.list.f
    ${frPanel('Recent activity',`<div id="wfRuns">${frWfRuns()}</div>`,{right:'<span class="livedot"><i></i>Live</span>'})}`}
 function frWfRuns(){return frTl(S.wf.runs.slice(0,6).map(x=>({ic:'workflow',h:x.state==='failed'?'alert':'int',t:esc(x.name),s:esc(x.state==='failed'?'Failed'+(x.note?' ('+x.note+')':''):'Completed · '+fmtN(x.rows)+' records'),ago:frAgo(Date.now()-x.ts),st:frSt(x.state==='failed'?'failed':x.state==='running'?'running':'completed')})),'Runs appear here as workflows fire on their triggers.')}
 function frWfList(){const f=S.wf.f,sys=[...new Set(S.wf.list.filter(w=>w.src).map(w=>w.src))].map(srcOr).filter(s=>!s.deleted);
-  return `<div class="frwfl"><div class="frwfm"><div class="frkpis fr4" id="wfChips">${frWfTiles()}</div>
+  return `<div class="frwfl"><div class="frwfm">${typeof wfAiBoxHTML==='function'?wfAiBoxHTML():''}<div class="frkpis fr4" id="wfChips">${frWfTiles()}</div>
    <div class="frbar"><div class="frsrch">${ICON.search}<label class="sr" for="frWfQ">Search workflows</label><input id="frWfQ" type="search" placeholder="Search workflows, owners or systems…" value="${esc(f.q||'')}" data-in="wfQ" autocomplete="off"></div>
     <label class="sr" for="wfTypeF">Type</label><select class="sel" id="wfTypeF" data-ch="wfTypeF"><option value="">All types</option>${['Ingest','Outbound','Decision'].map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('')}</select>
     <label class="sr" for="frWfSys">System</label><select class="sel" id="frWfSys" data-ch="frWfSys"><option value="">All systems</option>${sys.map(s=>`<option value="${s.id}" ${f.sys===s.id?'selected':''}>${esc(s.vendor)}</option>`).join('')}</select>
@@ -8410,7 +8621,7 @@ ${esc(new Date(r.ts).toISOString().slice(11,19))} INFO  downstream steps marked 
 ACT.frFixAsk=id=>{AF.ctxOverride={kind:'workflow',id};afPanelAsk('Why is this workflow failing?')};
 ACT.frFixApply=id=>{const w=WFW(id);if(!w||!can('manageWorkflows'))return toast(NOWF);const f=(MAPPINGS[w.src]||[])[0];w.frFix=f?'The renamed source field now maps to '+f[2]+' again (mapping kept as a new version).':'The step is reset to its last good configuration.';rbLog('workflow.fixed',w.id+' · '+w.frFix);toast('Fix applied. Run now to confirm it turns green.');route(true)};
 function frWfPage(){const w=S.wf.cur,s=frWfSys(w),tab=S.frWfTab||'studio',l=w.last,invest=/[?&]run=last/.test(location.hash)||(l&&l.state==='failed');
-  const head=`<nav class="frbc" aria-label="Breadcrumb"><span>Integration</span>${ICON.chevR}<span>Connection Fabric</span>${ICON.chevR}<button class="lnk" data-act="wfBack">Workflow Studio</button>${ICON.chevR}<b>${esc(w.name)}</b></nav>
+  const head=`<nav class="frbc" aria-label="Breadcrumb"><button class="lnk" data-act="wfBack">Connections › Workflows</button>${ICON.chevR}<b>${esc(w.name)}</b></nav>
    <div class="wfbar frwfh"><button class="iconbtn" data-act="wfBack" aria-label="All workflows">${ICON.back}</button>${s?vlogo(s):frIt('bot','agent','sm')}<div class="wfname"><label class="sr" for="wfName">Workflow name</label><input id="wfName" value="${esc(w.name)}" data-in="wfName" maxlength="80"></div><span id="wfStat">${frSt(wfStat(w))}</span><span class="note num">${w.id} · v${w.ver}</span>${l?`<span class="note">Last run ${esc(frAgo(Date.now()-l.ts))}</span>`:''}<span id="wfDirty">${w.dirty?'<span class="chip y">Unsaved changes</span>':''}</span><span class="grow"></span>
     <details class="frmenu"><summary class="btn">More actions ${ICON.chevD}</summary><div class="frdd" role="menu"><button role="menuitem" id="wfSaveB" data-act="wfSave" ${w.dirty?'':'disabled'}>${ICON.check}<span>Save</span></button><button role="menuitem" id="wfDiscB" data-act="wfDiscard" ${w.dirty?'':'disabled'}>${ICON.undo}<span>Discard changes</span></button><button role="menuitem" data-act="wfReset">${ICON.rotate}<span>Reset to template</span></button><button role="menuitem" data-act="wfPublish">${ICON.upload}<span>${w.status==='published'?'Unpublish':'Publish'}</span></button><button role="menuitem" data-act="wfDup" data-arg="${w.id}">${ICON.copy}<span>Duplicate</span></button><button role="menuitem" data-act="frWfTpl" data-arg="${w.id}">${ICON.file}<span>Save as template</span></button><button role="menuitem" data-act="frWfExport" data-arg="${w.id}">${ICON.download}<span>Export JSON</span></button><button role="menuitem" class="dng" data-act="wfDelAsk" data-arg="${w.id}">${ICON.trash}<span>Delete</span></button></div></details>
     <button class="btn" data-act="wfValidate">${ICON.checks} Validate</button><button class="btn" data-act="wfRun">${ICON.play} Test run</button><button class="btn pri" data-act="wfRunNow" data-arg="${w.id}">${ICON.play} Run now</button></div>
@@ -8445,7 +8656,7 @@ function frSrcModels(s){const pre=Object.fromEntries(Object.entries(CANON_PFX).m
   const t=MAP_TARGET[s.id]||(frTypeOf(s.type)||{}).target;if(t&&!o[t])o[t]=[];return o}
 S.frSm={view:innerWidth<=860?'list':'graph',sel:null,links:true,q:'',cat:'',st:'',z:null,tree:'sys',tab:'ov',hl:null};
 function frSmTiles(){wfInit();const conn=frConnected(),tbl=sum(SOURCES.map(s=>frTblN(s.id))),fm=sum(Object.values(MAPPINGS).map(r=>r.length)),act=S.wf.list.filter(w=>w.status==='published').length,t=hhTotals(),nw=SOURCES.filter(s=>s.frConnectedAt&&Date.now()-s.frConnectedAt<30*864e5).length,nwf=S.wf.list.filter(w=>w.frNew).length;
-  return frKpi({ic:'graph',h:'int',v:conn.length,n:conn.length,l:'Connected sources',k:'connected',d:nw?`<span class="frd good">▲ ${nw} this month</span>`:''})+frKpi({ic:'database',h:'money',v:tbl,n:tbl,l:'Tables modelled',k:'tables'})+frKpi({ic:'link',h:'dec',v:fm,n:fm,l:'Field mappings',k:'fields'})+frKpi({ic:'sync',h:'insp',v:act,n:act,l:'Active workflows',k:'workflows',d:nwf?`<span class="frd good">▲ ${nwf} this month</span>`:''})+frKpi({ic:'activity',h:'int',v:t.pct.toFixed(1)+'%',n:+t.pct.toFixed(1),l:'Integration health',sub:'last 24 hours',sp:S.hh.map(b=>b.ok/((b.ok+b.warn+b.bad)||1)),k:'health'})}
+  return frKpi({ic:'graph',h:'int',v:conn.length,n:conn.length,l:'Connected sources',k:'connected',d:nw?`<span class="frd good">▲ ${nw} this month</span>`:''})+frKpi({ic:'database',h:'money',v:tbl,n:tbl,l:'Tables modelled',k:'tables'})+frKpi({ic:'link',h:'dec',v:fm,n:fm,l:'Field mappings',k:'fields'})+frKpi({ic:'activity',h:'int',v:t.pct.toFixed(1)+'%',n:+t.pct.toFixed(1),l:'Integration health',sub:'last 24 hours',sp:S.hh.map(b=>b.ok/((b.ok+b.warn+b.bad)||1)),k:'health'})}
 function frSmList(){const f=S.frSm,q=f.q.trim().toLowerCase();return SOURCES.filter(s=>(!f.cat||frCatOf(s)===f.cat)&&(!f.st||(f.st==='attention'?frNeedsAttn(s):s.status===f.st))&&(!q||(s.name+' '+s.vendor+' '+s.owner).toLowerCase().includes(q)))}
 const frDot=s=>s.disconnected||s.status==='unavailable'?'bad':s.status==='stale'||frSrcFailing(s)?'warn':s.paused?'line':s.status==='manual'?'line':'ok';
 function frSourceMap(){const f=S.frSm,cats=FR_CATS.filter(c=>SOURCES.some(s=>frCatOf(s)===c));
@@ -8531,11 +8742,11 @@ function frTilesConf(){const o=CONFLICTS.filter(c=>c.status==='open').length,r=C
 const frSla=s=>s.interval?s.interval*2:/event|webhook/i.test(s.mode)?15:s.status==='manual'?2880:60;
 const frLat=s=>s.status==='unavailable'?null:Math.round(180+parseInt(hashId(s.id+'lat'),16)%900+(s.status==='stale'?2400:0));
 function frMonitor(){wfInit();hhInit();const t=hhTotals(),srcs=SOURCES.filter(s=>s.status!=='unavailable'),inSla=srcs.filter(s=>s.freshMin!=null&&s.freshMin<=frSla(s)),fr7=sum(srcs.map(s=>frFailedRecs(s,7))),lat=Math.round(sum(srcs.map(frLat))/(srcs.length||1)),mx=Math.max(...S.hh.map(b=>b.ok+b.warn+b.bad)),dips=S.hh.map((b,i)=>({i,b})).filter(x=>x.b.bad>0);
-  return `<div id="frMon"><div class="frkpis">${frKpi({ic:'checks',h:'int',v:t.pct.toFixed(1)+'%',n:+t.pct.toFixed(1),l:'Sync success',sub:'last 24 hours',sp:S.hh.map(b=>b.ok/((b.ok+b.warn+b.bad)||1)),k:'success'})}${frKpi({ic:'clock',h:'money',v:fmtN(lat)+' ms',n:lat,l:'Average latency',sub:'per sync request',k:'latency'})}${frKpi({ic:'alert',h:'alert',v:fmtN(fr7),n:fr7,l:'Failed records',sub:'last 7 days, held for reprocessing',k:'failed'})}${frKpi({ic:'gauge',h:'dec',v:inSla.length+' / '+srcs.length,n:inSla.length,l:'Fresh within SLA',sub:'connected sources',k:'sla'})}${frKpi({ic:'workflow',h:'insp',v:S.wf.list.filter(w=>wfStat(w)==='failing').length,l:'Failing workflows',k:'wffail'})}</div>
+  return `<div id="frMon"><div class="frkpis">${frKpi({ic:'checks',h:'int',v:t.pct.toFixed(1)+'%',n:+t.pct.toFixed(1),l:'Sync success',sub:'last 24 hours',sp:S.hh.map(b=>b.ok/((b.ok+b.warn+b.bad)||1)),k:'success'})}${frKpi({ic:'clock',h:'money',v:fmtN(lat)+' ms',n:lat,l:'Average latency',sub:'per sync request',k:'latency'})}${frKpi({ic:'alert',h:'alert',v:fmtN(fr7),n:fr7,l:'Failed records',sub:'last 7 days, held for reprocessing',k:'failed'})}${frKpi({ic:'gauge',h:'dec',v:inSla.length+' / '+srcs.length,n:inSla.length,l:'Fresh within SLA',sub:'connected sources',k:'sla'})})}</div>
    ${frPanel('Sync runs, last 24 hours',`<div class="frmonb" aria-hidden="true">${S.hh.map((b,i)=>`<span data-tip="${String(i).padStart(2,'0')}:00 · ${b.ok} successful, ${b.warn} warnings, ${b.bad} failures"><i style="height:${b.bad/mx*100}%;background:var(--bad)"></i><i style="height:${b.warn/mx*100}%;background:var(--h-dec)"></i><i style="height:${b.ok/mx*100}%;background:var(--ok)"></i></span>`).join('')}</div><div class="frlegl"><span><i style="background:var(--ok)"></i>Successful ${fmtN(t.ok)}</span><span><i style="background:var(--h-dec)"></i>Warnings ${fmtN(t.warn)}</span><span><i style="background:var(--bad)"></i>Failures ${fmtN(t.bad)}</span></div>
      ${dips.length?`<p class="note" style="margin:10px 0 0">Dips at ${dips.slice(0,6).map(x=>`<button class="lnk" data-act="frDip" data-arg="${x.i}">${String(x.i).padStart(2,'0')}:00</button>`).join(', ')}. ${ICON.spark} Select one for an explanation.</p>`:''}`,{sub:'Each bar is one hour; the same history feeds Home and the Source Map'})}
    <div class="frmon2">${frPanel('Per source',`<div class="tw"><table class="t static tight"><thead><tr><th>Source</th><th>Freshness</th><th>SLA</th><th class="r">Success</th><th class="r">Failed (7 d)</th><th class="r">Latency</th><th></th></tr></thead><tbody>${SOURCES.map(s=>{const ok=s.freshMin!=null&&s.freshMin<=frSla(s);return `<tr><td><span class="frsys">${vlogo(s)}<span><b>${esc(s.vendor)}</b><span class="note">${esc(s.name)}</span></span></span></td><td>${s.freshMin==null?'<span class="note">—</span>':esc(s.fresh)}</td><td>${s.status==='unavailable'?frSt('unavailable'):ok?frSt('success','Within '+srcAge(frSla(s))):frSt('failed','Over '+srcAge(frSla(s)))}</td><td class="r num">${s.status==='unavailable'?'—':frSuccess(s)+'%'}</td><td class="r num">${fmtN(frFailedRecs(s,7))}</td><td class="r num">${frLat(s)==null?'—':fmtN(frLat(s))+' ms'}</td><td>${!ok||s.status!=='live'?`<button class="afai" data-act="afAssist" data-arg="source|${s.id}" aria-label="Explain ${esc(s.vendor)}">✦</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`)}
-    ${frPanel('Per workflow',`<div class="tw"><table class="t static tight"><thead><tr><th>Workflow</th><th class="r">Runs (24 h)</th><th class="r">Success</th><th>Last run</th><th class="r">Avg duration</th></tr></thead><tbody>${S.wf.list.filter(w=>w.runsN).sort((a,b)=>a.okN/a.runsN-b.okN/b.runsN).slice(0,14).map(w=>`<tr data-wid="${w.id}"><td><button class="lnk b" data-act="wfOpen" data-arg="${w.id}">${esc(w.name)}</button></td><td class="r num">${w.runsN}</td><td class="r num ${w.okN/w.runsN<.9?'neg':''}">${Math.round(w.okN/w.runsN*100)}%</td><td>${w.last?frSt(w.last.state==='failed'?'failed':'success')+' <span class="note">'+esc(frAgo(Date.now()-w.last.ts))+'</span>':'—'}</td><td class="r num">${w.last?w.last.dur+' s':'—'}</td></tr>`).join('')}</tbody></table></div>`,{sub:'Lowest success first'})}</div></div>`}
+    <p class="note" style="margin:0">Workflow runs and failures are in <a href="#/integration/studio" data-act="go" data-arg="integration/studio">Workflows</a>.</p></div></div>`}
 ACT.frDip=i=>{const b=S.hh[+i],bad=SOURCES.filter(s=>s.status==='stale'||frSrcFailing(s)).map(s=>s.vendor);afPanelOpen(true);afThread(afThreadKey()).push({who:'agent',run:null,text:`At ${String(i).padStart(2,'0')}:00 there were ${b.bad} failed and ${b.warn} warning runs out of ${b.ok+b.warn+b.bad}. ${bad.length?'Sources that were stale or failing at the time: '+bad.join(', ')+'. ':''}Failures keep their records in the error handler; open a failing workflow and choose Investigate for the step and the reason.`,cards:[],next:[{label:'Which sources need attention',ask:'Which sources need attention'}],calls:[],at:asOfNow().toISOString()});afSave();afRefreshPanel()};
 /* ===== Near-real flows (5.10): connect from the catalogue, pause and resume, disconnect and reconnect, re-authenticate, credential expiry; all in the page ===== */
 /* credential expiry on a schedule: the ShipLane TMS client secret is issued for a term that ends five days from now */
@@ -8946,6 +9157,63 @@ document.addEventListener('click',e=>{const lb=e.target.closest&&e.target.closes
 /* workflow changes asked for in chat: a new step and the trigger, shown first, applied to the canvas only on confirm, never published by the agent */
 XF.push({id:'x_flag',label:'Flag failed bench tests',sub:'Hold the unit, notify the workshop lead',desc:'Units whose bench test fails are flagged, held from release and routed to the workshop lead with the test result attached.'});
 const CX_NUM={one:1,two:2,five:5,ten:10,fifteen:15,twenty:20,thirty:30,sixty:60};
+/* ===== AI-first Workflow Studio: describe a workflow in words and the agent builds it as a draft (never published) ===== */
+const WFAI_EX=['Ingest Salesforce opportunities every 15 minutes and convert currency','Send approved instructions to the warehouse system as events','Decision workflow that requests missing evidence and finds demand before the gates'];
+const WFAI_NUM={one:1,two:2,five:5,ten:10,fifteen:15,twenty:20,thirty:30,sixty:60};
+const WFAI_STOP=/^(the|and|for|cloud|management|system|systems|data|service|services|northfield|active|sales|fusion|with|from)$/;
+function wfAiSrc(t){let best=null,bs=0;
+ SOURCES.forEach(s=>{let sc=0;const words=[s.vendor,s.name,(SRC_TYPES[s.type]||{}).label||''].join(' ').toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>=3&&!WFAI_STOP.test(x));
+  new Set(words).forEach(x=>{if(new RegExp('\\b'+x+'\\b').test(t))sc+=x.length>=5?2:1});
+  if(new RegExp('\\b'+s.id+'s?\\b').test(t))sc+=3;
+  if(sc>bs){bs=sc;best=s}});return bs>=2?best:null}
+function wfAiTrig(t){const m=/every (\d+|one|two|five|ten|fifteen|twenty|thirty|sixty) ?(minutes?|mins?|hours?|h)\b/.exec(t);
+ if(m){let n=+m[1]||WFAI_NUM[m[1]]||15;if(/^h/.test(m[2]))n*=60;return{t:'schedule',min:n}}
+ if(/hourly|every hour/.test(t))return{t:'schedule',min:60};if(/daily|every day|each day|nightly/.test(t))return{t:'schedule',min:1440};
+ if(/on approval|once approved|after approval|when approved/.test(t))return{t:'approval'};
+ if(/file (lands|arrives)|when a file|trigger file/.test(t))return{t:'file'};
+ if(/each case|every case|per case/.test(t))return{t:'case'};
+ if(/\bevents?\b|webhook|real.?time|as it happens/.test(t))return{t:'event'};
+ if(/manual/.test(t))return{t:'manual'};return null}
+/* words to a plan: the kind of workflow, the system, the channel, the steps and the trigger */
+function wfAiPlan(raw){const t=String(raw||'').toLowerCase(),src=wfAiSrc(t),trig=wfAiTrig(t);
+ const out=src&&src.write.length&&/\b(send|push|deliver|outbound|instructions?|write ?back|hand ?off|publish)\b/.test(t)&&!/\b(ingest|import|pull|sync|collect|fetch|load)\b/.test(t);
+ const dec=/\b(decision workflow|six.?gate|gates?|eligib\w*|allocat\w*|pool|evidence gaps?|missing evidence|find demand)\b/.test(t)||(!src&&/\b(decision|decisions|routes?|demand|recommend\w*)\b/.test(t));
+ const extras=AF_WF_KW.filter(k=>k[1].test(t)).map(k=>k[0]);
+ let kind=dec?'dec':out?'out':src?'ingest':'blank',d,g,nm;
+ if(kind==='blank'&&!extras.length)return{need:'Which system should it read from or send to?'};
+ if(kind==='ingest'){d=afWfDraft(src.id,raw);g=d.graph;nm='Ingest · '+src.vendor}
+ else if(kind==='out'){let ch=/event|webhook|queue/.test(t)?'event':/\bfiles?\b|csv|sftp/.test(t)?'file':/process|bpm|task/.test(t)?'proc':'api';const al=DELIVER[src.id]||['api'];if(!al.includes(ch))ch=al[0];
+  g=bOut(src.id,ch);g.edges.forEach((e,i)=>e.id='e'+i);g.nodes.forEach(n=>{if(n.k!=='fixed')n.ai=1});nm='Outbound · '+src.vendor;d={ch}}
+ else if(kind==='dec'){const v=/pool|allocat/.test(t)?'pool':/evidence|demand/.test(t)?'gap':'standard';g=WF_DEC[v].build();g.edges.forEach((e,i)=>e.id='e'+i);g.nodes.forEach(n=>{if(n.k!=='fixed')n.ai=1});nm=WF_DEC[v].name;d={}}
+ else{const N=[],E=[];extras.forEach((x,i)=>{N.push(Object.assign(_n('ai'+i,'xf',x,24+206*i,170),{ai:1}));if(i)E.push({id:'e'+i,a:'ai'+(i-1),b:'ai'+i,locked:false})});g={nodes:N,edges:E};nm='New pipeline';d={}}
+ const v=wfValidate(g,kind==='dec'?'dec':'pipe');
+ const name=nm+' (AI draft)',plan={type:kind,src:src?src.id:'',ch:d.ch||'',name,graph:g,trig,raw:String(raw),desc:'AI draft from your request: “'+String(raw).trim().slice(0,160)+'”',
+  steps:g.nodes.map(n=>({id:n.id,label:wfInfo(n).label,kind:n.k,fixed:n.k==='fixed'})),errors:v.filter(x=>x.sev==='error').map(x=>x.msg),warnings:v.filter(x=>x.sev==='warn').map(x=>x.msg)};
+ if(trig&&!plan.trig)plan.trig=trig;return plan}
+function wfAiMake(d){if(!can('manageWorkflows'))return toast(NOWF);wfInit();const inp={type:d.type,src:d.src||'',ch:d.ch||'',name:d.name,graph:d.graph,desc:d.desc};if(d.trig)inp.trig=d.trig;
+ const r=invoke('workflow.create',inp,{preparer:typeof afAgentFor==='function'?afAgentFor('workflow.create'):undefined,confirmed:true});if(!r.ok)return afToast(r);
+ toast(r.output.name+' drafted by the agent. Review it on the canvas, then Save and Publish.',5200);ACT.wfOpen(r.output.id)}
+function wfAiBoxHTML(){if(!can('manageWorkflows'))return '';
+ return `<section class="wfai" aria-label="Build a workflow with AI"><div class="wfaih">${ICON.spark}<div><b>Describe the workflow you want</b><span class="note">The agent picks the system, steps and trigger and drafts it on the canvas. You review it, then publish.</span></div></div>
+  <div class="wfaib"><textarea id="wfAiIn" rows="2" placeholder="e.g. Ingest Salesforce opportunities every 15 minutes and convert currency" aria-label="Describe a workflow"></textarea><button class="btn pri" data-act="wfAiGo">${ICON.spark} Build it</button></div>
+  <div class="wfaix">${WFAI_EX.map((x,i)=>`<button class="wfaiex" data-act="wfAiEx" data-arg="${i}">${esc(x)}</button>`).join('')}</div><p class="note" id="wfAiMsg" aria-live="polite"></p></section>`}
+ACT.wfAiEx=i=>{const t=$('#wfAiIn');if(t){t.value=WFAI_EX[+i];t.focus()}};
+ACT.wfAiSrc=id=>{const t=$('#wfAiIn'),s=SRC(id);if(t&&s){t.value=(t.value+' '+s.vendor).trim();ACT.wfAiGo()}};
+ACT.wfAiGo=()=>{const t=$('#wfAiIn'),m=$('#wfAiMsg');const v=t?t.value.trim():'';if(!v){m&&(m.textContent='Describe what the workflow should do, for example one of the examples below.');return}
+ const d=wfAiPlan(v);if(d.need){if(m)m.innerHTML=esc(d.need)+' '+SOURCES.filter(s=>s.status==='live').slice(0,6).map(s=>`<button class="wfaiex" data-act="wfAiSrc" data-arg="${s.id}">${esc(s.vendor)}</button>`).join('');return}
+ wfAiMake(d)};
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='wfAiIn'){e.preventDefault();ACT.wfAiGo()}});
+/* the same builder from the Ask panel: any request to build a workflow */
+let AF_WB=0;
+defIntent({id:'workflow.build',area:'integration',title:'Build a workflow from a description',m:[[RX('(build|create|make|set up|draft|design|generate)\\b[^.]*\\b(workflow|pipeline|ingest)\\b'),2.9],[RX('^(a |an )?(new )?(workflow|pipeline)\\b'),2.9],[RX('(i (want|need)|can you|please)[^.]*\\b(workflow|pipeline)\\b'),2.9]]});
+AF_INTENT_RUN['workflow.build']=(p,ctx,R)=>{const d=wfAiPlan(p.raw);if(d.need)return{text:d.need,result:'clarify',cards:[{type:'clarify',data:{q:d.need,options:SOURCES.filter(s=>s.status==='live').slice(0,4).map(s=>({label:s.vendor,ask:p.raw+' '+s.vendor}))}}]};
+ d.key='wb'+(++AF_WB);(AF.drafts||(AF.drafts={}))['wfai:'+d.key]=d;
+ return{text:'Drafted "'+d.name+'" with '+d.steps.length+' steps. Creating it makes a draft on the canvas; the agent never publishes it.',cards:[{type:'wfbuild',data:d}]}};
+AF_CARDS.wfbuild=(d,o)=>afHead('Workflow draft · '+esc(d.name),['Draft','Rules'],d.steps.length+' steps · trigger: '+(d.trig?esc(trigText(d.trig)):'set from the system')+' · checks: '+d.errors.length+' errors, '+d.warnings.length+' warnings')+
+ `<ol class="afplan afwf">${d.steps.map(s=>`<li class="${s.fixed?'fx':'ghost'}"><b>${esc(s.label)}</b><span class="note">${s.fixed?'Fixed step (Circularity owns it)':'Step added by the agent · '+esc(s.kind)}</span></li>`).join('')}</ol>`+
+ (d.errors.length?`<p class="callout bad"><b>Checks:</b> ${d.errors.map(esc).join(' ')}</p>`:'<p class="note">Checks: no errors. The draft is never published by the agent.</p>')+
+ afFoot([afB('Create draft and open',{wfMake:d.key},'pri'),afB('Discard',{cancel:true})],o);
+{const afDoWf=ACT.afDo;ACT.afDo=(id,el)=>{const p=AF.btns[id];if(p&&p.wfMake){const d=(AF.drafts||{})['wfai:'+p.wfMake];if(d)wfAiMake(d);return}return afDoWf(id,el)}}
 defIntent({id:'workflow.edit',area:'integration',ctx:'workflow',title:'Change this workflow',m:[[RX('(run|trigger|schedule)[^.]*every|every (\\d+|one|two|five|ten|fifteen|twenty|thirty|sixty) ?min|add (a )?step|flag (any|units?|failed)|bench test|change (the )?(trigger|schedule)'),2.7]]});
 AF_INTENT_RUN['workflow.edit']=(p,ctx,R)=>{const w=afWfOf(p,ctx);if(!w)return{text:'Open a workflow first, or name it (for example WF-101).',cards:[]};const t=String(p.raw||'').toLowerCase(),ch=[];
   const g=JSON.parse(JSON.stringify(wfGraphOf(w)));let trig=null;const mt=/every (\d+|one|two|five|ten|fifteen|twenty|thirty|sixty) ?(min|minute)/.exec(t);
