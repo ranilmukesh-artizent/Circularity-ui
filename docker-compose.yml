@@ -8,6 +8,10 @@ x-pg: &pg
 x-api-env: &api-env
   DI_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-circ}:${POSTGRES_PASSWORD:-circ}@postgres:5432/di
   DI_SOURCE_SIM_URL: http://source-sim:8100
+  # B13b, the real loop: follow source-sim's simulated clock, and send approved steps to the mocked systems
+  # (the test suite pins the clock and turns sending off for itself: apps/api/tests/conftest.py)
+  DI_CLOCK: sim
+  DI_INSTRUCTIONS: "true"
 
 services:
   postgres:

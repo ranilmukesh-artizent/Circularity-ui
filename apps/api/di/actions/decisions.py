@@ -18,7 +18,7 @@ import copy
 import math
 from collections.abc import Callable
 
-from di import policy, state
+from di import instructions, policy, state
 from di.actions.registry import ACTIONS, ActionError, guard, implement
 from di.cases import lifecycle, store
 from di.engine.evaluate import build_routes
@@ -292,6 +292,7 @@ def _approve(action: str, i, ctx) -> dict:
         key,
     )  # fmt: skip
     lifecycle.move(ctx.session, c, "approved", f"{'Override approved' if is_ov else 'Approved'} under {ref}", ctx.actor.id)
+    instructions.queue_first(ctx.session, c)  # B13b: the first step goes to its system (when sending is on)
     return {"case_id": c["id"], "ref": ref, "route": t["plan"], "net": t["net"], "override": is_ov, "sent_to": steps[0]["sys"]}
 
 

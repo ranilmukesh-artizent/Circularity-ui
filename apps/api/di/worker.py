@@ -1,7 +1,8 @@
 """di-worker: claims jobs from the Postgres queue and runs their handler.
 
 Run with:  python -m di.worker
-Handlers register by job kind. Phase 2 adds source sync jobs; phase 4 adds outbound instructions.
+Handlers register by job kind: `sync.source` (B9) and `instruction.send` (B13b, di/instructions). Besides jobs, the
+loop queues due syncs every 30 s and, while sending instructions is on, acknowledges due simulated steps every 5 s.
 """
 
 import logging
@@ -68,11 +69,14 @@ def main() -> None:
     poll = get_settings().worker_poll_seconds
     startup()
     log.info("worker started; handlers: %s", ", ".join(sorted(HANDLERS)))
-    next_periodic = 0.0
+    next_periodic = next_tick = 0.0
     while not stopping:
         if time.monotonic() >= next_periodic:
             periodic()
             next_periodic = time.monotonic() + 30
+        if time.monotonic() >= next_tick and get_settings().instructions:
+            tick_instructions()  # simulated acknowledgements fall due as the simulated clock moves
+            next_tick = time.monotonic() + 5
         if not run_once():
             time.sleep(poll)
     log.info("worker stopped")
@@ -85,6 +89,28 @@ def _sync(payload: dict) -> None:
 
     out = run_sync(payload["source_id"], payload.get("trigger", "schedule"), bool(payload.get("full")))
     log.info("sync %s: %s", payload["source_id"], out)
+
+
+# ---------------------------------------------------------------- outbound instructions (B13b)
+@handler("instruction.send")
+def _instruction_send(payload: dict) -> None:
+    import di.actions.execution  # noqa: F401 - registers adapter.acknowledge, which acknowledgements go through
+    from di.instructions.send import send
+
+    out = send(int(payload["instruction_id"]), bool(payload.get("resend")))
+    log.info("instruction %s: %s", payload["instruction_id"], out)
+
+
+def tick_instructions() -> None:
+    """Acknowledge the simulated steps that are due on the simulated clock."""
+    import di.actions.execution  # noqa: F401
+    from di.instructions.send import tick
+
+    try:
+        if n := tick():
+            log.info("simulated acknowledgements: %s", n)
+    except Exception:  # noqa: BLE001
+        log.exception("simulated acknowledgements failed")
 
 
 def startup() -> None:

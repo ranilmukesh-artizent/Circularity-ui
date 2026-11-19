@@ -3,6 +3,10 @@
 source-sim delivers every change as a signed CloudEvent (B6). The intake verifies the HMAC signature and queues a
 delta sync of the source that changed; a burst of events for one source queues one sync. The subscription is made
 once by the worker at start-up.
+
+B13b: before the sync is queued, an event that completes an instruction's step acknowledges it
+(di/instructions/events.py: which event completes which step, and how it is matched). Every event still queues the
+delta sync, matched or not.
 """
 
 import hashlib
@@ -18,6 +22,7 @@ from di.config import get_settings
 from di.connectors.registry import ADAPTERS
 from di.connectors.sync import enqueue_sync
 from di.db import SessionLocal
+from di.instructions import events as instructions_events
 
 log = logging.getLogger("di.webhook")
 router = APIRouter(prefix="/api/webhooks", tags=["Connectors"])
@@ -52,6 +57,11 @@ async def source_event(request: Request, x_sim_signature: str | None = Header(de
         raise HTTPException(400, {"code": "validation_error", "message": "Not a CloudEvent from source-sim."}) from e
     if source_id not in ADAPTERS:
         return {"accepted": False, "reason": f"no connector for {source_id}"}
+    instruction = None
+    try:
+        instruction = instructions_events.handle(ev)  # B13b: a completion acknowledges its step
+    except Exception:  # noqa: BLE001 - an acknowledgement that fails must not stop the sync below
+        log.exception("instruction acknowledgement from %s %s failed", source_id, ev.get("type"))
     with SessionLocal() as s:
         if ev.get("type") == "sim.reset":
             # the simulation rewound this system: its delta cursors no longer mean anything, so read everything again
@@ -59,4 +69,5 @@ async def source_event(request: Request, x_sim_signature: str | None = Header(de
         status = s.execute(text("SELECT status FROM source_system WHERE id = :i"), {"i": source_id}).scalar()
         job = None if status in ("paused", "disconnected", "unavailable") else enqueue_sync(s, source_id, "webhook")
         s.commit()
-    return {"accepted": True, "source_id": source_id, "type": ev.get("type"), "queued_job": job}
+    out = {"accepted": True, "source_id": source_id, "type": ev.get("type"), "queued_job": job}
+    return out | ({"instruction": instruction} if instruction else {})

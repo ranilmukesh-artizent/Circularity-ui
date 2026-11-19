@@ -487,6 +487,31 @@ The rest of the design:
 - **Outcome:** the cost posting is read back by the S/4 connector (ACDOCA) into the Outcome model; `outcome.confirm` shows those actuals against the prediction, and reconciliation records the learning lines.
 - **Milestone test:** approve RT-1048 through the API, then only advance the simulated clock: every step is sent, acknowledged from a mock event, the case closes, Finance confirms, and the run reaches *Reconcile and learn*.
 
+**B13b status: done (19 Nov 2026). The first milestone is reached.**
+- **source-sim:** S/4HANA posts journal entries through SAP's SOAP "Journal Entry - Post" service (idempotent on `DocumentReferenceID`) and serves them through `API_JOURNALENTRYITEMBASIC_SRV`; the Sterling, Depot Repair, OTM and Manhattan completion events carry the caller's references.
+- **di:** table `instruction` (migration 0007) and `di/instructions/` (queue, per-step writers, the `instruction.send` job with retries and backoff, event matching). Approval queues the first step; each acknowledgement queues the next. The webhook receiver matches an event to its step by the references it carries and acknowledges it through `adapter.acknowledge` as the system actor with the system's own reference (new optional input `ref`); every event still queues a delta sync.
+- **RT-1048's six steps are real writes:**
+
+| Step | Write | Completed by | Reference |
+|---|---|---|---|
+| Allocate to the order line | Sterling `order/allocate` | `sterling.order.allocated` | SO-48102 |
+| Refurbishment work order | Depot Repair `create_repair_order` (our number) | `oracle.apps.csd.repair.complete` | WO-47349 |
+| Book transport | OTM order release | `otm.shipment.tenderAccepted` | the shipment, LD-5nnnn |
+| Warehouse moves and outbound delivery | Manhattan reservation and order (our number) | `manhattan.order.shipped` | TR-47362 |
+| Delivery confirmed | Sterling `fulfil` with OTM's proof of delivery | `sterling.order.fulfilled` | the POD |
+| Actual costs posted | S/4 journal entry, the actual cost lines | `JournalEntry.Created` | the accounting document |
+
+- **Simulated steps:** step kinds with no matching write in the mocks (sale, lease, collection, processing, certificate, putaway, release and the hold steps) are acknowledged by a simulated adapter after 2 simulated hours, marked as simulated on the step and in the event.
+- **Outcome:** the S/4 connector reads the journal entry items into a canonical `outcome` model (keyed by the approval, S/4 as the authority, with provenance); Finance's `outcome.confirm` keeps the demo's result.
+- **Clock and switches:** `DI_CLOCK=sim` makes the workspace clock follow source-sim's simulated clock; `DI_INSTRUCTIONS=true` turns sending on. Both are on in `docker-compose.yml`; the test suite forces the pinned clock and no sending (`tests/conftest.py`), so every parity test is unchanged.
+- **Milestone test** (`tests/test_milestone_rt1048.py`): approve RT-1048 over HTTP, then only advance the simulated clock 3 hours at a time. All six steps are sent to the right mock and acknowledged from that mock's event with its reference; a Depot Repair outage is retried and succeeds; the case closes, Finance confirms, the run is complete, and the canonical outcome lines from S/4 equal the actual cost lines. A second test resends every instruction and redelivers every event: nothing is written or acknowledged twice. A third covers the simulated steps (RT-1049, resale).
+- **Tests:** api 1,494, source-sim 197.
+
+**Known limits:**
+- Case stamps written by the handlers (approval time, step times) stay at the demo's as-of time for parity; the journal and instructions use the workspace clock. Escalation clocks still use the as-of time.
+- The transport goes from the warehouse straight to the ship-to; it does not follow the move's legs through the repair centre.
+- source-sim's own tests share its database with the running service's background loops and can fail intermittently while it runs; a clean rerun passes.
+
 ## B14. Read APIs for the screens
 
 **Goal:** everything the pages show comes from the API.

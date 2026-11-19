@@ -11,14 +11,17 @@ Models use the namespaces of the demo's field mappings (MAPPINGS in index.html):
     route          (logistics inputs)           lanes, rates, carriers, ETAs
     sustainability (Outcome evidence)           emission factors, footprints
     vendor         (partner eligibility)        recycler certification, yields
-Route candidate, Decision and Outcome are produced by Circularity itself (B10-B13), not by connectors.
+    outcome        Outcome (B13b)               the actual cost lines S/4HANA posted against a decision, keyed by the
+                                                approval reference (the journal entry's DocumentReferenceID)
+Route candidate and Decision are produced by Circularity itself (B10-B13), not by connectors; an Outcome's actuals
+are read back from S/4HANA.
 
 FIELD_AUTHORITY: when sources disagree on a field, the value of this source counts and a conflict is opened
 (the demo: "Circularity names the system with authority and holds any dependent route; it never picks silently").
 It follows the demo's SOURCES[*].authority labels.
 """
 
-MODELS = ("asset", "condition", "demand", "intervention", "market", "route", "sustainability", "vendor")
+MODELS = ("asset", "condition", "demand", "intervention", "market", "route", "sustainability", "vendor", "outcome")
 
 FIELD_AUTHORITY: dict[str, str] = {
     # asset
@@ -68,6 +71,9 @@ FIELD_AUTHORITY: dict[str, str] = {
     # sustainability, vendor
     "sustainability.emission_factor": "esg",  # Emissions factor
     "vendor.certification": "rcy",  # Vendor certification
+    # outcome (B13b): actual costs are SAP S/4HANA's (K1, the book of record for actual cost)
+    "outcome.line": "erp",
+    "outcome.accounting_document": "erp",
 }
 
 

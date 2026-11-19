@@ -168,6 +168,9 @@ cd apps/web && npm test && npm run build
 # sync every source once and summarise conflicts
 docker compose exec -e PYTHONPATH=/app api python scripts/full_sync.py
 
+# the first milestone: RT-1048 approved, then sent to the mocks and acknowledged from their events on the simulated clock
+docker compose stop worker && docker compose exec api pytest tests/test_milestone_rt1048.py; docker compose start worker
+
 # a database migration
 docker compose exec api alembic revision --autogenerate -m "what changed"
 
@@ -211,7 +214,7 @@ docs/BACKEND_STEPS.md        the backend build, step by step, with the status of
 | B10 | decision engine: routes, gates, ranges, ranking, what-if, pool optimiser | done |
 | B11 | cases in the database, the stage machine, every read action | done |
 | B12 | decisions, approvals, evidence, collaboration, access and identity actions | done |
-| B13 | instructions to the systems, acknowledgements, outcomes and reconciliation | next |
+| B13 | instructions really sent to the mocks, acknowledged from their events on the simulated clock; outcomes and reconciliation (first milestone: RT-1048 end to end) | done |
 | B14–B16 | read APIs for every screen, live updates, MCP server | to do |
 | B16b | Ask Circularity on a language model (Groq free tier) | to do |
 | B17 | switch the frontend to the backend | to do |

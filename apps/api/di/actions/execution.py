@@ -7,10 +7,18 @@ acknowledgement moves the case to executing, the last to closed; Finance then co
 
 Only the enterprise-system adapter acknowledges (risk "system": the pipeline refuses people and agents); it acts as
 `pipeline.SYSTEM`, the demo's AF_SYS.
+
+**B13b, the real loop.** adapter.acknowledge takes two optional inputs beyond the demo's: `ref`, the system's own
+document reference read from its completion event (di/instructions/events.py), and `simulated`, set by the simulated
+adapter for steps whose system has no write in the mocks. Without `ref` the reference is the demo's formula and the
+acknowledgement is marked simulated, exactly as in the demo (the B13a parity tests). When sending instructions is on
+(di/instructions), an acknowledgement also marks the step's instruction acknowledged and queues the next step, and
+instruction.resend sends the latest instruction again under its key.
 """
 
+from di import instructions
 from di.actions.decisions import NOW, _by, _case, _key, _peek, cyc, push_event, skey
-from di.actions.registry import guard, implement
+from di.actions.registry import ACTIONS, guard, implement
 from di.cases import lifecycle, store
 from di.engine.jsmath import js_sum
 from di.execution import EX_STEP, ack_note, ack_ref, ex_ev, line_actuals, ref_label, value_order
@@ -91,6 +99,9 @@ def _ack_idem(i, ctx):
 
 # every event an acknowledgement can emit, in the demo's order (`new Set(Object.values(EX_STEP).map(d => d.ev))`)
 ACK_EVENTS = list(dict.fromkeys(d["ev"] for d in EX_STEP.values()))
+# B13b inputs (the demo's catalog has case_id and step): the system's own reference, and the simulated adapter's mark
+ACTIONS["adapter.acknowledge"].input |= {"ref": {"req": False, "t": "string"}, "simulated": {"req": False, "t": "boolean"}}
+SIMULATED_NOTE = " (simulated acknowledgement: no write for this step in the mocked systems)"
 
 
 @implement("adapter.acknowledge", idem=_ack_idem, emits=ACK_EVENTS)
@@ -101,9 +112,11 @@ def adapter_acknowledge(i, ctx):
     k = _active(c)
     s = e["steps"][k]
     s["state"] = "done"
-    # the reference is the step's planned document number (ackRef's number is only for steps stored without a kind)
+    # the reference is the system's own (from its event), else the step's planned document number (ackRef's number is
+    # only for steps stored without a kind); only a reference from the system makes the acknowledgement real
     num = 40000 + int(c["id"][3:]) * 7 + k * 13 + cyc(c) * 101
-    s["ack"] = {"by": s["sys"].split(" · ")[0], "ref": ack_ref(c, s, num), "at": NOW, "sim": True}
+    real = i.get("ref") or None
+    s["ack"] = {"by": s["sys"].split(" · ")[0], "ref": real or ack_ref(c, s, num), "at": NOW, "sim": not real}
     if k + 1 < len(e["steps"]):
         e["steps"][k + 1]["state"] = "active"
         e["steps"][k + 1]["activeAt"] = NOW
@@ -115,7 +128,9 @@ def adapter_acknowledge(i, ctx):
             "dir": "in", "type": t, "caseId": c["id"], "decisionId": e["decisionId"], "approval": e["ref"],
             "ver": e["instruction"], "dest": s["sys"], "ack": "acknowledged",
             "key": "idem-" + hash_id(c["id"] + t + e["ref"])[:6].lower(), "retries": 0, "ref": s["ack"]["ref"],
-            "note": f"{ref_label(s)} returned by {s['ack']['by']}" + (f": {note}" if note else ""), "sim": True,
+            "note": f"{ref_label(s)} returned by {s['ack']['by']}" + (f": {note}" if note else "")
+            + (SIMULATED_NOTE if i.get("simulated") else ""),
+            "sim": not real,
         },
         key,
     )  # fmt: skip
@@ -129,6 +144,7 @@ def adapter_acknowledge(i, ctx):
         moved = True
     if not moved:
         store.save(ctx.session, c)
+    instructions.on_acknowledged(ctx.session, c, k, s["ack"]["ref"])  # the next step goes out (when sending is on)
     return {
         "case_id": c["id"],
         "step": k,
@@ -168,4 +184,5 @@ def instruction_resend(i, ctx):
         },
         key,
     )  # fmt: skip
+    instructions.resend(ctx.session, c)  # the real resend, under the same key (when sending is on)
     return {"case_id": c["id"], "deduplicated": True}

@@ -1,4 +1,5 @@
-"""SAP S/4HANA (erp): finance only — inventory valuation, stock, purchase baseline (the demo's SOURCES.erp).
+"""SAP S/4HANA (erp): finance only — inventory valuation, stock, purchase baseline, and the actual costs posted against
+a decision (the demo's SOURCES.erp).
 
 OData v2 over Basic auth (communication user). Delta reads by LastChangeDateTime.
 
@@ -6,6 +7,9 @@ Facts
     asset.<MATNR>        book_value (USD), stock_plant, stock_location (plant decoded: 2010 → Warehouse 1), stock_qty
     demand.PO-<EBELN>    kind = purchase_plan, purchase_baseline (USD from INR at the dated rate), purchase_baseline_inr,
                          ship_to_site (plant decoded: 1030 → Site 3), qty, cancelled (deletion flag)
+    outcome.<approval>   (B13b; journal entries di posted, read from API_JOURNALENTRYITEMBASIC_SRV / A_JournalEntryItemBasic,
+                         keyed by DocumentReferenceID = the approval reference) accounting_document, fiscal_year,
+                         company_code, line.<cost line> {kind, label, act (USD), gl_account, item, inr}
 The demo's mapping: EKPO-NETPR ₹10,02,000.00 INR → demand.purchase_baseline $12,000.00 USD, "Currency at 83.5
 (rate dated 2026-10-06)"; EKPO-WERKS 1030 → Site 3.
 """
@@ -56,6 +60,7 @@ class S4Adapter(Adapter):
             Resource("product", self.read_products),
             Resource("stock", self.read_stock),
             Resource("purchase_order", self.read_purchase_orders),
+            Resource("journal_entry_item", self.read_journal_entry_items),
         ]
 
     # ------------------------------------------------------------- reading
@@ -92,9 +97,18 @@ class S4Adapter(Adapter):
         ):
             yield Record("purchase_order", row["PurchaseOrder"], row, url, odata_time(row.get("LastChangeDateTime")))
 
+    def read_journal_entry_items(self, client, since):
+        """ACDOCA items of the leading ledger 0L; map_outcome keeps those with a document reference (ours: the approval)."""
+        path = f"{SRV}/API_JOURNALENTRYITEMBASIC_SRV/A_JournalEntryItemBasic"
+        for row, url in self._pages(client, path, {"$filter": "SourceLedger eq '0L'"}, since):
+            ext = f"{row['CompanyCode']}/{row['AccountingDocument']}/{row['FiscalYear']}/{row['LedgerGLLineItem']}"
+            yield Record("journal_entry_item", ext, row, url, odata_time(row.get("LastChangeDateTime")))
+
     # ------------------------------------------------------------- mapping
     def map(self, record: Record) -> list[Fact]:
         p = record.payload
+        if record.resource == "journal_entry_item":
+            return self.map_outcome(p)
         if record.resource == "product":
             vals = (p.get("to_Valuation") or {}).get("results") or []
             if not vals:
@@ -176,6 +190,36 @@ class S4Adapter(Adapter):
                 ),
             ]
         return []
+
+    @staticmethod
+    def map_outcome(p: dict) -> list[Fact]:
+        """One ACDOCA item of a journal entry di posted (di/instructions/writers.py, finance) -> the outcome's line.
+        The item's AssignmentReference names the cost line; its amount is the line's actual with the posting sign
+        (a cost is a debit), so actual = -amount, in USD (converted back at 83.5 if posted in INR)."""
+        ref, kind = p.get("DocumentReferenceID"), p.get("AssignmentReference")
+        if not ref or not kind:
+            return []
+        doc = p["AccountingDocument"]
+        facts = [
+            Fact("outcome", ref, "accounting_document", doc, "BKPF-BELNR", doc, "Pass-through"),
+            Fact("outcome", ref, "fiscal_year", p["FiscalYear"], "BKPF-GJAHR", p["FiscalYear"], "Pass-through"),
+            Fact("outcome", ref, "company_code", p["CompanyCode"], "BKPF-BUKRS", p["CompanyCode"], "Pass-through"),
+        ]
+        if kind == "CLEARING":  # the balancing item: no cost line of its own
+            return facts
+        amount = Decimal(p["AmountInTransactionCurrency"])
+        cur = p.get("TransactionCurrency")
+        actual = -float(amount) if cur == "USD" else -usd(amount)
+        line = {
+            "kind": kind,
+            "label": p.get("DocumentItemText"),
+            "act": actual,
+            "gl_account": p.get("GLAccount"),
+            "item": p.get("AccountingDocumentItem"),
+            "inr": -float(Decimal(p["AmountInCompanyCodeCurrency"])),
+        }
+        transform = "Actual = -amount (a cost is a debit)" + ("" if cur == "USD" else f"; {RATE_NOTE}")
+        return [*facts, Fact("outcome", ref, f"line.{kind}", line, "ACDOCA-WSL", f"{amount} {cur}", transform)]
 
 
 ADAPTER = S4Adapter()
