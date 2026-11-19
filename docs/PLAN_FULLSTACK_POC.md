@@ -18,6 +18,7 @@
 | D6 | Queue | A Postgres job table claimed with `FOR UPDATE SKIP LOCKED`, so no Redis |
 | D7 | Login | Local JWT with the demo IDs (`exec`, `ops`, `planner.b@northfield.example` …). Real SSO later; Keycloak is the option if an OIDC stand-in is needed |
 
+
 ## 3. Architecture
 
 ```
