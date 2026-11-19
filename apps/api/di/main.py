@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 import di.actions.access  # noqa: F401  (registers action handlers)
 import di.actions.decisions  # noqa: F401  (registers action handlers)
 import di.actions.engine  # noqa: F401  (registers action handlers)
+import di.actions.execution  # noqa: F401  (registers action handlers)
 import di.actions.integration  # noqa: F401  (registers action handlers)
 import di.reads.cases  # noqa: F401  (registers action handlers)
 import di.reads.workspace  # noqa: F401  (registers action handlers)

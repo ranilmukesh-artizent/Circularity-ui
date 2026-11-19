@@ -534,10 +534,11 @@ def lease(c: Case) -> dict:
 
 
 def ex_delivered(c: Case) -> str:
-    """The demo's exDelivered (the delivery line once the outcome is reported) needs the demo's transport plan
-    (exMove), which is not ported yet. No case reaches that point in the starting state; the execution handlers
-    (B12) must port exMove before a case can."""
-    raise NotImplementedError("exDelivered needs exMove, which is not ported yet")
+    """The demo's exDelivered: the order line and delivery in one sentence, once the outcome is reported (di.execution;
+    imported here, not at the top, because the execution package builds on this module)."""
+    from di.execution.plan import ex_delivered as delivered
+
+    return delivered(c)
 
 
 def stage_states(c: Case, ctx) -> list[dict]:
@@ -1030,9 +1031,12 @@ def ex_clock(c: Case, s: dict | None, now: int = AS_OF) -> dict | None:
     d = EX_STEP.get(s["k"]) if s else None
     if not s or s["state"] != "active" or not d or d[0] is None or not c.get("exec"):
         return None
-    due = work_add(ms(s.get("activeAt") or c["exec"]["approvedAt"]), d[0])
+    t0 = ms(s.get("activeAt") or c["exec"]["approvedAt"])
+    due = work_add(t0, d[0])
     due2 = work_add(due, d[0])
-    return {"due": due, "due2": due2, "level": 2 if now > due2 else 1 if now > due else 0, "lim": ex_lim(d[0])}
+    level = 2 if now > due2 else 1 if now > due else 0
+    to = "Admin" if level == 2 else "Approver" if level == 1 else None
+    return {"t0": t0, "due": due, "due2": due2, "level": level, "to": to, "lim": ex_lim(d[0])}
 
 
 def ex_hh(h: float) -> str:

@@ -23,7 +23,8 @@ from di.actions.registry import ACTIONS, ActionError, guard, implement
 from di.cases import lifecycle, store
 from di.engine.evaluate import build_routes
 from di.engine.predictor import FormulaPredictor
-from di.engine.routes import GATES, SUSTAINABILITY, Route, fail, rank_routes
+from di.engine.routes import GATES, SUSTAINABILITY, fail, rank_routes
+from di.execution.steps import approval_ref, steps_for  # the execution steps (B13 moved them to di.execution)
 from di.reads.common import AS_OF, case_demand, hash_id, iso, limit_for, money
 
 NOW = iso(AS_OF)  # the demo's asOfNow(), pinned
@@ -35,71 +36,6 @@ state.register("comments", list)
 WORKBENCH_WEIGHTS = {"net": 50, "time": 20, "env": 15, "serv": 15}  # S.ti.w: the Workbench's default fit weights
 NOTE_SEQ_START = 101  # S.ntSeq starts at 102
 EVENT_SEQ_START = 9091  # EV_SEQ: the starting log ends at EV-9091
-
-
-# ---------------------------------------------------------------- execution steps (the demo's EX_STEP and STEP_TPL)
-# Per step kind: its label and the enterprise system it is sent to. The step plan per route; a refurbish-then-sell
-# resale gets a repair step after the reservation.
-EX_STEP: dict[str, tuple[str, str]] = {
-    "order": ("Allocate to the order line", "OMS · order allocation"),
-    "repair": ("Refurbishment work order", "MRO · Depot repair"),
-    "transport": ("Book transport", "TMS · load booking"),
-    "move": ("Warehouse moves and outbound delivery", "WMS · transfer"),
-    "pod": ("Delivery confirmed", "OMS · order fulfilled"),
-    "finance": ("Actual costs posted", "ERP · finance"),
-    "reserve": ("Reserve unit", "WMS · reservation"),
-    "sale": ("Sale order", "OMS · sale order"),
-    "ship": ("Book shipment to the buyer", "TMS · load booking"),
-    "fulfil": ("Shipped and invoiced", "OMS · order fulfilled"),
-    "receipt": ("Outcome reported", "ERP · receipts"),
-    "putaway": ("Putaway after refurbishment", "WMS · putaway"),
-    "lease": ("Lease contract", "Lease · contract"),
-    "teardown": ("Teardown work order", "MRO · Depot repair"),
-    "partsput": ("Parts putaway", "WMS · putaway"),
-    "partsxfer": ("Parts allocation", "ERP · stock transfer"),
-    "resparts": ("Reserve parts", "WMS · reservation"),
-    "saletask": ("Sale task", "CRM · sale task"),
-    "release": ("Release to partner", "WMS · release"),
-    "collect": ("Collection", "Recycler / Exit partner"),
-    "process": ("Processing", "Recycler / Exit partner"),
-    "cert": ("Certificate returned", "Recycler · certificate"),
-    "custody": ("Custody certificate returned", "Exit partner"),
-    "holdput": ("Return to stock", "WMS · inventory putaway"),
-    "holdrev": ("Hold until review", "Planning"),
-    "reeval": ("Re-evaluate", "Circularity"),
-    "holdout": ("Outcome reported", "ERP · finance"),
-}
-STEP_TPL: dict[str, list[str]] = {
-    "redeploy": ["order", "repair", "transport", "move", "pod", "finance"],
-    "resale": ["reserve", "sale", "ship", "fulfil", "receipt"],
-    "relase": ["repair", "transport", "putaway", "lease", "finance"],
-    "intparts": ["teardown", "partsput", "partsxfer", "finance"],
-    "extparts": ["teardown", "resparts", "saletask", "receipt"],
-    "material": ["release", "collect", "process", "cert"],
-    "exit": ["release", "collect", "process", "custody"],
-    "hold": ["holdput", "holdrev", "reeval", "holdout"],
-}
-
-
-def ex_kinds(r: Route) -> list[str]:
-    """The demo's exKinds: the step kinds for a route."""
-    k = list(STEP_TPL.get(r.get("id") or "resale") or STEP_TPL["resale"])
-    if r.get("id") == "resale" and r.get("variant") == "refurb":
-        k.insert(1, "repair")
-    return k
-
-
-def steps_for(r: Route) -> list[dict]:
-    """The demo's stepsFor(r, 0): the plan with the first step active."""
-    return [
-        {"k": k, "label": EX_STEP[k][0], "sys": EX_STEP[k][1], "state": "active" if i == 0 else "todo", "ack": None}
-        for i, k in enumerate(ex_kinds(r))
-    ]
-
-
-def approval_ref(case_id: str) -> str:
-    """The demo's approvalRef."""
-    return f"APR-2026-10-{int(case_id[3:]) * 3 + 17:04d}"
 
 
 # ---------------------------------------------------------------- helpers

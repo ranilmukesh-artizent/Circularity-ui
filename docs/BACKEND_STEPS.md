@@ -462,6 +462,31 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 - RT-1048 runs from approval to *Reconciled* on synced data, driven only by source-sim events and the simulated clock.
 - This is the **first milestone** in the plan.
 
+**Plan (19 Nov 2026), in two parts:**
+
+*B13a. Execution at parity with the demo.* `adapter.acknowledge`, `instruction.resend`, `outcome.confirm`, and the execution detail (plan, move, what-if guidance, cost trace, actual lines) ported as pure functions. Checked against `writes.json` (four execution scenarios), the whole RT-1048 journey in `actions.json`, and `execution.json`. Here an acknowledgement is the demo's simulated one: the system adapter calls `adapter.acknowledge` and the reference follows the demo's formula.
+
+**B13a status: done (19 Nov 2026).** `di/execution/` (steps, lanes, preparation, move, plan, cost trace and actual lines, as pure functions) and `di/actions/execution.py` (`adapter.acknowledge`, `instruction.resend`, `outcome.confirm`; the first acknowledgement moves the case to executing and the last closes it, through the stage machine). Parity: the four execution scenarios (83 calls, 42 observed reads), the whole RT-1048 journey (15 steps, and the stage after each), and `execution.json` (17 cases: 83 plan rows, the moves, the what-if guidance and 220 cost-trace terms) match exactly. The demo's "ShipLane TMS" text stays until B17 (marked TODO). 1,491 api tests pass.
+
+*B13b. The real loop with the mocks.* A survey of the mocks (19 Nov) found what exists and what is missing:
+
+| Step (system) | Instruction (mock write) | Completion that acknowledges it | Gap |
+|---|---|---|---|
+| Allocate to the order line (OMS · Sterling) | `order/allocate` with `Idempotency-Key`, `Reference` = approval | the allocation response and `sterling.order.allocated` | none |
+| Refurbishment or teardown work order (MRO · Depot Repair) | `create_repair_order` with `P_REPAIR_NUMBER` = our document number | `oracle.apps.csd.repair.complete` on the clock (start +1 h, done after the planned hours) | none |
+| Book transport (TMS · Oracle Transportation Management) | order release with `orderReleaseXid` = our instruction key | `otm.shipment.tenderAccepted`; delivery (`otm.shipment.delivered`, POD) feeds the delivery step | none |
+| Warehouse moves and outbound delivery (WMS · Manhattan) | reservation, then a TRANSFER or OUTBOUND order with `ExternalReference` = our instruction key | `manhattan.order.shipped` (pick, pack, ship on the clock) | none |
+| Delivery confirmed (OMS · Sterling) | after the TMS delivery: `fulfil` RELEASE, SHIP, DELIVER with the POD | `sterling.order.fulfilled` | none |
+| Actual costs posted (ERP · S/4HANA) | a journal entry with the actual cost lines | the journal entry's created event | **S/4 has no cost-posting write and ACDOCA has no read service: add both (journal entry post, `A_JournalEntryItemBasic` read)** |
+| Resale, lease, harvest and exit steps (sale order, invoice, lease contract, collection, processing, certificate) | — | — | **no matching writes in the mocks (Optoro, Machinio, Oracle Lease and Sims have none for these)**: such steps are acknowledged by a simulated adapter on the clock, marked as simulated, until a mock supports them |
+
+The rest of the design:
+- **Instructions** (new table): one row per step with case, approval, step, system, idempotency key, the request sent, the system's own document reference, status (queued, sent, acknowledged, failed), attempts and times. Approval queues the first step; each acknowledgement queues the next, so steps run in the demo's order. The worker sends them (`instruction.send` jobs) through the connectors' clients, with retries.
+- **Acknowledgements from events:** the webhook receiver correlates an event to its instruction (our reference in the event, or the system's document number we stored) and calls `adapter.acknowledge` as the system actor with the system's own reference (`ref` becomes an optional input). Unmatched events still trigger the delta sync, as today.
+- **The clock:** `di/clock.py` gains a mode that follows source-sim's simulated clock (anchor and speed read from `/_sim/clock`), used by the running services. The parity tests keep the pinned as-of time. Maximo, ServiceNow and Salesforce stamp wall-clock time; their writes are not on RT-1048's path, so that is noted, not changed.
+- **Outcome:** the cost posting is read back by the S/4 connector (ACDOCA) into the Outcome model; `outcome.confirm` shows those actuals against the prediction, and reconciliation records the learning lines.
+- **Milestone test:** approve RT-1048 through the API, then only advance the simulated clock: every step is sent, acknowledged from a mock event, the case closes, Finance confirms, and the run reaches *Reconcile and learn*.
+
 ## B14. Read APIs for the screens
 
 **Goal:** everything the pages show comes from the API.

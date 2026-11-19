@@ -137,7 +137,7 @@ def test_unknown_case():
 
 
 def test_valid_call_without_a_handler_yet():
-    r = call("outcome.confirm", {"case_id": "RT-1048"}, user="finance")
+    r = call("analytics.query", {"metric": "recovery"}, user="executive")
     assert r.status_code == 501 and r.json()["error"]["code"] == "not_implemented"
 
 
