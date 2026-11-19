@@ -299,15 +299,58 @@ put('engine.json', { scenarios: SCENARIOS, what_if: whatIf, pools });
       observe: [['admin', 'access.lookup', { perm: 'assess' }], ['wm-2', 'cases.list', { limit: 3 }], ...inbox('admin')],
     },
   };
+  // B13: execution. 'system' is the enterprise-system adapter (as in the journey); `ackAll` acknowledges every step.
+  const sys = (id) => ['system', 'adapter.acknowledge', { case_id: id }];
+  const ackAll = (id, n = 8) => Array.from({ length: n }, () => sys(id));
+  const firstAt = (h, stage) => h('CASES').find((c) => c.stage === stage && !c.hero).id;
+  const execLook = (id) => [...look(id), ['finance', 'case.get', { case_id: id }], ['admin', 'case.evidence', { case_id: id }]];
+  Object.assign(SCENARIOS, {
+    exec_redeploy: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1048' }], ['approver', 'decision.approve', approve('RT-1048')],
+        ['finance', 'outcome.confirm', { case_id: 'RT-1048' }], ['planner-a', 'adapter.acknowledge', { case_id: 'RT-1048' }],
+        ['system', 'adapter.acknowledge', { case_id: 'RT-1048', step: 3 }], ['system', 'instruction.resend', { case_id: 'RT-1048' }],
+        ['system', 'instruction.resend', { case_id: 'RT-1048' }], ...ackAll('RT-1048'),
+        ['finance', 'outcome.confirm', { case_id: 'RT-1048' }], ['finance', 'outcome.confirm', { case_id: 'RT-1048' }]],
+      observe: [...execLook('RT-1048'), ...inbox('finance', 'approver', 'planner-a')],
+    },
+    exec_override_resale: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1048' }], ['approver', 'decision.override', approve('RT-1048', 'Sell + buy for Site 3')],
+        ...ackAll('RT-1048'), ['finance', 'outcome.confirm', { case_id: 'RT-1048' }]],
+      observe: [...execLook('RT-1048')],
+    },
+    exec_other_routes: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1049' }], ['approver', 'decision.approve', approve('RT-1049')], ...ackAll('RT-1049'),
+        ['finance', 'outcome.confirm', { case_id: 'RT-1049' }],
+        ['planner-a', 'decision.submit', { case_id: 'RT-1027' }], ['approver', 'decision.approve', approve('RT-1027')], ...ackAll('RT-1027'),
+        ['finance', 'outcome.confirm', { case_id: 'RT-1027' }],
+        ['planner-b', 'decision.submit', { case_id: 'RT-1104' }], ['approver', 'decision.approve', approve('RT-1104')], ...ackAll('RT-1104'),
+        ['finance', 'outcome.confirm', { case_id: 'RT-1104' }],
+        ['planner-c', 'decision.submit', { case_id: 'RT-1052' }], ['approver', 'decision.approve', approve('RT-1052')], ...ackAll('RT-1052'),
+        ['finance', 'outcome.confirm', { case_id: 'RT-1052' }]],
+      observe: [...execLook('RT-1049'), ...execLook('RT-1027'), ...execLook('RT-1104'), ...execLook('RT-1052'), ...inbox('finance')],
+    },
+    exec_seeded: {
+      calls: [
+        ['system', 'adapter.acknowledge', (h) => ({ case_id: firstAt(h, 'executing') })],
+        ['system', 'instruction.resend', (h) => ({ case_id: firstAt(h, 'executing') })],
+        ['system', 'adapter.acknowledge', (h) => ({ case_id: firstAt(h, 'approved') })],
+        ['system', 'adapter.acknowledge', (h) => ({ case_id: firstAt(h, 'awaiting_approval') })],
+        ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }], ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }],
+        ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }], ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }],
+        ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }], ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }],
+        ['finance', 'outcome.confirm', { case_id: 'RT-1009' }]],
+      observe: [...execLook('RT-1009'), ...inbox('finance', 'approver', 'admin')],
+    },
+  });
   const writes = {};
   for (const [name, sc] of Object.entries(SCENARIOS)) {
     const h = freshDemo();
-    const inv = h('invoke'), setA = h('setAcct'), acct = h('ACCT');
+    const inv = h('invoke'), setA = h('setAcct'), acct = h('ACCT'), SYS = h('AF_SYS');
     const results = [], calls = [];
     for (const [as, id, input] of sc.calls) {
       const inp = typeof input === 'function' ? input(h, results) : input;
-      setA(acct(as));
-      const r = inv(id, inp);
+      let r;
+      if (as === 'system') { setA(null); r = inv(id, inp, { via: 'system', actor: SYS }); } else { setA(acct(as)); r = inv(id, inp); }
       calls.push({ as, action: id, input: inp });
       results.push(r);
     }
@@ -316,6 +359,27 @@ put('engine.json', { scenarios: SCENARIOS, what_if: whatIf, pools });
     writes[name] = { calls: calls.map((c, k) => ({ ...c, result: results[k] })), observed };
   }
   put('writes.json', writes);
+}
+
+// ---------- execution detail and cost trace for the screens (B13): plan, move, what-if guidance, every term's lines ----------
+{
+  const h = freshDemo();
+  const CASE_BY_ID = h('CASE_BY_ID'), exPlan = h('exPlan'), exMove = h('exMove'), exWhatIf = h('exWhatIf'), exTrace = h('exTrace'), asOfNow = h('asOfNow');
+  const ids = files['reads.json'].case_ids; // the same 22 cases as the read fixture
+  const execution = {};
+  for (const id of ids) {
+    const c = CASE_BY_ID[id];
+    if (!c.routes.length) continue;
+    const r = c.chosen || c.recommendation;
+    execution[id] = {
+      route: r ? r.plan : null,
+      plan: r ? exPlan(c, r, asOfNow()) : [],
+      move: r ? exMove(c, r) : null,
+      what_if: r ? exWhatIf(c, r) : [],
+      traces: c.routes.filter((x) => !x.excluded).map((x) => ({ plan: x.plan, terms: x.terms.map((t) => exTrace(c, x, t)) })),
+    };
+  }
+  put('execution.json', execution);
 }
 
 // ---------- write ----------

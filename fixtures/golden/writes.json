@@ -2911,6 +2911,6893 @@
    }
   ]
  },
+ "exec_other_routes": {
+  "calls": [
+   {
+    "action": "decision.submit",
+    "as": "planner-a",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "decision.submit",
+     "key": "decision.submit:RT-1049:7:submit:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1049",
+      "submitted_by": "Planner · Customer A"
+     },
+     "seq": 1
+    }
+   },
+   {
+    "action": "decision.approve",
+    "as": "approver",
+    "input": {
+     "case_id": "RT-1049",
+     "rationale": "Redeploy to Site 3 as recommended; evidence snapshot reviewed.",
+     "reviewed": true
+    },
+    "result": {
+     "action": "decision.approve",
+     "key": "decision.approve:RT-1049:7:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1049",
+      "net": 186,
+      "override": false,
+      "ref": "APR-2026-10-3164",
+      "route": "Sell whole asset as-is",
+      "sent_to": "WMS · reservation"
+     },
+     "seq": 2
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1049:8:APR-2026-10-3164:0",
+     "ok": true,
+     "output": {
+      "by": "WMS",
+      "case_id": "RT-1049",
+      "label": "Reserve unit",
+      "ref": "RSV-47349",
+      "ref_label": "Reservation RSV-47349",
+      "step": 0
+     },
+     "seq": 3
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1049:8:APR-2026-10-3164:1",
+     "ok": true,
+     "output": {
+      "by": "OMS",
+      "case_id": "RT-1049",
+      "label": "Sale order",
+      "ref": "SO-47343",
+      "ref_label": "Sales order SO-47343",
+      "step": 1
+     },
+     "seq": 4
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1049:8:APR-2026-10-3164:2",
+     "ok": true,
+     "output": {
+      "by": "TMS",
+      "case_id": "RT-1049",
+      "label": "Book shipment to the buyer",
+      "ref": "LD-47395",
+      "ref_label": "Load LD-47395",
+      "step": 2
+     },
+     "seq": 5
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1049:8:APR-2026-10-3164:3",
+     "ok": true,
+     "output": {
+      "by": "OMS",
+      "case_id": "RT-1049",
+      "label": "Shipped and invoiced",
+      "ref": "FUL-47382",
+      "ref_label": "Fulfilment FUL-47382",
+      "step": 3
+     },
+     "seq": 6
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1049:9:APR-2026-10-3164:4",
+     "ok": true,
+     "output": {
+      "by": "ERP",
+      "case_id": "RT-1049",
+      "label": "Outcome reported",
+      "ref": "INV-47408",
+      "ref_label": "Invoice INV-47408",
+      "step": 4
+     },
+     "seq": 7
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1049 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1049 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1049 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "outcome.confirm",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "outcome.confirm",
+     "key": "outcome.confirm:RT-1049:9:0",
+     "ok": true,
+     "output": {
+      "actual": 177,
+      "case_id": "RT-1049",
+      "predicted": 186,
+      "variance": -9
+     },
+     "seq": 8
+    }
+   },
+   {
+    "action": "decision.submit",
+    "as": "planner-a",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "decision.submit",
+     "key": "decision.submit:RT-1027:7:submit:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1027",
+      "submitted_by": "Planner · Customer A"
+     },
+     "seq": 9
+    }
+   },
+   {
+    "action": "decision.approve",
+    "as": "approver",
+    "input": {
+     "case_id": "RT-1027",
+     "rationale": "Redeploy to Site 3 as recommended; evidence snapshot reviewed.",
+     "reviewed": true
+    },
+    "result": {
+     "action": "decision.approve",
+     "key": "decision.approve:RT-1027:7:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1027",
+      "net": 800,
+      "override": false,
+      "ref": "APR-2026-10-3098",
+      "route": "Selective harvest + material recovery",
+      "sent_to": "MRO · Depot repair"
+     },
+     "seq": 10
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1027:8:APR-2026-10-3098:0",
+     "ok": true,
+     "output": {
+      "by": "MRO",
+      "case_id": "RT-1027",
+      "label": "Teardown work order",
+      "ref": "WO-47202",
+      "ref_label": "Work order WO-47202",
+      "step": 0
+     },
+     "seq": 11
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1027:8:APR-2026-10-3098:1",
+     "ok": true,
+     "output": {
+      "by": "WMS",
+      "case_id": "RT-1027",
+      "label": "Parts putaway",
+      "ref": "PA-47215",
+      "ref_label": "Putaway PA-47215",
+      "step": 1
+     },
+     "seq": 12
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1027:8:APR-2026-10-3098:2",
+     "ok": true,
+     "output": {
+      "by": "ERP",
+      "case_id": "RT-1027",
+      "label": "Parts allocation",
+      "ref": "TR-47228",
+      "ref_label": "Transfer TR-47228",
+      "step": 2
+     },
+     "seq": 13
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1027:9:APR-2026-10-3098:3",
+     "ok": true,
+     "output": {
+      "by": "ERP",
+      "case_id": "RT-1027",
+      "label": "Actual costs posted",
+      "ref": "FI-47254",
+      "ref_label": "Finance document FI-47254",
+      "step": 3
+     },
+     "seq": 14
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1027 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1027 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1027 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1027 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "outcome.confirm",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "outcome.confirm",
+     "key": "outcome.confirm:RT-1027:9:0",
+     "ok": true,
+     "output": {
+      "actual": 820,
+      "case_id": "RT-1027",
+      "predicted": 800,
+      "variance": 20
+     },
+     "seq": 15
+    }
+   },
+   {
+    "action": "decision.submit",
+    "as": "planner-b",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "decision.submit",
+     "key": "decision.submit:RT-1104:7:submit:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1104",
+      "submitted_by": "Planner · Customer B"
+     },
+     "seq": 16
+    }
+   },
+   {
+    "action": "decision.approve",
+    "as": "approver",
+    "input": {
+     "case_id": "RT-1104",
+     "rationale": "Redeploy to Site 3 as recommended; evidence snapshot reviewed.",
+     "reviewed": true
+    },
+    "result": {
+     "action": "decision.approve",
+     "key": "decision.approve:RT-1104:7:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1104",
+      "net": -60,
+      "override": false,
+      "ref": "APR-2026-10-3329",
+      "route": "Responsible exit · Approved vendor A",
+      "sent_to": "WMS · release"
+     },
+     "seq": 17
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1104:8:APR-2026-10-3329:0",
+     "ok": true,
+     "output": {
+      "by": "WMS",
+      "case_id": "RT-1104",
+      "label": "Release to partner",
+      "ref": "REL-47728",
+      "ref_label": "Release REL-47728",
+      "step": 0
+     },
+     "seq": 18
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1104:8:APR-2026-10-3329:1",
+     "ok": true,
+     "output": {
+      "by": "Recycler / Exit partner",
+      "case_id": "RT-1104",
+      "label": "Collection",
+      "ref": "COL-47741",
+      "ref_label": "Collection COL-47741",
+      "step": 1
+     },
+     "seq": 19
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1104:8:APR-2026-10-3329:2",
+     "ok": true,
+     "output": {
+      "by": "Recycler / Exit partner",
+      "case_id": "RT-1104",
+      "label": "Processing",
+      "ref": "COL-47754",
+      "ref_label": "Collection COL-47754",
+      "step": 2
+     },
+     "seq": 20
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1104:9:APR-2026-10-3329:3",
+     "ok": true,
+     "output": {
+      "by": "Exit partner",
+      "case_id": "RT-1104",
+      "label": "Custody certificate returned",
+      "ref": "CERT-47767",
+      "ref_label": "Certificate CERT-47767",
+      "step": 3
+     },
+     "seq": 21
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1104 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1104 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1104 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1104 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "outcome.confirm",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "outcome.confirm",
+     "key": "outcome.confirm:RT-1104:9:0",
+     "ok": true,
+     "output": {
+      "actual": -60,
+      "case_id": "RT-1104",
+      "predicted": -60,
+      "variance": 0
+     },
+     "seq": 22
+    }
+   },
+   {
+    "action": "decision.submit",
+    "as": "planner-c",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "decision.submit",
+     "key": "decision.submit:RT-1052:7:submit:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1052",
+      "submitted_by": "Planner · Customer C"
+     },
+     "seq": 23
+    }
+   },
+   {
+    "action": "decision.approve",
+    "as": "approver",
+    "input": {
+     "case_id": "RT-1052",
+     "rationale": "Redeploy to Site 3 as recommended; evidence snapshot reviewed.",
+     "reviewed": true
+    },
+    "result": {
+     "action": "decision.approve",
+     "key": "decision.approve:RT-1052:7:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1052",
+      "net": 3984,
+      "override": false,
+      "ref": "APR-2026-10-3173",
+      "route": "Split: 12 → Site 2, 2 → Site 6, 6 → dealer lot",
+      "sent_to": "OMS · order allocation"
+     },
+     "seq": 24
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1052:8:APR-2026-10-3173:0",
+     "ok": true,
+     "output": {
+      "by": "OMS",
+      "case_id": "RT-1052",
+      "label": "Allocate to the order line",
+      "ref": "SO-48385",
+      "ref_label": "Sales order SO-48385",
+      "step": 0
+     },
+     "seq": 25
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1052:8:APR-2026-10-3173:1",
+     "ok": true,
+     "output": {
+      "by": "MRO",
+      "case_id": "RT-1052",
+      "label": "Refurbishment work order",
+      "ref": "WO-47377",
+      "ref_label": "Work order WO-47377",
+      "step": 1
+     },
+     "seq": 26
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1052:8:APR-2026-10-3173:2",
+     "ok": true,
+     "output": {
+      "by": "TMS",
+      "case_id": "RT-1052",
+      "label": "Book transport",
+      "ref": "LD-47416",
+      "ref_label": "Load LD-47416",
+      "step": 2
+     },
+     "seq": 27
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1052:8:APR-2026-10-3173:3",
+     "ok": true,
+     "output": {
+      "by": "WMS",
+      "case_id": "RT-1052",
+      "label": "Warehouse moves and outbound delivery",
+      "ref": "TR-47390",
+      "ref_label": "Transfer TR-47390",
+      "step": 3
+     },
+     "seq": 28
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1052:8:APR-2026-10-3173:4",
+     "ok": true,
+     "output": {
+      "by": "OMS",
+      "case_id": "RT-1052",
+      "label": "Delivery confirmed",
+      "ref": "FUL-47403",
+      "ref_label": "Fulfilment FUL-47403",
+      "step": 4
+     },
+     "seq": 29
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1052:9:APR-2026-10-3173:5",
+     "ok": true,
+     "output": {
+      "by": "ERP",
+      "case_id": "RT-1052",
+      "label": "Actual costs posted",
+      "ref": "FI-47429",
+      "ref_label": "Finance document FI-47429",
+      "step": 5
+     },
+     "seq": 30
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1052 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1052 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "outcome.confirm",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "outcome.confirm",
+     "key": "outcome.confirm:RT-1052:9:0",
+     "ok": true,
+     "output": {
+      "actual": 3916,
+      "case_id": "RT-1052",
+      "predicted": 3984,
+      "variance": -68
+     },
+     "seq": 31
+    }
+   }
+  ],
+  "observed": [
+   {
+    "action": "case.get",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 2.8,
+      "approval": "APR-2026-10-3164",
+      "assessment": "Ready",
+      "asset": "DRL-0812",
+      "blocked": null,
+      "cert_months": 12,
+      "cls": "drill",
+      "est_life": "20–27 months",
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [
+       "Market: 31 comparable sales, median $241",
+       "Refurbishment adds $48 gross, costs $52"
+      ],
+      "grade": "B",
+      "id": "RT-1049",
+      "life": "24 months",
+      "location": "Repair centre",
+      "mfr": "Tessen Tools",
+      "missing": [],
+      "outcome": {
+       "act": 177,
+       "lines": [
+        {
+         "act": 231,
+         "label": "Expected sale proceeds",
+         "model": "resale-price",
+         "pred": 238
+        },
+        {
+         "act": -36,
+         "label": "Fees and freight",
+         "model": "prep-cost-time",
+         "pred": -34
+        },
+        {
+         "act": -18,
+         "label": "Unsold-risk allowance",
+         "model": "repair-success",
+         "pred": -18
+        }
+       ],
+       "order": "SO-47343",
+       "plan": "Sell whole asset as-is",
+       "pred": 186,
+       "variance": -9
+      },
+      "owner": "Customer A",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer A"
+       ]
+      },
+      "product": "Tessen TX tool",
+      "qty": 1,
+      "received": "2026-10-03",
+      "recommendation": {
+       "conf": "High",
+       "demand": "forecast",
+       "net": 186,
+       "p10": 157,
+       "p90": 209,
+       "plan": "Sell whole asset as-is",
+       "route": "resale"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1049",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-8DCBC2B6",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer A",
+      "timing": "List within 3 days"
+     }
+    }
+   },
+   {
+    "action": "case.trace",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "case.trace",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1049",
+      "done": true,
+      "events": [
+       {
+        "by": "Finance",
+        "note": "Actual $177 against predicted $186 on SO-47343; 3 cost lines to the models",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Invoice INV-47408 returned by ERP: receipts posted",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.reported"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Fulfilment FUL-47382 returned by OMS: delivered and invoiced",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "delivery.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Load LD-47395 returned by TMS: load booked to the buyer",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "load.booked"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Sales order SO-47343 returned by OMS: buyer confirmed; sale order created",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "sale.recorded"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Reservation RSV-47349 returned by WMS: unit reserved for the sale",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "stock.reserved"
+       },
+       {
+        "by": "Approver",
+        "note": "",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "instruction.sent"
+       },
+       {
+        "by": "Planner · Customer A",
+        "note": "Submitted for review by Planner · Customer A",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "decision.submitted"
+       }
+      ],
+      "id": "RUN-1049",
+      "next": {
+       "kind": "done",
+       "label": "Journey complete",
+       "n": 11
+      },
+      "stage": 11,
+      "stages": [
+       {
+        "at": "2026-08-20T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 1,
+        "result": "Lease LC-4600 ended 20 Aug 2026; customer intent: early return; 320 cycles",
+        "state": "done",
+        "t": "Lease ends"
+       },
+       {
+        "at": "2026-08-23T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 2,
+        "result": "Return authorised RMA-56348, no fee; replacement order SO-48364; book value $230",
+        "state": "done",
+        "t": "Return authorised"
+       },
+       {
+        "at": "2026-08-25T00:00:00.000Z",
+        "by": "Northline 3PL",
+        "label": "Completed",
+        "n": 3,
+        "result": "Picked up 25 Aug at LOC-CHN-03 by Northline 3PL, arrived 02 Oct at RC-HSR-01; freight $91 (₹7,600, 320 km × ₹20 + ₹1,200 loading)",
+        "state": "done",
+        "t": "Pickup and transit"
+       },
+       {
+        "at": "2026-10-03T00:00:00.000Z",
+        "by": "WMS",
+        "label": "Completed",
+        "n": 4,
+        "result": "Received at Repair centre on 03 Oct; holding clock 4 days; evidence complete",
+        "state": "done",
+        "t": "Received"
+       },
+       {
+        "blocked": null,
+        "by": "Inspection",
+        "label": "Completed",
+        "n": 5,
+        "result": "Grade B · life 24 months",
+        "state": "done",
+        "t": "Inspect and grade"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "blocked": null,
+        "by": "Planner · Customer A",
+        "label": "Completed",
+        "n": 6,
+        "prep": null,
+        "result": "Sell whole asset as-is · $186 (P10–P90 $157–$209)",
+        "state": "done",
+        "t": "Decide"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Approver",
+        "label": "Completed",
+        "n": 7,
+        "prep": null,
+        "result": "Approved by Approver under APR-2026-10-3164",
+        "state": "done",
+        "t": "Approve"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Enterprise adapters",
+        "label": "Completed",
+        "n": 8,
+        "result": "Reserve unit RSV-47349 · Sale order SO-47343 · Book shipment to the buyer LD-47395 · Shipped and invoiced FUL-47382",
+        "state": "done",
+        "t": "Execute"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Finance",
+        "label": "Completed",
+        "n": 9,
+        "result": "Actual $177 confirmed by Finance",
+        "state": "done",
+        "t": "Outcome"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Reconciler",
+        "label": "Completed",
+        "n": 10,
+        "result": "Predicted $186, actual $177 (−$9); 3 learning records proposed",
+        "state": "done",
+        "t": "Reconcile and learn"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "case.routes",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "case.routes",
+     "key": null,
+     "ok": true,
+     "output": {
+      "blocked": null,
+      "case_id": "RT-1049",
+      "eligible": [
+       {
+        "behind": 0,
+        "demand": "Dealer network · 31 comparable sales",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 186,
+        "p10": 157,
+        "p90": 209,
+        "plan": "Sell whole asset as-is",
+        "rank": 1,
+        "route": "resale",
+        "terms": [
+         {
+          "amt": 238,
+          "kind": "sale",
+          "label": "Expected sale proceeds"
+         },
+         {
+          "amt": -34,
+          "kind": "fees",
+          "label": "Fees and freight"
+         },
+         {
+          "amt": -18,
+          "kind": "risk",
+          "label": "Unsold-risk allowance"
+         }
+        ],
+        "why": "Clean grade-B unit; no workshop capacity used"
+       },
+       {
+        "behind": 15,
+        "demand": "Dealer network · grade A listing",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 171,
+        "p10": 132,
+        "p90": 203,
+        "plan": "Refurbish, then sell",
+        "rank": 2,
+        "route": "resale",
+        "terms": [
+         {
+          "amt": 286,
+          "kind": "sale",
+          "label": "Expected sale proceeds"
+         },
+         {
+          "amt": -52,
+          "kind": "prep",
+          "label": "Light refurbishment (chuck, brushes)"
+         },
+         {
+          "amt": -38,
+          "kind": "fees",
+          "label": "Fees and freight"
+         },
+         {
+          "amt": -25,
+          "kind": "risk",
+          "label": "Repair-failure and unsold allowance"
+         }
+        ],
+        "why": "Grade lift adds $48 gross but costs $52 + risk"
+       },
+       {
+        "behind": 38,
+        "demand": "Site 6 · forecast replacement",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 148,
+        "p10": 110,
+        "p90": 179,
+        "plan": "Redeploy to Site 6 tool crib",
+        "rank": 3,
+        "route": "redeploy",
+        "terms": [
+         {
+          "amt": 340,
+          "kind": "purchase",
+          "label": "Avoided equivalent purchase"
+         },
+         {
+          "amt": -60,
+          "kind": "prep",
+          "label": "Preparation and transfer"
+         },
+         {
+          "amt": -30,
+          "kind": "service",
+          "label": "Service exposure"
+         },
+         {
+          "amt": -102,
+          "kind": "risk",
+          "label": "Non-realization allowance"
+         }
+        ],
+        "why": "Demand is forecast, not confirmed"
+       },
+       {
+        "behind": 96,
+        "demand": "Service stock · gearbox & chuck",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 90,
+        "p10": 65,
+        "p90": 111,
+        "plan": "Recover parts for internal use",
+        "rank": 4,
+        "route": "intparts",
+        "terms": [
+         {
+          "amt": 150,
+          "kind": "parts",
+          "label": "Parts consumed internally"
+         },
+         {
+          "amt": -36,
+          "kind": "prep",
+          "label": "Extraction and testing"
+         },
+         {
+          "amt": -24,
+          "kind": "residual",
+          "label": "Source-asset value lost"
+         }
+        ],
+        "why": ""
+       },
+       {
+        "behind": 175,
+        "demand": "Certified recycler",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 11,
+        "p10": -1,
+        "p90": 21,
+        "plan": "Recover material",
+        "rank": 5,
+        "route": "material",
+        "terms": [
+         {
+          "amt": 19,
+          "kind": "material",
+          "label": "Metals recovered"
+         },
+         {
+          "amt": -8,
+          "kind": "fees",
+          "label": "Processing and logistics"
+         }
+        ],
+        "why": ""
+       }
+      ],
+      "excluded": [],
+      "flips": [
+       {
+        "to": "Refurbish, then sell",
+        "txt": "Refurbish, then sell: expected sale proceeds rises above $301"
+       },
+       {
+        "to": "Refurbish, then sell",
+        "txt": "Expected sale proceeds falls below $223"
+       },
+       {
+        "to": "Refurbish, then sell",
+        "txt": "Fees and freight rises above $49"
+       }
+      ],
+      "recommended": {
+       "conf": "High",
+       "demand": "forecast",
+       "net": 186,
+       "p10": 157,
+       "p90": 209,
+       "plan": "Sell whole asset as-is",
+       "route": "resale"
+      },
+      "tie": {
+       "decided_by": "cycle",
+       "gap": 15,
+       "preferred": "Sell whole asset as-is",
+       "text": "Sell whole asset as-is and Refurbish, then sell are within $15 (8%). Sell whole asset as-is is preferred because cycle time decides: 29 days against 41 days."
+      }
+     }
+    }
+   },
+   {
+    "action": "case.get",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 2.8,
+      "approval": "APR-2026-10-3164",
+      "assessment": "Ready",
+      "asset": "DRL-0812",
+      "blocked": null,
+      "cert_months": 12,
+      "cls": "drill",
+      "est_life": "20–27 months",
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [
+       "Market: 31 comparable sales, median $241",
+       "Refurbishment adds $48 gross, costs $52"
+      ],
+      "grade": "B",
+      "id": "RT-1049",
+      "life": "24 months",
+      "location": "Repair centre",
+      "mfr": "Tessen Tools",
+      "missing": [],
+      "outcome": {
+       "act": 177,
+       "lines": [
+        {
+         "act": 231,
+         "label": "Expected sale proceeds",
+         "model": "resale-price",
+         "pred": 238
+        },
+        {
+         "act": -36,
+         "label": "Fees and freight",
+         "model": "prep-cost-time",
+         "pred": -34
+        },
+        {
+         "act": -18,
+         "label": "Unsold-risk allowance",
+         "model": "repair-success",
+         "pred": -18
+        }
+       ],
+       "order": "SO-47343",
+       "plan": "Sell whole asset as-is",
+       "pred": 186,
+       "variance": -9
+      },
+      "owner": "Customer A",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer A"
+       ]
+      },
+      "product": "Tessen TX tool",
+      "qty": 1,
+      "received": "2026-10-03",
+      "recommendation": {
+       "conf": "High",
+       "demand": "forecast",
+       "net": 186,
+       "p10": 157,
+       "p90": 209,
+       "plan": "Sell whole asset as-is",
+       "route": "resale"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1049",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-8DCBC2B6",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer A",
+      "timing": "List within 3 days"
+     }
+    }
+   },
+   {
+    "action": "case.evidence",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "result": {
+     "action": "case.evidence",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1049",
+      "items": [
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:43:57.000Z",
+        "fresh": "2 h ago",
+        "k": "ret",
+        "label": "Return record available",
+        "note": "",
+        "record": "MV-24467",
+        "source": "WMS · reverse logistics",
+        "state": "ready",
+        "system": "WMS"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:33:47.000Z",
+        "fresh": "2 h ago",
+        "k": "id",
+        "label": "Identity and configuration verified",
+        "note": "",
+        "record": "CFG-34289",
+        "source": "PLM",
+        "state": "ready",
+        "system": "PLM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:34.000Z",
+        "fresh": "12 min ago",
+        "k": "insp",
+        "label": "Inspection report available",
+        "note": "",
+        "record": "INS-69454",
+        "source": "Inspection",
+        "state": "ready",
+        "system": "Inspection"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:41:54.000Z",
+        "fresh": "5 h ago",
+        "k": "svc",
+        "label": "Service history retrieved",
+        "note": "",
+        "record": "WO-42340",
+        "source": "EAM",
+        "state": "ready",
+        "system": "EAM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:48:24.000Z",
+        "fresh": "2 h ago",
+        "k": "eng",
+        "label": "Engineering assessment available",
+        "note": "",
+        "record": "ENG-48358",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "Engineering"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T08:09:12.000Z",
+        "fresh": "yesterday",
+        "k": "photo",
+        "label": "Photos available",
+        "note": "",
+        "record": "IMG-51694",
+        "source": "Inspection",
+        "state": "ready",
+        "system": "Inspection"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:19:00.000Z",
+        "fresh": "41 min ago",
+        "k": "dem",
+        "label": "Demand evidence linked",
+        "note": "",
+        "record": "OPP-30524",
+        "source": "CRM",
+        "state": "ready",
+        "system": "CRM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T13:59:16.000Z",
+        "fresh": "12 min ago",
+        "k": "mkt",
+        "label": "Market comparables current",
+        "note": "",
+        "record": "CMP-21850",
+        "source": "Market pricing",
+        "state": "ready",
+        "system": "Market pricing"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:46:15.000Z",
+        "fresh": "2 h ago",
+        "k": "cost",
+        "label": "Cost and stock data available",
+        "note": "",
+        "record": "ERP-55585",
+        "source": "ERP finance",
+        "state": "ready",
+        "system": "ERP"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:41.000Z",
+        "fresh": "12 min ago",
+        "k": "pol",
+        "label": "Policy & certification checked",
+        "note": "",
+        "record": "POL-44679",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "QMS"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "case.get",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 11.8,
+      "approval": "APR-2026-10-3098",
+      "assessment": "Ready",
+      "asset": "MTR-1982",
+      "blocked": null,
+      "cert_months": null,
+      "cls": "motor",
+      "est_life": null,
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [
+       "Shared teardown $240 charged once across 5 outputs",
+       "Disposal avoidance counted once"
+      ],
+      "grade": "D",
+      "id": "RT-1027",
+      "life": "Below minimum",
+      "location": "Repair centre",
+      "mfr": "Kestrel Drives",
+      "missing": [],
+      "outcome": {
+       "act": 820,
+       "lines": [
+        {
+         "act": 290,
+         "label": "Bearing set → repair MTR-1730 (internal)",
+         "model": "resale-price",
+         "pred": 380
+        },
+        {
+         "act": 260,
+         "label": "Encoder module → external sale",
+         "model": "resale-price",
+         "pred": 210
+        },
+        {
+         "act": 140,
+         "label": "Terminal box + fan cover → service stock",
+         "model": "resale-price",
+         "pred": 150
+        },
+        {
+         "act": 360,
+         "label": "Copper windings → material recovery",
+         "model": "resale-price",
+         "pred": 330
+        },
+        {
+         "act": 50,
+         "label": "Steel frame + rotor → material recovery",
+         "model": "resale-price",
+         "pred": 60
+        },
+        {
+         "act": -200,
+         "label": "Shared teardown (charged once)",
+         "model": "prep-cost-time",
+         "pred": -240
+        },
+        {
+         "act": -80,
+         "label": "Logistics",
+         "model": "prep-cost-time",
+         "pred": -90
+        }
+       ],
+       "order": "WO-47202",
+       "plan": "Selective harvest + material recovery",
+       "pred": 800,
+       "variance": 20
+      },
+      "owner": "Customer A",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer A",
+        "received 13 days ago",
+        "confirmed demand, Teardown Day 2"
+       ]
+      },
+      "product": "Voltara V4 motor",
+      "qty": 1,
+      "received": "2026-09-24",
+      "recommendation": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": 800,
+       "p10": 616,
+       "p90": 951,
+       "plan": "Selective harvest + material recovery",
+       "route": "intparts"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1027",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-431177DE",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer A",
+      "timing": "Teardown Day 2"
+     }
+    }
+   },
+   {
+    "action": "case.trace",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "case.trace",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1027",
+      "done": true,
+      "events": [
+       {
+        "by": "Finance",
+        "note": "Actual $820 against predicted $800 on WO-47202; 7 cost lines to the models",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Finance document FI-47254 returned by ERP: actual parts, labour, machine and freight costs posted against the decision",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.reported"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Transfer TR-47228 returned by ERP: parts allocated to open service orders",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "stock.transferred"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Putaway PA-47215 returned by WMS: recovered parts put away",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "movement.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Work order WO-47202 returned by MRO: teardown done; recovered parts tested and certified",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "workorder.created"
+       },
+       {
+        "by": "Approver",
+        "note": "",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "instruction.sent"
+       },
+       {
+        "by": "Planner · Customer A",
+        "note": "Submitted for review by Planner · Customer A",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "decision.submitted"
+       }
+      ],
+      "id": "RUN-1027",
+      "next": {
+       "kind": "done",
+       "label": "Journey complete",
+       "n": 11
+      },
+      "stage": 11,
+      "stages": [
+       {
+        "at": "2026-08-23T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 1,
+        "result": "Lease LC-4372 ended 23 Aug 2026; customer intent: early return; 9180 operating hours",
+        "state": "done",
+        "t": "Lease ends"
+       },
+       {
+        "at": "2026-08-28T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 2,
+        "result": "Return authorised RMA-56684, no fee; replacement order SO-48210; book value $6,040",
+        "state": "done",
+        "t": "Return authorised"
+       },
+       {
+        "at": "2026-09-01T00:00:00.000Z",
+        "by": "Velo Freight",
+        "label": "Completed",
+        "n": 3,
+        "result": "Picked up 01 Sept at LOC-NSK-04 by Velo Freight, arrived 23 Sept at RC-HSR-01; freight $289 (₹24,100, 1,145 km × ₹20 + ₹1,200 loading)",
+        "state": "done",
+        "t": "Pickup and transit"
+       },
+       {
+        "at": "2026-09-24T00:00:00.000Z",
+        "by": "WMS",
+        "label": "Completed",
+        "n": 4,
+        "result": "Received at Repair centre on 24 Sept; holding clock 13 days; evidence complete",
+        "state": "done",
+        "t": "Received"
+       },
+       {
+        "blocked": null,
+        "by": "Inspection",
+        "label": "Completed",
+        "n": 5,
+        "result": "Grade D · life Below minimum",
+        "state": "done",
+        "t": "Inspect and grade"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "blocked": null,
+        "by": "Planner · Customer A",
+        "label": "Completed",
+        "n": 6,
+        "prep": null,
+        "result": "Selective harvest + material recovery · $800 (P10–P90 $616–$951)",
+        "state": "done",
+        "t": "Decide"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Approver",
+        "label": "Completed",
+        "n": 7,
+        "prep": null,
+        "result": "Approved by Approver under APR-2026-10-3098",
+        "state": "done",
+        "t": "Approve"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Enterprise adapters",
+        "label": "Completed",
+        "n": 8,
+        "result": "Teardown work order WO-47202 · Parts putaway PA-47215 · Parts allocation TR-47228",
+        "state": "done",
+        "t": "Execute"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Finance",
+        "label": "Completed",
+        "n": 9,
+        "result": "Actual $820 confirmed by Finance",
+        "state": "done",
+        "t": "Outcome"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Reconciler",
+        "label": "Completed",
+        "n": 10,
+        "result": "Predicted $800, actual $820 (+$20); 7 learning records proposed",
+        "state": "done",
+        "t": "Reconcile and learn"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "case.routes",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "case.routes",
+     "key": null,
+     "ok": true,
+     "output": {
+      "blocked": null,
+      "case_id": "RT-1027",
+      "eligible": [
+       {
+        "behind": 0,
+        "demand": "MTR-1730 repair · external encoder buyer · recycler",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 800,
+        "p10": 616,
+        "p90": 951,
+        "plan": "Selective harvest + material recovery",
+        "rank": 1,
+        "route": "intparts",
+        "terms": [
+         {
+          "amt": 380,
+          "kind": "parts",
+          "label": "Bearing set → repair MTR-1730 (internal)"
+         },
+         {
+          "amt": 210,
+          "kind": "parts",
+          "label": "Encoder module → external sale"
+         },
+         {
+          "amt": 150,
+          "kind": "parts",
+          "label": "Terminal box + fan cover → service stock"
+         },
+         {
+          "amt": 330,
+          "kind": "material",
+          "label": "Copper windings → material recovery"
+         },
+         {
+          "amt": 60,
+          "kind": "material",
+          "label": "Steel frame + rotor → material recovery"
+         },
+         {
+          "amt": -240,
+          "kind": "prep",
+          "label": "Shared teardown (charged once)"
+         },
+         {
+          "amt": -90,
+          "kind": "fees",
+          "label": "Logistics"
+         }
+        ],
+        "why": "Components allocated once; remainder to material recovery"
+       },
+       {
+        "behind": 420,
+        "demand": "Certified recycler",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 380,
+        "p10": 283,
+        "p90": 460,
+        "plan": "Material recovery only",
+        "rank": 2,
+        "route": "material",
+        "terms": [
+         {
+          "amt": 330,
+          "kind": "material",
+          "label": "Copper"
+         },
+         {
+          "amt": 120,
+          "kind": "material",
+          "label": "Steel and aluminium"
+         },
+         {
+          "amt": -70,
+          "kind": "fees",
+          "label": "Processing and logistics"
+         }
+        ],
+        "why": "Lower: usable bearings and encoder lost"
+       },
+       {
+        "behind": 680,
+        "demand": "Rewinder · failed winding",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 120,
+        "p10": 74,
+        "p90": 158,
+        "plan": "Sell as-is to rewinder",
+        "rank": 3,
+        "route": "resale",
+        "terms": [
+         {
+          "amt": 260,
+          "kind": "sale",
+          "label": "Sale proceeds"
+         },
+         {
+          "amt": -140,
+          "kind": "fees",
+          "label": "Fees and freight"
+         }
+        ],
+        "why": ""
+       },
+       {
+        "behind": 860,
+        "demand": "Approved vendor A",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": -60,
+        "p10": -72,
+        "p90": -50,
+        "plan": "Responsible exit",
+        "rank": 4,
+        "route": "exit",
+        "terms": [
+         {
+          "amt": -60,
+          "kind": "fees",
+          "label": "Net exit cost"
+         }
+        ],
+        "why": ""
+       }
+      ],
+      "excluded": [
+       {
+        "gate": "Condition & life",
+        "plan": "Redeploy",
+        "reason": "Winding insulation failed; remaining life below the minimum for reuse",
+        "route": "redeploy"
+       },
+       {
+        "gate": "Condition & life",
+        "plan": "Re-lease",
+        "reason": "Winding insulation failed; remaining life below the minimum for reuse",
+        "route": "relase"
+       }
+      ],
+      "flips": [
+       {
+        "to": "Material recovery only",
+        "txt": "Confirmed demand (MTR-1730 repair) is cancelled"
+       },
+       {
+        "to": "Material recovery only",
+        "txt": "Bearing set → repair MTR-1730 (internal) falls below −$40"
+       },
+       {
+        "to": "Material recovery only",
+        "txt": "Copper windings → material recovery falls below −$90"
+       }
+      ],
+      "recommended": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": 800,
+       "p10": 616,
+       "p90": 951,
+       "plan": "Selective harvest + material recovery",
+       "route": "intparts"
+      },
+      "tie": null
+     }
+    }
+   },
+   {
+    "action": "case.get",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 11.8,
+      "approval": "APR-2026-10-3098",
+      "assessment": "Ready",
+      "asset": "MTR-1982",
+      "blocked": null,
+      "cert_months": null,
+      "cls": "motor",
+      "est_life": null,
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [
+       "Shared teardown $240 charged once across 5 outputs",
+       "Disposal avoidance counted once"
+      ],
+      "grade": "D",
+      "id": "RT-1027",
+      "life": "Below minimum",
+      "location": "Repair centre",
+      "mfr": "Kestrel Drives",
+      "missing": [],
+      "outcome": {
+       "act": 820,
+       "lines": [
+        {
+         "act": 290,
+         "label": "Bearing set → repair MTR-1730 (internal)",
+         "model": "resale-price",
+         "pred": 380
+        },
+        {
+         "act": 260,
+         "label": "Encoder module → external sale",
+         "model": "resale-price",
+         "pred": 210
+        },
+        {
+         "act": 140,
+         "label": "Terminal box + fan cover → service stock",
+         "model": "resale-price",
+         "pred": 150
+        },
+        {
+         "act": 360,
+         "label": "Copper windings → material recovery",
+         "model": "resale-price",
+         "pred": 330
+        },
+        {
+         "act": 50,
+         "label": "Steel frame + rotor → material recovery",
+         "model": "resale-price",
+         "pred": 60
+        },
+        {
+         "act": -200,
+         "label": "Shared teardown (charged once)",
+         "model": "prep-cost-time",
+         "pred": -240
+        },
+        {
+         "act": -80,
+         "label": "Logistics",
+         "model": "prep-cost-time",
+         "pred": -90
+        }
+       ],
+       "order": "WO-47202",
+       "plan": "Selective harvest + material recovery",
+       "pred": 800,
+       "variance": 20
+      },
+      "owner": "Customer A",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer A",
+        "received 13 days ago",
+        "confirmed demand, Teardown Day 2"
+       ]
+      },
+      "product": "Voltara V4 motor",
+      "qty": 1,
+      "received": "2026-09-24",
+      "recommendation": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": 800,
+       "p10": 616,
+       "p90": 951,
+       "plan": "Selective harvest + material recovery",
+       "route": "intparts"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1027",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-431177DE",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer A",
+      "timing": "Teardown Day 2"
+     }
+    }
+   },
+   {
+    "action": "case.evidence",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1027"
+    },
+    "result": {
+     "action": "case.evidence",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1027",
+      "items": [
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:55:45.000Z",
+        "fresh": "5 h ago",
+        "k": "ret",
+        "label": "Return record available",
+        "note": "",
+        "record": "MV-31243",
+        "source": "WMS · reverse logistics",
+        "state": "ready",
+        "system": "WMS"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:57:15.000Z",
+        "fresh": "5 h ago",
+        "k": "id",
+        "label": "Identity and configuration verified",
+        "note": "",
+        "record": "CFG-56009",
+        "source": "PLM",
+        "state": "ready",
+        "system": "PLM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:37:12.000Z",
+        "fresh": "5 h ago",
+        "k": "insp",
+        "label": "Inspection report available",
+        "note": "",
+        "record": "INS-87254",
+        "source": "MRO",
+        "state": "ready",
+        "system": "MRO and workshop"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:35:26.000Z",
+        "fresh": "5 h ago",
+        "k": "svc",
+        "label": "Service history retrieved",
+        "note": "",
+        "record": "WO-22428",
+        "source": "EAM",
+        "state": "ready",
+        "system": "EAM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:36:52.000Z",
+        "fresh": "5 h ago",
+        "k": "eng",
+        "label": "Engineering assessment available",
+        "note": "",
+        "record": "ENG-87886",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "Engineering"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:34.000Z",
+        "fresh": "12 min ago",
+        "k": "photo",
+        "label": "Photos available",
+        "note": "",
+        "record": "IMG-45270",
+        "source": "MRO",
+        "state": "ready",
+        "system": "MRO and workshop"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:53:58.000Z",
+        "fresh": "5 h ago",
+        "k": "dem",
+        "label": "Demand evidence linked",
+        "note": "",
+        "record": "OPP-57700",
+        "source": "CRM",
+        "state": "ready",
+        "system": "CRM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T13:59:46.000Z",
+        "fresh": "41 min ago",
+        "k": "mkt",
+        "label": "Market comparables current",
+        "note": "",
+        "record": "CMP-33778",
+        "source": "Market pricing",
+        "state": "ready",
+        "system": "Market pricing"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:19.000Z",
+        "fresh": "41 min ago",
+        "k": "cost",
+        "label": "Cost and stock data available",
+        "note": "",
+        "record": "ERP-39897",
+        "source": "ERP finance",
+        "state": "ready",
+        "system": "ERP"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:55.000Z",
+        "fresh": "41 min ago",
+        "k": "pol",
+        "label": "Policy & certification checked",
+        "note": "",
+        "record": "POL-28415",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "QMS"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "case.get",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 9.1,
+      "approval": "APR-2026-10-3329",
+      "assessment": "Ready",
+      "asset": "ITE-0388",
+      "blocked": null,
+      "cert_months": null,
+      "cls": "it",
+      "est_life": null,
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [
+       "Higher-value routes unavailable; compliant destination required",
+       "Data erasure certificate on file (14 of 14 devices)"
+      ],
+      "grade": "D",
+      "id": "RT-1104",
+      "life": "Below minimum",
+      "location": "Warehouse 2",
+      "mfr": "Corvid Computing",
+      "missing": [],
+      "outcome": {
+       "act": -60,
+       "lines": [
+        {
+         "act": -20,
+         "label": "Collection",
+         "model": "prep-cost-time",
+         "pred": -20
+        },
+        {
+         "act": -70,
+         "label": "Processing",
+         "model": "prep-cost-time",
+         "pred": -70
+        },
+        {
+         "act": 30,
+         "label": "Vendor credit",
+         "model": null,
+         "pred": 30
+        }
+       ],
+       "order": null,
+       "plan": "Responsible exit · Approved vendor A",
+       "pred": -60,
+       "variance": 0
+      },
+      "owner": "Customer B",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer B",
+        "received 9 days ago"
+       ]
+      },
+      "product": "Corvid C14 laptop",
+      "qty": 14,
+      "received": "2026-09-28",
+      "recommendation": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": -60,
+       "p10": -72,
+       "p90": -50,
+       "plan": "Responsible exit · Approved vendor A",
+       "route": "exit"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1104",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-AA48FFFE",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer B",
+      "timing": "Collection within 5 days"
+     }
+    }
+   },
+   {
+    "action": "case.trace",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "case.trace",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1104",
+      "done": true,
+      "events": [
+       {
+        "by": "Finance",
+        "note": "Actual −$60 against predicted −$60; 2 cost lines to the models",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Certificate CERT-47767 returned by Exit partner: custody certificate returned",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "certificate.received"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Collection COL-47754 returned by Recycler / Exit partner: processed by the partner",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "processing.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Collection COL-47741 returned by Recycler / Exit partner: collected by the partner",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "collection.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Release REL-47728 returned by WMS: released to the partner",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "release.confirmed"
+       },
+       {
+        "by": "Approver",
+        "note": "",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "instruction.sent"
+       },
+       {
+        "by": "Planner · Customer B",
+        "note": "Submitted for review by Planner · Customer B",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "decision.submitted"
+       }
+      ],
+      "id": "RUN-1104",
+      "next": {
+       "kind": "done",
+       "label": "Journey complete",
+       "n": 11
+      },
+      "stage": 11,
+      "stages": [
+       {
+        "at": "2026-08-23T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 1,
+        "result": "Lease LC-4148 ended 23 Aug 2026; customer intent: early return; 2 years in service",
+        "state": "done",
+        "t": "Lease ends"
+       },
+       {
+        "at": "2026-08-26T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 2,
+        "result": "Return authorised RMA-55876, no fee; book value $1,940",
+        "state": "done",
+        "t": "Return authorised"
+       },
+       {
+        "at": "2026-09-01T00:00:00.000Z",
+        "by": "Northline 3PL",
+        "label": "Completed",
+        "n": 3,
+        "result": "Picked up 01 Sept at LOC-CBE-06 by Northline 3PL, arrived 27 Sept at WH-MAA-02; freight $132 (₹11,000, 490 km × ₹20 + ₹1,200 loading)",
+        "state": "done",
+        "t": "Pickup and transit"
+       },
+       {
+        "at": "2026-09-28T00:00:00.000Z",
+        "by": "WMS",
+        "label": "Completed",
+        "n": 4,
+        "result": "Received at Warehouse 2 on 28 Sept; holding clock 9 days; evidence complete",
+        "state": "done",
+        "t": "Received"
+       },
+       {
+        "blocked": null,
+        "by": "Inspection",
+        "label": "Completed",
+        "n": 5,
+        "result": "Grade D · life Below minimum",
+        "state": "done",
+        "t": "Inspect and grade"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "blocked": null,
+        "by": "Planner · Customer B",
+        "label": "Completed",
+        "n": 6,
+        "prep": null,
+        "result": "Responsible exit · Approved vendor A · −$60 (P10–P90 −$72–−$50)",
+        "state": "done",
+        "t": "Decide"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Approver",
+        "label": "Completed",
+        "n": 7,
+        "prep": null,
+        "result": "Approved by Approver under APR-2026-10-3329",
+        "state": "done",
+        "t": "Approve"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Enterprise adapters",
+        "label": "Completed",
+        "n": 8,
+        "result": "Release to partner REL-47728 · Collection COL-47741 · Processing COL-47754",
+        "state": "done",
+        "t": "Execute"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Finance",
+        "label": "Completed",
+        "n": 9,
+        "result": "Actual −$60 confirmed by Finance",
+        "state": "done",
+        "t": "Outcome"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Reconciler",
+        "label": "Completed",
+        "n": 10,
+        "result": "Predicted −$60, actual −$60 (+$0); 2 learning records proposed",
+        "state": "done",
+        "t": "Reconcile and learn"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "case.routes",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "case.routes",
+     "key": null,
+     "ok": true,
+     "output": {
+      "blocked": null,
+      "case_id": "RT-1104",
+      "eligible": [
+       {
+        "behind": 0,
+        "demand": "Approved vendor A · cert ISO 14001 · valid to Mar 2027",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": -60,
+        "p10": -72,
+        "p90": -50,
+        "plan": "Responsible exit · Approved vendor A",
+        "rank": 1,
+        "route": "exit",
+        "terms": [
+         {
+          "amt": -20,
+          "kind": "fees",
+          "label": "Collection"
+         },
+         {
+          "amt": -70,
+          "kind": "fees",
+          "label": "Processing"
+         },
+         {
+          "amt": 30,
+          "kind": "credit",
+          "label": "Vendor credit"
+         }
+        ],
+        "why": "Cheapest approved vendor: $25 below B"
+       },
+       {
+        "behind": 25,
+        "demand": "Approved vendor B · cert R2v3 · valid to Jun 2027",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": -85,
+        "p10": -97,
+        "p90": -75,
+        "plan": "Responsible exit · Approved vendor B",
+        "rank": 2,
+        "route": "exit",
+        "terms": [
+         {
+          "amt": -25,
+          "kind": "fees",
+          "label": "Collection"
+         },
+         {
+          "amt": -75,
+          "kind": "fees",
+          "label": "Processing"
+         },
+         {
+          "amt": 15,
+          "kind": "credit",
+          "label": "Vendor credit"
+         }
+        ],
+        "why": "Approved, $25 dearer than A"
+       }
+      ],
+      "excluded": [
+       {
+        "gate": "Policy & certification",
+        "plan": "Responsible exit · Uncertified vendor",
+        "reason": "Vendor not certified — cheaper at $35 but ineligible; mandatory requirement",
+        "route": "exit"
+       },
+       {
+        "gate": "Condition & life",
+        "plan": "Sell whole asset",
+        "reason": "Battery health 41% and OS out of support; below minimum for resale",
+        "route": "resale"
+       },
+       {
+        "gate": "Condition & life",
+        "plan": "Redeploy",
+        "reason": "Remaining life below the minimum for the intended use",
+        "route": "redeploy"
+       },
+       {
+        "gate": "Demand fit",
+        "plan": "Recover parts for internal use",
+        "reason": "No component demand for this platform",
+        "route": "intparts"
+       },
+       {
+        "gate": "Demand fit",
+        "plan": "Sell parts externally",
+        "reason": "No accepting buyer for 9-year-old platform",
+        "route": "extparts"
+       },
+       {
+        "gate": "Sustainability",
+        "plan": "Recover material",
+        "reason": "Li-ion cells need an approved hazardous-waste route; in-house stream not permitted",
+        "route": "material"
+       }
+      ],
+      "flips": [
+       {
+        "to": "Responsible exit · Approved vendor B",
+        "txt": "Processing rises above $95"
+       },
+       {
+        "to": "Responsible exit · Approved vendor B",
+        "txt": "Collection rises above $45"
+       }
+      ],
+      "recommended": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": -60,
+       "p10": -72,
+       "p90": -50,
+       "plan": "Responsible exit · Approved vendor A",
+       "route": "exit"
+      },
+      "tie": {
+       "decided_by": null,
+       "gap": 25,
+       "preferred": "Responsible exit · Approved vendor A",
+       "text": "Responsible exit · Approved vendor A and Responsible exit · Approved vendor B are within $25 (42%). No secondary factor separates them, so net value decides."
+      }
+     }
+    }
+   },
+   {
+    "action": "case.get",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 9.1,
+      "approval": "APR-2026-10-3329",
+      "assessment": "Ready",
+      "asset": "ITE-0388",
+      "blocked": null,
+      "cert_months": null,
+      "cls": "it",
+      "est_life": null,
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [
+       "Higher-value routes unavailable; compliant destination required",
+       "Data erasure certificate on file (14 of 14 devices)"
+      ],
+      "grade": "D",
+      "id": "RT-1104",
+      "life": "Below minimum",
+      "location": "Warehouse 2",
+      "mfr": "Corvid Computing",
+      "missing": [],
+      "outcome": {
+       "act": -60,
+       "lines": [
+        {
+         "act": -20,
+         "label": "Collection",
+         "model": "prep-cost-time",
+         "pred": -20
+        },
+        {
+         "act": -70,
+         "label": "Processing",
+         "model": "prep-cost-time",
+         "pred": -70
+        },
+        {
+         "act": 30,
+         "label": "Vendor credit",
+         "model": null,
+         "pred": 30
+        }
+       ],
+       "order": null,
+       "plan": "Responsible exit · Approved vendor A",
+       "pred": -60,
+       "variance": 0
+      },
+      "owner": "Customer B",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer B",
+        "received 9 days ago"
+       ]
+      },
+      "product": "Corvid C14 laptop",
+      "qty": 14,
+      "received": "2026-09-28",
+      "recommendation": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": -60,
+       "p10": -72,
+       "p90": -50,
+       "plan": "Responsible exit · Approved vendor A",
+       "route": "exit"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1104",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-AA48FFFE",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer B",
+      "timing": "Collection within 5 days"
+     }
+    }
+   },
+   {
+    "action": "case.evidence",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "result": {
+     "action": "case.evidence",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1104",
+      "items": [
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:47:33.000Z",
+        "fresh": "2 h ago",
+        "k": "ret",
+        "label": "Return record available",
+        "note": "",
+        "record": "MV-91435",
+        "source": "WMS · reverse logistics",
+        "state": "ready",
+        "system": "WMS"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:50:27.000Z",
+        "fresh": "2 h ago",
+        "k": "id",
+        "label": "Identity and configuration verified",
+        "note": "",
+        "record": "CFG-76393",
+        "source": "PLM",
+        "state": "ready",
+        "system": "PLM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T03:41:04.000Z",
+        "fresh": "yesterday",
+        "k": "insp",
+        "label": "Inspection report available",
+        "note": "",
+        "record": "INS-93942",
+        "source": "Inspection",
+        "state": "ready",
+        "system": "Inspection"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T03:07:22.000Z",
+        "fresh": "yesterday",
+        "k": "svc",
+        "label": "Service history retrieved",
+        "note": "",
+        "record": "WO-83260",
+        "source": "EAM",
+        "state": "ready",
+        "system": "EAM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:30.000Z",
+        "fresh": "41 min ago",
+        "k": "eng",
+        "label": "Engineering assessment available",
+        "note": "",
+        "record": "ENG-68078",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "Engineering"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:46.000Z",
+        "fresh": "41 min ago",
+        "k": "photo",
+        "label": "Photos available",
+        "note": "",
+        "record": "IMG-53110",
+        "source": "Inspection",
+        "state": "ready",
+        "system": "Inspection"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T02:40:50.000Z",
+        "fresh": "yesterday",
+        "k": "dem",
+        "label": "Demand evidence linked",
+        "note": "",
+        "record": "OPP-95364",
+        "source": "CRM",
+        "state": "ready",
+        "system": "CRM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T13:59:58.000Z",
+        "fresh": "12 min ago",
+        "k": "mkt",
+        "label": "Market comparables current",
+        "note": "",
+        "record": "CMP-71442",
+        "source": "Market pricing",
+        "state": "ready",
+        "system": "Market pricing"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:48:15.000Z",
+        "fresh": "5 h ago",
+        "k": "cost",
+        "label": "Cost and stock data available",
+        "note": "",
+        "record": "ERP-47225",
+        "source": "ERP finance",
+        "state": "ready",
+        "system": "ERP"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:51:29.000Z",
+        "fresh": "5 h ago",
+        "k": "pol",
+        "label": "Policy & certification checked",
+        "note": "",
+        "record": "POL-65951",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "QMS"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "case.get",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 2.2,
+      "approval": "APR-2026-10-3173",
+      "assessment": "Partial",
+      "asset": "BAT-0126",
+      "blocked": null,
+      "cert_months": 24,
+      "cls": "batch",
+      "est_life": "25–33 months",
+      "evidence_ready": 9,
+      "evidence_total": 10,
+      "facts": [
+       "Pool lock: D-302 reserved once (RT-1044 × 8, RT-1052 × 2)",
+       "Duplicate allocation attempt blocked at 09:42 — idempotency key held"
+      ],
+      "grade": "B",
+      "id": "RT-1052",
+      "life": "30 months (17 units)",
+      "location": "Warehouse 2",
+      "mfr": "Brava",
+      "missing": [
+       "Inspection report available"
+      ],
+      "outcome": {
+       "act": 3916,
+       "lines": [
+        {
+         "act": 2976,
+         "label": "12 units to Site 2 ($248 net each)",
+         "model": null,
+         "pred": 2976
+        },
+        {
+         "act": 300,
+         "label": "2 units to Site 6 project ($150 net each)",
+         "model": null,
+         "pred": 300
+        },
+        {
+         "act": 640,
+         "label": "6 units dealer lot ($118 net each)",
+         "model": "resale-price",
+         "pred": 708
+        }
+       ],
+       "order": "SO-48385",
+       "plan": "Split: 12 → Site 2, 2 → Site 6, 6 → dealer lot",
+       "pred": 3984,
+       "variance": -68
+      },
+      "owner": "Customer C",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer C",
+        "confirmed demand, Day 2–6 · 3 units conditional"
+       ]
+      },
+      "product": "Brava 36 V fleet",
+      "qty": 20,
+      "received": "2026-10-04",
+      "recommendation": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": 3984,
+       "p10": 3372,
+       "p90": 4486,
+       "plan": "Split: 12 → Site 2, 2 → Site 6, 6 → dealer lot",
+       "route": "redeploy"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1052",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-F30A2FA2",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer C",
+      "timing": "Day 2–6 · 3 units conditional"
+     }
+    }
+   },
+   {
+    "action": "case.trace",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "case.trace",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1052",
+      "done": true,
+      "events": [
+       {
+        "by": "Finance",
+        "note": "Actual $3,916 against predicted $3,984 on SO-48385; 1 cost lines to the models",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Finance document FI-47429 returned by ERP: actual parts, labour, machine and freight costs posted against the decision; delivered to Hosur Assembly (Site 2) for Customer C against SO-48385 line 20, WH-MAA-02 → RC-HSR-01 → LOC-HSR-02, ETD 08 Oct 08:00, ETA 09 Oct 08:30 (21 days before the need-by date)",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.reported"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Fulfilment FUL-47403 returned by OMS: proof of delivery signed; delivered to Hosur Assembly (Site 2) for Customer C against SO-48385 line 20, WH-MAA-02 → RC-HSR-01 → LOC-HSR-02, ETD 08 Oct 08:00, ETA 09 Oct 08:30 (21 days before the need-by date)",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "delivery.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Transfer TR-47390 returned by WMS: picked, staged and shipped against the load",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "movement.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Load LD-47416 returned by TMS: load tendered to and accepted by the carrier",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "load.booked"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Work order WO-47377 returned by MRO: repaired, tested and certified; QMS record updated",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "workorder.created"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Sales order SO-48385 returned by OMS: unit allocated to the order line; planned purchase cancelled in SAP Ariba",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "order.allocated"
+       },
+       {
+        "by": "Approver",
+        "note": "",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "instruction.sent"
+       },
+       {
+        "by": "Planner · Customer C",
+        "note": "Submitted for review by Planner · Customer C",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "decision.submitted"
+       }
+      ],
+      "id": "RUN-1052",
+      "next": {
+       "kind": "done",
+       "label": "Journey complete",
+       "n": 11
+      },
+      "stage": 11,
+      "stages": [
+       {
+        "at": "2026-09-12T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 1,
+        "result": "Lease LC-4720 ended 12 Sept 2026; customer intent: early return; 1056 cycles",
+        "state": "done",
+        "t": "Lease ends"
+       },
+       {
+        "at": "2026-09-17T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 2,
+        "result": "Return authorised RMA-56488, no fee; replacement order SO-48385; book value $2,130",
+        "state": "done",
+        "t": "Return authorised"
+       },
+       {
+        "at": "2026-09-20T00:00:00.000Z",
+        "by": "Northline 3PL",
+        "label": "Completed",
+        "n": 3,
+        "result": "Picked up 20 Sept at LOC-IDR-08 by Northline 3PL, arrived 03 Oct at WH-MAA-02; freight $364 (₹30,400, 1,460 km × ₹20 + ₹1,200 loading)",
+        "state": "done",
+        "t": "Pickup and transit"
+       },
+       {
+        "at": "2026-10-04T00:00:00.000Z",
+        "by": "WMS",
+        "label": "Completed",
+        "n": 4,
+        "result": "Received at Warehouse 2 on 04 Oct; holding clock 3 days; 1 evidence item missing",
+        "state": "done",
+        "t": "Received"
+       },
+       {
+        "blocked": null,
+        "by": "Inspection",
+        "label": "Completed",
+        "n": 5,
+        "result": "Grade B · life 30 months (17 units)",
+        "state": "done",
+        "t": "Inspect and grade"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "blocked": null,
+        "by": "Planner · Customer C",
+        "label": "Completed",
+        "n": 6,
+        "prep": null,
+        "result": "Split: 12 → Site 2, 2 → Site 6, 6 → dealer lot · $3,984 (P10–P90 $3,372–$4,486)",
+        "state": "done",
+        "t": "Decide"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Approver",
+        "label": "Completed",
+        "n": 7,
+        "prep": null,
+        "result": "Approved by Approver under APR-2026-10-3173",
+        "state": "done",
+        "t": "Approve"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Enterprise adapters",
+        "label": "Completed",
+        "n": 8,
+        "result": "Allocate to the order line SO-48385 · Refurbishment work order WO-47377 · Book transport LD-47416 · Warehouse moves and outbound delivery TR-47390 · Delivery confirmed FUL-47403",
+        "state": "done",
+        "t": "Execute"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Finance",
+        "label": "Completed",
+        "n": 9,
+        "result": "Actual $3,916 confirmed by Finance",
+        "state": "done",
+        "t": "Outcome"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Reconciler",
+        "label": "Completed",
+        "n": 10,
+        "result": "Predicted $3,984, actual $3,916 (−$68); 1 learning records proposed",
+        "state": "done",
+        "t": "Reconcile and learn"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "case.routes",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "case.routes",
+     "key": null,
+     "ok": true,
+     "output": {
+      "blocked": null,
+      "case_id": "RT-1052",
+      "eligible": [
+       {
+        "behind": 0,
+        "demand": "D-301 + D-302 + D-303 · confirmed and dealer lot",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 3984,
+        "p10": 3372,
+        "p90": 4486,
+        "plan": "Split: 12 → Site 2, 2 → Site 6, 6 → dealer lot",
+        "rank": 1,
+        "route": "redeploy",
+        "terms": [
+         {
+          "amt": 2976,
+          "kind": "purchase",
+          "label": "12 units to Site 2 ($248 net each)"
+         },
+         {
+          "amt": 300,
+          "kind": "purchase",
+          "label": "2 units to Site 6 project ($150 net each)"
+         },
+         {
+          "amt": 708,
+          "kind": "sale",
+          "label": "6 units dealer lot ($118 net each)"
+         }
+        ],
+        "why": "Leaves 8 of D-302's 10 units to RT-1044, whose 36 V units fit better"
+       },
+       {
+        "behind": 426,
+        "demand": "Site 2 + Site 6 project · confirmed",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 3558,
+        "p10": 3011,
+        "p90": 4006,
+        "plan": "12 → Site 2 (D-301), 8 → Site 6 (D-302)",
+        "rank": 2,
+        "route": "redeploy",
+        "terms": [
+         {
+          "amt": 2976,
+          "kind": "purchase",
+          "label": "12 units avoided purchase ($248 net each)"
+         },
+         {
+          "amt": 1200,
+          "kind": "purchase",
+          "label": "8 units avoided purchase ($150 net each)"
+         },
+         {
+          "amt": -618,
+          "kind": "risk",
+          "label": "Value displaced from RT-1044 (pool effect)"
+         }
+        ],
+        "why": "Best for this batch alone ($4,176) but worse for the pool"
+       },
+       {
+        "behind": 1744,
+        "demand": "Dealer lot offer (20 units)",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 2240,
+        "p10": 1839,
+        "p90": 2569,
+        "plan": "Sell whole lot to dealer",
+        "rank": 3,
+        "route": "resale",
+        "terms": [
+         {
+          "amt": 2560,
+          "kind": "sale",
+          "label": "Lot proceeds (20 × $128)"
+         },
+         {
+          "amt": -320,
+          "kind": "fees",
+          "label": "Fees and freight"
+         }
+        ],
+        "why": "Ignores confirmed internal demand"
+       },
+       {
+        "behind": 3594,
+        "demand": "Service stock",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 390,
+        "p10": 280,
+        "p90": 480,
+        "plan": "Recover cells and chargers",
+        "rank": 4,
+        "route": "intparts",
+        "terms": [
+         {
+          "amt": 1280,
+          "kind": "parts",
+          "label": "Parts consumed internally"
+         },
+         {
+          "amt": -480,
+          "kind": "prep",
+          "label": "Extraction and testing"
+         },
+         {
+          "amt": -140,
+          "kind": "fees",
+          "label": "Logistics"
+         },
+         {
+          "amt": -270,
+          "kind": "residual",
+          "label": "Source-asset value lost"
+         }
+        ],
+        "why": ""
+       },
+       {
+        "behind": 3614,
+        "demand": "Certified recycler",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 370,
+        "p10": 275,
+        "p90": 448,
+        "plan": "Recover material",
+        "rank": 5,
+        "route": "material",
+        "terms": [
+         {
+          "amt": 620,
+          "kind": "material",
+          "label": "Metals and cells"
+         },
+         {
+          "amt": -250,
+          "kind": "fees",
+          "label": "Processing and logistics"
+         }
+        ],
+        "why": ""
+       }
+      ],
+      "excluded": [
+       {
+        "gate": "Policy & certification",
+        "plan": "Sell battery packs externally",
+        "reason": "Used Li-ion cells cannot be resold without requalification certificate",
+        "route": "extparts"
+       }
+      ],
+      "flips": [
+       {
+        "to": "12 → Site 2 (D-301), 8 → Site 6 (D-302)",
+        "txt": "Confirmed demand (D-301 + D-302 + D-303) is cancelled"
+       },
+       {
+        "to": "12 → Site 2 (D-301), 8 → Site 6 (D-302)",
+        "txt": "12 units to Site 2 ($248 net each) falls below $2,550"
+       },
+       {
+        "to": "12 → Site 2 (D-301), 8 → Site 6 (D-302)",
+        "txt": "12 → Site 2 (D-301), 8 → Site 6 (D-302): 12 units avoided purchase ($248 net each) rises above $3,402"
+       }
+      ],
+      "recommended": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": 3984,
+       "p10": 3372,
+       "p90": 4486,
+       "plan": "Split: 12 → Site 2, 2 → Site 6, 6 → dealer lot",
+       "route": "redeploy"
+      },
+      "tie": null
+     }
+    }
+   },
+   {
+    "action": "case.get",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 2.2,
+      "approval": "APR-2026-10-3173",
+      "assessment": "Partial",
+      "asset": "BAT-0126",
+      "blocked": null,
+      "cert_months": 24,
+      "cls": "batch",
+      "est_life": "25–33 months",
+      "evidence_ready": 9,
+      "evidence_total": 10,
+      "facts": [
+       "Pool lock: D-302 reserved once (RT-1044 × 8, RT-1052 × 2)",
+       "Duplicate allocation attempt blocked at 09:42 — idempotency key held"
+      ],
+      "grade": "B",
+      "id": "RT-1052",
+      "life": "30 months (17 units)",
+      "location": "Warehouse 2",
+      "mfr": "Brava",
+      "missing": [
+       "Inspection report available"
+      ],
+      "outcome": {
+       "act": 3916,
+       "lines": [
+        {
+         "act": 2976,
+         "label": "12 units to Site 2 ($248 net each)",
+         "model": null,
+         "pred": 2976
+        },
+        {
+         "act": 300,
+         "label": "2 units to Site 6 project ($150 net each)",
+         "model": null,
+         "pred": 300
+        },
+        {
+         "act": 640,
+         "label": "6 units dealer lot ($118 net each)",
+         "model": "resale-price",
+         "pred": 708
+        }
+       ],
+       "order": "SO-48385",
+       "plan": "Split: 12 → Site 2, 2 → Site 6, 6 → dealer lot",
+       "pred": 3984,
+       "variance": -68
+      },
+      "owner": "Customer C",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer C",
+        "confirmed demand, Day 2–6 · 3 units conditional"
+       ]
+      },
+      "product": "Brava 36 V fleet",
+      "qty": 20,
+      "received": "2026-10-04",
+      "recommendation": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": 3984,
+       "p10": 3372,
+       "p90": 4486,
+       "plan": "Split: 12 → Site 2, 2 → Site 6, 6 → dealer lot",
+       "route": "redeploy"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1052",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-F30A2FA2",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer C",
+      "timing": "Day 2–6 · 3 units conditional"
+     }
+    }
+   },
+   {
+    "action": "case.evidence",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "result": {
+     "action": "case.evidence",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1052",
+      "items": [
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:37:17.000Z",
+        "fresh": "5 h ago",
+        "k": "ret",
+        "label": "Return record available",
+        "note": "",
+        "record": "MV-38575",
+        "source": "WMS · reverse logistics",
+        "state": "ready",
+        "system": "WMS"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:59.000Z",
+        "fresh": "12 min ago",
+        "k": "id",
+        "label": "Identity and configuration verified",
+        "note": "",
+        "record": "CFG-56317",
+        "source": "PLM",
+        "state": "ready",
+        "system": "PLM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:35:24.000Z",
+        "fresh": "2 h ago",
+        "k": "insp",
+        "label": "Inspection report available",
+        "note": "17 of 20 units graded; 3 units await inspection — their allocation stays conditional",
+        "record": null,
+        "source": "Inspection",
+        "state": "partial",
+        "system": "Inspection"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:24.000Z",
+        "fresh": "41 min ago",
+        "k": "svc",
+        "label": "Service history retrieved",
+        "note": "",
+        "record": "WO-98760",
+        "source": "EAM",
+        "state": "ready",
+        "system": "EAM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:50:12.000Z",
+        "fresh": "2 h ago",
+        "k": "eng",
+        "label": "Engineering assessment available",
+        "note": "",
+        "record": "ENG-83418",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "Engineering"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T06:14:04.000Z",
+        "fresh": "yesterday",
+        "k": "photo",
+        "label": "Photos available",
+        "note": "",
+        "record": "IMG-94018",
+        "source": "Inspection",
+        "state": "ready",
+        "system": "Inspection"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:45:54.000Z",
+        "fresh": "2 h ago",
+        "k": "dem",
+        "label": "Demand evidence linked",
+        "note": "",
+        "record": "OPP-51232",
+        "source": "CRM",
+        "state": "ready",
+        "system": "CRM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T13:59:36.000Z",
+        "fresh": "yesterday",
+        "k": "mkt",
+        "label": "Market comparables current",
+        "note": "",
+        "record": "CMP-31766",
+        "source": "Market pricing",
+        "state": "ready",
+        "system": "Market pricing"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:45.000Z",
+        "fresh": "12 min ago",
+        "k": "cost",
+        "label": "Cost and stock data available",
+        "note": "",
+        "record": "ERP-63525",
+        "source": "ERP finance",
+        "state": "ready",
+        "system": "ERP"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T03:39:41.000Z",
+        "fresh": "yesterday",
+        "k": "pol",
+        "label": "Policy & certification checked",
+        "note": "",
+        "record": "POL-85587",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "QMS"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "inbox.get",
+    "as": "finance",
+    "input": {},
+    "result": {
+     "action": "inbox.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "briefing": [
+       {
+        "go": "command/outcomes",
+        "n": 0,
+        "text": "No outcome waits for confirmation."
+       },
+       {
+        "go": "analytics",
+        "n": 1277,
+        "text": "$2,433,569 recovered on 1277 reconciled decisions; $1,741,546 of new purchases avoided."
+       }
+      ],
+      "items": [],
+      "total": 0
+     }
+    }
+   }
+  ]
+ },
+ "exec_override_resale": {
+  "calls": [
+   {
+    "action": "decision.submit",
+    "as": "planner-a",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "decision.submit",
+     "key": "decision.submit:RT-1048:7:submit:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1048",
+      "submitted_by": "Planner · Customer A"
+     },
+     "seq": 1
+    }
+   },
+   {
+    "action": "decision.override",
+    "as": "approver",
+    "input": {
+     "case_id": "RT-1048",
+     "rationale": "Redeploy to Site 3 as recommended; evidence snapshot reviewed.",
+     "reviewed": true,
+     "route": "Sell + buy for Site 3"
+    },
+    "result": {
+     "action": "decision.override",
+     "key": "decision.override:RT-1048:7:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1048",
+      "net": 4800,
+      "override": true,
+      "ref": "APR-2026-10-3161",
+      "route": "Sell + buy for Site 3",
+      "sent_to": "WMS · reservation"
+     },
+     "seq": 2
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:0",
+     "ok": true,
+     "output": {
+      "by": "WMS",
+      "case_id": "RT-1048",
+      "label": "Reserve unit",
+      "ref": "RSV-47342",
+      "ref_label": "Reservation RSV-47342",
+      "step": 0
+     },
+     "seq": 3
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:1",
+     "ok": true,
+     "output": {
+      "by": "OMS",
+      "case_id": "RT-1048",
+      "label": "Sale order",
+      "ref": "SO-47336",
+      "ref_label": "Sales order SO-47336",
+      "step": 1
+     },
+     "seq": 4
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:2",
+     "ok": true,
+     "output": {
+      "by": "TMS",
+      "case_id": "RT-1048",
+      "label": "Book shipment to the buyer",
+      "ref": "LD-47388",
+      "ref_label": "Load LD-47388",
+      "step": 2
+     },
+     "seq": 5
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:3",
+     "ok": true,
+     "output": {
+      "by": "OMS",
+      "case_id": "RT-1048",
+      "label": "Shipped and invoiced",
+      "ref": "FUL-47375",
+      "ref_label": "Fulfilment FUL-47375",
+      "step": 3
+     },
+     "seq": 6
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:9:APR-2026-10-3161:4",
+     "ok": true,
+     "output": {
+      "by": "ERP",
+      "case_id": "RT-1048",
+      "label": "Outcome reported",
+      "ref": "INV-47401",
+      "ref_label": "Invoice INV-47401",
+      "step": 4
+     },
+     "seq": 7
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1048 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1048 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1048 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "outcome.confirm",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "outcome.confirm",
+     "key": "outcome.confirm:RT-1048:9:0",
+     "ok": true,
+     "output": {
+      "actual": 5960,
+      "case_id": "RT-1048",
+      "predicted": 4800,
+      "variance": 1160
+     },
+     "seq": 8
+    }
+   }
+  ],
+  "observed": [
+   {
+    "action": "case.get",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 6.4,
+      "approval": "APR-2026-10-3161",
+      "assessment": "Ready",
+      "asset": "MTR-2041",
+      "blocked": null,
+      "cert_months": 24,
+      "cls": "motor",
+      "est_life": "30–40 months",
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [
+       "IBM Sterling OMS: contract replacement order SO-48102 line 10 for Customer A at Site 3 (Chennai Foundry) accepts a certified refurbished motor; a new one would cost $12,000",
+       "Planning/WMS: needed at Customer A Site 3 in 10 days; RT-1062 needed at Site 5",
+       "Baseline: buy a new motor for Customer A"
+      ],
+      "grade": "B",
+      "id": "RT-1048",
+      "life": "36 months",
+      "location": "Warehouse 1",
+      "mfr": "Voltara",
+      "missing": [],
+      "outcome": {
+       "act": 5960,
+       "lines": [
+        {
+         "act": 6620,
+         "label": "Expected sale proceeds",
+         "model": "resale-price",
+         "pred": 5600
+        },
+        {
+         "act": -660,
+         "label": "Fees and freight",
+         "model": "prep-cost-time",
+         "pred": -800
+        }
+       ],
+       "order": "SO-47336",
+       "plan": "Sell + buy for Site 3",
+       "pred": 4800,
+       "variance": 1160
+      },
+      "owner": "Customer A",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer A",
+        "confirmed demand, Day 3–7 vs Day 10 deadline"
+       ]
+      },
+      "product": "Voltara V4 motor",
+      "qty": 1,
+      "received": "2026-10-03",
+      "recommendation": {
+       "conf": "High",
+       "demand": "forecast",
+       "net": 4800,
+       "p10": 3817,
+       "p90": 5606,
+       "plan": "Sell + buy for Site 3",
+       "route": "resale"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1048",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-E7402581",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer A",
+      "timing": "Day 3–7 vs Day 10 deadline"
+     }
+    }
+   },
+   {
+    "action": "case.trace",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "case.trace",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1048",
+      "done": true,
+      "events": [
+       {
+        "by": "Finance",
+        "note": "Actual $5,960 against predicted $4,800 on SO-47336; 2 cost lines to the models",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Invoice INV-47401 returned by ERP: receipts posted",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.reported"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Fulfilment FUL-47375 returned by OMS: delivered and invoiced",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "delivery.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Load LD-47388 returned by TMS: load booked to the buyer",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "load.booked"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Sales order SO-47336 returned by OMS: buyer confirmed; sale order created",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "sale.recorded"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Reservation RSV-47342 returned by WMS: unit reserved for the sale",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "stock.reserved"
+       },
+       {
+        "by": "Approver",
+        "note": "Override approved with reason",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "instruction.sent"
+       },
+       {
+        "by": "Planner · Customer A",
+        "note": "Submitted for review by Planner · Customer A",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "decision.submitted"
+       }
+      ],
+      "id": "RUN-1048",
+      "next": {
+       "kind": "done",
+       "label": "Journey complete",
+       "n": 11
+      },
+      "stage": 11,
+      "stages": [
+       {
+        "at": "2026-08-11T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 1,
+        "result": "Lease LC-4739 ended 11 Aug 2026; customer intent: return at term; 32805 operating hours",
+        "state": "done",
+        "t": "Lease ends"
+       },
+       {
+        "at": "2026-08-15T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 2,
+        "result": "Return authorised RMA-56509, early-return fee $60; replacement order SO-48102; book value $8,200",
+        "state": "done",
+        "t": "Return authorised"
+       },
+       {
+        "at": "2026-08-21T00:00:00.000Z",
+        "by": "Velo Freight",
+        "label": "Completed",
+        "n": 3,
+        "result": "Picked up 21 Aug at LOC-PNQ-01 by Velo Freight, arrived 03 Oct at WH-PNQ-01; freight $43 (₹3,600, 20 km · minimum charge ₹3,600)",
+        "state": "done",
+        "t": "Pickup and transit"
+       },
+       {
+        "at": "2026-10-03T00:00:00.000Z",
+        "by": "WMS",
+        "label": "Completed",
+        "n": 4,
+        "result": "Received at Warehouse 1 on 03 Oct; holding clock 4 days; evidence complete",
+        "state": "done",
+        "t": "Received"
+       },
+       {
+        "blocked": null,
+        "by": "Inspection",
+        "label": "Completed",
+        "n": 5,
+        "result": "Grade B · life 36 months",
+        "state": "done",
+        "t": "Inspect and grade"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "blocked": null,
+        "by": "Planner · Customer A",
+        "label": "Completed",
+        "n": 6,
+        "prep": null,
+        "result": "Redeploy RT-1048 · $9,600 (P10–P90 $8,371–$10,608)",
+        "state": "done",
+        "t": "Decide"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Approver",
+        "label": "Completed",
+        "n": 7,
+        "prep": null,
+        "result": "Override approved by Approver under APR-2026-10-3161",
+        "state": "done",
+        "t": "Approve"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Enterprise adapters",
+        "label": "Completed",
+        "n": 8,
+        "result": "Reserve unit RSV-47342 · Sale order SO-47336 · Book shipment to the buyer LD-47388 · Shipped and invoiced FUL-47375",
+        "state": "done",
+        "t": "Execute"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Finance",
+        "label": "Completed",
+        "n": 9,
+        "result": "Actual $5,960 confirmed by Finance",
+        "state": "done",
+        "t": "Outcome"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Reconciler",
+        "label": "Completed",
+        "n": 10,
+        "result": "Predicted $4,800, actual $5,960 (+$1,160); 2 learning records proposed",
+        "state": "done",
+        "t": "Reconcile and learn"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "case.routes",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "case.routes",
+     "key": null,
+     "ok": true,
+     "output": {
+      "blocked": null,
+      "case_id": "RT-1048",
+      "eligible": [
+       {
+        "behind": 0,
+        "demand": "Customer A · Site 3 contract replacement · accepts certified refurbished",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 9600,
+        "p10": 8371,
+        "p90": 10608,
+        "plan": "Redeploy RT-1048",
+        "rank": 1,
+        "route": "redeploy",
+        "terms": [
+         {
+          "amt": 12000,
+          "kind": "purchase",
+          "label": "Avoided equivalent purchase"
+         },
+         {
+          "amt": -1800,
+          "kind": "prep",
+          "label": "Preparation and transfer"
+         },
+         {
+          "amt": -900,
+          "kind": "service",
+          "label": "Service exposure (30 months)"
+         },
+         {
+          "amt": 300,
+          "kind": "residual",
+          "label": "Residual value adjustment"
+         }
+        ],
+        "why": "Replaces a new purchase under Customer A's contract; certified life covers the 24 months needed"
+       },
+       {
+        "behind": 4800,
+        "demand": "Buyer demand + Site 3 replacement",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 4800,
+        "p10": 3817,
+        "p90": 5606,
+        "plan": "Sell + buy for Site 3",
+        "rank": 2,
+        "route": "resale",
+        "terms": [
+         {
+          "amt": 5600,
+          "kind": "sale",
+          "label": "Expected sale proceeds"
+         },
+         {
+          "amt": -800,
+          "kind": "fees",
+          "label": "Fees and freight"
+         }
+        ],
+        "why": "Recovery is below redeployment benefit"
+       },
+       {
+        "behind": 6000,
+        "demand": "Lease opportunity + Site 3 replacement",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 3600,
+        "p10": 2678,
+        "p90": 4356,
+        "plan": "Re-lease + buy for Site 3",
+        "rank": 3,
+        "route": "relase",
+        "terms": [
+         {
+          "amt": 4400,
+          "kind": "lease",
+          "label": "Lease income over 30 months"
+         },
+         {
+          "amt": -400,
+          "kind": "prep",
+          "label": "Preparation"
+         },
+         {
+          "amt": -400,
+          "kind": "service",
+          "label": "Operating and service costs"
+         }
+        ],
+        "why": "Lower contribution over same horizon"
+       },
+       {
+        "behind": 6400,
+        "demand": "Component demand + Site 3 replacement",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 3200,
+        "p10": 2299,
+        "p90": 3939,
+        "plan": "Recover parts + buy for Site 3",
+        "rank": 4,
+        "route": "intparts",
+        "terms": [
+         {
+          "amt": 4300,
+          "kind": "parts",
+          "label": "Value of parts consumed internally"
+         },
+         {
+          "amt": -700,
+          "kind": "prep",
+          "label": "Extraction and testing"
+         },
+         {
+          "amt": -400,
+          "kind": "fees",
+          "label": "Logistics"
+         }
+        ],
+        "why": "Recovery is below redeployment benefit; whole asset lost"
+       },
+       {
+        "behind": 9290,
+        "demand": "Certified recycler · spot",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 310,
+        "p10": 231,
+        "p90": 375,
+        "plan": "Recover material",
+        "rank": 5,
+        "route": "material",
+        "terms": [
+         {
+          "amt": 520,
+          "kind": "material",
+          "label": "Copper and steel recovered"
+         },
+         {
+          "amt": -210,
+          "kind": "fees",
+          "label": "Processing and logistics"
+         }
+        ],
+        "why": "Floor value only"
+       },
+       {
+        "behind": 9660,
+        "demand": "Approved vendor A",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": -60,
+        "p10": -72,
+        "p90": -50,
+        "plan": "Responsible exit",
+        "rank": 6,
+        "route": "exit",
+        "terms": [
+         {
+          "amt": -20,
+          "kind": "fees",
+          "label": "Collection"
+         },
+         {
+          "amt": -70,
+          "kind": "fees",
+          "label": "Processing"
+         },
+         {
+          "amt": 30,
+          "kind": "credit",
+          "label": "Vendor credit"
+         }
+        ],
+        "why": "Compliant fallback only"
+       }
+      ],
+      "excluded": [
+       {
+        "gate": "Demand fit",
+        "plan": "Sell parts externally",
+        "reason": "No confirmed buyer for 55 kW IE3 stator assemblies within the 30-day window",
+        "route": "extparts"
+       }
+      ],
+      "flips": [
+       {
+        "to": "Sell + buy for Site 3",
+        "txt": "Confirmed demand (Customer A) is cancelled"
+       },
+       {
+        "to": "Sell + buy for Site 3",
+        "txt": "Avoided equivalent purchase falls below $7,200"
+       },
+       {
+        "to": "Sell + buy for Site 3",
+        "txt": "Sell + buy for Site 3: expected sale proceeds rises above $10,400"
+       }
+      ],
+      "recommended": {
+       "conf": "High",
+       "demand": "forecast",
+       "net": 4800,
+       "p10": 3817,
+       "p90": 5606,
+       "plan": "Sell + buy for Site 3",
+       "route": "resale"
+      },
+      "tie": null
+     }
+    }
+   },
+   {
+    "action": "case.get",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 6.4,
+      "approval": "APR-2026-10-3161",
+      "assessment": "Ready",
+      "asset": "MTR-2041",
+      "blocked": null,
+      "cert_months": 24,
+      "cls": "motor",
+      "est_life": "30–40 months",
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [
+       "IBM Sterling OMS: contract replacement order SO-48102 line 10 for Customer A at Site 3 (Chennai Foundry) accepts a certified refurbished motor; a new one would cost $12,000",
+       "Planning/WMS: needed at Customer A Site 3 in 10 days; RT-1062 needed at Site 5",
+       "Baseline: buy a new motor for Customer A"
+      ],
+      "grade": "B",
+      "id": "RT-1048",
+      "life": "36 months",
+      "location": "Warehouse 1",
+      "mfr": "Voltara",
+      "missing": [],
+      "outcome": {
+       "act": 5960,
+       "lines": [
+        {
+         "act": 6620,
+         "label": "Expected sale proceeds",
+         "model": "resale-price",
+         "pred": 5600
+        },
+        {
+         "act": -660,
+         "label": "Fees and freight",
+         "model": "prep-cost-time",
+         "pred": -800
+        }
+       ],
+       "order": "SO-47336",
+       "plan": "Sell + buy for Site 3",
+       "pred": 4800,
+       "variance": 1160
+      },
+      "owner": "Customer A",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer A",
+        "confirmed demand, Day 3–7 vs Day 10 deadline"
+       ]
+      },
+      "product": "Voltara V4 motor",
+      "qty": 1,
+      "received": "2026-10-03",
+      "recommendation": {
+       "conf": "High",
+       "demand": "forecast",
+       "net": 4800,
+       "p10": 3817,
+       "p90": 5606,
+       "plan": "Sell + buy for Site 3",
+       "route": "resale"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1048",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-E7402581",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer A",
+      "timing": "Day 3–7 vs Day 10 deadline"
+     }
+    }
+   },
+   {
+    "action": "case.evidence",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "case.evidence",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1048",
+      "items": [
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:42:30.000Z",
+        "fresh": "2 h ago",
+        "k": "ret",
+        "label": "Return record available",
+        "note": "",
+        "record": "MV-54084",
+        "source": "WMS · reverse logistics",
+        "state": "ready",
+        "system": "WMS"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:18.000Z",
+        "fresh": "12 min ago",
+        "k": "id",
+        "label": "Identity and configuration verified",
+        "note": "",
+        "record": "CFG-36168",
+        "source": "PLM",
+        "state": "ready",
+        "system": "PLM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:41:21.000Z",
+        "fresh": "2 h ago",
+        "k": "insp",
+        "label": "Inspection report available",
+        "note": "",
+        "record": "INS-96879",
+        "source": "MRO",
+        "state": "ready",
+        "system": "MRO and workshop"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:55.000Z",
+        "fresh": "41 min ago",
+        "k": "svc",
+        "label": "Service history retrieved",
+        "note": "",
+        "record": "WO-20431",
+        "source": "EAM",
+        "state": "ready",
+        "system": "EAM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:17.000Z",
+        "fresh": "41 min ago",
+        "k": "eng",
+        "label": "Engineering assessment available",
+        "note": "",
+        "record": "ENG-68429",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "Engineering"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:27.000Z",
+        "fresh": "12 min ago",
+        "k": "photo",
+        "label": "Photos available",
+        "note": "",
+        "record": "IMG-52345",
+        "source": "MRO",
+        "state": "ready",
+        "system": "MRO and workshop"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T07:45:57.000Z",
+        "fresh": "yesterday",
+        "k": "dem",
+        "label": "Demand evidence linked",
+        "note": "",
+        "record": "OPP-24491",
+        "source": "CRM",
+        "state": "ready",
+        "system": "CRM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T13:59:41.000Z",
+        "fresh": "12 min ago",
+        "k": "mkt",
+        "label": "Market comparables current",
+        "note": "",
+        "record": "CMP-83241",
+        "source": "Market pricing",
+        "state": "ready",
+        "system": "Market pricing"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:45:22.000Z",
+        "fresh": "5 h ago",
+        "k": "cost",
+        "label": "Cost and stock data available",
+        "note": "",
+        "record": "ERP-22596",
+        "source": "ERP finance",
+        "state": "ready",
+        "system": "ERP"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:46.000Z",
+        "fresh": "12 min ago",
+        "k": "pol",
+        "label": "Policy & certification checked",
+        "note": "",
+        "record": "POL-68412",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "QMS"
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "exec_redeploy": {
+  "calls": [
+   {
+    "action": "decision.submit",
+    "as": "planner-a",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "decision.submit",
+     "key": "decision.submit:RT-1048:7:submit:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1048",
+      "submitted_by": "Planner · Customer A"
+     },
+     "seq": 1
+    }
+   },
+   {
+    "action": "decision.approve",
+    "as": "approver",
+    "input": {
+     "case_id": "RT-1048",
+     "rationale": "Redeploy to Site 3 as recommended; evidence snapshot reviewed.",
+     "reviewed": true
+    },
+    "result": {
+     "action": "decision.approve",
+     "key": "decision.approve:RT-1048:7:0",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1048",
+      "net": 9600,
+      "override": false,
+      "ref": "APR-2026-10-3161",
+      "route": "Redeploy RT-1048",
+      "sent_to": "OMS · order allocation"
+     },
+     "seq": 2
+    }
+   },
+   {
+    "action": "outcome.confirm",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "The outcome has not been reported yet; RT-1048 is still with the enterprise systems."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "planner-a",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "error": {
+      "code": "out_of_scope",
+      "message": "Only an enterprise system acknowledges instructions."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048",
+     "step": 3
+    },
+    "result": {
+     "error": {
+      "code": "duplicate",
+      "message": "Step 4 is already acknowledged"
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "instruction.resend",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "instruction.resend",
+     "key": "instruction.resend:RT-1048:8:resend:APR-2026-10-3161",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1048",
+      "deduplicated": true
+     },
+     "seq": 3
+    }
+   },
+   {
+    "action": "instruction.resend",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "error": {
+      "code": "duplicate",
+      "message": "Already resent; the target system ignored the duplicate. Nothing was created twice."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:0",
+     "ok": true,
+     "output": {
+      "by": "OMS",
+      "case_id": "RT-1048",
+      "label": "Allocate to the order line",
+      "ref": "SO-48102",
+      "ref_label": "Sales order SO-48102",
+      "step": 0
+     },
+     "seq": 4
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:1",
+     "ok": true,
+     "output": {
+      "by": "MRO",
+      "case_id": "RT-1048",
+      "label": "Refurbishment work order",
+      "ref": "WO-47349",
+      "ref_label": "Work order WO-47349",
+      "step": 1
+     },
+     "seq": 5
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:2",
+     "ok": true,
+     "output": {
+      "by": "TMS",
+      "case_id": "RT-1048",
+      "label": "Book transport",
+      "ref": "LD-47388",
+      "ref_label": "Load LD-47388",
+      "step": 2
+     },
+     "seq": 6
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:3",
+     "ok": true,
+     "output": {
+      "by": "WMS",
+      "case_id": "RT-1048",
+      "label": "Warehouse moves and outbound delivery",
+      "ref": "TR-47362",
+      "ref_label": "Transfer TR-47362",
+      "step": 3
+     },
+     "seq": 7
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:4",
+     "ok": true,
+     "output": {
+      "by": "OMS",
+      "case_id": "RT-1048",
+      "label": "Delivery confirmed",
+      "ref": "FUL-47375",
+      "ref_label": "Fulfilment FUL-47375",
+      "step": 4
+     },
+     "seq": 8
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1048:9:APR-2026-10-3161:5",
+     "ok": true,
+     "output": {
+      "by": "ERP",
+      "case_id": "RT-1048",
+      "label": "Actual costs posted",
+      "ref": "FI-47401",
+      "ref_label": "Finance document FI-47401",
+      "step": 5
+     },
+     "seq": 9
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1048 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1048 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "outcome.confirm",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "outcome.confirm",
+     "key": "outcome.confirm:RT-1048:9:0",
+     "ok": true,
+     "output": {
+      "actual": 9230,
+      "case_id": "RT-1048",
+      "predicted": 9600,
+      "variance": -370
+     },
+     "seq": 10
+    }
+   },
+   {
+    "action": "outcome.confirm",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "error": {
+      "code": "duplicate",
+      "message": "The outcome is already confirmed"
+     },
+     "ok": false
+    }
+   }
+  ],
+  "observed": [
+   {
+    "action": "case.get",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 6.4,
+      "approval": "APR-2026-10-3161",
+      "assessment": "Ready",
+      "asset": "MTR-2041",
+      "blocked": null,
+      "cert_months": 24,
+      "cls": "motor",
+      "est_life": "30–40 months",
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [
+       "IBM Sterling OMS: contract replacement order SO-48102 line 10 for Customer A at Site 3 (Chennai Foundry) accepts a certified refurbished motor; a new one would cost $12,000",
+       "Planning/WMS: needed at Customer A Site 3 in 10 days; RT-1062 needed at Site 5",
+       "Baseline: buy a new motor for Customer A"
+      ],
+      "grade": "B",
+      "id": "RT-1048",
+      "life": "36 months",
+      "location": "Warehouse 1",
+      "mfr": "Voltara",
+      "missing": [],
+      "outcome": {
+       "act": 9230,
+       "lines": [
+        {
+         "act": 12000,
+         "label": "Avoided equivalent purchase",
+         "model": null,
+         "pred": 12000
+        },
+        {
+         "act": -2070,
+         "label": "Preparation and transfer",
+         "model": "prep-cost-time",
+         "pred": -1800
+        },
+        {
+         "act": -1070,
+         "label": "Service exposure (30 months)",
+         "model": "service-exposure",
+         "pred": -900
+        },
+        {
+         "act": 370,
+         "label": "Residual value adjustment",
+         "model": "resale-price",
+         "pred": 300
+        }
+       ],
+       "order": "SO-48102",
+       "plan": "Redeploy RT-1048",
+       "pred": 9600,
+       "variance": -370
+      },
+      "owner": "Customer A",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer A",
+        "confirmed demand, Day 3–7 vs Day 10 deadline"
+       ]
+      },
+      "product": "Voltara V4 motor",
+      "qty": 1,
+      "received": "2026-10-03",
+      "recommendation": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": 9600,
+       "p10": 8371,
+       "p90": 10608,
+       "plan": "Redeploy RT-1048",
+       "route": "redeploy"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1048",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-E7402581",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer A",
+      "timing": "Day 3–7 vs Day 10 deadline"
+     }
+    }
+   },
+   {
+    "action": "case.trace",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "case.trace",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1048",
+      "done": true,
+      "events": [
+       {
+        "by": "Finance",
+        "note": "Actual $9,230 against predicted $9,600 on SO-48102; 3 cost lines to the models",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Finance document FI-47401 returned by ERP: actual parts, labour, machine and freight costs posted against the decision; delivered to Chennai Foundry (Site 3) for Customer A against SO-48102 line 10, WH-PNQ-01 → RC-HSR-01 → WH-MAA-02 → LOC-CHN-03, ETD 08 Oct 08:00, ETA 13 Oct 08:36 (4 days before the need-by date)",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.reported"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Fulfilment FUL-47375 returned by OMS: proof of delivery signed; delivered to Chennai Foundry (Site 3) for Customer A against SO-48102 line 10, WH-PNQ-01 → RC-HSR-01 → WH-MAA-02 → LOC-CHN-03, ETD 08 Oct 08:00, ETA 13 Oct 08:36 (4 days before the need-by date)",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "delivery.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Transfer TR-47362 returned by WMS: picked, staged and shipped against the load",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "movement.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Load LD-47388 returned by TMS: load tendered to and accepted by the carrier",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "load.booked"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Work order WO-47349 returned by MRO: repaired, tested and certified; QMS record updated",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "workorder.created"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Sales order SO-48102 returned by OMS: unit allocated to the order line; planned purchase cancelled in SAP Ariba",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "order.allocated"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Repeated message ignored: same idempotency key, no second reservation or work order",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "instruction.sent"
+       },
+       {
+        "by": "Approver",
+        "note": "",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "instruction.sent"
+       },
+       {
+        "by": "Planner · Customer A",
+        "note": "Submitted for review by Planner · Customer A",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "decision.submitted"
+       }
+      ],
+      "id": "RUN-1048",
+      "next": {
+       "kind": "done",
+       "label": "Journey complete",
+       "n": 11
+      },
+      "stage": 11,
+      "stages": [
+       {
+        "at": "2026-08-11T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 1,
+        "result": "Lease LC-4739 ended 11 Aug 2026; customer intent: return at term; 32805 operating hours",
+        "state": "done",
+        "t": "Lease ends"
+       },
+       {
+        "at": "2026-08-15T00:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 2,
+        "result": "Return authorised RMA-56509, early-return fee $60; replacement order SO-48102; book value $8,200",
+        "state": "done",
+        "t": "Return authorised"
+       },
+       {
+        "at": "2026-08-21T00:00:00.000Z",
+        "by": "Velo Freight",
+        "label": "Completed",
+        "n": 3,
+        "result": "Picked up 21 Aug at LOC-PNQ-01 by Velo Freight, arrived 03 Oct at WH-PNQ-01; freight $43 (₹3,600, 20 km · minimum charge ₹3,600)",
+        "state": "done",
+        "t": "Pickup and transit"
+       },
+       {
+        "at": "2026-10-03T00:00:00.000Z",
+        "by": "WMS",
+        "label": "Completed",
+        "n": 4,
+        "result": "Received at Warehouse 1 on 03 Oct; holding clock 4 days; evidence complete",
+        "state": "done",
+        "t": "Received"
+       },
+       {
+        "blocked": null,
+        "by": "Inspection",
+        "label": "Completed",
+        "n": 5,
+        "result": "Grade B · life 36 months",
+        "state": "done",
+        "t": "Inspect and grade"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "blocked": null,
+        "by": "Planner · Customer A",
+        "label": "Completed",
+        "n": 6,
+        "prep": null,
+        "result": "Redeploy RT-1048 · $9,600 (P10–P90 $8,371–$10,608)",
+        "state": "done",
+        "t": "Decide"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Approver",
+        "label": "Completed",
+        "n": 7,
+        "prep": null,
+        "result": "Approved by Approver under APR-2026-10-3161",
+        "state": "done",
+        "t": "Approve"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Enterprise adapters",
+        "label": "Completed",
+        "n": 8,
+        "result": "Allocate to the order line SO-48102 · Refurbishment work order WO-47349 · Book transport LD-47388 · Warehouse moves and outbound delivery TR-47362 · Delivery confirmed FUL-47375",
+        "state": "done",
+        "t": "Execute"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Finance",
+        "label": "Completed",
+        "n": 9,
+        "result": "Actual $9,230 confirmed by Finance",
+        "state": "done",
+        "t": "Outcome"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Reconciler",
+        "label": "Completed",
+        "n": 10,
+        "result": "Predicted $9,600, actual $9,230 (−$370); 3 learning records proposed",
+        "state": "done",
+        "t": "Reconcile and learn"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "case.routes",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "case.routes",
+     "key": null,
+     "ok": true,
+     "output": {
+      "blocked": null,
+      "case_id": "RT-1048",
+      "eligible": [
+       {
+        "behind": 0,
+        "demand": "Customer A · Site 3 contract replacement · accepts certified refurbished",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 9600,
+        "p10": 8371,
+        "p90": 10608,
+        "plan": "Redeploy RT-1048",
+        "rank": 1,
+        "route": "redeploy",
+        "terms": [
+         {
+          "amt": 12000,
+          "kind": "purchase",
+          "label": "Avoided equivalent purchase"
+         },
+         {
+          "amt": -1800,
+          "kind": "prep",
+          "label": "Preparation and transfer"
+         },
+         {
+          "amt": -900,
+          "kind": "service",
+          "label": "Service exposure (30 months)"
+         },
+         {
+          "amt": 300,
+          "kind": "residual",
+          "label": "Residual value adjustment"
+         }
+        ],
+        "why": "Replaces a new purchase under Customer A's contract; certified life covers the 24 months needed"
+       },
+       {
+        "behind": 4800,
+        "demand": "Buyer demand + Site 3 replacement",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 4800,
+        "p10": 3817,
+        "p90": 5606,
+        "plan": "Sell + buy for Site 3",
+        "rank": 2,
+        "route": "resale",
+        "terms": [
+         {
+          "amt": 5600,
+          "kind": "sale",
+          "label": "Expected sale proceeds"
+         },
+         {
+          "amt": -800,
+          "kind": "fees",
+          "label": "Fees and freight"
+         }
+        ],
+        "why": "Recovery is below redeployment benefit"
+       },
+       {
+        "behind": 6000,
+        "demand": "Lease opportunity + Site 3 replacement",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 3600,
+        "p10": 2678,
+        "p90": 4356,
+        "plan": "Re-lease + buy for Site 3",
+        "rank": 3,
+        "route": "relase",
+        "terms": [
+         {
+          "amt": 4400,
+          "kind": "lease",
+          "label": "Lease income over 30 months"
+         },
+         {
+          "amt": -400,
+          "kind": "prep",
+          "label": "Preparation"
+         },
+         {
+          "amt": -400,
+          "kind": "service",
+          "label": "Operating and service costs"
+         }
+        ],
+        "why": "Lower contribution over same horizon"
+       },
+       {
+        "behind": 6400,
+        "demand": "Component demand + Site 3 replacement",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 3200,
+        "p10": 2299,
+        "p90": 3939,
+        "plan": "Recover parts + buy for Site 3",
+        "rank": 4,
+        "route": "intparts",
+        "terms": [
+         {
+          "amt": 4300,
+          "kind": "parts",
+          "label": "Value of parts consumed internally"
+         },
+         {
+          "amt": -700,
+          "kind": "prep",
+          "label": "Extraction and testing"
+         },
+         {
+          "amt": -400,
+          "kind": "fees",
+          "label": "Logistics"
+         }
+        ],
+        "why": "Recovery is below redeployment benefit; whole asset lost"
+       },
+       {
+        "behind": 9290,
+        "demand": "Certified recycler · spot",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 310,
+        "p10": 231,
+        "p90": 375,
+        "plan": "Recover material",
+        "rank": 5,
+        "route": "material",
+        "terms": [
+         {
+          "amt": 520,
+          "kind": "material",
+          "label": "Copper and steel recovered"
+         },
+         {
+          "amt": -210,
+          "kind": "fees",
+          "label": "Processing and logistics"
+         }
+        ],
+        "why": "Floor value only"
+       },
+       {
+        "behind": 9660,
+        "demand": "Approved vendor A",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": -60,
+        "p10": -72,
+        "p90": -50,
+        "plan": "Responsible exit",
+        "rank": 6,
+        "route": "exit",
+        "terms": [
+         {
+          "amt": -20,
+          "kind": "fees",
+          "label": "Collection"
+         },
+         {
+          "amt": -70,
+          "kind": "fees",
+          "label": "Processing"
+         },
+         {
+          "amt": 30,
+          "kind": "credit",
+          "label": "Vendor credit"
+         }
+        ],
+        "why": "Compliant fallback only"
+       }
+      ],
+      "excluded": [
+       {
+        "gate": "Demand fit",
+        "plan": "Sell parts externally",
+        "reason": "No confirmed buyer for 55 kW IE3 stator assemblies within the 30-day window",
+        "route": "extparts"
+       }
+      ],
+      "flips": [
+       {
+        "to": "Sell + buy for Site 3",
+        "txt": "Confirmed demand (Customer A) is cancelled"
+       },
+       {
+        "to": "Sell + buy for Site 3",
+        "txt": "Avoided equivalent purchase falls below $7,200"
+       },
+       {
+        "to": "Sell + buy for Site 3",
+        "txt": "Sell + buy for Site 3: expected sale proceeds rises above $10,400"
+       }
+      ],
+      "recommended": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": 9600,
+       "p10": 8371,
+       "p90": 10608,
+       "plan": "Redeploy RT-1048",
+       "route": "redeploy"
+      },
+      "tie": null
+     }
+    }
+   },
+   {
+    "action": "case.get",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 6.4,
+      "approval": "APR-2026-10-3161",
+      "assessment": "Ready",
+      "asset": "MTR-2041",
+      "blocked": null,
+      "cert_months": 24,
+      "cls": "motor",
+      "est_life": "30–40 months",
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [
+       "IBM Sterling OMS: contract replacement order SO-48102 line 10 for Customer A at Site 3 (Chennai Foundry) accepts a certified refurbished motor; a new one would cost $12,000",
+       "Planning/WMS: needed at Customer A Site 3 in 10 days; RT-1062 needed at Site 5",
+       "Baseline: buy a new motor for Customer A"
+      ],
+      "grade": "B",
+      "id": "RT-1048",
+      "life": "36 months",
+      "location": "Warehouse 1",
+      "mfr": "Voltara",
+      "missing": [],
+      "outcome": {
+       "act": 9230,
+       "lines": [
+        {
+         "act": 12000,
+         "label": "Avoided equivalent purchase",
+         "model": null,
+         "pred": 12000
+        },
+        {
+         "act": -2070,
+         "label": "Preparation and transfer",
+         "model": "prep-cost-time",
+         "pred": -1800
+        },
+        {
+         "act": -1070,
+         "label": "Service exposure (30 months)",
+         "model": "service-exposure",
+         "pred": -900
+        },
+        {
+         "act": 370,
+         "label": "Residual value adjustment",
+         "model": "resale-price",
+         "pred": 300
+        }
+       ],
+       "order": "SO-48102",
+       "plan": "Redeploy RT-1048",
+       "pred": 9600,
+       "variance": -370
+      },
+      "owner": "Customer A",
+      "priority": {
+       "score": 0,
+       "why": [
+        "submitted by Planner · Customer A",
+        "confirmed demand, Day 3–7 vs Day 10 deadline"
+       ]
+      },
+      "product": "Voltara V4 motor",
+      "qty": 1,
+      "received": "2026-10-03",
+      "recommendation": {
+       "conf": "High",
+       "demand": "confirmed",
+       "net": 9600,
+       "p10": 8371,
+       "p90": 10608,
+       "plan": "Redeploy RT-1048",
+       "route": "redeploy"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1048",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-E7402581",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": "Planner · Customer A",
+      "timing": "Day 3–7 vs Day 10 deadline"
+     }
+    }
+   },
+   {
+    "action": "case.evidence",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "result": {
+     "action": "case.evidence",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1048",
+      "items": [
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:42:30.000Z",
+        "fresh": "2 h ago",
+        "k": "ret",
+        "label": "Return record available",
+        "note": "",
+        "record": "MV-54084",
+        "source": "WMS · reverse logistics",
+        "state": "ready",
+        "system": "WMS"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:18.000Z",
+        "fresh": "12 min ago",
+        "k": "id",
+        "label": "Identity and configuration verified",
+        "note": "",
+        "record": "CFG-36168",
+        "source": "PLM",
+        "state": "ready",
+        "system": "PLM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:41:21.000Z",
+        "fresh": "2 h ago",
+        "k": "insp",
+        "label": "Inspection report available",
+        "note": "",
+        "record": "INS-96879",
+        "source": "MRO",
+        "state": "ready",
+        "system": "MRO and workshop"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:55.000Z",
+        "fresh": "41 min ago",
+        "k": "svc",
+        "label": "Service history retrieved",
+        "note": "",
+        "record": "WO-20431",
+        "source": "EAM",
+        "state": "ready",
+        "system": "EAM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:17.000Z",
+        "fresh": "41 min ago",
+        "k": "eng",
+        "label": "Engineering assessment available",
+        "note": "",
+        "record": "ENG-68429",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "Engineering"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:27.000Z",
+        "fresh": "12 min ago",
+        "k": "photo",
+        "label": "Photos available",
+        "note": "",
+        "record": "IMG-52345",
+        "source": "MRO",
+        "state": "ready",
+        "system": "MRO and workshop"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T07:45:57.000Z",
+        "fresh": "yesterday",
+        "k": "dem",
+        "label": "Demand evidence linked",
+        "note": "",
+        "record": "OPP-24491",
+        "source": "CRM",
+        "state": "ready",
+        "system": "CRM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T13:59:41.000Z",
+        "fresh": "12 min ago",
+        "k": "mkt",
+        "label": "Market comparables current",
+        "note": "",
+        "record": "CMP-83241",
+        "source": "Market pricing",
+        "state": "ready",
+        "system": "Market pricing"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:45:22.000Z",
+        "fresh": "5 h ago",
+        "k": "cost",
+        "label": "Cost and stock data available",
+        "note": "",
+        "record": "ERP-22596",
+        "source": "ERP finance",
+        "state": "ready",
+        "system": "ERP"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:46.000Z",
+        "fresh": "12 min ago",
+        "k": "pol",
+        "label": "Policy & certification checked",
+        "note": "",
+        "record": "POL-68412",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "QMS"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "inbox.get",
+    "as": "finance",
+    "input": {},
+    "result": {
+     "action": "inbox.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "briefing": [
+       {
+        "go": "command/outcomes",
+        "n": 0,
+        "text": "No outcome waits for confirmation."
+       },
+       {
+        "go": "analytics",
+        "n": 1277,
+        "text": "$2,433,569 recovered on 1277 reconciled decisions; $1,741,546 of new purchases avoided."
+       }
+      ],
+      "items": [],
+      "total": 0
+     }
+    }
+   },
+   {
+    "action": "inbox.get",
+    "as": "approver",
+    "input": {},
+    "result": {
+     "action": "inbox.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "briefing": [
+       {
+        "go": "command/approvals",
+        "n": 0,
+        "text": "No submitted decision is waiting for approval."
+       },
+       {
+        "go": "command/approvals",
+        "n": 2,
+        "text": "2 access requests or MCP proposals to decide."
+       }
+      ],
+      "items": [
+       {
+        "act": "notifyAck",
+        "arg": "NTF-101",
+        "btn": "Acknowledge",
+        "case_id": null,
+        "detail": "From Executive · High · Decisions are close to their window. Please clear the oldest first.",
+        "go": null,
+        "title": "Value at risk: delayed approval"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Open inbox",
+        "case_id": null,
+        "detail": "Requested by Planner · Customer B",
+        "go": "command/approvals",
+        "title": "Tenant access REQ-304"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Open inbox",
+        "case_id": null,
+        "detail": "Requested by Developer",
+        "go": "command/approvals",
+        "title": "MCP server proposal REQ-301"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Open handoff",
+        "case_id": "RT-1009",
+        "detail": "Oracle Depot Repair passed its 4 working h limit at 06 Oct 16:00 · owner Repair centre lead (Engineer) · RC-HSR-01",
+        "go": "product/RT-1009?step=5",
+        "title": "RT-1009 · escalated: refurbishment work order"
+       }
+      ],
+      "total": 4
+     }
+    }
+   },
+   {
+    "action": "inbox.get",
+    "as": "planner-a",
+    "input": {},
+    "result": {
+     "action": "inbox.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "briefing": [
+       {
+        "go": "product/RT-1065?step=5",
+        "n": 20,
+        "text": "20 decisions ready to submit; the largest is RT-1065 at $9,713."
+       },
+       {
+        "go": "product/received",
+        "n": 21,
+        "text": "21 cases are missing evidence; 21 not yet requested."
+       },
+       {
+        "go": "product/RT-1002?step=5",
+        "n": 2,
+        "text": "2 cases need re-evaluation."
+       }
+      ],
+      "items": [
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Re-evaluate",
+        "case_id": "RT-1002",
+        "detail": "Demand cancelled by Site owner",
+        "go": "product/RT-1002?step=5",
+        "title": "RT-1002 · re-evaluate"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Submit",
+        "case_id": "RT-1028",
+        "detail": "Recover parts for internal use · $94",
+        "go": "product/RT-1028?step=5",
+        "title": "RT-1028 · submit for review"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Submit",
+        "case_id": "RT-1032",
+        "detail": "Refurbish, then sell · $2,190",
+        "go": "product/RT-1032?step=5",
+        "title": "RT-1032 · submit for review"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Submit",
+        "case_id": "RT-1065",
+        "detail": "Redeploy to Site 6 · $9,713",
+        "go": "product/RT-1065?step=5",
+        "title": "RT-1065 · submit for review"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Submit",
+        "case_id": "RT-1068",
+        "detail": "Sell whole asset as-is · $985",
+        "go": "product/RT-1068?step=5",
+        "title": "RT-1068 · submit for review"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Submit",
+        "case_id": "RT-1080",
+        "detail": "Sell whole asset as-is · $306",
+        "go": "product/RT-1080?step=5",
+        "title": "RT-1080 · submit for review"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Submit",
+        "case_id": "RT-1088",
+        "detail": "Sell parts externally · $839",
+        "go": "product/RT-1088?step=5",
+        "title": "RT-1088 · submit for review"
+       }
+      ],
+      "total": 7
+     }
+    }
+   }
+  ]
+ },
+ "exec_seeded": {
+  "calls": [
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1003"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1003:8:APR-2026-10-3026:1",
+     "ok": true,
+     "output": {
+      "by": "WMS",
+      "case_id": "RT-1003",
+      "label": "Reserve parts",
+      "ref": "RSV-47047",
+      "ref_label": "Reservation RSV-47047",
+      "step": 1
+     },
+     "seq": 1
+    }
+   },
+   {
+    "action": "instruction.resend",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1003"
+    },
+    "result": {
+     "action": "instruction.resend",
+     "key": "instruction.resend:RT-1003:8:resend:APR-2026-10-3026",
+     "ok": true,
+     "output": {
+      "case_id": "RT-1003",
+      "deduplicated": true
+     },
+     "seq": 2
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1019"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1019:8:APR-2026-10-3074:0",
+     "ok": true,
+     "output": {
+      "by": "WMS",
+      "case_id": "RT-1019",
+      "label": "Reserve unit",
+      "ref": "RSV-47139",
+      "ref_label": "Reservation RSV-47139",
+      "step": 0
+     },
+     "seq": 3
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1001"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Nothing has been sent for RT-1001 yet."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1009:8:APR-2026-10-3044:1",
+     "ok": true,
+     "output": {
+      "by": "MRO",
+      "case_id": "RT-1009",
+      "label": "Refurbishment work order",
+      "ref": "WO-47076",
+      "ref_label": "Work order WO-47076",
+      "step": 1
+     },
+     "seq": 4
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1009:8:APR-2026-10-3044:2",
+     "ok": true,
+     "output": {
+      "by": "TMS",
+      "case_id": "RT-1009",
+      "label": "Book transport",
+      "ref": "LD-47115",
+      "ref_label": "Load LD-47115",
+      "step": 2
+     },
+     "seq": 5
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1009:8:APR-2026-10-3044:3",
+     "ok": true,
+     "output": {
+      "by": "WMS",
+      "case_id": "RT-1009",
+      "label": "Warehouse moves and outbound delivery",
+      "ref": "TR-47089",
+      "ref_label": "Transfer TR-47089",
+      "step": 3
+     },
+     "seq": 6
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1009:8:APR-2026-10-3044:4",
+     "ok": true,
+     "output": {
+      "by": "OMS",
+      "case_id": "RT-1009",
+      "label": "Delivery confirmed",
+      "ref": "FUL-47102",
+      "ref_label": "Fulfilment FUL-47102",
+      "step": 4
+     },
+     "seq": 7
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "adapter.acknowledge",
+     "key": "adapter.acknowledge:RT-1009:9:APR-2026-10-3044:5",
+     "ok": true,
+     "output": {
+      "by": "ERP",
+      "case_id": "RT-1009",
+      "label": "Actual costs posted",
+      "ref": "FI-47128",
+      "ref_label": "Finance document FI-47128",
+      "step": 5
+     },
+     "seq": 8
+    }
+   },
+   {
+    "action": "adapter.acknowledge",
+    "as": "system",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "error": {
+      "code": "conflict",
+      "message": "Every step for RT-1009 is already acknowledged."
+     },
+     "ok": false
+    }
+   },
+   {
+    "action": "outcome.confirm",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "outcome.confirm",
+     "key": "outcome.confirm:RT-1009:9:0",
+     "ok": true,
+     "output": {
+      "actual": 4170,
+      "case_id": "RT-1009",
+      "predicted": 4336,
+      "variance": -166
+     },
+     "seq": 9
+    }
+   }
+  ],
+  "observed": [
+   {
+    "action": "case.get",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 9,
+      "approval": "APR-2026-10-3044",
+      "assessment": "Ready",
+      "asset": "PMP-0268",
+      "blocked": null,
+      "cert_months": 24,
+      "cls": "pump",
+      "est_life": "31–41 months",
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [],
+      "grade": "A",
+      "id": "RT-1009",
+      "life": "37 months",
+      "location": "Warehouse 2",
+      "mfr": "Aquaterra",
+      "missing": [],
+      "outcome": {
+       "act": 4170,
+       "lines": [
+        {
+         "act": 6250,
+         "label": "Avoided equivalent purchase",
+         "model": null,
+         "pred": 6250
+        },
+        {
+         "act": -1030,
+         "label": "Preparation and transfer",
+         "model": "prep-cost-time",
+         "pred": -846
+        },
+        {
+         "act": -350,
+         "label": "Service exposure",
+         "model": "service-exposure",
+         "pred": -446
+        },
+        {
+         "act": 100,
+         "label": "Residual value adjustment",
+         "model": "resale-price",
+         "pred": 128
+        },
+        {
+         "act": -800,
+         "label": "Non-realization allowance",
+         "model": "repair-success",
+         "pred": -750
+        }
+       ],
+       "order": "SO-48084",
+       "plan": "Redeploy to Site 4",
+       "pred": 4336,
+       "variance": -166
+      },
+      "owner": "Customer A",
+      "priority": {
+       "score": 0,
+       "why": [
+        "received 9 days ago"
+       ]
+      },
+      "product": "Halden HX axial pump",
+      "qty": 1,
+      "received": "2026-09-28",
+      "recommendation": {
+       "conf": "High",
+       "demand": "forecast",
+       "net": 4336,
+       "p10": 3614,
+       "p90": 4928,
+       "plan": "Redeploy to Site 4",
+       "route": "redeploy"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1009",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-2594D9E2",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": null,
+      "timing": null
+     }
+    }
+   },
+   {
+    "action": "case.trace",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "case.trace",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1009",
+      "done": true,
+      "events": [
+       {
+        "by": "Finance",
+        "note": "Actual $4,170 against predicted $4,336 on SO-48084; 4 cost lines to the models",
+        "sim": false,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Finance document FI-47128 returned by ERP: actual parts, labour, machine and freight costs posted against the decision; delivered to Nashik Plant (Site 4) for Customer A against SO-48084 line 20, WH-MAA-02 → RC-HSR-01 → WH-PNQ-01 → LOC-NSK-04, ETD 08 Oct 08:00, ETA 14 Oct 11:06 (24 days before the need-by date)",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "outcome.reported"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Fulfilment FUL-47102 returned by OMS: proof of delivery signed; delivered to Nashik Plant (Site 4) for Customer A against SO-48084 line 20, WH-MAA-02 → RC-HSR-01 → WH-PNQ-01 → LOC-NSK-04, ETD 08 Oct 08:00, ETA 14 Oct 11:06 (24 days before the need-by date)",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "delivery.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Transfer TR-47089 returned by WMS: picked, staged and shipped against the load",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "movement.confirmed"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Load LD-47115 returned by TMS: load tendered to and accepted by the carrier",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "load.booked"
+       },
+       {
+        "by": "Enterprise system adapter",
+        "note": "Work order WO-47076 returned by MRO: repaired, tested and certified; QMS record updated",
+        "sim": true,
+        "ts": "2026-10-07T09:00:00.000Z",
+        "type": "workorder.created"
+       },
+       {
+        "by": "Circularity",
+        "note": "Refurbishment work order (WO-47076) with Oracle Depot Repair passed its 4 working h limit at 06 Oct 16:00; escalated to Approver. Owner: Repair centre lead (Engineer) · RC-HSR-01",
+        "sim": false,
+        "ts": "2026-10-06T16:00:00.000Z",
+        "type": "handoff.escalated"
+       },
+       {
+        "by": "",
+        "note": "",
+        "sim": false,
+        "ts": "2026-10-06T06:17:24.214Z",
+        "type": "order.allocated"
+       },
+       {
+        "by": "",
+        "note": "",
+        "sim": false,
+        "ts": "2026-10-06T05:18:52.458Z",
+        "type": "instruction.sent"
+       }
+      ],
+      "id": "RUN-1009",
+      "next": {
+       "kind": "done",
+       "label": "Journey complete",
+       "n": 11
+      },
+      "stage": 11,
+      "stages": [
+       {
+        "at": "2026-08-27T09:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 1,
+        "result": "Lease LC-4700 ended 27 Aug 2026; customer intent: early return; 23272 operating hours",
+        "state": "done",
+        "t": "Lease ends"
+       },
+       {
+        "at": "2026-09-03T09:00:00.000Z",
+        "by": "Lease management",
+        "label": "Completed",
+        "n": 2,
+        "result": "Return authorised RMA-55900, no fee; replacement order SO-48084; book value $3,430",
+        "state": "done",
+        "t": "Return authorised"
+       },
+       {
+        "at": "2026-09-06T09:00:00.000Z",
+        "by": "Velo Freight",
+        "label": "Completed",
+        "n": 3,
+        "result": "Picked up 06 Sept at LOC-CHN-03 by Velo Freight, arrived 27 Sept at WH-MAA-02; freight $43 (₹3,600, 34 km · minimum charge ₹3,600)",
+        "state": "done",
+        "t": "Pickup and transit"
+       },
+       {
+        "at": "2026-09-28T09:00:00.000Z",
+        "by": "WMS",
+        "label": "Completed",
+        "n": 4,
+        "result": "Received at Warehouse 2 on 28 Sept; holding clock 9 days; evidence complete",
+        "state": "done",
+        "t": "Received"
+       },
+       {
+        "blocked": null,
+        "by": "Inspection",
+        "label": "Completed",
+        "n": 5,
+        "result": "Grade A · life 37 months",
+        "state": "done",
+        "t": "Inspect and grade"
+       },
+       {
+        "blocked": null,
+        "label": "Completed",
+        "n": 6,
+        "result": "Redeploy to Site 4 · $4,336 (P10–P90 $3,614–$4,928)",
+        "state": "done",
+        "t": "Decide"
+       },
+       {
+        "at": "2026-10-06T04:12:00.000Z",
+        "by": "Approver · Customer B",
+        "label": "Completed",
+        "n": 7,
+        "prep": null,
+        "result": "Approved by Approver · Customer B under APR-2026-10-3044",
+        "state": "done",
+        "t": "Approve"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Enterprise adapters",
+        "label": "Completed",
+        "n": 8,
+        "result": "Allocate to the order line SO-48084 · Refurbishment work order WO-47076 · Book transport LD-47115 · Warehouse moves and outbound delivery TR-47089 · Delivery confirmed FUL-47102",
+        "state": "done",
+        "t": "Execute"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Finance",
+        "label": "Completed",
+        "n": 9,
+        "result": "Actual $4,170 confirmed by Finance",
+        "state": "done",
+        "t": "Outcome"
+       },
+       {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "Reconciler",
+        "label": "Completed",
+        "n": 10,
+        "result": "Predicted $4,336, actual $4,170 (−$166); 4 learning records proposed",
+        "state": "done",
+        "t": "Reconcile and learn"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "case.routes",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "case.routes",
+     "key": null,
+     "ok": true,
+     "output": {
+      "blocked": null,
+      "case_id": "RT-1009",
+      "eligible": [
+       {
+        "behind": 0,
+        "demand": "Site 4 · forecast replacement",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 4336,
+        "p10": 3614,
+        "p90": 4928,
+        "plan": "Redeploy to Site 4",
+        "rank": 1,
+        "route": "redeploy",
+        "terms": [
+         {
+          "amt": 6250,
+          "kind": "purchase",
+          "label": "Avoided equivalent purchase"
+         },
+         {
+          "amt": -846,
+          "kind": "prep",
+          "label": "Preparation and transfer"
+         },
+         {
+          "amt": -446,
+          "kind": "service",
+          "label": "Service exposure"
+         },
+         {
+          "amt": 128,
+          "kind": "residual",
+          "label": "Residual value adjustment"
+         },
+         {
+          "amt": -750,
+          "kind": "risk",
+          "label": "Non-realization allowance"
+         }
+        ],
+        "why": "Avoids purchase; fits duty and due date"
+       },
+       {
+        "behind": 2652,
+        "demand": "External buyer · higher grade",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 1684,
+        "p10": 1253,
+        "p90": 2038,
+        "plan": "Refurbish, then sell",
+        "rank": 2,
+        "route": "resale",
+        "terms": [
+         {
+          "amt": 2307,
+          "kind": "sale",
+          "label": "Expected sale proceeds"
+         },
+         {
+          "amt": -163,
+          "kind": "prep",
+          "label": "Refurbishment"
+         },
+         {
+          "amt": -321,
+          "kind": "fees",
+          "label": "Fees and freight"
+         },
+         {
+          "amt": -139,
+          "kind": "risk",
+          "label": "Unsold and repair-failure allowance"
+         }
+        ],
+        "why": "Adds value only if grade lift lands"
+       },
+       {
+        "behind": 3200,
+        "demand": "Accepting external buyer",
+        "demand_status": "forecast",
+        "gates_passed": 6,
+        "net": 1136,
+        "p10": 787,
+        "p90": 1422,
+        "plan": "Sell parts externally",
+        "rank": 3,
+        "route": "extparts",
+        "terms": [
+         {
+          "amt": 1721,
+          "kind": "parts",
+          "label": "Parts sale proceeds"
+         },
+         {
+          "amt": -275,
+          "kind": "prep",
+          "label": "Extraction and testing"
+         },
+         {
+          "amt": -207,
+          "kind": "fees",
+          "label": "Selling and freight"
+         },
+         {
+          "amt": -103,
+          "kind": "risk",
+          "label": "Unsold-risk allowance"
+         }
+        ],
+        "why": "Below internal use on the same cost basis"
+       },
+       {
+        "behind": 4139,
+        "demand": "Certified recycler · spot prices",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": 197,
+        "p10": 147,
+        "p90": 238,
+        "plan": "Recover material",
+        "rank": 4,
+        "route": "material",
+        "terms": [
+         {
+          "amt": 303,
+          "kind": "material",
+          "label": "Metals and recoverable materials"
+         },
+         {
+          "amt": -131,
+          "kind": "fees",
+          "label": "Processing and logistics"
+         },
+         {
+          "amt": 25,
+          "kind": "avoid",
+          "label": "Disposal cost avoided"
+         }
+        ],
+        "why": "Floor value; lowest uncertainty"
+       },
+       {
+        "behind": 4396,
+        "demand": "Approved exit vendor A",
+        "demand_status": "confirmed",
+        "gates_passed": 6,
+        "net": -60,
+        "p10": -72,
+        "p90": -50,
+        "plan": "Responsible exit (approved vendor)",
+        "rank": 5,
+        "route": "exit",
+        "terms": [
+         {
+          "amt": -20,
+          "kind": "fees",
+          "label": "Collection"
+         },
+         {
+          "amt": -70,
+          "kind": "fees",
+          "label": "Processing"
+         },
+         {
+          "amt": 30,
+          "kind": "credit",
+          "label": "Vendor credit"
+         }
+        ],
+        "why": "Compliant fallback only"
+       }
+      ],
+      "excluded": [
+       {
+        "gate": "Demand fit",
+        "plan": "Re-lease (no prospect)",
+        "reason": "No lease opportunity within the horizon",
+        "route": "relase"
+       },
+       {
+        "gate": "Demand fit",
+        "plan": "Recover parts for internal use",
+        "reason": "No open component demand matches recoverable parts",
+        "route": "intparts"
+       }
+      ],
+      "flips": [
+       {
+        "to": "Refurbish, then sell",
+        "txt": "Avoided equivalent purchase falls below $3,598"
+       },
+       {
+        "to": "Refurbish, then sell",
+        "txt": "Refurbish, then sell: expected sale proceeds rises above $4,959"
+       },
+       {
+        "to": "Refurbish, then sell",
+        "txt": "Preparation and transfer rises above $3,498"
+       }
+      ],
+      "recommended": {
+       "conf": "High",
+       "demand": "forecast",
+       "net": 4336,
+       "p10": 3614,
+       "p90": 4928,
+       "plan": "Redeploy to Site 4",
+       "route": "redeploy"
+      },
+      "tie": null
+     }
+    }
+   },
+   {
+    "action": "case.get",
+    "as": "finance",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "case.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "age_years": 9,
+      "approval": "APR-2026-10-3044",
+      "assessment": "Ready",
+      "asset": "PMP-0268",
+      "blocked": null,
+      "cert_months": 24,
+      "cls": "pump",
+      "est_life": "31–41 months",
+      "evidence_ready": 10,
+      "evidence_total": 10,
+      "facts": [],
+      "grade": "A",
+      "id": "RT-1009",
+      "life": "37 months",
+      "location": "Warehouse 2",
+      "mfr": "Aquaterra",
+      "missing": [],
+      "outcome": {
+       "act": 4170,
+       "lines": [
+        {
+         "act": 6250,
+         "label": "Avoided equivalent purchase",
+         "model": null,
+         "pred": 6250
+        },
+        {
+         "act": -1030,
+         "label": "Preparation and transfer",
+         "model": "prep-cost-time",
+         "pred": -846
+        },
+        {
+         "act": -350,
+         "label": "Service exposure",
+         "model": "service-exposure",
+         "pred": -446
+        },
+        {
+         "act": 100,
+         "label": "Residual value adjustment",
+         "model": "resale-price",
+         "pred": 128
+        },
+        {
+         "act": -800,
+         "label": "Non-realization allowance",
+         "model": "repair-success",
+         "pred": -750
+        }
+       ],
+       "order": "SO-48084",
+       "plan": "Redeploy to Site 4",
+       "pred": 4336,
+       "variance": -166
+      },
+      "owner": "Customer A",
+      "priority": {
+       "score": 0,
+       "why": [
+        "received 9 days ago"
+       ]
+      },
+      "product": "Halden HX axial pump",
+      "qty": 1,
+      "received": "2026-09-28",
+      "recommendation": {
+       "conf": "High",
+       "demand": "forecast",
+       "net": 4336,
+       "p10": 3614,
+       "p90": 4928,
+       "plan": "Redeploy to Site 4",
+       "route": "redeploy"
+      },
+      "run": {
+       "done": true,
+       "id": "RUN-1009",
+       "stage": 10,
+       "stage_label": "Complete",
+       "state": "done"
+      },
+      "snapshot": "EVS-2594D9E2",
+      "stage": "closed",
+      "stage_label": "Closed",
+      "submitted": null,
+      "timing": null
+     }
+    }
+   },
+   {
+    "action": "case.evidence",
+    "as": "admin",
+    "input": {
+     "case_id": "RT-1009"
+    },
+    "result": {
+     "action": "case.evidence",
+     "key": null,
+     "ok": true,
+     "output": {
+      "case_id": "RT-1009",
+      "items": [
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:49:53.000Z",
+        "fresh": "5 h ago",
+        "k": "ret",
+        "label": "Return record available",
+        "note": "",
+        "record": "MV-31599",
+        "source": "WMS · reverse logistics",
+        "state": "ready",
+        "system": "WMS"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:25.000Z",
+        "fresh": "41 min ago",
+        "k": "id",
+        "label": "Identity and configuration verified",
+        "note": "",
+        "record": "CFG-86461",
+        "source": "PLM",
+        "state": "ready",
+        "system": "PLM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T03:53:20.000Z",
+        "fresh": "5 h ago",
+        "k": "insp",
+        "label": "Inspection report available",
+        "note": "",
+        "record": "INS-26730",
+        "source": "MRO",
+        "state": "ready",
+        "system": "MRO and workshop"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:26.000Z",
+        "fresh": "41 min ago",
+        "k": "svc",
+        "label": "Service history retrieved",
+        "note": "",
+        "record": "WO-34312",
+        "source": "EAM",
+        "state": "ready",
+        "system": "EAM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:34:28.000Z",
+        "fresh": "2 h ago",
+        "k": "eng",
+        "label": "Engineering assessment available",
+        "note": "",
+        "record": "ENG-83738",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "Engineering"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:20.000Z",
+        "fresh": "12 min ago",
+        "k": "photo",
+        "label": "Photos available",
+        "note": "",
+        "record": "IMG-43650",
+        "source": "MRO",
+        "state": "ready",
+        "system": "MRO and workshop"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T06:39:02.000Z",
+        "fresh": "2 h ago",
+        "k": "dem",
+        "label": "Demand evidence linked",
+        "note": "",
+        "record": "OPP-28256",
+        "source": "CRM",
+        "state": "ready",
+        "system": "CRM"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-06T13:59:20.000Z",
+        "fresh": "5 h ago",
+        "k": "mkt",
+        "label": "Market comparables current",
+        "note": "",
+        "record": "CMP-88150",
+        "source": "Market pricing",
+        "state": "ready",
+        "system": "Market pricing"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:47:39.000Z",
+        "fresh": "12 min ago",
+        "k": "cost",
+        "label": "Cost and stock data available",
+        "note": "",
+        "record": "ERP-36709",
+        "source": "ERP finance",
+        "state": "ready",
+        "system": "ERP"
+       },
+       {
+        "badge": "Retrieved",
+        "fetched": "2026-10-07T08:18:29.000Z",
+        "fresh": "41 min ago",
+        "k": "pol",
+        "label": "Policy & certification checked",
+        "note": "",
+        "record": "POL-39443",
+        "source": "Engineering",
+        "state": "ready",
+        "system": "QMS"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "action": "inbox.get",
+    "as": "finance",
+    "input": {},
+    "result": {
+     "action": "inbox.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "briefing": [
+       {
+        "go": "command/outcomes",
+        "n": 0,
+        "text": "No outcome waits for confirmation."
+       },
+       {
+        "go": "analytics",
+        "n": 1277,
+        "text": "$2,433,569 recovered on 1277 reconciled decisions; $1,741,546 of new purchases avoided."
+       }
+      ],
+      "items": [],
+      "total": 0
+     }
+    }
+   },
+   {
+    "action": "inbox.get",
+    "as": "approver",
+    "input": {},
+    "result": {
+     "action": "inbox.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "briefing": [
+       {
+        "go": "command/approvals",
+        "n": 0,
+        "text": "No submitted decision is waiting for approval."
+       },
+       {
+        "go": "command/approvals",
+        "n": 2,
+        "text": "2 access requests or MCP proposals to decide."
+       }
+      ],
+      "items": [
+       {
+        "act": "notifyAck",
+        "arg": "NTF-101",
+        "btn": "Acknowledge",
+        "case_id": null,
+        "detail": "From Executive · High · Decisions are close to their window. Please clear the oldest first.",
+        "go": null,
+        "title": "Value at risk: delayed approval"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Open inbox",
+        "case_id": null,
+        "detail": "Requested by Planner · Customer B",
+        "go": "command/approvals",
+        "title": "Tenant access REQ-304"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Open inbox",
+        "case_id": null,
+        "detail": "Requested by Developer",
+        "go": "command/approvals",
+        "title": "MCP server proposal REQ-301"
+       }
+      ],
+      "total": 3
+     }
+    }
+   },
+   {
+    "action": "inbox.get",
+    "as": "admin",
+    "input": {},
+    "result": {
+     "action": "inbox.get",
+     "key": null,
+     "ok": true,
+     "output": {
+      "briefing": [
+       {
+        "go": "product/RT-1065?step=5",
+        "n": 41,
+        "text": "41 decisions ready to submit; the largest is RT-1065 at $9,713."
+       },
+       {
+        "go": "product/received",
+        "n": 41,
+        "text": "41 cases are missing evidence; 41 not yet requested."
+       },
+       {
+        "go": "product/RT-1002?step=5",
+        "n": 8,
+        "text": "8 cases need re-evaluation."
+       },
+       {
+        "go": "command/approvals",
+        "n": 0,
+        "text": "No submitted decision is waiting for approval."
+       },
+       {
+        "go": "command/approvals",
+        "n": 2,
+        "text": "2 access requests or MCP proposals to decide."
+       },
+       {
+        "go": "product/received",
+        "n": 24,
+        "text": "24 inspections due."
+       }
+      ],
+      "items": [
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Open inbox",
+        "case_id": null,
+        "detail": "Requested by Planner · Customer B",
+        "go": "command/approvals",
+        "title": "Tenant access REQ-304"
+       },
+       {
+        "act": null,
+        "arg": null,
+        "btn": "Open inbox",
+        "case_id": null,
+        "detail": "Requested by Developer",
+        "go": "command/approvals",
+        "title": "MCP server proposal REQ-301"
+       }
+      ],
+      "total": 2
+     }
+    }
+   }
+  ]
+ },
  "identity": {
   "calls": [
    {
