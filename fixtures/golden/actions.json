@@ -1,0 +1,589 @@
+{
+ "case_id": "RT-1048",
+ "steps": [
+  {
+   "action": "case.get",
+   "as": "planner-a",
+   "case_after": {
+    "approval": null,
+    "exec": null,
+    "stage": "awaiting_approval"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "action": "case.get",
+    "key": null,
+    "ok": true,
+    "output": {
+     "age_years": 6.4,
+     "approval": null,
+     "assessment": "Ready",
+     "asset": "MTR-2041",
+     "blocked": null,
+     "cert_months": 24,
+     "cls": "motor",
+     "est_life": "30–40 months",
+     "evidence_ready": 10,
+     "evidence_total": 10,
+     "facts": [
+      "IBM Sterling OMS: contract replacement order SO-48102 line 10 for Customer A at Site 3 (Chennai Foundry) accepts a certified refurbished motor; a new one would cost $12,000",
+      "Planning/WMS: needed at Customer A Site 3 in 10 days; RT-1062 needed at Site 5",
+      "Baseline: buy a new motor for Customer A"
+     ],
+     "grade": "B",
+     "id": "RT-1048",
+     "life": "36 months",
+     "location": "Warehouse 1",
+     "mfr": "Voltara",
+     "missing": [],
+     "outcome": null,
+     "owner": "Customer A",
+     "priority": {
+      "score": 14194,
+      "why": [
+       "$9,600 waiting for a decision",
+       "confirmed demand, Day 3–7 vs Day 10 deadline"
+      ]
+     },
+     "product": "Voltara V4 motor",
+     "qty": 1,
+     "received": "2026-10-03",
+     "recommendation": {
+      "conf": "High",
+      "demand": "confirmed",
+      "net": 9600,
+      "p10": 8371,
+      "p90": 10608,
+      "plan": "Redeploy RT-1048",
+      "route": "redeploy"
+     },
+     "run": {
+      "done": false,
+      "id": "RUN-1048",
+      "stage": 7,
+      "stage_label": "Approve",
+      "state": "waiting"
+     },
+     "snapshot": "EVS-E7402581",
+     "stage": "awaiting_approval",
+     "stage_label": "Awaiting approval",
+     "submitted": null,
+     "timing": "Day 3–7 vs Day 10 deadline"
+    }
+   }
+  },
+  {
+   "action": "case.get",
+   "as": "planner-b",
+   "case_after": {
+    "approval": null,
+    "exec": null,
+    "stage": "awaiting_approval"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "error": {
+     "code": "tenant_boundary",
+     "message": "RT-1048 belongs to Customer A, a tenant you cannot see. Request tenant access first."
+    },
+    "ok": false
+   }
+  },
+  {
+   "action": "decision.submit",
+   "as": "planner-a",
+   "case_after": {
+    "approval": null,
+    "exec": null,
+    "stage": "awaiting_approval"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "action": "decision.submit",
+    "key": "decision.submit:RT-1048:7:submit:0",
+    "ok": true,
+    "output": {
+     "case_id": "RT-1048",
+     "submitted_by": "Planner · Customer A"
+    },
+    "seq": 1
+   }
+  },
+  {
+   "action": "decision.submit",
+   "as": "planner-a",
+   "case_after": {
+    "approval": null,
+    "exec": null,
+    "stage": "awaiting_approval"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "error": {
+     "code": "duplicate",
+     "message": "RT-1048 is already submitted"
+    },
+    "ok": false
+   }
+  },
+  {
+   "action": "decision.approve",
+   "as": "approver",
+   "case_after": {
+    "approval": null,
+    "exec": null,
+    "stage": "awaiting_approval"
+   },
+   "input": {
+    "case_id": "RT-1048",
+    "rationale": "short",
+    "reviewed": true,
+    "route": "Redeploy RT-1048",
+    "spend": 1800,
+    "terms": ""
+   },
+   "result": {
+    "error": {
+     "code": "validation_error",
+     "message": "Add a rationale of at least 15 characters."
+    },
+    "ok": false
+   }
+  },
+  {
+   "action": "decision.approve",
+   "as": "approver",
+   "case_after": {
+    "approval": {
+     "at": "2026-10-07T09:00:00.000Z",
+     "by": "Approver",
+     "prep": null,
+     "rationale": "Redeploy RT-1048 gives $9,600 predicted net, $4,800 ahead of Sell + buy for Site 3. Demand is confirmed (SO-48102). Evidence snapshot EVS-E7402581.",
+     "ref": "APR-2026-10-3161",
+     "spend": 1800,
+     "terms": "Transfer to Customer A · Site 3 by Day 3–7 vs Day 10 deadline; cancel planned purchase PO-49048"
+    },
+    "exec": {
+     "approvedAt": "2026-10-07T09:00:00.000Z",
+     "approver": "Approver",
+     "decisionId": "DI-2026-1048",
+     "dest": "OMS / MRO",
+     "instruction": 1,
+     "ref": "APR-2026-10-3161",
+     "steps": [
+      {
+       "ack": {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "OMS",
+        "ref": "SO-48102",
+        "sim": true
+       },
+       "activeAt": "2026-10-07T09:00:00.000Z",
+       "k": "order",
+       "label": "Allocate to the order line",
+       "state": "done",
+       "sys": "OMS · order allocation"
+      },
+      {
+       "ack": {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "MRO",
+        "ref": "WO-47349",
+        "sim": true
+       },
+       "activeAt": "2026-10-07T09:00:00.000Z",
+       "k": "repair",
+       "label": "Refurbishment work order",
+       "state": "done",
+       "sys": "MRO · Depot repair"
+      },
+      {
+       "ack": {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "TMS",
+        "ref": "LD-47388",
+        "sim": true
+       },
+       "activeAt": "2026-10-07T09:00:00.000Z",
+       "k": "transport",
+       "label": "Book transport",
+       "state": "done",
+       "sys": "TMS · load booking"
+      },
+      {
+       "ack": {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "WMS",
+        "ref": "TR-47362",
+        "sim": true
+       },
+       "activeAt": "2026-10-07T09:00:00.000Z",
+       "k": "move",
+       "label": "Warehouse moves and outbound delivery",
+       "state": "done",
+       "sys": "WMS · transfer"
+      },
+      {
+       "ack": {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "OMS",
+        "ref": "FUL-47375",
+        "sim": true
+       },
+       "activeAt": "2026-10-07T09:00:00.000Z",
+       "k": "pod",
+       "label": "Delivery confirmed",
+       "state": "done",
+       "sys": "OMS · order fulfilled"
+      },
+      {
+       "ack": {
+        "at": "2026-10-07T09:00:00.000Z",
+        "by": "ERP",
+        "ref": "FI-47401",
+        "sim": true
+       },
+       "activeAt": "2026-10-07T09:00:00.000Z",
+       "k": "finance",
+       "label": "Actual costs posted",
+       "state": "done",
+       "sys": "ERP · finance"
+      }
+     ]
+    },
+    "stage": "approved"
+   },
+   "input": {
+    "case_id": "RT-1048",
+    "rationale": "Redeploy RT-1048 gives $9,600 predicted net, $4,800 ahead of Sell + buy for Site 3. Demand is confirmed (SO-48102). Evidence snapshot EVS-E7402581.",
+    "reviewed": true,
+    "route": "Redeploy RT-1048",
+    "spend": 1800,
+    "terms": "Transfer to Customer A · Site 3 by Day 3–7 vs Day 10 deadline; cancel planned purchase PO-49048"
+   },
+   "result": {
+    "action": "decision.approve",
+    "key": "decision.approve:RT-1048:7:0",
+    "ok": true,
+    "output": {
+     "case_id": "RT-1048",
+     "net": 9600,
+     "override": false,
+     "ref": "APR-2026-10-3161",
+     "route": "Redeploy RT-1048",
+     "sent_to": "OMS · order allocation"
+    },
+    "seq": 2
+   }
+  },
+  {
+   "action": "adapter.acknowledge",
+   "as": "system",
+   "case_after": {
+    "approval": {
+     "$ref": "$.steps[5].case_after.approval"
+    },
+    "exec": {
+     "$ref": "$.steps[5].case_after.exec"
+    },
+    "stage": "executing"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "action": "adapter.acknowledge",
+    "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:0",
+    "ok": true,
+    "output": {
+     "by": "OMS",
+     "case_id": "RT-1048",
+     "label": "Allocate to the order line",
+     "ref": "SO-48102",
+     "ref_label": "Sales order SO-48102",
+     "step": 0
+    },
+    "seq": 3
+   }
+  },
+  {
+   "action": "adapter.acknowledge",
+   "as": "system",
+   "case_after": {
+    "approval": {
+     "$ref": "$.steps[5].case_after.approval"
+    },
+    "exec": {
+     "$ref": "$.steps[5].case_after.exec"
+    },
+    "stage": "executing"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "action": "adapter.acknowledge",
+    "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:1",
+    "ok": true,
+    "output": {
+     "by": "MRO",
+     "case_id": "RT-1048",
+     "label": "Refurbishment work order",
+     "ref": "WO-47349",
+     "ref_label": "Work order WO-47349",
+     "step": 1
+    },
+    "seq": 4
+   }
+  },
+  {
+   "action": "adapter.acknowledge",
+   "as": "system",
+   "case_after": {
+    "approval": {
+     "$ref": "$.steps[5].case_after.approval"
+    },
+    "exec": {
+     "$ref": "$.steps[5].case_after.exec"
+    },
+    "stage": "executing"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "action": "adapter.acknowledge",
+    "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:2",
+    "ok": true,
+    "output": {
+     "by": "TMS",
+     "case_id": "RT-1048",
+     "label": "Book transport",
+     "ref": "LD-47388",
+     "ref_label": "Load LD-47388",
+     "step": 2
+    },
+    "seq": 5
+   }
+  },
+  {
+   "action": "adapter.acknowledge",
+   "as": "system",
+   "case_after": {
+    "approval": {
+     "$ref": "$.steps[5].case_after.approval"
+    },
+    "exec": {
+     "$ref": "$.steps[5].case_after.exec"
+    },
+    "stage": "executing"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "action": "adapter.acknowledge",
+    "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:3",
+    "ok": true,
+    "output": {
+     "by": "WMS",
+     "case_id": "RT-1048",
+     "label": "Warehouse moves and outbound delivery",
+     "ref": "TR-47362",
+     "ref_label": "Transfer TR-47362",
+     "step": 3
+    },
+    "seq": 6
+   }
+  },
+  {
+   "action": "adapter.acknowledge",
+   "as": "system",
+   "case_after": {
+    "approval": {
+     "$ref": "$.steps[5].case_after.approval"
+    },
+    "exec": {
+     "$ref": "$.steps[5].case_after.exec"
+    },
+    "stage": "executing"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "action": "adapter.acknowledge",
+    "key": "adapter.acknowledge:RT-1048:8:APR-2026-10-3161:4",
+    "ok": true,
+    "output": {
+     "by": "OMS",
+     "case_id": "RT-1048",
+     "label": "Delivery confirmed",
+     "ref": "FUL-47375",
+     "ref_label": "Fulfilment FUL-47375",
+     "step": 4
+    },
+    "seq": 7
+   }
+  },
+  {
+   "action": "adapter.acknowledge",
+   "as": "system",
+   "case_after": {
+    "approval": {
+     "$ref": "$.steps[5].case_after.approval"
+    },
+    "exec": {
+     "$ref": "$.steps[5].case_after.exec"
+    },
+    "stage": "closed"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "action": "adapter.acknowledge",
+    "key": "adapter.acknowledge:RT-1048:9:APR-2026-10-3161:5",
+    "ok": true,
+    "output": {
+     "by": "ERP",
+     "case_id": "RT-1048",
+     "label": "Actual costs posted",
+     "ref": "FI-47401",
+     "ref_label": "Finance document FI-47401",
+     "step": 5
+    },
+    "seq": 8
+   }
+  },
+  {
+   "action": "adapter.acknowledge",
+   "as": "system",
+   "case_after": {
+    "approval": {
+     "$ref": "$.steps[5].case_after.approval"
+    },
+    "exec": {
+     "$ref": "$.steps[5].case_after.exec"
+    },
+    "stage": "closed"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "error": {
+     "code": "conflict",
+     "message": "Every step for RT-1048 is already acknowledged."
+    },
+    "ok": false
+   }
+  },
+  {
+   "action": "outcome.confirm",
+   "as": "finance",
+   "case_after": {
+    "approval": {
+     "$ref": "$.steps[5].case_after.approval"
+    },
+    "exec": {
+     "$ref": "$.steps[5].case_after.exec"
+    },
+    "outcome": {
+     "at": "2026-10-07T09:00:00.000Z",
+     "by": "Finance",
+     "lines": [
+      {
+       "act": 12000,
+       "kind": "purchase",
+       "label": "Avoided equivalent purchase",
+       "model": null,
+       "pred": 12000,
+       "src": "ERP price (retrieved)",
+       "ver": null
+      },
+      {
+       "act": -2070,
+       "kind": "prep",
+       "label": "Preparation and transfer",
+       "model": "prep-cost-time",
+       "pred": -1800,
+       "src": null,
+       "ver": "v1.3"
+      },
+      {
+       "act": -1070,
+       "kind": "service",
+       "label": "Service exposure (30 months)",
+       "model": "service-exposure",
+       "pred": -900,
+       "src": null,
+       "ver": "v1.2"
+      },
+      {
+       "act": 370,
+       "kind": "residual",
+       "label": "Residual value adjustment",
+       "model": "resale-price",
+       "pred": 300,
+       "src": null,
+       "ver": "v1.3"
+      }
+     ],
+     "net": 9230,
+     "order": "SO-48102"
+    },
+    "stage": "closed"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "action": "outcome.confirm",
+    "key": "outcome.confirm:RT-1048:9:0",
+    "ok": true,
+    "output": {
+     "actual": 9230,
+     "case_id": "RT-1048",
+     "predicted": 9600,
+     "variance": -370
+    },
+    "seq": 9
+   }
+  },
+  {
+   "action": "outcome.confirm",
+   "as": "finance",
+   "case_after": {
+    "approval": {
+     "$ref": "$.steps[5].case_after.approval"
+    },
+    "exec": {
+     "$ref": "$.steps[5].case_after.exec"
+    },
+    "outcome": {
+     "$ref": "$.steps[13].case_after.outcome"
+    },
+    "stage": "closed"
+   },
+   "input": {
+    "case_id": "RT-1048"
+   },
+   "result": {
+    "error": {
+     "code": "duplicate",
+     "message": "The outcome is already confirmed"
+    },
+    "ok": false
+   }
+  }
+ ]
+}

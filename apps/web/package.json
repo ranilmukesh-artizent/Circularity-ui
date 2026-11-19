@@ -12,7 +12,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "engine": "node scripts/extract-engine.mjs --force"
+    "engine": "node scripts/extract-engine.mjs --force",
+    "golden": "node scripts/dump-golden.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.62.7",

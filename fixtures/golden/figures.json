@@ -1,0 +1,3601 @@
+{
+ "accounts": {
+  "admin": {
+   "allowed_tenants": [
+    "Customer A",
+    "Customer B",
+    "Customer C"
+   ],
+   "can": {
+    "ack": true,
+    "approve.decisions": true,
+    "approve.mcp": true,
+    "approve.tenantAccess": true,
+    "assess": true,
+    "comment": true,
+    "confirm": true,
+    "execSim": true,
+    "manageAccess": true,
+    "manageIdentity": true,
+    "manageIntegrations": true,
+    "manageWorkflows": true,
+    "notify": true,
+    "proposeMcp": true,
+    "reeval": true,
+    "request": true,
+    "requestTenant": true,
+    "scenario": true,
+    "submit": true,
+    "useTools": true
+   },
+   "cases_total": 128,
+   "cases_value_total": 199829,
+   "counts": {
+    "alerts": 9,
+    "tasks": 2
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "product/RT-1065?step=5",
+      "n": 41,
+      "text": "41 decisions ready to submit; the largest is RT-1065 at $9,713."
+     },
+     {
+      "go": "product/received",
+      "n": 41,
+      "text": "41 cases are missing evidence; 41 not yet requested."
+     },
+     {
+      "go": "product/RT-1002?step=5",
+      "n": 8,
+      "text": "8 cases need re-evaluation."
+     },
+     {
+      "go": "command/approvals",
+      "n": 0,
+      "text": "No submitted decision is waiting for approval."
+     },
+     {
+      "go": "command/approvals",
+      "n": 2,
+      "text": "2 access requests or MCP proposals to decide."
+     },
+     {
+      "go": "product/received",
+      "n": 24,
+      "text": "24 inspections due."
+     }
+    ],
+    "items": [
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open inbox",
+      "case_id": null,
+      "detail": "Requested by Planner · Customer B",
+      "go": "command/approvals",
+      "title": "Tenant access REQ-304"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open inbox",
+      "case_id": null,
+      "detail": "Requested by Developer",
+      "go": "command/approvals",
+      "title": "MCP server proposal REQ-301"
+     }
+    ],
+    "total": 2
+   },
+   "kpis": [
+    {
+     "go": "product/received",
+     "h": "dec",
+     "ic": "tasks",
+     "k": "ready",
+     "l": "Decisions ready",
+     "n": 41,
+     "v": 41
+    },
+    {
+     "go": "product/received",
+     "h": "ev",
+     "ic": "search",
+     "k": "need",
+     "l": "Cases missing evidence",
+     "n": 42,
+     "v": 42
+    },
+    {
+     "go": "product/received",
+     "h": "re",
+     "ic": "rotate",
+     "k": "reeval",
+     "l": "Require re-evaluation",
+     "n": 8,
+     "v": 8
+    },
+    {
+     "go": "product/received",
+     "h": "insp",
+     "ic": "cal",
+     "k": "insp",
+     "l": "Inspections due",
+     "n": 24,
+     "v": 24
+    },
+    {
+     "go": "command/kpis",
+     "h": "money",
+     "ic": "dollar",
+     "k": "potential",
+     "l": "Potential recovery",
+     "n": 94415,
+     "sub": "49 decisions open",
+     "v": "$94k"
+    }
+   ],
+   "pages": {
+    "access": [
+     "accounts",
+     "identity",
+     "delegations",
+     "requests",
+     "autonomy",
+     "limits",
+     "agentsx",
+     "metrics",
+     ""
+    ],
+    "alerts": [
+     ""
+    ],
+    "analytics": [
+     "waterfall",
+     "pipeline",
+     "mix",
+     "predicted",
+     "models",
+     "overrides",
+     "eng",
+     "sustain",
+     ""
+    ],
+    "audit": [
+     "log",
+     "gaps",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "exceptions",
+     "aome",
+     "handed",
+     "approvals",
+     "outcomes",
+     "charts",
+     "actions",
+     "signals",
+     "value",
+     "health",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [
+     "studio",
+     "map",
+     "tables",
+     "models",
+     "events",
+     "conflicts",
+     "import",
+     "overview",
+     "monitor",
+     ""
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "playground",
+     "perms",
+     "calls",
+     "client",
+     "proposals",
+     ""
+    ],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case",
+     ""
+    ],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1001",
+    "RT-1002",
+    "RT-1003",
+    "RT-1004",
+    "RT-1005",
+    "RT-1006",
+    "RT-1007",
+    "RT-1008",
+    "RT-1009",
+    "RT-1010",
+    "RT-1011",
+    "RT-1012",
+    "RT-1013",
+    "RT-1014",
+    "RT-1015",
+    "RT-1016",
+    "RT-1017",
+    "RT-1018",
+    "RT-1019",
+    "RT-1020",
+    "RT-1021",
+    "RT-1022",
+    "RT-1023",
+    "RT-1024",
+    "RT-1025",
+    "RT-1026",
+    "RT-1027",
+    "RT-1028",
+    "RT-1029",
+    "RT-1030",
+    "RT-1031",
+    "RT-1032",
+    "RT-1033",
+    "RT-1034",
+    "RT-1035",
+    "RT-1036",
+    "RT-1037",
+    "RT-1038",
+    "RT-1039",
+    "RT-1040",
+    "RT-1041",
+    "RT-1042",
+    "RT-1043",
+    "RT-1044",
+    "RT-1045",
+    "RT-1046",
+    "RT-1047",
+    "RT-1048",
+    "RT-1049",
+    "RT-1050",
+    "RT-1051",
+    "RT-1052",
+    "RT-1053",
+    "RT-1054",
+    "RT-1055",
+    "RT-1056",
+    "RT-1057",
+    "RT-1058",
+    "RT-1059",
+    "RT-1060",
+    "RT-1061",
+    "RT-1062",
+    "RT-1063",
+    "RT-1064",
+    "RT-1065",
+    "RT-1066",
+    "RT-1067",
+    "RT-1068",
+    "RT-1069",
+    "RT-1070",
+    "RT-1071",
+    "RT-1072",
+    "RT-1073",
+    "RT-1074",
+    "RT-1075",
+    "RT-1076",
+    "RT-1077",
+    "RT-1078",
+    "RT-1079",
+    "RT-1080",
+    "RT-1081",
+    "RT-1082",
+    "RT-1083",
+    "RT-1084",
+    "RT-1085",
+    "RT-1086",
+    "RT-1087",
+    "RT-1088",
+    "RT-1089",
+    "RT-1090",
+    "RT-1091",
+    "RT-1092",
+    "RT-1093",
+    "RT-1094",
+    "RT-1095",
+    "RT-1096",
+    "RT-1097",
+    "RT-1098",
+    "RT-1099",
+    "RT-1100",
+    "RT-1101",
+    "RT-1102",
+    "RT-1103",
+    "RT-1104",
+    "RT-1105",
+    "RT-1106",
+    "RT-1107",
+    "RT-1108",
+    "RT-1109",
+    "RT-1110",
+    "RT-1111",
+    "RT-1112",
+    "RT-1113",
+    "RT-1114",
+    "RT-1115",
+    "RT-1116",
+    "RT-1117",
+    "RT-1118",
+    "RT-1119",
+    "RT-1120",
+    "RT-1121",
+    "RT-1122",
+    "RT-1123",
+    "RT-1124",
+    "RT-1125",
+    "RT-1126",
+    "RT-1127",
+    "RT-1128"
+   ]
+  },
+  "approver": {
+   "allowed_tenants": [
+    "Customer A",
+    "Customer B",
+    "Customer C"
+   ],
+   "can": {
+    "ack": true,
+    "approve.decisions": true,
+    "approve.mcp": true,
+    "approve.tenantAccess": true,
+    "assess": false,
+    "comment": false,
+    "confirm": false,
+    "execSim": true,
+    "manageAccess": false,
+    "manageIdentity": false,
+    "manageIntegrations": false,
+    "manageWorkflows": false,
+    "notify": false,
+    "proposeMcp": false,
+    "reeval": true,
+    "request": true,
+    "requestTenant": false,
+    "scenario": true,
+    "submit": false,
+    "useTools": false
+   },
+   "cases_total": 128,
+   "cases_value_total": 199829,
+   "counts": {
+    "alerts": 8,
+    "tasks": 4
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "command/approvals",
+      "n": 0,
+      "text": "No submitted decision is waiting for approval."
+     },
+     {
+      "go": "command/approvals",
+      "n": 2,
+      "text": "2 access requests or MCP proposals to decide."
+     }
+    ],
+    "items": [
+     {
+      "act": "notifyAck",
+      "arg": "NTF-101",
+      "btn": "Acknowledge",
+      "case_id": null,
+      "detail": "From Executive · High · Decisions are close to their window. Please clear the oldest first.",
+      "go": null,
+      "title": "Value at risk: delayed approval"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open inbox",
+      "case_id": null,
+      "detail": "Requested by Planner · Customer B",
+      "go": "command/approvals",
+      "title": "Tenant access REQ-304"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open inbox",
+      "case_id": null,
+      "detail": "Requested by Developer",
+      "go": "command/approvals",
+      "title": "MCP server proposal REQ-301"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open handoff",
+      "case_id": "RT-1009",
+      "detail": "Oracle Depot Repair passed its 4 working h limit at 06 Oct 16:00 · owner Repair centre lead (Engineer) · RC-HSR-01",
+      "go": "product/RT-1009?step=5",
+      "title": "RT-1009 · escalated: refurbishment work order"
+     }
+    ],
+    "total": 4
+   },
+   "kpis": [
+    {
+     "go": "command/approvals",
+     "h": "dec",
+     "ic": "tasks",
+     "k": "wait",
+     "l": "Waiting for me",
+     "n": 0,
+     "v": 0
+    },
+    {
+     "go": "alerts",
+     "h": "alert",
+     "ic": "clock",
+     "k": "esc",
+     "l": "Escalations",
+     "n": 1,
+     "v": 1
+    },
+    {
+     "go": "product/received",
+     "h": "insp",
+     "ic": "scale",
+     "k": "close",
+     "l": "Close calls",
+     "n": 3,
+     "sub": "top two routes within 10%",
+     "v": 3
+    },
+    {
+     "go": "product/received",
+     "h": "ev",
+     "ic": "shield",
+     "k": "over",
+     "l": "Over my limit",
+     "n": 0,
+     "v": 0
+    },
+    {
+     "go": "command/approvals",
+     "h": "money",
+     "ic": "dollar",
+     "k": "potential",
+     "l": "Value waiting",
+     "n": 0,
+     "v": "$0"
+    }
+   ],
+   "pages": {
+    "access": [],
+    "alerts": [
+     ""
+    ],
+    "analytics": [
+     "waterfall",
+     "pipeline",
+     "mix",
+     "predicted",
+     "models",
+     "overrides",
+     "eng",
+     "sustain",
+     ""
+    ],
+    "audit": [
+     "log",
+     "gaps",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "aome",
+     "approvals",
+     "charts",
+     "actions",
+     "signals",
+     "value",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [
+     "events",
+     "conflicts",
+     ""
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "perms",
+     "calls",
+     "client",
+     "proposals",
+     ""
+    ],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case",
+     ""
+    ],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1001",
+    "RT-1002",
+    "RT-1003",
+    "RT-1004",
+    "RT-1005",
+    "RT-1006",
+    "RT-1007",
+    "RT-1008",
+    "RT-1009",
+    "RT-1010",
+    "RT-1011",
+    "RT-1012",
+    "RT-1013",
+    "RT-1014",
+    "RT-1015",
+    "RT-1016",
+    "RT-1017",
+    "RT-1018",
+    "RT-1019",
+    "RT-1020",
+    "RT-1021",
+    "RT-1022",
+    "RT-1023",
+    "RT-1024",
+    "RT-1025",
+    "RT-1026",
+    "RT-1027",
+    "RT-1028",
+    "RT-1029",
+    "RT-1030",
+    "RT-1031",
+    "RT-1032",
+    "RT-1033",
+    "RT-1034",
+    "RT-1035",
+    "RT-1036",
+    "RT-1037",
+    "RT-1038",
+    "RT-1039",
+    "RT-1040",
+    "RT-1041",
+    "RT-1042",
+    "RT-1043",
+    "RT-1044",
+    "RT-1045",
+    "RT-1046",
+    "RT-1047",
+    "RT-1048",
+    "RT-1049",
+    "RT-1050",
+    "RT-1051",
+    "RT-1052",
+    "RT-1053",
+    "RT-1054",
+    "RT-1055",
+    "RT-1056",
+    "RT-1057",
+    "RT-1058",
+    "RT-1059",
+    "RT-1060",
+    "RT-1061",
+    "RT-1062",
+    "RT-1063",
+    "RT-1064",
+    "RT-1065",
+    "RT-1066",
+    "RT-1067",
+    "RT-1068",
+    "RT-1069",
+    "RT-1070",
+    "RT-1071",
+    "RT-1072",
+    "RT-1073",
+    "RT-1074",
+    "RT-1075",
+    "RT-1076",
+    "RT-1077",
+    "RT-1078",
+    "RT-1079",
+    "RT-1080",
+    "RT-1081",
+    "RT-1082",
+    "RT-1083",
+    "RT-1084",
+    "RT-1085",
+    "RT-1086",
+    "RT-1087",
+    "RT-1088",
+    "RT-1089",
+    "RT-1090",
+    "RT-1091",
+    "RT-1092",
+    "RT-1093",
+    "RT-1094",
+    "RT-1095",
+    "RT-1096",
+    "RT-1097",
+    "RT-1098",
+    "RT-1099",
+    "RT-1100",
+    "RT-1101",
+    "RT-1102",
+    "RT-1103",
+    "RT-1104",
+    "RT-1105",
+    "RT-1106",
+    "RT-1107",
+    "RT-1108",
+    "RT-1109",
+    "RT-1110",
+    "RT-1111",
+    "RT-1112",
+    "RT-1113",
+    "RT-1114",
+    "RT-1115",
+    "RT-1116",
+    "RT-1117",
+    "RT-1118",
+    "RT-1119",
+    "RT-1120",
+    "RT-1121",
+    "RT-1122",
+    "RT-1123",
+    "RT-1124",
+    "RT-1125",
+    "RT-1126",
+    "RT-1127",
+    "RT-1128"
+   ]
+  },
+  "developer": {
+   "allowed_tenants": [
+    "Customer A",
+    "Customer B",
+    "Customer C"
+   ],
+   "can": {
+    "ack": true,
+    "approve.decisions": false,
+    "approve.mcp": false,
+    "approve.tenantAccess": false,
+    "assess": false,
+    "comment": true,
+    "confirm": false,
+    "execSim": false,
+    "manageAccess": false,
+    "manageIdentity": false,
+    "manageIntegrations": true,
+    "manageWorkflows": true,
+    "notify": false,
+    "proposeMcp": true,
+    "reeval": false,
+    "request": false,
+    "requestTenant": false,
+    "scenario": false,
+    "submit": false,
+    "useTools": true
+   },
+   "cases_total": 128,
+   "cases_value_total": 199829,
+   "counts": {
+    "alerts": 7,
+    "tasks": 2
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "integration/map",
+      "n": 2,
+      "text": "2 sources stale or not connected: Device telemetry, Market pricing."
+     },
+     {
+      "go": "integration/studio",
+      "n": 1,
+      "text": "1 workflow failed on the last run: Ingest · Oracle Depot Repair."
+     },
+     {
+      "go": "integration/conflicts",
+      "n": 3,
+      "text": "3 open source conflicts."
+     }
+    ],
+    "items": [
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open Source map",
+      "case_id": null,
+      "detail": "AWS IoT Core",
+      "go": "integration/map",
+      "title": "Device telemetry · unavailable"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open Source map",
+      "case_id": null,
+      "detail": "Ritchie Bros. Market Data",
+      "go": "integration/map",
+      "title": "Market pricing · stale"
+     }
+    ],
+    "total": 2
+   },
+   "kpis": [
+    {
+     "go": "integration/studio",
+     "h": "alert",
+     "ic": "workflow",
+     "k": "wffail",
+     "l": "Failing workflows",
+     "n": 1,
+     "v": 1
+    },
+    {
+     "go": "integration/map",
+     "h": "dec",
+     "ic": "clock",
+     "k": "stale",
+     "l": "Stale sources",
+     "n": 2,
+     "v": 2
+    },
+    {
+     "go": "integration/map",
+     "h": "insp",
+     "ic": "mapping",
+     "k": "mapx",
+     "l": "Mappings needing attention",
+     "n": 6,
+     "v": 6
+    },
+    {
+     "go": "integration/conflicts",
+     "h": "ev",
+     "ic": "conflict",
+     "k": "conf",
+     "l": "Conflicts open",
+     "n": 3,
+     "v": 3
+    },
+    {
+     "go": "integration/monitor",
+     "h": "int",
+     "ic": "activity",
+     "k": "health",
+     "l": "Integration health",
+     "n": 96.8,
+     "sp": [
+      1,
+      0.95,
+      0.972222,
+      0.972973,
+      0.953488,
+      0.954545,
+      0.975,
+      1,
+      0.978261,
+      1,
+      1,
+      0.868421,
+      1,
+      1,
+      0.95,
+      1,
+      0.972973,
+      0.972222,
+      1,
+      1,
+      0.821429,
+      0.923077,
+      0.954545,
+      1
+     ],
+     "sub": "last 24 hours",
+     "v": "96.8%"
+    }
+   ],
+   "pages": {
+    "access": [],
+    "alerts": [
+     ""
+    ],
+    "analytics": [],
+    "audit": [
+     "log",
+     "gaps",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "aome",
+     "health",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [
+     "studio",
+     "map",
+     "tables",
+     "models",
+     "events",
+     "conflicts",
+     "import",
+     "overview",
+     "monitor",
+     ""
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "playground",
+     "perms",
+     "calls",
+     "client",
+     "proposals",
+     ""
+    ],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1001",
+    "RT-1002",
+    "RT-1003",
+    "RT-1004",
+    "RT-1005",
+    "RT-1006",
+    "RT-1007",
+    "RT-1008",
+    "RT-1009",
+    "RT-1010",
+    "RT-1011",
+    "RT-1012",
+    "RT-1013",
+    "RT-1014",
+    "RT-1015",
+    "RT-1016",
+    "RT-1017",
+    "RT-1018",
+    "RT-1019",
+    "RT-1020",
+    "RT-1021",
+    "RT-1022",
+    "RT-1023",
+    "RT-1024",
+    "RT-1025",
+    "RT-1026",
+    "RT-1027",
+    "RT-1028",
+    "RT-1029",
+    "RT-1030",
+    "RT-1031",
+    "RT-1032",
+    "RT-1033",
+    "RT-1034",
+    "RT-1035",
+    "RT-1036",
+    "RT-1037",
+    "RT-1038",
+    "RT-1039",
+    "RT-1040",
+    "RT-1041",
+    "RT-1042",
+    "RT-1043",
+    "RT-1044",
+    "RT-1045",
+    "RT-1046",
+    "RT-1047",
+    "RT-1048",
+    "RT-1049",
+    "RT-1050",
+    "RT-1051",
+    "RT-1052",
+    "RT-1053",
+    "RT-1054",
+    "RT-1055",
+    "RT-1056",
+    "RT-1057",
+    "RT-1058",
+    "RT-1059",
+    "RT-1060",
+    "RT-1061",
+    "RT-1062",
+    "RT-1063",
+    "RT-1064",
+    "RT-1065",
+    "RT-1066",
+    "RT-1067",
+    "RT-1068",
+    "RT-1069",
+    "RT-1070",
+    "RT-1071",
+    "RT-1072",
+    "RT-1073",
+    "RT-1074",
+    "RT-1075",
+    "RT-1076",
+    "RT-1077",
+    "RT-1078",
+    "RT-1079",
+    "RT-1080",
+    "RT-1081",
+    "RT-1082",
+    "RT-1083",
+    "RT-1084",
+    "RT-1085",
+    "RT-1086",
+    "RT-1087",
+    "RT-1088",
+    "RT-1089",
+    "RT-1090",
+    "RT-1091",
+    "RT-1092",
+    "RT-1093",
+    "RT-1094",
+    "RT-1095",
+    "RT-1096",
+    "RT-1097",
+    "RT-1098",
+    "RT-1099",
+    "RT-1100",
+    "RT-1101",
+    "RT-1102",
+    "RT-1103",
+    "RT-1104",
+    "RT-1105",
+    "RT-1106",
+    "RT-1107",
+    "RT-1108",
+    "RT-1109",
+    "RT-1110",
+    "RT-1111",
+    "RT-1112",
+    "RT-1113",
+    "RT-1114",
+    "RT-1115",
+    "RT-1116",
+    "RT-1117",
+    "RT-1118",
+    "RT-1119",
+    "RT-1120",
+    "RT-1121",
+    "RT-1122",
+    "RT-1123",
+    "RT-1124",
+    "RT-1125",
+    "RT-1126",
+    "RT-1127",
+    "RT-1128"
+   ]
+  },
+  "engineer": {
+   "allowed_tenants": [
+    "Customer A",
+    "Customer B",
+    "Customer C"
+   ],
+   "can": {
+    "ack": true,
+    "approve.decisions": false,
+    "approve.mcp": false,
+    "approve.tenantAccess": false,
+    "assess": true,
+    "comment": false,
+    "confirm": false,
+    "execSim": true,
+    "manageAccess": false,
+    "manageIdentity": false,
+    "manageIntegrations": false,
+    "manageWorkflows": false,
+    "notify": false,
+    "proposeMcp": false,
+    "reeval": false,
+    "request": true,
+    "requestTenant": false,
+    "scenario": false,
+    "submit": false,
+    "useTools": false
+   },
+   "cases_total": 128,
+   "cases_value_total": 199829,
+   "counts": {
+    "alerts": 4,
+    "tasks": 4
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "product/received",
+      "n": 24,
+      "text": "24 inspections due."
+     },
+     {
+      "go": "product/RT-1050",
+      "n": 1,
+      "text": "1 case where every route failed a gate."
+     }
+    ],
+    "items": [
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open asset",
+      "case_id": "RT-1037",
+      "detail": "IT electronics at Repair centre",
+      "go": "product/asset/RT-1037",
+      "title": "RT-1037 · inspection due"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open asset",
+      "case_id": "RT-1071",
+      "detail": "Tool-fleet batch at Repair centre",
+      "go": "product/asset/RT-1071",
+      "title": "RT-1071 · inspection due"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open asset",
+      "case_id": "RT-1109",
+      "detail": "Power tool at Repair centre",
+      "go": "product/asset/RT-1109",
+      "title": "RT-1109 · inspection due"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Open asset",
+      "case_id": "RT-1119",
+      "detail": "Power tool at Repair centre",
+      "go": "product/asset/RT-1119",
+      "title": "RT-1119 · inspection due"
+     }
+    ],
+    "total": 4
+   },
+   "kpis": [
+    {
+     "go": "product/received",
+     "h": "insp",
+     "ic": "cal",
+     "k": "insp",
+     "l": "Inspections due",
+     "n": 24,
+     "v": 24
+    },
+    {
+     "go": "command/aome",
+     "h": "dec",
+     "ic": "clipboard",
+     "k": "res",
+     "l": "Results to record",
+     "n": 0,
+     "v": 0
+    },
+    {
+     "go": "product/received",
+     "h": "ev",
+     "ic": "shield",
+     "k": "cert",
+     "l": "Certification holds",
+     "n": 2,
+     "v": 2
+    },
+    {
+     "go": "product/received",
+     "h": "re",
+     "ic": "rotate",
+     "k": "retest",
+     "l": "Re-tests",
+     "n": 8,
+     "sub": "test required",
+     "v": 8
+    },
+    {
+     "go": "product/received",
+     "h": "alert",
+     "ic": "flag",
+     "k": "hold",
+     "l": "Gate holds",
+     "n": 41,
+     "v": 41
+    }
+   ],
+   "pages": {
+    "access": [],
+    "alerts": [
+     ""
+    ],
+    "analytics": [
+     "eng",
+     "sustain",
+     ""
+    ],
+    "audit": [
+     "log",
+     "gaps",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "aome",
+     "handed",
+     "charts",
+     "actions",
+     "signals",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [
+     "map",
+     "tables",
+     "models",
+     "overview",
+     "monitor",
+     ""
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "perms",
+     "calls",
+     "client",
+     "proposals",
+     ""
+    ],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case",
+     ""
+    ],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1001",
+    "RT-1002",
+    "RT-1003",
+    "RT-1004",
+    "RT-1005",
+    "RT-1006",
+    "RT-1007",
+    "RT-1008",
+    "RT-1009",
+    "RT-1010",
+    "RT-1011",
+    "RT-1012",
+    "RT-1013",
+    "RT-1014",
+    "RT-1015",
+    "RT-1016",
+    "RT-1017",
+    "RT-1018",
+    "RT-1019",
+    "RT-1020",
+    "RT-1021",
+    "RT-1022",
+    "RT-1023",
+    "RT-1024",
+    "RT-1025",
+    "RT-1026",
+    "RT-1027",
+    "RT-1028",
+    "RT-1029",
+    "RT-1030",
+    "RT-1031",
+    "RT-1032",
+    "RT-1033",
+    "RT-1034",
+    "RT-1035",
+    "RT-1036",
+    "RT-1037",
+    "RT-1038",
+    "RT-1039",
+    "RT-1040",
+    "RT-1041",
+    "RT-1042",
+    "RT-1043",
+    "RT-1044",
+    "RT-1045",
+    "RT-1046",
+    "RT-1047",
+    "RT-1048",
+    "RT-1049",
+    "RT-1050",
+    "RT-1051",
+    "RT-1052",
+    "RT-1053",
+    "RT-1054",
+    "RT-1055",
+    "RT-1056",
+    "RT-1057",
+    "RT-1058",
+    "RT-1059",
+    "RT-1060",
+    "RT-1061",
+    "RT-1062",
+    "RT-1063",
+    "RT-1064",
+    "RT-1065",
+    "RT-1066",
+    "RT-1067",
+    "RT-1068",
+    "RT-1069",
+    "RT-1070",
+    "RT-1071",
+    "RT-1072",
+    "RT-1073",
+    "RT-1074",
+    "RT-1075",
+    "RT-1076",
+    "RT-1077",
+    "RT-1078",
+    "RT-1079",
+    "RT-1080",
+    "RT-1081",
+    "RT-1082",
+    "RT-1083",
+    "RT-1084",
+    "RT-1085",
+    "RT-1086",
+    "RT-1087",
+    "RT-1088",
+    "RT-1089",
+    "RT-1090",
+    "RT-1091",
+    "RT-1092",
+    "RT-1093",
+    "RT-1094",
+    "RT-1095",
+    "RT-1096",
+    "RT-1097",
+    "RT-1098",
+    "RT-1099",
+    "RT-1100",
+    "RT-1101",
+    "RT-1102",
+    "RT-1103",
+    "RT-1104",
+    "RT-1105",
+    "RT-1106",
+    "RT-1107",
+    "RT-1108",
+    "RT-1109",
+    "RT-1110",
+    "RT-1111",
+    "RT-1112",
+    "RT-1113",
+    "RT-1114",
+    "RT-1115",
+    "RT-1116",
+    "RT-1117",
+    "RT-1118",
+    "RT-1119",
+    "RT-1120",
+    "RT-1121",
+    "RT-1122",
+    "RT-1123",
+    "RT-1124",
+    "RT-1125",
+    "RT-1126",
+    "RT-1127",
+    "RT-1128"
+   ]
+  },
+  "executive": {
+   "allowed_tenants": [
+    "Customer A",
+    "Customer B",
+    "Customer C"
+   ],
+   "can": {
+    "ack": false,
+    "approve.decisions": false,
+    "approve.mcp": false,
+    "approve.tenantAccess": false,
+    "assess": false,
+    "comment": false,
+    "confirm": false,
+    "execSim": false,
+    "manageAccess": false,
+    "manageIdentity": false,
+    "manageIntegrations": false,
+    "manageWorkflows": false,
+    "notify": true,
+    "proposeMcp": false,
+    "reeval": false,
+    "request": false,
+    "requestTenant": false,
+    "scenario": false,
+    "submit": false,
+    "useTools": false
+   },
+   "cases_total": 128,
+   "cases_value_total": 199829,
+   "counts": {
+    "alerts": 1,
+    "tasks": 0
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "command/kpis",
+      "n": 1277,
+      "text": "$2,433,569 recovered on 1277 reconciled decisions; $1,741,546 of new purchases avoided."
+     },
+     {
+      "go": "command/exceptions",
+      "n": 1,
+      "text": "Warehouse 1 · Warehouse bottleneck: $115k at risk; owner Warehouse Manager · Warehouse 1."
+     },
+     {
+      "go": "command/exceptions",
+      "n": 1,
+      "text": "Warehouse 1 · Value at risk: missing evidence: $9k at risk; owner Engineer."
+     }
+    ],
+    "items": [],
+    "total": 0
+   },
+   "kpis": [
+    {
+     "d": "<span class=\"frd bad\" data-tip=\"Against the same measure 30 days earlier\">▼ 42%</span>",
+     "go": "analytics/waterfall",
+     "h": "money",
+     "ic": "dollar",
+     "k": "recovery",
+     "l": "Net recovery",
+     "n": 144386,
+     "sp": [
+      159367,
+      168911,
+      125497,
+      237521,
+      215317,
+      202966,
+      288556,
+      212269,
+      198736,
+      230716,
+      249327,
+      144386
+     ],
+     "sub": "Sep 26",
+     "v": "$144k"
+    },
+    {
+     "go": "command/kpis",
+     "h": "money",
+     "ic": "dollar",
+     "k": "potential",
+     "l": "Potential recovery",
+     "n": 94415,
+     "sub": "49 decisions open",
+     "v": "$94k"
+    },
+    {
+     "go": "command/exceptions",
+     "h": "alert",
+     "ic": "alert",
+     "k": "risk",
+     "l": "Value at risk",
+     "n": 26469.665,
+     "sub": "next 30 days if no action",
+     "v": "$26k"
+    },
+    {
+     "go": "command/kpis",
+     "h": "dec",
+     "ic": "tasks",
+     "k": "open",
+     "l": "Decisions open",
+     "n": 49,
+     "v": 49
+    },
+    {
+     "d": "<span class=\"frd bad\" data-tip=\"Against the same measure 30 days earlier\">▼ 17%</span>",
+     "go": "analytics/sustain",
+     "h": "int",
+     "ic": "leaf",
+     "k": "co2",
+     "l": "Carbon avoided",
+     "n": 21802,
+     "sp": [
+      21268,
+      17687,
+      14248,
+      25184,
+      19434,
+      16068,
+      27922,
+      19206,
+      26318,
+      27274,
+      26191,
+      21802
+     ],
+     "sub": "Sep 26 · CO₂e",
+     "v": "21,802 kg"
+    }
+   ],
+   "pages": {
+    "access": [],
+    "alerts": [
+     ""
+    ],
+    "analytics": [
+     "waterfall",
+     "pipeline",
+     "mix",
+     "predicted",
+     "models",
+     "overrides",
+     "eng",
+     "sustain",
+     ""
+    ],
+    "audit": [
+     "log",
+     "gaps",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "exceptions",
+     "charts",
+     "value",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [],
+    "mcp": [],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case",
+     ""
+    ],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1001",
+    "RT-1002",
+    "RT-1003",
+    "RT-1004",
+    "RT-1005",
+    "RT-1006",
+    "RT-1007",
+    "RT-1008",
+    "RT-1009",
+    "RT-1010",
+    "RT-1011",
+    "RT-1012",
+    "RT-1013",
+    "RT-1014",
+    "RT-1015",
+    "RT-1016",
+    "RT-1017",
+    "RT-1018",
+    "RT-1019",
+    "RT-1020",
+    "RT-1021",
+    "RT-1022",
+    "RT-1023",
+    "RT-1024",
+    "RT-1025",
+    "RT-1026",
+    "RT-1027",
+    "RT-1028",
+    "RT-1029",
+    "RT-1030",
+    "RT-1031",
+    "RT-1032",
+    "RT-1033",
+    "RT-1034",
+    "RT-1035",
+    "RT-1036",
+    "RT-1037",
+    "RT-1038",
+    "RT-1039",
+    "RT-1040",
+    "RT-1041",
+    "RT-1042",
+    "RT-1043",
+    "RT-1044",
+    "RT-1045",
+    "RT-1046",
+    "RT-1047",
+    "RT-1048",
+    "RT-1049",
+    "RT-1050",
+    "RT-1051",
+    "RT-1052",
+    "RT-1053",
+    "RT-1054",
+    "RT-1055",
+    "RT-1056",
+    "RT-1057",
+    "RT-1058",
+    "RT-1059",
+    "RT-1060",
+    "RT-1061",
+    "RT-1062",
+    "RT-1063",
+    "RT-1064",
+    "RT-1065",
+    "RT-1066",
+    "RT-1067",
+    "RT-1068",
+    "RT-1069",
+    "RT-1070",
+    "RT-1071",
+    "RT-1072",
+    "RT-1073",
+    "RT-1074",
+    "RT-1075",
+    "RT-1076",
+    "RT-1077",
+    "RT-1078",
+    "RT-1079",
+    "RT-1080",
+    "RT-1081",
+    "RT-1082",
+    "RT-1083",
+    "RT-1084",
+    "RT-1085",
+    "RT-1086",
+    "RT-1087",
+    "RT-1088",
+    "RT-1089",
+    "RT-1090",
+    "RT-1091",
+    "RT-1092",
+    "RT-1093",
+    "RT-1094",
+    "RT-1095",
+    "RT-1096",
+    "RT-1097",
+    "RT-1098",
+    "RT-1099",
+    "RT-1100",
+    "RT-1101",
+    "RT-1102",
+    "RT-1103",
+    "RT-1104",
+    "RT-1105",
+    "RT-1106",
+    "RT-1107",
+    "RT-1108",
+    "RT-1109",
+    "RT-1110",
+    "RT-1111",
+    "RT-1112",
+    "RT-1113",
+    "RT-1114",
+    "RT-1115",
+    "RT-1116",
+    "RT-1117",
+    "RT-1118",
+    "RT-1119",
+    "RT-1120",
+    "RT-1121",
+    "RT-1122",
+    "RT-1123",
+    "RT-1124",
+    "RT-1125",
+    "RT-1126",
+    "RT-1127",
+    "RT-1128"
+   ]
+  },
+  "finance": {
+   "allowed_tenants": [
+    "Customer A",
+    "Customer B",
+    "Customer C"
+   ],
+   "can": {
+    "ack": true,
+    "approve.decisions": false,
+    "approve.mcp": false,
+    "approve.tenantAccess": false,
+    "assess": false,
+    "comment": true,
+    "confirm": true,
+    "execSim": false,
+    "manageAccess": false,
+    "manageIdentity": false,
+    "manageIntegrations": false,
+    "manageWorkflows": false,
+    "notify": false,
+    "proposeMcp": false,
+    "reeval": false,
+    "request": false,
+    "requestTenant": false,
+    "scenario": false,
+    "submit": false,
+    "useTools": false
+   },
+   "cases_total": 128,
+   "cases_value_total": 199829,
+   "counts": {
+    "alerts": 4,
+    "tasks": 0
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "command/outcomes",
+      "n": 0,
+      "text": "No outcome waits for confirmation."
+     },
+     {
+      "go": "analytics",
+      "n": 1277,
+      "text": "$2,433,569 recovered on 1277 reconciled decisions; $1,741,546 of new purchases avoided."
+     }
+    ],
+    "items": [],
+    "total": 0
+   },
+   "kpis": [
+    {
+     "go": "command/outcomes",
+     "h": "dec",
+     "ic": "checks",
+     "k": "confirm",
+     "l": "Outcomes to confirm",
+     "n": 0,
+     "v": 0
+    },
+    {
+     "go": "analytics/predicted",
+     "h": "ev",
+     "ic": "scale",
+     "k": "variance",
+     "l": "Variance this month",
+     "n": 1588,
+     "sp": [
+      -14953,
+      -13062,
+      -4797,
+      -9318,
+      -2742,
+      -3462,
+      -6858,
+      -3783,
+      -9136,
+      -7028,
+      5756,
+      1588
+     ],
+     "sub": "actual against P50",
+     "v": "$2k"
+    },
+    {
+     "go": "analytics/predicted",
+     "h": "re",
+     "ic": "target",
+     "k": "pva",
+     "l": "Predicted vs actual",
+     "n": 33,
+     "sub": "within ±10% this month",
+     "v": "33%"
+    },
+    {
+     "go": "analytics",
+     "h": "insp",
+     "ic": "truck",
+     "k": "bills",
+     "l": "Carrier bills to check",
+     "n": 31,
+     "v": 31
+    },
+    {
+     "d": "<span class=\"frd bad\" data-tip=\"Against the same measure 30 days earlier\">▼ 42%</span>",
+     "go": "analytics/waterfall",
+     "h": "money",
+     "ic": "dollar",
+     "k": "recovery",
+     "l": "Net recovery",
+     "n": 144386,
+     "sp": [
+      159367,
+      168911,
+      125497,
+      237521,
+      215317,
+      202966,
+      288556,
+      212269,
+      198736,
+      230716,
+      249327,
+      144386
+     ],
+     "sub": "Sep 26",
+     "v": "$144k"
+    }
+   ],
+   "pages": {
+    "access": [],
+    "alerts": [
+     ""
+    ],
+    "analytics": [
+     "waterfall",
+     "pipeline",
+     "mix",
+     "predicted",
+     "models",
+     "overrides",
+     "eng",
+     "sustain",
+     ""
+    ],
+    "audit": [
+     "log",
+     "gaps",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "aome",
+     "outcomes",
+     "charts",
+     "value",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [
+     "map",
+     "overview",
+     "monitor",
+     ""
+    ],
+    "mcp": [],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case",
+     ""
+    ],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1001",
+    "RT-1002",
+    "RT-1003",
+    "RT-1004",
+    "RT-1005",
+    "RT-1006",
+    "RT-1007",
+    "RT-1008",
+    "RT-1009",
+    "RT-1010",
+    "RT-1011",
+    "RT-1012",
+    "RT-1013",
+    "RT-1014",
+    "RT-1015",
+    "RT-1016",
+    "RT-1017",
+    "RT-1018",
+    "RT-1019",
+    "RT-1020",
+    "RT-1021",
+    "RT-1022",
+    "RT-1023",
+    "RT-1024",
+    "RT-1025",
+    "RT-1026",
+    "RT-1027",
+    "RT-1028",
+    "RT-1029",
+    "RT-1030",
+    "RT-1031",
+    "RT-1032",
+    "RT-1033",
+    "RT-1034",
+    "RT-1035",
+    "RT-1036",
+    "RT-1037",
+    "RT-1038",
+    "RT-1039",
+    "RT-1040",
+    "RT-1041",
+    "RT-1042",
+    "RT-1043",
+    "RT-1044",
+    "RT-1045",
+    "RT-1046",
+    "RT-1047",
+    "RT-1048",
+    "RT-1049",
+    "RT-1050",
+    "RT-1051",
+    "RT-1052",
+    "RT-1053",
+    "RT-1054",
+    "RT-1055",
+    "RT-1056",
+    "RT-1057",
+    "RT-1058",
+    "RT-1059",
+    "RT-1060",
+    "RT-1061",
+    "RT-1062",
+    "RT-1063",
+    "RT-1064",
+    "RT-1065",
+    "RT-1066",
+    "RT-1067",
+    "RT-1068",
+    "RT-1069",
+    "RT-1070",
+    "RT-1071",
+    "RT-1072",
+    "RT-1073",
+    "RT-1074",
+    "RT-1075",
+    "RT-1076",
+    "RT-1077",
+    "RT-1078",
+    "RT-1079",
+    "RT-1080",
+    "RT-1081",
+    "RT-1082",
+    "RT-1083",
+    "RT-1084",
+    "RT-1085",
+    "RT-1086",
+    "RT-1087",
+    "RT-1088",
+    "RT-1089",
+    "RT-1090",
+    "RT-1091",
+    "RT-1092",
+    "RT-1093",
+    "RT-1094",
+    "RT-1095",
+    "RT-1096",
+    "RT-1097",
+    "RT-1098",
+    "RT-1099",
+    "RT-1100",
+    "RT-1101",
+    "RT-1102",
+    "RT-1103",
+    "RT-1104",
+    "RT-1105",
+    "RT-1106",
+    "RT-1107",
+    "RT-1108",
+    "RT-1109",
+    "RT-1110",
+    "RT-1111",
+    "RT-1112",
+    "RT-1113",
+    "RT-1114",
+    "RT-1115",
+    "RT-1116",
+    "RT-1117",
+    "RT-1118",
+    "RT-1119",
+    "RT-1120",
+    "RT-1121",
+    "RT-1122",
+    "RT-1123",
+    "RT-1124",
+    "RT-1125",
+    "RT-1126",
+    "RT-1127",
+    "RT-1128"
+   ]
+  },
+  "planner-a": {
+   "allowed_tenants": [
+    "Customer A"
+   ],
+   "can": {
+    "ack": true,
+    "approve.decisions": false,
+    "approve.mcp": false,
+    "approve.tenantAccess": false,
+    "assess": false,
+    "comment": false,
+    "confirm": false,
+    "execSim": true,
+    "manageAccess": false,
+    "manageIdentity": false,
+    "manageIntegrations": false,
+    "manageWorkflows": false,
+    "notify": false,
+    "proposeMcp": false,
+    "reeval": true,
+    "request": true,
+    "requestTenant": true,
+    "scenario": true,
+    "submit": true,
+    "useTools": false
+   },
+   "cases_total": 64,
+   "cases_value_total": 128630,
+   "counts": {
+    "alerts": 1,
+    "tasks": 7
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "product/RT-1065?step=5",
+      "n": 21,
+      "text": "21 decisions ready to submit; the largest is RT-1065 at $9,713."
+     },
+     {
+      "go": "product/received",
+      "n": 21,
+      "text": "21 cases are missing evidence; 21 not yet requested."
+     },
+     {
+      "go": "product/RT-1002?step=5",
+      "n": 2,
+      "text": "2 cases need re-evaluation."
+     }
+    ],
+    "items": [
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Re-evaluate",
+      "case_id": "RT-1002",
+      "detail": "Demand cancelled by Site owner",
+      "go": "product/RT-1002?step=5",
+      "title": "RT-1002 · re-evaluate"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1028",
+      "detail": "Recover parts for internal use · $94",
+      "go": "product/RT-1028?step=5",
+      "title": "RT-1028 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1032",
+      "detail": "Refurbish, then sell · $2,190",
+      "go": "product/RT-1032?step=5",
+      "title": "RT-1032 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1048",
+      "detail": "Redeploy RT-1048 · $9,600",
+      "go": "product/RT-1048?step=5",
+      "title": "RT-1048 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1065",
+      "detail": "Redeploy to Site 6 · $9,713",
+      "go": "product/RT-1065?step=5",
+      "title": "RT-1065 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1068",
+      "detail": "Sell whole asset as-is · $985",
+      "go": "product/RT-1068?step=5",
+      "title": "RT-1068 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1080",
+      "detail": "Sell whole asset as-is · $306",
+      "go": "product/RT-1080?step=5",
+      "title": "RT-1080 · submit for review"
+     }
+    ],
+    "total": 7
+   },
+   "kpis": [
+    {
+     "go": "product/received",
+     "h": "dec",
+     "ic": "clipboard",
+     "k": "ready",
+     "l": "Ready to submit",
+     "n": 21,
+     "v": 21
+    },
+    {
+     "go": "product/received",
+     "h": "ev",
+     "ic": "search",
+     "k": "need",
+     "l": "Missing evidence",
+     "n": 21,
+     "v": 21
+    },
+    {
+     "go": "product/received",
+     "h": "re",
+     "ic": "rotate",
+     "k": "reeval",
+     "l": "Re-evaluate",
+     "n": 2,
+     "v": 2
+    },
+    {
+     "go": "product/received",
+     "h": "insp",
+     "ic": "box",
+     "k": "week",
+     "l": "Received this week",
+     "n": 49,
+     "v": 49
+    },
+    {
+     "go": "command/kpis",
+     "h": "money",
+     "ic": "dollar",
+     "k": "potential",
+     "l": "Potential recovery",
+     "n": 60324,
+     "sub": "23 decisions open",
+     "v": "$60k"
+    }
+   ],
+   "pages": {
+    "access": [],
+    "alerts": [
+     ""
+    ],
+    "analytics": [
+     "waterfall",
+     "pipeline",
+     "mix",
+     "predicted",
+     "models",
+     "overrides",
+     ""
+    ],
+    "audit": [
+     "log",
+     "gaps",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "aome",
+     "handed",
+     "charts",
+     "actions",
+     "signals",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [],
+    "mcp": [],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case",
+     ""
+    ],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1002",
+    "RT-1003",
+    "RT-1009",
+    "RT-1016",
+    "RT-1017",
+    "RT-1021",
+    "RT-1024",
+    "RT-1026",
+    "RT-1027",
+    "RT-1028",
+    "RT-1030",
+    "RT-1032",
+    "RT-1034",
+    "RT-1035",
+    "RT-1036",
+    "RT-1037",
+    "RT-1039",
+    "RT-1042",
+    "RT-1043",
+    "RT-1046",
+    "RT-1048",
+    "RT-1049",
+    "RT-1051",
+    "RT-1053",
+    "RT-1054",
+    "RT-1055",
+    "RT-1058",
+    "RT-1062",
+    "RT-1064",
+    "RT-1065",
+    "RT-1066",
+    "RT-1067",
+    "RT-1068",
+    "RT-1070",
+    "RT-1073",
+    "RT-1074",
+    "RT-1076",
+    "RT-1077",
+    "RT-1078",
+    "RT-1079",
+    "RT-1080",
+    "RT-1082",
+    "RT-1083",
+    "RT-1088",
+    "RT-1090",
+    "RT-1093",
+    "RT-1094",
+    "RT-1096",
+    "RT-1100",
+    "RT-1102",
+    "RT-1103",
+    "RT-1106",
+    "RT-1107",
+    "RT-1108",
+    "RT-1109",
+    "RT-1111",
+    "RT-1112",
+    "RT-1116",
+    "RT-1118",
+    "RT-1120",
+    "RT-1121",
+    "RT-1122",
+    "RT-1123",
+    "RT-1126"
+   ]
+  },
+  "planner-b": {
+   "allowed_tenants": [
+    "Customer B"
+   ],
+   "can": {
+    "ack": true,
+    "approve.decisions": false,
+    "approve.mcp": false,
+    "approve.tenantAccess": false,
+    "assess": false,
+    "comment": false,
+    "confirm": false,
+    "execSim": true,
+    "manageAccess": false,
+    "manageIdentity": false,
+    "manageIntegrations": false,
+    "manageWorkflows": false,
+    "notify": false,
+    "proposeMcp": false,
+    "reeval": true,
+    "request": true,
+    "requestTenant": true,
+    "scenario": true,
+    "submit": true,
+    "useTools": false
+   },
+   "cases_total": 49,
+   "cases_value_total": 61346,
+   "counts": {
+    "alerts": 0,
+    "tasks": 8
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "product/RT-1125?step=5",
+      "n": 14,
+      "text": "14 decisions ready to submit; the largest is RT-1125 at $3,712."
+     },
+     {
+      "go": "product/received",
+      "n": 15,
+      "text": "15 cases are missing evidence; 15 not yet requested."
+     },
+     {
+      "go": "product/RT-1008?step=5",
+      "n": 5,
+      "text": "5 cases need re-evaluation."
+     }
+    ],
+    "items": [
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Re-evaluate",
+      "case_id": "RT-1008",
+      "detail": "Prep test failed on first pass",
+      "go": "product/RT-1008?step=5",
+      "title": "RT-1008 · re-evaluate"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Re-evaluate",
+      "case_id": "RT-1089",
+      "detail": "Prep test failed on first pass",
+      "go": "product/RT-1089?step=5",
+      "title": "RT-1089 · re-evaluate"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1001",
+      "detail": "Refurbish, then sell · $2,381",
+      "go": "product/RT-1001?step=5",
+      "title": "RT-1001 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1033",
+      "detail": "Hold for OPP-7712 (Site 6 line-2 tender) · $553",
+      "go": "product/RT-1033?step=5",
+      "title": "RT-1033 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1097",
+      "detail": "Refurbish, then sell · $1,047",
+      "go": "product/RT-1097?step=5",
+      "title": "RT-1097 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1104",
+      "detail": "Responsible exit · Approved vendor A · −$60",
+      "go": "product/RT-1104?step=5",
+      "title": "RT-1104 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1117",
+      "detail": "Refurbish, then sell · $171",
+      "go": "product/RT-1117?step=5",
+      "title": "RT-1117 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1125",
+      "detail": "Redeploy to Site 7 · $3,712",
+      "go": "product/RT-1125?step=5",
+      "title": "RT-1125 · submit for review"
+     }
+    ],
+    "total": 8
+   },
+   "kpis": [
+    {
+     "go": "product/received",
+     "h": "dec",
+     "ic": "clipboard",
+     "k": "ready",
+     "l": "Ready to submit",
+     "n": 14,
+     "v": 14
+    },
+    {
+     "go": "product/received",
+     "h": "ev",
+     "ic": "search",
+     "k": "need",
+     "l": "Missing evidence",
+     "n": 15,
+     "v": 15
+    },
+    {
+     "go": "product/received",
+     "h": "re",
+     "ic": "rotate",
+     "k": "reeval",
+     "l": "Re-evaluate",
+     "n": 5,
+     "v": 5
+    },
+    {
+     "go": "product/received",
+     "h": "insp",
+     "ic": "box",
+     "k": "week",
+     "l": "Received this week",
+     "n": 41,
+     "v": 41
+    },
+    {
+     "go": "command/kpis",
+     "h": "money",
+     "ic": "dollar",
+     "k": "potential",
+     "l": "Potential recovery",
+     "n": 24896,
+     "sub": "19 decisions open",
+     "v": "$25k"
+    }
+   ],
+   "pages": {
+    "access": [],
+    "alerts": [
+     ""
+    ],
+    "analytics": [
+     "waterfall",
+     "pipeline",
+     "mix",
+     "predicted",
+     "models",
+     "overrides",
+     ""
+    ],
+    "audit": [
+     "log",
+     "gaps",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "aome",
+     "handed",
+     "charts",
+     "actions",
+     "signals",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [],
+    "mcp": [],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case",
+     ""
+    ],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1001",
+    "RT-1004",
+    "RT-1005",
+    "RT-1007",
+    "RT-1008",
+    "RT-1010",
+    "RT-1011",
+    "RT-1014",
+    "RT-1015",
+    "RT-1018",
+    "RT-1020",
+    "RT-1022",
+    "RT-1023",
+    "RT-1025",
+    "RT-1029",
+    "RT-1031",
+    "RT-1033",
+    "RT-1040",
+    "RT-1041",
+    "RT-1045",
+    "RT-1050",
+    "RT-1056",
+    "RT-1057",
+    "RT-1059",
+    "RT-1061",
+    "RT-1063",
+    "RT-1071",
+    "RT-1072",
+    "RT-1075",
+    "RT-1081",
+    "RT-1084",
+    "RT-1086",
+    "RT-1089",
+    "RT-1091",
+    "RT-1095",
+    "RT-1097",
+    "RT-1099",
+    "RT-1101",
+    "RT-1104",
+    "RT-1105",
+    "RT-1110",
+    "RT-1113",
+    "RT-1114",
+    "RT-1117",
+    "RT-1119",
+    "RT-1124",
+    "RT-1125",
+    "RT-1127",
+    "RT-1128"
+   ]
+  },
+  "planner-c": {
+   "allowed_tenants": [
+    "Customer C"
+   ],
+   "can": {
+    "ack": true,
+    "approve.decisions": false,
+    "approve.mcp": false,
+    "approve.tenantAccess": false,
+    "assess": false,
+    "comment": false,
+    "confirm": false,
+    "execSim": true,
+    "manageAccess": false,
+    "manageIdentity": false,
+    "manageIntegrations": false,
+    "manageWorkflows": false,
+    "notify": false,
+    "proposeMcp": false,
+    "reeval": true,
+    "request": true,
+    "requestTenant": true,
+    "scenario": true,
+    "submit": true,
+    "useTools": false
+   },
+   "cases_total": 15,
+   "cases_value_total": 9853,
+   "counts": {
+    "alerts": 0,
+    "tasks": 3
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "product/RT-1052?step=5",
+      "n": 6,
+      "text": "6 decisions ready to submit; the largest is RT-1052 at $3,984."
+     },
+     {
+      "go": "product/received",
+      "n": 5,
+      "text": "5 cases are missing evidence; 5 not yet requested."
+     },
+     {
+      "go": "product/RT-1092?step=5",
+      "n": 1,
+      "text": "1 case needs re-evaluation."
+     }
+    ],
+    "items": [
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1006",
+      "detail": "Recover parts for internal use · $361",
+      "go": "product/RT-1006?step=5",
+      "title": "RT-1006 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1038",
+      "detail": "Sell whole asset as-is · $2,305",
+      "go": "product/RT-1038?step=5",
+      "title": "RT-1038 · submit for review"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Submit",
+      "case_id": "RT-1115",
+      "detail": "Sell parts externally · $383",
+      "go": "product/RT-1115?step=5",
+      "title": "RT-1115 · submit for review"
+     }
+    ],
+    "total": 3
+   },
+   "kpis": [
+    {
+     "go": "product/received",
+     "h": "dec",
+     "ic": "clipboard",
+     "k": "ready",
+     "l": "Ready to submit",
+     "n": 6,
+     "v": 6
+    },
+    {
+     "go": "product/received",
+     "h": "ev",
+     "ic": "search",
+     "k": "need",
+     "l": "Missing evidence",
+     "n": 6,
+     "v": 6
+    },
+    {
+     "go": "product/received",
+     "h": "re",
+     "ic": "rotate",
+     "k": "reeval",
+     "l": "Re-evaluate",
+     "n": 1,
+     "v": 1
+    },
+    {
+     "go": "product/received",
+     "h": "insp",
+     "ic": "box",
+     "k": "week",
+     "l": "Received this week",
+     "n": 11,
+     "v": 11
+    },
+    {
+     "go": "command/kpis",
+     "h": "money",
+     "ic": "dollar",
+     "k": "potential",
+     "l": "Potential recovery",
+     "n": 9195,
+     "sub": "7 decisions open",
+     "v": "$9k"
+    }
+   ],
+   "pages": {
+    "access": [],
+    "alerts": [
+     ""
+    ],
+    "analytics": [
+     "waterfall",
+     "pipeline",
+     "mix",
+     "predicted",
+     "models",
+     "overrides",
+     ""
+    ],
+    "audit": [
+     "log",
+     "gaps",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "aome",
+     "handed",
+     "charts",
+     "actions",
+     "signals",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [],
+    "mcp": [],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case",
+     ""
+    ],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1006",
+    "RT-1012",
+    "RT-1013",
+    "RT-1019",
+    "RT-1038",
+    "RT-1044",
+    "RT-1047",
+    "RT-1052",
+    "RT-1060",
+    "RT-1069",
+    "RT-1085",
+    "RT-1087",
+    "RT-1092",
+    "RT-1098",
+    "RT-1115"
+   ]
+  },
+  "wm-1": {
+   "allowed_tenants": [
+    "Customer A",
+    "Customer B",
+    "Customer C"
+   ],
+   "can": {
+    "ack": true,
+    "approve.decisions": false,
+    "approve.mcp": false,
+    "approve.tenantAccess": false,
+    "assess": false,
+    "comment": false,
+    "confirm": false,
+    "execSim": false,
+    "manageAccess": false,
+    "manageIdentity": false,
+    "manageIntegrations": false,
+    "manageWorkflows": false,
+    "notify": false,
+    "proposeMcp": false,
+    "reeval": false,
+    "request": true,
+    "requestTenant": false,
+    "scenario": false,
+    "submit": false,
+    "useTools": false
+   },
+   "cases_total": 55,
+   "cases_value_total": 84425,
+   "counts": {
+    "alerts": 0,
+    "tasks": 9
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "product/expected",
+      "n": 5,
+      "text": "5 returns expected at Warehouse 1."
+     },
+     {
+      "go": "command/handed",
+      "n": 4,
+      "text": "4 handed-off items waiting on WMS."
+     },
+     {
+      "go": "product/received",
+      "n": 55,
+      "text": "55 returned assets at Warehouse 1 now."
+     }
+    ],
+    "items": [
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Check",
+      "case_id": "RT-1016",
+      "detail": "WMS acknowledgement pending · Industrial motor",
+      "go": "product/RT-1016?step=5",
+      "title": "RT-1016 · warehouse moves and outbound delivery"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Check",
+      "case_id": "RT-1019",
+      "detail": "WMS acknowledgement pending · Power tool",
+      "go": "product/RT-1019?step=5",
+      "title": "RT-1019 · reserve unit"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Check",
+      "case_id": "RT-1120",
+      "detail": "WMS acknowledgement pending · Hydraulic pump",
+      "go": "product/RT-1120?step=5",
+      "title": "RT-1120 · warehouse moves and outbound delivery"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Check",
+      "case_id": "RT-1127",
+      "detail": "WMS acknowledgement pending · Control unit",
+      "go": "product/RT-1127?step=5",
+      "title": "RT-1127 · reserve parts"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Plan receiving",
+      "case_id": null,
+      "detail": "Industrial motor · Customer A · 68% likely to return",
+      "go": "product/expected",
+      "title": "LS-5412 · inbound 10 Oct–24 Oct"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Plan receiving",
+      "case_id": null,
+      "detail": "Power tool · Customer A · 100% likely to return",
+      "go": "product/expected",
+      "title": "CT-7045 · inbound 13 Oct–27 Oct"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Plan receiving",
+      "case_id": null,
+      "detail": "IT electronics · Customer B · 100% likely to return",
+      "go": "product/expected",
+      "title": "CT-7059 · inbound 17 Oct–31 Oct"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Plan receiving",
+      "case_id": null,
+      "detail": "Industrial motor · Customer B · 74% likely to return",
+      "go": "product/expected",
+      "title": "LS-5471 · inbound 22 Oct–05 Nov"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Plan receiving",
+      "case_id": null,
+      "detail": "Power tool · Customer C · 100% likely to return",
+      "go": "product/expected",
+      "title": "CT-7087 · inbound 28 Oct–11 Nov"
+     }
+    ],
+    "total": 9
+   },
+   "kpis": [
+    {
+     "go": "product/expected",
+     "h": "insp",
+     "ic": "truck",
+     "k": "inbound",
+     "l": "Inbound expected",
+     "n": 5,
+     "v": 5
+    },
+    {
+     "go": "command/handed",
+     "h": "dec",
+     "ic": "warehouse",
+     "k": "wms",
+     "l": "Steps waiting on WMS",
+     "n": 4,
+     "v": 4
+    },
+    {
+     "go": "alerts",
+     "h": "alert",
+     "ic": "clock",
+     "k": "esc",
+     "l": "Escalations",
+     "n": 0,
+     "v": 0
+    },
+    {
+     "go": "product/received",
+     "h": "re",
+     "ic": "box",
+     "k": "held",
+     "l": "Assets on hand",
+     "n": 55,
+     "v": 55
+    },
+    {
+     "go": "product/received",
+     "h": "money",
+     "ic": "cal",
+     "k": "days",
+     "l": "Average holding days",
+     "n": 5,
+     "v": "5 d"
+    }
+   ],
+   "pages": {
+    "access": [],
+    "alerts": [
+     ""
+    ],
+    "analytics": [],
+    "audit": [
+     "log",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "exceptions",
+     "aome",
+     "handed",
+     "charts",
+     "signals",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [],
+    "mcp": [],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case",
+     ""
+    ],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1002",
+    "RT-1006",
+    "RT-1010",
+    "RT-1012",
+    "RT-1014",
+    "RT-1016",
+    "RT-1017",
+    "RT-1019",
+    "RT-1020",
+    "RT-1022",
+    "RT-1025",
+    "RT-1028",
+    "RT-1029",
+    "RT-1031",
+    "RT-1032",
+    "RT-1035",
+    "RT-1038",
+    "RT-1042",
+    "RT-1043",
+    "RT-1045",
+    "RT-1048",
+    "RT-1051",
+    "RT-1053",
+    "RT-1054",
+    "RT-1059",
+    "RT-1065",
+    "RT-1067",
+    "RT-1068",
+    "RT-1069",
+    "RT-1070",
+    "RT-1075",
+    "RT-1076",
+    "RT-1077",
+    "RT-1078",
+    "RT-1080",
+    "RT-1081",
+    "RT-1084",
+    "RT-1085",
+    "RT-1088",
+    "RT-1095",
+    "RT-1096",
+    "RT-1099",
+    "RT-1106",
+    "RT-1107",
+    "RT-1108",
+    "RT-1110",
+    "RT-1113",
+    "RT-1115",
+    "RT-1118",
+    "RT-1120",
+    "RT-1122",
+    "RT-1123",
+    "RT-1124",
+    "RT-1127",
+    "RT-1128"
+   ]
+  },
+  "wm-2": {
+   "allowed_tenants": [
+    "Customer A",
+    "Customer B",
+    "Customer C"
+   ],
+   "can": {
+    "ack": true,
+    "approve.decisions": false,
+    "approve.mcp": false,
+    "approve.tenantAccess": false,
+    "assess": false,
+    "comment": false,
+    "confirm": false,
+    "execSim": false,
+    "manageAccess": false,
+    "manageIdentity": false,
+    "manageIntegrations": false,
+    "manageWorkflows": false,
+    "notify": false,
+    "proposeMcp": false,
+    "reeval": false,
+    "request": true,
+    "requestTenant": false,
+    "scenario": false,
+    "submit": false,
+    "useTools": false
+   },
+   "cases_total": 39,
+   "cases_value_total": 74286,
+   "counts": {
+    "alerts": 1,
+    "tasks": 7
+   },
+   "home": "home",
+   "inbox": {
+    "briefing": [
+     {
+      "go": "product/expected",
+      "n": 4,
+      "text": "4 returns expected at Warehouse 2."
+     },
+     {
+      "go": "command/handed",
+      "n": 3,
+      "text": "3 handed-off items waiting on WMS."
+     },
+     {
+      "go": "product/received",
+      "n": 39,
+      "text": "39 returned assets at Warehouse 2 now."
+     }
+    ],
+    "items": [
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Check",
+      "case_id": "RT-1056",
+      "detail": "WMS acknowledgement pending · IT electronics",
+      "go": "product/RT-1056?step=5",
+      "title": "RT-1056 · reserve parts"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Check",
+      "case_id": "RT-1090",
+      "detail": "WMS acknowledgement pending · Power tool",
+      "go": "product/RT-1090?step=5",
+      "title": "RT-1090 · reserve unit"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Check",
+      "case_id": "RT-1116",
+      "detail": "WMS acknowledgement pending · Tool-fleet batch",
+      "go": "product/RT-1116?step=5",
+      "title": "RT-1116 · reserve unit"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Plan receiving",
+      "case_id": null,
+      "detail": "Hydraulic pump · Customer B · 69% likely to return",
+      "go": "product/expected",
+      "title": "LS-5440 · inbound 12 Oct–26 Oct"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Plan receiving",
+      "case_id": null,
+      "detail": "Tool-fleet batch · Customer C · 100% likely to return",
+      "go": "product/expected",
+      "title": "CT-7052 · inbound 15 Oct–29 Oct"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Plan receiving",
+      "case_id": null,
+      "detail": "Control unit · Customer C · 100% likely to return",
+      "go": "product/expected",
+      "title": "CT-7066 · inbound 19 Oct–02 Nov"
+     },
+     {
+      "act": null,
+      "arg": null,
+      "btn": "Plan receiving",
+      "case_id": null,
+      "detail": "Hydraulic pump · Customer A · 100% likely to return",
+      "go": "product/expected",
+      "title": "CT-7080 · inbound 26 Oct–09 Nov"
+     }
+    ],
+    "total": 7
+   },
+   "kpis": [
+    {
+     "go": "product/expected",
+     "h": "insp",
+     "ic": "truck",
+     "k": "inbound",
+     "l": "Inbound expected",
+     "n": 4,
+     "v": 4
+    },
+    {
+     "go": "command/handed",
+     "h": "dec",
+     "ic": "warehouse",
+     "k": "wms",
+     "l": "Steps waiting on WMS",
+     "n": 3,
+     "v": 3
+    },
+    {
+     "go": "alerts",
+     "h": "alert",
+     "ic": "clock",
+     "k": "esc",
+     "l": "Escalations",
+     "n": 1,
+     "v": 1
+    },
+    {
+     "go": "product/received",
+     "h": "re",
+     "ic": "box",
+     "k": "held",
+     "l": "Assets on hand",
+     "n": 39,
+     "v": 39
+    },
+    {
+     "go": "product/received",
+     "h": "money",
+     "ic": "cal",
+     "k": "days",
+     "l": "Average holding days",
+     "n": 5,
+     "v": "5 d"
+    }
+   ],
+   "pages": {
+    "access": [],
+    "alerts": [
+     ""
+    ],
+    "analytics": [],
+    "audit": [
+     "log",
+     ""
+    ],
+    "checks": [
+     ""
+    ],
+    "command": [
+     "kpis",
+     "exceptions",
+     "aome",
+     "handed",
+     "charts",
+     "signals",
+     ""
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures",
+     ""
+    ],
+    "integration": [],
+    "mcp": [],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun",
+     ""
+    ],
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case",
+     ""
+    ],
+    "reports": [
+     ""
+    ],
+    "settings": [
+     ""
+    ],
+    "tasks": [
+     ""
+    ]
+   },
+   "visible_case_ids": [
+    "RT-1001",
+    "RT-1007",
+    "RT-1008",
+    "RT-1009",
+    "RT-1021",
+    "RT-1024",
+    "RT-1033",
+    "RT-1034",
+    "RT-1036",
+    "RT-1039",
+    "RT-1040",
+    "RT-1046",
+    "RT-1047",
+    "RT-1050",
+    "RT-1052",
+    "RT-1055",
+    "RT-1056",
+    "RT-1058",
+    "RT-1062",
+    "RT-1064",
+    "RT-1066",
+    "RT-1074",
+    "RT-1082",
+    "RT-1086",
+    "RT-1087",
+    "RT-1089",
+    "RT-1090",
+    "RT-1093",
+    "RT-1097",
+    "RT-1100",
+    "RT-1103",
+    "RT-1104",
+    "RT-1105",
+    "RT-1112",
+    "RT-1116",
+    "RT-1117",
+    "RT-1121",
+    "RT-1125",
+    "RT-1126"
+   ]
+  }
+ },
+ "invariants": [
+  {
+   "detail": "128 cases",
+   "name": "128 live returns",
+   "ok": true
+  },
+  {
+   "detail": "86 / 24 / 18",
+   "name": "Queue split matches concept (86 / 24 / 18)",
+   "ok": true
+  },
+  {
+   "detail": "RT-1001…RT-1128",
+   "name": "Return and asset IDs are unique",
+   "ok": true
+  },
+  {
+   "detail": "0 mismatches",
+   "name": "Every route net equals the sum of its cost terms",
+   "ok": true
+  },
+  {
+   "detail": "0 mismatches · 0 confirmed outcomes",
+   "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+   "ok": true
+  },
+  {
+   "detail": "9600, 4800, 3600, 3200",
+   "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+   "ok": true
+  },
+  {
+   "detail": "0 violations",
+   "name": "No approvable recommendation where a gate failed or evidence is missing",
+   "ok": true
+  },
+  {
+   "detail": "87 decisions",
+   "name": "Every decision carries an evidence snapshot",
+   "ok": true
+  },
+  {
+   "detail": "",
+   "name": "No excluded route is ever recommended",
+   "ok": true
+  },
+  {
+   "detail": "5 outputs · $240 teardown once",
+   "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+   "ok": true
+  },
+  {
+   "detail": "optimal $18,200 vs greedy $16,000",
+   "name": "Pool RT-1048: no demand line or unit allocated twice",
+   "ok": true
+  },
+  {
+   "detail": "optimal $5,776 vs greedy $5,350",
+   "name": "Pool RT-1052: no demand line or unit allocated twice",
+   "ok": true
+  },
+  {
+   "detail": "$152k in 17 warehouse rows",
+   "name": "Exception value by warehouse equals the ranked total",
+   "ok": true
+  },
+  {
+   "detail": "Voltara V4 motor · Customer A: 15 units",
+   "name": "SKU unit count equals Returned assets for that product and customer",
+   "ok": true
+  },
+  {
+   "detail": "1400 rows",
+   "name": "~1,400 closed decisions",
+   "ok": true
+  },
+  {
+   "detail": "$2,433,569",
+   "name": "Analytics total equals sum of case rows",
+   "ok": true
+  },
+  {
+   "detail": "1277 reconciled",
+   "name": "Route counts sum to reconciled total",
+   "ok": true
+  },
+  {
+   "detail": "61 pending",
+   "name": "Pending decisions are never counted as failures",
+   "ok": true
+  },
+  {
+   "detail": "13.8%",
+   "name": "Override rate ≈14% with a reason on each",
+   "ok": true
+  },
+  {
+   "detail": "18% → 15% → 14% → 12%",
+   "name": "Model error shrinks v1.0 → v1.3",
+   "ok": true
+  },
+  {
+   "detail": "85%",
+   "name": "P10–P90 covers ≈80% in latest model",
+   "ok": true
+  },
+  {
+   "af": true,
+   "detail": "45 adapters",
+   "name": "Every state-changing button calls invoke()",
+   "ok": true
+  },
+  {
+   "af": true,
+   "detail": "76 actions",
+   "name": "Every adapter maps to a registered action",
+   "ok": true
+  },
+  {
+   "af": true,
+   "detail": "pure",
+   "name": "No action handler reads or draws the page",
+   "ok": true
+  },
+  {
+   "af": true,
+   "detail": "complete",
+   "name": "Every action declares risk, permission and description",
+   "ok": true
+  },
+  {
+   "af": true,
+   "detail": "0 keyed entries",
+   "name": "No stage key or idempotency key is written twice",
+   "ok": true
+  },
+  {
+   "af": true,
+   "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+   "name": "Every button is classified in the inventory",
+   "ok": true
+  },
+  {
+   "af": true,
+   "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+   "name": "Every catalog intent returns its card on seeded cases",
+   "ok": true
+  },
+  {
+   "af": true,
+   "detail": "7 safety tests",
+   "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+   "ok": true
+  },
+  {
+   "af": true,
+   "detail": "52 intents",
+   "name": "Every intent in the catalog has a test",
+   "ok": true
+  },
+  {
+   "af": true,
+   "detail": "4 packets checked",
+   "name": "Card values equal case values",
+   "ok": true
+  }
+ ]
+}

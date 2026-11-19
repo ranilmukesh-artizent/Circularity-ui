@@ -1,0 +1,1559 @@
+{
+ "sources": [
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 JWT bearer",
+   "authority": [
+    "Opportunity stage",
+    "Lessee contact"
+   ],
+   "c0": 94,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 100,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 94,
+   "conf": 94,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "4 min",
+   "freshMin": 4,
+   "id": "crm",
+   "inputs": "Opportunities, accounts, renewal pipeline, quoted rates",
+   "interval": 0,
+   "k0": 94,
+   "lastSync": 1791363360000,
+   "method": "api",
+   "mode": "API extractor · API + events",
+   "name": "CRM",
+   "owner": "Sales Operations",
+   "read": [
+    "GET /services/data/v59.0/query?q=Opportunity",
+    "GET /services/data/v59.0/sobjects/Account",
+    "GET /services/data/v59.0/sobjects/Contract"
+   ],
+   "records": 48212,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "CRM",
+   "status": "live",
+   "step": [
+    1,
+    6
+   ],
+   "type": "crm",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://northfield.my.salesforce.com",
+   "vendor": "Salesforce Sales Cloud",
+   "ver": "API v59.0",
+   "write": [
+    "POST /services/data/v59.0/sobjects/Task"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790758800000,
+     "ver": "1.2",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Ownership",
+    "Lessee",
+    "Contract term"
+   ],
+   "c0": 97,
+   "cat": "internal",
+   "cfg": {
+    "extract": "Scheduled full pull",
+    "scope": "OKC_K_HEADERS_B, OKL_K_LINES",
+    "system": "Oracle E-Business Suite"
+   },
+   "cfgVer": "1.2",
+   "compl": 97,
+   "conf": 95,
+   "credAt": 1788080400000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "7 min",
+   "freshMin": 7,
+   "id": "lease",
+   "inputs": "Contract end dates, lease rates, lessee and asset ownership, renewal options",
+   "interval": 15,
+   "k0": 95,
+   "lastSync": 1791363180000,
+   "method": "native",
+   "mode": "Native connector · Polling · 15 min",
+   "name": "Lease management",
+   "owner": "Lease Administration",
+   "read": [
+    "EXTRACT OKC_K_HEADERS_B",
+    "EXTRACT OKL_K_LINES",
+    "EXTRACT OKC_K_REL_OBJS"
+   ],
+   "records": 12840,
+   "runs": [],
+   "rw": "Read",
+   "short": "Lease",
+   "status": "live",
+   "step": [
+    1
+   ],
+   "type": "lease",
+   "updatedAt": 1790758800000,
+   "updatedBy": "Platform Admin",
+   "url": "https://lease.northfield.example/fscmRestApi",
+   "vendor": "Oracle Lease and Finance Management",
+   "ver": "Fusion 24B",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 · mTLS",
+   "authority": [
+    "Cost",
+    "Purchase baseline",
+    "Valuation"
+   ],
+   "c0": 99,
+   "cat": "internal",
+   "cfg": {
+    "extract": "Automated delta pull",
+    "scope": "MARD, MSEG, EKPO, EKKO, MBEW",
+    "system": "SAP S/4HANA"
+   },
+   "cfgVer": "1.5",
+   "compl": 99,
+   "conf": 97,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "2 min",
+   "freshMin": 2,
+   "id": "erp",
+   "inputs": "Inventory valuation, actual cost postings, purchase baseline (finance only; orders live in OMS)",
+   "interval": 5,
+   "k0": 97,
+   "lastSync": 1791363480000,
+   "method": "native",
+   "mode": "Native connector · Polling · 5 min",
+   "name": "ERP",
+   "owner": "Finance Systems",
+   "read": [
+    "EXTRACT MARD",
+    "EXTRACT EKPO",
+    "EXTRACT MBEW"
+   ],
+   "records": 214903,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "ERP",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    9
+   ],
+   "type": "erp",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://s4.northfield.example/sap/opu/odata/sap",
+   "vendor": "SAP S/4HANA",
+   "ver": "2023 FPS02",
+   "write": [
+    "POST /API_RESERVATION_DOCUMENT_SRV/A_ReservationDocumentHeader",
+    "POST /API_MATERIAL_DOCUMENT_SRV/A_MaterialDocumentHeader"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Order line",
+    "Ship-to",
+    "Need-by date"
+   ],
+   "c0": 97,
+   "cat": "internal",
+   "cfg": {
+    "delivery": "Message queue",
+    "key": "OrderHeaderKey",
+    "order": "By source timestamp"
+   },
+   "cfgVer": "1.5",
+   "compl": 97,
+   "conf": 95,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "3 min",
+   "freshMin": 3,
+   "id": "oms",
+   "inputs": "Sales orders and lines, ship-to locations, need-by dates, return authorisations, fulfilment and proof of delivery",
+   "interval": 0,
+   "k0": 95,
+   "lastSync": 1791363420000,
+   "method": "event",
+   "mode": "Event API · Events",
+   "name": "Order management",
+   "owner": "Customer Operations",
+   "read": [
+    "GET /order",
+    "GET /order/{OrderHeaderKey}/lines",
+    "GET /return"
+   ],
+   "records": 128450,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "OMS",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    7,
+    9
+   ],
+   "type": "oms",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://oms.northfield.example/smcfs/restapi",
+   "vendor": "IBM Sterling OMS",
+   "ver": "Order Management 10.0",
+   "write": [
+    "POST /order/allocate",
+    "POST /order/{OrderHeaderKey}/fulfil"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790845200000,
+     "ver": "1.6",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Supplier lead time",
+    "Quoted price"
+   ],
+   "c0": 92,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Offset",
+    "rate": 60,
+    "spec": "OData"
+   },
+   "cfgVer": "1.6",
+   "compl": 92,
+   "conf": 90,
+   "credAt": 1788685200000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "12 min",
+   "freshMin": 12,
+   "id": "proc",
+   "inputs": "Purchase alternatives, supplier quotes, lead times, sourcing events",
+   "interval": 30,
+   "k0": 90,
+   "lastSync": 1791362880000,
+   "method": "api",
+   "mode": "API extractor · Polling · 30 min",
+   "name": "Procurement",
+   "owner": "Procurement",
+   "read": [
+    "GET /procurement-reporting-details/v2/prod/views/PurchaseOrders",
+    "GET /sourcing-event/v2/prod/events",
+    "GET /supplier-data/v4/prod/suppliers"
+   ],
+   "records": 31778,
+   "runs": [],
+   "rw": "Read",
+   "short": "Procurement",
+   "status": "live",
+   "step": [
+    1
+   ],
+   "type": "proc",
+   "updatedAt": 1790845200000,
+   "updatedBy": "Platform Admin",
+   "url": "https://openapi.ariba.com/api",
+   "vendor": "SAP Ariba",
+   "ver": "Procurement APIs v2",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "API key · mTLS",
+   "authority": [
+    "Asset identity",
+    "Work order status"
+   ],
+   "c0": 93,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Offset",
+    "rate": 120,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 93,
+   "conf": 91,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "6 min",
+   "freshMin": 6,
+   "id": "eam",
+   "inputs": "Installed base, asset registry, work orders, failure history, criticality",
+   "interval": 0,
+   "k0": 91,
+   "lastSync": 1791363240000,
+   "method": "api",
+   "mode": "API extractor · API + events",
+   "name": "EAM",
+   "owner": "Reliability Engineering",
+   "read": [
+    "GET /os/mxasset",
+    "GET /os/mxwo",
+    "GET /os/mxfailurereport"
+   ],
+   "records": 96430,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "EAM",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    7,
+    8,
+    9
+   ],
+   "type": "eam",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://maximo.northfield.example/maximo/api",
+   "vendor": "IBM Maximo",
+   "ver": "Manage 8.11",
+   "write": [
+    "POST /os/mxwo",
+    "PATCH /os/mxwo/{workorderid}"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Service demand",
+    "Dispatch status"
+   ],
+   "c0": 95,
+   "cat": "internal",
+   "cfg": {
+    "delivery": "Webhook",
+    "key": "sys_id",
+    "order": "By source timestamp"
+   },
+   "cfgVer": "1.5",
+   "compl": 95,
+   "conf": 92,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "3 min",
+   "freshMin": 3,
+   "id": "fsm",
+   "inputs": "Field service demand, technician dispatch, visit outcomes, parts consumed",
+   "interval": 0,
+   "k0": 92,
+   "lastSync": 1791363420000,
+   "method": "event",
+   "mode": "Event API · Events",
+   "name": "FSM",
+   "owner": "Field Operations",
+   "read": [
+    "GET /table/wm_order",
+    "GET /table/wm_task",
+    "GET /table/alm_asset"
+   ],
+   "records": 58116,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "FSM",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    7,
+    9
+   ],
+   "type": "fsm",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://northfield.service-now.com/api/now",
+   "vendor": "ServiceNow Field Service Management",
+   "ver": "Xanadu",
+   "write": [
+    "POST /table/wm_order",
+    "PATCH /table/wm_task/{sys_id}"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "Database user + password (vault)",
+   "authority": [
+    "Configuration",
+    "Compatibility"
+   ],
+   "c0": 88,
+   "cat": "internal",
+   "cfg": {
+    "database": "TCPROD",
+    "driver": "Oracle",
+    "host": "plm-db.northfield.example",
+    "port": 1521,
+    "schema": "INFODBA",
+    "uplink": "On-premise uplink server"
+   },
+   "cfgVer": "1.5",
+   "compl": 88,
+   "conf": 90,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "11 min",
+   "freshMin": 11,
+   "id": "plm",
+   "inputs": "Product configuration, compatibility rules, approved alternates, revisions",
+   "interval": 15,
+   "k0": 90,
+   "lastSync": 1791362940000,
+   "method": "jdbc",
+   "mode": "JDBC · Polling · 15 min",
+   "name": "PLM",
+   "owner": "Product Engineering",
+   "read": [
+    "SELECT * FROM INFODBA.PITEM",
+    "SELECT * FROM INFODBA.PITEMREVISION",
+    "SELECT * FROM INFODBA.PSOCCURRENCE"
+   ],
+   "records": 22650,
+   "runs": [],
+   "rw": "Read",
+   "short": "PLM",
+   "status": "live",
+   "step": [
+    1
+   ],
+   "type": "plm",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "jdbc:oracle://plm-db.northfield.example:1521/TCPROD",
+   "vendor": "Siemens Teamcenter",
+   "ver": "Teamcenter 14.3",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "Database user + password (vault)",
+   "authority": [
+    "Part structure",
+    "BOM revision"
+   ],
+   "c0": 90,
+   "cat": "internal",
+   "cfg": {
+    "database": "InnovatorDB",
+    "driver": "SQL Server",
+    "host": "bom-sql.northfield.example",
+    "port": 1433,
+    "schema": "innovator",
+    "uplink": "On-premise uplink server"
+   },
+   "cfgVer": "1.5",
+   "compl": 90,
+   "conf": 89,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "9 min",
+   "freshMin": 9,
+   "id": "bom",
+   "inputs": "Multi-level bill of materials, part structures, manufacturer parts",
+   "interval": 15,
+   "k0": 89,
+   "lastSync": 1791363060000,
+   "method": "jdbc",
+   "mode": "JDBC · Polling · 15 min",
+   "name": "BOM management",
+   "owner": "Product Engineering",
+   "read": [
+    "SELECT * FROM innovator.PART",
+    "SELECT * FROM innovator.PART_BOM",
+    "SELECT * FROM innovator.MANUFACTURER_PART"
+   ],
+   "records": 187402,
+   "runs": [],
+   "rw": "Read",
+   "short": "BOM",
+   "status": "live",
+   "step": [
+    1
+   ],
+   "type": "bom",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "jdbc:sqlserver://bom-sql.northfield.example:1433/InnovatorDB",
+   "vendor": "Aras Innovator",
+   "ver": "Innovator 14",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Policy",
+    "Certification"
+   ],
+   "c0": 90,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 60,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 90,
+   "conf": 93,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "26 min",
+   "freshMin": 26,
+   "id": "qms",
+   "inputs": "Reuse policies, certifications, test criteria, deviations",
+   "interval": 30,
+   "k0": 93,
+   "lastSync": 1791362040000,
+   "method": "api",
+   "mode": "API extractor · Polling · 30 min",
+   "name": "QMS",
+   "owner": "Quality Assurance",
+   "read": [
+    "GET /v2/controlled-documents",
+    "GET /v2/certificates",
+    "GET /v2/test-criteria"
+   ],
+   "records": 9421,
+   "runs": [],
+   "rw": "Read",
+   "short": "QMS",
+   "status": "live",
+   "step": [
+    1,
+    8
+   ],
+   "type": "qms",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://qms.northfield.example/mc/api",
+   "vendor": "MasterControl",
+   "ver": "Quality Excellence 2024",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Life assessment",
+    "Requalification"
+   ],
+   "c0": 89,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 60,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 89,
+   "conf": 92,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "33 min",
+   "freshMin": 33,
+   "id": "eng",
+   "inputs": "Life assessments, requalification standards, engineering limits",
+   "interval": 60,
+   "k0": 92,
+   "lastSync": 1791361620000,
+   "method": "api",
+   "mode": "API extractor · Polling · 60 min",
+   "name": "Engineering",
+   "owner": "Engineering Standards",
+   "read": [
+    "GET /v1/assessments",
+    "GET /v1/standards",
+    "GET /v1/limits"
+   ],
+   "records": 6118,
+   "runs": [],
+   "rw": "Read",
+   "short": "Engineering",
+   "status": "live",
+   "step": [
+    1,
+    8
+   ],
+   "type": "eng",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://eng.northfield.example/assetwise/api",
+   "vendor": "Bentley AssetWise",
+   "ver": "CONNECT Edition",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 · mTLS",
+   "authority": [
+    "Location",
+    "Availability"
+   ],
+   "c0": 96,
+   "cat": "internal",
+   "cfg": {
+    "delivery": "Message queue",
+    "key": "movement_id",
+    "order": "By sequence number"
+   },
+   "cfgVer": "1.5",
+   "compl": 96,
+   "conf": 88,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "1 min",
+   "freshMin": 1,
+   "id": "wms",
+   "inputs": "Stock location, quantity, stock age, reservations, physical movements",
+   "interval": 0,
+   "k0": 88,
+   "lastSync": 1791363540000,
+   "method": "event",
+   "mode": "Event API · Events",
+   "name": "WMS",
+   "owner": "Warehouse Operations",
+   "read": [
+    "GET /inventory",
+    "GET /locations",
+    "GET /movements"
+   ],
+   "records": 341877,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "WMS",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    7,
+    9
+   ],
+   "type": "wms",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://wms.northfield.example/wms/api",
+   "vendor": "Manhattan Active Warehouse Management",
+   "ver": "Active WM 2024",
+   "write": [
+    "POST /reservations",
+    "POST /transfers"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Lane rate",
+    "Carrier booking",
+    "ETA"
+   ],
+   "c0": 93,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 120,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 93,
+   "conf": 91,
+   "credAt": 1789290000000,
+   "credDays": 29,
+   "env": "Production",
+   "fresh": "4 min",
+   "freshMin": 4,
+   "id": "tms",
+   "inputs": "Lane rate cards, carrier bookings, loads, ETD and ETA, proof of delivery",
+   "interval": 0,
+   "k0": 91,
+   "lastSync": 1791363360000,
+   "method": "api",
+   "mode": "API extractor · API + events",
+   "name": "Transport management",
+   "owner": "Transport Planning",
+   "read": [
+    "GET /lanes",
+    "GET /rate-cards/{id}",
+    "GET /loads/{id}"
+   ],
+   "records": 44210,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "TMS",
+   "status": "live",
+   "step": [
+    6,
+    7,
+    9
+   ],
+   "type": "tms",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://api.shiplane.example/v3",
+   "vendor": "ShipLane TMS",
+   "ver": "TMS API v3",
+   "write": [
+    "POST /loads",
+    "PATCH /loads/{id}"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1791018000000,
+     "ver": "1.4",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "API key",
+   "authority": [
+    "Return receipt",
+    "Disposition"
+   ],
+   "c0": 91,
+   "cat": "internal",
+   "cfg": {
+    "delivery": "Webhook",
+    "key": "rma_id",
+    "order": "By arrival"
+   },
+   "cfgVer": "1.4",
+   "compl": 91,
+   "conf": 87,
+   "credAt": 1789894800000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "5 min",
+   "freshMin": 5,
+   "id": "rl",
+   "inputs": "Return receipts, disposition decisions, inbound shipments, carrier status",
+   "interval": 0,
+   "k0": 87,
+   "lastSync": 1791363300000,
+   "method": "event",
+   "mode": "Event API · Events",
+   "name": "Reverse logistics",
+   "owner": "Reverse Logistics",
+   "read": [
+    "GET /returns",
+    "GET /dispositions",
+    "GET /shipments"
+   ],
+   "records": 17934,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "Returns",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    9
+   ],
+   "type": "rl",
+   "updatedAt": 1791018000000,
+   "updatedBy": "Platform Admin",
+   "url": "https://api.optoro.com/v1",
+   "vendor": "Optoro",
+   "ver": "Returns API v1",
+   "write": [
+    "POST /return-authorizations"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790845200000,
+     "ver": "1.6",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Condition",
+    "Inspection result"
+   ],
+   "c0": 91,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 100,
+    "spec": "REST"
+   },
+   "cfgVer": "1.6",
+   "compl": 91,
+   "conf": 90,
+   "credAt": 1788685200000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "9 min",
+   "freshMin": 9,
+   "id": "insp",
+   "inputs": "Inspection reports, condition grades, photos, checklist results",
+   "interval": 0,
+   "k0": 90,
+   "lastSync": 1791363060000,
+   "method": "api",
+   "mode": "API extractor · API + events",
+   "name": "Inspection",
+   "owner": "Quality Assurance",
+   "read": [
+    "GET /audits/search",
+    "GET /audits/{audit_id}",
+    "GET /media/{media_id}"
+   ],
+   "records": 73025,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "Inspection",
+   "status": "live",
+   "step": [
+    1,
+    8
+   ],
+   "type": "insp",
+   "updatedAt": 1790845200000,
+   "updatedBy": "Platform Admin",
+   "url": "https://api.safetyculture.io",
+   "vendor": "SafetyCulture",
+   "ver": "iAuditor API",
+   "write": [
+    "POST /inspections/start",
+    "POST /actions"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790672400000,
+     "ver": "1.3",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Inspection grade",
+    "Repair scope and hours",
+    "Bench test result",
+    "Release to service"
+   ],
+   "c0": 91,
+   "cat": "internal",
+   "cfg": {
+    "delivery": "Webhook",
+    "key": "repair_id",
+    "order": "By source timestamp"
+   },
+   "cfgVer": "1.3",
+   "compl": 91,
+   "conf": 89,
+   "credAt": 1787475600000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "14 min",
+   "freshMin": 14,
+   "id": "repair",
+   "inputs": "Receiving inspection and grade, teardown findings, repair and refurbishment work orders, operations and hours, parts used, bench test results, release to service",
+   "interval": 0,
+   "k0": 89,
+   "lastSync": 1791362760000,
+   "method": "event",
+   "mode": "Event API · Events",
+   "name": "MRO and workshop",
+   "owner": "Repair Centre",
+   "read": [
+    "GET /repair-orders?serial={sn}",
+    "GET /repair-orders/{id}/tasks",
+    "GET /repair-orders/{id}/test-results"
+   ],
+   "records": 20411,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "MRO",
+   "status": "live",
+   "step": [
+    5,
+    8,
+    9
+   ],
+   "type": "repair",
+   "updatedAt": 1790672400000,
+   "updatedBy": "Platform Admin",
+   "url": "https://ebs.northfield.example/webservices/rest/csd",
+   "vendor": "Oracle Depot Repair",
+   "ver": "EBS 12.2.13",
+   "write": [
+    "POST /repair-orders"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "Pending security review",
+   "authority": [
+    "Duty",
+    "Operating hours"
+   ],
+   "c0": 0,
+   "cat": "streaming",
+   "cfg": {
+    "delivery": "Message queue",
+    "key": "device_event_id",
+    "order": "By source timestamp"
+   },
+   "cfgVer": "1.5",
+   "compl": 0,
+   "conf": 0,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "—",
+   "freshMin": null,
+   "id": "iot",
+   "inputs": "Operating hours, duty cycle, vibration and temperature events",
+   "interval": 0,
+   "k0": 0,
+   "lastSync": null,
+   "method": "event",
+   "mode": "Not connected",
+   "name": "Device telemetry",
+   "note": "Integration dependency. Sustainability uses estimated factors and says so; no measured telemetry is inferred.",
+   "owner": "IoT Platform",
+   "read": [],
+   "records": 0,
+   "runs": [],
+   "rw": "—",
+   "short": "Telemetry",
+   "status": "unavailable",
+   "step": [
+    1,
+    9
+   ],
+   "type": "iot",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "",
+   "vendor": "AWS IoT Core",
+   "ver": "Not provisioned",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "API key",
+   "authority": [
+    "Market price"
+   ],
+   "c0": 71,
+   "cat": "external",
+   "cfg": {
+    "pagination": "Offset",
+    "rate": 30,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 71,
+   "conf": 58,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "19 h",
+   "freshMin": 1140,
+   "id": "mkt",
+   "inputs": "Comparable transactions, realised prices, time-to-sale, buyer demand",
+   "interval": 60,
+   "k0": 58,
+   "lastSync": 1791295200000,
+   "method": "api",
+   "mode": "API extractor · Polling · 60 min",
+   "name": "Market pricing",
+   "note": "Feed token expired 6 Oct; pricing falls back to the last fresh comparables and says so on every prediction.",
+   "owner": "Remarketing",
+   "read": [
+    "GET /comparables",
+    "GET /price-index"
+   ],
+   "records": 402118,
+   "runs": [],
+   "rw": "Read",
+   "short": "Market",
+   "status": "stale",
+   "step": [
+    1
+   ],
+   "type": "mkt",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://api.rbauction.example/v2",
+   "vendor": "Ritchie Bros. Market Data",
+   "ver": "Comparables API v2",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "API key",
+   "authority": [
+    "Dealer offer"
+   ],
+   "c0": 82,
+   "cat": "external",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 60,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 82,
+   "conf": 78,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "18 min",
+   "freshMin": 18,
+   "id": "dlr",
+   "inputs": "Dealer offers, listing demand, fees, time-to-sale",
+   "interval": 0,
+   "k0": 78,
+   "lastSync": 1791362520000,
+   "method": "api",
+   "mode": "API extractor · API + events",
+   "name": "Dealer network",
+   "owner": "Remarketing",
+   "read": [
+    "GET /listings",
+    "GET /offers"
+   ],
+   "records": 56780,
+   "runs": [],
+   "rw": "Read",
+   "short": "Dealers",
+   "status": "live",
+   "step": [
+    1
+   ],
+   "type": "dlr",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://api.machinio.com/v1",
+   "vendor": "Machinio",
+   "ver": "Dealer API v1",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "SFTP drop · signed manifest",
+   "authority": [
+    "Vendor certification"
+   ],
+   "c0": 78,
+   "cat": "external",
+   "cfg": {
+    "delivery": "SFTP drop",
+    "format": "CSV",
+    "maxmb": 200,
+    "path": "/outbound/partner-rates.csv"
+   },
+   "cfgVer": "1.5",
+   "compl": 78,
+   "conf": 82,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "2 days",
+   "freshMin": 2880,
+   "id": "rcy",
+   "inputs": "Approvals, material yields, rebates, fees, custody certificates",
+   "interval": 0,
+   "k0": 82,
+   "lastSync": 1791190800000,
+   "method": "file",
+   "mode": "Flat file · CSV import",
+   "name": "Recycler partner",
+   "note": "No supported partner API. Manual import supports evaluation, not live automation.",
+   "owner": "Sustainability",
+   "read": [
+    "IMPORT partner-rates.csv"
+   ],
+   "records": 1204,
+   "runs": [],
+   "rw": "Read (import)",
+   "short": "Recycler",
+   "status": "manual",
+   "step": [
+    1,
+    9
+   ],
+   "type": "rcy",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "/outbound/partner-rates.csv",
+   "vendor": "Sims Lifecycle Services",
+   "ver": "Partner SFTP",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "Bearer token (Delta Sharing profile)",
+   "authority": [
+    "Emissions factor"
+   ],
+   "c0": 86,
+   "cat": "external",
+   "cfg": {
+    "endpoint": "https://sharing.persefoni.example/delta-sharing",
+    "platform": "Databricks",
+    "share": "emission_factors",
+    "table": "factors.cradle_to_gate"
+   },
+   "cfgVer": "1.5",
+   "compl": 86,
+   "conf": 81,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "3 min",
+   "freshMin": 3,
+   "id": "esg",
+   "inputs": "Embodied-carbon factors, emissions factors, footprint methodology",
+   "interval": 0,
+   "k0": 81,
+   "lastSync": 1791363420000,
+   "method": "delta",
+   "mode": "Delta Sharing · API read (live)",
+   "name": "ESG & carbon",
+   "owner": "Sustainability",
+   "read": [
+    "READ factors.cradle_to_gate",
+    "READ footprints.by_asset_class"
+   ],
+   "records": 8830,
+   "runs": [],
+   "rw": "Read",
+   "short": "ESG",
+   "status": "live",
+   "step": [
+    1,
+    9
+   ],
+   "type": "esg",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://sharing.persefoni.example/delta-sharing",
+   "vendor": "Persefoni",
+   "ver": "API v1",
+   "write": []
+  }
+ ],
+ "types": {
+  "bom": {
+   "cat": "internal",
+   "label": "BOM management",
+   "short": "BOM",
+   "target": "Asset & component",
+   "vendors": [
+    "Aras Innovator",
+    "OpenBOM",
+    "SAP Engineering Control Center",
+    "Autodesk Fusion Manage"
+   ]
+  },
+  "crm": {
+   "cat": "internal",
+   "label": "CRM",
+   "short": "CRM",
+   "target": "Demand opportunity",
+   "vendors": [
+    "Salesforce Sales Cloud",
+    "Microsoft Dynamics 365 Sales",
+    "HubSpot CRM",
+    "SAP Sales Cloud"
+   ]
+  },
+  "dlr": {
+   "cat": "external",
+   "label": "Dealer network",
+   "short": "Dealers",
+   "target": "Demand opportunity",
+   "vendors": [
+    "Machinio",
+    "Dealer Spike",
+    "TractorHouse Dealer Feed"
+   ]
+  },
+  "eam": {
+   "cat": "internal",
+   "label": "EAM",
+   "short": "EAM",
+   "target": "Asset & component",
+   "vendors": [
+    "IBM Maximo",
+    "SAP Plant Maintenance",
+    "Infor EAM",
+    "IFS Cloud EAM",
+    "Oracle EAM Cloud"
+   ]
+  },
+  "eng": {
+   "cat": "internal",
+   "label": "Engineering",
+   "short": "Engineering",
+   "target": "Condition & eligibility",
+   "vendors": [
+    "Bentley AssetWise",
+    "Hexagon HxGN EAM Engineering",
+    "Ansys Minerva",
+    "Dassault 3DEXPERIENCE"
+   ]
+  },
+  "erp": {
+   "cat": "internal",
+   "label": "ERP",
+   "short": "ERP",
+   "target": "Demand opportunity",
+   "vendors": [
+    "SAP S/4HANA",
+    "Oracle Fusion Cloud ERP",
+    "Oracle NetSuite",
+    "Microsoft Dynamics 365 Finance",
+    "Infor CloudSuite"
+   ]
+  },
+  "esg": {
+   "cat": "external",
+   "label": "ESG & carbon",
+   "short": "ESG",
+   "target": "Outcome",
+   "vendors": [
+    "Persefoni",
+    "Watershed",
+    "Sphera",
+    "Microsoft Sustainability Manager"
+   ]
+  },
+  "fsm": {
+   "cat": "internal",
+   "label": "FSM",
+   "short": "FSM",
+   "target": "Asset & component",
+   "vendors": [
+    "ServiceNow Field Service Management",
+    "Salesforce Field Service",
+    "Microsoft Dynamics 365 Field Service",
+    "IFS Field Service Management",
+    "ServiceMax"
+   ]
+  },
+  "insp": {
+   "cat": "internal",
+   "label": "Inspection",
+   "short": "Inspection",
+   "target": "Condition & eligibility",
+   "vendors": [
+    "SafetyCulture",
+    "Fluke Connect",
+    "GoCanvas",
+    "Intelex Inspections"
+   ]
+  },
+  "iot": {
+   "cat": "streaming",
+   "label": "Device telemetry",
+   "short": "Telemetry",
+   "target": "Outcome",
+   "vendors": [
+    "AWS IoT Core",
+    "Azure IoT Hub",
+    "PTC ThingWorx",
+    "Siemens Insights Hub"
+   ]
+  },
+  "lease": {
+   "cat": "internal",
+   "label": "Lease management",
+   "short": "Lease",
+   "target": "Demand opportunity",
+   "vendors": [
+    "Oracle Lease and Finance Management",
+    "Odessa LeaseWave",
+    "SAP Contract and Lease Management",
+    "NetSuite Lease Accounting"
+   ]
+  },
+  "mkt": {
+   "cat": "external",
+   "label": "Market pricing",
+   "short": "Market",
+   "target": "Demand opportunity",
+   "vendors": [
+    "Ritchie Bros. Market Data",
+    "Machinery Trader Values",
+    "EquipmentWatch",
+    "IronPlanet Insights"
+   ]
+  },
+  "oms": {
+   "cat": "internal",
+   "label": "Order management",
+   "short": "OMS",
+   "target": "Demand opportunity",
+   "vendors": [
+    "IBM Sterling OMS",
+    "Manhattan Active Omni",
+    "Salesforce Order Management",
+    "Oracle Order Management Cloud"
+   ]
+  },
+  "plm": {
+   "cat": "internal",
+   "label": "PLM",
+   "short": "PLM",
+   "target": "Asset & component",
+   "vendors": [
+    "Siemens Teamcenter",
+    "PTC Windchill",
+    "Dassault ENOVIA",
+    "Arena PLM"
+   ]
+  },
+  "proc": {
+   "cat": "internal",
+   "label": "Procurement",
+   "short": "Procurement",
+   "target": "Demand opportunity",
+   "vendors": [
+    "SAP Ariba",
+    "Coupa",
+    "Jaggaer",
+    "Oracle Procurement Cloud"
+   ]
+  },
+  "qms": {
+   "cat": "internal",
+   "label": "QMS",
+   "short": "QMS",
+   "target": "Condition & eligibility",
+   "vendors": [
+    "MasterControl",
+    "ETQ Reliance",
+    "Veeva Vault QMS",
+    "Intelex"
+   ]
+  },
+  "rcy": {
+   "cat": "external",
+   "label": "Recycler partner",
+   "short": "Recycler",
+   "target": "Outcome",
+   "vendors": [
+    "Sims Lifecycle Services",
+    "ERI Electronics Recycling",
+    "Cascade Asset Management",
+    "Li-Cycle"
+   ]
+  },
+  "repair": {
+   "cat": "internal",
+   "label": "MRO and workshop",
+   "short": "MRO",
+   "target": "Condition & eligibility",
+   "vendors": [
+    "Oracle Depot Repair",
+    "ServiceMax Repair",
+    "RepairShopr",
+    "Fixably"
+   ]
+  },
+  "rl": {
+   "cat": "internal",
+   "label": "Reverse logistics",
+   "short": "Returns",
+   "target": "Asset & component",
+   "vendors": [
+    "Optoro",
+    "Happy Returns",
+    "Narvar Returns",
+    "Blue Yonder Returns"
+   ]
+  },
+  "tms": {
+   "cat": "internal",
+   "label": "Transport management",
+   "short": "TMS",
+   "target": "Outcome",
+   "vendors": [
+    "ShipLane TMS",
+    "Oracle Transportation Management",
+    "Blue Yonder TMS",
+    "SAP Transportation Management"
+   ]
+  },
+  "wms": {
+   "cat": "internal",
+   "label": "WMS",
+   "short": "WMS",
+   "target": "Asset & component",
+   "vendors": [
+    "Manhattan Active Warehouse Management",
+    "SAP Extended Warehouse Management",
+    "Blue Yonder WMS",
+    "Oracle Warehouse Management Cloud",
+    "Körber WMS"
+   ]
+  }
+ }
+}

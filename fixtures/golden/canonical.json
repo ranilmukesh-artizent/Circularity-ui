@@ -1,0 +1,644 @@
+{
+ "mappings": {
+  "bom": [
+   [
+    "Part.item_number",
+    "P-55-ROT-01",
+    "asset.components[0]",
+    "Rotor assembly",
+    "Part name lookup"
+   ],
+   [
+    "Part BOM.quantity",
+    "1",
+    "asset.components[0].qty",
+    "1",
+    "Integer"
+   ],
+   [
+    "Part.state",
+    "Released",
+    "asset.bom_ref.state",
+    "released",
+    "State map"
+   ]
+  ],
+  "crm": [
+   [
+    "Opportunity.StageName",
+    "Proposal",
+    "demand.status",
+    "forecast",
+    "Stage map: Proposal → forecast"
+   ],
+   [
+    "Opportunity.Amount",
+    "2400",
+    "demand.lease_rate",
+    "$2,400 / month",
+    "Currency + period normalised"
+   ],
+   [
+    "Account.Id",
+    "001Hs00003AbCdE",
+    "asset.owner_tenant",
+    "Customer A",
+    "Tenant key lookup"
+   ],
+   [
+    "Opportunity.CloseDate",
+    "31/12/2026",
+    "demand.need_by",
+    "2026-12-31",
+    "Date format"
+   ]
+  ],
+  "dlr": [
+   [
+    "offer_amount",
+    "9,400",
+    "market.dealer_offer",
+    "$9,400",
+    "Currency"
+   ],
+   [
+    "listing_age_days",
+    "12",
+    "market.time_to_sell",
+    "12 days",
+    "Integer"
+   ]
+  ],
+  "eam": [
+   [
+    "ASSETNUM",
+    "MTR-2041",
+    "asset.asset_id",
+    "MTR-2041",
+    "Pass-through; identity key"
+   ],
+   [
+    "CONDITIONCODE",
+    "B+",
+    "condition.grade",
+    "B",
+    "Grade table v3 (B+ → B); source value kept"
+   ],
+   [
+    "RATED_PWR",
+    "55000 W",
+    "asset.config.rated_power",
+    "55 kW",
+    "Unit normalised W → kW"
+   ],
+   [
+    "LASTSERVICEDATE",
+    "2026-03-14T08:20:00+05:30",
+    "condition.service_date",
+    "2026-03-14T02:50:00Z",
+    "Timestamp to UTC"
+   ]
+  ],
+  "eng": [
+   [
+    "RUL_MONTHS",
+    "36",
+    "condition.life_assessment",
+    "36 months",
+    "Months; source & confidence retained"
+   ],
+   [
+    "STANDARD_REF",
+    "IEC 60034-1",
+    "condition.standard",
+    "IEC 60034-1",
+    "Pass-through"
+   ],
+   [
+    "REQUAL_STATUS",
+    "APPROVED",
+    "condition.qualification",
+    "approved",
+    "Status map"
+   ]
+  ],
+  "erp": [
+   [
+    "EKPO-NETPR",
+    "₹10,02,000.00 INR",
+    "demand.purchase_baseline",
+    "$12,000.00 USD",
+    "Currency at 83.5 (rate dated 2026-10-06)"
+   ],
+   [
+    "EKPO-MENGE",
+    "1.000",
+    "demand.qty",
+    "1",
+    "Integer"
+   ],
+   [
+    "EKKO-BSTYP",
+    "F",
+    "demand.status",
+    "confirmed",
+    "Status map: F → confirmed"
+   ],
+   [
+    "EKPO-WERKS",
+    "1030",
+    "demand.location",
+    "Site 3",
+    "Plant code lookup"
+   ]
+  ],
+  "esg": [
+   [
+    "factor_kgco2e",
+    "312.4",
+    "sustainability.embodied_carbon",
+    "312.4 kgCO2e",
+    "Unit kept"
+   ],
+   [
+    "scope",
+    "Cradle-to-gate",
+    "sustainability.boundary",
+    "cradle-to-gate",
+    "Boundary map"
+   ]
+  ],
+  "fsm": [
+   [
+    "wm_order.number",
+    "WO0010382",
+    "asset.work_order_ref",
+    "WO0010382",
+    "Pass-through"
+   ],
+   [
+    "alm_asset.serial_number",
+    "SN-77120-A",
+    "asset.source_refs[]",
+    "FSM:SN-77120-A",
+    "Prefixed with system"
+   ],
+   [
+    "wm_task.state",
+    "3",
+    "asset.availability",
+    "in_service",
+    "State map: 3 → in_service"
+   ],
+   [
+    "wm_task.closed_at",
+    "2026-09-30 14:05:11",
+    "condition.service_date",
+    "2026-09-30T14:05:11Z",
+    "Local time → UTC"
+   ]
+  ],
+  "insp": [
+   [
+    "grade_text",
+    "Grade B",
+    "condition.grade",
+    "B",
+    "Grade table v3"
+   ],
+   [
+    "media_count",
+    "12",
+    "condition.photo_count",
+    "12",
+    "Integer"
+   ],
+   [
+    "audit_id",
+    "audit_a1b2c3",
+    "condition.inspection_ref",
+    "INS-20441",
+    "Reference prefix"
+   ]
+  ],
+  "iot": [],
+  "lease": [
+   [
+    "LEASE_CONTRACT_ID",
+    "LC-004417",
+    "asset.lease_ref",
+    "LC-004417",
+    "Pass-through"
+   ],
+   [
+    "CONTRACT_END_DATE",
+    "2026-12-31",
+    "demand.need_by",
+    "2026-12-31",
+    "ISO date"
+   ],
+   [
+    "LESSEE_NAME",
+    "CUSTOMER_A",
+    "asset.owner_tenant",
+    "Customer A",
+    "Tenant key"
+   ],
+   [
+    "MONTHLY_RENTAL",
+    "2400.00 USD",
+    "demand.lease_rate",
+    "$2,400 / month",
+    "Currency + period normalised"
+   ]
+  ],
+  "mkt": [
+   [
+    "SOLD_PRC",
+    "8.1 L INR",
+    "market.sale_price",
+    "$9,700",
+    "Currency + Lakh unit expanded"
+   ],
+   [
+    "DAYS_LISTED",
+    "17",
+    "market.time_to_sell",
+    "17 days",
+    "Integer"
+   ],
+   [
+    "CONDITION",
+    "VG",
+    "market.grade",
+    "B",
+    "Dealer grade map"
+   ]
+  ],
+  "oms": [
+   [
+    "OrderNo",
+    "SO-48102",
+    "demand.demand_id",
+    "SO-48102",
+    "Pass-through"
+   ],
+   [
+    "PrimeLineNo",
+    "10",
+    "demand.line",
+    "10",
+    "Integer"
+   ],
+   [
+    "ShipToKey",
+    "LOC-CHN-03",
+    "demand.location",
+    "Site 3 · Chennai Foundry",
+    "Location lookup"
+   ],
+   [
+    "ReqDeliveryDate",
+    "2026-10-17T00:00:00+05:30",
+    "demand.need_by",
+    "2026-10-17",
+    "Date to ISO"
+   ]
+  ],
+  "plm": [
+   [
+    "ITEM_ID",
+    "MTR-55-IE3-250M",
+    "asset.configuration",
+    "55 kW · IE3 · 250M",
+    "Config decoded"
+   ],
+   [
+    "ALT_APPROVED",
+    "Y",
+    "route.compatibility",
+    "compatible",
+    "Boolean"
+   ],
+   [
+    "REV",
+    "C",
+    "asset.bom_ref",
+    "BOM-55-C",
+    "Revision prefix"
+   ]
+  ],
+  "proc": [
+   [
+    "SupplierLeadTime",
+    "21 days",
+    "demand.supplier_lead_time",
+    "21 days",
+    "Integer days"
+   ],
+   [
+    "QuotedUnitPrice",
+    "€10,400.00",
+    "demand.purchase_alternative",
+    "$11,300",
+    "Currency at dated rate"
+   ],
+   [
+    "SupplierId",
+    "SUP-88120",
+    "demand.supplier_ref",
+    "SUP-88120",
+    "Pass-through"
+   ]
+  ],
+  "qms": [
+   [
+    "CERT_EXPIRY",
+    "2027-03-01",
+    "condition.certificates[0].expires",
+    "2027-03-01",
+    "ISO date"
+   ],
+   [
+    "REUSE_CLASS",
+    "ALLOWED_CAT2",
+    "condition.policy",
+    "reuse_permitted",
+    "Policy map v3.2"
+   ],
+   [
+    "TEST_RESULT",
+    "PASS",
+    "condition.qualification",
+    "passed",
+    "Result map"
+   ]
+  ],
+  "rcy": [
+   [
+    "VND_CERT",
+    "ISO14001-VA",
+    "vendor.certification",
+    "certified",
+    "Certificate table"
+   ],
+   [
+    "RATE_TNE",
+    "Cu 7.8k",
+    "vendor.material_rate",
+    "Cu $7,800 / t",
+    "Unit + currency"
+   ]
+  ],
+  "repair": [
+   [
+    "repair_cost",
+    "1,800.00 USD",
+    "intervention.cost",
+    "$1,800",
+    "Currency kept in USD"
+   ],
+   [
+    "scope",
+    "Light repair + test",
+    "intervention.process",
+    "light repair + test",
+    "Process map"
+   ],
+   [
+    "result_state",
+    "B",
+    "intervention.predicted_condition",
+    "B",
+    "Grade table v3"
+   ]
+  ],
+  "rl": [
+   [
+    "RMA_ID",
+    "RMA-55820",
+    "asset.return_ref",
+    "RMA-55820",
+    "Pass-through"
+   ],
+   [
+    "DISPOSITION",
+    "REFURB",
+    "asset.disposition",
+    "refurbish",
+    "Disposition map"
+   ],
+   [
+    "RECEIVED_AT",
+    "2026-10-05T10:11:00-04:00",
+    "asset.received_at",
+    "2026-10-05T14:11:00Z",
+    "Timestamp to UTC"
+   ]
+  ],
+  "tms": [
+   [
+    "LaneId",
+    "WH-MAA-02>LOC-CHN-03",
+    "route.leg",
+    "WH-MAA-02 → LOC-CHN-03",
+    "Lane decode"
+   ],
+   [
+    "RateAmt",
+    "3600.00 INR",
+    "route.freight",
+    "$43",
+    "Currency at 83.5 (rate dated 2026-10-06)"
+   ],
+   [
+    "ETA",
+    "2026-10-13T08:36:00+05:30",
+    "route.eta",
+    "2026-10-13T08:36",
+    "Site time kept"
+   ],
+   [
+    "CarrierSCAC",
+    "NLTL",
+    "route.carrier",
+    "Northline 3PL",
+    "Carrier lookup"
+   ]
+  ],
+  "wms": [
+   [
+    "LOC",
+    "WH1-A-04",
+    "asset.location",
+    "Warehouse 1",
+    "Zone collapsed to facility"
+   ],
+   [
+    "MV_TS",
+    "06.10.2026 14:12",
+    "movement.ts",
+    "2026-10-06T08:42:00Z",
+    "Local time → UTC"
+   ],
+   [
+    "QTY_UOM",
+    "20 EA",
+    "asset.qty",
+    "20",
+    "UoM normalised"
+   ],
+   [
+    "RSV_ID",
+    "R-77102",
+    "asset.reservation_ref",
+    "R-77102",
+    "Pass-through"
+   ]
+  ]
+ },
+ "models": [
+  {
+   "fields": [
+    "asset_id",
+    "source_refs[]",
+    "owner_tenant",
+    "parent_asset",
+    "configuration",
+    "bom_ref",
+    "location",
+    "availability"
+   ],
+   "n": "Asset & component",
+   "purpose": "Stable identity across applications, source-system connections, ownership, parent asset, BOM, location and availability.",
+   "sources": [
+    "EAM",
+    "PLM",
+    "WMS",
+    "CRM"
+   ],
+   "v": "2.3"
+  },
+  {
+   "fields": [
+    "inspection_ref",
+    "grade",
+    "life_assessment",
+    "duty_assumptions",
+    "qualification",
+    "certificates[]",
+    "policy_version"
+   ],
+   "n": "Condition & eligibility",
+   "purpose": "Inspection evidence, grade, approved life assessment, qualification, compatibility, certificates and the policy version applied.",
+   "sources": [
+    "MRO",
+    "Inspection",
+    "QMS",
+    "EAM"
+   ],
+   "v": "2.1"
+  },
+  {
+   "fields": [
+    "demand_id",
+    "type",
+    "receiving_asset",
+    "buyer",
+    "spec",
+    "qty",
+    "location",
+    "need_by",
+    "horizon",
+    "status(confirmed|forecast)"
+   ],
+   "n": "Demand opportunity",
+   "purpose": "Demand identity and type, specification, quantity, location, timing, service horizon and confirmed or forecast status.",
+   "sources": [
+    "CRM",
+    "ERP",
+    "EAM",
+    "Markets"
+   ],
+   "v": "1.8"
+  },
+  {
+   "fields": [
+    "process",
+    "predicted_condition",
+    "cost",
+    "duration",
+    "success_p",
+    "capacity",
+    "required_tests[]"
+   ],
+   "n": "Intervention",
+   "purpose": "Approved process, predicted resulting condition, cost, duration, success uncertainty, capacity and required tests.",
+   "sources": [
+    "MRO",
+    "Inspection",
+    "QMS"
+   ],
+   "v": "1.5"
+  },
+  {
+   "fields": [
+    "components[]",
+    "channel",
+    "demand_id",
+    "intervention_ref",
+    "timing",
+    "expected_net",
+    "cost_breakdown",
+    "baseline",
+    "exclusions[]"
+   ],
+   "n": "Route candidate",
+   "purpose": "Asset or component combination, channel, demand, intervention, timing, expected contribution, cost breakdown, baseline and exclusions.",
+   "sources": [
+    "Circularity"
+   ],
+   "v": "2.0"
+  },
+  {
+   "fields": [
+    "decision_id",
+    "route",
+    "allocation",
+    "alternatives[]",
+    "evidence_snapshot",
+    "approval_ref",
+    "model_version",
+    "policy_version",
+    "expires_at"
+   ],
+   "n": "Decision",
+   "purpose": "Selected route and allocation, alternatives, evidence snapshot, approval reference, model and policy versions and expiry.",
+   "sources": [
+    "Circularity"
+   ],
+   "v": "2.2"
+  },
+  {
+   "fields": [
+    "decision_id",
+    "action_taken",
+    "execution_ref",
+    "receipts",
+    "costs",
+    "avoided_spend",
+    "service_results",
+    "environmental_evidence"
+   ],
+   "n": "Outcome",
+   "purpose": "Action actually taken, external system reference, actual receipts and costs, confirmed avoided expenditure, service results and environmental evidence.",
+   "sources": [
+    "ERP",
+    "MRO",
+    "WMS",
+    "Partners"
+   ],
+   "v": "1.6"
+  }
+ ]
+}

@@ -1,0 +1,787 @@
+{
+ "accounts": [
+  {
+   "homeClassic": "product/received?focus=RT-1048",
+   "id": "planner-a",
+   "label": "Planner · Customer A",
+   "role": "Planner",
+   "site": "Warehouse 1",
+   "tenant": "Customer A"
+  },
+  {
+   "id": "planner-b",
+   "label": "Planner · Customer B",
+   "role": "Planner",
+   "site": "Warehouse 2",
+   "tenant": "Customer B"
+  },
+  {
+   "id": "planner-c",
+   "label": "Planner · Customer C",
+   "role": "Planner",
+   "site": "Warehouse 1",
+   "tenant": "Customer C"
+  },
+  {
+   "id": "approver",
+   "label": "Approver",
+   "role": "Approver"
+  },
+  {
+   "id": "engineer",
+   "label": "Engineer",
+   "role": "Engineer",
+   "site": "Repair centre"
+  },
+  {
+   "id": "finance",
+   "label": "Finance",
+   "role": "Finance"
+  },
+  {
+   "id": "developer",
+   "label": "Developer",
+   "role": "Developer"
+  },
+  {
+   "id": "admin",
+   "label": "Admin",
+   "role": "Admin"
+  },
+  {
+   "id": "executive",
+   "label": "Executive",
+   "role": "Executive"
+  },
+  {
+   "id": "wm-1",
+   "label": "Warehouse Manager · Warehouse 1",
+   "role": "Warehouse Manager",
+   "warehouse": "Warehouse 1"
+  },
+  {
+   "id": "wm-2",
+   "label": "Warehouse Manager · Warehouse 2",
+   "role": "Warehouse Manager",
+   "warehouse": "Warehouse 2"
+  }
+ ],
+ "perm_acts": {
+  "ack": [
+   "notifyAck"
+  ],
+  "approve.decisions": [
+   "approve",
+   "confirmApprove",
+   "apRoute",
+   "wfApprove",
+   "declineDecision",
+   "declineDecisionOk"
+  ],
+  "assess": [
+   "simResult"
+  ],
+  "comment": [
+   "cmAdd"
+  ],
+  "confirm": [
+   "confirmOutcome"
+  ],
+  "execSim": [
+   "advance",
+   "replay"
+  ],
+  "manageAccess": [
+   "delegToggle"
+  ],
+  "manageIdentity": [
+   "idpSync",
+   "idpMap",
+   "idpSrc",
+   "idpRemove",
+   "oooSave",
+   "oooDel"
+  ],
+  "manageIntegrations": [
+   "srcAdd",
+   "srcSync",
+   "srcSyncAll",
+   "srcDel",
+   "srcDelOk",
+   "srcDelType",
+   "sdSave",
+   "sdRevert",
+   "sdTest",
+   "sdRotate",
+   "sdRotateOk",
+   "sdOpAdd",
+   "sdOpDel",
+   "sdMapAdd",
+   "sdMapDel",
+   "reconnect",
+   "sdF",
+   "sdC",
+   "sdOp",
+   "sdMap",
+   "tgAdd",
+   "tgAddOk",
+   "tgEdit",
+   "tgEditOk",
+   "tgDel",
+   "tgFkNew",
+   "tgFkOk",
+   "tgFkDel",
+   "tgFkF",
+   "tgFkWhy",
+   "taN",
+   "resolveConf",
+   "escConf",
+   "csvSample",
+   "csvValidate",
+   "csvCommit",
+   "csvText",
+   "csvFile",
+   "gotoImport",
+   "frSrcPause",
+   "frDisc",
+   "frDiscOk",
+   "frDiscT",
+   "frConnectStart",
+   "frCxNext",
+   "frCxAllow",
+   "frCxTest",
+   "frCxSuggest",
+   "frCxAll",
+   "frCxDone",
+   "frReauth",
+   "frSdTest",
+   "frNewInt",
+   "frNewBlank",
+   "frSmMap"
+  ],
+  "manageWorkflows": [
+   "wfNew",
+   "wfNewOk",
+   "wfSave",
+   "wfPublish",
+   "wfToggle",
+   "wfRunNow",
+   "wfDup",
+   "wfDelAsk",
+   "wfDelOk",
+   "wfDel",
+   "wfDelEdge",
+   "wfDiscard",
+   "wfReset",
+   "wfRun",
+   "wfFail",
+   "wfName",
+   "wfOwn",
+   "wfMin",
+   "wfTrig",
+   "nwF",
+   "nwName",
+   "wfConnTo",
+   "frWfBulk",
+   "frWfTpl",
+   "frTplUse",
+   "frReproc",
+   "frFixApply",
+   "frAutoLayout",
+   "frUndo",
+   "frRedo",
+   "frWfSet"
+  ],
+  "notify": [
+   "notifyOpen",
+   "notifyOk"
+  ],
+  "proposeMcp": [
+   "mcpPropose",
+   "mcpProposeOk"
+  ],
+  "reeval": [
+   "reeval"
+  ],
+  "request": [
+   "reqEvidence"
+  ],
+  "requestTenant": [
+   "tenantReq",
+   "tenantReqOk"
+  ],
+  "scenario": [
+   "tiSave",
+   "tiLoad",
+   "tiDelSc",
+   "tiRecalc"
+  ],
+  "submit": [
+   "tiSubmit"
+  ],
+  "useTools": [
+   "pgRun",
+   "tryTool",
+   "pgReset",
+   "pgTool",
+   "pgAgent",
+   "pgTenant",
+   "pgInput"
+  ]
+ },
+ "perm_alias": {
+  "approve": "approve.decisions"
+ },
+ "role_policy": {
+  "Admin": {
+   "all": true,
+   "asTabs": [
+    "overview",
+    "lifecycle",
+    "condition",
+    "product",
+    "economic",
+    "eligibility",
+    "data",
+    "related"
+   ],
+   "desc": "Every permission on every page and tenant, plus accounts, Approver delegations and access requests.",
+   "landing": "home",
+   "landingClassic": "command",
+   "pages": {
+    "access": [
+     "accounts",
+     "identity",
+     "delegations",
+     "requests",
+     "autonomy",
+     "limits",
+     "agentsx",
+     "metrics"
+    ],
+    "alerts": [],
+    "analytics": [
+     "waterfall",
+     "pipeline",
+     "mix",
+     "predicted",
+     "models",
+     "pool",
+     "overrides",
+     "eng",
+     "sustain"
+    ],
+    "audit": [
+     "log",
+     "gaps"
+    ],
+    "checks": [],
+    "command": [
+     "kpis",
+     "exceptions",
+     "aome",
+     "handed",
+     "approvals",
+     "outcomes",
+     "charts",
+     "actions",
+     "signals",
+     "value",
+     "health"
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures"
+    ],
+    "integration": [
+     "studio",
+     "map",
+     "tables",
+     "models",
+     "events",
+     "conflicts",
+     "import",
+     "overview",
+     "monitor"
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "playground",
+     "perms",
+     "calls",
+     "client",
+     "proposals"
+    ],
+    "orchestration": [
+     "flow",
+     "run",
+     "agents",
+     "caserun"
+    ],
+    "product": [
+     "received",
+     "expected",
+     "pools",
+     "asset",
+     "case"
+    ],
+    "reports": [],
+    "settings": [],
+    "tasks": []
+   },
+   "perms": [
+    "approve.decisions",
+    "submit",
+    "request",
+    "assess",
+    "confirm",
+    "reeval",
+    "execSim",
+    "scenario",
+    "manageIntegrations",
+    "manageWorkflows",
+    "useTools",
+    "proposeMcp",
+    "requestTenant",
+    "comment",
+    "manageAccess",
+    "notify",
+    "ack",
+    "manageIdentity",
+    "approve.mcp",
+    "approve.tenantAccess"
+   ]
+  },
+  "Approver": {
+   "asTabs": {
+    "$ref": "$.role_policy.Admin.asTabs"
+   },
+   "desc": "Approves or declines what Admin delegates: decisions and overrides, MCP server proposals and tenant access.",
+   "landing": "home",
+   "landingClassic": "command",
+   "pages": {
+    "alerts": [],
+    "analytics": {
+     "$ref": "$.role_policy.Admin.pages.analytics"
+    },
+    "audit": [
+     "log",
+     "gaps"
+    ],
+    "checks": [],
+    "command": [
+     "kpis",
+     "aome",
+     "approvals",
+     "charts",
+     "actions",
+     "signals",
+     "value"
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures"
+    ],
+    "integration": [
+     "events",
+     "conflicts"
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "perms",
+     "calls",
+     "client",
+     "proposals"
+    ],
+    "orchestration": {
+     "$ref": "$.role_policy.Admin.pages.orchestration"
+    },
+    "product": [
+     "received",
+     "expected",
+     "pools",
+     "asset",
+     "case"
+    ],
+    "reports": [],
+    "settings": [],
+    "tasks": []
+   },
+   "perms": [
+    "approve.decisions",
+    "approve.mcp",
+    "approve.tenantAccess",
+    "request",
+    "reeval",
+    "execSim",
+    "scenario",
+    "ack"
+   ]
+  },
+  "Developer": {
+   "asTabs": [],
+   "desc": "Connects sources, builds workflows, proposes MCP servers and governs agent tools.",
+   "landing": "home",
+   "landingClassic": "integration/map",
+   "pages": {
+    "alerts": [],
+    "audit": [
+     "log",
+     "gaps"
+    ],
+    "checks": [],
+    "command": [
+     "kpis",
+     "aome",
+     "health"
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures"
+    ],
+    "integration": {
+     "$ref": "$.role_policy.Admin.pages.integration"
+    },
+    "mcp": {
+     "$ref": "$.role_policy.Admin.pages.mcp"
+    },
+    "orchestration": {
+     "$ref": "$.role_policy.Admin.pages.orchestration"
+    },
+    "reports": [],
+    "settings": [],
+    "tasks": []
+   },
+   "perms": [
+    "manageIntegrations",
+    "manageWorkflows",
+    "useTools",
+    "proposeMcp",
+    "comment",
+    "ack"
+   ]
+  },
+  "Engineer": {
+   "asTabs": [
+    "overview",
+    "lifecycle",
+    "condition",
+    "product",
+    "eligibility",
+    "data",
+    "related"
+   ],
+   "desc": "Inspects assets, records assessments and test results, and owns technical eligibility.",
+   "landing": "home",
+   "landingClassic": "product/asset",
+   "pages": {
+    "alerts": [],
+    "analytics": [
+     "eng",
+     "sustain"
+    ],
+    "audit": [
+     "log",
+     "gaps"
+    ],
+    "checks": [],
+    "command": [
+     "kpis",
+     "aome",
+     "handed",
+     "charts",
+     "actions",
+     "signals"
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures"
+    ],
+    "integration": [
+     "map",
+     "tables",
+     "models",
+     "overview",
+     "monitor"
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "perms",
+     "calls",
+     "client",
+     "proposals"
+    ],
+    "orchestration": {
+     "$ref": "$.role_policy.Admin.pages.orchestration"
+    },
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case"
+    ],
+    "reports": [],
+    "settings": [],
+    "tasks": []
+   },
+   "perms": [
+    "request",
+    "assess",
+    "execSim",
+    "ack"
+   ]
+  },
+  "Executive": {
+   "asTabs": {
+    "$ref": "$.role_policy.Admin.asTabs"
+   },
+   "desc": "Senior view: value realised, portfolio health and ranked exceptions. Read-only, plus Notify the owner.",
+   "landing": "home",
+   "landingClassic": "command",
+   "pages": {
+    "alerts": [],
+    "analytics": {
+     "$ref": "$.role_policy.Admin.pages.analytics"
+    },
+    "audit": [
+     "log",
+     "gaps"
+    ],
+    "checks": [],
+    "command": [
+     "kpis",
+     "exceptions",
+     "charts",
+     "value"
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures"
+    ],
+    "orchestration": {
+     "$ref": "$.role_policy.Admin.pages.orchestration"
+    },
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case"
+    ],
+    "reports": [],
+    "settings": [],
+    "tasks": []
+   },
+   "perms": [
+    "notify"
+   ]
+  },
+  "Finance": {
+   "asTabs": [
+    "overview",
+    "lifecycle",
+    "economic",
+    "data",
+    "related"
+   ],
+   "desc": "Confirms outcomes and tracks recovery, avoided spend and variance. Reads and comments on the audit log and Source map.",
+   "landing": "home",
+   "landingClassic": "analytics",
+   "pages": {
+    "alerts": [],
+    "analytics": {
+     "$ref": "$.role_policy.Admin.pages.analytics"
+    },
+    "audit": [
+     "log",
+     "gaps"
+    ],
+    "checks": [],
+    "command": [
+     "kpis",
+     "aome",
+     "outcomes",
+     "charts",
+     "value"
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures"
+    ],
+    "integration": [
+     "map",
+     "overview",
+     "monitor"
+    ],
+    "orchestration": {
+     "$ref": "$.role_policy.Admin.pages.orchestration"
+    },
+    "product": [
+     "received",
+     "expected",
+     "pools",
+     "asset",
+     "case"
+    ],
+    "reports": [],
+    "settings": [],
+    "tasks": []
+   },
+   "perms": [
+    "confirm",
+    "comment",
+    "ack"
+   ]
+  },
+  "Planner": {
+   "asTabs": {
+    "$ref": "$.role_policy.Admin.asTabs"
+   },
+   "desc": "Prepares cases in their own tenant, requests evidence and submits decisions for review.",
+   "landing": "home",
+   "landingClassic": "product/received",
+   "pages": {
+    "alerts": [],
+    "analytics": [
+     "waterfall",
+     "pipeline",
+     "mix",
+     "predicted",
+     "models",
+     "pool",
+     "overrides"
+    ],
+    "audit": [
+     "log",
+     "gaps"
+    ],
+    "checks": [],
+    "command": [
+     "kpis",
+     "aome",
+     "handed",
+     "charts",
+     "actions",
+     "signals"
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures"
+    ],
+    "orchestration": {
+     "$ref": "$.role_policy.Admin.pages.orchestration"
+    },
+    "product": [
+     "received",
+     "expected",
+     "pools",
+     "asset",
+     "case"
+    ],
+    "reports": [],
+    "settings": [],
+    "tasks": []
+   },
+   "perms": [
+    "submit",
+    "request",
+    "reeval",
+    "execSim",
+    "scenario",
+    "requestTenant",
+    "ack"
+   ],
+   "tenantScoped": true
+  },
+  "Warehouse Manager": {
+   "asTabs": [
+    "overview",
+    "lifecycle",
+    "condition",
+    "data",
+    "related"
+   ],
+   "desc": "Runs one warehouse: cases at that location, inbound expected returns, capacity and items awaiting handoff outcomes. Requests evidence and acknowledges notifications; WMS stays the system of record.",
+   "landing": "home",
+   "landingClassic": "command",
+   "pages": {
+    "alerts": [],
+    "audit": [
+     "log"
+    ],
+    "checks": [],
+    "command": [
+     "kpis",
+     "exceptions",
+     "aome",
+     "handed",
+     "charts",
+     "signals"
+    ],
+    "home": [
+     "brief",
+     "needs",
+     "activity",
+     "figures"
+    ],
+    "orchestration": {
+     "$ref": "$.role_policy.Admin.pages.orchestration"
+    },
+    "product": [
+     "received",
+     "expected",
+     "asset",
+     "case"
+    ],
+    "reports": [],
+    "settings": [],
+    "tasks": []
+   },
+   "perms": [
+    "request",
+    "ack"
+   ],
+   "warehouseScoped": true
+  }
+ },
+ "sections": {
+  "$ref": "$.role_policy.Admin.pages"
+ },
+ "signin_domain": "northfield.example",
+ "signin_ids": {
+  "admin": "admin",
+  "approver": "approver",
+  "developer": "developer",
+  "engineer": "engineer",
+  "exec": "executive",
+  "executive": "executive",
+  "finance": "finance",
+  "ops": "planner-a",
+  "planner": "planner-a",
+  "planner.a": "planner-a",
+  "planner.b": "planner-b",
+  "planner.c": "planner-c",
+  "user": "planner-a",
+  "warehouse": "wm-1",
+  "warehouse.1": "wm-1",
+  "warehouse.2": "wm-2",
+  "warehouse1": "wm-1",
+  "warehouse2": "wm-2"
+ }
+}
