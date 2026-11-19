@@ -1,0 +1,335 @@
+# Backend: step-by-step build
+
+**For:** the engineers building the backend of the full-stack POC.
+**Plan and decisions:** [PLAN_FULLSTACK_POC.md](PLAN_FULLSTACK_POC.md) (D1: only SAP S/4HANA and SAP Ariba are mocked as SAP; every other source keeps its vendor as a generic mock).
+**Branch:** `feature/fullstack-poc`. **Run it:** [apps/README.md](../apps/README.md).
+
+## Where we start
+
+| Part | State |
+|---|---|
+| Frontend (`apps/web`) | Every screen ported to React. It talks to an **in-browser mock backend**: the demo's own script, behind the typed facade in `apps/web/src/api/`. Every change goes through `invoke(actionId, input)` |
+| `di-api` / `di-worker` (`apps/api`) | Skeleton: health checks, Alembic, Postgres job queue with retries, tests |
+| `source-sim` (`apps/source-sim`) | Registry of the 21 systems, one empty Postgres schema each |
+| Stack | Docker Compose: Postgres (`di`, `sources`), source-sim, api, worker, web. Runs in WSL |
+
+## How the steps fit together
+
+```
+B1 golden data ─┬─▶ B2–B5 source-sim (mock systems, filled by the seed)
+                │
+                └─▶ B6–B8 di foundations ─▶ B9 connectors and sync ─▶ B10–B12 decision core and actions
+                                                                            │
+                                         B13 outbound and reconcile ◀───────┘
+                                                    │
+                     B14 read APIs ─▶ B15 live updates ─▶ B16 MCP ─▶ B17 frontend switch-over ─▶ B18 hardening
+```
+
+**The one rule:** the `di` database is filled only through the connectors, over HTTP, from source-sim. Nothing seeds `di` directly.
+
+**How we know it is right:** the demo is the specification. Its script runs headless in Node (the React app already does this), so **B1** dumps its numbers as golden files. Every later step has a parity test against those files. A step is done only when its parity test passes.
+
+**Each step:** one pull request; tests and lint green (`pytest`, `ruff`); the stack still starts with `docker compose up`; the "Done when" line is true.
+
+---
+
+## B1. Golden data from the demo
+
+**Goal:** a frozen, machine-readable copy of what the demo computes, to test the Python backend against.
+
+1. `apps/web/scripts/dump-golden.mjs`: run the engine headless (as `engine.ts` does) and write JSON to `fixtures/golden/`:
+   - `world.json`: tenants, sites, facilities, classes, routes, gates, model versions, `AS_OF`.
+   - `cases.json`: the 128 live cases with evidence, routes (terms, gates, P10/P50/P90, rank), recommendation, stage, execution detail.
+   - `decisions.json`: the ~1,400 closed decisions (`ROWS`).
+   - `sources.json`, `canonical.json`, `mappings.json`, `events.json`, `conflicts.json`, `tools.json`, `agents.json`.
+   - `policy.json`: `ROLE_POLICY`, `ACCOUNTS`, `PERM_ACTS`, `RB_SECS`.
+   - `figures.json`: headline numbers per role (Command Center key figures, Analytics totals, nav badges) and the result of the demo's `runInvariants()`.
+   - `actions.json`: for a scripted RT-1048 journey (submit → approve → acknowledge → outcome → confirm), the output of each `invoke()` call.
+2. A README in `fixtures/golden/` that says how to regenerate the files and when (only when `index.html` changes on purpose).
+
+**Done when:** `node apps/web/scripts/dump-golden.mjs` writes every file, the demo's invariants all pass, and the output is identical on two runs (the seed is deterministic).
+
+## B2. Seed generator in Python
+
+**Goal:** source-sim can build the same synthetic world as the demo, without Node.
+
+1. `apps/source-sim/sim/seed/`: port the seeded random generator (`mulberry32`, `hashId`, `rnd`, `pick`, `rint`) and the world generator (demo lines ~1596–2546): hand-written hero cases, seeded fill, closed decisions, execution detail.
+2. The output is a Python object model (dataclasses), not tables yet.
+3. Parity test: compare with `fixtures/golden/world.json`, `cases.json` and `decisions.json`, field by field. Floats are compared to the cent.
+
+**Done when:** the parity test passes for all 128 cases and 1,400 decisions.
+
+## B3. SAP S/4HANA mock
+
+**Goal:** an S/4HANA-shaped system on Postgres that answers like the real OData services.
+
+1. **Tables** (schema `s4`, SAP names and key columns): `MARA`, `MAKT`, `MARC`, `MARD`, `MBEW`, `EKKO`, `EKPO`, `RKPF`, `RESB`, `MKPF`, `MSEG`, `ACDOCA`, `T001W`, each with `LastChangeDateTime`. Created by source-sim's own migrations.
+2. **Seed loader:** write the B2 world into these tables as S/4 would hold it (materials per asset class, stock per plant, purchase baseline per demand, plant codes per site, e.g. `1030` → Site 3).
+3. **OData v2 read services** under `/sap/opu/odata/sap/`: `API_PRODUCT_SRV/A_Product`, `API_MATERIAL_STOCK_SRV/A_MatlStkInAcctMod`, `API_PURCHASEORDER_PROCESS_SRV/A_PurchaseOrder` (+ `to_PurchaseOrderItem`).
+   - Query options: `$filter` (eq, ne, gt, ge, lt, le, and, or, `substringof`), `$select`, `$top`, `$skip`, `$orderby`, `$expand`, `$inlinecount=allpages`, `$format=json`.
+   - Response shape `{"d":{"results":[…],"__count":"…"}}`, with `__metadata`.
+   - Delta: `$filter=LastChangeDateTime gt datetimeoffset'…'`.
+   - A minimal `$metadata` document per service.
+4. **Auth:** Basic auth, and an OAuth 2.0 client-credentials token endpoint. Users and clients come from config.
+5. **Writes:** `GET` with `x-csrf-token: Fetch` returns a token and cookie; a `POST` without a valid token returns 403. Write services: `API_RESERVATION_DOCUMENT_SRV/A_ReservationDocumentHeader`, `API_MATERIAL_DOCUMENT_SRV/A_MaterialDocumentHeader`. They create rows and return SAP document numbers.
+6. **Errors:** the SAP error body `{"error":{"code":"…","message":{"lang":"en","value":"…"}}}`, with the right status codes.
+
+**Done when:** contract tests call each service the way a real S/4 client would (CSRF fetch, then post, then read back), and the values read back match the golden data.
+
+## B4. SAP Ariba mock
+
+1. Schema `ariba`: purchase orders, sourcing events and bids, suppliers. Seed from B2.
+2. REST JSON (not OData) at the paths in the demo's `SOURCES.proc`: `/procurement-reporting-details/v2/prod/views/PurchaseOrders`, `/sourcing-event/v2/prod/events`, `/supplier-data/v4/prod/suppliers`.
+3. `apiKey` header plus an OAuth bearer token; `PageToken` paging; a realistic 30-minute data cadence (data changes only on the simulated clock).
+
+**Done when:** contract tests page through every endpoint, and the totals match the golden data.
+
+## B5. Generic vendor mocks
+
+**Goal:** the other 17 systems, without writing 17 servers.
+
+1. **A declarative spec per system** (`sim/specs/<vendor>.yaml`): its resources, the Postgres table behind each, the read and write paths (the same as `SOURCES[*].read` and `write` in the demo), the paging style (offset, cursor, page token), the auth style (API key, OAuth, mTLS stand-in), and the field names in the vendor's style.
+2. **One generic router** serves every spec: list, get, create and patch, plus paging, filtering and auth.
+3. **Specs and seed loaders** for: Salesforce, Oracle Lease, IBM Sterling OMS, IBM Maximo, ServiceNow FSM, Siemens Teamcenter, Aras, MasterControl, Bentley AssetWise, Manhattan WMS, ShipLane TMS, Optoro, SafetyCulture, Oracle Depot Repair, Ritchie Bros., Machinio and Persefoni.
+4. **Kept as in the demo:**
+   - Sims recycler: signed CSV files written to a folder, imported by DI through Manual import.
+   - AWS IoT: not provisioned, so it returns 503.
+
+**Done when:** every system in `sim/registry.py` answers its demo paths, and a generic contract test runs against every spec.
+
+## B6. Events, faults and the simulated clock
+
+1. **Outbox:** every write in source-sim writes an outbox row. A sender pushes it as a CloudEvents webhook to subscribed URLs (S/4 event names such as `sap.s4.beh.reservation.v1.Reservation.Created.v1`; vendor-style names for the generic mocks). Delivery is retried until acknowledged.
+2. **Simulated clock:** `/_sim/clock` starts at the demo's `AS_OF` (7 Oct 2026 09:00) and can advance. Work orders, shipments and repairs complete on that clock and emit their events.
+3. **Fault injection:** `/_sim/faults` can add latency, return 5xx, expire a token or make a feed stale, per system. The seed starts Ritchie Bros. with an expired token, as in the demo.
+4. **Reset:** `/_sim/reset` rebuilds every schema from the seed.
+
+**Done when:** a test advances the clock, receives the completion webhooks in order, and a fault makes the next call fail as configured.
+
+## B7. di foundations: schema and auth
+
+1. **Schema** (Alembic):
+   - **Reference data:** tenants, sites, facilities, asset classes, routes, gates, model versions.
+   - **Accounts and access:** accounts, roles, delegations, access requests.
+   - **Source registry:** sources, credentials (references only, no secrets in the database), sync runs.
+   - **Canonical store:** the seven models from the demo's `CANON` (Asset & component, Condition & eligibility, Demand opportunity, Intervention, Route candidate, Decision, Outcome), versioned.
+   - **Provenance:** for every canonical field, its source, request, time fetched and confidence.
+   - **Cases and execution:** cases, decisions, approvals, instructions, outcomes.
+   - **Journal and logs:** an append-only journal (the demo's `AF.journal`), audit log and comments, event stream, conflicts.
+2. **Auth:** `POST /api/auth/login` takes the demo's sign-in IDs (`exec`, `ops`, `planner.b@northfield.example` …; any non-empty password, as in the demo) and returns a JWT with the account, role, tenant and warehouse. `GET /api/auth/me`. Planned later, not built now: OIDC (Keycloak as the stand-in).
+3. **Policy:** port `ROLE_POLICY`, `PERM_ACTS`, `can()`, `canPage()`, `canRoute()`, `allowedTenants()` and the warehouse lock to `di/policy.py`. Every endpoint goes through one dependency that enforces them.
+4. **Parity test:** for every account in `policy.json`, `can`, `canPage` and the tenant and warehouse checks give the demo's answers.
+
+**Done when:** the policy parity test passes, and an endpoint test shows a Planner for Customer B getting 403 on RT-1048.
+
+## B8. Action endpoint (the contract the frontend already uses)
+
+**Goal:** `POST /api/actions/{id}` behaves exactly like the demo's `invoke(id, input)`.
+
+1. **Registry:** in `di/actions/`, one module per area, each action declaring `id`, `risk` (read, draft, act, commit, system), `perm`, `scope`, input schema and handler. The ids are the 76 from the demo (list them with `actionCatalog()` in the frontend).
+2. **The pipeline, in the demo's order:**
+   1. Validate the input.
+   2. Check that someone is signed in.
+   3. Reject `system`-only actions from people.
+   4. Check the permission.
+   5. Check case scope (tenant and warehouse).
+   6. Apply the agent gate.
+   7. Apply the action's own guard.
+   8. Apply policy limits.
+   9. Check idempotency.
+   10. Run the handler.
+   11. Write to the journal.
+   12. Emit an event.
+3. **Response shape:** `{ok:true, output, key, action, seq}` or `{ok:false, error:{code, message}}`, with the demo's error codes (`validation_error`, `out_of_scope`, `tenant_boundary`, `approval_required`, `limit_exceeded`, `not_found`, `conflict`, `duplicate`).
+4. **Undo and reset:** undo marks journal entries as undone and rebuilds the affected state. Reset for a case or for everything is admin and demo only.
+
+**Done when:** a test runs every action with bad input and with the wrong role and gets the demo's error codes. The handlers themselves arrive in B10–B13.
+
+## B9. Connectors and sync
+
+**Goal:** `di` fills itself from source-sim.
+
+1. **Connector base class:** auth (Basic, OAuth, API key), paging, delta cursor, retries with backoff, rate limits, and a fetch log entry per call (feeds Audit › Fetch log).
+2. **Adapters:**
+   - S/4HANA (OData client with CSRF handling)
+   - Ariba
+   - one adapter for the generic mocks, driven by the same specs
+   - CSV import for Sims
+3. **Mapping:** source records become canonical models using the demo's `MAPPINGS` (unit and currency conversion with dated rates, status maps, tenant and plant lookups). Each mapped field records its provenance.
+4. **Sync jobs** on each source's interval, plus webhook intake for event sources. Record freshness, completeness and failed records per run (they feed the Monitor tab).
+5. **Conflicts:** when two sources disagree on a field, name the source with authority (`SOURCES[*].authority`), open a conflict and hold the routes that depend on it.
+6. **Connection Fabric actions:** `source.sync`, `source.reconnect`, `credentials.rotate`, `source.delete`, `source.update`, `conflict.resolve`, `conflict.escalate`, `import.commit`, `tables.update`.
+
+**Done when:**
+- A clean `docker compose up` followed by "sync all" fills `di` with the 128 cases, each with full evidence and provenance.
+- Source freshness and completeness match `sources.json`.
+- Making a feed stale in source-sim shows up as stale in `di`.
+
+## B10. Decision engine
+
+1. Port as pure functions in `di/engine/`, each with unit tests:
+   - route building and normalisation (`mkRoute`)
+   - the six gates and their failure reasons (`fail`)
+   - ranking and recommendation (`rankRoutes`)
+   - forecasts with P10/P50/P90
+   - the pool optimiser (exact search)
+   - the cost trace (`EX_*`)
+   - what-if scenarios (`case.whatIf`)
+2. **Models:** the demo's predictions are computed, not trained. Port the formulas as they are, behind a `Predictor` interface, so that a trained model (XGBoost or LightGBM, as named in the demo) can replace one formula at a time later.
+3. **Parity test:** for all 128 cases, the routes, gates, nets, ranges and recommendation match `cases.json`.
+
+**Done when:** that parity test passes.
+
+## B11. Case lifecycle and read actions
+
+1. **State machine:** the ten stages, from *Lease ends* to *Reconcile and learn*. Every transition writes the journal, audit and an event.
+2. **Read actions:**
+   - `cases.list`, `case.get`, `case.evidence`, `case.routes`, `case.whatIf`, `case.trace`, `asset.compare`
+   - `demand.find`, `pool.optimize`
+   - `inbox.get`, `receiving.plan`, `access.lookup`, `kpi.explain`
+3. **Parity test:** each read action, run as each role, matches the demo (fixture: B1 `actions.json`, extended with read calls).
+
+**Done when:** that parity test passes.
+
+## B12. Decisions and approvals
+
+1. **Decision actions:**
+   - `decision.prepare`, `decision.submit`
+   - `decision.approve` and `decision.override`: reason at least 15 characters, "I reviewed" required, approval limits, escalation to Admin above the limit
+   - `decision.decline`: reason at least 10 characters
+2. **Case work actions:**
+   - `evidence.request`, `evidence.recordResult`
+   - `case.reevaluate`
+   - `scenario.save`, `scenario.delete`
+3. **Collaboration actions:**
+   - `notify.send`, `notify.acknowledge`
+   - `comment.add`, `escalation.send`
+4. **Access actions:**
+   - `access.requestTenant`, `access.decideRequest`, `access.setDelegation`
+   - the identity actions (`access.syncDirectory`, `access.mapIdentity`, `access.removeUser`, `access.setRoleSource`, `access.setOutOfOffice`, `access.clearOutOfOffice`)
+   - `mcp.propose`
+5. **Parity test:** the RT-1048 journey in `actions.json` gives the same outputs, step by step.
+
+**Done when:** that parity test passes.
+
+## B13. Outbound instructions and reconciliation
+
+1. **Instructions:** an approved decision becomes one job per instruction. Each job makes an idempotent write to the system that owns the work, with an idempotency key per instruction:
+   - S/4 reservation
+   - Maximo work order
+   - Depot Repair order
+   - Manhattan reservation or transfer
+   - ShipLane load
+   - Sterling allocation
+2. **Acknowledgement:** the source-sim webhook (`adapter.acknowledge`, system only), and `instruction.resend`.
+3. **Outcomes:** completion events and S/4 cost postings (`ACDOCA`) come back as the Outcome model. `outcome.confirm` (Finance) and `reconcile_outcome` link actuals to the decision and update predicted-vs-actual and the model-version error.
+4. **Escalations:** time limits per step on the simulated clock (the demo's `exClock`), surfaced as alerts.
+
+**Done when:**
+- RT-1048 runs from approval to *Reconciled* on synced data, driven only by source-sim events and the simulated clock.
+- This is the **first milestone** in the plan.
+
+## B14. Read APIs for the screens
+
+**Goal:** everything the pages show comes from the API.
+
+1. `GET` endpoints, grouped like the frontend facade files (`src/api/*.ts`):
+   - **home:** briefing, tasks, alerts, reports, checks
+   - **command:** key figures, exceptions, handed off, inbox, charts
+   - **product:** returned assets, expected returns, asset intelligence
+   - **case:** stages, overview, full analysis
+   - **analytics:** waterfall, pipeline, route mix, predicted vs actual, models, overrides, engineering, sustainability
+   - **audit:** fetch log, gaps, comments
+   - **orchestration:** case runs, trace
+   - **integration:** catalogue, map, tables, models, events, conflicts, monitor
+   - **workflows**
+   - **mcp:** tools, agents, matrix, calls, proposals
+   - **access**
+2. Each returns the data the page needs, already scoped to the account. Formatting stays in the frontend.
+3. **Data checks:** port the demo's `runInvariants()` as `GET /api/checks` (the Data Checks page). It must pass on a fresh sync.
+
+**Done when:** for each endpoint, a parity test against `figures.json` (and the per-area fixtures added to B1 as needed) passes for every role.
+
+## B15. Live updates
+
+1. **Streams:** `GET /api/stream` (Server-Sent Events) sends journal events, sync progress, workflow runs, alerts and run-board steps for the signed-in account's scope.
+2. **Workflows:** workflow runs and the test-run animation become worker jobs that report progress over this stream (`workflow.*` actions).
+
+**Done when:** two browser sessions see each other's approvals within a second.
+
+## B16. MCP server
+
+1. **Server:** an MCP server inside `di-api` exposing the ten tools in the demo's `TOOLS`. Each tool calls the same action handlers.
+2. **Agents:** the scopes per agent (`AGENTS`) and per tenant (permission matrix) are enforced.
+3. **Hard rules (`HARD_RULES`) enforced in code:**
+   - an agent cannot waive a failed gate
+   - write tools stop at a human approval
+   - tenant consent is checked on every call
+4. **Logging:** every call goes to the call log, including held and denied calls.
+
+**Done when:** an MCP client test can read evidence, is refused `send_instruction` without an approval reference, and sees the call in the call log.
+
+## B17. Frontend switch-over
+
+**Goal:** the React app uses the real backend, one area at a time, with no page rewrites.
+
+1. **Switch:** `VITE_BACKEND=engine|api`. With `api`, the functions in `apps/web/src/api/*.ts` call `fetch` (TanStack Query) instead of the in-browser engine; `invoke()` posts to `/api/actions/{id}`; `useBackend()` refreshes on SSE events.
+2. **Areas, one PR each, in this order:**
+   1. session and policy
+   2. product
+   3. case
+   4. command
+   5. home
+   6. analytics
+   7. audit
+   8. orchestration
+   9. integration
+   10. workflows
+   11. mcp
+   12. access
+3. **When an area moves:** its legacy-HTML shortcuts (the case detail tabs and Full analysis) are rebuilt as React, because the engine is no longer there to produce the HTML.
+4. **When every area has moved:** delete `src/engine/`, `scripts/extract-engine.mjs` and the generated files.
+
+**Done when:** `VITE_BACKEND=api` is the default, the engine is deleted, and the demo script (`docs/demo/DEMO_SCRIPT.md`) runs end to end.
+
+## B18. Hardening
+
+1. **Browser tests:** rewrite the demo's three headless suites (208 role checks, 110 guided-flow checks, 88 demo-path checks) in Playwright, run them against the Compose stack, and add them to CI.
+2. **API tests:** contract tests for every action and read endpoint, generated from the registry.
+3. **Demo reset:** `POST /api/admin/reset` (Admin) resets source-sim and resyncs.
+4. **Run book:** start, reset, inject a fault, add a source.
+5. **Security review before anyone outside the team uses it:**
+   - auth
+   - secrets handling
+   - CORS
+   - rate limits
+   - the Legal note in the README (no named vendor is really connected)
+
+**Done when:** CI runs every test against the stack, and the security review findings are closed.
+
+---
+
+## Order and rough size
+
+| Step | Size | Can run in parallel with |
+|---|---|---|
+| B1 golden data | 1–2 days | — |
+| B2 seed in Python | 3–4 days | B7 |
+| B3 S/4HANA mock | 4–5 days | B4, B5 |
+| B4 Ariba mock | 2 days | B3, B5 |
+| B5 generic mocks | 4–5 days | B3, B4 |
+| B6 events, faults, clock | 2–3 days | — |
+| B7 di schema and auth | 3–4 days | B2–B5 |
+| B8 action endpoint | 2–3 days | B9 |
+| B9 connectors and sync | 6–8 days | B8 |
+| B10 decision engine | 4–5 days | B9 |
+| B11 case lifecycle, read actions | 3–4 days | — |
+| B12 decisions and approvals | 3–4 days | — |
+| B13 outbound and reconcile | 5–6 days | — |
+| B14 read APIs | 6–8 days | B15, B16 |
+| B15 live updates | 2–3 days | B14 |
+| B16 MCP server | 3–4 days | B14 |
+| B17 frontend switch-over | 6–8 days | follows B14 area by area |
+| B18 hardening | 4–5 days | — |
+
+Roughly 10–12 weeks for 2–3 engineers, in line with the plan. The first milestone, RT-1048 end to end on synced data, lands at the end of B13.
