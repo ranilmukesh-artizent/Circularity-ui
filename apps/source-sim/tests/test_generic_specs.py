@@ -97,10 +97,3 @@ def test_contract(client, spec: Spec):
                 patched = client.patch(f"{spec.base_path}{r.path}/{new_id}", headers=h, json={"note": "patched"})
                 assert patched.status_code == 200 and patched.json()["note"] == "patched"
     assert client.get(spec.base_path + first.path, headers=h, params={"bogus": "1"}).status_code == 400
-
-
-def test_rt_1048_in_manhattan(client):
-    spec = next(s for s in SPECS if s.source_id == "wms")
-    h = headers(client, spec)
-    inv = client.get(spec.base_path + "/inventory", headers=h, params={"returnReference": "RT-1048"}).json()["data"]
-    assert len(inv) == 1 and inv[0]["itemId"] == "MTR-2041" and inv[0]["facilityId"] == "WH01" and inv[0]["onHandQuantity"] == 1

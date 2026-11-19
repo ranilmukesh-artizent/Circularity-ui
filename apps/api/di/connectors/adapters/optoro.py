@@ -1,113 +1,170 @@
-"""Optoro (rl): return receipts, disposition decisions, inbound shipments, carrier status (SOURCES.rl).
+"""Optoro (rl): return authorisations (RMAs), receipts, dispositions, inbound shipments (ASNs) (the demo's SOURCES.rl),
+against Optoro's API (source-sim's sim/vendors/optoro).
 
-API key (X-Api-Key); page paging (?page=&per_page=, body {data, next_page, total_count}); ?updated_since= for delta
-reads. Optoro reports times in the returns centre's local time (-04:00); they are stored in UTC.
+Auth: OAuth 2.0 client credentials at the auth host (/auth/oauth/token), bearer token. Lists use Optoro's list
+conventions: ?per_page=&offset=<cursor> following next_page.offset to the end, ?updated_at=<cursor> for deltas
+(records changed after it); the cursor is the newest updated_at read.
 
 Facts (rl has authority over return_ref, received_at, disposition)
-    asset.<SKU>   return_ref (RMA_ID), received_at, case_ref (CLIENT_REF), return_id, return_receipt_status, return_reason_code,
-                  receiving_facility, origin_site (returns)
-                  disposition (RESTOCK → restock, REFURB → refurbish …), disposition_reason, disposition_status,
-                  disposition_final (dispositions)
-                  inbound_shipment_ref, inbound_load, inbound_carrier, inbound_tracking, inbound_delivered_at,
-                  inbound_freight (USD), carrier_status (shipments)
-                  return_authorization_ref, return_authorized_at, replacement_order (return authorisations)
-The demo's mapping (MAPPINGS.rl): RMA_ID → asset.return_ref "Pass-through"; DISPOSITION REFURB → refurbish
-"Disposition map"; RECEIVED_AT -04:00 → UTC "Timestamp to UTC". The seed gives RT-1048 RMA-56509, received
-2026-10-03T15:28:00-04:00 and RESTOCK, not the demo's RMA-55820 / 2026-10-05T10:11 / REFURB.
+    asset.<sku>   return_ref, return_authorization_ref (rma_identifier), return_authorized_at (created_at),
+                  case_ref (secondary_identifier), replacement_order (exchange_order_identifier),
+                  return_receipt_status (receiving_status), return_reason_code (return_reason)          (RMAs)
+                  received_at, return_id (OptiTurn LP), receiving_facility, origin_site, case_ref       (receipts)
+                  disposition (rts → restock, refurbish → refurbish, recycle → recycle, client_liquidation /
+                  b2b / d2c / outlets → liquidate ...), disposition_status, disposition_final  (disposition updates
+                  are proposals; a final disposition makes them final)
+                  inbound_shipment_ref (asn_number), inbound_load (shipment_identifier), inbound_carrier,
+                  inbound_tracking, inbound_delivered_at, inbound_freight (USD), carrier_status          (ASNs)
+The demo's mapping (MAPPINGS.rl): RMA_ID → asset.return_ref "Pass-through" (Optoro's field: rma_identifier);
+DISPOSITION REFURB → refurbish "Disposition map" (Optoro's field: to_disposition, channel refurbish);
+RECEIVED_AT -04:00 → UTC "Timestamp to UTC" (the receipt's received_at). The seed gives RT-1048 RMA-56509,
+received 2026-10-03T15:28:00-04:00 and rts (restock).
 """
+
+from collections.abc import Iterator
+from datetime import UTC, datetime
 
 from di.canonical.store import Fact
 from di.connectors.base import Adapter, Record, Resource
-from di.connectors.generic import generic_pages, source_clock, utc
-from di.connectors.http import ApiKey, SourceClient
+from di.connectors.generic import utc
+from di.connectors.http import OAuthClientCredentials, SourceClient
 
+PER_PAGE = 100
 DISPOSITION = {
-    "RESTOCK": "restock",
-    "REFURB": "refurbish",
-    "RECYCLE": "recycle",
-    "LIQUIDATE": "liquidate",
-    "RETURN_TO_VENDOR": "return_to_vendor",
-    "PENDING_INSPECTION": "pending_inspection",
+    "rts": "restock",
+    "rts_drop_ship": "restock",
+    "refurbish": "refurbish",
+    "recycle": "recycle",
+    "client_liquidation": "liquidate",
+    "b2b": "liquidate",
+    "d2c": "liquidate",
+    "outlets": "liquidate",
+    "rtv": "return_to_vendor",
+    "donate": "donate",
+    "destroy": "dispose",
+    "dispose": "dispose",
+    "needs_testing": "pending_inspection",
 }
-RESOURCES = (
-    ("returns", "/returns", "RETURN_ID"),
-    ("dispositions", "/dispositions", "DISPOSITION_ID"),
-    ("shipments", "/shipments", "SHIPMENT_ID"),
-    ("return_authorizations", "/return-authorizations", "RA_ID"),
+RESOURCES = (  # name, path, list key, id field
+    ("rmas", "/returns/rmas", "rmas", "rma_identifier"),
+    ("receipts", "/inventory/inventory_receipts", "inventory_receipts", "unit_identifier"),
+    ("dispositions", "/returns/dispositions", "dispositions", "id"),
+    ("final_dispositions", "/returns/final_dispositions", "final_dispositions", "id"),
+    ("asns", "/asn/asns", "asns", "asn_number"),
 )
+
+
+def cursor(v: str | None) -> str | None:
+    """Optoro's 2026-10-03T19:28:00.000Z → ISO with +00:00 (the cursor form)."""
+    return datetime.fromisoformat(v.replace("Z", "+00:00")).astimezone(UTC).isoformat() if v else None
 
 
 class OptoroAdapter(Adapter):
     source_id = "rl"
-    base_path = "/optoro/v1"
+    base_path = "/optoro"
 
     def auth(self):
-        return ApiKey("X-Api-Key", "rl-demo-key")
-
-    def __init__(self):
-        self.sku_of_return: dict[str, str] = {}  # RETURN_ID → SKU (shipments name their return, not the SKU)
+        return OAuthClientCredentials("/auth/oauth/token", "di-connector", "rl-demo-secret", form=True)
 
     def resources(self):
-        return [Resource(name, self.reader(name, path, id_field)) for name, path, id_field in RESOURCES]
+        return [Resource(name, self.reader(path, key, id_field), True) for name, path, key, id_field in RESOURCES]
 
-    def reader(self, name: str, path: str, id_field: str):
-        def read(client: SourceClient, since):
-            stamp = source_clock(client)
-            for doc, url in generic_pages(
-                client, path, since, items_key="data", next_key="next_page", next_param="page", size_param="per_page"
-            ):
-                if name == "returns" and doc.get("SKU"):
-                    self.sku_of_return[doc["RETURN_ID"]] = doc["SKU"]
-                elif name == "shipments" and doc.get("RETURN_ID") and doc["RETURN_ID"] not in self.sku_of_return:
-                    ret = client.get_json(f"/returns/{doc['RETURN_ID']}")
-                    if ret.get("SKU"):
-                        self.sku_of_return[doc["RETURN_ID"]] = ret["SKU"]
-                yield Record(name, str(doc[id_field]), doc, url, stamp)
+    def pages(self, client: SourceClient, path: str, key: str, since: str | None) -> Iterator[tuple[dict, str]]:
+        params: dict = {"per_page": PER_PAGE}
+        if since:
+            params["updated_at"] = since
+        while True:
+            r = client.request("GET", path, params=params)
+            body = r.json()
+            rows = body.get(key) or []
+            client.note_records(len(rows))
+            for row in rows:
+                yield row, str(r.request.url)
+            nxt = body.get("next_page")
+            if not nxt or not rows:
+                return
+            params = params | {"offset": nxt["offset"]}
+
+    def reader(self, path: str, key: str, id_field: str):
+        name = next(n for n, p, _, _ in RESOURCES if p == path)
+
+        def read(client: SourceClient, since: str | None):
+            for doc, url in self.pages(client, path, key, since):
+                yield Record(name, str(doc[id_field]), doc, url, cursor(doc.get("updated_at")))
 
         return read
 
+    # ------------------------------------------------------------- mapping
     def map(self, record: Record) -> list[Fact]:
         p = record.payload
-        key = p.get("SKU") or self.sku_of_return.get(p.get("RETURN_ID") or "")
         out: list[Fact] = []
 
-        def fact(field, value, sf, transform, sv=None):
-            if value is not None:
-                out.append(Fact("asset", key, field, value, sf, p.get(sf) if sv is None else sv, transform))
+        def fact(key, field, value, sf, sv, transform="Pass-through"):
+            if key and value is not None:
+                out.append(Fact("asset", key, field, value, sf, sv, transform))
 
-        if not key:
-            return []
-        if record.resource == "returns":
-            fact("return_ref", p.get("RMA_ID"), "RMA_ID", "Pass-through")
-            fact("received_at", utc(p.get("RECEIVED_AT")), "RECEIVED_AT", "Timestamp to UTC")
-            fact("case_ref", p.get("CLIENT_REF"), "CLIENT_REF", "Pass-through")
-            fact("return_id", p.get("RETURN_ID"), "RETURN_ID", "Pass-through")
-            fact("return_receipt_status", p.get("STATUS"), "STATUS", "Pass-through")
-            fact("return_reason_code", p.get("RETURN_REASON"), "RETURN_REASON", "Pass-through")
-            fact("receiving_facility", p.get("RECEIVING_FACILITY"), "RECEIVING_FACILITY", "Pass-through")
-            fact("origin_site", p.get("ORIGIN_SITE"), "ORIGIN_SITE", "Pass-through")
-        elif record.resource == "dispositions":
-            d = p.get("DISPOSITION")
-            fact("disposition", DISPOSITION.get(d, (d or "").lower() or None), "DISPOSITION", "Disposition map")
-            fact("disposition_reason", p.get("DISPOSITION_REASON"), "DISPOSITION_REASON", "Pass-through")
-            fact("disposition_status", p.get("STATUS"), "STATUS", "Pass-through")
-            fact("disposition_final", p.get("FINAL"), "FINAL", "Boolean")
-        elif record.resource == "shipments":
-            fact("inbound_shipment_ref", p.get("SHIPMENT_ID"), "SHIPMENT_ID", "Pass-through")
-            fact("inbound_load", p.get("TMS_LOAD_ID"), "TMS_LOAD_ID", "Pass-through")
-            fact("inbound_carrier", p.get("CARRIER"), "CARRIER", "Pass-through")
-            fact("inbound_tracking", p.get("TRACKING_NO"), "TRACKING_NO", "Pass-through")
-            fact("inbound_delivered_at", utc(p.get("DELIVERED_AT")), "DELIVERED_AT", "Timestamp to UTC")
-            if p.get("FREIGHT_USD") is not None:
-                inr = p.get("FREIGHT_INR")
-                sv = f"{p['FREIGHT_USD']:.2f} USD" + (f" ({inr:.2f} INR)" if inr is not None else "")
-                fact("inbound_freight", float(p["FREIGHT_USD"]), "FREIGHT_USD", "Pass-through (USD)", sv)
-            fact("carrier_status", p.get("CARRIER_STATUS"), "CARRIER_STATUS", "Pass-through")
-        elif record.resource == "return_authorizations":
-            fact("return_authorization_ref", p.get("RA_ID"), "RA_ID", "Pass-through")
-            fact("return_authorized_at", utc(p.get("AUTHORIZED_AT")), "AUTHORIZED_AT", "Timestamp to UTC")
-            fact("replacement_order", p.get("REPLACEMENT_ORDER"), "REPLACEMENT_ORDER", "Pass-through")
-            fact("case_ref", p.get("CLIENT_REF"), "CLIENT_REF", "Pass-through")
+        r = record.resource
+        if r == "rmas":
+            rid = p.get("rma_identifier")
+            for it in p.get("items") or []:
+                k = it.get("sku")
+                fact(k, "return_ref", rid, "rma_identifier", rid)
+                fact(k, "return_authorization_ref", rid, "rma_identifier", rid)
+                fact(k, "return_authorized_at", utc(p.get("created_at")), "created_at", p.get("created_at"), "Timestamp to UTC")
+                fact(k, "case_ref", it.get("secondary_identifier"), "items.secondary_identifier", it.get("secondary_identifier"))
+                ex = it.get("exchange_order_identifier")
+                fact(k, "replacement_order", ex, "items.exchange_order_identifier", ex)
+                fact(k, "return_receipt_status", it.get("receiving_status"), "items.receiving_status", it.get("receiving_status"))
+                fact(k, "return_reason_code", it.get("return_reason"), "items.return_reason", it.get("return_reason"))
+        elif r == "receipts":
+            k = p.get("sku")
+            fact(k, "received_at", utc(p.get("received_at")), "received_at", p.get("received_at"), "Timestamp to UTC")
+            fact(k, "return_id", p.get("unit_identifier"), "unit_identifier", p.get("unit_identifier"))
+            to = p.get("to") or {}
+            fac = to.get("original_identifier") or (str(to["identifier"]) if to.get("identifier") is not None else None)
+            fact(k, "receiving_facility", fac, "to.original_identifier", fac)
+            site = (p.get("from") or {}).get("name")
+            fact(k, "origin_site", site, "from.name", site)
+            ref = (p.get("reference") or {}).get("alternate_identifier")
+            fact(k, "case_ref", ref, "reference.alternate_identifier", ref)
+        elif r == "dispositions":
+            k = p.get("to_sku") or p.get("sku")
+            d = p.get("to_disposition")
+            fact(k, "disposition", DISPOSITION.get(d, d), "to_disposition", d, "Disposition map")
+            status = "ON_HOLD" if d == "needs_testing" else "PROPOSED"
+            fact(k, "disposition_status", status, "to_disposition", d, "Disposition update → proposal")
+            fact(k, "disposition_final", False, "to_disposition", d, "Disposition update → not final")
+        elif r == "final_dispositions":
+            k = p.get("sku")
+            d = p.get("disposition")
+            fact(k, "disposition", DISPOSITION.get(d, d), "disposition", d, "Disposition map")
+            fact(k, "disposition_status", "FINAL", "disposition", d, "Final disposition")
+            fact(k, "disposition_final", True, "disposition", d, "Final disposition")
+        elif r == "asns":
+            for carton in p.get("cartons") or []:
+                for det in carton.get("details") or []:
+                    k = det.get("sku")
+                    fact(k, "inbound_shipment_ref", p.get("asn_number"), "asn_number", p.get("asn_number"))
+                    fact(k, "inbound_load", p.get("shipment_identifier"), "shipment_identifier", p.get("shipment_identifier"))
+                    fact(k, "inbound_carrier", p.get("carrier"), "carrier", p.get("carrier"))
+                    fact(k, "inbound_tracking", p.get("tracking_number"), "tracking_number", p.get("tracking_number"))
+                    fact(
+                        k,
+                        "inbound_delivered_at",
+                        utc(p.get("delivered_at")),
+                        "delivered_at",
+                        p.get("delivered_at"),
+                        "Timestamp to UTC",
+                    )
+                    fr = p.get("freight") or {}
+                    if fr.get("amount_cents") is not None and fr.get("currency", "USD") == "USD":
+                        usd = fr["amount_cents"] / 100
+                        sv = f"{usd:.2f} USD"
+                        if fr.get("local_amount_cents") is not None:
+                            sv += f" ({fr['local_amount_cents'] / 100:.2f} {fr.get('local_currency') or ''})".replace(" )", ")")
+                        fact(k, "inbound_freight", usd, "freight.amount_cents", sv, "Pass-through (USD)")
+                    st = p.get("status")
+                    fact(k, "carrier_status", st.upper() if st else None, "status", st, "Status (upper case)")
         return out
 
 

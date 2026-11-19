@@ -201,6 +201,17 @@ Only SafetyCulture (RT-1048's inspection comes from Depot Repair) stays generic.
 
 **Done when:** each mock has contract tests that call it as the real client would, its adapter's tests pass against it, and the mock's docstring lists the documentation it follows and its assumptions.
 
+**Status: done (19 Nov 2026).** All 13 systems are full vendor mocks in `apps/source-sim/sim/vendors/` (`otm`, `oracle_lease`, `depot_repair`, `manhattan`, `optoro`, `teamcenter`, `aras`, `assetwise`, `mastercontrol`, `persefoni`, `ritchie`, `machinio`, `sims`), each with contract tests. Each adapter in `apps/api/di/connectors/adapters/` is rewritten against its mock, with its own tests.
+- `sim/generic/specs/` now holds only SafetyCulture; the generic specs and tests of the 13 systems are deleted.
+- ShipLane is gone: `tms` is Oracle Transportation Management (`adapters/otm.py`).
+- **Checked together:** source-sim 189 tests and api 236 tests pass; `/health` reports 20 mocks and none failed; a full sync of all 20 systems reads every resource with no failed records.
+
+**Known limits, noted by the mocks for later steps:**
+- Fetch-log entries for the Sims SFTP pull use status 0 for success (there is no HTTP status); a `SourceClient` hook for non-HTTP fetches would be cleaner.
+- Teamcenter delta reads have one-second granularity, like the vendor's `lastModifiedDate`.
+- AssetWise certificate expiry is seen only on a full read, not a delta.
+- `/_sim/reset` clears scheduled work after a mock's reset, so a mock cannot schedule work as part of its reset.
+
 ## B6. Events, faults and the simulated clock
 
 1. **Outbox:** every write in source-sim writes an outbox row. A sender pushes it as a CloudEvents webhook to subscribed URLs (S/4 event names such as `sap.s4.beh.reservation.v1.Reservation.Created.v1`; vendor-style names for the generic mocks). Delivery is retried until acknowledged.
@@ -299,10 +310,12 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 5. **Conflicts:** when two sources disagree on a field, name the source with authority (`SOURCES[*].authority`), open a conflict and hold the routes that depend on it.
 6. **Connection Fabric actions:** `source.sync`, `source.reconnect`, `credentials.rotate`, `source.delete`, `source.update`, `conflict.resolve`, `conflict.escalate`, `import.commit`, `tables.update`.
 
-**Status (19 Nov 2026): connectors done; the full-sync check is still to run.** All 20 systems have an adapter in `apps/api/di/connectors/adapters/`:
+**Status: done (19 Nov 2026).** All 20 systems have an adapter in `apps/api/di/connectors/adapters/`:
 - S/4 and Ariba
-- the four full mocks: Salesforce, Sterling, ServiceNow, Maximo
-- the generic mocks, sharing `di/connectors/generic.py`
+- the full vendor mocks of B5 and B5b
+- SafetyCulture, the one generic mock, using `di/connectors/generic.py`
+
+**Full sync:** after a reset, `scripts/full_sync.py` syncs all 20 systems with no failed records (about 55,000 facts).
 
 **Tests:** 38 connector tests run against the live mocks. Each adapter checks RT-1048's facts and the demo's mapping examples, delta reads, and a write picked up by a delta sync.
 

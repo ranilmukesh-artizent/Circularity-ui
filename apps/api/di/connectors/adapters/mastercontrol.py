@@ -1,15 +1,20 @@
-"""MasterControl (qms): controlled documents, certificates, test criteria (the demo's SOURCES.qms). Read only.
+"""MasterControl Quality Excellence (qms): controlled documents, certificates, test criteria (the demo's SOURCES.qms).
+Read only. Written against source-sim's full MasterControl mock (apps/source-sim/sim/vendors/mastercontrol).
 
-OAuth client credentials, pageNumber/pageSize paging, `?updated_since=` deltas (see oracle_lease.GenericAdapter).
-- certificates: one record per asset holding all of its certificates (a delta re-reads the whole set of an asset
-  with a change). Delta.
-- policies: one record per asset class joining its reuse policy, other controlled documents and test criteria. Small
-  reference lists, read in full (delta=False).
+OAuth 2.0 client credentials (POST /mc/api/oauth2/token, client in HTTP Basic); lists page with ?limit= / ?cursor=
+(body {"data", "paging": {"nextCursor"}}), deltas with ?modifiedSince= against each record's lastModifiedDate.
+- certificates: one record per asset holding all of its certificates (dataFields.ASSET_ID). A delta re-reads the whole
+  set of an asset with a change. The cursor is the newest lastModifiedDate; MasterControl moves it when a certificate
+  expires, so an expiry arrives as a change.
+- policies: one record per asset class joining its Effective reuse policy revision (only Effective revisions are
+  policy: drafts, pending and superseded revisions are ignored), other Effective controlled documents and the test
+  criteria. Small reference lists, read in full (delta=False).
 
 Facts (qms has authority over certificates and policy)
     condition.<ASSET_ID>     certificates (list: ref, type, issued, expires, certified_life_months, result, status,
-                             basis), certificate_expiry, cert_ref, certified_life_months, qualification (passed /
-                             failed / requalified), requalified_on, policy, policy_ref, policy_version
+                             basis), certificate_expiry, certificate_status (active / expired / revoked), cert_ref,
+                             certified_life_months, qualification (passed / failed / requalified), requalified_on,
+                             policy, policy_ref, policy_version
     condition.class:<cls>    policy, policy_ref, policy_version, policy_title, standard, required_tests, procedures
 Policy map (v<revision> of the class policy): ALLOWED_CAT1/2 → reuse_permitted, ALLOWED_CAT3 →
 reuse_with_requalification, RESTRICTED_CAT4 → restricted.
@@ -17,9 +22,14 @@ The demo's mapping: CERT_EXPIRY 2027-03-01 → condition.certificates[0].expires
 condition.policy reuse_permitted (Policy map v3.2); TEST_RESULT PASS → condition.qualification passed (Result map).
 """
 
+from collections.abc import Iterator
+
+import httpx
+
 from di.canonical.store import Fact
-from di.connectors.base import Record, Resource
-from di.connectors.generic import GenericAdapter, keep
+from di.connectors.base import Adapter, Record, Resource
+from di.connectors.generic import keep
+from di.connectors.http import OAuthClientCredentials, SourceClient
 
 POLICY = {
     "ALLOWED_CAT1": "reuse_permitted",
@@ -29,152 +39,199 @@ POLICY = {
 }
 RESULT = {"PASS": "passed", "FAIL": "failed", "PENDING": "pending"}
 CERT_ORDER = {"LIFE_CERTIFICATION": 0, "REQUALIFICATION": 1, "DATA_ERASURE": 2}
+LIMIT = 1000
 
 
-class MasterControlAdapter(GenericAdapter):
+class MasterControlAdapter(Adapter):
     source_id = "qms"
     base_path = "/mastercontrol/mc/api"
-    items_key, next_key, next_param, size_param, page_size = "results", "nextPage", "pageNumber", "pageSize", 200
+
+    def auth(self):
+        return OAuthClientCredentials("/oauth2/token", "circularity-di", "circularity-demo-mastercontrol-secret")
 
     def resources(self):
-        return [
-            Resource("policies", self.read_policies, delta=False),
-            Resource(
-                "certificates",
-                lambda c, s: self.grouped(c, "certificates", "/v2/certificates", "ASSET_ID", s, extra=self._policies),
-            ),
-        ]
+        return [Resource("policies", self.read_policies, delta=False), Resource("certificates", self.read_certificates)]
 
-    def _policies(self, client) -> dict:
-        """The policy document of each class, by document number (the certificates name theirs)."""
-        if getattr(client, "_qms_policies", None) is None:
-            docs = self.read_all(client, "/v2/controlled-documents", DOCUMENT_TYPE="POLICY")
-            client._qms_policies = {d["DOCUMENT_NUMBER"]: d for d in docs}
-        return {"policies": client._qms_policies}
+    # ------------------------------------------------------------- reading
+    def pages(self, client: SourceClient, path: str, **params) -> Iterator[tuple[dict, str]]:
+        cursor = None
+        while True:
+            q = {**params, "limit": str(LIMIT)} | ({"cursor": cursor} if cursor else {})
+            body = client.get_json(path, params=q)
+            rows = body["data"]
+            client.note_records(len(rows))
+            url = str(httpx.URL(client.url(path), params=q))
+            for row in rows:
+                yield row, url
+            cursor = (body.get("paging") or {}).get("nextCursor")
+            if not cursor or not rows:
+                return
 
-    def read_policies(self, client, since):
-        docs = self.read_all(client, "/v2/controlled-documents")
+    def read_all(self, client: SourceClient, path: str, **params) -> list[dict]:
+        return [row for row, _ in self.pages(client, path, **params)]
+
+    def _effective_policies(self, client: SourceClient) -> dict[str, dict]:
+        """The Effective revision of each controlled document, by document number (certificates name theirs)."""
+        if getattr(client, "_qms_effective", None) is None:
+            docs = self.read_all(client, "/v2/controlled-documents", status="Effective")
+            client._qms_effective = {d["documentNumber"]: d for d in docs}
+        return client._qms_effective
+
+    def read_policies(self, client: SourceClient, since: str | None) -> Iterator[Record]:
+        docs = list(self._effective_policies(client).values())
         tests = self.read_all(client, "/v2/test-criteria")
-        url = client.url("/v2/controlled-documents")
-        for cls in sorted({d["ASSET_CLASS"] for d in docs if d.get("ASSET_CLASS")}):
-            mine = [d for d in docs if d.get("ASSET_CLASS") == cls]
-            policy = next((d for d in mine if d.get("REUSE_CLASS")), None)
+        url = str(httpx.URL(client.url("/v2/controlled-documents"), params={"status": "Effective"}))
+        classes = sorted({d["dataFields"].get("ASSET_CLASS") for d in docs if d["dataFields"].get("ASSET_CLASS")})
+        for cls in classes:
+            mine = [d for d in docs if d["dataFields"].get("ASSET_CLASS") == cls]
+            policy = next((d for d in mine if d["infoCardType"] == "Policy" and d["dataFields"].get("REUSE_CLASS")), None)
             payload = {
-                "ASSET_CLASS": cls,
+                "assetClass": cls,
                 "policy": policy,
                 "documents": [d for d in mine if d is not policy],
-                "tests": [t for t in tests if t.get("ASSET_CLASS") == cls],
+                "tests": [x for x in tests if x.get("assetClass") == cls],
             }
-            yield Record("policies", cls, payload, url)
+            changed = max([d["lastModifiedDate"] for d in mine] + [x["lastModifiedDate"] for x in payload["tests"]])
+            yield Record("policies", cls, payload, url, changed)
 
+    def read_certificates(self, client: SourceClient, since: str | None) -> Iterator[Record]:
+        groups: dict[str, list[dict]] = {}
+        urls: dict[str, str] = {}
+        for row, url in self.pages(client, "/v2/certificates", **({"modifiedSince": since} if since else {})):
+            asset = row["dataFields"].get("ASSET_ID")
+            if asset:
+                groups.setdefault(asset, []).append(row)
+                urls.setdefault(asset, url)
+        policies = self._effective_policies(client) if groups else {}
+        for asset in sorted(groups):
+            rows, url = groups[asset], urls[asset]
+            if since:  # the whole set of the asset, not only what changed
+                rows = self.read_all(client, "/v2/certificates", assetId=asset)
+                url = str(httpx.URL(client.url("/v2/certificates"), params={"assetId": asset}))
+            changed = max(r["lastModifiedDate"] for r in rows)
+            yield Record("certificates", asset, {"assetId": asset, "items": rows, "policies": policies}, url, changed)
+
+    # ------------------------------------------------------------- mapping
     def map(self, record: Record) -> list[Fact]:
         if record.resource == "policies":
             return keep(self._class_policy(record.payload))
         return keep(self._certificates(record.payload))
 
     def _class_policy(self, p: dict) -> list[Fact]:
-        key = f"class:{p['ASSET_CLASS']}"
-        pol = p.get("policy") or {}
+        key = f"class:{p['assetClass']}"
+        pol = p.get("policy")
         tests = [
             {
-                "ref": t["TEST_ID"],
-                "name": t["TEST_NAME"],
-                "method": t.get("METHOD"),
-                "acceptance": t.get("ACCEPTANCE_CRITERIA"),
-                "routes": t.get("MANDATORY_FOR_ROUTES") or [],
+                "ref": x["testId"],
+                "name": x["testName"],
+                "method": x.get("method"),
+                "acceptance": x.get("acceptanceCriteria"),
+                "routes": x.get("mandatoryForRoutes") or [],
             }
-            for t in p["tests"]
+            for x in p["tests"]
         ]
         facts = [
-            Fact("condition", key, "required_tests", tests, "TEST_ID", [t["TEST_ID"] for t in p["tests"]], "Test criteria"),
+            Fact("condition", key, "required_tests", tests, "testId", [x["testId"] for x in p["tests"]], "Test criteria"),
             Fact(
                 "condition",
                 key,
                 "procedures",
-                [{"ref": d["DOCUMENT_NUMBER"], "title": d["TITLE"], "standard": d.get("STANDARD_REF")} for d in p["documents"]],
-                "DOCUMENT_NUMBER",
-                [d["DOCUMENT_NUMBER"] for d in p["documents"]],
+                [
+                    {"ref": d["documentNumber"], "title": d["title"], "standard": d["dataFields"].get("STANDARD_REF")}
+                    for d in p["documents"]
+                ],
+                "documentNumber",
+                [d["documentNumber"] for d in p["documents"]],
                 "Pass-through",
             ),
         ]
         if pol:
-            rc = pol["REUSE_CLASS"]
+            rc, rev, f = pol["dataFields"]["REUSE_CLASS"], pol["revision"], pol["dataFields"]
             facts += [
-                Fact("condition", key, "policy", POLICY.get(rc, rc.lower()), "REUSE_CLASS", rc, f"Policy map v{pol['REVISION']}"),
+                Fact("condition", key, "policy", POLICY.get(rc, rc.lower()), "REUSE_CLASS", rc, f"Policy map v{rev}"),
                 Fact(
-                    "condition",
-                    key,
-                    "policy_ref",
-                    pol["DOCUMENT_NUMBER"],
-                    "DOCUMENT_NUMBER",
-                    pol["DOCUMENT_NUMBER"],
-                    "Pass-through",
+                    "condition", key, "policy_ref", pol["documentNumber"], "documentNumber", pol["documentNumber"], "Pass-through"
                 ),
-                Fact("condition", key, "policy_version", pol["REVISION"], "REVISION", pol["REVISION"], "Pass-through"),
-                Fact("condition", key, "policy_title", pol.get("TITLE"), "TITLE", pol.get("TITLE"), "Pass-through"),
-                Fact(
-                    "condition", key, "standard", pol.get("STANDARD_REF"), "STANDARD_REF", pol.get("STANDARD_REF"), "Pass-through"
-                ),
+                Fact("condition", key, "policy_version", rev, "revision", rev, "Pass-through (Effective revision)"),
+                Fact("condition", key, "policy_title", pol.get("title"), "title", pol.get("title"), "Pass-through"),
+                Fact("condition", key, "standard", f.get("STANDARD_REF"), "STANDARD_REF", f.get("STANDARD_REF"), "Pass-through"),
             ]
         return facts
 
     def _certificates(self, p: dict) -> list[Fact]:
-        key = p["ASSET_ID"]
-        certs = sorted(p["items"], key=lambda c: (CERT_ORDER.get(c.get("CERT_TYPE"), 9), c.get("RECORD_ID")))
+        key = p["assetId"]
+        certs = sorted(
+            p["items"],
+            key=lambda c: (c["status"] != "Active", CERT_ORDER.get(c["certificateType"], 9), c["recordId"]),
+        )
         if not certs:
             return []
-        listed = [
-            {
-                "ref": c["CERT_NUMBER"],
-                "type": (c.get("CERT_TYPE") or "").lower(),
-                "issued": c.get("ISSUE_DATE"),
-                "expires": c.get("CERT_EXPIRY"),
-                "certified_life_months": c.get("CERTIFIED_LIFE_MONTHS"),
-                "result": RESULT.get(c.get("TEST_RESULT") or "", (c.get("TEST_RESULT") or "").lower() or None),
-                "status": (c.get("STATUS") or "").lower() or None,
-                "basis": c.get("BASIS"),
-            }
-            for c in certs
-        ]
-        main = certs[0]  # the life certificate (or requalification) when there is one
+        listed = []
+        for c in certs:
+            f = c["dataFields"]
+            res = f.get("TEST_RESULT") or ""
+            listed.append(
+                {
+                    "ref": c["certificateNumber"],
+                    "type": c["certificateType"].lower(),
+                    "issued": c.get("issuedDate"),
+                    "expires": f.get("CERT_EXPIRY"),
+                    "certified_life_months": f.get("CERTIFIED_LIFE_MONTHS"),
+                    "result": RESULT.get(res, res.lower() or None),
+                    "status": (c.get("status") or "").lower() or None,
+                    "basis": f.get("BASIS"),
+                }
+            )
+        main = certs[0]  # the active life certificate (or requalification) when there is one
+        mf = main["dataFields"]
+        expiry = mf.get("CERT_EXPIRY")
         facts = [
-            Fact("condition", key, "certificates", listed, "CERT_EXPIRY", [c.get("CERT_EXPIRY") for c in certs], "ISO date"),
             Fact(
                 "condition",
                 key,
-                "certificate_expiry",
-                main.get("CERT_EXPIRY"),
+                "certificates",
+                listed,
                 "CERT_EXPIRY",
-                main.get("CERT_EXPIRY"),
+                [c["dataFields"].get("CERT_EXPIRY") for c in certs],
                 "ISO date",
             ),
-            Fact("condition", key, "cert_ref", main["CERT_NUMBER"], "CERT_NUMBER", main["CERT_NUMBER"], "Pass-through"),
+            Fact("condition", key, "certificate_expiry", expiry, "CERT_EXPIRY", expiry, "ISO date"),
+            Fact("condition", key, "certificate_status", main["status"].lower(), "status", main["status"], "Status map"),
+            Fact(
+                "condition",
+                key,
+                "cert_ref",
+                main["certificateNumber"],
+                "certificateNumber",
+                main["certificateNumber"],
+                "Pass-through",
+            ),
             Fact(
                 "condition",
                 key,
                 "certified_life_months",
-                main.get("CERTIFIED_LIFE_MONTHS"),
+                mf.get("CERTIFIED_LIFE_MONTHS"),
                 "CERTIFIED_LIFE_MONTHS",
-                main.get("CERTIFIED_LIFE_MONTHS"),
+                mf.get("CERTIFIED_LIFE_MONTHS"),
                 "Integer",
             ),
         ]
-        result = main.get("TEST_RESULT")
-        if main.get("CERT_TYPE") == "REQUALIFICATION" and result == "PASS":
+        result = mf.get("TEST_RESULT")
+        if main["certificateType"] == "REQUALIFICATION" and result == "PASS":
             facts += [
                 Fact("condition", key, "qualification", "requalified", "TEST_RESULT", result, "Result map (requalification)"),
                 Fact(
-                    "condition", key, "requalified_on", main.get("ISSUE_DATE"), "ISSUE_DATE", main.get("ISSUE_DATE"), "ISO date"
+                    "condition", key, "requalified_on", main.get("issuedDate"), "issuedDate", main.get("issuedDate"), "ISO date"
                 ),
             ]
         elif result:
             facts.append(
                 Fact("condition", key, "qualification", RESULT.get(result, result.lower()), "TEST_RESULT", result, "Result map")
             )
-        rc = main.get("REUSE_CLASS")
+        rc = mf.get("REUSE_CLASS")
         if rc:
-            pol = (p.get("policies") or {}).get(main.get("DOCUMENT_NUMBER")) or {}
-            rev = pol.get("REVISION")
+            doc = (p.get("policies") or {}).get(mf.get("DOCUMENT_NUMBER")) or {}
+            rev = doc.get("revision")
             facts += [
                 Fact(
                     "condition",
@@ -189,12 +246,12 @@ class MasterControlAdapter(GenericAdapter):
                     "condition",
                     key,
                     "policy_ref",
-                    main.get("DOCUMENT_NUMBER"),
+                    mf.get("DOCUMENT_NUMBER"),
                     "DOCUMENT_NUMBER",
-                    main.get("DOCUMENT_NUMBER"),
+                    mf.get("DOCUMENT_NUMBER"),
                     "Pass-through",
                 ),
-                Fact("condition", key, "policy_version", rev, "REVISION", rev, "Pass-through"),
+                Fact("condition", key, "policy_version", rev, "revision", rev, "Pass-through (Effective revision)"),
             ]
         return facts
 

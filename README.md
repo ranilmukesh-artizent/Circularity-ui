@@ -116,8 +116,7 @@ Twenty enterprise systems, each in its own Postgres schema, seeded with the demo
 
 | Kind | Systems |
 |---|---|
-| **Full vendor mocks** (the vendor's real API style, rules and errors) | SAP S/4HANA (OData v2, CSRF), SAP Ariba, Salesforce (SOQL), ServiceNow (Table API), IBM Maximo (OSLC), IBM Sterling OMS |
-| **Being upgraded to full vendor mocks** (step B5b) | Oracle Transportation Management (replaces the demo's fictional ShipLane TMS), Oracle Depot Repair, Oracle Lease and Finance Management, Manhattan Active WM, Optoro, Siemens Teamcenter, Aras Innovator, Bentley AssetWise, MasterControl, Persefoni, Ritchie Bros. Market Data, Machinio, Sims Lifecycle Services (a real SFTP server on port 2222) |
+| **Full vendor mocks** (the vendor's real API style, rules and errors) | SAP S/4HANA (OData v2, CSRF), SAP Ariba, Salesforce (SOQL), ServiceNow (Table API), IBM Maximo (OSLC), IBM Sterling OMS, Oracle Transportation Management (replaces the demo's fictional ShipLane TMS), Oracle Depot Repair, Oracle Lease and Finance Management, Manhattan Active WM, Optoro, Siemens Teamcenter, Aras Innovator, Bentley AssetWise, MasterControl, Persefoni, Ritchie Bros. Market Data, Machinio, Sims Lifecycle Services (a real SFTP server on port 2222) |
 | **Generic mock** | SafetyCulture |
 | **Not provisioned** (as in the demo) | AWS IoT Core |
 
@@ -133,7 +132,7 @@ curl -X POST localhost:8100/_sim/faults/demo                                    
 curl -X POST localhost:8100/_sim/reset                                               # every system back to the seed, clock reset
 ```
 
-Demo credentials of each mocked system are in its module docstring (`apps/source-sim/sim/s4`, `sim/ariba`, `sim/vendors/*`, `sim/generic/specs/*`).
+Demo credentials of each mocked system are in its module docstring (`apps/source-sim/sim/s4`, `sim/ariba`, `sim/vendors/*`, `sim/generic/specs/safetyculture.py`).
 
 ### Where the data comes from
 
@@ -204,7 +203,7 @@ docs/BACKEND_STEPS.md        the backend build, step by step, with the status of
 |---|---|---|
 | Frontend | every screen in React, on the in-browser engine | done |
 | B1–B4 | golden data, seed, SAP S/4HANA and SAP Ariba mocks | done |
-| B5, B5b | the other 18 mocks; upgrading 13 to full vendor mocks | full mocks for 6; upgrade in progress |
+| B5, B5b | the other 18 mocks; 19 of the 20 as full vendor mocks | done |
 | B6 | simulated clock, scheduled work, webhooks, faults | done |
 | B7 | sign-in and the access policy | done |
 | B8 | the action endpoint and journal | done (handlers arrive with B10–B13) |

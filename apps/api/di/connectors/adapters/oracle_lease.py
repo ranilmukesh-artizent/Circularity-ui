@@ -1,52 +1,77 @@
 """Oracle Lease and Finance Management (lease): contracts, lease assets, renewals (the demo's SOURCES.lease). Read only.
 
-Also home of `GenericAdapter`, the base of the adapters for source-sim's generic, spec-driven mocks (B5): OAuth client
-credentials, API key or Basic auth with the spec's demo credentials, the spec's paging (offset, page or cursor), and
-`?updated_since=` deltas.
+Oracle E-Business Suite Integrated SOA Gateway REST under /oracle-lease/webservices/rest, HTTP Basic with the EBS
+user DI_CONNECTOR. Reads are GET calls of the query service xxoklleasequery (get_contracts, get_lease_assets,
+get_renewals) with P_START_INDEX / P_MAX_RECORDS paging until X_HAS_MORE = N; delta reads pass
+P_LAST_UPDATE_DATE_FROM = the newest LAST_UPDATE_DATE seen (each record's own stamp is Record.changed).
 
-Delta cursor: the generic mocks stamp each document's change time but do not return it, so `Record.changed` is the
-source's clock when the read started (an upper bound of every change it can contain). The next delta read asks for
-everything changed after that, so an unchanged system answers with nothing and nothing changed during a read is missed.
-
-Facts (lease has authority over ownership, lessee and contract term)
+Facts (lease has authority over ownership, lessee and contract term) — as before B5b:
     asset.<ASSET_NUMBER>   lease_ref, contract_end, contract_start, owner_tenant, lessee (tenant key: CUSTOMER_A →
-                           Customer A), lease_rate (USD per month), lease_term_months, contract_status, renewal_option;
-                           from /leaseAssets: lease_status, ownership_type, original_cost, returned_on (and the owner
-                           of assets not on a contract, e.g. MTR-2077 of the demo's conflict CF-31)
+                           Customer A), lease_rate (USD per month), lease_term_months, contract_status (BOOKED →
+                           active; expired, evergreen, terminated), renewal_option; from the lease assets:
+                           lease_status, ownership_type, original_cost, returned_on (and the owner of an asset not on
+                           a contract)
     demand.<LEASE_OPPORTUNITY_ID>   kind re_lease, asset_ref, lease_ref, need_by (option expiry), status, site,
                            proposed_term_months, proposed_rental
-The demo's mapping: LEASE_CONTRACT_ID LC-004417 → asset.lease_ref (Pass-through); CONTRACT_END_DATE 2026-12-31
-(ISO date); LESSEE_NAME CUSTOMER_A → asset.owner_tenant Customer A (Tenant key); MONTHLY_RENTAL 2400.00 USD → $2,400 /
-month (Currency + period normalised).
+The demo's mapping (MAPPINGS.lease) is unchanged: LEASE_CONTRACT_ID LC-004417 → asset.lease_ref (Pass-through);
+CONTRACT_END_DATE 2026-12-31 (ISO date); LESSEE_NAME CUSTOMER_A → asset.owner_tenant Customer A (Tenant key);
+MONTHLY_RENTAL 2400.00 USD → $2,400 / month (Currency + period normalised).
 """
 
+from collections.abc import Iterator
 from decimal import Decimal
 
+import httpx
+
 from di.canonical.store import Fact
-from di.connectors.base import Record, Resource
-from di.connectors.generic import (  # noqa: F401
-    EUR_PER_USD,
-    FX_NOTE,
-    INR_PER_USD,
-    GenericAdapter,
-    iso_z,
-    keep,
-    tenant_name,
-    to_usd,
-)
+from di.connectors.base import Adapter, Record, Resource
+from di.connectors.generic import FX_NOTE, keep, tenant_name, to_usd
+from di.connectors.http import Basic, SourceClient, SourceError
+
+QUERY = "/xxoklleasequery"
+PAGE = 500
+STATUS = {"BOOKED": "active", "EXPIRED": "expired", "EVERGREEN": "evergreen", "TERMINATED": "terminated"}
 
 
-class OracleLeaseAdapter(GenericAdapter):
+class OracleLeaseAdapter(Adapter):
     source_id = "lease"
-    base_path = "/oracle-lease/fscmRestApi"
-    items_key, next_key, next_param, size_param, page_size = "items", "nextOffset", "offset", "limit", 500
+    base_path = "/oracle-lease/webservices/rest"
+
+    def auth(self):
+        return Basic("DI_CONNECTOR", "lease-demo-password")
 
     def resources(self):
         return [
-            Resource("leaseContracts", lambda c, s: self.flat(c, "leaseContracts", "/leaseContracts", "LEASE_CONTRACT_ID", s)),
-            Resource("leaseAssets", lambda c, s: self.flat(c, "leaseAssets", "/leaseAssets", "ASSET_NUMBER", s)),
-            Resource("leaseRenewals", lambda c, s: self.flat(c, "leaseRenewals", "/leaseRenewals", "RENEWAL_ID", s)),
+            Resource("leaseContracts", self.reader("leaseContracts", "get_contracts", "X_CONTRACTS", "LEASE_CONTRACT_ID")),
+            Resource("leaseAssets", self.reader("leaseAssets", "get_lease_assets", "X_ASSETS", "ASSET_NUMBER")),
+            Resource("leaseRenewals", self.reader("leaseRenewals", "get_renewals", "X_RENEWALS", "RENEWAL_ID")),
         ]
+
+    def pages(self, client: SourceClient, method: str, name: str, since: str | None) -> Iterator[tuple[dict, str]]:
+        start = 1
+        while True:
+            q = {"P_START_INDEX": str(start), "P_MAX_RECORDS": str(PAGE)}
+            if since:
+                q["P_LAST_UPDATE_DATE_FROM"] = since
+            path = f"{QUERY}/{method}/"
+            out = client.get_json(path, params=q)["OutputParameters"]
+            if out.get("X_RETURN_STATUS") != "S":
+                raise SourceError("client", f"lease: {method} returned {out.get('X_RETURN_STATUS')}: {out.get('X_MSG_DATA')}")
+            rows = (out.get(name) or {}).get(f"{name}_ITEM") or []
+            client.note_records(len(rows))
+            url = str(httpx.URL(client.url(path), params=q))
+            for row in rows:
+                yield row, url
+            if out.get("X_HAS_MORE") != "Y" or not rows:
+                return
+            start += len(rows)
+
+    def reader(self, resource: str, method: str, name: str, id_field: str):
+        def read(client: SourceClient, since):
+            for row, url in self.pages(client, method, name, since):
+                yield Record(resource, str(row[id_field]), row, url, row.get("LAST_UPDATE_DATE"))
+
+        return read
 
     def map(self, record: Record) -> list[Fact]:
         p = record.payload
@@ -64,6 +89,8 @@ class OracleLeaseAdapter(GenericAdapter):
         rental = p.get("MONTHLY_RENTAL")
         freq = (p.get("BILLING_FREQUENCY") or "MONTHLY").upper()
         per_month = {"MONTHLY": 1, "QUARTERLY": Decimal(1) / 3, "ANNUAL": Decimal(1) / 12, "YEARLY": Decimal(1) / 12}[freq]
+        lessee = p["LESSEE_NAME"]
+        status = p.get("CONTRACT_STATUS")
         facts = [
             Fact("asset", key, "lease_ref", p["LEASE_CONTRACT_ID"], "LEASE_CONTRACT_ID", p["LEASE_CONTRACT_ID"], "Pass-through"),
             Fact("asset", key, "contract_end", p["CONTRACT_END_DATE"], "CONTRACT_END_DATE", p["CONTRACT_END_DATE"], "ISO date"),
@@ -76,16 +103,16 @@ class OracleLeaseAdapter(GenericAdapter):
                 p.get("CONTRACT_START_DATE"),
                 "ISO date",
             ),
-            Fact("asset", key, "owner_tenant", tenant_name(p["LESSEE_NAME"]), "LESSEE_NAME", p["LESSEE_NAME"], "Tenant key"),
-            Fact("asset", key, "lessee", tenant_name(p["LESSEE_NAME"]), "LESSEE_NAME", p["LESSEE_NAME"], "Tenant key"),
+            Fact("asset", key, "owner_tenant", tenant_name(lessee), "LESSEE_NAME", lessee, "Tenant key"),
+            Fact("asset", key, "lessee", tenant_name(lessee), "LESSEE_NAME", lessee, "Tenant key"),
             Fact("asset", key, "lease_term_months", p.get("TERM_MONTHS"), "TERM_MONTHS", p.get("TERM_MONTHS"), "Integer"),
             Fact(
                 "asset",
                 key,
                 "contract_status",
-                (p.get("CONTRACT_STATUS") or "").lower() or None,
+                STATUS.get(status or "", (status or "").lower() or None),
                 "CONTRACT_STATUS",
-                p.get("CONTRACT_STATUS"),
+                status,
                 "Status map",
             ),
             Fact(
@@ -151,7 +178,6 @@ class OracleLeaseAdapter(GenericAdapter):
         if p.get("RETURN_DATE"):
             facts.append(Fact("asset", key, "returned_on", p["RETURN_DATE"], "RETURN_DATE", p["RETURN_DATE"], "ISO date"))
         if not p.get("LEASE_CONTRACT_ID"):
-            # not on a returned contract (e.g. MTR-2077, still on lease): ownership comes from the asset record
             owner = p.get("OWNER_NAME") or p.get("LESSEE_NAME")
             facts.append(Fact("asset", key, "owner_tenant", tenant_name(owner), "OWNER_NAME", owner, "Tenant key"))
             if p.get("LESSEE_NAME"):

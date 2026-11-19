@@ -14,10 +14,10 @@ import hashlib
 from datetime import datetime, timedelta
 
 from sim.generic.spec import Auth, Paging, Resource, Spec
-from sim.generic.specs.manhattan import facility_id
-from sim.generic.specs.shiplane import as_hex, case_no
 from sim.seed import Seed
 from sim.seed.model import CaseFacts
+from sim.vendors.manhattan.seed import facility_id
+from sim.vendors.otm.demo import as_hex, case_no
 
 # components checked per class: the demo's EX_BOM component names, so findings line up with repair parts
 COMPONENTS = {
