@@ -35,7 +35,7 @@ state.register("comments", list)
 WORKBENCH_WEIGHTS = {"net": 50, "time": 20, "env": 15, "serv": 15}  # S.ti.w: the Workbench's default fit weights
 NOTE_SEQ_START = 101  # S.ntSeq starts at 102
 EVENT_SEQ_START = 9091  # EV_SEQ: the starting log ends at EV-9091
-SELF_APPROVAL = False  # AF.cfg.self: Admin may allow self-approval; off until the access port makes it a setting
+
 
 # ---------------------------------------------------------------- execution steps (the demo's EX_STEP and STEP_TPL)
 # Per step kind: its label and the enterprise system it is sent to. The step plan per route; a refurbish-then-sell
@@ -276,9 +276,9 @@ def _ap_policy(i, ctx, c) -> tuple | None:
     A limit refusal carries `escalate: 'admin'`, as in the demo."""
     r = next((x for x in c["routes"] if x["plan"] == i.get("route")), None) or c.get("recommendation")
     val = max(abs(r["net"] if r else 0), _spend(i))
-    lim = limit_for(ctx.actor.account)
+    lim = limit_for(ctx.actor.account, ctx.actor.ctx)  # AF.cfg.limits, as Admin set them
     sub = c.get("submitted")
-    if sub and sub.get("byId") == ctx.actor.id and not SELF_APPROVAL:
+    if sub and sub.get("byId") == ctx.actor.id and not ctx.actor.ctx.self_approval:  # AF.cfg.self
         return (
             "out_of_scope",
             f"You submitted {c['id']}, so another person must approve it. Admin can allow self-approval within a limit.",
@@ -601,7 +601,7 @@ def saved_scenarios(s, case_id: str) -> list[dict]:
 
 # ---------------------------------------------------------------- notifications, comments, escalations
 def _recipient_guard(i, ctx):
-    return ("not_found", "Unknown recipient.") if policy.account(i["to"]) is None else None
+    return ("not_found", "Unknown recipient.") if policy.account(i["to"], ctx.actor.ctx) is None else None
 
 
 guard("notify.send")(_recipient_guard)
@@ -621,7 +621,7 @@ def _notify(ctx, n: dict) -> dict:
     emits=["notification.sent"],
 )
 def notify_send(i, ctx):
-    key, by, to = _key("notify.send", i, ctx), _by(ctx), policy.account(i["to"])
+    key, by, to = _key("notify.send", i, ctx), _by(ctx), policy.account(i["to"], ctx.actor.ctx)
     n = _notify(
         ctx,
         {
@@ -674,7 +674,7 @@ def comments(s, key: str) -> list[dict]:
     idem=lambda i, ctx: f"esc:{i['case_id']}:{i['to']}:{hash_id(i['msg'])}",
 )
 def escalation_send(i, ctx):
-    key, by, to = _key("escalation.send", i, ctx), _by(ctx), policy.account(i["to"])
+    key, by, to = _key("escalation.send", i, ctx), _by(ctx), policy.account(i["to"], ctx.actor.ctx)
     n = _notify(
         ctx,
         {

@@ -227,8 +227,8 @@ def account(ctx) -> policy.Account | None:
 
 
 def can(ctx, perm: str) -> bool:
-    """The demo's can() for the signed-in account (no account: nothing). The demo also lets a Planner approve once
-    Admin raises the Planner approval limit above $0; that limit starts at $0 and is not held by the backend yet."""
+    """The demo's can() for the signed-in account (no account: nothing), including its later rule that a Planner may
+    approve once Admin raises the Planner approval limit above $0 (policy.can)."""
     return policy.can(account(ctx), perm, ctx.actor.ctx)
 
 
@@ -431,7 +431,7 @@ def _journal_by(ctx, case_id: str, actions: tuple[str, ...]) -> dict | None:
     ).first()
     if row is None:
         return None
-    a = policy.account(row.actor)
+    a = policy.account(row.actor, ctx.actor.ctx)  # the label as the identity mapping has it now
     by = "Enterprise system adapter" if row.actor == "system" else (a.label if a else row.actor)
     return {"by": by, "prep": row.preparer, "at": iso(row.at.isoformat())}
 
@@ -818,10 +818,6 @@ def kfmt(n: float) -> str:
 # reads use it as is, since nothing on the server changes them yet. When their handlers move to the server (B12, B13)
 # the state moves to the database and these become its seeds.
 
-# AF.cfg.limits: the approval limit per role, set by Admin (Access · Limits). A role not listed falls back to
-# afLimitFor's default: unlimited for Approver and Admin, $0 for everyone else. math.inf is the demo's Infinity.
-STARTING_APPROVAL_LIMITS: dict[str, float] = {"Approver": math.inf, "Admin": math.inf, "Planner": 0}
-
 # S.notes: notifications sent from an exception to its owner (Actions on me), the workspace collection "notes"
 # (di.state) seeded from these. One is open at the start.
 STARTING_NOTES: list[dict] = [
@@ -847,16 +843,58 @@ def notes(s) -> list[dict]:
     return state.items(s, "notes")
 
 
-# S.reqs: tenant-access requests and MCP server proposals, decided by a delegated Approver or by Admin (in order;
-# the reads need only these fields).
+# S.reqs: tenant-access requests and MCP server proposals, decided by a delegated Approver or by Admin. The workspace
+# collection "requests" (di.state), seeded from these; access.requestTenant and mcp.propose add to it and
+# access.decideRequest decides. The demo's list is newest first (new requests are unshifted), so the collection is
+# seeded oldest first and read newest first.
 REQ_SCOPE = {"tenant": "tenantAccess", "mcp": "mcp"}
 REQ_KIND = {"tenant": "Tenant access", "mcp": "MCP server proposal"}
 STARTING_REQUESTS: list[dict] = [
-    {"id": "REQ-304", "kind": "tenant", "status": "pending", "by": "Planner · Customer B", "byId": "planner-b"},
-    {"id": "REQ-301", "kind": "mcp", "status": "pending", "by": "Developer", "byId": "developer"},
-    {"id": "REQ-303", "kind": "mcp", "status": "declined", "by": "Developer", "byId": "developer"},
-    {"id": "REQ-302", "kind": "mcp", "status": "approved", "by": "Developer", "byId": "developer"},
-]
+    {
+        "id": "REQ-304", "kind": "tenant", "status": "pending", "by": "Planner · Customer B", "byId": "planner-b",
+        "at": iso(add_days(AS_OF, -0.4)), "tenant": "Customer A",
+        "reason": "Customer A and Customer B share the Site 3 motor pool. I need to see Customer A returns to plan "
+        "redeployment.",
+    },
+    {
+        "id": "REQ-301", "kind": "mcp", "status": "pending", "by": "Developer", "byId": "developer",
+        "at": iso(add_days(AS_OF, -1.2)),
+        "server": {
+            "name": "Fleet telematics MCP server", "owner": "TrackLine",
+            "purpose": "Read operating hours and duty cycles so condition predictions can use measured duty instead of "
+            "estimates.",
+            "tools": ["telemetry.hours", "telemetry.duty_cycle"], "access": "read",
+            "data": "Device telemetry for leased assets. No personal data.",
+        },
+    },
+    {
+        "id": "REQ-303", "kind": "mcp", "status": "declined", "by": "Developer", "byId": "developer",
+        "at": iso(add_days(AS_OF, -6)), "decidedBy": "Admin", "decidedAt": iso(add_days(AS_OF, -5)),
+        "note": "It books shipments without a human approval step. Resubmit with the approval gate.",
+        "server": {
+            "name": "Freight booking MCP server", "owner": "ShipLane", "purpose": "Book and cancel transfers between sites.",
+            "tools": ["shipment.book", "shipment.cancel"], "access": "write", "data": "Shipment orders between company sites.",
+        },
+    },
+    {
+        "id": "REQ-302", "kind": "mcp", "status": "approved", "by": "Developer", "byId": "developer",
+        "at": iso(add_days(AS_OF, -9)), "decidedBy": "Approver", "decidedAt": iso(add_days(AS_OF, -8)),
+        "note": "Read-only and limited to part prices.",
+        "server": {
+            "name": "Supplier catalogue MCP server", "owner": "PartsHub",
+            "purpose": "Look up spare-part prices and lead times for repair and harvest routes.",
+            "tools": ["part.search", "part.price"], "access": "read", "data": "Part numbers, prices and lead times.",
+        },
+    },
+]  # fmt: skip
+REQ_SEQ_START = 304  # the demo's REQ_SEQ: the next request is REQ-305
+state.register("requests", lambda: [(r["id"], r) for r in reversed(STARTING_REQUESTS)])
+
+
+def requests(s) -> list[dict]:
+    """The requests, newest first (the demo's S.reqs)."""
+    return state.items(s, "requests", newest_first=True)
+
 
 # S.wf.list: the workflows whose last run failed. The demo seeds one run per published workflow and injects a
 # validation failure into the Oracle Depot Repair ingest (wfSeed), so that is the only failed one at the start.
@@ -867,19 +905,14 @@ STARTING_CONFLICTS: list[dict] = golden.load("events")["conflicts"]
 STARTING_MAPPINGS: dict[str, list] = golden.load("canonical")["mappings"]
 
 
-def limit_for(a: policy.Account | None) -> float:
-    """The demo's afLimitFor: the account's approval limit in dollars (math.inf: no limit)."""
-    if a is None:
-        return 0
-    v = STARTING_APPROVAL_LIMITS.get(a.role)
-    if v is None:
-        return math.inf if a.role in ("Approver", "Admin") else 0
-    return v
+def limit_for(a: policy.Account | None, pctx: policy.Context | None = None) -> float:
+    """The demo's afLimitFor (policy.limit_for), with the stored limits when given the access context."""
+    return policy.limit_for(a, pctx)
 
 
 def inbox_requests(ctx) -> list[dict]:
     """The demo's inboxReqs: the pending requests this account may decide."""
-    return [r for r in STARTING_REQUESTS if r["status"] == "pending" and can(ctx, "approve." + REQ_SCOPE[r["kind"]])]
+    return [r for r in requests(ctx.session) if r["status"] == "pending" and can(ctx, "approve." + REQ_SCOPE[r["kind"]])]
 
 
 # ---------------------------------------------------------------- expected returns (the demo's EXPECTED)

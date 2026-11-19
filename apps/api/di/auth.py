@@ -17,7 +17,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di import policy
+from di import policy, state
 from di.config import get_settings
 from di.db import get_session
 
@@ -39,7 +39,15 @@ def load_context(session: Session) -> policy.Context:
     grants: dict[str, list[str]] = {}
     for r in session.execute(text("SELECT account_id, tenant FROM tenant_grant ORDER BY tenant")):
         grants.setdefault(r.account_id, []).append(r.tenant)
-    return policy.Context(delegations={k: deleg.get(k, True) for k in policy.DELEGATION_SCOPES}, grants=grants)
+    approval = state.get(session, "access_settings", "approval") or {}
+    return policy.Context(
+        delegations={k: deleg.get(k, True) for k in policy.DELEGATION_SCOPES},
+        grants=grants,
+        # the accounts as the identity mapping has them now (access.mapIdentity)
+        accounts={d["id"]: policy.Account(**d) for d in state.items(session, "accounts")},
+        limits=approval.get("limits", dict(policy.STARTING_LIMITS)),
+        self_approval=bool(approval.get("self")),
+    )
 
 
 @dataclass
@@ -95,10 +103,13 @@ def principal(
             {"code": "unauthenticated", "message": "Your session has ended. Sign in again."},
             headers={"WWW-Authenticate": 'Bearer error="invalid_token"'},
         ) from e
-    a = policy.account(claims.get("sub", ""))
+    # The account is looked up by id on every request, as mapped now: a token issued before an identity mapping
+    # changed the account's role or warehouse carries the old role claim, which is informational only.
+    ctx = load_context(session)
+    a = policy.account(claims.get("sub", ""), ctx)
     if a is None:
         raise HTTPException(401, {"code": "unauthenticated", "message": "Unknown account."})
-    return Principal(a, load_context(session))
+    return Principal(a, ctx)
 
 
 def optional_principal(

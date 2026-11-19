@@ -2,18 +2,30 @@
 (index.html, /*RBAC-START*/ … /*RBAC-END*/), so the server refuses exactly what the screens hide.
 
 The policy itself (roles, their pages and permissions, the demo accounts, sign-in IDs) is configuration, read from
-the B1 golden file `policy.json`. What changes at run time lives in the database: the Approver's delegations
-(decisions, MCP proposals, tenant access) and the tenant grants a Planner was given.
+the B1 golden file `policy.json`. What changes at run time lives in the database and reaches the rules through
+`Context` (loaded per request by di.auth.load_context):
+- the Approver's delegations (decisions, MCP proposals, tenant access) and a Planner's tenant grants (their tables);
+- the accounts as the identity mapping has them now (state collection "accounts"; access.mapIdentity changes an
+  account's role, tenant, site, warehouse and label, and every rule then sees the changed account);
+- the approval settings, the demo's AF.cfg.limits and AF.cfg.self (state collection "access_settings", item
+  "approval").
+The directory the identity provider syncs (the demo's S.idp: users, groups, role source, out-of-office delegations)
+is state too ("idp_users", and "access_settings" item "idp"); only the access actions read it.
 """
 
+import math
+import re
 from dataclasses import dataclass, field
 from functools import cache
 
-from di import golden
+from di import golden, state
 
 # Features the demo keeps hidden (index.html FEAT: pools:false): these sections are never visible.
 HIDDEN_SECTIONS = {("product", "pools"), ("analytics", "pool")}
 DELEGATION_SCOPES = ("decisions", "mcp", "tenantAccess")
+# AF.cfg.limits at the start, in dollars per role; None is the demo's Infinity (no limit). A role not listed falls
+# back to afLimitFor's default: unlimited for Approver and Admin, $0 for everyone else.
+STARTING_LIMITS: dict[str, float | None] = {"Approver": None, "Admin": None, "Planner": 0}
 
 
 @dataclass(frozen=True)
@@ -29,10 +41,13 @@ class Account:
 
 @dataclass
 class Context:
-    """Run-time access state: Approver delegations and tenant grants (from the database)."""
+    """Run-time access state (from the database). The defaults are the demo's starting state."""
 
     delegations: dict[str, bool] = field(default_factory=lambda: dict.fromkeys(DELEGATION_SCOPES, True))
     grants: dict[str, list[str]] = field(default_factory=dict)  # account id -> extra tenants
+    accounts: dict[str, Account] | None = None  # id -> account as mapped now, in the demo's order; None: the starting ones
+    limits: dict[str, float | None] = field(default_factory=lambda: dict(STARTING_LIMITS))
+    self_approval: bool = False
 
 
 @cache
@@ -61,22 +76,30 @@ def permissions() -> list[str]:
     return list(_data()["perm_acts"]) + ["approve.mcp", "approve.tenantAccess"]
 
 
-def accounts() -> list[Account]:
-    return [Account(**{k: a.get(k) for k in Account.__dataclass_fields__}) for a in _data()["accounts"]]
+@cache
+def starting_accounts() -> tuple[Account, ...]:
+    return tuple(Account(**{k: a.get(k) for k in Account.__dataclass_fields__}) for a in _data()["accounts"])
 
 
-def account(account_id: str) -> Account | None:
-    return next((a for a in accounts() if a.id == account_id), None)
+def accounts(ctx: Context | None = None) -> list[Account]:
+    """The accounts, in the demo's order: as the identity mapping has them now when given the context."""
+    if ctx is not None and ctx.accounts is not None:
+        return list(ctx.accounts.values())
+    return list(starting_accounts())
 
 
-def resolve_sign_in(value: str) -> Account | None:
+def account(account_id: str, ctx: Context | None = None) -> Account | None:
+    return next((a for a in accounts(ctx) if a.id == account_id), None)
+
+
+def resolve_sign_in(value: str, ctx: Context | None = None) -> Account | None:
     """A typed user ID or work email ("exec", "planner.b@northfield.example") → account (the demo's signInResolve)."""
     v = (value or "").strip().lower()
     local, _, domain = v.partition("@")
     if not local or (domain and domain != _data()["signin_domain"]) or " " in v or v.count("@") > 1:
         return None
     ids = _data()["signin_ids"]
-    return account(ids.get(local, "")) or account(local)
+    return account(ids.get(local, ""), ctx) or account(local, ctx)
 
 
 def sign_in_email(a: Account) -> str:
@@ -96,10 +119,24 @@ def policy(a: Account) -> dict:
     return roles()[a.role]
 
 
+def limit_for(a: Account | None, ctx: Context | None = None) -> float:
+    """The demo's afLimitFor: the account's approval limit in dollars (math.inf: no limit)."""
+    if a is None:
+        return 0
+    limits = (ctx or Context()).limits
+    if a.role not in limits:
+        return math.inf if a.role in ("Approver", "Admin") else 0
+    v = limits[a.role]
+    return math.inf if v is None else v
+
+
 def can(a: Account | None, perm: str, ctx: Context | None = None) -> bool:
     if a is None:
         return False
     perm = _data()["perm_alias"].get(perm, perm)
+    # the demo's later can(): a Planner may approve once Admin raises the Planner approval limit above $0
+    if perm == "approve.decisions" and a.role == "Planner" and limit_for(a, ctx) > 0:
+        return True
     p = policy(a)
     if p.get("all"):
         return True
@@ -142,7 +179,8 @@ def home(a: Account | None) -> str:
 
 
 def summary(a: Account, ctx: Context | None = None) -> dict:
-    """Everything the frontend needs to shape itself for this account."""
+    """Everything the frontend needs to shape itself for this account (as the identity mapping has it now)."""
+    a = account(a.id, ctx) or a
     return {
         "account": a.__dict__ | {"email": sign_in_email(a)},
         "description": policy(a)["desc"],
@@ -153,3 +191,87 @@ def summary(a: Account, ctx: Context | None = None) -> dict:
         "tenant_scoped": bool(policy(a).get("tenantScoped")),
         "warehouse": a.warehouse if policy(a).get("warehouseScoped") else None,
     }
+
+
+# ---------------------------------------------------------------- identity: the directory and the role mapping
+# The roles a directory group may map to (the demo's IDP_ROLES): Admin is assigned directly, never through a group.
+def idp_roles() -> list[str]:
+    return [r for r in roles() if r != "Admin"]
+
+
+# The demo's S.idp.groups: the directory group (or App Role) each account is mapped from.
+IDP_GROUPS = {
+    "planner-a": "circ-planners-customer-a",
+    "planner-b": "circ-planners-customer-b",
+    "planner-c": "circ-planners-customer-c",
+    "approver": "circ-approvers",
+    "engineer": "circ-engineering",
+    "finance": "circ-finance",
+    "developer": "circ-integration-devs",
+    "executive": "circ-executives",
+    "wm-1": "circ-warehouse-1",
+    "wm-2": "circ-warehouse-2",
+}
+
+
+def _idp_email(label: str) -> str:
+    return re.sub(r"\s+", "-", label.lower().replace(" · ", ".")) + "@example.com"
+
+
+def starting_idp_users() -> list[dict]:
+    """The demo's S.idp.users: one per account (email from its starting label), plus two deputies without an account."""
+    users = [{"id": a.id, "email": _idp_email(a.label), "acct": a.id} for a in starting_accounts()]
+    return users + [
+        {"id": "dep-ap", "email": "approver.deputy@example.com", "acct": None, "role": "Approver"},
+        {"id": "dep-pl", "email": "planner.deputy@example.com", "acct": None, "role": "Planner"},
+    ]
+
+
+def idp_role_of(u: dict, ctx: Context | None = None) -> str | None:
+    """The demo's idpRoleOf: a user's role is their account's (as mapped now), or the directory's for a deputy."""
+    if u.get("acct"):
+        a = account(u["acct"], ctx)
+        return a.role if a else None
+    return u.get("role")
+
+
+def map_identity(a: Account, field_: str, value: str | None) -> Account:
+    """The demo's access.mapIdentity handler: the account after mapping its group to another role, or to another site
+    (a Warehouse Manager's warehouse). The label is rebuilt from the result."""
+    d = dict(a.__dict__)
+    if field_ == "role":
+        p = roles()[value]
+        d["role"] = value
+        if p.get("tenantScoped") and not d["tenant"]:
+            d["tenant"] = "Customer A"
+        if p.get("warehouseScoped") and not d["warehouse"]:
+            d["warehouse"] = d["site"] if d["site"] and d["site"] != "Repair centre" else "Warehouse 1"
+        if not p.get("warehouseScoped"):
+            d["warehouse"] = None
+    elif roles()[d["role"]].get("warehouseScoped"):
+        if value in ("Warehouse 1", "Warehouse 2"):
+            d["warehouse"] = value
+    else:
+        d["site"] = value or None
+    p = roles()[d["role"]]
+    d["label"] = (
+        d["role"]
+        + (" · " + d["tenant"] if p.get("tenantScoped") and d["tenant"] else "")
+        + (" · " + d["warehouse"] if d["warehouse"] else "")
+    )
+    return Account(**d)
+
+
+# ---------------------------------------------------------------- run-time state, seeded with the demo's start
+def _idp_start() -> dict:
+    from di.reads.common import AS_OF, add_days, iso  # the demo's clock; imported late (common imports this module)
+
+    return {"src": "approles", "lastSync": iso(add_days(AS_OF, -0.08)), "ooo": []}
+
+
+state.register("accounts", lambda: [(a.id, dict(a.__dict__)) for a in starting_accounts()])
+state.register("idp_users", lambda: [(u["id"], u) for u in starting_idp_users()])
+state.register(
+    "access_settings",
+    lambda: [("approval", {"limits": dict(STARTING_LIMITS), "self": False}), ("idp", _idp_start())],
+)

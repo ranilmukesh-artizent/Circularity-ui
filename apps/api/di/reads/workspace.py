@@ -343,8 +343,8 @@ def ex_owner(x: dict) -> str:
     return EX_OWNER.get(x["type"]) or "approver"
 
 
-def ex_owner_label(x: dict) -> str:
-    a = policy.account(ex_owner(x))
+def ex_owner_label(x: dict, ctx) -> str:
+    a = policy.account(ex_owner(x), ctx.actor.ctx)
     return a.label if a else "Approver"
 
 
@@ -441,7 +441,7 @@ def briefing(ctx) -> list[dict]:
             add(_recovered_line(mm), "command/kpis", len(mm["rc"]))
         ex = cc_ex_rows(cc_scope(ctx), ctx)[:2] if _sees_exceptions(ctx) else []
         for x in ex:
-            add(f"{x['wh']} · {x['title']}: {kfmt(x['value'])} at risk; owner {ex_owner_label(x)}.", "command/exceptions", 1)
+            add(f"{x['wh']} · {x['title']}: {kfmt(x['value'])} at risk; owner {ex_owner_label(x, ctx)}.", "command/exceptions", 1)
     if role == "Warehouse Manager":
         inb = exp_vis(ctx)
         hand = [c for c in cs if (s := active_step(c)) and s["sys"].startswith("WMS")]
@@ -674,13 +674,13 @@ def access_lookup(i, ctx):
     want = PERM_ALIAS.get(perm, perm)
     roles = policy.roles()
     rows = []
-    for a in policy.accounts():
+    for a in policy.accounts(ctx.actor.ctx):
         p = roles.get(a.role)
         if not p or not (p.get("all") or want in (p.get("perms") or [])):
             continue
         if a.role == "Approver" and perm == "approve" and not decisions_delegated(ctx):
             continue
-        lim = limit_for(a)
+        lim = limit_for(a, ctx.actor.ctx)
         if amount and not lim > amount:
             continue
         how = "Master role" if a.role == "Admin" else "Delegated by Admin" if a.role == "Approver" else "Granted by Admin"
@@ -753,7 +753,7 @@ def kpi_explain(i, ctx):
                 {
                     "label": f"{x['wh']} · {x['title']}",
                     "value": x["value"],
-                    "owner": ex_owner_label(x),
+                    "owner": ex_owner_label(x, ctx),
                     "go": "command/exceptions",
                 }
                 for x in ex

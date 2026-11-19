@@ -422,6 +422,28 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 
 **Done when:** that parity test passes.
 
+**Status: done (19 Nov 2026).** All 24 actions run on the server:
+- `di/actions/decisions.py`: decision.prepare, submit, approve, override, decline; evidence.request, evidence.recordResult, case.reevaluate; scenario.save and delete; notify.send and acknowledge, comment.add, escalation.send.
+- `di/actions/access.py`: access.requestTenant, access.decideRequest, access.setDelegation, the six identity actions, mcp.propose.
+
+**How state is kept:**
+- Cases change through `di/cases/lifecycle.py` (stage moves logged and published).
+- The demo's in-memory lists live in `di/state.py` collections (migration 0006), seeded once from the demo's starting values: the event stream, notifications, requests, saved scenarios, comments, the mapped accounts, the directory users, approval and directory settings, and MCP servers. Delegations and tenant grants stay in their B7 tables.
+- **Identity mapping** changes an account's role, tenant, warehouse, site and label; the server looks the account up on every request, so a remap takes effect at once, as in the demo. The token's own `role` and `tenant` claims can be out of date after a remap: clients take role and scope from `/api/auth/me`.
+- **Approval rules:** the approver's limit (with escalation to Admin, `escalate: "admin"`), no self-approval unless Admin allows it, and the demo's rule that a Planner may approve once Admin raises the Planner limit above $0.
+- **Random draws:** the demo runs each state-changing action on a generator seeded from the action's key, so re-grading and re-valuing a case (evidence.recordResult, case.reevaluate) is reproduced draw for draw; checked on 20 generated cases.
+- **One clock:** every action's "now" comes from `di/clock.py` (the demo's as-of time until B13 follows the simulated clock).
+
+**Parity** (`fixtures/golden/writes.json`, new: 12 scenarios, each run in a fresh copy of the demo, every call's result and then reads showing what changed):
+- 81 calls and 58 observed reads match exactly, refusals included.
+- The first six steps of the RT-1048 journey (`actions.json`) match; the rest are B13.
+- One field differs by design: a saved scenario's id (the demo hashes its journal number, which the server knows only after the handler runs).
+- 1,466 api tests pass.
+
+**Left for later steps:**
+- `access.setLimit`, `access.setSelfApprove` and the other Admin settings actions only need to write the stored settings, which every check already reads (with B14's Access screens).
+- `PUT /api/access/delegations/{scope}` (B7) changes delegations without a journal entry; the frontend uses `access.setDelegation` instead (B17).
+
 ## B13. Outbound instructions and reconciliation
 
 1. **Instructions:** an approved decision becomes one job per instruction. Each job makes an idempotent write to the system that owns the work, with an idempotency key per instruction:
