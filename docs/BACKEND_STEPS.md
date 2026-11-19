@@ -351,6 +351,30 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 
 **Done when:** that parity test passes.
 
+**Status: done (19 Nov 2026).** The engine is in `apps/api/di/engine/`, as pure functions on routes in the demo's shape:
+
+| Module | From the demo | What it does |
+|---|---|---|
+| `routes.py` | `mkRoute`, `fail`, `rankRoutes` | Net (P50) as the sum of the terms; P10/P90 as ±1.28 sigma with a $12 floor and a damped upside; a failed gate skips the later ones; ranking by net, ties in listed order |
+| `gates.py` | the gate checks in `buildRoutes` | Demand fit, grade D life, data erasure, safety rating, customer consent, hazardous cells, net not positive; in the demo's order |
+| `predictor.py` | the valuation formulas in `buildRoutes` | `Predictor` interface, one method per quantity (market value, sale and fees, refurbishment, avoided purchase, prep, service, residual, lease income, parts value, material); `FormulaPredictor` is the demo's formulas |
+| `evaluate.py` | `buildRoutes` | A case from route drafts to ranked routes and a recommendation; `build_routes` values the seven standard routes with a Predictor |
+| `scenario.py` | `scenRoutes`, `scenNet`, `case.whatIf` | Re-rank under multipliers on purchase, cost, service and market, or with confirmed demand off |
+| `pool.py` | `solvePool` | Greedy against the exact optimum for a pool |
+| `book.py` | — | The live cases as the engine evaluates them, until B11 keeps cases in the database |
+
+**Actions:** `case.whatIf` and `pool.optimize` now have handlers.
+
+**Parity:**
+- All 128 cases: the engine recomputes every route's gates, net, range, rank and the recommendation from the case's inputs (its facts and route terms) and matches `cases.json` exactly. For the 79 generated cases, the gate rules find every exclusion themselves.
+- `engine.json`, a new golden file: the demo's `case.whatIf` answers for the 88 cases with routes under 10 scenarios (880 answers), and `pool.optimize` for the three pooled cases. All match.
+- JavaScript arithmetic is reproduced where it differs from Python's: halves round up, and sums run left to right (Python 3.12's `sum()` is compensated, which moved one what-if net by a dollar).
+
+**Decisions and limits:**
+- **Term values are inputs.** The demo draws each route's term values at random when it generates a case, so they cannot be recomputed. Parity is pinned on the terms as given; the formulas behind them are tested for structure (every generated case rebuilt by `FormulaPredictor` has the demo's routes and terms) and with pinned draws.
+- **Hazardous cells** are a case fact (`hazardousMaterial`), which the recycler supplies; the demo drew it at random.
+- **The cost trace (`EX_*`) moves to B13.** It explains each term with lanes, repair parts, labour and machine time, and shares that code with the execution plan; nothing in the decision depends on it.
+
 ## B11. Case lifecycle and read actions
 
 1. **State machine:** the ten stages, from *Lease ends* to *Reconcile and learn*. Every transition writes the journal, audit and an event.
@@ -395,6 +419,7 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 2. **Acknowledgement:** the source-sim webhook (`adapter.acknowledge`, system only), and `instruction.resend`.
 3. **Outcomes:** completion events and S/4 cost postings (`ACDOCA`) come back as the Outcome model. `outcome.confirm` (Finance) and `reconcile_outcome` link actuals to the decision and update predicted-vs-actual and the model-version error.
 4. **Escalations:** time limits per step on the simulated clock (the demo's `exClock`), surfaced as alerts.
+5. **Execution detail and cost trace** (moved from B10): the execution plan, the move and its legs (`exPlan`, `exMove`), and every term as cost lines with method and source (`exTrace`, `EX_*`), in rupees at ₹83.5.
 
 **Done when:**
 - RT-1048 runs from approval to *Reconciled* on synced data, driven only by source-sim events and the simulated clock.

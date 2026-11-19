@@ -208,7 +208,8 @@ docs/BACKEND_STEPS.md        the backend build, step by step, with the status of
 | B7 | sign-in and the access policy | done |
 | B8 | the action endpoint and journal | done (handlers arrive with B10–B13) |
 | B9 | connectors, canonical store, provenance, conflicts | done |
-| B10–B13 | decision engine, case lifecycle, approvals, instructions to the systems and reconciliation | next |
+| B10 | decision engine: routes, gates, ranges, ranking, what-if, pool optimiser | done |
+| B11–B13 | case lifecycle, approvals, instructions to the systems and reconciliation | next |
 | B14–B16 | read APIs for every screen, live updates, MCP server | to do |
 | B16b | Ask Circularity on a language model (Groq free tier) | to do |
 | B17 | switch the frontend to the backend | to do |

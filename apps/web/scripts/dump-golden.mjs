@@ -137,6 +137,22 @@ call('finance', 'outcome.confirm', { case_id: ID }); // duplicate
 setAcct(null);
 put('actions.json', { case_id: ID, steps });
 
+// ---------- the decision engine's read answers: what-if scenarios and pool optimisation (B10) ----------
+// After the journey, so nothing above moves; both actions are read-only and draw no random numbers.
+const SCENARIOS = [
+  { purchase: 0.8 }, { purchase: 1.25 }, { cost: 1.3 }, { cost: 0.7 }, { service: 1.5 }, { market: 0.7 }, { market: 1.2 },
+  { demandOff: true }, { purchase: 0.9, cost: 1.2, market: 1.1 }, { purchase: 0.6, service: 2, demandOff: true },
+];
+setAcct(ACCT('admin'));
+const whatIf = {}, pools = {};
+for (const cs of g('CASES')) {
+  if (!cs.routes.length) continue;
+  whatIf[cs.id] = SCENARIOS.map((s) => ({ input: s, output: read('case.whatIf', { case_id: cs.id, ...s }) }));
+  if (cs.pool) pools[cs.id] = read('pool.optimize', { case_id: cs.id });
+}
+setAcct(null);
+put('engine.json', { scenarios: SCENARIOS, what_if: whatIf, pools });
+
 // ---------- write ----------
 mkdirSync(out, { recursive: true });
 for (const [name, data] of Object.entries(files)) writeFileSync(join(out, name), JSON.stringify(data, null, 1) + '\n');
