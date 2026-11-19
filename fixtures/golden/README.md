@@ -24,4 +24,5 @@ The demo's script runs headless with the clock pinned to its as-of time (7 Oct 2
 | `figures.json` | The demo's 31 data checks (all passing), and for each of the 11 accounts: permissions, visible pages and sections, tenants, visible cases, totals, counts, key figures, inbox |
 | `actions.json` | A scripted RT-1048 journey: each `invoke()` call (submit, approve, six system acknowledgements, confirm outcome, and the refusals in between) with its result and the case state after it |
 | `reads.json` | The read actions from a fresh copy of the demo: six case reads for 22 cases as five accounts, and `cases.list`, `inbox.get`, `receiving.plan`, `access.lookup` and `kpi.explain` as all 11 accounts |
+| `writes.json` | Write actions in 12 scripted scenarios (decisions, evidence, scenarios, notifications, tenant access, MCP proposals, delegation, identity), each in a fresh copy of the demo: every call's result, then reads that show what changed |
 | `engine.json` | The decision engine's read answers: `case.whatIf` for every case with routes under 10 scenarios, and `pool.optimize` for the pooled cases |

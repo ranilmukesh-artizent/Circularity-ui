@@ -199,6 +199,125 @@ put('engine.json', { scenarios: SCENARIOS, what_if: whatIf, pools });
   put('reads.json', reads);
 }
 
+// ---------- write actions: scripted scenarios, each in a fresh copy of the demo (B12) ----------
+// A call is [account, action, input] (input may be a function of the demo and the results so far); after the calls,
+// `observe` reads ([account, action, input]) show what changed through the read actions B11 matched.
+{
+  const RATIONALE = 'Redeploy to Site 3 as recommended; evidence snapshot reviewed.';
+  const approve = (id, route, extra = {}) => ({ case_id: id, ...(route ? { route } : {}), rationale: RATIONALE, reviewed: true, ...extra });
+  const look = (id, as = ['admin']) => as.flatMap((a) => [[a, 'case.get', { case_id: id }], [a, 'case.trace', { case_id: id }], [a, 'case.routes', { case_id: id }]]);
+  const inbox = (...as) => as.map((a) => [a, 'inbox.get', {}]);
+  const idpUser = (h, pred) => h('S').idp.users.find(pred);
+  const lastReq = (h) => h('S').reqs[0].id;
+  const SCENARIOS = {
+    submit_and_approve: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1048' }], ['planner-a', 'decision.submit', { case_id: 'RT-1048' }],
+        ['approver', 'decision.approve', { case_id: 'RT-1048', rationale: 'too short', reviewed: true }],
+        ['approver', 'decision.approve', { case_id: 'RT-1048', rationale: RATIONALE, reviewed: false }],
+        ['approver', 'decision.approve', approve('RT-1048', 'Sell + buy for Site 3')],
+        ['approver', 'decision.approve', approve('RT-1048', null, { spend: 12000, terms: 'Transfer to Site 3 by Day 10' })],
+        ['approver', 'decision.approve', approve('RT-1048')]],
+      observe: [...look('RT-1048', ['admin', 'approver']), ...inbox('approver', 'planner-a', 'admin'), ['admin', 'cases.list', { submitted: true }]],
+    },
+    override: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1048' }], ['approver', 'decision.override', approve('RT-1048', 'Sell parts externally')],
+        ['approver', 'decision.override', approve('RT-1048', 'No such route')], ['approver', 'decision.override', approve('RT-1048', 'Sell + buy for Site 3')]],
+      observe: [...look('RT-1048'), ...inbox('approver', 'planner-a')],
+    },
+    decline_and_reevaluate: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1049' }], ['approver', 'decision.decline', { case_id: 'RT-1049', reason: 'short' }],
+        ['approver', 'decision.decline', { case_id: 'RT-1049', reason: 'Refurbish first: grade A listings are open.' }],
+        ['planner-a', 'decision.submit', { case_id: 'RT-1049' }], ['planner-a', 'case.reevaluate', { case_id: 'RT-1049' }],
+        ['planner-a', 'decision.submit', { case_id: 'RT-1049' }], ['approver', 'decision.approve', approve('RT-1049')]],
+      observe: [...look('RT-1049'), ...inbox('approver', 'planner-a')],
+    },
+    approve_without_submit_and_by_planner: {
+      calls: [['planner-a', 'decision.approve', approve('RT-1048')], ['admin', 'decision.approve', approve('RT-1049')],
+        ['approver', 'decision.approve', approve('RT-1050')], ['planner-b', 'decision.submit', { case_id: 'RT-1048' }]],
+      observe: [...look('RT-1049'), ...inbox('admin')],
+    },
+    evidence: {
+      calls: [['executive', 'evidence.request', { case_id: 'RT-1051' }], ['planner-a', 'evidence.request', { case_id: 'RT-1051' }],
+        ['planner-a', 'evidence.request', { case_id: 'RT-1051' }], ['engineer', 'evidence.recordResult', { case_id: 'RT-1051' }],
+        ['wm-1', 'evidence.request', { case_id: 'RT-1050' }], ['wm-2', 'evidence.request', { case_id: 'RT-1050' }],
+        ['engineer', 'evidence.recordResult', { case_id: 'RT-1050' }], ['planner-b', 'decision.submit', { case_id: 'RT-1050' }]],
+      observe: [...look('RT-1051'), ...look('RT-1050'), ...inbox('engineer', 'planner-a', 'planner-b', 'wm-2')],
+    },
+    prepare: {
+      calls: [['planner-a', 'decision.prepare', { case_id: 'RT-1049' }], ['planner-a', 'decision.prepare', { case_id: 'RT-1051' }],
+        ['approver', 'decision.prepare', { case_id: 'RT-1048' }]],
+      observe: [...look('RT-1049'), ...inbox('planner-a')],
+    },
+    scenarios: {
+      calls: [['planner-a', 'scenario.save', { case_id: 'RT-1048', name: 'Cheaper new motor', scen: { purchase: 0.8, cost: 1, service: 1, market: 1, demandOff: false } }],
+        ['planner-a', 'scenario.save', { case_id: 'RT-1048', name: 'Demand cancelled', scen: { purchase: 1, cost: 1, service: 1, market: 1, demandOff: true }, top: 'Sell + buy for Site 3' }],
+        ['planner-a', 'scenario.delete', (h, res) => ({ case_id: 'RT-1048', id: res[0].output && res[0].output.id })],
+        ['planner-a', 'scenario.delete', { case_id: 'RT-1048', id: 'SCN-NONE' }], ['executive', 'scenario.save', { case_id: 'RT-1048', name: 'x', scen: {} }]],
+      observe: [...look('RT-1048', ['planner-a'])],
+    },
+    notifications: {
+      calls: [['executive', 'notify.send', { ex_id: 'risk:RT-1048', title: 'Value at risk: RT-1048', msg: 'Approve RT-1048 before Day 10.', sev: 'High', to: 'approver', ids: ['RT-1048'] }],
+        ['approver', 'notify.acknowledge', { id: 'NTF-101' }], ['approver', 'notify.acknowledge', { id: 'NTF-101' }],
+        ['planner-a', 'notify.acknowledge', { id: 'NTF-999' }], ['planner-a', 'comment.add', { key: 'RT-1048', text: 'Site 3 confirmed the need date.' }],
+        ['approver', 'comment.add', { key: 'RT-1048', text: 'Checked the Site 3 contract terms.' }],
+        ['finance', 'comment.add', { key: 'RT-1048', text: 'Purchase baseline checked against PO 49048.' }], ['finance', 'comment.add', { key: 'RT-1048', text: '' }],
+        ['planner-a', 'escalation.send', { case_id: 'RT-1048', to: 'approver', msg: 'Needed at Site 3 in 10 days.', blocker: 'Approval pending' }]],
+      observe: [...inbox('approver', 'executive', 'planner-a'), ['admin', 'case.trace', { case_id: 'RT-1048' }]],
+    },
+    tenant_access: {
+      calls: [['planner-b', 'access.requestTenant', { tenant: 'Customer A', reason: 'Pooled motor demand at Site 3 needs RT-1048.' }],
+        ['planner-b', 'access.requestTenant', { tenant: 'Customer C', reason: 'Shared battery pool with Customer C.' }],
+        ['planner-b', 'access.requestTenant', { tenant: 'Customer C', reason: 'again' }], ['admin', 'access.decideRequest', (h) => ({ id: lastReq(h), decision: 'decline', note: 'Use the pool view' })],
+        ['planner-b', 'case.get', { case_id: 'RT-1048' }], ['planner-b', 'access.decideRequest', { id: 'REQ-304', decision: 'approve' }],
+        ['approver', 'access.decideRequest', { id: 'REQ-304', decision: 'approve', note: 'For the motor pool' }],
+        ['planner-b', 'case.get', { case_id: 'RT-1048' }], ['admin', 'access.decideRequest', { id: 'REQ-304', decision: 'decline', note: 'Not needed' }],
+        ['admin', 'access.decideRequest', { id: 'REQ-303', decision: 'approve' }]],
+      observe: [...inbox('approver', 'planner-b', 'admin'), ['planner-b', 'cases.list', { owner: 'Customer A', limit: 3 }]],
+    },
+    mcp_proposals: {
+      calls: [['developer', 'mcp.propose', { name: 'Fleet telemetry', owner: 'Operations', purpose: 'Read run hours for remaining life.', data: 'Run hours, alarms', access: 'read', tools: ['get_run_hours'] }],
+        ['planner-a', 'mcp.propose', { name: 'x', owner: 'y', purpose: 'z', data: 'd', access: 'read', tools: [] }],
+        ['approver', 'access.decideRequest', (h) => ({ id: lastReq(h), decision: 'approve' })], ['admin', 'access.decideRequest', { id: 'REQ-301', decision: 'decline', note: 'Duplicate' }]],
+      observe: [...inbox('approver', 'developer', 'admin')],
+    },
+    delegation: {
+      calls: [['approver', 'access.setDelegation', { k: 'decisions', on: false }], ['admin', 'access.setDelegation', { k: 'decisions', on: false }],
+        ['planner-a', 'decision.submit', { case_id: 'RT-1048' }], ['approver', 'decision.approve', approve('RT-1048')],
+        ['admin', 'access.setDelegation', { k: 'tenantAccess', on: false }], ['approver', 'access.decideRequest', { id: 'REQ-304', decision: 'approve' }],
+        ['admin', 'access.setDelegation', { k: 'decisions', on: true }]],
+      observe: [['admin', 'access.lookup', { perm: 'approve' }], ...inbox('approver', 'admin')],
+    },
+    identity: {
+      calls: [['planner-a', 'access.syncDirectory', {}], ['admin', 'access.syncDirectory', {}], ['admin', 'access.setRoleSource', { src: 'groups' }],
+        ['admin', 'access.mapIdentity', { acct: 'admin', field: 'role', value: 'Planner' }], ['admin', 'access.mapIdentity', { acct: 'planner-c', field: 'role', value: 'Wizard' }],
+        ['admin', 'access.mapIdentity', { acct: 'wm-2', field: 'site', value: 'Warehouse 1' }],
+        ['admin', 'access.setOutOfOffice', (h) => ({ to: idpUser(h, (u) => h('idpRoleOf')(u) === 'Planner').id, from: '2026-10-08', until: '2026-10-15' })],
+        ['admin', 'access.setOutOfOffice', (h) => ({ to: idpUser(h, (u) => h('idpRoleOf')(u) === 'Approver').id, from: '2026-10-15', until: '2026-10-08' })],
+        ['admin', 'access.setOutOfOffice', (h) => ({ to: idpUser(h, (u) => h('idpRoleOf')(u) === 'Approver').id, from: '2026-10-08', until: '2026-10-15' })],
+        ['admin', 'access.clearOutOfOffice', { index: 0 }], ['admin', 'access.clearOutOfOffice', { index: 5 }],
+        ['admin', 'access.removeUser', (h) => ({ id: h('S').idp.users[h('S').idp.users.length - 1].id })], ['admin', 'access.removeUser', { id: 'nobody' }]],
+      observe: [['admin', 'access.lookup', { perm: 'assess' }], ['wm-2', 'cases.list', { limit: 3 }], ...inbox('admin')],
+    },
+  };
+  const writes = {};
+  for (const [name, sc] of Object.entries(SCENARIOS)) {
+    const h = freshDemo();
+    const inv = h('invoke'), setA = h('setAcct'), acct = h('ACCT');
+    const results = [], calls = [];
+    for (const [as, id, input] of sc.calls) {
+      const inp = typeof input === 'function' ? input(h, results) : input;
+      setA(acct(as));
+      const r = inv(id, inp);
+      calls.push({ as, action: id, input: inp });
+      results.push(r);
+    }
+    const observed = sc.observe.map(([as, id, input]) => { setA(acct(as)); return { as, action: id, input, result: inv(id, input) }; });
+    setA(null);
+    writes[name] = { calls: calls.map((c, k) => ({ ...c, result: results[k] })), observed };
+  }
+  put('writes.json', writes);
+}
+
 // ---------- write ----------
 mkdirSync(out, { recursive: true });
 for (const [name, data] of Object.entries(files)) writeFileSync(join(out, name), JSON.stringify(data, null, 1) + '\n');
