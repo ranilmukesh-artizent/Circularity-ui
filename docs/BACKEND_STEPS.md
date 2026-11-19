@@ -440,6 +440,19 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 
 **Done when:** an MCP client test can read evidence, is refused `send_instruction` without an approval reference, and sees the call in the call log.
 
+## B16b. Ask Circularity on a language model
+
+**Decision (19 Nov 2026):** Ask Circularity (the Ctrl+J panel) answers with a language model through `di-api`, starting on **Groq's free tier** (no card; roughly 30 requests a minute and about 1,000 requests a day per organisation, checked at console.groq.com/settings/limits). The data is synthetic, so sending it to an outside service is acceptable.
+
+1. **One interface:** `di/ask/` defines an `AskModel` interface. The first provider is Groq; the provider is chosen by configuration, so Claude or a local model (Ollama) can replace it without touching the frontend.
+2. **Endpoint:** `POST /api/ask` takes the question and the current page context and streams the answer.
+3. **Grounded answers:** the model gets the read-only B16 tools (evidence, case, routes, conflicts) and answers only from what they return, naming the asset IDs and source systems it used.
+4. **Access:** every tool call runs as the signed-in user, so the access policy and tenant boundary apply; Ask can never write, only point to the action.
+5. **No key or over the limit:** when `GROQ_API_KEY` is not set, or Groq answers 429, Ask falls back to the demo's rule-based answers and says so.
+6. **Key handling:** `GROQ_API_KEY` lives in the local `.env` only; `.env.example` lists it empty.
+
+**Done when:** with a key set, "Why is RT-1048 recommended for redeploy?" is answered from synced data with its sources; a Customer B planner asking about RT-1048 is refused; without a key, the fallback answers.
+
 ## B17. Frontend switch-over
 
 **Goal:** the React app uses the real backend, one area at a time, with no page rewrites.
@@ -500,6 +513,7 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 | B14 read APIs | 6–8 days | B15, B16 |
 | B15 live updates | 2–3 days | B14 |
 | B16 MCP server | 3–4 days | B14 |
+| B16b Ask Circularity on a model (Groq) | 2–3 days | follows B16 |
 | B17 frontend switch-over | 6–8 days | follows B14 area by area |
 | B18 hardening | 4–5 days | — |
 
