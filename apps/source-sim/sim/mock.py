@@ -7,8 +7,9 @@ Both are picked up at start-up; no shared file needs editing to add one.
 
 import importlib
 import pkgutil
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import Any
 
 from fastapi import APIRouter
 from sqlalchemy.engine import Connection
@@ -23,6 +24,8 @@ class Mock:
     ensure: Callable[[Connection, Seed], None]  # create tables and load the seed if empty
     reset: Callable[[Connection, Seed], dict[str, int]]  # drop, recreate, load; returns row counts
     title: str = ""
+    # optional: an async callable run once at start-up (e.g. the Sims SFTP server); returns an object with .close()
+    startup: Callable[[], Awaitable[Any]] | None = None
 
 
 DISCOVERY_ERRORS: dict[str, str] = {}  # module -> error; must stay empty (tests/test_registry.py)

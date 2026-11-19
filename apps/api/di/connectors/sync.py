@@ -29,6 +29,8 @@ log = logging.getLogger("di.sync")
 COMMIT_EVERY = 200
 NOT_SYNCED = ("paused", "disconnected", "unavailable")
 SAFETY_INTERVAL_MIN = 60  # event-driven sources (interval 0) still get a full check every hour
+# vendors replaced on purpose (docs/BACKEND_STEPS.md, B5b); the same list as source-sim's registry
+VENDOR_OVERRIDES = {"tms": "Oracle Transportation Management"}  # was the fictional "ShipLane TMS"
 
 
 def ensure_sources(session: Session) -> None:
@@ -38,11 +40,11 @@ def ensure_sources(session: Session) -> None:
         session.execute(
             text(
                 "INSERT INTO source_system (id, vendor, type, status, interval_min, authority, owner, confidence, note) "
-                "VALUES (:id, :v, :t, :st, :i, :a, :o, :c, :n) ON CONFLICT (id) DO NOTHING"
+                "VALUES (:id, :v, :t, :st, :i, :a, :o, :c, :n) ON CONFLICT (id) DO UPDATE SET vendor = EXCLUDED.vendor"
             ),
             {
                 "id": s["id"],
-                "v": s["vendor"],
+                "v": VENDOR_OVERRIDES.get(s["id"], s["vendor"]),
                 "t": s["type"],
                 "st": status,
                 "i": int(s.get("interval") or 0),

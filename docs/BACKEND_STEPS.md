@@ -168,6 +168,39 @@ The systems share codes, so their data agrees. RT-1048 is `MTR-2041` everywhere:
 - One list wrapper key per spec.
 - Filters are plain `?field=value`, with no query language.
 
+## B5b. Full mocks for RT-1048's happy path
+
+**Decision (19 Nov 2026):** every system on RT-1048's happy path is a full, one-to-one vendor mock. That means:
+- the vendor's real URL paths, payload shapes and field names
+- the vendor's auth, query and paging conventions, and error bodies
+- the vendor's business rules and state changes (allocations, bookings, repair status, certificate expiry)
+
+The adapter for each is rewritten against it.
+
+**The path:**
+- the evidence, from lease end to inspection
+- every route the Decide stage scores, not only the recommended one
+- the six execution steps: Sterling allocation, Depot Repair refurbishment, transport booking, warehouse transfer, delivery, and S/4 cost posting
+
+Only SafetyCulture (RT-1048's inspection comes from Depot Repair) stays generic. AWS IoT stays not provisioned.
+
+| System | Status |
+|---|---|
+| SAP S/4HANA, SAP Ariba, Salesforce, ServiceNow, IBM Maximo, IBM Sterling OMS | Full since B3–B5 |
+| **Oracle Transportation Management** (`tms`) | **Replaces the demo's fictional ShipLane TMS** (it is on the demo's own list of TMS vendors). OTM REST resources (shipments, order releases, rates, tracking events) |
+| Oracle Lease and Finance Management (`lease`), Oracle Depot Repair (`repair`) | Oracle E-Business Suite REST (Integrated SOA Gateway) conventions |
+| Manhattan Active WM (`wms`) | Manhattan Active REST API conventions |
+| Siemens Teamcenter (`plm`) | Teamcenter REST and SOA JSON conventions |
+| Aras Innovator (`bom`) | Aras OData REST API (OData v4) |
+| Bentley AssetWise (`eng`), MasterControl (`qms`), Optoro (`rl`), Ritchie Bros. Market Data (`mkt`), Machinio (`dlr`), Persefoni (`esg`) | The vendor's real API where public documentation exists; otherwise its published conventions |
+| Sims Lifecycle Services (`rcy`) | A real SFTP server (source-sim, port 2222) with signed CSV files; the adapter is a real SFTP client |
+
+**Where no public API documentation exists**, each mock says so in its docstring and lists every assumption.
+
+**The vendor swap:** recorded in `VENDOR_OVERRIDES` in both services. The frontend still shows "ShipLane TMS" until it switches to the API in B17.
+
+**Done when:** each mock has contract tests that call it as the real client would, its adapter's tests pass against it, and the mock's docstring lists the documentation it follows and its assumptions.
+
 ## B6. Events, faults and the simulated clock
 
 1. **Outbox:** every write in source-sim writes an outbox row. A sender pushes it as a CloudEvents webhook to subscribed URLs (S/4 event names such as `sap.s4.beh.reservation.v1.Reservation.Created.v1`; vendor-style names for the generic mocks). Delivery is retried until acknowledged.

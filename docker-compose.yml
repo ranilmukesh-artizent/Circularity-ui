@@ -36,7 +36,9 @@ services:
     volumes:
       - ./apps/source-sim:/app
       - ./fixtures:/fixtures:ro # B1 golden files: the seed (docs/BACKEND_STEPS.md, B2)
-    ports: ["8100:8100"]
+    ports:
+      - "8100:8100"
+      - "2222:2222" # SFTP: the Sims Lifecycle Services drop (B5b)
     depends_on:
       postgres: { condition: service_healthy }
 

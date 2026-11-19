@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from sim.registry import SYSTEMS
+from sim.registry import SYSTEMS, VENDOR_OVERRIDES
 from sim.seed import golden, seed
 
 
@@ -110,4 +110,4 @@ def test_sources_match_the_registry(s):
     assert {x["id"] for x in s.sources} == {sys.source_id for sys in SYSTEMS}
     by_id = {x["id"]: x for x in s.sources}
     for sys in SYSTEMS:
-        assert by_id[sys.source_id]["vendor"] == sys.vendor, sys.source_id
+        assert VENDOR_OVERRIDES.get(sys.source_id, by_id[sys.source_id]["vendor"]) == sys.vendor, sys.source_id

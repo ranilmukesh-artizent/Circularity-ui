@@ -53,7 +53,18 @@ async def lifespan(_: FastAPI):
             asyncio.create_task(_loop("scheduler", scheduler.tick, 1.0)),
             asyncio.create_task(_loop("webhooks", webhooks.deliver, 1.0)),
         ]
+    started = []  # mocks with their own servers (e.g. the Sims SFTP server)
+    for sid, m in MOCKS.items():
+        if m.startup is not None:
+            try:
+                started.append(await m.startup())
+            except Exception as e:  # noqa: BLE001 - reported in /health, not fatal
+                log.exception("mock %s failed to start", sid)
+                STARTUP_ERRORS[sid] = f"startup: {type(e).__name__}: {e}"[:500]
     yield
+    for s in started:
+        with contextlib.suppress(Exception):
+            s.close()
     for t in tasks:
         t.cancel()
         with contextlib.suppress(asyncio.CancelledError):
