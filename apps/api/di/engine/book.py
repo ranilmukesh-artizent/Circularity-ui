@@ -34,10 +34,22 @@ def evaluated(c: dict) -> dict:
     return facts | {"routes": routes, "recommendation": rec}
 
 
+_GOLDEN = {c["id"]: c for c in golden.load("cases")}
+
+
 @cache
 def _book() -> dict[str, dict]:
-    return {c["id"]: evaluated(c) for c in golden.load("cases")}
+    return {cid: evaluated(c) for cid, c in _GOLDEN.items()}
 
 
 def get(case_id: str) -> dict | None:
+    """The case as the engine evaluates it. Shared: callers that change it take `fresh()` instead."""
     return _book().get(case_id)
+
+
+def fresh(case_id: str) -> dict | None:
+    return evaluated(_GOLDEN[case_id]) if case_id in _GOLDEN else None
+
+
+def ids() -> list[str]:
+    return sorted(_GOLDEN)

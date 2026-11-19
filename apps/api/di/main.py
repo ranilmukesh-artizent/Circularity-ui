@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 
 import di.actions.engine  # noqa: F401  (registers action handlers)
 import di.actions.integration  # noqa: F401  (registers action handlers)
+import di.reads.cases  # noqa: F401  (registers action handlers)
+import di.reads.workspace  # noqa: F401  (registers action handlers)
+from di.cases import use_database_scope
 from di.config import get_settings
 from di.connectors import webhook
 from di.db import get_session
@@ -17,6 +20,7 @@ app.include_router(auth_routes.router)
 app.include_router(action_routes.router)
 app.include_router(source_routes.router)
 app.include_router(webhook.router)
+use_database_scope()
 
 
 @app.get("/api/health/live")

@@ -34,12 +34,16 @@ var requestAnimationFrame=f=>0;var cancelAnimationFrame=()=>{};var ResizeObserve
 var CSS={escape:s=>s};var alert=()=>{};var confirm=()=>true;
 (function(){let s=20261007;Math.random=function(){s=(s+0x6D2B79F5)|0;let t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}})();
 `;
-const ctx = vm.createContext({
-  console, Date: FixedDate, Intl, TextEncoder, crypto: globalThis.crypto, performance: { now: () => 0 },
-  setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {},
-});
-vm.runInContext(prelude + src + '\n;globalThis.__get=function(n){return eval(n)};', ctx, { timeout: 60000 });
-const g = (n) => ctx.__get(n);
+// a fresh copy of the demo in its own sandbox; returns a lookup of its globals
+function freshDemo() {
+  const ctx = vm.createContext({
+    console, Date: FixedDate, Intl, TextEncoder, crypto: globalThis.crypto, performance: { now: () => 0 },
+    setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {},
+  });
+  vm.runInContext(prelude + src + '\n;globalThis.__get=function(n){return eval(n)};', ctx, { timeout: 60000 });
+  return (n) => ctx.__get(n);
+}
+const g = freshDemo();
 
 // ---------- plain JSON: drop functions, break cycles, dates as ISO, numbers rounded to 1e-6 ----------
 function plain(v, seen = new WeakMap(), path = '$') {
@@ -152,6 +156,48 @@ for (const cs of g('CASES')) {
 }
 setAcct(null);
 put('engine.json', { scenarios: SCENARIOS, what_if: whatIf, pools });
+
+// ---------- read actions as each account, from a fresh copy of the demo (B11) ----------
+// A fresh copy, so the reads see the demo's starting state and nothing above moves.
+{
+  const h = freshDemo();
+  const inv = h('invoke'), setA = h('setAcct'), acct = h('ACCT');
+  const rd = (id, input) => { const r = inv(id, input); return r.ok ? { ok: true, output: r.output } : { ok: false, error: r.error }; };
+  const all = h('CASES');
+  // every hand-modelled case, and generated cases from each stage and readiness (the first two of each)
+  const pickIds = new Set(all.filter((c) => c.hero || ['RT-1062', 'RT-1044'].includes(c.id)).map((c) => c.id));
+  const seen = {};
+  for (const c of all) {
+    const k = c.readiness + '|' + c.stage + '|' + (c.blocked ? 'b' : '');
+    if (!c.hero && (seen[k] = (seen[k] || 0) + 1) <= 2) pickIds.add(c.id);
+  }
+  const caseIds = [...pickIds].sort();
+  const CASE_READS = ['case.get', 'case.evidence', 'case.routes', 'case.trace', 'demand.find', 'asset.compare'];
+  const CASE_AS = ['admin', 'planner-a', 'planner-b', 'wm-1', 'executive'];
+  const LIST_INPUTS = [
+    {}, { sort: 'priority' }, { sort: 'value', limit: 10 }, { sort: 'received', limit: 5 }, { stage: 'awaiting_approval' },
+    { location: 'Warehouse 1' }, { missing: true }, { owner: 'Customer B' }, { cls: 'motor' }, { q: 'RT-1048' },
+    { route: 'redeploy' }, { submitted: true }, { received_within_days: 3 }, { assessment: 'Pending' }, { product: 'Industrial motor' },
+  ];
+  const OTHER_READS = [
+    ...LIST_INPUTS.map((i) => ['cases.list', i]),
+    ['inbox.get', {}], ['receiving.plan', {}],
+    ['access.lookup', { perm: 'approve' }], ['access.lookup', { perm: 'approve', amount: 20000 }], ['access.lookup', { perm: 'confirm' }],
+    ['access.lookup', { perm: 'assess' }],
+    ...Object.keys(h('AF_KPI')).map((k) => ['kpi.explain', { kpi: k }]),
+  ];
+  const reads = { case_ids: caseIds, case_reads: {}, other_reads: {} };
+  for (const a of h('ACCOUNTS')) {
+    setA(acct(a.id));
+    if (CASE_AS.includes(a.id)) {
+      reads.case_reads[a.id] = {};
+      for (const id of caseIds) reads.case_reads[a.id][id] = Object.fromEntries(CASE_READS.map((x) => [x, rd(x, { case_id: id })]));
+    }
+    reads.other_reads[a.id] = OTHER_READS.map(([x, i]) => ({ action: x, input: i, result: rd(x, i) }));
+  }
+  setA(null);
+  put('reads.json', reads);
+}
 
 // ---------- write ----------
 mkdirSync(out, { recursive: true });
