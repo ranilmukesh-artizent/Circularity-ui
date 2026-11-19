@@ -12,6 +12,7 @@ import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
+from types import SimpleNamespace
 from typing import Any
 
 from sqlalchemy import text
@@ -20,6 +21,8 @@ from sqlalchemy.orm import Session
 from di.canonical.schema import MODELS, authority
 
 NUMERIC_TOLERANCE = 0.005  # values within 0.5% count as the same (currency rounding, unit conversion)
+# list fields every source adds to: the canonical value is the union, and sources never conflict on them
+MERGE_FIELDS = {"asset.source_refs"}
 
 
 @dataclass(frozen=True)
@@ -64,7 +67,8 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
     """Record the facts of one source and update the canonical values and conflicts they touch. Returns facts written."""
     now = datetime.now(UTC)
     touched: set[tuple[str, str, str]] = set()
-    for f in facts:
+    # one fixed order for every writer, so two syncs touching the same records cannot deadlock each other
+    for f in sorted(facts, key=lambda x: (x.model, x.key, x.field)):
         session.execute(
             text(
                 "INSERT INTO provenance (model, key, field, source_id, value, source_field, source_value, transform, resource, "
@@ -90,7 +94,7 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
             },
         )
         touched.add((f.model, f.key, f.field))
-    for model, key, field in touched:
+    for model, key, field in sorted(touched):
         _settle(session, model, key, field, now)
     return len(facts)
 
@@ -102,7 +106,15 @@ def _settle(session: Session, model: str, key: str, field: str, now: datetime) -
     ).all()
     auth = authority(model, field)
     by_source = {r.source_id: r for r in rows}
-    if auth in by_source:
+    if f"{model}.{field}" in MERGE_FIELDS:
+        merged: list[Any] = []
+        for r in sorted(rows, key=lambda r: r.source_id):
+            for v in r.value if isinstance(r.value, list) else [r.value]:
+                if v not in merged:
+                    merged.append(v)
+        chosen = SimpleNamespace(value=merged)
+        rows = []  # a merged list never conflicts
+    elif auth in by_source:
         chosen = by_source[auth]
     else:
         chosen = max(rows, key=lambda r: (float(r.confidence or 0), r.fetched_at))

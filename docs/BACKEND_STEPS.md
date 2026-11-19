@@ -266,6 +266,25 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 5. **Conflicts:** when two sources disagree on a field, name the source with authority (`SOURCES[*].authority`), open a conflict and hold the routes that depend on it.
 6. **Connection Fabric actions:** `source.sync`, `source.reconnect`, `credentials.rotate`, `source.delete`, `source.update`, `conflict.resolve`, `conflict.escalate`, `import.commit`, `tables.update`.
 
+**Status (19 Nov 2026): connectors done; the full-sync check is still to run.** All 20 systems have an adapter in `apps/api/di/connectors/adapters/`:
+- S/4 and Ariba
+- the four full mocks: Salesforce, Sterling, ServiceNow, Maximo
+- the generic mocks, sharing `di/connectors/generic.py`
+
+**Tests:** 38 connector tests run against the live mocks. Each adapter checks RT-1048's facts and the demo's mapping examples, delta reads, and a write picked up by a delta sync.
+
+**Live webhook path:** checked end to end. A change in S/4 becomes an event, then a delta sync of just the 2 changed rows.
+
+**Fixed during integration:**
+- Concurrent syncs deadlocked; facts are now applied in one fixed order and a deadlocked record is retried.
+- The cursor moved past failed records; a resource with failures now keeps its old cursor.
+- Source status now follows the adapters that exist.
+- List fields such as `asset.source_refs` merge instead of conflicting.
+
+**Not reproduced:** mapping examples with no matching seeded data, listed in each adapter's docstring.
+
+**Disagreements between seeds:** the adapters report real ones, for example Maximo and ServiceNow on install dates. They show up as conflicts, as designed. Run `scripts/full_sync.py` for the totals.
+
 **Done when:**
 - A clean `docker compose up` followed by "sync all" fills `di` with the 128 cases, each with full evidence and provenance.
 - Source freshness and completeness match `sources.json`.

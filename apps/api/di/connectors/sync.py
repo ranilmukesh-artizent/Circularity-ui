@@ -10,9 +10,11 @@ refused). paused / disconnected / unavailable are set by people (Connection Fabr
 
 import json
 import logging
+import time
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from di import golden
@@ -50,6 +52,15 @@ def ensure_sources(session: Session) -> None:
                 "n": s.get("note"),
             },
         )
+    # a source that gained (or lost) a connector since it was registered
+    session.execute(
+        text("UPDATE source_system SET status = 'live', updated_at = now() WHERE status = 'unavailable' AND id = ANY(:ids)"),
+        {"ids": list(ADAPTERS)},
+    )
+    session.execute(
+        text("UPDATE source_system SET status = 'unavailable', updated_at = now() WHERE NOT (id = ANY(:ids))"),
+        {"ids": list(ADAPTERS)},
+    )
     session.commit()
 
 
@@ -90,6 +101,7 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
             for res in adapter.resources():
                 since = None if (full or not res.delta) else _cursor(s, source_id, res.name)
                 newest = since
+                failed_here = 0
                 for rec in res.read(client, since):
                     read += 1
                     s.execute(
@@ -106,23 +118,33 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
                             "q": rec.request,
                         },
                     )
-                    try:
-                        with s.begin_nested():
-                            facts = [
-                                f if f.resource else type(f)(**{**f.__dict__, "resource": rec.resource, "ext_id": rec.ext_id})
-                                for f in adapter.map(rec)
-                            ]
-                            written += store.apply(s, source_id, facts, conf)
-                    except Exception as e:  # noqa: BLE001 - a record that cannot be mapped is counted, not fatal
-                        failed += 1
-                        status = "partial"
-                        error = error or f"{rec.resource}/{rec.ext_id}: {type(e).__name__}: {e}"[:500]
-                        log.warning("map failed %s %s/%s: %s", source_id, rec.resource, rec.ext_id, e)
+                    for attempt in range(3):
+                        try:
+                            with s.begin_nested():
+                                facts = [
+                                    f if f.resource else type(f)(**{**f.__dict__, "resource": rec.resource, "ext_id": rec.ext_id})
+                                    for f in adapter.map(rec)
+                                ]
+                                written += store.apply(s, source_id, facts, conf)
+                            break
+                        except OperationalError as e:  # a deadlock with a concurrent sync: try the record again
+                            if "deadlock" not in str(e).lower() or attempt == 2:
+                                failed, failed_here = failed + 1, failed_here + 1
+                                status, error = "partial", error or f"{rec.resource}/{rec.ext_id}: {str(e).splitlines()[0]}"[:500]
+                                break
+                            time.sleep(0.05 * (attempt + 1))
+                        except Exception as e:  # noqa: BLE001 - a record that cannot be mapped is counted, not fatal
+                            failed, failed_here = failed + 1, failed_here + 1
+                            status = "partial"
+                            error = error or f"{rec.resource}/{rec.ext_id}: {type(e).__name__}: {e}"[:500]
+                            log.warning("map failed %s %s/%s: %s", source_id, rec.resource, rec.ext_id, e)
+                            break
                     if rec.changed and (newest is None or rec.changed > newest):
                         newest = rec.changed
                     if read % COMMIT_EVERY == 0:
                         s.commit()
-                if res.delta and newest:
+                # a resource with failed records keeps its old cursor, so the next sync reads them again
+                if res.delta and newest and not failed_here:
                     _set_cursor(s, source_id, res.name, newest)
                 s.commit()
             new_status = "live"

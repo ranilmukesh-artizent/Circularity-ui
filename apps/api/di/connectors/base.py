@@ -12,8 +12,9 @@ since a cursor, and how to turn each record into canonical facts.
 
 The sync runner (sync.py) does the rest: runs, cursors, raw records, the canonical store, freshness, errors.
 `since` is the cursor of the last successful sync of that resource (an ISO timestamp), or None for a full read;
-an adapter that cannot read deltas ignores it. The cursor saved after a run is the run's start time, so nothing
-changed during the run is missed.
+an adapter that cannot read deltas ignores it. The cursor saved after a run is the newest `Record.changed` the run
+saw, in the source's own clock (simulated time for the mocks); a resource with failed records keeps its old cursor.
+When a source gives no change time per record, the adapter can use the source's clock at the start of the read.
 """
 
 from collections.abc import Callable, Iterator
