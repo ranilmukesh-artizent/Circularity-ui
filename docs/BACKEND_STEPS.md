@@ -386,6 +386,21 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 
 **Done when:** that parity test passes.
 
+**Status: done (19 Nov 2026).**
+- **Cases in the database** (migration 0005): `case_record` holds each case as one JSON document in the demo's shape, with owner, location and stage as columns; `case_stage_log` records every change of stage. Cases are opened once from the engine's evaluation (`di/cases/store.py`): the one place di takes data other than through a connector, because the demo's route values are random draws no source holds (B10).
+- **Stage machine** (`di/cases/lifecycle.py`): the stored stages (none, awaiting approval, approved, executing, re-evaluate, closed) and the allowed moves. A move writes the stage log and a `case.stage_changed` event; the action behind it writes the journal. The ten stages a person sees are derived from it (`di/reads/common.py`, the demo's afStageStates and afRun).
+- **The tenant boundary and warehouse lock** read the case's owner and location from the database.
+- **Read actions** (`di/reads/`): `cases.list`, `case.get`, `case.evidence`, `case.routes`, `case.whatIf`, `case.trace`, `asset.compare`, `demand.find`, `pool.optimize`, `inbox.get`, `receiving.plan`, `access.lookup`, `kpi.explain`.
+- **Parity:** `fixtures/golden/reads.json` (new) holds the demo's answers from a fresh copy of the demo: six case reads for 22 cases as five accounts, and the other reads as all 11 accounts. All 969 match exactly, refusals included. The one translation: an unlimited approval limit is `null` in JSON (the demo's own `JSON.stringify` writes the same), where the dump wrote "Infinity".
+- **Tests:** 1,442 api tests pass.
+
+**Starting state with no backend home yet.** The demo keeps some state in browser memory: its event stream, notifications, evidence and access requests, failing workflows, approval limits and expected returns. The reads use the demo's starting values, kept in one commented block in `di/reads/common.py`; B12 and B15 give them tables as the actions that change them arrive.
+
+**Found for B12:**
+- The demo lets a Planner approve once Admin raises the Planner approval limit above $0 (its later `can()`); `di/policy.py` does not have that rule yet. `limit_for` in `di/reads/common.py` is ready for it.
+- `exDelivered` needs the transport plan (`exMove`), not ported yet; it is reached only once the last execution step is acknowledged (B13).
+- An action that returns Infinity or NaN cannot be sent as JSON; return `null`.
+
 ## B12. Decisions and approvals
 
 1. **Decision actions:**
