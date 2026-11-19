@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse, Response
 from sqlalchemy import func, insert, select, text, update
 from sqlalchemy.engine import Connection
 
-from sim import events
+from sim import clock, events
 from sim.db import engine
 from sim.odata.service import ODataError, error_response
 from sim.s4 import security
@@ -30,8 +30,8 @@ SOURCE = "erp"
 
 
 def sim_now() -> datetime:
-    """The simulated clock (B6 makes it advance); until then, wall-clock time."""
-    return datetime.now(UTC)
+    """Simulated time (sim/clock.py, B6)."""
+    return clock.now()
 
 
 # ------------------------------------------------------------------ auth

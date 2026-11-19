@@ -154,6 +154,19 @@ Each is a spec file with its resources, read and write paths, paging style, auth
 
 **Done when:** a test advances the clock, receives the completion webhooks in order, and a fault makes the next call fail as configured.
 
+**Status: done (19 Nov 2026).** The building blocks, each a module in `apps/source-sim/sim/`:
+- `clock.py`: simulated time, stored in Postgres
+- `scheduler.py`: named handlers that run when the clock reaches their time
+- `webhooks.py`: signed CloudEvents with retry and backoff
+- `faults.py`: one middleware, so every mock gets latency, error, unavailable and token-expired faults
+- `admin.py`: the `/_sim/*` control endpoints, plus a webhook sink for demos
+
+S/4, Ariba and the generic mocks stamp their changes with simulated time. Nine tests cover it.
+
+The demo's starting fault (Ritchie Bros. token expired) is applied by `POST /_sim/faults/demo`, or at start-up with `SIM_DEMO_FAULTS=true`. It stays off by default so contract tests see healthy systems.
+
+Mocks schedule their own completions as they get their write paths. For example, a Maximo work order completes in N days. That wiring happens in B13, where the instructions arrive.
+
 ## B7. di foundations: schema and auth
 
 1. **Schema** (Alembic):

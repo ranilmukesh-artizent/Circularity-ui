@@ -12,7 +12,7 @@ HTTP, below spec.base_path:
 import base64
 import secrets
 import time
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -21,7 +21,7 @@ from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, and_,
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import Connection
 
-from sim import events
+from sim import clock, events
 from sim.db import engine
 from sim.generic.spec import Auth, Paging, Resource, Spec, credentials
 from sim.mock import Mock
@@ -155,7 +155,7 @@ def build(spec: Spec) -> Mock:
         return offset + size
 
     def now() -> datetime:
-        return datetime.now(UTC)
+        return clock.now()  # simulated time (B6)
 
     def counter(conn: Connection, name: str) -> int:
         n = conn.execute(

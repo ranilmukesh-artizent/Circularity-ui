@@ -1,7 +1,7 @@
 """The outbox: every change in a mocked system records a business event here (docs/BACKEND_STEPS.md, B3; delivered
 as CloudEvents webhooks in B6)."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import BigInteger, Column, DateTime, MetaData, String, Table, insert, text
@@ -29,4 +29,6 @@ def create(conn: Connection) -> None:
 
 
 def emit(conn: Connection, source: str, type_: str, subject: str, data: dict[str, Any], at: datetime | None = None) -> None:
-    conn.execute(insert(OUTBOX).values(source=source, type=type_, subject=subject, data=data, time=at or datetime.now(UTC)))
+    from sim import clock  # simulated time (B6)
+
+    conn.execute(insert(OUTBOX).values(source=source, type=type_, subject=subject, data=data, time=at or clock.now(conn)))
