@@ -99,3 +99,15 @@ def principal(
     if a is None:
         raise HTTPException(401, {"code": "unauthenticated", "message": "Unknown account."})
     return Principal(a, load_context(session))
+
+
+def optional_principal(
+    creds: HTTPAuthorizationCredentials | None = Depends(_bearer), session: Session = Depends(get_session)
+) -> Principal | None:
+    """The signed-in account, or None (for endpoints that answer anonymous callers themselves, like /api/actions)."""
+    if creds is None:
+        return None
+    try:
+        return principal(creds, session)
+    except HTTPException:
+        return None

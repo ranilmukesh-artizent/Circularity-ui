@@ -6,14 +6,10 @@ the B1 golden file `policy.json`. What changes at run time lives in the database
 (decisions, MCP proposals, tenant access) and the tenant grants a Planner was given.
 """
 
-import json
-import re
 from dataclasses import dataclass, field
 from functools import cache
-from pathlib import Path
-from typing import Any
 
-from di.config import get_settings
+from di import golden
 
 # Features the demo keeps hidden (index.html FEAT: pools:false): these sections are never visible.
 HIDDEN_SECTIONS = {("product", "pools"), ("analytics", "pool")}
@@ -39,29 +35,14 @@ class Context:
     grants: dict[str, list[str]] = field(default_factory=dict)  # account id -> extra tenants
 
 
-def _resolve_refs(node: Any, root: Any) -> Any:
-    if isinstance(node, dict):
-        if set(node) == {"$ref"}:
-            cur = root
-            for key, idx in re.findall(r"\.([^.\[\]]+)|\[(\d+)\]", node["$ref"][1:]):
-                cur = cur[int(idx)] if idx else cur[key]
-            return _resolve_refs(cur, root)
-        return {k: _resolve_refs(v, root) for k, v in node.items()}
-    if isinstance(node, list):
-        return [_resolve_refs(v, root) for v in node]
-    return node
-
-
 @cache
 def _data() -> dict:
-    path = Path(get_settings().golden_dir) / "policy.json"
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    return _resolve_refs(raw, raw)
+    return golden.load("policy")
 
 
 @cache
 def _world() -> dict:
-    return json.loads((Path(get_settings().golden_dir) / "world.json").read_text(encoding="utf-8"))
+    return golden.load("world")
 
 
 def roles() -> dict[str, dict]:

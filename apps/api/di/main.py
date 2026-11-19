@@ -5,10 +5,12 @@ from sqlalchemy.orm import Session
 
 from di.config import get_settings
 from di.db import get_session
+from di.routers import actions as action_routes
 from di.routers import auth as auth_routes
 
 app = FastAPI(title="Circularity DI API", version="0.2.0")
 app.include_router(auth_routes.router)
+app.include_router(action_routes.router)
 
 
 @app.get("/api/health/live")

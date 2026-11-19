@@ -77,7 +77,7 @@ put('policy.json', {
   role_policy: g('ROLE_POLICY'), accounts: g('ACCOUNTS'), perm_acts: g('PERM_ACTS'), perm_alias: g('PERM_ALIAS'), sections: g('RB_SECS'),
   signin_ids: g('SIGNIN_IDS'), signin_domain: g('SIGNIN_DOMAIN'),
 });
-put('actions_catalog.json', Object.values(g('ACTIONS')).map(({ id, title, desc, risk, perm, scope, input }) => ({ id, title, desc, risk, perm, scope, input })));
+put('actions_catalog.json', Object.values(g('ACTIONS')).map(({ id, title, desc, risk, perm, scope, input, verb, dupText, idem }) => ({ id, title, desc, risk, perm, scope, input, verb: verb ?? null, dup_text: dupText ?? null, idempotent: !!idem })));
 
 // ---------- per-account answers: access, scope and headline figures ----------
 const setAcct = g('setAcct'), ACCT = g('ACCT'), invoke = g('invoke'), S = g('S');

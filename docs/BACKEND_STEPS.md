@@ -238,6 +238,19 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 
 **Done when:** a test runs every action with bad input and with the wrong role and gets the demo's error codes. The handlers themselves arrive in B10–B13.
 
+**Status: done (19 Nov 2026).** All 76 actions run through one pipeline.
+
+- **Code** (`apps/api/di/actions/`):
+  - `registry.py` declares the actions from the golden catalog. Handlers attach with `@implement` and `@guard`.
+  - `pipeline.py` has the 12 checks in the demo's order, with the demo's messages.
+  - `scope.py` has the case-scope lookup. It reads the golden cases until B9 and B11 put cases in `di`.
+- **Endpoints:** `POST /api/actions/{id}`, `GET /api/actions`, `GET /api/journal` and `POST /api/journal/undo`.
+- **Database:** migration 0003 adds the journal and domain events. An undone entry frees its idempotency key.
+- **Agent headers:** `X-Circularity-Preparer`, `-Confirmed` and `-Run` drive the agent gate. A client `Idempotency-Key` header covers actions that have no key of their own.
+- **Tests:** 129 cover the actions, and the API has 183 in all. Every action gets the demo's validation error for missing input, and every permissioned action gets `out_of_scope` for a role without it, with the demo's wording. The tenant boundary, the warehouse lock and the 15-character rationale match the golden refusals word for word.
+- **Status codes:** an action without a handler yet answers 501 `not_implemented`. HTTP status codes map onto the demo's error codes; the body always has the demo's shape.
+- **Golden catalog:** `dump-golden.mjs` now also records each action's verb and duplicate wording, for the error messages.
+
 ## B9. Connectors and sync
 
 **Goal:** `di` fills itself from source-sim.
