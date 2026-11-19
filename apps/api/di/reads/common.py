@@ -17,7 +17,7 @@ from typing import Any
 
 from sqlalchemy import text
 
-from di import golden, policy
+from di import golden, policy, state
 from di.engine.jsmath import js_round, js_sum
 from di.engine.scenario import Assumptions, scenario_routes
 
@@ -784,14 +784,16 @@ def next_step(c: Case, ctx) -> dict:
 
 
 # ---------------------------------------------------------------- the demo's event log
-# The demo's EVENTS (instructions, acknowledgements, escalations ...) live in browser memory. The backend has no home
-# for them yet (domain_event holds the backend's own events, in another shape), so the reads use the starting log.
+# The demo's EVENTS (instructions, acknowledgements, escalations ...): the workspace collection "events" (di.state),
+# seeded from the starting log. domain_event holds the backend's own events, in another shape. The demo's log is
+# newest first (pushEvent unshifts); the collection keeps insertion order, so it is seeded oldest first.
 STARTING_EVENTS: list[dict] = golden.load("events")["events"]
+state.register("events", lambda: [(e["id"], e) for e in reversed(STARTING_EVENTS)])
 
 
-def case_events(case_id: str) -> list[dict]:
-    """The demo's EVENTS for one case, in log order."""
-    return [e for e in STARTING_EVENTS if e.get("caseId") == case_id]
+def case_events(s, case_id: str) -> list[dict]:
+    """The demo's EVENTS for one case, in log order (newest first)."""
+    return [e for e in state.items(s, "events", newest_first=True) if e.get("caseId") == case_id]
 
 
 # ---------------------------------------------------------------- more number formats
@@ -820,7 +822,8 @@ def kfmt(n: float) -> str:
 # afLimitFor's default: unlimited for Approver and Admin, $0 for everyone else. math.inf is the demo's Infinity.
 STARTING_APPROVAL_LIMITS: dict[str, float] = {"Approver": math.inf, "Admin": math.inf, "Planner": 0}
 
-# S.notes: notifications sent from an exception to its owner (Actions on me). One is open at the start.
+# S.notes: notifications sent from an exception to its owner (Actions on me), the workspace collection "notes"
+# (di.state) seeded from these. One is open at the start.
 STARTING_NOTES: list[dict] = [
     {
         "id": "NTF-101",
@@ -831,9 +834,18 @@ STARTING_NOTES: list[dict] = [
         "to": "approver",
         "toLabel": "Approver",
         "from": "Executive",
+        "at": iso(add_days(AS_OF, -0.2)),
         "status": "open",
+        "ids": [],
     }
 ]
+state.register("notes", lambda: [(n["id"], n) for n in STARTING_NOTES])
+
+
+def notes(s) -> list[dict]:
+    """The notifications, oldest first (the demo's S.notes)."""
+    return state.items(s, "notes")
+
 
 # S.reqs: tenant-access requests and MCP server proposals, decided by a delegated Approver or by Admin (in order;
 # the reads need only these fields).

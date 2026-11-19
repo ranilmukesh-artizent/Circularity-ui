@@ -18,7 +18,7 @@ from di import golden
 
 Risk = Literal["read", "draft", "act", "commit", "system"]
 Handler = Callable[[dict[str, Any], "Any"], dict[str, Any] | None]
-Guard = Callable[[dict[str, Any], "Any"], tuple[str, str] | None]
+Guard = Callable[[dict[str, Any], "Any"], tuple[str, str] | tuple[str, str, dict] | None]  # (code, message[, extra])
 IdemKey = Callable[[dict[str, Any], "Any"], str]
 PERM_ALIAS = {"approve": "approve.decisions"}  # the demo's PERM_ALIAS
 
@@ -26,9 +26,9 @@ PERM_ALIAS = {"approve": "approve.decisions"}  # the demo's PERM_ALIAS
 class ActionError(Exception):
     """A refusal with one of the demo's error codes (see pipeline.ERROR_STATUS)."""
 
-    def __init__(self, code: str, message: str):
+    def __init__(self, code: str, message: str, extra: dict | None = None):
         super().__init__(message)
-        self.code, self.message = code, message
+        self.code, self.message, self.extra = code, message, extra
 
 
 @dataclass

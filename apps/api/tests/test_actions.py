@@ -137,11 +137,7 @@ def test_unknown_case():
 
 
 def test_valid_call_without_a_handler_yet():
-    r = call(
-        "decision.approve",
-        {"case_id": "RT-1048", "rationale": "Redeploy to Site 3 as recommended.", "reviewed": True},
-        user="approver",
-    )
+    r = call("outcome.confirm", {"case_id": "RT-1048"}, user="finance")
     assert r.status_code == 501 and r.json()["error"]["code"] == "not_implemented"
 
 

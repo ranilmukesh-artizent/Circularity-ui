@@ -10,14 +10,14 @@ Every result is the demo's shape: {ok: true, output, key, action, seq} or {ok: f
 """
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from di import policy
+from di import clock, policy
 from di.actions.registry import ACTIONS, ActionDef, ActionError
 from di.actions.scope import case_scope
 
@@ -64,11 +64,12 @@ class CallContext:
     confirmed: bool = False  # a person pressed the final button on the agent's plan
     run_id: str | None = None
     idem_key: str | None = None  # an Idempotency-Key from the client, for actions without their own key
-    now: datetime = field(default_factory=lambda: datetime.now(UTC))
+    now: datetime = field(default_factory=clock.now)  # the workspace clock (di/clock.py)
 
 
-def fail(code: str, message: str) -> dict:
-    return {"ok": False, "error": {"code": code, "message": message}}
+def fail(code: str, message: str, extra: dict | None = None) -> dict:
+    """A refusal in the demo's shape; `extra` adds fields the demo puts beside code and message (e.g. escalate)."""
+    return {"ok": False, "error": {"code": code, "message": message, **(extra or {})}}
 
 
 def _type_ok(value: Any, t: str | None) -> bool:
@@ -222,7 +223,7 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict:
                     },
                 )
     except ActionError as e:
-        return fail(e.code, e.message)
+        return fail(e.code, e.message, e.extra)
     except IntegrityError:  # a concurrent call won the idempotency race
         return fail("duplicate", f"{a.dup_text or 'Already done'}. Nothing was created twice.")
     return {"ok": True, "output": out, "key": key, "action": a.id, "seq": seq}

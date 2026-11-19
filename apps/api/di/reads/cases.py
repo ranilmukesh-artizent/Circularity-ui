@@ -341,7 +341,7 @@ def case_trace(i, ctx):
     c = _case(ctx, i["case_id"])
     events = [
         {"ts": iso(e["ts"]), "type": e["type"], "note": e.get("note") or "", "by": e.get("by") or "", "sim": bool(e.get("sim"))}
-        for e in case_events(c["id"])[:12]
+        for e in case_events(ctx.session, c["id"])[:12]
     ]
     return run(c, ctx) | {"next": next_step(c, ctx), "events": events}
 

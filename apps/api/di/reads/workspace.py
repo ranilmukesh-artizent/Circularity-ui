@@ -27,7 +27,6 @@ from di.reads.common import (
     STARTING_CONFLICTS,
     STARTING_FAILED_WORKFLOWS,
     STARTING_MAPPINGS,
-    STARTING_NOTES,
     WORLD,
     Case,
     account,
@@ -44,6 +43,7 @@ from di.reads.common import (
     limit_for,
     money,
     ms,
+    notes,
     step_owner,
     ti_conf,
     to_fixed,
@@ -499,7 +499,7 @@ def aome_items(ctx) -> list[dict]:
     def st5(cid: str) -> str:
         return f"product/{cid}?step=5"
 
-    for n in STARTING_NOTES:
+    for n in notes(ctx.session):
         if n["to"] == a.id and n["status"] == "open":
             out.append(
                 {

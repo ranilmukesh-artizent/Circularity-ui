@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-from di import golden
+from di import golden, state
 from di.cases import store
 from di.db import engine
 from di.main import app
@@ -40,7 +40,12 @@ def setup_module():
     with engine.begin() as conn:
         conn.execute(text("UPDATE delegation SET enabled = true"))
         conn.execute(text("DELETE FROM tenant_grant"))
+        # the starting state has an empty journal: the case run reads who acted from it
+        conn.execute(text("DELETE FROM domain_event"))
+        conn.execute(text("DELETE FROM case_stage_log WHERE seq IS NOT NULL"))
+        conn.execute(text("DELETE FROM action_journal"))
     store.reset()
+    state.reset()  # the workspace collections (events, notes ...) back to their starting values
 
 
 def _case_params(action: str):
