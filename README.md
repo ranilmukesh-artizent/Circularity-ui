@@ -8,7 +8,7 @@ Circularity is part of the Artizent Decision Intelligence Framework. This reposi
 
 | | |
 |---|---|
-| **Try it** | Open the hosted demo at [ranilmukesh-artizent.github.io/Circularity-ui](https://ranilmukesh-artizent.github.io/Circularity-ui/), or open `index.html` from this folder in any browser. Nothing to install. |
+| **Try it** | Start the frontend (React app in `apps/web`, needs Node.js 20 or later): `cd apps/web`, `npm install`, `npm run dev`, then open http://localhost:5173. To run it with the backend services (Postgres, API, worker, source systems), use `docker compose up --build` from the repository root, on Windows inside WSL. Setup and details are in [`apps/README.md`](apps/README.md). |
 | **Framework** | Circularity is **Recover**, one of three apps in the Artizent Decision Intelligence Framework. The framework overview at [/framework/](https://ranilmukesh-artizent.github.io/Circularity-ui/framework/) links to **Recover**, **Reconcile** (pre-invoice validation of carrier bills) and **Resolve** (operational recovery). All three share this demo's data and run fully in the browser on simulated data. See [section 16](#16-the-decision-intelligence-framework-reconcile-and-resolve). |
 | **Sign in** | A normal sign-in form. Type `exec` (senior management) or `ops` (end user) and any password, or a work email such as `planner.b@northfield.example` (full list in section 4). Sign-in is simulated: nothing is checked and nothing leaves the browser. In production, users and roles come from the customer's identity provider (single sign-on). |
 | **The journey** | Sign in, open **Returned assets**, pick one asset and follow it through the ten steps of the *Typical User Journey* (supply evidence to reconcile and learn). Every step is clickable in the strip under the top bar, and a bar at the bottom says what the step established and what comes next. The demo record is the returned motor **RT-1048**; the click-by-click script is [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). |
@@ -557,8 +557,8 @@ For the Product Owner and engineering.
 
 | | |
 |---|---|
-| **Shape** | One self-contained file, `index.html`. No build step, no framework, no backend; the only external request is for Google Fonts. The framework pages in `framework/` (section 16) are three more files built the same way |
-| **Run locally** | Open `index.html`, or serve the folder (`python -m http.server`) and open `http://localhost:8000` |
+| **Shape** | A React and TypeScript app in `apps/web` (Vite). Until the Python backend replaces it, the logic and data of `index.html` run in the browser as a mock backend behind a typed API layer (`apps/web/src/api`); see [`apps/web/PORTING.md`](apps/web/PORTING.md). Backend services are in `apps/api` and `apps/source-sim`; the plan is [`docs/PLAN_FULLSTACK_POC.md`](docs/PLAN_FULLSTACK_POC.md) and the build steps are [`docs/BACKEND_STEPS.md`](docs/BACKEND_STEPS.md). The framework pages in `framework/` (section 16) are separate static files |
+| **Run locally** | Frontend only: `cd apps/web`, `npm install`, `npm run dev`, then open http://localhost:5173. Full stack: `docker compose up --build` from the repository root (on Windows, inside WSL), then open http://localhost:5173. See [`apps/README.md`](apps/README.md) |
 | **Hosting** | GitHub Pages, deployed automatically from `main` by `.github/workflows/static.yml` (the identical `main.yml` was removed in PR #13, so each push deploys once). The workflow publishes the whole repository, so anything committed is public. The framework is at `/framework/` |
 | **Data** | A seeded synthetic world (seed 20261007): 128 live cases, about 1,400 closed decisions, 19 sources, 31 workflows. Built-in integrity checks make sure the numbers reconcile across pages |
 | **State** | In memory; resets on refresh. Only the theme, the menu state and the signed-in demo account are remembered on the device |
