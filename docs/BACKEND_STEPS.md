@@ -102,6 +102,18 @@ Known limits, each picked up by a later step:
 
 **Done when:** contract tests page through every endpoint, and the totals match the golden data.
 
+**Status: done (19 Nov 2026).** Code in `apps/source-sim/sim/ariba/`. What it holds:
+- one RFQ per planned purchase in S/4
+- three supplier quotes per RFQ, in EUR
+- the draft PO behind each planned purchase
+- suppliers linked to their S/4 supplier numbers
+
+RT-1048 reproduces the demo's mapping example: €10,400.00 → $11,300, 21 days, SUP-88120 (how the quotes are derived is described in `sim/ariba/seed.py`). Six contract tests cover auth, realm, paging, the reporting view's date-range rule and the RT-1048 values; source-sim has 49 tests in all.
+
+Known limits:
+- **Read-only:** writes are left out, because the demo only reads from Ariba.
+- **Cadence:** the 30-minute data cadence waits for the simulated clock in B6.
+
 ## B5. Generic vendor mocks
 
 **Goal:** the other 17 systems, without writing 17 servers.

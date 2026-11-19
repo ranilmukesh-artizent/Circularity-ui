@@ -5,6 +5,8 @@ from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
 
 from sim import events
+from sim.ariba import api as ariba_api
+from sim.ariba import seed as ariba_seed
 from sim.db import engine, ensure_schemas
 from sim.registry import SYSTEMS
 from sim.s4 import api as s4_api
@@ -18,13 +20,15 @@ async def lifespan(_: FastAPI):
     with engine.begin() as conn:
         events.create(conn)
         s4_seed.ensure(conn, seed())
+        ariba_seed.ensure(conn, seed())
     yield
 
 
 app = FastAPI(title="Circularity source-sim", version="0.2.0", lifespan=lifespan)
 app.include_router(s4_api.router, tags=["SAP S/4HANA"])
+app.include_router(ariba_api.router, tags=["SAP Ariba"])
 
-RESETTERS = {"erp": s4_seed.reset}
+RESETTERS = {"erp": s4_seed.reset, "proc": ariba_seed.reset}
 
 
 @app.get("/health")

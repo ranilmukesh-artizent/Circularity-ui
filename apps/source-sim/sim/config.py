@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     # S/4HANA mock credentials (demo values): "user:password,…" for Basic auth, "client:secret,…" for OAuth
     s4_users: str = "DI_CONNECTOR:Circularity-demo-1"
     s4_clients: str = "di-connector:circularity-demo-secret"
+    # SAP Ariba mock (demo values): application key, OAuth client "id:secret", realm
+    ariba_api_key: str = "circularity-demo-ariba-key"
+    ariba_client: str = "di-connector:circularity-demo-ariba-secret"
+    ariba_realm: str = "northfield-T"
 
 
 @lru_cache
