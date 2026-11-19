@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://circ:circ@localhost:5432/sources"
     # B1 golden files: the seed (docs/BACKEND_STEPS.md, B2). Mounted at /fixtures in Docker.
     golden_dir: str = "/fixtures/golden"
+    # S/4HANA mock credentials (demo values): "user:password,…" for Basic auth, "client:secret,…" for OAuth
+    s4_users: str = "DI_CONNECTOR:Circularity-demo-1"
+    s4_clients: str = "di-connector:circularity-demo-secret"
 
 
 @lru_cache

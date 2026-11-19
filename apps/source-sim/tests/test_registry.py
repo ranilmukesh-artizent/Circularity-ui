@@ -2,8 +2,27 @@ from sim.registry import SYSTEMS
 
 # SOURCES[].id from index.html: every demo source has exactly one mock
 DEMO_SOURCE_IDS = {
-    "crm", "lease", "erp", "oms", "proc", "eam", "fsm", "plm", "bom", "qms", "eng",
-    "wms", "tms", "rl", "insp", "repair", "iot", "mkt", "dlr", "rcy", "esg",
+    "crm",
+    "lease",
+    "erp",
+    "oms",
+    "proc",
+    "eam",
+    "fsm",
+    "plm",
+    "bom",
+    "qms",
+    "eng",
+    "wms",
+    "tms",
+    "rl",
+    "insp",
+    "repair",
+    "iot",
+    "mkt",
+    "dlr",
+    "rcy",
+    "esg",
 }
 
 

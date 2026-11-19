@@ -63,7 +63,12 @@ def test_rt_1048_matches_the_demo(s):
     c = s.cases["RT-1048"]
     f = c.facts
     assert (f.asset_id, f.cls, f.owner, f.location, f.grade, f.mfr) == (
-        "MTR-2041", "motor", "Customer A", "Warehouse 1", "B", "Voltara",
+        "MTR-2041",
+        "motor",
+        "Customer A",
+        "Warehouse 1",
+        "B",
+        "Voltara",
     )
     assert f.demand.site == "Site 3" and f.demand.confirmed
     redeploy = next(r for r in f.routes if r.id == "redeploy")

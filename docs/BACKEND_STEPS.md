@@ -86,6 +86,14 @@ B1 golden data ─┬─▶ B2–B5 source-sim (mock systems, filled by the seed
 
 **Done when:** contract tests call each service the way a real S/4 client would (CSRF fetch, then post, then read back), and the values read back match the golden data.
 
+**Status: done (19 Nov 2026).** Code in `apps/source-sim/sim/s4/` (tables, seed, services, security, API) and `sim/odata/` (a generic OData v2 layer that B5 can reuse). 43 source-sim tests pass. How the seed maps into S/4 is described in `sim/s4/seed.py`.
+
+Known limits, each picked up by a later step:
+- **Journal entries:** `ACDOCA` exists, but there is no journal-entry read service yet. It arrives in B13 with the cost postings.
+- **Clock:** writes stamp wall-clock time until B6 adds the simulated clock.
+- **Events:** events are written to `sim.outbox`, but nothing delivers them until B6.
+- **Formats and batching:** JSON only, with no `$batch`.
+
 ## B4. SAP Ariba mock
 
 1. Schema `ariba`: purchase orders, sourcing events and bids, suppliers. Seed from B2.

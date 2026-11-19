@@ -1,8 +1,8 @@
 """The seed: the demo's synthetic world, loaded from the B1 golden files (docs/BACKEND_STEPS.md, B2).
 
-    from sim.seed import seed
-    s = seed()
-    s.cases["RT-1048"].facts.routes[0].net   # 9600.0
+from sim.seed import seed
+s = seed()
+s.cases["RT-1048"].facts.routes[0].net   # 9600.0
 """
 
 from dataclasses import dataclass
