@@ -114,7 +114,25 @@ Known limits:
 - **Read-only:** writes are left out, because the demo only reads from Ariba.
 - **Cadence:** the 30-minute data cadence waits for the simulated clock in B6.
 
-## B5. Generic vendor mocks
+## B5. Vendor mocks: four in full, the rest generic
+
+**Decision (19 Nov 2026):** the most widely used systems, and those on the RT-1048 execution path, get full mocks with the vendor's real API style. The others share one generic, spec-driven mock.
+
+| Full mock | API style it reproduces |
+|---|---|
+| **Salesforce** Sales Cloud (`crm`) | REST `/services/data/v59.0`: SOQL `query?q=` (a subset: SELECT, WHERE, AND/OR, comparisons, LIKE, IN, ORDER BY, LIMIT/OFFSET), `nextRecordsUrl` paging, sObject describe, get, create and patch, OAuth 2.0 JWT bearer, Salesforce error arrays |
+| **ServiceNow** FSM (`fsm`) | Table API `/api/now/table/{table}`: `sysparm_query` encoded queries, `sysparm_fields`, `sysparm_limit`/`offset`, `X-Total-Count` and `Link` headers, create and patch, Basic and OAuth |
+| **IBM Maximo** Manage (`eam`) | `/maximo/api/os/{object}`: `oslc.where`, `oslc.select`, `oslc.pageSize`, `lean=1`, `responseInfo.nextPage`, `apikey` header, create and patch work orders with `x-method-override` |
+| **IBM Sterling OMS** (`oms`) | `/smcfs/restapi`: orders, order lines, returns, `allocate` and `fulfil` calls, Sterling error shape |
+
+**Generic mock (13 systems):**
+- Oracle Lease, Teamcenter, Aras
+- MasterControl, AssetWise
+- Manhattan WMS, ShipLane TMS, Optoro
+- SafetyCulture, Oracle Depot Repair
+- Ritchie Bros., Machinio, Persefoni
+
+Each is a spec file with its resources, read and write paths, paging style, auth style and seed. Sims stays a CSV drop; AWS IoT stays not provisioned.
 
 **Goal:** the other 17 systems, without writing 17 servers.
 

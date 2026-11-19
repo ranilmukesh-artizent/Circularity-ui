@@ -41,3 +41,10 @@ def test_schemas_are_unique_identifiers():
     schemas = [s.schema for s in SYSTEMS]
     assert len(schemas) == len(set(schemas))
     assert all(s.isidentifier() and s.islower() for s in schemas)
+
+
+def test_every_mock_module_loads():
+    from sim.mock import DISCOVERY_ERRORS, discover
+
+    discover()
+    assert DISCOVERY_ERRORS == {}
