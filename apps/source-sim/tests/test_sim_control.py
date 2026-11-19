@@ -111,13 +111,16 @@ def test_events_are_delivered_as_signed_cloudevents_and_retried(client):
     received, fail = [], {"left": 1}
 
     def post(url, body, headers):
+        if url != "http://receiver/hook":
+            return 204  # other subscribers (e.g. a running di-api) are not part of this test
         if fail["left"]:
             fail["left"] -= 1
             return 503
         received.append((url, body, headers))
         return 204
 
-    assert webhooks.deliver(post) == 1  # first attempt fails, retry is scheduled later
+    assert webhooks.deliver(post) >= 1  # our first attempt fails, its retry is scheduled later
+    assert received == []
     with engine.begin() as conn:
         conn.execute(text("UPDATE sim.deliveries SET next_at = now() - interval '1 second' WHERE status = 'pending'"))
     webhooks.deliver(post)

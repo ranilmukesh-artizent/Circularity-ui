@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     # B7: sign-in tokens (HS256). Override DI_JWT_SECRET outside local development.
     jwt_secret: str = "dev-only-change-me-circularity-di-api-secret"
     jwt_ttl_minutes: int = 720
+    # B9: where source-sim delivers change events, and the shared signing secret
+    webhook_url: str = "http://api:8000/api/webhooks/source-sim"
+    webhook_secret: str = "dev-only-source-sim-webhook-secret"
 
 
 @lru_cache

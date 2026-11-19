@@ -3,14 +3,19 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+import di.actions.integration  # noqa: F401  (registers action handlers)
 from di.config import get_settings
+from di.connectors import webhook
 from di.db import get_session
 from di.routers import actions as action_routes
 from di.routers import auth as auth_routes
+from di.routers import sources as source_routes
 
 app = FastAPI(title="Circularity DI API", version="0.2.0")
 app.include_router(auth_routes.router)
 app.include_router(action_routes.router)
+app.include_router(source_routes.router)
+app.include_router(webhook.router)
 
 
 @app.get("/api/health/live")

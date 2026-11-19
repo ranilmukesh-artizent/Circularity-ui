@@ -1,3 +1,5 @@
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from fastapi.testclient import TestClient
 
 from di.main import app
@@ -11,5 +13,6 @@ def test_live():
 
 def test_health_reports_database_migration():
     body = client.get("/api/health").json()
-    assert body["checks"]["database"] == {"ok": True, "migration": "0003"}
+    head = ScriptDirectory.from_config(Config("alembic.ini")).get_current_head()
+    assert body["checks"]["database"] == {"ok": True, "migration": head}
     assert "source_sim" in body["checks"]  # reachable in compose, may be down in isolated test runs

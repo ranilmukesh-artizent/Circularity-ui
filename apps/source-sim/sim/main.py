@@ -111,6 +111,9 @@ def reset(system: str | None = None) -> dict:
         scheduler.clear(conn, targets)
         if system is None:
             clock.reset(conn)
+        # tell subscribers: a reset rewinds the data (and, for a full reset, the clock), so their delta cursors are void
+        for t in targets:
+            events.emit(conn, t, "sim.reset", t, {"system": t, "clock_reset": system is None})
             if get_settings().demo_faults:
                 faults.apply_demo(conn)
     return {"reset": out}

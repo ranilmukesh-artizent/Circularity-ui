@@ -66,11 +66,51 @@ def main() -> None:
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     poll = get_settings().worker_poll_seconds
+    startup()
     log.info("worker started; handlers: %s", ", ".join(sorted(HANDLERS)))
+    next_periodic = 0.0
     while not stopping:
+        if time.monotonic() >= next_periodic:
+            periodic()
+            next_periodic = time.monotonic() + 30
         if not run_once():
             time.sleep(poll)
     log.info("worker stopped")
+
+
+# ---------------------------------------------------------------- connectors (B9)
+@handler("sync.source")
+def _sync(payload: dict) -> None:
+    from di.connectors.sync import run_sync
+
+    out = run_sync(payload["source_id"], payload.get("trigger", "schedule"), bool(payload.get("full")))
+    log.info("sync %s: %s", payload["source_id"], out)
+
+
+def startup() -> None:
+    """Register the sources and subscribe to source-sim's change events (idempotent)."""
+    from di.connectors.sync import ensure_sources
+    from di.connectors.webhook import ensure_subscription
+
+    try:
+        with SessionLocal() as s:
+            ensure_sources(s)
+        ensure_subscription()
+    except Exception:  # noqa: BLE001 - the periodic step retries
+        log.exception("startup step failed")
+
+
+def periodic() -> None:
+    """Every 30 s: queue the syncs that are due."""
+    from di.connectors.sync import enqueue_due
+
+    try:
+        with SessionLocal() as s:
+            queued = enqueue_due(s)
+        if queued:
+            log.info("queued syncs: %s", ", ".join(queued))
+    except Exception:  # noqa: BLE001
+        log.exception("periodic step failed")
 
 
 if __name__ == "__main__":
