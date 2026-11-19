@@ -22,6 +22,7 @@ jobs:
     env:
       DI_DATABASE_URL: postgresql+psycopg://circ:circ@localhost:5432/di
       SIM_DATABASE_URL: postgresql+psycopg://circ:circ@localhost:5432/sources
+      SIM_GOLDEN_DIR: ${{ github.workspace }}/fixtures/golden
       PGPASSWORD: circ
     defaults:
       run:

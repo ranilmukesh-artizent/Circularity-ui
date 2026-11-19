@@ -33,7 +33,9 @@ services:
     environment:
       SIM_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-circ}:${POSTGRES_PASSWORD:-circ}@postgres:5432/sources
     command: uvicorn sim.main:app --host 0.0.0.0 --port 8100 --reload
-    volumes: ["./apps/source-sim:/app"]
+    volumes:
+      - ./apps/source-sim:/app
+      - ./fixtures:/fixtures:ro # B1 golden files: the seed (docs/BACKEND_STEPS.md, B2)
     ports: ["8100:8100"]
     depends_on:
       postgres: { condition: service_healthy }
