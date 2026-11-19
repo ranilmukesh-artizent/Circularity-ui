@@ -1,0 +1,33 @@
+import httpx
+from fastapi import Depends, FastAPI
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from di.config import get_settings
+from di.db import get_session
+
+app = FastAPI(title="Circularity DI API", version="0.1.0")
+
+
+@app.get("/api/health/live")
+def live() -> dict:
+    """Process is up (used by the container healthcheck)."""
+    return {"status": "ok"}
+
+
+@app.get("/api/health")
+def health(session: Session = Depends(get_session)) -> dict:
+    """Process, database and source-sim reachability, for the web status page."""
+    checks: dict[str, dict] = {}
+    try:
+        rev = session.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        checks["database"] = {"ok": True, "migration": rev}
+    except Exception as exc:  # noqa: BLE001
+        checks["database"] = {"ok": False, "error": str(exc).splitlines()[0]}
+    try:
+        r = httpx.get(f"{get_settings().source_sim_url}/health", timeout=2)
+        r.raise_for_status()
+        checks["source_sim"] = {"ok": True, **r.json()}
+    except Exception as exc:  # noqa: BLE001
+        checks["source_sim"] = {"ok": False, "error": str(exc)}
+    return {"status": "ok" if all(c["ok"] for c in checks.values()) else "degraded", "checks": checks}

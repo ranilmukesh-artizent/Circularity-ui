@@ -1,0 +1,48 @@
+# Full-stack POC checks (docs/PLAN_FULLSTACK_POC.md). The static demo keeps deploying through static.yml.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ["main", "feature/fullstack-poc"]
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [api, source-sim]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: circ, POSTGRES_PASSWORD: circ, POSTGRES_DB: di }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U circ" --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DI_DATABASE_URL: postgresql+psycopg://circ:circ@localhost:5432/di
+      SIM_DATABASE_URL: postgresql+psycopg://circ:circ@localhost:5432/sources
+      PGPASSWORD: circ
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: psql -h localhost -U circ -d di -c "CREATE DATABASE sources"
+      - run: pip install -r ${{ matrix.app == 'api' && 'requirements-dev.txt' || 'requirements.txt' }}
+      - run: ruff check .
+      - run: pytest -q
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24", cache: npm, cache-dependency-path: apps/web/package-lock.json }
+      - run: npm ci
+      - run: npm run build

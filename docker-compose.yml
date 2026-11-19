@@ -1,0 +1,83 @@
+# Full-stack POC (docs/PLAN_FULLSTACK_POC.md).  Start with:  docker compose up --build
+# web http://localhost:5173 · di-api http://localhost:8000/docs · source-sim http://localhost:8100/docs
+
+x-pg: &pg
+  POSTGRES_USER: ${POSTGRES_USER:-circ}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-circ}
+
+x-api-env: &api-env
+  DI_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-circ}:${POSTGRES_PASSWORD:-circ}@postgres:5432/di
+  DI_SOURCE_SIM_URL: http://source-sim:8100
+
+services:
+  postgres:
+    restart: unless-stopped
+    image: postgres:16-alpine
+    environment:
+      <<: *pg
+      POSTGRES_DB: postgres
+    ports: ["${POSTGRES_PORT:-5432}:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # over TCP, so it only passes once the init scripts have run and the real server is up
+      test: ["CMD-SHELL", "export PGPASSWORD=$${POSTGRES_PASSWORD}; psql -h 127.0.0.1 -U $${POSTGRES_USER} -d di -tAc 'select 1' && psql -h 127.0.0.1 -U $${POSTGRES_USER} -d sources -tAc 'select 1'"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  source-sim:
+    restart: unless-stopped
+    build: ./apps/source-sim
+    environment:
+      SIM_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-circ}:${POSTGRES_PASSWORD:-circ}@postgres:5432/sources
+    command: uvicorn sim.main:app --host 0.0.0.0 --port 8100 --reload
+    volumes: ["./apps/source-sim:/app"]
+    ports: ["8100:8100"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    restart: unless-stopped
+    build: ./apps/api
+    environment: *api-env
+    command: sh -c "alembic upgrade head && uvicorn di.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes: ["./apps/api:/app"]
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/api/health/live')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  worker:
+    restart: unless-stopped
+    build: ./apps/api
+    environment: *api-env
+    command: python -m di.worker
+    volumes: ["./apps/api:/app"]
+    depends_on:
+      api: { condition: service_healthy }   # api runs the migrations first
+
+  web:
+    restart: unless-stopped
+    build: ./apps/web
+    environment:
+      API_PROXY_TARGET: http://api:8000
+      LEGACY_HTML: /legacy/index.html
+      CHOKIDAR_USEPOLLING: "true" # file changes on a Windows drive (/mnt/c) do not reach inotify in WSL
+    ports: ["5173:5173"]
+    volumes:
+      - ./apps/web:/app
+      - web_node_modules:/app/node_modules
+      # the static demo is the mock backend's source (apps/web/scripts/extract-engine.mjs reads /legacy/index.html)
+      - ./index.html:/legacy/index.html:ro
+      - ./assets:/legacy/assets:ro
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  web_node_modules:

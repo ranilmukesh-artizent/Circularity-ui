@@ -1,0 +1,8 @@
+/* The demo draws the stage bar above the page (#jmount) and the stage footer under it (#jgmount); here they sit
+   inside the page, so cancel the page padding around them. */
+.cspage > #jmount { margin: -22px -24px 16px; }
+.cspage > #jgmount { margin: 24px -24px -80px; }
+@media (max-width: 860px) {
+  .cspage > #jmount { margin: -16px -14px 12px; }
+  .cspage > #jgmount { margin: 20px -14px -60px; }
+}

@@ -8,3 +8,11 @@ docs/demo/video/pipeline/rec/
 docs/demo/video/pipeline/rec_cxo/
 docs/demo/video/pipeline/timeline*.json
 docs/demo/video/pipeline/miss*.png
+# full-stack POC
+.env
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+node_modules/
+apps/web/dist/

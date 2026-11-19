@@ -1,0 +1,8 @@
+/* The journey strip and guide sit in the shell's #jmount / #jgmount in the demo (full width, outside the page padding).
+   Here they render inside the page, so they bleed out of its padding to look the same. */
+.pjs { margin: -22px -24px 18px; }
+.pjg { margin: 18px -24px -80px; }
+@media (max-width: 860px) {
+  .pjs { margin: -16px -14px 14px; }
+  .pjg { margin: 14px -14px -60px; }
+}
