@@ -504,7 +504,7 @@ def _save_order(conn: Connection, body: dict, loc: str, user: str) -> dict:
     for ln in out_lines:
         ln.pop("_from")
     db.put_doc(conn, "order", order, at, user)
-    events.emit(conn, SOURCE, "manhattan.order.allocated", oid, {"order": order}, at)
+    events.emit(conn, SOURCE, "manhattan.order.allocated", oid, _order_event(order), at)
     scheduler.schedule(conn, at + PICK_AFTER, "manhattan.pick", {"OrderId": oid}, SOURCE)
     return order
 
@@ -522,6 +522,11 @@ router.add_api_route(BASE + "/dcorder/api/dcorder/order/save", _write("dcorder",
 
 
 # ------------------------------------------------------------------ scheduled fulfilment: pick -> pack -> ship
+def _order_event(order: dict) -> dict:
+    """Order event data: the order, plus the ids a caller matches it by at the top level."""
+    return {"OrderId": order["OrderId"], "ExternalReference": order.get("ExternalReference"), "order": order}
+
+
 def _advance(conn: Connection, order: dict, status: str, at) -> None:
     order["MinFulfillmentStatusId"] = order["MaxFulfillmentStatusId"] = status
     order["FulfillmentStatus"] = ORDER_STATUS[status]
@@ -556,7 +561,7 @@ def _picked(conn: Connection, payload: dict) -> None:
         _pix(conn, at, "system", inv, "INVENTORY_MOVE", ln["OrderedQuantity"], "PICK", order["OrderId"], frm, stage)
         _task(conn, at, "system", order, "PACK", ln | {"_from": stage})
     _advance(conn, order, "7000", at)
-    events.emit(conn, SOURCE, "manhattan.order.picked", order["OrderId"], {"order": order}, at)
+    events.emit(conn, SOURCE, "manhattan.order.picked", order["OrderId"], _order_event(order), at)
     scheduler.schedule(conn, at + PACK_AFTER, "manhattan.pack", {"OrderId": order["OrderId"]}, SOURCE)
 
 
@@ -569,7 +574,7 @@ def _packed(conn: Connection, payload: dict) -> None:
     _complete_tasks(conn, order["OrderId"], "PACK", at)
     order["OlpnId"] = f"OLPN{order['OrderId'].split('-')[-1]}01"
     _advance(conn, order, "7200", at)
-    events.emit(conn, SOURCE, "manhattan.order.packed", order["OrderId"], {"order": order}, at)
+    events.emit(conn, SOURCE, "manhattan.order.packed", order["OrderId"], _order_event(order), at)
     scheduler.schedule(conn, at + SHIP_AFTER, "manhattan.ship", {"OrderId": order["OrderId"]}, SOURCE)
 
 
@@ -604,4 +609,4 @@ def _shipped(conn: Connection, payload: dict) -> None:
     db.put_doc(conn, "shipment", shp, at, "system")
     order["ShipmentId"] = shp["ShipmentId"]
     _advance(conn, order, "8000", at)
-    events.emit(conn, SOURCE, "manhattan.order.shipped", order["OrderId"], {"order": order, "shipment": shp}, at)
+    events.emit(conn, SOURCE, "manhattan.order.shipped", order["OrderId"], _order_event(order) | {"shipment": shp}, at)

@@ -172,5 +172,13 @@ def test_booking_plans_a_shipment_that_is_delivered_on_the_clock(client, h):
         pod["externalEventReference"] == "POD-" + s["shipmentXid"][3:] and pod["ssContactName"] == "Receiving · Chennai Foundry"
     )
     assert [e["shipmentGid"] for e in outbox("otm.shipment.delivered")][-1] == s["shipmentGid"]
+    # every shipment event carries the order release the caller booked and the refnums, to match it by
+    for kind in ("created", "tenderAccepted", "departed", "arrived", "delivered"):
+        ev = outbox(f"otm.shipment.{kind}")[-1]
+        assert ev["shipmentGid"] == s["shipmentGid"] and ev["shipmentXid"] == s["shipmentXid"]
+        assert ev["orderReleaseGids"] == ["NORTHFIELD.OR-RT-1048-T"] and ev["orderReleaseXids"] == ["OR-RT-1048-T"]
+        refs = {r["shipmentRefnumQualGid"]: r["shipmentRefnumValue"] for r in ev["refnums"]}
+        assert refs["NORTHFIELD.CASE_REF"] == "RT-1048" and refs["NORTHFIELD.MOVE_TYPE"] == "REDEPLOYMENT"
+    assert outbox("otm.shipment.delivered")[-1]["externalEventReference"] == "POD-" + s["shipmentXid"][3:]
     changed = client.get(API + "/shipments", headers=h, params={"q": f'updateDate gt "{stamp}"'}).json()
     assert [x["shipmentGid"] for x in changed["items"]] == [s["shipmentGid"]]

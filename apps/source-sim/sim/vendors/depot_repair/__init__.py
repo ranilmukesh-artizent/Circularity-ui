@@ -43,7 +43,9 @@ Business rules (sim/scheduler.py, simulated clock): a new order is OPEN with its
     (operations complete with actual hours, final bench tests recorded at the predicted grade, release to service
     RTS-<repair number> when they pass); + 2 h → CLOSED (STATUS C, DATE_CLOSED). Each change stamps LAST_UPDATE_DATE.
 Outbox events (source "repair", EBS business event names): oracle.apps.csd.repair.create,
-    oracle.apps.csd.repair.status.update, oracle.apps.csd.repair.complete.
+    oracle.apps.csd.repair.status.update, oracle.apps.csd.repair.complete. Each carries the caller's references:
+    REPAIR_NUMBER (the caller may choose it with P_REPAIR_NUMBER), REPAIR_LINE_ID, SERIAL_NUMBER and
+    ORIGINAL_SOURCE_REFERENCE.
 
 ASSUMPTION: EBS has no public query API for repair orders; reads go through a custom PL/SQL package XXCSD_RO_QUERY
     deployed in ISG (as EBS customers do), returning CSD_REPAIRS columns plus the estimate, inspection, parts and

@@ -5,6 +5,8 @@ GET  /sap/opu/odata/sap/<SERVICE>/[<EntitySet>[(<key>)][/<nav>]][/$count]   read
 GET  /sap/opu/odata/sap/<SERVICE>/$metadata
 POST /sap/opu/odata/sap/API_RESERVATION_DOCUMENT_SRV/A_ReservationDocumentHeader   (deep insert of items)
 POST /sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV/A_MaterialDocumentHeader         (deep insert; moves stock)
+POST /sap/bc/srt/scs_ext/sap/journalentrycreaterequestconfi   SOAP "Journal Entry - Post" (sim/s4/journal.py, B13)
+GET  /sap/opu/odata/sap/API_JOURNALENTRYITEMBASIC_SRV/A_JournalEntryItemBasic     the posted lines (ACDOCA)
 """
 
 import re
@@ -20,11 +22,12 @@ from sqlalchemy.engine import Connection
 from sim import clock, events
 from sim.db import engine
 from sim.odata.service import ODataError, error_response
-from sim.s4 import security
+from sim.s4 import journal, security
 from sim.s4 import tables as t
 from sim.s4.services import SERVICES
 
 router = APIRouter()
+router.include_router(journal.router)
 BASE = "/sap/opu/odata/sap"
 SOURCE = "erp"
 

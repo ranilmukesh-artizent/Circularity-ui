@@ -232,6 +232,7 @@ def create_repair_order(params: dict, conn: Connection) -> dict:
         "SERIAL_NUMBER": serial,
         "FLOW_STATUS_CODE": "OPEN",
         "SCOPE": doc["SCOPE"],
+        "ORIGINAL_SOURCE_REFERENCE": doc["ORIGINAL_SOURCE_REFERENCE"],
     }
     events.emit(conn, SOURCE, "oracle.apps.csd.repair.create", rn, data | {"REPAIR_COST": cost}, now)
     start = now + timedelta(hours=1)
@@ -294,9 +295,19 @@ def _move(conn: Connection, ro, flow: str, now: datetime, **changes) -> None:
         SOURCE,
         "oracle.apps.csd.repair.status.update",
         ro.repair_number,
-        {"REPAIR_NUMBER": ro.repair_number, "SERIAL_NUMBER": ro.serial_number, "FROM_FLOW_STATUS": old, "TO_FLOW_STATUS": flow},
+        _refs(ro) | {"FROM_FLOW_STATUS": old, "TO_FLOW_STATUS": flow},
         now,
     )
+
+
+def _refs(ro) -> dict:
+    """The references a caller matches an event by: its repair number (P_REPAIR_NUMBER) and source reference."""
+    return {
+        "REPAIR_NUMBER": ro.repair_number,
+        "REPAIR_LINE_ID": ro.repair_line_id,
+        "SERIAL_NUMBER": ro.serial_number,
+        "ORIGINAL_SOURCE_REFERENCE": ro.doc.get("ORIGINAL_SOURCE_REFERENCE"),
+    }
 
 
 def _tasks(conn: Connection, line_id: int, status: str, now: datetime) -> None:
@@ -364,12 +375,7 @@ def _complete(conn: Connection, payload: dict) -> None:
         SOURCE,
         "oracle.apps.csd.repair.complete",
         ro.repair_number,
-        {
-            "REPAIR_NUMBER": ro.repair_number,
-            "SERIAL_NUMBER": ro.serial_number,
-            "RESULT_STATE": grade,
-            "RELEASE_TO_SERVICE": release,
-        },
+        _refs(ro) | {"RESULT_STATE": grade, "RELEASE_TO_SERVICE": release},
         now,
     )
 

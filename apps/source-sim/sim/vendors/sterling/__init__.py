@@ -30,13 +30,20 @@ Writes (JSON bodies):
                            unit not a received return (404 YFS10005), line not Created (409 YFS10270).
     POST /order/{OrderHeaderKey}/fulfil   {"PrimeLineNo", "SubLineNo", "Action": RELEASE | SHIP | DELIVER (default:
                            the next one), SHIP: "SCAC", "TrackingNo", "ShipDate"; DELIVER: "ProofOfDelivery":
-                           {"ReceivedBy" (required), "DeliveryDate", "PODReference", "Remarks"}}
+                           {"ReceivedBy" (required), "DeliveryDate", "PODReference", "Remarks"}, "Reference"
+                           (optional: the caller's reference for this step, echoed in the event)}
                            One step per call, in order; anything else is 409 YFS10270.
 Status codes: 1100 Created, 1500 Scheduled (unit allocated), 3200 Released, 3700 Shipped, 3700.7777 Delivered (proof
 of delivery), 3900 Return Received, 9000 Cancelled. Other errors: 400 YFC0101 bad input, 404 YFS10003 order,
 404 YFS10004 order line. Times are rendered in IST (+05:30), as the demo's mapping shows ReqDeliveryDate.
 Outbox events (source "oms", subject OrderHeaderKey): sterling.order.allocated, sterling.order.released,
-sterling.order.shipped, sterling.order.fulfilled (delivered).
+sterling.order.shipped, sterling.order.fulfilled (delivered). Every event carries OrderHeaderKey, OrderNo,
+PrimeLineNo, SubLineNo, SerialNo, Status, "AllocationReference" (the allocation's Reference) and "Reference" (the
+caller's reference: the fulfil call's own Reference when given, else the allocation's), so a caller can match the event
+to the instruction it sent.
+ASSUMPTION: "Reference" on a fulfil call and the reference fields in the events are this deployment's convention (a
+Sterling event handler would publish them from the order line's reservation and the API input); the order API
+responses are unchanged.
 """
 
 from sim.mock import Mock

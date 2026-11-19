@@ -196,6 +196,11 @@ def test_transfer_pick_pack_ship_on_the_clock(client, h):
     assert sorted(kinds) == ["INVENTORY_MOVE", "SHIPMENT"]
     types = [e["type"] for e in client.get("/_sim/outbox", params={"source": "wms"}).json()]
     assert types.index("manhattan.order.shipped") < types.index("manhattan.order.packed") < types.index("manhattan.order.picked")
+    evs = {e["type"]: e["data"] for e in reversed(client.get("/_sim/outbox", params={"source": "wms"}).json())}
+    for kind in ("allocated", "picked", "packed", "shipped"):
+        ev = evs[f"manhattan.order.{kind}"]
+        assert (ev["OrderId"], ev["ExternalReference"]) == (oid, "RT-1048/EX-4") and ev["order"]["OrderId"] == oid
+    assert evs["manhattan.order.shipped"]["shipment"]["ExternalReference"] == "RT-1048/EX-4"
     # the delta query sees the changes
     changed = search(client, h, INV, "UpdatedTimestamp > '2026-10-07T00:00:00.000'")["data"]
     assert "MTR-2041" in [d["ItemId"] for d in changed]

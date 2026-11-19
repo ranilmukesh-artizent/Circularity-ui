@@ -493,8 +493,7 @@ def _book(conn: Connection, body: dict) -> dict:
         sdoc["attribute3"] = "LATE"  # planned delivery after the order's late delivery date
     sg = sdoc["shipmentGid"]
     conn.execute(insert(t.OBJECT).values(resource="shipments", gid=sg, xid=sx, doc=sdoc, insert_date=now, update_date=now))
-    data = {
-        "shipmentGid": sg,
+    data = shipment_refs(sdoc) | {
         "orderReleaseGid": org,
         "servprovGid": sdoc["servprovGid"],
         "rateGeoGid": sdoc["rateGeoGid"],
@@ -504,11 +503,26 @@ def _book(conn: Connection, body: dict) -> dict:
     }
     events.emit(conn, SOURCE, "otm.orderRelease.planned", xid, data, now)
     events.emit(conn, SOURCE, "otm.shipment.created", sx, data, now)
-    events.emit(conn, SOURCE, "otm.shipment.tenderAccepted", sx, {"shipmentGid": sg, "servprovGid": sdoc["servprovGid"]}, now)
+    events.emit(conn, SOURCE, "otm.shipment.tenderAccepted", sx, shipment_refs(sdoc) | {"servprovGid": sdoc["servprovGid"]}, now)
     scheduler.schedule(conn, etd, "otm.shipment.depart", {"shipmentGid": sg}, SOURCE)
     scheduler.schedule(conn, eta, "otm.shipment.arrive", {"shipmentGid": sg}, SOURCE)
     scheduler.schedule(conn, eta + timedelta(minutes=30), "otm.shipment.deliver", {"shipmentGid": sg}, SOURCE)
     return or_doc
+
+
+def shipment_refs(doc: dict) -> dict:
+    """What a caller matches a shipment event by: the shipment, the order releases it carries and its refnums."""
+    gids = [r["orderReleaseGid"] for r in doc.get("orderReleases") or [] if r.get("orderReleaseGid")]
+    return {
+        "shipmentGid": doc["shipmentGid"],
+        "shipmentXid": doc["shipmentXid"],
+        "orderReleaseGids": gids,
+        "orderReleaseXids": [xid_of(g) for g in gids],
+        "refnums": [
+            {"shipmentRefnumQualGid": r["shipmentRefnumQualGid"], "shipmentRefnumValue": r["shipmentRefnumValue"]}
+            for r in doc.get("refnums") or []
+        ],
+    }
 
 
 # ------------------------------------------------------------------ scheduled: tracking events up to proof of delivery
@@ -562,7 +576,7 @@ def _progress(conn: Connection, sg: str, step: str) -> None:
         SOURCE,
         name,
         doc["shipmentXid"],
-        {"shipmentGid": sg, "statusCodeGid": ev["statusCodeGid"], "eventdate": ev["eventdate"], "timezone": TZ} | extra,
+        shipment_refs(doc) | {"statusCodeGid": ev["statusCodeGid"], "eventdate": ev["eventdate"], "timezone": TZ} | extra,
         now,
     )
 

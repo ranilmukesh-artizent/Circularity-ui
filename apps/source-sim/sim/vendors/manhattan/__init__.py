@@ -53,7 +53,8 @@ Writes (facility scoped by SelectedLocation):
          oLPN), +1 h shipped (8000: OnHand and Allocated decremented at the source facility, PIX SHIPMENT,
          shipment with tracking number).
 Outbox events (source "wms"): manhattan.reservation.created|cancelled|consumed, manhattan.inventory.statusChanged,
-    manhattan.order.allocated|picked|packed|shipped.
+    manhattan.order.allocated|picked|packed|shipped. The order events carry the whole order and, at the top level,
+    OrderId and ExternalReference (the caller's reference), so a caller can match them without reading the order.
 
 Seed: one inventory record (InventoryId INV-<asset>, bin WH01-RT-09 style, InventoryAttribute1 = case id,
 InventoryAttribute2 = owner) and one RECEIPT PIX per case; facilities WH01/WH02/RC01 and ST01-08.

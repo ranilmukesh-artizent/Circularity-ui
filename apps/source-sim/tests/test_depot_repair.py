@@ -165,3 +165,20 @@ def test_rt_1048_refurbishment_uses_its_diagnosis(client):
     assert ro["ITEM_CATEGORY"] == "MOTOR" and ro["LABOUR"]["STANDARD_HOURS"] == 22.0 and len(ro["PARTS"]["PARTS_ITEM"]) == 7
     tasks = out(client.get(Q + "/get_repair_tasks/", auth=USER, params={"P_REPAIR_NUMBER": ro["REPAIR_NUMBER"]}))
     assert [t["TASK_TYPE"] for t in tasks["X_REPAIR_TASKS"]["X_REPAIR_TASKS_ITEM"]] == ["Labour"] + ["Machine"] * 4
+
+
+def test_events_carry_the_callers_repair_number_and_source_reference(client):
+    """B13b: di sends P_REPAIR_NUMBER (its document number) and ORIGINAL_SOURCE_REFERENCE; every event echoes both."""
+    rec = {"SERIAL_NUMBER": "TST-RPR-REF", "REPAIR_TYPE": "Refurbishment", "ORIGINAL_SOURCE_REFERENCE": "APR-2026-10-0161"}
+    o = create(client, rec, P_REPAIR_NUMBER="DI-RO-0001")
+    assert o["X_RETURN_STATUS"] == "S" and o["X_REPAIR_NUMBER"] == "DI-RO-0001"
+    created = [e for e in outbox("oracle.apps.csd.repair.create") if e["REPAIR_NUMBER"] == "DI-RO-0001"]
+    assert len(created) == 1 and created[0]["ORIGINAL_SOURCE_REFERENCE"] == "APR-2026-10-0161"
+    client.post("/_sim/clock/advance", json={"hours": 8}).raise_for_status()
+    scheduler.tick()
+    moves = [e for e in outbox("oracle.apps.csd.repair.status.update") if e["REPAIR_NUMBER"] == "DI-RO-0001"]
+    assert [e["TO_FLOW_STATUS"] for e in moves] == ["IN_PROGRESS", "REPAIR_COMPLETE", "CLOSED"]
+    assert {e["ORIGINAL_SOURCE_REFERENCE"] for e in moves} == {"APR-2026-10-0161"}
+    assert {e["REPAIR_LINE_ID"] for e in moves} == {created[0]["REPAIR_LINE_ID"]}
+    (done,) = [e for e in outbox("oracle.apps.csd.repair.complete") if e["REPAIR_NUMBER"] == "DI-RO-0001"]
+    assert done["ORIGINAL_SOURCE_REFERENCE"] == "APR-2026-10-0161" and done["SERIAL_NUMBER"] == "TST-RPR-REF"

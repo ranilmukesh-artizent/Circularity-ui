@@ -165,7 +165,8 @@ def test_allocate_rt_1048_once_then_fulfil_to_delivered(client, h):
     no_pod = client.post(url, headers=h, json={"PrimeLineNo": "10", "Action": "DELIVER"})
     assert no_pod.status_code == 400
     pod = {"ReceivedBy": "Site 3 stores, Customer A", "DeliveryDate": "2026-10-13T08:36:00+05:30", "PODReference": "POD-1"}
-    done = client.post(url, headers=h, json={"PrimeLineNo": "10", "Action": "DELIVER", "ProofOfDelivery": pod})
+    deliver = {"PrimeLineNo": "10", "Action": "DELIVER", "ProofOfDelivery": pod, "Reference": "INS-1048-DELIVER"}
+    done = client.post(url, headers=h, json=deliver)
     assert done.status_code == 200
     o = done.json()
     line = o["OrderLines"]["OrderLine"][0]
@@ -176,6 +177,11 @@ def test_allocate_rt_1048_once_then_fulfil_to_delivered(client, h):
     assert client.post(url, headers=h, json={"PrimeLineNo": "10"}).status_code == 409  # nothing left to do
     for kind in ("released", "shipped", "fulfilled"):
         assert outbox(f"sterling.order.{kind}")[-1]["OrderNo"] == "SO-48102"
+    # every step's event carries the caller's references: the allocation's, and the step's own when it sent one
+    for kind, ref in (("released", "DEC-1048"), ("shipped", "DEC-1048"), ("fulfilled", "INS-1048-DELIVER")):
+        ev = outbox(f"sterling.order.{kind}")[-1]
+        assert (ev["Reference"], ev["AllocationReference"], ev["PrimeLineNo"], ev["SubLineNo"]) == (ref, "DEC-1048", "10", "1")
+    assert outbox("sterling.order.allocated")[-1]["AllocationReference"] == "DEC-1048"
 
 
 def test_allocation_is_refused_when_it_does_not_fit(client, h):

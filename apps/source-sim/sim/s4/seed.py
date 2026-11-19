@@ -9,6 +9,8 @@ finance only, orders live in OMS"):
 - purchase plan: one planned purchase per case whose routes avoid a purchase (EBELN = 48000 + case number, e.g.
                  RT-1048 → 49048, as the demo's approval terms say "cancel planned purchase PO-49048"); NETPR in INR
                  at the demo's dated rate of 83.5 INR/USD (RT-1048: 12,000 USD → 10,02,000.00 INR)
+- journal:       none. Actual cost postings (BKPF/ACDOCA) arrive only through the Journal Entry - Post service
+                 (sim/s4/journal.py) once an approved decision runs; a reset clears them.
 """
 
 import math
@@ -145,17 +147,29 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
 def reset(conn: Connection, seed: Seed) -> dict[str, int]:
     """Drop and recreate every S/4 table, then load the seed."""
     conn.execute(text('DROP VIEW IF EXISTS s4."V_MATL_STK"'))
+    conn.execute(text('DROP VIEW IF EXISTS s4."V_JE_ITEM"'))
     t.metadata.drop_all(conn)
-    for ddl in ("DROP SEQUENCE IF EXISTS s4.rsnum_seq", "DROP SEQUENCE IF EXISTS s4.mblnr_seq"):
-        conn.execute(text(ddl))
+    for seq in t.SEQUENCES:
+        conn.execute(text(f"DROP SEQUENCE IF EXISTS s4.{seq}"))
     create(conn)
-    return load(conn, seed)
+    return load(conn, seed)  # no journal entries: the starting state has no actual cost postings
 
 
 def create(conn: Connection) -> None:
     conn.execute(text("CREATE SCHEMA IF NOT EXISTS s4"))
+    # ACDOCA was a placeholder before B13 (no rows, fewer columns): rebuild it once with the journal-entry columns
+    old = conn.execute(
+        text(
+            "SELECT 1 FROM information_schema.tables WHERE table_schema = 's4' AND table_name = 'ACDOCA' AND NOT EXISTS "
+            "(SELECT 1 FROM information_schema.columns WHERE table_schema = 's4' AND table_name = 'ACDOCA' "
+            "AND column_name = 'DRCRK')"
+        )
+    ).first()
+    if old:
+        conn.execute(text('DROP TABLE s4."ACDOCA" CASCADE'))
     t.metadata.create_all(conn)
     conn.execute(text(t.STOCK_VIEW_DDL))
+    conn.execute(text(t.JE_ITEM_VIEW_DDL))
     for ddl in t.SEQUENCES_DDL:
         conn.execute(text(ddl))
 

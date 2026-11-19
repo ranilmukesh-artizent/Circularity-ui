@@ -198,6 +198,47 @@ def _build() -> dict[str, ODataService]:
         keys=["MaterialDocumentYear", "MaterialDocument", "MaterialDocumentItem"],
     )
     svc[md.name] = md
+
+    # Journal Entry Item - Read (ACDOCA). Read-only: journal entries are posted through the SOAP service in journal.py.
+    je = ODataService("API_JOURNALENTRYITEMBASIC_SRV")
+    j = t.V_JE_ITEM
+    je.entity_set(
+        "A_JournalEntryItemBasic",
+        j,
+        {
+            "SourceLedger": (j.c.RLDNR, S),
+            "CompanyCode": (j.c.RBUKRS, S),
+            "FiscalYear": (j.c.GJAHR, S),
+            "AccountingDocument": (j.c.BELNR, S),
+            "LedgerGLLineItem": (j.c.DOCLN, S),
+            "Ledger": (j.c.RLDNR, S),
+            "AccountingDocumentItem": (j.c.BUZEI, S),
+            "FiscalPeriod": (j.c.POPER, S),
+            "AccountingDocumentType": (j.c.BLART, S),
+            "PostingDate": (j.c.BUDAT, DT),
+            "DocumentDate": (j.c.BLDAT, DT),
+            "GLAccount": (j.c.RACCT, S),
+            "DebitCreditCode": (j.c.DRCRK, S),
+            "AmountInTransactionCurrency": (j.c.WSL, D),
+            "TransactionCurrency": (j.c.RWCUR, S),
+            "AmountInCompanyCodeCurrency": (j.c.HSL, D),
+            "CompanyCodeCurrency": (j.c.RHCUR, S),
+            "CostCenter": (j.c.RCNTR, S),
+            "WBSElement": (j.c.PS_POSID, S),
+            "Material": (j.c.MATNR, S),
+            "Plant": (j.c.WERKS, S),
+            "DocumentItemText": (j.c.SGTXT, S),
+            "AssignmentReference": (j.c.ZUONR, S),
+            "ReferenceDocumentType": (j.c.AWTYP, S),
+            "ReferenceDocument": (j.c.AWREF, S),
+            "DocumentReferenceID": (j.c.XBLNR, S),  # the header's reference: our decision / approval reference
+            "AccountingDocumentHeaderText": (j.c.BKTXT, S),
+            "AccountingDocCreatedByUser": (j.c.USNAM, S),
+            "LastChangeDateTime": (j.c.LAST_CHANGE, DTO),
+        },
+        keys=["SourceLedger", "CompanyCode", "FiscalYear", "AccountingDocument", "LedgerGLLineItem"],
+    )
+    svc[je.name] = je
     return svc
 
 

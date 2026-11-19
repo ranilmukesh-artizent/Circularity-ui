@@ -39,7 +39,12 @@ Writes:
         X1 (arrived), at ETA + 30 min D1 (delivered, ENROUTE_COMPLETED) with the proof of delivery POD-5nnnn signed by
         "Receiving · <location>". Every change stamps updateDate with simulated time.
 Outbox events (source "tms"): otm.orderRelease.created | planned | planningFailed, otm.shipment.created,
-    otm.shipment.tenderAccepted, otm.shipment.departed | arrived | delivered.
+    otm.shipment.tenderAccepted, otm.shipment.departed | arrived | delivered. Every otm.shipment.* event carries
+    shipmentGid, shipmentXid, orderReleaseGids / orderReleaseXids (the order releases on the shipment, i.e. the
+    caller's orderReleaseXid) and refnums [{shipmentRefnumQualGid, shipmentRefnumValue}], so a caller can match it
+    to the booking it sent.
+ASSUMPTION: the event payloads are this deployment's integration events (OTM publishes via its own integration
+    layer, whose message shape is configured per implementation); the REST resources are unchanged.
 Errors: application/vnd.oracle.resource+json;type=error {"type", "title", "status", "detail", "o:errorCode"}.
 
 Conventions of this deployment (refnum qualifiers and flexfields an OTM implementation configures itself):

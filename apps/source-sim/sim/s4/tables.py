@@ -177,22 +177,70 @@ MSEG = Table(
     _changed(),
 )
 
+BKPF = Table(
+    "BKPF",
+    metadata,  # accounting document header (journal entries posted through sim/s4/journal.py, B13)
+    Column("BUKRS", String(4), primary_key=True),
+    Column("BELNR", String(10), primary_key=True),
+    Column("GJAHR", String(4), primary_key=True),
+    Column("BLART", String(2)),  # document type, SA = G/L account document
+    Column("BLDAT", Date),
+    Column("BUDAT", Date),
+    Column("MONAT", String(2)),
+    Column("XBLNR", String(16), index=True),  # reference document number: the caller's external reference
+    Column("BKTXT", String(25)),
+    Column("USNAM", String(12)),
+    Column("AWTYP", String(5)),
+    Column("AWKEY", String(20)),
+    Column("MSG_ID", String(35)),  # the SOAP sub-message id that created it (not an SAP column; for tracing)
+    Column("CPUTM", DateTime(timezone=True)),  # entry time (CPUDT + CPUTM)
+    _changed(),
+)
+
 ACDOCA = Table(
     "ACDOCA",
-    metadata,  # universal journal (actual costs; written in B13)
-    Column("RLDNR", String(2), primary_key=True),
+    metadata,  # universal journal: one row per ledger line of a posted journal entry (actual costs; B13)
+    Column("RLDNR", String(2), primary_key=True),  # ledger, 0L
     Column("RBUKRS", String(4), primary_key=True),
     Column("GJAHR", String(4), primary_key=True),
     Column("BELNR", String(10), primary_key=True),
     Column("DOCLN", String(6), primary_key=True),
-    Column("RACCT", String(10)),
-    Column("HSL", AMT),
+    Column("BUZEI", String(3)),  # accounting document item
+    Column("POPER", String(3)),  # posting period
+    Column("BLART", String(2)),
+    Column("BUDAT", Date),
+    Column("BLDAT", Date),
+    Column("RACCT", String(10)),  # G/L account
+    Column("DRCRK", String(1)),  # S debit, H credit
+    Column("WSL", AMT),  # amount in transaction currency (credit negative)
+    Column("RWCUR", String(5)),
+    Column("HSL", AMT),  # amount in company code currency
     Column("RHCUR", String(5)),
+    Column("RCNTR", String(10)),  # cost centre
+    Column("PS_POSID", String(24)),  # WBS element (external id)
     Column("MATNR", String(40)),
     Column("WERKS", String(4)),
-    Column("BUDAT", Date),
     Column("SGTXT", String(50)),
+    Column("ZUONR", String(18)),  # assignment
+    Column("AWTYP", String(5)),  # reference procedure, BKPFF
+    Column("AWREF", String(10)),  # reference document
+    Column("USNAM", String(12)),
     _changed(),
+)
+
+# A_JournalEntryItemBasic reads ACDOCA with the header's reference (BKPF-XBLNR), as the CDS view I_JournalEntryItem does.
+JE_ITEM_VIEW_DDL = """
+CREATE OR REPLACE VIEW s4."V_JE_ITEM" AS
+  SELECT a.*, h."XBLNR", h."BKTXT"
+  FROM s4."ACDOCA" a JOIN s4."BKPF" h ON h."BUKRS" = a."RBUKRS" AND h."BELNR" = a."BELNR" AND h."GJAHR" = a."GJAHR"
+"""
+
+V_JE_ITEM = Table(
+    "V_JE_ITEM",
+    MetaData(schema="s4"),  # not created by metadata.create_all: it is the view above
+    *[Column(c.name, c.type, primary_key=c.primary_key) for c in ACDOCA.columns],
+    Column("XBLNR", String(16)),
+    Column("BKTXT", String(25)),
 )
 
 # Stock by type, as API_MATERIAL_STOCK_SRV reports it: unrestricted (01), quality inspection (02), blocked (07).
@@ -220,4 +268,6 @@ V_MATL_STK = Table(
 SEQUENCES_DDL = [
     "CREATE SEQUENCE IF NOT EXISTS s4.rsnum_seq START 100000",
     "CREATE SEQUENCE IF NOT EXISTS s4.mblnr_seq START 4900000000",
+    "CREATE SEQUENCE IF NOT EXISTS s4.belnr_seq START 100000000",  # number range 01 for document type SA
 ]
+SEQUENCES = ("rsnum_seq", "mblnr_seq", "belnr_seq")

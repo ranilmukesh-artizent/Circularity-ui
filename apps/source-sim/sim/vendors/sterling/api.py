@@ -458,6 +458,7 @@ def _allocate(conn: Connection, body: dict, idem: str | None) -> dict:
             "ShipNode": ship_node,
             "Status": "1500",
             "Reference": reservation["Reference"],
+            "AllocationReference": reservation["Reference"],
         },
         now,
     )
@@ -491,7 +492,17 @@ def _fulfil(conn: Connection, key: str, body: dict) -> dict:
         raise SterlingError(409, "YFS10270", f"{where} is {STATUS[ln.status]}; the next action is {action}, not {asked}")
     now = clock.now(conn)
     values: dict = {"status": target}
-    data = {"OrderHeaderKey": key, "OrderNo": h.order_no, "PrimeLineNo": str(ln.prime_line_no), "SerialNo": ln.allocated_serial}
+    allocation_ref = str((ln.reservation or {}).get("Reference") or "")
+    data = {
+        "OrderHeaderKey": key,
+        "OrderNo": h.order_no,
+        "PrimeLineNo": str(ln.prime_line_no),
+        "SubLineNo": str(ln.sub_line_no),
+        "SerialNo": ln.allocated_serial,
+        # the caller's reference: this call's own Reference when it sends one, else the allocation's
+        "Reference": str(body.get("Reference") or allocation_ref),
+        "AllocationReference": allocation_ref,
+    }
     if action == "SHIP":
         shipment = {
             "ShipmentNo": f"SHP-{ln.order_line_key[-10:]}",
