@@ -145,6 +145,29 @@ Each is a spec file with its resources, read and write paths, paging style, auth
 
 **Done when:** every system in `sim/registry.py` answers its demo paths, and a generic contract test runs against every spec.
 
+**Status: done (19 Nov 2026).** All 20 systems are implemented. AWS IoT stays not provisioned, as in the demo. Source-sim has 160 tests.
+
+**Full mocks:**
+- **Salesforce** (`sim/vendors/salesforce`): a SOQL-to-SQL translator, `nextRecordsUrl` paging, describe, get, create and patch, and JWT and client-credentials sign-in.
+- **ServiceNow** (`sim/vendors/servicenow`): encoded queries including dot-walking, display values, `Link` and `X-Total-Count` headers, and work-order rules.
+- **IBM Maximo** (`sim/vendors/maximo`): `oslc.where` and `oslc.select`, lean and full (non-lean) responses, work-order status changes with transition checks, about 1,450 assets and 1,000 work orders.
+- **IBM Sterling OMS** (`sim/vendors/sterling`): orders and returns, allocation that refuses double promises, and fulfilment through to delivery with proof of delivery.
+
+**Generic specs** (`sim/generic/specs`):
+- Manhattan WMS, ShipLane, Optoro, SafetyCulture, Oracle Depot Repair
+- Ritchie Bros., Machinio
+- Oracle Lease, Teamcenter, Aras, MasterControl, AssetWise, Persefoni
+- Sims, served as a file listing with a manifest and signatures
+
+The systems share codes, so their data agrees. RT-1048 is `MTR-2041` everywhere: Warehouse 1 is `WH01`, sales order `SO-48102` line 10, PO `49048`, lease LS-5530. Each module's docstring describes its seed, how it maps from the demo, and its demo credentials.
+
+**Mapping examples not reproduced:** where no seeded fact matches, the demo's mapping example is not reproduced. These are listed in each module, for example Persefoni's 312.4 kgCO2e and Machinio's $9,400 offer.
+
+**Framework limits:**
+- No nested paths. The demo's `/repair-orders/{id}/tasks` is served as `/repair-tasks?repair_number=`.
+- One list wrapper key per spec.
+- Filters are plain `?field=value`, with no query language.
+
 ## B6. Events, faults and the simulated clock
 
 1. **Outbox:** every write in source-sim writes an outbox row. A sender pushes it as a CloudEvents webhook to subscribed URLs (S/4 event names such as `sap.s4.beh.reservation.v1.Reservation.Created.v1`; vendor-style names for the generic mocks). Delivery is retried until acknowledged.

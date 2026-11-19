@@ -4,7 +4,7 @@ POST /_sim/faults {"system": "mkt", "kind": "token_expired"}     kinds:
     latency        delay every call by `value` ms
     error          answer `value` (HTTP status, default 500) to every `every`-th call (default every call)
     unavailable    answer 503 to every call (system down)
-    token_expired  refuse every call that carries a bearer token with 401; Basic auth and API keys still work
+    token_expired  refuse every call with 401 unless it uses Basic auth: bearer tokens and API keys have expired
 Optional "minutes": the fault ends after that many simulated minutes; otherwise it lasts until removed.
 DELETE /_sim/faults[?system=…] removes faults.
 
@@ -106,7 +106,7 @@ class FaultMiddleware(BaseHTTPMiddleware):
             if f["kind"] == "error" and f["calls"] % f["every"] == 0:
                 status = f["value"] or 500
                 return JSONResponse({"error": {"code": "simulated_error", "message": f"Simulated HTTP {status}"}}, status)
-            if f["kind"] == "token_expired" and request.headers.get("authorization", "").lower().startswith("bearer "):
+            if f["kind"] == "token_expired" and not request.headers.get("authorization", "").lower().startswith("basic "):
                 return JSONResponse(
                     {"error": {"code": "invalid_token", "message": "The access token expired"}},
                     401,

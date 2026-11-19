@@ -181,3 +181,14 @@ def test_demo_faults_and_validation(client):
     assert client.post("/_sim/faults", json={"system": "erp", "kind": "meteor"}).status_code == 400
     assert client.post("/_sim/faults", json={"system": "nope", "kind": "error"}).status_code == 400
     client.delete("/_sim/faults")
+
+
+def test_demo_fault_blocks_ritchie_api_key(client):
+    """The demo's starting state: Ritchie Bros. Market Data's feed token expired, so its API key is refused."""
+    key = {"X-Api-Key": "mkt-demo-key"}
+    assert client.get("/ritchie/v2/comparables", headers=key).status_code == 200
+    client.post("/_sim/faults/demo")
+    r = client.get("/ritchie/v2/comparables", headers=key)
+    assert r.status_code == 401 and r.json()["error"]["code"] == "invalid_token"
+    client.delete("/_sim/faults")
+    assert client.get("/ritchie/v2/comparables", headers=key).status_code == 200

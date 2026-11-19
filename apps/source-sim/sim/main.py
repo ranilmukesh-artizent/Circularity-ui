@@ -16,6 +16,7 @@ from sim.seed import seed
 
 log = logging.getLogger("sim")
 MOCKS = discover()
+STARTUP_ERRORS: dict[str, str] = {}  # system -> why its seed failed to load
 
 
 async def _loop(name: str, fn, every: float) -> None:
@@ -34,8 +35,16 @@ async def lifespan(_: FastAPI):
     with engine.begin() as conn:
         for mod in (events, clock, scheduler, webhooks, faults):
             mod.create(conn)
-        for m in MOCKS.values():
-            m.ensure(conn, seed())
+    # each mock loads in its own transaction: one that fails is reported in /health and skipped, not fatal
+    STARTUP_ERRORS.clear()
+    for sid, m in MOCKS.items():
+        try:
+            with engine.begin() as conn:
+                m.ensure(conn, seed())
+        except Exception as e:  # noqa: BLE001
+            log.exception("mock %s failed to load", sid)
+            STARTUP_ERRORS[sid] = f"{type(e).__name__}: {e}"[:500]
+    with engine.begin() as conn:
         if get_settings().demo_faults and not faults.active(conn):
             faults.apply_demo(conn)
     tasks = []
@@ -65,8 +74,11 @@ def health() -> dict:
         schemas = set(conn.execute(text("SELECT schema_name FROM information_schema.schemata")).scalars())
         now = clock.now(conn)
     missing = [s.schema for s in SYSTEMS if s.schema not in schemas]
+    from sim.mock import DISCOVERY_ERRORS
+
     return {
-        "status": "ok" if not missing else "degraded",
+        "status": "ok" if not (missing or STARTUP_ERRORS or DISCOVERY_ERRORS) else "degraded",
+        "failed_mocks": STARTUP_ERRORS | DISCOVERY_ERRORS,
         "systems": len(SYSTEMS),
         "missing_schemas": missing,
         "mocks": len(MOCKS),

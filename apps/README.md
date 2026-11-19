@@ -40,6 +40,34 @@ wsl -d Ubuntu-24.04 -u root -- bash -lc "cd /mnt/c/<path-to>/Circularity-ui && d
 
 WSL stops the Ubuntu VM, and the stack with it, shortly after the last WSL window closes. Keep a WSL terminal open while you use the app (`wsl -d Ubuntu-24.04`). The services have `restart: unless-stopped`, so they come back when Docker starts again.
 
+## Mock source systems (source-sim)
+
+Twenty mocked enterprise systems answer at http://localhost:8100, each below its own path:
+- `/sap/opu/odata/sap` for S/4HANA
+- `/ariba/api` for Ariba
+- `/salesforce/services/data/v59.0` for Salesforce
+- `/maximo/api` for Maximo
+- and so on for the others; `GET /_sim/systems` lists them all
+
+Each module's docstring gives its demo credentials (`apps/source-sim/sim/s4`, `sim/ariba`, `sim/vendors/*`). For the generic specs (`sim/generic/specs/*`), the credentials follow `sim/generic/spec.py`:
+- API key: `<id>-demo-key`
+- Basic: `di-connector` / `<id>-demo`
+- OAuth: `di-connector` / `<id>-demo-secret`
+
+Controlling the simulation:
+
+```sh
+curl localhost:8100/_sim/clock                                                   # simulated time (starts 7 Oct 2026 09:00 UTC)
+curl -X POST localhost:8100/_sim/clock/advance -H 'content-type: application/json' -d '{"days": 3}'
+curl -X POST localhost:8100/_sim/faults -H 'content-type: application/json' -d '{"system": "erp", "kind": "unavailable", "minutes": 30}'
+curl -X POST localhost:8100/_sim/faults/demo                                     # the demo's starting fault (Ritchie Bros. token expired)
+curl -X POST localhost:8100/_sim/webhooks -H 'content-type: application/json' -d '{"url": "http://source-sim:8100/_sim/sink"}'
+curl localhost:8100/_sim/sink                                                    # events received by the demo sink
+curl -X POST localhost:8100/_sim/reset                                           # every system back to the seed, clock reset
+```
+
+The source-sim tests use the same database as the running service, so run `/_sim/reset` after a test run.
+
 ## Test
 
 ```sh
