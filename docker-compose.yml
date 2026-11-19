@@ -45,7 +45,9 @@ services:
     build: ./apps/api
     environment: *api-env
     command: sh -c "alembic upgrade head && uvicorn di.main:app --host 0.0.0.0 --port 8000 --reload"
-    volumes: ["./apps/api:/app"]
+    volumes:
+      - ./apps/api:/app
+      - ./fixtures:/fixtures:ro # B1 golden files: access policy and reference data (B7)
     ports: ["8000:8000"]
     depends_on:
       postgres: { condition: service_healthy }
@@ -60,7 +62,9 @@ services:
     build: ./apps/api
     environment: *api-env
     command: python -m di.worker
-    volumes: ["./apps/api:/app"]
+    volumes:
+      - ./apps/api:/app
+      - ./fixtures:/fixtures:ro
     depends_on:
       api: { condition: service_healthy }   # api runs the migrations first
 

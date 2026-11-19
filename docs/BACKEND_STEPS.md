@@ -183,6 +183,15 @@ Mocks schedule their own completions as they get their write paths. For example,
 
 **Done when:** the policy parity test passes, and an endpoint test shows a Planner for Customer B getting 403 on RT-1048.
 
+**Status: done (19 Nov 2026).** Auth and policy are in place:
+- `di/policy.py` ports the demo's RBAC block. The policy itself is configuration, read from the golden `policy.json`.
+- `di/auth.py` handles sign-in with the demo IDs and issues JWTs. Its `Principal` dependency has `require`, `require_page` and `require_record` (tenant boundary and warehouse lock).
+- Migration 0002 holds the run-time access state (Approver delegations, tenant grants). Changing a delegation takes effect for the Approver at once.
+
+Parity tests pass for all 11 accounts: every permission, page and section, allowed tenants, home page, and which of the 128 cases they can see (54 api tests in all).
+
+**Changed from the plan:** the rest of the schema is not created up front. Each table arrives with the step that first uses it: the canonical store and provenance in B9, cases and decisions in B11–B12, the journal and audit in B8.
+
 ## B8. Action endpoint (the contract the frontend already uses)
 
 **Goal:** `POST /api/actions/{id}` behaves exactly like the demo's `invoke(id, input)`.

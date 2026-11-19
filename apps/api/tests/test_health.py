@@ -11,5 +11,5 @@ def test_live():
 
 def test_health_reports_database_migration():
     body = client.get("/api/health").json()
-    assert body["checks"]["database"] == {"ok": True, "migration": "0001"}
+    assert body["checks"]["database"] == {"ok": True, "migration": "0002"}
     assert "source_sim" in body["checks"]  # reachable in compose, may be down in isolated test runs

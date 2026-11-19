@@ -21,6 +21,7 @@ jobs:
           --health-cmd "pg_isready -U circ" --health-interval 3s --health-timeout 3s --health-retries 20
     env:
       DI_DATABASE_URL: postgresql+psycopg://circ:circ@localhost:5432/di
+      DI_GOLDEN_DIR: ${{ github.workspace }}/fixtures/golden
       SIM_DATABASE_URL: postgresql+psycopg://circ:circ@localhost:5432/sources
       SIM_GOLDEN_DIR: ${{ github.workspace }}/fixtures/golden
       PGPASSWORD: circ

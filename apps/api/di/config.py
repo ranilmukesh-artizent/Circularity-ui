@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     source_sim_url: str = "http://localhost:8100"
     worker_poll_seconds: float = 1.0
     job_max_attempts: int = 5
+    # B1 golden files: the access policy and reference data (mounted at /fixtures in Docker)
+    golden_dir: str = "/fixtures/golden"
+    # B7: sign-in tokens (HS256). Override DI_JWT_SECRET outside local development.
+    jwt_secret: str = "dev-only-change-me-circularity-di-api-secret"
+    jwt_ttl_minutes: int = 720
 
 
 @lru_cache
