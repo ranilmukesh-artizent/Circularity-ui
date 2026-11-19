@@ -448,7 +448,7 @@ Parity tests pass for all 11 accounts: every permission, page and section, allow
 3. **When an area moves:** its legacy-HTML shortcuts (the case detail tabs and Full analysis) are rebuilt as React, because the engine is no longer there to produce the HTML.
 4. **When every area has moved:** delete `src/engine/`, `scripts/extract-engine.mjs` and the generated files.
 
-**Done when:** `VITE_BACKEND=api` is the default, the engine is deleted, and the demo script (`docs/demo/DEMO_SCRIPT.md`) runs end to end.
+**Done when:** `VITE_BACKEND=api` is the default, the engine is deleted, and RT-1048 runs end to end through the ten stages in the browser (the walk-through in README.md).
 
 ## B18. Hardening
 

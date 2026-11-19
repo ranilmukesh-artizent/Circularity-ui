@@ -170,6 +170,6 @@ index.html           the static demo, unchanged, still on GitHub Pages
 
 ## 9. Risks and notes
 
-- **GitHub Pages publishes the whole repository** (`.github/workflows/static.yml` uploads `.`). The new code will be public on the Pages site as well as in the repo. Never commit `.env` files.
+- **Hosting.** GitHub Pages hosting was removed (19 Nov 2026); the app runs locally with Docker. Never commit `.env` files.
 - **Vendor names.** The mocks reproduce public API shapes; nothing is a real SAP or vendor connection. README section 13's Legal note still applies: nobody should say a named vendor product is connected.
 - **Two copies of the logic during the port.** Until the React app reaches parity, the demo and the POC run the decision logic separately. The engine tests pin the backend to the demo's figures, so drift shows up as a failing test.

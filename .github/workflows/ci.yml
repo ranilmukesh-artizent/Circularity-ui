@@ -1,4 +1,4 @@
-# Full-stack POC checks (docs/PLAN_FULLSTACK_POC.md). The static demo keeps deploying through static.yml.
+# Full-stack POC checks (docs/PLAN_FULLSTACK_POC.md, docs/BACKEND_STEPS.md).
 name: CI
 
 on:
