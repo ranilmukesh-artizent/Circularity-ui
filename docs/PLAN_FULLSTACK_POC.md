@@ -17,6 +17,7 @@
 | D5 | Hosting | **Local Docker Compose.** GitHub Pages keeps serving the static demo, which stays as the reference until the React app reaches parity |
 | D6 | Queue | A Postgres job table claimed with `FOR UPDATE SKIP LOCKED`, so no Redis |
 | D7 | Login | Local JWT with the demo IDs (`exec`, `ops`, `planner.b@northfield.example` …). Real SSO later; Keycloak is the option if an OIDC stand-in is needed |
+| D8 | Ask Circularity | **A language model through `di-api`, starting on Groq's free tier**, behind one interface so Claude or a local model can replace it (decided 19 Nov 2026; step B16b) |
 
 
 ## 3. Architecture
