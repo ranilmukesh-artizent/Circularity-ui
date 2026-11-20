@@ -4,6 +4,9 @@ POST /api/auth/login takes the demo's sign-in IDs (exec, ops, planner.b@northfie
 any non-empty password. It returns a JWT. Real single sign-on (OIDC, Keycloak as the stand-in) replaces the
 password check later; the token and the dependencies below stay the same.
 
+POST /api/auth/stream-ticket trades a valid access token for a 60-second stream ticket (aud "stream"), which only
+GET /api/stream accepts, as `?ticket=` (F3: the access token stays out of URLs and access logs).
+
 Endpoints depend on `Principal` (signed-in account + its run-time access state) and use the policy through it:
     def handler(p: Principal = Depends(principal)): p.require("approve.decisions"); p.require_tenant(case.owner)
 """
@@ -25,15 +28,48 @@ _bearer = HTTPBearer(auto_error=False)
 ALGORITHM = "HS256"
 ISSUER, AUDIENCE = "di-api", "di"  # D2: every token names who issued it and for whom; both are checked
 REQUIRED_CLAIMS = ["exp", "sub", "iat", "iss", "aud"]
+# F3: the live stream's EventSource cannot send headers, so the browser puts a ticket in the URL instead of its access
+# token. A ticket is good for one thing (aud "stream": GET /api/stream only, never as a bearer token) and briefly.
+STREAM_AUDIENCE = "stream"
+STREAM_TICKET_SECONDS = 60
+_ENDED = {"code": "unauthenticated", "message": "Your session has ended. Sign in again."}
+
+
+def _sign(a: policy.Account, audience: str, lifetime: timedelta) -> tuple[str, datetime]:
+    now = datetime.now(UTC)
+    exp = now + lifetime
+    claims = {"sub": a.id, "role": a.role, "tenant": a.tenant, "exp": exp, "iat": now, "iss": ISSUER, "aud": audience}
+    return jwt.encode(claims, get_settings().jwt_secret.get_secret_value(), ALGORITHM), exp
 
 
 def issue_token(a: policy.Account) -> tuple[str, datetime]:
-    s = get_settings()
-    now = datetime.now(UTC)
-    exp = now + timedelta(minutes=s.jwt_ttl_minutes)
-    claims = {"sub": a.id, "role": a.role, "tenant": a.tenant, "exp": exp, "iat": now, "iss": ISSUER, "aud": AUDIENCE}
-    token = jwt.encode(claims, s.jwt_secret.get_secret_value(), ALGORITHM)
-    return token, exp
+    return _sign(a, AUDIENCE, timedelta(minutes=get_settings().jwt_ttl_minutes))
+
+
+def issue_stream_ticket(a: policy.Account) -> str:
+    return _sign(a, STREAM_AUDIENCE, timedelta(seconds=STREAM_TICKET_SECONDS))[0]
+
+
+def _resolve(token: str, audience: str, session: Session) -> "Principal":
+    """The account behind a token for this audience, as mapped now; 401 for anything else (the token is not logged)."""
+    try:
+        claims = jwt.decode(
+            token,
+            get_settings().jwt_secret.get_secret_value(),
+            algorithms=[ALGORITHM],
+            audience=audience,
+            issuer=ISSUER,
+            options={"require": REQUIRED_CLAIMS},
+        )
+    except jwt.PyJWTError as e:
+        raise HTTPException(401, _ENDED, headers={"WWW-Authenticate": 'Bearer error="invalid_token"'}) from e
+    # The account is looked up by id on every request, as mapped now: a token issued before an identity mapping
+    # changed the account's role or warehouse carries the old role claim, which is informational only.
+    ctx = load_context(session)
+    a = policy.account(claims.get("sub", ""), ctx)
+    if a is None:
+        raise HTTPException(401, {"code": "unauthenticated", "message": "Unknown account."})
+    return Principal(a, ctx)
 
 
 def load_context(session: Session) -> policy.Context:
@@ -101,28 +137,12 @@ def principal(
 ) -> Principal:
     if creds is None:
         raise HTTPException(401, {"code": "unauthenticated", "message": "Sign in first."}, headers={"WWW-Authenticate": "Bearer"})
-    try:
-        claims = jwt.decode(
-            creds.credentials,
-            get_settings().jwt_secret.get_secret_value(),
-            algorithms=[ALGORITHM],
-            audience=AUDIENCE,
-            issuer=ISSUER,
-            options={"require": REQUIRED_CLAIMS},
-        )
-    except jwt.PyJWTError as e:
-        raise HTTPException(
-            401,
-            {"code": "unauthenticated", "message": "Your session has ended. Sign in again."},
-            headers={"WWW-Authenticate": 'Bearer error="invalid_token"'},
-        ) from e
-    # The account is looked up by id on every request, as mapped now: a token issued before an identity mapping
-    # changed the account's role or warehouse carries the old role claim, which is informational only.
-    ctx = load_context(session)
-    a = policy.account(claims.get("sub", ""), ctx)
-    if a is None:
-        raise HTTPException(401, {"code": "unauthenticated", "message": "Unknown account."})
-    return Principal(a, ctx)
+    return _resolve(creds.credentials, AUDIENCE, session)
+
+
+def stream_principal(ticket: str, session: Session) -> Principal:
+    """The account behind a stream ticket (aud "stream"); an access token is refused here, as a ticket is elsewhere."""
+    return _resolve(ticket, STREAM_AUDIENCE, session)
 
 
 def optional_principal(

@@ -297,11 +297,48 @@ export function onStream(l: StreamListener): () => void {
   };
 }
 
+// F3: EventSource cannot send headers, and the access token must not go in a URL (access logs keep URLs). So every
+// connection first trades the token for a short-lived stream ticket (POST /api/auth/stream-ticket, aud "stream") and
+// opens /api/stream?ticket=. The server checks the ticket only when the stream opens. EventSource's own retry would
+// reuse the old URL, whose ticket has expired, so on an error the stream is closed and reopened here with a fresh
+// ticket, resuming after the last event seen (last_event_id), with a growing delay that resets once a stream opens.
+const RETRY_MS = [1000, 2000, 5000, 10000, 30000];
+let generation = 0; // bumped by stopStream: a ticket or a timer of an older connection is dropped
+let attempts = 0;
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let lastEventId = '';
+
 function startStream() {
   stopStream();
+  lastEventId = '';
   if (!token || typeof EventSource === 'undefined') return;
-  source = new EventSource('/api/stream?access_token=' + encodeURIComponent(token));
+  void connect(generation);
+}
+
+async function connect(gen: number) {
+  let ticket: string;
+  try {
+    ({ ticket } = await http<{ ticket: string; expires_in: number }>('/api/auth/stream-ticket', { method: 'POST' }));
+  } catch {
+    reconnectLater(gen); // a 401 has signed out already (http), which ends the stream
+    return;
+  }
+  if (gen !== generation || !token) return;
+  const reopened = attempts > 0;
+  const es = new EventSource(withQuery('/api/stream', { ticket, last_event_id: lastEventId }));
+  source = es;
+  es.onopen = () => {
+    attempts = 0;
+    if (reopened) invalidate(); // what changed while the stream was down
+  };
+  es.onerror = () => {
+    if (source !== es) return;
+    es.close();
+    source = null;
+    reconnectLater(gen);
+  };
   const handle = (kind: string) => (ev: MessageEvent) => {
+    if (ev.lastEventId) lastEventId = ev.lastEventId;
     let data: unknown = ev.data;
     try {
       data = JSON.parse(ev.data);
@@ -312,11 +349,25 @@ function startStream() {
     // several events often arrive together (a sync, an approval's journal and events): refetch once
     if (pending === null) pending = window.setTimeout(() => ((pending = null), invalidate()), 150);
   };
-  for (const k of KINDS) source.addEventListener(k, handle(k) as EventListener);
-  source.onmessage = handle('message');
+  for (const k of KINDS) es.addEventListener(k, handle(k) as EventListener);
+  es.onmessage = handle('message');
+}
+
+function reconnectLater(gen: number) {
+  if (gen !== generation || !token || retryTimer !== null) return;
+  const delay = RETRY_MS[Math.min(attempts, RETRY_MS.length - 1)];
+  attempts += 1;
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    if (gen === generation && token) void connect(gen);
+  }, delay);
 }
 
 function stopStream() {
+  generation += 1;
   source?.close();
   source = null;
+  if (retryTimer !== null) clearTimeout(retryTimer);
+  retryTimer = null;
+  attempts = 0;
 }

@@ -19,7 +19,13 @@ The account's scope is read when the stream opens; a tenant grant made later app
 **The wire format.** One SSE message per event: `id` (the stream_event id), `event` (journal, event, notification,
 sync, step, workflow) and `data` (JSON: id, kind, case_id, at, payload). A comment line every 15 s keeps proxies from closing
 the connection. A client that reconnects with `Last-Event-ID` (EventSource does this itself) gets what it missed, up to
-500 events. Browsers' EventSource cannot send headers, so the token may also come as `?access_token=`.
+500 events (or `?last_event_id=`).
+
+**Signing in.** Non-browser clients send `Authorization: Bearer <access token>`. Browsers' EventSource cannot send
+headers, so the web app first trades its access token for a stream ticket (POST /api/auth/stream-ticket: aud
+"stream", 60 s) and opens `/api/stream?ticket=...` (F3): the access token never appears in a URL or an access log. The
+ticket is checked when the stream opens only; a reconnect fetches a new one. An access token in `?ticket=` is refused,
+as is a ticket used as a bearer token anywhere.
 """
 
 import asyncio
@@ -141,25 +147,26 @@ def sse(ev: dict) -> str:
     return f"id: {ev['id']}\nevent: {ev['kind']}\ndata: {json.dumps(data, separators=(',', ':'))}\n\n"
 
 
-def _principal(authorization: str | None, access_token: str | None) -> auth.Principal:
-    token = access_token
-    if authorization and authorization.lower().startswith("bearer "):
-        token = authorization[7:]
-    if not token:
-        raise HTTPException(401, {"code": "unauthenticated", "message": "Sign in first."})
+def _principal(authorization: str | None, ticket: str | None) -> auth.Principal:
+    """A bearer access token (non-browser clients) or a stream ticket (?ticket=); each is checked for its audience."""
     with SessionLocal() as s:
-        return auth.principal(HTTPAuthorizationCredentials(scheme="Bearer", credentials=token), s)
+        if authorization and authorization.lower().startswith("bearer "):
+            return auth.principal(HTTPAuthorizationCredentials(scheme="Bearer", credentials=authorization[7:]), s)
+        if ticket:
+            return auth.stream_principal(ticket, s)
+    raise HTTPException(401, {"code": "unauthenticated", "message": "Sign in first."})
 
 
 @router.get("/api/stream")
 async def stream(
     request: Request,
-    access_token: str | None = Query(None, description="the token, for EventSource (which cannot send headers)"),
+    ticket: str | None = Query(None, description="a stream ticket from POST /api/auth/stream-ticket, for EventSource"),
     last_event_id: int | None = Query(None, description="resume after this event id"),
     authorization: str | None = Header(None),
     last_event_header: str | None = Header(None, alias="Last-Event-ID"),
 ) -> StreamingResponse:
-    p = await run_in_threadpool(_principal, authorization, access_token)  # a database read: off the event loop
+    # checked once, here: the stream keeps running after a ticket expires (a reconnect fetches a new one)
+    p = await run_in_threadpool(_principal, authorization, ticket)  # a database read: off the event loop
     resume = last_event_id
     if resume is None and last_event_header and last_event_header.isdigit():
         resume = int(last_event_header)

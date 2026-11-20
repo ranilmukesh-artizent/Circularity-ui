@@ -9,10 +9,13 @@ them.
 import json
 import threading
 import time
+from datetime import UTC, datetime, timedelta
 
 import httpx
+import jwt
 import pytest
 
+from di.config import get_settings
 from tests import starting
 
 API = "http://localhost:8000"
@@ -24,19 +27,38 @@ def token(user: str) -> str:
     return r.json()["access_token"]
 
 
-class Listener:
-    """One open stream, read in a thread; events are kept with the time they arrived."""
+def ticket(user: str) -> str:
+    """A stream ticket, as the browser gets one before it opens EventSource (F3)."""
+    r = httpx.post(f"{API}/api/auth/stream-ticket", headers={"Authorization": f"Bearer {token(user)}"})
+    r.raise_for_status()
+    return r.json()["ticket"]
 
-    def __init__(self, user: str, via_query: bool = False, last_event_id: int | None = None):
+
+def forged_ticket(sub: str = "admin", seconds: float = 60, **claims) -> str:
+    """A ticket signed with the api's secret (the tests share the api's settings), with a chosen lifetime and claims."""
+    now = datetime.now(UTC)
+    base = {"sub": sub, "iat": now, "exp": now + timedelta(seconds=seconds), "iss": "di-api", "aud": "stream"}
+    return jwt.encode(base | claims, get_settings().jwt_secret.get_secret_value(), "HS256")
+
+
+class Listener:
+    """One open stream, read in a thread; events are kept with the time they arrived.
+
+    via: "header" (Authorization: Bearer, for non-browser clients) or "ticket" (?ticket=, as the browser does);
+    params: the query string as given (a test's own ticket), instead of either.
+    """
+
+    def __init__(self, user: str, via: str = "header", last_event_id: int | None = None, params: dict | None = None):
         self.user, self.events, self.comments = user, [], []
         self._stop = threading.Event()
         self._ready = threading.Event()
-        params, headers = {}, {}
-        t = token(user)
-        if via_query:
-            params["access_token"] = t
-        else:
-            headers["Authorization"] = f"Bearer {t}"
+        headers: dict[str, str] = {}
+        if params is None:
+            params = {}
+            if via == "ticket":
+                params["ticket"] = ticket(user)
+            else:
+                headers["Authorization"] = f"Bearer {token(user)}"
         if last_event_id is not None:
             headers["Last-Event-ID"] = str(last_event_id)
         self._thread = threading.Thread(target=self._run, args=(params, headers), daemon=True)
@@ -92,7 +114,7 @@ def is_case(case_id: str, type_: str):
 
 
 def test_two_sessions_see_each_others_approvals_within_a_second():
-    planner, approver, other = Listener("planner-a"), Listener("approver"), Listener("planner-b")
+    planner, approver, other = Listener("planner-a", via="ticket"), Listener("approver"), Listener("planner-b", via="ticket")
     try:
         t0 = time.monotonic()
         act("planner-a", "decision.submit", {"case_id": "RT-1048"})
@@ -130,7 +152,7 @@ def test_a_reconnect_replays_what_was_missed():
     finally:
         first.close()
     before = hit[3] - 1  # resume just before the submission
-    again = Listener("approver", via_query=True, last_event_id=before)  # also: the token as a query parameter
+    again = Listener("approver", via="ticket", last_event_id=before)  # also: a stream ticket in the query
     try:
         assert again.wait_for(is_case("RT-1048", "action.decision.submit"), timeout=2)
     finally:
@@ -138,7 +160,7 @@ def test_a_reconnect_replays_what_was_missed():
 
 
 def test_a_warehouse_manager_sees_only_its_warehouse():
-    wm2 = Listener("wm-2")  # Warehouse 2; RT-1048 is in Warehouse 1
+    wm2 = Listener("wm-2", via="ticket")  # Warehouse 2; RT-1048 is in Warehouse 1
     try:
         act("planner-a", "decision.submit", {"case_id": "RT-1048"})
         time.sleep(0.5)
@@ -149,4 +171,27 @@ def test_a_warehouse_manager_sees_only_its_warehouse():
 
 def test_the_stream_needs_a_sign_in():
     assert httpx.get(f"{API}/api/stream").status_code == 401
-    assert httpx.get(f"{API}/api/stream", params={"access_token": "nonsense"}).status_code == 401
+    assert httpx.get(f"{API}/api/stream", params={"ticket": "nonsense"}).status_code == 401
+    assert httpx.get(f"{API}/api/stream", headers={"Authorization": "Bearer nonsense"}).status_code == 401
+
+
+def test_the_url_takes_only_a_live_stream_ticket():
+    access = token("admin")
+    # the access token never goes in the URL: not as ?ticket=, and ?access_token= is gone (F3)
+    assert httpx.get(f"{API}/api/stream", params={"ticket": access}).status_code == 401
+    assert httpx.get(f"{API}/api/stream", params={"access_token": access}).status_code == 401
+    # a ticket is not a bearer token, not even for the stream
+    assert httpx.get(f"{API}/api/stream", headers={"Authorization": f"Bearer {ticket('admin')}"}).status_code == 401
+    # expired, another issuer, an unknown account
+    for bad in (forged_ticket(seconds=-5), forged_ticket(iss="someone-else"), forged_ticket(sub="nobody")):
+        assert httpx.get(f"{API}/api/stream", params={"ticket": bad}).status_code == 401
+
+
+def test_the_stream_outlives_its_ticket():
+    short = Listener("admin", params={"ticket": forged_ticket("admin", seconds=2)})
+    try:
+        time.sleep(3)  # the ticket has expired; it is checked only when the stream opens
+        act("planner-a", "decision.submit", {"case_id": "RT-1048"})
+        assert short.wait_for(is_case("RT-1048", "action.decision.submit")) is not None
+    finally:
+        short.close()

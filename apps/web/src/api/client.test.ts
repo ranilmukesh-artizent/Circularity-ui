@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, apiInvoke, cached, cachedAction, http, invalidate, retryFailed, withQuery } from './client';
+import { ApiError, apiInvoke, cached, cachedAction, http, invalidate, login, logout, onStream, retryFailed, withQuery } from './client';
 import { getVersion } from './store';
 
 /** A fake di-api: answers by path, counting calls. */
@@ -134,5 +134,84 @@ describe('API client cache', () => {
   it('builds query strings without empty values', () => {
     expect(withQuery('/api/screens/nav', { cc_mode: 'senior', last_asset: null, tenant_filter: '' })).toBe('/api/screens/nav?cc_mode=senior');
     expect(withQuery('/a?x=1', { y: 2 })).toBe('/a?x=1&y=2');
+  });
+});
+
+/** A fake EventSource: records each opened URL and lets the test fire events and errors. */
+class FakeEventSource {
+  static opened: FakeEventSource[] = [];
+  onopen: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  onmessage: ((ev: MessageEvent) => void) | null = null;
+  closed = false;
+  private listeners = new Map<string, (ev: MessageEvent) => void>();
+  constructor(readonly url: string) {
+    FakeEventSource.opened.push(this);
+  }
+  addEventListener(kind: string, l: (ev: MessageEvent) => void) {
+    this.listeners.set(kind, l);
+  }
+  close() {
+    this.closed = true;
+  }
+  emit(kind: string, data: unknown, id: string) {
+    this.listeners.get(kind)?.({ data: JSON.stringify(data), lastEventId: id } as MessageEvent);
+  }
+}
+
+describe('live stream (F3: a stream ticket, never the access token, in the URL)', () => {
+  beforeEach(() => {
+    FakeEventSource.opened = [];
+    vi.stubGlobal('EventSource', FakeEventSource);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  });
+  afterEach(() => {
+    logout();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('fetches a ticket with the bearer token, opens ?ticket=, and reconnects with a fresh ticket after an error', async () => {
+    let n = 0;
+    const calls = fakeFetch({
+      'GET /api/screens/reference': () => ({ body: {} }),
+      'POST /api/auth/login': () => ({ body: { account: { id: 'admin' }, access_token: 'ACCESS-TOKEN' } }),
+      'POST /api/auth/stream-ticket': () => ({ body: { ticket: 'T' + ++n, expires_in: 60 } }),
+    });
+    await login('admin', 'x');
+    await vi.waitFor(() => expect(FakeEventSource.opened).toHaveLength(1));
+    const first = FakeEventSource.opened[0];
+    expect(first.url).toBe('/api/stream?ticket=T1');
+    expect(first.url).not.toContain('ACCESS-TOKEN');
+    expect(first.url).not.toContain('access_token');
+    const ticketCall = vi.mocked(fetch).mock.calls.find(([p]) => p === '/api/auth/stream-ticket');
+    expect((ticketCall?.[1]?.headers as Record<string, string>).Authorization).toBe('Bearer ACCESS-TOKEN');
+
+    // an event marks the cached reads stale (once, after a short wait for its companions)
+    const seen: unknown[] = [];
+    const off = onStream((kind, data) => seen.push([kind, data]));
+    first.onopen?.();
+    const v = getVersion();
+    first.emit('journal', { id: 41 }, '41');
+    expect(seen).toEqual([['journal', { id: 41 }]]);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(getVersion()).toBeGreaterThan(v);
+    off();
+
+    // the connection drops: closed, then reopened after a delay with a new ticket, resuming after event 41
+    first.onerror?.();
+    expect(first.closed).toBe(true);
+    expect(FakeEventSource.opened).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    await vi.waitFor(() => expect(FakeEventSource.opened).toHaveLength(2));
+    expect(FakeEventSource.opened[1].url).toBe('/api/stream?ticket=T2&last_event_id=41');
+    expect(calls.filter((c) => c === 'POST /api/auth/stream-ticket')).toHaveLength(2);
+
+    // signing out ends it: no reconnect
+    logout();
+    FakeEventSource.opened[1].onerror?.();
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(FakeEventSource.opened).toHaveLength(2);
+    expect(FakeEventSource.opened[1].closed).toBe(true);
   });
 });

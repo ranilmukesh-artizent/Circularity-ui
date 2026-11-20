@@ -1,4 +1,4 @@
-"""Sign-in, the signed-in account, and the Approver delegations (B7)."""
+"""Sign-in, the signed-in account, the live stream's ticket (F3), and the Approver delegations (B7)."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di import policy
-from di.auth import Principal, issue_token, load_context, principal
+from di.auth import STREAM_TICKET_SECONDS, Principal, issue_stream_ticket, issue_token, load_context, principal
 from di.db import get_session
 
 router = APIRouter(prefix="/api", tags=["Access"])
@@ -40,6 +40,12 @@ def login(body: Login, session: Session = Depends(get_session)):
 @router.get("/auth/me")
 def me(p: Principal = Depends(principal)):
     return policy.summary(p.account, p.ctx)
+
+
+@router.post("/auth/stream-ticket")
+def stream_ticket(p: Principal = Depends(principal)):
+    """A short-lived ticket for GET /api/stream?ticket= (EventSource cannot send the bearer token as a header)."""
+    return {"ticket": issue_stream_ticket(p.account), "expires_in": STREAM_TICKET_SECONDS}
 
 
 class DelegationIn(BaseModel):
