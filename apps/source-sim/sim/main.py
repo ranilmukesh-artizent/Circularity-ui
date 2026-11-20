@@ -105,7 +105,8 @@ def systems() -> list[dict]:
 @app.post("/_sim/reset")
 def reset(system: str | None = None) -> dict:
     """Rebuild one system (?system=erp) or every implemented system from the seed. A full reset also resets the
-    clock, clears scheduled work and re-applies the demo faults when SIM_DEMO_FAULTS is on."""
+    clock, clears scheduled work and re-applies the demo faults when SIM_DEMO_FAULTS is on; a per-system reset then
+    re-applies only that system's demo faults and keeps the other systems' faults."""
     targets = [system] if system else list(MOCKS)
     unknown = [t for t in targets if t not in MOCKS]
     if unknown:
@@ -126,6 +127,6 @@ def reset(system: str | None = None) -> dict:
         # tell subscribers: a reset rewinds the data (and, for a full reset, the clock), so their delta cursors are void
         for t in targets:
             events.emit(conn, t, "sim.reset", t, {"system": t, "clock_reset": system is None})
-            if get_settings().demo_faults:
-                faults.apply_demo(conn)
+        if get_settings().demo_faults:  # a per-system reset leaves the other systems' faults alone (refactor R3)
+            faults.apply_demo(conn, None if system is None else targets)
     return {"reset": out}

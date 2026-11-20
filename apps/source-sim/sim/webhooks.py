@@ -1,4 +1,4 @@
-"""Deliver outbox events as CloudEvents webhooks (docs/BACKEND_STEPS.md, B6), the way SAP Event Mesh, Salesforce
+"""Deliver outbox events as CloudEvents webhooks (docs/backend-steps.md, B6), the way SAP Event Mesh, Salesforce
 platform events or ServiceNow outbound REST would notify di.
 
 - Subscribe: POST /_sim/webhooks {"url": ..., "sources": ["erp","eam"] or [] for all, "secret": "..."}
@@ -96,10 +96,21 @@ def _http_post(url: str, body: bytes, headers: dict) -> int:
 
 
 def _fan_out(conn: Connection) -> None:
-    """Create a pending delivery for every (undelivered event, matching subscription) pair that has none."""
+    """Create a pending delivery for every (undelivered event, matching subscription) pair that has none.
+
+    An event that no subscription wants is marked delivered first, over the whole outbox: otherwise it stays undelivered
+    for good and, once 500 of them pile up at the head, the window below never reaches the events a subscriber wants
+    (refactor R2). With no subscription at all, events wait for the first one."""
     subs = conn.execute(select(SUBSCRIPTIONS)).all()
     if not subs:
         return
+    conn.execute(
+        text(
+            "UPDATE sim.outbox o SET delivered_at = now() WHERE o.delivered_at IS NULL "
+            "AND NOT EXISTS (SELECT 1 FROM sim.deliveries d WHERE d.outbox_id = o.id) "
+            "AND NOT EXISTS (SELECT 1 FROM sim.subscriptions s WHERE cardinality(s.sources) = 0 OR o.source = ANY(s.sources))"
+        )
+    )
     rows = conn.execute(
         select(OUTBOX.c.id, OUTBOX.c.source).where(OUTBOX.c.delivered_at.is_(None)).order_by(OUTBOX.c.id).limit(500)
     ).all()

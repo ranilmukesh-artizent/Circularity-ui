@@ -1,4 +1,4 @@
-"""B6: simulated clock, scheduled work, webhook delivery and fault injection (docs/BACKEND_STEPS.md)."""
+"""B6: simulated clock, scheduled work, webhook delivery and fault injection (docs/backend-steps.md)."""
 
 import json
 from datetime import datetime, timedelta
@@ -238,3 +238,46 @@ def test_demo_fault_blocks_ritchie_api_key(client):
     assert r.status_code == 401 and r.json()["error"]["code"] == "invalid_token"
     client.delete("/_sim/faults")
     assert client.get("/ritchie/v2/comparables", headers=key).status_code == 200
+
+
+# ---------------- robustness (refactor F4)
+def test_fan_out_marks_events_no_subscription_wants_as_delivered(client):
+    """R2: an event that matches no subscription is marked delivered, so unmatched events don't pile up at the head of
+    the outbox and starve the fan-out (it looks at the oldest 500 undelivered events) of the events a subscriber wants."""
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE sim.outbox SET delivered_at = now() WHERE delivered_at IS NULL"))  # only new events
+    sub = client.post("/_sim/webhooks", json={"url": "http://receiver/starve", "sources": ["erp"], "secret": "x"}).json()["id"]
+    with engine.begin() as conn:
+        first = conn.execute(text("SELECT coalesce(max(id), 0) + 1 FROM sim.outbox")).scalar_one()
+        for i in range(501):
+            emit(conn, "eam", "test.Unmatched.v1", f"U-{i}", {"i": i})
+        emit(conn, "erp", "test.Wanted.v1", "W-1", {"n": 1})
+        wanted = conn.execute(text("SELECT max(id) FROM sim.outbox")).scalar_one()
+    received = []
+    webhooks.deliver(lambda url, body, headers: received.append((url, json.loads(body)["id"])) or 204)  # one pass
+    assert ("http://receiver/starve", str(wanted)) in received
+    with engine.connect() as conn:
+        left = conn.execute(
+            text("SELECT count(*) FROM sim.outbox WHERE id >= :f AND delivered_at IS NULL"), {"f": first}
+        ).scalar_one()
+    assert left == 0
+    assert client.get("/_sim/webhooks/status").json()["undelivered_events"] == 0
+    client.delete(f"/_sim/webhooks/{sub}")
+
+
+def test_a_per_system_reset_keeps_other_systems_faults(client, monkeypatch):
+    """R3: with the demo faults on, resetting one system re-applies only that system's demo faults; a fault set on
+    another system survives."""
+    from sim.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "demo_faults", True)
+    client.delete("/_sim/faults")
+    client.post("/_sim/faults/demo")
+    eam = client.post("/_sim/faults", json={"system": "eam", "kind": "error", "value": 502, "every": 1000}).json()["id"]
+    try:
+        assert client.post("/_sim/reset", params={"system": "erp"}).status_code == 200
+        after = client.get("/_sim/faults").json()
+        assert eam in [f["id"] for f in after]
+        assert sorted((f["system"], f["kind"]) for f in after) == [("eam", "error"), ("mkt", "token_expired")]
+    finally:
+        client.delete("/_sim/faults")

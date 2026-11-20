@@ -1,4 +1,4 @@
-"""Fault injection (docs/BACKEND_STEPS.md, B6). One middleware, so every mock gets it without code of its own.
+"""Fault injection (docs/backend-steps.md, B6). One middleware, so every mock gets it without code of its own.
 
 POST /_sim/faults {"system": "mkt", "kind": "token_expired"}     kinds:
     latency        delay every call by `value` ms
@@ -91,9 +91,15 @@ def active(conn: Connection, system: str | None = None) -> list[dict]:
     return [dict(r._mapping) for r in conn.execute(q.order_by(FAULTS.c.id))]
 
 
-def apply_demo(conn: Connection) -> list[int]:
-    remove(conn)
-    return [add(conn, f["system"], f["kind"], note=f["note"]) for f in DEMO_FAULTS]
+def apply_demo(conn: Connection, systems: list[str] | None = None) -> list[int]:
+    """Replace the faults with the demo's. With `systems` (a per-system reset), only those systems' faults are replaced
+    by their demo faults; other systems keep theirs (refactor R3)."""
+    if systems is None:
+        remove(conn)
+    else:
+        conn.execute(delete(FAULTS).where(FAULTS.c.system.in_(systems)))
+    demo = [f for f in DEMO_FAULTS if systems is None or f["system"] in systems]
+    return [add(conn, f["system"], f["kind"], note=f["note"]) for f in demo]
 
 
 class FaultMiddleware(BaseHTTPMiddleware):
