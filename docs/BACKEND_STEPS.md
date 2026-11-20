@@ -575,6 +575,14 @@ The rest of the design:
 
 **Done when:** two browser sessions see each other's approvals within a second.
 
+**Status: done (20 Nov 2026).**
+- **The stream** (`di/stream.py`, migrations 0008 and 0009): database triggers copy every change into `stream_event` (journal events, the demo-shaped event stream, notifications, sync runs, instruction steps, workflows and workflow runs) and send `NOTIFY di_stream`; one listener thread per api process fans each event out to the open streams. Each stream keeps what its account may see: a case's events inside its tenants and warehouse, sync progress for Connection Fabric users, workflow progress for Workflow Studio users, notifications for their addressee. `Last-Event-ID` replays up to 500 missed events; a heartbeat every 15 s; the token may come as `?access_token=` for EventSource. The worker drops feed rows after a day.
+- **Workflows** (`di/actions/workflows.py`): `workflow.save`, `publish`, `setStatus`, `create`, `duplicate`, `delete`, `run` and `validate`, with the demo's guards, messages and outputs (the template graphs, checks and run simulation are ported). `workflow.run` returns at once and queues a worker job that walks the run step by step, as the canvas animates it, writing progress after each step; each change reaches the stream as a `workflow` event, then the demo-shaped run record.
+- **Parity:** `fixtures/golden/workflow_writes.json` (new, 25 scenarios, 160 calls, 58 workflow reads) matches; a run's duration and record count are excluded, because the demo draws them unseeded (the server draws its own in the same ranges).
+- **Tests:** against the running server, two sessions see each other's submit and approval within a second; other tenants and warehouses see nothing; a reconnect replays; workflow progress arrives one event per step and only for studio accounts.
+
+**For B17:** the canvas's draft checks and test-run animation still run in the browser on the unsaved graph; follow a run by the `run` key the action returns; show a "Running" chip for a pending run; exportJson, saveAsTemplate, applySuggestedFix, reprocessFailed and setRunSetting still need actions.
+
 ## B16. MCP server
 
 1. **Server:** an MCP server inside `di-api` exposing the ten tools in the demo's `TOOLS`. Each tool calls the same action handlers.

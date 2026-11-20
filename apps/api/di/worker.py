@@ -1,7 +1,8 @@
 """di-worker: claims jobs from the Postgres queue and runs their handler.
 
 Run with:  python -m di.worker
-Handlers register by job kind: `sync.source` (B9) and `instruction.send` (B13b, di/instructions). Besides jobs, the
+Handlers register by job kind: `sync.source` (B9), `instruction.send` (B13b, di/instructions) and `workflow.run`
+(B15, di/actions/workflows: a workflow run, step by step, its progress on the live-update stream). Besides jobs, the
 loop queues due syncs every 30 s and, while sending instructions is on, acknowledges due simulated steps every 5 s.
 """
 
@@ -99,6 +100,15 @@ def _instruction_send(payload: dict) -> None:
 
     out = send(int(payload["instruction_id"]), bool(payload.get("resend")))
     log.info("instruction %s: %s", payload["instruction_id"], out)
+
+
+# ---------------------------------------------------------------- workflow runs (B15)
+@handler("workflow.run")
+def _workflow_run(payload: dict) -> None:
+    from di.actions.workflows import run_job
+
+    out = run_job(payload)
+    log.info("workflow run %s: %s", payload.get("run"), out)
 
 
 def tick_instructions() -> None:

@@ -11,11 +11,13 @@ row once and hands it to every subscriber's queue. Each stream then keeps what i
   the case actions);
 - sync progress only for accounts that may open Connection Fabric;
 - a notification only for its addressee (and Admin);
-- everything else (access changes, workflow runs) for every signed-in account.
+- workflow changes and run progress (kind `workflow`, migration 0009) only for accounts that may open the Workflow
+  Studio (integration/studio);
+- everything else (access changes, the journal) for every signed-in account.
 The account's scope is read when the stream opens; a tenant grant made later applies from the next connection.
 
 **The wire format.** One SSE message per event: `id` (the stream_event id), `event` (journal, event, notification,
-sync, step) and `data` (JSON: id, kind, case_id, at, payload). A comment line every 15 s keeps proxies from closing
+sync, step, workflow) and `data` (JSON: id, kind, case_id, at, payload). A comment line every 15 s keeps proxies from closing
 the connection. A client that reconnects with `Last-Event-ID` (EventSource does this itself) gets what it missed, up to
 500 events. Browsers' EventSource cannot send headers, so the token may also come as `?access_token=`.
 """
@@ -127,6 +129,8 @@ def visible(p: auth.Principal, ev: dict) -> bool:
         return policy.can_page(p.account, "integration")
     if kind == "notification":
         return ev["payload"].get("to") == p.account.id or p.account.role == "Admin"
+    if kind == "workflow":
+        return policy.can_page(p.account, "integration", "studio")
     return True
 
 

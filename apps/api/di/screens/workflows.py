@@ -14,15 +14,16 @@ Math.random on first use. Here they are two workspace collections (di.state), se
 as fixtures/golden/screens/workflows.json recorded them (apps/web/scripts/golden/fabric.mjs):
 - "workflows": `S.wf.list`, each with its graph already built from its template (what opening it does);
 - "workflow_runs": `S.wf.runs`, the recent runs, newest first.
-Nothing writes them yet: these endpoints are read-only. What is computed here, from the collections, is ported from
+The workflow actions (di/actions/workflows.py, B15) write them; runs are worker jobs that write their progress into the
+run record. What is computed here, from the collections, is ported from
 the demo: the status (wfStat), the history (frWfHistory), the step counts (frRunCounts), the last run on the canvas
 (wfRunFromLast), the failed records (frFailedRows) and the attention list (frWfAttn). Times are the demo's clock
 (the as-of time), as the seeded runs are. The attention list's stale sources and the failed records' field names come
 from the demo's source reference (sources.json, canonical.json mappings), so the studio stays at parity with the demo
 until workflows run on the synced sources.
 
-Still without handlers (the facade invokes them; B15 makes runs worker jobs): workflow.save, workflow.publish,
-workflow.setStatus, workflow.create, workflow.duplicate, workflow.delete, workflow.run, and the read workflow.validate.
+The actions the facade invokes (workflow.save, publish, setStatus, create, duplicate, delete, run and the read
+workflow.validate) are in di/actions/workflows.py (B15).
 
 Facade (apps/web/src/api/workflows.ts) → here, export by export:
 
@@ -41,8 +42,8 @@ Facade (apps/web/src/api/workflows.ts) → here, export by export:
 - frontend-only (checks and the test-run simulation on the unsaved draft the canvas holds; the saved graph's checks
   are the read action workflow.validate): validate, canLink, runOrder, analyze, evalStep, runTimes, runCounts with a
   draft's test-run states
-- actions, not yet implemented: saveWorkflow, publishWorkflow, setWorkflowStatus, createWorkflow, duplicateWorkflow,
-  deleteWorkflow, runWorkflow, validateSaved
+- actions (di/actions/workflows.py): saveWorkflow, publishWorkflow, setWorkflowStatus, createWorkflow,
+  duplicateWorkflow, deleteWorkflow, runWorkflow (a worker job; progress as `workflow` stream events), validateSaved
 - browser-only view flags in the demo (not journaled there), need actions before B17: exportJson, saveAsTemplate,
   applySuggestedFix, reprocessFailed, setRunSetting
 """
@@ -86,6 +87,17 @@ _LIST_HIDDEN = ("graph", "saved", "tpl")  # the list leaves the graph out; GET /
 
 def require_studio(p: Principal) -> None:
     p.require_page("integration", "studio")
+
+
+def template(tpl: dict | None) -> dict | None:
+    """wfBuild(tpl): the recorded template graph, or (for a template no starting workflow uses, such as a new blank
+    pipeline) the port in di.actions.workflows."""
+    t = _TEMPLATES.get(json.dumps(tpl, sort_keys=True))
+    if t is None and tpl:
+        from di.actions.workflows import build
+
+        t = build(tpl)
+    return t
 
 
 # ---------------------------------------------------------------- the collections
@@ -221,7 +233,7 @@ def history(w: dict, runs: list[dict], now: int = AS_OF) -> list[dict]:
     last = w.get("last")
     if not last:
         return real
-    t = w["trig"]["t"]
+    t = w["trig"].get("t")  # a saved trigger may be empty ({}): then it counts as hourly, as in the demo
     every = (w["trig"]["min"] if t == "schedule" else 10 if t == "event" else 60) * 60000
     n = min(30, w.get("runsN") or 0)
     bad = js_round((1 - w["okN"] / w["runsN"]) * n) if w.get("runsN") else 0
@@ -368,7 +380,7 @@ def workflow_detail(workflow_id: str, p: Principal = Depends(principal), session
         "workflow": w | {"stat": wf_stat(w)},
         "saved": saved
         and {"graph": saved["g"], "name": saved["m"]["name"], "owner": saved["m"]["owner"], "trig": saved["m"]["trig"]},
-        "template": _TEMPLATES.get(json.dumps(w.get("tpl"), sort_keys=True)),
+        "template": template(w.get("tpl")),
         "history": history(w, recent_runs(session)),
         "run_counts": c,
         "run_from_last": run_from_last(w),
