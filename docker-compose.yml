@@ -42,7 +42,7 @@ services:
 
   source-sim:
     restart: unless-stopped
-    build: ./apps/source-sim
+    build: { context: ./apps/source-sim, target: dev } # runtime target: docker-compose.prod.yml
     environment:
       SIM_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-circ}:${POSTGRES_PASSWORD:-circ}@postgres:5432/sources
     command: uvicorn sim.main:app --host 0.0.0.0 --port 8100 --reload
@@ -63,7 +63,7 @@ services:
 
   api:
     restart: unless-stopped
-    build: ./apps/api
+    build: { context: ./apps/api, target: dev } # runtime target: docker-compose.prod.yml
     environment: *api-env
     command: sh -c "alembic upgrade head && uvicorn di.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
@@ -82,7 +82,7 @@ services:
 
   worker:
     restart: unless-stopped
-    build: ./apps/api
+    build: { context: ./apps/api, target: dev } # runtime target: docker-compose.prod.yml
     environment: *api-env
     command: python -m di.worker
     volumes:
@@ -101,7 +101,7 @@ services:
 
   web:
     restart: unless-stopped
-    build: ./apps/web
+    build: { context: ./apps/web, target: dev } # runtime target: docker-compose.prod.yml
     environment:
       API_PROXY_TARGET: http://api:8000
       VITE_BACKEND: ${VITE_BACKEND:-api} # the app reads di-api (B17)

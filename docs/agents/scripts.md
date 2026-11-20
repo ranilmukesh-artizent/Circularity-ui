@@ -45,6 +45,15 @@ Check a lock installs cleanly without touching the stack:
 `docker run --rm -v "$PWD:/repo:ro" -w /repo/apps/<svc> python:3.12-slim sh -c 'pip install -q --require-hashes --no-deps -r requirements.lock -r requirements-dev.lock && pip check'`.
 The images install the same way (`apps/*/Dockerfile`); rebuild after a lock change.
 
+Images (`apps/*/Dockerfile`): base images pinned by digest; target `dev` is what `docker-compose.yml` builds
+(bind mounts, reload, dev lock, tests); target `runtime` has no dev tools, tests or scripts and runs as a non-root user
+(api/source-sim uid 10001; web is nginx-unprivileged on 8080 serving `dist` with a CSP, see
+`apps/web/nginx/default.conf.template`). WSL's Docker has no buildx, so the classic builder runs them; keep the
+Dockerfiles free of BuildKit-only syntax. Run the runtime images with
+`docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build` (opt-in); the web build needs
+`node apps/web/scripts/extract-styles.mjs` first. To bump a base image, take a tag at least two weeks old and its index
+digest from Docker Hub (`https://hub.docker.com/v2/repositories/library/<image>/tags?name=<tag>`).
+
 ## apps/api/scripts (run inside the api container)
 
 | Script | What |

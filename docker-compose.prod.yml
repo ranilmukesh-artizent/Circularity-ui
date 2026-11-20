@@ -1,0 +1,39 @@
+# Opt-in: the runtime images (each Dockerfile's `runtime` target) on top of docker-compose.yml.
+#   node apps/web/scripts/extract-styles.mjs     # the web build needs the demo's generated stylesheet and photos
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# No source bind mounts, no --reload, no dev tools or tests in the images, non-root users. The golden files are
+# mounted read-only, as in dev. The web app is the built bundle behind nginx (8080 in the container, published on
+# 5173 as in dev) with a Content-Security-Policy (apps/web/nginx/default.conf.template).
+# Outside DI_ENV=dev the api refuses the shipped signing secrets: set DI_ENV, DI_JWT_SECRET and DI_WEBHOOK_SECRET.
+
+services:
+  source-sim:
+    build: { context: ./apps/source-sim, target: runtime }
+    image: circularity-ui-source-sim:runtime
+    command: !reset null
+    volumes: !override
+      - ./fixtures/golden:/fixtures/golden:ro
+
+  api:
+    build: { context: ./apps/api, target: runtime }
+    image: circularity-ui-api:runtime
+    command: !reset null
+    volumes: !override
+      - ./fixtures/golden:/fixtures/golden:ro
+
+  worker:
+    build: { context: ./apps/api, target: runtime }
+    image: circularity-ui-worker:runtime
+    volumes: !override
+      - ./fixtures/golden:/fixtures/golden:ro
+
+  web:
+    build: { context: ./apps/web, target: runtime }
+    image: circularity-ui-web:runtime
+    environment: !override
+      API_UPSTREAM: http://api:8000
+    ports: !override
+      - "${BIND_ADDR:-127.0.0.1}:5173:8080"
+    volumes: !reset []
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]

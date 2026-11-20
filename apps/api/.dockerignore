@@ -1,5 +1,17 @@
+# Build context of the image (Dockerfile). The runtime target copies only the app's own code; tests and scripts stay
+# here for the dev target, which compose bind-mounts over anyway.
+.env
+.env.*
+.git
+.gitignore
+.venv/
 __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
-.venv/
+.mypy_cache/
+.coverage
+htmlcov/
+node_modules/
+Dockerfile
+.dockerignore

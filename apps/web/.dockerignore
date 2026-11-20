@@ -1,2 +1,17 @@
+# Build context of the image (Dockerfile). Keep src/styles/legacy.gen.css and public/assets/products: they are
+# generated (git-ignored) but the build target needs them.
+.env
+.env.*
+.git
+.gitignore
 node_modules/
 dist/
+*.tsbuildinfo
+coverage/
+e2e/
+playwright-report/
+test-results/
+**/*.test.ts
+**/*.test.tsx
+Dockerfile
+.dockerignore

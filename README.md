@@ -201,6 +201,7 @@ fixtures/demo/assets/products/   product photos
 infra/postgres/        database init
 scripts/dev/           test and maintenance scripts (bash, WSL)
 docker-compose.yml
+docker-compose.prod.yml  opt-in: the runtime images (no dev tools, non-root, the web app built and served by nginx)
 docs/reference/        source documents: the agent-first product spec, the user journey deck, the IFS process fit
 docs/plan-fullstack-poc.md   decisions and architecture
 docs/backend-steps.md        the backend build, step by step, with the status of each step
