@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   capacity, ccFilters, ccKeys, ccLayout, ccMetrics, ccMode, ccOps, ccPick, ccRows, ccScope, ccSecDesc, ccSecLabel, ccSecOK, ccSection,
   classLabel, clearCcFilters, clockText, CC_STAGES, dueSlices, filterOptions, healthDetail, healthStrip, insights, kfmt, kpiTiles,
-  rbPath, routeBars, routeShort, setCcFilters, setCcMode, setCcOps, signals, sourceCount, stageSlices, tenantAllowed, visCaseCount,
+  rbPath, routeBars, routeShort, scopeTotals, setCcFilters, setCcMode, setCcOps, signals, sourceCount, stageSlices, tenantAllowed, visCaseCount,
   visRowCount, workflowCount, type CcFilters, type CcRows, type CcScope, type KpiTile,
 } from '../../api/command';
 import { fmtNumber } from '../../api/format';
@@ -19,7 +19,6 @@ import { toast } from '../../ui/toast';
 import { Combo, Donut, HealthRing, RouteBars, Spark, VarList } from './charts';
 import { ActionsTable, ApprovalCards, Aome, Exceptions, Handed, Inbox, OpsReadOnly, Outcomes } from './sections';
 
-const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 /** Where each section's panel sits, so a tile can scroll to it when it is on the page. */
 const SEC_EL: Record<string, string> = { kpis: 'ccVar', approvals: 'ccApprovals', aome: 'ccAome', handed: 'ccHanded', signals: 'ccSignals' };
 const CC_DUE_LBL: Record<string, string> = { d5: '< 5 days', d7: '5–7 days', d10: '8–10 days', d11: '> 10 days' };
@@ -259,7 +258,7 @@ function Chart({ k, sc, f, onPick }: { k: string; sc: CcScope; f: CcFilters; onP
     return (
       <section className="panel">
         <div className="ph"><h3>Lifecycle portfolio</h3></div>
-        <div className="pb"><Donut items={stageSlices(sc)} cur={'stage:' + f.stage} top={fmtNumber(sc.all.length)} bottom="Assets" label="Lifecycle portfolio" onPick={onPick} /></div>
+        <div className="pb"><Donut items={stageSlices(sc)} cur={'stage:' + f.stage} top={fmtNumber(scopeTotals(sc).all)} bottom="Assets" label="Lifecycle portfolio" onPick={onPick} /></div>
       </section>
     );
   if (k === 'treat')
@@ -272,7 +271,7 @@ function Chart({ k, sc, f, onPick }: { k: string; sc: CcScope; f: CcFilters; onP
   if (k === 'var')
     return (
       <section className="panel" id="ccVar">
-        <div className="ph"><h3>Value at risk by reason</h3><span className="note num">{kfmt(sum(sc.all.map((c) => c._var)))}</span></div>
+        <div className="ph"><h3>Value at risk by reason</h3><span className="note num">{kfmt(scopeTotals(sc).risk)}</span></div>
         <div className="pb ccvlist"><VarList sc={sc} cur={f.reason} onPick={onPick} /></div>
       </section>
     );
@@ -280,7 +279,7 @@ function Chart({ k, sc, f, onPick }: { k: string; sc: CcScope; f: CcFilters; onP
     return (
       <section className="panel">
         <div className="ph"><h3>Assets by time to action</h3></div>
-        <div className="pb"><Donut items={dueSlices(sc)} cur={'due:' + f.due} top={fmtNumber(sc.act.length)} bottom="Assets" label="Assets by time to action" onPick={onPick} /></div>
+        <div className="pb"><Donut items={dueSlices(sc)} cur={'due:' + f.due} top={fmtNumber(scopeTotals(sc).act)} bottom="Assets" label="Assets by time to action" onPick={onPick} /></div>
       </section>
     );
   return null;

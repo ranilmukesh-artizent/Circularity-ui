@@ -53,6 +53,16 @@ Facade (apps/web/src/api/case.ts) → this API
 
 Summary: 51 exports → 22 served (19 by the two endpoints, 3 by actions), 5 reference, 24 frontend-only.
 
+B17 (done): the frontend draws the detail tabs, Full analysis, the Explain view and the drawers as React from these two
+answers in both modes (the engine assembles the same documents). Added for that: GET /{id} → sources (the demo's
+SOURCES: logos, provenance chips, the Systems tab); GET /{id}/analysis?tenant= → view: the hand-off steps (exApp,
+exDocRef, stepOwner, hoKind, ackNote), exDelivered, valueOrder, exActual per outcome line, afStageLabel, the packet's
+case.routes / case.evidence reads and afRisks, assetHealth, caseDiag, parts, part prices, catalogue, SC/RMA/receipt,
+title, serial, assetFacts, the repair centre's load (ccUtil, tenant filter), FAC_LOC, LOCS (name, receiving window),
+saved scenarios. The what-if (scenRoutes, tiRows, tieBreak, recert) is computed in the frontend from the routes and
+the ranking, because its edge cases (critical part, new unit only, short certification, apply to one route) are not
+inputs of case.whatIf.
+
 Notes for the switch-over (B17):
 - `null` stands for the demo's `undefined` as well (JSON has no undefined); an unlimited approval limit is `null`.
 - Times are ISO strings. The case record's `spec` is returned in the demo's per-class order (the database's JSON
@@ -78,9 +88,22 @@ from di.cases import store
 from di.db import get_session
 from di.engine.jsmath import js_round, js_sum
 from di.engine.pool import solve_pool
-from di.execution import ex_kg, ex_move, ex_plan, ex_prep_parts, ex_trace, ex_what_if, lane_cost, loc_name, steps_for
-from di.execution.lanes import LOCS, RATE_CARD
-from di.execution.plan import ex_delivered, value_order
+from di.execution import (
+    as_sc,
+    ex_actual,
+    ex_kg,
+    ex_move,
+    ex_plan,
+    ex_prep_parts,
+    ex_trace,
+    ex_what_if,
+    lane_cost,
+    loc_name,
+    steps_for,
+)
+from di.execution.lanes import LOCS, RATE_CARD, loc_win
+from di.execution.plan import ack_note, ex_delivered, value_order
+from di.execution.steps import ex_doc_ref, ho_kind
 from di.reads.cases import flips, tie_break, tie_text
 from di.reads.common import (
     AS_OF,
@@ -113,6 +136,8 @@ from di.reads.common import (
     ms,
     next_step,
     run,
+    stage_label,
+    step_owner,
     ti_conf,
 )
 from di.reads.common import EX_FX as FX
@@ -1053,6 +1078,72 @@ def case_page(case_id: str, p: Principal = Depends(principal), session: Session 
         "next": next_step(c, ctx),
         "clock": active_clock(c),
         "approval": {"role": "Approver" if deleg else "Admin", "limit": no_inf(policy.limit_for(p.account, p.ctx))},
+        "sources": case_sources(),
+    }
+
+
+def case_sources() -> dict:
+    """The connected sources the stage pages name (logos, provenance chips, the Systems tab): the demo's SRC by id."""
+    keys = ("id", "short", "name", "vendor", "mode", "status", "freshMin")
+    return {k: {f: s.get(f) for f in keys} for k, s in SOURCES.items()}
+
+
+def step_view(c: Case, s: dict) -> dict:
+    """One instruction step as the hand-off blocks draw it: the vendor application, the document it creates, its owner,
+    the kind of document the system returns and the acknowledgement note (exApp, exDocRef, stepOwner, hoKind, ackNote)."""
+    return {
+        "k": s.get("k"),
+        "label": s["label"],
+        "sys": s["sys"],
+        "state": s["state"],
+        "ack": s.get("ack"),
+        "app": ex_app(s),
+        "doc_ref": ex_doc_ref(c, s) if s.get("k") else None,
+        "owner": step_owner(c, s),
+        "doc": list(ho_kind(s)),
+        "note": ack_note(s, c),
+    }
+
+
+def analysis_view(c: Case, p: Principal, session: Session, ctx: CallContext, tenant: str) -> dict:
+    """What the detail tabs and Full analysis draw besides the analysis proper (B17): the hand-off steps, the delivery,
+    the order the value is committed against, the actuals behind the outcome lines, the packet's reads and risks, the
+    asset's health, diagnostics, parts and facts, and the repair centre's load (the demo's ccUtil, tenant filter)."""
+    from di.actions.decisions import saved_scenarios
+    from di.reads.cases import case_evidence, case_routes
+    from di.screens.command import af_risks
+    from di.screens.product import as_serial, as_title, asset_facts, case_diag, catalogue, health, part_prices, parts_availability
+
+    h = health(c)
+    rt, ev = case_routes({"case_id": c["id"]}, ctx), case_evidence({"case_id": c["id"]}, ctx)
+    o = c.get("outcome")
+    return {
+        "steps": [step_view(c, s) for s in steps_of(c)],
+        "delivered": ex_delivered(c),
+        "value_order": value_order(c),
+        "actuals": [ex_actual(c, ln) for ln in o.get("lines") or []] if o else [],
+        "stage_label": stage_label(c),
+        "routes_read": rt,
+        "evidence_read": ev,
+        "risks": af_risks(c, rt, ev),
+        "health": h,
+        "diag": case_diag(c, h),
+        "parts": parts_availability(c, h),
+        "part_prices": part_prices(c, h),
+        "catalogue": catalogue(c),
+        "sc": as_sc(c),
+        "rma": as_rma(c),
+        "receipt": f"GR-{100000 + as_hex(c, 'gr') % 900000}",
+        "title": as_title(c),
+        "serial": as_serial(c),
+        "facts": asset_facts(c),
+        "repair_load": sum(1 for x in vis_cases(p, session, tenant) if x["location"] == "Repair centre"),
+        "fac_code": FAC_LOC.get(c["location"]),
+        "scenarios": saved_scenarios(session, c["id"]),
+        "locs": {
+            k: {"name": loc_name(k), "win": loc_win(k)} | {f: L.get(f) for f in ("city", "bin", "bay", "days")}
+            for k, L in LOCS.items()
+        },
     }
 
 
@@ -1131,8 +1222,11 @@ def evidence_pack(c: Case, rn: dict, session: Session) -> dict:
 
 
 @router.get("/{case_id}/analysis")
-def case_analysis(case_id: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
-    """The data behind the stage pages' detail tabs and Full analysis."""
+def case_analysis(
+    case_id: str, tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)
+):
+    """The data behind the stage pages' detail tabs and Full analysis (`tenant`: the top-bar filter, for the repair
+    centre's load)."""
     c = load_case(p, session, case_id, "product", "case")
     ctx = screen_ctx(p, session)
     r = c.get("chosen") or c.get("recommendation")
@@ -1188,6 +1282,7 @@ def case_analysis(case_id: str, p: Principal = Depends(principal), session: Sess
         "journal": case_journal(session, c["id"]),
         "events": case_events(session, c["id"]),
         "evidence_pack": evidence_pack(c, run(c, ctx), session),
+        "view": analysis_view(c, p, session, ctx, tenant),
     }
 
 

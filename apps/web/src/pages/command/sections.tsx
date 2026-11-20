@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   acknowledge, aomeItems, approvalCards, approvalLimit, awaitingApproval, ccFilters, clsIcon, decideRequest, decisionsAwaiting,
-  exOwner, exRows, handedRows, inboxRequests, inboxScope, kfmt, rbPath, notifyRecipients, opScopeInfo, oppRow, oppRows, outcomesToConfirm,
+  exOwner, exRows, handedRows, inboxRequests, inboxScope, kfmt, rbPath, notifyRecipients, opScopeInfo, opsAwaiting, oppRow, oppRows, outcomesToConfirm,
   sendNotification, setCcFilters, toggleOpScope, type AccessRequest, type CcCase, type CcScope, type ExRow,
 } from '../../api/command';
 import { fmtDateYear, money } from '../../api/format';
@@ -344,8 +344,7 @@ export function Outcomes() {
 /** Senior view: the operational queues, read-only, only when asked for. */
 export function OpsReadOnly({ sc }: { sc: CcScope }) {
   const openCase = useOpenCase();
-  const net = (c: CcCase) => (c.recommendation ? c.recommendation.net : 0);
-  const ap = sc.all.filter((c) => c._st === 'approval').sort((a, b) => net(b) - net(a));
+  const ap = opsAwaiting(sc);
   return (
     <div className="aogrid" id="ccOpsRO">
       <section className="panel">
@@ -356,8 +355,8 @@ export function OpsReadOnly({ sc }: { sc: CcScope }) {
               {ap.slice(0, 6).map((c) => (
                 <tr key={c.id} {...rowProps(() => openCase(c.id))}>
                   <td><b>{c.id}</b></td>
-                  <td>{c.recommendation ? c.recommendation.plan : '—'}</td>
-                  <td className="r num">{kfmt(net(c))}</td>
+                  <td>{c.plan ?? '—'}</td>
+                  <td className="r num">{kfmt(c.net)}</td>
                 </tr>
               ))}
             </tbody>

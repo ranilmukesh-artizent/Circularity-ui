@@ -1,20 +1,21 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { invoke } from '../../api/actions';
 import {
-  approvalLimit, approvalTerms, badgeHtml, caseById, defaultSpend, draftRationale, driversHtml, eligibleRoutes,
-  instructionJsonHtml, resetScen, scen, scenAdj, scenarioImpactHtml, scheduleAutoAck, setScen, snapshotFrozenAt, snapshotItems,
-  type CaseRec, type ScenKey,
+  approvalLimit, approvalTerms, caseAnalysis, caseById, confidence, defaultSpend, draftRationale, eligibleRoutes, instruction,
+  isoT, resetScen, scen, scenAdj, scenRoutes, scheduleAutoAck, setScen, snapshotItems, type CaseAnalysis, type CaseRec, type Route, type ScenKey,
 } from '../../api/case';
 import { money } from '../../api/format';
 import { currentAccount } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { Legacy } from './ui';
+import { AfBadge, Json } from './kit';
+import { TiResult } from './tabs/decide';
 
 /** The approval card (ACT.approve with the agent's draft, the limit and the raw instruction; confirmApprove). */
 export function ApprovalModal({ c, mode, onClose }: { c: CaseRec; mode?: 'review'; onClose: () => void }) {
-  const rec = c.recommendation!;
+  // the recommendation as the entry of c.routes (the API sends it as a copy), so the comparisons below hold
+  const rec = c.routes.find((x) => x.id === c.recommendation!.id && x.plan === c.recommendation!.plan) ?? c.recommendation!;
   const el = eligibleRoutes(c);
   const draft = draftRationale(c);
   const [plan, setPlan] = useState(rec.plan);
@@ -26,7 +27,7 @@ export function ApprovalModal({ c, mode, onClose }: { c: CaseRec; mode?: 'review
   const [err, setErr] = useState('');
   const sel = useRef<HTMLSelectElement>(null);
   useEffect(() => { if (mode === 'review') window.setTimeout(() => sel.current?.focus(), 60); }, [mode]);
-  const lim = approvalLimit(), net = Math.abs(rec.net);
+  const lim = approvalLimit(c), net = Math.abs(rec.net);
   const t = c.routes.find((x) => x.plan === plan) ?? rec;
 
   function pickRoute(v: string) {
@@ -92,7 +93,7 @@ export function ApprovalModal({ c, mode, onClose }: { c: CaseRec; mode?: 'review
       </div>
       <div className="afapx">
         <p className="note">
-          <span dangerouslySetInnerHTML={{ __html: badgeHtml('Prepared by agent') }} /> The rationale above is the agent's draft. Edit it, or tick the box below to acknowledge it; nothing is approved until you press the button.
+          <AfBadge k="Prepared by agent" /> The rationale above is the agent's draft. Edit it, or tick the box below to acknowledge it; nothing is approved until you press the button.
         </p>
         <p className="note">
           Your approval limit: <b>{lim === Infinity ? 'unlimited' : money(lim)}</b>
@@ -100,7 +101,7 @@ export function ApprovalModal({ c, mode, onClose }: { c: CaseRec; mode?: 'review
         </p>
         <details className="afraw">
           <summary>Raw instruction that will be sent </summary>
-          <pre className="code" dangerouslySetInnerHTML={{ __html: instructionJsonHtml(c) }} />
+          <Json o={instruction(c)} />
         </details>
       </div>
       <div className="grid g2">
@@ -159,6 +160,7 @@ const CX_SL: [ScenKey, string][] = [['purchase', 'Avoided purchase price'], ['co
 export function ExplainView({ caseId, onClose }: { caseId: string; onClose: () => void }) {
   const c = caseById(caseId)!;
   const r = c.recommendation!;
+  const a = caseAnalysis(c.id);
   const [hot, setHot] = useState<string[]>([]);
   const timer = useRef(0);
   const close = useRef<HTMLButtonElement>(null);
@@ -179,7 +181,7 @@ export function ExplainView({ caseId, onClose }: { caseId: string; onClose: () =
     timer.current = window.setTimeout(() => setHot([]), 4200);
   };
   const s = scen();
-  const nx = c.routes.filter((x) => !x.excluded && x !== r).sort((a, b) => b.net - a.net)[0];
+  const nx = c.routes.filter((x) => !x.excluded && !(x.id === r.id && x.plan === r.plan)).sort((a, b) => b.net - a.net)[0];
   const ex = c.routes.filter((x) => x.excluded);
   const sn = c.snapshot;
   const preset = (k: 'parts' | 'demand' | 'resale' | 'reset') => {
@@ -202,14 +204,14 @@ export function ExplainView({ caseId, onClose }: { caseId: string; onClose: () =
             <h2>Why {r.plan} · {money(r.net)}</h2>
           </div>
           <span className="sp" />
-          <span dangerouslySetInnerHTML={{ __html: badgeHtml('Prepared by agent') }} style={{ display: 'contents' }} />
+          <AfBadge k="Prepared by agent" />
           <button ref={close} className="btn" aria-label="Close" onClick={onClose}>Close</button>
         </header>
         <div className="cxxb">
           <div className="cxl">
             <section className="panel cxp">
               <div className="cxph"><h3>Why this outcome</h3><span className="note">{r.why || ''}</span></div>
-              <div className="cxds" onMouseOver={onDriver} dangerouslySetInnerHTML={{ __html: driversHtml(c, r) }} />
+              <div className="cxds" onMouseOver={onDriver}><Drivers a={a} r={r} /></div>
               <p className="cxnx note">
                 {nx && <>Next best: <b>{nx.plan}</b>, {money(nx.net)}, {money(r.net - nx.net)} less. </>}
                 {ex.length > 0 && <>Withheld before pricing: {ex.map((x) => x.plan + ' (' + String(x.failReason || 'a gate failed').replace(/^./, (m) => m.toLowerCase()) + ')').join('; ')}. </>}
@@ -239,17 +241,17 @@ export function ExplainView({ caseId, onClose }: { caseId: string; onClose: () =
                     <button className="btn sm" onClick={() => preset('reset')}>Reset to base</button>
                   </div>
                 </div>
-                <Legacy html={scenarioImpactHtml(c)} />
+                <div id="cxImpact"><TiResult c={c} a={a} sr={scenRoutes(c)} /></div>
               </div>
             </section>
           </div>
           <aside className="panel cxr" aria-label="Evidence snapshot">
             <div className="cxph">
               <h3>Evidence snapshot</h3>
-              <span className="note">{sn ? sn.id + ' · frozen ' + snapshotFrozenAt(c) : 'No snapshot yet'}. Each figure, the system it came from and when.</span>
+              <span className="note">{sn ? sn.id + ' · frozen ' + isoT(a.snapshot_time) : 'No snapshot yet'}. Each figure, the system it came from and when.</span>
             </div>
             <ul className="cxevs">
-              {snapshotItems(c).map((e) => (
+              {snapshotItems(c, a).map((e) => (
                 <li key={e.k} className={'cxev' + (hot.includes(e.k) ? ' hot' : '')} data-k={e.k}>
                   <span className={'cxevi ' + (e.ready ? 'ok' : 'warn')} aria-hidden="true">{e.ready ? '✓' : '!'}</span>
                   <div>
@@ -267,3 +269,33 @@ export function ExplainView({ caseId, onClose }: { caseId: string; onClose: () =
   );
 }
 
+
+const CX_DRV: Record<string, [string, string]> = {
+  purchase: ['Avoids a new purchase', 'Planned purchase at the procurement contract price'],
+  prep: ['Workshop refurbishment and transfer', 'Repair scope and hours from the MRO workshop; parts at contract prices'],
+  service: ['Expected service cost', 'Failure history for this class at this duty'],
+  residual: ['Value left at the end of the term', 'Market comparables for this grade and age'],
+  sale: ['Sale proceeds', 'Market comparables for this grade and age'],
+};
+/** The value drivers of the recommended route as bars, each naming the evidence it rests on (cxDrivers). */
+function Drivers({ a, r }: { a: CaseAnalysis; r: Route }) {
+  const t = r.terms || [], mx = Math.max(1, ...t.map((x) => Math.abs(x.amt)));
+  return (
+    <>
+      {t.map((x, i) => {
+        const d = CX_DRV[x.kind] || [x.label, ''], ev = CX_EV[x.kind] || [], w = Math.max(4, Math.round((Math.abs(x.amt) / mx) * 100));
+        return (
+          <div key={i} className="cxd" data-ev={ev.join(' ')}>
+            <div className="cxdl"><b>{x.kind === 'service' ? d[0] + ' \u00b7 ' + ((x.label.match(/\(([^)]+)\)/) || [])[1] || 'term') : d[0]}</b><span className="note">{d[1]}</span></div>
+            <div className="cxdb"><span className={'cxbar ' + (x.amt < 0 ? 'neg' : 'pos')} style={{ width: w + '%' }}></span></div>
+            <b className={'num cxda ' + (x.amt < 0 ? 'neg' : 'pos')}>{x.amt < 0 ? '\u2212' : '+'}{money(Math.abs(x.amt))}</b>
+          </div>
+        );
+      })}
+      <div className="cxd cxtot">
+        <div className="cxdl"><b>Predicted net</b><span className="note">P10{'\u2013'}P90 {money(r.p10)} to {money(r.p90)} {'\u00b7'} confidence {confidence(a, r).toLowerCase()}</span></div>
+        <div></div><b className="num cxda">{money(r.net)}</b>
+      </div>
+    </>
+  );
+}

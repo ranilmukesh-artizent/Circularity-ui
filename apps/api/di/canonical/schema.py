@@ -40,6 +40,7 @@ FIELD_AUTHORITY: dict[str, str] = {
     "asset.received_at": "rl",
     "asset.disposition": "rl",
     "asset.work_order_ref": "eam",  # Work order status
+    "asset.run_hours": "iot",  # Operating hours (B5c: the device's hour counter over Maximo's RUNHOURS meter)
     # condition
     "condition.grade": "repair",  # Inspection grade (MRO)
     "condition.inspection_ref": "repair",
@@ -48,6 +49,7 @@ FIELD_AUTHORITY: dict[str, str] = {
     "condition.requalification": "eng",
     "condition.certificates": "qms",  # Certification
     "condition.policy": "qms",  # Policy
+    "condition.duty_cycle_pct": "iot",  # Duty (B5c)
     # demand
     "demand.demand_id": "oms",  # Order line
     "demand.ship_to": "oms",  # Ship-to

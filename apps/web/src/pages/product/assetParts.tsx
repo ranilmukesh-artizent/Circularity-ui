@@ -334,7 +334,7 @@ export function CostBuild() {
         {row('Labour, machine and transfer', inr(rest), rest)}
         {row('Labour', P.labH + ' h × ' + inr(P.rate) + ' · Oracle Depot Repair, standard ' + P.std + ' h, solved last', P.lab, 'ascbs')}
         {P.ops.length > 0 && row('Machine time', P.ops.map((o) => o.name.toLowerCase() + ' ' + o.h + ' h').join(', '), mc, 'ascbs')}
-        {P.legs.length > 0 && row('Transport', P.legs.length + ' leg' + (P.legs.length > 1 ? 's' : '') + ' · ShipLane TMS ' + rateCardId(), tr, 'ascbs')}
+        {P.legs.length > 0 && row('Transport', P.legs.length + ' leg' + (P.legs.length > 1 ? 's' : '') + ' · Oracle Transportation Management ' + rateCardId(), tr, 'ascbs')}
         {!!P.pack && row('Packing and handling', 'Manhattan Active WM', P.pack, 'ascbs')}
         <div className="asrow"><span><b>Preparation cost</b> <span className="note">{inr(P.B)} at ₹{fx}</span></span><b className="num">{m(prep)}</b></div>
       </div>

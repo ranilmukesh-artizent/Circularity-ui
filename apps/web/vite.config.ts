@@ -8,6 +8,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    proxy: { '/api': apiTarget },
+    proxy: { '/api': apiTarget, '/mcp': apiTarget }, // /mcp: the MCP server (B16), used by the MCP playground
   },
 });

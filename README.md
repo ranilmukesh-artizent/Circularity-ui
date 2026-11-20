@@ -28,6 +28,8 @@ docker compose up --build
 | http://localhost:8100/docs | `source-sim`: the 20 mocked enterprise systems |
 | localhost:5432 | Postgres (user and password `circ`): databases `di` and `sources` |
 
+The app still starts on the in-browser engine (the demo's logic) by default. To run it on the backend, start it with `VITE_BACKEND=api docker compose up --build` (or add `VITE_BACKEND=api` to `.env`): every page then reads `di-api`, updates live from its stream, and Ask Circularity (Ctrl+J) answers through `POST /api/ask`.
+
 Sign in with any of these IDs and **any password**:
 
 | ID | Account |
@@ -207,6 +209,7 @@ docs/BACKEND_STEPS.md        the backend build, step by step, with the status of
 | Frontend | every screen in React, on the in-browser engine | done |
 | B1–B4 | golden data, seed, SAP S/4HANA and SAP Ariba mocks | done |
 | B5, B5b | the other 18 mocks; 19 of the 20 as full vendor mocks | done |
+| B5c | AWS IoT Core as a full vendor mock with a connector (starts not provisioned, as in the demo; `POST /api/sources/iot/connect`) | done |
 | B6 | simulated clock, scheduled work, webhooks, faults | done |
 | B7 | sign-in and the access policy | done |
 | B8 | the action endpoint and journal | done (handlers arrive with B10–B13) |
@@ -219,7 +222,8 @@ docs/BACKEND_STEPS.md        the backend build, step by step, with the status of
 | B15 | live updates (`GET /api/stream`, Server-Sent Events) and Workflow Studio actions with runs as worker jobs | done |
 | B16 | MCP server at `/mcp`: the ten agent tools, agent scopes and hard rules in code, every call logged | done |
 | B16b | Ask Circularity on a language model (Groq free tier; `POST /api/ask`, read-only, falls back to the demo's answers) | done |
-| B17 | switch the frontend to the backend | to do |
+| B17a, B17b | the frontend on the backend: every page with `VITE_BACKEND=api`, live updates, the Ask Circularity panel | done |
+| B17c | `api` the default, the in-browser engine deleted | to do |
 | B18 | browser tests, run book, security review | to do |
 
 Details, decisions and known limits of each step: [`docs/BACKEND_STEPS.md`](docs/BACKEND_STEPS.md).

@@ -1,7 +1,14 @@
-/** Audit & provenance (#/audit): the fetch and event log, evidence gaps, provenance records and comments. */
+/**
+ * Audit & provenance (#/audit): the fetch and event log, evidence gaps, provenance records and comments.
+ * With VITE_BACKEND=api: GET /api/screens/audit (entries, gaps, comments), /audit/provenance and /audit/comments, and
+ * the action comment.add (di/screens/audit.py has the mapping).
+ */
 import { engine } from '../engine/engine';
 import { invoke } from './actions';
+import { API } from './backend';
+import { ApiError, cached, withQuery } from './client';
 import type { ActionResult } from './types';
+import { view } from './view';
 
 const e = () => engine();
 
@@ -25,21 +32,75 @@ export interface Evidence { k: string; label: string; source: string; state: str
 export interface CaseLite { id: string; assetId: string; evidence: Evidence[] }
 export interface Comment { by: string; at: Date | string; text: string; prep?: string | null }
 
-/** Every entry the account may see (evidence fetches of visible cases, and instructions and events), with agent preparers. */
-export const auditEntries = (): AuditEntry[] => e()<() => AuditEntry[]>('auditEntries')();
-/** Evidence with no recorded fetch, so no provenance. */
-export const auditGaps = (): { c: CaseLite; e: Evidence }[] => e()<() => { c: CaseLite; e: Evidence }[]>('auditGaps')();
+// ---------------------------------------------------------------- API answers (ISO timestamps become Dates once)
+type Wire<T> = Omit<T, 'ts' | 'p'> & { ts: string; p?: WireProv };
+type WireProv = Omit<Provenance, 'fetchedAt' | 'observedAt'> & { fetchedAt?: string; observedAt?: string };
+interface Answer { entries: Wire<AuditEntry>[]; gaps: { c: CaseLite; e: Evidence; p: WireProv }[]; comments: Record<string, Comment[]> }
+interface Parsed { entries: AuditEntry[]; gaps: { c: CaseLite; e: Evidence }[]; comments: Record<string, Comment[]> }
 
-export const caseById = (id: string): CaseLite | undefined => e()<Record<string, CaseLite>>('CASE_BY_ID')[id];
+const prov = (p: WireProv): Provenance => ({
+  ...p,
+  fetchedAt: p.fetchedAt ? new Date(p.fetchedAt) : undefined,
+  observedAt: p.observedAt ? new Date(p.observedAt) : undefined,
+});
+const parsed = new WeakMap<Answer, Parsed>();
+
+function audit(): Parsed {
+  const a = cached<Answer>(withQuery('/api/screens/audit', { tenant_filter: view().tenant }));
+  let p = parsed.get(a);
+  if (!p) {
+    p = {
+      entries: a.entries.map((x) => ({ ...x, ts: new Date(x.ts), p: x.p && prov(x.p) })),
+      gaps: a.gaps.map(({ c, e }) => ({ c, e })),
+      comments: a.comments,
+    };
+    parsed.set(a, p);
+  }
+  return p;
+}
+
+/** A read that may be refused (not found, out of scope): null instead of the error; a pending fetch still suspends. */
+function orNull<T>(f: () => T): T | null {
+  try {
+    return f();
+  } catch (err) {
+    if (err instanceof ApiError) return null;
+    throw err;
+  }
+}
+
+// ---------------------------------------------------------------- the log
+/** Every entry the account may see (evidence fetches of visible cases, and instructions and events), with agent preparers. */
+export const auditEntries = (): AuditEntry[] => (API ? audit().entries : e()<() => AuditEntry[]>('auditEntries')());
+/** Evidence with no recorded fetch, so no provenance. */
+export const auditGaps = (): { c: CaseLite; e: Evidence }[] =>
+  API ? audit().gaps : e()<() => { c: CaseLite; e: Evidence }[]>('auditGaps')();
+
+interface ProvAnswer { c: CaseLite; ev: Evidence; p: WireProv }
+const provAnswer = (caseId: string, key: string): ProvAnswer | null =>
+  orNull(() => cached<ProvAnswer>(withQuery('/api/screens/audit/provenance', { case_id: caseId, key })));
+
+export function caseById(id: string): CaseLite | undefined {
+  if (!API) return e()<Record<string, CaseLite>>('CASE_BY_ID')[id];
+  const g = audit().gaps.find((x) => x.c.id === id);
+  if (g) return g.c;
+  const x = audit().entries.find((y) => y.caseId === id && y.kind === 'fetch');
+  return (x && provAnswer(id, x.key)?.c) ?? undefined;
+}
 export function provenanceOf(caseId: string, key: string): { c: CaseLite; ev: Evidence; p: Provenance } | null {
+  if (API) {
+    const r = provAnswer(caseId, key);
+    return r && { c: r.c, ev: r.ev, p: prov(r.p) };
+  }
   const c = caseById(caseId);
   const ev = c?.evidence.find((x) => x.k === key);
   if (!c || !ev) return null;
   return { c, ev, p: e()<(c: CaseLite, e: Evidence) => Provenance>('provFor')(c, ev) };
 }
 
+// ---------------------------------------------------------------- formatting
 /** 2026-10-07 09:12:44 UTC (the demo's isoT). */
-export const isoT = (d: Date | string | number): string => e()<(d: unknown) => string>('isoT')(d);
+export const isoT = (d: Date | string | number): string => new Date(d).toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC');
 
 /** Pretty-printed JSON (for the raw event block). */
 export const eventJson = (ev: AuditEvent): string =>
@@ -51,5 +112,11 @@ export const eventJson = (ev: AuditEvent): string =>
 /** Acknowledgement chip colour (the demo's ackKind). */
 export const ackKind = (a: string): string => (/^acknowledged$/.test(a) ? 'ok' : /conflict|stale|failed/.test(a) ? 'bad' : /sent/.test(a) ? 'line' : 'warn');
 
-export const comments = (key: string): Comment[] => e()<{ cm: Record<string, Comment[]> }>('S').cm[key] ?? [];
+// ---------------------------------------------------------------- comments
+/** Comments under a record key, oldest first: audit entries come with the log; other keys from /audit/comments. */
+export function comments(key: string): Comment[] {
+  if (!API) return e()<{ cm: Record<string, Comment[]> }>('S').cm[key] ?? [];
+  if (key.startsWith('au:')) return audit().comments[key] ?? [];
+  return orNull(() => cached<Comment[]>(withQuery('/api/screens/audit/comments', { key }))) ?? [];
+}
 export const postComment = (key: string, text: string): Promise<ActionResult> => invoke('comment.add', { key, text });

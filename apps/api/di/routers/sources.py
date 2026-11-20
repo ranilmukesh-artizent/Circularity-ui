@@ -6,6 +6,11 @@
     GET /api/canonical/{model}/{key}      the canonical record with each field's provenance
     GET /api/conflicts?status=open        the conflict queue
 Changes (sync now, resolve or escalate a conflict) are actions: POST /api/actions/source.sync etc.
+
+B5c, provisioning a source that has a connector but starts not provisioned (AWS IoT, as in the demo); needs the
+manageIntegrations permission (Admin, Developer):
+    POST /api/sources/{id}/connect                 status live, full initial sync queued
+    POST /api/sources/{id}/disconnect?purge=false  back to unavailable; purge=true also removes what it synced
 """
 
 from datetime import UTC, datetime
@@ -17,6 +22,7 @@ from sqlalchemy.orm import Session
 from di import policy
 from di.auth import Principal, principal
 from di.canonical import store
+from di.connectors import sync
 from di.connectors.registry import ADAPTERS
 from di.db import get_session
 
@@ -58,6 +64,26 @@ def source(source_id: str, p: Principal = Depends(principal), session: Session =
         text("SELECT * FROM sync_run WHERE source_id = :i ORDER BY id DESC LIMIT 20"), {"i": source_id}
     ).mappings()
     return _source_row(r) | {"runs": [dict(x) for x in runs]}
+
+
+@router.post("/sources/{source_id}/connect")
+def connect(source_id: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+    p.require("manageIntegrations")
+    try:
+        return sync.connect_source(session, source_id)
+    except KeyError as e:
+        raise HTTPException(404, {"code": "not_found", "message": f"No connector for {source_id}."}) from e
+
+
+@router.post("/sources/{source_id}/disconnect")
+def disconnect(source_id: str, purge: bool = False, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+    p.require("manageIntegrations")
+    if source_id not in ADAPTERS:
+        raise HTTPException(404, {"code": "not_found", "message": f"No connector for {source_id}."})
+    try:
+        return sync.disconnect_source(session, source_id, purge)
+    except KeyError as e:
+        raise HTTPException(404, {"code": "not_found", "message": f"No source {source_id}."}) from e
 
 
 @router.get("/fetch-log")

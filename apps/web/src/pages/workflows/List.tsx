@@ -5,10 +5,10 @@ import { fmtNumber } from '../../api/format';
 import { useBackend } from '../../api/hooks';
 import { can } from '../../api/session';
 import {
-  ago, ageShort, attention, logoHtml, recentRuns, RUN_LABEL, source, systemOf, trigText, wfStat, workflows, type Workflow, type WfStat,
+  ago, ageShort, attention, logoHtml, nowMs, recentRuns, RUN_LABEL, source, sources, systemOf, trigText, wfStat, workflows, type Workflow, type WfStat,
 } from '../../api/workflows';
+import { openAsk } from '../../ui/askBus';
 import { Icon } from '../../ui/Icon';
-import { toast } from '../../ui/toast';
 import { isDirty, useDrafts } from './draft';
 import { It, Kpi, Menu, Panel, Raw, Ring, St, Timeline, useTick } from './kit';
 import { DeleteModal, NewWorkflowModal } from './Modals';
@@ -43,6 +43,7 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
   const [modal, setModal] = useState<{ k: 'new' } | { k: 'del'; id: string } | null>(null);
 
   const all = workflows();
+  sources(); // the system column and filter read the sources: load them with the list, not row by row
   const c = { published: 0, draft: 0, paused: 0, failing: 0 };
   all.forEach((w) => c[wfStat(w)]++);
   const srcN = new Set(all.filter((w) => w.src).map((w) => w.src)).size;
@@ -148,7 +149,7 @@ function Row({ w, sel, mgr, onPick, onOpen, onDelete, onInvestigate, onDup }: {
       <td>{w.running ? <St k="running" /> : up ? <St k="paused" t="Paused upstream" /> : <St k={st} />}</td>
       <td>{l ? <>
         <span className={'frlr ' + l.state}><i />{L[l.state]}</span>
-        <div className="note nowrap"><span className="num">{ageShort(Date.now() - l.ts)}</span> ago</div>
+        <div className="note nowrap"><span className="num">{ageShort(nowMs() - l.ts)}</span> ago</div>
         {fail && l.note && <div className="frwhy" title={l.note}>{l.note}</div>}
       </> : <span className="note">Never run</span>}</td>
       <td className="frsucc">{ok == null ? <span className="note">—</span> : <>
@@ -175,7 +176,7 @@ function Row({ w, sel, mgr, onPick, onOpen, onDelete, onInvestigate, onDup }: {
 
 function Side({ c, total, onInvestigate }: { c: Record<WfStat, number>; total: number; onInvestigate: (id: string) => void }) {
   const at = attention();
-  const soon = () => toast('Ask Circularity arrives soon.');
+  const soon = () => openAsk('Which workflows are failing and why?');
   return (
     <>
       {at.length > 0 && (
@@ -197,8 +198,8 @@ function Side({ c, total, onInvestigate }: { c: Record<WfStat, number>; total: n
         <div id="wfRuns">
           <Timeline empty="Runs appear here as workflows fire on their triggers." rows={recentRuns().slice(0, 6).map((x) => ({
             key: x.id + x.ts, ic: 'workflow', h: x.state === 'failed' ? 'alert' : 'int', t: x.name,
-            s: x.state === 'failed' ? 'Failed' + (x.note ? ' (' + x.note + ')' : '') : 'Completed · ' + fmtNumber(x.rows) + ' records',
-            ago: ago(Date.now() - x.ts), st: <St k={x.state === 'failed' ? 'failed' : x.state === 'running' ? 'running' : 'completed'} />,
+            s: x.state === 'failed' ? 'Failed' + (x.note ? ' (' + x.note + ')' : '') : x.state === 'running' ? 'Running' : 'Completed · ' + fmtNumber(x.rows) + ' records',
+            ago: ago(nowMs() - x.ts), st: <St k={x.state === 'failed' ? 'failed' : x.state === 'running' ? 'running' : 'completed'} />,
           }))} />
         </div>
       </Panel>

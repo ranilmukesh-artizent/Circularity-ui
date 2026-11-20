@@ -1,5 +1,6 @@
 """Access actions (B12): access.requestTenant, access.decideRequest, access.setDelegation, the identity actions
-(syncDirectory, mapIdentity, removeUser, setRoleSource, setOutOfOffice, clearOutOfOffice) and mcp.propose.
+(syncDirectory, mapIdentity, removeUser, setRoleSource, setOutOfOffice, clearOutOfOffice), mcp.propose, and Admin's
+agent-first settings (access.setAutonomy, setLimit, setSelfApprove, setRunLimits, agent.setEnabled; B17).
 
 Ports of the demo's handlers (index.html, `/* ---- access: requests, delegations, identity ---- */`). The pipeline has
 already validated the input and checked the permission; the guards here are the demo's state checks, in its order.
@@ -17,10 +18,10 @@ import math
 
 from sqlalchemy import text
 
-from di import policy, state
+from di import golden, policy, state
 from di.actions.decisions import NOW, rb_log
 from di.actions.registry import ACTIONS, guard, implement
-from di.reads.common import REQ_SCOPE, REQ_SEQ_START, can, requests
+from di.reads.common import REQ_SCOPE, REQ_SEQ_START, can, money, requests
 
 # The demo's DELEG: the kinds of request Admin may let the Approver decide (key, label).
 DELEG = {"decisions": "Decisions and overrides", "mcp": "MCP server proposals", "tenantAccess": "Tenant access"}
@@ -272,3 +273,106 @@ def clear_out_of_office(i, ctx):
         state.put(ctx.session, "access_settings", "idp", idp)
         rb_log(ctx, "delegation.out_of_office.removed", d["email"], "access.clearOutOfOffice")
     return {"removed": d is not None}
+
+
+# ---------------------------------------------------------------- agent-first settings (AF.cfg)
+# Admin's settings in Access: the approval limits and self-approval (item "approval", which di.auth.load_context
+# reads into every rule: decision.approve and decision.override check them), autonomy per role and action type
+# ("autonomy"), stopped agents ("agents_off", which the MCP server refuses) and run limits ("run_limits"). All in the
+# collection "access_settings"; di.screens.access reads them back.
+_GOLD = golden.load("screens/access")
+LEVELS = {x["k"]: x["label"] for x in _GOLD["levels"]}
+LEVEL_RANK = {"off": 0, "suggest": 1, "prepare": 2, "act": 3}  # the demo's AF_LV_RANK
+AUTO_TYPES = {t["k"]: t for t in _GOLD["auto_types"]}
+AGENT_NAMES = {a["id"]: a["name"] for a in golden.load("tools")["agents"]}
+
+
+def _settings(ctx, item: str, default):
+    return state.get(ctx.session, "access_settings", item, for_update=True) or default
+
+
+@guard("access.setAutonomy")
+def autonomy_guard(i, ctx):
+    t = AUTO_TYPES.get(i["type"])
+    if i["role"] not in policy.roles():
+        return "not_found", "Unknown role."
+    if t is None:
+        return "not_found", "Unknown action type."
+    if i["level"] not in LEVEL_RANK:
+        return "validation_error", "Unknown level."
+    if LEVEL_RANK[i["level"]] > LEVEL_RANK[t["max"]]:
+        return "conflict", f"{t['t']} is capped at {LEVELS[t['max']]} by its risk tier."
+    return None
+
+
+@implement("access.setAutonomy")
+def set_autonomy(i, ctx):
+    auto = _settings(ctx, "autonomy", {})
+    auto.setdefault(i["role"], {})[i["type"]] = i["level"]
+    state.put(ctx.session, "access_settings", "autonomy", auto)
+    note = f"{i['role']} · {AUTO_TYPES[i['type']]['t']} → {LEVELS[i['level']]}"
+    rb_log(ctx, "agent.autonomy.changed", note, "access.setAutonomy")
+    return {"role": i["role"], "type": i["type"], "level": i["level"]}
+
+
+@guard("access.setLimit")
+def limit_guard(i, ctx):
+    if i["role"] not in policy.roles():
+        return "not_found", "Unknown role."
+    if i.get("amount") is not None and i["amount"] < 0:
+        return "validation_error", "A limit cannot be negative."
+    return None
+
+
+@implement("access.setLimit")
+def set_limit(i, ctx):
+    amount = i.get("amount")
+    approval = _settings(ctx, "approval", {"limits": dict(policy.STARTING_LIMITS), "self": False})
+    approval.setdefault("limits", dict(policy.STARTING_LIMITS))[i["role"]] = amount  # None: the demo's Infinity
+    state.put(ctx.session, "access_settings", "approval", approval)
+    rb_log(ctx, "approval.limit.changed", f"{i['role']} → {'unlimited' if amount is None else money(amount)}", "access.setLimit")
+    return {"role": i["role"], "limit": amount}
+
+
+@implement("access.setSelfApprove")
+def set_self_approve(i, ctx):
+    on = bool(i["on"])
+    approval = _settings(ctx, "approval", {"limits": dict(policy.STARTING_LIMITS), "self": False}) | {"self": on}
+    state.put(ctx.session, "access_settings", "approval", approval)
+    note = "Self-approval allowed within the limit" if on else "Self-approval not allowed"
+    rb_log(ctx, "approval.self.changed", note, "access.setSelfApprove")
+    return {"on": on}
+
+
+@guard("agent.setEnabled")
+def agent_guard(i, ctx):
+    return None if i["id"] in AGENT_NAMES else ("not_found", "Unknown agent.")
+
+
+@implement("agent.setEnabled")
+def set_agent_enabled(i, ctx):
+    on = bool(i["on"])
+    off = _settings(ctx, "agents_off", {})
+    if on:
+        off.pop(i["id"], None)
+    else:
+        off[i["id"]] = True
+    state.put(ctx.session, "access_settings", "agents_off", off)
+    rb_log(ctx, "agent." + ("started" if on else "stopped"), AGENT_NAMES[i["id"]], "agent.setEnabled")
+    return {"id": i["id"], "on": on}
+
+
+@guard("access.setRunLimits")
+def run_limits_guard(i, ctx):
+    if i["actions"] < 1 or i["bulk"] < 1 or i["actions"] > 500 or i["bulk"] > 1000:
+        return "validation_error", "Use 1–500 actions and 1–1,000 items."
+    return None
+
+
+@implement("access.setRunLimits")
+def set_run_limits(i, ctx):
+    lim = {"actions": i["actions"], "bulk": i["bulk"]}
+    state.put(ctx.session, "access_settings", "run_limits", lim)
+    note = f"{i['actions']} actions per run · {i['bulk']} items per bulk plan"
+    rb_log(ctx, "agent.limits.changed", note, "access.setRunLimits")
+    return lim

@@ -8,7 +8,7 @@ import { fmtNumber } from '../../api/format';
 import { can } from '../../api/session';
 import {
   actTypes, agentsUsing, CH, channelsOf, deliverMap, deliverOf, edgePath, fixedStep, frTransforms, iconTileHtml, logoHtml, mappings, mapTarget,
-  nodeIconHtml, RUN_CHIP, RUN_LABEL, runTimes, sourceGroups, sourceLabel, sources, source, sourceShortLabel, statusChipHtml, stepInfo, tools,
+  nodeIconHtml, nowMs, RUN_CHIP, RUN_LABEL, runTimes, sourceGroups, sourceLabel, sources, source, sourceShortLabel, statusChipHtml, stepInfo, tools,
   transforms, canLink, WF_H, WF_W, WF_WH, worldWidth, type Check, type Counts, type RunState, type TestRun, type WfGraph, type WfNode, type Workflow,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
@@ -424,7 +424,7 @@ export function TaskInstances({ g, run, onPick, onApprove, onClear }: { g: WfGra
     const m = ({ running: ['y', 'Running'], held: ['y', 'Awaiting approval'], failed: ['bad', 'Failed'], success: [run.warn ? 'warn' : 'ok', run.warn ? 'Success · stale' : 'Success'] } as Record<string, string[]>)[run.status];
     const tot = run.order.filter((id) => ['success', 'warning', 'failed'].includes(run.states[id])).reduce((a, id) => a + +run.dur[id], 0);
     sum = <>
-      <span className={'chip ' + m[0]}>{m[1]}</span> <span className="note num">{run.id || 'Run'} · {hms(run.t0 || Date.now())} · {tot.toFixed(1)} s · {run.trig || 'Manual'}</span>
+      <span className={'chip ' + m[0]}>{m[1]}</span> <span className="note num">{run.id || 'Run'} · {hms(run.t0 || nowMs())} · {tot.toFixed(1)} s · {run.trig || 'Manual'}</span>
       {run.status === 'held' && <> <button className="btn sm pri" onClick={onApprove} aria-disabled={can('approve') ? undefined : true} data-why={can('approve') ? undefined : 'Your role cannot approve. Switch to Approver to continue the run.'}>Approve and continue</button></>}
       {' '}<button className="btn sm ghost" onClick={onClear}>Clear run</button>
     </>;

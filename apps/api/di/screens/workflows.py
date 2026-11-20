@@ -28,7 +28,7 @@ workflow.validate) are in di/actions/workflows.py (B15).
 Facade (apps/web/src/api/workflows.ts) → here, export by export:
 
 - endpoint GET /api/screens/workflows: workflows, workflow, recentRuns (`runs`), wfStat (`workflows[].stat`),
-  attention
+  attention, nowMs (`now`, the workspace clock the run times are on)
 - endpoint GET /api/screens/workflows/{id}: graphOf (`workflow.graph`), savedOf (`saved`), templateOf (`template`),
   history, runCounts for the last run (`run_counts`), runFromLast (`run_from_last`), failedRows (`failed_rows`)
 - endpoint GET /api/screens/integration/sources: usedBy (`health.workflows`), sources, source, sourceExists,
@@ -53,11 +53,11 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from di import golden, state
+from di import clock, golden, state
 from di.auth import Principal, principal
 from di.db import get_session
 from di.engine.jsmath import js_round
-from di.reads.common import AS_OF, SOURCES, STARTING_MAPPINGS, hash_id, to_fixed
+from di.reads.common import AS_OF, SOURCES, STARTING_MAPPINGS, hash_id, ms, to_fixed
 
 router = APIRouter(prefix="/api/screens/workflows", tags=["screens: workflows"])
 
@@ -365,7 +365,13 @@ def workflow_list(
         for w in wl
         if _matches(w, cat, status, src, q)
     ]
-    return {"workflows": rows, "counts": counts(wl), "runs": recent_runs(session), "attention": attention(wl)}
+    return {
+        "workflows": rows,
+        "counts": counts(wl),
+        "runs": recent_runs(session),
+        "attention": attention(wl),
+        "now": ms(clock.now().isoformat()),  # the workspace clock, which run times are on (the frontend's "ago")
+    }
 
 
 @router.get("/{workflow_id}")

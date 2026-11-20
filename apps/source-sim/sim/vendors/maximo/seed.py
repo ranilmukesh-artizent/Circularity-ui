@@ -94,6 +94,14 @@ FAILURES: dict[str, tuple[str, list[tuple[tuple[str, str], tuple[str, str], tupl
 }
 
 
+def run_hours_reading(f) -> Decimal:
+    """The RUNHOURS meter reading of a returned asset (CaseFacts), taken when it was received. RT-1048: 6.4 years ->
+    18,450 h. The AWS IoT mock's hour counters agree with it (sim/vendors/aws_iot/seed.py)."""
+    n = int(f.id.split("-")[1])
+    factor = (1.0, 0.85, 1.15, 0.9, 1.1, 0.95, 1.05)[(n - ANCHOR) % 7]
+    return Decimal(round(f.age * 2882.8125 * factor))
+
+
 def site_code(place: str) -> str:
     """Warehouse 1 -> WH01, Repair centre -> RC01, Site 3 -> ST03."""
     return FACILITY_SITES.get(place) or "ST" + place.split()[-1].zfill(2)
@@ -450,7 +458,6 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
         )
         case_assets.add(f.asset_id)
         meter_id += 1
-        factor = (1.0, 0.85, 1.15, 0.9, 1.1, 0.95, 1.05)[(n - ANCHOR) % 7]
         b.rows["assetmeter"].append(
             {
                 "assetmeterid": meter_id,
@@ -458,7 +465,7 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
                 "siteid": fac,
                 "metername": "RUNHOURS",
                 "measureunitid": "HOURS",
-                "lastreading": Decimal(round(f.age * 2882.8125 * factor)),  # RT-1048: 6.4 years -> 18,450 h
+                "lastreading": run_hours_reading(f),
                 "lastreadingdate": f.received,
             }
         )

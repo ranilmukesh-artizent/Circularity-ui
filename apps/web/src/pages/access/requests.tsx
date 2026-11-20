@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { invoke } from '../../api/actions';
-import { canDecide, REQ_KIND, type AccessRequest } from '../../api/access';
+import { canDecide, REQ_KIND, refreshAccess, type AccessRequest } from '../../api/access';
 import { fmtDateYear } from '../../api/format';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
@@ -83,6 +83,7 @@ function DecideModal({ r, dec, onClose }: { r: AccessRequest; dec: Decision; onC
       return onClose();
     }
     onClose();
+    void refreshAccess();
     toast(r.id + ' ' + res.output.status + '.' + (r.kind === 'tenant' && res.output.status === 'approved' ? ' ' + r.by + ' can now open ' + r.tenant + '.' : ''), 4200);
   }
   return (

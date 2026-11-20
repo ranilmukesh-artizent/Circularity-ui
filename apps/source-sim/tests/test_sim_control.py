@@ -119,12 +119,23 @@ def test_events_are_delivered_as_signed_cloudevents_and_retried(client):
         received.append((url, body, headers))
         return 204
 
-    assert webhooks.deliver(post) >= 1  # our first attempt fails, its retry is scheduled later
+    # The running service's own dispatcher (sim/main.py, every second) works on the same tables: it may take a pass at
+    # our delivery (its real HTTP to http://receiver fails, which also counts as a failed attempt) or hold the row lock
+    # while we call deliver. So drive passes until ours succeeds, making the pending retry due each time.
+    webhooks.deliver(post)  # the first attempt fails (ours returns 503, or the live dispatcher's cannot connect)
     assert received == []
-    with engine.begin() as conn:
-        conn.execute(text("UPDATE sim.deliveries SET next_at = now() - interval '1 second' WHERE status = 'pending'"))
-    webhooks.deliver(post)
+    for _ in range(20):
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE sim.deliveries SET next_at = now() - interval '1 second' WHERE status = 'pending'"))
+        webhooks.deliver(post)
+        if received:
+            break
     assert len(received) == 1
+    with engine.begin() as conn:
+        attempts = conn.execute(
+            text("SELECT attempts FROM sim.deliveries WHERE subscription_id = :s"), {"s": sub}
+        ).scalar_one()
+    assert attempts >= 2  # retried after the failure
     url, body, headers = received[0]
     ev = json.loads(body)
     assert url == "http://receiver/hook" and ev["specversion"] == "1.0" and ev["type"] == "sap.s4.beh.test.v1.Thing.Created.v1"

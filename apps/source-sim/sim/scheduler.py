@@ -7,8 +7,9 @@ A mock registers a handler once, and schedules it when something starts:
 
     schedule(conn, clock.now(conn) + timedelta(days=3), "maximo.complete_workorder", {"wonum": "1048001"})
 
-`tick()` runs every handler whose time has come, in time order, each in its own transaction. The service calls it
-every second; tests call it directly after advancing the clock.
+`tick()` runs every handler whose time has come, in time order, each in its own transaction. It takes only work
+whose handler is registered in its own process, so a test process and the running service do not take each
+other's. The service calls it every second; tests call it directly after advancing the clock.
 """
 
 import logging
@@ -68,7 +69,11 @@ def tick(limit: int = 100) -> int:
         with engine.begin() as conn:
             row = conn.execute(
                 select(SCHEDULED)
-                .where(SCHEDULED.c.done.is_(False), SCHEDULED.c.due_at <= clock.now(conn))
+                # only work this process has a handler for: another process (a test run next to the service) may
+                # have scheduled work with its own handlers, and must not find it taken and failed here
+                .where(
+                    SCHEDULED.c.done.is_(False), SCHEDULED.c.due_at <= clock.now(conn), SCHEDULED.c.handler.in_(list(HANDLERS))
+                )
                 .order_by(SCHEDULED.c.due_at, SCHEDULED.c.id)
                 .limit(1)
                 .with_for_update(skip_locked=True)

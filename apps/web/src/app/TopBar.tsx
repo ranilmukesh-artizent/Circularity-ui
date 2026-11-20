@@ -3,7 +3,7 @@ import { alerts, liveAgo, regionSummary } from '../api/nav';
 import { allowedTenants, can, canPage, currentAccount, rolePolicy, roleAvatar, setTenantFilter, tenantFilter, tenants } from '../api/session';
 import { Icon } from '../ui/Icon';
 import { toggleTheme, useTheme } from '../ui/theme';
-import { toast } from '../ui/toast';
+import { openAsk } from '../ui/askBus';
 
 /** Close a <details> menu when the user clicks outside it. */
 function useOutsideClose(ref: React.RefObject<HTMLDetailsElement>) {
@@ -117,7 +117,7 @@ export function TopBar({ onMenu, onSignOut }: { onMenu: () => void; onSignOut: (
             )}
           </div>
         </details>
-        <button className="iconbtn afask frask" aria-label="Ask Circularity (Ctrl+J)" title="Ask Circularity (Ctrl+J)" onClick={() => toast('Ask Circularity arrives soon.')}>
+        <button className="iconbtn afask frask" aria-label="Ask Circularity (Ctrl+J)" title="Ask Circularity (Ctrl+J)" onClick={() => openAsk()}>
           <Icon name="spark" />
         </button>
         <button className="iconbtn" aria-label="Toggle theme" onClick={toggleTheme}>

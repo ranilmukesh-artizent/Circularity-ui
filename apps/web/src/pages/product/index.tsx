@@ -29,7 +29,7 @@ function ProductPage({ route, query }: PageProps) {
 /** Pool optimizer (poolsPage): hidden while FEAT.pools is off, so canPage('product', 'pools') keeps it out of reach. */
 function PoolsPage() {
   useBackend();
-  const ids = ['RT-1048', 'RT-1052'].filter((id) => tenantOK(caseById(id)!.owner));
+  const ids = ['RT-1048', 'RT-1052'].filter((id) => { const c = caseById(id); return !!c && tenantOK(c.owner); });
   return (
     <>
       <div className="phead">

@@ -23,7 +23,7 @@ Facade (apps/web/src/api/orchestration.ts) → this API
 | runSignature | /run/{id} → sig |
 | LR_PACE | reference (the board's pacing constants) |
 | runStates | reference (RUN_ST) |
-| stageModels | /run/{id} → stage_models[n-1] (key, version); algorithm, task, data and validation are reference (LR_MODELS) |
+| stageModels | /run/{id} → stage_models[n-1] (key, version, validation); algorithm, task and data are reference (LR_MODELS) |
 | modelTag | /run/{id} → stage_models (key and version) with LR_MODELS[k].algo (reference) |
 | nextStep | /run/{id} → next |
 | runNext | action (the step's action through POST /api/actions) |
@@ -33,7 +33,8 @@ Facade (apps/web/src/api/orchestration.ts) → this API
 | agentCalls | /run/{id} → agent_calls (the agent runs of this session; none on the server yet, see below) |
 | caseEvents | /run/{id} → events |
 | inputSummary, orT, orDur | frontend-only (formatting) |
-| stageAgent, agents, handoffModel, poolsOn | reference (AF_STAGE_AGENT, AGENTS, HANDOFF_MODEL, FEAT) |
+| agents | /cases → agents (id, name, step, scopes, limit; AGENTS is not a reference list, MCP changes it) |
+| stageAgent, handoffModel, poolsOn | reference (AF_STAGE_AGENT, HANDOFF_MODEL, FEAT) |
 | traceId | /run/{id} → trace_id |
 
 Summary: 27 exports → 16 served (14 by the two endpoints, 2 by actions), 6 reference, 5 frontend-only.
@@ -79,11 +80,14 @@ from di.reads.common import (
     step_owner,
     to_fixed,
 )
+from di.engine.jsmath import js_round, js_sum
+from di.screens.analytics import reconciled
 from di.screens.case import af_lease, case_journal, load_case, my_cases, prov_for, screen_ctx, vis_cases
 
 router = APIRouter(prefix="/api/screens/orchestration", tags=["screens: orchestration"])
 
-AGENT_NAMES = {a["id"]: a["name"] for a in golden.load("tools")["agents"]}
+AGENTS = golden.load("tools")["agents"]
+AGENT_NAMES = {a["id"]: a["name"] for a in AGENTS}
 LR_MODEL_VERSIONS = {
     "condition-vision": "v2.1",
     "rul-survival": "v1.4",
@@ -122,7 +126,11 @@ def cases(tenant: str = "All", p: Principal = Depends(principal), session: Sessi
     p.require_page("orchestration")
     cs = my_cases(p, session) if policy.can_page(p.account, "product", "case") else vis_cases(p, session, tenant)
     default = next((c for c in cs if c["id"] == "RT-1048"), cs[0] if cs else None)
-    return {"cases": [or_row(c) for c in cs], "default": default["id"] if default else None}
+    return {
+        "cases": [or_row(c) for c in cs],
+        "default": default["id"] if default else None,
+        "agents": [{k: a[k] for k in ("id", "name", "step", "scopes", "limit")} for a in AGENTS],
+    }
 
 
 # ---------------------------------------------------------------- the run's activity lines (the demo's afStageLines)
@@ -662,13 +670,36 @@ def stage_models(c: Case, n: int, lines: list[dict]) -> list[dict]:
             ["repair-success"] if any(x["id"] in ("resale", "intparts") for x in c["routes"]) else []
         )
         ks += [k for k in extra if k not in ks]
-    return [
-        {
-            "key": k,
-            "version": learn_ver(c, k) if k in ("resale-price", "prep-cost-time", "service-exposure") else LR_MODEL_VERSIONS[k],
-        }
-        for k in ks
-    ]
+    out = []
+    for k in ks:
+        v = learn_ver(c, k) if k in ("resale-price", "prep-cost-time", "service-exposure") else LR_MODEL_VERSIONS[k]
+        out.append({"key": k, "version": v, "validation": lr_validation(k, v)})
+    return out
+
+
+# The demo's LR_MODELS[k].val(v): the validation line on a model card (fixed figures, except resale-price's, which are
+# measured on the reconciled decisions of that version).
+LR_VALIDATION = {
+    "condition-vision": "accuracy 94.2% · macro-F1 0.91",
+    "rul-survival": "C-index 0.81 · MAE 3.9 months",
+    "demand-match": "precision@3 0.92 · recall@10 0.88",
+    "prep-cost-time": "MAE $214 · MAPE 7.9% · R² 0.86",
+    "service-exposure": "MAE $186 · deviance explained 0.62",
+    "repair-success": "AUC 0.88 · Brier 0.09",
+}
+
+
+def lr_validation(k: str, v: str) -> str:
+    if k != "resale-price":
+        return LR_VALIDATION[k]
+    r = [x for x in reconciled() if x["model"] == v and x["route"] != "exit" and not x.get("override")]
+    n = len(r)
+    if not n:
+        return "validation pending"
+    mae = money(js_round(js_sum(abs(x["actual"] - x["p50"]) for x in r) / n))
+    mape = to_fixed(js_sum(abs(x["actual"] - x["p50"]) / max(abs(x["p50"]), 1) for x in r) / n * 100, 1)
+    cov = to_fixed(sum(1 for x in r if x["p10"] <= x["actual"] <= x["p90"]) / n * 100, 0)
+    return f"MAE {mae} · MAPE {mape}% · P10–P90 coverage {cov}% · {n} reconciled decisions"
 
 
 def escalation(c: Case, nx: dict, p: Principal) -> dict:

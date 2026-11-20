@@ -15,7 +15,8 @@ export function Monitor() {
   const ui = useInt();
   const W = workflows(), hh = hourly(), t = totals(), S = sources(), srcs = S.filter((s) => s.status !== 'unavailable');
   const inSla = srcs.filter((s) => s.freshMin != null && s.freshMin <= slaMinutes(s));
-  const fr7 = sum(srcs.map((s) => failedRecords(s, 7))), lat = Math.round(sum(srcs.map((s) => latency(s) ?? 0)) / (srcs.length || 1));
+  const L = srcs.map(latency).filter((l): l is number => l != null); // a source with no measured call has no latency
+  const fr7 = sum(srcs.map((s) => failedRecords(s, 7))), lat = Math.round(sum(L) / (L.length || 1));
   const mx = Math.max(...hh.map((b) => b.ok + b.warn + b.bad)), dips = hh.map((b, i) => ({ i, b })).filter((x) => x.b.bad > 0);
   const dip = (i: number) => {
     const b = hh[i], bad = S.filter((s) => s.status === 'stale' || srcFailing(s)).map((s) => s.vendor);

@@ -2,11 +2,21 @@
  * Command Center (#/command/<section>): typed reads over the demo's Command Center helpers (ccScope, ccExRows,
  * aomeItems, handedRows …) and the few view settings the demo keeps on S (S.cc filters, S.ccMode, S.ccOps, S.opScope).
  * Every figure is computed by the engine exactly as index.html does; pages only draw.
+ *
+ * With VITE_BACKEND=api: GET /api/screens/command/* (di/screens/command.py has the mapping), with the filters and view
+ * settings as query parameters. The filters, the senior view's "operational queues" toggle and the widened operational
+ * scope live in this module; the Admin's senior/operational choice is a view setting (view.ts). In this mode a CcScope
+ * or CcRows is only a handle for the current filters: read it through the functions below, never its fields.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { bump, engine } from '../engine/engine';
 import { invoke } from './actions';
+import { API } from './backend';
+import { cached, ref, session, withQuery } from './client';
+import { asOfNow, fmtDY, kfmt as kfmtLocal, rgTime } from './home';
+import { accounts, canRoute } from './session';
 import type { Account, ActionResult } from './types';
+import { setView, view } from './view';
 
 type Any = any;
 const g = () => engine();
@@ -37,47 +47,119 @@ export type CcRows = { readonly __rows: unique symbol }[];
 export interface CcMetrics { act: number; base: number; uplift: number; avoided: number; days: number | null; rcCount: number; p50: number; co2e: number }
 export interface Delta { txt: string; arrow: string; cls: 'ok' | 'bad' }
 
+// ---------------------------------------------------------------- API mode: local view state and the endpoints
+
+const CC0: CcFilters = { site: '', cls: '', route: '', stage: '', reason: '', due: '', view: '', q: '', months: 12 };
+/** The filters and toggles the demo kept on S, per signed-in account (reset when another account signs in). */
+const local = { id: '', cc: { ...CC0 }, ops: false, widen: false };
+function st() {
+  const id = session()?.account.id ?? '';
+  if (id !== local.id) Object.assign(local, { id, cc: { ...CC0 }, ops: false, widen: false });
+  return local;
+}
+/** The handles API mode hands out for a scope and the closed decisions (the figures come from the endpoints). */
+const SCOPE: CcScope = { all: [], act: [], util: {}, net: 0 };
+const ROWS = [] as unknown as CcRows;
+
+const P = '/api/screens/command';
+const get = <T>(path: string, q: Record<string, string | number | boolean> = {}): T => cached<T>(withQuery(P + path, q));
+const tenantQ = () => view().tenant;
+const modeQ = () => view().ccMode;
+function scopeQ() {
+  const f = st().cc;
+  return { tenant: tenantQ(), site: f.site, cls: f.cls, route: f.route, months: f.months };
+}
+
+interface LayoutAnswer { layout: CcLayout | null; keys: string[]; sections: string[] }
+interface KpisAnswer {
+  tiles: KpiTile[]; insights: [string, string][]; metrics: CcMetrics; health: ReturnType<typeof healthStrip>;
+  counts: { cases: number; rows: number; sources: number; workflows: number };
+}
+type CapRow = { k: string; label: string; u: number; cap: number; p: number; color: string; msg: string };
+type VarRow = { reason: string; v: number; pct: number; w: number; color: string; tip: string };
+interface ChartsAnswer {
+  stages: Slice[]; due: Slice[]; routes: RouteBar[]; var: VarRow[]; combo: { mi: number; p: number; a: number; y: number }[];
+  signals: Signal[]; capacity: CapRow[];
+}
+type ActionRow = Omit<OppRow, 'c'> & { case: CcCase };
+interface InboxAnswer {
+  requests: AccessRequest[]; scope: string[] | null; decisions_awaiting: number;
+  cards: (Omit<ApprovalCard, 'steps'> & { kinds: string[]; steps?: string[] })[]; limit: number | null;
+}
+type OpScope = { home: string; scope: string; locked: boolean };
+
+const layoutA = () => get<LayoutAnswer>('/layout', { mode: modeQ() });
+const kpisA = () => get<KpisAnswer>('/kpis', { ...scopeQ(), mode: modeQ() });
+const chartsA = () => get<ChartsAnswer>('/charts', scopeQ());
+function actionsA() {
+  const f = st().cc;
+  return get<{ rows: ActionRow[]; total: number }>('/actions', { ...scopeQ(), stage: f.stage, due: f.due, reason: f.reason, q: f.q });
+}
+const exA = () => get<{ rows: ExRow[]; awaiting: { id: string; plan: string | null; net: number }[] }>('/exceptions', scopeQ());
+const aomeA = () => get<{ items: AomeItem[]; scope: OpScope }>('/aome', { all: st().widen, tenant: tenantQ() });
+const handedA = () => get<{ handed: HandedRow[]; awaiting: ReturnType<typeof awaitingApproval>; scope: OpScope }>('/handed', { all: st().widen, tenant: tenantQ() });
+const outcomesA = () => get<ReturnType<typeof outcomesToConfirm>>('/outcomes', { tenant: tenantQ() });
+const inboxA = () => get<InboxAnswer>('/inbox', { tenant: tenantQ() });
+
 // ---------------------------------------------------------------- layout and view settings
 
 export const SECTIONS = ['kpis', 'exceptions', 'aome', 'handed', 'approvals', 'outcomes', 'charts', 'actions', 'signals', 'value', 'health'];
-export const ccLayout = (): CcLayout => fn<() => CcLayout>('ccLayout')();
-export const ccSecOK = (L: CcLayout, k: string): boolean => fn<(L: CcLayout, k: string) => boolean>('ccSecOK')(L, k);
+export const ccLayout = (): CcLayout => (API ? layoutA().layout ?? { sub: '', kpis: [] } : fn<() => CcLayout>('ccLayout')());
+/** Does the layout have this section (with the API: and may the account open it)? */
+export const ccSecOK = (L: CcLayout, k: string): boolean =>
+  API ? layoutA().sections.includes(k) : fn<(L: CcLayout, k: string) => boolean>('ccSecOK')(L, k);
 /** The section shown for #/command/<a> (falls back to key figures, like the demo's ccSec). */
-export const ccSection = (a: string | null): string => fn<(L: CcLayout, r: { a: string | null }) => string>('ccSec')(ccLayout(), { a });
-export const ccKeys = (L: CcLayout): string[] => L.kpis.filter((x) => fn<Any>('FEAT').uplift || x !== 'uplift');
+export const ccSection = (a: string | null): string =>
+  API ? (a && layoutA().sections.includes(a) ? a : 'kpis') : fn<(L: CcLayout, r: { a: string | null }) => string>('ccSec')(ccLayout(), { a });
+export const ccKeys = (L: CcLayout): string[] => (API ? layoutA().keys : L.kpis.filter((x) => fn<Any>('FEAT').uplift || x !== 'uplift'));
 export const ccSecLabel = (k: string): string =>
-  (fn<{ id: string; kids: string[][] }[]>('NAV').find((x) => x.id === 'command')?.kids.find((x) => x[0] === k) ?? [k, 'Key figures'])[1];
-export const ccSecDesc = (k: string): string => fn<Record<string, string>>('CC_DESC')[k] ?? '';
+  ((API ? ref<{ id: string; kids: string[][] }[]>('NAV') : fn<{ id: string; kids: string[][] }[]>('NAV'))
+    .find((x) => x.id === 'command')?.kids.find((x) => x[0] === k) ?? [k, 'Key figures'])[1];
+export const ccSecDesc = (k: string): string => (API ? ref<Record<string, string>>('CC_DESC') : fn<Record<string, string>>('CC_DESC'))[k] ?? '';
 
-export const ccFilters = (): CcFilters => S().cc;
+export const ccFilters = (): CcFilters => (API ? st().cc : S().cc);
 export function setCcFilters(patch: Partial<CcFilters>): void {
-  Object.assign(S().cc, patch);
+  if (API) st().cc = { ...st().cc, ...patch };
+  else Object.assign(S().cc, patch);
   bump();
 }
 /** "Clear all": every filter, the search and the tenant menu. */
 export function clearCcFilters(): void {
-  Object.assign(S().cc, { site: '', cls: '', route: '', stage: '', reason: '', due: '', view: '', q: '' });
+  const clear = { site: '', cls: '', route: '', stage: '', reason: '', due: '', view: '', q: '' };
+  if (API) {
+    st().cc = { ...st().cc, ...clear };
+    setView({ tenant: 'All' }); // bumps
+    return;
+  }
+  Object.assign(S().cc, clear);
   S().tenant = 'All';
   bump();
 }
 /** The demo's ccPick: "stage:approval", "route:resale", "reason:Missing evidence", "due:d5" toggle a filter. */
 export function ccPick(arg: string): void {
-  const i = arg.indexOf(':'), k = arg.slice(0, i), v = arg.slice(i + 1), f = S().cc;
+  const i = arg.indexOf(':'), k = arg.slice(0, i), v = arg.slice(i + 1), f = API ? { ...st().cc } : S().cc;
   if (k === 'stage') f.stage = v === '' || f.stage === v ? '' : v;
   else if (k === 'route') f.route = f.route === v ? '' : v;
   else if (k === 'reason') f.reason = f.reason === v ? '' : v;
   else if (k === 'due') f.due = f.due === v ? '' : v;
+  if (API) st().cc = f;
   bump();
 }
 
-export const ccMode = (): 'senior' | 'operational' => (S().ccMode === 'senior' ? 'senior' : 'operational');
+export const ccMode = (): 'senior' | 'operational' => ((API ? view().ccMode : S().ccMode) === 'senior' ? 'senior' : 'operational');
 export function setCcMode(v: 'senior' | 'operational'): void {
+  if (API) return setView({ ccMode: v });
   S().ccMode = v;
   fn<() => void>('ccSave')();
   bump();
 }
-export const ccOps = (): boolean => !!S().ccOps;
+export const ccOps = (): boolean => (API ? st().ops : !!S().ccOps);
 export function setCcOps(v: boolean): void {
+  if (API) {
+    st().ops = v;
+    bump();
+    return;
+  }
   S().ccOps = v;
   fn<() => void>('ccSave')();
   bump();
@@ -85,42 +167,68 @@ export function setCcOps(v: boolean): void {
 
 /** Operational scope: Planner and Engineer default to their home site and can widen it; a Warehouse Manager is locked. */
 export function opScopeInfo(): { home: string; scope: string; locked: boolean } {
+  if (API) return aomeA().scope;
   return { home: fn<() => string>('opHome')(), scope: fn<() => string>('opScope')(), locked: !!S().acct?.warehouse };
 }
 export function toggleOpScope(): void {
+  if (API) {
+    st().widen = !st().widen;
+    bump();
+    return;
+  }
   const s = S();
   s.opScope = fn<() => string>('opScope')() ? '' : fn<() => string>('opHome')();
   bump();
 }
 
-export const clockText = (): string => fn<() => string>('ccClockText')();
+/** "07 Oct 2026, 09:30" (UTC), or the date and time in the region's time zone (the demo's ccClockText). */
+export const clockText = (): string => {
+  if (!API) return fn<() => string>('ccClockText')();
+  const d = asOfNow();
+  return view().rg.tz === 'UTC' ? fmtDY(ref<string>('AS_OF')) + ', ' + d.toISOString().slice(11, 16) : rgTime(d);
+};
 /** May the account open this route ("integration/map", "product/RT-1048")? */
-export const rbPath = (p: string): boolean => fn<(p: string) => boolean>('rbPath')(p);
-export const kfmt = (n: number): string => fn<(n: number) => string>('kfmt')(n);
-export const tFmt = (n: number): string => fn<(n: number) => string>('tFmt')(n);
-export const asModel = (c: CcCase): string => fn<(c: CcCase) => string>('asModel')(c);
+export const rbPath = (p: string): boolean => {
+  if (!API) return fn<(p: string) => boolean>('rbPath')(p);
+  const [page, a, b] = p.split('/');
+  return canRoute({ page, a: a ?? null, b: b ?? null }) === true;
+};
+export const kfmt = kfmtLocal;
+export const tFmt = (n: number): string => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n)));
+export const asModel = (c: CcCase): string => {
+  if (!API) return fn<(c: CcCase) => string>('asModel')(c);
+  const e = ref<{ cls: string; m: string }[]>('EQUIP').find((x) => x.cls === c.cls);
+  return e ? e.m.replace(/s$/, '') : c.product;
+};
 /** Icon key of the thumbnail for an asset class (the demo's thumb()). */
-export const clsIcon = (cls: string): string => fn<Record<string, string>>('CLS_ICON')[cls] ?? 'batch';
+export const clsIcon = (cls: string): string => (API ? ref<Record<string, string>>('CLS_ICON') : fn<Record<string, string>>('CLS_ICON'))[cls] ?? 'batch';
 
 // ---------------------------------------------------------------- scope and metrics
 
-export const ccScope = (): CcScope => fn<() => CcScope>('ccScope')();
-export const ccRows = (): CcRows => fn<() => CcRows>('ccRows')();
+export const ccScope = (): CcScope => (API ? SCOPE : fn<() => CcScope>('ccScope')());
+export const ccRows = (): CcRows => (API ? ROWS : fn<() => CcRows>('ccRows')());
 export function ccMetrics(rows: CcRows): CcMetrics {
+  if (API) return kpisA().metrics;
   const m = fn<(r: CcRows) => Any>('metrics')(rows);
   return {
     act: m.act, base: m.base, uplift: m.uplift, avoided: m.avoided, days: m.days || null, rcCount: m.rc.length,
     p50: sum(m.rc.map((r: Any) => r.p50)), co2e: sum(m.rc.map((r: Any) => r.co2e)),
   };
 }
+/** Sizes of the scope: assets in it, those still needing a person, and their value at risk. */
+export function scopeTotals(sc: CcScope): { all: number; act: number; risk: number } {
+  if (!API) return { all: sc.all.length, act: sc.act.length, risk: sum(sc.all.map((c) => c._var)) };
+  const c = chartsA(); // every asset is in one lifecycle stage; every open one in one due window
+  return { all: sum(c.stages.map((x) => x.v)), act: sum(c.due.map((x) => x.v)), risk: sum(c.var.map((x) => x.v)) };
+}
 const series = (f: (r: Any) => number): number[] => fn<Any>('ccSeries')(f, fn<() => Any[]>('visRows')());
 const delta = (s: number[]): Delta | null => fn<Any>('ccDelta')(s);
 const ccNet = (c: CcCase): number => (c.recommendation ? c.recommendation.net : 0);
 
-export const visCaseCount = (): number => fn<() => unknown[]>('visCases')().length;
-export const visRowCount = (): number => fn<() => unknown[]>('visRows')().length;
-export const sourceCount = (): number => fn<unknown[]>('SOURCES').length;
-export const workflowCount = (): number => S().wf?.list.length ?? 0;
+export const visCaseCount = (): number => (API ? kpisA().counts.cases : fn<() => unknown[]>('visCases')().length);
+export const visRowCount = (): number => (API ? kpisA().counts.rows : fn<() => unknown[]>('visRows')().length);
+export const sourceCount = (): number => (API ? kpisA().counts.sources : fn<unknown[]>('SOURCES').length);
+export const workflowCount = (): number => (API ? kpisA().counts.workflows : S().wf?.list.length ?? 0);
 
 // ---------------------------------------------------------------- key figures (the demo's ccKpiSet)
 
@@ -131,7 +239,9 @@ export interface KpiTile {
   tip: string;
 }
 
+/** The layout's tiles (with the API: the server's, for the current filters and view). */
 export function kpiTiles(keys: string[], sc: CcScope, rows: CcRows): KpiTile[] {
+  if (API) return kpisA().tiles;
   const m = fn<(r: CcRows) => Any>('metrics')(rows), s = S(), acct = s.acct as Account;
   const st = (x: string) => sc.all.filter((c) => c._st === x), ap = st('approval');
   const open = sc.all.filter((c) => c._st === 'approval' || c._st === 'reeval'), pot = sum(open.map(ccNet)), vr = sum(sc.all.map((c) => c._var));
@@ -178,15 +288,18 @@ export function kpiTiles(keys: string[], sc: CcScope, rows: CcRows): KpiTile[] {
 // ---------------------------------------------------------------- charts and panels
 
 export interface Slice { k: string; label: string; v: number; color: string }
-export const CC_STAGES = (): [string, string, string][] => fn('CC_STAGES');
+export const CC_STAGES = (): [string, string, string][] => (API ? ref('CC_STAGES') : fn('CC_STAGES'));
 export function stageSlices(sc: CcScope): Slice[] {
+  if (API) return chartsA().stages;
   return CC_STAGES().map(([k, label, color]) => ({ k: 'stage:' + k, label, v: sc.all.filter((x) => x._st === k).length, color }));
 }
 export function dueSlices(sc: CcScope): Slice[] {
+  if (API) return chartsA().due;
   return fn<[string, string, string][]>('CC_DUE').map(([k, label, color]) => ({ k: 'due:' + k, label, v: sc.act.filter((x) => x._due === k).length, color }));
 }
 export interface RouteBar { id: string; label: string; v: number; net: number; color: string }
 export function routeBars(sc: CcScope): RouteBar[] {
+  if (API) return chartsA().routes;
   return fn<Any[]>('ROUTES').map((r) => {
     const a = sc.all.filter((c) => c.recommendation && c.recommendation.id === r.id);
     return { id: r.id, label: r.short, v: sum(a.map((c) => c.qty)), net: sum(a.map(ccNet)), color: r.color };
@@ -200,16 +313,18 @@ const VAR_TIP: Record<string, string> = {
   'Market price decline': 'Resale recommendations priced from stale market comparables.',
   'Capacity constraints': 'Repair-centre load is above 75%, so prep may slip.',
 };
-export function varReasons(sc: CcScope): { reason: string; v: number; pct: number; w: number; color: string; tip: string }[] {
+export function varReasons(sc: CcScope): VarRow[] {
+  if (API) return chartsA().var;
   const reasons = fn<string[]>('CC_REASONS'), by: Record<string, number> = {};
   reasons.forEach((r) => (by[r] = 0));
   sc.all.forEach((c) => Object.keys(c._risk).forEach((k) => (by[k] += c._risk[k])));
   const tot = sum(Object.values(by)) || 1, mx = Math.max(1, ...Object.values(by));
   return reasons.map((r) => ({ reason: r, v: by[r], pct: Math.round(by[r] / tot * 100), w: by[r] / mx * 100, color: VAR_COL[r], tip: VAR_TIP[r] }));
 }
-export const monthLabel = (mi: number): string => fn<string[]>('MONTHS')[mi];
+export const monthLabel = (mi: number): string => (API ? ref<string[]>('MONTHS') : fn<string[]>('MONTHS'))[mi];
 /** Predicted and actual net recovery by month on reconciled decisions (the value realisation combo chart). */
 export function comboData(rows: CcRows, months: number): { mi: number; p: number; a: number; y: number }[] {
+  if (API) return chartsA().combo; // for the filters' time horizon, which is what the page passes as `months`
   const rc = (rows as unknown as Any[]).filter((r) => r.status === 'reconciled'), out = [];
   for (let mi = 12 - months; mi < 12; mi++) {
     const p = sum(rc.filter((r) => r.mi === mi).map((r) => r.p50)), a = sum(rc.filter((r) => r.mi === mi).map((r) => r.actual));
@@ -221,12 +336,14 @@ export function comboData(rows: CcRows, months: number): { mi: number; p: number
 export interface Signal { t: string; n: string; note: string; lvl: string; act: string; ic: string }
 const ICON_KEYS = ['flag', 'audit', 'trend', 'refresh', 'pump', 'integration'];
 export function signals(sc: CcScope): Signal[] {
+  if (API) return chartsA().signals; // already without the routes the account cannot open; `ic` is the icon key
   const ICON = fn<Record<string, string>>('ICON');
   return fn<(sc: CcScope) => Any[]>('ccSignals')(sc)
     .filter((x) => x.act.indexOf('go:') !== 0 || rbPath(x.act.slice(3)))
     .map((x) => ({ ...x, ic: ICON_KEYS.find((k) => ICON[k] === x.ic) ?? 'flag' }));
 }
-export function capacity(sc: CcScope): { k: string; label: string; u: number; cap: number; p: number; color: string; msg: string }[] {
+export function capacity(sc: CcScope): CapRow[] {
+  if (API) return chartsA().capacity;
   const CAP = fn<Record<string, number>>('CC_CAP'), LBL = fn<Record<string, string>>('CAP_LBL');
   return Object.keys(CAP).map((k) => {
     const u = sc.util[k] || 0, p = u / CAP[k];
@@ -234,11 +351,13 @@ export function capacity(sc: CcScope): { k: string; label: string; u: number; ca
   });
 }
 export function healthStrip(): { pct: number; live: number; stale: number; manual: number; unavailable: number } {
+  if (API) return kpisA().health;
   const t = fn<() => Any>('hhTotals')(), st: Record<string, number> = { live: 0, stale: 0, manual: 0, unavailable: 0 };
   fn<Any[]>('SOURCES').forEach((x) => st[x.status]++);
   return { pct: t.pct, live: st.live, stale: st.stale, manual: st.manual, unavailable: st.unavailable };
 }
 export function insights(sc: CcScope): [string, string][] {
+  if (API) return kpisA().insights;
   const o: [string, string][] = [], cl = sc.all.filter((c) => c._st === 'approval' && c._left < 5).length, ap = sc.all.filter((c) => c._st === 'approval').length;
   if (ap) o.push(['stage:approval', ap + ' decisions await approval' + (cl ? ', ' + cl + ' close within 5 days' : '')]);
   const by: Record<string, number> = {};
@@ -258,19 +377,23 @@ export interface FilterOptions {
   sites: string[]; classes: [string, string][]; routes: [string, string, string][];
 }
 export function filterOptions(): FilterOptions {
-  const P = fn<() => Any>('pol')(), sc = P && P.tenantScoped, al = fn<() => string[]>('allowedTenants')();
-  const tenants: FilterOptions['tenants'] = [{ value: 'All', label: sc ? 'All my tenants' : 'All tenants' }];
-  fn<string[]>('TENANTS').forEach((t) => tenants.push(al.includes(t) ? { value: t, label: t } : { value: t, label: t + ' · locked', disabled: true }));
+  const r = <T>(n: string): T => (API ? ref<T>(n) : fn<T>(n));
+  const scoped = API ? !!session()?.tenant_scoped : !!fn<() => Any>('pol')()?.tenantScoped;
+  const al = API ? session()?.tenants ?? [] : fn<() => string[]>('allowedTenants')();
+  const tenants: FilterOptions['tenants'] = [{ value: 'All', label: scoped ? 'All my tenants' : 'All tenants' }];
+  r<string[]>('TENANTS').forEach((t) => tenants.push(al.includes(t) ? { value: t, label: t } : { value: t, label: t + ' · locked', disabled: true }));
   return {
     tenants,
-    sites: fn<string[]>('FACILITIES'),
-    classes: Object.entries(fn<Record<string, { label: string }>>('CLASSES')).map(([k, v]) => [k, v.label]),
-    routes: fn<Any[]>('ROUTES').map((r) => [r.id, r.name, r.short]),
+    sites: r<string[]>('FACILITIES'),
+    classes: Object.entries(r<Record<string, { label: string }>>('CLASSES')).map(([k, v]) => [k, v.label]),
+    routes: r<Any[]>('ROUTES').map((x) => [x.id, x.name, x.short]),
   };
 }
-export const tenantAllowed = (t: string): boolean => t === 'All' || fn<(t: string) => boolean>('tenantOK')(t);
-export const classLabel = (k: string): string => fn<Record<string, { label: string }>>('CLASSES')[k]?.label ?? k;
-export const routeShort = (id: string): string => fn<(r: string) => { short: string }>('rid')(id).short;
+export const tenantAllowed = (t: string): boolean =>
+  t === 'All' || (API ? !!session()?.tenants.includes(t) : fn<(t: string) => boolean>('tenantOK')(t));
+export const classLabel = (k: string): string => (API ? ref<Record<string, { label: string }>>('CLASSES') : fn<Record<string, { label: string }>>('CLASSES'))[k]?.label ?? k;
+export const routeShort = (id: string): string =>
+  API ? ref<{ id: string; short: string }[]>('ROUTES').find((r) => r.id === id)?.short ?? id : fn<(r: string) => { short: string }>('rid')(id).short;
 
 // ---------------------------------------------------------------- actions to prioritise (the ranked table)
 
@@ -278,6 +401,7 @@ export interface OppRow {
   c: CcCase; trigger: string; action: string; cons: string; btn: string; conf: number | null; deadline: string; left: number;
 }
 export function oppRows(sc: CcScope): CcCase[] {
+  if (API) return actionsA().rows.map((r) => r.case);
   const f = S().cc, q = String(f.q).trim().toLowerCase();
   let l = f.stage && ['exec', 'approved'].includes(f.stage) ? sc.all.slice().sort((a, b) => b._score - a._score) : sc.act;
   l = l.filter((c) => (!f.stage || c._st === f.stage) && (!f.due || c._due === f.due) && (!f.reason || c._risk[f.reason] > 0)
@@ -285,6 +409,10 @@ export function oppRows(sc: CcScope): CcCase[] {
   return l;
 }
 export function oppRow(c: CcCase, sc: CcScope): OppRow {
+  if (API) {
+    const { case: _c, ...o } = actionsA().rows.find((r) => r.case.id === c.id)!; // eslint-disable-line @typescript-eslint/no-unused-vars
+    return { c, ...o };
+  }
   const rid = fn<(r: string) => { name: string }>('rid'), CAP = fn<Record<string, number>>('CC_CAP');
   const r = c.recommendation;
   const trigger = c._st === 'approval' ? 'Recommendation awaiting approval' : c._st === 'reeval' ? c.reevalReason || 'Conditions changed'
@@ -305,8 +433,11 @@ export interface ExRow {
   id: string; base: string; wh: string; title: string; value: number; count: number; sev: 'High' | 'Medium' | 'Low'; trend: string; go?: string;
   items: { id: string; model: string; v: number }[];
   note: { status: string; ackBy?: string; toLabel: string } | null;
+  /** the account it goes to by default (sent by the API) */
+  owner?: string;
 }
 export function exRows(sc: CcScope): ExRow[] {
+  if (API) return exA().rows;
   const exNote = fn<(x: Any) => Any>('exNote'), am = fn<(c: Any) => string>('asModel');
   return fn<(sc: CcScope) => Any[]>('ccExRows')(sc).map((x) => ({
     id: x.id, base: x.base, wh: x.wh, title: x.title, value: x.value, count: x.count, sev: x.sev, trend: x.trend, go: x.go,
@@ -315,8 +446,14 @@ export function exRows(sc: CcScope): ExRow[] {
   }));
 }
 /** The account the exception is routed to by default (the demo's exOwner). */
-export const exOwner = (x: ExRow): string => fn<(x: ExRow) => string>('exOwner')(x);
-export const notifyRecipients = (): Account[] => fn<Account[]>('ACCOUNTS').filter((a) => a.role !== 'Executive');
+export const exOwner = (x: ExRow): string => (API ? x.owner ?? 'approver' : fn<(x: ExRow) => string>('exOwner')(x));
+/** The senior view's read-only queue: decisions awaiting approval in the scope, highest predicted net first. */
+export function opsAwaiting(sc: CcScope): { id: string; plan: string | null; net: number }[] {
+  if (API) return exA().awaiting;
+  return sc.all.filter((c) => c._st === 'approval').sort((a, b) => ccNet(b) - ccNet(a))
+    .map((c) => ({ id: c.id, plan: c.recommendation ? c.recommendation.plan : null, net: ccNet(c) }));
+}
+export const notifyRecipients = (): Account[] => (API ? accounts() : fn<Account[]>('ACCOUNTS')).filter((a) => a.role !== 'Executive');
 export function sendNotification(x: ExRow, to: string, sev: string, msg: string): Promise<ActionResult<{ id: string; to: string }>> {
   return invoke<{ id: string; to: string }>('notify.send', { ex_id: x.id, title: x.wh + ' · ' + x.title, to, sev, msg, ids: x.items.map((i) => i.id).slice(0, 40) });
 }
@@ -325,13 +462,15 @@ export const acknowledge = (id: string): Promise<ActionResult> => invoke('notify
 // ---------------------------------------------------------------- Actions on me, handed off, outcomes
 
 export interface AomeItem { t: string; d: string; btn: string; act?: string; arg?: string; go?: string }
-export const aomeItems = (): AomeItem[] => fn<() => AomeItem[]>('aomeItems')();
+export const aomeItems = (): AomeItem[] => (API ? aomeA().items : fn<() => AomeItem[]>('aomeItems')());
 
 export interface HandedRow { id: string; label: string; sys: string; ref: string | null; age: number; over: boolean }
 export function handedRows(): HandedRow[] {
+  if (API) return handedA().handed;
   return fn<() => Any[]>('handedRows')().map((x) => ({ id: x.c.id, label: x.a.label, sys: x.a.sys, ref: x.last ? x.last.ack.ref : null, age: x.age, over: x.over }));
 }
 export function awaitingApproval(): { decider: string; rows: { id: string; location: string; plan: string; submitted: boolean }[] } {
+  if (API) return handedA().awaiting;
   const ap = fn<() => CcCase[]>('opScoped')().filter((c) => c.stage === 'awaiting_approval');
   return {
     decider: S().deleg.decisions ? 'Approver' : 'Admin',
@@ -339,6 +478,7 @@ export function awaitingApproval(): { decider: string; rows: { id: string; locat
   };
 }
 export function outcomesToConfirm(): { rows: { id: string; product: string; assetId: string; plan: string; net: number | null }[]; done: number } {
+  if (API) return outcomesA();
   const v = fn<() => CcCase[]>('visCases')();
   return {
     rows: v.filter((c) => c.stage === 'closed' && !(c as Any).outcome).map((c) => {
@@ -358,31 +498,37 @@ export interface AccessRequest {
   kindLabel: string; canDecide: boolean;
 }
 const toReq = (r: Any): AccessRequest => ({ ...r, kindLabel: fn<Record<string, string>>('REQ_KIND')[r.kind], canDecide: fn<(r: Any) => boolean>('canDecide')(r) });
-export const inboxRequests = (): AccessRequest[] => fn<() => Any[]>('inboxReqs')().map(toReq);
+export const inboxRequests = (): AccessRequest[] => (API ? inboxA().requests : fn<() => Any[]>('inboxReqs')().map(toReq));
 /** What Admin delegated to the Approver (null for Admin, who sees every scope). */
 export function inboxScope(): string[] | null {
+  if (API) return inboxA().scope;
   if (S().acct?.role !== 'Approver') return null;
   const dlab = fn<(d: Any) => string>('dlab');
   return fn<Any[]>('DELEG').filter((d) => S().deleg[d[0]]).map(dlab);
 }
-export const decisionsAwaiting = (): number => fn<() => CcCase[]>('visCases')().filter((c) => c.stage === 'awaiting_approval').length;
+export const decisionsAwaiting = (): number =>
+  API ? inboxA().decisions_awaiting : fn<() => CcCase[]>('visCases')().filter((c) => c.stage === 'awaiting_approval').length;
 export const decideRequest = (id: string, decision: 'approve' | 'decline', note: string): Promise<ActionResult<{ status: string }>> =>
   invoke<{ status: string }>('access.decideRequest', { id, decision, note });
 export const requestById = (id: string): AccessRequest | undefined => {
+  if (API) return inboxA().requests.find((x) => x.id === id);
   const r = S().reqs.find((x: Any) => x.id === id);
   return r ? toReq(r) : undefined;
 };
 
-/** Submitted decisions as approval cards, by value then deadline, each with its pre-approval check (afApprovalQueue). */
+/** Submitted decisions as approval cards, by value then deadline, each with its pre-approval check (afApprovalQueue)
+ *  and the instructions it would send ("<step> → <system>"). */
 export interface ApprovalCard { id: string; plan: string; net: number; model: string; owner: string; timing: string; submittedBy: string; risks: string[]; steps: string[] }
 export function approvalCards(): ApprovalCard[] {
-  const q = fn<() => Any[]>('afApprovalQueue')(), am = fn<(c: Any) => string>('asModel'), TPL = fn<Record<string, [string, string][]>>('STEP_TPL');
+  if (API) return inboxA().cards.map(({ kinds, steps, ...c }) => ({ ...c, steps: steps ?? kinds }));
+  const q = fn<() => Any[]>('afApprovalQueue')(), am = fn<(c: Any) => string>('asModel');
+  const TPL = fn<Record<string, string[]>>('STEP_TPL'), EX = fn<Record<string, { label: string; sys: string }>>('EX_STEP');
   return q.map((x) => ({
     id: x.c.id, plan: x.c.recommendation.plan, net: x.net, model: am(x.c), owner: x.c.owner, timing: x.c.timing || '', submittedBy: x.c.submitted.by,
-    risks: x.risks.map((r: Any) => r.text), steps: (TPL[x.c.recommendation.id] || []).map((s) => s[0] + ' → ' + s[1]),
+    risks: x.risks.map((r: Any) => r.text), steps: (TPL[x.c.recommendation.id] || []).map((k) => (EX[k] ? EX[k].label + ' → ' + EX[k].sys : k)),
   }));
 }
-export const approvalLimit = (): number => fn<(a: Account) => number>('afLimitFor')(S().acct);
+export const approvalLimit = (): number => (API ? inboxA().limit ?? Infinity : fn<(a: Account) => number>('afLimitFor')(S().acct));
 
 // ---------------------------------------------------------------- integration health (Developer and Admin)
 
@@ -391,9 +537,10 @@ export interface HealthDetail {
   hours: { ok: number; warn: number; bad: number }[];
   exceptions: { src: string; obj: string; issue: string; sev: 'High' | 'Medium' | 'Low'; st: string }[];
   exceptionCount: number;
-  events: { id: string; ts: number; dest: string; type: string; ack: string; kind: string }[];
+  events: { id: string; ts: number | string; dest: string; type: string; ack: string; kind: string }[];
 }
 export function healthDetail(): HealthDetail {
+  if (API) return get<HealthDetail>('/health');
   const t = fn<() => Any>('hhTotals')(), ex = fn<() => Any[]>('smExceptions')(), ackKind = fn<(a: string) => string>('ackKind');
   return {
     ok: t.ok, warn: t.warn, bad: t.bad, run: t.run, pct: t.pct,

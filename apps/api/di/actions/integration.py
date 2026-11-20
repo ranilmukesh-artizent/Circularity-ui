@@ -6,15 +6,16 @@ from sqlalchemy import text
 
 from di.actions.registry import ActionError, implement
 from di.connectors.registry import ADAPTERS
-from di.connectors.sync import enqueue_sync
+from di.connectors.sync import enqueue_sync, provisioned
 
 
 @implement("source.sync")
 def source_sync(i, ctx):
     sid = i["source_id"]
-    if sid not in ADAPTERS:
-        raise ActionError("not_found", f"No connector for {sid}.")
     status = ctx.session.execute(text("SELECT status FROM source_system WHERE id = :i"), {"i": sid}).scalar()
+    # a connector that is not provisioned yet (AWS IoT at start, B5c) counts as no connector, as in the demo
+    if sid not in ADAPTERS or (status == "unavailable" and not provisioned(sid)):
+        raise ActionError("not_found", f"No connector for {sid}.")
     if status in ("paused", "disconnected", "unavailable"):
         raise ActionError("conflict", f"{sid} is {status}. Resume or reconnect it first.")
     job = enqueue_sync(ctx.session, sid, "manual")

@@ -33,10 +33,17 @@ SAFETY_INTERVAL_MIN = 60  # event-driven sources (interval 0) still get a full c
 VENDOR_OVERRIDES = {"tms": "Oracle Transportation Management"}  # was the fictional "ShipLane TMS"
 
 
+def provisioned(source_id: str) -> bool:
+    """A connector exists and the source starts connected. AWS IoT (B5c) has a connector but starts not provisioned,
+    as in the demo, until it is connected (connect_source) or configured to start connected (DI_IOT_CONNECTED)."""
+    a = ADAPTERS.get(source_id)
+    return a is not None and bool(getattr(a, "provisioned", True))
+
+
 def ensure_sources(session: Session) -> None:
     """Register the demo's 21 sources once (vendor, type, interval, authority, owner)."""
     for s in golden.load("sources")["sources"]:
-        status = "unavailable" if s["id"] not in ADAPTERS else "live"
+        status = "live" if provisioned(s["id"]) else "unavailable"
         session.execute(
             text(
                 "INSERT INTO source_system (id, vendor, type, status, interval_min, authority, owner, confidence, note) "
@@ -57,13 +64,124 @@ def ensure_sources(session: Session) -> None:
     # a source that gained (or lost) a connector since it was registered
     session.execute(
         text("UPDATE source_system SET status = 'live', updated_at = now() WHERE status = 'unavailable' AND id = ANY(:ids)"),
-        {"ids": list(ADAPTERS)},
+        {"ids": [i for i in ADAPTERS if provisioned(i)]},
     )
     session.execute(
         text("UPDATE source_system SET status = 'unavailable', updated_at = now() WHERE NOT (id = ANY(:ids))"),
         {"ids": list(ADAPTERS)},
     )
+    for sid, a in ADAPTERS.items():
+        if getattr(a, "connected_confidence", None) is not None:
+            _connected_confidence(session, sid, a.connected_confidence)
     session.commit()
+    for sid, a in ADAPTERS.items():  # configured to start connected (DI_IOT_CONNECTED): its rules deliver from the start
+        if hasattr(a, "set_delivery") and provisioned(sid):
+            _set_delivery(a, True)
+
+
+def _connected_confidence(session: Session, source_id: str, conf: float) -> None:
+    """A source the demo lists with confidence 0 (no data yet) gets its connector's confidence once connected."""
+    session.execute(
+        text(
+            "UPDATE source_system SET confidence = :c WHERE id = :i AND status <> 'unavailable' "
+            "AND coalesce(confidence, 0) = 0"
+        ),
+        {"c": conf, "i": source_id},
+    )
+
+
+def connect_source(session: Session, source_id: str) -> dict:
+    """Connect (provision) a source that has a connector but is not provisioned, e.g. AWS IoT (B5c): it becomes
+    `live` and a full initial sync is queued. A source that is already connected is left as it is."""
+    adapter = ADAPTERS.get(source_id)
+    if adapter is None:
+        raise KeyError(f"No connector for {source_id}")
+    status = session.execute(text("SELECT status FROM source_system WHERE id = :i"), {"i": source_id}).scalar()
+    if status is None:
+        raise KeyError(f"No source {source_id}")
+    changed = status == "unavailable"
+    if changed:
+        session.execute(text("UPDATE source_system SET status = 'live', updated_at = now() WHERE id = :i"), {"i": source_id})
+        if getattr(adapter, "connected_confidence", None) is not None:
+            _connected_confidence(session, source_id, adapter.connected_confidence)
+    job = enqueue_sync(session, source_id, "initial", full=True) if changed else None
+    session.commit()
+    _set_delivery(adapter, True)
+    return {"source_id": source_id, "status": "live" if changed else status, "connected": changed, "queued_job": job}
+
+
+def _set_delivery(adapter, enabled: bool) -> None:
+    """Switch the source's own event delivery on or off where the system has one (AWS IoT topic rules). A failure is
+    logged, not raised: syncs still read the system, and the next connect or disconnect tries again."""
+    fn = getattr(adapter, "set_delivery", None)
+    if fn is None:
+        return
+    try:
+        fn(enabled)
+    except Exception:  # the system may be down; the connection itself is recorded either way
+        log.warning("could not %s event delivery for %s", "enable" if enabled else "disable", adapter.source_id, exc_info=True)
+
+
+def disconnect_source(session: Session, source_id: str, purge: bool = False) -> dict:
+    """Back to not provisioned (`unavailable`), as the demo starts AWS IoT. With purge, everything the source brought
+    is removed too: its facts (the canonical values fall back to the other sources, its conflicts are deleted), raw
+    records, cursors, runs and fetch log, and its completeness, confidence and sync times go back to the demo's."""
+    if session.execute(text("SELECT 1 FROM source_system WHERE id = :i"), {"i": source_id}).first() is None:
+        raise KeyError(f"No source {source_id}")
+    session.execute(
+        text("DELETE FROM job WHERE kind = 'sync.source' AND status = 'queued' AND payload->>'source_id' = :s"),
+        {"s": source_id},
+    )
+    session.execute(text("UPDATE source_system SET status = 'unavailable', updated_at = now() WHERE id = :i"), {"i": source_id})
+    out = {"source_id": source_id, "status": "unavailable", "purged": purge}
+    if purge:
+        out["facts_removed"] = _purge(session, source_id)
+    session.commit()
+    if (adapter := ADAPTERS.get(source_id)) is not None:
+        _set_delivery(adapter, False)
+    return out
+
+
+def _purge(session: Session, source_id: str) -> int:
+    touched = session.execute(
+        text("DELETE FROM provenance WHERE source_id = :s RETURNING model, key, field"), {"s": source_id}
+    ).all()
+    now = datetime.now(UTC)
+    for model, key, field in sorted(set(touched)):
+        left = session.execute(
+            text("SELECT count(*) FROM provenance WHERE model = :m AND key = :k AND field = :f"),
+            {"m": model, "k": key, "f": field},
+        ).scalar_one()
+        if left:
+            store._settle(session, model, key, field, now)  # the other sources' value again
+        else:
+            session.execute(
+                text(
+                    "UPDATE canonical SET data = data - CAST(:f AS text), version = version + 1, updated_at = :at "
+                    "WHERE model = :m AND key = :k AND jsonb_exists(data, CAST(:f AS text))"
+                ),
+                {"m": model, "k": key, "f": field, "at": now},
+            )
+    for model, key in sorted({(m, k) for m, k, _ in touched}):
+        session.execute(
+            text("DELETE FROM canonical WHERE model = :m AND key = :k AND data = '{}'::jsonb"), {"m": model, "k": key}
+        )
+    session.execute(text('DELETE FROM conflict WHERE jsonb_exists("values", :s)'), {"s": source_id})
+    for table in ("raw_record", "sync_cursor", "fetch_log", "sync_run"):
+        session.execute(text(f"DELETE FROM {table} WHERE source_id = :s"), {"s": source_id})  # noqa: S608 - fixed names
+    session.execute(
+        text("DELETE FROM job WHERE kind = 'sync.source' AND status <> 'running' AND payload->>'source_id' = :s"),
+        {"s": source_id},
+    )
+    ref = next((s for s in golden.load("sources")["sources"] if s["id"] == source_id), {})
+    session.execute(  # as registered by ensure_sources: no completeness or sync times yet, the demo's confidence
+        text(
+            "UPDATE source_system SET completeness = NULL, confidence = :cf, last_sync_at = NULL, last_success_at = NULL "
+            "WHERE id = :i"
+        ),
+        {"cf": ref.get("conf"), "i": source_id},
+    )
+    return len(touched)
 
 
 def _cursor(session: Session, source_id: str, resource: str) -> str | None:

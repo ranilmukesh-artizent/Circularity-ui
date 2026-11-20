@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { asOfLabel, logReportExported, logReportViewed, reportRows, reports, toCsv, type Report } from '../../api/home';
+import { asOfLabel, logReportExported, logReportViewed, reportLink, reportRows, reports, toCsv, type Report } from '../../api/home';
 import { fmtNumber } from '../../api/format';
 import { useBackend } from '../../api/hooks';
 import { allowedTenants } from '../../api/session';
@@ -64,6 +64,25 @@ export function ReportsPage() {
       </div>
       <div className="frrep">
         {L.map((r) => {
+          const link = reportLink(r.id);
+          if (link)
+            return (
+              <section className="panel frrc" id={'rep-' + r.id} key={r.id}>
+                <div className="frrch">
+                  <FrIt ic={r.ic} h={r.h} />
+                  <div>
+                    <h3>{r.t}</h3>
+                    <p className="note">{r.d}</p>
+                  </div>
+                </div>
+                <div className="frrcf">
+                  <span className="note">Preview, scope and export are on the audit log.</span>
+                  <span className="row">
+                    <a className="btn sm pri" href={'#/' + link}><Icon name="audit" /> Open the audit log</a>
+                  </span>
+                </div>
+              </section>
+            );
           const rows = reportRows(r.id, tenant, period), body = rows.slice(1, 5);
           return (
             <section className="panel frrc" id={'rep-' + r.id} key={r.id}>

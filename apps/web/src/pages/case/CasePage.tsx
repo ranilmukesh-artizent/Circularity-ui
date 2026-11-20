@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import {
-  caseById, caseVisible, fullAnalysisHtml, landing, stageHref, stageState, stageTitle, syncEngineRoute, type CaseRec,
-} from '../../api/case';
+import { caseById, caseRefusal, enterCase, landing, stageHref, stageState, stageTitle, type CaseRec } from '../../api/case';
 import { useBackend } from '../../api/hooks';
-import { Modal } from '../../ui/Overlay';
+import { Drawer, Modal } from '../../ui/Overlay';
 import { ApprovalModal, DeclineModal, ExplainView } from './Dialogs';
+import { FullAnalysis } from './FullAnalysis';
 import { Overview } from './Overview';
 import { StageBar, StageFoot, StagePage, stageDo, type CaseView } from './StagePage';
-import { CaseUiContext, Legacy, type CaseUi } from './ui';
+import { CaseUiContext, type CaseUi, type ModalSpec } from './ui';
 import './case.css';
 
 type Resolved = { view: CaseView; redirect: boolean };
@@ -53,18 +52,20 @@ export function CasePage({ caseId, query }: { caseId: string; view: string | nul
   const [approval, setApproval] = useState<{ id: string; mode?: 'review' } | null>(null);
   const [decline, setDecline] = useState<string | null>(null);
   const [explain, setExplain] = useState<string | null>(null);
-  const [legacy, setLegacy] = useState<{ title: string; body: string; foot: string; wide: boolean } | null>(null);
+  const [modal, setModal] = useState<ModalSpec | null>(null);
   const closeExplain = useMemo(() => () => setExplain(null), []);
   const ui = useMemo<CaseUi>(() => ({
     openApproval: (id, mode) => setApproval({ id, mode }),
     openDecline: (id) => setDecline(id),
     openExplain: (id) => setExplain(id),
-    legacyModal: (m) => setLegacy(m),
-  }), []);
+    modal: (m) => setModal(m),
+    go: (p) => nav('/' + p.replace(/^#?\/?/, '')),
+  }), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  syncEngineRoute(loc.pathname + loc.search);
-  const c = caseById(caseId);
-  const ok = !!c && caseVisible(caseId);
+  enterCase(caseId);
+  const refusal = caseRefusal(caseId);
+  const c = refusal ? undefined : caseById(caseId);
+  const ok = !!c;
   const r = ok ? resolve(c!, loc.pathname.split('/').filter(Boolean), query, loc.pathname + loc.search) : null;
   const v = r?.view;
   const key = v ? v.kind + (v.kind === 'stage' ? v.n : '') : '';
@@ -94,7 +95,7 @@ export function CasePage({ caseId, query }: { caseId: string; view: string | nul
   if (!c || !ok || !v)
     return (
       <div className="empty" style={{ marginTop: 40 }}>
-        <b>{c ? caseId + ' is not available for your account' : 'No case ' + caseId}</b>
+        <b>{refusal === 'refused' ? caseId + ' is not available for your account' : 'No case ' + caseId}</b>
         <a className="lnk" href="#/product/received">Back to Returned assets</a>
       </div>
     );
@@ -110,20 +111,15 @@ export function CasePage({ caseId, query }: { caseId: string; view: string | nul
         <div id="jmount"><StageBar c={c} view={v} /></div>
         {v.kind === 'stage' ? <StagePage key={c.id + v.n} c={c} n={v.n} tab={v.tab} />
           : v.kind === 'overview' ? <Overview c={c} />
-          : <Legacy html={fullAnalysisHtml(c)} />}
+          : <FullAnalysis c={c} />}
         <div id="jgmount"><StageFoot c={c} view={v} pri={pri} /></div>
       </div>
       {ap && ap.recommendation && <ApprovalModal c={ap} mode={approval!.mode} onClose={() => setApproval(null)} />}
       {dc && <DeclineModal c={dc} onClose={() => setDecline(null)} />}
       {explain && caseById(explain)?.recommendation && <ExplainView caseId={explain} onClose={closeExplain} />}
-      {legacy && (
-        <Modal
-          title={legacy.title.replace(/<[^>]*>/g, '')} wide={legacy.wide} onClose={() => setLegacy(null)}
-          foot={legacy.foot ? <Legacy html={legacy.foot} style={{ display: 'contents' }} /> : undefined}
-        >
-          <Legacy html={legacy.body} />
-        </Modal>
-      )}
+      {modal && (modal.drawer
+        ? <Drawer title={modal.title} sub={modal.sub} wide={modal.wide} foot={modal.foot} onClose={() => setModal(null)}>{modal.body}</Drawer>
+        : <Modal title={modal.title} wide={modal.wide} foot={modal.foot} onClose={() => setModal(null)}>{modal.body}</Modal>)}
     </CaseUiContext.Provider>
   );
 }

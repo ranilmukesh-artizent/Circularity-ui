@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode }
 import { useBackend } from '../../api/hooks';
 import {
   ackKind, allMappings, canon, catOf, connMethods, smLog as smLogEntries, connected, events, exceptions, failedRecords, fieldCount, frCats, frDecisions, hourly, mappings,
-  needsAttention, series, source, sources, srcAgeText, srcCatNote, srcCats, srcFailing, srcFresh, srcModels, successRate, syncAllLive, syncHistory, tableCount,
+  needsAttention, publishedWorkflowCount, series, source, sources, srcAgeText, srcCatNote, srcCats, srcFailing, srcFresh, srcModels, successRate, syncAllLive, syncHistory, tableCount,
   tableModel, tableModelIds, totals, vHue, workflows, type Source,
 } from '../../api/integration';
 import { Icon } from '../../ui/Icon';
@@ -74,7 +74,7 @@ export function SourceMap() {
 
 function SmTiles() {
   const conn = connected(), tbl = sum(sources().map((s) => tableCount(s.id))), fm = sum(Object.values(allMappings()).map((r) => r.length));
-  const W = workflows(), act = W.filter((w) => w.status === 'published').length, t = totals(), hh = hourly();
+  const W = workflows(), act = publishedWorkflowCount(), t = totals(), hh = hourly();
   const nw = sources().filter((s) => s.frConnectedAt && Date.now() - s.frConnectedAt < 30 * 864e5).length, nwf = W.filter((w) => w.frNew).length;
   return (
     <>
@@ -453,7 +453,7 @@ function TileGrid() {
 
 function SmKpis() {
   const t = totals(), conn = sources().filter((s) => s.status !== 'unavailable').length, tbl = sum(tableModelIds().map((k) => tableModel(k)?.t.length ?? 0));
-  const pub = workflows().filter((w) => w.status === 'published').length;
+  const pub = publishedWorkflowCount();
   const k = (cls: string, ic: string, v: ReactNode, l: string) => (
     <div className={'hkpi ' + cls}><span className="kic"><Icon name={ic} /></span><div><b className="num">{v}</b><span>{l}</span></div></div>
   );

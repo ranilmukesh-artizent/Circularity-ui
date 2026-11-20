@@ -1,7 +1,7 @@
 /* Connection Fabric component kit: the demo's frIt, frSt, frKpi, frSeg, vlogo, status chips, the row menu and an action toast. */
 import { createContext, useContext, useEffect, useReducer, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import { fmtNumber } from '../../api/format';
-import { hashId, recordTest, sources, stepHtml, vlogoHtml, type Source } from '../../api/integration';
+import { hashId, journeyStep, recordTest, sources, vendorInitials, vHue, type Source } from '../../api/integration';
 import { can } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 
@@ -13,12 +13,37 @@ export const when = (ts: number | string | Date) =>
 export const plural = (n: number, w: string, p = w + 's') => n + ' ' + (n === 1 ? w : p);
 export const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 
-/** A static fragment of the demo's own markup (vendor logo, journey step chip). */
-export function Html({ html }: { html: string }) {
-  return <span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: html }} />;
+/** The vendor's logo tile (the demo's vlogo). */
+export const Vlogo = ({ vendor }: { vendor: string }) => (
+  <span className="vlogo" style={{ '--h': vHue(vendor) } as CSSProperties} aria-hidden="true">{vendorInitials(vendor)}</span>
+);
+/** A journey step chip (the demo's stp). */
+export function Stp({ n }: { n: number }) {
+  const j = journeyStep(n);
+  return (
+    <span className={'stp ' + (j.kind === 'built' ? '' : j.kind)} title={'Journey step ' + j.n + ': ' + j.label + ' — ' + j.desc}>
+      <b>{j.n}</b>
+      {j.label}
+    </span>
+  );
 }
-export const Vlogo = ({ vendor }: { vendor: string }) => <Html html={vlogoHtml(vendor)} />;
-export const Stp = ({ n }: { n: number }) => <Html html={stepHtml(n)} />;
+
+/** Highlighted JSON (the demo's jsonHtml): keys, string and number values. */
+export function Json({ value }: { value: unknown }) {
+  const text = JSON.stringify(value, null, 2) ?? '';
+  const out: ReactNode[] = [];
+  const re = /"([^"]+?)":|(?<=: )"(.*?)"|(?<=: )(-?\d+(?:\.\d+)?)/g;
+  let at = 0, m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    out.push(text.slice(at, m.index));
+    if (m[1] !== undefined) out.push(<span key={m.index} className="k">"{m[1]}"</span>, ':');
+    else if (m[2] !== undefined) out.push(<span key={m.index} className="s">"{m[2]}"</span>);
+    else out.push(<span key={m.index} className="n">{m[3]}</span>);
+    at = m.index + m[0].length;
+  }
+  out.push(text.slice(at));
+  return <>{out}</>;
+}
 
 export function FrIt({ ic, h, cls }: { ic: string; h?: string; cls?: string }) {
   return (

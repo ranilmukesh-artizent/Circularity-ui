@@ -526,7 +526,7 @@
     "ic": "key",
     "id": "cred:tms",
     "kind": "cred",
-    "s": "ShipLane TMS · OAuth 2.0 client credentials",
+    "s": "Oracle Transportation Management · OAuth 2.0 client credentials",
     "sev": 1,
     "src": "tms",
     "t": "Transport management · credential expires in 5 days"
@@ -1183,7 +1183,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -1405,7 +1405,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -1627,7 +1627,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -1849,7 +1849,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -2071,7 +2071,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -2293,7 +2293,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -24498,7 +24498,7 @@
     "ic": "key",
     "id": "cred:tms",
     "kind": "cred",
-    "s": "ShipLane TMS · OAuth 2.0 client credentials",
+    "s": "Oracle Transportation Management · OAuth 2.0 client credentials",
     "sev": 1,
     "src": "tms",
     "t": "Transport management · credential expires in 5 days"
@@ -25144,7 +25144,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -25366,7 +25366,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -25588,7 +25588,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -25810,7 +25810,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -26032,7 +26032,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -26254,7 +26254,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -48486,7 +48486,7 @@
     "ic": "key",
     "id": "cred:tms",
     "kind": "cred",
-    "s": "ShipLane TMS · OAuth 2.0 client credentials",
+    "s": "Oracle Transportation Management · OAuth 2.0 client credentials",
     "sev": 1,
     "src": "tms",
     "t": "Transport management · credential expires in 5 days"
@@ -48954,7 +48954,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -49176,7 +49176,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -49398,7 +49398,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -49620,7 +49620,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -49842,7 +49842,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -50064,7 +50064,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -50691,7 +50691,7 @@
     "ic": "key",
     "id": "cred:tms",
     "kind": "cred",
-    "s": "ShipLane TMS · OAuth 2.0 client credentials",
+    "s": "Oracle Transportation Management · OAuth 2.0 client credentials",
     "sev": 1,
     "src": "tms",
     "t": "Transport management · credential expires in 5 days"
@@ -51309,7 +51309,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -51531,7 +51531,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -51753,7 +51753,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -51975,7 +51975,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -52197,7 +52197,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -52419,7 +52419,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -97365,7 +97365,7 @@
     "ic": "key",
     "id": "cred:tms",
     "kind": "cred",
-    "s": "ShipLane TMS · OAuth 2.0 client credentials",
+    "s": "Oracle Transportation Management · OAuth 2.0 client credentials",
     "sev": 1,
     "src": "tms",
     "t": "Transport management · credential expires in 5 days"
@@ -98002,7 +98002,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -98224,7 +98224,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -98446,7 +98446,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -98668,7 +98668,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -98890,7 +98890,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,
@@ -99112,7 +99112,7 @@
      ],
      [
       "Transport management",
-      "ShipLane TMS",
+      "Oracle Transportation Management",
       "live",
       87,
       93,

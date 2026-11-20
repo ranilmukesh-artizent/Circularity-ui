@@ -112,6 +112,8 @@ def reset(system: str | None = None) -> dict:
         raise HTTPException(404, f"No mock to reset for {unknown[0]!r}")
     out = {}
     with engine.begin() as conn:
+        # scheduled work is cleared first, so a mock can schedule work as part of its reset (AWS IoT's telemetry)
+        scheduler.clear(conn, targets)
         for t in targets:
             out[t] = MOCKS[t].reset(conn, seed())
         conn.execute(
@@ -119,7 +121,6 @@ def reset(system: str | None = None) -> dict:
             {"s": targets},
         )
         conn.execute(text("DELETE FROM sim.outbox WHERE source = ANY(:s)"), {"s": targets})
-        scheduler.clear(conn, targets)
         if system is None:
             clock.reset(conn)
         # tell subscribers: a reset rewinds the data (and, for a full reset, the clock), so their delta cursors are void

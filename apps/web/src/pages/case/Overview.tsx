@@ -1,12 +1,12 @@
 import type { CSSProperties } from 'react';
 import {
-  assetModel, assetPhotoHtml, assetSerial, lc, nextStep, phases, predictedVsActualHtml, runOf, stageHref, stageSentence,
+  assetModel, assetSerial, lc, nextStep, phases, runOf, stageHref, stageSentence,
   stageState, stageTitle, stages, when, type CaseRec,
 } from '../../api/case';
 import { fmtDate, fmtDateYear, money } from '../../api/format';
 import { canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
-import { Tag } from './StagePage';
+import { FrPanel, Photo, Pva, Tag } from './kit';
 import { approveGuarded, caseActions, runNextStep, useCaseUi } from './ui';
 
 const href = (id: string, n: number | 'overview' | 'full') => '#/' + stageHref(id, n);
@@ -56,7 +56,7 @@ export function Overview({ c }: { c: CaseRec }) {
         <b>{id} · Overview</b>
       </nav>
       <header className="sthead stovh">
-        <span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: assetPhotoHtml(c, 'stph') }} />
+        <Photo c={c} cls="stph" />
         <div className="sthl">
           <p className="stcap">Case overview · {c.owner} · {c.location}</p>
           <h1 id="stH1" tabIndex={-1}>{id} · {assetModel(c)}</h1>
@@ -100,10 +100,7 @@ export function Overview({ c }: { c: CaseRec }) {
             </div>
           </section>
           {o && r && (
-            <section className="panel frp">
-              <div className="ph"><div><h3>Predicted against actual</h3></div></div>
-              <div className="pb" dangerouslySetInnerHTML={{ __html: predictedVsActualHtml(r.net, o.net) }} />
-            </section>
+            <FrPanel t="Predicted against actual"><Pva pred={r.net} act={o.net} /></FrPanel>
           )}
           <section className="panel frp">
             <div className="ph"><h3>More on {id}</h3></div>

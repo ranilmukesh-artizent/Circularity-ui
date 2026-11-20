@@ -224,6 +224,9 @@ def test_map(acct):
     assert all(a["id"] in DB_SOURCES and a["kind"] in ("ok", "warn") for a in got["activity"]) and len(got["activity"]) <= 6
     deps = {i for i, r in DB_SOURCES.items() if SCREEN_STATUS.get(r[1], r[1]) in ("unavailable", "stale", "manual")}
     assert set(got["dependencies"]) == deps
+    assert got["mappings"] == {k: v for k, v in G["mappings"].items() if k in DB_SOURCES}
+    assert got["source_models"] == {i: G["derived"][i]["models"] for i in DB_SOURCES if i in REF}
+    assert got["table_models"] == {k: m for k, m in G["table_models"].items() if k in DB_SOURCES}
 
 
 # ---------------------------------------------------------------- tables, models

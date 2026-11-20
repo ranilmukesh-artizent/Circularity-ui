@@ -7,16 +7,18 @@ POST /_sim/faults {"system": "mkt", "kind": "token_expired"}     kinds:
     token_expired  refuse every call with 401 unless it uses Basic auth: bearer tokens and API keys have expired
 Optional "minutes": the fault ends after that many simulated minutes; otherwise it lasts until removed.
 DELETE /_sim/faults[?system=…] removes faults.
+A mock can register its vendor's error shape for these in SHAPES (AWS IoT: ThrottlingException for a 429, etc.).
 
 The demo starts with one fault (SOURCES.mkt: "Feed token expired 6 Oct"): Ritchie Bros. Market Data has an expired
 token. It is applied by POST /_sim/faults/demo, and at start-up when SIM_DEMO_FAULTS is true.
 """
 
 import asyncio
+from collections.abc import Callable
 from datetime import timedelta
 
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, delete, insert, select, text, update
 from sqlalchemy.engine import Connection
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -44,6 +46,10 @@ FAULTS = Table(
 
 # first path segment -> system id: /sap -> erp, /ariba -> proc, /maximo -> eam …
 PREFIX = {"sap": "erp", "ariba": "proc"} | {s.base_path.strip("/").split("/")[0]: s.source_id for s in SYSTEMS if s.base_path}
+
+# A mock may answer faults in its vendor's own error shape: system -> fn(kind, status, message) -> Response.
+# kind is "unavailable", "error" or "token_expired"; without one, the generic shapes below are used.
+SHAPES: dict[str, Callable[[str, int, str], Response]] = {}
 
 
 def create(conn: Connection) -> None:
@@ -100,13 +106,20 @@ class FaultMiddleware(BaseHTTPMiddleware):
         for f in faults:
             if f["kind"] == "latency" and f["value"]:
                 await asyncio.sleep(f["value"] / 1000)
+        shape = SHAPES.get(system)
         for f in faults:
             if f["kind"] == "unavailable":
+                if shape:
+                    return shape("unavailable", 503, f"{system} is unavailable (simulated)")
                 return JSONResponse({"error": {"code": "unavailable", "message": f"{system} is unavailable (simulated)"}}, 503)
             if f["kind"] == "error" and f["calls"] % f["every"] == 0:
                 status = f["value"] or 500
+                if shape:
+                    return shape("error", status, f"Simulated HTTP {status}")
                 return JSONResponse({"error": {"code": "simulated_error", "message": f"Simulated HTTP {status}"}}, status)
             if f["kind"] == "token_expired" and not request.headers.get("authorization", "").lower().startswith("basic "):
+                if shape:
+                    return shape("token_expired", 401, "The access token expired")
                 return JSONResponse(
                     {"error": {"code": "invalid_token", "message": "The access token expired"}},
                     401,

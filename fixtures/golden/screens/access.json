@@ -3129,7 +3129,7 @@
     "access": "write",
     "data": "Shipment orders between company sites.",
     "name": "Freight booking MCP server",
-    "owner": "ShipLane",
+    "owner": "Oracle",
     "purpose": "Book and cancel transfers between sites.",
     "tools": [
      "shipment.book",

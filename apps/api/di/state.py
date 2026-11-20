@@ -24,20 +24,29 @@ def register(collection: str, starting: Callable[[], list[tuple[str, Item]]]) ->
 
 
 def _ensure(s: Session, collection: str) -> None:
+    """Seed the collection the first time it is read.
+
+    The seed is written and committed in its own short transaction, not the caller's: if the caller's transaction held
+    the seed lock and uncommitted rows, any other session the same request opens (store.ensure, load_context …) that
+    reads the collection would wait on that lock forever (a request deadlocking itself; seen in B17 after test resets).
+    """
     if collection not in _SEEDS:
         raise KeyError(f"unknown state collection {collection!r}")
     if s.execute(text("SELECT 1 FROM state_seed WHERE collection = :c"), {"c": collection}).first():
         return
-    # one seeder at a time per collection; the loser of the race finds it seeded
-    s.execute(text("SELECT pg_advisory_xact_lock(hashtext(:c))"), {"c": "state:" + collection})
-    if s.execute(text("SELECT 1 FROM state_seed WHERE collection = :c"), {"c": collection}).first():
-        return
-    for item_id, item in _SEEDS[collection]():
-        _insert(s, collection, item_id, item)
-    s.execute(text("INSERT INTO state_seed (collection) VALUES (:c)"), {"c": collection})
+    from di.db import engine
+
+    with engine.begin() as conn:
+        # one seeder at a time per collection; the loser of the race finds it seeded
+        conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:c))"), {"c": "state:" + collection})
+        if conn.execute(text("SELECT 1 FROM state_seed WHERE collection = :c"), {"c": collection}).first():
+            return
+        for item_id, item in _SEEDS[collection]():
+            _insert(conn, collection, item_id, item)
+        conn.execute(text("INSERT INTO state_seed (collection) VALUES (:c)"), {"c": collection})
 
 
-def _insert(s: Session, collection: str, item_id: str, item: Item) -> None:
+def _insert(s, collection: str, item_id: str, item: Item) -> None:
     s.execute(
         text("INSERT INTO state_item (collection, id, data) VALUES (:c, :i, CAST(:d AS jsonb))"),
         {"c": collection, "i": item_id, "d": json.dumps(item)},

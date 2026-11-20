@@ -13,6 +13,7 @@ import { useBackend } from '../../api/hooks';
 import { allowedTenants, canPage, tenantFilter } from '../../api/session';
 import type { PageProps } from '../registry';
 import { Icon } from '../../ui/Icon';
+import { openAsk } from '../../ui/askBus';
 import { Drawer } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import { downloadCsv } from '../audit/csv';
@@ -288,7 +289,7 @@ function AgentAnswer({ onOpen }: { onOpen: () => void }) {
     return <section className="panel"><div className="pb"><p className="note">{(e as Error).message}</p></div></section>;
   }
   const a = o.versions[0], b = o.versions[o.versions.length - 1];
-  const ask = (e: FormEvent) => { e.preventDefault(); toast('Ask Circularity arrives soon.'); setQ(''); };
+  const ask = (e: FormEvent) => { e.preventDefault(); if (q.trim()) openAsk(q.trim()); setQ(''); };
   return (
     <section className="panel" aria-label="Circularity Agent answer">
       <div className="ph"><h3>✦ Circularity Agent</h3><span className="note">Predicted vs actual: what changed across the model versions?</span></div>

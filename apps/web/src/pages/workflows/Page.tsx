@@ -5,17 +5,18 @@ import { fmtNumber } from '../../api/format';
 import { useBackend } from '../../api/hooks';
 import { can } from '../../api/session';
 import {
-  ago, analyze, applySuggestedFix, evalStep, hashId, history, logoHtml, mappings, NOWF, publishWorkflow, runCounts, runErrors,
+  ago, analyze, applySuggestedFix, evalStep, hashId, history, logoHtml, mappings, nowMs, NOWF, publishWorkflow, runCounts, runErrors,
   runFromLast, runOrder, saveWorkflow, savedOf, setOpenWorkflow, setRunSetting, setWorkflowStatus, sourceCategoryLabel, sourceCompleteness,
   stepInfo, systemOf, templateOf, trigText, usedBy, validate, wfStat, workflow, WF_H, WF_W, WF_WH, worldWidth, type TestRun, type Trigger, type Workflow,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
+import { openAsk } from '../../ui/askBus';
 import { toast } from '../../ui/toast';
 import { draftOf, edit, reload, undoRedo, useDrafts, type Draft } from './draft';
 import { CanvasView, canvasOps, ChecksPanel, FIXMSG, Inspector, Palette, TaskInstances, type Sel } from './Canvas';
 import { It, Menu, Panel, QuickActions, Raw, Ring, Seg, St, useTick } from './kit';
 import { DeleteModal, FailedRecordsModal, RunViewModal } from './Modals';
-import { duplicate, exportOne, runNow, saveTemplate, studioHref } from './ops';
+import { duplicate, exportOne, NOT_YET, runNow, saveTemplate, studioHref } from './ops';
 
 type Tab = 'studio' | 'settings' | 'history' | 'docs';
 type View = 'overview' | 'details' | 'flow';
@@ -102,7 +103,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     const e = checks.filter((x) => x.sev === 'error').length;
     if (e) { toast(`Fix ${e} error${e > 1 ? 's' : ''} before running. The checks below say what and why.`); scrollChecks(); return; }
     clearRun();
-    const order = runOrder(g), dur: Record<string, string> = {}, now = Date.now();
+    const order = runOrder(g), dur: Record<string, string> = {}, now = nowMs();
     order.forEach((x) => (dur[x] = (0.2 + (hashId(x + w.id).charCodeAt(0) % 20) / 10).toFixed(1)));
     const r: TestRun = { status: 'running', states: {}, dur, order, i: 0, approved: false, t0: now, id: 'RUN-' + hashId(w.id + now).slice(0, 5).toUpperCase(), trig: 'Manual' };
     order.forEach((x) => (r.states[x] = 'queued'));
@@ -129,12 +130,14 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   }
 
   // ---- save, publish, discard, reset, back
+  /** What was just saved: the copy keeps it until the backend's newer graph arrives (with the API it comes a moment later). */
+  const kept = (): Partial<Draft> => ({ graph: d.graph, name: d.name, owner: d.owner, trig: d.trig, hist: { s: [JSON.stringify(d.graph)], i: 0 } });
   async function save() {
     if (!mgr) return toast(NOWF());
     if (!d.name.trim()) return toast('Enter a workflow name before saving.');
     const r = await saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' });
     if (!r.ok) return toast(r.error.message, 4200);
-    reload(w.id);
+    reload(w.id, kept());
     toast(r.output.name + ' saved as v' + r.output.ver + '.');
   }
   async function publish() {
@@ -153,7 +156,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     }
     const r = await publishWorkflow(w.id);
     if (!r.ok) { toast(r.error.message); if (/error/.test(r.error.message)) scrollChecks(); return; }
-    reload(w.id);
+    reload(w.id, kept());
     toast(r.output.name + ' published as v' + r.output.ver + '. It runs on its trigger: ' + r.output.trig + '.');
   }
   function discard() {
@@ -285,9 +288,9 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
         {s ? <Raw html={logoHtml(s)} /> : <It ic="bot" h="agent" cls="sm" />}
         <div className="wfname"><label className="sr" htmlFor="wfName">Workflow name</label>
           <input id="wfName" value={d.name} maxLength={80} onChange={(e) => meta((x) => { x.name = e.target.value; })} /></div>
-        <span id="wfStat"><St k={stat} /></span>
+        <span id="wfStat">{w.running ? <St k="running" /> : <St k={stat} />}</span>
         <span className="note num">{w.id} · v{w.ver}</span>
-        {l && <span className="note">Last run {ago(Date.now() - l.ts)}</span>}
+        {l && <span className="note">Last run {ago(nowMs() - l.ts)}</span>}
         <span id="wfDirty">{d.dirty && <span className="chip y">Unsaved changes</span>}</span>
         <span className="grow" />
         <Menu summaryCls="btn" summary={<>More actions <Icon name="chevD" /></>}>
@@ -333,11 +336,11 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
             <div className="fld"><label htmlFor="wfOwn">Owner (role or team)</label>
               <input id="wfOwn" value={d.owner} maxLength={60} onChange={(e) => meta((x) => { x.owner = e.target.value; })} /></div>
             <div className="fld"><label htmlFor="frRetry">Retries</label>
-              <select id="frRetry" value={String(w.retries ?? 3)} onChange={(e) => { setRunSetting(w.id, 'retries', e.target.value); meta(() => {}); toast('Saved with the workflow.'); }}>
+              <select id="frRetry" value={String(w.retries ?? 3)} onChange={(e) => { if (!setRunSetting(w.id, 'retries', e.target.value)) return toast(NOT_YET); meta(() => {}); toast('Saved with the workflow.'); }}>
                 {[0, 1, 3, 5].map((n) => <option key={n}>{n}</option>)}
               </select></div>
             <div className="fld"><label htmlFor="frAlert">Alert when</label>
-              <select id="frAlert" value={w.alert || 'A run fails'} onChange={(e) => { setRunSetting(w.id, 'alert', e.target.value); meta(() => {}); toast('Saved with the workflow.'); }}>
+              <select id="frAlert" value={w.alert || 'A run fails'} onChange={(e) => { if (!setRunSetting(w.id, 'alert', e.target.value)) return toast(NOT_YET); meta(() => {}); toast('Saved with the workflow.'); }}>
                 {['A run fails', 'Two runs fail in a row', 'Success rate drops below 95%', 'Never'].map((o) => <option key={o}>{o}</option>)}
               </select></div>
           </div>
@@ -354,7 +357,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     const o = runOrder(g);
     return (
       <>{head}
-        <Panel title="Documentation" right={<button className="btn sm" onClick={() => toast('Ask Circularity arrives soon.')}><Icon name="spark" /> Explain this workflow</button>}>
+        <Panel title="Documentation" right={<button className="btn sm" onClick={() => openAsk(`Explain the workflow ${w.name} (${w.id}).`)}><Icon name="spark" /> Explain this workflow</button>}>
           <div className="frdoc">
             <p>{w.desc}</p>
             <p className="note">Generated from the workflow graph · {g.nodes.length} steps, {g.edges.length} links · {trigText(d.trig)} · owner {d.owner}</p>
@@ -424,13 +427,14 @@ function RunsTable({ w, n, onView }: { w: Workflow; n: number; onView: (run: str
     <div className="tw"><table className="t static tight">
       <thead><tr><th>Run ID</th><th>Status</th><th>Start time</th><th className="r">Duration</th><th className="r">Records (in / out)</th><th className="r">Errors</th><th>Triggered by</th><th /></tr></thead>
       <tbody>{L.map((r) => {
-        const rej = runErrors(w.id, r);
+        // a run still in progress (the API's worker job) has no duration or record count yet
+        const going = r.state === 'running', rej = going ? 0 : runErrors(w.id, r);
         return (
           <tr key={r.id + r.ts} className={r.state === 'failed' ? 'frfail' : ''}>
-            <td className="mono">{r.id}</td><td><St k={r.state === 'failed' ? 'failed' : r.state === 'running' ? 'running' : 'success'} /></td>
-            <td className="num nowrap">{stamp(r.ts)}</td><td className="r num">{r.dur} s</td>
-            <td className="r num">{fmtNumber(r.rows)} / {fmtNumber(r.state === 'failed' ? 0 : r.rows - rej)}</td>
-            <td className={'r num ' + (rej ? 'neg' : '')}>{fmtNumber(rej)}</td><td>{r.trig}</td>
+            <td className="mono">{r.id}</td><td><St k={r.state === 'failed' ? 'failed' : going ? 'running' : 'success'} /></td>
+            <td className="num nowrap">{stamp(r.ts)}</td><td className="r num">{going ? '—' : r.dur + ' s'}</td>
+            <td className="r num">{going ? '—' : fmtNumber(r.rows) + ' / ' + fmtNumber(r.state === 'failed' ? 0 : r.rows - rej)}</td>
+            <td className={'r num ' + (rej ? 'neg' : '')}>{going ? '—' : fmtNumber(rej)}</td><td>{r.trig}</td>
             <td><button className="btn sm" onClick={() => onView(r.id)}>View</button></td>
           </tr>
         );
@@ -498,11 +502,11 @@ function Investigation({ w, mgr, onRun }: { w: Workflow; mgr: boolean; onRun: ()
   const r = w.lastRun, bad = r?.order.find((x) => r.states[x] === 'failed'), g = draftOf(w.id)!.graph, n = bad ? g.nodes.find((x) => x.id === bad) : undefined;
   if (!r || !n) return null;
   const i = stepInfo(n), m = mappings(w.src).slice(0, 3), t = (o: number) => new Date(r.ts - o).toISOString().slice(11, 19);
-  const soon = () => toast('Ask Circularity arrives soon.');
+  const soon = () => openAsk(`Why did ${w.name} (${w.id}) fail at ${i.label} in run ${r.id}, and how do I fix it?`);
   return (
     <section className="panel frinvp" id="frInvest">
       <div className="ph">
-        <div><h3><Icon name="alert" /> Investigation · {r.id}</h3><span className="note">{i.label} failed after 3 retries · {ago(Date.now() - r.ts)}</span></div>
+        <div><h3><Icon name="alert" /> Investigation · {r.id}</h3><span className="note">{i.label} failed after 3 retries · {ago(nowMs() - r.ts)}</span></div>
         <span className="row">
           <button className="btn sm" onClick={soon}><Icon name="spark" /> Diagnose</button>
           <button className="btn sm" onClick={soon}><Icon name="spark" /> Fix</button>
@@ -521,7 +525,7 @@ ${t(0)} INFO  downstream steps marked upstream failed; held records kept`}</pre>
               <tbody>{m.map((f, k) => <tr key={k}><td className="mono">{f[0]}</td><td className="mono">{f[1]}</td><td className={'mono ' + (k === 0 ? 'neg' : '')}>{k === 0 ? f[1] + ' → renamed in source' : f[1]}</td></tr>)}</tbody></table>
           ) : <p className="note">No field-level drift recorded.</p>}
           {w.frFix ? <p className="callout ok" style={{ marginTop: 8 }}><b>Fix applied.</b> {w.frFix} Run now to confirm.</p>
-            : mgr && <button className="btn sm" style={{ marginTop: 8 }} onClick={() => { applySuggestedFix(w.id); toast('Fix applied. Run now to confirm it turns green.'); }}>Apply the suggested fix</button>}
+            : mgr && <button className="btn sm" style={{ marginTop: 8 }} onClick={() => toast(applySuggestedFix(w.id) ? 'Fix applied. Run now to confirm it turns green.' : NOT_YET)}>Apply the suggested fix</button>}
         </div>
       </div>
     </section>

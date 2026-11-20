@@ -7,8 +7,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { fmtDate, fmtDateYear, fmtNumber, money } from '../../api/format';
 import { useBackend } from '../../api/hooks';
 import {
-  addDays, asHex, asModel, asSerial, asTitle, assetFacts, assetHealth, assetRelated, assetTabAllowed, baseline, caseById, caseDemand,
-  caseDiag, caseRul, classInfo, closedLastYear, confidence, demoVisible, diagKind, gateNames, journeyHref, lastAssetId, leaseTrail, locName,
+  addDays, asHex, asModel, asSerial, asTitle, assetCase, assetFacts, assetHealth, assetRelated, assetTabAllowed, baseline, caseById, caseDemand,
+  caseDiag, caseRul, classInfo, closedLastYear, confidence, demoVisible, diagKind, gateNames, journeyHref, leaseTrail, locName,
   myCases, partsAvailability, provenance, recert, rememberAsset, returnHistory, routeAllowed, routeInfo, skuUnits, snapshotTime, termMethod, upliftEnabled,
   valueOrder, valueState, type Case,
 } from '../../api/product';
@@ -46,7 +46,7 @@ export function AssetPage({ id, zone }: { id: string | null; zone: string | null
   useBackend();
   const nav = useNavigate();
   const v = useView();
-  const c = caseById(id || lastAssetId());
+  const c = assetCase(id);
   const [tab, setTab] = useState<string>(zone === 'predicted' ? 'pred' : 'known');
   const [snap, setSnap] = useState(false);
   const [cmp, setCmp] = useState<string | null | undefined>(undefined); // undefined: closed; null: opened from the menu

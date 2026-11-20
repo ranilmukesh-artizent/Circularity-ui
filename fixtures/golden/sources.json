@@ -810,7 +810,7 @@
    "updatedAt": 1790931600000,
    "updatedBy": "Platform Admin",
    "url": "https://api.shiplane.example/v3",
-   "vendor": "ShipLane TMS",
+   "vendor": "Oracle Transportation Management",
    "ver": "TMS API v3",
    "write": [
     "POST /loads",
@@ -1536,7 +1536,6 @@
    "short": "TMS",
    "target": "Outcome",
    "vendors": [
-    "ShipLane TMS",
     "Oracle Transportation Management",
     "Blue Yonder TMS",
     "SAP Transportation Management"

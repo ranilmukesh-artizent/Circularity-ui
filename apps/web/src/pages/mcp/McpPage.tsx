@@ -4,7 +4,7 @@ import { invoke } from '../../api/actions';
 import { mcpProposals } from '../../api/access';
 import { useBackend } from '../../api/hooks';
 import {
-  autoAgent, benchBadgeHtml, benchCases, caseOpenable, clientServers, exampleInput, hardRules, journeyStep, jsonHtml,
+  autoAgent, benchAvailable, benchBadgeTip, benchCases, caseOpenable, clientServers, exampleInput, hardRules, journeyStep,
   mcpAgents, PERM_CHIP, permCell, registryTools, runBench, runBenchAll, runPlaygroundTool, tenantList, toolById,
   toolCalls, tools, toolSchema, type BenchResult, type Tool, type ToolRun,
 } from '../../api/mcp';
@@ -89,9 +89,26 @@ function Stp({ n, full }: { n: number; full?: boolean }) {
   );
 }
 
+/** Pretty JSON highlighted as the demo's jsonHtml does: keys (.k), and string (.s) and number (.n) values after a key. */
 function Json({ value }: { value: unknown }) {
-  // jsonHtml escapes every value first, then adds highlighting spans (the demo's own formatter)
-  return <pre className="code" dangerouslySetInnerHTML={{ __html: jsonHtml(value) }} />;
+  const lines = (JSON.stringify(value, null, 2) ?? '').split('\n');
+  return (
+    <pre className="code">
+      {lines.map((ln, i) => {
+        const m = /^(\s*)"((?:[^"\\]|\\.)*)": (.*?)(,?)$/.exec(ln);
+        if (!m) return <span key={i}>{ln}{'\n'}</span>;
+        const v = m[3], cls = v.startsWith('"') ? 's' : /^-?\d+(\.\d+)?/.test(v) ? 'n' : '';
+        return (
+          <span key={i}>{m[1]}<span className="k">"{m[2]}"</span>: {cls ? <span className={cls}>{v}</span> : v}{m[4]}{'\n'}</span>
+        );
+      })}
+    </pre>
+  );
+}
+
+/** A call's source badge (the demo's afBadge). */
+function Badge({ k }: { k: string }) {
+  return <span className={'afb afb-' + k.toLowerCase().replace(/[^a-z]+/g, '')} data-tip={benchBadgeTip(k)}>{k}</span>;
 }
 
 function SchemaModal({ id, onClose }: { id: string; onClose: () => void }) {
@@ -228,10 +245,17 @@ function Playground({ onSchema }: { onSchema: (id: string) => void }) {
   const o = pg.out;
   const use = can('useTools');
   const example = JSON.stringify(exampleInput(t), null, 2);
-  const run = () => {
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
     const raw = pg.input != null ? pg.input : example;
-    const out = runPlaygroundTool(t.id, ag, pg.tenant, raw);
-    setPg({ input: raw, out });
+    setBusy(true);
+    try {
+      setPg({ input: raw, out: await runPlaygroundTool(t.id, ag, pg.tenant, raw) });
+    } catch (x) {
+      toast('The tool call did not reach the server: ' + (x as Error).message, 4200);
+    } finally {
+      setBusy(false);
+    }
   };
   return (
     <div className="grid g2 mcppg">
@@ -268,7 +292,7 @@ function Playground({ onSchema }: { onSchema: (id: string) => void }) {
             <div className="hint">{t.desc}</div>
           </div>
           <div className="row">
-            {use && <button className="btn pri" onClick={run}><Icon name="play" /> Run tool</button>}
+            {use && <button className="btn pri" onClick={run} disabled={busy}><Icon name="play" /> Run tool</button>}
             {use && <button className="btn" onClick={() => setPg({ input: null, out: null })}>Reset input</button>}
             <button className="btn ghost" onClick={() => onSchema(t.id)}>View schema</button>
           </div>
@@ -293,7 +317,7 @@ function Playground({ onSchema }: { onSchema: (id: string) => void }) {
                   <div key={i} className={'ev ' + (s.ok ? '' : 'missing')}>
                     <span className="ic">{s.ok ? '✓' : '✕'}</span>
                     <div><b>{s.n}</b><small>{s.detail}</small></div>
-                    <em className="num">{s.ms} ms</em>
+                    {s.ms != null && <em className="num">{s.ms} ms</em>}
                   </div>
                 ))}
               </div>
@@ -321,7 +345,7 @@ function BenchOut({ r }: { r: BenchResult }) {
           <ol className="aflines">
             {r.run.calls.map((c, i) => (
               <li key={i} className={c.ok ? 'ok' : 'bad'}>
-                <span className="mono">{c.action}</span> <span dangerouslySetInnerHTML={{ __html: benchBadgeHtml(c.badge) }} /> <span className="note">{c.input}</span> → {c.msg}
+                <span className="mono">{c.action}</span> <Badge k={c.badge} /><span className="note">{c.input}</span> → {c.msg}
               </li>
             ))}
           </ol>
@@ -352,8 +376,8 @@ function Bench() {
             <select id="afBq" className="sel" value={sel} onChange={(e) => setSel(+e.target.value)}>
               {cases.map((c) => <option key={c.i} value={c.i}>{c.label}</option>)}
             </select>
-            <button className="btn pri" onClick={() => { setAll(null); setOne(runBench(sel)); }}>Run</button>
-            <button className="btn" onClick={() => { setOne(null); setAll(runBenchAll()); }}>Run all</button>
+            <button className="btn pri" onClick={() => { if (!benchAvailable) return toast('Not available yet.'); setAll(null); setOne(runBench(sel)); }}>Run</button>
+            <button className="btn" onClick={() => { if (!benchAvailable) return toast('Not available yet.'); setOne(null); setAll(runBenchAll()); }}>Run all</button>
           </div>
           <div id="afBenchOut" className="afbench">
             {one && <BenchOut r={one} />}

@@ -132,7 +132,7 @@ Known limits:
 - SafetyCulture, Oracle Depot Repair
 - Ritchie Bros., Machinio, Persefoni
 
-Each is a spec file with its resources, read and write paths, paging style, auth style and seed. Sims stays a CSV drop; AWS IoT stays not provisioned.
+Each is a spec file with its resources, read and write paths, paging style, auth style and seed. Sims stays a CSV drop; AWS IoT stays not provisioned (B5c later adds a full mock, still not provisioned in di at start).
 
 **Goal:** the other 17 systems, without writing 17 servers.
 
@@ -210,7 +210,55 @@ Only SafetyCulture (RT-1048's inspection comes from Depot Repair) stays generic.
 - Fetch-log entries for the Sims SFTP pull use status 0 for success (there is no HTTP status); a `SourceClient` hook for non-HTTP fetches would be cleaner.
 - Teamcenter delta reads have one-second granularity, like the vendor's `lastModifiedDate`.
 - AssetWise certificate expiry is seen only on a full read, not a delta.
-- `/_sim/reset` clears scheduled work after a mock's reset, so a mock cannot schedule work as part of its reset.
+- ~~`/_sim/reset` clears scheduled work after a mock's reset, so a mock cannot schedule work as part of its reset.~~ Fixed in B5c: scheduled work is cleared first. Also in B5c, `scheduler.tick()` takes only work whose handler its own process registered, so a test run beside the running service no longer has its test work taken and failed by the service.
+
+## B5c. AWS IoT Core mock
+
+**Decision (20 Nov 2026):** AWS IoT Core (`iot`, the demo's device telemetry) gets a full vendor mock, to the B5b standard. di still starts with it **not provisioned**, as in the demo, so the starting state and the parity tests do not change. It is a synthetic mock; no real AWS account is involved.
+
+**Status: done (20 Nov 2026).** Code in `apps/source-sim/sim/vendors/aws_iot/` (the docstring lists the documentation followed and every assumption). The adapter is `apps/api/di/connectors/adapters/aws_iot.py`.
+
+**What is mocked:**
+- **Control plane** (`/aws-iot/iot`): ListThings, DescribeThing, ListThingGroups, DescribeThingGroup, ListThingsInThingGroup, ListJobs, DescribeJob, ListTopicRules, GetTopicRule. Paging uses `maxResults` and `nextToken`.
+- **Data plane** (`/aws-iot/data`): Get, Update and DeleteThingShadow, classic and named. Shadows have desired, reported and delta state, metadata, version and timestamp. Also ListNamedShadowsForThing, Publish, ListRetainedMessages and GetRetainedMessage.
+- **The fleet:** 77 condition-monitoring kits.
+  - One kit per returned motor or pump of the live cases. These are offline and hold their last report. The thing attribute `assetTag` links each kit to the asset, for example `cm-mtr-2041` → MTR-2041 for RT-1048.
+  - 24 kits on redeployed or re-leased assets in service. These are online.
+  - The named shadow `condition` holds operating hours, duty cycle %, vibration in mm/s RMS with its ISO 10816-3 zone, bearing °C, and the last alarms. The kits publish on `dt/<fleet>/<thing>/telemetry` and `/events`.
+  - Two firmware jobs.
+- **Seed values:** RT-1048 shows 18,450 h, 96.4 % duty (24/7), 2.8 mm/s and 66 °C.
+  - Hour counters agree with Maximo's RUNHOURS meter, except for one case in eight, where Maximo's reading is older.
+- **Simulated clock:** every simulated hour the online kits report. Each report adds hours, takes a sample, raises an alarm when vibration reaches 7.1 mm/s or the bearing reaches 90 °C, and updates the shadow.
+- **Rules:** three topic rules deliver to the HTTPS destination. That destination is the shared outbox: CloudEvents `aws.iot.rule.<rule>`, signed with HMAC. The pull path for backfill is ListRetainedMessages plus GetThingShadow.
+  - The rules start **disabled** (not provisioned), so no telemetry fills the shared outbox before anyone connects (it had pushed RT-1048's own events out of the milestone test's view). EnableTopicRule and DisableTopicRule (`POST /iot/rules/{name}/enable|disable`) switch them; di's connect enables them and its disconnect disables them.
+- **Auth:** SigV4, checked against two demo IAM users: the connector, and a read-only viewer. Errors are AWS JSON: `x-amzn-ErrorType` and `{"message"}`. Refusals are MissingAuthenticationToken, UnrecognizedClient, InvalidSignature (including 15-minute clock skew), Unauthorized (401), ResourceNotFound, InvalidRequest and Conflict.
+- **Faults:** the shared fault injection answers in AWS's shape. 429 gives ThrottlingException, 5xx gives InternalFailure, `unavailable` gives ServiceUnavailable, and `token_expired` gives ExpiredToken (403). `faults.SHAPES` lets any mock do the same.
+
+**The adapter:**
+- **Full sync:** ListRetainedMessages, then ListThings, then GetThingShadow `?name=condition` per thing.
+- **Delta sync:** only the things whose retained telemetry or events changed after the cursor.
+- **Retries:** throttling is retried with backoff.
+- **Facts:** `asset.run_hours`, `asset.iot_thing`, `asset.source_refs`, and `condition.duty_cycle_pct`, `vibration_mm_s`, `vibration_zone`, `bearing_temp_c`, `telemetry_events` and `telemetry_at`.
+- **Authority:** iot has authority over Operating hours (`asset.run_hours`) and Duty (`condition.duty_cycle_pct`). Where Maximo's meter disagrees, a conflict opens naming iot.
+- **Webhooks:** rule deliveries reach the shared webhook receiver, which queues a delta sync while iot is connected and ignores them otherwise.
+
+**How to switch it on:**
+- At run time, as Admin or Developer, call `POST /api/sources/iot/connect`. The source goes live, its topic rules are enabled, and a full initial sync is queued.
+- To switch it off, call `POST /api/sources/iot/disconnect`. With `?purge=true`, everything it synced is removed as well.
+- To start connected by default, set `DI_IOT_CONNECTED=true` for the api and worker, or set `iot_connected: bool = True` in `apps/api/di/config.py` (one line).
+- While iot is not provisioned, `source.sync` for iot still answers "No connector for iot.", as before.
+
+**Tests:** source-sim has 11 contract tests (`tests/test_aws_iot.py`). The api has 8 adapter tests (`tests/test_adapter_aws_iot.py`); they connect iot and put the starting state back afterwards.
+
+**Left out:**
+- certificates and policies, Fleet Indexing, Device Defender
+- job executions and CreateJob
+- creating things, groups or rules
+- MQTT connections (devices are simulated server-side)
+- rule SQL beyond the seeded forms
+- real service rate limits (throttling comes only from fault injection)
+
+The frontend still shows the demo's "Not provisioned" version text, which comes from `sources.json`.
 
 ## B6. Events, faults and the simulated clock
 
@@ -660,6 +708,17 @@ The rest of the design:
 - **Session and menu** (`session.ts`, `nav.ts`): sign-in through `POST /api/auth/login` (token in session storage, restored on reload), `can`, `canPage` and `canRoute` evaluated from `/api/auth/me` and the case scope map (`GET /api/screens/nav/scope`, new), the menu and badges from `/api/screens/nav`, reference lists loaded once. View settings (tenant filter, theme, Command Center view, last asset, region, alert acknowledgements) live in the browser (`src/api/view.ts`).
 - **Areas not moved yet** still read the in-browser engine, kept signed in as the same account.
 - **Checks:** unit tests for the cache (suspend, stale-while-revalidate, refusals, read actions, invalidation after actions); `scripts/smoke-pages.mjs` signs in as each of the 11 accounts in Chrome and opens every page in its menu: no failures in either mode, and the same menus; `scripts/smoke-signin.mjs` checks the sign-in messages, the login call and a reload.
+
+**B17b, every area on the API: done (20 Nov 2026).** With `VITE_BACKEND=api` no page reads the in-browser engine any more, except the static assets (logos, icons, vendor logos), which move to a bundled module when the engine is deleted (B17c).
+- **Product, command, home, analytics, audit, orchestration, integration, workflows, MCP, access:** each facade file has an API branch with the same exports and shapes, served by its `di/screens/<area>.py` endpoints, the reference lists and browser view state. The page text matches engine mode line for line where the backend has parity; the differences are the documented ones (real connector data on the Connection Fabric, the server's clock, values the demo draws at random).
+- **Case pages:** the engine-built HTML (stage tabs, cost drivers, results, the Full analysis, the dialogs) is rebuilt as React (`pages/case/kit.tsx`, `tabs/`, `drawers.tsx`, `FullAnalysis.tsx`) and is the only renderer in both modes; the case screen endpoints gained what those views need.
+- **Ask Circularity** (`src/app/AskPanel.tsx`, `src/api/ask.ts`): Ctrl+J or the top bar; posts to `/api/ask` with the page context and reads the stream with `fetch`; shows each lookup, the text as it arrives, the cases and source systems used, the fallback's cards, and suggested next steps (an action runs only after the person confirms). Every "Ask" button on the pages opens it.
+- **Backend additions on the way:** Admin settings actions (`access.setLimit`, `setSelfApprove`, `setAutonomy`, `setRunLimits`, `agent.setEnabled`) with their effects (approval limit and self-approval on approvals, the kill switch on the MCP server); `/api/screens/workflows` returns the workspace clock; orchestration returns the agents and the models' validation text; the integration map returns mappings and models; the inbox cards' steps are labelled (fixes the "o → r" approval cards); the reference lists include the translations (I18N).
+- **ShipLane TMS is gone:** the demo itself (`index.html`) now names Oracle Transportation Management where it named the fictional ShipLane TMS (12 places), the golden files were regenerated (checked: the rename is their only change), and the backend's placeholders were updated.
+- **Bug fixed:** a request could deadlock itself after a state reset (seeding held a lock inside the request's transaction while another session of the same request read the collection). Seeding now commits in its own short transaction (`di/state.py`).
+- **Still missing on the server** (the page says "not available on the server yet"): Connection Fabric pause/resume, disconnect, re-authenticate, connect from the catalogue, test connection, and the handlers for `source.reconnect`, `credentials.rotate`, `source.delete`, `source.update`, `import.commit`, `tables.update`; the workflow template save, suggested fix, reprocessing failed rows and run settings; the MCP agent test bench; the action pipeline's agent gate (autonomy levels, run limits and the kill switch outside MCP).
+
+**B17c (next):** make `api` the default, move the static assets into a bundled module, delete `src/engine/` and the extraction script, and walk RT-1048 end to end in the browser.
 
 ## B18. Hardening
 

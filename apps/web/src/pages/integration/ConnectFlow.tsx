@@ -1,6 +1,6 @@
 /* Connect an integration from the catalogue (auth → scopes → test → mappings → first sync), and re-authenticate a source (5.10). */
 import { useEffect, useRef, useState } from 'react';
-import { catalog, finishConnect, frAuthOptions, frSample, hashId, nowLabel, reauthenticated, source, typeOf } from '../../api/integration';
+import { catalog, finishConnect, frAuthOptions, frSample, hashId, notOnServer, nowLabel, reauthenticated, source, typeOf } from '../../api/integration';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
@@ -56,7 +56,11 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
       const tick = () => {
         if (!live.current) return;
         p = Math.min(100, p + (reduced() ? 100 : 20));
-        if (p >= 100) setWf(finishConnect(c!.id, authLabel(), scopes, n.current, maps!.filter((_, i) => acc[i]).map((r) => [r[0], r[1], r[2], r[3], ''])));
+        if (p >= 100) {
+          const w = finishConnect(c!.id, authLabel(), scopes, n.current, maps!.filter((_, i) => acc[i]).map((r) => [r[0], r[1], r[2], r[3], '']));
+          if (w === null) { onClose(); toast(notOnServer('Connecting from the catalogue')); return; }
+          setWf(w);
+        }
         setSync(p);
         if (p < 100) window.setTimeout(tick, 220);
       };
@@ -78,6 +82,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
     const r = reauthenticated(s.id);
     onClose();
     if (r === 'reconnect') ui.reconnect(s.id);
+    else if (r === null) toast(notOnServer('Re-authenticating a source'));
     else toast(s.vendor + ' re-authenticated. The credential is renewed for 180 days.');
   }
 

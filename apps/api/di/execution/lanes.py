@@ -1,9 +1,8 @@
 """Facilities, customer sites, lanes and the rate card (the demo's LOCS, laneCost, RATE_CARD, exStage, exMoveRaw).
 
 Road distances come from di.reads.common (LANE_KM pinned where measured, else straight line x 1.25, `_lane_km`), as do
-the site and facility codes; this module adds what each location is and when it receives.
-
-TODO(B17): the rate card lives in "ShipLane TMS" in the demo; the backend's TMS is Oracle Transportation Management.
+the site and facility codes; this module adds what each location is and when it receives. The rate card lives in
+Oracle Transportation Management.
 """
 
 from typing import Any

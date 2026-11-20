@@ -1,6 +1,6 @@
 /* How data flows (the demo's flowDiagram): sources → integration layer → platform → enterprise systems, with the return loop. */
 import type { ReactNode } from 'react';
-import { conflicts, sources, srcCats, srcChannels } from '../../api/integration';
+import { openConflictCount, sources, srcCats, srcChannels } from '../../api/integration';
 import { Icon } from '../../ui/Icon';
 import { plural, Stp } from './ui';
 
@@ -20,7 +20,7 @@ export function FlowDiagram() {
     <div className="zbox"><b>{t}</b><span className="note">{d}</span>{x && <div className="row">{x}</div>}</div>
   );
   const arr = (l: string) => <div className="zarr"><Icon name="arrow" /><span>{l}</span></div>;
-  const out = S.filter((x) => x.write.length), open = conflicts().filter((c) => c.status === 'open').length;
+  const out = S.filter((x) => x.write.length), open = openConflictCount();
   return (
     <>
       <div className="zf">

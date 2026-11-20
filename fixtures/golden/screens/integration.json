@@ -5438,8 +5438,8 @@
    ],
    "tables": 0,
    "workflows": [
-    "Ingest · ShipLane TMS",
-    "Outbound · ShipLane TMS"
+    "Ingest · Oracle Transportation Management",
+    "Outbound · Oracle Transportation Management"
    ]
   },
   "wms": {
@@ -7349,7 +7349,7 @@
    "src": "tms",
    "status": "attention",
    "type": "Transport management",
-   "vendor": "ShipLane TMS"
+   "vendor": "Oracle Transportation Management"
   },
   {
    "cat": "OMS",
@@ -8790,7 +8790,7 @@
    "updatedAt": 1790931600000,
    "updatedBy": "Platform Admin",
    "url": "https://api.shiplane.example/v3",
-   "vendor": "ShipLane TMS",
+   "vendor": "Oracle Transportation Management",
    "ver": "TMS API v3",
    "write": [
     "POST /loads",

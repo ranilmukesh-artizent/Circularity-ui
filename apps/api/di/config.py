@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     clock_cache_seconds: float = 2.0  # how long the simulated clock's anchor is reused before it is read again
     # B13b: send approved decisions' steps to the systems (di/instructions); off unless the services turn it on
     instructions: bool = False
+    # B5c: AWS IoT Core (source iot) starts not provisioned, as in the demo. True registers it live at start-up
+    # (DI_IOT_CONNECTED=true); at run time POST /api/sources/iot/connect does the same.
+    iot_connected: bool = False
     # a step with no matching write in the mocks is acknowledged by a simulated adapter after this many simulated hours
     simulated_ack_hours: float = 2.0
     # B16b, Ask Circularity (di/ask): which language model answers ("groq", or "none" for the rule-based fallback only).

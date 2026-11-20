@@ -4,12 +4,12 @@ import { Link } from 'react-router-dom';
 import { fmtDate } from '../../api/format';
 import { useBackend } from '../../api/hooks';
 import {
-  ackKind, canon, canonExample, caseExists, commitImport, conflicts, escalateConflict, events, facilities, jsonHtml, mappings, pct, rbPath, resolveConflict,
+  ackKind, canon, canonExample, caseExists, commitImport, conflictPage, escalateConflict, events, facilities, mappings, pct, rbPath, resolveConflict,
   sampleCsv, sources, tenantList, type StreamEvent,
 } from '../../api/integration';
 import { Drawer } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { canMgr, FrKpi, Html, NOMGR, sum } from './ui';
+import { canMgr, FrKpi, Json, NOMGR, sum } from './ui';
 
 /* ---- Canonical models ---- */
 export function Models() {
@@ -33,7 +33,7 @@ export function Models() {
               <p style={{ margin: '0 0 10px' }} className="ink2">{m.purpose}</p>
               <div className="row" style={{ gap: 5, marginBottom: 10 }}>{m.fields.map((x) => <span key={x} className="chip line mono" style={{ fontSize: 11 }}>{x}</span>)}</div>
               <div className="note">Fed by {m.sources.join(' · ')}</div>
-              <details className="dd"><summary>Example from RT-1048</summary><pre className="code"><Html html={jsonHtml(canonExample(m.n))} /></pre></details>
+              <details className="dd"><summary>Example from RT-1048</summary><pre className="code"><Json value={canonExample(m.n)} /></pre></details>
             </div>
           </div>
         ))}
@@ -117,16 +117,18 @@ export function EventDrawer({ id, onClose }: { id: string; onClose: () => void }
       </div>
       {e.note && <div className="callout" style={{ marginBottom: 12 }}>{e.note}</div>}
       <pre className="code">
-        <Html html={jsonHtml({ event: e.id, type: e.type, at: new Date(e.ts).toISOString(), caseId: e.caseId, decisionId: e.decisionId, approvalRef: e.approval, instructionVersion: e.ver, destination: e.dest, acknowledgement: e.ack, idempotencyKey: e.key, retries: e.retries || 0 })} />
+        <Json value={{ event: e.id, type: e.type, at: new Date(e.ts).toISOString(), caseId: e.caseId, decisionId: e.decisionId, approvalRef: e.approval, instructionVersion: e.ver, destination: e.dest, acknowledgement: e.ack, idempotencyKey: e.key, retries: e.retries || 0 }} />
       </pre>
     </Drawer>
   );
 }
 
 /* ---- Conflict queue ---- */
+const CF_PAGE = 60;
 export function Conflicts() {
   useBackend();
-  const C = conflicts(), o = C.filter((c) => c.status === 'open').length;
+  const [n, setN] = useState(CF_PAGE);
+  const P = conflictPage(n), C = P.list;
   const resolve = async (id: string) => {
     if (!canMgr()) return toast(NOMGR);
     const r = await resolveConflict(id);
@@ -141,9 +143,9 @@ export function Conflicts() {
   return (
     <>
       <div className="frkpis fr3">
-        <FrKpi ic="conflict" h="dec" v={o} l="Open conflicts" />
-        <FrKpi ic="checks" h="int" v={C.length - o} l="Resolved or escalated" />
-        <FrKpi ic="graph" h="money" v={new Set(C.flatMap((c) => [c.a.src, c.b.src])).size} l="Systems involved" />
+        <FrKpi ic="conflict" h="dec" v={P.open} l="Open conflicts" />
+        <FrKpi ic="checks" h="int" v={P.closed} l="Resolved or escalated" />
+        <FrKpi ic="graph" h="money" v={P.systems} l="Systems involved" />
       </div>
       <p className="ink2" style={{ marginTop: 0, maxWidth: '75ch' }}>
         When two systems disagree, Circularity names the source with authority, flags the conflict and holds any dependent route. It does not pick silently.
@@ -171,6 +173,12 @@ export function Conflicts() {
           </div>
         ))}
       </div>
+      {C.length < P.total && (
+        <div className="row" style={{ marginTop: 14, justifyContent: 'center' }}>
+          <span className="note">Showing {C.length} of {P.total}</span>
+          <button className="btn" onClick={() => setN(C.length + CF_PAGE)}>Show more</button>
+        </div>
+      )}
     </>
   );
 }

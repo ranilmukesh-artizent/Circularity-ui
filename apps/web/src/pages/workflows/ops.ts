@@ -2,12 +2,14 @@
 import { can } from '../../api/session';
 import { fmtNumber } from '../../api/format';
 import {
-  duplicateWorkflow, exportJson, NOWF, runWorkflow, saveAsTemplate, setWorkflowStatus, workflow,
+  duplicateWorkflow, exportJson, followRun, NOWF, runWorkflow, saveAsTemplate, setWorkflowStatus, workflow,
 } from '../../api/workflows';
 import { toast } from '../../ui/toast';
 import { download } from './kit';
 
 export const studioHref = (id?: string) => '/integration/studio' + (id ? '/' + id : '');
+/** A change the backend has no action for yet. */
+export const NOT_YET = 'Not available yet.';
 
 function refused(r: { ok: boolean; error?: { message: string } }): boolean {
   if (!r.ok) toast(r.error!.message, 4200);
@@ -25,18 +27,22 @@ export async function toggle(id: string) {
   toast(r.output.was === 'draft' ? w.name + ' published.' : to === 'paused' ? w.name + ' paused. Scheduled runs stop until you resume it.' : w.name + ' resumed.');
 }
 
+const finished = (name: string, l: { state: string; note: string; rows: number }) =>
+  toast(name + ': ' + (l.state === 'failed' ? 'run failed. ' + l.note : 'run finished, ' + fmtNumber(l.rows) + ' records.'), 4000);
+
 /** Run now (ACT.wfRunNow). The backend finishes the run a few seconds later; this reports it like the demo does. */
 export async function runNow(id: string) {
   if (!can('manageWorkflows')) return toast(NOWF());
   const r = await runWorkflow(id);
-  if (refused(r)) return;
+  if (refused(r) || !r.ok) return;
+  // with the API: the run is a worker job; its record (by the run key) reports progress on the stream
+  if (r.output.run) return void followRun(r.output.run, (x) => finished(r.output.name, x));
   const t = window.setInterval(() => {
     const w = workflow(id);
     if (!w) return window.clearInterval(t);
     if (w.running) return;
     window.clearInterval(t);
-    const l = w.last;
-    if (l) toast(w.name + ': ' + (l.state === 'failed' ? 'run failed. ' + l.note : 'run finished, ' + fmtNumber(l.rows) + ' records.'), 4000);
+    if (w.last) finished(w.name, w.last);
   }, 250);
 }
 
@@ -49,8 +55,8 @@ export async function duplicate(id: string): Promise<string | null> {
   return r.output.id;
 }
 
-export function exportOne(id: string) {
-  const x = exportJson(id);
+export async function exportOne(id: string) {
+  const x = await exportJson(id).catch((err: Error) => void toast(err.message, 4200));
   if (!x) return;
   download(x.file, x.json);
   toast(workflow(id)!.name + ' exported as JSON.');
@@ -58,7 +64,7 @@ export function exportOne(id: string) {
 
 export function saveTemplate(id: string) {
   if (!can('manageWorkflows')) return toast(NOWF());
-  saveAsTemplate(id);
+  if (!saveAsTemplate(id)) return toast(NOT_YET);
   toast('Saved as a template. It appears under New workflow.');
 }
 
@@ -66,7 +72,7 @@ export function saveTemplate(id: string) {
 export async function bulk(a: 'run' | 'pause' | 'export', ids: string[]) {
   const L = ids.map((i) => workflow(i)).filter((w): w is NonNullable<typeof w> => !!w);
   if (a === 'export') {
-    L.forEach((w) => { const x = exportJson(w.id); if (x) download(x.file, x.json); });
+    for (const w of L) { const x = await exportJson(w.id).catch(() => null); if (x) download(x.file, x.json); }
     return toast(L.length + ' workflow' + (L.length > 1 ? 's' : '') + ' exported as JSON.');
   }
   if (!can('manageWorkflows')) return toast(NOWF());
@@ -79,4 +85,3 @@ export async function bulk(a: 'run' | 'pause' | 'export', ids: string[]) {
     toast('Paused ' + L.length + ' workflow' + (L.length > 1 ? 's' : '') + '.');
   }
 }
-

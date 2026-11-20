@@ -203,9 +203,9 @@ function StageBody({ caseId, s, b, chip, prev, cur }: { caseId: string; s: RunSt
   const nx = s.n === cur && failDrill() === '' ? nextStep(caseId) : null;
   const act = nx && ['act', 'approve', 'ack'].includes(nx.kind);
   const ag = agentsOf(s), models = s.state === 'queued' ? [] : stageModels(caseId, s);
-  const doNext = () => {
+  const doNext = async () => {
     if (nx?.kind === 'approve') { nav('/product/' + caseId + '/stage/7'); return; }
-    const r = runNext(caseId);
+    const r = await runNext(caseId);
     if (!r.ok) { toast(r.error.message, 4200); return; }
     if (r.step && r.step.kind !== 'approve') toast('Stage ' + r.step.n + ': ' + r.step.label + ' · done.');
   };

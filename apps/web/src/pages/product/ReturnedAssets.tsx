@@ -8,7 +8,7 @@ import { invoke } from '../../api/actions';
 import { fmtDate, fmtDateYear, money } from '../../api/format';
 import { useBackend } from '../../api/hooks';
 import {
-  asModel, caseById, classLabel, demoCaseId, demoVisible, expectedCount, expectedStage, expectedVisible, facilities, journeyHref, journeyTitle, leaseSource,
+  asModel, caseById, classLabel, demoCaseId, demoVisible, expectedCount, expectedStage, expectedVisible, facilities, isCaseId, journeyHref, journeyTitle, leaseSource,
   myOpenNotes, routeAllowed, routeInfo, visibleCases, type Case, type Expected,
 } from '../../api/product';
 import { canPage, tenants } from '../../api/session';
@@ -65,7 +65,7 @@ export function ReturnedAssetsPage({ view, focus }: { view: 'received' | 'expect
   const [exp, setExp] = useState<Expected | null>(null);
   const f = useQ();
   const sel = f.sel ? caseById(f.sel) : undefined;
-  const jid = view === 'received' ? (caseById(focus) ? focus! : demoCaseId()) : null;
+  const jid = view === 'received' ? (isCaseId(focus) ? focus! : demoCaseId()) : null;
   const showJourney = !!jid && demoVisible(jid);
 
   useEffect(() => {

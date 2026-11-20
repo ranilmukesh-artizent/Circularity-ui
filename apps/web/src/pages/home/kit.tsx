@@ -3,10 +3,10 @@ import { useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from '
 import type { Delta, Kpi, RingSeg, Status } from '../../api/home';
 import { fmtNumber } from '../../api/format';
 import { Icon } from '../../ui/Icon';
-import { toast } from '../../ui/toast';
+import { openAsk } from '../../ui/askBus';
 
-/** Everything that opens Ask Circularity (the agent panel) is ported separately. */
-export const askSoon = () => toast('Ask Circularity arrives soon.');
+/** Open Ask Circularity (src/app/AskPanel.tsx), asking the question at once when one is given. */
+export const askSoon = (q?: unknown) => openAsk(typeof q === 'string' ? q : undefined); // click events pass no question
 
 const hue = (h?: string) => ({ '--c': `var(--h-${h || 'neutral'})` }) as CSSProperties;
 

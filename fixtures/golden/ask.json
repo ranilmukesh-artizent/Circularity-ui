@@ -282,7 +282,7 @@
         },
         {
          "act": "3 legs with Northline 3PL: WH-MAA-02 → RC-HSR-01 → WH-MAA-02 → LOC-VTZ-05 · first ETD 08 Oct 08:00",
-         "app": "ShipLane TMS",
+         "app": "Oracle Transportation Management",
          "doc": "LD-47486",
          "esc": null,
          "label": "Book transport",
@@ -514,7 +514,7 @@
         },
         {
          "act": "2 legs with Northline 3PL: WH-PNQ-01 → RC-HSR-01 → LOC-CBE-06 · first ETD 08 Oct 08:00",
-         "app": "ShipLane TMS",
+         "app": "Oracle Transportation Management",
          "doc": "LD-47507",
          "esc": null,
          "label": "Book transport",
@@ -745,7 +745,7 @@
         },
         {
          "act": "3 legs with Northline 3PL: WH-PNQ-01 → RC-HSR-01 → WH-MAA-02 → LOC-CHN-03 · first ETD 08 Oct 08:00",
-         "app": "ShipLane TMS",
+         "app": "Oracle Transportation Management",
          "doc": "LD-47388",
          "esc": null,
          "label": "Book transport",
@@ -970,7 +970,7 @@
         },
         {
          "act": "3 legs with Northline 3PL: WH-PNQ-01 → RC-HSR-01 → WH-PNQ-01 → LOC-NSK-04 · first ETD 08 Oct 08:00",
-         "app": "ShipLane TMS",
+         "app": "Oracle Transportation Management",
          "doc": "LD-47794",
          "esc": null,
          "label": "Book transport",
@@ -1213,7 +1213,7 @@
         },
         {
          "act": "1 leg with Northline 3PL: RC-HSR-01 → EXT-BOM · first ETD 08 Oct 08:00",
-         "app": "ShipLane TMS",
+         "app": "Oracle Transportation Management",
          "doc": "LD-47605",
          "esc": null,
          "label": "Book shipment to the buyer",
@@ -2872,7 +2872,7 @@
        "rows": [
         {
          "cells": [
-          "Transport management · ShipLane TMS",
+          "Transport management · Oracle Transportation Management",
           "live",
           "Credentials expire in 5 days"
          ],
@@ -4427,7 +4427,7 @@
         },
         {
          "act": "3 legs with Northline 3PL: WH-PNQ-01 → RC-HSR-01 → WH-MAA-02 → LOC-CHN-03 · first ETD 08 Oct 08:00",
-         "app": "ShipLane TMS",
+         "app": "Oracle Transportation Management",
          "doc": "LD-47388",
          "esc": null,
          "label": "Book transport",
@@ -4745,7 +4745,7 @@
         },
         {
          "act": "1 leg with Northline 3PL: RC-HSR-01 → EXT-BOM · first ETD 08 Oct 08:00",
-         "app": "ShipLane TMS",
+         "app": "Oracle Transportation Management",
          "doc": "LD-47395",
          "esc": null,
          "label": "Book shipment to the buyer",
@@ -7342,7 +7342,7 @@
        "rows": [
         {
          "cells": [
-          "Transport management · ShipLane TMS",
+          "Transport management · Oracle Transportation Management",
           "live",
           "Credentials expire in 5 days"
          ],
@@ -8018,7 +8018,7 @@
           "document": "LD-47388",
           "owner": "Transport planner",
           "step": 3,
-          "system": "ShipLane TMS",
+          "system": "Oracle Transportation Management",
           "timeLimit": "4 working h"
          },
          {
@@ -12288,7 +12288,7 @@
           "document": "LD-47388",
           "owner": "Transport planner",
           "step": 3,
-          "system": "ShipLane TMS",
+          "system": "Oracle Transportation Management",
           "timeLimit": "4 working h"
          },
          {

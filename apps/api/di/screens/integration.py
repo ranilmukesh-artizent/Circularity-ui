@@ -7,7 +7,8 @@ and monitor (B14).
     GET /api/screens/integration/overview                         the catalogue: integrations, recommendations,
                                                                   available systems, categories
     GET /api/screens/integration/map?limit=                       source map tiles, exceptions, sync activity,
-                                                                  dependencies, health by hour
+                                                                  dependencies, health by hour, and the mappings,
+                                                                  source models and table models the map draws
     GET /api/screens/integration/tables?source=                   table models, with their counts
     GET /api/screens/integration/models                           canonical models (with synced record counts),
                                                                   examples, field mappings per source
@@ -54,7 +55,8 @@ Facade (apps/web/src/api/integration.ts) → here, export by export:
 - endpoint GET /sources/{id}: syncHistory (`sync_history`), series, failedRecords (`failed`, and `health.failed7`),
   srcModels (`models`), tableModel for one source (`table_model`), commentsOf('src:<id>') (`comments`)
 - endpoint GET /overview: integrations, recommendations, available, catalog
-- endpoint GET /map: exceptions, smLog (`activity`)
+- endpoint GET /map: exceptions, smLog (`activity`), totals and hourly, and for accounts without Tables or Models
+  mappings, allMappings, srcModels (`source_models`), tableModel and tableModelIds (`table_models`)
 - endpoint GET /tables: tableModel, tableModelIds
 - endpoint GET /models: canon, canonExample (`examples`), canonPrefix (`prefix`), mappings, allMappings
 - endpoint GET /events: events
@@ -643,6 +645,10 @@ def source_map(
         "open_conflicts": f.conflicts("open", limit=1)[1],
         "hourly": hh,
         "totals": t,
+        # what the map draws (tree, graph, matrix): accounts with the map but without Tables or Models read them here
+        "mappings": {k: v for k, v in MAPPINGS.items() if k in f.by_id},
+        "source_models": {s["id"]: src_models(s) for s in f.sources},
+        "table_models": {k: m for k, m in f.tables.items() if k in f.by_id},
     }
 
 

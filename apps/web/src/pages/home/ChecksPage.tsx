@@ -1,4 +1,4 @@
-import { checkOwner, checks, checksRunAt, runChecks, status } from '../../api/home';
+import { checkOwner, checks, checksNotRun, checksRunAt, runChecks, status } from '../../api/home';
 import { fmtDate } from '../../api/format';
 import { useBackend } from '../../api/hooks';
 import { Icon } from '../../ui/Icon';
@@ -8,7 +8,7 @@ import { askSoon, FrHead, FrKpi, FrPanel, FrSt } from './kit';
 /** Data Checks (frChecks): the integrity checks as a page. */
 export function ChecksPage() {
   useBackend();
-  const res = checks(), ok = res.filter((r) => r.ok).length, at = checksRunAt();
+  const res = checks(), ok = res.filter((r) => r.ok).length, at = checksRunAt(), skipped = checksNotRun();
   const run = () => {
     const r = runChecks();
     toast(r.ok + ' of ' + r.total + ' checks pass.');
@@ -46,6 +46,26 @@ export function ChecksPage() {
           </table>
         </div>
       </FrPanel>
+      {skipped.length > 0 && (
+        <FrPanel title="Not run here" sub={skipped.length + ' checks test the demo page itself'}>
+          <div className="tw">
+            <table className="t static">
+              <thead>
+                <tr><th>Check</th><th>Why it is not run</th><th>Last result</th></tr>
+              </thead>
+              <tbody>
+                {skipped.map((r) => (
+                  <tr key={r.name}>
+                    <td><b>{r.name}</b></td>
+                    <td className="note">{r.reason}</td>
+                    <td><FrSt s={status('disconnected', 'Not run')} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </FrPanel>
+      )}
     </div>
   );
 }

@@ -3,10 +3,6 @@
 Each step of an approved decision is an instruction to one enterprise system. Per step kind: its label, the system it
 goes to, the document that system returns (prefix and name), the owner, the time limit in working hours (None: it
 completes on delivery), the event its acknowledgement emits, and the offset of its planned document number.
-
-TODO(B17): the transport texts name "ShipLane TMS", the demo's vendor. The backend's TMS is Oracle Transportation
-Management (VENDOR_OVERRIDES in di/connectors/sync.py); the demo's strings stay until the frontend switches vendor
-names in B17, so the golden files keep matching.
 """
 
 import re
@@ -29,7 +25,7 @@ EX_STEP: dict[str, dict[str, Any]] = {
                  "The Repair centre lead plans the repair order and its operations in Oracle Depot Repair"),
     "transport": _s("Book transport", "TMS · load booking", ("LD", "Load"), "Transport planner", 4, "load.booked", 52,
                     "load tendered to and accepted by the carrier",
-                    "The Transport planner books loads on contracted lanes in ShipLane TMS"),  # TODO(B17): vendor name
+                    "The Transport planner books loads on contracted lanes in Oracle Transportation Management"),
     "move": _s("Warehouse moves and outbound delivery", "WMS · transfer", ("TR", "Transfer"), "Warehouse Manager", 2,
                "movement.confirmed", 26, "picked, staged and shipped against the load",
                "The Warehouse Manager of the shipping warehouse confirms picks, staging and dispatch"),

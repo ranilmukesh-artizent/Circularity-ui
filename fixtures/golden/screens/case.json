@@ -889,8 +889,8 @@
       "icon": "⏳",
       "k": "wait",
       "since": "2026-10-06T18:36:00.000Z",
-      "who": "ShipLane TMS",
-      "word": "Waiting on ShipLane TMS"
+      "who": "Oracle Transportation Management",
+      "word": "Waiting on Oracle Transportation Management"
      },
      {
       "icon": "○",
@@ -4821,8 +4821,8 @@
       "icon": "⏳",
       "k": "wait",
       "since": "2026-10-06T18:36:00.000Z",
-      "who": "ShipLane TMS",
-      "word": "Waiting on ShipLane TMS"
+      "who": "Oracle Transportation Management",
+      "word": "Waiting on Oracle Transportation Management"
      },
      {
       "icon": "○",
@@ -8820,8 +8820,8 @@
       "icon": "⏳",
       "k": "wait",
       "since": "2026-10-06T18:36:00.000Z",
-      "who": "ShipLane TMS",
-      "word": "Waiting on ShipLane TMS"
+      "who": "Oracle Transportation Management",
+      "word": "Waiting on Oracle Transportation Management"
      },
      {
       "icon": "○",
@@ -12756,8 +12756,8 @@
       "icon": "⏳",
       "k": "wait",
       "since": "2026-10-06T18:36:00.000Z",
-      "who": "ShipLane TMS",
-      "word": "Waiting on ShipLane TMS"
+      "who": "Oracle Transportation Management",
+      "word": "Waiting on Oracle Transportation Management"
      },
      {
       "icon": "○",
@@ -16674,8 +16674,8 @@
       "icon": "⏳",
       "k": "wait",
       "since": "2026-10-06T18:36:00.000Z",
-      "who": "ShipLane TMS",
-      "word": "Waiting on ShipLane TMS"
+      "who": "Oracle Transportation Management",
+      "word": "Waiting on Oracle Transportation Management"
      },
      {
       "icon": "○",
@@ -21908,8 +21908,8 @@
       "icon": "⏳",
       "k": "wait",
       "since": "2026-10-06T18:36:00.000Z",
-      "who": "ShipLane TMS",
-      "word": "Waiting on ShipLane TMS"
+      "who": "Oracle Transportation Management",
+      "word": "Waiting on Oracle Transportation Management"
      },
      {
       "icon": "○",
@@ -26661,7 +26661,7 @@
          "item": "Transport leg 1 · WH-MAA-02 → RC-HSR-01",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -26677,7 +26677,7 @@
        "method": "Modelled",
        "rec": "Work order WO-47020",
        "sign": -1,
-       "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+       "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
        "usd": -179,
        "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 4.4 labour hours, 1 machine operations, 1 transport leg on RC-2026.2 and packing."
       },
@@ -26693,7 +26693,7 @@
          "item": "Freight · RC-HSR-01 → EXT-BOM",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Same lane rate card as the inbound return"
         },
         {
@@ -26709,7 +26709,7 @@
        "method": "Contracted",
        "rec": "RC-2026.2",
        "sign": -1,
-       "sys": "ShipLane TMS · SAP S/4HANA",
+       "sys": "Oracle Transportation Management · SAP S/4HANA",
        "usd": -406,
        "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
       },
@@ -26855,7 +26855,7 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 4,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
        "why": "Freight goes on the contracted lane rate card; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
@@ -27110,7 +27110,7 @@
        "document": "LD-47059",
        "owner": "Transport planner",
        "step": 4,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -27266,7 +27266,7 @@
      },
      {
       "act": "2 legs with Northline 3PL: WH-MAA-02 → RC-HSR-01 → EXT-BOM · first ETD 08 Oct 08:00",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": null,
       "docs": [
        "LD-47059"
@@ -27855,7 +27855,7 @@
           "item": "Transport leg 1 · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -27871,7 +27871,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47020",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -179,
         "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 4.4 labour hours, 1 machine operations, 1 transport leg on RC-2026.2 and packing."
        },
@@ -27887,7 +27887,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -27903,7 +27903,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -406,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -28042,7 +28042,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47020",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -329,
         "why": "Teardown and part testing at RC-HSR-01: 26.9 labour hours and the final test."
        },
@@ -28058,7 +28058,7 @@
           "item": "Freight · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -28067,7 +28067,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -28083,7 +28083,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -247,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -28161,7 +28161,7 @@
           "item": "Freight · WH-MAA-02 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -28177,7 +28177,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -247,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -29120,7 +29120,7 @@
        "v": "All six gates passed; evidence snapshot EVS-DBC1D74A"
       }
      ],
-     "mean": "Approval sends 5 instructions to Manhattan Active Warehouse Management, IBM Sterling OMS, ShipLane TMS, SAP S/4HANA and commits up to $179 of spend.",
+     "mean": "Approval sends 5 instructions to Manhattan Active Warehouse Management, IBM Sterling OMS, Oracle Transportation Management, SAP S/4HANA and commits up to $179 of spend.",
      "res": "The decision packet is ready; it waits for the Planner to submit it.",
      "when": null,
      "who": ""
@@ -29264,7 +29264,7 @@
        "method": "Modelled",
        "rec": "Work order WO-47027",
        "sign": -1,
-       "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+       "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
        "usd": -97,
        "why": "Teardown and part testing at RC-HSR-01: 4 labour hours and the final test."
       },
@@ -29280,7 +29280,7 @@
          "item": "Freight · WH-PNQ-01 → RC-HSR-01",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Same lane rate card as the inbound return"
         },
         {
@@ -29289,7 +29289,7 @@
          "item": "Freight · RC-HSR-01 → EXT-BOM",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Same lane rate card as the inbound return"
         },
         {
@@ -29305,7 +29305,7 @@
        "method": "Contracted",
        "rec": "RC-2026.2",
        "sign": -1,
-       "sys": "ShipLane TMS · SAP S/4HANA",
+       "sys": "Oracle Transportation Management · SAP S/4HANA",
        "usd": -73,
        "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
       },
@@ -30394,7 +30394,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47027",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -97,
         "why": "Teardown and part testing at RC-HSR-01: 4 labour hours and the final test."
        },
@@ -30410,7 +30410,7 @@
           "item": "Freight · WH-PNQ-01 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -30419,7 +30419,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -30435,7 +30435,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -73,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -30513,7 +30513,7 @@
           "item": "Freight · WH-PNQ-01 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -30529,7 +30529,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -140,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -31693,7 +31693,7 @@
        "method": "Modelled",
        "rec": "Work order WO-47034",
        "sign": -1,
-       "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+       "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
        "usd": -117,
        "why": "Teardown and part testing at RC-HSR-01: 6 labour hours and the final test."
       },
@@ -31709,7 +31709,7 @@
          "item": "Freight · RC-HSR-01 → EXT-BOM",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Same lane rate card as the inbound return"
         },
         {
@@ -31725,7 +31725,7 @@
        "method": "Contracted",
        "rec": "RC-2026.2",
        "sign": -1,
-       "sys": "ShipLane TMS · SAP S/4HANA",
+       "sys": "Oracle Transportation Management · SAP S/4HANA",
        "usd": -88,
        "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
       },
@@ -32879,7 +32879,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47034",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -117,
         "why": "Teardown and part testing at RC-HSR-01: 6 labour hours and the final test."
        },
@@ -32895,7 +32895,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -32911,7 +32911,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -88,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -32989,7 +32989,7 @@
           "item": "Freight · RC-HSR-01 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -33005,7 +33005,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -102,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -34136,7 +34136,7 @@
          "item": "Transport leg 1 · RC-HSR-01 → WH-PNQ-01",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -34145,7 +34145,7 @@
          "item": "Transport leg 2 · WH-PNQ-01 → LOC-NSK-04",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -34161,7 +34161,7 @@
        "method": "Modelled",
        "rec": "Work order WO-47041",
        "sign": -1,
-       "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+       "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
        "usd": -41,
        "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 2.2 labour hours, 2 machine operations, 2 transport legs on RC-2026.2 and packing."
       },
@@ -34350,9 +34350,9 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
-       "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+       "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
       {
        "action": "RC-HSR-01 bin R-01-02 → RC-HSR-01 → WH-PNQ-01 bay S-02 → LOC-NSK-04",
@@ -34615,7 +34615,7 @@
        "document": "LD-47080",
        "owner": "Transport planner",
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -34767,7 +34767,7 @@
      },
      {
       "act": "2 legs with Northline 3PL: RC-HSR-01 → WH-PNQ-01 → LOC-NSK-04 · first ETD 09 Oct 08:00",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": null,
       "docs": [
        "LD-47080"
@@ -34780,7 +34780,7 @@
       "planned": true,
       "state": "todo",
       "sys": "TMS · load booking",
-      "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+      "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
      },
      {
       "act": "RC-HSR-01 bin R-01-02 → RC-HSR-01 → WH-PNQ-01 bay S-02 → LOC-NSK-04",
@@ -35371,7 +35371,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -35387,7 +35387,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -29,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -35492,7 +35492,7 @@
           "item": "Transport leg 1 · RC-HSR-01 → WH-PNQ-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -35501,7 +35501,7 @@
           "item": "Transport leg 2 · WH-PNQ-01 → LOC-NSK-04",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -35517,7 +35517,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47041",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -41,
         "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 2.2 labour hours, 2 machine operations, 2 transport legs on RC-2026.2 and packing."
        },
@@ -35705,7 +35705,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47041",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -8,
         "why": "Teardown and part testing at RC-HSR-01: 0.8 labour hours and the final test."
        },
@@ -35721,7 +35721,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -35737,7 +35737,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -6,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -35806,7 +35806,7 @@
           "item": "Freight · RC-HSR-01 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -35822,7 +35822,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -16,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -36806,7 +36806,7 @@
        "v": "All six gates passed; evidence snapshot EVS-F2AF4591"
       }
      ],
-     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, ShipLane TMS, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48049 line 30 and commits up to $41 of spend.",
+     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, Oracle Transportation Management, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48049 line 30 and commits up to $41 of spend.",
      "res": "The decision packet is ready; it waits for the Planner to submit it.",
      "when": null,
      "who": ""
@@ -37002,7 +37002,7 @@
          "item": "Freight · RC-HSR-01 → EXT-BLR",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Same lane rate card as the inbound return"
         },
         {
@@ -37018,7 +37018,7 @@
        "method": "Contracted",
        "rec": "RC-2026.2",
        "sign": -1,
-       "sys": "ShipLane TMS · SAP S/4HANA",
+       "sys": "Oracle Transportation Management · SAP S/4HANA",
        "usd": -149,
        "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
       },
@@ -37180,7 +37180,7 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
        "why": "Freight goes on the contracted lane rate card; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
@@ -37271,7 +37271,7 @@
         "document": "LD-47087",
         "owner": "Transport planner",
         "step": 3,
-        "system": "ShipLane TMS",
+        "system": "Oracle Transportation Management",
         "timeLimit": "4 working h"
        },
        {
@@ -37489,7 +37489,7 @@
        "document": "LD-47087",
        "owner": "Transport planner",
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -37613,7 +37613,7 @@
      },
      {
       "act": "1 leg with Northline 3PL: RC-HSR-01 → EXT-BLR · first ETD 06 Oct 08:12",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": {
        "due": "2026-10-07T12:00:00.000Z",
        "due2": "2026-10-07T16:00:00.000Z",
@@ -38144,7 +38144,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BLR",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -38160,7 +38160,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -149,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -38299,7 +38299,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47048",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -157,
         "why": "Teardown and part testing at RC-HSR-01: 11.4 labour hours and the final test."
        },
@@ -38315,7 +38315,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BLR",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -38331,7 +38331,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -118,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -38409,7 +38409,7 @@
           "item": "Freight · RC-HSR-01 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -38425,7 +38425,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -101,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -39410,7 +39410,7 @@
        "v": "$0"
       }
      ],
-     "mean": "Approval sends 5 instructions to Manhattan Active Warehouse Management, IBM Sterling OMS, ShipLane TMS, SAP S/4HANA and commits up to $0 of spend.",
+     "mean": "Approval sends 5 instructions to Manhattan Active Warehouse Management, IBM Sterling OMS, Oracle Transportation Management, SAP S/4HANA and commits up to $0 of spend.",
      "res": "Approved by Approver · Customer C under APR-2026-10-3032: Sell whole asset as-is.",
      "when": "2026-10-05T13:48:00.000Z",
      "who": "Approver · Customer C"
@@ -39437,7 +39437,7 @@
        "k": "ret",
        "l": "Running",
        "sys": "tms",
-       "v": "Book shipment to the buyer · ShipLane TMS"
+       "v": "Book shipment to the buyer · Oracle Transportation Management"
       },
       {
        "k": "rul",
@@ -39447,7 +39447,7 @@
       }
      ],
      "mean": "Step 3 of 5 is running; the unit arrives 06 Oct 09:00.",
-     "res": "2 of 5 instructions acknowledged; book shipment to the buyer is with ShipLane TMS.",
+     "res": "2 of 5 instructions acknowledged; book shipment to the buyer is with Oracle Transportation Management.",
      "when": "2026-10-05T13:48:00.000Z",
      "who": "Enterprise adapters"
     },
@@ -39537,7 +39537,7 @@
          "item": "Freight · WH-MAA-02 → EXT-BLR",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Same lane rate card as the inbound return"
         },
         {
@@ -39553,7 +39553,7 @@
        "method": "Contracted",
        "rec": "RC-2026.2",
        "sign": -1,
-       "sys": "ShipLane TMS · SAP S/4HANA",
+       "sys": "Oracle Transportation Management · SAP S/4HANA",
        "usd": -81,
        "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
       },
@@ -39686,7 +39686,7 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
        "why": "Freight goes on the contracted lane rate card; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
@@ -39908,7 +39908,7 @@
        "document": "LD-47108",
        "owner": "Transport planner",
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -40032,7 +40032,7 @@
      },
      {
       "act": "1 leg with Northline 3PL: WH-MAA-02 → EXT-BLR · first ETD 08 Oct 08:00",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": null,
       "docs": [
        "LD-47108"
@@ -40578,7 +40578,7 @@
           "item": "Freight · WH-MAA-02 → EXT-BLR",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -40594,7 +40594,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -81,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -40696,7 +40696,7 @@
           "item": "Transport leg 1 · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -40705,7 +40705,7 @@
           "item": "Transport leg 2 · RC-HSR-01 → WH-MAA-02",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -40721,7 +40721,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47069",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -77,
         "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 2.1 labour hours, 1 machine operations, 2 transport legs on RC-2026.2 and packing."
        },
@@ -40865,7 +40865,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47069",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -188,
         "why": "Teardown and part testing at RC-HSR-01: 14.1 labour hours and the final test."
        },
@@ -40881,7 +40881,7 @@
           "item": "Freight · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -40897,7 +40897,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -66,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -40991,7 +40991,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47069",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -106,
         "why": "Teardown and part testing at RC-HSR-01: 6.9 labour hours and the final test."
        },
@@ -41007,7 +41007,7 @@
           "item": "Freight · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -41016,7 +41016,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BLR",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -41032,7 +41032,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -79,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -41110,7 +41110,7 @@
           "item": "Freight · WH-MAA-02 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -41126,7 +41126,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -66,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -42098,7 +42098,7 @@
        "v": "All six gates passed; evidence snapshot EVS-7BA8BA0D"
       }
      ],
-     "mean": "Approval sends 5 instructions to Manhattan Active Warehouse Management, IBM Sterling OMS, ShipLane TMS, SAP S/4HANA and commits up to $0 of spend.",
+     "mean": "Approval sends 5 instructions to Manhattan Active Warehouse Management, IBM Sterling OMS, Oracle Transportation Management, SAP S/4HANA and commits up to $0 of spend.",
      "res": "The decision packet is ready; it waits for the Planner to submit it.",
      "when": null,
      "who": ""
@@ -45798,7 +45798,7 @@
          "item": "Transport leg 1 · WH-PNQ-01 → RC-HSR-01",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -45814,7 +45814,7 @@
        "method": "Modelled",
        "rec": "Work order WO-47146",
        "sign": -1,
-       "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+       "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
        "usd": -10,
        "why": "Refurbishment at RC-HSR-01 Hosur: 0 parts at contract prices, 0.5 labour hours, 1 machine operations, 1 transport leg on RC-2026.2 and packing."
       },
@@ -45830,7 +45830,7 @@
          "item": "Freight · RC-HSR-01 → EXT-BOM",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Same lane rate card as the inbound return"
         },
         {
@@ -45846,7 +45846,7 @@
        "method": "Contracted",
        "rec": "RC-2026.2",
        "sign": -1,
-       "sys": "ShipLane TMS · SAP S/4HANA",
+       "sys": "Oracle Transportation Management · SAP S/4HANA",
        "usd": -21,
        "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
       },
@@ -46000,7 +46000,7 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 4,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
        "why": "Freight goes on the contracted lane rate card; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
@@ -46108,7 +46108,7 @@
         "document": "LD-47185",
         "owner": "Transport planner",
         "step": 4,
-        "system": "ShipLane TMS",
+        "system": "Oracle Transportation Management",
         "timeLimit": "4 working h"
        },
        {
@@ -46360,7 +46360,7 @@
        "document": "LD-47185",
        "owner": "Transport planner",
        "step": 4,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -46524,7 +46524,7 @@
      },
      {
       "act": "2 legs with Northline 3PL: WH-PNQ-01 → RC-HSR-01 → EXT-BOM · first ETD 08 Oct 08:00",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": null,
       "docs": [
        "LD-47185"
@@ -47118,7 +47118,7 @@
           "item": "Transport leg 1 · WH-PNQ-01 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -47134,7 +47134,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47146",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -10,
         "why": "Refurbishment at RC-HSR-01 Hosur: 0 parts at contract prices, 0.5 labour hours, 1 machine operations, 1 transport leg on RC-2026.2 and packing."
        },
@@ -47150,7 +47150,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -47166,7 +47166,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -21,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -47259,7 +47259,7 @@
           "item": "Transport leg 1 · WH-PNQ-01 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -47268,7 +47268,7 @@
           "item": "Transport leg 2 · RC-HSR-01 → WH-PNQ-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -47284,7 +47284,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47146",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -8,
         "why": "Refurbishment at RC-HSR-01 Hosur: 0 parts at contract prices, 0.5 labour hours, 1 machine operations, 2 transport legs on RC-2026.2 and packing."
        },
@@ -47437,7 +47437,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47146",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -18,
         "why": "Teardown and part testing at RC-HSR-01: 2.4 labour hours and the final test."
        },
@@ -47453,7 +47453,7 @@
           "item": "Freight · WH-PNQ-01 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -47469,7 +47469,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -6,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -47590,7 +47590,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47146",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -10,
         "why": "Teardown and part testing at RC-HSR-01: 1.1 labour hours and the final test."
        },
@@ -47606,7 +47606,7 @@
           "item": "Freight · WH-PNQ-01 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -47615,7 +47615,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -47631,7 +47631,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -7,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -47700,7 +47700,7 @@
           "item": "Freight · WH-PNQ-01 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -47716,7 +47716,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -15,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -48761,7 +48761,7 @@
        "v": "$10"
       }
      ],
-     "mean": "Approval sends 6 instructions to Manhattan Active Warehouse Management, Oracle Depot Repair, IBM Sterling OMS, ShipLane TMS, SAP S/4HANA and commits up to $10 of spend.",
+     "mean": "Approval sends 6 instructions to Manhattan Active Warehouse Management, Oracle Depot Repair, IBM Sterling OMS, Oracle Transportation Management, SAP S/4HANA and commits up to $10 of spend.",
      "res": "Approved by Approver · Customer C under APR-2026-10-3074: Refurbish, then sell.",
      "when": "2026-10-06T18:36:00.000Z",
      "who": "Approver · Customer C"
@@ -49093,7 +49093,7 @@
        "method": "Modelled",
        "rec": "Work order WO-47202",
        "sign": -1,
-       "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+       "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
        "usd": -240,
        "why": "Teardown and part testing at RC-HSR-01: 18.2 labour hours and the final test."
       },
@@ -49116,7 +49116,7 @@
        "method": "Contracted",
        "rec": "RC-2026.2",
        "sign": -1,
-       "sys": "ShipLane TMS · SAP S/4HANA",
+       "sys": "Oracle Transportation Management · SAP S/4HANA",
        "usd": -90,
        "why": "Contracted channel fee."
       }
@@ -50261,7 +50261,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47202",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -240,
         "why": "Teardown and part testing at RC-HSR-01: 18.2 labour hours and the final test."
        },
@@ -50284,7 +50284,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -90,
         "why": "Contracted channel fee."
        }
@@ -50371,7 +50371,7 @@
           "item": "Freight · RC-HSR-01 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -50387,7 +50387,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -70,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -50433,7 +50433,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -50449,7 +50449,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -140,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -50484,7 +50484,7 @@
           "item": "Freight · RC-HSR-01 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -50500,7 +50500,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -60,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -51457,7 +51457,7 @@
        "method": "Contracted",
        "rec": "RC-2026.2",
        "sign": -1,
-       "sys": "ShipLane TMS · SAP S/4HANA",
+       "sys": "Oracle Transportation Management · SAP S/4HANA",
        "usd": -100,
        "why": "Contracted channel fee."
       },
@@ -52430,7 +52430,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -100,
         "why": "Contracted channel fee."
        },
@@ -52522,7 +52522,7 @@
           "item": "Freight · WH-MAA-02 → EXT-BLR",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -52538,7 +52538,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -60,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -52611,7 +52611,7 @@
           "item": "Freight · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -52620,7 +52620,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BLR",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -52636,7 +52636,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -110,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -52734,7 +52734,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47244",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -50,
         "why": "Teardown and part testing at RC-HSR-01: 2 labour hours and the final test."
        },
@@ -53794,7 +53794,7 @@
          "item": "Transport leg 1 · WH-MAA-02 → RC-HSR-01",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -53803,7 +53803,7 @@
          "item": "Transport leg 2 · RC-HSR-01 → LOC-HSR-02",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -53819,7 +53819,7 @@
        "method": "Modelled",
        "rec": "Work order WO-47265",
        "sign": -1,
-       "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+       "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
        "usd": -98,
        "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 5.1 labour hours, 2 machine operations, 2 transport legs on RC-2026.2 and packing."
       },
@@ -54016,9 +54016,9 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
-       "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+       "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
       {
        "action": "WH-MAA-02 bin B-04-11 → RC-HSR-01 → LOC-HSR-02",
@@ -54130,7 +54130,7 @@
         "document": "LD-47304",
         "owner": "Transport planner",
         "step": 3,
-        "system": "ShipLane TMS",
+        "system": "Oracle Transportation Management",
         "timeLimit": "4 working h"
        },
        {
@@ -54386,7 +54386,7 @@
        "document": "LD-47304",
        "owner": "Transport planner",
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -54546,7 +54546,7 @@
      },
      {
       "act": "2 legs with Northline 3PL: WH-MAA-02 → RC-HSR-01 → LOC-HSR-02 · first ETD 08 Oct 08:00",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": null,
       "docs": [
        "LD-47304"
@@ -54559,7 +54559,7 @@
       "planned": true,
       "state": "todo",
       "sys": "TMS · load booking",
-      "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+      "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
      },
      {
       "act": "WH-MAA-02 bin B-04-11 → RC-HSR-01 → LOC-HSR-02",
@@ -55166,7 +55166,7 @@
           "item": "Transport leg 1 · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -55182,7 +55182,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47265",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -48,
         "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 0.5 labour hours, 1 machine operations, 1 transport leg on RC-2026.2 and packing."
        },
@@ -55198,7 +55198,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BLR",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -55214,7 +55214,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -66,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -55319,7 +55319,7 @@
           "item": "Transport leg 1 · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -55328,7 +55328,7 @@
           "item": "Transport leg 2 · RC-HSR-01 → LOC-HSR-02",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -55344,7 +55344,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47265",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -98,
         "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 5.1 labour hours, 2 machine operations, 2 transport legs on RC-2026.2 and packing."
        },
@@ -55532,7 +55532,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47265",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -21,
         "why": "Teardown and part testing at RC-HSR-01: 2.9 labour hours and the final test."
        },
@@ -55548,7 +55548,7 @@
           "item": "Freight · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -55557,7 +55557,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BLR",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -55573,7 +55573,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -16,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -56627,7 +56627,7 @@
        "v": "$98"
       }
      ],
-     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, ShipLane TMS, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48273 line 40 and commits up to $98 of spend.",
+     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, Oracle Transportation Management, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48273 line 40 and commits up to $98 of spend.",
      "res": "Approved by Approver · Customer C under APR-2026-10-3125: Redeploy to Site 2.",
      "when": "2026-10-06T18:36:00.000Z",
      "who": "Approver · Customer C"
@@ -56786,7 +56786,7 @@
          "item": "Transport leg 1 · RC-HSR-01 → LOC-CBE-06",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -56802,7 +56802,7 @@
        "method": "Modelled",
        "rec": "Work order WO-47321",
        "sign": -1,
-       "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+       "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
        "usd": -248,
        "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 6 labour hours, 2 machine operations, 1 transport leg on RC-2026.2 and packing."
       },
@@ -56945,9 +56945,9 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
-       "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+       "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
       {
        "action": "RC-HSR-01 bin R-01-02 → RC-HSR-01 → LOC-CBE-06",
@@ -57190,7 +57190,7 @@
        "document": "LD-47360",
        "owner": "Transport planner",
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -57328,7 +57328,7 @@
      },
      {
       "act": "1 leg with Northline 3PL: RC-HSR-01 → LOC-CBE-06 · first ETD 09 Oct 08:00",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": null,
       "docs": [
        "LD-47360"
@@ -57341,7 +57341,7 @@
       "planned": true,
       "state": "todo",
       "sys": "TMS · load booking",
-      "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+      "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
      },
      {
       "act": "RC-HSR-01 bin R-01-02 → RC-HSR-01 → LOC-CBE-06",
@@ -57988,7 +57988,7 @@
           "item": "Transport leg 1 · RC-HSR-01 → LOC-CBE-06",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -58004,7 +58004,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47321",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -248,
         "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 6 labour hours, 2 machine operations, 1 transport leg on RC-2026.2 and packing."
        },
@@ -58082,7 +58082,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -58098,7 +58098,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -262,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -58742,7 +58742,7 @@
        "v": "All six gates passed; evidence snapshot EVS-B7542E7D"
       }
      ],
-     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, ShipLane TMS, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48329 line 30 and commits up to $248 of spend.",
+     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, Oracle Transportation Management, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48329 line 30 and commits up to $248 of spend.",
      "res": "The decision packet is ready; it waits for the Planner to submit it.",
      "when": null,
      "who": ""
@@ -58949,7 +58949,7 @@
          "item": "Transport leg 1 · WH-PNQ-01 → RC-HSR-01",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -58958,7 +58958,7 @@
          "item": "Transport leg 2 · RC-HSR-01 → WH-MAA-02",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -58967,7 +58967,7 @@
          "item": "Transport leg 3 · WH-MAA-02 → LOC-CHN-03",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -58983,7 +58983,7 @@
        "method": "Modelled",
        "rec": "Work order WO-47349",
        "sign": -1,
-       "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+       "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
        "usd": -1800,
        "why": "Refurbishment at RC-HSR-01 Hosur: 7 parts at contract prices, 22 labour hours, 4 machine operations, 3 transport legs on RC-2026.2 and packing."
       },
@@ -59167,9 +59167,9 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
-       "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+       "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
       {
        "action": "WH-PNQ-01 bin A-12-03 → RC-HSR-01 → WH-MAA-02 bay S-04 → LOC-CHN-03",
@@ -59452,7 +59452,7 @@
        "document": "LD-47388",
        "owner": "Transport planner",
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -59619,7 +59619,7 @@
      },
      {
       "act": "3 legs with Northline 3PL: WH-PNQ-01 → RC-HSR-01 → WH-MAA-02 → LOC-CHN-03 · first ETD 08 Oct 08:00",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": null,
       "docs": [
        "LD-47388"
@@ -59632,7 +59632,7 @@
       "planned": true,
       "state": "todo",
       "sys": "TMS · load booking",
-      "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+      "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
      },
      {
       "act": "WH-PNQ-01 bin A-12-03 → RC-HSR-01 → WH-MAA-02 bay S-04 → LOC-CHN-03",
@@ -60461,7 +60461,7 @@
           "item": "Transport leg 1 · WH-PNQ-01 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -60470,7 +60470,7 @@
           "item": "Transport leg 2 · RC-HSR-01 → WH-MAA-02",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -60479,7 +60479,7 @@
           "item": "Transport leg 3 · WH-MAA-02 → LOC-CHN-03",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -60495,7 +60495,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47349",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -1800,
         "why": "Refurbishment at RC-HSR-01 Hosur: 7 parts at contract prices, 22 labour hours, 4 machine operations, 3 transport legs on RC-2026.2 and packing."
        },
@@ -60614,7 +60614,7 @@
           "item": "Freight · WH-PNQ-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -60630,7 +60630,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -800,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -60703,7 +60703,7 @@
           "item": "Transport leg 1 · WH-PNQ-01 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -60712,7 +60712,7 @@
           "item": "Transport leg 2 · RC-HSR-01 → WH-PNQ-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -60728,7 +60728,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47349",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -400,
         "why": "Refurbishment at RC-HSR-01 Hosur: 1 parts at contract prices, 11 labour hours, 1 machine operations, 2 transport legs on RC-2026.2 and packing."
        },
@@ -60876,7 +60876,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47349",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -700,
         "why": "Teardown and part testing at RC-HSR-01: 57.4 labour hours and the final test."
        },
@@ -60892,7 +60892,7 @@
           "item": "Freight · WH-PNQ-01 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -60908,7 +60908,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -400,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -60963,7 +60963,7 @@
           "item": "Freight · WH-PNQ-01 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -60979,7 +60979,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -210,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -61984,7 +61984,7 @@
        "v": "All six gates passed; evidence snapshot EVS-E7402581"
       }
      ],
-     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, ShipLane TMS, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48102 line 10 and commits up to $1,800 of spend.",
+     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, Oracle Transportation Management, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48102 line 10 and commits up to $1,800 of spend.",
      "res": "The decision packet is ready; it waits for the Planner to submit it.",
      "when": null,
      "who": ""
@@ -62083,7 +62083,7 @@
          "item": "Freight · RC-HSR-01 → EXT-BOM",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Same lane rate card as the inbound return"
         },
         {
@@ -62099,7 +62099,7 @@
        "method": "Contracted",
        "rec": "RC-2026.2",
        "sign": -1,
-       "sys": "ShipLane TMS · SAP S/4HANA",
+       "sys": "Oracle Transportation Management · SAP S/4HANA",
        "usd": -34,
        "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
       },
@@ -62232,7 +62232,7 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
        "why": "Freight goes on the contracted lane rate card; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
@@ -62454,7 +62454,7 @@
        "document": "LD-47395",
        "owner": "Transport planner",
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -62578,7 +62578,7 @@
      },
      {
       "act": "1 leg with Northline 3PL: RC-HSR-01 → EXT-BOM · first ETD 08 Oct 08:00",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": null,
       "docs": [
        "LD-47395"
@@ -63113,7 +63113,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -63129,7 +63129,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -34,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -63250,7 +63250,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47356",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -52,
         "why": "Refurbishment at RC-HSR-01 Hosur: 2 parts at contract prices, 1.8 labour hours, 2 machine operations and packing."
        },
@@ -63266,7 +63266,7 @@
           "item": "Freight · RC-HSR-01 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -63282,7 +63282,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -38,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -63405,7 +63405,7 @@
           "item": "Transport leg 1 · RC-HSR-01 → LOC-CBE-06",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -63421,7 +63421,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47356",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -60,
         "why": "Refurbishment at RC-HSR-01 Hosur: 3 parts at contract prices, 0.8 labour hours, 2 machine operations, 1 transport leg on RC-2026.2 and packing."
        },
@@ -63556,7 +63556,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47356",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -36,
         "why": "Teardown and part testing at RC-HSR-01: 5.3 labour hours and the final test."
        },
@@ -63625,7 +63625,7 @@
           "item": "Freight · RC-HSR-01 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -63641,7 +63641,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -8,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -64451,7 +64451,7 @@
        "v": "All six gates passed; evidence snapshot EVS-8DCBC2B6"
       }
      ],
-     "mean": "Approval sends 5 instructions to Manhattan Active Warehouse Management, IBM Sterling OMS, ShipLane TMS, SAP S/4HANA and commits up to $0 of spend.",
+     "mean": "Approval sends 5 instructions to Manhattan Active Warehouse Management, IBM Sterling OMS, Oracle Transportation Management, SAP S/4HANA and commits up to $0 of spend.",
      "res": "The decision packet is ready; it waits for the Planner to submit it.",
      "when": null,
      "who": ""
@@ -65103,7 +65103,7 @@
           "item": "Freight · WH-MAA-02 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -65119,7 +65119,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -22,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -66720,9 +66720,9 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
-       "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+       "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
       {
        "action": "WH-MAA-02 bin B-04-11 → RC-HSR-01 → LOC-HSR-02",
@@ -66985,7 +66985,7 @@
        "document": "LD-47416",
        "owner": "Transport planner",
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -67137,7 +67137,7 @@
      },
      {
       "act": "2 legs with Northline 3PL: WH-MAA-02 → RC-HSR-01 → LOC-HSR-02 · first ETD 08 Oct 08:00",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": null,
       "docs": [
        "LD-47416"
@@ -67150,7 +67150,7 @@
       "planned": true,
       "state": "todo",
       "sys": "TMS · load booking",
-      "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+      "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
      },
      {
       "act": "WH-MAA-02 bin B-04-11 → RC-HSR-01 → LOC-HSR-02",
@@ -67906,7 +67906,7 @@
           "item": "Freight · WH-MAA-02 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -67922,7 +67922,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -320,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -68020,7 +68020,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47377",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -480,
         "why": "Teardown and part testing at RC-HSR-01: 68.6 labour hours and the final test."
        },
@@ -68036,7 +68036,7 @@
           "item": "Freight · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -68052,7 +68052,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -140,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        },
@@ -68136,7 +68136,7 @@
           "item": "Freight · WH-MAA-02 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -68152,7 +68152,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -250,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -68952,7 +68952,7 @@
        "v": "All six gates passed; evidence snapshot EVS-F30A2FA2"
       }
      ],
-     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, ShipLane TMS, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48385 line 20 and commits up to $0 of spend.",
+     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, Oracle Transportation Management, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48385 line 20 and commits up to $0 of spend.",
      "res": "The decision packet is ready; it waits for the Planner to submit it.",
      "when": null,
      "who": ""
@@ -69132,7 +69132,7 @@
          "item": "Transport leg 1 · WH-MAA-02 → RC-HSR-01",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -69141,7 +69141,7 @@
          "item": "Transport leg 2 · RC-HSR-01 → WH-MAA-02",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -69150,7 +69150,7 @@
          "item": "Transport leg 3 · WH-MAA-02 → LOC-VTZ-05",
          "method": "Contracted",
          "rec": "RC-2026.2 · Northline 3PL",
-         "sys": "ShipLane TMS",
+         "sys": "Oracle Transportation Management",
          "why": "Contracted lane rate"
         },
         {
@@ -69166,7 +69166,7 @@
        "method": "Modelled",
        "rec": "Work order WO-47447",
        "sign": -1,
-       "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+       "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
        "usd": -1500,
        "why": "Refurbishment at RC-HSR-01 Hosur: 4 parts at contract prices, 40.3 labour hours, 4 machine operations, 3 transport legs on RC-2026.2 and packing."
       },
@@ -69350,9 +69350,9 @@
        "owner": "Transport planner",
        "planned": true,
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "time_limit": "4 working h",
-       "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+       "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
       },
       {
        "action": "WH-MAA-02 bin B-04-11 → RC-HSR-01 → WH-MAA-02 bay S-04 → LOC-VTZ-05",
@@ -69635,7 +69635,7 @@
        "document": "LD-47486",
        "owner": "Transport planner",
        "step": 3,
-       "system": "ShipLane TMS",
+       "system": "Oracle Transportation Management",
        "timeLimit": "4 working h"
       },
       {
@@ -69802,7 +69802,7 @@
      },
      {
       "act": "3 legs with Northline 3PL: WH-MAA-02 → RC-HSR-01 → WH-MAA-02 → LOC-VTZ-05 · first ETD 08 Oct 08:00",
-      "app": "ShipLane TMS",
+      "app": "Oracle Transportation Management",
       "clock": null,
       "docs": [
        "LD-47486"
@@ -69815,7 +69815,7 @@
       "planned": true,
       "state": "todo",
       "sys": "TMS · load booking",
-      "why": "The Transport planner books loads on contracted lanes in ShipLane TMS; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
+      "why": "The Transport planner books loads on contracted lanes in Oracle Transportation Management; Northline 3PL holds the RC-2026.2 lanes (K15, assumed)"
      },
      {
       "act": "WH-MAA-02 bin B-04-11 → RC-HSR-01 → WH-MAA-02 bay S-04 → LOC-VTZ-05",
@@ -70574,7 +70574,7 @@
           "item": "Transport leg 1 · WH-MAA-02 → RC-HSR-01",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -70583,7 +70583,7 @@
           "item": "Transport leg 2 · RC-HSR-01 → WH-MAA-02",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -70592,7 +70592,7 @@
           "item": "Transport leg 3 · WH-MAA-02 → LOC-VTZ-05",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Contracted lane rate"
          },
          {
@@ -70608,7 +70608,7 @@
         "method": "Modelled",
         "rec": "Work order WO-47447",
         "sign": -1,
-        "sys": "Oracle Depot Repair · ShipLane TMS · SAP Ariba",
+        "sys": "Oracle Depot Repair · Oracle Transportation Management · SAP Ariba",
         "usd": -1500,
         "why": "Refurbishment at RC-HSR-01 Hosur: 4 parts at contract prices, 40.3 labour hours, 4 machine operations, 3 transport legs on RC-2026.2 and packing."
        },
@@ -70727,7 +70727,7 @@
           "item": "Freight · WH-MAA-02 → EXT-BOM",
           "method": "Contracted",
           "rec": "RC-2026.2 · Northline 3PL",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -70743,7 +70743,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -800,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -70798,7 +70798,7 @@
           "item": "Freight · WH-MAA-02 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -70814,7 +70814,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · Sims Lifecycle Services",
+        "sys": "Oracle Transportation Management · Sims Lifecycle Services",
         "usd": -210,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -70837,7 +70837,7 @@
           "item": "Freight · WH-MAA-02 → PTN-MAA",
           "method": "Contracted",
           "rec": "RC-2026.2 · partner collection",
-          "sys": "ShipLane TMS",
+          "sys": "Oracle Transportation Management",
           "why": "Same lane rate card as the inbound return"
          },
          {
@@ -70853,7 +70853,7 @@
         "method": "Contracted",
         "rec": "RC-2026.2",
         "sign": -1,
-        "sys": "ShipLane TMS · SAP S/4HANA",
+        "sys": "Oracle Transportation Management · SAP S/4HANA",
         "usd": -60,
         "why": "Freight from the RC-2026.2 lane rate card (one card for every move, inbound and outbound); the rest is the channel's contracted fee."
        }
@@ -71628,7 +71628,7 @@
        "v": "All six gates passed; evidence snapshot EVS-1425BC31"
       }
      ],
-     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, ShipLane TMS, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48455 line 30 and commits up to $1,500 of spend.",
+     "mean": "Approval sends 6 instructions to IBM Sterling OMS, Oracle Depot Repair, Oracle Transportation Management, Manhattan Active Warehouse Management, SAP S/4HANA, allocates the unit to SO-48455 line 30 and commits up to $1,500 of spend.",
      "res": "The decision packet is ready; it waits for the Planner to submit it.",
      "when": null,
      "who": ""

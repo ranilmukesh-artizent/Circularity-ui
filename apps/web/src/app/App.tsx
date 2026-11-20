@@ -9,6 +9,7 @@ import { SignInPage } from '../pages/SignInPage';
 import { Boundary } from '../ui/Boundary';
 import { useTheme } from '../ui/theme';
 import { toast, Toasts } from '../ui/toast';
+import { AskPanel } from './AskPanel';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 
@@ -86,6 +87,7 @@ function Shell({ route, search }: { route: RouteRef; search: string }) {
         </div>
         <div className="frscrim" aria-hidden="true" onClick={() => setMenu(false)} />
       </div>
+      <AskPanel route={route} />
       <Toasts />
     </>
   );

@@ -13,10 +13,10 @@ Where the data comes from (all at parity with the demo; fixtures/golden/screens/
 - delegations (table delegation), with the demo's labels and descriptions (DELEG);
 - requests (state "requests"), each with whether this account may decide it (the demo's canDecide);
 - approval limits and self-approval (state "access_settings" item "approval");
-- agent autonomy per role (AF.cfg.auto), stopped agents (AF.cfg.off) and run limits (AF.cfg.max): no action writes
-  them yet (access.setAutonomy, agent.setEnabled and access.setRunLimits have no handlers), so they are read from
-  "access_settings" items "autonomy" ({role: {type: level}}), "agents_off" ({agent: true}) and "run_limits", which
-  do not exist at the start, and default to the demo's starting values ({}, {}, 50 actions and 100 in bulk);
+- agent autonomy per role (AF.cfg.auto), stopped agents (AF.cfg.off) and run limits (AF.cfg.max): written by
+  access.setAutonomy, agent.setEnabled and access.setRunLimits (di.actions.access) to the "access_settings" items
+  "autonomy" ({role: {type: level}}), "agents_off" ({agent: true}) and "run_limits", which do not exist at the
+  start, and default to the demo's starting values ({}, {}, 50 actions and 100 in bulk);
 - agent metrics (afMetrics) from the action journal: the share of actions per role prepared by an agent, undo rate,
   time to decision. The demo's click and prompt counts per approval and its agent runs (AF.ui) live in the browser:
   `interactions`, `acceptance`, `edit`, `fallback` and `ms` are null and `runs` is 0 until agent runs reach the server

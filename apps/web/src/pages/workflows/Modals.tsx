@@ -11,6 +11,7 @@ import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import { forget } from './draft';
 import { download, St } from './kit';
+import { NOT_YET } from './ops';
 
 type NewType = 'ingest' | 'out' | 'dec' | 'blank';
 const CH_NAME: Record<string, string> = { api: 'Outbound API call', event: 'Event trigger', file: 'Interface file', proc: 'Process orchestration' };
@@ -162,6 +163,7 @@ export function FailedRecordsModal({ id, onClose }: { id: string; onClose: () =>
   }
   function reproc() {
     const n = reprocessFailed(id);
+    if (n === null) return toast(NOT_YET);
     onClose();
     toast(n + ' records sent back through validation. Rows that still break a rule stay held.');
   }

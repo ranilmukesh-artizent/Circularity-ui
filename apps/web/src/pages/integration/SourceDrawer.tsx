@@ -235,11 +235,16 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
   );
 }
 
+/** The connector's own word when the screen shows it as stale (failing: the system did not answer; auth_expired). */
+const connectorNote = (s: Source): string | null =>
+  s.connectorStatus === 'failing' ? 'Connector failing: the system did not answer'
+    : s.connectorStatus === 'auth_expired' ? 'Connector credentials refused' : null;
+
 function LiveKv({ s }: { s: Source }) {
   return (
     <dl className="kv sdlive">
       <dt>Status</dt>
-      <dd>{s.syncing ? <span className="chip y">Syncing {s.syncPct || 0}%</span> : <StChip s={s.status} />}</dd>
+      <dd>{s.syncing ? <span className="chip y">Syncing {s.syncPct || 0}%</span> : <StChip s={s.status} />}{connectorNote(s) && <span className="note"> · {connectorNote(s)}</span>}</dd>
       <dt>Last sync</dt>
       <dd><span className="num">{s.lastSync == null ? (s.status === 'unavailable' ? 'Not connected' : 'Never') : srcAgeText(s).replace(/^(Updated|Last import) /, '')}</span></dd>
       <dt>Freshness · completeness · confidence</dt>
@@ -328,7 +333,7 @@ function ConnTab({ s, d, errs: e, setField, setCfg, test }: {
       <div className="credrow">
         <div>
           <b>Credentials</b>
-          <div className="note">{s ? (left < 0 ? 'Secret expired ' + -left + ' days ago.' : 'Secret rotated ' + age + ' days ago · expires in ' + left + ' days.') : 'Stored in the secrets vault after you save.'}</div>
+          <div className="note">{s && s.credAt ? (left < 0 ? 'Secret expired ' + -left + ' days ago.' : 'Secret rotated ' + age + ' days ago · expires in ' + left + ' days.') : 'Stored in the secrets vault after you save.'}</div>
         </div>
         {s && <RotateBtn id={s.id} label="Rotate credentials" />}
       </div>
@@ -428,7 +433,7 @@ function HistTab({ s }: { s: Source }) {
                   <td>{r.trigger}</td>
                   <td className="r num">{fmtN(r.rows)}</td>
                   <td className="r num">{r.dur} s</td>
-                  <td><span className={'chip ' + (r.result === 'success' ? 'ok' : 'bad')}>{r.result === 'success' ? 'Success' : 'Failed'}</span>{r.note && <div className="note">{r.note}</div>}</td>
+                  <td><span className={'chip ' + (r.result === 'success' ? 'ok' : r.result === 'running' ? 'y' : 'bad')}>{r.result === 'success' ? 'Success' : r.result === 'running' ? 'Running' : 'Failed'}</span>{r.note && <div className="note">{r.note}</div>}</td>
                 </tr>
               ))}
             </tbody>
@@ -503,7 +508,7 @@ function HealthCard({ s }: { s: Source }) {
       <FrIt ic={st === 'healthy' ? 'checks' : st === 'manual' ? 'file' : 'alert'} h={st === 'healthy' ? 'int' : st === 'manual' || st === 'paused' ? 'neutral' : 'alert'} />
       <div>
         <b>{head}</b>
-        <span className="note">{s.disconnected ? 'Disconnected by ' + (s.discBy || 'Admin') + '. Reconnect to resume.' : s.note || srcAgeText(s)}</span>
+        <span className="note">{s.disconnected ? 'Disconnected by ' + (s.discBy || 'Admin') + '. Reconnect to resume.' : [connectorNote(s), s.note || srcAgeText(s)].filter(Boolean).join('. ')}</span>
       </div>
       <dl>
         <dt>Last sync</dt><dd>{s.lastSync ? when(s.lastSync) : '—'}</dd>

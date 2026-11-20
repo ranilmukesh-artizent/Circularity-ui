@@ -1,28 +1,20 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { Suspense, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  activeClock, approverRole, assetModel, iconTileHtml, lc, nextStep, phaseOf, phases, rememberTab, rememberedTab, runOf,
-  stageData, stageHref, stageLogosHtml, stageSentence, stageState, stageTitle, stageWillHappen, stages, when,
+  activeClock, approverRole, assetModel, caseAnalysis, caseScreen, lc, nextStep, phaseOf, phases, rememberTab, rememberedTab, runOf,
+  sources, stageData, stageHref, stageSentence, stageState, stageTitle, stageWillHappen, stages, when,
   type CaseRec, type Run, type StageTag,
 } from '../../api/case';
 import { can, canPage } from '../../api/session';
+import { ErrorBoundary } from '../../ui/Boundary';
 import { Icon } from '../../ui/Icon';
-import { approveGuarded, caseActions, Legacy, runNextStep, useCaseUi, type CaseUi } from './ui';
+import { Doc, FrIt, hue, StageLogos, StProv, Tag } from './kit';
+import { stageTabs, type TabDef } from './tabs';
+import { approveGuarded, caseActions, runNextStep, useCaseUi, type CaseUi } from './ui';
 
 export type CaseView = { kind: 'stage'; n: number; tab: string | null } | { kind: 'overview' } | { kind: 'full' };
 
-const hue = (h: string, k?: number) => ({ '--c': `var(--h-${h})`, ...(k != null ? { '--k': k } : {}) }) as CSSProperties;
 const href = (id: string, n: number | 'overview' | 'full', tab?: string | null) => '#/' + stageHref(id, n, tab);
-
-/** A stage's state in words and shape: Done, Current, Waiting on…, Blocked, Not reached (stTag). */
-export function Tag({ t, big }: { t: Pick<StageTag, 'k' | 'icon' | 'word'>; big?: boolean }) {
-  return (
-    <span className={`sttag st-${t.k}${big ? ' big' : ''}`}>
-      <i aria-hidden="true">{t.icon}</i>
-      {t.word}
-    </span>
-  );
-}
 
 /** The stage bar: four phases, ten chips, states in words; aria-current marks the stage in view (stBar). */
 export function StageBar({ c, view }: { c: CaseRec; view: CaseView }) {
@@ -69,13 +61,6 @@ export function StageBar({ c, view }: { c: CaseRec; view: CaseView }) {
   );
 }
 
-const Doc = ({ r }: { r: string }) => (
-  <span className="stdoc">
-    <span className="mono">{r}</span>
-    <button className="lnk stcp" aria-label={'Copy ' + r} onClick={() => caseActions.copy(r)}>Copy</button>
-  </span>
-);
-
 /** "Notify the owner": the agent drafts an escalation to whoever the stage waits on. */
 function NotifyBtn({ who }: { who: string }) {
   return /Approver|Admin|Planner|Finance|Engineer|Inspection|Engineering/.test(who || '') ? (
@@ -105,7 +90,7 @@ const Cons = ({ b, l }: { b: ReactNode; l: ReactNode }) => (
 
 /** What this person does now, or who it waits on; one primary action per page (stDo). */
 export function stageDo(c: CaseRec, n: number, t: StageTag, ui: CaseUi): { h: string; pri: boolean; b: ReactNode } {
-  const r = c.chosen || c.recommendation, id = c.id, A = approverRole();
+  const r = c.chosen || c.recommendation, id = c.id, A = approverRole(c);
   const Pri = ({ children, onClick }: { children: ReactNode; onClick: () => void }) => <button className="btn pri lg" onClick={onClick}>{children}</button>;
   const ex = (h: string, b: ReactNode, pri = false) => ({ h, b, pri });
   if (t.k === 'todo') {
@@ -189,7 +174,7 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
     : t.k === 'wait' ? (t.since ? 'since ' + when(t.since) + ' · ' : '') + S1.person
     : t.k === 'block' ? `Blocked: ${t.why || ''}` : t.k === 'cur' ? 'The case is here now' : `Starts on ${lc(S1.trig)}`;
   const D = stageDo(c, n, t, ui);
-  const tabs = d.tabs, rem = rememberedTab(c.id, n);
+  const tabs = stageTabs(c, n), rem = rememberedTab(c.id, n);
   const cur = tabs.find((x) => x[0] === tab) ? tab : rem && tabs.find((x) => x[0] === rem) ? rem : tabs[0]?.[0];
   const pick = (k: string) => {
     rememberTab(c.id, n, k);
@@ -209,7 +194,7 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
           <p className="stcap"><span className="stphase">{ph.t}</span> · Stage {n} of 10</p>
           <h1 id="stH1" tabIndex={-1}>{S1.t}</h1>
           <p className="stsub"><Tag t={t} big /><span className="stline">{line}</span></p>
-          <p className="stlogos" dangerouslySetInnerHTML={{ __html: stageLogosHtml(n) }} />
+          <p className="stlogos"><StageLogos n={n} src={sources(c)} /></p>
         </div>
         <div className="row stha">
           <button className="btn afai2" onClick={caseActions.askSoon}><Icon name="spark" /> Ask about this stage</button>
@@ -226,7 +211,7 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
               <dl className="stfacts">
                 {d.facts.map((f) => (
                   <div key={f.l} className={String(f.v).length > 34 ? 'wide' : undefined}>
-                    <dt>{f.l}</dt><dd>{f.v}</dd><span className="stpv" dangerouslySetInnerHTML={{ __html: f.p }} />
+                    <dt>{f.l}</dt><dd>{f.v}</dd><span className="stpv"><StProv k={f.k} sys={f.sys} src={sources(c)} /></span>
                   </div>
                 ))}
               </dl>
@@ -248,7 +233,7 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
         <div className="stside">
           {d.mean && reached && (
             <section className="stmean" id="stMean" aria-labelledby="stMeanH">
-              <span dangerouslySetInnerHTML={{ __html: iconTileHtml('spark', ph.h, 'sm') }} style={{ display: 'contents' }} />
+              <FrIt ic="spark" h={ph.h} cls="sm" />
               <div><h2 id="stMeanH">What it means</h2><p>{d.mean}</p></div>
             </section>
           )}
@@ -273,13 +258,24 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
               key={x[0]} className="stacc" id={'stp-' + x[0]} data-k={x[0]} open={x[0] === cur}
             >
               <summary onClick={(e) => { e.preventDefault(); pick(x[0]); }}>{x[1]}</summary>
-              {x[0] === cur && <Legacy className="stpn" html={x[2]} />}
+              {x[0] === cur && (
+                <div className="stpn" role="tabpanel" aria-labelledby={'stt-' + x[0]}>
+                  <ErrorBoundary resetKey={c.id + n + x[0]}><Suspense fallback={<p className="note stpad">Loading…</p>}><TabBody c={c} tab={x} /></Suspense></ErrorBoundary>
+                </div>
+              )}
             </details>
           ))}
         </section>
       )}
     </div>
   );
+}
+
+/** One tab's content, drawn from the analysis (read here, so the stage page shows before it arrives). */
+function TabBody({ c, tab }: { c: CaseRec; tab: TabDef }) {
+  const a = caseAnalysis(c.id), s = caseScreen(c.id)!;
+  const View = tab[2];
+  return <View c={c} a={a} s={s} />;
 }
 
 function Recap({ c, n, run }: { c: CaseRec; n: number; run: Run }) {

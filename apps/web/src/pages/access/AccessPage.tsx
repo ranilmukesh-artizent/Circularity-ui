@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { invoke } from '../../api/actions';
 import {
   accountRows, agentMetrics, approvalLimit, autoLevel, autoTypes, delegationLabel, delegations, facilities, fmtDateTime,
-  governedAgents, hardRules, idp, idpRoleOf, idpRoles, levelRank, levels, pctTxt, requests, roles, runLimits,
+  governedAgents, hardRules, idp, idpRoleOf, idpRoles, levelRank, levels, pctTxt, refreshAccess, requests, roles, runLimits,
   selfApproveAllowed, type Level,
 } from '../../api/access';
 import { money } from '../../api/format';
@@ -90,7 +90,10 @@ function Identity() {
   };
   const mapTo = async (acct: string, field: 'role' | 'site', value: string) => {
     const r = await invoke<{ label: string }>('access.mapIdentity', { acct, field, value });
-    if (r.ok) toast('Mapping updated. ' + r.output.label + ' changes at their next sign-in.');
+    if (r.ok) {
+      toast('Mapping updated. ' + r.output.label + ' changes at their next sign-in.');
+      void refreshAccess();
+    }
     else toast(r.error.message, 4200);
   };
   const remove = async (id: string) => {
@@ -256,6 +259,7 @@ function Delegations() {
     const d = delegations().find((x) => x.k === k)!;
     const r = await invoke('access.setDelegation', { k, on });
     if (!r.ok) return toast(r.error.message, 4200);
+    void refreshAccess();
     toast(on ? 'The Approver can now decide ' + delegationLabel(d) + '.' : d.label + ' are now decided by Admin only.', 4200);
   };
   return (
@@ -357,6 +361,7 @@ function LimitRow({ role, manage }: { role: string; manage: boolean }) {
     const s = ref.current?.value ?? '';
     const r = await invoke<{ limit: number | null }>('access.setLimit', { role, amount: s === '' ? null : +s });
     if (!r.ok) return toast(r.error.message, 4200);
+    void refreshAccess();
     toast(role + ' approval limit: ' + (r.output.limit == null ? 'unlimited' : money(r.output.limit)) + '.');
   };
   return (

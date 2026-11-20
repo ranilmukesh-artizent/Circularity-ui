@@ -63,7 +63,8 @@ function AskBox() {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!q.trim()) return;
-    askSoon();
+    askSoon(q.trim());
+    setQ('');
   };
   return (
     <section className="panel frask afhp" id="frAsk">
@@ -79,7 +80,7 @@ function AskBox() {
         </form>
         <p className="afopts frex">
           {askStarters().map((s) => (
-            <button key={s} className="btn sm" onClick={askSoon}>{s}</button>
+            <button key={s} className="btn sm" onClick={() => askSoon(s)}>{s}</button>
           ))}
           <button className="lnk" onClick={() => setEx(true)}>View more examples →</button>
         </p>
@@ -91,7 +92,7 @@ function AskBox() {
           </p>
           <div className="frexl">
             {askExamples().map((t) => (
-              <button key={t} className="btn sm" onClick={() => { setEx(false); askSoon(); }}>{t}</button>
+              <button key={t} className="btn sm" onClick={() => { setEx(false); askSoon(t); }}>{t}</button>
             ))}
           </div>
         </Modal>

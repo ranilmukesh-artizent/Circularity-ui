@@ -7,8 +7,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBackend } from '../../api/hooks';
 import {
-  available, conflicts, deleteSource, disconnectSource, intKids, intSub, mappings, openDecisionCount, reconnectSource, rotateCredentials, source, srcTypes,
-  syncSource, togglePause, typeOf, undoActions, wfUsing,
+  available, deleteSource, disconnectSource, followSync, intKids, intSub, mappings, notOnServer, openConflictCount, openDecisionCount, reconnectSource,
+  rotateCredentials, source, srcTypes, syncSource, togglePause, typeOf, undoActions, wfUsing,
 } from '../../api/integration';
 import { can, canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
@@ -64,22 +64,18 @@ function IntegrationPage({ route, query }: PageProps) {
         if (s?.paused) return toast(s.name + ' is paused. Resume it to sync.');
         const r = await syncSource(id);
         if (!r.ok) { if (r.error.code !== 'duplicate') toast(r.error.message); return; }
-        // the engine finishes the sync on a timer; report its result as the demo does
-        const wait = () => {
-          const x = source(id);
-          if (!x) return;
-          if (x.syncing) { window.setTimeout(wait, 200); return; }
-          const run = x.runs[0];
-          if (!run) return;
-          if (run.result === 'failed') toast(x.name + ': sync failed, the feed token has expired. Refresh the token to resume.', 4200);
-          else toast(x.name + ' synced: ' + run.rows.toLocaleString('en-US') + ' records updated.');
-        };
-        window.setTimeout(wait, 300);
+        // report its result as the demo does when it finishes
+        const name = s?.name ?? id;
+        followSync(id, (x) => {
+          if (!x.ok) toast(name + ': sync failed, ' + x.reason, 4200);
+          else toast(name + ' synced: ' + x.rows.toLocaleString('en-US') + ' records updated.');
+        });
       },
       pause: (id) => {
         if (!canMgr()) return toast(NOMGR);
         const s = source(id), r = togglePause(id);
-        if (!s || !r) return;
+        if (!s) return;
+        if (!r) return toast(notOnServer(s.paused ? 'Resuming a source' : 'Pausing a source'));
         toast(r.paused ? s.vendor + ' paused. Scheduled syncs stop; ' + r.workflows + ' workflow' + (r.workflows === 1 ? '' : 's') + ' now show Paused upstream.' : s.vendor + ' resumed. Scheduled syncs restart.');
       },
       disconnect: (id) => { if (!canMgr()) return toast(NOMGR); setDlg({ k: 'disc', id }); },
@@ -103,7 +99,7 @@ function IntegrationPage({ route, query }: PageProps) {
     );
   }
 
-  const open = conflicts().filter((c) => c.status === 'open').length;
+  const open = openConflictCount();
   const right = (
     <>
       <button className="btn" onClick={() => setDlg({ k: 'guide' })}><Icon name="book" /> Integration guide</button>
@@ -206,7 +202,7 @@ function DisconnectModal({ id, onClose }: { id: string; onClose: () => void }) {
   const ok = async () => {
     if (t.trim() !== s.vendor) return;
     onClose();
-    disconnectSource(id);
+    if (!disconnectSource(id)) return toast(notOnServer('Disconnecting a source'));
     toastAct(s.vendor + ' disconnected.', 'Reconnect', async () => {
       const r = await reconnectSource(id);
       if (!r.ok) return toast(r.error.message);

@@ -1,7 +1,8 @@
-"""The systems source-sim mocks (docs/PLAN_FULLSTACK_POC.md section 4; docs/BACKEND_STEPS.md B5, B5b).
+"""The systems source-sim mocks (docs/PLAN_FULLSTACK_POC.md section 4; docs/BACKEND_STEPS.md B5, B5b, B5c).
 
 Plan decision D1: only the two sources that are SAP in the demo are mocked as SAP (S/4HANA, Ariba).
 B5b: the systems on RT-1048's happy path are full vendor mocks (style "vendor"); SafetyCulture stays generic.
+B5c: AWS IoT Core is a full vendor mock too; whether di uses it is di's choice (it starts not provisioned).
 `source_id` matches SOURCES[].id in index.html. For the vendor mocks, base_path is the vendor host prefix and each
 mock serves the vendor's real URL paths below it.
 """
@@ -43,8 +44,8 @@ SYSTEMS: tuple[System, ...] = (
     System("rcy", "Sims Lifecycle Services", "sims", "sftp-csv", "/sims"),  # SFTP on port 2222; /sims is its admin view
     # generic mock (not on the happy path)
     System("insp", "SafetyCulture", "safetyculture", "generic-rest", "/safetyculture"),
-    # not provisioned, as in the demo
-    System("iot", "AWS IoT Core", "aws_iot", "unavailable", ""),
+    # B5c: a full mock, but di starts with it not provisioned, as in the demo (docs/BACKEND_STEPS.md, B5c)
+    System("iot", "AWS IoT Core", "aws_iot", "vendor", "/aws-iot"),
 )
 
 BY_SOURCE_ID = {s.source_id: s for s in SYSTEMS}

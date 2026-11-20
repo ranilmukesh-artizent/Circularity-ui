@@ -42,9 +42,9 @@ sendNotification, acknowledge,        | actions (POST /api/actions/notify.send, 
   decideRequest                       |   access.decideRequest)
 
 Differences from the demo, by design:
-- inbox.cards[].kinds: the step kinds of the route (STEP_TPL). The facade's `steps` maps them with `s[0] + ' → ' + s[1]`,
-  which on the demo's step kinds (strings) gives their first two letters ("o → r"): a facade bug B17 should fix by
-  labelling the kinds (EX_STEP labels) instead.
+- inbox.cards[].kinds: the step kinds of the route (STEP_TPL); cards[].steps labels them "<step> → <system>" (EX_STEP).
+  The demo's facade mapped the kinds with `s[0] + ' → ' + s[1]`, which on its step kinds (strings) gave their first
+  two letters ("o → r"); B17 fixed the facade to use these labels in both modes.
 - kpis.counts.workflows: the demo counts its workflows only once a page has opened them (S.wf is created lazily);
   the server always counts the catalogue (35).
 - Integration health (hhTotals) has no workflow runs in progress on the server; the demo has none at the start either.
@@ -60,7 +60,7 @@ from di import policy
 from di.auth import Principal, principal
 from di.db import get_session
 from di.engine.jsmath import js_round, js_sum
-from di.execution.steps import STEP_TPL, steps_for
+from di.execution.steps import EX_STEP, STEP_TPL, steps_for
 from di.reads import cases as case_reads
 from di.reads import workspace as ws
 from di.reads.common import (
@@ -1592,6 +1592,9 @@ def approval_cards(ctx, tenant: str = "All") -> list[dict]:
             "submittedBy": x["c"]["submitted"]["by"],
             "risks": [r["text"] for r in x["risks"]],
             "kinds": list(STEP_TPL.get(x["c"]["recommendation"]["id"]) or []),
+            "steps": [
+                EX_STEP[k]["label"] + " → " + EX_STEP[k]["sys"] for k in STEP_TPL.get(x["c"]["recommendation"]["id"]) or []
+            ],
         }
         for x in q
     ]

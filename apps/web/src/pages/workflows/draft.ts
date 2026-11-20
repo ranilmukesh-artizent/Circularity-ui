@@ -4,7 +4,7 @@
  * Save and Publish send the copy through invoke(); Discard reloads the last saved version.
  */
 import { useSyncExternalStore } from 'react';
-import { graphOf, workflow, type Trigger, type WfGraph } from '../../api/workflows';
+import { graphOf, graphStamp, workflow, type Trigger, type WfGraph } from '../../api/workflows';
 
 export interface Draft {
   id: string;
@@ -15,7 +15,7 @@ export interface Draft {
   dirty: boolean;
   /** "Leave with unsaved changes" was already warned once. */
   warned: boolean;
-  /** ver|updated of the engine workflow this copy was taken from. */
+  /** ver|updated of the backend's graph this copy was taken from. */
   base: string;
   /** Undo / redo snapshots of the graph. */
   hist: { s: string[]; i: number };
@@ -31,7 +31,7 @@ export function useDrafts(): number {
   return useSyncExternalStore((f) => (subs.add(f), () => subs.delete(f)), () => version);
 }
 
-const baseOf = (id: string) => { const w = workflow(id); return w ? w.ver + '|' + String(w.updated) : ''; };
+const baseOf = (id: string) => graphStamp(id);
 
 function fresh(id: string): Draft {
   const w = workflow(id)!;

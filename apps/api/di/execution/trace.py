@@ -1,8 +1,6 @@
 """Where each number comes from (the demo's exTrace, N7/N8): every term of a route as cost lines, each with a method
 (Retrieved, Contracted, Modelled), a source (system, record) and a why; and the actuals Finance confirms against them
 (lineActuals, exActual).
-
-TODO(B17): several sources read "ShipLane TMS", the demo's TMS; the backend's is Oracle Transportation Management.
 """
 
 import re
@@ -14,7 +12,7 @@ from di.execution.steps import ex_doc_num, ex_doc_ref
 from di.execution.util import js_str
 from di.reads.common import AS_OF, CLASSES, WORLD, Case, as_model, case_demand, fmt_d, hash_id, inr, jg_lc
 
-TMS = "ShipLane TMS"  # TODO(B17): Oracle Transportation Management once the frontend switches vendor names
+TMS = "Oracle Transportation Management"  # the demo's fictional "ShipLane TMS", replaced in B5b and in the demo (B17)
 RATE = f"{RATE_CARD['id']} · {RATE_CARD['carrier']}"
 
 

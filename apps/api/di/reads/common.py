@@ -873,7 +873,7 @@ STARTING_REQUESTS: list[dict] = [
         "at": iso(add_days(AS_OF, -6)), "decidedBy": "Admin", "decidedAt": iso(add_days(AS_OF, -5)),
         "note": "It books shipments without a human approval step. Resubmit with the approval gate.",
         "server": {
-            "name": "Freight booking MCP server", "owner": "ShipLane", "purpose": "Book and cancel transfers between sites.",
+            "name": "Freight booking MCP server", "owner": "Oracle", "purpose": "Book and cancel transfers between sites.",
             "tools": ["shipment.book", "shipment.cancel"], "access": "write", "data": "Shipment orders between company sites.",
         },
     },
