@@ -1,0 +1,4863 @@
+{
+ "scenarios": {
+  "approval": [
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1049",
+    "error": {
+     "approval_request": "AQ-D72B0D",
+     "case_url": "#/product/RT-1049",
+     "code": "held",
+     "message": "Held for human approval. Nothing is committed until an Approver accepts it in Product."
+    },
+    "input": {
+     "case_id": "RT-1049",
+     "rationale": "Resale narrowly beats refurbishment by $15"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1049",
+     "lat": 58,
+     "outcome": "held for approval",
+     "step": 5,
+     "tenant": "Customer A",
+     "tool": "request_approval",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "held for approval",
+    "tenant": "Customer A",
+    "tool": "request_approval",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "Write tool: a person must approve",
+      "n": "Hold for human approval",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-c",
+    "agent": "coordinator",
+    "caseId": "RT-1044",
+    "error": {
+     "approval_request": "AQ-05E61A",
+     "case_url": "#/product/RT-1044",
+     "code": "held",
+     "message": "Held for human approval. Nothing is committed until an Approver accepts it in Product."
+    },
+    "input": {
+     "case_id": "RT-1044",
+     "rationale": "Pool allocation lifts the total"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1044",
+     "lat": 50,
+     "outcome": "held for approval",
+     "step": 5,
+     "tenant": "Customer C",
+     "tool": "request_approval",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "held for approval",
+    "tenant": "Customer C",
+    "tool": "request_approval",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer C · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "Write tool: a person must approve",
+      "n": "Hold for human approval",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1049",
+    "error": {
+     "code": "validation_error",
+     "message": "Missing required field \"rationale\"."
+    },
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1049",
+     "lat": 38,
+     "outcome": "error · validation_error",
+     "step": 5,
+     "tenant": "Customer A",
+     "tool": "request_approval",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · validation_error",
+    "tenant": "Customer A",
+    "tool": "request_approval",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "Missing \"rationale\"",
+      "n": "Validate input schema",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "coordinator",
+    "caseId": "RT-1049",
+    "error": {
+     "code": "tenant_boundary",
+     "message": "Case RT-1049 belongs to Customer A. Cross-client access needs customer consent, which is not on file for Customer B."
+    },
+    "input": {
+     "case_id": "RT-1049",
+     "rationale": "Resale narrowly beats refurbishment by $15"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1049",
+     "lat": 50,
+     "outcome": "denied · tenant boundary",
+     "step": 5,
+     "tenant": "Customer B",
+     "tool": "request_approval",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · tenant boundary",
+    "tenant": "Customer B",
+    "tool": "request_approval",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A data requested on behalf of Customer B",
+      "n": "Enforce tenant boundary",
+      "ok": false
+     }
+    ]
+   }
+  ],
+  "approve_then_send": [
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1048",
+    "error": {
+     "code": "approval_required",
+     "hint": "Approve the case in Product first.",
+     "message": "No human approval none is recorded for RT-1048. Instructions cannot be sent without one."
+    },
+    "input": {
+     "approval_ref": "none",
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1048",
+     "lat": 51,
+     "outcome": "held for approval",
+     "step": 6,
+     "tenant": "Customer A",
+     "tool": "send_instruction",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "held for approval",
+    "tenant": "Customer A",
+    "tool": "send_instruction",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "No approval none on record for RT-1048",
+      "n": "Verify approval reference",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1048",
+    "error": {
+     "approval_request": "AQ-3962EF",
+     "case_url": "#/product/RT-1048",
+     "code": "held",
+     "message": "Held for human approval. Nothing is committed until an Approver accepts it in Product."
+    },
+    "input": {
+     "case_id": "RT-1048",
+     "rationale": "Redeploy to the Chennai line; pool uplift confirmed"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1048",
+     "lat": 61,
+     "outcome": "held for approval",
+     "step": 5,
+     "tenant": "Customer A",
+     "tool": "request_approval",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "held for approval",
+    "tenant": "Customer A",
+    "tool": "request_approval",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "Write tool: a person must approve",
+      "n": "Hold for human approval",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "approve": "RT-1048",
+    "as": "approver",
+    "input": {
+     "case_id": "RT-1048",
+     "rationale": "Redeploy RT-1048 gives $9,600 predicted net, $4,800 ahead of Sell + buy for Site 3. Demand is confirmed (SO-48102). Evidence snapshot EVS-E7402581.",
+     "reviewed": true,
+     "route": "Redeploy RT-1048",
+     "spend": 1800,
+     "terms": ""
+    },
+    "result": {
+     "ok": true,
+     "output": {
+      "case_id": "RT-1048",
+      "net": 9600,
+      "override": false,
+      "ref": "APR-2026-10-3161",
+      "route": "Redeploy RT-1048",
+      "sent_to": "OMS · order allocation"
+     }
+    }
+   },
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1048",
+    "input": {
+     "approval_ref": "APR-2026-10-3161",
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1048",
+     "lat": 112,
+     "outcome": "ok",
+     "step": 6,
+     "tenant": "Customer A",
+     "tool": "send_instruction",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "approval_ref": "APR-2026-10-3161",
+     "case_id": "RT-1048",
+     "decision_id": "DI-2026-1048",
+     "deduplicated": true,
+     "destination": "OMS · order allocation",
+     "idempotency_key": "idem-ff06ff",
+     "instruction_version": 1,
+     "note": "Instruction already delivered; repeated call created nothing new"
+    },
+    "tenant": "Customer A",
+    "tool": "send_instruction",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "APR-2026-10-3161",
+      "n": "Verify approval reference",
+      "ok": true
+     },
+     {
+      "detail": "write sent within scope",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1048",
+    "input": {
+     "approval_ref": "APR-2026-10-3161",
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1048",
+     "lat": 89,
+     "outcome": "ok",
+     "step": 6,
+     "tenant": "Customer A",
+     "tool": "send_instruction",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "approval_ref": "APR-2026-10-3161",
+     "case_id": "RT-1048",
+     "decision_id": "DI-2026-1048",
+     "deduplicated": true,
+     "destination": "OMS · order allocation",
+     "idempotency_key": "idem-ff06ff",
+     "instruction_version": 1,
+     "note": "Instruction already delivered; repeated call created nothing new"
+    },
+    "tenant": "Customer A",
+    "tool": "send_instruction",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "APR-2026-10-3161",
+      "n": "Verify approval reference",
+      "ok": true
+     },
+     {
+      "detail": "write sent within scope",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   }
+  ],
+  "demand": [
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1049",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1049",
+     "lat": 72,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "find_demand",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1049",
+     "demand": [
+      {
+       "demand": "Dealer network · 31 comparable sales",
+       "eligible": true,
+       "route": "resale",
+       "status": "forecast"
+      },
+      {
+       "demand": "Dealer network · grade A listing",
+       "eligible": true,
+       "route": "resale",
+       "status": "forecast"
+      },
+      {
+       "demand": "Site 6 · forecast replacement",
+       "eligible": true,
+       "route": "redeploy",
+       "status": "forecast"
+      },
+      {
+       "demand": "Service stock · gearbox & chuck",
+       "eligible": true,
+       "route": "intparts",
+       "status": "confirmed"
+      },
+      {
+       "demand": "Certified recycler",
+       "eligible": true,
+       "route": "material",
+       "status": "confirmed"
+      }
+     ]
+    },
+    "tenant": "Customer A",
+    "tool": "find_demand",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1048",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1048",
+     "lat": 115,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "find_demand",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1048",
+     "demand": [
+      {
+       "demand": "Customer A · Site 3 contract replacement · accepts certified refurbished",
+       "eligible": true,
+       "route": "redeploy",
+       "status": "confirmed"
+      },
+      {
+       "demand": "Buyer demand + Site 3 replacement",
+       "eligible": true,
+       "route": "resale",
+       "status": "forecast"
+      },
+      {
+       "demand": "Lease opportunity + Site 3 replacement",
+       "eligible": true,
+       "route": "relase",
+       "status": "forecast"
+      },
+      {
+       "demand": "Component demand + Site 3 replacement",
+       "eligible": true,
+       "route": "intparts",
+       "status": "forecast"
+      },
+      {
+       "demand": "Certified recycler · spot",
+       "eligible": true,
+       "route": "material",
+       "status": "confirmed"
+      },
+      {
+       "demand": "Approved vendor A",
+       "eligible": true,
+       "route": "exit",
+       "status": "confirmed"
+      }
+     ]
+    },
+    "tenant": "Customer A",
+    "tool": "find_demand",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "finder",
+    "caseId": "RT-1104",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1104",
+     "lat": 99,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer B",
+     "tool": "find_demand",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1104",
+     "demand": [
+      {
+       "demand": "Approved vendor A · cert ISO 14001 · valid to Mar 2027",
+       "eligible": true,
+       "route": "exit",
+       "status": "confirmed"
+      },
+      {
+       "demand": "Approved vendor B · cert R2v3 · valid to Jun 2027",
+       "eligible": true,
+       "route": "exit",
+       "status": "confirmed"
+      },
+      {
+       "demand": "Uncertified vendor · certificate lapsed 12 Aug 2026",
+       "eligible": false,
+       "route": "exit",
+       "status": "confirmed"
+      }
+     ]
+    },
+    "tenant": "Customer B",
+    "tool": "find_demand",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-c",
+    "agent": "finder",
+    "caseId": "RT-1052",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1052",
+     "lat": 137,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer C",
+     "tool": "find_demand",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1052",
+     "demand": [
+      {
+       "demand": "D-301 + D-302 + D-303 · confirmed and dealer lot",
+       "eligible": true,
+       "route": "redeploy",
+       "status": "confirmed"
+      },
+      {
+       "demand": "Site 2 + Site 6 project · confirmed",
+       "eligible": true,
+       "route": "redeploy",
+       "status": "confirmed"
+      },
+      {
+       "demand": "Dealer lot offer (20 units)",
+       "eligible": true,
+       "route": "resale",
+       "status": "forecast"
+      },
+      {
+       "demand": "Service stock",
+       "eligible": true,
+       "route": "intparts",
+       "status": "confirmed"
+      },
+      {
+       "demand": "Accepting buyer",
+       "eligible": false,
+       "route": "extparts",
+       "status": "forecast"
+      },
+      {
+       "demand": "Certified recycler",
+       "eligible": true,
+       "route": "material",
+       "status": "confirmed"
+      }
+     ]
+    },
+    "tenant": "Customer C",
+    "tool": "find_demand",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer C · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-c",
+    "agent": "finder",
+    "caseId": "RT-1104",
+    "error": {
+     "code": "tenant_boundary",
+     "message": "Case RT-1104 belongs to Customer B. Cross-client access needs customer consent, which is not on file for Customer C."
+    },
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1104",
+     "lat": 49,
+     "outcome": "denied · tenant boundary",
+     "step": 2,
+     "tenant": "Customer C",
+     "tool": "find_demand",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · tenant boundary",
+    "tenant": "Customer C",
+    "tool": "find_demand",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B data requested on behalf of Customer C",
+      "n": "Enforce tenant boundary",
+      "ok": false
+     }
+    ]
+   }
+  ],
+  "evidence": [
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": "RT-1048",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "RT-1048",
+     "lat": 72,
+     "outcome": "ok",
+     "step": 1,
+     "tenant": "Customer A",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "asset_id": "MTR-2041",
+     "case_id": "RT-1048",
+     "evidence": [
+      {
+       "freshness": "2 h ago",
+       "item": "Return record available",
+       "source": "WMS · reverse logistics",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Identity and configuration verified",
+       "source": "PLM",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Inspection report available",
+       "source": "MRO",
+       "state": "ready"
+      },
+      {
+       "freshness": "41 min ago",
+       "item": "Service history retrieved",
+       "source": "EAM",
+       "state": "ready"
+      },
+      {
+       "freshness": "41 min ago",
+       "item": "Engineering assessment available",
+       "source": "Engineering",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Photos available",
+       "source": "MRO",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Demand evidence linked",
+       "source": "CRM",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Market comparables current",
+       "source": "Market pricing",
+       "state": "ready"
+      },
+      {
+       "freshness": "5 h ago",
+       "item": "Cost and stock data available",
+       "source": "ERP finance",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Policy & certification checked",
+       "source": "Engineering",
+       "state": "ready"
+      }
+     ],
+     "readiness": "10/10",
+     "tenant": "Customer A"
+    },
+    "tenant": "Customer A",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1049",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1049",
+     "lat": 115,
+     "outcome": "ok",
+     "step": 1,
+     "tenant": "Customer A",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "asset_id": "DRL-0812",
+     "case_id": "RT-1049",
+     "evidence": [
+      {
+       "freshness": "2 h ago",
+       "item": "Return record available",
+       "source": "WMS · reverse logistics",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Identity and configuration verified",
+       "source": "PLM",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Inspection report available",
+       "source": "Inspection",
+       "state": "ready"
+      },
+      {
+       "freshness": "5 h ago",
+       "item": "Service history retrieved",
+       "source": "EAM",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Engineering assessment available",
+       "source": "Engineering",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Photos available",
+       "source": "Inspection",
+       "state": "ready"
+      },
+      {
+       "freshness": "41 min ago",
+       "item": "Demand evidence linked",
+       "source": "CRM",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Market comparables current",
+       "source": "Market pricing",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Cost and stock data available",
+       "source": "ERP finance",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Policy & certification checked",
+       "source": "Engineering",
+       "state": "ready"
+      }
+     ],
+     "readiness": "10/10",
+     "tenant": "Customer A"
+    },
+    "tenant": "Customer A",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "gap",
+    "caseId": "RT-1051",
+    "input": {
+     "case_id": "RT-1051"
+    },
+    "log": {
+     "agent": "Gap Requester",
+     "caseId": "RT-1051",
+     "lat": 99,
+     "outcome": "ok",
+     "step": 1,
+     "tenant": "Customer A",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "asset_id": "PMP-0470",
+     "case_id": "RT-1051",
+     "evidence": [
+      {
+       "freshness": "41 min ago",
+       "item": "Return record available",
+       "source": "WMS · reverse logistics",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Identity and configuration verified",
+       "source": "PLM",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Inspection report available",
+       "source": "MRO",
+       "state": "missing"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Service history retrieved",
+       "source": "EAM",
+       "state": "stale"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Engineering assessment available",
+       "source": "Engineering",
+       "state": "missing"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Photos available",
+       "source": "MRO",
+       "state": "missing"
+      },
+      {
+       "freshness": "41 min ago",
+       "item": "Demand evidence linked",
+       "source": "CRM",
+       "state": "missing"
+      },
+      {
+       "freshness": "5 h ago",
+       "item": "Market comparables current",
+       "source": "Market pricing",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Cost and stock data available",
+       "source": "ERP finance",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Policy & certification checked",
+       "source": "Engineering",
+       "state": "ready"
+      }
+     ],
+     "readiness": "5/10",
+     "tenant": "Customer A"
+    },
+    "tenant": "Customer A",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Gap Requester · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read, request:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1003",
+    "input": {
+     "case_id": "RT-1003"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1003",
+     "lat": 137,
+     "outcome": "ok",
+     "step": 1,
+     "tenant": "Customer A",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "asset_id": "PMP-0060",
+     "case_id": "RT-1003",
+     "evidence": [
+      {
+       "freshness": "41 min ago",
+       "item": "Return record available",
+       "source": "WMS · reverse logistics",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Identity and configuration verified",
+       "source": "PLM",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Inspection report available",
+       "source": "MRO",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Service history retrieved",
+       "source": "EAM",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Engineering assessment available",
+       "source": "Engineering",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Photos available",
+       "source": "MRO",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Demand evidence linked",
+       "source": "CRM",
+       "state": "ready"
+      },
+      {
+       "freshness": "5 h ago",
+       "item": "Market comparables current",
+       "source": "Market pricing",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Cost and stock data available",
+       "source": "ERP finance",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Policy & certification checked",
+       "source": "Engineering",
+       "state": "ready"
+      }
+     ],
+     "readiness": "10/10",
+     "tenant": "Customer A"
+    },
+    "tenant": "Customer A",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "reconciler",
+    "caseId": "RT-1042",
+    "input": {
+     "case_id": "RT-1042"
+    },
+    "log": {
+     "agent": "Reconciler",
+     "caseId": "RT-1042",
+     "lat": 95,
+     "outcome": "ok",
+     "step": 1,
+     "tenant": "Customer A",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "asset_id": "DRL-1543",
+     "case_id": "RT-1042",
+     "evidence": [
+      {
+       "freshness": "41 min ago",
+       "item": "Return record available",
+       "source": "WMS · reverse logistics",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Identity and configuration verified",
+       "source": "PLM",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Inspection report available",
+       "source": "Inspection",
+       "state": "ready"
+      },
+      {
+       "freshness": "5 h ago",
+       "item": "Service history retrieved",
+       "source": "EAM",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Engineering assessment available",
+       "source": "Engineering",
+       "state": "missing"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Photos available",
+       "source": "Inspection",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Demand evidence linked",
+       "source": "CRM",
+       "state": "ready"
+      },
+      {
+       "freshness": "41 min ago",
+       "item": "Market comparables current",
+       "source": "Market pricing",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Cost and stock data available",
+       "source": "ERP finance",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Policy & certification checked",
+       "source": "Engineering",
+       "state": "ready"
+      }
+     ],
+     "readiness": "9/10",
+     "tenant": "Customer A"
+    },
+    "tenant": "Customer A",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Reconciler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "outcome:write, evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "assembler",
+    "caseId": "RT-1050",
+    "input": {
+     "case_id": "RT-1050"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "RT-1050",
+     "lat": 72,
+     "outcome": "ok",
+     "step": 1,
+     "tenant": "Customer B",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "asset_id": "CTL-0318",
+     "case_id": "RT-1050",
+     "evidence": [
+      {
+       "freshness": "2 h ago",
+       "item": "Return record available",
+       "source": "WMS · reverse logistics",
+       "state": "ready"
+      },
+      {
+       "freshness": "41 min ago",
+       "item": "Identity and configuration verified",
+       "source": "PLM",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Inspection report available",
+       "source": "Inspection",
+       "state": "partial"
+      },
+      {
+       "freshness": "5 h ago",
+       "item": "Service history retrieved",
+       "source": "EAM",
+       "state": "ready"
+      },
+      {
+       "freshness": "5 h ago",
+       "item": "Engineering assessment available",
+       "source": "Engineering",
+       "state": "missing"
+      },
+      {
+       "freshness": "5 h ago",
+       "item": "Photos available",
+       "source": "Inspection",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Demand evidence linked",
+       "source": "CRM",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Market comparables current",
+       "source": "Market pricing",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Cost and stock data available",
+       "source": "ERP finance",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Policy & certification checked",
+       "source": "Engineering",
+       "state": "ready"
+      }
+     ],
+     "readiness": "8/10",
+     "tenant": "Customer B"
+    },
+    "tenant": "Customer B",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-c",
+    "agent": "assembler",
+    "caseId": "RT-1052",
+    "input": {
+     "case_id": "RT-1052"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "RT-1052",
+     "lat": 79,
+     "outcome": "ok",
+     "step": 1,
+     "tenant": "Customer C",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "asset_id": "BAT-0126",
+     "case_id": "RT-1052",
+     "evidence": [
+      {
+       "freshness": "5 h ago",
+       "item": "Return record available",
+       "source": "WMS · reverse logistics",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Identity and configuration verified",
+       "source": "PLM",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Inspection report available",
+       "source": "Inspection",
+       "state": "partial"
+      },
+      {
+       "freshness": "41 min ago",
+       "item": "Service history retrieved",
+       "source": "EAM",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Engineering assessment available",
+       "source": "Engineering",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Photos available",
+       "source": "Inspection",
+       "state": "ready"
+      },
+      {
+       "freshness": "2 h ago",
+       "item": "Demand evidence linked",
+       "source": "CRM",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Market comparables current",
+       "source": "Market pricing",
+       "state": "ready"
+      },
+      {
+       "freshness": "12 min ago",
+       "item": "Cost and stock data available",
+       "source": "ERP finance",
+       "state": "ready"
+      },
+      {
+       "freshness": "yesterday",
+       "item": "Policy & certification checked",
+       "source": "Engineering",
+       "state": "ready"
+      }
+     ],
+     "readiness": "9/10",
+     "tenant": "Customer C"
+    },
+    "tenant": "Customer C",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer C · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": "RT-1001",
+    "error": {
+     "code": "tenant_boundary",
+     "message": "Case RT-1001 belongs to Customer B. Cross-client access needs customer consent, which is not on file for Customer A."
+    },
+    "input": {
+     "case_id": "RT-1001"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "RT-1001",
+     "lat": 30,
+     "outcome": "denied · tenant boundary",
+     "step": 1,
+     "tenant": "Customer A",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · tenant boundary",
+    "tenant": "Customer A",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B data requested on behalf of Customer A",
+      "n": "Enforce tenant boundary",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "assembler",
+    "caseId": "RT-1048",
+    "error": {
+     "code": "tenant_boundary",
+     "message": "Case RT-1048 belongs to Customer A. Cross-client access needs customer consent, which is not on file for Customer B."
+    },
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "RT-1048",
+     "lat": 40,
+     "outcome": "denied · tenant boundary",
+     "step": 1,
+     "tenant": "Customer B",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · tenant boundary",
+    "tenant": "Customer B",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A data requested on behalf of Customer B",
+      "n": "Enforce tenant boundary",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": "RT-9999",
+    "error": {
+     "code": "case_not_found",
+     "message": "No live case RT-9999."
+    },
+    "input": {
+     "case_id": "RT-9999"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "RT-9999",
+     "lat": 23,
+     "outcome": "error · case_not_found",
+     "step": 1,
+     "tenant": "Customer A",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · case_not_found",
+    "tenant": "Customer A",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Unknown case",
+      "n": "Resolve case",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": null,
+    "error": {
+     "code": "validation_error",
+     "message": "Missing required field \"case_id\"."
+    },
+    "input": {},
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "—",
+     "lat": 31,
+     "outcome": "error · validation_error",
+     "step": 1,
+     "tenant": "Customer A",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · validation_error",
+    "tenant": "Customer A",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "Missing \"case_id\"",
+      "n": "Validate input schema",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": 1048,
+    "error": {
+     "code": "validation_error",
+     "message": "\"case_id\" must be a string."
+    },
+    "input": {
+     "case_id": 1048
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": 1048,
+     "lat": 24,
+     "outcome": "error · validation_error",
+     "step": 1,
+     "tenant": "Customer A",
+     "tool": "get_case_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · validation_error",
+    "tenant": "Customer A",
+    "tool": "get_case_evidence",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "case_id must be string",
+      "n": "Validate input schema",
+      "ok": false
+     }
+    ]
+   }
+  ],
+  "gaps": [
+   {
+    "account": "planner-a",
+    "agent": "gap",
+    "caseId": "RT-1051",
+    "input": {
+     "case_id": "RT-1051",
+     "kind": "inspection"
+    },
+    "log": {
+     "agent": "Gap Requester",
+     "caseId": "RT-1051",
+     "lat": 72,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "request_missing_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1051",
+     "kind": "inspection",
+     "request_ref": "WO-94000",
+     "sent_to": "Inspection",
+     "status": "sent"
+    },
+    "tenant": "Customer A",
+    "tool": "request_missing_evidence",
+    "trace": [
+     {
+      "detail": "Gap Requester · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read, request:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "write sent within scope",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "gap",
+    "caseId": "RT-1045",
+    "input": {
+     "case_id": "RT-1045",
+     "kind": "test"
+    },
+    "log": {
+     "agent": "Gap Requester",
+     "caseId": "RT-1045",
+     "lat": 115,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer B",
+     "tool": "request_missing_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1045",
+     "kind": "test",
+     "request_ref": "WO-94001",
+     "sent_to": "Inspection",
+     "status": "sent"
+    },
+    "tenant": "Customer B",
+    "tool": "request_missing_evidence",
+    "trace": [
+     {
+      "detail": "Gap Requester · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read, request:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "write sent within scope",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "gap",
+    "caseId": "RT-1048",
+    "error": {
+     "code": "nothing_to_request",
+     "message": "RT-1048 has no missing evidence."
+    },
+    "input": {
+     "case_id": "RT-1048",
+     "kind": "photos"
+    },
+    "log": {
+     "agent": "Gap Requester",
+     "caseId": "RT-1048",
+     "lat": 47,
+     "outcome": "error · nothing_to_request",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "request_missing_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · nothing_to_request",
+    "tenant": "Customer A",
+    "tool": "request_missing_evidence",
+    "trace": [
+     {
+      "detail": "Gap Requester · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read, request:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "Nothing missing",
+      "n": "Run tool",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "gap",
+    "caseId": "RT-1051",
+    "error": {
+     "code": "validation_error",
+     "message": "Missing required field \"kind\"."
+    },
+    "input": {
+     "case_id": "RT-1051"
+    },
+    "log": {
+     "agent": "Gap Requester",
+     "caseId": "RT-1051",
+     "lat": 28,
+     "outcome": "error · validation_error",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "request_missing_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · validation_error",
+    "tenant": "Customer A",
+    "tool": "request_missing_evidence",
+    "trace": [
+     {
+      "detail": "Gap Requester · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read, request:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "Missing \"kind\"",
+      "n": "Validate input schema",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "gap",
+    "caseId": "RT-1045",
+    "error": {
+     "code": "tenant_boundary",
+     "message": "Case RT-1045 belongs to Customer B. Cross-client access needs customer consent, which is not on file for Customer A."
+    },
+    "input": {
+     "case_id": "RT-1045",
+     "kind": "test"
+    },
+    "log": {
+     "agent": "Gap Requester",
+     "caseId": "RT-1045",
+     "lat": 50,
+     "outcome": "denied · tenant boundary",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "request_missing_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · tenant boundary",
+    "tenant": "Customer A",
+    "tool": "request_missing_evidence",
+    "trace": [
+     {
+      "detail": "Gap Requester · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read, request:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B data requested on behalf of Customer A",
+      "n": "Enforce tenant boundary",
+      "ok": false
+     }
+    ]
+   }
+  ],
+  "instructions": [
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1048",
+    "error": {
+     "code": "validation_error",
+     "message": "Missing required field \"approval_ref\"."
+    },
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1048",
+     "lat": 31,
+     "outcome": "error · validation_error",
+     "step": 6,
+     "tenant": "Customer A",
+     "tool": "send_instruction",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · validation_error",
+    "tenant": "Customer A",
+    "tool": "send_instruction",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "Missing \"approval_ref\"",
+      "n": "Validate input schema",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1048",
+    "error": {
+     "code": "approval_required",
+     "hint": "Approve the case in Product first.",
+     "message": "No human approval APR-2026-10-0161 is recorded for RT-1048. Instructions cannot be sent without one."
+    },
+    "input": {
+     "approval_ref": "APR-2026-10-0161",
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1048",
+     "lat": 59,
+     "outcome": "held for approval",
+     "step": 6,
+     "tenant": "Customer A",
+     "tool": "send_instruction",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "held for approval",
+    "tenant": "Customer A",
+    "tool": "send_instruction",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "No approval APR-2026-10-0161 on record for RT-1048",
+      "n": "Verify approval reference",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1003",
+    "error": {
+     "code": "approval_required",
+     "hint": "Recorded reference is APR-2026-10-3026",
+     "message": "No human approval APR-2026-10-0000 is recorded for RT-1003. Instructions cannot be sent without one."
+    },
+    "input": {
+     "approval_ref": "APR-2026-10-0000",
+     "case_id": "RT-1003"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1003",
+     "lat": 69,
+     "outcome": "held for approval",
+     "step": 6,
+     "tenant": "Customer A",
+     "tool": "send_instruction",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "held for approval",
+    "tenant": "Customer A",
+    "tool": "send_instruction",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "No approval APR-2026-10-0000 on record for RT-1003",
+      "n": "Verify approval reference",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": "RT-1003",
+    "input": {
+     "approval_ref": "APR-2026-10-3026",
+     "case_id": "RT-1003"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1003",
+     "lat": 113,
+     "outcome": "ok",
+     "step": 6,
+     "tenant": "Customer A",
+     "tool": "send_instruction",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "approval_ref": "APR-2026-10-3026",
+     "case_id": "RT-1003",
+     "decision_id": "DI-2026-1003",
+     "deduplicated": true,
+     "destination": "MRO · Depot repair",
+     "idempotency_key": "idem-db9f8a",
+     "instruction_version": 1,
+     "note": "Instruction already delivered; repeated call created nothing new"
+    },
+    "tenant": "Customer A",
+    "tool": "send_instruction",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "APR-2026-10-3026",
+      "n": "Verify approval reference",
+      "ok": true
+     },
+     {
+      "detail": "write sent within scope",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "coordinator",
+    "caseId": "RT-1040",
+    "input": {
+     "approval_ref": "APR-2026-10-3137",
+     "case_id": "RT-1040"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1040",
+     "lat": 109,
+     "outcome": "ok",
+     "step": 6,
+     "tenant": "Customer B",
+     "tool": "send_instruction",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "approval_ref": "APR-2026-10-3137",
+     "case_id": "RT-1040",
+     "decision_id": "DI-2026-1040",
+     "deduplicated": true,
+     "destination": "WMS · reservation",
+     "idempotency_key": "idem-4388ba",
+     "instruction_version": 2,
+     "note": "Instruction already delivered; repeated call created nothing new"
+    },
+    "tenant": "Customer B",
+    "tool": "send_instruction",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "APR-2026-10-3137",
+      "n": "Verify approval reference",
+      "ok": true
+     },
+     {
+      "detail": "write sent within scope",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "coordinator",
+    "caseId": "RT-1003",
+    "error": {
+     "code": "tenant_boundary",
+     "message": "Case RT-1003 belongs to Customer A. Cross-client access needs customer consent, which is not on file for Customer B."
+    },
+    "input": {
+     "approval_ref": "APR-2026-10-3026",
+     "case_id": "RT-1003"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "RT-1003",
+     "lat": 44,
+     "outcome": "denied · tenant boundary",
+     "step": 6,
+     "tenant": "Customer B",
+     "tool": "send_instruction",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · tenant boundary",
+    "tenant": "Customer B",
+    "tool": "send_instruction",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "instruction:write",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A data requested on behalf of Customer B",
+      "n": "Enforce tenant boundary",
+      "ok": false
+     }
+    ]
+   }
+  ],
+  "models": [
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": null,
+    "input": {
+     "version": "v1.3"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "—",
+     "lat": 72,
+     "outcome": "ok",
+     "step": 3,
+     "tenant": "Customer A",
+     "tool": "get_model_validation",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "bias": 0.006,
+     "closed_cases": 278,
+     "mape": 0.125,
+     "p10_p90_coverage": 0.849,
+     "version": "v1.3"
+    },
+    "tenant": "Customer A",
+    "tool": "get_model_validation",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "reconciler",
+    "caseId": null,
+    "input": {
+     "version": "v1.0"
+    },
+    "log": {
+     "agent": "Reconciler",
+     "caseId": "—",
+     "lat": 115,
+     "outcome": "ok",
+     "step": 3,
+     "tenant": "Customer B",
+     "tool": "get_model_validation",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "bias": -0.042,
+     "closed_cases": 211,
+     "mape": 0.177,
+     "p10_p90_coverage": 0.635,
+     "version": "v1.0"
+    },
+    "tenant": "Customer B",
+    "tool": "get_model_validation",
+    "trace": [
+     {
+      "detail": "Reconciler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "outcome:write, evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-c",
+    "agent": "reconciler",
+    "caseId": null,
+    "input": {
+     "version": "v1.2"
+    },
+    "log": {
+     "agent": "Reconciler",
+     "caseId": "—",
+     "lat": 99,
+     "outcome": "ok",
+     "step": 3,
+     "tenant": "Customer C",
+     "tool": "get_model_validation",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "bias": -0.025,
+     "closed_cases": 297,
+     "mape": 0.139,
+     "p10_p90_coverage": 0.754,
+     "version": "v1.2"
+    },
+    "tenant": "Customer C",
+    "tool": "get_model_validation",
+    "trace": [
+     {
+      "detail": "Reconciler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "outcome:write, evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer C · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": null,
+    "error": {
+     "code": "unknown_version",
+     "message": "Unknown model version. Try v1.0 to v1.3."
+    },
+    "input": {
+     "version": "v9"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "—",
+     "lat": 49,
+     "outcome": "error · unknown_version",
+     "step": 3,
+     "tenant": "Customer A",
+     "tool": "get_model_validation",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · unknown_version",
+    "tenant": "Customer A",
+    "tool": "get_model_validation",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "Unknown version",
+      "n": "Run tool",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": null,
+    "error": {
+     "code": "validation_error",
+     "message": "\"version\" must be a string."
+    },
+    "input": {
+     "version": 13
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "—",
+     "lat": 40,
+     "outcome": "error · validation_error",
+     "step": 3,
+     "tenant": "Customer A",
+     "tool": "get_model_validation",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · validation_error",
+    "tenant": "Customer A",
+    "tool": "get_model_validation",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "version must be string",
+      "n": "Validate input schema",
+      "ok": false
+     }
+    ]
+   }
+  ],
+  "pools": [
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": null,
+    "input": {
+     "pool_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "—",
+     "lat": 123,
+     "outcome": "ok",
+     "step": 4,
+     "tenant": "Customer A",
+     "tool": "optimize_pool",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "allocation": {
+      "RT-1048": {
+       "Site 3": 1
+      },
+      "RT-1062": {
+       "Site 5": 1
+      }
+     },
+     "checked": "every unit and demand line allocated once",
+     "duplicate_allocation": false,
+     "per_asset_greedy_usd": 16000,
+     "pool": "RT-1048",
+     "pool_optimized_usd": 18200,
+     "uplift_usd": 2200
+    },
+    "tenant": "Customer A",
+    "tool": "optimize_pool",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-c",
+    "agent": "finder",
+    "caseId": null,
+    "input": {
+     "pool_id": "RT-1052"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "—",
+     "lat": 295,
+     "outcome": "ok",
+     "step": 4,
+     "tenant": "Customer C",
+     "tool": "optimize_pool",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "allocation": {
+      "RT-1044": {
+       "D-302": 8
+      },
+      "RT-1052": {
+       "D-301": 12,
+       "D-302": 2,
+       "D-303": 6
+      }
+     },
+     "checked": "every unit and demand line allocated once",
+     "duplicate_allocation": false,
+     "per_asset_greedy_usd": 5350,
+     "pool": "RT-1052",
+     "pool_optimized_usd": 5776,
+     "uplift_usd": 426
+    },
+    "tenant": "Customer C",
+    "tool": "optimize_pool",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer C · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": null,
+    "error": {
+     "code": "pool_not_found",
+     "message": "No pool for RT-1049. Try RT-1048 or RT-1052."
+    },
+    "input": {
+     "pool_id": "RT-1049"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "—",
+     "lat": 47,
+     "outcome": "error · pool_not_found",
+     "step": 4,
+     "tenant": "Customer A",
+     "tool": "optimize_pool",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · pool_not_found",
+    "tenant": "Customer A",
+    "tool": "optimize_pool",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "No pool",
+      "n": "Run tool",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": null,
+    "error": {
+     "code": "pool_not_found",
+     "message": "No pool for POOL-9. Try RT-1048 or RT-1052."
+    },
+    "input": {
+     "pool_id": "POOL-9"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "—",
+     "lat": 42,
+     "outcome": "error · pool_not_found",
+     "step": 4,
+     "tenant": "Customer A",
+     "tool": "optimize_pool",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · pool_not_found",
+    "tenant": "Customer A",
+    "tool": "optimize_pool",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "No pool",
+      "n": "Run tool",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": null,
+    "error": {
+     "code": "validation_error",
+     "message": "Missing required field \"pool_id\"."
+    },
+    "input": {},
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "—",
+     "lat": 41,
+     "outcome": "error · validation_error",
+     "step": 4,
+     "tenant": "Customer A",
+     "tool": "optimize_pool",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · validation_error",
+    "tenant": "Customer A",
+    "tool": "optimize_pool",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "Missing \"pool_id\"",
+      "n": "Validate input schema",
+      "ok": false
+     }
+    ]
+   }
+  ],
+  "predict": [
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1048",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1048",
+     "lat": 72,
+     "outcome": "ok",
+     "step": 3,
+     "tenant": "Customer A",
+     "tool": "predict_outcomes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1048",
+     "evidence_date": "07 Oct 2026",
+     "expected_net_usd": 9600,
+     "model_version": "v1.3",
+     "p10": 8371,
+     "p50": 9600,
+     "p90": 10608,
+     "plan": "Redeploy RT-1048",
+     "route": "redeploy",
+     "uncertainty": "Cost and service forecasts"
+    },
+    "tenant": "Customer A",
+    "tool": "predict_outcomes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1048",
+    "input": {
+     "case_id": "RT-1048",
+     "route": "redeploy"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1048",
+     "lat": 115,
+     "outcome": "ok",
+     "step": 3,
+     "tenant": "Customer A",
+     "tool": "predict_outcomes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1048",
+     "evidence_date": "07 Oct 2026",
+     "expected_net_usd": 9600,
+     "model_version": "v1.3",
+     "p10": 8371,
+     "p50": 9600,
+     "p90": 10608,
+     "plan": "Redeploy RT-1048",
+     "route": "redeploy",
+     "uncertainty": "Cost and service forecasts"
+    },
+    "tenant": "Customer A",
+    "tool": "predict_outcomes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1048",
+    "error": {
+     "code": "route_not_eligible",
+     "message": "Route \"extparts\" is excluded or not evaluated for RT-1048."
+    },
+    "input": {
+     "case_id": "RT-1048",
+     "route": "extparts"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1048",
+     "lat": 48,
+     "outcome": "error · route_not_eligible",
+     "step": 3,
+     "tenant": "Customer A",
+     "tool": "predict_outcomes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · route_not_eligible",
+    "tenant": "Customer A",
+    "tool": "predict_outcomes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "Route not eligible",
+      "n": "Run tool",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1048",
+    "error": {
+     "code": "route_not_eligible",
+     "message": "Route \"teleport\" is excluded or not evaluated for RT-1048."
+    },
+    "input": {
+     "case_id": "RT-1048",
+     "route": "teleport"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1048",
+     "lat": 43,
+     "outcome": "error · route_not_eligible",
+     "step": 3,
+     "tenant": "Customer A",
+     "tool": "predict_outcomes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · route_not_eligible",
+    "tenant": "Customer A",
+    "tool": "predict_outcomes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "Route not eligible",
+      "n": "Run tool",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1049",
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1049",
+     "lat": 122,
+     "outcome": "ok",
+     "step": 3,
+     "tenant": "Customer A",
+     "tool": "predict_outcomes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1049",
+     "evidence_date": "07 Oct 2026",
+     "expected_net_usd": 186,
+     "model_version": "v1.3",
+     "p10": 157,
+     "p50": 186,
+     "p90": 209,
+     "plan": "Sell whole asset as-is",
+     "route": "resale",
+     "uncertainty": "Price, sale timing, unsold risk"
+    },
+    "tenant": "Customer A",
+    "tool": "predict_outcomes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1051",
+    "input": {
+     "case_id": "RT-1051"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1051",
+     "lat": 110,
+     "outcome": "ok",
+     "step": 3,
+     "tenant": "Customer A",
+     "tool": "predict_outcomes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1051",
+     "reason": "Insufficient evidence for a validated prediction",
+     "withheld": true
+    },
+    "tenant": "Customer A",
+    "tool": "predict_outcomes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-c",
+    "agent": "finder",
+    "caseId": "RT-1052",
+    "error": {
+     "code": "route_not_eligible",
+     "message": "Route \"extparts\" is excluded or not evaluated for RT-1052."
+    },
+    "input": {
+     "case_id": "RT-1052",
+     "route": "extparts"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1052",
+     "lat": 50,
+     "outcome": "error · route_not_eligible",
+     "step": 3,
+     "tenant": "Customer C",
+     "tool": "predict_outcomes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · route_not_eligible",
+    "tenant": "Customer C",
+    "tool": "predict_outcomes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer C · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "Route not eligible",
+      "n": "Run tool",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "finder",
+    "caseId": "RT-1049",
+    "error": {
+     "code": "tenant_boundary",
+     "message": "Case RT-1049 belongs to Customer A. Cross-client access needs customer consent, which is not on file for Customer B."
+    },
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1049",
+     "lat": 56,
+     "outcome": "denied · tenant boundary",
+     "step": 3,
+     "tenant": "Customer B",
+     "tool": "predict_outcomes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · tenant boundary",
+    "tenant": "Customer B",
+    "tool": "predict_outcomes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A data requested on behalf of Customer B",
+      "n": "Enforce tenant boundary",
+      "ok": false
+     }
+    ]
+   }
+  ],
+  "reconcile": [
+   {
+    "account": "planner-a",
+    "agent": "reconciler",
+    "caseId": "CS-2041",
+    "input": {
+     "case_id": "CS-2041"
+    },
+    "log": {
+     "agent": "Reconciler",
+     "caseId": "CS-2041",
+     "lat": 72,
+     "outcome": "ok",
+     "step": 10,
+     "tenant": "Customer A",
+     "tool": "reconcile_outcome",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "actual": -57,
+     "case_id": "CS-2041",
+     "evidence_snapshot": "EVS-6A59D716",
+     "linked": true,
+     "model_version": "v1.0",
+     "predicted_p50": -45,
+     "route": "exit",
+     "status": "reconciled",
+     "variance": -12
+    },
+    "tenant": "Customer A",
+    "tool": "reconcile_outcome",
+    "trace": [
+     {
+      "detail": "Reconciler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "outcome:write, evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "write sent within scope",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "reconciler",
+    "caseId": "CS-3138",
+    "input": {
+     "case_id": "CS-3138"
+    },
+    "log": {
+     "agent": "Reconciler",
+     "caseId": "CS-3138",
+     "lat": 115,
+     "outcome": "ok",
+     "step": 10,
+     "tenant": "Customer A",
+     "tool": "reconcile_outcome",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "CS-3138",
+     "note": "Evidence incomplete. Pending cases are not treated as failures.",
+     "status": "pending"
+    },
+    "tenant": "Customer A",
+    "tool": "reconcile_outcome",
+    "trace": [
+     {
+      "detail": "Reconciler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "outcome:write, evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "write sent within scope",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "reconciler",
+    "caseId": "CS-0001",
+    "error": {
+     "code": "case_not_found",
+     "message": "No closed case CS-0001. Try CS-2041."
+    },
+    "input": {
+     "case_id": "CS-0001"
+    },
+    "log": {
+     "agent": "Reconciler",
+     "caseId": "CS-0001",
+     "lat": 47,
+     "outcome": "error · case_not_found",
+     "step": 10,
+     "tenant": "Customer A",
+     "tool": "reconcile_outcome",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · case_not_found",
+    "tenant": "Customer A",
+    "tool": "reconcile_outcome",
+    "trace": [
+     {
+      "detail": "Reconciler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "outcome:write, evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "Unknown closed case",
+      "n": "Run tool",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "reconciler",
+    "caseId": "RT-1048",
+    "error": {
+     "code": "case_not_found",
+     "message": "No closed case RT-1048. Try CS-2041."
+    },
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Reconciler",
+     "caseId": "RT-1048",
+     "lat": 42,
+     "outcome": "error · case_not_found",
+     "step": 10,
+     "tenant": "Customer A",
+     "tool": "reconcile_outcome",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · case_not_found",
+    "tenant": "Customer A",
+    "tool": "reconcile_outcome",
+    "trace": [
+     {
+      "detail": "Reconciler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "outcome:write, evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "Unknown closed case",
+      "n": "Run tool",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "reconciler",
+    "caseId": null,
+    "error": {
+     "code": "validation_error",
+     "message": "Missing required field \"case_id\"."
+    },
+    "input": {},
+    "log": {
+     "agent": "Reconciler",
+     "caseId": "—",
+     "lat": 41,
+     "outcome": "error · validation_error",
+     "step": 10,
+     "tenant": "Customer A",
+     "tool": "reconcile_outcome",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · validation_error",
+    "tenant": "Customer A",
+    "tool": "reconcile_outcome",
+    "trace": [
+     {
+      "detail": "Reconciler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "outcome:write, evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "Missing \"case_id\"",
+      "n": "Validate input schema",
+      "ok": false
+     }
+    ]
+   }
+  ],
+  "routes": [
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": "RT-1048",
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "RT-1048",
+     "lat": 72,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "list_eligible_routes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1048",
+     "eligible": [
+      {
+       "demand": "confirmed",
+       "expected_net_usd": 9600,
+       "p10": 8371,
+       "p90": 10608,
+       "plan": "Redeploy RT-1048",
+       "rank": 1
+      },
+      {
+       "demand": "forecast",
+       "expected_net_usd": 4800,
+       "p10": 3817,
+       "p90": 5606,
+       "plan": "Sell + buy for Site 3",
+       "rank": 2
+      },
+      {
+       "demand": "forecast",
+       "expected_net_usd": 3600,
+       "p10": 2678,
+       "p90": 4356,
+       "plan": "Re-lease + buy for Site 3",
+       "rank": 3
+      },
+      {
+       "demand": "forecast",
+       "expected_net_usd": 3200,
+       "p10": 2299,
+       "p90": 3939,
+       "plan": "Recover parts + buy for Site 3",
+       "rank": 4
+      },
+      {
+       "demand": "confirmed",
+       "expected_net_usd": 310,
+       "p10": 231,
+       "p90": 375,
+       "plan": "Recover material",
+       "rank": 5
+      },
+      {
+       "demand": "confirmed",
+       "expected_net_usd": -60,
+       "p10": -72,
+       "p90": -50,
+       "plan": "Responsible exit",
+       "rank": 6
+      }
+     ],
+     "excluded": [
+      {
+       "failed_gate": "Demand fit",
+       "plan": "Sell parts externally",
+       "reason": "No confirmed buyer for 55 kW IE3 stator assemblies within the 30-day window"
+      }
+     ]
+    },
+    "tenant": "Customer A",
+    "tool": "list_eligible_routes",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1048",
+    "input": {
+     "case_id": "RT-1048",
+     "include_excluded": false
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1048",
+     "lat": 115,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "list_eligible_routes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1048",
+     "eligible": [
+      {
+       "demand": "confirmed",
+       "expected_net_usd": 9600,
+       "p10": 8371,
+       "p90": 10608,
+       "plan": "Redeploy RT-1048",
+       "rank": 1
+      },
+      {
+       "demand": "forecast",
+       "expected_net_usd": 4800,
+       "p10": 3817,
+       "p90": 5606,
+       "plan": "Sell + buy for Site 3",
+       "rank": 2
+      },
+      {
+       "demand": "forecast",
+       "expected_net_usd": 3600,
+       "p10": 2678,
+       "p90": 4356,
+       "plan": "Re-lease + buy for Site 3",
+       "rank": 3
+      },
+      {
+       "demand": "forecast",
+       "expected_net_usd": 3200,
+       "p10": 2299,
+       "p90": 3939,
+       "plan": "Recover parts + buy for Site 3",
+       "rank": 4
+      },
+      {
+       "demand": "confirmed",
+       "expected_net_usd": 310,
+       "p10": 231,
+       "p90": 375,
+       "plan": "Recover material",
+       "rank": 5
+      },
+      {
+       "demand": "confirmed",
+       "expected_net_usd": -60,
+       "p10": -72,
+       "p90": -50,
+       "plan": "Responsible exit",
+       "rank": 6
+      }
+     ]
+    },
+    "tenant": "Customer A",
+    "tool": "list_eligible_routes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1027",
+    "input": {
+     "case_id": "RT-1027",
+     "include_excluded": true
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1027",
+     "lat": 99,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "list_eligible_routes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1027",
+     "eligible": [
+      {
+       "demand": "confirmed",
+       "expected_net_usd": 800,
+       "p10": 616,
+       "p90": 951,
+       "plan": "Selective harvest + material recovery",
+       "rank": 1
+      },
+      {
+       "demand": "confirmed",
+       "expected_net_usd": 380,
+       "p10": 283,
+       "p90": 460,
+       "plan": "Material recovery only",
+       "rank": 2
+      },
+      {
+       "demand": "forecast",
+       "expected_net_usd": 120,
+       "p10": 74,
+       "p90": 158,
+       "plan": "Sell as-is to rewinder",
+       "rank": 3
+      },
+      {
+       "demand": "confirmed",
+       "expected_net_usd": -60,
+       "p10": -72,
+       "p90": -50,
+       "plan": "Responsible exit",
+       "rank": 4
+      }
+     ],
+     "excluded": [
+      {
+       "failed_gate": "Condition & life",
+       "plan": "Redeploy",
+       "reason": "Winding insulation failed; remaining life below the minimum for reuse"
+      },
+      {
+       "failed_gate": "Condition & life",
+       "plan": "Re-lease",
+       "reason": "Winding insulation failed; remaining life below the minimum for reuse"
+      }
+     ]
+    },
+    "tenant": "Customer A",
+    "tool": "list_eligible_routes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "2 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": "RT-1051",
+    "input": {
+     "case_id": "RT-1051"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "RT-1051",
+     "lat": 137,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "list_eligible_routes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1051",
+     "failed_gate": "Condition & life",
+     "reason": "Pump has not been inspected. No route can be evaluated without condition and remaining-life evidence.",
+     "withheld": true
+    },
+    "tenant": "Customer A",
+    "tool": "list_eligible_routes",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "evidence:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer A · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "finder",
+    "caseId": "RT-1050",
+    "input": {
+     "case_id": "RT-1050"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1050",
+     "lat": 95,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer B",
+     "tool": "list_eligible_routes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1050",
+     "failed_gate": "Condition & life",
+     "reason": "Functional test required before any reuse route can be assessed. Value ranking is withheld rather than guessed.",
+     "withheld": true
+    },
+    "tenant": "Customer B",
+    "tool": "list_eligible_routes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-b",
+    "agent": "finder",
+    "caseId": "RT-1104",
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1104",
+     "lat": 72,
+     "outcome": "ok",
+     "step": 2,
+     "tenant": "Customer B",
+     "tool": "list_eligible_routes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": true,
+    "outcome": "ok",
+    "result": {
+     "case_id": "RT-1104",
+     "eligible": [
+      {
+       "demand": "confirmed",
+       "expected_net_usd": -60,
+       "p10": -72,
+       "p90": -50,
+       "plan": "Responsible exit · Approved vendor A",
+       "rank": 1
+      },
+      {
+       "demand": "confirmed",
+       "expected_net_usd": -85,
+       "p10": -97,
+       "p90": -75,
+       "plan": "Responsible exit · Approved vendor B",
+       "rank": 2
+      }
+     ],
+     "excluded": [
+      {
+       "failed_gate": "Policy & certification",
+       "plan": "Responsible exit · Uncertified vendor",
+       "reason": "Vendor not certified — cheaper at $35 but ineligible; mandatory requirement"
+      },
+      {
+       "failed_gate": "Condition & life",
+       "plan": "Sell whole asset",
+       "reason": "Battery health 41% and OS out of support; below minimum for resale"
+      },
+      {
+       "failed_gate": "Condition & life",
+       "plan": "Redeploy",
+       "reason": "Remaining life below the minimum for the intended use"
+      },
+      {
+       "failed_gate": "Demand fit",
+       "plan": "Recover parts for internal use",
+       "reason": "No component demand for this platform"
+      },
+      {
+       "failed_gate": "Demand fit",
+       "plan": "Sell parts externally",
+       "reason": "No accepting buyer for 9-year-old platform"
+      },
+      {
+       "failed_gate": "Sustainability",
+       "plan": "Recover material",
+       "reason": "Li-ion cells need an approved hazardous-waste route; in-house stream not permitted"
+      }
+     ]
+    },
+    "tenant": "Customer B",
+    "tool": "list_eligible_routes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B · own data only",
+      "n": "Enforce tenant boundary",
+      "ok": true
+     },
+     {
+      "detail": "read-only",
+      "n": "Run tool",
+      "ok": true
+     },
+     {
+      "detail": "call logged with agent, tenant and case",
+      "n": "Write audit record",
+      "ok": true
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1104",
+    "error": {
+     "code": "tenant_boundary",
+     "message": "Case RT-1104 belongs to Customer B. Cross-client access needs customer consent, which is not on file for Customer A."
+    },
+    "input": {
+     "case_id": "RT-1104"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1104",
+     "lat": 56,
+     "outcome": "denied · tenant boundary",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "list_eligible_routes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · tenant boundary",
+    "tenant": "Customer A",
+    "tool": "list_eligible_routes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "1 fields",
+      "n": "Validate input schema",
+      "ok": true
+     },
+     {
+      "detail": "Customer B data requested on behalf of Customer A",
+      "n": "Enforce tenant boundary",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": "RT-1048",
+    "error": {
+     "code": "validation_error",
+     "message": "\"include_excluded\" must be a boolean."
+    },
+    "input": {
+     "case_id": "RT-1048",
+     "include_excluded": "yes"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "RT-1048",
+     "lat": 15,
+     "outcome": "error · validation_error",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "list_eligible_routes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "error · validation_error",
+    "tenant": "Customer A",
+    "tool": "list_eligible_routes",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "demand:read, market:read, pool:read",
+      "n": "Check agent scope",
+      "ok": true
+     },
+     {
+      "detail": "include_excluded must be boolean",
+      "n": "Validate input schema",
+      "ok": false
+     }
+    ]
+   }
+  ],
+  "scope": [
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": null,
+    "error": {
+     "code": "out_of_scope",
+     "message": "Evidence Assembler cannot call request_missing_evidence. Scopes: evidence:read."
+    },
+    "input": {
+     "case_id": "RT-1051",
+     "kind": "inspection"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "—",
+     "lat": 23,
+     "outcome": "denied · out of_scope",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "request_missing_evidence",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · out of_scope",
+    "tenant": "Customer A",
+    "tool": "request_missing_evidence",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "Evidence Assembler is not scoped for request_missing_evidence",
+      "n": "Check agent scope",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": null,
+    "error": {
+     "code": "out_of_scope",
+     "message": "Evidence Assembler cannot call send_instruction. Scopes: evidence:read."
+    },
+    "input": {
+     "approval_ref": "APR-2026-10-0161",
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "—",
+     "lat": 26,
+     "outcome": "denied · out of_scope",
+     "step": 6,
+     "tenant": "Customer A",
+     "tool": "send_instruction",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · out of_scope",
+    "tenant": "Customer A",
+    "tool": "send_instruction",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "Evidence Assembler is not scoped for send_instruction",
+      "n": "Check agent scope",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "assembler",
+    "caseId": null,
+    "error": {
+     "code": "out_of_scope",
+     "message": "Evidence Assembler cannot call find_demand. Scopes: evidence:read."
+    },
+    "input": {
+     "case_id": "RT-1049"
+    },
+    "log": {
+     "agent": "Evidence Assembler",
+     "caseId": "—",
+     "lat": 18,
+     "outcome": "denied · out of_scope",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "find_demand",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · out of_scope",
+    "tenant": "Customer A",
+    "tool": "find_demand",
+    "trace": [
+     {
+      "detail": "Evidence Assembler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "Evidence Assembler is not scoped for find_demand",
+      "n": "Check agent scope",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": null,
+    "error": {
+     "code": "out_of_scope",
+     "message": "Opportunity Finder cannot call request_approval. Scopes: demand:read, market:read, pool:read."
+    },
+    "input": {
+     "case_id": "RT-1049",
+     "rationale": "Resale narrowly beats refurbishment by $15"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "—",
+     "lat": 23,
+     "outcome": "denied · out of_scope",
+     "step": 5,
+     "tenant": "Customer A",
+     "tool": "request_approval",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · out of_scope",
+    "tenant": "Customer A",
+    "tool": "request_approval",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "Opportunity Finder is not scoped for request_approval",
+      "n": "Check agent scope",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "finder",
+    "caseId": null,
+    "error": {
+     "code": "out_of_scope",
+     "message": "Opportunity Finder cannot call get_model_validation. Scopes: demand:read, market:read, pool:read."
+    },
+    "input": {
+     "version": "v1.3"
+    },
+    "log": {
+     "agent": "Opportunity Finder",
+     "caseId": "—",
+     "lat": 26,
+     "outcome": "denied · out of_scope",
+     "step": 3,
+     "tenant": "Customer A",
+     "tool": "get_model_validation",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · out of_scope",
+    "tenant": "Customer A",
+    "tool": "get_model_validation",
+    "trace": [
+     {
+      "detail": "Opportunity Finder · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "Opportunity Finder is not scoped for get_model_validation",
+      "n": "Check agent scope",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "gap",
+    "caseId": null,
+    "error": {
+     "code": "out_of_scope",
+     "message": "Gap Requester cannot call list_eligible_routes. Scopes: evidence:read, request:write."
+    },
+    "input": {
+     "case_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Gap Requester",
+     "caseId": "—",
+     "lat": 30,
+     "outcome": "denied · out of_scope",
+     "step": 2,
+     "tenant": "Customer A",
+     "tool": "list_eligible_routes",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · out of_scope",
+    "tenant": "Customer A",
+    "tool": "list_eligible_routes",
+    "trace": [
+     {
+      "detail": "Gap Requester · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "Gap Requester is not scoped for list_eligible_routes",
+      "n": "Check agent scope",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "coordinator",
+    "caseId": null,
+    "error": {
+     "code": "out_of_scope",
+     "message": "Handoff Coordinator cannot call reconcile_outcome. Scopes: instruction:write."
+    },
+    "input": {
+     "case_id": "CS-2041"
+    },
+    "log": {
+     "agent": "Handoff Coordinator",
+     "caseId": "—",
+     "lat": 24,
+     "outcome": "denied · out of_scope",
+     "step": 10,
+     "tenant": "Customer A",
+     "tool": "reconcile_outcome",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · out of_scope",
+    "tenant": "Customer A",
+    "tool": "reconcile_outcome",
+    "trace": [
+     {
+      "detail": "Handoff Coordinator · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "Handoff Coordinator is not scoped for reconcile_outcome",
+      "n": "Check agent scope",
+      "ok": false
+     }
+    ]
+   },
+   {
+    "account": "planner-a",
+    "agent": "reconciler",
+    "caseId": null,
+    "error": {
+     "code": "out_of_scope",
+     "message": "Reconciler cannot call optimize_pool. Scopes: outcome:write, evidence:read."
+    },
+    "input": {
+     "pool_id": "RT-1048"
+    },
+    "log": {
+     "agent": "Reconciler",
+     "caseId": "—",
+     "lat": 18,
+     "outcome": "denied · out of_scope",
+     "step": 4,
+     "tenant": "Customer A",
+     "tool": "optimize_pool",
+     "ts": "2026-10-07T09:00:00.000Z"
+    },
+    "ok": false,
+    "outcome": "denied · out of_scope",
+    "tenant": "Customer A",
+    "tool": "optimize_pool",
+    "trace": [
+     {
+      "detail": "Reconciler · service identity",
+      "n": "Authenticate agent token",
+      "ok": true
+     },
+     {
+      "detail": "Reconciler is not scoped for optimize_pool",
+      "n": "Check agent scope",
+      "ok": false
+     }
+    ]
+   }
+  ]
+ }
+}

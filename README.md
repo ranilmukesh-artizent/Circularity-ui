@@ -217,7 +217,7 @@ docs/BACKEND_STEPS.md        the backend build, step by step, with the status of
 | B13 | instructions really sent to the mocks, acknowledged from their events on the simulated clock; outcomes and reconciliation (first milestone: RT-1048 end to end) | done |
 | B14 | read APIs for every screen (`/api/screens/*`, `/api/checks`), scoped to the account | done |
 | B15 | live updates (`GET /api/stream`, Server-Sent Events) and Workflow Studio actions with runs as worker jobs | done |
-| B16 | MCP server | to do |
+| B16 | MCP server at `/mcp`: the ten agent tools, agent scopes and hard rules in code, every call logged | done |
 | B16b | Ask Circularity on a language model (Groq free tier) | to do |
 | B17 | switch the frontend to the backend | to do |
 | B18 | browser tests, run book, security review | to do |

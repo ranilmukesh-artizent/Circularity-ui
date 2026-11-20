@@ -595,6 +595,16 @@ The rest of the design:
 
 **Done when:** an MCP client test can read evidence, is refused `send_instruction` without an approval reference, and sees the call in the call log.
 
+**Status: done (20 Nov 2026).** `di/mcp/`, mounted at `/mcp` (official MCP Python SDK `mcp==2.3.0`, streamable HTTP, stateless, JSON responses).
+- **Identity:** the account's bearer token (from `/api/auth/login`) on every request; the agent in `X-Agent`, the tenant it acts for in `X-Tenant`. Each call runs through the action pipeline as that account with the agent as preparer, so the journal, the tenant boundary, the warehouse lock and the agent gate apply.
+- **Tools → actions:** get_case_evidence → case.evidence; list_eligible_routes and predict_outcomes → case.routes; optimize_pool → pool.optimize; find_demand → demand.find; get_model_validation → analytics.models; request_missing_evidence → evidence.request; request_approval → decision.submit, then held for a person; send_instruction → checks the approval reference, then instruction.resend; reconcile_outcome → reads the closed decision.
+- **Hard rules in code:** no tool can approve, override, decline, confirm an outcome, change access, publish or change a source (the server refuses to start if one is mapped); `request_approval` stops at "held for approval"; `send_instruction` without an approval reference is refused before anything runs; tenant consent is checked on every call; only declared arguments reach an action and no record text is ever acted on; a stopped agent is refused.
+- **Call log:** every call, allowed, held or denied, goes to the `mcp_calls` collection in the demo's shape (plus account and code), so the MCP & Tools screen shows it.
+- **Parity:** `fixtures/golden/mcp.json` (12 scenarios, 75 tool calls, from the demo's own playground) matches through the live server; one intended difference: a missing approval reference gets the hard rule's refusal.
+- **Tests:** an MCP client test against the running server lists the ten tools, reads RT-1048's evidence, is refused `send_instruction` without an approval reference, is held on `request_approval`, succeeds after a person approves, and finds every call in the log.
+
+**Left for later:** agent autonomy levels and the playground's agent runs (B16b); an action for the per-agent kill switch (`agent.setEnabled`) and for `reconcile_outcome`.
+
 ## B16b. Ask Circularity on a language model
 
 **Decision (19 Nov 2026):** Ask Circularity (the Ctrl+J panel) answers with a language model through `di-api`, starting on **Groq's free tier** (no card; roughly 30 requests a minute and about 1,000 requests a day per organisation, checked at console.groq.com/settings/limits). The data is synthetic, so sending it to an outside service is acceptable.
