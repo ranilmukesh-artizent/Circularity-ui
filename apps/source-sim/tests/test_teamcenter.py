@@ -120,7 +120,7 @@ def test_the_demo_mapping_example(client, queries):
     assert (c["nf0ConfigStatus"]["dbValues"], c["nf0Compatibility"]["dbValues"]) == (["VERIFIED"], ["COMPATIBLE"])
     assert c["nf0CompatibleItems"]["dbValues"][0] == "MTR-55-IE3-250M"
     assert c["nf0DesignRevision"]["uiValues"] == ["MTR-55-IE3-250M/C;1-55 kW · IE3 · 250M"]
-    assert datetime.strptime(c["last_mod_date"]["uiValues"][0], "%d-%b-%Y %H:%M")
+    assert datetime.strptime(c["last_mod_date"]["uiValues"][0], "%d-%b-%Y %H:%M")  # noqa: DTZ007 - parses a display value
     rev_uid = c["nf0DesignRevision"]["dbValues"][0]
     rev = props(
         client,

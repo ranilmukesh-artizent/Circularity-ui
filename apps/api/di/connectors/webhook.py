@@ -67,7 +67,7 @@ def _accept(ev: dict, source_id: str) -> dict:
     instruction = None
     try:
         instruction = instructions_events.handle(ev)  # B13b: a completion acknowledges its step
-    except Exception:  # noqa: BLE001 - an acknowledgement that fails must not stop the sync below
+    except Exception:  # an acknowledgement that fails must not stop the sync below
         log.exception("instruction acknowledgement from %s %s failed", source_id, ev.get("type"))
     with SessionLocal() as s:
         if ev.get("type") == "sim.reset":

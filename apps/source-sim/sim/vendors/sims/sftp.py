@@ -52,7 +52,7 @@ def _faults() -> list[dict]:
 
 
 class _Server(asyncssh.SSHServer):
-    def begin_auth(self, username: str) -> bool:
+    def begin_auth(self, username: str) -> bool:  # noqa: ARG002 - asyncssh's server interface
         return True
 
     def password_auth_supported(self) -> bool:

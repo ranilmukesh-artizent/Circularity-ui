@@ -200,7 +200,7 @@ def reset(conn: Connection, s: Seed) -> dict[str, int]:
 
 def ensure(conn: Connection, s: Seed) -> None:
     create(conn)
-    if conn.execute(text(f"SELECT count(*) FROM {SCHEMA}.facility")).scalar_one() == 0:
+    if conn.execute(text(f"SELECT count(*) FROM {SCHEMA}.facility")).scalar_one() == 0:  # noqa: S608 - SCHEMA is a module constant
         load(conn, s)
 
 

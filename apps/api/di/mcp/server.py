@@ -49,7 +49,7 @@ def _tool(t: dict) -> types.Tool:
     )
 
 
-async def list_tools(ctx: ServerRequestContext, params: types.PaginatedRequestParams | None) -> types.ListToolsResult:
+async def list_tools(ctx: ServerRequestContext, params: types.PaginatedRequestParams | None) -> types.ListToolsResult:  # noqa: ARG001 - the MCP SDK's handler signature
     return types.ListToolsResult(tools=[_tool(t) for t in TOOLS.values()])
 
 
@@ -114,7 +114,7 @@ class BearerGate:
 
 
 @contextlib.asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001 - FastAPI's lifespan signature
     """Runs the transport's session manager for the life of the app."""
     global _manager
     _manager = StreamableHTTPSessionManager(app=server, stateless=True, json_response=True, security_settings=SECURITY)

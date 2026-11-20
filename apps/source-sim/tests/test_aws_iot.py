@@ -168,7 +168,7 @@ def test_jobs_and_rules(client):
     assert rule["sql"].endswith("FROM 'dt/+/+/telemetry'") and rule["actions"][0]["http"]["url"].startswith("https://")
     assert code(call(client, "GET", "iot", "/rules/nope")) == "UnauthorizedException"
     # not provisioned at start: every rule disabled until the integration enables it (EnableTopicRule)
-    assert STARTING_RULES == dict.fromkeys(RULE_NAMES, True)
+    assert dict.fromkeys(RULE_NAMES, True) == STARTING_RULES
     assert all(r["ruleDisabled"] is False for r in rules)  # the fixture enabled them, as di's connect does
     denied = call(client, "POST", "iot", "/rules/circularity_telemetry/disable", key=VIEWER)
     assert denied.status_code == 401 and "iot:DisableTopicRule" in denied.json()["message"]

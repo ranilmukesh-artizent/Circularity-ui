@@ -67,7 +67,7 @@ def confirmations(r) -> list[dict]:
     """The JournalEntryCreateConfirmation entries of a reply: document, company code, year, severity, log notes."""
     assert r.status_code == 200, r.text
     assert r.headers["content-type"].startswith("text/xml")
-    root = ET.fromstring(r.content)
+    root = ET.fromstring(r.content)  # noqa: S314 - parses the simulator's own reply
     out = []
     for conf in root.iter("JournalEntryCreateConfirmation"):
         inner = conf.find("JournalEntryCreateConfirmation")

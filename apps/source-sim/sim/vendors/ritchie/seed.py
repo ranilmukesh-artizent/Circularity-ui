@@ -238,7 +238,7 @@ def _price_index(s: Seed) -> list[dict]:
     for cls, trend in (("motor", 0.4), ("pump", 0.2), ("control", -0.3), ("drill", -0.6), ("batch", -0.5), ("it", -1.1)):
         value, prev = 100.0, None
         for i, m in enumerate(s.world.months):  # 'Oct 25' .. 'Sep 26'
-            d = datetime.strptime(m, "%b %y")
+            d = datetime.strptime(m, "%b %y")  # noqa: DTZ007 - a calendar date, no time zone involved
             if i:
                 value = round(value * (1 + (trend + (as_hex(cls, m) % 21 - 10) / 10) / 100), 1)
             pub = (d.replace(day=28) + timedelta(days=6)).replace(day=2)
@@ -301,7 +301,7 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
                 "condition": c["CONDITION"],
                 "region": c["REGION"],
                 "qty": c["QTY"],
-                "sold_date": datetime.strptime(c["SOLD_DATE"], "%d/%m/%Y").date(),
+                "sold_date": datetime.strptime(c["SOLD_DATE"], "%d/%m/%Y").date(),  # noqa: DTZ007 - a calendar date, no time zone involved
                 "amount": c["SOLD_PRC_AMT"],
                 "last_updated": _ts(c["LAST_UPDATED"]),
                 "doc": c,

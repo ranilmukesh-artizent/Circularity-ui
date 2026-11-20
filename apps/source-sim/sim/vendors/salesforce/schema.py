@@ -102,8 +102,8 @@ OBJECTS: dict[str, SObject] = {
             "User",
             "Users",
             "005",
-            _system("User")
-            + (
+            (
+                *_system("User"),
                 Field("Username", "string", "Username", 80, nillable=False),
                 Field("Name", "string", "Full Name", 121, create=False, update=False),
                 Field("FirstName", "string", "First Name", 40),
@@ -119,8 +119,8 @@ OBJECTS: dict[str, SObject] = {
             "Account",
             "Accounts",
             "001",
-            _system("Account")
-            + (
+            (
+                *_system("Account"),
                 _owner(),
                 Field("Name", "string", "Account Name", 255, nillable=False),
                 Field("AccountNumber", "string", "Account Number", 40),
@@ -136,8 +136,8 @@ OBJECTS: dict[str, SObject] = {
             "Contact",
             "Contacts",
             "003",
-            _system("Contact")
-            + (
+            (
+                *_system("Contact"),
                 _owner(),
                 Field("AccountId", "reference", "Account ID", 18, ref=("Account",), rel="Account"),
                 Field("Name", "string", "Full Name", 121, create=False, update=False),
@@ -153,8 +153,8 @@ OBJECTS: dict[str, SObject] = {
             "Contract",
             "Contracts",
             "800",
-            _system("Contract")
-            + (
+            (
+                *_system("Contract"),
                 _owner(),
                 Field("AccountId", "reference", "Account ID", 18, ref=("Account",), rel="Account", nillable=False),
                 Field("Name", "string", "Contract Name", 80),
@@ -176,8 +176,8 @@ OBJECTS: dict[str, SObject] = {
             "Opportunity",
             "Opportunities",
             "006",
-            _system("Opportunity")
-            + (
+            (
+                *_system("Opportunity"),
                 _owner(),
                 Field("AccountId", "reference", "Account ID", 18, ref=("Account",), rel="Account"),
                 Field("Name", "string", "Name", 120, nillable=False),
@@ -204,8 +204,8 @@ OBJECTS: dict[str, SObject] = {
             "Task",
             "Tasks",
             "00T",
-            _system("Activity")
-            + (
+            (
+                *_system("Activity"),
                 _owner(),
                 Field("Subject", "string", "Subject", 255),
                 Field("Status", "picklist", "Status", 40, picklist=TASK_STATUS, nillable=False, default="Not Started"),

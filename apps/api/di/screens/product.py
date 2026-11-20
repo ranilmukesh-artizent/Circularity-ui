@@ -347,7 +347,7 @@ def _wh_ok(p: Principal, e: dict) -> bool:
 
 
 @router.get("/expected")
-def expected(tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def expected(tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)):  # noqa: ARG001 - unused dependency left in place (C1 changes no behaviour)
     """Expected returns: the account's (tenant, warehouse, top-bar filter), the toggle's count and the source."""
     p.require_page("product", "expected")
     ok = [e for e in EXPECTED if policy.tenant_ok(p.account, e["owner"], p.ctx) and _wh_ok(p, e)]

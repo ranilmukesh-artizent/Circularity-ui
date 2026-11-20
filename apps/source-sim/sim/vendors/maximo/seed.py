@@ -143,7 +143,7 @@ def _spec_rows(spec: dict) -> list[dict]:
 
 def _next_inspection(text_: str) -> date | None:
     try:
-        return datetime.strptime(text_, "%b %Y").date()
+        return datetime.strptime(text_, "%b %Y").date()  # noqa: DTZ007 - a calendar date, no time zone involved
     except ValueError:
         return None
 
@@ -457,7 +457,7 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
             }
         )
         case_assets.add(f.asset_id)
-        meter_id += 1
+        meter_id += 1  # noqa: SIM113 - the meter ids continue from a starting number
         b.rows["assetmeter"].append(
             {
                 "assetmeterid": meter_id,

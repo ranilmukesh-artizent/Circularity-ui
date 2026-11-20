@@ -182,7 +182,7 @@ def nav(
 
 
 @router.get("/scope")
-def scope(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def scope(p: Principal = Depends(principal), session: Session = Depends(get_session)):  # noqa: ARG001 - the dependency authenticates the caller
     rows = session.execute(text("SELECT id, owner, location FROM case_record ORDER BY id"))
     return {r.id: [r.owner, r.location] for r in rows}
 

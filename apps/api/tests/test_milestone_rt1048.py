@@ -166,7 +166,7 @@ def real_loop():
 @pytest.fixture(autouse=True)
 def clean_jobs():
     """Overrides conftest's: the loop's jobs carry over from one test of this module to the next."""
-    yield
+    return
 
 
 # ---------------------------------------------------------------- the milestone

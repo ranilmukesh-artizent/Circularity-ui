@@ -433,7 +433,7 @@ def js_num(n: float) -> str:
 
 
 # ---------------------------------------------------------------- the runners (AF_INTENT_RUN), in the demo's order
-def r_briefing(R: Run, p: dict) -> dict:
+def r_briefing(R: Run, p: dict) -> dict:  # noqa: ARG001 - every runner takes (run, params)
     o = R.call("inbox.get", {})["output"]
     lines = o["briefing"]
 
@@ -835,7 +835,7 @@ def r_queue_triage(R: Run, p: dict) -> dict:
     return {"text": t, "cards": [table_cases("Look at these first", o, why=True)]}
 
 
-def r_approvals_inbox(R: Run, p: dict) -> dict:
+def r_approvals_inbox(R: Run, p: dict) -> dict:  # noqa: ARG001 - every runner takes (run, params)
     s = R.call("cases.list", {"stage": "awaiting_approval", "submitted": True, "sort": "value", "limit": 25})
     if not s["ok"]:
         return fail1(R, s)
@@ -890,7 +890,7 @@ def r_outcome_reconcile(R: Run, p: dict) -> dict:
     }
 
 
-def r_outcome_list(R: Run, p: dict) -> dict:
+def r_outcome_list(R: Run, p: dict) -> dict:  # noqa: ARG001 - every runner takes (run, params)
     r = R.call("cases.list", {"stage": "closed", "limit": 25})
     if not r["ok"]:
         return fail1(R, r)
@@ -923,7 +923,7 @@ def r_analytics_explain(R: Run, p: dict) -> dict:
     return {"text": f"{o['label']}: {o['value_text']}. {o['definition']}", "cards": [{"type": "kpi", "data": o}]}
 
 
-def r_exceptions_top(R: Run, p: dict) -> dict:
+def r_exceptions_top(R: Run, p: dict) -> dict:  # noqa: ARG001 - every runner takes (run, params)
     r = R.call("kpi.explain", {"kpi": "risk"})
     if not r["ok"]:
         return fail1(R, r)
@@ -981,7 +981,7 @@ def r_run_explain(R: Run, p: dict) -> dict:
     }
 
 
-def r_expected_plan(R: Run, p: dict) -> dict:
+def r_expected_plan(R: Run, p: dict) -> dict:  # noqa: ARG001 - every runner takes (run, params)
     r = R.call("receiving.plan", {})
     if not r["ok"]:
         return fail1(R, r)
@@ -1007,7 +1007,7 @@ def r_expected_plan(R: Run, p: dict) -> dict:
     }
 
 
-def r_wms_stuck(R: Run, p: dict) -> dict:
+def r_wms_stuck(R: Run, p: dict) -> dict:  # noqa: ARG001 - every runner takes (run, params)
     r = R.call("cases.list", {"stage": "executing", "limit": 50})
     if not r["ok"]:
         return fail1(R, r)
@@ -1062,7 +1062,7 @@ def r_asset_compare(R: Run, p: dict) -> dict:
     }
 
 
-def r_analytics_accuracy(R: Run, p: dict) -> dict:
+def r_analytics_accuracy(R: Run, p: dict) -> dict:  # noqa: ARG001 - every runner takes (run, params)
     r = R.call("analytics.models", {})
     if not r["ok"]:
         return fail1(R, r)
@@ -1103,7 +1103,7 @@ RUNNERS: dict[str, Callable[[Run, dict], dict]] = {
     "asset.compare": r_asset_compare,
     "analytics.accuracy": r_analytics_accuracy,
 }
-assert set(RUNNERS) <= set(INTENT), "every runner belongs to an intent in the catalog"
+assert set(RUNNERS) <= set(INTENT), "every runner belongs to an intent in the catalog"  # noqa: S101 - import-time check of the catalog
 
 
 # ---------------------------------------------------------------- one request (afAsk)

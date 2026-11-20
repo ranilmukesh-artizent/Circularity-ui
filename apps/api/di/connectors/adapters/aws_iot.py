@@ -45,7 +45,7 @@ from di.connectors.http import Auth, SourceClient, SourceError
 
 REGION = "ap-south-1"
 ACCESS_KEY = "AKIACIRCULARITYDEMO1"
-SECRET_KEY = "circularity-demo/aws-iot/K7MDENG+bPxRfiCYDI"  # demo credential of the synthetic mock
+SECRET_KEY = "circularity-demo/aws-iot/K7MDENG+bPxRfiCYDI"  # noqa: S105 - the demo credential of the synthetic mock
 SERVICE = {"iot": "iot", "data": "iotdata"}
 SHADOW = "condition"
 THROTTLE_TRIES = 4

@@ -371,7 +371,7 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
         doc, evs, booked, done = _inbound(case, as_of)
         rows.append(_obj("shipments", doc["shipmentGid"], doc["shipmentXid"], doc, booked, done))
         events += [{"shipment_gid": doc["shipmentGid"], "doc": e, "insert_date": done, "update_date": done} for e in evs]
-        n += 1
+        n += 1  # noqa: SIM113 - counter kept explicit
     conn.execute(insert(t.OBJECT), rows)
     conn.execute(insert(t.TRACKING_EVENT), events)
     counts: dict[str, int] = {}

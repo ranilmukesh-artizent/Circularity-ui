@@ -133,7 +133,7 @@ def case_rul(f: CaseFacts) -> dict | None:
 def month_date(text_: str) -> date | None:
     """'Apr 2027' -> 2027-04-01; '—' -> None."""
     try:
-        return datetime.strptime(text_, "%b %Y").date()
+        return datetime.strptime(text_, "%b %Y").date()  # noqa: DTZ007 - a calendar date, no time zone involved
     except (TypeError, ValueError):
         return None
 

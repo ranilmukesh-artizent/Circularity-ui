@@ -209,16 +209,16 @@ class _Filter:
             return inner
         if kind == "str":
             s = tok[1:-1].replace("''", "'")
-            return lambda r, g: s
+            return lambda r, g: s  # noqa: ARG005 - every value takes (row, getter)
         if kind == "dt":
             d = as_datetime(tok)
-            return lambda r, g: d
+            return lambda r, g: d  # noqa: ARG005 - every value takes (row, getter)
         if kind == "num":
             n = float(tok) if "." in tok else int(tok)
-            return lambda r, g: n
+            return lambda r, g: n  # noqa: ARG005 - every value takes (row, getter)
         if kind == "name" and tok in ("null", "true", "false"):
             v = {"null": None, "true": True, "false": False}[tok]
-            return lambda r, g: v
+            return lambda r, g: v  # noqa: ARG005 - every value takes (row, getter)
         if kind == "name" and tok in FUNCS and self._peek("("):
             self._take("(")
             args = [self._value()]

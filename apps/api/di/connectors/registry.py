@@ -21,7 +21,7 @@ def _discover() -> dict[str, Adapter]:
             if a.source_id in out:
                 raise RuntimeError(f"two adapters for {a.source_id}")
             out[a.source_id] = a
-        except Exception as e:  # noqa: BLE001 - one broken adapter must not stop the others
+        except Exception as e:  # one broken adapter must not stop the others
             LOAD_ERRORS[name] = f"{type(e).__name__}: {e}"
             log.exception("adapter %s not loaded", name)
     return out

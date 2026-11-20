@@ -126,15 +126,17 @@ def create_repair_order(params: dict, conn: Connection) -> dict:
     qty = rec.get("QUANTITY", 1)
     try:
         qty = int(qty)
-        assert qty >= 1
-    except (TypeError, ValueError, AssertionError):
+        if qty < 1:
+            raise ValueError(qty)
+    except (TypeError, ValueError):
         return _error(m, "CSD_API_INV_QUANTITY: QUANTITY must be a positive whole number.")
     cost = rec.get("ATTRIBUTE2")
     if cost not in (None, ""):
         try:
             cost = round(float(cost), 2)
-            assert cost >= 0
-        except (TypeError, ValueError, AssertionError):
+            if cost < 0:
+                raise ValueError(cost)
+        except (TypeError, ValueError):
             return _error(m, "CSD_API_INV_DFF: ATTRIBUTE2 (estimate amount) must be a non-negative number.")
     else:
         cost = None

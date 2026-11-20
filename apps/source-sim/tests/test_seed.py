@@ -15,7 +15,7 @@ def s():
 
 def test_counts(s):
     assert len(s.cases) == 128
-    assert list(s.cases)[0] == "RT-1001" and list(s.cases)[-1] == "RT-1128"
+    assert next(iter(s.cases)) == "RT-1001" and list(s.cases)[-1] == "RT-1128"
     assert len(s.decisions) == 1400
     assert len(s.sources) == 21
 

@@ -392,7 +392,7 @@ async def journal_entry_post(request: Request):
         return security.unauthorized()
     soap_ns = SOAP12 if "soap+xml" in request.headers.get("content-type", "") else SOAP11
     try:
-        root = ET.fromstring(await request.body())
+        root = ET.fromstring(await request.body())  # noqa: S314 - requests come from di, the integration under test
     except ET.ParseError as e:
         return _fault(soap_ns, f"The request is not well-formed XML: {e}")
     if _local(root.tag) != "Envelope":

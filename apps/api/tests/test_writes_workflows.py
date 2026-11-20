@@ -94,7 +94,7 @@ def fresh(monkeypatch):
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM job WHERE kind = 'workflow.run'"))
     state.reset(["workflows", "workflow_runs"])
-    yield
+    return
 
 
 # ---------------------------------------------------------------- what a run draws at random

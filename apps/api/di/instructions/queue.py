@@ -125,7 +125,7 @@ def resend(s: Session, c: store.Case) -> int | None:
 
 
 def get(s: Session, iid: int, for_update: bool = False) -> dict | None:
-    q = "SELECT * FROM instruction WHERE id = :i" + (" FOR UPDATE" if for_update else "")
+    q = "SELECT * FROM instruction WHERE id = :i" + (" FOR UPDATE" if for_update else "")  # noqa: S608 - only the fixed FOR UPDATE suffix is appended; values are bound
     row = s.execute(text(q), {"i": iid}).mappings().first()
     return dict(row) if row else None
 

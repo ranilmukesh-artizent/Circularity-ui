@@ -55,6 +55,7 @@ from sqlalchemy.orm import Session
 from di import golden, policy
 from di.auth import Principal, principal
 from di.db import get_session
+from di.engine.jsmath import js_round, js_sum
 from di.engine.routes import GATES
 from di.execution import ex_doc_ref, steps_for
 from di.execution.trace import learn_ver
@@ -80,7 +81,6 @@ from di.reads.common import (
     step_owner,
     to_fixed,
 )
-from di.engine.jsmath import js_round, js_sum
 from di.screens.analytics import reconciled
 from di.screens.case import af_lease, case_journal, load_case, my_cases, prov_for, screen_ctx, vis_cases
 

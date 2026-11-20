@@ -383,7 +383,7 @@ def kpi_tiles(ctx, ks: list[str], sc: dict, rows: list[dict], f: Filters) -> lis
     yp = js_sum(r["p50"] for r in m["rc"])
 
     def s_cnt():
-        return series(lambda r: 1, every)
+        return series(lambda r: 1, every)  # noqa: ARG005 - every counter takes the row
 
     def s_pred():
         return series(lambda r: max(0, r["p50"]), every)
@@ -1190,7 +1190,7 @@ def _ex_list(ctx, sc: dict, f: Filters) -> list[dict]:
         for name, fn in (
             ("net recovery", lambda r: r["actual"] if r["status"] == "reconciled" else 0),
             ("uplift vs baseline", lambda r: r["actual"] - r["baseline"] if r["status"] == "reconciled" else 0),
-            ("closed decisions", lambda r: 1),
+            ("closed decisions", lambda r: 1),  # noqa: ARG005 - every counter takes the row
         ):
             s = series(fn, rows)
             last, prev = s[10], s[9]

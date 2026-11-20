@@ -261,7 +261,7 @@ class Fabric:
             for r in s.execute(text("SELECT source_id, avg(duration_ms) FROM fetch_log WHERE duration_ms IS NOT NULL GROUP BY 1"))
         }
         self.workflows = all_workflows(s)
-        self.tables = dict((k, m) for k, m in _table_models(s))
+        self.tables = dict(_table_models(s))
         ids = [x["id"] for x in REF_SOURCES if x["id"] in self.rows] + sorted(i for i in self.rows if i not in REF_BY_ID)
         self.sources = [self._source(i) for i in ids]
         self.by_id = {x["id"]: x for x in self.sources}
@@ -396,8 +396,8 @@ class Fabric:
         where = {"open": "status IN ('open', 'escalated')", "resolved": "status = 'resolved'", "all": "true"}[status]
         args = {"src": source}
         cond = f'{where} AND (CAST(:src AS text) IS NULL OR authority = :src OR "values" ? :src)'
-        total = self.s.execute(text(f"SELECT count(*) FROM conflict WHERE {cond}"), args).scalar()
-        q = f"SELECT * FROM conflict WHERE {cond} ORDER BY id DESC" + (" LIMIT :n" if limit else "")
+        total = self.s.execute(text(f"SELECT count(*) FROM conflict WHERE {cond}"), args).scalar()  # noqa: S608 - `where` comes from a fixed mapping; values are bound
+        q = f"SELECT * FROM conflict WHERE {cond} ORDER BY id DESC" + (" LIMIT :n" if limit else "")  # noqa: S608 - `where` comes from a fixed mapping; values are bound
         rows = self.s.execute(text(q), args | ({"n": limit} if limit else {})).mappings()
         return [self._conflict(r) for r in rows], total
 

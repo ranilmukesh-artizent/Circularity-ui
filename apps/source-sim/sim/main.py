@@ -24,7 +24,7 @@ async def _loop(name: str, fn, every: float) -> None:
     while True:
         try:
             await asyncio.to_thread(fn)
-        except Exception:  # noqa: BLE001
+        except Exception:
             log.exception("%s failed", name)
         await asyncio.sleep(every)
 
@@ -41,7 +41,7 @@ async def lifespan(_: FastAPI):
         try:
             with engine.begin() as conn:
                 m.ensure(conn, seed())
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             log.exception("mock %s failed to load", sid)
             STARTUP_ERRORS[sid] = f"{type(e).__name__}: {e}"[:500]
     with engine.begin() as conn:
@@ -58,7 +58,7 @@ async def lifespan(_: FastAPI):
         if m.startup is not None:
             try:
                 started.append(await m.startup())
-            except Exception as e:  # noqa: BLE001 - reported in /health, not fatal
+            except Exception as e:  # reported in /health, not fatal
                 log.exception("mock %s failed to start", sid)
                 STARTUP_ERRORS[sid] = f"startup: {type(e).__name__}: {e}"[:500]
     yield

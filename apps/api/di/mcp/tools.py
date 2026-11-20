@@ -296,7 +296,7 @@ RUN: dict[str, Callable[[ToolCall], dict]] = {
     "send_instruction": send_instruction,
     "reconcile_outcome": reconcile_outcome,
 }
-assert set(RUN) == set(TOOLS) == set(ACTIONS_OF), "every tool in TOOLS needs a runner and an action mapping"
+assert set(RUN) == set(TOOLS) == set(ACTIONS_OF), "every tool in TOOLS needs a runner and an action mapping"  # noqa: S101 - import-time check of the tool tables
 
 
 def schema(t: dict) -> dict:

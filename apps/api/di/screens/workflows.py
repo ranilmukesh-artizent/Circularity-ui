@@ -340,7 +340,7 @@ def counts(workflows: list[dict]) -> dict:
 
 def _matches(w: dict, cat: str | None, status: str | None, src: str | None, q: str | None) -> bool:
     """frWfFilter: type, status (with failing), system and a search over name, id, owner and the system's vendor."""
-    if cat and w["cat"] != cat or status and wf_stat(w) != status or src and w.get("src") != src:
+    if (cat and w["cat"] != cat) or (status and wf_stat(w) != status) or (src and w.get("src") != src):
         return False
     if q:
         vendor = SOURCES.get(w.get("src") or "", {}).get("vendor", "") if w.get("src") else ""

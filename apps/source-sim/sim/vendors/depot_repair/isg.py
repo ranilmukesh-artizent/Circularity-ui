@@ -196,7 +196,7 @@ def paging(params, service: str, method: str) -> tuple[int, int]:
     return out[0], out[1]
 
 
-def dispatch(gw: Gateway, request: Request, alias: str, method: str, services: dict[str, dict[str, tuple[str, Callable]]]):
+def dispatch(gw: Gateway, request: Request, alias: str, method: str, services: dict[str, dict[str, tuple[str, Callable]]]):  # noqa: ARG001 - same signature as the other gateways' dispatch
     """Find the method of a service alias; returns (verb, handler) or raises the ISG fault."""
     if alias not in services:
         raise IsgFault(404, "ISG_SERVICE_NOT_FOUND", f"The service alias {alias} is not deployed.", "", alias, method)

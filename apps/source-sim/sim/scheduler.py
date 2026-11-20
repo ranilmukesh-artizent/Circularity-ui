@@ -87,7 +87,7 @@ def tick(limit: int = 100) -> int:
                 with conn.begin_nested():
                     fn(conn, row.payload)
                 conn.execute(update(SCHEDULED).where(SCHEDULED.c.id == row.id).values(done=True))
-            except Exception as e:  # noqa: BLE001 - recorded on the row; the next item still runs
+            except Exception as e:  # recorded on the row; the next item still runs
                 log.exception("scheduled %s (%s) failed", row.id, row.handler)
                 conn.execute(
                     update(SCHEDULED).where(SCHEDULED.c.id == row.id).values(done=True, error=f"{type(e).__name__}: {e}"[:500])

@@ -401,7 +401,7 @@ PMAP: dict[str, dict] = {
         "col": "REUSE",
         "pre": "POL",
         "q": lambda c: f"GET /policies?class={c['cls']}&owner={quote(c['owner'], safe='-_.!~*()' + chr(39))}",
-        "val": lambda c: "Reuse permitted · policy POL-3.2",
+        "val": lambda c: "Reuse permitted · policy POL-3.2",  # noqa: ARG005 - every field value takes the case
         "use": ["Gate 3 Policy & certification"],
         "proc": ["Policy map v3.2 applied"],
     },
@@ -567,7 +567,7 @@ def steps_of(c: Case) -> list[dict]:
     return steps_for({"id": r["id"]}, -1)
 
 
-def default_spend(c: Case, r: dict) -> int:
+def default_spend(c: Case, r: dict) -> int:  # noqa: ARG001 - the demo's defaultSpend(c, r)
     """The demo's defaultSpend: the preparation cost, as the spend the approval authorises."""
     return js_round(-js_sum(t["amt"] for t in r["terms"] if t["kind"] == "prep" and t["amt"] < 0))
 

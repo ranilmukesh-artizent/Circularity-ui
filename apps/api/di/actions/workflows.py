@@ -132,11 +132,11 @@ WF_DEC = {
 }
 TRIG_L: dict[str, Callable[[dict], str]] = {
     "schedule": lambda t: f"Every {t.get('min')} min",
-    "event": lambda t: "On event",
-    "approval": lambda t: "On approval",
-    "manual": lambda t: "Manual",
-    "case": lambda t: "On case request",
-    "file": lambda t: "On file arrival",
+    "event": lambda t: "On event",  # noqa: ARG005 - every trigger label takes the trigger
+    "approval": lambda t: "On approval",  # noqa: ARG005 - every trigger label takes the trigger
+    "manual": lambda t: "Manual",  # noqa: ARG005 - every trigger label takes the trigger
+    "case": lambda t: "On case request",  # noqa: ARG005 - every trigger label takes the trigger
+    "file": lambda t: "On file arrival",  # noqa: ARG005 - every trigger label takes the trigger
 }
 
 
@@ -319,15 +319,23 @@ def _decision(kind: str) -> dict:
             [("evid", "fixed", "evid", 24, 130), ("gates", "fixed", "gates", 262, 130)]
             + [(f"tl_{t}", "tool", t, x, 130) for t, x in (("list_eligible_routes", 500), ("predict_outcomes", 738))]
             + [("tl_request_approval", "tool", "request_approval", 976, 130)],
-            [("evid", "gates", 1), ("gates", "tl_list_eligible_routes"), ("tl_list_eligible_routes", "tl_predict_outcomes")]
-            + [("tl_predict_outcomes", "tl_request_approval")],
+            [
+                ("evid", "gates", 1),
+                ("gates", "tl_list_eligible_routes"),
+                ("tl_list_eligible_routes", "tl_predict_outcomes"),
+                ("tl_predict_outcomes", "tl_request_approval"),
+            ],
         ),
         "pool": (
             [("evid", "fixed", "evid", 24, 130), ("gates", "fixed", "gates", 262, 130)]
             + [(f"tl_{t}", "tool", t, x, 130) for t, x in (("predict_outcomes", 500), ("optimize_pool", 738))]
             + [("tl_request_approval", "tool", "request_approval", 976, 130)],
-            [("evid", "gates", 1), ("gates", "tl_predict_outcomes"), ("tl_predict_outcomes", "tl_optimize_pool")]
-            + [("tl_optimize_pool", "tl_request_approval")],
+            [
+                ("evid", "gates", 1),
+                ("gates", "tl_predict_outcomes"),
+                ("tl_predict_outcomes", "tl_optimize_pool"),
+                ("tl_optimize_pool", "tl_request_approval"),
+            ],
         ),
         "gap": (
             [
@@ -855,7 +863,7 @@ def set_status(i, ctx):
 
 
 @guard("workflow.create")
-def create_guard(i, ctx):
+def create_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
     return ("validation_error", "Choose a system first.") if i["type"] in ("ingest", "out") and not src(i.get("src")) else None
 
 

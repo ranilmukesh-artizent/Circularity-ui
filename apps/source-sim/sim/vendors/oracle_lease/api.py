@@ -82,7 +82,7 @@ def process_term_ends(conn: Connection, as_of: date | None = None) -> list[str]:
 
 
 @scheduler.handler("okl.contract.term_end")
-def _term_end(conn: Connection, payload: dict) -> None:
+def _term_end(conn: Connection, payload: dict) -> None:  # noqa: ARG001 - scheduled handlers take (conn, payload)
     process_term_ends(conn)
 
 
@@ -150,7 +150,7 @@ def _error(method: str, msg: str) -> dict:
     return output(PRODUCT, RETURNS, method, {}, "E", [msg])
 
 
-def _rec(params: dict, method: str) -> dict | str:
+def _rec(params: dict, method: str) -> dict | str:  # noqa: ARG001 - same signature as the other record builders
     if str(params.get("P_API_VERSION") or "") not in ("1.0", "1"):
         return "FND_AS_INCOMPATIBLE_API_CALL: P_API_VERSION must be 1.0."
     rec = params.get("P_ARTV_REC")

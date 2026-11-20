@@ -74,7 +74,7 @@ class AssetWiseAdapter(Adapter):
         for row, url in self.collection(client, "/LifeAssessments", params):
             yield Record("assessments", row["ASSESSMENT_ID"], row, url, utc_iso(row.get("MODIFIED_ON")))
 
-    def read_standards(self, client: SourceClient, since: str | None) -> Iterator[Record]:
+    def read_standards(self, client: SourceClient, since: str | None) -> Iterator[Record]:  # noqa: ARG002 - the adapter read interface; this read is always full
         standards = [r for r, _ in self.collection(client, "/Standards", {"$orderby": "STANDARD_ID"})]
         limits = [r for r, _ in self.collection(client, "/EngineeringLimits", {"$orderby": "LIMIT_ID"})]
         url = client.url("/Standards")

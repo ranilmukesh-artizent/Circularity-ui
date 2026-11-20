@@ -121,7 +121,7 @@ def decide_guard(i, ctx):
     return None
 
 
-@implement("access.decideRequest", idem=lambda i, ctx: f"req:{i['id']}")
+@implement("access.decideRequest", idem=lambda i, ctx: f"req:{i['id']}")  # noqa: ARG005 - idem keys take (input, ctx)
 def decide_request(i, ctx):
     r, note = _request(ctx, i["id"], for_update=True), (i.get("note") or "").strip()
     r |= {"status": "approved" if i["decision"] == "approve" else "declined", "decidedBy": _by(ctx), "decidedAt": NOW}
@@ -156,7 +156,7 @@ def decide_request(i, ctx):
 
 # ---------------------------------------------------------------- the Approver's delegations
 @guard("access.setDelegation")
-def delegation_guard(i, ctx):
+def delegation_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
     return None if i["k"] in DELEG else ("not_found", "Unknown delegation.")
 
 
@@ -183,7 +183,7 @@ def _idp_users(ctx) -> list[dict]:
 
 
 @implement("access.syncDirectory")
-def sync_directory(i, ctx):
+def sync_directory(i, ctx):  # noqa: ARG001 - handlers take (input, ctx)
     idp = _idp(ctx, for_update=True) | {"lastSync": NOW}
     state.put(ctx.session, "access_settings", "idp", idp)
     n = len(_idp_users(ctx))
@@ -220,7 +220,7 @@ def remove_user_guard(i, ctx):
     return None if state.get(ctx.session, "idp_users", i["id"]) else ("not_found", "No such user.")
 
 
-@implement("access.removeUser", idem=lambda i, ctx: f"idp-rm:{i['id']}")
+@implement("access.removeUser", idem=lambda i, ctx: f"idp-rm:{i['id']}")  # noqa: ARG005 - idem keys take (input, ctx)
 def remove_user(i, ctx):
     u = state.get(ctx.session, "idp_users", i["id"])
     state.delete(ctx.session, "idp_users", i["id"])
@@ -292,7 +292,7 @@ def _settings(ctx, item: str, default):
 
 
 @guard("access.setAutonomy")
-def autonomy_guard(i, ctx):
+def autonomy_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
     t = AUTO_TYPES.get(i["type"])
     if i["role"] not in policy.roles():
         return "not_found", "Unknown role."
@@ -316,7 +316,7 @@ def set_autonomy(i, ctx):
 
 
 @guard("access.setLimit")
-def limit_guard(i, ctx):
+def limit_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
     if i["role"] not in policy.roles():
         return "not_found", "Unknown role."
     if i.get("amount") is not None and i["amount"] < 0:
@@ -345,7 +345,7 @@ def set_self_approve(i, ctx):
 
 
 @guard("agent.setEnabled")
-def agent_guard(i, ctx):
+def agent_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
     return None if i["id"] in AGENT_NAMES else ("not_found", "Unknown agent.")
 
 
@@ -363,7 +363,7 @@ def set_agent_enabled(i, ctx):
 
 
 @guard("access.setRunLimits")
-def run_limits_guard(i, ctx):
+def run_limits_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
     if i["actions"] < 1 or i["bulk"] < 1 or i["actions"] > 500 or i["bulk"] > 1000:
         return "validation_error", "Use 1–500 actions and 1–1,000 items."
     return None

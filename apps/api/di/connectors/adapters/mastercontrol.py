@@ -77,7 +77,7 @@ class MasterControlAdapter(Adapter):
             client._qms_effective = {d["documentNumber"]: d for d in docs}
         return client._qms_effective
 
-    def read_policies(self, client: SourceClient, since: str | None) -> Iterator[Record]:
+    def read_policies(self, client: SourceClient, since: str | None) -> Iterator[Record]:  # noqa: ARG002 - the adapter read interface; this read is always full
         docs = list(self._effective_policies(client).values())
         tests = self.read_all(client, "/v2/test-criteria")
         url = str(httpx.URL(client.url("/v2/controlled-documents"), params={"status": "Effective"}))

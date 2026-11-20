@@ -187,7 +187,7 @@ def submit(i, ctx):
     return {"case_id": c["id"], "submitted_by": by}
 
 
-def _ap_guard(i, ctx, c) -> tuple[str, str] | None:
+def _ap_guard(i, ctx, c) -> tuple[str, str] | None:  # noqa: ARG001 - guards take (input, ctx, case)
     """The demo's apReviewed and apGuard: shared by approve and override."""
     if i.get("reviewed") is not True:
         return "validation_error", "Confirm that you reviewed the evidence snapshot."
@@ -554,7 +554,7 @@ def _notify(ctx, n: dict) -> dict:
 
 @implement(
     "notify.send",
-    idem=lambda i, ctx: "ntf:" + hash_id(f"{i['ex_id']}|{i['to']}|{i['msg']}"),
+    idem=lambda i, ctx: "ntf:" + hash_id(f"{i['ex_id']}|{i['to']}|{i['msg']}"),  # noqa: ARG005 - idem keys take (input, ctx)
     emits=["notification.sent"],
 )
 def notify_send(i, ctx):
@@ -582,7 +582,7 @@ def ack_guard(i, ctx):
     return None
 
 
-@implement("notify.acknowledge", idem=lambda i, ctx: "ntf-ack:" + i["id"], emits=["notification.acknowledged"])
+@implement("notify.acknowledge", idem=lambda i, ctx: "ntf-ack:" + i["id"], emits=["notification.acknowledged"])  # noqa: ARG005 - idem keys take (input, ctx)
 def notify_acknowledge(i, ctx):
     key, by = _key("notify.acknowledge", i, ctx), _by(ctx)
     n = state.get(ctx.session, "notes", i["id"], for_update=True)
@@ -608,7 +608,7 @@ def comments(s, key: str) -> list[dict]:
 
 @implement(
     "escalation.send",
-    idem=lambda i, ctx: f"esc:{i['case_id']}:{i['to']}:{hash_id(i['msg'])}",
+    idem=lambda i, ctx: f"esc:{i['case_id']}:{i['to']}:{hash_id(i['msg'])}",  # noqa: ARG005 - idem keys take (input, ctx)
 )
 def escalation_send(i, ctx):
     key, by, to = _key("escalation.send", i, ctx), _by(ctx), policy.account(i["to"], ctx.actor.ctx)

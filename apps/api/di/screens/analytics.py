@@ -132,7 +132,7 @@ def _fixed1(x: float) -> float:
 
 
 @implement("analytics.models")
-def analytics_models(i, ctx):
+def analytics_models(i, ctx):  # noqa: ARG001 - read handlers take (input, ctx)
     """The demo's analytics.models: each model version against outcomes, and how many landed within ±10%."""
     ms = [(m, s) for m in MODELS if (s := model_stats(m["v"]))]
     rc = [x for x in reconciled() if x["route"] != "exit" and not x.get("override")]

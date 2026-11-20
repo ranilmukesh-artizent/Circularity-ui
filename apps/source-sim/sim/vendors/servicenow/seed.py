@@ -583,5 +583,5 @@ def reset(conn: Connection, seed: Seed) -> dict[str, int]:
 def ensure(conn: Connection, seed: Seed) -> None:
     """Create the tables and load the seed once (on first start)."""
     create(conn)
-    if conn.execute(text(f'SELECT count(*) FROM "{SCHEMA}".wm_order')).scalar_one() == 0:
+    if conn.execute(text(f'SELECT count(*) FROM "{SCHEMA}".wm_order')).scalar_one() == 0:  # noqa: S608 - SCHEMA is a module constant
         load(conn, seed)

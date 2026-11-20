@@ -17,11 +17,11 @@ class Settings(BaseSettings):
     # B1 golden files: the access policy and reference data (mounted at /fixtures in Docker)
     golden_dir: str = "/fixtures/golden"
     # B7: sign-in tokens (HS256). Override DI_JWT_SECRET outside local development.
-    jwt_secret: str = "dev-only-change-me-circularity-di-api-secret"
+    jwt_secret: str = "dev-only-change-me-circularity-di-api-secret"  # noqa: S105 - dev-only default, replaced in deployments (F7)
     jwt_ttl_minutes: int = 720
     # B9: where source-sim delivers change events, and the shared signing secret
     webhook_url: str = "http://api:8000/api/webhooks/source-sim"
-    webhook_secret: str = "dev-only-source-sim-webhook-secret"
+    webhook_secret: str = "dev-only-source-sim-webhook-secret"  # noqa: S105 - dev-only default, replaced in deployments (F7)
     # B13b: what "now" is (di/clock.py): "pinned" to the demo's as-of time, or "sim" = source-sim's simulated clock
     clock: str = "pinned"
     clock_cache_seconds: float = 2.0  # how long the simulated clock's anchor is reused before it is read again

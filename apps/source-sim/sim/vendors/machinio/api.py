@@ -88,7 +88,7 @@ def expire_offers(conn: Connection) -> int:
     return len(rows)
 
 
-def _run(request: Request, fn, *, write: bool = False):
+def _run(request: Request, fn, *, write: bool = False):  # noqa: ARG001 - callers mark writes; the transaction is the same either way
     try:
         _auth(request)
         with engine.begin() as conn:
@@ -153,14 +153,14 @@ def listing_out(doc: dict, now: datetime) -> dict:
     return doc | {"listing_age_days": age}
 
 
-def offer_out(doc: dict, now: datetime) -> dict:
+def offer_out(doc: dict, now: datetime) -> dict:  # noqa: ARG001 - same signature as the other output mappers
     return doc
 
 
 # ------------------------------------------------------------------ account
 @router.get("/account")
 def account(request: Request):
-    return _run(request, lambda conn: ACCOUNT)
+    return _run(request, lambda conn: ACCOUNT)  # noqa: ARG005 - _run passes the connection
 
 
 # ------------------------------------------------------------------ listings

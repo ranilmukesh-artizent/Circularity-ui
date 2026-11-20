@@ -44,7 +44,7 @@ class Listener:
         assert self._ready.wait(10), f"{user}: the stream did not open"
 
     def _run(self, params, headers):
-        with httpx.stream("GET", f"{API}/api/stream", params=params, headers=headers, timeout=None) as r:
+        with httpx.stream("GET", f"{API}/api/stream", params=params, headers=headers, timeout=None) as r:  # noqa: S113 - a stream that stays open: no timeout on purpose
             assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
             msg: dict = {}
             for line in r.iter_lines():

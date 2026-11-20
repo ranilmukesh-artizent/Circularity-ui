@@ -194,7 +194,7 @@ def test_paging_headers_and_walk(client):
     while True:
         r = get(client, "wm_task", sysparm_limit=100, sysparm_offset=offset, sysparm_fields="sys_id")
         assert int(r.headers["X-Total-Count"]) == total
-        links = dict((rel, url) for url, rel in re.findall(r'<([^>]+)>;rel="(\w+)"', r.headers["Link"]))
+        links = {rel: url for url, rel in re.findall(r'<([^>]+)>;rel="(\w+)"', r.headers["Link"])}
         assert "first" in links and "last" in links and ("prev" in links) == (offset > 0)
         seen += [x["sys_id"] for x in r.json()["result"]]
         if "next" not in links:

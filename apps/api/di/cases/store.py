@@ -76,7 +76,8 @@ def reset() -> int:
 def get(s: Session, case_id: str, for_update: bool = False) -> Case | None:
     ensure(s)
     row = s.execute(
-        text("SELECT data FROM case_record WHERE id = :i" + (" FOR UPDATE" if for_update else "")), {"i": case_id}
+        text("SELECT data FROM case_record WHERE id = :i" + (" FOR UPDATE" if for_update else "")),  # noqa: S608 - only the fixed FOR UPDATE suffix is appended; values are bound
+        {"i": case_id},
     ).scalar()
     return _case(row) if row is not None else None
 

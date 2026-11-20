@@ -8,11 +8,8 @@ testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.ruff]
-line-length = 130
-target-version = "py312"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
+# Shared settings (line length, target, rule selection) live in the repo-root ruff.toml.
+extend = "../../ruff.toml"
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Body", "fastapi.Header"]

@@ -215,7 +215,7 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
             )
     for name, table in TABLES.items():
         if rows[name]:
-            conn.execute(insert(table), [{c: r.get(c) for c in table.c.keys()} for r in rows[name]])
+            conn.execute(insert(table), [{c: r.get(c) for c in table.c.keys()} for r in rows[name]])  # noqa: SIM118 - table.c iterates columns; keys() gives the names
     return {name: len(r) for name, r in rows.items()}
 
 

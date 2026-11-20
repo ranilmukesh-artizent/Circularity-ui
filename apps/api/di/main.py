@@ -5,13 +5,13 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-import di.actions.access  # noqa: F401  (registers action handlers)
-import di.actions.decisions  # noqa: F401  (registers action handlers)
-import di.actions.engine  # noqa: F401  (registers action handlers)
-import di.actions.execution  # noqa: F401  (registers action handlers)
-import di.actions.integration  # noqa: F401  (registers action handlers)
-import di.actions.workflows  # noqa: F401  (registers action handlers)
-import di.reads.cases  # noqa: F401  (registers action handlers)
+import di.actions.access  # registers action handlers
+import di.actions.decisions  # registers action handlers
+import di.actions.engine  # registers action handlers
+import di.actions.execution  # registers action handlers
+import di.actions.integration  # registers action handlers
+import di.actions.workflows  # registers action handlers
+import di.reads.cases  # registers action handlers
 import di.reads.workspace  # noqa: F401  (registers action handlers)
 from di.ask import service as ask_service
 from di.cases import use_database_scope
@@ -51,14 +51,14 @@ def health(session: Session = Depends(get_session)) -> dict:
     try:
         rev = session.execute(text("SELECT version_num FROM alembic_version")).scalar()
         checks["database"] = {"ok": True, "migration": rev}
-    except Exception:  # noqa: BLE001 - the detail goes to the log only (it can name hosts and users)
+    except Exception:  # the detail goes to the log only (it can name hosts and users)
         log.exception("health: database check failed")
         checks["database"] = {"ok": False, "error": "unreachable"}
     try:
         r = httpx.get(f"{get_settings().source_sim_url}/health", timeout=2)
         r.raise_for_status()
         checks["source_sim"] = {"ok": True, **r.json()}
-    except Exception:  # noqa: BLE001
+    except Exception:
         log.exception("health: source-sim check failed")
         checks["source_sim"] = {"ok": False, "error": "unreachable"}
     return {"status": "ok" if all(c["ok"] for c in checks.values()) else "degraded", "checks": checks}

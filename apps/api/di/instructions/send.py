@@ -133,4 +133,4 @@ def _update(s: Session, iid: int, **values) -> None:
         raise ValueError(f"not an updatable instruction column: {', '.join(sorted(unknown))}")
     sets = ", ".join(f"{k} = CAST(:{k} AS jsonb)" if k == "request" else f"{k} = :{k}" for k in values)
     params = {k: json.dumps(v) if k == "request" else v for k, v in values.items()}
-    s.execute(text(f"UPDATE instruction SET {sets}, updated_at = now() WHERE id = :i"), params | {"i": iid})
+    s.execute(text(f"UPDATE instruction SET {sets}, updated_at = now() WHERE id = :i"), params | {"i": iid})  # noqa: S608 - column names checked against _UPDATABLE above; values are bound

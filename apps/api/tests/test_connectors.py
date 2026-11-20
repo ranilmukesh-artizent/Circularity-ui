@@ -45,7 +45,7 @@ def clean():
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM job WHERE kind = 'sync.source'"))
         for t in TABLES:
-            conn.execute(text(f"DELETE FROM {t}"))
+            conn.execute(text(f"DELETE FROM {t}"))  # noqa: S608 - TABLES is a fixed list of table names
         conn.execute(text("DELETE FROM source_system"))
     with SessionLocal() as s:
         ensure_sources(s)

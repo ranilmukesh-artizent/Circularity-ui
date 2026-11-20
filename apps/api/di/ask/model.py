@@ -77,7 +77,7 @@ class NoModel:
     def __init__(self, reason: str):
         self.reason = reason
 
-    def answer(self, request: AskRequest, tools: Toolbox) -> Iterator[Event]:
+    def answer(self, request: AskRequest, tools: Toolbox) -> Iterator[Event]:  # noqa: ARG002 - the provider interface
         raise ModelUnavailable(self.reason)
         yield  # pragma: no cover  (a generator, like every provider's answer)
 

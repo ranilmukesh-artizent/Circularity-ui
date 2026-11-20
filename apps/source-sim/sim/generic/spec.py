@@ -26,7 +26,7 @@ class Auth:
 
     kind: AuthKind
     header: str = "Authorization"  # for api_key: the header that carries the key, e.g. "x-api-key"
-    token_path: str = "/oauth/token"  # for oauth_cc: relative to base_path
+    token_path: str = "/oauth/token"  # noqa: S105 - a URL path, not a secret (for oauth_cc: relative to base_path)
 
 
 @dataclass(frozen=True)
@@ -64,7 +64,7 @@ class Resource:
     event: str | None = None  # outbox event type prefix, e.g. "manhattan.reservation" -> ".created", ".updated"
 
 
-def _default_error(status: int, code: str, message: str) -> dict:
+def _default_error(status: int, code: str, message: str) -> dict:  # noqa: ARG001 - same signature as the specs' error builders
     return {"error": {"code": code, "message": message}}
 
 

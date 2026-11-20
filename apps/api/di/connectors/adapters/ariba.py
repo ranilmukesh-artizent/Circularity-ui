@@ -40,7 +40,7 @@ class AribaAdapter(Adapter):
     def resources(self):
         return [Resource("event", self.read_events, delta=False)]
 
-    def read_events(self, client, since):
+    def read_events(self, client, since):  # noqa: ARG002 - the adapter read interface; this read is always full
         token = None
         while True:
             params = REALM | ({"pageToken": token} if token else {})

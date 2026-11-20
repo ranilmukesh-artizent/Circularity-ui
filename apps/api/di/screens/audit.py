@@ -167,7 +167,7 @@ PMAP: dict[str, dict] = {
     "pol": {
         "s": "qms", "t": "policies", "col": "REUSE", "pre": "POL",
         "q": lambda c: f"GET /policies?class={c['cls']}&owner={quote(c['owner'], safe=chr(39) + '-_.!~*()')}",
-        "val": lambda c: "Reuse permitted · policy POL-3.2",
+        "val": lambda c: "Reuse permitted · policy POL-3.2",  # noqa: ARG005 - every field value takes the case
         "use": ["Gate 3 Policy & certification"],
         "proc": ["Policy map v3.2 applied"],
     },
@@ -366,6 +366,6 @@ def provenance_of(case_id: str, key: str, p: Principal = Depends(principal), ses
 
 
 @router.get("/comments")
-def comments(key: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def comments(key: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):  # noqa: ARG001 - the dependency authenticates the caller
     """Comments under one record key (an audit entry "au:<id>", a source "src:<id>" ...): everyone signed in reads."""
     return comments_by_key(session, {key}).get(key, [])

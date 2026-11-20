@@ -118,7 +118,7 @@ def _set_delivery(adapter, enabled: bool) -> None:
         return
     try:
         fn(enabled)
-    except Exception:  # the system may be down; the connection itself is recorded either way
+    except Exception:  # noqa: BLE001 - the system may be down; the connection itself is recorded either way
         log.warning("could not %s event delivery for %s", "enable" if enabled else "disable", adapter.source_id, exc_info=True)
 
 
@@ -322,8 +322,8 @@ def enqueue_due(session: Session) -> list[str]:
         if r.id not in ADAPTERS or r.status in NOT_SYNCED:
             continue
         every = timedelta(minutes=r.interval_min or SAFETY_INTERVAL_MIN)
-        if r.last_sync_at is None or now - r.last_sync_at >= every:
-            if enqueue_sync(session, r.id, "initial" if r.last_sync_at is None else "schedule"):
-                queued.append(r.id)
+        due = r.last_sync_at is None or now - r.last_sync_at >= every
+        if due and enqueue_sync(session, r.id, "initial" if r.last_sync_at is None else "schedule"):
+            queued.append(r.id)
     session.commit()
     return queued

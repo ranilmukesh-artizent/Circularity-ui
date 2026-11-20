@@ -39,7 +39,7 @@ from di.connectors.http import Auth, SourceClient, SourceError
 API = "/services/data/v59.0"
 BATCH = 200  # Sforce-Query-Options batchSize
 CLIENT_ID = "3MVG9circularity.demo.northfield.crm.connector"
-CLIENT_SECRET = "circularity-demo-salesforce-secret"
+CLIENT_SECRET = "circularity-demo-salesforce-secret"  # noqa: S105 - the simulator's demo client secret
 USERNAME = "integration@northfield.example"
 STAGE_STATUS = {"Closed Won": "confirmed", "Closed Lost": "lost"}  # every open stage is a forecast
 KINDS = {"Replacement": "replacement", "Lease": "lease", "New Business": "new_business"}

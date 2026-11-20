@@ -56,7 +56,7 @@ YIELDS = {
 
 
 def root() -> Path:
-    return Path(os.environ.get("SIMS_SFTP_ROOT", "/tmp/sims-sftp"))
+    return Path(os.environ.get("SIMS_SFTP_ROOT", "/tmp/sims-sftp"))  # noqa: S108 - the in-container default; SIMS_SFTP_ROOT overrides it
 
 
 def outbound() -> Path:

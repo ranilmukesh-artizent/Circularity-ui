@@ -117,6 +117,6 @@ def test_cases_list(acct, body, expected):
 
 
 def test_every_golden_read_is_covered():
-    assert {a for a in READS["case_reads"]} == {"admin", "planner-a", "planner-b", "wm-1", "executive"}
+    assert set(READS["case_reads"]) == {"admin", "planner-a", "planner-b", "wm-1", "executive"}
     assert all(set(CASE_ACTIONS) <= set(r) for by_case in READS["case_reads"].values() for r in by_case.values())
     assert len(LIST_READS) == 15 * 11

@@ -1,0 +1,41 @@
+# Shared ruff settings for the Python services (docs/agents/plans/01b-refactor.md, step C1).
+# apps/api/pyproject.toml and apps/source-sim/pyproject.toml `extend` this file and add only their own exceptions.
+# The ruff version is the one each service's requirements-dev.lock pins (CI and pre-commit use the same).
+line-length = 130
+target-version = "py312"
+
+[lint]
+select = [
+  "E",      # pycodestyle errors
+  "F",      # pyflakes
+  "I",      # isort
+  "B",      # flake8-bugbear
+  "UP",     # pyupgrade
+  "BLE",    # blind except
+  "S",      # flake8-bandit (security)
+  "ASYNC",  # async pitfalls
+  "RUF",    # ruff-specific
+  "SIM",    # simplify
+  "C4",     # comprehensions
+  "PT",     # pytest style
+  "DTZ",    # naive datetimes
+  "PERF",   # performance anti-patterns
+  "FAST",   # FastAPI (the stable rules; FAST003 is preview in this ruff)
+  "ARG",    # unused arguments
+]
+ignore = [
+  # Endpoints take their dependencies as `x: T = Depends(f)` throughout (B008 is configured for that style).
+  # Moving ~160 signatures to `Annotated[T, Depends(f)]` changes no behaviour and is left to its own change.
+  "FAST002",
+  # Loops that append response rows mirror the reference app's code, which the golden files are compared with;
+  # turning them into comprehensions is churn with no measurable gain at these sizes.
+  "PERF401",
+]
+
+# Typography the product shows on purpose (ranges, multiplication, minus, quotes, breadcrumbs, non-breaking hyphens).
+allowed-confusables = ["–", "×", "−", "’", "‘", "›", "‑", "‐"]
+
+[lint.per-file-ignores]
+# Tests: plain asserts are the point; fixtures and fakes take arguments they do not use; fake credentials and
+# token types are test data; the suites assert several related facts in one `assert a and b` (PT018), their style.
+"**/tests/**" = ["S101", "S105", "S106", "S107", "ARG", "PT018"]

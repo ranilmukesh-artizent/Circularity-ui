@@ -11,6 +11,7 @@ Client credentials run as the integration user.
 
 import base64
 import binascii
+import contextlib
 import hashlib
 import hmac
 import json
@@ -23,7 +24,7 @@ from fastapi import Request
 from sim.vendors.salesforce.schema import make_id
 
 CLIENT_ID = "3MVG9circularity.demo.northfield.crm.connector"
-CLIENT_SECRET = "circularity-demo-salesforce-secret"
+CLIENT_SECRET = "circularity-demo-salesforce-secret"  # noqa: S105 - the simulator's demo client secret
 ORG_ID = make_id("00D", 4711)
 AUDIENCES = ("https://login.salesforce.com", "https://test.salesforce.com")
 INTEGRATION_USER = "integration@northfield.example"
@@ -83,10 +84,8 @@ def _jwt_user(assertion: str) -> str:
 def _client_credentials(form: dict, header: str) -> str:
     cid, secret = form.get("client_id", ""), form.get("client_secret", "")
     if header.lower().startswith("basic "):
-        try:
+        with contextlib.suppress(ValueError, binascii.Error):
             cid, _, secret = base64.b64decode(header[6:]).decode().partition(":")
-        except (ValueError, binascii.Error):
-            pass
     if cid != CLIENT_ID:
         raise OAuthError("invalid_client_id", "client identifier invalid")
     if not hmac.compare_digest(secret, CLIENT_SECRET):

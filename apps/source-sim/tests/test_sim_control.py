@@ -97,9 +97,8 @@ def test_scheduled_work_runs_when_the_clock_reaches_it(client):
         assert "boom" in err
         conn.execute(text("DELETE FROM sim.outbox WHERE type='test.completed'"))
         scheduler.clear(conn, ["test"])
-    with pytest.raises(KeyError):
-        with engine.begin() as conn:
-            scheduler.schedule(conn, clock.now(conn), "no.such.handler", {})
+    with pytest.raises(KeyError), engine.begin() as conn:
+        scheduler.schedule(conn, clock.now(conn), "no.such.handler", {})
 
 
 # ---------------- webhooks

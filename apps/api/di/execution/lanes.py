@@ -37,7 +37,7 @@ LOCS: dict[str, dict[str, Any]] = {
     "EXT-BLR": _loc("Buyer hub", "Refurbisher auction hub", "Bengaluru", _MON_SAT, (9, 18)),
     "PTN-MAA": _loc("Partner", "Certified recycler", "Chennai (Gummidipoondi)", _MON_SAT, (8, 17)),
 }
-assert LOCS.keys() == COORDS.keys()  # one list of locations, two tables
+assert LOCS.keys() == COORDS.keys()  # noqa: S101 - import-time check: one list of locations, two tables
 
 # Rate card RC-2026.2 (K7): dedicated vehicle from 150 kg, part load below by distance band
 RATE_CARD = {

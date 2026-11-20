@@ -115,7 +115,7 @@ class GenericAdapter(Adapter):
 
     auth_kind: str = "oauth"  # oauth | api_key | basic
     api_key_header: str = "x-api-key"
-    token_path: str = "/oauth/token"  # relative to base_path
+    token_path: str = "/oauth/token"  # noqa: S105 - a URL path, not a secret (relative to base_path)
     items_key: str = "items"
     next_key: str = "next"  # the body key that holds the next page / offset / cursor
     next_param: str = "offset"  # the query parameter that takes it

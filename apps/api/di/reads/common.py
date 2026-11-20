@@ -299,7 +299,7 @@ def case_demand(c: Case) -> dict | None:
     r = case_rul(c)
     cert = r["certMonths"] if r else 24
     internal = bool(d.get("internal"))
-    if c["id"] == "RT-1048":
+    if c["id"] == "RT-1048":  # noqa: SIM108 - a nested conditional expression would read worse
         horizon = 24
     else:
         horizon = cert + 12 if as_hex(c, "hz") % 6 == 0 else min(cert, 24)
@@ -455,7 +455,7 @@ def _states(c: Case) -> list[str]:
         s7 = "queued"
     else:
         s7 = "done" if c.get("approval") and live else "waiting" if c["stage"] == "awaiting_approval" else "queued"
-    if s7 != "done":
+    if s7 != "done":  # noqa: SIM108 - a nested conditional expression would read worse
         s8 = "queued"
     else:
         s8 = "done" if st and all(s["state"] == "done" for s in st[:-1]) else "running"

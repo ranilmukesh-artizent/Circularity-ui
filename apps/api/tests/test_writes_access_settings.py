@@ -35,7 +35,7 @@ def journaled(action: str) -> list[str]:
 
 
 @pytest.mark.parametrize(
-    "action, body",
+    ("action", "body"),
     [
         ("access.setLimit", {"role": "Approver", "amount": 1000}),
         ("access.setSelfApprove", {"on": True}),

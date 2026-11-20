@@ -57,13 +57,13 @@ def items(s: Session, collection: str, newest_first: bool = False) -> list[Item]
     _ensure(s, collection)
     order = "DESC" if newest_first else "ASC"
     return list(
-        s.execute(text(f"SELECT data FROM state_item WHERE collection = :c ORDER BY seq {order}"), {"c": collection}).scalars()
+        s.execute(text(f"SELECT data FROM state_item WHERE collection = :c ORDER BY seq {order}"), {"c": collection}).scalars()  # noqa: S608 - `order` is ASC or DESC; values are bound
     )
 
 
 def get(s: Session, collection: str, item_id: str, for_update: bool = False) -> Item | None:
     _ensure(s, collection)
-    q = "SELECT data FROM state_item WHERE collection = :c AND id = :i" + (" FOR UPDATE" if for_update else "")
+    q = "SELECT data FROM state_item WHERE collection = :c AND id = :i" + (" FOR UPDATE" if for_update else "")  # noqa: S608 - only the fixed FOR UPDATE suffix is appended; values are bound
     return s.execute(text(q), {"c": collection, "i": item_id}).scalar()
 
 

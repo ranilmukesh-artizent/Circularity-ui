@@ -79,7 +79,7 @@ class FormulaPredictor:
     model_version = "v1.3"
 
     def __init__(self, rnd: Callable[[], float] | None = None):
-        self.rnd = rnd or random.Random(20261007).random
+        self.rnd = rnd or random.Random(20261007).random  # noqa: S311 - seeded for repeatable demo numbers, not security
 
     def market_value(self, a: Asset) -> float:
         # depreciation by age, grade factor, quantity, and 8% log-normal market noise
@@ -90,7 +90,7 @@ class FormulaPredictor:
         handling = 140 if a.cls in HEAVY else 12 * math.sqrt(a.qty)
         return sale, js_round(sale * (0.08 + self.rnd() * 0.05) + handling)
 
-    def refurbishment(self, a: Asset, sale: int) -> tuple[int, int]:
+    def refurbishment(self, a: Asset, sale: int) -> tuple[int, int]:  # noqa: ARG002 - same signature as the other estimates
         return js_round(sale * (0.04 + self.rnd() * 0.14)), js_round(sale * (0.06 + self.rnd() * 0.09))
 
     def avoided_purchase(self, a: Asset) -> int:

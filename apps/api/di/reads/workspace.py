@@ -238,7 +238,7 @@ def cc_ex_list(sc: dict, ctx) -> list[dict]:
         series = [
             ("net recovery", lambda r: r["actual"] if r["status"] == "reconciled" else 0),
             ("uplift vs baseline", lambda r: r["actual"] - r["baseline"] if r["status"] == "reconciled" else 0),
-            ("closed decisions", lambda r: 1),
+            ("closed decisions", lambda r: 1),  # noqa: ARG005 - every counter takes the row
         ]
         for name, fn in series:
             s = _cc_series(fn, rows)
@@ -623,7 +623,7 @@ def aome_items(ctx) -> list[dict]:
 
 
 @implement("inbox.get")
-def inbox_get(i, ctx):
+def inbox_get(i, ctx):  # noqa: ARG001 - read handlers take (input, ctx)
     br = briefing(ctx)
     items = []
     for x in aome_items(ctx):
@@ -644,7 +644,7 @@ def inbox_get(i, ctx):
 
 # ---------------------------------------------------------------- receiving.plan
 @implement("receiving.plan")
-def receiving_plan(i, ctx):
+def receiving_plan(i, ctx):  # noqa: ARG001 - read handlers take (input, ctx)
     """Expected returns per warehouse and return window against receiving capacity (8 a window; Warehouse 2: 6,
     the Repair centre: 4)."""
     expected = exp_vis(ctx)

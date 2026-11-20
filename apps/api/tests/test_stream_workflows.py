@@ -6,6 +6,7 @@ run), and every step it writes into the run record must reach the Workflow Studi
 in order, while accounts without the studio receive none.
 """
 
+import itertools
 import time
 
 import httpx
@@ -79,7 +80,7 @@ def test_a_run_streams_one_event_per_step_change_to_the_studio_only():
         order = steps[0]["order"]
         seen = [(s["step"], s["step_state"]) for s in steps]
         assert [x for x in seen if x[1] != "running"] == [(i, steps[-1]["states"][i]) for i in order]
-        for a, b in zip(steps, steps[1:], strict=False):
+        for a, b in itertools.pairwise(steps):
             changed = [i for i in order if a["states"][i] != b["states"][i]]
             assert changed == [b["step"]], (a["step"], b["step"], changed)
         # the records in and out of each finished step come with it

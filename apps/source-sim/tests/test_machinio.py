@@ -15,7 +15,7 @@ API = "/machinio/v1"
 KEY = {"X-Api-Key": "mch_demo_circularity_4f7b2e91"}
 
 
-@pytest.fixture()
+@pytest.fixture
 def client():
     c = TestClient(app)  # no lifespan: the reset builds the schema
     with engine.begin() as conn:

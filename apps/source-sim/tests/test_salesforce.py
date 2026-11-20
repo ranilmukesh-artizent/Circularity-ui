@@ -122,7 +122,7 @@ def test_seeded_org_has_no_changes_after_the_as_of_time(client, h):
 # ---------------- the demo's MAPPINGS.crm examples and RT-1048
 def test_mappings_crm_examples(client, h):
     # Account.Id 001Hs00003AbCdE → asset.owner_tenant Customer A (15-character id accepted, as in Salesforce)
-    acct = soql(client, h, f"SELECT Id, Name, Tenant_Key__c FROM Account WHERE Id = '{CUSTOMER_A}'")["records"]
+    acct = soql(client, h, f"SELECT Id, Name, Tenant_Key__c FROM Account WHERE Id = '{CUSTOMER_A}'")["records"]  # noqa: S608 - SOQL sent to the simulator, not SQL run here
     assert [(a["Id"][:15], a["Name"], a["Tenant_Key__c"]) for a in acct] == [(CUSTOMER_A, "Customer A", "CUSTOMER_A")]
     # RT-1048's lease opportunity: StageName 'Proposal' → forecast; CloseDate 2026-12-31; Amount a monthly lease rate
     lease = rt1048_opps(client, h)["Lease"]
@@ -252,7 +252,7 @@ def test_create_sale_task(client, h):
     assert task["AccountId"] == opp["AccountId"] and task["OwnerId"] == auth.user_id(auth.INTEGRATION_USER)
     [(kind, data)] = outbox(created["id"])
     assert kind == "salesforce.Task.created" and data["Subject"] == body["Subject"]
-    found = soql(client, h, f"SELECT Id, Account.Name FROM Task WHERE Id = '{created['id']}'")["records"]
+    found = soql(client, h, f"SELECT Id, Account.Name FROM Task WHERE Id = '{created['id']}'")["records"]  # noqa: S608 - SOQL sent to the simulator, not SQL run here
     assert found[0]["Account"]["Name"] == "Customer A"
 
 

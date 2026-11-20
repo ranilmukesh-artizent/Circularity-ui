@@ -50,7 +50,7 @@ class FaultIn(BaseModel):
 class SubscriptionIn(BaseModel):
     url: str
     sources: list[str] = []
-    secret: str = "source-sim-demo-secret"
+    secret: str = "source-sim-demo-secret"  # noqa: S105 - the simulator's demo secret
 
 
 @router.get("/clock")

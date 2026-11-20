@@ -105,7 +105,7 @@ def aras_client() -> httpx.Client:
         "scope": "Innovator",
         "client_id": "IOMApp",
         "username": "di-connector",
-        "password": hashlib.md5(b"Circularity-demo-aras-1").hexdigest(),
+        "password": hashlib.md5(b"Circularity-demo-aras-1").hexdigest(),  # noqa: S324 - the vendor's protocol
         "database": "InnovatorDB",
     }
     tok = httpx.post(ARAS + "/oauthserver/connect/token", data=form, timeout=30).json()["access_token"]

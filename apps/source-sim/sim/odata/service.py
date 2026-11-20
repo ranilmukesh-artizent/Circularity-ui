@@ -242,7 +242,7 @@ class ODataService:
         return tree
 
     # ------------------------------------------------------------- documents
-    def service_document(self, base: str) -> JSONResponse:
+    def service_document(self, base: str) -> JSONResponse:  # noqa: ARG002 - the service interface
         return JSONResponse({"d": {"EntitySets": list(self.sets)}})
 
     def metadata(self) -> str:

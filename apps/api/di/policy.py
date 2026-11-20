@@ -73,7 +73,7 @@ def tenants() -> list[str]:
 
 
 def permissions() -> list[str]:
-    return list(_data()["perm_acts"]) + ["approve.mcp", "approve.tenantAccess"]
+    return [*_data()["perm_acts"], "approve.mcp", "approve.tenantAccess"]
 
 
 @cache
@@ -221,7 +221,8 @@ def _idp_email(label: str) -> str:
 def starting_idp_users() -> list[dict]:
     """The demo's S.idp.users: one per account (email from its starting label), plus two deputies without an account."""
     users = [{"id": a.id, "email": _idp_email(a.label), "acct": a.id} for a in starting_accounts()]
-    return users + [
+    return [
+        *users,
         {"id": "dep-ap", "email": "approver.deputy@example.com", "acct": None, "role": "Approver"},
         {"id": "dep-pl", "email": "planner.deputy@example.com", "acct": None, "role": "Planner"},
     ]

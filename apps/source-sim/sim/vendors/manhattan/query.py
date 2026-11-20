@@ -157,7 +157,7 @@ class _Parser:
 
 def parse_query(q: str | None) -> Pred:
     if not q or not q.strip():
-        return lambda d: True
+        return lambda d: True  # noqa: ARG005 - every filter takes the document
     p = _Parser(_tokens(q))
     pred = p.expr()
     if p.i != len(p.t):

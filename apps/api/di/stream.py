@@ -108,7 +108,7 @@ class Broker:
                         for ev in fetch(last):
                             last = ev["id"]
                             self._publish(ev)
-            except Exception:  # noqa: BLE001 - reconnect after a database restart
+            except Exception:  # reconnect after a database restart
                 log.exception("stream listener lost its connection; reconnecting")
                 threading.Event().wait(2)
 

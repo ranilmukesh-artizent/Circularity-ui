@@ -6,9 +6,9 @@ from di.instructions.send import _update
 
 
 def test_update_refuses_an_unknown_column(session):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="not an updatable instruction column"):
         _update(session, 0, **{"status = 'x'; --": "y"})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="not an updatable instruction column"):
         _update(session, 0, approval_ref="x")
     session.rollback()
 

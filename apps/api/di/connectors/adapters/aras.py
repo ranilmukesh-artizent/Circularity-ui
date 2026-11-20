@@ -33,7 +33,7 @@ from di.connectors.generic import keep, to_usd
 from di.connectors.http import Auth, SourceClient, SourceError
 
 ODATA = "/aras/InnovatorServer/server/odata"
-TOKEN = "/aras/InnovatorServer/oauthserver/connect/token"
+TOKEN = "/aras/InnovatorServer/oauthserver/connect/token"  # noqa: S105 - a URL path, not a secret
 PAGE = 25
 PART = "item_number,name,state,major_rev,classification,nf_harvestable,cost,nf_cost_currency,modified_on"
 AML = "Part AML($select=modified_on;$expand=related_id($select=item_number,modified_on;$expand=manufacturer($select=name)))"
@@ -49,7 +49,7 @@ class ArasPassword(Auth):
 
     def __init__(self, username: str, password: str, database: str):
         self.username, self.database = username, database
-        self.password_md5 = hashlib.md5(password.encode()).hexdigest()
+        self.password_md5 = hashlib.md5(password.encode()).hexdigest()  # noqa: S324 - Aras logins send the MD5 of the password (the vendor's protocol)
         self.token: str | None = None
         self.expires = 0.0
 

@@ -24,6 +24,7 @@ The demo's mapping: VND_CERT ISO14001-VA → vendor.certification certified (Cer
 Cu $7,800 / t (Unit + currency; ₹650/kg at 83.5 INR/USD = $7,784/t).
 """
 
+import contextlib
 import csv
 import hashlib
 import hmac
@@ -152,10 +153,8 @@ class Drop:
     def close(self) -> None:
         for c in (self.sftp, self.transport):
             if c is not None:
-                try:
+                with contextlib.suppress(Exception):  # closing a broken session
                     c.close()
-                except Exception:  # noqa: BLE001, S110 - closing a broken session
-                    pass
 
     def _log(self, op: str, url: str, status: int, records: int | None, t0: float, error: str | None) -> None:
         """fetch_log row: method SFTP; the operation leads the URL column's note (connect / list / get)."""

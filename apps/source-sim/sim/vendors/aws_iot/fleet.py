@@ -231,7 +231,7 @@ def update_shadow(conn: Connection, thing: str, name: str, doc: Any, at: datetim
         json.dumps({"previous": previous, "current": current, "timestamp": ts}).encode(),
         at=at,
     )
-    out = {"state": {k: v for k, v in state_in.items()}, "metadata": {k: meta(v, ts) for k, v in state_in.items() if v},
+    out = {"state": dict(state_in),"metadata": {k: meta(v, ts) for k, v in state_in.items() if v},
            "version": version, "timestamp": ts}  # fmt: skip
     if "clientToken" in doc:
         out["clientToken"] = doc["clientToken"]
@@ -274,7 +274,7 @@ def report_device(conn: Connection, thing, at: datetime) -> None:
 
 
 @scheduler.handler(HANDLER)
-def report(conn: Connection, payload: dict) -> None:
+def report(conn: Connection, payload: dict) -> None:  # noqa: ARG001 - scheduled handlers take (conn, payload)
     now = clock.now(conn)
     for thing in conn.execute(select(t.THING).where(t.THING.c.online.is_(True)).order_by(t.THING.c.thing_name)).all():
         report_device(conn, thing, now)

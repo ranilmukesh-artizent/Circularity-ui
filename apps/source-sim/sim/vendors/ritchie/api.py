@@ -288,7 +288,7 @@ def market_summary(request: Request):
             "medianSoldPrice": {"amount": med, "currency": "INR", "display": lakh(med)},
             "medianDaysListed": round(statistics.median(d["DAYS_LISTED"] for d in docs)),
             "avgBidders": round(statistics.mean(d["BIDDERS"] for d in docs), 1),
-            "latestSaleDate": max(datetime.strptime(d["SOLD_DATE"], "%d/%m/%Y").date() for d in docs).strftime("%d/%m/%Y"),
+            "latestSaleDate": max(datetime.strptime(d["SOLD_DATE"], "%d/%m/%Y").date() for d in docs).strftime("%d/%m/%Y"),  # noqa: DTZ007 - a calendar date, no time zone involved
             "dataAsOf": _z(as_of),
         }
 

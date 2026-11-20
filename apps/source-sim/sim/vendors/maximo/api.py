@@ -349,7 +349,7 @@ def _reply(conn, request: Request, os_: ObjectStructure, row, status: int, locat
     return JSONResponse(body, status_code=status, headers=headers)
 
 
-def _event_data(os_: ObjectStructure, row, changed: dict | None = None) -> dict:
+def _event_data(os_: ObjectStructure, row, changed: dict | None = None) -> dict:  # noqa: ARG001 - same signature as the other event builders
     data = {k: _value(v) for k, v in row._mapping.items() if v is not None}
     if changed is not None:
         data["changed"] = sorted(changed)

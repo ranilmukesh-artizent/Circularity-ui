@@ -104,7 +104,7 @@ def manhattan_facility(code: str) -> str:
 
 
 # ---------------------------------------------------------------- IBM Sterling OMS
-def order(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:
+def order(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
     so, d = demand_order(c), case_demand(c) or {}
     if not so or not d.get("line"):
         raise NotApplicable("no matched sales order line")
@@ -127,7 +127,7 @@ def order(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:
     )
 
 
-def pod(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:
+def pod(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
     """Delivery confirmed: the order line is released, shipped and delivered in Sterling with the carrier's proof of
     delivery, once Oracle Transportation Management has reported the delivery."""
     alloc, transport = prev.get("order"), prev.get("transport")
@@ -165,7 +165,7 @@ def pod(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:
 
 
 # ---------------------------------------------------------------- Oracle Depot Repair
-def repair(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:
+def repair(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
     number = ex_doc_ref(c, _step(c, ins))  # WO-47349: our planned work order number becomes the repair number
     rec = {
         "SERIAL_NUMBER": c["assetId"],
@@ -202,7 +202,7 @@ def repair(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:
 
 
 # ---------------------------------------------------------------- Oracle Transportation Management
-def transport(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:
+def transport(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
     src, dst = FAC_LOC.get(c["location"]), _ship_to(c)
     if not src or not dst or src == dst:
         raise NotApplicable("no lane from the case's warehouse")
@@ -288,7 +288,7 @@ def _ok_if_duplicate(call) -> None:
 
 
 # ---------------------------------------------------------------- SAP S/4HANA
-def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:
+def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
     r = c.get("chosen") or c["recommendation"]
     lines = [ln for ln in line_actuals(c, r) if ln["act"]]
     if not lines:
@@ -323,7 +323,7 @@ def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:
         raise _refused(e) from e
     finally:
         cl.close()
-    root = ET.fromstring(resp.content)
+    root = ET.fromstring(resp.content)  # noqa: S314 - the reply of the configured S/4 system (the simulator)
     doc = _find(root, "AccountingDocument")
     severity = _find(root, "MaximumLogItemSeverityCode")
     if severity == "3" or not doc or doc == "0000000000":

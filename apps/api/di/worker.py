@@ -50,7 +50,7 @@ def run_once() -> bool:
                 raise LookupError(f"no handler for job kind {job.kind!r}")
             fn(job.payload)
             jobs.complete(session, job.id)
-        except Exception as exc:  # noqa: BLE001 - every failure is recorded on the job
+        except Exception as exc:  # every failure is recorded on the job
             log.exception("job %s (%s) failed", job.id, job.kind)
             jobs.fail(session, job, f"{type(exc).__name__}: {exc}", settings.job_max_attempts)
         session.commit()
@@ -119,7 +119,7 @@ def tick_instructions() -> None:
     try:
         if n := tick():
             log.info("simulated acknowledgements: %s", n)
-    except Exception:  # noqa: BLE001
+    except Exception:
         log.exception("simulated acknowledgements failed")
 
 
@@ -132,7 +132,7 @@ def startup() -> None:
         with SessionLocal() as s:
             ensure_sources(s)
         ensure_subscription()
-    except Exception:  # noqa: BLE001 - the periodic step retries the subscription
+    except Exception:  # the periodic step retries the subscription
         log.exception("startup step failed")
 
 
@@ -147,7 +147,7 @@ def periodic() -> None:
 
     try:
         ensure_subscription()
-    except Exception:  # noqa: BLE001 - source-sim may be down; the next tick tries again
+    except Exception:  # source-sim may be down; the next tick tries again
         log.exception("webhook subscription failed")
     try:
         with SessionLocal() as s:
@@ -156,7 +156,7 @@ def periodic() -> None:
             s.commit()
         if queued:
             log.info("queued syncs: %s", ", ".join(queued))
-    except Exception:  # noqa: BLE001
+    except Exception:
         log.exception("periodic step failed")
 
 

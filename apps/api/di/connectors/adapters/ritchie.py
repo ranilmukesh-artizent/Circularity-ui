@@ -58,7 +58,7 @@ def usd(inr: Decimal) -> float:
 
 def iso_date(ddmmyyyy: str | None) -> str | None:
     """The vendor's SOLD_DATE (DD/MM/YYYY) → ISO date."""
-    return datetime.strptime(ddmmyyyy, "%d/%m/%Y").date().isoformat() if ddmmyyyy else None
+    return datetime.strptime(ddmmyyyy, "%d/%m/%Y").date().isoformat() if ddmmyyyy else None  # noqa: DTZ007 - a calendar date: only .date() is kept
 
 
 def to_utc(v: str) -> str:
@@ -122,7 +122,7 @@ class RitchieAdapter(Adapter):
             url = urls[-1]
             yield Record("comparables", ref, payload, url, to_utc(max(stamps, key=to_utc)))
 
-    def read_price_index(self, client: SourceClient, since: str | None) -> Iterator[Record]:
+    def read_price_index(self, client: SourceClient, since: str | None) -> Iterator[Record]:  # noqa: ARG002 - the adapter read interface; this read is always full
         read = list(self.pages(client, "/price-index"))
         rows = [r for r, _, _ in read]
         url, as_of = (read[0][1], read[-1][2]) if read else (client.url("/price-index"), None)
@@ -171,7 +171,8 @@ class RitchieAdapter(Adapter):
         days = [c["DAYS_LISTED"] for c in rows if c.get("DAYS_LISTED") is not None]
         bidders = [c["BIDDERS"] for c in rows if c.get("BIDDERS") is not None]
         hi, lo = rows[-1], rows[0]
-        return facts + [
+        return [
+            *facts,
             Fact(
                 "market",
                 key,

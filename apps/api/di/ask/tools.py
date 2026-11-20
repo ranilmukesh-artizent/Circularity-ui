@@ -109,13 +109,13 @@ TOOL_NAMES = (*MCP_TOOLS, *ACTION_TOOLS)
 
 # ---- read-only, asserted once
 for _t in MCP_TOOLS:
-    assert TOOLS[_t]["rw"] == "read", f"{_t} is not a read tool"
-    assert all(ACTIONS[a].risk == "read" for a in ACTIONS_OF[_t]), f"{_t} reaches an action that is not a read"
+    assert TOOLS[_t]["rw"] == "read", f"{_t} is not a read tool"  # noqa: S101 - import-time check: Ask reaches reads only
+    assert all(ACTIONS[a].risk == "read" for a in ACTIONS_OF[_t]), f"{_t} reaches an action that is not a read"  # noqa: S101 - import-time check: Ask reaches reads only
 for _n, (_a, *_rest) in ACTION_TOOLS.items():
-    assert ACTIONS[_a].risk == "read", f"{_n} runs {_a}, which is not a read"
+    assert ACTIONS[_a].risk == "read", f"{_n} runs {_a}, which is not a read"  # noqa: S101 - import-time check: Ask reaches reads only
 _ALL = [a for t in MCP_TOOLS for a in ACTIONS_OF[t]] + [a for a, *_ in ACTION_TOOLS.values()] + ["case.evidence"]
-assert all(ACTIONS[a].risk == "read" for a in _ALL), "every action a tool runs is a read"
-assert not [a for a in _ALL if a.startswith(FORBIDDEN_ACTIONS)], "Ask may never reach an action an agent must not run"
+assert all(ACTIONS[a].risk == "read" for a in _ALL), "every action a tool runs is a read"  # noqa: S101 - import-time check: Ask reaches reads only
+assert not [a for a in _ALL if a.startswith(FORBIDDEN_ACTIONS)], "Ask may never reach an action an agent must not run"  # noqa: S101 - import-time check: Ask reaches reads only
 
 PY_TYPE = {"string": str, "boolean": bool, "number": (int, float), "object": dict, "array": list}
 LIST_MAX, STR_MAX, RESULT_MAX = 8, 400, 4000

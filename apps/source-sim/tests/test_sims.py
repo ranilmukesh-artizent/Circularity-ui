@@ -35,7 +35,7 @@ async def _session(fn, port=None, user=sftp.USER, password=sftp.PASSWORD, known_
     server = await sftp.serve(0, "127.0.0.1") if port is None else None
     p = port or server.sockets[0].getsockname()[1]
     try:
-        async with asyncssh.connect(
+        async with asyncssh.connect(  # noqa: SIM117 - the SFTP client needs the connection opened first
             "127.0.0.1", p, username=user, password=password, known_hosts=known_hosts, connect_timeout=TIMEOUT
         ) as conn:
             async with conn.start_sftp_client() as s:
@@ -62,7 +62,8 @@ async def fetch_all(s) -> dict[str, tuple[bytes, int]]:
 
 def test_layout_signatures_and_manifest(client):
     files = run(fetch_all)
-    assert sorted(files) == sorted(CSVS + ["manifest.json"] + [n + ".sig" for n in CSVS + ["manifest.json"]])
+    names = [*CSVS, "manifest.json"]
+    assert sorted(files) == sorted(names + [n + ".sig" for n in names])
     for name, (data, mtime) in files.items():
         assert mtime == 1791190800  # 2026-10-05T09:00:00Z: 2 days before the as-of time
         if not name.endswith(".sig"):

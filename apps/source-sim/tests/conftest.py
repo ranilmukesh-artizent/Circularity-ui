@@ -12,7 +12,7 @@ os.environ.setdefault("SIM_BACKGROUND", "false")
 # anything imports `sim.db` (it builds its engine from the setting at import; sim.config only reads it, uncached
 # here). The app's start-up (each test module's TestClient) creates the schemas and loads the seed, as it does for
 # the live database.
-from sim.config import Settings  # noqa: E402
+from sim.config import Settings
 
 _live = make_url(Settings().database_url)
 _test = _live.set(database="sources_test")

@@ -30,7 +30,7 @@ class SourceError(Exception):
 
 
 class Auth:
-    def headers(self, client: "SourceClient", force_refresh: bool = False) -> dict[str, str]:
+    def headers(self, client: "SourceClient", force_refresh: bool = False) -> dict[str, str]:  # noqa: ARG002 - the Auth interface (OAuth uses both)
         return {}
 
 
@@ -39,7 +39,7 @@ class Basic(Auth):
     user: str
     password: str
 
-    def headers(self, client, force_refresh=False):
+    def headers(self, client, force_refresh=False):  # noqa: ARG002 - the Auth interface (OAuth uses both)
         return {"Authorization": "Basic " + base64.b64encode(f"{self.user}:{self.password}".encode()).decode()}
 
 
@@ -49,7 +49,7 @@ class ApiKey(Auth):
     key: str
     prefix: str = ""
 
-    def headers(self, client, force_refresh=False):
+    def headers(self, client, force_refresh=False):  # noqa: ARG002 - the Auth interface (OAuth uses both)
         return {self.header: self.prefix + self.key}
 
 
@@ -57,7 +57,7 @@ class ApiKey(Auth):
 class Static(Auth):
     values: dict[str, str]
 
-    def headers(self, client, force_refresh=False):
+    def headers(self, client, force_refresh=False):  # noqa: ARG002 - the Auth interface (OAuth uses both)
         return dict(self.values)
 
 
@@ -115,7 +115,7 @@ class SourceClient:
     def url(self, path: str) -> str:
         return path if path.startswith("http") else self.base_url + path
 
-    def raw(self, method: str, path: str, log_records: bool = True, **kw) -> httpx.Response:
+    def raw(self, method: str, path: str, log_records: bool = True, **kw) -> httpx.Response:  # noqa: ARG002 - token calls pass it; not acted on yet (C1 changes no behaviour)
         """One HTTP call, logged. No auth headers added (used by token endpoints and by `request`)."""
         url = self.url(path)
         t0 = time.perf_counter()

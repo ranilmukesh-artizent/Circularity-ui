@@ -20,6 +20,7 @@ ShipLane spec so this package does not depend on it.
 import math
 import re
 from datetime import UTC, datetime, timedelta
+from itertools import pairwise
 
 from sqlalchemy import Column, DateTime, MetaData, String, Table, insert, select, text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -115,7 +116,7 @@ def fee_split(f: CaseFacts, r: RouteFacts) -> dict:
     src, rc, hub, kg = FAC_LOC.get(f.location, "WH-PNQ-01"), "RC-HSR-01", resale_hub(f), ex_kg(f)
     stops = [src, rc, hub] if r.variant == "refurb" else [src, hub]
     stops = [x for i, x in enumerate(stops) if i == 0 or x != stops[i - 1]]
-    legs = [(a, b) for a, b in zip(stops, stops[1:], strict=False) if a == rc or rc not in stops]
+    legs = [(a, b) for a, b in pairwise(stops) if a == rc or rc not in stops]
     total = jround(abs(fees.amt) * FX)
     freight = [lane_inr(a, b, kg) for a, b in legs]
     fr, cap = sum(freight), jround(total * 0.7)

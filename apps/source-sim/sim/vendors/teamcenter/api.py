@@ -240,7 +240,7 @@ def run_query(name: str, entries: list[str], values: list[str], objs: dict[str, 
 
 
 # ------------------------------------------------------------------ operations
-def op_login(body: dict, request: Request) -> JSONResponse:
+def op_login(body: dict, request: Request) -> JSONResponse:  # noqa: ARG001 - every operation takes (body, request)
     cred = body.get("credentials")
     if not isinstance(cred, dict):
         return exception("ServiceException", 214000, "The credentials input is missing.")
@@ -263,7 +263,7 @@ def op_login(body: dict, request: Request) -> JSONResponse:
                 "DisplayVersion": "14.3.0.0 (tc14.3.0.0_20231024)",
                 "HostName": "plm.northfield.example",
                 "Locale": "en_US",
-                "LogFile": f"/tmp/tcserver{sid[:6]}.syslog",
+                "LogFile": f"/tmp/tcserver{sid[:6]}.syslog",  # noqa: S108 - a path the mock reports; nothing is written there
                 "SiteLocale": "en_US",
                 "TcServerID": f"tcserver{sid[:8]}",
                 "UserID": s.user,
@@ -288,7 +288,7 @@ def handle(service: str, operation: str, body: dict, user: str, sid: str) -> JSO
             return {
                 ".QName": f"{NS}/Core/2007-01/Session.GetTCSessionInfoResponse",
                 "serverVersion": "P14000.3.0",
-                "transientVolRootDir": "/tmp/transientVolume",
+                "transientVolRootDir": "/tmp/transientVolume",  # noqa: S108 - a path the mock reports; nothing is written there
                 "isInV7Mode": False,
                 "moduleNumber": 0,
                 "bypass": False,
@@ -509,7 +509,7 @@ def set_properties(conn: Connection, body: dict, objs: dict[str, dict], user: st
         conn.execute(update(POM).where(POM.c.uid == u).values(props=props, last_mod_date=now))
         o["props"] = props
         sd.updated.append(u)
-        sd.add(o, sorted(changes) + ["last_mod_date"], plain=False)
+        sd.add(o, [*sorted(changes), "last_mod_date"], plain=False)
         events.emit(
             conn,
             SOURCE,

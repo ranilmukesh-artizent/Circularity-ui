@@ -183,7 +183,7 @@ def _filter(*fields):
     """Exact-match query filters over (possibly nested) fields: ?sku=MTR-2041."""
 
     def match(doc: dict, q) -> bool:
-        for param, getter in fields:
+        for param, getter in fields:  # noqa: SIM110 - reads clearer as a loop
             if param in q and q[param] != getter(doc):
                 return False
         return True

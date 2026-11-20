@@ -70,7 +70,7 @@ def fresh():
         conn.execute(text("DELETE FROM action_journal"))
     store.reset()
     state.reset()
-    yield
+    return
 
 
 class Replay:

@@ -10,6 +10,7 @@ HTTP, below spec.base_path:
 """
 
 import base64
+import contextlib
 import secrets
 import time
 from datetime import datetime
@@ -115,10 +116,8 @@ def build(spec: Spec) -> Mock:
             h = request.headers.get("authorization", "")
             cid, csec = form.get("client_id", ""), form.get("client_secret", "")
             if h.lower().startswith("basic "):
-                try:
+                with contextlib.suppress(ValueError):
                     cid, _, csec = base64.b64decode(h[6:]).decode().partition(":")
-                except ValueError:
-                    pass
             if form.get("grant_type") != "client_credentials" or (cid, csec) != (creds["client_id"], creds["client_secret"]):
                 return JSONResponse({"error": "invalid_client"}, status_code=401)
             tok = secrets.token_urlsafe(32)
