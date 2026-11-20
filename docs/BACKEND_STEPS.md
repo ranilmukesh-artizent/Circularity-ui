@@ -718,7 +718,20 @@ The rest of the design:
 - **Bug fixed:** a request could deadlock itself after a state reset (seeding held a lock inside the request's transaction while another session of the same request read the collection). Seeding now commits in its own short transaction (`di/state.py`).
 - **Still missing on the server** (the page says "not available on the server yet"): Connection Fabric pause/resume, disconnect, re-authenticate, connect from the catalogue, test connection, and the handlers for `source.reconnect`, `credentials.rotate`, `source.delete`, `source.update`, `import.commit`, `tables.update`; the workflow template save, suggested fix, reprocessing failed rows and run settings; the MCP agent test bench; the action pipeline's agent gate (autonomy levels, run limits and the kill switch outside MCP).
 
-**B17c (next):** make `api` the default, move the static assets into a bundled module, delete `src/engine/` and the extraction script, and walk RT-1048 end to end in the browser.
+**B17c, the engine deleted: done (20 Nov 2026). B17 is complete.**
+- **Only di-api:** the `VITE_BACKEND` switch, every engine branch in the facade, `src/engine/` and
+  `scripts/extract-engine.mjs` are deleted; a unit test (`src/api/no-engine.test.ts`) fails if anything imports them
+  again. The JavaScript bundle dropped from about 2.4 MB to 1.05 MB (325 KB gzipped).
+- **Static assets:** the demo's logos, icons and vendor logos are a committed module, `src/ui/assets.gen.ts`
+  (`scripts/dump-assets.mjs`); the build copies only the stylesheet and product photos (`scripts/extract-styles.mjs`).
+- **Removed with the engine:** exports that only served it (e.g. the agent test bench's in-browser runs, engine-only
+  sync polling); the page text in api mode is unchanged.
+- **Checks:** typecheck, unit tests (13), production build; all 11 accounts open every page with no failures;
+  `scripts/smoke-rt1048.mjs` takes RT-1048 through all ten stages in the browser (Planner submits, Approver approves,
+  only the simulated clock moves while the mocks acknowledge the six instructions, Finance confirms; predicted $9,600,
+  actual $9,230), with a second session following live without reloading.
+- **Found on the way:** after a reset the single worker syncs every source before it sends a person's instruction
+  (the queue is first in, first out). `scripts/dev/wait-idle.sh` waits it out; plan 02 adds job priorities.
 
 ## B18. Hardening
 

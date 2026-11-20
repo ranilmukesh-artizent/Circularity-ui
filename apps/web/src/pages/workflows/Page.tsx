@@ -5,8 +5,8 @@ import { fmtNumber } from '../../api/format';
 import { useBackend } from '../../api/hooks';
 import { can } from '../../api/session';
 import {
-  ago, analyze, applySuggestedFix, evalStep, hashId, history, logoHtml, mappings, nowMs, NOWF, publishWorkflow, runCounts, runErrors,
-  runFromLast, runOrder, saveWorkflow, savedOf, setOpenWorkflow, setRunSetting, setWorkflowStatus, sourceCategoryLabel, sourceCompleteness,
+  ago, analyze, evalStep, hashId, history, logoHtml, mappings, nowMs, NOWF, publishWorkflow, runCounts, runErrors,
+  runFromLast, runOrder, saveWorkflow, savedOf, setWorkflowStatus, sourceCategoryLabel, sourceCompleteness,
   stepInfo, systemOf, templateOf, trigText, usedBy, validate, wfStat, workflow, WF_H, WF_W, WF_WH, worldWidth, type TestRun, type Trigger, type Workflow,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
@@ -63,10 +63,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   const [, setRunV] = useState(0);
   const paint = () => setRunV((x) => x + 1);
   const lastSeen = useRef(w.lastRun?.id);
-  useEffect(() => {
-    setOpenWorkflow(w.id);
-    return () => { window.clearTimeout(timer.current); setOpenWorkflow(null); };
-  }, [w.id]);
+  useEffect(() => () => window.clearTimeout(timer.current), [w.id]);
   // a real run that finishes while no test run is shown is painted, like the demo
   useEffect(() => {
     if (w.lastRun?.id !== lastSeen.current) {
@@ -336,11 +333,11 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
             <div className="fld"><label htmlFor="wfOwn">Owner (role or team)</label>
               <input id="wfOwn" value={d.owner} maxLength={60} onChange={(e) => meta((x) => { x.owner = e.target.value; })} /></div>
             <div className="fld"><label htmlFor="frRetry">Retries</label>
-              <select id="frRetry" value={String(w.retries ?? 3)} onChange={(e) => { if (!setRunSetting(w.id, 'retries', e.target.value)) return toast(NOT_YET); meta(() => {}); toast('Saved with the workflow.'); }}>
+              <select id="frRetry" value={String(w.retries ?? 3)} onChange={() => toast(NOT_YET)}>
                 {[0, 1, 3, 5].map((n) => <option key={n}>{n}</option>)}
               </select></div>
             <div className="fld"><label htmlFor="frAlert">Alert when</label>
-              <select id="frAlert" value={w.alert || 'A run fails'} onChange={(e) => { if (!setRunSetting(w.id, 'alert', e.target.value)) return toast(NOT_YET); meta(() => {}); toast('Saved with the workflow.'); }}>
+              <select id="frAlert" value={w.alert || 'A run fails'} onChange={() => toast(NOT_YET)}>
                 {['A run fails', 'Two runs fail in a row', 'Success rate drops below 95%', 'Never'].map((o) => <option key={o}>{o}</option>)}
               </select></div>
           </div>
@@ -524,8 +521,7 @@ ${t(0)} INFO  downstream steps marked upstream failed; held records kept`}</pre>
             <table className="t static tight"><thead><tr><th>Field</th><th>Expected</th><th>Received</th></tr></thead>
               <tbody>{m.map((f, k) => <tr key={k}><td className="mono">{f[0]}</td><td className="mono">{f[1]}</td><td className={'mono ' + (k === 0 ? 'neg' : '')}>{k === 0 ? f[1] + ' → renamed in source' : f[1]}</td></tr>)}</tbody></table>
           ) : <p className="note">No field-level drift recorded.</p>}
-          {w.frFix ? <p className="callout ok" style={{ marginTop: 8 }}><b>Fix applied.</b> {w.frFix} Run now to confirm.</p>
-            : mgr && <button className="btn sm" style={{ marginTop: 8 }} onClick={() => toast(applySuggestedFix(w.id) ? 'Fix applied. Run now to confirm it turns green.' : NOT_YET)}>Apply the suggested fix</button>}
+          {mgr && <button className="btn sm" style={{ marginTop: 8 }} onClick={() => toast(NOT_YET)}>Apply the suggested fix</button>}
         </div>
       </div>
     </section>

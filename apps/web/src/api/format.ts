@@ -1,6 +1,6 @@
 /**
  * The demo's formatters, so every page prints numbers and dates exactly as index.html does. They are pure functions
- * (ports of the demo's money, fmtD, fmtDY and fmtN), so both backends use this code and nothing reads the engine.
+ * (ports of the demo's money, fmtD, fmtDY and fmtN).
  */
 
 /** $1,234 / −$1,234 */

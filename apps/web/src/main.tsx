@@ -7,7 +7,6 @@ import './app/app.css';
 import { App } from './app/App';
 import { StatusPage } from './pages/StatusPage';
 import { applyTheme } from './ui/theme';
-import { API } from './api/backend';
 import { bootApi } from './api/client';
 
 // The demo's revamped look (fr) and stage pages (st) are scoped by classes on <html>; they are the default build.
@@ -32,10 +31,8 @@ function render() {
   );
 }
 
-// With VITE_BACKEND=api, restore the session this tab holds and load the reference lists before the first render.
-if (API) {
-  bootApi().then(render, (err) => {
-    console.error(err);
-    root.render(<p className="note" style={{ padding: 24 }}>Could not reach di-api ({String(err?.message ?? err)}). Check that the stack is running, then reload.</p>);
-  });
-} else render();
+// Restore the session this tab holds and load the reference lists before the first render.
+bootApi().then(render, (err) => {
+  console.error(err);
+  root.render(<p className="note" style={{ padding: 24 }}>Could not reach di-api ({String(err?.message ?? err)}). Check that the stack is running, then reload.</p>);
+});

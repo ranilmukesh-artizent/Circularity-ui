@@ -1,7 +1,7 @@
 /* Connection Fabric component kit: the demo's frIt, frSt, frKpi, frSeg, vlogo, status chips, the row menu and an action toast. */
 import { createContext, useContext, useEffect, useReducer, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import { fmtNumber } from '../../api/format';
-import { hashId, journeyStep, recordTest, sources, vendorInitials, vHue, type Source } from '../../api/integration';
+import { hashId, journeyStep, vendorInitials, vHue, type Source } from '../../api/integration';
 import { can } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 
@@ -147,7 +147,7 @@ export function FrPanel({ title, sub, right, cls, children }: { title: ReactNode
   );
 }
 
-/** Re-render on a timer while the page is open: ages tick and syncs progress inside the engine. */
+/** Re-render on a timer while the page is open: ages tick. */
 export function useTick(ms: number) {
   const [, force] = useReducer((x: number) => x + 1, 0);
   useEffect(() => {
@@ -184,7 +184,6 @@ export function runTest(s: Pick<Source, 'id' | 'vendor' | 'status' | 'auth' | 'r
     if (fail || t.i >= FR_TEST.length) {
       t.done = true; t.ok = !fail; t.at = Date.now();
       tEmit();
-      recordTest(s, !!t.ok, FR_TEST[i][0]);
       done?.(!!t.ok);
       return;
     }
@@ -308,5 +307,3 @@ export function SrcMenu({ s }: { s: Source }) {
     </details>
   );
 }
-
-export const anySyncing = () => sources().some((s) => s.syncing);

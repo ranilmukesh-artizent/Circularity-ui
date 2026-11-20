@@ -2,7 +2,7 @@
 import { can } from '../../api/session';
 import { fmtNumber } from '../../api/format';
 import {
-  duplicateWorkflow, exportJson, followRun, NOWF, runWorkflow, saveAsTemplate, setWorkflowStatus, workflow,
+  duplicateWorkflow, exportJson, followRun, NOWF, runWorkflow, setWorkflowStatus, workflow,
 } from '../../api/workflows';
 import { toast } from '../../ui/toast';
 import { download } from './kit';
@@ -35,15 +35,8 @@ export async function runNow(id: string) {
   if (!can('manageWorkflows')) return toast(NOWF());
   const r = await runWorkflow(id);
   if (refused(r) || !r.ok) return;
-  // with the API: the run is a worker job; its record (by the run key) reports progress on the stream
-  if (r.output.run) return void followRun(r.output.run, (x) => finished(r.output.name, x));
-  const t = window.setInterval(() => {
-    const w = workflow(id);
-    if (!w) return window.clearInterval(t);
-    if (w.running) return;
-    window.clearInterval(t);
-    if (w.last) finished(w.name, w.last);
-  }, 250);
+  // the run is a worker job; its record (by the run key) reports progress on the stream
+  if (r.output.run) followRun(r.output.run, (x) => finished(r.output.name, x));
 }
 
 /** Duplicate (ACT.wfDup). Returns the copy's id. */
@@ -62,10 +55,9 @@ export async function exportOne(id: string) {
   toast(workflow(id)!.name + ' exported as JSON.');
 }
 
-export function saveTemplate(id: string) {
+export function saveTemplate(_id: string) {
   if (!can('manageWorkflows')) return toast(NOWF());
-  if (!saveAsTemplate(id)) return toast(NOT_YET);
-  toast('Saved as a template. It appears under New workflow.');
+  toast(NOT_YET); // no backend action saves a template yet
 }
 
 /** Bulk run, pause or export from the list (ACT.frWfBulk), each run and pause through invoke(). */

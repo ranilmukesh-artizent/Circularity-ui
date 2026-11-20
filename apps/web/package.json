@@ -4,15 +4,15 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/extract-engine.mjs",
+    "predev": "node scripts/extract-styles.mjs",
     "dev": "vite --host 0.0.0.0",
-    "prebuild": "node scripts/extract-engine.mjs",
+    "prebuild": "node scripts/extract-styles.mjs",
     "build": "tsc --noEmit && vite build",
-    "pretest": "node scripts/extract-engine.mjs",
+    "pretest": "node scripts/extract-styles.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "engine": "node scripts/extract-engine.mjs --force",
+    "assets": "node scripts/dump-assets.mjs",
     "golden": "node scripts/dump-golden.mjs"
   },
   "dependencies": {

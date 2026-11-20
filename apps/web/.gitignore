@@ -1,6 +1,5 @@
 node_modules/
 dist/
 *.tsbuildinfo
-src/engine/legacy.gen.js
 src/styles/legacy.gen.css
 public/assets/products/

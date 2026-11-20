@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { fmtNumber } from '../../api/format';
 import { can } from '../../api/session';
 import {
-  createWorkflow, deleteWorkflow, deliverOf, failedRows, graphOf, history, readableSources, reprocessFailed, runCounts, RUN_CHIP, RUN_LABEL,
-  runTimes, sourceExists, sourceLabel, source, stepInfo, templates, workflow, writableSources, type TestRun,
+  createWorkflow, deleteWorkflow, deliverOf, failedRows, graphOf, history, readableSources, runCounts, RUN_CHIP, RUN_LABEL,
+  runTimes, sourceExists, sourceLabel, source, stepInfo, workflow, writableSources, type TestRun,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
@@ -41,18 +41,6 @@ export function NewWorkflowModal({ onClose, onCreated }: { onClose: () => void; 
     onCreated(r.output.id);
   }
 
-  /** From a saved template (frTplUse), as a new draft through workflow.create. */
-  async function fromTemplate(id: string) {
-    const t = templates().find((x) => x.id === id);
-    if (!t) return;
-    const type = t.kind === 'dec' ? 'dec' : t.cat === 'Outbound' && t.src ? 'out' : t.src && sourceExists(t.src) ? 'ingest' : 'blank';
-    const r = await createWorkflow({ type, src: t.src ?? '', ch: 'api', name: t.name.replace(/ template$/, '') + ' (from template)', graph: t.tpl, desc: 'Created from ' + t.name + '.' });
-    if (!r.ok) return toast(r.error.message, 4200);
-    toast('Created from the template as a draft.');
-    onCreated(r.output.id);
-  }
-
-  const tpls = templates();
   return (
     <Modal title="New workflow" onClose={onClose}
       foot={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn pri" onClick={create}>Create workflow</button></>}>
@@ -85,12 +73,6 @@ export function NewWorkflowModal({ onClose, onCreated }: { onClose: () => void; 
         <label htmlFor="nwName">Name</label>
         <input id="nwName" value={n.name} placeholder={auto} maxLength={80} onChange={(e) => setN({ ...n, name: e.target.value })} />
       </div>
-      {tpls.length > 0 && (
-        <>
-          <h4 style={{ margin: '14px 0 6px' }}>Your templates</h4>
-          <div className="row">{tpls.map((t) => <button key={t.id} className="btn sm" onClick={() => fromTemplate(t.id)}><Icon name="file" /> {t.name}</button>)}</div>
-        </>
-      )}
     </Modal>
   );
 }
@@ -154,29 +136,24 @@ export function RunViewModal({ id, runId, onClose, onFailed }: { id: string; run
 export function FailedRecordsModal({ id, onClose }: { id: string; onClose: () => void }) {
   const w = workflow(id);
   if (!w) return null;
-  const L = failedRows(id), done = w.frReproc;
+  const L = failedRows(id);
   function csv() {
     const q = (v: string) => (/[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v);
     const rows = [['record', 'field', 'value', 'rule'], ...L.map((r) => [r.rec, r.field, r.value, r.rule])];
     download(w!.id + '-failed-records.csv', rows.map((r) => r.map(q).join(',')).join('\n'), 'text/csv');
     toast('Failed records exported as CSV.');
   }
-  function reproc() {
-    const n = reprocessFailed(id);
-    if (n === null) return toast(NOT_YET);
-    onClose();
-    toast(n + ' records sent back through validation. Rows that still break a rule stay held.');
-  }
+  const reproc = () => toast(NOT_YET); // no backend action reprocesses held records yet
   return (
     <Modal title={'Failed records · ' + w.name} wide onClose={onClose}
       foot={<>
         <button className="btn" onClick={onClose}>Close</button>
         <button className="btn" onClick={csv} disabled={!L.length}><Icon name="download" /> Export CSV</button>
-        {can('manageWorkflows') && <button className="btn pri" onClick={reproc} disabled={!L.length || !!done}>Reprocess</button>}
+        {can('manageWorkflows') && <button className="btn pri" onClick={reproc} disabled={!L.length}>Reprocess</button>}
       </>}>
       {L.length ? (
         <>
-          <p className="note" style={{ marginTop: 0 }}>{L.length} record{L.length > 1 ? 's' : ''} from the latest run broke a validation rule. They are held by the error handler, not dropped.{done && <> <b>Reprocessed {done}.</b></>}</p>
+          <p className="note" style={{ marginTop: 0 }}>{L.length} record{L.length > 1 ? 's' : ''} from the latest run broke a validation rule. They are held by the error handler, not dropped.</p>
           <div className="tw"><table className="t static tight">
             <thead><tr><th>Record</th><th>Field</th><th>Value</th><th>Rule broken</th></tr></thead>
             <tbody>{L.map((r, i) => <tr key={i}><td className="mono">{r.rec}</td><td className="mono">{r.field}</td><td className="mono">{r.value || <span className="note">(empty)</span>}</td><td>{r.rule}</td></tr>)}</tbody>

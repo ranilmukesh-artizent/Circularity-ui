@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { invoke } from '../../api/actions';
 import {
   approvalLimit, approvalTerms, caseAnalysis, caseById, confidence, defaultSpend, draftRationale, eligibleRoutes, instruction,
-  isoT, resetScen, scen, scenAdj, scenRoutes, scheduleAutoAck, setScen, snapshotItems, type CaseAnalysis, type CaseRec, type Route, type ScenKey,
+  isoT, resetScen, scen, scenAdj, scenRoutes, setScen, snapshotItems, type CaseAnalysis, type CaseRec, type Route, type ScenKey,
 } from '../../api/case';
 import { money } from '../../api/format';
 import { currentAccount } from '../../api/session';
@@ -61,7 +61,6 @@ export function ApprovalModal({ c, mode, onClose }: { c: CaseRec; mode?: 'review
     }
     onClose();
     toast(`${r.output.ref} created. Instruction handed to ${r.output.sent_to.split(' · ')[0]}.`);
-    scheduleAutoAck(c.id, 0);
   }
 
   return (

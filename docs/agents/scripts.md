@@ -14,6 +14,7 @@ from `apps/web`, unless noted.
 | `restart.sh [services]` | Restarts api, worker and source-sim (or the ones given) and waits for health. |
 | `reset.sh` | Demo starting state: source-sim reset, `scripts/reset_starting.py` (with `PYTHONPATH=/app`), worker started. |
 | `unstick.sh` | Lists non-idle db sessions, terminates sessions idle in a transaction for over 1 min, restarts the api. Use when the api hangs. |
+| `wait-idle.sh [max_s]` | Waits until the worker has no due jobs (after a reset it syncs every source first, ~2–3 min). Use before `smoke-rt1048.mjs`. |
 | `status.sh` | Health of api and source-sim, container status, api tests running or waiting for the lock, non-idle db sessions. |
 
 From Windows: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path>/Circularity-ui/scripts/dev/status.sh`.
@@ -29,21 +30,22 @@ From Windows: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path>/Circularity-ui/
 
 | Script | What |
 |---|---|
-| `extract-engine.mjs [--force]` | Extracts the demo's script and CSS from `index.html` into `src/engine/legacy.gen.js` and `src/styles/legacy.gen.css`. Runs before `npm run dev/build/test`. Goes away in B17c. |
+| `extract-styles.mjs [--force]` | Copies the demo's stylesheet into `src/styles/legacy.gen.css` and the product photos into `public/assets/products/`. Runs before `npm run dev/build/test`. |
+| `dump-assets.mjs` | Writes `src/ui/assets.gen.ts` (logos, icons, vendor logos and their rules) from the demo run headless. Committed; rerun only when the demo's assets change. `npm run assets`. |
 | `dump-golden.mjs` | Writes the base golden files (`fixtures/golden/*.json`) from the demo. `npm run golden`. |
 | `golden-sandbox.mjs` | Shared headless sandbox for the golden scripts (`freshDemo`, `plain`, `writeGolden`). |
 | `golden/<area>.mjs` | Per-area golden files: `analytics_audit` (screens reference, analytics, audit, nav, checks), `ask`, `fabric` (screens integration, mcp, access, workflows), `home_command` (home, command), `mcp_calls` (mcp.json), `product_case` (product, case, orchestration), `workflow_writes`. See `golden/README.md`. |
-| `smoke-pages.mjs`, `smoke-signin.mjs`, `smoke-ask.mjs`, `smoke-approve.mjs` | Browser smoke checks with Chrome: see [testing.md](testing.md#browser-smoke-scripts-appswebscripts). |
+| `smoke-pages.mjs`, `smoke-signin.mjs`, `smoke-ask.mjs`, `smoke-approve.mjs`, `smoke-rt1048.mjs` | Browser smoke checks with Chrome: see [testing.md](testing.md#browser-smoke-scripts-appswebscripts). |
 
 ## npm scripts (apps/web/package.json)
 
 | Script | Runs |
 |---|---|
-| `dev` | `predev` (extract-engine), then `vite --host 0.0.0.0`. |
-| `build` | `prebuild` (extract-engine), then `tsc --noEmit && vite build`. |
-| `test` | `pretest` (extract-engine), then `vitest run`. |
+| `dev` | `predev` (extract-styles), then `vite --host 0.0.0.0`. |
+| `build` | `prebuild` (extract-styles), then `tsc --noEmit && vite build`. |
+| `test` | `pretest` (extract-styles), then `vitest run`. |
 | `typecheck` | `tsc --noEmit`. |
-| `engine` | `extract-engine --force`. |
+| `assets` | `dump-assets.mjs`. |
 | `golden` | `dump-golden.mjs`. |
 
 ## Useful one-offs (source-sim control API, :8100)

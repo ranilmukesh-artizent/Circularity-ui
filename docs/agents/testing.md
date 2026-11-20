@@ -43,7 +43,8 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
 
 1. Change `index.html` (or a dump script), never the JSON.
 2. Regenerate everything from `apps/web` on the host:
-   `node scripts/extract-engine.mjs --force; node scripts/dump-golden.mjs;` then each `node scripts/golden/<area>.mjs`.
+   `node scripts/dump-golden.mjs;` then each `node scripts/golden/<area>.mjs` (and `node scripts/dump-assets.mjs` if
+   the demo's logos or icons changed).
 3. Prove the diff is only what you meant. Load `git show HEAD:<file>`, apply your intended change to the parsed JSON,
    and deep-compare it with the new file. Every file must report "only the intended change". Text diffs are too
    noisy for files this size.
@@ -58,11 +59,11 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
 | `smoke-signin.mjs <base>` | Sign-in messages (unknown account, missing password), the login call to di-api, and that a reload keeps the session. |
 | `smoke-ask.mjs <base> <account> "<question>" [route]` | Opens Ask with Ctrl+J and prints the streamed answer, the lookups and the sources. Spends Groq requests. |
 | `smoke-approve.mjs <base>` | Two sessions: Planner A watches RT-1048 stage 7 while the Approver approves. Checks the live update without a reload and the hand-off in stage 8. **Changes state:** run `scripts/dev/reset.sh` afterwards. |
+| `smoke-rt1048.mjs <base>` | RT-1048 through all ten stages: Planner A submits, the Approver approves, source-sim's clock advances until the systems have acknowledged every instruction, Finance confirms; a watcher follows without reloading. Exits 1 unless stage 10 is reached with no page errors. **Changes state:** `reset.sh`, then `wait-idle.sh`, before and `reset.sh` after. |
 
-- **Modes:** the container serves engine mode on :5173. For api mode, run a host Vite on :5174
-  (`$env:VITE_BACKEND='api'; npx vite --port 5174 --strictPort` in `apps/web`). Run the smoke against both and
-  expect the same route counts.
-- **Last full result** (20 Nov 2026): 0 failing pages in both modes for all 11 accounts. Route counts: admin 70,
+- The app (container on :5173, or a host Vite on :5174) reads only di-api; there is no other mode since B17c.
+- **Last full result** (20 Nov 2026, after B17c): 0 failing pages for all 11 accounts; `smoke-rt1048.mjs` reached
+  stage 10 (predicted $9,600, actual $9,230). Route counts: admin 70,
   executive 33, planner-a 41, planner-b 41, planner-c 38, approver 47, engineer 48, finance 38, developer 39,
   wm-1 29, wm-2 29.
 

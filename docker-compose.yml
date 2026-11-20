@@ -84,14 +84,14 @@ services:
     build: ./apps/web
     environment:
       API_PROXY_TARGET: http://api:8000
-      VITE_BACKEND: ${VITE_BACKEND:-engine} # engine: the demo's logic in the browser; api: di-api (B17)
+      VITE_BACKEND: ${VITE_BACKEND:-api} # the app reads di-api (B17)
       LEGACY_HTML: /legacy/index.html
       CHOKIDAR_USEPOLLING: "true" # file changes on a Windows drive (/mnt/c) do not reach inotify in WSL
     ports: ["5173:5173"]
     volumes:
       - ./apps/web:/app
       - web_node_modules:/app/node_modules
-      # the static demo is the mock backend's source (apps/web/scripts/extract-engine.mjs reads /legacy/index.html)
+      # the static demo supplies the stylesheet and product photos (apps/web/scripts/extract-styles.mjs reads /legacy/index.html)
       - ./index.html:/legacy/index.html:ro
       - ./assets:/legacy/assets:ro
     depends_on: [api]

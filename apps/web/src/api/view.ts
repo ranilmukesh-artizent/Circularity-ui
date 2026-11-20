@@ -1,10 +1,9 @@
 /**
  * View settings that belong to this browser, not to the backend: the top bar's tenant filter, the theme, the
  * Command Center view an Admin picked, the asset opened last and the region settings. In the demo these lived on its
- * state object S; with VITE_BACKEND=api they live here and are sent to the screens as query parameters
+ * state object S; here they live in the browser and are sent to the screens as query parameters
  * (tenant_filter, cc_mode, last_asset).
  */
-import { engine, engineBooted } from '../engine/engine';
 import { bump } from './store';
 
 export interface Region { lang: string; tz: string; cur: string; dfmt?: string; nfmt?: string; [k: string]: unknown }
@@ -35,21 +34,13 @@ const state: ViewState = load();
 
 export const view = (): Readonly<ViewState> => state;
 
-/** Change view settings; mirrored onto the engine's S while areas not yet moved still read it. */
+/** Change view settings (kept in this browser's local storage). */
 export function setView(patch: Partial<ViewState>): void {
   Object.assign(state, patch);
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch {
     /* private window: settings last for this tab only */
-  }
-  if (engineBooted()) {
-    const S = engine()<Record<string, unknown>>('S');
-    if (patch.tenant !== undefined) S.tenant = patch.tenant;
-    if (patch.theme !== undefined) S.theme = patch.theme;
-    if (patch.ccMode !== undefined) S.ccMode = patch.ccMode;
-    if (patch.lastAsset !== undefined) S.lastAsset = patch.lastAsset;
-    if (patch.rg !== undefined) S.rg = { ...(S.rg as object), ...patch.rg };
   }
   bump();
 }

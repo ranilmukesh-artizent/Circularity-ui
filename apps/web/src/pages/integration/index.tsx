@@ -7,8 +7,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBackend } from '../../api/hooks';
 import {
-  available, deleteSource, disconnectSource, followSync, intKids, intSub, mappings, notOnServer, openConflictCount, openDecisionCount, reconnectSource,
-  rotateCredentials, source, srcTypes, syncSource, togglePause, typeOf, undoActions, wfUsing,
+  available, deleteSource, followSync, intKids, intSub, mappings, notOnServer, openConflictCount, openDecisionCount, reconnectSource,
+  rotateCredentials, source, srcTypes, syncSource, typeOf, undoActions, wfUsing,
 } from '../../api/integration';
 import { can, canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
@@ -24,7 +24,7 @@ import { Conflicts, EventDrawer, Events, Import, Models } from './Records';
 import { SourceDrawer, type DrawerRef } from './SourceDrawer';
 import { SourceMap } from './SourceMap';
 import { Tables, TablesTiles } from './Tables';
-import { ActToasts, anySyncing, canMgr, FrIt, IntCtx, NOMGR, runTest, toastAct, useTick, Vlogo, type IntUI } from './ui';
+import { ActToasts, canMgr, FrIt, IntCtx, NOMGR, runTest, toastAct, useTick, Vlogo, type IntUI } from './ui';
 
 type Dialog =
   | { k: 'guide' } | { k: 'new' } | { k: 'disc'; id: string } | { k: 'del'; id: string } | { k: 'rot'; id: string } | { k: 'cx'; start: CxStart } | null;
@@ -36,7 +36,7 @@ function IntegrationPage({ route, query }: PageProps) {
   const [drawerKey, setDrawerKey] = useState(0);
   const [dlg, setDlg] = useState<Dialog>(null);
   const [evId, setEvId] = useState<string | null>(null);
-  useTick(anySyncing() ? 200 : 1000);
+  useTick(1000);
 
   const T = intKids().filter((t) => canPage('integration', t[0]));
   const tab = T.some((t) => t[0] === route.a) ? route.a! : T.some((t) => t[0] === 'overview') && !route.a ? 'overview' : T[0]?.[0] ?? 'overview';
@@ -73,10 +73,9 @@ function IntegrationPage({ route, query }: PageProps) {
       },
       pause: (id) => {
         if (!canMgr()) return toast(NOMGR);
-        const s = source(id), r = togglePause(id);
+        const s = source(id);
         if (!s) return;
-        if (!r) return toast(notOnServer(s.paused ? 'Resuming a source' : 'Pausing a source'));
-        toast(r.paused ? s.vendor + ' paused. Scheduled syncs stop; ' + r.workflows + ' workflow' + (r.workflows === 1 ? '' : 's') + ' now show Paused upstream.' : s.vendor + ' resumed. Scheduled syncs restart.');
+        toast(notOnServer(s.paused ? 'Resuming a source' : 'Pausing a source'));
       },
       disconnect: (id) => { if (!canMgr()) return toast(NOMGR); setDlg({ k: 'disc', id }); },
       reconnect,
@@ -199,15 +198,10 @@ function DisconnectModal({ id, onClose }: { id: string; onClose: () => void }) {
   const s = source(id);
   if (!s) return null;
   const use = wfUsing(id), dec = openDecisionCount(), mp = mappings(id).length, T = srcTypes()[s.type];
-  const ok = async () => {
+  const ok = () => {
     if (t.trim() !== s.vendor) return;
     onClose();
-    if (!disconnectSource(id)) return toast(notOnServer('Disconnecting a source'));
-    toastAct(s.vendor + ' disconnected.', 'Reconnect', async () => {
-      const r = await reconnectSource(id);
-      if (!r.ok) return toast(r.error.message);
-      toast(s.name + ' is live again. Predictions no longer carry a stale-feed warning.');
-    });
+    toast(notOnServer('Disconnecting a source'));
   };
   return (
     <Modal title={'Disconnect ' + s.vendor + '?'} onClose={onClose} foot={<>

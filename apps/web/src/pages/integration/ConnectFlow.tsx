@@ -1,6 +1,6 @@
 /* Connect an integration from the catalogue (auth → scopes → test → mappings → first sync), and re-authenticate a source (5.10). */
 import { useEffect, useRef, useState } from 'react';
-import { catalog, finishConnect, frAuthOptions, frSample, hashId, notOnServer, nowLabel, reauthenticated, source, typeOf } from '../../api/integration';
+import { catalog, frAuthOptions, frSample, hashId, notOnServer, nowLabel, reauthenticated, source, typeOf } from '../../api/integration';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
@@ -35,7 +35,6 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   const [maps, setMaps] = useState<[string, string, string, string, number][] | null>(null);
   const [acc, setAcc] = useState<Record<number, boolean>>({});
   const [sync, setSync] = useState(0);
-  const [wf, setWf] = useState<string | null>(null);
   const n = useRef(1200 + (parseInt(hashId(start.mode === 'new' ? start.cat : start.src), 16) % 9000));
   const live = useRef(true);
   useEffect(() => {
@@ -56,13 +55,10 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
       const tick = () => {
         if (!live.current) return;
         p = Math.min(100, p + (reduced() ? 100 : 20));
-        if (p >= 100) {
-          const w = finishConnect(c!.id, authLabel(), scopes, n.current, maps!.filter((_, i) => acc[i]).map((r) => [r[0], r[1], r[2], r[3], '']));
-          if (w === null) { onClose(); toast(notOnServer('Connecting from the catalogue')); return; }
-          setWf(w);
-        }
+        // the server has no action for connecting from the catalogue yet
+        if (p >= 100) { onClose(); toast(notOnServer('Connecting from the catalogue')); return; }
         setSync(p);
-        if (p < 100) window.setTimeout(tick, 220);
+        window.setTimeout(tick, 220);
       };
       window.setTimeout(tick, reduced() ? 0 : 220);
       return;
@@ -194,13 +190,10 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
       <>
         <p className="note" style={{ marginTop: 0 }}>The first sync reads a full extract; after that, {scopes.includes('events') ? 'events arrive as they happen' : 'it runs on a schedule'}.</p>
         <div className="frprog"><i style={{ width: p + '%' }} /></div>
-        <p className="num">{p < 100 ? 'Syncing… ' + p + '% · ' + fmtN(Math.round((p * n.current) / 100)) + ' records' : 'Connected · ' + fmtN(n.current) + ' records in the first sync'}</p>
-        {p >= 100 && <div className="callout ok"><b>{v} is connected.</b> It appears in the Source Map, and its ingest workflow is ready as a draft in Workflow Studio.</div>}
+        <p className="num">{'Syncing… ' + p + '% · ' + fmtN(Math.round((p * n.current) / 100)) + ' records'}</p>
       </>
     );
-    foot = p >= 100
-      ? <><button className="btn" onClick={() => { onClose(); if (wf) ui.go('integration/studio/' + wf); }}>Open the ingest workflow</button><button className="btn pri" onClick={onClose}>Done</button></>
-      : <button className="btn" disabled>Syncing…</button>;
+    foot = <button className="btn" disabled>Syncing…</button>;
   }
 
   return (

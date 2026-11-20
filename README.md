@@ -28,7 +28,7 @@ docker compose up --build
 | http://localhost:8100/docs | `source-sim`: the 20 mocked enterprise systems |
 | localhost:5432 | Postgres (user and password `circ`): databases `di` and `sources` |
 
-The app still starts on the in-browser engine (the demo's logic) by default. To run it on the backend, start it with `VITE_BACKEND=api docker compose up --build` (or add `VITE_BACKEND=api` to `.env`): every page then reads `di-api`, updates live from its stream, and Ask Circularity (Ctrl+J) answers through `POST /api/ask`.
+Every page reads `di-api` and updates live from its event stream; Ask Circularity (Ctrl+J) answers through `POST /api/ask`.
 
 Sign in with any of these IDs and **any password**:
 
@@ -82,8 +82,8 @@ Without the backend, the app runs on its built-in mock backend (see *How it work
 
 ```
  Browser ── React app (apps/web)
-              │  src/api/*  typed functions; today they call the in-browser engine,
-              │             after the switch-over (B17) they call di-api
+              │  src/api/*  typed functions over di-api (HTTP), kept live by its
+              │             event stream (GET /api/stream)
               ▼
  di-api (apps/api) ─────────────── Postgres "di"
    sign-in, access policy            action journal, events, canonical store,
@@ -99,7 +99,7 @@ Without the backend, the app runs on its built-in mock backend (see *How it work
 
 React and TypeScript (Vite). Every screen of the original demo has been rebuilt: Home, My Tasks, Alerts, Command Center, Returned assets, Asset intelligence, the ten stage pages of a case with its approval card, Analytics, Audit, Process orchestration with the live run board, Connection Fabric, Workflow Studio, MCP & Tools, Access, Reports, Data Checks and Settings, for all eight roles.
 
-Until the frontend is switched to the backend (step B17), it gets its data from an **in-browser engine**: the original demo's own logic (`index.html`), run unchanged behind a typed API layer (`src/api/`). Pages only call `src/api/*`, and every change goes through `invoke(actionId, input)` — the same action ids the backend serves. Conventions for pages: [`apps/web/PORTING.md`](apps/web/PORTING.md).
+Pages only call the typed API layer (`src/api/*`), which reads `di-api` through a cache that the live event stream keeps current, and every change goes through `invoke(actionId, input)` (`POST /api/actions/{id}`). Ask Circularity (Ctrl+J) answers through `POST /api/ask`. Conventions for pages: [`apps/web/PORTING.md`](apps/web/PORTING.md).
 
 ### The backend (`apps/api`, package `di`)
 
@@ -155,8 +155,6 @@ curl -s -H "Authorization: Bearer $TOKEN" localhost:8000/api/sources
 curl -s -H "Authorization: Bearer $TOKEN" localhost:8000/api/canonical/demand/PO-49048     # $12,000 purchase baseline, with provenance
 ```
 
-Until the switch-over (step B17), the frontend runs on its in-browser engine, so steps 1–2 do not yet reach the backend.
-
 ---
 
 ## Develop
@@ -206,7 +204,7 @@ docs/BACKEND_STEPS.md        the backend build, step by step, with the status of
 
 | Step | | Status |
 |---|---|---|
-| Frontend | every screen in React, on the in-browser engine | done |
+| Frontend | every screen in React | done |
 | B1–B4 | golden data, seed, SAP S/4HANA and SAP Ariba mocks | done |
 | B5, B5b | the other 18 mocks; 19 of the 20 as full vendor mocks | done |
 | B5c | AWS IoT Core as a full vendor mock with a connector (starts not provisioned, as in the demo; `POST /api/sources/iot/connect`) | done |
@@ -222,8 +220,8 @@ docs/BACKEND_STEPS.md        the backend build, step by step, with the status of
 | B15 | live updates (`GET /api/stream`, Server-Sent Events) and Workflow Studio actions with runs as worker jobs | done |
 | B16 | MCP server at `/mcp`: the ten agent tools, agent scopes and hard rules in code, every call logged | done |
 | B16b | Ask Circularity on a language model (Groq free tier; `POST /api/ask`, read-only, falls back to the demo's answers) | done |
-| B17a, B17b | the frontend on the backend: every page with `VITE_BACKEND=api`, live updates, the Ask Circularity panel | done |
-| B17c | `api` the default, the in-browser engine deleted | to do |
+| B17 | the frontend on the backend: every page reads di-api, live updates, the Ask Circularity panel; the in-browser engine deleted; RT-1048 end to end in the browser | done |
+| next | the plans in `docs/agents/plans/`: agent loop, queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry | planned |
 | B18 | browser tests, run book, security review | to do |
 
 Details, decisions and known limits of each step: [`docs/BACKEND_STEPS.md`](docs/BACKEND_STEPS.md).

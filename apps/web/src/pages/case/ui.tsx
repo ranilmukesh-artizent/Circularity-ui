@@ -49,7 +49,7 @@ export const caseActions = {
     const o = r.output;
     toast(o.now ? `Re-evaluated. New recommendation: ${o.now} at ${money(o.net)}${o.was && o.was !== o.now ? ` (was ${o.was})` : ''}.` : 'Re-evaluated. No route passes every gate.', 4200);
   },
-  /** "Check for the next acknowledgement": the systems answer (the engine's simulated system, or the worker's). */
+  /** "Check for the next acknowledgement": the systems answer (the worker's). */
   async advance(id: string) {
     const c = caseById(id);
     if (!c) return;

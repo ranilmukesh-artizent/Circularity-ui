@@ -1,26 +1,19 @@
 /**
  * A live case: the Decision Workbench stage pages (#/product/<ID>/stage/<n>), the case Overview and Full analysis.
  *
- * Both backends answer with the same two documents, and the pages draw everything from them (one rendering path):
+ * The API answers with two documents, and the pages draw everything from them:
  * - CaseScreen = GET /api/screens/case/{id}: the case record, the run, each stage's tag and summary, the landing
  *   stage, the next step, the active hand-off clock, the approval role and limit, the connected sources.
  * - CaseAnalysis = GET /api/screens/case/{id}/analysis: what the detail tabs and Full analysis are made of.
- * With VITE_BACKEND=api they are read through the cache (client.ts); with the engine they are assembled from the
- * demo's own helpers (same fields, same sentences), so the React views are the only renderer in both modes.
+ * Both are read through the cache (client.ts).
  * Formatting, the what-if assumptions and the remembered tabs are frontend-only (apps/api/di/screens/case.py has the
  * mapping table).
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { engine, engineSet, getVersion } from '../engine/engine';
-import { API } from './backend';
 import { ApiError, cached, invalidate, ref, withQuery } from './client';
 import { fmtDate, fmtDateYear, fmtNumber, money } from './format';
 import { bump } from './store';
 import type { ActionResult } from './types';
 import { view } from './view';
-
-const g = () => engine();
-const fn = <T extends (...a: any[]) => any>(name: string) => g()<T>(name);
 
 // ---------- records ----------
 export interface CostTerm { kind: string; label: string; amt: number }
@@ -125,43 +118,25 @@ export interface CaseAnalysis {
 
 // ---------- reading the two documents ----------
 const casePath = (id: string) => '/api/screens/case/' + encodeURIComponent(id);
-const memo = new Map<string, { v: number; x: unknown }>();
-/** Engine documents are rebuilt when the engine's state changes (an action bumps the version). */
-function memoized<T>(key: string, make: () => T): T {
-  const m = memo.get(key), v = getVersion();
-  if (m && m.v === v) return m.x as T;
-  const x = make();
-  memo.set(key, { v, x });
-  return x;
-}
-/** Dates become ISO strings, undefined disappears: the engine's objects in the API's JSON shape. */
-const plain = <T>(x: unknown): T => (x === undefined ? (null as T) : JSON.parse(JSON.stringify(x)));
 
 /** The case screen, or null when there is no such case or the account may not open it. */
 export function caseScreen(id: string): CaseScreen | null {
-  if (API) {
-    try {
-      return cached<CaseScreen>(casePath(id));
-    } catch (e) {
-      if (e instanceof ApiError) return null;
-      throw e; // a pending fetch (Suspense)
-    }
+  try {
+    return cached<CaseScreen>(casePath(id));
+  } catch (e) {
+    if (e instanceof ApiError) return null;
+    throw e; // a pending fetch (Suspense)
   }
-  return memoized('s|' + id, () => engineScreen(id));
 }
 /** Why a case cannot be opened: 'missing' (no such case) or 'refused' (tenant, warehouse or page access). */
 export function caseRefusal(id: string): 'missing' | 'refused' | null {
-  if (API) {
-    try {
-      cached(casePath(id));
-      return null;
-    } catch (e) {
-      if (e instanceof ApiError) return e.status === 404 ? 'missing' : 'refused';
-      throw e;
-    }
+  try {
+    cached(casePath(id));
+    return null;
+  } catch (e) {
+    if (e instanceof ApiError) return e.status === 404 ? 'missing' : 'refused';
+    throw e;
   }
-  if (!g()<Record<string, CaseRec>>('CASE_BY_ID')[id]) return 'missing';
-  return fn<(id: string) => boolean>('dpVisible')(id) ? null : 'refused';
 }
 const screenOf = (c: CaseRec | string): CaseScreen => {
   const s = caseScreen(typeof c === 'string' ? c : c.id);
@@ -170,88 +145,11 @@ const screenOf = (c: CaseRec | string): CaseScreen => {
 };
 /** The analysis behind the detail tabs and Full analysis (tenant filter: the repair centre's load). */
 export function caseAnalysis(id: string): CaseAnalysis {
-  if (API) return cached<CaseAnalysis>(withQuery(casePath(id) + '/analysis', { tenant: view().tenant }));
-  return memoized('a|' + id, () => engineAnalysis(id));
+  return cached<CaseAnalysis>(withQuery(casePath(id) + '/analysis', { tenant: view().tenant }));
 }
 
-function engineScreen(id: string): CaseScreen | null {
-  const c = g()<Record<string, CaseRec>>('CASE_BY_ID')[id];
-  if (!c || !fn<(id: string) => boolean>('dpVisible')(id)) return null;
-  const run = fn<(c: CaseRec) => Run>('afRun')(c);
-  const S = g()<{ acct: unknown; deleg: { decisions: boolean } }>('S');
-  const a = c.exec?.steps.find((y) => y.state === 'active');
-  const lim = fn<(a: unknown) => number>('afLimitFor')(S.acct);
-  const sources: Record<string, Source> = {};
-  for (const s of g()<Source[]>('SOURCES')) sources[s.id] = s;
-  return plain<CaseScreen>({
-    case: c, model: fn<(c: CaseRec) => string>('asModel')(c), serial: fn<(c: CaseRec) => string>('asSerial')(c), run,
-    tags: Array.from({ length: 10 }, (_, i) => fn<(c: CaseRec, n: number, r: Run) => StageTag>('stState')(c, i + 1, run)),
-    stages: [], // drawn one at a time (engineStage): stData builds the demo's tab markup too, which is slow
-    landing: fn<(c: CaseRec) => number | 'overview'>('stLand')(c), next: fn<(c: CaseRec) => NextStep>('afNextStep')(c),
-    clock: a ? fn<(...x: unknown[]) => Clock>('exClock')(c, a, fn<() => Date>('asOfNow')()) : null,
-    approval: { role: S.deleg.decisions ? 'Approver' : 'Admin', limit: lim === Infinity ? null : lim }, sources,
-  });
-}
-/** stData of one stage, with each fact's provenance as data (stProv is swapped for the duration of the call). */
-function engineStage(c: CaseRec, n: number): StageData {
-  const saved = g()('stProv');
-  engineSet('stProv', (k: string, sys: string) => '\u0001' + k + '\u0001' + sys);
-  try {
-    const d = fn<(c: CaseRec, n: number) => Omit<StageData, 'facts'> & { facts: { l: string; v: string; p: string }[] }>('stData')(g()<Record<string, CaseRec>>('CASE_BY_ID')[c.id], n);
-    return plain<StageData>({
-      res: d.res, docs: d.docs, mean: d.mean, when: d.when ?? null, who: d.who,
-      facts: d.facts.map((f) => { const [, k, sys] = f.p.split('\u0001'); return { l: f.l, v: f.v, k, sys }; }),
-    });
-  } finally {
-    engineSet('stProv', saved);
-  }
-}
-function engineAnalysis(id: string): CaseAnalysis {
-  const c = g()<Record<string, CaseRec>>('CASE_BY_ID')[id];
-  const F = <T>(name: string, ...a: unknown[]): T => fn<(...x: unknown[]) => T>(name)(...a);
-  const r = c.chosen || c.recommendation, now = F<Date>('asOfNow');
-  const el = c.routes.filter((x) => !x.excluded).sort((a, b) => b.net - a.net);
-  const inv = (a: string) => g()<(id: string, i: unknown) => ActionResult<any>>('invoke')(a, { case_id: id });
-  const rt = inv('case.routes'), ev = inv('case.evidence'), h = F<Health>('assetHealth', c);
-  const locs: Record<string, Loc> = {};
-  const LOCS = g()<Record<string, Loc>>('LOCS');
-  for (const k of Object.keys(LOCS)) locs[k] = { ...LOCS[k], name: F('locName', k), win: F('locWin', k) };
-  const S = g()<{ ti: { saved: Record<string, SavedScenario[]> } }>('S');
-  return plain<CaseAnalysis>({
-    case_id: c.id,
-    provenance: c.evidence.map((e) => F('provFor', c, e)),
-    snapshot_time: F('snapTime', c),
-    routes: c.routes.map((x) => ({ id: x.id, plan: x.plan, conf: F('tiConf', c, x), terms: x.excluded ? null : x.terms.map((t) => F('exTrace', c, x, t)) })),
-    ranking: el.map((x) => ({ route: x.id, plan: x.plan, ...pick(F<RankRow>('tiM', c, { r: x, sn: x.net }), ['gross', 'cost', 'net', 'days', 'prob', 'life', 'co2']) })),
-    flips: F('flips', c), rul: F('caseRul', c), demand: F('caseDemand', c),
-    plan: r ? F('exPlan', c, r, now) : [], move: r ? F('exMove', c, r) : null, what_if: r ? F('exWhatIf', c, r) : [],
-    prep_parts: r ? F('exPrepParts', c, r) : null, lease: F('afLease', c), rationale: F('afDraftRationale', c),
-    spend: Object.fromEntries(el.map((x) => [x.id, defaultSpend(c, x)])), instruction: r ? F('instrPayload', c) : null,
-    journal: F('afCaseJournal', c.id), evidence_pack: F('afEvidencePack', c.id),
-    view: {
-      steps: F<ExecStep[]>('stepsOf', c).map((s) => ({
-        k: s.k ?? null, label: s.label, sys: s.sys, state: s.state, ack: s.ack ?? null, app: F('exApp', s),
-        doc_ref: s.k ? F('exDocRef', c, s) : null, owner: F('stepOwner', c, s), doc: F('hoKind', s), note: F('ackNote', s, c),
-      })),
-      delivered: F('exDelivered', c), value_order: F('valueOrder', c),
-      actuals: (c.outcome?.lines ?? []).map((l) => F('exActual', c, l)), stage_label: F('afStageLabel', c),
-      routes_read: rt.ok ? rt.output : { eligible: [], excluded: [], tie: null }, evidence_read: ev.ok ? ev.output : { items: [] },
-      risks: rt.ok && ev.ok ? F('afRisks', c, rt.output, ev.output) : [],
-      health: h, diag: F('caseDiag', c), parts: F('asParts', c, h), part_prices: F('asPartPrices', c, h), catalogue: F('asCatalogue', c),
-      sc: F('asSC', c), rma: F('asRMA', c), receipt: F('asReceipt', c), title: F('asTitle', c), serial: F('asSerial', c), facts: F('assetFacts', c),
-      repair_load: F<Record<string, number>>('ccUtil')['Repair centre'], fac_code: g()<Record<string, string>>('FAC_LOC')[c.location] ?? null, locs,
-      scenarios: S.ti.saved[c.id] ?? [],
-    },
-  });
-}
-function pick<T extends object>(o: T, keys: (keyof T)[]): Partial<T> {
-  const out: Partial<T> = {};
-  for (const k of keys) out[k] = o[k];
-  return out;
-}
-
-/** A static list of the demo (reference data in API mode). */
-export const refList = <T>(name: string): T => (API ? ref<T>(name) : g()<T>(name));
+/** A static list of the demo (reference data). */
+export const refList = <T>(name: string): T => ref<T>(name);
 
 // ---------- the case and its stages ----------
 export const caseById = (id: string): CaseRec | undefined => caseScreen(id)?.case;
@@ -268,8 +166,7 @@ export const stageState = (c: CaseRec, n: number, _run?: Run): StageTag => scree
 export const stageSentence = (_c: CaseRec, n: number, t: StageTag): string =>
   'Stage ' + n + ', ' + stageTitle(n) + ': ' + (t.k === 'wait' ? 'waiting on ' + t.who + (t.since ? ' since ' + when(t.since) : '')
     : t.k === 'done' ? 'done' + (t.since ? ' ' + when(t.since) : '') : t.k === 'block' ? 'blocked: ' + (t.why || '') : t.k === 'cur' ? 'the case is here now' : 'not reached yet');
-export const stageData = (c: CaseRec, n: number): StageData =>
-  API ? screenOf(c).stages[n - 1] : memoized('d|' + c.id + '|' + n, () => engineStage(c, n));
+export const stageData = (c: CaseRec, n: number): StageData => screenOf(c).stages[n - 1];
 /** Where a case opens for the signed-in role: a stage number or 'overview'. */
 export const landing = (c: CaseRec): number | 'overview' => screenOf(c).landing;
 export const nextStep = (c: CaseRec): NextStep => screenOf(c).next;
@@ -323,22 +220,15 @@ export const evidencePack = (id: string): unknown => caseAnalysis(id).evidence_p
 
 // ---------- the enterprise systems ----------
 /**
- * "Check for the next acknowledgement". With the engine, the simulated system acknowledges the active step. With the
- * API, the worker sends each instruction and the systems acknowledge on their own (B13b): there is nothing to trigger,
- * so the case is read again and the answer says where it stands.
+ * "Check for the next acknowledgement". The worker sends each instruction and the systems acknowledge on their own
+ * (B13b): there is nothing to trigger, so the case is read again and the answer says where it stands.
  */
 export async function checkAcknowledgement(c: CaseRec): Promise<ActionResult<{ label: string; by: string; ref_label: string }>> {
-  if (!API) return fn<(...a: unknown[]) => ActionResult<{ label: string; by: string; ref_label: string }>>('invoke')('adapter.acknowledge', { case_id: c.id }, { via: 'system' });
   const before = c.exec?.steps.filter((y) => y.state === 'done').length ?? 0;
   invalidate();
   const a = c.exec?.steps.find((y) => y.state === 'active');
   return { ok: false, error: { code: 'conflict', message: a ? `No new acknowledgement yet: ${lc(a.label)} is with ${a.sys.split(' · ')[0]}. Acknowledgements arrive here as the systems send them${before ? ` (${before} so far)` : ''}.` : 'Every instruction is acknowledged.' } };
 }
-/** After approval the simulated system acknowledges the first step (afAutoAck); with the API the worker does it. */
-export function scheduleAutoAck(caseId: string, step = 0): void {
-  if (!API) fn<(id: string, s: number) => void>('afAutoAck')(caseId, step);
-}
-
 // ---------- formatting (the demo's helpers, frontend-only) ----------
 export const fmtD = fmtDate;
 export const fmtDY = fmtDateYear;

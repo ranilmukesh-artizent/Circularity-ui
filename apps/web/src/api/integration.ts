@@ -1,24 +1,21 @@
 /**
  * Connection Fabric (#/integration): sources, catalogue, source map, source tables, canonical models, event stream,
- * conflicts, manual import and monitor. Typed reads over the engine; changes go through invoke() where the demo has an
- * action, and through the small helpers at the bottom for the demo's near-real flows (pause, disconnect, re-authenticate,
- * connect from the catalogue) that the demo itself does not journal.
+ * conflicts, manual import and monitor. Changes go through invoke(); the near-real flows the server has no action for
+ * yet (pause, disconnect, re-authenticate, connect from the catalogue) are refused by the pages with notOnServer().
  *
- * With VITE_BACKEND=api: GET /api/screens/integration/{sources, sources/{id}, overview, map, tables, models, events,
- * conflicts, monitor}, the Workflow Studio list (/api/screens/workflows) and the reference lists; the mapping, export by
- * export, is in di/screens/integration.py. Each endpoint needs its Connection Fabric section, so a read the account may
- * not make answers empty instead of asking. Sources, freshness, runs, records, conflicts and latency are the
- * connectors' real data, not the demo's. A sync is the real source.sync action, followed on the live stream.
+ * GET /api/screens/integration/{sources, sources/{id}, overview, map, tables, models, events, conflicts, monitor}, the
+ * Workflow Studio list (/api/screens/workflows) and the reference lists; the mapping, export by export, is in
+ * di/screens/integration.py. Each endpoint needs its Connection Fabric section, so a read the account may not make
+ * answers empty instead of asking. Sources, freshness, runs, records, conflicts and latency are the connectors' real
+ * data. A sync is the real source.sync action, followed on the live stream.
  */
-import { bump, engine } from '../engine/engine';
 import { invoke } from './actions';
-import { API } from './backend';
 import { ApiError, cached, http, invalidate, onStream, peek, ref, session, withQuery } from './client';
 import { visibleCases } from './product';
 import { canPage, canRoute } from './session';
+import { bump } from './store';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const g = () => engine();
 
 export type SrcStatus = 'live' | 'stale' | 'manual' | 'unavailable';
 export interface SyncRun { id: string; ts: number; trigger: string; rows: number; dur: number; result: string; note: string }
@@ -30,7 +27,7 @@ export interface Source {
   note?: string; cfgVer: string; lastSync: number | null; updatedAt: number; runs: SyncRun[]; audit: AuditEntry[];
   method: string; cfg: Record<string, string | number>; credAt: number; credDays: number;
   syncing?: boolean; syncPct?: number; paused?: boolean; disconnected?: boolean; discBy?: string; frConnectedAt?: number;
-  /** API only: the connector's own state (live, failing, auth_expired, unavailable); `status` shows failing and auth_expired as stale. */
+  /** The connector's own state (live, failing, auth_expired, unavailable); `status` shows failing and auth_expired as stale. */
   connectorStatus?: string;
 }
 export interface CmField { k: string; l: string; t: 'select' | 'text' | 'number'; def: string | number; o: string | string[]; req?: number }
@@ -123,154 +120,129 @@ const modelsAnswer = (): { mappings: Record<string, MapRow[]>; source_models: Re
   may('models') ? cached(BASE + '/models') : undefined;
 
 /* ---- reference data ---- */
-export const sources = (): Source[] => (API ? apiSources() : g()<Source[]>('SOURCES'));
+export const sources = (): Source[] => apiSources();
 export const source = (id: string | null | undefined): Source | undefined => (id ? sources().find((s) => s.id === id) : undefined);
 export function allMappings(): Record<string, MapRow[]> {
-  if (!API) return g()<Record<string, MapRow[]>>('MAPPINGS');
   return modelsAnswer()?.mappings ?? mapAnswer()?.mappings ?? {};
 }
 export function mappings(id: string): MapRow[] {
-  if (!API) return g()<Record<string, MapRow[]>>('MAPPINGS')[id] ?? [];
   return (may('models', 'map') ? allMappings()[id] : detail(id)?.mappings) ?? [];
 }
-export const connMethods = (): Record<string, ConnMethod> => (API ? ref('CONN_METHODS') : g()('CONN_METHODS'));
+export const connMethods = (): Record<string, ConnMethod> => ref('CONN_METHODS');
 export function srcTypes(): Record<string, SrcType> {
-  if (!API) return g()('SRC_TYPES');
   // a connected source of a type outside SRC_TYPES (from the catalogue's extra types) is listed too, as the demo adds it on connect
   const T = ref<Record<string, SrcType>>('SRC_TYPES'), extra = sources().filter((s) => !T[s.type]);
   return extra.length ? { ...T, ...Object.fromEntries(extra.map((s) => [s.type, typeOf(s.type)])) } : T;
 }
-export const srcCats = (): Record<string, string> => (API ? ref('SRC_CATS') : g()('SRC_CATS'));
-export const srcCatNote = (): Record<string, string> => (API ? ref('SRC_CAT_NOTE') : g()('SRC_CAT_NOTE'));
-export const authOpts = (): string[] => (API ? ref('AUTH_OPTS') : g()('AUTH_OPTS'));
-export const canon = (): Canon[] => (API ? ref('CANON') : g()('CANON'));
-export const canonExample = (n: string): unknown => (API ? ref<Record<string, unknown>>('CANON_EX') : g()<Record<string, unknown>>('CANON_EX'))[n];
-export const canonPrefix = (): Record<string, string> => (API ? ref('CANON_PFX') : g()('CANON_PFX'));
-export const events = (): StreamEvent[] => (API ? (may('events') ? cached<{ events: StreamEvent[] }>(BASE + '/events').events : []) : g()('EVENTS'));
+export const srcCats = (): Record<string, string> => ref('SRC_CATS');
+export const srcCatNote = (): Record<string, string> => ref('SRC_CAT_NOTE');
+export const authOpts = (): string[] => ref('AUTH_OPTS');
+export const canon = (): Canon[] => ref('CANON');
+export const canonExample = (n: string): unknown => ref<Record<string, unknown>>('CANON_EX')[n];
+export const canonPrefix = (): Record<string, string> => ref('CANON_PFX');
+export const events = (): StreamEvent[] => (may('events') ? cached<{ events: StreamEvent[] }>(BASE + '/events').events : []);
 export function catalog(): CatalogItem[] {
-  if (!API) return g()('CATALOG');
   const o = overview();
   if (o) return o.catalog;
   const ids = new Set(sources().map((s) => s.id));
   return ref<CatalogItem[]>('CATALOG').map((c) => ({ ...c, connected: ids.has(c.id) }));
 }
-export const frCats = (): string[] => (API ? ref('FR_CATS') : g()('FR_CATS'));
-export const frDecisions = (): [string, string, string[]][] => (API ? ref('FR_DEC') : g()('FR_DEC'));
-export const intSub = (tab: string): string => (API ? ref<Record<string, string>>('FR_INT_SUB') : g()<Record<string, string>>('FR_INT_SUB'))[tab] ?? '';
-export const intKids = (): [string, string, string, string?][] => (API ? ref('FR_INT_KIDS') : g()('FR_INT_KIDS'));
-export const sampleCsv = (): string => (API ? ref('SAMPLE_CSV') : g()('SAMPLE_CSV'));
-export const facilities = (): string[] => (API ? ref('FACILITIES') : g()('FACILITIES'));
-export const tenantList = (): string[] => (API ? ref('TENANTS') : g()('TENANTS'));
+export const frCats = (): string[] => ref('FR_CATS');
+export const frDecisions = (): [string, string, string[]][] => ref('FR_DEC');
+export const intSub = (tab: string): string => ref<Record<string, string>>('FR_INT_SUB')[tab] ?? '';
+export const intKids = (): [string, string, string, string?][] => ref('FR_INT_KIDS');
+export const sampleCsv = (): string => ref('SAMPLE_CSV');
+export const facilities = (): string[] => ref('FACILITIES');
+export const tenantList = (): string[] => ref('TENANTS');
 export function tableModelIds(): string[] {
-  if (!API) return Object.keys(g()<Record<string, unknown>>('TBL_MODELS'));
   return Object.keys(tablesAnswer()?.models ?? mapAnswer()?.table_models ?? {});
 }
 export const tableSuggestions = (src: string): { n: string; cl: string; desc: string; cols: string[] }[] =>
-  (API ? ref<Record<string, any[]>>('TBL_AVAIL') : g()<Record<string, any[]>>('TBL_AVAIL'))[src] ?? [];
+  ref<Record<string, any[]>>('TBL_AVAIL')[src] ?? [];
 export const frSample = (type: string): [string, string, string, string, number][] => {
-  const S = API ? ref<Record<string, [string, string, string, string, number][]>>('FR_SAMPLE') : g()<Record<string, [string, string, string, string, number][]>>('FR_SAMPLE');
+  const S = ref<Record<string, [string, string, string, string, number][]>>('FR_SAMPLE');
   return (S[type] || S.db).map((r) => r.slice() as [string, string, string, string, number]);
 };
-export const frAuthOptions = (): [string, string, string][] => (API ? ref('FR_AUTH') : g()('FR_AUTH'));
+export const frAuthOptions = (): [string, string, string][] => ref('FR_AUTH');
 export function caseExists(id: string): boolean {
-  if (!API) return !!g()<Record<string, unknown>>('CASE_BY_ID')[id];
   return !!session() && id in cached<Record<string, unknown>>('/api/screens/nav/scope');
 }
 export function rbPath(p: string): boolean {
-  if (!API) return !!g()<(p: string) => unknown>('rbPath')(p);
   const h = String(p).replace(/^#?\/?/, '').split('/');
   return canRoute({ page: h[0], a: h[1] || null, b: h[2] || null }) === true;
 }
-export const nowLabel = (): string => (API ? session()?.account.label ?? '—' : g()<() => string>('who')());
+export const nowLabel = (): string => session()?.account.label ?? '—';
 
-/* ---- derived (the demo's own helpers; with the API, the `health` each source comes with) ---- */
+/* ---- derived (the `health` each source comes with) ---- */
 export function integrations(): Integration[] {
-  if (!API) return g()<() => Integration[]>('frIntegrations')();
   const o = overview();
   if (!o) return [];
   const cat = new Map(o.catalog.map((c) => [c.id, c]));
   return o.integrations.map(({ src, catalog: c, ...x }) => ({ ...x, src: source(src), c: c ? cat.get(c) : undefined }));
 }
 export function recommendations(): Rec[] {
-  if (!API) return g()<() => Rec[]>('frRecs')();
   const o = overview();
   if (!o) return [];
   return o.recommendations.map(({ source: s, catalog: c, ...x }) => ({ ...x, s: source(s), c: o.catalog.find((y) => y.id === c) }));
 }
-export const connected = (): Source[] => (API ? sources().filter((s) => s.status !== 'unavailable') : g()<() => Source[]>('frConnected')());
+export const connected = (): Source[] => sources().filter((s) => s.status !== 'unavailable');
 export function available(): CatalogItem[] {
-  if (!API) return g()<() => CatalogItem[]>('frAvail')();
   const o = overview();
   return o ? o.available.map((id) => o.catalog.find((c) => c.id === id)!).filter(Boolean) : [];
 }
-export const needsAttention = (s: Source): boolean => (API ? !!health(s)?.needs_attention : g()<(s: Source) => boolean>('frNeedsAttn')(s));
-export const srcFailing = (s: Source): boolean => (API ? !!health(s)?.failing : g()<(s: Source) => boolean>('frSrcFailing')(s));
-export const credDays = (s: Source): number => (API ? health(s)?.cred_days ?? 0 : g()<(s: Source) => number>('frCredDays')(s));
+export const needsAttention = (s: Source): boolean => !!health(s)?.needs_attention;
+export const srcFailing = (s: Source): boolean => !!health(s)?.failing;
+export const credDays = (s: Source): number => health(s)?.cred_days ?? 0;
 export function series(s: Source, n: number): number[] {
-  if (!API) return g()<(s: Source, n: number) => number[]>('frSeries')(s, n);
   const a = detail(s.id, n)?.series ?? [];
   return a.length >= n ? a.slice(-n) : Array<number>(n - a.length).fill(0).concat(a);
 }
-export const successRate = (s: Source): number => (API ? health(s)?.success ?? 0 : g()<(s: Source) => number>('frSuccess')(s));
+export const successRate = (s: Source): number => health(s)?.success ?? 0;
 export function failedRecords(s: Source, n: number): number {
-  if (!API) return g()<(s: Source, n: number) => number>('frFailedRecs')(s, n);
   return n === 7 ? health(s)?.failed7 ?? 0 : detail(s.id, n)?.failed ?? 0;
 }
-export const typeOf = (t: string): SrcType => {
-  if (!API) return g()<(t: string) => SrcType>('frTypeOf')(t);
-  return ref<Record<string, SrcType>>('SRC_TYPES')[t] || ref<Record<string, SrcType>>('FR_XTYPES')[t] || { label: t, short: t, cat: 'internal', target: 'Asset & component', vendors: [] };
-};
-export const catOf = (s: Source): string => (API ? health(s)?.category ?? 'Custom' : g()<(s: Source) => string>('frCatOf')(s));
-export const tableCount = (id: string): number => (API ? health(source(id) ?? ({ id } as Source))?.tables ?? 0 : g()<(id: string) => number>('frTblN')(id));
-export const fieldCount = (id: string): number => (API ? health(source(id) ?? ({ id } as Source))?.fields ?? 0 : g()<(id: string) => number>('frFldN')(id));
+export const typeOf = (t: string): SrcType =>
+  ref<Record<string, SrcType>>('SRC_TYPES')[t] || ref<Record<string, SrcType>>('FR_XTYPES')[t] || { label: t, short: t, cat: 'internal', target: 'Asset & component', vendors: [] };
+export const catOf = (s: Source): string => health(s)?.category ?? 'Custom';
+export const tableCount = (id: string): number => health(source(id) ?? ({ id } as Source))?.tables ?? 0;
+export const fieldCount = (id: string): number => health(source(id) ?? ({ id } as Source))?.fields ?? 0;
 export function srcModels(s: Source): Record<string, MapRow[]> {
-  if (!API) return g()<(s: Source) => Record<string, MapRow[]>>('frSrcModels')(s);
   return (modelsAnswer() ?? mapAnswer())?.source_models[s.id] ?? detail(s.id)?.models ?? {};
 }
 export function tableModel(id: string): TableModel | null {
-  if (!API) return g()<(id: string) => TableModel | null>('tgModel')(id);
   return (tablesAnswer()?.models ?? mapAnswer()?.table_models)?.[id] ?? null;
 }
 export function syncHistory(s: Source): { ts: number; ok: boolean; rows: number; dur: string }[] {
-  if (!API) return g()<(s: Source) => { ts: number; ok: boolean; rows: number; dur: string }[]>('frSyncHist')(s);
   return detail(s.id)?.sync_history ?? [];
 }
-export const slaMinutes = (s: Source): number => (API ? health(s)?.sla ?? 60 : g()<(s: Source) => number>('frSla')(s));
-export const latency = (s: Source): number | null => (API ? health(s)?.latency ?? null : g()<(s: Source) => number | null>('frLat')(s));
-export const wfUsing = (id: string): string[] => (API ? health(source(id) ?? ({ id } as Source))?.workflows ?? [] : g()<(id: string) => string[]>('wfUsing')(id));
-export const exceptions = (): MapException[] => (API ? mapAnswer()?.exceptions ?? [] : g()<() => MapException[]>('smExceptions')());
-export const srcChannels = (s: Source): string[] => (API ? health(s)?.channels ?? [] : g()<(s: Source) => string[]>('srcCh')(s));
+export const slaMinutes = (s: Source): number => health(s)?.sla ?? 60;
+export const latency = (s: Source): number | null => health(s)?.latency ?? null;
+export const wfUsing = (id: string): string[] => health(source(id) ?? ({ id } as Source))?.workflows ?? [];
+export const exceptions = (): MapException[] => mapAnswer()?.exceptions ?? [];
+export const srcChannels = (s: Source): string[] => health(s)?.channels ?? [];
 export function commentsOf(key: string): Comment[] {
-  if (!API) return g()<(k: string) => Comment[]>('cmList')(key);
   return key.startsWith('src:') ? detail(key.slice(4))?.comments ?? [] : [];
 }
-export const smLog = (): SmLog[] => (API ? mapAnswer()?.activity ?? [] : g()<{ smLog: SmLog[] }>('S').smLog);
+export const smLog = (): SmLog[] => mapAnswer()?.activity ?? [];
 /** Open decisions (awaiting approval or re-evaluation) the account may see: the Product area's cases. */
 export const openDecisionCount = (): number =>
-  (API ? visibleCases() : g()<() => { stage: string }[]>('visCases')()).filter((c) => c.stage === 'awaiting_approval' || c.stage === 'reeval').length;
+  visibleCases().filter((c) => c.stage === 'awaiting_approval' || c.stage === 'reeval').length;
 
 export function totals(): Totals {
-  if (API) return (mapAnswer() ?? monitorAnswer())?.totals ?? { ok: 0, warn: 0, bad: 0, run: 0, pct: 100 };
-  return g()<() => Totals>('hhTotals')();
+  return (mapAnswer() ?? monitorAnswer())?.totals ?? { ok: 0, warn: 0, bad: 0, run: 0, pct: 100 };
 }
 export function hourly(): HourBucket[] {
-  if (API) return (mapAnswer() ?? monitorAnswer())?.hourly ?? [];
-  g()<() => void>('hhInit')();
-  return g()<{ hh: HourBucket[] }>('S').hh;
+  return (mapAnswer() ?? monitorAnswer())?.hourly ?? [];
 }
 /** The workflows: Workflow Studio's list, or, for accounts without the studio, the Monitor's workflows that ran. */
 export function workflows(): Workflow[] {
-  if (API) {
-    if (may('studio')) return cached<{ workflows: Workflow[] }>('/api/screens/workflows').workflows;
-    return monitorAnswer()?.workflows ?? [];
-  }
-  g()<() => void>('wfInit')();
-  return g()<{ wf: { list: Workflow[] } }>('S').wf.list;
+  if (may('studio')) return cached<{ workflows: Workflow[] }>('/api/screens/workflows').workflows;
+  return monitorAnswer()?.workflows ?? [];
 }
-export const wfStat = (w: Workflow): string => (API ? (w as Workflow & { stat?: string }).stat ?? w.status : g()<(w: Workflow) => string>('wfStat')(w));
+export const wfStat = (w: Workflow): string => (w as Workflow & { stat?: string }).stat ?? w.status;
 /** Published workflows (the Source Map's tile). */
 export function publishedWorkflowCount(): number {
-  if (API && !may('studio')) return mapAnswer()?.kpis.workflows_published ?? 0;
+  if (!may('studio')) return mapAnswer()?.kpis.workflows_published ?? 0;
   return workflows().filter((w) => w.status === 'published').length;
 }
 
@@ -279,10 +251,6 @@ export interface ConflictPage { list: Conflict[]; total: number; open: number; c
 let lastConflicts: string | null = null;
 /** The first `limit` conflicts (open, escalated and resolved, newest first), with the queue's counts. */
 export function conflictPage(limit = 60): ConflictPage {
-  if (!API) {
-    const C = g()<Conflict[]>('CONFLICTS'), open = C.filter((c) => c.status === 'open').length;
-    return { list: C, total: C.length, open, closed: C.length - open, systems: new Set(C.flatMap((c) => [c.a.src, c.b.src])).size };
-  }
   if (!may('conflicts')) return { list: [], total: 0, open: 0, closed: 0, systems: 0 };
   const path = withQuery(BASE + '/conflicts', { status: 'all', limit });
   let a: ConflictAnswer;
@@ -300,7 +268,6 @@ export function conflictPage(limit = 60): ConflictPage {
 export const conflicts = (): Conflict[] => conflictPage(200).list;
 /** Open conflicts in the queue (the Conflict Queue tab and the flow diagram). */
 export function openConflictCount(): number {
-  if (!API) return g()<Conflict[]>('CONFLICTS').filter((c) => c.status === 'open').length;
   if (may('conflicts')) return conflictPage().open;
   return mapAnswer()?.open_conflicts ?? 0;
 }
@@ -352,8 +319,8 @@ export function buildUrl(d: { method: string; cfg: Record<string, unknown>; url:
 export const tableHeight = (t: Table): number => 34 + Math.min(t.cols.length, 4) * 19 + (t.cols.length > 4 ? 18 : 0) + 38;
 /** A journey step chip's content: number, label, kind (ext, built, human) and description (the demo's stp, after jmap). */
 export function journeyStep(n: number): { n: number; label: string; kind: string; desc: string } {
-  const J = API ? ref<[number, string, string, string][]>('JSTEPS') : g()<[number, string, string, string][]>('JSTEPS');
-  const m = (API ? ref<number[]>('JMAP')[n] : g()<(n: number) => number>('jmap')(n)) || n;
+  const J = ref<[number, string, string, string][]>('JSTEPS');
+  const m = ref<number[]>('JMAP')[n] || n;
   const j = J[m - 1];
   return { n: m, label: j[1], kind: j[2], desc: j[3] };
 }
@@ -384,7 +351,6 @@ export const saveSource = (mode: 'new' | 'edit', id: string, d: Draft, maps: str
     mode, id, d, maps, ops, note: '',
   });
 export async function resolveConflict(id: string) {
-  if (!API) return invoke<{ id: string; authority: string; kind: string }>('conflict.resolve', { id });
   // the server answers with the kept source's id and the field; the page names the authority and the kind
   const c = (lastConflicts ? peek<ConflictAnswer>(lastConflicts)?.conflicts : undefined)?.find((x) => x.id === id);
   const r = await invoke<{ id: string; kept: string; field: string; authority: string; kind: string }>('conflict.resolve', { id });
@@ -398,16 +364,9 @@ export const updateTables = (input: Record<string, unknown>) =>
   invoke<{ op: string; name?: string; fks?: number; from?: string; to?: string }>('tables.update', input);
 export const addComment = (key: string, text: string) => invoke('comment.add', { key, text });
 
-/** Undo journaled actions: the journal is replayed without them on the next load (the demo's afUndo); with the API, POST /api/journal/undo. */
+/** Undo journaled actions: POST /api/journal/undo. */
 export function undoActions(seqs: number[]) {
-  if (API) {
-    void http('/api/journal/undo', { method: 'POST', body: { seqs } }).finally(invalidate);
-    return;
-  }
-  const AF = g()<{ undone: Set<number> }>('AF');
-  seqs.forEach((s) => AF.undone.add(s));
-  g()<() => void>('afSave')();
-  window.location.reload();
+  void http('/api/journal/undo', { method: 'POST', body: { seqs } }).finally(invalidate);
 }
 
 /** Start every live source syncing, staggered like the demo's Sync all. Returns how many started. */
@@ -419,41 +378,29 @@ export function syncAllLive(): number {
 
 export interface SyncResult { ok: boolean; rows: number; reason?: string }
 /**
- * Report when a sync started with syncSource() finishes. The engine finishes it on a timer; the server runs it as a
- * worker job whose sync run reaches the live stream (kind `sync`) when it ends.
+ * Report when a sync started with syncSource() finishes. The server runs it as a worker job whose sync run reaches the
+ * live stream (kind `sync`) when it ends.
  */
 export function followSync(id: string, done: (r: SyncResult) => void): void {
-  if (API) {
-    syncsPending.set(id, Date.now());
+  syncsPending.set(id, Date.now());
+  bump();
+  const end = (r: SyncResult | null) => {
+    stop();
+    window.clearTimeout(t);
+    syncsPending.delete(id);
     bump();
-    const end = (r: SyncResult | null) => {
-      stop();
-      window.clearTimeout(t);
-      syncsPending.delete(id);
-      bump();
-      if (r) done(r);
-    };
-    const stop = onStream((kind, data) => {
-      const p = (data as { payload?: { source_id?: string; status?: string; records_read?: number } } | null)?.payload;
-      if (kind !== 'sync' || !p || p.source_id !== id || p.status === 'running') return;
-      const ok = p.status === 'ok' || p.status === 'partial';
-      end({ ok, rows: p.records_read ?? 0, reason: ok ? undefined : 'see Sync & History for the reason.' });
-    });
-    const t = window.setTimeout(() => end(null), 5 * 60000); // no word from the worker: stop showing it as syncing
-    return;
-  }
-  const wait = () => {
-    const x = source(id);
-    if (!x) return;
-    if (x.syncing) { window.setTimeout(wait, 200); return; }
-    const run = x.runs[0];
-    if (!run) return;
-    done({ ok: run.result !== 'failed', rows: run.rows, reason: 'the feed token has expired. Refresh the token to resume.' });
+    if (r) done(r);
   };
-  window.setTimeout(wait, 300);
+  const stop = onStream((kind, data) => {
+    const p = (data as { payload?: { source_id?: string; status?: string; records_read?: number } } | null)?.payload;
+    if (kind !== 'sync' || !p || p.source_id !== id || p.status === 'running') return;
+    const ok = p.status === 'ok' || p.status === 'partial';
+    end({ ok, rows: p.records_read ?? 0, reason: ok ? undefined : 'see Sync & History for the reason.' });
+  });
+  const t = window.setTimeout(() => end(null), 5 * 60000); // no word from the worker: stop showing it as syncing
 }
 
-/* ---- source tables: layout only (positions), not journaled in the demo either ---- */
+/* ---- source tables: layout only (positions), not journaled ---- */
 /** tgLayout: clusters of up to two tables per row, three clusters per band. */
 function layoutTables(m: TableModel) {
   const W = 190, G = 16, P = 44;
@@ -489,104 +436,18 @@ export function alignTables(src: string) {
   const m = tableModel(src);
   if (!m) return;
   m.t.forEach((t) => { (t as { x: number | null }).x = null; });
-  if (API) layoutTables(m);
-  else g()<(m: TableModel) => void>('tgLayout')(m);
+  layoutTables(m);
   bump();
 }
 
-/* ---- near-real flows (5.10); the demo changes these directly, without an action. The server has no action for them
-   yet: with the API they change nothing and say so (null or false), and the page tells the person. ---- */
-const bumpVer = (s: Source, change: string) => {
-  const [a, b] = s.cfgVer.split('.');
-  s.cfgVer = a + '.' + (+b + 1);
-  s.audit.unshift({ ver: s.cfgVer, who: nowLabel(), ts: Date.now(), change });
-};
-const srcEvent = (s: Partial<Source>, type: string, ack: string, note: string) => g()<(...a: unknown[]) => void>('srcEvent')(s, type, ack, note);
-const rbLog = (k: string, t: string) => g()<(k: string, t: string) => void>('rbLog')(k, t);
-const smLogAdd = (s: Source, t: string, kind?: string) => g()<(...a: unknown[]) => void>('smLogAdd')(s, t, kind);
+/* ---- near-real flows (5.10): pause, disconnect, re-authenticate and connect from the catalogue. The server has no
+   action for them yet, so the pages change nothing and say so. ---- */
 /** What the page says when the server has no action for a near-real flow yet. */
 export const notOnServer = (what: string) => what + ' is not available on the server yet.';
 
-/** Pause or resume scheduled syncs. Returns the new state and the number of workflows that read the source. */
-export function togglePause(id: string): { paused: boolean; workflows: number } | null {
-  if (API) return null;
-  const s = source(id);
-  if (!s) return null;
-  s.paused = !s.paused;
-  const who = nowLabel();
-  srcEvent(s, s.paused ? 'source.paused' : 'source.resumed', 'acknowledged', s.paused ? 'Scheduled syncs stopped by ' + who : 'Scheduled syncs resumed by ' + who);
-  rbLog(s.paused ? 'source.paused' : 'source.resumed', s.vendor + ' · by ' + who);
-  bump();
-  return { paused: !!s.paused, workflows: wfUsing(id).length };
-}
-
-/** Disconnect a source, keeping its settings for a reconnect. false when it could not be done. */
-export function disconnectSource(id: string): boolean {
-  if (API) return false;
-  const s = source(id);
-  if (!s) return false;
-  const who = nowLabel();
-  s.disconnected = true; s.paused = false; s.status = 'unavailable'; s.discBy = who; s.lastSync = null; s.fresh = '—'; s.freshMin = null;
-  bumpVer(s, 'Disconnected; settings kept for reconnect');
-  srcEvent(s, 'source.disconnected', 'acknowledged', 'Disconnected by ' + who);
-  rbLog('source.disconnected', s.vendor + ' · by ' + who);
-  smLogAdd(s, 'Disconnected by ' + who, 'warn');
-  bump();
-  return true;
-}
-
-/** Re-authentication finished: renew the credential; a stale source is reconnected through source.reconnect. */
+/** Re-authentication finished: a stale source is reconnected through source.reconnect; otherwise null (no server action yet). */
 export function reauthenticated(id: string): 'reconnect' | 'renewed' | null {
   const s = source(id);
   if (!s) return null;
-  if (API) return s.status === 'stale' ? 'reconnect' : null;
-  s.credAt = Date.now(); s.credDays = 180;
-  rbLog('source.reauthenticated', s.vendor + ' · by ' + nowLabel());
-  if (s.status === 'stale') return 'reconnect';
-  bumpVer(s, 'Re-authenticated; credential renewed');
-  bump();
-  return 'renewed';
-}
-
-/** Note a connection test in the event stream (the engine's; the server has no record of browser-side tests). */
-export function recordTest(s: Partial<Source>, ok: boolean, failedAt: string) {
-  if (API) return;
-  srcEvent(s, 'source.tested', ok ? 'acknowledged' : 'error', ok ? 'Connection test passed' : 'Connection test failed at ' + failedAt);
-  bump();
-}
-
-/** The connect flow's last step: the new source, its accepted mappings and its draft ingest workflow (the demo's frCxFinish). */
-export function finishConnect(catId: string, authLabel: string, scopes: string[], n: number, accepted: MapRow[]): string | null {
-  if (API) return null;
-  const G = g();
-  const c = catalog().find((y) => y.id === catId);
-  if (!c) return null;
-  const t = c.type, T0 = srcTypes(), X = G<Record<string, SrcType>>('FR_XTYPES');
-  if (!T0[t]) T0[t] = X[t];
-  const m = t === 'db' ? 'jdbc' : t === 'store' ? 'file' : t === 'dw' ? 'delta' : 'api', id = c.id, now = Date.now(), who = nowLabel();
-  const ev = scopes.includes('events');
-  const T = T0[t];
-  const s: Source = {
-    id, type: t, vendor: c.vendor, ver: 'Connected ' + G<(d: Date) => string>('fmtDY')(G<() => Date>('asOfNow')()),
-    url: m === 'file' ? 'sftp://' + c.id + '.northfield.example/outbound' : 'https://' + c.id + '.northfield.example/api',
-    status: m === 'file' ? 'manual' : 'live', mode: m === 'file' ? 'Controlled CSV import' : ev ? 'API + events' : 'Polling · 30 min',
-    interval: m === 'file' || ev ? 0 : 30, auth: authLabel, freshMin: 1, compl: 92, conf: 88, rw: scopes.includes('write') ? 'Read / write' : 'Read',
-    inputs: c.desc, read: ['GET /records'], write: scopes.includes('write') ? ['POST /records'] : [], step: [1], authority: [], owner: 'Integration Engineering',
-    records: n, frConnectedAt: now, cat: T.cat, name: T.label, short: T.short, env: 'Production', cfgVer: '1.0', lastSync: now, updatedAt: now, fresh: '1 min',
-    runs: [{ id: 'SYNC-' + hashId(id + now).slice(0, 5).toUpperCase(), ts: now, trigger: 'Manual', rows: n, dur: 4.2, result: 'success', note: 'First sync' }],
-    method: m, cfg: cfgDefaults(m), credAt: now, credDays: 180, audit: [{ ver: '1.0', who, ts: now, change: 'Connected from the catalogue' }],
-  };
-  Object.assign(s, { updatedBy: who, c0: 92, k0: 88 });
-  sources().push(s);
-  allMappings()[id] = accepted.map((r) => [r[0], r[1], r[2], r[3], 'Accepted from the agent’s suggestion']);
-  c.connected = true;
-  G<() => void>('rebuildLookups')();
-  G<(s: Source) => void>('wfAddForSource')(s);
-  const list = workflows(), w = list[list.length - 1];
-  w.frNew = true;
-  srcEvent(s, 'source.connected', 'acknowledged', 'Connected from the catalogue by ' + who);
-  rbLog('source.connected', s.vendor + ' · ' + s.auth + ' · by ' + who);
-  smLogAdd(s, 'Connected · first sync ' + G<(n: number) => string>('fmtN')(n) + ' records');
-  bump();
-  return w.id;
+  return s.status === 'stale' ? 'reconnect' : null;
 }

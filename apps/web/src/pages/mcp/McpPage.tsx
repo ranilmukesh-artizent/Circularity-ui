@@ -4,9 +4,9 @@ import { invoke } from '../../api/actions';
 import { mcpProposals } from '../../api/access';
 import { useBackend } from '../../api/hooks';
 import {
-  autoAgent, benchAvailable, benchBadgeTip, benchCases, caseOpenable, clientServers, exampleInput, hardRules, journeyStep,
-  mcpAgents, PERM_CHIP, permCell, registryTools, runBench, runBenchAll, runPlaygroundTool, tenantList, toolById,
-  toolCalls, tools, toolSchema, type BenchResult, type Tool, type ToolRun,
+  autoAgent, benchCases, caseOpenable, clientServers, exampleInput, hardRules, journeyStep,
+  mcpAgents, PERM_CHIP, permCell, registryTools, runPlaygroundTool, tenantList, toolById,
+  toolCalls, tools, toolSchema, type Tool, type ToolRun,
 } from '../../api/mcp';
 import { can, canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
@@ -104,11 +104,6 @@ function Json({ value }: { value: unknown }) {
       })}
     </pre>
   );
-}
-
-/** A call's source badge (the demo's afBadge). */
-function Badge({ k }: { k: string }) {
-  return <span className={'afb afb-' + k.toLowerCase().replace(/[^a-z]+/g, '')} data-tip={benchBadgeTip(k)}>{k}</span>;
 }
 
 function SchemaModal({ id, onClose }: { id: string; onClose: () => void }) {
@@ -334,35 +329,9 @@ function Playground({ onSchema }: { onSchema: (id: string) => void }) {
   );
 }
 
-function BenchOut({ r }: { r: BenchResult }) {
-  return (
-    <>
-      <p>
-        <span className={'chip ' + (r.ok ? 'ok' : 'bad')}>{r.ok ? (r.skipped ? 'Skipped' : 'Pass') : 'Fail'}</span> expected {r.expected} → {r.card} {r.why ? '· ' + r.why : ''}
-      </p>
-      {r.run && (
-        <>
-          <ol className="aflines">
-            {r.run.calls.map((c, i) => (
-              <li key={i} className={c.ok ? 'ok' : 'bad'}>
-                <span className="mono">{c.action}</span> <Badge k={c.badge} /><span className="note">{c.input}</span> → {c.msg}
-              </li>
-            ))}
-          </ol>
-          <p className="aft">{r.run.text}</p>
-          {/* the agent's answer cards, as the demo's card renderer draws them (escaped markup; shown read-only here) */}
-          {r.run.cardsHtml.map((h, i) => <div key={i} dangerouslySetInnerHTML={{ __html: h }} />)}
-        </>
-      )}
-    </>
-  );
-}
-
 function Bench() {
   const cases = benchCases();
   const [sel, setSel] = useState(0);
-  const [one, setOne] = useState<BenchResult | null>(null);
-  const [all, setAll] = useState<BenchResult[] | null>(null);
   return (
     <section className="sect" id="afBench">
       <div className="sh">
@@ -376,24 +345,11 @@ function Bench() {
             <select id="afBq" className="sel" value={sel} onChange={(e) => setSel(+e.target.value)}>
               {cases.map((c) => <option key={c.i} value={c.i}>{c.label}</option>)}
             </select>
-            <button className="btn pri" onClick={() => { if (!benchAvailable) return toast('Not available yet.'); setAll(null); setOne(runBench(sel)); }}>Run</button>
-            <button className="btn" onClick={() => { if (!benchAvailable) return toast('Not available yet.'); setOne(null); setAll(runBenchAll()); }}>Run all</button>
+            {/* the bench ran the demo's in-browser agent layer; the server has no bench yet */}
+            <button className="btn pri" onClick={() => toast('Not available yet.')}>Run</button>
+            <button className="btn" onClick={() => toast('Not available yet.')}>Run all</button>
           </div>
-          <div id="afBenchOut" className="afbench">
-            {one && <BenchOut r={one} />}
-            {all && (
-              <>
-                <p><b>{all.filter((x) => x.ok).length} of {all.length}</b> intent and safety tests pass.</p>
-                <ul className="afcite">
-                  {all.filter((x) => !x.ok || x.skipped).map((x, i) => (
-                    <li key={i}>
-                      <span className={'chip ' + (x.ok ? 'line' : 'bad')}>{x.ok ? 'Skipped' : 'Fail'}</span> {x.name} <span className="note">{x.why}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
+          <div id="afBenchOut" className="afbench" />
         </div>
       </div>
     </section>

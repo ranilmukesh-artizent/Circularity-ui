@@ -3,7 +3,6 @@
  * Events: start, tool, delta, reset, final (apps/api/di/ask/service.py). Ask only reads; a suggested next step is
  * offered to the person and runs only when they confirm it.
  */
-import { API } from './backend';
 import { accessToken } from './client';
 
 export interface AskContext { page?: string; section?: string; case_id?: string; object?: { kind: string; id: string } }
@@ -38,8 +37,6 @@ export type AskEvent =
   | { type: 'reset'; reason: string }
   | ({ type: 'final' } & AskFinal);
 
-/** Is Ask available here (it needs di-api)? */
-export const askAvailable = (): boolean => API;
 
 /** Split an SSE byte stream into events and hand each parsed one to onEvent. */
 export async function readSse(body: ReadableStream<Uint8Array>, onEvent: (e: AskEvent) => void): Promise<void> {

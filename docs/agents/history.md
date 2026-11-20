@@ -48,7 +48,11 @@ polish layouts while switching data sources.
 | B16b | `8e43e31` | Ask Circularity on Groq |
 | B17a | `c4b0483` | Frontend switch (`VITE_BACKEND`), Suspense cache client, session and menu on the backend; conflicts badge decision |
 
-## 4. B17b and B5c (20 Nov 2026; committed after this file was written, see `git log`)
+## 4. B17b, B5c and B17c (20 Nov 2026)
+
+Commits: `fbd2122` (B17b, B5c, ShipLane rename), `b47f7f9` (repo cleanup), `266dc87` (agent setup), `22bc1e9`
+(plans), then B17c (engine deleted; see `git log`).
+
 
 - **All page areas on the API.** Seven parallel agents worked on disjoint files: product, case, command and home,
   analytics/audit/orchestration, integration, workflows and MCP, access.
@@ -59,11 +63,13 @@ polish layouts while switching data sources.
 - **Deadlock fix** in `di/state.py`.
 - **ShipLane renamed** to OTM in the demo itself, with the golden files regenerated.
 - **B5c:** AWS IoT Core mock and adapter. It starts not provisioned, and its topic rules are disabled until di connects it.
+- **B17c:** the in-browser engine and the `VITE_BACKEND` switch deleted; assets bundled (`src/ui/assets.gen.ts`);
+  RT-1048 runs through all ten stages in the browser (`scripts/smoke-rt1048.mjs`). B17 complete.
 
 ## 5. Next
 
-- **B17c:** `api` as the default, static assets bundled, `src/engine/` and `scripts/extract-engine.mjs` deleted,
-  RT-1048 walked end to end in the browser.
+- **Best-practices audit and refactor plan** (user decision, 20 Nov 2026), before the plans in `docs/agents/plans/`.
+- **The plans:** loop, queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry.
 - **B18:** Playwright suites, `POST /api/admin/reset`, run book, security review.
 - **Server gaps** (from B17b): Connection Fabric write actions, workflow extras, the MCP agent test bench, and the
   pipeline's agent gate (autonomy levels, run limits, the kill switch outside MCP).

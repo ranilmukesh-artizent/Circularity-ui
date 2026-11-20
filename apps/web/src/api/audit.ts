@@ -1,16 +1,12 @@
 /**
  * Audit & provenance (#/audit): the fetch and event log, evidence gaps, provenance records and comments.
- * With VITE_BACKEND=api: GET /api/screens/audit (entries, gaps, comments), /audit/provenance and /audit/comments, and
+ * GET /api/screens/audit (entries, gaps, comments), /audit/provenance and /audit/comments, and
  * the action comment.add (di/screens/audit.py has the mapping).
  */
-import { engine } from '../engine/engine';
 import { invoke } from './actions';
-import { API } from './backend';
 import { ApiError, cached, withQuery } from './client';
 import type { ActionResult } from './types';
 import { view } from './view';
-
-const e = () => engine();
 
 export interface Provenance {
   id: string; key: string; label: string; status: 'available' | 'partial' | 'unavailable'; state?: string;
@@ -71,31 +67,23 @@ function orNull<T>(f: () => T): T | null {
 
 // ---------------------------------------------------------------- the log
 /** Every entry the account may see (evidence fetches of visible cases, and instructions and events), with agent preparers. */
-export const auditEntries = (): AuditEntry[] => (API ? audit().entries : e()<() => AuditEntry[]>('auditEntries')());
+export const auditEntries = (): AuditEntry[] => audit().entries;
 /** Evidence with no recorded fetch, so no provenance. */
-export const auditGaps = (): { c: CaseLite; e: Evidence }[] =>
-  API ? audit().gaps : e()<() => { c: CaseLite; e: Evidence }[]>('auditGaps')();
+export const auditGaps = (): { c: CaseLite; e: Evidence }[] => audit().gaps;
 
 interface ProvAnswer { c: CaseLite; ev: Evidence; p: WireProv }
 const provAnswer = (caseId: string, key: string): ProvAnswer | null =>
   orNull(() => cached<ProvAnswer>(withQuery('/api/screens/audit/provenance', { case_id: caseId, key })));
 
 export function caseById(id: string): CaseLite | undefined {
-  if (!API) return e()<Record<string, CaseLite>>('CASE_BY_ID')[id];
   const g = audit().gaps.find((x) => x.c.id === id);
   if (g) return g.c;
   const x = audit().entries.find((y) => y.caseId === id && y.kind === 'fetch');
   return (x && provAnswer(id, x.key)?.c) ?? undefined;
 }
 export function provenanceOf(caseId: string, key: string): { c: CaseLite; ev: Evidence; p: Provenance } | null {
-  if (API) {
-    const r = provAnswer(caseId, key);
-    return r && { c: r.c, ev: r.ev, p: prov(r.p) };
-  }
-  const c = caseById(caseId);
-  const ev = c?.evidence.find((x) => x.k === key);
-  if (!c || !ev) return null;
-  return { c, ev, p: e()<(c: CaseLite, e: Evidence) => Provenance>('provFor')(c, ev) };
+  const r = provAnswer(caseId, key);
+  return r && { c: r.c, ev: r.ev, p: prov(r.p) };
 }
 
 // ---------------------------------------------------------------- formatting
@@ -115,7 +103,6 @@ export const ackKind = (a: string): string => (/^acknowledged$/.test(a) ? 'ok' :
 // ---------------------------------------------------------------- comments
 /** Comments under a record key, oldest first: audit entries come with the log; other keys from /audit/comments. */
 export function comments(key: string): Comment[] {
-  if (!API) return e()<{ cm: Record<string, Comment[]> }>('S').cm[key] ?? [];
   if (key.startsWith('au:')) return audit().comments[key] ?? [];
   return orNull(() => cached<Comment[]>(withQuery('/api/screens/audit/comments', { key }))) ?? [];
 }

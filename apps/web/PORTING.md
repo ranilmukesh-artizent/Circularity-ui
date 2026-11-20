@@ -6,9 +6,9 @@ The React app reproduces the static demo (`index.html` at the repository root) s
 
 | Layer | Where | Rule |
 |---|---|---|
-| Mock backend | `src/engine/engine.ts` runs the demo's own script (generated into `src/engine/legacy.gen.js` by `scripts/extract-engine.mjs`) behind inert DOM shims | **Only `src/api/` may import `src/engine/`.** The demo's render functions are never called |
-| API facade | `src/api/*.ts` | Typed functions over the engine. Each area has its own file (`src/api/product.ts`, `src/api/integration.ts` …). When `di-api` lands, these switch to `fetch()` and pages do not change |
-| Changes | `invoke(actionId, input)` in `src/api/actions.ts` | Every state change goes through the demo's action registry (permission, tenant and warehouse scope, guards, idempotency, journal). Never mutate engine objects from a page |
+| Backend | `di-api` (`apps/api`) | Each area's screen endpoints (`/api/screens/<area>`) serve what the pages show; their docstrings map the facade exports |
+| API facade | `src/api/*.ts` | Typed, synchronous functions over di-api through the Suspense read cache in `src/api/client.ts`. Each area has its own file (`src/api/product.ts`, `src/api/integration.ts` …) |
+| Changes | `invoke(actionId, input)` in `src/api/actions.ts` | Every state change is `POST /api/actions/{id}` (permission, tenant and warehouse scope, guards, idempotency, journal). Never mutate cached answers from a page |
 | Re-render | `useBackend()` in `src/api/hooks.ts` | Call it at the top of every page component; it re-renders after any action |
 | Access | `can()`, `canPage()` in `src/api/session.ts` | Hide what the role may never use (the demo removes those controls; it does not grey them out) |
 | Look | `src/styles/legacy.gen.css` is the demo's whole stylesheet | **Use the demo's class names and DOM structure**, so the CSS applies unchanged. No new CSS unless something cannot be expressed with existing classes; put it in your area folder as a `.css` file |

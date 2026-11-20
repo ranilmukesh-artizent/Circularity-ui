@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { invoke } from '../api/actions';
-import { ask, askAvailable, type AskCard, type AskEvent, type AskFinal, type AskNext, type AskTool } from '../api/ask';
+import { ask, type AskCard, type AskEvent, type AskFinal, type AskNext, type AskTool } from '../api/ask';
 import { ref } from '../api/client';
 import { currentAccount } from '../api/session';
 import type { RouteRef } from '../api/types';
@@ -56,10 +56,6 @@ export function AskPanel({ route }: { route: RouteRef }) {
   async function send(question: string) {
     const text = question.trim();
     if (!text || busy) return;
-    if (!askAvailable()) {
-      toast('Ask Circularity needs the backend: run the app with VITE_BACKEND=api.');
-      return;
-    }
     setQ('');
     setOpen(true);
     const i = turns.length;
