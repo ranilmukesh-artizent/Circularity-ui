@@ -25,7 +25,7 @@ services:
     environment:
       <<: *pg
       POSTGRES_DB: postgres
-    ports: ["${POSTGRES_PORT:-5432}:5432"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -46,8 +46,8 @@ services:
       - ./apps/source-sim:/app
       - ./fixtures:/fixtures:ro # B1 golden files: the seed (docs/BACKEND_STEPS.md, B2)
     ports:
-      - "8100:8100"
-      - "2222:2222" # SFTP: the Sims Lifecycle Services drop (B5b)
+      - "${BIND_ADDR:-127.0.0.1}:8100:8100"
+      - "${BIND_ADDR:-127.0.0.1}:2222:2222" # SFTP: the Sims Lifecycle Services drop (B5b)
     depends_on:
       postgres: { condition: service_healthy }
 
@@ -59,7 +59,7 @@ services:
     volumes:
       - ./apps/api:/app
       - ./fixtures:/fixtures:ro # B1 golden files: access policy and reference data (B7)
-    ports: ["8000:8000"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:8000:8000"]
     depends_on:
       postgres: { condition: service_healthy }
     healthcheck:
@@ -87,7 +87,7 @@ services:
       VITE_BACKEND: ${VITE_BACKEND:-api} # the app reads di-api (B17)
       LEGACY_HTML: /legacy/index.html
       CHOKIDAR_USEPOLLING: "true" # file changes on a Windows drive (/mnt/c) do not reach inotify in WSL
-    ports: ["5173:5173"]
+    ports: ["${BIND_ADDR:-127.0.0.1}:5173:5173"]
     volumes:
       - ./apps/web:/app
       - web_node_modules:/app/node_modules
