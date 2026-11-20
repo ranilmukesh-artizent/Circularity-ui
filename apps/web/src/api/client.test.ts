@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiInvoke, cached, cachedAction, invalidate, withQuery } from './client';
+import { ApiError, apiInvoke, cached, cachedAction, http, invalidate, retryFailed, withQuery } from './client';
 import { getVersion } from './store';
 
 /** A fake di-api: answers by path, counting calls. */
@@ -83,6 +83,29 @@ describe('API client cache (VITE_BACKEND=api)', () => {
     const r = await apiInvoke('decision.approve', { case_id: 'RT-1048' });
     expect(r.ok).toBe(false);
     expect(getVersion()).toBe(v);
+  });
+
+  it('retries a failed read after retryFailed()', async () => {
+    let fail = true;
+    const calls = fakeFetch({
+      'GET /api/retry': () => (fail ? { status: 500, body: { detail: { code: 'error', message: 'Boom.' } } } : { body: { ok: 1 } }),
+    });
+    await expect(suspendRead(() => cached('/api/retry'))).rejects.toThrow('Boom.');
+    expect(() => cached('/api/retry')).toThrow('Boom.'); // the failed entry keeps its error
+    fail = false;
+    const v = getVersion();
+    retryFailed();
+    expect(getVersion()).toBeGreaterThan(v);
+    expect(await suspendRead(() => cached('/api/retry'))).toEqual({ ok: 1 });
+    expect(calls).toEqual(['GET /api/retry', 'GET /api/retry']);
+  });
+
+  it('turns an unreachable server into a network error', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    const r = await apiInvoke('decision.submit', { case_id: 'RT-1048' });
+    expect(r).toEqual({ ok: false, error: { code: 'network', message: 'Could not reach the server. Check your connection and try again.' } });
+    await expect(http('/api/anything')).rejects.toMatchObject({ code: 'network', message: 'Could not reach the server. Check your connection and try again.' });
+    await expect(http('/api/anything')).rejects.toBeInstanceOf(ApiError);
   });
 
   it('builds query strings without empty values', () => {

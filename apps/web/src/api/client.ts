@@ -75,13 +75,20 @@ function headers(extra: Record<string, string> = {}): Record<string, string> {
   return { Accept: 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...extra };
 }
 
-/** GET or POST JSON; on 401 the session has expired, so sign out. */
+const NETWORK_MESSAGE = 'Could not reach the server. Check your connection and try again.';
+
+/** GET or POST JSON; on 401 the session has expired, so sign out. An unreachable server throws ApiError 'network'. */
 export async function http<T>(path: string, init: { method?: string; body?: unknown; headers?: Record<string, string> } = {}): Promise<T> {
-  const res = await fetch(path, {
-    method: init.method ?? 'GET',
-    headers: headers({ ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...init.headers }),
-    body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method: init.method ?? 'GET',
+      headers: headers({ ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...init.headers }),
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+    });
+  } catch {
+    throw new ApiError(0, 'network', NETWORK_MESSAGE);
+  }
   if (res.status === 401 && token) expire();
   if (!res.ok) throw await errorOf(res);
   return res.json() as Promise<T>;
@@ -218,6 +225,12 @@ export function invalidate(): void {
   bump();
 }
 
+/** "Try again" after a failed read: refetch every answer that failed (a refusal or an unreachable server). */
+export function retryFailed(): void {
+  for (const e of cache.values()) if (e.error !== undefined) e.stale = true;
+  bump();
+}
+
 function clearCache() {
   cache.clear();
 }
@@ -229,15 +242,20 @@ export interface ActionOptions {
 }
 
 async function postAction<T>(id: string, input: Record<string, unknown>, opts: ActionOptions = {}): Promise<ActionResult<T>> {
-  const res = await fetch('/api/actions/' + encodeURIComponent(id), {
-    method: 'POST',
-    headers: headers({
-      'Content-Type': 'application/json',
-      ...(opts.idempotencyKey ? { 'Idempotency-Key': opts.idempotencyKey } : {}),
-      ...(opts.confirmed ? { 'X-Circularity-Confirmed': 'true' } : {}),
-    }),
-    body: JSON.stringify(input),
-  });
+  let res: Response;
+  try {
+    res = await fetch('/api/actions/' + encodeURIComponent(id), {
+      method: 'POST',
+      headers: headers({
+        'Content-Type': 'application/json',
+        ...(opts.idempotencyKey ? { 'Idempotency-Key': opts.idempotencyKey } : {}),
+        ...(opts.confirmed ? { 'X-Circularity-Confirmed': 'true' } : {}),
+      }),
+      body: JSON.stringify(input),
+    });
+  } catch {
+    return { ok: false, error: { code: 'network', message: NETWORK_MESSAGE } };
+  }
   if (res.status === 401 && token) expire();
   try {
     return (await res.json()) as ActionResult<T>;

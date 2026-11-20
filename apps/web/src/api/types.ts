@@ -24,7 +24,7 @@ export interface RolePolicy {
 export interface ActionError {
   code:
     | 'validation_error' | 'out_of_scope' | 'tenant_boundary' | 'approval_required' | 'limit_exceeded'
-    | 'not_found' | 'conflict' | 'duplicate';
+    | 'not_found' | 'conflict' | 'duplicate' | 'network';
   message: string;
 }
 

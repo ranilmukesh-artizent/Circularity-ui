@@ -1,4 +1,5 @@
 import { Component, Suspense, type ReactNode } from 'react';
+import { retryFailed } from '../api/client';
 
 /** "Loading…" while a page waits for its first answer from di-api (the facade suspends on a cache miss). */
 export function Loading({ label = 'Loading…' }: { label?: string }) {
@@ -20,8 +21,14 @@ export class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: s
   }
 
   componentDidUpdate(prev: { resetKey?: string }) {
-    if (prev.resetKey !== this.props.resetKey && this.state.error) this.setState({ error: null });
+    if (prev.resetKey !== this.props.resetKey && this.state.error) this.retry();
   }
+
+  /** Refetch the reads that failed (else the cache would throw the same error again), then render the page. */
+  retry = () => {
+    retryFailed();
+    this.setState({ error: null });
+  };
 
   render() {
     const e = this.state.error;
@@ -30,7 +37,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: s
       <div className="card" role="alert" style={{ padding: 16, margin: '16px 0' }}>
         <b>This page could not load.</b>
         <p className="note">{e.message}</p>
-        <button className="btn" onClick={() => this.setState({ error: null })}>Try again</button>
+        <button className="btn" onClick={this.retry}>Try again</button>
       </div>
     );
   }
