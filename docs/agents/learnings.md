@@ -21,7 +21,8 @@ Problems already hit, newest first. Each entry gives the symptom, the root cause
 - **Symptom:** bogus failures (163 at one point), hangs, `inbox.get` totals off by one.
 - **Cause:** several agents ran pytest at the same time. Each module resets the shared database
   (`tests/starting.py reset()`).
-- **Fix:** `scripts/dev/lib.sh api_lock` (flock on `/tmp/di-pytest.lock`). Every dev script that runs api tests takes it.
+- **Fix:** `scripts/dev/lib.sh api_lock` (flock on `/tmp/di-pytest.lock`; since G3 inside the api container, so it needs no host
+  `flock` and works on macOS and Git Bash). Every dev script that runs api tests takes it.
 - **Avoid:** run api tests only through the dev scripts. Restarting the api container also kills any pytest inside it.
 
 ## 2026-11-20: IoT telemetry pushed RT-1048's events out of the milestone test

@@ -3,7 +3,7 @@
 # connector data is kept), restart the worker. Run after the full suite or after clicking writes in the browser.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 docker compose stop worker >/dev/null 2>&1
-curl -s -X POST localhost:8100/_sim/reset >/dev/null
+curl -s -X POST "$(sim_url)/_sim/reset" >/dev/null
 # reset_starting.py imports tests.starting, so /app must be on the path
 filtered '.' 3 docker compose exec -T -e PYTHONPATH=/app api python scripts/reset_starting.py
 rc=$?

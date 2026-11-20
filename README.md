@@ -51,8 +51,15 @@ start seeds the mocks and the worker then syncs every source, which takes a few 
 Every page reads `di-api` and updates live from its event stream; Ask Circularity (Ctrl+J) answers through `POST /api/ask`. The status page shows the API, the `di` database migration and source-sim; all three should read **OK**.
 
 Optional: copy `.env.example` to `.env` to set `GROQ_API_KEY` (Ask Circularity on a language model; without it Ask
-uses the demo's prepared answers) or change the defaults (database user and password, the postgres port, the bind
-address, signing secrets). The stack runs without a `.env`.
+uses the demo's prepared answers) or change the defaults (database user and password, the host ports, the bind
+address, file watching, signing secrets). The stack runs without a `.env`.
+
+- Host ports, when one is taken on your machine: `WEB_PORT` (5173), `API_PORT` (8000), `SIM_PORT` (8100),
+  `SFTP_PORT` (2222), `POSTGRES_PORT` (5432), in `.env` or the environment, e.g.
+  `WEB_PORT=15173 API_PORT=18000 docker compose up -d`. The containers keep their own ports.
+- `DEV_POLLING=1`: hot reload polls for file changes, for bind mounts that deliver no change events (a Windows drive
+  without WSL 2's own file system, some VMs). `DEV_POLLING=0` never polls; unset, the api, source-sim and web poll
+  only under a WSL2 kernel. Apply it with `docker compose up -d`.
 
 Sign in with any of these IDs and **any password**:
 
@@ -189,7 +196,7 @@ curl -s -H "Authorization: Bearer $TOKEN" localhost:8000/api/canonical/demand/PO
 
 ## Develop
 
-The test and maintenance scripts are in `scripts/dev/` (bash; they still use host `flock` and GNU `timeout`, so run them on Linux or in WSL for now: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path-to>/Circularity-ui/scripts/dev/<script>.sh`). They take the shared test lock and stop the worker while tests run, so scheduled syncs do not race them. Every script is listed in [`docs/agents/scripts.md`](docs/agents/scripts.md); suites and CI in [`docs/agents/testing.md`](docs/agents/testing.md).
+The test and maintenance scripts are in `scripts/dev/`. They are bash (3.2 or later) and run from the repo root on Linux, macOS (its stock bash) and Git Bash on Windows; the host needs only `docker` and `curl`, since the test lock, timeouts, `psql`, `python` and `node` run inside the containers. If your Docker runs inside WSL, run them there: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path-to>/Circularity-ui/scripts/dev/<script>.sh`. They find the published ports themselves, so they follow `API_PORT` and friends. They take the shared test lock and stop the worker while tests run, so scheduled syncs do not race them. Every script is listed in [`docs/agents/scripts.md`](docs/agents/scripts.md); suites and CI in [`docs/agents/testing.md`](docs/agents/testing.md).
 
 ```sh
 # tests (in the running containers)

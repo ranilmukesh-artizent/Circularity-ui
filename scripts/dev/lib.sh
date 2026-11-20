@@ -1,7 +1,10 @@
 #!/bin/bash
-# Shared by scripts/dev/*.sh: cd to the repo root (resolved from this file), and the api test lock.
-# Run the dev scripts inside WSL, e.g. from Windows:
-#   wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path-to>/Circularity-ui/scripts/dev/status.sh
+# Shared by scripts/dev/*.sh: cd to the repo root (resolved from this file), host URLs, and the api test lock.
+# The scripts run in plain bash (3.2 or later) on Linux, macOS and Git Bash on Windows. The host needs only docker
+# (Compose v2) and curl: the test lock, timeouts, psql, python and node all run inside the containers.
+#   bash scripts/dev/status.sh
+# (On a Windows machine whose Docker runs inside WSL, call them through WSL instead:
+#   wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path-to>/Circularity-ui/scripts/dev/status.sh)
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO" || exit 1
 set -o pipefail  # a pipeline fails when any command in it fails, not only the last one
@@ -18,18 +21,55 @@ filtered() {
   return $rc
 }
 
+# The host URL of a service's published port: the port Compose actually published (so API_PORT, SIM_PORT ... from
+# the environment or .env are honoured), else the variable, else the default.
+#   host_url api 8000 API_PORT 8000   ->   http://localhost:8000
+host_url() { # service container_port variable default
+  local hp
+  hp=$(docker compose port "$1" "$2" 2>/dev/null | tail -n 1)
+  hp=${hp##*:}
+  case $hp in '' | *[!0-9]*) hp=${!3:-$4} ;; esac
+  printf 'http://localhost:%s' "$hp"
+}
+api_url() { host_url api 8000 API_PORT 8000; }
+sim_url() { host_url source-sim 8100 SIM_PORT 8100; }
+
 # One api pytest at a time: the suites share one database and reset it. Waits for the lock, holds it until exit.
+# The lock is a flock on /tmp/di-pytest.lock INSIDE the api container, so the host needs no flock. A holder process
+# runs there (flock ... cat) whose stdin is a pipe from this shell on fd 9: when this script exits, however it
+# ends, the pipe closes, `cat` sees end of input, and flock releases the lock. Commands this script starts inherit
+# fd 9, so the lock is also held while they run (as with a host flock).
 api_lock() {
-  exec 9>/tmp/di-pytest.lock
+  local state f
+  f=$(mktemp "${TMPDIR:-/tmp}/di-lock.XXXXXX") || return 1
   echo "waiting for the api test lock..." >&2
-  flock 9
+  # shellcheck disable=SC2016  # $f is expanded by the subshell, the single-quoted part runs in the container
+  exec 9> >(
+    docker compose exec -T api flock /tmp/di-pytest.lock sh -c 'echo locked; exec cat >/dev/null' >"$f" 2>&1
+    rc=$?
+    if grep -q '^locked' "$f" 2>/dev/null; then rm -f "$f"; else echo "ended with exit $rc" >>"$f"; fi
+  )
+  while :; do
+    state=$(cat "$f" 2>/dev/null)
+    case $state in
+      locked*) return 0 ;;
+      *"ended with exit"*)
+        printf 'could not take the api test lock (is the api container running?):\n%s\n' "$state" >&2
+        rm -f "$f"
+        return 1
+        ;;
+    esac
+    sleep 1
+  done
 }
 
 # Wait until di-api (and source-sim) answer their health checks; prints how long it took.
 wait_healthy() {
-  for i in $(seq 1 90); do
-    if curl -sf -m 3 localhost:8000/api/health >/dev/null && curl -sf -m 3 localhost:8100/health >/dev/null; then
-      echo "api + source-sim healthy after ${i}s"
+  local start=$SECONDS api sim
+  while [ $((SECONDS - start)) -lt 90 ]; do
+    api=$(api_url) sim=$(sim_url) # asked each time: a restarting container may not report its port yet
+    if curl -sf -m 3 "$api/api/health" >/dev/null && curl -sf -m 3 "$sim/health" >/dev/null; then
+      echo "api + source-sim healthy after $((SECONDS - start + 1))s"
       return 0
     fi
     sleep 1

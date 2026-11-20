@@ -1,7 +1,8 @@
 #!/bin/bash
 # Checks that the dev scripts report failures through their exit status (the agent loop's gate relies on it).
 #   bash scripts/dev/selftest.sh
-# Takes ~1-2 min. Plants a temporary type error under apps/web/src and removes it again.
+# Also checks that the api test lock serializes takers and is released when its holder dies.
+# Takes ~2 min. Plants a temporary type error under apps/web/src and removes it again.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 dev="$REPO/scripts/dev"
 fails=0
@@ -18,11 +19,38 @@ expect() { # expect <0|nonzero> <label> <command...>
   fi
 }
 
+# The api test lock lives in the api container (lib.sh api_lock). A holder takes it in the background and says so in
+# $mark; its sleep runs with fd 9 closed, so only the holder's own shell keeps the lock.
+mark=$(mktemp "${TMPDIR:-/tmp}/di-selftest.XXXXXX")
+trap 'rm -f "$mark"' EXIT
+hold_lock() { # seconds
+  : >"$mark"
+  # shellcheck disable=SC2016  # expanded by the inner bash
+  bash -c 'source "$1"; api_lock 2>/dev/null || exit 1; echo held >"$2"; sleep "$3" 9>&-' _ "$dev/lib.sh" "$mark" "$1" &
+  holder=$!
+  for _ in $(seq 1 60); do [ -s "$mark" ] && return 0; sleep 1; done
+  return 1
+}
+take_lock_within() { # min max: take the lock and release it; true if that took min..max seconds
+  local t0=$SECONDS took
+  # shellcheck disable=SC2016
+  bash -c 'source "$1"; api_lock 2>/dev/null' _ "$dev/lib.sh" || return 1
+  took=$((SECONDS - t0))
+  [ "$took" -ge "$1" ] && [ "$took" -le "$2" ]
+}
+expect 0 "api lock, taken by a holder for 8s" hold_lock 8
+expect 0 "api lock, a second taker waits for the holder (5-30s)" take_lock_within 5 30
+wait "$holder"
+expect 0 "api lock, taken by a holder that is then killed" hold_lock 30
+kill -9 "$holder" 2>/dev/null
+wait "$holder" 2>/dev/null
+expect 0 "api lock, released when its holder is killed (0-15s)" take_lock_within 0 15
+
 expect 0 "api-test.sh, a passing test" bash "$dev/api-test.sh" tests/test_screens_reference.py::test_case_scope_map
 expect nonzero "api-test.sh, a missing test file" bash "$dev/api-test.sh" tests/test_no_such_file.py
 
 planted="$REPO/apps/web/src/__selftest_type_error.ts"
-trap 'rm -f "$planted"' EXIT
+trap 'rm -f "$planted" "$mark"' EXIT
 printf 'export const broken: number = "not a number";\n' >"$planted"
 expect nonzero "web-check.sh tsc, with a type error" bash "$dev/web-check.sh" tsc
 rm -f "$planted"

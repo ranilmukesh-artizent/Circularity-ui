@@ -1,29 +1,32 @@
 # Scripts
 
-Every script in the repo: what it does and how to run it. Shell scripts are bash: run them in a Linux or macOS
-terminal, WSL, or Git Bash on Windows (`scripts/dev` still needs host `flock` and GNU `timeout` until G3, so Linux or
-WSL for those). Node scripts run on the host from `apps/web`, unless noted; running the app needs no host Node.
+Every script in the repo: what it does and how to run it. Shell scripts are bash (3.2 or later): run them from the
+repo root in a Linux or macOS terminal (macOS's stock bash and BSD tools are enough), WSL, or Git Bash on Windows.
+`scripts/dev` needs only `docker` (Compose v2) and `curl` on the host: the test lock, `timeout`, `psql`, `python` and
+`node` run inside the containers. Node scripts run on the host from `apps/web`, unless noted; running the app needs no
+host Node. Lint the shell scripts with shellcheck (`.shellcheckrc` at the root):
+`docker run --rm -v "$PWD:/mnt:ro" -w /mnt koalaman/shellcheck:v0.11.0 -x -s bash scripts/dev/*.sh scripts/doctor.sh`.
 
 ## scripts
 
 | Script | What |
 |---|---|
-| `doctor.sh` | Read-only check that this machine can run the stack: docker and its daemon, Compose v2 (2.24+ for `docker-compose.prod.yml`), ports 5173/8000/8100/2222/5432 free or used by this project's containers (project = `COMPOSE_PROJECT_NAME` or the folder name), Docker memory (WARN under 4 GB), free disk, CRLF in `*.sh`/`*.py`. One OK/WARN/FAIL line per check; exits 1 on any FAIL. `bash scripts/doctor.sh`. |
+| `doctor.sh` | Read-only check that this machine can run the stack: docker and its daemon, Compose v2 (2.24+ for `docker-compose.prod.yml`), the host ports (`WEB_PORT` 5173, `API_PORT` 8000, `SIM_PORT` 8100, `SFTP_PORT` 2222, `POSTGRES_PORT` 5432, from env or `.env`) free or used by this project's containers (project = `COMPOSE_PROJECT_NAME` or the folder name), Docker memory (WARN under 4 GB), free disk, CRLF in `*.sh`/`*.py`. One OK/WARN/FAIL line per check; exits 1 on any FAIL. `bash scripts/doctor.sh`. |
 
 ## scripts/dev (bash; each resolves the repo root itself)
 
 | Script | What |
 |---|---|
-| `lib.sh` | Sourced by the others. `cd`s to the repo root; `api_lock` (flock `/tmp/di-pytest.lock`); `wait_healthy` (api :8000 and source-sim :8100). |
-| `api-test.sh <pytest args>` | Selected api tests behind the lock, `-x`, last 40 lines. |
+| `lib.sh` | Sourced by the others. `cd`s to the repo root; `api_url`/`sim_url` (the host ports Compose published, else `API_PORT`/`SIM_PORT`, else 8000/8100); `api_lock` (a flock on `/tmp/di-pytest.lock` inside the api container, held by a `flock … cat` there whose stdin is a pipe from the script: it is released when the script exits or is killed; exits 1 if the api container is not running); `wait_healthy` (api and source-sim health). |
+| `api-test.sh <pytest args>` | Selected api tests behind the lock, `-x`, last 40 lines, `timeout 1800` in the container. Stops the worker for the run and starts it on exit. |
 | `full-suite.sh [pytest args]` | Stops the worker, resets source-sim, runs the whole api suite (~25 min) and the source-sim suite, prints failures and summaries. Holds the lock. Follow with `reset.sh`. |
 | `web-check.sh [tsc]` | `tsc -b` (app and Node configs, tsconfig.app.json + tsconfig.node.json) in the web container, then vitest. With `tsc`, the typecheck only. |
 | `restart.sh [services]` | Restarts api, worker and source-sim (or the ones given) and waits for health. |
 | `reset.sh` | Demo starting state: source-sim reset, `scripts/reset_starting.py` (with `PYTHONPATH=/app`), worker started. |
 | `unstick.sh` | Lists non-idle db sessions, terminates sessions idle in a transaction for over 1 min, restarts the api. Use when the api hangs. |
-| `selftest.sh` | Proves the scripts report failures through their exit status (a passing and a missing test, a planted type error). Every script exits non-zero on failure; `lib.sh` sets `pipefail` and offers `filtered PATTERN N cmd…`. |
+| `selftest.sh` | Proves the scripts report failures through their exit status (a passing and a missing test, a planted type error) and that the api test lock makes a second taker wait and is released when its holder is killed. Every script exits non-zero on failure; `lib.sh` sets `pipefail` and offers `filtered PATTERN N cmd…`. |
 | `wait-idle.sh [max_s]` | Waits until the worker has no due jobs (after a reset it syncs every source first, ~2–3 min). Use before `smoke-rt1048.mjs`. |
-| `status.sh` | Health of api and source-sim, container status, api tests running or waiting for the lock, non-idle db sessions. |
+| `status.sh` | Health of api and source-sim, container status, api tests running or waiting for the lock (pid, elapsed, args, read from `/proc` in the api container), non-idle db sessions. |
 
 From Windows with Docker in WSL: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path>/Circularity-ui/scripts/dev/status.sh`.
 
@@ -94,7 +97,7 @@ digest from Docker Hub (`https://hub.docker.com/v2/repositories/library/<image>/
 | `assets` | `dump-assets.mjs`. |
 | `golden` | `dump-golden.mjs`. |
 
-## Useful one-offs (source-sim control API, :8100)
+## Useful one-offs (source-sim control API, :8100 or `SIM_PORT`)
 
 | Endpoint | What |
 |---|---|
@@ -110,4 +113,4 @@ digest from Docker Hub (`https://hub.docker.com/v2/repositories/library/<image>/
 | `POST /api/sources/iot/connect` | Connect AWS IoT Core (Admin or Developer). It goes live, its topic rules are enabled, and a full sync is queued. |
 | `POST /api/sources/iot/disconnect[?purge=true]` | Back to not provisioned. With `purge`, everything it synced is removed. |
 | `GET /api/health` | Health. |
-| `http://localhost:8000/docs` | OpenAPI for the whole api. |
+| `http://localhost:8000/docs` | OpenAPI for the whole api (`API_PORT` if set). |

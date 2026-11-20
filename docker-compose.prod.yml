@@ -2,8 +2,8 @@
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 # No source bind mounts, no --reload, no dev tools or tests in the images, non-root users. The golden files are
 # mounted read-only, as in dev. The web app is the built bundle behind nginx (8080 in the container, published on
-# 5173 as in dev) with a Content-Security-Policy (apps/web/nginx/default.conf.template). Its image is built from the
-# repo root (apps/web/Dockerfile.runtime, root .dockerignore) so the build generates the demo's stylesheet and product
+# WEB_PORT, 5173 by default, as in dev) with a Content-Security-Policy (apps/web/nginx/default.conf.template). Its
+# image is built from the repo root (apps/web/Dockerfile.runtime, root .dockerignore) so the build generates the demo's stylesheet and product
 # photos from fixtures/demo itself.
 # Outside DI_ENV=dev the api refuses the shipped signing secrets: set DI_ENV, DI_JWT_SECRET and DI_WEBHOOK_SECRET.
 
@@ -34,7 +34,7 @@ services:
     environment: !override
       API_UPSTREAM: http://api:8000
     ports: !override
-      - "${BIND_ADDR:-127.0.0.1}:5173:8080"
+      - "${BIND_ADDR:-127.0.0.1}:${WEB_PORT:-5173}:8080"
     volumes: !reset []
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]

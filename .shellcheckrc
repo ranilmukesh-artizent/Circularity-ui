@@ -1,0 +1,2 @@
+# shellcheck (scripts/dev/*.sh, scripts/*.sh): follow `source` paths relative to the script itself
+source-path=SCRIPTDIR

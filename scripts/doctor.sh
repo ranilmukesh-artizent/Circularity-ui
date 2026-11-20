@@ -52,8 +52,8 @@ else
   fi
 fi
 
-# 3. ports: free, or published by this project's containers. Today only POSTGRES_PORT is configurable in
-# docker-compose.yml; the other variables are read for when the rest become configurable too.
+# 3. ports: free, or published by this project's containers. Each host port comes from its variable (environment or
+# .env), as docker-compose.yml reads it.
 port_open() { # true if something on this machine accepts connections on the port
   (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
 }
@@ -106,7 +106,10 @@ fi
 droot=$(docker info --format '{{.DockerRootDir}}' 2>/dev/null)
 if [ -n "$droot" ] && [ -d "$droot" ]; then
   dkb=$(df -Pk "$droot" 2>/dev/null | awk 'NR==2 {print $4}')
-  [ -n "$dkb" ] && { dgb=$((dkb / 1024 / 1024)); [ "$dgb" -lt 10 ] && warn "disk: ${dgb} GB free for Docker at $droot" || ok "disk: ${dgb} GB free for Docker at $droot"; }
+  if [ -n "$dkb" ]; then
+    dgb=$((dkb / 1024 / 1024))
+    if [ "$dgb" -lt 10 ]; then warn "disk: ${dgb} GB free for Docker at $droot"; else ok "disk: ${dgb} GB free for Docker at $droot"; fi
+  fi
 fi
 
 # 6. git line endings: a CR in a .sh or .py file breaks it inside the Linux containers

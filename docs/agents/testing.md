@@ -39,8 +39,10 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
 
 ## Rules
 
-- **One api pytest at a time.** `scripts/dev/lib.sh api_lock` takes a flock on `/tmp/di-pytest.lock`. Never run
-  `docker compose exec api pytest` by hand while anyone else may be testing.
+- **One api pytest at a time.** `scripts/dev/lib.sh api_lock` takes a flock on `/tmp/di-pytest.lock` inside the api
+  container (no host `flock`; the scripts run on Linux, macOS and Git Bash). It is released when the script exits or is
+  killed; two `api-test.sh` started together run one after the other, and `status.sh` lists the holder and the waiters.
+  `selftest.sh` checks both. Never run `docker compose exec api pytest` by hand while anyone else may be testing.
 - **Module resets.** Most test modules reset di to the starting state (`apps/api/tests/starting.py reset()`). Set
   `B14_PARALLEL=1` only if you run the B14 screen modules in parallel processes and reset once yourself; otherwise
   leave it unset.
@@ -50,7 +52,7 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
 - **source-sim tests use their own database.** `apps/source-sim/tests/conftest.py` points them at `sources_test`
   (created if missing, schemas and seed from the app's start-up), so the live service on `sources` (its background
   loops, di's webhook subscription) is never touched; tests delete only the subscriptions they made.
-- **Live-server tests.** `test_stream.py` and the MCP/Ask live tests call the running api on `localhost:8000`, so the
+- **Live-server tests.** `test_stream.py` and the MCP/Ask live tests call the running api on `localhost:8000` inside the api container (any `API_PORT`), so the
   api must be healthy. Run `bash scripts/dev/status.sh` first.
 - **Groq.** The live Ask smoke test spends real free-tier requests (about 1,000 a day). Don't loop it.
 - **Shared helpers.** `apps/api/tests/helpers.py` holds the one in-process `client`, `h(user)` (the Authorization

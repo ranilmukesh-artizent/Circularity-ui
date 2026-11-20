@@ -8,8 +8,8 @@
  */
 import { chromium } from '@playwright/test';
 
-const base = process.argv[2] || 'http://localhost:5173';
-const SIM = process.env.SIM_URL || 'http://localhost:8100';
+const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
+const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
 const CASE = 'RT-1048';
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const errors = [];

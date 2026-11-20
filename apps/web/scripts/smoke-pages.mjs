@@ -9,7 +9,7 @@
  */
 import { chromium } from '@playwright/test';
 
-const base = process.argv[2] || 'http://localhost:5173';
+const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const ACCOUNTS = ['admin', 'executive', 'planner-a', 'planner-b', 'planner-c', 'approver', 'engineer', 'finance', 'developer', 'wm-1', 'wm-2'];
 const only = process.argv.slice(3);
 const accounts = only.length ? only : ACCOUNTS;

@@ -48,15 +48,18 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build   
 - Sign in with any ID and any password: `admin`, `exec`, `ops`/`planner.a`, `planner.b`, `planner.c`, `approver`,
   `engineer`, `finance`, `developer`, `warehouse1`, `warehouse2` (emails `<id>@northfield.example`).
 - `.env` (git-ignored) holds `GROQ_API_KEY`. Without it Ask uses the demo's rule-based answers.
+- Host ports from env or `.env` (containers keep theirs): `WEB_PORT` 5173, `API_PORT` 8000, `SIM_PORT` 8100,
+  `SFTP_PORT` 2222, `POSTGRES_PORT` 5432 (`.env.example`). `DEV_POLLING=1` makes uvicorn --reload and Vite poll for
+  file changes (bind mounts without change events), `0` never; unset, they poll only under a WSL2 kernel.
 
-Shell scripts are bash; run them from the repo root in a Linux/macOS terminal, WSL or Git Bash. If Docker runs inside
-WSL (as on the lead's Windows machine, see CLAUDE.md), run each through a script file:
+Shell scripts are bash (3.2 or later); run them from the repo root in a Linux/macOS terminal, WSL or Git Bash. The host
+needs only `docker` and `curl`: the test lock, timeouts, psql, python and node run inside the containers. If Docker
+runs inside WSL (as on the lead's Windows machine, see CLAUDE.md), run each through a script file:
 `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/Users/<you>/Documents/Circularity-ui/scripts/dev/<script>.sh`
 
 ## Test
 
-The `scripts/dev` test scripts still use host `flock` and GNU `timeout` (Linux or WSL; G3 makes them portable). The
-Node smoke scripts need host Node 24 and Chrome.
+The Node smoke scripts need host Node 24 and Chrome; the URL argument defaults to `WEB_PORT`.
 
 | What | Command | Time |
 |---|---|---|
@@ -66,8 +69,8 @@ Node smoke scripts need host Node 24 and Chrome.
 | Browser smoke, 11 accounts | `node apps/web/scripts/smoke-pages.mjs http://localhost:5173` | ~5 min |
 | RT-1048 end to end (changes state: reset before and after) | `node apps/web/scripts/smoke-rt1048.mjs http://localhost:5173` | ~3 min |
 
-- **One api pytest at a time.** All suites share one database and reset it. The dev scripts take a flock
-  (`/tmp/di-pytest.lock`). Never call `docker compose exec api pytest` directly while anyone else may be testing.
+- **One api pytest at a time.** All suites share one database and reset it. The dev scripts take a flock on
+  `/tmp/di-pytest.lock` inside the api container (`scripts/dev/lib.sh api_lock`). Never call `docker compose exec api pytest` directly while anyone else may be testing.
 - The api suite forces the pinned clock and no outbound instructions (`apps/api/tests/conftest.py`).
 - Details, counts, flaky tests: [docs/agents/testing.md](docs/agents/testing.md).
 

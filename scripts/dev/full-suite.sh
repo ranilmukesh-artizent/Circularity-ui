@@ -6,9 +6,9 @@
 #   bash scripts/dev/full-suite.sh            # everything
 #   bash scripts/dev/full-suite.sh -k nav     # extra pytest arguments go to the api run
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-api_lock
+api_lock || exit 1
 docker compose stop worker >/dev/null 2>&1
-curl -s -X POST localhost:8100/_sim/reset >/dev/null
+curl -s -X POST "$(sim_url)/_sim/reset" >/dev/null
 echo "== api"
 filtered '^(FAILED|ERROR)|passed|failed|error' 40 docker compose exec -T api pytest -q -p no:cacheprovider -rfE "$@"
 api_rc=$?

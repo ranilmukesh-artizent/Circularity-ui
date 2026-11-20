@@ -4,7 +4,7 @@ import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 
 const [out, acct, ...routes] = process.argv.slice(2);
-const base = process.env.BASE_URL ?? 'http://localhost:5173/';
+const base = process.env.BASE_URL ?? `http://localhost:${process.env.WEB_PORT || 5173}/`;
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chrome' });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });

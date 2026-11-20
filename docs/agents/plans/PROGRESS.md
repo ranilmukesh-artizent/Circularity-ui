@@ -33,6 +33,8 @@ One line per step: date, plan and step, commit, the tests that gated it, result.
 | 2026-11-21 | 01b · F4 source-sim fan-out and per-system reset | `0b0d9c2` | both new tests failed first; source-sim 213 passed; api connector tests 21 passed | done |
 | 2026-11-21 | 01b · C3 (web) tsconfig split, noImplicitReturns/Override, typed Reference | `b5f8845` | staged tree alone: tsc -b 0, 154 tests, eslint, knip, build; smoke admin 66, planner-b 32, wm-1 24, 0 failing | done |
 | 2026-11-21 | 01b · E6 useAction for writes; read cache on TanStack Query | `363a115` | staged tree alone: tsc -b 0, 168 tests, eslint, knip, build; smoke admin 70, planner-b 32, wm-1 24, 0 failing; refusal toasts equal the server's messages | done |
+| 2026-11-21 | 01b · C3 (python) mypy, typed action contexts, Annotated dependencies | `84ed439` | mypy: no issues in 133 files; ruff clean; lint-imports 3 kept; full suite api 3,486 passed, source-sim 213 passed | done |
+| 2026-11-21 | 01b · G3 portable dev scripts (lock in the api container), host ports from env, DEV_POLLING | see git log | selftest (lock + exit codes) passed; two api-test runs serialized; stack recreated, all healthy; second project on ports 18000/15173/18100/12222/15432 healthy; shellcheck clean; bash 3.2 syntax check | done |
 
 ## Decisions taken without the user (to review)
 
@@ -117,6 +119,12 @@ One line per step: date, plan and step, commit, the tests that gated it, result.
   - Buttons are not yet disabled while an action is pending.
   - Invalidation is still "everything" on every stream event; mapping event kinds to reads is a follow-up (see the
     design note).
+- **G3:** when `DEV_POLLING` is unset, file watching uses watchfiles' own default (polling under a WSL2 kernel).
+  `DEV_POLLING=1` forces polling and `0` turns it off. A strict "off" default would have broken hot reload on this
+  machine's `/mnt/c` mount.
+  - The api command now `exec`s uvicorn.
+  - Not run on a real Mac or with Git Bash's Docker. The evidence is shellcheck, bash 3.2 syntax checks and WSL runs;
+    G5's CI job adds a second platform.
 - **PROGRESS.md itself** was untracked until 21 Nov; it is committed on its own.
 - **api under load:** with two smoke runs and a pytest run at once, the single dev api process reached 128% CPU and
   its 3 s health check timed out.
