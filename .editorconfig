@@ -1,0 +1,24 @@
+# https://editorconfig.org: the same basic formatting in every editor. Ruff (Python) and the TS/JS conventions in
+# AGENTS.md decide the rest; line endings are enforced by .gitattributes.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_size = 4
+max_line_length = 130
+
+[*.{md,mdx}]
+# a trailing double space is a line break in Markdown
+trim_trailing_whitespace = false
+
+[fixtures/**]
+# the demo and the golden files are reproduced byte for byte: editors must not touch them
+trim_trailing_whitespace = false
+insert_final_newline = unset

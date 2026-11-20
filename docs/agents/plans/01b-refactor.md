@@ -75,7 +75,7 @@ repo root.
   page code out of `integration/index.tsx` and `product/index.tsx`, `workflows/graph.ts` → `src/api/workflowGraph.ts`,
   `audit/csv.ts` → `src/lib/csv.ts`, `e2e/shot.mjs` → `scripts/screenshot.mjs`. Do after C2 (dead code gone). Add
   `eslint-plugin-check-file` rules. Gate: tsc, vitest, smoke.
-- [ ] **B4** line endings and editor config: `.gitattributes` `* text=auto eol=lf` with binaries marked, `.editorconfig`,
+- [x] **B4** line endings and editor config: `.gitattributes` `* text=auto eol=lf` with binaries marked, `.editorconfig`,
   `git add --renormalize` [X4]. Gate: golden regeneration unchanged; full suite.
 
 ## Phase C: tooling that enforces the rest
@@ -179,7 +179,7 @@ arm64/x64 musl native packages.
   - Host ports come from env (`API_PORT`, `WEB_PORT`, `SIM_PORT`, `SFTP_PORT`, `POSTGRES_PORT`).
   - `DEV_POLLING=1` switches uvicorn (watchfiles) and Vite to polling.
   - Run it alone; it changes the lock every agent uses.
-- [ ] **G4** = B4 line endings [G-f].
+- [x] **G4** = B4 line endings [G-f].
 - [ ] **G5** proof [G-g].
   - CI gains an arm64 job (`ubuntu-24.04-arm`): `compose up --wait`, health checks and a short smoke.
   - A fresh-clone test: clone into a temp dir with another project name and ports, `up --wait`, sign in and smoke

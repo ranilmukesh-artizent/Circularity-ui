@@ -1,5 +1,15 @@
-fixtures/** text eol=lf
-# the demo's product photos (fixtures/demo/assets) are binary: no line-ending conversion
+# Every text file is stored and checked out with LF, on every OS (a CR breaks shell scripts in Linux containers:
+# "$'\r': command not found", and Windows checkouts with core.autocrlf would otherwise differ from the index).
+* text=auto eol=lf
+
+# Binary files: no line-ending conversion, no text diff.
 *.webp binary
-# shell scripts run in WSL bash: a CR breaks them ("$'\r': command not found")
-*.sh text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.pptx binary
+*.woff binary
+*.woff2 binary
