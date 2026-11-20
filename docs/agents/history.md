@@ -5,7 +5,7 @@ The commit hashes are from `git log`. The detailed status of each step is in `do
 
 ## 1. The demo (before November 2026, merged to `main` through PRs #15–#20)
 
-`index.html` was the whole product: a seeded world (mulberry32, 128 cases, 11 accounts, 3 customer tenants), the
+`fixtures/demo/index.html` was the whole product: a seeded world (mulberry32, 128 cases, 11 accounts, 3 customer tenants), the
 decision engine, an action registry with `invoke()`, a journal, an in-browser agent runtime, and every page.
 
 Last UI work:

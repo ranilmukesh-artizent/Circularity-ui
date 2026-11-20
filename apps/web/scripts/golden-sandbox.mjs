@@ -1,4 +1,5 @@
-// The demo (index.html) run headless, shared by the golden-data scripts (dump-golden.mjs and scripts/golden/*.mjs).
+// The demo (fixtures/demo/index.html) run headless, shared by the golden-data scripts (dump-golden.mjs and
+// scripts/golden/*.mjs).
 //
 // freshDemo() runs a fresh copy of the demo's script in its own sandbox, with inert DOM shims, the clock pinned to its
 // as-of time (7 Oct 2026 09:00 UTC) and Math.random seeded, and returns a lookup of its globals: g('CASES'),
@@ -11,7 +12,7 @@ import vm from 'node:vm';
 
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 export const goldenDir = join(root, 'fixtures/golden');
-const html = readFileSync(process.env.LEGACY_HTML ?? join(root, 'index.html'), 'utf8');
+const html = readFileSync(process.env.LEGACY_HTML ?? join(root, 'fixtures/demo/index.html'), 'utf8');
 let src = /<script>([\s\S]*)<\/script>\s*<\/body>/.exec(html)[1];
 src = src.replace(/^afBoot\(\);S\.acct=sessionLoad\(\);.*$/m, '').replace(/^setInterval\(\(\)=>\{try\{smTick\(\)\}.*$/m, '');
 

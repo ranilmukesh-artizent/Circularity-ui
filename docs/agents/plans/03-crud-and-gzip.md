@@ -59,7 +59,7 @@ One task per group; each adds its registrations and tests (list scoped per accou
 - [ ] accounts and identity mappings (Admin; via `access.*`), journal (read only)
 
 ### Task 4: the missing write handlers
-One task per action, each with tests for allowed, refused, the guard messages (port them from the demo's `index.html`
+One task per action, each with tests for allowed, refused, the guard messages (port them from the demo's `fixtures/demo/index.html`
 implementation of the same id) and the effect visible in the reads: `source.update`, `source.delete`, `source.reconnect`,
 `credentials.rotate`, `source.pause`, `source.resume`, `source.connect` (from the catalogue; `iot` uses
 `di.connectors.sync.connect_source`), `import.commit`, `tables.update`, `workflow.saveAsTemplate`,

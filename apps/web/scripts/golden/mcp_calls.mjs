@@ -3,8 +3,8 @@
 //
 //   node apps/web/scripts/golden/mcp_calls.mjs   -> fixtures/golden/mcp.json
 //
-// The demo's MCP layer is the tool playground (index.html, "MCP & Tools"): runTool(tool, agent, tenant, json) checks
-// the agent's scope, the input schema, the case and the tenant boundary, runs the tool, and ACT.pgRun puts the call
+// The demo's MCP layer is the tool playground (fixtures/demo/index.html, "MCP & Tools"): runTool(tool, agent, tenant,
+// json) checks the agent's scope, the input schema, the case and the tenant boundary, runs the tool, and ACT.pgRun puts the call
 // at the head of the call log (CALLS). Each call here goes through ACT.pgRun itself, so the result (S.pgOut) and the
 // log entry (CALLS[0]) are the demo's own; pgRun's re-render afterwards needs a page, which the sandbox does not
 // have, and its error is ignored (the result and the log entry are already written by then).

@@ -1,6 +1,7 @@
 // Writes src/ui/assets.gen.ts: the demo's static assets (logos, the Lucide icon set, vendor logos and the rules that
-// pick a vendor logo), read from index.html run headless. Committed, so the app builds without the demo's script.
-// Run again only when index.html's assets change:  node scripts/dump-assets.mjs
+// pick a vendor logo), read from the demo (fixtures/demo/index.html) run headless. Committed, so the app builds
+// without the demo's script. Run again only when the demo's assets change:  node scripts/dump-assets.mjs
+// (The generated header still says "from index.html", the demo's file name, so regenerating changes nothing.)
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { freshDemo, root } from './golden-sandbox.mjs';

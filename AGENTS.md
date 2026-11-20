@@ -6,15 +6,15 @@ Entry point for coding agents working in this repo. Read this first; follow the 
 
 Circularity Decision Workbench ("DI", decision intelligence): decides what to do with returned industrial assets
 (redeploy, resell, re-lease, recover parts, recycle, exit) and hands the decision to the enterprise systems.
-It began as one HTML file (`index.html`, "the demo"). It is now a full-stack POC that must stay at **parity** with
-that demo: same numbers, same rules, same texts, for all 11 demo accounts and all 128 cases. RT-1048 (Voltara motor,
+It began as one HTML file (`fixtures/demo/index.html`, "the demo"). It is now a full-stack POC that must stay at
+**parity** with that demo: same numbers, same rules, same texts, for all 11 demo accounts and all 128 cases. RT-1048 (Voltara motor,
 Customer A) is the hero case. All data is synthetic; no named vendor product is really connected.
 
 ## Map
 
 | Path | What |
 |---|---|
-| `index.html` | The demo. Source of truth for parity: every golden file, the web app's stylesheet and its static assets are extracted from it. |
+| `fixtures/demo/index.html` | The demo. Source of truth for parity: every golden file, the web app's stylesheet and its static assets are extracted from it. |
 | `apps/web` | React 18 + TS + Vite. Pages in `src/pages/<area>`, facade in `src/api/*.ts` (pages call only the facade). |
 | `apps/web/src/api/client.ts` | HTTP client: Suspense read cache, actions, sign-in token, live stream. |
 | `apps/web/src/ui/assets.gen.ts` | The demo's logos, icons and vendor logos (`scripts/dump-assets.mjs`, committed). |
@@ -28,7 +28,7 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 | `docs/BACKEND_STEPS.md` | The build plan B1–B18 with a status section per step. Read the step you work on. |
 | `docs/agents/` | Dos and don'ts, learnings, decisions, history, testing, scripts. |
 | `scripts/dev/` | Dev scripts (tests with the lock, reset, restart, unstick, status). |
-| `assets/products/` | Product photos; `apps/web/scripts/extract-styles.mjs` copies them into the web app. |
+| `fixtures/demo/assets/products/` | Product photos, beside the demo; `apps/web/scripts/extract-styles.mjs` copies them into the web app. |
 | `docs/reference/` | Source documents (agent-first product spec, user journey deck, IFS process fit). Read-only background. |
 
 ## Run

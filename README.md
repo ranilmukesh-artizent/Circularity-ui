@@ -138,7 +138,7 @@ Demo credentials of each mocked system are in its module docstring (`apps/source
 
 ### Where the data comes from
 
-The original single-file demo, `index.html`, is the specification. `apps/web/scripts/dump-golden.mjs` runs its logic headless and writes `fixtures/golden/*.json` (the 128 cases, 1,400 closed decisions, policy, actions, figures and a scripted RT-1048 journey). The mocks are seeded from those files, and the backend's tests compare against them, so the backend gives the demo's answers.
+The original single-file demo, `fixtures/demo/index.html`, is the specification. `apps/web/scripts/dump-golden.mjs` runs its logic headless and writes `fixtures/golden/*.json` (the 128 cases, 1,400 closed decisions, policy, actions, figures and a scripted RT-1048 journey). The mocks are seeded from those files, and the backend's tests compare against them, so the backend gives the demo's answers.
 
 ---
 
@@ -174,7 +174,7 @@ docker compose stop worker && docker compose exec api pytest tests/test_mileston
 # a database migration
 docker compose exec api alembic revision --autogenerate -m "what changed"
 
-# regenerate the golden data after changing index.html on purpose
+# regenerate the golden data after changing fixtures/demo/index.html on purpose
 cd apps/web && npm run golden
 ```
 
@@ -191,8 +191,8 @@ apps/source-sim/       the mocked enterprise systems, package `sim`
 fixtures/golden/       the demo's computed data, the backend's test reference
 infra/postgres/        database init
 docker-compose.yml
-index.html             the original single-file demo: the specification and the frontend engine's source
-assets/products/       product photos
+fixtures/demo/index.html         the original single-file demo: the specification and the frontend engine's source
+fixtures/demo/assets/products/   product photos
 docs/reference/        source documents: the agent-first product spec, the user journey deck, the IFS process fit
 docs/PLAN_FULLSTACK_POC.md   decisions and architecture
 docs/BACKEND_STEPS.md        the backend build, step by step, with the status of each step

@@ -1,6 +1,6 @@
 # Full-stack POC
 
-The plan is [`docs/PLAN_FULLSTACK_POC.md`](../docs/PLAN_FULLSTACK_POC.md). The static demo (`index.html` at the repository root) is unchanged and still the reference.
+The plan is [`docs/PLAN_FULLSTACK_POC.md`](../docs/PLAN_FULLSTACK_POC.md). The static demo (`fixtures/demo/index.html`) is unchanged and still the reference.
 
 | App | What it is | Local URL |
 |---|---|---|

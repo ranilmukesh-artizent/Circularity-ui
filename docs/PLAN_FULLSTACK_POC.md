@@ -4,7 +4,7 @@
 
 ## 1. Why
 
-`index.html` is a clickable demo: one 9,000-line file, all data generated in the browser from seed `20261007`, state in memory, nothing connected (README sections 12 and 13). The next step is a working POC: a real backend and database, server-side access control, and connectors that talk to source systems over HTTP the way they would in production. The source systems themselves are mocked on Postgres.
+`fixtures/demo/index.html` is a clickable demo: one 9,000-line file, all data generated in the browser from seed `20261007`, state in memory, nothing connected (README sections 12 and 13). The next step is a working POC: a real backend and database, server-side access control, and connectors that talk to source systems over HTTP the way they would in production. The source systems themselves are mocked on Postgres.
 
 ## 2. Decisions
 
@@ -14,7 +14,7 @@
 | D2 | Frontend | **React rewrite** (TypeScript, Vite), page by page, reusing the demo's CSS and design tokens |
 | D3 | Backend | **Python, FastAPI**, SQLAlchemy 2 and Alembic. Python because the models named in the demo (XGBoost, LightGBM) and the agents are Python-native |
 | D4 | Framework apps | Reconcile and Resolve stay out of scope (their pages were removed from the repo on 20 Nov 2026) |
-| D5 | Hosting | **Local Docker Compose.** The static demo (`index.html`) stays in the repo as the reference and the source of the golden data; it is not hosted |
+| D5 | Hosting | **Local Docker Compose.** The static demo (`fixtures/demo/index.html`) stays in the repo as the reference and the source of the golden data; it is not hosted |
 | D6 | Queue | A Postgres job table claimed with `FOR UPDATE SKIP LOCKED`, so no Redis |
 | D7 | Login | Local JWT with the demo IDs (`exec`, `ops`, `planner.b@northfield.example` …). Real SSO later; Keycloak is the option if an OIDC stand-in is needed |
 | D8 | Ask Circularity | **A language model through `di-api`, starting on Groq's free tier**, behind one interface so Claude or a local model can replace it (decided 19 Nov 2026; step B16b) |
@@ -151,7 +151,7 @@ apps/web/            React app
 infra/postgres/      init scripts (databases, roles)
 docker-compose.yml
 .env.example
-index.html           the static demo: the reference and the source of the golden data (not hosted)
+fixtures/demo/index.html   the static demo: the reference and the source of the golden data (not hosted)
 ```
 
 ## 8. Phases

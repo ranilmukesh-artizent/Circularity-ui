@@ -4,11 +4,11 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 
 ## Parity and data
 
-- **Do** treat `index.html` as the reference for behaviour, numbers and texts. A difference from the demo is a bug
+- **Do** treat `fixtures/demo/index.html` as the reference for behaviour, numbers and texts. A difference from the demo is a bug
   unless [decision-log.md](decision-log.md) records it.
 - **Do** reproduce JS arithmetic exactly in Python: use `di.engine.jsmath` (`js_round`, `js_sum`) and the seeded
   mulberry32 draws the demo uses. Python's `round` and `sum` differ from JavaScript's.
-- **Don't** hand-edit `fixtures/golden/*`. Change `index.html` or the dump script, regenerate, then prove the diff is
+- **Don't** hand-edit `fixtures/golden/*`. Change `fixtures/demo/index.html` or the dump script, regenerate, then prove the diff is
   only what you meant ([testing.md](testing.md#regenerating-golden-files)).
 - **Don't** compare values the demo draws unseeded (some run durations, record counts, random ages). The tests list
   such exclusions with the reason; add yours the same way.

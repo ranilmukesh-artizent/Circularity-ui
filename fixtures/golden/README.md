@@ -1,8 +1,8 @@
 # Golden data
 
-What the static demo (`index.html`) computes, frozen as JSON. The Python backend's parity tests compare against these files (docs/BACKEND_STEPS.md, step B1).
+What the static demo (`fixtures/demo/index.html`) computes, frozen as JSON. The Python backend's parity tests compare against these files (docs/BACKEND_STEPS.md, step B1).
 
-**Regenerate** only when `index.html` changes on purpose, then review the diff:
+**Regenerate** only when `fixtures/demo/index.html` changes on purpose, then review the diff:
 
 ```sh
 cd apps/web && npm run golden          # or: node apps/web/scripts/dump-golden.mjs from the repository root

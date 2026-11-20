@@ -1,3 +1,5 @@
 fixtures/** text eol=lf
+# the demo's product photos (fixtures/demo/assets) are binary: no line-ending conversion
+*.webp binary
 # shell scripts run in WSL bash: a CR breaks them ("$'\r': command not found")
 *.sh text eol=lf

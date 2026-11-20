@@ -21,13 +21,16 @@ cancelled, every job has a timeout, and actions and images are pinned by commit 
 
 | Job | What it runs |
 |---|---|
-| `stack` | `docker compose up` of postgres, source-sim and api (worker left stopped), waits for `/api/health` and `/health`, resets the simulator, then the api suite and the source-sim suite inside their containers, as `full-suite.sh` does; `docker compose down -v` always |
+| `stack` | `docker compose up -d --build --wait` of postgres, source-sim and api (worker left stopped; `--wait` returns once their healthchecks pass), resets the simulator, then the api suite and the source-sim suite inside their containers, as `full-suite.sh` does; `docker compose down -v` always |
 | `web` | Node 24: `npm ci`, `npm test` (vitest), `npm run build`, `npm audit --audit-level=high` |
 | `python-lint` | per service: `ruff check` (the ruff pinned in its requirements) and `pip-audit -r requirements.lock` |
 | `secrets` | gitleaks: the PR's commits on pull requests, the full history on pushes |
 
-Still to come: `ruff format --check` (C1), ESLint and knip (C2), mypy (C3), `up --wait` once every service has a
-healthcheck (F1); they sit commented out in the workflow with a TODO naming the step. Dependabot
+Still to come: `ruff format --check` (C1), ESLint and knip (C2), mypy (C3); they sit commented out in the workflow
+with a TODO naming the step. Every compose service has a healthcheck (F1): postgres (`psql` on both databases), api
+(`/api/health/live`), source-sim (`/health`), web (an HTTP GET of the dev server) and worker (liveness only: PID 1 is
+still `python -m di.worker`; it serves no port). api and worker start once source-sim is healthy, web once api is,
+so `docker compose up -d --wait` returns when the whole stack is up. Dependabot
 (`.github/dependabot.yml`) opens weekly grouped minor/patch updates for pip, npm, docker and actions.
 `.pre-commit-config.yaml` runs gitleaks, ruff check, end-of-file-fixer and mixed-line-ending (LF) on commit
 (`pre-commit install` once).
@@ -53,7 +56,7 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
 
 ## Parity (golden files)
 
-- `fixtures/golden/*.json` is what the demo computes, dumped headless from `index.html` by:
+- `fixtures/golden/*.json` is what the demo computes, dumped headless from `fixtures/demo/index.html` by:
   - `apps/web/scripts/dump-golden.mjs` (base files: world, cases, decisions, sources, …);
   - `apps/web/scripts/golden/<area>.mjs` (screens, ask, mcp, workflow writes), all on the shared sandbox
     `apps/web/scripts/golden-sandbox.mjs` (`freshDemo`, `plain`, `writeGolden`).
@@ -63,7 +66,7 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
 
 ### Regenerating golden files
 
-1. Change `index.html` (or a dump script), never the JSON.
+1. Change `fixtures/demo/index.html` (or a dump script), never the JSON.
 2. Regenerate everything from `apps/web` on the host:
    `node scripts/dump-golden.mjs;` then each `node scripts/golden/<area>.mjs` (and `node scripts/dump-assets.mjs` if
    the demo's logos or icons changed).
