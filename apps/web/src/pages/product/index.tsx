@@ -1,3 +1,4 @@
-import { ProductPage } from './ProductPage';
-
-export const pages = { product: ProductPage };
+// Loaders, not components: src/pages/registry.tsx wraps each in React.lazy, so every page is its own chunk.
+export const pages = {
+  product: () => import('./ProductPage').then((m) => m.ProductPage),
+};

@@ -1,3 +1,4 @@
-import { AccessPage } from './AccessPage';
-
-export const pages = { access: AccessPage };
+// Loaders, not components: src/pages/registry.tsx wraps each in React.lazy, so every page is its own chunk.
+export const pages = {
+  access: () => import('./AccessPage').then((m) => m.AccessPage),
+};

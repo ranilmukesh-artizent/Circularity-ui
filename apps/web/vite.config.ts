@@ -14,4 +14,16 @@ export default defineConfig({
   // extracted from the static demo has `@container or (...)` (`or` is a reserved word, so browsers ignore those rules
   // too); recovering drops such rules with a build warning instead of failing the build.
   css: { lightningcss: { errorRecovery: true } },
+  // Pages are lazy chunks (src/pages/registry.tsx). React and the router go into their own `vendor` chunk, which
+  // changes less often than app code and so stays cached across deploys. (Vite 8: rolldownOptions replaces the
+  // deprecated rollupOptions; output.codeSplitting.groups replaces manualChunks.)
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [{ name: 'vendor', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler|@remix-run[\\/]router)[\\/]/ }],
+        },
+      },
+    },
+  },
 });
