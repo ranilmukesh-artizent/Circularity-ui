@@ -5,7 +5,9 @@ already checked the permission, the tenant boundary and the warehouse lock for t
 """
 
 import re
+from typing import Any
 
+from di.actions.pipeline import CallContext
 from di.actions.registry import ActionError, implement
 from di.cases import store
 from di.engine.jsmath import js_round, js_sum
@@ -37,7 +39,7 @@ from di.reads.context import visible_cases
 from di.reads.provenance import fetch_time, pmap
 
 
-def _case(ctx, case_id: str) -> Case:
+def _case(ctx: CallContext, case_id: str) -> Case:
     c = store.get(ctx.session, case_id)
     if c is None:
         raise ActionError("not_found", f"No case {case_id}.")
@@ -45,7 +47,7 @@ def _case(ctx, case_id: str) -> Case:
 
 
 # ---------------------------------------------------------------- cases.list
-def _cases_in(i: dict, ctx) -> list[Case]:
+def _cases_in(i: dict, ctx: CallContext) -> list[Case]:
     """The demo's afCasesIn: the visible cases that match every filter given."""
     q = (i.get("q") or "").lower()
     product = (i.get("product") or "").lower()
@@ -73,7 +75,7 @@ def _cases_in(i: dict, ctx) -> list[Case]:
 
 
 @implement("cases.list")
-def cases_list(i, ctx):
+def cases_list(i: dict[str, Any], ctx: CallContext):
     cases = _cases_in(i, ctx)
     sort = i.get("sort")
     if sort == "priority":
@@ -97,7 +99,7 @@ def cases_list(i, ctx):
 
 # ---------------------------------------------------------------- case.get
 @implement("case.get")
-def case_get(i, ctx):
+def case_get(i: dict[str, Any], ctx: CallContext):
     c = _case(ctx, i["case_id"])
     rul = case_rul(c)
     out = None
@@ -142,7 +144,7 @@ def provenance(c: Case, e: dict) -> dict:
 
 
 @implement("case.evidence")
-def case_evidence(i, ctx):
+def case_evidence(i: dict[str, Any], ctx: CallContext):
     c = _case(ctx, i["case_id"])
     items = []
     for e in c.get("evidence") or []:
@@ -254,7 +256,7 @@ def flips(c: Case) -> list[dict]:
 
 
 @implement("case.routes")
-def case_routes(i, ctx):
+def case_routes(i: dict[str, Any], ctx: CallContext):
     c = _case(ctx, i["case_id"])
     el = sorted((r for r in c["routes"] if not r["excluded"]), key=lambda r: -r["net"])
     tb = tie_break(c, base_rows(c))
@@ -304,7 +306,7 @@ def case_routes(i, ctx):
 
 # ---------------------------------------------------------------- case.trace
 @implement("case.trace")
-def case_trace(i, ctx):
+def case_trace(i: dict[str, Any], ctx: CallContext):
     c = _case(ctx, i["case_id"])
     events = [
         {"ts": iso(e["ts"]), "type": e["type"], "note": e.get("note") or "", "by": e.get("by") or "", "sim": bool(e.get("sim"))}
@@ -315,7 +317,7 @@ def case_trace(i, ctx):
 
 # ---------------------------------------------------------------- demand.find
 @implement("demand.find")
-def demand_find(i, ctx):
+def demand_find(i: dict[str, Any], ctx: CallContext):
     c = _case(ctx, i["case_id"])
     m = case_demand(c)
     matched = (
@@ -339,7 +341,7 @@ def demand_find(i, ctx):
 
 # ---------------------------------------------------------------- asset.compare
 @implement("asset.compare")
-def asset_compare(i, ctx):
+def asset_compare(i: dict[str, Any], ctx: CallContext):
     c = _case(ctx, i["case_id"])
     m = as_model(c)
     same = [x for x in visible_cases(ctx) if x["id"] != c["id"] and x["cls"] == c["cls"] and as_model(x) == m]

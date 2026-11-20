@@ -18,6 +18,7 @@ from typing import Any
 from sqlalchemy import text
 
 from di import golden, policy, state
+from di.actions.pipeline import CallContext
 from di.engine.jsmath import js_round, js_sum
 from di.engine.scenario import Assumptions, scenario_routes
 
@@ -94,7 +95,7 @@ def _en_in(n: int) -> str:
     if len(s) <= 3:
         return s
     head, tail = s[:-3], s[-3:]
-    groups = []
+    groups: list[str] = []
     while len(head) > 2:
         groups.insert(0, head[-2:])
         head = head[:-2]
@@ -222,17 +223,17 @@ RATE_CARD = {"perKm": 20, "load": 1200, "min": 3600}
 
 
 # ---------------------------------------------------------------- scope
-def account(ctx) -> policy.Account | None:
+def account(ctx: CallContext) -> policy.Account | None:
     return None if ctx.actor.system else ctx.actor.account
 
 
-def can(ctx, perm: str) -> bool:
+def can(ctx: CallContext, perm: str) -> bool:
     """The demo's can() for the signed-in account (no account: nothing), including its later rule that a Planner may
     approve once Admin raises the Planner approval limit above $0 (policy.can)."""
     return policy.can(account(ctx), perm, ctx.actor.ctx)
 
 
-def decisions_delegated(ctx) -> bool:
+def decisions_delegated(ctx: CallContext) -> bool:
     """The demo's S.deleg.decisions: Admin has delegated approving decisions to the Approver."""
     return ctx.actor.ctx.delegations.get("decisions", True)
 
@@ -248,7 +249,8 @@ def stage_label(c: Case) -> str:
     """The demo's afStageLabel."""
     if c["stage"] == "none":
         return "Needs evidence" if c.get("blocked") else "Needs review"
-    return AF_STAGE.get(c["stage"], c["stage"])
+    stage: str = c["stage"]
+    return AF_STAGE.get(stage, stage)
 
 
 def case_rul(c: Case) -> dict | None:
@@ -283,7 +285,7 @@ def demand_order(c: Case) -> str | None:
 
 def case_demand(c: Case) -> dict | None:
     """The demo's caseDemand: the internal demand (order line, ship-to, need-by) or lease matched to a case."""
-    d = c.get("demand") or {}
+    d: Any = c.get("demand") or {}
     if not d.get("internal") and not d.get("lease"):
         return None
     n = int(c["id"][3:])
@@ -357,7 +359,9 @@ def rec(c: Case) -> dict | None:
 def priority(c: Case) -> dict:
     """The demo's afPriority: why a case deserves attention first (value at stake, waiting time, missing evidence,
     a closing window), as a score and reasons."""
-    r, why, s = c.get("recommendation"), [], 0
+    r: Any = c.get("recommendation")
+    why: list[str] = []
+    s: float = 0
     age = af_days(c["received"])
     if r and c["stage"] == "awaiting_approval":
         s += r["net"]
@@ -410,7 +414,7 @@ def case_row(c: Case) -> dict:
 
 
 # ---------------------------------------------------------------- the case run: ten stages
-def _journal_by(ctx, case_id: str, actions: tuple[str, ...]) -> dict | None:
+def _journal_by(ctx: CallContext, case_id: str, actions: tuple[str, ...]) -> dict | None:
     """The last journal entry (not undone) of these actions on this case: who acted, which agent prepared it, when
     (the demo's afCaseJournal). The demo keeps the actor's label; the journal keeps the account id."""
     row = ctx.session.execute(
@@ -532,7 +536,7 @@ def ex_delivered(c: Case) -> str:
     return delivered(c)
 
 
-def stage_states(c: Case, ctx) -> list[dict]:
+def stage_states(c: Case, ctx: CallContext) -> list[dict]:
     """The demo's afStageStates: each of the ten stages with its state, result, who acted and when."""
     s5, s6, s7, s8, s9, s10 = _states(c)[4:]
     x = c.get("exec")
@@ -540,9 +544,10 @@ def stage_states(c: Case, ctx) -> list[dict]:
     lz = lease(c)
     miss = [e for e in c.get("evidence") or [] if e["state"] != "ready"]
     deleg = decisions_delegated(ctx)
-    last = st[-1] if st else None
+    last: Any = st[-1] if st else None
     last_acked = bool(last and last["state"] == "done")
-    blocked, r = c.get("blocked"), c.get("recommendation")
+    blocked: Any = c.get("blocked")
+    r: Any = c.get("recommendation")
 
     def by(actions: tuple[str, ...]) -> dict | None:
         return _journal_by(ctx, c["id"], actions)
@@ -618,7 +623,7 @@ def stage_states(c: Case, ctx) -> list[dict]:
     )
 
     # stage 7: approve
-    appr = c.get("approval")
+    appr: Any = c.get("approval")
     if s7 == "done":
         res7 = ("Override approved" if c.get("override") else "Approved") + f" by {appr['by']} under {appr['ref']}"
     elif s7 == "waiting":
@@ -656,7 +661,7 @@ def stage_states(c: Case, ctx) -> list[dict]:
     })  # fmt: skip
 
     # stage 9: outcome
-    out = c.get("outcome")
+    out: Any = c.get("outcome")
     if out:
         res9 = f"Actual {money(out['net'])} confirmed by {out.get('by') or 'Finance'}"
     elif last_acked:
@@ -692,7 +697,7 @@ def _current(states: list[str]) -> int:
     return next((i + 1 for i, s in enumerate(states) if s != "done"), 11)
 
 
-def run(c: Case, ctx) -> dict:
+def run(c: Case, ctx: CallContext) -> dict:
     """The demo's afRun: the case run through its ten stages."""
     stages = stage_states(c, ctx)
     cur = _current([s["state"] for s in stages])
@@ -718,7 +723,7 @@ def run_of(c: Case) -> dict:
     }
 
 
-def next_step(c: Case, ctx) -> dict:
+def next_step(c: Case, ctx: CallContext) -> dict:
     """The demo's afNextStep: what Next does at the current stage, for this person: one action, a person-only step,
     or nothing."""
     states = _states(c)
@@ -902,7 +907,7 @@ def limit_for(a: policy.Account | None, pctx: policy.Context | None = None) -> f
     return policy.limit_for(a, pctx)
 
 
-def inbox_requests(ctx) -> list[dict]:
+def inbox_requests(ctx: CallContext) -> list[dict]:
     """The demo's inboxReqs: the pending requests this account may decide."""
     return [r for r in requests(ctx.session) if r["status"] == "pending" and can(ctx, "approve." + REQ_SCOPE[r["kind"]])]
 

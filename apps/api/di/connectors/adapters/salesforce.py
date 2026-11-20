@@ -41,8 +41,8 @@ BATCH = 200  # Sforce-Query-Options batchSize
 CLIENT_ID = "3MVG9circularity.demo.northfield.crm.connector"
 CLIENT_SECRET = "circularity-demo-salesforce-secret"  # noqa: S105 - the simulator's demo client secret
 USERNAME = "integration@northfield.example"
-STAGE_STATUS = {"Closed Won": "confirmed", "Closed Lost": "lost"}  # every open stage is a forecast
-KINDS = {"Replacement": "replacement", "Lease": "lease", "New Business": "new_business"}
+STAGE_STATUS: dict[str | None, str] = {"Closed Won": "confirmed", "Closed Lost": "lost"}  # every open stage is a forecast
+KINDS: dict[str | None, str] = {"Replacement": "replacement", "Lease": "lease", "New Business": "new_business"}
 
 ACCOUNT_SOQL = "SELECT Id, Name, AccountNumber, Type, Tenant_Key__c, SystemModstamp FROM Account"
 OPPORTUNITY_SOQL = (

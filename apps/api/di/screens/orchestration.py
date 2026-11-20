@@ -48,13 +48,14 @@ Notes for the switch-over (B17):
 """
 
 import re
+from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy.orm import Session
 
 from di import policy
-from di.auth import Principal, principal
-from di.db import get_session
+from di.auth import Principal
+from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round, js_sum
 from di.engine.routes import GATES
 from di.execution import ex_doc_ref, steps_for
@@ -123,7 +124,7 @@ def or_row(c: Case) -> dict:
 
 
 @router.get("/cases")
-def cases(tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def cases(p: CurrentPrincipal, session: DbSession, tenant: str = "All"):
     """The demo's orCases and orCase."""
     p.require_page("orchestration")
     ctx = call_ctx(p, session)
@@ -157,7 +158,7 @@ def stage_lines(c: Case, n: int, rn: dict, session: Session) -> list[dict]:
     s = rn["stages"][n - 1]
     L = af_lease(c)
     evs = c.get("evidence") or []
-    r = c.get("recommendation")
+    r: Any = c.get("recommendation")
     steps = c["exec"]["steps"] if c.get("exec") else []
     cevs = case_events(session, c["id"])
 
@@ -298,9 +299,11 @@ def stage_lines(c: Case, n: int, rn: dict, session: Session) -> list[dict]:
         R = case_rul(c)
         need = "wait" if s["state"] == "running" else "fail" if s["state"] == "warning" else None
         o = {"need": need}
-        ph = ev("photo")
+        ph: Any = ev("photo")
         ph_ok = ph and ph["state"] != "missing" and c.get("grade")
-        eng = ev("eng")
+        eng: Any = ev("eng")
+        photo: dict | None
+        life: dict | None
         if ph_ok:
             pp = prov_for(c, ph)
             conf = to_fixed(0.86 + (lr_h(c, "cv") % 11) / 100, 2)
@@ -442,7 +445,8 @@ def stage_lines(c: Case, n: int, rn: dict, session: Session) -> list[dict]:
             snap = f"snapshot {c['snapshot']['id']} · " if c.get("snapshot") else ""
             gates = f"{sum(1 for g in r['gates'] if g == 'pass')} of {len(GATES)} gates passed" if r else "gates"
             prov = sum(1 for e in evs if e["state"] != "missing")
-            sub, appr = c.get("submitted"), c.get("approval")
+            sub: Any = c.get("submitted")
+            appr: Any = c.get("approval")
             out = [
                 A("auditor", "case.trace", "Circularity", "Pre-approval check", f"{snap}{gates} · {prov} provenance records"),
                 A(
@@ -517,7 +521,7 @@ def stage_lines(c: Case, n: int, rn: dict, session: Session) -> list[dict]:
                             f"{ex_doc_ref(c, t)} to be created",
                         )
                     )
-            a = next((t for t in steps if t["state"] == "active"), None)
+            a: Any = next((t for t in steps if t["state"] == "active"), None)
             k = ex_clock(c, a) if a else None
             if k and k["level"]:
                 ids = ev_ids(lambda e: e.get("type") == "handoff.escalated")
@@ -652,7 +656,7 @@ def lr_timeline(c: Case, m: dict) -> dict:
     """The demo's lrTimeline: when each stage opens and each line lands, in ms."""
     t, segs = 0, []
     for n in range(1, m["cur"] + 1):
-        seg = {"n": n, "start": t, "lines": []}
+        seg: dict[str, Any] = {"n": n, "start": t, "lines": []}
         t += LR_PACE["open"]
         for i, _ in enumerate(m["st"][n - 1]["lines"]):
             d = LR_PACE["min"] + lr_h(c, f"t{n}|{i}") % LR_PACE["span"]
@@ -708,7 +712,7 @@ def lr_validation(k: str, v: str) -> str:
 def escalation(c: Case, nx: dict, p: Principal) -> dict:
     """The demo's afEscalation (the draft) with the recipient's label."""
     b = c.get("blocked")
-    owner = b["owner"] if b else nx.get("role") if nx and nx.get("role") else "Approver"
+    owner: Any = b["owner"] if b else nx.get("role") if nx and nx.get("role") else "Approver"
     planner = "planner-b" if c["owner"] == "Customer B" else "planner-c" if c["owner"] == "Customer C" else "planner-a"
     to = {
         "Inspection": "engineer",
@@ -732,7 +736,7 @@ def escalation(c: Case, nx: dict, p: Principal) -> dict:
 
 
 @router.get("/run/{case_id}")
-def case_run(case_id: str, fail: str = "", p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def case_run(case_id: str, p: CurrentPrincipal, session: DbSession, fail: str = ""):
     """One case's run, as the live board, the run details and the trace read it."""
     c = load_case(p, session, case_id, "orchestration", "run")
     ctx = call_ctx(p, session)

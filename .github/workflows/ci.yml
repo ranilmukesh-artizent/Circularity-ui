@@ -111,8 +111,13 @@ jobs:
           python -m pip install "$ruff_pin" "pip-audit==2.10.1"
       - run: ruff check .
       - run: ruff format --check .
-      # TODO(C3): mypy once its config lands.
-      # - run: mypy
+      # mypy (api only; config in apps/api/pyproject.toml): it checks against the packages the code imports, so it
+      # installs both locks, hash-checked, as the image does; mypy itself is pinned in the dev lock.
+      - name: mypy
+        if: ${{ matrix.app == 'api' }}
+        run: |
+          python -m pip install --require-hashes --no-deps -r requirements.lock -r requirements-dev.lock
+          mypy
       - run: pip-audit --progress-spinner off --require-hashes --disable-pip -r requirements.lock
 
   secrets:

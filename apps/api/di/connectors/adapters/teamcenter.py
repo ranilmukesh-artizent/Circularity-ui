@@ -181,10 +181,10 @@ class TeamcenterAdapter(Adapter):
             after = tc_date(since)
             uids = set(self.run_query(client, queries, "Nf0 Compatibility Checks", ["Modified After"], [after]))
             touched = set()
-            revs = self.run_query(client, queries, "Item Revision...", ["Modified After"], [after])
-            touched |= {p["item_id"] for p in self.props(client, revs, ["item_id"]).values()}
-            items = self.run_query(client, queries, "Item...", ["Modified After"], [after])
-            touched |= {p["item_id"] for p in self.props(client, items, ["item_id"]).values()}
+            rev_uids = self.run_query(client, queries, "Item Revision...", ["Modified After"], [after])
+            touched |= {p["item_id"] for p in self.props(client, rev_uids, ["item_id"]).values()}
+            item_uids = self.run_query(client, queries, "Item...", ["Modified After"], [after])
+            touched |= {p["item_id"] for p in self.props(client, item_uids, ["item_id"]).values()}
             rels = self.props(
                 client,
                 self.run_query(client, queries, "Nf0 Alternate Approvals", ["Modified After"], [after]),
@@ -248,7 +248,7 @@ class TeamcenterAdapter(Adapter):
                 ]
                 if x
             ]
-            changed = max((utc_iso(x) for x in stamps), default=None)
+            changed = max((utc_iso(x) or "" for x in stamps), default=None)  # `or ""` never applies: stamps are non-empty
             payload = {"check": c, "revision": rev, "item": item, "alternates": alts}
             yield Record("compatibility", c["nf0AssetId"], payload, url, changed)
 

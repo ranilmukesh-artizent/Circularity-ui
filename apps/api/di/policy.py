@@ -241,6 +241,8 @@ def map_identity(a: Account, field_: str, value: str | None) -> Account:
     (a Warehouse Manager's warehouse). The label is rebuilt from the result."""
     d = dict(a.__dict__)
     if field_ == "role":
+        if value is None:  # not reached: the action's input requires the role
+            raise ValueError("Mapping a group to a role needs the role.")
         p = roles()[value]
         d["role"] = value
         if p.get("tenantScoped") and not d["tenant"]:

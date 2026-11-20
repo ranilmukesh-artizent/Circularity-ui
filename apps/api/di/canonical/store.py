@@ -112,7 +112,7 @@ def _settle(session: Session, model: str, key: str, field: str, now: datetime) -
             for v in r.value if isinstance(r.value, list) else [r.value]:
                 if v not in merged:
                     merged.append(v)
-        chosen = SimpleNamespace(value=merged)
+        chosen: Any = SimpleNamespace(value=merged)
         rows = []  # a merged list never conflicts
     elif auth in by_source:
         chosen = by_source[auth]

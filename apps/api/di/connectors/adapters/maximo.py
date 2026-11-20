@@ -80,9 +80,10 @@ class MaximoAdapter(Adapter):
     # ------------------------------------------------------------------ reading
     def _query(self, client: SourceClient, os_name: str, select: str, where: str | None):
         """Every member of an OSLC query, following responseInfo.nextPage to the end."""
-        params = {"lean": "1", "oslc.select": select, "oslc.pageSize": str(PAGE)}
+        query = {"lean": "1", "oslc.select": select, "oslc.pageSize": str(PAGE)}
         if where:
-            params["oslc.where"] = where
+            query["oslc.where"] = where
+        params: dict[str, str] | None = query
         url: str | None = f"/os/{os_name}"
         while url:
             r = client.request("GET", url, params=params)

@@ -161,7 +161,7 @@ def ex_doc_ref(c: Case, s: dict) -> str:
 def ho_kind(s: dict) -> tuple[str, str]:
     """The demo's hoKind: the document type a system returns for a step (by kind; the label and system rules are for
     steps stored without a kind)."""
-    d = EX_STEP.get(s.get("k"))
+    d = EX_STEP.get(s.get("k", ""))
     if d:
         return d["doc"]
     y, lbl = s["sys"], s["label"]

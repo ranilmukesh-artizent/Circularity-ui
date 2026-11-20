@@ -142,11 +142,11 @@ def ex_delivered(c: Case) -> str:
 
 def ack_note(s: dict, c: Case | None) -> str:
     """The demo's ackNote: what the system reports with its acknowledgement; delivery and finance carry the delivery."""
-    d = EX_STEP.get(s.get("k"))
+    d = EX_STEP.get(s.get("k", ""))
     if c and s.get("k") in ("pod", "finance"):
         t = ex_delivered(c)
         if t:
-            return ("proof of delivery signed; " if s["k"] == "pod" else d["note"] + "; ") + t
+            return ("proof of delivery signed; " if s["k"] == "pod" else EX_STEP["finance"]["note"] + "; ") + t
     return d["note"] if d else ACK_NOTE.get(s["label"], "")
 
 

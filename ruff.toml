@@ -24,9 +24,6 @@ select = [
   "ARG",    # unused arguments
 ]
 ignore = [
-  # Endpoints take their dependencies as `x: T = Depends(f)` throughout (B008 is configured for that style).
-  # Moving ~160 signatures to `Annotated[T, Depends(f)]` changes no behaviour and is left to its own change.
-  "FAST002",
   # Loops that append response rows mirror the reference app's code, which the golden files are compared with;
   # turning them into comprehensions is churn with no measurable gain at these sizes.
   "PERF401",

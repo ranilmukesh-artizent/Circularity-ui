@@ -88,7 +88,13 @@ class OracleLeaseAdapter(Adapter):
         cur = p.get("CURRENCY_CODE") or "USD"
         rental = p.get("MONTHLY_RENTAL")
         freq = (p.get("BILLING_FREQUENCY") or "MONTHLY").upper()
-        per_month = {"MONTHLY": 1, "QUARTERLY": Decimal(1) / 3, "ANNUAL": Decimal(1) / 12, "YEARLY": Decimal(1) / 12}[freq]
+        per_month_by: dict[str, Decimal | int] = {
+            "MONTHLY": 1,
+            "QUARTERLY": Decimal(1) / 3,
+            "ANNUAL": Decimal(1) / 12,
+            "YEARLY": Decimal(1) / 12,
+        }
+        per_month = per_month_by[freq]
         lessee = p["LESSEE_NAME"]
         status = p.get("CONTRACT_STATUS")
         facts = [

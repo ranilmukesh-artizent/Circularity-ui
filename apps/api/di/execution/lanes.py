@@ -40,7 +40,7 @@ LOCS: dict[str, dict[str, Any]] = {
 assert LOCS.keys() == COORDS.keys()  # noqa: S101 - import-time check: one list of locations, two tables
 
 # Rate card RC-2026.2 (K7): dedicated vehicle from 150 kg, part load below by distance band
-RATE_CARD = {
+RATE_CARD: dict[str, Any] = {
     "id": "RC-2026.2", "carrier": "Northline 3PL", "contract": "NL-MSA-2025-11", "vehicle": "LCV 1.5 t with tail-lift",
     "perKm": 20, "load": 1200, "min": 3600, "ptl": [(100, 6), (500, 10), (float("inf"), 16)], "docket": 350, "ptlMin": 450,
     "detFree": 120, "detUsd": 72,
@@ -54,7 +54,7 @@ def lane_km(a: str, b: str) -> int:
 
 def loc_name(k: str | None) -> str:
     """The demo's locName: "Chennai Foundry (Site 3)", "Warehouse 2 · Chennai (Sriperumbudur)"."""
-    L = LOCS.get(k)
+    L = LOCS.get(k) if k is not None else None
     if not L:
         return str(k)
     return f"{L['name']} ({L['site']})" if L.get("site") else f"{L['name']} · {L['city']}"
@@ -103,7 +103,9 @@ def ex_kg(c: Case) -> int:
 def ex_stage(to: str) -> dict:
     """The demo's exStage (K5): stage at the warehouse nearest the ship-to; a site nearer the Repair centre than any
     warehouse is delivered direct."""
-    ws = sorted(({"k": k, "km": lane_km(k, to)} for k, L in LOCS.items() if L["kind"] == "Warehouse"), key=lambda x: x["km"])
+    ws: list[dict[str, Any]] = sorted(
+        ({"k": k, "km": lane_km(k, to)} for k, L in LOCS.items() if L["kind"] == "Warehouse"), key=lambda x: x["km"]
+    )
     rc, w = lane_km(RC, to), ws[0]
     if rc < w["km"]:
         why = (
@@ -128,7 +130,8 @@ def ex_move_raw(c: Case, r: dict) -> dict | None:
     hub = "EXT-BLR" if c["cls"] in ("it", "control") else "EXT-BOM"
     rid = r.get("id")
     if rid == "redeploy":
-        to = (M and M.get("shipTo")) or SITE_LOC.get((c.get("demand") or {}).get("site")) or "LOC-HSR-02"
+        site: Any = (c.get("demand") or {}).get("site")
+        to = (M and M.get("shipTo")) or SITE_LOC.get(site) or "LOC-HSR-02"
         st = ex_stage(to)
         stops = [src, RC, *([st["code"]] if st["code"] else []), to]
     elif rid == "relase":

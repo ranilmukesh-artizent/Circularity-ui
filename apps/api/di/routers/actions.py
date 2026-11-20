@@ -9,20 +9,19 @@ GET  /api/journal             the action journal (Audit), newest first
 POST /api/journal/undo        mark journal entries as undone (the person who acted, or Admin)
 """
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException
+from fastapi import APIRouter, Body, Header, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import text
-from sqlalchemy.orm import Session
 
 from di import policy
 from di.actions.pipeline import ERROR_STATUS, Actor, CallContext, invoke
 from di.actions.registry import ACTIONS
 from di.actions.scope import case_scope
-from di.auth import Principal, optional_principal, principal
-from di.db import get_session
+from di.auth import Principal
+from di.deps import CurrentPrincipal, DbSession, OptionalPrincipal
 
 router = APIRouter(prefix="/api", tags=["Actions"])
 
@@ -30,13 +29,13 @@ router = APIRouter(prefix="/api", tags=["Actions"])
 @router.post("/actions/{action_id}")
 def call_action(
     action_id: str,
-    body: Any = Body(default=None),
-    p: Principal | None = Depends(optional_principal),
-    session: Session = Depends(get_session),
-    idempotency_key: str | None = Header(default=None),
-    x_circularity_preparer: str | None = Header(default=None),
-    x_circularity_confirmed: str | None = Header(default=None),
-    x_circularity_run: str | None = Header(default=None),
+    p: OptionalPrincipal,
+    session: DbSession,
+    body: Annotated[Any, Body()] = None,
+    idempotency_key: Annotated[str | None, Header()] = None,
+    x_circularity_preparer: Annotated[str | None, Header()] = None,
+    x_circularity_confirmed: Annotated[str | None, Header()] = None,
+    x_circularity_run: Annotated[str | None, Header()] = None,
 ):
     if body is not None and not isinstance(body, dict):
         return JSONResponse(
@@ -62,7 +61,7 @@ def call_action(
 
 
 @router.get("/actions")
-def catalog(p: Principal = Depends(principal)):
+def catalog(p: CurrentPrincipal):
     out = []
     for a in ACTIONS.values():
         allowed = a.risk != "system" and (a.permission is None or policy.can(p.account, a.permission, p.ctx))
@@ -83,9 +82,7 @@ def catalog(p: Principal = Depends(principal)):
 
 
 @router.get("/journal")
-def journal(
-    case_id: str | None = None, limit: int = 100, p: Principal = Depends(principal), session: Session = Depends(get_session)
-):
+def journal(p: CurrentPrincipal, session: DbSession, case_id: str | None = None, limit: int = 100):
     p.require_page("audit")
     # A Planner sees their own tenants' cases only; journal entries without a case are visible to the auditor roles.
     # The cases this account may not see are excluded in SQL, so LIMIT counts visible entries only.
@@ -113,7 +110,7 @@ class Undo(BaseModel):
 
 
 @router.post("/journal/undo")
-def undo(body: Undo, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def undo(body: Undo, p: CurrentPrincipal, session: DbSession):
     """Marks entries as undone. Reversing their effects is each handler's undo (added with the handlers, B10-B13)."""
     rows = session.execute(text("SELECT seq, actor FROM action_journal WHERE seq = ANY(:s)"), {"s": body.seqs}).all()
     if len(rows) != len(set(body.seqs)):

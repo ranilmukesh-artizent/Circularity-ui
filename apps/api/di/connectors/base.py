@@ -47,6 +47,8 @@ class Resource:
 class Adapter:
     source_id: str = ""
     base_path: str = ""  # appended to settings.source_sim_url (the mock) or a real system's URL from config
+    # the source's confidence once connected, for a source the demo lists with confidence 0 (no data yet); None: keep it
+    connected_confidence: float | None = None
 
     def auth(self) -> Auth:
         raise NotImplementedError

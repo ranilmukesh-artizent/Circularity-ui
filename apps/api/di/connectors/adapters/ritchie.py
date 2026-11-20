@@ -92,9 +92,9 @@ class RitchieAdapter(Adapter):
                 return
 
     def read_comparables(self, client: SourceClient, since: str | None) -> Iterator[Record]:
-        subjects = [s for s, _, _ in self.pages(client, "/subjects")] if not since else None
+        subjects = [s for s, _, _ in self.pages(client, "/subjects")] if not since else []
         if since:
-            stamp = iso_z(utc(since))
+            stamp = iso_z(utc(since) or "")  # `or ""` never applies: `since` is a non-empty timestamp
             changed = [c for c, _, _ in self.pages(client, "/comparables", modifiedSince=stamp)]
             changed_subjects = {s["SUBJECT_REF"] for s, _, _ in self.pages(client, "/subjects", modifiedSince=stamp)}
             if not changed and not changed_subjects:
@@ -224,7 +224,7 @@ class RitchieAdapter(Adapter):
         facts = self._set(key, asis, False) + self._set(key, refurb, True)
         sold = [c["SOLD_DATE"] for c in asis + refurb if c.get("SOLD_DATE")]
         if sold:
-            newest = max(sold, key=iso_date)
+            newest = max(sold, key=lambda d: iso_date(d) or "")  # `or ""` never applies: sold dates are non-empty
             facts.append(
                 Fact(
                     "market",

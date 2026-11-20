@@ -1,9 +1,8 @@
 import logging
 
 import httpx
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from sqlalchemy import text
-from sqlalchemy.orm import Session
 
 import di.actions.access  # registers action handlers
 import di.actions.decisions  # registers action handlers
@@ -17,7 +16,7 @@ from di.ask import service as ask_service
 from di.cases import use_database_scope
 from di.config import get_settings
 from di.connectors import webhook
-from di.db import get_session
+from di.deps import DbSession
 from di.errors import register as register_error_handlers
 from di.logs import configure_logging
 from di.mcp import server as mcp_server
@@ -49,7 +48,7 @@ def live() -> dict:
 
 
 @app.get("/api/health")
-def health(session: Session = Depends(get_session)) -> dict:
+def health(session: DbSession) -> dict:
     """Process, database and source-sim reachability, for the web status page."""
     checks: dict[str, dict] = {}
     try:

@@ -52,8 +52,9 @@ checksRunAt and runChecks stay in the frontend (the time the page last ran them 
 """
 
 import json
+from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -63,9 +64,9 @@ from di.actions.registry import ACTIONS
 from di.ask.fallback import RUNNERS
 from di.ask.intents import CATALOG
 from di.ask.safety import intents_without_test, run_safety
-from di.auth import Principal, principal
+from di.auth import Principal
 from di.cases import store
-from di.db import get_session
+from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_sum
 from di.engine.pool import solve_pool
 from di.execution.trace import line_actuals
@@ -103,7 +104,7 @@ def _dumps(x) -> str:
 
 
 def _line_mismatch(c: dict) -> bool:
-    r = c.get("chosen") or c.get("recommendation")
+    r: Any = c.get("chosen") or c.get("recommendation")
     a, b = line_actuals(c, r), _dumps(line_actuals(c, r))
     if _dumps(a) != b:
         return True
@@ -239,7 +240,7 @@ def run(p: Principal, session: Session) -> list[dict]:
         to_fixed(ov * 100, 1) + "%",
         "decisions",
     )
-    ms = [model_stats(m["v"]) for m in MODELS]
+    ms: list[Any] = [model_stats(m["v"]) for m in MODELS]
     t(
         "Model error shrinks v1.0 → v1.3",
         ms[0]["mape"] > ms[3]["mape"] and abs(ms[0]["bias"]) > abs(ms[3]["bias"]),
@@ -306,7 +307,7 @@ def run(p: Principal, session: Session) -> list[dict]:
 
 
 @router.get("/api/checks")
-def checks(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def checks(p: CurrentPrincipal, session: DbSession):
     out = run(p, session)
     return {
         "checks": out,

@@ -41,13 +41,13 @@ Facade mapping (apps/web/src/api/audit.ts), for the switch-over (B17):
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
 
 from di import policy, state
-from di.auth import Principal, principal
+from di.auth import Principal
 from di.cases import store
-from di.db import get_session
+from di.deps import CurrentPrincipal, DbSession
 from di.reads.common import iso
 from di.reads.context import call_ctx, can_see_case, visible_cases
 from di.reads.provenance import prov_for
@@ -92,11 +92,11 @@ def entries(p: Principal, session: Session, tenant_filter: str = "All") -> list[
     by_id = {c["id"]: c for c in store.all_cases(session)}
     tenant_scoped = bool(policy.policy(p.account).get("tenantScoped"))
     for ev in state.items(session, "events", newest_first=True):
-        c = by_id.get(ev.get("caseId")) if ev.get("caseId") else None
-        if c is not None:
-            if not can_see_case(p.account, p.ctx, c):
+        ec = by_id.get(ev.get("caseId")) if ev.get("caseId") else None
+        if ec is not None:
+            if not can_see_case(p.account, p.ctx, ec):
                 continue
-            if tenant_filter != "All" and c["owner"] != tenant_filter:
+            if tenant_filter != "All" and ec["owner"] != tenant_filter:
                 continue
         elif tenant_scoped:
             continue
@@ -104,7 +104,7 @@ def entries(p: Principal, session: Session, tenant_filter: str = "All") -> list[
         key = ev.get("key")
         out.append({
             "id": "AE-" + ev["id"], "kind": "event", "ts": iso(ev["ts"]), "source": ev.get("dest"),
-            "caseId": ev.get("caseId") or "—", "asset": c["assetId"] if c else "—", "item": ev.get("type"), "key": "event",
+            "caseId": ev.get("caseId") or "—", "asset": ec["assetId"] if ec else "—", "item": ev.get("type"), "key": "event",
             "request": direction + str(ev.get("type")) + (" · " + key if key and key != "—" else ""),
             "result": ev.get("ack"), "used": _event_used(ev), "status": "recorded", "prep": ev.get("prep") or None, "ev": ev,
         })  # fmt: skip
@@ -134,7 +134,7 @@ def comments_by_key(session: Session, keys: set[str] | None = None) -> dict[str,
 
 
 @router.get("")
-def audit(tenant_filter: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def audit(p: CurrentPrincipal, session: DbSession, tenant_filter: str = "All"):
     p.require_page("audit")
     es = entries(p, session, tenant_filter)
     return {
@@ -145,7 +145,7 @@ def audit(tenant_filter: str = "All", p: Principal = Depends(principal), session
 
 
 @router.get("/provenance")
-def provenance_of(case_id: str, key: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def provenance_of(case_id: str, key: str, p: CurrentPrincipal, session: DbSession):
     p.require_page("audit")
     c = store.get(session, case_id)
     if c is None:
@@ -159,6 +159,6 @@ def provenance_of(case_id: str, key: str, p: Principal = Depends(principal), ses
 
 
 @router.get("/comments")
-def comments(key: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):  # noqa: ARG001 - the dependency authenticates the caller
+def comments(key: str, p: CurrentPrincipal, session: DbSession):  # noqa: ARG001 - the dependency authenticates the caller
     """Comments under one record key (an audit entry "au:<id>", a source "src:<id>" ...): everyone signed in reads."""
     return comments_by_key(session, {key}).get(key, [])

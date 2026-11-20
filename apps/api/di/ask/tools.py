@@ -117,7 +117,13 @@ _ALL = [a for t in MCP_TOOLS for a in ACTIONS_OF[t]] + [a for a, *_ in ACTION_TO
 assert all(ACTIONS[a].risk == "read" for a in _ALL), "every action a tool runs is a read"  # noqa: S101 - import-time check: Ask reaches reads only
 assert not [a for a in _ALL if a.startswith(FORBIDDEN_ACTIONS)], "Ask may never reach an action an agent must not run"  # noqa: S101 - import-time check: Ask reaches reads only
 
-PY_TYPE = {"string": str, "boolean": bool, "number": (int, float), "object": dict, "array": list}
+PY_TYPE: dict[str, type | tuple[type, ...]] = {
+    "string": str,
+    "boolean": bool,
+    "number": (int, float),
+    "object": dict,
+    "array": list,
+}
 LIST_MAX, STR_MAX, RESULT_MAX = 8, 400, 4000
 
 

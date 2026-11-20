@@ -32,7 +32,12 @@ ORG = "NORTHFIELD"
 SIZE = 200
 STOCKING = ("DISTRIBUTION_CENTER", "REPAIR_CENTER")
 FACILITIES = {"WH01": "Warehouse 1", "WH02": "Warehouse 2", "RC01": "Repair centre"}  # fallback names
-AVAILABILITY = {"AVAILABLE": "available", "HOLD": "on_hold", "DAMAGED": "damaged", "QUARANTINE": "quarantine"}
+AVAILABILITY: dict[str | None, str] = {
+    "AVAILABLE": "available",
+    "HOLD": "on_hold",
+    "DAMAGED": "damaged",
+    "QUARANTINE": "quarantine",
+}
 RESOURCES = (  # name, search path, id field
     ("inventory", "/dcinventory/api/dcinventory/inventory/search", "InventoryId"),
     ("movements", "/pix/api/pix/pix/search", "PixId"),

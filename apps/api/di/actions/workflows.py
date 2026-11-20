@@ -39,11 +39,13 @@ import logging
 import math
 import time
 from collections.abc import Callable
+from typing import Any, cast
 
 from sqlalchemy import text
 
 from di import clock, jobs, state
-from di.actions.registry import guard, implement
+from di.actions.pipeline import CallContext
+from di.actions.registry import ActionError, guard, implement
 from di.reads import workflows as studio
 from di.reads.common import SOURCES, hash_id, iso, ms, to_fixed
 from di.reads.constants import MAP_TARGET, MAPPINGS, SRC_TYPES, TOOLS
@@ -152,11 +154,20 @@ def src_or(sid: str) -> dict:
 
 
 def trig_text(t: dict) -> str:
-    return TRIG_L.get(t.get("t"), TRIG_L["manual"])(t)
+    kind: Any = t.get("t")
+    return TRIG_L.get(kind, TRIG_L["manual"])(t)
 
 
 def _xf(ref: str) -> dict | None:
     return next((x for x in XF if x["id"] == ref), None)
+
+
+def _xf_req(ref: str) -> dict[str, Any]:
+    """The transform a graph step names (the palette offers only known ones)."""
+    x = _xf(ref)
+    if x is None:
+        raise LookupError(f"unknown transform {ref}")
+    return x
 
 
 def _fr_xf(ref: str) -> dict | None:
@@ -174,7 +185,7 @@ def label(n: dict) -> str:
     if k == "act":
         return next(t for t in ACT_TYPES if t["id"] == ref)["label"]
     if k == "xf":
-        return _xf(ref)["label"]
+        return _xf_req(ref)["label"]
     if k == "map":
         return f"{SH.get(ref)} fields"
     t = next((x for x in TOOLS if x["id"] == ref), None)
@@ -251,14 +262,15 @@ def _ingest(sid: str) -> dict:
     nodes.append(_n("v", "xf", "x_val", col(), y0))
     edges += [_e(p, "v") for p in prev]
     prev = ["v"]
-    xf = not file_only and XFORM.get(s.get("type"))
+    stype: Any = s.get("type")
+    xf = not file_only and XFORM.get(stype)
     if xf:
         nodes.append(_n("t", "xf", xf, col(), y0))
         edges.append(_e("v", "t"))
         prev = ["t"]
     nodes.append(_n("m", "map", sid, col(), y0))
     edges.append(_e(prev[0], "m"))
-    c = CANON_FIX.get(MAP_TARGET.get(sid) or "Outcome")
+    c: Any = CANON_FIX.get(MAP_TARGET.get(sid) or "Outcome")
     nodes.append(_n(c, "fixed", c, col(), y0))
     edges.append(_e("m", c))
     if c != "c_out" and not file_only:
@@ -311,7 +323,7 @@ def _outbound(sid: str, ch: str | None) -> dict:
 
 def _decision(kind: str) -> dict:
     """WF_DEC[kind].build(), with the Fabric's audit-log branch."""
-    head = {
+    head: tuple[list[tuple[Any, ...]], list[tuple[Any, ...]]] = {
         "standard": (
             [("evid", "fixed", "evid", 24, 130), ("gates", "fixed", "gates", 262, 130)]
             + [(f"tl_{t}", "tool", t, x, 130) for t, x in (("list_eligible_routes", 500), ("predict_outcomes", 738))]
@@ -365,12 +377,15 @@ def _decision(kind: str) -> dict:
 def build(tpl: dict) -> dict:
     """wfBuild(tpl): the template graph; edges are numbered e0, e1 ... in order."""
     k = tpl.get("k")
+    sid: Any = tpl.get("src")
+    ch: Any = tpl.get("ch")
+    tid: Any = tpl.get("id")
     g = (
-        _ingest(tpl.get("src"))
+        _ingest(sid)
         if k == "ingest"
-        else _outbound(tpl.get("src"), tpl.get("ch"))
+        else _outbound(sid, ch)
         if k == "out"
-        else _decision(tpl.get("id"))
+        else _decision(tid)
         if k == "dec"
         else {"nodes": [], "edges": []}
     )
@@ -462,7 +477,8 @@ def _validate_base(g: dict, kind: str) -> list[dict]:
                 add("warn", nid, f"{s['name']} is {s['fresh']} old. Predictions fall back to the last fresh data and say so.")
             elif s["status"] == "manual":
                 add("info", nid, f"{s['name']} is a manual import. It supports evaluation, not live automation.")
-            st, vis, bad = [(nid, False, False, False)], set(), {}
+            st, vis = [(nid, False, False, False)], set[tuple[str, bool, bool, bool]]()
+            bad: dict[str, None] = {}
             hit = no_ing = no_val = False
             while st:
                 x, vm, vi, vv = st.pop()
@@ -472,7 +488,7 @@ def _validate_base(g: dict, kind: str) -> list[dict]:
                 for y in A.succ[x]:
                     m = A.by[y]
                     v2 = vm or m["k"] == "map"
-                    i2 = vi or bool(m["k"] == "xf" and _xf(m["ref"]).get("ingest"))
+                    i2 = vi or bool(m["k"] == "xf" and _xf_req(m["ref"]).get("ingest"))
                     w2 = vv or _is_xf(m, "x_val")
                     if m["k"] == "fixed":
                         hit = True
@@ -528,7 +544,7 @@ def _validate_base(g: dict, kind: str) -> list[dict]:
             elif canon and MAP_TARGET.get(ref) not in canon:
                 add("error", nid, f"{lb} maps to {MAP_TARGET.get(ref)}, but it is wired to {', '.join(canon)}.")
         if k == "xf":
-            x = _xf(ref)
+            x = cast(Any, _xf(ref))  # used only on a wired step
             anc_ids = A.anc(nid)
             anc_n = [A.by[i] for i in anc_ids]
             conns = [m for m in anc_n if m["k"] == "conn"]
@@ -620,10 +636,10 @@ def _validate_base(g: dict, kind: str) -> list[dict]:
                 add("warn", nid, f"{ref} is not wired in.")
             elif r:
                 anc_s, dsc_s = set(A.anc(nid)), set(A.desc(nid))
-                miss = [i for i in r.get("after", []) if i not in anc_s]
+                after = [i for i in r.get("after", []) if i not in anc_s]
                 late = [i for i in r.get("before", []) if i not in dsc_s]
-                if miss:
-                    add("error", nid, f"{ref} has to come after {' and '.join(WF_NM[i] for i in miss)}. {r['why']}")
+                if after:
+                    add("error", nid, f"{ref} has to come after {' and '.join(WF_NM[i] for i in after)}. {r['why']}")
                 if late:
                     add("error", nid, f"{ref} has to come before {' and '.join(WF_NM[i] for i in late)}. {r['why']}")
         if k == "fixed" and kind == "pipe" and FXD[ref].get("canon") and ref not in ("c_dec", "c_out") and not np_:
@@ -641,7 +657,7 @@ def validate(g: dict, kind: str) -> list[dict]:
     by = {n["id"]: n for n in g["nodes"]}
 
     def keep(o: dict) -> bool:
-        n = by.get(o["id"])
+        n: Any = by.get(o["id"])
         x = n and n["k"] == "xf" and _fr_xf(n["ref"])
         if not x or "not wired between" not in o["msg"]:
             return True
@@ -756,43 +772,51 @@ def sim_outcome(w: dict) -> dict:
 
 
 # ---------------------------------------------------------------- helpers for the handlers
-def _now(ctx=None) -> int:
+def _now(ctx: CallContext | None = None) -> int:
     return ms((ctx.now if ctx is not None else clock.now()).isoformat())
 
 
-def _by(ctx) -> str:
+def _by(ctx: CallContext) -> str:
     return ctx.actor.account.label if ctx.actor.account else "Enterprise system adapter"
 
 
-def _get(ctx, wid: str, for_update: bool = False) -> dict | None:
+def _get(ctx: CallContext, wid: str, for_update: bool = False) -> dict[str, Any] | None:
     return state.get(ctx.session, "workflows", wid, for_update=for_update)
 
 
-def _put(ctx, w: dict) -> None:
+def _must(ctx: CallContext, wid: str, for_update: bool = False) -> dict[str, Any]:
+    """The workflow a handler works on; its guard has already refused one that does not exist."""
+    w = _get(ctx, wid, for_update=for_update)
+    if w is None:
+        raise ActionError("not_found", f"No workflow {wid}.")
+    return w
+
+
+def _put(ctx: CallContext, w: dict[str, Any]) -> None:
     state.put(ctx.session, "workflows", w["id"], w)
 
 
-def _not_found(i) -> tuple[str, str]:
+def _not_found(i: dict[str, Any]) -> tuple[str, str]:
     return "not_found", f"No workflow {i['id']}."
 
 
-def _wf_guard(i, ctx) -> tuple[str, str] | None:
+def _wf_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     return None if _get(ctx, i["id"]) else _not_found(i)
 
 
-def _ids(ctx) -> set[str]:
+def _ids(ctx: CallContext) -> set[str]:
     return {w["id"] for w in studio.all_workflows(ctx.session)}
 
 
 # ---------------------------------------------------------------- the actions
 @guard("workflow.save")
-def save_guard(i, ctx):
+def save_guard(i: dict[str, Any], ctx: CallContext):
     return _wf_guard(i, ctx) or (None if i["name"].strip() else ("validation_error", "Enter a workflow name before saving."))
 
 
 @implement("workflow.save")
-def save(i, ctx):
-    w = _get(ctx, i["id"], for_update=True)
+def save(i: dict[str, Any], ctx: CallContext):
+    w = _must(ctx, i["id"], for_update=True)
     w["graph"] = copy.deepcopy(i["graph"])
     w["name"] = i["name"].strip()
     if i.get("owner") is not None:
@@ -812,7 +836,7 @@ def save(i, ctx):
 
 
 @guard("workflow.publish")
-def publish_guard(i, ctx):
+def publish_guard(i: dict[str, Any], ctx: CallContext):
     w = _get(ctx, i["id"])
     if w is None:
         return _not_found(i)
@@ -823,8 +847,8 @@ def publish_guard(i, ctx):
 
 
 @implement("workflow.publish")
-def publish(i, ctx):
-    w = _get(ctx, i["id"], for_update=True)
+def publish(i: dict[str, Any], ctx: CallContext):
+    w = _must(ctx, i["id"], for_update=True)
     graph_of(w)
     if i.get("graph") is not None and (w.get("dirty") or i["graph"] != w.get("graph")):
         w["graph"] = copy.deepcopy(i["graph"])
@@ -839,7 +863,7 @@ def publish(i, ctx):
 
 
 @guard("workflow.setStatus")
-def set_status_guard(i, ctx):
+def set_status_guard(i: dict[str, Any], ctx: CallContext):
     w = _get(ctx, i["id"])
     if w is None:
         return _not_found(i)
@@ -851,8 +875,8 @@ def set_status_guard(i, ctx):
 
 
 @implement("workflow.setStatus")
-def set_status(i, ctx):
-    w = _get(ctx, i["id"], for_update=True)
+def set_status(i: dict[str, Any], ctx: CallContext):
+    w = _must(ctx, i["id"], for_update=True)
     was = w["status"]
     w["status"], w["updated"] = i["status"], _now(ctx)
     _put(ctx, w)
@@ -860,12 +884,12 @@ def set_status(i, ctx):
 
 
 @guard("workflow.create")
-def create_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
+def create_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)
     return ("validation_error", "Choose a system first.") if i["type"] in ("ingest", "out") and not src(i.get("src")) else None
 
 
 @implement("workflow.create")
-def create(i, ctx):
+def create(i: dict[str, Any], ctx: CallContext):
     state.next_number(ctx.session, "workflows", "WF-", 0)  # holds the numbering lock for this transaction
     ids = _ids(ctx)
     k = 100
@@ -874,7 +898,8 @@ def create(i, ctx):
     k = max(k, 100 + len(ids))
     while f"WF-{k}" in ids:
         k += 1
-    t, so = i["type"], src(i.get("src"))
+    t = i["type"]
+    so: Any = src(i.get("src"))  # the guard refused an ingest or outbound workflow without a source
     nm = (i.get("name") or "").strip() or (
         f"Ingest · {so['vendor']}"
         if t == "ingest"
@@ -906,7 +931,7 @@ def create(i, ctx):
             "cat": "Ingest", "kind": "pipe", "tpl": {"k": "blank"}, "src": None, "owner": "Unassigned", "trig": {"t": "manual"},
             "desc": "Blank pipeline. Drag steps from the left and connect them.",
         }  # fmt: skip
-    w = {
+    w: dict[str, Any] = {
         "id": f"WF-{k}", "name": nm, "status": "draft", "ver": "0.1", "graph": None, "saved": None, "dirty": False,
         "running": False, "updated": _now(ctx), "runsN": 0, "okN": 0, "last": None, "prep": ctx.preparer,
     } | base  # fmt: skip
@@ -922,14 +947,14 @@ def create(i, ctx):
 
 
 @guard("workflow.duplicate")
-def duplicate_guard(i, ctx):
+def duplicate_guard(i: dict[str, Any], ctx: CallContext):
     return _wf_guard(i, ctx)
 
 
 @implement("workflow.duplicate")
-def duplicate(i, ctx):
+def duplicate(i: dict[str, Any], ctx: CallContext):
     state.next_number(ctx.session, "workflows", "WF-", 0)  # the numbering lock
-    w = _get(ctx, i["id"])
+    w = _must(ctx, i["id"])
     ids = _ids(ctx)
     n = 100
     while f"WF-{n}" in ids:
@@ -945,25 +970,25 @@ def duplicate(i, ctx):
 
 
 @guard("workflow.delete")
-def delete_guard(i, ctx):
+def delete_guard(i: dict[str, Any], ctx: CallContext):
     return _wf_guard(i, ctx)
 
 
 @implement("workflow.delete")
-def delete(i, ctx):
-    w = _get(ctx, i["id"], for_update=True)
+def delete(i: dict[str, Any], ctx: CallContext):
+    w = _must(ctx, i["id"], for_update=True)
     state.delete(ctx.session, "workflows", w["id"])
     return {"id": w["id"], "name": w["name"]}
 
 
 @guard("workflow.validate")
-def validate_guard(i, ctx):
+def validate_guard(i: dict[str, Any], ctx: CallContext):
     return _wf_guard(i, ctx)
 
 
 @implement("workflow.validate")
-def validate_action(i, ctx):
-    w = _get(ctx, i["id"])
+def validate_action(i: dict[str, Any], ctx: CallContext):
+    w = _must(ctx, i["id"])
     v = validate(graph_of(w), w["kind"])
     # the demo reads x.node, which its checks never set (they carry the step as `id`), so `node` is always null
     return {
@@ -975,7 +1000,7 @@ def validate_action(i, ctx):
 
 
 @guard("workflow.run")
-def run_guard(i, ctx):
+def run_guard(i: dict[str, Any], ctx: CallContext):
     w = _get(ctx, i["id"])
     if w is None:
         return _not_found(i)
@@ -994,8 +1019,8 @@ def run_id(wid: str, now: int) -> str:
 
 
 @implement("workflow.run")
-def run(i, ctx):
-    w = _get(ctx, i["id"], for_update=True)
+def run(i: dict[str, Any], ctx: CallContext):
+    w = _must(ctx, i["id"], for_update=True)
     graph_of(w)
     w["running"] = True
     _put(ctx, w)

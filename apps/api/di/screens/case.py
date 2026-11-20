@@ -75,14 +75,14 @@ import math
 import re
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy.orm import Session
 
 from di import policy
 from di.actions.decisions import draft_rationale
 from di.actions.pipeline import CallContext
-from di.auth import Principal, principal
-from di.db import get_session
+from di.auth import Principal
+from di.deps import CurrentPrincipal, DbSession
 from di.execution import (
     as_sc,
     ex_actual,
@@ -180,7 +180,7 @@ def limit_of_role(role: str, p: Principal) -> float:
 def stage_tag(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
     """The demo's stState: a stage's tag (done, not reached, blocked, waiting on someone, current)."""
     s = rn["stages"][n - 1]
-    x = c.get("exec")
+    x: Any = c.get("exec")
     st = x["steps"] if x else []
     cur = rn["stage"] == n
 
@@ -281,8 +281,10 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
     provenance and the system behind it), documents, what it means, when and who."""
     L = af_lease(c)
     s = rn["stages"][n - 1]
-    r = c.get("chosen") or c.get("recommendation")
-    M, R, x = case_demand(c), case_rul(c), c.get("exec")
+    r: Any = c.get("chosen") or c.get("recommendation")
+    M: Any = case_demand(c)
+    R: Any = case_rul(c)
+    x: Any = c.get("exec")
     st = x["steps"] if x else []
     ev = c.get("evidence") or []
     miss = [e for e in ev if e["state"] != "ready"]
@@ -296,7 +298,7 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
         facts.append({"l": label, "v": v, "k": k, "sys": sys})
 
     lane = L["lane"]
-    blocked = c.get("blocked")
+    blocked: Any = c.get("blocked")
     if n == 1:
         o["res"] = f"Lease {L['lease']} ended on {fmt_dy(L['end'])}; {c['owner']} chose to {L['intent']}."
         F("Lease contract", L["lease"], "ret", "Lease management")
@@ -335,7 +337,7 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
         )
     elif n == 4:
         hold = next((t for t in r["terms"] if re.search("holding", t["label"], re.I)), None) if r else None
-        code = FAC_LOC.get(c["location"])
+        code: Any = FAC_LOC.get(c["location"])
         Lc = LOCS.get(code) or {}
         if miss:
             items = f"{len(miss)} evidence item{'s are' if len(miss) > 1 else ' is'} still missing"
@@ -424,9 +426,10 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
             F("Routes built", str(len(c["routes"])), "rul", "Gate engine")
             F("Eligible", str(len(el)), "rul", "Gate engine")
     elif n == 7:
-        pay = instr_payload(c) if r else None
-        appr, sub = c.get("approval"), c.get("submitted")
-        lim = None if appr else limit_of_role("Approver" if deleg else "Admin", p)
+        pay: Any = instr_payload(c) if r else None
+        appr: Any = c.get("approval")
+        sub: Any = c.get("submitted")
+        lim: Any = None if appr else limit_of_role("Approver" if deleg else "Admin", p)
         apps = list(dict.fromkeys(ex_app(y) for y in steps_of(c))) if r else []
         apps = [a for a in apps if not re.match(r"^Circularity|^Planning", a)]
         if appr:
@@ -470,7 +473,7 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
                 f"{money(pay['spendAuthorityUsd'])} of spend."
             )
     elif n == 8:
-        mv = ex_move(c, r) if r else None
+        mv: Any = ex_move(c, r) if r else None
         i = next((k for k, y in enumerate(st) if y["state"] != "done"), -1)
         a = st[i] if i >= 0 else None
         done = sum(1 for y in st if y["state"] == "done")
@@ -499,7 +502,8 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
         else:
             o["res"] = "Instructions go out only after approval."
     elif n == 9:
-        o9, last = c.get("outcome"), (st[-1] if st else None)
+        o9: Any = c.get("outcome")
+        last: Any = st[-1] if st else None
         d = ex_delivered(c)
         mv = ex_move(c, r) if d else None
         ds = f"delivered to {loc_name(mv['to'])} against {M['order']} line {M['line']}" if d else ""
@@ -538,7 +542,7 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
                     "shows which lines moved."
                 )
     else:
-        o10 = c.get("outcome")
+        o10: Any = c.get("outcome")
 
         def dl(v: float) -> str:
             return "—" if v == 0 else ("+" if v > 0 else "−") + money(abs(v))
@@ -566,7 +570,7 @@ def active_clock(c: Case) -> dict | None:
 
 
 @router.get("/{case_id}")
-def case_page(case_id: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def case_page(case_id: str, p: CurrentPrincipal, session: DbSession):
     """Everything the stage bar, the stage pages, the Overview and the approval card read, for one case."""
     c = load_case(p, session, case_id, "product", "case")
     ctx = call_ctx(p, session)
@@ -727,7 +731,7 @@ def evidence_pack(c: Case, rn: dict, session: Session) -> dict:
 
 
 @router.get("/{case_id}/analysis")
-def case_analysis(case_id: str, tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def case_analysis(case_id: str, p: CurrentPrincipal, session: DbSession, tenant: str = "All"):
     """The data behind the stage pages' detail tabs and Full analysis (`tenant`: the top-bar filter, for the repair
     centre's load)."""
     c = load_case(p, session, case_id, "product", "case")

@@ -17,7 +17,7 @@ from typing import Protocol
 from di.engine.jsmath import js_round
 
 # per asset class: price of a new unit and the age (years) over which value decays by 1/e (the demo's CLASSES)
-CLASSES = {
+CLASSES: dict[str, dict[str, float]] = {
     "motor": {"pnew": 11800, "tau": 11},
     "pump": {"pnew": 6400, "tau": 9},
     "control": {"pnew": 4300, "tau": 7},

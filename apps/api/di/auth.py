@@ -7,12 +7,14 @@ password check later; the token and the dependencies below stay the same.
 POST /api/auth/stream-ticket trades a valid access token for a 60-second stream ticket (aud "stream"), which only
 GET /api/stream accepts, as `?ticket=` (F3: the access token stays out of URLs and access logs).
 
-Endpoints depend on `Principal` (signed-in account + its run-time access state) and use the policy through it:
-    def handler(p: Principal = Depends(principal)): p.require("approve.decisions"); p.require_tenant(case.owner)
+Endpoints depend on `Principal` (signed-in account + its run-time access state; the `CurrentPrincipal` alias in di.deps)
+and use the policy through it:
+    def handler(p: CurrentPrincipal): p.require("approve.decisions"); p.require_tenant(case.owner)
 """
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
 import jwt
 from fastapi import Depends, HTTPException
@@ -133,7 +135,7 @@ class Principal:
 
 
 def principal(
-    creds: HTTPAuthorizationCredentials | None = Depends(_bearer), session: Session = Depends(get_session)
+    creds: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)], session: Annotated[Session, Depends(get_session)]
 ) -> Principal:
     if creds is None:
         raise HTTPException(401, {"code": "unauthenticated", "message": "Sign in first."}, headers={"WWW-Authenticate": "Bearer"})
@@ -146,7 +148,7 @@ def stream_principal(ticket: str, session: Session) -> Principal:
 
 
 def optional_principal(
-    creds: HTTPAuthorizationCredentials | None = Depends(_bearer), session: Session = Depends(get_session)
+    creds: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)], session: Annotated[Session, Depends(get_session)]
 ) -> Principal | None:
     """The signed-in account, or None (for endpoints that answer anonymous callers themselves, like /api/actions)."""
     if creds is None:

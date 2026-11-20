@@ -12,6 +12,7 @@ import json
 import logging
 import time
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
@@ -71,7 +72,7 @@ def ensure_sources(session: Session) -> None:
         {"ids": list(ADAPTERS)},
     )
     for sid, a in ADAPTERS.items():
-        if getattr(a, "connected_confidence", None) is not None:
+        if a.connected_confidence is not None:
             _connected_confidence(session, sid, a.connected_confidence)
     session.commit()
     for sid, a in ADAPTERS.items():  # configured to start connected (DI_IOT_CONNECTED): its rules deliver from the start
@@ -102,7 +103,7 @@ def connect_source(session: Session, source_id: str) -> dict:
     changed = status == "unavailable"
     if changed:
         session.execute(text("UPDATE source_system SET status = 'live', updated_at = now() WHERE id = :i"), {"i": source_id})
-        if getattr(adapter, "connected_confidence", None) is not None:
+        if adapter.connected_confidence is not None:
             _connected_confidence(session, source_id, adapter.connected_confidence)
     job = enqueue_sync(session, source_id, "initial", full=True) if changed else None
     session.commit()
@@ -173,7 +174,7 @@ def _purge(session: Session, source_id: str) -> int:
         text("DELETE FROM job WHERE kind = 'sync.source' AND status <> 'running' AND payload->>'source_id' = :s"),
         {"s": source_id},
     )
-    ref = next((s for s in golden.load("sources")["sources"] if s["id"] == source_id), {})
+    ref: dict[str, Any] = next((s for s in golden.load("sources")["sources"] if s["id"] == source_id), {})
     session.execute(  # as registered by ensure_sources: no completeness or sync times yet, the demo's confidence
         text(
             "UPDATE source_system SET completeness = NULL, confidence = :cf, last_sync_at = NULL, last_success_at = NULL "

@@ -13,6 +13,7 @@ probability-weighted planning range). One table, read by the Expected returns sc
 import re
 
 from di import policy
+from di.actions.pipeline import CallContext
 from di.engine.jsmath import js_round
 from di.reads.common import AS_OF, fmt_d, hash_id, iso, ms, to_fixed
 
@@ -119,7 +120,7 @@ def _brief(e: dict) -> dict:
     return {**e, "window": e["outcome"]["window"], "prob": e["outcome"]["prob"]}
 
 
-def exp_vis(ctx) -> list[dict]:
+def exp_vis(ctx: CallContext) -> list[dict]:
     """The demo's expVis: the expected returns the signed-in account may see (all of them for the system actor), with
     `window` and `prob` (the likely outcome's return window and probability) at the top level."""
     a = None if ctx.actor.system else ctx.actor.account

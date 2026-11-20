@@ -42,13 +42,15 @@ Facade mapping (apps/web/src/api/analytics.ts), for the switch-over (B17):
 | kfmt, pct, sum, DEFAULT_FILTER | frontend-only: formatting and the page's default filter                     |
 """
 
-from fastapi import APIRouter, Depends, Query
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from di.actions.pipeline import CallContext
 from di.actions.registry import implement
-from di.auth import Principal, principal
-from di.db import get_session
+from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round, js_sum
 from di.reads.common import to_fixed
 from di.reads.constants import MODELS
@@ -96,7 +98,7 @@ def _fixed1(x: float) -> float:
 
 
 @implement("analytics.models")
-def analytics_models(i, ctx):  # noqa: ARG001 - read handlers take (input, ctx)
+def analytics_models(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - read handlers take (input, ctx)
     """The demo's analytics.models: each model version against outcomes, and how many landed within ±10%."""
     ms = [(m, s) for m in MODELS if (s := model_stats(m["v"]))]
     rc = [x for x in reconciled() if x["route"] != "exit" and not x.get("override")]
@@ -130,15 +132,15 @@ def telemetry_unavailable(session: Session) -> bool:
 
 @router.get("")
 def analytics(
+    p: CurrentPrincipal,
+    session: DbSession,
     tenant: str = "",
     cls: str = "",
     route: str = "",
-    from_: int = Query(0, alias="from"),
+    from_: Annotated[int, Query(alias="from")] = 0,
     to: int = 11,
     model: str = "",
     tenant_filter: str = "All",
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
 ):
     p.require_page("analytics")
     ctx = call_ctx(p, session)

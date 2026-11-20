@@ -43,22 +43,22 @@ def apply_gate_rules(case: dict, routes: list[Route]) -> list[Route]:
                 fail(r, CONDITION, LIFE_BELOW_MINIMUM)
     # Policy & certification
     if case.get("cls") == "it" and spec.get("Data erasure") == "Pending":
-        r = _first(routes, "resale")
-        if r:
-            fail(r, POLICY, DATA_ERASURE)
+        hit = _first(routes, "resale")
+        if hit:
+            fail(hit, POLICY, DATA_ERASURE)
     if case.get("cls") == "control" and re.search("SIL", str(spec.get("Safety rating", ""))):
-        r = _first(routes, "redeploy", eligible_only=True)
-        if r:
-            fail(r, POLICY, SAFETY_RATED)
+        hit = _first(routes, "redeploy", eligible_only=True)
+        if hit:
+            fail(hit, POLICY, SAFETY_RATED)
     if case.get("consentGap"):
-        r = _first(routes, "redeploy", eligible_only=True)
-        if r:
-            fail(r, POLICY, CONSENT)
+        hit = _first(routes, "redeploy", eligible_only=True)
+        if hit:
+            fail(hit, POLICY, CONSENT)
     # Sustainability: lithium cells need an approved hazardous-waste route
     if case.get("cls") in ("batch", "it") and case.get("hazardousMaterial"):
-        r = _first(routes, "material")
-        if r:
-            fail(r, SUSTAINABILITY, HAZARDOUS)
+        hit = _first(routes, "material")
+        if hit:
+            fail(hit, SUSTAINABILITY, HAZARDOUS)
     # Economics: only routes worth something stay eligible (exit is the compliant fallback and may cost money)
     for r in routes:
         if not r["excluded"] and r["id"] != "exit" and r["net"] <= 0:

@@ -15,12 +15,14 @@ Every change is logged to the event log as the demo's rbLog does.
 """
 
 import math
+from typing import Any
 
 from sqlalchemy import text
 
 from di import golden, policy, state
 from di.actions.decisions import NOW, rb_log
-from di.actions.registry import ACTIONS, guard, implement
+from di.actions.pipeline import CallContext
+from di.actions.registry import ACTIONS, ActionError, guard, implement
 from di.reads.common import REQ_SCOPE, REQ_SEQ_START, can, money, requests
 
 # The demo's DELEG: the kinds of request Admin may let the Approver decide (key, label).
@@ -45,35 +47,35 @@ STARTING_MCP_SERVERS: list[dict] = [
 state.register("mcp_servers", lambda: [(s["id"], s) for s in STARTING_MCP_SERVERS])
 
 
-def _key(action: str, i: dict, ctx) -> str:
+def _key(action: str, i: dict, ctx: CallContext) -> str:
     """The key the demo's rbLog hashes (ctx.key): the idempotency key when the action has one."""
     a = ACTIONS[action]
     return f"{action}:{a.idem(i, ctx)}" if a.idem else action
 
 
-def _by(ctx) -> str:
-    return ctx.actor.account.label
+def _by(ctx: CallContext) -> str:
+    return ctx.actor.person.label
 
 
-def _new_request(ctx, r: dict) -> dict:
+def _new_request(ctx: CallContext, r: dict) -> dict:
     s = ctx.session
     n = state.next_number(s, "requests", "REQ-", REQ_SEQ_START)
     r = {"id": f"REQ-{n}", "status": "pending", "by": _by(ctx), "byId": ctx.actor.id, "at": NOW, **r}
     return state.add(s, "requests", r["id"], r)
 
 
-def _request(ctx, req_id: str, for_update: bool = False) -> dict | None:
+def _request(ctx: CallContext, req_id: str, for_update: bool = False) -> dict | None:
     return state.get(ctx.session, "requests", req_id, for_update=for_update)
 
 
-def _can_decide(ctx, r: dict) -> bool:
+def _can_decide(ctx: CallContext, r: dict) -> bool:
     """The demo's canDecide: a pending request of a kind this account may decide."""
     return r["status"] == "pending" and can(ctx, "approve." + REQ_SCOPE[r["kind"]])
 
 
 # ---------------------------------------------------------------- tenant access and MCP proposals
 @guard("access.requestTenant")
-def request_tenant_guard(i, ctx):
+def request_tenant_guard(i: dict[str, Any], ctx: CallContext):
     if i["tenant"] not in policy.tenants():
         return "not_found", "Unknown tenant."
     mine = (r for r in requests(ctx.session) if r["kind"] == "tenant" and r["status"] == "pending" and r["byId"] == ctx.actor.id)
@@ -83,14 +85,14 @@ def request_tenant_guard(i, ctx):
 
 
 @implement("access.requestTenant")
-def request_tenant(i, ctx):
+def request_tenant(i: dict[str, Any], ctx: CallContext):
     r = _new_request(ctx, {"kind": "tenant", "tenant": i["tenant"], "reason": i["reason"]})
     rb_log(ctx, "access.requested", f"{r['by']} → {i['tenant']} · {i['reason']}", _key("access.requestTenant", i, ctx))
     return {"id": r["id"]}
 
 
 @guard("mcp.propose")
-def propose_guard(i, ctx):
+def propose_guard(i: dict[str, Any], ctx: CallContext):
     if not i["tools"]:
         return "validation_error", "List at least one tool."
     name = i["name"].lower()
@@ -102,7 +104,7 @@ def propose_guard(i, ctx):
 
 
 @implement("mcp.propose")
-def propose(i, ctx):
+def propose(i: dict[str, Any], ctx: CallContext):
     server = {k: i[k] for k in ("name", "owner", "purpose", "access", "data")} | {"tools": list(i["tools"])}
     r = _new_request(ctx, {"kind": "mcp", "server": server})
     rb_log(ctx, "mcp.proposal.submitted", f"{server['name']} · {server['access']}", _key("mcp.propose", i, ctx))
@@ -110,7 +112,7 @@ def propose(i, ctx):
 
 
 @guard("access.decideRequest")
-def decide_guard(i, ctx):
+def decide_guard(i: dict[str, Any], ctx: CallContext):
     r = _request(ctx, i["id"])
     if r is None:
         return "not_found", f"No request {i['id']}."
@@ -122,8 +124,8 @@ def decide_guard(i, ctx):
 
 
 @implement("access.decideRequest", idem=lambda i, ctx: f"req:{i['id']}")  # noqa: ARG005 - idem keys take (input, ctx)
-def decide_request(i, ctx):
-    r, note = _request(ctx, i["id"], for_update=True), (i.get("note") or "").strip()
+def decide_request(i: dict[str, Any], ctx: CallContext):
+    r, note = state.need(ctx.session, "requests", i["id"], for_update=True), (i.get("note") or "").strip()
     r |= {"status": "approved" if i["decision"] == "approve" else "declined", "decidedBy": _by(ctx), "decidedAt": NOW}
     r["note"] = note
     state.put(ctx.session, "requests", r["id"], r)
@@ -156,12 +158,12 @@ def decide_request(i, ctx):
 
 # ---------------------------------------------------------------- the Approver's delegations
 @guard("access.setDelegation")
-def delegation_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
+def delegation_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)
     return None if i["k"] in DELEG else ("not_found", "Unknown delegation.")
 
 
 @implement("access.setDelegation")
-def set_delegation(i, ctx):
+def set_delegation(i: dict[str, Any], ctx: CallContext):
     on = bool(i["on"])
     ctx.session.execute(
         text("UPDATE delegation SET enabled = :e, updated_by = :by, updated_at = now() WHERE scope = :s"),
@@ -174,16 +176,16 @@ def set_delegation(i, ctx):
 
 
 # ---------------------------------------------------------------- identity: directory, role mapping, out of office
-def _idp(ctx, for_update: bool = False) -> dict:
-    return state.get(ctx.session, "access_settings", "idp", for_update=for_update)
+def _idp(ctx: CallContext, for_update: bool = False) -> dict:
+    return state.need(ctx.session, "access_settings", "idp", for_update=for_update)
 
 
-def _idp_users(ctx) -> list[dict]:
+def _idp_users(ctx: CallContext) -> list[dict]:
     return state.items(ctx.session, "idp_users")
 
 
 @implement("access.syncDirectory")
-def sync_directory(i, ctx):  # noqa: ARG001 - handlers take (input, ctx)
+def sync_directory(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - handlers take (input, ctx)
     idp = _idp(ctx, for_update=True) | {"lastSync": NOW}
     state.put(ctx.session, "access_settings", "idp", idp)
     n = len(_idp_users(ctx))
@@ -192,7 +194,7 @@ def sync_directory(i, ctx):  # noqa: ARG001 - handlers take (input, ctx)
 
 
 @guard("access.mapIdentity")
-def map_guard(i, ctx):
+def map_guard(i: dict[str, Any], ctx: CallContext):
     a = policy.account(i["acct"], ctx.actor.ctx)
     if a is None:
         return "not_found", "Unknown account."
@@ -204,10 +206,13 @@ def map_guard(i, ctx):
 
 
 @implement("access.mapIdentity")
-def map_identity(i, ctx):
+def map_identity(i: dict[str, Any], ctx: CallContext):
     """Changes the account itself: its role, tenant, site or warehouse and label, which every rule and read uses from
     the next request on (the signed-in account is looked up by id on each request; see di.auth.principal)."""
-    a = policy.map_identity(policy.account(i["acct"], ctx.actor.ctx), i["field"], i.get("value"))
+    found = policy.account(i["acct"], ctx.actor.ctx)
+    if found is None:  # not reached: map_guard refused an unknown account
+        raise ActionError("not_found", "Unknown account.")
+    a = policy.map_identity(found, i["field"], i.get("value"))
     state.put(ctx.session, "accounts", a.id, dict(a.__dict__))
     where = a.warehouse or a.site
     note = f"{policy.IDP_GROUPS.get(a.id)} → {a.role}" + (f" · {where}" if where else "")
@@ -216,13 +221,13 @@ def map_identity(i, ctx):
 
 
 @guard("access.removeUser")
-def remove_user_guard(i, ctx):
+def remove_user_guard(i: dict[str, Any], ctx: CallContext):
     return None if state.get(ctx.session, "idp_users", i["id"]) else ("not_found", "No such user.")
 
 
 @implement("access.removeUser", idem=lambda i, ctx: f"idp-rm:{i['id']}")  # noqa: ARG005 - idem keys take (input, ctx)
-def remove_user(i, ctx):
-    u = state.get(ctx.session, "idp_users", i["id"])
+def remove_user(i: dict[str, Any], ctx: CallContext):
+    u = state.need(ctx.session, "idp_users", i["id"])
     state.delete(ctx.session, "idp_users", i["id"])
     note = f"{u['email']} removed in the directory; access removed at the provisioning sync"
     rb_log(ctx, "user.deprovisioned", note, _key("access.removeUser", i, ctx))
@@ -230,7 +235,7 @@ def remove_user(i, ctx):
 
 
 @implement("access.setRoleSource")
-def set_role_source(i, ctx):
+def set_role_source(i: dict[str, Any], ctx: CallContext):
     src = "groups" if i["src"] == "groups" else "approles"
     state.put(ctx.session, "access_settings", "idp", _idp(ctx, for_update=True) | {"src": src})
     rb_log(ctx, "identity.role_source", i["src"], "access.setRoleSource")
@@ -238,7 +243,7 @@ def set_role_source(i, ctx):
 
 
 @guard("access.setOutOfOffice")
-def ooo_guard(i, ctx):
+def ooo_guard(i: dict[str, Any], ctx: CallContext):
     u = state.get(ctx.session, "idp_users", i["to"])
     if u is None or policy.idp_role_of(u, ctx.actor.ctx) != "Approver":
         return "validation_error", "Pick a delegate who already holds the Approver role."
@@ -248,8 +253,8 @@ def ooo_guard(i, ctx):
 
 
 @implement("access.setOutOfOffice")
-def set_out_of_office(i, ctx):
-    u = state.get(ctx.session, "idp_users", i["to"])
+def set_out_of_office(i: dict[str, Any], ctx: CallContext):
+    u = state.need(ctx.session, "idp_users", i["to"])
     idp = _idp(ctx, for_update=True)
     idp["ooo"].append({"email": u["email"], "from": i["from"], "until": i["until"]})
     state.put(ctx.session, "access_settings", "idp", idp)
@@ -265,7 +270,7 @@ def _splice_index(index: float, n: int) -> int:
 
 
 @implement("access.clearOutOfOffice")
-def clear_out_of_office(i, ctx):
+def clear_out_of_office(i: dict[str, Any], ctx: CallContext):
     idp = _idp(ctx, for_update=True)
     k = _splice_index(i["index"], len(idp["ooo"]))
     d = idp["ooo"].pop(k) if k < len(idp["ooo"]) else None
@@ -287,12 +292,12 @@ AUTO_TYPES = {t["k"]: t for t in _GOLD["auto_types"]}
 AGENT_NAMES = {a["id"]: a["name"] for a in golden.load("tools")["agents"]}
 
 
-def _settings(ctx, item: str, default):
+def _settings(ctx: CallContext, item: str, default):
     return state.get(ctx.session, "access_settings", item, for_update=True) or default
 
 
 @guard("access.setAutonomy")
-def autonomy_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
+def autonomy_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)
     t = AUTO_TYPES.get(i["type"])
     if i["role"] not in policy.roles():
         return "not_found", "Unknown role."
@@ -306,7 +311,7 @@ def autonomy_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
 
 
 @implement("access.setAutonomy")
-def set_autonomy(i, ctx):
+def set_autonomy(i: dict[str, Any], ctx: CallContext):
     auto = _settings(ctx, "autonomy", {})
     auto.setdefault(i["role"], {})[i["type"]] = i["level"]
     state.put(ctx.session, "access_settings", "autonomy", auto)
@@ -316,7 +321,7 @@ def set_autonomy(i, ctx):
 
 
 @guard("access.setLimit")
-def limit_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
+def limit_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)
     if i["role"] not in policy.roles():
         return "not_found", "Unknown role."
     if i.get("amount") is not None and i["amount"] < 0:
@@ -325,7 +330,7 @@ def limit_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
 
 
 @implement("access.setLimit")
-def set_limit(i, ctx):
+def set_limit(i: dict[str, Any], ctx: CallContext):
     amount = i.get("amount")
     approval = _settings(ctx, "approval", {"limits": dict(policy.STARTING_LIMITS), "self": False})
     approval.setdefault("limits", dict(policy.STARTING_LIMITS))[i["role"]] = amount  # None: the demo's Infinity
@@ -335,7 +340,7 @@ def set_limit(i, ctx):
 
 
 @implement("access.setSelfApprove")
-def set_self_approve(i, ctx):
+def set_self_approve(i: dict[str, Any], ctx: CallContext):
     on = bool(i["on"])
     approval = _settings(ctx, "approval", {"limits": dict(policy.STARTING_LIMITS), "self": False}) | {"self": on}
     state.put(ctx.session, "access_settings", "approval", approval)
@@ -345,12 +350,12 @@ def set_self_approve(i, ctx):
 
 
 @guard("agent.setEnabled")
-def agent_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
+def agent_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)
     return None if i["id"] in AGENT_NAMES else ("not_found", "Unknown agent.")
 
 
 @implement("agent.setEnabled")
-def set_agent_enabled(i, ctx):
+def set_agent_enabled(i: dict[str, Any], ctx: CallContext):
     on = bool(i["on"])
     off = _settings(ctx, "agents_off", {})
     if on:
@@ -363,14 +368,14 @@ def set_agent_enabled(i, ctx):
 
 
 @guard("access.setRunLimits")
-def run_limits_guard(i, ctx):  # noqa: ARG001 - guards take (input, ctx)
+def run_limits_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)
     if i["actions"] < 1 or i["bulk"] < 1 or i["actions"] > 500 or i["bulk"] > 1000:
         return "validation_error", "Use 1–500 actions and 1–1,000 items."
     return None
 
 
 @implement("access.setRunLimits")
-def set_run_limits(i, ctx):
+def set_run_limits(i: dict[str, Any], ctx: CallContext):
     lim = {"actions": i["actions"], "bulk": i["bulk"]}
     state.put(ctx.session, "access_settings", "run_limits", lim)
     note = f"{i['actions']} actions per run · {i['bulk']} items per bulk plan"

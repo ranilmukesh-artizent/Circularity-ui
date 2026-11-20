@@ -6,6 +6,9 @@
 [importlinter]
 root_package = di
 include_external_packages = False
+# Imports under `if TYPE_CHECKING:` exist only for mypy (di.actions.registry names CallContext that way) and set no
+# runtime dependency direction.
+exclude_type_checking_imports = True
 
 [importlinter:contract:screens-are-leaves]
 name = Only di.main imports di.screens
@@ -20,6 +23,7 @@ source_modules =
     di.config
     di.connectors
     di.db
+    di.deps
     di.engine
     di.errors
     di.execution

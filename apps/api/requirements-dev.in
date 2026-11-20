@@ -9,3 +9,10 @@ import-linter==2.15
 # its dependencies newer than two weeks, held at the release before
 grimp==3.18
 markdown-it-py==4.2.0
+# type checking (pyproject.toml [tool.mypy]; docs/agents/plans/01b-refactor.md, step C3); pinned: releases at least
+# two weeks old when added, and the stubs for the paramiko the runtime lock pins (3.5)
+mypy==2.4.1
+types-paramiko==3.5.0.20250801
+# mypy's dependencies newer than two weeks, held at the release before
+mypy-extensions==1.1.0
+librt==0.16.0

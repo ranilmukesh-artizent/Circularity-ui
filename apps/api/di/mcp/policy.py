@@ -46,7 +46,13 @@ _REACHED = [a for acts in ACTIONS_OF.values() for a in acts if a.startswith(FORB
 if _REACHED:
     raise RuntimeError(f"tools reach actions no agent may run: {_REACHED}")
 
-PY_TYPE = {"string": str, "boolean": bool, "number": (int, float), "object": dict, "array": list}
+PY_TYPE: dict[str, type | tuple[type, ...]] = {
+    "string": str,
+    "boolean": bool,
+    "number": (int, float),
+    "object": dict,
+    "array": list,
+}
 
 
 @dataclass

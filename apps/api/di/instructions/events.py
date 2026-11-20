@@ -25,6 +25,7 @@ import json
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import text
 
@@ -87,7 +88,8 @@ def handle(ev: dict) -> dict | None:
     """Act on one source-sim CloudEvent. Returns what it did for an event that concerns an instruction, else None."""
     if not queue.enabled():
         return None
-    t, data = ev.get("type"), ev.get("data") or {}
+    t: Any = ev.get("type")
+    data = ev.get("data") or {}
     source = str(ev.get("source", "")).rsplit("/", 1)[-1]
     if t == DELIVERED and source == "tms":
         return _delivered(data)

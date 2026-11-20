@@ -52,13 +52,14 @@ Differences from the demo, by design:
 
 import re
 from functools import cmp_to_key
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
 
 from di import policy
-from di.auth import Principal, principal
-from di.db import get_session
+from di.actions.pipeline import CallContext
+from di.auth import Principal
+from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round, js_sum
 from di.execution.steps import EX_STEP, STEP_TPL, steps_for
 from di.reads import cases as case_reads
@@ -207,18 +208,20 @@ class Filters:
 
 
 def scope_filters(
-    tenant: str = "All", site: str = "", cls: str = "", route: str = "", months: int = Query(12, ge=1, le=12)
+    tenant: str = "All", site: str = "", cls: str = "", route: str = "", months: Annotated[int, Query(ge=1, le=12)] = 12
 ) -> Filters:
     return Filters(tenant, site, cls, route, months)
 
 
-def table_filters(f: Filters = Depends(scope_filters), stage: str = "", due: str = "", reason: str = "", q: str = "") -> Filters:
+def table_filters(
+    f: Annotated[Filters, Depends(scope_filters)], stage: str = "", due: str = "", reason: str = "", q: str = ""
+) -> Filters:
     f.stage, f.due, f.reason, f.q = stage, due, reason, q
     return f
 
 
 # ---------------------------------------------------------------- scope (the demo's ccRows; ccScope: di.reads.workspace)
-def cc_rows(ctx, f: Filters) -> list[dict]:
+def cc_rows(ctx: CallContext, f: Filters) -> list[dict]:
     """The demo's ccRows: the closed decisions in the filters and the time horizon."""
     return [
         r
@@ -229,7 +232,7 @@ def cc_rows(ctx, f: Filters) -> list[dict]:
 
 def series(fn, rows: list[dict]) -> list[float]:
     """The demo's ccSeries: a figure per month over the closed decisions."""
-    o = [0] * 12
+    o: list[float] = [0] * 12
     for r in rows:
         o[r["mi"]] = o[r["mi"]] + fn(r)
     return o
@@ -282,7 +285,7 @@ def sec_ok(L: dict, k: str) -> bool:
     }.get(k, False)
 
 
-def sections(ctx, L: dict) -> list[str]:
+def sections(ctx: CallContext, L: dict) -> list[str]:
     """The sections the account may open (the demo's ccSec: the layout has it and the access policy allows it)."""
     return [k for k in SECTIONS if k == "kpis" or (sec_ok(L, k) and can_page(ctx, "command", k))]
 
@@ -306,8 +309,8 @@ AS_COMPS = {
 }
 
 
-def kpi_tiles(ctx, ks: list[str], sc: dict, rows: list[dict], f: Filters) -> list[dict]:
-    a = ctx.actor.account
+def kpi_tiles(ctx: CallContext, ks: list[str], sc: dict, rows: list[dict], f: Filters) -> list[dict]:
+    a = ctx.actor.person
     m = metrics(rows)
     every = visible_rows(ctx, f.tenant)
     al = sc["all"]
@@ -834,13 +837,13 @@ def combo(rows: list[dict], months: int) -> list[dict]:
     return out
 
 
-def rb_path(ctx, p: str) -> bool:
+def rb_path(ctx: CallContext, p: str) -> bool:
     """The demo's rbPath for the routes a signal can open (a page and an optional section)."""
     h = p.split("/")
     return can_page(ctx, h[0]) and (len(h) < 2 or not policy.sections().get(h[0]) or can_page(ctx, h[0], h[1]))
 
 
-def signals(ctx, sc: dict, f: Filters) -> list[dict]:
+def signals(ctx: CallContext, sc: dict, f: Filters) -> list[dict]:
     """The demo's ccSignals, without the routes the account cannot open."""
     a, v = [], sc["all"]
     cl = [c for c in v if c["_st"] == "approval" and c["_left"] < 5]
@@ -955,7 +958,7 @@ def capacity(sc: dict) -> list[dict]:
     return out
 
 
-def charts(ctx, f: Filters) -> dict:
+def charts(ctx: CallContext, f: Filters) -> dict:
     sc = ws.cc_scope(ctx, f.tenant, f.site, f.cls, f.route)
     al = sc["all"]
     routes = []
@@ -1078,10 +1081,10 @@ def opp_row(c: Case, sc: dict) -> dict:
 
 
 # ---------------------------------------------------------------- exceptions (the demo's ccExList and ccExRows)
-def _ex_list(ctx, sc: dict, f: Filters) -> list[dict]:
+def _ex_list(ctx: CallContext, sc: dict, f: Filters) -> list[dict]:
     """The demo's ccExList, with each exception's count and trend line, over the filtered scope."""
     out: list[dict] = []
-    a = ctx.actor.account
+    a = ctx.actor.person
     wh = a.warehouse
     by: dict[str, dict] = {}
     for c in sc["all"]:
@@ -1171,7 +1174,7 @@ def _ex_list(ctx, sc: dict, f: Filters) -> list[dict]:
     return sorted(out, key=lambda x: -x["score"])
 
 
-def ex_rows(ctx, sc: dict, f: Filters) -> list[dict]:
+def ex_rows(ctx: CallContext, sc: dict, f: Filters) -> list[dict]:
     """The demo's ccExRows as the facade's exRows: each exception split by warehouse, its items highest value first, the
     last notification sent about it and the account it goes to by default (exOwner)."""
     rows: list[dict] = []
@@ -1221,7 +1224,7 @@ def ex_rows(ctx, sc: dict, f: Filters) -> list[dict]:
         order = lambda w: ws.EX_WH_ORDER.index(w) if w in ws.EX_WH_ORDER else -1  # noqa: E731
         return (gk(b["wh"]) - gk(a["wh"])) or (order(a["wh"]) - order(b["wh"]))
 
-    rows.sort(key=cmp_to_key(cmp))
+    rows.sort(key=cmp_to_key(cmp))  # type: ignore[arg-type]  # a float difference; only its sign is used
     ns = notes(ctx.session)
     out = []
     for x in rows:
@@ -1248,7 +1251,7 @@ def ex_rows(ctx, sc: dict, f: Filters) -> list[dict]:
 # ---------------------------------------------------------------- Actions on me, handed off, outcomes
 
 
-def handed_rows(ctx, widen: bool, tenant: str = "All") -> list[dict]:
+def handed_rows(ctx: CallContext, widen: bool, tenant: str = "All") -> list[dict]:
     out = []
     for c in ws.op_scoped(ctx, widen, tenant):
         if c["stage"] not in ("approved", "executing"):
@@ -1271,7 +1274,7 @@ def handed_rows(ctx, widen: bool, tenant: str = "All") -> list[dict]:
     return sorted(out, key=lambda r: -r["age"])
 
 
-def awaiting_approval(ctx, widen: bool, tenant: str = "All") -> dict:
+def awaiting_approval(ctx: CallContext, widen: bool, tenant: str = "All") -> dict:
     ap = [c for c in ws.op_scoped(ctx, widen, tenant) if c["stage"] == "awaiting_approval"]
     return {
         "decider": "Approver" if decisions_delegated(ctx) else "Admin",
@@ -1287,7 +1290,7 @@ def awaiting_approval(ctx, widen: bool, tenant: str = "All") -> dict:
     }
 
 
-def outcomes(ctx, tenant: str = "All") -> dict:
+def outcomes(ctx: CallContext, tenant: str = "All") -> dict:
     v = visible_cases(ctx, tenant)
     rows = []
     for c in v:
@@ -1308,7 +1311,7 @@ def outcomes(ctx, tenant: str = "All") -> dict:
 # ---------------------------------------------------------------- the Approvals inbox
 
 
-def approval_cards(ctx, tenant: str = "All") -> list[dict]:
+def approval_cards(ctx: CallContext, tenant: str = "All") -> list[dict]:
     """The demo's afApprovalQueue as the facade's approvalCards: submitted decisions by value, then deadline, each with
     what to check before approving."""
     q = []
@@ -1341,8 +1344,8 @@ def approval_cards(ctx, tenant: str = "All") -> list[dict]:
     ]
 
 
-def inbox(ctx, tenant: str = "All") -> dict:
-    a = ctx.actor.account
+def inbox(ctx: CallContext, tenant: str = "All") -> dict:
+    a = ctx.actor.person
     lim = limit_for(a, ctx.actor.ctx)
     return {
         "requests": [{**r, "kindLabel": REQ_KIND[r["kind"]], "canDecide": True} for r in inbox_requests(ctx)],
@@ -1365,7 +1368,7 @@ def ack_kind(a: str) -> str:
     return "line" if "sent" in a else "warn"
 
 
-def health_detail(ctx) -> dict:
+def health_detail(ctx: CallContext) -> dict:
     t, ex = hh_totals(), sm_exceptions()
     return {
         "ok": t["ok"],
@@ -1390,9 +1393,7 @@ def _layout_or_kpis(p: Principal, mode: str) -> dict:
 
 @router.get("/layout")
 def get_layout(
-    mode: str = Query("operational", pattern="^(operational|senior)$"),
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
+    p: CurrentPrincipal, session: DbSession, mode: Annotated[str, Query(pattern="^(operational|senior)$")] = "operational"
 ) -> dict:
     """The role's Command Center layout, its key figures and the sections the account may open."""
     L = layout(p.account, mode)
@@ -1403,10 +1404,10 @@ def get_layout(
 
 @router.get("/kpis")
 def get_kpis(
-    mode: str = Query("operational", pattern="^(operational|senior)$"),
-    f: Filters = Depends(scope_filters),
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
+    f: Annotated[Filters, Depends(scope_filters)],
+    p: CurrentPrincipal,
+    session: DbSession,
+    mode: Annotated[str, Query(pattern="^(operational|senior)$")] = "operational",
 ) -> dict:
     """Key figures: the layout's tiles, the "needs attention now" line, the totals and the health strip."""
     ctx = call_ctx(p, session)
@@ -1426,18 +1427,14 @@ def get_kpis(
 
 
 @router.get("/charts")
-def get_charts(
-    f: Filters = Depends(scope_filters), p: Principal = Depends(principal), session: Session = Depends(get_session)
-) -> dict:
+def get_charts(f: Annotated[Filters, Depends(scope_filters)], p: CurrentPrincipal, session: DbSession) -> dict:
     """The charts and panels: lifecycle stages, due windows, routes, value at risk, value realisation, signals and
     capacity."""
     return charts(call_ctx(p, session), f)
 
 
 @router.get("/actions")
-def get_actions(
-    f: Filters = Depends(table_filters), p: Principal = Depends(principal), session: Session = Depends(get_session)
-) -> dict:
+def get_actions(f: Annotated[Filters, Depends(table_filters)], p: CurrentPrincipal, session: DbSession) -> dict:
     """The ranked table of actions to prioritise, with the table's view, due, reason and search filters."""
     ctx = call_ctx(p, session)
     sc = ws.cc_scope(ctx, f.tenant, f.site, f.cls, f.route)
@@ -1446,9 +1443,7 @@ def get_actions(
 
 
 @router.get("/exceptions")
-def get_exceptions(
-    f: Filters = Depends(scope_filters), p: Principal = Depends(principal), session: Session = Depends(get_session)
-) -> dict:
+def get_exceptions(f: Annotated[Filters, Depends(scope_filters)], p: CurrentPrincipal, session: DbSession) -> dict:
     """Exceptions by warehouse, and the decisions awaiting approval (the senior view's read-only queue)."""
     ctx = call_ctx(p, session)
     sc = ws.cc_scope(ctx, f.tenant, f.site, f.cls, f.route)
@@ -1463,18 +1458,14 @@ def get_exceptions(
 
 
 @router.get("/aome")
-def get_aome(
-    all: bool = False, tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)
-) -> dict:
+def get_aome(p: CurrentPrincipal, session: DbSession, all: bool = False, tenant: str = "All") -> dict:
     """Actions on me, at the home site or (all=true) every location, in the tenant menu's tenant."""
     ctx = call_ctx(p, session)
     return {"items": ws.aome_items(ctx, all, tenant), "scope": ws.op_scope_info(ctx, all)}
 
 
 @router.get("/handed")
-def get_handed(
-    all: bool = False, tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)
-) -> dict:
+def get_handed(p: CurrentPrincipal, session: DbSession, all: bool = False, tenant: str = "All") -> dict:
     """Handed off and awaiting outcome, and waiting for approval, at the home site or (all=true) every location."""
     ctx = call_ctx(p, session)
     return {
@@ -1485,18 +1476,18 @@ def get_handed(
 
 
 @router.get("/outcomes")
-def get_outcomes(tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)) -> dict:
+def get_outcomes(p: CurrentPrincipal, session: DbSession, tenant: str = "All") -> dict:
     """Outcomes reported by the enterprise systems and waiting for Finance."""
     return outcomes(call_ctx(p, session), tenant)
 
 
 @router.get("/inbox")
-def get_inbox(tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)) -> dict:
+def get_inbox(p: CurrentPrincipal, session: DbSession, tenant: str = "All") -> dict:
     """The Approvals inbox: requests the account may decide, its delegated scope and the approval cards."""
     return inbox(call_ctx(p, session), tenant)
 
 
 @router.get("/health")
-def get_health(p: Principal = Depends(principal), session: Session = Depends(get_session)) -> dict:
+def get_health(p: CurrentPrincipal, session: DbSession) -> dict:
     """Integration health for the Developer and Admin views."""
     return health_detail(call_ctx(p, session))

@@ -41,14 +41,14 @@ Facade (apps/web/src/api/access.ts) → here:
 
 import math
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di import golden, policy, state
 from di.actions.registry import ACTIONS
-from di.auth import Principal, principal
-from di.db import get_session
+from di.auth import Principal
+from di.deps import CurrentPrincipal, DbSession
 from di.reads.access import can_decide, request_rows
 from di.reads.common import af_days, requests
 from di.reads.constants import AGENTS, AUTO_TYPES, DELEG, HARD_RULES, LEVEL_RANK, LEVELS
@@ -130,7 +130,9 @@ def limits(s: Session, p: Principal) -> dict:
 def agents(s: Session) -> dict:
     """governedAgents: identities, scopes, limits, kill switch, and how many journaled actions each prepared."""
     off = state.get(s, "access_settings", "agents_off") or {}
-    prepared = dict(s.execute(text("SELECT preparer, count(*) FROM action_journal WHERE preparer IS NOT NULL GROUP BY 1")).all())
+    prepared: dict[str, int] = dict(
+        s.execute(text("SELECT preparer, count(*) FROM action_journal WHERE preparer IS NOT NULL GROUP BY 1")).tuples().all()
+    )
     rows = [
         {"id": a["id"], "name": a["name"], "scopes": list(a["scopes"]), "limit": a["limit"], "stopped": bool(off.get(a["id"])),
          "prepared": prepared.get(a["id"], 0)}
@@ -157,12 +159,12 @@ def metrics(s: Session) -> dict:
         b["agent"] += 1 if r["preparer"] else 0
     prep = [r for r in rows if r["preparer"]]
     approvals = [r for r in live if r["action"] in ("decision.approve", "decision.override")]
-    received = {}
+    received: dict[str, str] = {}
     if approvals:
         ids = list({r["case_id"] for r in approvals})
         q = text("SELECT id, data->>'received' FROM case_record WHERE id = ANY(:i)")
-        received = dict(s.execute(q, {"i": ids}).all())
-    ttd = [af_days(received[r["case_id"]], r["at"].isoformat()) for r in approvals if received.get(r["case_id"])]
+        received = dict(s.execute(q, {"i": ids}).tuples().all())
+    ttd: list[float] = [af_days(received[r["case_id"]], r["at"].isoformat()) for r in approvals if received.get(r["case_id"])]
     return {
         "interactions": None,
         "approvals": len(approvals),
@@ -179,7 +181,7 @@ def metrics(s: Session) -> dict:
 
 # ---------------------------------------------------------------- endpoint
 @router.get("")
-def access_page(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def access_page(p: CurrentPrincipal, session: DbSession):
     p.require_page("access")
     secs = [x for x in SECTIONS if policy.can_page(p.account, "access", x)]
     build = {

@@ -24,7 +24,7 @@ the same way) and the demo's tool only reads one. Its tenant check is done here,
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from di import policy
 from di.actions.pipeline import CallContext, invoke
@@ -86,6 +86,10 @@ class ToolCall:
         extra = {k: v for k, v in e.items() if k not in ("code", "message")}
         raise Refused(e["code"], e["message"], extra, step=f"{action_id}: {e['code']}")
 
+    def run(self, action_id: str, i: dict[str, Any]) -> dict[str, Any]:
+        """act() with no accepted refusal codes: a refusal raises, so there is always an output."""
+        return cast(dict[str, Any], self.act(action_id, i))
+
     def need_case(self) -> dict:
         if self.case is None:
             raise Refused("not_found", f"No live case {self.args.get('case_id', '')}.", step="Unknown case")
@@ -104,7 +108,7 @@ def _fixed3(x: float) -> float:
 
 # ---------------------------------------------------------------- the tools, in the demo's order
 def get_case_evidence(t: ToolCall) -> dict:
-    out = t.act("case.evidence", {"case_id": t.args["case_id"]})
+    out = t.run("case.evidence", {"case_id": t.args["case_id"]})
     c = t.need_case()
     items = out["items"]
     return {
@@ -120,7 +124,7 @@ def get_case_evidence(t: ToolCall) -> dict:
 
 
 def list_eligible_routes(t: ToolCall) -> dict:
-    out = t.act("case.routes", {"case_id": t.args["case_id"]})
+    out = t.run("case.routes", {"case_id": t.args["case_id"]})
     c = t.need_case()
     if c.get("blocked") and not c.get("recommendation"):
         b = c["blocked"]
@@ -161,12 +165,12 @@ def predict_outcomes(t: ToolCall) -> dict:
 
 def optimize_pool(t: ToolCall) -> dict:
     pid = t.args["pool_id"]
-    owner = (t.case or {}).get("owner")
+    owner: Any = (t.case or {}).get("owner")
     if t.case is not None and t.tenant and owner != t.tenant:  # the pool's case: tenant consent, as for any case
         detail = f"{owner} pool requested on behalf of {t.tenant}"
         raise Refused("tenant_boundary", cross_tenant(pid, owner, t.tenant), step=detail)
     try:
-        out = t.act("pool.optimize", {"case_id": pid})
+        out = t.run("pool.optimize", {"case_id": pid})
     except Refused as e:
         if e.code != "not_found":
             raise
@@ -183,7 +187,7 @@ def optimize_pool(t: ToolCall) -> dict:
 
 
 def find_demand(t: ToolCall) -> dict:
-    out = t.act("demand.find", {"case_id": t.args["case_id"]})
+    out = t.run("demand.find", {"case_id": t.args["case_id"]})
     return {
         "case_id": out["case_id"],
         "demand": [
@@ -211,7 +215,7 @@ def request_missing_evidence(t: ToolCall) -> dict:
     c = t.need_case()
     if not c.get("blocked") and all(e["state"] == "ready" for e in c.get("evidence") or []):
         raise Refused("nothing_to_request", f"{c['id']} has no missing evidence.", step="Nothing missing")
-    out = t.act("evidence.request", {"case_id": c["id"]})
+    out = t.run("evidence.request", {"case_id": c["id"]})
     return {"case_id": c["id"], "request_ref": out["ref"], "kind": t.args["kind"], "sent_to": out["to"], "status": "sent"}
 
 
@@ -262,7 +266,11 @@ def reconcile_outcome(t: ToolCall) -> dict:
         raise Refused("case_not_found", f"No closed case {cid}. Try CS-2041.", step="Unknown closed case")
     acct, pctx = t.ctx.actor.account, t.ctx.actor.ctx
     if (t.tenant and r["tenant"] != t.tenant) or (acct and not policy.tenant_ok(acct, r["tenant"], pctx)):
-        raise Refused("tenant_boundary", cross_tenant(cid, r["tenant"], t.tenant or acct.label), step=f"{r['tenant']} decision")
+        raise Refused(
+            "tenant_boundary",
+            cross_tenant(cid, r["tenant"], t.tenant or (acct.label if acct else "")),
+            step=f"{r['tenant']} decision",
+        )
     if r["status"] == "pending":
         return {"case_id": cid, "status": "pending", "note": "Evidence incomplete. Pending cases are not treated as failures."}
     return {

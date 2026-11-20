@@ -59,14 +59,15 @@ Facade mapping, for the switch-over (B17):
 | tenantFilter, setTenantFilter, setBackendTheme, SIGNIN_DOMAIN | frontend-only: view state (sent as tenant_filter) |
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di import policy
-from di.auth import Principal, load_context, principal
+from di.actions.pipeline import CallContext
+from di.auth import Principal, load_context
 from di.cases import store
-from di.db import get_session
+from di.deps import CurrentPrincipal, DbSession
 from di.reads.common import STARTING_FAILED_WORKFLOWS, inbox_requests
 from di.reads.context import call_ctx, can_see_case, visible_cases
 from di.reads.reference import lists
@@ -140,13 +141,13 @@ def navigation(p: Principal, cases: list[dict], cc_mode: str = "operational", la
 HELD_STAGES = ("none", "awaiting_approval")  # a decision is still to be made or approved
 
 
-def held_conflicts(ctx, session: Session) -> int:
+def held_conflicts(ctx: CallContext, session: Session) -> int:
     """Open or escalated conflicts on the asset of a visible case whose decision is still pending (the menu badge)."""
     assets = [c.get("assetId") for c in visible_cases(ctx) if c["stage"] in HELD_STAGES and c.get("assetId")]
     if not assets:
         return 0
     q = "SELECT count(*) FROM conflict WHERE status IN ('open', 'escalated') AND key = ANY(:keys)"
-    return session.execute(text(q), {"keys": assets}).scalar()
+    return session.execute(text(q), {"keys": assets}).scalar_one()
 
 
 def badges(p: Principal, session: Session, tenant_filter: str = "All") -> dict:
@@ -167,11 +168,11 @@ def badges(p: Principal, session: Session, tenant_filter: str = "All") -> dict:
 
 @router.get("")
 def nav(
+    p: CurrentPrincipal,
+    session: DbSession,
     cc_mode: str = "operational",
     last_asset: str | None = None,
     tenant_filter: str = "All",
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
 ):
     cases = store.all_cases(session)
     return {
@@ -182,12 +183,12 @@ def nav(
 
 
 @router.get("/scope")
-def scope(p: Principal = Depends(principal), session: Session = Depends(get_session)):  # noqa: ARG001 - the dependency authenticates the caller
+def scope(p: CurrentPrincipal, session: DbSession):  # noqa: ARG001 - the dependency authenticates the caller
     rows = session.execute(text("SELECT id, owner, location FROM case_record ORDER BY id"))
     return {r.id: [r.owner, r.location] for r in rows}
 
 
 @router.get("/accounts")
-def accounts(session: Session = Depends(get_session)):
+def accounts(session: DbSession):
     """The demo accounts, as the identity mapping has them now, with the sign-in email (shown before sign-in)."""
     return [a.__dict__ | {"email": policy.sign_in_email(a)} for a in policy.accounts(load_context(session))]

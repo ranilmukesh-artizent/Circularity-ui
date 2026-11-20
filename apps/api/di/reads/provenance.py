@@ -231,7 +231,7 @@ def prov_for(c: Case, e: dict) -> dict:
             "sourceName": s0["name"] if s0 else e.get("source"),
             "usedIn": [],
         }
-    s = src(m["s"])
+    s: Any = src(m["s"])  # the mapping names a known source
     h = int(hash_id(c["id"] + e["k"] + "r"), 16)
     fa = fetch_time(c, e)
     via_api = bool(re.search(r"API|Events", s["mode"]))

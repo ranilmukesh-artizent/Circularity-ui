@@ -2,15 +2,18 @@
 The other Connection Fabric actions (source.update, source.delete, credentials.rotate, source.reconnect,
 import.commit, tables.update) follow with the Connection Fabric switch-over (B17)."""
 
+from typing import Any
+
 from sqlalchemy import text
 
+from di.actions.pipeline import CallContext
 from di.actions.registry import ActionError, implement
 from di.connectors.registry import ADAPTERS
 from di.connectors.sync import enqueue_sync, provisioned
 
 
 @implement("source.sync")
-def source_sync(i, ctx):
+def source_sync(i: dict[str, Any], ctx: CallContext):
     sid = i["source_id"]
     status = ctx.session.execute(text("SELECT status FROM source_system WHERE id = :i"), {"i": sid}).scalar()
     # a connector that is not provisioned yet (AWS IoT at start, B5c) counts as no connector, as in the demo
@@ -27,7 +30,7 @@ def source_sync(i, ctx):
     }
 
 
-def _conflict(ctx, cid) -> dict:
+def _conflict(ctx: CallContext, cid) -> dict:
     try:
         n = int(str(cid).removeprefix("CF-"))
     except ValueError as e:
@@ -41,7 +44,7 @@ def _conflict(ctx, cid) -> dict:
 
 
 @implement("conflict.resolve")
-def conflict_resolve(i, ctx):
+def conflict_resolve(i: dict[str, Any], ctx: CallContext):
     c = _conflict(ctx, i["id"])
     ctx.session.execute(
         text("UPDATE conflict SET status = 'resolved', closed_at = now(), closed_by = :by, note = :n WHERE id = :i"),
@@ -51,7 +54,7 @@ def conflict_resolve(i, ctx):
 
 
 @implement("conflict.escalate")
-def conflict_escalate(i, ctx):
+def conflict_escalate(i: dict[str, Any], ctx: CallContext):
     c = _conflict(ctx, i["id"])
     ctx.session.execute(
         text("UPDATE conflict SET status = 'escalated', closed_at = now(), closed_by = :by, note = :n WHERE id = :i"),

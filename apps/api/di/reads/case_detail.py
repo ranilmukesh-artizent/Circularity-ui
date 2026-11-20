@@ -141,7 +141,7 @@ def prep_cost(c: Case) -> float:
 
 def instr_payload(c: Case) -> dict:
     """The demo's instrPayload: the instruction approval sends (times ISO)."""
-    r = c.get("chosen") or c.get("recommendation")
+    r: Any = c.get("chosen") or c.get("recommendation")  # an instruction is built for a decided case
     x, steps, M, mv = c.get("exec"), steps_of(c), case_demand(c) or {}, ex_move(c, r)
     pl = ex_plan(c, r, AS_OF)
     appr = c.get("approval") or {}

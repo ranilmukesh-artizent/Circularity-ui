@@ -21,6 +21,7 @@ the server has the runners its reads support (di.ask.fallback), so that check st
 
 import re
 from collections.abc import Callable
+from typing import cast
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -73,7 +74,7 @@ def run_safety(s: Session, pctx: policy.Context) -> list[tuple[str, bool, str]]:
     names = _G["safety_names"]
 
     def ask(acct: str, q: str, inject: Callable | None = None) -> dict:
-        a = policy.account(acct, pctx)
+        a = cast(policy.Account, policy.account(acct, pctx))  # the demo's fixed accounts
         ctx = CallContext(actor=Actor(account=a, ctx=pctx), session=s)
         return ask_rule(q, ctx, {"page": "home", "role": a.role, "object": None}, inject)
 

@@ -10,11 +10,12 @@ All reads and writes use the caller's session, so they commit or roll back with 
 import json
 import re
 from collections.abc import Callable
+from typing import Any, cast
 
-from sqlalchemy import text
+from sqlalchemy import Connection, CursorResult, text
 from sqlalchemy.orm import Session
 
-Item = dict
+Item = dict[str, Any]
 _SEEDS: dict[str, Callable[[], list[tuple[str, Item]]]] = {}
 
 
@@ -46,7 +47,7 @@ def _ensure(s: Session, collection: str) -> None:
         conn.execute(text("INSERT INTO state_seed (collection) VALUES (:c)"), {"c": collection})
 
 
-def _insert(s, collection: str, item_id: str, item: Item) -> None:
+def _insert(s: Session | Connection, collection: str, item_id: str, item: Item) -> None:
     s.execute(
         text("INSERT INTO state_item (collection, id, data) VALUES (:c, :i, CAST(:d AS jsonb))"),
         {"c": collection, "i": item_id, "d": json.dumps(item)},
@@ -64,7 +65,16 @@ def items(s: Session, collection: str, newest_first: bool = False) -> list[Item]
 def get(s: Session, collection: str, item_id: str, for_update: bool = False) -> Item | None:
     _ensure(s, collection)
     q = "SELECT data FROM state_item WHERE collection = :c AND id = :i" + (" FOR UPDATE" if for_update else "")  # noqa: S608 - only the fixed FOR UPDATE suffix is appended; values are bound
-    return s.execute(text(q), {"c": collection, "i": item_id}).scalar()
+    item: Item | None = s.execute(text(q), {"c": collection, "i": item_id}).scalar()
+    return item
+
+
+def need(s: Session, collection: str, item_id: str, for_update: bool = False) -> Item:
+    """get() for an item the caller knows exists (an action's guard found it in the same transaction)."""
+    item = get(s, collection, item_id, for_update)
+    if item is None:
+        raise LookupError(f"no {collection} item {item_id!r}")
+    return item
 
 
 def add(s: Session, collection: str, item_id: str, item: Item) -> Item:
@@ -89,7 +99,10 @@ def put(s: Session, collection: str, item_id: str, item: Item) -> Item:
 
 def delete(s: Session, collection: str, item_id: str) -> bool:
     _ensure(s, collection)
-    n = s.execute(text("DELETE FROM state_item WHERE collection = :c AND id = :i"), {"c": collection, "i": item_id})
+    n = cast(
+        CursorResult[Any],
+        s.execute(text("DELETE FROM state_item WHERE collection = :c AND id = :i"), {"c": collection, "i": item_id}),
+    )
     return n.rowcount > 0
 
 

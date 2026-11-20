@@ -35,6 +35,7 @@ import socket
 import time
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 from urllib.parse import urlparse
 
 import paramiko
@@ -71,13 +72,17 @@ def verified(data: bytes, sig: bytes | None) -> bool:
     return sig is not None and hmac.compare_digest(signature(data), sig.decode(errors="replace").strip())
 
 
-def mtime_iso(ts: float) -> str:
+def mtime_iso(ts: float | None) -> str:
+    if ts is None:  # the drop always sends modification times
+        raise ValueError("the SFTP listing has no modification time")
     return datetime.fromtimestamp(int(ts), UTC).isoformat()
 
 
-def after(ts: float, since: str | None) -> bool:
+def after(ts: float | None, since: str | None) -> bool:
     if not since:
         return True
+    if ts is None:  # the drop always sends modification times
+        raise ValueError("the SFTP listing has no modification time")
     s = datetime.fromisoformat(since.replace("Z", "+00:00"))
     return datetime.fromtimestamp(int(ts), UTC) > (s if s.tzinfo else s.replace(tzinfo=UTC))
 
@@ -105,7 +110,10 @@ class Drop:
                 raise SourceError("auth", f"rcy: host key {key.get_name()} {key.get_base64()[:16]}… is not the partner's")
             self.transport.auth_password(user, password)
             self.sftp = paramiko.SFTPClient.from_transport(self.transport)
-            self.sftp.get_channel().settimeout(TIMEOUT)
+            channel = self.sftp.get_channel() if self.sftp else None
+            if channel is None:  # not reached: the transport above is open and authenticated
+                raise SourceError("unavailable", f"rcy: SFTP {host}:{port}: no SFTP channel")
+            channel.settimeout(TIMEOUT)
         except SourceError as e:
             self._log("connect", self.url(""), FX_FAILURE, None, t0, str(e))
             self.close()
@@ -123,10 +131,15 @@ class Drop:
     def url(self, path: str) -> str:
         return f"sftp://{self.user}@{self.host}:{self.port}{path}"
 
+    def _session(self) -> paramiko.SFTPClient:
+        if self.sftp is None:  # not reached: __init__ opens the session or raises
+            raise SourceError("unavailable", "rcy: the SFTP session is not open")
+        return self.sftp
+
     def listdir(self, path: str = DIR) -> dict[str, paramiko.SFTPAttributes]:
         t0 = time.perf_counter()
         try:
-            entries = {a.filename: a for a in self.sftp.listdir_attr(path)}
+            entries = {a.filename: a for a in self._session().listdir_attr(path)}
         except (OSError, paramiko.SSHException) as e:
             self._log("list", self.url(path + "/"), FX_FAILURE, None, t0, str(e))
             raise SourceError("unavailable", f"rcy: SFTP list {path}: {e}") from e
@@ -138,7 +151,7 @@ class Drop:
         path = f"{DIR}/{name}"
         t0 = time.perf_counter()
         try:
-            with self.sftp.open(path, "rb") as f:
+            with self._session().open(path, "rb") as f:
                 data = f.read()
         except FileNotFoundError:
             self._log("get", self.url(path), 2, None, t0, "no such file")  # SSH_FX_NO_SUCH_FILE
@@ -218,7 +231,7 @@ class SimsAdapter(Adapter):
         def problem(name: str, data: bytes) -> str | None:
             if manifest_error:
                 return manifest_error
-            entry = manifest.get(name)
+            entry = manifest.get(name) if manifest is not None else None  # set whenever there is no manifest_error
             if entry is None:
                 return f"{name} is not in the manifest"
             actual = sha256(data)
@@ -232,7 +245,8 @@ class SimsAdapter(Adapter):
 
         def failed(name: str, error: str, digest: str | None, ts: float | None) -> Record:
             payload = {"file": name, "integrity_error": error, "sha256": digest}
-            return Record(name.removesuffix(".csv"), name, payload, drop.url(f"{DIR}/{name}"), ts and mtime_iso(ts))
+            changed_at: Any = ts and mtime_iso(ts)
+            return Record(name.removesuffix(".csv"), name, payload, drop.url(f"{DIR}/{name}"), changed_at)
 
         tables: dict[str, list[dict]] = {}
         wanted = set(changed) | ({"vendor-approvals.csv"} & set(csvs))  # approvals: the VND_CERT → vendor lookup

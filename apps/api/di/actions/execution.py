@@ -16,8 +16,11 @@ acknowledgement is marked simulated, exactly as in the demo (the B13a parity tes
 instruction.resend sends the latest instruction again under its key.
 """
 
+from typing import Any
+
 from di import instructions
 from di.actions.decisions import NOW, _by, _case, _key, _peek, cyc, push_event, skey
+from di.actions.pipeline import CallContext
 from di.actions.registry import ACTIONS, guard, implement
 from di.cases import lifecycle, store
 from di.engine.jsmath import js_sum
@@ -33,7 +36,7 @@ def _active(c: store.Case) -> int:
 
 # ---------------------------------------------------------------- outcome.confirm
 @guard("outcome.confirm")
-def confirm_guard(i, ctx):
+def confirm_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     if c.get("outcome"):
         return "duplicate", "The outcome is already confirmed"
@@ -42,13 +45,13 @@ def confirm_guard(i, ctx):
     return None
 
 
-def _confirm_idem(i, ctx):
+def _confirm_idem(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return skey(c, 9, cyc(c))
 
 
 @implement("outcome.confirm", idem=_confirm_idem, emits=["outcome.confirmed"])
-def outcome_confirm(i, ctx):
+def outcome_confirm(i: dict[str, Any], ctx: CallContext):
     """Finance confirms the reported outcome: an actual per cost line of the chosen route, linked to the decision so the
     models that predicted them learn from the difference."""
     key = _key("outcome.confirm", i, ctx)
@@ -77,7 +80,7 @@ def outcome_confirm(i, ctx):
 
 # ---------------------------------------------------------------- adapter.acknowledge
 @guard("adapter.acknowledge")
-def ack_guard(i, ctx):
+def ack_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     if not c.get("exec"):
         return "conflict", f"Nothing has been sent for {c['id']} yet."
@@ -90,7 +93,7 @@ def ack_guard(i, ctx):
     return None
 
 
-def _ack_idem(i, ctx):
+def _ack_idem(i: dict[str, Any], ctx: CallContext):
     """<case>:8:<approval>:<step>; the last step's acknowledgement reports the outcome, so it is keyed to stage 9."""
     c = _peek(ctx, i["case_id"])
     x, a = c.get("exec"), _active(c)
@@ -105,7 +108,7 @@ SIMULATED_NOTE = " (simulated acknowledgement: no write for this step in the moc
 
 
 @implement("adapter.acknowledge", idem=_ack_idem, emits=ACK_EVENTS)
-def adapter_acknowledge(i, ctx):
+def adapter_acknowledge(i: dict[str, Any], ctx: CallContext):
     key = _key("adapter.acknowledge", i, ctx)
     c = _case(ctx, i["case_id"])
     e = c["exec"]
@@ -157,18 +160,18 @@ def adapter_acknowledge(i, ctx):
 
 # ---------------------------------------------------------------- instruction.resend
 @guard("instruction.resend")
-def resend_guard(i, ctx):
+def resend_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return None if c.get("exec") else ("conflict", "Nothing to resend: no instruction has been sent.")
 
 
-def _resend_idem(i, ctx):
+def _resend_idem(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return skey(c, 8, f"resend:{(c.get('exec') or {}).get('ref')}")
 
 
 @implement("instruction.resend", idem=_resend_idem, emits=["instruction.sent"])
-def instruction_resend(i, ctx):
+def instruction_resend(i: dict[str, Any], ctx: CallContext):
     """Send the approved instruction again under the same idempotency key: the target system ignores the duplicate, so
     nothing is reserved or ordered twice."""
     key = _key("instruction.resend", i, ctx)

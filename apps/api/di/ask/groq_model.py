@@ -20,6 +20,7 @@ The key comes from the settings (GROQ_API_KEY) and is handed to the SDK only; it
 import json
 from collections.abc import Iterator
 from functools import lru_cache
+from typing import Any
 
 import groq
 import httpx
@@ -67,9 +68,10 @@ class GroqModel:
         said: list[str] = []
         for n in range(self.max_rounds):
             last = n == self.max_rounds - 1
-            text, calls = [], {}
+            text: list[str] = []
+            calls: dict[int, dict[str, Any]] = {}
             try:
-                stream = client.chat.completions.create(
+                stream = client.chat.completions.create(  # type: ignore[call-overload]  # messages and tools are the API's JSON dicts
                     model=self.model,
                     messages=messages,
                     tools=specs,

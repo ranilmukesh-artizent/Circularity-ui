@@ -9,10 +9,12 @@ state they read (notifications, requests, approval limits, workflows) is the dem
 import math
 import re
 from functools import cache, cmp_to_key
+from typing import Any
 
 from sqlalchemy import text
 
 from di import policy
+from di.actions.pipeline import CallContext
 from di.actions.registry import PERM_ALIAS, implement
 from di.engine.jsmath import js_round, js_sum
 from di.reads.common import (
@@ -153,7 +155,7 @@ def due_key(left: int) -> str:
 ACT_STAGES = ("approval", "reeval", "need", "await_insp", "noroute")  # the stages that still need a person
 
 
-def cc_scope(ctx, tenant: str = "All", site: str = "", cls: str = "", route: str = "") -> dict:
+def cc_scope(ctx: CallContext, tenant: str = "All", site: str = "", cls: str = "", route: str = "") -> dict:
     """The demo's ccScope: the visible cases in the Command Center's filters (top-bar tenant, site, class, route; none
     by default), each annotated as the demo does: stage bucket (_st), days left (_left), value at risk by reason
     (_risk, _var), estimated value (_val), due bucket (_due), rank score (_score) and, for those still needing a person
@@ -191,7 +193,7 @@ def cc_scope(ctx, tenant: str = "All", site: str = "", cls: str = "", route: str
 
 
 def _cc_series(fn, rows: list[dict]) -> list[float]:
-    o = [0] * 12
+    o: list[float] = [0] * 12
     for r in rows:
         o[r["mi"]] = o[r["mi"]] + fn(r)
     return o
@@ -202,7 +204,7 @@ def _prev_grade(c: Case) -> bool:
     return bool(c.get("grade") and c["grade"] != "A" and as_hex(c, "pg") % 11 == 0)
 
 
-def cc_ex_list(sc: dict, ctx) -> list[dict]:
+def cc_ex_list(sc: dict, ctx: CallContext) -> list[dict]:
     """The demo's ccExList: exceptions ranked by value × urgency."""
     out: list[dict] = []
     a = account(ctx)
@@ -288,7 +290,7 @@ def cc_ex_list(sc: dict, ctx) -> list[dict]:
     return sorted(out, key=lambda x: -x["score"])
 
 
-def cc_ex_rows(sc: dict, ctx) -> list[dict]:
+def cc_ex_rows(sc: dict, ctx: CallContext) -> list[dict]:
     """The demo's ccExRows: each ranked exception split by the warehouse its items are in; the parts still add up to
     the ranked value (the remainder goes to the largest part)."""
     rows: list[dict] = []
@@ -345,7 +347,7 @@ def cc_ex_rows(sc: dict, ctx) -> list[dict]:
             return b["value"] - a["value"]
         return (gk(b["wh"]) - gk(a["wh"])) or (order(a["wh"]) - order(b["wh"]))
 
-    return sorted(rows, key=cmp_to_key(cmp))
+    return sorted(rows, key=cmp_to_key(cmp))  # type: ignore[arg-type]  # a float difference; only its sign is used
 
 
 def ex_owner(x: dict) -> str:
@@ -355,12 +357,12 @@ def ex_owner(x: dict) -> str:
     return EX_OWNER.get(x["type"]) or "approver"
 
 
-def ex_owner_label(x: dict, ctx) -> str:
+def ex_owner_label(x: dict, ctx: CallContext) -> str:
     a = policy.account(ex_owner(x), ctx.actor.ctx)
     return a.label if a else "Approver"
 
 
-def _sees_exceptions(ctx) -> bool:
+def _sees_exceptions(ctx: CallContext) -> bool:
     return policy.can_page(account(ctx), "command", "exceptions")
 
 
@@ -369,7 +371,7 @@ def _plural(n: int, one: str, many: str) -> str:
     return one if n == 1 else many
 
 
-def briefing(ctx) -> list[dict]:
+def briefing(ctx: CallContext) -> list[dict]:
     """The demo's afBriefing: the briefing lines for the signed-in role, each linked to its object."""
     a = account(ctx)
     if a is None:
@@ -456,7 +458,7 @@ def briefing(ctx) -> list[dict]:
             add(f"{x['wh']} · {x['title']}: {kfmt(x['value'])} at risk; owner {ex_owner_label(x, ctx)}.", "command/exceptions", 1)
     if role == "Warehouse Manager":
         inb = exp_vis(ctx)
-        hand = [c for c in cs if (s := active_step(c)) and s["sys"].startswith("WMS")]
+        hand = [c for c in cs if (step := active_step(c)) and step["sys"].startswith("WMS")]
         add(f"{len(inb)} return{_plural(len(inb), '', 's')} expected at {a.warehouse}.", "product/expected", len(inb))
         add(f"{len(hand)} handed-off item{_plural(len(hand), '', 's')} waiting on WMS.", "command/handed", len(hand))
         add(f"{len(cs)} returned asset{_plural(len(cs), '', 's')} at {a.warehouse} now.", "product/received", len(cs))
@@ -494,7 +496,7 @@ def _recovered_line(m: dict) -> str:
 
 
 @implement("inbox.get")
-def inbox_get(i, ctx):  # noqa: ARG001 - read handlers take (input, ctx)
+def inbox_get(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - read handlers take (input, ctx)
     br = briefing(ctx)
     items = []
     for x in aome_items(ctx):
@@ -515,7 +517,7 @@ def inbox_get(i, ctx):  # noqa: ARG001 - read handlers take (input, ctx)
 
 # ---------------------------------------------------------------- receiving.plan
 @implement("receiving.plan")
-def receiving_plan(i, ctx):  # noqa: ARG001 - read handlers take (input, ctx)
+def receiving_plan(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - read handlers take (input, ctx)
     """Expected returns per warehouse and return window against receiving capacity (8 a window; Warehouse 2: 6,
     the Repair centre: 4)."""
     expected = exp_vis(ctx)
@@ -540,7 +542,7 @@ def _limit_out(v: float) -> float | None:
 
 
 @implement("access.lookup")
-def access_lookup(i, ctx):
+def access_lookup(i: dict[str, Any], ctx: CallContext):
     perm, amount = i["perm"], i.get("amount")
     want = PERM_ALIAS.get(perm, perm)
     roles = policy.roles()
@@ -577,7 +579,7 @@ def _signed_k(n: float) -> str:
 
 
 @implement("kpi.explain")
-def kpi_explain(i, ctx):
+def kpi_explain(i: dict[str, Any], ctx: CallContext):
     k = i["kpi"] if i["kpi"] in AF_KPI else "recovery"
     sc = cc_scope(ctx)
     m = metrics(visible_rows(ctx))
@@ -700,21 +702,21 @@ def kpi_explain(i, ctx):
     return o
 
 
-def op_scope_info(ctx, widen: bool) -> dict:
+def op_scope_info(ctx: CallContext, widen: bool) -> dict:
     """The demo's opScope: Planners and Engineers start at their home site and may widen to every location; a Warehouse
     Manager is locked to theirs."""
-    a = ctx.actor.account
+    a = ctx.actor.person
     home = a.warehouse or a.site or ""
     scope = a.warehouse if a.warehouse else "" if widen else home
     return {"home": home, "scope": scope, "locked": bool(a.warehouse)}
 
 
-def op_scoped(ctx, widen: bool, tenant: str = "All") -> list[Case]:
+def op_scoped(ctx: CallContext, widen: bool, tenant: str = "All") -> list[Case]:
     s = op_scope_info(ctx, widen)["scope"]
     return [c for c in visible_cases(ctx, tenant) if not s or c["location"] == s]
 
 
-def aome_items(ctx, widen: bool = False, tenant: str = "All") -> list[dict]:
+def aome_items(ctx: CallContext, widen: bool = False, tenant: str = "All") -> list[dict]:
     """The demo's aomeItems: everything whose next step belongs to this account, each with one button. Planners and
     Engineers see their home site unless the scope is widened; approvals and outcomes are listed across every visible
     case; the top bar's tenant filter narrows all of it (inbox.get reads the default scope and every tenant)."""
@@ -839,14 +841,14 @@ def aome_items(ctx, widen: bool = False, tenant: str = "All") -> list[dict]:
                 )
     if role in ("Approver", "Admin"):
         for c in cs:
-            s = active_step(c)
-            k = ex_clock(c, s) if s else None
+            step: Any = active_step(c)
+            k = ex_clock(c, step) if step else None
             if k and k["level"] and (role == "Approver" or k["level"] == 2):
                 at = ex_ts(k["due2"] if k["level"] == 2 else k["due"])
                 out.append(
                     {
-                        "t": f"{c['id']} · escalated: {s['label'].lower()}",
-                        "d": f"{ex_app(s)} passed its {k['lim']} limit at {at} · owner {step_owner(c, s)}",
+                        "t": f"{c['id']} · escalated: {step['label'].lower()}",
+                        "d": f"{ex_app(step)} passed its {k['lim']} limit at {at} · owner {step_owner(c, step)}",
                         "btn": "Open handoff",
                         "go": st5(c["id"]),
                     }

@@ -58,7 +58,8 @@ class AssetWiseAdapter(Adapter):
 
     # ------------------------------------------------------------- reading
     def collection(self, client: SourceClient, path: str, params: dict) -> Iterator[tuple[dict, str]]:
-        url, q = path, params
+        url = path
+        q: dict | None = params
         while url:
             r = client.request("GET", url, params=q, headers={"Prefer": f"odata.maxpagesize={PAGE}"})
             body = r.json()

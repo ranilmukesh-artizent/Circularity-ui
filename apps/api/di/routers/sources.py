@@ -15,15 +15,14 @@ manageIntegrations permission (Admin, Developer):
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import text
-from sqlalchemy.orm import Session
 
-from di.auth import Principal, principal
+from di.auth import Principal
 from di.canonical import store
 from di.connectors import sync
 from di.connectors.registry import ADAPTERS
-from di.db import get_session
+from di.deps import CurrentPrincipal, DbSession
 
 router = APIRouter(prefix="/api", tags=["Connectors"])
 
@@ -42,7 +41,7 @@ def _source_row(r) -> dict:
 
 
 @router.get("/sources")
-def sources(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def sources(p: CurrentPrincipal, session: DbSession):
     _can_see_integration(p)
     rows = session.execute(
         text(
@@ -54,7 +53,7 @@ def sources(p: Principal = Depends(principal), session: Session = Depends(get_se
 
 
 @router.get("/sources/{source_id}")
-def source(source_id: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def source(source_id: str, p: CurrentPrincipal, session: DbSession):
     _can_see_integration(p)
     r = session.execute(text("SELECT * FROM source_system WHERE id = :i"), {"i": source_id}).mappings().first()
     if r is None:
@@ -66,7 +65,7 @@ def source(source_id: str, p: Principal = Depends(principal), session: Session =
 
 
 @router.post("/sources/{source_id}/connect")
-def connect(source_id: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def connect(source_id: str, p: CurrentPrincipal, session: DbSession):
     p.require("manageIntegrations")
     try:
         return sync.connect_source(session, source_id)
@@ -75,7 +74,7 @@ def connect(source_id: str, p: Principal = Depends(principal), session: Session 
 
 
 @router.post("/sources/{source_id}/disconnect")
-def disconnect(source_id: str, purge: bool = False, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def disconnect(source_id: str, p: CurrentPrincipal, session: DbSession, purge: bool = False):
     p.require("manageIntegrations")
     if source_id not in ADAPTERS:
         raise HTTPException(404, {"code": "not_found", "message": f"No connector for {source_id}."})
@@ -86,9 +85,7 @@ def disconnect(source_id: str, purge: bool = False, p: Principal = Depends(princ
 
 
 @router.get("/fetch-log")
-def fetch_log(
-    source: str | None = None, limit: int = 100, p: Principal = Depends(principal), session: Session = Depends(get_session)
-):
+def fetch_log(p: CurrentPrincipal, session: DbSession, source: str | None = None, limit: int = 100):
     p.require_page("audit", "log")
     rows = session.execute(
         text("SELECT * FROM fetch_log WHERE (CAST(:s AS text) IS NULL OR source_id = :s) ORDER BY id DESC LIMIT :n"),
@@ -98,7 +95,7 @@ def fetch_log(
 
 
 @router.get("/canonical/{model}/{key}")
-def canonical(model: str, key: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def canonical(model: str, key: str, p: CurrentPrincipal, session: DbSession):
     p.require_any_page(("product", None), ("integration", "models"))
     rec = store.get(session, model, key)
     if rec is None:
@@ -110,7 +107,7 @@ def canonical(model: str, key: str, p: Principal = Depends(principal), session: 
 
 
 @router.get("/conflicts")
-def conflicts(status: str = "open", p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def conflicts(p: CurrentPrincipal, session: DbSession, status: str = "open"):
     p.require_page("integration", "conflicts")
     rows = session.execute(
         text("SELECT * FROM conflict WHERE (:s = 'all' OR status = :s) ORDER BY id DESC LIMIT 500"), {"s": status}

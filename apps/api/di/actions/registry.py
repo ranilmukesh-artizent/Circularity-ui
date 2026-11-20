@@ -12,21 +12,28 @@ the server and the demo agree. Behaviour is attached in code, one module per are
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, TypeVar
 
 from di import golden
 
+if TYPE_CHECKING:
+    from di.actions.pipeline import CallContext
+
 Risk = Literal["read", "draft", "act", "commit", "system"]
-Handler = Callable[[dict[str, Any], "Any"], dict[str, Any] | None]
-Guard = Callable[[dict[str, Any], "Any"], tuple[str, str] | tuple[str, str, dict] | None]  # (code, message[, extra])
-IdemKey = Callable[[dict[str, Any], "Any"], str]
+Handler = Callable[[dict[str, Any], "CallContext"], dict[str, Any] | None]
+Guard = Callable[
+    [dict[str, Any], "CallContext"], tuple[str, str] | tuple[str, str, dict[str, Any]] | None
+]  # (code, message[, extra])
+IdemKey = Callable[[dict[str, Any], "CallContext"], str]
+H = TypeVar("H", bound=Handler)
+G = TypeVar("G", bound=Guard)
 PERM_ALIAS = {"approve": "approve.decisions"}  # the demo's PERM_ALIAS
 
 
 class ActionError(Exception):
     """A refusal with one of the demo's error codes (see pipeline.ERROR_STATUS)."""
 
-    def __init__(self, code: str, message: str, extra: dict | None = None):
+    def __init__(self, code: str, message: str, extra: dict[str, Any] | None = None) -> None:
         super().__init__(message)
         self.code, self.message, self.extra = code, message, extra
 
@@ -57,7 +64,7 @@ class ActionDef:
 
 
 def _load() -> dict[str, ActionDef]:
-    out = {}
+    out: dict[str, ActionDef] = {}
     for a in golden.load("actions_catalog"):
         spec = {k: (v if isinstance(v, dict) else {}) for k, v in (a.get("input") or {}).items()}
         out[a["id"]] = ActionDef(
@@ -77,8 +84,10 @@ def _load() -> dict[str, ActionDef]:
 ACTIONS: dict[str, ActionDef] = _load()
 
 
-def implement(action_id: str, idem: IdemKey | None = None, emits: list[str] | None = None) -> Callable[[Handler], Handler]:
-    def register(fn: Handler) -> Handler:
+def implement(action_id: str, idem: IdemKey | None = None, emits: list[str] | None = None) -> Callable[[H], H]:
+    """Attach a handler; the decorated function keeps its own signature (read handlers are also called directly)."""
+
+    def register(fn: H) -> H:
         a = ACTIONS[action_id]
         a.handler, a.idem, a.emits = fn, idem or a.idem, emits or a.emits
         return fn
@@ -86,8 +95,8 @@ def implement(action_id: str, idem: IdemKey | None = None, emits: list[str] | No
     return register
 
 
-def guard(action_id: str) -> Callable[[Guard], Guard]:
-    def register(fn: Guard) -> Guard:
+def guard(action_id: str) -> Callable[[G], G]:
+    def register(fn: G) -> G:
         ACTIONS[action_id].guard = fn
         return fn
 

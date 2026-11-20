@@ -50,12 +50,11 @@ Facade (apps/web/src/api/workflows.ts) → here, export by export:
 
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException
 
 from di import clock, state
-from di.auth import Principal, principal
-from di.db import get_session
+from di.auth import Principal
+from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round
 from di.reads.common import AS_OF, SOURCES, STARTING_MAPPINGS, hash_id, ms, to_fixed
 from di.reads.workflows import GOLDEN, all_workflows, recent_runs, run_counts, wf_stat
@@ -263,12 +262,12 @@ def _matches(w: dict, cat: str | None, status: str | None, src: str | None, q: s
 # ---------------------------------------------------------------- endpoints
 @router.get("")
 def workflow_list(
+    p: CurrentPrincipal,
+    session: DbSession,
     cat: str | None = None,
     status: str | None = None,
     src: str | None = None,
     q: str | None = None,
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
 ):
     require_studio(p)
     wl = all_workflows(session)
@@ -287,7 +286,7 @@ def workflow_list(
 
 
 @router.get("/{workflow_id}")
-def workflow_detail(workflow_id: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def workflow_detail(workflow_id: str, p: CurrentPrincipal, session: DbSession):
     require_studio(p)
     w = state.get(session, "workflows", workflow_id)
     if w is None:

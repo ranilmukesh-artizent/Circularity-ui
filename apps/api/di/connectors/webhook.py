@@ -13,6 +13,7 @@ import hashlib
 import hmac
 import json
 import logging
+from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Header, HTTPException, Request
@@ -45,11 +46,13 @@ def ensure_subscription() -> None:
 
 def valid_signature(body: bytes, signature: str | None) -> bool:
     expected = "sha256=" + hmac.new(get_settings().webhook_secret.get_secret_value().encode(), body, hashlib.sha256).hexdigest()
-    return bool(signature) and hmac.compare_digest(expected, signature)
+    if not signature:
+        return False
+    return hmac.compare_digest(expected, signature)
 
 
 @router.post("/source-sim", status_code=202)
-async def source_event(request: Request, x_sim_signature: str | None = Header(default=None)):
+async def source_event(request: Request, x_sim_signature: Annotated[str | None, Header()] = None):
     body = await request.body()
     if not valid_signature(body, x_sim_signature):
         raise HTTPException(401, {"code": "bad_signature", "message": "The event signature does not match."})

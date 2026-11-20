@@ -72,10 +72,11 @@ class MasterControlAdapter(Adapter):
 
     def _effective_policies(self, client: SourceClient) -> dict[str, dict]:
         """The Effective revision of each controlled document, by document number (certificates name theirs)."""
-        if getattr(client, "_qms_effective", None) is None:
+        cached: dict[str, dict] | None = vars(client).get("_qms_effective")  # kept on the client, for this sync run
+        if cached is None:
             docs = self.read_all(client, "/v2/controlled-documents", status="Effective")
-            client._qms_effective = {d["documentNumber"]: d for d in docs}
-        return client._qms_effective
+            cached = vars(client)["_qms_effective"] = {d["documentNumber"]: d for d in docs}
+        return cached
 
     def read_policies(self, client: SourceClient, since: str | None) -> Iterator[Record]:  # noqa: ARG002 - the adapter read interface; this read is always full
         docs = list(self._effective_policies(client).values())

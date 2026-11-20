@@ -25,7 +25,7 @@ def term(label: str, amt: int, kind: str) -> dict:
     return {"label": label, "amt": amt, "kind": kind}
 
 
-def term_sum(r: Route) -> int:
+def term_sum(r: Route) -> float:
     return js_sum(t["amt"] for t in r["terms"])
 
 

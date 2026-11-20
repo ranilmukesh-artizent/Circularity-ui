@@ -35,7 +35,7 @@ from di.connectors.http import OAuthClientCredentials, SourceClient
 API = "/sterling/smcfs/restapi"
 PAGE = 200
 STATUS_MAP = {"CONFIRMED": "confirmed", "FORECAST": "forecast"}
-ORDER_KINDS = {"CONTRACT_REPLACEMENT": "replacement"}
+ORDER_KINDS: dict[str | None, str] = {"CONTRACT_REPLACEMENT": "replacement"}
 
 
 def utc(v: str | None) -> str | None:

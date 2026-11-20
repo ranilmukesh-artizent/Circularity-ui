@@ -31,6 +31,7 @@ import math
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any, overload
 
 import httpx
 
@@ -50,6 +51,10 @@ def usd_whole(inr: Decimal) -> float:
     return float(math.floor(inr / INR_PER_USD + Decimal("0.5")))
 
 
+@overload
+def xid(gid: str) -> str: ...
+@overload
+def xid(gid: None) -> None: ...
 def xid(gid: str | None) -> str | None:
     return gid.split(".", 1)[1] if gid and "." in gid else gid
 
@@ -81,7 +86,7 @@ class OtmAdapter(Adapter):
 
     def __init__(self):
         self.names: dict[str, str] = {}  # carrier gid → name
-        self.scac: dict[str, str] = {}  # carrier gid → SCAC
+        self.scac: dict[str, str | None] = {}  # carrier gid → SCAC
         self.lanes: dict[str, dict] = {}  # xLaneGid → lane
         self.locations: dict[str, dict] = {}  # locationGid → location
         self.offerings: dict[str, dict] = {}  # rateOfferingGid → rate offering
@@ -185,7 +190,7 @@ class OtmAdapter(Adapter):
             )
         elif record.resource == "rateOfferings":
             k = p["rateOfferingXid"]
-            sg = p.get("servprovGid")
+            sg: Any = p.get("servprovGid")
             fact("route", k, "kind", "rate_card", "rateOfferingGid", p["rateOfferingGid"], "Rate card")
             fact("route", k, "carrier", self.carrier(sg), "servprovGid", self.scac.get(sg, xid(sg)), "Carrier lookup")
             fact("route", k, "contract_ref", p.get("attribute1"), "attribute1", p.get("attribute1"), "Pass-through")
@@ -214,8 +219,9 @@ class OtmAdapter(Adapter):
         return out
 
     def _lane(self, p: dict, fact) -> None:
-        lane = self.lanes.get(p.get("xLaneGid")) or {}
-        k = xid(p.get("xLaneGid"))
+        lane_gid: Any = p.get("xLaneGid")
+        lane = self.lanes.get(lane_gid) or {}
+        k = xid(lane_gid)
         a, b = xid(lane.get("sourceLocationGid")), xid(lane.get("destLocationGid"))
         if not (k and a and b):
             return
@@ -254,9 +260,10 @@ class OtmAdapter(Adapter):
                 else f"{int(km or 0):,} km × ₹{per_km:.0f} + ₹{flat:,.0f} loading"
             )
             fact("route", k, "rate_basis", basis, "costs", None, "Rate record charges")
-        ro = self.offerings.get(p.get("rateOfferingGid")) or {}
+        offering: Any = p.get("rateOfferingGid")
+        ro = self.offerings.get(offering) or {}
         partner = p.get("attribute1") == "PARTNER"
-        sg = ro.get("servprovGid")
+        sg: Any = ro.get("servprovGid")
         if not partner:
             fact("route", k, "carrier", self.carrier(sg), "servprovGid", self.scac.get(sg, xid(sg)), "Carrier lookup")
         fact("route", k, "rate_card", xid(p.get("rateOfferingGid")), "rateOfferingGid", p.get("rateOfferingGid"), "Pass-through")
@@ -264,7 +271,9 @@ class OtmAdapter(Adapter):
 
     def _shipment(self, p: dict, fact) -> None:
         k = p["shipmentXid"]
-        refs = {xid(r.get("shipmentRefnumQualGid")): r.get("shipmentRefnumValue") for r in items(p.get("refnums"))}
+        refs: dict[str | None, Any] = {
+            xid(r.get("shipmentRefnumQualGid")): r.get("shipmentRefnumValue") for r in items(p.get("refnums"))
+        }
         a, b = xid(p.get("sourceLocationGid")), xid(p.get("destLocationGid"))
         lane = f"{a}>{b}" if a and b else None
         if lane:
@@ -277,7 +286,7 @@ class OtmAdapter(Adapter):
         item = refs.get("ITEM_ID")
         fact("route", k, "asset_id", item, "refnums.ITEM_ID", item, "Pass-through")
         fact("route", k, "case_ref", refs.get("CASE_REF"), "refnums.CASE_REF", refs.get("CASE_REF"), "Pass-through")
-        sg = p.get("servprovGid")
+        sg: Any = p.get("servprovGid")
         carrier = self.carrier(sg)
         fact("route", k, "carrier", carrier, "servprovGid", self.scac.get(sg, xid(sg)), "Carrier lookup")
         enroute = next(

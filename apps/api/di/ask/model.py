@@ -57,7 +57,8 @@ class ModelUnavailable(Exception):
 
 
 class Toolbox(Protocol):
-    specs: list[dict]
+    @property
+    def specs(self) -> list[dict]: ...
 
     def call(self, name: str, arguments: Any) -> dict: ...
 

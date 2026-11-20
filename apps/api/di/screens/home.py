@@ -42,17 +42,16 @@ Differences from the demo, by design (each documented where it is computed, and 
 
 import math
 import re
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
-from sqlalchemy.orm import Session
 
 from di import policy
 from di.actions.pipeline import CallContext
 from di.actions.registry import ACTIONS
-from di.auth import Principal, principal
 from di.cases import store
-from di.db import get_session
+from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round, js_sum
 from di.reads import workspace as ws
 from di.reads.common import (
@@ -139,7 +138,7 @@ def _cred_days(s: dict) -> int:
 def alerts(ctx: CallContext) -> list[dict]:
     """The demo's frAlerts: notifications, escalations, failing workflows, stale or unavailable sources, expiring
     credentials and open conflicts, most severe first."""
-    a = ctx.actor.account
+    a = ctx.actor.person
     out: list[dict] = []
     p_all = bool(policy.policy(a).get("all"))
     for n in notes(ctx.session):
@@ -160,7 +159,7 @@ def alerts(ctx: CallContext) -> list[dict]:
             )
     if can_page(ctx, "product", "case"):
         for c in visible_cases(ctx):
-            s = active_step(c)
+            s: Any = active_step(c)
             k = ex_clock(c, s) if s else None
             if k and k["level"]:
                 out.append(
@@ -248,7 +247,7 @@ def alerts(ctx: CallContext) -> list[dict]:
 # ---------------------------------------------------------------- KPI tiles per role (the demo's frKpis)
 def _monthly(rows: list[dict], f) -> list[float]:
     """The demo's frMonthly."""
-    o = [0] * len(MONTHS)
+    o: list[float] = [0] * len(MONTHS)
     for x in rows:
         if x.get("mi") is not None and x["mi"] < len(o):
             o[x["mi"]] = o[x["mi"]] + (f(x) or 0)
@@ -261,7 +260,7 @@ def _wms_active(c: Case) -> bool:
 
 
 def kpis(ctx: CallContext) -> list[dict]:
-    a = ctx.actor.account
+    a = ctx.actor.person
     role, cs = a.role, visible_cases(ctx)
     T: list[dict] = []
     open_ = [c for c in cs if c["stage"] in ("awaiting_approval", "reeval")]
@@ -484,15 +483,15 @@ def activity(ctx: CallContext, win: str) -> list[dict]:
     evs = [
         e for e in ws_events(ctx) if _ACT_EVENT.search(e["type"]) and (not e.get("caseId") or e["caseId"] not in ids or case_page)
     ][:10]
-    for e in evs:
-        esc = e["type"] == "handoff.escalated"
+    for ev in evs:
+        esc = ev["type"] == "handoff.escalated"
         out.append(
             {
-                "ts": ms(e["ts"]),
+                "ts": ms(ev["ts"]),
                 "ic": "clock" if esc else "send",
                 "h": "alert" if esc else "money",
-                "title": e["type"] + (" · " + e["caseId"] if e.get("caseId") else ""),
-                "sub": f"{e.get('dest') or ''} · {e.get('ack') or ''}",
+                "title": ev["type"] + (" · " + ev["caseId"] if ev.get("caseId") else ""),
+                "sub": f"{ev.get('dest') or ''} · {ev.get('ack') or ''}",
                 "st": {"tone": "warn", "label": "Action required"} if esc else {"tone": "ok", "label": "Completed"},
                 "links": [],
             }
@@ -508,12 +507,12 @@ def activity(ctx: CallContext, win: str) -> list[dict]:
 
 # ---------------------------------------------------------------- the middle panel (the facade's middlePanel)
 def middle(ctx: CallContext) -> dict:
-    r = ctx.actor.account.role
+    r = ctx.actor.person.role
     if r in ("Developer", "Admin"):
         lst = workflows()
-        c = {"published": 0, "failing": 0, "draft": 0, "paused": 0}
+        n = {"published": 0, "failing": 0, "draft": 0, "paused": 0}
         for w in lst:
-            c[wf_stat(w)] += 1
+            n[wf_stat(w)] += 1
         src_n = len({w["src"] for w in lst if w["src"]})
         return {
             "id": "frWfHealth",
@@ -522,18 +521,18 @@ def middle(ctx: CallContext) -> dict:
             "link": {"go": "integration/studio", "label": "View all →"},
             "ring": {
                 "segs": [
-                    {"v": c["published"], "c": "var(--ok)", "l": "Published"},
-                    {"v": c["failing"], "c": "var(--bad)", "l": "Failing"},
-                    {"v": c["draft"] + c["paused"], "c": "var(--muted)", "l": "Draft or paused"},
+                    {"v": n["published"], "c": "var(--ok)", "l": "Published"},
+                    {"v": n["failing"], "c": "var(--bad)", "l": "Failing"},
+                    {"v": n["draft"] + n["paused"], "c": "var(--muted)", "l": "Draft or paused"},
                 ],
-                "center": to_fixed(c["published"] / (len(lst) or 1) * 100, 1) + "%",
+                "center": to_fixed(n["published"] / (len(lst) or 1) * 100, 1) + "%",
                 "sub": "Healthy",
                 "label": "Workflow health",
             },
         }
     cs = visible_cases(ctx)
     if r == "Engineer":
-        gr: dict[str, int] = {}
+        gr: dict[str | None, int] = {}
         for c in cs:
             k = (
                 "Grade " + c["grade"]
@@ -603,7 +602,7 @@ def middle(ctx: CallContext) -> dict:
         "exec": "Handed off",
         "noroute": "Other",
     }
-    cols = {
+    stage_cols = {
         "Awaiting approval": "var(--yellow)",
         "Re-evaluate": "var(--h-re)",
         "Needs evidence": "var(--h-ev)",
@@ -616,7 +615,7 @@ def middle(ctx: CallContext) -> dict:
     for c in cs:
         k = names[ws.cc_stage(c)]
         st[k] = st.get(k, 0) + 1
-    segs = [{"v": v, "l": k, "c": cols[k]} for k, v in st.items()]
+    segs = [{"v": v, "l": k, "c": stage_cols[k]} for k, v in st.items()]
     return {
         "title": "Decisions by stage",
         "sub": "Every returned asset in your view",
@@ -773,7 +772,7 @@ def report_rows(ctx: CallContext, rid: str, tenant: str, period: str) -> list[li
         ]
     if rid == "packs":
         head = ["Case", "Tenant", "Stage", "Route", "Net", "Approval ref", "Snapshot"]
-        out = [head]
+        out: list[list[Any]] = [head]
         for c in visible_cases(ctx):
             if c.get("recommendation") and (tenant == "All" or c["owner"] == tenant):
                 r = c.get("chosen") or c["recommendation"]
@@ -834,55 +833,53 @@ def reports(ctx: CallContext) -> list[dict]:
 
 # ---------------------------------------------------------------- endpoints
 @router.get("/briefing")
-def get_briefing(p: Principal = Depends(principal), session: Session = Depends(get_session)) -> list[dict]:
+def get_briefing(p: CurrentPrincipal, session: DbSession) -> list[dict]:
     """The briefing lines for the signed-in role (the demo's afBriefing)."""
     return ws.briefing(call_ctx(p, session))
 
 
 @router.get("/tasks")
-def get_tasks(p: Principal = Depends(principal), session: Session = Depends(get_session)) -> list[dict]:
+def get_tasks(p: CurrentPrincipal, session: DbSession) -> list[dict]:
     """Everything whose next step is the signed-in account's (the demo's aomeItems), each with its My Tasks group."""
     return [{**i, "group": task_group(i)} for i in ws.aome_items(call_ctx(p, session))]
 
 
 @router.get("/alerts")
-def get_alerts(p: Principal = Depends(principal), session: Session = Depends(get_session)) -> list[dict]:
+def get_alerts(p: CurrentPrincipal, session: DbSession) -> list[dict]:
     """Notifications, escalations and integration issues the account sees (the demo's frAlerts)."""
     return alerts(call_ctx(p, session))
 
 
 @router.get("/kpis")
-def get_kpis(p: Principal = Depends(principal), session: Session = Depends(get_session)) -> list[dict]:
+def get_kpis(p: CurrentPrincipal, session: DbSession) -> list[dict]:
     """Home's KPI tiles for the signed-in role (the demo's frKpis)."""
     return kpis(call_ctx(p, session))
 
 
 @router.get("/activity")
 def get_activity(
-    win: str = Query("today", pattern="^(live|today|week)$"),
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
+    p: CurrentPrincipal, session: DbSession, win: Annotated[str, Query(pattern="^(live|today|week)$")] = "today"
 ) -> list[dict]:
     """Agent-prepared changes and hand-off events in the window (the demo's frActivity)."""
     return activity(call_ctx(p, session), win)
 
 
 @router.get("/middle")
-def get_middle(p: Principal = Depends(principal), session: Session = Depends(get_session)) -> dict:
+def get_middle(p: CurrentPrincipal, session: DbSession) -> dict:
     """Home's middle panel for the signed-in role."""
     return middle(call_ctx(p, session))
 
 
 @router.get("/figures")
 def get_figures(
-    per: str = Query("30", pattern="^(30|90|365)$"), p: Principal = Depends(principal), session: Session = Depends(get_session)
+    p: CurrentPrincipal, session: DbSession, per: Annotated[str, Query(pattern="^(30|90|365)$")] = "30"
 ) -> list[dict]:
     """Home's key figures for a period of 30, 90 or 365 days."""
     return figures(call_ctx(p, session), per)
 
 
 @router.get("/reports")
-def get_reports(p: Principal = Depends(principal), session: Session = Depends(get_session)) -> list[dict]:
+def get_reports(p: CurrentPrincipal, session: DbSession) -> list[dict]:
     """The reports the account may open."""
     return reports(call_ctx(p, session))
 
@@ -890,10 +887,10 @@ def get_reports(p: Principal = Depends(principal), session: Session = Depends(ge
 @router.get("/reports/{report_id}")
 def get_report_rows(
     report_id: str,
+    p: CurrentPrincipal,
+    session: DbSession,
     tenant: str = "All",
-    period: str = Query("90", pattern="^(30|90|365)$"),
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
+    period: Annotated[str, Query(pattern="^(30|90|365)$")] = "90",
 ) -> list[list]:
     """A report's rows (header first) for a tenant ('All' or one the account may see) and a period."""
     ctx = call_ctx(p, session)

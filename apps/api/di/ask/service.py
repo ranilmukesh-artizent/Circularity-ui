@@ -31,7 +31,7 @@ import logging
 import re
 import time
 from collections.abc import Iterator
-from typing import Any
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -44,9 +44,10 @@ from di.ask.fallback import ask_rule
 from di.ask.model import AskModel, AskRequest, Done, ModelUnavailable, NoModel, TextDelta, ToolUse, get_model
 from di.ask.prompt import system_prompt
 from di.ask.tools import Toolbox, log_call
-from di.auth import Principal, principal
+from di.auth import Principal
 from di.cases import store
 from di.db import SessionLocal
+from di.deps import CurrentPrincipal
 from di.reads.common import next_step
 from di.reads.context import can_see_case
 
@@ -135,7 +136,7 @@ def suggestions(ctx: CallContext, case_ids: list[str]) -> list[dict]:
     out = []
     for cid in case_ids[:3]:
         c = store.get(ctx.session, cid)
-        if not c or not can_see_case(ctx.actor.account, ctx.actor.ctx, c):
+        if not c or not can_see_case(cast(policy.Account, ctx.actor.account), ctx.actor.ctx, c):  # Ask runs signed in
             continue
         st = next_step(c, ctx)
         if st["kind"] == "act":
@@ -188,7 +189,7 @@ def answer_stream(body: AskBody, p: Principal, model: AskModel) -> Iterator[str]
 
         if reason is None:
             used = [(u.args, u.data) for u in box.used if u.ok]
-            g = grounding(text, used)
+            g = grounding(text or "", used)  # text is set here: an empty answer raised above
             final = {
                 "provider": model.name,
                 "model": model.model,
@@ -252,7 +253,7 @@ def answer_stream(body: AskBody, p: Principal, model: AskModel) -> Iterator[str]
 
 
 @router.post("/api/ask")
-def ask(body: AskBody, p: Principal = Depends(principal), model: AskModel = Depends(get_model)) -> StreamingResponse:
+def ask(body: AskBody, p: CurrentPrincipal, model: Annotated[AskModel, Depends(get_model)]) -> StreamingResponse:
     """Ask Circularity: the answer streams as Server-Sent Events (see the module docstring for the events)."""
     headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     return StreamingResponse(answer_stream(body, p, model), media_type="text/event-stream", headers=headers)

@@ -38,12 +38,12 @@ Facade (apps/web/src/api/mcp.ts) → here:
 | benchCases, runBench, runBenchAll, benchBadgeHtml | the agent test bench runs the in-browser agent layer; B16b |
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Query
 
 from di import policy, state
-from di.auth import Principal, principal
-from di.db import get_session
+from di.deps import CurrentPrincipal, DbSession
 from di.reads import mcp_calls  # noqa: F401 - registers the "mcp_calls" collection this page reads
 from di.reads.access import request_rows
 from di.reads.constants import AGENTS, HARD_RULES, TOOLS
@@ -68,19 +68,19 @@ def perm_cell(a: dict, t: dict, tenant: str) -> dict:
 
 # ---------------------------------------------------------------- endpoints
 @router.get("/tools")
-def tools(p: Principal = Depends(principal)):
+def tools(p: CurrentPrincipal):
     p.require_page("mcp", "catalog")
     return {"tools": TOOLS, "hard_rules": HARD_RULES}
 
 
 @router.get("/agents")
-def agents(p: Principal = Depends(principal)):
+def agents(p: CurrentPrincipal):
     p.require_page("mcp", "agents")
     return {"agents": AGENTS}
 
 
 @router.get("/matrix")
-def matrix(tenant: str | None = None, p: Principal = Depends(principal)):
+def matrix(p: CurrentPrincipal, tenant: str | None = None):
     p.require_page("mcp", "perms")
     tenants = policy.tenants()
     ten = tenant or tenants[0]
@@ -92,10 +92,10 @@ def matrix(tenant: str | None = None, p: Principal = Depends(principal)):
 
 @router.get("/calls")
 def calls(
-    filter: str = Query("all", pattern="^(all|issues)$"),
-    limit: int | None = Query(None, ge=1, le=1000),
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
+    p: CurrentPrincipal,
+    session: DbSession,
+    filter: Annotated[str, Query(pattern="^(all|issues)$")] = "all",
+    limit: Annotated[int | None, Query(ge=1, le=1000)] = None,
 ):
     p.require_page("mcp", "calls")
     log = state.items(session, "mcp_calls", newest_first=True)
@@ -115,12 +115,12 @@ def calls(
 
 
 @router.get("/client")
-def client_servers(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def client_servers(p: CurrentPrincipal, session: DbSession):
     p.require_page("mcp", "client")
     return {"servers": state.items(session, "mcp_servers")}
 
 
 @router.get("/proposals")
-def proposals(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def proposals(p: CurrentPrincipal, session: DbSession):
     p.require_page("mcp", "proposals")
     return {"proposals": request_rows(session, p, kind="mcp")}

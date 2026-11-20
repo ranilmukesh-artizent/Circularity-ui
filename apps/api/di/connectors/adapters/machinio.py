@@ -35,7 +35,10 @@ LIMIT = 100
 
 
 def to_utc(v: str) -> str:
-    return utc(v).replace("Z", "+00:00")
+    u = utc(v)
+    if u is None:
+        raise ValueError(f"not a timestamp: {v!r}")
+    return u.replace("Z", "+00:00")
 
 
 class MachinioAdapter(Adapter):
@@ -64,7 +67,7 @@ class MachinioAdapter(Adapter):
                 return
 
     def _since(self, since: str | None) -> dict:
-        return {"updated_since": iso_z(utc(since))} if since else {}
+        return {"updated_since": iso_z(utc(since) or "")} if since else {}  # `or ""` never applies: `since` is non-empty
 
     def read_offers(self, client: SourceClient, since: str | None) -> Iterator[Record]:
         for o, url in self.pages(client, "/offers", **self._since(since)):

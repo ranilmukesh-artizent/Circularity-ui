@@ -79,7 +79,7 @@ EX_LAB = {
     "batch": (520, 0.8, "Bench technician"),
     "it": (520, 1, "Bench technician"),
 }
-EX_OPS = {
+EX_OPS: dict[str, list[tuple[str, float, int]]] = {
     "motor": [
         ("Bake oven", 8, 350),
         ("Balancing", 1, 1600),
@@ -176,7 +176,7 @@ def ex_prep_parts(c: Case, r: dict) -> dict[str, Any] | None:
     std = js_round((std_h * 0.45 if mode == "teardown" else std_h) * max(0.4, f) * u * 10) / 10
     h = asset_health(c) if c.get("grade") else None
     bad = [x["n"] for x in h["comps"] if x["cls"] != "ok"] if h else []
-    bom = [
+    bom: list[dict[str, Any]] = [
         {
             "name": p[0],
             "pn": p[1],
@@ -192,7 +192,7 @@ def ex_prep_parts(c: Case, r: dict) -> dict[str, Any] | None:
         scope = EX_SCOPE.get(c["id"])
         parts = [p for p in bom if p["pn"] in scope] if scope else [p for p in bom if p["comp"] in bad]
         extra = [p for p in bom if not any(p is q for q in parts)]
-    ops = []
+    ops: list[dict[str, Any]] = []
     for name, oh, orate in EX_OPS[c["cls"]]:
         hh = js_round(oh * (u if oh < 1 else max(1, u * 0.6)) * 10) / 10
         ops.append({"name": name, "h": hh, "rate": orate, "inr": js_round(hh * orate)})
@@ -200,7 +200,9 @@ def ex_prep_parts(c: Case, r: dict) -> dict[str, Any] | None:
         ops = ops[-1:]
     pack = js_round(EX_PACK[c["cls"]] * (max(0.35, f) if c["cls"] == "motor" else 1) * u / 10) * 10
     mv = ex_move_legs_for(c, r) if mode == "refurb" else []
-    legs = [{"n": x["n"], "from": x["from"], "to": x["to"], "inr": x["inr"], "calc": x["calc"], "share": 1} for x in mv]
+    legs: list[dict[str, Any]] = [
+        {"n": x["n"], "from": x["from"], "to": x["to"], "inr": x["inr"], "calc": x["calc"], "share": 1} for x in mv
+    ]
 
     def P() -> float:
         return js_sum(p["unit"] * p["qty"] for p in parts)
@@ -260,7 +262,7 @@ def ex_svc(c: Case, B: int, months: int) -> dict:
     sc = B / fixed() if fixed() > B else 1
 
     ns = js_str(n)
-    lines = [
+    lines: list[list[Any]] = [
         ["Call-out", f"{ns} × {inr(co * sc)}", js_round(n * co * sc)],
         ["Field labour", f"{ns} × {js_str(fh)} h × {inr(FIELD_RATE)}", js_round(n * lab * sc)],
         ["Downtime handling", f"{ns} × {inr(dt * sc)}", js_round(n * dt * sc)],

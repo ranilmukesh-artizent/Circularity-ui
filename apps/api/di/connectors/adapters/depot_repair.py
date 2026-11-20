@@ -167,7 +167,7 @@ class DepotRepairAdapter(Adapter):
                 None,
                 "Measurements",
             )
-            at = max((utc(t["TEST_DATE"]) for t in tests if t.get("TEST_DATE")), default=None)
+            at = max((utc(t["TEST_DATE"]) or "" for t in tests if t.get("TEST_DATE")), default=None)  # `or ""` never applies
             fact("condition", "tested_at", at, "TEST_DATE", None, "Latest test, timestamp to UTC")
         return out
 
@@ -227,7 +227,7 @@ class DepotRepairAdapter(Adapter):
         fact("intervention", "released", cert, "RELEASE_TO_SERVICE.CERTIFICATE", cert, "Release to service")
         parts = (p.get("PARTS") or {}).get("PARTS_ITEM") or []
         if parts:
-            inr = sum(Decimal(str(x["UNIT_PRICE"])) * Decimal(str(x["QUANTITY"])) for x in parts)
+            inr = sum((Decimal(str(x["UNIT_PRICE"])) * Decimal(str(x["QUANTITY"])) for x in parts), Decimal(0))
             fact(
                 "intervention",
                 "parts",

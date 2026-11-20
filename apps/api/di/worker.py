@@ -10,6 +10,7 @@ import logging
 import signal
 import time
 from collections.abc import Callable
+from typing import Any
 
 from di import jobs
 from di.config import get_settings
@@ -18,7 +19,7 @@ from di.logs import configure_logging
 
 log = logging.getLogger("di.worker")
 
-Handler = Callable[[dict], None]
+Handler = Callable[[dict[str, Any]], None]
 HANDLERS: dict[str, Handler] = {}
 
 
@@ -31,7 +32,7 @@ def handler(kind: str) -> Callable[[Handler], Handler]:
 
 
 @handler("ping")
-def _ping(payload: dict) -> None:
+def _ping(payload: dict[str, Any]) -> None:
     log.info("ping %s", payload)
 
 
@@ -86,7 +87,7 @@ def main() -> None:
 
 # ---------------------------------------------------------------- connectors (B9)
 @handler("sync.source")
-def _sync(payload: dict) -> None:
+def _sync(payload: dict[str, Any]) -> None:
     from di.connectors.sync import run_sync
 
     out = run_sync(payload["source_id"], payload.get("trigger", "schedule"), bool(payload.get("full")))
@@ -95,7 +96,7 @@ def _sync(payload: dict) -> None:
 
 # ---------------------------------------------------------------- outbound instructions (B13b)
 @handler("instruction.send")
-def _instruction_send(payload: dict) -> None:
+def _instruction_send(payload: dict[str, Any]) -> None:
     import di.actions.execution  # noqa: F401 - registers adapter.acknowledge, which acknowledgements go through
     from di.instructions.send import send
 
@@ -105,7 +106,7 @@ def _instruction_send(payload: dict) -> None:
 
 # ---------------------------------------------------------------- workflow runs (B15)
 @handler("workflow.run")
-def _workflow_run(payload: dict) -> None:
+def _workflow_run(payload: dict[str, Any]) -> None:
     from di.actions.workflows import run_job
 
     out = run_job(payload)

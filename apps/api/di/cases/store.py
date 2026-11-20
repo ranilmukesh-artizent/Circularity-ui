@@ -54,7 +54,10 @@ def ensure(_: Session | None = None) -> int:
         own.execute(text("SELECT pg_advisory_xact_lock(1048)"))  # api and worker may start together
         if not own.execute(text("SELECT EXISTS (SELECT 1 FROM case_record)")).scalar():
             for cid in book.ids():
-                _insert(own, book.get(cid))
+                case = book.get(cid)
+                if case is None:  # not reached: book.ids() lists only the cases book.get() has
+                    raise LookupError(f"case {cid} is listed but has no record")
+                _insert(own, case)
                 n += 1
         own.commit()
     _ready = True

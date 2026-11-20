@@ -1,6 +1,7 @@
 """A small Postgres job queue (plan decision D6: no Redis)."""
 
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -12,11 +13,11 @@ from di.models import Job
 class ClaimedJob:
     id: int
     kind: str
-    payload: dict
+    payload: dict[str, Any]
     attempts: int
 
 
-def enqueue(session: Session, kind: str, payload: dict | None = None) -> Job:
+def enqueue(session: Session, kind: str, payload: dict[str, Any] | None = None) -> Job:
     job = Job(kind=kind, payload=payload or {})
     session.add(job)
     session.flush()

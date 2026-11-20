@@ -15,7 +15,7 @@ def js_round(x: float) -> int:
 
 
 def js_sum(xs: Iterable[float]) -> float:
-    total = 0
+    total: float = 0
     for x in xs:
         total = total + x
     return total

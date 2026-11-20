@@ -31,6 +31,7 @@ refusal that a retry will not change; a SourceError of kind "unavailable" or "au
 
 import uuid
 from dataclasses import dataclass, field
+from typing import Any
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
 
@@ -207,7 +208,8 @@ def transport(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa
     if not src or not dst or src == dst:
         raise NotApplicable("no lane from the case's warehouse")
     xid = f"OR-{ins['idem_key']}"
-    move_type = {"redeploy": "REDEPLOYMENT", "relase": "RELEASE_TO_LEASE"}.get((c.get("chosen") or {}).get("id"), "OUTBOUND")
+    route: Any = (c.get("chosen") or {}).get("id")
+    move_type = {"redeploy": "REDEPLOYMENT", "relase": "RELEASE_TO_LEASE"}.get(route, "OUTBOUND")
     refnums = {"CASE_REF": c["id"], "ITEM_ID": c["assetId"], "MOVE_TYPE": move_type, "APPROVAL": c["exec"]["ref"]}
     body = {
         "orderReleaseXid": xid,

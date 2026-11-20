@@ -4,6 +4,7 @@
 """
 
 import re
+from typing import Any
 
 from di.engine.jsmath import js_round, js_sum
 from di.execution.lanes import RATE_CARD, ex_kg, ex_move_raw
@@ -203,7 +204,7 @@ def ex_trace(c: Case, r: dict, t: dict) -> dict:
 
 def _fees(c: Case, r: dict, o: dict, L, B: int, pos: dict | None) -> None:
     """Fees and freight: freight legs on the rate card (capped at 70% of the term), the rest the channel's fee."""
-    rid = r.get("id")
+    rid: Any = r.get("id")
     mv = ex_move_raw(c, r)
     if not mv:
         legs = []
@@ -306,7 +307,8 @@ def ex_actual(c: Case, line: dict) -> list[list]:
     k = f"{c['id']}|{line['kind']}"
     if k in EX_ACT:
         return EX_ACT[k]
-    P = ex_prep_parts(c, c.get("chosen") or c.get("recommendation")) if line["kind"] == "prep" else None
+    chosen: Any = c.get("chosen") or c.get("recommendation")
+    P = ex_prep_parts(c, chosen) if line["kind"] == "prep" else None
     if P:
         hrs = js_str(js_round(abs(d) / P["rate"] * 10) / 10)
         return [

@@ -34,7 +34,7 @@ exactly as the demo's own eval mode does (afCallEval). Plan and approval cards p
 
 import re
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from di import golden, policy
 from di.actions.decisions import draft_rationale
@@ -110,7 +110,7 @@ class Run:
         a = ACTIONS.get(action_id)
         clean = {k: v for k, v in i.items() if v is not None and v != ""}
         if a is not None and a.risk != "read":  # Ask never writes: recorded as skipped, as the demo's eval mode does
-            res = {"ok": True, "output": {}, "skipped": True}
+            res: dict[str, Any] = {"ok": True, "output": {}, "skipped": True}
         else:
             prev = self.ctx.preparer
             self.ctx.preparer = AGENT_OF.get(action_id, "briefer")
@@ -136,7 +136,7 @@ class Run:
 
     @property
     def account(self) -> policy.Account:
-        return self.ctx.actor.account
+        return cast(policy.Account, self.ctx.actor.account)  # Ask always runs as a signed-in person
 
     def can(self, perm: str) -> bool:
         return can(self.ctx, perm)
@@ -489,7 +489,7 @@ def r_case_explain(R: Run, p: dict) -> dict:
 
 
 def r_case_recommend(R: Run, p: dict) -> dict:
-    c = R.case(p["case"])
+    c: Any = R.case(p["case"])
     if c and not R.in_scope(c):
         return fail1(R, scope_err(R, c))
     if c.get("blocked") or not c.get("recommendation"):
@@ -536,7 +536,7 @@ def r_queue_prepare(R: Run, p: dict) -> dict:
         return {"text": "No case in that set waits for a decision packet.", "cards": [{"type": "table", "data": empty}]}
     cards = []
     for r in rows:
-        c = R.case(r["id"])
+        c: Any = R.case(r["id"])
         if R.can("submit") or R.all_policy():
             R.call("decision.prepare", {"case_id": r["id"]})  # skipped: the packets stay unsaved drafts
         rt = R.call("case.routes", {"case_id": r["id"]})
@@ -609,7 +609,7 @@ def r_case_whynot(R: Run, p: dict) -> dict:
     else:
         ex = next((x for x in o["excluded"] if x["route"] == want), None)
         hit = next((x for x in el if x["route"] == want), None)
-        top = el[0] if el else None
+        top: Any = el[0] if el else None  # set whenever `hit` is (hit is one of el)
         if ex:
             text = f"{ex['plan']} is not eligible for {o['case_id']}: the {ex['gate']} gate failed. {ex['reason']}."
             items.append({"term": ex["gate"] + " gate", "detail": ex["reason"], "cite": "Gate engine (rules)"})
@@ -662,7 +662,8 @@ def r_gate_waive(R: Run, p: dict) -> dict:
 
 
 def r_case_whatif(R: Run, p: dict) -> dict:
-    wi = p.get("whatif") or {}
+    wi: dict[str, Any] = p.get("whatif") or {}
+    factor: Any = wi.get("factor")
     cid = p["case"]
     if not p.get("whatif") and not p.get("demandOff"):
         opts = [
@@ -686,9 +687,7 @@ def r_case_whatif(R: Run, p: dict) -> dict:
     if not r["ok"]:
         return fail1(R, r)
     o = r["output"]
-    lbl = {"cost": "prep and fees", "purchase": "purchase price", "service": "service", "market": "market price"}.get(
-        wi.get("factor"), ""
-    )
+    lbl = {"cost": "prep and fees", "purchase": "purchase price", "service": "service", "market": "market price"}.get(factor, "")
     head = f"With {lbl} {'+' if wi['pct'] > 0 else ''}{wi['pct']}%" if lbl else "With the confirmed demand cancelled"
     sim = f"{o['sim']['plan']} gives {money(o['sim']['net'])}" if o.get("sim") else "no route stays eligible"
     rank = f"; the ranking changes from {o['base']['plan']}" if o.get("rank_changed") else "; the ranking does not change"
@@ -704,7 +703,8 @@ def r_case_risk(R: Run, p: dict) -> dict:
     if not g["ok"]:
         return fail1(R, g)
     rt, ev = R.call("case.routes", {"case_id": p["case"]}), R.call("case.evidence", {"case_id": p["case"]})
-    items = af_risks(R.case(p["case"]), rt["output"], ev["output"])
+    c: Any = R.case(p["case"])  # case.get above found it
+    items = af_risks(c, rt["output"], ev["output"])
     n = sum(1 for i in items if i["level"] != "ok")
     t = (
         f"{n} thing{'s' if n > 1 else ''} to check before approving {p['case']}."
@@ -719,7 +719,7 @@ def r_case_risk(R: Run, p: dict) -> dict:
 
 
 def r_case_submit(R: Run, p: dict) -> dict:
-    c = R.case(p["case"])
+    c: Any = R.case(p["case"])
     if not R.in_scope(c):
         return fail1(R, scope_err(R, c))
     if not R.can("submit"):
@@ -749,7 +749,7 @@ def r_case_submit(R: Run, p: dict) -> dict:
 
 
 def r_case_approve(R: Run, p: dict) -> dict:
-    c = R.case(p["case"])
+    c: Any = R.case(p["case"])
     if not R.in_scope(c):
         return fail1(R, scope_err(R, c))
     if not R.can("approve"):
@@ -765,7 +765,7 @@ def r_case_approve(R: Run, p: dict) -> dict:
 
 
 def r_case_record(R: Run, p: dict) -> dict:
-    c = R.case(p["case"])
+    c: Any = R.case(p["case"])
     if not R.can("assess"):
         return fail1(R, err("out_of_scope", "Only the Engineer records inspection results."))
     if not c.get("blocked") and c.get("assessment") == "Ready":
@@ -859,7 +859,7 @@ def r_approvals_inbox(R: Run, p: dict) -> dict:  # noqa: ARG001 - every runner t
 
 
 def r_outcome_reconcile(R: Run, p: dict) -> dict:
-    c = R.case(p["case"])
+    c: Any = R.case(p["case"])
     if not R.in_scope(c):
         return fail1(R, scope_err(R, c))
     tr, g = R.call("case.trace", {"case_id": c["id"]}), R.call("case.get", {"case_id": c["id"]})

@@ -17,8 +17,10 @@ lets evidence.recordResult and case.reevaluate rebuild routes to the dollar.
 import copy
 import math
 from collections.abc import Callable
+from typing import Any
 
 from di import instructions, policy, state
+from di.actions.pipeline import CallContext
 from di.actions.registry import ACTIONS, ActionError, guard, implement
 from di.cases import lifecycle, store
 from di.engine.evaluate import build_routes
@@ -66,25 +68,25 @@ def _wpick(rnd: Callable[[], float], pairs: list[tuple[str, float]]) -> str:
     return pairs[-1][0]
 
 
-def _key(action: str, i: dict, ctx) -> str:
+def _key(action: str, i: dict, ctx: CallContext) -> str:
     """The demo's ctx.key: the idempotency key, taken before the handler changes what it depends on (the cycle)."""
     a = ACTIONS[action]
     return f"{action}:{a.idem(i, ctx)}" if a.idem else action
 
 
-def _by(ctx) -> str:
+def _by(ctx: CallContext) -> str:
     """Who acts (the demo's x.by)."""
     return ctx.actor.account.label if ctx.actor.account else "Enterprise system adapter"
 
 
-def _case(ctx, case_id: str) -> store.Case:
+def _case(ctx: CallContext, case_id: str) -> store.Case:
     c = store.get(ctx.session, case_id, for_update=True)
     if c is None:
         raise ActionError("not_found", f"No live case {case_id}.")
     return c
 
 
-def _peek(ctx, case_id: str) -> store.Case:
+def _peek(ctx: CallContext, case_id: str) -> store.Case:
     """The case for a guard (the pipeline has checked it exists)."""
     c = store.get(ctx.session, case_id)
     if c is None:
@@ -101,7 +103,7 @@ def skey(c: store.Case, stage: int, x: object = None) -> str:
     return f"{c['id']}:{stage}" + (f":{x}" if x is not None else "")
 
 
-def push_event(ctx, e: dict, key: str | None) -> dict:
+def push_event(ctx: CallContext, e: dict, key: str | None) -> dict:
     """The demo's pushEvent: a new event at the head of the log (EVENTS), stamped with the action that made it."""
     s = ctx.session
     n = state.next_number(s, "events", "EV-", EVENT_SEQ_START)
@@ -117,7 +119,7 @@ def push_event(ctx, e: dict, key: str | None) -> dict:
     return state.add(s, "events", e["id"], e)
 
 
-def rb_log(ctx, type_: str, note: str, key: str) -> dict:
+def rb_log(ctx: CallContext, type_: str, note: str, key: str) -> dict:
     """The demo's rbLog: an access-control entry in the event log."""
     return push_event(
         ctx,
@@ -153,7 +155,7 @@ def _rerank(c: store.Case) -> None:
 
 # ---------------------------------------------------------------- decision flow
 @guard("decision.submit")
-def submit_guard(i, ctx):
+def submit_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     if c["stage"] != "awaiting_approval":
         return "conflict", f"{c['id']} is not awaiting approval."
@@ -162,13 +164,13 @@ def submit_guard(i, ctx):
     return None
 
 
-def _submit_idem(i, ctx):
+def _submit_idem(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return skey(c, 7, f"submit:{cyc(c)}")
 
 
 @implement("decision.submit", idem=_submit_idem, emits=["decision.submitted"])
-def submit(i, ctx):
+def submit(i: dict[str, Any], ctx: CallContext):
     key = _key("decision.submit", i, ctx)
     c, by = _case(ctx, i["case_id"]), _by(ctx)
     # byId: the demo adds it right after (afOn('action')), for the self-approval rule
@@ -187,7 +189,7 @@ def submit(i, ctx):
     return {"case_id": c["id"], "submitted_by": by}
 
 
-def _ap_guard(i, ctx, c) -> tuple[str, str] | None:  # noqa: ARG001 - guards take (input, ctx, case)
+def _ap_guard(i: dict[str, Any], ctx: CallContext, c) -> tuple[str, str] | None:  # noqa: ARG001 - guards take (input, ctx, case)
     """The demo's apReviewed and apGuard: shared by approve and override."""
     if i.get("reviewed") is not True:
         return "validation_error", "Confirm that you reviewed the evidence snapshot."
@@ -207,7 +209,7 @@ def _ap_guard(i, ctx, c) -> tuple[str, str] | None:  # noqa: ARG001 - guards tak
     return None
 
 
-def _ap_policy(i, ctx, c) -> tuple | None:
+def _ap_policy(i: dict[str, Any], ctx: CallContext, c) -> tuple | None:
     """The demo's afPolicy: no self-approval, and the approver's limit (the larger of the route's net and the spend).
     A limit refusal carries `escalate: 'admin'`, as in the demo."""
     r = next((x for x in c["routes"] if x["plan"] == i.get("route")), None) or c.get("recommendation")
@@ -235,7 +237,7 @@ def _spend(i) -> float:
 
 
 @guard("decision.approve")
-def approve_guard(i, ctx):
+def approve_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     g = _ap_guard(i, ctx, c)
     rec = c.get("recommendation")
@@ -245,17 +247,17 @@ def approve_guard(i, ctx):
 
 
 @guard("decision.override")
-def override_guard(i, ctx):
+def override_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return _ap_guard(i, ctx, c) or _ap_policy(i, ctx, c)
 
 
-def _approve_idem(i, ctx):
+def _approve_idem(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return skey(c, 7, cyc(c))
 
 
-def _approve(action: str, i, ctx) -> dict:
+def _approve(action: str, i: dict[str, Any], ctx: CallContext) -> dict:
     """The demo's approveHandler: the approval, the execution plan with its first step active, and the instruction."""
     key = _key(action, i, ctx)
     c, by = _case(ctx, i["case_id"]), _by(ctx)
@@ -297,28 +299,28 @@ def _approve(action: str, i, ctx) -> dict:
 
 
 @implement("decision.approve", idem=_approve_idem, emits=["instruction.sent"])
-def approve(i, ctx):
+def approve(i: dict[str, Any], ctx: CallContext):
     return _approve("decision.approve", i, ctx)
 
 
 @implement("decision.override", idem=_approve_idem, emits=["instruction.sent"])
-def override(i, ctx):
+def override(i: dict[str, Any], ctx: CallContext):
     return _approve("decision.override", i, ctx)
 
 
 @guard("decision.decline")
-def decline_guard(i, ctx):
+def decline_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return ("conflict", f"{c['id']} is not awaiting approval.") if c["stage"] != "awaiting_approval" else None
 
 
-def _decline_idem(i, ctx):
+def _decline_idem(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return skey(c, 7, f"decline:{cyc(c)}")
 
 
 @implement("decision.decline", idem=_decline_idem, emits=["decision.declined"])
-def decline(i, ctx):
+def decline(i: dict[str, Any], ctx: CallContext):
     key = _key("decision.decline", i, ctx)
     c, by = _case(ctx, i["case_id"]), _by(ctx)
     c["reevalReason"] = f"Declined by {by}: {i['reason']}"
@@ -358,7 +360,7 @@ def draft_rationale(c: store.Case) -> str:
 
 
 @guard("decision.prepare")
-def prepare_guard(i, ctx):
+def prepare_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     if c.get("blocked"):
         return "conflict", f"{c['id']}: {c['blocked']['reason']}"
@@ -368,7 +370,7 @@ def prepare_guard(i, ctx):
 
 
 @implement("decision.prepare")
-def prepare(i, ctx):
+def prepare(i: dict[str, Any], ctx: CallContext):
     c, by = _case(ctx, i["case_id"]), _by(ctx)
     snap = c.get("snapshot")
     c["packet"] = {
@@ -385,7 +387,7 @@ def prepare(i, ctx):
 
 # ---------------------------------------------------------------- evidence
 @guard("evidence.request")
-def request_guard(i, ctx):
+def request_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     if not c.get("blocked"):
         return "conflict", f"{c['id']} has no missing evidence to request."
@@ -394,13 +396,13 @@ def request_guard(i, ctx):
     return None
 
 
-def _request_idem(i, ctx):
+def _request_idem(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return skey(c, 5, f"request:{cyc(c)}")
 
 
 @implement("evidence.request", idem=_request_idem, emits=["evidence.requested"])
-def evidence_request(i, ctx):
+def evidence_request(i: dict[str, Any], ctx: CallContext):
     key = _key("evidence.request", i, ctx)
     c, by = _case(ctx, i["case_id"]), _by(ctx)
     c["reqN"] = (c.get("reqN") or 0) + 1
@@ -424,13 +426,13 @@ def evidence_request(i, ctx):
 
 
 @guard("evidence.recordResult")
-def record_guard(i, ctx):
+def record_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return ("duplicate", f"{c['id']} is already assessed") if not c.get("blocked") and c.get("assessment") == "Ready" else None
 
 
 @implement("evidence.recordResult", idem=lambda i, ctx: skey(_peek(ctx, i["case_id"]), 5, "result"), emits=["inspection.result"])
-def record_result(i, ctx):
+def record_result(i: dict[str, Any], ctx: CallContext):
     key = _key("evidence.recordResult", i, ctx)
     c = _case(ctx, i["case_id"])
     rnd = _seeded(key)
@@ -469,18 +471,18 @@ def record_result(i, ctx):
 
 
 @guard("case.reevaluate")
-def reevaluate_guard(i, ctx):
+def reevaluate_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return ("conflict", f"{i['case_id']} is not waiting for re-evaluation.") if c["stage"] != "reeval" else None
 
 
-def _reeval_idem(i, ctx):
+def _reeval_idem(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
     return skey(c, 6, f"reeval:{cyc(c)}")
 
 
 @implement("case.reevaluate", idem=_reeval_idem, emits=["decision.reevaluated"])
-def reevaluate(i, ctx):
+def reevaluate(i: dict[str, Any], ctx: CallContext):
     key = _key("case.reevaluate", i, ctx)
     c, by = _case(ctx, i["case_id"]), _by(ctx)
     was = c["recommendation"]["plan"] if c.get("recommendation") else None
@@ -507,7 +509,7 @@ def reevaluate(i, ctx):
 
 # ---------------------------------------------------------------- scenarios (saved what-ifs; the decision never changes)
 @implement("scenario.save")
-def scenario_save(i, ctx):
+def scenario_save(i: dict[str, Any], ctx: CallContext):
     """The demo names a scenario `sc` + hashId of its journal position (`scenario.save#<seq>`). The server's journal
     seq is only known after the handler, so the name hashes the workspace's own count of saved scenarios instead."""
     s, by = ctx.session, _by(ctx)
@@ -522,7 +524,7 @@ def scenario_save(i, ctx):
 
 
 @implement("scenario.delete")
-def scenario_delete(i, ctx):
+def scenario_delete(i: dict[str, Any], ctx: CallContext):
     s = ctx.session
     _by(ctx)
     for x in saved_scenarios(s, i["case_id"]):
@@ -537,15 +539,23 @@ def saved_scenarios(s, case_id: str) -> list[dict]:
 
 
 # ---------------------------------------------------------------- notifications, comments, escalations
-def _recipient_guard(i, ctx):
+def _recipient_guard(i: dict[str, Any], ctx: CallContext):
     return ("not_found", "Unknown recipient.") if policy.account(i["to"], ctx.actor.ctx) is None else None
+
+
+def _recipient(i: dict[str, Any], ctx: CallContext) -> policy.Account:
+    """The recipient _recipient_guard found."""
+    to = policy.account(i["to"], ctx.actor.ctx)
+    if to is None:
+        raise ActionError("not_found", "Unknown recipient.")
+    return to
 
 
 guard("notify.send")(_recipient_guard)
 guard("escalation.send")(_recipient_guard)
 
 
-def _notify(ctx, n: dict) -> dict:
+def _notify(ctx: CallContext, n: dict) -> dict:
     """Add a notification (the demo's S.notes.push, numbered from S.ntSeq)."""
     s = ctx.session
     n = {"id": f"NTF-{state.next_number(s, 'notes', 'NTF-', NOTE_SEQ_START)}", **n}
@@ -557,8 +567,8 @@ def _notify(ctx, n: dict) -> dict:
     idem=lambda i, ctx: "ntf:" + hash_id(f"{i['ex_id']}|{i['to']}|{i['msg']}"),  # noqa: ARG005 - idem keys take (input, ctx)
     emits=["notification.sent"],
 )
-def notify_send(i, ctx):
-    key, by, to = _key("notify.send", i, ctx), _by(ctx), policy.account(i["to"], ctx.actor.ctx)
+def notify_send(i: dict[str, Any], ctx: CallContext):
+    key, by, to = _key("notify.send", i, ctx), _by(ctx), _recipient(i, ctx)
     n = _notify(
         ctx,
         {
@@ -571,7 +581,7 @@ def notify_send(i, ctx):
 
 
 @guard("notify.acknowledge")
-def ack_guard(i, ctx):
+def ack_guard(i: dict[str, Any], ctx: CallContext):
     n = state.get(ctx.session, "notes", i["id"])
     if not n:
         return "not_found", f"No notification {i['id']}."
@@ -583,9 +593,9 @@ def ack_guard(i, ctx):
 
 
 @implement("notify.acknowledge", idem=lambda i, ctx: "ntf-ack:" + i["id"], emits=["notification.acknowledged"])  # noqa: ARG005 - idem keys take (input, ctx)
-def notify_acknowledge(i, ctx):
+def notify_acknowledge(i: dict[str, Any], ctx: CallContext):
     key, by = _key("notify.acknowledge", i, ctx), _by(ctx)
-    n = state.get(ctx.session, "notes", i["id"], for_update=True)
+    n = state.need(ctx.session, "notes", i["id"], for_update=True)
     n.update(status="ack", ackBy=by, ackAt=NOW)
     state.put(ctx.session, "notes", n["id"], n)
     rb_log(ctx, "notification.acknowledged", f"{n['id']} · {n['title']} · in hand by {by}", key)
@@ -593,7 +603,7 @@ def notify_acknowledge(i, ctx):
 
 
 @implement("comment.add")
-def comment_add(i, ctx):
+def comment_add(i: dict[str, Any], ctx: CallContext):
     """Comments are data, never instructions: kept as posted (up to 500 characters) under the record's key."""
     s, by = ctx.session, _by(ctx)
     n = state.next_number(s, "comments", "CM-", 0)
@@ -610,8 +620,8 @@ def comments(s, key: str) -> list[dict]:
     "escalation.send",
     idem=lambda i, ctx: f"esc:{i['case_id']}:{i['to']}:{hash_id(i['msg'])}",  # noqa: ARG005 - idem keys take (input, ctx)
 )
-def escalation_send(i, ctx):
-    key, by, to = _key("escalation.send", i, ctx), _by(ctx), policy.account(i["to"], ctx.actor.ctx)
+def escalation_send(i: dict[str, Any], ctx: CallContext):
+    key, by, to = _key("escalation.send", i, ctx), _by(ctx), _recipient(i, ctx)
     n = _notify(
         ctx,
         {

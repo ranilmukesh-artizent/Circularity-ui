@@ -77,13 +77,13 @@ helpers that take a Case now read the fields above; the per-case figures do not 
 
 import re
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy.orm import Session
 
 from di import policy
-from di.auth import Principal, principal
+from di.auth import Principal
 from di.cases import store
-from di.db import get_session
+from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round, js_sum
 from di.execution import as_sc, ex_prep_parts, ex_trace
 from di.execution.plan import value_order
@@ -206,7 +206,7 @@ def row(c: Case) -> dict:
 
 # ---------------------------------------------------------------- Returned assets
 @router.get("/returned")
-def returned(tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def returned(p: CurrentPrincipal, session: DbSession, tenant: str = "All"):
     """Returned assets: the queue, the KPI strip, the Expected toggle's count and the account's open notifications."""
     p.require_page("product", "received")
     a = p.account
@@ -221,7 +221,7 @@ def returned(tenant: str = "All", p: Principal = Depends(principal), session: Se
 
 
 @router.get("/expected")
-def expected(tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)):  # noqa: ARG001 - unused dependency left in place (C1 changes no behaviour)
+def expected(p: CurrentPrincipal, session: DbSession, tenant: str = "All"):  # noqa: ARG001 - unused dependency left in place (C1 changes no behaviour)
     """Expected returns: the account's (tenant, warehouse, top-bar filter), the toggle's count and the source."""
     p.require_page("product", "expected")
     ok = expected_for(p.account, p.ctx)
@@ -278,10 +278,10 @@ def dp_visible(p: Principal, c: Case | None) -> bool:
 
 
 @router.get("/journey/{case_id}")
-def journey(case_id: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def journey(case_id: str, p: CurrentPrincipal, session: DbSession):
     """The journey strip and guide on Returned assets (step 0) and Asset intelligence (step 1)."""
     c = store.get(session, case_id)
-    if not dp_visible(p, c):
+    if c is None or not dp_visible(p, c):
         return {"visible": False}
     R = case_rul(c)
     k = len(return_history(c))
@@ -519,13 +519,13 @@ def default_asset(p: Principal, session: Session) -> str:
 
 
 @router.get("/asset")
-def asset_default(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def asset_default(p: CurrentPrincipal, session: DbSession):
     """Asset intelligence for the default asset (the frontend passes the remembered one to /asset/{id})."""
     return asset(default_asset(p, session), p, session)
 
 
 @router.get("/asset/{case_id}")
-def asset(case_id: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def asset(case_id: str, p: CurrentPrincipal, session: DbSession):
     """Asset intelligence for one case."""
     c = load_case(p, session, case_id, "product", "asset")
     h = health(c)
@@ -582,7 +582,7 @@ def asset(case_id: str, p: Principal = Depends(principal), session: Session = De
 
 # ---------------------------------------------------------------- pools
 @router.get("/pools")
-def pools(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def pools(p: CurrentPrincipal, session: DbSession):
     """The pool optimiser: the two pools in the account's tenants, solved. Hidden while pools are off (the demo's
     FEAT.pools), as canPage('product', 'pools') hides it."""
     p.require_page("product", "pools")

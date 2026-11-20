@@ -84,7 +84,8 @@ def _unhandled(request: Request, exc: Exception) -> JSONResponse:
 
 
 def register(app: FastAPI) -> None:
-    app.add_exception_handler(ApiError, _api_error)
-    app.add_exception_handler(StarletteHTTPException, _http_error)
-    app.add_exception_handler(RequestValidationError, _validation_error)
+    # Starlette types a handler as taking any Exception; each of these is registered for its own exception class.
+    app.add_exception_handler(ApiError, _api_error)  # type: ignore[arg-type]
+    app.add_exception_handler(StarletteHTTPException, _http_error)  # type: ignore[arg-type]
+    app.add_exception_handler(RequestValidationError, _validation_error)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, _unhandled)

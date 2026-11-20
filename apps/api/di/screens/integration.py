@@ -77,17 +77,17 @@ Facade (apps/web/src/api/integration.ts) → here, export by export:
 import json
 import re
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Annotated, Any, Literal, overload
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di import clock, golden, policy, state
 from di.actions.decisions import comments
-from di.auth import Principal, principal
+from di.auth import Principal
 from di.connectors.registry import ADAPTERS
-from di.db import get_session
+from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round
 from di.reads.common import ms
 from di.reads.constants import MAP_TARGET, MAPPINGS, SRC_TYPES
@@ -182,6 +182,10 @@ def _now() -> int:
     return ms(clock.now().isoformat())
 
 
+@overload
+def _ts(v: datetime) -> int: ...
+@overload
+def _ts(v: None) -> None: ...
 def _ts(v: datetime | None) -> int | None:
     return ms(v.astimezone(UTC).isoformat()) if v else None
 
@@ -230,7 +234,7 @@ class Fabric:
         # the end of every window: now, or the newest run when the clock is behind the synced data (pinned test clock)
         self.ref = max(self.now, _ts(newest) or 0)
         since7 = datetime.fromtimestamp((self.ref - 7 * DAY) / 1000, UTC)
-        self.agg = {
+        self.agg: dict[str, Any] = {
             r["source_id"]: r
             for r in s.execute(
                 text(
@@ -242,7 +246,7 @@ class Fabric:
                 {"s": since7},
             ).mappings()
         }
-        self.latency = {
+        self.latency: dict[str, int] = {
             r[0]: js_round(float(r[1]))
             for r in s.execute(text("SELECT source_id, avg(duration_ms) FROM fetch_log WHERE duration_ms IS NOT NULL GROUP BY 1"))
         }
@@ -350,7 +354,7 @@ class Fabric:
     def failed_in(self, sid: str, days: int) -> int:
         since = datetime.fromtimestamp((self.ref - days * DAY) / 1000, UTC)
         q = text("SELECT coalesce(sum(records_failed), 0) FROM sync_run WHERE source_id = :i AND started_at >= :s")
-        return int(self.s.execute(q, {"i": sid, "s": since}).scalar())
+        return int(self.s.execute(q, {"i": sid, "s": since}).scalar_one())
 
     # ---- across sources
     def hourly(self) -> list[dict]:
@@ -382,7 +386,7 @@ class Fabric:
         where = {"open": "status IN ('open', 'escalated')", "resolved": "status = 'resolved'", "all": "true"}[status]
         args = {"src": source}
         cond = f'{where} AND (CAST(:src AS text) IS NULL OR authority = :src OR "values" ? :src)'
-        total = self.s.execute(text(f"SELECT count(*) FROM conflict WHERE {cond}"), args).scalar()  # noqa: S608 - `where` comes from a fixed mapping; values are bound
+        total = self.s.execute(text(f"SELECT count(*) FROM conflict WHERE {cond}"), args).scalar_one()  # noqa: S608 - `where` comes from a fixed mapping; values are bound
         q = f"SELECT * FROM conflict WHERE {cond} ORDER BY id DESC" + (" LIMIT :n" if limit else "")  # noqa: S608 - `where` comes from a fixed mapping; values are bound
         rows = self.s.execute(text(q), args | ({"n": limit} if limit else {})).mappings()
         return [self._conflict(r) for r in rows], total
@@ -535,12 +539,12 @@ def _status_counts(f: Fabric) -> dict:
 # ---------------------------------------------------------------- endpoints
 @router.get("/sources")
 def sources(
+    p: CurrentPrincipal,
+    session: DbSession,
     cat: str | None = None,
     status: str | None = None,
     method: str | None = None,
     q: str | None = None,
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
 ):
     _require_any(p, *SECTIONS_SOURCES, "tables", "models", "monitor")
     f = Fabric(session, p)
@@ -549,12 +553,7 @@ def sources(
 
 
 @router.get("/sources/{source_id}")
-def source_detail(
-    source_id: str,
-    days: int = Query(30, ge=1, le=180),
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
-):
+def source_detail(source_id: str, p: CurrentPrincipal, session: DbSession, days: Annotated[int, Query(ge=1, le=180)] = 30):
     _require_any(p, *SECTIONS_SOURCES, "tables", "models", "monitor")
     f = Fabric(session, p)
     s = f.by_id.get(source_id)
@@ -577,7 +576,7 @@ def source_detail(
 
 
 @router.get("/overview")
-def overview(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def overview(p: CurrentPrincipal, session: DbSession):
     _require_any(p, "overview")
     f = Fabric(session, p)
     catalog = _catalog(f)
@@ -603,9 +602,7 @@ def overview(p: Principal = Depends(principal), session: Session = Depends(get_s
 
 
 @router.get("/map")
-def source_map(
-    limit: int = Query(100, ge=1, le=2000), p: Principal = Depends(principal), session: Session = Depends(get_session)
-):
+def source_map(p: CurrentPrincipal, session: DbSession, limit: Annotated[int, Query(ge=1, le=2000)] = 100):
     _require_any(p, "map")
     f = Fabric(session, p)
     hh = f.hourly()
@@ -642,7 +639,7 @@ def source_map(
 
 
 @router.get("/tables")
-def tables(source: str | None = None, p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def tables(p: CurrentPrincipal, session: DbSession, source: str | None = None):
     _require_any(p, "tables")
     f = Fabric(session, p)
     models = {k: m for k, m in f.tables.items() if k in f.by_id and (source is None or k == source)}
@@ -659,10 +656,10 @@ def tables(source: str | None = None, p: Principal = Depends(principal), session
 
 
 @router.get("/models")
-def models(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def models(p: CurrentPrincipal, session: DbSession):
     _require_any(p, "models")
     f = Fabric(session, p)
-    records = dict(session.execute(text("SELECT model, count(*) FROM canonical GROUP BY model")).all())
+    records: dict[str, int] = dict(session.execute(text("SELECT model, count(*) FROM canonical GROUP BY model")).tuples().all())
     return {
         "canon": [m | {"records": records.get(CANON_PFX.get(m["n"], ""), 0)} for m in CANON],
         "examples": CANON_EX,
@@ -680,16 +677,16 @@ def models(p: Principal = Depends(principal), session: Session = Depends(get_ses
 
 @router.get("/events")
 def events(
-    dir: str | None = Query(None, pattern="^(in|out)$"),
+    p: CurrentPrincipal,
+    session: DbSession,
+    dir: Annotated[str | None, Query(pattern="^(in|out)$")] = None,
     issues: bool = False,
     q: str | None = None,
-    limit: int | None = Query(None, ge=1, le=5000),
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
+    limit: Annotated[int | None, Query(ge=1, le=5000)] = None,
 ):
     _require_any(p, "events")
     ev = state.items(session, "events", newest_first=True)
-    ok = case_openable(session, p, {e.get("caseId") for e in ev if e.get("caseId")})
+    ok = case_openable(session, p, {e["caseId"] for e in ev if e.get("caseId")})
     qq = (q or "").lower()
 
     def keep(e: dict) -> bool:
@@ -715,11 +712,11 @@ def events(
 
 @router.get("/conflicts")
 def conflicts(
-    status: Literal["open", "resolved", "all"] = Query("open"),
+    p: CurrentPrincipal,
+    session: DbSession,
+    status: Annotated[Literal["open", "resolved", "all"], Query()] = "open",
     source: str | None = None,
-    limit: int = Query(200, ge=1, le=5000),
-    p: Principal = Depends(principal),
-    session: Session = Depends(get_session),
+    limit: Annotated[int, Query(ge=1, le=5000)] = 200,
 ):
     _require_any(p, "conflicts")
     f = Fabric(session, p)
@@ -731,7 +728,7 @@ def conflicts(
 
 
 @router.get("/monitor")
-def monitor(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+def monitor(p: CurrentPrincipal, session: DbSession):
     _require_any(p, "monitor")
     f = Fabric(session, p)
     hh = f.hourly()

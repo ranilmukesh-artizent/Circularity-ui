@@ -52,6 +52,13 @@ class Actor:
     def role(self) -> str:
         return "System" if self.system else (self.account.role if self.account else "—")
 
+    @property
+    def person(self) -> policy.Account:
+        """The signed-in account, for code only people reach (invoke() refuses a caller who is not signed in)."""
+        if self.account is None:
+            raise ActionError("out_of_scope", "Sign in first.")
+        return self.account
+
 
 SYSTEM = Actor(account=None, system=True)
 
@@ -67,7 +74,7 @@ class CallContext:
     now: datetime = field(default_factory=clock.now)  # the workspace clock (di/clock.py)
 
 
-def fail(code: str, message: str, extra: dict | None = None) -> dict:
+def fail(code: str, message: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
     """A refusal in the demo's shape; `extra` adds fields the demo puts beside code and message (e.g. escalate)."""
     return {"ok": False, "error": {"code": code, "message": message, **(extra or {})}}
 
@@ -116,24 +123,25 @@ def _agent_gate(a: ActionDef, ctx: CallContext) -> tuple[str, str] | None:
 def _clean(i: dict[str, Any]) -> dict[str, Any]:
     """Inputs are stored; anything that looks like a secret is never kept."""
 
-    def walk(x):
+    def walk(x: Any) -> Any:
         if isinstance(x, dict):
             return {k: walk(v) for k, v in x.items() if not any(w in k.lower() for w in SECRET_WORDS)}
         if isinstance(x, list):
             return [walk(v) for v in x]
         return x
 
-    return walk(i)
+    cleaned: dict[str, Any] = walk(i)
+    return cleaned
 
 
-def _output_ref(o: dict | None) -> dict | None:
+def _output_ref(o: dict[str, Any] | None) -> dict[str, Any] | None:
     if not isinstance(o, dict):
         return None
     ref = {k: o[k] for k in ("id", "ref", "case_id", "source_id") if o.get(k) is not None}
     return ref or None
 
 
-def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict:
+def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[str, Any]:
     a = ACTIONS.get(action_id)
     i = i or {}
     if a is None:
@@ -159,6 +167,8 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict:
             return fail("not_found", f"No live case {i.get('case_id', '')}.")
         owner, location = where
         acct = actor.account
+        if acct is None:  # not reached: step 2 refused a person who is not signed in
+            return fail("out_of_scope", "Sign in first.")
         if not policy.tenant_ok(acct, owner, actor.ctx) or not policy.location_ok(acct, location):
             msg = (
                 f"{case_id} is at {location}, outside your warehouse."
@@ -170,8 +180,8 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict:
     if ctx.preparer and (g := _agent_gate(a, ctx)):
         return fail(*g)
     # 7 the action's own guard
-    if a.guard and (g := a.guard(i, ctx)):
-        return fail(*g)
+    if a.guard and (refusal := a.guard(i, ctx)):
+        return fail(*refusal)
     # 8 policy limits: approval limits and agent autonomy arrive with their handlers (B12)
     # 9 idempotency
     key = f"{a.id}:{a.idem(i, ctx)}" if a.idem else (f"{a.id}:{ctx.idem_key}" if ctx.idem_key and a.changes_state else None)

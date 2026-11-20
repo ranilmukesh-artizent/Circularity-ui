@@ -30,7 +30,7 @@ from di.connectors.generic import utc
 from di.connectors.http import OAuthClientCredentials, SourceClient
 
 PER_PAGE = 100
-DISPOSITION = {
+DISPOSITION: dict[str | None, str] = {
     "rts": "restock",
     "rts_drop_ship": "restock",
     "refurbish": "refurbish",

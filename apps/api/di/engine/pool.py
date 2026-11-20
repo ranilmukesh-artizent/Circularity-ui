@@ -8,6 +8,8 @@ A pool is {supplies: [{id, units, order}], dests: [{id, cap}], val: {supply id: 
 None means that supply cannot serve that destination.
 """
 
+from typing import Any
+
 
 def solve_pool(pool: dict) -> dict:
     supplies = sorted(pool["supplies"], key=lambda s: s["order"])
@@ -33,7 +35,7 @@ def solve_pool(pool: dict) -> dict:
 
     # exact search: every split of each supply's units across destinations, keeping only splits that place as many
     # units as the remaining capacity allows; the first best total found wins
-    best = {"t": float("-inf"), "a": None}
+    best: dict[str, Any] = {"t": float("-inf"), "a": None}
 
     def splits(s, di, left, cap, cur):
         if di == len(dests):

@@ -57,7 +57,7 @@ def hh() -> list[dict]:
 
 def hh_totals() -> dict:
     """The demo's hhTotals: the last 24 hours' totals, the runs in progress and the success share."""
-    t = {"ok": 0, "warn": 0, "bad": 0}
+    t: dict[str, float] = {"ok": 0, "warn": 0, "bad": 0}
     for b in hh():
         for k in t:
             t[k] += b[k]

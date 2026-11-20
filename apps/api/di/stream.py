@@ -32,13 +32,15 @@ import asyncio
 import json
 import logging
 import threading
+from collections.abc import AsyncIterator
 from datetime import datetime
+from typing import Annotated, Any
 
 import psycopg
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials
-from sqlalchemy import text
+from sqlalchemy import RowMapping, text
 from starlette.concurrency import run_in_threadpool
 
 from di import auth, policy
@@ -53,14 +55,18 @@ HEARTBEAT_S = 15
 REPLAY_MAX = 500
 
 
-def _row(r) -> dict:
+Event = dict[str, Any]
+EventQueue = asyncio.Queue[Event]
+
+
+def _row(r: RowMapping) -> Event:
     d = dict(r)
     if isinstance(d.get("at"), datetime):
         d["at"] = d["at"].isoformat()
     return d
 
 
-def fetch(after: int, limit: int = REPLAY_MAX) -> list[dict]:
+def fetch(after: int, limit: int = REPLAY_MAX) -> list[Event]:
     with engine.connect() as conn:
         rows = conn.execute(
             text("SELECT * FROM stream_event WHERE id > :a ORDER BY id LIMIT :n"), {"a": after, "n": limit}
@@ -70,19 +76,20 @@ def fetch(after: int, limit: int = REPLAY_MAX) -> list[dict]:
 
 def latest_id() -> int:
     with engine.connect() as conn:
-        return conn.execute(text("SELECT coalesce(max(id), 0) FROM stream_event")).scalar()
+        last: int = conn.execute(text("SELECT coalesce(max(id), 0) FROM stream_event")).scalar_one()
+        return last
 
 
 class Broker:
     """One LISTEN connection per process, fanned out to every open stream's asyncio queue."""
 
     def __init__(self) -> None:
-        self._subs: set[tuple[asyncio.AbstractEventLoop, asyncio.Queue]] = set()
+        self._subs: set[tuple[asyncio.AbstractEventLoop, EventQueue]] = set()
         self._lock = threading.Lock()
         self._thread: threading.Thread | None = None
 
-    def subscribe(self) -> asyncio.Queue:
-        q: asyncio.Queue = asyncio.Queue(maxsize=1000)
+    def subscribe(self) -> EventQueue:
+        q: EventQueue = asyncio.Queue(maxsize=1000)
         with self._lock:
             self._subs.add((asyncio.get_running_loop(), q))
             if self._thread is None or not self._thread.is_alive():
@@ -90,14 +97,14 @@ class Broker:
                 self._thread.start()
         return q
 
-    def unsubscribe(self, q: asyncio.Queue) -> None:
+    def unsubscribe(self, q: EventQueue) -> None:
         with self._lock:
             self._subs = {s for s in self._subs if s[1] is not q}
 
     def subscribers(self) -> int:
         return len(self._subs)
 
-    def _publish(self, ev: dict) -> None:
+    def _publish(self, ev: Event) -> None:
         with self._lock:
             subs = list(self._subs)
         for loop, q in subs:
@@ -120,7 +127,7 @@ class Broker:
                 threading.Event().wait(2)
 
 
-def _offer(q: asyncio.Queue, ev: dict) -> None:
+def _offer(q: EventQueue, ev: Event) -> None:
     if q.full():  # a client that stops reading loses the oldest events, not the server's memory
         q.get_nowait()
     q.put_nowait(ev)
@@ -129,7 +136,7 @@ def _offer(q: asyncio.Queue, ev: dict) -> None:
 BROKER = Broker()
 
 
-def visible(p: auth.Principal, ev: dict) -> bool:
+def visible(p: auth.Principal, ev: Event) -> bool:
     if ev["tenant"] is not None and not can_see_case(p.account, p.ctx, {"owner": ev["tenant"], "location": ev["location"] or ""}):
         return False
     kind = ev["kind"]
@@ -142,7 +149,7 @@ def visible(p: auth.Principal, ev: dict) -> bool:
     return True
 
 
-def sse(ev: dict) -> str:
+def sse(ev: Event) -> str:
     data = {k: ev[k] for k in ("id", "kind", "case_id", "at", "payload")}
     return f"id: {ev['id']}\nevent: {ev['kind']}\ndata: {json.dumps(data, separators=(',', ':'))}\n\n"
 
@@ -160,10 +167,10 @@ def _principal(authorization: str | None, ticket: str | None) -> auth.Principal:
 @router.get("/api/stream")
 async def stream(
     request: Request,
-    ticket: str | None = Query(None, description="a stream ticket from POST /api/auth/stream-ticket, for EventSource"),
-    last_event_id: int | None = Query(None, description="resume after this event id"),
-    authorization: str | None = Header(None),
-    last_event_header: str | None = Header(None, alias="Last-Event-ID"),
+    ticket: Annotated[str | None, Query(description="a stream ticket from POST /api/auth/stream-ticket, for EventSource")] = None,
+    last_event_id: Annotated[int | None, Query(description="resume after this event id")] = None,
+    authorization: Annotated[str | None, Header()] = None,
+    last_event_header: Annotated[str | None, Header(alias="Last-Event-ID")] = None,
 ) -> StreamingResponse:
     # checked once, here: the stream keeps running after a ticket expires (a reconnect fetches a new one)
     p = await run_in_threadpool(_principal, authorization, ticket)  # a database read: off the event loop
@@ -171,7 +178,7 @@ async def stream(
     if resume is None and last_event_header and last_event_header.isdigit():
         resume = int(last_event_header)
 
-    async def events():
+    async def events() -> AsyncIterator[str]:
         q = BROKER.subscribe()  # subscribe before replaying, so nothing falls between the two
         sent = 0
         try:
