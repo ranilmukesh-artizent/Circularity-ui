@@ -8,10 +8,29 @@ From Windows, run every script below through WSL:
 | Suite | Where | Command | Size and time (20 Nov 2026) |
 |---|---|---|---|
 | api (di) | `apps/api/tests` | `bash scripts/dev/full-suite.sh` (all) / `bash scripts/dev/api-test.sh tests/test_x.py` | ~3,450 tests, ~25 min |
-| source-sim | `apps/source-sim/tests` | part of `full-suite.sh`; alone: `docker compose exec -T source-sim pytest -q` | 208 tests, ~1 min |
+| source-sim | `apps/source-sim/tests` | part of `full-suite.sh`; alone: `docker compose exec -T source-sim pytest -q` | 210 tests, ~1 min |
 | web unit | `apps/web/src/**/*.test.ts` (vitest, jsdom) | `bash scripts/dev/web-check.sh` | 12 tests + tsc, ~1 min |
 | browser smoke | `apps/web/scripts/smoke-*.mjs` (Node Playwright, installed Chrome) | `node apps/web/scripts/smoke-pages.mjs <baseUrl> [accounts…]` from `apps/web` on the host | ~5 min per mode for 11 accounts |
-| CI | `.github/workflows/ci.yml` | ruff + pytest for api and source-sim; `npm run build` for web | — |
+| CI | `.github/workflows/ci.yml` | see "CI" below | ~30 min (the `stack` job) |
+
+## CI
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main` and `feature/fullstack-poc`. It needs no
+secret (without `GROQ_API_KEY`, Ask uses its rule-based fallback). Read-only token, superseded runs on the same ref are
+cancelled, every job has a timeout, and actions and images are pinned by commit SHA or digest.
+
+| Job | What it runs |
+|---|---|
+| `stack` | `docker compose up` of postgres, source-sim and api (worker left stopped), waits for `/api/health` and `/health`, resets the simulator, then the api suite and the source-sim suite inside their containers, as `full-suite.sh` does; `docker compose down -v` always |
+| `web` | Node 24: `npm ci`, `npm test` (vitest), `npm run build`, `npm audit --audit-level=high` |
+| `python-lint` | per service: `ruff check` (the ruff pinned in its requirements) and `pip-audit -r requirements.lock` |
+| `secrets` | gitleaks: the PR's commits on pull requests, the full history on pushes |
+
+Still to come: `ruff format --check` (C1), ESLint and knip (C2), mypy (C3), `up --wait` once every service has a
+healthcheck (F1); they sit commented out in the workflow with a TODO naming the step. Dependabot
+(`.github/dependabot.yml`) opens weekly grouped minor/patch updates for pip, npm, docker and actions.
+`.pre-commit-config.yaml` runs gitleaks, ruff check, end-of-file-fixer and mixed-line-ending (LF) on commit
+(`pre-commit install` once).
 
 After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test state behind and stops the worker).
 
@@ -25,6 +44,9 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
 - **Clock and instructions.** `tests/conftest.py` forces `DI_CLOCK=pinned` and `DI_INSTRUCTIONS=false`. The real
   loop is tested only in `tests/test_milestone_rt1048.py`, which pauses the simulated clock, removes the live api's
   webhook subscription, and needs the worker stopped (`full-suite.sh` stops it).
+- **source-sim tests use their own database.** `apps/source-sim/tests/conftest.py` points them at `sources_test`
+  (created if missing, schemas and seed from the app's start-up), so the live service on `sources` (its background
+  loops, di's webhook subscription) is never touched; tests delete only the subscriptions they made.
 - **Live-server tests.** `test_stream.py` and the MCP/Ask live tests call the running api on `localhost:8000`, so the
   api must be healthy. Run `bash scripts/dev/status.sh` first.
 - **Groq.** The live Ask smoke test spends real free-tier requests (about 1,000 a day). Don't loop it.
@@ -69,17 +91,6 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
 
 ## Known flaky tests
 
-Cause, for all of these: the running source-sim service has its own background loops (`sim/main.py`: `scheduler.tick`
-and `webhooks.deliver`, every second) working on the same tables the tests drive by hand. A test that calls
-`webhooks.deliver` or advances the clock can lose a row lock or a scheduled item to the live loop.
-
-- **`test_sim_control.py::test_events_are_delivered_as_signed_cloudevents_and_retried`:** fixed 20 Nov 2026 by
-  driving delivery passes until the test's own delivery lands (tolerates the live dispatcher). Use this pattern.
-- **`test_aws_iot.py::test_rule_deliveries_are_signed_cloudevents`:** can fail with `NoResultFound` right after a
-  source-sim restart while the service is still delivering its backlog. Re-run once it settles.
-- **`test_otm.py::test_booking_plans_a_shipment_that_is_delivered_on_the_clock`:** failed once in seven full runs
-  (20 Nov 2026), passes alone; suspected race with the live `scheduler.tick`. Not fixed yet: if it fails again,
-  capture the assertion and apply the same pattern (or run source-sim with its background loops off for tests).
 - Browser smoke failures with "Failed to fetch" or `ERR_NETWORK_IO_SUSPENDED` while the api restarts, or while
   another agent's half-finished edit is hot-reloading. Re-run when the stack is healthy and the tree typechecks.
 
