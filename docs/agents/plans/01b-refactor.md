@@ -180,7 +180,7 @@ arm64/x64 musl native packages.
   - `DEV_POLLING=1` switches uvicorn (watchfiles) and Vite to polling.
   - Run it alone; it changes the lock every agent uses.
 - [x] **G4** = B4 line endings [G-f].
-- [ ] **G5** proof [G-g].
+- [x] **G5** proof [G-g].
   - CI gains an arm64 job (`ubuntu-24.04-arm`): `compose up --wait`, health checks and a short smoke.
   - A fresh-clone test: clone into a temp dir with another project name and ports, `up --wait`, sign in and smoke
     one account, `down -v`. It is documented as `scripts/dev/fresh-clone.sh`.

@@ -68,6 +68,7 @@ The Node smoke scripts need host Node 24 and Chrome; the URL argument defaults t
 | Web typecheck + unit | `bash scripts/dev/web-check.sh` | ~1 min |
 | Browser smoke, 11 accounts | `node apps/web/scripts/smoke-pages.mjs http://localhost:5173` | ~5 min |
 | RT-1048 end to end (changes state: reset before and after) | `node apps/web/scripts/smoke-rt1048.mjs http://localhost:5173` | ~3 min |
+| Fresh clone of HEAD, own project `circfresh` and ports (main stack untouched; `--prod` for the runtime images) | `bash scripts/dev/fresh-clone.sh [--prod]` | ~5–15 min |
 
 - **One api pytest at a time.** All suites share one database and reset it. The dev scripts take a flock on
   `/tmp/di-pytest.lock` inside the api container (`scripts/dev/lib.sh api_lock`). Never call `docker compose exec api pytest` directly while anyone else may be testing.

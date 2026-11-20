@@ -11,6 +11,7 @@ From Windows, run every script below through WSL:
 | source-sim | `apps/source-sim/tests` | part of `full-suite.sh`; alone: `docker compose exec -T source-sim pytest -q` | 210 tests, ~1 min |
 | web unit | `apps/web/src/**/*.test.ts` (vitest, jsdom) | `bash scripts/dev/web-check.sh` | 12 tests + tsc, ~1 min |
 | browser smoke | `apps/web/scripts/smoke-*.mjs` (Node Playwright, installed Chrome) | `node apps/web/scripts/smoke-pages.mjs <baseUrl> [accounts…]` from `apps/web` on the host | ~5 min per mode for 11 accounts |
+| fresh clone | committed HEAD cloned to a temp dir, project `circfresh`, ports 15173/18000/18100/12222/15432 | `bash scripts/dev/fresh-clone.sh [--prod]` | up --wait, health, doctor, sign-in + RT-1048 screen, smoke for admin if host Node; ~5–15 min (build) |
 | CI | `.github/workflows/ci.yml` | see "CI" below | ~30 min (the `stack` job) |
 
 ## CI
@@ -22,6 +23,7 @@ cancelled, every job has a timeout, and actions and images are pinned by commit 
 | Job | What it runs |
 |---|---|
 | `stack` | `docker compose up -d --build --wait` of postgres, source-sim and api (worker left stopped; `--wait` returns once their healthchecks pass), resets the simulator, then the api suite and the source-sim suite inside their containers, as `full-suite.sh` does; `docker compose down -v` always |
+| `arm64` | on `ubuntu-24.04-arm`: `docker compose up -d --build --wait` of the whole stack (postgres, source-sim, api, worker, web), checks the api container is `aarch64`, api `/api/health` ok, source-sim `/health`, web `/` 200, signs in as admin through the web port and reads `/api/screens/case/RT-1048`; logs on failure, `down -v` always. No test suite (those run on amd64 in `stack`). GitHub's arm64 runners are free for public repositories; a private one needs a plan with arm64 runners, or the job waits for a runner |
 | `web` | Node 24: `npm ci`, `npm test` (vitest), `npm run build`, `npm audit --audit-level=high` |
 | `python-lint` | per service: `ruff check` (the ruff pinned in its requirements) and `pip-audit -r requirements.lock` |
 | `secrets` | gitleaks: the PR's commits on pull requests, the full history on pushes |

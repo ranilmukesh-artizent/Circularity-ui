@@ -22,8 +22,10 @@ This repository is the proof of concept that turns the earlier single-file demo 
 
 What is proved: CI (`.github/workflows/ci.yml`, GitHub's Linux amd64 runners) brings up postgres, source-sim and the
 api in Docker and runs their test suites, plus the web tests and build; the whole stack is developed on Windows with
-Docker inside WSL. macOS and Docker Desktop are expected to work but are not tested. An arm64 (Apple Silicon, ARM Linux) build is not yet proved by CI; the
-base images are multi-arch and the npm lock carries the arm64 packages (plan step G5 adds the arm64 job).
+Docker inside WSL. macOS and Docker Desktop are expected to work but are not tested. For arm64 (Apple Silicon, ARM
+Linux), CI has an `arm64` job on GitHub's `ubuntu-24.04-arm` runner that builds and starts the whole stack, checks its
+health and reads a screen after signing in (no test suites); arm64 counts as proved only once that job has run green
+on GitHub. `scripts/dev/fresh-clone.sh` checks that the committed HEAD comes up from a fresh clone on your machine.
 
 ### Quick start (any OS)
 
@@ -218,7 +220,7 @@ cd apps/web && npm run golden
 
 The tests use the same databases as the running services, so run `scripts/dev/reset.sh` after them. To delete everything, database volume included: `docker compose down -v`.
 
-CI (`.github/workflows/ci.yml`) brings the stack up and runs the api and source-sim suites in their containers, the web tests and build, linters, and dependency and secret scans.
+CI (`.github/workflows/ci.yml`) brings the stack up and runs the api and source-sim suites in their containers, the web tests and build, linters, and dependency and secret scans; an arm64 job starts the whole stack on an arm64 runner and smoke-checks it.
 
 ### Repository
 
