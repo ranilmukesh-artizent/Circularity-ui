@@ -1,6 +1,6 @@
 # Golden data
 
-What the static demo (`fixtures/demo/index.html`) computes, frozen as JSON. The Python backend's parity tests compare against these files (docs/BACKEND_STEPS.md, step B1).
+What the static demo (`fixtures/demo/index.html`) computes, frozen as JSON. The Python backend's parity tests compare against these files (docs/backend-steps.md, step B1).
 
 **Regenerate** only when `fixtures/demo/index.html` changes on purpose, then review the diff:
 

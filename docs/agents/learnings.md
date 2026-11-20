@@ -105,5 +105,5 @@ Problems already hit, newest first. Each entry gives the symptom, the root cause
 
 ## Editor overwrites
 
-- **Symptom:** an open editor in the IDE reverted edits to README.md and BACKEND_STEPS.md.
+- **Symptom:** an open editor in the IDE reverted edits to README.md and backend-steps.md.
 - **Avoid:** re-read a file before editing it if a long time has passed, and check `git diff` before committing.

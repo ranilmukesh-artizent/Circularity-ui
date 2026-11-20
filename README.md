@@ -13,7 +13,7 @@ This repository is the proof of concept that turns the earlier single-file demo 
 ### Requirements
 
 - **Docker** with Compose. On Windows without Docker Desktop, use Docker inside WSL (below).
-- **Node.js 20 or later**, only to run the frontend outside Docker.
+- **Node.js 24 or later** (`.nvmrc`), only to run the frontend or its scripts outside Docker.
 
 ### Everything (recommended)
 
@@ -28,7 +28,9 @@ docker compose up --build
 | http://localhost:8100/docs | `source-sim`: the 20 mocked enterprise systems |
 | localhost:5432 | Postgres (user and password `circ`): databases `di` and `sources` |
 
-Every page reads `di-api` and updates live from its event stream; Ask Circularity (Ctrl+J) answers through `POST /api/ask`.
+Every page reads `di-api` and updates live from its event stream; Ask Circularity (Ctrl+J) answers through `POST /api/ask`. The status page shows the API, the `di` database migration and source-sim; all three should read **OK**.
+
+To change the defaults (database user and password, ports, secrets), copy `.env.example` to `.env`.
 
 Sign in with any of these IDs and **any password**:
 
@@ -64,7 +66,7 @@ Each time:
 wsl -d Ubuntu-24.04 -u root -- bash -lc "cd /mnt/c/<path-to>/Circularity-ui && docker compose up -d --build"
 ```
 
-Keep a WSL terminal open while you use the app (`wsl -d Ubuntu-24.04`): WSL stops the Linux VM, and the containers with it, when the last WSL session closes. The containers restart when Docker starts again.
+Keep a WSL terminal open while you use the app (`wsl -d Ubuntu-24.04`): WSL stops the Linux VM, and the containers with it, when the last WSL session closes. The services have `restart: unless-stopped`, so they come back when Docker starts again.
 
 ### Frontend only (no Docker)
 
@@ -74,7 +76,7 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Without the backend, the app runs on its built-in mock backend (see *How it works*): every screen works, nothing is saved on a server.
+The app has no built-in backend: the dev server proxies `/api` and `/mcp` to `di-api` on http://localhost:8000 (`API_PROXY_TARGET` overrides it), so start the backend with Docker as above. Without it, sign-in fails and no page has data.
 
 ---
 
@@ -99,7 +101,7 @@ Without the backend, the app runs on its built-in mock backend (see *How it work
 
 React and TypeScript (Vite). Every screen of the original demo has been rebuilt: Home, My Tasks, Alerts, Command Center, Returned assets, Asset intelligence, the ten stage pages of a case with its approval card, Analytics, Audit, Process orchestration with the live run board, Connection Fabric, Workflow Studio, MCP & Tools, Access, Reports, Data Checks and Settings, for all eight roles.
 
-Pages only call the typed API layer (`src/api/*`), which reads `di-api` through a cache that the live event stream keeps current, and every change goes through `invoke(actionId, input)` (`POST /api/actions/{id}`). Ask Circularity (Ctrl+J) answers through `POST /api/ask`. Conventions for pages: [`apps/web/PORTING.md`](apps/web/PORTING.md).
+Pages only call the typed API layer (`src/api/*`), which reads `di-api` through a cache that the live event stream keeps current, and every change goes through `invoke(actionId, input)` (`POST /api/actions/{id}`). Ask Circularity (Ctrl+J) answers through `POST /api/ask`. Conventions for pages: [`apps/web/porting.md`](apps/web/porting.md).
 
 ### The backend (`apps/api`, package `di`)
 
@@ -124,6 +126,8 @@ Twenty enterprise systems, each in its own Postgres schema, seeded with the demo
 
 Every change a mock makes is stamped with a **simulated clock** that starts at the demo's as-of time (7 Oct 2026, 09:00 UTC), recorded as an event and delivered to subscribers as a signed CloudEvent. Work that takes time (a repair, a shipment) is scheduled on that clock.
 
+Each system answers at http://localhost:8100 below its own path: `/sap/opu/odata/sap` for S/4HANA, `/ariba/api` for Ariba, `/salesforce/services/data/v59.0` for Salesforce, `/maximo/api` for Maximo, and so on; `GET /_sim/systems` lists them all.
+
 Controlling the simulation (`/_sim`, see http://localhost:8100/docs):
 
 ```sh
@@ -131,10 +135,12 @@ curl localhost:8100/_sim/clock                                                  
 curl -X POST localhost:8100/_sim/clock/advance -H 'content-type: application/json' -d '{"days": 3}'
 curl -X POST localhost:8100/_sim/faults -H 'content-type: application/json' -d '{"system": "erp", "kind": "unavailable", "minutes": 30}'
 curl -X POST localhost:8100/_sim/faults/demo                                         # the demo's starting fault: Ritchie Bros. token expired
+curl -X POST localhost:8100/_sim/webhooks -H 'content-type: application/json' -d '{"url": "http://source-sim:8100/_sim/sink"}'
+curl localhost:8100/_sim/sink                                                        # events received by the demo sink
 curl -X POST localhost:8100/_sim/reset                                               # every system back to the seed, clock reset
 ```
 
-Demo credentials of each mocked system are in its module docstring (`apps/source-sim/sim/s4`, `sim/ariba`, `sim/vendors/*`, `sim/generic/specs/safetyculture.py`).
+Demo credentials of each mocked system are in its module docstring (`apps/source-sim/sim/s4`, `sim/ariba`, `sim/vendors/*`). The generic specs (`sim/generic/specs/*`, e.g. SafetyCulture) follow `sim/generic/spec.py`: API key `<id>-demo-key`; Basic `di-connector` / `<id>-demo`; OAuth `di-connector` / `<id>-demo-secret`.
 
 ### Where the data comes from
 
@@ -159,17 +165,18 @@ curl -s -H "Authorization: Bearer $TOKEN" localhost:8000/api/canonical/demand/PO
 
 ## Develop
 
+The test and maintenance scripts are in `scripts/dev/` (bash; on Windows run them through WSL: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path-to>/Circularity-ui/scripts/dev/<script>.sh`). They take the shared test lock and stop the worker while tests run, so scheduled syncs do not race them. Every script is listed in [`docs/agents/scripts.md`](docs/agents/scripts.md); suites and CI in [`docs/agents/testing.md`](docs/agents/testing.md).
+
 ```sh
 # tests (in the running containers)
-docker compose exec api pytest
-docker compose exec source-sim pytest
-cd apps/web && npm test && npm run build
+bash scripts/dev/api-test.sh tests/test_milestone_rt1048.py   # selected api tests (here the first milestone: RT-1048 end to end)
+bash scripts/dev/full-suite.sh                                # the whole api suite (~25 min) and the source-sim suite
+bash scripts/dev/web-check.sh                                 # tsc and vitest in the web container
+bash scripts/dev/reset.sh                                     # afterwards: the demo's starting state, worker started
+cd apps/web && npm test && npm run lint && npm run build      # the frontend on the host (Node 24)
 
 # sync every source once and summarise conflicts
-docker compose exec -e PYTHONPATH=/app api python scripts/full_sync.py
-
-# the first milestone: RT-1048 approved, then sent to the mocks and acknowledged from their events on the simulated clock
-docker compose stop worker && docker compose exec api pytest tests/test_milestone_rt1048.py; docker compose start worker
+docker compose exec -T -e PYTHONPATH=/app api python scripts/full_sync.py
 
 # a database migration
 docker compose exec api alembic revision --autogenerate -m "what changed"
@@ -178,24 +185,26 @@ docker compose exec api alembic revision --autogenerate -m "what changed"
 cd apps/web && npm run golden
 ```
 
-The source-sim and api tests use the same databases as the running services; run `curl -X POST localhost:8100/_sim/reset` afterwards. Stop the worker while running the connector tests (`docker compose stop worker`), so scheduled syncs do not race them.
+The tests use the same databases as the running services, so run `scripts/dev/reset.sh` after them. To delete everything, database volume included: `docker compose down -v`.
 
-CI (`.github/workflows/ci.yml`) runs the Python tests against Postgres and builds the frontend.
+CI (`.github/workflows/ci.yml`) brings the stack up and runs the api and source-sim suites in their containers, the web tests and build, linters, and dependency and secret scans.
 
 ### Repository
 
 ```
-apps/web/              React app (Vite, TypeScript); PORTING.md has the page conventions
-apps/api/              di-api and di-worker (FastAPI, SQLAlchemy, Alembic), package `di`
+apps/web/              React app (Vite, TypeScript); porting.md has the page conventions
+apps/api/              di-api and di-worker (python -m di.worker): FastAPI, SQLAlchemy, Alembic; package `di`
 apps/source-sim/       the mocked enterprise systems, package `sim`
 fixtures/golden/       the demo's computed data, the backend's test reference
-infra/postgres/        database init
-docker-compose.yml
-fixtures/demo/index.html         the original single-file demo: the specification and the frontend engine's source
+fixtures/demo/index.html         the original single-file demo: the specification and the source of the golden data
 fixtures/demo/assets/products/   product photos
+infra/postgres/        database init
+scripts/dev/           test and maintenance scripts (bash, WSL)
+docker-compose.yml
 docs/reference/        source documents: the agent-first product spec, the user journey deck, the IFS process fit
-docs/PLAN_FULLSTACK_POC.md   decisions and architecture
-docs/BACKEND_STEPS.md        the backend build, step by step, with the status of each step
+docs/plan-fullstack-poc.md   decisions and architecture
+docs/backend-steps.md        the backend build, step by step, with the status of each step
+docs/agents/           working notes for agents: scripts, testing, plans, decisions
 ```
 
 ---
@@ -224,4 +233,4 @@ docs/BACKEND_STEPS.md        the backend build, step by step, with the status of
 | next | the plans in `docs/agents/plans/`: agent loop, queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry | planned |
 | B18 | browser tests, run book, security review | to do |
 
-Details, decisions and known limits of each step: [`docs/BACKEND_STEPS.md`](docs/BACKEND_STEPS.md).
+Details, decisions and known limits of each step: [`docs/backend-steps.md`](docs/backend-steps.md).

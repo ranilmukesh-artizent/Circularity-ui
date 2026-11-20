@@ -1,8 +1,8 @@
 # Backend: step-by-step build
 
 **For:** the engineers building the backend of the full-stack POC.
-**Plan and decisions:** [PLAN_FULLSTACK_POC.md](PLAN_FULLSTACK_POC.md) (D1: only SAP S/4HANA and SAP Ariba are mocked as SAP; every other source keeps its vendor as a generic mock).
-**Branch:** `feature/fullstack-poc`. **Run it:** [apps/README.md](../apps/README.md).
+**Plan and decisions:** [plan-fullstack-poc.md](plan-fullstack-poc.md) (D1: only SAP S/4HANA and SAP Ariba are mocked as SAP; every other source keeps its vendor as a generic mock).
+**Branch:** `feature/fullstack-poc`. **Run it:** [README.md](../README.md#start-it).
 
 ## Where we start
 
@@ -711,7 +711,7 @@ The rest of the design:
 
 **B17b, every area on the API: done (20 Nov 2026).** With `VITE_BACKEND=api` no page reads the in-browser engine any more, except the static assets (logos, icons, vendor logos), which move to a bundled module when the engine is deleted (B17c).
 - **Product, command, home, analytics, audit, orchestration, integration, workflows, MCP, access:** each facade file has an API branch with the same exports and shapes, served by its `di/screens/<area>.py` endpoints, the reference lists and browser view state. The page text matches engine mode line for line where the backend has parity; the differences are the documented ones (real connector data on the Connection Fabric, the server's clock, values the demo draws at random).
-- **Case pages:** the engine-built HTML (stage tabs, cost drivers, results, the Full analysis, the dialogs) is rebuilt as React (`pages/case/kit.tsx`, `tabs/`, `drawers.tsx`, `FullAnalysis.tsx`) and is the only renderer in both modes; the case screen endpoints gained what those views need.
+- **Case pages:** the engine-built HTML (stage tabs, cost drivers, results, the Full analysis, the dialogs) is rebuilt as React (`pages/case/kit.tsx`, `tabs/`, `CaseDrawers.tsx`, `FullAnalysis.tsx`) and is the only renderer in both modes; the case screen endpoints gained what those views need.
 - **Ask Circularity** (`src/app/AskPanel.tsx`, `src/api/ask.ts`): Ctrl+J or the top bar; posts to `/api/ask` with the page context and reads the stream with `fetch`; shows each lookup, the text as it arrives, the cases and source systems used, the fallback's cards, and suggested next steps (an action runs only after the person confirms). Every "Ask" button on the pages opens it.
 - **Backend additions on the way:** Admin settings actions (`access.setLimit`, `setSelfApprove`, `setAutonomy`, `setRunLimits`, `agent.setEnabled`) with their effects (approval limit and self-approval on approvals, the kill switch on the MCP server); `/api/screens/workflows` returns the workspace clock; orchestration returns the agents and the models' validation text; the integration map returns mappings and models; the inbox cards' steps are labelled (fixes the "o → r" approval cards); the reference lists include the translations (I18N).
 - **ShipLane TMS is gone:** the demo itself (`fixtures/demo/index.html`) now names Oracle Transportation Management where it named the fictional ShipLane TMS (12 places), the golden files were regenerated (checked: the rename is their only change), and the backend's placeholders were updated.
@@ -720,7 +720,7 @@ The rest of the design:
 
 **B17c, the engine deleted: done (20 Nov 2026). B17 is complete.**
 - **Only di-api:** the `VITE_BACKEND` switch, every engine branch in the facade, `src/engine/` and
-  `scripts/extract-engine.mjs` are deleted; a unit test (`src/api/no-engine.test.ts`) fails if anything imports them
+  `scripts/extract-engine.mjs` are deleted; a unit test (`src/api/noEngine.test.ts`) fails if anything imports them
   again. The JavaScript bundle dropped from about 2.4 MB to 1.05 MB (325 KB gzipped).
 - **Static assets:** the demo's logos, icons and vendor logos are a committed module, `src/ui/assets.gen.ts`
   (`scripts/dump-assets.mjs`); the build copies only the stylesheet and product photos (`scripts/extract-styles.mjs`).

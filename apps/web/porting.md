@@ -9,7 +9,7 @@ The React app reproduces the static demo (`fixtures/demo/index.html`) screen by 
 | Backend | `di-api` (`apps/api`) | Each area's screen endpoints (`/api/screens/<area>`) serve what the pages show; their docstrings map the facade exports |
 | API facade | `src/api/*.ts` | Typed, synchronous functions over di-api through the Suspense read cache in `src/api/client.ts`. Each area has its own file (`src/api/product.ts`, `src/api/integration.ts` …) |
 | Changes | `invoke(actionId, input)` in `src/api/actions.ts` | Every state change is `POST /api/actions/{id}` (permission, tenant and warehouse scope, guards, idempotency, journal). Never mutate cached answers from a page |
-| Re-render | `useBackend()` in `src/api/hooks.ts` | Call it at the top of every page component; it re-renders after any action |
+| Re-render | `useBackend()` in `src/api/useBackend.ts` | Call it at the top of every page component; it re-renders after any action |
 | Access | `can()`, `canPage()` in `src/api/session.ts` | Hide what the role may never use (the demo removes those controls; it does not grey them out) |
 | Look | `src/styles/legacy.gen.css` is the demo's whole stylesheet | **Use the demo's class names and DOM structure**, so the CSS applies unchanged. No new CSS unless something cannot be expressed with existing classes; put it in your area folder as a `.css` file |
 | Shared UI | `src/ui/` | `Icon` (the demo's icon set by key), `Drawer`, `Modal`, `toast()`, `useTheme()`. Formatters in `src/api/format.ts` |
@@ -27,7 +27,7 @@ The React app reproduces the static demo (`fixtures/demo/index.html`) screen by 
 ```sh
 npm run typecheck
 npx vite --port <your port> --strictPort        # in the background
-BASE_URL=http://localhost:<port>/ node e2e/shot.mjs <outDir> approver product/received   # screenshot, signed in
+BASE_URL=http://localhost:<port>/ node scripts/screenshot.mjs <outDir> approver product/received   # screenshot, signed in
 ```
 
 Open the same route in the static demo to compare (`fixtures/demo/index.html#/product/received`).

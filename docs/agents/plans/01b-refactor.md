@@ -65,11 +65,11 @@ repo root.
 - [ ] **B1** move the demo: `index.html` → `fixtures/demo/index.html` (`git mv`). Update `extract-styles.mjs`,
   `golden-sandbox.mjs`, `dump-assets.mjs`, the compose mount and `LEGACY_HTML`, CI, `assets/products` path if needed,
   every doc. Gate: regenerate every golden file and `assets.gen.ts` → no change (parsed-JSON compare); web build.
-- [ ] **B2** docs to kebab-case: `docs/BACKEND_STEPS.md` → `docs/backend-steps.md`, `docs/PLAN_FULLSTACK_POC.md` →
-  `docs/plan-fullstack-poc.md`, `apps/web/PORTING.md` → `apps/web/porting.md`, the three `docs/reference/*` files →
+- [ ] **B2** docs to kebab-case (the old upper-case names are in the git history): `docs/backend-steps.md`,
+  `docs/plan-fullstack-poc.md`, `apps/web/porting.md`, the three `docs/reference/*` files →
   `cvl-user-journey-v1.1.pptx`, `ifs-process-inventory-and-di-pipeline-fit.pdf`,
-  `agent-first-workbench-pr.md`; fold `apps/README.md` into `README.md` [D1]. Update every link and the many code
-  docstrings that cite `docs/BACKEND_STEPS.md`. Gate: grep for old names → none; link check.
+  `agent-first-workbench-pr.md`; fold the README under `apps/` into `README.md` [D1]. Update every link and the many
+  code docstrings that cite the backend steps doc. Gate: grep for old names → none; link check.
 - [ ] **B3** web renames (table in the findings index, "Naming A"): `src/api.ts` → `src/api/health.ts`,
   `api/hooks.ts` → `api/useBackend.ts`, lower-case component modules → PascalCase, vague names → specific ones,
   page code out of `integration/index.tsx` and `product/index.tsx`, `workflows/graph.ts` → `src/api/workflowGraph.ts`,

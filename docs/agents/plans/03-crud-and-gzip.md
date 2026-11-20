@@ -14,7 +14,7 @@ one place. The actions B17b listed as "not available on the server yet" get hand
 
 **Tech Stack:** FastAPI, Starlette `GZipMiddleware`, SQLAlchemy 2, pytest.
 
-**Spec:** this plan; `docs/BACKEND_STEPS.md` B17b "Still missing on the server".
+**Spec:** this plan; `docs/backend-steps.md` B17b "Still missing on the server".
 
 ## Global Constraints
 

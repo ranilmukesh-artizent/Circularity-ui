@@ -1,4 +1,4 @@
-# Full-stack POC (docs/PLAN_FULLSTACK_POC.md).  Start with:  docker compose up --build
+# Full-stack POC (docs/plan-fullstack-poc.md).  Start with:  docker compose up --build
 # web http://localhost:5173 · di-api http://localhost:8000/docs · source-sim http://localhost:8100/docs
 
 x-pg: &pg
@@ -44,7 +44,7 @@ services:
     command: uvicorn sim.main:app --host 0.0.0.0 --port 8100 --reload
     volumes:
       - ./apps/source-sim:/app
-      - ./fixtures:/fixtures:ro # B1 golden files: the seed (docs/BACKEND_STEPS.md, B2)
+      - ./fixtures:/fixtures:ro # B1 golden files: the seed (docs/backend-steps.md, B2)
       - ./ruff.toml:/ruff.toml:ro # the shared ruff config the service's pyproject extends (../../ruff.toml)
     ports:
       - "${BIND_ADDR:-127.0.0.1}:8100:8100"

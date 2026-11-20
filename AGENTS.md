@@ -25,7 +25,7 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 | `apps/api/di/mcp/`, `di/ask/` | MCP server at `/mcp`; Ask Circularity (`POST /api/ask`, Groq). |
 | `apps/source-sim` | Package `sim`: mocks of the enterprise systems (SAP S/4HANA, Ariba, Sterling, OTM, AWS IoT Core …), simulated clock, outbox, signed CloudEvents, faults. |
 | `fixtures/golden/` | JSON dumped from the demo; the parity tests compare against it. Never hand-edit. |
-| `docs/BACKEND_STEPS.md` | The build plan B1–B18 with a status section per step. Read the step you work on. |
+| `docs/backend-steps.md` | The build plan B1–B18 with a status section per step. Read the step you work on. |
 | `docs/agents/` | Dos and don'ts, learnings, decisions, history, testing, scripts. |
 | `scripts/dev/` | Dev scripts (tests with the lock, reset, restart, unstick, status). |
 | `fixtures/demo/assets/products/` | Product photos, beside the demo; `apps/web/scripts/extract-styles.mjs` copies them into the web app. |
@@ -100,7 +100,7 @@ Full list: [docs/agents/dos-and-donts.md](docs/agents/dos-and-donts.md).
 
 ## Where to read more
 
-- [docs/BACKEND_STEPS.md](docs/BACKEND_STEPS.md): the plan and the status of every step (B1–B18).
+- [docs/backend-steps.md](docs/backend-steps.md): the plan and the status of every step (B1–B18).
 - [docs/agents/history.md](docs/agents/history.md): how the repo got here, with commits.
 - [docs/agents/decision-log.md](docs/agents/decision-log.md): decisions and why.
 - [docs/agents/learnings.md](docs/agents/learnings.md): problems already hit, with root cause and fix.
@@ -115,4 +115,4 @@ B1–B17 done: the web app reads only di-api; the in-browser engine is gone. Nex
 `docs/agents/plans/` (the loop, queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry), then B18
 (Playwright suites, demo reset endpoint, run book, security review).
 
-Known server gaps are listed under B17b in `docs/BACKEND_STEPS.md`.
+Known server gaps are listed under B17b in `docs/backend-steps.md`.

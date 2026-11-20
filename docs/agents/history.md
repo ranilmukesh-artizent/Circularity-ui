@@ -1,7 +1,7 @@
 # How we got here
 
 From a single HTML demo to a full-stack app. Branch `feature/fullstack-poc` (PRs target `main`).
-The commit hashes are from `git log`. The detailed status of each step is in `docs/BACKEND_STEPS.md`.
+The commit hashes are from `git log`. The detailed status of each step is in `docs/backend-steps.md`.
 
 ## 1. The demo (before November 2026, merged to `main` through PRs #15–#20)
 
@@ -21,7 +21,7 @@ polish layouts while switching data sources.
 
 - `0fe771e`: React frontend (`apps/web`) that runs the demo's own script as an in-browser engine behind a typed
   facade (`src/api/*.ts`); service skeleton; Docker Compose in WSL.
-- `a903e12`: the step plan B1–B18 (`docs/BACKEND_STEPS.md`).
+- `a903e12`: the step plan B1–B18 (`docs/backend-steps.md`).
 
 ## 3. Backend, step by step
 
