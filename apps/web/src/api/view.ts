@@ -4,7 +4,19 @@
  * state object S; here they live in the browser and are sent to the screens as query parameters
  * (tenant_filter, cc_mode, last_asset).
  */
-import { bump } from './store';
+import { bump, onSessionChange } from './store';
+
+/**
+ * Page state kept between visits for one signed-in session (a list's filters, the tab last shown): `.current` starts
+ * as init() and goes back to a fresh init() on every sign-in and sign-out, so the next user starts clean.
+ */
+export function sessionScoped<T>(init: () => T): { current: T } {
+  const box = { current: init() };
+  onSessionChange(() => {
+    box.current = init();
+  });
+  return box;
+}
 
 export interface Region { lang: string; tz: string; cur: string; dfmt?: string; nfmt?: string; [k: string]: unknown }
 

@@ -48,7 +48,13 @@ export function App() {
 
 function Shell({ route, search }: { route: RouteRef; search: string }) {
   const nav = useNavigate();
-  const [rail, setRail] = useState(() => localStorage.getItem('circ-react-rail') === '1');
+  const [rail, setRail] = useState(() => {
+    try {
+      return localStorage.getItem('circ-react-rail') === '1';
+    } catch {
+      return false; // blocked site data: start with the full sidebar
+    }
+  });
   const [menu, setMenu] = useState(false);
   const allowed = canRoute(route);
   const Page = pageFor(route.page) ?? NotPortedPage;
@@ -67,7 +73,11 @@ function Shell({ route, search }: { route: RouteRef; search: string }) {
   };
   const toggleRail = () =>
     setRail((r) => {
-      localStorage.setItem('circ-react-rail', r ? '0' : '1');
+      try {
+        localStorage.setItem('circ-react-rail', r ? '0' : '1');
+      } catch {
+        /* private window: the choice lasts for this page only */
+      }
       return !r;
     });
 

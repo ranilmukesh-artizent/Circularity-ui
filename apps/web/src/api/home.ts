@@ -11,7 +11,7 @@ import { cached, http, invalidate, peek, ref, session, withQuery } from './clien
 import { alerts as navAlerts, navigation } from './nav';
 import { can as canDo, canPage, currentAccount } from './session';
 import { bump } from './store';
-import { setView, view } from './view';
+import { sessionScoped, setView, view } from './view';
 
 const H = '/api/screens/home';
 
@@ -58,7 +58,8 @@ function lsSet(key: string, v: unknown): void {
     /* private window: lasts for this page only */
   }
 }
-const local: { assign: Record<string, string>; paused: boolean; checksAt: Date | null } = { assign: {}, paused: false, checksAt: null };
+// this session's alert hand-overs, live-feed pause and last checks run (not kept across sign-in and sign-out)
+const local = sessionScoped<{ assign: Record<string, string>; paused: boolean; checksAt: Date | null }>(() => ({ assign: {}, paused: false, checksAt: null }));
 type HomeUi = Record<string, any>;
 const uiKey = () => 'circ-home-ui-' + acctId();
 const ui = (): HomeUi => lsGet<HomeUi>(uiKey()) ?? {};
@@ -128,7 +129,7 @@ export async function runTaskAct(act: string, arg: string) {
 export interface Alert { id: string; kind: string; ic: string; h: string; t: string; s: string; sev: number; go: string; ack: boolean; ref?: string }
 /** The same list as the bell and the menu (nav.ts), with this browser's acknowledgements. */
 export const alerts = (): Alert[] => navAlerts() as Alert[];
-export const alertAssignee = (id: string): string | undefined => local.assign[id];
+export const alertAssignee = (id: string): string | undefined => local.current.assign[id];
 export const alertKinds = (): [string, string][] => ref('FR_AK');
 
 /** Acknowledge an alert (the demo's frAlAck): a notification addressed to me is acknowledged through notify.acknowledge. */
@@ -146,7 +147,7 @@ export async function acknowledgeAlert(id: string): Promise<boolean> {
 }
 
 export function assignAlert(id: string, toRole: string): void {
-  local.assign = { ...local.assign, [id]: toRole };
+  local.current.assign = { ...local.current.assign, [id]: toRole };
   bump();
 }
 
@@ -285,9 +286,9 @@ export const checksNotRun = (): CheckNotRun[] => cached<ChecksAnswer>('/api/chec
 export const checkOwner = (name: string): string =>
   /source|feed|mapping|integration|workflow|event/i.test(name) ? 'Developer' : /money|net|cost|recover|value|\$|baseline|avoid/i.test(name) ? 'Finance'
     : /approv|decision|route|gate/i.test(name) ? 'Decision Services' : 'Platform';
-export const checksRunAt = (): Date => local.checksAt ?? asOfNow();
+export const checksRunAt = (): Date => local.current.checksAt ?? asOfNow();
 export function runChecks(): { ok: number; total: number } {
-  local.checksAt = asOfNow();
+  local.current.checksAt = asOfNow();
   const r = checks(), ok = r.filter((x) => x.ok).length;
   invalidate(); // the page shows the fresh answer when it arrives
   return { ok, total: r.length };
@@ -335,8 +336,8 @@ export function setPresenter(on: boolean): void {
   try { localStorage.setItem('circ-presenter', on ? '1' : '0'); } catch { /* storage unavailable */ }
   bump();
 }
-export const livePaused = (): boolean => local.paused;
+export const livePaused = (): boolean => local.current.paused;
 export function setLivePaused(off: boolean): void {
-  local.paused = off;
+  local.current.paused = off;
   bump();
 }

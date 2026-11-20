@@ -48,6 +48,51 @@ describe('view settings', () => {
   });
 });
 
+describe('sessionScoped', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  /** view.ts and client.ts from one fresh module graph, so they share one store (and one reset registry). */
+  async function loadWithClient() {
+    const v = await load();
+    const client = await import('./client');
+    return { ...v, client };
+  }
+
+  it('starts from init() and keeps changes while the session lasts', async () => {
+    const { sessionScoped } = await load();
+    const s = sessionScoped(() => ({ q: '', n: 0 }));
+    expect(s.current).toEqual({ q: '', n: 0 });
+    s.current = { ...s.current, q: 'RT-1048' };
+    s.current.n = 2;
+    expect(s.current).toEqual({ q: 'RT-1048', n: 2 });
+  });
+
+  it('goes back to a fresh init() value on sign-out', async () => {
+    const { sessionScoped, client } = await loadWithClient();
+    const init = vi.fn(() => ({ open: {} as Record<string, boolean> }));
+    const s = sessionScoped(init);
+    const first = s.current;
+    s.current.open['RT-1048'] = true;
+    client.logout();
+    expect(s.current).toEqual({ open: {} });
+    expect(s.current).not.toBe(first); // a new object, not the one the last user changed
+    expect(init).toHaveBeenCalledTimes(2);
+  });
+
+  it('goes back to init() on sign-in too (a session that expired without a sign-out)', async () => {
+    const { sessionScoped, client } = await loadWithClient();
+    const me = { account: { id: 'admin', label: 'Admin', role: 'Admin', email: 'admin@northfield.example' }, description: '', home: 'home',
+      permissions: [], pages: {}, tenants: [], tenant_scoped: false, warehouse: null };
+    vi.stubGlobal('fetch', vi.fn(async (path: string) => new Response(JSON.stringify(
+      path === '/api/auth/login' ? { ...me, access_token: 't' } : {},
+    ), { status: 200, headers: { 'Content-Type': 'application/json' } })));
+    const s = sessionScoped(() => 'details');
+    s.current = 'canvas';
+    await client.login('admin', 'pw');
+    expect(s.current).toBe('details');
+  });
+});
+
 describe('view settings without usable local storage', () => {
   const desc = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   afterEach(() => {

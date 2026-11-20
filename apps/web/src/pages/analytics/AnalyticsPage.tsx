@@ -11,6 +11,7 @@ import {
 import { fmtDateYear, money } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import { allowedTenants, canPage, tenantFilter } from '../../api/session';
+import { sessionScoped } from '../../api/view';
 import type { PageProps } from '../registry';
 import { Icon } from '../../ui/Icon';
 import { openAsk } from '../../ui/askBus';
@@ -20,8 +21,8 @@ import { downloadCsv } from '../../lib/csv';
 import { drills, Funnel, Heat, MixChart, ModelTable, Overrides, PoolChart, Scatter, Sustain, Waterfall, type Drill } from './AnalyticsCharts';
 
 // View state survives leaving and coming back, as the demo's S.fA and S.drill do.
-let savedFilter: AnalyticsFilter = { ...DEFAULT_FILTER };
-let savedDrill: (Drill & { page: number }) | null = null;
+const savedFilter = sessionScoped<AnalyticsFilter>(() => ({ ...DEFAULT_FILTER }));
+const savedDrill = sessionScoped<(Drill & { page: number }) | null>(() => null);
 
 /** Scroll a section into view and mark it, as the demo's anchorScroll does. */
 export function anchor(el: Element | null) {
@@ -51,11 +52,11 @@ const statusChip = (r: ClosedRow) =>
 export function AnalyticsPage({ route }: PageProps) {
   useBackend();
   const nav = useNavigate();
-  const [f, setF] = useState<AnalyticsFilter>(savedFilter);
-  const [drill, setDrillState] = useState(savedDrill);
+  const [f, setF] = useState<AnalyticsFilter>(savedFilter.current);
+  const [drill, setDrillState] = useState(savedDrill.current);
   const [openRow, setOpenRow] = useState<string | null>(null);
-  const setFilter = (x: AnalyticsFilter) => { savedFilter = x; setF(x); };
-  const setDrill = (d: (Drill & { page: number }) | null) => { savedDrill = d; setDrillState(d); };
+  const setFilter = (x: AnalyticsFilter) => { savedFilter.current = x; setF(x); };
+  const setDrill = (d: (Drill & { page: number }) | null) => { savedDrill.current = d; setDrillState(d); };
   const onDrill = (d: Drill) => {
     setDrill({ ...d, page: 0 });
     window.setTimeout(() => document.getElementById('drill')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 30);

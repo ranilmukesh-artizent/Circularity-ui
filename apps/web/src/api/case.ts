@@ -11,9 +11,9 @@
  */
 import { ApiError, cached, invalidate, ref, withQuery } from './client';
 import { fmtDate, fmtDateYear, fmtNumber, money } from './format';
-import { bump } from './store';
+import { bump, onSessionChange } from './store';
 import type { ActionResult } from './types';
-import { view } from './view';
+import { sessionScoped, view } from './view';
 
 // ---------- records ----------
 export interface CostTerm { kind: string; label: string; amt: number }
@@ -193,10 +193,10 @@ export const assetModel = (c: CaseRec): string => screenOf(c).model;
 export const assetSerial = (c: CaseRec): string => screenOf(c).serial;
 
 // ---------- remembered detail tab per case and stage (the demo's S.stTabs) ----------
-const tabs: Record<string, string> = {};
-export const rememberedTab = (id: string, n: number): string | undefined => tabs[id + '|' + n];
+const tabs = sessionScoped<Record<string, string>>(() => ({}));
+export const rememberedTab = (id: string, n: number): string | undefined => tabs.current[id + '|' + n];
 export function rememberTab(id: string, n: number, k: string): void {
-  tabs[id + '|' + n] = k;
+  tabs.current[id + '|' + n] = k;
 }
 
 // ---------- approval card ----------
@@ -259,8 +259,14 @@ export interface Scen { purchase: number; cost: number; service: number; market:
 export interface Weights { net: number; time: number; env: number; serv: number }
 interface Ti { apply: string; w: Weights; sel: string[] | null; selFor: string | null; focus: string | null; diffOnly: boolean; xtab: 'why' | 'assume' | 'flip'; expand: Record<string, boolean>; caseId: string | null }
 const BASE: Scen = { purchase: 1, cost: 1, service: 1, market: 1, demandOff: false, partUnavail: false, newOnly: false, certShort: false };
+const TI0 = (): Ti => ({ apply: '', w: { net: 50, time: 20, env: 15, serv: 15 }, sel: null, selFor: null, focus: null, diffOnly: false, xtab: 'why', expand: {}, caseId: null });
 let S: Scen = { ...BASE };
-const ti: Ti = { apply: '', w: { net: 50, time: 20, env: 15, serv: 15 }, sel: null, selFor: null, focus: null, diffOnly: false, xtab: 'why', expand: {}, caseId: null };
+const ti: Ti = TI0();
+// the next user starts from the base assumptions and default weights, even on the case the last one had open
+onSessionChange(() => {
+  S = { ...BASE };
+  Object.assign(ti, TI0());
+});
 export const scen = (): Scen => S;
 export function setScen(patch: Partial<Scen>): void {
   S = { ...S, ...patch };

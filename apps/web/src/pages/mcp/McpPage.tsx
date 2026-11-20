@@ -9,6 +9,7 @@ import {
   toolCalls, tools, toolSchema, type Tool, type ToolRun,
 } from '../../api/mcp';
 import { can, canPage } from '../../api/session';
+import { sessionScoped } from '../../api/view';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
@@ -18,10 +19,10 @@ import type { PageProps } from '../registry';
 
 // ---- view state that survives switching sections (the demo keeps it on S) ----
 interface Pg { tool: string; agent: string | null; tenant: string; input: string | null; out: ToolRun | null; perm: string; callF: 'all' | 'issues' }
-let pgState: Pg = { tool: 'get_case_evidence', agent: null, tenant: 'Customer A', input: null, out: null, perm: 'Customer A', callF: 'all' };
+const pgState = sessionScoped<Pg>(() => ({ tool: 'get_case_evidence', agent: null, tenant: 'Customer A', input: null, out: null, perm: 'Customer A', callF: 'all' }));
 function usePg(): [Pg, (p: Partial<Pg>) => void] {
-  const [s, setS] = useState(pgState);
-  return [s, (p) => setS((pgState = { ...pgState, ...p }))];
+  const [s, setS] = useState(pgState.current);
+  return [s, (p) => setS((pgState.current = { ...pgState.current, ...p }))];
 }
 
 /** MCP & Tools: the demo's renderMcp, one section per route, plus the agent catalog and test bench (AF_ON). */

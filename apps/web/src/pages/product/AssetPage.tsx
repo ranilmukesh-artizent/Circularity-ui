@@ -2,7 +2,7 @@
  * Asset & Product Intelligence (#/product/asset/<CASE_ID>): everything about one returned asset, split into what the enterprise
  * systems supplied (Retrieved data) and what Circularity predicts (Predictions), with per-role detail tabs (assetPage in index.html).
  */
-import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fmtDate, fmtDateYear, fmtNumber, money } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
@@ -13,8 +13,10 @@ import {
   valueOrder, valueState, type Case,
 } from '../../api/product';
 import { currentAccount } from '../../api/session';
+import { sessionScoped } from '../../api/view';
 import { Icon } from '../../ui/Icon';
-import { Drawer, Modal } from '../../ui/Overlay';
+import { onActivateKey } from '../../ui/keys';
+import { Drawer, Modal, useOverlay } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import {
   AfBadge, AssetCtx, Condition, CostBuild, CostInputs, Econ, Eligibility, HealthRing, Panel, Photo, ProductSpecs, Prov, Quality, Related,
@@ -34,10 +36,26 @@ const AS_PAGES: Record<'known' | 'pred', string> = { known: 'Retrieved data', pr
 
 // view state kept for the session, as the demo's S.at.cur and S.skuF
 type SkuF = { sku: string; k: 'g' | 'r'; v: string } | null;
-let view: { local: boolean; skuF: SkuF } = { local: false, skuF: null };
+type AsView = { local: boolean; skuF: SkuF };
+const view = sessionScoped<AsView>(() => ({ local: false, skuF: null }));
 const subs = new Set<() => void>();
-const setView = (p: Partial<typeof view>) => { view = { ...view, ...p }; subs.forEach((f) => f()); };
-const useView = () => useSyncExternalStore((f) => (subs.add(f), () => subs.delete(f)), () => view);
+const setView = (p: Partial<AsView>) => { view.current = { ...view.current, ...p }; subs.forEach((f) => f()); };
+const useView = () => useSyncExternalStore((f) => (subs.add(f), () => subs.delete(f)), () => view.current);
+
+/**
+ * The photo lightbox (the CXO view's cxLb): a click anywhere or Esc (the overlay stack) closes it, and focus goes back
+ * to the photo that opened it.
+ */
+function Lightbox({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  const box = useRef<HTMLElement>(null);
+  useOverlay(onClose, box);
+  useEffect(() => box.current?.focus(), []);
+  return (
+    <div id="cxLb" className="cxlb" role="presentation" onClick={onClose}>
+      <figure ref={box} role="dialog" aria-modal="true" aria-label="Product photo" tabIndex={-1}>{children}</figure>
+    </div>
+  );
+}
 
 const routeShort = (x: Case) => { const r = x.chosen || x.recommendation; return r ? routeInfo(r.id).short : 'No route yet'; };
 const skuMatch = (x: Case, f: SkuF) => !f || (f.k === 'g' ? (x.grade || '—') === f.v : routeShort(x) === f.v);
@@ -68,12 +86,6 @@ export function AssetPage({ id, zone }: { id: string | null; zone: string | null
     }, 40);
     return () => window.clearTimeout(t);
   }, [c?.id, zone]);
-  useEffect(() => {
-    if (!lb) return;
-    const f = (e: KeyboardEvent) => e.key === 'Escape' && setLb(null);
-    document.addEventListener('keydown', f);
-    return () => document.removeEventListener('keydown', f);
-  }, [lb]);
 
   const h = useMemo(() => (c ? assetHealth(c) : null), [c]);
   if (!c || !h) {
@@ -130,15 +142,13 @@ export function AssetPage({ id, zone }: { id: string | null; zone: string | null
       {snap && <SnapshotDrawer c={c} onClose={() => setSnap(false)} />}
       {cmp !== undefined && <CompareModal id={cmp} onClose={() => setCmp(undefined)} />}
       {lb && (
-        <div id="cxLb" className="cxlb" role="dialog" aria-label="Product photo" onClick={() => setLb(null)}>
-          <figure>
-            <img src={lb.src} alt={lb.alt} />
-            <figcaption>
-              {c.product} · {c.assetId} · {c.id}{c.grade ? ' · Grade ' + c.grade : ''}
-              <span className="note"> · Click or Esc to close</span>
-            </figcaption>
-          </figure>
-        </div>
+        <Lightbox onClose={() => setLb(null)}>
+          <img src={lb.src} alt={lb.alt} />
+          <figcaption>
+            {c.product} · {c.assetId} · {c.id}{c.grade ? ' · Grade ' + c.grade : ''}
+            <span className="note"> · Click or Esc to close</span>
+          </figcaption>
+        </Lightbox>
       )}
       {jOn && <JourneyGuide id={c.id} at={1} />}
     </AssetCtx.Provider>
@@ -620,11 +630,14 @@ function TabCondition() {
       </Panel>
       <Panel t="Photos">
         <div className="asgal">
-          {pos.map((p, i) => (
-            <div key={i} className="asimg zoomg" style={{ '--op': p } as React.CSSProperties}>
-              <img src={src} alt={`${c.product} view ${i + 1}`} loading="lazy" onClick={() => zoom(src, `${c.product} view ${i + 1}`)} />
-            </div>
-          ))}
+          {pos.map((p, i) => {
+            const alt = `${c.product} view ${i + 1}`, open = () => zoom(src, alt);
+            return (
+              <div key={i} className="asimg zoomg" style={{ '--op': p } as React.CSSProperties} role="button" tabIndex={0} onClick={open} onKeyDown={onActivateKey(open)}>
+                <img src={src} alt={alt} loading="lazy" />
+              </div>
+            );
+          })}
         </div>
         <div className="note" style={{ marginTop: 6 }}>Close-up crops of the product photo. Inspection photos attach here when they arrive from the inspection system.</div>
       </Panel>

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { fmtNumber } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
+import { sessionScoped } from '../../api/view';
 import {
   ago, ageShort, attention, logoHtml, nowMs, recentRuns, RUN_LABEL, source, sources, systemOf, trigText, wfStat, workflows, type Workflow, type WfStat,
 } from '../../api/workflows';
@@ -16,7 +17,7 @@ import { bulk, duplicate, exportOne, runNow, studioHref, toggle } from './workfl
 
 interface Filters { q: string; type: string; sys: string; st: string; sort: 'last' | 'name' | 'ok' | 'status'; pg: number }
 /** The filters survive leaving the list and coming back, like the demo's S.wf.f. */
-let kept: Filters = { q: '', type: '', sys: '', st: '', sort: 'last', pg: 0 };
+const kept = sessionScoped<Filters>(() => ({ q: '', type: '', sys: '', st: '', sort: 'last', pg: 0 }));
 const PER = 20;
 
 function filterList(L: Workflow[], f: Filters): Workflow[] {
@@ -36,9 +37,9 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
   const mgr = can('manageWorkflows');
   const [f, setF0] = useState<Filters>(() => {
     const st = query.get('st'), q = query.get('q');
-    return st || q ? { ...kept, st: st ?? kept.st, q: q ?? kept.q, pg: 0 } : kept;
+    return st || q ? { ...kept.current, st: st ?? kept.current.st, q: q ?? kept.current.q, pg: 0 } : kept.current;
   });
-  const setF = (p: Partial<Filters>) => setF0((o) => (kept = { ...o, ...p }));
+  const setF = (p: Partial<Filters>) => setF0((o) => (kept.current = { ...o, ...p }));
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [modal, setModal] = useState<{ k: 'new' } | { k: 'del'; id: string } | null>(null);
 

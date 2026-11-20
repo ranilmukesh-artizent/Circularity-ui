@@ -12,6 +12,7 @@ import { currentAccount } from '../api/session';
 import type { RouteRef } from '../api/types';
 import { onOpenAsk } from '../ui/askBus';
 import { Icon } from '../ui/Icon';
+import { useOverlay } from '../ui/Overlay';
 import { toast } from '../ui/toast';
 
 interface Turn {
@@ -85,13 +86,16 @@ export function AskPanel({ route }: { route: RouteRef }) {
     }
   }
 
+  // Esc closes the panel through the overlay stack, so it never also closes a dialog under the panel (or the panel
+  // when a dialog was opened over it)
+  useOverlay(() => setOpen(false), undefined, open);
   // open with Ctrl+J, from the top bar, or from a page (openAsk)
   useEffect(() => {
     const key = (e: globalThis.KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
         e.preventDefault();
         setOpen((o) => !o);
-      } else if (e.key === 'Escape') setOpen(false);
+      }
     };
     document.addEventListener('keydown', key);
     return () => document.removeEventListener('keydown', key);
@@ -145,7 +149,7 @@ export function AskPanel({ route }: { route: RouteRef }) {
 
   return (
     <>
-      <aside className="afp" hidden={!open} aria-label="Ask Circularity" role="complementary">
+      <aside className="afp" hidden={!open} aria-label="Ask Circularity">
         <header className="afph">
           <div>
             <h2>

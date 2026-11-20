@@ -1,6 +1,7 @@
 /** The Command Center's charts, drawn as JSX SVG with the demo's geometry and class names (ccSpark, ccDonut, ccBars, ccCombo …). */
 import { comboData, kfmt, monthLabel, varReasons, type CcRows, type CcScope, type HealthDetail, type RouteBar, type Slice } from '../../api/command';
 import { fmtNumber } from '../../api/format';
+import { onActivateKey } from '../../ui/keys';
 
 const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 
@@ -27,7 +28,7 @@ export function Donut({ items, cur, top, bottom, label, onPick }: {
     const tip = i.label + ' · ' + fmtNumber(i.v) + ' (' + Math.round((i.v / tot) * 100) + '%)';
     return (
       <circle key={i.k} className={'dseg ' + (cur === i.k ? 'on' : '')} cx="70" cy="70" r={r} fill="none" stroke={i.color} strokeWidth="18"
-        strokeDasharray={`${d} ${c - d}`} strokeDashoffset={-o} transform="rotate(-90 70 70)" data-tip={tip} onClick={() => onPick(i.k)}>
+        strokeDasharray={`${d} ${c - d}`} strokeDashoffset={-o} transform="rotate(-90 70 70)" data-tip={tip} role="button" tabIndex={0} aria-label={tip} onClick={() => onPick(i.k)} onKeyDown={onActivateKey(() => onPick(i.k))}>
         <title>{tip}</title>
       </circle>
     );

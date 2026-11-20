@@ -9,15 +9,16 @@ import {
 import { fmtDateYear, money } from '../../api/format';
 import { can, canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
+import { onActivateKey } from '../../ui/keys';
 import { Drawer, Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 
 const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 const plural = (n: number, w: string) => n + ' ' + w + (n === 1 ? '' : 's');
 
-/** Row that opens on click and on Enter, like the demo's data-act rows with tabindex. */
+/** Row that opens on click and on Enter or Space, like the demo's data-act rows with tabindex. */
 function rowProps(onOpen: () => void) {
-  return { tabIndex: 0, onClick: onOpen, onKeyDown: (e: React.KeyboardEvent) => e.key === 'Enter' && onOpen() };
+  return { tabIndex: 0, onClick: onOpen, onKeyDown: onActivateKey(onOpen) };
 }
 export function useOpenCase() {
   const nav = useNavigate();
@@ -89,7 +90,7 @@ export function Exceptions({ sc }: { sc: CcScope }) {
                 const n = x.note, first = x.wh !== prev, top = x.items[0];
                 prev = x.wh;
                 return (
-                  <tr key={x.id} data-ex={x.id} className={first ? 'exg1' : ''} data-tip={x.sev + ' severity · ' + x.trend} onClick={() => open(x)}>
+                  <tr key={x.id} data-ex={x.id} className={first ? 'exg1' : ''} data-tip={x.sev + ' severity · ' + x.trend} tabIndex={0} onClick={() => open(x)} onKeyDown={onActivateKey(() => open(x))}>
                     <td data-l="Warehouse">{first ? <b>{x.wh}</b> : <span className="note">{x.wh}</span>}</td>
                     <td data-l="Exception">
                       <span className={'exsev ' + x.sev} aria-hidden="true" />

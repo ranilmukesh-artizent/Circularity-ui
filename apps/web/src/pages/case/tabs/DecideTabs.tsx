@@ -12,6 +12,7 @@ import {
 } from '../../../api/case';
 import { money } from '../../../api/format';
 import { can } from '../../../api/session';
+import { onActivateKey } from '../../../ui/keys';
 import { toast } from '../../../ui/toast';
 import { openExSrc, openExSrcAll, openModels, openSources, openTrace } from '../CaseDrawers';
 import { AfBadge, ExMethod, Panel, ProvB, RangeBar, Stp, Tbl } from '../kit';
@@ -617,7 +618,7 @@ export function OptionsBlock({ c, sr }: { c: CaseRec; sr: ScenRoutes }) {
         <tbody>{sr.el.map((x) => {
           const r = x.r, open = !!ti.expand[c.id + r.plan];
           return [
-            <tr key={r.plan} tabIndex={0} className={x.rank === 1 ? 'sel' : ''} aria-expanded={open} onClick={() => toggle(r.plan)} onKeyDown={(e) => e.key === 'Enter' && toggle(r.plan)}>
+            <tr key={r.plan} tabIndex={0} className={x.rank === 1 ? 'sel' : ''} aria-expanded={open} onClick={() => toggle(r.plan)} onKeyDown={onActivateKey(() => toggle(r.plan))}>
               <td style={{ minWidth: 150 }}>
                 <span className="bn" style={{ ...(x.rank === 1 ? {} : { background: 'var(--panel3)', color: 'var(--ink)' }), width: 22, height: 22, display: 'inline-grid', marginRight: 8, verticalAlign: 'top' }}>{x.rank}</span>
                 <span style={{ display: 'inline-block', maxWidth: 150, verticalAlign: 'top' }}><b>{r.plan}</b>{r.variant === 'greedy' && <> <span className="chip warn">Pool conflict</span></>}</span>

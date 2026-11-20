@@ -1,20 +1,13 @@
 // ESLint flat config for the web app (refactor step C2).
 //   npm run lint
-// typescript-eslint recommended, the two classic react-hooks rules, and jsx-a11y recommended. The a11y rules are
-// warnings for now so this step lands without markup rewrites; step E4 fixes them and turns them into errors.
+// typescript-eslint recommended, the two classic react-hooks rules, and jsx-a11y recommended as errors (step E4; C2
+// had them as warnings).
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import checkFile from "eslint-plugin-check-file";
 import globals from "globals";
-
-const a11yAsWarnings = Object.fromEntries(
-  Object.entries(jsxA11y.flatConfigs.recommended.rules).map(([rule, setting]) => [
-    rule,
-    Array.isArray(setting) ? ["warn", ...setting.slice(1)] : setting === "off" || setting === 0 ? setting : "warn",
-  ]),
-);
 
 export default tseslint.config(
   { ignores: ["dist/", "node_modules/", "src/ui/assets.gen.ts"] },
@@ -46,9 +39,9 @@ export default tseslint.config(
     },
   },
   {
+    // the plugin's recommended set as it ships: its rules are errors, and the few it leaves off stay off
     files: ["**/*.tsx"],
     ...jsxA11y.flatConfigs.recommended,
-    rules: a11yAsWarnings,
   },
   {
     // node scripts (asset extraction, golden dumps, smoke tests) and config files run under node

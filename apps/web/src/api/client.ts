@@ -9,7 +9,7 @@
  * keep showing the old answer while the new one loads, then re-render (stale-while-revalidate).
  */
 import type { Account, ActionResult } from './types';
-import { bump } from './store';
+import { bump, sessionChanged } from './store';
 
 // ---------------------------------------------------------------- session
 const TOKEN_KEY = 'circ-api-token';
@@ -110,6 +110,7 @@ export async function login(username: string, password: string): Promise<Me> {
          tenants: out.tenants, tenant_scoped: out.tenant_scoped, warehouse: out.warehouse }; // prettier-ignore
   await loadReference();
   clearCache();
+  sessionChanged();
   startStream();
   bump();
   return me;
@@ -120,6 +121,7 @@ export function logout(): void {
   me = null;
   stopStream();
   clearCache();
+  sessionChanged();
   bump();
 }
 

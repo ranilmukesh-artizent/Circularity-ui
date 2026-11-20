@@ -12,7 +12,9 @@ import {
   myOpenNotes, routeAllowed, routeInfo, visibleCases, type Case, type Expected,
 } from '../../api/product';
 import { canPage, tenants } from '../../api/session';
+import { sessionScoped } from '../../api/view';
 import { Icon } from '../../ui/Icon';
+import { onActivateKey } from '../../ui/keys';
 import { Drawer } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import { AssessChip, CondChip, EvRow, Signals, StageChip, Thumb } from './AssetChips';
@@ -24,13 +26,13 @@ interface Q {
   kpi: 'all' | 'ready' | 'awaiting' | 'need' | 'approval'; text: string; cond: string; loc: string; owner: string; assess: string;
   sortK: SortK; sortD: 1 | -1; limit: number; group: boolean; open: Record<string, boolean>; sel: string | null;
 }
-let q: Q = { kpi: 'all', text: '', cond: '', loc: '', owner: '', assess: '', sortK: 'priority', sortD: 1, limit: 25, group: false, open: {}, sel: null };
+const q = sessionScoped<Q>(() => ({ kpi: 'all', text: '', cond: '', loc: '', owner: '', assess: '', sortK: 'priority', sortD: 1, limit: 25, group: false, open: {}, sel: null }));
 const subs = new Set<() => void>();
 function setQ(p: Partial<Q>) {
-  q = { ...q, ...p };
+  q.current = { ...q.current, ...p };
   subs.forEach((f) => f());
 }
-const useQ = () => useSyncExternalStore((f) => (subs.add(f), () => subs.delete(f)), () => q);
+const useQ = () => useSyncExternalStore((f) => (subs.add(f), () => subs.delete(f)), () => q.current);
 
 const PRIO = ['RT-1048', 'RT-1049', 'RT-1050', 'RT-1051', 'RT-1052'];
 const SORT: Record<SortK, (c: Case) => string | number> = {
@@ -55,7 +57,7 @@ function queueRows(f: Q): Case[] {
   if (f.owner) rows = rows.filter((c) => c.owner === f.owner);
   if (f.assess) rows = rows.filter((c) => c.assessment === f.assess);
   const v = SORT[f.sortK], d = f.sortD;
-  return rows.sort((a, b) => (v(a) > v(b) ? d : v(a) < v(b) ? -d : 0));
+  return [...rows].sort((a, b) => (v(a) > v(b) ? d : v(a) < v(b) ? -d : 0));
 }
 
 // ---------- page ----------
@@ -213,7 +215,7 @@ function QueueTable({ f, focus }: { f: Q; focus: string | null }) {
       const on = !!f.open[k];
       const toggle = () => setQ({ open: { ...f.open, [k]: !on } });
       return [
-        <tr key={k} className="skug" aria-expanded={on} tabIndex={0} onClick={toggle} onKeyDown={(e) => e.key === 'Enter' && toggle()}>
+        <tr key={k} className="skug" aria-expanded={on} tabIndex={0} onClick={toggle} onKeyDown={onActivateKey(toggle)}>
           <td colSpan={10}>
             <span className="skut">
               <span className="car" aria-hidden="true">›</span>
@@ -357,7 +359,7 @@ function ExpectedTable({ onOpen }: { onOpen: (e: Expected) => void }) {
               {rows.map((e) => {
                 const st = expectedStage(e);
                 return (
-                  <tr key={e.id} tabIndex={0} onClick={() => onOpen(e)} onKeyDown={(k) => k.key === 'Enter' && onOpen(e)}>
+                  <tr key={e.id} tabIndex={0} onClick={() => onOpen(e)} onKeyDown={onActivateKey(() => onOpen(e))}>
                     <td data-l="Contract"><b className="mono">{e.contract}</b><div className="note">{e.id} · {e.reason}</div></td>
                     <td data-l="Customer">{e.customer}</td>
                     <td data-l="Asset">

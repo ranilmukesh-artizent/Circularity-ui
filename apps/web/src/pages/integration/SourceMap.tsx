@@ -6,23 +6,27 @@ import {
   needsAttention, publishedWorkflowCount, series, source, sources, srcAgeText, srcCatNote, srcCats, srcFailing, srcFresh, srcModels, successRate, syncAllLive, syncHistory, tableCount,
   tableModel, tableModelIds, totals, vHue, workflows, type Source,
 } from '../../api/integration';
+import { sessionScoped } from '../../api/view';
 import { Icon } from '../../ui/Icon';
+import { onActivateKey } from '../../ui/keys';
 import { toast } from '../../ui/toast';
 import { canMgr, FrIt, FrKpi, FrSeg, FrSt, fmtN, NOMGR, SrcMenu, StChip, sum, TestSteps, useInt, Vlogo, when } from './ui';
 import { FlowDiagram } from './FlowDiagram';
 
 type View = 'graph' | 'list' | 'matrix';
-const sm = {
+// kept while the session lasts (the demo's S.frSm and S.frGrid)
+const smKept = sessionScoped(() => ({
   view: (window.innerWidth <= 860 ? 'list' : 'graph') as View, sel: null as string | null, links: true, q: '', cat: '', st: '', z: null as number | null,
   tree: 'sys', tab: 'ov', hl: null as string | null, tq: '',
-};
-const grid = { q: '', cat: '', st: '', me: '' };
+}));
+const gridKept = sessionScoped(() => ({ q: '', cat: '', st: '', me: '' }));
 
 const dotOf = (s: Source) => (s.disconnected || s.status === 'unavailable' ? 'bad' : s.status === 'stale' || srcFailing(s) ? 'warn' : s.paused ? 'line' : s.status === 'manual' ? 'line' : 'ok');
 const tblNames = (id: string) => tableModel(id)?.t.map((t) => t.n) ?? [];
 
 export function SourceMap() {
   useBackend();
+  const sm = smKept.current, grid = gridKept.current;
   const ui = useInt();
   const [, setV] = useState(0);
   const up = (f: () => void) => { f(); setV((x) => x + 1); };
@@ -88,6 +92,7 @@ function SmTiles() {
 }
 
 function Tree({ onSel, up }: { onSel: (id: string) => void; up: (f: () => void) => void }) {
+  const sm = smKept.current;
   const tq = sm.tq.toLowerCase(), S = sources(), list = S.filter((s) => !tq || (s.vendor + ' ' + s.name).toLowerCase().includes(tq)), tbl = sum(S.map((s) => tableCount(s.id)));
   return (
     <>
@@ -128,6 +133,7 @@ function Tree({ onSel, up }: { onSel: (id: string) => void; up: (f: () => void) 
 
 type Edge = { a: string; b: string; col: string; n?: number; t?: string; dash?: boolean };
 function Graph({ list, onSel, up }: { list: Source[]; onSel: (id: string) => void; up: (f: () => void) => void }) {
+  const sm = smKept.current;
   const C = canon(), D = frDecisions();
   const view = useRef<HTMLDivElement>(null), world = useRef<HTMLDivElement>(null), nodes = useRef(new Map<string, HTMLDivElement>());
   const [geo, setGeo] = useState<{ w: number; h: number; p: Record<string, { x: number; y: number; w: number }>; fit: number }>({ w: 0, h: 0, p: {}, fit: 1 });
@@ -380,6 +386,7 @@ function Tile({ s }: { s: Source }) {
 }
 
 function TileGrid() {
+  const grid = gridKept.current;
   const ui = useInt();
   const [, setV] = useState(0);
   const up = (f: () => void) => { f(); setV((x) => x + 1); };
@@ -536,7 +543,7 @@ function SmSide() {
             <thead><tr><th>Time</th><th>System</th><th>Event</th><th>Status</th></tr></thead>
             <tbody>
               {ev.map((e) => (
-                <tr key={e.id} style={{ cursor: 'pointer' }} onClick={() => ui.openEvent(e.id)}>
+                <tr key={e.id} style={{ cursor: 'pointer' }} tabIndex={0} onClick={() => ui.openEvent(e.id)} onKeyDown={onActivateKey(() => ui.openEvent(e.id))}>
                   <td className="num nowrap">{new Date(e.ts).toISOString().slice(11, 19)}</td><td>{e.dest}</td><td className="mono">{e.type}</td>
                   <td><span className={'chip ' + ackKind(e.ack)}>{e.ack.length > 16 ? e.ack.slice(0, 15) + '…' : e.ack}</span></td>
                 </tr>

@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useReducer, useRef, useState, use
 import { fmtNumber } from '../../api/format';
 import { hashId, journeyStep, vendorInitials, vHue, type Source } from '../../api/integration';
 import { can } from '../../api/session';
+import { sessionScoped } from '../../api/view';
 import { Icon } from '../../ui/Icon';
 
 export const canMgr = () => can('manageIntegrations');
@@ -158,10 +159,10 @@ export function useTick(ms: number) {
 
 /* ---- connection test (5.10): DNS, TLS, auth, permissions, sample read ---- */
 export interface TestState { i: number; res: { ok: boolean; msg: string }[]; done: boolean; ok?: boolean; at: number }
-let tests: Record<string, TestState> = {};
+const tests = sessionScoped<Record<string, TestState>>(() => ({}));
 const tSubs = new Set<() => void>();
-const tEmit = () => { tests = { ...tests }; tSubs.forEach((f) => f()); };
-export const useTests = () => useSyncExternalStore((f) => (tSubs.add(f), () => tSubs.delete(f)), () => tests);
+const tEmit = () => { tests.current = { ...tests.current }; tSubs.forEach((f) => f()); };
+export const useTests = () => useSyncExternalStore((f) => (tSubs.add(f), () => tSubs.delete(f)), () => tests.current);
 const FR_TEST: [string, string][] = [['DNS', 'Resolve host'], ['TLS', 'Handshake and certificate'], ['Auth', 'Authenticate'], ['Permissions', 'Check read scopes'], ['Sample read', 'Read a sample record']];
 const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -169,7 +170,7 @@ export function runTest(s: Pick<Source, 'id' | 'vendor' | 'status' | 'auth' | 'r
   const h = (k: string) => parseInt(hashId(k), 16);
   const host = (s.url || '').replace(/^[a-z]+:\/\//, '').split('/')[0] || s.vendor, res: TestState['res'] = [];
   const t: TestState = { i: 0, res, done: false, at: Date.now() };
-  tests[s.id] = t;
+  tests.current[s.id] = t;
   const msg = [
     () => host + ' → 10.' + (h(s.id) % 200) + '.' + (h(s.id + 'b') % 250) + '.' + (h(s.id + 'c') % 250),
     () => 'TLS 1.3 · certificate valid',
@@ -222,25 +223,26 @@ export function TestSteps({ id }: { id: string }) {
 
 /* ---- toast with an action button (the demo's toastAct) ---- */
 type ActT = { id: number; msg: string; label: string; fn: () => void };
-let acts: ActT[] = [];
+const acts = sessionScoped<ActT[]>(() => []); // an undo offered to one user is not offered to the next
 let aSeq = 0;
 const aSubs = new Set<() => void>();
 const aEmit = () => aSubs.forEach((f) => f());
+const dropAct = (t: ActT) => { acts.current = acts.current.filter((x) => x !== t); aEmit(); };
 export function toastAct(msg: string, label: string, fn: () => void, ms = 8000) {
   const t = { id: ++aSeq, msg, label, fn };
-  acts = [...acts, t];
+  acts.current = [...acts.current, t];
   aEmit();
-  window.setTimeout(() => { acts = acts.filter((x) => x !== t); aEmit(); }, ms);
+  window.setTimeout(() => dropAct(t), ms);
 }
 export function ActToasts() {
-  const list = useSyncExternalStore((f) => (aSubs.add(f), () => aSubs.delete(f)), () => acts);
+  const list = useSyncExternalStore((f) => (aSubs.add(f), () => aSubs.delete(f)), () => acts.current);
   if (!list.length) return null;
   return (
     <div className="toasts" aria-live="polite" style={{ bottom: 70 }}>
       {list.map((t) => (
         <div key={t.id} className="toast act" role="status">
           <span>{t.msg} </span>
-          <button className="toastbtn" onClick={() => { acts = acts.filter((x) => x !== t); aEmit(); t.fn(); }}>
+          <button className="toastbtn" onClick={() => { dropAct(t); t.fn(); }}>
             {t.label}
           </button>
         </div>

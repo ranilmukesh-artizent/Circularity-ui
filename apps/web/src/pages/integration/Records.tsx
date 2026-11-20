@@ -7,6 +7,8 @@ import {
   ackKind, canon, canonExample, caseExists, commitImport, conflictPage, escalateConflict, events, facilities, mappings, pct, rbPath, resolveConflict,
   sampleCsv, sources, tenantList, type StreamEvent,
 } from '../../api/integration';
+import { sessionScoped } from '../../api/view';
+import { onActivateKey } from '../../ui/keys';
 import { Drawer } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import { canMgr, FrKpi, Json, NOMGR, sum } from './ui';
@@ -43,11 +45,12 @@ export function Models() {
 }
 
 /* ---- Event streams ---- */
-const ef = { dir: '', issues: false, q: '' };
+const efKept = sessionScoped(() => ({ dir: '', issues: false, q: '' }));
 const evTime = (ts: StreamEvent['ts']) => fmtDate(ts) + ' ' + new Date(ts).toISOString().slice(11, 16);
 
 export function Events({ onOpen }: { onOpen: (id: string) => void }) {
   useBackend();
+  const ef = efKept.current;
   const [, setV] = useState(0);
   const up = (f: () => void) => { f(); setV((x) => x + 1); };
   const E = events(), q = ef.q.toLowerCase();
@@ -84,7 +87,7 @@ export function Events({ onOpen }: { onOpen: (id: string) => void }) {
             <thead><tr><th>Time</th><th>Dir</th><th>Event</th><th>Case</th><th>Decision</th><th>Approval</th><th className="r">Ver</th><th>Destination</th><th>Acknowledgement</th><th>Idempotency key</th></tr></thead>
             <tbody>
               {rows.length ? rows.slice(0, 70).map((e) => (
-                <tr key={e.id} style={{ cursor: 'pointer' }} onClick={() => onOpen(e.id)}>
+                <tr key={e.id} style={{ cursor: 'pointer' }} tabIndex={0} onClick={() => onOpen(e.id)} onKeyDown={onActivateKey(() => onOpen(e.id))}>
                   <td className="num nowrap">{evTime(e.ts)}</td>
                   <td><span className={'chip ' + (e.dir === 'out' ? 'dk' : 'line')}>{e.dir === 'out' ? 'Out' : 'In'}</span></td>
                   <td className="mono">{e.type}</td>
@@ -186,7 +189,7 @@ export function Conflicts() {
 /* ---- Manual import ---- */
 type Row = { asset_id: string; qty: string; grade: string; location: string; owner: string; received: string; errors: string[]; warn: string[] };
 type Csv = { rows: Row[]; ok: number; err: number; committed?: boolean };
-const imp: { text: string; csv: Csv | null } = { text: '', csv: null };
+const impKept = sessionScoped<{ text: string; csv: Csv | null }>(() => ({ text: '', csv: null }));
 
 function validateCsv(t: string): Csv | string {
   const lines = t.split(/\r?\n/).filter(Boolean), hd = lines[0].split(',').map((x) => x.trim().toLowerCase());
@@ -214,6 +217,7 @@ export function Import() {
   useBackend();
   const [, setV] = useState(0);
   const up = (f: () => void) => { f(); setV((x) => x + 1); };
+  const imp = impKept.current;
   const st = imp.csv, mgr = canMgr();
   const validate = () => {
     const t = imp.text.trim();

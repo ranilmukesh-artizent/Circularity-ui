@@ -5,6 +5,7 @@ import {
   type ClosedRow, type Metrics,
 } from '../../api/analytics';
 import { money } from '../../api/format';
+import { onActivateKey } from '../../ui/keys';
 
 export interface Drill { title: string; fn: (r: ClosedRow) => boolean }
 type OnDrill = (d: Drill) => void;
@@ -128,9 +129,16 @@ export function Funnel({ rows, m, onDrill }: { rows: ClosedRow[]; m: Metrics; on
             <b>{s[0]}</b>
             <span className="num"><b>{s[1].toLocaleString()}</b> {i ? <span className="note">{pct(s[1] / st[i - 1][1], 0)} of previous</span> : null}</span>
           </div>
-          <div className="bar" style={{ height: 14, margin: '4px 0', cursor: s[3] ? 'pointer' : undefined }} onClick={s[3] ? () => onDrill(s[3]!) : undefined}>
-            <i style={{ width: (s[1] / (opened || 1)) * 100 + '%' }} />
-          </div>
+          {s[3] ? (
+            <div className="bar" style={{ height: 14, margin: '4px 0', cursor: 'pointer' }} role="button" tabIndex={0} aria-label={s[0]}
+              onClick={() => onDrill(s[3]!)} onKeyDown={onActivateKey(() => onDrill(s[3]!))}>
+              <i style={{ width: (s[1] / (opened || 1)) * 100 + '%' }} />
+            </div>
+          ) : (
+            <div className="bar" style={{ height: 14, margin: '4px 0' }}>
+              <i style={{ width: (s[1] / (opened || 1)) * 100 + '%' }} />
+            </div>
+          )}
           <div className="note">{s[2]}</div>
         </div>
       ))}

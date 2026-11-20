@@ -2,16 +2,19 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 import { useBackend } from '../../api/useBackend';
 import { available, connected, frCats, integrations, needsAttention, recommendations, sources, typeOf, type Integration, type Rec } from '../../api/integration';
+import { sessionScoped } from '../../api/view';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
 import { canMgr, FrKpi, FrSt, SrcMenu, useInt, Vlogo, when } from './ui';
 
 type SortKey = 'name' | 'cat' | 'status' | 'last';
-const ov = { q: '', cat: '', sort: 'name' as SortKey, dir: 1 }; // kept while the app is open, like the demo's S.frOv
+// kept while the session lasts, like the demo's S.frOv
+const ovKept = sessionScoped(() => ({ q: '', cat: '', sort: 'name' as SortKey, dir: 1 }));
 
 export function Overview() {
   useBackend();
   const ui = useInt();
+  const ov = ovKept.current;
   const [q, setQ] = useState(ov.q);
   const [cat, setCat] = useState(ov.cat);
   const [sort, setSort] = useState<[SortKey, number]>([ov.sort, ov.dir]);

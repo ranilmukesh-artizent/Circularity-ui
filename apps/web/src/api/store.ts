@@ -16,3 +16,15 @@ export function subscribe(l: () => void) {
   };
 }
 export const getVersion = () => version;
+
+/**
+ * Session change hooks: client.ts calls sessionChanged() on every sign-in and sign-out, and sessionScoped() (view.ts)
+ * registers here so state kept between pages (filters, open drafts, what-if assumptions) does not pass to the next user.
+ */
+const sessionHooks = new Set<() => void>();
+export function onSessionChange(f: () => void) {
+  sessionHooks.add(f);
+}
+export function sessionChanged() {
+  sessionHooks.forEach((f) => f());
+}

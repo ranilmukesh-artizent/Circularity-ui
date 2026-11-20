@@ -9,6 +9,7 @@ import {
   escalationDraft, failDrill, LR_PACE, modelTag, nextStep, orCaseById, orDur, runModel, runNext, runSignature, runStates, runTimeline,
   sendEscalation, stageModels, type NextStep, type RunLine, type RunModel, type RunStage, type Segment,
 } from '../../api/orchestration';
+import { useOverlay } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 
 interface Play {
@@ -127,15 +128,8 @@ export function LiveBoard({ caseId, replaySignal }: { caseId: string; replaySign
     replay();
   }, [replaySignal, replay]);
 
-  // Esc closes the open box
-  useEffect(() => {
-    const f = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || document.querySelector('.modal.on, .drawer.on')) return;
-      setL((p) => (view(p).open == null ? p : { ...p, open: null, playing: false }));
-    };
-    document.addEventListener('keydown', f);
-    return () => document.removeEventListener('keydown', f);
-  }, []);
+  // Esc closes the open box, through the overlay stack (a dialog or the Ask panel over the board closes first)
+  useOverlay(() => setL((p) => (view(p).open == null ? p : { ...p, open: null, playing: false })), undefined, V.open != null);
 
   const c = orCaseById(caseId)!, run = L.m.run, RS = runStates();
   const chip = (b: Box): [string, string] => (b.state === 'play' ? ['Running', 'warn'] : b.state === 'ahead' ? ['Pending', 'line'] : RS[b.state] ?? ['—', 'line']);

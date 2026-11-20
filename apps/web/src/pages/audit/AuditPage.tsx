@@ -7,6 +7,7 @@ import {
 import { fmtDateYear } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import { can, canRoute } from '../../api/session';
+import { sessionScoped } from '../../api/view';
 import type { PageProps } from '../registry';
 import { Drawer, Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
@@ -15,7 +16,7 @@ import { downloadCsv, q } from '../../lib/csv';
 
 interface AuFilter { q: string; src: string; type: string; status: string; dir: 1 | -1; limit: number; prep: boolean }
 const EMPTY: AuFilter = { q: '', src: '', type: '', status: '', dir: -1, limit: 40, prep: false };
-let saved: AuFilter = { ...EMPTY };
+const saved = sessionScoped<AuFilter>(() => ({ ...EMPTY }));
 
 const PU = <span className="chip bad" style={{ height: 'auto', padding: '1px 8px' }}>Provenance unavailable</span>;
 const fv = (v: unknown): ReactNode => (v == null || v === '' ? PU : String(v));
@@ -25,24 +26,25 @@ export const provChip = (p: Provenance) =>
   p.status === 'available' ? <span className="chip ok">Full provenance</span> : p.status === 'partial' ? <span className="chip warn">Partial provenance</span> : <span className="chip bad">Provenance unavailable</span>;
 const canOpen = (id: string) => canRoute({ page: 'product', a: id, b: null }) === true;
 
-function filtered(f: AuFilter): AuditEntry[] {
+/** The log rows a filter shows, oldest or newest first (a new array: the cached answer keeps its order). */
+export function filtered(f: AuFilter): AuditEntry[] {
   let a = auditEntries();
   if (f.q) { const s = f.q.toLowerCase(); a = a.filter((x) => (x.caseId + ' ' + x.asset + ' ' + x.item + ' ' + x.source + ' ' + x.request + ' ' + x.used).toLowerCase().includes(s)); }
   if (f.src) a = a.filter((x) => x.source === f.src);
   if (f.type) a = a.filter((x) => x.kind === f.type);
   if (f.status) a = a.filter((x) => x.status === f.status);
   if (f.prep) a = a.filter((x) => x.prep);
-  return a.sort((x, y) => (+x.ts - +y.ts) * f.dir);
+  return [...a].sort((x, y) => (+x.ts - +y.ts) * f.dir);
 }
 
 export function AuditPage({ route, query }: PageProps) {
   useBackend();
   const [f, setF0] = useState<AuFilter>(() => {
     const qq = query.get('q') ?? query.get('case');
-    return qq ? (saved = { ...saved, q: qq, limit: 40 }) : saved;
+    return qq ? (saved.current = { ...saved.current, q: qq, limit: 40 }) : saved.current;
   });
   // `saved` always holds the current filter (every change goes through setF), so effects read it instead of `f`
-  const setF = useCallback((x: AuFilter) => { saved = x; setF0(x); }, []);
+  const setF = useCallback((x: AuFilter) => { saved.current = x; setF0(x); }, []);
   const [entry, setEntry] = useState<string | null>(null);
   const [trace, setTrace] = useState<{ id: string; k: string } | null>(null);
 
@@ -51,7 +53,7 @@ export function AuditPage({ route, query }: PageProps) {
   useEffect(() => {
     const p = new URLSearchParams(qs);
     const qq = p.get('q') ?? p.get('case');
-    if (qq && qq !== saved.q) setF({ ...saved, q: qq, limit: 40 });
+    if (qq && qq !== saved.current.q) setF({ ...saved.current, q: qq, limit: 40 });
   }, [qs, setF]);
   useEffect(() => {
     if (!route.a) return;

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { fmtNumber } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
+import { sessionScoped } from '../../api/view';
 import {
   ago, analyze, evalStep, hashId, history, logoHtml, mappings, nowMs, NOWF, publishWorkflow, runCounts, runErrors,
   runFromLast, runOrder, saveWorkflow, savedOf, setWorkflowStatus, sourceCategoryLabel, sourceCompleteness,
@@ -25,7 +26,7 @@ const TRIGS: [string, string][] = [['schedule', 'On a schedule'], ['event', 'On 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const stamp = (ts: number) => new Date(ts).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 /** The demo keeps the open tab across workflows (S.frWfTab) and the canvas view (S.frWfView). */
-let keptView: View = 'details';
+const keptView = sessionScoped<View>(() => 'details');
 
 export function WorkflowPage({ id, query }: { id: string; query: URLSearchParams }) {
   useBackend();
@@ -47,8 +48,8 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   const [tab, setTab] = useState<Tab>('studio');
   const [sel, setSel] = useState<Sel>(null);
   const [z, setZ] = useState(0.72);
-  const [view, setView0] = useState<View>(keptView);
-  const setView = (v: View) => { keptView = v; setView0(v); };
+  const [view, setView0] = useState<View>(keptView.current);
+  const setView = (v: View) => { keptView.current = v; setView0(v); };
   const [mini, setMini] = useState(true);
   const [wide, setWide] = useState(false);
   const [modal, setModal] = useState<ModalState>(null);

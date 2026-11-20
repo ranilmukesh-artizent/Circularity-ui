@@ -46,18 +46,19 @@ export function Panel({ title, sub, right, id, cls = '', children }: { title: Re
 
 /** Pill tabs (frSeg). */
 export function Seg<T extends string>({ name, items, cur, onPick, label }: { name: string; items: [T, string][]; cur: T; onPick: (k: T) => void; label: string }) {
+  // ← and → move to the previous or next tab and focus it (roving tabindex)
+  const arrows = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const i = items.findIndex((x) => x[0] === cur), n = items[(i + (e.key === 'ArrowRight' ? 1 : items.length - 1)) % items.length];
+    e.preventDefault();
+    const box = e.currentTarget.parentElement!;
+    onPick(n[0]);
+    window.setTimeout(() => (box.querySelector('[aria-selected="true"]') as HTMLElement | null)?.focus(), 0);
+  };
   return (
-    <div className="frseg" role="tablist" aria-label={label} data-seg={name}
-      onKeyDown={(e) => {
-        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-        const i = items.findIndex((x) => x[0] === cur), n = items[(i + (e.key === 'ArrowRight' ? 1 : items.length - 1)) % items.length];
-        e.preventDefault();
-        const box = e.currentTarget;
-        onPick(n[0]);
-        window.setTimeout(() => (box.querySelector('[aria-selected="true"]') as HTMLElement | null)?.focus(), 0);
-      }}>
+    <div className="frseg" role="tablist" aria-label={label} data-seg={name}>
       {items.map(([k, t]) => (
-        <button key={k} role="tab" aria-selected={k === cur} tabIndex={k === cur ? 0 : -1} onClick={() => onPick(k)}>{t}</button>
+        <button key={k} role="tab" aria-selected={k === cur} tabIndex={k === cur ? 0 : -1} onClick={() => onPick(k)} onKeyDown={arrows}>{t}</button>
       ))}
     </div>
   );
@@ -112,6 +113,8 @@ export function QuickActions({ rows }: { rows: { l: string; ic: string; on: () =
 /** ⋯ menu that closes after a choice (the demo's details.frmenu). */
 export function Menu({ summary, summaryCls, label, children }: { summary: ReactNode; summaryCls: string; label?: string; children: ReactNode }) {
   return (
+    // closes after a choice: a click on a menu item, which Enter and Space on that item's button also send
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- delegated from the items
     <details className="frmenu" onClick={(e) => {
       if ((e.target as HTMLElement).closest('[role=menuitem]')) (e.currentTarget as HTMLDetailsElement).open = false;
     }}>

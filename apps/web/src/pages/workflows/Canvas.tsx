@@ -12,6 +12,7 @@ import {
   transforms, canLink, WF_H, WF_W, WF_WH, worldWidth, type Check, type Counts, type RunState, type TestRun, type WfGraph, type WfNode, type Workflow,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
+import { onActivateKey } from '../../ui/keys';
 import { toast } from '../../ui/toast';
 import { edit, nextId, type Draft } from './draftStore';
 import { GRIP_SVG, LOCK_SVG, Raw } from './kit';
@@ -76,9 +77,9 @@ export function canvasOps(d: Draft, kind: 'pipe' | 'dec', setSel: (s: Sel) => vo
 }
 
 // ---------------------------------------------------------------- palette
-function PalItem({ k, label, sub, icon, dot, onDown }: { k: string; label: string; sub: string; icon: ReactNode; dot?: string; onDown: (e: RPointerEvent, key: string, label: string) => void }) {
+function PalItem({ k, label, sub, icon, dot, onDown, onKey }: { k: string; label: string; sub: string; icon: ReactNode; dot?: string; onDown: (e: RPointerEvent, key: string, label: string) => void; onKey: (e: React.KeyboardEvent) => void }) {
   return (
-    <button className="wfp frp2" data-pal={k} aria-label={'Add ' + label} onPointerDown={(e) => onDown(e, k, label)}>
+    <button className="wfp frp2" data-pal={k} aria-label={'Add ' + label} onPointerDown={(e) => onDown(e, k, label)} onKeyDown={onKey}>
       {icon}<span className="tx"><span className="lb">{label}</span><span className="sb">{sub}</span></span>{dot != null && <span className={'dotc ' + dot} />}
     </button>
   );
@@ -94,7 +95,7 @@ export function Palette({ w, onDown, onKeyAdd }: { w: Workflow; onDown: (e: RPoi
     if (b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onKeyAdd(b.dataset.pal!); }
   };
   const it = (key: string, label: string, sub: string, icon: ReactNode, dot?: string) =>
-    !ql || (label + ' ' + sub).toLowerCase().includes(ql) ? <PalItem key={key} k={key} label={label} sub={sub} icon={icon} dot={dot} onDown={onDown} /> : null;
+    !ql || (label + ' ' + sub).toLowerCase().includes(ql) ? <PalItem key={key} k={key} label={label} sub={sub} icon={icon} dot={dot} onDown={onDown} onKey={keyAdd} /> : null;
 
   if (w.kind !== 'pipe') {
     const def: Record<string, boolean> = { t_r: true, t_w: true };
@@ -103,12 +104,12 @@ export function Palette({ w, onDown, onKeyAdd }: { w: Workflow; onDown: (e: RPoi
       return <div className="sec" key={k}><button className="wfh" aria-expanded={o} onClick={() => setOpen({ ...open, [k]: !o })}><span>{h}</span><span className="note">{items.length}</span></button>{o && items}</div>;
     };
     const old = (key: string, label: string, sub: string) => (
-      <button key={key} className="wfp" data-pal={key} aria-label={'Add ' + label} onPointerDown={(e) => onDown(e, key, label)}>
+      <button key={key} className="wfp" data-pal={key} aria-label={'Add ' + label} onPointerDown={(e) => onDown(e, key, label)} onKeyDown={keyAdd}>
         <span className="grip">{GRIP_SVG}</span><span className="tx"><span className="lb">{label}</span><span className="sb">{sub}</span></span>
       </button>
     );
     return (
-      <aside className="wfpal" id="wfPal" aria-label="Components. Drag one onto the canvas, or press Enter to add it." onKeyDown={keyAdd}>
+      <aside className="wfpal" id="wfPal" aria-label="Components. Drag one onto the canvas, or press Enter to add it.">
         {sec('t_r', 'Agent tools · read', tools().filter((t) => t.rw === 'read').map((t) => old('tool:' + t.id, t.id, 'Read')))}
         {sec('t_w', 'Agent tools · write', tools().filter((t) => t.rw === 'write').map((t) => old('tool:' + t.id, t.id, t.approval === 'human approval required' ? 'Needs approval' : 'Within agent scope')))}
       </aside>
@@ -131,7 +132,7 @@ export function Palette({ w, onDown, onKeyAdd }: { w: Workflow; onDown: (e: RPoi
   const mapIc = <Raw html={iconTileHtml('mapping', 'money', 'sm')} />;
   const S = sources();
   return (
-    <aside className="wfpal" id="wfPal" aria-label="Components. Drag one onto the canvas, or press Enter to add it." onKeyDown={keyAdd}>
+    <aside className="wfpal" id="wfPal" aria-label="Components. Drag one onto the canvas, or press Enter to add it.">
       <div className="frpals"><label className="sr" htmlFor="frPalQ">Search components</label><Icon name="search" />
         <input id="frPalQ" type="search" placeholder="Search components" value={q} onChange={(e) => setQ(e.target.value)} /></div>
       <h4 className="frpalh">Sources</h4>
@@ -264,6 +265,7 @@ export function CanvasView({ w, d, z, sel, run, checks, counts, flow, mini, onSe
   return (
     <div className="wfcanvas">
       {toolbar}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- the canvas takes focus for its arrow-key and Delete shortcuts, as its label says */}
       <div className="wfview" id="wfView" ref={viewRef} tabIndex={0} role="group" aria-label="Workflow canvas. Select a step, then use arrow keys to move it or Delete to remove it." onPointerDown={down}>
         <div id="wfSizer" style={{ width: WW * z, height: WF_WH * z }}>
           <div id="wfWorld" style={{ width: WW, height: WF_WH, transform: `scale(${z})` }}>
@@ -434,7 +436,7 @@ export function TaskInstances({ g, run, onPick, onApprove, onClear }: { g: WfGra
         <thead><tr><th>Step</th><th>State</th><th>Start</th><th>End</th><th className="r">Duration</th><th className="r">Try</th><th>Pool</th></tr></thead>
         <tbody>{rows.length ? rows.map((id) => {
           const n = by[id], st = run.states[id], t = T[id], ex = t?.ex;
-          return <tr key={id} onClick={() => onPick(id)} style={{ cursor: 'pointer' }}>
+          return <tr key={id} tabIndex={0} onClick={() => onPick(id)} onKeyDown={onActivateKey(() => onPick(id))} style={{ cursor: 'pointer' }}>
             <td><b>{stepInfo(n).label}</b></td><td><span className={'chip ' + C[st]}>{ICO[st] ?? ''} {L[st]}</span></td>
             <td className="num nowrap">{ex ? hms(t.s) : '—'}</td><td className="num nowrap">{ex && st !== 'running' ? hms(t.e) : '—'}</td>
             <td className="r num">{ex && st !== 'running' ? t.d.toFixed(2) + ' s' : '—'}</td><td className="r num">{st === 'failed' ? 3 : ex ? 1 : 0}</td><td className="mono">{POOL(n)}</td>

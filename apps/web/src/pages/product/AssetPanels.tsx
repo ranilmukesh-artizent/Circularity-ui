@@ -8,6 +8,7 @@ import {
   prepCost, prepParts, rateCardId, routeInfo, type Case, type Health,
 } from '../../api/product';
 import { Icon } from '../../ui/Icon';
+import { onActivateKey } from '../../ui/keys';
 import { Thumb } from './AssetChips';
 
 // ---------- context: the asset in view and the page's view state ----------
@@ -60,11 +61,13 @@ export function Photo({ x, cls, noZoom }: { x: Case; cls?: string; noZoom?: bool
   const { zoom } = useAsset();
   const [broken, setBroken] = useState(false);
   const alt = `${x.product}, ${x.mfr}`;
+  // the tile is the control (Enter or Space enlarges too); the image inside names it
+  const open = () => zoom(photoSrc(x.cls), alt);
+  const zoomable = noZoom || broken ? {} : { role: 'button', tabIndex: 0, onClick: open, onKeyDown: onActivateKey(open) };
   return (
-    <div className={'asimg ' + (cls || '')}>
+    <div className={'asimg ' + (cls || '')} {...zoomable}>
       {!broken && (
-        <img src={photoSrc(x.cls)} alt={alt} loading="lazy" onError={() => setBroken(true)}
-          onClick={noZoom ? undefined : () => zoom(photoSrc(x.cls), alt)} />
+        <img src={photoSrc(x.cls)} alt={alt} loading="lazy" onError={() => setBroken(true)} />
       )}
       <span className="asph" hidden={!broken}>
         <Thumb cls={x.cls} />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { caseById, caseRefusal, enterCase, landing, stageHref, stageState, stageTitle, type CaseRec } from '../../api/case';
 import { useBackend } from '../../api/useBackend';
@@ -44,8 +44,23 @@ const viewHref = (id: string, v: CaseView) => '/' + stageHref(id, v.kind === 'st
  * A live case (#/product/RT-1048, #/product/RT-1048/<stage or view>): the Decision Workbench stage pages,
  * the case Overview and Full analysis. Rendered by the `product` page dispatcher (src/pages/product/).
  * CONTRACT: keep this export name and props; the case area owns everything behind it.
+ *
+ * Opening a case resets the what-if assumptions and the Workbench's view state (enterCase). That happens in a layout
+ * effect, not during render: the case's pages mount after it, before the browser paints, so they never see the last
+ * case's assumptions and nothing flashes.
  */
-export function CasePage({ caseId, query }: { caseId: string; view: string | null; query: URLSearchParams }) {
+export function CasePage(props: CasePageProps) {
+  const [entered, setEntered] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    enterCase(props.caseId);
+    setEntered(props.caseId);
+  }, [props.caseId]);
+  return entered === props.caseId ? <EnteredCase key={props.caseId} {...props} /> : null;
+}
+
+type CasePageProps = { caseId: string; view: string | null; query: URLSearchParams };
+
+function EnteredCase({ caseId, query }: CasePageProps) {
   useBackend();
   const loc = useLocation();
   const nav = useNavigate();
@@ -68,7 +83,6 @@ export function CasePage({ caseId, query }: { caseId: string; view: string | nul
     go: (p) => navRef.current('/' + p.replace(/^#?\/?/, '')),
   }), []);
 
-  enterCase(caseId);
   const refusal = caseRefusal(caseId);
   const c = refusal ? undefined : caseById(caseId);
   const ok = !!c;

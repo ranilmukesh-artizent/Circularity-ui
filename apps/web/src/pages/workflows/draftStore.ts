@@ -5,6 +5,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { graphOf, graphStamp, workflow, type Trigger, type WfGraph } from '../../api/workflows';
+import { sessionScoped } from '../../api/view';
 
 export interface Draft {
   id: string;
@@ -22,7 +23,8 @@ export interface Draft {
   seq: number;
 }
 
-const drafts = new Map<string, Draft>();
+// unsaved copies belong to the user who made them: a sign-in or sign-out drops them
+const drafts = sessionScoped(() => new Map<string, Draft>());
 let version = 0;
 const subs = new Set<() => void>();
 const emit = () => { version++; subs.forEach((f) => f()); };
@@ -45,18 +47,18 @@ function fresh(id: string): Draft {
 /** The working copy for a workflow. A copy that is clean, or one an agent has since replaced, is refreshed from the backend. */
 export function draftOf(id: string): Draft | null {
   const w = workflow(id);
-  if (!w) { drafts.delete(id); return null; }
-  let d = drafts.get(id);
+  if (!w) { drafts.current.delete(id); return null; }
+  let d = drafts.current.get(id);
   if (!d || (d.base !== baseOf(id) && (!d.dirty || w.dirty))) {
     d = fresh(id);
-    drafts.set(id, d);
+    drafts.current.set(id, d);
   }
   return d;
 }
 
 /** Does the list show "unsaved changes" for this workflow? */
 export function isDirty(id: string): boolean {
-  const d = drafts.get(id);
+  const d = drafts.current.get(id);
   return d ? d.dirty : !!workflow(id)?.dirty;
 }
 
@@ -91,15 +93,15 @@ export function undoRedo(id: string, step: -1 | 1) {
 
 /** Replace the copy with the backend's version (after Save, Publish or Discard). */
 export function reload(id: string, patch?: Partial<Draft>) {
-  if (!workflow(id)) { drafts.delete(id); emit(); return; }
+  if (!workflow(id)) { drafts.current.delete(id); emit(); return; }
   const d = fresh(id);
   Object.assign(d, { dirty: false }, patch);
-  drafts.set(id, d);
+  drafts.current.set(id, d);
   emit();
 }
 
 export function forget(id: string) {
-  drafts.delete(id);
+  drafts.current.delete(id);
   emit();
 }
 

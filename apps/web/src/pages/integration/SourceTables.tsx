@@ -5,11 +5,12 @@ import {
   alignTables, moveTable, source, sources, srcAgeText, tableCount, tableHeight, tableModel, tableModelIds, tableSuggestions, undoActions, updateTables,
   type Table, type TableModel,
 } from '../../api/integration';
+import { sessionScoped } from '../../api/view';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import { canMgr, FrKpi, NOMGR, sum, toastAct } from './ui';
 
-const tg = { src: 'erp', view: 'graph' as 'graph' | 'list', z: 0.85 };
+const tgKept = sessionScoped(() => ({ src: 'erp', view: 'graph' as 'graph' | 'list', z: 0.85 })); // kept while the session lasts
 const W = 190;
 
 export function TablesTiles() {
@@ -40,6 +41,7 @@ type Dlg = { k: 'edit'; n: string } | { k: 'add' } | { k: 'fk'; a: string } | nu
 
 export function Tables() {
   useBackend();
+  const tg = tgKept.current;
   const [, setV] = useState(0);
   const up = (f: () => void) => { f(); setV((x) => x + 1); };
   const [dlg, setDlg] = useState<Dlg>(null);
@@ -93,11 +95,13 @@ export function Tables() {
 }
 
 function TableGraph({ m, up, onEdit, onFk }: { m: TableModel; up: (f: () => void) => void; onEdit: (n: string) => void; onFk: (n: string) => void }) {
+  const tg = tgKept.current;
   const drag = useRef<{ t: Table; sx: number; sy: number; ox: number; oy: number } | null>(null);
   useEffect(() => {
     const mv = (e: PointerEvent) => {
       const d = drag.current;
       if (!d) return;
+      const tg = tgKept.current;
       moveTable(tg.src, d.t.n, Math.max(0, Math.round((d.ox + (e.clientX - d.sx) / tg.z) / 8) * 8), Math.max(30, Math.round((d.oy + (e.clientY - d.sy) / tg.z) / 8) * 8));
     };
     const end = () => { drag.current = null; };
@@ -161,6 +165,7 @@ function TableGraph({ m, up, onEdit, onFk }: { m: TableModel; up: (f: () => void
 }
 
 function TableList({ m, onEdit, onFk, onDel, onFkDel }: { m: TableModel; onEdit: (n: string) => void; onFk: (n: string) => void; onDel: (n: string) => void; onFkDel: (i: number) => void }) {
+  const tg = tgKept.current;
   const s = source(tg.src)!, mgr = canMgr();
   const fkc = (n: string) => m.fk.filter((f) => f[0].split('.')[0] === n || f[1].split('.')[0] === n).length;
   return (
@@ -214,6 +219,7 @@ function TableList({ m, onEdit, onFk, onDel, onFkDel }: { m: TableModel; onEdit:
 }
 
 function EditTable({ m, n, onClose, onDel }: { m: TableModel; n: string; onClose: () => void; onDel: (n: string) => void }) {
+  const tg = tgKept.current;
   const t = m.t.find((x) => x.n === n)!;
   const [desc, setDesc] = useState(t.desc), [cl, setCl] = useState(t.cl), [cols, setCols] = useState(t.cols.map((c) => c[0]).join('\n')), [err, setErr] = useState('');
   const save = async () => {
@@ -241,6 +247,7 @@ function EditTable({ m, n, onClose, onDel }: { m: TableModel; n: string; onClose
 }
 
 function AddTable({ m, onClose }: { m: TableModel; onClose: () => void }) {
+  const tg = tgKept.current;
   const av = tableSuggestions(tg.src).filter((a) => !m.t.some((t) => t.n === a.n));
   const [n, setN] = useState(''), [cl, setCl] = useState(m.cl[0]?.[0] ?? ''), [desc, setDesc] = useState(''), [cols, setCols] = useState('ID'), [err, setErr] = useState('');
   const onName = (v: string) => {
@@ -276,6 +283,7 @@ function AddTable({ m, onClose }: { m: TableModel; onClose: () => void }) {
 }
 
 function NewFk({ m, a0, onClose }: { m: TableModel; a0: string; onClose: () => void }) {
+  const tg = tgKept.current;
   const cols = (n: string) => (m.t.find((t) => t.n === n) || { cols: [] as [string, string][] }).cols.map((c) => c[0]);
   const [f, setF] = useState({ a: a0, ac: '', b: '', bc: '', why: '' });
   const [err, setErr] = useState('');

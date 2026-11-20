@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { invoke } from '../../api/actions';
 import {
   approvalLimit, approvalTerms, caseAnalysis, caseById, confidence, defaultSpend, draftRationale, eligibleRoutes, instruction,
@@ -7,7 +7,7 @@ import {
 import { money } from '../../api/format';
 import { currentAccount } from '../../api/session';
 import { Icon } from '../../ui/Icon';
-import { Modal } from '../../ui/Overlay';
+import { Modal, useOverlay } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import { AfBadge, Json } from './kit';
 import { TiResult } from './tabs/DecideTabs';
@@ -163,17 +163,17 @@ export function ExplainView({ caseId, onClose }: { caseId: string; onClose: () =
   const [hot, setHot] = useState<string[]>([]);
   const timer = useRef(0);
   const close = useRef<HTMLButtonElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useOverlay(onClose, box); // Esc through the overlay stack, Tab kept inside, focus back to the opener on close
   useEffect(() => {
     document.body.classList.add('cxopen');
-    window.setTimeout(() => close.current?.focus(), 30);
-    const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', k);
+    const t = window.setTimeout(() => close.current?.focus(), 30);
     return () => {
       document.body.classList.remove('cxopen');
-      document.removeEventListener('keydown', k);
+      window.clearTimeout(t);
       window.clearTimeout(timer.current);
     };
-  }, [onClose]);
+  }, []);
   const light = (keys: string[]) => {
     setHot(keys);
     window.clearTimeout(timer.current);
@@ -189,13 +189,14 @@ export function ExplainView({ caseId, onClose }: { caseId: string; onClose: () =
     else if (k === 'demand') { setScen({ demandOff: !s.demandOff }); light(CX_EV.demand); }
     else { setScen({ market: s.market === 0.8 ? 1 : 0.8 }); light(CX_EV.market); }
   };
-  const onDriver = (e: MouseEvent) => {
+  // a driver lights its evidence on hover, and on keyboard focus too
+  const onDriver = (e: SyntheticEvent) => {
     const d = (e.target as Element).closest('.cxd[data-ev]') as HTMLElement | null;
     if (d?.dataset.ev) light(d.dataset.ev.split(' '));
   };
 
   return (
-    <div id="cxX" className="cxx" role="dialog" aria-modal="true" aria-label="Explain this decision">
+    <div ref={box} id="cxX" className="cxx" role="dialog" aria-modal="true" aria-label="Explain this decision">
       <div className="cxxw">
         <header className="cxxh">
           <div>
@@ -210,7 +211,7 @@ export function ExplainView({ caseId, onClose }: { caseId: string; onClose: () =
           <div className="cxl">
             <section className="panel cxp">
               <div className="cxph"><h3>Why this outcome</h3><span className="note">{r.why || ''}</span></div>
-              <div className="cxds" onMouseOver={onDriver}><Drivers a={a} r={r} /></div>
+              <div className="cxds" onMouseOver={onDriver} onFocus={onDriver}><Drivers a={a} r={r} /></div>
               <p className="cxnx note">
                 {nx && <>Next best: <b>{nx.plan}</b>, {money(nx.net)}, {money(r.net - nx.net)} less. </>}
                 {ex.length > 0 && <>Withheld before pricing: {ex.map((x) => x.plan + ' (' + String(x.failReason || 'a gate failed').replace(/^./, (m) => m.toLowerCase()) + ')').join('; ')}. </>}
