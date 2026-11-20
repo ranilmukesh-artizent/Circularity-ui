@@ -11,6 +11,8 @@
     "pretest": "node scripts/extract-styles.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "knip": "knip",
     "preview": "vite preview",
     "assets": "node scripts/dump-assets.mjs",
     "golden": "node scripts/dump-golden.mjs"
@@ -19,17 +21,24 @@
     "@tanstack/react-query": "5.62.7",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router-dom": "6.28.0"
+    "react-router-dom": "6.30.6"
   },
   "devDependencies": {
-    "@playwright/test": "1.49.1",
-    "@types/node": "22.10.2",
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.65.0",
+    "@types/node": "22.20.5",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
-    "@vitejs/plugin-react": "4.3.4",
-    "jsdom": "25.0.1",
+    "@vitejs/plugin-react": "6.2.1",
+    "eslint": "9.39.5",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "jsdom": "31.0.0",
+    "knip": "6.44.1",
     "typescript": "5.6.3",
-    "vite": "5.4.11",
-    "vitest": "2.1.8"
+    "typescript-eslint": "8.72.1",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
   }
 }

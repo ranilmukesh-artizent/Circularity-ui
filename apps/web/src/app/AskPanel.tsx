@@ -96,14 +96,18 @@ export function AskPanel({ route }: { route: RouteRef }) {
     document.addEventListener('keydown', key);
     return () => document.removeEventListener('keydown', key);
   }, []);
+  // subscribe once; the listener calls the latest send (which closes over this render's turns, conversation and busy)
+  const sendRef = useRef(send);
+  useEffect(() => {
+    sendRef.current = send;
+  });
   useEffect(
     () =>
       onOpenAsk(({ question }) => {
         setOpen(true);
-        if (question) void send(question);
+        if (question) void sendRef.current(question);
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [turns, conv, busy],
+    [],
   );
   useEffect(() => {
     if (open) input.current?.focus();

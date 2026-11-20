@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { caseById, caseRefusal, enterCase, landing, stageHref, stageState, stageTitle, type CaseRec } from '../../api/case';
 import { useBackend } from '../../api/hooks';
@@ -54,13 +54,19 @@ export function CasePage({ caseId, query }: { caseId: string; view: string | nul
   const [explain, setExplain] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalSpec | null>(null);
   const closeExplain = useMemo(() => () => setExplain(null), []);
+  // useNavigate() returns a new function after every navigation; the case UI and the key handler call the latest one
+  // through this ref so they stay stable (a new `ui` would re-render every consumer of the context)
+  const navRef = useRef(nav);
+  useEffect(() => {
+    navRef.current = nav;
+  });
   const ui = useMemo<CaseUi>(() => ({
     openApproval: (id, mode) => setApproval({ id, mode }),
     openDecline: (id) => setDecline(id),
     openExplain: (id) => setExplain(id),
     modal: (m) => setModal(m),
-    go: (p) => nav('/' + p.replace(/^#?\/?/, '')),
-  }), []); // eslint-disable-line react-hooks/exhaustive-deps
+    go: (p) => navRef.current('/' + p.replace(/^#?\/?/, '')),
+  }), []);
 
   enterCase(caseId);
   const refusal = caseRefusal(caseId);
@@ -68,29 +74,30 @@ export function CasePage({ caseId, query }: { caseId: string; view: string | nul
   const ok = !!c;
   const r = ok ? resolve(c!, loc.pathname.split('/').filter(Boolean), query, loc.pathname + loc.search) : null;
   const v = r?.view;
-  const key = v ? v.kind + (v.kind === 'stage' ? v.n : '') : '';
+  // the effects below depend on which page is shown (kind and stage number), not on the view object or its tab
+  const kind = v?.kind, n = v?.kind === 'stage' ? v.n : 0, redirect = !!r?.redirect;
 
   useEffect(() => {
-    if (!v || r?.redirect) return;
-    document.title = (v.kind === 'stage' ? 'Stage ' + v.n + ' · ' + stageTitle(v.n) : v.kind === 'full' ? 'Full analysis' : 'Overview') + ' · ' + caseId;
+    if (!kind || redirect) return;
+    document.title = (kind === 'stage' ? 'Stage ' + n + ' · ' + stageTitle(n) : kind === 'full' ? 'Full analysis' : 'Overview') + ' · ' + caseId;
     window.scrollTo(0, 0);
     const h = document.getElementById('stH1');
     try { h?.focus({ preventScroll: true }); } catch { h?.focus(); }
-  }, [caseId, key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [caseId, kind, n, redirect]);
 
   // Alt+← and Alt+→ move between stages
   useEffect(() => {
-    if (!v || v.kind !== 'stage') return;
+    if (kind !== 'stage') return;
     const f = (e: KeyboardEvent) => {
       if (!e.altKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
-      const n = v.n + (e.key === 'ArrowRight' ? 1 : -1);
-      if (n < 1 || n > 10) return;
+      const to = n + (e.key === 'ArrowRight' ? 1 : -1);
+      if (to < 1 || to > 10) return;
       e.preventDefault();
-      nav('/' + stageHref(caseId, n));
+      navRef.current('/' + stageHref(caseId, to));
     };
     document.addEventListener('keydown', f);
     return () => document.removeEventListener('keydown', f);
-  }, [caseId, key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [caseId, kind, n]);
 
   if (!c || !ok || !v)
     return (

@@ -9,7 +9,6 @@
 import { invoke } from './actions';
 import { cached, ref, withQuery } from './client';
 import { fmtDate } from './format';
-import { bump } from './store';
 import type { ActionResult } from './types';
 import { view } from './view';
 
@@ -61,11 +60,6 @@ export function setOrCase(id: string): void {
 }
 /** The presenter's failure drill: '' when off, else the 0-based stage index that fails. */
 export const failDrill = (): string => or.fail;
-/** Turn the failure drill on ('0'..'9') or off (''). */
-export function setFailDrill(v: string): void {
-  or.fail = v;
-  bump();
-}
 
 // ---------------------------------------------------------------- the run
 /** The ten stages with their activity lines (the demo's lrModel). */

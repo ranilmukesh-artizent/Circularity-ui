@@ -30,9 +30,11 @@ export function OrchestrationPage({ route, query }: PageProps) {
     if (want && cs.some((x) => x.id === want)) { setOrCase(want); return want; }
     return orCase()?.id ?? null;
   });
+  // follow a new ?case= in the address. Only `want` is a dependency on purpose: re-running when `picked` changes would
+  // undo the person's own pick (back to the address's case), and `cs` is a fresh array every render.
   useEffect(() => {
     if (want && want !== picked && cs.some((x) => x.id === want)) { setOrCase(want); setPicked(want); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see above: runs only when the address's case changes
   }, [want]);
   useEffect(() => {
     if (route.a !== 'agents') return;

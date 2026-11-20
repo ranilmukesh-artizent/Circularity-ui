@@ -1,9 +1,9 @@
 /**
- * The HTTP side of the facade (VITE_BACKEND=api): the signed-in session, a read cache that lets the facade stay
- * synchronous, actions, and the live stream.
+ * The HTTP side of the facade: the app reads di-api only. The signed-in session, a read cache that lets the facade
+ * stay synchronous, actions, and the live stream.
  *
- * How the facade stays synchronous: pages call facade functions during render (listCases(), navBadges() …). In api
- * mode those call cached(path), which returns the last answer for that path at once. On the first read there is no
+ * How the facade stays synchronous: pages call facade functions during render (listCases(), navBadges() …). Those
+ * call cached(path), which returns the last answer for that path at once. On the first read there is no
  * answer yet, so cached() throws the pending fetch: React Suspense shows the page's fallback and renders again when it
  * arrives. When data may have changed (an action, a stream event), invalidate() marks every answer stale; the pages
  * keep showing the old answer while the new one loads, then re-render (stale-while-revalidate).
@@ -276,7 +276,6 @@ type StreamListener = (kind: string, data: unknown) => void;
 const streamListeners = new Set<StreamListener>();
 let source: EventSource | null = null;
 let pending: number | null = null;
-let lastStreamAt = 0;
 
 const KINDS = ['journal', 'event', 'notification', 'sync', 'step', 'workflow']; // di/stream.py, migrations 0008-0009
 
@@ -288,15 +287,11 @@ export function onStream(l: StreamListener): () => void {
   };
 }
 
-/** When the stream last delivered an event (ms since epoch; 0 before any). */
-export const lastStreamEvent = () => lastStreamAt;
-
 function startStream() {
   stopStream();
   if (!token || typeof EventSource === 'undefined') return;
   source = new EventSource('/api/stream?access_token=' + encodeURIComponent(token));
   const handle = (kind: string) => (ev: MessageEvent) => {
-    lastStreamAt = Date.now();
     let data: unknown = ev.data;
     try {
       data = JSON.parse(ev.data);

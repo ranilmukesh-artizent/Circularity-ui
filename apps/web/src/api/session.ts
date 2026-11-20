@@ -44,7 +44,6 @@ export function signOut(): void {
 type AccountWithEmail = Account & { email?: string };
 
 export const accounts = (): Account[] => cached<Account[]>('/api/screens/nav/accounts');
-export const accountById = (id: string): Account | undefined => accounts().find((a) => a.id === id);
 export const signInEmail = (a: Account): string => {
   const known = (a as AccountWithEmail).email ?? (accounts() as AccountWithEmail[]).find((x) => x.id === a.id)?.email;
   return known ?? a.id + '@' + SIGNIN_DOMAIN;

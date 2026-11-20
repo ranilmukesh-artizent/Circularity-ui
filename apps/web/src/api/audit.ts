@@ -75,12 +75,6 @@ interface ProvAnswer { c: CaseLite; ev: Evidence; p: WireProv }
 const provAnswer = (caseId: string, key: string): ProvAnswer | null =>
   orNull(() => cached<ProvAnswer>(withQuery('/api/screens/audit/provenance', { case_id: caseId, key })));
 
-export function caseById(id: string): CaseLite | undefined {
-  const g = audit().gaps.find((x) => x.c.id === id);
-  if (g) return g.c;
-  const x = audit().entries.find((y) => y.caseId === id && y.kind === 'fetch');
-  return (x && provAnswer(id, x.key)?.c) ?? undefined;
-}
 export function provenanceOf(caseId: string, key: string): { c: CaseLite; ev: Evidence; p: Provenance } | null {
   const r = provAnswer(caseId, key);
   return r && { c: r.c, ev: r.ev, p: prov(r.p) };

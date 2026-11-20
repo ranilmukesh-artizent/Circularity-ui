@@ -119,10 +119,6 @@ export function HealthRing({ h }: { h: Health }) {
   );
 }
 
-export function Row({ l, v, cls }: { l: ReactNode; v: ReactNode; cls?: string }) {
-  return <div className={'asrow' + (cls ? ' ' + cls : '')}><span>{l}</span>{v}</div>;
-}
-
 export function Timeline({ full, ret }: { full?: boolean; ret?: boolean }) {
   const { c } = useAsset();
   const ev = assetEvents(c).filter((e) => !ret || e.k !== 'dec');

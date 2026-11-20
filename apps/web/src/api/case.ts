@@ -285,7 +285,6 @@ export function enterCase(id: string): void {
 export const scenActive = (): boolean => S.purchase !== 1 || S.cost !== 1 || S.service !== 1 || S.market !== 1 || !!S.demandOff || !!S.partUnavail || !!S.newOnly;
 
 const KIND_MULT: Record<string, ScenKey> = { purchase: 'purchase', prep: 'cost', fees: 'cost', service: 'service', sale: 'market', parts: 'market', material: 'market', lease: 'market' };
-export const KIND_MULT_KINDS = KIND_MULT;
 const SCEN_WHY = {
   ecm: 'Critical component failed and no replacement is available in supplier contracts, so EAM and QMS cannot re-certify its remaining life',
   newonly: 'The demand line requires a new unit; a refurbished unit cannot be supplied',

@@ -44,11 +44,6 @@ export const requests = (): AccessRequest[] => screen().requests.requests.slice(
 export const mcpProposals = (): AccessRequest[] => cached<{ proposals: AccessRequest[] }>('/api/screens/mcp/proposals').proposals.slice();
 /** May the signed-in account decide this request (pending, and the Approver holds the delegation or is Admin)? */
 export const canDecide = (r: AccessRequest): boolean => !!r.can_decide;
-/** Requests waiting for the signed-in account. */
-export function inboxRequests(): AccessRequest[] {
-  const { requests: all, inbox } = screen().requests;
-  return all.filter((r) => inbox.includes(r.id));
-}
 
 // ---------------------------------------------------------------- delegations
 export interface Delegation { k: string; label: string; desc: string; on: boolean }

@@ -2,8 +2,8 @@
 //
 //   node apps/web/scripts/golden/ask.mjs   -> fixtures/golden/ask.json
 //
-// The demo's Ask Circularity (index.html, "Agent runtime and Ask Circularity") turns a question into an intent by
-// keyword scoring (afParse, afMatch over AF_INTENTS), runs the intent's runner (AF_INTENT_RUN) through invoke() as the
+// The demo's Ask Circularity (fixtures/demo/index.html, "Agent runtime and Ask Circularity") turns a question into
+// an intent by keyword scoring (afParse, afMatch over AF_INTENTS), runs the intent's runner (AF_INTENT_RUN) through invoke() as the
 // signed-in person and answers with text and typed cards. The server's fallback (apps/api/di/ask/fallback.py) ports
 // that router and the runners the starters and the data checks need; this file gives it the demo's data and answers.
 //
@@ -20,7 +20,7 @@
 //                 with its note planted on RT-1048's first evidence item, as the demo's `pre` does)
 //
 // Every answer runs in the same fresh copy of the demo; eval mode changes nothing, so the order does not matter.
-import { freshDemo, plain, writeGolden } from '../golden-sandbox.mjs';
+import { freshDemo, writeGolden } from '../golden-sandbox.mjs';
 
 const g = freshDemo();
 const S = g('S'), AF = g('AF'), ACCT = g('ACCT'), afAsk = g('afAsk');
@@ -72,7 +72,7 @@ const safety = g('AF_SAFETY').filter((e) => e.q).map((e) => {
   if (e.pre) { const ev = g('CASE_BY_ID')['RT-1048'].evidence[0], k = ev.note; ev.note = NOTE; undo = () => { ev.note = k; }; }
   try {
     return { name: e.name, q: e.q, as: e.as, planted_note: e.pre ? NOTE : null, run: ask(e.as, e.q) };
-  } finally { undo && undo(); }
+  } finally { undo?.(); }
 });
 
 const file = writeGolden('ask.json', {

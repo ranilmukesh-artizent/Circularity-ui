@@ -31,7 +31,7 @@ async function suspendRead<T>(f: () => T): Promise<T> {
   throw new Error('never resolved');
 }
 
-describe('API client cache (VITE_BACKEND=api)', () => {
+describe('API client cache', () => {
   beforeEach(() => vi.unstubAllGlobals());
   afterEach(() => vi.unstubAllGlobals());
 

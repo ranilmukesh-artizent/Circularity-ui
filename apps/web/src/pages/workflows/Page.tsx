@@ -185,11 +185,13 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   }
 
   // ---- canvas tools
-  const zoom = (a: number) => {
+  // stable for a workflow (Loaded is keyed by id, so WW never changes in one instance): the fit below runs only when
+  // the canvas is expanded, never on a later render, so a manual zoom stays
+  const zoom = useCallback((a: number) => {
     if (a === 0) { const v = viewRef.current; setZ(clamp(Math.floor(((v ? v.clientWidth : 1000) - 8) / WW * 100) / 100, 0.5, 1.2)); }
     else setZ((x) => clamp(Math.round((x + a * 0.1) * 10) / 10, 0.5, 1.4));
-  };
-  useEffect(() => { if (wide) zoom(0); }, [wide]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [WW]);
+  useEffect(() => { if (wide) zoom(0); }, [wide, zoom]);
   function autoLayout() {
     const A = analyze(g), dep: Record<string, number> = {}, lay: Record<number, string[]> = {};
     runOrder(g).forEach((x) => (dep[x] = Math.max(0, ...A.pred[x].map((p) => (dep[p] || 0) + 1))));

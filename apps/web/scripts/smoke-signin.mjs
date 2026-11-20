@@ -1,6 +1,6 @@
 /**
  * Sign-in checks against a running app: wrong account, missing password, a good sign-in that calls di-api's
- * /api/auth/login when the app runs with VITE_BACKEND=api, and the menu badges after signing in.
+ * /api/auth/login, and the menu badges after signing in.
  *   node scripts/smoke-signin.mjs http://localhost:5174
  */
 import { chromium } from '@playwright/test';

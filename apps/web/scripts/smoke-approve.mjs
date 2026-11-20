@@ -1,5 +1,5 @@
 ﻿/**
- * Two people, two browser sessions, one decision (VITE_BACKEND=api): Planner A watches RT-1048's stage 7 while the
+ * Two people, two browser sessions, one decision: Planner A watches RT-1048's stage 7 while the
  * Approver approves it. Checks the approval goes through di-api and that Planner A's page updates from the live
  * stream without a reload, and that the instructions go out (stage 8). Changes state: reset afterwards.
  *   node scripts/smoke-approve.mjs http://localhost:5174

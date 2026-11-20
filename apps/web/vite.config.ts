@@ -10,4 +10,8 @@ export default defineConfig({
     port: 5173,
     proxy: { '/api': apiTarget, '/mcp': apiTarget }, // /mcp: the MCP server (B16), used by the MCP playground
   },
+  // Vite 8 minifies CSS with Lightning CSS, which rejects invalid rules instead of copying them through. The stylesheet
+  // extracted from the static demo has `@container or (...)` (`or` is a reserved word, so browsers ignore those rules
+  // too); recovering drops such rules with a build warning instead of failing the build.
+  css: { lightningcss: { errorRecovery: true } },
 });

@@ -27,19 +27,13 @@ jobs:
           persist-credentials: false
 
       # The worker stays down (full-suite.sh stops it: tests/test_milestone_rt1048.py needs it stopped) and the web
-      # app has its own job. TODO(F1): `docker compose up -d --build --wait` once every service has a healthcheck.
+      # app has its own job. --wait returns once every started service's healthcheck passes (step F1).
       - name: Start postgres, source-sim and api
-        run: docker compose up -d --build postgres source-sim api
+        run: docker compose up -d --build --wait --wait-timeout 300 postgres source-sim api
 
-      - name: Wait for api and source-sim
-        run: |
-          for i in $(seq 1 90); do
-            if curl -fsS http://localhost:8000/api/health >/dev/null && curl -fsS http://localhost:8100/health >/dev/null; then
-              echo "healthy after ~$((i * 2))s"; exit 0
-            fi
-            sleep 2
-          done
-          echo "api or source-sim did not become healthy"; docker compose ps; exit 1
+      - name: Show the stack on failure
+        if: ${{ failure() }}
+        run: docker compose ps
 
       - name: Reset the simulator
         run: |
@@ -82,9 +76,8 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm audit --audit-level=high
-      # TODO(C2): ESLint and knip once the web lint config lands.
-      # - run: npm run lint
-      # - run: npx knip
+      - run: npm run lint
+      - run: npm run knip
 
   python-lint:
     runs-on: ubuntu-latest

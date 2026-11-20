@@ -17,7 +17,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as G from '../pages/workflows/graph';
 import { LOGO_KEY, SYSLOGO } from '../ui/assets.gen';
-import { invoke, read } from './actions';
+import { invoke } from './actions';
 import { ApiError, cached, onStream, ref, session } from './client';
 import { iconSvg } from './nav';
 import type { ActionResult } from './types';
@@ -286,7 +286,6 @@ function agents(): { name: string; tools: string[] }[] {
 export const agentsUsing = (tool: string): string[] => agents().filter((a) => a.tools.includes(tool)).map((a) => a.name);
 export const fixedStep = (ref: string): { label: string; fields?: string[]; canon?: boolean } => list<Record<string, any>>('FXD')[ref];
 export const sourceGroups = (): [string, string[], string][] => list('FR_SRCG');
-export const sourceCats = (): Record<string, string> => list('SRC_CATS');
 
 // ---- changes (invoke) ----
 export const saveWorkflow = (i: { id: string; name: string; owner: string; trig: Trigger; graph: WfGraph; note?: string }) =>
@@ -302,9 +301,6 @@ export const deleteWorkflow = (id: string) => invoke<{ id: string; name: string 
 /** Start a run. It returns at once with the run key (`run`); follow it with followRun. */
 export const runWorkflow = (id: string): Promise<ActionResult<{ id: string; name: string; run?: string }>> =>
   invoke<{ id: string; name: string; run?: string }>('workflow.run', { id });
-/** The checks on the saved graph, through the read action the agent uses. */
-export const validateSaved = (id: string) =>
-  read<{ id: string; name: string; errors: { msg: string }[]; warnings: { msg: string }[] }>('workflow.validate', { id });
 
 const exportFile = (w: Workflow, o: unknown) => ({ file: w.id + '-' + w.name.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase() + '.json', json: JSON.stringify(o, null, 2) });
 /** The JSON export (frWfJSON) of the saved workflow. */

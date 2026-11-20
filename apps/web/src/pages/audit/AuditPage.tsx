@@ -1,5 +1,5 @@
 /** Audit & provenance (#/audit/log, #/audit/gaps): the demo's renderAudit, its entry drawers, the data trace and comments. */
-import { Fragment, useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ackKind, auditEntries, auditGaps, comments, eventJson, isoT, postComment, provenanceOf, type AuditEntry, type Provenance,
@@ -41,15 +41,18 @@ export function AuditPage({ route, query }: PageProps) {
     const qq = query.get('q') ?? query.get('case');
     return qq ? (saved = { ...saved, q: qq, limit: 40 }) : saved;
   });
-  const setF = (x: AuFilter) => { saved = x; setF0(x); };
+  // `saved` always holds the current filter (every change goes through setF), so effects read it instead of `f`
+  const setF = useCallback((x: AuFilter) => { saved = x; setF0(x); }, []);
   const [entry, setEntry] = useState<string | null>(null);
   const [trace, setTrace] = useState<{ id: string; k: string } | null>(null);
 
+  // a ?q= / ?case= in the address (a link from another page) replaces the search, only when the address changes
+  const qs = query.toString();
   useEffect(() => {
-    const qq = query.get('q') ?? query.get('case');
-    if (qq && qq !== f.q) setF({ ...f, q: qq, limit: 40 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query.toString()]);
+    const p = new URLSearchParams(qs);
+    const qq = p.get('q') ?? p.get('case');
+    if (qq && qq !== saved.q) setF({ ...saved, q: qq, limit: 40 });
+  }, [qs, setF]);
   useEffect(() => {
     if (!route.a) return;
     const t = window.setTimeout(() => anchor(document.getElementById(route.a === 'gaps' ? 'auGaps' : 'auLog')), 30);

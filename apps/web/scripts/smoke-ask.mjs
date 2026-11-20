@@ -1,5 +1,5 @@
 /**
- * Ask Circularity in the browser (VITE_BACKEND=api): sign in, open the panel with Ctrl+J on RT-1048's page, ask,
+ * Ask Circularity in the browser: sign in, open the panel with Ctrl+J on RT-1048's page, ask,
  * and print the streamed answer, the lookups and the sources. Each run spends one or two language-model requests.
  *   node scripts/smoke-ask.mjs http://localhost:5174 planner-a "Why is RT-1048 recommended for redeploy?"
  */

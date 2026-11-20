@@ -265,7 +265,6 @@ export function conflictPage(limit = 60): ConflictPage {
   }
   return { list: a.conflicts, total: a.total, ...a.counts };
 }
-export const conflicts = (): Conflict[] => conflictPage(200).list;
 /** Open conflicts in the queue (the Conflict Queue tab and the flow diagram). */
 export function openConflictCount(): number {
   if (may('conflicts')) return conflictPage().open;
@@ -273,7 +272,6 @@ export function openConflictCount(): number {
 }
 
 /* ---- formatting and small pure helpers (the demo's, ported) ---- */
-const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 export function hashId(s: string): string {
   let h = 2166136261;
   for (const ch of s) {
@@ -304,10 +302,6 @@ export function srcFresh(s: Source): number {
   const w = s.interval ? s.interval * 2 : 30, a = (Date.now() - s.lastSync) / 60000;
   return Math.max(4, Math.round(100 - Math.min(96, (a / w) * 100)));
 }
-export const methodMode = (m: string, iv: number): string =>
-  m === 'native' ? 'Native connector · Polling · ' + iv + ' min' : m === 'jdbc' ? 'JDBC · Polling · ' + iv + ' min'
-    : m === 'api' ? (iv ? 'API extractor · Polling · ' + iv + ' min' : 'API extractor · API + events') : m === 'event' ? 'Event API · Events'
-      : m === 'delta' ? 'Delta Sharing · API read (live)' : 'Flat file · CSV import';
 export const cfgDefaults = (m: string): Record<string, string | number> => Object.fromEntries(connMethods()[m].fields.map((f) => [f.k, f.def]));
 export function buildUrl(d: { method: string; cfg: Record<string, unknown>; url: string }): string {
   const c = d.cfg || {};
@@ -324,18 +318,6 @@ export function journeyStep(n: number): { n: number; label: string; kind: string
   const j = J[m - 1];
   return { n: m, label: j[1], kind: j[2], desc: j[3] };
 }
-
-/** Static, trusted markup fragments from the demo (vendor logos, journey step chips, highlighted JSON); the pages draw these as React. */
-export const vlogoHtml = (vendor: string): string => `<span class="vlogo" style="--h:${vHue(vendor)}" aria-hidden="true">${esc(vendorInitials(vendor))}</span>`;
-export const stepHtml = (n: number): string => {
-  const j = journeyStep(n);
-  return `<span class="stp ${j.kind === 'built' ? '' : j.kind}" title="Journey step ${j.n}: ${esc(j.label)} — ${esc(j.desc)}"><b>${j.n}</b>${esc(j.label)}</span>`;
-};
-export const jsonHtml = (o: unknown): string =>
-  esc(JSON.stringify(o, null, 2))
-    .replace(/&quot;([^&]+?)&quot;:/g, '<span class="k">"$1"</span>:')
-    .replace(/: &quot;(.*?)&quot;/g, ': <span class="s">"$1"</span>')
-    .replace(/: (-?\d+(\.\d+)?)/g, ': <span class="n">$1</span>');
 
 /* ---- changes through the action registry ---- */
 export const syncSource = (id: string) => invoke('source.sync', { source_id: id });

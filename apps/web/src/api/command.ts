@@ -94,7 +94,6 @@ const inboxA = () => get<InboxAnswer>('/inbox', { tenant: tenantQ() });
 
 // ---------------------------------------------------------------- layout and view settings
 
-export const SECTIONS = ['kpis', 'exceptions', 'aome', 'handed', 'approvals', 'outcomes', 'charts', 'actions', 'signals', 'value', 'health'];
 export const ccLayout = (): CcLayout => layoutA().layout ?? { sub: '', kpis: [] };
 /** Does the layout have this section, and may the account open it? */
 export const ccSecOK = (_L: CcLayout, k: string): boolean => layoutA().sections.includes(k);
@@ -157,11 +156,6 @@ export const rbPath = (p: string): boolean => {
   return canRoute({ page, a: a ?? null, b: b ?? null }) === true;
 };
 export const kfmt = kfmtLocal;
-export const tFmt = (n: number): string => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n)));
-export const asModel = (c: CcCase): string => {
-  const e = ref<{ cls: string; m: string }[]>('EQUIP').find((x) => x.cls === c.cls);
-  return e ? e.m.replace(/s$/, '') : c.product;
-};
 /** Icon key of the thumbnail for an asset class (the demo's thumb()). */
 export const clsIcon = (cls: string): string => ref<Record<string, string>>('CLS_ICON')[cls] ?? 'batch';
 
@@ -245,7 +239,7 @@ export interface OppRow {
 }
 export const oppRows = (_sc: CcScope): CcCase[] => actionsA().rows.map((r) => r.case);
 export function oppRow(c: CcCase, _sc: CcScope): OppRow {
-  const { case: _c, ...o } = actionsA().rows.find((r) => r.case.id === c.id)!; // eslint-disable-line @typescript-eslint/no-unused-vars
+  const { case: _c, ...o } = actionsA().rows.find((r) => r.case.id === c.id)!;
   return { c, ...o };
 }
 
@@ -297,7 +291,6 @@ export const inboxScope = (): string[] | null => inboxA().scope;
 export const decisionsAwaiting = (): number => inboxA().decisions_awaiting;
 export const decideRequest = (id: string, decision: 'approve' | 'decline', note: string): Promise<ActionResult<{ status: string }>> =>
   invoke<{ status: string }>('access.decideRequest', { id, decision, note });
-export const requestById = (id: string): AccessRequest | undefined => inboxA().requests.find((x) => x.id === id);
 
 /** Submitted decisions as approval cards, by value then deadline, each with its pre-approval check (afApprovalQueue)
  *  and the instructions it would send ("<step> → <system>"). */

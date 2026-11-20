@@ -54,11 +54,12 @@ export function AssetPage({ id, zone }: { id: string | null; zone: string | null
 
   // a new link resets the view to the zone it names (the demo's S.at.hash check)
   useEffect(() => setTab(zone === 'predicted' ? 'pred' : 'known'), [c?.id, zone]);
+  const cid = c?.id;
   useEffect(() => {
-    if (!c) return;
-    rememberAsset(c.id);
+    if (!cid) return;
+    rememberAsset(cid);
     document.title = 'Product · Circularity Decision Workbench';
-  }, [c?.id]);
+  }, [cid]);
   useEffect(() => {
     if (!zone) return;
     const t = window.setTimeout(() => {

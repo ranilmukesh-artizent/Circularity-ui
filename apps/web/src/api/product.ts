@@ -103,7 +103,6 @@ export const routeAllowed = (path: string): boolean => {
   return canRoute({ page: h[0], a: h[1] || null, b: h[2] || null }) === true;
 };
 const feat = () => ref<Record<string, boolean>>('FEAT');
-export const poolsEnabled = (): boolean => !!feat().pools;
 export const upliftEnabled = (): boolean => !!feat().uplift;
 
 /** Signals: received, diagnostics, certification, economic path (sigOf). */
@@ -218,7 +217,6 @@ export const asRev = (c: Case): string => 'Rev ' + 'ABCDE'[hex(c, 'rv') % 5];
 export const asReceipt = (c: Case): string => 'GR-' + (100000 + (hex(c, 'gr') % 900000));
 export const asRMA = (c: Case): string => 'RMA-' + (55800 + (hex(c, 'rma') % 900));
 export const asSC = (c: Case): string => 'SC-' + (7000 + (hex(c, 'sc') % 900));
-export const asLease = (c: Case): string => 'LS-' + (4900 + (hex(c, 'cl') % 300));
 export const asHex: (c: Case, k: string) => number = hex;
 
 /** The asset's health; for a list row (related assets, the fleet) only its score is sent. */
