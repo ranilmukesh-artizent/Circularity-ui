@@ -33,6 +33,7 @@ from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import text
+from starlette.concurrency import run_in_threadpool
 
 from di import auth, policy
 from di.config import get_settings
@@ -157,7 +158,7 @@ async def stream(
     authorization: str | None = Header(None),
     last_event_header: str | None = Header(None, alias="Last-Event-ID"),
 ) -> StreamingResponse:
-    p = _principal(authorization, access_token)
+    p = await run_in_threadpool(_principal, authorization, access_token)  # a database read: off the event loop
     resume = last_event_id
     if resume is None and last_event_header and last_event_header.isdigit():
         resume = int(last_event_header)

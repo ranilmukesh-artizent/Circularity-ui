@@ -1,8 +1,8 @@
 """Change events from the source systems (docs/BACKEND_STEPS.md, B9).
 
 source-sim delivers every change as a signed CloudEvent (B6). The intake verifies the HMAC signature and queues a
-delta sync of the source that changed; a burst of events for one source queues one sync. The subscription is made
-once by the worker at start-up.
+delta sync of the source that changed; a burst of events for one source queues one sync. The worker makes the
+subscription at start-up and checks it on every periodic tick (it is put back if source-sim lost it).
 
 B13b: before the sync is queued, an event that completes an instruction's step acknowledges it
 (di/instructions/events.py: which event completes which step, and how it is matched). Every event still queues the
@@ -17,6 +17,7 @@ import logging
 import httpx
 from fastapi import APIRouter, Header, HTTPException, Request
 from sqlalchemy import text
+from starlette.concurrency import run_in_threadpool
 
 from di.config import get_settings
 from di.connectors.registry import ADAPTERS
@@ -57,6 +58,12 @@ async def source_event(request: Request, x_sim_signature: str | None = Header(de
         raise HTTPException(400, {"code": "validation_error", "message": "Not a CloudEvent from source-sim."}) from e
     if source_id not in ADAPTERS:
         return {"accepted": False, "reason": f"no connector for {source_id}"}
+    # the body must be read here, as received (the signature covers its exact bytes); the database work below blocks,
+    # so it runs in the thread pool instead of on the event loop
+    return await run_in_threadpool(_accept, ev, source_id)
+
+
+def _accept(ev: dict, source_id: str) -> dict:
     instruction = None
     try:
         instruction = instructions_events.handle(ev)  # B13b: a completion acknowledges its step

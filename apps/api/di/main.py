@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 from fastapi import Depends, FastAPI
 from sqlalchemy import text
@@ -23,6 +25,7 @@ from di.routers import sources as source_routes
 from di.screens import router as screen_routes
 from di.stream import router as stream_routes
 
+log = logging.getLogger("di.api")
 app = FastAPI(title="Circularity DI API", version="0.2.0", lifespan=mcp_server.lifespan)
 app.include_router(auth_routes.router)
 app.include_router(action_routes.router)
@@ -48,12 +51,14 @@ def health(session: Session = Depends(get_session)) -> dict:
     try:
         rev = session.execute(text("SELECT version_num FROM alembic_version")).scalar()
         checks["database"] = {"ok": True, "migration": rev}
-    except Exception as exc:  # noqa: BLE001
-        checks["database"] = {"ok": False, "error": str(exc).splitlines()[0]}
+    except Exception:  # noqa: BLE001 - the detail goes to the log only (it can name hosts and users)
+        log.exception("health: database check failed")
+        checks["database"] = {"ok": False, "error": "unreachable"}
     try:
         r = httpx.get(f"{get_settings().source_sim_url}/health", timeout=2)
         r.raise_for_status()
         checks["source_sim"] = {"ok": True, **r.json()}
-    except Exception as exc:  # noqa: BLE001
-        checks["source_sim"] = {"ok": False, "error": str(exc)}
+    except Exception:  # noqa: BLE001
+        log.exception("health: source-sim check failed")
+        checks["source_sim"] = {"ok": False, "error": "unreachable"}
     return {"status": "ok" if all(c["ok"] for c in checks.values()) else "degraded", "checks": checks}

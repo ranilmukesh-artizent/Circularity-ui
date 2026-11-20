@@ -124,7 +124,13 @@ def _earlier(s: Session, ins: dict) -> dict[str, dict]:
     return {r["kind"]: dict(r) for r in rows}
 
 
+_UPDATABLE = frozenset({"status", "last_error", "simulated", "due_at", "sent_at", "request", "waiting_for"})
+
+
 def _update(s: Session, iid: int, **values) -> None:
+    # the names go into the SQL text: only the columns this module writes are allowed
+    if unknown := set(values) - _UPDATABLE:
+        raise ValueError(f"not an updatable instruction column: {', '.join(sorted(unknown))}")
     sets = ", ".join(f"{k} = CAST(:{k} AS jsonb)" if k == "request" else f"{k} = :{k}" for k in values)
     params = {k: json.dumps(v) if k == "request" else v for k, v in values.items()}
     s.execute(text(f"UPDATE instruction SET {sets}, updated_at = now() WHERE id = :i"), params | {"i": iid})

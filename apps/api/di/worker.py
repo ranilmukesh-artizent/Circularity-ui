@@ -132,17 +132,23 @@ def startup() -> None:
         with SessionLocal() as s:
             ensure_sources(s)
         ensure_subscription()
-    except Exception:  # noqa: BLE001 - the periodic step retries
+    except Exception:  # noqa: BLE001 - the periodic step retries the subscription
         log.exception("startup step failed")
 
 
 def periodic() -> None:
-    """Every 30 s: queue the syncs that are due, and drop live-update events older than a day (a reconnecting client
-    replays at most 500, so older ones are never read again)."""
+    """Every 30 s: make sure source-sim still delivers its change events here (a source-sim reset or a failed start-up
+    subscription loses them), queue the syncs that are due, and drop live-update events older than a day (a
+    reconnecting client replays at most 500, so older ones are never read again)."""
     from sqlalchemy import text
 
     from di.connectors.sync import enqueue_due
+    from di.connectors.webhook import ensure_subscription
 
+    try:
+        ensure_subscription()
+    except Exception:  # noqa: BLE001 - source-sim may be down; the next tick tries again
+        log.exception("webhook subscription failed")
     try:
         with SessionLocal() as s:
             queued = enqueue_due(s)

@@ -77,6 +77,7 @@ Facade (apps/web/src/api/integration.ts) → here, export by export:
 import json
 import re
 from datetime import UTC, datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
@@ -389,7 +390,9 @@ class Fabric:
         t["pct"] = t["ok"] / n * 100 if n else 100
         return t
 
-    def conflicts(self, status: str = "open", source: str | None = None, limit: int | None = None) -> tuple[list[dict], int]:
+    def conflicts(
+        self, status: Literal["open", "resolved", "all"] = "open", source: str | None = None, limit: int | None = None
+    ) -> tuple[list[dict], int]:
         where = {"open": "status IN ('open', 'escalated')", "resolved": "status = 'resolved'", "all": "true"}[status]
         args = {"src": source}
         cond = f'{where} AND (CAST(:src AS text) IS NULL OR authority = :src OR "values" ? :src)'
@@ -726,7 +729,7 @@ def events(
 
 @router.get("/conflicts")
 def conflicts(
-    status: str = Query("open", pattern="^(open|resolved|all)$"),
+    status: Literal["open", "resolved", "all"] = Query("open"),
     source: str | None = None,
     limit: int = Query(200, ge=1, le=5000),
     p: Principal = Depends(principal),

@@ -308,6 +308,12 @@ def test_conflicts(acct):
     assert all(c["status"] == "resolved" for c in closed["conflicts"])
 
 
+def test_conflicts_bad_status_is_a_validation_error():
+    r = client.get("/api/screens/integration/conflicts", params={"status": "bogus"}, headers=h("admin"))
+    assert r.status_code == 422
+    assert client.get("/api/screens/integration/conflicts", params={"status": "all"}, headers=h("admin")).status_code == 200
+
+
 # ---------------------------------------------------------------- monitor
 @pytest.mark.parametrize("acct", ACCOUNTS)
 def test_monitor(acct):

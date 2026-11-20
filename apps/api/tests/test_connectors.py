@@ -212,6 +212,31 @@ def test_webhook_intake():
         conn.execute(text("DELETE FROM job WHERE kind = 'sync.source'"))
 
 
+def test_webhook_rejects_a_body_that_does_not_match_its_signature():
+    body = json.dumps({"specversion": "1.0", "id": "3", "source": "/source-sim/erp", "type": "x"}).encode()
+    sig = "sha256=" + hmac.new(get_settings().webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+    r = client.post("/api/webhooks/source-sim", content=body + b" ", headers={"x-sim-signature": sig})
+    assert r.status_code == 401 and r.json()["detail"]["code"] == "bad_signature"
+
+
+def test_periodic_puts_back_a_lost_webhook_subscription():
+    from di import worker
+
+    url = get_settings().webhook_url
+    ours = [x for x in sim("GET", "/_sim/webhooks").json() if x["url"] == url]
+    try:
+        for x in ours:
+            sim("DELETE", f"/_sim/webhooks/{x['id']}")
+        assert not any(x["url"] == url for x in sim("GET", "/_sim/webhooks").json())
+        worker.periodic()
+        assert [x["url"] for x in sim("GET", "/_sim/webhooks").json()].count(url) == 1
+    finally:
+        if ours and not any(x["url"] == url for x in sim("GET", "/_sim/webhooks").json()):
+            sim("POST", "/_sim/webhooks", json={"url": url, "sources": [], "secret": get_settings().webhook_secret})
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM job WHERE kind = 'sync.source'"))
+
+
 def test_reset_event_voids_the_cursors():
     run_sync("erp", "manual")
     with SessionLocal() as s:
