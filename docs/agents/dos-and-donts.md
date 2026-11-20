@@ -57,7 +57,8 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 ## Git, secrets, scope
 
 - **Don't** commit `.env`, `.vscode/`, `settings.local.json`, keys or tokens. Before committing, run
-  `git diff --cached | Select-String gsk_` and expect no match.
+  `git diff --cached | Select-String -Pattern 'gsk_[A-Za-z0-9]{20,}'` and expect no match. (The bare prefix also
+  matches these docs, so scan for the key's shape, and read the scan's result before you commit, not after.)
 - **Do** stage explicit paths, never `git add -A`. Other agents' work may be in the tree.
 - **Do** commit and push only when the user asks: one step per commit on `feature/fullstack-poc`, then a short report.
 - **Don't** publish to GitHub Pages; it isn't needed.

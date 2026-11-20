@@ -71,7 +71,7 @@ From Windows, run every shell command through a script file:
    [docs/agents/decision-log.md](docs/agents/decision-log.md) says otherwise.
 2. Never hand-edit `fixtures/golden/`. Change the demo or the dump script, regenerate, and prove the diff is only
    what you intended ([testing.md](docs/agents/testing.md#regenerating-golden-files)).
-3. Never commit `.env`, `.vscode/`, keys or tokens. Scan the staged diff for `gsk_` before every commit.
+3. Never commit `.env`, `.vscode/`, keys or tokens. Scan the staged diff for key-shaped strings (`gsk_` followed by 20+ letters/digits) before every commit.
 4. Never print, log or paste `GROQ_API_KEY`.
 5. Commit and push only when the user asks; one step per commit, on `feature/fullstack-poc`; report after each.
 6. Pages call only `src/api/*.ts`. Never import `src/engine/` outside the facade.
