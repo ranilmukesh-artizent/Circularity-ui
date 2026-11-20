@@ -12,14 +12,34 @@ This repository is the proof of concept that turns the earlier single-file demo 
 
 ### Requirements
 
-- **Docker** with Compose. On Windows without Docker Desktop, use Docker inside WSL (below).
-- **Node.js 24 or later** (`.nvmrc`), only to run the frontend or its scripts outside Docker.
+- **Git**.
+- **Docker** with **Compose v2** (`docker compose`, 2.24 or later for the runtime images), at least 4 GB of memory for
+  Docker and about 10 GB of free disk:
+  - Windows or macOS (Intel or Apple Silicon): Docker Desktop. On Windows, Docker Engine inside WSL also works (below).
+  - Linux: Docker Engine with the Compose plugin.
+- No Node.js or Python on the host to run the app. Node.js 24 (`.nvmrc`) only for the frontend outside Docker and the
+  browser smoke scripts.
 
-### Everything (recommended)
+What is proved: CI (`.github/workflows/ci.yml`, GitHub's Linux amd64 runners) brings up postgres, source-sim and the
+api in Docker and runs their test suites, plus the web tests and build; the whole stack is developed on Windows with
+Docker inside WSL. macOS and Docker Desktop are expected to work but are not tested. An arm64 (Apple Silicon, ARM Linux) build is not yet proved by CI; the
+base images are multi-arch and the npm lock carries the arm64 packages (plan step G5 adds the arm64 job).
+
+### Quick start (any OS)
 
 ```sh
-docker compose up --build
+git clone <repo-url> Circularity-ui
+cd Circularity-ui
+bash scripts/doctor.sh          # optional check: Docker, Compose v2, free ports, memory, disk, line endings
+docker compose up -d --build    # first build takes a few minutes
 ```
+
+On Windows, run these in Git Bash (or PowerShell, without the `bash scripts/doctor.sh` line). Clone with LF line
+endings for the scripts and Python files the containers run: `git config --global core.autocrlf input` before
+cloning (the doctor warns if a `.sh` or `.py` file has CRLF).
+
+Then open http://localhost:5173 and sign in (IDs below). `docker compose ps` shows each service's health; the first
+start seeds the mocks and the worker then syncs every source, which takes a few minutes.
 
 | Open | What it is |
 |---|---|
@@ -30,7 +50,9 @@ docker compose up --build
 
 Every page reads `di-api` and updates live from its event stream; Ask Circularity (Ctrl+J) answers through `POST /api/ask`. The status page shows the API, the `di` database migration and source-sim; all three should read **OK**.
 
-To change the defaults (database user and password, ports, secrets), copy `.env.example` to `.env`.
+Optional: copy `.env.example` to `.env` to set `GROQ_API_KEY` (Ask Circularity on a language model; without it Ask
+uses the demo's prepared answers) or change the defaults (database user and password, the postgres port, the bind
+address, signing secrets). The stack runs without a `.env`.
 
 Sign in with any of these IDs and **any password**:
 
@@ -48,7 +70,12 @@ Sign in with any of these IDs and **any password**:
 
 Stop with `docker compose down`; add `-v` to delete the database as well.
 
-### On Windows with WSL (no Docker Desktop)
+The runtime images (no dev tools, non-root users, the web app built inside its image and served by nginx with a CSP)
+are opt-in and also need nothing on the host but Docker:
+`docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build` (see the comments in
+`docker-compose.prod.yml`).
+
+### Windows option: Docker inside WSL (no Docker Desktop)
 
 One-time setup, from PowerShell:
 
@@ -60,13 +87,10 @@ wsl -d Ubuntu-24.04 -u root -- bash -lc "printf '[boot]\nsystemd=true\n\n[intero
 wsl --terminate Ubuntu-24.04
 ```
 
-Each time:
-
-```powershell
-wsl -d Ubuntu-24.04 -u root -- bash -lc "cd /mnt/c/<path-to>/Circularity-ui && docker compose up -d --build"
-```
-
-Keep a WSL terminal open while you use the app (`wsl -d Ubuntu-24.04`): WSL stops the Linux VM, and the containers with it, when the last WSL session closes. The services have `restart: unless-stopped`, so they come back when Docker starts again.
+Then, each time, run the quick start's commands inside WSL:
+`wsl -d Ubuntu-24.04 -u root -- bash -lc "cd /mnt/c/<path-to>/Circularity-ui && docker compose up -d --build"`.
+Keep a WSL terminal open while you use the app: WSL stops its VM, and the containers with it, when the last WSL
+session closes (the services have `restart: unless-stopped`, so they come back when Docker starts again).
 
 ### Frontend only (no Docker)
 
@@ -165,7 +189,7 @@ curl -s -H "Authorization: Bearer $TOKEN" localhost:8000/api/canonical/demand/PO
 
 ## Develop
 
-The test and maintenance scripts are in `scripts/dev/` (bash; on Windows run them through WSL: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path-to>/Circularity-ui/scripts/dev/<script>.sh`). They take the shared test lock and stop the worker while tests run, so scheduled syncs do not race them. Every script is listed in [`docs/agents/scripts.md`](docs/agents/scripts.md); suites and CI in [`docs/agents/testing.md`](docs/agents/testing.md).
+The test and maintenance scripts are in `scripts/dev/` (bash; they still use host `flock` and GNU `timeout`, so run them on Linux or in WSL for now: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path-to>/Circularity-ui/scripts/dev/<script>.sh`). They take the shared test lock and stop the worker while tests run, so scheduled syncs do not race them. Every script is listed in [`docs/agents/scripts.md`](docs/agents/scripts.md); suites and CI in [`docs/agents/testing.md`](docs/agents/testing.md).
 
 ```sh
 # tests (in the running containers)
@@ -199,9 +223,11 @@ fixtures/golden/       the demo's computed data, the backend's test reference
 fixtures/demo/index.html         the original single-file demo: the specification and the source of the golden data
 fixtures/demo/assets/products/   product photos
 infra/postgres/        database init
-scripts/dev/           test and maintenance scripts (bash, WSL)
+scripts/doctor.sh      checks this machine can run the stack (read-only)
+scripts/dev/           test and maintenance scripts (bash)
 docker-compose.yml
-docker-compose.prod.yml  opt-in: the runtime images (no dev tools, non-root, the web app built and served by nginx)
+docker-compose.prod.yml  opt-in: the runtime images (no dev tools, non-root, the web app built and served by nginx;
+                         the web image is apps/web/Dockerfile.runtime, built from the repo root)
 docs/reference/        source documents: the agent-first product spec, the user journey deck, the IFS process fit
 docs/plan-fullstack-poc.md   decisions and architecture
 docs/backend-steps.md        the backend build, step by step, with the status of each step

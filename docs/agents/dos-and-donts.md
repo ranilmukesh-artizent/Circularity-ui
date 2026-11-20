@@ -80,6 +80,9 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 
 ## Shell on this machine (Windows + WSL)
 
+This machine runs Docker inside WSL. The repo itself needs only Git and Docker (README, "Start it"); on Linux, macOS or
+Docker Desktop run the same commands in a terminal, without `wsl ...`.
+
 - **Do** put commands in a `.sh` file (LF endings) and run it with
   `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/.../file.sh`. Inline `bash -lc '...'` with nested quotes breaks in PowerShell.
 - **Don't** rely on Git Bash. It fails to fork here (exit 66, "Resource temporarily unavailable").

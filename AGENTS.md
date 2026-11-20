@@ -33,23 +33,30 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 
 ## Run
 
-Everything runs in Docker Compose inside WSL (`Ubuntu-24.04`). Services: `postgres` (5432), `source-sim` (8100,
-SFTP 2222), `api` (8000), `worker`, `web` (5173).
+Everything runs in Docker Compose; the host needs only Git and Docker (Docker Desktop on Windows/macOS, or Docker
+Engine with Compose v2 on Linux). Services: `postgres` (5432), `source-sim` (8100, SFTP 2222), `api` (8000), `worker`,
+`web` (5173).
 
 ```sh
+bash scripts/doctor.sh                             # optional: Docker, Compose v2, free ports, memory, line endings
 docker compose up -d --build                       # the app on :5173 reads di-api
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build   # opt-in runtime images
 ```
 
-- A second dev server on the host (hot reload without the container): `cd apps/web; npx vite --port 5174 --strictPort`
-  (PowerShell; proxies `/api` and `/mcp` to localhost:8000).
+- A second dev server on the host (hot reload without the container; needs Node 24):
+  `cd apps/web; npx vite --port 5174 --strictPort` (proxies `/api` and `/mcp` to localhost:8000).
 - Sign in with any ID and any password: `admin`, `exec`, `ops`/`planner.a`, `planner.b`, `planner.c`, `approver`,
   `engineer`, `finance`, `developer`, `warehouse1`, `warehouse2` (emails `<id>@northfield.example`).
 - `.env` (git-ignored) holds `GROQ_API_KEY`. Without it Ask uses the demo's rule-based answers.
 
-From Windows, run every shell command through a script file:
+Shell scripts are bash; run them from the repo root in a Linux/macOS terminal, WSL or Git Bash. If Docker runs inside
+WSL (as on the lead's Windows machine, see CLAUDE.md), run each through a script file:
 `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/Users/<you>/Documents/Circularity-ui/scripts/dev/<script>.sh`
 
 ## Test
+
+The `scripts/dev` test scripts still use host `flock` and GNU `timeout` (Linux or WSL; G3 makes them portable). The
+Node smoke scripts need host Node 24 and Chrome.
 
 | What | Command | Time |
 |---|---|---|

@@ -1,4 +1,4 @@
-# The production web server (apps/web/Dockerfile, target runtime): serves the built app (dist) and proxies /api and
+# The production web server (apps/web/Dockerfile.runtime, built from the repo root): serves the built app (dist) and proxies /api and
 # /mcp to di-api. The nginx image renders this template into /etc/nginx/conf.d/default.conf at start-up, replacing
 # ${API_UPSTREAM} (default http://api:8000, set in the Dockerfile). nginx's own $variables are left alone.
 

@@ -4,7 +4,8 @@
 
 - Shared project settings are in `.claude/settings.json`; personal ones go in `.claude/settings.local.json` (never
   commit it).
-- This machine is Windows. Use the PowerShell tool for git and for `wsl ... bash scripts/dev/*.sh`. Git Bash often
+- This machine is Windows with Docker inside WSL; the WSL notes here and in AGENTS.md are about this machine, not a
+  requirement of the repo (any machine with Git and Docker runs it, see README). Use the PowerShell tool for git and for `wsl ... bash scripts/dev/*.sh`. Git Bash often
   fails here with "fork: Resource temporarily unavailable".
 - Subagents share one database and one dev server. Give each a disjoint set of files. Serialize api tests through
   the lock (`scripts/dev/api-test.sh`), and keep browser checks read-only unless the lead runs them.

@@ -148,6 +148,43 @@ pytest-xdist with per-worker databases [F20 step 4] with plan 04 (env-before-imp
 - [ ] **F4** source-sim robustness: fan-out marks unmatched events delivered [R2]; per-system reset keeps other
   systems' faults [R3]. Webhook delivery outside the transaction [R1] and ASGI fault middleware [R4] go with plan 04.
 
+## Phase G: runs on any machine (user request, 20 Nov 2026)
+
+Target: any machine with Git and Docker (Docker Desktop on Windows or macOS, Intel or Apple Silicon; Docker Engine with
+Compose v2 on Linux). The host needs no Node or Python to run, test or build the app, and nothing depends on WSL or a
+user's paths.
+
+Audit findings (20 Nov 2026):
+- [G-a] The docs assume Windows + WSL.
+- [G-b] The web runtime image needs host-generated `legacy.gen.css` and product photos, so it needs Node on the host.
+- [G-c] `scripts/dev` uses host `flock` and GNU `timeout`, which macOS doesn't have.
+- [G-d] Host ports other than postgres's are fixed.
+- [G-e] File watching on Windows bind mounts needs polling.
+- [G-f] Only `fixtures/` and `*.sh` are forced to LF (B4).
+- [G-g] Nothing has proved an arm64 build.
+
+Already fine: no `env_file` (`.env` optional), index digests are multi-arch, and the npm lock carries the linux
+arm64/x64 musl native packages.
+
+- [x] **G1** one quick start for every OS [G-a].
+  - README: prerequisites, `docker compose up -d --build`, open :5173. WSL becomes one Windows option among others.
+  - `scripts/doctor.sh` checks Docker, Compose v2, free ports, memory and git line-ending settings.
+  - AGENTS.md "Run" generalised; CLAUDE.md keeps this machine's WSL notes.
+- [x] **G2** self-contained images [G-b]. The web runtime stage generates the styles and photos itself (build context
+  = repo root, so `fixtures/demo` is in the context). `docker compose -f docker-compose.yml -f docker-compose.prod.yml
+  up --build` works on a fresh clone with no host Node.
+- [ ] **G3** portable dev scripts [G-c, G-d, G-e].
+  - The test lock and timeout run inside the api container, so they don't depend on host tools; the scripts run in
+    plain bash on Linux, macOS and Git Bash.
+  - Host ports come from env (`API_PORT`, `WEB_PORT`, `SIM_PORT`, `SFTP_PORT`, `POSTGRES_PORT`).
+  - `DEV_POLLING=1` switches uvicorn (watchfiles) and Vite to polling.
+  - Run it alone; it changes the lock every agent uses.
+- [ ] **G4** = B4 line endings [G-f].
+- [ ] **G5** proof [G-g].
+  - CI gains an arm64 job (`ubuntu-24.04-arm`): `compose up --wait`, health checks and a short smoke.
+  - A fresh-clone test: clone into a temp dir with another project name and ports, `up --wait`, sign in and smoke
+    one account, `down -v`. It is documented as `scripts/dev/fresh-clone.sh`.
+
 Deferred to B18's security review: login throttling and Ask rate limits [F11], timestamped webhook signatures [S3],
 the POC's any-password sign-in.
 

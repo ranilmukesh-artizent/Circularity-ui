@@ -1,9 +1,16 @@
 # Scripts
 
-Every script in the repo: what it does and how to run it. Shell scripts run inside WSL. Node scripts run on the host
-from `apps/web`, unless noted.
+Every script in the repo: what it does and how to run it. Shell scripts are bash: run them in a Linux or macOS
+terminal, WSL, or Git Bash on Windows (`scripts/dev` still needs host `flock` and GNU `timeout` until G3, so Linux or
+WSL for those). Node scripts run on the host from `apps/web`, unless noted; running the app needs no host Node.
 
-## scripts/dev (bash, WSL; each resolves the repo root itself)
+## scripts
+
+| Script | What |
+|---|---|
+| `doctor.sh` | Read-only check that this machine can run the stack: docker and its daemon, Compose v2 (2.24+ for `docker-compose.prod.yml`), ports 5173/8000/8100/2222/5432 free or used by this project's containers (project = `COMPOSE_PROJECT_NAME` or the folder name), Docker memory (WARN under 4 GB), free disk, CRLF in `*.sh`/`*.py`. One OK/WARN/FAIL line per check; exits 1 on any FAIL. `bash scripts/doctor.sh`. |
+
+## scripts/dev (bash; each resolves the repo root itself)
 
 | Script | What |
 |---|---|
@@ -18,18 +25,18 @@ from `apps/web`, unless noted.
 | `wait-idle.sh [max_s]` | Waits until the worker has no due jobs (after a reset it syncs every source first, ~2–3 min). Use before `smoke-rt1048.mjs`. |
 | `status.sh` | Health of api and source-sim, container status, api tests running or waiting for the lock, non-idle db sessions. |
 
-From Windows: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path>/Circularity-ui/scripts/dev/status.sh`.
+From Windows with Docker in WSL: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path>/Circularity-ui/scripts/dev/status.sh`.
 
 ## Python dependency locks
 
 `apps/api` and `apps/source-sim` each have `requirements.in` → `requirements.lock` and `requirements-dev.in` →
 `requirements-dev.lock` (hashes for every package, transitive included); shared versions are in
 `requirements/constraints.txt`. Why and when: [dos-and-donts.md](dos-and-donts.md#dependencies-python).
-Re-compile with uv 0.13.5 in a throwaway container (WSL; put it in a `.sh` file). Runtime first, then dev (the dev
+Re-compile with uv 0.13.5 in a throwaway container (in bash; on this Windows machine put it in a `.sh` file for WSL). Runtime first, then dev (the dev
 `.in` reads the runtime lock):
 
 ```bash
-cd /mnt/c/<path>/Circularity-ui
+cd <repo root>      # in WSL: /mnt/c/<path>/Circularity-ui
 for svc in api source-sim; do
   for f in requirements requirements-dev; do
     docker run --rm -v "$PWD:/repo" -w "/repo/apps/$svc" --tmpfs /tmp -e UV_NO_CACHE=1 \
@@ -47,11 +54,15 @@ The images install the same way (`apps/*/Dockerfile`); rebuild after a lock chan
 
 Images (`apps/*/Dockerfile`): base images pinned by digest; target `dev` is what `docker-compose.yml` builds
 (bind mounts, reload, dev lock, tests); target `runtime` has no dev tools, tests or scripts and runs as a non-root user
-(api/source-sim uid 10001; web is nginx-unprivileged on 8080 serving `dist` with a CSP, see
-`apps/web/nginx/default.conf.template`). WSL's Docker has no buildx, so the classic builder runs them; keep the
-Dockerfiles free of BuildKit-only syntax. Run the runtime images with
-`docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build` (opt-in); the web build needs
-`node apps/web/scripts/extract-styles.mjs` first. To bump a base image, take a tag at least two weeks old and its index
+(api/source-sim uid 10001). The web app's runtime image is a separate file, `apps/web/Dockerfile.runtime`, built from
+the repo root (root `.dockerignore` allows only `apps/web` and `fixtures/demo`): it runs `extract-styles.mjs` and
+`vite build` itself, then serves `dist` from nginx-unprivileged on 8080 with a CSP
+(`apps/web/nginx/default.conf.template`). `apps/web/Dockerfile` keeps only the dev target with context `apps/web`; the
+classic builder builds every stage before the target, so one file cannot serve both contexts. Some Docker installs
+(e.g. Ubuntu's `docker.io` in WSL) have no buildx, so the classic builder runs them; keep the Dockerfiles free of
+BuildKit-only syntax. Run the runtime images with
+`docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build` (opt-in; no host Node needed), or build
+the web one alone: `docker build -f apps/web/Dockerfile.runtime -t circularity-ui-web:runtime .`. To bump a base image, take a tag at least two weeks old and its index
 digest from Docker Hub (`https://hub.docker.com/v2/repositories/library/<image>/tags?name=<tag>`).
 
 ## apps/api/scripts (run inside the api container)
