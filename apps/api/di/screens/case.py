@@ -1222,9 +1222,7 @@ def evidence_pack(c: Case, rn: dict, session: Session) -> dict:
 
 
 @router.get("/{case_id}/analysis")
-def case_analysis(
-    case_id: str, tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)
-):
+def case_analysis(case_id: str, tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)):
     """The data behind the stage pages' detail tabs and Full analysis (`tenant`: the top-bar filter, for the repair
     centre's load)."""
     c = load_case(p, session, case_id, "product", "case")

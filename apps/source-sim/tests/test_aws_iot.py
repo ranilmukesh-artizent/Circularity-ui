@@ -175,7 +175,9 @@ def test_jobs_and_rules(client):
     assert code(call(client, "POST", "iot", "/rules/nope/enable")) == "UnauthorizedException"
     assert call(client, "POST", "iot", "/rules/circularity_telemetry/disable").status_code == 200
     assert call(client, "GET", "iot", "/rules/circularity_telemetry").json()["rule"]["ruleDisabled"] is True
-    assert call(client, "GET", "iot", "/rules", {"ruleDisabled": "true"}).json()["rules"][0]["ruleName"] == "circularity_telemetry"
+    assert (
+        call(client, "GET", "iot", "/rules", {"ruleDisabled": "true"}).json()["rules"][0]["ruleName"] == "circularity_telemetry"
+    )
     mark = last_outbox_id()  # a disabled rule delivers nothing
     topic = quote("dt/motors/cm-mtr-2041/telemetry", safe="")
     assert call(client, "POST", "data", "/topics/" + topic, body=b'{"operatingHours": 1}').status_code == 200

@@ -68,7 +68,10 @@ def test_approval_limit_is_read_back_and_applies_to_decision_approve():
 
 
 def test_limit_guards():
-    assert call("access.setLimit", {"role": "Nobody", "amount": 5}, "admin")["error"] == {"code": "not_found", "message": "Unknown role."}
+    assert call("access.setLimit", {"role": "Nobody", "amount": 5}, "admin")["error"] == {
+        "code": "not_found",
+        "message": "Unknown role.",
+    }
     bad = call("access.setLimit", {"role": "Planner", "amount": -1}, "admin")["error"]
     assert bad == {"code": "validation_error", "message": "A limit cannot be negative."}
 
@@ -80,7 +83,9 @@ def test_a_planner_limit_lets_planners_approve_and_self_approval_is_a_separate_r
     assert "approve.decisions" in me["permissions"]
     assert call("decision.submit", {"case_id": "RT-1048"}, "planner-a")["ok"]
     own = call("decision.approve", APPROVE, "planner-a")
-    assert own["ok"] is False and own["error"]["code"] == "out_of_scope" and "another person must approve" in own["error"]["message"]
+    assert (
+        own["ok"] is False and own["error"]["code"] == "out_of_scope" and "another person must approve" in own["error"]["message"]
+    )
     r = call("access.setSelfApprove", {"on": True}, "admin")
     assert r["output"] == {"on": True} and page("limits")["self_approve"] is True
     assert call("decision.approve", APPROVE, "planner-a")["ok"] is True
@@ -97,9 +102,18 @@ def test_autonomy_is_read_back_and_capped_by_the_risk_tier():
     capped = call("access.setAutonomy", {"role": "Planner", "type": "decisions", "level": "act"}, "admin")["error"]
     assert capped["code"] == "conflict"
     assert capped["message"] == "Approve, override or decline decisions; confirm outcomes is capped at Prepare by its risk tier."
-    assert call("access.setAutonomy", {"role": "X", "type": "evidence", "level": "off"}, "admin")["error"]["message"] == "Unknown role."
-    assert call("access.setAutonomy", {"role": "Planner", "type": "x", "level": "off"}, "admin")["error"]["message"] == "Unknown action type."
-    assert call("access.setAutonomy", {"role": "Planner", "type": "evidence", "level": "x"}, "admin")["error"]["code"] == "validation_error"
+    assert (
+        call("access.setAutonomy", {"role": "X", "type": "evidence", "level": "off"}, "admin")["error"]["message"]
+        == "Unknown role."
+    )
+    assert (
+        call("access.setAutonomy", {"role": "Planner", "type": "x", "level": "off"}, "admin")["error"]["message"]
+        == "Unknown action type."
+    )
+    assert (
+        call("access.setAutonomy", {"role": "Planner", "type": "evidence", "level": "x"}, "admin")["error"]["code"]
+        == "validation_error"
+    )
 
 
 # ---------------------------------------------------------------- kill switch
@@ -122,7 +136,10 @@ def test_a_stopped_agent_is_refused_by_the_mcp_server_until_started_again():
     assert call("agent.setEnabled", {"id": "assembler", "on": True}, "admin")["ok"]
     assert {a["id"]: a for a in page("agentsx")["agents"]}["assembler"]["stopped"] is False
     assert _evidence("planner-a", "assembler")["ok"] is True
-    assert call("agent.setEnabled", {"id": "intruder", "on": False}, "admin")["error"] == {"code": "not_found", "message": "Unknown agent."}
+    assert call("agent.setEnabled", {"id": "intruder", "on": False}, "admin")["error"] == {
+        "code": "not_found",
+        "message": "Unknown agent.",
+    }
 
 
 # ---------------------------------------------------------------- run limits

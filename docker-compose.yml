@@ -45,6 +45,7 @@ services:
     volumes:
       - ./apps/source-sim:/app
       - ./fixtures:/fixtures:ro # B1 golden files: the seed (docs/BACKEND_STEPS.md, B2)
+      - ./ruff.toml:/ruff.toml:ro # the shared ruff config the service's pyproject extends (../../ruff.toml)
     ports:
       - "${BIND_ADDR:-127.0.0.1}:8100:8100"
       - "${BIND_ADDR:-127.0.0.1}:2222:2222" # SFTP: the Sims Lifecycle Services drop (B5b)
@@ -64,6 +65,7 @@ services:
     volumes:
       - ./apps/api:/app
       - ./fixtures:/fixtures:ro # B1 golden files: access policy and reference data (B7)
+      - ./ruff.toml:/ruff.toml:ro # the shared ruff config the service's pyproject extends (../../ruff.toml)
     ports: ["${BIND_ADDR:-127.0.0.1}:8000:8000"]
     depends_on:
       postgres: { condition: service_healthy }

@@ -107,8 +107,7 @@ jobs:
           test -n "$ruff_pin"
           python -m pip install "$ruff_pin" "pip-audit==2.10.1"
       - run: ruff check .
-      # TODO(C1): ruff format check once the code is formatted.
-      # - run: ruff format --check .
+      - run: ruff format --check .
       # TODO(C3): mypy once its config lands.
       # - run: mypy
       - run: pip-audit --progress-spinner off --require-hashes --disable-pip -r requirements.lock

@@ -132,9 +132,7 @@ def test_events_are_delivered_as_signed_cloudevents_and_retried(client):
             break
     assert len(received) == 1
     with engine.begin() as conn:
-        attempts = conn.execute(
-            text("SELECT attempts FROM sim.deliveries WHERE subscription_id = :s"), {"s": sub}
-        ).scalar_one()
+        attempts = conn.execute(text("SELECT attempts FROM sim.deliveries WHERE subscription_id = :s"), {"s": sub}).scalar_one()
     assert attempts >= 2  # retried after the failure
     url, body, headers = received[0]
     ev = json.loads(body)

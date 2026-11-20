@@ -1,6 +1,6 @@
 # pre-commit hooks (docs/agents/plans/01b-refactor.md, step C5). Install once: `pre-commit install`.
 # The ruff rev matches the ruff pin in apps/api/requirements-dev.txt and apps/source-sim/requirements.txt;
-# each service's pyproject.toml supplies its ruff settings.
+# the root ruff.toml holds the ruff settings, which each service's pyproject.toml extends.
 # fixtures/ is excluded from the text fixers: the golden files are compared byte for byte (parity).
 repos:
   - repo: https://github.com/gitleaks/gitleaks
@@ -13,7 +13,8 @@ repos:
     hooks:
       - id: ruff
         files: ^apps/(api|source-sim)/
-        # TODO(C1): add the ruff-format hook once the code is formatted.
+      - id: ruff-format
+        files: ^apps/(api|source-sim)/
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
