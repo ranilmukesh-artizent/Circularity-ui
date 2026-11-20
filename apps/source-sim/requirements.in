@@ -1,0 +1,11 @@
+# source-sim runtime dependencies (direct only). Compiled to requirements.lock with hashes; see
+# docs/agents/dos-and-donts.md, "Dependencies". Unpinned names take their version from the shared constraints.
+-c ../../requirements/constraints.txt
+fastapi
+uvicorn[standard]
+SQLAlchemy
+psycopg[binary]
+pydantic-settings
+httpx
+python-multipart==0.0.20
+asyncssh==2.18.0

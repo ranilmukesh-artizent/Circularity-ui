@@ -54,6 +54,19 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 - **Do** run the browser smoke in both modes for all 11 accounts after any frontend change that touches routing,
   the facade or the shell.
 
+## Dependencies (Python)
+
+- **Do** add or bump a dependency in the `.in` file, never in a `.lock`: `apps/<svc>/requirements.in` (runtime) or
+  `requirements-dev.in` (pytest, ruff). Versions both services share (fastapi, uvicorn, SQLAlchemy, psycopg,
+  pydantic-settings, httpx, pytest, ruff) live in `requirements/constraints.txt`; bump them there so both move.
+- **Do** re-compile both locks of every service you touched (shared bump: both services) with the uv command in
+  [scripts.md](scripts.md#python-dependency-locks), check that the lock diff holds only the change you meant, then
+  rebuild the image (`docker compose up -d --build <svc>`; the worker shares the api image).
+- **Don't** `pip install` into a running container to try something. The images install only the locks
+  (`--require-hashes --no-deps`), and the next rebuild silently drops anything else.
+- **Don't** pass `--upgrade` to the compile unless upgrading is the step. Without it, uv keeps every version the lock
+  already has and moves only what the `.in` change forces.
+
 ## Git, secrets, scope
 
 - **Don't** commit `.env`, `.vscode/`, `settings.local.json`, keys or tokens. Before committing, run

@@ -37,7 +37,7 @@ httpx `AsyncClient`, `pytest-asyncio==1.5.0` (or anyio's plugin), FastAPI.
 ---
 
 ### Task 1: async engine and session dependency
-**Files:** Modify `apps/api/di/db.py`, `requirements.txt` (`SQLAlchemy[asyncio]`, `pytest-asyncio==1.5.0`), `pyproject.toml`
+**Files:** Modify `apps/api/di/db.py`, `requirements.in` + recompiled lock (`SQLAlchemy[asyncio]`, `pytest-asyncio==1.5.0`), `pyproject.toml`
 (`asyncio_default_fixture_loop_scope = "function"`). Test: `tests/test_async_db.py`.
 **Interfaces:** Produces `async_engine`, `AsyncSessionLocal`, `async def get_async_session() -> AsyncIterator[AsyncSession]`.
 - [ ] Tests: a query through `get_async_session`; `expire_on_commit` honoured; `run_sync` executes a sync helper on the same connection. Fail → implement → pass. Commit.

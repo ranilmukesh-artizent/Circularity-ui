@@ -20,6 +20,31 @@ from `apps/web`, unless noted.
 
 From Windows: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path>/Circularity-ui/scripts/dev/status.sh`.
 
+## Python dependency locks
+
+`apps/api` and `apps/source-sim` each have `requirements.in` → `requirements.lock` and `requirements-dev.in` →
+`requirements-dev.lock` (hashes for every package, transitive included); shared versions are in
+`requirements/constraints.txt`. Why and when: [dos-and-donts.md](dos-and-donts.md#dependencies-python).
+Re-compile with uv 0.13.5 in a throwaway container (WSL; put it in a `.sh` file). Runtime first, then dev (the dev
+`.in` reads the runtime lock):
+
+```bash
+cd /mnt/c/<path>/Circularity-ui
+for svc in api source-sim; do
+  for f in requirements requirements-dev; do
+    docker run --rm -v "$PWD:/repo" -w "/repo/apps/$svc" --tmpfs /tmp -e UV_NO_CACHE=1 \
+      ghcr.io/astral-sh/uv:0.13.5-python3.12-trixie-slim \
+      uv pip compile -q "$f.in" -o "$f.lock" --generate-hashes \
+        --python-version 3.12 --python-platform x86_64-unknown-linux-gnu \
+        --custom-compile-command "docs/agents/scripts.md (Python dependency locks)"
+  done
+done
+```
+
+Check a lock installs cleanly without touching the stack:
+`docker run --rm -v "$PWD:/repo:ro" -w /repo/apps/<svc> python:3.12-slim sh -c 'pip install -q --require-hashes --no-deps -r requirements.lock -r requirements-dev.lock && pip check'`.
+The images install the same way (`apps/*/Dockerfile`); rebuild after a lock change.
+
 ## apps/api/scripts (run inside the api container)
 
 | Script | What |

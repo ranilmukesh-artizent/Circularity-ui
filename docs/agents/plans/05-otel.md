@@ -44,7 +44,7 @@ inference span `chat {gen_ai.request.model}` (CLIENT) with `gen_ai.operation.nam
 ---
 
 ### Task 1: setup, off by default
-**Files:** Create `apps/api/di/telemetry.py`; Modify `di/main.py`, `di/worker.py`, `requirements.txt`, `.env.example`
+**Files:** Create `apps/api/di/telemetry.py`; Modify `di/main.py`, `di/worker.py`, `requirements.in` (+ recompiled lock), `.env.example`
 (`OTEL_EXPORTER_OTLP_ENDPOINT=` empty). Test: `tests/test_otel.py`.
 **Interfaces:** Produces `setup_telemetry(service_name: str, app: FastAPI | None = None) -> None` and
 `tracer = trace.get_tracer("di")`; tests use `InMemorySpanExporter` via `setup_telemetry(..., exporter=...)`.

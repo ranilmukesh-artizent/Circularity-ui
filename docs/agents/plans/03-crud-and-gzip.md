@@ -35,7 +35,7 @@ one place. The actions B17b listed as "not available on the server yet" get hand
 ---
 
 ### Task 1: dependency bump and gzip
-**Files:** Modify `apps/api/requirements.txt`, `apps/api/di/main.py`. Test: Create `tests/test_gzip.py`.
+**Files:** Modify `apps/api/requirements.in` (recompile `requirements.lock`, see docs/agents/scripts.md), `apps/api/di/main.py`. Test: Create `tests/test_gzip.py`.
 - [ ] Tests: `/api/screens/reference` with `Accept-Encoding: gzip` → `content-encoding: gzip`; a < 1000-byte answer → not compressed;
   `/api/stream` (read the first event, then close) and `/api/ask` → no `content-encoding`.
 - [ ] Fail → bump pins, rebuild the api image, add the middleware → pass; also run `tests/test_mcp*.py` and `tests/test_stream.py`. Commit.

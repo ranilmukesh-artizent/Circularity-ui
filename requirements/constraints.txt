@@ -1,0 +1,14 @@
+# Versions the two Python services share (apps/api, apps/source-sim). Both requirements*.in files read this with -c,
+# so a bump here moves both services together. Edit, re-compile both services' locks, rebuild
+# (docs/agents/dos-and-donts.md, "Dependencies"). No extras here: constraints cannot carry them.
+fastapi==0.115.6
+uvicorn==0.34.0
+SQLAlchemy==2.0.36
+psycopg==3.2.3
+psycopg-binary==3.2.3
+pydantic-settings==2.7.0
+httpx==0.28.1
+
+# dev
+pytest==8.3.4
+ruff==0.8.4
