@@ -195,7 +195,7 @@ infra/postgres/        database init
 docker-compose.yml
 index.html             the original single-file demo: the specification and the frontend engine's source
 assets/products/       product photos
-framework/             the framework overview and the Reconcile and Resolve concept pages (static)
+docs/reference/        source documents: the agent-first product spec, the user journey deck, the IFS process fit
 docs/PLAN_FULLSTACK_POC.md   decisions and architecture
 docs/BACKEND_STEPS.md        the backend build, step by step, with the status of each step
 ```

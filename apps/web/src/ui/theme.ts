@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 export type Theme = 'light' | 'dark';
-const KEY = 'circ-theme'; // same key as the static demo and the framework pages
+const KEY = 'circ-theme'; // same key as the static demo
 const subs = new Set<() => void>();
 
 function read(): Theme {

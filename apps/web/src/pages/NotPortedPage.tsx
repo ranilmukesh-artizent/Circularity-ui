@@ -1,20 +1,14 @@
 import type { PageProps } from './registry';
 
-const DEMO = 'https://ranilmukesh-artizent.github.io/Circularity-ui/';
-
-/** Placeholder for a screen that has not moved to React yet. */
+/** Placeholder for a route that has no page in the React app. */
 export function NotPortedPage({ route }: PageProps) {
   const path = [route.page, route.a, route.b].filter(Boolean).join('/');
   return (
     <div className="phead frph">
       <div>
-        <h1>Coming to the new app</h1>
+        <h1>Page not found</h1>
         <p>
-          <b>#/{path}</b> has not moved to the React app yet.{' '}
-          <a href={DEMO + '#/' + path} target="_blank" rel="noreferrer">
-            Open it in the static demo
-          </a>
-          .
+          <b>#/{path}</b> is not a page in this app. Use the menu to find what you need.
         </p>
       </div>
     </div>

@@ -13,8 +13,8 @@
 | D1 | Which sources are mocked as SAP | **Only the two that are SAP today: SAP S/4HANA (ERP) and SAP Ariba (procurement).** Every other source keeps its current vendor (Maximo, Sterling OMS, Manhattan WMS and so on) and gets a generic mock with that vendor's resource shapes and the paths already in `SOURCES` |
 | D2 | Frontend | **React rewrite** (TypeScript, Vite), page by page, reusing the demo's CSS and design tokens |
 | D3 | Backend | **Python, FastAPI**, SQLAlchemy 2 and Alembic. Python because the models named in the demo (XGBoost, LightGBM) and the agents are Python-native |
-| D4 | Framework apps | Reconcile and Resolve (`framework/`) stay out of scope |
-| D5 | Hosting | **Local Docker Compose.** GitHub Pages keeps serving the static demo, which stays as the reference until the React app reaches parity |
+| D4 | Framework apps | Reconcile and Resolve stay out of scope (their pages were removed from the repo on 20 Nov 2026) |
+| D5 | Hosting | **Local Docker Compose.** The static demo (`index.html`) stays in the repo as the reference and the source of the golden data; it is not hosted |
 | D6 | Queue | A Postgres job table claimed with `FOR UPDATE SKIP LOCKED`, so no Redis |
 | D7 | Login | Local JWT with the demo IDs (`exec`, `ops`, `planner.b@northfield.example` …). Real SSO later; Keycloak is the option if an OIDC stand-in is needed |
 | D8 | Ask Circularity | **A language model through `di-api`, starting on Groq's free tier**, behind one interface so Claude or a local model can replace it (decided 19 Nov 2026; step B16b) |
@@ -151,7 +151,7 @@ apps/web/            React app
 infra/postgres/      init scripts (databases, roles)
 docker-compose.yml
 .env.example
-index.html           the static demo, unchanged, still on GitHub Pages
+index.html           the static demo: the reference and the source of the golden data (not hosted)
 ```
 
 ## 8. Phases

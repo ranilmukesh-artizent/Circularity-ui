@@ -1,5 +1,5 @@
 /* Shell fixes on top of the demo's stylesheet (src/styles/legacy.gen.css). Keep this file small. */
 
 /* The revamp redefines --side-ink/--side-mut for its white menu; the sign-in panel stays dark, so give it the
-   original dark-panel colours (as in docs/screenshots/demo-signin.webp). */
+   original dark-panel colours (as in the static demo's sign-in page). */
 .si .sil { --side-ink: #E9E3DB; --side-mut: #9C9189; }

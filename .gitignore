@@ -1,12 +1,27 @@
-images-for-pasting/
-assets/products/originals/
-# local source material for the framework pages (concept decks, mockups); not published
-Decision_intelligence/
-# full-stack POC
+# secrets: never commit; .env.example is the template
 .env
+.env.*
+!.env.example
+
+# editors and OS; personal Claude Code settings (the shared ones are .claude/settings.json)
+.vscode/
+.claude/settings.local.json
+.DS_Store
+
+# Python
 __pycache__/
 .pytest_cache/
 .ruff_cache/
 .venv/
+
+# web
 node_modules/
 apps/web/dist/
+test-results/
+playwright-report/
+shots/
+
+# the agent loop's working files (docs/agents/plans/loop.md)
+.loop/
+
+*.log
