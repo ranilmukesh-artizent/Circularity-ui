@@ -153,8 +153,8 @@ function NotifyModal({ x, onClose }: { x: ExRow; onClose: () => void }) {
   const [sev, setSev] = useState<string>(x.sev);
   const [msg, setMsg] = useState('Please look at: ' + x.title.toLowerCase() + '.');
   const [err, setErr] = useState('');
-  const send = () => {
-    const r = sendNotification(x, to, sev, msg.trim());
+  const send = async () => {
+    const r = await sendNotification(x, to, sev, msg.trim());
     if (!r.ok) {
       if (r.error.code === 'validation_error') setErr(r.error.message);
       else toast(r.error.message);
@@ -196,8 +196,8 @@ function NotifyModal({ x, onClose }: { x: ExRow; onClose: () => void }) {
 
 export function Aome() {
   const l = aomeItems();
-  const ack = (id: string) => {
-    const r = acknowledge(id);
+  const ack = async (id: string) => {
+    const r = await acknowledge(id);
     if (r.ok) toast('Acknowledged. The sender sees it is in hand.');
     else toast(r.error.message);
   };
@@ -408,8 +408,8 @@ function ReqRow({ r, onDecide }: { r: AccessRequest; onDecide: (dec: 'approve' |
 function DecideModal({ r, dec, onClose }: { r: AccessRequest; dec: 'approve' | 'decline'; onClose: () => void }) {
   const [note, setNote] = useState('');
   const [err, setErr] = useState('');
-  const ok = () => {
-    const res = decideRequest(r.id, dec, note.trim());
+  const ok = async () => {
+    const res = await decideRequest(r.id, dec, note.trim());
     if (!res.ok) {
       if (res.error.code === 'validation_error') setErr(res.error.message);
       else toast(res.error.message);

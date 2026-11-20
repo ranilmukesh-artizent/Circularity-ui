@@ -129,18 +129,18 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   }
 
   // ---- save, publish, discard, reset, back
-  function save() {
+  async function save() {
     if (!mgr) return toast(NOWF());
     if (!d.name.trim()) return toast('Enter a workflow name before saving.');
-    const r = saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' });
+    const r = await saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' });
     if (!r.ok) return toast(r.error.message, 4200);
     reload(w.id);
     toast(r.output.name + ' saved as v' + r.output.ver + '.');
   }
-  function publish() {
+  async function publish() {
     if (!mgr) return toast(NOWF());
     if (w.status === 'published') {
-      const r = setWorkflowStatus(w.id, 'draft');
+      const r = await setWorkflowStatus(w.id, 'draft');
       return r.ok ? toast(d.name + ' unpublished. It will no longer run on its trigger.') : toast(r.error.message, 4200);
     }
     const er = checks.filter((x) => x.sev === 'error');
@@ -148,10 +148,10 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     if (d.dirty) {
       // the name, owner and trigger are part of the change, so they are saved with the graph first
       if (!d.name.trim()) return toast('Enter a workflow name before saving.');
-      const s = saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' });
+      const s = await saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' });
       if (!s.ok) return toast(s.error.message, 4200);
     }
-    const r = publishWorkflow(w.id);
+    const r = await publishWorkflow(w.id);
     if (!r.ok) { toast(r.error.message); if (/error/.test(r.error.message)) scrollChecks(); return; }
     reload(w.id);
     toast(r.output.name + ' published as v' + r.output.ver + '. It runs on its trigger: ' + r.output.trig + '.');
@@ -179,8 +179,8 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     nav(studioHref());
   }
   const meta = (f: (x: Draft) => void) => edit(w.id, f);
-  function dup() {
-    const nid = duplicate(w.id);
+  async function dup() {
+    const nid = await duplicate(w.id);
     if (nid) nav(studioHref(nid));
   }
 

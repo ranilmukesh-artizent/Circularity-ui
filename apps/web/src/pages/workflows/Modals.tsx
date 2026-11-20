@@ -33,19 +33,19 @@ export function NewWorkflowModal({ onClose, onCreated }: { onClose: () => void; 
     setN(x);
   }
 
-  function create() {
-    const r = createWorkflow({ type: n.type, src: n.src || '', ch: n.ch || '', name: n.name || '' });
+  async function create() {
+    const r = await createWorkflow({ type: n.type, src: n.src || '', ch: n.ch || '', name: n.name || '' });
     if (!r.ok) return toast(r.error.message, 4200);
     toast(r.output.name + ' created as a draft. Arrange it, then Save and Publish.');
     onCreated(r.output.id);
   }
 
   /** From a saved template (frTplUse), as a new draft through workflow.create. */
-  function fromTemplate(id: string) {
+  async function fromTemplate(id: string) {
     const t = templates().find((x) => x.id === id);
     if (!t) return;
     const type = t.kind === 'dec' ? 'dec' : t.cat === 'Outbound' && t.src ? 'out' : t.src && sourceExists(t.src) ? 'ingest' : 'blank';
-    const r = createWorkflow({ type, src: t.src ?? '', ch: 'api', name: t.name.replace(/ template$/, '') + ' (from template)', graph: t.tpl, desc: 'Created from ' + t.name + '.' });
+    const r = await createWorkflow({ type, src: t.src ?? '', ch: 'api', name: t.name.replace(/ template$/, '') + ' (from template)', graph: t.tpl, desc: 'Created from ' + t.name + '.' });
     if (!r.ok) return toast(r.error.message, 4200);
     toast('Created from the template as a draft.');
     onCreated(r.output.id);
@@ -97,8 +97,8 @@ export function NewWorkflowModal({ onClose, onCreated }: { onClose: () => void; 
 export function DeleteModal({ id, onClose, onDeleted }: { id: string; onClose: () => void; onDeleted: () => void }) {
   const w = workflow(id);
   if (!w) return null;
-  function del() {
-    const r = deleteWorkflow(id);
+  async function del() {
+    const r = await deleteWorkflow(id);
     if (!r.ok) return toast(r.error.message, 4200);
     forget(id);
     toast(r.output.name + ' deleted.');

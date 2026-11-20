@@ -74,8 +74,8 @@ export const taskGroupOf = (i: TaskItem): string => call('frTaskGroup', i);
 export const taskGroups = (): [string, string, string, string, string][] => g('FR_TG');
 
 /** Run a task row's own button (only notifyAck exists today): through the action registry. */
-export function runTaskAct(act: string, arg: string) {
-  if (act === 'notifyAck') return invoke('notify.acknowledge', { id: arg });
+export async function runTaskAct(act: string, arg: string) {
+  if (act === 'notifyAck') return await invoke('notify.acknowledge', { id: arg });
   return { ok: false as const, error: { code: 'not_found' as const, message: 'That action is not available here.' } };
 }
 
@@ -88,12 +88,12 @@ const rbLog = (type: string, note: string) => call('rbLog', type, note);
 const who = (): string => call('who');
 
 /** Acknowledge an alert (the demo's frAlAck): a notification addressed to me is acknowledged through notify.acknowledge. */
-export function acknowledgeAlert(id: string): boolean {
+export async function acknowledgeAlert(id: string): Promise<boolean> {
   const a = alerts().find((x) => x.id === id);
   if (!a) return false;
   const s = S();
   let acked = false;
-  if (a.kind === 'note' && s.notes.some((n: any) => n.id === a.ref && n.to === s.acct.id)) acked = invoke('notify.acknowledge', { id: a.ref }).ok;
+  if (a.kind === 'note' && s.notes.some((n: any) => n.id === a.ref && n.to === s.acct.id)) acked = (await invoke('notify.acknowledge', { id: a.ref })).ok;
   s.frAck[id] = true;
   rbLog('alert.acknowledged', id + ' · ' + a.t + ' · by ' + who());
   bump();

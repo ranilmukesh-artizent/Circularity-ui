@@ -1,12 +1,28 @@
-/** The menu: groups, sections and counts the signed-in account may see (the demo's NAV after the revamp). */
+/**
+ * The menu: groups, sections and counts the signed-in account may see (the demo's NAV after the revamp).
+ * With VITE_BACKEND=api: GET /api/screens/nav (groups, badges, tasks) and the home area's alerts.
+ */
 import { engine } from '../engine/engine';
+import { API } from './backend';
+import { cached, ref, session, withQuery } from './client';
+import { view } from './view';
 
 export interface NavSection { id: string; label: string; sub: string; href: string; badge?: string }
 export interface NavGroup { id: string; label: string; sub: string; icon: string; section: string; leaf: boolean; href: string; kids: NavSection[] }
 
 type RawGroup = { id: string; label: string; sub: string; icon: string; sec?: string; leaf?: boolean; mode?: number; kids: string[][] };
 
+interface Badges { awaiting: number; inbox: number; integration: number; sections: Record<string, number> }
+interface NavAnswer { groups: NavGroup[]; badges: Badges; tasks: number }
+
+/** GET /api/screens/nav with the view settings it depends on. */
+function navAnswer(): NavAnswer {
+  const v = view();
+  return cached<NavAnswer>(withQuery('/api/screens/nav', { cc_mode: v.ccMode, last_asset: v.lastAsset, tenant_filter: v.tenant }));
+}
+
 export function navigation(): NavGroup[] {
+  if (API) return navAnswer().groups;
   const g = engine();
   const NAV = g<RawGroup[]>('NAV');
   const visible = g<(x: RawGroup) => boolean>('frVisible');
@@ -24,8 +40,10 @@ export function navigation(): NavGroup[] {
 }
 
 /** Badges in the menu: decisions awaiting approval (Decision Workbench), the approvals inbox (Command Center),
- *  open conflicts (Connection Fabric), and per-section badges keyed as in NAV (conf, srcissue, wffail, inbox). */
-export function navBadges(): { awaiting: number; inbox: number; integration: number; sections: Record<string, number> } {
+ *  open conflicts (Connection Fabric), and per-section badges keyed as in NAV (conf, srcissue, wffail, inbox).
+ *  With the API, conflicts are the real ones that hold up a pending decision (di/screens/nav.py). */
+export function navBadges(): Badges {
+  if (API) return navAnswer().badges;
   const g = engine();
   const S = g<{ acct: unknown; wf?: { list: { status: string; last?: { state: string } }[] } }>('S');
   const conf = g<{ status: string }[]>('CONFLICTS').filter((c) => c.status === 'open').length;
@@ -43,22 +61,45 @@ export function navBadges(): { awaiting: number; inbox: number; integration: num
 }
 
 export interface AlertItem { id: string; kind: string; ic: string; h: string; t: string; s: string; sev: number; go: string; ack: boolean }
-/** Alerts for the signed-in account, unacknowledged and most severe first (the demo's frAlerts). */
-export const alerts = (): AlertItem[] => engine()<() => AlertItem[]>('frAlerts')();
 
+/** Alerts for the signed-in account, unacknowledged and most severe first (the demo's frAlerts). */
+export function alerts(): AlertItem[] {
+  if (!API) return engine()<() => AlertItem[]>('frAlerts')();
+  if (!session()) return [];
+  const acks = view().acks;
+  const all = cached<AlertItem[]>('/api/screens/home/alerts').map((a) => ({ ...a, ack: a.ack || !!acks[a.id] }));
+  return [...all.filter((a) => !a.ack), ...all.filter((a) => a.ack)];
+}
+
+const LIVE_T0 = Date.now();
 /** "Live · updated 2 min ago" */
-export const liveAgo = (): string => engine()<() => string>('liveAgo')();
+export const liveAgo = (): string =>
+  API ? 'Live · updated ' + (1 + (Math.floor((Date.now() - LIVE_T0) / 60000) % 3)) + ' min ago' : engine()<() => string>('liveAgo')();
+
+const TZ_SHORT: Record<string, string> = {
+  UTC: 'UTC', 'Asia/Kolkata': 'IST', 'Asia/Tokyo': 'JST', 'Europe/Berlin': 'CET', 'Europe/Helsinki': 'EET', 'America/New_York': 'ET',
+};
 
 /** Region summary for the top bar, e.g. "EN · UTC · ₹". */
 export function regionSummary(): string {
+  if (API) {
+    const rg = view().rg;
+    return `${rg.lang.toUpperCase()} · ${TZ_SHORT[rg.tz] ?? rg.tz} · ${ref<Record<string, string[]>>('RG_CUR')[rg.cur][0]}`;
+  }
   const g = engine();
   const rg = g<{ rg: { lang: string; cur: string } }>('S').rg;
   return `${rg.lang.toUpperCase()} · ${g<() => string>('rgTzShort')()} · ${g<Record<string, string[]>>('RG_CUR')[rg.cur][0]}`;
 }
 
 /** Open counts shown in the menu and the bell. */
-export const navCounts = (): { tasks: number; alerts: number } => engine()<() => { tasks: number; alerts: number }>('frCounts')();
+export function navCounts(): { tasks: number; alerts: number } {
+  if (!API) return engine()<() => { tasks: number; alerts: number }>('frCounts')();
+  if (!session()) return { tasks: 0, alerts: 0 };
+  return { tasks: navAnswer().tasks, alerts: alerts().filter((a) => !a.ack).length };
+}
 
+// Assets bundled with the app (the demo's LOGO, LOGO_INK and Lucide ICON set); read from the extracted demo source
+// until the engine is deleted, when they move to a generated assets module.
 export const logos = () => ({ dark: engine()<string>('LOGO'), light: engine()<string>('LOGO_INK') });
 
 /** The demo's icon set (Lucide paths), as SVG markup strings keyed by name. */

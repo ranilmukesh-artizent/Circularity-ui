@@ -48,9 +48,9 @@ function IntegrationPage({ route, query }: PageProps) {
 
   const ui: IntUI = useMemo(() => {
     const open = (r: DrawerRef) => { setDrawer(r); setDrawerKey((k) => k + 1); };
-    const reconnect = (id: string) => {
+    const reconnect = async (id: string) => {
       if (!canMgr()) return toast(NOMGR);
-      const r = reconnectSource(id);
+      const r = await reconnectSource(id);
       if (!r.ok) return toast(r.error.message);
       const s = source(id);
       if (s) toast(s.name + ' is live again. Predictions no longer carry a stale-feed warning.');
@@ -58,11 +58,11 @@ function IntegrationPage({ route, query }: PageProps) {
     return {
       openSource: (id, t) => open({ mode: 'edit', id, tab: t ?? 'conn' }),
       addSource: (cat) => { if (!canMgr()) return toast(NOMGR); open({ mode: 'new', id: '', tab: 'conn', cat }); },
-      sync: (id) => {
+      sync: async (id) => {
         if (!canMgr()) return toast(NOMGR);
         const s = source(id);
         if (s?.paused) return toast(s.name + ' is paused. Resume it to sync.');
-        const r = syncSource(id);
+        const r = await syncSource(id);
         if (!r.ok) { if (r.error.code !== 'duplicate') toast(r.error.message); return; }
         // the engine finishes the sync on a timer; report its result as the demo does
         const wait = () => {
@@ -203,12 +203,12 @@ function DisconnectModal({ id, onClose }: { id: string; onClose: () => void }) {
   const s = source(id);
   if (!s) return null;
   const use = wfUsing(id), dec = openDecisionCount(), mp = mappings(id).length, T = srcTypes()[s.type];
-  const ok = () => {
+  const ok = async () => {
     if (t.trim() !== s.vendor) return;
     onClose();
     disconnectSource(id);
-    toastAct(s.vendor + ' disconnected.', 'Reconnect', () => {
-      const r = reconnectSource(id);
+    toastAct(s.vendor + ' disconnected.', 'Reconnect', async () => {
+      const r = await reconnectSource(id);
       if (!r.ok) return toast(r.error.message);
       toast(s.name + ' is live again. Predictions no longer carry a stale-feed warning.');
     });
@@ -238,8 +238,8 @@ function DeleteModal({ id, onClose, onDone }: { id: string; onClose: () => void;
   const s = source(id);
   if (!s) return null;
   const use = wfUsing(id), mp = mappings(id).length;
-  const ok = () => {
-    const r = deleteSource(id);
+  const ok = async () => {
+    const r = await deleteSource(id);
     if (!r.ok) return toast(r.error.message);
     onClose();
     onDone();
@@ -265,13 +265,13 @@ function RotateModal({ id, onClose }: { id: string; onClose: () => void }) {
   const [secret, setSecret] = useState(''), [days, setDays] = useState('180'), [err, setErr] = useState('');
   const s = source(id);
   if (!s) return null;
-  const ok = () => {
+  const ok = async () => {
     if (secret.length < 8) return setErr('Enter at least 8 characters.');
-    const r = rotateCredentials(id, +days);
+    const r = await rotateCredentials(id, +days);
     if (!r.ok) return setErr(r.error.message);
     onClose();
     if (r.output.stale) {
-      const x = reconnectSource(id);
+      const x = await reconnectSource(id);
       if (!x.ok) return toast(x.error.message);
       return toast(s.name + ' is live again. Predictions no longer carry a stale-feed warning.');
     }

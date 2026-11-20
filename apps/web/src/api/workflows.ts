@@ -179,7 +179,7 @@ export const createWorkflow = (i: { type: string; src?: string; ch?: string; nam
   invoke<{ id: string; name: string }>('workflow.create', i);
 export const duplicateWorkflow = (id: string) => invoke<{ id: string; name: string }>('workflow.duplicate', { id });
 export const deleteWorkflow = (id: string) => invoke<{ id: string; name: string }>('workflow.delete', { id });
-export const runWorkflow = (id: string): ActionResult<{ id: string; name: string }> => invoke('workflow.run', { id });
+export const runWorkflow = (id: string): Promise<ActionResult<{ id: string; name: string }>> => invoke<{ id: string; name: string }>('workflow.run', { id });
 /** The checks on the saved graph, through the read action the agent uses. */
 export const validateSaved = (id: string) =>
   read<{ id: string; name: string; errors: { msg: string }[]; warnings: { msg: string }[] }>('workflow.validate', { id });

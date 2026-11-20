@@ -651,6 +651,16 @@ The rest of the design:
 
 **Done when:** `VITE_BACKEND=api` is the default, the engine is deleted, and RT-1048 runs end to end through the ten stages in the browser (the walk-through in README.md).
 
+**Decision (20 Nov 2026):** the menu's open-conflicts badge counts only the conflicts that hold up a decision: open or escalated conflicts on the asset of a case the account may see that has no decision yet or is awaiting approval (154 for Admin after a full sync). The full queue stays on the Connection Fabric's conflicts page.
+
+**B17a, the switch, session and menu: done (20 Nov 2026).**
+- **Switch:** `VITE_BACKEND=engine|api` (`src/api/backend.ts`; `docker compose` passes it to the web service, default `engine` until every area has moved). Pages do not check it; only the facade does.
+- **Client** (`src/api/client.ts`): the facade stays synchronous. A read calls `cached(path)`, which returns the last answer at once; the first read throws the pending fetch so React Suspense shows "Loading…" (`src/ui/Boundary.tsx`, also an error boundary with a retry). An action, or any event on `/api/stream`, marks answers stale; pages keep the old answer until the new one arrives. Read actions go through the same cache (`read()`).
+- **invoke() is asynchronous** in both modes; every caller awaits it.
+- **Session and menu** (`session.ts`, `nav.ts`): sign-in through `POST /api/auth/login` (token in session storage, restored on reload), `can`, `canPage` and `canRoute` evaluated from `/api/auth/me` and the case scope map (`GET /api/screens/nav/scope`, new), the menu and badges from `/api/screens/nav`, reference lists loaded once. View settings (tenant filter, theme, Command Center view, last asset, region, alert acknowledgements) live in the browser (`src/api/view.ts`).
+- **Areas not moved yet** still read the in-browser engine, kept signed in as the same account.
+- **Checks:** unit tests for the cache (suspend, stale-while-revalidate, refusals, read actions, invalidation after actions); `scripts/smoke-pages.mjs` signs in as each of the 11 accounts in Chrome and opens every page in its menu: no failures in either mode, and the same menus; `scripts/smoke-signin.mjs` checks the sign-in messages, the login call and a reload.
+
 ## B18. Hardening
 
 1. **Browser tests:** rewrite the demo's three headless suites (208 role checks, 110 guided-flow checks, 88 demo-path checks) in Playwright, run them against the Compose stack, and add them to CI.

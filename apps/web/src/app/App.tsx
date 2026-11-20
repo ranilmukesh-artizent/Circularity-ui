@@ -6,6 +6,7 @@ import type { RouteRef } from '../api/types';
 import { NotPortedPage } from '../pages/NotPortedPage';
 import { pageFor } from '../pages/registry';
 import { SignInPage } from '../pages/SignInPage';
+import { Boundary } from '../ui/Boundary';
 import { useTheme } from '../ui/theme';
 import { toast, Toasts } from '../ui/toast';
 import { Sidebar } from './Sidebar';
@@ -37,7 +38,11 @@ export function App() {
     );
   }
   if (!route.page || route.page === 'signin') return <Navigate to={'/' + homeRoute()} replace />;
-  return <Shell route={route} search={loc.search} />;
+  return (
+    <Boundary>
+      <Shell route={route} search={loc.search} />
+    </Boundary>
+  );
 }
 
 function Shell({ route, search }: { route: RouteRef; search: string }) {
@@ -74,7 +79,9 @@ function Shell({ route, search }: { route: RouteRef; search: string }) {
         <div className="main">
           <TopBar onMenu={() => setMenu((m) => !m)} onSignOut={doSignOut} />
           <main className="page" id="view" tabIndex={-1}>
-            <Page route={route} query={new URLSearchParams(search)} />
+            <Boundary resetKey={route.page + '/' + (route.a ?? '') + '/' + (route.b ?? '')}>
+              <Page route={route} query={new URLSearchParams(search)} />
+            </Boundary>
           </main>
         </div>
         <div className="frscrim" aria-hidden="true" onClick={() => setMenu(false)} />

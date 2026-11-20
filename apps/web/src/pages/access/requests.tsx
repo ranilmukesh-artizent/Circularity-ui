@@ -71,12 +71,12 @@ export function ReqRow({ r, onDecide }: { r: AccessRequest; onDecide: (r: Access
 function DecideModal({ r, dec, onClose }: { r: AccessRequest; dec: Decision; onClose: () => void }) {
   const [note, setNote] = useState('');
   const [err, setErr] = useState('');
-  function ok() {
+  async function ok() {
     if (!canDecide(r)) {
       toast('This request is not yours to decide.');
       return onClose();
     }
-    const res = invoke<{ id: string; status: string }>('access.decideRequest', { id: r.id, decision: dec, note: note.trim() });
+    const res = await invoke<{ id: string; status: string }>('access.decideRequest', { id: r.id, decision: dec, note: note.trim() });
     if (!res.ok) {
       if (res.error.code === 'validation_error') return setErr(res.error.message);
       toast(res.error.message, 4200);

@@ -18,8 +18,8 @@ export function AlertsPage() {
   const kinds = alertKinds().filter((k) => k[0] === 'all' || l.some((a) => a.kind === k[0]));
   const high = open.filter((a) => a.sev >= 2).length;
 
-  const ack = (a: Alert) => {
-    if (acknowledgeAlert(a.id)) toast('Acknowledged. The sender sees it is in hand.');
+  const ack = async (a: Alert) => {
+    if (await acknowledgeAlert(a.id)) toast('Acknowledged. The sender sees it is in hand.');
   };
   const doAssign = () => {
     if (!assign) return;

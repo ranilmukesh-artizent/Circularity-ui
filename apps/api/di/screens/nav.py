@@ -9,14 +9,18 @@
         badges   nav.ts navBadges(): cases awaiting approval, the approvals inbox, open conflicts, and the per-section
                  counts keyed as in NAV (conf, srcissue, wffail, inbox)
         tasks    the open tasks count in the menu (the demo's frCounts().tasks: Actions on me)
+    GET /api/screens/nav/scope   every case id with its owner and location ({id: [owner, location]}), so the frontend
+                 can evaluate the demo's canRoute for record links (true, false, or "tenant" for a record outside the
+                 account's tenants or warehouse) without a request per link; the tenant boundary itself is enforced
+                 by every endpoint and action
     GET /api/screens/nav/accounts   the accounts as the identity mapping has them now, with their sign-in email: the
                  sign-in page lists them before anyone has signed in (the demo's ACCOUNTS)
 
 Where the counts come from:
 - awaiting, inbox, tasks: the cases in the database and the workspace collections, as the reads compute them;
-- conf: the demo's conflict list (di.reads.common.STARTING_CONFLICTS), as the Command Center and Home reads count
-  them. The connectors' conflict table (B9) holds the real queue (hundreds after a sync); B17 decides which one the
-  menu shows, together with the Connection Fabric's conflicts page;
+- conf (decided in B17, 20 Nov 2026): the connectors' real conflict table (B9), counting only the conflicts that
+  hold up a decision: open or escalated conflicts on the asset of a case the account may see that has no decision yet
+  or is awaiting approval. The full queue (hundreds after a sync) stays on the Connection Fabric's conflicts page;
 - srcissue: the backend's source_system table (sources stale or unavailable), the real connector state, which gives
   the demo's count after a sync;
 - wffail: the demo's starting failed workflows (di.reads.common.STARTING_FAILED_WORKFLOWS), until workflows move.
@@ -63,7 +67,7 @@ from di import policy
 from di.auth import Principal, load_context, principal
 from di.cases import store
 from di.db import get_session
-from di.reads.common import STARTING_CONFLICTS, STARTING_FAILED_WORKFLOWS, inbox_requests
+from di.reads.common import STARTING_FAILED_WORKFLOWS, inbox_requests
 from di.reads.workspace import aome_items
 from di.screens.analytics import call_context, vis_cases_filtered
 from di.screens.reference import lists
@@ -133,10 +137,22 @@ def navigation(p: Principal, cases: list[dict], cc_mode: str = "operational", la
     return out
 
 
+HELD_STAGES = ("none", "awaiting_approval")  # a decision is still to be made or approved
+
+
+def held_conflicts(ctx, session: Session) -> int:
+    """Open or escalated conflicts on the asset of a visible case whose decision is still pending (the menu badge)."""
+    assets = [c.get("assetId") for c in vis_cases_filtered(ctx) if c["stage"] in HELD_STAGES and c.get("assetId")]
+    if not assets:
+        return 0
+    q = "SELECT count(*) FROM conflict WHERE status IN ('open', 'escalated') AND key = ANY(:keys)"
+    return session.execute(text(q), {"keys": assets}).scalar()
+
+
 def badges(p: Principal, session: Session, tenant_filter: str = "All") -> dict:
     """nav.ts navBadges()."""
     ctx = call_context(p, session)
-    conf = sum(1 for c in STARTING_CONFLICTS if c["status"] == "open")
+    conf = held_conflicts(ctx, session)
     srcissue = session.execute(text(ISSUE_SQL)).scalar()
     wffail = len(STARTING_FAILED_WORKFLOWS)
     inbox = len(inbox_requests(ctx))
@@ -163,6 +179,12 @@ def nav(
         "badges": badges(p, session, tenant_filter),
         "tasks": len(aome_items(call_context(p, session))),
     }
+
+
+@router.get("/scope")
+def scope(p: Principal = Depends(principal), session: Session = Depends(get_session)):
+    rows = session.execute(text("SELECT id, owner, location FROM case_record ORDER BY id"))
+    return {r.id: [r.owner, r.location] for r in rows}
 
 
 @router.get("/accounts")

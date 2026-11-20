@@ -76,7 +76,7 @@ export function escalationDraft(id: string, nx: NextStep): Escalation {
   const a = e()<(id: string) => { label: string } | undefined>('ACCT')(d.to);
   return { ...d, toLabel: a ? a.label : d.to };
 }
-export const sendEscalation = (d: Escalation, msg: string): ActionResult<{ to: string }> =>
+export const sendEscalation = (d: Escalation, msg: string): Promise<ActionResult<{ to: string }>> =>
   invoke<{ to: string }>('escalation.send', { case_id: d.case_id, to: d.to, msg, blocker: d.blocker });
 
 /** Recorded actions for the case (journal), agent tool calls that mention it, and its events. */

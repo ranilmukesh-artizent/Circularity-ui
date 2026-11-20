@@ -317,10 +317,10 @@ export function exRows(sc: CcScope): ExRow[] {
 /** The account the exception is routed to by default (the demo's exOwner). */
 export const exOwner = (x: ExRow): string => fn<(x: ExRow) => string>('exOwner')(x);
 export const notifyRecipients = (): Account[] => fn<Account[]>('ACCOUNTS').filter((a) => a.role !== 'Executive');
-export function sendNotification(x: ExRow, to: string, sev: string, msg: string): ActionResult<{ id: string; to: string }> {
-  return invoke('notify.send', { ex_id: x.id, title: x.wh + ' · ' + x.title, to, sev, msg, ids: x.items.map((i) => i.id).slice(0, 40) });
+export function sendNotification(x: ExRow, to: string, sev: string, msg: string): Promise<ActionResult<{ id: string; to: string }>> {
+  return invoke<{ id: string; to: string }>('notify.send', { ex_id: x.id, title: x.wh + ' · ' + x.title, to, sev, msg, ids: x.items.map((i) => i.id).slice(0, 40) });
 }
-export const acknowledge = (id: string): ActionResult => invoke('notify.acknowledge', { id });
+export const acknowledge = (id: string): Promise<ActionResult> => invoke('notify.acknowledge', { id });
 
 // ---------------------------------------------------------------- Actions on me, handed off, outcomes
 
@@ -366,8 +366,8 @@ export function inboxScope(): string[] | null {
   return fn<Any[]>('DELEG').filter((d) => S().deleg[d[0]]).map(dlab);
 }
 export const decisionsAwaiting = (): number => fn<() => CcCase[]>('visCases')().filter((c) => c.stage === 'awaiting_approval').length;
-export const decideRequest = (id: string, decision: 'approve' | 'decline', note: string): ActionResult<{ status: string }> =>
-  invoke('access.decideRequest', { id, decision, note });
+export const decideRequest = (id: string, decision: 'approve' | 'decline', note: string): Promise<ActionResult<{ status: string }>> =>
+  invoke<{ status: string }>('access.decideRequest', { id, decision, note });
 export const requestById = (id: string): AccessRequest | undefined => {
   const r = S().reqs.find((x: Any) => x.id === id);
   return r ? toReq(r) : undefined;

@@ -130,8 +130,8 @@ function NoteCallouts() {
             <span><b>From {n.from}:</b> {n.title} · {n.msg}</span>
             <span className="sp" />
             {ok && <a className="btn sm" href={'#/product/received?focus=' + id}>Show {id}</a>}
-            <button className="btn sm pri" onClick={() => {
-              const r = invoke('notify.acknowledge', { id: n.id });
+            <button className="btn sm pri" onClick={async () => {
+              const r = await invoke('notify.acknowledge', { id: n.id });
               if (r.ok) toast('Acknowledged. The sender sees it is in hand.');
               else toast(r.error.message);
             }}>Acknowledge</button>

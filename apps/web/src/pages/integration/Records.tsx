@@ -127,14 +127,14 @@ export function EventDrawer({ id, onClose }: { id: string; onClose: () => void }
 export function Conflicts() {
   useBackend();
   const C = conflicts(), o = C.filter((c) => c.status === 'open').length;
-  const resolve = (id: string) => {
+  const resolve = async (id: string) => {
     if (!canMgr()) return toast(NOMGR);
-    const r = resolveConflict(id);
+    const r = await resolveConflict(id);
     if (!r.ok) return toast(r.error.message);
     toast(`${id} resolved: ${r.output.authority} is authoritative for ${r.output.kind.toLowerCase()}.`);
   };
-  const escalate = (id: string) => {
-    const r = escalateConflict(id);
+  const escalate = async (id: string) => {
+    const r = await escalateConflict(id);
     if (!r.ok && r.error.code !== 'duplicate') return toast(r.error.message);
     toast('Escalated to the data owner. The conflict stays open and dependent routes stay held.');
   };
@@ -221,9 +221,9 @@ export function Import() {
     r.onload = () => { up(() => { imp.text = String(r.result); imp.csv = null; }); toast('Loaded ' + f.name + '. Choose Validate.'); };
     r.readAsText(f);
   };
-  const commit = () => {
+  const commit = async () => {
     if (!st) return;
-    const r = commitImport(st.ok, st.err, st.rows);
+    const r = await commitImport(st.ok, st.err, st.rows);
     if (!r.ok) return toast(r.error.message);
     up(() => { st.committed = true; });
     toast(st.ok + ' rows loaded for evaluation. They are tagged manual and will not trigger any instruction.', 4200);

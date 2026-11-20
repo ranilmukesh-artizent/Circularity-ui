@@ -84,6 +84,7 @@ services:
     build: ./apps/web
     environment:
       API_PROXY_TARGET: http://api:8000
+      VITE_BACKEND: ${VITE_BACKEND:-engine} # engine: the demo's logic in the browser; api: di-api (B17)
       LEGACY_HTML: /legacy/index.html
       CHOKIDAR_USEPOLLING: "true" # file changes on a Windows drive (/mnt/c) do not reach inotify in WSL
     ports: ["5173:5173"]

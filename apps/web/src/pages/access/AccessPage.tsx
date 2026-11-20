@@ -85,20 +85,20 @@ function Identity() {
   const [err, setErr] = useState('');
   const approles = I.src === 'approles';
 
-  const sync = () => {
-    if (invoke('access.syncDirectory', {}).ok) toast('Directory synced.');
+  const sync = async () => {
+    if ((await invoke('access.syncDirectory', {})).ok) toast('Directory synced.');
   };
-  const mapTo = (acct: string, field: 'role' | 'site', value: string) => {
-    const r = invoke<{ label: string }>('access.mapIdentity', { acct, field, value });
+  const mapTo = async (acct: string, field: 'role' | 'site', value: string) => {
+    const r = await invoke<{ label: string }>('access.mapIdentity', { acct, field, value });
     if (r.ok) toast('Mapping updated. ' + r.output.label + ' changes at their next sign-in.');
     else toast(r.error.message, 4200);
   };
-  const remove = (id: string) => {
-    const r = invoke<{ email: string }>('access.removeUser', { id });
+  const remove = async (id: string) => {
+    const r = await invoke<{ email: string }>('access.removeUser', { id });
     if (r.ok) toast(r.output.email + ' removed at the next provisioning sync.');
   };
-  const saveOoo = () => {
-    const r = invoke('access.setOutOfOffice', { to: to || eligible[0]?.id || '', from, until });
+  const saveOoo = async () => {
+    const r = await invoke('access.setOutOfOffice', { to: to || eligible[0]?.id || '', from, until });
     if (!r.ok) return setErr(r.error.message);
     setErr('');
     toast('Out-of-office delegation saved.');
@@ -252,9 +252,9 @@ function Identity() {
 
 function Delegations() {
   const manage = can('manageAccess');
-  const toggle = (k: string, on: boolean) => {
+  const toggle = async (k: string, on: boolean) => {
     const d = delegations().find((x) => x.k === k)!;
-    const r = invoke('access.setDelegation', { k, on });
+    const r = await invoke('access.setDelegation', { k, on });
     if (!r.ok) return toast(r.error.message, 4200);
     toast(on ? 'The Approver can now decide ' + delegationLabel(d) + '.' : d.label + ' are now decided by Admin only.', 4200);
   };
@@ -300,8 +300,8 @@ function Autonomy() {
   const L = levels();
   const rs = roles();
   const manage = can('manageAccess');
-  const set = (role: string, type: string, level: Level) => {
-    const r = invoke('access.setAutonomy', { role, type, level });
+  const set = async (role: string, type: string, level: Level) => {
+    const r = await invoke('access.setAutonomy', { role, type, level });
     if (!r.ok) return toast(r.error.message, 4200);
     toast(role + ': ' + autoTypes().find((t) => t.k === type)!.t.toLowerCase() + ' → ' + L.find((l) => l.k === level)!.label + '.');
   };
@@ -353,9 +353,9 @@ function Autonomy() {
 function LimitRow({ role, manage }: { role: string; manage: boolean }) {
   const v = approvalLimit(role);
   const ref = useRef<HTMLInputElement>(null);
-  const save = () => {
+  const save = async () => {
     const s = ref.current?.value ?? '';
-    const r = invoke<{ limit: number | null }>('access.setLimit', { role, amount: s === '' ? null : +s });
+    const r = await invoke<{ limit: number | null }>('access.setLimit', { role, amount: s === '' ? null : +s });
     if (!r.ok) return toast(r.error.message, 4200);
     toast(role + ' approval limit: ' + (r.output.limit == null ? 'unlimited' : money(r.output.limit)) + '.');
   };
@@ -379,13 +379,13 @@ function Limits() {
   const rl = runLimits();
   const aRef = useRef<HTMLInputElement>(null);
   const bRef = useRef<HTMLInputElement>(null);
-  const saveRun = () => {
-    const r = invoke('access.setRunLimits', { actions: +(aRef.current?.value ?? 0), bulk: +(bRef.current?.value ?? 0) });
+  const saveRun = async () => {
+    const r = await invoke('access.setRunLimits', { actions: +(aRef.current?.value ?? 0), bulk: +(bRef.current?.value ?? 0) });
     if (!r.ok) return toast(r.error.message, 4200);
     toast('Run limits saved.');
   };
-  const self = (on: boolean) => {
-    const r = invoke('access.setSelfApprove', { on });
+  const self = async (on: boolean) => {
+    const r = await invoke('access.setSelfApprove', { on });
     if (r.ok) toast(on ? 'Self-approval allowed within the limit.' : 'Self-approval not allowed.');
   };
   return (
@@ -421,8 +421,8 @@ function Limits() {
 
 function Agents() {
   const manage = can('manageAccess');
-  const kill = (id: string, name: string, on: boolean) => {
-    const r = invoke('agent.setEnabled', { id, on });
+  const kill = async (id: string, name: string, on: boolean) => {
+    const r = await invoke('agent.setEnabled', { id, on });
     if (!r.ok) return toast(r.error.message);
     toast(name + (on ? ' is running again.' : ' is stopped. The runtime will not call it.'));
   };

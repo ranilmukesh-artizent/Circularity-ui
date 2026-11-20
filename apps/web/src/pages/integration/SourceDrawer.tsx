@@ -103,7 +103,7 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
     touch();
   };
 
-  function save() {
+  async function save() {
     if (!mgr) return toast(NOMGR);
     const e = validate(mode, at.id, d, maps, ops);
     if (Object.keys(e).length) {
@@ -113,7 +113,7 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
       toast('Fix ' + n + ' item' + (n > 1 ? 's' : '') + ' before saving. Errors are marked in the form.');
       return;
     }
-    const r = saveSource(mode, at.id, d, maps, ops);
+    const r = await saveSource(mode, at.id, d, maps, ops);
     if (!r.ok) {
       if (r.error.code === 'conflict' && /No changes/.test(r.error.message)) { toast('No changes to save.'); setDirty(false); return; }
       return toast(r.error.message);
@@ -462,8 +462,8 @@ export function Comments({ k, label }: { k: string; label: string }) {
   const [text, setText] = useState('');
   const [err, setErr] = useState('');
   const l = commentsOf(k);
-  const post = () => {
-    const r = addComment(k, text.trim());
+  const post = async () => {
+    const r = await addComment(k, text.trim());
     if (!r.ok) return setErr(r.error.message);
     setText(''); setErr('');
     toast('Comment posted.');

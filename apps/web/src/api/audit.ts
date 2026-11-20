@@ -52,4 +52,4 @@ export const eventJson = (ev: AuditEvent): string =>
 export const ackKind = (a: string): string => (/^acknowledged$/.test(a) ? 'ok' : /conflict|stale|failed/.test(a) ? 'bad' : /sent/.test(a) ? 'line' : 'warn');
 
 export const comments = (key: string): Comment[] => e()<{ cm: Record<string, Comment[]> }>('S').cm[key] ?? [];
-export const postComment = (key: string, text: string): ActionResult => invoke('comment.add', { key, text });
+export const postComment = (key: string, text: string): Promise<ActionResult> => invoke('comment.add', { key, text });

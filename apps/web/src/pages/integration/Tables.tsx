@@ -47,16 +47,16 @@ export function Tables() {
   if (!tg.src) return <div className="empty"><b>No table models</b>Connect a source that publishes tables first.</div>;
   const m = tableModel(tg.src)!;
   const mgr = canMgr();
-  const del = (n: string) => {
+  const del = async (n: string) => {
     if (!mgr) return toast(NOMGR);
-    const r = updateTables({ src: tg.src, op: 'delete', name: n });
+    const r = await updateTables({ src: tg.src, op: 'delete', name: n });
     if (!r.ok) return toast(r.error.message);
     setDlg(null);
     toastAct(n + ' deleted' + (r.output.fks ? ' with ' + r.output.fks + ' foreign key' + (r.output.fks > 1 ? 's' : '') : '') + '.', 'Undo', () => undoActions([r.seq!]));
   };
-  const fkDel = (i: number) => {
+  const fkDel = async (i: number) => {
     if (!mgr) return toast(NOMGR);
-    const r = updateTables({ src: tg.src, op: 'fkDel', index: i });
+    const r = await updateTables({ src: tg.src, op: 'fkDel', index: i });
     if (!r.ok) return toast(r.error.message);
     toastAct(r.output.from + ' → ' + r.output.to + ' removed.', 'Undo', () => undoActions([r.seq!]));
   };
@@ -216,13 +216,13 @@ function TableList({ m, onEdit, onFk, onDel, onFkDel }: { m: TableModel; onEdit:
 function EditTable({ m, n, onClose, onDel }: { m: TableModel; n: string; onClose: () => void; onDel: (n: string) => void }) {
   const t = m.t.find((x) => x.n === n)!;
   const [desc, setDesc] = useState(t.desc), [cl, setCl] = useState(t.cl), [cols, setCols] = useState(t.cols.map((c) => c[0]).join('\n')), [err, setErr] = useState('');
-  const save = () => {
+  const save = async () => {
     if (!canMgr()) return toast(NOMGR);
     const l = cols.split('\n').map((x) => x.trim()).filter(Boolean);
     if (!l.length) return setErr('Add at least one column.');
     if (new Set(l.map((c) => c.toLowerCase())).size !== l.length) return setErr('Column names must be unique.');
     if (l.some((c) => !/^[A-Za-z_][\w$]*$/.test(c))) return setErr('Use letters, numbers and underscores only.');
-    const r = updateTables({ src: tg.src, op: 'edit', name: n, table: { cols: l, desc: desc.trim(), cl } });
+    const r = await updateTables({ src: tg.src, op: 'edit', name: n, table: { cols: l, desc: desc.trim(), cl } });
     if (!r.ok) return setErr(r.error.message);
     onClose();
     toast(n + ' saved.');
@@ -248,14 +248,14 @@ function AddTable({ m, onClose }: { m: TableModel; onClose: () => void }) {
     const a = tableSuggestions(tg.src).find((x) => x.n.toLowerCase() === v.trim().toLowerCase());
     if (a) { setDesc(a.desc); setCl(a.cl); setCols(a.cols.join('\n')); }
   };
-  const add = () => {
+  const add = async () => {
     const name = n.trim(), l = cols.split('\n').map((x) => x.trim()).filter(Boolean);
     if (!/^[A-Za-z][\w$]{1,40}$/.test(name)) return setErr('Enter a table name: letters, numbers and underscores.');
     if (m.t.some((t) => t.n.toLowerCase() === name.toLowerCase())) return setErr(name + ' is already in this model.');
     if (!l.length || l.some((c) => !/^[A-Za-z_][\w$]*$/.test(c))) return setErr('Add at least one valid column name.');
     const mem = m.t.filter((t) => t.cl === cl), x = mem.length ? Math.max(...mem.map((t) => t.x)) : 24;
     const y = mem.length ? Math.max(...mem.map((t) => t.y + tableHeight(t))) + 30 : m.t.length ? Math.max(...m.t.map((t) => t.y + tableHeight(t))) + 60 : 60;
-    const r = updateTables({ src: tg.src, op: 'add', table: { n: name, cl, desc: desc.trim() || 'Table extracted for evidence.', cols: l.map((c) => [c, '']), rows: '—', x: mem.length ? x : 24, y } });
+    const r = await updateTables({ src: tg.src, op: 'add', table: { n: name, cl, desc: desc.trim() || 'Table extracted for evidence.', cols: l.map((c) => [c, '']), rows: '—', x: mem.length ? x : 24, y } });
     if (!r.ok) return setErr(r.error.message);
     onClose();
     toast(name + ' added. Use New Foreign Key to link it to other tables.');
@@ -295,9 +295,9 @@ function NewFk({ m, a0, onClose }: { m: TableModel; a0: string; onClose: () => v
       </select>
     </div>
   );
-  const ok = () => {
+  const ok = async () => {
     if (a === b) return setErr('Choose two different tables.');
-    const r = updateTables({ src: tg.src, op: 'fkAdd', fk: [a + '.' + ac, b + '.' + bc, f.why.trim() || 'Foreign key link'] });
+    const r = await updateTables({ src: tg.src, op: 'fkAdd', fk: [a + '.' + ac, b + '.' + bc, f.why.trim() || 'Foreign key link'] });
     if (!r.ok) return setErr(r.error.message);
     onClose();
     toast(a + '.' + ac + ' now links to ' + b + '.' + bc + '.');

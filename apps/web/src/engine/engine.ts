@@ -93,7 +93,12 @@ function boot() {
   const acct = g<() => unknown>('sessionLoad')();
   g<(a: unknown) => void>('setAcct')(acct);
   g<(t: string, f: () => void) => void>('afOn')('*', bump); // every action, sync and boot event re-renders React
+  afterBoot.forEach((f) => f());
 }
+
+/** Run after the engine starts (session.ts uses it to keep the engine's account the same as the server's). */
+const afterBoot: (() => void)[] = [];
+export const onEngineBoot = (f: () => void) => afterBoot.push(f);
 
 /** Read any top-level binding of the engine (data, helpers, functions). */
 export function engine(): Get {
@@ -107,15 +112,10 @@ export function engineSet(name: string, value: unknown) {
   set!(name, value);
 }
 
-// ---- change notification: React subscribes through useEngineVersion() (src/api/hooks.ts) ----
-let version = 0;
-const listeners = new Set<() => void>();
-export function bump() {
-  version++;
-  listeners.forEach((l) => l());
-}
-export function subscribe(l: () => void) {
-  listeners.add(l);
-  return () => listeners.delete(l);
-}
-export const getVersion = () => version;
+/** Has the engine been started (by a facade function that still reads it)? */
+export const engineBooted = () => get !== null;
+
+// ---- change notification: one store for the engine and the API client (src/api/store.ts) ----
+import { bump } from '../api/store';
+export { bump };
+export { getVersion, subscribe } from '../api/store';

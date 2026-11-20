@@ -43,7 +43,7 @@ export function ApprovalModal({ c, mode, onClose }: { c: CaseRec; mode?: 'review
     }
   }
 
-  function confirm() {
+  async function confirm() {
     const text = why.trim();
     const val = Math.max(Math.abs(t.net), +spend || 0);
     if (val > lim && text.length >= 15 && ack) {
@@ -52,7 +52,7 @@ export function ApprovalModal({ c, mode, onClose }: { c: CaseRec; mode?: 'review
       return;
     }
     const ov = plan !== rec.plan;
-    const r = invoke<{ ref: string; sent_to: string }>(ov ? 'decision.override' : 'decision.approve', { case_id: c.id, route: plan, rationale: text, reviewed: ack, spend: +spend || 0, terms });
+    const r = await invoke<{ ref: string; sent_to: string }>(ov ? 'decision.override' : 'decision.approve', { case_id: c.id, route: plan, rationale: text, reviewed: ack, spend: +spend || 0, terms });
     if (!r.ok) {
       if (r.error.code === 'validation_error') setErr(r.error.message);
       else toast(r.error.message, 4200);
@@ -125,8 +125,8 @@ export function ApprovalModal({ c, mode, onClose }: { c: CaseRec; mode?: 'review
 export function DeclineModal({ c, onClose }: { c: CaseRec; onClose: () => void }) {
   const [why, setWhy] = useState('');
   const [err, setErr] = useState('');
-  function ok() {
-    const r = invoke('decision.decline', { case_id: c.id, reason: why.trim() });
+  async function ok() {
+    const r = await invoke('decision.decline', { case_id: c.id, reason: why.trim() });
     if (!r.ok) {
       if (r.error.code === 'validation_error') setErr(r.error.message);
       else toast(r.error.message, 4200);

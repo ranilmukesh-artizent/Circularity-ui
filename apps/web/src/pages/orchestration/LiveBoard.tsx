@@ -267,8 +267,8 @@ function EscalationCard({ caseId, nx }: { caseId: string; nx: NextStep }) {
   const nav = useNavigate();
   const d = escalationDraft(caseId, nx);
   const [msg, setMsg] = useState(d.msg);
-  const send = () => {
-    const r = sendEscalation(d, msg.trim());
+  const send = async () => {
+    const r = await sendEscalation(d, msg.trim());
     if (!r.ok) { toast(r.error.message, 4200); return; }
     toast('Escalation sent to ' + r.output.to + '.');
   };

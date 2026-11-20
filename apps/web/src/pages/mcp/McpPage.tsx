@@ -552,8 +552,8 @@ function ProposeModal({ onClose }: { onClose: () => void }) {
   const [f, setF] = useState({ n: '', o: '', p: '', t: '', a: 'read', d: '' });
   const [err, setErr] = useState('');
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
-  function submit() {
-    const r = invoke<{ id: string }>('mcp.propose', {
+  async function submit() {
+    const r = await invoke<{ id: string }>('mcp.propose', {
       name: f.n.trim(), owner: f.o.trim(), purpose: f.p.trim(),
       tools: f.t.split(',').map((x) => x.trim()).filter(Boolean), access: f.a || 'read', data: f.d.trim(),
     });

@@ -15,20 +15,20 @@ function refused(r: { ok: boolean; error?: { message: string } }): boolean {
 }
 
 /** Pause, resume or publish from the list (ACT.wfToggle). */
-export function toggle(id: string) {
+export async function toggle(id: string) {
   if (!can('manageWorkflows')) return toast(NOWF());
   const w = workflow(id);
   if (!w) return;
   const to = w.status === 'draft' ? 'published' : w.status === 'published' ? 'paused' : 'published';
-  const r = setWorkflowStatus(id, to);
+  const r = await setWorkflowStatus(id, to);
   if (!r.ok) return toast(r.error.message, 4200);
   toast(r.output.was === 'draft' ? w.name + ' published.' : to === 'paused' ? w.name + ' paused. Scheduled runs stop until you resume it.' : w.name + ' resumed.');
 }
 
 /** Run now (ACT.wfRunNow). The backend finishes the run a few seconds later; this reports it like the demo does. */
-export function runNow(id: string) {
+export async function runNow(id: string) {
   if (!can('manageWorkflows')) return toast(NOWF());
-  const r = runWorkflow(id);
+  const r = await runWorkflow(id);
   if (refused(r)) return;
   const t = window.setInterval(() => {
     const w = workflow(id);
@@ -41,9 +41,9 @@ export function runNow(id: string) {
 }
 
 /** Duplicate (ACT.wfDup). Returns the copy's id. */
-export function duplicate(id: string): string | null {
+export async function duplicate(id: string): Promise<string | null> {
   if (!can('manageWorkflows')) { toast(NOWF()); return null; }
-  const r = duplicateWorkflow(id);
+  const r = await duplicateWorkflow(id);
   if (refused(r) || !r.ok) return null;
   toast('Copy created as a draft: ' + r.output.name + '.');
   return r.output.id;
@@ -63,7 +63,7 @@ export function saveTemplate(id: string) {
 }
 
 /** Bulk run, pause or export from the list (ACT.frWfBulk), each run and pause through invoke(). */
-export function bulk(a: 'run' | 'pause' | 'export', ids: string[]) {
+export async function bulk(a: 'run' | 'pause' | 'export', ids: string[]) {
   const L = ids.map((i) => workflow(i)).filter((w): w is NonNullable<typeof w> => !!w);
   if (a === 'export') {
     L.forEach((w) => { const x = exportJson(w.id); if (x) download(x.file, x.json); });
@@ -71,7 +71,8 @@ export function bulk(a: 'run' | 'pause' | 'export', ids: string[]) {
   }
   if (!can('manageWorkflows')) return toast(NOWF());
   if (a === 'run') {
-    const n = L.filter((w) => w.status !== 'draft' && runWorkflow(w.id).ok).length;
+    let n = 0;
+    for (const w of L) if (w.status !== 'draft' && (await runWorkflow(w.id)).ok) n++;
     toast('Started ' + n + ' run' + (L.length > 1 ? 's' : '') + '. Drafts are skipped.');
   } else {
     L.filter((w) => w.status === 'published').forEach((w) => setWorkflowStatus(w.id, 'paused'));

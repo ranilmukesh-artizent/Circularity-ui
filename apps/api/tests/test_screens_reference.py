@@ -94,15 +94,40 @@ def test_navigation(acct):
     assert starting.strict(out["groups"]) == starting.strict(want["navigation"])
     assert out["tasks"] == want["tasks"]
     b, wb = out["badges"], want["badges"]
-    assert {k: b[k] for k in ("awaiting", "inbox", "integration")} == {k: wb[k] for k in ("awaiting", "inbox", "integration")}
-    assert {k: b["sections"][k] for k in ("conf", "inbox", "wffail")} == {
-        k: wb["sections"][k] for k in ("conf", "inbox", "wffail")
-    }
+    assert {k: b[k] for k in ("awaiting", "inbox")} == {k: wb[k] for k in ("awaiting", "inbox")}
+    assert {k: b["sections"][k] for k in ("inbox", "wffail")} == {k: wb["sections"][k] for k in ("inbox", "wffail")}
+    # open conflicts (B17 decision): the real conflict table, only conflicts holding up a pending decision in scope
+    me = client.get("/api/auth/me", headers=h(acct)).json()
+    with engine.connect() as conn:
+        held = conn.execute(text(HELD_SQL), {"tenants": me["tenants"], "wh": me["warehouse"]}).scalar()
+    assert b["sections"]["conf"] == held
+    assert b["integration"] == (held if "conflicts" in me["pages"].get("integration", []) else 0)
     # sources stale or unavailable: the connectors' real state, not the demo's. It changes as sources sync (the demo
     # shows 2; a live database can show 1 or more), so the badge is compared with the source table, not the golden file.
     with engine.connect() as conn:
         n = conn.execute(text(ISSUE_SQL)).scalar()
     assert b["sections"]["srcissue"] == n
+
+
+HELD_SQL = """
+SELECT count(*) FROM conflict c JOIN case_record r ON r.data->>'assetId' = c.key
+WHERE c.status IN ('open', 'escalated') AND r.stage IN ('none', 'awaiting_approval')
+  AND r.owner = ANY(:tenants) AND (CAST(:wh AS text) IS NULL OR r.location = :wh)
+"""
+
+
+def test_held_conflicts_are_fewer_than_the_queue():
+    b = client.get("/api/screens/nav", headers=h("admin")).json()["badges"]
+    with engine.connect() as conn:
+        queue = conn.execute(text("SELECT count(*) FROM conflict WHERE status IN ('open', 'escalated')")).scalar()
+    assert 0 < b["sections"]["conf"] < queue
+
+
+def test_case_scope_map():
+    """Owner and location of every case, for the frontend's canRoute on record links; signing in is required."""
+    assert client.get("/api/screens/nav/scope").status_code == 401
+    out = client.get("/api/screens/nav/scope", headers=h("planner-b")).json()
+    assert len(out) == 128 and out["RT-1048"] == ["Customer A", "Warehouse 1"]
 
 
 def test_admin_senior_view():

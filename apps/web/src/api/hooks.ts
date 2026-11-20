@@ -1,10 +1,9 @@
 import { useSyncExternalStore } from 'react';
-import { getVersion, subscribe } from '../engine/engine';
+import { getVersion, subscribe } from './store';
 
 /**
- * Re-render when the backend state changes (any action, sync or sign-in).
+ * Re-render when the backend state may have changed (an action, a sync, a sign-in, a stream event, a finished fetch).
  * Usage: `useBackend(); const cases = listCases(...)` at the top of a component.
- * When the real API lands this becomes TanStack Query invalidation; components do not change.
  */
 export function useBackend(): number {
   return useSyncExternalStore(subscribe, getVersion, getVersion);

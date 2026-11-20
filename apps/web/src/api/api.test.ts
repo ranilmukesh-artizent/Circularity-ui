@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeAll, describe, expect, it } from 'vitest';
 import { invoke, read } from './actions';
-import { accountById, can, canPage, canRoute, currentAccount, homeRoute, resolveSignIn, signIn, signOut } from './session';
+import { accountById, can, canPage, canRoute, currentAccount, homeRoute, resolveSignIn, signIn, signInWith, signOut } from './session';
 
 beforeAll(() => localStorage.clear());
 
@@ -12,11 +12,19 @@ describe('mock backend (engine) through the API facade', () => {
     expect(resolveSignIn('someone@elsewhere.com')).toBeNull();
   });
 
-  it('starts signed out and refuses actions', () => {
+  it('starts signed out and refuses actions', async () => {
     signOut();
     expect(currentAccount()).toBeNull();
-    const r = invoke('cases.list', {});
+    const r = await invoke('cases.list', {});
     expect(r.ok).toBe(false);
+  });
+
+  it('signs in through the form helper with the demo messages', async () => {
+    expect(await signInWith('', 'x')).toEqual({ ok: false, message: 'Enter your work email or user ID.', field: 'id' });
+    expect((await signInWith('nobody', 'x')).ok).toBe(false);
+    expect(await signInWith('exec', '')).toEqual({ ok: false, message: 'Enter your password.', field: 'pw' });
+    const r = await signInWith('planner.b@northfield.example', 'pw');
+    expect(r.ok && r.account.id).toBe('planner-b');
   });
 
   it('applies the tenant lock for a Planner', () => {

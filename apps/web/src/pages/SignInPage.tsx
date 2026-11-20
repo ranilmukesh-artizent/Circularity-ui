@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logos } from '../api/nav';
-import { accounts, homeRoute, resolveSignIn, rolePolicy, signIn, signInEmail } from '../api/session';
+import { accounts, homeRoute, rolePolicy, signInEmail, signInWith } from '../api/session';
 import type { Account } from '../api/types';
 import { Icon } from '../ui/Icon';
 import { useTheme, toggleTheme } from '../ui/theme';
@@ -25,29 +25,31 @@ export function SignInPage({ next }: { next?: string }) {
     return () => document.getElementById('app')?.classList.remove('signedout');
   }, []);
 
-  function enter(a: Account) {
-    signIn(a);
+  function entered(a: Account) {
     toast('Signed in as ' + a.label + '. ' + rolePolicy(a.role).desc, 4200);
     nav('/' + (next || homeRoute(a)), { replace: true });
   }
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
-    const a = resolveSignIn(id.trim());
-    if (!id.trim()) return fail('Enter your work email or user ID.', idRef);
-    if (!a) return fail('We could not find that account. Check the email or user ID.', idRef);
-    if (!pw) return fail('Enter your password.', pwRef);
+    const r = await signInWith(id, pw);
+    if (!r.ok) return fail(r.message, r.field === 'pw' ? pwRef : idRef);
     setErr('');
-    enter(a);
+    entered(r.account);
   }
 
   function singleSignOn() {
-    const a = resolveSignIn(id.trim());
     if (!id.trim()) return fail('Enter your work email to continue with single sign-on.', idRef);
-    if (!a) return fail('We could not find an organisation for that email. Check it, or sign in with your password.', idRef);
     setErr('');
     setSso(true);
-    window.setTimeout(() => enter(a), 600);
+    window.setTimeout(async () => {
+      const r = await signInWith(id, '', true);
+      if (!r.ok) {
+        setSso(false);
+        return fail(r.message, idRef);
+      }
+      entered(r.account);
+    }, 600);
   }
 
   function fail(m: string, ref: React.RefObject<HTMLInputElement>) {

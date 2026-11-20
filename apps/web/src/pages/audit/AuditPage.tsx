@@ -182,8 +182,8 @@ function Comments({ k, label }: { k: string; label: string }) {
   const l = comments(k);
   const [text, setText] = useState('');
   const [err, setErr] = useState('');
-  const post = () => {
-    const r = postComment(k, text.trim());
+  const post = async () => {
+    const r = await postComment(k, text.trim());
     if (!r.ok) { setErr(r.error.message); return; }
     setText(''); setErr('');
     toast('Comment posted.');
