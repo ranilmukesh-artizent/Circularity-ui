@@ -1,8 +1,19 @@
 /* How data flows (the demo's flowDiagram): sources → integration layer → platform → enterprise systems, with the return loop. */
 import type { ReactNode } from 'react';
-import { openConflictCount, sources, srcCats, srcChannels } from '../../api/integration';
+import { journeyStep, openConflictCount, sources, srcCats, srcChannels } from '../../api/integration';
 import { Icon } from '../../ui/Icon';
-import { plural, Stp } from './ui';
+import { plural } from './fabricFormat';
+
+/** A journey step chip (the demo's stp). */
+function Stp({ n }: { n: number }) {
+  const j = journeyStep(n);
+  return (
+    <span className={'stp ' + (j.kind === 'built' ? '' : j.kind)} title={'Journey step ' + j.n + ': ' + j.label + ' — ' + j.desc}>
+      <b>{j.n}</b>
+      {j.label}
+    </span>
+  );
+}
 
 export function FlowDiagram() {
   const S = sources(), C = srcCats();

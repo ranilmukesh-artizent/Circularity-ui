@@ -1,32 +1,19 @@
-import { createContext, useContext, type ReactNode } from 'react';
+/** The human-in-the-loop actions of the case pages, each one invoke() with the demo's action id and its toast. */
 import { actionCatalog, invoke } from '../../api/actions';
 import { approverRole, caseById, checkAcknowledgement, evidencePack, nextStep } from '../../api/case';
 import { money } from '../../api/format';
 import { can } from '../../api/session';
 import type { ActionResult } from '../../api/types';
-import { openAsk } from '../../ui/askBus';
+import { askSoon } from '../../ui/askBus';
 import { toast } from '../../ui/toast';
-
-/** A dialog or side panel opened from inside a case page (the demo's openModal / openDrawer). */
-export interface ModalSpec { title: string; sub?: string; body: ReactNode; foot?: ReactNode; wide?: boolean; drawer?: boolean }
-
-/** The dialogs a case page can open. */
-export interface CaseUi {
-  openApproval(id: string, mode?: 'review'): void;
-  openDecline(id: string): void;
-  openExplain(id: string): void;
-  modal(m: ModalSpec | null): void;
-  go(path: string): void;
-}
-export const CaseUiContext = createContext<CaseUi | null>(null);
-export const useCaseUi = (): CaseUi => useContext(CaseUiContext)!;
+import type { CaseUi } from './CaseContext';
 
 const fail = (r: ActionResult<unknown>): boolean => {
   if (!r.ok) toast(r.error.message, 4200);
   return !r.ok;
 };
 
-/** The human-in-the-loop actions, each one invoke() with the demo's action id and its toast (the demo's UI adapters). */
+/** The demo's UI adapters for the case actions. */
 export const caseActions = {
   async submit(id: string) {
     const r = await invoke('decision.submit', { case_id: id });
@@ -78,9 +65,7 @@ export const caseActions = {
   copy(v: string) {
     (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => toast(v + ' copied.'), () => toast('Copy: ' + v, 5000));
   },
-  askSoon(question?: unknown) {
-    openAsk(typeof question === 'string' ? question : undefined);
-  },
+  askSoon,
 };
 
 /** The agent's suggested next step for this person (runNext): one action, the approval card, or why it waits. */

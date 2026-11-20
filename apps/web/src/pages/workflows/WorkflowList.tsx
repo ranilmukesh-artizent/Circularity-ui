@@ -6,12 +6,19 @@ import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import {
-  ago, ageShort, attention, logoHtml, nowMs, recentRuns, RUN_LABEL, source, sources, systemOf, trigText, wfStat, workflows, type Workflow, type WfStat,
+  ago, ageShort, attention, nowMs, recentRuns, RUN_LABEL, source, sources, systemOf, trigText, wfStat, workflows, type Workflow, type WfStat,
 } from '../../api/workflows';
 import { openAsk } from '../../ui/askBus';
 import { Icon } from '../../ui/Icon';
 import { isDirty, useDrafts } from './draftStore';
-import { It, Kpi, Menu, Panel, Raw, Ring, St, Timeline, useTick } from './kit';
+import { IconTile } from '../../ui/kit/IconTile';
+import { Kpi } from '../../ui/kit/Kpi';
+import { Panel } from '../../ui/kit/Panel';
+import { Ring } from '../../ui/kit/Ring';
+import { Timeline } from '../../ui/kit/Timeline';
+import { useTick } from '../../ui/useTick';
+import { WorkflowMenu } from './WorkflowMenus';
+import { SourceMark, WorkflowStatus } from './WorkflowMarks';
 import { DeleteModal, NewWorkflowModal } from './WorkflowModals';
 import { bulk, duplicate, exportOne, runNow, studioHref, toggle } from './workflowActions';
 
@@ -62,10 +69,10 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
     <div className="frwfl">
       <div className="frwfm">
         <div className="frkpis fr4" id="wfChips">
-          <Kpi ic="workflow" h="dec" v={all.length} l="Total workflows" sub={'Across ' + srcN + ' source systems'} k="total" />
-          <Kpi ic="checks" h="int" v={c.published} l="Published" sub="Running and healthy" k="published" />
-          <Kpi ic="alert" h="alert" v={c.failing} l="Failing" sub="Needs attention" k="failing" />
-          <Kpi ic="file" h="neutral" v={c.draft + c.paused} l="Draft or paused" sub={c.draft + ' not yet published · ' + c.paused + ' paused'} k="draft" />
+          <Kpi ic="workflow" h="dec" v={all.length} n={all.length} l="Total workflows" sub={'Across ' + srcN + ' source systems'} k="total" />
+          <Kpi ic="checks" h="int" v={c.published} n={c.published} l="Published" sub="Running and healthy" k="published" />
+          <Kpi ic="alert" h="alert" v={c.failing} n={c.failing} l="Failing" sub="Needs attention" k="failing" />
+          <Kpi ic="file" h="neutral" v={c.draft + c.paused} n={c.draft + c.paused} l="Draft or paused" sub={c.draft + ' not yet published · ' + c.paused + ' paused'} k="draft" />
         </div>
         <div className="frbar">
           <div className="frsrch">
@@ -144,10 +151,10 @@ function Row({ w, sel, mgr, onPick, onOpen, onDelete, onInvestigate, onDup }: {
       <td><button className="lnk b" onClick={() => onOpen(w.id)}>{w.name}</button><div className="note">{w.id} · v{w.ver}{isDirty(w.id) ? ' · unsaved changes' : ''}</div></td>
       <td><span className="chip line">{w.cat}</span></td>
       <td>{s
-        ? <span className="frsys"><Raw html={logoHtml(s)} /><span><b>{s.deleted ? 'Deleted source' : s.short || s.name}</b><span className="note">{s.vendor}</span></span></span>
-        : <span className="frsys"><It ic="bot" h="agent" cls="sm" /><span><b>Decision</b><span className="note">Circularity</span></span></span>}</td>
+        ? <span className="frsys"><SourceMark s={s} /><span><b>{s.deleted ? 'Deleted source' : s.short || s.name}</b><span className="note">{s.vendor}</span></span></span>
+        : <span className="frsys"><IconTile ic="bot" h="agent" cls="sm" /><span><b>Decision</b><span className="note">Circularity</span></span></span>}</td>
       <td className="frtrig">{trigText(w.trig)}</td>
-      <td>{w.running ? <St k="running" /> : up ? <St k="paused" t="Paused upstream" /> : <St k={st} />}</td>
+      <td>{w.running ? <WorkflowStatus k="running" /> : up ? <WorkflowStatus k="paused" t="Paused upstream" /> : <WorkflowStatus k={st} />}</td>
       <td>{l ? <>
         <span className={'frlr ' + l.state}><i />{L[l.state]}</span>
         <div className="note nowrap"><span className="num">{ageShort(nowMs() - l.ts)}</span> ago</div>
@@ -160,7 +167,7 @@ function Row({ w, sel, mgr, onPick, onOpen, onDelete, onInvestigate, onDup }: {
       <td>{w.owner}</td>
       <td className="nowrap"><span className="tacts frta">
         {fail ? <button className="btn sm frinv" onClick={onInvestigate}>Investigate</button> : <button className="btn sm" onClick={() => onOpen(w.id)}>Open</button>}
-        <Menu summaryCls="iconbtn sm" label={'More actions for ' + w.name} summary={<Icon name="more" />}>
+        <WorkflowMenu summaryCls="iconbtn sm" label={'More actions for ' + w.name} summary={<Icon name="more" />}>
           <button role="menuitem" onClick={() => onOpen(w.id)}><Icon name="edit" /><span>Edit</span></button>
           {mgr && <button role="menuitem" onClick={() => runNow(w.id)} disabled={w.running}><Icon name="play" /><span>Run now</span></button>}
           {mgr && (w.status === 'draft'
@@ -169,7 +176,7 @@ function Row({ w, sel, mgr, onPick, onOpen, onDelete, onInvestigate, onDup }: {
           {mgr && <button role="menuitem" onClick={onDup}><Icon name="copy" /><span>Duplicate</span></button>}
           <button role="menuitem" onClick={() => exportOne(w.id)}><Icon name="download" /><span>Export JSON</span></button>
           {mgr && <button role="menuitem" className="dng" onClick={onDelete}><Icon name="trash" /><span>Delete</span></button>}
-        </Menu>
+        </WorkflowMenu>
       </span></td>
     </tr>
   );
@@ -184,7 +191,7 @@ function Side({ c, total, onInvestigate }: { c: Record<WfStat, number>; total: n
         <section className="panel frp frwatt"><div className="pb">
           <div className="frattnh"><Icon name="alert" /><div><b>{at.length} item{at.length > 1 ? 's' : ''} need attention</b><p className="note">Resolve failing workflows and expired credentials to keep data fresh.</p></div></div>
           <ol className="frtl">{at.map((a, i) => (
-            <li key={i}><It ic={a.ic} h={a.h} cls="sm" />
+            <li key={i}><IconTile ic={a.ic} h={a.h} cls="sm" />
               <div className="frtlb"><b>{a.t}</b><span className="note">{a.s}</span>
                 <span className="frtlx">{a.go && <button className="lnk" onClick={() => onInvestigate(a.go!)}>Investigate</button>}<button className="lnk" onClick={soon}><Icon name="spark" /> Diagnose</button></span>
               </div></li>
@@ -200,7 +207,7 @@ function Side({ c, total, onInvestigate }: { c: Record<WfStat, number>; total: n
           <Timeline empty="Runs appear here as workflows fire on their triggers." rows={recentRuns().slice(0, 6).map((x) => ({
             key: x.id + x.ts, ic: 'workflow', h: x.state === 'failed' ? 'alert' : 'int', t: x.name,
             s: x.state === 'failed' ? 'Failed' + (x.note ? ' (' + x.note + ')' : '') : x.state === 'running' ? 'Running' : 'Completed · ' + fmtNumber(x.rows) + ' records',
-            ago: ago(nowMs() - x.ts), st: <St k={x.state === 'failed' ? 'failed' : x.state === 'running' ? 'running' : 'completed'} />,
+            ago: ago(nowMs() - x.ts), st: <WorkflowStatus k={x.state === 'failed' ? 'failed' : x.state === 'running' ? 'running' : 'completed'} />,
           }))} />
         </div>
       </Panel>

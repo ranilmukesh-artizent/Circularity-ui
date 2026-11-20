@@ -11,12 +11,13 @@ import { can, canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
 import { openSnapshot } from './CaseDrawers';
-import { Panel, Photo, StageChip } from './kit';
+import { CasePanel, Photo, StageChip } from './CaseBlocks';
 import {
   compareBody, EvidenceBlock, ExplainBlock, OptionsBlock, PredictBlock, saveScenario, SpecialBlock, TiA, TiOutcome, TiP4, useRows,
 } from './tabs/DecideTabs';
 import { BestCard, ExecBlock, TiHandoff, TiReconcile } from './tabs/ExecuteTabs';
-import { scrollToId, useCaseUi } from './ui';
+import { scrollToId } from './caseActions';
+import { useCaseUi } from './CaseContext';
 
 const TI_STEPS = ['Asset and status', 'Possible outcomes', 'Why this outcome', 'What-if and edge cases', 'Approval and handoff'];
 const StepH = ({ n, t, sub }: { n: number; t: string; sub?: string }) => (
@@ -91,10 +92,10 @@ function TiP5({ c, a, s }: { c: CaseRec; a: CaseAnalysis; s: CaseScreen }) {
   ];
   const ready = items.filter((i) => i[3] === 'ok').length;
   return (
-    <Panel t="Handoff readiness" cls="tix5">
+    <CasePanel t="Handoff readiness" cls="tix5">
       <div className="tirdy"><b className="num">{ready} of {items.length}</b><span className="note">checks ready</span>{canPage('integration', 'map') && <a className="lnk" href="#/integration/map">View system actions</a>}</div>
       {items.map((i) => <div key={i[0]} className="asrow"><span><b>{i[0]}</b><div className="note">{i[1]}</div></span><span className={'chip ' + i[3]}>{i[2]}</span></div>)}
-    </Panel>
+    </CasePanel>
   );
 }
 
@@ -156,7 +157,7 @@ function Body({ c }: { c: CaseRec }) {
         <StepH n={5} t="Next best action: approval and enterprise handoff" sub="Circularity recommends and sends the approved instruction; OMS, EAM, TMS, WMS and ERP finance carry out the work" />
         <div className="tig2">
           <div>
-            <Panel t="Decision" cls="tix5a" id="tiDecision"><div className="tidec"><BestCard c={c} a={a} sr={sr} /></div></Panel>
+            <CasePanel t="Decision" cls="tix5a" id="tiDecision"><div className="tidec"><BestCard c={c} a={a} sr={sr} /></div></CasePanel>
             <TiHandoff c={c} a={a} />
           </div>
           <div><TiP5 c={c} a={a} s={s} /><ExecBlock c={c} a={a} /></div>

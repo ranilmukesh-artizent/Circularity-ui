@@ -8,7 +8,10 @@ import {
 import { sessionScoped } from '../../api/view';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { canMgr, FrKpi, NOMGR, sum, toastAct } from './ui';
+import { Kpi } from '../../ui/kit/Kpi';
+import { toastAct } from './ActionToasts';
+import { canMgr, NOMGR } from './FabricContext';
+import { sum } from './fabricFormat';
 
 const tgKept = sessionScoped(() => ({ src: 'erp', view: 'graph' as 'graph' | 'list', z: 0.85 })); // kept while the session lasts
 const W = 190;
@@ -18,9 +21,9 @@ export function TablesTiles() {
   const fk = sum(S.map((s) => tableModel(s.id)?.fk.length ?? 0));
   return (
     <div className="frkpis fr3">
-      <FrKpi ic="database" h="money" v={tbl} l="Tables modelled" />
-      <FrKpi ic="link" h="dec" v={fk} l="Links between tables" />
-      <FrKpi ic="graph" h="int" v={sys} l="Systems with a table model" />
+      <Kpi ic="database" h="money" v={tbl} l="Tables modelled" />
+      <Kpi ic="link" h="dec" v={fk} l="Links between tables" />
+      <Kpi ic="graph" h="int" v={sys} l="Systems with a table model" />
     </div>
   );
 }

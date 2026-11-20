@@ -7,7 +7,7 @@ import { ApprovalModal, DeclineModal, ExplainView } from './CaseModals';
 import { FullAnalysis } from './FullAnalysis';
 import { Overview } from './CaseOverview';
 import { StageBar, StageFoot, StagePage, stageDo, type CaseView } from './StagePage';
-import { CaseUiContext, type CaseUi, type ModalSpec } from './ui';
+import { CaseUiContext, type CaseUi, type ModalSpec } from './CaseContext';
 import './case.css';
 
 type Resolved = { view: CaseView; redirect: boolean };

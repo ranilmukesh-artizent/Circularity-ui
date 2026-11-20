@@ -7,15 +7,15 @@ import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type R
 import { fmtNumber } from '../../api/format';
 import { can } from '../../api/session';
 import {
-  actTypes, agentsUsing, CH, channelsOf, deliverMap, deliverOf, edgePath, fixedStep, frTransforms, iconTileHtml, logoHtml, mappings, mapTarget,
-  nodeIconHtml, nowMs, RUN_CHIP, RUN_LABEL, runTimes, sourceGroups, sourceLabel, sources, source, sourceShortLabel, statusChipHtml, stepInfo, tools,
+  actTypes, agentsUsing, CH, channelsOf, deliverMap, deliverOf, edgePath, fixedStep, frTransforms, mappings, mapTarget,
+  nowMs, RUN_CHIP, RUN_LABEL, runTimes, sourceGroups, sourceLabel, sources, source, sourceShortLabel, stepInfo, tools,
   transforms, canLink, WF_H, WF_W, WF_WH, worldWidth, type Check, type Counts, type RunState, type TestRun, type WfGraph, type WfNode, type Workflow,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
 import { onActivateKey } from '../../ui/keys';
 import { toast } from '../../ui/toast';
 import { edit, nextId, type Draft } from './draftStore';
-import { GRIP_SVG, LOCK_SVG, Raw } from './kit';
+import { GRIP_SVG, LOCK_SVG, NodeMark, SourceMark, StateChip, TileMark } from './WorkflowMarks';
 
 export type Sel = { t: 'n' | 'e'; id: string } | null;
 export const FIXMSG = 'Fixed steps belong to Circularity and cannot be moved or removed.';
@@ -127,9 +127,9 @@ export function Palette({ w, onDown, onKeyAdd }: { w: Workflow; onDown: (e: RPoi
   const xf = (id: string) => {
     const x = XF.find((y) => y.id === id), f = FR.find((y) => y.id === id);
     if (!x) return null;
-    return it('xf:' + id, x.label, x.sub, <Raw html={iconTileHtml(f?.ic ?? XIC[id] ?? 'workflow', f?.group === 'orch' ? 'agent' : 'insp', 'sm')} />);
+    return it('xf:' + id, x.label, x.sub, <TileMark ic={f?.ic ?? XIC[id] ?? 'workflow'} h={f?.group === 'orch' ? 'agent' : 'insp'} />);
   };
-  const mapIc = <Raw html={iconTileHtml('mapping', 'money', 'sm')} />;
+  const mapIc = <TileMark ic="mapping" h="money" />;
   const S = sources();
   return (
     <aside className="wfpal" id="wfPal" aria-label="Components. Drag one onto the canvas, or press Enter to add it.">
@@ -138,7 +138,7 @@ export function Palette({ w, onDown, onKeyAdd }: { w: Workflow; onDown: (e: RPoi
       <h4 className="frpalh">Sources</h4>
       {sourceGroups().map(([key, types, label]) => {
         const l = S.filter((s) => types.includes(s.type));
-        return l.length ? grp('src_' + key, label, l.map((s) => it('conn:' + s.id, sourceLabel(s), s.vendor, <Raw html={logoHtml(s)} />, DOT[s.status]))) : null;
+        return l.length ? grp('src_' + key, label, l.map((s) => it('conn:' + s.id, sourceLabel(s), s.vendor, <SourceMark s={s} />, DOT[s.status]))) : null;
       })}
       <h4 className="frpalh">Transform</h4>
       {grp('frT', 'Transform steps', [
@@ -151,8 +151,8 @@ export function Palette({ w, onDown, onKeyAdd }: { w: Workflow; onDown: (e: RPoi
       <h4 className="frpalh">More</h4>
       {grp('ing', 'Integration layer', XF.filter((x) => x.group === 'ingest').map((x) => xf(x.id)))}
       {grp('file', 'File exchange steps', XF.filter((x) => x.group === 'file').map((x) => xf(x.id)))}
-      {grp('act', 'Delivery methods', actTypes().map((x) => it('act:' + x.id, x.label, x.sub, <Raw html={iconTileHtml('send', 'money', 'sm')} />)))}
-      {grp('wr', 'Write to a system', S.filter((x) => x.write.length).map((x) => it('wconn:' + x.id, sourceLabel(x), x.write[0], <Raw html={logoHtml(x)} />, DOT[x.status])))}
+      {grp('act', 'Delivery methods', actTypes().map((x) => it('act:' + x.id, x.label, x.sub, <TileMark ic="send" h="money" />)))}
+      {grp('wr', 'Write to a system', S.filter((x) => x.write.length).map((x) => it('wconn:' + x.id, sourceLabel(x), x.write[0], <SourceMark s={x} />, DOT[x.status])))}
       {grp('map', 'All field mappings', S.map((x) => it('map:' + x.id, sourceShortLabel(x.id) + ' fields', '→ ' + mapTarget(x.id), mapIc)))}
       <div className="frfixed"><b>{LOCK_SVG} Fixed Circularity steps</b><span className="note">Canonical models, evidence snapshot, decision and send instruction are placed by Circularity and cannot be re-wired or deleted.</span></div>
     </aside>
@@ -300,7 +300,7 @@ export function CanvasView({ w, d, z, sel, run, checks, counts, flow, mini, onSe
                   aria-label={`${i.label}. ${fx ? 'Fixed' : 'Movable'} ${i.tag.replace(/^Fixed · /, '')}.`} title={i.sub}>
                   {i.in && <span className={'port in' + (link?.hot === n.id ? ' hot' : '')} />}
                   {i.out && <span className="port out" />}
-                  <span className="frnh"><Raw html={nodeIconHtml(n)} /><span className="frnt"><span className="lb">{i.label}</span><span className="sb">{i.sub}</span></span>{fx && <span className="frlk" aria-hidden="true">{LOCK_SVG}</span>}</span>
+                  <span className="frnh"><NodeMark n={n} /><span className="frnt"><span className="lb">{i.label}</span><span className="sb">{i.sub}</span></span>{fx && <span className="frlk" aria-hidden="true">{LOCK_SVG}</span>}</span>
                   <span className="frnf"><span className="st">{st ? L[st] : ''}</span><span className="frrcn num" data-rc={n.id}>{c && showCounts ? fmtNumber(c.out) + ' records' : ''}</span></span>
                   <span className="tag">{i.tag}</span>
                 </div>
@@ -343,7 +343,7 @@ export function Inspector({ d, sel, checks, ops, onFail }: { d: Draft; sel: Sel;
     const s = source(n.ref), wr = n.k === 'wconn';
     det = (
       <dl className="kv">
-        <dt>Status</dt><dd><Raw html={statusChipHtml(s.status)} /></dd><dt>Mode</dt><dd>{s.mode}</dd><dt>Access</dt><dd>{s.auth}</dd>
+        <dt>Status</dt><dd><StateChip s={s.status} /></dd><dt>Mode</dt><dd>{s.mode}</dd><dt>Access</dt><dd>{s.auth}</dd>
         <dt>{wr ? 'Writes' : 'Reads'}</dt><dd>{(wr ? s.write : s.read).join(', ') || '—'}</dd>
         <dt>{wr ? 'Accepts' : 'Arrives as'}</dt><dd>{(wr ? deliverOf(n.ref).map((c) => ch.del[c]) : channelsOf(s).map((c) => ch.arr[c])).join(', ') || 'No supported channel'}</dd>
       </dl>

@@ -2,7 +2,12 @@
 import { useBackend } from '../../api/useBackend';
 import { failedRecords, hourly, latency, slaMinutes, sources, srcAge, srcFailing, successRate, totals, wfStat, workflows } from '../../api/integration';
 import { toast } from '../../ui/toast';
-import { FrKpi, FrPanel, FrSt, fmtN, sum, useInt, Vlogo } from './ui';
+import { Kpi } from '../../ui/kit/Kpi';
+import { Panel } from '../../ui/kit/Panel';
+import { VendorLogo } from '../../ui/kit/VendorLogo';
+import { useInt } from './FabricContext';
+import { fmtN, sum } from './fabricFormat';
+import { FabricStatus } from './FabricStatus';
 
 const ago = (ms: number) => {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -25,13 +30,13 @@ export function Monitor() {
   return (
     <div id="frMon">
       <div className="frkpis">
-        <FrKpi ic="checks" h="int" v={t.pct.toFixed(1) + '%'} l="Sync success" sub="last 24 hours" sp={hh.map((b) => b.ok / (b.ok + b.warn + b.bad || 1))} k="success" />
-        <FrKpi ic="clock" h="money" v={fmtN(lat) + ' ms'} l="Average latency" sub="per sync request" k="latency" />
-        <FrKpi ic="alert" h="alert" v={fmtN(fr7)} l="Failed records" sub="last 7 days, held for reprocessing" k="failed" />
-        <FrKpi ic="gauge" h="dec" v={inSla.length + ' / ' + srcs.length} l="Fresh within SLA" sub="connected sources" k="sla" />
-        <FrKpi ic="workflow" h="insp" v={W.filter((w) => wfStat(w) === 'failing').length} l="Failing workflows" k="wffail" />
+        <Kpi ic="checks" h="int" v={t.pct.toFixed(1) + '%'} l="Sync success" sub="last 24 hours" sp={hh.map((b) => b.ok / (b.ok + b.warn + b.bad || 1))} k="success" />
+        <Kpi ic="clock" h="money" v={fmtN(lat) + ' ms'} l="Average latency" sub="per sync request" k="latency" />
+        <Kpi ic="alert" h="alert" v={fmtN(fr7)} l="Failed records" sub="last 7 days, held for reprocessing" k="failed" />
+        <Kpi ic="gauge" h="dec" v={inSla.length + ' / ' + srcs.length} l="Fresh within SLA" sub="connected sources" k="sla" />
+        <Kpi ic="workflow" h="insp" v={W.filter((w) => wfStat(w) === 'failing').length} l="Failing workflows" k="wffail" />
       </div>
-      <FrPanel title="Sync runs, last 24 hours" sub="Each bar is one hour; the same history feeds Home and the Source Map">
+      <Panel title="Sync runs, last 24 hours" sub="Each bar is one hour; the same history feeds Home and the Source Map">
         <div className="frmonb" aria-hidden="true">
           {hh.map((b, i) => (
             <span key={i} data-tip={`${hh2(i)} · ${b.ok} successful, ${b.warn} warnings, ${b.bad} failures`} title={`${hh2(i)} · ${b.ok} successful, ${b.warn} warnings, ${b.bad} failures`}>
@@ -49,9 +54,9 @@ export function Monitor() {
             Dips at {dips.slice(0, 6).map((x, k) => <span key={x.i}>{k ? ', ' : ''}<button className="lnk" onClick={() => dip(x.i)}>{hh2(x.i)}</button></span>)}. Select one for an explanation.
           </p>
         )}
-      </FrPanel>
+      </Panel>
       <div className="frmon2">
-        <FrPanel title="Per source">
+        <Panel title="Per source">
           <div className="tw">
             <table className="t static tight">
               <thead><tr><th>Source</th><th>Freshness</th><th>SLA</th><th className="r">Success</th><th className="r">Failed (7 d)</th><th className="r">Latency</th></tr></thead>
@@ -60,9 +65,9 @@ export function Monitor() {
                   const ok = s.freshMin != null && s.freshMin <= slaMinutes(s), l = latency(s);
                   return (
                     <tr key={s.id}>
-                      <td><span className="frsys"><Vlogo vendor={s.vendor} /><span><b>{s.vendor}</b><span className="note">{s.name}</span></span></span></td>
+                      <td><span className="frsys"><VendorLogo vendor={s.vendor} /><span><b>{s.vendor}</b><span className="note">{s.name}</span></span></span></td>
                       <td>{s.freshMin == null ? <span className="note">—</span> : s.fresh}</td>
-                      <td>{s.status === 'unavailable' ? <FrSt k="unavailable" /> : ok ? <FrSt k="success" t={'Within ' + srcAge(slaMinutes(s))} /> : <FrSt k="failed" t={'Over ' + srcAge(slaMinutes(s))} />}</td>
+                      <td>{s.status === 'unavailable' ? <FabricStatus k="unavailable" /> : ok ? <FabricStatus k="success" t={'Within ' + srcAge(slaMinutes(s))} /> : <FabricStatus k="failed" t={'Over ' + srcAge(slaMinutes(s))} />}</td>
                       <td className="r num">{s.status === 'unavailable' ? '—' : successRate(s) + '%'}</td>
                       <td className="r num">{fmtN(failedRecords(s, 7))}</td>
                       <td className="r num">{l == null ? '—' : fmtN(l) + ' ms'}</td>
@@ -72,8 +77,8 @@ export function Monitor() {
               </tbody>
             </table>
           </div>
-        </FrPanel>
-        <FrPanel title="Per workflow" sub="Lowest success first">
+        </Panel>
+        <Panel title="Per workflow" sub="Lowest success first">
           <div className="tw">
             <table className="t static tight">
               <thead><tr><th>Workflow</th><th className="r">Runs (24 h)</th><th className="r">Success</th><th>Last run</th><th className="r">Avg duration</th></tr></thead>
@@ -83,14 +88,14 @@ export function Monitor() {
                     <td><button className="lnk b" onClick={() => ui.go('integration/studio/' + w.id)}>{w.name}</button></td>
                     <td className="r num">{w.runsN}</td>
                     <td className={'r num ' + (w.okN! / w.runsN! < 0.9 ? 'neg' : '')}>{Math.round((w.okN! / w.runsN!) * 100)}%</td>
-                    <td>{w.last ? <><FrSt k={w.last.state === 'failed' ? 'failed' : 'success'} /> <span className="note">{ago(Date.now() - w.last.ts)}</span></> : '—'}</td>
+                    <td>{w.last ? <><FabricStatus k={w.last.state === 'failed' ? 'failed' : 'success'} /> <span className="note">{ago(Date.now() - w.last.ts)}</span></> : '—'}</td>
                     <td className="r num">{w.last ? w.last.dur + ' s' : '—'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </FrPanel>
+        </Panel>
       </div>
     </div>
   );

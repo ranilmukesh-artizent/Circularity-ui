@@ -16,10 +16,8 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as G from './workflowGraph';
-import { LOGO_KEY, SYSLOGO } from '../ui/assets.gen';
 import { invoke } from './actions';
 import { ApiError, cached, onStream, ref, session } from './client';
-import { iconSvg } from './nav';
 import type { ActionResult } from './types';
 
 export type StepKind = 'fixed' | 'conn' | 'wconn' | 'act' | 'xf' | 'map' | 'tool';
@@ -223,50 +221,29 @@ export const CH = () => ({ arr: ref<Record<string, string>>('CH_ARR'), ing: ref<
 export const sourceCategoryLabel = (s: Source): string => ref<Record<string, string>>('FR_CATOF')[s.type] ?? s.short ?? '';
 export const usedBy = (srcId: string): string[] => sourcesA().find((s) => s.id === srcId)?.health?.workflows ?? [];
 
-// ---- markup for the vendor marks and icon tiles (trusted: built here from static assets, values escaped) ----
-const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-const vHue = (v: string) => { let h = 7; for (const c of v) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
-const vInit = (v: string) => v.replace(/[^A-Za-z0-9 ]/g, '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-/** The vendor logo set (an app asset: src/ui/assets.gen.ts). */
-const logoAssets = () => ({ keys: LOGO_KEY, svg: SYSLOGO });
-function vlogo(s: { vendor: string }): string {
-  if (ref<Record<string, boolean>>('FEAT').logos) {
-    const a = logoAssets(), k = a.keys.find((x) => x[0].test(s.vendor || ''))?.[1];
-    if (k && a.svg[k]) return `<span class="vlg" data-logo="${k}" aria-hidden="true"><svg viewBox="0 0 32 32">${a.svg[k]}</svg></span>`;
-  }
-  return `<span class="vlogo" style="--h:${vHue(s.vendor)}" aria-hidden="true">${esc(vInit(s.vendor))}</span>`;
-}
-const frIt = (ic: string, h: string, cls = '') => `<span class="frit ${esc(cls)}" style="--c:var(--h-${esc(h || 'neutral')})">${iconSvg(ic) ?? ''}</span>`;
+// ---- the vendor marks and icon tiles (drawn by src/pages/workflows/WorkflowMarks.tsx) ----
+/** Whether a vendor shows its logo, when the app has one, rather than its initials (the demo's FEAT.logos). */
+export const vendorLogos = (): boolean => !!ref<Record<string, boolean>>('FEAT').logos;
+/** A step's mark on the canvas: its system's vendor mark, or a tinted icon tile. */
+export type NodeMark = { source: Source } | { ic: string; h: string };
 const XF_IC: Record<string, string> = {
   x_gw: 'api', x_evt: 'stream', x_file: 'file', x_val: 'checks', x_utc: 'clock', x_fx: 'dollar', x_lookup: 'lookup', x_units: 'scale', x_ident: 'link',
   x_late: 'clock', x_env: 'shield', x_man: 'file', x_cb: 'download', x_notify: 'bell', x_trig: 'file', x_unzip: 'file', x_chunk: 'layers',
 };
 const FR_NIC: Record<string, string> = { conn: 'database', wconn: 'send', map: 'mapping', act: 'send', tool: 'bot' };
-function frNodeIcon(n: WfNode): string {
-  if (n.k === 'conn' || n.k === 'wconn') return vlogo(source(n.ref));
+/** The step's mark on the canvas (the demo's frNodeIcon). */
+export function nodeMark(n: WfNode): NodeMark {
+  if (n.k === 'conn' || n.k === 'wconn') return { source: source(n.ref) };
   if (n.k === 'xf') {
     const x = ref<Xf[]>('FR_XF').find((y) => y.id === n.ref);
-    return frIt(x?.ic ?? XF_IC[n.ref] ?? 'workflow', x?.sink ? (n.ref === 'x_err' ? 'alert' : 'agent') : 'insp', 'sm');
+    return { ic: x?.ic ?? XF_IC[n.ref] ?? 'workflow', h: x?.sink ? (n.ref === 'x_err' ? 'alert' : 'agent') : 'insp' };
   }
   if (n.k === 'fixed') {
     const f = ref<Record<string, G.Fixed>>('FXD')[n.ref];
-    return frIt(f.canon ? 'database' : n.ref === 'appr' ? 'user' : n.ref === 'gates' ? 'shield' : 'file', 'dec', 'sm');
+    return { ic: f.canon ? 'database' : n.ref === 'appr' ? 'user' : n.ref === 'gates' ? 'shield' : 'file', h: 'dec' };
   }
-  return frIt(FR_NIC[n.k] ?? 'workflow', n.k === 'map' ? 'money' : 'agent', 'sm');
+  return { ic: FR_NIC[n.k] ?? 'workflow', h: n.k === 'map' ? 'money' : 'agent' };
 }
-const ST_CHIP: Record<string, string> = {
-  live: '<span class="chip ok">Live</span>', manual: '<span class="chip dk">Manual import</span>',
-  unavailable: '<span class="chip bad">Unavailable</span>', stale: '<span class="chip warn">Stale</span>',
-};
-
-/** The vendor mark (an inline SVG or initials badge) as trusted markup. */
-export const logoHtml = (s: Source): string => vlogo(s);
-/** The step's icon tile on the canvas (vendor mark or tinted icon), as trusted markup. */
-export const nodeIconHtml = (n: WfNode): string => frNodeIcon(n);
-/** Tinted icon tile (frIt). */
-export const iconTileHtml = (ic: string, h: string, cls = ''): string => frIt(ic, h, cls);
-/** The source status chip (stChip). */
-export const statusChipHtml = (st: string): string => ST_CHIP[st] ?? '';
 
 // ---- step catalogue (palette and inspector) ----
 export interface Xf { id: string; label: string; sub: string; desc: string; group?: string; ingest?: string; ic?: string; start?: boolean; sink?: boolean }

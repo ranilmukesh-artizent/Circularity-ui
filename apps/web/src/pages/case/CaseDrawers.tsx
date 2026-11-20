@@ -9,9 +9,10 @@ import { ApiError } from '../../api/client';
 import { money } from '../../api/format';
 import { canPage } from '../../api/session';
 import { toast } from '../../ui/toast';
-import { ExMethod, Json } from './kit';
+import { JsonView } from '../../ui/kit/JsonView';
+import { ExMethod } from './CaseBlocks';
 import { hashId } from './tabs/EarlyTabs';
-import type { CaseUi } from './ui';
+import type { CaseUi } from './CaseContext';
 
 const EX_FX_AT = '2026-10-06';
 const asOf = () => new Date(refList<string>('AS_OF'));
@@ -99,14 +100,14 @@ export function openPayload(ui: CaseUi, c: CaseRec, a: CaseAnalysis) {
   const p = { ...(a.instruction || {}), expiresAt: addDays(asOf(), 7).toISOString().slice(0, 10) };
   ui.modal({
     title: 'Work instructions · ' + c.id, foot: closeBtn(ui),
-    body: <><p className="ink2" style={{ marginTop: 0 }}>Every outbound message carries a decision identifier, approval reference, instruction version, destination and acknowledgement. Retries are idempotent.</p><Json o={p} /></>,
+    body: <><p className="ink2" style={{ marginTop: 0 }}>Every outbound message carries a decision identifier, approval reference, instruction version, destination and acknowledgement. Retries are idempotent.</p><JsonView variant="lines" value={p} /></>,
   });
 }
 /** The raw instruction (ACT.tiRaw). */
 export function openRaw(ui: CaseUi, c: CaseRec, a: CaseAnalysis) {
   ui.modal({
     title: 'Instruction payload · ' + c.id, foot: closeBtn(ui),
-    body: <><p className="ink2" style={{ marginTop: 0 }}>{c.exec ? 'This is what was sent.' : 'This is exactly what will be sent once a person approves. Nothing has been sent yet.'}</p><Json o={a.instruction} /></>,
+    body: <><p className="ink2" style={{ marginTop: 0 }}>{c.exec ? 'This is what was sent.' : 'This is exactly what will be sent once a person approves. Nothing has been sent yet.'}</p><JsonView variant="lines" value={a.instruction} /></>,
   });
 }
 

@@ -8,9 +8,11 @@ import {
 import { can, canPage } from '../../api/session';
 import { ErrorBoundary } from '../../ui/Boundary';
 import { Icon } from '../../ui/Icon';
-import { Doc, FrIt, hue, StageLogos, StProv, Tag } from './kit';
+import { IconTile } from '../../ui/kit/IconTile';
+import { Doc, hue, StageLogos, StProv, Tag } from './CaseBlocks';
 import { stageTabs, type TabDef } from './tabs';
-import { approveGuarded, caseActions, runNextStep, useCaseUi, type CaseUi } from './ui';
+import { approveGuarded, caseActions, runNextStep } from './caseActions';
+import { useCaseUi, type CaseUi } from './CaseContext';
 
 export type CaseView = { kind: 'stage'; n: number; tab: string | null } | { kind: 'overview' } | { kind: 'full' };
 
@@ -233,7 +235,7 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
         <div className="stside">
           {d.mean && reached && (
             <section className="stmean" id="stMean" aria-labelledby="stMeanH">
-              <FrIt ic="spark" h={ph.h} cls="sm" />
+              <IconTile ic="spark" h={ph.h} cls="sm" />
               <div><h2 id="stMeanH">What it means</h2><p>{d.mean}</p></div>
             </section>
           )}

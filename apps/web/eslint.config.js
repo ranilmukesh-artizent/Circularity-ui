@@ -67,12 +67,6 @@ export default tseslint.config(
       "src/ui/theme.ts",
       "src/ui/askBus.ts",
       "src/pages/registry.tsx", // the route table (a module, not a component)
-      // split into src/ui/kit/* and area files by "Naming B" (step E2); drop them from this list then
-      "src/pages/home/kit.tsx",
-      "src/pages/workflows/kit.tsx",
-      "src/pages/case/kit.tsx",
-      "src/pages/case/ui.tsx",
-      "src/pages/integration/ui.tsx",
     ],
     plugins: { "check-file": checkFile },
     rules: {

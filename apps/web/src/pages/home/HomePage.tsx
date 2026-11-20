@@ -9,7 +9,16 @@ import { canPage, currentAccount } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { askSoon, FrAttn, FrIt, FrKpi, FrPanel, FrRing, FrSeg, FrSt, FrTl } from './kit';
+import { askSoon } from '../../ui/askBus';
+import { Delta } from '../../ui/kit/Delta';
+import { IconTile } from '../../ui/kit/IconTile';
+import { Panel } from '../../ui/kit/Panel';
+import { Ring } from '../../ui/kit/Ring';
+import { Segmented } from '../../ui/kit/Segmented';
+import { StatusPill } from '../../ui/kit/StatusPill';
+import { Timeline } from '../../ui/kit/Timeline';
+import { AttentionCard } from './AttentionCard';
+import { HomeKpi } from './HomeKpi';
 import { TaskRow } from './TasksPage';
 
 /** Hero drawing (FR_HERO): hidden on phones and in Technical mode. */
@@ -69,7 +78,7 @@ function AskBox() {
   return (
     <section className="panel frask afhp" id="frAsk">
       <div className="pb">
-        <FrSeg name="askmode" label="Ask mode" cur={M[0]} items={modes.map((x) => [x[0], x[1], x[2]])} onPick={(v) => setHomeUi('frMode', v)} />
+        <Segmented name="askmode" label="Ask mode" cur={M[0]} items={modes.map((x) => [x[0], x[1], x[2]])} onPick={(v) => setHomeUi('frMode', v)} />
         <form className="afhpr frhpr" onSubmit={submit}>
           <label className="sr" htmlFor="afhq">{M[1]}: state a goal or ask</label>
           <Icon name="spark" />
@@ -104,12 +113,12 @@ function AskBox() {
 function ActivityTimeline({ win, compact }: { win: string; compact?: boolean }) {
   const rows = activity(win);
   return (
-    <FrTl
+    <Timeline
       empty={compact ? 'No activity yet today.' : 'Nothing yet. Ask the agent to prepare something and it appears here with a trace.'}
       rows={(compact ? rows.slice(0, 6) : rows).map((o, i) => ({
         key: String(i), ic: o.ic, h: o.h,
         t: <>{o.title}{o.badge && <> <span className="afb afb-preparedbyagent">{o.badge}</span></>}</>,
-        s: o.sub, ago: o.ago, st: <FrSt s={o.st} />,
+        s: o.sub, ago: o.ago, st: o.st && <StatusPill {...o.st} />,
         x: !compact && o.links.length ? <>{o.links.map((l) => <button key={l.act} className="lnk" onClick={askSoon}>{l.label}</button>)}</> : undefined,
       }))}
     />
@@ -164,7 +173,7 @@ function RightTabs() {
             <ul className="frbl">
               {al.slice(0, 6).map((a) => (
                 <li key={a.id}>
-                  <FrIt ic={a.ic} h={a.h} cls="sm" />
+                  <IconTile ic={a.ic} h={a.h} cls="sm" />
                   <span><b>{a.t}</b><span className="note">{a.s}</span></span>
                 </li>
               ))}
@@ -193,7 +202,7 @@ function QuickActions() {
   };
   const toggle = (label: string, on: boolean) => setFrPref('qa', on ? hide.filter((x) => x !== label) : [...hide, label]);
   return (
-    <FrPanel
+    <Panel
       title="Quick actions" id="frQa"
       right={<button className="iconbtn sm" aria-label="Choose quick actions" onClick={() => setCfg(true)}><Icon name="settings" /></button>}
     >
@@ -217,7 +226,7 @@ function QuickActions() {
           </div>
         </Modal>
       )}
-    </FrPanel>
+    </Panel>
   );
 }
 
@@ -242,14 +251,14 @@ function Modules() {
           <p className="note" style={{ margin: '2px 0 0' }}>Jump into any module or let an agent guide you.</p>
         </div>
         <div className="row">
-          <FrSeg name="mods" label="Module view" cur={view} items={[['grid', 'Grid', 'grid'], ['list', 'List', 'list']]} onPick={(v) => save({ view: v })} />
+          <Segmented name="mods" label="Module view" cur={view} items={[['grid', 'Grid', 'grid'], ['list', 'List', 'list']]} onPick={(v) => save({ view: v })} />
           <button className="btn sm" onClick={() => setCus(true)}>Customize</button>
         </div>
       </div>
       <div className={'frmods ' + view}>
         {shown.map((g) => (
           <a key={g.id} className="frmod" href={'#/' + g.go}>
-            <FrIt ic={g.icon} h={g.hue} />
+            <IconTile ic={g.icon} h={g.hue} />
             <span><b>{g.label}</b><span className="note">{g.sub}</span></span>
             <Icon name="arrow" />
           </a>
@@ -286,8 +295,8 @@ function Modules() {
 function Middle({ role }: { role: string }) {
   const p = middlePanel(role);
   return (
-    <FrPanel title={p.title} sub={p.sub} id={p.id} right={p.link && <a className="lnk" href={'#/' + p.link.go}>{p.link.label}</a>}>
-      {p.ring && <FrRing {...p.ring} />}
+    <Panel title={p.title} sub={p.sub} id={p.id} right={p.link && <a className="lnk" href={'#/' + p.link.go}>{p.link.label}</a>}>
+      {p.ring && <Ring {...p.ring} />}
       {p.bars?.map((b) => (
         <div className="frwf" key={b.l}>
           <span>{b.l}</span>
@@ -295,14 +304,14 @@ function Middle({ role }: { role: string }) {
           <b className="num">{kfmt(b.v)}</b>
         </div>
       ))}
-    </FrPanel>
+    </Panel>
   );
 }
 
 function Figures() {
   const per = homeUi('frPer') || '30';
   return (
-    <FrPanel
+    <Panel
       title="Key figures" id="afFigures"
       right={
         <>
@@ -318,12 +327,12 @@ function Figures() {
       <div className="frfig">
         {figures(per).map((f) => (
           <div className="frfg" key={f.k}>
-            <FrIt ic={f.ic} h={f.h} />
+            <IconTile ic={f.ic} h={f.h} />
             <div>
               <b className="num">{f.v}</b>
               <span className="note">{f.l}</span>
               <span className="frfgs">
-                {f.delta && <span className={'frd ' + f.delta.cls} data-tip={f.delta.tip}>{f.delta.text}</span>}
+                {f.delta && <Delta d={f.delta} />}
                 <span className="note">{f.sub}</span>
               </span>
               <button className="lnk" onClick={askSoon}><Icon name="spark" /> Explain this number</button>
@@ -331,7 +340,7 @@ function Figures() {
           </div>
         ))}
       </div>
-    </FrPanel>
+    </Panel>
   );
 }
 
@@ -371,16 +380,16 @@ export function HomePage() {
         <div className="frhmain">
           <AskBox />
           <div className="frkpis" id="frKpis">
-            {kpis(role).map((k) => <FrKpi key={k.k + k.l} o={k} />)}
+            {kpis(role).map((k) => <HomeKpi key={k.k + k.l} o={k} />)}
           </div>
           <div className="frh2">
-            <FrPanel
+            <Panel
               title="Agent activity" id="afActivity" sub="What your agents and workflows are doing across systems"
               right={<a className="lnk" href="#/audit/log">View all →</a>}
             >
-              <FrSeg name="act" label="Activity period" cur={act} items={[['live', 'Live'], ['today', 'Today'], ['week', 'This week']]} onPick={(v) => setHomeUi('frAct', v)} />
+              <Segmented name="act" label="Activity period" cur={act} items={[['live', 'Live'], ['today', 'Today'], ['week', 'This week']]} onPick={(v) => setHomeUi('frAct', v)} />
               <ActivityTimeline win={act} />
-            </FrPanel>
+            </Panel>
             <div className="frhst">
               <Middle role={role} />
               <Figures />
@@ -390,7 +399,7 @@ export function HomePage() {
         </div>
         <aside className="frhside">
           <RightTabs />
-          {attn && <FrAttn head={attn.head} line={attn.line} btn={attn.btn} onClick={() => nav('/' + attn.go)} />}
+          {attn && <AttentionCard head={attn.head} line={attn.line} btn={attn.btn} onClick={() => nav('/' + attn.go)} />}
           <QuickActions />
         </aside>
       </div>

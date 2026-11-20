@@ -11,7 +11,10 @@ import { sessionScoped } from '../../api/view';
 import { onActivateKey } from '../../ui/keys';
 import { Drawer } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { canMgr, FrKpi, Json, NOMGR, sum } from './ui';
+import { JsonView } from '../../ui/kit/JsonView';
+import { Kpi } from '../../ui/kit/Kpi';
+import { canMgr, NOMGR } from './FabricContext';
+import { sum } from './fabricFormat';
 
 /* ---- Canonical models ---- */
 export function Models() {
@@ -20,9 +23,9 @@ export function Models() {
   return (
     <>
       <div className="frkpis fr3">
-        <FrKpi ic="layers" h="dec" v={C.length} l="Canonical models" />
-        <FrKpi ic="list" h="money" v={f} l="Fields across models" />
-        <FrKpi ic="mapping" h="int" v={src} l="Sources mapped in" />
+        <Kpi ic="layers" h="dec" v={C.length} l="Canonical models" />
+        <Kpi ic="list" h="money" v={f} l="Fields across models" />
+        <Kpi ic="mapping" h="int" v={src} l="Sources mapped in" />
       </div>
       <p className="ink2" style={{ marginTop: 0, maxWidth: '75ch' }}>
         Adapters map vendor-specific records into these versioned canonical models, so the AI services evaluate assets and demand the same way across platforms. Adapters never invent data a source does not hold.
@@ -35,7 +38,7 @@ export function Models() {
               <p style={{ margin: '0 0 10px' }} className="ink2">{m.purpose}</p>
               <div className="row" style={{ gap: 5, marginBottom: 10 }}>{m.fields.map((x) => <span key={x} className="chip line mono" style={{ fontSize: 11 }}>{x}</span>)}</div>
               <div className="note">Fed by {m.sources.join(' · ')}</div>
-              <details className="dd"><summary>Example from RT-1048</summary><pre className="code"><Json value={canonExample(m.n)} /></pre></details>
+              <details className="dd"><summary>Example from RT-1048</summary><JsonView variant="tokens" value={canonExample(m.n)} /></details>
             </div>
           </div>
         ))}
@@ -61,10 +64,10 @@ export function Events({ onOpen }: { onOpen: (id: string) => void }) {
   return (
     <>
       <div className="frkpis fr4">
-        <FrKpi ic="stream" h="int" v={n} l="Events in the stream" />
-        <FrKpi ic="download" h="money" v={inn} l="Inbound" />
-        <FrKpi ic="send" h="dec" v={n - inn} l="Outbound" />
-        <FrKpi ic="alert" h="alert" v={err} l="Errors, duplicates and escalations" />
+        <Kpi ic="stream" h="int" v={n} l="Events in the stream" />
+        <Kpi ic="download" h="money" v={inn} l="Inbound" />
+        <Kpi ic="send" h="dec" v={n - inn} l="Outbound" />
+        <Kpi ic="alert" h="alert" v={err} l="Errors, duplicates and escalations" />
       </div>
       <div className="grid g4" style={{ marginBottom: 14 }}>
         {([[n, 'events in stream'], [pct(ok / n, 0), 'acknowledged first time'], [dup + ' · ' + rt, 'duplicates caught · retries'], [late, 'late or out of order, reconciled']] as [string | number, string][]).map((x) => (
@@ -119,9 +122,7 @@ export function EventDrawer({ id, onClose }: { id: string; onClose: () => void }
         <span className={'chip ' + ackKind(e.ack)}>{e.ack}</span>
       </div>
       {e.note && <div className="callout" style={{ marginBottom: 12 }}>{e.note}</div>}
-      <pre className="code">
-        <Json value={{ event: e.id, type: e.type, at: new Date(e.ts).toISOString(), caseId: e.caseId, decisionId: e.decisionId, approvalRef: e.approval, instructionVersion: e.ver, destination: e.dest, acknowledgement: e.ack, idempotencyKey: e.key, retries: e.retries || 0 }} />
-      </pre>
+      <JsonView variant="tokens" value={{ event: e.id, type: e.type, at: new Date(e.ts).toISOString(), caseId: e.caseId, decisionId: e.decisionId, approvalRef: e.approval, instructionVersion: e.ver, destination: e.dest, acknowledgement: e.ack, idempotencyKey: e.key, retries: e.retries || 0 }} />
     </Drawer>
   );
 }
@@ -146,9 +147,9 @@ export function Conflicts() {
   return (
     <>
       <div className="frkpis fr3">
-        <FrKpi ic="conflict" h="dec" v={P.open} l="Open conflicts" />
-        <FrKpi ic="checks" h="int" v={P.closed} l="Resolved or escalated" />
-        <FrKpi ic="graph" h="money" v={P.systems} l="Systems involved" />
+        <Kpi ic="conflict" h="dec" v={P.open} l="Open conflicts" />
+        <Kpi ic="checks" h="int" v={P.closed} l="Resolved or escalated" />
+        <Kpi ic="graph" h="money" v={P.systems} l="Systems involved" />
       </div>
       <p className="ink2" style={{ marginTop: 0, maxWidth: '75ch' }}>
         When two systems disagree, Circularity names the source with authority, flags the conflict and holds any dependent route. It does not pick silently.

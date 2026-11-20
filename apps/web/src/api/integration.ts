@@ -280,13 +280,6 @@ export function hashId(s: string): string {
   }
   return (h >>> 0).toString(16).toUpperCase().padStart(8, '0');
 }
-export const vHue = (v: string): number => {
-  let h = 7;
-  for (const c of v) h = (h * 31 + c.charCodeAt(0)) % 360;
-  return h;
-};
-/** The two letters of a vendor's logo tile. */
-export const vendorInitials = (v: string): string => v.replace(/[^A-Za-z0-9 ]/g, '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 export const ackKind = (a: string): string => (/^acknowledged$/.test(a) ? 'ok' : /conflict|stale|failed/.test(a) ? 'bad' : /sent/.test(a) ? 'line' : 'warn');
 export const pct = (v: number, d = 0): string => (v * 100).toFixed(d) + '%';
 export const isoTime = (d: unknown): string => new Date(d as string).toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC');

@@ -3,7 +3,11 @@ import { runTaskAct, taskGroupOf, taskGroups, taskItems, type TaskItem } from '.
 import { useBackend } from '../../api/useBackend';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
-import { askSoon, FrHead, FrKpi, FrPanel, FrSeg } from './kit';
+import { askSoon } from '../../ui/askBus';
+import { Panel } from '../../ui/kit/Panel';
+import { Segmented } from '../../ui/kit/Segmented';
+import { HomeHeader } from './HomeHeader';
+import { HomeKpi } from './HomeKpi';
 
 /** One "Needs you" row: the item's own button (an action) or a link to where the step is done. */
 export function TaskRow({ i }: { i: TaskItem }) {
@@ -51,32 +55,32 @@ export function TasksPage() {
     .filter((x) => x.it.length);
   return (
     <div className="frpage" id="frTasks">
-      <FrHead
+      <HomeHeader
         title="My Tasks"
         sub="Everything whose next step is yours, grouped by what it asks of you. The same list feeds Home › Needs you."
         right={<span className={'chip ' + (l.length ? 'warn' : 'ok')} id="frTasksN">{l.length} open</span>}
       />
       <div className="frkpis fr4">
         {G.map((g) => (
-          <FrKpi key={g[0]} o={{ ic: g[2], h: g[3], v: count(g[0]), n: count(g[0]), l: g[1], k: g[0] }} />
+          <HomeKpi key={g[0]} o={{ ic: g[2], h: g[3], v: count(g[0]), n: count(g[0]), l: g[1], k: g[0] }} />
         ))}
       </div>
       <div className="frbar">
-        <FrSeg
+        <Segmented
           name="tasks" label="Task group" cur={f} onPick={setF}
           items={[['all', 'All (' + l.length + ')'] as [string, string]].concat(G.map((g) => [g[0], g[1] + ' (' + count(g[0]) + ')']))}
         />
       </div>
       {groups.length ? (
         groups.map(({ g, it }) => (
-          <FrPanel
+          <Panel
             key={g[0]} title={g[1]} sub={it.length + ' item' + (it.length > 1 ? 's' : '')}
             right={<button className="btn sm" onClick={askSoon}><Icon name="spark" /> Do it for me</button>}
           >
             <ul className="aol">
               {it.map((i, k) => <TaskRow key={k} i={i} />)}
             </ul>
-          </FrPanel>
+          </Panel>
         ))
       ) : (
         <div className="empty">

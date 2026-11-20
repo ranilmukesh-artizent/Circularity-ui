@@ -4,13 +4,22 @@ import { useBackend } from '../../api/useBackend';
 import {
   ackKind, allMappings, canon, catOf, connMethods, smLog as smLogEntries, connected, events, exceptions, failedRecords, fieldCount, frCats, frDecisions, hourly, mappings,
   needsAttention, publishedWorkflowCount, series, source, sources, srcAgeText, srcCatNote, srcCats, srcFailing, srcFresh, srcModels, successRate, syncAllLive, syncHistory, tableCount,
-  tableModel, tableModelIds, totals, vHue, workflows, type Source,
+  tableModel, tableModelIds, totals, workflows, type Source,
 } from '../../api/integration';
 import { sessionScoped } from '../../api/view';
 import { Icon } from '../../ui/Icon';
 import { onActivateKey } from '../../ui/keys';
 import { toast } from '../../ui/toast';
-import { canMgr, FrIt, FrKpi, FrSeg, FrSt, fmtN, NOMGR, SrcMenu, StChip, sum, TestSteps, useInt, Vlogo, when } from './ui';
+import { IconTile } from '../../ui/kit/IconTile';
+import { Kpi } from '../../ui/kit/Kpi';
+import { Segmented } from '../../ui/kit/Segmented';
+import { StatusChip } from '../../ui/kit/StatusChip';
+import { VendorLogo, vendorHue } from '../../ui/kit/VendorLogo';
+import { TestSteps } from './ConnectionTests';
+import { canMgr, NOMGR, useInt } from './FabricContext';
+import { fmtN, sum, when } from './fabricFormat';
+import { FabricStatus } from './FabricStatus';
+import { SourceMenu } from './SourceMenu';
 import { FlowDiagram } from './FlowDiagram';
 
 type View = 'graph' | 'list' | 'matrix';
@@ -61,7 +70,7 @@ export function SourceMap() {
         </select>
         <label className="tog frlinks"><input type="checkbox" checked={sm.links} onChange={(e) => up(() => { sm.links = e.target.checked; })} /> Show field links</label>
         <span className="grow" />
-        <FrSeg<View> items={[['graph', 'Graph', 'graph'], ['list', 'List', 'list'], ['matrix', 'Matrix', 'matrix']]} cur={sm.view} onPick={(v) => up(() => { sm.view = v; })} label="Source map view" />
+        <Segmented<View> items={[['graph', 'Graph', 'graph'], ['list', 'List', 'list'], ['matrix', 'Matrix', 'matrix']]} cur={sm.view} onPick={(v) => up(() => { sm.view = v; })} label="Source map view" />
       </div>
       {sm.view === 'list' ? (
         <div className="frsml"><TileGrid /></div>
@@ -82,11 +91,11 @@ function SmTiles() {
   const nw = sources().filter((s) => s.frConnectedAt && Date.now() - s.frConnectedAt < 30 * 864e5).length, nwf = W.filter((w) => w.frNew).length;
   return (
     <>
-      <FrKpi ic="graph" h="int" v={conn.length} l="Connected sources" k="connected" d={nw ? <span className="frd good">▲ {nw} this month</span> : undefined} />
-      <FrKpi ic="database" h="money" v={tbl} l="Tables modelled" k="tables" />
-      <FrKpi ic="link" h="dec" v={fm} l="Field mappings" k="fields" />
-      <FrKpi ic="sync" h="insp" v={act} l="Active workflows" k="workflows" d={nwf ? <span className="frd good">▲ {nwf} this month</span> : undefined} />
-      <FrKpi ic="activity" h="int" v={t.pct.toFixed(1) + '%'} l="Integration health" sub="last 24 hours" sp={hh.map((b) => b.ok / (b.ok + b.warn + b.bad || 1))} k="health" />
+      <Kpi ic="graph" h="int" v={conn.length} l="Connected sources" k="connected" delta={nw ? <span className="frd good">▲ {nw} this month</span> : undefined} />
+      <Kpi ic="database" h="money" v={tbl} l="Tables modelled" k="tables" />
+      <Kpi ic="link" h="dec" v={fm} l="Field mappings" k="fields" />
+      <Kpi ic="sync" h="insp" v={act} l="Active workflows" k="workflows" delta={nwf ? <span className="frd good">▲ {nwf} this month</span> : undefined} />
+      <Kpi ic="activity" h="int" v={t.pct.toFixed(1) + '%'} l="Integration health" sub="last 24 hours" sp={hh.map((b) => b.ok / (b.ok + b.warn + b.bad || 1))} k="health" />
     </>
   );
 }
@@ -109,7 +118,7 @@ function Tree({ onSel, up }: { onSel: (id: string) => void; up: (f: () => void) 
         {sm.tree === 'tbl'
           ? S.filter((s) => tableCount(s.id) && (!tq || (s.vendor + ' ' + tblNames(s.id).join(' ')).toLowerCase().includes(tq))).map((s) => (
             <details key={s.id}>
-              <summary><Vlogo vendor={s.vendor} /> {s.vendor} <span className="note">({tableCount(s.id)})</span></summary>
+              <summary><VendorLogo vendor={s.vendor} /> {s.vendor} <span className="note">({tableCount(s.id)})</span></summary>
               {tblNames(s.id).map((n) => <button key={n} className="frti" onClick={() => onSel(s.id)}><span className="mono">{n}</span></button>)}
             </details>
           ))
@@ -120,7 +129,7 @@ function Tree({ onSel, up }: { onSel: (id: string) => void; up: (f: () => void) 
                 <summary>{c} <span className="note">({it.length})</span></summary>
                 {it.map((s) => (
                   <button key={s.id} className="frti" aria-pressed={sm.sel === s.id} onClick={() => onSel(s.id)}>
-                    <i className={'dotc ' + dotOf(s)} /><Vlogo vendor={s.vendor} /><span>{s.vendor}</span>
+                    <i className={'dotc ' + dotOf(s)} /><VendorLogo vendor={s.vendor} /><span>{s.vendor}</span>
                   </button>
                 ))}
               </details>
@@ -138,7 +147,7 @@ function Graph({ list, onSel, up }: { list: Source[]; onSel: (id: string) => voi
   const view = useRef<HTMLDivElement>(null), world = useRef<HTMLDivElement>(null), nodes = useRef(new Map<string, HTMLDivElement>());
   const [geo, setGeo] = useState<{ w: number; h: number; p: Record<string, { x: number; y: number; w: number }>; fit: number }>({ w: 0, h: 0, p: {}, fit: 1 });
   const E: Edge[] = [];
-  list.forEach((s) => Object.entries(srcModels(s)).forEach(([m, rows]) => E.push({ a: 's:' + s.id, b: 'c:' + m, col: `hsl(${vHue(s.vendor)} 62% 52%)`, n: rows.length, t: rows.map((r) => r[0] + ' → ' + r[2]).join('\n') })));
+  list.forEach((s) => Object.entries(srcModels(s)).forEach(([m, rows]) => E.push({ a: 's:' + s.id, b: 'c:' + m, col: `hsl(${vendorHue(s.vendor)} 62% 52%)`, n: rows.length, t: rows.map((r) => r[0] + ' → ' + r[2]).join('\n') })));
   D.forEach((d) => d[2].forEach((m) => E.push({ a: 'c:' + m, b: 'd:' + d[0], col: 'var(--muted)', dash: true })));
   const hl = sm.hl || (sm.sel ? 's:' + sm.sel : null), rel = new Set<string>();
   if (hl) {
@@ -199,20 +208,20 @@ function Graph({ list, onSel, up }: { list: Source[]; onSel: (id: string) => voi
           </svg>
           <div className="frgcol">
             {list.length ? list.map((s) => node('s:' + s.id, 'frgs' + (sm.sel === s.id ? ' on' : ''), (
-              <><Vlogo vendor={s.vendor} /><span><b>{s.vendor}</b><span className="note">{tableCount(s.id)} tables · {fieldCount(s.id)} fields</span></span><i className={'dotc ' + dotOf(s)} /></>
+              <><VendorLogo vendor={s.vendor} /><span><b>{s.vendor}</b><span className="note">{tableCount(s.id)} tables · {fieldCount(s.id)} fields</span></span><i className={'dotc ' + dotOf(s)} /></>
             ), () => onSel(s.id), s.vendor)) : <div className="empty"><b>No system matches</b>Clear the filters.</div>}
           </div>
           <div className="frgcol mid">
             {C.map((c) => {
               const n = sum(sources().map((s) => (srcModels(s)[c.n] || []).length));
               return <div key={c.n} style={{ display: 'contents' }}>{node('c:' + c.n, 'frgc', (
-                <><FrIt ic="database" h="dec" cls="sm" /><span><b>{c.n}</b><span className="note">Canonical model v{c.v} · {n} mapped field{n === 1 ? '' : 's'}</span></span></>
+                <><IconTile ic="database" h="dec" cls="sm" /><span><b>{c.n}</b><span className="note">Canonical model v{c.v} · {n} mapped field{n === 1 ? '' : 's'}</span></span></>
               ), () => hlToggle('c:' + c.n))}</div>;
             })}
           </div>
           <div className="frgcol">
             {D.map((d) => <div key={d[0]} style={{ display: 'contents' }}>{node('d:' + d[0], 'frgd', (
-              <><FrIt ic={d[0] === 'dc' ? 'tasks' : d[0] === 'rc' ? 'scale' : 'bot'} h="agent" cls="sm" /><span><b>{d[1]}</b><span className="note">{d[0] === 'dc' || d[0] === 'rc' ? 'Decision step' : 'Model'}</span></span></>
+              <><IconTile ic={d[0] === 'dc' ? 'tasks' : d[0] === 'rc' ? 'scale' : 'bot'} h="agent" cls="sm" /><span><b>{d[1]}</b><span className="note">{d[0] === 'dc' || d[0] === 'rc' ? 'Decision step' : 'Model'}</span></span></>
             ), () => hlToggle('d:' + d[0]))}</div>)}
           </div>
         </div>
@@ -236,7 +245,7 @@ function Matrix({ list, onSel }: { list: Source[]; onSel: (id: string) => void }
               const m = srcModels(s), bad = s.status === 'stale' || s.status === 'unavailable';
               return (
                 <tr key={s.id}>
-                  <td><button className="frintn" onClick={() => onSel(s.id)}><Vlogo vendor={s.vendor} /><span><b>{s.vendor}</b><span className="note">{s.name}</span></span></button></td>
+                  <td><button className="frintn" onClick={() => onSel(s.id)}><VendorLogo vendor={s.vendor} /><span><b>{s.vendor}</b><span className="note">{s.name}</span></span></button></td>
                   {C.map((c) => {
                     const r = m[c.n];
                     return (
@@ -263,7 +272,7 @@ function SyncTable({ s, n }: { s: Source; n: number }) {
     <table className="t static tight">
       <tbody>
         {L.slice(0, n).map((r, i) => (
-          <tr key={i}><td className="num nowrap">{when(r.ts)}</td><td>{r.ok ? <FrSt k="success" /> : <FrSt k="failed" />}</td><td className="r num">{fmtN(r.rows)} records</td><td className="r num note">{String(r.dur)}</td></tr>
+          <tr key={i}><td className="num nowrap">{when(r.ts)}</td><td>{r.ok ? <FabricStatus k="success" /> : <FabricStatus k="failed" />}</td><td className="r num">{fmtN(r.rows)} records</td><td className="r num note">{String(r.dur)}</td></tr>
         ))}
       </tbody>
     </table>
@@ -323,15 +332,15 @@ function SmPanel({ s, tab, setTab }: { s?: Source; tab: string; setTab: (t: stri
   return (
     <>
       <div className="frsph">
-        <Vlogo vendor={s.vendor} />
+        <VendorLogo vendor={s.vendor} />
         <div><h3>{s.vendor}</h3><span className="note">{s.name} · {CM[s.method] ? CM[s.method].label : s.mode}</span></div>
-        <FrSt k={stk} />
+        <FabricStatus k={stk} />
       </div>
       <div className="frtabs" role="tablist">{T.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
       <div className="pb">{body}</div>
       <div className="frspf">
         {canMgr() && <button className="btn sm pri" onClick={() => ui.test(s.id)}><Icon name="play" /> Test connection</button>}
-        <SrcMenu s={s} />
+        <SourceMenu s={s} />
       </div>
     </>
   );
@@ -356,8 +365,8 @@ function Tile({ s }: { s: Source }) {
     <div className={'tile ' + s.status + (s.syncing ? ' syncing' : '')} data-sid={s.id} tabIndex={0} role="button" aria-label={s.name + ', ' + s.vendor + '. Open configuration.'}
       onClick={() => ui.openSource(s.id, 'conn')} onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); ui.openSource(s.id, 'conn'); } }}>
       <div className="row between" style={{ marginBottom: 6, flexWrap: 'nowrap' }}>
-        <span className="row" style={{ gap: 9, flexWrap: 'nowrap', minWidth: 0 }}><Vlogo vendor={s.vendor} /><b className="tname">{s.name}</b></span>
-        {s.syncing ? <span className="chip y">Syncing</span> : <StChip s={s.status} />}
+        <span className="row" style={{ gap: 9, flexWrap: 'nowrap', minWidth: 0 }}><VendorLogo vendor={s.vendor} /><b className="tname">{s.name}</b></span>
+        {s.syncing ? <span className="chip y">Syncing</span> : <StatusChip s={s.status} />}
       </div>
       <div className="note vline">
         <span className="mbadge" data-tip={CM.tip}>{CM.badge}</span>
@@ -476,7 +485,7 @@ function SmLogList() {
         return (
           <div className={'lg ' + l.kind} key={i}>
             <span className="num lt">{new Date(l.ts).toTimeString().slice(0, 8)}</span>
-            {s && <Vlogo vendor={s.vendor} />}
+            {s && <VendorLogo vendor={s.vendor} />}
             <span className="lm"><b>{s ? s.name : 'Removed'}</b> <span className="note">{s ? s.vendor : '—'}</span> · {l.text}</span>
           </div>
         );

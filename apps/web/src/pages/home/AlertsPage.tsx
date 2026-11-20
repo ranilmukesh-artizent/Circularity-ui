@@ -4,7 +4,13 @@ import { useBackend } from '../../api/useBackend';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { askSoon, FrAttn, FrHead, FrPanel, FrSeg, FrSt, FrTl } from './kit';
+import { askSoon } from '../../ui/askBus';
+import { Panel } from '../../ui/kit/Panel';
+import { Segmented } from '../../ui/kit/Segmented';
+import { StatusPill } from '../../ui/kit/StatusPill';
+import { Timeline } from '../../ui/kit/Timeline';
+import { AttentionCard } from './AttentionCard';
+import { HomeHeader } from './HomeHeader';
 
 const ROLES = ['Developer', 'Approver', 'Planner', 'Engineer', 'Finance', 'Warehouse Manager', 'Admin'];
 
@@ -30,21 +36,21 @@ export function AlertsPage() {
 
   return (
     <div className="frpage" id="frAlerts">
-      <FrHead
+      <HomeHeader
         title="Alerts"
         sub="Escalations from the handoff clock, failing workflows, stale or unavailable sources, expiring credentials, open conflicts and notifications. Acknowledge, assign or open each one."
         right={<span className={'chip ' + (open.length ? 'bad' : 'ok')} id="frAlertsN">{open.length} open</span>}
       />
-      {open.length > 0 && <FrAttn head={open.length + ' alert' + (open.length > 1 ? 's' : '') + ' open'} line={high + ' high severity. Clear the oldest escalations first.'} />}
+      {open.length > 0 && <AttentionCard head={open.length + ' alert' + (open.length > 1 ? 's' : '') + ' open'} line={high + ' high severity. Clear the oldest escalations first.'} />}
       <div className="frbar">
-        <FrSeg
+        <Segmented
           name="alerts" label="Alert type" cur={f} onPick={setF}
           items={kinds.map((k) => [k[0], k[1] + ' (' + (k[0] === 'all' ? l.length : l.filter((a) => a.kind === k[0]).length) + ')'])}
         />
       </div>
-      <FrPanel title="Open and recent">
+      <Panel title="Open and recent">
         {vis.length ? (
-          <FrTl
+          <Timeline
             cls="fral"
             rows={vis.map((a) => {
               const who = alertAssignee(a.id);
@@ -63,7 +69,7 @@ export function AlertsPage() {
                     <button className="lnk" onClick={askSoon}><Icon name="spark" /> Explain</button>
                   </>
                 ),
-                st: <FrSt s={a.ack ? status('ack') : a.sev >= 2 ? status('failed', 'High') : status('open', 'Medium')} />,
+                st: <StatusPill {...(a.ack ? status('ack') : a.sev >= 2 ? status('failed', 'High') : status('open', 'Medium'))} />,
               };
             })}
           />
@@ -72,7 +78,7 @@ export function AlertsPage() {
             <b>No alerts of this type</b>Choose All to see every alert.
           </div>
         )}
-      </FrPanel>
+      </Panel>
       {assign && (
         <Modal
           title="Assign alert"

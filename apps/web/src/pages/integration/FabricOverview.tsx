@@ -5,7 +5,12 @@ import { available, connected, frCats, integrations, needsAttention, recommendat
 import { sessionScoped } from '../../api/view';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
-import { canMgr, FrKpi, FrSt, SrcMenu, useInt, Vlogo, when } from './ui';
+import { Kpi } from '../../ui/kit/Kpi';
+import { VendorLogo } from '../../ui/kit/VendorLogo';
+import { canMgr, useInt } from './FabricContext';
+import { when } from './fabricFormat';
+import { FabricStatus } from './FabricStatus';
+import { SourceMenu } from './SourceMenu';
 
 type SortKey = 'name' | 'cat' | 'status' | 'last';
 // kept while the session lasts, like the demo's S.frOv
@@ -53,9 +58,9 @@ export function Overview() {
   return (
     <div id="frOverview">
       <div className="frkpis fr3">
-        <FrKpi ic="sync" h="int" v={conn.length} l="Connected" sub="systems sending data" k="connected" />
-        <FrKpi ic="alert" h="dec" v={attn.length} l="Needs attention" sub="stale, failing, expiring or not connected" k="attention" />
-        <FrKpi ic="grid" h="money" v={av.length} l="Available" sub="in the catalogue, not yet connected" k="available" />
+        <Kpi ic="sync" h="int" v={conn.length} l="Connected" sub="systems sending data" k="connected" />
+        <Kpi ic="alert" h="dec" v={attn.length} l="Needs attention" sub="stale, failing, expiring or not connected" k="attention" />
+        <Kpi ic="grid" h="money" v={av.length} l="Available" sub="in the catalogue, not yet connected" k="available" />
       </div>
       <div className="frbar">
         <div className="frsrch">
@@ -91,11 +96,11 @@ export function Overview() {
       <div className="frrecs">
         {recs.map((x, i) => (
           <article className="frrec" key={i}>
-            <Vlogo vendor={x.s ? x.s.vendor : x.v} />
+            <VendorLogo vendor={x.s ? x.s.vendor : x.v} />
             <div className="frrech"><b>{x.v}</b><span className="note">{x.t}</span></div>
             <p>{x.line}</p>
             <div className="frrecf">
-              <FrSt k={x.st} />
+              <FabricStatus k={x.st} />
               <span className="row">
                 <button className="lnk" onClick={() => toast('Why ' + x.v + ' is recommended: ' + x.why + ' Ranked from open gaps in your evidence and workflows; nothing is connected or changed until you choose Connect or Manage.', 7000)}>
                   <Icon name="spark" /> Why recommended
@@ -139,16 +144,16 @@ function IntRow({ x }: { x: Integration }) {
     <tr data-int={x.id}>
       <td>
         <button className="frintn" onClick={() => (s ? ui.openSource(s.id, 'ov') : ui.connect(x.c!.id))}>
-          <Vlogo vendor={x.vendor} />
+          <VendorLogo vendor={x.vendor} />
           <span><b>{x.vendor}</b><span className="note">{x.name}</span></span>
         </button>
       </td>
       <td>{x.cat}</td>
-      <td><FrSt k={x.status} t={s && s.syncing ? 'Syncing' : null} /></td>
+      <td><FabricStatus k={x.status} t={s && s.syncing ? 'Syncing' : null} /></td>
       <td className="num note nowrap">{x.last ? when(x.last) : '—'}</td>
       <td>{x.owner}</td>
       <td className="r">
-        {s ? <SrcMenu s={s} /> : canMgr() ? <button className="btn sm pri" onClick={() => ui.connect(x.c!.id)}>Connect</button> : <span className="note">Available</span>}
+        {s ? <SourceMenu s={s} /> : canMgr() ? <button className="btn sm pri" onClick={() => ui.connect(x.c!.id)}>Connect</button> : <span className="note">Available</span>}
       </td>
     </tr>
   );

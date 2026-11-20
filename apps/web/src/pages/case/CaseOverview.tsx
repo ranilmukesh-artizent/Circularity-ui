@@ -6,8 +6,10 @@ import {
 import { fmtDate, fmtDateYear, money } from '../../api/format';
 import { canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
-import { FrPanel, Photo, Pva, Tag } from './kit';
-import { approveGuarded, caseActions, runNextStep, useCaseUi } from './ui';
+import { Panel } from '../../ui/kit/Panel';
+import { Photo, Pva, Tag } from './CaseBlocks';
+import { approveGuarded, caseActions, runNextStep } from './caseActions';
+import { useCaseUi } from './CaseContext';
 
 const href = (id: string, n: number | 'overview' | 'full') => '#/' + stageHref(id, n);
 
@@ -100,7 +102,7 @@ export function Overview({ c }: { c: CaseRec }) {
             </div>
           </section>
           {o && r && (
-            <FrPanel t="Predicted against actual"><Pva pred={r.net} act={o.net} /></FrPanel>
+            <Panel title="Predicted against actual"><Pva pred={r.net} act={o.net} /></Panel>
           )}
           <section className="panel frp">
             <div className="ph"><h3>More on {id}</h3></div>

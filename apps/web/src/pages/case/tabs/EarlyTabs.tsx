@@ -2,7 +2,8 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { exNum, fmtD, fmtDY, inr, refList, stages, type CaseAnalysis, type CaseRec } from '../../../api/case';
 import { money } from '../../../api/format';
-import { AfBadge, FrSt, Kv, Panel, ProvB, ST_SYS, VLogo, locOf, photoSrc, Photo } from '../kit';
+import { VendorLogo } from '../../../ui/kit/VendorLogo';
+import { AfBadge, CasePanel, Kv, ProvB, SourceStatus, ST_SYS, locOf, photoSrc, Photo } from '../CaseBlocks';
 import type { TabProps } from './index';
 
 // ---------- shared ----------
@@ -47,9 +48,9 @@ export function SystemsTab({ s }: TabProps) {
         const src = s.sources[ST_SYS[n]];
         return (
           <li key={n}>
-            {src && <VLogo s={src} />}
+            {src && <VendorLogo vendor={src.vendor} />}
             <span><b>{n}</b><span className="note">{src ? src.vendor + ' · ' + src.mode : 'Circularity'}</span></span>
-            {src && <FrSt k={src.status === 'live' ? 'live' : src.status === 'stale' ? 'stale' : src.status === 'manual' ? 'manual' : 'unavailable'} />}
+            {src && <SourceStatus k={src.status === 'live' ? 'live' : src.status === 'stale' ? 'stale' : src.status === 'manual' ? 'manual' : 'unavailable'} />}
           </li>
         );
       })}
@@ -83,7 +84,7 @@ const EV_ST: Record<string, [string, string]> = { ready: ['Complete', 'ok'], par
 export function EvidenceListTab({ c }: TabProps) {
   return (
     <div id="aszKnown">
-      <Panel t="Evidence readiness" badge={<ProvB k="rul" sys="Evidence scoring" />}>
+      <CasePanel t="Evidence readiness" badge={<ProvB k="rul" sys="Evidence scoring" />}>
         <div className="tw">
           <table className="t static tight">
             <thead><tr><th>Evidence</th><th>Source</th><th>State</th><th>Updated</th></tr></thead>
@@ -99,7 +100,7 @@ export function EvidenceListTab({ c }: TabProps) {
             </tbody>
           </table>
         </div>
-      </Panel>
+      </CasePanel>
     </div>
   );
 }
@@ -112,7 +113,7 @@ export function HoldingTab({ c, a }: TabProps) {
   return (
     <>
       <Kv rows={[['Days since receipt', String(afDays(c.received))], ['Holding and risk cost in the recommended route', hold ? money(hold.amt) : 'Not priced yet'], ['Cost inputs', 'See below']]} />
-      <Panel t="Cost inputs" cls="asCostCard" badge={<ProvB k="ret" sys="OMS, PLM, EAM, procurement" />}><CostInputs c={c} a={a} /></Panel>
+      <CasePanel t="Cost inputs" cls="asCostCard" badge={<ProvB k="ret" sys="OMS, PLM, EAM, procurement" />}><CostInputs c={c} a={a} /></CasePanel>
     </>
   );
 }
@@ -152,7 +153,7 @@ export function FindingsTab({ c }: TabProps) {
   const insD = c.assessment === 'Pending' ? 'Not yet inspected' : fmtDY(addDays(c.received, 1 + (asHex(c, 'ins') % 3)));
   const row = (l: string, v: string, t: string) => <div className="asrow"><span>{l}</span><b className={t === 'line' ? '' : 'tx-' + t}>{v}</b></div>;
   return (
-    <Panel t="Inspection findings" badge={<ProvB k="ret" sys="Inspection" />}>
+    <CasePanel t="Inspection findings" badge={<ProvB k="ret" sys="Inspection" />}>
       <div className="ascond">
         <div className="ascl">
           <div className="asclose"><Photo c={c} cls="zoom" /></div>
@@ -165,14 +166,14 @@ export function FindingsTab({ c }: TabProps) {
         </div>
         <div className="asrows">{row('Functional test', test[0], test[1])}{row('Wear level', wear, wearT)}{row('Cosmetic damage', cos[0], cos[1])}{row(key[0], key[1], 'ok')}</div>
       </div>
-    </Panel>
+    </CasePanel>
   );
 }
 /** Diagnostic condition (asKnownDiag). */
 export function DiagTab({ c, a }: TabProps) {
   const D = a.view.diag, d = refList<Record<string, [string, string]>>('DIAG')[c.cls] || ['', 'pct'];
   return (
-    <Panel t="Diagnostic condition" badge={<ProvB k="ret" sys={ws(c)} />}>
+    <CasePanel t="Diagnostic condition" badge={<ProvB k="ret" sys={ws(c)} />}>
       {D ? (
         <div className="asfig">
           <span className="note">{D.metric}</span><b className="big">{D.value}</b>
@@ -181,14 +182,14 @@ export function DiagTab({ c, a }: TabProps) {
           {d[1] !== 'grade' && <span className="note">Value modelled from grade, age and class</span>}
         </div>
       ) : <div className="asfig"><b>Not inspected yet</b><span className="note">Waiting for the inspection report</span></div>}
-    </Panel>
+    </CasePanel>
   );
 }
 /** Certified period (asKnownCert). */
 export function CertTab({ c, a }: TabProps) {
   const R = a.rul;
   return (
-    <Panel t="Certified period" badge={<ProvB k="ret" sys="QMS" />}>
+    <CasePanel t="Certified period" badge={<ProvB k="ret" sys="QMS" />}>
       {R ? (
         <div className="asfig">
           <span className="note">Certified operating period</span><b className="big num">{R.certMonths} months</b>
@@ -196,18 +197,18 @@ export function CertTab({ c, a }: TabProps) {
           <span className="note">Circularity reads this certificate; it does not certify equipment.</span>
         </div>
       ) : <div className="asfig"><b>No certified period</b><span className="note">{c.engLife || 'Not assessed'}</span></div>}
-    </Panel>
+    </CasePanel>
   );
 }
 export function PhotosTab({ c }: TabProps) {
   return (
-    <Panel t="Photos">
+    <CasePanel t="Photos">
       <div className="asgal">
         {['36% 60%', '70% 40%', '20% 30%', '55% 85%'].map((p, i) => (
           <div key={i} className="asimg zoomg" style={{ '--op': p } as CSSProperties}><img src={photoSrc(c.cls)} alt={`${c.product} view ${i + 1}`} loading="lazy" /></div>
         ))}
       </div>
       <p className="note" style={{ margin: '6px 0 0' }}>Close-up crops of the product photo. Inspection photos attach here when they arrive from the inspection system.</p>
-    </Panel>
+    </CasePanel>
   );
 }

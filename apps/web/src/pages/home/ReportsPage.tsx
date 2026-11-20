@@ -6,7 +6,9 @@ import { allowedTenants } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { askSoon, FrHead, FrIt } from './kit';
+import { askSoon } from '../../ui/askBus';
+import { IconTile } from '../../ui/kit/IconTile';
+import { HomeHeader } from './HomeHeader';
 
 const PERIODS: [string, string][] = [['30', 'Last 30 days'], ['90', 'Last 90 days'], ['365', 'Last 12 months']];
 type Cell = string | number;
@@ -50,7 +52,7 @@ export function ReportsPage() {
 
   return (
     <div className="frpage" id="frReports">
-      <FrHead title="Reports" sub="Six reports built from the same data as every page. Choose the scope, preview, then export as CSV or print to PDF." />
+      <HomeHeader title="Reports" sub="Six reports built from the same data as every page. Choose the scope, preview, then export as CSV or print to PDF." />
       <div className="frbar">
         <label htmlFor="frRepT">Tenant</label>
         <select className="sel" id="frRepT" value={tenant} onChange={(e) => setTenant(e.target.value)}>
@@ -69,7 +71,7 @@ export function ReportsPage() {
             return (
               <section className="panel frrc" id={'rep-' + r.id} key={r.id}>
                 <div className="frrch">
-                  <FrIt ic={r.ic} h={r.h} />
+                  <IconTile ic={r.ic} h={r.h} />
                   <div>
                     <h3>{r.t}</h3>
                     <p className="note">{r.d}</p>
@@ -87,7 +89,7 @@ export function ReportsPage() {
           return (
             <section className="panel frrc" id={'rep-' + r.id} key={r.id}>
               <div className="frrch">
-                <FrIt ic={r.ic} h={r.h} />
+                <IconTile ic={r.ic} h={r.h} />
                 <div>
                   <h3>{r.t}</h3>
                   <p className="note">{r.d}</p>

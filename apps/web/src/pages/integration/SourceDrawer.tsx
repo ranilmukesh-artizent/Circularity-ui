@@ -11,7 +11,15 @@ import { can } from '../../api/session';
 import { Drawer } from '../../ui/Overlay';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
-import { canMgr, FrDelta, FrIt, FrSeg, FrSt, fmtN, NOMGR, plural, StChip, sum, TestSteps, useInt, Vlogo, when } from './ui';
+import { Delta, pctDelta } from '../../ui/kit/Delta';
+import { IconTile } from '../../ui/kit/IconTile';
+import { Segmented } from '../../ui/kit/Segmented';
+import { StatusChip } from '../../ui/kit/StatusChip';
+import { VendorLogo } from '../../ui/kit/VendorLogo';
+import { TestSteps } from './ConnectionTests';
+import { canMgr, NOMGR, useInt } from './FabricContext';
+import { fmtN, plural, sum, when } from './fabricFormat';
+import { FabricStatus } from './FabricStatus';
 
 export interface DrawerRef { mode: 'edit' | 'new'; id: string; tab: string; cat?: string }
 type Errs = Record<string, string>;
@@ -158,9 +166,9 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
 
   const title = s ? (
     <span className="row" style={{ gap: 10, flexWrap: 'nowrap' }}>
-      <Vlogo vendor={s.vendor} />
+      <VendorLogo vendor={s.vendor} />
       <span>{s.name}</span>
-      {s.syncing ? <span className="chip y">Syncing</span> : <StChip s={s.status} />}
+      {s.syncing ? <span className="chip y">Syncing</span> : <StatusChip s={s.status} />}
     </span>
   ) : 'Add source';
   const sub = s ? s.vendor + ' adapter · config v' + s.cfgVer : 'Connect a system. Each system is its own connector.';
@@ -244,7 +252,7 @@ function LiveKv({ s }: { s: Source }) {
   return (
     <dl className="kv sdlive">
       <dt>Status</dt>
-      <dd>{s.syncing ? <span className="chip y">Syncing {s.syncPct || 0}%</span> : <StChip s={s.status} />}{connectorNote(s) && <span className="note"> · {connectorNote(s)}</span>}</dd>
+      <dd>{s.syncing ? <span className="chip y">Syncing {s.syncPct || 0}%</span> : <StatusChip s={s.status} />}{connectorNote(s) && <span className="note"> · {connectorNote(s)}</span>}</dd>
       <dt>Last sync</dt>
       <dd><span className="num">{s.lastSync == null ? (s.status === 'unavailable' ? 'Not connected' : 'Never') : srcAgeText(s).replace(/^(Updated|Last import) /, '')}</span></dd>
       <dt>Freshness · completeness · confidence</dt>
@@ -505,7 +513,7 @@ function HealthCard({ s }: { s: Source }) {
   const next = s.paused ? 'Paused' : s.interval && s.lastSync ? new Date(s.lastSync + s.interval * 60000).toISOString().slice(11, 16) + ' UTC' : /event|webhook/i.test(s.mode) ? 'On event' : '—';
   return (
     <div className={'frhc ' + st}>
-      <FrIt ic={st === 'healthy' ? 'checks' : st === 'manual' ? 'file' : 'alert'} h={st === 'healthy' ? 'int' : st === 'manual' || st === 'paused' ? 'neutral' : 'alert'} />
+      <IconTile ic={st === 'healthy' ? 'checks' : st === 'manual' ? 'file' : 'alert'} h={st === 'healthy' ? 'int' : st === 'manual' || st === 'paused' ? 'neutral' : 'alert'} />
       <div>
         <b>{head}</b>
         <span className="note">{s.disconnected ? 'Disconnected by ' + (s.discBy || 'Admin') + '. Reconnect to resume.' : [connectorNote(s), s.note || srcAgeText(s)].filter(Boolean).join('. ')}</span>
@@ -553,10 +561,10 @@ function OvTab({ s, use, setUse }: { s: Source; use: string; setUse: (v: string)
         <dt>Last sync</dt><dd>{srcAgeText(s)}</dd>
       </dl>
       <h4>Usage and performance</h4>
-      <div className="frusg"><FrSeg items={[['7', '7D'], ['30', '30D'], ['90', '90D']]} cur={use} onPick={setUse} label="Usage period" /></div>
+      <div className="frusg"><Segmented items={[['7', '7D'], ['30', '30D'], ['90', '90D']]} cur={use} onPick={setUse} label="Usage period" /></div>
       <div className="frust">
-        <div><span className="note">Records synced</span><b className="num">{fmtN(rec)}</b><FrDelta cur={rec} prev={pr} goodUp /></div>
-        <div><span className="note">API calls</span><b className="num">{fmtN(calls)}</b><FrDelta cur={calls} prev={Math.round(pr * 2.4)} goodUp={null} /></div>
+        <div><span className="note">Records synced</span><b className="num">{fmtN(rec)}</b><Delta d={pctDelta(rec, pr, true)} /></div>
+        <div><span className="note">API calls</span><b className="num">{fmtN(calls)}</b><Delta d={pctDelta(calls, Math.round(pr * 2.4), null)} /></div>
         <div><span className="note">Success rate</span><b className="num">{s.status === 'unavailable' ? '—' : successRate(s) + '%'}</b><span className="note">{fmtN(failedRecords(s, n))} failed records</span></div>
       </div>
       <UsageChart s={s} n={n} />
@@ -589,7 +597,7 @@ function SecTab({ s }: { s: Source }) {
         <dt>Method</dt><dd>{s.auth}</dd>
         <dt>Credential issued</dt><dd>{s.credAt ? fmtDateYear(new Date(s.credAt)) : '—'}</dd>
         <dt>Expires</dt>
-        <dd>{exp && d != null ? <>{fmtDateYear(exp)} · {d < 0 ? 'expired' : d + ' days'}{d <= 14 && <> <FrSt k="expiring" /></>}</> : '—'}</dd>
+        <dd>{exp && d != null ? <>{fmtDateYear(exp)} · {d < 0 ? 'expired' : d + ' days'}{d <= 14 && <> <FabricStatus k="expiring" /></>}</> : '—'}</dd>
         <dt>Stored in</dt><dd>Platform secret store; never shown in the interface</dd>
       </dl>
       {canMgr() && (

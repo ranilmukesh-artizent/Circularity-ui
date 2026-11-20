@@ -1,32 +1,25 @@
 /**
  * Small building blocks of the case pages, ported from the demo's markup helpers (asPanel, provB, stProv, afBadge,
- * stTag, stKv, stp, vlogo, frIt, frSt, frTl, stPva, rangeBar, jsonHtml, exMethod, exClockChip, stLogos, asPhoto,
- * stageChip). Same classes and text, so the demo's CSS applies.
+ * stTag, stKv, stp, frSt, stPva, rangeBar, exMethod, exClockChip, stLogos, asPhoto, stageChip, asTbl). Same classes
+ * and text, so the demo's CSS applies. The shared ones (frIt, frPanel, frTl, vlogo, jsonHtml) are in src/ui/kit.
  */
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import {
   exTs, refList, srcAge, stages, type CaseAnalysis, type CaseRec, type Clock, type Source, type StageTag,
 } from '../../api/case';
 import { money } from '../../api/format';
-import { Icon } from '../../ui/Icon';
-import { caseActions } from './ui';
+import { IconTile } from '../../ui/kit/IconTile';
+import { KeyedStatus, type StatusTable } from '../../ui/kit/StatusPill';
+import { VendorLogo } from '../../ui/kit/VendorLogo';
+import { caseActions } from './caseActions';
 
 export const hue = (h: string, k?: number) => ({ '--c': `var(--h-${h})`, ...(k != null ? { '--k': k } : {}) }) as CSSProperties;
 
-/** A panel (asPanel). */
-export function Panel({ t, badge, cls, id, children }: { t: ReactNode; badge?: ReactNode; cls?: string; id?: string; children: ReactNode }) {
+/** A panel of the case pages (asPanel): a title with an optional badge, no subtitle. */
+export function CasePanel({ t, badge, cls, id, children }: { t: ReactNode; badge?: ReactNode; cls?: string; id?: string; children: ReactNode }) {
   return (
     <section className={'panel aspn ' + (cls || '')} id={id}>
       <div className="ph"><h3>{t}</h3>{badge}</div>
-      <div className="pb">{children}</div>
-    </section>
-  );
-}
-/** A panel with a title and an optional subtitle (frPanel). */
-export function FrPanel({ t, sub, cls, children }: { t: ReactNode; sub?: ReactNode; cls?: string; children: ReactNode }) {
-  return (
-    <section className={'panel frp ' + (cls || '')}>
-      <div className="ph"><div><h3>{t}</h3>{sub && <span className="note">{sub}</span>}</div></div>
       <div className="pb">{children}</div>
     </section>
   );
@@ -85,36 +78,9 @@ export function Stp({ n, short }: { n: number; short?: boolean }) {
 }
 /** The demo's jmap: the journey's old step numbers onto the ten stages. */
 const jmap = (n: number): number => [0, 5, 6, 6, 6, 7, 8, 8, 8, 9, 10][n] || n;
-const vInit = (v: string) => v.replace(/[^A-Za-z0-9 ]/g, '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-const vHue = (v: string) => { let h = 7; for (const c of v) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
-/** A vendor's initials as a logo (vlogo). */
-export const VLogo = ({ s }: { s: Source }) => <span className="vlogo" style={{ '--h': vHue(s.vendor) } as CSSProperties} aria-hidden="true">{vInit(s.vendor)}</span>;
-/** A coloured icon tile (frIt). */
-export const FrIt = ({ ic, h, cls }: { ic: string; h?: string; cls?: string }) => (
-  <span className={'frit ' + (cls || '')} style={{ '--c': `var(--h-${h || 'neutral'})` } as CSSProperties}><Icon name={ic} /></span>
-);
-const FR_ST: Record<string, [string, string]> = { live: ['Live', 'ok'], stale: ['Stale', 'warn'], manual: ['Manual import', 'line'], unavailable: ['Not connected', 'bad'] };
-/** A status with a dot (frSt). */
-export function FrSt({ k, t }: { k: string; t?: string }) {
-  const s = FR_ST[k] || [k, 'line'];
-  return <span className={'frst ' + s[1]}><i></i>{t || s[0]}</span>;
-}
-export interface TlRow { ic: string; h: string; t: ReactNode; s?: ReactNode; ago?: string; st?: ReactNode }
-/** A timeline (frTl). */
-export function FrTl({ rows, empty }: { rows: TlRow[]; empty?: string }) {
-  if (!rows.length) return <p className="note">{empty || 'Nothing yet.'}</p>;
-  return (
-    <ol className="frtl">
-      {rows.map((r, i) => (
-        <li key={i}>
-          <FrIt ic={r.ic} h={r.h} cls="sm" />
-          <div className="frtlb"><b>{r.t}</b>{r.s && <span className="note">{r.s}</span>}</div>
-          <span className="frtlr">{r.ago && <span className="note num">{r.ago}</span>}{r.st}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}
+const SRC_ST: StatusTable = { live: ['Live', 'ok'], stale: ['Stale', 'warn'], manual: ['Manual import', 'line'], unavailable: ['Not connected', 'bad'] };
+/** A source's connection state with a dot (frSt). */
+export const SourceStatus = ({ k, t }: { k: string; t?: string }) => <KeyedStatus k={k} t={t} table={SRC_ST} />;
 /** Predicted against actual: two columns and the variance (stPva). */
 export function Pva({ pred, act }: { pred: number; act: number }) {
   const mx = Math.max(Math.abs(pred), Math.abs(act)) || 1, d = act - pred, w = (v: number) => Math.round((Math.abs(v) / mx) * 100);
@@ -138,17 +104,6 @@ export function RangeBar({ p10, p50, p90, lo, hi }: { p10: number; p50: number; 
     </div>
   );
 }
-/** Highlighted JSON (jsonHtml): keys, strings and numbers in their colours. */
-export function Json({ o }: { o: unknown }) {
-  const out: ReactNode[] = [];
-  JSON.stringify(o, null, 2).split('\n').forEach((line, i) => {
-    const m = /^(\s*)(?:"([^"]+)"(: ))?(.*?)(,?)$/.exec(line)!;
-    const [, ind, key, sep, val, comma] = m;
-    const v = /^".*"$/.test(val) && key ? <span className="s">{val}</span> : /^-?\d+(\.\d+)?$/.test(val) && key ? <span className="n">{val}</span> : val;
-    out.push(<span key={i}>{ind}{key && <><span className="k">"{key}"</span>{sep}</>}{v}{comma}{'\n'}</span>);
-  });
-  return <pre className="code">{out}</pre>;
-}
 const EX_MC_TIP: Record<string, [string, string]> = {
   Retrieved: ['exm-r', 'Read as-is from the source system'], Contracted: ['exm-c', 'A contracted price or rate held in the source system'],
   Modelled: ['exm-m', 'Predicted by a model, or solved from the other lines'],
@@ -169,12 +124,12 @@ export function StageLogos({ n, src }: { n: number; src: Record<string, Source> 
       {stages()[n - 1].sys.map((s) => {
         const so = src[ST_SYS[s]];
         if (!so) {
-          if (s === 'Circularity') return <span key={s} className="stsy"><FrIt ic="spark" h="agent" cls="xs" /><span>Circularity</span></span>;
+          if (s === 'Circularity') return <span key={s} className="stsy"><IconTile ic="spark" h="agent" cls="xs" /><span>Circularity</span></span>;
           return <span key={s} className="stsy"><span>{s}</span></span>;
         }
         if (seen.has(so.id)) return null;
         seen.add(so.id);
-        return <span key={s} className="stsy" data-tip={s + ' · ' + so.vendor}><VLogo s={so} /><span>{s}</span></span>;
+        return <span key={s} className="stsy" data-tip={s + ' · ' + so.vendor}><VendorLogo vendor={so.vendor} /><span>{s}</span></span>;
       })}
     </>
   );

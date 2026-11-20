@@ -8,7 +8,9 @@ import { allowedTenants, canPage, currentAccount, signInEmail, signOut } from '.
 import { Icon } from '../../ui/Icon';
 import { applyTheme, useTheme } from '../../ui/theme';
 import { toast } from '../../ui/toast';
-import { FrHead, FrPanel, FrSeg } from './kit';
+import { Panel } from '../../ui/kit/Panel';
+import { Segmented } from '../../ui/kit/Segmented';
+import { HomeHeader } from './HomeHeader';
 
 /** The menu's collapsed state belongs to the app shell; Settings drives its own toggle button. */
 const railOn = () => !!document.querySelector('.app.rail');
@@ -44,9 +46,9 @@ export function SettingsPage() {
 
   return (
     <div className="frpage" id="frSettings">
-      <FrHead title="Settings" sub="Your profile and preferences. Changes apply on this device; access and autonomy stay with Access & Governance." />
+      <HomeHeader title="Settings" sub="Your profile and preferences. Changes apply on this device; access and autonomy stay with Access & Governance." />
       <div className="frset">
-        <FrPanel title="Profile" id="stProfile">
+        <Panel title="Profile" id="stProfile">
           <dl className="frdl">
             <dt>Signed in as</dt><dd>{a.label}</dd>
             <dt>Role</dt><dd>{a.role}</dd>
@@ -58,21 +60,21 @@ export function SettingsPage() {
             <button className="btn sm" onClick={() => leave('Sign in with another account to continue.')}>Switch account</button>
             <button className="btn sm" onClick={() => leave('Signed out of ' + a.label + '.')}><Icon name="logout" /> Sign out</button>
           </div>
-        </FrPanel>
-        <FrPanel title="Appearance" id="stLook">
+        </Panel>
+        <Panel title="Appearance" id="stLook">
           <div className="frfr">
             <span>Theme</span>
-            <FrSeg name="theme" label="Theme" cur={theme} items={[['light', 'Light', 'sun'], ['dark', 'Dark', 'moon']]} onPick={(v) => applyTheme(v as 'light' | 'dark')} />
+            <Segmented name="theme" label="Theme" cur={theme} items={[['light', 'Light', 'sun'], ['dark', 'Dark', 'moon']]} onPick={(v) => applyTheme(v as 'light' | 'dark')} />
           </div>
           <div className="frfr">
             <span>Menu</span>
-            <FrSeg
+            <Segmented
               name="menu" label="Menu" cur={rail ? 'rail' : 'open'} items={[['open', 'Expanded'], ['rail', 'Collapsed']]}
               onPick={(v) => { if ((v === 'rail') !== railOn()) toggleRail(); setRail(v === 'rail'); }}
             />
           </div>
-        </FrPanel>
-        <FrPanel title="Region and currency" id="stRegion">
+        </Panel>
+        <Panel title="Region and currency" id="stRegion">
           <div className="frfr">
             <label htmlFor="st-lang">Language</label>
             <select className="sel" id="st-lang" value={rg.lang} onChange={(e) => lang(e.target.value)}>
@@ -92,8 +94,8 @@ export function SettingsPage() {
             </select>
           </div>
           <p className="note">Exchange rates are indicative; decisions stay in USD.</p>
-        </FrPanel>
-        <FrPanel title="Notifications" id="stNotif">
+        </Panel>
+        <Panel title="Notifications" id="stNotif">
           <div className="frchk">
             {notifTypes().map((n) => (
               <label className="tog" key={n[0]}>
@@ -102,8 +104,8 @@ export function SettingsPage() {
             ))}
           </div>
           <p className="note">Alerts always show in the bell and on the Alerts page; these choose what is also sent to you.</p>
-        </FrPanel>
-        <FrPanel title="Agent autonomy" id="stAuto">
+        </Panel>
+        <Panel title="Agent autonomy" id="stAuto">
           {auto.length ? (
             <table className="t static tight">
               <tbody>
@@ -123,8 +125,8 @@ export function SettingsPage() {
             {access ? 'Admin changes it under Access & Governance.' : 'Ask Admin to change it.'}
           </p>
           {access && <a className="btn sm" href="#/access/autonomy">Open agent autonomy →</a>}
-        </FrPanel>
-        <FrPanel title="Presenter options" id="stPres">
+        </Panel>
+        <Panel title="Presenter options" id="stPres">
           <label className="tog">
             <input type="checkbox" checked={presenterOn()} onChange={(e) => setPresenter(e.target.checked)} /> Show the Presenter menu on this device
           </label>
@@ -132,7 +134,7 @@ export function SettingsPage() {
             <input type="checkbox" checked={livePaused()} onChange={(e) => pause(e.target.checked)} /> Pause live updates
           </label>
           <p className="note">The Presenter menu holds the quick-fill chips and the drills. An audience never sees it unless it is turned on here.</p>
-        </FrPanel>
+        </Panel>
       </div>
     </div>
   );

@@ -9,7 +9,8 @@ import { currentAccount } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { Modal, useOverlay } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { AfBadge, Json } from './kit';
+import { JsonView } from '../../ui/kit/JsonView';
+import { AfBadge } from './CaseBlocks';
 import { TiResult } from './tabs/DecideTabs';
 
 /** The approval card (ACT.approve with the agent's draft, the limit and the raw instruction; confirmApprove). */
@@ -100,7 +101,7 @@ export function ApprovalModal({ c, mode, onClose }: { c: CaseRec; mode?: 'review
         </p>
         <details className="afraw">
           <summary>Raw instruction that will be sent </summary>
-          <Json o={instruction(c)} />
+          <JsonView variant="lines" value={instruction(c)} />
         </details>
       </div>
       <div className="grid g2">

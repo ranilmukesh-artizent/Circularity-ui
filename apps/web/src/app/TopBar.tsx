@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { alerts, liveAgo, regionSummary } from '../api/nav';
 import { allowedTenants, can, canPage, currentAccount, rolePolicy, roleAvatar, setTenantFilter, tenantFilter, tenants } from '../api/session';
 import { Icon } from '../ui/Icon';
+import { IconTile } from '../ui/kit/IconTile';
 import { toggleTheme, useTheme } from '../ui/theme';
 import { openAsk } from '../ui/askBus';
 
@@ -100,9 +101,7 @@ export function TopBar({ onMenu, onSignOut }: { onMenu: () => void; onSignOut: (
               <ul className="frbl">
                 {open.slice(0, 5).map((x) => (
                   <li key={x.id}>
-                    <span className="frit sm" style={{ ['--c' as string]: `var(--h-${x.h || 'neutral'})` }}>
-                      <Icon name={x.ic} />
-                    </span>
+                    <IconTile ic={x.ic} h={x.h} cls="sm" />
                     <span>
                       <a href={'#/' + x.go}>
                         <b>{x.t}</b>

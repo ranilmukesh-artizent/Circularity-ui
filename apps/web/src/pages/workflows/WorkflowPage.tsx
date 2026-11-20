@@ -6,7 +6,7 @@ import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import {
-  ago, analyze, evalStep, hashId, history, logoHtml, mappings, nowMs, NOWF, publishWorkflow, runCounts, runErrors,
+  ago, analyze, evalStep, hashId, history, mappings, nowMs, NOWF, publishWorkflow, runCounts, runErrors,
   runFromLast, runOrder, saveWorkflow, savedOf, setWorkflowStatus, sourceCategoryLabel, sourceCompleteness,
   stepInfo, systemOf, templateOf, trigText, usedBy, validate, wfStat, workflow, WF_H, WF_W, WF_WH, worldWidth, type TestRun, type Trigger, type Workflow,
 } from '../../api/workflows';
@@ -15,7 +15,13 @@ import { openAsk } from '../../ui/askBus';
 import { toast } from '../../ui/toast';
 import { draftOf, edit, reload, undoRedo, useDrafts, type Draft } from './draftStore';
 import { CanvasView, canvasOps, ChecksPanel, FIXMSG, Inspector, Palette, TaskInstances, type Sel } from './Canvas';
-import { It, Menu, Panel, QuickActions, Raw, Ring, Seg, St, useTick } from './kit';
+import { IconTile } from '../../ui/kit/IconTile';
+import { Panel } from '../../ui/kit/Panel';
+import { Ring } from '../../ui/kit/Ring';
+import { Segmented } from '../../ui/kit/Segmented';
+import { useTick } from '../../ui/useTick';
+import { QuickActions, WorkflowMenu } from './WorkflowMenus';
+import { SourceMark, WorkflowStatus } from './WorkflowMarks';
 import { DeleteModal, FailedRecordsModal, RunViewModal } from './WorkflowModals';
 import { duplicate, exportOne, NOT_YET, runNow, saveTemplate, studioHref } from './workflowActions';
 
@@ -285,15 +291,15 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
       </nav>
       <div className="wfbar frwfh">
         <button className="iconbtn" aria-label="All workflows" onClick={back}><Icon name="back" /></button>
-        {s ? <Raw html={logoHtml(s)} /> : <It ic="bot" h="agent" cls="sm" />}
+        {s ? <SourceMark s={s} /> : <IconTile ic="bot" h="agent" cls="sm" />}
         <div className="wfname"><label className="sr" htmlFor="wfName">Workflow name</label>
           <input id="wfName" value={d.name} maxLength={80} onChange={(e) => meta((x) => { x.name = e.target.value; })} /></div>
-        <span id="wfStat">{w.running ? <St k="running" /> : <St k={stat} />}</span>
+        <span id="wfStat">{w.running ? <WorkflowStatus k="running" /> : <WorkflowStatus k={stat} />}</span>
         <span className="note num">{w.id} · v{w.ver}</span>
         {l && <span className="note">Last run {ago(nowMs() - l.ts)}</span>}
         <span id="wfDirty">{d.dirty && <span className="chip y">Unsaved changes</span>}</span>
         <span className="grow" />
-        <Menu summaryCls="btn" summary={<>More actions <Icon name="chevD" /></>}>
+        <WorkflowMenu summaryCls="btn" summary={<>More actions <Icon name="chevD" /></>}>
           {mgr && <button role="menuitem" id="wfSaveB" disabled={!d.dirty} onClick={save}><Icon name="check" /><span>Save</span></button>}
           <button role="menuitem" id="wfDiscB" disabled={!d.dirty} onClick={discard}><Icon name="undo" /><span>Discard changes</span></button>
           <button role="menuitem" onClick={reset}><Icon name="rotate" /><span>Reset to template</span></button>
@@ -302,13 +308,13 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
           {mgr && <button role="menuitem" onClick={() => saveTemplate(w.id)}><Icon name="file" /><span>Save as template</span></button>}
           <button role="menuitem" onClick={() => exportOne(w.id)}><Icon name="download" /><span>Export JSON</span></button>
           {mgr && <button role="menuitem" className="dng" onClick={() => setModal({ k: 'del' })}><Icon name="trash" /><span>Delete</span></button>}
-        </Menu>
+        </WorkflowMenu>
         <button className="btn" onClick={validateNow}><Icon name="checks" /> Validate</button>
         <button className="btn" onClick={testRun}><Icon name="play" /> Test run</button>
         {mgr && <button className="btn pri" onClick={() => runNow(w.id)}><Icon name="play" /> Run now</button>}
       </div>
       <p className="note frwfd">{w.desc}</p>
-      <Seg name="wftab" label="Workflow sections" cur={tab} onPick={setTab}
+      <Segmented name="wftab" label="Workflow sections" cur={tab} onPick={setTab}
         items={[['studio', 'Workflow studio'], ['settings', 'Settings'], ['history', 'History'], ['docs', 'Documentation']]} />
     </>
   );
@@ -384,7 +390,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
       <button className="btn sm" onClick={autoLayout}>Auto layout</button>
       <button className="iconbtn sm" aria-label="Show or hide the minimap" onClick={() => setMini((m) => !m)}><Icon name="minimap" /></button>
       <span className="grow" />
-      <Seg name="wfview" label="Canvas view" cur={view} onPick={setView} items={[['overview', 'Overview'], ['details', 'Details'], ['flow', 'Data flow']]} />
+      <Segmented name="wfview" label="Canvas view" cur={view} onPick={setView} items={[['overview', 'Overview'], ['details', 'Details'], ['flow', 'Data flow']]} />
       <button className="btn sm cxwb" aria-pressed={wide} onClick={() => setWide((x) => !x)}>{wide ? 'Show panels' : 'Expand canvas'}</button>
     </div>
   );
@@ -431,7 +437,7 @@ function RunsTable({ w, n, onView }: { w: Workflow; n: number; onView: (run: str
         const going = r.state === 'running', rej = going ? 0 : runErrors(w.id, r);
         return (
           <tr key={r.id + r.ts} className={r.state === 'failed' ? 'frfail' : ''}>
-            <td className="mono">{r.id}</td><td><St k={r.state === 'failed' ? 'failed' : going ? 'running' : 'success'} /></td>
+            <td className="mono">{r.id}</td><td><WorkflowStatus k={r.state === 'failed' ? 'failed' : going ? 'running' : 'success'} /></td>
             <td className="num nowrap">{stamp(r.ts)}</td><td className="r num">{going ? '—' : r.dur + ' s'}</td>
             <td className="r num">{going ? '—' : fmtNumber(r.rows) + ' / ' + fmtNumber(r.state === 'failed' ? 0 : r.rows - rej)}</td>
             <td className={'r num ' + (rej ? 'neg' : '')}>{going ? '—' : fmtNumber(rej)}</td><td>{r.trig}</td>
@@ -479,8 +485,8 @@ function Details({ w, d, mgr, onDup, onDelete }: { w: Workflow; d: Draft; mgr: b
       <Panel title="Workflow details" id="frWfDet">
         <dl className="frdl">
           <dt>Name</dt><dd>{w.name}</dd><dt>Description</dt><dd className="note">{w.desc}</dd><dt>Version</dt><dd>v{w.ver}</dd>
-          <dt>Status</dt><dd><St k={wfStat(w)} /></dd><dt>Owner</dt><dd>{w.owner}</dd><dt>Trigger</dt><dd>{trigText(w.trig)}</dd>
-          <dt>Last run</dt><dd>{w.last ? <>{stamp(w.last.ts)} <St k={w.last.state === 'failed' ? 'failed' : 'success'} /></> : '—'}</dd>
+          <dt>Status</dt><dd><WorkflowStatus k={wfStat(w)} /></dd><dt>Owner</dt><dd>{w.owner}</dd><dt>Trigger</dt><dd>{trigText(w.trig)}</dd>
+          <dt>Last run</dt><dd>{w.last ? <>{stamp(w.last.ts)} <WorkflowStatus k={w.last.state === 'failed' ? 'failed' : 'success'} /></> : '—'}</dd>
           <dt>Next run</dt><dd>{every && w.last && w.status === 'published' ? new Date(w.last.ts + every * 60000).toTimeString().slice(0, 5) : '—'}</dd>
           <dt>Success rate (24 h)</dt><dd>{w.runsN ? Math.round((w.okN / w.runsN) * 100) + '%' : '—'}</dd>
           <dt>Average duration</dt><dd>{w.last ? w.last.dur + ' s' : '—'}</dd>
@@ -489,7 +495,7 @@ function Details({ w, d, mgr, onDup, onDelete }: { w: Workflow; d: Draft; mgr: b
       <Panel title="Tags"><div className="row">{tags.map((t) => <span key={t} className="chip line">{t}</span>)}</div></Panel>
       {s && (
         <Panel title="Related systems">
-          <div className="frrel"><Raw html={logoHtml(s)} /><span><b>{s.vendor}</b><span className="note mono">{s.url || '—'}</span><span className="note">Used by {uses} workflow{uses === 1 ? '' : 's'}</span></span><St k={s.status === 'live' ? 'live' : s.status} /></div>
+          <div className="frrel"><SourceMark s={s} /><span><b>{s.vendor}</b><span className="note mono">{s.url || '—'}</span><span className="note">Used by {uses} workflow{uses === 1 ? '' : 's'}</span></span><WorkflowStatus k={s.status === 'live' ? 'live' : s.status} /></div>
           <button className="lnk" onClick={() => nav('/integration/map?src=' + encodeURIComponent(s.id))}>Open connection →</button>
         </Panel>
       )}

@@ -15,8 +15,9 @@ import { can } from '../../../api/session';
 import { onActivateKey } from '../../../ui/keys';
 import { toast } from '../../../ui/toast';
 import { openExSrc, openExSrcAll, openModels, openSources, openTrace } from '../CaseDrawers';
-import { AfBadge, ExMethod, Panel, ProvB, RangeBar, Stp, Tbl } from '../kit';
-import { approveGuarded, caseActions, runNextStep, scrollToId, useCaseUi } from '../ui';
+import { AfBadge, CasePanel, ExMethod, ProvB, RangeBar, Stp, Tbl } from '../CaseBlocks';
+import { approveGuarded, caseActions, runNextStep, scrollToId } from '../caseActions';
+import { useCaseUi } from '../CaseContext';
 import type { TabProps } from './index';
 
 type P = { c: CaseRec; a: CaseAnalysis };
@@ -163,7 +164,7 @@ function TiAllPaths({ c }: { c: CaseRec }) {
   const rec = c.recommendation, ch = c.chosen, rs = c.routes.slice().sort((x, y) => y.net - x.net), el = rs.filter((r) => !r.excluded).length;
   if (!rs.length) return null;
   return (
-    <Panel t={<>All pathways <span className="note">{rs.length} route{rs.length > 1 ? 's' : ''} · {el} eligible · {rs.length - el} withheld</span></>} cls="tiallw" id="tiAllPaths">
+    <CasePanel t={<>All pathways <span className="note">{rs.length} route{rs.length > 1 ? 's' : ''} · {el} eligible · {rs.length - el} withheld</span></>} cls="tiallw" id="tiAllPaths">
       <p className="note" style={{ margin: '0 0 8px' }}>Every route Circularity built for {c.id}, including any a gate withheld. Net is the predicted net contribution.</p>
       <Tbl head={[['Pathway'], ['Net', 'r'], ['P10 to P90', 'r'], ['Status']]} cls="tiallp" rows={rs.map((r, i) => {
         const isRec = sameR(r, rec), isCh = sameR(r, ch || rec);
@@ -176,7 +177,7 @@ function TiAllPaths({ c }: { c: CaseRec }) {
           </tr>
         );
       })} />
-    </Panel>
+    </CasePanel>
   );
 }
 function TiKnown({ c, a }: P) {
@@ -274,7 +275,7 @@ function TiP1({ c, a, sr }: PS) {
     return { r, st, rt: rid(r.id) };
   }).sort((x, y) => ({ ok: 0, warn: 1, bad: 2 } as Record<string, number>)[x.st[1]] - ({ ok: 0, warn: 1, bad: 2 } as Record<string, number>)[y.st[1]] || y.r.net - x.r.net);
   return (
-    <Panel t="Eligibility and feasible pathways" cls="tix1">
+    <CasePanel t="Eligibility and feasible pathways" cls="tix1">
       {el.length ? <>
         <p className="note" style={{ margin: '0 0 8px' }}>Based on condition, product, ownership, policy, parts and operating constraints. Select a pathway to highlight it.</p>
         <div className="tipath">{el.map((e, i) => (
@@ -283,7 +284,7 @@ function TiP1({ c, a, sr }: PS) {
           </button>
         ))}</div>
       </> : <div className="empty"><b>No pathways evaluated</b>{c.blocked ? c.blocked.reason : 'This asset needs evidence first.'}</div>}
-    </Panel>
+    </CasePanel>
   );
 }
 function TiScatter({ rows, rec }: { rows: TiRow[]; rec: Route | null | undefined }) {
@@ -318,7 +319,7 @@ function TiP2({ c, rows }: PS) {
     else setTi({ sel: s.filter((x) => x !== p) });
   };
   return (
-    <Panel t="Predicted outcomes and comparison" cls="tix2">
+    <CasePanel t="Predicted outcomes and comparison" cls="tix2">
       {rows.length ? <>
         <p className="note" style={{ margin: '0 0 8px' }}>Model-predicted outcomes for each feasible pathway{scenActive() ? <>. <b>Scenario applied.</b></> : '.'}</p>
         <div className="tw">
@@ -338,7 +339,7 @@ function TiP2({ c, rows }: PS) {
         <h4 style={{ margin: '12px 0 4px' }}>Comparison chart (net recovery vs cycle time)</h4>
         <TiScatter rows={rows} rec={rec} />
       </> : <div className="empty"><b>No predictions yet</b>{c.blocked ? c.blocked.reason : 'Evidence is needed before outcomes can be predicted.'}</div>}
-    </Panel>
+    </CasePanel>
   );
 }
 export const TbNote = () => (
@@ -364,10 +365,10 @@ const explainOpen = () => {
 function TiP3({ c, a, sr, rows }: PS) {
   const r = c.chosen || c.recommendation, ti = tiView();
   if (!r) return (
-    <Panel t="Recommendation and rationale" cls="tix3">
+    <CasePanel t="Recommendation and rationale" cls="tix3">
       <div className="empty"><b>No recommendation yet</b>{c.blocked ? c.blocked.reason : 'Evidence is needed before a pathway can be recommended.'}</div>
       <a className="lnk" href="#step-5" onClick={(e) => { e.preventDefault(); scrollToId('step-5'); }}>See what happens next (step 5)</a>
-    </Panel>
+    </CasePanel>
   );
   const others = rows.filter((z) => !sameR(z.r, r)).sort((x, y) => y.r.net - x.r.net), next = others[0], me = rows.find((z) => sameR(z.r, r)) || { ...metrics(a, r), fit: '—' as unknown as number };
   const pctUp = next && next.r.net ? Math.round(((r.net - next.r.net) / Math.abs(next.r.net)) * 100) : null, W = ti.w, top = rows.slice().sort((x, y) => y.fit - x.fit)[0];
@@ -380,7 +381,7 @@ function TiP3({ c, a, sr, rows }: PS) {
   const cons = c.blocked ? c.blocked.reason : r.demandStatus === 'forecast' ? 'Demand is a forecast, so a haircut is included.' : exN ? exN + ' pathway(s) withheld by a gate.' : 'None for this asset.';
   const tag = (z: TiRow) => [(z.r.net > r.net ? 'Higher value' : 'Lower value') + ' · ' + (z.days < me.days ? 'Shorter cycle time' : 'Longer cycle time'), (z.prob < me.prob ? 'Higher risk' : 'Lower risk') + ' · ' + (z.cost > me.cost ? 'Lower cost' : 'Higher cost')];
   return (
-    <Panel t="Recommendation and rationale" cls="tix3">
+    <CasePanel t="Recommendation and rationale" cls="tix3">
       <div className="tirec"><span className="chip ok">Recommended</span><div className="tirt">{r.plan}</div>
         <div className="tirv"><span className="note">Expected net recovery</span><b className="num">{money(r.net)}</b>
           {pctUp != null && next && <span className={pctUp >= 0 ? 'tx-ok' : 'tx-bad'}>{pctUp >= 0 ? '▲' : '▼'} {Math.abs(pctUp)}% vs next best alternative</span>}</div>
@@ -402,7 +403,7 @@ function TiP3({ c, a, sr, rows }: PS) {
       </>}
       <TieBox t={tieBreak(a, rows)} rec={r} /><TbNote />
       <a className="lnk" href="#step-5" onClick={(e) => { e.preventDefault(); scrollToId('step-5'); }}>Approve and hand off in step 5 →</a>
-    </Panel>
+    </CasePanel>
   );
 }
 export const TiA = (p: PS) => <><TiP1 {...p} /><TiP2 {...p} /><TiP3 {...p} /></>;
@@ -698,19 +699,19 @@ const TI_OBJ: [keyof ReturnType<typeof tiView>['w'], string][] = [['net', 'Maxim
 function TiObj() {
   const w = tiView().w;
   return (
-    <Panel t={<>Business objectives <span className="note">(for the Fit score)</span></>} cls="tiobj">
+    <CasePanel t={<>Business objectives <span className="note">(for the Fit score)</span></>} cls="tiobj">
       {TI_OBJ.map(([k, l]) => (
         <div key={k} className="sl"><label htmlFor={'tw-' + k}>{l}</label>
           <input id={'tw-' + k} type="range" min={0} max={100} step={5} value={w[k]} onChange={(e) => setTi({ w: { ...w, [k]: +e.target.value } })} />
           <b className="num" id={'twv-' + k}>{w[k]}%</b></div>
       ))}
       <p className="note" style={{ margin: '6px 0 0' }}>The weights produce the Fit score, a second opinion next to net value. They do not change the approved recommendation.</p>
-    </Panel>
+    </CasePanel>
   );
 }
 export function TiMulti({ c, a, rows }: PS) {
   const ti = tiView();
-  if (rows.length < 2) return <Panel t="Compare pathways" cls="ticmpp"><div className="empty"><b>Only one eligible pathway</b>Nothing to compare under these assumptions.</div></Panel>;
+  if (rows.length < 2) return <CasePanel t="Compare pathways" cls="ticmpp"><div className="empty"><b>Only one eligible pathway</b>Nothing to compare under these assumptions.</div></CasePanel>;
   const rec = c.chosen || c.recommendation, t = tieBreak(a, rows), sel = (ti.sel || []).map((p) => rows.find((z) => z.r.plan === p)).filter(Boolean) as TiRow[];
   const pick = sel.length >= 2 ? sel : rows.slice(0, 3), ranked = rows.slice();
   if (t && t.near && t.preferred === t.b) { ranked[0] = t.b; ranked[1] = t.a; }
@@ -768,7 +769,7 @@ export function TiP4({ c, a, sr, rows }: PS) {
     <>
       <div id="tiImpact"><TiResult c={c} sr={sr} /></div>
       <div className="tig2">
-        <Panel t="Assumptions and edge cases" cls="tix4">
+        <CasePanel t="Assumptions and edge cases" cls="tix4">
           <p className="note" style={{ margin: '0 0 8px' }}>Adjust the assumptions to see how the ranking would change. The approved recommendation stays as it is until re-evaluated.{!can('scenario') && <> <b>Preview only:</b> saving scenarios belongs to the Planner and Approver.</>}</p>
           <div className="tisl">{sl('purchase', 'Avoided purchase price')}{sl('cost', 'Preparation, parts and fees')}{sl('service', 'Service exposure')}{sl('market', 'Resale price', 'Also scales lease income')}</div>
           <label className="tog" style={{ margin: '4px 0 8px' }}><input type="checkbox" checked={!!s.demandOff} onChange={(e) => setScen({ demandOff: e.target.checked })} /> Confirmed internal demand is cancelled</label>
@@ -792,7 +793,7 @@ export function TiP4({ c, a, sr, rows }: PS) {
                 <span className="tacts" style={{ display: 'inline-flex' }}><button className="tbtn" onClick={() => load(x.id)}>Load</button><button className="tbtn dng" onClick={() => del(x.id)}>Delete</button></span></div>
             ))}
           </>}
-        </Panel>
+        </CasePanel>
         <TiObj />
       </div>
       <div id="tiCmpW"><TiMulti c={c} a={a} sr={sr} rows={rows} /></div>
@@ -821,7 +822,7 @@ export function MatchedDemand({ c, a }: P) {
   if (!rows.length) return <div className="empty"><b>No contract demand matched</b>Only external market routes apply.</div>;
   return <>{rows}<p className="note" style={{ margin: '6px 0 0' }}>Matched by Circularity from orders, contracts and opportunities in ERP and CRM. The routes that use this demand are priced in step 3.</p></>;
 }
-export const DemandTab = ({ c, a }: TabProps) => <Panel t="Matched demand" badge={<ProvB k="rul" sys="Demand matching" />}><MatchedDemand c={c} a={a} /></Panel>;
+export const DemandTab = ({ c, a }: TabProps) => <CasePanel t="Matched demand" badge={<ProvB k="rul" sys="Demand matching" />}><MatchedDemand c={c} a={a} /></CasePanel>;
 
 // ================================================================ compare modal (ACT.tiCompare)
 export function compareBody(c: CaseRec, rows: TiRow[], sel: string[] | null): ReactNode | null {

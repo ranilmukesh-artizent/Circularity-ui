@@ -12,8 +12,11 @@ import { money } from '../../../api/format';
 import { can, canPage } from '../../../api/session';
 import { Icon } from '../../../ui/Icon';
 import { openExSrc, openPayload, openRaw } from '../CaseDrawers';
-import { AfBadge, Doc, ExClockChip, FrTl, Kv, Panel, Pva, Stp, Tag, VLogo, locOf } from '../kit';
-import { approveGuarded, caseActions, declineGuarded, useCaseUi } from '../ui';
+import { Timeline } from '../../../ui/kit/Timeline';
+import { VendorLogo } from '../../../ui/kit/VendorLogo';
+import { AfBadge, CasePanel, Doc, ExClockChip, Kv, Pva, Stp, Tag, locOf } from '../CaseBlocks';
+import { approveGuarded, caseActions, declineGuarded } from '../caseActions';
+import { useCaseUi } from '../CaseContext';
 import type { TabProps } from './index';
 
 const routeOf = (c: CaseRec) => c.chosen || c.recommendation;
@@ -203,12 +206,12 @@ export function WhatIfList({ a }: { a: CaseAnalysis }) {
 export function TiHandoff({ c, a, noMove }: { c: CaseRec; a: CaseAnalysis; noMove?: boolean }) {
   const ui = useCaseUi();
   const r = routeOf(c);
-  if (!r) return <Panel t="Approval and enterprise handoff" cls="tiho"><p className="note" style={{ margin: 0 }}>Nothing can be approved or handed off until a pathway is recommended.</p></Panel>;
+  if (!r) return <CasePanel t="Approval and enterprise handoff" cls="tiho"><p className="note" style={{ margin: 0 }}>Nothing can be approved or handed off until a pathway is recommended.</p></CasePanel>;
   const steps = a.view.steps, p = (a.instruction || {}) as { targetSite?: string; expectedNetUsd?: number; spendAuthorityUsd?: number }, M = a.demand;
   const dl = approverRole(c) === 'Approver', big = r.net > 25000, mv = a.move, legs = !!(mv && mv.legs.length);
   const apps = uniq(steps.map((s) => s.app)).filter((s) => !/^Circularity|^Planning/.test(s));
   return (
-    <Panel t="Approval and enterprise handoff" cls="tiho" id="tiInstr">
+    <CasePanel t="Approval and enterprise handoff" cls="tiho" id="tiInstr">
       <dl className="tikv">
         <div><dt>Required approval</dt><dd>{dl ? 'Approver (decisions delegated by Admin)' : 'Admin (decisions are not delegated)'}{big ? ' · above $25k also needs Admin (assumed)' : ''}</dd></div>
         <div><dt>Responsible approver</dt><dd>{c.approval ? c.approval.by : dl ? 'Approver' : 'Admin'}</dd></div>
@@ -253,7 +256,7 @@ export function TiHandoff({ c, a, noMove }: { c: CaseRec; a: CaseAnalysis; noMov
         <button className="btn sm" onClick={() => openRaw(ui, c, a)}>View raw payload</button>
         <span className="note">There is no auto-approve path. Every handoff carries the approval reference.</span>
       </div>
-    </Panel>
+    </CasePanel>
   );
 }
 
@@ -336,14 +339,14 @@ export function RationaleTab({ c, a }: TabProps) {
 export function ChecksTab({ c, a }: TabProps) {
   return (
     <section className="tistep" id="step-5">
-      <Panel t="Decision" cls="tix5a" id="tiDecision"><div className="tidec"><BestCard c={c} a={a} /></div></Panel>
+      <CasePanel t="Decision" cls="tix5a" id="tiDecision"><div className="tidec"><BestCard c={c} a={a} /></div></CasePanel>
     </section>
   );
 }
 export function HistoryTab({ c, a }: TabProps) {
   const jr = a.journal.slice(-8).reverse(), cat = actionCatalog();
   if (!jr.length) return <p className="note stpad">No recorded actions on {c.id} yet.</p>;
-  return <FrTl rows={jr.map((e) => ({ ic: 'clock', h: 'neutral', t: cat.find((x) => x.id === e.id)?.title ?? e.id, s: e.by + (e.prep ? ' · prepared by the agent' : ''), ago: when(e.at) }))} />;
+  return <Timeline rows={jr.map((e) => ({ ic: 'clock', h: 'neutral', t: cat.find((x) => x.id === e.id)?.title ?? e.id, s: e.by + (e.prep ? ' · prepared by the agent' : ''), ago: when(e.at) }))} />;
 }
 
 // ---------- stage 8 ----------
@@ -363,7 +366,7 @@ export function PlanTab({ c, a, s }: TabProps) {
             <div className="sttb">
               <b>{p.label}</b> <Tag t={t as { k: 'done' | 'wait' | 'todo'; icon: string; word: string }} />
               <p className="note">{p.act}</p>
-              <p className="sttm">{so && <VLogo s={so} />}<span>{p.app}</span><span className="mono">{p.docs.join(' · ')}</span><span>{p.owner}</span><span>Limit {p.lim}</span></p>
+              <p className="sttm">{so && <VendorLogo vendor={so.vendor} />}<span>{p.app}</span><span className="mono">{p.docs.join(' · ')}</span><span>{p.owner}</span><span>Limit {p.lim}</span></p>
               <ExClockChip k={p.clock} />
             </div>
           </li>

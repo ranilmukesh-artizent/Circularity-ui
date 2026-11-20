@@ -14,7 +14,7 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock('../../api/session', () => ({ can: () => m.allowed }));
 vi.mock('../../ui/toast', () => ({ toast: m.toast }));
-vi.mock('./kit', () => ({ download: m.download }));
+vi.mock('../../lib/download', () => ({ download: m.download }));
 vi.mock('../../api/workflows', () => ({
   NOWF: () => 'Only workflow managers can change workflows.',
   workflow: (id: string) => m.list.get(id),

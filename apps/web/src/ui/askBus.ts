@@ -11,6 +11,9 @@ export function openAsk(question?: string): void {
   listeners.forEach((l) => l({ question, nonce }));
 }
 
+/** openAsk for an onClick: a click passes an event, not a question, so only a string is asked. */
+export const askSoon = (q?: unknown): void => openAsk(typeof q === 'string' ? q : undefined);
+
 export function onOpenAsk(l: Listener): () => void {
   listeners.add(l);
   return () => {

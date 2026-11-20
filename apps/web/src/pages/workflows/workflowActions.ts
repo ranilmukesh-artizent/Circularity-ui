@@ -5,7 +5,7 @@ import {
   duplicateWorkflow, exportJson, followRun, NOWF, runWorkflow, setWorkflowStatus, workflow,
 } from '../../api/workflows';
 import { toast } from '../../ui/toast';
-import { download } from './kit';
+import { download } from '../../lib/download';
 
 export const studioHref = (id?: string) => '/integration/studio' + (id ? '/' + id : '');
 /** A change the backend has no action for yet. */

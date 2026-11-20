@@ -24,7 +24,12 @@ import { Conflicts, EventDrawer, Events, Import, Models } from './Records';
 import { SourceDrawer, type DrawerRef } from './SourceDrawer';
 import { SourceMap } from './SourceMap';
 import { Tables, TablesTiles } from './SourceTables';
-import { ActToasts, canMgr, FrIt, IntCtx, NOMGR, runTest, toastAct, useTick, Vlogo, type IntUI } from './ui';
+import { IconTile } from '../../ui/kit/IconTile';
+import { VendorLogo } from '../../ui/kit/VendorLogo';
+import { useTick } from '../../ui/useTick';
+import { ActToasts, toastAct } from './ActionToasts';
+import { runTest } from './ConnectionTests';
+import { canMgr, IntCtx, NOMGR, type IntUI } from './FabricContext';
 
 type Dialog =
   | { k: 'guide' } | { k: 'new' } | { k: 'disc'; id: string } | { k: 'del'; id: string } | { k: 'rot'; id: string } | { k: 'cx'; start: CxStart } | null;
@@ -180,12 +185,12 @@ function NewIntegration({ onClose, onPick, onBlank }: { onClose: () => void; onP
       <div className="frpick">
         {available().map((c) => (
           <button key={c.id} className="frrec frpk" onClick={() => onPick(c.id)}>
-            <Vlogo vendor={c.vendor} />
+            <VendorLogo vendor={c.vendor} />
             <span><b>{c.vendor}</b><span className="note">{typeOf(c.type).label} · {c.desc}</span></span>
           </button>
         ))}
         <button className="frrec frpk" onClick={onBlank}>
-          <FrIt ic="plus" h="neutral" cls="sm" />
+          <IconTile ic="plus" h="neutral" cls="sm" />
           <span><b>Another system</b><span className="note">Set up a connection by hand</span></span>
         </button>
       </div>

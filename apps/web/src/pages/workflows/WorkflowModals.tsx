@@ -10,7 +10,8 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import { forget } from './draftStore';
-import { download, St } from './kit';
+import { download } from '../../lib/download';
+import { WorkflowStatus } from './WorkflowMarks';
 import { NOT_YET } from './workflowActions';
 
 type NewType = 'ingest' | 'out' | 'dec' | 'blank';
@@ -108,7 +109,7 @@ export function RunViewModal({ id, runId, onClose, onFailed }: { id: string; run
     <Modal title={w.name + ' · ' + runId} wide onClose={onClose}
       foot={<><button className="btn" onClick={onClose}>Close</button>{w.src && <button className="btn" onClick={onFailed}>View failed records</button>}</>}>
       <dl className="frdl">
-        <dt>Status</dt><dd><St k={r?.state === 'failed' ? 'failed' : 'success'} /></dd>
+        <dt>Status</dt><dd><WorkflowStatus k={r?.state === 'failed' ? 'failed' : 'success'} /></dd>
         <dt>Started</dt><dd>{stamp(r?.ts ?? Date.now())}</dd>
         <dt>Duration</dt><dd>{r?.dur ?? '—'} s</dd>
         <dt>Triggered by</dt><dd>{r?.trig ?? '—'}</dd>

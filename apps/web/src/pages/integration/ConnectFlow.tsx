@@ -4,7 +4,11 @@ import { catalog, frAuthOptions, frSample, hashId, notOnServer, nowLabel, reauth
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { FrSt, fmtN, runTest, TestSteps, useInt, Vlogo } from './ui';
+import { VendorLogo } from '../../ui/kit/VendorLogo';
+import { runTest, TestSteps } from './ConnectionTests';
+import { useInt } from './FabricContext';
+import { fmtN } from './fabricFormat';
+import { FabricStatus } from './FabricStatus';
 
 export type CxStart = { mode: 'new'; cat: string } | { mode: 'reauth'; src: string };
 const STEPS = ['Authentication', 'Scopes', 'Test connection', 'Field mapping', 'First sync'];
@@ -99,7 +103,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
         </div>
         {auth === 'oauth' ? (
           <div className="frconsent" id="frConsent">
-            <div className="frcsh"><Vlogo vendor={v} /><b>{v}</b><span className="note">Sign in to authorise</span></div>
+            <div className="frcsh"><VendorLogo vendor={v} /><b>{v}</b><span className="note">Sign in to authorise</span></div>
             <p><b>Circularity Decision Workbench</b> is requesting access to:</p>
             <ul>
               <li>Read records it needs as evidence</li>
@@ -167,7 +171,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
                     <tr key={i}>
                       <td><input type="checkbox" aria-label={'Accept ' + r[0]} checked={!!acc[i]} onChange={(e) => setAcc({ ...acc, [i]: e.target.checked })} /></td>
                       <td className="mono">{r[0]}</td><td className="mono note">{r[1]}</td><td className="mono">{r[2]}</td><td className="mono note">{r[3]}</td>
-                      <td className="r">{r[4] >= 85 ? <FrSt k="success" t={'High · ' + r[4] + '%'} /> : r[4] >= 70 ? <FrSt k="warning" t={'Medium · ' + r[4] + '%'} /> : <FrSt k="failed" t={'Low · ' + r[4] + '%'} />}</td>
+                      <td className="r">{r[4] >= 85 ? <FabricStatus k="success" t={'High · ' + r[4] + '%'} /> : r[4] >= 70 ? <FabricStatus k="warning" t={'Medium · ' + r[4] + '%'} /> : <FabricStatus k="failed" t={'Low · ' + r[4] + '%'} />}</td>
                     </tr>
                   ))}
                 </tbody>

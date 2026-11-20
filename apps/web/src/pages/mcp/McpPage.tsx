@@ -11,6 +11,7 @@ import {
 import { can, canPage } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import { Icon } from '../../ui/Icon';
+import { JsonView } from '../../ui/kit/JsonView';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import { ReqList } from '../access/AccessRequests';
@@ -90,29 +91,12 @@ function Stp({ n, full }: { n: number; full?: boolean }) {
   );
 }
 
-/** Pretty JSON highlighted as the demo's jsonHtml does: keys (.k), and string (.s) and number (.n) values after a key. */
-function Json({ value }: { value: unknown }) {
-  const lines = (JSON.stringify(value, null, 2) ?? '').split('\n');
-  return (
-    <pre className="code">
-      {lines.map((ln, i) => {
-        const m = /^(\s*)"((?:[^"\\]|\\.)*)": (.*?)(,?)$/.exec(ln);
-        if (!m) return <span key={i}>{ln}{'\n'}</span>;
-        const v = m[3], cls = v.startsWith('"') ? 's' : /^-?\d+(\.\d+)?/.test(v) ? 'n' : '';
-        return (
-          <span key={i}>{m[1]}<span className="k">"{m[2]}"</span>: {cls ? <span className={cls}>{v}</span> : v}{m[4]}{'\n'}</span>
-        );
-      })}
-    </pre>
-  );
-}
-
 function SchemaModal({ id, onClose }: { id: string; onClose: () => void }) {
   const t = toolById(id)!;
   return (
     <Modal title={id} onClose={onClose} foot={<button className="btn" onClick={onClose}>Close</button>}>
       <p className="ink2" style={{ marginTop: 0 }}>{t.desc}</p>
-      <Json value={toolSchema(t)} />
+      <JsonView variant="escaped" value={toolSchema(t)} />
     </Modal>
   );
 }
@@ -317,7 +301,7 @@ function Playground({ onSchema }: { onSchema: (id: string) => void }) {
                   </div>
                 ))}
               </div>
-              <Json value={o.ok ? o.result : { error: o.error }} />
+              <JsonView variant="escaped" value={o.ok ? o.result : { error: o.error }} />
             </>
           ) : (
             <div className="empty">
