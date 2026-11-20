@@ -533,6 +533,41 @@ The rest of the design:
 
 **Done when:** for each endpoint, a parity test against `figures.json` (and the per-area fixtures added to B1 as needed) passes for every role.
 
+**Status: done (20 Nov 2026).** `apps/api/di/screens/`, one module per area, discovered by `di/screens/__init__.py`:
+
+| Area | Prefix | What it serves |
+|---|---|---|
+| home | `/api/screens/home` | briefing, tasks, alerts, key figures, activity, figures by period, reports |
+| command | `/api/screens/command` | layout, key figures, charts, actions table, exceptions, actions on me, handed off, outcomes, inbox, health (with the Command Center's filters) |
+| product | `/api/screens/product` | returned assets, expected returns, journey, asset intelligence (pools are off, as in the demo) |
+| case | `/api/screens/case` | the case page (run, ten stage summaries, next step, clock, approval) and the full analysis (provenance, confidence, cost traces, ranking, tie, flips, life, demand, pool, plan, move, payload, journal, events, evidence pack) |
+| orchestration | `/api/screens/orchestration` | case runs and one run's stage lines, timeline, models and escalation draft |
+| analytics | `/api/screens/analytics` | closed decisions in scope with metrics and model statistics (`analytics.models` now has a handler) |
+| audit | `/api/screens/audit` | audit entries with provenance, evidence gaps, comments |
+| reference | `/api/screens/reference` | the 101 static lists every page uses (no sign-in needed) |
+| nav | `/api/screens/nav` | the menu, its badges, the sign-in account list |
+| checks | `/api/checks` | the demo's data checks: 25 of 31 run on the server and pass; 6 test the demo's own page or its in-browser agent and are listed as not run, with the reason |
+| integration | `/api/screens/integration` | Connection Fabric: sources, overview, map, tables, models, events, conflicts, monitor |
+| mcp | `/api/screens/mcp` | tools, agents, client servers, permission matrix, calls, proposals |
+| access | `/api/screens/access` | every Access section the account may see |
+| workflows | `/api/screens/workflows` | Workflow Studio list, runs and one workflow's detail |
+
+- **Design:** each facade export was classed as data (an endpoint, scoped to the account), static reference (the reference endpoint) or frontend-only (formatting, view settings). Every module's docstring maps its facade file's exports for the switch-over (B17).
+- **Parity:** per-area golden files (`fixtures/golden/screens/*.json`, from `apps/web/scripts/golden/*.mjs` on the shared sandbox `golden-sandbox.mjs`) compared for all 11 accounts.
+- **Real data, not the demo's:** the Connection Fabric's statuses, freshness, sync history, record counts, conflicts (428 open after a full sync) and latency come from the connector tables; those screens are tested for shape and invariants. Source descriptions, mappings and the catalogue still come from the demo's reference.
+- **Connector states on screen:** the connectors' `failing` and `auth_expired` are shown as `stale` (as the demo shows an expired token), with the connector's own word in `connectorStatus`; the menu's sources-with-issues badge counts them.
+- **Tests:** 3,221 api tests pass (1,730 of them B14's), in one clean run from the starting state.
+- **Left out of comparison, with the reason in the tests:** values the demo draws at random (a failing workflow's age, the demo's seeded workflow runs and in-browser agent runs in the activity feed) and browser-only state (alert acknowledgements, an account's `homeClassic`).
+
+**For B17 (frontend switch-over):**
+- HTML the demo builds in its page functions (stage tabs, cost-driver and result blocks) is redrawn in the frontend from the returned data; the workflow canvas still needs its draft-validation functions in TypeScript.
+- The menu's open-conflicts badge shows the demo's 3; the real conflict table holds 428 open: decide which the menu shows.
+- Endpoints return ids where the facade embedded objects (integration), and ISO timestamps.
+- A facade bug to fix on the way: approval cards join step kinds letter by letter ("o → r").
+- Agent metrics and agent calls stay empty until agents run on the server (B16, B16b).
+- Workflow write actions (save, publish, setStatus, create, duplicate, delete, run, validate) and the Admin settings actions (setLimit, setSelfApprove, setAutonomy, agent.setEnabled, setRunLimits) still need handlers; the reads already use the state they would write.
+- Shared helpers were duplicated across areas (account context, tenant-filtered scope, full provenance, expected returns); consolidate them into `di/reads/common.py` when B17 touches them.
+
 ## B15. Live updates
 
 1. **Streams:** `GET /api/stream` (Server-Sent Events) sends journal events, sync progress, workflow runs, alerts and run-board steps for the signed-in account's scope.

@@ -1,0 +1,3493 @@
+{
+ "accounts": {
+  "admin": {
+   "badges": {
+    "awaiting": 41,
+    "inbox": 2,
+    "integration": 3,
+    "sections": {
+     "conf": 3,
+     "inbox": 2,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/exceptions",
+       "id": "exceptions",
+       "label": "Exceptions",
+       "sub": "Ranked issues to drill into or notify"
+      },
+      {
+       "href": "#/command/aome",
+       "id": "aome",
+       "label": "Actions on me",
+       "sub": "What waits on you"
+      },
+      {
+       "href": "#/command/handed",
+       "id": "handed",
+       "label": "Handed off",
+       "sub": "With enterprise systems, awaiting outcome"
+      },
+      {
+       "badge": "inbox",
+       "href": "#/command/approvals",
+       "id": "approvals",
+       "label": "Approvals inbox",
+       "sub": "Requests waiting for your decision"
+      },
+      {
+       "href": "#/command/outcomes",
+       "id": "outcomes",
+       "label": "Outcomes to confirm",
+       "sub": "Results that need Finance"
+      },
+      {
+       "href": "#/command/actions",
+       "id": "actions",
+       "label": "Actions to prioritise",
+       "sub": "Ranked opportunities to act on"
+      },
+      {
+       "href": "#/command/signals",
+       "id": "signals",
+       "label": "Signals and capacity",
+       "sub": "What needs attention"
+      },
+      {
+       "href": "#/command/health",
+       "id": "health",
+       "label": "Integration health",
+       "sub": "Sources, workflows and events"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/product/received",
+     "icon": "product",
+     "id": "product",
+     "kids": [
+      {
+       "href": "#/product/asset/RT-1001",
+       "id": "asset",
+       "label": "Asset intelligence",
+       "sub": "Lifecycle, condition and economics of one asset"
+      },
+      {
+       "href": "#/product/received",
+       "id": "received",
+       "label": "Returned assets",
+       "sub": "Inspect inventory and evaluate use"
+      },
+      {
+       "href": "#/product/expected",
+       "id": "expected",
+       "label": "Expected returns",
+       "sub": "Planning signals, not yet received"
+      }
+     ],
+     "label": "Decision Workbench",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Decision Workbench"
+    },
+    {
+     "href": "#/analytics",
+     "icon": "analytics",
+     "id": "analytics",
+     "kids": [
+      {
+       "href": "#/analytics/waterfall",
+       "id": "waterfall",
+       "label": "Recovery waterfall",
+       "sub": "Baseline to Circularity uplift"
+      },
+      {
+       "href": "#/analytics/pipeline",
+       "id": "pipeline",
+       "label": "Pipeline",
+       "sub": "Case to reconciled"
+      },
+      {
+       "href": "#/analytics/mix",
+       "id": "mix",
+       "label": "Route mix",
+       "sub": "How routes change over time"
+      },
+      {
+       "href": "#/analytics/predicted",
+       "id": "predicted",
+       "label": "Predicted vs actual",
+       "sub": "Forecast against outcome"
+      },
+      {
+       "href": "#/analytics/models",
+       "id": "models",
+       "label": "Model versions",
+       "sub": "The learning loop"
+      },
+      {
+       "href": "#/analytics/overrides",
+       "id": "overrides",
+       "label": "Overrides",
+       "sub": "When people changed the plan"
+      },
+      {
+       "href": "#/analytics/eng",
+       "id": "eng",
+       "label": "Engineering economics",
+       "sub": "Parts and economics"
+      },
+      {
+       "href": "#/analytics/sustain",
+       "id": "sustain",
+       "label": "Sustainability",
+       "sub": "Estimated vs measured CO₂e"
+      }
+     ],
+     "label": "Analytics",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Reconcile & learn"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/integration/overview",
+     "icon": "integration",
+     "id": "integration",
+     "kids": [
+      {
+       "href": "#/integration/overview",
+       "id": "overview",
+       "label": "Overview",
+       "sub": "Catalogue, health and recommendations"
+      },
+      {
+       "badge": "wffail",
+       "href": "#/integration/studio",
+       "id": "studio",
+       "label": "Workflow Studio",
+       "sub": "Build pipelines and workflows"
+      },
+      {
+       "badge": "srcissue",
+       "href": "#/integration/map",
+       "id": "map",
+       "label": "Source Map",
+       "sub": "Systems, tables and field links"
+      },
+      {
+       "href": "#/integration/tables",
+       "id": "tables",
+       "label": "Source Tables",
+       "sub": "Tables and how they link"
+      },
+      {
+       "href": "#/integration/models",
+       "id": "models",
+       "label": "Canonical Models",
+       "sub": "Versioned shared models"
+      },
+      {
+       "href": "#/integration/events",
+       "id": "events",
+       "label": "Event Streams",
+       "sub": "Live message stream"
+      },
+      {
+       "badge": "conf",
+       "href": "#/integration/conflicts",
+       "id": "conflicts",
+       "label": "Conflict Queue",
+       "sub": "Systems that disagree"
+      },
+      {
+       "href": "#/integration/import",
+       "id": "import",
+       "label": "Manual Import",
+       "sub": "Controlled CSV import"
+      },
+      {
+       "href": "#/integration/monitor",
+       "id": "monitor",
+       "label": "Monitor",
+       "sub": "Integration health over time against SLA"
+      }
+     ],
+     "label": "Connection Fabric",
+     "leaf": false,
+     "section": "Integration",
+     "sub": "Connection Fabric"
+    },
+    {
+     "href": "#/mcp",
+     "icon": "mcp",
+     "id": "mcp",
+     "kids": [
+      {
+       "href": "#/mcp/catalog",
+       "id": "catalog",
+       "label": "Tool catalog",
+       "sub": "Governed tools"
+      },
+      {
+       "href": "#/mcp/agents",
+       "id": "agents",
+       "label": "Agent registry",
+       "sub": "Who can call what"
+      },
+      {
+       "href": "#/mcp/playground",
+       "id": "playground",
+       "label": "Playground",
+       "sub": "Try a tool call"
+      },
+      {
+       "href": "#/mcp/perms",
+       "id": "perms",
+       "label": "Permission matrix",
+       "sub": "Agent permissions by tenant"
+      },
+      {
+       "href": "#/mcp/calls",
+       "id": "calls",
+       "label": "Call log and gate",
+       "sub": "Every call, and the write gate"
+      },
+      {
+       "href": "#/mcp/client",
+       "id": "client",
+       "label": "As MCP client",
+       "sub": "Consume enterprise MCP servers"
+      },
+      {
+       "href": "#/mcp/proposals",
+       "id": "proposals",
+       "label": "Server proposals",
+       "sub": "New MCP servers waiting for review"
+      }
+     ],
+     "label": "MCP & Tools",
+     "leaf": false,
+     "section": "More",
+     "sub": "Agents within permissions"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      },
+      {
+       "href": "#/audit/gaps",
+       "id": "gaps",
+       "label": "Evidence gaps",
+       "sub": "Evidence with no provenance"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/access",
+     "icon": "access",
+     "id": "access",
+     "kids": [
+      {
+       "href": "#/access/accounts",
+       "id": "accounts",
+       "label": "Accounts and roles",
+       "sub": "Who signs in as what"
+      },
+      {
+       "href": "#/access/identity",
+       "id": "identity",
+       "label": "Identity and users",
+       "sub": "Users and roles from your identity provider"
+      },
+      {
+       "href": "#/access/delegations",
+       "id": "delegations",
+       "label": "Approver delegations",
+       "sub": "What the Approver may decide"
+      },
+      {
+       "href": "#/access/requests",
+       "id": "requests",
+       "label": "All requests",
+       "sub": "Tenant access and MCP proposals"
+      },
+      {
+       "href": "#/access/autonomy",
+       "id": "autonomy",
+       "label": "Agent autonomy",
+       "sub": "How far the agent may go, by role"
+      },
+      {
+       "href": "#/access/limits",
+       "id": "limits",
+       "label": "Approval limits",
+       "sub": "Dollar limits and self-approval"
+      },
+      {
+       "href": "#/access/agentsx",
+       "id": "agentsx",
+       "label": "Agents and kill switches",
+       "sub": "Agent identities, scopes and limits"
+      },
+      {
+       "href": "#/access/metrics",
+       "id": "metrics",
+       "label": "Agent metrics",
+       "sub": "Success measures from the journal"
+      }
+     ],
+     "label": "Access & Governance",
+     "leaf": false,
+     "section": "More",
+     "sub": "Accounts, delegations, requests"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 2
+  },
+  "approver": {
+   "badges": {
+    "awaiting": 41,
+    "inbox": 2,
+    "integration": 3,
+    "sections": {
+     "conf": 3,
+     "inbox": 2,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/aome",
+       "id": "aome",
+       "label": "Actions on me",
+       "sub": "What waits on you"
+      },
+      {
+       "badge": "inbox",
+       "href": "#/command/approvals",
+       "id": "approvals",
+       "label": "Approvals inbox",
+       "sub": "Requests waiting for your decision"
+      },
+      {
+       "href": "#/command/actions",
+       "id": "actions",
+       "label": "Actions to prioritise",
+       "sub": "Ranked opportunities to act on"
+      },
+      {
+       "href": "#/command/signals",
+       "id": "signals",
+       "label": "Signals and capacity",
+       "sub": "What needs attention"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/product/received",
+     "icon": "product",
+     "id": "product",
+     "kids": [
+      {
+       "href": "#/product/asset/RT-1001",
+       "id": "asset",
+       "label": "Asset intelligence",
+       "sub": "Lifecycle, condition and economics of one asset"
+      },
+      {
+       "href": "#/product/received",
+       "id": "received",
+       "label": "Returned assets",
+       "sub": "Inspect inventory and evaluate use"
+      },
+      {
+       "href": "#/product/expected",
+       "id": "expected",
+       "label": "Expected returns",
+       "sub": "Planning signals, not yet received"
+      }
+     ],
+     "label": "Decision Workbench",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Decision Workbench"
+    },
+    {
+     "href": "#/analytics",
+     "icon": "analytics",
+     "id": "analytics",
+     "kids": [
+      {
+       "href": "#/analytics/waterfall",
+       "id": "waterfall",
+       "label": "Recovery waterfall",
+       "sub": "Baseline to Circularity uplift"
+      },
+      {
+       "href": "#/analytics/pipeline",
+       "id": "pipeline",
+       "label": "Pipeline",
+       "sub": "Case to reconciled"
+      },
+      {
+       "href": "#/analytics/mix",
+       "id": "mix",
+       "label": "Route mix",
+       "sub": "How routes change over time"
+      },
+      {
+       "href": "#/analytics/predicted",
+       "id": "predicted",
+       "label": "Predicted vs actual",
+       "sub": "Forecast against outcome"
+      },
+      {
+       "href": "#/analytics/models",
+       "id": "models",
+       "label": "Model versions",
+       "sub": "The learning loop"
+      },
+      {
+       "href": "#/analytics/overrides",
+       "id": "overrides",
+       "label": "Overrides",
+       "sub": "When people changed the plan"
+      },
+      {
+       "href": "#/analytics/eng",
+       "id": "eng",
+       "label": "Engineering economics",
+       "sub": "Parts and economics"
+      },
+      {
+       "href": "#/analytics/sustain",
+       "id": "sustain",
+       "label": "Sustainability",
+       "sub": "Estimated vs measured CO₂e"
+      }
+     ],
+     "label": "Analytics",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Reconcile & learn"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/integration/events",
+     "icon": "integration",
+     "id": "integration",
+     "kids": [
+      {
+       "href": "#/integration/events",
+       "id": "events",
+       "label": "Event Streams",
+       "sub": "Live message stream"
+      },
+      {
+       "badge": "conf",
+       "href": "#/integration/conflicts",
+       "id": "conflicts",
+       "label": "Conflict Queue",
+       "sub": "Systems that disagree"
+      }
+     ],
+     "label": "Connection Fabric",
+     "leaf": false,
+     "section": "Integration",
+     "sub": "Connection Fabric"
+    },
+    {
+     "href": "#/mcp",
+     "icon": "mcp",
+     "id": "mcp",
+     "kids": [
+      {
+       "href": "#/mcp/catalog",
+       "id": "catalog",
+       "label": "Tool catalog",
+       "sub": "Governed tools"
+      },
+      {
+       "href": "#/mcp/agents",
+       "id": "agents",
+       "label": "Agent registry",
+       "sub": "Who can call what"
+      },
+      {
+       "href": "#/mcp/perms",
+       "id": "perms",
+       "label": "Permission matrix",
+       "sub": "Agent permissions by tenant"
+      },
+      {
+       "href": "#/mcp/calls",
+       "id": "calls",
+       "label": "Call log and gate",
+       "sub": "Every call, and the write gate"
+      },
+      {
+       "href": "#/mcp/client",
+       "id": "client",
+       "label": "As MCP client",
+       "sub": "Consume enterprise MCP servers"
+      },
+      {
+       "href": "#/mcp/proposals",
+       "id": "proposals",
+       "label": "Server proposals",
+       "sub": "New MCP servers waiting for review"
+      }
+     ],
+     "label": "MCP & Tools",
+     "leaf": false,
+     "section": "More",
+     "sub": "Agents within permissions"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      },
+      {
+       "href": "#/audit/gaps",
+       "id": "gaps",
+       "label": "Evidence gaps",
+       "sub": "Evidence with no provenance"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 4
+  },
+  "developer": {
+   "badges": {
+    "awaiting": 41,
+    "inbox": 0,
+    "integration": 3,
+    "sections": {
+     "conf": 3,
+     "inbox": 0,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/aome",
+       "id": "aome",
+       "label": "Actions on me",
+       "sub": "What waits on you"
+      },
+      {
+       "href": "#/command/health",
+       "id": "health",
+       "label": "Integration health",
+       "sub": "Sources, workflows and events"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/integration/overview",
+     "icon": "integration",
+     "id": "integration",
+     "kids": [
+      {
+       "href": "#/integration/overview",
+       "id": "overview",
+       "label": "Overview",
+       "sub": "Catalogue, health and recommendations"
+      },
+      {
+       "badge": "wffail",
+       "href": "#/integration/studio",
+       "id": "studio",
+       "label": "Workflow Studio",
+       "sub": "Build pipelines and workflows"
+      },
+      {
+       "badge": "srcissue",
+       "href": "#/integration/map",
+       "id": "map",
+       "label": "Source Map",
+       "sub": "Systems, tables and field links"
+      },
+      {
+       "href": "#/integration/tables",
+       "id": "tables",
+       "label": "Source Tables",
+       "sub": "Tables and how they link"
+      },
+      {
+       "href": "#/integration/models",
+       "id": "models",
+       "label": "Canonical Models",
+       "sub": "Versioned shared models"
+      },
+      {
+       "href": "#/integration/events",
+       "id": "events",
+       "label": "Event Streams",
+       "sub": "Live message stream"
+      },
+      {
+       "badge": "conf",
+       "href": "#/integration/conflicts",
+       "id": "conflicts",
+       "label": "Conflict Queue",
+       "sub": "Systems that disagree"
+      },
+      {
+       "href": "#/integration/import",
+       "id": "import",
+       "label": "Manual Import",
+       "sub": "Controlled CSV import"
+      },
+      {
+       "href": "#/integration/monitor",
+       "id": "monitor",
+       "label": "Monitor",
+       "sub": "Integration health over time against SLA"
+      }
+     ],
+     "label": "Connection Fabric",
+     "leaf": false,
+     "section": "Integration",
+     "sub": "Connection Fabric"
+    },
+    {
+     "href": "#/mcp",
+     "icon": "mcp",
+     "id": "mcp",
+     "kids": [
+      {
+       "href": "#/mcp/catalog",
+       "id": "catalog",
+       "label": "Tool catalog",
+       "sub": "Governed tools"
+      },
+      {
+       "href": "#/mcp/agents",
+       "id": "agents",
+       "label": "Agent registry",
+       "sub": "Who can call what"
+      },
+      {
+       "href": "#/mcp/playground",
+       "id": "playground",
+       "label": "Playground",
+       "sub": "Try a tool call"
+      },
+      {
+       "href": "#/mcp/perms",
+       "id": "perms",
+       "label": "Permission matrix",
+       "sub": "Agent permissions by tenant"
+      },
+      {
+       "href": "#/mcp/calls",
+       "id": "calls",
+       "label": "Call log and gate",
+       "sub": "Every call, and the write gate"
+      },
+      {
+       "href": "#/mcp/client",
+       "id": "client",
+       "label": "As MCP client",
+       "sub": "Consume enterprise MCP servers"
+      },
+      {
+       "href": "#/mcp/proposals",
+       "id": "proposals",
+       "label": "Server proposals",
+       "sub": "New MCP servers waiting for review"
+      }
+     ],
+     "label": "MCP & Tools",
+     "leaf": false,
+     "section": "More",
+     "sub": "Agents within permissions"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      },
+      {
+       "href": "#/audit/gaps",
+       "id": "gaps",
+       "label": "Evidence gaps",
+       "sub": "Evidence with no provenance"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 2
+  },
+  "engineer": {
+   "badges": {
+    "awaiting": 41,
+    "inbox": 0,
+    "integration": 0,
+    "sections": {
+     "conf": 3,
+     "inbox": 0,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/aome",
+       "id": "aome",
+       "label": "Actions on me",
+       "sub": "What waits on you"
+      },
+      {
+       "href": "#/command/handed",
+       "id": "handed",
+       "label": "Handed off",
+       "sub": "With enterprise systems, awaiting outcome"
+      },
+      {
+       "href": "#/command/actions",
+       "id": "actions",
+       "label": "Actions to prioritise",
+       "sub": "Ranked opportunities to act on"
+      },
+      {
+       "href": "#/command/signals",
+       "id": "signals",
+       "label": "Signals and capacity",
+       "sub": "What needs attention"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/product/received",
+     "icon": "product",
+     "id": "product",
+     "kids": [
+      {
+       "href": "#/product/asset/RT-1001",
+       "id": "asset",
+       "label": "Asset intelligence",
+       "sub": "Lifecycle, condition and economics of one asset"
+      },
+      {
+       "href": "#/product/received",
+       "id": "received",
+       "label": "Returned assets",
+       "sub": "Inspect inventory and evaluate use"
+      },
+      {
+       "href": "#/product/expected",
+       "id": "expected",
+       "label": "Expected returns",
+       "sub": "Planning signals, not yet received"
+      }
+     ],
+     "label": "Decision Workbench",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Decision Workbench"
+    },
+    {
+     "href": "#/analytics",
+     "icon": "analytics",
+     "id": "analytics",
+     "kids": [
+      {
+       "href": "#/analytics/eng",
+       "id": "eng",
+       "label": "Engineering economics",
+       "sub": "Parts and economics"
+      },
+      {
+       "href": "#/analytics/sustain",
+       "id": "sustain",
+       "label": "Sustainability",
+       "sub": "Estimated vs measured CO₂e"
+      }
+     ],
+     "label": "Analytics",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Reconcile & learn"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/integration/overview",
+     "icon": "integration",
+     "id": "integration",
+     "kids": [
+      {
+       "href": "#/integration/overview",
+       "id": "overview",
+       "label": "Overview",
+       "sub": "Catalogue, health and recommendations"
+      },
+      {
+       "badge": "srcissue",
+       "href": "#/integration/map",
+       "id": "map",
+       "label": "Source Map",
+       "sub": "Systems, tables and field links"
+      },
+      {
+       "href": "#/integration/tables",
+       "id": "tables",
+       "label": "Source Tables",
+       "sub": "Tables and how they link"
+      },
+      {
+       "href": "#/integration/models",
+       "id": "models",
+       "label": "Canonical Models",
+       "sub": "Versioned shared models"
+      },
+      {
+       "href": "#/integration/monitor",
+       "id": "monitor",
+       "label": "Monitor",
+       "sub": "Integration health over time against SLA"
+      }
+     ],
+     "label": "Connection Fabric",
+     "leaf": false,
+     "section": "Integration",
+     "sub": "Connection Fabric"
+    },
+    {
+     "href": "#/mcp",
+     "icon": "mcp",
+     "id": "mcp",
+     "kids": [
+      {
+       "href": "#/mcp/catalog",
+       "id": "catalog",
+       "label": "Tool catalog",
+       "sub": "Governed tools"
+      },
+      {
+       "href": "#/mcp/agents",
+       "id": "agents",
+       "label": "Agent registry",
+       "sub": "Who can call what"
+      },
+      {
+       "href": "#/mcp/perms",
+       "id": "perms",
+       "label": "Permission matrix",
+       "sub": "Agent permissions by tenant"
+      },
+      {
+       "href": "#/mcp/calls",
+       "id": "calls",
+       "label": "Call log and gate",
+       "sub": "Every call, and the write gate"
+      },
+      {
+       "href": "#/mcp/client",
+       "id": "client",
+       "label": "As MCP client",
+       "sub": "Consume enterprise MCP servers"
+      },
+      {
+       "href": "#/mcp/proposals",
+       "id": "proposals",
+       "label": "Server proposals",
+       "sub": "New MCP servers waiting for review"
+      }
+     ],
+     "label": "MCP & Tools",
+     "leaf": false,
+     "section": "More",
+     "sub": "Agents within permissions"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      },
+      {
+       "href": "#/audit/gaps",
+       "id": "gaps",
+       "label": "Evidence gaps",
+       "sub": "Evidence with no provenance"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 4
+  },
+  "executive": {
+   "badges": {
+    "awaiting": 41,
+    "inbox": 0,
+    "integration": 0,
+    "sections": {
+     "conf": 3,
+     "inbox": 0,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/exceptions",
+       "id": "exceptions",
+       "label": "Exceptions",
+       "sub": "Ranked issues to drill into or notify"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/product/received",
+     "icon": "product",
+     "id": "product",
+     "kids": [
+      {
+       "href": "#/product/asset/RT-1001",
+       "id": "asset",
+       "label": "Asset intelligence",
+       "sub": "Lifecycle, condition and economics of one asset"
+      },
+      {
+       "href": "#/product/received",
+       "id": "received",
+       "label": "Returned assets",
+       "sub": "Inspect inventory and evaluate use"
+      },
+      {
+       "href": "#/product/expected",
+       "id": "expected",
+       "label": "Expected returns",
+       "sub": "Planning signals, not yet received"
+      }
+     ],
+     "label": "Decision Workbench",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Decision Workbench"
+    },
+    {
+     "href": "#/analytics",
+     "icon": "analytics",
+     "id": "analytics",
+     "kids": [
+      {
+       "href": "#/analytics/waterfall",
+       "id": "waterfall",
+       "label": "Recovery waterfall",
+       "sub": "Baseline to Circularity uplift"
+      },
+      {
+       "href": "#/analytics/pipeline",
+       "id": "pipeline",
+       "label": "Pipeline",
+       "sub": "Case to reconciled"
+      },
+      {
+       "href": "#/analytics/mix",
+       "id": "mix",
+       "label": "Route mix",
+       "sub": "How routes change over time"
+      },
+      {
+       "href": "#/analytics/predicted",
+       "id": "predicted",
+       "label": "Predicted vs actual",
+       "sub": "Forecast against outcome"
+      },
+      {
+       "href": "#/analytics/models",
+       "id": "models",
+       "label": "Model versions",
+       "sub": "The learning loop"
+      },
+      {
+       "href": "#/analytics/overrides",
+       "id": "overrides",
+       "label": "Overrides",
+       "sub": "When people changed the plan"
+      },
+      {
+       "href": "#/analytics/eng",
+       "id": "eng",
+       "label": "Engineering economics",
+       "sub": "Parts and economics"
+      },
+      {
+       "href": "#/analytics/sustain",
+       "id": "sustain",
+       "label": "Sustainability",
+       "sub": "Estimated vs measured CO₂e"
+      }
+     ],
+     "label": "Analytics",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Reconcile & learn"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      },
+      {
+       "href": "#/audit/gaps",
+       "id": "gaps",
+       "label": "Evidence gaps",
+       "sub": "Evidence with no provenance"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 0
+  },
+  "finance": {
+   "badges": {
+    "awaiting": 41,
+    "inbox": 0,
+    "integration": 0,
+    "sections": {
+     "conf": 3,
+     "inbox": 0,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/aome",
+       "id": "aome",
+       "label": "Actions on me",
+       "sub": "What waits on you"
+      },
+      {
+       "href": "#/command/outcomes",
+       "id": "outcomes",
+       "label": "Outcomes to confirm",
+       "sub": "Results that need Finance"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/product/received",
+     "icon": "product",
+     "id": "product",
+     "kids": [
+      {
+       "href": "#/product/asset/RT-1001",
+       "id": "asset",
+       "label": "Asset intelligence",
+       "sub": "Lifecycle, condition and economics of one asset"
+      },
+      {
+       "href": "#/product/received",
+       "id": "received",
+       "label": "Returned assets",
+       "sub": "Inspect inventory and evaluate use"
+      },
+      {
+       "href": "#/product/expected",
+       "id": "expected",
+       "label": "Expected returns",
+       "sub": "Planning signals, not yet received"
+      }
+     ],
+     "label": "Decision Workbench",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Decision Workbench"
+    },
+    {
+     "href": "#/analytics",
+     "icon": "analytics",
+     "id": "analytics",
+     "kids": [
+      {
+       "href": "#/analytics/waterfall",
+       "id": "waterfall",
+       "label": "Recovery waterfall",
+       "sub": "Baseline to Circularity uplift"
+      },
+      {
+       "href": "#/analytics/pipeline",
+       "id": "pipeline",
+       "label": "Pipeline",
+       "sub": "Case to reconciled"
+      },
+      {
+       "href": "#/analytics/mix",
+       "id": "mix",
+       "label": "Route mix",
+       "sub": "How routes change over time"
+      },
+      {
+       "href": "#/analytics/predicted",
+       "id": "predicted",
+       "label": "Predicted vs actual",
+       "sub": "Forecast against outcome"
+      },
+      {
+       "href": "#/analytics/models",
+       "id": "models",
+       "label": "Model versions",
+       "sub": "The learning loop"
+      },
+      {
+       "href": "#/analytics/overrides",
+       "id": "overrides",
+       "label": "Overrides",
+       "sub": "When people changed the plan"
+      },
+      {
+       "href": "#/analytics/eng",
+       "id": "eng",
+       "label": "Engineering economics",
+       "sub": "Parts and economics"
+      },
+      {
+       "href": "#/analytics/sustain",
+       "id": "sustain",
+       "label": "Sustainability",
+       "sub": "Estimated vs measured CO₂e"
+      }
+     ],
+     "label": "Analytics",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Reconcile & learn"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/integration/overview",
+     "icon": "integration",
+     "id": "integration",
+     "kids": [
+      {
+       "href": "#/integration/overview",
+       "id": "overview",
+       "label": "Overview",
+       "sub": "Catalogue, health and recommendations"
+      },
+      {
+       "badge": "srcissue",
+       "href": "#/integration/map",
+       "id": "map",
+       "label": "Source Map",
+       "sub": "Systems, tables and field links"
+      },
+      {
+       "href": "#/integration/monitor",
+       "id": "monitor",
+       "label": "Monitor",
+       "sub": "Integration health over time against SLA"
+      }
+     ],
+     "label": "Connection Fabric",
+     "leaf": false,
+     "section": "Integration",
+     "sub": "Connection Fabric"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      },
+      {
+       "href": "#/audit/gaps",
+       "id": "gaps",
+       "label": "Evidence gaps",
+       "sub": "Evidence with no provenance"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 0
+  },
+  "planner-a": {
+   "badges": {
+    "awaiting": 21,
+    "inbox": 0,
+    "integration": 0,
+    "sections": {
+     "conf": 3,
+     "inbox": 0,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/aome",
+       "id": "aome",
+       "label": "Actions on me",
+       "sub": "What waits on you"
+      },
+      {
+       "href": "#/command/handed",
+       "id": "handed",
+       "label": "Handed off",
+       "sub": "With enterprise systems, awaiting outcome"
+      },
+      {
+       "href": "#/command/actions",
+       "id": "actions",
+       "label": "Actions to prioritise",
+       "sub": "Ranked opportunities to act on"
+      },
+      {
+       "href": "#/command/signals",
+       "id": "signals",
+       "label": "Signals and capacity",
+       "sub": "What needs attention"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/product/received",
+     "icon": "product",
+     "id": "product",
+     "kids": [
+      {
+       "href": "#/product/asset/RT-1002",
+       "id": "asset",
+       "label": "Asset intelligence",
+       "sub": "Lifecycle, condition and economics of one asset"
+      },
+      {
+       "href": "#/product/received",
+       "id": "received",
+       "label": "Returned assets",
+       "sub": "Inspect inventory and evaluate use"
+      },
+      {
+       "href": "#/product/expected",
+       "id": "expected",
+       "label": "Expected returns",
+       "sub": "Planning signals, not yet received"
+      }
+     ],
+     "label": "Decision Workbench",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Decision Workbench"
+    },
+    {
+     "href": "#/analytics",
+     "icon": "analytics",
+     "id": "analytics",
+     "kids": [
+      {
+       "href": "#/analytics/waterfall",
+       "id": "waterfall",
+       "label": "Recovery waterfall",
+       "sub": "Baseline to Circularity uplift"
+      },
+      {
+       "href": "#/analytics/pipeline",
+       "id": "pipeline",
+       "label": "Pipeline",
+       "sub": "Case to reconciled"
+      },
+      {
+       "href": "#/analytics/mix",
+       "id": "mix",
+       "label": "Route mix",
+       "sub": "How routes change over time"
+      },
+      {
+       "href": "#/analytics/predicted",
+       "id": "predicted",
+       "label": "Predicted vs actual",
+       "sub": "Forecast against outcome"
+      },
+      {
+       "href": "#/analytics/models",
+       "id": "models",
+       "label": "Model versions",
+       "sub": "The learning loop"
+      },
+      {
+       "href": "#/analytics/overrides",
+       "id": "overrides",
+       "label": "Overrides",
+       "sub": "When people changed the plan"
+      }
+     ],
+     "label": "Analytics",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Reconcile & learn"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      },
+      {
+       "href": "#/audit/gaps",
+       "id": "gaps",
+       "label": "Evidence gaps",
+       "sub": "Evidence with no provenance"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 7
+  },
+  "planner-b": {
+   "badges": {
+    "awaiting": 14,
+    "inbox": 0,
+    "integration": 0,
+    "sections": {
+     "conf": 3,
+     "inbox": 0,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/aome",
+       "id": "aome",
+       "label": "Actions on me",
+       "sub": "What waits on you"
+      },
+      {
+       "href": "#/command/handed",
+       "id": "handed",
+       "label": "Handed off",
+       "sub": "With enterprise systems, awaiting outcome"
+      },
+      {
+       "href": "#/command/actions",
+       "id": "actions",
+       "label": "Actions to prioritise",
+       "sub": "Ranked opportunities to act on"
+      },
+      {
+       "href": "#/command/signals",
+       "id": "signals",
+       "label": "Signals and capacity",
+       "sub": "What needs attention"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/product/received",
+     "icon": "product",
+     "id": "product",
+     "kids": [
+      {
+       "href": "#/product/asset/RT-1001",
+       "id": "asset",
+       "label": "Asset intelligence",
+       "sub": "Lifecycle, condition and economics of one asset"
+      },
+      {
+       "href": "#/product/received",
+       "id": "received",
+       "label": "Returned assets",
+       "sub": "Inspect inventory and evaluate use"
+      },
+      {
+       "href": "#/product/expected",
+       "id": "expected",
+       "label": "Expected returns",
+       "sub": "Planning signals, not yet received"
+      }
+     ],
+     "label": "Decision Workbench",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Decision Workbench"
+    },
+    {
+     "href": "#/analytics",
+     "icon": "analytics",
+     "id": "analytics",
+     "kids": [
+      {
+       "href": "#/analytics/waterfall",
+       "id": "waterfall",
+       "label": "Recovery waterfall",
+       "sub": "Baseline to Circularity uplift"
+      },
+      {
+       "href": "#/analytics/pipeline",
+       "id": "pipeline",
+       "label": "Pipeline",
+       "sub": "Case to reconciled"
+      },
+      {
+       "href": "#/analytics/mix",
+       "id": "mix",
+       "label": "Route mix",
+       "sub": "How routes change over time"
+      },
+      {
+       "href": "#/analytics/predicted",
+       "id": "predicted",
+       "label": "Predicted vs actual",
+       "sub": "Forecast against outcome"
+      },
+      {
+       "href": "#/analytics/models",
+       "id": "models",
+       "label": "Model versions",
+       "sub": "The learning loop"
+      },
+      {
+       "href": "#/analytics/overrides",
+       "id": "overrides",
+       "label": "Overrides",
+       "sub": "When people changed the plan"
+      }
+     ],
+     "label": "Analytics",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Reconcile & learn"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      },
+      {
+       "href": "#/audit/gaps",
+       "id": "gaps",
+       "label": "Evidence gaps",
+       "sub": "Evidence with no provenance"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 8
+  },
+  "planner-c": {
+   "badges": {
+    "awaiting": 6,
+    "inbox": 0,
+    "integration": 0,
+    "sections": {
+     "conf": 3,
+     "inbox": 0,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/aome",
+       "id": "aome",
+       "label": "Actions on me",
+       "sub": "What waits on you"
+      },
+      {
+       "href": "#/command/handed",
+       "id": "handed",
+       "label": "Handed off",
+       "sub": "With enterprise systems, awaiting outcome"
+      },
+      {
+       "href": "#/command/actions",
+       "id": "actions",
+       "label": "Actions to prioritise",
+       "sub": "Ranked opportunities to act on"
+      },
+      {
+       "href": "#/command/signals",
+       "id": "signals",
+       "label": "Signals and capacity",
+       "sub": "What needs attention"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/product/received",
+     "icon": "product",
+     "id": "product",
+     "kids": [
+      {
+       "href": "#/product/asset/RT-1006",
+       "id": "asset",
+       "label": "Asset intelligence",
+       "sub": "Lifecycle, condition and economics of one asset"
+      },
+      {
+       "href": "#/product/received",
+       "id": "received",
+       "label": "Returned assets",
+       "sub": "Inspect inventory and evaluate use"
+      },
+      {
+       "href": "#/product/expected",
+       "id": "expected",
+       "label": "Expected returns",
+       "sub": "Planning signals, not yet received"
+      }
+     ],
+     "label": "Decision Workbench",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Decision Workbench"
+    },
+    {
+     "href": "#/analytics",
+     "icon": "analytics",
+     "id": "analytics",
+     "kids": [
+      {
+       "href": "#/analytics/waterfall",
+       "id": "waterfall",
+       "label": "Recovery waterfall",
+       "sub": "Baseline to Circularity uplift"
+      },
+      {
+       "href": "#/analytics/pipeline",
+       "id": "pipeline",
+       "label": "Pipeline",
+       "sub": "Case to reconciled"
+      },
+      {
+       "href": "#/analytics/mix",
+       "id": "mix",
+       "label": "Route mix",
+       "sub": "How routes change over time"
+      },
+      {
+       "href": "#/analytics/predicted",
+       "id": "predicted",
+       "label": "Predicted vs actual",
+       "sub": "Forecast against outcome"
+      },
+      {
+       "href": "#/analytics/models",
+       "id": "models",
+       "label": "Model versions",
+       "sub": "The learning loop"
+      },
+      {
+       "href": "#/analytics/overrides",
+       "id": "overrides",
+       "label": "Overrides",
+       "sub": "When people changed the plan"
+      }
+     ],
+     "label": "Analytics",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Reconcile & learn"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      },
+      {
+       "href": "#/audit/gaps",
+       "id": "gaps",
+       "label": "Evidence gaps",
+       "sub": "Evidence with no provenance"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 3
+  },
+  "wm-1": {
+   "badges": {
+    "awaiting": 13,
+    "inbox": 0,
+    "integration": 0,
+    "sections": {
+     "conf": 3,
+     "inbox": 0,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/exceptions",
+       "id": "exceptions",
+       "label": "Exceptions",
+       "sub": "Ranked issues to drill into or notify"
+      },
+      {
+       "href": "#/command/aome",
+       "id": "aome",
+       "label": "Actions on me",
+       "sub": "What waits on you"
+      },
+      {
+       "href": "#/command/handed",
+       "id": "handed",
+       "label": "Handed off",
+       "sub": "With enterprise systems, awaiting outcome"
+      },
+      {
+       "href": "#/command/signals",
+       "id": "signals",
+       "label": "Signals and capacity",
+       "sub": "What needs attention"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/product/received",
+     "icon": "product",
+     "id": "product",
+     "kids": [
+      {
+       "href": "#/product/asset/RT-1002",
+       "id": "asset",
+       "label": "Asset intelligence",
+       "sub": "Lifecycle, condition and economics of one asset"
+      },
+      {
+       "href": "#/product/received",
+       "id": "received",
+       "label": "Returned assets",
+       "sub": "Inspect inventory and evaluate use"
+      },
+      {
+       "href": "#/product/expected",
+       "id": "expected",
+       "label": "Expected returns",
+       "sub": "Planning signals, not yet received"
+      }
+     ],
+     "label": "Decision Workbench",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Decision Workbench"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 9
+  },
+  "wm-2": {
+   "badges": {
+    "awaiting": 13,
+    "inbox": 0,
+    "integration": 0,
+    "sections": {
+     "conf": 3,
+     "inbox": 0,
+     "srcissue": 2,
+     "wffail": 1
+    }
+   },
+   "navigation": [
+    {
+     "href": "#/home",
+     "icon": "home",
+     "id": "home",
+     "kids": [],
+     "label": "Home",
+     "leaf": true,
+     "section": "",
+     "sub": "What needs you"
+    },
+    {
+     "href": "#/command",
+     "icon": "command",
+     "id": "command",
+     "kids": [
+      {
+       "href": "#/command/kpis",
+       "id": "kpis",
+       "label": "Key figures",
+       "sub": "Headline numbers for your role"
+      },
+      {
+       "href": "#/command/exceptions",
+       "id": "exceptions",
+       "label": "Exceptions",
+       "sub": "Ranked issues to drill into or notify"
+      },
+      {
+       "href": "#/command/aome",
+       "id": "aome",
+       "label": "Actions on me",
+       "sub": "What waits on you"
+      },
+      {
+       "href": "#/command/handed",
+       "id": "handed",
+       "label": "Handed off",
+       "sub": "With enterprise systems, awaiting outcome"
+      },
+      {
+       "href": "#/command/signals",
+       "id": "signals",
+       "label": "Signals and capacity",
+       "sub": "What needs attention"
+      }
+     ],
+     "label": "Command Center",
+     "leaf": false,
+     "section": "",
+     "sub": "Overview and priorities"
+    },
+    {
+     "href": "#/tasks",
+     "icon": "tasks",
+     "id": "tasks",
+     "kids": [],
+     "label": "My Tasks",
+     "leaf": true,
+     "section": "",
+     "sub": "Everything whose next step is yours"
+    },
+    {
+     "href": "#/alerts",
+     "icon": "bell",
+     "id": "alerts",
+     "kids": [],
+     "label": "Alerts",
+     "leaf": true,
+     "section": "",
+     "sub": "Escalations, failures and notifications"
+    },
+    {
+     "href": "#/product/received",
+     "icon": "product",
+     "id": "product",
+     "kids": [
+      {
+       "href": "#/product/asset/RT-1001",
+       "id": "asset",
+       "label": "Asset intelligence",
+       "sub": "Lifecycle, condition and economics of one asset"
+      },
+      {
+       "href": "#/product/received",
+       "id": "received",
+       "label": "Returned assets",
+       "sub": "Inspect inventory and evaluate use"
+      },
+      {
+       "href": "#/product/expected",
+       "id": "expected",
+       "label": "Expected returns",
+       "sub": "Planning signals, not yet received"
+      }
+     ],
+     "label": "Decision Workbench",
+     "leaf": false,
+     "section": "Product",
+     "sub": "Decision Workbench"
+    },
+    {
+     "href": "#/reports",
+     "icon": "report",
+     "id": "reports",
+     "kids": [],
+     "label": "Reports",
+     "leaf": true,
+     "section": "Product",
+     "sub": "Exportable reports"
+    },
+    {
+     "href": "#/checks",
+     "icon": "checks",
+     "id": "checks",
+     "kids": [],
+     "label": "Data Checks",
+     "leaf": true,
+     "section": "Product",
+     "sub": "What is checked and the last result"
+    },
+    {
+     "href": "#/orchestration",
+     "icon": "orch",
+     "id": "orchestration",
+     "kids": [
+      {
+       "href": "#/orchestration/caserun",
+       "id": "caserun",
+       "label": "Live run",
+       "sub": "Ten stages that play in place"
+      },
+      {
+       "href": "#/orchestration/flow",
+       "id": "flow",
+       "label": "Stages",
+       "sub": "Ten stages from start to outcome"
+      },
+      {
+       "href": "#/orchestration/run",
+       "id": "run",
+       "label": "Case run",
+       "sub": "One case, stage by stage"
+      },
+      {
+       "href": "#/orchestration/agents",
+       "id": "agents",
+       "label": "Agents and services",
+       "sub": "Who does what, with which systems"
+      }
+     ],
+     "label": "Process Orchestration",
+     "leaf": false,
+     "section": "More",
+     "sub": "How a recommendation is made"
+    },
+    {
+     "href": "#/audit",
+     "icon": "audit",
+     "id": "audit",
+     "kids": [
+      {
+       "href": "#/audit/log",
+       "id": "log",
+       "label": "Fetch log",
+       "sub": "Every fetch with its source"
+      }
+     ],
+     "label": "Audit & Provenance",
+     "leaf": false,
+     "section": "More",
+     "sub": "What was fetched, from where"
+    },
+    {
+     "href": "#/settings",
+     "icon": "settings",
+     "id": "settings",
+     "kids": [],
+     "label": "Settings",
+     "leaf": true,
+     "section": "More",
+     "sub": "Profile, theme, region and agent options"
+    }
+   ],
+   "tasks": 7
+  }
+ },
+ "admin_senior": [
+  {
+   "href": "#/home",
+   "icon": "home",
+   "id": "home",
+   "kids": [],
+   "label": "Home",
+   "leaf": true,
+   "section": "",
+   "sub": "What needs you"
+  },
+  {
+   "href": "#/command",
+   "icon": "command",
+   "id": "command",
+   "kids": [
+    {
+     "href": "#/command/kpis",
+     "id": "kpis",
+     "label": "Key figures",
+     "sub": "Headline numbers for your role"
+    },
+    {
+     "href": "#/command/exceptions",
+     "id": "exceptions",
+     "label": "Exceptions",
+     "sub": "Ranked issues to drill into or notify"
+    }
+   ],
+   "label": "Command Center",
+   "leaf": false,
+   "section": "",
+   "sub": "Overview and priorities"
+  },
+  {
+   "href": "#/tasks",
+   "icon": "tasks",
+   "id": "tasks",
+   "kids": [],
+   "label": "My Tasks",
+   "leaf": true,
+   "section": "",
+   "sub": "Everything whose next step is yours"
+  },
+  {
+   "href": "#/alerts",
+   "icon": "bell",
+   "id": "alerts",
+   "kids": [],
+   "label": "Alerts",
+   "leaf": true,
+   "section": "",
+   "sub": "Escalations, failures and notifications"
+  },
+  {
+   "href": "#/product/received",
+   "icon": "product",
+   "id": "product",
+   "kids": [
+    {
+     "href": "#/product/asset/RT-1001",
+     "id": "asset",
+     "label": "Asset intelligence",
+     "sub": "Lifecycle, condition and economics of one asset"
+    },
+    {
+     "href": "#/product/received",
+     "id": "received",
+     "label": "Returned assets",
+     "sub": "Inspect inventory and evaluate use"
+    },
+    {
+     "href": "#/product/expected",
+     "id": "expected",
+     "label": "Expected returns",
+     "sub": "Planning signals, not yet received"
+    }
+   ],
+   "label": "Decision Workbench",
+   "leaf": false,
+   "section": "Product",
+   "sub": "Decision Workbench"
+  },
+  {
+   "href": "#/analytics",
+   "icon": "analytics",
+   "id": "analytics",
+   "kids": [
+    {
+     "href": "#/analytics/waterfall",
+     "id": "waterfall",
+     "label": "Recovery waterfall",
+     "sub": "Baseline to Circularity uplift"
+    },
+    {
+     "href": "#/analytics/pipeline",
+     "id": "pipeline",
+     "label": "Pipeline",
+     "sub": "Case to reconciled"
+    },
+    {
+     "href": "#/analytics/mix",
+     "id": "mix",
+     "label": "Route mix",
+     "sub": "How routes change over time"
+    },
+    {
+     "href": "#/analytics/predicted",
+     "id": "predicted",
+     "label": "Predicted vs actual",
+     "sub": "Forecast against outcome"
+    },
+    {
+     "href": "#/analytics/models",
+     "id": "models",
+     "label": "Model versions",
+     "sub": "The learning loop"
+    },
+    {
+     "href": "#/analytics/overrides",
+     "id": "overrides",
+     "label": "Overrides",
+     "sub": "When people changed the plan"
+    },
+    {
+     "href": "#/analytics/eng",
+     "id": "eng",
+     "label": "Engineering economics",
+     "sub": "Parts and economics"
+    },
+    {
+     "href": "#/analytics/sustain",
+     "id": "sustain",
+     "label": "Sustainability",
+     "sub": "Estimated vs measured CO₂e"
+    }
+   ],
+   "label": "Analytics",
+   "leaf": false,
+   "section": "Product",
+   "sub": "Reconcile & learn"
+  },
+  {
+   "href": "#/reports",
+   "icon": "report",
+   "id": "reports",
+   "kids": [],
+   "label": "Reports",
+   "leaf": true,
+   "section": "Product",
+   "sub": "Exportable reports"
+  },
+  {
+   "href": "#/checks",
+   "icon": "checks",
+   "id": "checks",
+   "kids": [],
+   "label": "Data Checks",
+   "leaf": true,
+   "section": "Product",
+   "sub": "What is checked and the last result"
+  },
+  {
+   "href": "#/integration/overview",
+   "icon": "integration",
+   "id": "integration",
+   "kids": [
+    {
+     "href": "#/integration/overview",
+     "id": "overview",
+     "label": "Overview",
+     "sub": "Catalogue, health and recommendations"
+    },
+    {
+     "badge": "wffail",
+     "href": "#/integration/studio",
+     "id": "studio",
+     "label": "Workflow Studio",
+     "sub": "Build pipelines and workflows"
+    },
+    {
+     "badge": "srcissue",
+     "href": "#/integration/map",
+     "id": "map",
+     "label": "Source Map",
+     "sub": "Systems, tables and field links"
+    },
+    {
+     "href": "#/integration/tables",
+     "id": "tables",
+     "label": "Source Tables",
+     "sub": "Tables and how they link"
+    },
+    {
+     "href": "#/integration/models",
+     "id": "models",
+     "label": "Canonical Models",
+     "sub": "Versioned shared models"
+    },
+    {
+     "href": "#/integration/events",
+     "id": "events",
+     "label": "Event Streams",
+     "sub": "Live message stream"
+    },
+    {
+     "badge": "conf",
+     "href": "#/integration/conflicts",
+     "id": "conflicts",
+     "label": "Conflict Queue",
+     "sub": "Systems that disagree"
+    },
+    {
+     "href": "#/integration/import",
+     "id": "import",
+     "label": "Manual Import",
+     "sub": "Controlled CSV import"
+    },
+    {
+     "href": "#/integration/monitor",
+     "id": "monitor",
+     "label": "Monitor",
+     "sub": "Integration health over time against SLA"
+    }
+   ],
+   "label": "Connection Fabric",
+   "leaf": false,
+   "section": "Integration",
+   "sub": "Connection Fabric"
+  },
+  {
+   "href": "#/mcp",
+   "icon": "mcp",
+   "id": "mcp",
+   "kids": [
+    {
+     "href": "#/mcp/catalog",
+     "id": "catalog",
+     "label": "Tool catalog",
+     "sub": "Governed tools"
+    },
+    {
+     "href": "#/mcp/agents",
+     "id": "agents",
+     "label": "Agent registry",
+     "sub": "Who can call what"
+    },
+    {
+     "href": "#/mcp/playground",
+     "id": "playground",
+     "label": "Playground",
+     "sub": "Try a tool call"
+    },
+    {
+     "href": "#/mcp/perms",
+     "id": "perms",
+     "label": "Permission matrix",
+     "sub": "Agent permissions by tenant"
+    },
+    {
+     "href": "#/mcp/calls",
+     "id": "calls",
+     "label": "Call log and gate",
+     "sub": "Every call, and the write gate"
+    },
+    {
+     "href": "#/mcp/client",
+     "id": "client",
+     "label": "As MCP client",
+     "sub": "Consume enterprise MCP servers"
+    },
+    {
+     "href": "#/mcp/proposals",
+     "id": "proposals",
+     "label": "Server proposals",
+     "sub": "New MCP servers waiting for review"
+    }
+   ],
+   "label": "MCP & Tools",
+   "leaf": false,
+   "section": "More",
+   "sub": "Agents within permissions"
+  },
+  {
+   "href": "#/orchestration",
+   "icon": "orch",
+   "id": "orchestration",
+   "kids": [
+    {
+     "href": "#/orchestration/caserun",
+     "id": "caserun",
+     "label": "Live run",
+     "sub": "Ten stages that play in place"
+    },
+    {
+     "href": "#/orchestration/flow",
+     "id": "flow",
+     "label": "Stages",
+     "sub": "Ten stages from start to outcome"
+    },
+    {
+     "href": "#/orchestration/run",
+     "id": "run",
+     "label": "Case run",
+     "sub": "One case, stage by stage"
+    },
+    {
+     "href": "#/orchestration/agents",
+     "id": "agents",
+     "label": "Agents and services",
+     "sub": "Who does what, with which systems"
+    }
+   ],
+   "label": "Process Orchestration",
+   "leaf": false,
+   "section": "More",
+   "sub": "How a recommendation is made"
+  },
+  {
+   "href": "#/audit",
+   "icon": "audit",
+   "id": "audit",
+   "kids": [
+    {
+     "href": "#/audit/log",
+     "id": "log",
+     "label": "Fetch log",
+     "sub": "Every fetch with its source"
+    },
+    {
+     "href": "#/audit/gaps",
+     "id": "gaps",
+     "label": "Evidence gaps",
+     "sub": "Evidence with no provenance"
+    }
+   ],
+   "label": "Audit & Provenance",
+   "leaf": false,
+   "section": "More",
+   "sub": "What was fetched, from where"
+  },
+  {
+   "href": "#/access",
+   "icon": "access",
+   "id": "access",
+   "kids": [
+    {
+     "href": "#/access/accounts",
+     "id": "accounts",
+     "label": "Accounts and roles",
+     "sub": "Who signs in as what"
+    },
+    {
+     "href": "#/access/identity",
+     "id": "identity",
+     "label": "Identity and users",
+     "sub": "Users and roles from your identity provider"
+    },
+    {
+     "href": "#/access/delegations",
+     "id": "delegations",
+     "label": "Approver delegations",
+     "sub": "What the Approver may decide"
+    },
+    {
+     "href": "#/access/requests",
+     "id": "requests",
+     "label": "All requests",
+     "sub": "Tenant access and MCP proposals"
+    },
+    {
+     "href": "#/access/autonomy",
+     "id": "autonomy",
+     "label": "Agent autonomy",
+     "sub": "How far the agent may go, by role"
+    },
+    {
+     "href": "#/access/limits",
+     "id": "limits",
+     "label": "Approval limits",
+     "sub": "Dollar limits and self-approval"
+    },
+    {
+     "href": "#/access/agentsx",
+     "id": "agentsx",
+     "label": "Agents and kill switches",
+     "sub": "Agent identities, scopes and limits"
+    },
+    {
+     "href": "#/access/metrics",
+     "id": "metrics",
+     "label": "Agent metrics",
+     "sub": "Success measures from the journal"
+    }
+   ],
+   "label": "Access & Governance",
+   "leaf": false,
+   "section": "More",
+   "sub": "Accounts, delegations, requests"
+  },
+  {
+   "href": "#/settings",
+   "icon": "settings",
+   "id": "settings",
+   "kids": [],
+   "label": "Settings",
+   "leaf": true,
+   "section": "More",
+   "sub": "Profile, theme, region and agent options"
+  }
+ ]
+}

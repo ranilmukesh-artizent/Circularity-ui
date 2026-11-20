@@ -1,0 +1,1786 @@
+{
+ "accounts": {
+  "admin": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "$152k in 17 warehouse rows",
+    "name": "Exception value by warehouse equals the ranked total",
+    "ok": true
+   },
+   {
+    "detail": "Voltara V4 motor · Customer A: 15 units",
+    "name": "SKU unit count equals Returned assets for that product and customer",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ],
+  "approver": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "Voltara V4 motor · Customer A: 15 units",
+    "name": "SKU unit count equals Returned assets for that product and customer",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ],
+  "developer": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ],
+  "engineer": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "Voltara V4 motor · Customer A: 15 units",
+    "name": "SKU unit count equals Returned assets for that product and customer",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ],
+  "executive": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "$152k in 17 warehouse rows",
+    "name": "Exception value by warehouse equals the ranked total",
+    "ok": true
+   },
+   {
+    "detail": "Voltara V4 motor · Customer A: 15 units",
+    "name": "SKU unit count equals Returned assets for that product and customer",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ],
+  "finance": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "Voltara V4 motor · Customer A: 15 units",
+    "name": "SKU unit count equals Returned assets for that product and customer",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ],
+  "planner-a": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "Voltara V4 motor · Customer A: 15 units",
+    "name": "SKU unit count equals Returned assets for that product and customer",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ],
+  "planner-b": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ],
+  "planner-c": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ],
+  "wm-1": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "$129k in 6 warehouse rows",
+    "name": "Exception value by warehouse equals the ranked total",
+    "ok": true
+   },
+   {
+    "detail": "Voltara V4 motor · Customer A: 7 units",
+    "name": "SKU unit count equals Returned assets for that product and customer",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ],
+  "wm-2": [
+   {
+    "detail": "128 cases",
+    "name": "128 live returns",
+    "ok": true
+   },
+   {
+    "detail": "86 / 24 / 18",
+    "name": "Queue split matches concept (86 / 24 / 18)",
+    "ok": true
+   },
+   {
+    "detail": "RT-1001…RT-1128",
+    "name": "Return and asset IDs are unique",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches",
+    "name": "Every route net equals the sum of its cost terms",
+    "ok": true
+   },
+   {
+    "detail": "0 mismatches · 0 confirmed outcomes",
+    "name": "Line-item actuals are deterministic, within ±25% and add up to the actual net",
+    "ok": true
+   },
+   {
+    "detail": "9600, 4800, 3600, 3200",
+    "name": "RT-1048 reproduces framework figures ($9,600 / $4,800 / $3,600 / $3,200)",
+    "ok": true
+   },
+   {
+    "detail": "0 violations",
+    "name": "No approvable recommendation where a gate failed or evidence is missing",
+    "ok": true
+   },
+   {
+    "detail": "87 decisions",
+    "name": "Every decision carries an evidence snapshot",
+    "ok": true
+   },
+   {
+    "detail": "",
+    "name": "No excluded route is ever recommended",
+    "ok": true
+   },
+   {
+    "detail": "5 outputs · $240 teardown once",
+    "name": "No component allocated twice; shared teardown charged once (RT-1027)",
+    "ok": true
+   },
+   {
+    "detail": "optimal $18,200 vs greedy $16,000",
+    "name": "Pool RT-1048: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "optimal $5,776 vs greedy $5,350",
+    "name": "Pool RT-1052: no demand line or unit allocated twice",
+    "ok": true
+   },
+   {
+    "detail": "$12k in 5 warehouse rows",
+    "name": "Exception value by warehouse equals the ranked total",
+    "ok": true
+   },
+   {
+    "detail": "1400 rows",
+    "name": "~1,400 closed decisions",
+    "ok": true
+   },
+   {
+    "detail": "$2,433,569",
+    "name": "Analytics total equals sum of case rows",
+    "ok": true
+   },
+   {
+    "detail": "1277 reconciled",
+    "name": "Route counts sum to reconciled total",
+    "ok": true
+   },
+   {
+    "detail": "61 pending",
+    "name": "Pending decisions are never counted as failures",
+    "ok": true
+   },
+   {
+    "detail": "13.8%",
+    "name": "Override rate ≈14% with a reason on each",
+    "ok": true
+   },
+   {
+    "detail": "18% → 15% → 14% → 12%",
+    "name": "Model error shrinks v1.0 → v1.3",
+    "ok": true
+   },
+   {
+    "detail": "85%",
+    "name": "P10–P90 covers ≈80% in latest model",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "45 adapters",
+    "name": "Every state-changing button calls invoke()",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "76 actions",
+    "name": "Every adapter maps to a registered action",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "pure",
+    "name": "No action handler reads or draws the page",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "complete",
+    "name": "Every action declares risk, permission and description",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "0 keyed entries",
+    "name": "No stage key or idempotency key is written twice",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "425 handlers · 305 view · 34 dialog · 45 adapter · 32 draft · 9 sim",
+    "name": "Every button is classified in the inventory",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "54 of 55 intent tests pass, 1 skipped because the case moved on since the baseline",
+    "name": "Every catalog intent returns its card on seeded cases",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "7 safety tests",
+    "name": "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "52 intents",
+    "name": "Every intent in the catalog has a test",
+    "ok": true
+   },
+   {
+    "af": true,
+    "detail": "4 packets checked",
+    "name": "Card values equal case values",
+    "ok": true
+   }
+  ]
+ }
+}

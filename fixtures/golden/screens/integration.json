@@ -1,0 +1,11057 @@
+{
+ "accounts": {
+  "admin": {
+   "calls_openable": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "can_decide": {
+    "REQ-301": true,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": true
+   },
+   "events_openable": [
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "inbox_requests": [
+    "REQ-304",
+    "REQ-301"
+   ],
+   "pages": {
+    "access": [
+     "accounts",
+     "identity",
+     "delegations",
+     "requests",
+     "autonomy",
+     "limits",
+     "agentsx",
+     "metrics"
+    ],
+    "integration": [
+     "studio",
+     "map",
+     "tables",
+     "models",
+     "events",
+     "conflicts",
+     "import",
+     "overview",
+     "monitor"
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "playground",
+     "perms",
+     "calls",
+     "client",
+     "proposals"
+    ]
+   }
+  },
+  "approver": {
+   "calls_openable": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "can_decide": {
+    "REQ-301": true,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": true
+   },
+   "events_openable": [
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "inbox_requests": [
+    "REQ-304",
+    "REQ-301"
+   ],
+   "pages": {
+    "access": null,
+    "integration": [
+     "events",
+     "conflicts"
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "perms",
+     "calls",
+     "client",
+     "proposals"
+    ]
+   }
+  },
+  "developer": {
+   "calls_openable": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "can_decide": {
+    "REQ-301": false,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": false
+   },
+   "events_openable": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "inbox_requests": [],
+   "pages": {
+    "access": null,
+    "integration": [
+     "studio",
+     "map",
+     "tables",
+     "models",
+     "events",
+     "conflicts",
+     "import",
+     "overview",
+     "monitor"
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "playground",
+     "perms",
+     "calls",
+     "client",
+     "proposals"
+    ]
+   }
+  },
+  "engineer": {
+   "calls_openable": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "can_decide": {
+    "REQ-301": false,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": false
+   },
+   "events_openable": [
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "inbox_requests": [],
+   "pages": {
+    "access": null,
+    "integration": [
+     "map",
+     "tables",
+     "models",
+     "overview",
+     "monitor"
+    ],
+    "mcp": [
+     "catalog",
+     "agents",
+     "perms",
+     "calls",
+     "client",
+     "proposals"
+    ]
+   }
+  },
+  "executive": {
+   "calls_openable": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "can_decide": {
+    "REQ-301": false,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": false
+   },
+   "events_openable": [
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "inbox_requests": [],
+   "pages": {
+    "access": null,
+    "integration": null,
+    "mcp": null
+   }
+  },
+  "finance": {
+   "calls_openable": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "can_decide": {
+    "REQ-301": false,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": false
+   },
+   "events_openable": [
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "inbox_requests": [],
+   "pages": {
+    "access": null,
+    "integration": [
+     "map",
+     "overview",
+     "monitor"
+    ],
+    "mcp": null
+   }
+  },
+  "planner-a": {
+   "calls_openable": [
+    false,
+    true,
+    false,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false
+   ],
+   "can_decide": {
+    "REQ-301": false,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": false
+   },
+   "events_openable": [
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false
+   ],
+   "inbox_requests": [],
+   "pages": {
+    "access": null,
+    "integration": null,
+    "mcp": null
+   }
+  },
+  "planner-b": {
+   "calls_openable": [
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true
+   ],
+   "can_decide": {
+    "REQ-301": false,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": false
+   },
+   "events_openable": [
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "inbox_requests": [],
+   "pages": {
+    "access": null,
+    "integration": null,
+    "mcp": null
+   }
+  },
+  "planner-c": {
+   "calls_openable": [
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "can_decide": {
+    "REQ-301": false,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": false
+   },
+   "events_openable": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true
+   ],
+   "inbox_requests": [],
+   "pages": {
+    "access": null,
+    "integration": null,
+    "mcp": null
+   }
+  },
+  "wm-1": {
+   "calls_openable": [
+    true,
+    false,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false
+   ],
+   "can_decide": {
+    "REQ-301": false,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": false
+   },
+   "events_openable": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true
+   ],
+   "inbox_requests": [],
+   "pages": {
+    "access": null,
+    "integration": null,
+    "mcp": null
+   }
+  },
+  "wm-2": {
+   "calls_openable": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false
+   ],
+   "can_decide": {
+    "REQ-301": false,
+    "REQ-302": false,
+    "REQ-303": false,
+    "REQ-304": false
+   },
+   "events_openable": [
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "inbox_requests": [],
+   "pages": {
+    "access": null,
+    "integration": null,
+    "mcp": null
+   }
+  }
+ },
+ "activity": [
+  {
+   "id": "wms",
+   "kind": "ok",
+   "text": "Sync completed · 367 records",
+   "ts": 1791363540000
+  },
+  {
+   "id": "erp",
+   "kind": "ok",
+   "text": "Sync completed · 172 records",
+   "ts": 1791363480000
+  },
+  {
+   "id": "oms",
+   "kind": "ok",
+   "text": "Sync completed · 36 records",
+   "ts": 1791363420000
+  },
+  {
+   "id": "fsm",
+   "kind": "ok",
+   "text": "Sync completed · 235 records",
+   "ts": 1791363420000
+  },
+  {
+   "id": "esg",
+   "kind": "ok",
+   "text": "Sync completed · 113 records",
+   "ts": 1791363420000
+  },
+  {
+   "id": "crm",
+   "kind": "ok",
+   "text": "Sync completed · 126 records",
+   "ts": 1791363360000
+  }
+ ],
+ "available": [
+  {
+   "auth": [
+    "OAuth 2.0",
+    "Service principal"
+   ],
+   "desc": "Workers, positions and cost centres, so owners and approvers resolve to real teams.",
+   "id": "workday",
+   "status": "available",
+   "type": "hr",
+   "vendor": "Workday HCM",
+   "why": "Approver and owner roles would resolve to real cost centres."
+  },
+  {
+   "auth": [
+    "OAuth 2.0",
+    "API key"
+   ],
+   "desc": "Raise and track engineering issues from failed inspections or workflow errors.",
+   "id": "jira",
+   "status": "available",
+   "type": "collab",
+   "vendor": "Atlassian Jira"
+  },
+  {
+   "auth": [
+    "OAuth 2.0",
+    "API key"
+   ],
+   "desc": "Publish generated workflow documentation and evidence summaries.",
+   "id": "confluence",
+   "status": "available",
+   "type": "collab",
+   "vendor": "Atlassian Confluence"
+  },
+  {
+   "auth": [
+    "Service principal",
+    "API key"
+   ],
+   "desc": "Read operational tables directly over JDBC with a read-only role.",
+   "id": "postgres",
+   "status": "available",
+   "type": "db",
+   "vendor": "PostgreSQL"
+  },
+  {
+   "auth": [
+    "Service principal",
+    "API key"
+   ],
+   "desc": "Read legacy site databases over JDBC with a read-only role.",
+   "id": "mysql",
+   "status": "available",
+   "type": "db",
+   "vendor": "MySQL"
+  },
+  {
+   "auth": [
+    "Service principal",
+    "API key"
+   ],
+   "desc": "Read plant historian and maintenance tables over JDBC.",
+   "id": "sqlserver",
+   "status": "available",
+   "type": "db",
+   "vendor": "Microsoft SQL Server"
+  },
+  {
+   "auth": [
+    "Service principal",
+    "SFTP"
+   ],
+   "desc": "Pick up partner files and photos from a bucket with a signed manifest.",
+   "id": "s3",
+   "status": "available",
+   "type": "store",
+   "vendor": "Amazon S3"
+  },
+  {
+   "auth": [
+    "Service principal",
+    "SFTP"
+   ],
+   "desc": "Pick up partner files from a container with a signed manifest.",
+   "id": "azureblob",
+   "status": "available",
+   "type": "store",
+   "vendor": "Azure Blob Storage"
+  },
+  {
+   "auth": [
+    "OAuth 2.0"
+   ],
+   "desc": "Controlled import of spreadsheets kept in SharePoint.",
+   "id": "excel",
+   "status": "available",
+   "type": "store",
+   "vendor": "Microsoft Excel and SharePoint"
+  },
+  {
+   "auth": [
+    "OAuth 2.0",
+    "Service principal"
+   ],
+   "desc": "Opportunities and accounts from a second CRM used by one region.",
+   "id": "dynamics",
+   "status": "available",
+   "type": "crm",
+   "vendor": "Microsoft Dynamics 365"
+  },
+  {
+   "auth": [
+    "OAuth 2.0",
+    "API key"
+   ],
+   "desc": "Supplier invoices and payables for Reconcile, from the legacy ERP.",
+   "id": "ebs",
+   "status": "available",
+   "type": "erp",
+   "vendor": "Oracle E-Business Suite",
+   "why": "Reconcile would match supplier invoices against outcomes without a manual import."
+  },
+  {
+   "auth": [
+    "OAuth 2.0",
+    "API key"
+   ],
+   "desc": "Financials for the subsidiary that runs on NetSuite.",
+   "id": "netsuite",
+   "status": "available",
+   "type": "erp",
+   "vendor": "Oracle NetSuite"
+  },
+  {
+   "auth": [
+    "OAuth 2.0"
+   ],
+   "desc": "Send notifications and escalations into team channels.",
+   "id": "teams",
+   "status": "available",
+   "type": "collab",
+   "vendor": "Microsoft Teams",
+   "why": "Escalations would reach owners in the channel they already watch."
+  },
+  {
+   "auth": [
+    "OAuth 2.0"
+   ],
+   "desc": "Pick up shared inspection folders and photos.",
+   "id": "gdrive",
+   "status": "available",
+   "type": "store",
+   "vendor": "Google Drive"
+  },
+  {
+   "auth": [
+    "Service principal",
+    "OAuth 2.0"
+   ],
+   "desc": "Query governed warehouse data for analytics and model training.",
+   "id": "snowflake",
+   "status": "available",
+   "type": "dw",
+   "vendor": "Snowflake",
+   "why": "Model training would read governed history instead of exports."
+  }
+ ],
+ "canon": [
+  {
+   "fields": [
+    "asset_id",
+    "source_refs[]",
+    "owner_tenant",
+    "parent_asset",
+    "configuration",
+    "bom_ref",
+    "location",
+    "availability"
+   ],
+   "n": "Asset & component",
+   "purpose": "Stable identity across applications, source-system connections, ownership, parent asset, BOM, location and availability.",
+   "sources": [
+    "EAM",
+    "PLM",
+    "WMS",
+    "CRM"
+   ],
+   "v": "2.3"
+  },
+  {
+   "fields": [
+    "inspection_ref",
+    "grade",
+    "life_assessment",
+    "duty_assumptions",
+    "qualification",
+    "certificates[]",
+    "policy_version"
+   ],
+   "n": "Condition & eligibility",
+   "purpose": "Inspection evidence, grade, approved life assessment, qualification, compatibility, certificates and the policy version applied.",
+   "sources": [
+    "MRO",
+    "Inspection",
+    "QMS",
+    "EAM"
+   ],
+   "v": "2.1"
+  },
+  {
+   "fields": [
+    "demand_id",
+    "type",
+    "receiving_asset",
+    "buyer",
+    "spec",
+    "qty",
+    "location",
+    "need_by",
+    "horizon",
+    "status(confirmed|forecast)"
+   ],
+   "n": "Demand opportunity",
+   "purpose": "Demand identity and type, specification, quantity, location, timing, service horizon and confirmed or forecast status.",
+   "sources": [
+    "CRM",
+    "ERP",
+    "EAM",
+    "Markets"
+   ],
+   "v": "1.8"
+  },
+  {
+   "fields": [
+    "process",
+    "predicted_condition",
+    "cost",
+    "duration",
+    "success_p",
+    "capacity",
+    "required_tests[]"
+   ],
+   "n": "Intervention",
+   "purpose": "Approved process, predicted resulting condition, cost, duration, success uncertainty, capacity and required tests.",
+   "sources": [
+    "MRO",
+    "Inspection",
+    "QMS"
+   ],
+   "v": "1.5"
+  },
+  {
+   "fields": [
+    "components[]",
+    "channel",
+    "demand_id",
+    "intervention_ref",
+    "timing",
+    "expected_net",
+    "cost_breakdown",
+    "baseline",
+    "exclusions[]"
+   ],
+   "n": "Route candidate",
+   "purpose": "Asset or component combination, channel, demand, intervention, timing, expected contribution, cost breakdown, baseline and exclusions.",
+   "sources": [
+    "Circularity"
+   ],
+   "v": "2.0"
+  },
+  {
+   "fields": [
+    "decision_id",
+    "route",
+    "allocation",
+    "alternatives[]",
+    "evidence_snapshot",
+    "approval_ref",
+    "model_version",
+    "policy_version",
+    "expires_at"
+   ],
+   "n": "Decision",
+   "purpose": "Selected route and allocation, alternatives, evidence snapshot, approval reference, model and policy versions and expiry.",
+   "sources": [
+    "Circularity"
+   ],
+   "v": "2.2"
+  },
+  {
+   "fields": [
+    "decision_id",
+    "action_taken",
+    "execution_ref",
+    "receipts",
+    "costs",
+    "avoided_spend",
+    "service_results",
+    "environmental_evidence"
+   ],
+   "n": "Outcome",
+   "purpose": "Action actually taken, external system reference, actual receipts and costs, confirmed avoided expenditure, service results and environmental evidence.",
+   "sources": [
+    "ERP",
+    "MRO",
+    "WMS",
+    "Partners"
+   ],
+   "v": "1.6"
+  }
+ ],
+ "canon_examples": {
+  "Asset & component": {
+   "asset_id": "MTR-2041",
+   "availability": "available",
+   "configuration": "55 kW · IE3 · 250M",
+   "location": "Warehouse 1",
+   "owner_tenant": "Customer A",
+   "source_refs": [
+    "EAM:AST-77120",
+    "ERP:INV-5521",
+    "WMS:R-77102"
+   ]
+  },
+  "Condition & eligibility": {
+   "certificates": [
+    "CERT-0381"
+   ],
+   "grade": "B",
+   "inspection_ref": "INS-20441",
+   "life_assessment": {
+    "confidence": 0.9,
+    "months": 36,
+    "source": "Engineering"
+   },
+   "policy_version": "POL-3.2"
+  },
+  "Decision": {
+   "approval_ref": "pending",
+   "decision_id": "DI-2026-1048",
+   "evidence_snapshot": "EVS-…",
+   "expires_at": "2026-10-14",
+   "model_version": "v1.3",
+   "policy_version": "POL-3.2",
+   "route": "redeploy"
+  },
+  "Demand opportunity": {
+   "avoided_purchase": "PO-49048",
+   "buyer": "Customer A",
+   "demand_id": "SO-48102-10",
+   "line": 10,
+   "location": "LOC-CHN-03 · Chennai Foundry (Site 3)",
+   "need_by": "2026-10-17",
+   "order": "SO-48102",
+   "qty": 1,
+   "receiving_asset": "Site 3 line 2",
+   "source": "IBM Sterling OMS",
+   "status": "confirmed",
+   "type": "replacement"
+  },
+  "Intervention": {
+   "cost": 1800,
+   "duration_days": 4,
+   "predicted_condition": "B",
+   "process": "light repair + test",
+   "required_tests": [
+    "megger",
+    "vibration"
+   ],
+   "success_p": 0.93
+  },
+  "Outcome": {
+   "action_taken": "redeploy",
+   "avoided_spend": null,
+   "costs": null,
+   "decision_id": "DI-2026-1048",
+   "receipts": 0,
+   "status": "pending"
+  },
+  "Route candidate": {
+   "channel": "redeploy",
+   "cost_breakdown": {
+    "prep_transfer": -1800,
+    "purchase_avoided": 12000,
+    "residual": 300,
+    "service_exposure": -900
+   },
+   "demand_id": "SO-48102-10",
+   "exclusions": [
+    "extparts: demand fit"
+   ],
+   "expected_net": 9600
+  }
+ },
+ "canon_pfx": {
+  "Asset & component": "asset",
+  "Condition & eligibility": "condition",
+  "Decision": "decision",
+  "Demand opportunity": "demand",
+  "Intervention": "intervention",
+  "Outcome": "outcome",
+  "Route candidate": "route"
+ },
+ "catalog": [
+  {
+   "$ref": "$.available[0]"
+  },
+  {
+   "$ref": "$.available[1]"
+  },
+  {
+   "$ref": "$.available[2]"
+  },
+  {
+   "$ref": "$.available[3]"
+  },
+  {
+   "$ref": "$.available[4]"
+  },
+  {
+   "$ref": "$.available[5]"
+  },
+  {
+   "$ref": "$.available[6]"
+  },
+  {
+   "$ref": "$.available[7]"
+  },
+  {
+   "$ref": "$.available[8]"
+  },
+  {
+   "$ref": "$.available[9]"
+  },
+  {
+   "$ref": "$.available[10]"
+  },
+  {
+   "$ref": "$.available[11]"
+  },
+  {
+   "$ref": "$.available[12]"
+  },
+  {
+   "$ref": "$.available[13]"
+  },
+  {
+   "$ref": "$.available[14]"
+  }
+ ],
+ "conflicts": [
+  {
+   "a": {
+    "src": "Lease management",
+    "val": "Customer A"
+   },
+   "asset": "MTR-2077",
+   "authority": "Lease management",
+   "b": {
+    "src": "ERP",
+    "val": "Customer B"
+   },
+   "id": "CF-31",
+   "impact": "Allocation held; cross-client consent rules apply",
+   "kind": "Ownership",
+   "since": "7 h",
+   "status": "open"
+  },
+  {
+   "a": {
+    "src": "QMS",
+    "val": "Requalified 12 Sep"
+   },
+   "asset": "CTL-0122",
+   "authority": "QMS",
+   "b": {
+    "src": "EAM",
+    "val": "Status: not qualified"
+   },
+   "id": "CF-32",
+   "impact": "Redeploy route excluded at policy gate until resolved",
+   "kind": "Qualification",
+   "since": "1 d",
+   "status": "open"
+  },
+  {
+   "a": {
+    "src": "WMS",
+    "val": "8 units reserved (D-302)"
+   },
+   "asset": "BAT-0119",
+   "authority": "WMS",
+   "b": {
+    "src": "ERP",
+    "val": "8 units free to sell"
+   },
+   "id": "CF-33",
+   "impact": "Duplicate allocation blocked; ERP view stale",
+   "kind": "Availability",
+   "since": "3 h",
+   "status": "open"
+  }
+ ],
+ "connected": [
+  "crm",
+  "lease",
+  "erp",
+  "oms",
+  "proc",
+  "eam",
+  "fsm",
+  "plm",
+  "bom",
+  "qms",
+  "eng",
+  "wms",
+  "tms",
+  "rl",
+  "insp",
+  "repair",
+  "mkt",
+  "dlr",
+  "rcy",
+  "esg"
+ ],
+ "derived": {
+  "bom": {
+   "category": "EAM",
+   "channels": [
+    "api"
+   ],
+   "cred_days": 156,
+   "failed30": 102,
+   "failed7": 24,
+   "failing": false,
+   "fields": 3,
+   "latency": 598,
+   "models": {
+    "Asset & component": [
+     [
+      "Part.item_number",
+      "P-55-ROT-01",
+      "asset.components[0]",
+      "Rotor assembly",
+      "Part name lookup"
+     ],
+     [
+      "Part BOM.quantity",
+      "1",
+      "asset.components[0].qty",
+      "1",
+      "Integer"
+     ],
+     [
+      "Part.state",
+      "Released",
+      "asset.bom_ref.state",
+      "released",
+      "State map"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    791,
+    904,
+    723,
+    1018,
+    836,
+    654,
+    950,
+    768,
+    1063,
+    881,
+    700,
+    973,
+    677,
+    632,
+    814,
+    745,
+    927,
+    882,
+    1064,
+    995,
+    700,
+    916,
+    734,
+    1075,
+    893,
+    712,
+    1007,
+    825,
+    643,
+    939
+   ],
+   "sla": 30,
+   "success": 99.6,
+   "sync_history": [
+    {
+     "dur": "42 s",
+     "ok": true,
+     "rows": 1090,
+     "ts": 1791363060000
+    },
+    {
+     "dur": "11 s",
+     "ok": true,
+     "rows": 1082,
+     "ts": 1791362160000
+    },
+    {
+     "dur": "4 s",
+     "ok": true,
+     "rows": 596,
+     "ts": 1791361260000
+    },
+    {
+     "dur": "23 s",
+     "ok": true,
+     "rows": 1099,
+     "ts": 1791360360000
+    },
+    {
+     "dur": "16 s",
+     "ok": true,
+     "rows": 613,
+     "ts": 1791359460000
+    },
+    {
+     "dur": "35 s",
+     "ok": true,
+     "rows": 605,
+     "ts": 1791358560000
+    },
+    {
+     "dur": "28 s",
+     "ok": false,
+     "rows": 630,
+     "ts": 1791357660000
+    },
+    {
+     "dur": "47 s",
+     "ok": true,
+     "rows": 622,
+     "ts": 1791356760000
+    },
+    {
+     "dur": "40 s",
+     "ok": true,
+     "rows": 647,
+     "ts": 1791355860000
+    },
+    {
+     "dur": "9 s",
+     "ok": true,
+     "rows": 639,
+     "ts": 1791354960000
+    },
+    {
+     "dur": "47 s",
+     "ok": true,
+     "rows": 963,
+     "ts": 1791354060000
+    },
+    {
+     "dur": "28 s",
+     "ok": true,
+     "rows": 971,
+     "ts": 1791353160000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · Aras Innovator"
+   ]
+  },
+  "crm": {
+   "category": "CRM",
+   "channels": [
+    "api",
+    "event"
+   ],
+   "cred_days": 156,
+   "failed30": 46,
+   "failed7": 10,
+   "failing": false,
+   "fields": 23,
+   "latency": 808,
+   "models": {
+    "Asset & component": [
+     [
+      "Account.Id",
+      "001Hs00003AbCdE",
+      "asset.owner_tenant",
+      "Customer A",
+      "Tenant key lookup"
+     ]
+    ],
+    "Demand opportunity": [
+     [
+      "Opportunity.StageName",
+      "Proposal",
+      "demand.status",
+      "forecast",
+      "Stage map: Proposal → forecast"
+     ],
+     [
+      "Opportunity.Amount",
+      "2400",
+      "demand.lease_rate",
+      "$2,400 / month",
+      "Currency + period normalised"
+     ],
+     [
+      "Opportunity.CloseDate",
+      "31/12/2026",
+      "demand.need_by",
+      "2026-12-31",
+      "Date format"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    259,
+    206,
+    159,
+    177,
+    253,
+    270,
+    223,
+    241,
+    194,
+    212,
+    165,
+    265,
+    189,
+    224,
+    271,
+    195,
+    242,
+    166,
+    213,
+    259,
+    183,
+    204,
+    280,
+    163,
+    239,
+    256,
+    210,
+    227,
+    180,
+    198
+   ],
+   "sla": 15,
+   "success": 99.3,
+   "sync_history": [
+    {
+     "dur": "4 s",
+     "ok": false,
+     "rows": 197,
+     "ts": 1791363360000
+    },
+    {
+     "dur": "23 s",
+     "ok": true,
+     "rows": 195,
+     "ts": 1791359760000
+    },
+    {
+     "dur": "42 s",
+     "ok": true,
+     "rows": 193,
+     "ts": 1791356160000
+    },
+    {
+     "dur": "11 s",
+     "ok": true,
+     "rows": 191,
+     "ts": 1791352560000
+    },
+    {
+     "dur": "28 s",
+     "ok": true,
+     "rows": 206,
+     "ts": 1791348960000
+    },
+    {
+     "dur": "47 s",
+     "ok": true,
+     "rows": 204,
+     "ts": 1791345360000
+    },
+    {
+     "dur": "16 s",
+     "ok": true,
+     "rows": 202,
+     "ts": 1791341760000
+    },
+    {
+     "dur": "35 s",
+     "ok": true,
+     "rows": 199,
+     "ts": 1791338160000
+    },
+    {
+     "dur": "52 s",
+     "ok": true,
+     "rows": 215,
+     "ts": 1791334560000
+    },
+    {
+     "dur": "21 s",
+     "ok": true,
+     "rows": 213,
+     "ts": 1791330960000
+    },
+    {
+     "dur": "43 s",
+     "ok": true,
+     "rows": 217,
+     "ts": 1791327360000
+    },
+    {
+     "dur": "24 s",
+     "ok": true,
+     "rows": 219,
+     "ts": 1791323760000
+    }
+   ],
+   "tables": 7,
+   "workflows": [
+    "Ingest · Salesforce Sales Cloud",
+    "Outbound · Salesforce Sales Cloud"
+   ]
+  },
+  "dlr": {
+   "category": "Analytics",
+   "channels": [
+    "api",
+    "event"
+   ],
+   "cred_days": 156,
+   "failed30": 139,
+   "failed7": 31,
+   "failing": false,
+   "fields": 2,
+   "latency": 742,
+   "models": {
+    "Demand opportunity": []
+   },
+   "needs_attention": false,
+   "series30": [
+    326,
+    216,
+    305,
+    243,
+    188,
+    277,
+    222,
+    319,
+    264,
+    209,
+    298,
+    222,
+    277,
+    257,
+    312,
+    291,
+    202,
+    326,
+    236,
+    215,
+    271,
+    233,
+    322,
+    260,
+    205,
+    295,
+    240,
+    192,
+    281,
+    226
+   ],
+   "sla": 15,
+   "success": 98.2,
+   "sync_history": [
+    {
+     "dur": "12 s",
+     "ok": true,
+     "rows": 279,
+     "ts": 1791362520000
+    },
+    {
+     "dur": "31 s",
+     "ok": true,
+     "rows": 276,
+     "ts": 1791358920000
+    },
+    {
+     "dur": "24 s",
+     "ok": true,
+     "rows": 284,
+     "ts": 1791355320000
+    },
+    {
+     "dur": "43 s",
+     "ok": true,
+     "rows": 281,
+     "ts": 1791351720000
+    },
+    {
+     "dur": "38 s",
+     "ok": true,
+     "rows": 268,
+     "ts": 1791348120000
+    },
+    {
+     "dur": "7 s",
+     "ok": true,
+     "rows": 266,
+     "ts": 1791344520000
+    },
+    {
+     "dur": "50 s",
+     "ok": true,
+     "rows": 274,
+     "ts": 1791340920000
+    },
+    {
+     "dur": "19 s",
+     "ok": true,
+     "rows": 271,
+     "ts": 1791337320000
+    },
+    {
+     "dur": "10 s",
+     "ok": true,
+     "rows": 299,
+     "ts": 1791333720000
+    },
+    {
+     "dur": "29 s",
+     "ok": true,
+     "rows": 297,
+     "ts": 1791330120000
+    },
+    {
+     "dur": "33 s",
+     "ok": true,
+     "rows": 230,
+     "ts": 1791326520000
+    },
+    {
+     "dur": "14 s",
+     "ok": true,
+     "rows": 232,
+     "ts": 1791322920000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · Machinio"
+   ]
+  },
+  "eam": {
+   "category": "EAM",
+   "channels": [
+    "api",
+    "event"
+   ],
+   "cred_days": 156,
+   "failed30": 26,
+   "failed7": 6,
+   "failing": false,
+   "fields": 33,
+   "latency": 651,
+   "models": {
+    "Asset & component": [
+     [
+      "ASSETNUM",
+      "MTR-2041",
+      "asset.asset_id",
+      "MTR-2041",
+      "Pass-through; identity key"
+     ],
+     [
+      "RATED_PWR",
+      "55000 W",
+      "asset.config.rated_power",
+      "55 kW",
+      "Unit normalised W → kW"
+     ]
+    ],
+    "Condition & eligibility": [
+     [
+      "CONDITIONCODE",
+      "B+",
+      "condition.grade",
+      "B",
+      "Grade table v3 (B+ → B); source value kept"
+     ],
+     [
+      "LASTSERVICEDATE",
+      "2026-03-14T08:20:00+05:30",
+      "condition.service_date",
+      "2026-03-14T02:50:00Z",
+      "Timestamp to UTC"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    353,
+    507,
+    355,
+    425,
+    518,
+    366,
+    460,
+    553,
+    401,
+    495,
+    343,
+    388,
+    540,
+    330,
+    482,
+    517,
+    423,
+    458,
+    365,
+    400,
+    552,
+    434,
+    527,
+    480,
+    328,
+    539,
+    387,
+    363,
+    457,
+    422
+   ],
+   "sla": 15,
+   "success": 99.8,
+   "sync_history": [
+    {
+     "dur": "7 s",
+     "ok": true,
+     "rows": 451,
+     "ts": 1791363240000
+    },
+    {
+     "dur": "38 s",
+     "ok": true,
+     "rows": 456,
+     "ts": 1791359640000
+    },
+    {
+     "dur": "19 s",
+     "ok": true,
+     "rows": 460,
+     "ts": 1791356040000
+    },
+    {
+     "dur": "50 s",
+     "ok": true,
+     "rows": 465,
+     "ts": 1791352440000
+    },
+    {
+     "dur": "33 s",
+     "ok": true,
+     "rows": 434,
+     "ts": 1791348840000
+    },
+    {
+     "dur": "14 s",
+     "ok": true,
+     "rows": 438,
+     "ts": 1791345240000
+    },
+    {
+     "dur": "45 s",
+     "ok": true,
+     "rows": 443,
+     "ts": 1791341640000
+    },
+    {
+     "dur": "26 s",
+     "ok": true,
+     "rows": 447,
+     "ts": 1791338040000
+    },
+    {
+     "dur": "5 s",
+     "ok": true,
+     "rows": 487,
+     "ts": 1791334440000
+    },
+    {
+     "dur": "36 s",
+     "ok": true,
+     "rows": 491,
+     "ts": 1791330840000
+    },
+    {
+     "dur": "10 s",
+     "ok": true,
+     "rows": 421,
+     "ts": 1791327240000
+    },
+    {
+     "dur": "29 s",
+     "ok": true,
+     "rows": 416,
+     "ts": 1791323640000
+    }
+   ],
+   "tables": 11,
+   "workflows": [
+    "Ingest · IBM Maximo",
+    "Outbound · IBM Maximo"
+   ]
+  },
+  "eng": {
+   "category": "EAM",
+   "channels": [
+    "api"
+   ],
+   "cred_days": 156,
+   "failed30": 8,
+   "failed7": 2,
+   "failing": false,
+   "fields": 3,
+   "latency": 260,
+   "models": {
+    "Condition & eligibility": [
+     [
+      "RUL_MONTHS",
+      "36",
+      "condition.life_assessment",
+      "36 months",
+      "Months; source & confidence retained"
+     ],
+     [
+      "STANDARD_REF",
+      "IEC 60034-1",
+      "condition.standard",
+      "IEC 60034-1",
+      "Pass-through"
+     ],
+     [
+      "REQUAL_STATUS",
+      "APPROVED",
+      "condition.qualification",
+      "approved",
+      "Status map"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    50,
+    35,
+    49,
+    30,
+    44,
+    47,
+    39,
+    42,
+    33,
+    37,
+    50,
+    30,
+    39,
+    45,
+    32,
+    40,
+    49,
+    35,
+    43,
+    29,
+    38,
+    45,
+    36,
+    37,
+    29,
+    32,
+    46,
+    49,
+    41,
+    44
+   ],
+   "sla": 120,
+   "success": 99.3,
+   "sync_history": [
+    {
+     "dur": "12 s",
+     "ok": true,
+     "rows": 31,
+     "ts": 1791361620000
+    },
+    {
+     "dur": "31 s",
+     "ok": true,
+     "rows": 31,
+     "ts": 1791358020000
+    },
+    {
+     "dur": "50 s",
+     "ok": true,
+     "rows": 30,
+     "ts": 1791354420000
+    },
+    {
+     "dur": "19 s",
+     "ok": true,
+     "rows": 30,
+     "ts": 1791350820000
+    },
+    {
+     "dur": "36 s",
+     "ok": true,
+     "rows": 33,
+     "ts": 1791347220000
+    },
+    {
+     "dur": "5 s",
+     "ok": true,
+     "rows": 32,
+     "ts": 1791343620000
+    },
+    {
+     "dur": "24 s",
+     "ok": true,
+     "rows": 32,
+     "ts": 1791340020000
+    },
+    {
+     "dur": "43 s",
+     "ok": true,
+     "rows": 32,
+     "ts": 1791336420000
+    },
+    {
+     "dur": "10 s",
+     "ok": true,
+     "rows": 34,
+     "ts": 1791332820000
+    },
+    {
+     "dur": "29 s",
+     "ok": true,
+     "rows": 34,
+     "ts": 1791329220000
+    },
+    {
+     "dur": "45 s",
+     "ok": true,
+     "rows": 36,
+     "ts": 1791325620000
+    },
+    {
+     "dur": "26 s",
+     "ok": true,
+     "rows": 37,
+     "ts": 1791322020000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · Bentley AssetWise"
+   ]
+  },
+  "erp": {
+   "category": "ERP",
+   "channels": [
+    "api"
+   ],
+   "cred_days": 156,
+   "failed30": 203,
+   "failed7": 49,
+   "failing": false,
+   "fields": 75,
+   "latency": 511,
+   "models": {
+    "Demand opportunity": [
+     [
+      "EKPO-NETPR",
+      "₹10,02,000.00 INR",
+      "demand.purchase_baseline",
+      "$12,000.00 USD",
+      "Currency at 83.5 (rate dated 2026-10-06)"
+     ],
+     [
+      "EKPO-MENGE",
+      "1.000",
+      "demand.qty",
+      "1",
+      "Integer"
+     ],
+     [
+      "EKKO-BSTYP",
+      "F",
+      "demand.status",
+      "confirmed",
+      "Status map: F → confirmed"
+     ],
+     [
+      "EKPO-WERKS",
+      "1030",
+      "demand.location",
+      "Site 3",
+      "Plant code lookup"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    966,
+    836,
+    1045,
+    706,
+    914,
+    1123,
+    784,
+    993,
+    1201,
+    863,
+    1071,
+    957,
+    749,
+    774,
+    1113,
+    1191,
+    983,
+    1061,
+    853,
+    931,
+    722,
+    1036,
+    1245,
+    1193,
+    854,
+    776,
+    984,
+    933,
+    1141,
+    1063
+   ],
+   "sla": 10,
+   "success": 99.3,
+   "sync_history": [
+    {
+     "dur": "49 s",
+     "ok": true,
+     "rows": 1123,
+     "ts": 1791363480000
+    },
+    {
+     "dur": "30 s",
+     "ok": true,
+     "rows": 1133,
+     "ts": 1791363180000
+    },
+    {
+     "dur": "11 s",
+     "ok": true,
+     "rows": 1143,
+     "ts": 1791362880000
+    },
+    {
+     "dur": "42 s",
+     "ok": true,
+     "rows": 1153,
+     "ts": 1791362580000
+    },
+    {
+     "dur": "25 s",
+     "ok": true,
+     "rows": 1084,
+     "ts": 1791362280000
+    },
+    {
+     "dur": "6 s",
+     "ok": true,
+     "rows": 1094,
+     "ts": 1791361980000
+    },
+    {
+     "dur": "37 s",
+     "ok": true,
+     "rows": 1104,
+     "ts": 1791361680000
+    },
+    {
+     "dur": "18 s",
+     "ok": true,
+     "rows": 1114,
+     "ts": 1791361380000
+    },
+    {
+     "dur": "51 s",
+     "ok": true,
+     "rows": 1045,
+     "ts": 1791361080000
+    },
+    {
+     "dur": "32 s",
+     "ok": false,
+     "rows": 1055,
+     "ts": 1791360780000
+    },
+    {
+     "dur": "36 s",
+     "ok": true,
+     "rows": 703,
+     "ts": 1791360480000
+    },
+    {
+     "dur": "5 s",
+     "ok": true,
+     "rows": 694,
+     "ts": 1791360180000
+    }
+   ],
+   "tables": 20,
+   "workflows": [
+    "Ingest · SAP S/4HANA",
+    "Outbound · SAP S/4HANA",
+    "Outbound · SAP S/4HANA (interface file)"
+   ]
+  },
+  "esg": {
+   "category": "Analytics",
+   "channels": [
+    "api"
+   ],
+   "cred_days": 156,
+   "failed30": 17,
+   "failed7": 4,
+   "failing": false,
+   "fields": 2,
+   "latency": 351,
+   "models": {
+    "Outcome": []
+   },
+   "needs_attention": false,
+   "series30": [
+    48,
+    45,
+    31,
+    37,
+    46,
+    32,
+    40,
+    49,
+    35,
+    44,
+    30,
+    34,
+    48,
+    51,
+    42,
+    46,
+    37,
+    40,
+    32,
+    35,
+    49,
+    48,
+    34,
+    30,
+    39,
+    35,
+    44,
+    42,
+    50,
+    47
+   ],
+   "sla": 60,
+   "success": 98.6,
+   "sync_history": [
+    {
+     "dur": "27 s",
+     "ok": true,
+     "rows": 49,
+     "ts": 1791363420000
+    },
+    {
+     "dur": "8 s",
+     "ok": true,
+     "rows": 50,
+     "ts": 1791359820000
+    },
+    {
+     "dur": "39 s",
+     "ok": true,
+     "rows": 50,
+     "ts": 1791356220000
+    },
+    {
+     "dur": "20 s",
+     "ok": true,
+     "rows": 51,
+     "ts": 1791352620000
+    },
+    {
+     "dur": "53 s",
+     "ok": true,
+     "rows": 48,
+     "ts": 1791349020000
+    },
+    {
+     "dur": "34 s",
+     "ok": true,
+     "rows": 48,
+     "ts": 1791345420000
+    },
+    {
+     "dur": "15 s",
+     "ok": true,
+     "rows": 49,
+     "ts": 1791341820000
+    },
+    {
+     "dur": "46 s",
+     "ok": true,
+     "rows": 49,
+     "ts": 1791338220000
+    },
+    {
+     "dur": "25 s",
+     "ok": true,
+     "rows": 28,
+     "ts": 1791334620000
+    },
+    {
+     "dur": "6 s",
+     "ok": true,
+     "rows": 29,
+     "ts": 1791331020000
+    },
+    {
+     "dur": "8 s",
+     "ok": true,
+     "rows": 42,
+     "ts": 1791327420000
+    },
+    {
+     "dur": "27 s",
+     "ok": true,
+     "rows": 41,
+     "ts": 1791323820000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · Persefoni"
+   ]
+  },
+  "fsm": {
+   "category": "EAM",
+   "channels": [
+    "api",
+    "event"
+   ],
+   "cred_days": 156,
+   "failed30": 16,
+   "failed7": 4,
+   "failing": false,
+   "fields": 23,
+   "latency": 790,
+   "models": {
+    "Asset & component": [
+     [
+      "wm_order.number",
+      "WO0010382",
+      "asset.work_order_ref",
+      "WO0010382",
+      "Pass-through"
+     ],
+     [
+      "alm_asset.serial_number",
+      "SN-77120-A",
+      "asset.source_refs[]",
+      "FSM:SN-77120-A",
+      "Prefixed with system"
+     ],
+     [
+      "wm_task.state",
+      "3",
+      "asset.availability",
+      "in_service",
+      "State map: 3 → in_service"
+     ]
+    ],
+    "Condition & eligibility": [
+     [
+      "wm_task.closed_at",
+      "2026-09-30 14:05:11",
+      "condition.service_date",
+      "2026-09-30T14:05:11Z",
+      "Local time → UTC"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    296,
+    331,
+    275,
+    219,
+    310,
+    254,
+    197,
+    289,
+    233,
+    324,
+    268,
+    195,
+    251,
+    237,
+    294,
+    273,
+    329,
+    315,
+    223,
+    202,
+    259,
+    259,
+    203,
+    309,
+    252,
+    196,
+    287,
+    231,
+    323,
+    266
+   ],
+   "sla": 15,
+   "success": 99.8,
+   "sync_history": [
+    {
+     "dur": "24 s",
+     "ok": true,
+     "rows": 264,
+     "ts": 1791363420000
+    },
+    {
+     "dur": "43 s",
+     "ok": false,
+     "rows": 262,
+     "ts": 1791359820000
+    },
+    {
+     "dur": "36 s",
+     "ok": true,
+     "rows": 269,
+     "ts": 1791356220000
+    },
+    {
+     "dur": "5 s",
+     "ok": true,
+     "rows": 267,
+     "ts": 1791352620000
+    },
+    {
+     "dur": "48 s",
+     "ok": true,
+     "rows": 275,
+     "ts": 1791349020000
+    },
+    {
+     "dur": "17 s",
+     "ok": true,
+     "rows": 272,
+     "ts": 1791345420000
+    },
+    {
+     "dur": "10 s",
+     "ok": true,
+     "rows": 280,
+     "ts": 1791341820000
+    },
+    {
+     "dur": "29 s",
+     "ok": true,
+     "rows": 277,
+     "ts": 1791338220000
+    },
+    {
+     "dur": "22 s",
+     "ok": true,
+     "rows": 285,
+     "ts": 1791334620000
+    },
+    {
+     "dur": "41 s",
+     "ok": true,
+     "rows": 283,
+     "ts": 1791331020000
+    },
+    {
+     "dur": "41 s",
+     "ok": true,
+     "rows": 256,
+     "ts": 1791327420000
+    },
+    {
+     "dur": "22 s",
+     "ok": true,
+     "rows": 259,
+     "ts": 1791323820000
+    }
+   ],
+   "tables": 7,
+   "workflows": [
+    "Ingest · ServiceNow Field Service Management",
+    "Outbound · ServiceNow Field Service Management"
+   ]
+  },
+  "insp": {
+   "category": "MRO",
+   "channels": [
+    "api",
+    "event"
+   ],
+   "cred_days": 149,
+   "failed30": 80,
+   "failed7": 19,
+   "failing": false,
+   "fields": 3,
+   "latency": 554,
+   "models": {
+    "Condition & eligibility": [
+     [
+      "grade_text",
+      "Grade B",
+      "condition.grade",
+      "B",
+      "Grade table v3"
+     ],
+     [
+      "media_count",
+      "12",
+      "condition.photo_count",
+      "12",
+      "Integer"
+     ],
+     [
+      "audit_id",
+      "audit_a1b2c3",
+      "condition.inspection_ref",
+      "INS-20441",
+      "Reference prefix"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    407,
+    248,
+    363,
+    301,
+    416,
+    345,
+    274,
+    398,
+    327,
+    256,
+    372,
+    299,
+    370,
+    361,
+    246,
+    406,
+    291,
+    264,
+    335,
+    308,
+    379,
+    407,
+    336,
+    274,
+    389,
+    318,
+    247,
+    371,
+    301,
+    416
+   ],
+   "sla": 15,
+   "success": 99.2,
+   "sync_history": [
+    {
+     "dur": "34 s",
+     "ok": true,
+     "rows": 332,
+     "ts": 1791363060000
+    },
+    {
+     "dur": "53 s",
+     "ok": true,
+     "rows": 329,
+     "ts": 1791359460000
+    },
+    {
+     "dur": "46 s",
+     "ok": true,
+     "rows": 339,
+     "ts": 1791355860000
+    },
+    {
+     "dur": "15 s",
+     "ok": true,
+     "rows": 335,
+     "ts": 1791352260000
+    },
+    {
+     "dur": "10 s",
+     "ok": true,
+     "rows": 319,
+     "ts": 1791348660000
+    },
+    {
+     "dur": "29 s",
+     "ok": true,
+     "rows": 315,
+     "ts": 1791345060000
+    },
+    {
+     "dur": "22 s",
+     "ok": true,
+     "rows": 325,
+     "ts": 1791341460000
+    },
+    {
+     "dur": "41 s",
+     "ok": true,
+     "rows": 322,
+     "ts": 1791337860000
+    },
+    {
+     "dur": "36 s",
+     "ok": true,
+     "rows": 305,
+     "ts": 1791334260000
+    },
+    {
+     "dur": "5 s",
+     "ok": true,
+     "rows": 302,
+     "ts": 1791330660000
+    },
+    {
+     "dur": "27 s",
+     "ok": true,
+     "rows": 309,
+     "ts": 1791327060000
+    },
+    {
+     "dur": "8 s",
+     "ok": true,
+     "rows": 312,
+     "ts": 1791323460000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · SafetyCulture",
+    "Outbound · SafetyCulture"
+   ]
+  },
+  "iot": {
+   "category": "Custom",
+   "channels": [],
+   "cred_days": 156,
+   "failed30": 0,
+   "failed7": 0,
+   "failing": false,
+   "fields": 0,
+   "latency": null,
+   "models": {
+    "Outcome": []
+   },
+   "needs_attention": true,
+   "series30": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "sla": 60,
+   "success": 0,
+   "sync_history": [],
+   "tables": 0,
+   "workflows": [
+    "Ingest · AWS IoT Core"
+   ]
+  },
+  "lease": {
+   "category": "ERP",
+   "channels": [
+    "api"
+   ],
+   "cred_days": 142,
+   "failed30": 14,
+   "failed7": 3,
+   "failing": false,
+   "fields": 4,
+   "latency": 762,
+   "models": {
+    "Asset & component": [
+     [
+      "LEASE_CONTRACT_ID",
+      "LC-004417",
+      "asset.lease_ref",
+      "LC-004417",
+      "Pass-through"
+     ],
+     [
+      "LESSEE_NAME",
+      "CUSTOMER_A",
+      "asset.owner_tenant",
+      "Customer A",
+      "Tenant key"
+     ]
+    ],
+    "Demand opportunity": [
+     [
+      "CONTRACT_END_DATE",
+      "2026-12-31",
+      "demand.need_by",
+      "2026-12-31",
+      "ISO date"
+     ],
+     [
+      "MONTHLY_RENTAL",
+      "2400.00 USD",
+      "demand.lease_rate",
+      "$2,400 / month",
+      "Currency + period normalised"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    43,
+    51,
+    71,
+    59,
+    46,
+    67,
+    54,
+    74,
+    62,
+    49,
+    70,
+    54,
+    66,
+    63,
+    43,
+    71,
+    50,
+    47,
+    60,
+    55,
+    68,
+    68,
+    56,
+    46,
+    67,
+    54,
+    74,
+    62,
+    50,
+    70
+   ],
+   "sla": 30,
+   "success": 99.2,
+   "sync_history": [
+    {
+     "dur": "30 s",
+     "ok": false,
+     "rows": 44,
+     "ts": 1791363180000
+    },
+    {
+     "dur": "49 s",
+     "ok": true,
+     "rows": 44,
+     "ts": 1791362280000
+    },
+    {
+     "dur": "42 s",
+     "ok": true,
+     "rows": 46,
+     "ts": 1791361380000
+    },
+    {
+     "dur": "11 s",
+     "ok": true,
+     "rows": 45,
+     "ts": 1791360480000
+    },
+    {
+     "dur": "4 s",
+     "ok": true,
+     "rows": 47,
+     "ts": 1791359580000
+    },
+    {
+     "dur": "23 s",
+     "ok": true,
+     "rows": 46,
+     "ts": 1791358680000
+    },
+    {
+     "dur": "16 s",
+     "ok": true,
+     "rows": 48,
+     "ts": 1791357780000
+    },
+    {
+     "dur": "35 s",
+     "ok": true,
+     "rows": 47,
+     "ts": 1791356880000
+    },
+    {
+     "dur": "28 s",
+     "ok": true,
+     "rows": 49,
+     "ts": 1791355980000
+    },
+    {
+     "dur": "47 s",
+     "ok": true,
+     "rows": 48,
+     "ts": 1791355080000
+    },
+    {
+     "dur": "13 s",
+     "ok": true,
+     "rows": 75,
+     "ts": 1791354180000
+    },
+    {
+     "dur": "44 s",
+     "ok": false,
+     "rows": 41,
+     "ts": 1791353280000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · Oracle Lease and Finance Management"
+   ]
+  },
+  "mkt": {
+   "category": "Analytics",
+   "channels": [
+    "api"
+   ],
+   "cred_days": 156,
+   "failed30": 2352,
+   "failed7": 486,
+   "failing": false,
+   "fields": 3,
+   "latency": 3316,
+   "models": {
+    "Demand opportunity": []
+   },
+   "needs_attention": true,
+   "series30": [
+    1809,
+    2086,
+    1696,
+    1842,
+    1452,
+    1599,
+    2232,
+    1355,
+    1989,
+    2135,
+    1745,
+    1860,
+    2250,
+    1518,
+    1908,
+    2298,
+    1664,
+    2054,
+    1420,
+    1810,
+    2200,
+    1938,
+    1548,
+    1596,
+    2230,
+    1353,
+    1986,
+    2133,
+    1743,
+    0
+   ],
+   "sla": 120,
+   "success": 95.6,
+   "sync_history": [
+    {
+     "dur": "34 s",
+     "ok": false,
+     "rows": 1645,
+     "ts": 1791295200000
+    },
+    {
+     "dur": "53 s",
+     "ok": true,
+     "rows": 1627,
+     "ts": 1791291600000
+    },
+    {
+     "dur": "22 s",
+     "ok": true,
+     "rows": 1608,
+     "ts": 1791288000000
+    },
+    {
+     "dur": "41 s",
+     "ok": true,
+     "rows": 1590,
+     "ts": 1791284400000
+    },
+    {
+     "dur": "8 s",
+     "ok": true,
+     "rows": 1718,
+     "ts": 1791280800000
+    },
+    {
+     "dur": "27 s",
+     "ok": true,
+     "rows": 1700,
+     "ts": 1791277200000
+    },
+    {
+     "dur": "46 s",
+     "ok": true,
+     "rows": 1682,
+     "ts": 1791273600000
+    },
+    {
+     "dur": "15 s",
+     "ok": true,
+     "rows": 1663,
+     "ts": 1791270000000
+    },
+    {
+     "dur": "32 s",
+     "ok": true,
+     "rows": 1791,
+     "ts": 1791266400000
+    },
+    {
+     "dur": "51 s",
+     "ok": true,
+     "rows": 1773,
+     "ts": 1791262800000
+    },
+    {
+     "dur": "13 s",
+     "ok": true,
+     "rows": 1444,
+     "ts": 1791259200000
+    },
+    {
+     "dur": "44 s",
+     "ok": true,
+     "rows": 1462,
+     "ts": 1791255600000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · Ritchie Bros. Market Data"
+   ]
+  },
+  "oms": {
+   "category": "OMS",
+   "channels": [
+    "api",
+    "event"
+   ],
+   "cred_days": 156,
+   "failed30": 156,
+   "failed7": 37,
+   "failing": false,
+   "fields": 4,
+   "latency": 747,
+   "models": {
+    "Demand opportunity": [
+     [
+      "OrderNo",
+      "SO-48102",
+      "demand.demand_id",
+      "SO-48102",
+      "Pass-through"
+     ],
+     [
+      "PrimeLineNo",
+      "10",
+      "demand.line",
+      "10",
+      "Integer"
+     ],
+     [
+      "ShipToKey",
+      "LOC-CHN-03",
+      "demand.location",
+      "Site 3 · Chennai Foundry",
+      "Location lookup"
+     ],
+     [
+      "ReqDeliveryDate",
+      "2026-10-17T00:00:00+05:30",
+      "demand.need_by",
+      "2026-10-17",
+      "Date to ISO"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    503,
+    425,
+    550,
+    690,
+    488,
+    612,
+    737,
+    519,
+    643,
+    441,
+    566,
+    518,
+    721,
+    425,
+    627,
+    674,
+    550,
+    581,
+    456,
+    503,
+    705,
+    587,
+    711,
+    665,
+    462,
+    742,
+    540,
+    493,
+    618,
+    571
+   ],
+   "sla": 15,
+   "success": 99.1,
+   "sync_history": [
+    {
+     "dur": "39 s",
+     "ok": true,
+     "rows": 438,
+     "ts": 1791363420000
+    },
+    {
+     "dur": "20 s",
+     "ok": true,
+     "rows": 444,
+     "ts": 1791359820000
+    },
+    {
+     "dur": "51 s",
+     "ok": true,
+     "rows": 450,
+     "ts": 1791356220000
+    },
+    {
+     "dur": "32 s",
+     "ok": true,
+     "rows": 455,
+     "ts": 1791352620000
+    },
+    {
+     "dur": "13 s",
+     "ok": false,
+     "rows": 461,
+     "ts": 1791349020000
+    },
+    {
+     "dur": "44 s",
+     "ok": true,
+     "rows": 467,
+     "ts": 1791345420000
+    },
+    {
+     "dur": "25 s",
+     "ok": true,
+     "rows": 473,
+     "ts": 1791341820000
+    },
+    {
+     "dur": "6 s",
+     "ok": true,
+     "rows": 479,
+     "ts": 1791338220000
+    },
+    {
+     "dur": "41 s",
+     "ok": true,
+     "rows": 742,
+     "ts": 1791334620000
+    },
+    {
+     "dur": "22 s",
+     "ok": true,
+     "rows": 747,
+     "ts": 1791331020000
+    },
+    {
+     "dur": "48 s",
+     "ok": true,
+     "rows": 490,
+     "ts": 1791327420000
+    },
+    {
+     "dur": "17 s",
+     "ok": false,
+     "rows": 485,
+     "ts": 1791323820000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · IBM Sterling OMS",
+    "Outbound · IBM Sterling OMS"
+   ]
+  },
+  "plm": {
+   "category": "EAM",
+   "channels": [
+    "api"
+   ],
+   "cred_days": 156,
+   "failed30": 24,
+   "failed7": 6,
+   "failing": false,
+   "fields": 20,
+   "latency": 657,
+   "models": {
+    "Asset & component": [
+     [
+      "ITEM_ID",
+      "MTR-55-IE3-250M",
+      "asset.configuration",
+      "55 kW · IE3 · 250M",
+      "Config decoded"
+     ],
+     [
+      "REV",
+      "C",
+      "asset.bom_ref",
+      "BOM-55-C",
+      "Revision prefix"
+     ]
+    ],
+    "Route candidate": [
+     [
+      "ALT_APPROVED",
+      "Y",
+      "route.compatibility",
+      "compatible",
+      "Boolean"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    111,
+    92,
+    114,
+    106,
+    128,
+    119,
+    84,
+    75,
+    97,
+    89,
+    111,
+    76,
+    112,
+    87,
+    122,
+    101,
+    79,
+    117,
+    95,
+    131,
+    109,
+    78,
+    100,
+    116,
+    81,
+    103,
+    125,
+    89,
+    111,
+    75
+   ],
+   "sla": 30,
+   "success": 99.2,
+   "sync_history": [
+    {
+     "dur": "39 s",
+     "ok": true,
+     "rows": 129,
+     "ts": 1791362940000
+    },
+    {
+     "dur": "20 s",
+     "ok": true,
+     "rows": 130,
+     "ts": 1791362040000
+    },
+    {
+     "dur": "27 s",
+     "ok": true,
+     "rows": 127,
+     "ts": 1791361140000
+    },
+    {
+     "dur": "8 s",
+     "ok": true,
+     "rows": 128,
+     "ts": 1791360240000
+    },
+    {
+     "dur": "13 s",
+     "ok": true,
+     "rows": 133,
+     "ts": 1791359340000
+    },
+    {
+     "dur": "44 s",
+     "ok": true,
+     "rows": 72,
+     "ts": 1791358440000
+    },
+    {
+     "dur": "51 s",
+     "ok": true,
+     "rows": 131,
+     "ts": 1791357540000
+    },
+    {
+     "dur": "32 s",
+     "ok": true,
+     "rows": 132,
+     "ts": 1791356640000
+    },
+    {
+     "dur": "37 s",
+     "ok": true,
+     "rows": 75,
+     "ts": 1791355740000
+    },
+    {
+     "dur": "18 s",
+     "ok": true,
+     "rows": 76,
+     "ts": 1791354840000
+    },
+    {
+     "dur": "34 s",
+     "ok": true,
+     "rows": 93,
+     "ts": 1791353940000
+    },
+    {
+     "dur": "53 s",
+     "ok": true,
+     "rows": 92,
+     "ts": 1791353040000
+    }
+   ],
+   "tables": 6,
+   "workflows": [
+    "Ingest · Siemens Teamcenter"
+   ]
+  },
+  "proc": {
+   "category": "ERP",
+   "channels": [
+    "api"
+   ],
+   "cred_days": 149,
+   "failed30": 40,
+   "failed7": 9,
+   "failing": false,
+   "fields": 3,
+   "latency": 526,
+   "models": {
+    "Demand opportunity": [
+     [
+      "SupplierLeadTime",
+      "21 days",
+      "demand.supplier_lead_time",
+      "21 days",
+      "Integer days"
+     ],
+     [
+      "QuotedUnitPrice",
+      "€10,400.00",
+      "demand.purchase_alternative",
+      "$11,300",
+      "Currency at dated rate"
+     ],
+     [
+      "SupplierId",
+      "SUP-88120",
+      "demand.supplier_ref",
+      "SUP-88120",
+      "Pass-through"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    122,
+    134,
+    184,
+    161,
+    130,
+    180,
+    149,
+    119,
+    169,
+    138,
+    107,
+    145,
+    176,
+    161,
+    111,
+    180,
+    130,
+    122,
+    153,
+    142,
+    172,
+    179,
+    148,
+    118,
+    168,
+    137,
+    106,
+    156,
+    125,
+    175
+   ],
+   "sla": 60,
+   "success": 99.1,
+   "sync_history": [
+    {
+     "dur": "34 s",
+     "ok": true,
+     "rows": 116,
+     "ts": 1791362880000
+    },
+    {
+     "dur": "53 s",
+     "ok": true,
+     "rows": 114,
+     "ts": 1791361080000
+    },
+    {
+     "dur": "46 s",
+     "ok": true,
+     "rows": 118,
+     "ts": 1791359280000
+    },
+    {
+     "dur": "15 s",
+     "ok": true,
+     "rows": 117,
+     "ts": 1791357480000
+    },
+    {
+     "dur": "8 s",
+     "ok": true,
+     "rows": 121,
+     "ts": 1791355680000
+    },
+    {
+     "dur": "27 s",
+     "ok": false,
+     "rows": 120,
+     "ts": 1791353880000
+    },
+    {
+     "dur": "20 s",
+     "ok": true,
+     "rows": 124,
+     "ts": 1791352080000
+    },
+    {
+     "dur": "39 s",
+     "ok": true,
+     "rows": 123,
+     "ts": 1791350280000
+    },
+    {
+     "dur": "36 s",
+     "ok": true,
+     "rows": 104,
+     "ts": 1791348480000
+    },
+    {
+     "dur": "5 s",
+     "ok": true,
+     "rows": 103,
+     "ts": 1791346680000
+    },
+    {
+     "dur": "23 s",
+     "ok": true,
+     "rows": 157,
+     "ts": 1791344880000
+    },
+    {
+     "dur": "4 s",
+     "ok": true,
+     "rows": 159,
+     "ts": 1791343080000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · SAP Ariba"
+   ]
+  },
+  "qms": {
+   "category": "EAM",
+   "channels": [
+    "api"
+   ],
+   "cred_days": 156,
+   "failed30": 9,
+   "failed7": 2,
+   "failing": false,
+   "fields": 3,
+   "latency": 185,
+   "models": {
+    "Condition & eligibility": [
+     [
+      "CERT_EXPIRY",
+      "2027-03-01",
+      "condition.certificates[0].expires",
+      "2027-03-01",
+      "ISO date"
+     ],
+     [
+      "REUSE_CLASS",
+      "ALLOWED_CAT2",
+      "condition.policy",
+      "reuse_permitted",
+      "Policy map v3.2"
+     ],
+     [
+      "TEST_RESULT",
+      "PASS",
+      "condition.qualification",
+      "passed",
+      "Result map"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    50,
+    47,
+    32,
+    51,
+    36,
+    33,
+    42,
+    40,
+    49,
+    45,
+    55,
+    38,
+    52,
+    46,
+    36,
+    51,
+    42,
+    33,
+    48,
+    39,
+    54,
+    40,
+    49,
+    33,
+    42,
+    52,
+    37,
+    45,
+    54,
+    39
+   ],
+   "sla": 60,
+   "success": 99.3,
+   "sync_history": [
+    {
+     "dur": "27 s",
+     "ok": true,
+     "rows": 48,
+     "ts": 1791362040000
+    },
+    {
+     "dur": "8 s",
+     "ok": true,
+     "rows": 49,
+     "ts": 1791360240000
+    },
+    {
+     "dur": "15 s",
+     "ok": true,
+     "rows": 48,
+     "ts": 1791358440000
+    },
+    {
+     "dur": "46 s",
+     "ok": true,
+     "rows": 48,
+     "ts": 1791356640000
+    },
+    {
+     "dur": "53 s",
+     "ok": true,
+     "rows": 47,
+     "ts": 1791354840000
+    },
+    {
+     "dur": "34 s",
+     "ok": true,
+     "rows": 47,
+     "ts": 1791353040000
+    },
+    {
+     "dur": "41 s",
+     "ok": true,
+     "rows": 46,
+     "ts": 1791351240000
+    },
+    {
+     "dur": "22 s",
+     "ok": true,
+     "rows": 46,
+     "ts": 1791349440000
+    },
+    {
+     "dur": "25 s",
+     "ok": true,
+     "rows": 52,
+     "ts": 1791347640000
+    },
+    {
+     "dur": "6 s",
+     "ok": true,
+     "rows": 52,
+     "ts": 1791345840000
+    },
+    {
+     "dur": "8 s",
+     "ok": false,
+     "rows": 32,
+     "ts": 1791344040000
+    },
+    {
+     "dur": "27 s",
+     "ok": true,
+     "rows": 31,
+     "ts": 1791342240000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · MasterControl"
+   ]
+  },
+  "rcy": {
+   "category": "Custom",
+   "channels": [
+    "file"
+   ],
+   "cred_days": 156,
+   "failed30": 8,
+   "failed7": 2,
+   "failing": false,
+   "fields": 2,
+   "latency": 898,
+   "models": {
+    "Outcome": []
+   },
+   "needs_attention": false,
+   "series30": [
+    120,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    120,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    120,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    120,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    120,
+    0
+   ],
+   "sla": 2880,
+   "success": 98.6,
+   "sync_history": [
+    {
+     "dur": "28 s",
+     "ok": true,
+     "rows": 34,
+     "ts": 1791190800000
+    },
+    {
+     "dur": "47 s",
+     "ok": true,
+     "rows": 33,
+     "ts": 1791187200000
+    },
+    {
+     "dur": "40 s",
+     "ok": true,
+     "rows": 34,
+     "ts": 1791183600000
+    },
+    {
+     "dur": "9 s",
+     "ok": true,
+     "rows": 34,
+     "ts": 1791180000000
+    },
+    {
+     "dur": "52 s",
+     "ok": true,
+     "rows": 35,
+     "ts": 1791176400000
+    },
+    {
+     "dur": "21 s",
+     "ok": true,
+     "rows": 35,
+     "ts": 1791172800000
+    },
+    {
+     "dur": "14 s",
+     "ok": true,
+     "rows": 36,
+     "ts": 1791169200000
+    },
+    {
+     "dur": "33 s",
+     "ok": true,
+     "rows": 36,
+     "ts": 1791165600000
+    },
+    {
+     "dur": "30 s",
+     "ok": true,
+     "rows": 30,
+     "ts": 1791162000000
+    },
+    {
+     "dur": "49 s",
+     "ok": true,
+     "rows": 30,
+     "ts": 1791158400000
+    },
+    {
+     "dur": "45 s",
+     "ok": true,
+     "rows": 48,
+     "ts": 1791154800000
+    },
+    {
+     "dur": "26 s",
+     "ok": true,
+     "rows": 49,
+     "ts": 1791151200000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · Sims Lifecycle Services"
+   ]
+  },
+  "repair": {
+   "category": "MRO",
+   "channels": [
+    "api",
+    "event"
+   ],
+   "cred_days": 135,
+   "failed30": 17,
+   "failed7": 4,
+   "failing": true,
+   "fields": 3,
+   "latency": 533,
+   "models": {
+    "Condition & eligibility": [],
+    "Intervention": [
+     [
+      "repair_cost",
+      "1,800.00 USD",
+      "intervention.cost",
+      "$1,800",
+      "Currency kept in USD"
+     ],
+     [
+      "scope",
+      "Light repair + test",
+      "intervention.process",
+      "light repair + test",
+      "Process map"
+     ],
+     [
+      "result_state",
+      "B",
+      "intervention.predicted_condition",
+      "B",
+      "Grade table v3"
+     ]
+    ]
+   },
+   "needs_attention": true,
+   "series30": [
+    118,
+    106,
+    74,
+    72,
+    91,
+    84,
+    104,
+    96,
+    116,
+    109,
+    76,
+    104,
+    84,
+    119,
+    99,
+    79,
+    111,
+    94,
+    74,
+    106,
+    86,
+    77,
+    96,
+    116,
+    84,
+    104,
+    72,
+    91,
+    111,
+    79
+   ],
+   "sla": 15,
+   "success": 99.4,
+   "sync_history": [
+    {
+     "dur": "37 s",
+     "ok": true,
+     "rows": 68,
+     "ts": 1791362760000
+    },
+    {
+     "dur": "18 s",
+     "ok": true,
+     "rows": 69,
+     "ts": 1791359160000
+    },
+    {
+     "dur": "25 s",
+     "ok": true,
+     "rows": 66,
+     "ts": 1791355560000
+    },
+    {
+     "dur": "6 s",
+     "ok": true,
+     "rows": 67,
+     "ts": 1791351960000
+    },
+    {
+     "dur": "11 s",
+     "ok": true,
+     "rows": 71,
+     "ts": 1791348360000
+    },
+    {
+     "dur": "42 s",
+     "ok": true,
+     "rows": 72,
+     "ts": 1791344760000
+    },
+    {
+     "dur": "49 s",
+     "ok": true,
+     "rows": 70,
+     "ts": 1791341160000
+    },
+    {
+     "dur": "30 s",
+     "ok": true,
+     "rows": 71,
+     "ts": 1791337560000
+    },
+    {
+     "dur": "39 s",
+     "ok": true,
+     "rows": 116,
+     "ts": 1791333960000
+    },
+    {
+     "dur": "20 s",
+     "ok": true,
+     "rows": 117,
+     "ts": 1791330360000
+    },
+    {
+     "dur": "38 s",
+     "ok": true,
+     "rows": 87,
+     "ts": 1791326760000
+    },
+    {
+     "dur": "7 s",
+     "ok": true,
+     "rows": 86,
+     "ts": 1791323160000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · Oracle Depot Repair",
+    "Outbound · Oracle Depot Repair"
+   ]
+  },
+  "rl": {
+   "category": "OMS",
+   "channels": [
+    "api",
+    "event"
+   ],
+   "cred_days": 163,
+   "failed30": 22,
+   "failed7": 5,
+   "failing": false,
+   "fields": 3,
+   "latency": 348,
+   "models": {
+    "Asset & component": [
+     [
+      "RMA_ID",
+      "RMA-55820",
+      "asset.return_ref",
+      "RMA-55820",
+      "Pass-through"
+     ],
+     [
+      "DISPOSITION",
+      "REFURB",
+      "asset.disposition",
+      "refurbish",
+      "Disposition map"
+     ],
+     [
+      "RECEIVED_AT",
+      "2026-10-05T10:11:00-04:00",
+      "asset.received_at",
+      "2026-10-05T14:11:00Z",
+      "Timestamp to UTC"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    88,
+    99,
+    81,
+    86,
+    68,
+    75,
+    103,
+    62,
+    90,
+    96,
+    79,
+    89,
+    60,
+    80,
+    97,
+    69,
+    86,
+    102,
+    73,
+    91,
+    63,
+    76,
+    104,
+    63,
+    78,
+    98,
+    80,
+    71,
+    99,
+    60
+   ],
+   "sla": 15,
+   "success": 99.1,
+   "sync_history": [
+    {
+     "dur": "44 s",
+     "ok": true,
+     "rows": 57,
+     "ts": 1791363300000
+    },
+    {
+     "dur": "13 s",
+     "ok": true,
+     "rows": 105,
+     "ts": 1791359700000
+    },
+    {
+     "dur": "32 s",
+     "ok": true,
+     "rows": 104,
+     "ts": 1791356100000
+    },
+    {
+     "dur": "51 s",
+     "ok": true,
+     "rows": 104,
+     "ts": 1791352500000
+    },
+    {
+     "dur": "20 s",
+     "ok": true,
+     "rows": 103,
+     "ts": 1791348900000
+    },
+    {
+     "dur": "39 s",
+     "ok": true,
+     "rows": 102,
+     "ts": 1791345300000
+    },
+    {
+     "dur": "8 s",
+     "ok": true,
+     "rows": 101,
+     "ts": 1791341700000
+    },
+    {
+     "dur": "27 s",
+     "ok": true,
+     "rows": 100,
+     "ts": 1791338100000
+    },
+    {
+     "dur": "42 s",
+     "ok": true,
+     "rows": 64,
+     "ts": 1791334500000
+    },
+    {
+     "dur": "11 s",
+     "ok": true,
+     "rows": 63,
+     "ts": 1791330900000
+    },
+    {
+     "dur": "29 s",
+     "ok": true,
+     "rows": 94,
+     "ts": 1791327300000
+    },
+    {
+     "dur": "10 s",
+     "ok": true,
+     "rows": 95,
+     "ts": 1791323700000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · Optoro",
+    "Outbound · Optoro"
+   ]
+  },
+  "tms": {
+   "category": "TMS",
+   "channels": [
+    "api",
+    "event"
+   ],
+   "cred_days": 5,
+   "failed30": 6,
+   "failed7": 1,
+   "failing": false,
+   "fields": 4,
+   "latency": 580,
+   "models": {
+    "Outcome": [],
+    "Route candidate": [
+     [
+      "LaneId",
+      "WH-MAA-02>LOC-CHN-03",
+      "route.leg",
+      "WH-MAA-02 → LOC-CHN-03",
+      "Lane decode"
+     ],
+     [
+      "RateAmt",
+      "3600.00 INR",
+      "route.freight",
+      "$43",
+      "Currency at 83.5 (rate dated 2026-10-06)"
+     ],
+     [
+      "ETA",
+      "2026-10-13T08:36:00+05:30",
+      "route.eta",
+      "2026-10-13T08:36",
+      "Site time kept"
+     ],
+     [
+      "CarrierSCAC",
+      "NLTL",
+      "route.carrier",
+      "Northline 3PL",
+      "Carrier lookup"
+     ]
+    ]
+   },
+   "needs_attention": true,
+   "series30": [
+    173,
+    200,
+    157,
+    168,
+    238,
+    254,
+    211,
+    221,
+    179,
+    195,
+    152,
+    175,
+    218,
+    154,
+    197,
+    240,
+    170,
+    207,
+    250,
+    181,
+    223,
+    149,
+    218,
+    229,
+    186,
+    202,
+    159,
+    170,
+    240,
+    256
+   ],
+   "sla": 15,
+   "success": 99.9,
+   "sync_history": [
+    {
+     "dur": "46 s",
+     "ok": true,
+     "rows": 245,
+     "ts": 1791363360000
+    },
+    {
+     "dur": "15 s",
+     "ok": true,
+     "rows": 243,
+     "ts": 1791359760000
+    },
+    {
+     "dur": "34 s",
+     "ok": true,
+     "rows": 241,
+     "ts": 1791356160000
+    },
+    {
+     "dur": "53 s",
+     "ok": true,
+     "rows": 239,
+     "ts": 1791352560000
+    },
+    {
+     "dur": "22 s",
+     "ok": true,
+     "rows": 237,
+     "ts": 1791348960000
+    },
+    {
+     "dur": "41 s",
+     "ok": true,
+     "rows": 235,
+     "ts": 1791345360000
+    },
+    {
+     "dur": "10 s",
+     "ok": true,
+     "rows": 233,
+     "ts": 1791341760000
+    },
+    {
+     "dur": "29 s",
+     "ok": true,
+     "rows": 231,
+     "ts": 1791338160000
+    },
+    {
+     "dur": "44 s",
+     "ok": true,
+     "rows": 141,
+     "ts": 1791334560000
+    },
+    {
+     "dur": "13 s",
+     "ok": false,
+     "rows": 259,
+     "ts": 1791330960000
+    },
+    {
+     "dur": "49 s",
+     "ok": true,
+     "rows": 231,
+     "ts": 1791327360000
+    },
+    {
+     "dur": "30 s",
+     "ok": true,
+     "rows": 233,
+     "ts": 1791323760000
+    }
+   ],
+   "tables": 0,
+   "workflows": [
+    "Ingest · ShipLane TMS",
+    "Outbound · ShipLane TMS"
+   ]
+  },
+  "wms": {
+   "category": "WMS",
+   "channels": [
+    "api",
+    "event"
+   ],
+   "cred_days": 156,
+   "failed30": 47,
+   "failed7": 11,
+   "failing": false,
+   "fields": 22,
+   "latency": 731,
+   "models": {
+    "Asset & component": [
+     [
+      "LOC",
+      "WH1-A-04",
+      "asset.location",
+      "Warehouse 1",
+      "Zone collapsed to facility"
+     ],
+     [
+      "QTY_UOM",
+      "20 EA",
+      "asset.qty",
+      "20",
+      "UoM normalised"
+     ],
+     [
+      "RSV_ID",
+      "R-77102",
+      "asset.reservation_ref",
+      "R-77102",
+      "Pass-through"
+     ]
+    ]
+   },
+   "needs_attention": false,
+   "series30": [
+    1673,
+    1550,
+    1881,
+    1301,
+    1632,
+    1964,
+    1425,
+    1715,
+    1176,
+    1508,
+    1839,
+    1129,
+    1668,
+    1834,
+    1503,
+    1627,
+    1296,
+    1378,
+    1917,
+    1171,
+    1710,
+    1478,
+    1810,
+    1769,
+    1230,
+    1976,
+    1437,
+    1313,
+    1644,
+    1520
+   ],
+   "sla": 15,
+   "success": 99.9,
+   "sync_history": [
+    {
+     "dur": "21 s",
+     "ok": true,
+     "rows": 1974,
+     "ts": 1791363540000
+    },
+    {
+     "dur": "52 s",
+     "ok": true,
+     "rows": 1989,
+     "ts": 1791359940000
+    },
+    {
+     "dur": "33 s",
+     "ok": true,
+     "rows": 2005,
+     "ts": 1791356340000
+    },
+    {
+     "dur": "14 s",
+     "ok": true,
+     "rows": 1088,
+     "ts": 1791352740000
+    },
+    {
+     "dur": "45 s",
+     "ok": true,
+     "rows": 1103,
+     "ts": 1791349140000
+    },
+    {
+     "dur": "22 s",
+     "ok": true,
+     "rows": 1368,
+     "ts": 1791345540000
+    },
+    {
+     "dur": "53 s",
+     "ok": true,
+     "rows": 1383,
+     "ts": 1791341940000
+    },
+    {
+     "dur": "34 s",
+     "ok": true,
+     "rows": 1399,
+     "ts": 1791338340000
+    },
+    {
+     "dur": "15 s",
+     "ok": true,
+     "rows": 1414,
+     "ts": 1791334740000
+    },
+    {
+     "dur": "46 s",
+     "ok": true,
+     "rows": 1430,
+     "ts": 1791331140000
+    },
+    {
+     "dur": "14 s",
+     "ok": true,
+     "rows": 1554,
+     "ts": 1791327540000
+    },
+    {
+     "dur": "33 s",
+     "ok": true,
+     "rows": 1538,
+     "ts": 1791323940000
+    }
+   ],
+   "tables": 7,
+   "workflows": [
+    "Ingest · Manhattan Active Warehouse Management",
+    "Outbound · Manhattan Active Warehouse Management"
+   ]
+  }
+ },
+ "events": [
+  {
+   "ack": "escalated · Approver",
+   "approval": "APR-2026-10-3044",
+   "by": "Circularity",
+   "caseId": "RT-1009",
+   "decisionId": "DI-2026-1009",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9091",
+   "key": "esc-13eb3d",
+   "note": "Refurbishment work order (WO-47076) with Oracle Depot Repair passed its 4 working h limit at 06 Oct 16:00; escalated to Approver. Owner: Repair centre lead (Engineer) · RC-HSR-01",
+   "retries": 0,
+   "ts": "2026-10-06T16:00:00.000Z",
+   "type": "handoff.escalated",
+   "ver": 1
+  },
+  {
+   "ack": "conflict · queued",
+   "approval": null,
+   "caseId": null,
+   "decisionId": null,
+   "dest": "Lease management vs ERP",
+   "dir": "in",
+   "id": "EV-9090",
+   "key": "—",
+   "note": "MTR-2077 ownership differs between Lease management and ERP",
+   "ts": "2026-10-07T01:48:00.000Z",
+   "type": "ownership.conflict",
+   "ver": null
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3365",
+   "caseId": "RT-1116",
+   "decisionId": "DI-2026-1116",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9089",
+   "key": "idem-c5c8c3",
+   "retries": 0,
+   "ts": "2026-10-06T20:45:22.055Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3233",
+   "caseId": "RT-1072",
+   "decisionId": "DI-2026-1072",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9088",
+   "key": "idem-a8ccdd",
+   "retries": 0,
+   "ts": "2026-10-06T20:23:34.833Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3260",
+   "caseId": "RT-1081",
+   "decisionId": "DI-2026-1081",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9087",
+   "key": "idem-84af40",
+   "retries": 0,
+   "ts": "2026-10-06T20:04:07.840Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3248",
+   "caseId": "RT-1077",
+   "decisionId": "DI-2026-1077",
+   "dest": "MRO · Depot repair",
+   "dir": "out",
+   "id": "EV-9086",
+   "key": "idem-027cdb",
+   "retries": 0,
+   "ts": "2026-10-06T19:49:40.799Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3125",
+   "caseId": "RT-1036",
+   "decisionId": "DI-2026-1036",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9085",
+   "key": "idem-9ac49e",
+   "retries": 0,
+   "ts": "2026-10-06T19:06:49.925Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3074",
+   "caseId": "RT-1019",
+   "decisionId": "DI-2026-1019",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9084",
+   "key": "idem-3505c8",
+   "retries": 0,
+   "ts": "2026-10-06T18:54:44.974Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3287",
+   "caseId": "RT-1090",
+   "decisionId": "DI-2026-1090",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9083",
+   "key": "idem-a04cda",
+   "retries": 0,
+   "ts": "2026-10-06T18:40:17.323Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "stale feed · fallback used",
+   "approval": null,
+   "caseId": null,
+   "decisionId": null,
+   "dest": "Market pricing",
+   "dir": "in",
+   "id": "EV-9082",
+   "key": "—",
+   "note": "DealerBridge token expired; 14 predictions flagged \"market evidence stale\"",
+   "ts": "2026-10-06T13:48:00.000Z",
+   "type": "feed.stale",
+   "ver": null
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3401",
+   "caseId": "RT-1128",
+   "decisionId": "DI-2026-1128",
+   "dest": "WMS · release",
+   "dir": "out",
+   "id": "EV-9081",
+   "key": "idem-162607",
+   "retries": 0,
+   "ts": "2026-10-06T06:32:07.402Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3155",
+   "caseId": "RT-1046",
+   "decisionId": "DI-2026-1046",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9080",
+   "key": "idem-baf0ee",
+   "ref": "RSV-47328",
+   "retries": 0,
+   "ts": "2026-10-06T06:18:59.713Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3044",
+   "caseId": "RT-1009",
+   "decisionId": "DI-2026-1009",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9079",
+   "key": "idem-2fd98c",
+   "ref": "SO-48084",
+   "retries": 0,
+   "ts": "2026-10-06T06:17:24.214Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3359",
+   "caseId": "RT-1114",
+   "decisionId": "DI-2026-1114",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9078",
+   "key": "idem-df89d8",
+   "retries": 0,
+   "ts": "2026-10-06T06:16:49.537Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3401",
+   "caseId": "RT-1128",
+   "decisionId": "DI-2026-1128",
+   "dest": "WMS · release",
+   "dir": "in",
+   "id": "EV-9077",
+   "key": "idem-eae9ba",
+   "ref": "REL-47896",
+   "retries": 0,
+   "ts": "2026-10-06T06:12:41.506Z",
+   "type": "release.confirmed",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3026",
+   "caseId": "RT-1003",
+   "decisionId": "DI-2026-1003",
+   "dest": "MRO · Depot repair",
+   "dir": "out",
+   "id": "EV-9076",
+   "key": "idem-b2ce46",
+   "retries": 0,
+   "ts": "2026-10-06T06:09:46.313Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3185",
+   "caseId": "RT-1056",
+   "decisionId": "DI-2026-1056",
+   "dest": "MRO · Depot repair",
+   "dir": "out",
+   "id": "EV-9075",
+   "key": "idem-44fb4b",
+   "retries": 0,
+   "ts": "2026-10-06T06:08:59.951Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3140",
+   "caseId": "RT-1041",
+   "decisionId": "DI-2026-1041",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9074",
+   "key": "idem-6248cd",
+   "retries": 0,
+   "ts": "2026-10-06T06:04:31.694Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3263",
+   "caseId": "RT-1082",
+   "decisionId": "DI-2026-1082",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9073",
+   "key": "idem-c3fe1b",
+   "ref": "RSV-47580",
+   "retries": 0,
+   "ts": "2026-10-06T05:57:28.349Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "late · reconciled",
+   "approval": "APR-2026-10-3056",
+   "caseId": "RT-1013",
+   "decisionId": "DI-2026-1013",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9072",
+   "key": "idem-6c685d",
+   "note": "Arrived 5 h after the transfer event; case timeline reordered",
+   "ref": "WO-47104",
+   "retries": 0,
+   "ts": "2026-10-06T05:51:09.756Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3119",
+   "caseId": "RT-1034",
+   "decisionId": "DI-2026-1034",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9071",
+   "key": "idem-30481e",
+   "ref": "SO-48259",
+   "retries": 0,
+   "ts": "2026-10-06T05:40:11.121Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3080",
+   "caseId": "RT-1021",
+   "decisionId": "DI-2026-1021",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9070",
+   "key": "idem-2dc34e",
+   "ref": "SO-48168",
+   "retries": 0,
+   "ts": "2026-10-06T05:32:42.454Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3191",
+   "caseId": "RT-1058",
+   "decisionId": "DI-2026-1058",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9069",
+   "key": "idem-338894",
+   "ref": "SO-48427",
+   "retries": 0,
+   "ts": "2026-10-06T05:31:07.160Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3080",
+   "caseId": "RT-1021",
+   "decisionId": "DI-2026-1021",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9068",
+   "key": "idem-a70560",
+   "retries": 0,
+   "ts": "2026-10-06T05:30:26.343Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "late · reconciled",
+   "approval": "APR-2026-10-3026",
+   "caseId": "RT-1003",
+   "decisionId": "DI-2026-1003",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9067",
+   "key": "idem-51d717",
+   "note": "Arrived 4 h after the transfer event; case timeline reordered",
+   "ref": "WO-47034",
+   "retries": 0,
+   "ts": "2026-10-06T05:26:06.585Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "retry 1 of 3 · acknowledged",
+   "approval": "APR-2026-10-3044",
+   "caseId": "RT-1009",
+   "decisionId": "DI-2026-1009",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9066",
+   "key": "idem-e142d9",
+   "retries": 1,
+   "ts": "2026-10-06T05:18:52.458Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3119",
+   "caseId": "RT-1034",
+   "decisionId": "DI-2026-1034",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9065",
+   "key": "idem-7fdf8a",
+   "retries": 0,
+   "ts": "2026-10-06T05:09:20.285Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3398",
+   "caseId": "RT-1127",
+   "decisionId": "DI-2026-1127",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9064",
+   "key": "idem-f30086",
+   "ref": "WO-47902",
+   "retries": 0,
+   "ts": "2026-10-06T05:09:16.986Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3182",
+   "caseId": "RT-1055",
+   "decisionId": "DI-2026-1055",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9063",
+   "key": "idem-214275",
+   "ref": "RSV-47391",
+   "retries": 0,
+   "ts": "2026-10-06T05:07:35.137Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3182",
+   "caseId": "RT-1055",
+   "decisionId": "DI-2026-1055",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9062",
+   "key": "idem-7f31a4",
+   "retries": 0,
+   "ts": "2026-10-06T04:56:34.634Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3056",
+   "caseId": "RT-1013",
+   "decisionId": "DI-2026-1013",
+   "dest": "MRO · Depot repair",
+   "dir": "out",
+   "id": "EV-9061",
+   "key": "idem-d521f9",
+   "retries": 0,
+   "ts": "2026-10-06T04:50:55.498Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3155",
+   "caseId": "RT-1046",
+   "decisionId": "DI-2026-1046",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9060",
+   "key": "idem-4d0558",
+   "retries": 0,
+   "ts": "2026-10-06T04:48:09.456Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3140",
+   "caseId": "RT-1041",
+   "decisionId": "DI-2026-1041",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9059",
+   "key": "idem-0fcfaf",
+   "ref": "SO-48308",
+   "retries": 0,
+   "ts": "2026-10-06T04:46:08.117Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3398",
+   "caseId": "RT-1127",
+   "decisionId": "DI-2026-1127",
+   "dest": "MRO · Depot repair",
+   "dir": "out",
+   "id": "EV-9058",
+   "key": "idem-a5649c",
+   "retries": 0,
+   "ts": "2026-10-06T04:43:37.881Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3323",
+   "caseId": "RT-1102",
+   "decisionId": "DI-2026-1102",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9057",
+   "key": "idem-692ae3",
+   "retries": 0,
+   "ts": "2026-10-06T04:42:08.524Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3185",
+   "caseId": "RT-1056",
+   "decisionId": "DI-2026-1056",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9056",
+   "key": "idem-18f87a",
+   "ref": "WO-47405",
+   "retries": 0,
+   "ts": "2026-10-06T04:37:24.649Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3323",
+   "caseId": "RT-1102",
+   "decisionId": "DI-2026-1102",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9055",
+   "key": "idem-70edd9",
+   "ref": "SO-48735",
+   "retries": 0,
+   "ts": "2026-10-06T04:23:42.597Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3191",
+   "caseId": "RT-1058",
+   "decisionId": "DI-2026-1058",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9054",
+   "key": "idem-5a2d2a",
+   "retries": 0,
+   "ts": "2026-10-06T04:21:49.542Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3359",
+   "caseId": "RT-1114",
+   "decisionId": "DI-2026-1114",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9053",
+   "key": "idem-57e0d8",
+   "ref": "RSV-47804",
+   "retries": 0,
+   "ts": "2026-10-06T04:18:58.769Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3263",
+   "caseId": "RT-1082",
+   "decisionId": "DI-2026-1082",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9052",
+   "key": "idem-47de16",
+   "retries": 0,
+   "ts": "2026-10-06T04:17:31.991Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3305",
+   "caseId": "RT-1096",
+   "decisionId": "DI-2026-1096",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9051",
+   "key": "idem-e63e85",
+   "ref": "WO-47685",
+   "retries": 0,
+   "ts": "2026-10-05T20:13:45.595Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3242",
+   "caseId": "RT-1075",
+   "decisionId": "DI-2026-1075",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9050",
+   "key": "idem-068edc",
+   "ref": "WO-47538",
+   "retries": 0,
+   "ts": "2026-10-05T20:09:56.899Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3032",
+   "caseId": "RT-1005",
+   "decisionId": "DI-2026-1005",
+   "dest": "OMS · sale order",
+   "dir": "in",
+   "id": "EV-9049",
+   "key": "idem-46b80a",
+   "ref": "SO-47035",
+   "retries": 0,
+   "ts": "2026-10-05T19:36:24.274Z",
+   "type": "sale.recorded",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3038",
+   "caseId": "RT-1007",
+   "decisionId": "DI-2026-1007",
+   "dest": "OMS · sale order",
+   "dir": "in",
+   "id": "EV-9048",
+   "key": "idem-3b5ad9",
+   "ref": "SO-47049",
+   "retries": 0,
+   "ts": "2026-10-05T19:29:34.595Z",
+   "type": "sale.recorded",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3386",
+   "caseId": "RT-1123",
+   "decisionId": "DI-2026-1123",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9047",
+   "key": "idem-427e4f",
+   "ref": "WO-47874",
+   "retries": 0,
+   "ts": "2026-10-05T19:24:50.292Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3146",
+   "caseId": "RT-1043",
+   "decisionId": "DI-2026-1043",
+   "dest": "OMS · sale order",
+   "dir": "in",
+   "id": "EV-9046",
+   "key": "idem-93b602",
+   "ref": "SO-47301",
+   "retries": 0,
+   "ts": "2026-10-05T19:16:29.556Z",
+   "type": "sale.recorded",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3389",
+   "caseId": "RT-1124",
+   "decisionId": "DI-2026-1124",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9045",
+   "key": "idem-081f08",
+   "ref": "RSV-47894",
+   "retries": 0,
+   "ts": "2026-10-05T18:58:18.292Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3353",
+   "caseId": "RT-1112",
+   "decisionId": "DI-2026-1112",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9044",
+   "key": "idem-f6e43f",
+   "ref": "WO-47797",
+   "retries": 0,
+   "ts": "2026-10-05T18:55:09.749Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3092",
+   "caseId": "RT-1025",
+   "decisionId": "DI-2026-1025",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9043",
+   "key": "idem-23dee9",
+   "ref": "WO-47188",
+   "retries": 0,
+   "ts": "2026-10-05T18:53:38.484Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3386",
+   "caseId": "RT-1123",
+   "decisionId": "DI-2026-1123",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9042",
+   "key": "idem-bb9ad0",
+   "retries": 0,
+   "ts": "2026-10-05T16:07:02.217Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3242",
+   "caseId": "RT-1075",
+   "decisionId": "DI-2026-1075",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9041",
+   "key": "idem-e9aca9",
+   "retries": 0,
+   "ts": "2026-10-05T15:51:32.916Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3389",
+   "caseId": "RT-1124",
+   "decisionId": "DI-2026-1124",
+   "dest": "MRO · Depot repair",
+   "dir": "out",
+   "id": "EV-9040",
+   "key": "idem-3d96f3",
+   "retries": 0,
+   "ts": "2026-10-05T15:41:06.751Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "duplicate · deduplicated",
+   "approval": "APR-2026-10-3032",
+   "caseId": "RT-1005",
+   "decisionId": "DI-2026-1005",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9039",
+   "key": "idem-52a913",
+   "note": "Same idempotency key — second delivery ignored, no second reservation created",
+   "ref": "RSV-47041",
+   "retries": 0,
+   "ts": "2026-10-05T15:28:10.236Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3389",
+   "caseId": "RT-1124",
+   "decisionId": "DI-2026-1124",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9038",
+   "key": "idem-93c8fc",
+   "ref": "WO-47881",
+   "retries": 0,
+   "ts": "2026-10-05T15:25:42.935Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3353",
+   "caseId": "RT-1112",
+   "decisionId": "DI-2026-1112",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9037",
+   "key": "idem-2af5e3",
+   "ref": "SO-48805",
+   "retries": 0,
+   "ts": "2026-10-05T15:23:22.679Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3092",
+   "caseId": "RT-1025",
+   "decisionId": "DI-2026-1025",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9036",
+   "key": "idem-7d3ac9",
+   "retries": 0,
+   "ts": "2026-10-05T15:18:13.005Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3032",
+   "caseId": "RT-1005",
+   "decisionId": "DI-2026-1005",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9035",
+   "key": "idem-52a913",
+   "ref": "RSV-47041",
+   "retries": 0,
+   "ts": "2026-10-05T15:13:46.236Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3032",
+   "caseId": "RT-1005",
+   "decisionId": "DI-2026-1005",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9034",
+   "key": "idem-321831",
+   "retries": 0,
+   "ts": "2026-10-05T15:01:01.546Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3146",
+   "caseId": "RT-1043",
+   "decisionId": "DI-2026-1043",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9033",
+   "key": "idem-7d2de1",
+   "retries": 0,
+   "ts": "2026-10-05T14:58:28.276Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3305",
+   "caseId": "RT-1096",
+   "decisionId": "DI-2026-1096",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9032",
+   "key": "idem-c30e84",
+   "retries": 0,
+   "ts": "2026-10-05T14:42:03.173Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3386",
+   "caseId": "RT-1123",
+   "decisionId": "DI-2026-1123",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9031",
+   "key": "idem-8247c1",
+   "ref": "RSV-47867",
+   "retries": 0,
+   "ts": "2026-10-05T14:33:42.047Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "retry 2 of 3 · acknowledged",
+   "approval": "APR-2026-10-3038",
+   "caseId": "RT-1007",
+   "decisionId": "DI-2026-1007",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9030",
+   "key": "idem-bde397",
+   "retries": 2,
+   "ts": "2026-10-05T14:30:46.435Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3092",
+   "caseId": "RT-1025",
+   "decisionId": "DI-2026-1025",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9029",
+   "key": "idem-f70aa1",
+   "ref": "RSV-47181",
+   "retries": 0,
+   "ts": "2026-10-05T14:15:30.176Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3305",
+   "caseId": "RT-1096",
+   "decisionId": "DI-2026-1096",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9028",
+   "key": "idem-c726cb",
+   "ref": "SO-48693",
+   "retries": 0,
+   "ts": "2026-10-05T14:14:27.317Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3242",
+   "caseId": "RT-1075",
+   "decisionId": "DI-2026-1075",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9027",
+   "key": "idem-149b01",
+   "ref": "SO-48546",
+   "retries": 0,
+   "ts": "2026-10-05T14:10:48.653Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3038",
+   "caseId": "RT-1007",
+   "decisionId": "DI-2026-1007",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9026",
+   "key": "idem-212e0b",
+   "ref": "RSV-47055",
+   "retries": 0,
+   "ts": "2026-10-05T14:08:29.668Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3353",
+   "caseId": "RT-1112",
+   "decisionId": "DI-2026-1112",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9025",
+   "key": "idem-8d18ec",
+   "retries": 0,
+   "ts": "2026-10-05T14:02:39.133Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3146",
+   "caseId": "RT-1043",
+   "decisionId": "DI-2026-1043",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9024",
+   "key": "idem-555b28",
+   "ref": "RSV-47307",
+   "retries": 0,
+   "ts": "2026-10-05T14:00:10.325Z",
+   "type": "stock.reserved",
+   "ver": 1
+  },
+  {
+   "ack": "out of order · reordered",
+   "approval": "APR-2026-10-3065",
+   "caseId": "RT-1016",
+   "decisionId": "DI-2026-1016",
+   "dest": "TMS · load booking",
+   "dir": "in",
+   "id": "EV-9023",
+   "key": "idem-8b3bc3",
+   "note": "Received before work order acknowledgement; held, then applied in sequence",
+   "ref": "LD-47164",
+   "retries": 0,
+   "ts": "2026-10-05T10:03:09.897Z",
+   "type": "load.booked",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3053",
+   "caseId": "RT-1012",
+   "decisionId": "DI-2026-1012",
+   "dest": "OMS · sale order",
+   "dir": "in",
+   "id": "EV-9022",
+   "key": "idem-ac3967",
+   "ref": "SO-47084",
+   "retries": 0,
+   "ts": "2026-10-05T09:58:39.770Z",
+   "type": "sale.recorded",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3266",
+   "caseId": "RT-1083",
+   "decisionId": "DI-2026-1083",
+   "dest": "OMS · sale order",
+   "dir": "in",
+   "id": "EV-9021",
+   "key": "idem-0acd5d",
+   "ref": "SO-47581",
+   "retries": 0,
+   "ts": "2026-10-05T09:06:13.679Z",
+   "type": "sale.recorded",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3071",
+   "caseId": "RT-1018",
+   "decisionId": "DI-2026-1018",
+   "dest": "TMS · load booking",
+   "dir": "in",
+   "id": "EV-9020",
+   "key": "idem-1d14a5",
+   "ref": "LD-47178",
+   "retries": 0,
+   "ts": "2026-10-05T09:05:12.561Z",
+   "type": "load.booked",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3377",
+   "caseId": "RT-1120",
+   "decisionId": "DI-2026-1120",
+   "dest": "TMS · load booking",
+   "dir": "in",
+   "id": "EV-9019",
+   "key": "idem-b28345",
+   "ref": "LD-47892",
+   "retries": 0,
+   "ts": "2026-10-05T08:38:52.491Z",
+   "type": "load.booked",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3332",
+   "caseId": "RT-1105",
+   "decisionId": "DI-2026-1105",
+   "dest": "TMS · load booking",
+   "dir": "in",
+   "id": "EV-9018",
+   "key": "idem-e3cde0",
+   "ref": "LD-47787",
+   "retries": 0,
+   "ts": "2026-10-05T08:24:20.466Z",
+   "type": "load.booked",
+   "ver": 2
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3137",
+   "caseId": "RT-1040",
+   "decisionId": "DI-2026-1040",
+   "dest": "TMS · load booking",
+   "dir": "in",
+   "id": "EV-9017",
+   "key": "idem-133cd3",
+   "ref": "LD-47332",
+   "retries": 0,
+   "ts": "2026-10-05T08:23:04.310Z",
+   "type": "load.booked",
+   "ver": 2
+  },
+  {
+   "ack": "late · reconciled",
+   "approval": "APR-2026-10-3053",
+   "caseId": "RT-1012",
+   "decisionId": "DI-2026-1012",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9016",
+   "key": "idem-374f30",
+   "note": "Arrived 9 h after the transfer event; case timeline reordered",
+   "ref": "WO-47097",
+   "retries": 0,
+   "ts": "2026-10-05T05:59:19.093Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3071",
+   "caseId": "RT-1018",
+   "decisionId": "DI-2026-1018",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9015",
+   "key": "idem-72dfb9",
+   "ref": "WO-47139",
+   "retries": 0,
+   "ts": "2026-10-05T05:34:51.146Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3266",
+   "caseId": "RT-1083",
+   "decisionId": "DI-2026-1083",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9014",
+   "key": "idem-ec8c7b",
+   "ref": "WO-47594",
+   "retries": 0,
+   "ts": "2026-10-05T05:10:15.765Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3065",
+   "caseId": "RT-1016",
+   "decisionId": "DI-2026-1016",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9013",
+   "key": "idem-cddcc6",
+   "ref": "WO-47125",
+   "retries": 0,
+   "ts": "2026-10-05T04:59:11.960Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3137",
+   "caseId": "RT-1040",
+   "decisionId": "DI-2026-1040",
+   "dest": "OMS · sale order",
+   "dir": "in",
+   "id": "EV-9012",
+   "key": "idem-2c2f4f",
+   "ref": "SO-47280",
+   "retries": 0,
+   "ts": "2026-10-05T04:40:26.519Z",
+   "type": "sale.recorded",
+   "ver": 2
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3332",
+   "caseId": "RT-1105",
+   "decisionId": "DI-2026-1105",
+   "dest": "OMS · sale order",
+   "dir": "in",
+   "id": "EV-9011",
+   "key": "idem-3132e3",
+   "ref": "SO-47735",
+   "retries": 0,
+   "ts": "2026-10-05T04:22:52.734Z",
+   "type": "sale.recorded",
+   "ver": 2
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3377",
+   "caseId": "RT-1120",
+   "decisionId": "DI-2026-1120",
+   "dest": "MRO · Depot repair",
+   "dir": "in",
+   "id": "EV-9010",
+   "key": "idem-3a7709",
+   "ref": "WO-47853",
+   "retries": 0,
+   "ts": "2026-10-05T04:14:42.889Z",
+   "type": "workorder.created",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3332",
+   "caseId": "RT-1105",
+   "decisionId": "DI-2026-1105",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9009",
+   "key": "idem-2e2492",
+   "retries": 0,
+   "ts": "2026-10-05T01:43:07.734Z",
+   "type": "instruction.sent",
+   "ver": 2
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3071",
+   "caseId": "RT-1018",
+   "decisionId": "DI-2026-1018",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9008",
+   "key": "idem-5376b7",
+   "retries": 0,
+   "ts": "2026-10-05T01:42:11.030Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3137",
+   "caseId": "RT-1040",
+   "decisionId": "DI-2026-1040",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9007",
+   "key": "idem-a0a250",
+   "ref": "RSV-47286",
+   "retries": 0,
+   "ts": "2026-10-05T00:45:02.717Z",
+   "type": "stock.reserved",
+   "ver": 2
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3071",
+   "caseId": "RT-1018",
+   "decisionId": "DI-2026-1018",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9006",
+   "key": "idem-fd9dcc",
+   "ref": "SO-48147",
+   "retries": 0,
+   "ts": "2026-10-05T00:42:54.060Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3332",
+   "caseId": "RT-1105",
+   "decisionId": "DI-2026-1105",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9005",
+   "key": "idem-12f2f5",
+   "ref": "RSV-47741",
+   "retries": 0,
+   "ts": "2026-10-05T00:40:23.387Z",
+   "type": "stock.reserved",
+   "ver": 2
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3377",
+   "caseId": "RT-1120",
+   "decisionId": "DI-2026-1120",
+   "dest": "OMS · order allocation",
+   "dir": "in",
+   "id": "EV-9004",
+   "key": "idem-d6375d",
+   "ref": "SO-48861",
+   "retries": 0,
+   "ts": "2026-10-05T00:37:26.653Z",
+   "type": "order.allocated",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3065",
+   "caseId": "RT-1016",
+   "decisionId": "DI-2026-1016",
+   "dest": "OMS · order allocation",
+   "dir": "out",
+   "id": "EV-9003",
+   "key": "idem-510bf1",
+   "retries": 0,
+   "ts": "2026-10-05T00:34:34.904Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3266",
+   "caseId": "RT-1083",
+   "decisionId": "DI-2026-1083",
+   "dest": "WMS · reservation",
+   "dir": "out",
+   "id": "EV-9002",
+   "key": "idem-5317c0",
+   "retries": 0,
+   "ts": "2026-10-05T00:32:32.225Z",
+   "type": "instruction.sent",
+   "ver": 1
+  },
+  {
+   "ack": "acknowledged",
+   "approval": "APR-2026-10-3053",
+   "caseId": "RT-1012",
+   "decisionId": "DI-2026-1012",
+   "dest": "WMS · reservation",
+   "dir": "in",
+   "id": "EV-9001",
+   "key": "idem-316223",
+   "ref": "RSV-47090",
+   "retries": 0,
+   "ts": "2026-10-05T00:23:46.866Z",
+   "type": "stock.reserved",
+   "ver": 1
+  }
+ ],
+ "exceptions": [
+  {
+   "issue": "Not connected: no feed",
+   "obj": "AWS IoT Core",
+   "sev": "High",
+   "src": "Device telemetry",
+   "st": "Open"
+  },
+  {
+   "issue": "Feed token expired",
+   "obj": "Ritchie Bros. Market Data",
+   "sev": "High",
+   "src": "Market pricing",
+   "st": "Open"
+  },
+  {
+   "issue": "Manual import only, no live feed",
+   "obj": "Sims Lifecycle Services",
+   "sev": "Low",
+   "src": "Recycler partner",
+   "st": "In Progress"
+  },
+  {
+   "issue": "Ownership differs from ERP",
+   "obj": "MTR-2077",
+   "sev": "Medium",
+   "src": "Lease management",
+   "st": "Open"
+  },
+  {
+   "issue": "Qualification differs from EAM",
+   "obj": "CTL-0122",
+   "sev": "Medium",
+   "src": "QMS",
+   "st": "Open"
+  },
+  {
+   "issue": "Availability differs from ERP",
+   "obj": "BAT-0119",
+   "sev": "Medium",
+   "src": "WMS",
+   "st": "Open"
+  }
+ ],
+ "fr_catof": {
+  "bom": "EAM",
+  "collab": "Collaboration",
+  "crm": "CRM",
+  "db": "Databases",
+  "dlr": "Analytics",
+  "dw": "Analytics",
+  "eam": "EAM",
+  "eng": "EAM",
+  "erp": "ERP",
+  "esg": "Analytics",
+  "fsm": "EAM",
+  "hr": "Custom",
+  "insp": "MRO",
+  "iot": "Custom",
+  "lease": "ERP",
+  "mkt": "Analytics",
+  "oms": "OMS",
+  "plm": "EAM",
+  "proc": "ERP",
+  "qms": "EAM",
+  "rcy": "Custom",
+  "repair": "MRO",
+  "rl": "OMS",
+  "store": "Storage",
+  "tms": "TMS",
+  "wms": "WMS"
+ },
+ "fr_cats": [
+  "CRM",
+  "ERP",
+  "OMS",
+  "MRO",
+  "EAM",
+  "WMS",
+  "TMS",
+  "Databases",
+  "Collaboration",
+  "Storage",
+  "Analytics",
+  "Security",
+  "Custom"
+ ],
+ "fr_xtypes": {
+  "collab": {
+   "cat": "internal",
+   "label": "Collaboration",
+   "short": "Collab",
+   "target": "Outcome",
+   "vendors": [
+    "Atlassian Jira",
+    "Atlassian Confluence",
+    "Microsoft Teams"
+   ]
+  },
+  "db": {
+   "cat": "internal",
+   "label": "Database",
+   "short": "Database",
+   "target": "Asset & component",
+   "vendors": [
+    "PostgreSQL",
+    "MySQL",
+    "Microsoft SQL Server"
+   ]
+  },
+  "dw": {
+   "cat": "external",
+   "label": "Data warehouse",
+   "short": "Warehouse",
+   "target": "Outcome",
+   "vendors": [
+    "Snowflake"
+   ]
+  },
+  "hr": {
+   "cat": "internal",
+   "label": "HR system",
+   "short": "HR",
+   "target": "Asset & component",
+   "vendors": [
+    "Workday HCM"
+   ]
+  },
+  "store": {
+   "cat": "internal",
+   "label": "File storage",
+   "short": "Storage",
+   "target": "Asset & component",
+   "vendors": [
+    "Amazon S3",
+    "Azure Blob Storage",
+    "Microsoft Excel and SharePoint",
+    "Google Drive"
+   ]
+  }
+ },
+ "hourly": [
+  {
+   "bad": 0,
+   "ok": 37,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 38,
+   "warn": 2
+  },
+  {
+   "bad": 1,
+   "ok": 35,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 36,
+   "warn": 1
+  },
+  {
+   "bad": 2,
+   "ok": 41,
+   "warn": 0
+  },
+  {
+   "bad": 1,
+   "ok": 42,
+   "warn": 1
+  },
+  {
+   "bad": 0,
+   "ok": 39,
+   "warn": 1
+  },
+  {
+   "bad": 0,
+   "ok": 40,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 45,
+   "warn": 1
+  },
+  {
+   "bad": 0,
+   "ok": 46,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 34,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 33,
+   "warn": 5
+  },
+  {
+   "bad": 0,
+   "ok": 32,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 31,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 38,
+   "warn": 2
+  },
+  {
+   "bad": 0,
+   "ok": 37,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 36,
+   "warn": 1
+  },
+  {
+   "bad": 1,
+   "ok": 35,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 26,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 25,
+   "warn": 0
+  },
+  {
+   "bad": 0,
+   "ok": 23,
+   "warn": 5
+  },
+  {
+   "bad": 1,
+   "ok": 24,
+   "warn": 1
+  },
+  {
+   "bad": 0,
+   "ok": 21,
+   "warn": 1
+  },
+  {
+   "bad": 0,
+   "ok": 22,
+   "warn": 0
+  }
+ ],
+ "integrations": [
+  {
+   "cat": "CRM",
+   "catalog": null,
+   "id": "crm",
+   "last": 1791363360000,
+   "name": "CRM",
+   "owner": "Sales Operations",
+   "src": "crm",
+   "status": "connected",
+   "type": "CRM",
+   "vendor": "Salesforce Sales Cloud"
+  },
+  {
+   "cat": "ERP",
+   "catalog": null,
+   "id": "lease",
+   "last": 1791363180000,
+   "name": "Lease management",
+   "owner": "Lease Administration",
+   "src": "lease",
+   "status": "connected",
+   "type": "Lease management",
+   "vendor": "Oracle Lease and Finance Management"
+  },
+  {
+   "cat": "ERP",
+   "catalog": null,
+   "id": "erp",
+   "last": 1791363480000,
+   "name": "ERP",
+   "owner": "Finance Systems",
+   "src": "erp",
+   "status": "connected",
+   "type": "ERP",
+   "vendor": "SAP S/4HANA"
+  },
+  {
+   "cat": "OMS",
+   "catalog": null,
+   "id": "oms",
+   "last": 1791363420000,
+   "name": "Order management",
+   "owner": "Customer Operations",
+   "src": "oms",
+   "status": "connected",
+   "type": "Order management",
+   "vendor": "IBM Sterling OMS"
+  },
+  {
+   "cat": "ERP",
+   "catalog": null,
+   "id": "proc",
+   "last": 1791362880000,
+   "name": "Procurement",
+   "owner": "Procurement",
+   "src": "proc",
+   "status": "connected",
+   "type": "Procurement",
+   "vendor": "SAP Ariba"
+  },
+  {
+   "cat": "EAM",
+   "catalog": null,
+   "id": "eam",
+   "last": 1791363240000,
+   "name": "EAM",
+   "owner": "Reliability Engineering",
+   "src": "eam",
+   "status": "connected",
+   "type": "EAM",
+   "vendor": "IBM Maximo"
+  },
+  {
+   "cat": "EAM",
+   "catalog": null,
+   "id": "fsm",
+   "last": 1791363420000,
+   "name": "FSM",
+   "owner": "Field Operations",
+   "src": "fsm",
+   "status": "connected",
+   "type": "FSM",
+   "vendor": "ServiceNow Field Service Management"
+  },
+  {
+   "cat": "EAM",
+   "catalog": null,
+   "id": "plm",
+   "last": 1791362940000,
+   "name": "PLM",
+   "owner": "Product Engineering",
+   "src": "plm",
+   "status": "connected",
+   "type": "PLM",
+   "vendor": "Siemens Teamcenter"
+  },
+  {
+   "cat": "EAM",
+   "catalog": null,
+   "id": "bom",
+   "last": 1791363060000,
+   "name": "BOM management",
+   "owner": "Product Engineering",
+   "src": "bom",
+   "status": "connected",
+   "type": "BOM management",
+   "vendor": "Aras Innovator"
+  },
+  {
+   "cat": "EAM",
+   "catalog": null,
+   "id": "qms",
+   "last": 1791362040000,
+   "name": "QMS",
+   "owner": "Quality Assurance",
+   "src": "qms",
+   "status": "connected",
+   "type": "QMS",
+   "vendor": "MasterControl"
+  },
+  {
+   "cat": "EAM",
+   "catalog": null,
+   "id": "eng",
+   "last": 1791361620000,
+   "name": "Engineering",
+   "owner": "Engineering Standards",
+   "src": "eng",
+   "status": "connected",
+   "type": "Engineering",
+   "vendor": "Bentley AssetWise"
+  },
+  {
+   "cat": "WMS",
+   "catalog": null,
+   "id": "wms",
+   "last": 1791363540000,
+   "name": "WMS",
+   "owner": "Warehouse Operations",
+   "src": "wms",
+   "status": "connected",
+   "type": "WMS",
+   "vendor": "Manhattan Active Warehouse Management"
+  },
+  {
+   "cat": "TMS",
+   "catalog": null,
+   "id": "tms",
+   "last": 1791363360000,
+   "name": "Transport management",
+   "owner": "Transport Planning",
+   "src": "tms",
+   "status": "attention",
+   "type": "Transport management",
+   "vendor": "ShipLane TMS"
+  },
+  {
+   "cat": "OMS",
+   "catalog": null,
+   "id": "rl",
+   "last": 1791363300000,
+   "name": "Reverse logistics",
+   "owner": "Reverse Logistics",
+   "src": "rl",
+   "status": "connected",
+   "type": "Reverse logistics",
+   "vendor": "Optoro"
+  },
+  {
+   "cat": "MRO",
+   "catalog": null,
+   "id": "insp",
+   "last": 1791363060000,
+   "name": "Inspection",
+   "owner": "Quality Assurance",
+   "src": "insp",
+   "status": "connected",
+   "type": "Inspection",
+   "vendor": "SafetyCulture"
+  },
+  {
+   "cat": "MRO",
+   "catalog": null,
+   "id": "repair",
+   "last": 1791362760000,
+   "name": "MRO and workshop",
+   "owner": "Repair Centre",
+   "src": "repair",
+   "status": "attention",
+   "type": "MRO and workshop",
+   "vendor": "Oracle Depot Repair"
+  },
+  {
+   "cat": "Custom",
+   "catalog": null,
+   "id": "iot",
+   "last": null,
+   "name": "Device telemetry",
+   "owner": "IoT Platform",
+   "src": "iot",
+   "status": "unavailable",
+   "type": "Device telemetry",
+   "vendor": "AWS IoT Core"
+  },
+  {
+   "cat": "Analytics",
+   "catalog": null,
+   "id": "mkt",
+   "last": 1791295200000,
+   "name": "Market pricing",
+   "owner": "Remarketing",
+   "src": "mkt",
+   "status": "attention",
+   "type": "Market pricing",
+   "vendor": "Ritchie Bros. Market Data"
+  },
+  {
+   "cat": "Analytics",
+   "catalog": null,
+   "id": "dlr",
+   "last": 1791362520000,
+   "name": "Dealer network",
+   "owner": "Remarketing",
+   "src": "dlr",
+   "status": "connected",
+   "type": "Dealer network",
+   "vendor": "Machinio"
+  },
+  {
+   "cat": "Custom",
+   "catalog": null,
+   "id": "rcy",
+   "last": 1791190800000,
+   "name": "Recycler partner",
+   "owner": "Sustainability",
+   "src": "rcy",
+   "status": "manual",
+   "type": "Recycler partner",
+   "vendor": "Sims Lifecycle Services"
+  },
+  {
+   "cat": "Analytics",
+   "catalog": null,
+   "id": "esg",
+   "last": 1791363420000,
+   "name": "ESG & carbon",
+   "owner": "Sustainability",
+   "src": "esg",
+   "status": "connected",
+   "type": "ESG & carbon",
+   "vendor": "Persefoni"
+  },
+  {
+   "cat": "Custom",
+   "catalog": "workday",
+   "id": "cat:workday",
+   "last": null,
+   "name": "HR system",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "HR system",
+   "vendor": "Workday HCM"
+  },
+  {
+   "cat": "Collaboration",
+   "catalog": "jira",
+   "id": "cat:jira",
+   "last": null,
+   "name": "Collaboration",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "Collaboration",
+   "vendor": "Atlassian Jira"
+  },
+  {
+   "cat": "Collaboration",
+   "catalog": "confluence",
+   "id": "cat:confluence",
+   "last": null,
+   "name": "Collaboration",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "Collaboration",
+   "vendor": "Atlassian Confluence"
+  },
+  {
+   "cat": "Databases",
+   "catalog": "postgres",
+   "id": "cat:postgres",
+   "last": null,
+   "name": "Database",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "Database",
+   "vendor": "PostgreSQL"
+  },
+  {
+   "cat": "Databases",
+   "catalog": "mysql",
+   "id": "cat:mysql",
+   "last": null,
+   "name": "Database",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "Database",
+   "vendor": "MySQL"
+  },
+  {
+   "cat": "Databases",
+   "catalog": "sqlserver",
+   "id": "cat:sqlserver",
+   "last": null,
+   "name": "Database",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "Database",
+   "vendor": "Microsoft SQL Server"
+  },
+  {
+   "cat": "Storage",
+   "catalog": "s3",
+   "id": "cat:s3",
+   "last": null,
+   "name": "File storage",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "File storage",
+   "vendor": "Amazon S3"
+  },
+  {
+   "cat": "Storage",
+   "catalog": "azureblob",
+   "id": "cat:azureblob",
+   "last": null,
+   "name": "File storage",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "File storage",
+   "vendor": "Azure Blob Storage"
+  },
+  {
+   "cat": "Storage",
+   "catalog": "excel",
+   "id": "cat:excel",
+   "last": null,
+   "name": "File storage",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "File storage",
+   "vendor": "Microsoft Excel and SharePoint"
+  },
+  {
+   "cat": "CRM",
+   "catalog": "dynamics",
+   "id": "cat:dynamics",
+   "last": null,
+   "name": "CRM",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "CRM",
+   "vendor": "Microsoft Dynamics 365"
+  },
+  {
+   "cat": "ERP",
+   "catalog": "ebs",
+   "id": "cat:ebs",
+   "last": null,
+   "name": "ERP",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "ERP",
+   "vendor": "Oracle E-Business Suite"
+  },
+  {
+   "cat": "ERP",
+   "catalog": "netsuite",
+   "id": "cat:netsuite",
+   "last": null,
+   "name": "ERP",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "ERP",
+   "vendor": "Oracle NetSuite"
+  },
+  {
+   "cat": "Collaboration",
+   "catalog": "teams",
+   "id": "cat:teams",
+   "last": null,
+   "name": "Collaboration",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "Collaboration",
+   "vendor": "Microsoft Teams"
+  },
+  {
+   "cat": "Storage",
+   "catalog": "gdrive",
+   "id": "cat:gdrive",
+   "last": null,
+   "name": "File storage",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "File storage",
+   "vendor": "Google Drive"
+  },
+  {
+   "cat": "Analytics",
+   "catalog": "snowflake",
+   "id": "cat:snowflake",
+   "last": null,
+   "name": "Data warehouse",
+   "owner": "—",
+   "src": null,
+   "status": "available",
+   "type": "Data warehouse",
+   "vendor": "Snowflake"
+  }
+ ],
+ "map_target": {
+  "bom": "Asset & component",
+  "crm": "Demand opportunity",
+  "dlr": "Demand opportunity",
+  "eam": "Asset & component",
+  "eng": "Condition & eligibility",
+  "erp": "Demand opportunity",
+  "esg": "Outcome",
+  "fsm": "Asset & component",
+  "insp": "Condition & eligibility",
+  "iot": "Outcome",
+  "lease": "Demand opportunity",
+  "mkt": "Demand opportunity",
+  "oms": "Demand opportunity",
+  "plm": "Asset & component",
+  "proc": "Demand opportunity",
+  "qms": "Condition & eligibility",
+  "rcy": "Outcome",
+  "repair": "Condition & eligibility",
+  "rl": "Asset & component",
+  "tms": "Outcome",
+  "wms": "Asset & component"
+ },
+ "mappings": {
+  "bom": [
+   {
+    "$ref": "$.derived.bom.models.Asset & component[0]"
+   },
+   {
+    "$ref": "$.derived.bom.models.Asset & component[1]"
+   },
+   {
+    "$ref": "$.derived.bom.models.Asset & component[2]"
+   }
+  ],
+  "crm": [
+   {
+    "$ref": "$.derived.crm.models.Demand opportunity[0]"
+   },
+   {
+    "$ref": "$.derived.crm.models.Demand opportunity[1]"
+   },
+   {
+    "$ref": "$.derived.crm.models.Asset & component[0]"
+   },
+   {
+    "$ref": "$.derived.crm.models.Demand opportunity[2]"
+   }
+  ],
+  "dlr": [
+   [
+    "offer_amount",
+    "9,400",
+    "market.dealer_offer",
+    "$9,400",
+    "Currency"
+   ],
+   [
+    "listing_age_days",
+    "12",
+    "market.time_to_sell",
+    "12 days",
+    "Integer"
+   ]
+  ],
+  "eam": [
+   {
+    "$ref": "$.derived.eam.models.Asset & component[0]"
+   },
+   {
+    "$ref": "$.derived.eam.models.Condition & eligibility[0]"
+   },
+   {
+    "$ref": "$.derived.eam.models.Asset & component[1]"
+   },
+   {
+    "$ref": "$.derived.eam.models.Condition & eligibility[1]"
+   }
+  ],
+  "eng": [
+   {
+    "$ref": "$.derived.eng.models.Condition & eligibility[0]"
+   },
+   {
+    "$ref": "$.derived.eng.models.Condition & eligibility[1]"
+   },
+   {
+    "$ref": "$.derived.eng.models.Condition & eligibility[2]"
+   }
+  ],
+  "erp": [
+   {
+    "$ref": "$.derived.erp.models.Demand opportunity[0]"
+   },
+   {
+    "$ref": "$.derived.erp.models.Demand opportunity[1]"
+   },
+   {
+    "$ref": "$.derived.erp.models.Demand opportunity[2]"
+   },
+   {
+    "$ref": "$.derived.erp.models.Demand opportunity[3]"
+   }
+  ],
+  "esg": [
+   [
+    "factor_kgco2e",
+    "312.4",
+    "sustainability.embodied_carbon",
+    "312.4 kgCO2e",
+    "Unit kept"
+   ],
+   [
+    "scope",
+    "Cradle-to-gate",
+    "sustainability.boundary",
+    "cradle-to-gate",
+    "Boundary map"
+   ]
+  ],
+  "fsm": [
+   {
+    "$ref": "$.derived.fsm.models.Asset & component[0]"
+   },
+   {
+    "$ref": "$.derived.fsm.models.Asset & component[1]"
+   },
+   {
+    "$ref": "$.derived.fsm.models.Asset & component[2]"
+   },
+   {
+    "$ref": "$.derived.fsm.models.Condition & eligibility[0]"
+   }
+  ],
+  "insp": [
+   {
+    "$ref": "$.derived.insp.models.Condition & eligibility[0]"
+   },
+   {
+    "$ref": "$.derived.insp.models.Condition & eligibility[1]"
+   },
+   {
+    "$ref": "$.derived.insp.models.Condition & eligibility[2]"
+   }
+  ],
+  "iot": [],
+  "lease": [
+   {
+    "$ref": "$.derived.lease.models.Asset & component[0]"
+   },
+   {
+    "$ref": "$.derived.lease.models.Demand opportunity[0]"
+   },
+   {
+    "$ref": "$.derived.lease.models.Asset & component[1]"
+   },
+   {
+    "$ref": "$.derived.lease.models.Demand opportunity[1]"
+   }
+  ],
+  "mkt": [
+   [
+    "SOLD_PRC",
+    "8.1 L INR",
+    "market.sale_price",
+    "$9,700",
+    "Currency + Lakh unit expanded"
+   ],
+   [
+    "DAYS_LISTED",
+    "17",
+    "market.time_to_sell",
+    "17 days",
+    "Integer"
+   ],
+   [
+    "CONDITION",
+    "VG",
+    "market.grade",
+    "B",
+    "Dealer grade map"
+   ]
+  ],
+  "oms": [
+   {
+    "$ref": "$.derived.oms.models.Demand opportunity[0]"
+   },
+   {
+    "$ref": "$.derived.oms.models.Demand opportunity[1]"
+   },
+   {
+    "$ref": "$.derived.oms.models.Demand opportunity[2]"
+   },
+   {
+    "$ref": "$.derived.oms.models.Demand opportunity[3]"
+   }
+  ],
+  "plm": [
+   {
+    "$ref": "$.derived.plm.models.Asset & component[0]"
+   },
+   {
+    "$ref": "$.derived.plm.models.Route candidate[0]"
+   },
+   {
+    "$ref": "$.derived.plm.models.Asset & component[1]"
+   }
+  ],
+  "proc": [
+   {
+    "$ref": "$.derived.proc.models.Demand opportunity[0]"
+   },
+   {
+    "$ref": "$.derived.proc.models.Demand opportunity[1]"
+   },
+   {
+    "$ref": "$.derived.proc.models.Demand opportunity[2]"
+   }
+  ],
+  "qms": [
+   {
+    "$ref": "$.derived.qms.models.Condition & eligibility[0]"
+   },
+   {
+    "$ref": "$.derived.qms.models.Condition & eligibility[1]"
+   },
+   {
+    "$ref": "$.derived.qms.models.Condition & eligibility[2]"
+   }
+  ],
+  "rcy": [
+   [
+    "VND_CERT",
+    "ISO14001-VA",
+    "vendor.certification",
+    "certified",
+    "Certificate table"
+   ],
+   [
+    "RATE_TNE",
+    "Cu 7.8k",
+    "vendor.material_rate",
+    "Cu $7,800 / t",
+    "Unit + currency"
+   ]
+  ],
+  "repair": [
+   {
+    "$ref": "$.derived.repair.models.Intervention[0]"
+   },
+   {
+    "$ref": "$.derived.repair.models.Intervention[1]"
+   },
+   {
+    "$ref": "$.derived.repair.models.Intervention[2]"
+   }
+  ],
+  "rl": [
+   {
+    "$ref": "$.derived.rl.models.Asset & component[0]"
+   },
+   {
+    "$ref": "$.derived.rl.models.Asset & component[1]"
+   },
+   {
+    "$ref": "$.derived.rl.models.Asset & component[2]"
+   }
+  ],
+  "tms": [
+   {
+    "$ref": "$.derived.tms.models.Route candidate[0]"
+   },
+   {
+    "$ref": "$.derived.tms.models.Route candidate[1]"
+   },
+   {
+    "$ref": "$.derived.tms.models.Route candidate[2]"
+   },
+   {
+    "$ref": "$.derived.tms.models.Route candidate[3]"
+   }
+  ],
+  "wms": [
+   {
+    "$ref": "$.derived.wms.models.Asset & component[0]"
+   },
+   [
+    "MV_TS",
+    "06.10.2026 14:12",
+    "movement.ts",
+    "2026-10-06T08:42:00Z",
+    "Local time → UTC"
+   ],
+   {
+    "$ref": "$.derived.wms.models.Asset & component[1]"
+   },
+   {
+    "$ref": "$.derived.wms.models.Asset & component[2]"
+   }
+  ]
+ },
+ "recommendations": [
+  {
+   "act": "frOpenSrc",
+   "arg": "mkt",
+   "btn": "Manage",
+   "catalog": null,
+   "line": "Market pricing feed is stale. Feed token expired 6 Oct; pricing falls back to the last fresh comparables and says so on every prediction.",
+   "source": "mkt",
+   "st": "attention",
+   "t": "Market pricing",
+   "v": "Ritchie Bros. Market Data",
+   "why": "Ritchie Bros. Market Data has not delivered fresh data for 19 h. Every prediction that uses market pricing says it fell back to older data until the feed is refreshed."
+  },
+  {
+   "act": "frInvestigate",
+   "arg": "WF-116",
+   "btn": "Investigate",
+   "catalog": null,
+   "line": "Ingest · Oracle Depot Repair is failing: Validation & enrichment: 3 retries exhausted (connection reset).",
+   "source": "repair",
+   "st": "failing",
+   "t": "MRO and workshop",
+   "v": "Oracle Depot Repair",
+   "why": "The ingest workflow for Oracle Depot Repair failed its last run, so Condition & eligibility evidence from it is not current."
+  },
+  {
+   "act": "frOpenSrc",
+   "arg": "iot",
+   "btn": "Connect",
+   "catalog": null,
+   "line": "AWS IoT Core is not connected yet. Integration dependency. Sustainability uses estimated factors and says so; no measured telemetry is inferred.",
+   "source": "iot",
+   "st": "unavailable",
+   "t": "Device telemetry",
+   "v": "AWS IoT Core",
+   "why": "Integration dependency. Sustainability uses estimated factors and says so; no measured telemetry is inferred. Connecting it replaces estimated factors with measured data."
+  },
+  {
+   "act": "frConnectStart",
+   "arg": "workday",
+   "btn": "Connect",
+   "catalog": "workday",
+   "line": "Workers, positions and cost centres, so owners and approvers resolve to real teams.",
+   "source": null,
+   "st": "available",
+   "t": "HR system",
+   "v": "Workday HCM",
+   "why": "Approver and owner roles would resolve to real cost centres."
+  }
+ ],
+ "sources": [
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 JWT bearer",
+   "authority": [
+    "Opportunity stage",
+    "Lessee contact"
+   ],
+   "c0": 94,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 100,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 94,
+   "conf": 94,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "4 min",
+   "freshMin": 4,
+   "id": "crm",
+   "inputs": "Opportunities, accounts, renewal pipeline, quoted rates",
+   "interval": 0,
+   "k0": 94,
+   "lastSync": 1791363360000,
+   "method": "api",
+   "mode": "API extractor · API + events",
+   "name": "CRM",
+   "owner": "Sales Operations",
+   "read": [
+    "GET /services/data/v59.0/query?q=Opportunity",
+    "GET /services/data/v59.0/sobjects/Account",
+    "GET /services/data/v59.0/sobjects/Contract"
+   ],
+   "records": 48212,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "CRM",
+   "status": "live",
+   "step": [
+    1,
+    6
+   ],
+   "type": "crm",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://northfield.my.salesforce.com",
+   "vendor": "Salesforce Sales Cloud",
+   "ver": "API v59.0",
+   "write": [
+    "POST /services/data/v59.0/sobjects/Task"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790758800000,
+     "ver": "1.2",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Ownership",
+    "Lessee",
+    "Contract term"
+   ],
+   "c0": 97,
+   "cat": "internal",
+   "cfg": {
+    "extract": "Scheduled full pull",
+    "scope": "OKC_K_HEADERS_B, OKL_K_LINES",
+    "system": "Oracle E-Business Suite"
+   },
+   "cfgVer": "1.2",
+   "compl": 97,
+   "conf": 95,
+   "credAt": 1788080400000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "7 min",
+   "freshMin": 7,
+   "id": "lease",
+   "inputs": "Contract end dates, lease rates, lessee and asset ownership, renewal options",
+   "interval": 15,
+   "k0": 95,
+   "lastSync": 1791363180000,
+   "method": "native",
+   "mode": "Native connector · Polling · 15 min",
+   "name": "Lease management",
+   "owner": "Lease Administration",
+   "read": [
+    "EXTRACT OKC_K_HEADERS_B",
+    "EXTRACT OKL_K_LINES",
+    "EXTRACT OKC_K_REL_OBJS"
+   ],
+   "records": 12840,
+   "runs": [],
+   "rw": "Read",
+   "short": "Lease",
+   "status": "live",
+   "step": [
+    1
+   ],
+   "type": "lease",
+   "updatedAt": 1790758800000,
+   "updatedBy": "Platform Admin",
+   "url": "https://lease.northfield.example/fscmRestApi",
+   "vendor": "Oracle Lease and Finance Management",
+   "ver": "Fusion 24B",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 · mTLS",
+   "authority": [
+    "Cost",
+    "Purchase baseline",
+    "Valuation"
+   ],
+   "c0": 99,
+   "cat": "internal",
+   "cfg": {
+    "extract": "Automated delta pull",
+    "scope": "MARD, MSEG, EKPO, EKKO, MBEW",
+    "system": "SAP S/4HANA"
+   },
+   "cfgVer": "1.5",
+   "compl": 99,
+   "conf": 97,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "2 min",
+   "freshMin": 2,
+   "id": "erp",
+   "inputs": "Inventory valuation, actual cost postings, purchase baseline (finance only; orders live in OMS)",
+   "interval": 5,
+   "k0": 97,
+   "lastSync": 1791363480000,
+   "method": "native",
+   "mode": "Native connector · Polling · 5 min",
+   "name": "ERP",
+   "owner": "Finance Systems",
+   "read": [
+    "EXTRACT MARD",
+    "EXTRACT EKPO",
+    "EXTRACT MBEW"
+   ],
+   "records": 214903,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "ERP",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    9
+   ],
+   "type": "erp",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://s4.northfield.example/sap/opu/odata/sap",
+   "vendor": "SAP S/4HANA",
+   "ver": "2023 FPS02",
+   "write": [
+    "POST /API_RESERVATION_DOCUMENT_SRV/A_ReservationDocumentHeader",
+    "POST /API_MATERIAL_DOCUMENT_SRV/A_MaterialDocumentHeader"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Order line",
+    "Ship-to",
+    "Need-by date"
+   ],
+   "c0": 97,
+   "cat": "internal",
+   "cfg": {
+    "delivery": "Message queue",
+    "key": "OrderHeaderKey",
+    "order": "By source timestamp"
+   },
+   "cfgVer": "1.5",
+   "compl": 97,
+   "conf": 95,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "3 min",
+   "freshMin": 3,
+   "id": "oms",
+   "inputs": "Sales orders and lines, ship-to locations, need-by dates, return authorisations, fulfilment and proof of delivery",
+   "interval": 0,
+   "k0": 95,
+   "lastSync": 1791363420000,
+   "method": "event",
+   "mode": "Event API · Events",
+   "name": "Order management",
+   "owner": "Customer Operations",
+   "read": [
+    "GET /order",
+    "GET /order/{OrderHeaderKey}/lines",
+    "GET /return"
+   ],
+   "records": 128450,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "OMS",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    7,
+    9
+   ],
+   "type": "oms",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://oms.northfield.example/smcfs/restapi",
+   "vendor": "IBM Sterling OMS",
+   "ver": "Order Management 10.0",
+   "write": [
+    "POST /order/allocate",
+    "POST /order/{OrderHeaderKey}/fulfil"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790845200000,
+     "ver": "1.6",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Supplier lead time",
+    "Quoted price"
+   ],
+   "c0": 92,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Offset",
+    "rate": 60,
+    "spec": "OData"
+   },
+   "cfgVer": "1.6",
+   "compl": 92,
+   "conf": 90,
+   "credAt": 1788685200000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "12 min",
+   "freshMin": 12,
+   "id": "proc",
+   "inputs": "Purchase alternatives, supplier quotes, lead times, sourcing events",
+   "interval": 30,
+   "k0": 90,
+   "lastSync": 1791362880000,
+   "method": "api",
+   "mode": "API extractor · Polling · 30 min",
+   "name": "Procurement",
+   "owner": "Procurement",
+   "read": [
+    "GET /procurement-reporting-details/v2/prod/views/PurchaseOrders",
+    "GET /sourcing-event/v2/prod/events",
+    "GET /supplier-data/v4/prod/suppliers"
+   ],
+   "records": 31778,
+   "runs": [],
+   "rw": "Read",
+   "short": "Procurement",
+   "status": "live",
+   "step": [
+    1
+   ],
+   "type": "proc",
+   "updatedAt": 1790845200000,
+   "updatedBy": "Platform Admin",
+   "url": "https://openapi.ariba.com/api",
+   "vendor": "SAP Ariba",
+   "ver": "Procurement APIs v2",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "API key · mTLS",
+   "authority": [
+    "Asset identity",
+    "Work order status"
+   ],
+   "c0": 93,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Offset",
+    "rate": 120,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 93,
+   "conf": 91,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "6 min",
+   "freshMin": 6,
+   "id": "eam",
+   "inputs": "Installed base, asset registry, work orders, failure history, criticality",
+   "interval": 0,
+   "k0": 91,
+   "lastSync": 1791363240000,
+   "method": "api",
+   "mode": "API extractor · API + events",
+   "name": "EAM",
+   "owner": "Reliability Engineering",
+   "read": [
+    "GET /os/mxasset",
+    "GET /os/mxwo",
+    "GET /os/mxfailurereport"
+   ],
+   "records": 96430,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "EAM",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    7,
+    8,
+    9
+   ],
+   "type": "eam",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://maximo.northfield.example/maximo/api",
+   "vendor": "IBM Maximo",
+   "ver": "Manage 8.11",
+   "write": [
+    "POST /os/mxwo",
+    "PATCH /os/mxwo/{workorderid}"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Service demand",
+    "Dispatch status"
+   ],
+   "c0": 95,
+   "cat": "internal",
+   "cfg": {
+    "delivery": "Webhook",
+    "key": "sys_id",
+    "order": "By source timestamp"
+   },
+   "cfgVer": "1.5",
+   "compl": 95,
+   "conf": 92,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "3 min",
+   "freshMin": 3,
+   "id": "fsm",
+   "inputs": "Field service demand, technician dispatch, visit outcomes, parts consumed",
+   "interval": 0,
+   "k0": 92,
+   "lastSync": 1791363420000,
+   "method": "event",
+   "mode": "Event API · Events",
+   "name": "FSM",
+   "owner": "Field Operations",
+   "read": [
+    "GET /table/wm_order",
+    "GET /table/wm_task",
+    "GET /table/alm_asset"
+   ],
+   "records": 58116,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "FSM",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    7,
+    9
+   ],
+   "type": "fsm",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://northfield.service-now.com/api/now",
+   "vendor": "ServiceNow Field Service Management",
+   "ver": "Xanadu",
+   "write": [
+    "POST /table/wm_order",
+    "PATCH /table/wm_task/{sys_id}"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "Database user + password (vault)",
+   "authority": [
+    "Configuration",
+    "Compatibility"
+   ],
+   "c0": 88,
+   "cat": "internal",
+   "cfg": {
+    "database": "TCPROD",
+    "driver": "Oracle",
+    "host": "plm-db.northfield.example",
+    "port": 1521,
+    "schema": "INFODBA",
+    "uplink": "On-premise uplink server"
+   },
+   "cfgVer": "1.5",
+   "compl": 88,
+   "conf": 90,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "11 min",
+   "freshMin": 11,
+   "id": "plm",
+   "inputs": "Product configuration, compatibility rules, approved alternates, revisions",
+   "interval": 15,
+   "k0": 90,
+   "lastSync": 1791362940000,
+   "method": "jdbc",
+   "mode": "JDBC · Polling · 15 min",
+   "name": "PLM",
+   "owner": "Product Engineering",
+   "read": [
+    "SELECT * FROM INFODBA.PITEM",
+    "SELECT * FROM INFODBA.PITEMREVISION",
+    "SELECT * FROM INFODBA.PSOCCURRENCE"
+   ],
+   "records": 22650,
+   "runs": [],
+   "rw": "Read",
+   "short": "PLM",
+   "status": "live",
+   "step": [
+    1
+   ],
+   "type": "plm",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "jdbc:oracle://plm-db.northfield.example:1521/TCPROD",
+   "vendor": "Siemens Teamcenter",
+   "ver": "Teamcenter 14.3",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "Database user + password (vault)",
+   "authority": [
+    "Part structure",
+    "BOM revision"
+   ],
+   "c0": 90,
+   "cat": "internal",
+   "cfg": {
+    "database": "InnovatorDB",
+    "driver": "SQL Server",
+    "host": "bom-sql.northfield.example",
+    "port": 1433,
+    "schema": "innovator",
+    "uplink": "On-premise uplink server"
+   },
+   "cfgVer": "1.5",
+   "compl": 90,
+   "conf": 89,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "9 min",
+   "freshMin": 9,
+   "id": "bom",
+   "inputs": "Multi-level bill of materials, part structures, manufacturer parts",
+   "interval": 15,
+   "k0": 89,
+   "lastSync": 1791363060000,
+   "method": "jdbc",
+   "mode": "JDBC · Polling · 15 min",
+   "name": "BOM management",
+   "owner": "Product Engineering",
+   "read": [
+    "SELECT * FROM innovator.PART",
+    "SELECT * FROM innovator.PART_BOM",
+    "SELECT * FROM innovator.MANUFACTURER_PART"
+   ],
+   "records": 187402,
+   "runs": [],
+   "rw": "Read",
+   "short": "BOM",
+   "status": "live",
+   "step": [
+    1
+   ],
+   "type": "bom",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "jdbc:sqlserver://bom-sql.northfield.example:1433/InnovatorDB",
+   "vendor": "Aras Innovator",
+   "ver": "Innovator 14",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Policy",
+    "Certification"
+   ],
+   "c0": 90,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 60,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 90,
+   "conf": 93,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "26 min",
+   "freshMin": 26,
+   "id": "qms",
+   "inputs": "Reuse policies, certifications, test criteria, deviations",
+   "interval": 30,
+   "k0": 93,
+   "lastSync": 1791362040000,
+   "method": "api",
+   "mode": "API extractor · Polling · 30 min",
+   "name": "QMS",
+   "owner": "Quality Assurance",
+   "read": [
+    "GET /v2/controlled-documents",
+    "GET /v2/certificates",
+    "GET /v2/test-criteria"
+   ],
+   "records": 9421,
+   "runs": [],
+   "rw": "Read",
+   "short": "QMS",
+   "status": "live",
+   "step": [
+    1,
+    8
+   ],
+   "type": "qms",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://qms.northfield.example/mc/api",
+   "vendor": "MasterControl",
+   "ver": "Quality Excellence 2024",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Life assessment",
+    "Requalification"
+   ],
+   "c0": 89,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 60,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 89,
+   "conf": 92,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "33 min",
+   "freshMin": 33,
+   "id": "eng",
+   "inputs": "Life assessments, requalification standards, engineering limits",
+   "interval": 60,
+   "k0": 92,
+   "lastSync": 1791361620000,
+   "method": "api",
+   "mode": "API extractor · Polling · 60 min",
+   "name": "Engineering",
+   "owner": "Engineering Standards",
+   "read": [
+    "GET /v1/assessments",
+    "GET /v1/standards",
+    "GET /v1/limits"
+   ],
+   "records": 6118,
+   "runs": [],
+   "rw": "Read",
+   "short": "Engineering",
+   "status": "live",
+   "step": [
+    1,
+    8
+   ],
+   "type": "eng",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://eng.northfield.example/assetwise/api",
+   "vendor": "Bentley AssetWise",
+   "ver": "CONNECT Edition",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 · mTLS",
+   "authority": [
+    "Location",
+    "Availability"
+   ],
+   "c0": 96,
+   "cat": "internal",
+   "cfg": {
+    "delivery": "Message queue",
+    "key": "movement_id",
+    "order": "By sequence number"
+   },
+   "cfgVer": "1.5",
+   "compl": 96,
+   "conf": 88,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "1 min",
+   "freshMin": 1,
+   "id": "wms",
+   "inputs": "Stock location, quantity, stock age, reservations, physical movements",
+   "interval": 0,
+   "k0": 88,
+   "lastSync": 1791363540000,
+   "method": "event",
+   "mode": "Event API · Events",
+   "name": "WMS",
+   "owner": "Warehouse Operations",
+   "read": [
+    "GET /inventory",
+    "GET /locations",
+    "GET /movements"
+   ],
+   "records": 341877,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "WMS",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    7,
+    9
+   ],
+   "type": "wms",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://wms.northfield.example/wms/api",
+   "vendor": "Manhattan Active Warehouse Management",
+   "ver": "Active WM 2024",
+   "write": [
+    "POST /reservations",
+    "POST /transfers"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Lane rate",
+    "Carrier booking",
+    "ETA"
+   ],
+   "c0": 93,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 120,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 93,
+   "conf": 91,
+   "credAt": 1789290000000,
+   "credDays": 29,
+   "env": "Production",
+   "fresh": "4 min",
+   "freshMin": 4,
+   "id": "tms",
+   "inputs": "Lane rate cards, carrier bookings, loads, ETD and ETA, proof of delivery",
+   "interval": 0,
+   "k0": 91,
+   "lastSync": 1791363360000,
+   "method": "api",
+   "mode": "API extractor · API + events",
+   "name": "Transport management",
+   "owner": "Transport Planning",
+   "read": [
+    "GET /lanes",
+    "GET /rate-cards/{id}",
+    "GET /loads/{id}"
+   ],
+   "records": 44210,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "TMS",
+   "status": "live",
+   "step": [
+    6,
+    7,
+    9
+   ],
+   "type": "tms",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://api.shiplane.example/v3",
+   "vendor": "ShipLane TMS",
+   "ver": "TMS API v3",
+   "write": [
+    "POST /loads",
+    "PATCH /loads/{id}"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1791018000000,
+     "ver": "1.4",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "API key",
+   "authority": [
+    "Return receipt",
+    "Disposition"
+   ],
+   "c0": 91,
+   "cat": "internal",
+   "cfg": {
+    "delivery": "Webhook",
+    "key": "rma_id",
+    "order": "By arrival"
+   },
+   "cfgVer": "1.4",
+   "compl": 91,
+   "conf": 87,
+   "credAt": 1789894800000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "5 min",
+   "freshMin": 5,
+   "id": "rl",
+   "inputs": "Return receipts, disposition decisions, inbound shipments, carrier status",
+   "interval": 0,
+   "k0": 87,
+   "lastSync": 1791363300000,
+   "method": "event",
+   "mode": "Event API · Events",
+   "name": "Reverse logistics",
+   "owner": "Reverse Logistics",
+   "read": [
+    "GET /returns",
+    "GET /dispositions",
+    "GET /shipments"
+   ],
+   "records": 17934,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "Returns",
+   "status": "live",
+   "step": [
+    1,
+    6,
+    9
+   ],
+   "type": "rl",
+   "updatedAt": 1791018000000,
+   "updatedBy": "Platform Admin",
+   "url": "https://api.optoro.com/v1",
+   "vendor": "Optoro",
+   "ver": "Returns API v1",
+   "write": [
+    "POST /return-authorizations"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790845200000,
+     "ver": "1.6",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Condition",
+    "Inspection result"
+   ],
+   "c0": 91,
+   "cat": "internal",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 100,
+    "spec": "REST"
+   },
+   "cfgVer": "1.6",
+   "compl": 91,
+   "conf": 90,
+   "credAt": 1788685200000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "9 min",
+   "freshMin": 9,
+   "id": "insp",
+   "inputs": "Inspection reports, condition grades, photos, checklist results",
+   "interval": 0,
+   "k0": 90,
+   "lastSync": 1791363060000,
+   "method": "api",
+   "mode": "API extractor · API + events",
+   "name": "Inspection",
+   "owner": "Quality Assurance",
+   "read": [
+    "GET /audits/search",
+    "GET /audits/{audit_id}",
+    "GET /media/{media_id}"
+   ],
+   "records": 73025,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "Inspection",
+   "status": "live",
+   "step": [
+    1,
+    8
+   ],
+   "type": "insp",
+   "updatedAt": 1790845200000,
+   "updatedBy": "Platform Admin",
+   "url": "https://api.safetyculture.io",
+   "vendor": "SafetyCulture",
+   "ver": "iAuditor API",
+   "write": [
+    "POST /inspections/start",
+    "POST /actions"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790672400000,
+     "ver": "1.3",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "OAuth 2.0 client credentials",
+   "authority": [
+    "Inspection grade",
+    "Repair scope and hours",
+    "Bench test result",
+    "Release to service"
+   ],
+   "c0": 91,
+   "cat": "internal",
+   "cfg": {
+    "delivery": "Webhook",
+    "key": "repair_id",
+    "order": "By source timestamp"
+   },
+   "cfgVer": "1.3",
+   "compl": 91,
+   "conf": 89,
+   "credAt": 1787475600000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "14 min",
+   "freshMin": 14,
+   "id": "repair",
+   "inputs": "Receiving inspection and grade, teardown findings, repair and refurbishment work orders, operations and hours, parts used, bench test results, release to service",
+   "interval": 0,
+   "k0": 89,
+   "lastSync": 1791362760000,
+   "method": "event",
+   "mode": "Event API · Events",
+   "name": "MRO and workshop",
+   "owner": "Repair Centre",
+   "read": [
+    "GET /repair-orders?serial={sn}",
+    "GET /repair-orders/{id}/tasks",
+    "GET /repair-orders/{id}/test-results"
+   ],
+   "records": 20411,
+   "runs": [],
+   "rw": "Read / write",
+   "short": "MRO",
+   "status": "live",
+   "step": [
+    5,
+    8,
+    9
+   ],
+   "type": "repair",
+   "updatedAt": 1790672400000,
+   "updatedBy": "Platform Admin",
+   "url": "https://ebs.northfield.example/webservices/rest/csd",
+   "vendor": "Oracle Depot Repair",
+   "ver": "EBS 12.2.13",
+   "write": [
+    "POST /repair-orders"
+   ]
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "Pending security review",
+   "authority": [
+    "Duty",
+    "Operating hours"
+   ],
+   "c0": 0,
+   "cat": "streaming",
+   "cfg": {
+    "delivery": "Message queue",
+    "key": "device_event_id",
+    "order": "By source timestamp"
+   },
+   "cfgVer": "1.5",
+   "compl": 0,
+   "conf": 0,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "—",
+   "freshMin": null,
+   "id": "iot",
+   "inputs": "Operating hours, duty cycle, vibration and temperature events",
+   "interval": 0,
+   "k0": 0,
+   "lastSync": null,
+   "method": "event",
+   "mode": "Not connected",
+   "name": "Device telemetry",
+   "note": "Integration dependency. Sustainability uses estimated factors and says so; no measured telemetry is inferred.",
+   "owner": "IoT Platform",
+   "read": [],
+   "records": 0,
+   "runs": [],
+   "rw": "—",
+   "short": "Telemetry",
+   "status": "unavailable",
+   "step": [
+    1,
+    9
+   ],
+   "type": "iot",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "",
+   "vendor": "AWS IoT Core",
+   "ver": "Not provisioned",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "API key",
+   "authority": [
+    "Market price"
+   ],
+   "c0": 71,
+   "cat": "external",
+   "cfg": {
+    "pagination": "Offset",
+    "rate": 30,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 71,
+   "conf": 58,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "19 h",
+   "freshMin": 1140,
+   "id": "mkt",
+   "inputs": "Comparable transactions, realised prices, time-to-sale, buyer demand",
+   "interval": 60,
+   "k0": 58,
+   "lastSync": 1791295200000,
+   "method": "api",
+   "mode": "API extractor · Polling · 60 min",
+   "name": "Market pricing",
+   "note": "Feed token expired 6 Oct; pricing falls back to the last fresh comparables and says so on every prediction.",
+   "owner": "Remarketing",
+   "read": [
+    "GET /comparables",
+    "GET /price-index"
+   ],
+   "records": 402118,
+   "runs": [],
+   "rw": "Read",
+   "short": "Market",
+   "status": "stale",
+   "step": [
+    1
+   ],
+   "type": "mkt",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://api.rbauction.example/v2",
+   "vendor": "Ritchie Bros. Market Data",
+   "ver": "Comparables API v2",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "API key",
+   "authority": [
+    "Dealer offer"
+   ],
+   "c0": 82,
+   "cat": "external",
+   "cfg": {
+    "pagination": "Cursor",
+    "rate": 60,
+    "spec": "REST"
+   },
+   "cfgVer": "1.5",
+   "compl": 82,
+   "conf": 78,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "18 min",
+   "freshMin": 18,
+   "id": "dlr",
+   "inputs": "Dealer offers, listing demand, fees, time-to-sale",
+   "interval": 0,
+   "k0": 78,
+   "lastSync": 1791362520000,
+   "method": "api",
+   "mode": "API extractor · API + events",
+   "name": "Dealer network",
+   "owner": "Remarketing",
+   "read": [
+    "GET /listings",
+    "GET /offers"
+   ],
+   "records": 56780,
+   "runs": [],
+   "rw": "Read",
+   "short": "Dealers",
+   "status": "live",
+   "step": [
+    1
+   ],
+   "type": "dlr",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://api.machinio.com/v1",
+   "vendor": "Machinio",
+   "ver": "Dealer API v1",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "SFTP drop · signed manifest",
+   "authority": [
+    "Vendor certification"
+   ],
+   "c0": 78,
+   "cat": "external",
+   "cfg": {
+    "delivery": "SFTP drop",
+    "format": "CSV",
+    "maxmb": 200,
+    "path": "/outbound/partner-rates.csv"
+   },
+   "cfgVer": "1.5",
+   "compl": 78,
+   "conf": 82,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "2 days",
+   "freshMin": 2880,
+   "id": "rcy",
+   "inputs": "Approvals, material yields, rebates, fees, custody certificates",
+   "interval": 0,
+   "k0": 82,
+   "lastSync": 1791190800000,
+   "method": "file",
+   "mode": "Flat file · CSV import",
+   "name": "Recycler partner",
+   "note": "No supported partner API. Manual import supports evaluation, not live automation.",
+   "owner": "Sustainability",
+   "read": [
+    "IMPORT partner-rates.csv"
+   ],
+   "records": 1204,
+   "runs": [],
+   "rw": "Read (import)",
+   "short": "Recycler",
+   "status": "manual",
+   "step": [
+    1,
+    9
+   ],
+   "type": "rcy",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "/outbound/partner-rates.csv",
+   "vendor": "Sims Lifecycle Services",
+   "ver": "Partner SFTP",
+   "write": []
+  },
+  {
+   "audit": [
+    {
+     "change": "Initial configuration imported",
+     "ts": 1790931600000,
+     "ver": "1.5",
+     "who": "Platform Admin"
+    }
+   ],
+   "auth": "Bearer token (Delta Sharing profile)",
+   "authority": [
+    "Emissions factor"
+   ],
+   "c0": 86,
+   "cat": "external",
+   "cfg": {
+    "endpoint": "https://sharing.persefoni.example/delta-sharing",
+    "platform": "Databricks",
+    "share": "emission_factors",
+    "table": "factors.cradle_to_gate"
+   },
+   "cfgVer": "1.5",
+   "compl": 86,
+   "conf": 81,
+   "credAt": 1789290000000,
+   "credDays": 180,
+   "env": "Production",
+   "fresh": "3 min",
+   "freshMin": 3,
+   "id": "esg",
+   "inputs": "Embodied-carbon factors, emissions factors, footprint methodology",
+   "interval": 0,
+   "k0": 81,
+   "lastSync": 1791363420000,
+   "method": "delta",
+   "mode": "Delta Sharing · API read (live)",
+   "name": "ESG & carbon",
+   "owner": "Sustainability",
+   "read": [
+    "READ factors.cradle_to_gate",
+    "READ footprints.by_asset_class"
+   ],
+   "records": 8830,
+   "runs": [],
+   "rw": "Read",
+   "short": "ESG",
+   "status": "live",
+   "step": [
+    1,
+    9
+   ],
+   "type": "esg",
+   "updatedAt": 1790931600000,
+   "updatedBy": "Platform Admin",
+   "url": "https://sharing.persefoni.example/delta-sharing",
+   "vendor": "Persefoni",
+   "ver": "API v1",
+   "write": []
+  }
+ ],
+ "table_models": {
+  "crm": {
+   "cl": [
+    [
+     "acc",
+     "Account Tables"
+    ],
+    [
+     "pipe",
+     "Pipeline Tables"
+    ],
+    [
+     "con",
+     "Contract Tables"
+    ]
+   ],
+   "fk": [
+    [
+     "Contact.AccountId",
+     "Account.Id",
+     "A contact works at an account"
+    ],
+    [
+     "Opportunity.AccountId",
+     "Account.Id",
+     "An opportunity is for an account"
+    ],
+    [
+     "OpportunityLineItem.OpportunityId",
+     "Opportunity.Id",
+     "Line items belong to an opportunity"
+    ],
+    [
+     "Quote.OpportunityId",
+     "Opportunity.Id",
+     "A quote supports an opportunity"
+    ],
+    [
+     "Contract.AccountId",
+     "Account.Id",
+     "A contract is with an account"
+    ],
+    [
+     "Task.WhatId",
+     "Opportunity.Id",
+     "A task follows up an opportunity"
+    ]
+   ],
+   "t": [
+    {
+     "cl": "acc",
+     "cols": [
+      [
+       "Id",
+       "Record key"
+      ],
+      [
+       "Name",
+       "Account name"
+      ],
+      [
+       "Type",
+       "Account type"
+      ]
+     ],
+     "desc": "Customer accounts. Resolves the owning customer tenant.",
+     "n": "Account",
+     "rows": "48K",
+     "x": 24,
+     "y": 58
+    },
+    {
+     "cl": "acc",
+     "cols": [
+      [
+       "Id",
+       "Record key"
+      ],
+      [
+       "AccountId",
+       "Account"
+      ],
+      [
+       "Email",
+       "Email"
+      ]
+     ],
+     "desc": "People at an account. Identifies who approves or buys.",
+     "n": "Contact",
+     "rows": "160K",
+     "x": 230,
+     "y": 58
+    },
+    {
+     "cl": "pipe",
+     "cols": [
+      [
+       "Id",
+       "Record key"
+      ],
+      [
+       "AccountId",
+       "Account"
+      ],
+      [
+       "StageName",
+       "Stage"
+      ],
+      [
+       "CloseDate",
+       "Expected close"
+      ]
+     ],
+     "desc": "Sales opportunities. Shows forecast demand and its stage.",
+     "n": "Opportunity",
+     "rows": "72K",
+     "x": 478,
+     "y": 58
+    },
+    {
+     "cl": "pipe",
+     "cols": [
+      [
+       "Id",
+       "Record key"
+      ],
+      [
+       "OpportunityId",
+       "Opportunity"
+      ],
+      [
+       "Quantity",
+       "Quantity"
+      ],
+      [
+       "UnitPrice",
+       "Unit price"
+      ]
+     ],
+     "desc": "Products on an opportunity. Gives quantity and rate.",
+     "n": "OpportunityLineItem",
+     "rows": "210K",
+     "x": 684,
+     "y": 58
+    },
+    {
+     "cl": "pipe",
+     "cols": [
+      [
+       "Id",
+       "Record key"
+      ],
+      [
+       "OpportunityId",
+       "Opportunity"
+      ],
+      [
+       "TotalPrice",
+       "Total"
+      ]
+     ],
+     "desc": "Quotes sent to customers. Evidence of quoted rates.",
+     "n": "Quote",
+     "rows": "64K",
+     "x": 478,
+     "y": 222
+    },
+    {
+     "cl": "con",
+     "cols": [
+      [
+       "Id",
+       "Record key"
+      ],
+      [
+       "AccountId",
+       "Account"
+      ],
+      [
+       "EndDate",
+       "End date"
+      ]
+     ],
+     "desc": "Customer contracts. Gives contract end dates that create demand.",
+     "n": "Contract",
+     "rows": "31K",
+     "x": 932,
+     "y": 58
+    },
+    {
+     "cl": "con",
+     "cols": [
+      [
+       "Id",
+       "Record key"
+      ],
+      [
+       "WhatId",
+       "Related record"
+      ],
+      [
+       "Status",
+       "Status"
+      ]
+     ],
+     "desc": "Tasks and follow-ups. Where Circularity creates sale tasks.",
+     "n": "Task",
+     "rows": "540K",
+     "x": 1138,
+     "y": 58
+    }
+   ]
+  },
+  "eam": {
+   "cl": [
+    [
+     "assets",
+     "Asset Tables"
+    ],
+    [
+     "work",
+     "Work Management Tables"
+    ],
+    [
+     "rel",
+     "Reliability Tables"
+    ],
+    [
+     "loc",
+     "Location Tables"
+    ]
+   ],
+   "fk": [
+    [
+     "ASSETSPEC.ASSETNUM",
+     "ASSET.ASSETNUM",
+     "Spec values belong to one asset"
+    ],
+    [
+     "ASSETMETER.ASSETNUM",
+     "ASSET.ASSETNUM",
+     "Readings belong to one asset"
+    ],
+    [
+     "WORKORDER.ASSETNUM",
+     "ASSET.ASSETNUM",
+     "Work is done on an asset"
+    ],
+    [
+     "WOSTATUS.WONUM",
+     "WORKORDER.WONUM",
+     "Status history of a work order"
+    ],
+    [
+     "WPLABOR.WONUM",
+     "WORKORDER.WONUM",
+     "Labour planned on a work order"
+    ],
+    [
+     "FAILUREREPORT.ASSETNUM",
+     "ASSET.ASSETNUM",
+     "A failure belongs to an asset"
+    ],
+    [
+     "FAILUREREPORT.FAILURECODE",
+     "FAILURECODE.FAILURECODE",
+     "Failure is classified by a code"
+    ],
+    [
+     "PM.ASSETNUM",
+     "ASSET.ASSETNUM",
+     "Maintenance plan for an asset"
+    ],
+    [
+     "ASSET.LOCATION",
+     "LOCATIONS.LOCATION",
+     "Asset sits at a location"
+    ],
+    [
+     "LOCHIERARCHY.LOCATION",
+     "LOCATIONS.LOCATION",
+     "Hierarchy links locations"
+    ]
+   ],
+   "t": [
+    {
+     "cl": "assets",
+     "cols": [
+      [
+       "ASSETNUM",
+       "Asset number: the identity key"
+      ],
+      [
+       "DESCRIPTION",
+       "Description"
+      ],
+      [
+       "STATUS",
+       "Operating status"
+      ],
+      [
+       "LOCATION",
+       "Where the asset sits"
+      ]
+     ],
+     "desc": "The asset register. Gives each asset its identity, class and status.",
+     "n": "ASSET",
+     "rows": "96K",
+     "x": 24,
+     "y": 58
+    },
+    {
+     "cl": "assets",
+     "cols": [
+      [
+       "ASSETNUM",
+       "Asset number"
+      ],
+      [
+       "ASSETATTRID",
+       "Attribute"
+      ],
+      [
+       "NUMVALUE",
+       "Numeric value"
+      ]
+     ],
+     "desc": "Technical specification values. Used to match an asset to demand by rating and class.",
+     "n": "ASSETSPEC",
+     "rows": "1.2M",
+     "x": 230,
+     "y": 58
+    },
+    {
+     "cl": "assets",
+     "cols": [
+      [
+       "ASSETNUM",
+       "Asset number"
+      ],
+      [
+       "METERNAME",
+       "Meter"
+      ],
+      [
+       "LASTREADING",
+       "Last reading"
+      ]
+     ],
+     "desc": "Meter readings such as running hours. Informs remaining life.",
+     "n": "ASSETMETER",
+     "rows": "410K",
+     "x": 24,
+     "y": 222
+    },
+    {
+     "cl": "work",
+     "cols": [
+      [
+       "WONUM",
+       "Work order number"
+      ],
+      [
+       "ASSETNUM",
+       "Asset number"
+      ],
+      [
+       "WORKTYPE",
+       "Work type"
+      ],
+      [
+       "STATUS",
+       "Status"
+      ]
+     ],
+     "desc": "Work orders. Shows service history and where Circularity creates new work.",
+     "n": "WORKORDER",
+     "rows": "2.8M",
+     "x": 478,
+     "y": 58
+    },
+    {
+     "cl": "work",
+     "cols": [
+      [
+       "WONUM",
+       "Work order number"
+      ],
+      [
+       "STATUS",
+       "Status"
+      ],
+      [
+       "CHANGEDATE",
+       "Changed on"
+      ]
+     ],
+     "desc": "Work order status history. Used to confirm acknowledgement and completion.",
+     "n": "WOSTATUS",
+     "rows": "9.4M",
+     "x": 684,
+     "y": 58
+    },
+    {
+     "cl": "work",
+     "cols": [
+      [
+       "WONUM",
+       "Work order number"
+      ],
+      [
+       "LABORCODE",
+       "Labour"
+      ],
+      [
+       "LABORHRS",
+       "Hours"
+      ]
+     ],
+     "desc": "Planned labour on a work order. Feeds repair cost and duration.",
+     "n": "WPLABOR",
+     "rows": "3.1M",
+     "x": 478,
+     "y": 222
+    },
+    {
+     "cl": "rel",
+     "cols": [
+      [
+       "ASSETNUM",
+       "Asset number"
+      ],
+      [
+       "FAILURECODE",
+       "Failure code"
+      ],
+      [
+       "REPORTDATE",
+       "Reported on"
+      ]
+     ],
+     "desc": "Failure events per asset. Drives service-exposure risk.",
+     "n": "FAILUREREPORT",
+     "rows": "380K",
+     "x": 932,
+     "y": 58
+    },
+    {
+     "cl": "rel",
+     "cols": [
+      [
+       "FAILURECODE",
+       "Failure code"
+      ],
+      [
+       "DESCRIPTION",
+       "Description"
+      ]
+     ],
+     "desc": "Failure code catalogue. Normalises failure causes across sites.",
+     "n": "FAILURECODE",
+     "rows": "1.1K",
+     "x": 1138,
+     "y": 58
+    },
+    {
+     "cl": "rel",
+     "cols": [
+      [
+       "PMNUM",
+       "PM number"
+      ],
+      [
+       "ASSETNUM",
+       "Asset number"
+      ],
+      [
+       "FREQUENCY",
+       "Frequency"
+      ]
+     ],
+     "desc": "Preventive maintenance plans. Shows how well an asset was maintained.",
+     "n": "PM",
+     "rows": "120K",
+     "x": 932,
+     "y": 203
+    },
+    {
+     "cl": "loc",
+     "cols": [
+      [
+       "LOCATION",
+       "Location"
+      ],
+      [
+       "DESCRIPTION",
+       "Description"
+      ],
+      [
+       "TYPE",
+       "Type"
+      ]
+     ],
+     "desc": "Locations. Resolves where an asset physically is.",
+     "n": "LOCATIONS",
+     "rows": "4.8K",
+     "x": 24,
+     "y": 451
+    },
+    {
+     "cl": "loc",
+     "cols": [
+      [
+       "LOCATION",
+       "Location"
+      ],
+      [
+       "PARENT",
+       "Parent location"
+      ]
+     ],
+     "desc": "Location hierarchy. Rolls a bay up to a site for demand matching.",
+     "n": "LOCHIERARCHY",
+     "rows": "6.2K",
+     "x": 230,
+     "y": 451
+    }
+   ]
+  },
+  "erp": {
+   "cl": [
+    [
+     "cur",
+     "Currency Conversion Tables"
+    ],
+    [
+     "inv",
+     "Inventory Management Tables"
+    ],
+    [
+     "sales",
+     "Sales Tables"
+    ],
+    [
+     "prod",
+     "Production Tables"
+    ],
+    [
+     "pur",
+     "Purchasing Tables"
+    ]
+   ],
+   "fk": [
+    [
+     "MARC.MATNR",
+     "MARA.MATNR",
+     "Plant data belongs to one material"
+    ],
+    [
+     "MARD.MATNR",
+     "MARC.MATNR",
+     "Stock sits under a material at a plant"
+    ],
+    [
+     "MBEW.MATNR",
+     "MARA.MATNR",
+     "Valuation belongs to one material"
+    ],
+    [
+     "MSEG.MATNR",
+     "MARA.MATNR",
+     "A movement moves one material"
+    ],
+    [
+     "MARC.WERKS",
+     "T001W.WERKS",
+     "Plant code resolves to a plant"
+    ],
+    [
+     "VBAP.VBELN",
+     "VBAK.VBELN",
+     "Order item belongs to its header"
+    ],
+    [
+     "VBAP.MATNR",
+     "MARA.MATNR",
+     "Demand line names a material"
+    ],
+    [
+     "VBAK.KUNNR",
+     "KNA1.KUNNR",
+     "Order belongs to a customer"
+    ],
+    [
+     "VBRK.KUNRG",
+     "KNA1.KUNNR",
+     "Bill goes to a customer"
+    ],
+    [
+     "AFPO.AUFNR",
+     "AFKO.AUFNR",
+     "Order item belongs to its header"
+    ],
+    [
+     "AFKO.AUFNR",
+     "AUFK.AUFNR",
+     "Header extends the order master"
+    ],
+    [
+     "AFPO.MATNR",
+     "MARA.MATNR",
+     "The order produces a material"
+    ],
+    [
+     "EKPO.EBELN",
+     "EKKO.EBELN",
+     "Item belongs to its purchase order"
+    ],
+    [
+     "EKPO.MATNR",
+     "MARA.MATNR",
+     "Purchase item names a material"
+    ],
+    [
+     "EKBE.EBELN",
+     "EKKO.EBELN",
+     "History belongs to its purchase order"
+    ],
+    [
+     "EKKO.LIFNR",
+     "LFA1.LIFNR",
+     "Order goes to a vendor"
+    ],
+    [
+     "TCURR.FCURR",
+     "TCURF.FCURR",
+     "Rates use the conversion factors"
+    ]
+   ],
+   "t": [
+    {
+     "cl": "cur",
+     "cols": [
+      [
+       "FCURR",
+       "From currency"
+      ],
+      [
+       "TCURR",
+       "To currency"
+      ],
+      [
+       "GDATU",
+       "Valid-from date"
+      ],
+      [
+       "FFACT",
+       "Conversion factor"
+      ]
+     ],
+     "desc": "Conversion factors between currencies. Used to convert costs and prices to USD.",
+     "n": "TCURF",
+     "rows": "4.1K",
+     "x": 24,
+     "y": 58
+    },
+    {
+     "cl": "cur",
+     "cols": [
+      [
+       "KURST",
+       "Exchange rate type"
+      ],
+      [
+       "FCURR",
+       "From currency"
+      ],
+      [
+       "TCURR",
+       "To currency"
+      ],
+      [
+       "UKURS",
+       "Exchange rate"
+      ]
+     ],
+     "desc": "Dated exchange rates. Every USD figure in a decision traces back to the rate in this table.",
+     "n": "TCURR",
+     "rows": "1.2M",
+     "x": 230,
+     "y": 58
+    },
+    {
+     "cl": "cur",
+     "cols": [
+      [
+       "CURRKEY",
+       "Currency key"
+      ],
+      [
+       "CURRDEC",
+       "Number of decimals"
+      ]
+     ],
+     "desc": "Decimal places per currency. Keeps converted amounts correctly rounded.",
+     "n": "TCURX",
+     "rows": "182",
+     "x": 24,
+     "y": 222
+    },
+    {
+     "cl": "inv",
+     "cols": [
+      [
+       "MATNR",
+       "Material number: the key that links every other table"
+      ],
+      [
+       "MTART",
+       "Material type"
+      ],
+      [
+       "MATKL",
+       "Material group"
+      ],
+      [
+       "MEINS",
+       "Base unit of measure"
+      ]
+     ],
+     "desc": "General material data. Identifies each part and its class, so an asset is recognised across systems.",
+     "n": "MARA",
+     "rows": "2.4M",
+     "x": 478,
+     "y": 58
+    },
+    {
+     "cl": "inv",
+     "cols": [
+      [
+       "MATNR",
+       "Material number"
+      ],
+      [
+       "WERKS",
+       "Plant"
+      ],
+      [
+       "DISMM",
+       "MRP type"
+      ],
+      [
+       "EKGRP",
+       "Purchasing group"
+      ]
+     ],
+     "desc": "Plant data for a material. Shows where a part is planned and held.",
+     "n": "MARC",
+     "rows": "6.8M",
+     "x": 684,
+     "y": 58
+    },
+    {
+     "cl": "inv",
+     "cols": [
+      [
+       "MATNR",
+       "Material number"
+      ],
+      [
+       "WERKS",
+       "Plant"
+      ],
+      [
+       "LGORT",
+       "Storage location"
+      ],
+      [
+       "LABST",
+       "Unrestricted stock"
+      ]
+     ],
+     "desc": "Stock by storage location. Free stock is what a redeploy route can use.",
+     "n": "MARD",
+     "rows": "9.1M",
+     "x": 478,
+     "y": 222
+    },
+    {
+     "cl": "inv",
+     "cols": [
+      [
+       "MATNR",
+       "Material number"
+      ],
+      [
+       "BWKEY",
+       "Valuation area"
+      ],
+      [
+       "VERPR",
+       "Moving average price"
+      ],
+      [
+       "STPRS",
+       "Standard price"
+      ]
+     ],
+     "desc": "Material valuation. Gives the book value and cost basis behind avoided purchase.",
+     "n": "MBEW",
+     "rows": "3.3M",
+     "x": 684,
+     "y": 222
+    },
+    {
+     "cl": "inv",
+     "cols": [
+      [
+       "MBLNR",
+       "Material document"
+      ],
+      [
+       "MATNR",
+       "Material number"
+      ],
+      [
+       "WERKS",
+       "Plant"
+      ],
+      [
+       "MENGE",
+       "Quantity"
+      ]
+     ],
+     "desc": "Material document items: the physical movements. Used to confirm what really moved.",
+     "n": "MSEG",
+     "rows": "41M",
+     "x": 478,
+     "y": 386
+    },
+    {
+     "cl": "inv",
+     "cols": [
+      [
+       "WERKS",
+       "Plant"
+      ],
+      [
+       "NAME1",
+       "Plant name"
+      ],
+      [
+       "LAND1",
+       "Country"
+      ]
+     ],
+     "desc": "Plants. Turns a plant code into a site name for demand matching.",
+     "n": "T001W",
+     "rows": "64",
+     "x": 684,
+     "y": 386
+    },
+    {
+     "cl": "sales",
+     "cols": [
+      [
+       "VBELN",
+       "Sales document"
+      ],
+      [
+       "KUNNR",
+       "Customer"
+      ],
+      [
+       "AUDAT",
+       "Document date"
+      ],
+      [
+       "NETWR",
+       "Net value"
+      ]
+     ],
+     "desc": "Sales order header. Shows committed demand and who it is for.",
+     "n": "VBAK",
+     "rows": "1.9M",
+     "x": 932,
+     "y": 58
+    },
+    {
+     "cl": "sales",
+     "cols": [
+      [
+       "VBELN",
+       "Sales document"
+      ],
+      [
+       "POSNR",
+       "Item"
+      ],
+      [
+       "MATNR",
+       "Material number"
+      ],
+      [
+       "KWMENG",
+       "Order quantity"
+      ]
+     ],
+     "desc": "Sales order items. Gives quantity and material per demand line.",
+     "n": "VBAP",
+     "rows": "7.2M",
+     "x": 1138,
+     "y": 58
+    },
+    {
+     "cl": "sales",
+     "cols": [
+      [
+       "KUNNR",
+       "Customer number"
+      ],
+      [
+       "NAME1",
+       "Name"
+      ],
+      [
+       "LAND1",
+       "Country"
+      ]
+     ],
+     "desc": "Customer master. Resolves the owning customer tenant.",
+     "n": "KNA1",
+     "rows": "38K",
+     "x": 932,
+     "y": 222
+    },
+    {
+     "cl": "sales",
+     "cols": [
+      [
+       "VBELN",
+       "Billing document"
+      ],
+      [
+       "KUNRG",
+       "Payer"
+      ],
+      [
+       "FKDAT",
+       "Billing date"
+      ],
+      [
+       "NETWR",
+       "Net value"
+      ]
+     ],
+     "desc": "Billing document header. Confirms a sale actually produced a receipt.",
+     "n": "VBRK",
+     "rows": "1.1M",
+     "x": 1138,
+     "y": 222
+    },
+    {
+     "cl": "prod",
+     "cols": [
+      [
+       "AUFNR",
+       "Order number"
+      ],
+      [
+       "GSTRP",
+       "Start date"
+      ],
+      [
+       "GLTRP",
+       "Finish date"
+      ],
+      [
+       "GAMNG",
+       "Order quantity"
+      ]
+     ],
+     "desc": "Production order header. Used for repair and refurbish orders.",
+     "n": "AFKO",
+     "rows": "640K",
+     "x": 24,
+     "y": 634
+    },
+    {
+     "cl": "prod",
+     "cols": [
+      [
+       "AUFNR",
+       "Order number"
+      ],
+      [
+       "POSNR",
+       "Item"
+      ],
+      [
+       "MATNR",
+       "Material number"
+      ],
+      [
+       "PSMNG",
+       "Planned quantity"
+      ]
+     ],
+     "desc": "Production order item. Links the order to the material produced.",
+     "n": "AFPO",
+     "rows": "650K",
+     "x": 230,
+     "y": 634
+    },
+    {
+     "cl": "prod",
+     "cols": [
+      [
+       "AUFNR",
+       "Order number"
+      ],
+      [
+       "AUART",
+       "Order type"
+      ],
+      [
+       "KOSTV",
+       "Cost centre"
+      ],
+      [
+       "OBJNR",
+       "Object number"
+      ]
+     ],
+     "desc": "Order master data. Holds the cost and status of the repair order.",
+     "n": "AUFK",
+     "rows": "910K",
+     "x": 24,
+     "y": 798
+    },
+    {
+     "cl": "pur",
+     "cols": [
+      [
+       "EBELN",
+       "Purchasing document"
+      ],
+      [
+       "LIFNR",
+       "Vendor"
+      ],
+      [
+       "BEDAT",
+       "Document date"
+      ],
+      [
+       "WAERS",
+       "Currency"
+      ]
+     ],
+     "desc": "Purchase order header. The planned purchase that a reuse route avoids.",
+     "n": "EKKO",
+     "rows": "1.4M",
+     "x": 478,
+     "y": 634
+    },
+    {
+     "cl": "pur",
+     "cols": [
+      [
+       "EBELN",
+       "Purchasing document"
+      ],
+      [
+       "EBELP",
+       "Item"
+      ],
+      [
+       "MATNR",
+       "Material number"
+      ],
+      [
+       "NETPR",
+       "Net price"
+      ]
+     ],
+     "desc": "Purchase order items. Gives the baseline price per unit.",
+     "n": "EKPO",
+     "rows": "5.6M",
+     "x": 684,
+     "y": 634
+    },
+    {
+     "cl": "pur",
+     "cols": [
+      [
+       "EBELN",
+       "Purchasing document"
+      ],
+      [
+       "EBELP",
+       "Item"
+      ],
+      [
+       "BELNR",
+       "Document number"
+      ],
+      [
+       "DMBTR",
+       "Amount"
+      ]
+     ],
+     "desc": "Purchase order history. Actual costs and receipts for outcome reconciliation.",
+     "n": "EKBE",
+     "rows": "9.8M",
+     "x": 478,
+     "y": 798
+    },
+    {
+     "cl": "pur",
+     "cols": [
+      [
+       "LIFNR",
+       "Vendor number"
+      ],
+      [
+       "NAME1",
+       "Name"
+      ],
+      [
+       "LAND1",
+       "Country"
+      ]
+     ],
+     "desc": "Vendor master. Identifies suppliers and recycler partners.",
+     "n": "LFA1",
+     "rows": "27K",
+     "x": 684,
+     "y": 798
+    }
+   ]
+  },
+  "fsm": {
+   "cl": [
+    [
+     "orders",
+     "Work Order Tables"
+    ],
+    [
+     "assets",
+     "Asset Tables"
+    ],
+    [
+     "people",
+     "People and Places"
+    ]
+   ],
+   "fk": [
+    [
+     "wm_task.parent",
+     "wm_order.sys_id",
+     "A task belongs to an order"
+    ],
+    [
+     "wm_order.asset",
+     "alm_asset.sys_id",
+     "An order is for an asset"
+    ],
+    [
+     "wm_order.location",
+     "cmn_location.sys_id",
+     "An order happens at a location"
+    ],
+    [
+     "wm_task.assigned_to",
+     "sys_user.sys_id",
+     "A task is done by a technician"
+    ],
+    [
+     "alm_hardware.sys_id",
+     "alm_asset.sys_id",
+     "Hardware detail extends the asset"
+    ],
+    [
+     "alm_asset.location",
+     "cmn_location.sys_id",
+     "Asset sits at a location"
+    ],
+    [
+     "alm_asset.owned_by",
+     "sys_user.sys_id",
+     "Asset has an owner"
+    ],
+    [
+     "cmn_location.company",
+     "core_company.sys_id",
+     "A location belongs to a company"
+    ]
+   ],
+   "t": [
+    {
+     "cl": "orders",
+     "cols": [
+      [
+       "sys_id",
+       "Record key"
+      ],
+      [
+       "number",
+       "Order number"
+      ],
+      [
+       "asset",
+       "Asset"
+      ],
+      [
+       "location",
+       "Location"
+      ]
+     ],
+     "desc": "Field service work orders. Shows service demand and dispatch status.",
+     "n": "wm_order",
+     "rows": "58K",
+     "x": 24,
+     "y": 58
+    },
+    {
+     "cl": "orders",
+     "cols": [
+      [
+       "sys_id",
+       "Record key"
+      ],
+      [
+       "parent",
+       "Parent order"
+      ],
+      [
+       "assigned_to",
+       "Technician"
+      ],
+      [
+       "state",
+       "State"
+      ]
+     ],
+     "desc": "Technician tasks on an order. Confirms visits and outcomes.",
+     "n": "wm_task",
+     "rows": "210K",
+     "x": 230,
+     "y": 58
+    },
+    {
+     "cl": "assets",
+     "cols": [
+      [
+       "sys_id",
+       "Record key"
+      ],
+      [
+       "serial_number",
+       "Serial number"
+      ],
+      [
+       "location",
+       "Location"
+      ],
+      [
+       "owned_by",
+       "Owner"
+      ]
+     ],
+     "desc": "Asset records. Links field service to the asset register.",
+     "n": "alm_asset",
+     "rows": "96K",
+     "x": 478,
+     "y": 58
+    },
+    {
+     "cl": "assets",
+     "cols": [
+      [
+       "sys_id",
+       "Record key"
+      ],
+      [
+       "model_id",
+       "Model"
+      ],
+      [
+       "install_date",
+       "Installed on"
+      ]
+     ],
+     "desc": "Hardware detail for an asset. Adds model and configuration.",
+     "n": "alm_hardware",
+     "rows": "88K",
+     "x": 684,
+     "y": 58
+    },
+    {
+     "cl": "people",
+     "cols": [
+      [
+       "sys_id",
+       "Record key"
+      ],
+      [
+       "name",
+       "Name"
+      ],
+      [
+       "department",
+       "Department"
+      ]
+     ],
+     "desc": "Users and technicians. Resolves who did the work.",
+     "n": "sys_user",
+     "rows": "4.2K",
+     "x": 932,
+     "y": 58
+    },
+    {
+     "cl": "people",
+     "cols": [
+      [
+       "sys_id",
+       "Record key"
+      ],
+      [
+       "name",
+       "Name"
+      ],
+      [
+       "company",
+       "Company"
+      ]
+     ],
+     "desc": "Locations. Used to match field demand to where assets are.",
+     "n": "cmn_location",
+     "rows": "1.9K",
+     "x": 1138,
+     "y": 58
+    },
+    {
+     "cl": "people",
+     "cols": [
+      [
+       "sys_id",
+       "Record key"
+      ],
+      [
+       "name",
+       "Name"
+      ]
+     ],
+     "desc": "Companies. Maps a site to the customer that owns it.",
+     "n": "core_company",
+     "rows": "640",
+     "x": 932,
+     "y": 203
+    }
+   ]
+  },
+  "plm": {
+   "cl": [
+    [
+     "item",
+     "Item Tables"
+    ],
+    [
+     "struct",
+     "Structure Tables"
+    ],
+    [
+     "compat",
+     "Compatibility Tables"
+    ]
+   ],
+   "fk": [
+    [
+     "PITEMREVISION.ITEM",
+     "PITEM.PUID",
+     "A revision belongs to an item"
+    ],
+    [
+     "PSBOMVIEWREVISION.ITEMREV",
+     "PITEMREVISION.PUID",
+     "A BOM view belongs to a revision"
+    ],
+    [
+     "PSOCCURRENCE.PARENT",
+     "PSBOMVIEWREVISION.PUID",
+     "A component sits in a BOM view"
+    ],
+    [
+     "PSOCCURRENCE.CHILD",
+     "PITEM.PUID",
+     "A component is an item"
+    ],
+    [
+     "PALTERNATE.ITEM",
+     "PITEM.PUID",
+     "Alternate approved for an item"
+    ],
+    [
+     "PCOMPAT.ITEM",
+     "PITEM.PUID",
+     "Compatibility rule for an item"
+    ]
+   ],
+   "t": [
+    {
+     "cl": "item",
+     "cols": [
+      [
+       "PUID",
+       "Record key"
+      ],
+      [
+       "ITEM_ID",
+       "Item ID"
+      ],
+      [
+       "NAME",
+       "Name"
+      ]
+     ],
+     "desc": "Items (parts and assemblies). The identity of a configuration.",
+     "n": "PITEM",
+     "rows": "22K",
+     "x": 24,
+     "y": 58
+    },
+    {
+     "cl": "item",
+     "cols": [
+      [
+       "PUID",
+       "Record key"
+      ],
+      [
+       "ITEM",
+       "Item"
+      ],
+      [
+       "REV_ID",
+       "Revision"
+      ],
+      [
+       "RELEASED",
+       "Released on"
+      ]
+     ],
+     "desc": "Item revisions. Shows which revision an asset was built to.",
+     "n": "PITEMREVISION",
+     "rows": "61K",
+     "x": 230,
+     "y": 58
+    },
+    {
+     "cl": "struct",
+     "cols": [
+      [
+       "PUID",
+       "Record key"
+      ],
+      [
+       "ITEMREV",
+       "Item revision"
+      ],
+      [
+       "VIEW_TYPE",
+       "View type"
+      ]
+     ],
+     "desc": "Bill of materials views. The structure behind a configuration.",
+     "n": "PSBOMVIEWREVISION",
+     "rows": "34K",
+     "x": 478,
+     "y": 58
+    },
+    {
+     "cl": "struct",
+     "cols": [
+      [
+       "PUID",
+       "Record key"
+      ],
+      [
+       "PARENT",
+       "Parent BOM view"
+      ],
+      [
+       "CHILD",
+       "Child item"
+      ],
+      [
+       "QTY",
+       "Quantity"
+      ]
+     ],
+     "desc": "Components in a structure. Lets Circularity reason about parts and sub-assemblies.",
+     "n": "PSOCCURRENCE",
+     "rows": "1.4M",
+     "x": 684,
+     "y": 58
+    },
+    {
+     "cl": "compat",
+     "cols": [
+      [
+       "PUID",
+       "Record key"
+      ],
+      [
+       "ITEM",
+       "Item"
+      ],
+      [
+       "ALT_ITEM",
+       "Alternate item"
+      ]
+     ],
+     "desc": "Approved alternates. Allows a different but compatible part to be reused.",
+     "n": "PALTERNATE",
+     "rows": "48K",
+     "x": 932,
+     "y": 58
+    },
+    {
+     "cl": "compat",
+     "cols": [
+      [
+       "PUID",
+       "Record key"
+      ],
+      [
+       "ITEM",
+       "Item"
+      ],
+      [
+       "RULE",
+       "Rule"
+      ]
+     ],
+     "desc": "Compatibility rules. Decides whether a reused asset fits the demand.",
+     "n": "PCOMPAT",
+     "rows": "19K",
+     "x": 1138,
+     "y": 58
+    }
+   ]
+  },
+  "wms": {
+   "cl": [
+    [
+     "stock",
+     "Inventory Tables"
+    ],
+    [
+     "loc",
+     "Location Tables"
+    ],
+    [
+     "moves",
+     "Movement Tables"
+    ]
+   ],
+   "fk": [
+    [
+     "INVENTORY.ITEM_ID",
+     "ITEM_MASTER.ITEM_ID",
+     "Stock is of one item"
+    ],
+    [
+     "INVENTORY.LOCATION_ID",
+     "LOCATION.LOCATION_ID",
+     "Stock sits in a location"
+    ],
+    [
+     "LOCATION.ZONE_ID",
+     "ZONE.ZONE_ID",
+     "A location is in a zone"
+    ],
+    [
+     "MOVEMENT.ITEM_ID",
+     "ITEM_MASTER.ITEM_ID",
+     "A movement moves one item"
+    ],
+    [
+     "MOVEMENT.TO_LOCATION",
+     "LOCATION.LOCATION_ID",
+     "A movement ends at a location"
+    ],
+    [
+     "RESERVATION.ITEM_ID",
+     "ITEM_MASTER.ITEM_ID",
+     "Reservation is for one item"
+    ],
+    [
+     "RECEIPT.ITEM_ID",
+     "ITEM_MASTER.ITEM_ID",
+     "A receipt is of one item"
+    ]
+   ],
+   "t": [
+    {
+     "cl": "stock",
+     "cols": [
+      [
+       "INVENTORY_ID",
+       "Inventory key"
+      ],
+      [
+       "ITEM_ID",
+       "Item"
+      ],
+      [
+       "LOCATION_ID",
+       "Location"
+      ],
+      [
+       "QTY",
+       "Quantity"
+      ]
+     ],
+     "desc": "Stock on hand. Tells Circularity what is physically available.",
+     "n": "INVENTORY",
+     "rows": "341K",
+     "x": 24,
+     "y": 58
+    },
+    {
+     "cl": "stock",
+     "cols": [
+      [
+       "ITEM_ID",
+       "Item key"
+      ],
+      [
+       "DESCRIPTION",
+       "Description"
+      ],
+      [
+       "UOM",
+       "Unit of measure"
+      ]
+     ],
+     "desc": "Item master. Identifies each part and unit of measure.",
+     "n": "ITEM_MASTER",
+     "rows": "88K",
+     "x": 230,
+     "y": 58
+    },
+    {
+     "cl": "loc",
+     "cols": [
+      [
+       "LOCATION_ID",
+       "Location key"
+      ],
+      [
+       "ZONE_ID",
+       "Zone"
+      ],
+      [
+       "FACILITY",
+       "Facility"
+      ]
+     ],
+     "desc": "Storage locations. Resolves where stock is.",
+     "n": "LOCATION",
+     "rows": "12K",
+     "x": 478,
+     "y": 58
+    },
+    {
+     "cl": "loc",
+     "cols": [
+      [
+       "ZONE_ID",
+       "Zone key"
+      ],
+      [
+       "NAME",
+       "Name"
+      ]
+     ],
+     "desc": "Warehouse zones. Rolled up to facility for matching.",
+     "n": "ZONE",
+     "rows": "320",
+     "x": 684,
+     "y": 58
+    },
+    {
+     "cl": "moves",
+     "cols": [
+      [
+       "MOVEMENT_ID",
+       "Movement key"
+      ],
+      [
+       "ITEM_ID",
+       "Item"
+      ],
+      [
+       "TO_LOCATION",
+       "Destination"
+      ],
+      [
+       "MOVED_AT",
+       "Moved at"
+      ]
+     ],
+     "desc": "Physical movements. Late and out-of-order events are reconciled from here.",
+     "n": "MOVEMENT",
+     "rows": "4.6M",
+     "x": 932,
+     "y": 58
+    },
+    {
+     "cl": "moves",
+     "cols": [
+      [
+       "RESERVATION_ID",
+       "Reservation key"
+      ],
+      [
+       "ITEM_ID",
+       "Item"
+      ],
+      [
+       "QTY",
+       "Quantity"
+      ]
+     ],
+     "desc": "Stock reservations. Prevents the same stock being promised twice.",
+     "n": "RESERVATION",
+     "rows": "210K",
+     "x": 1138,
+     "y": 58
+    },
+    {
+     "cl": "moves",
+     "cols": [
+      [
+       "RECEIPT_ID",
+       "Receipt key"
+      ],
+      [
+       "ITEM_ID",
+       "Item"
+      ],
+      [
+       "RECEIVED_AT",
+       "Received at"
+      ]
+     ],
+     "desc": "Receipts into the warehouse. Starts the case for a returned asset.",
+     "n": "RECEIPT",
+     "rows": "96K",
+     "x": 932,
+     "y": 222
+    }
+   ]
+  }
+ },
+ "totals": {
+  "bad": 6,
+  "ok": 816,
+  "pct": 96.797153,
+  "run": 0,
+  "warn": 21
+ }
+}
