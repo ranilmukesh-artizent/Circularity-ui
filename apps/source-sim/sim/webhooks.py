@@ -16,7 +16,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
 import httpx
-from sqlalchemy import BigInteger, Column, DateTime, Integer, MetaData, String, Table, and_, insert, select, text, update
+from sqlalchemy import BigInteger, Column, DateTime, Integer, MetaData, String, Table, and_, delete, insert, select, text, update
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.engine import Connection
 
@@ -132,7 +132,11 @@ def deliver(post: Post = _http_post, limit: int = 100) -> int:
             .with_for_update(of=DELIVERIES, skip_locked=True)
         ).all()
         for d in due:
-            ev = conn.execute(select(OUTBOX).where(OUTBOX.c.id == d.outbox_id)).one()
+            key = and_(DELIVERIES.c.outbox_id == d.outbox_id, DELIVERIES.c.subscription_id == d.subscription_id)
+            ev = conn.execute(select(OUTBOX).where(OUTBOX.c.id == d.outbox_id)).first()
+            if ev is None:  # the event vanished meanwhile (a reset or a cleanup deleted it): nothing left to send
+                conn.execute(delete(DELIVERIES).where(key))
+                continue
             body = json.dumps(cloudevent(ev), separators=(",", ":")).encode()
             headers = {"content-type": "application/cloudevents+json", "x-sim-signature": sign(d.secret, body)}
             attempted += 1
@@ -141,7 +145,6 @@ def deliver(post: Post = _http_post, limit: int = 100) -> int:
                 error = None if 200 <= status < 300 else f"HTTP {status}"
             except Exception as e:  # noqa: BLE001 - recorded and retried
                 error = f"{type(e).__name__}: {e}"[:500]
-            key = and_(DELIVERIES.c.outbox_id == d.outbox_id, DELIVERIES.c.subscription_id == d.subscription_id)
             if error is None:
                 conn.execute(update(DELIVERIES).where(key).values(status="delivered", attempts=d.attempts + 1, last_error=None))
             else:

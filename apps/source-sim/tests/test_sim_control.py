@@ -22,9 +22,11 @@ def client():
         c.delete("/_sim/faults")
         yield c
         c.delete("/_sim/faults")
+        # only the subscriptions these tests made (to http://receiver/...), even if a test failed before its cleanup
         with engine.begin() as conn:
-            conn.execute(text("DELETE FROM sim.deliveries"))
-            conn.execute(text("DELETE FROM sim.subscriptions"))
+            ours = conn.execute(text("SELECT id FROM sim.subscriptions WHERE url LIKE 'http://receiver/%'")).scalars().all()
+            for sub_id in ours:
+                webhooks.unsubscribe(conn, sub_id)
 
 
 def at(s: str) -> datetime:
@@ -119,10 +121,9 @@ def test_events_are_delivered_as_signed_cloudevents_and_retried(client):
         received.append((url, body, headers))
         return 204
 
-    # The running service's own dispatcher (sim/main.py, every second) works on the same tables: it may take a pass at
-    # our delivery (its real HTTP to http://receiver fails, which also counts as a failed attempt) or hold the row lock
-    # while we call deliver. So drive passes until ours succeeds, making the pending retry due each time.
-    webhooks.deliver(post)  # the first attempt fails (ours returns 503, or the live dispatcher's cannot connect)
+    # Drive passes until ours succeeds, making the pending retry due each time. (Tests have their own database since
+    # A6, so the running service's dispatcher no longer races us; the loop stays as a cheap guard.)
+    webhooks.deliver(post)  # the first attempt fails (ours returns 503)
     assert received == []
     for _ in range(20):
         with engine.begin() as conn:
@@ -145,6 +146,32 @@ def test_events_are_delivered_as_signed_cloudevents_and_retried(client):
     assert status["undelivered_events"] == 0
     client.delete(f"/_sim/webhooks/{sub}")
     client.delete(f"/_sim/webhooks/{other}")
+
+
+def test_tests_run_on_their_own_database():
+    """The live service keeps `sources`; tests work on `sources_test` (conftest), so neither disturbs the other."""
+    assert engine.url.database == "sources_test"
+
+
+def test_deliver_skips_a_delivery_whose_event_vanished(client):
+    """A delivery whose outbox row was deleted meanwhile (a reset, a test's cleanup) is dropped, not fatal."""
+    sub = client.post("/_sim/webhooks", json={"url": "http://receiver/gone", "sources": ["erp"], "secret": "x"}).json()["id"]
+    with engine.begin() as conn:
+        gone = conn.execute(text("SELECT coalesce(max(id), 0) + 1000 FROM sim.outbox")).scalar_one()
+        conn.execute(
+            text(
+                "INSERT INTO sim.deliveries (outbox_id, subscription_id, status, attempts, next_at) "
+                "VALUES (:o, :s, 'pending', 0, now() - interval '1 second')"
+            ),
+            {"o": gone, "s": sub},
+        )
+    posted = []
+    webhooks.deliver(lambda url, body, headers: posted.append(url) or 204)
+    assert "http://receiver/gone" not in posted
+    with engine.connect() as conn:
+        left = conn.execute(text("SELECT count(*) FROM sim.deliveries WHERE outbox_id = :o"), {"o": gone}).scalar_one()
+    assert left == 0
+    client.delete(f"/_sim/webhooks/{sub}")
 
 
 def test_sink_receives(client):
