@@ -44,7 +44,7 @@ repo root.
 
 ## Phase A: trustworthy gates and real bugs
 
-- [ ] **A1** dev scripts return pytest/tsc exit codes (`set -euo pipefail` in `lib.sh`, `PIPESTATUS`) [T4]. Test: a
+- [x] **A1** dev scripts return pytest/tsc exit codes (`set -euo pipefail` in `lib.sh`, `PIPESTATUS`) [T4]. Test: a
   failing test file makes `api-test.sh` exit non-zero; `web-check.sh` exits non-zero on a type error.
 - [ ] **A2** worker re-subscribes to source-sim webhooks in `periodic()` [O3]. Test: delete the subscription; within
   one periodic tick it is back (unit test calls `periodic()` with the sim subscription removed).

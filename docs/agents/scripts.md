@@ -14,6 +14,7 @@ from `apps/web`, unless noted.
 | `restart.sh [services]` | Restarts api, worker and source-sim (or the ones given) and waits for health. |
 | `reset.sh` | Demo starting state: source-sim reset, `scripts/reset_starting.py` (with `PYTHONPATH=/app`), worker started. |
 | `unstick.sh` | Lists non-idle db sessions, terminates sessions idle in a transaction for over 1 min, restarts the api. Use when the api hangs. |
+| `selftest.sh` | Proves the scripts report failures through their exit status (a passing and a missing test, a planted type error). Every script exits non-zero on failure; `lib.sh` sets `pipefail` and offers `filtered PATTERN N cmd…`. |
 | `wait-idle.sh [max_s]` | Waits until the worker has no due jobs (after a reset it syncs every source first, ~2–3 min). Use before `smoke-rt1048.mjs`. |
 | `status.sh` | Health of api and source-sim, container status, api tests running or waiting for the lock, non-idle db sessions. |
 
