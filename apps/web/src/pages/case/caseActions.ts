@@ -26,13 +26,13 @@ export const caseActions = {
   },
   async recordResult(id: string) {
     const r = await invoke<{ recommendation: string | null; net: number }>('evidence.recordResult', { case_id: id });
-    if (!r.ok) return fail(r);
+    if (fail(r) || !r.ok) return;
     const o = r.output;
     toast(o.recommendation ? `${id} is ready. Recommendation: ${o.recommendation} at ${money(o.net)}.` : `${id} assessed, but no route passes every gate.`, 4200);
   },
   async reevaluate(id: string) {
     const r = await invoke<{ now: string | null; was: string | null; net: number }>('case.reevaluate', { case_id: id });
-    if (!r.ok) return fail(r);
+    if (fail(r) || !r.ok) return;
     const o = r.output;
     toast(o.now ? `Re-evaluated. New recommendation: ${o.now} at ${money(o.net)}${o.was && o.was !== o.now ? ` (was ${o.was})` : ''}.` : 'Re-evaluated. No route passes every gate.', 4200);
   },
@@ -41,7 +41,7 @@ export const caseActions = {
     const c = caseById(id);
     if (!c) return;
     const r = await checkAcknowledgement(c);
-    if (!r.ok) return fail(r);
+    if (fail(r) || !r.ok) return;
     const o = r.output;
     toast(`${o.label}: acknowledged by ${o.by} · ${o.ref_label}`);
   },

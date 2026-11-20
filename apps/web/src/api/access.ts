@@ -67,8 +67,8 @@ export interface Idp { src: 'approles' | 'groups'; lastSync: Date | string; grou
 export const idp = (): Idp => screen().identity;
 /** The role a directory user maps to (the server sends it with each user). */
 export const idpRoleOf = (u: IdpUser): string => u.role ?? '';
-export const idpRoles = (): string[] => ref<string[]>('IDP_ROLES');
-export const facilities = (): string[] => ref<string[]>('FACILITIES');
+export const idpRoles = (): string[] => ref('IDP_ROLES');
+export const facilities = (): string[] => ref('FACILITIES');
 /** "07 Oct 14:20" (the demo's orT). */
 export const fmtDateTime = (d: Date | string | null | undefined): string =>
   d ? fmtDate(d) + ' ' + new Date(d).toISOString().slice(11, 16) : '—';
@@ -78,11 +78,11 @@ export type Level = 'off' | 'suggest' | 'prepare' | 'act';
 export interface LevelDef { k: Level; label: string; desc: string }
 export interface AutoType { k: string; t: string; acts: string[]; def: Level; max: Level }
 
-export const levels = (): LevelDef[] => ref<string[][]>('AF_LEVELS').map(([k, label, desc]) => ({ k: k as Level, label, desc }));
-export const levelRank = (l: Level): number => ref<Record<string, number>>('AF_LV_RANK')[l];
-export const autoTypes = (): AutoType[] => ref<AutoType[]>('AF_AUTO_TYPES');
+export const levels = (): LevelDef[] => ref('AF_LEVELS').map(([k, label, desc]) => ({ k: k as Level, label, desc }));
+export const levelRank = (l: Level): number => ref('AF_LV_RANK')[l];
+export const autoTypes = (): AutoType[] => ref('AF_AUTO_TYPES');
 export const autoLevel = (role: string, type: string): Level => screen().autonomy.matrix[role]?.[type] ?? 'prepare';
-export const roles = (): string[] => Object.keys(ref<Record<string, RolePolicy>>('ROLE_POLICY'));
+export const roles = (): string[] => Object.keys(ref('ROLE_POLICY'));
 
 /** Approval limit in dollars; null means unlimited. */
 export const approvalLimit = (role: string): number | null => {
@@ -97,7 +97,7 @@ export function governedAgents(): GovAgent[] {
   return screen().agentsx.agents;
 }
 /** The six hard rules (never configurable). */
-export const hardRules = (): string[] => ref<string[]>('HARD_RULES').slice();
+export const hardRules = (): string[] => ref('HARD_RULES').slice();
 
 export interface AgentMetrics {
   interactions: number | null; approvals: number; share: Record<string, { all: number; agent: number }>;

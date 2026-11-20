@@ -15,7 +15,6 @@ import { visibleCases } from './product';
 import { canPage, canRoute } from './session';
 import { bump } from './store';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export type SrcStatus = 'live' | 'stale' | 'manual' | 'unavailable';
 export interface SyncRun { id: string; ts: number; trigger: string; rows: number; dur: number; result: string; note: string }
@@ -131,25 +130,25 @@ export function mappings(id: string): MapRow[] {
 export const connMethods = (): Record<string, ConnMethod> => ref('CONN_METHODS');
 export function srcTypes(): Record<string, SrcType> {
   // a connected source of a type outside SRC_TYPES (from the catalogue's extra types) is listed too, as the demo adds it on connect
-  const T = ref<Record<string, SrcType>>('SRC_TYPES'), extra = sources().filter((s) => !T[s.type]);
+  const T = ref('SRC_TYPES'), extra = sources().filter((s) => !T[s.type]);
   return extra.length ? { ...T, ...Object.fromEntries(extra.map((s) => [s.type, typeOf(s.type)])) } : T;
 }
 export const srcCats = (): Record<string, string> => ref('SRC_CATS');
 export const srcCatNote = (): Record<string, string> => ref('SRC_CAT_NOTE');
 export const authOpts = (): string[] => ref('AUTH_OPTS');
 export const canon = (): Canon[] => ref('CANON');
-export const canonExample = (n: string): unknown => ref<Record<string, unknown>>('CANON_EX')[n];
+export const canonExample = (n: string): unknown => ref('CANON_EX')[n];
 export const canonPrefix = (): Record<string, string> => ref('CANON_PFX');
 export const events = (): StreamEvent[] => (may('events') ? cached<{ events: StreamEvent[] }>(BASE + '/events').events : []);
 export function catalog(): CatalogItem[] {
   const o = overview();
   if (o) return o.catalog;
   const ids = new Set(sources().map((s) => s.id));
-  return ref<CatalogItem[]>('CATALOG').map((c) => ({ ...c, connected: ids.has(c.id) }));
+  return ref('CATALOG').map((c) => ({ ...c, connected: ids.has(c.id) }));
 }
 export const frCats = (): string[] => ref('FR_CATS');
 export const frDecisions = (): [string, string, string[]][] => ref('FR_DEC');
-export const intSub = (tab: string): string => ref<Record<string, string>>('FR_INT_SUB')[tab] ?? '';
+export const intSub = (tab: string): string => ref('FR_INT_SUB')[tab] ?? '';
 export const intKids = (): [string, string, string, string?][] => ref('FR_INT_KIDS');
 export const sampleCsv = (): string => ref('SAMPLE_CSV');
 export const facilities = (): string[] => ref('FACILITIES');
@@ -158,9 +157,9 @@ export function tableModelIds(): string[] {
   return Object.keys(tablesAnswer()?.models ?? mapAnswer()?.table_models ?? {});
 }
 export const tableSuggestions = (src: string): { n: string; cl: string; desc: string; cols: string[] }[] =>
-  ref<Record<string, any[]>>('TBL_AVAIL')[src] ?? [];
+  ref('TBL_AVAIL')[src] ?? [];
 export const frSample = (type: string): [string, string, string, string, number][] => {
-  const S = ref<Record<string, [string, string, string, string, number][]>>('FR_SAMPLE');
+  const S = ref('FR_SAMPLE');
   return (S[type] || S.db).map((r) => r.slice() as [string, string, string, string, number]);
 };
 export const frAuthOptions = (): [string, string, string][] => ref('FR_AUTH');
@@ -202,7 +201,7 @@ export function failedRecords(s: Source, n: number): number {
   return n === 7 ? health(s)?.failed7 ?? 0 : detail(s.id, n)?.failed ?? 0;
 }
 export const typeOf = (t: string): SrcType =>
-  ref<Record<string, SrcType>>('SRC_TYPES')[t] || ref<Record<string, SrcType>>('FR_XTYPES')[t] || { label: t, short: t, cat: 'internal', target: 'Asset & component', vendors: [] };
+  ref('SRC_TYPES')[t] || ref('FR_XTYPES')[t] || { label: t, short: t, cat: 'internal', target: 'Asset & component', vendors: [] };
 export const catOf = (s: Source): string => health(s)?.category ?? 'Custom';
 export const tableCount = (id: string): number => health(source(id) ?? ({ id } as Source))?.tables ?? 0;
 export const fieldCount = (id: string): number => health(source(id) ?? ({ id } as Source))?.fields ?? 0;
@@ -306,8 +305,8 @@ export function buildUrl(d: { method: string; cfg: Record<string, unknown>; url:
 export const tableHeight = (t: Table): number => 34 + Math.min(t.cols.length, 4) * 19 + (t.cols.length > 4 ? 18 : 0) + 38;
 /** A journey step chip's content: number, label, kind (ext, built, human) and description (the demo's stp, after jmap). */
 export function journeyStep(n: number): { n: number; label: string; kind: string; desc: string } {
-  const J = ref<[number, string, string, string][]>('JSTEPS');
-  const m = ref<number[]>('JMAP')[n] || n;
+  const J = ref('JSTEPS');
+  const m = ref('JMAP')[n] || n;
   const j = J[m - 1];
   return { n: m, label: j[1], kind: j[2], desc: j[3] };
 }

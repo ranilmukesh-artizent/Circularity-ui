@@ -103,7 +103,7 @@ export function BestCard({ c, a }: { c: CaseRec; a: CaseAnalysis; sr?: ScenRoute
 
 // ---------- the enterprise hand-off (execBlock) ----------
 function HandoffLegend() {
-  const rows = refList<[string, string, string][]>('HANDOFF_MODEL');
+  const rows = refList('HANDOFF_MODEL');
   return (
     <div className="tw" style={{ marginTop: 10 }}>
       <table className="t static">
@@ -178,7 +178,7 @@ export function MoveTable({ a }: { c?: CaseRec; a: CaseAnalysis }) {
                 <td className="num nowrap">{exTs(l.etd)}<div className="note">Day {moveDay(m, l.etd)}</div></td>
                 <td className="num nowrap">{exTs(l.eta)}<div className="note">Day {moveDay(m, l.eta)}{l.readyAt ? ' · refurbished ' + fmtD(l.readyAt) + ', Day ' + moveDay(m, l.readyAt) : ''}</div></td>
                 <td>{l.carrier}<div className="note">{l.mode}</div></td>
-                <td className="r num">{inr(l.inr)}<div className="note">{money(l.inr / refList<number>('EX_FX'))}</div></td>
+                <td className="r num">{inr(l.inr)}<div className="note">{money(l.inr / refList('EX_FX'))}</div></td>
               </tr>
             ))}
           </tbody>

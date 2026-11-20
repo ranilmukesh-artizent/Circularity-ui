@@ -25,9 +25,9 @@ type PS = P & { sr: ScenRoutes; rows: TiRow[] };
 
 /** Routes are copies in JSON: the same route has the same id and plan. */
 export const sameR = (x: Route | null | undefined, y: Route | null | undefined): boolean => !!(x && y && x.id === y.id && x.plan === y.plan);
-const rid = (id: string) => refList<{ id: string; name: string; short: string; color: string }[]>('ROUTES').find((x) => x.id === id) || { id, name: id, short: id, color: '#999' };
-const gates = () => refList<string[]>('GATES');
-const asOf = () => new Date(refList<string | Date>('AS_OF') as string);
+const rid = (id: string) => refList('ROUTES').find((x) => x.id === id) || { id, name: id, short: id, color: '#999' };
+const gates = () => refList('GATES');
+const asOf = () => new Date(refList('AS_OF'));
 const addDays = (d: Date | string, n: number) => new Date(new Date(d).getTime() + n * 864e5);
 /** tiM for one route: the base ranking row with the scenario net. */
 const metrics = (a: CaseAnalysis, r: Route, net = r.net): RankRow => {
@@ -181,7 +181,7 @@ function TiAllPaths({ c }: { c: CaseRec }) {
   );
 }
 function TiKnown({ c, a }: P) {
-  const D = a.view.diag, R = a.rul, d = refList<Record<string, [string, string]>>('DIAG')[c.cls] || ['', 'pct'];
+  const D = a.view.diag, R = a.rul, d = refList('DIAG')[c.cls] || ['', 'pct'];
   return (
     <>
       <div className="ticlvc"><span className="ticlh">Diagnostic condition</span>

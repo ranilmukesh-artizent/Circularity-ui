@@ -9,6 +9,7 @@
  * keep showing the old answer while the new one loads, then re-render (stale-while-revalidate).
  */
 import type { Account, ActionResult } from './types';
+import type { Reference } from './reference';
 import { bump, sessionChanged } from './store';
 
 // ---------------------------------------------------------------- session
@@ -27,7 +28,7 @@ export interface Me {
 
 let token: string | null = readToken();
 let me: Me | null = null;
-let reference: Record<string, unknown> | null = null;
+let reference: Partial<Reference> | null = null;
 
 function readToken(): string | null {
   try {
@@ -153,14 +154,14 @@ export async function refreshMe(): Promise<void> {
 // ---------------------------------------------------------------- reference lists (static, loaded once)
 async function loadReference(): Promise<void> {
   if (reference) return;
-  reference = await http<Record<string, unknown>>('/api/screens/reference');
+  reference = await http<Partial<Reference>>('/api/screens/reference');
 }
 
 /** One of the demo's static lists (ROLE_POLICY, NAV, ROUTES …), from GET /api/screens/reference. */
-export function ref<T = unknown>(name: string): T {
+export function ref<K extends keyof Reference>(name: K): Reference[K] {
   if (!reference) throw new Error('Reference lists are not loaded yet.');
   if (!(name in reference)) throw new Error(`No reference list ${name}.`);
-  return reference[name] as T;
+  return reference[name] as Reference[K];
 }
 
 // ---------------------------------------------------------------- the read cache

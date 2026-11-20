@@ -30,7 +30,7 @@ const asLease = (c: CaseRec) => 'LS-' + (4900 + (hex(c, 'cl') % 300));
 /** Step 1: why the case is in its status, and what is still outstanding (tiStatus). */
 function TiStatus({ c, a, s }: { c: CaseRec; a: CaseAnalysis; s: CaseScreen }) {
   const st = c.stage, x = c.exec, act = x && x.steps.find((y) => y.state === 'active'), dl = s.approval.role;
-  const AS_OF = refList<string>('AS_OF');
+  const AS_OF = refList('AS_OF');
   const why = st === 'awaiting_approval' ? `Awaiting approval since ${fmtD(c.submitted ? c.submitted.at : addDays(AS_OF, -((hex(c, 'aw') % 6) + 1)))} · ${c.submitted ? 'submitted by ' + c.submitted.by : 'recommended by Circularity'} · ${c.owner}`
     : st === 'approved' ? `Approved by ${c.approval ? c.approval.by : 'Approver'}${c.approval ? ' on ' + fmtD(c.approval.at) : ''} · instruction going to ${act ? act.sys : x ? x.steps[0].sys : 'the enterprise system'}`
     : st === 'executing' ? `Handed off to ${act ? act.sys : 'enterprise systems'} · awaiting outcome`
@@ -59,7 +59,7 @@ function TiStatus({ c, a, s }: { c: CaseRec; a: CaseAnalysis; s: CaseScreen }) {
 function TiCtx({ c, a, s }: { c: CaseRec; a: CaseAnalysis; s: CaseScreen }) {
   const pick = ['Asset ID', 'Serial number', 'Product', 'Revision', 'Ownership', 'Location', 'Received', 'Age'];
   const facts = a.view.facts.filter((x) => pick.includes(x[0])), h = a.view.health;
-  const label = refList<Record<string, { label: string }>>('CLASSES')[c.cls]?.label ?? c.cls;
+  const label = refList('CLASSES')[c.cls]?.label ?? c.cls;
   return (
     <section className="aship ticx">
       <div className="asphoto"><Photo c={c} /></div>
@@ -78,7 +78,7 @@ function TiCtx({ c, a, s }: { c: CaseRec; a: CaseAnalysis; s: CaseScreen }) {
 }
 /** Step 5: handoff readiness (tiP5). */
 function TiP5({ c, a, s }: { c: CaseRec; a: CaseAnalysis; s: CaseScreen }) {
-  const r = c.chosen || c.recommendation, cap = refList<Record<string, number>>('CC_CAP')['Repair centre'] || 45, rc = a.view.repair_load / cap;
+  const r = c.chosen || c.recommendation, cap = refList('CC_CAP')['Repair centre'] || 45, rc = a.view.repair_load / cap;
   const parts = a.view.parts, inS = parts.filter((p) => p.st === 'In stock').length;
   const eam = s.sources.eam || { status: 'unavailable', name: 'EAM', vendor: '' }, erp = s.sources.erp || { status: 'unavailable', name: 'ERP', vendor: '' };
   const lith = ['drill', 'batch', 'it'].includes(c.cls), d = c.demand || {};
@@ -103,7 +103,7 @@ function Body({ c }: { c: CaseRec }) {
   const ui = useCaseUi();
   const a = caseAnalysis(c.id), s = caseScreen(c.id)!;
   const { sr, rows } = useRows(c, a);
-  const ti = tiView(), CL = refList<Record<string, { plural: string }>>('CLASSES')[c.cls];
+  const ti = tiView(), CL = refList('CLASSES')[c.cls];
   const compare = () => {
     const body = compareBody(c, rows, ti.sel);
     if (!body) return toast('Tick at least two pathways to compare.');

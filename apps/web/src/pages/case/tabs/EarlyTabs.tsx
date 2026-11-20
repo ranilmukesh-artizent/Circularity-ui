@@ -14,7 +14,7 @@ export function hashId(s: string): string {
 }
 /** The demo's asHex: a hash of the case id, for the illustrative figures. */
 export const asHex = (c: CaseRec, k: string): number => parseInt(hashId(c.id + k), 16) || 0;
-const asOf = () => new Date(refList<string>('AS_OF'));
+const asOf = () => new Date(refList('AS_OF'));
 const addDays = (d: string | Date, n: number) => new Date(new Date(d).getTime() + n * 864e5);
 /** Days since a date, at the as-of time (afDays). */
 export const afDays = (d: string | Date): number => Math.max(0, Math.round((asOf().getTime() - new Date(d).getTime()) / 864e5));
@@ -74,8 +74,8 @@ export function LaneTab({ a }: TabProps) {
   return <Kv rows={[['From', l.from + ' · ' + locOf(a, l.from)], ['To', l.to + ' · ' + locOf(a, l.to)], ['Distance', exNum(l.km) + ' km'], ['Mode', l.mode], ['Carrier', a.lease.carrier]]} />;
 }
 export function LaneCostTab({ a }: TabProps) {
-  const L = a.lease, RC = refList<{ id: string; carrier: string }>('RATE_CARD');
-  return <Kv rows={[['Calculation', L.lane.calc], ['Freight in rupees', inr(L.lane.inr)], ['Freight in dollars', money(L.freight) + ' at ₹' + refList<number>('EX_FX')], ['Rate card', RC.id + ' · ' + RC.carrier]]} />;
+  const L = a.lease, RC = refList('RATE_CARD');
+  return <Kv rows={[['Calculation', L.lane.calc], ['Freight in rupees', inr(L.lane.inr)], ['Freight in dollars', money(L.freight) + ' at ₹' + refList('EX_FX')], ['Rate card', RC.id + ' · ' + RC.carrier]]} />;
 }
 
 // ---------- stage 4 ----------
@@ -171,7 +171,7 @@ export function FindingsTab({ c }: TabProps) {
 }
 /** Diagnostic condition (asKnownDiag). */
 export function DiagTab({ c, a }: TabProps) {
-  const D = a.view.diag, d = refList<Record<string, [string, string]>>('DIAG')[c.cls] || ['', 'pct'];
+  const D = a.view.diag, d = refList('DIAG')[c.cls] || ['', 'pct'];
   return (
     <CasePanel t="Diagnostic condition" badge={<ProvB k="ret" sys={ws(c)} />}>
       {D ? (

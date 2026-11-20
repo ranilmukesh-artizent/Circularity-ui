@@ -15,7 +15,7 @@ import { hashId } from './tabs/EarlyTabs';
 import type { CaseUi } from './CaseContext';
 
 const EX_FX_AT = '2026-10-06';
-const asOf = () => new Date(refList<string>('AS_OF'));
+const asOf = () => new Date(refList('AS_OF'));
 const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 864e5);
 const closeBtn = (ui: CaseUi) => <button className="btn" onClick={() => ui.modal(null)}>Close</button>;
 const ExFoot = () => <p className="note">Source systems hold rupees; Circularity decides in dollars at ₹83.5. The lines add up exactly to each term.</p>;
@@ -30,7 +30,7 @@ export function ExTrace({ c, a, ri, ti, withAct }: { c: CaseRec; a: CaseAnalysis
   if (withAct && c.outcome && chosen && chosen.id === r.id && chosen.plan === r.plan) {
     const k = (c.outcome.lines || []).findIndex((x) => x.label === t.label), ol = c.outcome.lines[k];
     if (ol) {
-      const A = a.view.actuals[k] || [], fx = refList<number>('EX_FX');
+      const A = a.view.actuals[k] || [], fx = refList('EX_FX');
       act = (
         <>
           <h4 className="exah">Actual {money(ol.act)} <span className="note">{inr(Math.round(ol.act * fx))} · confirmed by Finance</span></h4>
@@ -51,7 +51,7 @@ export function ExTrace({ c, a, ri, ti, withAct }: { c: CaseRec; a: CaseAnalysis
   return (
     <div className="extr">
       <p className="extrh">
-        <b className="num">{money(t.amt)}</b> <span className="note">= {t.amt < 0 ? '−' : ''}{inr(o.inr)} at ₹{refList<number>('EX_FX')} to the dollar (rate dated {fmtDY(EX_FX_AT)})</span> <ExMethod m={o.method} />
+        <b className="num">{money(t.amt)}</b> <span className="note">= {t.amt < 0 ? '−' : ''}{inr(o.inr)} at ₹{refList('EX_FX')} to the dollar (rate dated {fmtDY(EX_FX_AT)})</span> <ExMethod m={o.method} />
       </p>
       <p className="note" style={{ margin: '0 0 8px' }}>{o.sys}{o.rec ? ' · ' + o.rec : ''}</p>
       <div className="tw">
@@ -64,7 +64,7 @@ export function ExTrace({ c, a, ri, ti, withAct }: { c: CaseRec; a: CaseAnalysis
                 <td className="note">{l.calc}</td>
                 <td><ExMethod m={l.method} /><div className="note">{l.sys}{l.rec ? ' · ' + l.rec : ''}</div></td>
                 <td className="r num">{inr(l.inr)}</td>
-                <td className="r num note">{money(l.inr / refList<number>('EX_FX'))}</td>
+                <td className="r num note">{money(l.inr / refList('EX_FX'))}</td>
               </tr>
             ))}
             <tr><td colSpan={3}><b>{t.label}</b></td><td className="r num"><b>{inr(o.inr)}</b></td><td className="r num"><b>{money(Math.abs(t.amt))}</b></td></tr>

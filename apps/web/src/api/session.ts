@@ -48,15 +48,15 @@ export const signInEmail = (a: Account): string => {
   const known = (a as AccountWithEmail).email ?? (accounts() as AccountWithEmail[]).find((x) => x.id === a.id)?.email;
   return known ?? a.id + '@' + SIGNIN_DOMAIN;
 };
-export const rolePolicy = (role: string): RolePolicy => ref<Record<string, RolePolicy>>('ROLE_POLICY')[role];
+export const rolePolicy = (role: string): RolePolicy => ref('ROLE_POLICY')[role];
 /** Two-letter avatar per role (RB_AV in the demo). */
-export const roleAvatar = (role: string): string => ref<Record<string, string>>('RB_AV')[role] ?? role.slice(0, 2);
+export const roleAvatar = (role: string): string => ref('RB_AV')[role] ?? role.slice(0, 2);
 
 /** May the signed-in account use this permission (e.g. "approve.decisions", "manageIntegrations")? */
 export function can(perm: string): boolean {
   const me = session();
   if (!me) return false;
-  const p = ref<Record<string, string>>('PERM_ALIAS')[perm] ?? perm;
+  const p = ref('PERM_ALIAS')[perm] ?? perm;
   return me.permissions.includes(p);
 }
 
@@ -80,7 +80,7 @@ function recordOK(caseId: string | null): boolean | null {
 /** true, false, or 'tenant' when the record belongs to a tenant or warehouse the account cannot see. */
 export function canRoute(r: RouteRef): boolean | 'tenant' {
   const p = r.page;
-  if (!(p in ref<Record<string, unknown>>('PAGES')) || !canPage(p)) return false;
+  if (!(p in ref('PAGES')) || !canPage(p)) return false;
   if (p === 'product') {
     if (!r.a || ['received', 'expected', 'pools'].includes(r.a)) return canPage(p, r.a || 'received');
     if (r.a === 'asset') {
@@ -93,7 +93,7 @@ export function canRoute(r: RouteRef): boolean | 'tenant' {
     return canPage(p, 'received');
   }
   if (p === 'mcp' && r.a === 'client') return canPage(p, 'client');
-  return !r.a || !(p in ref<Record<string, unknown>>('RB_SECS')) || canPage(p, r.a);
+  return !r.a || !(p in ref('RB_SECS')) || canPage(p, r.a);
 }
 
 /** The account's landing route, without the leading "#/" (e.g. "home", "product/received?focus=RT-1048"). */
@@ -104,7 +104,7 @@ export function homeRoute(a: Account | null = currentAccount()): string {
   return a.home || rolePolicy(a.role)?.landing || 'command';
 }
 
-export const tenants = (): string[] => ref<string[]>('TENANTS');
+export const tenants = (): string[] => ref('TENANTS');
 export const allowedTenants = (): string[] => session()?.tenants ?? [];
 
 /** Remember the theme (some views read it). */

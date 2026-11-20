@@ -48,7 +48,7 @@ export function StProv({ k, sys, src }: { k: string; sys: string; src: Record<st
 }
 /** Retrieved / Model / Rules / Draft / Prepared by agent (afBadge). */
 export function AfBadge({ k }: { k: string }) {
-  const tip = refList<Record<string, string>>('AF_BADGE_TIP')[k] || k;
+  const tip = refList('AF_BADGE_TIP')[k] || k;
   return <span className={'afb afb-' + k.toLowerCase().replace(/[^a-z]+/g, '')} data-tip={tip}>{k}</span>;
 }
 /** A stage's state in words and shape (stTag). */
@@ -68,7 +68,7 @@ export const Doc = ({ r }: { r: string }) => (
 );
 /** The journey step a block belongs to (stp; `short` is stpn). */
 export function Stp({ n, short }: { n: number; short?: boolean }) {
-  const m = jmap(n), j = refList<[number, string, string, string][]>('JSTEPS')[m - 1];
+  const m = jmap(n), j = refList('JSTEPS')[m - 1];
   if (!j) return null;
   return (
     <span className={'stp ' + (j[2] === 'built' ? '' : j[2])} title={'Journey step ' + m + ': ' + j[1] + (short ? '' : ' — ' + j[3])}>
@@ -139,7 +139,7 @@ export const photoSrc = (cls: string) => 'assets/products/' + AS_IMG[cls] + '.we
 /** The product photo, with the class name as a fallback (asPhoto). */
 export function Photo({ c, cls }: { c: CaseRec; cls?: string }) {
   const [broken, setBroken] = useState(false);
-  const label = refList<Record<string, { label: string }>>('CLASSES')[c.cls]?.label ?? c.cls;
+  const label = refList('CLASSES')[c.cls]?.label ?? c.cls;
   return (
     <div className={'asimg ' + (cls || '')}>
       {!broken && <img src={photoSrc(c.cls)} alt={`${c.product}, ${c.mfr}`} onError={() => setBroken(true)} />}

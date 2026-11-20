@@ -1,18 +1,6 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "isolatedModules": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "types": ["vite/client", "node"]
-  },
-  "include": ["src", "vite.config.ts"]
+  // Solution file (refactor step C3): the app and the Node-side config files have their own settings.
+  //   npx tsc -b      typecheck both (npm run typecheck, scripts/dev/web-check.sh)
+  "files": [],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }

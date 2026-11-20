@@ -101,8 +101,8 @@ export const ccSecOK = (_L: CcLayout, k: string): boolean => layoutA().sections.
 export const ccSection = (a: string | null): string => (a && layoutA().sections.includes(a) ? a : 'kpis');
 export const ccKeys = (_L: CcLayout): string[] => layoutA().keys;
 export const ccSecLabel = (k: string): string =>
-  (ref<{ id: string; kids: string[][] }[]>('NAV').find((x) => x.id === 'command')?.kids.find((x) => x[0] === k) ?? [k, 'Key figures'])[1];
-export const ccSecDesc = (k: string): string => ref<Record<string, string>>('CC_DESC')[k] ?? '';
+  (ref('NAV').find((x) => x.id === 'command')?.kids.find((x) => x[0] === k) ?? [k, 'Key figures'])[1];
+export const ccSecDesc = (k: string): string => ref('CC_DESC')[k] ?? '';
 
 export const ccFilters = (): CcFilters => st().cc;
 export function setCcFilters(patch: Partial<CcFilters>): void {
@@ -148,7 +148,7 @@ export function toggleOpScope(): void {
 /** "07 Oct 2026, 09:30" (UTC), or the date and time in the region's time zone (the demo's ccClockText). */
 export const clockText = (): string => {
   const d = asOfNow();
-  return view().rg.tz === 'UTC' ? fmtDY(ref<string>('AS_OF')) + ', ' + d.toISOString().slice(11, 16) : rgTime(d);
+  return view().rg.tz === 'UTC' ? fmtDY(ref('AS_OF')) + ', ' + d.toISOString().slice(11, 16) : rgTime(d);
 };
 /** May the account open this route ("integration/map", "product/RT-1048")? */
 export const rbPath = (p: string): boolean => {
@@ -157,7 +157,7 @@ export const rbPath = (p: string): boolean => {
 };
 export const kfmt = kfmtLocal;
 /** Icon key of the thumbnail for an asset class (the demo's thumb()). */
-export const clsIcon = (cls: string): string => ref<Record<string, string>>('CLS_ICON')[cls] ?? 'batch';
+export const clsIcon = (cls: string): string => ref('CLS_ICON')[cls] ?? 'batch';
 
 // ---------------------------------------------------------------- scope and metrics
 
@@ -196,7 +196,7 @@ export const dueSlices = (_sc: CcScope): Slice[] => chartsA().due;
 export interface RouteBar { id: string; label: string; v: number; net: number; color: string }
 export const routeBars = (_sc: CcScope): RouteBar[] => chartsA().routes;
 export const varReasons = (_sc: CcScope): VarRow[] => chartsA().var;
-export const monthLabel = (mi: number): string => ref<string[]>('MONTHS')[mi];
+export const monthLabel = (mi: number): string => ref('MONTHS')[mi];
 /** Predicted and actual net recovery by month on reconciled decisions (the value realisation combo chart), for the
  *  filters' time horizon, which is what the page passes as `months`. */
 export const comboData = (_rows: CcRows, _months: number): { mi: number; p: number; a: number; y: number }[] => chartsA().combo;
@@ -220,17 +220,17 @@ export function filterOptions(): FilterOptions {
   const scoped = !!session()?.tenant_scoped;
   const al = session()?.tenants ?? [];
   const tenants: FilterOptions['tenants'] = [{ value: 'All', label: scoped ? 'All my tenants' : 'All tenants' }];
-  ref<string[]>('TENANTS').forEach((t) => tenants.push(al.includes(t) ? { value: t, label: t } : { value: t, label: t + ' · locked', disabled: true }));
+  ref('TENANTS').forEach((t) => tenants.push(al.includes(t) ? { value: t, label: t } : { value: t, label: t + ' · locked', disabled: true }));
   return {
     tenants,
-    sites: ref<string[]>('FACILITIES'),
-    classes: Object.entries(ref<Record<string, { label: string }>>('CLASSES')).map(([k, v]) => [k, v.label]),
-    routes: ref<{ id: string; name: string; short: string }[]>('ROUTES').map((x) => [x.id, x.name, x.short]),
+    sites: ref('FACILITIES'),
+    classes: Object.entries(ref('CLASSES')).map(([k, v]) => [k, v.label]),
+    routes: ref('ROUTES').map((x) => [x.id, x.name, x.short]),
   };
 }
 export const tenantAllowed = (t: string): boolean => t === 'All' || !!session()?.tenants.includes(t);
-export const classLabel = (k: string): string => ref<Record<string, { label: string }>>('CLASSES')[k]?.label ?? k;
-export const routeShort = (id: string): string => ref<{ id: string; short: string }[]>('ROUTES').find((r) => r.id === id)?.short ?? id;
+export const classLabel = (k: string): string => ref('CLASSES')[k]?.label ?? k;
+export const routeShort = (id: string): string => ref('ROUTES').find((r) => r.id === id)?.short ?? id;
 
 // ---------------------------------------------------------------- actions to prioritise (the ranked table)
 

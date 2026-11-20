@@ -8,7 +8,6 @@
  * apps/api/di/mcp/) as the signed-in account, so its calls land in the real call log. The agent test bench ran the
  * demo's in-browser agent layer and is not available yet (the server's Ask runs the safety checks: GET /api/checks).
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { actionCatalog } from './actions';
 import { accessToken, cached, invalidate, ref, withQuery } from './client';
 
@@ -21,19 +20,19 @@ export interface ToolCall { ts: Date | string; agent: string; tool: string; case
 type ApiCall = ToolCall & { openable: boolean };
 const callsA = () => cached<{ calls: ApiCall[] }>('/api/screens/mcp/calls').calls;
 
-export const tools = (): Tool[] => ref<Tool[]>('TOOLS');
+export const tools = (): Tool[] => ref('TOOLS');
 export const toolById = (id: string): Tool | undefined => tools().find((t) => t.id === id);
 export const mcpAgents = (): McpAgent[] => cached<{ agents: McpAgent[] }>('/api/screens/mcp/agents').agents;
-export const hardRules = (): string[] => ref<string[]>('HARD_RULES').slice();
+export const hardRules = (): string[] => ref('HARD_RULES').slice();
 export const clientServers = (): ClientServer[] => cached<{ servers: ClientServer[] }>('/api/screens/mcp/client').servers.slice();
 export const toolCalls = (): ToolCall[] => callsA().slice();
-export const tenantList = (): string[] => ref<string[]>('TENANTS');
+export const tenantList = (): string[] => ref('TENANTS');
 
 /** A journey step as the demo's stp()/stpn() chips show it. */
 export interface JourneyStep { n: number; name: string; status: string; desc: string }
 export function journeyStep(n: number): JourneyStep {
-  const m = ref<number[]>('JMAP')[n] || n;
-  const j = ref<any[][]>('JSTEPS')[m - 1];
+  const m = ref('JMAP')[n] || n;
+  const j = ref('JSTEPS')[m - 1];
   return { n: m, name: j[1], status: j[2] === 'built' ? '' : j[2], desc: j[3] };
 }
 
@@ -114,7 +113,7 @@ export interface RegistryTool { id: string; exposedAs: string; risk: string; ris
 export function registryTools(): RegistryTool[] {
   const order = ['read', 'draft', 'act', 'commit'];
   const all: { id: string; risk: string; perm: string | null; desc: string }[] = actionCatalog();
-  const RL = ref<Record<string, string>>('RISK_LABEL');
+  const RL = ref('RISK_LABEL');
   return all.filter((A) => A.risk !== 'system').sort((a, b) => order.indexOf(a.risk) - order.indexOf(b.risk)).map((A) => ({
     id: A.id, exposedAs: A.risk === 'commit' ? A.id + '.prepare' : A.id, risk: A.risk, riskLabel: RL[A.risk], perm: A.perm || 'any signed-in role', desc: A.desc,
   }));
@@ -125,4 +124,4 @@ export function registryTools(): RegistryTool[] {
 export interface BenchCase { i: number; label: string }
 export const benchCases = (): BenchCase[] =>
   // the reference drops the questions the demo builds from live data (functions): those show their intent id
-  ref<any[]>('AF_EVALS').map((x, i) => ({ i, label: (typeof x.q === 'function' ? x.q() : x.q ?? x.intent) + ' · as ' + x.as }));
+  ref('AF_EVALS').map((x, i) => ({ i, label: (x.q ?? x.intent) + ' · as ' + x.as }));

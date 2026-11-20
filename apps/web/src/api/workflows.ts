@@ -14,7 +14,6 @@
  *
  * The canvas edits a copy of the graph held by the page (src/pages/workflows/draftStore.ts).
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as G from './workflowGraph';
 import { invoke } from './actions';
 import { ApiError, cached, onStream, ref, session } from './client';
@@ -99,7 +98,7 @@ const T0 = Date.now();
 export function nowMs(): number {
   const a = listA();
   if (!seenAt.has(a)) seenAt.set(a, Date.now());
-  return a.now != null ? a.now + (Date.now() - seenAt.get(a)!) : Date.parse(ref<string>('AS_OF')) + (Date.now() - T0);
+  return a.now != null ? a.now + (Date.now() - seenAt.get(a)!) : Date.parse(ref('AS_OF')) + (Date.now() - T0);
 }
 
 // ---- the list ----
@@ -211,19 +210,19 @@ export const sources = (): Source[] => sourcesA();
 export const source = (id: string): Source => G.srcOr(srcL(), id);
 export const sourceExists = (id: string): boolean => sourcesA().some((s) => s.id === id);
 export const sourceLabel = (s: Source): string => G.srcLabel(srcL(), s);
-export const sourceShortLabel = (id: string): string => ref<Record<string, string>>('SH')[id] ?? id;
-export const mapTarget = (id: string): string => ref<Record<string, string>>('MAP_TARGET')[id] ?? '';
+export const sourceShortLabel = (id: string): string => ref('SH')[id] ?? id;
+export const mapTarget = (id: string): string => ref('MAP_TARGET')[id] ?? '';
 export const mappings = (id: string | null): string[][] => (id ? mappingsA()[id] ?? [] : []);
 export const deliverMap = (): Record<string, string[]> => ref('DELIVER');
 export const deliverOf = (id: string): string[] => deliverMap()[id] ?? [];
 export const channelsOf = (s: Source): string[] => G.srcCh(s);
-export const CH = () => ({ arr: ref<Record<string, string>>('CH_ARR'), ing: ref<Record<string, string>>('CH_ING'), del: ref<Record<string, string>>('CH_DEL') });
-export const sourceCategoryLabel = (s: Source): string => ref<Record<string, string>>('FR_CATOF')[s.type] ?? s.short ?? '';
+export const CH = () => ({ arr: ref('CH_ARR'), ing: ref('CH_ING'), del: ref('CH_DEL') });
+export const sourceCategoryLabel = (s: Source): string => ref('FR_CATOF')[s.type] ?? s.short ?? '';
 export const usedBy = (srcId: string): string[] => sourcesA().find((s) => s.id === srcId)?.health?.workflows ?? [];
 
 // ---- the vendor marks and icon tiles (drawn by src/pages/workflows/WorkflowMarks.tsx) ----
 /** Whether a vendor shows its logo, when the app has one, rather than its initials (the demo's FEAT.logos). */
-export const vendorLogos = (): boolean => !!ref<Record<string, boolean>>('FEAT').logos;
+export const vendorLogos = (): boolean => !!ref('FEAT').logos;
 /** A step's mark on the canvas: its system's vendor mark, or a tinted icon tile. */
 export type NodeMark = { source: Source } | { ic: string; h: string };
 const XF_IC: Record<string, string> = {
@@ -235,11 +234,11 @@ const FR_NIC: Record<string, string> = { conn: 'database', wconn: 'send', map: '
 export function nodeMark(n: WfNode): NodeMark {
   if (n.k === 'conn' || n.k === 'wconn') return { source: source(n.ref) };
   if (n.k === 'xf') {
-    const x = ref<Xf[]>('FR_XF').find((y) => y.id === n.ref);
+    const x = ref('FR_XF').find((y) => y.id === n.ref);
     return { ic: x?.ic ?? XF_IC[n.ref] ?? 'workflow', h: x?.sink ? (n.ref === 'x_err' ? 'alert' : 'agent') : 'insp' };
   }
   if (n.k === 'fixed') {
-    const f = ref<Record<string, G.Fixed>>('FXD')[n.ref];
+    const f = ref('FXD')[n.ref];
     return { ic: f.canon ? 'database' : n.ref === 'appr' ? 'user' : n.ref === 'gates' ? 'shield' : 'file', h: 'dec' };
   }
   return { ic: FR_NIC[n.k] ?? 'workflow', h: n.k === 'map' ? 'money' : 'agent' };
@@ -247,11 +246,10 @@ export function nodeMark(n: WfNode): NodeMark {
 
 // ---- step catalogue (palette and inspector) ----
 export interface Xf { id: string; label: string; sub: string; desc: string; group?: string; ingest?: string; ic?: string; start?: boolean; sink?: boolean }
-const list = <T,>(n: string): T => ref<T>(n);
-export const transforms = (): Xf[] => list('XF');
-export const frTransforms = (): Xf[] => list('FR_XF');
-export const actTypes = (): { id: string; ch: string; label: string; sub: string; desc: string }[] => list('ACT_TYPES');
-export const tools = (): { id: string; rw: 'read' | 'write'; approval: string; desc: string }[] => list('TOOLS');
+export const transforms = (): Xf[] => ref('XF');
+export const frTransforms = (): Xf[] => ref('FR_XF');
+export const actTypes = (): { id: string; ch: string; label: string; sub: string; desc: string }[] => ref('ACT_TYPES');
+export const tools = (): { id: string; rw: 'read' | 'write'; approval: string; desc: string }[] => ref('TOOLS');
 function agents(): { name: string; tools: string[] }[] {
   try {
     return cached<{ agents: { name: string; tools: string[] }[] }>('/api/screens/mcp/agents').agents;
@@ -261,8 +259,8 @@ function agents(): { name: string; tools: string[] }[] {
   }
 }
 export const agentsUsing = (tool: string): string[] => agents().filter((a) => a.tools.includes(tool)).map((a) => a.name);
-export const fixedStep = (ref: string): { label: string; fields?: string[]; canon?: boolean } => list<Record<string, any>>('FXD')[ref];
-export const sourceGroups = (): [string, string[], string][] => list('FR_SRCG');
+export const fixedStep = (id: string): { label: string; fields?: string[]; canon?: boolean } => ref('FXD')[id];
+export const sourceGroups = (): [string, string[], string][] => ref('FR_SRCG');
 
 // ---- changes (invoke) ----
 export const saveWorkflow = (i: { id: string; name: string; owner: string; trig: Trigger; graph: WfGraph; note?: string }) =>
@@ -308,6 +306,6 @@ export const writableSources = (): Source[] => sources().filter((s) => s.write.l
 /** The edge path between two points (wfPathXY): a curve forward, a rounded detour backward. */
 export const edgePath = (sx: number, sy: number, tx: number, ty: number): string => G.pathXY(sx, sy, tx, ty);
 /** Status pill label and colour class (FR_ST), e.g. failing → ['Failing', 'bad']. */
-export const statusPill = (k: string): [string, string] => list<Record<string, [string, string]>>('FR_ST')[k] ?? [k, 'line'];
+export const statusPill = (k: string): [string, string] => ref('FR_ST')[k] ?? [k, 'line'];
 /** The workflow's source system, or null for a decision workflow. */
 export const systemOf = (w: Workflow): Source | null => (w.src ? source(w.src) : null);

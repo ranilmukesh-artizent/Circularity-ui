@@ -39,13 +39,13 @@ function answer(f: AnalyticsFilter = DEFAULT_FILTER): Answer {
 }
 
 // ---------------------------------------------------------------- reference lists
-export const months = (): string[] => ref<string[]>('MONTHS');
-export const routes = (): Route[] => ref<Route[]>('ROUTES');
-export const modelVersions = (): ModelVersion[] => ref<ModelVersion[]>('MODELS');
-export const assetClasses = (): Record<string, { label: string }> => ref<Record<string, { label: string }>>('CLASSES');
-export const classIcon = (cls: string): string => ref<Record<string, string>>('CLS_ICON')[cls] ?? 'box';
-export const equipmentModels = (): string[] => ref<{ m: string }[]>('EQUIP').map((x) => x.m);
-export const components = (): string[] => ref<string[]>('COMPS');
+export const months = (): string[] => ref('MONTHS');
+export const routes = (): Route[] => ref('ROUTES');
+export const modelVersions = (): ModelVersion[] => ref('MODELS');
+export const assetClasses = (): Record<string, { label: string }> => ref('CLASSES');
+export const classIcon = (cls: string): string => ref('CLS_ICON')[cls] ?? 'box';
+export const equipmentModels = (): string[] => ref('EQUIP').map((x) => x.m);
+export const components = (): string[] => ref('COMPS');
 export const routeById = (id: string): Route => routes().find((r) => r.id === id) ?? { id, name: id, short: id, color: '#999' };
 
 // ---------------------------------------------------------------- rows and metrics
@@ -101,8 +101,8 @@ export function telemetryUnavailable(): boolean {
 
 /** A journey-step chip (the demo's stp(n)): the number, label, kind and description shown on panels. */
 export function journeyStep(n: number): { n: number; label: string; kind: string; desc: string } {
-  const m = ref<number[]>('JMAP')[n] ?? n;
-  const j = ref<[number, string, string, string][]>('JSTEPS')[m - 1];
+  const m = ref('JMAP')[n] ?? n;
+  const j = ref('JSTEPS')[m - 1];
   return { n: m, label: j[1], kind: j[2], desc: j[3] };
 }
 

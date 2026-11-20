@@ -84,10 +84,10 @@ export const myCases = (): Case[] => myRows();
 /** A case by id: the list row (undefined outside the account's tenants and warehouse). */
 export const caseById = (id: string | null | undefined): Case | undefined => (!id ? undefined : rowById(id));
 export const isCaseId = (id: string | null | undefined): boolean => !!id && id in cached<Record<string, unknown>>('/api/screens/nav/scope');
-export const classInfo = (cls: string): ClassInfo => ref<Record<string, ClassInfo>>('CLASSES')[cls];
+export const classInfo = (cls: string): ClassInfo => ref('CLASSES')[cls];
 export const routeInfo = (id: string): { name: string; short: string } =>
-  ref<{ id: string; name: string; short: string }[]>('ROUTES').find((x) => x.id === id) ?? { name: id, short: id };
-export const facilities = (): string[] => ref<string[]>('FACILITIES');
+  ref('ROUTES').find((x) => x.id === id) ?? { name: id, short: id };
+export const facilities = (): string[] => ref('FACILITIES');
 export const tenantOK = (t: string): boolean => !!session()?.tenants.includes(t);
 /** The last asset opened on Asset intelligence, else the first of the account's cases (rbLastAsset). */
 export function lastAssetId(): string {
@@ -102,7 +102,7 @@ export const routeAllowed = (path: string): boolean => {
   const h = String(path).replace(/^#?\/?/, '').split('/');
   return canRoute({ page: h[0], a: h[1] || null, b: h[2] || null }) === true;
 };
-const feat = () => ref<Record<string, boolean>>('FEAT');
+const feat = () => ref('FEAT');
 export const upliftEnabled = (): boolean => !!feat().uplift;
 
 /** Signals: received, diagnostics, certification, economic path (sigOf). */
@@ -125,7 +125,7 @@ export const demoCaseId = (): string => 'RT-1048';
 /** The case's journey can be walked by this account (tenant, warehouse, case and asset pages). */
 export const demoVisible = (id: string): boolean => !!session() && journeyAns(id).visible;
 export type JStep = [number, string, string, string]; // n, title, kind, description
-export const journeySteps = (): JStep[] => ref<JStep[]>('JSTEPS');
+export const journeySteps = (): JStep[] => ref('JSTEPS');
 /** Link (without "#/") for journey step n (0 = Start · Returned assets); the demo's JG links. */
 export function journeyHref(n: number, id: string): string {
   if (n === 0) return 'product/received?focus=' + id;
@@ -138,10 +138,10 @@ export const journeyProgress = (c: Case): number => journeyAns(c.id).progress ??
 export const journeyEstablished = (c: Case, n: number): string => journeyAns(c.id).established?.[n] ?? '';
 /** Not reached on these pages (the runs are past steps 0 and 1), so empty. */
 export const journeyWaiting = (_c: Case, _n: number, _s: string): string => '';
-export const journeyNextText = (n: number): string => ref<string[]>('JG_NEXT')[n];
+export const journeyNextText = (n: number): string => ref('JG_NEXT')[n];
 export const journeyTitle = (n: number): string => (n ? journeySteps()[n - 1][1] : 'Returned assets');
 export const journeyLabel = (n: number): string => (n ? 'Step ' + n + ' · ' + journeyTitle(n) : 'Start · Returned assets');
-export const continueLabel = (n: number): string => ref<Record<string, string>>('RG_CONT').en.replace('{n}', String(n));
+export const continueLabel = (n: number): string => ref('RG_CONT').en.replace('{n}', String(n));
 
 // ---------- pools ----------
 export interface PoolResult { greedy: { total: number }; optimal: { total: number }; uplift: number; supplies: { id: string }[]; dests: { id: string }[] }
@@ -206,7 +206,7 @@ function hashId(s: string): string {
 }
 const hex = (c: Case, k: string): number => parseInt(hashId(c.id + k), 16) || 0;
 const modelOf = (c: Case): string => {
-  const e = ref<{ cls: string; m: string }[]>('EQUIP').find((x) => x.cls === c.cls);
+  const e = ref('EQUIP').find((x) => x.cls === c.cls);
   return e ? e.m.replace(/s$/, '') : c.product;
 };
 
@@ -235,15 +235,15 @@ export const catalogueValue = (c: Case): number => A(c).catalogue;
 export const prepCost = (c: Case): number => A(c).prep_cost;
 /** The preparation build-up of the chosen (else recommended) route, which is the route the pages pass. */
 export const prepParts = (c: Case, _r: CaseRoute): PrepParts | null => A(c).prep_parts;
-export const exFx = (): number => ref<number>('EX_FX');
+export const exFx = (): number => ref('EX_FX');
 export const inr = (n: number): string => (n < 0 ? '−' : '') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
-export const rateCardId = (): string => ref<{ id: string }>('RATE_CARD').id;
+export const rateCardId = (): string => ref('RATE_CARD').id;
 /** The learning version of a model ('prep-cost-time', the one the page shows). */
 export const learnVersion = (c: Case, _k: string): string => A(c).learn_version;
 export const caseRul = (c: Case): Rul | null => A(c).rul;
 export const caseDemand = (c: Case): Demand | null => A(c).demand;
 export const caseDiag = (c: Case): Diag | null => A(c).diag;
-export const diagKind = (cls: string): string => (ref<Record<string, string[]>>('DIAG')[cls] || ['', 'pct'])[1];
+export const diagKind = (cls: string): string => (ref('DIAG')[cls] || ['', 'pct'])[1];
 /** Re-certification need for the chosen (else recommended) route, the route the page passes. */
 export const recert = (c: Case, _r: CaseRoute): { need: number; cert: number } | null => A(c).recert;
 export const confidence = (c: Case, _r: CaseRoute): string => A(c).confidence ?? '';
@@ -260,7 +260,7 @@ const LOC_NAMES: Record<string, string> = {
 };
 export const locName = (k: string | null): string => (k && LOC_NAMES[k]) || String(k);
 export const caseStageKey = (c: Case): string => (c as Row).stage_key ?? rowById(c.id)?.stage_key ?? '';
-export const gateNames = (): string[] => ref<string[]>('GATES');
+export const gateNames = (): string[] => ref('GATES');
 export const assetTabAllowed = (t: string): boolean => {
   const a = currentAccount();
   return !!a && !!rolePolicy(a.role)?.asTabs?.includes(t);
@@ -270,7 +270,7 @@ export const addDays = (d: Date | string, n: number): Date => new Date(new Date(
 /** How a cost line was produced (Retrieved, Contracted, Modelled), from the explain trace. */
 export function termMethod(c: Case, r: CaseRoute, t: Term): { m: string; cls: string; tip: string } {
   const m = A(c).term_methods[r.terms.indexOf(t)] ?? '';
-  const mc = ref<Record<string, [string, string]>>('EX_MC')[m] || ['', m];
+  const mc = ref('EX_MC')[m] || ['', m];
   return { m, cls: mc[0], tip: mc[1] };
 }
 
@@ -283,7 +283,7 @@ export function asMoney(v: number, local: boolean): string {
   const c = localCurrency();
   return (v < 0 ? '−' : '') + c[0] + Math.abs(Math.round(v * c[1])).toLocaleString(c[2]);
 }
-export const localCurrency = (): [string, number, string] => ref<Record<string, [string, number, string]>>('RG_CUR')[view().rg.cur];
+export const localCurrency = (): [string, number, string, string] => ref('RG_CUR')[view().rg.cur];
 
 /** Economic intelligence figures (asEcon): recovery, cost, net, service history, resale demand and price. */
 export const assetEcon = (c: Case): Econ => ({ ...A(c).econ, r: c.recommendation });
@@ -300,7 +300,7 @@ export const leaseTrail = (c: Case): LeaseTrail | null => {
   const d = (k: string) => new Date(L[k] as string);
   return { ...(L as unknown as LeaseTrail), end: d('end'), auth: d('auth'), acq: d('acq'), pickup: d('pickup'), eta: d('eta') };
 };
-export const badgeTip = (k: string): string => ref<Record<string, string>>('AF_BADGE_TIP')[k] || k;
+export const badgeTip = (k: string): string => ref('AF_BADGE_TIP')[k] || k;
 
 // ---------- evidence snapshot ----------
 export const provenance = (c: Case, e: Evidence): Provenance => {

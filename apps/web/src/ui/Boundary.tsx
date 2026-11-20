@@ -14,13 +14,13 @@ interface State { error: Error | null }
 
 /** Shows a failed read (a refusal or an unreachable server) in place of the page, with a retry. */
 export class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: string }, State> {
-  state: State = { error: null };
+  override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
   }
 
-  componentDidUpdate(prev: { resetKey?: string }) {
+  override componentDidUpdate(prev: { resetKey?: string }) {
     if (prev.resetKey !== this.props.resetKey && this.state.error) this.retry();
   }
 
@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: s
     this.setState({ error: null });
   };
 
-  render() {
+  override render() {
     const e = this.state.error;
     if (!e) return this.props.children;
     return (

@@ -35,7 +35,7 @@ function contextOf(route: RouteRef) {
 function starters(): string[] {
   const role = currentAccount()?.role ?? '';
   try {
-    return (ref<Record<string, string[]>>('AF_STARTERS')[role] ?? []).slice(0, 4);
+    return (ref('AF_STARTERS')[role] ?? []).slice(0, 4);
   } catch {
     return [];
   }

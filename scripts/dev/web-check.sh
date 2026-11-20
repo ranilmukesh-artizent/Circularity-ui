@@ -3,7 +3,8 @@
 #   bash scripts/dev/web-check.sh          # tsc + vitest
 #   bash scripts/dev/web-check.sh tsc      # typecheck only
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-out=$(docker compose exec -T web npx tsc --noEmit -p . 2>&1)
+# tsc -b: tsconfig.json is a solution file (the app, tsconfig.app.json; the Node-side configs, tsconfig.node.json)
+out=$(docker compose exec -T web npx tsc -b 2>&1)
 tsc_rc=$?
 echo "$out" | grep -E "error TS" | head -60
 echo "tsc errors: $(echo "$out" | grep -c 'error TS')"

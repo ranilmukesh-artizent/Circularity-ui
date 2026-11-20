@@ -10,6 +10,7 @@
  * mapping table).
  */
 import { ApiError, cached, invalidate, ref, withQuery } from './client';
+import type { Reference } from './reference';
 import { fmtDate, fmtDateYear, fmtNumber, money } from './format';
 import { bump, onSessionChange } from './store';
 import type { ActionResult } from './types';
@@ -149,17 +150,17 @@ export function caseAnalysis(id: string): CaseAnalysis {
 }
 
 /** A static list of the demo (reference data). */
-export const refList = <T>(name: string): T => ref<T>(name);
+export const refList = <K extends keyof Reference>(name: K): Reference[K] => ref(name);
 
 // ---------- the case and its stages ----------
 export const caseById = (id: string): CaseRec | undefined => caseScreen(id)?.case;
 
-export const stages = (): StageDef[] => refList<StageDef[]>('AF_STAGES');
-export const phases = (): Phase[] => refList<Phase[]>('ST_PH');
+export const stages = (): StageDef[] => refList('AF_STAGES');
+export const phases = (): Phase[] => refList('ST_PH');
 export const phaseOf = (n: number): Phase => phases().find((p) => p.n.includes(n))!;
 export const stageTitle = (n: number): string => stages()[n - 1].t;
 /** What a stage that has not started will do (JSTEPS_AF). */
-export const stageWillHappen = (n: number): string => refList<string[][]>('JSTEPS_AF')[n - 1][3];
+export const stageWillHappen = (n: number): string => refList('JSTEPS_AF')[n - 1][3];
 export const runOf = (c: CaseRec): Run => screenOf(c).run;
 // the run argument is accepted for the callers' convenience; the tags come with the run
 export const stageState = (c: CaseRec, n: number, _run?: Run): StageTag => screenOf(c).tags[n - 1];

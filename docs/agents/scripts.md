@@ -17,7 +17,7 @@ WSL for those). Node scripts run on the host from `apps/web`, unless noted; runn
 | `lib.sh` | Sourced by the others. `cd`s to the repo root; `api_lock` (flock `/tmp/di-pytest.lock`); `wait_healthy` (api :8000 and source-sim :8100). |
 | `api-test.sh <pytest args>` | Selected api tests behind the lock, `-x`, last 40 lines. |
 | `full-suite.sh [pytest args]` | Stops the worker, resets source-sim, runs the whole api suite (~25 min) and the source-sim suite, prints failures and summaries. Holds the lock. Follow with `reset.sh`. |
-| `web-check.sh [tsc]` | `tsc --noEmit` in the web container, then vitest. With `tsc`, the typecheck only. |
+| `web-check.sh [tsc]` | `tsc -b` (app and Node configs, tsconfig.app.json + tsconfig.node.json) in the web container, then vitest. With `tsc`, the typecheck only. |
 | `restart.sh [services]` | Restarts api, worker and source-sim (or the ones given) and waits for health. |
 | `reset.sh` | Demo starting state: source-sim reset, `scripts/reset_starting.py` (with `PYTHONPATH=/app`), worker started. |
 | `unstick.sh` | Lists non-idle db sessions, terminates sessions idle in a transaction for over 1 min, restarts the api. Use when the api hangs. |
@@ -88,9 +88,9 @@ digest from Docker Hub (`https://hub.docker.com/v2/repositories/library/<image>/
 | Script | Runs |
 |---|---|
 | `dev` | `predev` (extract-styles), then `vite --host 0.0.0.0`. |
-| `build` | `prebuild` (extract-styles), then `tsc --noEmit && vite build`. |
+| `build` | `prebuild` (extract-styles), then `tsc -b && vite build`. |
 | `test` | `pretest` (extract-styles), then `vitest run`. |
-| `typecheck` | `tsc --noEmit`. |
+| `typecheck` | `tsc -b`: the app (tsconfig.app.json) and the Node-side configs (tsconfig.node.json). |
 | `assets` | `dump-assets.mjs`. |
 | `golden` | `dump-golden.mjs`. |
 

@@ -29,7 +29,6 @@ export interface RunEvent { id: string; ts: string | Date; type: string; note?: 
 export interface AgentInfo { id: string; name: string; step: string; scopes: string[]; limit: string }
 export interface Escalation { case_id: string; blocker: string; owner: string; to: string; toLabel: string; msg: string }
 
-type LrModelRef = Record<string, { v: string; kind: 'ML' | 'DL'; algo: string; task: string; data: string }>;
 
 // ---------------------------------------------------------------- API answers and view state
 interface CasesAnswer { cases: OrCase[]; default: string | null; agents: AgentInfo[] }
@@ -70,17 +69,17 @@ export const runTimeline = (id: string, _m: RunModel): { segs: Segment[]; total:
 export const runSignature = (id: string): string => runAnswer(id).sig;
 export const LR_PACE = { open: 400, gap: 150, settle: 300, min: 900, span: 500, tick: 100 };
 
-export const runStates = (): Record<string, [string, string]> => ref<Record<string, [string, string]>>('RUN_ST');
+export const runStates = (): Record<string, [string, string]> => ref('RUN_ST');
 
 /** The models a stage used, with their algorithm and validation (the demo's model cards). */
 export function stageModels(id: string, s: RunStage): ModelCard[] {
-  const M = ref<LrModelRef>('LR_MODELS');
+  const M = ref('LR_MODELS');
   return (runAnswer(id).stage_models[s.n - 1] ?? []).map(({ key, version, validation }) => ({
     key, version, kind: M[key].kind, algo: M[key].algo, task: M[key].task, validation, data: M[key].data,
   }));
 }
 export function modelTag(id: string, k: string): string {
-  const M = ref<LrModelRef>('LR_MODELS');
+  const M = ref('LR_MODELS');
   const v = runAnswer(id).stage_models.flat().find((m) => m.key === k)?.version ?? M[k]?.v;
   return k + ' ' + v + ' · ' + M[k]?.algo;
 }
@@ -116,7 +115,7 @@ export const inputSummary = (i: Record<string, unknown>): string =>
     .map(([k, v]) => k + '=' + (typeof v === 'object' ? JSON.stringify(v).slice(0, 40) : String(v).slice(0, 40)))
     .join(', ');
 
-export const stageAgent = (n: number): string => ref<Record<string, string>>('AF_STAGE_AGENT')[n];
+export const stageAgent = (n: number): string => ref('AF_STAGE_AGENT')[n];
 export const traceId = (id: string): string => runAnswer(id).trace_id;
 /** 07 Oct 09:12 (the demo's orT). */
 export const orT = (d: Date | string | number | null | undefined): string => {
@@ -131,5 +130,5 @@ export const orDur = (a: Date | null, b: Date | null): string => {
 };
 
 export const agents = (): AgentInfo[] => casesAnswer().agents;
-export const handoffModel = (): [string, string, string][] => ref<[string, string, string][]>('HANDOFF_MODEL');
-export const poolsOn = (): boolean => !!ref<{ pools: boolean }>('FEAT').pools;
+export const handoffModel = (): [string, string, string][] => ref('HANDOFF_MODEL');
+export const poolsOn = (): boolean => !!ref('FEAT').pools;

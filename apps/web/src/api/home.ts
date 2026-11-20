@@ -31,7 +31,7 @@ const TZ_SHORT: Record<string, string> = {
   UTC: 'UTC', 'Asia/Kolkata': 'IST', 'Asia/Tokyo': 'JST', 'Europe/Berlin': 'CET', 'Europe/Helsinki': 'EET', 'America/New_York': 'ET',
 };
 /** The world's "now": the seeded as-of date plus the time since the app started. */
-export const asOfNow = (): Date => new Date(new Date(ref<string>('AS_OF')).getTime() + Date.now() - T0);
+export const asOfNow = (): Date => new Date(new Date(ref('AS_OF')).getTime() + Date.now() - T0);
 /** 07 Oct 2026 (UTC). */
 export const fmtDY = (d: Date | string | number): string =>
   new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -78,7 +78,7 @@ export const providerLabel = (): string => 'Circularity Agent';
 /** Translate a menu label for the region's language (the demo's tr; I18N comes with the reference lists). */
 export const translate = (t: string): string => {
   const lang = view().rg.lang;
-  return (lang !== 'en' && ref<Record<string, Record<string, string>>>('I18N')[lang]?.[t]) || t;
+  return (lang !== 'en' && ref('I18N')[lang]?.[t]) || t;
 };
 
 export function greeting(): { date: string; greet: string } {
@@ -212,7 +212,7 @@ const FR_QA: Record<string, [string, string, string][]> = {
 /** Quick actions for the role: `go` is a route; otherwise `act` names the demo handler (wfNew, frConnect, frCompare). */
 export interface QuickAction { label: string; icon: string; go?: string; act?: string }
 export function quickActions(): QuickAction[] {
-  const PAGES = ref<Record<string, unknown>>('PAGES');
+  const PAGES = ref('PAGES');
   const isRoute = (q: string[]) => /\//.test(q[0]) || !!PAGES[q[0]];
   const all: string[][] = (FR_QA[role()] || FR_QA.Planner).filter((q) => !isRoute(q) || canPage(q[0].split('/')[0], q[0].split('/')[1] || undefined));
   return all.map((q) => (isRoute(q) ? { go: q[0], label: q[1], icon: q[2] } : { act: q[0], label: q[1], icon: q[2] }));
@@ -221,7 +221,7 @@ export function quickActions(): QuickAction[] {
 export interface Module { id: string; label: string; sub: string; icon: string; hue: string; go: string }
 const toModule = (x: any): Module => ({
   id: x.id, label: translate(x.label), sub: translate(x.sub), icon: x.icon,
-  hue: ref<Record<string, string>>('FR_MODH')[x.id],
+  hue: ref('FR_MODH')[x.id],
   go: x.id,
 });
 type ModCfg = { order?: string[]; hide?: string[] };
@@ -237,11 +237,11 @@ export const allModules = (): Module[] => navigation().filter((x) => x.id !== 'h
 
 export const askModes = (): [string, string, string, string][] => ref('FR_MODES');
 export const askStarters = (): string[] => {
-  const st = ref<Record<string, string[]>>('AF_STARTERS');
+  const st = ref('AF_STARTERS');
   return st[role()] || st.Planner;
 };
 export function askExamples(): string[] {
-  const l = ref<any[]>('AF_INTENTS')
+  const l = ref('AF_INTENTS')
     .filter((I) => I.title && I.area !== 'presenter' && (I.area !== 'integration' || canPage('integration')) && (I.area !== 'case' || canPage('product', 'case')))
     .map((I) => I.title as string);
   return [...new Set(l)].slice(0, 40);
@@ -272,7 +272,7 @@ export const toCsv = (rows: Cell[][]): string =>
 export const logReportExported = (_title: string) => { bump(); };
 export const logReportViewed = (_title: string) => { bump(); };
 export const asOfLabel = (): string => {
-  return view().rg.tz === 'UTC' ? fmtDY(ref<string>('AS_OF')) : rgTime(asOfNow());
+  return view().rg.tz === 'UTC' ? fmtDY(ref('AS_OF')) : rgTime(asOfNow());
 };
 
 // ---------- Data Checks ----------
@@ -298,25 +298,23 @@ export function runChecks(): { ok: number; total: number } {
 export const roleDescription = (): string => session()?.description ?? '';
 export const region = (): { lang: string; tz: string; cur: string } => view().rg;
 export const regionOptions = () => {
-  const r = <T>(n: string): T => ref<T>(n);
   return {
-    lang: r<[string, string][]>('RG_LANG'),
-    tz: r<[string, string][]>('RG_TZ'),
-    cur: Object.entries(r<Record<string, [string, number, string, string]>>('RG_CUR')).map(([k, v]) => [k, v[0] + ' ' + v[3]] as [string, string]),
+    lang: ref('RG_LANG'),
+    tz: ref('RG_TZ'),
+    cur: Object.entries(ref('RG_CUR')).map(([k, v]) => [k, v[0] + ' ' + v[3]] as [string, string]),
   };
 };
 export function setRegion(k: 'lang' | 'tz' | 'cur', v: string): void {
   setView({ rg: { ...view().rg, [k]: v } });
 }
 export const notifTypes = (): [string, string][] => ref('FR_NOTIF');
-interface AutoType { k: string; t: string; def: string; max: string }
 /** Agent autonomy per action type for a role: [type, level label]. */
 export function autonomy(r: string): [string, string][] {
-  const types = ref<AutoType[]>('AF_AUTO_TYPES'), levels = ref<string[][]>('AF_LEVELS');
+  const types = ref('AF_AUTO_TYPES'), levels = ref('AF_LEVELS');
   const label = (lv: string) => (levels.find((l) => l[0] === lv) || [])[1] || '';
   // Admin's settings are read where the account may see them (Access › Agent autonomy); otherwise each type's default
   const matrix = canPage('access', 'autonomy') ? cached<{ autonomy?: { matrix: Record<string, Record<string, string>> } }>('/api/screens/access').autonomy?.matrix : undefined;
-  const rank = ref<Record<string, number>>('AF_LV_RANK');
+  const rank = ref('AF_LV_RANK');
   return types.map((t) => {
     const v = matrix?.[r]?.[t.k] ?? t.def;
     return [t.t, label(rank[v] > rank[t.max] ? t.max : v)];

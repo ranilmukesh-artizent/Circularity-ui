@@ -46,7 +46,7 @@ const TZ_SHORT: Record<string, string> = {
 /** Region summary for the top bar, e.g. "EN · UTC · ₹". */
 export function regionSummary(): string {
   const rg = view().rg;
-  return `${rg.lang.toUpperCase()} · ${TZ_SHORT[rg.tz] ?? rg.tz} · ${ref<Record<string, string[]>>('RG_CUR')[rg.cur][0]}`;
+  return `${rg.lang.toUpperCase()} · ${TZ_SHORT[rg.tz] ?? rg.tz} · ${ref('RG_CUR')[rg.cur][0]}`;
 }
 
 /** Open counts shown in the menu and the bell. */

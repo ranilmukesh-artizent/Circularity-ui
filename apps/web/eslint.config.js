@@ -5,6 +5,7 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
+// @ts-expect-error -- the plugin ships no type declarations (tsconfig.node.json checks this file)
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import checkFile from "eslint-plugin-check-file";
 import globals from "globals";
