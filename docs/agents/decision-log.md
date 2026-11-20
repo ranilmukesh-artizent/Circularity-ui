@@ -1,0 +1,25 @@
+# Decision log
+
+Newest first. Each entry gives the decision, why, the alternatives considered, and where it lives in the code.
+Plan-level decisions D1–D8 are in `docs/PLAN_FULLSTACK_POC.md`.
+
+| Date | Decision | Why | Alternatives | Where |
+|---|---|---|---|---|
+| 2026-11-20 | The demo itself now says **Oracle Transportation Management** instead of the fictional "ShipLane TMS"; golden files regenerated | One vendor name everywhere; parity tests stay meaningful | Rename only at the display boundary (two names in code and data) | `index.html`, `fixtures/golden/*`, `di/execution/{trace,steps,lanes}.py` |
+| 2026-11-20 | **AWS IoT Core** is a full vendor mock but starts **not provisioned**, with its topic rules disabled until di connects it | The user asked for an IoT source. The demo's story ("Not provisioned · Pending security review") and its parity tests stay intact | Connected by default (changes many parity counts) | `apps/source-sim/sim/vendors/aws_iot/`, `di/connectors/adapters/aws_iot.py`, `POST /api/sources/iot/connect`, `DI_IOT_CONNECTED` |
+| 2026-11-20 | The menu's **open-conflicts badge** counts only conflicts that hold up a pending decision (open or escalated, on the asset of a visible case with no decision yet or awaiting approval) | The demo showed 3; the real table holds hundreds (428 after a full sync), which says nothing | Demo's 3; the real 428 | `di/screens/nav.py held_conflicts` |
+| 2026-11-20 | **`VITE_BACKEND=engine\|api`** switch, with a synchronous facade over a Suspense read cache | Pages keep calling the same functions; areas move one at a time; no page rewrites | TanStack Query hooks in every page (rewrites every page) | `apps/web/src/api/{backend,client}.ts` |
+| 2026-11-20 | `invoke()` is async in both modes | HTTP cannot be synchronous; one signature for both modes | Two invoke functions | `apps/web/src/api/actions.ts` |
+| 2026-11-20 | Case pages render **React only** in both modes; the engine-built HTML is removed | api mode has no engine to build HTML | Keep engine HTML in engine mode | `apps/web/src/pages/case/` |
+| 2026-11-20 | Record route checks (`canRoute`) run in the browser from a case scope map | One request per row (Audit) would be hundreds | Server route check per link | `GET /api/screens/nav/scope`, `session.ts canRoute` |
+| 2026-11-20 | Browser-only view state (tenant filter, theme, Command Center view, last asset, region, alert acks) lives in `view.ts` | It belongs to the browser, not the backend; the endpoints take it as query parameters | Store it server-side | `apps/web/src/api/view.ts` |
+| 2026-11-19 | **Ask Circularity runs on Groq's free tier** (`openai/gpt-oss-120b`) behind an `AskModel` interface, read-only, with the demo's rule-based answers as fallback | Free (no card), good tool use; the data is synthetic, so an outside model is acceptable; the provider is swappable | Claude via the backend; local Ollama | `apps/api/di/ask/`, `ASK_PROVIDER`, `GROQ_MODEL` |
+| 2026-11-19 | `GROQ_API_KEY` lives only in the local `.env` | Secret; never committed, logged or printed | — | `.env` (git-ignored), `.env.example` lists it empty |
+| 2026-11-19 | MCP server inside di-api with hard rules in code | Agents must not waive a gate, approve, or cross tenants | Policy only in prompts | `apps/api/di/mcp/` |
+| 2026-11-19 | Connector statuses `failing`/`auth_expired` are shown as `stale`, with `connectorStatus` kept | The frontend knows only the demo's statuses | Teach the frontend new statuses | `di/screens/integration.py SCREEN_STATUS` |
+| 2026-11 (B5b) | **OTM replaces the fictional ShipLane TMS**; every connector on RT-1048's happy path is a full one-to-one vendor mock | A real vendor's API shapes make the mocks credible | Generic spec-driven mocks | `apps/source-sim/sim/vendors/*`, `sim/registry.py` |
+| 2026-11 | **Golden parity**: dump the demo headless into `fixtures/golden` and compare every endpoint and action against it | The demo is the spec | Hand-written expectations | `apps/web/scripts/golden-sandbox.mjs`, `scripts/golden/*.mjs`, `dump-golden.mjs` |
+| 2026-11 | Build step by step (B1–B18); commit and push each step to `feature/fullstack-poc` with a short report | The user reviews step by step | One large PR | `docs/BACKEND_STEPS.md` |
+| 2026-11 | Clock: `DI_CLOCK=pinned` in tests, `sim` in services | Parity needs the demo's as-of time; services follow source-sim's clock | — | `di/clock.py`, `tests/conftest.py` |
+| 2026-11 | No implication that a named vendor product is connected; all data synthetic | Legal | — | README note at the top ("All data is synthetic … No real system …"), mock docstrings |
+| 2026-11 | No GitHub Pages | Not needed | — | — |

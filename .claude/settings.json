@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "PowerShell(git status:*)",
+      "PowerShell(git diff:*)",
+      "PowerShell(git log:*)",
+      "PowerShell(git show:*)",
+      "PowerShell(wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/*/Circularity-ui/scripts/dev/status.sh:*)",
+      "PowerShell(wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/*/Circularity-ui/scripts/dev/web-check.sh:*)",
+      "PowerShell(wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/*/Circularity-ui/scripts/dev/api-test.sh:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Edit(./.env)",
+      "Bash(git add .env:*)",
+      "PowerShell(git add .env:*)"
+    ]
+  }
+}
