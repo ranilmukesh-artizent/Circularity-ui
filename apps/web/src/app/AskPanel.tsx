@@ -14,6 +14,7 @@ import { onOpenAsk } from '../ui/askBus';
 import { Icon } from '../ui/Icon';
 import { useOverlay } from '../ui/Overlay';
 import { toast } from '../ui/toast';
+import { refused } from '../ui/useAction';
 
 interface Turn {
   q: string;
@@ -132,7 +133,7 @@ export function AskPanel({ route }: { route: RouteRef }) {
     setConfirm(null);
     if (!n?.action) return;
     const r = await invoke(n.action, n.input ?? {});
-    toast(r.ok ? n.label + ': done.' : r.error.message);
+    if (!refused(r)) toast(n.label + ': done.');
   }
 
   function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {

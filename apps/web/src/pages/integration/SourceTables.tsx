@@ -8,6 +8,7 @@ import {
 import { sessionScoped } from '../../api/view';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
+import { refused } from '../../ui/useAction';
 import { Kpi } from '../../ui/kit/Kpi';
 import { toastAct } from './ActionToasts';
 import { canMgr, NOMGR } from './FabricContext';
@@ -55,14 +56,14 @@ export function Tables() {
   const del = async (n: string) => {
     if (!mgr) return toast(NOMGR);
     const r = await updateTables({ src: tg.src, op: 'delete', name: n });
-    if (!r.ok) return toast(r.error.message);
+    if (refused(r)) return;
     setDlg(null);
     toastAct(n + ' deleted' + (r.output.fks ? ' with ' + r.output.fks + ' foreign key' + (r.output.fks > 1 ? 's' : '') : '') + '.', 'Undo', () => undoActions([r.seq!]));
   };
   const fkDel = async (i: number) => {
     if (!mgr) return toast(NOMGR);
     const r = await updateTables({ src: tg.src, op: 'fkDel', index: i });
-    if (!r.ok) return toast(r.error.message);
+    if (refused(r)) return;
     toastAct(r.output.from + ' → ' + r.output.to + ' removed.', 'Undo', () => undoActions([r.seq!]));
   };
   const fkNew = (a: string) => {
@@ -232,7 +233,7 @@ function EditTable({ m, n, onClose, onDel }: { m: TableModel; n: string; onClose
     if (new Set(l.map((c) => c.toLowerCase())).size !== l.length) return setErr('Column names must be unique.');
     if (l.some((c) => !/^[A-Za-z_][\w$]*$/.test(c))) return setErr('Use letters, numbers and underscores only.');
     const r = await updateTables({ src: tg.src, op: 'edit', name: n, table: { cols: l, desc: desc.trim(), cl } });
-    if (!r.ok) return setErr(r.error.message);
+    if (refused(r, { all: setErr })) return;
     onClose();
     toast(n + ' saved.');
   };
@@ -266,7 +267,7 @@ function AddTable({ m, onClose }: { m: TableModel; onClose: () => void }) {
     const mem = m.t.filter((t) => t.cl === cl), x = mem.length ? Math.max(...mem.map((t) => t.x)) : 24;
     const y = mem.length ? Math.max(...mem.map((t) => t.y + tableHeight(t))) + 30 : m.t.length ? Math.max(...m.t.map((t) => t.y + tableHeight(t))) + 60 : 60;
     const r = await updateTables({ src: tg.src, op: 'add', table: { n: name, cl, desc: desc.trim() || 'Table extracted for evidence.', cols: l.map((c) => [c, '']), rows: '—', x: mem.length ? x : 24, y } });
-    if (!r.ok) return setErr(r.error.message);
+    if (refused(r, { all: setErr })) return;
     onClose();
     toast(name + ' added. Use New Foreign Key to link it to other tables.');
   };
@@ -309,7 +310,7 @@ function NewFk({ m, a0, onClose }: { m: TableModel; a0: string; onClose: () => v
   const ok = async () => {
     if (a === b) return setErr('Choose two different tables.');
     const r = await updateTables({ src: tg.src, op: 'fkAdd', fk: [a + '.' + ac, b + '.' + bc, f.why.trim() || 'Foreign key link'] });
-    if (!r.ok) return setErr(r.error.message);
+    if (refused(r, { all: setErr })) return;
     onClose();
     toast(a + '.' + ac + ' now links to ' + b + '.' + bc + '.');
   };

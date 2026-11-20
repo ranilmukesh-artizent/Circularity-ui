@@ -17,6 +17,7 @@ import { Icon } from '../../ui/Icon';
 import { onActivateKey } from '../../ui/keys';
 import { Drawer } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
+import { refused } from '../../ui/useAction';
 import { AssessChip, CondChip, EvRow, Signals, StageChip, Thumb } from './AssetChips';
 import { JourneyGuide, JourneyStrip } from './Journey';
 
@@ -134,8 +135,7 @@ function NoteCallouts() {
             {ok && <a className="btn sm" href={'#/product/received?focus=' + id}>Show {id}</a>}
             <button className="btn sm pri" onClick={async () => {
               const r = await invoke('notify.acknowledge', { id: n.id });
-              if (r.ok) toast('Acknowledged. The sender sees it is in hand.');
-              else toast(r.error.message);
+              if (!refused(r)) toast('Acknowledged. The sender sees it is in hand.');
             }}>Acknowledge</button>
           </div>
         );

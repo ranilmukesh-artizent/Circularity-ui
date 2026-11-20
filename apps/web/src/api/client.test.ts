@@ -120,7 +120,8 @@ describe('API client cache', () => {
     retryFailed();
     expect(getVersion()).toBeGreaterThan(v);
     expect(await suspendRead(() => cached('/api/retry'))).toEqual({ ok: 1 });
-    expect(calls).toEqual(['GET /api/retry', 'GET /api/retry']);
+    // a 5xx is retried twice before the error shows (E6), then once more after retryFailed()
+    expect(calls).toEqual(['GET /api/retry', 'GET /api/retry', 'GET /api/retry', 'GET /api/retry']);
   });
 
   it('turns an unreachable server into a network error', async () => {

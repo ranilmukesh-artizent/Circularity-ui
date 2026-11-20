@@ -14,6 +14,7 @@ import { money } from '../../../api/format';
 import { can } from '../../../api/session';
 import { onActivateKey } from '../../../ui/keys';
 import { toast } from '../../../ui/toast';
+import { refused } from '../../../ui/useAction';
 import { openExSrc, openExSrcAll, openModels, openSources, openTrace } from '../CaseDrawers';
 import { AfBadge, CasePanel, ExMethod, ProvB, RangeBar, Stp, Tbl } from '../CaseBlocks';
 import { approveGuarded, caseActions, runNextStep, scrollToId } from '../caseActions';
@@ -692,7 +693,7 @@ export async function saveScenario(c: CaseRec, a: CaseAnalysis) {
     case_id: c.id, name: 'Scenario ' + (n + 1) + (parts.length ? ': ' + parts.join(', ') : ': base'),
     top: sr.el[0] ? sr.el[0].r.plan + ' · ' + money(sr.el[0].sn) : 'No eligible pathway', scen: { ...s }, w: { ...tiView().w },
   });
-  if (!r.ok) return toast(r.error.message, 4200);
+  if (refused(r, 4200)) return;
   toast('Scenario saved for ' + c.id + '.');
 }
 const TI_OBJ: [keyof ReturnType<typeof tiView>['w'], string][] = [['net', 'Maximize net recovery'], ['time', 'Minimize turnaround time'], ['env', 'Minimize environmental impact'], ['serv', 'Preserve serviceability (redeploy)']];
@@ -763,7 +764,7 @@ export function TiP4({ c, a, sr, rows }: PS) {
   };
   const del = async (id: string) => {
     const r = await invoke('scenario.delete', { case_id: c.id, id });
-    if (!r.ok) toast(r.error.message, 4200);
+    refused(r, 4200);
   };
   return (
     <>

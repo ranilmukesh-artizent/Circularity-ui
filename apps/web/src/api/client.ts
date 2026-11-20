@@ -6,8 +6,10 @@
  * call cached(path), which returns the last answer for that path at once. On the first read there is no
  * answer yet, so cached() throws the pending fetch: React Suspense shows the page's fallback and renders again when it
  * arrives. When data may have changed (an action, a stream event), invalidate() marks every answer stale; the pages
- * keep showing the old answer while the new one loads, then re-render (stale-while-revalidate).
+ * keep showing the old answer while the new one loads, then re-render (stale-while-revalidate). The answers live in a
+ * TanStack Query cache (step E6, docs/agents/plans/e6-tanstack-design.md): retries, eviction, scoped invalidation.
  */
+import { QueryClient, type Query } from '@tanstack/react-query';
 import type { Account, ActionResult } from './types';
 import type { Reference } from './reference';
 import { bump, sessionChanged } from './store';
@@ -164,43 +166,50 @@ export function ref<K extends keyof Reference>(name: K): Reference[K] {
   return reference[name] as Reference[K];
 }
 
-// ---------------------------------------------------------------- the read cache
-interface Entry {
-  data?: unknown;
-  error?: unknown;
-  promise?: Promise<void>;
-  stale: boolean;
-}
-const cache = new Map<string, Entry>();
+// ---------------------------------------------------------------- the read cache (TanStack Query, step E6)
+// Design: docs/agents/plans/e6-tanstack-design.md. The facade reads in render (not in hooks), so the QueryClient is
+// used imperatively: a read returns the query's answer at once, starts a refetch when the query was invalidated, and
+// throws the fetch to Suspense when there is no answer yet. Pages re-render through store.ts (bump), as before.
 
-function load(key: string, e: Entry, run: () => Promise<unknown>) {
-  e.promise = run()
-    .then(
-      (d) => {
-        e.data = d;
-        e.error = undefined;
-      },
-      (err) => {
-        e.error = err;
-      },
-    )
-    .finally(() => {
-      e.promise = undefined;
-      e.stale = false;
-      if (cache.get(key) === e) bump();
-    });
-}
+/** Retry an unreachable server or a 5xx twice (0.5 s, 1 s); a refusal (4xx) is final. */
+const retry = (n: number, err: unknown): boolean => n < 2 && err instanceof ApiError && (err.status === 0 || err.status >= 500);
+const retryDelay = (n: number): number => 500 * 2 ** n;
 
-function readThrough<T>(key: string, run: () => Promise<unknown>): T {
-  let e = cache.get(key);
-  if (!e) {
-    e = { stale: true };
-    cache.set(key, e);
+/** The one QueryClient (main.tsx hands it to QueryClientProvider too). */
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: Infinity, // fresh until invalidate()
+      gcTime: Infinity, // queries have no observers; eviction is sweep() below
+      retry,
+      retryDelay,
+      networkMode: 'always', // fetch even when the browser says offline: the error shows, as before
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
+const queries = queryClient.getQueryCache();
+
+// a fetch that ends (an answer or a refusal) re-renders the pages; not for a query already removed (sign-out)
+queries.subscribe((e) => {
+  if (e.type === 'updated' && (e.action.type === 'success' || e.action.type === 'error') && queries.get(e.query.queryHash) === e.query) bump();
+});
+
+const settled = () => undefined;
+const thrown = new WeakMap<Query, Promise<void>>(); // what Suspense waits on: the query's current fetch
+const lastRead = new WeakMap<Query, number>();
+
+function readThrough<T>(queryKey: readonly unknown[], queryFn: () => Promise<unknown>): T {
+  const q = queries.build(queryClient, { queryKey, queryFn });
+  lastRead.set(q, Date.now());
+  if (q.state.fetchStatus === 'idle' && (q.state.isInvalidated || q.state.status === 'pending')) {
+    thrown.set(q, queryClient.fetchQuery({ queryKey, queryFn, retry, retryDelay }).then(settled, settled));
   }
-  if (e.stale && !e.promise) load(key, e, run);
-  if ('data' in e && e.data !== undefined) return e.data as T;
-  if (e.error && !e.promise) throw e.error;
-  throw e.promise;
+  const s = q.state;
+  if (s.data !== undefined) return s.data as T;
+  if (s.status === 'error' && s.fetchStatus === 'idle') throw s.error;
+  throw thrown.get(q);
 }
 
 /** Path with query parameters, leaving out empty ones. */
@@ -213,12 +222,12 @@ export function withQuery(path: string, q: Record<string, string | number | bool
 
 /** The answer of GET path, synchronously (suspends on the first read). */
 export function cached<T>(path: string): T {
-  return readThrough<T>('GET ' + path, () => http(path));
+  return readThrough<T>(['GET', path], () => http(path));
 }
 
 /** The answer of a read action (POST /api/actions/{id}), synchronously; throws ApiError on a refusal. */
 export function cachedAction<T>(id: string, input: Record<string, unknown> = {}): T {
-  return readThrough<T>('ACT ' + id + ' ' + JSON.stringify(input), async () => {
+  return readThrough<T>(['ACT', id, input], async () => {
     const r = await postAction<T>(id, input);
     if (!r.ok) throw new ApiError(400, r.error.code, r.error.message);
     return r.output;
@@ -227,23 +236,46 @@ export function cachedAction<T>(id: string, input: Record<string, unknown> = {})
 
 /** Has GET path an answer already (no suspending)? For pages that prefetch. */
 export function peek<T>(path: string): T | undefined {
-  return cache.get('GET ' + path)?.data as T | undefined;
+  return queryClient.getQueryData<T>(['GET', path]);
 }
 
-/** Everything may have changed: refetch what pages read, keeping the old answers on screen meanwhile. */
-export function invalidate(): void {
-  for (const e of cache.values()) e.stale = true;
+/**
+ * Everything may have changed (or only what `match` selects, by query key: ['GET', path] or ['ACT', id, input]):
+ * refetch what pages read, keeping the old answers on screen meanwhile.
+ */
+export function invalidate(match?: (key: readonly unknown[]) => boolean): void {
+  void queryClient.invalidateQueries(match ? { refetchType: 'none', predicate: (q) => match(q.queryKey) } : { refetchType: 'none' });
   bump();
+  scheduleSweep();
 }
 
 /** "Try again" after a failed read: refetch every answer that failed (a refusal or an unreachable server). */
 export function retryFailed(): void {
-  for (const e of cache.values()) if (e.error !== undefined) e.stale = true;
+  void queryClient.invalidateQueries({ refetchType: 'none', predicate: (q) => q.state.status === 'error' });
   bump();
 }
 
 function clearCache() {
-  cache.clear();
+  queryClient.clear();
+}
+
+// Eviction. App subscribes to bump() at the root and nothing is memoised, so every page on screen re-renders on a bump
+// and reads its answers again. A query nobody has read for SWEEP_IDLE_MS is not on screen. The sweep runs a second
+// after invalidate()'s bump, once the re-render has recorded its reads.
+const SWEEP_IDLE_MS = 15 * 60_000;
+let sweepTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleSweep() {
+  if (sweepTimer !== null) return;
+  sweepTimer = setTimeout(() => {
+    sweepTimer = null;
+    sweep(Date.now());
+  }, 1000);
+}
+/** Drop the answers not read for SWEEP_IDLE_MS (exported for the tests). */
+export function sweep(now: number): void {
+  for (const q of queries.getAll()) {
+    if (q.state.fetchStatus === 'idle' && now - (lastRead.get(q) ?? 0) >= SWEEP_IDLE_MS) queries.remove(q);
+  }
 }
 
 // ---------------------------------------------------------------- actions

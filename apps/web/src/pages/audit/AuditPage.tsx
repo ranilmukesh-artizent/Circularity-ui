@@ -11,6 +11,7 @@ import { sessionScoped } from '../../api/view';
 import type { PageProps } from '../registry';
 import { Drawer, Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
+import { useAction } from '../../ui/useAction';
 import { anchor } from '../analytics/AnalyticsPage';
 import { downloadCsv, q } from '../../lib/csv';
 
@@ -186,10 +187,11 @@ export function ProvTable({ p }: { p: Provenance }) {
 function Comments({ k, label }: { k: string; label: string }) {
   const l = comments(k);
   const [text, setText] = useState('');
+  const action = useAction();
   const [err, setErr] = useState('');
   const post = async () => {
-    const r = await postComment(k, text.trim());
-    if (!r.ok) { setErr(r.error.message); return; }
+    const r = await action.run(() => postComment(k, text.trim()), { all: setErr });
+    if (!r.ok) return;
     setText(''); setErr('');
     toast('Comment posted.');
   };

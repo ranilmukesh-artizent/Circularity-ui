@@ -14,6 +14,7 @@ import { can, canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
+import { refused } from '../../ui/useAction';
 import type { PageProps } from '../registry';
 import { WorkflowStudio } from '../workflows/WorkflowStudio';
 import { ConnectFlow, type CxStart } from './ConnectFlow';
@@ -56,7 +57,7 @@ export function IntegrationPage({ route, query }: PageProps) {
     const reconnect = async (id: string) => {
       if (!canMgr()) return toast(NOMGR);
       const r = await reconnectSource(id);
-      if (!r.ok) return toast(r.error.message);
+      if (refused(r)) return;
       const s = source(id);
       if (s) toast(s.name + ' is live again. Predictions no longer carry a stale-feed warning.');
     };
@@ -68,7 +69,7 @@ export function IntegrationPage({ route, query }: PageProps) {
         const s = source(id);
         if (s?.paused) return toast(s.name + ' is paused. Resume it to sync.');
         const r = await syncSource(id);
-        if (!r.ok) { if (r.error.code !== 'duplicate') toast(r.error.message); return; }
+        if (refused(r, { silent: ['duplicate'] })) return;
         // report its result as the demo does when it finishes
         const name = s?.name ?? id;
         followSync(id, (x) => {
@@ -235,7 +236,7 @@ function DeleteModal({ id, onClose, onDone }: { id: string; onClose: () => void;
   const use = wfUsing(id), mp = mappings(id).length;
   const ok = async () => {
     const r = await deleteSource(id);
-    if (!r.ok) return toast(r.error.message);
+    if (refused(r)) return;
     onClose();
     onDone();
     toastAct(r.output.name + ' (' + r.output.vendor + ') deleted.', 'Undo', () => undoActions([r.seq!]));
@@ -263,11 +264,11 @@ function RotateModal({ id, onClose }: { id: string; onClose: () => void }) {
   const ok = async () => {
     if (secret.length < 8) return setErr('Enter at least 8 characters.');
     const r = await rotateCredentials(id, +days);
-    if (!r.ok) return setErr(r.error.message);
+    if (refused(r, { all: setErr })) return;
     onClose();
     if (r.output.stale) {
       const x = await reconnectSource(id);
-      if (!x.ok) return toast(x.error.message);
+      if (refused(x)) return;
       return toast(s.name + ' is live again. Predictions no longer carry a stale-feed warning.');
     }
     toast('Credentials updated for ' + s.name + '.');

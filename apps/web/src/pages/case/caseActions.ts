@@ -6,33 +6,29 @@ import { can } from '../../api/session';
 import type { ActionResult } from '../../api/types';
 import { askSoon } from '../../ui/askBus';
 import { toast } from '../../ui/toast';
+import { refused } from '../../ui/useAction';
 import type { CaseUi } from './CaseContext';
-
-const fail = (r: ActionResult<unknown>): boolean => {
-  if (!r.ok) toast(r.error.message, 4200);
-  return !r.ok;
-};
 
 /** The demo's UI adapters for the case actions. */
 export const caseActions = {
   async submit(id: string) {
     const r = await invoke('decision.submit', { case_id: id });
-    if (!fail(r)) toast(id + ' submitted for review. An Approver approves, overrides or declines it.', 4200);
+    if (!refused(r, 4200)) toast(id + ' submitted for review. An Approver approves, overrides or declines it.', 4200);
   },
   async requestEvidence(id: string) {
     const r = await invoke<{ what: string; to: string; ref: string }>('evidence.request', { case_id: id });
     if (r.ok) toast(`${r.output.what} sent to ${r.output.to} (${r.output.ref}).`);
-    else fail(r);
+    else refused(r, 4200);
   },
   async recordResult(id: string) {
     const r = await invoke<{ recommendation: string | null; net: number }>('evidence.recordResult', { case_id: id });
-    if (fail(r) || !r.ok) return;
+    if (refused(r, 4200)) return;
     const o = r.output;
     toast(o.recommendation ? `${id} is ready. Recommendation: ${o.recommendation} at ${money(o.net)}.` : `${id} assessed, but no route passes every gate.`, 4200);
   },
   async reevaluate(id: string) {
     const r = await invoke<{ now: string | null; was: string | null; net: number }>('case.reevaluate', { case_id: id });
-    if (fail(r) || !r.ok) return;
+    if (refused(r, 4200)) return;
     const o = r.output;
     toast(o.now ? `Re-evaluated. New recommendation: ${o.now} at ${money(o.net)}${o.was && o.was !== o.now ? ` (was ${o.was})` : ''}.` : 'Re-evaluated. No route passes every gate.', 4200);
   },
@@ -41,17 +37,17 @@ export const caseActions = {
     const c = caseById(id);
     if (!c) return;
     const r = await checkAcknowledgement(c);
-    if (fail(r) || !r.ok) return;
+    if (refused(r, 4200)) return;
     const o = r.output;
     toast(`${o.label}: acknowledged by ${o.by} · ${o.ref_label}`);
   },
   async resend(id: string) {
     const r = await invoke('instruction.resend', { case_id: id });
-    if (!fail(r)) toast('Duplicate delivery ignored. The idempotency key already exists, so nothing was created twice.', 4200);
+    if (!refused(r, 4200)) toast('Duplicate delivery ignored. The idempotency key already exists, so nothing was created twice.', 4200);
   },
   async confirmOutcome(id: string) {
     const r = await invoke('outcome.confirm', { case_id: id });
-    if (!fail(r)) toast('Outcome confirmed and linked to the decision.');
+    if (!refused(r, 4200)) toast('Outcome confirmed and linked to the decision.');
   },
   downloadPack(id: string) {
     const p = evidencePack(id);
@@ -78,7 +74,7 @@ export async function runNextStep(id: string, ui: CaseUi, quiet = false) {
   if (st.kind === 'act') r = await invoke(st.action!, st.input);
   else if (st.kind === 'ack') r = (await checkAcknowledgement(c)) as ActionResult<Record<string, unknown>>;
   else return toast(st.label, 4200);
-  if (!r.ok) return toast(r.error.message, 4200);
+  if (refused(r, 4200)) return;
   if (quiet) return toast('Stage ' + st.n + ': ' + st.label + ' · done.');
   const o = r.output, title = actionCatalog().find((a) => a.id === r.action)?.title;
   toast((title ?? 'Done') + (o.ref ? ' · ' + o.ref : '') + (o.case_id ? ' · ' + o.case_id : '') + '.', 3600);

@@ -5,16 +5,12 @@ import {
   duplicateWorkflow, exportJson, followRun, NOWF, runWorkflow, setWorkflowStatus, workflow,
 } from '../../api/workflows';
 import { toast } from '../../ui/toast';
+import { refused } from '../../ui/useAction';
 import { download } from '../../lib/download';
 
 export const studioHref = (id?: string) => '/integration/studio' + (id ? '/' + id : '');
 /** A change the backend has no action for yet. */
 export const NOT_YET = 'Not available yet.';
-
-function refused(r: { ok: boolean; error?: { message: string } }): boolean {
-  if (!r.ok) toast(r.error!.message, 4200);
-  return !r.ok;
-}
 
 /** Pause, resume or publish from the list (ACT.wfToggle). */
 export async function toggle(id: string) {
@@ -23,7 +19,7 @@ export async function toggle(id: string) {
   if (!w) return;
   const to = w.status === 'draft' ? 'published' : w.status === 'published' ? 'paused' : 'published';
   const r = await setWorkflowStatus(id, to);
-  if (!r.ok) return toast(r.error.message, 4200);
+  if (refused(r, 4200)) return;
   toast(r.output.was === 'draft' ? w.name + ' published.' : to === 'paused' ? w.name + ' paused. Scheduled runs stop until you resume it.' : w.name + ' resumed.');
 }
 
@@ -34,7 +30,7 @@ const finished = (name: string, l: { state: string; note: string; rows: number }
 export async function runNow(id: string) {
   if (!can('manageWorkflows')) return toast(NOWF());
   const r = await runWorkflow(id);
-  if (refused(r) || !r.ok) return;
+  if (refused(r, 4200)) return;
   // the run is a worker job; its record (by the run key) reports progress on the stream
   if (r.output.run) followRun(r.output.run, (x) => finished(r.output.name, x));
 }
@@ -43,7 +39,7 @@ export async function runNow(id: string) {
 export async function duplicate(id: string): Promise<string | null> {
   if (!can('manageWorkflows')) { toast(NOWF()); return null; }
   const r = await duplicateWorkflow(id);
-  if (refused(r) || !r.ok) return null;
+  if (refused(r, 4200)) return null;
   toast('Copy created as a draft: ' + r.output.name + '.');
   return r.output.id;
 }

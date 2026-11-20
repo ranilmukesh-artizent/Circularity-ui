@@ -11,6 +11,7 @@ import {
 } from '../../api/orchestration';
 import { useOverlay } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
+import { useAction } from '../../ui/useAction';
 
 interface Play {
   sig: string; m: RunModel; segs: Segment[]; total: number;
@@ -196,11 +197,12 @@ function StageBody({ caseId, s, b, chip, prev, cur }: { caseId: string; s: RunSt
   const nav = useNavigate();
   const nx = s.n === cur && failDrill() === '' ? nextStep(caseId) : null;
   const act = nx && ['act', 'approve', 'ack'].includes(nx.kind);
+  const action = useAction();
   const ag = agentsOf(s), models = s.state === 'queued' ? [] : stageModels(caseId, s);
   const doNext = async () => {
     if (nx?.kind === 'approve') { nav('/product/' + caseId + '/stage/7'); return; }
-    const r = await runNext(caseId);
-    if (!r.ok) { toast(r.error.message, 4200); return; }
+    const r = await action.run(() => runNext(caseId), 4200);
+    if (!r.ok) return;
     if (r.step && r.step.kind !== 'approve') toast('Stage ' + r.step.n + ': ' + r.step.label + ' · done.');
   };
   return (
@@ -261,9 +263,10 @@ function EscalationCard({ caseId, nx }: { caseId: string; nx: NextStep }) {
   const nav = useNavigate();
   const d = escalationDraft(caseId, nx);
   const [msg, setMsg] = useState(d.msg);
+  const action = useAction();
   const send = async () => {
-    const r = await sendEscalation(d, msg.trim());
-    if (!r.ok) { toast(r.error.message, 4200); return; }
+    const r = await action.run(() => sendEscalation(d, msg.trim()), 4200);
+    if (!r.ok) return;
     toast('Escalation sent to ' + r.output.to + '.');
   };
   return (

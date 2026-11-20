@@ -4,6 +4,7 @@ import { canDecide, REQ_KIND, refreshAccess, type AccessRequest } from '../../ap
 import { fmtDateYear } from '../../api/format';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
+import { useAction } from '../../ui/useAction';
 
 /** Status chip (the demo's reqStChip). */
 function StatusChip({ r }: { r: AccessRequest }) {
@@ -70,17 +71,17 @@ export function ReqRow({ r, onDecide }: { r: AccessRequest; onDecide: (r: Access
 /** Approve or decline dialog (the demo's reqDecide / reqDecideOk), through access.decideRequest. */
 function DecideModal({ r, dec, onClose }: { r: AccessRequest; dec: Decision; onClose: () => void }) {
   const [note, setNote] = useState('');
+  const action = useAction();
   const [err, setErr] = useState('');
   async function ok() {
     if (!canDecide(r)) {
       toast('This request is not yours to decide.');
       return onClose();
     }
-    const res = await invoke<{ id: string; status: string }>('access.decideRequest', { id: r.id, decision: dec, note: note.trim() });
+    const res = await action.run(() => invoke<{ id: string; status: string }>('access.decideRequest', { id: r.id, decision: dec, note: note.trim() }), { ms: 4200, inline: setErr });
     if (!res.ok) {
-      if (res.error.code === 'validation_error') return setErr(res.error.message);
-      toast(res.error.message, 4200);
-      return onClose();
+      if (res.error.code !== 'validation_error') onClose();
+      return;
     }
     onClose();
     void refreshAccess();

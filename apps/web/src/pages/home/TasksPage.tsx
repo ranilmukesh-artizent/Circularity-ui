@@ -3,6 +3,7 @@ import { runTaskAct, taskGroupOf, taskGroups, taskItems, type TaskItem } from '.
 import { useBackend } from '../../api/useBackend';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
+import { refused } from '../../ui/useAction';
 import { askSoon } from '../../ui/askBus';
 import { Panel } from '../../ui/kit/Panel';
 import { Segmented } from '../../ui/kit/Segmented';
@@ -14,7 +15,7 @@ export function TaskRow({ i }: { i: TaskItem }) {
   const cid = (/^(RT-\d{4})/.exec(i.t) || [])[1];
   const run = async () => {
     const r = await runTaskAct(i.act!, i.arg ?? '');
-    toast(r.ok ? 'Acknowledged. The sender sees it is in hand.' : r.error.message);
+    if (!refused(r)) toast('Acknowledged. The sender sees it is in hand.');
   };
   return (
     <li className="aor">

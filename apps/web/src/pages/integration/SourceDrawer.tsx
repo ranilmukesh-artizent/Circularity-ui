@@ -11,6 +11,7 @@ import { can } from '../../api/session';
 import { Drawer } from '../../ui/Overlay';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
+import { useAction } from '../../ui/useAction';
 import { Delta, pctDelta } from '../../ui/kit/Delta';
 import { IconTile } from '../../ui/kit/IconTile';
 import { Segmented } from '../../ui/kit/Segmented';
@@ -90,6 +91,7 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
   const [dirty, setDirty] = useState(mode === 'new');
   const [test, setTest] = useState<Test>(null);
   const [use, setUse] = useState('30');
+  const action = useAction();
   const mgr = canMgr();
 
   if (mode === 'edit' && !s) return null;
@@ -121,11 +123,12 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
       toast('Fix ' + n + ' item' + (n > 1 ? 's' : '') + ' before saving. Errors are marked in the form.');
       return;
     }
-    const r = await saveSource(mode, at.id, d, maps, ops);
-    if (!r.ok) {
-      if (r.error.code === 'conflict' && /No changes/.test(r.error.message)) { toast('No changes to save.'); setDirty(false); return; }
-      return toast(r.error.message);
-    }
+    const r = await action.run(() => saveSource(mode, at.id, d, maps, ops), {
+      all: (m, code) => {
+        if (code === 'conflict' && /No changes/.test(m)) { toast('No changes to save.'); setDirty(false); } else toast(m);
+      },
+    });
+    if (!r.ok) return;
     const o = r.output;
     if (o.mode === 'new') {
       toast(o.name + ' (' + o.vendor + ') connected. Initial sync started.');
@@ -475,9 +478,10 @@ export function Comments({ k, label }: { k: string; label: string }) {
   const [text, setText] = useState('');
   const [err, setErr] = useState('');
   const l = commentsOf(k);
+  const action = useAction();
   const post = async () => {
-    const r = await addComment(k, text.trim());
-    if (!r.ok) return setErr(r.error.message);
+    const r = await action.run(() => addComment(k, text.trim()), { all: setErr });
+    if (!r.ok) return;
     setText(''); setErr('');
     toast('Comment posted.');
   };

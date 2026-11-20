@@ -13,6 +13,7 @@ import {
 import { Icon } from '../../ui/Icon';
 import { openAsk } from '../../ui/askBus';
 import { toast } from '../../ui/toast';
+import { useAction } from '../../ui/useAction';
 import { draftOf, edit, reload, undoRedo, useDrafts, type Draft } from './draftStore';
 import { CanvasView, canvasOps, ChecksPanel, FIXMSG, Inspector, Palette, TaskInstances, type Sel } from './Canvas';
 import { IconTile } from '../../ui/kit/IconTile';
@@ -68,6 +69,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   if (runRef.current === undefined) runRef.current = runFromLast(w.id);
   const timer = useRef(0);
   const [, setRunV] = useState(0);
+  const action = useAction();
   const paint = () => setRunV((x) => x + 1);
   const lastSeen = useRef(w.lastRun?.id);
   useEffect(() => () => window.clearTimeout(timer.current), [w.id]);
@@ -139,27 +141,28 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   async function save() {
     if (!mgr) return toast(NOWF());
     if (!d.name.trim()) return toast('Enter a workflow name before saving.');
-    const r = await saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' });
-    if (!r.ok) return toast(r.error.message, 4200);
+    const r = await action.run(() => saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' }), 4200);
+    if (!r.ok) return;
     reload(w.id, kept());
     toast(r.output.name + ' saved as v' + r.output.ver + '.');
   }
   async function publish() {
     if (!mgr) return toast(NOWF());
     if (w.status === 'published') {
-      const r = await setWorkflowStatus(w.id, 'draft');
-      return r.ok ? toast(d.name + ' unpublished. It will no longer run on its trigger.') : toast(r.error.message, 4200);
+      const r = await action.run(() => setWorkflowStatus(w.id, 'draft'), 4200);
+      if (r.ok) toast(d.name + ' unpublished. It will no longer run on its trigger.');
+      return;
     }
     const er = checks.filter((x) => x.sev === 'error');
     if (er.length) { toast('Cannot publish: ' + er.length + ' error' + (er.length > 1 ? 's' : '') + ' in the checks. Fix them first.'); scrollChecks(); return; }
     if (d.dirty) {
       // the name, owner and trigger are part of the change, so they are saved with the graph first
       if (!d.name.trim()) return toast('Enter a workflow name before saving.');
-      const s = await saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' });
-      if (!s.ok) return toast(s.error.message, 4200);
+      const s = await action.run(() => saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' }), 4200);
+      if (!s.ok) return;
     }
-    const r = await publishWorkflow(w.id);
-    if (!r.ok) { toast(r.error.message); if (/error/.test(r.error.message)) scrollChecks(); return; }
+    const r = await action.run(() => publishWorkflow(w.id));
+    if (!r.ok) { if (/error/.test(r.error.message)) scrollChecks(); return; }
     reload(w.id, kept());
     toast(r.output.name + ' published as v' + r.output.ver + '. It runs on its trigger: ' + r.output.trig + '.');
   }

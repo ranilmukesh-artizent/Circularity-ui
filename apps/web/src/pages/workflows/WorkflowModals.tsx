@@ -9,6 +9,7 @@ import {
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
+import { refused } from '../../ui/useAction';
 import { forget } from './draftStore';
 import { download } from '../../lib/download';
 import { WorkflowStatus } from './WorkflowMarks';
@@ -37,7 +38,7 @@ export function NewWorkflowModal({ onClose, onCreated }: { onClose: () => void; 
 
   async function create() {
     const r = await createWorkflow({ type: n.type, src: n.src || '', ch: n.ch || '', name: n.name || '' });
-    if (!r.ok) return toast(r.error.message, 4200);
+    if (refused(r, 4200)) return;
     toast(r.output.name + ' created as a draft. Arrange it, then Save and Publish.');
     onCreated(r.output.id);
   }
@@ -83,7 +84,7 @@ export function DeleteModal({ id, onClose, onDeleted }: { id: string; onClose: (
   if (!w) return null;
   async function del() {
     const r = await deleteWorkflow(id);
-    if (!r.ok) return toast(r.error.message, 4200);
+    if (refused(r, 4200)) return;
     forget(id);
     toast(r.output.name + ' deleted.');
     onDeleted();

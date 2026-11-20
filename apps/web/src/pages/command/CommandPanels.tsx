@@ -12,6 +12,7 @@ import { Icon } from '../../ui/Icon';
 import { onActivateKey } from '../../ui/keys';
 import { Drawer, Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
+import { refused, useAction } from '../../ui/useAction';
 
 const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 const plural = (n: number, w: string) => n + ' ' + w + (n === 1 ? '' : 's');
@@ -153,14 +154,11 @@ function NotifyModal({ x, onClose }: { x: ExRow; onClose: () => void }) {
   const [to, setTo] = useState(() => exOwner(x));
   const [sev, setSev] = useState<string>(x.sev);
   const [msg, setMsg] = useState('Please look at: ' + x.title.toLowerCase() + '.');
+  const action = useAction();
   const [err, setErr] = useState('');
   const send = async () => {
-    const r = await sendNotification(x, to, sev, msg.trim());
-    if (!r.ok) {
-      if (r.error.code === 'validation_error') setErr(r.error.message);
-      else toast(r.error.message);
-      return;
-    }
+    const r = await action.run(() => sendNotification(x, to, sev, msg.trim()), { inline: setErr });
+    if (!r.ok) return;
     onClose();
     toast('Notification sent to ' + r.output.to + '.', 4200);
   };
@@ -199,8 +197,7 @@ export function Aome() {
   const l = aomeItems();
   const ack = async (id: string) => {
     const r = await acknowledge(id);
-    if (r.ok) toast('Acknowledged. The sender sees it is in hand.');
-    else toast(r.error.message);
+    if (!refused(r)) toast('Acknowledged. The sender sees it is in hand.');
   };
   return (
     <section className="panel" id="ccAome">
@@ -407,14 +404,11 @@ function ReqRow({ r, onDecide }: { r: AccessRequest; onDecide: (dec: 'approve' |
 
 function DecideModal({ r, dec, onClose }: { r: AccessRequest; dec: 'approve' | 'decline'; onClose: () => void }) {
   const [note, setNote] = useState('');
+  const action = useAction();
   const [err, setErr] = useState('');
   const ok = async () => {
-    const res = await decideRequest(r.id, dec, note.trim());
-    if (!res.ok) {
-      if (res.error.code === 'validation_error') setErr(res.error.message);
-      else toast(res.error.message);
-      return;
-    }
+    const res = await action.run(() => decideRequest(r.id, dec, note.trim()), { inline: setErr });
+    if (!res.ok) return;
     onClose();
     toast(r.id + ' ' + res.output.status + '.' + (r.kind === 'tenant' && res.output.status === 'approved' ? ' ' + r.by + ' can now open ' + r.tenant + '.' : ''), 4200);
   };

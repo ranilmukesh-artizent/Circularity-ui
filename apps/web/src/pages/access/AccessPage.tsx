@@ -9,6 +9,7 @@ import { money } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import { accounts, can, rolePolicy } from '../../api/session';
 import { toast } from '../../ui/toast';
+import { useAction } from '../../ui/useAction';
 import type { PageProps } from '../registry';
 import { ReqList } from './AccessRequests';
 import { SectionTabs, sectionsOf } from './SectionTabs';
@@ -82,6 +83,7 @@ function Identity() {
   const [to, setTo] = useState(eligible[0]?.id ?? '');
   const [from, setFrom] = useState('2026-10-20');
   const [until, setUntil] = useState('2026-10-31');
+  const action = useAction();
   const [err, setErr] = useState('');
   const approles = I.src === 'approles';
 
@@ -89,20 +91,18 @@ function Identity() {
     if ((await invoke('access.syncDirectory', {})).ok) toast('Directory synced.');
   };
   const mapTo = async (acct: string, field: 'role' | 'site', value: string) => {
-    const r = await invoke<{ label: string }>('access.mapIdentity', { acct, field, value });
-    if (r.ok) {
-      toast('Mapping updated. ' + r.output.label + ' changes at their next sign-in.');
-      void refreshAccess();
-    }
-    else toast(r.error.message, 4200);
+    const r = await action.run(() => invoke<{ label: string }>('access.mapIdentity', { acct, field, value }), 4200);
+    if (!r.ok) return;
+    toast('Mapping updated. ' + r.output.label + ' changes at their next sign-in.');
+    void refreshAccess();
   };
   const remove = async (id: string) => {
     const r = await invoke<{ email: string }>('access.removeUser', { id });
     if (r.ok) toast(r.output.email + ' removed at the next provisioning sync.');
   };
   const saveOoo = async () => {
-    const r = await invoke('access.setOutOfOffice', { to: to || eligible[0]?.id || '', from, until });
-    if (!r.ok) return setErr(r.error.message);
+    const r = await action.run(() => invoke('access.setOutOfOffice', { to: to || eligible[0]?.id || '', from, until }), { all: setErr });
+    if (!r.ok) return;
     setErr('');
     toast('Out-of-office delegation saved.');
   };
@@ -254,11 +254,12 @@ function Identity() {
 }
 
 function Delegations() {
+  const action = useAction();
   const manage = can('manageAccess');
   const toggle = async (k: string, on: boolean) => {
     const d = delegations().find((x) => x.k === k)!;
-    const r = await invoke('access.setDelegation', { k, on });
-    if (!r.ok) return toast(r.error.message, 4200);
+    const r = await action.run(() => invoke('access.setDelegation', { k, on }), 4200);
+    if (!r.ok) return;
     void refreshAccess();
     toast(on ? 'The Approver can now decide ' + delegationLabel(d) + '.' : d.label + ' are now decided by Admin only.', 4200);
   };
@@ -301,12 +302,13 @@ function AllRequests() {
 }
 
 function Autonomy() {
+  const action = useAction();
   const L = levels();
   const rs = roles();
   const manage = can('manageAccess');
   const set = async (role: string, type: string, level: Level) => {
-    const r = await invoke('access.setAutonomy', { role, type, level });
-    if (!r.ok) return toast(r.error.message, 4200);
+    const r = await action.run(() => invoke('access.setAutonomy', { role, type, level }), 4200);
+    if (!r.ok) return;
     toast(role + ': ' + autoTypes().find((t) => t.k === type)!.t.toLowerCase() + ' → ' + L.find((l) => l.k === level)!.label + '.');
   };
   return (
@@ -356,11 +358,12 @@ function Autonomy() {
 
 function LimitRow({ role, manage }: { role: string; manage: boolean }) {
   const v = approvalLimit(role);
+  const action = useAction();
   const ref = useRef<HTMLInputElement>(null);
   const save = async () => {
     const s = ref.current?.value ?? '';
-    const r = await invoke<{ limit: number | null }>('access.setLimit', { role, amount: s === '' ? null : +s });
-    if (!r.ok) return toast(r.error.message, 4200);
+    const r = await action.run(() => invoke<{ limit: number | null }>('access.setLimit', { role, amount: s === '' ? null : +s }), 4200);
+    if (!r.ok) return;
     void refreshAccess();
     toast(role + ' approval limit: ' + (r.output.limit == null ? 'unlimited' : money(r.output.limit)) + '.');
   };
@@ -380,13 +383,14 @@ function LimitRow({ role, manage }: { role: string; manage: boolean }) {
 }
 
 function Limits() {
+  const action = useAction();
   const manage = can('manageAccess');
   const rl = runLimits();
   const aRef = useRef<HTMLInputElement>(null);
   const bRef = useRef<HTMLInputElement>(null);
   const saveRun = async () => {
-    const r = await invoke('access.setRunLimits', { actions: +(aRef.current?.value ?? 0), bulk: +(bRef.current?.value ?? 0) });
-    if (!r.ok) return toast(r.error.message, 4200);
+    const r = await action.run(() => invoke('access.setRunLimits', { actions: +(aRef.current?.value ?? 0), bulk: +(bRef.current?.value ?? 0) }), 4200);
+    if (!r.ok) return;
     toast('Run limits saved.');
   };
   const self = async (on: boolean) => {
@@ -425,10 +429,11 @@ function Limits() {
 }
 
 function Agents() {
+  const action = useAction();
   const manage = can('manageAccess');
   const kill = async (id: string, name: string, on: boolean) => {
-    const r = await invoke('agent.setEnabled', { id, on });
-    if (!r.ok) return toast(r.error.message);
+    const r = await action.run(() => invoke('agent.setEnabled', { id, on }));
+    if (!r.ok) return;
     toast(name + (on ? ' is running again.' : ' is stopped. The runtime will not call it.'));
   };
   return (

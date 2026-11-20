@@ -11,6 +11,7 @@ import { sessionScoped } from '../../api/view';
 import { onActivateKey } from '../../ui/keys';
 import { Drawer } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
+import { useAction } from '../../ui/useAction';
 import { JsonView } from '../../ui/kit/JsonView';
 import { Kpi } from '../../ui/kit/Kpi';
 import { canMgr, NOMGR } from './FabricContext';
@@ -133,15 +134,16 @@ export function Conflicts() {
   useBackend();
   const [n, setN] = useState(CF_PAGE);
   const P = conflictPage(n), C = P.list;
+  const action = useAction();
   const resolve = async (id: string) => {
     if (!canMgr()) return toast(NOMGR);
-    const r = await resolveConflict(id);
-    if (!r.ok) return toast(r.error.message);
+    const r = await action.run(() => resolveConflict(id));
+    if (!r.ok) return;
     toast(`${id} resolved: ${r.output.authority} is authoritative for ${r.output.kind.toLowerCase()}.`);
   };
   const escalate = async (id: string) => {
-    const r = await escalateConflict(id);
-    if (!r.ok && r.error.code !== 'duplicate') return toast(r.error.message);
+    const r = await action.run(() => escalateConflict(id), { silent: ['duplicate'] });
+    if (!r.ok && r.error.code !== 'duplicate') return;
     toast('Escalated to the data owner. The conflict stays open and dependent routes stay held.');
   };
   return (
@@ -220,6 +222,7 @@ export function Import() {
   const up = (f: () => void) => { f(); setV((x) => x + 1); };
   const imp = impKept.current;
   const st = imp.csv, mgr = canMgr();
+  const action = useAction();
   const validate = () => {
     const t = imp.text.trim();
     if (!t) return toast('Add a CSV file or rows first.');
@@ -236,8 +239,8 @@ export function Import() {
   };
   const commit = async () => {
     if (!st) return;
-    const r = await commitImport(st.ok, st.err, st.rows);
-    if (!r.ok) return toast(r.error.message);
+    const r = await action.run(() => commitImport(st.ok, st.err, st.rows));
+    if (!r.ok) return;
     up(() => { st.committed = true; });
     toast(st.ok + ' rows loaded for evaluation. They are tagged manual and will not trigger any instruction.', 4200);
   };
