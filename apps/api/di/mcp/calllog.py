@@ -1,6 +1,6 @@
 """The MCP call log: every tool call, allowed, held or denied, in the workspace collection "mcp_calls".
 
-The collection is the demo's CALLS, registered and seeded by the MCP screen (di.screens.mcp, CALL-1 … CALL-64, read
+The collection is the demo's CALLS, registered and seeded in di.reads.mcp_calls ( CALL-1 … CALL-64, read
 newest first). A call is appended in the demo's shape (ACT.pgRun: ts, agent, tool, caseId, tenant, lat, outcome,
 step), plus who called (`account`) and the refusal code (`code`, null for an allowed call), so the screen's call log,
 its "held or denied" filter and its counts show server calls next to the demo's.
@@ -11,7 +11,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from di import state
-from di.screens import mcp as screen  # noqa: F401  (registers the "mcp_calls" collection and its starting calls)
+from di.reads import mcp_calls  # noqa: F401  (registers the "mcp_calls" collection and its starting calls)
 
 COLLECTION = "mcp_calls"
 

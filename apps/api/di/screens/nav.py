@@ -68,9 +68,9 @@ from di.auth import Principal, load_context, principal
 from di.cases import store
 from di.db import get_session
 from di.reads.common import STARTING_FAILED_WORKFLOWS, inbox_requests
+from di.reads.context import call_ctx, can_see_case, visible_cases
+from di.reads.reference import lists
 from di.reads.workspace import aome_items
-from di.screens.analytics import call_context, vis_cases_filtered
-from di.screens.reference import lists
 
 router = APIRouter(prefix="/api/screens/nav", tags=["screens: nav"])
 
@@ -108,7 +108,7 @@ def navigation(p: Principal, cases: list[dict], cc_mode: str = "operational", la
     """nav.ts navigation(): NAV filtered by the demo's frVisible and navKids, with each link as navHref builds it."""
     a = p.account
     lay = cc_layout(a, cc_mode)
-    mine = [c for c in cases if p.tenant_ok(c["owner"]) and p.location_ok(c["location"])]  # the demo's myCases
+    mine = [c for c in cases if can_see_case(a, p.ctx, c)]  # the demo's myCases
     last = next((c for c in cases if c["id"] == last_asset), None)
     asset = last["id"] if last and p.tenant_ok(last["owner"]) else (mine[0]["id"] if mine else "RT-1048")  # rbLastAsset
 
@@ -142,7 +142,7 @@ HELD_STAGES = ("none", "awaiting_approval")  # a decision is still to be made or
 
 def held_conflicts(ctx, session: Session) -> int:
     """Open or escalated conflicts on the asset of a visible case whose decision is still pending (the menu badge)."""
-    assets = [c.get("assetId") for c in vis_cases_filtered(ctx) if c["stage"] in HELD_STAGES and c.get("assetId")]
+    assets = [c.get("assetId") for c in visible_cases(ctx) if c["stage"] in HELD_STAGES and c.get("assetId")]
     if not assets:
         return 0
     q = "SELECT count(*) FROM conflict WHERE status IN ('open', 'escalated') AND key = ANY(:keys)"
@@ -151,12 +151,12 @@ def held_conflicts(ctx, session: Session) -> int:
 
 def badges(p: Principal, session: Session, tenant_filter: str = "All") -> dict:
     """nav.ts navBadges()."""
-    ctx = call_context(p, session)
+    ctx = call_ctx(p, session)
     conf = held_conflicts(ctx, session)
     srcissue = session.execute(text(ISSUE_SQL)).scalar()
     wffail = len(STARTING_FAILED_WORKFLOWS)
     inbox = len(inbox_requests(ctx))
-    awaiting = sum(1 for c in vis_cases_filtered(ctx, tenant_filter) if c["stage"] == "awaiting_approval")
+    awaiting = sum(1 for c in visible_cases(ctx, tenant_filter) if c["stage"] == "awaiting_approval")
     return {
         "awaiting": awaiting,
         "inbox": inbox if policy.can_page(p.account, "command", "approvals") else 0,
@@ -177,7 +177,7 @@ def nav(
     return {
         "groups": navigation(p, cases, cc_mode, last_asset),
         "badges": badges(p, session, tenant_filter),
-        "tasks": len(aome_items(call_context(p, session))),
+        "tasks": len(aome_items(call_ctx(p, session))),
     }
 
 

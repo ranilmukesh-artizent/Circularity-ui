@@ -12,7 +12,6 @@ from di.engine.jsmath import js_round, js_sum
 from di.engine.routes import GATES
 from di.engine.scenario import KIND_MULT
 from di.reads.common import (
-    AS_OF,
     SOURCES,
     Case,
     af_days,
@@ -33,8 +32,9 @@ from di.reads.common import (
     rec,
     run,
     stage_label,
-    vis_cases,
 )
+from di.reads.context import visible_cases
+from di.reads.provenance import fetch_time, pmap
 
 
 def _case(ctx, case_id: str) -> Case:
@@ -69,7 +69,7 @@ def _cases_in(i: dict, ctx) -> list[Case]:
             and (not q or q in f"{c['id']} {c['assetId']} {as_model(c)} {c['owner']} {c['location']}".lower())
         )
 
-    return [c for c in vis_cases(ctx, store.all_cases(ctx.session)) if keep(c)]
+    return [c for c in visible_cases(ctx) if keep(c)]
 
 
 @implement("cases.list")
@@ -129,49 +129,16 @@ def case_get(i, ctx):
 
 
 # ---------------------------------------------------------------- case.evidence
-# The demo's PMAP: the source system and record prefix behind each kind of evidence
-PMAP = {
-    "ret": ("wms", "MV"),
-    "id": ("plm", "CFG"),
-    "insp": ("insp", "INS"),
-    "svc": ("eam", "WO"),
-    "eng": ("eng", "ENG"),
-    "photo": ("insp", "IMG"),
-    "dem": ("crm", "OPP"),
-    "mkt": ("mkt", "CMP"),
-    "cost": ("erp", "ERP"),
-    "pol": ("qms", "POL"),
-}
-
-
-def _fetch_time(c: Case, e: dict) -> int:
-    """The demo's fetchTimeOf: when the evidence was fetched, from its freshness text."""
-    h = int(hash_id(c["id"] + e["k"]), 16)
-    f = e.get("fresh") or ""
-    if e["k"] == "mkt":
-        return AS_OF - ((SOURCES.get("mkt") or {}).get("freshMin") or 1) * 60000 - (h % 50) * 1000
-    if "just now" in f:
-        return AS_OF - (h % 40) * 1000
-    if m := re.search(r"(\d+) min", f):
-        return AS_OF - (int(m[1]) * 60 + h % 50) * 1000
-    if m := re.search(r"(\d+) h", f):
-        return AS_OF - (int(m[1]) * 3600 + h % 1700) * 1000
-    return AS_OF - (86400 + h % 28000) * 1000
-
-
 def provenance(c: Case, e: dict) -> dict:
-    """The demo's provFor, the fields the reads use: the source system's name, the record and when it was fetched.
-    Motors and pumps are inspected in the MRO workshop, so their inspection and photo records trace to that source
-    (the demo's later override of provFor)."""
-    m = PMAP.get(e["k"])
-    if m and c["cls"] in ("motor", "pump") and e["k"] in ("insp", "photo") and "repair" in SOURCES:
-        m = ("repair", m[1])
+    """The demo's provFor (the shared PMAP, di.reads.provenance), the fields the reads use: the source system's name,
+    the record and when it was fetched (motors and pumps trace their inspection and photos to the repair system)."""
+    m = pmap(c, e["k"])
     if not m or e["state"] == "missing":
-        src = SOURCES.get(m[0]) if m else None
+        src = SOURCES.get(m["s"]) if m else None
         return {"sourceName": src["name"] if src else e.get("source"), "record": None, "fetchedAt": None}
     h = int(hash_id(c["id"] + e["k"] + "r"), 16)
-    record = None if e["state"] in ("partial", "conflict") else f"{m[1]}-{20000 + h % 80000}"
-    return {"sourceName": SOURCES[m[0]]["name"], "record": record, "fetchedAt": _fetch_time(c, e)}
+    record = None if e["state"] in ("partial", "conflict") else f"{m['pre']}-{20000 + h % 80000}"
+    return {"sourceName": SOURCES[m["s"]]["name"], "record": record, "fetchedAt": fetch_time(c, e)}
 
 
 @implement("case.evidence")
@@ -375,11 +342,7 @@ def demand_find(i, ctx):
 def asset_compare(i, ctx):
     c = _case(ctx, i["case_id"])
     m = as_model(c)
-    same = [
-        x
-        for x in vis_cases(ctx, store.all_cases(ctx.session))
-        if x["id"] != c["id"] and x["cls"] == c["cls"] and as_model(x) == m
-    ]
+    same = [x for x in visible_cases(ctx) if x["id"] != c["id"] and x["cls"] == c["cls"] and as_model(x) == m]
     rows = []
     for x in same[:10]:
         r = x.get("recommendation")

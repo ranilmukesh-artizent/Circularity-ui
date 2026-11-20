@@ -44,6 +44,7 @@ from di.ask.intents import IGNORE_RULES, INTENT, STARTERS, match, parse
 from di.cases import store
 from di.engine.routes import GATES
 from di.execution import ex_move, ex_plan, ex_trace, ex_what_if, loc_name
+from di.reads.case_detail import instr_payload
 from di.reads.common import (
     AF_STAGES,
     AS_OF,
@@ -62,10 +63,9 @@ from di.reads.common import (
     priority,
     stage_label,
     ti_conf,
-    vis_cases,
 )
-from di.screens.case import instr_payload
-from di.screens.command import af_risks
+from di.reads.context import visible_cases
+from di.reads.workspace import af_risks
 
 WORLD = golden.load("world")
 ROUTE_NAME = {r["id"]: r["name"] for r in WORLD["routes"]}
@@ -277,7 +277,7 @@ def escalation(c: dict, st: dict | None = None) -> dict:
 
 def need_case(R: Run, p: dict, what: str) -> dict:
     """The demo's afNeedCase: ask which case, offering the three highest-priority ones in scope."""
-    mine = vis_cases(R.ctx, store.all_cases(R.ctx.session))
+    mine = visible_cases(R.ctx)
     top = sorted(mine, key=lambda c: -priority(c)["score"])[:3]
     q = re.sub(r"\b(this|it|that)\b", "", p["raw"], count=1, flags=re.I)
     opts = [{"label": f"{c['id']} · {as_model(c)}", "ask": f"{q} {c['id']}"} for c in top]

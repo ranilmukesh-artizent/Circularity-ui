@@ -40,7 +40,7 @@ Still the demo's reference:
 - workspace collection "table_models": the table models (TBL_MODELS, laid out by tgLayout), seeded from the demo
   (tables.update has no handler yet);
 - workspace collection "events": the event stream (the demo's EVENTS and what actions add);
-- workspace collection "workflows" (di.screens.workflows): the workflows reading a source, failing ingest workflows.
+- workspace collection "workflows" (di.reads.workflows): the workflows reading a source, failing ingest workflows.
 
 Texts the demo computes (recommendations, exceptions, activity lines) are built the demo's way from these values.
 Where the backend has no value the demo invented one: a conflict's `impact` names what the backend does (dependent
@@ -89,9 +89,11 @@ from di.auth import Principal, principal
 from di.connectors.registry import ADAPTERS
 from di.db import get_session
 from di.engine.jsmath import js_round
-from di.reads.common import STARTING_MAPPINGS, ms
-from di.screens.mcp import case_openable
-from di.screens.workflows import all_workflows, wf_stat, wf_using
+from di.reads.common import ms
+from di.reads.constants import MAP_TARGET, MAPPINGS, SRC_TYPES
+from di.reads.context import case_openable
+from di.reads.reference import channels
+from di.reads.workflows import all_workflows, wf_stat, wf_using
 
 router = APIRouter(prefix="/api/screens/integration", tags=["screens: integration"])
 
@@ -103,14 +105,11 @@ REF_BY_ID = {s["id"]: s for s in REF_SOURCES}
 # credentials were refused, like the demo's expired Ritchie Bros. token). The screens show both as `stale`, as the
 # demo does: the data is there but not current. `connectorStatus` keeps the connector's own word.
 SCREEN_STATUS = {"failing": "stale", "auth_expired": "stale"}
-SRC_TYPES: dict[str, dict] = _SRC["types"]
 CANON: list[dict] = golden.load("canonical")["models"]
-MAPPINGS: dict[str, list] = STARTING_MAPPINGS
 _REF = golden.load("screens/integration")
 CATALOG: list[dict] = _REF["catalog"]
 CANON_EX: dict = _REF["canon_examples"]
 CANON_PFX: dict[str, str] = _REF["canon_pfx"]
-MAP_TARGET: dict[str, str] = _REF["map_target"]
 FR_CATOF: dict[str, str] = _REF["fr_catof"]
 FR_CATS: list[str] = _REF["fr_cats"]
 FR_XTYPES: dict[str, dict] = _REF["fr_xtypes"]
@@ -146,19 +145,6 @@ def type_of(t: str) -> dict:
 def cat_of(s: dict) -> str:
     """frCatOf."""
     return FR_CATOF.get(s["type"], "Custom")
-
-
-def channels(s: dict) -> list[str]:
-    """srcCh: api, event and file, from the source's mode and auth."""
-    m = f"{s.get('mode', '')} {s.get('auth', '')}".lower()
-    out = []
-    if re.search("api|poll", m):
-        out.append("api")
-    if re.search("event|webhook", m):
-        out.append("event")
-    if re.search("csv|sftp", m):
-        out.append("file")
-    return out
 
 
 def sla_minutes(s: dict) -> int:

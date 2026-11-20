@@ -49,32 +49,20 @@ from di import golden, policy, state
 from di.actions.registry import ACTIONS
 from di.auth import Principal, principal
 from di.db import get_session
-from di.reads.common import REQ_SCOPE, af_days, requests
+from di.reads.access import can_decide, request_rows
+from di.reads.common import af_days, requests
+from di.reads.constants import AGENTS, AUTO_TYPES, DELEG, HARD_RULES, LEVEL_RANK, LEVELS
 
 router = APIRouter(prefix="/api/screens/access", tags=["screens: access"])
 
 _REF = golden.load("screens/access")
-DELEG = [{k: d[k] for k in ("k", "label", "desc")} for d in _REF["delegations"]]
-LEVELS = _REF["levels"]
 IDP_ROLES = _REF["idp_roles"]  # the demo's IDP_ROLES, in its order (policy.idp_roles() has policy.json's sorted keys)
-AUTO_TYPES = _REF["auto_types"]
-LEVEL_RANK = {"off": 0, "suggest": 1, "prepare": 2, "act": 3}
-AGENTS = golden.load("tools")["agents"]
-HARD_RULES = golden.load("tools")["hard_rules"]
 HOME_LABEL = _REF["home_label"]  # the demo's HOME_LABEL: landing route -> page name
 RUN_LIMITS = {"actions": 50, "bulk": 100}  # AF.cfg.max at the start
 SECTIONS = ("accounts", "identity", "delegations", "requests", "autonomy", "limits", "agentsx", "metrics")
 
 
 # ---------------------------------------------------------------- shared with the MCP screen (proposals)
-def can_decide(p: Principal, r: dict) -> bool:
-    """The demo's canDecide: a pending request of a kind this account may decide (Admin, or a delegated Approver)."""
-    return r["status"] == "pending" and p.can("approve." + REQ_SCOPE[r["kind"]])
-
-
-def request_rows(s: Session, p: Principal, kind: str | None = None) -> list[dict]:
-    """The requests, newest first (the demo's S.reqs), each with whether this account may decide it."""
-    return [r | {"can_decide": can_decide(p, r)} for r in requests(s) if kind is None or r["kind"] == kind]
 
 
 # ---------------------------------------------------------------- sections

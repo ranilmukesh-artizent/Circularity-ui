@@ -44,10 +44,10 @@ from sqlalchemy import text
 
 from di import clock, jobs, state
 from di.actions.registry import guard, implement
-from di.reads.common import SOURCES, STARTING_MAPPINGS, hash_id, iso, ms, to_fixed
-from di.screens import workflows as screen
-from di.screens.integration import SRC_TYPES, channels
-from di.screens.reference import lists
+from di.reads import workflows as studio
+from di.reads.common import SOURCES, hash_id, iso, ms, to_fixed
+from di.reads.constants import MAP_TARGET, MAPPINGS, SRC_TYPES, TOOLS
+from di.reads.reference import channels, lists
 
 log = logging.getLogger("di.workflows")
 _REF = lists()
@@ -59,9 +59,6 @@ DELIVER: dict[str, list] = _REF["DELIVER"]
 CH_ARR: dict[str, str] = _REF["CH_ARR"]
 CH_DEL: dict[str, str] = _REF["CH_DEL"]
 SH: dict[str, str] = _REF["SH"]
-MAP_TARGET: dict[str, str] = _REF["MAP_TARGET"]
-TOOLS: list[dict] = _REF["TOOLS"]
-MAPPINGS: dict[str, list] = STARTING_MAPPINGS
 
 RUNS_KEPT = 40  # S.wf.runs.length = Math.min(S.wf.runs.length, 40)
 # the canvas' test run (wfStep): a step that runs shows "running" for 320 ms; one that does nothing takes 25 ms.
@@ -395,7 +392,7 @@ class _Graph:
     """wfAnalyze: nodes by id, successors, predecessors, and what is reachable either way (in the demo's order)."""
 
     def __init__(self, g: dict):
-        self.by, self.succ, self.pred = screen._analyze(g)
+        self.by, self.succ, self.pred = studio._analyze(g)
 
     def _reach(self, nid: str, adj: dict) -> list[str]:
         seen: dict[str, None] = {}
@@ -719,7 +716,7 @@ def step_dur(nid: str, wid: str) -> float:
 def sim_outcome(w: dict) -> dict:
     """wfSimOutcome (a manual run: no injected failure): every step's state, the run's state and its note."""
     g = graph_of(w)
-    A, order = _Graph(g), screen._order(g)
+    A, order = _Graph(g), studio._order(g)
     states: dict[str, str] = {}
     dur: dict[str, float] = {}
     bad = None
@@ -784,7 +781,7 @@ def _wf_guard(i, ctx) -> tuple[str, str] | None:
 
 
 def _ids(ctx) -> set[str]:
-    return {w["id"] for w in screen.all_workflows(ctx.session)}
+    return {w["id"] for w in studio.all_workflows(ctx.session)}
 
 
 # ---------------------------------------------------------------- the actions
@@ -1047,7 +1044,7 @@ def _rr(rnd: Callable[[], float], a: int, b: int) -> int:
 
 def counts_for(w: dict, g: dict, rows: int, states: dict) -> dict:
     """frRunCounts for the given states (records in and out of each step)."""
-    return screen.run_counts({"id": w["id"], "graph": g, "last": {"rows": rows}, "lastRun": {"states": states}})
+    return studio.run_counts({"id": w["id"], "graph": g, "last": {"rows": rows}, "lastRun": {"states": states}})
 
 
 def progress(w: dict, g: dict, outcome: dict, rows: int) -> list[dict]:

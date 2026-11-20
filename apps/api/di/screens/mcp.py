@@ -39,39 +39,17 @@ Facade (apps/web/src/api/mcp.ts) → here:
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di import golden, policy, state
+from di import policy, state
 from di.auth import Principal, principal
-from di.cases import store
 from di.db import get_session
-from di.screens.access import request_rows
+from di.reads import mcp_calls  # noqa: F401 - registers the "mcp_calls" collection this page reads
+from di.reads.access import request_rows
+from di.reads.constants import AGENTS, HARD_RULES, TOOLS
+from di.reads.context import case_openable
 
 router = APIRouter(prefix="/api/screens/mcp", tags=["screens: mcp"])
-
-_TOOLS_REF = golden.load("tools")
-TOOLS: list[dict] = _TOOLS_REF["tools"]
-AGENTS: list[dict] = _TOOLS_REF["agents"]
-HARD_RULES: list[str] = _TOOLS_REF["hard_rules"]
-_CALLS: list[dict] = golden.load("screens/mcp")["calls"]  # the demo's CALLS, newest first
-# seeded oldest first (CALL-1 is the oldest) and read newest first, as the demo's log (new calls are unshifted)
-state.register("mcp_calls", lambda: [(f"CALL-{i + 1}", c) for i, c in enumerate(reversed(_CALLS))])
-
-
-# ---------------------------------------------------------------- shared with the Connection Fabric (events)
-def case_openable(s: Session, p: Principal, case_ids: set[str]) -> dict[str, bool]:
-    """The demo's canRoute to a case page: the case exists, the account has the case page, and the case is in its
-    tenants (and its warehouse, for a Warehouse Manager)."""
-    ids = sorted(i for i in case_ids if i)
-    if not ids or not policy.can_page(p.account, "product", "case"):
-        return dict.fromkeys(ids, False)
-    store.ensure(s)
-    found = {
-        r.id: (r.owner, r.location)
-        for r in s.execute(text("SELECT id, owner, location FROM case_record WHERE id = ANY(:i)"), {"i": ids})
-    }
-    return {i: i in found and p.tenant_ok(found[i][0]) and p.location_ok(found[i][1]) for i in ids}
 
 
 # ---------------------------------------------------------------- the demo's permCell

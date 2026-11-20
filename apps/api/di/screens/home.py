@@ -47,8 +47,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di import golden, policy
-from di.actions.pipeline import Actor, CallContext
+from di import policy
+from di.actions.pipeline import CallContext
 from di.actions.registry import ACTIONS
 from di.auth import Principal, principal
 from di.cases import store
@@ -59,16 +59,12 @@ from di.reads.common import (
     AS_OF,
     DAY_MS,
     SOURCES,
-    STARTING_CONFLICTS,
-    STARTING_MAPPINGS,
     WORLD,
     Case,
     active_step,
     ex_app,
     ex_clock,
-    exp_vis,
     fmt_n,
-    hash_id,
     iso,
     kfmt,
     limit_for,
@@ -76,42 +72,19 @@ from di.reads.common import (
     notes,
     step_owner,
     to_fixed,
-    vis_cases,
 )
+from di.reads.constants import ROUTES
+from di.reads.context import call_ctx, can_page, visible_cases, visible_rows
+from di.reads.decisions import metrics
+from di.reads.expected import exp_vis
+from di.reads.fabric import hh, hh_totals, open_conflicts, sm_exceptions, stale_sources, wf_stat, workflows, ws_events
 
 router = APIRouter(prefix="/api/screens/home", tags=["screens: home"])
 
 MONTHS: list[str] = WORLD["months"]
-ROUTES: list[dict] = WORLD["routes"]
-SRC_TYPES: dict = golden.load("sources")["types"]
 
 
 # ---------------------------------------------------------------- the call context and scope
-def call_ctx(p: Principal, session: Session) -> CallContext:
-    """The read helpers (di.reads) take the action pipeline's context: the signed-in account and the session."""
-    return CallContext(actor=Actor(account=p.account, ctx=p.ctx), session=session)
-
-
-def can_page(ctx: CallContext, page: str, section: str | None = None) -> bool:
-    return policy.can_page(ctx.actor.account, page, section)
-
-
-def vis(ctx: CallContext, tenant: str = "All") -> list[Case]:
-    """The demo's visCases with the tenant menu (S.tenant): the account's cases, narrowed to one tenant if chosen."""
-    return [c for c in vis_cases(ctx, store.all_cases(ctx.session)) if tenant == "All" or c["owner"] == tenant]
-
-
-def vis_rows(ctx: CallContext, tenant: str = "All") -> list[dict]:
-    """The demo's visRows with the tenant menu."""
-    return [r for r in ws.vis_rows(ctx) if tenant == "All" or r["tenant"] == tenant]
-
-
-def metrics(rows: list[dict]) -> dict:
-    """The demo's metrics, the totals the screens show."""
-    rc = [r for r in rows if r["status"] == "reconciled"]
-    base, act = js_sum(r["baseline"] for r in rc), js_sum(r["actual"] for r in rc)
-    days = ws._median([r["days"] for r in rc])
-    return {"rc": rc, "base": base, "act": act, "uplift": act - base, "avoided": js_sum(r["avoided"] for r in rc), "days": days}
 
 
 def ago(ms_: float) -> str:
@@ -141,102 +114,9 @@ def delta(cur: float | None, prev: float | None, good_up: bool | None) -> dict |
 
 # ---------------------------------------------------------------- the workflow catalogue (the demo's wfSeed)
 WF_FAILED_NOTE = "Validation & enrichment: 3 retries exhausted (connection reset)"
-WF_DEC = ["Standard six-gate decision", "Pool allocation to approval", "Evidence gaps and demand first"]
-
-
-def workflows() -> list[dict]:
-    """The demo's starting workflows without their random run data: one ingest per source (a draft when the source is
-    not connected), one outbound per write channel, and the three decision workflows. The Oracle Depot Repair ingest
-    is the one whose last run failed (STARTING_FAILED_WORKFLOWS)."""
-    out: list[dict] = []
-
-    def add(name: str, src: str | None, status: str = "published") -> None:
-        failing = name in ws.STARTING_FAILED_WORKFLOWS
-        out.append({"id": f"WF-{101 + len(out)}", "name": name, "src": src, "status": status, "failing": failing})
-
-    for s in SOURCES.values():
-        add("Ingest · " + s["vendor"], s["id"], "draft" if s["status"] == "unavailable" else "published")
-    for s in SOURCES.values():
-        if s.get("write"):
-            for ch in ("api", "file") if s["type"] == "erp" else ("api",):
-                add("Outbound · " + s["vendor"] + (" (interface file)" if ch == "file" else ""), s["id"])
-    for name in WF_DEC:
-        add(name, None)
-    return out
-
-
-def wf_stat(w: dict) -> str:
-    """The demo's wfStat."""
-    return "failing" if w["status"] == "published" and w["failing"] else w["status"]
 
 
 # ---------------------------------------------------------------- integration health (the demo's hhTotals)
-def hh() -> list[dict]:
-    """The demo's S.hh: 24 hourly buckets of successful, warning and failed syncs and events (hhInit)."""
-    out = []
-    for i in range(24):
-        h = int(hash_id(f"hh{i}"), 16)
-        out.append(
-            {
-                "ok": 18 + h % 30,
-                "warn": 2 + h % 4 if h % 5 == 0 else 1 if h % 3 == 0 else 0,
-                "bad": 2 if h % 11 == 0 else 1 if h % 7 == 0 else 0,
-            }
-        )
-    return out
-
-
-def hh_totals() -> dict:
-    """The demo's hhTotals: the last 24 hours' totals, the runs in progress and the success share."""
-    t = {"ok": 0, "warn": 0, "bad": 0}
-    for b in hh():
-        for k in t:
-            t[k] += b[k]
-    t["run"] = sum(1 for s in SOURCES.values() if s.get("syncing"))  # no workflow runs on the server
-    n = t["ok"] + t["warn"] + t["bad"]
-    t["pct"] = t["ok"] / n * 100 if n else 100
-    return t
-
-
-def sm_exceptions() -> list[dict]:
-    """The demo's smExceptions: sources not connected, stale or unmapped, and open conflicts."""
-    o: list[dict] = []
-    for s in SOURCES.values():
-        if s["status"] == "unavailable":
-            o.append({"src": s["name"], "obj": s["vendor"], "issue": "Not connected: no feed", "sev": "High", "st": "Open"})
-        elif s["status"] == "stale":
-            o.append({"src": s["name"], "obj": s["vendor"], "issue": "Feed token expired", "sev": "High", "st": "Open"})
-        if s["status"] != "unavailable" and not STARTING_MAPPINGS.get(s["id"]):
-            o.append({"src": s["name"], "obj": s["vendor"], "issue": "No field mapping defined", "sev": "High", "st": "Open"})
-        elif s["status"] == "manual":
-            o.append(
-                {
-                    "src": s["name"],
-                    "obj": s["vendor"],
-                    "issue": "Manual import only, no live feed",
-                    "sev": "Low",
-                    "st": "In Progress",
-                }
-            )
-    for c in open_conflicts():
-        o.append(
-            {
-                "src": c["a"]["src"],
-                "obj": c["asset"],
-                "issue": c["kind"] + " differs from " + c["b"]["src"],
-                "sev": "Medium",
-                "st": "Open",
-            }
-        )
-    return o
-
-
-def open_conflicts() -> list[dict]:
-    return [c for c in STARTING_CONFLICTS if c["status"] == "open"]
-
-
-def stale_sources() -> list[dict]:
-    return [s for s in SOURCES.values() if s["status"] in ("stale", "unavailable")]
 
 
 # ---------------------------------------------------------------- tasks and alerts
@@ -279,7 +159,7 @@ def alerts(ctx: CallContext) -> list[dict]:
                 }
             )
     if can_page(ctx, "product", "case"):
-        for c in vis(ctx):
+        for c in visible_cases(ctx):
             s = active_step(c)
             k = ex_clock(c, s) if s else None
             if k and k["level"]:
@@ -375,10 +255,6 @@ def _monthly(rows: list[dict], f) -> list[float]:
     return o
 
 
-def cc_net(c: Case) -> float:
-    return c["recommendation"]["net"] if c.get("recommendation") else 0
-
-
 def _wms_active(c: Case) -> bool:
     s = active_step(c)
     return bool(s and s["sys"].startswith("WMS"))
@@ -386,11 +262,11 @@ def _wms_active(c: Case) -> bool:
 
 def kpis(ctx: CallContext) -> list[dict]:
     a = ctx.actor.account
-    role, cs = a.role, vis(ctx)
+    role, cs = a.role, visible_cases(ctx)
     T: list[dict] = []
     open_ = [c for c in cs if c["stage"] in ("awaiting_approval", "reeval")]
-    pot = js_sum(cc_net(c) for c in open_)
-    rows = vis_rows(ctx)
+    pot = js_sum(ws.cc_net(c) for c in open_)
+    rows = visible_rows(ctx)
     rec = _monthly(rows, lambda x: x["actual"] if x["status"] == "reconciled" else 0)
     r1, r0 = rec[-1], rec[-2]
     need = sum(1 for c in cs if c.get("blocked") or c.get("assessment") in ("Review", "Partial"))
@@ -465,7 +341,7 @@ def kpis(ctx: CallContext) -> list[dict]:
             for c in cs
             if c["stage"] == "awaiting_approval" and c.get("recommendation") and abs(c["recommendation"]["net"]) > lim
         )
-        wv = js_sum(cc_net(c) for c in wait)
+        wv = js_sum(ws.cc_net(c) for c in wait)
         add("tasks", "dec", "wait", len(wait), len(wait), "Waiting for me", "command/approvals")
         add("clock", "alert", "esc", esc, esc, "Escalations", "alerts")
         add("scale", "insp", "close", close, close, "Close calls", "product/received", sub="top two routes within 10%")
@@ -532,9 +408,7 @@ def kpis(ctx: CallContext) -> list[dict]:
         add("cal", "money", "days", f"{days} d", days, "Average holding days", "product/received")
         return T
     if role == "Executive":
-        from di.screens.command import cc_scope
-
-        sc = cc_scope(ctx, {})
+        sc = ws.cc_scope(ctx)
         co2 = _monthly(rows, lambda x: x["co2e"] if x["status"] == "reconciled" else 0)
         c1, c0 = co2[-1], co2[-2]
         risk = js_sum(c["_var"] for c in sc["all"])
@@ -632,13 +506,6 @@ def activity(ctx: CallContext, win: str) -> list[dict]:
     return rows
 
 
-def ws_events(ctx: CallContext) -> list[dict]:
-    """The demo's EVENTS, newest first (the workspace collection "events")."""
-    from di import state
-
-    return state.items(ctx.session, "events", newest_first=True)
-
-
 # ---------------------------------------------------------------- the middle panel (the facade's middlePanel)
 def middle(ctx: CallContext) -> dict:
     r = ctx.actor.account.role
@@ -664,7 +531,7 @@ def middle(ctx: CallContext) -> dict:
                 "label": "Workflow health",
             },
         }
-    cs = vis(ctx)
+    cs = visible_cases(ctx)
     if r == "Engineer":
         gr: dict[str, int] = {}
         for c in cs:
@@ -684,7 +551,7 @@ def middle(ctx: CallContext) -> dict:
             "ring": {"segs": segs, "center": str(len(cs)), "sub": "assets"},
         }
     if r == "Finance":
-        rc = [x for x in vis_rows(ctx) if x["status"] == "reconciled"]
+        rc = [x for x in visible_rows(ctx) if x["status"] == "reconciled"]
         inb = sum(1 for x in rc if abs(x["actual"] - x["p50"]) <= abs(x["p50"]) * 0.1)
         ab = sum(1 for x in rc if x["actual"] - x["p50"] > abs(x["p50"]) * 0.1)
         return {
@@ -711,7 +578,7 @@ def middle(ctx: CallContext) -> dict:
             "ring": {"segs": segs, "center": str(sum(u.values())), "sub": "assets"},
         }
     if r == "Executive":
-        m = metrics(vis_rows(ctx))
+        m = metrics(visible_rows(ctx))
         mx = max(m["base"], m["act"], 1)
 
         def bar(label: str, v: float, c: str) -> dict:
@@ -759,13 +626,11 @@ def middle(ctx: CallContext) -> dict:
 
 # ---------------------------------------------------------------- key figures (the facade's figures)
 def figures(ctx: CallContext, per: str) -> list[dict]:
-    from di.screens.command import cc_scope
-
     n = 1 if per == "30" else 3 if per == "90" else 12
     mi0 = len(MONTHS) - n
-    every = vis_rows(ctx)
+    every = visible_rows(ctx)
     rc = [x for x in every if x["mi"] >= mi0 and x["status"] == "reconciled"]
-    sc = cc_scope(ctx, {})
+    sc = ws.cc_scope(ctx)
     open_ = [c for c in sc["all"] if c["_st"] in ("approval", "reeval")]
     prev = [x for x in every if mi0 - n <= x["mi"] < mi0 and x["status"] == "reconciled"]
 
@@ -785,7 +650,7 @@ def figures(ctx: CallContext, per: str) -> list[dict]:
             "potential",
             "dollar",
             "money",
-            kfmt(js_sum(cc_net(c) for c in open_)),
+            kfmt(js_sum(ws.cc_net(c) for c in open_)),
             "Potential recovery",
             f"{len(open_)} decisions open",
         ),
@@ -889,7 +754,7 @@ def src_fresh(s: dict) -> int:
 
 def report_rows(ctx: CallContext, rid: str, tenant: str, period: str) -> list[list]:
     n = 1 if period == "30" else 3 if period == "90" else 12
-    rows = [x for x in vis_rows(ctx) if x["mi"] >= len(MONTHS) - n and (tenant == "All" or x["tenant"] == tenant)]
+    rows = [x for x in visible_rows(ctx) if x["mi"] >= len(MONTHS) - n and (tenant == "All" or x["tenant"] == tenant)]
     rc = [x for x in rows if x["status"] == "reconciled"]
     months = sorted({x["mi"] for x in rc})
     if rid == "pva":
@@ -909,7 +774,7 @@ def report_rows(ctx: CallContext, rid: str, tenant: str, period: str) -> list[li
     if rid == "packs":
         head = ["Case", "Tenant", "Stage", "Route", "Net", "Approval ref", "Snapshot"]
         out = [head]
-        for c in vis(ctx):
+        for c in visible_cases(ctx):
             if c.get("recommendation") and (tenant == "All" or c["owner"] == tenant):
                 r = c.get("chosen") or c["recommendation"]
                 appr = c["approval"]["ref"] if c.get("approval") else ""

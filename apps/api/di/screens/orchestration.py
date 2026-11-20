@@ -43,8 +43,8 @@ Notes for the switch-over (B17):
 - `agent_calls`: the demo lists the tool calls of the agent runs started in this browser session (AF.ui.runs, empty at
   the start). The server has no agent runs yet (the agent layer moves to the server with MCP, B16), so it is always
   an empty list for now.
-- The journal entries are the action journal's (see di.screens.case: `by` is the account's label, `out` the stored
-  output reference).
+- The journal entries are the action journal's (see di.reads.case_detail.case_journal: `by` is the account's label,
+  `out` the stored output reference).
 """
 
 import re
@@ -52,13 +52,14 @@ import re
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from di import golden, policy
+from di import policy
 from di.auth import Principal, principal
 from di.db import get_session
 from di.engine.jsmath import js_round, js_sum
 from di.engine.routes import GATES
 from di.execution import ex_doc_ref, steps_for
 from di.execution.trace import learn_ver
+from di.reads.case_detail import af_lease, case_journal
 from di.reads.common import (
     AS_OF,
     SOURCES,
@@ -81,12 +82,13 @@ from di.reads.common import (
     step_owner,
     to_fixed,
 )
-from di.screens.analytics import reconciled
-from di.screens.case import af_lease, case_journal, load_case, my_cases, prov_for, screen_ctx, vis_cases
+from di.reads.constants import AGENTS
+from di.reads.context import call_ctx, load_case, visible_cases
+from di.reads.decisions import reconciled
+from di.reads.provenance import prov_for
 
 router = APIRouter(prefix="/api/screens/orchestration", tags=["screens: orchestration"])
 
-AGENTS = golden.load("tools")["agents"]
 AGENT_NAMES = {a["id"]: a["name"] for a in AGENTS}
 LR_MODEL_VERSIONS = {
     "condition-vision": "v2.1",
@@ -124,7 +126,8 @@ def or_row(c: Case) -> dict:
 def cases(tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)):
     """The demo's orCases and orCase."""
     p.require_page("orchestration")
-    cs = my_cases(p, session) if policy.can_page(p.account, "product", "case") else vis_cases(p, session, tenant)
+    ctx = call_ctx(p, session)
+    cs = visible_cases(ctx) if policy.can_page(p.account, "product", "case") else visible_cases(ctx, tenant)
     default = next((c for c in cs if c["id"] == "RT-1048"), cs[0] if cs else None)
     return {
         "cases": [or_row(c) for c in cs],
@@ -732,7 +735,7 @@ def escalation(c: Case, nx: dict, p: Principal) -> dict:
 def case_run(case_id: str, fail: str = "", p: Principal = Depends(principal), session: Session = Depends(get_session)):
     """One case's run, as the live board, the run details and the trace read it."""
     c = load_case(p, session, case_id, "orchestration", "run")
-    ctx = screen_ctx(p, session)
+    ctx = call_ctx(p, session)
     rn = run(c, ctx)
     m = lr_model(c, rn, fail, session)
     nx = next_step(c, ctx)

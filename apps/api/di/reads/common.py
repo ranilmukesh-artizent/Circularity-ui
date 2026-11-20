@@ -3,7 +3,7 @@
 - formatting: `money`, `inr`, `fmt_n`, `fmt_d`, `fmt_dy`, `iso`, and JavaScript's date arithmetic in epoch milliseconds
 - the case as a list row: `case_row` (afCaseRow), `priority` (afPriority), `stage_label` (afStageLabel), `rec` (afRec)
 - the ten-stage case run: `stage_states` (afStageStates), `run` (afRun), `run_of` (afRunOf), `next_step` (afNextStep)
-- scope: `vis_cases` (visCases), `can` (can)
+- scope: `can` (can); what an account may see (visCases, visRows) is in di.reads.context
 - facts derived from a case: `case_rul` (caseRul), `case_demand` (caseDemand), `ti_m` (tiM), `base_rows` (afBaseRows)
 
 The demo's clock is pinned to its as-of time (`AS_OF`, from the golden world); `asOfNow()` and `new Date()` mean that.
@@ -235,15 +235,6 @@ def can(ctx, perm: str) -> bool:
 def decisions_delegated(ctx) -> bool:
     """The demo's S.deleg.decisions: Admin has delegated approving decisions to the Approver."""
     return ctx.actor.ctx.delegations.get("decisions", True)
-
-
-def vis_cases(ctx, cases: list[Case]) -> list[Case]:
-    """The demo's visCases: the cases in the signed-in account's tenants (and warehouse, for a Warehouse Manager).
-    The demo's tenant filter on screen (S.tenant) is 'All' after sign-in, so it narrows nothing here."""
-    a = account(ctx)
-    if a is None:
-        return list(cases)
-    return [c for c in cases if policy.tenant_ok(a, c["owner"], ctx.actor.ctx) and policy.location_ok(a, c["location"])]
 
 
 # ---------------------------------------------------------------- facts derived from a case
@@ -917,53 +908,6 @@ def inbox_requests(ctx) -> list[dict]:
 
 
 # ---------------------------------------------------------------- expected returns (the demo's EXPECTED)
-# Returns expected from contract and lease expiry (Contract Management): (id, product, customer, expected day in
-# October 2026, signal). The warehouse, contract, return window and probability are derived as the demo does at load.
-_EXPECTED_BASE = [
-    ("ER-3101", "Industrial motor", "Customer A", 12, "Lease LS-5412 ends 11 Oct"),
-    ("ER-3102", "Hydraulic pump", "Customer B", 14, "Lease LS-5440 ends 13 Oct"),
-    ("ER-3103", "Power tool", "Customer A", 15, "Site 1 tool-crib refresh"),
-    ("ER-3104", "Tool-fleet batch", "Customer C", 17, "Project P-7 closes"),
-    ("ER-3105", "IT electronics", "Customer B", 19, "Laptop refresh wave 2 (22 units)"),
-    ("ER-3106", "Control unit", "Customer C", 21, "Line 4 upgrade"),
-    ("ER-3107", "Industrial motor", "Customer B", 24, "Lease LS-5471 ends 22 Oct"),
-    ("ER-3108", "Hydraulic pump", "Customer A", 28, "Failure-driven swap at Site 5"),
-    ("ER-3109", "Power tool", "Customer C", 30, "Warranty return batch"),
-]
-
-
-def _expected() -> list[dict]:
-    out = []
-    oct1 = ms("2026-10-01")
-    for i, (eid, product, owner, day, signal) in enumerate(_EXPECTED_BASE):
-        h = int(hash_id(eid), 16)
-        lease_ref = re.search(r"LS-\d+", signal)
-        out.append(
-            {
-                "id": eid,
-                "product": product,
-                "owner": owner,
-                "customer": owner,
-                "contract": lease_ref[0] if lease_ref else f"CT-{7031 + i * 7}",
-                "wh": ["Warehouse 1", "Warehouse 2"][h % 2],
-                # the return window: from two days before the expected date to twelve days after
-                "window": f"{fmt_d(oct1 + (day - 3) * DAY_MS)}–{fmt_d(oct1 + (day + 11) * DAY_MS)}",
-                "prob": 62 + h % 20 if lease_ref else 100,
-            }
-        )
-    return out
-
-
-EXPECTED = _expected()
-
-
-def exp_vis(ctx) -> list[dict]:
-    """The demo's expVis: the expected returns in the account's tenants (and warehouse, for a Warehouse Manager)."""
-    a = account(ctx)
-    if a is None:
-        return list(EXPECTED)
-    wh_scoped = policy.policy(a).get("warehouseScoped")
-    return [e for e in EXPECTED if policy.tenant_ok(a, e["owner"], ctx.actor.ctx) and (not wh_scoped or e["wh"] == a.warehouse)]
 
 
 # ---------------------------------------------------------------- hand-off clocks (the demo's EX_STEP limits)

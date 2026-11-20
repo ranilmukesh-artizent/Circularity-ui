@@ -26,15 +26,14 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from di import golden, policy
+from di import policy
 from di.actions.pipeline import CallContext, invoke
 from di.reads.common import AS_OF, fmt_dy, hash_id, to_fixed
-from di.screens.analytics import all_rows, model_stats
+from di.reads.constants import AGENTS_BY_ID, HARD_RULES, TOOLS_BY_ID
+from di.reads.decisions import all_rows, model_stats
 
-_REF = golden.load("tools")
-TOOLS: dict[str, dict] = {t["id"]: t for t in _REF["tools"]}
-AGENTS: dict[str, dict] = {a["id"]: a for a in _REF["agents"]}
-HARD_RULES: list[str] = _REF["hard_rules"]
+TOOLS: dict[str, dict] = TOOLS_BY_ID  # keyed by id (the tables below and di.mcp.policy look tools up by id)
+AGENTS: dict[str, dict] = AGENTS_BY_ID
 NO_APPROVAL_REF = HARD_RULES[2]  # "Nothing is sent to an enterprise system without an approval reference."
 
 # the action(s) each tool may run; policy.py asserts none of them is one an agent must never reach

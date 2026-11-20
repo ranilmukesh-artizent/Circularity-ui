@@ -12,9 +12,8 @@ from functools import cache, cmp_to_key
 
 from sqlalchemy import text
 
-from di import golden, policy
+from di import policy
 from di.actions.registry import PERM_ALIAS, implement
-from di.cases import store
 from di.engine.jsmath import js_round, js_sum
 from di.reads.common import (
     AS_OF,
@@ -27,7 +26,6 @@ from di.reads.common import (
     STARTING_CONFLICTS,
     STARTING_FAILED_WORKFLOWS,
     STARTING_MAPPINGS,
-    WORLD,
     Case,
     account,
     active_step,
@@ -36,7 +34,6 @@ from di.reads.common import (
     ex_app,
     ex_clock,
     ex_ts,
-    exp_vis,
     fmt_n,
     inbox_requests,
     kfmt,
@@ -47,31 +44,14 @@ from di.reads.common import (
     step_owner,
     ti_conf,
     to_fixed,
-    vis_cases,
 )
-
-ROUTES = WORLD["routes"]
+from di.reads.constants import ROUTES
+from di.reads.context import visible_cases, visible_rows
+from di.reads.decisions import all_rows, median
+from di.reads.expected import exp_vis
 
 
 # ---------------------------------------------------------------- closed decisions (the demo's ROWS)
-def _rows() -> list[dict]:
-    return golden.load("decisions")
-
-
-def vis_rows(ctx) -> list[dict]:
-    """The demo's visRows: the closed decisions in the account's tenants (the on-screen tenant filter is 'All')."""
-    a = account(ctx)
-    return [r for r in _rows() if a is None or policy.tenant_ok(a, r["tenant"], ctx.actor.ctx)]
-
-
-def _median(a: list[float]) -> float:
-    """The demo's med."""
-    if not a:
-        return 0
-    s, m = sorted(a), len(a) >> 1
-    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2
-
-
 def metrics(rows: list[dict]) -> dict:
     """The demo's metrics, the parts the reads use: reconciled decisions, actual net and avoided spend."""
     rc = [r for r in rows if r["status"] == "reconciled"]
@@ -98,7 +78,7 @@ EX_TYPE = {"Missing evidence": "evidence", "Condition deterioration": "evidence"
 def cc_est_per_unit() -> dict[str, float]:
     """The demo's CC_EST: per class, the median predicted net per unit of closed decisions (not exits, P50 > 0)."""
     return {
-        k: _median([r["p50"] / r["q"] for r in _rows() if r["cls"] == k and r["route"] != "exit" and r["p50"] > 0])
+        k: median([r["p50"] / r["q"] for r in all_rows() if r["cls"] == k and r["route"] != "exit" and r["p50"] > 0])
         for k in CLASSES
     }
 
@@ -165,17 +145,49 @@ def cc_risk(c: Case, util: dict[str, int]) -> dict[str, float]:
     return {k: v for k, v in r.items() if v > 0}
 
 
-def cc_scope(ctx) -> dict:
-    """The demo's ccScope with the Command Center filters cleared: the visible cases, each annotated with its stage
-    (_st), risks (_risk), value at risk (_var) and estimated value (_val)."""
-    vis = vis_cases(ctx, store.all_cases(ctx.session))
-    util = cc_util(vis)
-    for c in vis:
-        c["_st"] = cc_stage(c)
-        c["_risk"] = cc_risk(c, util)
-        c["_var"] = js_sum(c["_risk"].values())
-        c["_val"] = cc_est(c)
-    return {"all": vis, "util": util}
+def due_key(left: int) -> str:
+    """The demo's ccDueKey."""
+    return "d5" if left < 5 else "d7" if left < 8 else "d10" if left < 11 else "d11"
+
+
+ACT_STAGES = ("approval", "reeval", "need", "await_insp", "noroute")  # the stages that still need a person
+
+
+def cc_scope(ctx, tenant: str = "All", site: str = "", cls: str = "", route: str = "") -> dict:
+    """The demo's ccScope: the visible cases in the Command Center's filters (top-bar tenant, site, class, route; none
+    by default), each annotated as the demo does: stage bucket (_st), days left (_left), value at risk by reason
+    (_risk, _var), estimated value (_val), due bucket (_due), rank score (_score) and, for those still needing a person
+    (act), a priority (_pri). The annotations go on copies: the cases read from the store are not changed. The load
+    (util) is over every visible case in the tenant filter, before the other filters."""
+    v = visible_cases(ctx, tenant)
+    util = cc_util(v)
+    out = [
+        c
+        for c in v
+        if (not site or c["location"] == site)
+        and (not cls or c["cls"] == cls)
+        and (not route or (c.get("recommendation") and c["recommendation"]["id"] == route))
+    ]
+    mx = max([1, *(cc_est(c) for c in out)])
+    annotated = []
+    for c in out:
+        left, risk, val = cc_left(c), cc_risk(c, util), cc_est(c)
+        annotated.append(
+            c
+            | {
+                "_st": cc_stage(c),
+                "_left": left,
+                "_risk": risk,
+                "_var": js_sum(risk.values()),
+                "_val": val,
+                "_due": due_key(left),
+                "_score": (val / mx) * 60 + max(0, min(1, (10 - left) / 10)) * 40,
+            }
+        )
+    act = sorted((c for c in annotated if c["_st"] in ACT_STAGES), key=lambda c: -c["_score"])
+    for i, c in enumerate(act):
+        c["_pri"] = "High" if i < len(act) * 0.3 else "Medium" if i < len(act) * 0.7 else "Low"
+    return {"all": annotated, "act": act, "util": util, "net": js_sum(cc_net(c) for c in annotated)}
 
 
 def _cc_series(fn, rows: list[dict]) -> list[float]:
@@ -234,7 +246,7 @@ def cc_ex_list(sc: dict, ctx) -> list[dict]:
                 }
             )
     if not wh:
-        rows = vis_rows(ctx)
+        rows = visible_rows(ctx)
         series = [
             ("net recovery", lambda r: r["actual"] if r["status"] == "reconciled" else 0),
             ("uplift vs baseline", lambda r: r["actual"] - r["baseline"] if r["status"] == "reconciled" else 0),
@@ -362,14 +374,14 @@ def briefing(ctx) -> list[dict]:
     a = account(ctx)
     if a is None:
         return []
-    role, cs = a.role, vis_cases(ctx, store.all_cases(ctx.session))
+    role, cs = a.role, visible_cases(ctx)
     out: list[dict] = []
 
     def add(t: str, go: str, n: int) -> None:
         out.append({"text": t, "go": go, "n": n})
 
     def m() -> dict:
-        return metrics(vis_rows(ctx))
+        return metrics(visible_rows(ctx))
 
     sub = [c for c in cs if c["stage"] == "awaiting_approval" and c.get("submitted")]
     prep = [c for c in cs if c["stage"] == "awaiting_approval" and not c.get("submitted") and c.get("recommendation")]
@@ -481,147 +493,6 @@ def _recovered_line(m: dict) -> str:
     return f"{money(m['act'])} recovered on {len(m['rc'])} reconciled decisions; {money(m['avoided'])} of new purchases avoided."
 
 
-def _op_scoped(ctx, a: policy.Account) -> list[Case]:
-    """The demo's opScoped: Planners and Engineers start at their home site (warehouse or site); a Warehouse Manager
-    is locked to theirs. The demo's widen-to-all-locations toggle is a screen setting, so the read uses the default."""
-    home = a.warehouse or a.site
-    return [c for c in vis_cases(ctx, store.all_cases(ctx.session)) if not home or c["location"] == home]
-
-
-def aome_items(ctx) -> list[dict]:
-    """The demo's aomeItems: everything whose next step belongs to this account, each with one button."""
-    a = account(ctx)
-    if a is None:
-        return []
-    role, out = a.role, []
-    cs = _op_scoped(ctx, a)
-
-    def st5(cid: str) -> str:
-        return f"product/{cid}?step=5"
-
-    for n in notes(ctx.session):
-        if n["to"] == a.id and n["status"] == "open":
-            out.append(
-                {
-                    "t": n["title"],
-                    "d": f"From {n['from']} · {n['sev']} · {n['msg']}",
-                    "btn": "Acknowledge",
-                    "act": "notifyAck",
-                    "arg": n["id"],
-                }
-            )
-    perms = policy.policy(a).get("perms") or []
-    if role == "Admin" or any(p.startswith("approve.") for p in perms):
-        for r in inbox_requests(ctx):
-            out.append(
-                {
-                    "t": f"{REQ_KIND[r['kind']]} {r['id']}",
-                    "d": "Requested by " + r["by"],
-                    "btn": "Open inbox",
-                    "go": "command/approvals",
-                }
-            )
-    if role == "Engineer":
-        for c in cs:
-            if c.get("blocked") and c.get("requested"):
-                b = c["blocked"]
-                out.append(
-                    {
-                        "t": c["id"] + " · record the assessment result",
-                        "d": f"{b['action']} · {b['gateName']} gate",
-                        "btn": "Record result",
-                        "go": st5(c["id"]),
-                    }
-                )
-        for c in [c for c in cs if c.get("assessment") == "Pending"][:6]:
-            out.append(
-                {
-                    "t": c["id"] + " · inspection due",
-                    "d": f"{c['product']} at {c['location']}",
-                    "btn": "Open asset",
-                    "go": "product/asset/" + c["id"],
-                }
-            )
-    if role == "Planner":
-        for c in cs:
-            if c["stage"] == "reeval":
-                out.append(
-                    {
-                        "t": c["id"] + " · re-evaluate",
-                        "d": c.get("reevalReason") or "Review triggered",
-                        "btn": "Re-evaluate",
-                        "go": st5(c["id"]),
-                    }
-                )
-        ready = [c for c in cs if c["stage"] == "awaiting_approval" and not c.get("submitted") and c.get("recommendation")]
-        for c in ready[:6]:
-            r = c["recommendation"]
-            out.append(
-                {
-                    "t": c["id"] + " · submit for review",
-                    "d": f"{r['plan']} · {money(r['net'])}",
-                    "btn": "Submit",
-                    "go": st5(c["id"]),
-                }
-            )
-    # Approvals and outcomes are listed across every visible case, not only the home site
-    vis = vis_cases(ctx, store.all_cases(ctx.session)) if role in ("Approver", "Finance") else []
-    if role == "Approver":
-        for c in vis:
-            if c["stage"] == "awaiting_approval" and c.get("submitted"):
-                d = f"Submitted by {c['submitted']['by']} · {money(c['recommendation']['net'])}"
-                out.append({"t": c["id"] + " · approve or decline", "d": d, "btn": "Decide", "go": st5(c["id"])})
-    if role == "Finance":
-        for c in vis:
-            if c["stage"] == "closed" and not c.get("outcome"):
-                out.append(
-                    {
-                        "t": c["id"] + " · confirm the outcome",
-                        "d": "Reported by the enterprise systems",
-                        "btn": "Confirm",
-                        "go": st5(c["id"]),
-                    }
-                )
-    if role == "Developer":
-        for s in SOURCES.values():
-            if s["status"] in ("stale", "unavailable"):
-                out.append(
-                    {"t": f"{s['name']} · {s['status']}", "d": s["vendor"], "btn": "Open Source map", "go": "integration/map"}
-                )
-    if role == "Warehouse Manager":
-        for c in cs:
-            s = active_step(c)
-            if s and s["sys"].startswith("WMS"):
-                out.append(
-                    {
-                        "t": f"{c['id']} · {s['label'].lower()}",
-                        "d": "WMS acknowledgement pending · " + c["product"],
-                        "btn": "Check",
-                        "go": st5(c["id"]),
-                    }
-                )
-        for e in exp_vis(ctx):
-            d = f"{e['product']} · {e['customer']} · {e['prob']}% likely to return"
-            out.append(
-                {"t": f"{e['contract']} · inbound {e['window']}", "d": d, "btn": "Plan receiving", "go": "product/expected"}
-            )
-    if role in ("Approver", "Admin"):
-        for c in cs:
-            s = active_step(c)
-            k = ex_clock(c, s) if s else None
-            if k and k["level"] and (role == "Approver" or k["level"] == 2):
-                at = ex_ts(k["due2"] if k["level"] == 2 else k["due"])
-                out.append(
-                    {
-                        "t": f"{c['id']} · escalated: {s['label'].lower()}",
-                        "d": f"{ex_app(s)} passed its {k['lim']} limit at {at} · owner {step_owner(c, s)}",
-                        "btn": "Open handoff",
-                        "go": st5(c["id"]),
-                    }
-                )
-    return out
-
-
 @implement("inbox.get")
 def inbox_get(i, ctx):  # noqa: ARG001 - read handlers take (input, ctx)
     br = briefing(ctx)
@@ -709,7 +580,7 @@ def _signed_k(n: float) -> str:
 def kpi_explain(i, ctx):
     k = i["kpi"] if i["kpi"] in AF_KPI else "recovery"
     sc = cc_scope(ctx)
-    m = metrics(vis_rows(ctx))
+    m = metrics(visible_rows(ctx))
     o = {"kpi": k, "label": AF_KPI[k]}
     if k == "assets":
         by: dict[str, int] = {}
@@ -798,7 +669,7 @@ def kpi_explain(i, ctx):
         }
     elif k == "variance":
         # the demo's REC(): every reconciled decision, not only the account's tenants
-        rc = [r for r in _rows() if r["status"] == "reconciled" and r["route"] != "exit"]
+        rc = [r for r in all_rows() if r["status"] == "reconciled" and r["route"] != "exit"]
         by_route: dict[str, float] = {}
         for r in rc:
             by_route[r["route"]] = by_route.get(r["route"], 0) + (r["actual"] - r["p50"])
@@ -827,3 +698,209 @@ def kpi_explain(i, ctx):
             "go": "analytics",
         }
     return o
+
+
+def op_scope_info(ctx, widen: bool) -> dict:
+    """The demo's opScope: Planners and Engineers start at their home site and may widen to every location; a Warehouse
+    Manager is locked to theirs."""
+    a = ctx.actor.account
+    home = a.warehouse or a.site or ""
+    scope = a.warehouse if a.warehouse else "" if widen else home
+    return {"home": home, "scope": scope, "locked": bool(a.warehouse)}
+
+
+def op_scoped(ctx, widen: bool, tenant: str = "All") -> list[Case]:
+    s = op_scope_info(ctx, widen)["scope"]
+    return [c for c in visible_cases(ctx, tenant) if not s or c["location"] == s]
+
+
+def aome_items(ctx, widen: bool = False, tenant: str = "All") -> list[dict]:
+    """The demo's aomeItems: everything whose next step belongs to this account, each with one button. Planners and
+    Engineers see their home site unless the scope is widened; approvals and outcomes are listed across every visible
+    case; the top bar's tenant filter narrows all of it (inbox.get reads the default scope and every tenant)."""
+    a = account(ctx)
+    if a is None:
+        return []
+    role, out = a.role, []
+    cs = op_scoped(ctx, widen, tenant)
+
+    def st5(cid: str) -> str:
+        return f"product/{cid}?step=5"
+
+    for n in notes(ctx.session):
+        if n["to"] == a.id and n["status"] == "open":
+            out.append(
+                {
+                    "t": n["title"],
+                    "d": f"From {n['from']} · {n['sev']} · {n['msg']}",
+                    "btn": "Acknowledge",
+                    "act": "notifyAck",
+                    "arg": n["id"],
+                }
+            )
+    perms = policy.policy(a).get("perms") or []
+    if role == "Admin" or any(p.startswith("approve.") for p in perms):
+        for r in inbox_requests(ctx):
+            out.append(
+                {
+                    "t": f"{REQ_KIND[r['kind']]} {r['id']}",
+                    "d": "Requested by " + r["by"],
+                    "btn": "Open inbox",
+                    "go": "command/approvals",
+                }
+            )
+    if role == "Engineer":
+        for c in cs:
+            if c.get("blocked") and c.get("requested"):
+                b = c["blocked"]
+                out.append(
+                    {
+                        "t": c["id"] + " · record the assessment result",
+                        "d": f"{b['action']} · {b['gateName']} gate",
+                        "btn": "Record result",
+                        "go": st5(c["id"]),
+                    }
+                )
+        for c in [c for c in cs if c.get("assessment") == "Pending"][:6]:
+            out.append(
+                {
+                    "t": c["id"] + " · inspection due",
+                    "d": f"{c['product']} at {c['location']}",
+                    "btn": "Open asset",
+                    "go": "product/asset/" + c["id"],
+                }
+            )
+    if role == "Planner":
+        for c in cs:
+            if c["stage"] == "reeval":
+                out.append(
+                    {
+                        "t": c["id"] + " · re-evaluate",
+                        "d": c.get("reevalReason") or "Review triggered",
+                        "btn": "Re-evaluate",
+                        "go": st5(c["id"]),
+                    }
+                )
+        ready = [c for c in cs if c["stage"] == "awaiting_approval" and not c.get("submitted") and c.get("recommendation")]
+        for c in ready[:6]:
+            r = c["recommendation"]
+            out.append(
+                {
+                    "t": c["id"] + " · submit for review",
+                    "d": f"{r['plan']} · {money(r['net'])}",
+                    "btn": "Submit",
+                    "go": st5(c["id"]),
+                }
+            )
+    every = visible_cases(ctx, tenant) if role in ("Approver", "Finance") else []
+    if role == "Approver":
+        for c in every:
+            if c["stage"] == "awaiting_approval" and c.get("submitted"):
+                d = f"Submitted by {c['submitted']['by']} · {money(c['recommendation']['net'])}"
+                out.append({"t": c["id"] + " · approve or decline", "d": d, "btn": "Decide", "go": st5(c["id"])})
+    if role == "Finance":
+        for c in every:
+            if c["stage"] == "closed" and not c.get("outcome"):
+                out.append(
+                    {
+                        "t": c["id"] + " · confirm the outcome",
+                        "d": "Reported by the enterprise systems",
+                        "btn": "Confirm",
+                        "go": st5(c["id"]),
+                    }
+                )
+    if role == "Developer":
+        for s in SOURCES.values():
+            if s["status"] in ("stale", "unavailable"):
+                out.append(
+                    {"t": f"{s['name']} · {s['status']}", "d": s["vendor"], "btn": "Open Source map", "go": "integration/map"}
+                )
+    if role == "Warehouse Manager":
+        for c in cs:
+            s = active_step(c)
+            if s and s["sys"].startswith("WMS"):
+                out.append(
+                    {
+                        "t": f"{c['id']} · {s['label'].lower()}",
+                        "d": "WMS acknowledgement pending · " + c["product"],
+                        "btn": "Check",
+                        "go": st5(c["id"]),
+                    }
+                )
+        for e in exp_vis(ctx):
+            if tenant == "All" or e["owner"] == tenant:
+                out.append(
+                    {
+                        "t": f"{e['contract']} · inbound {e['window']}",
+                        "d": f"{e['product']} · {e['customer']} · {e['prob']}% likely to return",
+                        "btn": "Plan receiving",
+                        "go": "product/expected",
+                    }
+                )
+    if role in ("Approver", "Admin"):
+        for c in cs:
+            s = active_step(c)
+            k = ex_clock(c, s) if s else None
+            if k and k["level"] and (role == "Approver" or k["level"] == 2):
+                at = ex_ts(k["due2"] if k["level"] == 2 else k["due"])
+                out.append(
+                    {
+                        "t": f"{c['id']} · escalated: {s['label'].lower()}",
+                        "d": f"{ex_app(s)} passed its {k['lim']} limit at {at} · owner {step_owner(c, s)}",
+                        "btn": "Open handoff",
+                        "go": st5(c["id"]),
+                    }
+                )
+    return out
+
+
+def af_risks(c: Case, rt: dict, ev: dict) -> list[dict]:
+    """The demo's afRisks: what to check before approving."""
+    r = c.get("recommendation")
+    if not r:
+        return [
+            {
+                "level": "bad",
+                "text": "No eligible route",
+                "detail": c["blocked"]["reason"] if c.get("blocked") else "Every route failed a gate.",
+            }
+        ]
+    items = []
+    gw = [n for n in r.get("gateNotes") or [] if re.search(r"review|partial|warning|conditional", n, re.I)]
+    items.append(
+        {"level": "warn", "text": "Gate notes to read", "detail": "; ".join(gw)}
+        if gw
+        else {"level": "ok", "text": "All six gates passed", "detail": "Gate engine (rules)"}
+    )
+    st = [e for e in ev.get("items") or [] if e["state"] in ("stale", "partial")]
+    items.append(
+        {"level": "warn", "text": "Stale or partial evidence", "detail": "; ".join(e["label"] for e in st)}
+        if st
+        else {"level": "ok", "text": "Evidence current", "detail": f"{len(ev.get('items') or [])} items"}
+    )
+    mk = SOURCES.get("mkt")
+    if mk and mk["status"] == "stale" and r["id"] in ("resale", "extparts"):
+        items.append({"level": "warn", "text": "Market feed is stale", "detail": "Resale price uses the last fresh comparables"})
+    items.append(
+        {"level": "warn", "text": "Demand is a forecast", "detail": "A non-realisation allowance is included"}
+        if r.get("demandStatus") != "confirmed"
+        else {"level": "ok", "text": "Demand confirmed", "detail": r.get("demandLabel")}
+    )
+    cf = ti_conf(c, r)
+    items.append(
+        {"level": "bad", "text": "Low confidence", "detail": "Compare routes before approving"}
+        if cf == "Low"
+        else {
+            "level": "warn" if cf == "Medium" else "ok",
+            "text": cf + " confidence",
+            "detail": f"P10–P90 {money(r['p10'])}–{money(r['p90'])}",
+        }
+    )
+    if rt.get("tie"):
+        items.append({"level": "warn", "text": "Near tie", "detail": rt["tie"]["text"]})
+    cfl = [x for x in STARTING_CONFLICTS if x["status"] == "open" and x["asset"] == c["assetId"]]
+    if cfl:
+        items.append(
+            {"level": "bad", "text": "Open source conflict", "detail": "; ".join(f"{x['kind']}: {x['impact']}" for x in cfl)}
+        )
+    return items

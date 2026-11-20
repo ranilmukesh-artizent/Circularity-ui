@@ -40,6 +40,9 @@ jobs:
           docker compose stop worker
           curl -fsS -X POST http://localhost:8100/_sim/reset >/dev/null
 
+      - name: api import contracts (apps/api/.importlinter)
+        run: docker compose exec -T api lint-imports
+
       - name: api suite
         timeout-minutes: 60
         run: docker compose exec -T api pytest -q -p no:cacheprovider -rfE

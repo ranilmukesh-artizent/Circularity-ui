@@ -45,14 +45,9 @@ are frontend assets: ICON, LOGO, LOGO_INK (bundle them with the app).
 
 from fastapi import APIRouter, HTTPException
 
-from di import golden
+from di.reads.reference import lists
 
 router = APIRouter(prefix="/api/screens/reference", tags=["screens: reference"])
-
-
-def lists() -> dict:
-    """Every reference list, keyed by the demo's name (cached by golden.load: treat as read-only)."""
-    return golden.load("screens/reference")
 
 
 @router.get("")

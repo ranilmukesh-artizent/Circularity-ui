@@ -48,6 +48,7 @@ from di.auth import Principal, principal
 from di.cases import store
 from di.db import SessionLocal
 from di.reads.common import next_step
+from di.reads.context import can_see_case
 
 router = APIRouter(tags=["ask"])
 log = logging.getLogger("di.ask")
@@ -134,7 +135,7 @@ def suggestions(ctx: CallContext, case_ids: list[str]) -> list[dict]:
     out = []
     for cid in case_ids[:3]:
         c = store.get(ctx.session, cid)
-        if not c or not policy.tenant_ok(ctx.actor.account, c["owner"], ctx.actor.ctx):
+        if not c or not can_see_case(ctx.actor.account, ctx.actor.ctx, c):
             continue
         st = next_step(c, ctx)
         if st["kind"] == "act":

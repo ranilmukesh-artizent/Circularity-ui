@@ -174,7 +174,7 @@ def test_pre_approval_checks(session):
     from di.actions.pipeline import Actor, CallContext
     from di.cases import store
     from di.reads import cases as case_reads
-    from di.screens.command import af_risks
+    from di.reads.workspace import af_risks
 
     want = CMD["admin"]["risks"]
     ctx = CallContext(actor=Actor(account=policy.account("admin")), session=session)

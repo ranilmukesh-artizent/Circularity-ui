@@ -70,9 +70,11 @@ from di.engine.jsmath import js_sum
 from di.engine.pool import solve_pool
 from di.execution.trace import line_actuals
 from di.reads.cases import case_routes
-from di.reads.common import as_model, kfmt, money, to_fixed, vis_cases
+from di.reads.common import as_model, kfmt, money, to_fixed
+from di.reads.constants import MODELS, ROUTES
+from di.reads.context import call_ctx, can_see_case, visible_cases
+from di.reads.decisions import all_rows, model_stats
 from di.reads.workspace import cc_ex_list, cc_ex_rows, cc_scope
-from di.screens.analytics import MODELS, ROUTES, all_rows, call_context, model_stats
 
 router = APIRouter(tags=["screens: checks"])
 RISK_LABEL = {"act": "Act", "commit": "Commit", "draft": "Draft", "read": "Read", "system": "System only"}
@@ -194,7 +196,7 @@ def run(p: Principal, session: Session) -> list[dict]:
         detail = f"optimal {money(pl['optimal']['total'])} vs greedy {money(pl['greedy']['total'])}"
         t(f"Pool {k}: no demand line or unit allocated twice", not dup, detail, "cases")
 
-    ctx = call_context(p, session)
+    ctx = call_ctx(p, session)
     if policy.can_page(p.account, "command", "exceptions"):
         sc = cc_scope(ctx)
         a, b = cc_ex_list(sc, ctx), cc_ex_rows(sc, ctx)
@@ -203,9 +205,9 @@ def run(p: Principal, session: Session) -> list[dict]:
         t("Exception value by warehouse equals the ranked total", ok, f"{kfmt(tb)} in {len(b)} warehouse rows", "cases")
     if policy.can_page(p.account, "product", "asset"):
         c = by_id["RT-1048"]
-        mine = vis_cases(ctx, live)
+        mine = visible_cases(ctx, cases=live)
         q = sum(1 for x in mine if as_model(x) == as_model(c) and x["owner"] == c["owner"])
-        if p.tenant_ok(c["owner"]) and p.location_ok(c["location"]):
+        if can_see_case(p.account, p.ctx, c):
             sku = [x for x in mine if as_model(x) == as_model(c) and x["owner"] == c["owner"]]  # the demo's skuUnits
             t(
                 "SKU unit count equals Returned assets for that product and customer",

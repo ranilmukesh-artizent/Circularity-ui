@@ -4,3 +4,8 @@
 -c requirements.lock
 pytest
 ruff
+# dependency-direction contracts (apps/api/.importlinter); pinned: the release at least two weeks old when added
+import-linter==2.15
+# its dependencies newer than two weeks, held at the release before
+grimp==3.18
+markdown-it-py==4.2.0

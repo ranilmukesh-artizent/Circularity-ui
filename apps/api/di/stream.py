@@ -38,6 +38,7 @@ from starlette.concurrency import run_in_threadpool
 from di import auth, policy
 from di.config import get_settings
 from di.db import SessionLocal, engine
+from di.reads.context import can_see_case
 
 log = logging.getLogger("di.stream")
 router = APIRouter(tags=["live updates"])
@@ -123,7 +124,7 @@ BROKER = Broker()
 
 
 def visible(p: auth.Principal, ev: dict) -> bool:
-    if ev["tenant"] is not None and not (p.tenant_ok(ev["tenant"]) and p.location_ok(ev["location"] or "")):
+    if ev["tenant"] is not None and not can_see_case(p.account, p.ctx, {"owner": ev["tenant"], "location": ev["location"] or ""}):
         return False
     kind = ev["kind"]
     if kind == "sync":

@@ -46,38 +46,19 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di import golden
-from di.actions.pipeline import Actor, CallContext
 from di.actions.registry import implement
 from di.auth import Principal, principal
-from di.cases import store
 from di.db import get_session
 from di.engine.jsmath import js_round, js_sum
-from di.reads.common import WORLD, to_fixed, vis_cases
+from di.reads.common import to_fixed
+from di.reads.constants import MODELS
+from di.reads.context import call_ctx, visible_cases, visible_rows
+from di.reads.decisions import model_stats, reconciled
 
 router = APIRouter(prefix="/api/screens/analytics", tags=["screens: analytics"])
-MODELS = WORLD["models"]
-ROUTES = WORLD["routes"]
 
 
 # ---------------------------------------------------------------- the closed decisions (the demo's ROWS)
-def all_rows() -> list[dict]:
-    return golden.load("decisions")
-
-
-def vis_rows(p: Principal, tenant_filter: str = "All") -> list[dict]:
-    """The demo's visRows: the closed decisions in the account's tenants and the top bar's tenant filter."""
-    return [r for r in all_rows() if p.tenant_ok(r["tenant"]) and (tenant_filter == "All" or r["tenant"] == tenant_filter)]
-
-
-def call_context(p: Principal, session: Session) -> CallContext:
-    """The context the read helpers in di.reads take, for the signed-in account."""
-    return CallContext(actor=Actor(account=p.account, ctx=p.ctx), session=session)
-
-
-def vis_cases_filtered(ctx: CallContext, tenant_filter: str = "All") -> list[dict]:
-    """The demo's visCases with the top bar's tenant filter (S.tenant)."""
-    return [c for c in vis_cases(ctx, store.all_cases(ctx.session)) if tenant_filter == "All" or c["owner"] == tenant_filter]
 
 
 def med(a: list[float]) -> float:
@@ -107,23 +88,6 @@ def metrics(rows: list[dict], live_open: int) -> dict:
         "exp": sum(1 for r in rows if r["status"] == "expired"),
         "n": len(rows),
     }
-
-
-def reconciled() -> list[dict]:
-    """The demo's REC(): every reconciled closed decision (all tenants)."""
-    return [r for r in all_rows() if r["status"] == "reconciled"]
-
-
-def model_stats(v: str) -> dict | None:
-    """The demo's modelStats(v): error, bias and P10-P90 coverage of a model version (exit routes and overrides out)."""
-    r = [x for x in reconciled() if x["model"] == v and x["route"] != "exit" and not x.get("override")]
-    n = len(r)
-    if not n:
-        return None
-    mape = js_sum(abs(x["actual"] - x["p50"]) / max(abs(x["p50"]), 1) for x in r) / n
-    bias = js_sum((x["actual"] - x["p50"]) / max(abs(x["p50"]), 1) for x in r) / n
-    cov = sum(1 for x in r if x["p10"] <= x["actual"] <= x["p90"]) / n
-    return {"v": v, "n": n, "mape": mape, "bias": bias, "cov": cov}
 
 
 def _fixed1(x: float) -> float:
@@ -177,16 +141,17 @@ def analytics(
     session: Session = Depends(get_session),
 ):
     p.require_page("analytics")
+    ctx = call_ctx(p, session)
     rows = [
         r
-        for r in vis_rows(p, tenant_filter)
+        for r in visible_rows(ctx, tenant_filter)
         if (not tenant or r["tenant"] == tenant)
         and (not cls or r["cls"] == cls)
         and (not route or r["route"] == route)
         and from_ <= r["mi"] <= to
         and (not model or r["model"] == model)
     ]
-    live = sum(1 for c in vis_cases_filtered(call_context(p, session), tenant_filter) if c["stage"] == "awaiting_approval")
+    live = sum(1 for c in visible_cases(ctx, tenant_filter) if c["stage"] == "awaiting_approval")
     return {
         "rows": rows,
         "metrics": metrics(rows, live),

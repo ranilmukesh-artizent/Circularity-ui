@@ -75,7 +75,6 @@ Notes for the switch-over (B17): `null` also stands for the demo's `undefined`; 
 helpers that take a Case now read the fields above; the per-case figures do not depend on the account, the lists do.
 """
 
-import math
 import re
 
 from fastapi import APIRouter, Depends
@@ -86,9 +85,21 @@ from di.auth import Principal, principal
 from di.cases import store
 from di.db import get_session
 from di.engine.jsmath import js_round, js_sum
-from di.execution import as_sc, asset_health, ex_prep_parts, ex_trace
+from di.execution import as_sc, ex_prep_parts, ex_trace
 from di.execution.plan import value_order
 from di.execution.trace import learn_ver
+from di.reads.asset import (
+    as_lease,
+    as_serial,
+    as_title,
+    asset_facts,
+    case_diag,
+    catalogue,
+    health,
+    part_prices,
+    parts_availability,
+)
+from di.reads.case_detail import af_lease, as_rma, case_record, pool_of, prep_cost, recert, with_times
 from di.reads.common import (
     AS_OF,
     CLASSES,
@@ -99,33 +110,18 @@ from di.reads.common import (
     as_model,
     case_demand,
     case_rul,
-    fmt_d,
     fmt_dy,
-    hash_id,
     iso,
     ms,
     notes,
     run,
     ti_conf,
-    to_fixed,
 )
-from di.reads.workspace import _median, _rows, cc_stage
-from di.screens.case import (
-    af_lease,
-    as_rma,
-    case_record,
-    load_case,
-    my_cases,
-    ordered_spec,
-    pool_of,
-    prep_cost,
-    prov_for,
-    recert,
-    screen_ctx,
-    snap_time,
-    vis_cases,
-    with_times,
-)
+from di.reads.context import call_ctx, can_see_case, load_case, visible_cases
+from di.reads.decisions import all_rows, median
+from di.reads.expected import expected_for
+from di.reads.provenance import ordered_spec, prov_for, snap_time
+from di.reads.workspace import cc_stage
 
 router = APIRouter(prefix="/api/screens/product", tags=["screens: product"])
 
@@ -134,14 +130,6 @@ FACILITIES = ["Warehouse 1", "Warehouse 2", "Repair centre"]
 GRADE_F = {"A": 1, "B": 0.86, "C": 0.64, "D": 0.38}
 MONTHS = ["Oct 25", "Nov 25", "Dec 25", "Jan 26", "Feb 26", "Mar 26", "Apr 26", "May 26", "Jun 26", "Jul 26", "Aug 26", "Sep 26"]
 _MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]  # en-GB, as Node writes it
-DIAG = {
-    "motor": ("Winding insulation", "grade"),
-    "pump": ("Seal and bearing wear", "wear"),
-    "control": ("Controller self-test", "test"),
-    "drill": ("Battery health", "pct"),
-    "batch": ("Battery health", "pct"),
-    "it": ("Battery health", "pct"),
-}
 PAST_DEC = {
     "redeploy": "Reused at another site",
     "resale": "Sold whole",
@@ -153,7 +141,7 @@ PAST_DEC = {
 }
 # the demo's CC_EST: the median predicted value per unit of each class over the closed decisions (not exits)
 CC_EST = {
-    k: _median([r["p50"] / r["q"] for r in _rows() if r["cls"] == k and r["route"] != "exit" and r["p50"] > 0]) for k in CLASSES
+    k: median([r["p50"] / r["q"] for r in all_rows() if r["cls"] == k and r["route"] != "exit" and r["p50"] > 0]) for k in CLASSES
 }
 ROW_KEYS = (
     "id",
@@ -178,10 +166,6 @@ ROW_KEYS = (
 )
 
 
-def _clamp(v: float, a: float, b: float) -> float:
-    return max(a, min(b, v))
-
-
 # ---------------------------------------------------------------- one case, as the lists show it
 def signals(c: Case) -> list[list[str]]:
     """The demo's sigOf: received, diagnostics, certification and economic path, each done, partial, waiting or blocked."""
@@ -201,22 +185,8 @@ def signals(c: Case) -> list[list[str]]:
     ]
 
 
-def health(c: Case) -> dict:
-    """The demo's assetHealth: score, components and the band counts."""
-    h = asset_health(c)
-    band: dict[str, int] = {}
-    for x in h["comps"]:
-        k = "Excellent" if x["h"] >= 0.9 else "Good" if x["h"] >= 0.75 else "Fair" if x["h"] >= 0.55 else "Poor"
-        band[k] = band.get(k, 0) + 1
-    return h | {"band": band}
-
-
 def _brief(r: dict | None) -> dict | None:
     return {"id": r["id"], "plan": r["plan"], "net": r["net"]} if r else None
-
-
-def as_serial(c: Case) -> str:
-    return "SN" + str(as_hex(c, "sn"))[:7].rjust(7, "0")
 
 
 def row(c: Case) -> dict:
@@ -241,116 +211,20 @@ def returned(tenant: str = "All", p: Principal = Depends(principal), session: Se
     p.require_page("product", "received")
     a = p.account
     return {
-        "cases": [row(c) for c in vis_cases(p, session, tenant)],
-        "expected_count": sum(1 for e in EXPECTED if policy.tenant_ok(a, e["owner"], p.ctx) and _wh_ok(p, e)),
+        "cases": [row(c) for c in visible_cases(call_ctx(p, session), tenant)],
+        "expected_count": len(expected_for(a, p.ctx)),
         "notes": [n for n in notes(session) if n.get("to") == a.id and n.get("status") == "open"],
     }
 
 
-# ---------------------------------------------------------------- Expected returns (the demo's EXPECTED)
-_EXPECTED_BASE = [
-    ("ER-3101", "Industrial motor", "motor", "Customer A", "12 Oct", "Lease LS-5412 ends 11 Oct", "$3.1k–$8.2k", "Site 3"),
-    ("ER-3102", "Hydraulic pump", "pump", "Customer B", "14 Oct", "Lease LS-5440 ends 13 Oct", "$1.4k–$3.6k", "Site 7"),
-    ("ER-3103", "Power tool", "drill", "Customer A", "15 Oct", "Site 1 tool-crib refresh", "$90–$240", "Site 1"),
-    ("ER-3104", "Tool-fleet batch", "batch", "Customer C", "17 Oct", "Project P-7 closes", "$1.6k–$3.9k", "Site 6"),
-    ("ER-3105", "IT electronics", "it", "Customer B", "19 Oct", "Laptop refresh wave 2 (22 units)", "$2.2k–$5.1k", "Site 4"),
-    ("ER-3106", "Control unit", "control", "Customer C", "21 Oct", "Line 4 upgrade", "$0.8k–$2.9k", "Site 8"),
-    ("ER-3107", "Industrial motor", "motor", "Customer B", "24 Oct", "Lease LS-5471 ends 22 Oct", "$2.6k–$7.4k", "Site 2"),
-    ("ER-3108", "Hydraulic pump", "pump", "Customer A", "28 Oct", "Failure-driven swap at Site 5", "$0.9k–$2.8k", "Site 5"),
-    ("ER-3109", "Power tool", "drill", "Customer C", "30 Oct", "Warranty return batch", "$60–$180", "Site 6"),
-]
-
-
-def _reason(signal: str) -> str:
-    if signal.startswith("Lease"):
-        return "Lease ends"
-    if re.search("refresh", signal, re.I):
-        return "Refresh programme"
-    if re.search("swap|Warranty", signal, re.I):
-        return "Contract ends (swap or warranty)"
-    return "Contract ends"
-
-
-def _parse_k(s: str) -> int:
-    m = re.search(r"\$([\d.]+)(k?)", s or "")
-    return js_round(float(m[1]) * (1000 if m[2] else 1)) if m else 0
-
-
-def _kfmt_e(n: float) -> str:
-    return f"${to_fixed(n / 1000, 1)}k" if n >= 1000 else f"${js_round(n)}"
-
-
-def _utc(y: int, mo: int, d: int) -> int:
-    """Date.UTC(y, mo, d) with JavaScript's month and day overflow (mo is 0-based)."""
-    y += mo // 12
-    mo %= 12
-    return ms(f"{y:04d}-{mo + 1:02d}-01") + (d - 1) * 86_400_000
-
-
-def _expected() -> list[dict]:
-    """The demo's EXPECTED, as it completes each entry at load: contract, lease period, warehouse, likely outcome and its
-    probabilities, the return window and the probability-weighted planning range."""
-    out = []
-    first_stage = "Stage 1 · Lease ends"
-    for i, (eid, product, cls, owner, date, signal, rng, loc) in enumerate(_EXPECTED_BASE):
-        h = int(hash_id(eid), 16)
-        lm = re.search(r"LS-\d+", signal)
-        months = [24, 36, 36, 48, 24, 36][h % 6]
-        day = int(date.split(" ")[0])
-        expiry, start = _utc(2026, 9, day - 1), _utc(2026, 9 - months, day)
-        pr = [62 + h % 20, 0, 0, 0] if lm else [100, 0, 0, 0]
-        if lm:
-            rest = 100 - pr[0]
-            pr[1] = js_round(rest * 0.45)
-            pr[2] = js_round(rest * 0.35)
-            pr[3] = rest - pr[1] - pr[2]
-        lo, hi = _parse_k(rng.split("–")[0]), _parse_k(rng.split("–")[1])
-        stage = first_stage if day - 2 > int(iso(AS_OF)[8:10]) else "Stage 2 · Return authorised"
-        out.append(
-            {
-                "id": eid,
-                "product": product,
-                "cls": cls,
-                "owner": owner,
-                "date": date,
-                "signal": signal,
-                "range": rng,
-                "loc": loc,
-                "contract": lm[0] if lm else f"CT-{7031 + i * 7}",
-                "customer": owner,
-                "source": "Contract Management",
-                "reason": _reason(signal),
-                "expiry": iso(expiry),
-                "start": iso(start),
-                "lease": {"start": iso(start), "end": iso(expiry), "months": months},
-                "wh": ["Warehouse 1", "Warehouse 2"][h % 2],
-                "outcome": {
-                    "probs": {"Return": pr[0], "Buyout": pr[1], "Extension": pr[2], "Early termination": pr[3]},
-                    "likely": "Return",
-                    "prob": pr[0],
-                    "window": f"{fmt_d(_utc(2026, 9, day - 2))}–{fmt_d(_utc(2026, 9, day + 12))}",
-                    "modelled": bool(lm),
-                },
-                "wRange": f"{_kfmt_e(lo * pr[0] / 100)}–{_kfmt_e(hi * pr[0] / 100)}",
-                "run_stage": stage,
-            }
-        )
-    return out
-
-
-EXPECTED = _expected()
-
-
-def _wh_ok(p: Principal, e: dict) -> bool:
-    """The demo's whOK: a Warehouse Manager sees the returns expected at their warehouse."""
-    return not policy.policy(p.account).get("warehouseScoped") or e["wh"] == p.account.warehouse
+# ---------------------------------------------------------------- Expected returns (the demo's EXPECTED: di.reads.expected)
 
 
 @router.get("/expected")
 def expected(tenant: str = "All", p: Principal = Depends(principal), session: Session = Depends(get_session)):  # noqa: ARG001 - unused dependency left in place (C1 changes no behaviour)
     """Expected returns: the account's (tenant, warehouse, top-bar filter), the toggle's count and the source."""
     p.require_page("product", "expected")
-    ok = [e for e in EXPECTED if policy.tenant_ok(p.account, e["owner"], p.ctx) and _wh_ok(p, e)]
+    ok = expected_for(p.account, p.ctx)
     return {
         "rows": [e for e in ok if tenant == "All" or e["owner"] == tenant],
         "count": len(ok),
@@ -361,7 +235,7 @@ def expected(tenant: str = "All", p: Principal = Depends(principal), session: Se
 # ---------------------------------------------------------------- the journey strip
 def return_history(c: Case) -> list[dict]:
     """The demo's asReturnHistory: earlier returns of this asset (closed decisions), else derived ones."""
-    past = sorted((x for x in _rows() if x["assetId"] == c["assetId"]), key=lambda x: -ms(x["date"]))
+    past = sorted((x for x in all_rows() if x["assetId"] == c["assetId"]), key=lambda x: -ms(x["date"]))
     if past:
         return [
             {
@@ -399,11 +273,7 @@ def dp_visible(p: Principal, c: Case | None) -> bool:
     """The demo's dpVisible: the case's journey can be walked by this account (tenant, warehouse, case and asset pages)."""
     a = p.account
     return bool(
-        c
-        and policy.tenant_ok(a, c["owner"], p.ctx)
-        and policy.location_ok(a, c["location"])
-        and policy.can_page(a, "product", "case")
-        and policy.can_page(a, "product", "asset")
+        c and can_see_case(a, p.ctx, c) and policy.can_page(a, "product", "case") and policy.can_page(a, "product", "asset")
     )
 
 
@@ -423,11 +293,12 @@ def journey(case_id: str, p: Principal = Depends(principal), session: Session = 
     cert = f", certified for {R['certMonths']} months ({R['certRef']})" if R else ""
     times = "once" if k == 1 else "twice" if k == 2 else f"{k} times"
     tail = f"; {miss} evidence item{'s' if miss > 1 else ''} not complete yet" if miss else ""
+    ctx = call_ctx(p, session)
     return {
         "visible": True,
-        "progress": run(c, screen_ctx(p, session))["stage"],
+        "progress": run(c, ctx)["stage"],
         "established": [
-            f"{len(vis_cases(p, session))} returned assets in your view. {c['id']} is selected: {as_model(c)}, {c['owner']}, "
+            f"{len(visible_cases(ctx))} returned assets in your view. {c['id']} is selected: {as_model(c)}, {c['owner']}, "
             f"{c['location']}.",
             f"{graded}{cert}, received at {c['location']}, returned {times} before{tail}.",
         ],
@@ -435,44 +306,6 @@ def journey(case_id: str, p: Principal = Depends(principal), session: Session = 
 
 
 # ---------------------------------------------------------------- Asset intelligence
-def as_title(c: Case) -> str:
-    m = as_model(c)
-    return m if str(c["mfr"]).split(" ")[0].lower() in m.lower() else f"{c['mfr']} {m}"
-
-
-def as_lease(c: Case) -> str:
-    return f"LS-{4900 + as_hex(c, 'cl') % 300}"
-
-
-def asset_facts(c: Case) -> list[list[str]]:
-    """The demo's assetFacts."""
-    d = c.get("demand") or {}
-    return [
-        ["Asset ID", c["assetId"]],
-        ["Serial number", as_serial(c)],
-        ["Product", as_model(c)],
-        ["Manufacturer", c["mfr"]],
-        ["Revision", "Rev " + "ABCDE"[as_hex(c, "rv") % 5]],
-        ["Ownership", c["owner"] + (f" · lease {as_lease(c)} (ended)" if d.get("lease") else "")],
-        ["Location", c["location"]],
-        [
-            "Contract demand",
-            f"{c['owner']} · {d['site']}" + (" · confirmed" if d.get("confirmed") else " · forecast")
-            if d.get("site")
-            else "None matched",
-        ],
-        ["Received", fmt_dy(c["received"])],
-        ["Received under", f"GR-{100000 + as_hex(c, 'gr') % 900000} · WMS receipt"],
-        ["Return authorisation", as_rma(c) + " · IBM Sterling OMS"],
-        ["Age", f"{_num(c['age'])} years"],
-        ["Engineering life", c["engLife"]],
-        ["Next inspection", c["nextInspection"]],
-    ]
-
-
-def _num(v: float) -> str:
-    """JavaScript's String(n)."""
-    return str(int(v)) if float(v).is_integer() else repr(v)
 
 
 def _mon(t: int) -> str:
@@ -562,80 +395,6 @@ def related(c: Case, my: list[Case]) -> list[Case]:
     return sorted(pool, key=lambda x: (x["owner"] != c["owner"], -1 if x["location"] == c["location"] else 1, x["id"]))[:3]
 
 
-def parts_availability(c: Case, h: dict) -> list[dict]:
-    """The demo's asParts."""
-    out = []
-    for x in h["comps"]:
-        v, q = (as_hex(c, "pt" + x["n"]) % 100) / 100, as_hex(c, "q" + x["n"])
-        if v >= 0.6:
-            out.append({"n": x["n"], "st": "In stock", "cls": "ok", "q": q % 24 + 3})
-        elif v >= 0.3:
-            out.append({"n": x["n"], "st": "Limited", "cls": "warn", "q": q % 4 + 1})
-        else:
-            out.append({"n": x["n"], "st": "Backorder", "cls": "bad", "q": 0})
-    return out
-
-
-def part_prices(c: Case, h: dict) -> list[dict]:
-    """The demo's asPartPrices: the parts the preparation buys (from the build-up), else an estimate per worn part."""
-    if not c.get("grade"):
-        return []
-    rr = c.get("chosen") or c.get("recommendation")
-    PB = ex_prep_parts(c, rr) if rr else None
-    if PB and PB["parts"]:
-        return [
-            {
-                "n": x["name"],
-                "st": x["comp"],
-                "price": x["unit"] * x["qty"] / 83.5,
-                "pn": x["pn"],
-                "qty": x["qty"],
-                "inr": x["unit"] * x["qty"],
-            }
-            for x in PB["parts"]
-        ]
-    sc = [x for x in h["comps"] if x["cls"] != "ok"]
-    prep = prep_cost(c)
-    base = prep * 0.55 if prep else CLASSES[c["cls"]]["pnew"] * c["qty"] * 0.06
-    if not sc:
-        return []
-    w = [1 + as_hex(c, "pw" + x["n"]) % 5 for x in sc]
-    tw = sum(w)
-    if prep and prep < 200:
-        return [{"n": x["n"], "st": x["st"], "price": max(1, math.floor(base * w[i] / tw))} for i, x in enumerate(sc)]
-    left, out = js_round(base / 10) * 10, []
-    for i, x in enumerate(sc):
-        v = left if i == len(sc) - 1 else js_round(base * w[i] / tw / 10) * 10
-        left -= v
-        out.append({"n": x["n"], "st": x["st"], "price": max(15, v + 5)})
-    return out
-
-
-def catalogue(c: Case) -> float:
-    """The demo's asCatalogue: the planned purchase price, else the class's new price."""
-    amts = [next((t["amt"] for t in r["terms"] if t["kind"] == "purchase"), None) for r in c.get("routes") or []]
-    return next((a for a in amts if a), None) or js_round(CLASSES[c["cls"]]["pnew"] * c["qty"])
-
-
-def case_diag(c: Case, h: dict) -> dict | None:
-    """The demo's caseDiag: the class's diagnostic measure."""
-    if c.get("assessment") == "Pending" or (not c.get("grade") and c.get("assessment") != "Ready"):
-        return None
-    metric, kind = DIAG.get(c["cls"]) or ("Condition score", "pct")
-    if kind == "grade":
-        value = "Grade " + (c.get("grade") or "B")
-    elif kind == "wear":
-        value = f"{max(5, 100 - h['score'])}%"
-    elif kind == "test":
-        n = as_hex(c, "st") % 4
-        value = ("Fail" if c.get("grade") == "C" or n > 2 else "Pass") + f" · {n} error{'' if n == 1 else 's'}"
-    else:
-        value = f"{_clamp(h['score'] - as_hex(c, 'bh') % 12, 35, 98)}%"
-    ins = next((e for e in c.get("evidence") or [] if e["k"] == "insp"), None)
-    source = "MRO · Depot repair" if c["cls"] in ("motor", "pump") else "Inspection"
-    return {"metric": metric, "value": value, "source": source, "at": (ins.get("fresh") if ins else None) or "—"}
-
-
 def value_state(c: Case) -> str:
     """The demo's asValState."""
     r = c.get("chosen") or c.get("recommendation")
@@ -665,14 +424,16 @@ def asset_econ(c: Case) -> dict:
     sv = js_round((mt + pr) * (0.9 + (as_hex(c, "sv") % 30) / 100))
     avg = js_round(sv / age)
     rs = [
-        x for x in _rows() if x["cls"] == c["cls"] and x["route"] == "resale" and x["status"] == "reconciled" and x["actual"] > 0
+        x
+        for x in all_rows()
+        if x["cls"] == c["cls"] and x["route"] == "resale" and x["status"] == "reconciled" and x["actual"] > 0
     ]
     by = [0] * 12
     for x in rs:
         by[x["mi"]] += 1
 
     def unit(a: list[dict]) -> float:
-        return _median([x["actual"] / x["q"] for x in a])
+        return median([x["actual"] / x["q"] for x in a])
 
     last3 = [x for x in rs if x["mi"] >= 9]
     prev3 = [x for x in rs if 6 <= x["mi"] < 9]
@@ -740,7 +501,7 @@ def closed_last_year(c: Case) -> int:
     """Closed decisions of this product for this customer in the last 12 months (the demo's skuStrip)."""
     m, cut = as_model(c), add_days(AS_OF, -365)
     return sum(
-        1 for r in _rows() if re.sub(r"s$", "", str(r["equip"])) == m and r["tenant"] == c["owner"] and ms(r["date"]) >= cut
+        1 for r in all_rows() if re.sub(r"s$", "", str(r["equip"])) == m and r["tenant"] == c["owner"] and ms(r["date"]) >= cut
     )
 
 
@@ -753,7 +514,7 @@ def _count(items: list[str]) -> dict[str, int]:
 
 def default_asset(p: Principal, session: Session) -> str:
     """The demo's rbLastAsset without a remembered asset: the first of the account's cases (RT-1048 when none)."""
-    my = my_cases(p, session)
+    my = visible_cases(call_ctx(p, session))
     return my[0]["id"] if my else "RT-1048"
 
 
@@ -770,7 +531,7 @@ def asset(case_id: str, p: Principal = Depends(principal), session: Session = De
     h = health(c)
     r = c.get("chosen") or c.get("recommendation")
     rec = c.get("recommendation")
-    my = my_cases(p, session)
+    my = visible_cases(call_ctx(p, session))
     m = as_model(c)
     return {
         "case": case_record(c, session),

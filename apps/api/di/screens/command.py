@@ -70,42 +70,23 @@ from di.reads.common import (
     SOURCES,
     STARTING_CONFLICTS,
     Case,
-    active_step,
     add_days,
     as_model,
     decisions_delegated,
-    ex_app,
-    ex_clock,
-    ex_ts,
-    exp_vis,
     fmt_d,
     fmt_n,
     inbox_requests,
     kfmt,
     limit_for,
-    money,
     ms,
     notes,
     requests,
-    step_owner,
-    ti_conf,
     to_fixed,
 )
-from di.screens.home import (
-    ROUTES,
-    call_ctx,
-    can_page,
-    cc_net,
-    hh,
-    hh_totals,
-    metrics,
-    sm_exceptions,
-    stale_sources,
-    vis,
-    vis_rows,
-    wf_stat,
-    workflows,
-)
+from di.reads.constants import DELEG, ROUTES
+from di.reads.context import call_ctx, can_page, visible_cases, visible_rows
+from di.reads.decisions import metrics
+from di.reads.fabric import hh, hh_totals, sm_exceptions, stale_sources, wf_stat, workflows, ws_events
 
 router = APIRouter(prefix="/api/screens/command", tags=["screens: command"])
 
@@ -212,7 +193,6 @@ CC_LAYOUT: dict[str, dict] = {
     },
 }
 SENIOR_SUB = "Senior view: value realised, portfolio health and exceptions. Switch to Operational for the queues."
-DELEG = [("decisions", "Decisions and overrides"), ("mcp", "MCP server proposals"), ("tenantAccess", "Tenant access")]
 REASONS = ws.CC_REASONS
 CC_CAP = ws.CC_CAP
 
@@ -237,52 +217,12 @@ def table_filters(f: Filters = Depends(scope_filters), stage: str = "", due: str
     return f
 
 
-def _f(f: Filters | dict) -> Filters:
-    return Filters(**f) if isinstance(f, dict) else f
-
-
-# ---------------------------------------------------------------- scope (the demo's ccScope and ccRows)
-def due_key(left: int) -> str:
-    """The demo's ccDueKey."""
-    return "d5" if left < 5 else "d7" if left < 8 else "d10" if left < 11 else "d11"
-
-
-def cc_scope(ctx, f: Filters | dict) -> dict:
-    """The visible cases matching the filters, each annotated as the demo's ccScope does: stage bucket (_st), days left
-    (_left), value at risk by reason (_risk, _var), estimated value (_val), due bucket (_due), rank score (_score) and,
-    for those still needing a person (act), a priority (_pri)."""
-    f = _f(f)
-    v = vis(ctx, f.tenant)
-    util = ws.cc_util(v)
-    out = [
-        c
-        for c in v
-        if (not f.site or c["location"] == f.site)
-        and (not f.cls or c["cls"] == f.cls)
-        and (not f.route or (c.get("recommendation") and c["recommendation"]["id"] == f.route))
-    ]
-    mx = max([1, *(ws.cc_est(c) for c in out)])
-    for c in out:
-        c["_st"] = ws.cc_stage(c)
-        c["_left"] = ws.cc_left(c)
-        c["_risk"] = ws.cc_risk(c, util)
-        c["_var"] = js_sum(c["_risk"].values())
-        c["_val"] = ws.cc_est(c)
-        c["_due"] = due_key(c["_left"])
-        c["_score"] = (c["_val"] / mx) * 60 + max(0, min(1, (10 - c["_left"]) / 10)) * 40
-    act = sorted(
-        (c for c in out if c["_st"] in ("approval", "reeval", "need", "await_insp", "noroute")), key=lambda c: -c["_score"]
-    )
-    for i, c in enumerate(act):
-        c["_pri"] = "High" if i < len(act) * 0.3 else "Medium" if i < len(act) * 0.7 else "Low"
-    return {"all": out, "act": act, "util": util, "net": js_sum(cc_net(c) for c in out)}
-
-
+# ---------------------------------------------------------------- scope (the demo's ccRows; ccScope: di.reads.workspace)
 def cc_rows(ctx, f: Filters) -> list[dict]:
     """The demo's ccRows: the closed decisions in the filters and the time horizon."""
     return [
         r
-        for r in vis_rows(ctx, f.tenant)
+        for r in visible_rows(ctx, f.tenant)
         if (not f.cls or r["cls"] == f.cls) and (not f.route or r["route"] == f.route) and r["mi"] >= 12 - f.months
     ]
 
@@ -369,7 +309,7 @@ AS_COMPS = {
 def kpi_tiles(ctx, ks: list[str], sc: dict, rows: list[dict], f: Filters) -> list[dict]:
     a = ctx.actor.account
     m = metrics(rows)
-    every = vis_rows(ctx, f.tenant)
+    every = visible_rows(ctx, f.tenant)
     al = sc["all"]
 
     def st(x: str) -> list[Case]:
@@ -377,7 +317,7 @@ def kpi_tiles(ctx, ks: list[str], sc: dict, rows: list[dict], f: Filters) -> lis
 
     ap = st("approval")
     open_ = [c for c in al if c["_st"] in ("approval", "reeval")]
-    pot, vr = js_sum(cc_net(c) for c in open_), js_sum(c["_var"] for c in al)
+    pot, vr = js_sum(ws.cc_net(c) for c in open_), js_sum(c["_var"] for c in al)
     cl = sum(1 for c in ap if c["_left"] < 5)
     gaps = sum(1 for c in al if c["_st"] in ("need", "await_insp"))
     yp = js_sum(r["p50"] for r in m["rc"])
@@ -419,7 +359,7 @@ def kpi_tiles(ctx, ks: list[str], sc: dict, rows: list[dict], f: Filters) -> lis
 
     rest = js_sum(c["_val"] for c in al if c["_st"] in ("need", "await_insp", "noroute"))
     risk_pct = js_round(vr / max(1, pot + rest) * 100) if pot else 0
-    ap_net = js_sum(cc_net(c) for c in ap)
+    ap_net = js_sum(ws.cc_net(c) for c in ap)
 
     def inbox():
         n = len(inbox_requests(ctx))
@@ -558,7 +498,7 @@ def kpi_tiles(ctx, ks: list[str], sc: dict, rows: list[dict], f: Filters) -> lis
         )
 
     def aome():
-        n = len(aome_items(ctx, False, f.tenant))
+        n = len(ws.aome_items(ctx, False, f.tenant))
         return k(
             "aome",
             "y" if n else "ok",
@@ -957,7 +897,7 @@ def signals(ctx, sc: dict, f: Filters) -> list[dict]:
                 "ic": "refresh",
             }
         )
-    rr = vis_rows(ctx, f.tenant)
+    rr = visible_rows(ctx, f.tenant)
     h: dict[str, int] = {}
     pv: dict[str, int] = {}
     for r in rr:
@@ -981,8 +921,6 @@ def signals(ctx, sc: dict, f: Filters) -> list[dict]:
                 "ic": "pump",
             }
         )
-    from di.screens.home import ws_events
-
     late = sum(1 for e in ws_events(ctx) if re.search(r"late|out of order", e.get("ack") or ""))
     if late:
         a.append(
@@ -1018,14 +956,16 @@ def capacity(sc: dict) -> list[dict]:
 
 
 def charts(ctx, f: Filters) -> dict:
-    sc = cc_scope(ctx, f)
+    sc = ws.cc_scope(ctx, f.tenant, f.site, f.cls, f.route)
     al = sc["all"]
     routes = []
     for r in ROUTES:
         a = [c for c in al if c.get("recommendation") and c["recommendation"]["id"] == r["id"]]
         v = sum(c["qty"] for c in a)
         if v > 0:
-            routes.append({"id": r["id"], "label": r["short"], "v": v, "net": js_sum(cc_net(c) for c in a), "color": r["color"]})
+            routes.append(
+                {"id": r["id"], "label": r["short"], "v": v, "net": js_sum(ws.cc_net(c) for c in a), "color": r["color"]}
+            )
     return {
         "stages": [
             {"k": "stage:" + k, "label": label, "v": sum(1 for x in al if x["_st"] == k), "color": col}
@@ -1186,7 +1126,7 @@ def _ex_list(ctx, sc: dict, f: Filters) -> list[dict]:
                 }
             )
     if not wh:
-        rows = vis_rows(ctx, f.tenant)
+        rows = visible_rows(ctx, f.tenant)
         for name, fn in (
             ("net recovery", lambda r: r["actual"] if r["status"] == "reconciled" else 0),
             ("uplift vs baseline", lambda r: r["actual"] - r["baseline"] if r["status"] == "reconciled" else 0),
@@ -1306,160 +1246,11 @@ def ex_rows(ctx, sc: dict, f: Filters) -> list[dict]:
 
 
 # ---------------------------------------------------------------- Actions on me, handed off, outcomes
-def op_scope_info(ctx, widen: bool) -> dict:
-    """The demo's opScope: Planners and Engineers start at their home site and may widen to every location; a Warehouse
-    Manager is locked to theirs."""
-    a = ctx.actor.account
-    home = a.warehouse or a.site or ""
-    scope = a.warehouse if a.warehouse else "" if widen else home
-    return {"home": home, "scope": scope, "locked": bool(a.warehouse)}
-
-
-def op_scoped(ctx, widen: bool, tenant: str = "All") -> list[Case]:
-    s = op_scope_info(ctx, widen)["scope"]
-    return [c for c in vis(ctx, tenant) if not s or c["location"] == s]
-
-
-def aome_items(ctx, widen: bool = False, tenant: str = "All") -> list[dict]:
-    """The demo's aomeItems with the tenant menu and the widened scope (di.reads.workspace.aome_items answers for the
-    default scope and every tenant; this is the same port with those two settings)."""
-    a = ctx.actor.account
-    role, out = a.role, []
-    cs = op_scoped(ctx, widen, tenant)
-
-    def st5(cid: str) -> str:
-        return f"product/{cid}?step=5"
-
-    for n in notes(ctx.session):
-        if n["to"] == a.id and n["status"] == "open":
-            out.append(
-                {
-                    "t": n["title"],
-                    "d": f"From {n['from']} · {n['sev']} · {n['msg']}",
-                    "btn": "Acknowledge",
-                    "act": "notifyAck",
-                    "arg": n["id"],
-                }
-            )
-    perms = policy.policy(a).get("perms") or []
-    if role == "Admin" or any(p.startswith("approve.") for p in perms):
-        for r in inbox_requests(ctx):
-            out.append(
-                {
-                    "t": f"{REQ_KIND[r['kind']]} {r['id']}",
-                    "d": "Requested by " + r["by"],
-                    "btn": "Open inbox",
-                    "go": "command/approvals",
-                }
-            )
-    if role == "Engineer":
-        for c in cs:
-            if c.get("blocked") and c.get("requested"):
-                b = c["blocked"]
-                out.append(
-                    {
-                        "t": c["id"] + " · record the assessment result",
-                        "d": f"{b['action']} · {b['gateName']} gate",
-                        "btn": "Record result",
-                        "go": st5(c["id"]),
-                    }
-                )
-        for c in [c for c in cs if c.get("assessment") == "Pending"][:6]:
-            out.append(
-                {
-                    "t": c["id"] + " · inspection due",
-                    "d": f"{c['product']} at {c['location']}",
-                    "btn": "Open asset",
-                    "go": "product/asset/" + c["id"],
-                }
-            )
-    if role == "Planner":
-        for c in cs:
-            if c["stage"] == "reeval":
-                out.append(
-                    {
-                        "t": c["id"] + " · re-evaluate",
-                        "d": c.get("reevalReason") or "Review triggered",
-                        "btn": "Re-evaluate",
-                        "go": st5(c["id"]),
-                    }
-                )
-        ready = [c for c in cs if c["stage"] == "awaiting_approval" and not c.get("submitted") and c.get("recommendation")]
-        for c in ready[:6]:
-            r = c["recommendation"]
-            out.append(
-                {
-                    "t": c["id"] + " · submit for review",
-                    "d": f"{r['plan']} · {money(r['net'])}",
-                    "btn": "Submit",
-                    "go": st5(c["id"]),
-                }
-            )
-    every = vis(ctx, tenant) if role in ("Approver", "Finance") else []
-    if role == "Approver":
-        for c in every:
-            if c["stage"] == "awaiting_approval" and c.get("submitted"):
-                d = f"Submitted by {c['submitted']['by']} · {money(c['recommendation']['net'])}"
-                out.append({"t": c["id"] + " · approve or decline", "d": d, "btn": "Decide", "go": st5(c["id"])})
-    if role == "Finance":
-        for c in every:
-            if c["stage"] == "closed" and not c.get("outcome"):
-                out.append(
-                    {
-                        "t": c["id"] + " · confirm the outcome",
-                        "d": "Reported by the enterprise systems",
-                        "btn": "Confirm",
-                        "go": st5(c["id"]),
-                    }
-                )
-    if role == "Developer":
-        for s in SOURCES.values():
-            if s["status"] in ("stale", "unavailable"):
-                out.append(
-                    {"t": f"{s['name']} · {s['status']}", "d": s["vendor"], "btn": "Open Source map", "go": "integration/map"}
-                )
-    if role == "Warehouse Manager":
-        for c in cs:
-            s = active_step(c)
-            if s and s["sys"].startswith("WMS"):
-                out.append(
-                    {
-                        "t": f"{c['id']} · {s['label'].lower()}",
-                        "d": "WMS acknowledgement pending · " + c["product"],
-                        "btn": "Check",
-                        "go": st5(c["id"]),
-                    }
-                )
-        for e in exp_vis(ctx):
-            if tenant == "All" or e["owner"] == tenant:
-                out.append(
-                    {
-                        "t": f"{e['contract']} · inbound {e['window']}",
-                        "d": f"{e['product']} · {e['customer']} · {e['prob']}% likely to return",
-                        "btn": "Plan receiving",
-                        "go": "product/expected",
-                    }
-                )
-    if role in ("Approver", "Admin"):
-        for c in cs:
-            s = active_step(c)
-            k = ex_clock(c, s) if s else None
-            if k and k["level"] and (role == "Approver" or k["level"] == 2):
-                at = ex_ts(k["due2"] if k["level"] == 2 else k["due"])
-                out.append(
-                    {
-                        "t": f"{c['id']} · escalated: {s['label'].lower()}",
-                        "d": f"{ex_app(s)} passed its {k['lim']} limit at {at} · owner {step_owner(c, s)}",
-                        "btn": "Open handoff",
-                        "go": st5(c["id"]),
-                    }
-                )
-    return out
 
 
 def handed_rows(ctx, widen: bool, tenant: str = "All") -> list[dict]:
     out = []
-    for c in op_scoped(ctx, widen, tenant):
+    for c in ws.op_scoped(ctx, widen, tenant):
         if c["stage"] not in ("approved", "executing"):
             continue
         x = c.get("exec")
@@ -1481,7 +1272,7 @@ def handed_rows(ctx, widen: bool, tenant: str = "All") -> list[dict]:
 
 
 def awaiting_approval(ctx, widen: bool, tenant: str = "All") -> dict:
-    ap = [c for c in op_scoped(ctx, widen, tenant) if c["stage"] == "awaiting_approval"]
+    ap = [c for c in ws.op_scoped(ctx, widen, tenant) if c["stage"] == "awaiting_approval"]
     return {
         "decider": "Approver" if decisions_delegated(ctx) else "Admin",
         "rows": [
@@ -1497,7 +1288,7 @@ def awaiting_approval(ctx, widen: bool, tenant: str = "All") -> dict:
 
 
 def outcomes(ctx, tenant: str = "All") -> dict:
-    v = vis(ctx, tenant)
+    v = visible_cases(ctx, tenant)
     rows = []
     for c in v:
         if c["stage"] == "closed" and not c.get("outcome"):
@@ -1515,68 +1306,18 @@ def outcomes(ctx, tenant: str = "All") -> dict:
 
 
 # ---------------------------------------------------------------- the Approvals inbox
-def af_risks(c: Case, rt: dict, ev: dict) -> list[dict]:
-    """The demo's afRisks: what to check before approving."""
-    r = c.get("recommendation")
-    if not r:
-        return [
-            {
-                "level": "bad",
-                "text": "No eligible route",
-                "detail": c["blocked"]["reason"] if c.get("blocked") else "Every route failed a gate.",
-            }
-        ]
-    items = []
-    gw = [n for n in r.get("gateNotes") or [] if re.search(r"review|partial|warning|conditional", n, re.I)]
-    items.append(
-        {"level": "warn", "text": "Gate notes to read", "detail": "; ".join(gw)}
-        if gw
-        else {"level": "ok", "text": "All six gates passed", "detail": "Gate engine (rules)"}
-    )
-    st = [e for e in ev.get("items") or [] if e["state"] in ("stale", "partial")]
-    items.append(
-        {"level": "warn", "text": "Stale or partial evidence", "detail": "; ".join(e["label"] for e in st)}
-        if st
-        else {"level": "ok", "text": "Evidence current", "detail": f"{len(ev.get('items') or [])} items"}
-    )
-    mk = SOURCES.get("mkt")
-    if mk and mk["status"] == "stale" and r["id"] in ("resale", "extparts"):
-        items.append({"level": "warn", "text": "Market feed is stale", "detail": "Resale price uses the last fresh comparables"})
-    items.append(
-        {"level": "warn", "text": "Demand is a forecast", "detail": "A non-realisation allowance is included"}
-        if r.get("demandStatus") != "confirmed"
-        else {"level": "ok", "text": "Demand confirmed", "detail": r.get("demandLabel")}
-    )
-    cf = ti_conf(c, r)
-    items.append(
-        {"level": "bad", "text": "Low confidence", "detail": "Compare routes before approving"}
-        if cf == "Low"
-        else {
-            "level": "warn" if cf == "Medium" else "ok",
-            "text": cf + " confidence",
-            "detail": f"P10–P90 {money(r['p10'])}–{money(r['p90'])}",
-        }
-    )
-    if rt.get("tie"):
-        items.append({"level": "warn", "text": "Near tie", "detail": rt["tie"]["text"]})
-    cfl = [x for x in STARTING_CONFLICTS if x["status"] == "open" and x["asset"] == c["assetId"]]
-    if cfl:
-        items.append(
-            {"level": "bad", "text": "Open source conflict", "detail": "; ".join(f"{x['kind']}: {x['impact']}" for x in cfl)}
-        )
-    return items
 
 
 def approval_cards(ctx, tenant: str = "All") -> list[dict]:
     """The demo's afApprovalQueue as the facade's approvalCards: submitted decisions by value, then deadline, each with
     what to check before approving."""
     q = []
-    for c in vis(ctx, tenant):
+    for c in visible_cases(ctx, tenant):
         if not (c["stage"] == "awaiting_approval" and c.get("submitted") and c.get("recommendation")):
             continue
         rt = case_reads.case_routes({"case_id": c["id"]}, ctx)
         ev = case_reads.case_evidence({"case_id": c["id"]}, ctx)
-        risks = [x for x in af_risks(c, rt, ev) if x["level"] != "ok"]
+        risks = [x for x in ws.af_risks(c, rt, ev) if x["level"] != "ok"]
         t = c.get("timing") or ""
         m = re.search(r"Day (\d+)", t) or re.search(r"(\d+) days", t)
         q.append({"c": c, "net": c["recommendation"]["net"], "days": int(m[1]) if m else 30, "risks": risks})
@@ -1605,10 +1346,10 @@ def inbox(ctx, tenant: str = "All") -> dict:
     lim = limit_for(a, ctx.actor.ctx)
     return {
         "requests": [{**r, "kindLabel": REQ_KIND[r["kind"]], "canDecide": True} for r in inbox_requests(ctx)],
-        "scope": [label.lower().replace("mcp", "MCP") for k, label in DELEG if ctx.actor.ctx.delegations.get(k, True)]
+        "scope": [d["label"].lower().replace("mcp", "MCP") for d in DELEG if ctx.actor.ctx.delegations.get(d["k"], True)]
         if a.role == "Approver"
         else None,
-        "decisions_awaiting": sum(1 for c in vis(ctx, tenant) if c["stage"] == "awaiting_approval"),
+        "decisions_awaiting": sum(1 for c in visible_cases(ctx, tenant) if c["stage"] == "awaiting_approval"),
         "cards": approval_cards(ctx, tenant),
         "limit": None if lim == float("inf") else lim,
     }
@@ -1625,8 +1366,6 @@ def ack_kind(a: str) -> str:
 
 
 def health_detail(ctx) -> dict:
-    from di.screens.home import ws_events
-
     t, ex = hh_totals(), sm_exceptions()
     return {
         "ok": t["ok"],
@@ -1671,15 +1410,15 @@ def get_kpis(
 ) -> dict:
     """Key figures: the layout's tiles, the "needs attention now" line, the totals and the health strip."""
     ctx = call_ctx(p, session)
-    sc, rows = cc_scope(ctx, f), cc_rows(ctx, f)
+    sc, rows = ws.cc_scope(ctx, f.tenant, f.site, f.cls, f.route), cc_rows(ctx, f)
     return {
         "tiles": kpi_tiles(ctx, keys(_layout_or_kpis(p, mode)), sc, rows, f),
         "insights": insights(sc),
         "metrics": cc_metrics(rows),
         "health": health_strip(),
         "counts": {
-            "cases": len(vis(ctx, f.tenant)),
-            "rows": len(vis_rows(ctx, f.tenant)),
+            "cases": len(visible_cases(ctx, f.tenant)),
+            "rows": len(visible_rows(ctx, f.tenant)),
             "sources": len(SOURCES),
             "workflows": len(workflows()),
         },
@@ -1701,7 +1440,7 @@ def get_actions(
 ) -> dict:
     """The ranked table of actions to prioritise, with the table's view, due, reason and search filters."""
     ctx = call_ctx(p, session)
-    sc = cc_scope(ctx, f)
+    sc = ws.cc_scope(ctx, f.tenant, f.site, f.cls, f.route)
     rows = [{"case": cc_case(c), **opp_row(c, sc)} for c in opp_rows(sc, f)]
     return {"rows": rows, "total": len(rows)}
 
@@ -1712,12 +1451,12 @@ def get_exceptions(
 ) -> dict:
     """Exceptions by warehouse, and the decisions awaiting approval (the senior view's read-only queue)."""
     ctx = call_ctx(p, session)
-    sc = cc_scope(ctx, f)
-    ap = sorted((c for c in sc["all"] if c["_st"] == "approval"), key=lambda c: -cc_net(c))
+    sc = ws.cc_scope(ctx, f.tenant, f.site, f.cls, f.route)
+    ap = sorted((c for c in sc["all"] if c["_st"] == "approval"), key=lambda c: -ws.cc_net(c))
     return {
         "rows": ex_rows(ctx, sc, f),
         "awaiting": [
-            {"id": c["id"], "plan": c["recommendation"]["plan"] if c.get("recommendation") else None, "net": cc_net(c)}
+            {"id": c["id"], "plan": c["recommendation"]["plan"] if c.get("recommendation") else None, "net": ws.cc_net(c)}
             for c in ap
         ],
     }
@@ -1729,7 +1468,7 @@ def get_aome(
 ) -> dict:
     """Actions on me, at the home site or (all=true) every location, in the tenant menu's tenant."""
     ctx = call_ctx(p, session)
-    return {"items": aome_items(ctx, all, tenant), "scope": op_scope_info(ctx, all)}
+    return {"items": ws.aome_items(ctx, all, tenant), "scope": ws.op_scope_info(ctx, all)}
 
 
 @router.get("/handed")
@@ -1741,7 +1480,7 @@ def get_handed(
     return {
         "handed": handed_rows(ctx, all, tenant),
         "awaiting": awaiting_approval(ctx, all, tenant),
-        "scope": op_scope_info(ctx, all),
+        "scope": ws.op_scope_info(ctx, all),
     }
 
 

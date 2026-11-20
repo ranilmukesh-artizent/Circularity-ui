@@ -74,46 +74,47 @@ Notes for the switch-over (B17):
 import math
 import re
 from typing import Any
-from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import text
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from di import policy
 from di.actions.decisions import draft_rationale
-from di.actions.pipeline import Actor, CallContext
+from di.actions.pipeline import CallContext
 from di.auth import Principal, principal
-from di.cases import store
 from di.db import get_session
-from di.engine.jsmath import js_round, js_sum
-from di.engine.pool import solve_pool
 from di.execution import (
     as_sc,
     ex_actual,
-    ex_kg,
     ex_move,
     ex_plan,
     ex_prep_parts,
     ex_trace,
     ex_what_if,
-    lane_cost,
     loc_name,
-    steps_for,
 )
 from di.execution.lanes import LOCS, RATE_CARD, loc_win
 from di.execution.plan import ack_note, ex_delivered, value_order
 from di.execution.steps import ex_doc_ref, ho_kind
+from di.reads.case_detail import (
+    af_lease,
+    as_rma,
+    case_journal,
+    case_record,
+    default_spend,
+    instr_payload,
+    pool_of,
+    prep_cost,
+    recert,
+    steps_of,
+    with_times,
+)
 from di.reads.cases import flips, tie_break, tie_text
 from di.reads.common import (
     AS_OF,
-    CLASSES,
     FAC_LOC,
-    SITE_LOC,
     SOURCES,
-    TENANT_SITES,
     Case,
-    add_days,
     af_days,
     as_hex,
     as_model,
@@ -122,13 +123,11 @@ from di.reads.common import (
     case_events,
     case_rul,
     decisions_delegated,
-    demand_order,
     ex_app,
     ex_clock,
     ex_ts,
     fmt_d,
     fmt_dy,
-    hash_id,
     inr,
     iso,
     jg_lc,
@@ -140,404 +139,18 @@ from di.reads.common import (
     step_owner,
     ti_conf,
 )
-from di.reads.common import EX_FX as FX
+from di.reads.context import call_ctx, load_case, visible_cases
+from di.reads.provenance import prov_for, snap_time
 
 router = APIRouter(prefix="/api/screens/case", tags=["screens: case"])
 
 
 # ================================================================ shared by the product, case and orchestration screens
-def screen_ctx(p: Principal, session: Session) -> CallContext:
-    """The read context the action reads take (di.reads), for the signed-in account."""
-    return CallContext(actor=Actor(account=p.account, ctx=p.ctx), session=session)
-
-
-def load_case(p: Principal, session: Session, case_id: str, page: str, section: str) -> Case:
-    """One live case for a page: the page must be open to the account, the case must exist and be inside the account's
-    tenants and warehouse (the refusals and messages of the case actions, di.actions.pipeline)."""
-    p.require_page(page, section)
-    c = store.get(session, case_id)
-    if c is None:
-        raise HTTPException(404, {"code": "not_found", "message": f"No live case {case_id}."})
-    a = p.account
-    if not policy.tenant_ok(a, c["owner"], p.ctx) or not policy.location_ok(a, c["location"]):
-        msg = (
-            f"{case_id} is at {c['location']}, outside your warehouse."
-            if policy.policy(a).get("warehouseScoped")
-            else f"{case_id} belongs to {c['owner']}, a tenant you cannot see. Request tenant access first."
-        )
-        raise HTTPException(403, {"code": "tenant_boundary", "message": msg})
-    return c
-
-
-def my_cases(p: Principal, session: Session) -> list[Case]:
-    """The demo's myCases: every case in the account's tenants and warehouse."""
-    return [
-        c
-        for c in store.all_cases(session)
-        if policy.tenant_ok(p.account, c["owner"], p.ctx) and policy.location_ok(p.account, c["location"])
-    ]
-
-
-def vis_cases(p: Principal, session: Session, tenant: str = "All") -> list[Case]:
-    """The demo's visCases: myCases narrowed by the top-bar tenant filter (S.tenant; "All" by default)."""
-    return [c for c in my_cases(p, session) if tenant == "All" or c["owner"] == tenant]
-
-
-# The demo lists a case's specification in a fixed order per class; the database's JSON type keeps keys sorted, so the
-# order is restored here (the drawer shows the fields in it, and the configuration's provenance value uses the first three).
-SPEC_ORDER = {
-    "motor": ["Rated power", "IEC frame", "Efficiency class", "Voltage", "Speed"],
-    "pump": ["Flow", "Head", "Pressure", "Drive", "Port"],
-    "drill": ["Type", "Voltage", "Battery cycles", "Chuck"],
-    "control": ["Family", "I/O points", "Firmware", "Supply", "Safety rating"],
-    "it": ["Device", "CPU / RAM", "Storage", "Battery health", "Data erasure"],
-    "batch": ["Tool type", "Cell chemistry", "Lot grade", "Calibration"],
-}
-BACKEND_ONLY = ("hazardousMaterial",)  # engine inputs the demo's case record does not carry
-
-
-def ordered_spec(c: Case) -> dict:
-    spec = c.get("spec") or {}
-    order = SPEC_ORDER.get(c["cls"], [])
-    return {k: spec[k] for k in order if k in spec} | {k: v for k, v in sorted(spec.items()) if k not in order}
-
-
-def case_record(c: Case, session: Session) -> Case:
-    """The case record as the pages read it (the demo's CASE_BY_ID entry). A pool's partner case carries the pool's
-    result (the demo's poolResult)."""
-    out = {k: v for k, v in c.items() if k not in BACKEND_ONLY}
-    out["spec"] = ordered_spec(c)
-    if POOL_HOME.get(c["id"], c["id"]) != c["id"]:
-        out["poolResult"] = pool_of(session, c["id"])
-    return out
-
-
-TIMES = {"d0", "eta", "etd", "need", "repairAt", "readyAt", "t0", "due", "due2", "end", "auth", "pickup", "acq"}
-
-
-def with_times(v: Any, key: str | None = None) -> Any:
-    """Times kept as epoch milliseconds by the ports, as ISO strings (as the demo's Dates are sent)."""
-    if isinstance(v, bool) or v is None or isinstance(v, str):
-        return v
-    if isinstance(v, int | float):
-        return iso(v) if key in TIMES else v
-    if isinstance(v, dict):
-        return {k: with_times(x, k) for k, x in v.items()}
-    if isinstance(v, list | tuple):
-        return [with_times(x) for x in v]
-    return v
 
 
 def no_inf(v: float | None) -> float | None:
     """JSON has no Infinity: an unlimited amount is sent as null."""
     return None if v is None or math.isinf(v) else v
-
-
-def src(sid: str | None) -> dict | None:
-    """The demo's SRC: a source system by id."""
-    return SOURCES.get(sid) if sid else None
-
-
-def as_rma(c: Case) -> str:
-    return f"RMA-{55800 + as_hex(c, 'rma') % 900}"
-
-
-def ex_inbound(c: Case) -> dict:
-    """The demo's exInbound: the inbound lane from the customer site to the receiving facility, as laneCost prices it."""
-    ts = TENANT_SITES.get(c["owner"]) or TENANT_SITES["Customer A"]
-    o = SITE_LOC[ts[int(c["id"][3:]) % len(ts)]]
-    to = FAC_LOC.get(c["location"]) or "WH-PNQ-01"
-    return {"from": o, "to": to, **lane_cost(o, to, max(150, ex_kg(c)))}
-
-
-def af_lease(c: Case) -> dict:
-    """The demo's afLease: stages 1-3 (lease end, return authorisation, pickup and transit), derived from the case id."""
-
-    def h(k: str) -> int:
-        return as_hex(c, "|af|" + k)
-
-    rec = ms(c["received"])
-    end = add_days(rec, -(16 + h("end") % 38))
-    auth = add_days(end, 3 + h("ra") % 6)
-    pk = add_days(auth, 2 + h("pk") % 5)
-    eta = add_days(rec, -(h("eta") % 2))
-    k = CLASSES[c["cls"]]
-    book = js_round(k["pnew"] * c["qty"] * math.exp(-c["age"] / (k["tau"] * 1.6)) / 10) * 10
-    if c["cls"] in ("motor", "pump"):
-        usage = f"{9000 + h('u') % 26000} operating hours"
-    elif c["cls"] == "it":
-        usage = f"{h('u') % 4 + 2} years in service"
-    else:
-        usage = f"{h('u') % 900 + 300} cycles"
-    lane = ex_inbound(c)
-    return {
-        "lease": f"LC-{4000 + h('lc') % 900}",
-        "end": end,
-        "intent": ["return at term", "return at term", "early return", "upgrade to a newer model"][h("in") % 4],
-        "usage": usage,
-        "rma": as_rma(c),
-        "auth": auth,
-        "fee": c["qty"] * (0 if h("fee") % 3 else 40 + h("f2") % 8 * 10),
-        "repl": demand_order(c),
-        "book": book,
-        "acq": add_days(AS_OF, -js_round(c["age"] * 365.25)),
-        "pickup": pk,
-        "eta": eta,
-        "carrier": ["Northline 3PL", "Velo Freight", "Coastal Haulage"][h("cr") % 3],
-        "freight": js_round(lane["inr"] / FX),
-        "lane": lane,
-        "sim": True,
-    }
-
-
-# ---------------------------------------------------------------- provenance (the demo's PMAP and provFor)
-def js_text(v: Any) -> str:
-    """JavaScript's String(v) for the values a case's specification holds."""
-    if isinstance(v, bool):
-        return "true" if v else "false"
-    if isinstance(v, int | float):
-        return str(int(v)) if float(v).is_integer() else repr(v)
-    return str(v)
-
-
-PMAP: dict[str, dict] = {
-    "ret": {
-        "s": "wms",
-        "t": "movements",
-        "col": "RCV_TS",
-        "pre": "MV",
-        "q": lambda c: f"GET /movements?return_id={c['id']}&asset_id={c['assetId']}",
-        "val": lambda c: f"{fmt_dy(c['received'])} · received at {c['location']}",
-        "use": ["Case creation", "Gate 1 Condition & life (identity of receipt)"],
-        "proc": ["Normalised local time to UTC (MV_TS)", "Linked to asset identity"],
-    },
-    "id": {
-        "s": "plm",
-        "t": "BOM_HEADER",
-        "col": "CFG_ID",
-        "pre": "CFG",
-        "q": lambda c: f"poll boms.csv · filter CFG_ID for {c['assetId']}",
-        "val": lambda c: " · ".join(js_text(v) for v in list(ordered_spec(c).values())[:3]),
-        "use": ["Gate 3 Policy & certification (compatibility)", "Demand matching (specification)"],
-        "proc": ["Decoded configuration code", "Matched to approved alternates", "Linked to asset identity"],
-    },
-    "insp": {
-        "s": "insp",
-        "t": "inspections",
-        "col": "GRADE_TXT",
-        "pre": "INS",
-        "q": lambda c: f"GET /inspections?asset_id={c['assetId']}&latest=true",
-        "val": lambda c: f"Grade {c['grade']}" if c.get("grade") else c["condition"],
-        "use": ["Gate 1 Condition & life", "Prediction: prep-cost-time v1.3", "Prediction: resale-price v1.3"],
-        "proc": ["Mapped grade text through grade table v3", "Validated against condition schema v2.1"],
-    },
-    "svc": {
-        "s": "eam",
-        "t": "work_orders",
-        "col": "LAST_SVC",
-        "pre": "WO",
-        "q": lambda c: f"GET /work-orders?asset_id={c['assetId']}&since=2023-01-01",
-        "val": lambda c: f"Last service {fmt_dy(add_days(c['received'], -(30 + int(hash_id(c['id']), 16) % 200)))}",
-        "use": ["Prediction: service-exposure v1.2", "Gate 2 Post-intervention"],
-        "proc": ["Converted to UTC", "Aggregated failure history"],
-    },
-    "eng": {
-        "s": "eng",
-        "t": "assessments",
-        "col": "RUL_MO",
-        "pre": "ENG",
-        "q": lambda c: f"GET /certificates?asset_id={c['assetId']}&type=life-assessment",
-        "val": lambda c: f"Engineering life: {c['engLife']}",
-        "use": ["Gate 1 Condition & life", "Economics: service exposure horizon"],
-        "proc": ["Kept source assumptions and confidence", "Validated against policy POL-3.2"],
-    },
-    "photo": {
-        "s": "insp",
-        "t": "attachments",
-        "col": "PHOTOS",
-        "pre": "IMG",
-        "q": lambda c: f"GET /inspections/attachments?asset_id={c['assetId']}",
-        "val": lambda c: f"{6 + int(hash_id(c['id'] + 'p'), 16) % 10} images",
-        "use": ["Condition validation"],
-        "proc": ["Counted attachments", "Checksums recorded"],
-    },
-    "dem": {
-        "s": "crm",
-        "t": "opportunities",
-        "col": "OPP_STG",
-        "pre": "OPP",
-        "q": lambda c: f"GET /opportunities?site={(c.get('demand') or {}).get('site') or 'any'}&spec_match={c['assetId']}",
-        "val": lambda c: (
-            f"{c['demand']['site']} requirement · qty {c['qty']} · {'confirmed' if c['demand'].get('confirmed') else 'forecast'}"
-            if (c.get("demand") or {}).get("internal")
-            else "No open internal requirement matched"
-        ),
-        "use": ["Gate 4 Demand fit", "Route candidates (redeploy, re-lease)"],
-        "proc": ["Stage mapped to confirmed or forecast", "Specification matched via PLM"],
-    },
-    "mkt": {
-        "s": "mkt",
-        "t": "comparables",
-        "col": "SOLD_PRC",
-        "pre": "CMP",
-        "q": lambda c: f"GET /comparables?class={c['cls']}&grade={c.get('grade') or 'any'}&age={js_round(c['age'])}y",
-        "val": lambda c: _mkt_val(c),
-        "use": ["Prediction: resale-price v1.3", "Economics: sale routes"],
-        "proc": ["Currency and unit normalised", "Dealer grade mapped to grade table v3"],
-    },
-    "cost": {
-        "s": "erp",
-        "t": "costs",
-        "col": "COST_AMT",
-        "pre": "ERP",
-        "q": lambda c: f"GET /purchase-plans?asset_class={c['cls']}&site={(c.get('demand') or {}).get('site') or 'any'}",
-        "val": lambda c: _cost_val(c),
-        "use": ["Economics: avoided purchase", "Baseline definition"],
-        "proc": ["Currency converted to USD", "Cost basis aligned across routes"],
-    },
-    "pol": {
-        "s": "qms",
-        "t": "policies",
-        "col": "REUSE",
-        "pre": "POL",
-        "q": lambda c: f"GET /policies?class={c['cls']}&owner={quote(c['owner'], safe='-_.!~*()' + chr(39))}",
-        "val": lambda c: "Reuse permitted · policy POL-3.2",  # noqa: ARG005 - every field value takes the case
-        "use": ["Gate 3 Policy & certification"],
-        "proc": ["Policy map v3.2 applied"],
-    },
-}
-# Motors and pumps are inspected in the MRO workshop: their inspection report and photos come from the repair system
-# (the demo's later override of provFor).
-REPAIR_PMAP = {
-    "insp": {
-        "s": "repair",
-        "t": "repair_inspections",
-        "q": lambda c: f"GET /repair-orders?serial={c.get('serial') or c['assetId']}&task=receiving-inspection",
-    },
-    "photo": {
-        "s": "repair",
-        "t": "repair_attachments",
-        "q": lambda c: f"GET /repair-orders/attachments?serial={c.get('serial') or c['assetId']}",
-    },
-}
-
-
-def _mkt_val(c: Case) -> str:
-    r = next((x for x in c["routes"] if x["id"] == "resale" and x["terms"]), None)
-    if not r:
-        return "Comparable set retrieved"
-    return f"{14 + int(hash_id(c['id'] + 'm'), 16) % 40} comparable sales · expected {money(r['terms'][0]['amt'])}"
-
-
-def _cost_val(c: Case) -> str:
-    t = next((t for r in c["routes"] for t in [next((x for x in r["terms"] if x["kind"] == "purchase"), None)] if t), None)
-    return f"Planned purchase {money(t['amt'])}" if t else "Cost basis retrieved"
-
-
-def fetch_time(c: Case, e: dict) -> int:
-    """The demo's fetchTimeOf: when an evidence item was fetched, from its freshness text (epoch ms)."""
-    h = int(hash_id(c["id"] + e["k"]), 16)
-    f = e.get("fresh") or ""
-    if e["k"] == "mkt":
-        return AS_OF - ((src("mkt") or {}).get("freshMin") or 1) * 60000 - (h % 50) * 1000
-    if "just now" in f:
-        return AS_OF - (h % 40) * 1000
-    if m := re.search(r"(\d+) min", f):
-        return AS_OF - (int(m[1]) * 60 + h % 50) * 1000
-    if m := re.search(r"(\d+) h", f):
-        return AS_OF - (int(m[1]) * 3600 + h % 1700) * 1000
-    return AS_OF - (86400 + h % 28000) * 1000
-
-
-def _ymd(t: int) -> str:
-    return iso(t)[:10].replace("-", "")
-
-
-def prov_for(c: Case, e: dict) -> dict:
-    """The demo's provFor: where an evidence item came from (system, file, table, record, exact value, fetch time,
-    request, checksum, processing) and what it is used in. Times are ISO strings."""
-    m = PMAP.get(e["k"])
-    if m and c["cls"] in ("motor", "pump") and e["k"] in REPAIR_PMAP and src("repair"):
-        m = m | REPAIR_PMAP[e["k"]]
-    pid = "PRV-" + hash_id(c["id"] + e["k"] + "p")[:6]
-    if not m or e["state"] == "missing":
-        s0 = src(m["s"]) if m else None
-        reason = (
-            (e.get("note") or "Evidence has not been supplied by the source system.")
-            + " No fetch is recorded, so nothing is shown."
-            if e["state"] == "missing"
-            else "No provenance mapping exists for this item."
-        )
-        return {
-            "id": pid,
-            "status": "unavailable",
-            "key": e["k"],
-            "label": e["label"],
-            "reason": reason,
-            "sourceName": s0["name"] if s0 else e.get("source"),
-            "usedIn": [],
-        }
-    s = src(m["s"])
-    h = int(hash_id(c["id"] + e["k"] + "r"), 16)
-    fa = fetch_time(c, e)
-    via_api = bool(re.search(r"API|Events", s["mode"]))
-    ext = "json" if via_api else "csv"
-    hhmm = iso(fa)[11:16].replace(":", "")
-    p = {
-        "id": pid,
-        "key": e["k"],
-        "label": e["label"],
-        "status": "available",
-        "state": e["state"],
-        "sourceName": s["name"],
-        "vendor": s["vendor"],
-        "mode": s["mode"],
-        "auth": s["auth"],
-        "file": f"landing/{m['s']}/{_ymd(fa)}/{m['t']}_{hhmm}.{ext}",
-        "fileNote": "Staged API response (Connection Fabric)" if via_api else "Staged poll file (Connection Fabric)",
-        "table": m["t"],
-        "sheetKind": "resource" if via_api else "sheet",
-        "column": m["col"],
-        "record": f"{m['pre']}-{20000 + h % 80000}",
-        "row": 1 + h % 4800,
-        "rowsTotal": 2000 + h % 4000,
-        "value": m["val"](c),
-        "fetchedAt": iso(fa),
-        "observedAt": iso(fa - (60 + h % 900) * 1000),
-        "request": m["q"](c),
-        "checksum": "sha256:" + hash_id(c["id"] + e["k"] + "x").lower() + hash_id(e["k"] + c["id"]).lower(),
-        "processing": [
-            f"Fetched via {s['vendor']} adapter ({s['auth']})",
-            "Staged to landing file with checksum",
-            *m["proc"],
-            "Written to canonical model",
-            f"Linked to {c['assetId']}",
-        ],
-        "usedIn": list(m["use"]),
-        "notes": [],
-    }
-    if c.get("recommendation") and c.get("snapshot"):
-        p["usedIn"].append(f"Decision DI-2026-{c['id'][3:]} · snapshot {c['snapshot']['id']}")
-    if e["state"] == "stale":
-        p["notes"].append("Source value is stale: " + (e.get("note") or "older than the freshness threshold"))
-    if e["k"] == "mkt" and s.get("status") == "stale":
-        p["notes"].append("Market feed is stale; last successful pull shown. Predictions carry a reduced-confidence flag.")
-    if e["state"] == "partial":
-        p["notes"].append(e.get("note") or "Partial evidence")
-        p.update(status="partial", row=None, record=None)
-        p["partialWhy"] = "Record references exist only for the units that were inspected; the remainder have no source record."
-    if e["state"] == "conflict":
-        p["status"] = "partial"
-        p["notes"].append(e.get("note") or "Conflicting records")
-        p.update(file=None, table=None, column=None, row=None, record=None)
-        p["partialWhy"] = "The conflicting value comes from a physical label, which has no system record to trace."
-    return p
-
-
-def snap_time(c: Case) -> str:
-    """The demo's snapTime: 90 s after the last evidence fetch (ISO)."""
-    t = [fetch_time(c, e) for e in c["evidence"] if e["state"] != "missing"]
-    return iso((max(t) if t else AS_OF) + 90000)
 
 
 # ---------------------------------------------------------------- small demo helpers
@@ -559,116 +172,8 @@ def eligible(c: Case) -> list[dict]:
     return sorted((x for x in c["routes"] if not x["excluded"]), key=lambda x: -x["net"])
 
 
-def steps_of(c: Case) -> list[dict]:
-    """The demo's stepsOf: the instruction's steps, or the steps the route would send (by route id)."""
-    if c.get("exec"):
-        return c["exec"]["steps"]
-    r = c.get("chosen") or c.get("recommendation") or {"id": "resale"}
-    return steps_for({"id": r["id"]}, -1)
-
-
-def default_spend(c: Case, r: dict) -> int:  # noqa: ARG001 - the demo's defaultSpend(c, r)
-    """The demo's defaultSpend: the preparation cost, as the spend the approval authorises."""
-    return js_round(-js_sum(t["amt"] for t in r["terms"] if t["kind"] == "prep" and t["amt"] < 0))
-
-
-def prep_cost(c: Case) -> float:
-    """The demo's asPrepCost."""
-    r = c.get("chosen") or c.get("recommendation")
-    return -js_sum(t["amt"] for t in r["terms"] if t["kind"] == "prep" and t["amt"] < 0) if r else 0
-
-
 def limit_of_role(role: str, p: Principal) -> float:
     return policy.limit_for(policy.Account(id="", role=role, label=role), p.ctx)
-
-
-def instr_payload(c: Case) -> dict:
-    """The demo's instrPayload: the instruction approval sends (times ISO)."""
-    r = c.get("chosen") or c.get("recommendation")
-    x, steps, M, mv = c.get("exec"), steps_of(c), case_demand(c) or {}, ex_move(c, r)
-    pl = ex_plan(c, r, AS_OF)
-    appr = c.get("approval") or {}
-    legs = mv["legs"] if mv else []
-    return {
-        "decisionId": x["decisionId"] if x else "DI-2026-" + c["id"][3:],
-        "approvalRef": x["ref"] if x else "(added on approval)",
-        "instructionVersion": x.get("instruction") if x else 1,
-        "destination": steps[0]["sys"],
-        "targets": [s["sys"] for s in steps],
-        "caseId": c["id"],
-        "assetId": c["assetId"],
-        "quantity": c["qty"],
-        "action": r["id"],
-        "plan": r["plan"],
-        "targetSite": r.get("target") or M.get("site") or None,
-        "order": M.get("order") or None,
-        "orderLine": M.get("line") or None,
-        "shipTo": M.get("shipTo") or None,
-        "needBy": M.get("needBy") or None,
-        "avoidedPurchase": M.get("avoidedPo") or None,
-        "sourceLocation": FAC_LOC.get(c["location"]),
-        "stagingWarehouse": mv["stage"]["code"] if mv and mv.get("stage") else None,
-        "etd": iso(legs[0]["etd"]) if legs else None,
-        "eta": iso(mv["eta"]) if mv and mv.get("eta") else None,
-        "legs": [
-            {
-                "from": leg["from"],
-                "to": leg["to"],
-                "km": leg["km"],
-                "etd": iso(leg["etd"]),
-                "eta": iso(leg["eta"]),
-                "carrier": leg["carrier"],
-                "freightInr": leg["inr"],
-            }
-            for leg in legs
-        ],
-        "steps": [
-            {
-                "step": s["n"],
-                "action": s["act"],
-                "system": s["app"],
-                "document": s["docs"][0],
-                "owner": s["owner"],
-                "timeLimit": s["lim"],
-            }
-            for s in pl
-        ],
-        "expectedNetUsd": r["net"],
-        "spendAuthorityUsd": appr["spend"] if appr.get("spend") is not None else default_spend(c, r),
-        "terms": appr.get("terms") or "As approved",
-        "evidenceSnapshot": c["snapshot"]["id"],
-        "policyVersion": "POL-3.2",
-        "modelVersion": c.get("model"),
-        "idempotencyKey": "idem-" + hash_id(c["id"] + (x["ref"] if x else "pending"))[:6].lower(),
-    }
-
-
-def case_journal(session: Session, case_id: str) -> list[dict]:
-    """The demo's afCaseJournal: the recorded actions on the case (not undone), oldest first."""
-    rows = session.execute(
-        text(
-            "SELECT seq, action, input, actor, preparer, run_id, output_ref, at FROM action_journal "
-            "WHERE input->>'case_id' = :c AND NOT undone ORDER BY seq"
-        ),
-        {"c": case_id},
-    ).all()
-    out = []
-    for r in rows:
-        a = policy.account(r.actor)
-        by = "Enterprise system adapter" if r.actor == "system" else (a.label if a else r.actor)
-        out.append(
-            {
-                "seq": r.seq,
-                "id": r.action,
-                "by": by,
-                "prep": r.preparer,
-                "input": r.input,
-                "out": r.output_ref,
-                "at": iso(r.at.isoformat()),
-                "run": r.run_id,
-            }
-        )
-    return out
 
 
 # ================================================================ the stage pages
@@ -1064,7 +569,7 @@ def active_clock(c: Case) -> dict | None:
 def case_page(case_id: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
     """Everything the stage bar, the stage pages, the Overview and the approval card read, for one case."""
     c = load_case(p, session, case_id, "product", "case")
-    ctx = screen_ctx(p, session)
+    ctx = call_ctx(p, session)
     deleg = decisions_delegated(ctx)
     rn = run(c, ctx)
     return {
@@ -1110,9 +615,9 @@ def analysis_view(c: Case, p: Principal, session: Session, ctx: CallContext, ten
     the order the value is committed against, the actuals behind the outcome lines, the packet's reads and risks, the
     asset's health, diagnostics, parts and facts, and the repair centre's load (the demo's ccUtil, tenant filter)."""
     from di.actions.decisions import saved_scenarios
+    from di.reads.asset import as_serial, as_title, asset_facts, case_diag, catalogue, health, part_prices, parts_availability
     from di.reads.cases import case_evidence, case_routes
-    from di.screens.command import af_risks
-    from di.screens.product import as_serial, as_title, asset_facts, case_diag, catalogue, health, part_prices, parts_availability
+    from di.reads.workspace import af_risks
 
     h = health(c)
     rt, ev = case_routes({"case_id": c["id"]}, ctx), case_evidence({"case_id": c["id"]}, ctx)
@@ -1137,7 +642,7 @@ def analysis_view(c: Case, p: Principal, session: Session, ctx: CallContext, ten
         "title": as_title(c),
         "serial": as_serial(c),
         "facts": asset_facts(c),
-        "repair_load": sum(1 for x in vis_cases(p, session, tenant) if x["location"] == "Repair centre"),
+        "repair_load": sum(1 for x in visible_cases(call_ctx(p, session), tenant) if x["location"] == "Repair centre"),
         "fac_code": FAC_LOC.get(c["location"]),
         "scenarios": saved_scenarios(session, c["id"]),
         "locs": {
@@ -1226,7 +731,7 @@ def case_analysis(case_id: str, tenant: str = "All", p: Principal = Depends(prin
     """The data behind the stage pages' detail tabs and Full analysis (`tenant`: the top-bar filter, for the repair
     centre's load)."""
     c = load_case(p, session, case_id, "product", "case")
-    ctx = screen_ctx(p, session)
+    ctx = call_ctx(p, session)
     r = c.get("chosen") or c.get("recommendation")
     rows = base_rows(c)
     tb = tie_break(c, rows)
@@ -1282,25 +787,3 @@ def case_analysis(case_id: str, tenant: str = "All", p: Principal = Depends(prin
         "evidence_pack": evidence_pack(c, run(c, ctx), session),
         "view": analysis_view(c, p, session, ctx, tenant),
     }
-
-
-# The demo's two pools: each is solved for its hero case, and its partner case shows the same result (POOLS, poolResult).
-POOL_HOME = {"RT-1048": "RT-1048", "RT-1062": "RT-1048", "RT-1052": "RT-1052", "RT-1044": "RT-1052"}
-
-
-def pool_of(session: Session, case_id: str) -> dict | None:
-    """The pool a case belongs to, solved (the demo's solvePool, di.engine.pool)."""
-    home = store.get(session, POOL_HOME[case_id]) if case_id in POOL_HOME else None
-    return solve_pool(home["pool"]) if home and home.get("pool") else None
-
-
-def recert(c: Case, r: dict | None) -> dict | None:
-    """The demo's recert under the base assumptions: a redeployment or re-lease whose demand horizon outlasts the
-    certified period needs recertification."""
-    if not r or r["id"] not in ("redeploy", "relase"):
-        return None
-    R, D = case_rul(c), case_demand(c)
-    if not R or not D:
-        return None
-    need = D["horizonMonths"]
-    return {"need": need, "cert": R["certMonths"]} if need > R["certMonths"] else None
