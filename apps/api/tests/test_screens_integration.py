@@ -17,16 +17,14 @@ import re
 from collections.abc import Mapping
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from di import golden
 from di.db import engine
-from di.main import app
 from di.screens.integration import SCREEN_STATUS
 from tests import starting
+from tests.helpers import client, h
 
-client = TestClient(app)
 G = golden.load("screens/integration")
 ACCOUNTS = list(G["accounts"])
 REF = {s["id"]: s for s in G["sources"]}
@@ -46,20 +44,11 @@ NEEDS = {
     "monitor": ("monitor",),
 }
 STATUSES = {"live", "stale", "manual", "unavailable", "paused", "disconnected"}
-_tokens: dict[str, dict] = {}
 
 
 def setup_module():
     if os.environ.get("B14_PARALLEL") != "1":
         starting.reset()
-
-
-def h(user: str) -> dict:
-    if user not in _tokens:
-        r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-        assert r.status_code == 200, r.text
-        _tokens[user] = {"Authorization": "Bearer " + r.json()["access_token"]}
-    return _tokens[user]
 
 
 def allowed(acct: str, path: str) -> bool:

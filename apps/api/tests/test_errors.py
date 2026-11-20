@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from di.errors import ApiError
 from di.main import app
+from tests.helpers import h
 
 
 class _Body(BaseModel):
@@ -100,19 +101,14 @@ def test_sign_in_refusals_keep_their_codes_messages_and_challenge():
     assert r.json() == {"ok": False, "error": {"code": "unauthenticated", "message": "Sign in first."}}
 
 
-def _login(user: str) -> dict:
-    r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-    return {"Authorization": "Bearer " + r.json()["access_token"]}
-
-
 def test_source_endpoints_refuse_roles_without_the_pages():
-    planner = _login("planner.a")  # no integration pages
+    planner = h("planner.a")  # no integration pages
     for path in ("/api/sources", "/api/sources/erp"):
         r = client.get(path, headers=planner)
         assert r.status_code == 403 and r.json()["error"] == {
             "code": "out_of_scope",
             "message": "Not available for the Planner view.",
         }, (path, r.text)
-    assert client.get("/api/sources", headers=_login("developer")).status_code == 200
-    r = client.get("/api/canonical/asset/nope", headers=_login("developer"))  # integration models, no product pages
+    assert client.get("/api/sources", headers=h("developer")).status_code == 200
+    r = client.get("/api/canonical/asset/nope", headers=h("developer"))  # integration models, no product pages
     assert r.status_code == 404 and r.json()["error"] == {"code": "not_found", "message": "No asset nope."}

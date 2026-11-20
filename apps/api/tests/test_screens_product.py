@@ -16,14 +16,12 @@ undefined).
 import os
 
 import pytest
-from fastapi.testclient import TestClient
 
 from di import golden, policy
-from di.main import app
 from tests import starting
-from tests.test_screens_case import h, same
+from tests.helpers import client, h
+from tests.test_screens_case import same
 
-client = TestClient(app)
 G = golden.load("screens/product")
 ACCOUNTS = list(G["accounts"])
 TENANT_FILTERS = ["All", "Customer A", "Customer B", "Customer C"]

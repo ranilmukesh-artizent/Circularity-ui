@@ -20,7 +20,6 @@ import time
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from di import clock, golden, state, worker
@@ -32,14 +31,12 @@ from di.connectors.webhook import ensure_subscription
 from di.db import SessionLocal, engine
 from di.execution import line_actuals
 from di.instructions import send as instruction_send
-from di.main import app
+from tests.helpers import call, client
 
 SETTINGS = get_settings()
 SIM = SETTINGS.source_sim_url.rstrip("/")
 CASE = "RT-1048"
 REF = "APR-2026-10-3161"
-client = TestClient(app)
-_tokens: dict[str, dict] = {}
 # which event acknowledged which step (filled as events are delivered)
 ACKED_BY: dict[str, str] = {}
 SEEN: set[int] = set()
@@ -57,17 +54,6 @@ def sim(method: str, path: str, **kw) -> httpx.Response:
     r = httpx.request(method, SIM + path, timeout=60, **kw)
     r.raise_for_status()
     return r
-
-
-def h(user: str) -> dict:
-    if user not in _tokens:
-        r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-        _tokens[user] = {"Authorization": "Bearer " + r.json()["access_token"]}
-    return _tokens[user]
-
-
-def call(action: str, body: dict, user: str) -> dict:
-    return client.post(f"/api/actions/{action}", json=body, headers=h(user)).json()
 
 
 def post_event(ev: dict) -> dict:

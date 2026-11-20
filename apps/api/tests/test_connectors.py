@@ -10,7 +10,6 @@ import json
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from di.canonical import store
@@ -18,10 +17,9 @@ from di.canonical.store import Fact
 from di.config import get_settings
 from di.connectors.sync import ensure_sources, run_sync
 from di.db import SessionLocal, engine
-from di.main import app
+from tests.helpers import client, h
 
 SIM = get_settings().source_sim_url
-client = TestClient(app)
 TABLES = ("conflict", "canonical", "provenance", "raw_record", "fetch_log", "sync_cursor", "sync_run")
 
 
@@ -29,11 +27,6 @@ def sim(method: str, path: str, **kw) -> httpx.Response:
     r = httpx.request(method, SIM + path, timeout=60, **kw)
     r.raise_for_status()
     return r
-
-
-def h(user: str) -> dict:
-    r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-    return {"Authorization": "Bearer " + r.json()["access_token"]}
 
 
 @pytest.fixture(scope="module", autouse=True)

@@ -15,6 +15,7 @@ from di.db import SessionLocal
 from di.engine.jsmath import js_round
 from di.execution import ex_move, ex_plan, ex_trace, ex_what_if
 from di.reads.common import iso
+from tests.helpers import strict
 
 EXECUTION = golden.load("execution")
 TIMES = {"d0", "eta", "etd", "need", "repairAt", "readyAt", "t0", "due", "due2"}  # the demo's Date fields
@@ -33,17 +34,6 @@ def plain(v, key: str | None = None):
     return v
 
 
-def _strict(x):
-    """Booleans only equal booleans (Python's == takes True for 1)."""
-    if isinstance(x, bool):
-        return ("bool", x)
-    if isinstance(x, dict):
-        return {k: _strict(v) for k, v in x.items()}
-    if isinstance(x, list):
-        return [_strict(v) for v in x]
-    return x
-
-
 @pytest.fixture(scope="module")
 def cases():
     store.reset()
@@ -56,15 +46,15 @@ def test_execution_detail(cases, case_id):
     exp, c = EXECUTION[case_id], cases[case_id]
     r = c.get("chosen") or c.get("recommendation")
     assert (r["plan"] if r else None) == exp["route"]
-    assert _strict(plain(ex_plan(c, r) if r else [])) == _strict(exp["plan"]), "plan"
-    assert _strict(plain(ex_move(c, r) if r else None)) == _strict(exp["move"]), "move"
-    assert _strict(plain(ex_what_if(c, r) if r else [])) == _strict(exp["what_if"]), "what_if"
+    assert strict(plain(ex_plan(c, r) if r else [])) == strict(exp["plan"]), "plan"
+    assert strict(plain(ex_move(c, r) if r else None)) == strict(exp["move"]), "move"
+    assert strict(plain(ex_what_if(c, r) if r else [])) == strict(exp["what_if"]), "what_if"
     traces = [{"plan": x["plan"], "terms": [ex_trace(c, x, t) for t in x["terms"]]} for x in c["routes"] if not x["excluded"]]
     assert len(traces) == len(exp["traces"])
     for got, want in zip(traces, exp["traces"], strict=True):
         assert got["plan"] == want["plan"]
         for k, (g, w) in enumerate(zip(got["terms"], want["terms"], strict=True)):
-            assert _strict(plain(g)) == _strict(w), f"{want['plan']} term {k} ({w['label']})"
+            assert strict(plain(g)) == strict(w), f"{want['plan']} term {k} ({w['label']})"
 
 
 def test_step_tables_agree():

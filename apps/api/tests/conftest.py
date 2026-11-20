@@ -32,6 +32,22 @@ def session():
         yield s
 
 
+@pytest.fixture
+def client():
+    """The shared in-process client (tests/helpers.py)."""
+    from tests import helpers
+
+    return helpers.client
+
+
+@pytest.fixture
+def login():
+    """`login(user)` -> the Authorization header for that demo account, signed in once per session."""
+    from tests import helpers
+
+    return helpers.h
+
+
 @pytest.fixture(autouse=True)
 def clean_jobs():
     with engine.begin() as conn:

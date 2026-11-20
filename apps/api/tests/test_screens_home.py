@@ -15,30 +15,19 @@ import os
 import re
 
 import pytest
-from fastapi.testclient import TestClient
 
 from di import golden
 from di.engine.jsmath import js_round
-from di.main import app
 from tests import starting
+from tests.helpers import client, h
 
-client = TestClient(app)
 HOME = golden.load("screens/home")
 ACCOUNTS = sorted(HOME)
-_tokens: dict[str, dict] = {}
 
 
 def setup_module():
     if os.environ.get("B14_PARALLEL") != "1":
         starting.reset()
-
-
-def h(user: str) -> dict:
-    if user not in _tokens:
-        r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-        assert r.status_code == 200, r.text
-        _tokens[user] = {"Authorization": "Bearer " + r.json()["access_token"]}
-    return _tokens[user]
 
 
 def get(path: str, user: str, **params):

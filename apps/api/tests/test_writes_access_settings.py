@@ -10,7 +10,7 @@ from sqlalchemy import text
 from di.db import SessionLocal
 from di.mcp.policy import Caller, call_tool
 from tests import starting
-from tests.test_writes_decisions import call, client, h
+from tests.helpers import call, client, h
 
 APPROVE = {"case_id": "RT-1048", "rationale": "Redeploy to Site 3 as recommended; evidence reviewed.", "reviewed": True}
 

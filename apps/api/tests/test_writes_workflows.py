@@ -24,21 +24,17 @@ does not keep the key order of the graph inside it.
 import json
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 import di.actions.workflows as wf
 from di import golden, state
 from di.db import engine
-from di.engine.jsmath import js_round
-from di.main import app
 from tests import starting
+from tests.helpers import call, client, h, norm
 
-client = TestClient(app)
 G = golden.load("workflow_writes")
 B14 = golden.load("screens/workflows")
 STARTING_RUNS = {r["id"] for r in B14["runs"]}
-_tokens: dict[str, dict] = {}
 
 
 def setup_module():
@@ -47,31 +43,6 @@ def setup_module():
 
 def teardown_module():
     starting.reset()
-
-
-def h(user: str) -> dict:
-    if user not in _tokens:
-        r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-        assert r.status_code == 200, r.text
-        _tokens[user] = {"Authorization": "Bearer " + r.json()["access_token"]}
-    return _tokens[user]
-
-
-def call(action: str, body: dict, user: str) -> dict:
-    return client.post(f"/api/actions/{action}", json=body, headers=h(user)).json()
-
-
-def norm(x):
-    """The golden file's normalisation (numbers to 1e-6), with booleans kept strict."""
-    if isinstance(x, bool):
-        return ("bool", x)
-    if isinstance(x, float):
-        return js_round(x * 1e6) / 1e6
-    if isinstance(x, dict):
-        return {k: norm(v) for k, v in x.items()}
-    if isinstance(x, list):
-        return [norm(v) for v in x]
-    return x
 
 
 def run_queued() -> int:

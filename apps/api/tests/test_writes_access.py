@@ -17,7 +17,8 @@ from sqlalchemy import text
 from di import golden, policy, state
 from di.cases import store
 from di.db import SessionLocal, engine
-from tests.test_writes_decisions import Replay, _strict, call, client, h
+from tests.helpers import call, client, h, strict
+from tests.test_writes_decisions import Replay
 
 WRITES = golden.load("writes")
 SCENARIOS = ["tenant_access", "mcp_proposals", "delegation", "identity"]
@@ -53,7 +54,7 @@ def test_scenario(fresh, name):
             # an unlimited approval limit: the dump's "Infinity" is null on the server (see test_reads_workspace)
             exp = {**exp, "output": {**exp["output"], "rows": [
                 {**x, "limit": None if x["limit"] == "Infinity" else x["limit"]} for x in exp["output"]["rows"]]}}  # fmt: skip
-        assert _strict(got) == _strict(exp), f"{name} read {k}: {step['as']} {step['action']} {step['input']}"
+        assert strict(got) == strict(exp), f"{name} read {k}: {step['as']} {step['action']} {step['input']}"
 
 
 def test_mapping_changes_the_signed_in_account_and_reset_restores_it(fresh):

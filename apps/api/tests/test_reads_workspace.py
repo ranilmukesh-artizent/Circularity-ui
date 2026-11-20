@@ -10,27 +10,15 @@ sends null (what the demo's own JSON.stringify writes), so the expected "Infinit
 """
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from di import golden, state
 from di.cases import store
 from di.db import engine
-from di.engine.jsmath import js_round
-from di.main import app
+from tests.helpers import client, h, norm
 
-client = TestClient(app)
 READS = golden.load("reads")
 ACTIONS = ("inbox.get", "receiving.plan", "access.lookup", "kpi.explain")
-_tokens: dict[str, dict] = {}
-
-
-def h(user: str) -> dict:
-    if user not in _tokens:
-        r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-        assert r.status_code == 200, r.text
-        _tokens[user] = {"Authorization": "Bearer " + r.json()["access_token"]}
-    return _tokens[user]
 
 
 def call(action: str, body: dict, user: str) -> dict:
@@ -51,22 +39,6 @@ def setup_module():
         conn.execute(text("DELETE FROM action_journal"))
     store.reset()
     state.reset()  # the workspace collections (events, notes ...) back to their starting values
-
-
-def _plain(x):
-    """The dump's normalisation, applied to the server's answer: floats to 1e-6. Booleans are tagged so they only
-    equal booleans (Python's == takes True for 1; JSON does not)."""
-    if isinstance(x, bool):
-        return ("bool", x)
-    if isinstance(x, float):
-        return js_round(x * 1e6) / 1e6
-    if isinstance(x, int):
-        return x
-    if isinstance(x, dict):
-        return {k: _plain(v) for k, v in x.items()}
-    if isinstance(x, list):
-        return [_plain(v) for v in x]
-    return x
 
 
 def _expected(x):
@@ -91,7 +63,7 @@ READS_UNDER_TEST = [
 @pytest.mark.parametrize(("acct", "action", "body", "expected"), READS_UNDER_TEST)
 def test_workspace_read(acct, action, body, expected):
     got = call(action, body, acct)
-    assert _plain(got) == _plain(_expected(expected))
+    assert norm(got) == norm(_expected(expected))
 
 
 def test_every_golden_read_is_covered():

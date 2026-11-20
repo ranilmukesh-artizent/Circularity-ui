@@ -5,7 +5,8 @@ workspace collections (events, notes, requests, accounts ...) back to their star
 grants, and no journal, events, stage moves made by actions, instructions or queued jobs. Connector data (canonical
 store, sync cursors) is left alone.
 
-`strict()` makes booleans compare strictly: Python's `==` treats True == 1, which hides real differences.
+`strict()` (from tests/helpers.py) makes booleans compare strictly: Python's `==` treats True == 1, which hides real
+differences.
 """
 
 from sqlalchemy import text
@@ -13,6 +14,7 @@ from sqlalchemy import text
 from di import state
 from di.cases import store
 from di.db import engine
+from tests.helpers import strict  # noqa: F401  (tests call starting.strict)
 
 
 def reset() -> None:
@@ -26,14 +28,3 @@ def reset() -> None:
         conn.execute(text("DELETE FROM job WHERE kind <> 'sync.source'"))
     store.reset()
     state.reset()
-
-
-def strict(x):
-    """Booleans tagged, so True and 1 differ when two structures are compared with ==."""
-    if isinstance(x, bool):
-        return ("bool", x)
-    if isinstance(x, dict):
-        return {k: strict(v) for k, v in x.items()}
-    if isinstance(x, list | tuple):
-        return [strict(v) for v in x]
-    return x

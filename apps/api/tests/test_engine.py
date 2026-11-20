@@ -9,7 +9,6 @@ import copy
 import itertools
 
 import pytest
-from fastapi.testclient import TestClient
 
 from di import golden
 from di.engine import book
@@ -19,7 +18,7 @@ from di.engine.pool import solve_pool
 from di.engine.predictor import Asset, FormulaPredictor
 from di.engine.routes import fail, mk_route, rank_routes, term
 from di.engine.scenario import what_if
-from di.main import app
+from tests.helpers import client, h
 
 CASES = golden.load("cases")
 BY_ID = {c["id"]: c for c in CASES}
@@ -150,12 +149,10 @@ def test_build_routes_has_the_demo_structure(cid):
 
 
 # ---------------------------------------------------------------- the actions
-client = TestClient(app)
 
 
 def _post(action, body, user="ops"):
-    t = client.post("/api/auth/login", json={"username": user, "password": "x"}).json()["access_token"]
-    return client.post(f"/api/actions/{action}", json=body, headers={"Authorization": f"Bearer {t}"})
+    return client.post(f"/api/actions/{action}", json=body, headers=h(user))
 
 
 def test_case_what_if_action():

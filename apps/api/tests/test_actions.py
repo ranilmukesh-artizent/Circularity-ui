@@ -1,23 +1,12 @@
 """B8: the action endpoint behaves like the demo's invoke() (docs/backend-steps.md)."""
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from di import golden, policy
 from di.actions.registry import ACTIONS, ActionDef, ActionError
 from di.db import engine
-from di.main import app
-
-client = TestClient(app)
-_tokens: dict[str, dict] = {}
-
-
-def h(user: str) -> dict:
-    if user not in _tokens:
-        r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-        _tokens[user] = {"Authorization": "Bearer " + r.json()["access_token"]}
-    return _tokens[user]
+from tests.helpers import client, h
 
 
 def call(action: str, body: dict, user: str | None = "admin", **headers):
@@ -257,3 +246,14 @@ def test_journal_endpoint_respects_tenants(test_actions):
     assert any(r["case_id"] == "RT-1048" for r in mine)
     theirs = client.get("/api/journal", headers=h("planner.b")).json()
     assert all(r["case_id"] != "RT-1048" for r in theirs)
+
+
+def test_journal_limit_counts_visible_entries_only(test_actions):
+    # planner.b's entry is older than the five Customer A entries after it; LIMIT must not cut it off
+    seq = call("test.act", {"case_id": "RT-1001", "n": 11}, user="planner.b").json()["seq"]
+    for n in range(12, 17):
+        call("test.act", {"case_id": "RT-1048", "n": n}, user="planner.a")
+    got = client.get("/api/journal", params={"limit": 1}, headers=h("planner.b")).json()
+    assert [r["seq"] for r in got] == [seq]
+    got = client.get("/api/journal", params={"limit": 3}, headers=h("planner.a")).json()
+    assert len(got) == 3 and all(r["case_id"] == "RT-1048" for r in got)

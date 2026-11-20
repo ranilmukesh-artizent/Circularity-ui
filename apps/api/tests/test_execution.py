@@ -7,13 +7,14 @@ People call over HTTP, as in the decision tests. Calls the dump made `as: "syste
 """
 
 import pytest
-from test_writes_decisions import Replay, _strict, call, fresh  # noqa: F401  (fresh is a fixture)
+from test_writes_decisions import Replay, fresh  # noqa: F401  (fresh is a fixture)
 
 from di import golden, state
 from di.actions.pipeline import SYSTEM, CallContext, invoke
 from di.cases import store
 from di.db import SessionLocal
 from di.execution import ex_delivered
+from tests.helpers import call, strict
 
 WRITES = golden.load("writes")
 JOURNEY = golden.load("actions")["steps"]
@@ -42,7 +43,7 @@ class ExecReplay(Replay):
             if self.base is None:
                 self.base = (exp["seq"], got["seq"])
             exp["seq"] = exp["seq"] - self.base[0] + self.base[1]
-        assert _strict(got) == _strict(exp), where
+        assert strict(got) == strict(exp), where
 
 
 @pytest.mark.parametrize("name", SCENARIOS)
@@ -52,7 +53,7 @@ def test_scenario(fresh, name):  # noqa: F811
         r.check(step, f"{name} call {k}: {step['as']} {step['action']} {step['input']}")
     for k, step in enumerate(sc["observed"]):
         got = call(step["action"], step["input"], step["as"])
-        assert _strict(got) == _strict(step["result"]), f"{name} read {k}: {step['as']} {step['action']} {step['input']}"
+        assert strict(got) == strict(step["result"]), f"{name} read {k}: {step['as']} {step['action']} {step['input']}"
 
 
 def _resolve(root, v):
@@ -81,7 +82,7 @@ def test_journey(fresh):  # noqa: F811
         assert _case("RT-1048")["stage"] == step["case_after"]["stage"], f"stage after step {k}"
     final, c = JOURNEY[-1]["case_after"], _case("RT-1048")
     for f in ("approval", "exec", "outcome"):
-        assert _strict(c.get(f)) == _strict(_resolve(root, final[f])), f
+        assert strict(c.get(f)) == strict(_resolve(root, final[f])), f
 
 
 # The demo's answers below come from a fresh demo running the exec_redeploy calls (the dump script's sandbox): no golden

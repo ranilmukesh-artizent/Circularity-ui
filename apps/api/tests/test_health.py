@@ -1,12 +1,10 @@
 from alembic.config import Config
 from alembic.script import ScriptDirectory
-from fastapi.testclient import TestClient
 
 from di.config import get_settings
 from di.db import get_session
 from di.main import app
-
-client = TestClient(app)
+from tests.helpers import client
 
 
 def test_live():

@@ -14,6 +14,7 @@ from collections.abc import Callable
 from di import jobs
 from di.config import get_settings
 from di.db import SessionLocal
+from di.logs import configure_logging
 
 log = logging.getLogger("di.worker")
 
@@ -58,7 +59,7 @@ def run_once() -> bool:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    configure_logging()  # the api's format and level (di/logs.py)
     stopping = False
 
     def stop(*_: object) -> None:

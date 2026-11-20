@@ -14,7 +14,6 @@ from urllib.parse import quote
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from di.canonical import store
@@ -24,11 +23,10 @@ from di.connectors.http import SourceClient
 from di.connectors.registry import ADAPTERS
 from di.connectors.sync import disconnect_source, ensure_sources, run_sync
 from di.db import SessionLocal, engine
-from di.main import app
+from tests.helpers import client, h
 
 SIM = get_settings().source_sim_url
 SID = "iot"
-client = TestClient(app)
 
 
 def sim(method: str, path: str, **kw) -> httpx.Response:
@@ -44,11 +42,6 @@ def aws(method: str, plane: str, path: str, params: dict | None = None, body: by
     r = httpx.request(method, url, content=body or None, headers=h, timeout=30)
     r.raise_for_status()
     return r
-
-
-def h(user: str) -> dict:
-    r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-    return {"Authorization": "Bearer " + r.json()["access_token"]}
 
 
 def counts() -> dict:

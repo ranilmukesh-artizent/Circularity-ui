@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from di import policy
 from di.actions.pipeline import ERROR_STATUS, Actor, CallContext, invoke
 from di.actions.registry import ACTIONS
+from di.actions.scope import case_scope
 from di.auth import Principal, optional_principal, principal
 from di.db import get_session
 
@@ -86,24 +87,25 @@ def journal(
     case_id: str | None = None, limit: int = 100, p: Principal = Depends(principal), session: Session = Depends(get_session)
 ):
     p.require_page("audit")
+    # A Planner sees their own tenants' cases only; journal entries without a case are visible to the auditor roles.
+    # The cases this account may not see are excluded in SQL, so LIMIT counts visible entries only.
+    journaled = session.execute(text("SELECT DISTINCT case_id FROM action_journal WHERE case_id IS NOT NULL")).scalars()
+    hidden = [c for c in journaled if not _may_see(p, c)]
     rows = session.execute(
         text(
             "SELECT seq, action, input, actor, role, preparer, run_id, case_id, output_ref, undone, at FROM action_journal "
-            "WHERE (CAST(:c AS text) IS NULL OR case_id = :c) ORDER BY seq DESC LIMIT :n"
+            "WHERE (CAST(:c AS text) IS NULL OR case_id = :c) AND (case_id IS NULL OR case_id <> ALL(CAST(:hidden AS text[]))) "
+            "ORDER BY seq DESC LIMIT :n"
         ),
-        {"c": case_id, "n": max(1, min(limit, 500))},
+        {"c": case_id, "hidden": hidden, "n": max(1, min(limit, 500))},
     ).mappings()
-    visible = []
-    for r in rows:
-        # a Planner sees their own tenants' cases only; journal entries without a case are visible to the auditor roles
-        if r["case_id"]:
-            from di.actions.scope import case_scope
+    return [dict(r) for r in rows]
 
-            where = case_scope(r["case_id"])
-            if where and not (p.tenant_ok(where[0]) and p.location_ok(where[1])):
-                continue
-        visible.append(dict(r))
-    return visible
+
+def _may_see(p: Principal, case_id: str) -> bool:
+    """The tenant boundary and warehouse lock for one journaled case; an unknown case is not restricted."""
+    where = case_scope(case_id)
+    return not where or (p.tenant_ok(where[0]) and p.location_ok(where[1]))
 
 
 class Undo(BaseModel):

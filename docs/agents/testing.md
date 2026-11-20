@@ -7,7 +7,7 @@ From Windows, run every script below through WSL:
 
 | Suite | Where | Command | Size and time (20 Nov 2026) |
 |---|---|---|---|
-| api (di) | `apps/api/tests` | `bash scripts/dev/full-suite.sh` (all) / `bash scripts/dev/api-test.sh tests/test_x.py` | ~3,450 tests, ~25 min |
+| api (di) | `apps/api/tests` | `bash scripts/dev/full-suite.sh` (all) / `bash scripts/dev/api-test.sh tests/test_x.py` | ~3,490 tests, ~25–30 min |
 | source-sim | `apps/source-sim/tests` | part of `full-suite.sh`; alone: `docker compose exec -T source-sim pytest -q` | 210 tests, ~1 min |
 | web unit | `apps/web/src/**/*.test.ts` (vitest, jsdom) | `bash scripts/dev/web-check.sh` | 12 tests + tsc, ~1 min |
 | browser smoke | `apps/web/scripts/smoke-*.mjs` (Node Playwright, installed Chrome) | `node apps/web/scripts/smoke-pages.mjs <baseUrl> [accounts…]` from `apps/web` on the host | ~5 min per mode for 11 accounts |
@@ -53,6 +53,43 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
 - **Live-server tests.** `test_stream.py` and the MCP/Ask live tests call the running api on `localhost:8000`, so the
   api must be healthy. Run `bash scripts/dev/status.sh` first.
 - **Groq.** The live Ask smoke test spends real free-tier requests (about 1,000 a day). Don't loop it.
+- **Shared helpers.** `apps/api/tests/helpers.py` holds the one in-process `client`, `h(user)` (the Authorization
+  header for a demo account, signed in once per session), `call(action, body, user)`, and the golden comparisons
+  `strict()` (booleans apart from numbers) and `norm()` (numbers to 1e-6, as the dump writes them). `conftest.py` also
+  offers `client` and `login` as fixtures. Read golden files with `di.golden.load(name)`. Don't add per-file copies.
+
+## Slowest api tests
+
+`bash scripts/dev/api-test.sh --durations=50` over the whole api suite (20 Nov 2026, D6): `3486 passed, 1 warning in
+1763.37s (0:29:23)`. The time is in the connector adapter tests (initial syncs against source-sim, and the module
+teardowns that reset a simulated system); the parity tests are many but fast.
+
+| Time | Phase | Test |
+|---|---|---|
+| 15.67s | teardown | `test_adapter_assetwise.py::test_unchanged_delta_reads_nothing_and_an_approval_is_picked_up` |
+| 13.74s | teardown | `test_adapter_aras.py::test_unchanged_delta_reads_nothing_and_a_change_is_picked_up` |
+| 13.61s | call | `test_adapters_crm_oms_fsm.py::test_sterling_initial_sync_maps_the_demo_examples` |
+| 13.52s | call | `test_adapter_assetwise.py::test_initial_sync_maps_the_demo_examples` |
+| 12.74s | call | `test_adapter_manhattan.py::test_initial_sync_reproduces_the_facts_and_mappings` |
+| 12.06s | call | `test_adapter_persefoni.py::test_initial_sync_reproduces_the_demo_mappings` |
+| 11.75s | setup | `test_adapters_maximo_safetyculture.py::test_maximo_initial_sync_maps_assets_and_service_history` |
+| 11.12s | call | `test_adapter_teamcenter.py::test_initial_sync_maps_the_demo_examples` |
+| 11.01s | call | `test_models_migrations.py::test_downgrade_and_upgrade_round_trip` |
+| 10.69s | teardown | `test_adapter_persefoni.py::test_new_activity_is_calculated_and_picked_up` |
+| 10.48s | call | `test_adapter_sims.py::test_bad_manifest_signature_fails_every_file` |
+| 10.25s | teardown | `test_milestone_rt1048.py::test_steps_without_a_mock_write_are_acknowledged_by_the_simulated_adapter_on_the_clock` |
+| 10.23s | call | `test_adapters_crm_oms_fsm.py::test_salesforce_initial_sync_maps_the_demo_examples` |
+| 9.43s | call | `test_adapter_aws_iot.py::test_full_sync_maps_telemetry_to_the_canonical_model` |
+| 8.20s | teardown | `test_adapter_mastercontrol.py::test_an_expired_certificate_shows_as_expired` |
+| 7.63s | setup | `test_milestone_rt1048.py::test_rt1048_runs_from_approval_to_reconciled_on_events_and_the_clock` |
+| 7.42s | call | `test_adapter_machinio.py::test_initial_sync_reproduces_the_facts` |
+| 6.98s | call | `test_adapter_aras.py::test_unchanged_delta_reads_nothing_and_a_change_is_picked_up` |
+| 6.85s | call | `test_adapter_aras.py::test_initial_sync_maps_the_demo_examples` |
+| 6.39s | teardown | `test_adapter_manhattan.py::test_delta_picks_up_a_reservation_and_a_shipped_transfer` |
+
+Then 20 more between 6.2s and 2.5s, the same kinds (adapter syncs, `test_connectors.py` S/4 syncs,
+`test_models_migrations.py::test_alembic_check_finds_no_differences` 3.1s, `test_stream.py` 3.2s,
+`test_execution.py::test_scenario[exec_other_routes]` 2.5s). Every other test takes under 2.5s.
 
 ## Parity (golden files)
 
@@ -60,8 +97,8 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
   - `apps/web/scripts/dump-golden.mjs` (base files: world, cases, decisions, sources, …);
   - `apps/web/scripts/golden/<area>.mjs` (screens, ask, mcp, workflow writes), all on the shared sandbox
     `apps/web/scripts/golden-sandbox.mjs` (`freshDemo`, `plain`, `writeGolden`).
-- Backend tests compare endpoint and action output to these files for all 11 accounts. `starting.strict()` compares
-  strictly.
+- Backend tests compare endpoint and action output to these files for all 11 accounts. `strict()` and `norm()`
+  (`tests/helpers.py`; `starting.strict()` is the same function) compare strictly.
 - Values the demo draws unseeded, and real connector data, are excluded where they occur, with the reason in a comment.
 
 ### Regenerating golden files

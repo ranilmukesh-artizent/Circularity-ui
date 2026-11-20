@@ -115,8 +115,12 @@ class SourceClient:
     def url(self, path: str) -> str:
         return path if path.startswith("http") else self.base_url + path
 
-    def raw(self, method: str, path: str, log_records: bool = True, **kw) -> httpx.Response:  # noqa: ARG002 - token calls pass it; not acted on yet (C1 changes no behaviour)
-        """One HTTP call, logged. No auth headers added (used by token endpoints and by `request`)."""
+    def raw(self, method: str, path: str, log_records: bool = True, **kw) -> httpx.Response:
+        """One HTTP call, logged. No auth headers added (used by token endpoints and by `request`).
+
+        Every call gets a fetch-log row. A failed call's row carries the start of the response body, unless
+        `log_records=False` (token and session calls): their bodies can hold credentials, so only the status is kept.
+        """
         url = self.url(path)
         t0 = time.perf_counter()
         err = None
@@ -126,7 +130,10 @@ class SourceClient:
             err = f"{type(e).__name__}: {e}"
             self._log(method, str(httpx.URL(url, params=kw.get("params"))), None, None, t0, err)
             raise SourceError("unavailable", err) from e
-        self._log(method, str(r.request.url), r.status_code, None, t0, None if r.status_code < 400 else r.text[:300])
+        error = None
+        if r.status_code >= 400:
+            error = r.text[:300] if log_records else f"HTTP {r.status_code}"
+        self._log(method, str(r.request.url), r.status_code, None, t0, error)
         return r
 
     def request(self, method: str, path: str, **kw) -> httpx.Response:

@@ -12,15 +12,13 @@ journaled call (the demo's journal starts at 1).
 import re
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from di import golden, state
 from di.cases import store
 from di.db import engine
-from di.main import app
+from tests.helpers import call, strict
 
-client = TestClient(app)
 WRITES = golden.load("writes")
 JOURNEY = golden.load("actions")["steps"][:6]  # the later steps (acknowledgements, outcome) are B13
 SCENARIOS = [
@@ -33,30 +31,6 @@ SCENARIOS = [
     "scenarios",
     "notifications",
 ]
-_tokens: dict[str, dict] = {}
-
-
-def h(user: str) -> dict:
-    if user not in _tokens:
-        r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-        assert r.status_code == 200, r.text
-        _tokens[user] = {"Authorization": "Bearer " + r.json()["access_token"]}
-    return _tokens[user]
-
-
-def call(action: str, body: dict, user: str) -> dict:
-    return client.post(f"/api/actions/{action}", json=body, headers=h(user)).json()
-
-
-def _strict(x):
-    """Python's == takes True for 1; JSON (and the demo) do not. Tag booleans so they only equal booleans."""
-    if isinstance(x, bool):
-        return ("bool", x)
-    if isinstance(x, dict):
-        return {k: _strict(v) for k, v in x.items()}
-    if isinstance(x, list):
-        return [_strict(v) for v in x]
-    return x
 
 
 @pytest.fixture
@@ -98,7 +72,7 @@ class Replay:
             self.ids[exp["output"]["id"]] = got["output"]["id"]
         if exp.get("ok"):
             exp["output"] = self.input(exp["output"])  # a delete echoes the id it was given
-        assert _strict(got) == _strict(exp), where
+        assert strict(got) == strict(exp), where
 
 
 @pytest.mark.parametrize("name", SCENARIOS)
@@ -108,7 +82,7 @@ def test_scenario(fresh, name):
         r.check(step, f"{name} call {k}: {step['as']} {step['action']}")
     for k, step in enumerate(sc["observed"]):
         got = call(step["action"], step["input"], step["as"])
-        assert _strict(got) == _strict(step["result"]), f"{name} read {k}: {step['as']} {step['action']} {step['input']}"
+        assert strict(got) == strict(step["result"]), f"{name} read {k}: {step['as']} {step['action']} {step['input']}"
 
 
 def test_journey_first_six_steps(fresh):

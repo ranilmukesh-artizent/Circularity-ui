@@ -6,35 +6,24 @@ sees in the demo (fixtures/golden/screens/nav.json), with its badges and task co
 import os
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from di import golden, policy
 from di.db import engine
-from di.main import app
 from di.reads import common, workspace
 from di.screens import checks
 from di.screens.nav import ISSUE_SQL
 from tests import starting
+from tests.helpers import client, h
 
-client = TestClient(app)
 REF = golden.load("screens/reference")
 NAV = golden.load("screens/nav")
-_tokens: dict[str, dict] = {}
 
 
 @pytest.fixture(scope="module", autouse=True)
 def _start():
     if os.environ.get("B14_PARALLEL") != "1":
         starting.reset()
-
-
-def h(user: str) -> dict:
-    if user not in _tokens:
-        r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-        assert r.status_code == 200, r.text
-        _tokens[user] = {"Authorization": "Bearer " + r.json()["access_token"]}
-    return _tokens[user]
 
 
 # ---------------------------------------------------------------- reference

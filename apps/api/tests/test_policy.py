@@ -1,16 +1,12 @@
 """B7 parity: the server's access policy gives the demo's answers for every account (fixtures/golden/figures.json)."""
 
-import json
-from pathlib import Path
-
 import pytest
 
 from di import policy
-from di.config import get_settings
+from di.golden import load
 
-GOLDEN = Path(get_settings().golden_dir)
-FIGURES = json.loads((GOLDEN / "figures.json").read_text(encoding="utf-8"))["accounts"]
-CASES = json.loads((GOLDEN / "cases.json").read_text(encoding="utf-8"))
+FIGURES = load("figures")["accounts"]
+CASES = load("cases")
 ACCOUNT_IDS = sorted(FIGURES)
 
 

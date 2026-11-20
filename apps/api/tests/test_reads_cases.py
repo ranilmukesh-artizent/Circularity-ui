@@ -6,26 +6,15 @@ starting state (cases reopened, delegations on, no tenant grants).
 """
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from di import golden, state
 from di.cases import store
 from di.db import engine
-from di.main import app
+from tests.helpers import client, h, strict
 
-client = TestClient(app)
 READS = golden.load("reads")
 CASE_ACTIONS = ["case.get", "case.evidence", "case.routes", "case.trace", "demand.find", "asset.compare"]
-_tokens: dict[str, dict] = {}
-
-
-def h(user: str) -> dict:
-    if user not in _tokens:
-        r = client.post("/api/auth/login", json={"username": user, "password": "x"})
-        assert r.status_code == 200, r.text
-        _tokens[user] = {"Authorization": "Bearer " + r.json()["access_token"]}
-    return _tokens[user]
 
 
 def call(action: str, body: dict, user: str) -> dict:
@@ -57,20 +46,9 @@ def _case_params(action: str):
     ]
 
 
-def _strict(x):
-    """Python's == takes True for 1; JSON (and the demo) do not. Tag booleans so they only equal booleans."""
-    if isinstance(x, bool):
-        return ("bool", x)
-    if isinstance(x, dict):
-        return {k: _strict(v) for k, v in x.items()}
-    if isinstance(x, list):
-        return [_strict(v) for v in x]
-    return x
-
-
 def _check(action: str, body: dict, user: str, expected: dict):
     got = call(action, body, user)
-    assert _strict(got) == _strict(expected)
+    assert strict(got) == strict(expected)
 
 
 @pytest.mark.parametrize(("acct", "case_id"), _case_params("case.get"))
