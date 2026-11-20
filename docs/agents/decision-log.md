@@ -5,6 +5,7 @@ Plan-level decisions D1–D8 are in `docs/PLAN_FULLSTACK_POC.md`.
 
 | Date | Decision | Why | Alternatives | Where |
 |---|---|---|---|---|
+| 2026-11-20 | File naming: React component modules PascalCase, hooks `useX`, other TS camelCase, Python snake_case, scripts/docs kebab-case; the demo moves to `fixtures/demo/index.html` | User request; matches the React docs and the code's majority (about 90%), so few renames | kebab-case everywhere (bulletproof-react's preference; would rename ~95 of 107 web files) | `docs/agents/plans/01b-refactor.md` B1–B3 |
 | 2026-11-20 | Before the plans in `docs/agents/plans/`: a **best-practices audit, then a refactor plan** run step by step with the full suite green after each step; behaviour and parity unchanged | The user asked for full-stack best practices before new features | Fold into the existing plans; a full rewrite now (highest risk) | `docs/agents/plans/` (audit and refactor plan) |
 | 2026-11-20 | **B17c: the in-browser engine is deleted**; the web app reads only di-api; static assets are a committed generated module | One backend; the engine was 1.4 MB of demo script | Keep engine mode for offline demos | `apps/web/src/ui/assets.gen.ts`, `scripts/dump-assets.mjs`, `scripts/extract-styles.mjs`, `src/api/no-engine.test.ts` |
 | 2026-11-20 | The agent loop is a home-grown Ralph loop: fresh `claude -p` per task, the script runs the gate and commits on green | External test gate, fresh context, hard stops | Official `ralph-loop` plugin, Ralphy, GSD | `docs/agents/plans/loop.md` |

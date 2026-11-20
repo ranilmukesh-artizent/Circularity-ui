@@ -7,7 +7,7 @@ iteration, in this order. Do not start a plan before the previous one's phase ga
 |---|---|---|---|
 | 0 | `loop.md` | the Ralph-style loop that runs plans 1–5 | a dry run completes one task of plan 1 and stops cleanly |
 | 1 | `01-b17c.md` | **done 20 Nov 2026:** the in-browser engine is deleted, RT-1048 runs end to end in the browser | web checks, smoke for 11 accounts, `smoke-rt1048.mjs` |
-| 1b | best-practices audit and refactor plan (user decision, 20 Nov 2026) | the codebase brought to full-stack best practices, behaviour unchanged | full api + source-sim suites after every step |
+| 1b | `01b-refactor.md` (audit of 20 Nov 2026; user decision) | the codebase at full-stack best practices: trustworthy gates, layout and naming (`index.html` → `fixtures/demo/`), lint/type/CI, backend and frontend structure, container hardening; behaviour unchanged | full api + source-sim suites and smoke at each phase end |
 | 2 | `02-queue-and-tasks.md` | a hardened job queue (priorities, scheduling, dead letters, stale-lock reaper, LISTEN/NOTIFY wake-up) and task CRUD | same |
 | 3 | `03-crud-and-gzip.md` | a REST resource for every entity (`/api/v1/...`), writes through the action pipeline, gzip on JSON, never on streams | same + gzip/stream tests |
 | 4 | `04-async.md` | async database access, async endpoints and an async worker, end to end | same + a concurrency smoke |
