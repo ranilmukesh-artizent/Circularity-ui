@@ -145,6 +145,14 @@ def test_events_are_delivered_as_signed_cloudevents_and_retried(client):
     client.delete(f"/_sim/webhooks/{other}")
 
 
+def test_a_subscription_needs_its_own_signing_secret(client):
+    """No shared default secret: a subscriber that sends none (or an empty one) is refused."""
+    for body in ({"url": "http://receiver/nosecret", "sources": []}, {"url": "http://receiver/nosecret", "secret": ""}):
+        r = client.post("/_sim/webhooks", json=body)
+        assert r.status_code == 422, r.text
+    assert not any(s["url"] == "http://receiver/nosecret" for s in client.get("/_sim/webhooks").json())
+
+
 def test_tests_run_on_their_own_database():
     """The live service keeps `sources`; tests work on `sources_test` (conftest), so neither disturbs the other."""
     assert engine.url.database == "sources_test"

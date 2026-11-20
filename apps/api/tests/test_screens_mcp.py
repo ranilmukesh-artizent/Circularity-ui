@@ -47,7 +47,7 @@ def get(acct: str, path: str, **params):
     r = client.get(f"/api/screens/mcp/{path}", params=params, headers=h(acct))
     secs = G["accounts"][acct]["pages"]["mcp"] or []
     if SECTIONS[path] not in secs:
-        assert r.status_code == 403 and r.json()["detail"]["code"] == "out_of_scope", r.text
+        assert r.status_code == 403 and r.json()["error"]["code"] == "out_of_scope", r.text
         return None
     assert r.status_code == 200, r.text
     return r.json()

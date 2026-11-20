@@ -106,7 +106,7 @@ def test_provenance_of():
 def test_provenance_tenant_boundary():
     r = client.get("/api/screens/audit/provenance", params={"case_id": "RT-1048", "key": "insp"}, headers=h("planner-b"))
     assert r.status_code == 403
-    assert r.json()["detail"]["code"] == "tenant_boundary"
+    assert r.json()["error"]["code"] == "tenant_boundary"
 
 
 def test_comments_by_key():

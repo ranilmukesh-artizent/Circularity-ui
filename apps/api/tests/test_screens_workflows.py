@@ -60,7 +60,7 @@ def stat(w: dict) -> str:
 def test_list(acct):
     r = client.get("/api/screens/workflows", headers=h(acct))
     if not studio(acct):
-        assert r.status_code == 403 and r.json()["detail"]["code"] == "out_of_scope"
+        assert r.status_code == 403 and r.json()["error"]["code"] == "out_of_scope"
         return
     assert r.status_code == 200, r.text
     got = r.json()
@@ -101,5 +101,5 @@ def test_detail(wid):
 def test_detail_refusals():
     assert client.get("/api/screens/workflows/WF-999", headers=h("admin")).status_code == 404
     r = client.get("/api/screens/workflows/WF-101", headers=h("planner-a"))
-    assert r.status_code == 403 and r.json()["detail"]["code"] == "out_of_scope"
+    assert r.status_code == 403 and r.json()["error"]["code"] == "out_of_scope"
     assert client.get("/api/screens/workflows").status_code == 401

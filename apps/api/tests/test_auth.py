@@ -1,10 +1,15 @@
 """B7: sign-in, tokens and server-side enforcement."""
 
+from datetime import UTC, datetime, timedelta
+
+import jwt
+import pytest
 from fastapi import Depends
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from di.auth import Principal, principal
+from di.config import get_settings
 from di.db import engine
 from di.main import app
 
@@ -51,14 +56,40 @@ def test_me_needs_a_valid_token():
     assert client.get("/api/auth/me", headers=login("exec")).json()["account"]["role"] == "Executive"
 
 
+def _token(**claims) -> str:
+    now = datetime.now(UTC)
+    base = {"sub": "admin", "iat": now, "exp": now + timedelta(minutes=5), "iss": "di-api", "aud": "di"}
+    return jwt.encode(
+        {k: v for k, v in (base | claims).items() if v is not None}, get_settings().jwt_secret.get_secret_value(), "HS256"
+    )
+
+
+def test_tokens_carry_issuer_and_audience():
+    token = login("exec")["Authorization"][7:]
+    claims = jwt.decode(token, options={"verify_signature": False})
+    assert claims["iss"] == "di-api" and claims["aud"] == "di" and claims["sub"] == "executive"
+    assert {"exp", "iat"} <= claims.keys()
+
+
+@pytest.mark.parametrize(
+    "claims",
+    [{"aud": None}, {"aud": "other"}, {"iss": None}, {"iss": "someone-else"}, {"exp": None}, {"iat": None}, {"sub": None}],
+)
+def test_a_token_without_the_required_claims_is_refused(claims):
+    assert client.get("/api/auth/me", headers={"Authorization": "Bearer " + _token()}).status_code == 200
+    r = client.get("/api/auth/me", headers={"Authorization": "Bearer " + _token(**claims)})
+    assert r.status_code == 401, claims
+    assert r.json()["error"] == {"code": "unauthenticated", "message": "Your session has ended. Sign in again."}
+
+
 def test_tenant_boundary_and_warehouse_lock():
     rt1048 = {"tenant": "Customer A", "location": "Warehouse 1"}
     assert client.get("/api/_test/case/RT-1048", params=rt1048, headers=login("ops")).status_code == 200
     r = client.get("/api/_test/case/RT-1048", params=rt1048, headers=login("planner.b"))
-    assert r.status_code == 403 and r.json()["detail"]["code"] == "tenant_boundary"
+    assert r.status_code == 403 and r.json()["error"]["code"] == "tenant_boundary"
     assert client.get("/api/_test/case/RT-1048", params=rt1048, headers=login("warehouse1")).status_code == 200
     r = client.get("/api/_test/case/RT-1048", params=rt1048, headers=login("warehouse2"))
-    assert r.status_code == 403 and "outside your warehouse" in r.json()["detail"]["message"]
+    assert r.status_code == 403 and "outside your warehouse" in r.json()["error"]["message"]
     assert client.get("/api/_test/case/RT-1048", params=rt1048, headers=login("developer")).status_code == 403  # no case pages
 
 

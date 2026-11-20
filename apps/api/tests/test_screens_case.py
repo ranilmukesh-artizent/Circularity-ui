@@ -91,7 +91,7 @@ def test_case_page(acct):
         want = G["accounts"][acct][cid]
         r = client.get(f"/api/screens/case/{cid}", headers=h(acct))
         if "refused" in want:
-            assert r.status_code == 403 and r.json()["detail"]["code"] == want["refused"], (cid, r.text)
+            assert r.status_code == 403 and r.json()["error"]["code"] == want["refused"], (cid, r.text)
             continue
         assert r.status_code == 200, (cid, r.text)
         got = r.json()
@@ -113,13 +113,13 @@ def test_analysis(cid):
 
 def test_refusals():
     r = client.get("/api/screens/case/RT-9999", headers=h("admin"))
-    assert r.status_code == 404 and r.json()["detail"]["code"] == "not_found"
+    assert r.status_code == 404 and r.json()["error"]["code"] == "not_found"
     r = client.get("/api/screens/case/RT-1048/analysis", headers=h("planner-b"))
-    assert r.status_code == 403 and r.json()["detail"] == {
+    assert r.status_code == 403 and r.json()["error"] == {
         "code": "tenant_boundary",
         "message": "RT-1048 belongs to Customer A, a tenant you cannot see. Request tenant access first.",
     }
     r = client.get("/api/screens/case/RT-1048", headers=h("wm-2"))
-    assert r.json()["detail"]["message"] == "RT-1048 is at Warehouse 1, outside your warehouse."
-    assert client.get("/api/screens/case/RT-1048", headers=h("developer")).json()["detail"]["code"] == "out_of_scope"
+    assert r.json()["error"]["message"] == "RT-1048 is at Warehouse 1, outside your warehouse."
+    assert client.get("/api/screens/case/RT-1048", headers=h("developer")).json()["error"]["code"] == "out_of_scope"
     assert client.get("/api/screens/case/RT-1048").status_code == 401

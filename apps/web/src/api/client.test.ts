@@ -62,6 +62,29 @@ describe('API client cache', () => {
     await expect(suspendRead(() => cached('/api/z'))).rejects.toThrow('RT-1048 belongs to Customer A.');
   });
 
+  it('reads the error envelope, and the older shapes, from a failed request', async () => {
+    const reply = (status: number, body: string, type = 'application/json') => async () => new Response(body, { status, headers: { 'Content-Type': type } });
+    const cases: [() => Promise<Response>, { status: number; code: string; message: string }][] = [
+      // di-api's envelope: a refusal, a validation error (422) and an unhandled failure (500)
+      [reply(403, JSON.stringify({ ok: false, error: { code: 'tenant_boundary', message: 'RT-1048 belongs to Customer A.' } })), { status: 403, code: 'tenant_boundary', message: 'RT-1048 belongs to Customer A.' }],
+      [reply(422, JSON.stringify({ ok: false, error: { code: 'validation_error', message: 'username: Field required' } })), { status: 422, code: 'validation_error', message: 'username: Field required' }],
+      [reply(500, JSON.stringify({ ok: false, error: { code: 'internal_error', message: 'Something went wrong on the server.' } })), { status: 500, code: 'internal_error', message: 'Something went wrong on the server.' }],
+      // FastAPI's own 422 (a list of field errors): the first one; a plain-text 500 from a proxy: the status
+      [reply(422, JSON.stringify({ detail: [{ loc: ['body', 'username'], msg: 'Field required', type: 'missing' }] })), { status: 422, code: 'validation_error', message: 'username: Field required' }],
+      [reply(500, 'Internal Server Error', 'text/plain'), { status: 500, code: 'error', message: '500 ' }],
+      // the older {detail: {code, message}} shape still reads
+      [reply(401, JSON.stringify({ detail: { code: 'unauthenticated', message: 'Sign in first.' } })), { status: 401, code: 'unauthenticated', message: 'Sign in first.' }],
+    ];
+    for (const [answer, want] of cases) {
+      vi.stubGlobal('fetch', vi.fn(answer));
+      const e = await http('/api/fail').catch((x: unknown) => x);
+      expect(e).toBeInstanceOf(ApiError);
+      expect(e).toMatchObject({ status: want.status, code: want.code });
+      if (want.message.endsWith(' ')) expect((e as ApiError).message.startsWith(want.message)).toBe(true);
+      else expect((e as ApiError).message).toBe(want.message);
+    }
+  });
+
   it('caches read actions per input and refuses with the action error', async () => {
     fakeFetch({
       'POST /api/actions/case.get': () => ({ body: { ok: true, output: { id: 'RT-1048' }, key: null, action: 'case.get' } }),

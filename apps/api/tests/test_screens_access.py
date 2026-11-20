@@ -66,7 +66,7 @@ def expected(acct: str) -> dict:
 def test_access_page(acct):
     r = client.get("/api/screens/access", headers=h(acct))
     if not G["accounts"][acct]["pages"]["access"]:
-        assert r.status_code == 403 and r.json()["detail"]["code"] == "out_of_scope"
+        assert r.status_code == 403 and r.json()["error"]["code"] == "out_of_scope"
         return
     assert r.status_code == 200, r.text
     assert starting.strict(r.json()) == starting.strict(expected(acct))

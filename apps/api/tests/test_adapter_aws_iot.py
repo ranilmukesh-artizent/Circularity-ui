@@ -164,7 +164,7 @@ def delta_reads() -> set[str]:
 
 def signed_event(ev: dict) -> tuple[bytes, dict]:
     body = json.dumps(ev).encode()
-    sig = "sha256=" + hmac.new(get_settings().webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+    sig = "sha256=" + hmac.new(get_settings().webhook_secret.get_secret_value().encode(), body, hashlib.sha256).hexdigest()
     return body, {"x-sim-signature": sig, "content-type": "application/cloudevents+json"}
 
 

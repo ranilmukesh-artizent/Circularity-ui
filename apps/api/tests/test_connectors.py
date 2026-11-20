@@ -201,7 +201,7 @@ def test_sources_and_canonical_endpoints():
 
 def test_webhook_intake():
     body = json.dumps({"specversion": "1.0", "id": "1", "source": "/source-sim/erp", "type": "x"}).encode()
-    sig = "sha256=" + hmac.new(get_settings().webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+    sig = "sha256=" + hmac.new(get_settings().webhook_secret.get_secret_value().encode(), body, hashlib.sha256).hexdigest()
     r = client.post(
         "/api/webhooks/source-sim", content=body, headers={"x-sim-signature": sig, "content-type": "application/json"}
     )
@@ -214,9 +214,9 @@ def test_webhook_intake():
 
 def test_webhook_rejects_a_body_that_does_not_match_its_signature():
     body = json.dumps({"specversion": "1.0", "id": "3", "source": "/source-sim/erp", "type": "x"}).encode()
-    sig = "sha256=" + hmac.new(get_settings().webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+    sig = "sha256=" + hmac.new(get_settings().webhook_secret.get_secret_value().encode(), body, hashlib.sha256).hexdigest()
     r = client.post("/api/webhooks/source-sim", content=body + b" ", headers={"x-sim-signature": sig})
-    assert r.status_code == 401 and r.json()["detail"]["code"] == "bad_signature"
+    assert r.status_code == 401 and r.json()["error"]["code"] == "bad_signature"
 
 
 def test_periodic_puts_back_a_lost_webhook_subscription():
@@ -232,7 +232,11 @@ def test_periodic_puts_back_a_lost_webhook_subscription():
         assert [x["url"] for x in sim("GET", "/_sim/webhooks").json()].count(url) == 1
     finally:
         if ours and not any(x["url"] == url for x in sim("GET", "/_sim/webhooks").json()):
-            sim("POST", "/_sim/webhooks", json={"url": url, "sources": [], "secret": get_settings().webhook_secret})
+            sim(
+                "POST",
+                "/_sim/webhooks",
+                json={"url": url, "sources": [], "secret": get_settings().webhook_secret.get_secret_value()},
+            )
         with engine.begin() as conn:
             conn.execute(text("DELETE FROM job WHERE kind = 'sync.source'"))
 
@@ -242,7 +246,7 @@ def test_reset_event_voids_the_cursors():
     with SessionLocal() as s:
         assert s.execute(text("SELECT count(*) FROM sync_cursor WHERE source_id = 'erp'")).scalar_one() > 0
     body = json.dumps({"specversion": "1.0", "id": "2", "source": "/source-sim/erp", "type": "sim.reset"}).encode()
-    sig = "sha256=" + hmac.new(get_settings().webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+    sig = "sha256=" + hmac.new(get_settings().webhook_secret.get_secret_value().encode(), body, hashlib.sha256).hexdigest()
     assert client.post("/api/webhooks/source-sim", content=body, headers={"x-sim-signature": sig}).status_code == 202
     with SessionLocal() as s:
         assert s.execute(text("SELECT count(*) FROM sync_cursor WHERE source_id = 'erp'")).scalar_one() == 0

@@ -85,7 +85,7 @@ export async function ask(
     let msg = `${res.status} ${res.statusText}`;
     try {
       const b = await res.json();
-      msg = b?.detail?.message ?? b?.detail?.[0]?.msg ?? msg;
+      msg = b?.error?.message ?? b?.detail?.message ?? b?.detail?.[0]?.msg ?? msg;
     } catch {
       /* not JSON */
     }

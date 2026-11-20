@@ -121,7 +121,12 @@ def test_lists_the_ten_tools_with_their_schemas_and_approval_rules():
 
 def test_a_request_without_a_valid_token_is_401():
     body = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
-    assert httpx.post(f"{API}/mcp", json=body).status_code == 401
+    r = httpx.post(f"{API}/mcp", json=body)
+    assert r.status_code == 401 and r.headers["www-authenticate"] == "Bearer"
+    assert r.json() == {
+        "ok": False,
+        "error": {"code": "unauthenticated", "message": "Sign in first: send the account's bearer token."},
+    }
     assert httpx.post(f"{API}/mcp", json=body, headers={"Authorization": "Bearer nope"}).status_code == 401
 
 

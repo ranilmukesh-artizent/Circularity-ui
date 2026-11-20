@@ -44,7 +44,7 @@ def test_returned(acct):
     for t in TENANT_FILTERS:
         r = client.get("/api/screens/product/returned", params={"tenant": t}, headers=h(acct))
         if not page(acct, "received"):
-            assert r.status_code == 403 and r.json()["detail"]["code"] == "out_of_scope"
+            assert r.status_code == 403 and r.json()["error"]["code"] == "out_of_scope"
             return
         assert r.status_code == 200, r.text
         got = r.json()
@@ -82,7 +82,7 @@ def test_asset(acct):
     for cid, want in G["accounts"][acct]["asset"].items():
         r = client.get(f"/api/screens/product/asset/{cid}", headers=h(acct))
         if "refused" in want:
-            assert r.status_code == 403 and r.json()["detail"]["code"] == want["refused"], (cid, r.text)
+            assert r.status_code == 403 and r.json()["error"]["code"] == want["refused"], (cid, r.text)
             continue
         assert r.status_code == 200, (cid, r.text)
         got = r.json()

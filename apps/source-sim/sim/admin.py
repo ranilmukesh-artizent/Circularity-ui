@@ -17,7 +17,7 @@ from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from sim import clock, faults, scheduler, webhooks
@@ -50,7 +50,7 @@ class FaultIn(BaseModel):
 class SubscriptionIn(BaseModel):
     url: str
     sources: list[str] = []
-    secret: str = "source-sim-demo-secret"  # noqa: S105 - the simulator's demo secret
+    secret: str = Field(min_length=1)  # each subscriber signs with its own secret (no shared default: D2, S1)
 
 
 @router.get("/clock")

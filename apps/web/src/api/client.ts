@@ -60,8 +60,16 @@ async function errorOf(res: Response): Promise<ApiError> {
   let code = 'error';
   let message = `${res.status} ${res.statusText}`;
   try {
+    // di-api answers {ok: false, error: {code, message}}; {detail: {code, message} | string} and FastAPI's own 422
+    // {detail: [{loc, msg}]} are still read
     const body = await res.json();
     const e = body?.error ?? body?.detail ?? body;
+    if (Array.isArray(e) && e[0]?.msg) {
+      const loc: unknown[] = Array.isArray(e[0].loc) ? e[0].loc : [];
+      const field = (['body', 'query', 'path', 'header', 'cookie'].includes(String(loc[0])) ? loc.slice(1) : loc).join('.');
+      code = 'validation_error';
+      message = field ? `${field}: ${e[0].msg}` : String(e[0].msg);
+    }
     if (e?.code) code = e.code;
     if (e?.message) message = e.message;
     else if (typeof e === 'string') message = e;

@@ -18,6 +18,7 @@ from di.cases import use_database_scope
 from di.config import get_settings
 from di.connectors import webhook
 from di.db import get_session
+from di.errors import register as register_error_handlers
 from di.mcp import server as mcp_server
 from di.routers import actions as action_routes
 from di.routers import auth as auth_routes
@@ -27,6 +28,7 @@ from di.stream import router as stream_routes
 
 log = logging.getLogger("di.api")
 app = FastAPI(title="Circularity DI API", version="0.2.0", lifespan=mcp_server.lifespan)
+register_error_handlers(app)  # every error answers {ok: false, error: {code, message}} (di/errors.py, D1)
 app.include_router(auth_routes.router)
 app.include_router(action_routes.router)
 app.include_router(source_routes.router)

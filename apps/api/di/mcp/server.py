@@ -31,6 +31,7 @@ from starlette.routing import Route
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from di.db import SessionLocal
+from di.errors import envelope
 from di.mcp import policy
 from di.mcp.tools import TOOLS, schema
 
@@ -103,7 +104,7 @@ class BearerGate:
         if scope["type"] == "http":
             token = _bearer(Headers(scope=scope))
             if await anyio.to_thread.run_sync(policy.account_of, token) is None:
-                body = json.dumps({"code": "unauthenticated", "message": "Sign in first: send the account's bearer token."})
+                body = json.dumps(envelope("unauthenticated", "Sign in first: send the account's bearer token."))
                 await send({
                     "type": "http.response.start", "status": 401,
                     "headers": [(b"content-type", b"application/json"), (b"www-authenticate", b"Bearer")],

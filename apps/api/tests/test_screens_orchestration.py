@@ -47,7 +47,7 @@ def test_run(acct):
     for cid, want in G["accounts"][acct]["run"].items():
         r = client.get(f"/api/screens/orchestration/run/{cid}", headers=h(acct))
         if "refused" in want:
-            assert r.status_code == 403 and r.json()["detail"]["code"] == want["refused"], (cid, r.text)
+            assert r.status_code == 403 and r.json()["error"]["code"] == want["refused"], (cid, r.text)
             continue
         assert r.status_code == 200, (cid, r.text)
         got = r.json()

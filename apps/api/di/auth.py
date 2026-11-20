@@ -23,14 +23,16 @@ from di.db import get_session
 
 _bearer = HTTPBearer(auto_error=False)
 ALGORITHM = "HS256"
+ISSUER, AUDIENCE = "di-api", "di"  # D2: every token names who issued it and for whom; both are checked
+REQUIRED_CLAIMS = ["exp", "sub", "iat", "iss", "aud"]
 
 
 def issue_token(a: policy.Account) -> tuple[str, datetime]:
     s = get_settings()
-    exp = datetime.now(UTC) + timedelta(minutes=s.jwt_ttl_minutes)
-    token = jwt.encode(
-        {"sub": a.id, "role": a.role, "tenant": a.tenant, "exp": exp, "iat": datetime.now(UTC)}, s.jwt_secret, ALGORITHM
-    )
+    now = datetime.now(UTC)
+    exp = now + timedelta(minutes=s.jwt_ttl_minutes)
+    claims = {"sub": a.id, "role": a.role, "tenant": a.tenant, "exp": exp, "iat": now, "iss": ISSUER, "aud": AUDIENCE}
+    token = jwt.encode(claims, s.jwt_secret.get_secret_value(), ALGORITHM)
     return token, exp
 
 
@@ -65,7 +67,11 @@ class Principal:
             )
 
     def require_page(self, page: str, section: str | None = None) -> None:
-        if not policy.can_page(self.account, page, section):
+        self.require_any_page((page, section))
+
+    def require_any_page(self, *pages: tuple[str, str | None]) -> None:
+        """Refused unless the account sees at least one of these (page, section) pairs (section None: the page)."""
+        if not any(policy.can_page(self.account, page, section) for page, section in pages):
             raise HTTPException(403, {"code": "out_of_scope", "message": f"Not available for the {self.account.role} view."})
 
     def tenant_ok(self, tenant: str) -> bool:
@@ -96,7 +102,14 @@ def principal(
     if creds is None:
         raise HTTPException(401, {"code": "unauthenticated", "message": "Sign in first."}, headers={"WWW-Authenticate": "Bearer"})
     try:
-        claims = jwt.decode(creds.credentials, get_settings().jwt_secret, algorithms=[ALGORITHM])
+        claims = jwt.decode(
+            creds.credentials,
+            get_settings().jwt_secret.get_secret_value(),
+            algorithms=[ALGORITHM],
+            audience=AUDIENCE,
+            issuer=ISSUER,
+            options={"require": REQUIRED_CLAIMS},
+        )
     except jwt.PyJWTError as e:
         raise HTTPException(
             401,

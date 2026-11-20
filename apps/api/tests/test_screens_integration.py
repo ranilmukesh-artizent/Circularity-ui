@@ -71,7 +71,7 @@ def get(acct: str, path: str, **params):
     """The answer, or None when the account may not see it (checked to be a 403 out_of_scope)."""
     r = client.get(f"/api/screens/integration/{path}", params=params, headers=h(acct))
     if not allowed(acct, path.split("/")[0]):
-        assert r.status_code == 403 and r.json()["detail"]["code"] == "out_of_scope", r.text
+        assert r.status_code == 403 and r.json()["error"]["code"] == "out_of_scope", r.text
         return None
     assert r.status_code == 200, r.text
     return r.json()
@@ -168,7 +168,7 @@ def test_source_detail(sid):
 def test_source_detail_refusals():
     assert client.get("/api/screens/integration/sources/nope", headers=h("admin")).status_code == 404
     r = client.get("/api/screens/integration/sources/erp", headers=h("approver"))
-    assert r.status_code == 403 and r.json()["detail"]["code"] == "out_of_scope"
+    assert r.status_code == 403 and r.json()["error"]["code"] == "out_of_scope"
     assert client.get("/api/screens/integration/sources").status_code == 401
 
 

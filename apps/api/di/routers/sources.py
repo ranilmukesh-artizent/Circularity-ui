@@ -19,7 +19,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di import policy
 from di.auth import Principal, principal
 from di.canonical import store
 from di.connectors import sync
@@ -29,11 +28,11 @@ from di.db import get_session
 router = APIRouter(prefix="/api", tags=["Connectors"])
 
 
+_INTEGRATION_SECTIONS = ("map", "overview", "events", "conflicts", "tables", "models")
+
+
 def _can_see_integration(p: Principal) -> None:
-    if not any(
-        policy.can_page(p.account, "integration", s) for s in ("map", "overview", "events", "conflicts", "tables", "models")
-    ):
-        raise HTTPException(403, {"code": "out_of_scope", "message": f"Not available for the {p.account.role} view."})
+    p.require_any_page(*(("integration", s) for s in _INTEGRATION_SECTIONS))
 
 
 def _source_row(r) -> dict:
@@ -100,8 +99,7 @@ def fetch_log(
 
 @router.get("/canonical/{model}/{key}")
 def canonical(model: str, key: str, p: Principal = Depends(principal), session: Session = Depends(get_session)):
-    if not (policy.can_page(p.account, "product") or policy.can_page(p.account, "integration", "models")):
-        raise HTTPException(403, {"code": "out_of_scope", "message": f"Not available for the {p.account.role} view."})
+    p.require_any_page(("product", None), ("integration", "models"))
     rec = store.get(session, model, key)
     if rec is None:
         raise HTTPException(404, {"code": "not_found", "message": f"No {model} {key}."})

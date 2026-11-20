@@ -36,13 +36,15 @@ def ensure_subscription() -> None:
     if any(x["url"] == s.webhook_url for x in subs):
         return
     httpx.post(
-        f"{base}/_sim/webhooks", json={"url": s.webhook_url, "sources": [], "secret": s.webhook_secret}, timeout=5
+        f"{base}/_sim/webhooks",
+        json={"url": s.webhook_url, "sources": [], "secret": s.webhook_secret.get_secret_value()},
+        timeout=5,
     ).raise_for_status()
     log.info("subscribed to source-sim events at %s", s.webhook_url)
 
 
 def valid_signature(body: bytes, signature: str | None) -> bool:
-    expected = "sha256=" + hmac.new(get_settings().webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+    expected = "sha256=" + hmac.new(get_settings().webhook_secret.get_secret_value().encode(), body, hashlib.sha256).hexdigest()
     return bool(signature) and hmac.compare_digest(expected, signature)
 
 

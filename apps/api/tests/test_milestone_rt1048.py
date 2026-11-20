@@ -73,7 +73,7 @@ def call(action: str, body: dict, user: str) -> dict:
 def post_event(ev: dict) -> dict:
     """Post one CloudEvent to the receiver, signed as source-sim signs it."""
     body = json.dumps({k: v for k, v in ev.items() if k != "delivered_at"}, separators=(",", ":")).encode()
-    sig = "sha256=" + hmac.new(SETTINGS.webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+    sig = "sha256=" + hmac.new(SETTINGS.webhook_secret.get_secret_value().encode(), body, hashlib.sha256).hexdigest()
     r = client.post(
         "/api/webhooks/source-sim", content=body, headers={"x-sim-signature": sig, "content-type": "application/cloudevents+json"}
     )
