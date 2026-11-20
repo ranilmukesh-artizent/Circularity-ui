@@ -5,13 +5,13 @@ import {
   ackKind, auditEntries, auditGaps, comments, eventJson, isoT, postComment, provenanceOf, type AuditEntry, type Provenance,
 } from '../../api/audit';
 import { fmtDateYear } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { can, canRoute } from '../../api/session';
 import type { PageProps } from '../registry';
 import { Drawer, Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import { anchor } from '../analytics/AnalyticsPage';
-import { downloadCsv, q } from './csv';
+import { downloadCsv, q } from '../../lib/csv';
 
 interface AuFilter { q: string; src: string; type: string; status: string; dir: 1 | -1; limit: number; prep: boolean }
 const EMPTY: AuFilter = { q: '', src: '', type: '', status: '', dir: -1, limit: 40, prep: false };

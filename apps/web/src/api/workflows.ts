@@ -9,13 +9,13 @@
  *   version, template, history and failed records: GET /api/screens/workflows/{id};
  * - sources: GET /api/screens/integration/sources; field mappings: GET /api/screens/integration/models; the agents
  *   (agentsUsing): GET /api/screens/mcp/agents; the static lists: ref();
- * - the canvas checks and the test-run simulation run in the browser on the unsaved draft (src/pages/workflows/graph.ts);
+ * - the canvas checks and the test-run simulation run in the browser on the unsaved draft (src/api/workflowGraph.ts);
  * - a run is followed on the stream (kind `workflow`) by the run key workflow.run returns.
  *
- * The canvas edits a copy of the graph held by the page (src/pages/workflows/draft.ts).
+ * The canvas edits a copy of the graph held by the page (src/pages/workflows/draftStore.ts).
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import * as G from '../pages/workflows/graph';
+import * as G from './workflowGraph';
 import { LOGO_KEY, SYSLOGO } from '../ui/assets.gen';
 import { invoke } from './actions';
 import { ApiError, cached, onStream, ref, session } from './client';

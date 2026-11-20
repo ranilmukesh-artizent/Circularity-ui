@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { caseById, caseRefusal, enterCase, landing, stageHref, stageState, stageTitle, type CaseRec } from '../../api/case';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { Drawer, Modal } from '../../ui/Overlay';
-import { ApprovalModal, DeclineModal, ExplainView } from './Dialogs';
+import { ApprovalModal, DeclineModal, ExplainView } from './CaseModals';
 import { FullAnalysis } from './FullAnalysis';
-import { Overview } from './Overview';
+import { Overview } from './CaseOverview';
 import { StageBar, StageFoot, StagePage, stageDo, type CaseView } from './StagePage';
 import { CaseUiContext, type CaseUi, type ModalSpec } from './ui';
 import './case.css';

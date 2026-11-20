@@ -6,7 +6,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { invoke } from '../../api/actions';
 import { fmtDate, fmtDateYear, money } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import {
   asModel, caseById, classLabel, demoCaseId, demoVisible, expectedCount, expectedStage, expectedVisible, facilities, isCaseId, journeyHref, journeyTitle, leaseSource,
   myOpenNotes, routeAllowed, routeInfo, visibleCases, type Case, type Expected,
@@ -15,7 +15,7 @@ import { canPage, tenants } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { Drawer } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { AssessChip, CondChip, EvRow, Signals, StageChip, Thumb } from './chips';
+import { AssessChip, CondChip, EvRow, Signals, StageChip, Thumb } from './AssetChips';
 import { JourneyGuide, JourneyStrip } from './Journey';
 
 // ---------- view state (the demo's S.q / S.sel): kept for the session, like the demo ----------

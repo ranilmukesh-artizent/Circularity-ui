@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { RunState, Source, StepKind, TestRun, WfGraph, Workflow } from '../../api/workflows';
+import type { RunState, Source, StepKind, TestRun, WfGraph, Workflow } from './workflows';
 import {
   ageShort, analyze, canLink, evalStep, frAgo, hashId, info, order, pathXY, runCounts, runTimes, srcCh, srcLabel, srcOr, trigText,
   validate, wfStat, type Fixed, type Lookups,
-} from './graph';
+} from './workflowGraph';
 
 // ---------------------------------------------------------------- hand-built lookups (shapes as ref() serves them)
 const src = (id: string, name: string, status: Source['status'], mode: string, more: Partial<Source> = {}): Source => ({

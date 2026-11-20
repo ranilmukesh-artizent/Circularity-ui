@@ -9,9 +9,9 @@ import {
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { forget } from './draft';
+import { forget } from './draftStore';
 import { download, St } from './kit';
-import { NOT_YET } from './ops';
+import { NOT_YET } from './workflowActions';
 
 type NewType = 'ingest' | 'out' | 'dec' | 'blank';
 const CH_NAME: Record<string, string> = { api: 'Outbound API call', event: 'Event trigger', file: 'Interface file', proc: 'Process orchestration' };

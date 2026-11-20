@@ -5,7 +5,7 @@
  * Ported from index.html: wfInfo, wfAnalyze, wfValidate, wfBypass, wfCanLink, wfOrder, wfEval, wfRunTimes, frRunCounts,
  * wfRound, wfPathXY, trigText, ageShort, frAgo, hashId, srcLabel, srcCh, srcOr, wfStat.
  */
-import type { Check, Counts, RunState, Source, StepInfo, TestRun, Trigger, WfGraph, WfNode, WfStat, Workflow, Xf } from '../../api/workflows';
+import type { Check, Counts, RunState, Source, StepInfo, TestRun, Trigger, WfGraph, WfNode, WfStat, Workflow, Xf } from './workflows';
 
 export interface Fixed { label: string; sub: string; desc: string; canon?: boolean; model?: string; in: boolean; out: boolean; start?: boolean; fields?: string[] }
 export interface ActType { id: string; ch: string; label: string; sub: string; desc: string }

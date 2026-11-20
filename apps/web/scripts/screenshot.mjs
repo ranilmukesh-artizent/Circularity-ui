@@ -1,5 +1,5 @@
 // Dev helper: screenshot routes of the running dev server, signed in as an account.
-// usage: node e2e/shot.mjs <outDir> <account|-> <route> [route…]      e.g. node e2e/shot.mjs ./shots approver home product/received
+// usage: node scripts/screenshot.mjs <outDir> <account|-> <route> [route…]      e.g. node scripts/screenshot.mjs ./shots approver home product/received
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 

@@ -2,17 +2,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fmtNumber } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
 import {
   ago, ageShort, attention, logoHtml, nowMs, recentRuns, RUN_LABEL, source, sources, systemOf, trigText, wfStat, workflows, type Workflow, type WfStat,
 } from '../../api/workflows';
 import { openAsk } from '../../ui/askBus';
 import { Icon } from '../../ui/Icon';
-import { isDirty, useDrafts } from './draft';
+import { isDirty, useDrafts } from './draftStore';
 import { It, Kpi, Menu, Panel, Raw, Ring, St, Timeline, useTick } from './kit';
-import { DeleteModal, NewWorkflowModal } from './Modals';
-import { bulk, duplicate, exportOne, runNow, studioHref, toggle } from './ops';
+import { DeleteModal, NewWorkflowModal } from './WorkflowModals';
+import { bulk, duplicate, exportOne, runNow, studioHref, toggle } from './workflowActions';
 
 interface Filters { q: string; type: string; sys: string; st: string; sort: 'last' | 'name' | 'ok' | 'status'; pg: number }
 /** The filters survive leaving the list and coming back, like the demo's S.wf.f. */

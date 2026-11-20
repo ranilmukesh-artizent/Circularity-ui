@@ -1,6 +1,6 @@
 /* Source Map (5.9): tiles, filters, Graph · List · Matrix, a system tree and a detail panel. List is the tile grid (intMap). */
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import {
   ackKind, allMappings, canon, catOf, connMethods, smLog as smLogEntries, connected, events, exceptions, failedRecords, fieldCount, frCats, frDecisions, hourly, mappings,
   needsAttention, publishedWorkflowCount, series, source, sources, srcAgeText, srcCatNote, srcCats, srcFailing, srcFresh, srcModels, successRate, syncAllLive, syncHistory, tableCount,

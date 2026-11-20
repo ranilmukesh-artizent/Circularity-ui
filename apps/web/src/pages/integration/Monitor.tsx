@@ -1,5 +1,5 @@
 /* Monitor (W9): integration health over time, per source and per workflow, against SLA. */
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { failedRecords, hourly, latency, slaMinutes, sources, srcAge, srcFailing, successRate, totals, wfStat, workflows } from '../../api/integration';
 import { toast } from '../../ui/toast';
 import { FrKpi, FrPanel, FrSt, fmtN, sum, useInt, Vlogo } from './ui';

@@ -3,10 +3,10 @@
  * with its canvas. Rendered by the `integration` page dispatcher (src/pages/integration/) inside the Connection
  * Fabric frame. CONTRACT: keep this export name and props; the workflows area owns everything behind it.
  */
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { canPage } from '../../api/session';
-import { WorkflowList } from './List';
-import { WorkflowPage } from './Page';
+import { WorkflowList } from './WorkflowList';
+import { WorkflowPage } from './WorkflowPage';
 
 export function WorkflowStudio({ workflowId, query }: { workflowId: string | null; query: URLSearchParams }) {
   useBackend();

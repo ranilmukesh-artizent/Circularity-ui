@@ -1,4 +1,4 @@
-// B1 (docs/BACKEND_STEPS.md): dump what the static demo computes, as golden JSON for the Python backend's parity tests.
+// B1 (docs/backend-steps.md): dump what the static demo computes, as golden JSON for the Python backend's parity tests.
 //
 //   node apps/web/scripts/dump-golden.mjs            -> fixtures/golden/*.json at the repository root
 //

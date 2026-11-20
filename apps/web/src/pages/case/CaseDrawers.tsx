@@ -10,7 +10,7 @@ import { money } from '../../api/format';
 import { canPage } from '../../api/session';
 import { toast } from '../../ui/toast';
 import { ExMethod, Json } from './kit';
-import { hashId } from './tabs/early';
+import { hashId } from './tabs/EarlyTabs';
 import type { CaseUi } from './ui';
 
 const EX_FX_AT = '2026-10-06';

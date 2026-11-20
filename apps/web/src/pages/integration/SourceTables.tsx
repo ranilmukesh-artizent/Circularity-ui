@@ -1,6 +1,6 @@
 /* Source Tables: the table graph with clusters and foreign keys, a list view, and add / edit / delete / link (tables.update). */
 import { useEffect, useRef, useState } from 'react';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import {
   alignTables, moveTable, source, sources, srcAgeText, tableCount, tableHeight, tableModel, tableModelIds, tableSuggestions, undoActions, updateTables,
   type Table, type TableModel,

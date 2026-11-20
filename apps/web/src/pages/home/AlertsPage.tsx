@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { acknowledgeAlert, alertAssignee, alertKinds, alerts, assignAlert, status, type Alert } from '../../api/home';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';

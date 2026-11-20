@@ -6,16 +6,16 @@ import {
   caseAnalysis, caseScreen, exTs, fmtD, refList, stageHref, tiView,
   type CaseAnalysis, type CaseRec, type CaseScreen,
 } from '../../api/case';
-import { asHex } from './tabs/early';
+import { asHex } from './tabs/EarlyTabs';
 import { can, canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
-import { openSnapshot } from './drawers';
+import { openSnapshot } from './CaseDrawers';
 import { Panel, Photo, StageChip } from './kit';
 import {
   compareBody, EvidenceBlock, ExplainBlock, OptionsBlock, PredictBlock, saveScenario, SpecialBlock, TiA, TiOutcome, TiP4, useRows,
-} from './tabs/decide';
-import { BestCard, ExecBlock, TiHandoff, TiReconcile } from './tabs/execute';
+} from './tabs/DecideTabs';
+import { BestCard, ExecBlock, TiHandoff, TiReconcile } from './tabs/ExecuteTabs';
 import { scrollToId, useCaseUi } from './ui';
 
 const TI_STEPS = ['Asset and status', 'Possible outcomes', 'Why this outcome', 'What-if and edge cases', 'Approval and handoff'];

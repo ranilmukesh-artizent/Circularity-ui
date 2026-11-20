@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fmtDate } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import {
   ackKind, canon, canonExample, caseExists, commitImport, conflictPage, escalateConflict, events, facilities, mappings, pct, rbPath, resolveConflict,
   sampleCsv, sources, tenantList, type StreamEvent,

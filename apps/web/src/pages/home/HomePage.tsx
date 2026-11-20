@@ -4,7 +4,7 @@ import {
   activity, alerts, allModules, askExamples, askModes, askStarters, attention, briefing, canManageWorkflows, figures, frPref, greeting, homeUi,
   isTechnical, kfmt, kpis, noWorkflowsMessage, middlePanel, modules, providerLabel, quickActions, setFrPref, setHomeUi, taskItems, unwatch, watches,
 } from '../../api/home';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { canPage, currentAccount } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';

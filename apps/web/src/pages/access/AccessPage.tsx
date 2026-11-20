@@ -6,11 +6,11 @@ import {
   selfApproveAllowed, type Level,
 } from '../../api/access';
 import { money } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { accounts, can, rolePolicy } from '../../api/session';
 import { toast } from '../../ui/toast';
 import type { PageProps } from '../registry';
-import { ReqList } from './requests';
+import { ReqList } from './AccessRequests';
 import { SectionTabs, sectionsOf } from './SectionTabs';
 
 /** Access & Governance (Admin): the demo's renderAccess plus afAccessHTML, one section per route. */

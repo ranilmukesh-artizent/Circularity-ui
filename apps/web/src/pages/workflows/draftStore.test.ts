@@ -9,7 +9,7 @@ vi.mock('../../api/workflows', () => ({
   graphStamp: (id: string) => backend.get(id)?.stamp ?? '',
 }));
 
-import { draftOf, edit, forget, isDirty, nextId, reload, undoRedo } from './draft';
+import { draftOf, edit, forget, isDirty, nextId, reload, undoRedo } from './draftStore';
 
 const graph = (...ids: string[]): WfGraph => ({
   nodes: ids.map((id, i) => ({ id, k: 'xf', ref: 'x_utc', x: i * 200, y: 0 })),

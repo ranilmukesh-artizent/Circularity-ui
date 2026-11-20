@@ -25,7 +25,7 @@ vi.mock('../../api/workflows', () => ({
   followRun: m.followRun,
 }));
 
-import { bulk, duplicate, exportOne, NOT_YET, runNow, saveTemplate, studioHref, toggle } from './ops';
+import { bulk, duplicate, exportOne, NOT_YET, runNow, saveTemplate, studioHref, toggle } from './workflowActions';
 
 const NOWF = 'Only workflow managers can change workflows.';
 const wf = (id: string, status: 'published' | 'draft' | 'paused') => m.list.set(id, { id, name: 'Flow ' + id, status });

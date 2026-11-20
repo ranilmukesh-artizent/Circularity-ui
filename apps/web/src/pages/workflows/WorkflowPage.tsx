@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fmtNumber } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
 import {
   ago, analyze, evalStep, hashId, history, logoHtml, mappings, nowMs, NOWF, publishWorkflow, runCounts, runErrors,
@@ -12,11 +12,11 @@ import {
 import { Icon } from '../../ui/Icon';
 import { openAsk } from '../../ui/askBus';
 import { toast } from '../../ui/toast';
-import { draftOf, edit, reload, undoRedo, useDrafts, type Draft } from './draft';
+import { draftOf, edit, reload, undoRedo, useDrafts, type Draft } from './draftStore';
 import { CanvasView, canvasOps, ChecksPanel, FIXMSG, Inspector, Palette, TaskInstances, type Sel } from './Canvas';
 import { It, Menu, Panel, QuickActions, Raw, Ring, Seg, St, useTick } from './kit';
-import { DeleteModal, FailedRecordsModal, RunViewModal } from './Modals';
-import { duplicate, exportOne, NOT_YET, runNow, saveTemplate, studioHref } from './ops';
+import { DeleteModal, FailedRecordsModal, RunViewModal } from './WorkflowModals';
+import { duplicate, exportOne, NOT_YET, runNow, saveTemplate, studioHref } from './workflowActions';
 
 type Tab = 'studio' | 'settings' | 'history' | 'docs';
 type View = 'overview' | 'details' | 'flow';

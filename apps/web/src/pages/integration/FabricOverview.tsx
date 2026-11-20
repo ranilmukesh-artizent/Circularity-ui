@@ -1,6 +1,6 @@
 /* Overview (5.6): tiles, search, category pills, featured banner, Recommended for you, All integrations. */
 import { useRef, useState, type KeyboardEvent } from 'react';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { available, connected, frCats, integrations, needsAttention, recommendations, sources, typeOf, type Integration, type Rec } from '../../api/integration';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';

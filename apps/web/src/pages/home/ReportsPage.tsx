@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { asOfLabel, logReportExported, logReportViewed, reportLink, reportRows, reports, toCsv, type Report } from '../../api/home';
 import { fmtNumber } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { allowedTenants } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';

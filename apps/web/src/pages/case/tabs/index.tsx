@@ -1,9 +1,9 @@
 /** The detail tabs of each stage (stData's tabs), in the demo's order, with its keys and labels. */
 import type { ReactNode } from 'react';
 import type { CaseAnalysis, CaseRec, CaseScreen } from '../../../api/case';
-import * as D from './decide';
-import * as E from './early';
-import * as X from './execute';
+import * as D from './DecideTabs';
+import * as E from './EarlyTabs';
+import * as X from './ExecuteTabs';
 
 export interface TabProps { c: CaseRec; a: CaseAnalysis; s: CaseScreen }
 export type TabDef = [key: string, label: string, View: (p: TabProps) => ReactNode];

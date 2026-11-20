@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { invoke } from '../../api/actions';
 import { mcpProposals } from '../../api/access';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import {
   autoAgent, benchCases, caseOpenable, clientServers, exampleInput, hardRules, journeyStep,
   mcpAgents, PERM_CHIP, permCell, registryTools, runPlaygroundTool, tenantList, toolById,
@@ -12,7 +12,7 @@ import { can, canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { ReqList } from '../access/requests';
+import { ReqList } from '../access/AccessRequests';
 import { SectionTabs, sectionsOf } from '../access/SectionTabs';
 import type { PageProps } from '../registry';
 

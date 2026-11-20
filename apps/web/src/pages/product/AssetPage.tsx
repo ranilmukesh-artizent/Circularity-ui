@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fmtDate, fmtDateYear, fmtNumber, money } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import {
   addDays, asHex, asModel, asSerial, asTitle, assetCase, assetFacts, assetHealth, assetRelated, assetTabAllowed, baseline, caseById, caseDemand,
   caseDiag, caseRul, classInfo, closedLastYear, confidence, demoVisible, diagKind, gateNames, journeyHref, leaseTrail, locName,
@@ -19,8 +19,8 @@ import { toast } from '../../ui/toast';
 import {
   AfBadge, AssetCtx, Condition, CostBuild, CostInputs, Econ, Eligibility, HealthRing, Panel, Photo, ProductSpecs, Prov, Quality, Related,
   Tbl, Timeline, useAsset, useMoney, type AsCtx,
-} from './assetParts';
-import { StageChip } from './chips';
+} from './AssetPanels';
+import { StageChip } from './AssetChips';
 import { JourneyGuide, JourneyStrip } from './Journey';
 
 const AS_TABS: [string, string][] = [

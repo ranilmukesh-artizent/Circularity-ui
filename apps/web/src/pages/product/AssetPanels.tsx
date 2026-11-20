@@ -8,7 +8,7 @@ import {
   prepCost, prepParts, rateCardId, routeInfo, type Case, type Health,
 } from '../../api/product';
 import { Icon } from '../../ui/Icon';
-import { Thumb } from './chips';
+import { Thumb } from './AssetChips';
 
 // ---------- context: the asset in view and the page's view state ----------
 export interface AsCtx {

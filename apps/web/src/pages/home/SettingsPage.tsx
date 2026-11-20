@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   autonomy, frPref, livePaused, notifTypes, presenterOn, region, regionOptions, roleDescription, setFrPref, setLivePaused, setPresenter, setRegion,
 } from '../../api/home';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { allowedTenants, canPage, currentAccount, signInEmail, signOut } from '../../api/session';
 import { Icon } from '../../ui/Icon';
 import { applyTheme, useTheme } from '../../ui/theme';

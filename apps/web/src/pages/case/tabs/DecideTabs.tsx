@@ -13,7 +13,7 @@ import {
 import { money } from '../../../api/format';
 import { can } from '../../../api/session';
 import { toast } from '../../../ui/toast';
-import { openExSrc, openExSrcAll, openModels, openSources, openTrace } from '../drawers';
+import { openExSrc, openExSrcAll, openModels, openSources, openTrace } from '../CaseDrawers';
 import { AfBadge, ExMethod, Panel, ProvB, RangeBar, Stp, Tbl } from '../kit';
 import { approveGuarded, caseActions, runNextStep, scrollToId, useCaseUi } from '../ui';
 import type { TabProps } from './index';

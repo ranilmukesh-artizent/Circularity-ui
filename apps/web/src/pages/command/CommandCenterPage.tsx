@@ -11,13 +11,13 @@ import {
   visRowCount, workflowCount, type CcFilters, type CcRows, type CcScope, type KpiTile,
 } from '../../api/command';
 import { fmtNumber } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { canPage, currentAccount, setTenantFilter, tenantFilter } from '../../api/session';
 import type { PageProps } from '../registry';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
-import { Combo, Donut, HealthRing, RouteBars, Spark, VarList } from './charts';
-import { ActionsTable, ApprovalCards, Aome, Exceptions, Handed, Inbox, OpsReadOnly, Outcomes } from './sections';
+import { Combo, Donut, HealthRing, RouteBars, Spark, VarList } from './CommandCharts';
+import { ActionsTable, ApprovalCards, Aome, Exceptions, Handed, Inbox, OpsReadOnly, Outcomes } from './CommandPanels';
 
 /** Where each section's panel sits, so a tile can scroll to it when it is on the page. */
 const SEC_EL: Record<string, string> = { kpis: 'ccVar', approvals: 'ccApprovals', aome: 'ccAome', handed: 'ccHanded', signals: 'ccSignals' };

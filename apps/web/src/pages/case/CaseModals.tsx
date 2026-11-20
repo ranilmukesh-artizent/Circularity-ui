@@ -10,7 +10,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
 import { AfBadge, Json } from './kit';
-import { TiResult } from './tabs/decide';
+import { TiResult } from './tabs/DecideTabs';
 
 /** The approval card (ACT.approve with the agent's draft, the limit and the raw instruction; confirmApprove). */
 export function ApprovalModal({ c, mode, onClose }: { c: CaseRec; mode?: 'review'; onClose: () => void }) {

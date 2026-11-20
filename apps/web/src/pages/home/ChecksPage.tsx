@@ -1,6 +1,6 @@
 import { checkOwner, checks, checksNotRun, checksRunAt, runChecks, status } from '../../api/home';
 import { fmtDate } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
 import { askSoon, FrHead, FrKpi, FrPanel, FrSt } from './kit';

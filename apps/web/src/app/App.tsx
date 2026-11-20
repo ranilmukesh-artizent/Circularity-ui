@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useBackend } from '../api/hooks';
+import { useBackend } from '../api/useBackend';
 import { canRoute, currentAccount, homeRoute, setBackendTheme, signOut } from '../api/session';
 import type { RouteRef } from '../api/types';
 import { NotPortedPage } from '../pages/NotPortedPage';

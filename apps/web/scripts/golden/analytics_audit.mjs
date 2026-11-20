@@ -1,4 +1,4 @@
-// B14 golden data for analytics, audit, reference data, the menu and the data checks (docs/BACKEND_STEPS.md, B14).
+// B14 golden data for analytics, audit, reference data, the menu and the data checks (docs/backend-steps.md, B14).
 //
 //   node apps/web/scripts/golden/analytics_audit.mjs
 //

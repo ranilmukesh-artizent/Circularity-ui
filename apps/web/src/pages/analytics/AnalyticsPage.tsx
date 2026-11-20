@@ -9,15 +9,15 @@ import {
   type AnalyticsFilter, type ClosedRow,
 } from '../../api/analytics';
 import { fmtDateYear, money } from '../../api/format';
-import { useBackend } from '../../api/hooks';
+import { useBackend } from '../../api/useBackend';
 import { allowedTenants, canPage, tenantFilter } from '../../api/session';
 import type { PageProps } from '../registry';
 import { Icon } from '../../ui/Icon';
 import { openAsk } from '../../ui/askBus';
 import { Drawer } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
-import { downloadCsv } from '../audit/csv';
-import { drills, Funnel, Heat, MixChart, ModelTable, Overrides, PoolChart, Scatter, Sustain, Waterfall, type Drill } from './charts';
+import { downloadCsv } from '../../lib/csv';
+import { drills, Funnel, Heat, MixChart, ModelTable, Overrides, PoolChart, Scatter, Sustain, Waterfall, type Drill } from './AnalyticsCharts';
 
 // View state survives leaving and coming back, as the demo's S.fA and S.drill do.
 let savedFilter: AnalyticsFilter = { ...DEFAULT_FILTER };

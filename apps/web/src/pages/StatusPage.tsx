@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getJson, type Health } from '../api';
+import { getJson, type Health } from '../api/health';
 
 const LABELS: Record<string, string> = { database: 'Database (di)', source_sim: 'Source systems (source-sim)' };
 

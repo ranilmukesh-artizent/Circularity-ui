@@ -1,7 +1,7 @@
 /**
  * The Airflow-style canvas (the demo's wf* canvas code): palette, nodes and edges with drag to move, drag from the
  * right dot to connect, select and Delete, arrow keys, zoom, minimap, inspector, checks and task instances.
- * It edits the page's working copy (draft.ts); Save and Publish send it through invoke().
+ * It edits the page's working copy (draftStore.ts); Save and Publish send it through invoke().
  */
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { fmtNumber } from '../../api/format';
@@ -13,7 +13,7 @@ import {
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
 import { toast } from '../../ui/toast';
-import { edit, nextId, type Draft } from './draft';
+import { edit, nextId, type Draft } from './draftStore';
 import { GRIP_SVG, LOCK_SVG, Raw } from './kit';
 
 export type Sel = { t: 'n' | 'e'; id: string } | null;

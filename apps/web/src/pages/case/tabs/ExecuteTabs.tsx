@@ -11,7 +11,7 @@ import {
 import { money } from '../../../api/format';
 import { can, canPage } from '../../../api/session';
 import { Icon } from '../../../ui/Icon';
-import { openExSrc, openPayload, openRaw } from '../drawers';
+import { openExSrc, openPayload, openRaw } from '../CaseDrawers';
 import { AfBadge, Doc, ExClockChip, FrTl, Kv, Panel, Pva, Stp, Tag, VLogo, locOf } from '../kit';
 import { approveGuarded, caseActions, declineGuarded, useCaseUi } from '../ui';
 import type { TabProps } from './index';
