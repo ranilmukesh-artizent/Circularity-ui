@@ -18,6 +18,7 @@ from di.routers import actions as action_routes
 from di.routers import auth as auth_routes
 from di.routers import sources as source_routes
 from di.screens import router as screen_routes
+from di.stream import router as stream_routes
 
 app = FastAPI(title="Circularity DI API", version="0.2.0")
 app.include_router(auth_routes.router)
@@ -25,6 +26,7 @@ app.include_router(action_routes.router)
 app.include_router(source_routes.router)
 app.include_router(webhook.router)
 app.include_router(screen_routes)
+app.include_router(stream_routes)
 use_database_scope()
 
 

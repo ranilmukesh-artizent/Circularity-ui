@@ -127,12 +127,17 @@ def startup() -> None:
 
 
 def periodic() -> None:
-    """Every 30 s: queue the syncs that are due."""
+    """Every 30 s: queue the syncs that are due, and drop live-update events older than a day (a reconnecting client
+    replays at most 500, so older ones are never read again)."""
+    from sqlalchemy import text
+
     from di.connectors.sync import enqueue_due
 
     try:
         with SessionLocal() as s:
             queued = enqueue_due(s)
+            s.execute(text("DELETE FROM stream_event WHERE at < now() - interval '1 day'"))
+            s.commit()
         if queued:
             log.info("queued syncs: %s", ", ".join(queued))
     except Exception:  # noqa: BLE001
