@@ -1,4 +1,4 @@
-"""Salesforce REST API surface (docs/BACKEND_STEPS.md, B5). Paths as a client sees them, under the mock's /salesforce:
+"""Salesforce REST API surface (docs/backend-steps.md, B5). Paths as a client sees them, under the mock's /salesforce:
 
     POST  /services/oauth2/token                          JWT bearer (assertion) or client credentials
     GET   /services/data                                  API versions (no auth)

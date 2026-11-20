@@ -1,4 +1,4 @@
-"""The action endpoint the frontend's invoke() calls (docs/BACKEND_STEPS.md, B8).
+"""The action endpoint the frontend's invoke() calls (docs/backend-steps.md, B8).
 
 POST /api/actions/{id}        body: the action's input (JSON object)
     headers (optional): Idempotency-Key, X-Circularity-Preparer (agent id), X-Circularity-Confirmed: true,

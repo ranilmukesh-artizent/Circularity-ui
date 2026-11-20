@@ -1,4 +1,4 @@
-"""Persefoni seed: emission factors, activities and their calculated footprints (docs/BACKEND_STEPS.md, B5b).
+"""Persefoni seed: emission factors, activities and their calculated footprints (docs/backend-steps.md, B5b).
 
 Values are those of the replaced generic mock (sim/generic/specs/persefoni.py):
 - embodied-carbon factors per asset class (kgCO2e per unit, cradle-to-gate, version 2026.2) and the share of it each

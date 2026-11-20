@@ -1,4 +1,4 @@
-"""Ritchie Bros. Market Data mock (demo source `mkt`, schema `ritchie`; docs/BACKEND_STEPS.md, B5b).
+"""Ritchie Bros. Market Data mock (demo source `mkt`, schema `ritchie`; docs/backend-steps.md, B5b).
 
 The demo's SOURCES.mkt: "Comparables API v2" at https://api.rbauction.example/v2, API key, offset paging, 30 calls a
 minute, reads GET /comparables and GET /price-index; inputs "comparable transactions, realised prices, time-to-sale,

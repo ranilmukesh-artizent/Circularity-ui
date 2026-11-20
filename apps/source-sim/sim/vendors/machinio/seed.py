@@ -1,4 +1,4 @@
-"""Machinio: tables (Postgres schema `machinio`) and the seed (docs/BACKEND_STEPS.md, B5b).
+"""Machinio: tables (Postgres schema `machinio`) and the seed (docs/backend-steps.md, B5b).
 
 Tables
     listings          the seller account's own inventory (Machinio System): one per case with a resale route,

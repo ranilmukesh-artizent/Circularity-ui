@@ -1,4 +1,4 @@
-"""B5 contract tests: call the ServiceNow FSM mock the way a ServiceNow Table API client does (docs/BACKEND_STEPS.md)."""
+"""B5 contract tests: call the ServiceNow FSM mock the way a ServiceNow Table API client does (docs/backend-steps.md)."""
 
 import re
 

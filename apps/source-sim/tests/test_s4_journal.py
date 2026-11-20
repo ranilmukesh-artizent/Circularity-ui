@@ -1,6 +1,6 @@
 """B13b contract tests: post actual cost journal entries to the S/4HANA mock the way an SAP SOAP client does
 ("Journal Entry - Post", JournalEntryCreateRequestConfirmation_In), then read them back through
-API_JOURNALENTRYITEMBASIC_SRV (docs/BACKEND_STEPS.md)."""
+API_JOURNALENTRYITEMBASIC_SRV (docs/backend-steps.md)."""
 
 from datetime import datetime, timedelta
 from xml.etree import ElementTree as ET

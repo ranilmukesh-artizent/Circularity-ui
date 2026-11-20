@@ -1,4 +1,4 @@
-"""AWS IoT Core seed: the condition-monitoring fleet (docs/BACKEND_STEPS.md, B5c).
+"""AWS IoT Core seed: the condition-monitoring fleet (docs/backend-steps.md, B5c).
 
 Which devices
 - returned assets: every live case whose asset is an industrial motor (MTR-) or a hydraulic pump (PMP-) carries a

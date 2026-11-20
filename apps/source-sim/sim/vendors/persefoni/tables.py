@@ -1,4 +1,4 @@
-"""Persefoni data in Postgres schema `persefoni` (docs/BACKEND_STEPS.md, B5b).
+"""Persefoni data in Postgres schema `persefoni` (docs/backend-steps.md, B5b).
 
 Each object is stored as the JSON document the API returns (`doc`), with the columns the API filters and sorts on.
 Times are UTC, truncated to milliseconds.

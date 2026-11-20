@@ -1,5 +1,5 @@
 """B13b milestone: RT-1048 runs from approval to *Reconcile and learn* against the mocked systems, driven only by their
-events and the simulated clock (docs/BACKEND_STEPS.md, B13b).
+events and the simulated clock (docs/backend-steps.md, B13b).
 
 People act over HTTP (Planner submits, Approver approves, Finance confirms). After the approval the test only drives
 time: advance source-sim's simulated clock, run the worker's due jobs in-process (as di/worker.py does), and deliver

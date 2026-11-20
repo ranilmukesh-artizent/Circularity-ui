@@ -1,4 +1,4 @@
-"""Siemens Teamcenter 14 mock (docs/BACKEND_STEPS.md, B5b): the demo's PLM source (SOURCES.plm).
+"""Siemens Teamcenter 14 mock (docs/backend-steps.md, B5b): the demo's PLM source (SOURCES.plm).
 
 Teamcenter Services (SOA) over HTTP/JSON under /teamcenter/tc/JsonRestServices (see api.py): session login with the
 JSESSIONID cookie, saved queries, getProperties, GRM relation expansion, getItemFromId, setProperties.

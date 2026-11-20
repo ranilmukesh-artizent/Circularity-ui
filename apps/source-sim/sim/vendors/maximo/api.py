@@ -1,4 +1,4 @@
-"""IBM Maximo Manage 8.11 mock: the REST/OSLC JSON API (docs/BACKEND_STEPS.md, B5).
+"""IBM Maximo Manage 8.11 mock: the REST/OSLC JSON API (docs/backend-steps.md, B5).
 
     GET   /maximo/api/whoami                                        the authenticated user
     GET   /maximo/api/os/{mxasset|mxwo|mxfailurereport}             query an object structure

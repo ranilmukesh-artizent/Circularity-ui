@@ -1,4 +1,4 @@
-"""Helpers shared by the adapters of source-sim's generic, spec-driven mocks (docs/BACKEND_STEPS.md, B5 and B9).
+"""Helpers shared by the adapters of source-sim's generic, spec-driven mocks (docs/backend-steps.md, B5 and B9).
 
 Moved here from manhattan.py and oracle_lease.py so those adapters can be replaced without breaking the others:
 - `GenericAdapter`: the base for a generic-mock adapter (spec demo credentials, the spec's paging, `?updated_since=` deltas)

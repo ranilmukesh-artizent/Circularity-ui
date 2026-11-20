@@ -1,4 +1,4 @@
-"""Data checks (Home › Data checks; docs/BACKEND_STEPS.md, B14): the demo's runInvariants(), run on the backend's data.
+"""Data checks (Home › Data checks; docs/backend-steps.md, B14): the demo's runInvariants(), run on the backend's data.
 
     GET /api/checks
         checks   [{name, ok, detail, af?, data}] in the demo's order; `af: true` marks the agent layer's checks, as in

@@ -1,1 +1,1 @@
-"""SAP S/4HANA mock (docs/BACKEND_STEPS.md, B3)."""
+"""SAP S/4HANA mock (docs/backend-steps.md, B3)."""

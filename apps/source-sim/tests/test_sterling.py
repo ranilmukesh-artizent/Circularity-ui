@@ -1,4 +1,4 @@
-"""B5 contract tests: call the IBM Sterling OMS mock the way a Sterling REST client does (docs/BACKEND_STEPS.md)."""
+"""B5 contract tests: call the IBM Sterling OMS mock the way a Sterling REST client does (docs/backend-steps.md)."""
 
 import pytest
 from fastapi.testclient import TestClient

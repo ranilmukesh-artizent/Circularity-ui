@@ -1,4 +1,4 @@
-"""IBM Sterling OMS mock: HTTP surface (docs/BACKEND_STEPS.md, B5). See the package docstring for the contract."""
+"""IBM Sterling OMS mock: HTTP surface (docs/backend-steps.md, B5). See the package docstring for the contract."""
 
 import base64
 import secrets

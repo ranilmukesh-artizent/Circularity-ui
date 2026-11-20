@@ -44,6 +44,6 @@ def load(name: str) -> Any:
     """Load fixtures/golden/<name>.json with back-references resolved. Cached: treat the result as read-only."""
     path = golden_dir() / f"{name}.json"
     if not path.exists():
-        raise FileNotFoundError(f"{path} not found; run `npm run golden` in apps/web (docs/BACKEND_STEPS.md, B1)")
+        raise FileNotFoundError(f"{path} not found; run `npm run golden` in apps/web (docs/backend-steps.md, B1)")
     raw = json.loads(path.read_text(encoding="utf-8"))
     return _resolve(raw, raw)

@@ -1,4 +1,4 @@
-"""SAP Gateway security, as a client meets it (docs/BACKEND_STEPS.md, B3).
+"""SAP Gateway security, as a client meets it (docs/backend-steps.md, B3).
 
 - Every call needs Basic auth (communication user) or an OAuth 2.0 bearer token from the client-credentials
   token endpoint. Otherwise: 401 with a Basic challenge.

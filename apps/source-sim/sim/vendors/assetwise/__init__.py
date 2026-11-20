@@ -1,4 +1,4 @@
-"""Bentley AssetWise (CONNECT Edition) mock (docs/BACKEND_STEPS.md, B5b): the demo's engineering source (SOURCES.eng).
+"""Bentley AssetWise (CONNECT Edition) mock (docs/backend-steps.md, B5b): the demo's engineering source (SOURCES.eng).
 
 The engineering data warehouse over OData v4 under /assetwise/eB/Service/OData/Engineering/ (see api.py), with
 Bentley IMS tokens (client credentials) or AssetWise Basic authentication. Data in Postgres schema `assetwise`

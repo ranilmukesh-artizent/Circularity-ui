@@ -1,4 +1,4 @@
-"""The access policy (docs/BACKEND_STEPS.md, B7): who may see and do what. A port of the demo's RBAC block
+"""The access policy (docs/backend-steps.md, B7): who may see and do what. A port of the demo's RBAC block
 (index.html, /*RBAC-START*/ … /*RBAC-END*/), so the server refuses exactly what the screens hide.
 
 The policy itself (roles, their pages and permissions, the demo accounts, sign-in IDs) is configuration, read from

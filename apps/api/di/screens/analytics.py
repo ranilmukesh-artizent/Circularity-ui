@@ -1,4 +1,4 @@
-"""Analytics (#/analytics; docs/BACKEND_STEPS.md, B14): the closed decisions the account may see, their totals and the
+"""Analytics (#/analytics; docs/backend-steps.md, B14): the closed decisions the account may see, their totals and the
 model versions' accuracy.
 
     GET /api/screens/analytics?tenant=&cls=&route=&from=0&to=11&model=&tenant_filter=All
@@ -15,7 +15,7 @@ model versions' accuracy.
                               handler before B14): the demo's handler, over every reconciled decision
 
 Charts (waterfall, pipeline, route mix, predicted vs actual, overrides, engineering heat map, sustainability, pool
-efficiency) and the drill-through are drawn from `rows` and `metrics` in the frontend (pages/analytics/charts.tsx), as
+efficiency) and the drill-through are drawn from `rows` and `metrics` in the frontend (pages/analytics/AnalyticsCharts.tsx), as
 they are today: every number on the page is a sum or count over these rows, and the drill-through needs the rows.
 
 The page is for accounts that may open Analytics (canPage('analytics')); others get 403.

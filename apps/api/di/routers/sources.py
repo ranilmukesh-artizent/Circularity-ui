@@ -1,4 +1,4 @@
-"""Connected systems, sync runs, the fetch log, canonical records and conflicts (docs/BACKEND_STEPS.md, B9).
+"""Connected systems, sync runs, the fetch log, canonical records and conflicts (docs/backend-steps.md, B9).
 
     GET /api/sources                      every source with status, freshness, completeness, open conflicts
     GET /api/sources/{id}                 one source with its recent runs

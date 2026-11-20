@@ -1,5 +1,5 @@
 """Oracle Lease and Finance Management (Oracle E-Business Suite 12.2.13, product OKL) mock: the demo's SOURCES.lease
-(docs/BACKEND_STEPS.md, B5b). Contract end dates, lease rates, lessee and asset ownership, renewal options, asset
+(docs/backend-steps.md, B5b). Contract end dates, lease rates, lessee and asset ownership, renewal options, asset
 returns.
 
 Documentation followed
@@ -45,7 +45,7 @@ ASSUMPTION: OKL has no public query API for contracts; reads go through a custom
     deployed in ISG, flattening OKC_K_HEADERS / OKL_K_HEADERS / OKC_K_LINES / OKL asset returns under the demo's
     field names (LEASE_CONTRACT_ID, CONTRACT_END_DATE, LESSEE_NAME, MONTHLY_RENTAL ...).
 ASSUMPTION: the demo lists this source as "Fusion 24B" at .../fscmRestApi; Oracle's lessor product is the EBS module,
-    so the EBS ISG conventions are used, as docs/BACKEND_STEPS.md (B5b) decides.
+    so the EBS ISG conventions are used, as docs/backend-steps.md (B5b) decides.
 ASSUMPTION: re-lease opportunities (renewals) are a custom table of this deployment.
 ASSUMPTION: aliases xxoklleasequery and oklamassetreturn, cookie EBSOKL1, the business event names, and the ISG fault
     codes other than ISG_UNSUPPORTED_REST_VERB.

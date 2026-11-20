@@ -1,4 +1,4 @@
-"""Salesforce Sales Cloud mock (source `crm`, schema `salesforce`; docs/BACKEND_STEPS.md, B5).
+"""Salesforce Sales Cloud mock (source `crm`, schema `salesforce`; docs/backend-steps.md, B5).
 
 A vendor-faithful slice of the Salesforce REST API v59.0 under /salesforce: OAuth 2.0 (JWT bearer and client
 credentials), SOQL queries with nextRecordsUrl paging, sObject describe, retrieve, create and patch (Task and

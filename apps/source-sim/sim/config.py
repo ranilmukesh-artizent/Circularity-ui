@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SIM_", env_file=".env", extra="ignore")
 
     database_url: str = "postgresql+psycopg://circ:circ@localhost:5432/sources"
-    # B1 golden files: the seed (docs/BACKEND_STEPS.md, B2). Mounted at /fixtures in Docker.
+    # B1 golden files: the seed (docs/backend-steps.md, B2). Mounted at /fixtures in Docker.
     golden_dir: str = "/fixtures/golden"
     # B6: run the scheduler and webhook sender in the background (tests switch this off and call them directly)
     background: bool = True

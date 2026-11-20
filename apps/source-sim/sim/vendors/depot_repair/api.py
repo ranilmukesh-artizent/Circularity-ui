@@ -1,4 +1,4 @@
-"""Oracle Depot Repair mock: HTTP surface (docs/BACKEND_STEPS.md, B5b). See the package docstring for the contract."""
+"""Oracle Depot Repair mock: HTTP surface (docs/backend-steps.md, B5b). See the package docstring for the contract."""
 
 from datetime import datetime, timedelta
 

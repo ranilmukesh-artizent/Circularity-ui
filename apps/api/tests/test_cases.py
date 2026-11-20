@@ -1,4 +1,4 @@
-"""B11: cases in the database and the stage machine (docs/BACKEND_STEPS.md)."""
+"""B11: cases in the database and the stage machine (docs/backend-steps.md)."""
 
 import pytest
 from sqlalchemy import text

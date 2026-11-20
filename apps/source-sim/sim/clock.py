@@ -1,4 +1,4 @@
-"""The simulated clock (docs/BACKEND_STEPS.md, B6).
+"""The simulated clock (docs/backend-steps.md, B6).
 
 Simulated time starts at the demo's as-of time (7 Oct 2026, 09:00 UTC) and runs at `speed` × wall time from there.
 `advance()` jumps it forward, so "the work order completes in 3 days" can be played in seconds. Every mock stamps

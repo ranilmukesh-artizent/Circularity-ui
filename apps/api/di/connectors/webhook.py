@@ -1,4 +1,4 @@
-"""Change events from the source systems (docs/BACKEND_STEPS.md, B9).
+"""Change events from the source systems (docs/backend-steps.md, B9).
 
 source-sim delivers every change as a signed CloudEvent (B6). The intake verifies the HMAC signature and queues a
 delta sync of the source that changed; a burst of events for one source queues one sync. The worker makes the

@@ -1,4 +1,4 @@
-"""SAP S/4HANA mock: HTTP surface (docs/BACKEND_STEPS.md, B3).
+"""SAP S/4HANA mock: HTTP surface (docs/backend-steps.md, B3).
 
 POST /sap/bc/sec/oauth2/token                                   OAuth 2.0 client credentials
 GET  /sap/opu/odata/sap/<SERVICE>/[<EntitySet>[(<key>)][/<nav>]][/$count]   reads, with OData v2 query options

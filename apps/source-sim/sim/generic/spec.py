@@ -1,4 +1,4 @@
-"""The spec a generic mock is built from (docs/BACKEND_STEPS.md, B5).
+"""The spec a generic mock is built from (docs/backend-steps.md, B5).
 
     SPEC = Spec(
         source_id="wms", title="Manhattan Active Warehouse Management", schema="manhattan", base_path="/manhattan/wms/api",

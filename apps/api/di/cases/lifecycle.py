@@ -1,4 +1,4 @@
-"""A case's stage, and the moves between stages (docs/BACKEND_STEPS.md, B11).
+"""A case's stage, and the moves between stages (docs/backend-steps.md, B11).
 
 The demo keeps one stored stage per case; the ten stages a person sees (Lease ends ... Reconcile and learn) are
 derived from it and from the case's approval, execution steps and outcome (see di.cases.run).

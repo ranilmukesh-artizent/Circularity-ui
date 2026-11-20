@@ -1,4 +1,4 @@
-"""Decision-engine read actions (docs/BACKEND_STEPS.md, B10): what-if and pool optimisation.
+"""Decision-engine read actions (docs/backend-steps.md, B10): what-if and pool optimisation.
 Both are read-only: nothing is stored, and the approved decision is unchanged."""
 
 from di.actions.registry import ActionError, guard, implement

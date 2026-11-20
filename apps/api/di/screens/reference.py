@@ -1,4 +1,4 @@
-"""Reference data (docs/BACKEND_STEPS.md, B14): the static lists every page reads, in one answer.
+"""Reference data (docs/backend-steps.md, B14): the static lists every page reads, in one answer.
 
     GET /api/screens/reference              every list below, keyed by the demo's name
     GET /api/screens/reference?names=A,B    only those lists

@@ -1,4 +1,4 @@
-"""B5 contract tests: call the Salesforce mock the way a Salesforce REST client does (docs/BACKEND_STEPS.md)."""
+"""B5 contract tests: call the Salesforce mock the way a Salesforce REST client does (docs/backend-steps.md)."""
 
 import base64
 import json

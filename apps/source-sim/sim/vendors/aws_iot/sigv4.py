@@ -1,4 +1,4 @@
-"""AWS Signature Version 4, as the AWS IoT Core mock verifies it (docs/BACKEND_STEPS.md, B5c).
+"""AWS Signature Version 4, as the AWS IoT Core mock verifies it (docs/backend-steps.md, B5c).
 
 Documentation followed: https://docs.aws.amazon.com/IAM/latest/UserGuide/create-signed-request.html
 

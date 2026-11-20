@@ -1,4 +1,4 @@
-"""B4 contract tests: call the Ariba mock the way an Ariba API client does (docs/BACKEND_STEPS.md)."""
+"""B4 contract tests: call the Ariba mock the way an Ariba API client does (docs/backend-steps.md)."""
 
 import json
 from decimal import Decimal

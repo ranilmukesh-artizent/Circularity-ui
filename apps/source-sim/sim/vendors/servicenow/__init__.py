@@ -1,4 +1,4 @@
-"""ServiceNow Field Service Management mock (demo source `fsm`, schema `servicenow`; docs/BACKEND_STEPS.md, B5).
+"""ServiceNow Field Service Management mock (demo source `fsm`, schema `servicenow`; docs/backend-steps.md, B5).
 
 Base path /servicenow/api/now (the Table API); OAuth at /servicenow/oauth_token.do. See api.py for the surface,
 seed.py for the data and schema.py for the tables.

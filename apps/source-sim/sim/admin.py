@@ -1,4 +1,4 @@
-"""Control endpoints for the simulation (docs/BACKEND_STEPS.md, B6). Not part of any vendor API.
+"""Control endpoints for the simulation (docs/backend-steps.md, B6). Not part of any vendor API.
 
 GET  /_sim/clock                          {"now", "speed", "as_of"}
 POST /_sim/clock/advance  {"minutes"|"hours"|"days": n}

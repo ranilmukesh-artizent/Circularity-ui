@@ -1,4 +1,4 @@
-"""Optoro (OptiTurn returns platform) mock (the demo's SOURCES.rl; docs/BACKEND_STEPS.md, B5b).
+"""Optoro (OptiTurn returns platform) mock (the demo's SOURCES.rl; docs/backend-steps.md, B5b).
 
 Optoro serves each API from its own host (auth.optiturn.com, asn.optiturn.com, orders.optiturn.com ...). Under the
 registry's base /optoro each host is one path segment: /optoro/auth, /optoro/asn, /optoro/inventory, /optoro/returns.

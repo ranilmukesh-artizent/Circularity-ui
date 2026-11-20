@@ -1,4 +1,4 @@
-"""IBM Sterling Order Management 10.0 mock (the demo's SOURCES.oms; docs/BACKEND_STEPS.md, B5).
+"""IBM Sterling Order Management 10.0 mock (the demo's SOURCES.oms; docs/backend-steps.md, B5).
 
 Base path /sterling/smcfs/restapi (sim/registry.py). Data model and seed: see seed.py.
 

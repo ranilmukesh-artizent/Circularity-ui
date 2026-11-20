@@ -1,4 +1,4 @@
-"""SAP Ariba data in Postgres schema `ariba` (docs/BACKEND_STEPS.md, B4)."""
+"""SAP Ariba data in Postgres schema `ariba` (docs/backend-steps.md, B4)."""
 
 from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, MetaData, Numeric, String, Table
 

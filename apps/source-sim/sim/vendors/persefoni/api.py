@@ -1,4 +1,4 @@
-"""Persefoni API v1 mock (docs/BACKEND_STEPS.md, B5b). See the package docstring for documentation and assumptions.
+"""Persefoni API v1 mock (docs/backend-steps.md, B5b). See the package docstring for documentation and assumptions.
 
     POST /persefoni/oauth/token                       client credentials (form or JSON) -> bearer token
     GET  /persefoni/v1/emission-factors               ?category= &asset_class= &route= &scope= &version=

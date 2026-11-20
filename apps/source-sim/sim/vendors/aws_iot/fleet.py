@@ -1,4 +1,4 @@
-"""The AWS IoT Core message broker, Device Shadow service and rules engine, as the mock runs them (docs/BACKEND_STEPS.md, B5c).
+"""The AWS IoT Core message broker, Device Shadow service and rules engine, as the mock runs them (docs/backend-steps.md, B5c).
 
     publish(conn, topic, payload, qos, retain)   the broker: keeps retained messages, hands the message to the rules
     update_shadow(conn, thing, name, doc)        the Device Shadow service: merge, version, metadata, delta, and the

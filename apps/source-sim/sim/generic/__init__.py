@@ -1,4 +1,4 @@
-"""Build a mock system from a Spec (docs/BACKEND_STEPS.md, B5).
+"""Build a mock system from a Spec (docs/backend-steps.md, B5).
 
 Storage: one table per system, `<schema>.docs (resource, id, doc jsonb, updated_at)`, plus a counter for new ids.
 HTTP, below spec.base_path:

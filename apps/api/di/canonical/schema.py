@@ -1,4 +1,4 @@
-"""The canonical models and which source has authority over which field (docs/BACKEND_STEPS.md, B9).
+"""The canonical models and which source has authority over which field (docs/backend-steps.md, B9).
 
 Models use the namespaces of the demo's field mappings (MAPPINGS in index.html): `asset.asset_id`,
 `condition.grade`, `demand.need_by` … How they relate to the demo's seven canonical models (CANON):

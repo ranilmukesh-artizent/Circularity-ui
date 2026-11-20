@@ -1,4 +1,4 @@
-"""Live updates (docs/BACKEND_STEPS.md, B15): `GET /api/stream`, Server-Sent Events for the signed-in account.
+"""Live updates (docs/backend-steps.md, B15): `GET /api/stream`, Server-Sent Events for the signed-in account.
 
 **Where events come from.** Database triggers copy everything that changes into `stream_event` (migration 0008):
 journal events (actions and stage moves), the demo-shaped event stream, notifications, sync runs and instruction

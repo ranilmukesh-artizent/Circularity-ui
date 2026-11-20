@@ -1,4 +1,4 @@
-"""The live cases, in the database (table case_record; docs/BACKEND_STEPS.md, B11).
+"""The live cases, in the database (table case_record; docs/backend-steps.md, B11).
 
 A case is one JSON document in the demo's shape. The recommendation is stored as the index of its route, so after a
 load `case["recommendation"] is case["routes"][i]`, as in the demo.

@@ -1,4 +1,4 @@
-"""Persefoni API v1 mock (docs/BACKEND_STEPS.md, B5b): the demo's ESG & carbon source (SOURCES.esg).
+"""Persefoni API v1 mock (docs/backend-steps.md, B5b): the demo's ESG & carbon source (SOURCES.esg).
 
 API under /persefoni/v1 (the demo's url https://api.persefoni.com/v1), token at /persefoni/oauth/token; see api.py.
 Data in Postgres schema `persefoni` (tables.py), seeded from the world (seed.py). Replaces sim/generic/specs/persefoni.py.

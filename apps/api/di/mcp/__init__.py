@@ -1,4 +1,4 @@
-"""The MCP server (docs/BACKEND_STEPS.md, B16): the demo's ten agent tools over the Model Context Protocol.
+"""The MCP server (docs/backend-steps.md, B16): the demo's ten agent tools over the Model Context Protocol.
 
     POST /mcp      Streamable HTTP (the official MCP Python SDK, `mcp` 2.x, low-level `Server`), stateless, JSON
                    responses. Every request needs `Authorization: Bearer <JWT from /api/auth/login>` (401 without).

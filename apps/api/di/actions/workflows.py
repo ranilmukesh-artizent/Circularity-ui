@@ -1,4 +1,4 @@
-"""Workflow Studio actions (docs/BACKEND_STEPS.md, B15 part 2): workflow.save, publish, setStatus, create, duplicate,
+"""Workflow Studio actions (docs/backend-steps.md, B15 part 2): workflow.save, publish, setStatus, create, duplicate,
 delete and run, and the read workflow.validate.
 
 Ports of the demo's handlers (index.html, `defAction('workflow.save', ...)` and the ones after it) and of what they call:

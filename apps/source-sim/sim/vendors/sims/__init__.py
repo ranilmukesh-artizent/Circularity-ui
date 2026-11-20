@@ -1,4 +1,4 @@
-"""Sims Lifecycle Services mock (the demo's SOURCES.rcy; docs/BACKEND_STEPS.md, B5b): a partner SFTP drop.
+"""Sims Lifecycle Services mock (the demo's SOURCES.rcy; docs/backend-steps.md, B5b): a partner SFTP drop.
 
 The demo: "Partner SFTP", auth "SFTP drop · signed manifest", "Controlled CSV import", "No supported partner API.
 Manual import supports evaluation, not live automation." MAPPINGS.rcy: VND_CERT ISO14001-VA → vendor.certification

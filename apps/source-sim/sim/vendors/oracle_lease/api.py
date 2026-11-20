@@ -1,4 +1,4 @@
-"""Oracle Lease and Finance Management mock: HTTP surface (docs/BACKEND_STEPS.md, B5b). See the package docstring."""
+"""Oracle Lease and Finance Management mock: HTTP surface (docs/backend-steps.md, B5b). See the package docstring."""
 
 from datetime import date, datetime
 

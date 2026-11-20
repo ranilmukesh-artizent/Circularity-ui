@@ -1,4 +1,4 @@
-"""Ritchie Bros. Market Data: tables (Postgres schema `ritchie`) and the seed (docs/BACKEND_STEPS.md, B5b).
+"""Ritchie Bros. Market Data: tables (Postgres schema `ritchie`) and the seed (docs/backend-steps.md, B5b).
 
 Tables
     comparables   one realised sale (a "price result"): JSONB record plus the match columns (make, model, condition,

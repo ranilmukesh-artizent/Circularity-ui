@@ -1,4 +1,4 @@
-"""Sign-in and request authentication (docs/BACKEND_STEPS.md, B7).
+"""Sign-in and request authentication (docs/backend-steps.md, B7).
 
 POST /api/auth/login takes the demo's sign-in IDs (exec, ops, planner.b@northfield.example …) and, as in the demo,
 any non-empty password. It returns a JWT. Real single sign-on (OIDC, Keycloak as the stand-in) replaces the

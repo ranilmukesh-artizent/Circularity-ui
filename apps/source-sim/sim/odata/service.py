@@ -1,4 +1,4 @@
-"""A small OData v2 server over SQLAlchemy tables, shaped like SAP Gateway (docs/BACKEND_STEPS.md, B3).
+"""A small OData v2 server over SQLAlchemy tables, shaped like SAP Gateway (docs/backend-steps.md, B3).
 
     svc = ODataService("API_PRODUCT_SRV", namespace="API_PRODUCT_SRV")
     svc.entity_set("A_Product", table, {"Product": (table.c.product, "Edm.String"), ...}, keys=["Product"])

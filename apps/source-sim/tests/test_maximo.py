@@ -1,4 +1,4 @@
-"""B5 contract tests: call the Maximo mock the way a Maximo REST/OSLC client does (docs/BACKEND_STEPS.md)."""
+"""B5 contract tests: call the Maximo mock the way a Maximo REST/OSLC client does (docs/backend-steps.md)."""
 
 import base64
 

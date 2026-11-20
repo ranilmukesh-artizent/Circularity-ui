@@ -1,4 +1,4 @@
-"""Audit & provenance (#/audit; docs/BACKEND_STEPS.md, B14): the log of evidence fetches and system events, the evidence
+"""Audit & provenance (#/audit; docs/backend-steps.md, B14): the log of evidence fetches and system events, the evidence
 gaps, provenance records and comments.
 
     GET /api/screens/audit?tenant_filter=All

@@ -1,4 +1,4 @@
-"""AWS IoT Core data in Postgres schema `aws_iot` (docs/BACKEND_STEPS.md, B5c).
+"""AWS IoT Core data in Postgres schema `aws_iot` (docs/backend-steps.md, B5c).
 
 Control-plane objects (things, thing groups, topic rules, jobs) are stored as the JSON the API returns (`doc`), with the
 columns the API filters and sorts on. Shadows keep their state and metadata documents; retained messages their payload

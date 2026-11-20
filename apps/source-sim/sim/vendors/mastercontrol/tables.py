@@ -1,4 +1,4 @@
-"""MasterControl Quality Excellence data in Postgres schema `mastercontrol` (docs/BACKEND_STEPS.md, B5b).
+"""MasterControl Quality Excellence data in Postgres schema `mastercontrol` (docs/backend-steps.md, B5b).
 
 One table per object the API serves. Standard InfoCard / record metadata are columns; the site-configured form data
 fields (CERT_EXPIRY, REUSE_CLASS, TEST_RESULT ...) are kept in `data_fields` under their configured names, exactly as

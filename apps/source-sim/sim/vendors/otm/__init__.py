@@ -1,4 +1,4 @@
-"""Oracle Transportation Management (OTM) mock: the demo's SOURCES.tms (docs/BACKEND_STEPS.md, B5b). OTM replaces
+"""Oracle Transportation Management (OTM) mock: the demo's SOURCES.tms (docs/backend-steps.md, B5b). OTM replaces
 the demo's fictional "ShipLane TMS" (VENDOR_OVERRIDES in sim/registry.py); the seeded values are unchanged.
 
 Documentation followed

@@ -1,4 +1,4 @@
-"""What every mocked system provides, and how source-sim finds them (docs/BACKEND_STEPS.md, B3-B5).
+"""What every mocked system provides, and how source-sim finds them (docs/backend-steps.md, B3-B5).
 
 A full mock is a package in `sim/vendors/` whose `__init__.py` defines `MOCK = Mock(...)`.
 A generic mock is a module in `sim/generic/specs/` that defines `SPEC = Spec(...)` (see sim/generic/spec.py).

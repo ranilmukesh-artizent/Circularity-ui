@@ -1,4 +1,4 @@
-"""SAP Ariba mock: HTTP surface (docs/BACKEND_STEPS.md, B4). Read-only, as in the demo (SOURCES.proc: "Read").
+"""SAP Ariba mock: HTTP surface (docs/backend-steps.md, B4). Read-only, as in the demo (SOURCES.proc: "Read").
 
     POST /ariba/v2/oauth/token                                                         OAuth 2.0 client credentials
     GET  /ariba/api/procurement-reporting-details/v2/prod/views/PurchaseOrders          Operational Reporting view

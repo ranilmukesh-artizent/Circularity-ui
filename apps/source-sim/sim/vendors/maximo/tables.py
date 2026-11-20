@@ -1,4 +1,4 @@
-"""IBM Maximo Manage data in Postgres schema `maximo` (docs/BACKEND_STEPS.md, B5).
+"""IBM Maximo Manage data in Postgres schema `maximo` (docs/backend-steps.md, B5).
 
 Table and column names are Maximo's (ASSET, ASSETMETER, ASSETSPEC, WORKORDER, WOSTATUS, FAILUREREPORT), lower case,
 so an OSLC attribute name is the column name. Money is in the base currency (USD); times are stored in UTC and

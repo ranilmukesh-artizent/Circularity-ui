@@ -1,4 +1,4 @@
-"""What an adapter provides (docs/BACKEND_STEPS.md, B9).
+"""What an adapter provides (docs/backend-steps.md, B9).
 
 An adapter knows one system's API: how to authenticate, how to page through each resource, how to ask for changes
 since a cursor, and how to turn each record into canonical facts.

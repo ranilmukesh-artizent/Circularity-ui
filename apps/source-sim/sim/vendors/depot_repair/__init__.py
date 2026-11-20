@@ -1,5 +1,5 @@
 """Oracle Depot Repair (Oracle E-Business Suite 12.2.13, product CSD) mock: the demo's SOURCES.repair
-(docs/BACKEND_STEPS.md, B5b). Receiving inspection and grade, teardown findings, repair orders, tasks and hours,
+(docs/backend-steps.md, B5b). Receiving inspection and grade, teardown findings, repair orders, tasks and hours,
 parts, bench test results, release to service.
 
 Documentation followed

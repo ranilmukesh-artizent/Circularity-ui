@@ -1,4 +1,4 @@
-"""Read APIs for the screens (docs/BACKEND_STEPS.md, B14): what each page shows, already scoped to the signed-in account.
+"""Read APIs for the screens (docs/backend-steps.md, B14): what each page shows, already scoped to the signed-in account.
 
 One module per area (home, command, product, case, orchestration, analytics, audit, reference, integration, mcp,
 access, workflows), mirroring the frontend facade files in apps/web/src/api/*.ts. Each module defines

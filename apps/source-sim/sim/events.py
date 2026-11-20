@@ -1,4 +1,4 @@
-"""The outbox: every change in a mocked system records a business event here (docs/BACKEND_STEPS.md, B3; delivered
+"""The outbox: every change in a mocked system records a business event here (docs/backend-steps.md, B3; delivered
 as CloudEvents webhooks in B6)."""
 
 from datetime import datetime

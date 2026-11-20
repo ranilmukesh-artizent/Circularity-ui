@@ -1,4 +1,4 @@
-"""Manhattan Active Warehouse Management mock (the demo's SOURCES.wms; docs/BACKEND_STEPS.md, B5b).
+"""Manhattan Active Warehouse Management mock (the demo's SOURCES.wms; docs/backend-steps.md, B5b).
 
 Base /manhattan (sim/registry.py) stands for the tenant host (https://<tenant>.omni.manh.com); the paths below it are
 Manhattan Active's component paths /<component>/api/<component>/<entity>/... .

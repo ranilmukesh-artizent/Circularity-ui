@@ -1,4 +1,4 @@
-"""SAP S/4HANA tables in Postgres schema `s4` (docs/BACKEND_STEPS.md, B3).
+"""SAP S/4HANA tables in Postgres schema `s4` (docs/backend-steps.md, B3).
 
 Table and column names are SAP's (MARA-MATNR, EKPO-NETPR …), so the field mappings in di read like the real ones.
 Every table carries LAST_CHANGE (timestamptz) for delta reads (`LastChangeDateTime gt datetimeoffset'…'`).

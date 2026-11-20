@@ -1,4 +1,4 @@
-"""B2 parity: the seed holds exactly the demo's world (docs/BACKEND_STEPS.md)."""
+"""B2 parity: the seed holds exactly the demo's world (docs/backend-steps.md)."""
 
 from datetime import UTC, datetime
 

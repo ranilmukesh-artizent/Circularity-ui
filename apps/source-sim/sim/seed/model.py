@@ -1,4 +1,4 @@
-"""The synthetic world as typed objects (docs/BACKEND_STEPS.md, B2).
+"""The synthetic world as typed objects (docs/backend-steps.md, B2).
 
 Each case is split three ways:
 - source facts (`CaseFacts`, `RouteFacts`, `Term`, `Evidence`, `Demand`): what the enterprise systems hold. The mock

@@ -1,4 +1,4 @@
-"""B8: the action endpoint behaves like the demo's invoke() (docs/BACKEND_STEPS.md)."""
+"""B8: the action endpoint behaves like the demo's invoke() (docs/backend-steps.md)."""
 
 import pytest
 from fastapi.testclient import TestClient

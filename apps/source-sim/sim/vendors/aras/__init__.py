@@ -1,4 +1,4 @@
-"""Aras Innovator 14 mock (docs/BACKEND_STEPS.md, B5b): the demo's BOM source (SOURCES.bom).
+"""Aras Innovator 14 mock (docs/backend-steps.md, B5b): the demo's BOM source (SOURCES.bom).
 
 The RESTful API (OData v4) under /aras/InnovatorServer/server/odata and the Innovator OAuth server under
 /aras/InnovatorServer/oauthserver (see api.py, auth.py). Data in Postgres schema `aras` (seed.py): Parts, Part BOM,

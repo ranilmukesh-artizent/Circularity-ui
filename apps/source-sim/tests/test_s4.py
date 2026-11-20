@@ -1,4 +1,4 @@
-"""B3 contract tests: call the S/4HANA mock the way a real S/4 client does (docs/BACKEND_STEPS.md)."""
+"""B3 contract tests: call the S/4HANA mock the way a real S/4 client does (docs/backend-steps.md)."""
 
 import pytest
 from fastapi.testclient import TestClient

@@ -1,4 +1,4 @@
-"""The canonical store: facts in, chosen values and conflicts out (docs/BACKEND_STEPS.md, B9).
+"""The canonical store: facts in, chosen values and conflicts out (docs/backend-steps.md, B9).
 
 A connector maps each source record to `Fact`s. `apply()` keeps every source's value (provenance), then for each
 touched field picks the canonical value:

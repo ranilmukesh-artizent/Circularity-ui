@@ -1,4 +1,4 @@
-"""The seed: the demo's synthetic world, loaded from the B1 golden files (docs/BACKEND_STEPS.md, B2).
+"""The seed: the demo's synthetic world, loaded from the B1 golden files (docs/backend-steps.md, B2).
 
 from sim.seed import seed
 s = seed()

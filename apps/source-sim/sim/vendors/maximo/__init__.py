@@ -1,4 +1,4 @@
-"""IBM Maximo Manage 8.11 mock (docs/BACKEND_STEPS.md, B5): the demo's EAM source (SOURCES.eam).
+"""IBM Maximo Manage 8.11 mock (docs/backend-steps.md, B5): the demo's EAM source (SOURCES.eam).
 
 REST/OSLC JSON API under /maximo/api (see api.py): object structures mxasset, mxwo, mxfailurereport.
 Data in Postgres schema `maximo` (tables.py), seeded from the world (seed.py).

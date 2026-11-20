@@ -1,4 +1,4 @@
-"""SAP S/4HANA mock: posting journal entries with actual cost lines (docs/BACKEND_STEPS.md, B13b).
+"""SAP S/4HANA mock: posting journal entries with actual cost lines (docs/backend-steps.md, B13b).
 
 Choice of API
     SAP's documented way to post a journal entry from outside S/4HANA is the SOAP service "Journal Entry - Post"

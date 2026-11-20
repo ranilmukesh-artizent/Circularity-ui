@@ -1,1 +1,1 @@
-"""SAP Ariba mock (docs/BACKEND_STEPS.md, B4)."""
+"""SAP Ariba mock (docs/backend-steps.md, B4)."""

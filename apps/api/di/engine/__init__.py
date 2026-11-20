@@ -1,4 +1,4 @@
-"""The decision engine (docs/BACKEND_STEPS.md, B10): pure functions ported from the demo (`index.html`).
+"""The decision engine (docs/backend-steps.md, B10): pure functions ported from the demo (`index.html`).
 
 - `routes`: a route's net and P10/P50/P90 range (`mkRoute`), a failed gate (`fail`), ranking (`rankRoutes`)
 - `gates`: the six gates and the rules that exclude a route (the gate checks in `buildRoutes`)

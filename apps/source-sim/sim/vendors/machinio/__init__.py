@@ -1,4 +1,4 @@
-"""Machinio mock (demo source `dlr`, schema `machinio`; docs/BACKEND_STEPS.md, B5b).
+"""Machinio mock (demo source `dlr`, schema `machinio`; docs/backend-steps.md, B5b).
 
 The demo's SOURCES.dlr: "Dealer API v1" at https://api.machinio.com/v1, API key, cursor paging, "API + events",
 reads GET /listings and GET /offers; inputs "dealer offers, listing demand, fees, time-to-sale"; MAPPINGS.dlr

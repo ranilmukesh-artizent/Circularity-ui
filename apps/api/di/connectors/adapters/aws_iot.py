@@ -5,7 +5,7 @@ AWS account is connected.
 
 Not provisioned at start, as in the demo: the source stays `unavailable` until it is connected
 (POST /api/sources/iot/connect, or DI_IOT_CONNECTED=true / `iot_connected` in di/config.py to start connected;
-docs/BACKEND_STEPS.md, B5c).
+docs/backend-steps.md, B5c).
 
 Auth: AWS Signature Version 4 on every call (region ap-south-1; service "iot" for the control plane under /iot,
 "iotdata" for the data plane under /data), with the connector's IAM access key. The canonical URI is the full request

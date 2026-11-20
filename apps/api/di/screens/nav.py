@@ -1,4 +1,4 @@
-"""The menu and the signed-in session (docs/BACKEND_STEPS.md, B14): what apps/web/src/api/nav.ts and session.ts read.
+"""The menu and the signed-in session (docs/backend-steps.md, B14): what apps/web/src/api/nav.ts and session.ts read.
 
     GET /api/screens/nav?cc_mode=operational&last_asset=&tenant_filter=All
         groups   the demo's NAV as the account sees it (nav.ts navigation()): the groups it may open, each with the

@@ -1,4 +1,4 @@
-"""MasterControl Quality Excellence mock (docs/BACKEND_STEPS.md, B5b): the demo's QMS source (SOURCES.qms).
+"""MasterControl Quality Excellence mock (docs/backend-steps.md, B5b): the demo's QMS source (SOURCES.qms).
 
 REST API under /mastercontrol/mc/api (the demo's url https://qms.northfield.example/mc/api), see api.py. Data in Postgres
 schema `mastercontrol` (tables.py), seeded from the world (seed.py). Replaces sim/generic/specs/mastercontrol.py.

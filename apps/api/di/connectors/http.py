@@ -1,4 +1,4 @@
-"""The HTTP side of a connector: authentication, retries and the fetch log (docs/BACKEND_STEPS.md, B9).
+"""The HTTP side of a connector: authentication, retries and the fetch log (docs/backend-steps.md, B9).
 
 Every call is written to `fetch_log` (Audit › Fetch log): method, URL, status, record count, duration.
 Auth strategies:

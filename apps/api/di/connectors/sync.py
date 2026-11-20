@@ -1,4 +1,4 @@
-"""Sync one source into the canonical store (docs/BACKEND_STEPS.md, B9).
+"""Sync one source into the canonical store (docs/backend-steps.md, B9).
 
     run_sync("erp", trigger="manual")            → {"run_id", "status", "records_read", "facts_written", …}
     enqueue_sync(session, "erp", "webhook")       → queue a job for the worker (once: no duplicates while queued)
@@ -29,7 +29,7 @@ log = logging.getLogger("di.sync")
 COMMIT_EVERY = 200
 NOT_SYNCED = ("paused", "disconnected", "unavailable")
 SAFETY_INTERVAL_MIN = 60  # event-driven sources (interval 0) still get a full check every hour
-# vendors replaced on purpose (docs/BACKEND_STEPS.md, B5b); the same list as source-sim's registry
+# vendors replaced on purpose (docs/backend-steps.md, B5b); the same list as source-sim's registry
 VENDOR_OVERRIDES = {"tms": "Oracle Transportation Management"}  # was the fictional "ShipLane TMS"
 
 

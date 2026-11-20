@@ -1,4 +1,4 @@
-"""B9: connectors fill the canonical store from source-sim over HTTP (docs/BACKEND_STEPS.md).
+"""B9: connectors fill the canonical store from source-sim over HTTP (docs/backend-steps.md).
 
 Needs source-sim running (docker compose). Stop the worker while these run (`docker compose stop worker`), so its
 scheduled syncs do not race the tests.

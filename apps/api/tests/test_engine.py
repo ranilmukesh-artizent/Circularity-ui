@@ -1,4 +1,4 @@
-"""B10: the decision engine gives the demo's answers (docs/BACKEND_STEPS.md).
+"""B10: the decision engine gives the demo's answers (docs/backend-steps.md).
 
 Parity: for all 128 cases, the engine recomputes the gates, nets, P10/P90 ranges, ranks and recommendation from
 each case's inputs (facts and route terms) and must match fixtures/golden/cases.json exactly. What-if and the pool

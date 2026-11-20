@@ -1,4 +1,4 @@
-"""AWS IoT Core mock: the demo's device telemetry source (SOURCES.iot; docs/BACKEND_STEPS.md, B5c).
+"""AWS IoT Core mock: the demo's device telemetry source (SOURCES.iot; docs/backend-steps.md, B5c).
 
 A synthetic stand-in: no real AWS account or service is involved. di starts with this source not provisioned, as in
 the demo; the mock itself always answers, so it can be tested and connected (see B5c for how).

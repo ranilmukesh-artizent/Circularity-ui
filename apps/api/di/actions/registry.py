@@ -1,4 +1,4 @@
-"""The action registry (docs/BACKEND_STEPS.md, B8): the demo's 76 named actions, declared once.
+"""The action registry (docs/backend-steps.md, B8): the demo's 76 named actions, declared once.
 
 The declarations (id, title, risk, permission, scope, input schema, verb) come from the golden action catalog, so
 the server and the demo agree. Behaviour is attached in code, one module per area (B10-B13):

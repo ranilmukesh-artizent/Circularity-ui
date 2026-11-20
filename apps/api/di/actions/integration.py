@@ -1,4 +1,4 @@
-"""Connection Fabric actions (docs/BACKEND_STEPS.md, B9): sync a source now, resolve or escalate a conflict.
+"""Connection Fabric actions (docs/backend-steps.md, B9): sync a source now, resolve or escalate a conflict.
 The other Connection Fabric actions (source.update, source.delete, credentials.rotate, source.reconnect,
 import.commit, tables.update) follow with the Connection Fabric switch-over (B17)."""
 

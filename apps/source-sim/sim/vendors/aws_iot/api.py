@@ -1,4 +1,4 @@
-"""AWS IoT Core API mock (docs/BACKEND_STEPS.md, B5c). See the package docstring for documentation and assumptions.
+"""AWS IoT Core API mock (docs/backend-steps.md, B5c). See the package docstring for documentation and assumptions.
 
 Control plane (the iot endpoint, SigV4 service "iot"), under /aws-iot/iot:
     GET  /things                                   ListThings  ?maxResults (1-250) &nextToken &attributeName

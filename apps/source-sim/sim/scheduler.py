@@ -1,4 +1,4 @@
-"""Work that happens later on the simulated clock (docs/BACKEND_STEPS.md, B6).
+"""Work that happens later on the simulated clock (docs/backend-steps.md, B6).
 
 A mock registers a handler once, and schedules it when something starts:
 

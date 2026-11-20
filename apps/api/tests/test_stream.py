@@ -1,4 +1,4 @@
-"""B15: live updates. Two sessions see each other's work within a second (docs/BACKEND_STEPS.md).
+"""B15: live updates. Two sessions see each other's work within a second (docs/backend-steps.md).
 
 These tests talk to the running api server (the one in this container, port 8000) over real HTTP, because a stream
 is a long-lived connection that the in-process TestClient cannot hold open alongside other requests. The worker is

@@ -1,4 +1,4 @@
-"""Outbound instructions (docs/BACKEND_STEPS.md, B13b, "the real loop with the mocks").
+"""Outbound instructions (docs/backend-steps.md, B13b, "the real loop with the mocks").
 
 An approved decision's execution plan (di.execution.steps) goes to the enterprise systems one step at a time:
 

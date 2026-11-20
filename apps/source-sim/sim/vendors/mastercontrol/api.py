@@ -1,4 +1,4 @@
-"""MasterControl Quality Excellence REST API mock (docs/BACKEND_STEPS.md, B5b). See the package docstring for the
+"""MasterControl Quality Excellence REST API mock (docs/backend-steps.md, B5b). See the package docstring for the
 documentation followed and the assumptions.
 
     POST /mastercontrol/mc/api/oauth2/token                          client credentials -> bearer token

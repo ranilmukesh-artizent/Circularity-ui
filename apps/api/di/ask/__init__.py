@@ -1,4 +1,4 @@
-"""Ask Circularity on a language model (docs/BACKEND_STEPS.md, B16b): the product's assistant panel answered by di-api.
+"""Ask Circularity on a language model (docs/backend-steps.md, B16b): the product's assistant panel answered by di-api.
 
     POST /api/ask   a question with its page context; the answer streams as Server-Sent Events (di.ask.service)
 
