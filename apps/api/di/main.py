@@ -11,6 +11,7 @@ import di.actions.integration  # noqa: F401  (registers action handlers)
 import di.actions.workflows  # noqa: F401  (registers action handlers)
 import di.reads.cases  # noqa: F401  (registers action handlers)
 import di.reads.workspace  # noqa: F401  (registers action handlers)
+from di.ask import service as ask_service
 from di.cases import use_database_scope
 from di.config import get_settings
 from di.connectors import webhook
@@ -29,6 +30,7 @@ app.include_router(source_routes.router)
 app.include_router(webhook.router)
 app.include_router(screen_routes)
 app.include_router(stream_routes)
+app.include_router(ask_service.router)  # POST /api/ask (B16b; di.ask)
 mcp_server.mount(app)  # the MCP server at /mcp (B16; di.mcp)
 use_database_scope()
 

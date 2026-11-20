@@ -58,7 +58,7 @@ def test_admin_list_is_the_b1_figures():
 def test_what_each_check_reads():
     out = client.get("/api/checks", headers=h("admin")).json()
     assert {x["data"] for x in out["checks"]} == {"cases", "decisions", "catalog", "journal"}
-    assert len(out["checks"]) == 25 and len(out["not_run"]) == 6
+    assert len(out["checks"]) == 27 and len(out["not_run"]) == 4  # B16b runs the safety and intent-catalogue checks
 
 
 def test_needs_sign_in():

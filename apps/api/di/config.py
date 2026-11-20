@@ -1,6 +1,10 @@
 from functools import lru_cache
 
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# B16b: the Groq model Ask uses when GROQ_MODEL is empty (chosen from the account's model list: tool calling on the free tier)
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 
 
 class Settings(BaseSettings):
@@ -25,6 +29,13 @@ class Settings(BaseSettings):
     instructions: bool = False
     # a step with no matching write in the mocks is acknowledged by a simulated adapter after this many simulated hours
     simulated_ack_hours: float = 2.0
+    # B16b, Ask Circularity (di/ask): which language model answers ("groq", or "none" for the rule-based fallback only).
+    # These three are read without the DI_ prefix, as .env.example names them; the key is never logged or returned.
+    ask_provider: str = Field("groq", validation_alias="ASK_PROVIDER")
+    groq_api_key: SecretStr = Field(SecretStr(""), validation_alias="GROQ_API_KEY")
+    groq_model: str = Field("", validation_alias="GROQ_MODEL")  # empty: DEFAULT_GROQ_MODEL
+    ask_timeout_seconds: float = 20.0  # one model request; on timeout Ask falls back
+    ask_max_rounds: int = 4  # model requests per question (tool rounds), the last one without tools
 
 
 @lru_cache

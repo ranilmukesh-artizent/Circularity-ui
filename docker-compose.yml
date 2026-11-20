@@ -12,6 +12,11 @@ x-api-env: &api-env
   # (the test suite pins the clock and turns sending off for itself: apps/api/tests/conftest.py)
   DI_CLOCK: sim
   DI_INSTRUCTIONS: "true"
+  # B16b, Ask Circularity on a language model (di/ask): the key stays in the repository's local .env (git-ignored);
+  # without it, or with ASK_PROVIDER=none, Ask answers with the demo's rule-based fallback
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
+  ASK_PROVIDER: ${ASK_PROVIDER:-groq}
+  GROQ_MODEL: ${GROQ_MODEL:-}
 
 services:
   postgres:

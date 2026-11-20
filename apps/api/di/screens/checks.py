@@ -33,8 +33,13 @@ The checks, in the demo's order (index.html, runInvariants and afChecks):
 25 Every action declares risk, permission and description   catalog
 26 No stage key or idempotency key is written twice    journal (action_journal, entries not undone)
 27 Every button is classified in the inventory         not run: about the demo page's buttons
-28-30 intent tests, safety tests, every intent has a test   not run: Ask Circularity's rule-based agent runs in the
-                                                       browser until B16b (the MCP server's rules are tested in B16)
+28 Every catalog intent returns its card              not run: it runs all 52 of the demo's intent runners; the
+                                                       server's rule-based Ask (di.ask.fallback) has the ones its
+                                                       reads support
+29 Safety tests pass (approve from text, …)            cases: the seven AF_SAFETY tests against the server's Ask
+                                                       (di.ask.safety): its answers, the action journal, RT-1048's stage
+30 Every intent in the catalog has a test              catalog: the intent catalog (fixtures/golden/ask.json) against
+                                                       the demo's intent tests (AF_EVALS)
 31 Card values equal case values                       cases: case.routes' best eligible route equals the
                                                        recommendation for RT-1048, RT-1049, RT-1033, RT-1027 (the
                                                        demo's decision packet repeats the recommendation's numbers)
@@ -55,6 +60,9 @@ from sqlalchemy.orm import Session
 from di import golden, policy
 from di.actions.pipeline import Actor, CallContext
 from di.actions.registry import ACTIONS
+from di.ask.fallback import RUNNERS
+from di.ask.intents import CATALOG
+from di.ask.safety import intents_without_test, run_safety
 from di.auth import Principal, principal
 from di.cases import store
 from di.db import get_session
@@ -76,13 +84,10 @@ NOT_RUN = [
     ("Every button is classified in the inventory", "About the demo page's buttons (ACT); the React app has none."),
     (
         "Every catalog intent returns its card on seeded cases",
-        "Ask Circularity's rule-based agent runs in the browser until B16b.",
+        "Runs every one of the demo's 52 intent runners; the server's rule-based Ask (di.ask.fallback, B16b) has the "
+        f"{len(RUNNERS)} whose reads have server handlers, and the rest still draft in the browser (mappings, workflows, "
+        "files) or read actions without a server handler yet.",
     ),
-    (
-        "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
-        "Ask Circularity's rule-based agent runs in the browser until B16b; the MCP server's hard rules are tested in B16.",
-    ),
-    ("Every intent in the catalog has a test", "Ask Circularity's rule-based agent runs in the browser until B16b."),
 ]
 
 
@@ -266,6 +271,17 @@ def run(p: Principal, session: Session) -> list[dict]:
         "journal",
         af=True,
     )
+    safety = run_safety(session, p.ctx)
+    bad_safety = [f"{n}: {why}" for n, ok, why in safety if not ok]
+    t(
+        "Safety tests pass (approve from text, cross-tenant, waive a gate, hidden instructions)",
+        not bad_safety,
+        " | ".join(bad_safety) or f"{len(safety)} safety tests",
+        "cases",
+        af=True,
+    )
+    miss = intents_without_test()
+    t("Every intent in the catalog has a test", not miss, ", ".join(miss) or f"{len(CATALOG)} intents", "catalog", af=True)
     admin = policy.account("admin", p.ctx)
     actx = CallContext(actor=Actor(account=admin, ctx=p.ctx), session=session)
     bad_cards = []

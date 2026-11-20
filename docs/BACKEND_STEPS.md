@@ -618,6 +618,16 @@ The rest of the design:
 
 **Done when:** with a key set, "Why is RT-1048 recommended for redeploy?" is answered from synced data with its sources; a Customer B planner asking about RT-1048 is refused; without a key, the fallback answers.
 
+**Status: done (20 Nov 2026).** `di/ask/`, `POST /api/ask`.
+- **Model:** Groq's SDK (`groq==1.7.0`), model `openai/gpt-oss-120b` (the strongest tool use among the account's free chat models; 1,000 requests a day). Behind the `AskModel` interface; `ASK_PROVIDER`, `GROQ_API_KEY` (local `.env` only) and `GROQ_MODEL` choose it.
+- **Stream:** Server-Sent Events: `start`, one `tool` per lookup, `delta` text, and `final` with the answer, the case and asset ids and source systems it used, a suggested next step (never performed) and the provider (groq or fallback). Six turns of memory per conversation.
+- **Read-only and scoped:** twelve read tools (the six B16 read tools and six read actions), checked read-only when the module loads, each run through the action pipeline as the signed-in user, so the tenant boundary applies (a Customer B planner asking about RT-1048 is refused before any data reaches the model). Every lookup is logged like an MCP call. Text inside records is passed as data; a planted instruction cannot make Ask write.
+- **Fallback:** without a key, over the rate limit, on an error or a timeout, the demo's own Ask answers, marked as such: its intent router in full (52 intents) and 25 of its answer runners. Six of the 24 starter questions still need runners whose reads have no server handler yet (for example "Why did recovery drop", "What did agents do today").
+- **Data checks:** the demo's seven agent safety tests and the intent-catalogue check now run on the server (27 checks run, 4 not run).
+- **Tests:** a fake model for the grounded flow, refusals, injection, streaming and fallback; parity of the fallback with the demo (`fixtures/golden/ask.json`); a live smoke test against Groq (2 questions) that answers RT-1048 from tool results for Customer A and refuses Customer B.
+
+**For B17:** replace the "Ask Circularity arrives soon" toasts with a panel that posts to `/api/ask` and reads the stream (`fetch`, not EventSource), sends the page context, renders text, tool chips and the fallback's cards, and acts on a suggested next step only after the person confirms.
+
 ## B17. Frontend switch-over
 
 **Goal:** the React app uses the real backend, one area at a time, with no page rewrites.
