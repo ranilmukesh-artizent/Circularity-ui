@@ -106,6 +106,22 @@ def test_a_sync_of_a_source_that_delivers_no_files_runs_no_file_workflow(monkeyp
     assert queued() == []
 
 
+def test_a_file_source_made_in_the_app_counts_as_a_file_source(monkeypatch):
+    """delivers_files reads the sources as they are now: a file drop connected from the catalogue or made by hand
+    (here: a copy of the demo's file source under a new id) fires File triggers too; unknown ids do not."""
+    from di.reads.common import SOURCES
+    from di.workflow import live
+
+    made = {**SOURCES["rcy"], "id": "drop2"}
+    real = live.sources
+    monkeypatch.setattr(live, "sources", lambda s: {**real(s), "drop2": made})
+    with SessionLocal() as s:
+        assert triggers.delivers_files("drop2", s) is True
+        assert triggers.delivers_files("proc", s) is False
+        assert triggers.delivers_files("nope", s) is False
+    assert triggers.delivers_files("drop2") is False  # without a session: the demo's reference only
+
+
 def test_a_file_trigger_error_never_breaks_the_sync(monkeypatch):
     def boom(*_a, **_k):
         raise RuntimeError("trigger down")

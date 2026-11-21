@@ -233,6 +233,13 @@ def live_sources(s: Any) -> Iterator[None]:
         _LIVE.reset(tok)
 
 
+def src_or_live(sid: str, s: Any) -> dict | None:
+    """The source as it is now (di/workflow/live.py): a demo source as src() has it, one connected from the catalogue
+    or made by hand too; None for an unknown or deleted one. For callers outside an action (the worker's triggers)."""
+    with live_sources(s):
+        return src(sid)
+
+
 def label_in(n: dict, sources: dict[str, dict] | None) -> str:
     """label(n) with the sources as `sources` (di/workflow/live.py `sources`) has them: a source connected from the
     catalogue or made by hand by its own name, one deleted in the Connection Fabric "Deleted source". None: the

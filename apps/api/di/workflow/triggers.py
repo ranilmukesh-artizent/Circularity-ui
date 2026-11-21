@@ -198,12 +198,14 @@ def on_file(s: Session, source_id: str) -> list[str]:
     return [w["id"] for w in _matching(s, "file", source_id) if w["id"] != bound and fire(s, w["id"], LABEL["file"]) is not None]
 
 
-def delivers_files(source_id: str) -> bool:
-    """A source that delivers files (an SFTP or CSV drop: the demo's arrival channel `file`)."""
-    from di.actions.workflows import src
+def delivers_files(source_id: str, s: Any = None) -> bool:
+    """A source that delivers files (an SFTP or CSV drop: arrival channel `file`). With a session, the sources as
+    they are now (di/workflow/live.py), so a file source connected from the catalogue or made by hand counts too;
+    without one, the demo's reference."""
+    from di.actions.workflows import src, src_or_live
     from di.reads.reference import channels
 
-    so = src(source_id)
+    so = src_or_live(source_id, s) if s is not None else src(source_id)
     return so is not None and "file" in channels(so)
 
 
@@ -214,9 +216,11 @@ def file_arrived(source_id: str, records_read: int) -> list[str]:
     from di.db import SessionLocal
 
     try:
-        if records_read <= 0 or not enabled() or not delivers_files(source_id):
+        if records_read <= 0 or not enabled():
             return []
         with SessionLocal() as s:
+            if not delivers_files(source_id, s):
+                return []
             out = safely(on_file, s, source_id)
             s.commit()
         return out
