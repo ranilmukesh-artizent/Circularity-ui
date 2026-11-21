@@ -12,6 +12,7 @@ iteration, in this order. Do not start a plan before the previous one's phase ga
 | 3 | `03-crud-and-gzip.md` | a REST resource for every entity (`/api/v1/...`), writes through the action pipeline, gzip on JSON, never on streams | same + gzip/stream tests |
 | 4 | `04-async.md` | async database access, async endpoints and an async worker, end to end | same + a concurrency smoke |
 | 5 | `05-otel.md` | OpenTelemetry traces, metrics, logs; GenAI spans for Ask (Groq) and MCP spans; local Grafana LGTM | same + spans visible for a sample request |
+| 6 | `06-fabric-production.md` (user request 21 Nov 2026: runs **next**, after plan 2 tasks 1–3) | the Connection Fabric for real: encrypted per-source credentials and URLs, a configured adapter for catalogue and hand-made sources, mappings that run, canonical checks, sticky conflicts, block settings, a workflow engine that processes records on its triggers | per phase: full suites, web checks, smoke for 11 accounts, RT-1048, and the phase's Chrome walk-through |
 
 ## Order and why
 
