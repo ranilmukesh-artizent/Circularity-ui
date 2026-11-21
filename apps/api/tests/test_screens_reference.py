@@ -14,7 +14,7 @@ from di.reads import common, workspace
 from di.screens import checks
 from di.screens.nav import ISSUE_SQL
 from tests import starting
-from tests.helpers import client, h
+from tests.helpers import client, h, live_stale_sources
 
 REF = golden.load("screens/reference")
 NAV = golden.load("screens/nav")
@@ -81,7 +81,11 @@ def test_navigation(acct):
     assert r.status_code == 200, r.text
     out, want = r.json(), NAV["accounts"][acct]
     assert starting.strict(out["groups"]) == starting.strict(want["navigation"])
-    assert out["tasks"] == want["tasks"]
+    tasks = want["tasks"]
+    if acct == "developer":  # its stale or unconnected sources are the live Connection Fabric's (decision-log D-Fabric)
+        demo_stale = sum(1 for s in common.SOURCES.values() if s["status"] in ("stale", "unavailable"))
+        tasks = tasks - demo_stale + len(live_stale_sources())
+    assert out["tasks"] == tasks
     b, wb = out["badges"], want["badges"]
     assert {k: b[k] for k in ("awaiting", "inbox")} == {k: wb[k] for k in ("awaiting", "inbox")}
     assert {k: b["sections"][k] for k in ("inbox", "wffail")} == {k: wb["sections"][k] for k in ("inbox", "wffail")}
