@@ -5,14 +5,16 @@
  * How the facade stays synchronous: pages call facade functions during render (listCases(), navBadges() …). Those
  * call cached(path), which returns the last answer for that path at once. On the first read there is no
  * answer yet, so cached() throws the pending fetch: React Suspense shows the page's fallback and renders again when it
- * arrives. When data may have changed (an action, a stream event), invalidate() marks every answer stale; the pages
- * keep showing the old answer while the new one loads, then re-render (stale-while-revalidate). The answers live in a
+ * arrives. When data may have changed (an action, a stream event), invalidate() marks the answers it may have changed
+ * stale (invalidation.ts maps each action and stream event to the reads it can touch; anything unknown marks every
+ * answer stale); the pages keep showing the old answer while the new one loads, then re-render (stale-while-revalidate). The answers live in a
  * TanStack Query cache (step E6, docs/agents/plans/e6-tanstack-design.md): retries, eviction, scoped invalidation.
  */
 import { QueryClient, type Query } from '@tanstack/react-query';
 import type { Account, ActionResult } from './types';
 import type { Reference } from './reference';
 import { bump, sessionChanged } from './store';
+import { actionScope, matcher, streamScope, union, type Scope } from './invalidation';
 
 // ---------------------------------------------------------------- session
 const TOKEN_KEY = 'circ-api-token';
@@ -191,9 +193,17 @@ export const queryClient = new QueryClient({
 });
 const queries = queryClient.getQueryCache();
 
+// A query invalidated while its fetch runs: the answer on its way may predate the change, and TanStack clears
+// isInvalidated when that fetch succeeds, so the change would be lost. invalidate() notes such queries here, and the
+// listener below marks them stale again when the fetch ends, so the next read fetches once more.
+const changedDuringFetch = new WeakSet<Query>();
+
 // a fetch that ends (an answer or a refusal) re-renders the pages; not for a query already removed (sign-out)
 queries.subscribe((e) => {
-  if (e.type === 'updated' && (e.action.type === 'success' || e.action.type === 'error') && queries.get(e.query.queryHash) === e.query) bump();
+  if (e.type === 'updated' && (e.action.type === 'success' || e.action.type === 'error') && queries.get(e.query.queryHash) === e.query) {
+    if (changedDuringFetch.delete(e.query)) void queryClient.invalidateQueries({ queryKey: e.query.queryKey, exact: true, refetchType: 'none' });
+    bump();
+  }
 });
 
 const settled = () => undefined;
@@ -244,9 +254,20 @@ export function peek<T>(path: string): T | undefined {
  * refetch what pages read, keeping the old answers on screen meanwhile.
  */
 export function invalidate(match?: (key: readonly unknown[]) => boolean): void {
-  void queryClient.invalidateQueries(match ? { refetchType: 'none', predicate: (q) => match(q.queryKey) } : { refetchType: 'none' });
+  const pick = (q: Query) => {
+    if (match && !match(q.queryKey)) return false;
+    if (q.state.fetchStatus === 'fetching') changedDuringFetch.add(q);
+    return true;
+  };
+  void queryClient.invalidateQueries({ refetchType: 'none', predicate: pick });
   bump();
   scheduleSweep();
+}
+
+/** Invalidate what a change can have touched (invalidation.ts); nothing for a change that touches nothing. */
+function invalidateScope(scope: Scope): void {
+  const m = matcher(scope);
+  if (m !== null) invalidate(m);
 }
 
 /** "Try again" after a failed read: refetch every answer that failed (a refusal or an unreachable server). */
@@ -307,10 +328,10 @@ async function postAction<T>(id: string, input: Record<string, unknown>, opts: A
   }
 }
 
-/** POST /api/actions/{id}; a change makes every cached read stale. */
+/** POST /api/actions/{id}; a change makes the cached reads it can touch stale (invalidation.ts actionScope). */
 export async function apiInvoke<T>(id: string, input: Record<string, unknown> = {}, opts: ActionOptions = {}): Promise<ActionResult<T>> {
   const r = await postAction<T>(id, input, opts);
-  if (r.ok) invalidate();
+  if (r.ok) invalidateScope(actionScope(id));
   return r;
 }
 
@@ -319,6 +340,7 @@ type StreamListener = (kind: string, data: unknown) => void;
 const streamListeners = new Set<StreamListener>();
 let source: EventSource | null = null;
 let pending: number | null = null;
+let burst: Scope[] = []; // what the events since the last refetch can have changed
 
 const KINDS = ['journal', 'event', 'notification', 'sync', 'step', 'workflow']; // di/stream.py, migrations 0008-0009
 
@@ -379,11 +401,20 @@ async function connect(gen: number) {
       /* plain text */
     }
     streamListeners.forEach((l) => l(kind, data));
-    // several events often arrive together (a sync, an approval's journal and events): refetch once
-    if (pending === null) pending = window.setTimeout(() => ((pending = null), invalidate()), 150);
+    // several events often arrive together (a sync, an approval's journal and events): refetch once, what any of
+    // them can have changed (invalidation.ts streamScope; an unknown kind: everything)
+    burst.push(streamScope(kind, data));
+    if (pending === null) pending = window.setTimeout(flushBurst, 150);
   };
   for (const k of KINDS) es.addEventListener(k, handle(k) as EventListener);
   es.onmessage = handle('message');
+}
+
+function flushBurst() {
+  pending = null;
+  const scope = union(burst);
+  burst = [];
+  invalidateScope(scope);
 }
 
 function reconnectLater(gen: number) {

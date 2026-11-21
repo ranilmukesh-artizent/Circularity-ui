@@ -92,6 +92,13 @@ every caller keeps its behaviour. Uses follow, each in its own commit:
 These need the server's event kinds mapped to read paths. Until that mapping is tested on the parity routes, actions
 and the stream keep invalidating everything. So this step adds the parameter and changes no caller.
 
+**Done (21 Nov 2026):** `src/api/invalidation.ts` maps every read to an area (from its key) and every stream event
+kind and action family to the areas it can change; `client.ts` invalidates only those (a stream burst invalidates
+the union once). Unknown kinds, journal types and action families, and access changes, still invalidate everything;
+a reconnect still invalidates everything and sign-in/out still clears the cache. A read that is mid-fetch when a
+change arrives is marked stale again when the fetch ends (`changedDuringFetch`), so the change is not lost. The
+table and the reason for each mapping are in the module; `invalidation.test.ts` covers it.
+
 ## What stays the same for pages
 
 - The same imports and signatures, synchronous reads, and Suspense on the first read. A refusal still reaches the
