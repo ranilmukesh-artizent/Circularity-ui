@@ -97,8 +97,9 @@ def reset_sources(conn: Connection) -> None:
 
     Sources created in the Connection Fabric (from the catalogue or by hand) are removed with their sync history and
     queued syncs. The demo's own sources get back their reference description (vendor, interval, owner, note) and,
-    if a person paused or disconnected them, their starting status; a status the connector itself set (failing,
-    auth_expired) is left for the next sync to decide. Connector data of the demo's sources is kept."""
+    their starting status when a person paused or disconnected them or a sync left them failing or auth_expired (the
+    secrets a person rotated are deleted too, so the next sync decides again from the demo's credentials; plan 6: the
+    workflow checks read these statuses), and no retry schedule. Connector data of the demo's sources is kept."""
     ref = golden.load("sources")["sources"]
     ids = [s["id"] for s in ref]
     made = list(conn.execute(text("SELECT id FROM source_system WHERE NOT (id = ANY(:i))"), {"i": ids}).scalars())
@@ -116,7 +117,8 @@ def reset_sources(conn: Connection) -> None:
         conn.execute(
             text(
                 "UPDATE source_system SET vendor = :v, interval_min = :iv, owner = :o, note = :n, "
-                "status = CASE WHEN status IN ('paused', 'disconnected') OR (:st = 'unavailable') THEN :st ELSE status END "
+                "status = CASE WHEN status IN ('paused', 'disconnected', 'failing', 'auth_expired') OR (:st = 'unavailable') "
+                "THEN :st ELSE status END, fail_streak = 0, next_retry_at = NULL "
                 "WHERE id = :id"
             ),
             {

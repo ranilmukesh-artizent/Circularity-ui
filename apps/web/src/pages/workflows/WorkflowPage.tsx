@@ -6,14 +6,14 @@ import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import {
-  ago, analyze, evalStep, hashId, history, mappings, nowMs, NOWF, publishWorkflow, runCounts, runErrors,
+  ago, analyze, hashId, history, mappings, nowMs, NOWF, publishWorkflow, runCounts, runErrors,
   runFromLast, runOrder, saveWorkflow, savedOf, setWorkflowStatus, sourceCategoryLabel, sourceCompleteness,
-  stepInfo, systemOf, templateOf, trigText, usedBy, validate, wfStat, workflow, WF_H, WF_W, WF_WH, worldWidth, type TestRun, type Trigger, type Workflow,
+  stepInfo, systemOf, templateOf, testRunWorkflow, trigText, usedBy, validate, wfStat, workflow, WF_H, WF_W, WF_WH, worldWidth, type TestRun, type Trigger, type Workflow,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
 import { openAsk } from '../../ui/askBus';
 import { toast } from '../../ui/toast';
-import { useAction } from '../../ui/useAction';
+import { refused, useAction } from '../../ui/useAction';
 import { draftOf, edit, reload, undoRedo, useDrafts, type Draft } from './draftStore';
 import { CanvasView, canvasOps, ChecksPanel, FIXMSG, Inspector, Palette, TaskInstances, type Sel } from './Canvas';
 import { IconTile } from '../../ui/kit/IconTile';
@@ -24,6 +24,7 @@ import { useTick } from '../../ui/useTick';
 import { QuickActions, WorkflowMenu } from './WorkflowMenus';
 import { SourceMark, WorkflowStatus } from './WorkflowMarks';
 import { DeleteModal, FailedRecordsModal, RunViewModal } from './WorkflowModals';
+import { VersionsPanel } from './VersionsPanel';
 import { applyFix, duplicate, exportOne, runNow, saveTemplate, studioHref } from './workflowActions';
 import { errorLog, failedAfter, retriesOf } from './investigation';
 
@@ -65,15 +66,14 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   const viewRef = useRef<HTMLDivElement>(null);
   const checksRef = useRef<HTMLDivElement>(null);
 
-  // ---- the test run (wfRun / wfStep), painted on the canvas; starts from the workflow's last real run
+  // ---- the test run, painted on the canvas; starts from the workflow's last real run. A test run is a dry run of the
+  //      draft on the server (workflow.testRun, plan 6 C9): real records through every step, nothing written.
   const runRef = useRef<TestRun | null | undefined>(undefined);
   if (runRef.current === undefined) runRef.current = runFromLast(w.id);
-  const timer = useRef(0);
   const [, setRunV] = useState(0);
   const action = useAction();
   const paint = () => setRunV((x) => x + 1);
   const lastSeen = useRef(w.lastRun?.id);
-  useEffect(() => () => window.clearTimeout(timer.current), [w.id]);
   // a real run that finishes while no test run is shown is painted, like the demo
   useEffect(() => {
     if (w.lastRun?.id !== lastSeen.current) {
@@ -82,50 +82,43 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     }
   });
   const run = runRef.current ?? null;
-  const clearRun = useCallback(() => { window.clearTimeout(timer.current); runRef.current = null; paint(); }, []);
+  const clearRun = useCallback(() => { runRef.current = null; paint(); }, []);
 
   const g = d.graph;
   const checks = validate(g, w.kind);
-  const counts = runCounts(w.id, g, run ? run.states : null);
+  // a test run carries the records that really went in and out of each step
+  const counts = run?.counts ?? runCounts(w.id, g, run ? run.states : null);
   const ops = canvasOps(d, w.kind, setSel, clearRun);
   const WW = worldWidth(w.kind);
 
-  function step() {
-    const r = runRef.current;
-    if (!r || r.status !== 'running') return;
-    const gg = draftOf(w.id)!.graph;
-    if (r.i >= r.order.length) { r.status = Object.values(r.states).some((s) => s === 'failed') ? 'failed' : 'success'; paint(); return; }
-    const sid = r.order[r.i], n = gg.nodes.find((x) => x.id === sid)!, st = evalStep(r, gg, n), quick = ['upstream_failed', 'waiting', 'skipped'].includes(st);
-    if (!quick) { r.states[sid] = 'running'; paint(); }
-    timer.current = window.setTimeout(() => {
-      if (runRef.current !== r) return;
-      r.states[sid] = st;
-      if (st === 'held') { r.status = 'held'; analyze(gg).desc(sid).forEach((x) => (r.states[x] = 'waiting')); paint(); return; }
-      r.i++;
-      paint();
-      step();
-    }, quick ? 25 : 320);
+  /** Run the draft dry on the server; `approved` continues past Human approval (a dry run stops there: held). */
+  async function dryRun(approved: boolean, prev?: TestRun) {
+    const order = runOrder(g), now = nowMs();
+    const r: TestRun = {
+      status: 'running', states: Object.fromEntries(order.map((x) => [x, prev && prev.states[x] !== 'waiting' && prev.states[x] !== 'held' ? prev.states[x] : 'queued'])),
+      dur: prev ? { ...prev.dur } : {}, order, i: 0, approved, t0: prev?.t0 ?? now, id: prev?.id ?? 'RUN-' + hashId(w.id + now).slice(0, 5).toUpperCase(), trig: 'Manual', dry: true,
+    };
+    runRef.current = r;
+    paint();
+    const res = await testRunWorkflow(w.id, g, approved);
+    if (runRef.current !== r) return; // cleared, or a new run started, while the server ran it
+    if (refused(res, 4200)) { runRef.current = null; paint(); return; }
+    const o = res.output;
+    Object.assign(r, { status: o.status, states: o.states, dur: o.dur, order: o.order, i: o.order.length, counts: o.counts, samples: o.samples, rows: o.rows, held: o.held, note: o.note });
+    paint();
+    if (o.status !== 'held') toast('Test run ' + (o.status === 'failed' ? 'failed' : 'finished') + ': ' + fmtNumber(o.rows) + ' records' + (o.note ? '. ' + o.note : '') + '. Nothing was written.', 4200);
   }
   function testRun() {
     const e = checks.filter((x) => x.sev === 'error').length;
     if (e) { toast(`Fix ${e} error${e > 1 ? 's' : ''} before running. The checks below say what and why.`); scrollChecks(); return; }
-    clearRun();
-    const order = runOrder(g), dur: Record<string, string> = {}, now = nowMs();
-    order.forEach((x) => (dur[x] = (0.2 + (hashId(x + w.id).charCodeAt(0) % 20) / 10).toFixed(1)));
-    const r: TestRun = { status: 'running', states: {}, dur, order, i: 0, approved: false, t0: now, id: 'RUN-' + hashId(w.id + now).slice(0, 5).toUpperCase(), trig: 'Manual' };
-    order.forEach((x) => (r.states[x] = 'queued'));
-    runRef.current = r;
     if (tab !== 'studio') setTab('studio');
-    paint();
-    step();
+    void dryRun(false);
   }
   function approve() {
     const r = runRef.current;
     if (!r || r.status !== 'held') return;
     if (!can('approve')) return toast('Your role cannot approve. Switch to Approver to continue the run.');
-    r.approved = true;
-    r.status = 'running';
-    step();
+    void dryRun(true, r);
     toast('Approved in the test run. No instruction is sent to any system.');
   }
   const scrollChecks = () => checksRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -364,7 +357,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     );
   }
   if (tab === 'history') {
-    return <>{head}<Panel title="History" sub="Every run of this workflow, latest first"><RunsTable w={w} n={100} onView={(r) => setModal({ k: 'run', run: r })} /></Panel>{modals}</>;
+    return <>{head}<VersionsPanel w={w} dirty={d.dirty} /><Panel title="Runs" sub="Every run of this workflow that happened, latest first"><RunsTable w={w} n={100} onView={(r) => setModal({ k: 'run', run: r })} /></Panel>{modals}</>;
   }
   if (tab === 'docs') {
     const o = runOrder(g);

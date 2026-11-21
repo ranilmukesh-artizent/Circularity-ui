@@ -6,15 +6,17 @@ journaled call). A `flush` step is where the demo's run timers fired: here the q
 in-process (the worker is stopped during the tests). Then the Workflow Studio's reads (the B14 endpoints) are compared
 with what the demo's own functions returned.
 
-**What a run draws at random.** The demo draws a run's duration and record count with Math.random, not with the
-action's seeded generator, so the server cannot reproduce them (it draws its own, seeded from the run, in the same
-ranges). For the runs a scenario makes, these fields are left out of the comparison, with what follows from them:
-- the run's `dur` and `rows` (in the recent runs, the workflow's `last` and its history) and `lastRun.t0` (the start,
-  now - duration), and the duration and record count of the earlier runs the history derives from the last one;
-- the records in and out of each step (`run_counts`): compared as which steps carried records and which did not;
-- the failed records (`failed_rows`, one per record validation rejected, a share of the run's records): compared as
-  a prefix, since each row is a function of its position only.
-Everything else (the states, the note, the per-step durations, the run ids, the success counts) is compared exactly.
+**Runs are real (plan 6 C5, decision D-Fabric).** The demo simulated a run's outcome; the server runs the workflow
+through the engine, over the records its sources really send. For the runs a scenario makes, the comparison keeps
+what does not depend on those records (the run ids and keys, the trigger, the run order, the run counts, the tries
+setting) and asserts the rest as behaviour (`_check_run_fields`): a measured duration and record count, per-step
+counts that never grow along a step, and a run that fails exactly where the demo's failed (a failing step, a check
+error, a source that is not connected). The step counts (`run_counts`) and failed records (`failed_rows`) are the
+ones the run recorded; the starting workflows' seeded runs never ran, so they have none. The call results (the
+refusals included) are still compared exactly.
+**History lists only runs that happened (plan 6 C8, a deliberate change).** The demo's history added earlier runs
+derived from a workflow's counts; the server does not, so the history is compared with the demo's real entries
+(`_real_history`).
 
 **New workflow starts minimal (a deliberate change, decision log 21 Nov 2026).** The demo gave a new ingest, outbound
 or decision workflow its full template graph; here New workflow starts from the blocks it needs to run (tpl
@@ -151,14 +153,19 @@ def _mask_wf(w: dict, new: set[str]) -> dict:
     if w.get("saved"):
         w["saved"] = json.loads(w["saved"])
     lr = w.get("lastRun")
-    if lr and lr.get("id") in new:
-        w["lastRun"] = {k: v for k, v in lr.items() if k != "t0"}
-        w["last"] = {k: v for k, v in w["last"].items() if k not in ("dur", "rows")}
+    if lr and lr.get("id") in new:  # a real run: only what does not depend on the records (see the module docstring)
+        w["lastRun"] = {k: v for k, v in lr.items() if k in ("id", "trig", "retries")}  # order: of the version that ran
+        w["last"] = {k: v for k, v in w["last"].items() if k == "ts"}
+        w.pop("okN", None)
+        w.pop("stat", None)  # follows the real run's state (asserted in _check_run_fields)
     return w
 
 
+_RUN_OUTCOME = ("dur", "rows", "state", "note")
+
+
 def _mask_run(r: dict, new: set[str], drop_all: bool = False) -> dict:
-    return {k: v for k, v in r.items() if k not in ("dur", "rows")} if drop_all or r["id"] in new else r
+    return {k: v for k, v in r.items() if k not in _RUN_OUTCOME} if drop_all or r["id"] in new else r
 
 
 def _ran(w: dict | None, new: set[str]) -> bool:
@@ -170,12 +177,29 @@ def _list_view(w: dict) -> dict:
     return {k: v for k, v in w.items() if k not in ("graph", "saved", "tpl")} | {"stat": stat}
 
 
-def _check_run_fields(w: dict) -> None:
-    """The server's own draws are in the demo's ranges."""
-    last = w["last"]
-    assert 1 <= last["dur"] <= 4.5, last
-    lo, hi = (1, 6) if w["cat"] == "Outbound" else (1, 1) if w["cat"] == "Decision" else (30, 900)
-    assert lo <= last["rows"] <= hi, last
+def _real_history(hist: list[dict]) -> list[dict]:
+    """History lists only the runs that happened (plan 6 C8, a deliberate change; see test_screens_workflows): the
+    demo's real runs or, when it had none, the workflow's last run, without the earlier runs it derived from the counts."""
+    real = [x for x in hist if x.get("real")]
+    return real or hist[:1]
+
+
+def _check_run_fields(w: dict, want: dict) -> None:
+    """A real run (plan 6 C5): a measured duration, the records it read, per-step counts and tries, and it fails where
+    the demo's run failed (a failing step, a check error, a source that is not connected) and only there."""
+    last, lr = w["last"], w["lastRun"]
+    assert last["state"] in ("success", "warning", "failed") and lr["status"] == last["state"], last
+    # a published workflow runs its published version (plan 6 C8): a failure toggled on a saved draft does not run
+    with engine.connect() as conn:
+        stored = conn.execute(
+            text("SELECT data FROM state_item WHERE collection = 'workflows' AND id = :i"), {"i": w["id"]}
+        ).scalar_one()
+    if norm(wf.graph_for_run(stored)) == norm(stored.get("graph")):
+        assert (last["state"] == "failed") == (want["last"]["state"] == "failed"), (w["id"], last, want["last"])
+    assert isinstance(last["rows"], int) and last["rows"] >= 0 and last["dur"] >= 0, last
+    assert set(lr["counts"]) == set(lr["order"]) and set(lr["attempts"]) <= set(lr["order"]), lr
+    assert all(c["out"] <= c["in"] for c in lr["counts"].values()), lr["counts"]
+    assert lr["key"].startswith(lr["id"])
 
 
 # ---------------------------------------------------------------- the replay
@@ -213,14 +237,20 @@ def test_scenario(fresh, name):
 
     # the list: workflows, recent runs, attention
     got = client.get("/api/screens/workflows", headers=h("admin")).json()
-    want_wf = [_list_view(_mask_wf(w, new)) for w in obs["workflows"]]
+    want_wf = [_mask_wf(_list_view(w), new) for w in obs["workflows"]]
     got_wf = [_mask_wf(w, new) for w in got["workflows"]]
-    assert norm(got_wf) == norm(want_wf), f"{name}: workflows"
+    for a, b in zip(norm(got_wf), norm(want_wf), strict=False):
+        diff = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+        assert not diff, f"{name}: {a.get('id')} differs in {diff}: {[(k, a.get(k), b.get(k)) for k in diff]}"[:1500]
+    assert len(got_wf) == len(want_wf), f"{name}: workflows"
+    ran_ids = {w["id"] for w in got["workflows"] if _ran(w, new)}
     for w in got["workflows"]:
-        if _ran(w, new):
-            _check_run_fields(w)
+        if w["id"] in ran_ids:
+            _check_run_fields(w, next(x for x in obs["workflows"] if x["id"] == w["id"]))
     assert norm([_mask_run(x, new) for x in got["runs"]]) == norm([_mask_run(x, new) for x in obs["runs"]]), f"{name}: runs"
-    assert got["attention"] == obs["attention"], f"{name}: attention"
+    # a workflow that ran is listed as failing by its real run (its note is the real one)
+    att = [a for a in got["attention"] if a.get("go") not in ran_ids]
+    assert att == [a for a in obs["attention"] if a.get("go") not in ran_ids], f"{name}: attention"
 
     # each workflow the scenario looked at
     for wid, want in obs["detail"].items():
@@ -232,24 +262,21 @@ def test_scenario(fresh, name):
         d = res.json()
         w_want = next(x for x in obs["workflows"] if x["id"] == wid)
         ran = _ran(w_want, new)
-        assert norm(_mask_wf(d["workflow"], new)) == norm(_mask_wf(w_want, new) | {"stat": want["stat"]}), f"{name}: {wid}"
+        assert norm(_mask_wf(d["workflow"], new)) == norm(_mask_wf(w_want | {"stat": want["stat"]}, new)), f"{name}: {wid}"
         assert norm(d["template"]) == norm(want["template"]), f"{name}: {wid} template"
         hist_got = [_mask_run(x, new, drop_all=ran) for x in d["history"]]
-        hist_want = [_mask_run(x, new, drop_all=ran) for x in want["history"]]
+        hist_want = [_mask_run(x, new, drop_all=ran) for x in _real_history(want["history"])]
         assert norm(hist_got) == norm(hist_want), f"{name}: {wid} history"
         rfl_got, rfl_want = d["run_from_last"], want["run_from_last"]
         if ran:
-            rfl_got, rfl_want = ({k: v for k, v in x.items() if k != "t0"} for x in (rfl_got, rfl_want))
+            outcome = ("t0", "states", "dur", "status", "warn", "order", "i")  # the version that ran (C8)
+            rfl_got, rfl_want = ({k: v for k, v in x.items() if k not in outcome} for x in (rfl_got, rfl_want))
         assert norm(rfl_got) == norm(rfl_want), f"{name}: {wid} run_from_last"
-        if ran:
-            pattern = {k: (v["in"] > 0, v["out"] > 0, v["rej"] > 0) for k, v in want["run_counts"].items()}
-            assert {k: (v["in"] > 0, v["out"] > 0, v["rej"] > 0) for k, v in d["run_counts"].items()} == pattern, wid
-            n = min(len(d["failed_rows"]), len(want["failed_rows"]))
-            assert d["failed_rows"][:n] == want["failed_rows"][:n], f"{name}: {wid} failed rows"
-            assert bool(d["failed_rows"]) == bool(want["failed_rows"]), f"{name}: {wid} failed rows"
-        else:
-            assert norm(d["run_counts"]) == norm(want["run_counts"]), f"{name}: {wid} run_counts"
-            assert d["failed_rows"] == want["failed_rows"], f"{name}: {wid} failed rows"
+        if ran:  # what the run really counted and held (plan 6 C5)
+            assert d["run_counts"] == d["workflow"]["lastRun"]["counts"], wid
+            assert len(d["failed_rows"]) == min(40, d["workflow"]["lastRun"]["held"]), wid
+        else:  # the seeded runs never ran: no counts, no held records
+            assert d["run_counts"] == {} and d["failed_rows"] == [], f"{name}: {wid}"
 
 
 # ---------------------------------------------------------------- the ports, against the recorded demo data
@@ -260,16 +287,15 @@ def test_template_graphs(w):
 
 
 @pytest.mark.parametrize("w", B14["starting"], ids=lambda w: w["id"])
-def test_run_simulation_matches_last_runs(w):
-    """wfSimOutcome on a starting workflow gives the step states and per-step durations of its recorded last run,
-    except where the demo's seeding injected a failure (Depot Repair's validation step)."""
+def test_runs_follow_the_demo_run_order(w):
+    """The engine runs steps in the demo's run order (wfOrder): the order of every starting workflow's recorded last
+    run. The simulation that replayed its states and durations is gone (plan 6 C5: runs are real; their outcome is
+    asserted as behaviour in test_scenario and tests/test_workflow_engine.py)."""
+    from di.reads.workflows import _order
+
     lr = w.get("lastRun")
-    if not lr or w["src"] == "repair":
-        return
-    o = wf.sim_outcome(dict(w))
-    assert o["states"] == lr["states"] and o["order"] == lr["order"] and o["status"] == lr["status"]
-    assert norm(o["dur"]) == norm(lr["dur"])
-    assert o["note"] == lr["note"]
+    if lr:
+        assert _order(w.get("graph") or wf.build(w["tpl"])) == lr["order"]
 
 
 # ---------------------------------------------------------------- block settings (plan 6, task C2)

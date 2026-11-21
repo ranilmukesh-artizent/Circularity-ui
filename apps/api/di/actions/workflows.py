@@ -1,41 +1,49 @@
 """Workflow Studio actions (docs/backend-steps.md, B15 part 2): workflow.save, publish, setStatus, create, duplicate,
 delete and run, and the read workflow.validate; and three the demo ran in the browser without an action, declared
 here beside the catalog: workflow.saveTemplate (frWfTpl), workflow.reprocess (frReproc), workflow.applyFix
-(frFixApply). workflow.save also takes the Settings tab's run settings (`retries`, `alert`: frWfSet) and
+(frFixApply); and workflow.restore (plan 6 C8). workflow.save also takes the Settings tab's run settings (`retries`, `alert`: frWfSet) and
 workflow.create a saved template (`tpl`: frTplUse). Runs use the retries and raise the alert the settings ask for.
 
 Ports of the demo's handlers (index.html, `defAction('workflow.save', ...)` and the ones after it) and of what they call:
 the template graphs (wfBuild with the Connection Fabric's extra branches), the checks (wfValidate, with the Fabric's
-override for start and branch steps) and the run simulation (wfSimRun, wfEval, wfSimOutcome). They write the two
+override for start and branch steps); runs go through the workflow engine (di/workflow/engine.py). They write the two
 workspace collections the Workflow Studio reads (di/screens/workflows.py): "workflows" (S.wf.list) and
 "workflow_runs" (S.wf.runs). The pipeline has validated the input and checked the permission; the guards here are the
 demo's, in its order. None of the workflow actions has an idempotency key in the demo; repeats are refused by state
 (already published, already running).
 
-**Runs are worker jobs.** The demo's workflow.run marks the workflow running and finishes the run after a timer (one
-to four and a half seconds), computing the outcome all at once. Here workflow.run marks the workflow running, adds a
-run record in state "running" to "workflow_runs" and queues a `workflow.run` job; the action returns at once with the
-demo's output ({id, name}) plus `run`, the run record's id. The job (`run_job`, registered in di/worker.py) walks the
-graph in its run order as the canvas' test run does (wfStep): each step goes to "running" and then to its state
-(steps that do nothing - upstream failed, waiting, skipped - go straight to their state), and after each change the run
-record is written with the states so far and the records in and out of the finished steps (frRunCounts). Each write
-is a commit, so it reaches GET /api/stream as a `workflow` event (migration 0009). At the end the workflow gets its
-last run (`last`, `lastRun`, the counts) and the run record takes the demo's shape {id, wf, name, ts, trig, dur, rows,
-state, note}.
+**Runs are worker jobs, and they are real (plan 6 C5, C7).** workflow.run marks the workflow running, adds a run
+record in state "running" to "workflow_runs" and queues a `workflow.run` job; the action returns at once with the
+demo's output ({id, name}) plus `run`, the run record's key. The job (`run_job`, registered in di/worker.py) runs the
+version that runs (graph_for_run) through the engine (di.workflow.engine.run_graph): connectors read the source,
+mapping and canonical steps write the canonical store, transforms change the records, rejected records are held in
+failed_record. After each state change the run record is written with the states so far and the real records in and
+out of the finished steps; each write is a commit, so it reaches GET /api/stream as a `workflow` event (migration
+0009). At the end the workflow gets its last run (`last`, `lastRun` with the real states, per-step durations, counts,
+tries and the run key its held records are filed under) and the run record takes the demo's shape {id, wf, name, ts,
+trig, dur, rows, state, note}. Durations and record counts are measured, no longer drawn (decision D-Fabric).
 
-**Random draws.** The demo draws a run's duration and record count with Math.random (not the action's seeded
-generator), so they cannot be reproduced; here they come from mulberry32 seeded from the run record's key, in the
-demo's ranges. Everything else in a run (the step states, the note, the per-step durations, the run id) is
-a function of the graph and the sources, as in the demo.
+**One run at a time; retries.** The job holds the workflow's run lock (RUN_LOCK) for the whole run: a second job of
+the same workflow is dropped (its record removed), Run now is refused while a run is queued or going (run_active),
+and a run that crashes is closed as failed. A worker that dies loses the lock with its connection; the next Run now
+closes that run as "Failed: worker lost" (reap_lost_run). A step that raises is tried again the workflow's Retries
+times (1 s, 2 s, 4 s ... apart); the tries are kept per step for the run table's Try column.
 
 **Block settings (plan 6 C2).** A node may carry `cfg`, the settings of its block (di/workflow/blocks.py) that differ
 from the defaults; save, publish and create store only those (blocks.compact_graph), so a graph whose settings are all
 the defaults is the demo's graph. The checks add one error per bad setting, naming the block and the field
 (cfg_checks); save keeps a bad setting, publish refuses it (its guard counts the errors).
 
-**Not ported.** A manual run of an ingest workflow also starts the demo's simulated sync of its source (startSync)
-and bumps the Command Centre's hourly health bar (hhBump); the backend's sources sync through the connectors (B9)
-and its health bars are fixed, so neither happens here.
+**Versions, reprocess and the fix (plan 6 C8).** Every save, publish, restore and applied fix keeps the version it makes
+(graph and settings) in "workflow_versions" (di/workflow/versions.py); workflow.restore puts an earlier one back as a
+new version. A published workflow carries the version that was published (`pub`), and runs use it (graph_for_run,
+settings_for_run) while a person saves drafts; a published workflow whose saved version is newer can be published
+again. workflow.reprocess sends the held records back through the engine from the step that rejected them;
+workflow.applyFix gives the failed step its settings from the last good version, with a text that says what changed.
+
+**Not ported.** The demo's manual run of an ingest workflow starts a simulated sync of its source (startSync) and
+bumps the Command Centre's hourly health bar (hhBump). Here the run itself reads the source and writes the canonical
+store (under the source's sync lock, from its cursors), but records no sync_run row; the health bars are fixed.
 
 **Times.** The workspace clock (di/clock.py, `ctx.now`): pinned to the demo's as-of time in the tests, as the demo's
 Date.now() is in its sandbox.
@@ -44,9 +52,9 @@ Date.now() is in its sandbox.
 import copy
 import json
 import logging
-import math
 import time
 from collections.abc import Callable
+from contextvars import ContextVar
 from typing import Any, cast
 
 from sqlalchemy import text
@@ -57,10 +65,10 @@ from di.actions.pipeline import CallContext
 from di.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
 from di.engine.jsmath import js_round
 from di.reads import workflows as studio
-from di.reads.common import SOURCES, STARTING_MAPPINGS, hash_id, iso, ms, to_fixed
+from di.reads.common import SOURCES, hash_id, iso, ms
 from di.reads.constants import MAP_TARGET, MAPPINGS, SRC_TYPES, TOOLS
 from di.reads.reference import channels, lists
-from di.workflow import blocks
+from di.workflow import binding, blocks, versions
 
 log = logging.getLogger("di.workflows")
 _REF = lists()
@@ -98,6 +106,10 @@ _ID = {"id": {"req": True, "t": "string"}}
 _declare("workflow.saveTemplate", "Save workflow as template", "Save a workflow's graph as a template for New workflow.", _ID)
 _declare("workflow.reprocess", "Reprocess failed records", "Send the records the latest run held back through validation.", _ID)
 _declare("workflow.applyFix", "Apply the suggested fix", "Apply the suggested fix for the step the last run failed at.", _ID)
+_declare(
+    "workflow.restore", "Restore a workflow version", "Put an earlier version's graph and settings back as a new version.",
+    _ID | {"ver": {"req": True, "t": "string"}},
+)  # fmt: skip
 ACTIONS["workflow.save"].input |= {"retries": {"req": False, "t": "number"}, "alert": {"req": False, "t": "string"}}
 ACTIONS["workflow.create"].input |= {"tpl": {"req": False, "t": "string"}}
 # the canvas' test run (wfStep): a step that runs shows "running" for 320 ms; one that does nothing takes 25 ms.
@@ -177,9 +189,24 @@ TRIG_L: dict[str, Callable[[dict], str]] = {
 
 
 # ---------------------------------------------------------------- small ports
+# The sources the checks read (plan 6 C10): the demo's reference, or, while `validate(..., s=session)` runs, the
+# sources as they are now (di/workflow/live.py: paused, disconnected, failing ... over the demo's statuses). The field
+# mappings likewise. Set per call (a context variable), so the ports below keep their signatures.
+_LIVE: ContextVar[dict[str, dict] | None] = ContextVar("workflow_live_sources", default=None)
+_LIVE_MAPS: ContextVar[dict[str, list] | None] = ContextVar("workflow_live_mappings", default=None)
+
+
 def src(sid: str | None) -> dict | None:
-    """SRC: the source reference (the demo's SOURCES)."""
-    return SOURCES.get(sid) if isinstance(sid, str) else None
+    """SRC: the source (the demo's SOURCES, or the live sources while the checks read them)."""
+    if not isinstance(sid, str):
+        return None
+    lv = _LIVE.get()
+    return (lv if lv is not None else SOURCES).get(sid)
+
+
+def _maps() -> dict[str, list]:
+    lm = _LIVE_MAPS.get()
+    return lm if lm is not None else MAPPINGS
 
 
 def src_or(sid: str) -> dict:
@@ -521,6 +548,8 @@ def _validate_base(g: dict, kind: str) -> list[dict]:
                 add("warn", nid, f"{s['name']} is {s['fresh']} old. Predictions fall back to the last fresh data and say so.")
             elif s["status"] == "manual":
                 add("info", nid, f"{s['name']} is a manual import. It supports evaluation, not live automation.")
+            if s.get("paused"):  # paused in the Connection Fabric (plan 6 C10)
+                add("warn", nid, f"{s['name']} is paused. Runs read nothing from it until it is resumed.")
             st, vis = [(nid, False, False, False)], set[tuple[str, bool, bool, bool]]()
             bad: dict[str, None] = {}
             hit = no_ing = no_val = False
@@ -581,7 +610,7 @@ def _validate_base(g: dict, kind: str) -> list[dict]:
                     nid,
                     f"{lb} is fed by {', '.join(str(SH.get(c['ref'])) for c in anc)}. Field names would not line up.",
                 )
-            if not MAPPINGS.get(ref):
+            if not _maps().get(ref):
                 add("error", nid, f"No field mapping is defined for {SH.get(ref)} yet.")
             if not ns:
                 add("warn", nid, f"{lb} does not lead to a canonical model.")
@@ -695,8 +724,31 @@ def _validate_base(g: dict, kind: str) -> list[dict]:
     return sorted(out, key=lambda o: _RANK[o["sev"]])
 
 
-def validate(g: dict, kind: str) -> list[dict]:
-    """wfValidate: errors, warnings and notes, each with the step it belongs to, errors first."""
+def validate(g: dict, kind: str, s: Any = None) -> list[dict]:
+    """wfValidate: errors, warnings and notes, each with the step it belongs to, errors first. With a session `s` the
+    checks read the sources and mappings as they are now and check field settings against the fields the source's
+    records carry (plan 6 C10, di/workflow/live.py); without one, the demo's reference (the AI builder's plans)."""
+    if s is None:
+        return _validate(g, kind, None)
+    from di.workflow import live
+
+    maps = live.mappings(s)
+    t1, t2 = _LIVE.set(live.sources(s)), _LIVE_MAPS.set(maps)
+    known: dict[str, set[str] | None] = {}
+
+    def fields_of(sid: str) -> set[str] | None:
+        if sid not in known:
+            known[sid] = live.fields(s, sid, maps)
+        return known[sid]
+
+    try:
+        return _validate(g, kind, fields_of)
+    finally:
+        _LIVE.reset(t1)
+        _LIVE_MAPS.reset(t2)
+
+
+def _validate(g: dict, kind: str, fields_of: Callable[[str], set[str] | None] | None) -> list[dict]:
     out, A = _validate_base(g, kind), _Graph(g)
     by = {n["id"]: n for n in g["nodes"]}
 
@@ -733,8 +785,21 @@ def validate(g: dict, kind: str) -> list[dict]:
         x = _fr_xf(n["ref"])
         if x and x.get("start") and has_pred:
             out.append({"sev": "warn", "id": n["id"], "msg": f"{x['label']} starts a workflow, so nothing should feed it."})
-    out += cfg_checks(g)
+    out += cfg_checks(g, fields_of)
     return sorted(out, key=lambda o: _RANK[o["sev"]])
+
+
+def _fields_for(A: "_Graph", nid: str, fields_of: Callable[[str], set[str] | None]) -> list[str] | None:
+    """The field names the records reaching a step carry: those of every read connector upstream of it (sorted), or
+    None when it has none or one of them is not known (the field checks are then skipped)."""
+    out: set[str] = set()
+    conns = [A.by[i]["ref"] for i in A.anc(nid) if A.by[i]["k"] == "conn"]
+    for sid in dict.fromkeys(conns):
+        f = fields_of(sid)
+        if f is None:
+            return None
+        out |= f
+    return sorted(out) if conns else None
 
 
 def _resources(sid: str) -> list[str] | None:
@@ -748,10 +813,12 @@ def _resources(sid: str) -> list[str] | None:
         return None
 
 
-def cfg_checks(g: dict) -> list[dict]:
+def cfg_checks(g: dict, fields_of: Callable[[str], set[str] | None] | None = None) -> list[dict]:
     """The block settings' errors (plan 6 C2), one per problem, each naming the block and the field. A node without
-    `cfg` has the defaults, which always pass, so the demo's graphs get none."""
+    `cfg` has the defaults, which always pass, so the demo's graphs get none. `fields_of(source id)`: the fields a
+    source's records carry (plan 6 C10); with it, a field setting naming a field the records lack is an error."""
     out = []
+    A = _Graph(g) if fields_of is not None else None
     for n in g["nodes"]:
         if n.get("cfg") is None:
             continue
@@ -762,87 +829,14 @@ def cfg_checks(g: dict) -> list[dict]:
         ctx: dict[str, Any] = {"label": lb}
         if n["k"] == "conn":
             ctx["resources"] = _resources(n["ref"])
+        elif A is not None and fields_of is not None and n["id"] in A.by:
+            ctx["fields"] = _fields_for(A, n["id"], fields_of)
         out += [{"sev": "error", "id": n["id"], "msg": m} for m in blocks.cfg_errors(n, ctx)]
     return out
 
 
-def errors(g: dict, kind: str) -> list[dict]:
-    return [e for e in validate(g, kind) if e["sev"] == "error"]
-
-
-# ---------------------------------------------------------------- the run simulation (wfEval, wfSimRun, wfSimOutcome)
-def evaluate(states: dict, A: _Graph, n: dict, approved: bool = True) -> str:
-    """wfEval: a step's state from its predecessors' states, its source and its failure flag."""
-    ps = [states.get(p) for p in A.pred[n["id"]]]
-    if any(s in ("failed", "upstream_failed") for s in ps):
-        return "upstream_failed"
-    if any(s in ("held", "waiting") for s in ps):
-        return "waiting"
-    if n["k"] == "fixed":
-        f = FXD[n["ref"]]
-        needs = bool(f.get("in") and not f.get("start"))
-    else:
-        needs = n["k"] != "conn"
-    if needs and (not ps or all(s == "skipped" for s in ps)):
-        return "skipped"
-    if n.get("fail"):
-        return "failed"
-    if n["k"] in ("conn", "wconn"):
-        s = src_or(n["ref"])
-        if s["status"] == "unavailable":
-            return "failed"
-        if s["status"] == "stale":
-            return "warning"
-    if n["k"] == "fixed" and n["ref"] == "appr" and not approved:
-        return "held"
-    return "success"
-
-
-def step_dur(nid: str, wid: str) -> float:
-    """A step's duration in the run: +(.2 + (hashId(id + wf).charCodeAt(0) % 20) / 10).toFixed(2)."""
-    return float(to_fixed(0.2 + (ord(hash_id(nid + wid)[0]) % 20) / 10, 2))
-
-
-def sim_outcome(w: dict) -> dict:
-    """wfSimOutcome (a manual run: no injected failure): every step's state, the run's state and its note."""
-    g = graph_of(w)
-    A, order = _Graph(g), studio._order(g)
-    states: dict[str, str] = {}
-    dur: dict[str, float] = {}
-    bad = None
-    for nid in order:
-        st = evaluate(states, A, A.by[nid])
-        states[nid] = st
-        dur[nid] = step_dur(nid, w["id"])
-        if st == "failed" and bad is None:
-            bad = nid
-    vs = list(states.values())
-    status = "failed" if "failed" in vs else "warning" if "warning" in vs else "success"
-    note = ""
-    if bad:
-        n = A.by[bad]
-        note = label(n) + (" has no connected feed" if n["k"] in ("conn", "wconn") else " failed")
-    elif status == "warning":
-        s = next(
-            (x for x in (src_or(n["ref"]) for n in g["nodes"] if n["k"] in ("conn", "wconn")) if x["status"] == "stale"), None
-        )
-        note = f"{s['name']} feed is stale; last fresh data used" if s else ""
-    state_ = status
-    er = errors(g, w["kind"])
-    if state_ != "failed" and er:
-        states[er[0]["id"]] = "failed"
-        for d in A.desc(er[0]["id"]):
-            states[d] = "upstream_failed"
-        status = state_ = "failed"
-        msg = er[0]["msg"]
-        note = msg[:94] + "…" if len(msg) > 96 else msg
-    if state_ == "success":
-        mn = next(
-            (x for x in (src_or(n["ref"]) for n in g["nodes"] if n["k"] in ("conn", "wconn")) if x["status"] == "manual"), None
-        )
-        if mn:
-            note = f"{mn['name']} is a controlled import"
-    return {"state": state_, "note": note, "states": states, "dur": dur, "order": order, "status": status}
+def errors(g: dict, kind: str, s: Any = None) -> list[dict]:
+    return [e for e in validate(g, kind, s) if e["sev"] == "error"]
 
 
 # ---------------------------------------------------------------- helpers for the handlers
@@ -904,6 +898,7 @@ def _settings_problem(i: dict[str, Any]) -> tuple[str, str] | None:
 @implement("workflow.save")
 def save(i: dict[str, Any], ctx: CallContext):
     w = _must(ctx, i["id"], for_update=True)
+    _before_change(ctx, w)
     w["graph"] = blocks.compact_graph(copy.deepcopy(i["graph"]))  # settings: only those that differ from the defaults
     w["name"] = i["name"].strip()
     if i.get("owner") is not None:
@@ -922,8 +917,78 @@ def save(i: dict[str, Any], ctx: CallContext):
         {"ver": w["ver"], "by": _by(ctx), "at": iso(now), "note": i.get("note") or "Saved", "prep": ctx.preparer},
         *(w.get("hist") or []),
     ]
+    versions.keep(ctx.session, w, _by(ctx), iso(now), i.get("note") or "Saved")
     _put(ctx, w)
     return {"id": w["id"], "ver": w["ver"], "name": w["name"]}
+
+
+# ---------------------------------------------------------------- versions (plan 6 C8; di/workflow/versions.py)
+def _before_change(ctx: CallContext, w: dict[str, Any]) -> None:
+    """Before a change makes a new version: keep the current one, and, for a published workflow that has not recorded
+    its published version yet (a starting one), record it, so its runs keep using it while drafts are saved."""
+    graph_of(w)
+    versions.keep_prior(ctx.session, w, iso)
+    if w.get("status") in ("published", "paused") and not w.get("pub"):
+        _set_pub(w)
+
+
+def _set_pub(w: dict[str, Any]) -> None:
+    """The version that runs: the workflow as it is now."""
+    w["pub"] = {"ver": w["ver"]} | versions.snapshot(w)
+
+
+def graph_for_run(w: dict[str, Any]) -> dict:
+    """The graph a run of the workflow uses: the published version's (kept while drafts are saved), or, for a workflow
+    that is not published (a draft tried with Run now), its saved graph."""
+    pub = w.get("pub")
+    return pub["graph"] if pub else graph_of(w)
+
+
+def settings_for_run(w: dict[str, Any]) -> dict:
+    """The run settings (retries, alert, trigger) of the version that runs."""
+    pub = w.get("pub")
+    if pub:
+        return dict(pub.get("settings") or {})
+    return {k: w[k] for k in versions.SETTINGS if w.get(k) is not None}
+
+
+@guard("workflow.restore")
+def restore_guard(i: dict[str, Any], ctx: CallContext):
+    w = _get(ctx, i["id"])
+    if w is None:
+        return _not_found(i)
+    if i["ver"] == w["ver"]:
+        return "conflict", f"v{i['ver']} is the current version."
+    if versions.get(ctx.session, w["id"], i["ver"]) is None:
+        return "not_found", f"No version {i['ver']} of {w['name']}."
+    return None
+
+
+@implement("workflow.restore")
+def restore(i: dict[str, Any], ctx: CallContext):
+    """Restore: the version's graph and settings become the workflow's, as a new version (a draft change: a published
+    workflow keeps running its published version until it is published again)."""
+    w = _must(ctx, i["id"], for_update=True)
+    v = versions.get(ctx.session, w["id"], i["ver"])
+    if v is None:  # the guard refused it
+        raise ActionError("not_found", f"No version {i['ver']} of {w['name']}.")
+    _before_change(ctx, w)
+    w["graph"] = copy.deepcopy(v["graph"])
+    st = v.get("settings") or {}
+    for k in versions.SETTINGS:
+        if st.get(k) is not None:
+            w[k] = copy.deepcopy(st[k])
+        elif k in ("retries", "alert"):
+            w.pop(k, None)
+    bump(w)
+    now = _now(ctx)
+    note = f"Restored v{i['ver']}"
+    w.update(updated=now, dirty=False, warned=False)
+    w["saved"] = snap(w)
+    w["hist"] = [{"ver": w["ver"], "by": _by(ctx), "at": iso(now), "note": note, "prep": ctx.preparer}, *(w.get("hist") or [])]
+    versions.keep(ctx.session, w, _by(ctx), iso(now), note)
+    _put(ctx, w)
+    return {"id": w["id"], "name": w["name"], "ver": w["ver"], "from": i["ver"]}
 
 
 @guard("workflow.publish")
@@ -931,26 +996,33 @@ def publish_guard(i: dict[str, Any], ctx: CallContext):
     w = _get(ctx, i["id"])
     if w is None:
         return _not_found(i)
-    if w["status"] == "published":
+    # a published workflow whose saved version is not the one that runs (plan 6 C8) can publish that version
+    if w["status"] == "published" and not (w.get("pub") and w["pub"]["ver"] != w["ver"]):
         return "duplicate", f"{w['name']} is already published"
-    n = len(errors(i.get("graph") or graph_of(w), w["kind"]))
+    n = len(errors(i.get("graph") or graph_of(w), w["kind"], ctx.session))
     return ("conflict", f"Cannot publish: {n} error{'s' if n > 1 else ''} in the checks. Fix them first.") if n else None
 
 
 @implement("workflow.publish")
 def publish(i: dict[str, Any], ctx: CallContext):
     w = _must(ctx, i["id"], for_update=True)
-    graph_of(w)
+    _before_change(ctx, w)
     gi = blocks.compact_graph(copy.deepcopy(i["graph"])) if i.get("graph") is not None else None
+    bumped = False
     if gi is not None and (w.get("dirty") or gi != w.get("graph")):
         w["graph"] = gi
         w["saved"] = snap(w)
         bump(w)
         w["dirty"] = False
+        bumped = True
     now = _now(ctx)
     w["status"], w["updated"] = "published", now
     w["hist"] = [{"ver": w["ver"], "by": _by(ctx), "at": iso(now), "note": "Published"}, *(w.get("hist") or [])]
+    if bumped:  # a new version; otherwise the saved version, kept already, is the one published
+        versions.keep(ctx.session, w, _by(ctx), iso(now), "Published")
+    _set_pub(w)
     _put(ctx, w)
+    binding.rebind_for(ctx.session, w)  # its source's syncs now run it (plan 6 C5)
     return {"id": w["id"], "ver": w["ver"], "name": w["name"], "trig": trig_text(w["trig"])}
 
 
@@ -961,7 +1033,7 @@ def set_status_guard(i: dict[str, Any], ctx: CallContext):
         return _not_found(i)
     if i["status"] not in ("draft", "paused", "published"):
         return "validation_error", "Unknown status."
-    if i["status"] == "published" and (er := errors(graph_of(w), w["kind"])):
+    if i["status"] == "published" and (er := errors(graph_of(w), w["kind"], ctx.session)):
         return "conflict", f"Cannot publish {w['name']}: {er[0]['msg']}"
     return None
 
@@ -970,8 +1042,14 @@ def set_status_guard(i: dict[str, Any], ctx: CallContext):
 def set_status(i: dict[str, Any], ctx: CallContext):
     w = _must(ctx, i["id"], for_update=True)
     was = w["status"]
+    _before_change(ctx, w)  # a paused or published workflow keeps its published version
     w["status"], w["updated"] = i["status"], _now(ctx)
+    if i["status"] == "draft":  # unpublished: nothing is published any more
+        w.pop("pub", None)
+    elif i["status"] == "published" and was == "draft":  # published from the list: the saved version
+        _set_pub(w)
     _put(ctx, w)
+    binding.rebind_for(ctx.session, w)  # published: its source syncs with it; paused or draft: no longer (plan 6 C5)
     return {"id": w["id"], "was": was, "status": w["status"], "name": w["name"]}
 
 
@@ -1067,6 +1145,7 @@ def duplicate(i: dict[str, Any], ctx: CallContext):
         "graph": copy.deepcopy(graph_of(w)), "dirty": False, "running": False, "last": None, "runsN": 0, "okN": 0,
         "trig": dict(w["trig"]), "updated": _now(ctx), "warned": False, "hist": [], "prep": ctx.preparer,
     }  # fmt: skip
+    c.pop("pub", None)  # a copy is a draft with versions of its own
     c["saved"] = snap(c)
     state.add(ctx.session, "workflows", c["id"], c)
     return {"id": c["id"], "name": c["name"]}
@@ -1081,6 +1160,135 @@ def delete_guard(i: dict[str, Any], ctx: CallContext):
 def delete(i: dict[str, Any], ctx: CallContext):
     w = _must(ctx, i["id"], for_update=True)
     state.delete(ctx.session, "workflows", w["id"])
+    binding.rebind_for(ctx.session, w)  # its source no longer syncs with it (plan 6 C5)
+    versions.forget(ctx.session, w["id"])  # ids are reused: a new workflow under this id starts without versions
+    from di.actions import workflow_drafts
+
+    workflow_drafts.forget(ctx.session, w["id"])  # and without anyone's working draft (plan 6 C9)
+    return {"id": w["id"], "name": w["name"]}
+
+
+# ---------------------------------------------------------------- import (plan 6 C10)
+# The JSON Export JSON writes (apps/web/src/api/workflows.ts exportJson): {name, type, owner, trigger, source,
+# source_id, description, steps: [{id, kind, ref, label, x, y, cfg?}], links: [{from, to, fixed}], ...}. It becomes a
+# new draft; the steps' blocks and sources must exist (sources as they are now, di/workflow/live.py).
+_declare(
+    "workflow.import", "Import a workflow", "Create a draft workflow from the JSON a workflow export wrote.",
+    {"data": {"req": True, "t": "object"}},
+)  # fmt: skip
+_KINDS = ("fixed", "conn", "wconn", "act", "xf", "map", "tool")
+_CAT_KIND = {"Ingest": "pipe", "Outbound": "pipe", "Decision": "dec"}
+
+
+def _known_block(k: str, ref: str) -> bool:
+    if k == "xf":
+        return _xf(ref) is not None
+    if k == "fixed":
+        return ref in FXD
+    if k == "act":
+        return any(t["id"] == ref for t in ACT_TYPES)
+    return any(t["id"] == ref for t in TOOLS)  # tool
+
+
+def _parse_import(data: dict[str, Any], sources: dict[str, dict]) -> tuple[str, str] | dict[str, Any]:
+    """The draft an export describes, or the refusal (code, message) naming the first unknown block or source."""
+    steps, links = data.get("steps"), data.get("links", [])
+    if not isinstance(steps, list) or not steps:
+        return "validation_error", "This is not a workflow export: it has no steps."
+    if not isinstance(links, list):
+        return "validation_error", "This is not a workflow export: its links are not a list."
+    nodes: list[dict] = []
+    for st in steps:
+        if not isinstance(st, dict) or not isinstance(st.get("id"), str) or not st["id"].strip():
+            return "validation_error", "Every step needs an id."
+        sid, k, ref = st["id"], st.get("kind"), st.get("ref")
+        if not isinstance(k, str) or k not in _KINDS:
+            return "validation_error", f"Unknown block {k} in step {sid}."
+        if not isinstance(ref, str) or not ref:
+            return "validation_error", f"Step {sid} does not say which block it is."
+        if k in ("conn", "wconn", "map"):
+            if ref not in sources:
+                return "not_found", f"Unknown source {ref} in step {sid}."
+        elif not _known_block(k, ref):
+            return "validation_error", f"Unknown block {ref} in step {sid}."
+        if any(n["id"] == sid for n in nodes):
+            return "validation_error", f"Step {sid} appears twice."
+        x, y = st.get("x", 0), st.get("y", 0)
+        if not all(isinstance(v, int | float) and not isinstance(v, bool) for v in (x, y)):
+            return "validation_error", f"Step {sid} needs a position (x and y)."
+        cfg = st.get("cfg")
+        if cfg is not None and not isinstance(cfg, dict):
+            return "validation_error", f"The settings of step {sid} must be an object."
+        nodes.append({"id": sid, "k": k, "ref": ref, "x": x, "y": y} | ({"cfg": copy.deepcopy(cfg)} if cfg else {}))
+    ids = {n["id"] for n in nodes}
+    edges: list[dict] = []
+    for i, ln in enumerate(links):
+        a, b = (ln.get("from"), ln.get("to")) if isinstance(ln, dict) else (None, None)
+        if a not in ids or b not in ids:
+            return "validation_error", f"Link {a} → {b} names a step the workflow does not have."
+        edges.append({"id": f"e{i}", "a": a, "b": b, "locked": bool(ln.get("fixed"))})
+    conns = [n["ref"] for n in nodes if n["k"] in ("conn", "wconn")]
+    sid_given, vendor = data.get("source_id"), data.get("source")
+    if isinstance(sid_given, str) and sid_given:
+        if sid_given not in sources:
+            return "not_found", f"Unknown source {sid_given}."
+        src_id: str | None = sid_given
+    elif isinstance(vendor, str) and vendor:
+        same = [x for x in sources if sources[x].get("vendor") == vendor]
+        if not same:
+            return "not_found", f"Unknown source {vendor}."
+        src_id = next((x for x in same if x in conns), same[0])
+    else:
+        src_id = conns[0] if conns else None
+    cat = data.get("type")
+    if cat not in _CAT_KIND:
+        cat = "Outbound" if any(n["k"] == "wconn" for n in nodes) else "Ingest" if conns else "Decision"
+    t = data.get("trigger")
+    trig: dict[str, Any] = {"t": "manual"}
+    if isinstance(t, dict) and t.get("t") in TRIG_L:
+        trig = {"t": t["t"]}
+        if t["t"] == "schedule":
+            m = t.get("min")
+            trig["min"] = m if isinstance(m, int) and not isinstance(m, bool) and 1 <= m <= 1440 else 60
+    so = sources.get(src_id) if src_id else None
+    name = str(data.get("name") or "").strip()[:80] or "Imported workflow"
+    owner = str(data.get("owner") or "").strip()[:60] or (so or {}).get("owner") or "Unassigned"
+    return {
+        "name": name, "cat": cat, "kind": _CAT_KIND[cat], "src": src_id, "owner": owner, "trig": trig,
+        "desc": str(data.get("description") or "").strip() or "Imported from a workflow export.",
+        "graph": {"nodes": nodes, "edges": edges},
+    }  # fmt: skip
+
+
+def _import_sources(ctx: CallContext) -> dict[str, dict]:
+    from di.workflow import live
+
+    return live.sources(ctx.session)
+
+
+@guard("workflow.import")
+def import_guard(i: dict[str, Any], ctx: CallContext):
+    p = _parse_import(i["data"], _import_sources(ctx))
+    return p if isinstance(p, tuple) else None
+
+
+@implement("workflow.import")
+def import_workflow(i: dict[str, Any], ctx: CallContext):
+    p = _parse_import(i["data"], _import_sources(ctx))
+    if isinstance(p, tuple):  # the guard refused it
+        raise ActionError(*p)
+    state.next_number(ctx.session, "workflows", "WF-", 0)  # the numbering lock
+    ids = _ids(ctx)
+    n = 100
+    while f"WF-{n}" in ids:
+        n += 1
+    w: dict[str, Any] = {
+        "id": f"WF-{n}", "status": "draft", "ver": "0.1", "saved": None, "dirty": False, "running": False,
+        "updated": _now(ctx), "tpl": {"k": "blank"}, "runsN": 0, "okN": 0, "last": None, "prep": ctx.preparer,
+    } | p  # fmt: skip
+    w["graph"] = blocks.compact_graph(w["graph"])
+    w["saved"] = snap(w)
+    state.add(ctx.session, "workflows", w["id"], w)
     return {"id": w["id"], "name": w["name"]}
 
 
@@ -1130,8 +1338,98 @@ def _create_from_template(tid: str, ctx: CallContext) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------- failed records (ACT.frReproc)
-def _failed_rows(w: dict) -> list[dict]:
-    return studio.failed_rows(w)
+def _failed_rows(w: dict, s=None) -> list[dict]:
+    """The records the latest run held (failed_record, plan 6 C5)."""
+    return studio.failed_rows(w, s=s)
+
+
+REPROCESS_MAX = 2000  # held records sent back in one Reprocess
+
+
+def _held_of(s, w: dict) -> list[dict]:
+    """The records the workflow's runs hold (failed_record, run_kind 'workflow', status 'held'), oldest first: those of
+    the runs it still has a record of, and of its last run."""
+    state.get(s, "workflow_runs", "")  # seeds the collection on its first read
+    keys = set(
+        s.execute(
+            text("SELECT id FROM state_item WHERE collection = 'workflow_runs' AND data->>'wf' = :w"), {"w": w["id"]}
+        ).scalars()
+    )
+    lr = w.get("lastRun") or {}
+    keys |= {str(x) for x in (lr.get("key"), lr.get("id")) if x}
+    if not keys:
+        return []
+    rows = s.execute(
+        text(
+            "SELECT * FROM failed_record WHERE run_kind = 'workflow' AND status = 'held' AND run_id = ANY(:k) "
+            "ORDER BY id LIMIT :n"
+        ),
+        {"k": sorted(keys), "n": REPROCESS_MAX},
+    ).mappings()
+    return [dict(r) for r in rows]
+
+
+def _start_step(g: dict, step: str | None) -> str | None:
+    """The step a held record goes back to: the one that rejected it. An error handler that held it took it from the
+    step before it; a fact that did not fit its canonical model ("canonical") goes back through the field mapping; a
+    canonical step itself needs mapped records, so the mapping before it too."""
+    by, _succ, pred = studio._analyze(g)
+    if step in by:
+        n = by[step]
+        if n["k"] == "xf" and n["ref"] == "x_err":
+            return pred[step][0] if pred[step] else None
+        if n["k"] == "fixed" and (FXD.get(n["ref"]) or {}).get("canon"):
+            return next((p for p in pred[step] if by[p]["k"] == "map"), step)
+        return step
+    if step == "canonical":
+        return next((n["id"] for n in g["nodes"] if n["k"] == "map"), None)
+    return None
+
+
+def _from_step(g: dict, start: str, sid: str) -> dict:
+    """The part of the graph from `start` on (it and everything after it), fed by a connector node on `sid` that
+    replays the held records."""
+    _by, succ, _pred = studio._analyze(g)
+    keep, st = {start}, [start]
+    while st:
+        for y in succ[st.pop()]:
+            if y not in keep:
+                keep.add(y)
+                st.append(y)
+    nodes = [{"id": "__held", "k": "conn", "ref": sid, "x": 0, "y": 0}] + [
+        copy.deepcopy(n) for n in g["nodes"] if n["id"] in keep
+    ]
+    edges = [{"id": "__e", "a": "__held", "b": start, "locked": False}] + [
+        copy.deepcopy(e) for e in g["edges"] if e["a"] in keep and e["b"] in keep
+    ]
+    return {"nodes": nodes, "edges": edges}
+
+
+class _Replay:
+    """An adapter that reads the held records again (their stored payloads) and maps with the source's own adapter."""
+
+    def __init__(self, rows: list[dict], real: Any):
+        self.rows, self.real = rows, real
+        self.source_id = getattr(real, "source_id", "")
+
+    def resources(self) -> list:
+        from di.connectors.base import Record, Resource
+
+        def reader(name: str):
+            def read(_client, _since):
+                for r in self.rows:
+                    if (r["resource"] or "records") == name:
+                        data = r["payload"] if isinstance(r["payload"], dict) else {"value": r["payload"]}
+                        yield Record(name, r["ext_id"] or str(r["id"]), dict(data), None, None)
+
+            return read
+
+        return [Resource(n, reader(n), delta=False) for n in dict.fromkeys(r["resource"] or "records" for r in self.rows)]
+
+    def map(self, rec: Any) -> list:
+        if self.real is None:
+            raise LookupError(f"no field mapping for {self.source_id or 'this source'}")
+        return self.real.map(rec)
 
 
 @guard("workflow.reprocess")
@@ -1139,21 +1437,60 @@ def reprocess_guard(i: dict[str, Any], ctx: CallContext):
     w = _get(ctx, i["id"])
     if w is None:
         return _not_found(i)
-    if w.get("frReproc"):
-        return "duplicate", f"Already reprocessed: {w['frReproc']}"
-    return None if _failed_rows(w) else ("conflict", "The latest run held no failed records.")
+    return None if _held_of(ctx.session, w) else ("conflict", "No held records to reprocess.")
 
 
 @implement("workflow.reprocess")
 def reprocess(i: dict[str, Any], ctx: CallContext):
-    """frReproc: the held records go back through validation; the dialog then says when. The next run's held records
-    can be reprocessed again (the run job clears the mark)."""
+    """Reprocess (plan 6 C8): the records the workflow's runs hold go back through the graph that runs
+    (graph_for_run), from the step that rejected them on (that step with its settings as they are now, so a fixed rule
+    lets them through, and every step after it), through the engine. A record no step rejects again is marked
+    `reprocessed`; one that is rejected again stays held (its row is kept, the engine's new copy is removed). A step
+    whose On failure is `reject` drops what it rejects, so such a record counts as reprocessed. A held record whose step
+    is no longer in the graph stays held."""
+    from di.connectors import mapping
+    from di.connectors.registry import ADAPTERS, adapter_for
+    from di.db import SessionLocal
+    from di.workflow import engine
+
     w = _must(ctx, i["id"], for_update=True)
-    n = len(_failed_rows(w))
-    w["frReproc"] = f"{n} records at {ctx.now:%H:%M}"
+    rows = _held_of(ctx.session, w)
+    g = graph_for_run(w)
+    rid = f"REPROC-{w['id']}-{_now(ctx)}"
+    groups: dict[tuple[str, str], list[dict]] = {}
+    for r in rows:
+        start = _start_step(g, r["step"])
+        sid = r["source_id"] or w.get("src")
+        if start and sid:
+            groups.setdefault((start, sid), []).append(r)
+    done: list[int] = []
+    labels: list[str] = []
+    for (start, sid), grp in groups.items():
+        labels.append(label(studio._analyze(g)[0][start]))
+        with SessionLocal() as s:
+            real = adapter_for(s, sid)
+            conf = s.execute(text("SELECT confidence FROM source_system WHERE id = :i"), {"i": sid}).scalar()
+            feed = engine.Feed(
+                sid, _Replay(grp, real), None, None, True, float(conf) if conf is not None else None,
+                mapping.mapper(s, sid, sid in ADAPTERS) if real is not None else None,
+            )  # fmt: skip
+            engine.run_graph(s, w, _from_step(g, start, sid), trigger="Reprocess", feeds={sid: feed}, run_id=rid)
+            again = s.execute(
+                text("SELECT resource, ext_id FROM failed_record WHERE run_kind = 'workflow' AND run_id = :r"), {"r": rid}
+            ).all()
+            s.execute(text("DELETE FROM failed_record WHERE run_kind = 'workflow' AND run_id = :r"), {"r": rid})
+            s.commit()
+        held_again = {(x.resource or "records", x.ext_id) for x in again}
+        done += [r["id"] for r in grp if (r["resource"] or "records", r["ext_id"] or str(r["id"])) not in held_again]
+    if done:
+        ctx.session.execute(text("UPDATE failed_record SET status = 'reprocessed' WHERE id = ANY(:i)"), {"i": done})
+    n, ok, held = len(rows), len(done), len(rows) - len(done)
+    via = " and ".join(dict.fromkeys(labels)) or "the workflow"
+    w["frReproc"] = f"{n} records at {ctx.now:%H:%M}: {ok} reprocessed, {held} still held"
     _put(ctx, w)
-    rb_log(ctx, "workflow.reprocessed", f"{w['id']} · {n} held records sent back through validation", "workflow.reprocess")
-    return {"id": w["id"], "name": w["name"], "n": n}
+    note = f"{w['id']} · {n} held records sent back through {via}: {ok} reprocessed, {held} still held"
+    rb_log(ctx, "workflow.reprocessed", note, "workflow.reprocess")
+    return {"id": w["id"], "name": w["name"], "n": n, "reprocessed": ok, "held": held}
 
 
 # ---------------------------------------------------------------- the suggested fix (ACT.frFixApply)
@@ -1166,36 +1503,98 @@ def apply_fix_guard(i: dict[str, Any], ctx: CallContext):
         return "duplicate", "The suggested fix is already applied. Run now to confirm."
     if (w.get("last") or {}).get("state") != "failed":
         return "conflict", f"The last run of {w['name']} did not fail, so there is nothing to fix."
-    return None
+    found = _fix_for(ctx.session, w)
+    return found if isinstance(found, tuple) else None
+
+
+def _failed_step(w: dict) -> str | None:
+    """The first step that failed in the last run."""
+    lr = w.get("lastRun") or {}
+    states = lr.get("states") or {}
+    return next((n for n in (lr.get("order") or list(states)) if states.get(n) == "failed"), None)
+
+
+def _fix_for(s, w: dict) -> dict | tuple[str, str]:
+    """The fix for the last run's failure: the failed step, and the last good version of its settings: the newest
+    version older than the one that ran (the published one, else the saved one) in which the step had other settings.
+    Or the refusal (code, message) when there is none."""
+    nid = _failed_step(w)
+    if nid is None:
+        return "conflict", f"No step failed in the last run of {w['name']}, so there is no step to fix."
+    ran = (w.get("lastRun") or {}).get("ver") or (w.get("pub") or {}).get("ver") or w["ver"]
+    vs = versions.of(s, w["id"])  # newest first
+    at = next((k for k, v in enumerate(vs) if v["ver"] == ran), None)
+    ran_g = (w.get("pub") or {}).get("graph") if (w.get("pub") or {}).get("ver") == ran else None
+    ran_g = ran_g or (vs[at]["graph"] if at is not None else graph_of(w))
+    bad = next((n for n in ran_g["nodes"] if n["id"] == nid), None)
+    cur = next((n for n in graph_of(w)["nodes"] if n["id"] == nid), None)
+    some = bad or cur
+    lb = label(some) if some else nid
+    if bad is None or cur is None:
+        return "conflict", f"{lb} is no longer in {w['name']}, so there is no step to fix."
+    for v in vs[at + 1 :] if at is not None else []:
+        good = next((n for n in v["graph"].get("nodes") or [] if n["id"] == nid), None)
+        if good is None:
+            continue
+        d = versions.diff({"ver": ran, "graph": {"nodes": [bad]}}, {"ver": v["ver"], "graph": {"nodes": [good]}}, label)
+        fields = d["blocks"]["changed"][0]["fields"] if d["blocks"]["changed"] else []
+        if fields:
+            return {"node": nid, "label": lb, "ver": v["ver"], "good": good, "fields": fields}
+    return (
+        "conflict",
+        f"There is no earlier version of {w['name']} with other settings for {lb} to restore. Change its settings by hand.",
+    )
+
+
+def _fix_text(fix: dict) -> str:
+    def one(f: dict) -> str:
+        if f["field"] == "fail":
+            return "failure toggle " + ("on" if f["to"] else "off")
+        to = f["to"]
+        return f"{f['field']} back to {json.dumps(to, ensure_ascii=False) if isinstance(to, dict | list) else to}"
+
+    return f"{fix['label']} is back to its settings from v{fix['ver']}: {', '.join(one(f) for f in fix['fields'])}."
 
 
 @implement("workflow.applyFix")
 def apply_fix(i: dict[str, Any], ctx: CallContext):
-    """frFixApply: the demo's text for the fix (the renamed source field mapped again, or the step reset). Here the fix
-    also takes effect: the failing step's failure flag is cleared, so Run now can confirm it, and the change is kept as
-    a new version, as the text says."""
+    """Apply fix (plan 6 C8): the step the last run failed at gets back its settings (block settings and failure
+    toggle) from the last good version (`_fix_for`), as a new version. A published workflow whose saved version was the
+    one that runs publishes the fix, so Run now confirms it; one with unpublished changes keeps them and is told to
+    publish. The text says exactly what changed."""
     w = _must(ctx, i["id"], for_update=True)
-    m = STARTING_MAPPINGS.get(w.get("src") or "") or []
-    fix = (
-        f"The renamed source field now maps to {m[0][2]} again (mapping kept as a new version)."
-        if m
-        else "The step is reset to its last good configuration."
-    )
-    states = (w.get("lastRun") or {}).get("states") or {}
-    for n in graph_of(w)["nodes"]:
-        if states.get(n["id"]) == "failed":
-            n.pop("fail", None)
+    fix = _fix_for(ctx.session, w)
+    if isinstance(fix, tuple):  # the guard refused it
+        raise ActionError(*fix)
+    _before_change(ctx, w)
+    runs_saved = bool(w.get("pub")) and w["pub"]["ver"] == w["ver"]
+    n = next(x for x in w["graph"]["nodes"] if x["id"] == fix["node"])
+    good = fix["good"]
+    for k in ("k", "ref"):
+        n[k] = good[k]
+    n.pop("cfg", None)
+    n.pop("fail", None)
+    if good.get("cfg"):
+        n["cfg"] = copy.deepcopy(good["cfg"])
+    if good.get("fail"):
+        n["fail"] = True
     bump(w)
+    text_ = _fix_text(fix)
+    if w.get("pub") and not runs_saved:
+        text_ += f" Publish v{w['ver']} to make runs use it."
     now = _now(ctx)
-    w.update(frFix=fix, updated=now, dirty=False)
+    w.update(frFix=text_, updated=now, dirty=False)
     w["saved"] = snap(w)
     w["hist"] = [
         {"ver": w["ver"], "by": _by(ctx), "at": iso(now), "note": "Fix applied", "prep": ctx.preparer},
         *(w.get("hist") or []),
     ]
+    versions.keep(ctx.session, w, _by(ctx), iso(now), f"Fix applied: {fix['label']} settings from v{fix['ver']}")
+    if runs_saved:
+        _set_pub(w)
     _put(ctx, w)
-    rb_log(ctx, "workflow.fixed", f"{w['id']} · {fix}", "workflow.applyFix")
-    return {"id": w["id"], "name": w["name"], "ver": w["ver"], "fix": fix}
+    rb_log(ctx, "workflow.fixed", f"{w['id']} · {text_}", "workflow.applyFix")
+    return {"id": w["id"], "name": w["name"], "ver": w["ver"], "fix": text_}
 
 
 @guard("workflow.validate")
@@ -1206,7 +1605,7 @@ def validate_guard(i: dict[str, Any], ctx: CallContext):
 @implement("workflow.validate")
 def validate_action(i: dict[str, Any], ctx: CallContext):
     w = _must(ctx, i["id"])
-    v = validate(graph_of(w), w["kind"])
+    v = validate(graph_of(w), w["kind"], ctx.session)
     # the demo reads x.node, which its checks never set (they carry the step as `id`), so `node` is always null
     return {
         "id": w["id"],
@@ -1221,13 +1620,23 @@ def run_guard(i: dict[str, Any], ctx: CallContext):
     w = _get(ctx, i["id"])
     if w is None:
         return _not_found(i)
-    if w.get("running"):
+    if w.get("running") and run_active(ctx.session, w["id"]):  # one run at a time (plan 6 C7)
         return "duplicate", f"{w['name']} is already running"
-    if w["status"] == "draft":
-        o = sim_outcome(w)
-        if o["state"] == "failed":
-            return "conflict", f"{w['name']} is a draft with errors: {o['note']}"
+    if w["status"] == "draft":  # a draft runs only when it can: its sources connected, its checks clean
+        g = graph_for_run(w)
+        msg = next((f"{label(n)} has no connected feed" for n in (_Graph(g).by[i] for i in studio._order(g))
+                    if n["k"] in ("conn", "wconn") and not _connected(ctx.session, n["ref"])), None)  # fmt: skip
+        if msg is None and (er := errors(g, w["kind"])):
+            msg = er[0]["msg"]
+        if msg:
+            return "conflict", f"{w['name']} is a draft with errors: {msg[:94] + '…' if len(msg) > 96 else msg}"
     return None
+
+
+def _connected(s, sid: str) -> bool:
+    """The source exists and is connected (source_system): not unavailable, disconnected or deleted."""
+    st = s.execute(text("SELECT status FROM source_system WHERE id = :i"), {"i": sid}).scalar()
+    return st is not None and st not in ("unavailable", "disconnected", "deleted")
 
 
 def run_id(wid: str, now: int) -> str:
@@ -1238,14 +1647,22 @@ def run_id(wid: str, now: int) -> str:
 @implement("workflow.run")
 def run(i: dict[str, Any], ctx: CallContext):
     w = _must(ctx, i["id"], for_update=True)
+    reap_lost_run(ctx.session, w, _now(ctx))  # a run whose worker died leaves `running` set: it is closed first
+    key = start_run(ctx.session, w, "Manual", _now(ctx))
+    return {"id": w["id"], "name": w["name"], "run": key}
+
+
+def start_run(s, w: dict[str, Any], trig: str, now: int, *, enqueue: bool = True) -> str:
+    """Start a run of `w` (loaded for update): mark it running, add its run record in state "running" labelled `trig`
+    (Manual for Run now; Schedule, Event, File, Approval or Case from di/workflow/triggers.py) and, unless the caller
+    is already the run's job (a triggered run, `enqueue=False`), queue the `workflow.run` job. Returns the record's key."""
     graph_of(w)
     w["running"] = True
-    _put(ctx, w)
-    now = _now(ctx)
+    state.put(s, "workflows", w["id"], w)
     rid = run_id(w["id"], now)
     # the demo's ids repeat when a workflow runs twice at the same time (its clock is pinned); the record's key must not
     key, n = rid, 1
-    while state.get(ctx.session, "workflow_runs", key) is not None:
+    while state.get(s, "workflow_runs", key) is not None:
         n += 1
         key = f"{rid}~{n}"
     # in progress: the demo's run fields (duration and records known at the end) and, once the job starts, the steps
@@ -1254,77 +1671,145 @@ def run(i: dict[str, Any], ctx: CallContext):
         "wf": w["id"],
         "name": w["name"],
         "ts": now,
-        "trig": "Manual",
+        "trig": trig,
         "dur": None,
         "rows": None,
         "state": "running",
         "note": "",
     }
-    state.add(ctx.session, "workflow_runs", key, record)
-    jobs.enqueue(ctx.session, "workflow.run", {"run": key, "wf": w["id"], "trig": "Manual"})
-    return {"id": w["id"], "name": w["name"], "run": key}
+    state.add(s, "workflow_runs", key, record)
+    if enqueue:
+        jobs.enqueue(s, "workflow.run", {"run": key, "wf": w["id"], "trig": trig})
+    return key
 
 
 # ---------------------------------------------------------------- the run job
-def _mulberry(key: str) -> Callable[[], float]:
-    """mulberry32 seeded from the key's hashId (the demo's seeded generator)."""
-    a = int(hash_id(key), 16)
-
-    def rnd() -> float:
-        nonlocal a
-        a = (a + 0x6D2B79F5) & 0xFFFFFFFF
-        t = ((a ^ (a >> 15)) * (1 | a)) & 0xFFFFFFFF
-        t = ((t + (((t ^ (t >> 7)) * (61 | t)) & 0xFFFFFFFF)) & 0xFFFFFFFF) ^ t
-        return ((t ^ (t >> 14)) & 0xFFFFFFFF) / 4294967296
-
-    return rnd
+RUN_LOCK = 7311  # the advisory lock of a workflow's run: (RUN_LOCK, hashtext('wf:' || id)), held by the run's job
+BACKOFF_SECONDS = 1.0  # a failing step is tried again after 1 s, 2 s, 4 s ... (tests set 0)
+DEFAULT_RETRIES = 3  # the Settings tab's default (frWfSet)
+_ACTIVE = text(
+    "SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND classid = :c AND objsubid = 2 "
+    "AND objid::bigint = (hashtext(:k)::bigint & 4294967295)) "
+    "OR (SELECT count(*) FROM job WHERE kind = 'workflow.run' AND payload->>'wf' = :w AND (status = 'queued' "
+    "OR (status = 'running' AND locked_at > now() - interval '2 minutes'))) > :n"  # a claimed job still starting
+)
 
 
-def _rr(rnd: Callable[[], float], a: int, b: int) -> int:
-    return a + math.floor(rnd() * (b - a + 1))
+class _RunGone(Exception):
+    """The run record went while the run was going (the workflow was deleted)."""
 
 
-def counts_for(w: dict, g: dict, rows: int, states: dict) -> dict:
-    """frRunCounts for the given states (records in and out of each step)."""
-    return studio.run_counts({"id": w["id"], "graph": g, "last": {"rows": rows}, "lastRun": {"states": states}})
+def run_active(s, wid: str, jobs_ok: int = 0) -> bool:
+    """A run of the workflow is queued or going: its job is waiting, or a worker holds the run lock. A `running` flag
+    without either is left by a worker that died (the lock goes with its connection). `jobs_ok`: the caller's own jobs
+    of the workflow (a triggered run's job, taken but not yet running) that do not count."""
+    return bool(s.execute(_ACTIVE, {"c": RUN_LOCK, "k": f"wf:{wid}", "w": wid, "n": jobs_ok}).scalar())
 
 
-def progress(w: dict, g: dict, outcome: dict, rows: int) -> list[dict]:
-    """The run as the canvas animates it (wfStep): one entry per state change, with every step's state at that point."""
-    states = dict.fromkeys(outcome["order"], "queued")
-    out = []
-    for nid in outcome["order"]:
-        st = outcome["states"][nid]
-        if st not in QUICK:
-            states[nid] = "running"
-            out.append({"step": nid, "state": "running", "states": dict(states)})
-        states[nid] = st
-        out.append({"step": nid, "state": st, "states": dict(states)})
-    for nid, st in outcome["states"].items():  # steps outside the run order (in a loop) that a failure marks
-        if states.get(nid) != st:
-            states[nid] = st
-            out.append({"step": nid, "state": st, "states": dict(states)})
-    for e in out:
-        done = {k: v for k, v in e["states"].items() if v not in ("queued", "running")}
-        c = counts_for(w, g, rows, e["states"])
-        e["counts"] = {k: v for k, v in c.items() if k in done}
-    return out
+def reap_lost_run(s, w: dict[str, Any], now: int, jobs_ok: int = 0) -> bool:
+    """Close the run a dead worker left (`running` set, nothing queued or going): its record fails with "worker lost"
+    and the workflow is no longer running. In the caller's transaction; True when there was one. Run now calls it,
+    and a triggered run's start (di/workflow/triggers.py start, with its own job as `jobs_ok`)."""
+    if not w.get("running") or run_active(s, w["id"], jobs_ok):
+        return False
+    for key, r in _run_keys(s, w["id"]):
+        if r.get("state") == "running":
+            state.put(s, "workflow_runs", key, _final_record(r, w, now, "failed", "Failed: worker lost", r.get("rows")))
+    w["running"] = False
+    w["last"] = {"ts": now, "state": "failed", "dur": None, "rows": None, "note": "Failed: worker lost"}
+    state.put(s, "workflows", w["id"], w)
+    log.warning("workflow %s: closed a run its worker lost", w["id"])
+    return True
 
 
-def draws(w: dict, seed: str) -> tuple[float, int]:
-    """The run's duration (1 to 4.5 s) and record count, in the demo's ranges (it draws them with Math.random)."""
-    rnd = _mulberry(seed)
-    dur = _rr(rnd, 10, 45) / 10
-    rows = _rr(rnd, 1, 6) if w["cat"] == "Outbound" else 1 if w["cat"] == "Decision" else _rr(rnd, 30, 900)
-    return dur, rows
+def _run_keys(s, wid: str) -> list[tuple[str, dict]]:
+    rows = s.execute(
+        text("SELECT id, data FROM state_item WHERE collection = 'workflow_runs' AND data->>'wf' = :w"), {"w": wid}
+    ).all()
+    return [(r.id, r.data) for r in rows]
+
+
+def _final_record(r: dict, w: dict, now: int, st: str, note: str, rows: Any) -> dict:
+    """The run record as it stays: the demo's shape {id, wf, name, ts, trig, dur, rows, state, note}."""
+    dur = round((now - r["ts"]) / 1000, 2) if isinstance(r.get("ts"), int | float) else None
+    return {"id": r["id"], "wf": w["id"], "name": w["name"], "ts": now, "trig": r.get("trig") or "Manual", "dur": dur,
+            "rows": rows, "state": st, "note": note}  # fmt: skip
+
+
+def _retries(w: dict) -> int:
+    r = settings_for_run(w).get("retries")
+    return DEFAULT_RETRIES if r is None else int(r)
 
 
 def run_job(payload: dict) -> dict:
-    """The `workflow.run` job: run the workflow step by step, writing progress into its run record, then finish it as
-    the demo's wfStartRun does."""
+    """The `workflow.run` job (plan 6 C5, C7): one run at a time per workflow, through the engine.
+
+    The job takes the workflow's run lock on a connection of its own for the whole run; a second run of the same
+    workflow that finds it taken (a schedule tick during Run now) is dropped: its record goes and nothing runs, so it
+    is queued once. A run that raises is closed as failed (its workflow stops running) instead of being retried by
+    the queue; a worker that dies loses the lock with its connection, and the next Run now closes the run
+    (reap_lost_run)."""
+    from di.db import engine as db
+
+    key, wid = payload["run"], payload["wf"]
+    with db.connect() as lock:
+        got = lock.execute(text("SELECT pg_try_advisory_xact_lock(:c, hashtext(:k))"), {"c": RUN_LOCK, "k": f"wf:{wid}"}).scalar()
+        if not got:
+            lock.rollback()
+            _drop_duplicate(key)
+            return {"run": key, "skipped": "already_running"}
+        try:
+            return _run_locked(payload)
+        except _RunGone:
+            return {"run": key, "skipped": "run record removed"}
+        except Exception as e:  # a crashed run never leaves its workflow running
+            log.exception("workflow run %s (%s) crashed", key, wid)
+            return _crashed(payload, e)
+        finally:
+            lock.rollback()  # releases the run lock
+
+
+def _drop_duplicate(key: str) -> None:
+    from di.db import SessionLocal
+
+    with SessionLocal() as s:
+        r = state.get(s, "workflow_runs", key, for_update=True)
+        if r is not None and r.get("state") == "running":
+            state.delete(s, "workflow_runs", key)
+        s.commit()
+
+
+def _crashed(payload: dict, e: Exception) -> dict:
     from di.db import SessionLocal
 
     key, wid = payload["run"], payload["wf"]
+    note = f"Failed: {type(e).__name__}: {e}"
+    note = note[:94] + "…" if len(note) > 96 else note
+    with SessionLocal() as s:
+        w = state.get(s, "workflows", wid, for_update=True)
+        r = state.get(s, "workflow_runs", key, for_update=True)
+        if w is not None:
+            now = _now()
+            w["running"] = False
+            w["last"] = {"ts": now, "state": "failed", "dur": None, "rows": None, "note": note}
+            w["runsN"] = (w.get("runsN") or 0) + 1
+            state.put(s, "workflows", wid, w)
+            if r is not None:
+                state.put(s, "workflow_runs", key, _final_record(r, w, now, "failed", note, None))
+        s.commit()
+    return {"run": key, "state": "failed", "error": note}
+
+
+def _run_locked(payload: dict) -> dict:
+    """Run the workflow's version that runs (graph_for_run) through the engine, writing each state change into its run
+    record (the live canvas follows it on the stream), then finish it: the workflow's last run with the real states,
+    counts, durations and tries, the run record in the demo's shape, and the alert its rule asks for."""
+    from di.db import SessionLocal
+    from di.workflow import engine
+
+    key, wid = payload["run"], payload["wf"]
+    trig = payload.get("trig") or "Manual"
+    t0 = time.monotonic()
     with SessionLocal() as s:
         w = state.get(s, "workflows", wid)
         record = state.get(s, "workflow_runs", key)
@@ -1334,23 +1819,39 @@ def run_job(payload: dict) -> dict:
             state.delete(s, "workflow_runs", key)
             s.commit()
             return {"run": key, "skipped": "workflow deleted"}
-        g = graph_of(w)
-        o = sim_outcome(w)
-        dur, rows = draws(w, f"workflow.run#{key}")
-    steps = progress(w, g, o, rows)
-    for e in steps:
-        with SessionLocal() as s:
-            record = state.get(s, "workflow_runs", key, for_update=True)
-            if record is None:
-                return {"run": key, "skipped": "run record removed"}
-            record.update(
-                state="running", step=e["step"], step_state=e["state"], states=e["states"], counts=e["counts"], order=o["order"]
-            )
-            state.put(s, "workflow_runs", key, record)
-            s.commit()
-        pause = QUICK_SECONDS if e["state"] in QUICK else STEP_SECONDS
-        if pause:
-            time.sleep(pause)
+        if record.get("state") != "running":  # a job claimed again after its run was closed
+            return {"run": key, "skipped": "finished"}
+        g = copy.deepcopy(graph_for_run(w))
+        ran_ver = (w.get("pub") or {}).get("ver") or w.get("ver")  # the version that runs (Apply fix reads it)
+        order = studio._order(g)
+
+        def on_step(e: dict) -> None:
+            with SessionLocal() as s2:
+                r = state.get(s2, "workflow_runs", key, for_update=True)
+                if r is None:
+                    raise _RunGone(key)
+                r.update(state="running", step=e["step"], step_state=e["state"], states=e["states"], counts=e["counts"],
+                         order=order)  # fmt: skip
+                state.put(s2, "workflow_runs", key, r)
+                s2.commit()
+            pause = STEP_SECONDS if e["state"] == "running" else QUICK_SECONDS if e["state"] in QUICK else 0
+            if pause:  # long enough for the canvas to show the step going
+                time.sleep(pause)
+
+        er = errors(g, w["kind"])
+        if er:  # a graph with errors does not run: its first error fails, the steps after it upstream failed
+            res = engine.refused(g, er[0]["id"], er[0]["msg"])
+            states = dict.fromkeys(res.order, "queued")
+            for nid in res.order:
+                states[nid] = res.states[nid]
+                on_step({"step": nid, "state": res.states[nid], "states": dict(states), "counts": {}})
+            res.steps = len(res.order)
+        else:
+            res = engine.run_graph(
+                s, w, g, trigger=trig, on_step=on_step, retries=_retries(w), backoff=BACKOFF_SECONDS, run_id=key,
+                run_kind="workflow",
+            )  # fmt: skip
+    dur = round(time.monotonic() - t0, 2)
     with SessionLocal() as s:
         w = state.get(s, "workflows", wid, for_update=True)
         record = state.get(s, "workflow_runs", key, for_update=True)
@@ -1359,25 +1860,26 @@ def run_job(payload: dict) -> dict:
                 state.delete(s, "workflow_runs", key)
             s.commit()
             return {"run": key, "skipped": "workflow deleted"}
-        o = sim_outcome(w)  # the demo decides the outcome when the run finishes, on the graph as it is then
         now = _now()
-        trig = payload.get("trig") or "Manual"
         before = {
             "failed": (w.get("last") or {}).get("state") == "failed",
             "okN": w.get("okN") or 0,
             "runsN": w.get("runsN") or 0,
         }
         w["running"] = False
-        w["last"] = {"ts": now, "state": o["state"], "dur": dur, "rows": rows, "note": o["note"]}
+        w["last"] = {"ts": now, "state": res.status, "dur": dur, "rows": res.rows, "note": res.note}
         w["runsN"] = (w.get("runsN") or 0) + 1
-        if o["state"] != "failed":
+        if res.status != "failed":
             w["okN"] = (w.get("okN") or 0) + 1
         w["lastRun"] = {
             "id": (record or {}).get("id") or run_id(wid, now), "ts": now, "t0": now - dur * 1000, "trig": trig,
-            "states": o["states"], "dur": o["dur"], "order": o["order"], "status": o["status"], "note": o["note"],
+            "states": res.states, "dur": {k: round(v / 1000, 2) for k, v in res.dur_ms.items()}, "order": res.order,
+            "status": res.status, "note": res.note,
+            # what really happened (plan 6 C5, C7): records in and out of each step, tries, held records, the run key
+            "counts": res.counts, "attempts": res.attempts, "held": res.held, "key": key, "ver": ran_ver,
         }  # fmt: skip
-        if w.get("retries") is not None:  # the saved setting this run used (the investigation's "failed after N retries")
-            w["lastRun"]["retries"] = w["retries"]
+        if (r := settings_for_run(w).get("retries")) is not None:  # the setting this run used ("failed after N retries")
+            w["lastRun"]["retries"] = r
         # a new latest run: its held records and its failures are new, so the marks for the previous run go
         w.pop("frReproc", None)
         w.pop("frFix", None)
@@ -1385,14 +1887,14 @@ def run_job(payload: dict) -> dict:
         if alert := _alert(w, before):
             _raise_alert(s, w, alert, now)
         final = {
-            "id": w["lastRun"]["id"], "wf": wid, "name": w["name"], "ts": now, "trig": trig, "dur": dur, "rows": rows,
-            "state": o["state"], "note": o["note"],
+            "id": w["lastRun"]["id"], "wf": wid, "name": w["name"], "ts": now, "trig": trig, "dur": dur, "rows": res.rows,
+            "state": res.status, "note": res.note,
         }  # fmt: skip
         state.put(s, "workflow_runs", key, final)
         _keep_recent_runs(s)
         s.commit()
-    log.info("workflow run %s (%s): %s", key, wid, o["state"])
-    return {"run": key, "state": o["state"], "steps": len(steps)}
+    log.info("workflow run %s (%s): %s", key, wid, res.status)
+    return {"run": key, "state": res.status, "steps": res.steps, "rows": res.rows, "held": res.held}
 
 
 def _keep_recent_runs(s) -> None:

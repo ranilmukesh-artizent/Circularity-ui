@@ -269,7 +269,8 @@ class Fabric:
                 "kind": r.kind, "version": r.version, "last4": r.last4,
                 "issued_at": _ts(r.issued_at), "expires_at": _ts(r.expires_at),
             }
-            for r in s.execute(text("SELECT source_id, kind, version, last4, issued_at, expires_at FROM source_secret WHERE active AND kind = 'auth'"))
+            for r in s.execute(text("SELECT source_id, kind, version, last4, issued_at, expires_at FROM source_secret "
+                                    "WHERE active AND kind = 'auth'"))
         }  # fmt: skip
         ids = [x["id"] for x in REF_SOURCES if x["id"] in self.rows] + sorted(i for i in self.rows if i not in REF_BY_ID)
         self.sources = [self._source(i) for i in ids]

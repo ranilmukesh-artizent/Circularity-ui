@@ -5,7 +5,9 @@
     GET /api/screens/workflows/blocks                 the block catalogue: every palette block's settings (plan 6 C1)
     GET /api/screens/workflows/{id}                   one workflow: its graph, the saved version, the template graph,
                                                       the run history, records in and out of each step in the last run,
-                                                      the last run as the canvas paints it, and its failed records
+                                                      the last run as the canvas paints it, and its failed records;
+                                                      its versions and the published one (plan 6 C8)
+    GET /api/screens/workflows/{id}/compare?a=&b=     what changed from version a to version b (default: current)
 
 Both need the Workflow Studio section of the Connection Fabric (`integration/studio`: Admin and Developer); other
 accounts get 403 `out_of_scope`, as the actions do.
@@ -17,7 +19,8 @@ as fixtures/golden/screens/workflows.json recorded them (apps/web/scripts/golden
 - "workflow_runs": `S.wf.runs`, the recent runs, newest first.
 The workflow actions (di/actions/workflows.py, B15) write them; runs are worker jobs that write their progress into the
 run record. What is computed here, from the collections, is ported from
-the demo: the status (wfStat), the history (frWfHistory), the step counts (frRunCounts), the last run on the canvas
+the demo: the status (wfStat), the history (frWfHistory, without the runs it derived: only runs that happened, plan 6
+C8), the step counts (frRunCounts), the last run on the canvas
 (wfRunFromLast), the failed records (frFailedRows) and the attention list (frWfAttn). Times are the demo's clock
 (the as-of time), as the seeded runs are. The attention list's stale sources and the failed records' field names come
 from the demo's source reference (sources.json, canonical.json mappings), so the studio stays at parity with the demo
@@ -31,7 +34,9 @@ Facade (apps/web/src/api/workflows.ts) → here, export by export:
 - endpoint GET /api/screens/workflows: workflows, workflow, recentRuns (`runs`), wfStat (`workflows[].stat`),
   attention, nowMs (`now`, the workspace clock the run times are on)
 - endpoint GET /api/screens/workflows/{id}: graphOf (`workflow.graph`), savedOf (`saved`), templateOf (`template`),
-  history, runCounts for the last run (`run_counts`), runFromLast (`run_from_last`), failedRows (`failed_rows`)
+  history, runCounts for the last run (`run_counts`), runFromLast (`run_from_last`), failedRows (`failed_rows`),
+  versions, publishedVersion (`published_ver`)
+- endpoint GET /api/screens/workflows/{id}/compare: compareVersions; action workflow.restore: restoreVersion
 - endpoint GET /api/screens/workflows/blocks: blockSpecs, blockResources
 - endpoint GET /api/screens/integration/sources: usedBy (`health.workflows`), sources, source, sourceExists,
   sourceLabel, sourceShortLabel, channelsOf (`health.channels`), readableSources, writableSources,
@@ -57,17 +62,20 @@ import json
 from fastapi import APIRouter, HTTPException
 
 from di import clock, state
+from di.actions.workflow_drafts import draft_for
 from di.auth import Principal
 from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round
-from di.reads.common import AS_OF, SOURCES, hash_id, ms, to_fixed
+from di.reads.common import AS_OF, SOURCES, hash_id, iso, ms
 from di.reads.workflows import GOLDEN, all_workflows, failed_rows, recent_runs, run_counts, templates, wf_stat
+from di.workflow import live, versions
 
 router = APIRouter(prefix="/api/screens/workflows", tags=["screens: workflows"])
 
 # wfBuild(tpl): the template graphs, keyed by template (a pure function of the template and the source reference)
 _TEMPLATES = {json.dumps(w["tpl"], sort_keys=True): GOLDEN["detail"][w["id"]]["template"] for w in GOLDEN["starting"]}
-_LIST_HIDDEN = ("graph", "saved", "tpl")  # the list leaves the graph out; GET /{id} has it
+_LIST_HIDDEN = ("graph", "saved", "tpl", "pub")  # the list leaves the graph out; GET /{id} has it
+_HIDDEN = ("pub",)  # the published version's graph: the detail gives its number (`published_ver`) instead
 
 
 def require_studio(p: Principal) -> None:
@@ -126,56 +134,30 @@ def run_from_last(w: dict) -> dict | None:
     }
 
 
-def history(w: dict, runs: list[dict], now: int = AS_OF) -> list[dict]:
-    """frWfHistory: every run of the workflow, latest first: its real runs, then earlier ones derived from its counts."""
+def history(w: dict, runs: list[dict]) -> list[dict]:
+    """The runs of the workflow that happened, latest first (plan 6 C8): its run records, or, when it has none, its
+    recorded last run. The demo's frWfHistory added up to 30 earlier runs derived from the workflow's counts (hashed
+    times, durations and failures); those never happened, so they are gone."""
     real = [
         {k: x[k] for k in ("id", "ts", "state", "dur", "rows", "trig", "note")} | {"real": True}
         for x in runs
         if x["wf"] == w["id"]
     ]
     last = w.get("last")
-    if not last:
+    if real or not last:
         return real
-    t = w["trig"].get("t")  # a saved trigger may be empty ({}): then it counts as hourly, as in the demo
-    every = (w["trig"]["min"] if t == "schedule" else 10 if t == "event" else 60) * 60000
-    n = min(30, w.get("runsN") or 0)
-    bad = js_round((1 - w["okN"] / w["runsN"]) * n) if w.get("runsN") else 0
-    out = list(real)
     lr = w.get("lastRun")
-    k = 1
-    while len(out) < n:
-        h = int(hash_id(f"{w['id']}h{k}"), 16)
-        ts = (real[-1]["ts"] if real else last["ts"]) - k * every
-        if ts > now:
-            k += 1
-            continue
-        failed = k <= bad and h % 3 == 0
-        out.append(
-            {
-                "id": "RUN-" + hash_id(f"{w['id']}r{k}")[:5],
-                "ts": ts,
-                "state": "failed" if failed else "success",
-                "dur": float(to_fixed((last.get("dur") or 2) * (0.8 + (h % 40) / 100), 1)),
-                "rows": js_round((last.get("rows") or 100) * (0.9 + (h % 20) / 100)),
-                "trig": lr["trig"] if lr else "Schedule",
-                "note": "Validation: schema drift" if failed else "",
-            }
-        )
-        k += 1
-    if not real:
-        out.insert(
-            0,
-            {
-                "id": lr["id"] if lr else "RUN-" + hash_id(w["id"])[:5],
-                "ts": last["ts"],
-                "state": last["state"],
-                "dur": last["dur"],
-                "rows": last["rows"],
-                "trig": lr["trig"] if lr else "Schedule",
-                "note": last["note"],
-            },
-        )
-    return sorted(out, key=lambda r: -r["ts"])  # stable, as the demo's sort
+    return [
+        {
+            "id": lr["id"] if lr else "RUN-" + hash_id(w["id"])[:5],
+            "ts": last["ts"],
+            "state": last["state"],
+            "dur": last["dur"],
+            "rows": last["rows"],
+            "trig": lr["trig"] if lr else "Schedule",
+            "note": last["note"],
+        }
+    ]
 
 
 def attention(workflows: list[dict], now: int = AS_OF) -> list[dict]:
@@ -230,6 +212,13 @@ def _matches(w: dict, cat: str | None, status: str | None, src: str | None, q: s
     return True
 
 
+def _upstream(w: dict, lv: dict[str, dict]) -> dict:
+    """{"upstream": "paused"} when the workflow's source is paused in the Connection Fabric (the list's "Paused
+    upstream", plan 6 C10); nothing otherwise, so the seeded workspace answers as the demo does."""
+    s = lv.get(w.get("src") or "")
+    return {"upstream": "paused"} if s and s.get("paused") else {}
+
+
 # ---------------------------------------------------------------- endpoints
 @router.get("")
 def workflow_list(
@@ -242,12 +231,14 @@ def workflow_list(
 ):
     require_studio(p)
     wl = all_workflows(session)
+    lv = live.sources(session)  # plan 6 C10: the sources as they are now (paused, disconnected ...)
     rows = [
-        {k: v for k, v in w.items() if k not in _LIST_HIDDEN} | {"stat": wf_stat(w)}
+        {k: v for k, v in w.items() if k not in _LIST_HIDDEN} | {"stat": wf_stat(w)} | _upstream(w, lv)
         for w in wl
         if _matches(w, cat, status, src, q)
     ]
     return {
+        "live": live.overlay(lv),  # the browser's checks read the sources' status from here, as the server's do
         "workflows": rows,
         "counts": counts(wl),
         "runs": recent_runs(session),
@@ -292,7 +283,9 @@ def workflow_detail(workflow_id: str, p: CurrentPrincipal, session: DbSession):
     saved = json.loads(w["saved"]) if w.get("saved") else None
     tpl = w.get("tpl")
     return {
-        "workflow": w | {"stat": wf_stat(w)},
+        "workflow": {k: v for k, v in w.items() if k not in _HIDDEN}
+        | {"stat": wf_stat(w)}
+        | _upstream(w, live.sources(session)),  # plan 6 C10: "Paused upstream"
         "saved": saved
         and {"graph": saved["g"], "name": saved["m"]["name"], "owner": saved["m"]["owner"], "trig": saved["m"]["trig"]}
         | {k: saved["m"][k] for k in ("retries", "alert") if k in saved["m"]},  # the run settings, once saved
@@ -300,6 +293,27 @@ def workflow_detail(workflow_id: str, p: CurrentPrincipal, session: DbSession):
         "history": history(w, recent_runs(session)),
         "run_counts": c,
         "run_from_last": run_from_last(w),
-        "failed_rows": failed_rows(w, c),
+        "failed_rows": failed_rows(w, c, session),  # the latest run's held records (failed_record, plan 6 C5)
         "success_pct": js_round(w["okN"] / w["runsN"] * 100) if w.get("runsN") else None,
+        "versions": versions.listing(session, w, iso),  # plan 6 C8: every version, newest first
+        "published_ver": (w.get("pub") or {}).get("ver"),  # the version runs use (None: not published)
+        "draft": draft_for(session, w["id"], p.account.id),  # plan 6 C9: this person's autosaved working copy, or None
     }
+
+
+@router.get("/{workflow_id}/compare")
+def workflow_compare(workflow_id: str, a: str, p: CurrentPrincipal, session: DbSession, b: str | None = None):
+    """The History tab's Compare (plan 6 C8): what changed from version `a` to version `b` (default: the current one),
+    blocks added, removed and changed (with each changed setting), links added and removed, and changed settings."""
+    require_studio(p)
+    w = state.get(session, "workflows", workflow_id)
+    if w is None:
+        raise HTTPException(404, {"code": "not_found", "message": f"No workflow {workflow_id}."})
+    from di.actions.workflows import label
+
+    b = b or w["ver"]
+    va, vb = versions.resolve(session, w, a), versions.resolve(session, w, b)
+    if va is None or vb is None:
+        ver = a if va is None else b
+        raise HTTPException(404, {"code": "not_found", "message": f"No version {ver} of {w['name']}."})
+    return versions.diff(va, vb, label)

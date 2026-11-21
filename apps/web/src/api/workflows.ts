@@ -3,7 +3,7 @@
  * checks and the run simulation. Changes go through invoke() with the demo's action ids: workflow.save,
  * workflow.publish, workflow.setStatus, workflow.create, workflow.duplicate, workflow.delete, workflow.run (and
  * workflow.validate as a read), and the server's workflow.saveTemplate, workflow.reprocess and workflow.applyFix for
- * the controls the demo ran in the browser.
+ * the controls the demo ran in the browser, and workflow.restore for the History tab's versions (plan 6 C8).
  *
  * apps/api/di/screens/workflows.py has the mapping, export by export:
  * - the list, the recent runs and the attention list: GET /api/screens/workflows; one workflow's graph, saved
@@ -35,9 +35,15 @@ export interface Workflow {
   id: string; name: string; status: WfStatus; ver: string; cat: 'Ingest' | 'Outbound' | 'Decision'; kind: 'pipe' | 'dec';
   src: string | null; owner: string; trig: Trigger; desc: string; running: boolean; dirty: boolean;
   last: LastRun | null; runsN: number; okN: number; updated: number | string;
-  /** `retries`: the retries setting the run used (once one is saved). */
-  lastRun?: { id: string; ts: number; t0: number; trig: string; states: Record<string, RunState>; dur: Record<string, number>; order: string[]; status: string; note: string; retries?: number };
+  /** `retries`: the retries setting the run used (once one is saved). A real run (plan 6 C5, C7) also has the records
+   * in and out of each step (`counts`), the tries per step (`attempts`), the records it held and its run key. */
+  lastRun?: {
+    id: string; ts: number; t0: number; trig: string; states: Record<string, RunState>; dur: Record<string, number>; order: string[]; status: string; note: string; retries?: number;
+    counts?: Record<string, Counts>; attempts?: Record<string, number>; held?: number; key?: string;
+  };
   frFix?: string; frReproc?: string; retries?: number; alert?: string; aiNote?: string;
+  /** 'paused' when its source is paused in the Connection Fabric (the server's "Paused upstream", plan 6 C10). */
+  upstream?: 'paused';
 }
 export interface RunRow { id: string; wf: string; name: string; ts: number; trig: string; dur: number; rows: number; state: RunState; note: string }
 export interface HistoryRow { id: string; ts: number; state: RunState; dur: number; rows: number; trig: string; note: string }
@@ -51,13 +57,27 @@ export interface Source {
 export interface TestRun {
   status: 'running' | 'held' | 'failed' | 'success'; warn?: boolean; states: Record<string, RunState>; dur: Record<string, number | string>;
   order: string[]; i: number; approved: boolean; t0: number; id: string; trig: string;
+  /** The tries per step of a real run (plan 6 C7); a test run has none. */
+  attempts?: Record<string, number>;
+  /** A test run (workflow.testRun, plan 6 C9): a dry run on the server with real records in and out of each step,
+   *  each step's first records before and after it, and what was held. */
+  dry?: boolean; counts?: Record<string, Counts>; samples?: Record<string, StepSamples>; rows?: number; held?: number; note?: string;
+}
+/** A record as a test run shows it: its id and data (after mapping, its canonical facts; a rejected one, its rule). */
+export interface SampleRec { ext_id: string; resource: string; data?: Record<string, unknown>; facts?: { model: string; key: string; field: string; value: unknown }[]; rule?: string; field?: string; reason?: string }
+export interface StepSamples { before: SampleRec[]; after: SampleRec[] }
+/** What workflow.testRun answers. */
+export interface TestRunResult {
+  id: string; name: string; dry: true; status: 'held' | 'failed' | 'success'; states: Record<string, RunState>; counts: Record<string, Counts>;
+  dur: Record<string, number>; order: string[]; samples: Record<string, StepSamples>; rows: number; held: number; note: string; approved: boolean;
 }
 export interface Counts { in: number; out: number; rej: number }
 type Attention = { ic: string; h: string; t: string; s: string; arg: string; go?: string };
 
 // ---------------------------------------------------------------- the API answers
 export interface WfTemplate { id: string; from: string; name: string; cat: string; kind: string; src: string | null; owner: string; trig: Trigger }
-interface ListAnswer { workflows: Workflow[]; runs: RunRow[]; attention: Attention[]; templates?: WfTemplate[]; now?: number }
+/** `live`: each source's status for the checks as the server reads it now (plan 6 C10, di/workflow/live.py). */
+interface ListAnswer { workflows: Workflow[]; runs: RunRow[]; attention: Attention[]; templates?: WfTemplate[]; now?: number; live?: G.LiveState }
 export interface Saved { graph: WfGraph; name: string; owner: string; trig: Trigger; retries?: number; alert?: string }
 interface Detail {
   workflow: Workflow & { graph: WfGraph };
@@ -65,6 +85,21 @@ interface Detail {
   template: WfGraph | null;
   history: HistoryRow[];
   failed_rows: { rec: string; field: string; value: string; rule: string }[];
+  versions?: WfVersion[];
+  published_ver?: string | null;
+  /** The signed-in person's autosaved working copy (plan 6 C9, workflow.draft.save), or null. */
+  draft?: ServerDraft | null;
+}
+/** A working copy kept on the server (di/actions/workflow_drafts.py). `base`: the ver|updated it was taken from. */
+export interface ServerDraft { graph: WfGraph; name: string; owner?: string; trig?: Trigger; retries?: number; alert?: string; base?: string; at?: string }
+/** A kept version of a workflow (plan 6 C8): `current` is the saved one, `published` the one runs use. */
+export interface WfVersion { ver: string; at: string; by: string; note: string; current: boolean; published: boolean }
+/** What changed from version a to version b (GET /api/screens/workflows/{id}/compare). */
+export interface VersionDiff {
+  a: string; b: string;
+  blocks: { added: { id: string; label: string }[]; removed: { id: string; label: string }[]; changed: { id: string; label: string; fields: { field: string; from: unknown; to: unknown }[] }[] };
+  links: { added: { a: string; b: string }[]; removed: { a: string; b: string }[] };
+  settings: { key: string; from: unknown; to: unknown }[];
 }
 type ApiSource = Source & { compl?: number; health?: { workflows?: string[] } };
 /** A block setting (di/workflow/blocks.py FieldSpec). */
@@ -82,10 +117,11 @@ const detailA = (id: string) => cached<Detail>('/api/screens/workflows/' + encod
 const sourcesA = () => cached<{ sources: ApiSource[] }>('/api/screens/integration/sources').sources;
 const mappingsA = () => cached<{ mappings: Record<string, string[][]> }>('/api/screens/integration/models').mappings;
 
-/** The reference lists and sources the ported graph logic reads. */
+/** The reference lists and sources the ported graph logic reads; the sources with the status the server's checks read
+ *  (paused, disconnected ... over the demo's statuses), so the canvas checks agree with workflow.validate. */
 function lk(): G.Lookups {
   return {
-    sources: sourcesA(), mappings: mappingsA(), XF: ref('XF'), FR_XF: ref('FR_XF'), FXD: ref('FXD'), ACT_TYPES: ref('ACT_TYPES'), TOOLS: ref('TOOLS'),
+    sources: G.liveSources(sourcesA(), listA().live), mappings: mappingsA(), XF: ref('XF'), FR_XF: ref('FR_XF'), FXD: ref('FXD'), ACT_TYPES: ref('ACT_TYPES'), TOOLS: ref('TOOLS'),
     MAP_TARGET: ref('MAP_TARGET'), SH: ref('SH'), DELIVER: ref('DELIVER'), CH_ARR: ref('CH_ARR'), CH_DEL: ref('CH_DEL'),
   };
 }
@@ -193,23 +229,35 @@ export function runFromLast(id: string): TestRun | null {
   return {
     status: (l.status === 'warning' ? 'success' : l.status) as TestRun['status'], warn: l.status === 'warning', states: { ...l.states }, dur: l.dur,
     order: l.order.filter((x) => ids.has(x)), i: l.order.length, approved: true, t0: l.t0, id: l.id, trig: l.trig,
+    ...(l.attempts ? { attempts: { ...l.attempts } } : {}),
   };
 }
 export const runTimes = (r: TestRun): Record<string, { s: number; e: number; d: number; ex: boolean }> => G.runTimes(r, nowMs());
 export const hashId = (s: string): string => G.hashId(s);
 
-/** Records in and out of each step, from the given run states (or the last run). */
+/** Records in and out of each step. For the last run (no states, or its states): what the run really counted
+ * (`lastRun.counts`, plan 6 C5), none for a seeded run that never ran; for a test run's states, the browser's estimate. */
 export function runCounts(id: string, g: WfGraph, states: Record<string, RunState> | null): Record<string, Counts> {
   const w = workflow(id);
   if (!w) return {};
-  return G.runCounts(w, g, states ?? w.lastRun?.states ?? {});
+  const l = w.lastRun;
+  const same = (a: Record<string, RunState>, b: Record<string, RunState>) => Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k]);
+  if (l && (states == null || same(states, l.states))) return { ...(l.counts ?? {}) };
+  return G.runCounts(w, g, states ?? {});
 }
-/** Every run of this workflow, latest first (real runs, then earlier ones derived from its counts). */
+/** The runs of this workflow that happened, latest first. */
 export function history(id: string): HistoryRow[] {
   const w = workflow(id);
   if (!w) return [];
   return detailA(id).history;
 }
+/** Every kept version of this workflow, newest first (plan 6 C8). */
+export const versions = (id: string): WfVersion[] => (workflow(id) ? detailA(id).versions ?? [] : []);
+/** The version runs use, or null when the workflow is not published. */
+export const publishedVersion = (id: string): string | null => (workflow(id) ? detailA(id).published_ver ?? null : null);
+/** What changed from version a to version b (default: the current one), computed on the server. Suspends. */
+export const compareVersions = (id: string, a: string, b?: string): VersionDiff =>
+  cached<VersionDiff>('/api/screens/workflows/' + encodeURIComponent(id) + '/compare?a=' + encodeURIComponent(a) + (b ? '&b=' + encodeURIComponent(b) : ''));
 /** The invalid rows of the latest run, with the field and the rule each broke. */
 export const failedRows = (id: string): { rec: string; field: string; value: string; rule: string }[] => {
   const w = workflow(id);
@@ -315,9 +363,13 @@ export const saveAsTemplate = (id: string) => invoke<{ id: string; name: string;
 /** A new draft from a saved template (frTplUse). */
 export const createFromTemplate = (tpl: string) => invoke<{ id: string; name: string }>('workflow.create', { type: 'template', tpl });
 /** Send the latest run's held records back through validation (frReproc). */
-export const reprocessFailed = (id: string) => invoke<{ id: string; name: string; n: number }>('workflow.reprocess', { id });
+export const reprocessFailed = (id: string) =>
+  invoke<{ id: string; name: string; n: number; reprocessed: number; held: number }>('workflow.reprocess', { id });
 /** Apply the investigation's suggested fix (frFixApply). */
 export const applySuggestedFix = (id: string) => invoke<{ id: string; name: string; ver: string; fix: string }>('workflow.applyFix', { id });
+/** Put an earlier version's graph and settings back as a new version (workflow.restore). */
+export const restoreVersion = (id: string, ver: string) =>
+  invoke<{ id: string; name: string; ver: string; from: string }>('workflow.restore', { id, ver });
 export const publishWorkflow = (id: string, graph?: WfGraph) =>
   invoke<{ id: string; ver: string; name: string; trig: string }>('workflow.publish', graph ? { id, graph } : { id });
 export const setWorkflowStatus = (id: string, status: WfStatus) =>
@@ -325,6 +377,18 @@ export const setWorkflowStatus = (id: string, status: WfStatus) =>
 export const createWorkflow = (i: { type: string; src?: string; ch?: string; name?: string; graph?: WfGraph; desc?: string }) =>
   invoke<{ id: string; name: string }>('workflow.create', i);
 export const duplicateWorkflow = (id: string) => invoke<{ id: string; name: string }>('workflow.duplicate', { id });
+/** A new draft from the JSON Export JSON wrote (workflow.import, plan 6 C10); an unknown block or source is refused. */
+export const importWorkflow = (data: unknown) => invoke<{ id: string; name: string }>('workflow.import', { data });
+/** The signed-in person's working copy kept on the server, read when the workflow opens (plan 6 C9). Suspends. */
+export const serverDraftOf = (id: string): ServerDraft | null => (workflow(id) ? detailA(id).draft ?? null : null);
+/** Autosave the working copy (workflow.draft.save); the canvas calls it after two seconds of quiet. */
+export const saveDraft = (d: { id: string } & ServerDraft) => invoke<{ id: string; at: string }>('workflow.draft.save', { ...d });
+/** Test run (workflow.testRun): a dry run of the draft's graph on the server over a sample of real records, writing
+ *  nothing. It stops at Human approval ("held") unless `approved`. */
+export const testRunWorkflow = (id: string, graph: WfGraph, approved = false, sample?: number) =>
+  invoke<TestRunResult>('workflow.testRun', { id, graph, ...(approved ? { approved } : {}), ...(sample ? { sample } : {}) });
+/** Drop the working copy kept on the server (after Save, Publish or Discard). */
+export const discardDraft = (id: string) => invoke<{ id: string; discarded: boolean }>('workflow.draft.discard', { id });
 export const deleteWorkflow = (id: string) => invoke<{ id: string; name: string }>('workflow.delete', { id });
 /** Start a run. It returns at once with the run key (`run`); follow it with followRun. */
 export const runWorkflow = (id: string): Promise<ActionResult<{ id: string; name: string; run?: string }>> =>
@@ -339,8 +403,9 @@ export async function exportJson(id: string): Promise<{ file: string; json: stri
     const g = detailA(id).workflow.graph, L = lk();
     return exportFile(w, {
       id: w.id, name: w.name, version: w.ver, type: w.cat, status: w.status, owner: w.owner, trigger: w.trig,
-      source: w.src ? G.srcOr(L, w.src).vendor : null, description: w.desc,
-      steps: g.nodes.map((n) => ({ id: n.id, kind: n.k, ref: n.ref, label: G.info(L, n).label, x: n.x, y: n.y })),
+      source: w.src ? G.srcOr(L, w.src).vendor : null, source_id: w.src, description: w.desc,
+      // `cfg`: the block settings that differ from the defaults, so Import (workflow.import) recreates them
+      steps: g.nodes.map((n) => ({ id: n.id, kind: n.k, ref: n.ref, label: G.info(L, n).label, x: n.x, y: n.y, ...(n.cfg ? { cfg: n.cfg } : {}) })),
       links: g.edges.map((x) => ({ from: x.a, to: x.b, fixed: !!x.locked })),
       exported_by: session()?.account.label ?? '', exported_at: new Date(nowMs()).toISOString(),
     });

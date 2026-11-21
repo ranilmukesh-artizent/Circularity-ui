@@ -1,8 +1,14 @@
 """B14: the Workflow Studio's reads give the demo's answers (fixtures/golden/screens/workflows.json), for every account.
 
-The studio is pure demo state (the demo's S.wf, seeded into the "workflows" and "workflow_runs" collections), so the
-list, the recent runs, the attention list and every workflow's history, step counts, last run and failed records must
-match the demo exactly. Accounts without the Workflow Studio section get 403 out_of_scope.
+The studio starts from demo state (the demo's S.wf, seeded into the "workflows" and "workflow_runs" collections), so the
+list, the recent runs, the attention list and every workflow's history and last run must match the demo exactly. The
+step counts and failed records are asserted as behaviour instead (plan 6 C5): they come from real runs only, and the
+seeded runs never ran. Accounts without the Workflow Studio section get 403 out_of_scope.
+
+**History: only runs that happened (plan 6 C8, a deliberate change).** The demo's history (frWfHistory) added up to 30
+earlier runs derived from a workflow's counts; those never happened, so the server lists only the run records (or the
+workflow's recorded last run when it has none). The history is compared with the demo's entries that were real
+(`real_history`), and the rest is asserted as behaviour in tests/test_workflow_extras.py.
 """
 
 import os
@@ -25,6 +31,13 @@ def setup_module():
 def studio(acct: str) -> bool:
     pages = G["accounts"][acct]["pages"]["integration"]
     return bool(pages and "studio" in pages)
+
+
+def real_history(hist: list[dict]) -> list[dict]:
+    """The demo's history without the runs it derived from the counts: its real runs or, when it had none, the
+    workflow's last run (the newest entry; the derived ones are all earlier)."""
+    real = [x for x in hist if x.get("real")]
+    return real or hist[:1]
 
 
 def stat(w: dict) -> str:
@@ -66,10 +79,12 @@ def test_detail(wid):
     w = next(x for x in G["starting"] if x["id"] == wid)
     assert norm(got["workflow"]) == norm(w | {"stat": want["stat"]})
     assert norm(got["template"]) == norm(want["template"])
-    assert norm(got["history"]) == norm(want["history"])
-    assert norm(got["run_counts"]) == norm(want["run_counts"])
+    assert norm(got["history"]) == norm(real_history(want["history"]))
+    assert len(got["history"]) <= 1 or all(x.get("real") for x in got["history"])
     assert norm(got["run_from_last"]) == norm(want["run_from_last"])
-    assert got["failed_rows"] == want["failed_rows"]
+    # behaviour, no longer the demo's numbers (plan 6 C5, decision D-Fabric): the step counts and failed records are
+    # what a real run counted and held; the seeded last runs never ran, so they have none
+    assert got["run_counts"] == {} and got["failed_rows"] == []
     assert got["saved"]["graph"] == w["graph"]
 
 

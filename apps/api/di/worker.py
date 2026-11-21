@@ -185,6 +185,24 @@ def tick_triggers() -> None:
             log.info("queued scheduled workflow runs: %s", ", ".join(queued))
     except Exception:
         log.exception("workflow triggers failed")
+    reap_lost_runs()
+
+
+def reap_lost_runs() -> None:
+    """Close workflow runs a dead worker left open (`running` set, no job queued or going, no run lock held): the run
+    fails with "worker lost" and the workflow can run again (plan 6 C7; Run now and triggered starts do the same)."""
+    from di.actions import workflows as wf
+    from di.reads.workflows import all_workflows
+
+    try:
+        with SessionLocal() as s:
+            now = wf._now()
+            closed = [w["id"] for w in all_workflows(s) if w.get("running") and wf.reap_lost_run(s, w, now)]
+            s.commit()
+        if closed:
+            log.warning("closed workflow runs their worker lost: %s", ", ".join(closed))
+    except Exception:
+        log.exception("reaping lost workflow runs failed")
 
 
 if __name__ == "__main__":

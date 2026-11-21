@@ -125,7 +125,7 @@ export function Palette({ w, onDown, onKeyAdd }: { w: Workflow; onDown: (e: RPoi
     return <div className="sec" key={k}><button className="wfh" aria-expanded={o} onClick={() => setOpen({ ...open, [k]: !o })}><span>{h}</span></button>{o && items}</div>;
   };
   const XF = transforms(), FR = frTransforms();
-  const XIC: Record<string, string> = { x_val: 'checks', x_utc: 'clock', x_fx: 'dollar', x_lookup: 'lookup', x_units: 'scale', x_ident: 'link', x_late: 'clock' };
+  const XIC: Record<string, string> = { x_val: 'checks', x_utc: 'clock', x_fx: 'dollar', x_lookup: 'lookup', x_units: 'scale', x_ident: 'link', x_late: 'clock', x_env: 'shield', x_flag: 'alert' };
   const xf = (id: string) => {
     const x = XF.find((y) => y.id === id), f = FR.find((y) => y.id === id);
     if (!x) return null;
@@ -145,7 +145,7 @@ export function Palette({ w, onDown, onKeyAdd }: { w: Workflow; onDown: (e: RPoi
       <h4 className="frpalh">Transform</h4>
       {grp('frT', 'Transform steps', [
         ...(w.src ? [it('map:' + w.src, sourceShortLabel(w.src) + ' fields', 'Field mapping → ' + mapTarget(w.src), mapIc)] : []),
-        ...['x_enrich', 'x_filter', 'x_agg', 'x_expr', 'x_lookup', 'x_join', 'x_val', 'x_utc', 'x_fx', 'x_units', 'x_ident', 'x_late'].map(xf),
+        ...['x_enrich', 'x_filter', 'x_agg', 'x_expr', 'x_lookup', 'x_join', 'x_val', 'x_utc', 'x_fx', 'x_units', 'x_ident', 'x_late', 'x_env', 'x_flag'].map(xf),
       ])}
       <h4 className="frpalh">Orchestration</h4>
       {grp('frO', 'Orchestration steps', ['x_sched', 'x_evtrig', 'x_branch', 'x_loop', 'x_call', 'x_wait'].map(xf))}
@@ -475,9 +475,11 @@ export function ChecksPanel({ g, checks, onPick }: { g: WfGraph; checks: Check[]
   );
 }
 
-/** The run's step table (wfRunHTML). `retries`: the Retries setting; a failed step shows that many tries (the demo's fixed 3). */
+/** The run's step table (wfRunHTML). Try: the tries a real run recorded per step (`run.attempts`, plan 6 C7); for a run
+ * without them (a test run), a failed step shows the Retries setting (`retries`, the demo's fixed 3). */
 export function TaskInstances({ g, run, retries = 3, onPick, onApprove, onClear }: { g: WfGraph; run: TestRun | null; retries?: number; onPick: (id: string) => void; onApprove: () => void; onClear: () => void }) {
   const [f, setF] = useState<{ q: string; st: string }>({ q: '', st: '' });
+  const [peek, setPeek] = useState<string | null>(null); // the step whose test-run samples are open
   const L = RUN_LABEL(), C = RUN_CHIP(), by: Record<string, WfNode> = {};
   g.nodes.forEach((n) => (by[n.id] = n));
   let sum: ReactNode = null, body: ReactNode;
@@ -495,16 +497,24 @@ export function TaskInstances({ g, run, retries = 3, onPick, onApprove, onClear 
     </>;
     body = <>
       <div className="runcnt">{Object.keys(cnt).map((k) => <button key={k} className={'chip ' + C[k] + ' chipb'} aria-pressed={f.st === k} onClick={() => setF({ ...f, st: f.st === k ? '' : k })}>{cnt[k]} {L[k]}</button>)}</div>
+      {run.dry && run.status !== 'running' && <p className="note" id="wfDryNote">Dry run on {fmtNumber(run.rows ?? 0)} sampled records. Nothing was written.{run.note ? ' ' + run.note + '.' : ''}</p>}
       <div className="tw" style={{ maxHeight: 340, overflow: 'auto' }}><table className="t tight">
-        <thead><tr><th>Step</th><th>State</th><th>Start</th><th>End</th><th className="r">Duration</th><th className="r">Try</th><th>Pool</th></tr></thead>
-        <tbody>{rows.length ? rows.map((id) => {
-          const n = by[id], st = run.states[id], t = T[id], ex = t?.ex;
-          return <tr key={id} tabIndex={0} onClick={() => onPick(id)} onKeyDown={onActivateKey(() => onPick(id))} style={{ cursor: 'pointer' }}>
+        <thead><tr><th>Step</th><th>State</th><th>Start</th><th>End</th><th className="r">Duration</th><th className="r">Try</th>{run.counts && <th className="r">Records (in / out)</th>}<th>Pool</th></tr></thead>
+        <tbody>{rows.length ? rows.flatMap((id) => {
+          const n = by[id], st = run.states[id], t = T[id], ex = t?.ex, c = run.counts?.[id], sm = run.samples?.[id];
+          const row = <tr key={id} tabIndex={0} onClick={() => onPick(id)} onKeyDown={onActivateKey(() => onPick(id))} style={{ cursor: 'pointer' }}>
             <td><b>{stepInfo(n).label}</b></td><td><span className={'chip ' + C[st]}>{ICO[st] ?? ''} {L[st]}</span></td>
             <td className="num nowrap">{ex ? hms(t.s) : '—'}</td><td className="num nowrap">{ex && st !== 'running' ? hms(t.e) : '—'}</td>
-            <td className="r num">{ex && st !== 'running' ? t.d.toFixed(2) + ' s' : '—'}</td><td className="r num">{st === 'failed' ? Math.max(1, retries) : ex ? 1 : 0}</td><td className="mono">{POOL(n)}</td>
+            <td className="r num">{ex && st !== 'running' ? t.d.toFixed(2) + ' s' : '—'}</td><td className="r num">{run.attempts?.[id] ?? (st === 'failed' ? Math.max(1, retries) : ex ? 1 : 0)}</td>
+            {run.counts && <td className="r num nowrap">{c ? fmtNumber(c.in) + ' / ' + fmtNumber(c.out) + (c.rej ? ' · ' + fmtNumber(c.rej) + ' held' : '') : '—'}
+              {sm && (sm.before.length > 0 || sm.after.length > 0) && <> <button className="lnk" aria-expanded={peek === id} onClick={(e) => { e.stopPropagation(); setPeek(peek === id ? null : id); }}>Samples</button></>}</td>}
+            <td className="mono">{POOL(n)}</td>
           </tr>;
-        }) : <tr><td colSpan={7}><div className="empty"><b>No steps match</b></div></td></tr>}</tbody>
+          return peek === id && sm ? [row, <tr key={id + ':s'}><td colSpan={8}><div className="frsamp" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 8 }}>
+            <div><h4>Before</h4><pre className="frlog" style={{ maxHeight: 220, overflow: 'auto' }}>{sm.before.length ? JSON.stringify(sm.before, null, 2) : 'No records'}</pre></div>
+            <div><h4>After</h4><pre className="frlog" style={{ maxHeight: 220, overflow: 'auto' }}>{sm.after.length ? JSON.stringify(sm.after, null, 2) : 'No records'}</pre></div>
+          </div></td></tr>] : [row];
+        }) : <tr><td colSpan={8}><div className="empty"><b>No steps match</b></div></td></tr>}</tbody>
       </table></div>
     </>;
   }
