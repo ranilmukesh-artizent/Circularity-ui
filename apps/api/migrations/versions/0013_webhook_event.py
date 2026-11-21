@@ -1,4 +1,8 @@
-"""plan 6 A7 webhook event dedupe (reserved; filled by that task)
+"""plan 6 A7: webhook events already received, for dedupe
+
+One row per event accepted by POST /api/webhooks/{source_id} (di/connectors/webhook.py): a second delivery of the same
+event id for the same source is answered `{"duplicate": true}` and queues nothing. Rows older than a week are pruned
+by the intake (events older than the 300 s replay window are refused anyway).
 
 Revision ID: 0013
 Revises: 0012
@@ -9,7 +13,7 @@ DROP ... IF EXISTS, inserts ON CONFLICT DO NOTHING) so they can be re-applied wi
 upgrade head while the chain is being filled.
 """
 
-from alembic import op  # noqa: F401 - used once the task fills this migration
+from alembic import op
 
 revision = "0013"
 down_revision = "0012"
@@ -18,8 +22,20 @@ depends_on = None
 
 
 def upgrade() -> None:
-    pass
+    op.execute(
+        """
+CREATE TABLE IF NOT EXISTS webhook_event (
+  source_id    text        NOT NULL,
+  event_id     text        NOT NULL,
+  event_type   text,
+  event_time   timestamptz,
+  received_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (source_id, event_id)
+);
+CREATE INDEX IF NOT EXISTS ix_webhook_event_received ON webhook_event (received_at);
+"""
+    )
 
 
 def downgrade() -> None:
-    pass
+    op.execute("DROP TABLE IF EXISTS webhook_event")

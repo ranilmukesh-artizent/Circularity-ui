@@ -380,3 +380,16 @@ fx_rate = Table(
     Column("usd_rate", Numeric(18, 6), nullable=False),  # units of the currency per USD
     CheckConstraint("usd_rate > 0", name="fx_rate_positive"),
 )
+
+# --- 0013 webhook events received, for dedupe (plan 6 A7; di/connectors/webhook.py) ---------------------------------
+
+webhook_event = Table(
+    "webhook_event",
+    metadata,
+    Column("source_id", Text, primary_key=True),
+    Column("event_id", Text, primary_key=True),
+    Column("event_type", Text),
+    _ts("event_time"),
+    _ts("received_at", now=True),
+    Index("ix_webhook_event_received", "received_at"),
+)
