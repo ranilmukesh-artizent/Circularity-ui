@@ -1,7 +1,7 @@
 /**
  * Connection Fabric (#/integration): sources, catalogue, source map, source tables, canonical models, event stream,
- * conflicts, manual import and monitor. Changes go through invoke(); the near-real flows the server has no action for
- * yet (pause, disconnect, re-authenticate, connect from the catalogue) are refused by the pages with notOnServer().
+ * conflicts, manual import and monitor. Changes go through invoke(), the near-real flows too (pause, resume,
+ * disconnect, re-authenticate, test a connection, connect from the catalogue: di/actions/fabric_sources.py).
  *
  * GET /api/screens/integration/{sources, sources/{id}, overview, map, tables, models, events, conflicts, monitor}, the
  * Workflow Studio list (/api/screens/workflows) and the reference lists; the mapping, export by export, is in
@@ -25,7 +25,7 @@ export interface Source {
   rw: string; inputs: string; read: string[]; write: string[]; step: number[]; authority: string[]; owner: string; records: number;
   note?: string; cfgVer: string; lastSync: number | null; updatedAt: number; runs: SyncRun[]; audit: AuditEntry[];
   method: string; cfg: Record<string, string | number>; credAt: number; credDays: number;
-  syncing?: boolean; syncPct?: number; paused?: boolean; disconnected?: boolean; discBy?: string; frConnectedAt?: number;
+  syncing?: boolean; syncPct?: number; paused?: boolean; disconnected?: boolean; discBy?: string | null; frConnectedAt?: number;
   /** The connector's own state (live, failing, auth_expired, unavailable); `status` shows failing and auth_expired as stale. */
   connectorStatus?: string;
 }
@@ -314,6 +314,7 @@ export function journeyStep(n: number): { n: number; label: string; kind: string
 /* ---- changes through the action registry ---- */
 export const syncSource = (id: string) => invoke('source.sync', { source_id: id });
 export const reconnectSource = (id: string) => invoke('source.reconnect', { source_id: id });
+/** Rotate credentials: the page checks the secret (8 characters or more) and does not send it; the vault is simulated. */
 export const rotateCredentials = (id: string, days: number) => invoke<{ source_id: string; ver: string; stale: boolean }>('credentials.rotate', { source_id: id, days });
 export const deleteSource = (id: string) => invoke<{ source_id: string; name: string; vendor: string }>('source.delete', { source_id: id });
 export interface Draft {
@@ -325,17 +326,23 @@ export const saveSource = (mode: 'new' | 'edit', id: string, d: Draft, maps: str
     mode, id, d, maps, ops, note: '',
   });
 export async function resolveConflict(id: string) {
-  // the server answers with the kept source's id and the field; the page names the authority and the kind
+  // the server names the authority and the kind; the queue's copy is the fallback
   const c = (lastConflicts ? peek<ConflictAnswer>(lastConflicts)?.conflicts : undefined)?.find((x) => x.id === id);
   const r = await invoke<{ id: string; kept: string; field: string; authority: string; kind: string }>('conflict.resolve', { id });
-  if (r.ok) r.output = { ...r.output, authority: c?.authority ?? r.output.kept, kind: c?.kind ?? r.output.field };
+  if (r.ok) r.output = { ...r.output, authority: r.output.authority || c?.authority || r.output.kept, kind: r.output.kind || c?.kind || r.output.field };
   return r;
 }
 export const escalateConflict = (id: string) => invoke('conflict.escalate', { id });
-export const commitImport = (ok: number, err: number, rows: unknown) =>
-  invoke('import.commit', { ok, err, hash: hashId(JSON.stringify(rows)) });
+export interface ImportRow { asset_id: string; qty: string; grade: string; location: string; owner: string; received: string; errors: string[] }
+/** The import.commit input: the demo's counts and hash (of every validated row, so the same file loads once), plus
+ *  the valid rows themselves, which the server checks again and keeps, tagged manual. */
+export function importInput(ok: number, err: number, rows: ImportRow[]) {
+  const valid = rows.filter((r) => !r.errors.length).map(({ asset_id, qty, grade, location, owner, received }) => ({ asset_id, qty, grade, location, owner, received }));
+  return { ok, err, hash: hashId(JSON.stringify(rows)), rows: valid };
+}
+export const commitImport = (ok: number, err: number, rows: ImportRow[]) => invoke('import.commit', importInput(ok, err, rows));
 export const updateTables = (input: Record<string, unknown>) =>
-  invoke<{ op: string; name?: string; fks?: number; from?: string; to?: string }>('tables.update', input);
+  invoke<{ op: string; name?: string; fks?: number; from?: string; to?: string; table?: Table; index?: number; gone?: string[][]; fk?: string[] }>('tables.update', input);
 export const addComment = (key: string, text: string) => invoke('comment.add', { key, text });
 
 /** Undo journaled actions: POST /api/journal/undo. */
@@ -345,7 +352,7 @@ export function undoActions(seqs: number[]) {
 
 /** Start every live source syncing, staggered like the demo's Sync all. Returns how many started. */
 export function syncAllLive(): number {
-  const l = sources().filter((s) => s.status === 'live' && !s.syncing);
+  const l = sources().filter((s) => s.status === 'live' && !s.syncing && !s.paused);
   l.forEach((s, i) => window.setTimeout(() => invoke('source.sync', { source_id: s.id }), i * 120));
   return l.length;
 }
@@ -374,9 +381,10 @@ export function followSync(id: string, done: (r: SyncResult) => void): void {
   const t = window.setTimeout(() => end(null), 5 * 60000); // no word from the worker: stop showing it as syncing
 }
 
-/* ---- source tables: layout only (positions), not journaled ---- */
+/* ---- source tables: positions. A drag moves the card on screen at once; when it ends (and after Auto Align) the
+   positions are saved with tables.update {op: 'layout'}, so they survive a reload and the next edit's re-read. ---- */
 /** tgLayout: clusters of up to two tables per row, three clusters per band. */
-function layoutTables(m: TableModel) {
+export function layoutTables(m: TableModel) {
   const W = 190, G = 16, P = 44;
   let cx = 24, cy = 24, rowH = 0, col = 0;
   m.cl.forEach(([id]) => {
@@ -406,22 +414,56 @@ export function moveTable(src: string, name: string, x: number, y: number) {
   const t = tableModel(src)?.t.find((t) => t.n === name);
   if (t) { t.x = x; t.y = y; bump(); }
 }
+/** Save the positions of the named tables (all when none are named). */
+export function saveTableLayout(src: string, names?: string[]) {
+  const m = tableModel(src);
+  if (!m) return Promise.resolve(null);
+  const pos: Record<string, [number, number]> = {};
+  m.t.filter((t) => !names || names.includes(t.n)).forEach((t) => { pos[t.n] = [t.x, t.y]; });
+  return invoke<{ op: 'layout'; moved: number }>('tables.update', { src, op: 'layout', table: { pos } });
+}
 export function alignTables(src: string) {
   const m = tableModel(src);
-  if (!m) return;
+  if (!m) return Promise.resolve(null);
   m.t.forEach((t) => { (t as { x: number | null }).x = null; });
   layoutTables(m);
   bump();
+  return saveTableLayout(src);
 }
 
-/* ---- near-real flows (5.10): pause, disconnect, re-authenticate and connect from the catalogue. The server has no
-   action for them yet, so the pages change nothing and say so. ---- */
-/** What the page says when the server has no action for a near-real flow yet. */
-export const notOnServer = (what: string) => what + ' is not available on the server yet.';
+/* ---- near-real flows (5.10): pause and resume, disconnect, re-authenticate, test a connection and connect from the
+   catalogue, each a server action (di/actions/fabric_sources.py). ---- */
+export const pauseSource = (id: string) =>
+  invoke<{ source_id: string; name: string; vendor: string; paused: boolean; workflows: number }>('source.pause', { source_id: id });
+export const resumeSource = (id: string) => invoke<{ source_id: string; name: string; vendor: string }>('source.resume', { source_id: id });
+/** Disconnect; `confirm` is the vendor's name as the person typed it (the server checks it too). */
+export const disconnectSource = (id: string, confirm: string) =>
+  invoke<{ source_id: string; name: string; vendor: string }>('source.disconnect', { source_id: id, confirm });
 
-/** Re-authentication finished: a stale source is reconnected through source.reconnect; otherwise null (no server action yet). */
-export function reauthenticated(id: string): 'reconnect' | 'renewed' | null {
-  const s = source(id);
-  if (!s) return null;
-  return s.status === 'stale' ? 'reconnect' : null;
+/**
+ * Re-authentication finished: a stale source is reconnected (source.reconnect: token refreshed, re-synced); any other
+ * gets its credential renewed for 180 days (credentials.rotate, recorded as a re-authentication).
+ */
+export async function reauthenticated(id: string) {
+  if (source(id)?.status === 'stale') return 'reconnect' as const;
+  return invoke<{ source_id: string; ver: string }>('credentials.rotate', { source_id: id, days: 180, reauth: true });
 }
+
+export interface TestStep { ok: boolean; msg: string }
+export interface TestInput { source_id: string; reauth?: boolean; auth?: string }
+/** The connection test (source.test, a read): DNS, TLS, Auth, Permissions, Sample read, probed by the server; the steps
+ *  up to the first failure. A catalogue system being connected is `cat:<id>`. */
+export const testConnection = (input: TestInput) =>
+  invoke<{ source_id: string; steps: TestStep[]; ok: boolean; at: string }>('source.test', { ...input });
+/** The drawer's one-line test of the settings being edited (source.test with `draft`). */
+export const testDraft = (id: string, d: Draft, ops: { read: string[]; write: string[] }) =>
+  invoke<{ ok: boolean; msg: string }>('source.test', {
+    source_id: id,
+    draft: { method: d.method, url: buildUrl(d), auth: d.auth, read: ops.read.filter((x) => x.trim()).length, write: ops.write.filter((x) => x.trim()).length },
+  });
+
+/** Finish connecting a catalogue system: the source, its accepted mappings (source.update, mode "catalog"). */
+export const connectFromCatalog = (cat: string, auth: string, scopes: string[], maps: [string, string, string, string, number][]) =>
+  invoke<{ mode: 'catalog'; source_id: string; name: string; vendor: string; records: number; csv: boolean }>('source.update', {
+    mode: 'catalog', id: '', d: { catalog: cat, auth, scopes }, maps, ops: {},
+  });

@@ -2,6 +2,7 @@
 catalogue without its random run data (wfSeed, wfStat), integration health (S.hh, hhTotals), source exceptions
 (smExceptions), open conflicts, stale sources and the workspace events (EVENTS)."""
 
+from di import golden
 from di.actions.pipeline import CallContext
 from di.reads import workspace as ws
 from di.reads.common import (
@@ -10,6 +11,19 @@ from di.reads.common import (
     STARTING_MAPPINGS,
     hash_id,
 )
+from di.reads.constants import SRC_TYPES
+
+# How a connector status shows on the screens (read by the integration screen and the source actions): failing and
+# expired credentials show as stale; a disconnected source shows as not connected (`disconnected: true`, `discBy`).
+# A paused one keeps the status it had before (`paused: true`; connectorStatus says `paused`).
+SCREEN_STATUS = {"failing": "stale", "auth_expired": "stale", "disconnected": "unavailable"}
+FR_XTYPES: dict[str, dict] = golden.load("screens/integration")["fr_xtypes"]
+
+
+def type_of(t: str) -> dict:
+    """frTypeOf: a source type's label, short name, category and target model."""
+    return SRC_TYPES.get(t) or FR_XTYPES.get(t) or {"label": t, "short": t, "cat": "internal", "target": "Asset & component"}
+
 
 WF_DEC = ["Standard six-gate decision", "Pool allocation to approval", "Evidence gaps and demand first"]
 

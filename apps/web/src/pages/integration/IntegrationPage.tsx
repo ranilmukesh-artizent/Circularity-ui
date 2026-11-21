@@ -7,8 +7,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBackend } from '../../api/useBackend';
 import {
-  available, deleteSource, followSync, intKids, intSub, mappings, notOnServer, openConflictCount, openDecisionCount, reconnectSource,
-  rotateCredentials, source, srcTypes, syncSource, typeOf, undoActions, wfUsing,
+  available, deleteSource, disconnectSource, followSync, intKids, intSub, mappings, openConflictCount, openDecisionCount, pauseSource,
+  reconnectSource, resumeSource, rotateCredentials, source, srcTypes, syncSource, typeOf, undoActions, wfUsing,
 } from '../../api/integration';
 import { can, canPage } from '../../api/session';
 import { Icon } from '../../ui/Icon';
@@ -77,11 +77,19 @@ export function IntegrationPage({ route, query }: PageProps) {
           else toast(name + ' synced: ' + x.rows.toLocaleString('en-US') + ' records updated.');
         });
       },
-      pause: (id) => {
+      pause: async (id) => {
         if (!canMgr()) return toast(NOMGR);
         const s = source(id);
         if (!s) return;
-        toast(notOnServer(s.paused ? 'Resuming a source' : 'Pausing a source'));
+        if (s.paused) {
+          const r = await resumeSource(id);
+          if (refused(r)) return;
+          return toast(r.output.vendor + ' resumed. Scheduled syncs restart.');
+        }
+        const r = await pauseSource(id);
+        if (refused(r)) return;
+        const n = r.output.workflows;
+        toast(r.output.vendor + ' paused. Scheduled syncs stop; ' + n + ' workflow' + (n === 1 ? '' : 's') + ' now show Paused upstream.');
       },
       disconnect: (id) => { if (!canMgr()) return toast(NOMGR); setDlg({ k: 'disc', id }); },
       reconnect,
@@ -90,7 +98,7 @@ export function IntegrationPage({ route, query }: PageProps) {
       connect: (catId) => { if (!canMgr()) return toast(NOMGR); setDlg({ k: 'cx', start: { mode: 'new', cat: catId } }); },
       reauth: (id) => { if (!canMgr()) return toast(NOMGR); setDlg({ k: 'cx', start: { mode: 'reauth', src: id } }); },
       newIntegration: () => { if (!canMgr()) return toast(NOMGR); setDlg({ k: 'new' }); },
-      test: (id) => { const s = source(id); if (!s) return; if (!canMgr()) return toast(NOMGR); runTest(s); },
+      test: (id) => { const s = source(id); if (!s) return; if (!canMgr()) return toast(NOMGR); runTest({ source_id: s.id }); },
       openEvent: (id) => setEvId(id),
       go: (p) => { setDrawer(null); nav('/' + p); },
     };
@@ -152,7 +160,7 @@ export function IntegrationPage({ route, query }: PageProps) {
       {evId && <EventDrawer id={evId} onClose={() => setEvId(null)} />}
       {dlg?.k === 'guide' && <GuideModal onClose={() => setDlg(null)} />}
       {dlg?.k === 'new' && <NewIntegration onClose={() => setDlg(null)} onPick={(id) => setDlg({ k: 'cx', start: { mode: 'new', cat: id } })} onBlank={() => { setDlg(null); ui.addSource(''); }} />}
-      {dlg?.k === 'disc' && <DisconnectModal id={dlg.id} onClose={() => setDlg(null)} />}
+      {dlg?.k === 'disc' && <DisconnectModal id={dlg.id} onClose={() => setDlg(null)} onReconnect={ui.reconnect} />}
       {dlg?.k === 'del' && <DeleteModal id={dlg.id} onClose={() => setDlg(null)} onDone={() => setDrawer((d) => (d && d.id === dlg.id ? null : d))} />}
       {dlg?.k === 'rot' && <RotateModal id={dlg.id} onClose={() => setDlg(null)} />}
       {dlg?.k === 'cx' && <ConnectFlow start={dlg.start} onClose={() => setDlg(null)} />}
@@ -199,15 +207,17 @@ function NewIntegration({ onClose, onPick, onBlank }: { onClose: () => void; onP
   );
 }
 
-function DisconnectModal({ id, onClose }: { id: string; onClose: () => void }) {
+function DisconnectModal({ id, onClose, onReconnect }: { id: string; onClose: () => void; onReconnect: (id: string) => void }) {
   const [t, setT] = useState('');
   const s = source(id);
   if (!s) return null;
   const use = wfUsing(id), dec = openDecisionCount(), mp = mappings(id).length, T = srcTypes()[s.type];
-  const ok = () => {
+  const ok = async () => {
     if (t.trim() !== s.vendor) return;
+    const r = await disconnectSource(id, t.trim());
+    if (refused(r)) return;
     onClose();
-    toast(notOnServer('Disconnecting a source'));
+    toastAct(r.output.vendor + ' disconnected.', 'Reconnect', () => onReconnect(id));
   };
   return (
     <Modal title={'Disconnect ' + s.vendor + '?'} onClose={onClose} foot={<>

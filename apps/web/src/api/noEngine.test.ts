@@ -16,5 +16,5 @@ describe('the app reads only di-api', () => {
       /from ['"][./]*(engine\/engine|api\/backend|\.\/backend)['"]|legacy\.gen\.js/.test(readFileSync(p, 'utf8')),
     );
     expect(offenders).toEqual([]);
-  });
+  }, 30_000); // it reads every source file: slow when 19 test workers start at once
 });

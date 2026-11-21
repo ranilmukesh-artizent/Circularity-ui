@@ -254,7 +254,8 @@ def run(p: Principal, session: Session) -> list[dict]:
     t(
         "Every adapter maps to a registered action",
         catalog <= set(ACTIONS),
-        ", ".join(sorted(catalog - set(ACTIONS))) or f"{len(ACTIONS)} actions",
+        # the demo's catalog (76); actions declared beside it for flows the demo ran in the browser are not counted
+        ", ".join(sorted(catalog - set(ACTIONS))) or f"{len(catalog)} actions",
         "catalog",
         af=True,
     )

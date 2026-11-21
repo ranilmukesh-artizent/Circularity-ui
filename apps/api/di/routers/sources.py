@@ -5,7 +5,9 @@
     GET /api/fetch-log?source=&limit=     every connector HTTP call (Audit › Fetch log)
     GET /api/canonical/{model}/{key}      the canonical record with each field's provenance
     GET /api/conflicts?status=open        the conflict queue
-Changes (sync now, resolve or escalate a conflict) are actions: POST /api/actions/source.sync etc.
+Changes (sync now, resolve or escalate a conflict) are actions: POST /api/actions/source.sync etc. A deleted source
+(source.delete, until its deletion is undone; di.connectors.lifecycle) is not listed. The Connection Fabric's
+lifecycle (save, delete, reconnect, rotate, pause, resume, disconnect, test) is in di.actions.fabric_sources.
 
 B5c, provisioning a source that has a connector but starts not provisioned (AWS IoT, as in the demo); needs the
 manageIntegrations permission (Admin, Developer):
@@ -20,7 +22,7 @@ from sqlalchemy import text
 
 from di.auth import Principal
 from di.canonical import store
-from di.connectors import sync
+from di.connectors import lifecycle, sync
 from di.connectors.registry import ADAPTERS
 from di.deps import CurrentPrincipal, DbSession
 
@@ -49,14 +51,15 @@ def sources(p: CurrentPrincipal, session: DbSession):
             "(SELECT count(*) FROM provenance v WHERE v.source_id = s.id) AS facts FROM source_system s ORDER BY s.id"
         )
     ).mappings()
-    return [_source_row(r) for r in rows]
+    gone = lifecycle.deleted(session)
+    return [_source_row(r) for r in rows if r["id"] not in gone]
 
 
 @router.get("/sources/{source_id}")
 def source(source_id: str, p: CurrentPrincipal, session: DbSession):
     _can_see_integration(p)
     r = session.execute(text("SELECT * FROM source_system WHERE id = :i"), {"i": source_id}).mappings().first()
-    if r is None:
+    if r is None or lifecycle.is_deleted(session, source_id):
         raise HTTPException(404, {"code": "not_found", "message": f"No source {source_id}."})
     runs = session.execute(
         text("SELECT * FROM sync_run WHERE source_id = :i ORDER BY id DESC LIMIT 20"), {"i": source_id}

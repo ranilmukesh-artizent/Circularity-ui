@@ -1,9 +1,13 @@
-/* Connect an integration from the catalogue (auth → scopes → test → mappings → first sync), and re-authenticate a source (5.10). */
+/* Connect an integration from the catalogue (auth → scopes → test → mappings → first sync), and re-authenticate a source (5.10).
+   The test is the server's probe (source.test); finishing creates the source (source.update, mode "catalog"); the
+   re-authentication renews the credential (credentials.rotate) or, for a stale feed, refreshes the token (source.reconnect).
+   A catalogue system has no simulated system behind it: its first sync is recorded as synthetic (see fabric_sources.py). */
 import { useEffect, useRef, useState } from 'react';
-import { catalog, frAuthOptions, frSample, hashId, notOnServer, nowLabel, reauthenticated, source, typeOf } from '../../api/integration';
+import { catalog, connectFromCatalog, frAuthOptions, frSample, hashId, nowLabel, reauthenticated, source, typeOf } from '../../api/integration';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
+import { refused } from '../../ui/useAction';
 import { VendorLogo } from '../../ui/kit/VendorLogo';
 import { runTest, TestSteps } from './ConnectionTests';
 import { useInt } from './FabricContext';
@@ -39,6 +43,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   const [maps, setMaps] = useState<[string, string, string, string, number][] | null>(null);
   const [acc, setAcc] = useState<Record<number, boolean>>({});
   const [sync, setSync] = useState(0);
+  const [connected, setDone] = useState(false);
   const n = useRef(1200 + (parseInt(hashId(start.mode === 'new' ? start.cat : start.src), 16) % 9000));
   const live = useRef(true);
   useEffect(() => {
@@ -55,14 +60,21 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   function next() {
     if (!reauth && step === 4) {
       setStep(5);
+      // the connection is made on the server when the first sync's progress bar fills (the demo's frCxFinish)
+      const accepted = (maps ?? []).filter((_, i) => acc[i]);
       let p = 0;
-      const tick = () => {
+      const tick = async () => {
         if (!live.current) return;
         p = Math.min(100, p + (reduced() ? 100 : 20));
-        // the server has no action for connecting from the catalogue yet
-        if (p >= 100) { onClose(); toast(notOnServer('Connecting from the catalogue')); return; }
+        if (p >= 100) {
+          const r = await connectFromCatalog(c!.id, auth, scopes, accepted);
+          if (!live.current) return;
+          if (refused(r)) { onClose(); return; }
+          n.current = r.output.records;
+          setDone(true);
+        }
         setSync(p);
-        window.setTimeout(tick, 220);
+        if (p < 100) window.setTimeout(tick, 220);
       };
       window.setTimeout(tick, reduced() ? 0 : 220);
       return;
@@ -71,19 +83,15 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   }
   const back = () => setStep(reauth ? 1 : Math.max(1, step - 1));
   function test() {
-    const t = reauth
-      ? { ...s!, status: 'live' as const }
-      : { id: 'cat:' + c!.id, vendor: c!.vendor, status: 'live' as const, url: 'https://' + c!.id + '.northfield.example/api', auth: authLabel(), read: ['GET /records'] };
     setTested(true);
-    runTest(t, (ok) => live.current && setPassed(ok));
+    runTest(reauth ? { source_id: s!.id, reauth: true, auth: authLabel() } : { source_id: 'cat:' + c!.id, auth: authLabel() }, (ok) => live.current && setPassed(ok));
   }
-  function done() {
+  async function done() {
     if (!s) return;
-    const r = reauthenticated(s.id);
+    const r = await reauthenticated(s.id);
     onClose();
     if (r === 'reconnect') ui.reconnect(s.id);
-    else if (r === null) toast(notOnServer('Re-authenticating a source'));
-    else toast(s.vendor + ' re-authenticated. The credential is renewed for 180 days.');
+    else if (!refused(r)) toast(s.vendor + ' re-authenticated. The credential is renewed for 180 days.');
   }
 
   let body: React.ReactNode, foot: React.ReactNode;
@@ -189,15 +197,16 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
     );
     foot = <><button className="btn" onClick={back}>Back</button><button className="btn pri" disabled={!Object.values(acc).some(Boolean)} onClick={next}>Continue</button></>;
   } else {
-    const p = sync;
+    const p = connected ? 100 : Math.min(sync, 99);
     body = (
       <>
         <p className="note" style={{ marginTop: 0 }}>The first sync reads a full extract; after that, {scopes.includes('events') ? 'events arrive as they happen' : 'it runs on a schedule'}.</p>
         <div className="frprog"><i style={{ width: p + '%' }} /></div>
-        <p className="num">{'Syncing… ' + p + '% · ' + fmtN(Math.round((p * n.current) / 100)) + ' records'}</p>
+        <p className="num">{connected ? 'Connected · ' + fmtN(n.current) + ' records in the first sync' : 'Syncing… ' + p + '% · ' + fmtN(Math.round((p * n.current) / 100)) + ' records'}</p>
+        {connected && <div className="callout ok"><b>{v} is connected.</b> It appears in the Source Map.</div>}
       </>
     );
-    foot = <button className="btn" disabled>Syncing…</button>;
+    foot = connected ? <button className="btn pri" onClick={onClose}>Done</button> : <button className="btn" disabled>Syncing…</button>;
   }
 
   return (

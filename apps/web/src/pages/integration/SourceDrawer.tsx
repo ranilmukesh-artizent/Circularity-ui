@@ -4,8 +4,8 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { fmtDateYear } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {
-  addComment, authOpts, buildUrl, hashId, canon, canonPrefix, cfgDefaults, commentsOf, connMethods, credDays, failedRecords, isoTime, mappings,
-  saveSource, series, source, sources, srcAgeText, srcFailing, srcFresh, srcTypes, successRate, wfUsing, type Draft, type Source,
+  addComment, authOpts, hashId, canon, canonPrefix, cfgDefaults, commentsOf, connMethods, credDays, failedRecords, isoTime, mappings,
+  saveSource, series, source, sources, srcAgeText, srcFailing, srcFresh, srcTypes, successRate, testDraft, wfUsing, type Draft, type Source,
 } from '../../api/integration';
 import { can } from '../../api/session';
 import { Drawer } from '../../ui/Overlay';
@@ -131,9 +131,9 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
     if (!r.ok) return;
     const o = r.output;
     if (o.mode === 'new') {
+      // the server records the first sync itself: a source set up by hand has no simulated system behind it
       toast(o.name + ' (' + o.vendor + ') connected. Initial sync started.');
       onOpen({ mode: 'edit', id: o.source_id, tab: 'conn' });
-      if (!o.csv) window.setTimeout(() => ui.sync(o.source_id), 400);
       return;
     }
     setDirty(false); setErrs({}); setTest(null);
@@ -146,13 +146,8 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
     setTab('conn');
     if (bad.length) { setErrs(e); setTest({ ok: false, msg: 'Fix the highlighted connection settings first.' }); return; }
     setTest({ state: 'running' });
-    window.setTimeout(() => {
-      const cur = mode === 'edit' ? source(at.id) : undefined, ms = 70 + Math.floor(Math.random() * 251), cm = connMethods()[d.method];
-      const off = !!cur && cur.status === 'unavailable' && /^Pending/.test(d.auth);
-      if (cur && cur.status === 'stale' && cur.url === buildUrl(d)) setTest({ ok: false, msg: 'HTTP 401 Unauthorized. The feed token expired; use Refresh token and re-sync or rotate credentials.' });
-      else if (off) setTest({ ok: false, msg: 'No connection configured. Choose an authentication method and complete the settings.' });
-      else setTest({ ok: true, msg: cm.label + ' reached in ' + ms + ' ms. ' + ops.read.filter((x) => x.trim()).length + ' read and ' + ops.write.filter((x) => x.trim()).length + ' write operations available.' });
-    }, 700 + Math.floor(Math.random() * 600));
+    // the server probes the source's connector when the endpoint is the saved one (source.test with the draft)
+    void testDraft(mode === 'edit' ? at.id : '', d, ops).then((r) => setTest(r.ok ? r.output : { ok: false, msg: r.error.message }));
   }
 
   function revert() {

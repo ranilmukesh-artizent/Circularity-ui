@@ -1,8 +1,9 @@
-/* Source Tables: the table graph with clusters and foreign keys, a list view, and add / edit / delete / link (tables.update). */
+/* Source Tables: the table graph with clusters and foreign keys, a list view, and add / edit / delete / link (tables.update).
+   Positions after a drag or Auto Align are saved too (tables.update op 'layout'); Undo sends the reverse op. */
 import { useEffect, useRef, useState } from 'react';
 import { useBackend } from '../../api/useBackend';
 import {
-  alignTables, moveTable, source, sources, srcAgeText, tableCount, tableHeight, tableModel, tableModelIds, tableSuggestions, undoActions, updateTables,
+  alignTables, moveTable, saveTableLayout, source, sources, srcAgeText, tableCount, tableHeight, tableModel, tableModelIds, tableSuggestions, updateTables,
   type Table, type TableModel,
 } from '../../api/integration';
 import { sessionScoped } from '../../api/view';
@@ -58,13 +59,18 @@ export function Tables() {
     const r = await updateTables({ src: tg.src, op: 'delete', name: n });
     if (refused(r)) return;
     setDlg(null);
-    toastAct(n + ' deleted' + (r.output.fks ? ' with ' + r.output.fks + ' foreign key' + (r.output.fks > 1 ? 's' : '') : '') + '.', 'Undo', () => undoActions([r.seq!]));
+    const src = tg.src, o = r.output;
+    // Undo puts the table back where it was, with its links (the demo's toastAct undo)
+    toastAct(n + ' deleted' + (o.fks ? ' with ' + o.fks + ' foreign key' + (o.fks > 1 ? 's' : '') : '') + '.', 'Undo', async () => {
+      const u = await updateTables({ src, op: 'restore', table: o.table, index: o.index, fk: o.gone });
+      if (!refused(u)) toast(n + ' restored.');
+    });
   };
   const fkDel = async (i: number) => {
     if (!mgr) return toast(NOMGR);
-    const r = await updateTables({ src: tg.src, op: 'fkDel', index: i });
+    const src = tg.src, r = await updateTables({ src, op: 'fkDel', index: i });
     if (refused(r)) return;
-    toastAct(r.output.from + ' → ' + r.output.to + ' removed.', 'Undo', () => undoActions([r.seq!]));
+    toastAct(r.output.from + ' → ' + r.output.to + ' removed.', 'Undo', async () => { refused(await updateTables({ src, op: 'fkAdd', fk: r.output.fk, index: r.output.index })); });
   };
   const fkNew = (a: string) => {
     if (!mgr) return toast(NOMGR);
@@ -108,7 +114,13 @@ function TableGraph({ m, up, onEdit, onFk }: { m: TableModel; up: (f: () => void
       const tg = tgKept.current;
       moveTable(tg.src, d.t.n, Math.max(0, Math.round((d.ox + (e.clientX - d.sx) / tg.z) / 8) * 8), Math.max(30, Math.round((d.oy + (e.clientY - d.sy) / tg.z) / 8) * 8));
     };
-    const end = () => { drag.current = null; };
+    const end = () => {
+      const d = drag.current;
+      drag.current = null;
+      if (!d) return;
+      const src = tgKept.current.src, t = tableModel(src)?.t.find((x) => x.n === d.t.n);
+      if (t && (t.x !== d.ox || t.y !== d.oy)) void saveTableLayout(src, [t.n]).then((r) => r && refused(r)); // kept across reloads
+    };
     document.addEventListener('pointermove', mv);
     document.addEventListener('pointerup', end);
     return () => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', end); };
@@ -159,7 +171,7 @@ function TableGraph({ m, up, onEdit, onFk }: { m: TableModel; up: (f: () => void
         </div>
       </div>
       <div className="tgctl">
-        {canMgr() && <button className="btn sm" onClick={() => { alignTables(tg.src); toast('Tables aligned by cluster.'); }}>Auto Align</button>}
+        {canMgr() && <button className="btn sm" onClick={() => { void alignTables(tg.src).then((r) => r && refused(r)); toast('Tables aligned by cluster.'); }}>Auto Align</button>}
         <button className="btn sm" aria-label="Zoom out" onClick={() => zoom(-1)}>−</button>
         <span id="tgZ" className="note num" style={{ width: 40, textAlign: 'center' }}>{Math.round(tg.z * 100)}%</span>
         <button className="btn sm" aria-label="Zoom in" onClick={() => zoom(1)}>+</button>

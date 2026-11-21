@@ -46,7 +46,9 @@ def setup_module():
 
 # ---------------------------------------------------------------- every action
 def test_catalog_has_the_demos_76_actions():
-    assert len(ACTIONS) == 76
+    # the demo's 76, plus the ones declared beside them for flows the demo ran in the browser (B17)
+    demo = [a["id"] for a in golden.load("actions_catalog")]
+    assert len(demo) == 76 and set(demo) <= set(ACTIONS)
     cat = client.get("/api/actions", headers=h("planner.a")).json()
     by_id = {a["id"]: a for a in cat}
     assert by_id["decision.submit"]["allowed"] and not by_id["decision.approve"]["allowed"]

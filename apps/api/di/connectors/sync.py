@@ -5,7 +5,8 @@
     enqueue_due(session)                          → queue every source whose interval has passed (worker, every 30 s)
 
 Status of a source after a run: live (ok or partial), failing (the system did not answer), auth_expired (credentials
-refused). paused / disconnected / unavailable are set by people (Connection Fabric) and are never synced.
+refused). paused / disconnected / unavailable are set by people (Connection Fabric) and are never synced, nor is a
+deleted source (di.connectors.lifecycle).
 """
 
 import json
@@ -14,13 +15,14 @@ import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import Connection, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from di import golden
 from di.canonical import store
 from di.config import get_settings
+from di.connectors import lifecycle
 from di.connectors.http import SourceClient, SourceError
 from di.connectors.registry import ADAPTERS
 from di.db import SessionLocal
@@ -67,9 +69,9 @@ def ensure_sources(session: Session) -> None:
         text("UPDATE source_system SET status = 'live', updated_at = now() WHERE status = 'unavailable' AND id = ANY(:ids)"),
         {"ids": [i for i in ADAPTERS if provisioned(i)]},
     )
-    session.execute(
-        text("UPDATE source_system SET status = 'unavailable', updated_at = now() WHERE NOT (id = ANY(:ids))"),
-        {"ids": list(ADAPTERS)},
+    session.execute(  # the demo's sources only: a source created in the Connection Fabric has no connector by design
+        text("UPDATE source_system SET status = 'unavailable', updated_at = now() WHERE NOT (id = ANY(:ids)) AND id = ANY(:ref)"),
+        {"ids": list(ADAPTERS), "ref": [s["id"] for s in golden.load("sources")["sources"]]},
     )
     for sid, a in ADAPTERS.items():
         if a.connected_confidence is not None:
@@ -78,6 +80,43 @@ def ensure_sources(session: Session) -> None:
     for sid, a in ADAPTERS.items():  # configured to start connected (DI_IOT_CONNECTED): its rules deliver from the start
         if hasattr(a, "set_delivery") and provisioned(sid):
             _set_delivery(a, True)
+
+
+SOURCE_TABLES = ("sync_run", "fetch_log", "raw_record", "sync_cursor")  # rows kept per source
+
+
+def reset_sources(conn: Connection) -> None:
+    """Back to the demo's sources, for the demo reset (tests/starting.py, scripts/reset_starting.py).
+
+    Sources created in the Connection Fabric (from the catalogue or by hand) are removed with their sync history and
+    queued syncs. The demo's own sources get back their reference description (vendor, interval, owner, note) and,
+    if a person paused or disconnected them, their starting status; a status the connector itself set (failing,
+    auth_expired) is left for the next sync to decide. Connector data of the demo's sources is kept."""
+    ref = golden.load("sources")["sources"]
+    ids = [s["id"] for s in ref]
+    made = list(conn.execute(text("SELECT id FROM source_system WHERE NOT (id = ANY(:i))"), {"i": ids}).scalars())
+    if made:
+        for t in SOURCE_TABLES:
+            conn.execute(text(f"DELETE FROM {t} WHERE source_id = ANY(:i)"), {"i": made})  # noqa: S608 - fixed names
+        conn.execute(text("DELETE FROM job WHERE kind = 'sync.source' AND payload->>'source_id' = ANY(:i)"), {"i": made})
+        conn.execute(text("DELETE FROM source_system WHERE id = ANY(:i)"), {"i": made})
+    for s in ref:
+        start = "live" if provisioned(s["id"]) else "unavailable"
+        conn.execute(
+            text(
+                "UPDATE source_system SET vendor = :v, interval_min = :iv, owner = :o, note = :n, "
+                "status = CASE WHEN status IN ('paused', 'disconnected') OR (:st = 'unavailable') THEN :st ELSE status END "
+                "WHERE id = :id"
+            ),
+            {
+                "id": s["id"],
+                "v": VENDOR_OVERRIDES.get(s["id"], s["vendor"]),
+                "iv": int(s.get("interval") or 0),
+                "o": s.get("owner"),
+                "n": s.get("note"),
+                "st": start,
+            },
+        )
 
 
 def _connected_confidence(session: Session, source_id: str, conf: float) -> None:
@@ -101,14 +140,57 @@ def connect_source(session: Session, source_id: str) -> dict:
     if status is None:
         raise KeyError(f"No source {source_id}")
     changed = status == "unavailable"
-    if changed:
-        session.execute(text("UPDATE source_system SET status = 'live', updated_at = now() WHERE id = :i"), {"i": source_id})
-        if adapter.connected_confidence is not None:
-            _connected_confidence(session, source_id, adapter.connected_confidence)
-    job = enqueue_sync(session, source_id, "initial", full=True) if changed else None
+    job = mark_connected(session, source_id, status) if changed else None
     session.commit()
     _set_delivery(adapter, True)
     return {"source_id": source_id, "status": "live" if changed else status, "connected": changed, "queued_job": job}
+
+
+def mark_connected(session: Session, source_id: str, was: str) -> int | None:
+    """Make a source `live` again in the caller's transaction (no commit) and queue its sync: a full initial sync
+    when it was not provisioned (`unavailable`), else a manual one. Returns the queued job (None if one is waiting).
+    A source without a connector (created in the Connection Fabric) only becomes live."""
+    session.execute(text("UPDATE source_system SET status = 'live', updated_at = now() WHERE id = :i"), {"i": source_id})
+    adapter = ADAPTERS.get(source_id)
+    if adapter is None:
+        return None
+    if adapter.connected_confidence is not None:
+        _connected_confidence(session, source_id, adapter.connected_confidence)
+    if was == "unavailable":
+        return enqueue_sync(session, source_id, "initial", full=True)
+    return enqueue_sync(session, source_id, "manual")
+
+
+def drop_queued(session: Session, source_id: str) -> None:
+    """Forget the source's sync jobs that have not started (pause, disconnect, delete); a running one finishes."""
+    session.execute(
+        text("DELETE FROM job WHERE kind = 'sync.source' AND status = 'queued' AND payload->>'source_id' = :s"),
+        {"s": source_id},
+    )
+
+
+def set_delivery(source_id: str, enabled: bool) -> None:
+    """Switch the source's own event delivery on or off (AWS IoT topic rules), where it has one."""
+    if (adapter := ADAPTERS.get(source_id)) is not None:
+        _set_delivery(adapter, enabled)
+
+
+def record_synthetic_run(session: Session, source_id: str, rows: int, at: datetime, note: str) -> int:
+    """A finished first sync for a source that has no connector (one connected from the catalogue or set up by hand):
+    source-sim simulates no system behind it, so nothing is read. The run says so in its note; `rows` is the count
+    the demo's connect flow shows. The source's sync times become `at`."""
+    run = session.execute(
+        text(
+            "INSERT INTO sync_run (source_id, trigger, status, started_at, finished_at, records_read, error) "
+            "VALUES (:s, 'manual', 'ok', :at, :end, :n, :note) RETURNING id"
+        ),
+        {"s": source_id, "at": at, "end": at + timedelta(seconds=4.2), "n": rows, "note": note},
+    ).scalar_one()
+    session.execute(
+        text("UPDATE source_system SET last_sync_at = :at, last_success_at = :at, updated_at = now() WHERE id = :s"),
+        {"s": source_id, "at": at},
+    )
+    return int(run)
 
 
 def _set_delivery(adapter, enabled: bool) -> None:
@@ -129,10 +211,7 @@ def disconnect_source(session: Session, source_id: str, purge: bool = False) -> 
     records, cursors, runs and fetch log, and its completeness, confidence and sync times go back to the demo's."""
     if session.execute(text("SELECT 1 FROM source_system WHERE id = :i"), {"i": source_id}).first() is None:
         raise KeyError(f"No source {source_id}")
-    session.execute(
-        text("DELETE FROM job WHERE kind = 'sync.source' AND status = 'queued' AND payload->>'source_id' = :s"),
-        {"s": source_id},
-    )
+    drop_queued(session, source_id)
     session.execute(text("UPDATE source_system SET status = 'unavailable', updated_at = now() WHERE id = :i"), {"i": source_id})
     out = {"source_id": source_id, "status": "unavailable", "purged": purge}
     if purge:
@@ -209,6 +288,8 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
         src = s.execute(text("SELECT status, confidence FROM source_system WHERE id = :i"), {"i": source_id}).first()
         if src and src.status in NOT_SYNCED:
             return {"source_id": source_id, "status": "skipped", "reason": src.status}
+        if lifecycle.is_deleted(s, source_id):
+            return {"source_id": source_id, "status": "skipped", "reason": "deleted"}
         run_id = s.execute(
             text("INSERT INTO sync_run (source_id, trigger, status) VALUES (:s, :t, 'running') RETURNING id"),
             {"s": source_id, "t": trigger},
@@ -319,8 +400,9 @@ def enqueue_sync(session: Session, source_id: str, trigger: str, full: bool = Fa
 def enqueue_due(session: Session) -> list[str]:
     now = datetime.now(UTC)
     queued = []
+    gone = lifecycle.deleted(session)
     for r in session.execute(text("SELECT id, status, interval_min, last_sync_at FROM source_system ORDER BY id")).all():
-        if r.id not in ADAPTERS or r.status in NOT_SYNCED:
+        if r.id not in ADAPTERS or r.status in NOT_SYNCED or r.id in gone:
             continue
         every = timedelta(minutes=r.interval_min or SAFETY_INTERVAL_MIN)
         due = r.last_sync_at is None or now - r.last_sync_at >= every

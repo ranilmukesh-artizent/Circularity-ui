@@ -38,7 +38,11 @@ Still the demo's reference:
 - canonical.json and screens/integration.json: field mappings (MAPPINGS), canonical models (CANON) and their examples,
   the catalogue (CATALOG; an entry is connected when a source with its id exists), categories;
 - workspace collection "table_models": the table models (TBL_MODELS, laid out by tgLayout), seeded from the demo
-  (tables.update has no handler yet);
+  changed by tables.update (di.actions.fabric_records: tables, links, positions);
+- workspace collection "conflict_escalations": who escalated which conflict (conflict.escalate; it stays open);
+- workspace collection "source_config" (di.connectors.lifecycle): what people saved about a source (its descriptive
+  fields, credential, configuration version, audit trail and field mapping) over the reference above, sources created
+  in the Connection Fabric, and the deleted sources (left out of every endpoint until their deletion is undone);
 - workspace collection "events": the event stream (the demo's EVENTS and what actions add);
 - workspace collection "workflows" (di.reads.workflows): the workflows reading a source, failing ingest workflows.
 
@@ -70,8 +74,9 @@ Facade (apps/web/src/api/integration.ts) → here, export by export:
   rbPath; and moveTable, alignTables (the table layout on the canvas)
 - actions (POST /api/actions/...): syncSource, reconnectSource, rotateCredentials, deleteSource, saveSource,
   resolveConflict, escalateConflict, commitImport, updateTables, addComment, undoActions, syncAllLive
-- browser-only flows in the demo, need actions before B17: togglePause, disconnectSource, reauthenticated,
-  recordTest, finishConnect
+- the demo's browser-only flows, now actions (di.actions.fabric_sources): pauseSource and resumeSource
+  (source.pause, source.resume), disconnectSource (source.disconnect), reauthenticated (source.reconnect or
+  credentials.rotate), testConnection (source.test, a read), connectFromCatalog (source.update, mode "catalog")
 """
 
 import json
@@ -85,13 +90,16 @@ from sqlalchemy.orm import Session
 
 from di import clock, golden, policy, state
 from di.actions.decisions import comments
+from di.actions.fabric_records import escalations
 from di.auth import Principal
+from di.connectors import lifecycle
 from di.connectors.registry import ADAPTERS
 from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round
 from di.reads.common import ms
-from di.reads.constants import MAP_TARGET, MAPPINGS, SRC_TYPES
+from di.reads.constants import MAP_TARGET, MAPPINGS
 from di.reads.context import case_openable
+from di.reads.fabric import SCREEN_STATUS, type_of
 from di.reads.reference import channels
 from di.reads.workflows import all_workflows, wf_stat, wf_using
 
@@ -104,7 +112,6 @@ REF_BY_ID = {s["id"]: s for s in REF_SOURCES}
 # The connectors know two states the screens do not: `failing` (the system did not answer) and `auth_expired` (its
 # credentials were refused, like the demo's expired Ritchie Bros. token). The screens show both as `stale`, as the
 # demo does: the data is there but not current. `connectorStatus` keeps the connector's own word.
-SCREEN_STATUS = {"failing": "stale", "auth_expired": "stale"}
 CANON: list[dict] = golden.load("canonical")["models"]
 _REF = golden.load("screens/integration")
 CATALOG: list[dict] = _REF["catalog"]
@@ -112,11 +119,15 @@ CANON_EX: dict = _REF["canon_examples"]
 CANON_PFX: dict[str, str] = _REF["canon_pfx"]
 FR_CATOF: dict[str, str] = _REF["fr_catof"]
 FR_CATS: list[str] = _REF["fr_cats"]
-FR_XTYPES: dict[str, dict] = _REF["fr_xtypes"]
 state.register("table_models", lambda: [(k, m | {"source": k}) for k, m in _REF["table_models"].items()])
 
 DAY = 86_400_000
 HOUR = 3_600_000
+# the descriptive fields a saved source (workspace collection "source_config") overlays on the demo's record
+OVERLAY = (
+    "name", "short", "cat", "vendor", "ver", "env", "url", "mode", "auth", "rw", "inputs", "read", "write", "step",
+    "authority", "method", "cfg", "cfgVer", "credAt", "credDays", "audit", "owner", "updatedBy", "frConnectedAt",
+)  # fmt: skip
 SECTIONS_SOURCES = ("overview", "map")
 
 
@@ -135,11 +146,6 @@ def src_age(m: float) -> str:
     if m < 2880:
         return f"{js_round(m / 60)} h"
     return f"{js_round(m / 1440)} days"
-
-
-def type_of(t: str) -> dict:
-    """frTypeOf."""
-    return SRC_TYPES.get(t) or FR_XTYPES.get(t) or {"label": t, "short": t, "cat": "internal", "target": "Asset & component"}
 
 
 def cat_of(s: dict) -> str:
@@ -163,11 +169,11 @@ def cred_days(s: dict, now: int) -> int | None:
     return js_round((s["credAt"] + s["credDays"] * DAY - now) / DAY)
 
 
-def src_models(s: dict) -> dict[str, list]:
+def src_models(s: dict, maps: dict[str, list] | None = None) -> dict[str, list]:
     """frSrcModels: the canonical models a source reaches (its mapped fields' prefixes, or its target model)."""
     pre = {v: k for k, v in CANON_PFX.items()}
     o: dict[str, list] = {}
-    for r in MAPPINGS.get(s["id"], []):
+    for r in (MAPPINGS if maps is None else maps).get(s["id"], []):
         m = pre.get(str(r[2]).split(".")[0])
         if m:
             o.setdefault(m, []).append(r)
@@ -220,7 +226,11 @@ class Fabric:
                 "FROM source_system s ORDER BY s.id"
             )
         ).mappings()
-        self.rows = {r["id"]: r for r in rows}
+        # what people changed (di.connectors.lifecycle): saved settings and mappings, deleted sources left out
+        self.deleted = lifecycle.deleted(s)
+        self.cfg = lifecycle.configs(s)
+        self.maps = lifecycle.mappings(MAPPINGS, self.cfg, self.deleted)
+        self.rows = {r["id"]: r for r in rows if r["id"] not in self.deleted}
         runs = s.execute(
             text(
                 "SELECT * FROM (SELECT r.*, row_number() OVER (PARTITION BY source_id ORDER BY id DESC) AS n "
@@ -291,6 +301,21 @@ class Fabric:
             base["note"] = row["note"]
         for k in ("c0", "k0", "updatedBy"):  # the demo's starting copies of completeness and confidence
             base.pop(k, None)
+        return self._changed(base, row)
+
+    def _changed(self, base: dict, row) -> dict:
+        """What people changed (di.actions.fabric_sources) over the demo's record: saved settings, the paused and
+        disconnected flags. A source nobody changed is returned as it is, so the seeded state stays the demo's."""
+        cfg = self.cfg.get(base["id"])
+        if cfg:
+            base.update({k: v for k, v in cfg.items() if k in OVERLAY})
+            if not base["records"] and cfg.get("records"):  # no connector: the synthetic first sync's count
+                base["records"] = cfg["records"]
+        if row["status"] == "paused":  # the demo: the status it had (live, stale ...), flagged paused
+            prev = (cfg or {}).get("prev") or "live"
+            base.update(status=SCREEN_STATUS.get(prev, prev), paused=True)
+        elif row["status"] == "disconnected":  # the demo: not connected, no sync time, who did it
+            base.update(disconnected=True, discBy=(cfg or {}).get("discBy"), lastSync=None, freshMin=None, fresh="—")
         return base
 
     # ---- derived per source
@@ -316,7 +341,7 @@ class Fabric:
     def field_count(self, sid: str) -> int:
         """frFldN: columns across the source's tables, or its mapped fields when it has no table model."""
         m = self.tables.get(sid)
-        return sum(len(t["cols"]) for t in m["t"]) if m else len(MAPPINGS.get(sid, []))
+        return sum(len(t["cols"]) for t in m["t"]) if m else len(self.maps.get(sid, []))
 
     def health(self, s: dict) -> dict:
         sla = sla_minutes(s)
@@ -331,7 +356,7 @@ class Fabric:
             "in_sla": s["freshMin"] is not None and s["freshMin"] <= sla,
             "tables": self.table_count(s["id"]),
             "fields": self.field_count(s["id"]),
-            "mapped": len(MAPPINGS.get(s["id"], [])),
+            "mapped": len(self.maps.get(s["id"], [])),
             "workflows": wf_using(self.workflows, s["id"]),
             "channels": channels(s),
             "category": cat_of(s),
@@ -389,14 +414,16 @@ class Fabric:
         total = self.s.execute(text(f"SELECT count(*) FROM conflict WHERE {cond}"), args).scalar_one()  # noqa: S608 - `where` comes from a fixed mapping; values are bound
         q = f"SELECT * FROM conflict WHERE {cond} ORDER BY id DESC" + (" LIMIT :n" if limit else "")  # noqa: S608 - `where` comes from a fixed mapping; values are bound
         rows = self.s.execute(text(q), args | ({"n": limit} if limit else {})).mappings()
-        return [self._conflict(r) for r in rows], total
+        esc = escalations(self.s)
+        return [self._conflict(r, esc.get(f"CF-{r['id']}")) for r in rows], total
 
     def _name(self, sid: str) -> str:
         s = self.by_id.get(sid) or REF_BY_ID.get(sid)
         return s["name"] if s else sid
 
-    def _conflict(self, r) -> dict:
-        """A conflict in the facade's Conflict shape: `a` is the authority's value, `b` the first other source's."""
+    def _conflict(self, r, esc: dict | None = None) -> dict:
+        """A conflict in the facade's Conflict shape: `a` is the authority's value, `b` the first other source's.
+        An escalated conflict stays open (the demo's c.escalated beside status 'open'); `escalated` says who and when."""
         vals: dict = r["values"] or {}
         auth = r["authority"]
         others = sorted(k for k in vals if k != auth)
@@ -422,7 +449,9 @@ class Fabric:
             "since": src_age(age),
             "openedAt": _ts(r["opened_at"]),
         }
-        if r["status"] == "escalated":
+        if esc and r["status"] != "resolved":
+            out["escalated"] = {"by": esc["by"], "at": esc["at"]}
+        elif r["status"] == "escalated":
             out["escalated"] = {"by": r["closed_by"], "at": datetime.isoformat(r["closed_at"]) if r["closed_at"] else None}
         if r["status"] == "resolved":
             out["resolved"] = {"by": r["closed_by"], "at": datetime.isoformat(r["closed_at"]) if r["closed_at"] else None}
@@ -436,7 +465,7 @@ class Fabric:
                 o.append({"src": s["name"], "obj": s["vendor"], "issue": "Not connected: no feed", "sev": "High", "st": "Open"})
             elif s["status"] == "stale":
                 o.append({"src": s["name"], "obj": s["vendor"], "issue": "Feed token expired", "sev": "High", "st": "Open"})
-            if s["status"] != "unavailable" and not MAPPINGS.get(s["id"]):
+            if s["status"] != "unavailable" and not self.maps.get(s["id"]):
                 o.append({"src": s["name"], "obj": s["vendor"], "issue": "No field mapping defined", "sev": "High", "st": "Open"})
             elif s["status"] == "manual":
                 issue = "Manual import only, no live feed"
@@ -465,9 +494,9 @@ def _catalog(f: Fabric) -> list[dict]:
 
 
 def _integration_status(f: Fabric, s: dict) -> str:
-    if s["status"] == "disconnected":
+    if s.get("disconnected"):
         return "disconnected"
-    if s["status"] == "paused":
+    if s.get("paused"):
         return "paused"
     if f.needs_attention(s):
         return "unavailable" if s["status"] == "unavailable" else "attention"
@@ -568,8 +597,8 @@ def source_detail(source_id: str, p: CurrentPrincipal, session: DbSession, days:
         ],
         "series": f.series(source_id, days),
         "failed": f.failed_in(source_id, days),
-        "mappings": MAPPINGS.get(source_id, []),
-        "models": src_models(s),
+        "mappings": f.maps.get(source_id, []),
+        "models": src_models(s, f.maps),
         "table_model": f.tables.get(source_id),
         "comments": comments(session, "src:" + source_id),
     }  # fmt: skip
@@ -619,7 +648,7 @@ def source_map(p: CurrentPrincipal, session: DbSession, limit: Annotated[int, Qu
         "kpis": {
             "connected": sum(1 for s in f.sources if s["status"] != "unavailable"),
             "tables": sum(f.table_count(s["id"]) for s in f.sources),
-            "fields": sum(len(v) for v in MAPPINGS.values()),
+            "fields": sum(len(v) for v in f.maps.values()),
             "workflows_published": sum(1 for w in f.workflows if w["status"] == "published"),
             "exceptions": len(ex),
             "health_pct": t["pct"],
@@ -632,8 +661,8 @@ def source_map(p: CurrentPrincipal, session: DbSession, limit: Annotated[int, Qu
         "hourly": hh,
         "totals": t,
         # what the map draws (tree, graph, matrix): accounts with the map but without Tables or Models read them here
-        "mappings": {k: v for k, v in MAPPINGS.items() if k in f.by_id},
-        "source_models": {s["id"]: src_models(s) for s in f.sources},
+        "mappings": {k: v for k, v in f.maps.items() if k in f.by_id},
+        "source_models": {s["id"]: src_models(s, f.maps) for s in f.sources},
         "table_models": {k: m for k, m in f.tables.items() if k in f.by_id},
     }
 
@@ -664,12 +693,12 @@ def models(p: CurrentPrincipal, session: DbSession):
         "canon": [m | {"records": records.get(CANON_PFX.get(m["n"], ""), 0)} for m in CANON],
         "examples": CANON_EX,
         "prefix": CANON_PFX,
-        "mappings": {k: v for k, v in MAPPINGS.items() if k in f.by_id},
-        "source_models": {s["id"]: src_models(s) for s in f.sources},
+        "mappings": {k: v for k, v in f.maps.items() if k in f.by_id},
+        "source_models": {s["id"]: src_models(s, f.maps) for s in f.sources},
         "counts": {
             "models": len(CANON),
             "fields": sum(len(m["fields"]) for m in CANON),
-            "sources_mapped": sum(1 for s in f.sources if MAPPINGS.get(s["id"])),
+            "sources_mapped": sum(1 for s in f.sources if f.maps.get(s["id"])),
             "records": sum(records.values()),
         },
     }
