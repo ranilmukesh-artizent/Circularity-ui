@@ -21,12 +21,14 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 | `apps/api` | `di-api` + `di-worker` (FastAPI, SQLAlchemy 2, Alembic, psycopg 3). Package `di`. |
 | `apps/api/di/actions/` | Every write and read action (`POST /api/actions/{id}`), through `pipeline.invoke`. |
 | `apps/api/di/screens/` | Read endpoints per page area (`/api/screens/<area>`); each docstring maps the facade exports. |
-| `apps/api/di/connectors/` | Adapters to the 21 source systems, sync, webhooks, conflicts. |
+| `apps/api/di/connectors/` | Adapters to the 21 source systems, encrypted credentials, connections, configured adapter, mappings, sync, webhooks, conflicts. |
+| `apps/api/di/workflow/` | Workflow engine: `blocks` (settings), `engine`, `steps/`, `triggers`, `versions`, `binding` (a sync is its source's ingest workflow), `live`. |
 | `apps/api/di/mcp/`, `di/ask/` | MCP server at `/mcp`; Ask Circularity (`POST /api/ask`, Groq). |
 | `apps/source-sim` | Package `sim`: mocks of the enterprise systems (SAP S/4HANA, Ariba, Sterling, OTM, AWS IoT Core …), simulated clock, outbox, signed CloudEvents, faults. |
 | `fixtures/golden/` | JSON dumped from the demo; the parity tests compare against it. Never hand-edit. |
 | `docs/backend-steps.md` | The build plan B1–B18 with a status section per step. Read the step you work on. |
 | `docs/agents/` | Dos and don'ts, learnings, decisions, history, testing, scripts. |
+| `docs/agents/runbook-fabric.md` | Operating the Connection Fabric: failing source, credentials and key, webhooks, stuck runs, held records. |
 | `scripts/dev/` | Dev scripts (tests with the lock, reset, restart, unstick, status). |
 | `fixtures/demo/assets/products/` | Product photos, beside the demo; `apps/web/scripts/extract-styles.mjs` copies them into the web app. |
 | `docs/reference/` | Source documents (agent-first product spec, user journey deck, IFS process fit). Read-only background. |
@@ -120,10 +122,13 @@ Full list: [docs/agents/dos-and-donts.md](docs/agents/dos-and-donts.md).
 - `apps/api/di/screens/<area>.py` docstrings: what each screen endpoint serves and how the facade maps to it.
 - `apps/web/src/api/client.ts` docstring: how the synchronous facade works over HTTP.
 
-## Current state (20 Nov 2026)
+## Current state (21 Nov 2026)
 
-B1–B17 done: the web app reads only di-api; the in-browser engine is gone. Next: the plans in
-`docs/agents/plans/` (the loop, queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry), then B18
+B1–B17 done: the web app reads only di-api; the in-browser engine is gone. Plan 1b (refactor) and plan 6 done: the
+Connection Fabric runs for real (encrypted credentials, configured connections, mappings that run, canonical checks,
+a workflow engine on triggers) while every vendor system stays synthetic; see the plan-6 status in
+`docs/backend-steps.md` and [docs/agents/runbook-fabric.md](docs/agents/runbook-fabric.md). Next: plans 2–5 in
+`docs/agents/plans/` (queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry), then B18
 (Playwright suites, demo reset endpoint, run book, security review).
 
-Known server gaps are listed under B17b in `docs/backend-steps.md`.
+Known server gaps are listed under B17b and plan 6 in `docs/backend-steps.md`.

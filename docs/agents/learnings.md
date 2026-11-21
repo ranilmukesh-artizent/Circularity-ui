@@ -2,6 +2,59 @@
 
 Problems already hit, newest first. Each entry gives the symptom, the root cause, the fix, and how to avoid it.
 
+## 2026-11-21: Commits from inside WSL had author `root`
+
+- **Symptom:** plan-6 commits made by agents showed `root <root@…>` as author in `git log`.
+- **Cause:** they ran `git commit` inside WSL as `-u root`, where git uses root's identity, not the Windows user's.
+- **Fix:** a rebase that reset the author on those commits, before the push (unpushed, so no force-push).
+- **Avoid:** run git from PowerShell on Windows (CLAUDE.md); use WSL only for `bash scripts/dev/*.sh`. Check
+  `git log --format="%h %an %s"` before a push.
+
+## 2026-11-21: PowerShell `Set-Content` mangled UTF-8 docs
+
+- **Symptom:** a file edited with `Get-Content … | Set-Content` gained a byte-order mark and its non-ASCII characters
+  (`…`, `→`, `·`, `•`) turned into mojibake; one earlier commit subject (`25954ea`) starts with a stray BOM.
+- **Cause:** Windows PowerShell 5.1 reads files without a BOM as the ANSI code page and `Set-Content -Encoding utf8`
+  writes a BOM.
+- **Fix:** restore the file from git (`git show HEAD:<path>`) and redo the change.
+- **Avoid:** edit with the Edit tool, or `sed` in WSL; never round-trip a repo file through `Set-Content`/`Out-File`.
+
+## 2026-11-21: A rotated junk secret broke the live-check replay
+
+- **Symptom:** workflow check tests that replay the demo's checks failed after other tests: the checks warned about a
+  demo source (proc) being `auth_expired`.
+- **Cause:** a test rotated a junk secret on a demo source; the next sync got a 401 and set the source
+  `auth_expired`. The demo reset put back credentials but not connector-set statuses, and plan 6 made the workflow
+  checks read the live source state (`di/workflow/live.py`).
+- **Fix:** `reset_sources` (`di/connectors/sync.py`) returns demo sources left `failing` or `auth_expired` to their
+  starting status and clears their retry schedule (`8b0417c`).
+- **Avoid:** a test that breaks a demo source must restore it, and the reset must undo every state a sync can set.
+
+## 2026-11-21: Shared-index commits swept other agents' hunks
+
+- **Symptom:** commits that held another agent's unfinished lines (`86aaa12` took back an A3 line committed with A6)
+  or that dropped a just-committed change (`0511bbc` put back A7's `webhook_event` model that the A2 commit's
+  `models.py`, staged from an older HEAD, had removed).
+- **Cause:** all agents share one working tree and one index. `git commit -- <path>` commits the whole working-tree
+  file, so it takes every agent's hunks in it; a file staged from an old HEAD drops what landed since.
+- **Fix:** stage only your own hunks (`git apply --cached` of a patch filtered to them, or `git update-index
+  --cacheinfo` with a blob of HEAD plus your hunks) and commit the index without paths (a path list would take the
+  working-tree file again), or leave a shared file to the lead, who commits it once all its hunks are done
+  (`8ee1d29`, `8b0417c`). A file only you changed can still go by `git commit -- <path>`.
+- **Avoid:** before a commit, `git diff --cached --stat` must list only your files and `git diff --cached <file>`
+  only your hunks, staged on the current HEAD.
+
+## 2026-11-21: The 2-minute window in `run_active`
+
+- **Symptom:** reading the query, a workflow run longer than 2 minutes seems to stop counting as active, so the
+  reaper or a second Run now would close or double it.
+- **Cause / design:** `run_active` (`di/actions/workflows.py`) counts a `job` row in `running` only while
+  `locked_at` is under 2 minutes old: that covers a claimed job that is still starting. A run past its start is seen
+  by its advisory lock (`RUN_LOCK`, `hashtext('wf:'||id)`), which the job holds on its own connection for the whole
+  run and loses when its worker dies.
+- **Avoid:** never extend the 2-minute window to cover long runs; a run that holds no lock and has no fresh job is
+  lost and `reap_lost_run` closes it ("worker lost").
+
 ## 2026-11-20: A request deadlocked itself after a state reset
 
 - **Symptom:** di-api stopped answering. The container showed unhealthy. In Postgres, one session was

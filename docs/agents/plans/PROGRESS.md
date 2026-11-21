@@ -39,6 +39,58 @@ One line per step: date, plan and step, commit, the tests that gated it, result.
 | 2026-11-21 | 01b · **wave gate** (HEAD `40789c2`, stack recreated by G3) | — | full suite: api 3,486 passed, source-sim 213 passed; reset + idle; smoke 11 accounts 0 failing (admin 66, executive 32, planner-a 41, planner-b 41, planner-c 38, approver 47, engineer 48, finance 36, developer 39, wm-1 29, wm-2 29); `smoke-rt1048.mjs` stage 10, no page errors; reset after; `/api/health/live` 2 ms idle | passed |
 | 2026-11-21 | 01b · G5 fresh-clone test; arm64 CI job | see git log | `fresh-clone.sh` on HEAD 40789c2: dev PASSED (healthy 327 s, doctor OK, sign-in, RT-1048 screen, 401 without token), `--prod` PASSED (162 s); torn down clean; shellcheck + actionlint clean. arm64: proved only once the CI job runs green | done |
 
+## Plan 6: the Connection Fabric, production grade (21 Nov 2026)
+
+Run by the lead with 7+ agents in parallel on one tree. Per-commit checks are quoted from each commit message; the
+phase gate is the last row.
+
+| Date | Plan · step | Commit | Gate | Result |
+|---|---|---|---|---|
+| 2026-11-21 | 06 · A1 source credentials stored, encrypted | `810d706` | test_secrets, test_fabric_sources, test_models_migrations, test_config 38 passed; screens 961 passed; tsc 0, vitest 212 | done |
+| 2026-11-21 | 06 · migrations 0011–0017 reserved (idempotent), `migrate-reapply.sh` | `f45a85d` | downgrade 0010 / upgrade head | done |
+| 2026-11-21 | 06 · C1 block catalogue with settings | `c23d6b3` | test_blocks | done |
+| 2026-11-21 | 06 · A6 sync reliability (retries, per-source lock, backoff) | `7ce232b`, `86aaa12` | test_sync_reliability | done |
+| 2026-11-21 | 06 · B4 Event Streams and fabric tiles from real data | `9625f34` | test_screens_integration/home/command | done |
+| 2026-11-21 | 06 · C4 step implementations, `fx_rate` | `5088b2d` | test_steps | done |
+| 2026-11-21 | 06 · C2 settings on nodes, checked on the server | `d6200ec` | test_writes_workflows, test_workflow_builder, workflowGraph.test.ts | done |
+| 2026-11-21 | 06 · C3 settings in the inspector | `cf89309` | BlockSettings.test.tsx | done |
+| 2026-11-21 | 06 · A4 the edited mapping runs | `e00df59`, `8ee1d29` | test_mapping_runs (all 21 adapters map as before without a saved version) | done |
+| 2026-11-21 | 06 · B5 Source Tables discovered | `cf99202`, `8ee1d29` | with A4: test_mapping_runs, test_discover, test_fabric_sources, test_fabric_records, test_models_migrations, test_screens_integration 174 passed | done |
+| 2026-11-21 | 06 · A7 webhook intake per source | `90f51bf` | test_webhooks | done |
+| 2026-11-21 | 06 · A2+A3+A5 connections, configured adapter, honest Test connection | `b9a9081`, `0511bbc` | api 48 passed; source-sim 53 passed; tsc 0, vitest 224 | done |
+| 2026-11-21 | 06 · B1 canonical schema checks, failed records | `0600f33` | test_canonical_schema (a full demo sync holds nothing) | done |
+| 2026-11-21 | 06 · B2 conflicts that stay resolved | `7dcdaf0` | test_conflicts | done |
+| 2026-11-21 | 06 · B3 Manual Import through the pipeline | `f25ea62` | test_fabric_records, fabricRecords.test.ts | done |
+| 2026-11-21 | 06 · C10 live checks, palette gaps, import | `8579832`, `8b0417c` | test_workflow_live 15, workflowGraph.test.ts | done |
+| 2026-11-21 | 06 · C8 versions, compare, restore, reprocess, fix | `2cf2785`, `8b0417c` | test_workflow_extras | done |
+| 2026-11-21 | 06 · C9 server drafts, dry test run | `b667dbd`, `e53c371`, `8b0417c` | test_workflow_drafts + test_actions 167 passed; draftStore.test.ts | done |
+| 2026-11-21 | 06 · C6 triggers | `0d2296d`, `8b0417c` | test_triggers | done |
+| 2026-11-21 | 06 · T8 catalogue mappings on the mocks' real fields (added to the plan) | `df9cee3` | test_catalog_mappings, test_configured_adapter, test_fabric_sources | done |
+| 2026-11-21 | 06 · C5+C7 engine, sync = ingest workflow, retries, one run at a time | `f9bbbf2`, `8b0417c` | test_workflow_engine incl. test_engine_parity_canonical; workflow set 368 passed; tsc 0, vitest 233; ruff clean | done |
+| 2026-11-21 | 06 · type checks | `fc9e7dc`, `93e57e5` | mypy: 26 errors fixed, no ignores; ruff clean | done |
+| 2026-11-21 | 06 · D1 Monitor per workflow and per step | `4b9c095` | test_screens_integration | done |
+| 2026-11-21 | 06 · D3 decisions (D-Fabric), runbook | `3932fbe` | — | done |
+| 2026-11-21 | 06 · D2 `smoke-fabric.mjs`, D3 guides and agent docs | (lead) | (lead) | (lead) |
+| 2026-11-21 | 06 · **phase gate** | — | (full suite and smoke results: added by the lead) | (lead) |
+
+### Lessons from running 7+ agents in parallel
+
+- **One shared test lock made the lock the bottleneck.** Every track serialized its api tests through `api_lock`
+  (one database), so agents queued behind each other. Keep each task's own tests narrow; run the wide sets at the gate.
+- **Agents committing from inside WSL got author `root`.** Fixed by a rebase that reset the author before the push.
+  Commit from PowerShell on Windows (learnings.md).
+- **Path-limited commits would have swept other agents' hunks.** `git commit -- <file>` commits the whole working-tree
+  file, including hunks another agent is still writing. Agents staged only their own hunks (`git apply --cached` of a
+  filtered patch, or `git update-index` with a blob of HEAD plus their hunks), or left the shared file to the lead
+  (`8ee1d29`, `8b0417c`; the "(part)" commits). `0511bbc` and `86aaa12` repair two slips.
+- **Reserved idempotent migrations** (0011–0017 created empty in one chain, `f45a85d`) let tracks add tables in
+  parallel without fighting over the Alembic head; `scripts/dev/migrate-reapply.sh` picks up a filled one.
+- **A parity test that empties the store must back it up and restore it.** `test_engine_parity_canonical` copies the
+  canonical tables and the source statuses to `parity_bk_*` and puts them back afterwards; otherwise it would leave
+  the shared store empty under every other agent's tests.
+- **Demo reset now clears connector-set `failing`/`auth_expired` statuses** (`8b0417c`): a test that rotated a junk
+  secret left a demo source `auth_expired`, and the live checks then warned.
+
 ## Decisions taken without the user (to review)
 
 - **A5b, web toolchain majors:** chosen versions are vite 8.3.6, vitest 5.1.0, @vitejs/plugin-react 6.2.1 and

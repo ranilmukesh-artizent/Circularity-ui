@@ -733,6 +733,51 @@ The rest of the design:
 - **Found on the way:** after a reset the single worker syncs every source before it sends a person's instruction
   (the queue is first in, first out). `scripts/dev/wait-idle.sh` waits it out; plan 02 adds job priorities.
 
+**Plan 6, the Connection Fabric for real: done (21 Nov 2026).** Everything under the Connection Fabric menu does real
+work against any HTTP API shaped like a source-sim spec; every vendor system stays synthetic (AGENTS.md rule 14).
+Plan: `docs/agents/plans/06-fabric-production.md` (task → commit list in its status section); commits `810d706` …
+`93e57e5`; parity changes on purpose: decision-log *D-Fabric*; operating it: `docs/agents/runbook-fabric.md`.
+- **Connections:** credentials are stored encrypted (Fernet, `DI_SECRET_KEY`, required outside `DI_ENV=dev`) in
+  `source_secret`, one active version per source and kind; screens get the version and last 4 characters only
+  (`di/connectors/secrets.py`, migration 0010). Each source has a `source_connection` row (URL, protocol, auth kind,
+  paging, resources) that the 21 Python adapters and the probe read (`di/connectors/connection.py`, 0011).
+  Catalogue and hand-made sources sync through `ConfiguredAdapter` (`di/connectors/configured.py`, templates in
+  `catalog.py`) against 15 catalogue mocks (`apps/source-sim/sim/generic/specs/catalog_*.py`) and
+  `/sandbox/{name}/records`; the synthetic first sync is gone. Test connection is honest (`probe.py`: resolved
+  address, a real TLS handshake or "Not encrypted: http", one read per resource); an expired stored credential stops
+  the sync (`auth_expired`). Syncs retry GETs on 429/5xx/timeouts, take a per-source advisory lock and back off
+  2, 4, 8 … minutes after a failure (`http.py`, `sync.py`, 0012). Webhooks per source:
+  `POST /api/webhooks/{source_id}` with a per-source secret, a 300 s window and event-id dedupe (`webhook.py`, 0013).
+- **Data:** the mapping a person edits is versioned in `field_mapping` and applied by the sync, over a Python
+  adapter's code mapping per canonical field (`di/connectors/mapping.py`, 0014; `mapping.preview`,
+  `mapping.revert`, `mapping.catalogSuggest`). Facts are checked against `MODEL_FIELDS`
+  (`di/canonical/schema.py`, `fields.py`); misfits are held in `failed_record` (`di/canonical/failed.py`, 0015).
+  Resolved conflicts stay resolved until a value changes (`conflict.values_hash`, 0016; `store.override`);
+  escalation is stored. Manual Import lands rows as raw records and canonical facts from source `manual`
+  (`di/connectors/manual.py`). Source Tables for app-made sources are discovered from payloads (`discover.py`).
+  Event Streams and the Home/Command fabric tiles read real data (hash buckets gone).
+- **Workflows:** `di/workflow/` holds the block catalogue with settings (`blocks.py`, `GET
+  /api/screens/workflows/blocks`), node `cfg` checked on save and publish, the step implementations (`steps/`,
+  `fx_rate` table 0017), the engine (`engine.py`, `run_graph`), the source binding (`binding.py`: a source's sync
+  **is** the run of its bound published ingest workflow, else the default graph; `test_engine_parity_canonical`
+  proves identical canonical and provenance), triggers (`triggers.py`: schedule, event, approval; off with
+  `DI_WORKFLOW_TRIGGERS=false`), versions (`versions.py`: Compare, Restore; runs use the published version) and the
+  live source overlay for the checks (`live.py`). One run at a time per workflow (advisory lock), retries with backoff
+  1 s, 2 s, 4 s, Reprocess and Apply fix through the engine; drafts autosave on the server, unjournaled
+  (`ActionDef.journaled=False`); Test run is a dry run on the server; JSON import.
+- **Operate:** the worker's periodic step closes runs a dead worker left ("worker lost", `di/worker.py
+  reap_lost_runs`); the Monitor shows per-workflow success, p95 run and step durations and held records by rule from
+  real runs (`workflow_run_stats`); the demo reset clears stored credentials, edited mappings, imports, app-made
+  versions and drafts, and returns demo sources left `failing` or `auth_expired` to their starting status.
+- **Checks:** (full suite and smoke results: added by the lead)
+- **Known gaps:** file and case triggers exist as helpers (`triggers.on_file`, `on_case`) that nothing calls yet; no
+  tool re-encrypts stored secrets when `DI_SECRET_KEY` changes (runbook: rotate each again); plan 2 tasks 1–3 (job
+  priorities, `dedupe_key`, dead letters) were not done first, so one-run-at-a-time is a query on `job` plus the run
+  lock and plan 6 has its own run reaper; catalogue systems without circularity data (Workday, Jira, Confluence,
+  Teams, Google Drive, S3, Azure Blob, NetSuite) keep records raw and map nothing; the demo's `mapping.suggest` stays
+  unported; the integration screen still shows the market feed and the recycler as live while the workflow checks
+  say otherwise (demo parity on both screens).
+
 ## B18. Hardening
 
 1. **Browser tests:** rewrite the demo's three headless suites (208 role checks, 110 guided-flow checks, 88 demo-path checks) in Playwright, run them against the Compose stack, and add them to CI.

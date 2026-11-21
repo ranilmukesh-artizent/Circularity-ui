@@ -66,10 +66,27 @@ Commits: `fbd2122` (B17b, B5c, ShipLane rename), `b47f7f9` (repo cleanup), `266d
 - **B17c:** the in-browser engine and the `VITE_BACKEND` switch deleted; assets bundled (`src/ui/assets.gen.ts`);
   RT-1048 runs through all ten stages in the browser (`scripts/smoke-rt1048.mjs`). B17 complete.
 
-## 5. Next
+## 5. Plan 6, the Connection Fabric for real (21 Nov 2026)
 
-- **Best-practices audit and refactor plan** (user decision, 20 Nov 2026), before the plans in `docs/agents/plans/`.
-- **The plans:** loop, queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry.
+Commits: `832b681` (the plan), `810d706` … `93e57e5` (the work), `3932fbe` (decisions and runbook); task → commit list
+in `docs/agents/plans/06-fabric-production.md`, one line per task in `docs/agents/plans/PROGRESS.md`. Before it: plan
+1b (refactor, `PROGRESS.md`) and the Fabric/Workflow Studio controls on the server (decision log, 21 Nov).
+
+- **User request:** "all the things under the connector menu should be production grade". Ran before plan 2.
+- **Connections:** encrypted per-source credentials (`DI_SECRET_KEY`), a connection row per source, a configured
+  adapter that really syncs catalogue and hand-made sources against new source-sim mocks, an honest Test connection,
+  sync retries and backoff, per-source webhooks with dedupe.
+- **Data:** versioned mappings that the sync applies, canonical schema checks with held records, conflicts that stay
+  resolved, Manual Import through the pipeline, discovered Source Tables, Event Streams and tiles from real data.
+- **Workflows:** block settings, step implementations and an engine (`di/workflow/`); a source's sync is the run of
+  its ingest workflow, with canonical data proven identical; triggers, versions, server drafts, a dry test run,
+  Reprocess and Apply fix for real, one run at a time with a reaper; the Monitor per workflow and step.
+- **How:** 7+ agents in parallel on one tree, migrations reserved in advance; the lessons are in `PROGRESS.md`.
+  Parity changes on purpose: decision-log *D-Fabric*. Vendors stay synthetic.
+
+## 6. Next
+
+- **The plans:** queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry (plans 2–5).
 - **B18:** Playwright suites, `POST /api/admin/reset`, run book, security review.
-- **Server gaps** (from B17b): Connection Fabric write actions, workflow extras, the MCP agent test bench, and the
-  pipeline's agent gate (autonomy levels, run limits, the kill switch outside MCP).
+- **Server gaps** (from B17b): the MCP agent test bench and the pipeline's agent gate (autonomy levels, run limits,
+  the kill switch outside MCP). Plan 6's known gaps are in its status block in `docs/backend-steps.md`.
