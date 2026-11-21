@@ -47,7 +47,8 @@ def sources(p: CurrentPrincipal, session: DbSession):
     _can_see_integration(p)
     rows = session.execute(
         text(
-            "SELECT s.*, (SELECT count(*) FROM conflict c WHERE c.status = 'open' AND c.authority = s.id) AS open_conflicts, "
+            "SELECT s.*, (SELECT count(*) FROM conflict c WHERE c.status IN ('open', 'escalated') AND c.authority = s.id) "
+            "AS open_conflicts, "
             "(SELECT count(*) FROM provenance v WHERE v.source_id = s.id) AS facts FROM source_system s ORDER BY s.id"
         )
     ).mappings()

@@ -252,7 +252,10 @@ conflict = Table(
     _ts("closed_at"),
     Column("closed_by", Text),
     Column("note", Text),
-    Index("ux_conflict_open", "model", "key", "field", unique=True, postgresql_where=text("status = 'open'")),
+    Column("values_hash", Text),  # 0016 (plan 6 B2): the differing values it was opened or resolved on
+    Index(
+        "ux_conflict_open", "model", "key", "field", unique=True, postgresql_where=text("status IN ('open', 'escalated')")
+    ),  # 0016: one active (open or escalated) conflict per field
 )
 
 # --- 0005 cases -----------------------------------------------------------------------------------------------------

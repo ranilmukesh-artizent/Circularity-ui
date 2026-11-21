@@ -5,7 +5,7 @@ import { fmtDate } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {
   ackKind, canon, canonExample, caseExists, commitImport, conflictPage, escalateConflict, events, facilities, mappings, pct, rbPath, resolveConflict,
-  sampleCsv, sources, tenantList, type StreamEvent,
+  sampleCsv, sources, tenantList, type Conflict, type ConflictChoice, type StreamEvent,
 } from '../../api/integration';
 import { sessionScoped } from '../../api/view';
 import { onActivateKey } from '../../ui/keys';
@@ -146,6 +146,22 @@ export function Conflicts() {
     if (!r.ok && r.error.code !== 'duplicate') return;
     toast('Escalated to the data owner. The conflict stays open and dependent routes stay held.');
   };
+  /* plan 6 B2: keep another source's value or enter one, with a reason (the choice holds until a source's value changes) */
+  const [pick, setPick] = useState<(ConflictChoice & { id: string }) | null>(null);
+  const choose = async () => {
+    if (!pick || !canMgr()) return;
+    if (!pick.reason?.trim()) return toast('Give a reason when you do not keep the value of the system with authority.');
+    if (pick.choose === 'value' && !pick.value?.trim()) return toast('Enter the value to keep.');
+    const r = await action.run(() => resolveConflict(pick.id, pick));
+    if (!r.ok) return;
+    setPick(null);
+    toast(r.output.choose === 'value' ? `${pick.id} resolved with the value you entered.` : `${pick.id} resolved: ${r.output.keptName}'s value is kept for ${r.output.kind.toLowerCase()}.`);
+  };
+  const others = (c: Conflict) => (c.values ?? [{ source: '', src: c.b.src, val: c.b.val }]).filter((v) => v.source !== c.authorityId);
+  const resolvedNote = (c: Conflict) => {
+    const note = c.resolved?.note;
+    return note && !note.includes('(the system with authority)') && note !== 'The sources agree again' ? note + '.' : `Resolved in favour of ${c.authority}.`;
+  };
   return (
     <>
       <div className="frkpis fr3">
@@ -167,14 +183,46 @@ export function Conflicts() {
                 <div className="panel flat" style={{ padding: 8 }}><div className="note">{c.b.src}</div><b>{c.b.val}</b></div>
               </div>
               <dl className="kv"><dt>Source authority</dt><dd>{c.authority}</dd><dt>Impact</dt><dd>{c.impact}</dd></dl>
+              {c.status === 'open' && c.escalated && <div className="note" style={{ marginTop: 8 }}>Escalated to {c.escalated.to || 'the data owner'} by {c.escalated.by}.</div>}
               {c.status === 'open' ? (
                 canMgr() && (
-                  <div className="row" style={{ marginTop: 12 }}>
-                    <button className="btn sm pri" onClick={() => resolve(c.id)}>Accept {c.authority}</button>
-                    <button className="btn sm" onClick={() => escalate(c.id)}>Escalate to owner</button>
-                  </div>
+                  <>
+                    <div className="row" style={{ marginTop: 12 }}>
+                      <button className="btn sm pri" onClick={() => resolve(c.id)}>Accept {c.authority}</button>
+                      <button className="btn sm" onClick={() => escalate(c.id)}>Escalate to owner</button>
+                      {pick?.id !== c.id && (
+                        <button className="btn sm" onClick={() => setPick({ id: c.id, choose: 'other', source: others(c)[0]?.source || undefined, reason: '' })}>Choose another value</button>
+                      )}
+                    </div>
+                    {pick?.id === c.id && (
+                      <div className="panel flat" style={{ padding: 10, marginTop: 10 }}>
+                        {others(c).map((v) => (
+                          <label key={v.source || v.src} className="row" style={{ gap: 6 }}>
+                            <input type="radio" name={'cf-' + c.id} checked={pick.choose === 'other' && (pick.source ?? '') === v.source}
+                              onChange={() => setPick({ ...pick, choose: 'other', source: v.source || undefined })} />
+                            Keep {v.src}: <b>{v.val}</b>
+                          </label>
+                        ))}
+                        <label className="row" style={{ gap: 6 }}>
+                          <input type="radio" name={'cf-' + c.id} checked={pick.choose === 'value'} onChange={() => setPick({ ...pick, choose: 'value' })} />
+                          Enter a value
+                        </label>
+                        {pick.choose === 'value' && (
+                          <div className="fld"><label htmlFor={'cfv-' + c.id}>Value</label>
+                            <input id={'cfv-' + c.id} value={pick.value ?? ''} onChange={(e) => setPick({ ...pick, value: e.target.value })} /></div>
+                        )}
+                        <div className="fld"><label htmlFor={'cfr-' + c.id}>Reason (kept in the audit trail)</label>
+                          <input id={'cfr-' + c.id} value={pick.reason ?? ''} onChange={(e) => setPick({ ...pick, reason: e.target.value })} /></div>
+                        <div className="note">The choice holds until a source sends a different value; then the conflict opens again.</div>
+                        <div className="row" style={{ marginTop: 8 }}>
+                          <button className="btn sm pri" onClick={choose}>Resolve</button>
+                          <button className="btn sm" onClick={() => setPick(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )
-              ) : <div className="note" style={{ marginTop: 10 }}>Resolved in favour of {c.authority}. Held routes were released for re-evaluation.</div>}
+              ) : <div className="note" style={{ marginTop: 10 }}>{resolvedNote(c)} Held routes were released for re-evaluation.</div>}
             </div>
           </div>
         ))}

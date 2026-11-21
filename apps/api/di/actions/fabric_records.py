@@ -13,13 +13,18 @@ Workspace collections written here:
   the table and its links back) and `layout` (positions after a drag or Auto Align, which the demo kept in memory for
   the session; here they survive a reload);
 - "imports": one item per loaded import (the demo's S.imports), with the rows when the page sends them, tagged manual;
-- "conflict_escalations": who escalated which conflict, when (the demo's c.escalated). An escalated conflict stays
-  open, as in the demo ("it stays open and dependent routes stay held"), so the canonical store keeps managing it
-  (its unique open index, closing it when the sources agree again) and a person can still accept the authority.
+- "conflict_escalations": who escalated which conflict, when (the demo's c.escalated). An escalated conflict is
+  stored as status 'escalated' (plan 6 B2) and stays active, as in the demo ("it stays open and dependent routes stay
+  held"): the screens show it open, the canonical store keeps managing it (one active conflict per field, closed when
+  the sources agree again) and a person can still resolve it.
+
+conflict.resolve (plan 6 B2) keeps the authority's value (the demo's), another source's value or one a person enters,
+with a reason; the resolution sticks while the sources send the same values (di/canonical/store.py).
 
 Each resolve, escalate and import writes an Event Streams entry, as the demo's pushEvent did.
 """
 
+import json
 import re
 from typing import Any
 
@@ -28,7 +33,10 @@ from sqlalchemy import text
 from di import golden, state
 from di.actions.decisions import NOW, push_event
 from di.actions.pipeline import CallContext
-from di.actions.registry import ActionError, guard, implement
+from di.actions.registry import ACTIONS, ActionError, guard, implement
+from di.canonical import store
+from di.canonical.schema import MODEL_FIELDS, check_fact, top_field
+from di.canonical.store import Fact
 
 state.register("imports", list)
 state.register("conflict_escalations", list)
@@ -280,6 +288,8 @@ def _by(ctx: CallContext) -> str:
 # ---------------------------------------------------------------- conflicts
 def _name(ctx: CallContext, sid: str) -> str:
     """The source's name as the Connection Fabric shows it (Fabric._source: the demo's name, else its type's label)."""
+    if sid == store.MANUAL:  # Manual Import rows and choices made in the Conflict Queue (plan 6 B2, B3)
+        return "Manual import"
     if sid in _SOURCES:
         return str(_SOURCES[sid]["name"])
     from di.reads.fabric import type_of
@@ -307,36 +317,114 @@ def conflict_row(ctx: CallContext, cid: Any) -> dict:
     return c
 
 
-def resolve(ctx: CallContext, cid: Any) -> dict:
+# conflict.resolve beyond the demo (plan 6 B2): keep another source's value or enter one, with a reason
+ACTIONS["conflict.resolve"].input |= {
+    "choose": {"req": False, "t": "string"},  # authority (default, the demo's), other, value
+    "source": {"req": False, "t": "string"},  # with other: which source's value (default: the first other source)
+    "value": {"req": False, "t": "string"},  # with value: the value a person enters
+    "reason": {"req": False, "t": "string"},  # required with other and value
+}
+CHOICES = ("authority", "other", "value")
+
+
+def _entered(c: dict, raw: str) -> Any:
+    """The value a person typed, as the field's type (a number for a number field, true/false for a flag)."""
+    spec = MODEL_FIELDS.get(c["model"], {}).get(top_field(c["field"]))
+    v: Any = raw.strip()
+    if spec and spec.type == "number":
+        try:
+            v = float(v.replace(",", ""))
+        except ValueError:
+            v = raw
+    elif spec and spec.type == "bool" and v.lower() in ("true", "false", "yes", "no"):
+        v = v.lower() in ("true", "yes")
+    if why := check_fact(Fact(c["model"], c["key"], c["field"], v)):
+        raise ActionError("validation_error", f"{why}.")
+    return v
+
+
+def resolve(
+    ctx: CallContext, cid: Any, choose: str | None = None, value: Any = None, reason: str | None = None, source: str | None = None
+) -> dict:
+    """Resolve a conflict. `authority` (the demo's action) keeps the value of the system with authority; `other`
+    keeps another source's value and `value` a value the person enters, both with a reason. The resolution sticks
+    while the sources keep sending the same values (store.values_hash); routes held by the conflict are released."""
+    choose = choose or "authority"
+    if choose not in CHOICES:
+        raise ActionError("validation_error", f'"choose" must be one of {", ".join(CHOICES)}.')
     c = conflict_row(ctx, cid)
     if c["status"] == "resolved":
         raise ActionError("duplicate", f"{c['ref']} is already resolved")
+    reason = (reason or "").strip()
+    if choose != "authority" and not reason:
+        raise ActionError("validation_error", "Give a reason when you do not keep the value of the system with authority.")
+    vals: dict = c["values"] or {}
+    kept, kept_name, chosen = c["authority"], c["auth_name"], None
+    if choose == "other":
+        others = sorted(k for k in vals if k != c["authority"])
+        kept = source or (others[0] if others else None)
+        if kept not in others:
+            raise ActionError("validation_error", f"{source or 'Another source'} has no value in {c['ref']}.")
+        kept_name, chosen = _name(ctx, kept), vals[kept]
+    elif choose == "value":
+        if value is None or str(value).strip() == "":
+            raise ActionError("validation_error", 'Missing "value".')
+        kept, kept_name, chosen = store.MANUAL, _by(ctx), _entered(c, str(value))
+    note = {
+        "authority": f"Resolved in favour of {c['authority']} (the system with authority)",
+        "other": f"Resolved in favour of {kept_name}: {reason}",
+        "value": f"Set to {json.dumps(chosen, default=str)} by {_by(ctx)}: {reason}",
+    }[choose]
+    if choose == "authority" and reason:
+        note += f": {reason}"
     ctx.session.execute(
-        text("UPDATE conflict SET status = 'resolved', closed_at = now(), closed_by = :by, note = :n WHERE id = :i"),
-        {"by": ctx.actor.id, "n": f"Resolved in favour of {c['authority']} (the system with authority)", "i": c["id"]},
+        text(
+            "UPDATE conflict SET status = 'resolved', closed_at = now(), closed_by = :by, note = :n, values_hash = :h "
+            "WHERE id = :i"
+        ),
+        {"by": ctx.actor.id, "n": note, "h": store.values_hash(vals), "i": c["id"]},
     )
+    if choose == "authority":
+        store.drop_override(ctx.session, c["model"], c["key"], c["field"])
+        store.settle(ctx.session, c["model"], c["key"], c["field"])
+    else:
+        store.override(ctx.session, c["model"], c["key"], c["field"], chosen, ctx.actor.id, f"{note} ({c['ref']})")
+    text_ = {
+        "authority": f"resolved by source authority {c['auth_name']}",
+        "other": f"resolved with the value of {kept_name}",
+        "value": f"resolved with a value entered by {kept_name}",
+    }[choose]
     push_event(
         ctx,
         {
             "dir": "in", "type": "conflict.resolved", "caseId": None, "decisionId": None, "approval": None, "ver": None,
             "dest": f"{c['auth_name']} vs {c['other_name']}", "ack": "acknowledged", "key": "conf-" + c["ref"].lower(),
-            "note": f"{c['kind']} conflict on {c['key']} resolved by source authority {c['auth_name']}",
+            "note": f"{c['kind']} conflict on {c['key']} {text_}",
         },
         "conflict.resolve",
     )  # fmt: skip
-    return {
-        "id": c["ref"], "ref": c["ref"], "kept": c["authority"], "field": f"{c['model']}.{c['field']}",
+    out = {
+        "id": c["ref"], "ref": c["ref"], "kept": kept, "field": f"{c['model']}.{c['field']}",
         "authority": c["auth_name"], "kind": c["kind"],
     }  # fmt: skip
+    if choose != "authority":
+        out |= {"choose": choose, "value": chosen, "keptName": kept_name}
+    return out
 
 
 def escalate(ctx: CallContext, cid: Any) -> dict:
+    """Escalate to the authority's data owner: status 'escalated' (still active: a sync updates it, it is closed when
+    the sources agree, and a person can still resolve it); dependent routes stay held."""
     c = conflict_row(ctx, cid)
     if c["status"] == "resolved":
         raise ActionError("conflict", f"Conflict {c['ref']} is already resolved.")
     if c["status"] == "escalated" or state.get(ctx.session, "conflict_escalations", c["ref"]):
         raise ActionError("duplicate", f"{c['ref']} is already escalated to the data owner")
     state.add(ctx.session, "conflict_escalations", c["ref"], {"id": c["ref"], "by": _by(ctx), "byId": ctx.actor.id, "at": NOW})
+    ctx.session.execute(
+        text("UPDATE conflict SET status = 'escalated', note = :n WHERE id = :i"),
+        {"n": f"Escalated to the {c['auth_name']} data owner by {_by(ctx)}", "i": c["id"]},
+    )
     push_event(
         ctx,
         {

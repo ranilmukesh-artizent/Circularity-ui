@@ -41,8 +41,12 @@ export interface Rec { s?: Source; c?: CatalogItem; v: string; t: string; line: 
 export interface Canon { n: string; v: string; fields: string[]; purpose: string; sources: string[] }
 export interface Conflict {
   id: string; kind: string; asset: string; a: { src: string; val: string }; b: { src: string; val: string }; authority: string; impact: string;
-  status: 'open' | 'resolved'; since: string; escalated?: { by: string; at: string };
+  status: 'open' | 'resolved'; since: string; escalated?: { by: string; at: string; to?: string };
+  /** every source's value; resolved: who closed it and the note (which value was kept, and why) */
+  values?: { source: string; src: string; val: string }[]; authorityId?: string; resolved?: { by: string; at: string | null; note?: string | null };
 }
+/** conflict.resolve beyond the demo's accept-the-authority: keep another source's value or enter one, with a reason. */
+export interface ConflictChoice { choose: 'authority' | 'other' | 'value'; source?: string; value?: string; reason?: string }
 export interface StreamEvent {
   id: string; dir: 'in' | 'out'; type: string; caseId: string | null; decisionId: string | null; approval: string | null; ver: number | null;
   dest: string; ack: string; key: string; note?: string; ts: Date | string | number; retries?: number;
@@ -327,10 +331,12 @@ export const saveSource = (mode: 'new' | 'edit', id: string, d: Draft, maps: str
   invoke<{ mode: 'new' | 'edit'; source_id: string; name: string; vendor?: string; ver?: string; csv?: boolean; wasOff?: boolean }>('source.update', {
     mode, id, d, maps, ops, note: '',
   });
-export async function resolveConflict(id: string) {
+export async function resolveConflict(id: string, choice?: ConflictChoice) {
   // the server names the authority and the kind; the queue's copy is the fallback
   const c = (lastConflicts ? peek<ConflictAnswer>(lastConflicts)?.conflicts : undefined)?.find((x) => x.id === id);
-  const r = await invoke<{ id: string; kept: string; field: string; authority: string; kind: string }>('conflict.resolve', { id });
+  const r = await invoke<{ id: string; kept: string; field: string; authority: string; kind: string; choose?: string; value?: unknown; keptName?: string }>(
+    'conflict.resolve', choice && choice.choose !== 'authority' ? { id, ...choice } : { id },
+  );
   if (r.ok) r.output = { ...r.output, authority: r.output.authority || c?.authority || r.output.kept, kind: r.output.kind || c?.kind || r.output.field };
   return r;
 }

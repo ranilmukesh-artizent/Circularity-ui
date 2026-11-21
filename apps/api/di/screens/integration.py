@@ -430,7 +430,7 @@ class Fabric:
 
     def _name(self, sid: str) -> str:
         s = self.by_id.get(sid) or REF_BY_ID.get(sid)
-        return s["name"] if s else sid
+        return s["name"] if s else "Manual import" if sid == "manual" else sid  # manual: imports, Conflict Queue choices
 
     def _conflict(self, r, esc: dict | None = None) -> dict:
         """A conflict in the facade's Conflict shape: `a` is the authority's value, `b` the first other source's.
@@ -460,12 +460,16 @@ class Fabric:
             "since": src_age(age),
             "openedAt": _ts(r["opened_at"]),
         }
+        owner = (self.by_id.get(auth) or REF_BY_ID.get(auth) or {}).get("owner") or f"{self._name(auth)} data owner"
         if esc and r["status"] != "resolved":
-            out["escalated"] = {"by": esc["by"], "at": esc["at"]}
+            out["escalated"] = {"by": esc["by"], "at": esc["at"], "to": owner}  # to: the authority's data owner (B2)
         elif r["status"] == "escalated":
-            out["escalated"] = {"by": r["closed_by"], "at": datetime.isoformat(r["closed_at"]) if r["closed_at"] else None}
+            at = datetime.isoformat(r["closed_at"]) if r["closed_at"] else None
+            out["escalated"] = {"by": r["closed_by"], "at": at, "to": owner}
         if r["status"] == "resolved":
-            out["resolved"] = {"by": r["closed_by"], "at": datetime.isoformat(r["closed_at"]) if r["closed_at"] else None}
+            out["resolved"] = {
+                "by": r["closed_by"], "at": datetime.isoformat(r["closed_at"]) if r["closed_at"] else None, "note": r["note"],
+            }  # fmt: skip
         return out
 
     def exceptions(self) -> list[dict]:
