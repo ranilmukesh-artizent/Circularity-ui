@@ -181,7 +181,7 @@ def _audit_entry(ctx: StepCtx, level: str, count: int) -> str:
     from di.workflow.engine import label
 
     wf, node = ctx.wf or {}, ctx.node or {}
-    wid, step = wf.get("id"), label(node) if node.get("k") else node.get("id")
+    wid, step = wf.get("id"), label(node, ctx.s) if node.get("k") else node.get("id")
     n = state.next_number(ctx.s, "events", "EV-", EVENT_SEQ_START)
     now = ctx.now.astimezone(UTC)
     e = {

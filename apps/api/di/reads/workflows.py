@@ -236,6 +236,7 @@ def run_quality(s: Session, w: dict) -> dict | None:
     rows = rec.get("rows") if rec else last.get("rows") if last.get("ts") == lr.get("ts") else None
     held = held_records(s, [str(key)]).get(str(key), 0)
     by = {n["id"]: n for n in (w.get("graph") or {}).get("nodes") or []}
+    srcs: list[dict] = []  # the sources as they are now, read for the first step named (a catalogue source by its name)
     groups = s.execute(
         text(
             f"SELECT coalesce(step, '') AS step, coalesce(field, '') AS field, coalesce(rule, 'error') AS rule, "  # noqa: S608 - a fixed expression
@@ -247,16 +248,19 @@ def run_quality(s: Session, w: dict) -> dict | None:
     return {
         "real": True, "key": key, "run": lr.get("id"), "state": lr.get("status"), "in": rows, "held": held,
         "valid": max(0, rows - held) if rows is not None else None,
-        "groups": [{"step": g["step"], "label": _step_label(by.get(g["step"]), g["step"]), "field": g["field"] or "—",
+        "groups": [{"step": g["step"], "label": _step_label(by.get(g["step"]), g["step"], s, srcs), "field": g["field"] or "—",
                     "rule": g["rule"], "n": int(g["n"])} for g in groups],
     }  # fmt: skip
 
 
-def _step_label(n: dict | None, step: str) -> str:
+def _step_label(n: dict | None, step: str, s: Session, srcs: list[dict]) -> str:
     if n is not None:
+        from di.workflow import live
         from di.workflow.engine import label
 
-        return label(n)
+        if not srcs:
+            srcs.append(live.sources(s))
+        return label(n, sources=srcs[0])
     return "Canonical model" if step == "canonical" else step or "—"
 
 

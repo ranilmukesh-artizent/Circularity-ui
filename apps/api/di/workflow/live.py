@@ -123,11 +123,17 @@ def sources(s: Session) -> dict[str, dict]:
 
 def overlay(live: dict[str, dict]) -> dict[str, dict]:
     """What the browser's checks need on top of the integration screen's sources: per source that exists, its status
-    for the checks, its age and whether it is paused (GET /api/screens/workflows `live`)."""
+    for the checks, its age and whether it is paused (GET /api/screens/workflows `live`); for a source made in the
+    Connection Fabric also what the demo's MAP_TARGET and DELIVER do not know: the canonical model its mapping feeds
+    (`target`) and how it takes instructions (`deliver`), as the server's checks read them."""
+    from di.actions.workflows import made_here_lookups
+
+    extra = made_here_lookups(live)
     return {
-        sid: {"status": x["status"], "fresh": x.get("fresh") or "—", **({"paused": True} if x.get("paused") else {})}
+        sid: {"status": x["status"], "fresh": x.get("fresh") or "—", **({"paused": True} if x.get("paused") else {}),
+              **extra.get(sid, {})}
         for sid, x in live.items()
-    }
+    }  # fmt: skip
 
 
 def mappings(s: Session) -> dict[str, list]:

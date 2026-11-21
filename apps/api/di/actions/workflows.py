@@ -233,6 +233,31 @@ def live_sources(s: Any) -> Iterator[None]:
         _LIVE.reset(tok)
 
 
+def label_in(n: dict, sources: dict[str, dict] | None) -> str:
+    """label(n) with the sources as `sources` (di/workflow/live.py `sources`) has them: a source connected from the
+    catalogue or made by hand by its own name, one deleted in the Connection Fabric "Deleted source". None: the
+    sources the context reads (the demo's reference outside live_sources). For whatever names a step outside the
+    checks: run notes, the Monitor's step labels, Compare, Reprocess and Apply fix."""
+    if sources is None:
+        return label(n)
+    tok = _LIVE.set(sources)
+    try:
+        return label(n)
+    finally:
+        _LIVE.reset(tok)
+
+
+def made_here_lookups(sources: dict[str, dict]) -> dict[str, dict]:
+    """For each source made in the Connection Fabric, what the demo's MAP_TARGET and DELIVER do not know: the canonical
+    model its field mapping feeds (`target`, map_target) and how it accepts instructions (`deliver`). The browser's
+    checks read them from the workflow list's `live` overlay, so they agree with these."""
+    tok = _LIVE.set(sources)
+    try:
+        return {sid: {"target": map_target(sid), "deliver": deliver(sid)} for sid in sources if made_here(sid)}
+    finally:
+        _LIVE.reset(tok)
+
+
 def made_here(sid: str) -> bool:
     """A source the demo does not know (connected from the catalogue or made by hand) that exists now."""
     return sid not in SOURCES and src(sid) is not None
@@ -1535,7 +1560,8 @@ def reprocess(i: dict[str, Any], ctx: CallContext):
     done: list[int] = []
     labels: list[str] = []
     for (start, sid), grp in groups.items():
-        labels.append(label(studio._analyze(g)[0][start]))
+        with live_sources(ctx.session):  # a source made in the Connection Fabric by its name
+            labels.append(label(studio._analyze(g)[0][start]))
         with SessionLocal() as s:
             real = adapter_for(s, sid)
             conf = s.execute(text("SELECT confidence FROM source_system WHERE id = :i"), {"i": sid}).scalar()
@@ -1586,7 +1612,12 @@ def _failed_step(w: dict) -> str | None:
 def _fix_for(s, w: dict) -> dict | tuple[str, str]:
     """The fix for the last run's failure: the failed step, and the last good version of its settings: the newest
     version older than the one that ran (the published one, else the saved one) in which the step had other settings.
-    Or the refusal (code, message) when there is none."""
+    Or the refusal (code, message) when there is none. Steps are named with the sources as they are now."""
+    with live_sources(s):
+        return _fix_named(s, w)
+
+
+def _fix_named(s, w: dict) -> dict | tuple[str, str]:
     nid = _failed_step(w)
     if nid is None:
         return "conflict", f"No step failed in the last run of {w['name']}, so there is no step to fix."
@@ -1710,8 +1741,9 @@ def run_guard(i: dict[str, Any], ctx: CallContext):
         return "duplicate", f"{w['name']} is already running"
     if w["status"] == "draft":  # a draft runs only when it can: its sources connected, its checks clean
         g = graph_for_run(w)
-        msg = next((f"{label(n)} has no connected feed" for n in (_Graph(g).by[i] for i in studio._order(g))
-                    if n["k"] in ("conn", "wconn") and not _connected(ctx.session, n["ref"])), None)  # fmt: skip
+        with live_sources(ctx.session):  # a source made in the Connection Fabric by its name
+            msg = next((f"{label(n)} has no connected feed" for n in (_Graph(g).by[i] for i in studio._order(g))
+                        if n["k"] in ("conn", "wconn") and not _connected(ctx.session, n["ref"])), None)  # fmt: skip
         if msg is None and (er := errors(g, w["kind"], ctx.session)):  # the sources now (catalogue ones too)
             msg = er[0]["msg"]
         if msg:
@@ -1926,7 +1958,7 @@ def _run_locked(payload: dict) -> dict:
             if pause:  # long enough for the canvas to show the step going
                 time.sleep(pause)
 
-        er = errors(g, w["kind"])
+        er = errors(g, w["kind"], s)  # the sources as they are now: a catalogue or hand-made source's step runs
         if er:  # a graph with errors does not run: its first error fails, the steps after it upstream failed
             res = engine.refused(g, er[0]["id"], er[0]["msg"])
             states = dict.fromkeys(res.order, "queued")
@@ -1980,8 +2012,9 @@ def _run_locked(payload: dict) -> dict:
         }  # fmt: skip
         state.put(s, "workflow_runs", key, final)
         steps = w["lastRun"]["dur"]  # what the Monitor reads (plan 6 D1): the run, and each step with its label
-        studio.record_run_stats(s, key, wid, now, dur, res.status, steps,
-                                {n["id"]: engine.label(n) for n in g["nodes"] if n["id"] in steps})  # fmt: skip
+        with live_sources(s):  # a source made in the Connection Fabric by its name
+            labels = {n["id"]: engine.label(n) for n in g["nodes"] if n["id"] in steps}
+        studio.record_run_stats(s, key, wid, now, dur, res.status, steps, labels)
         _keep_recent_runs(s)
         s.commit()
     log.info("workflow run %s (%s): %s", key, wid, res.status)

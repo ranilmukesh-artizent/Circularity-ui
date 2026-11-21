@@ -22,9 +22,9 @@ run record. What is computed here, from the collections, is ported from
 the demo: the status (wfStat), the history (frWfHistory, without the runs it derived: only runs that happened, plan 6
 C8), the step counts (frRunCounts), the last run on the canvas
 (wfRunFromLast), the failed records (frFailedRows) and the attention list (frWfAttn). Times are the demo's clock
-(the as-of time), as the seeded runs are. The attention list's stale sources and the failed records' field names come
-from the demo's source reference (sources.json, canonical.json mappings), so the studio stays at parity with the demo
-until workflows run on the synced sources.
+(the as-of time), as the seeded runs are. The attention list's stale sources and the search by a system's vendor read
+the sources as they are now (di/workflow/live.py: a catalogue or hand-made source too, an expired one listed), which
+for the seeded workspace are the demo's reference, so the studio stays at parity with the demo.
 
 The actions the facade invokes (workflow.save, publish, setStatus, create, duplicate, delete, run and the read
 workflow.validate) are in di/actions/workflows.py (B15).
@@ -40,7 +40,7 @@ Facade (apps/web/src/api/workflows.ts) → here, export by export:
   (`quality`: the latest real run's records read, held and passed and its held records by step, field and rule; None
   when the last run is seeded)
 - endpoint GET /api/screens/workflows/{id}/compare: compareVersions; action workflow.restore: restoreVersion
-- endpoint GET /api/screens/workflows/blocks: blockSpecs, blockResources
+- endpoint GET /api/screens/workflows/blocks: blockSpecs, blockResources, blockOperations (`operations`)
 - endpoint GET /api/screens/integration/sources: usedBy (`health.workflows`), sources, source, sourceExists,
   sourceLabel, sourceShortLabel, channelsOf (`health.channels`), readableSources, writableSources,
   sourceCompleteness (`compl`), systemOf
@@ -187,14 +187,16 @@ def figures(session, w: dict, runs: list[tuple[str, dict]]) -> list[dict]:
     return [{"real": False}]
 
 
-def attention(workflows: list[dict], now: int = AS_OF) -> list[dict]:
-    """frWfAttn: failing workflows, expired source credentials (the demo's stale sources), high failure rates."""
+def attention(workflows: list[dict], now: int = AS_OF, sources: dict[str, dict] | None = None) -> list[dict]:
+    """frWfAttn: failing workflows, expired source credentials (the stale sources: `sources`, the sources as they are
+    now, di/workflow/live.py, which for the seeded workspace are the demo's; default the demo's reference), high failure
+    rates."""
     o = []
     for w in workflows:
         if wf_stat(w) == "failing":
             s = (w["last"].get("note") or "Last run failed") + " · " + fr_ago(now - w["last"]["ts"])
             o.append({"ic": "alert", "h": "alert", "t": w["name"], "s": s, "arg": "run|" + w["id"], "go": w["id"]})
-    for src in SOURCES.values():
+    for src in (SOURCES if sources is None else sources).values():
         if src["status"] == "stale":
             o.append(
                 {
@@ -229,12 +231,13 @@ def counts(workflows: list[dict]) -> dict:
     return {"total": len(workflows), **c, "systems": len({w["src"] for w in workflows if w.get("src")})}
 
 
-def _matches(w: dict, cat: str | None, status: str | None, src: str | None, q: str | None) -> bool:
-    """frWfFilter: type, status (with failing), system and a search over name, id, owner and the system's vendor."""
+def _matches(w: dict, cat: str | None, status: str | None, src: str | None, q: str | None, lv: dict[str, dict]) -> bool:
+    """frWfFilter: type, status (with failing), system and a search over name, id, owner and the system's vendor (the
+    sources as they are now, `lv`: a catalogue or hand-made source's vendor too)."""
     if (cat and w["cat"] != cat) or (status and wf_stat(w) != status) or (src and w.get("src") != src):
         return False
     if q:
-        vendor = SOURCES.get(w.get("src") or "", {}).get("vendor", "") if w.get("src") else ""
+        vendor = lv.get(w.get("src") or "", {}).get("vendor", "") if w.get("src") else ""
         return q.strip().lower() in f"{w['name']} {w['id']} {w['owner']} {vendor}".lower()
     return True
 
@@ -262,14 +265,14 @@ def workflow_list(
     rows = [
         {k: v for k, v in w.items() if k not in _LIST_HIDDEN} | {"stat": wf_stat(w)} | _upstream(w, lv)
         for w in wl
-        if _matches(w, cat, status, src, q)
+        if _matches(w, cat, status, src, q, lv)
     ]
     return {
         "live": live.overlay(lv),  # the browser's checks read the sources' status from here, as the server's do
         "workflows": rows,
         "counts": counts(wl),
         "runs": recent_runs(session),
-        "attention": attention(wl),
+        "attention": attention(wl, sources=lv),  # a stale catalogue source too; the seeded workspace: the demo's
         "templates": [{k: v for k, v in t.items() if k != "tpl"} for t in templates(session)],  # S.frTpl, no graphs
         "now": ms(clock.now().isoformat()),  # the workspace clock, which run times are on (the frontend's "ago")
     }
@@ -278,11 +281,15 @@ def workflow_list(
 @router.get("/blocks")
 def workflow_blocks(p: CurrentPrincipal):
     """The block catalogue (di/workflow/blocks.py, plan 6 C1): every palette block's settings, with their defaults and
-    choices, and each connection's resources (the choices of a connector's Resources setting)."""
+    choices, each connection's resources (the choices of a connector's Resources setting) and each target system's
+    write operations (the choices of a write connector's Target operation, di/instructions/writers.py; a target not
+    listed takes none)."""
     require_studio(p)
+    from di.instructions.writers import SYSTEM_OF, operations
     from di.workflow.blocks import catalogue
 
-    return {"blocks": catalogue(), "resources": _resources()}
+    ops = {sid: operations(sid) for sid in dict.fromkeys(SYSTEM_OF.values())}
+    return {"blocks": catalogue(), "resources": _resources(), "operations": ops}
 
 
 def _resources() -> dict[str, list[str]]:
@@ -339,11 +346,12 @@ def workflow_compare(workflow_id: str, a: str, p: CurrentPrincipal, session: DbS
     w = state.get(session, "workflows", workflow_id)
     if w is None:
         raise HTTPException(404, {"code": "not_found", "message": f"No workflow {workflow_id}."})
-    from di.actions.workflows import label
+    from di.actions.workflows import label, live_sources
 
     b = b or w["ver"]
     va, vb = versions.resolve(session, w, a), versions.resolve(session, w, b)
     if va is None or vb is None:
         ver = a if va is None else b
         raise HTTPException(404, {"code": "not_found", "message": f"No version {ver} of {w['name']}."})
-    return versions.diff(va, vb, label)
+    with live_sources(session):  # a source made in the Connection Fabric by its name
+        return versions.diff(va, vb, label)

@@ -11,8 +11,11 @@ it). Per node kind:
 - `conn` reads the source through its adapter (`registry.adapter_for`: the Python adapter, or the configured one for a
   catalogue or hand-made source) on its connection (`connection.client_for`: the URL and stored secret a person set),
   per resource from the sync cursor (setting `mode` delta, `lookback_days`) or in full; every record read is kept in
-  `raw_record`. It holds the source's sync lock (`sync:<id>`, as `di.connectors.sync.run_sync` does) for the rest of
-  the run, so a run and a sync of one source never interleave.
+  `raw_record`. The source's own cursor serves its syncs, its bound sync workflow and the default graph; any other
+  workflow keeps cursors of its own (sync_cursor resource `wf:<workflow id>:<resource>`, `cursor_ns`), so a triggered
+  workflow reads each record once however its runs and the syncs interleave. It holds the source's sync lock
+  (`sync:<id>`, as `di.connectors.sync.run_sync` does) for the rest of the run, so a run and a sync of one source never
+  interleave.
 - `map` turns a record into canonical facts: the adapter's `map` with the mapping a person saved over it (A4,
   `mapping.mapper`), exactly as a sync maps; with setting `version` a number, that saved version of the mapping instead
   (`version_map`).
@@ -95,6 +98,9 @@ class Feed:
     remap: Callable | None = None
     own: bool = False  # opened by the engine: it closes the client and releases the lock
     lock: Any = None
+    # prefix of the delta cursors' resource key in sync_cursor: "" the source's own (a sync, the bound workflow, the
+    # default graph); "wf:<workflow id>:" a workflow that is not the source's bound sync workflow
+    cursor_ns: str = ""
     newest: dict[str, str | None] = field(default_factory=dict)
     delta: set[str] = field(default_factory=set)
     bad: set[str] = field(default_factory=set)  # resources with a record that could not be mapped or stored
@@ -144,11 +150,18 @@ def _fxd() -> dict:
     return lists()["FXD"]
 
 
-def label(n: dict) -> str:
+def label(n: dict, s: Session | None = None, sources: dict[str, dict] | None = None) -> str:
+    """The step's name in messages. With a session (or the `sources` read from one), a source connected from the
+    catalogue or made by hand is named by its own name and a deleted one "Deleted source" (di/workflow/live.py);
+    without, as the context reads the sources (the demo's reference unless inside workflows.live_sources)."""
     try:
-        from di.actions.workflows import label as wf_label
+        from di.actions.workflows import label_in
 
-        return wf_label(n)
+        if sources is None and s is not None:
+            from di.workflow import live
+
+            sources = live.sources(s)
+        return label_in(n, sources)
     except Exception:  # noqa: BLE001 - a label is only for messages
         return str(n.get("ref") or n.get("id"))
 
@@ -227,6 +240,7 @@ class _Run:
         self.held = 0
         self.steps = 0
         self.fxd = _fxd()
+        self._sources: dict[str, dict] | None = None  # the sources as they are now, read for the first message
         # a run coming back for the records a Wait step parked (di/workflow/waits.py): that step and the steps after it
         self.resume: tuple[str, list[Rec]] | None = None
         self.after: set[str] = set()
@@ -241,6 +255,18 @@ class _Run:
                     if y not in self.after:
                         self.after.add(y)
                         st.append(y)
+
+    def label(self, n: dict) -> str:
+        """The step's name in this run's messages, a source by its name as it is now (catalogue and hand-made sources
+        too; read once per run, on the first message)."""
+        if self._sources is None:
+            try:
+                from di.workflow import live
+
+                self._sources = live.sources(self.s)
+            except Exception:  # noqa: BLE001 - a label is only for messages
+                return label(n)
+        return label(n, sources=self._sources)
 
     # ------------------------------------------------------------ progress
     def emit(self, nid: str, st: str) -> None:
@@ -422,7 +448,7 @@ class _Run:
 
     def step(self, n: dict, inp: list) -> StepResult:
         if n.get("fail"):
-            raise StepError(f"{label(n)} failed")
+            raise StepError(f"{self.label(n)} failed")
         k, ref = n["k"], n["ref"]
         if k == "conn":
             return self.read(n)
@@ -446,18 +472,18 @@ class _Run:
 
         row = self.s.execute(text("SELECT status, confidence FROM source_system WHERE id = :i"), {"i": sid}).first()
         if row is None or lifecycle.is_deleted(self.s, sid):
-            raise Unreadable(f"{label(n)} has no connected feed")
+            raise Unreadable(f"{self.label(n)} has no connected feed")
         if row.status in NOT_READ:
-            raise Unreadable(f"{label(n)} is {row.status}")
+            raise Unreadable(f"{self.label(n)} is {row.status}")
         adapter = adapter_for(self.s, sid)
         if adapter is None:
-            raise Unreadable(f"{label(n)} has no connected feed")
+            raise Unreadable(f"{self.label(n)} has no connected feed")
         lock = engine.connect()
         got = lock.execute(text("SELECT pg_try_advisory_xact_lock(hashtext('sync:' || :s))"), {"s": sid}).scalar()
         if not got:
             lock.rollback()
             lock.close()
-            raise StepError(f"{label(n)} is syncing now")  # retried: the sync ends soon
+            raise StepError(f"{self.label(n)} is syncing now")  # retried: the sync ends soon
         try:
             connection.check_credential(self.s, sid)
             client = connection.client_for(self.s, sid, adapter, None)
@@ -466,9 +492,23 @@ class _Run:
             lock.close()
             raise
         f = Feed(sid, adapter, client, None, self.full, float(row.confidence) if row.confidence is not None else None,
-                 mapping.mapper(self.s, sid, sid in ADAPTERS), True, lock)  # fmt: skip
+                 mapping.mapper(self.s, sid, sid in ADAPTERS), True, lock, cursor_ns=self.cursor_ns(sid))  # fmt: skip
         self.feeds[sid] = f
         return f
+
+    def cursor_ns(self, sid: str) -> str:
+        """Where this run keeps its delta cursors for the source: the source's own for its bound sync workflow and the
+        default graph (no workflow id), so a Run now of the bound workflow reads on from the last sync; any other
+        workflow (Event, File or Case-triggered, Call workflow, Run now of an unbound one) keeps its own
+        (`wf:<id>:<resource>`), so a sync that ran first does not leave it 0 new records, and its first run reads per
+        its connector's mode and lookback."""
+        wid = self.wf.get("id")
+        if not wid:
+            return ""
+        from di.workflow import binding
+
+        bound, _ = binding.bound(self.s, sid)
+        return "" if bound.get("id") == wid else f"wf:{wid}:"
 
     def close_feeds(self) -> None:
         for f in self.feeds.values():
@@ -498,10 +538,10 @@ class _Run:
                 continue
             if res.delta:
                 f.delta.add(res.name)
-            since = None if (full or not res.delta) else _cursor(self.s, sid, res.name)
+            since = None if (full or not res.delta) else _cursor(self.s, sid, f.cursor_ns + res.name)
             if since and back:
                 since = _minus_days(since, back)
-            newest = f.newest.get(res.name) or (None if full or not res.delta else _cursor(self.s, sid, res.name))
+            newest = f.newest.get(res.name) or (None if full or not res.delta else _cursor(self.s, sid, f.cursor_ns + res.name))
             for rec in res.read(f.client, since):
                 f.read += 1
                 if not self.dry:
@@ -537,7 +577,7 @@ class _Run:
             bad = {f.res_of.get(r, r) for r in f.bad}
             for res, newest in f.newest.items():
                 if res in f.delta and newest and res not in bad:
-                    _set_cursor(self.s, f.source_id, res, newest)
+                    _set_cursor(self.s, f.source_id, f.cursor_ns + res, newest)
 
     # ------------------------------------------------------------ mapping
     def map(self, n: dict, inp: list[Rec]) -> StepResult:
@@ -549,7 +589,7 @@ class _Run:
         if f is None:
             a = adapter_for(self.s, sid)
             if a is None:
-                raise Unreadable(f"{label(n)}: no field mapping for {sid}")
+                raise Unreadable(f"{self.label(n)}: no field mapping for {sid}")
             from di.connectors import mapping
             from di.connectors.registry import ADAPTERS
 
@@ -592,7 +632,7 @@ class _Run:
             text("SELECT rows FROM field_mapping WHERE source_id = :s AND version = :v"), {"s": sid, "v": int(v)}
         ).scalar()
         if stored is None:
-            raise Unreadable(f"{label(n)}: no field mapping version {int(v)} for {sid}")
+            raise Unreadable(f"{self.label(n)}: no field mapping version {int(v)} for {sid}")
         rows = mapping.to_rows(stored)
         if sid in ADAPTERS:
             base = mapping.builtin(sid)
@@ -667,19 +707,19 @@ class _Run:
         note = ""
         if failed_nodes:
             nid = failed_nodes[0]
-            error = self.errors.get(nid) or f"{label(self.by[nid])} failed"
-            msg = error if error.startswith(label(self.by[nid])) else f"{label(self.by[nid])} failed: {error}"
+            error = self.errors.get(nid) or f"{self.label(self.by[nid])} failed"
+            msg = error if error.startswith(self.label(self.by[nid])) else f"{self.label(self.by[nid])} failed: {error}"
             note = msg[:94] + "…" if len(msg) > 96 else msg
             status = "failed"
         elif self.held:
             status = "warning"
             at = next((self.by[i] for i in self.order if self.counts[i]["rej"]), None)
-            note = f"{self.held} record{'s' if self.held != 1 else ''} held" + (f" at {label(at)}" if at else "")
+            note = f"{self.held} record{'s' if self.held != 1 else ''} held" + (f" at {self.label(at)}" if at else "")
         else:
             status = "success"
             if self.waiting:
                 at_wait, cnt = self.waiting[0]
-                note = f"{cnt} record{'s' if cnt != 1 else ''} waiting at {label(self.by[at_wait])}"
+                note = f"{cnt} record{'s' if cnt != 1 else ''} waiting at {self.label(self.by[at_wait])}"
         return RunResult(
             dict(self.states), self.counts, self.dur, rows, rejected, error, list(self.order), status, note,
             dict(self.attempts), self.samples, self.held, self.error_kind, self.steps,
