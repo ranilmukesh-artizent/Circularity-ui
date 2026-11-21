@@ -385,6 +385,7 @@ source_connection = Table(
     Column("updated_by", Text),  # NULL: the seeded default of a demo source
     _ts("updated_at", now=True),
 )
+
 # --- 0017 dated currency rates (plan 6 C4; di/workflow/steps/transform.py x_fx) --------------------------------------
 
 fx_rate = Table(
@@ -394,4 +395,17 @@ fx_rate = Table(
     Column("currency", Text, primary_key=True),
     Column("usd_rate", Numeric(18, 6), nullable=False),  # units of the currency per USD
     CheckConstraint("usd_rate > 0", name="fx_rate_positive"),
+)
+
+# --- 0013 webhook events received, for dedupe (plan 6 A7; di/connectors/webhook.py) ---------------------------------
+
+webhook_event = Table(
+    "webhook_event",
+    metadata,
+    Column("source_id", Text, primary_key=True),
+    Column("event_id", Text, primary_key=True),
+    Column("event_type", Text),
+    _ts("event_time"),
+    _ts("received_at", now=True),
+    Index("ix_webhook_event_received", "received_at"),
 )
