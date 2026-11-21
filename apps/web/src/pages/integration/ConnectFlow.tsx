@@ -1,12 +1,14 @@
 /* Connect an integration from the catalogue (auth → scopes → test → mappings → first sync), and re-authenticate a source (5.10).
    The test is the server's probe (source.test); finishing creates the source (source.update, mode "catalog"); the
    re-authentication renews the credential (credentials.rotate) or, for a stale feed, refreshes the token (source.reconnect).
-   Every catalogue system is synthetic: source-sim mocks it. Connecting stores its connection and credential (encrypted)
+   Every catalogue system is synthetic: source-sim mocks it. The API key field is prefilled with the simulated system's
+   sandbox key (source.sandboxKey); the key typed is the one the test probes with and the one stored, so another key
+   fails at Auth. Connecting stores its connection and credential (encrypted)
    and queues a first sync that really reads it; its records then show in Sync & History (plan 6 A3). Suggest mappings
    asks the server (mapping.catalogSuggest): the rows the system's records really support, none for a system with no
    circularity data (its records are kept raw). */
 import { useEffect, useRef, useState } from 'react';
-import { catalog, connectFromCatalog, frAuthOptions, nowLabel, reauthenticated, source, suggestMappings, typeOf, type SuggestedMap } from '../../api/integration';
+import { catalog, connectFromCatalog, frAuthOptions, nowLabel, reauthenticated, sandboxKey, source, suggestMappings, typeOf, type SuggestedMap } from '../../api/integration';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
@@ -46,17 +48,32 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   const [sampleErr, setSampleErr] = useState<string | null>(null);
   const [acc, setAcc] = useState<Record<number, boolean>>({});
   const [connected, setDone] = useState(false);
+  const [sandbox, setSandbox] = useState<string | null>(null);
   const live = useRef(true);
   useEffect(() => {
     live.current = true;
     return () => { live.current = false; };
   }, []);
+  // the simulated system's sandbox key: the API key field starts with it (a person may type another one)
+  const catId = c?.id;
+  const authNow = useRef(auth);
+  authNow.current = auth;
+  useEffect(() => {
+    if (!catId) return;
+    void sandboxKey(catId).then((r) => {
+      if (!live.current || !r.ok) return;
+      setSandbox(r.output.key);
+      if (authNow.current === 'key') setKey((k) => k || r.output.key);
+    });
+  }, [catId]);
 
   if (!c && !s) return null;
   const testId = c ? 'cat:' + c.id : s!.id;
   const steps = reauth ? ['Authentication', 'Test connection'] : STEPS;
   const si = reauth ? (step === 1 ? 0 : 1) : step - 1;
   const authLabel = () => frAuthOptions().find((a) => a[0] === auth)![1];
+  // the API key typed (sent to the test and stored on connect); other sign-ins use the simulated system's own credential
+  const typedKey = () => (auth === 'key' && key ? key : undefined);
 
   function next() {
     if (!reauth && step === 4) {
@@ -64,7 +81,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
       // the connection is made on the server now (the demo's frCxFinish); the first sync runs in the worker
       const accepted = (maps ?? []).filter((_, i) => acc[i]);
       void (async () => {
-        const r = await connectFromCatalog(c!.id, auth, scopes, accepted);
+        const r = await connectFromCatalog(c!.id, auth, scopes, accepted, typedKey());
         if (!live.current) return;
         if (refused(r)) { onClose(); return; }
         setDone(true);
@@ -76,7 +93,8 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   const back = () => setStep(reauth ? 1 : Math.max(1, step - 1));
   function test() {
     setTested(true);
-    runTest(reauth ? { source_id: s!.id, reauth: true, auth: authLabel() } : { source_id: 'cat:' + c!.id, auth: authLabel() }, (ok) => live.current && setPassed(ok));
+    const secret = typedKey();
+    runTest(reauth ? { source_id: s!.id, reauth: true, auth: authLabel() } : { source_id: 'cat:' + c!.id, auth: authLabel(), ...(secret ? { secret } : {}) }, (ok) => live.current && setPassed(ok));
   }
   // the rows the system's records really support, from the server (mapping.catalogSuggest): none for a system with no circularity data
   async function suggest() {
@@ -106,7 +124,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
         <div className="frauth">
           {frAuthOptions().filter((a) => !c || a[0] !== 'sftp' || c.type === 'store').map((a) => (
             <label key={a[0]} className={'frao ' + (auth === a[0] ? 'on' : '')}>
-              <input type="radio" name="frAuth" value={a[0]} checked={auth === a[0]} onChange={() => { setAuth(a[0]); setAllowed(false); setKey(''); }} />
+              <input type="radio" name="frAuth" value={a[0]} checked={auth === a[0]} onChange={() => { setAuth(a[0]); setAllowed(false); setKey(a[0] === 'key' && c && sandbox ? sandbox : ''); }} />
               <b>{a[1]}</b>
               <span className="note">{a[2]}</span>
             </label>
@@ -128,7 +146,12 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
             )}
           </div>
         ) : auth === 'key' ? (
-          <><label htmlFor="frKey">API key</label><input id="frKey" type="password" className="sel" style={{ width: '100%' }} placeholder="Paste the key" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} /></>
+          <>
+            <label htmlFor="frKey">API key</label><input id="frKey" type="password" className="sel" style={{ width: '100%' }} placeholder="Paste the key" autoComplete="off" value={key} onChange={(e) => { setKey(e.target.value); setTested(false); setPassed(false); }} />
+            {c && sandbox && (key === sandbox
+              ? <p className="note" id="frKeyNote">This is the sandbox key of the simulated system.</p>
+              : <p className="note" id="frKeyNote">The simulated system accepts only its sandbox key; another key fails the test at Auth.</p>)}
+          </>
         ) : auth === 'sftp' ? (
           <><label htmlFor="frSftp">Drop path</label><input id="frSftp" className="sel" style={{ width: '100%' }} defaultValue="sftp://partner.example/outbound" onChange={(e) => setKey(e.target.value)} /><p className="note">Each file must arrive with a signed manifest; unsigned files are rejected.</p></>
         ) : (

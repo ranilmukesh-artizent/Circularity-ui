@@ -137,23 +137,27 @@ export function Overview() {
   );
 }
 
-function IntRow({ x }: { x: Integration }) {
+/** A row of All integrations: a connected source (opens its drawer), a catalogue entry (opens Connect), or a source
+ *  just connected whose record the sources list has not brought yet (neither: shown pending, nothing to open). */
+export function IntRow({ x }: { x: Integration }) {
   const ui = useInt();
-  const s = x.src;
+  const s = x.src, c = x.c;
+  const name = <><VendorLogo vendor={x.vendor} /><span><b>{x.vendor}</b><span className="note">{x.name}</span></span></>;
   return (
     <tr data-int={x.id}>
       <td>
-        <button className="frintn" onClick={() => (s ? ui.openSource(s.id, 'ov') : ui.connect(x.c!.id))}>
-          <VendorLogo vendor={x.vendor} />
-          <span><b>{x.vendor}</b><span className="note">{x.name}</span></span>
-        </button>
+        {s || c ? (
+          <button className="frintn" onClick={() => (s ? ui.openSource(s.id, 'ov') : ui.connect(c!.id))}>{name}</button>
+        ) : (
+          <span className="frintn" aria-busy="true">{name}</span>
+        )}
       </td>
       <td>{x.cat}</td>
       <td><FabricStatus k={x.status} t={s && s.syncing ? 'Syncing' : null} /></td>
       <td className="num note nowrap">{x.last ? when(x.last) : '—'}</td>
       <td>{x.owner}</td>
       <td className="r">
-        {s ? <SourceMenu s={s} /> : canMgr() ? <button className="btn sm pri" onClick={() => ui.connect(x.c!.id)}>Connect</button> : <span className="note">Available</span>}
+        {s ? <SourceMenu s={s} /> : !c ? <span className="note">Connecting…</span> : canMgr() ? <button className="btn sm pri" onClick={() => ui.connect(c.id)}>Connect</button> : <span className="note">Available</span>}
       </td>
     </tr>
   );

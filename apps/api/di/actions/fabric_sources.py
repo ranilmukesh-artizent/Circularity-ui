@@ -93,7 +93,13 @@ _declare(
     "source.test", "Test a connection", "test connections",
     "Probe a source's connection: DNS, TLS, authentication, permissions and a sample read. Changes nothing.", "read",
     {"source_id": {"req": False, "t": "string"}, "reauth": {"req": False, "t": "boolean"},
-     "auth": {"req": False, "t": "string"}, "draft": {"req": False, "t": "object"}}, None,
+     "auth": {"req": False, "t": "string"}, "draft": {"req": False, "t": "object"},
+     "secret": {"req": False, "t": "string"}}, None,
+)  # fmt: skip
+_declare(
+    "source.sandboxKey", "Sandbox key of a catalogue system", "read sandbox keys",
+    "The synthetic key the simulated system of a catalogue entry accepts (the Connect dialog prefills it). "
+    "Changes nothing.", "read", {"catalog_id": {"req": True, "t": "string"}}, _MGR,
 )  # fmt: skip
 # the secret, when a caller sends it, is only checked (never stored); reauth: the Re-authenticate dialog's renewal
 ACTIONS["credentials.rotate"].input |= {"secret": {"req": False, "t": "string"}, "reauth": {"req": False, "t": "boolean"}}
@@ -460,6 +466,8 @@ def _connect_catalog(i: dict[str, Any], ctx: CallContext) -> dict:
     row = ctx.session.execute(text("SELECT 1 FROM source_system WHERE id = :i"), {"i": sid}).first()
     if row is not None and not lifecycle.is_deleted(ctx.session, sid):
         raise ActionError("conflict", f"{c['vendor']} is already connected.")
+    if row is not None and sid not in REF:  # connected again after a delete: none of the deleted source's history
+        lifecycle.purge(ctx.session, sid)
     auth = next((a[1] for a in FR_AUTH if a[0] == d.get("auth")), None)
     if auth is None:
         raise ActionError("validation_error", "Choose how Circularity signs in.")
@@ -493,7 +501,8 @@ def _connect_catalog(i: dict[str, Any], ctx: CallContext) -> dict:
         ctx.session, sid, _by(ctx), base_url=base_url, protocol="rest", auth_kind=tpl["auth_kind"],
         auth_params=tpl["auth_params"], paging=tpl["paging"], resources=tpl["resources"],
     )  # fmt: skip
-    # the credential source-sim's mock accepts (synthetic, apps/README.md), or the one the person entered
+    # the one the person entered (the Connect dialog prefills the mock's sandbox key; another one fails at Auth), or,
+    # when none is sent (the API), the credential source-sim's mock accepts (synthetic, apps/README.md)
     secrets.put_secret(ctx.session, sid, "auth", str(i.get("secret") or tpl["demo_secret"]), 180, _by(ctx), ctx.now)
     lifecycle.save(ctx.session, item)
     mapping.save_version(ctx.session, sid, maps, _by(ctx), "Connected from the catalogue", ctx.now, strict=False)  # A4
@@ -569,6 +578,17 @@ def mapping_suggest(i: dict[str, Any], ctx: CallContext):
         conf = 96 if r["rule"] == "copy" else 91
         out["rows"].append([r["src"], _cell(sample), f"{r['model']}.{r['field']}", _cell(norm), conf, r["resource"]])
     return out
+
+
+@implement("source.sandboxKey")
+def sandbox_key(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - every action takes the context
+    """The key source-sim's synthetic mock of a catalogue system accepts (di.connectors.catalog `demo_secret`): the
+    Connect dialog prefills its key field with it and says so. It is no customer secret: the mock is public test data."""
+    cid = str(i.get("catalog_id") or "")
+    tpl = catalog.template(cid) if cid in CATALOG else None
+    if tpl is None:
+        raise ActionError("not_found", f"No catalogue system {cid}.")
+    return {"catalog_id": cid, "key": tpl["demo_secret"]}
 
 
 # ---------------------------------------------------------------- delete, reconnect, rotate
@@ -733,8 +753,9 @@ def _probe_steps(ctx: CallContext, sid: str, status: str, auth: str, reauth: boo
     return _steps_of(probe(ctx.session, sid), auth, reauth)
 
 
-def _catalog_steps(ctx: CallContext, c: dict, auth: str) -> list[dict]:
-    """A catalogue system being connected: its template's connection, probed with the simulator's demo credential."""
+def _catalog_steps(ctx: CallContext, c: dict, auth: str, secret: str | None = None) -> list[dict]:
+    """A catalogue system being connected: its template's connection, probed with the credential the person typed
+    (another key than the mock's sandbox key fails at Auth), or the simulator's sandbox credential when none is sent."""
     from di.connectors.configured import ConfiguredAdapter
     from di.connectors.probe import probe_connection
 
@@ -745,7 +766,8 @@ def _catalog_steps(ctx: CallContext, c: dict, auth: str) -> list[dict]:
         c["id"], connection.sim_url(tpl["base_path"]), "rest", tpl["auth_kind"], tpl["auth_params"], tpl["paging"],
         tpl["resources"],
     )  # fmt: skip
-    return _steps_of(probe_connection(ctx.session, c["id"], ConfiguredAdapter(conn), conn, tpl["demo_secret"]), auth, False)
+    used = secret or tpl["demo_secret"]
+    return _steps_of(probe_connection(ctx.session, c["id"], ConfiguredAdapter(conn), conn, used), auth, False)
 
 
 def _draft_test(ctx: CallContext, cur: dict | None, draft: dict) -> dict:
@@ -790,7 +812,7 @@ def source_test(i: dict[str, Any], ctx: CallContext):
         c = CATALOG.get(sid[4:])
         if c is None:
             raise ActionError("not_found", f"No catalogue system {sid[4:]}.")
-        steps = _catalog_steps(ctx, c, i.get("auth") or c["auth"][0])
+        steps = _catalog_steps(ctx, c, i.get("auth") or c["auth"][0], str(i["secret"]) if i.get("secret") else None)
     else:
         if not sid:
             raise ActionError("validation_error", 'Missing "source_id".')

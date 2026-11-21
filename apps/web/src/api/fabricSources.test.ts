@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const m = vi.hoisted(() => ({ invoke: vi.fn(async () => ({ ok: true, output: {}, key: null, action: 'x' })) }));
 vi.mock('./actions', () => ({ invoke: m.invoke }));
 
-import { connectFromCatalog, disconnectSource, pauseSource, resumeSource, suggestMappings, testConnection, testDraft, type Draft } from './integration';
+import { connectFromCatalog, disconnectSource, pauseSource, resumeSource, sandboxKey, suggestMappings, testConnection, testDraft, type Draft } from './integration';
 
 beforeEach(() => m.invoke.mockClear());
 const call = () => m.invoke.mock.calls[0] as unknown as [string, Record<string, unknown>];
@@ -43,5 +43,18 @@ describe('source lifecycle actions', () => {
     const rows: [string, string, string, string, number][] = [['A.B', '1', 'asset.asset_id', '1', 97]];
     await connectFromCatalog('workday', 'oauth', ['read'], rows);
     expect(call()).toEqual(['source.update', { mode: 'catalog', id: '', d: { catalog: 'workday', auth: 'oauth', scopes: ['read'] }, maps: rows, ops: {} }]);
+  });
+
+  it('the key typed in the Connect dialog is sent, to the test and to the connection', async () => {
+    await connectFromCatalog('postgres', 'key', ['read'], [], 'typed-key-0001');
+    expect(call()).toEqual(['source.update', { mode: 'catalog', id: '', d: { catalog: 'postgres', auth: 'key', scopes: ['read'] }, maps: [], ops: {}, secret: 'typed-key-0001' }]);
+    m.invoke.mockClear();
+    await testConnection({ source_id: 'cat:postgres', auth: 'API key', secret: 'typed-key-0001' });
+    expect(call()).toEqual(['source.test', { source_id: 'cat:postgres', auth: 'API key', secret: 'typed-key-0001' }]);
+  });
+
+  it('the sandbox key is the server read source.sandboxKey', async () => {
+    await sandboxKey('postgres');
+    expect(call()).toEqual(['source.sandboxKey', { catalog_id: 'postgres' }]);
   });
 });

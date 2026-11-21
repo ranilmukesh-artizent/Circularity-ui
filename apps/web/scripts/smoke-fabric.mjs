@@ -19,9 +19,9 @@ const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173
 const shots = process.env.SMOKE_SHOTS || ''; // a folder: a screenshot of the page is saved there when a step fails
 const CAT = 'postgres'; // the catalogue system: row data-int "cat:postgres" while available, "postgres" once connected
 const DEMO = 'insp'; // SafetyCulture: the demo source whose mapping is edited
-// The workflow's source and the key its Order late events step de-duplicates on. A demo source: workflow.create refuses
-// a catalogue source ("Choose a system first.", its guard reads the demo's sources only). The run writes the CRM's
-// canonical data (amounts in EUR) until the next sync or reset.
+// The workflow's source and the key its Order late events step de-duplicates on. A demo source (a catalogue source can
+// have a workflow too, tests/test_fabric_followups.py). The run writes the CRM's canonical data (amounts in EUR) until
+// the next sync or reset.
 const WF_SRC = 'crm', WF_KEY = 'Id'; // a field the CRM's records carry (the server checks it)
 const WF_RULE = 'StageName'; // Validation & enrichment: "present"; only opportunities carry it, so the run holds the rest
 // the credential source-sim's synthetic mock of the catalogue system accepts (di/connectors/catalog.py _demo_secret);
@@ -163,9 +163,10 @@ await step('1 Connect PostgreSQL from the catalogue (5 steps, first sync)', asyn
   await page.getByRole('button', { name: 'New integration' }).click();
   await dlg().getByText('PostgreSQL', { exact: true }).click();
   await dlg().getByRole('heading', { name: 'Connect PostgreSQL' }).waitFor();
-  // 1 Authentication: an API key
+  // 1 Authentication: an API key, prefilled with the simulated system's sandbox key (another key fails at Auth)
   await dlg().locator('input[name=frAuth][value=key]').check();
-  await dlg().locator('#frKey').fill('smoke-pg-key-0001');
+  await until(async () => (await dlg().locator('#frKey').inputValue()) === CAT_SECRET, 'the API key is not prefilled with the sandbox key');
+  await dlg().getByText('This is the sandbox key of the simulated system.').waitFor();
   await dlg().getByRole('button', { name: 'Continue' }).click();
   // 2 Scopes: read only
   await dlg().getByText('Grant only what Circularity needs').waitFor();
@@ -190,7 +191,7 @@ await step('1 Connect PostgreSQL from the catalogue (5 steps, first sync)', asyn
   await dlg().getByRole('button', { name: 'Done' }).click();
   // the first sync runs in the worker; Sync now if it has not run after a minute
   await openSource(CAT, 'Sync & History');
-  // the newest sync run (the first row; a source connected before under the same id keeps its old runs below it)
+  // the newest sync run (the first row; a source connected again under the same id starts with no runs)
   const newest = () => drawer().locator('table tbody tr').first().innerText();
   const synced = async () => {
     const m = (await newest()).match(/SYNC-\S+\s+\S+\s+\S+\s+([\d,]+)\s+[\d.]+ s\s+Success/);

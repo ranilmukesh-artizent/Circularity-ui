@@ -17,8 +17,9 @@ The collection starts empty, so the seeded state is the demo's exactly.
 **Deleted sources.** source.delete keeps the source's row and data; a source is deleted while the newest live journal
 entry about it (source.delete or source.update, by `output_ref.source_id`) is a source.delete. Undoing that entry
 (POST /api/journal/undo) brings the source back with everything it had, as the demo's Undo does; creating a source
-with the same id again (source.update) also ends the deletion. Deleted sources are left out of every screen, never
-scheduled and never synced.
+with the same id again (source.update) also ends the deletion, and a source made in the app (a catalogue system
+connected again) then starts clean: `purge` removes the deleted one's history, mappings and credentials. Deleted
+sources are left out of every screen, never scheduled and never synced.
 
 **Credentials in the mock.** Refreshing a source's credential (source.reconnect) clears source-sim's `token_expired`
 fault for that system, the demo's "Feed token expired" on Ritchie Bros. Market Data: the mock then accepts the key
@@ -77,6 +78,26 @@ def mappings(starting: dict[str, list], cfgs: dict[str, dict], gone: set[str]) -
     out = {k: (cfgs[k]["maps"] if "maps" in cfgs.get(k, {}) else v) for k, v in starting.items() if k not in gone}
     out |= {k: c["maps"] for k, c in cfgs.items() if "maps" in c and k not in starting and k not in gone}
     return out
+
+
+# what a source made in the app leaves behind, per source (purge)
+PURGED = (
+    "sync_run", "fetch_log", "raw_record", "sync_cursor", "failed_record", "webhook_event", "field_mapping",
+    "source_connection", "source_secret",
+)  # fmt: skip
+
+
+def purge(s: Session, source_id: str) -> None:
+    """A source made in the app (catalogue, by hand) connected again under the id of a deleted one starts clean: the
+    deleted source's sync runs, fetches, landed records, cursors, held records, webhook events, mapping versions,
+    connection and credentials are removed, its queued syncs dropped and its retry schedule reset. Called only when
+    the source is created again: until then Undo of the delete brings the deleted source back with all of it. The
+    canonical facts it wrote (on keys of its own, `<system>:<key>`) and their provenance stay; the new source's syncs
+    write them again."""
+    for t in PURGED:
+        s.execute(text(f"DELETE FROM {t} WHERE source_id = :i"), {"i": source_id})  # noqa: S608 - fixed names
+    s.execute(text("DELETE FROM job WHERE kind = 'sync.source' AND payload->>'source_id' = :i"), {"i": source_id})
+    s.execute(text("UPDATE source_system SET fail_streak = 0, next_retry_at = NULL WHERE id = :i"), {"i": source_id})
 
 
 def refresh_credentials(source_id: str) -> bool:

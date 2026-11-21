@@ -467,9 +467,9 @@ export async function reauthenticated(id: string) {
 }
 
 export interface TestStep { ok: boolean; msg: string }
-export interface TestInput { source_id: string; reauth?: boolean; auth?: string }
+export interface TestInput { source_id: string; reauth?: boolean; auth?: string; secret?: string }
 /** The connection test (source.test, a read): DNS, TLS, Auth, Permissions, Sample read, probed by the server; the steps
- *  up to the first failure. A catalogue system being connected is `cat:<id>`. */
+ *  up to the first failure. A catalogue system being connected is `cat:<id>`, probed with the key typed (`secret`). */
 export const testConnection = (input: TestInput) =>
   invoke<{ source_id: string; steps: TestStep[]; ok: boolean; at: string }>('source.test', { ...input });
 /** The drawer's one-line test of the settings being edited (source.test with `draft`). */
@@ -509,8 +509,12 @@ export type SuggestedMap = [string, string, string, string, number, string?];
 export const suggestMappings = (cat: string) =>
   invoke<{ catalog_id: string; rows: SuggestedMap[]; error: string | null }>('mapping.catalogSuggest', { catalog_id: cat });
 
-/** Finish connecting a catalogue system: the source, its accepted mappings (source.update, mode "catalog"). */
-export const connectFromCatalog = (cat: string, auth: string, scopes: string[], maps: SuggestedMap[]) =>
+/** The synthetic key the simulated system of a catalogue entry accepts (source.sandboxKey, a read): the Connect dialog prefills it. */
+export const sandboxKey = (cat: string) => invoke<{ catalog_id: string; key: string }>('source.sandboxKey', { catalog_id: cat });
+
+/** Finish connecting a catalogue system: the source, its accepted mappings and the key typed, stored encrypted
+ *  (source.update, mode "catalog"); without a key the server stores the simulated system's sandbox key. */
+export const connectFromCatalog = (cat: string, auth: string, scopes: string[], maps: SuggestedMap[], secret?: string) =>
   invoke<{ mode: 'catalog'; source_id: string; name: string; vendor: string; records: number | null; queued: boolean; csv: boolean }>('source.update', {
-    mode: 'catalog', id: '', d: { catalog: cat, auth, scopes }, maps, ops: {},
+    mode: 'catalog', id: '', d: { catalog: cat, auth, scopes }, maps, ops: {}, ...(secret ? { secret } : {}),
   });
