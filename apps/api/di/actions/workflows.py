@@ -409,6 +409,10 @@ def _decision(kind: str) -> dict:
 def build(tpl: dict) -> dict:
     """wfBuild(tpl): the template graph; edges are numbered e0, e1 ... in order."""
     k = tpl.get("k")
+    if k == "min":  # a workflow made in New workflow: only the blocks it needs to run (the AI builder's MINIMAL)
+        from di.actions.workflow_builder import minimal_graph  # imports this module
+
+        return minimal_graph(tpl)
     sid: Any = tpl.get("src")
     ch: Any = tpl.get("ch")
     tid: Any = tpl.get("id")
@@ -966,22 +970,25 @@ def create(i: dict[str, Any], ctx: CallContext):
         if t == "dec"
         else "New pipeline"
     )
+    # New workflow starts from the blocks the workflow needs to run (tpl {k: "min"}), not the demo's full template:
+    # the person adds the rest from the palette (decision log, 21 Nov 2026)
     if t == "ingest":
+        trig = {"t": "schedule", "min": so["interval"]} if so.get("interval") else {"t": "event"}
         base = {
-            "cat": "Ingest", "kind": "pipe", "tpl": {"k": "ingest", "src": so["id"]}, "src": so["id"], "owner": so["owner"],
-            "trig": {"t": "schedule", "min": so["interval"]} if so.get("interval") else {"t": "event"},
+            "cat": "Ingest", "kind": "pipe", "src": so["id"], "owner": so["owner"], "trig": trig,
+            "tpl": {"k": "min", "type": "ingest", "src": so["id"], "arrive": "event" if trig["t"] == "event" else "api"},
             "desc": f"{so['name']} into the {SRC_TYPES[so['type']]['target']} model through validation and field mapping.",
         }  # fmt: skip
     elif t == "out":
-        tpl = {"k": "out", "src": so["id"]} | ({"ch": i["ch"]} if i.get("ch") is not None else {})
+        tpl = {"k": "min", "type": "out", "src": so["id"], "ch": i.get("ch") or (DELIVER.get(so["id"]) or ["api"])[0]}
         base = {
             "cat": "Outbound", "kind": "pipe", "tpl": tpl, "src": so["id"], "owner": so["owner"], "trig": {"t": "approval"},
             "desc": f"Approved instruction to {so['name']}.",
         }  # fmt: skip
     elif t == "dec":
         base = {
-            "cat": "Decision", "kind": "dec", "tpl": {"k": "dec", "id": "standard"}, "src": None, "owner": "Decision Services",
-            "trig": {"t": "case"}, "desc": WF_DEC["standard"]["desc"],
+            "cat": "Decision", "kind": "dec", "tpl": {"k": "min", "type": "dec", "id": "standard"}, "src": None,
+            "owner": "Decision Services", "trig": {"t": "case"}, "desc": WF_DEC["standard"]["desc"],
         }  # fmt: skip
     else:
         base = {

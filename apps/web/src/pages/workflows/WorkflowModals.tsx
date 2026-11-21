@@ -39,7 +39,7 @@ export function NewWorkflowModal({ onClose, onCreated }: { onClose: () => void; 
   async function create() {
     const r = await createWorkflow({ type: n.type, src: n.src || '', ch: n.ch || '', name: n.name || '' });
     if (refused(r, 4200)) return;
-    toast(r.output.name + ' created as a draft. Arrange it, then Save and Publish.');
+    toast(r.output.name + ' created as a draft with only the blocks it needs to run. Add more from the palette, then Save and Publish.');
     onCreated(r.output.id);
   }
   async function pickTpl(id: string) {

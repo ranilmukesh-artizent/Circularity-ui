@@ -5,10 +5,20 @@
                     with the workflow checks; the steps (fixed or new) are the demo's `wfdiff` card. Nothing is saved.
     workflow.plan   (declared here, risk "read", no permission)  a person describes a workflow in words; the planner
                     reads what it can from the description, asks follow-up questions for what is missing or ambiguous,
-                    and, once every slot is settled, returns a complete plan: a graph tailored to the request (the
-                    requested steps wired where they belong, the standard optional steps the person did not want left
-                    out), its checks (always 0 errors), the trigger and run settings, a tailored name and description,
-                    a summary of every step and why, and what differs from the standard generated template.
+                    and, once every slot is settled, returns a complete plan: a graph built from the blocks the
+                    workflow needs to run (MINIMAL below) plus exactly the blocks the person asked for, wired where they
+                    belong; its checks (always 0 errors), the trigger and run settings, a tailored name and description,
+                    and every step with why it is there (required to run, or asked for). It does not start from the
+                    standard template: optional blocks (a second ingestion channel, the source type's usual transform,
+                    the error handler, audit log, event stream) are offered, never added unasked.
+
+**MINIMAL, the blocks a workflow needs to run with 0 errors and 0 warnings:**
+    ingest      the source's connector, one ingestion channel it delivers by (API gateway or event ingestion; the file
+                steps for a file-only source), Validation & enrichment, the source's field mapping, the canonical model
+                and the evidence snapshot (both fixed: Circularity places them)
+    outbound    decision and human approval (fixed), the instruction envelope, the delivery method, a manifest for a
+                file delivery, the target's write connector and the outcome (fixed)
+    decision    the chosen decision flow's agent tools and fixed steps
 
 **Agents never write** (AGENTS.md rule 10). The planner only proposes: it computes and returns; it saves nothing, so it
 is a read (not journaled, no live-stream event per question). The person's own click on Create workflow runs
@@ -20,11 +30,12 @@ workflow.create and workflow.save through the pipeline with their permissions (m
     system      ingest: a readable source with a connected feed; out: a source Circularity writes to
     delivery    out: one of the channels the target accepts (DELIVER)
     decision    dec: standard | pool | gap (the three decision graphs)
-    channels    ingest from a source that delivers by API and events: both | api | event
+    channels    ingest from a source that delivers by API and events: api | event | both (default: one channel)
     trigger     schedule:<min> | event | file | approval | case | manual, the valid ones per type, a default per type
-    steps       palette transforms and branches relevant to the source (multi), pre-ticked from the description
-    keep_std    keep the standard type transform (e.g. Convert currency for a dealer feed)? yes | no
-    handling    error handler, audit log, event stream (ingest); audit log, import log (outbound) (multi)
+    steps       palette transforms and branches relevant to the source (multi), ticked only from the description
+                (the source type's usual transform is offered, marked as such, not added)
+    handling    error handler, audit log, event stream (ingest); audit log, import log (outbound) (multi; none by
+                default: none is needed to run)
     retries     0 | 1 | 3 | 5        alert   the four alert rules (di.actions.workflows.ALERTS)
     name, owner text, defaulting to the tailored name and the source's owner
 Questions come in rounds: the type, then the system (and delivery or decision flow), then every unsettled detail at
@@ -157,9 +168,9 @@ CH_HINT = {
 }
 CH_BY = {"api": "by API", "event": "as events", "file": "by file", "proc": "by process orchestration"}
 ARRIVE = {
-    "both": ("API and events", "API gateway and event ingestion side by side (the standard)"),
     "api": ("API only", "Polls the API through the API gateway"),
     "event": ("Events only", "Webhooks and queue events through event ingestion"),
+    "both": ("API and events", "API gateway and event ingestion side by side"),
 }
 INTERVALS = (5, 15, 30, 60, 240, 1440)
 TRIG_OK = {
@@ -665,7 +676,7 @@ def step_choices(kind: str, sid: str | None) -> list[dict]:
         {
             "value": r,
             "label": wf._xf_req(r)["label"],
-            "hint": wf._xf_req(r)["desc"] + (" (standard for this source)" if r == std else ""),
+            "hint": wf._xf_req(r)["desc"] + (" (usual for this source; optional)" if r == std else ""),
         }
         for r in refs
     ]
@@ -800,15 +811,9 @@ def plan(prompt: str, answers: dict[str, Any], ctx: CallContext, use_model: bool
     def settled(slot: str, from_prompt: bool) -> bool:
         return slot in a or from_prompt or defaults_ok
 
-    # channels (ingest from a source that delivers by API and events)
-    arrive: str = "both"
-    if kind == "ingest" and "api" in s_ch and "event" in s_ch:
-        arrive = str(a["channels"] if a.get("channels") in ARRIVE else p.get("channels") or "both")
-        if not settled("channels", bool(p.get("channels"))):
-            details.append(_q("channels", f"How should records arrive from {src_name}?", "choice",
-                              [{"value": k, "label": v[0], "hint": v[1]} for k, v in ARRIVE.items()], "both"))  # fmt: skip
-        elif arrive != "both":
-            said("channels", "Arrives by", ARRIVE[arrive][0], "answer" if "channels" in a else "prompt")
+    # channels (ingest from a source that delivers by API and events): one channel unless the person wants both
+    two_ways = kind == "ingest" and "api" in s_ch and "event" in s_ch
+    arrive: str = str(a["channels"] if a.get("channels") in ARRIVE else p.get("channels") or "")
     # the trigger
     dflt = default_trigger(kind, sid)
     trig = _trig_from(a.get("trigger")) or p.get("trigger")
@@ -818,7 +823,7 @@ def plan(prompt: str, answers: dict[str, Any], ctx: CallContext, use_model: bool
         notes.append(f"{wf.trig_text(trig)} does not fit this workflow{why} Pick one of these.")
         trig = None
         a.pop("trigger", None)
-    if kind == "ingest" and arrive == "event" and not trig and "event" in s_ch:
+    if kind == "ingest" and arrive == "event" and not trig and "event" in s_ch:  # "events only" said in the prompt
         dflt = {"t": "event"}
     if trig is None and not defaults_ok:
         opts = []
@@ -835,8 +840,17 @@ def plan(prompt: str, answers: dict[str, Any], ctx: CallContext, use_model: bool
     trig = trig or dflt
     if p.get("trigger") or "trigger" in a:
         said("trigger", "Trigger", wf.trig_text(trig), "answer" if "trigger" in a else "prompt")
-    # extra steps
-    std = _std_xform(kind, sid)
+    if two_ways:
+        one = "event" if trig.get("t") == "event" else "api"
+        if not settled("channels", bool(p.get("channels"))):
+            details.append(_q("channels", f"How should records arrive from {src_name}?", "choice",
+                              [{"value": k, "label": v[0], "hint": v[1]} for k, v in ARRIVE.items()], one,
+                              "One channel is all it needs; both only if the system sends some records each way."))  # fmt: skip
+        arrive = arrive or one
+        if "channels" in a or p.get("channels"):
+            said("channels", "Arrives by", ARRIVE[arrive][0], "answer" if "channels" in a else "prompt")
+    arrive = arrive or "api"
+    # extra blocks: only the ones asked for
     choices = step_choices(kind, sid)
     allowed = {c["value"] for c in choices}
     if "steps" in a and isinstance(a["steps"], list):
@@ -848,47 +862,31 @@ def plan(prompt: str, answers: dict[str, Any], ctx: CallContext, use_model: bool
             fits = "an outbound instruction" if kind == "out" else "this ingest"
             notes.append(f"{wf._xf_req(r)['label']} does not fit {fits}, so it is left out.")
     if choices and not settled("steps", p["steps_said"]):
-        details.append(_q("steps", "Which steps should it add?", "multi", choices,
-                          [r for r in steps if r != std],
-                          "Ticked from your description. Each one runs in the order shown."))  # fmt: skip
+        details.append(_q("steps", "Which blocks should it add?", "multi", choices, steps,
+                          "Only the blocks you mention are ticked; the workflow runs without any of them. They run in the "
+                          "order shown."))  # fmt: skip
     elif steps:
         said(
             "steps",
             "Adds",
-            ", ".join(wf._xf_req(r)["label"] for r in steps if r != std) or "no extra steps",
+            ", ".join(wf._xf_req(r)["label"] for r in steps) or "no extra blocks",
             "answer" if "steps" in a else "prompt",
         )
-    # the standard transform for the source's type: keep it?
-    keep_std = True
-    if std:
-        if std in steps:
-            keep_std = True
-        elif "keep_std" in a:
-            keep_std = a["keep_std"] in (True, "yes", "keep")
-        elif std in p["steps_drop"]:
-            keep_std = False
-            said("keep_std", "Leaves out", wf._xf_req(std)["label"], "prompt")
-        elif not defaults_ok and not p["steps_said"]:
-            x = wf._xf_req(std)
-            details.append(_q("keep_std", f"Keep the standard “{x['label']}” step for {src_name}?", "choice",
-                              [{"value": "yes", "label": "Keep it", "hint": x["desc"]},
-                               {"value": "no", "label": "Leave it out", "hint": "The checks pass without it"}],
-                              "yes"))  # fmt: skip
     # error handling and branches
     hc = handling_choices(kind, sid, ch)
     if "handling" in a and isinstance(a["handling"], list):
         handling = [h for h in hc if h in a["handling"]]
     else:
-        handling = [h for h in hc if h not in p["handling_drop"]]
+        handling = [h for h in hc if h in p["handling_keep"]]  # none is needed to run: only what was asked for
     if hc and not settled("handling", bool(p["handling_keep"] or p["handling_drop"])):
         details.append(_q("handling", "Error handling and logging", "multi",
                           [{"value": h, "label": HANDLING_LABEL[h][0], "hint": HANDLING_LABEL[h][1]} for h in hc], handling,
-                          "The standard workflow has all of these; untick the ones you do not want."))  # fmt: skip
-    elif hc and set(handling) != set(hc):
+                          "Optional: the workflow runs without them. Tick the ones you want."))  # fmt: skip
+    elif handling:
         said(
             "handling",
-            "Leaves out",
-            ", ".join(HANDLING_LABEL[h][0] for h in hc if h not in handling),
+            "Adds",
+            ", ".join(HANDLING_LABEL[h][0] for h in handling),
             "answer" if "handling" in a else "prompt",
         )
     # run settings
@@ -920,7 +918,6 @@ def plan(prompt: str, answers: dict[str, Any], ctx: CallContext, use_model: bool
         "dec": dk,
         "arrive": arrive,
         "steps": steps,
-        "keep_std": keep_std,
         "handling": handling,
     }
     g = tailored_graph(shape)
@@ -965,21 +962,28 @@ def tailored_graph(sh: dict) -> dict:
     return g
 
 
+def minimal_graph(tpl: dict) -> dict:
+    """The graph New workflow starts with ({k: "min", type, src, ch, arrive, id}): MINIMAL, the blocks the workflow
+    needs to run, and nothing else; the person adds the rest from the palette. Reset to template returns to it."""
+    kind = tpl.get("type") or "blank"
+    return tailored_graph({
+        "kind": kind, "sid": tpl.get("src"), "ch": tpl.get("ch"), "dec": tpl.get("id") or "standard",
+        "arrive": tpl.get("arrive") or "api", "steps": [], "handling": [],
+    })  # fmt: skip
+
+
 def _step_id(ref: str) -> str:
     return "s_" + ref.removeprefix("x_")
 
 
 def _ingest(sh: dict) -> dict:
-    """The standard ingest's shape (bIngest: the same step ids), with the chosen ingestion channels, the requested steps
-    between validation and the field mapping in run order, and the chosen branches; laid out left to right."""
+    """The required ingest blocks (MINIMAL) with bIngest's step ids, the chosen ingestion channel(s), the requested steps
+    between validation and the field mapping in run order, and the requested branches; laid out left to right."""
     sid = sh["sid"]
     s = SOURCES[sid]
     ch = channels(s)
     file_only = "file" in ch and "api" not in ch and "event" not in ch
-    std = _std_xform("ingest", sid)
-    chain = [r for r in STEP_ORDER if r in sh["steps"] or (r == std and sh["keep_std"])]
-    if std and sh["keep_std"] and std not in STEP_ORDER:
-        chain.insert(0, std)
+    chain = [r for r in STEP_ORDER if r in sh["steps"]]
     y0, X = 170, 206
     nodes: list[dict] = []
     edges: list[dict] = []
@@ -1016,7 +1020,7 @@ def _ingest(sh: dict) -> dict:
     prev = ["v"]
     branch_at = None
     for r in chain:
-        nid = "t" if r == std else _step_id(r)
+        nid = _step_id(r)
         nodes.append(wf._n(nid, "xf", r, x(), y0))
         edges.append(wf._e(prev[0], nid))
         prev = [nid]
@@ -1089,7 +1093,7 @@ def _outbound(sh: dict) -> dict:
 
 def tailored_name(sh: dict, trig: dict) -> str:
     kind = sh["kind"]
-    added = [r for r in sh["steps"] if r != _std_xform(kind, sh["sid"])]
+    added = list(sh["steps"])
     if kind == "ingest":
         s = SOURCES[sh["sid"]]
         base = f"{wf.SH.get(sh['sid'], s['name'])} ingest"
@@ -1102,13 +1106,6 @@ def tailored_name(sh: dict, trig: dict) -> str:
     if kind == "dec":
         return {"standard": "Six-gate decision", "pool": "Pool allocation decision", "gap": "Evidence-gap decision"}[sh["dec"]]
     return "New pipeline"
-
-
-def _std_name(kind: str, sid: str | None) -> str:
-    """The name workflow.create gives a workflow nobody named."""
-    if kind in ("ingest", "out") and sid:
-        return f"{'Ingest' if kind == 'ingest' else 'Outbound'} · {SOURCES[sid]['vendor']}"
-    return "Decision workflow" if kind == "dec" else "New pipeline"
 
 
 def _lc(label_: str) -> str:
@@ -1172,7 +1169,7 @@ def _why(n: dict, added: bool) -> str:
     if k == "tool":
         return f"Agent tool {ref}, in the order the decision rules require."
     d = wf._xf_req(ref)["desc"]
-    return ("Added because you asked for it. " if added else "") + d
+    return ("You asked for it. " if added else "Required to run. ") + d
 
 
 def _ready(sh: dict, g: dict, name: str, owner: str, trig: dict, retries: int, alert: str, notes: list[str],
@@ -1197,67 +1194,45 @@ def _ready(sh: dict, g: dict, name: str, owner: str, trig: dict, retries: int, a
     if errs:
         return {"status": "blocked", "questions": [], "notes": notes + [x["msg"] for x in errs], "understood": understood,
                 "answers": a, "plan": None}  # fmt: skip
-    # what differs from the standard template (what New workflow would generate)
-    tpl = (
-        {"k": "ingest", "src": sid}
-        if kind == "ingest"
-        else {"k": "out", "src": sid, "ch": ch}
-        if kind == "out"
-        else {"k": "dec", "id": "standard"}
-        if kind == "dec"
-        else {"k": "blank"}
-    )
-    std = wf.build(tpl)
-    std_refs = [(n["k"], n["ref"]) for n in std["nodes"]]
-    plan_refs = [(n["k"], n["ref"]) for n in g["nodes"]]
-    added_keys = [r for r in plan_refs if r not in std_refs]
-    removed = [r for r in std_refs if r not in plan_refs]
+    # every block is either required to run (MINIMAL) or one the person asked for; nothing comes from a template
+    asked = set(sh["steps"]) | set(sh["handling"]) | ({"x_evt"} if sh.get("arrive") == "both" else set())
     order = studio._order(g)
     by = {n["id"]: n for n in g["nodes"]}
     steps = []
     for nid in order:
         n = by[nid]
-        is_new = (n["k"], n["ref"]) in added_keys
+        is_new = n["k"] == "xf" and n["ref"] in asked
         steps.append({
             "id": nid, "label": wf.label(n), "kind": n["k"], "fixed": n["k"] == "fixed",
-            "status": "fixed" if n["k"] == "fixed" else "added" if is_new else "standard", "why": _why(n, is_new),
+            "status": "fixed" if n["k"] == "fixed" else "added" if is_new else "required", "why": _why(n, is_new),
         })  # fmt: skip
-    lbl = {(n["k"], n["ref"]): wf.label(n) for n in std["nodes"] + g["nodes"]}
     dflt_trig = default_trigger(kind, sid)
     changed = []
-    std_name = _std_name(kind, sid)
-    if name != std_name:
-        changed.append(f"Name: {name} (standard: {std_name})")
     if trig != dflt_trig:
-        changed.append(f"Trigger: {wf.trig_text(trig)} (standard: {wf.trig_text(dflt_trig)})")
+        changed.append(f"Trigger: {wf.trig_text(trig)} (default: {wf.trig_text(dflt_trig)})")
     if retries != 3:
-        changed.append(f"Retries: {retries} (standard: 3)")
+        changed.append(f"Retries: {retries} (default: 3)")
     if alert != wf.ALERTS[0]:
-        changed.append(f"Alert when: {alert} (standard: {wf.ALERTS[0]})")
+        changed.append(f"Alert when: {alert} (default: {wf.ALERTS[0]})")
     if kind == "dec" and sh["dec"] != "standard":
-        changed.append(f"Decision flow: {DECISIONS[sh['dec']][0]} (standard: {DECISIONS['standard'][0]})")
+        changed.append(f"Decision flow: {DECISIONS[sh['dec']][0]}")
     std_owner = SOURCES[sid]["owner"] if sid else "Decision Services" if kind == "dec" else "Unassigned"
     if owner != std_owner:
-        changed.append(f"Owner: {owner} (standard: {std_owner})")
+        changed.append(f"Owner: {owner} (default: {std_owner})")
     desc = tailored_desc(sh, g, trig)
-    diff = {"added": [lbl[r] for r in added_keys], "removed": [lbl[r] for r in removed], "changed": changed}
+    diff = {
+        "required": [x["label"] for x in steps if x["status"] != "added"],
+        "added": [x["label"] for x in steps if x["status"] == "added"],
+        "changed": changed,
+    }
     warns = [x["msg"] for x in v if x["sev"] == "warn"]
     infos = [x["msg"] for x in v if x["sev"] == "info"]
     summary = (
-        f"{name}: {len(g['nodes'])} steps, checks show 0 errors"
+        f"{name}: {len(g['nodes'])} blocks, {len(diff['required'])} required to run"
+        + (f" and {len(diff['added'])} you asked for ({', '.join(diff['added'])})" if diff["added"] else "")
+        + "; checks show 0 errors"
         + (f" and {len(warns)} warning{'s' if len(warns) != 1 else ''}" if warns else "")
-        + ". Versus the standard template: "
-        + "; ".join(
-            x
-            for x in (
-                ("added " + ", ".join(diff["added"])) if diff["added"] else "",
-                ("left out " + ", ".join(diff["removed"])) if diff["removed"] else "",
-                ("changed " + ", ".join(c.split(" (")[0] for c in changed)) if changed else "",
-            )
-            if x
-        )
-        + (". " if diff["added"] or diff["removed"] or changed else "nothing differs. ")
-        + "Nothing is created until you press Create workflow."
+        + ". Nothing is created until you press Create workflow."
     )
     create: dict[str, Any] = {"type": kind, "name": name, "desc": desc, "graph": copy.deepcopy(g)}
     if sid:

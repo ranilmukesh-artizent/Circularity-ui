@@ -202,7 +202,7 @@ function PlanView({ plan }: { plan: Plan }) {
       <ol className="afplan afwf">
         {plan.steps.map((st) => (
           <li key={st.id} className={st.status === 'added' ? 'ghost' : st.fixed ? 'fx' : ''}>
-            <b>{st.label}{st.status === 'added' && <span className="chip ok" style={{ marginLeft: 6 }}>Added</span>}</b>
+            <b>{st.label}{st.status === 'added' && <span className="chip ok" style={{ marginLeft: 6 }}>You asked for it</span>}</b>
             <span className="note">{st.why}</span>
           </li>
         ))}
@@ -213,15 +213,14 @@ function PlanView({ plan }: { plan: Plan }) {
 
 function Diff({ plan }: { plan: Plan }) {
   const d = plan.diff;
-  if (!d.added.length && !d.removed.length && !d.changed.length) return <p className="note">Same steps as the standard template.</p>;
   return (
     <div className="tw" style={{ marginBottom: 10 }}>
-      <table className="t static tight" aria-label="Differences from the standard template">
-        <thead><tr><th>Versus the standard template</th><th /></tr></thead>
+      <table className="t static tight" aria-label="What the workflow contains">
+        <thead><tr><th>What it contains</th><th /></tr></thead>
         <tbody>
-          {d.added.length > 0 && <tr><td>Added</td><td>{d.added.join(', ')}</td></tr>}
-          {d.removed.length > 0 && <tr><td>Left out</td><td>{d.removed.join(', ')}</td></tr>}
-          {d.changed.map((c, i) => <tr key={i}><td>{i === 0 ? 'Changed' : ''}</td><td>{c}</td></tr>)}
+          <tr><td>Required to run</td><td>{d.required.join(', ')}</td></tr>
+          <tr><td>You asked for</td><td>{d.added.length ? d.added.join(', ') : 'Nothing extra: add blocks from the palette after you create it'}</td></tr>
+          {d.changed.map((c, i) => <tr key={i}><td>{i === 0 ? 'Settings' : ''}</td><td>{c}</td></tr>)}
         </tbody>
       </table>
     </div>
@@ -255,7 +254,7 @@ function GraphPreview({ plan }: { plan: Plan }) {
               <rect x={n.x} y={n.y} width={W} height={H} rx={8} fill={fixed ? 'var(--panel2)' : 'var(--panel)'} stroke={added ? 'var(--ink)' : 'var(--line)'}
                 strokeWidth={added ? 2 : 1.5} strokeDasharray={added ? '6 4' : undefined} />
               <text x={n.x + 12} y={n.y + 27} fontSize={14} fontWeight={600} fill="var(--ink)">{(x?.label ?? n.ref).slice(0, 22)}</text>
-              <text x={n.x + 12} y={n.y + 47} fontSize={11.5} fill="var(--muted)">{fixed ? 'Fixed step' : added ? 'Added' : n.k === 'conn' ? 'Source' : n.k === 'wconn' ? 'Target' : 'Standard'}</text>
+              <text x={n.x + 12} y={n.y + 47} fontSize={11.5} fill="var(--muted)">{fixed ? 'Fixed step' : added ? 'You asked for it' : n.k === 'conn' ? 'Source' : n.k === 'wconn' ? 'Target' : 'Required'}</text>
             </g>
           );
         })}

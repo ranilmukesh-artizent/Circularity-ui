@@ -16,11 +16,17 @@ ranges). For the runs a scenario makes, these fields are left out of the compari
   a prefix, since each row is a function of its position only.
 Everything else (the states, the note, the per-step durations, the run ids, the success counts) is compared exactly.
 
+**New workflow starts minimal (a deliberate change, decision log 21 Nov 2026).** The demo gave a new ingest, outbound
+or decision workflow its full template graph; here New workflow starts from the blocks it needs to run (tpl
+{k: "min"}). `_minimal_start` rewrites the scenarios' expectations accordingly: a workflow the scenario created gets
+the minimal template, and where it still held the demo's template graph (as created, or reset to it), the minimal one.
+
 The workflow.run output is the demo's ({id, name}) plus `run`, the id of the run record the job writes its progress
 into; `run` is checked and set aside. The saved snapshot (`saved`, a JSON string) is compared parsed: the database
 does not keep the key order of the graph inside it.
 """
 
+import copy
 import json
 
 import pytest
@@ -28,13 +34,80 @@ from sqlalchemy import text
 
 import di.actions.workflows as wf
 from di import golden, state
+from di.actions.workflow_builder import minimal_graph
 from di.db import engine
+from di.reads.common import SOURCES
 from tests import starting
 from tests.helpers import call, client, h, norm
 
 G = golden.load("workflow_writes")
 B14 = golden.load("screens/workflows")
 STARTING_RUNS = {r["id"] for r in B14["runs"]}
+
+
+def _min_tpl(tpl: dict) -> dict | None:
+    """The minimal template workflow.create gives now, for the demo's generated one (None: not a generated template)."""
+    k, sid = tpl.get("k"), tpl.get("src")
+    if k == "ingest":
+        return {"k": "min", "type": "ingest", "src": sid, "arrive": "api" if SOURCES[sid].get("interval") else "event"}
+    if k == "out":
+        return {"k": "min", "type": "out", "src": sid, "ch": tpl.get("ch") or (wf.DELIVER.get(sid) or ["api"])[0]}
+    if k == "dec" and tpl.get("id") == "standard":
+        return {"k": "min", "type": "dec", "id": "standard"}
+    return None
+
+
+def _trim(rec: dict | None, full: dict, mini: dict) -> None:
+    """A run record's per-step fields (states, durations, order, the step index i) for the steps the minimal graph has."""
+    if not rec:
+        return
+    every, keep = {n["id"] for n in full["nodes"]}, {n["id"] for n in mini["nodes"]}
+    order = rec.get("order")
+    if isinstance(rec.get("i"), int) and isinstance(order, list):
+        rec["i"] = len([x for x in order[: rec["i"]] if x in keep])
+    for f, v in list(rec.items()):
+        if isinstance(v, dict) and set(v) & every:
+            rec[f] = {k: x for k, x in v.items() if k in keep}
+        elif isinstance(v, list) and v and all(isinstance(x, str) for x in v) and set(v) <= every:
+            rec[f] = [x for x in v if x in keep]
+
+
+def _minimal_start(sc: dict) -> dict:
+    """The scenario with New workflow's minimal start in place of the demo's full template (see the module docstring)."""
+    sc = copy.deepcopy(sc)
+    obs = sc["observed"]
+    made: set[str] = set()  # the workflows New workflow made from a generated template, as they stand at the end
+    for c in sc["calls"]:  # ids are reused after a delete, so follow the calls in order
+        if c.get("action") in ("workflow.create", "workflow.duplicate") and (c.get("result") or {}).get("ok"):
+            plain = c["action"] == "workflow.create" and "graph" not in c["input"] and "tpl" not in c["input"]
+            (made.add if plain else made.discard)(c["result"]["output"]["id"])
+    given = {c["input"].get("id") for c in sc["calls"] if "graph" in (c.get("input") or {})}  # saved with a graph of its own
+    swap: dict[str, tuple[dict, dict]] = {}
+    for w in obs["workflows"]:
+        if w["id"] not in made or not w.get("tpl") or not (mt := _min_tpl(w["tpl"])):
+            continue
+        full, mini = wf.build(w["tpl"]), minimal_graph(mt)
+        swap[w["id"]] = (full, mini)
+        w["tpl"] = mt
+        if w["id"] in given:
+            continue
+        if norm(w.get("graph")) == norm(full):
+            w["graph"] = copy.deepcopy(mini)
+            _trim(w.get("lastRun"), full, mini)
+        if isinstance(w.get("saved"), str):
+            sv = json.loads(w["saved"])
+            if norm(sv.get("g")) == norm(full):
+                sv["g"] = copy.deepcopy(mini)
+                w["saved"] = json.dumps(sv)
+    for wid, d in obs["detail"].items():
+        if d and wid in swap and norm(d.get("template")) == norm(swap[wid][0]):
+            d["template"] = copy.deepcopy(swap[wid][1])
+        w = next((x for x in obs["workflows"] if x["id"] == wid), None)
+        if d and wid in swap and w and norm(w.get("graph")) == norm(swap[wid][1]):  # per-step reads follow its steps
+            keep = {n["id"] for n in swap[wid][1]["nodes"]}
+            d["run_counts"] = {k: v for k, v in d["run_counts"].items() if k in keep}
+            _trim(d.get("run_from_last"), swap[wid][0], swap[wid][1])
+    return sc
 
 
 def setup_module():
@@ -127,7 +200,7 @@ class Replay:
 
 @pytest.mark.parametrize("name", list(G))
 def test_scenario(fresh, name):
-    sc = G[name]
+    sc = _minimal_start(G[name])
     r = Replay(name)
     for k, step in enumerate(sc["calls"]):
         if step.get("flush"):

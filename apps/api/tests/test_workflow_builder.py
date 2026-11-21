@@ -1,8 +1,11 @@
 """Workflow Studio's AI workflow builder (di.actions.workflow_builder): the demo's workflow.draft and the guided planner
 workflow.plan, and the rule-based Ask's workflow.draft runner.
 
-- a fully specified description gives a complete plan at once (no questions) with 0 check errors, tailored to it: the
-  steps it asks for added, the standard steps it declines left out, the trigger and run settings it names
+- a fully specified description gives a complete plan at once (no questions) with 0 check errors: the blocks the
+  workflow needs to run plus exactly the ones it asks for (nothing from the standard template), the trigger and run
+  settings it names
+- with the defaults, a plan holds only the required blocks (one ingestion channel, validation, mapping, model,
+  snapshot) and passes the checks with no warning
 - a vague one asks the workflow type first, and only that
 - "ingest from salesforce ..." resolves to the CRM source, adds currency conversion and late-event ordering, runs every
   30 minutes; the details round asks only what the description did not settle
@@ -73,9 +76,9 @@ def test_fully_specified_prompt_gives_a_complete_tailored_plan():
     assert p["checks"]["errors"] == [] and wf.errors(p["graph"], "pipe") == []
     r = refs(p)
     assert "x_units" in r and "x_err" in r
-    assert "x_fx" not in r and "x_audit" not in r  # the standard steps the description declined
-    assert p["diff"]["added"] == ["Normalise units"]
-    assert set(p["diff"]["removed"]) == {"Convert currency", "Write to audit log"}
+    assert "x_fx" not in r and "x_audit" not in r and "x_pub" not in r  # not asked for: not added
+    assert set(p["diff"]["added"]) == {"Normalise units", "Error handler"}
+    assert "Validation & enrichment" in p["diff"]["required"]
     assert any(c.startswith("Trigger: Every 15 min") for c in p["diff"]["changed"])
     # a tailored name and description, not the stock "Ingest · Machinio"
     assert p["name"] == "Dealer network ingest · unit normalisation"
@@ -91,6 +94,23 @@ def test_fully_specified_prompt_gives_a_complete_tailored_plan():
     # what the person's Create button sends
     assert p["create"]["type"] == "ingest" and p["create"]["src"] == "dlr" and p["create"]["graph"] == p["graph"]
     assert p["save"]["trig"] == p["trigger"] and p["save"]["retries"] == 3
+
+
+def test_defaults_give_only_the_required_blocks():
+    p = plan("ingest from salesforce every 30 minutes", {"_defaults": True})["plan"]
+    assert sorted(refs(p)) == sorted(["crm", "x_gw", "x_val", "crm", "c_dem", "snap"])  # a schedule polls the API
+    assert p["checks"]["errors"] == [] and p["checks"]["warnings"] == []
+    assert p["diff"]["added"] == [] and all(s["status"] in ("required", "fixed") for s in p["steps"])
+    assert all(s["why"].startswith(("Required to run", "Fixed step", "Reads", "Maps")) for s in p["steps"])
+    # its default trigger (On event) gives event ingestion instead of the API gateway; both only when asked
+    ev = plan("ingest from salesforce", {"_defaults": True})["plan"]
+    assert "x_evt" in refs(ev) and "x_gw" not in refs(ev)
+    both = plan("ingest from salesforce", {"_defaults": True, "channels": "both"})["plan"]
+    assert {"x_gw", "x_evt"} <= set(refs(both))
+    # the usual transform for the source type is offered, not added
+    q = plan("ingest from salesforce")
+    steps_q = next(x for x in q["questions"] if x["id"] == "steps")
+    assert steps_q["default"] == [] and any("usual for this source" in c["hint"] for c in steps_q["choices"])
 
 
 def test_vague_prompt_asks_the_type_first():

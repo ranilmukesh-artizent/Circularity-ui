@@ -35,7 +35,8 @@ export interface PlanStep {
   label: string;
   kind: string;
   fixed: boolean;
-  status: 'fixed' | 'added' | 'standard';
+  /** fixed: placed by Circularity; required: needed to run; added: the person asked for it. */
+  status: 'fixed' | 'added' | 'required';
   why: string;
 }
 
@@ -59,7 +60,8 @@ export interface Plan {
   graph: PlanGraph;
   checks: { errors: string[]; warnings: string[]; notes: string[] };
   steps: PlanStep[];
-  diff: { added: string[]; removed: string[]; changed: string[] };
+  /** What the workflow holds: the blocks it needs to run, the ones asked for, and settings changed from their defaults. */
+  diff: { required: string[]; added: string[]; changed: string[] };
   summary: string;
   create: Record<string, unknown>;
   save: Record<string, unknown>;
