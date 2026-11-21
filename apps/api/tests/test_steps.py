@@ -11,8 +11,8 @@ import pytest
 from sqlalchemy import text
 
 from di.connectors.generic import to_usd
-from di.workflow.blocks import default_cfg
-from di.workflow.steps import STEPS, ExprError, Rec, Reject, StepCtx, StepResult, compile_expr
+from di.workflow.blocks import cfg_errors, default_cfg
+from di.workflow.steps import STEPS, ExprError, Rec, Reject, StepCtx, StepError, StepResult, compile_expr
 
 NOW = datetime(2026, 11, 21, 12, 0, tzinfo=UTC)
 C4 = (
@@ -314,3 +314,132 @@ def test_sinks_collect_without_side_effects_when_dry():
     assert res.side["audit"]["records"] == 2 and logs
     res = run("x_pub", [rec("1")], {"topic": "asset.updated"})
     assert res.side["publish"] == {"topic": "asset.updated", "count": 1, "keys": ["1"], "sent": False}
+
+
+# ------------------------------------------------------------------ plan 6 follow-up: blocks do what their settings say
+def test_x_fx_reads_the_fields_its_settings_name():
+    """Amount fields, Currency field, Source currency (for a record without a currency) and Date field."""
+    cfg = {"fields": ["net", "gross"], "currency_field": "cur", "source_currency": "INR", "date_field": "posted"}
+    no_cur = rec("1", net=1002000, gross="2004000", posted="2026-10-10")
+    own_cur = rec("2", net=92, cur="EUR", posted="2026-10-10")
+    res = run("x_fx", [no_cur, own_cur], cfg)
+    by = {r.ext_id: r for r in res.out}
+    assert by["1"].data["net"] == 12000.0 and by["1"].data["gross"] == 24000.0
+    assert by["1"].meta["fx"]["net"]["from"] == "INR" and by["1"].meta["fx"]["gross"]["source_value"] == "2004000"
+    assert by["1"].data["cur"] == "USD"  # the currency field now says what the amounts are in
+    assert by["2"].data["net"] == 100.0 and by["2"].meta["fx"]["net"]["from"] == "EUR"
+    # without a Source currency, a record without a currency is in USD (today's behaviour)
+    assert run("x_fx", [rec("3", amount=5)]).out[0].data == {"amount": 5}
+    # Currency field empty: every record is in the Source currency
+    res = run("x_fx", [rec("4", amount=1002000, currency="EUR")], {"currency_field": "", "source_currency": "INR"})
+    assert res.out[0].data == {"amount": 12000.0, "currency": "EUR"}
+
+
+def test_x_fx_field_settings_are_checked_against_the_fields_the_records_carry():
+    node = {"id": "n", "k": "xf", "ref": "x_fx",
+            "cfg": {"fields": ["net", "nope"], "currency_field": "cur", "date_field": "when"}}  # fmt: skip
+    assert cfg_errors(node, {"label": "FX", "fields": {"net", "cur"}}) == [
+        "FX: Amount fields nope is not a field the records carry.",
+        "FX: Date field when is not a field the records carry.",
+    ]
+    # a setting left at its default (amount, currency, date) is not held against a source that lacks it
+    plain = {"id": "n", "k": "xf", "ref": "x_fx", "cfg": {"currency": "EUR"}}
+    assert cfg_errors(plain, {"label": "FX", "fields": {"net"}}) == []
+    bad = {"id": "n", "k": "xf", "ref": "x_fx", "cfg": {"source_currency": "GBP"}}
+    assert cfg_errors(bad, {"label": "FX"}) == ["FX: Source currency GBP is not one of USD, EUR, INR."]
+
+
+def test_x_late_passes_records_without_their_key_untouched():
+    recs = [
+        rec("1", k="a", t="2026-11-21T10:00:00Z"),
+        rec("2", t="2026-11-21T11:00:00Z"),
+        rec("3", k="", t="2026-11-21T12:00:00Z"),
+        rec("4", k="a", t="2026-11-21T13:00:00Z"),
+        rec("5", t="2026-11-21T14:00:00Z"),
+    ]
+    res = run("x_late", recs, {"keys": ["k"], "newest_by": "t"})
+    assert [r.ext_id for r in res.out] == ["2", "3", "4", "5"] and not res.rejected
+    assert res.side["no_key"] == 3 and res.side["dropped"] == 1
+
+
+def test_x_late_time_field_rejects_records_older_than_the_window_before_the_newest():
+    recs = [
+        rec("1", k="a", ts="2026-11-21T10:00:00Z"),
+        rec("2", k="b", ts="2026-11-21T11:30:00Z"),
+        rec("3", k="c", ts="2026-11-21T12:00:00Z"),
+        rec("4", k="d"),  # no time: never late
+    ]
+    res = run("x_late", recs, {"keys": ["k"], "time_field": "ts", "late_window_min": 60})
+    assert [r.ext_id for r in res.out] == ["2", "3", "4"]
+    assert [(j.rec.ext_id, j.rule, j.field, j.value) for j in res.rejected] == [
+        ("1", "late_window", "ts", "2026-11-21T10:00:00Z")
+    ]
+    assert res.rejected[0].reason == "ts is more than 60 min before the newest record's (2026-11-21T12:00:00Z)"
+    # window 0: off
+    assert len(run("x_late", recs, {"keys": ["k"], "time_field": "ts", "late_window_min": 0}).out) == 4
+
+
+def test_x_evt_time_field_applies_the_replay_window_to_synced_records():
+    recs = [rec("1", at="2026-11-21T09:00:00Z"), rec("2", at="2026-11-21T11:59:00Z"), rec("3", at="2026-11-21T12:00:00Z")]
+    res = run("x_evt", recs, {"time_field": "at", "replay_window_min": 60})
+    assert [r.ext_id for r in res.out] == ["2", "3"]
+    assert [(j.rec.ext_id, j.rule, j.field) for j in res.rejected] == [("1", "replay_window", "at")]
+    assert len(run("x_evt", recs, {"replay_window_min": 60}).out) == 3  # no time field: synced records pass
+
+
+def test_x_wait_duration_holds_every_record_until_it_has_passed():
+    res = run("x_wait", [rec("1"), rec("2")], {"duration_min": 30})
+    assert res.out == [] and [r.ext_id for r in res.side["waiting"]] == ["1", "2"]
+    assert res.side["resume_at"] == "2026-11-21T12:30:00Z"
+    assert res.side["waiting"][0].meta["wait_since"] == "2026-11-21T12:00:00Z"
+
+
+def test_x_wait_until_alone_is_checked_again_every_15_minutes():
+    res = run("x_wait", [rec("1", ready=True), rec("2", ready=False)], {"until": "ready == true"})
+    assert [r.ext_id for r in res.out] == ["1"] and [r.ext_id for r in res.side["waiting"]] == ["2"]
+    assert res.side["resume_at"] == "2026-11-21T12:15:00Z"
+
+
+def test_x_wait_when_the_run_comes_back():
+    c = ctx()
+    c.resumed = True
+    # Duration only: the time has passed, everything goes on
+    res = run("x_wait", [rec("1")], {"duration_min": 30}, c)
+    assert [r.ext_id for r in res.out] == ["1"] and not res.side.get("waiting") and "resume_at" not in res.side
+    # Until: checked again; a record that still does not meet it waits again (since when it first waited)
+    w = Rec("2", "orders", {"ready": False}, None, {"wait_since": "2026-11-21T11:00:00Z"})
+    res = run("x_wait", [rec("1", ready=True), w], {"until": "ready == true", "duration_min": 10}, c)
+    assert [r.ext_id for r in res.out] == ["1"] and [r.ext_id for r in res.side["waiting"]] == ["2"]
+    assert res.side["waiting"][0].meta["wait_since"] == "2026-11-21T11:00:00Z"
+    assert res.side["resume_at"] == "2026-11-21T12:10:00Z"
+    # waiting longer than the longest wait (7 days): rejected, so it is held instead of waiting for ever
+    old = Rec("3", "orders", {"ready": False}, None, {"wait_since": "2026-11-13T12:00:00Z"})
+    res = run("x_wait", [old], {"until": "ready == true"}, c)
+    assert res.out == [] and not res.side.get("waiting") and res.rejected[0].rule == "wait"
+    assert "not met within 7 days" in res.rejected[0].reason
+
+
+def test_x_call_refuses_to_call_its_own_workflow():
+    with pytest.raises(StepError, match="its own workflow"):
+        run("x_call", [rec("1")], {"workflow": "WF-T"})
+
+
+def test_x_audit_writes_one_entry_to_the_audit_log(session):
+    from di import state
+
+    c = StepCtx(s=session, run_id="RUN-AUD1", wf={"id": "WF-T", "name": "Audit test"}, node={"id": "aud"},
+                source_id="crm", now=NOW, dry=False)  # fmt: skip
+    try:
+        res = run("x_audit", [rec("1"), rec("2")], {"level": "warn"}, c)
+        assert [r.ext_id for r in res.out] == ["1", "2"]
+        ev = next(e for e in state.items(session, "events", newest_first=True) if e.get("run") == "RUN-AUD1")
+        assert ev["type"] == "workflow.audit" and ev["level"] == "warn" and ev["records"] == 2
+        assert ev["note"] == "WF-T · run RUN-AUD1 · step aud: 2 records (warn)"
+        assert ev["dest"] == "Circularity · workflow Audit test" and ev["ts"] == "2026-11-21T12:00:00.000Z"
+        assert res.side["audit"]["event"] == ev["id"]
+        # a test run writes nothing
+        n = len(state.items(session, "events"))
+        run("x_audit", [rec("1")], {}, ctx(s=session, dry=True))
+        assert len(state.items(session, "events")) == n
+    finally:
+        session.rollback()

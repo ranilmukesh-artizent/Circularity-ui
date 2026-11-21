@@ -8,12 +8,12 @@ the file's checksum.
 
 from datetime import timedelta
 
-from di.workflow.steps.core import Rec, Reject, StepCtx, StepResult, clone, digest, get, opt, parse_ts
+from di.workflow.steps.core import Rec, Reject, StepCtx, StepResult, clone, digest, get, iso_z, opt, parse_ts, too_old
 
 # the settings each step reads (keys of di/workflow/blocks.py)
 KEYS = {
     "x_gw": {"rate_limit": "rate_limit_per_min", "timeout": "timeout_s"},
-    "x_evt": {"ordering_key": "ordering_key", "replay_window": "replay_window_min"},
+    "x_evt": {"ordering_key": "ordering_key", "replay_window": "replay_window_min", "time_field": "time_field"},
     "x_file": {"path": "path", "checksum_required": "checksum_required"},
 }
 
@@ -36,17 +36,25 @@ def x_gw(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
 def x_evt(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
     """Events in order of the ordering key (stable; events without it keep their place after the others), exact
     replays (same id, same payload) dropped. With a replay window, an event that carries its arrival time
-    (meta.received_at) more than the window after its own time is rejected (rule `replay_window`)."""
+    (meta.received_at) more than the window after its own time is rejected (rule `replay_window`), and, with a Time
+    field, one whose time is more than the window before the newest event's time in the run (quality.too_old: synced
+    records carry no arrival time)."""
     k = KEYS["x_evt"]
     key, window = opt(cfg, k["ordering_key"], ""), opt(cfg, k["replay_window"], 0)
+    tf = str(opt(cfg, k["time_field"], "")).strip()
+    old, newest = too_old(recs, tf, window)
     seen: set[tuple[str, str]] = set()
     out, rejected, dups = [], [], 0
-    for r in recs:
+    for i, r in enumerate(recs):
         sig = (r.ext_id, digest(r.data))
         if sig in seen:
             dups += 1
             continue
         seen.add(sig)
+        if i in old and newest is not None:
+            why = f"{tf} is more than {window} min before the newest event's ({iso_z(newest)})"
+            rejected.append(Reject(r, tf, "replay_window", get(r, tf), why))
+            continue
         if window and key:
             t, got = parse_ts(get(r, key)), parse_ts(r.meta.get("received_at"))
             if t and got and got - t > timedelta(minutes=window):

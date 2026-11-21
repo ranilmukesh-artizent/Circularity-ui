@@ -3,12 +3,26 @@
 
 from datetime import timedelta
 
-from di.workflow.steps.core import Rec, Reject, StepCtx, StepResult, as_list, clone, get, opt, parse_ts, present, rule_ok
+from di.workflow.steps.core import (
+    Rec,
+    Reject,
+    StepCtx,
+    StepResult,
+    as_list,
+    clone,
+    get,
+    iso_z,
+    opt,
+    parse_ts,
+    present,
+    rule_ok,
+    too_old,
+)
 
 # the settings each step reads (keys of di/workflow/blocks.py; "tenant_field" is not in the catalogue)
 KEYS = {
     "x_val": {"required": "required", "rules": "rules", "on_failure": "on_failure"},
-    "x_late": {"keys": "keys", "newest_by": "newest_by", "late_window": "late_window_min"},
+    "x_late": {"keys": "keys", "newest_by": "newest_by", "late_window": "late_window_min", "time_field": "time_field"},
     "x_ident": {"keys": "keys", "tenant_field": "tenant_field"},
 }
 # where a record's change time is when "newest wins by" is empty
@@ -48,12 +62,18 @@ def _change_time(r: Rec, by: str):
 def x_late(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
     """Newest per key wins (key fields; empty: the record id), by the `newest_by` field (empty: the change time the
     record carries); a tie goes to the later arrival. The others are dropped (side.dropped), not rejected. A record
-    that carries its arrival time (meta.received_at) more than the late window after its own time is rejected
-    (rule `late_window`); records read by a sync carry none."""
+    missing any key field is never merged: it goes on untouched (side.no_key counts them).
+
+    Late records are rejected (rule `late_window`): one that carries its arrival time (meta.received_at) more than
+    the late window after its own time, and, with a Time field, one whose time is more than the window before the
+    newest record's time in the run (`too_old`)."""
     k = KEYS["x_late"]
     keys, by, window = as_list(opt(cfg, k["keys"], [])), opt(cfg, k["newest_by"], ""), opt(cfg, k["late_window"], 0)
+    tf = str(opt(cfg, k["time_field"], "")).strip()
+    old, newest = too_old(recs, tf, window)
     rejected: list[Reject] = []
     best: dict[tuple, tuple[int, Rec]] = {}
+    no_key = 0
     for i, r in enumerate(recs):
         t = _change_time(r, by)
         got = parse_ts(r.meta.get("received_at"))
@@ -61,6 +81,14 @@ def x_late(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
             rejected.append(
                 Reject(r, by or None, "late_window", get(r, by) if by else None, f"arrived more than {window} min late")
             )
+            continue
+        if i in old and newest is not None:
+            why = f"{tf} is more than {window} min before the newest record's ({iso_z(newest)})"
+            rejected.append(Reject(r, tf, "late_window", get(r, tf), why))
+            continue
+        if keys and not all(present(get(r, f)) for f in keys):
+            no_key += 1
+            best[("\0no-key", i)] = (i, r)  # its own group: never merged with another record
             continue
         key = (r.resource, *(str(get(r, f)) for f in keys)) if keys else (r.resource, r.ext_id)
         cur = best.get(key)
@@ -72,7 +100,7 @@ def x_late(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
             best[key] = (i, r)
     kept = sorted(best.values(), key=lambda p: p[0])
     out = [clone(r) for _, r in kept]
-    return StepResult(out, rejected, {"dropped": len(recs) - len(out) - len(rejected)})
+    return StepResult(out, rejected, {"dropped": len(recs) - len(out) - len(rejected), "no_key": no_key})
 
 
 def x_ident(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:

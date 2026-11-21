@@ -54,6 +54,7 @@ class StepCtx:
     now: datetime
     dry: bool
     log: Callable[[str], None] | None = None
+    resumed: bool = False  # x_wait: the run came back for the records this step parked (di/workflow/waits.py)
 
 
 @dataclass
@@ -167,6 +168,20 @@ def parse_ts(v: Any) -> datetime | None:
 
 def iso_z(d: datetime) -> str:
     return d.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def too_old(recs: list[Rec], time_field: str, window: float) -> tuple[dict[int, datetime], datetime | None]:
+    """The records (by position) whose `time_field` is more than `window` minutes before the newest such time in the
+    batch, and that newest time. Records without a readable time are never too old. Synced records carry no arrival
+    time, so this is how x_late's late window and x_evt's replay window apply to them: relative to the newest record
+    of the same run (not the run's clock, so replaying old data does not reject all of it)."""
+    if not time_field or not window:
+        return {}, None
+    times = {i: t for i, r in enumerate(recs) if (t := parse_ts(get(r, time_field))) is not None}
+    if not times:
+        return {}, None
+    newest = max(times.values())
+    return {i: t for i, t in times.items() if newest - t > timedelta(minutes=window)}, newest
 
 
 def zone(name: str | None):

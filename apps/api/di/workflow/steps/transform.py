@@ -41,9 +41,10 @@ from di.workflow.steps.core import (
 KEYS = {
     "x_fx": {
         "currency": "currency", "rate_date": "rate_date", "rate_table": "rate_table",
-        "fields": "fields",  # * money fields, default ["amount"]
-        "currency_field": "currency_field",  # * default "currency"
-        "date_field": "date_field",  # * default "date"
+        "fields": "fields",  # Amount fields, default ["amount"]
+        "currency_field": "currency_field",  # default "currency"; "" none
+        "source_currency": "source_currency",  # default "": USD
+        "date_field": "date_field",  # default "date"; "" the run's date
     },
     "x_utc": {"fields": "fields", "zone": "source_zone"},
     "x_units": {"units": "units"},
@@ -88,26 +89,40 @@ def _pick(rates: list[tuple[date, Decimal]], on: date) -> tuple[date, Decimal]:
     return best
 
 
+def _named(cfg: dict, key: str, default: str) -> str:
+    """A setting that names a field: missing → its default; set empty → "" (no such field)."""
+    v = (cfg or {}).get(key, default)
+    return default if v is None else str(v).strip()
+
+
 def x_fx(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
-    """Money fields to the target currency at a dated rate: the record's date (`rate_date` record) or the run's
-    (`run`). The amount goes source → USD → target; meta.fx[field] = {from, to, rate, rate_date, source_value} (plus
-    target_rate when the target is not USD). A currency without a rate is rejected (rule `fx`)."""
+    """Each Amount field (`fields`, default amount) to the target currency at a dated rate: the rate of the record's
+    Date field (`rate_date` record; Date field empty or no date: the run's) or the run's date (`run`). The currency
+    an amount is in is the record's Currency field, else the Source currency, else USD (Currency field empty: the
+    Source currency for every record). The amount goes source → USD → target; meta.fx[field] = {from, to, rate,
+    rate_date, source_value} (plus target_rate when the target is not USD), and the Currency field (when there is
+    one) becomes the target. A currency without a rate is rejected (rule `fx`)."""
     k = KEYS["x_fx"]
     target = str(opt(cfg, k["currency"], "USD")).upper()
     by_run = opt(cfg, k["rate_date"], "record") == "run"
     fields = as_list(opt(cfg, k["fields"], ["amount"]))
-    cur_f, date_f = opt(cfg, k["currency_field"], "currency"), opt(cfg, k["date_field"], "date")
-    wanted = {target} | {str(get(r, cur_f) or "USD").upper() for r in recs}
+    cur_f, date_f = _named(cfg, k["currency_field"], "currency"), _named(cfg, k["date_field"], "date")
+    fallback = str(opt(cfg, k["source_currency"], "USD")).upper()
+
+    def source_of(r: Rec) -> str:
+        return str((get(r, cur_f) if cur_f else None) or fallback).upper()
+
+    wanted = {target} | {source_of(r) for r in recs}
     rates = _rates(ctx, opt(cfg, k["rate_table"], "fx_rate"), wanted)
     if target not in rates:
         raise StepError(f"no rate for the target currency {target}")
     out, rejected = [], []
     for r in recs:
-        src = str(get(r, cur_f) or "USD").upper()
-        rd = parse_ts(get(r, date_f))
+        src = source_of(r)
+        rd = parse_ts(get(r, date_f)) if date_f else None
         on = ctx.now.date() if by_run or rd is None else rd.date()
         if src not in rates:
-            rejected.append(Reject(r, cur_f, "fx", src, f"no rate for {src} on {on.isoformat()}"))
+            rejected.append(Reject(r, cur_f or None, "fx", src, f"no rate for {src} on {on.isoformat()}"))
             continue
         c, bad = clone(r), None
         for f in fields:
@@ -129,7 +144,7 @@ def x_fx(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
         if bad:
             rejected.append(bad)
             continue
-        if get(r, cur_f) is not None or src != target:
+        if cur_f and (get(r, cur_f) is not None or src != target):
             put(c, cur_f, target)
         out.append(c)
     return StepResult(out, rejected, {})
