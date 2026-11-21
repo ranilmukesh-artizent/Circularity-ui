@@ -13,10 +13,11 @@ derived from it and from the case's approval, execution steps and outcome (see d
 | closed | every step acknowledged | (end) |
 
 Every move writes the stage log, a domain event `case.stage_changed` and, through the action that caused it, the
-action journal.
+action journal. A move to `reeval` is a case request: the case-triggered (decision) workflows run (plan 6 C6).
 """
 
 import json
+import logging
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -58,6 +59,19 @@ def move(s: Session, c: store.Case, to: str, reason: str, actor: str, seq: int |
         text("INSERT INTO domain_event (type, seq, case_id, payload) VALUES ('case.stage_changed', :s, :c, CAST(:p AS jsonb))"),
         p,
     )
+    if to == "reeval":
+        _case_request(s, c["id"])
+
+
+def _case_request(s: Session, case_id: str) -> None:
+    """The case needs a new decision: the published case-triggered (decision) workflows run (plan 6 C6,
+    di/workflow/triggers.py on_case). In a savepoint of the caller's transaction: a trigger never fails the move."""
+    try:
+        from di.workflow import triggers
+
+        triggers.safely(triggers.on_case, s, case_id)
+    except Exception:  # never let a trigger break the stage move
+        logging.getLogger("di.cases").exception("case request triggers for %s failed", case_id)
 
 
 def history(s: Session, case_id: str) -> list[dict]:

@@ -105,19 +105,20 @@ def _accept(ev: dict, source_id: str) -> dict:
         job = None if status in ("paused", "disconnected", "unavailable") else enqueue_sync(s, source_id, "webhook")
         s.commit()
     if ev.get("type") != "sim.reset":
-        _trigger_workflows(source_id)
+        _trigger_workflows(source_id, ev.get("type"))
     out = {"accepted": True, "source_id": source_id, "type": ev.get("type"), "queued_job": job}
     return out | ({"instruction": instruction} if instruction else {})
 
 
-def _trigger_workflows(source_id: str) -> None:
-    """Plan 6 C6: the source's event-triggered workflows run (di/workflow/triggers.py). Its own transaction, after the
-    sync was committed: a trigger that fails is logged and never fails the event."""
+def _trigger_workflows(source_id: str, event_type: object = None) -> None:
+    """Plan 6 C6: the source's event-triggered workflows run (di/workflow/triggers.py), those whose event type matches
+    the event's. Its own transaction, after the sync was committed: a trigger that fails is logged and never fails the
+    event."""
     from di.workflow import triggers
 
     try:
         with SessionLocal() as s:
-            triggers.safely(triggers.on_event, s, source_id)
+            triggers.safely(triggers.on_event, s, source_id, event_type if isinstance(event_type, str) else None)
             s.commit()
     except Exception:
         log.exception("workflow triggers for %s failed", source_id)

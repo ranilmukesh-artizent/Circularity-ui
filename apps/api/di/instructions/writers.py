@@ -27,9 +27,16 @@ A writer raises `NotApplicable` when the case has nothing for that system to act
 ship-to): the step is then acknowledged by the simulated adapter, as the kinds without a mock write are. `Waiting`
 means the step cannot be sent yet (delivery waits for the carrier's proof of delivery). `Refused` is a business
 refusal that a retry will not change; a SourceError of kind "unavailable" or "auth" is retried.
+
+The target's outbound workflow, once published here (di/instructions/outbound.py), may set the HTTP timeout of the
+writes (`timeout`, its delivery method's Timeout) and, for Oracle Depot Repair, which repair order its write connector
+makes (`operation_for`: Refurbishment or Teardown). Without one every write is as described above.
 """
 
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -43,7 +50,7 @@ from di.config import get_settings
 from di.connectors.http import SourceClient, SourceError
 from di.connectors.registry import ADAPTERS
 from di.execution import ex_doc_num, ex_doc_ref, ex_kg, ex_move_raw, line_actuals
-from di.instructions.queue import journal_ref
+from di.instructions.queue import SYSTEM_OF, journal_ref
 from di.reads.common import FAC_LOC, case_demand, demand_order
 
 OTM_DOMAIN = "NORTHFIELD"
@@ -78,10 +85,30 @@ class Sent:
     detail: dict = field(default_factory=dict)  # what later steps or the event matching need
 
 
+_TIMEOUT: ContextVar[float | None] = ContextVar("write_timeout", default=None)
+
+
+@contextmanager
+def timeout(seconds: float | None) -> Iterator[None]:
+    """The HTTP timeout of the writes made inside (the bound outbound workflow's delivery method, di/instructions/
+    outbound.py); None: the client's own."""
+    tok = _TIMEOUT.set(seconds)
+    try:
+        yield
+    finally:
+        _TIMEOUT.reset(tok)
+
+
+def current_timeout() -> float | None:
+    return _TIMEOUT.get()
+
+
 def client(s: Session, source_id: str) -> SourceClient:
     """The connector's own client (auth, fetch log) for a write."""
     a = ADAPTERS[source_id]
-    return SourceClient(source_id, get_settings().source_sim_url.rstrip("/") + a.base_path, a.auth(), s)
+    url = get_settings().source_sim_url.rstrip("/") + a.base_path
+    t = _TIMEOUT.get()
+    return SourceClient(source_id, url, a.auth(), s) if t is None else SourceClient(source_id, url, a.auth(), s, timeout=t)
 
 
 def _step(c: store.Case, ins: dict) -> dict:
@@ -364,3 +391,18 @@ WRITERS = {
     "pod": pod,
     "finance": finance,
 }
+
+
+def operations(system: str) -> list[str]:
+    """The write operations of a target system (the step kinds written to it): the choices of a write connector's
+    Target operation. oms: order, pod; repair: repair, teardown; tms: transport; wms: move; erp: finance."""
+    return [k for k, sys in SYSTEM_OF.items() if sys == system]
+
+
+def operation_for(kind: str, operation: str | None) -> str:
+    """The write a step of `kind` makes when its target's write connector names `operation`: that operation when it
+    is the same call with another option (Oracle Depot Repair's repair order: Refurbishment `repair` or Teardown
+    `teardown`), else the step's own (an allocation is never sent as a delivery)."""
+    if operation and operation != kind and kind in WRITERS and WRITERS.get(operation) is WRITERS[kind]:
+        return operation
+    return kind

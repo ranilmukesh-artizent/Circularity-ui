@@ -10,9 +10,19 @@ add noise to the run list. Run now (workflow.run) is not a trigger and keeps its
   queues them (`tick()`). Counting from what the database holds keeps the suite's golden screens still: on the pinned
   as-of time every seeded schedule ran less than its interval ago (the demo's last runs are minutes old), so nothing
   is due, and the suite's worker is stopped anyway (scripts/dev/api-test.sh).
-- event (`on_event`): a webhook for the workflow's source (di/connectors/webhook.py, both routes).
+- event (`on_event`): a webhook for the workflow's source (di/connectors/webhook.py, both routes), of the workflow's
+  event type when it has one (an Event trigger block's setting; `*` patterns as in fnmatch).
 - approval (`on_approval`): an instruction queued for the workflow's target system (di/instructions/queue.py).
-- file (`on_file`) and case (`on_case`): helpers for the file intake and the case request; nothing calls them yet.
+- file (`on_file`, through `file_arrived`): a sync of a source that delivers files (an SFTP or CSV drop: the Sims
+  partner drop) read new records (di/worker.py, the `sync.source` job).
+- case (`on_case`): a case needs a new decision, i.e. it moves to re-evaluation (declined, or changed after approval;
+  di/cases/lifecycle.py move).
+
+**The trigger blocks.** A graph with a Scheduler (x_sched) or Event trigger (x_evtrig) block sets the workflow's
+trigger (`from_graph`): `{"t": "schedule", "min": interval_min}` or `{"t": "event", "type": event_type}` (no type: any
+event). `trigger_of(w)` is what the triggers read: the block's trigger in the graph that runs (`graph_for_run`), else the
+Settings tab's `trig`. Save keeps `trig` in step with the block (di/actions/workflows.py save), so the list's trigger
+text and the Settings tab say the same ("Set by the Scheduler block").
 
 A trigger queues a `workflow.run` job `{wf, trig}` without a run record (the label is the run record's `trig`:
 Schedule, Event, File, Approval, Case). A webhook or an approval therefore changes no workspace state when it is
@@ -24,6 +34,7 @@ di.connectors.sync.enqueue_sync does it until the job queue has dedupe keys).
 DI_WORKFLOW_TRIGGERS=false switches every trigger off (`enabled()`); the api suite does (tests/conftest.py).
 """
 
+import fnmatch
 import logging
 import os
 from datetime import datetime
@@ -42,8 +53,39 @@ NOT_RUN = ("paused", "disconnected", "unavailable")  # the sources the connector
 MIN_MS = 60_000
 
 
+TRIGGER_BLOCKS = ("x_sched", "x_evtrig")
+
+
+def from_graph(g: Any) -> dict | None:
+    """The trigger a graph's Scheduler or Event trigger block sets (the first such block), or None."""
+    from di.workflow.blocks import node_cfg
+
+    nodes = g.get("nodes") if isinstance(g, dict) else None
+    for n in nodes if isinstance(nodes, list) else []:
+        if not isinstance(n, dict) or n.get("k") != "xf" or n.get("ref") not in TRIGGER_BLOCKS:
+            continue
+        cfg = node_cfg(n)
+        if n["ref"] == "x_sched":
+            m = cfg.get("interval_min")
+            return {"t": "schedule", "min": int(m) if isinstance(m, int | float) and not isinstance(m, bool) and m >= 1 else 60}
+        et = cfg.get("event_type")
+        return {"t": "event"} | ({"type": et.strip()} if isinstance(et, str) and et.strip() else {})
+    return None
+
+
+def _run_graph(w: dict) -> Any:
+    """The graph that runs, without building a template's graph (templates have no trigger blocks)."""
+    pub = w.get("pub")
+    return (pub or {}).get("graph") if pub else w.get("graph")
+
+
+def trigger_of(w: dict) -> dict:
+    """The workflow's trigger: its trigger block's, else the Settings tab's."""
+    return from_graph(_run_graph(w)) or w.get("trig") or {}
+
+
 def _kind(w: dict) -> str | None:
-    return (w.get("trig") or {}).get("t")
+    return trigger_of(w).get("t")
 
 
 def _source_ok(s: Session, w: dict) -> bool:
@@ -111,7 +153,7 @@ def due(s: Session, now: datetime) -> list[tuple[str, str]]:
     t = ms(now.isoformat())
     out = []
     for w in _matching(s, "schedule"):
-        every = (w.get("trig") or {}).get("min")
+        every = trigger_of(w).get("min")
         if not isinstance(every, int | float) or isinstance(every, bool) or every <= 0:
             continue
         base = max(int((w.get("last") or {}).get("ts") or 0), int(w.get("updated") or 0))
@@ -126,22 +168,61 @@ def tick(s: Session, now: datetime) -> list[str]:
 
 
 # ---------------------------------------------------------------- the other triggers
-def on_event(s: Session, source_id: str) -> list[str]:
-    """A webhook for this source: its published event-triggered workflows, except the one bound to the source's sync
-    (source_config.workflow, plan 6 C5): the webhook already queues the sync, which runs that workflow, so firing it
-    here too would ingest the same change twice."""
+def _bound(s: Session, source_id: str) -> str | None:
     from di.connectors import lifecycle
 
-    bound = (state.get(s, lifecycle.COLLECTION, source_id) or {}).get("workflow")
+    return (state.get(s, lifecycle.COLLECTION, source_id) or {}).get("workflow")
+
+
+def _type_ok(w: dict, event_type: str | None) -> bool:
+    want = trigger_of(w).get("type")
+    return not want or (event_type is not None and fnmatch.fnmatchcase(event_type, want))
+
+
+def on_event(s: Session, source_id: str, event_type: str | None = None) -> list[str]:
+    """A webhook for this source (an event of `event_type`): its published event-triggered workflows whose event type
+    matches (or that take any event), except the one bound to the source's sync (source_config.workflow, plan 6 C5):
+    the webhook already queues the sync, which runs that workflow, so firing it here too would ingest the same change
+    twice."""
+    bound = _bound(s, source_id)
     return [
         w["id"] for w in _matching(s, "event", source_id)
-        if w["id"] != bound and fire(s, w["id"], LABEL["event"]) is not None
+        if w["id"] != bound and _type_ok(w, event_type) and fire(s, w["id"], LABEL["event"]) is not None
     ]  # fmt: skip
 
 
 def on_file(s: Session, source_id: str) -> list[str]:
-    """A file landed for this source: its published file-triggered workflows."""
-    return _fire_all(s, "file", source_id)
+    """New files landed for this source: its published file-triggered workflows, except the one bound to the source's
+    sync (the sync that read the files ran it)."""
+    bound = _bound(s, source_id)
+    return [w["id"] for w in _matching(s, "file", source_id) if w["id"] != bound and fire(s, w["id"], LABEL["file"]) is not None]
+
+
+def delivers_files(source_id: str) -> bool:
+    """A source that delivers files (an SFTP or CSV drop: the demo's arrival channel `file`)."""
+    from di.actions.workflows import src
+    from di.reads.reference import channels
+
+    so = src(source_id)
+    return so is not None and "file" in channels(so)
+
+
+def file_arrived(source_id: str, records_read: int) -> list[str]:
+    """After a sync of the source (the worker's `sync.source` job): when it is a file source and the sync read new
+    records (new files: an unchanged drop reads none), its file-triggered workflows run. Its own transaction; never
+    raises, so a trigger never fails the sync."""
+    from di.db import SessionLocal
+
+    try:
+        if records_read <= 0 or not enabled() or not delivers_files(source_id):
+            return []
+        with SessionLocal() as s:
+            out = safely(on_file, s, source_id)
+            s.commit()
+        return out
+    except Exception:
+        log.exception("file triggers for %s failed", source_id)
+        return []
 
 
 def on_approval(s: Session, target_id: str) -> list[str]:
@@ -151,18 +232,20 @@ def on_approval(s: Session, target_id: str) -> list[str]:
 
 def on_case(s: Session, case_id: str) -> list[str]:
     """A case asked for a decision: the published case-triggered (decision) workflows."""
+    if not enabled():  # called inside the case actions: no workflow scan while triggers are off
+        return []
     log.debug("case request %s", case_id)
     return _fire_all(s, "case")
 
 
-def safely(fn, s: Session, arg: str) -> list[str]:
+def safely(fn, s: Session, *args: Any) -> list[str]:
     """Run a trigger inside a savepoint: a trigger that fails is logged and undone, and never breaks its caller's
-    transaction (a webhook, an instruction)."""
+    transaction (a webhook, an instruction, a case's stage move)."""
     try:
         with s.begin_nested():
-            return fn(s, arg)
+            return fn(s, *args)
     except Exception:
-        log.exception("trigger %s(%s) failed", getattr(fn, "__name__", fn), arg)
+        log.exception("trigger %s%s failed", getattr(fn, "__name__", fn), args)
         return []
 
 

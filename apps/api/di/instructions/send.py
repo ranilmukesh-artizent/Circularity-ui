@@ -12,6 +12,11 @@ A send locks its row, calls the step's writer and records the outcome:
 A system that is down or refuses the credentials raises; the error is kept on the row and the job queue retries with
 exponential backoff (di/jobs.py), up to `job_max_attempts`.
 
+When the target has an outbound workflow published here (di/instructions/outbound.py), its delivery method's changed
+Timeout is the HTTP timeout of the write, its Retries how many times a transient failure is tried again before the row
+fails (at most `job_max_attempts` tries in all), and its write connector's Target operation picks the repair order
+type for Oracle Depot Repair. Without one (the demo), or with the defaults, a send is exactly as described above.
+
 `resend` (instruction.resend, or a test) sends an instruction again even when it was acknowledged: the writers are
 idempotent, so the system answers with the document it already has.
 """
@@ -27,7 +32,7 @@ from di.actions.pipeline import SYSTEM, CallContext, invoke
 from di.cases import store
 from di.config import get_settings
 from di.db import SessionLocal
-from di.instructions import queue, writers
+from di.instructions import outbound, queue, writers
 
 log = logging.getLogger("di.instructions")
 
@@ -46,12 +51,15 @@ def send(iid: int, resend: bool = False) -> str:
             s.commit()
             return "failed"
         prev = _earlier(s, ins)
-        writer = writers.WRITERS.get(ins["kind"])
+        cfg = outbound.settings(s, ins["system"])  # the target's outbound workflow published here; {}: none (the demo)
+        kind = writers.operation_for(ins["kind"], cfg.get("operation"))
+        writer = writers.WRITERS.get(kind)
         s.execute(text("UPDATE instruction SET attempts = attempts + 1, updated_at = now() WHERE id = :i"), {"i": iid})
         try:
             if writer is None:
                 raise writers.NotApplicable(f"no write for {ins['kind']} steps in the mocked systems")
-            out = writer(s, ins, c, prev)
+            with writers.timeout(cfg.get("timeout_s")):
+                out = writer(s, ins if kind == ins["kind"] else {**ins, "kind": kind}, c, prev)
         except writers.NotApplicable as e:
             if resend:
                 s.commit()
@@ -74,7 +82,10 @@ def send(iid: int, resend: bool = False) -> str:
         except Exception as e:
             # retried by the job queue; the row keeps the error, and fails with the job's last attempt
             attempts = ins["attempts"] + 1
-            final = attempts >= get_settings().job_max_attempts
+            most = get_settings().job_max_attempts
+            if "retries" in cfg:  # the delivery method's Retries: tries after the first, within the job queue's own
+                most = min(most, int(cfg["retries"]) + 1)
+            final = attempts >= most
             _update(s, iid, last_error=f"{type(e).__name__}: {e}"[:1000], **({"status": "failed"} if final else {}))
             s.commit()
             raise
