@@ -11,15 +11,20 @@ Two golden values are synthetic in the demo and are not compared, by design (see
   the expected activity is the demo's own frActivity with those runs removed (`activity_without_workflow_runs`).
 
 Plan 6 B4 (decision-log D-Fabric): the Developer's Connection Fabric KPI tiles are real; their numbers are asserted to
-equal the Monitor and the Source Map at the same moment instead of the demo's (test_kpis).
+equal the Monitor and the Source Map at the same moment instead of the demo's (test_kpis). The same holds for the
+alerts' sources and conflicts and the Developer's briefing lines on them (plan 6 follow-up): they are asserted against
+the source list and the conflict queue at the same moment (test_alerts, test_briefing); every other field is the
+demo's. No golden file was edited.
 """
 
 import os
 import re
 
 import pytest
+from sqlalchemy import text
 
 from di import golden
+from di.db import engine
 from di.engine.jsmath import js_round
 from di.reads.common import to_fixed
 from tests import starting
@@ -61,9 +66,73 @@ def test_every_account_is_in_the_golden_file():
     assert len(ACCOUNTS) == 11
 
 
+REAL_ALERTS = ("src", "conf")  # the alert kinds that come from the live Connection Fabric (docstring)
+
+
+def with_fabric(read, acct: str):
+    """`read()` together with the Connection Fabric at the same moment: the sources as the Source Map shows them, the
+    open conflicts (the Conflict Queue's count) and those that hold up a decision of the account (the menu badge's
+    rule). The reads are repeated when a sync lands between them (the worker keeps syncing while the tests run)."""
+
+    def fabric():
+        hd = h("developer")
+        srcs = client.get("/api/screens/integration/sources", headers=hd).json()["sources"]
+        n = client.get("/api/screens/integration/conflicts", params={"limit": 1}, headers=hd).json()["counts"]["open"]
+        held = client.get("/api/screens/nav", headers=h(acct)).json()["badges"]["sections"]["conf"]
+        return srcs, n, held
+
+    for _ in range(5):
+        before, got, after = fabric(), read(), fabric()
+        if before == after:
+            return got, before
+    raise AssertionError("the Connection Fabric kept changing")
+
+
+def plural(n: int, one: str, many: str) -> str:
+    return f"{n} {one if n == 1 else many}"
+
+
 @pytest.mark.parametrize("acct", ACCOUNTS)
 def test_briefing(acct):
-    same(get("/briefing", acct), HOME[acct]["briefing"])
+    """Every account's briefing is the demo's, but the Developer's Connection Fabric lines (decision-log D-Fabric):
+    the stale or unconnected sources and the open conflicts are the live fabric's (the source list and the conflict
+    queue at the same moment; the conflicts line also says how many hold up a decision, the menu badge's rule), and
+    the failed workflows are the stored workflows whose last run failed (the seeded state: the demo's one). An Admin's
+    briefing stops at six lines, before these."""
+    if acct != "developer":
+        same(get("/briefing", acct), HOME[acct]["briefing"])
+        return
+    got, (srcs, n, held) = with_fabric(lambda: get("/briefing", acct), acct)
+    want = HOME[acct]["briefing"]
+    st = [s for s in srcs if s["status"] in ("stale", "unavailable")]
+    names = (": " + ", ".join(s["name"] for s in st)) if st else ""
+    assert got[0] == {"text": f"{len(st)} source{'' if len(st) == 1 else 's'} stale or not connected{names}.",
+                      "go": "integration/map", "n": len(st)}  # fmt: skip
+    assert got[1] == want[1]  # the seeded failed workflow
+    line = plural(n, "open source conflict", "open source conflicts") + "; " + plural(held, "holds", "hold") + " up a decision."
+    assert got[2] == {"text": line, "go": "integration/conflicts", "n": n}
+    same(got[3:], want[3:])
+
+
+def test_the_developer_briefing_lists_a_workflow_whose_real_run_failed():
+    from di import state
+    from di.db import SessionLocal
+
+    with SessionLocal() as s:
+        w = state.get(s, "workflows", "WF-101")
+        w["last"] = {"ts": w["last"]["ts"], "state": "failed", "dur": 1, "rows": 0, "note": "Salesforce failed"}
+        state.put(s, "workflows", "WF-101", w)
+        s.commit()
+    try:
+        line = next(x for x in get("/briefing", "developer") if x["go"] == "integration/studio")
+        names = "Ingest · Salesforce Sales Cloud, Ingest · Oracle Depot Repair"
+        assert line["text"] == f"2 workflows failed on the last run: {names}."
+        assert line["n"] == 2
+        wf = [a for a in get("/alerts", "developer") if a["kind"] == "wf"]
+        seeded = HOME["developer"]["alerts"][0]["s"].split(" · ")[0]  # WF-116's seeded failure note
+        assert [(a["id"], a["s"]) for a in wf] == [("wf:WF-101", "Salesforce failed"), ("wf:WF-116", seeded)]
+    finally:
+        state.reset(["workflows"])
 
 
 @pytest.mark.parametrize("acct", ACCOUNTS)
@@ -73,11 +142,43 @@ def test_tasks(acct):
 
 @pytest.mark.parametrize("acct", ACCOUNTS)
 def test_alerts(acct):
+    """The demo's alerts, but the stale or failing sources (one alert each, from source_system as the Connection Fabric
+    shows it) and the open conflicts (one alert for the whole queue: how many are open and how many hold up a
+    decision), which are the live fabric's (decision-log D-Fabric). Every other alert, and every field of the others, is
+    the demo's."""
     expected = [
         {**a, "s": re.sub(r" · [^·]* ago$", "", a["s"])} if a["kind"] == "wf" else a  # the run's random age (docstring)
         for a in HOME[acct]["alerts"]
     ]
-    same(get("/alerts", acct), expected)
+    got, (srcs, n, held) = with_fabric(lambda: get("/alerts", acct), acct)
+    same([a for a in got if a["kind"] not in REAL_ALERTS], [a for a in expected if a["kind"] not in REAL_ALERTS])
+    sees_src = any(a["kind"] in ("src", "cred") for a in expected)  # the accounts that see the Connection Fabric
+    st = [s for s in srcs if s["status"] in ("stale", "unavailable")] if sees_src else []
+    assert sorted(a["id"] for a in got if a["kind"] == "src") == sorted("src:" + s["id"] for s in st)
+    for a in (a for a in got if a["kind"] == "src"):
+        s = next(x for x in st if "src:" + x["id"] == a["id"])
+        assert a["t"].startswith(s["name"] + " · ") and a["s"].startswith(s["vendor"]) and a["go"] == "integration/map"
+    conf = [a for a in got if a["kind"] == "conf"]
+    if any(a["kind"] == "conf" for a in expected) and n:
+        t = plural(n, "open source conflict", "open source conflicts")
+        assert conf == [{"id": "cf:open", "kind": "conf", "ic": "conflict", "h": "dec", "t": t,
+                         "s": plural(held, "holds", "hold") + " up a decision", "sev": 1, "go": "integration/conflicts",
+                         "ack": False}]  # fmt: skip
+    else:
+        assert not conf
+
+
+def test_a_failing_or_expired_source_raises_one_alert():
+    """A source a sync left failing or with an expired credential shows as stale on the Source Map: one alert each."""
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE source_system SET status = 'auth_expired' WHERE id = 'crm'"))
+        conn.execute(text("UPDATE source_system SET status = 'failing' WHERE id = 'lease'"))
+    try:
+        got = {a["id"]: a for a in get("/alerts", "developer") if a["kind"] == "src"}
+        assert got["src:crm"]["t"].endswith(" · credential expired") and got["src:crm"]["sev"] == 2
+        assert got["src:lease"]["t"].endswith(" · sync failing") and got["src:lease"]["sev"] == 2
+    finally:
+        starting.reset()
 
 
 FABRIC_TILES = ("wffail", "stale", "mapx", "conf", "health")  # the Developer's Connection Fabric tiles

@@ -26,7 +26,6 @@ from di.reads.common import (
     REQ_KIND,
     SOURCES,
     STARTING_CONFLICTS,
-    STARTING_FAILED_WORKFLOWS,
     STARTING_MAPPINGS,
     Case,
     account,
@@ -46,6 +45,9 @@ from di.reads.common import (
     step_owner,
     ti_conf,
     to_fixed,
+)
+from di.reads.common import (
+    STARTING_FAILED_WORKFLOWS as STARTING_FAILED_WORKFLOWS,  # re-exported: di.reads.fabric reads it from here
 )
 from di.reads.constants import ROUTES
 from di.reads.context import visible_cases, visible_rows
@@ -462,12 +464,19 @@ def briefing(ctx: CallContext) -> list[dict]:
         add(f"{len(inb)} return{_plural(len(inb), '', 's')} expected at {a.warehouse}.", "product/expected", len(inb))
         add(f"{len(hand)} handed-off item{_plural(len(hand), '', 's')} waiting on WMS.", "command/handed", len(hand))
         add(f"{len(cs)} returned asset{_plural(len(cs), '', 's')} at {a.warehouse} now.", "product/received", len(cs))
-    if role in ("Developer", "Admin"):
-        srcs = list(SOURCES.values())
-        st = [s for s in srcs if s["status"] in ("stale", "unavailable")]
-        gp = [s for s in srcs if s["status"] != "unavailable" and not STARTING_MAPPINGS.get(s["id"])]
-        wf = STARTING_FAILED_WORKFLOWS
-        cf = [c for c in STARTING_CONFLICTS if c["status"] == "open"]
+    if role in ("Developer", "Admin") and len(out) < (6 if role == "Admin" else 5):
+        # the live Connection Fabric (decision-log D-Fabric), as Home's tiles and alerts read it: the sources the Source
+        # Map shows stale or not connected, the stored workflows whose last run failed, the open conflicts and how many
+        # of them hold up a decision (the menu badge's rule). Field mappings are still the demo's reference.
+        from di.reads.fabric import live, open_conflicts_now, stale_now
+        from di.reads.workflows import wf_stat
+        from di.screens.nav import held_conflicts
+
+        f = live(ctx.session)
+        st = stale_now(f)
+        gp = [s for s in SOURCES.values() if s["status"] != "unavailable" and not STARTING_MAPPINGS.get(s["id"])]
+        wf = [w["name"] for w in f.workflows if wf_stat(w) == "failing"]
+        n_cf = open_conflicts_now(f)
         names = (": " + ", ".join(s["name"] for s in st)) if st else ""
         add(f"{len(st)} source{_plural(len(st), '', 's')} stale or not connected{names}.", "integration/map", len(st))
         if wf:
@@ -476,8 +485,13 @@ def briefing(ctx: CallContext) -> list[dict]:
                 "integration/studio",
                 len(wf),
             )
-        if cf:
-            add(f"{len(cf)} open source conflict{'s' if len(cf) > 1 else ''}.", "integration/conflicts", len(cf))
+        if n_cf:
+            held = held_conflicts(ctx, ctx.session)
+            add(
+                f"{n_cf} open source conflict{'s' if n_cf > 1 else ''}; {held} hold{'s' if held == 1 else ''} up a decision.",
+                "integration/conflicts",
+                n_cf,
+            )
         if gp:
             add(f"{len(gp)} source{'s have' if len(gp) > 1 else ' has'} no field mapping.", "integration/map", len(gp))
     if role == "Admin":

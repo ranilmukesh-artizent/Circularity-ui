@@ -40,8 +40,12 @@ Differences from the demo, by design (each documented where it is computed, and 
 - The workflow catalogue (names, statuses, the one failing ingest) is the demo's wfSeed without its random run data.
 - kpis (Developer): the Connection Fabric tiles are real (plan 6 B4, decision-log D-Fabric): failing workflows, stale
   or unconnected sources, exceptions, open conflicts and the integration health with its hourly line equal the Monitor
-  and the Source Map at the same moment (di.reads.fabric.live), not the demo's hash buckets and fixed sources. The
-  alerts still list the demo's stale sources and conflicts.
+  and the Source Map at the same moment (di.reads.fabric.live), not the demo's hash buckets and fixed sources.
+- alerts and the Developer's briefing read the same live fabric (plan 6 follow-up): one alert per source the Source Map
+  shows stale or not connected (source_system: stale, failing, auth_expired, unavailable, disconnected), the stored
+  workflows whose last run failed (their failure note), and the open conflicts as one alert, "N open source conflicts"
+  with how many hold up a decision (di.screens.nav.held_conflicts, the menu badge's rule), instead of one per demo
+  conflict. In the seeded state the failing workflow is the demo's; the sources and conflicts are the connectors'.
 """
 
 import math
@@ -84,14 +88,14 @@ from di.reads.fabric import (
     failing_now,
     health,
     live,
-    open_conflicts,
     open_conflicts_now,
     stale_now,
-    stale_sources,
     wf_stat,
     workflows,
     ws_events,
 )
+from di.reads.workflows import wf_stat as stored_stat
+from di.screens.nav import held_conflicts
 
 router = APIRouter(prefix="/api/screens/home", tags=["screens: home"])
 
@@ -124,10 +128,6 @@ def delta(cur: float | None, prev: float | None, good_up: bool | None) -> dict |
     good = "" if good_up is None else "good" if up == good_up else "bad"
     pct = to_fixed(abs(p), 1) if abs(p) < 10 else to_fixed(abs(p), 0)
     return {"cls": good, "tip": "Against the same measure 30 days earlier", "text": f"{'▲' if up else '▼'} {pct}%"}
-
-
-# ---------------------------------------------------------------- the workflow catalogue (the demo's wfSeed)
-WF_FAILED_NOTE = "Validation & enrichment: 3 retries exhausted (connection reset)"
 
 
 # ---------------------------------------------------------------- tasks and alerts
@@ -188,9 +188,10 @@ def alerts(ctx: CallContext) -> list[dict]:
                     }
                 )
     if can_page(ctx, "integration"):
+        f = live(ctx.session)  # the Connection Fabric as its screens show it now (the tiles read the same object)
         if can_page(ctx, "integration", "studio"):
-            for w in workflows():
-                if wf_stat(w) == "failing":
+            for w in f.workflows:
+                if stored_stat(w) == "failing":
                     # the demo appends " · <age of the last run>", drawn at random when it seeds its workflows
                     out.append(
                         {
@@ -199,29 +200,15 @@ def alerts(ctx: CallContext) -> list[dict]:
                             "ic": "workflow",
                             "h": "alert",
                             "t": w["name"] + " is failing",
-                            "s": WF_FAILED_NOTE,
+                            "s": (w.get("last") or {}).get("note") or "Last run failed",
                             "sev": 2,
                             "go": "integration/studio/" + w["id"],
                             "ack": False,
                             "wf": w["id"],
                         }
                     )
-        for s in stale_sources():
-            stale = s["status"] == "stale"
-            out.append(
-                {
-                    "id": "src:" + s["id"],
-                    "kind": "src",
-                    "ic": "clock" if stale else "unplug",
-                    "h": "dec" if stale else "alert",
-                    "t": s["name"] + " · " + ("feed is stale" if stale else "not connected"),
-                    "s": s["vendor"] + (" · " + s["note"].split(".")[0] if s.get("note") else ""),
-                    "sev": 2 if stale else 1,
-                    "go": "integration/map",
-                    "ack": False,
-                    "src": s["id"],
-                }
-            )
+        for s in stale_now(f):
+            out.append(source_alert(s))
         for s in SOURCES.values():
             if s["status"] == "live" and s.get("credAt") and _cred_days(s) <= 14:
                 out.append(
@@ -238,22 +225,56 @@ def alerts(ctx: CallContext) -> list[dict]:
                         "src": s["id"],
                     }
                 )
-        if can_page(ctx, "integration", "conflicts"):
-            for c in open_conflicts():
-                out.append(
-                    {
-                        "id": "cf:" + c["id"],
-                        "kind": "conf",
-                        "ic": "conflict",
-                        "h": "dec",
-                        "t": f"{c['id']} · {c['kind']} differs",
-                        "s": f"{c['a']['src']} and {c['b']['src']} · {c['asset']}",
-                        "sev": 1,
-                        "go": "integration/conflicts",
-                        "ack": False,
-                    }
-                )
+        if can_page(ctx, "integration", "conflicts") and (n_cf := open_conflicts_now(f)):
+            held = held_conflicts(ctx, ctx.session)
+            out.append(
+                {
+                    "id": "cf:open",
+                    "kind": "conf",
+                    "ic": "conflict",
+                    "h": "dec",
+                    "t": _plural(n_cf, "open source conflict", "open source conflicts"),
+                    "s": _plural(held, "holds", "hold") + " up a decision",
+                    "sev": 1,
+                    "go": "integration/conflicts",
+                    "ack": False,
+                }
+            )
     return sorted(out, key=lambda x: -x["sev"])  # the demo sorts unacknowledged first, then by severity (stable)
+
+
+def _plural(n: int, one: str, many: str) -> str:
+    return f"{n} {one if n == 1 else many}"
+
+
+# what a source's connector status says in its alert: (icon, hue, text, severity); a paused source keeps the status it
+# had (the Source Map's rule), so it is listed by its screen status
+_SRC_ALERT = {
+    "failing": ("clock", "dec", "sync failing", 2),
+    "auth_expired": ("key", "dec", "credential expired", 2),
+    "stale": ("clock", "dec", "feed is stale", 2),
+    "unavailable": ("unplug", "alert", "not connected", 1),
+}
+
+
+def source_alert(s: dict) -> dict:
+    """One alert for a source the Connection Fabric shows stale or not connected (source_system's status: stale,
+    failing or auth_expired show as stale; unavailable and disconnected as not connected), with its note's first
+    sentence, as the demo's frAlerts words it."""
+    st = s["status"] if s.get("paused") else s.get("connectorStatus") or s["status"]
+    ic, hue, what, sev = _SRC_ALERT.get(st) or _SRC_ALERT["stale" if s["status"] == "stale" else "unavailable"]
+    return {
+        "id": "src:" + s["id"],
+        "kind": "src",
+        "ic": ic,
+        "h": hue,
+        "t": s["name"] + " · " + what,
+        "s": s["vendor"] + (" · " + s["note"].split(".")[0] if s.get("note") else ""),
+        "sev": sev,
+        "go": "integration/map",
+        "ack": False,
+        "src": s["id"],
+    }
 
 
 # ---------------------------------------------------------------- KPI tiles per role (the demo's frKpis)
