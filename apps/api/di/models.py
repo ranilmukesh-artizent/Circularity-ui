@@ -21,6 +21,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Column,
+    Date,
     DateTime,
     ForeignKey,
     Identity,
@@ -367,4 +368,15 @@ source_secret = Table(
     Column("created_by", Text, nullable=False),
     CheckConstraint("kind IN ('auth', 'webhook')", name="source_secret_kind_check"),
     Index("source_secret_one_active", "source_id", "kind", unique=True, postgresql_where=text("active")),
+)
+
+# --- 0017 dated currency rates (plan 6 C4; di/workflow/steps/transform.py x_fx) --------------------------------------
+
+fx_rate = Table(
+    "fx_rate",
+    metadata,
+    Column("date", Date, primary_key=True),
+    Column("currency", Text, primary_key=True),
+    Column("usd_rate", Numeric(18, 6), nullable=False),  # units of the currency per USD
+    CheckConstraint("usd_rate > 0", name="fx_rate_positive"),
 )

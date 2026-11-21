@@ -1,4 +1,8 @@
-"""plan 6 C4 dated currency rates (reserved; filled by that task)
+"""dated currency rates for the Convert currency step (plan 6, task C4)
+
+`fx_rate` holds one rate per date and currency: how many units of the currency one USD buys. The x_fx step converts
+a record's amount at the newest rate dated on or before the record's date (or the run's). Seeded with the demo's
+fixed rates (di.connectors.generic.to_usd: 83.5 INR/USD, 0.92 EUR/USD, dated 2026-10-06), so numbers do not change.
 
 Revision ID: 0017
 Revises: 0016
@@ -9,7 +13,7 @@ DROP ... IF EXISTS, inserts ON CONFLICT DO NOTHING) so they can be re-applied wi
 upgrade head while the chain is being filled.
 """
 
-from alembic import op  # noqa: F401 - used once the task fills this migration
+from alembic import op
 
 revision = "0017"
 down_revision = "0016"
@@ -18,8 +22,22 @@ depends_on = None
 
 
 def upgrade() -> None:
-    pass
+    op.execute(
+        """
+CREATE TABLE IF NOT EXISTS fx_rate (
+  date      date          NOT NULL,
+  currency  text          NOT NULL,
+  usd_rate  numeric(18,6) NOT NULL CONSTRAINT fx_rate_positive CHECK (usd_rate > 0),
+  PRIMARY KEY (date, currency)
+);
+INSERT INTO fx_rate (date, currency, usd_rate) VALUES
+  ('2026-10-06', 'USD', 1),
+  ('2026-10-06', 'INR', 83.5),
+  ('2026-10-06', 'EUR', 0.92)
+ON CONFLICT DO NOTHING;
+"""
+    )
 
 
 def downgrade() -> None:
-    pass
+    op.execute("DROP TABLE IF EXISTS fx_rate")
