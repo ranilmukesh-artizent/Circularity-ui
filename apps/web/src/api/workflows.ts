@@ -66,6 +66,15 @@ interface Detail {
   failed_rows: { rec: string; field: string; value: string; rule: string }[];
 }
 type ApiSource = Source & { compl?: number; health?: { workflows?: string[] } };
+/** A block setting (di/workflow/blocks.py FieldSpec). */
+export type FieldType = 'text' | 'number' | 'select' | 'multi' | 'bool' | 'fields' | 'rules' | 'mapping';
+export interface FieldSpec {
+  key: string; label: string; type: FieldType; default: unknown; required: boolean; choices: string[] | null; help: string;
+  min: number | null; max: number | null; source: string | null;
+}
+export interface BlockSpec { ref: string; readonly: boolean; fields: FieldSpec[] }
+export interface Rule { field: string; check: string; arg?: string }
+interface BlocksAnswer { blocks: BlockSpec[]; resources?: Record<string, string[]> }
 
 const listA = () => cached<ListAnswer>('/api/screens/workflows');
 const detailA = (id: string) => cached<Detail>('/api/screens/workflows/' + encodeURIComponent(id));
@@ -267,6 +276,16 @@ function agents(): { name: string; tools: string[] }[] {
 export const agentsUsing = (tool: string): string[] => agents().filter((a) => a.tools.includes(tool)).map((a) => a.name);
 export const fixedStep = (id: string): { label: string; fields?: string[]; canon?: boolean } => ref('FXD')[id];
 export const sourceGroups = (): [string, string[], string][] => ref('FR_SRCG');
+
+// ---- block settings (GET /api/screens/workflows/blocks; di/workflow/blocks.py) ----
+const blocksA = () => cached<BlocksAnswer>('/api/screens/workflows/blocks');
+/** Every palette block's settings: its fields with their types, defaults and choices, keyed by spec key (an xf node's
+ *  transform id, else the node kind: conn, wconn, map, act, fixed, tool). */
+export function blockSpecs(): Record<string, BlockSpec> {
+  return Object.fromEntries(blocksA().blocks.map((b) => [b.ref, b]));
+}
+/** The resources each connection reads (the choices of a connector's Resources setting). */
+export const blockResources = (): Record<string, string[]> => blocksA().resources ?? {};
 
 // ---- changes (invoke) ----
 /** Save the draft; `retries` and `alert` are the Settings tab's run settings (frWfSet), saved with the workflow. */

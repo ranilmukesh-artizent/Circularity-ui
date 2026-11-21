@@ -2,6 +2,7 @@
 
     GET /api/screens/workflows?cat=&status=&src=&q=   the list (filtered), the status counts, the recent runs and what
                                                       needs attention
+    GET /api/screens/workflows/blocks                 the block catalogue: every palette block's settings (plan 6 C1)
     GET /api/screens/workflows/{id}                   one workflow: its graph, the saved version, the template graph,
                                                       the run history, records in and out of each step in the last run,
                                                       the last run as the canvas paints it, and its failed records
@@ -31,6 +32,7 @@ Facade (apps/web/src/api/workflows.ts) → here, export by export:
   attention, nowMs (`now`, the workspace clock the run times are on)
 - endpoint GET /api/screens/workflows/{id}: graphOf (`workflow.graph`), savedOf (`saved`), templateOf (`template`),
   history, runCounts for the last run (`run_counts`), runFromLast (`run_from_last`), failedRows (`failed_rows`)
+- endpoint GET /api/screens/workflows/blocks: blockSpecs, blockResources
 - endpoint GET /api/screens/integration/sources: usedBy (`health.workflows`), sources, source, sourceExists,
   sourceLabel, sourceShortLabel, channelsOf (`health.channels`), readableSources, writableSources,
   sourceCompleteness (`compl`), systemOf
@@ -253,6 +255,31 @@ def workflow_list(
         "templates": [{k: v for k, v in t.items() if k != "tpl"} for t in templates(session)],  # S.frTpl, no graphs
         "now": ms(clock.now().isoformat()),  # the workspace clock, which run times are on (the frontend's "ago")
     }
+
+
+@router.get("/blocks")
+def workflow_blocks(p: CurrentPrincipal):
+    """The block catalogue (di/workflow/blocks.py, plan 6 C1): every palette block's settings, with their defaults and
+    choices, and each connection's resources (the choices of a connector's Resources setting)."""
+    require_studio(p)
+    from di.workflow.blocks import catalogue
+
+    return {"blocks": catalogue(), "resources": _resources()}
+
+
+def _resources() -> dict[str, list[str]]:
+    """The resources each source's adapter reads (none for a source without an adapter)."""
+    try:
+        from di.connectors.registry import ADAPTERS
+    except Exception:  # noqa: BLE001 - the catalogue stands without the adapters
+        return {}
+    out: dict[str, list[str]] = {}
+    for sid, a in ADAPTERS.items():
+        try:
+            out[sid] = [r.name for r in a.resources()]
+        except Exception:  # noqa: BLE001 - one adapter that cannot list its resources leaves only its own list empty
+            out[sid] = []
+    return out
 
 
 @router.get("/{workflow_id}")
