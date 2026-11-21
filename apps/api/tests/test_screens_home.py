@@ -28,7 +28,7 @@ from di.db import engine
 from di.engine.jsmath import js_round
 from di.reads.common import to_fixed
 from tests import starting
-from tests.helpers import client, h
+from tests.helpers import client, h, live_stale_sources, with_live_source_tasks
 
 HOME = golden.load("screens/home")
 ACCOUNTS = sorted(HOME)
@@ -137,7 +137,12 @@ def test_the_developer_briefing_lists_a_workflow_whose_real_run_failed():
 
 @pytest.mark.parametrize("acct", ACCOUNTS)
 def test_tasks(acct):
-    same(get("/tasks", acct), HOME[acct]["tasks"])
+    """The demo's tasks, but the Developer's stale or unconnected sources come from the live Connection Fabric
+    (decision-log D-Fabric), in the same shape and place."""
+    want = HOME[acct]["tasks"]
+    if acct == "developer":
+        want = with_live_source_tasks(want, live_stale_sources())
+    same(get("/tasks", acct), want)
 
 
 @pytest.mark.parametrize("acct", ACCOUNTS)

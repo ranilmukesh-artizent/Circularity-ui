@@ -23,7 +23,7 @@ from di import golden
 from di.engine.jsmath import js_round
 from di.reads.common import fmt_n, to_fixed
 from tests import starting
-from tests.helpers import client, h
+from tests.helpers import client, h, live_stale_sources, with_live_source_tasks
 
 CMD = golden.load("screens/command")
 ACCOUNTS = sorted(CMD)
@@ -179,9 +179,12 @@ def test_actions_to_prioritise(acct, i):
 @pytest.mark.parametrize("widen", [False, True])
 @pytest.mark.parametrize("acct", ACCOUNTS)
 def test_actions_on_me_and_handed_off(acct, widen):
+    """The demo's queues; the Developer's stale or unconnected sources in Actions on me are the live Connection
+    Fabric's (decision-log D-Fabric), in the same shape and place."""
     want = CMD[acct]["op_scopes"]["all" if widen else "default"]
     aome = get("/aome", acct, all=str(widen).lower())
-    same(aome, {"items": want["aome"], "scope": want["scope"]})
+    items = with_live_source_tasks(want["aome"], live_stale_sources()) if acct == "developer" else want["aome"]
+    same(aome, {"items": items, "scope": want["scope"]})
     same(
         get("/handed", acct, all=str(widen).lower()),
         {"handed": want["handed"], "awaiting": want["awaiting"], "scope": want["scope"]},
@@ -204,7 +207,8 @@ TENANT_CASES = [pytest.param(acct, t, id=f"{acct}-{t}") for acct in ACCOUNTS for
 @pytest.mark.parametrize(("acct", "tenant"), TENANT_CASES)
 def test_the_tenant_menu_narrows_the_queues(acct, tenant):
     want = CMD[acct]["in_tenant"][tenant]
-    same(get("/aome", acct, tenant=tenant), {"items": want["aome"], "scope": want["scope"]})
+    items = with_live_source_tasks(want["aome"], live_stale_sources()) if acct == "developer" else want["aome"]
+    same(get("/aome", acct, tenant=tenant), {"items": items, "scope": want["scope"]})
     same(get("/handed", acct, tenant=tenant), {"handed": want["handed"], "awaiting": want["awaiting"], "scope": want["scope"]})
     same(get("/outcomes", acct, tenant=tenant), want["outcomes"])
     got = get("/inbox", acct, tenant=tenant)

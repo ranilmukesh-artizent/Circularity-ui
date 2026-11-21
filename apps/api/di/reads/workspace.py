@@ -826,11 +826,14 @@ def aome_items(ctx: CallContext, widen: bool = False, tenant: str = "All") -> li
                     }
                 )
     if role == "Developer":
-        for s in SOURCES.values():
-            if s["status"] in ("stale", "unavailable"):
-                out.append(
-                    {"t": f"{s['name']} · {s['status']}", "d": s["vendor"], "btn": "Open Source map", "go": "integration/map"}
-                )
+        # the sources the live Connection Fabric shows stale or not connected, as the briefing's line reads them
+        # (decision-log D-Fabric), so the inbox's items and its briefing agree
+        from di.reads.fabric import live, stale_now
+
+        for so in stale_now(live(ctx.session)):
+            out.append(
+                {"t": f"{so['name']} · {so['status']}", "d": so["vendor"], "btn": "Open Source map", "go": "integration/map"}
+            )
     if role == "Warehouse Manager":
         for c in cs:
             s = active_step(c)

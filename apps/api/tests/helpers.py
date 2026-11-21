@@ -27,6 +27,41 @@ def call(action: str, body: dict, user: str) -> dict:
     return client.post(f"/api/actions/{action}", json=body, headers=h(user)).json()
 
 
+def live_stale_sources() -> list[dict]:
+    """The sources the live Connection Fabric shows stale or not connected (the Source Map's list), in its order."""
+    srcs = client.get("/api/screens/integration/sources", headers=h("developer")).json()["sources"]
+    return [s for s in srcs if s["status"] in ("stale", "unavailable")]
+
+
+def with_live_source_tasks(items: list[dict], stale: list[dict]) -> list[dict]:
+    """A golden task list with its Source-map items (the Developer's stale or unconnected sources: btn "Open Source
+    map") replaced by `stale`, the live Connection Fabric's, in the same shape and place (decision-log D-Fabric: the
+    Developer's tasks read the live fabric, as the briefing and Home's alerts do). Every other item is the golden one."""
+    at = [k for k, x in enumerate(items) if x.get("btn") == "Open Source map"]
+    if not at:
+        return items
+    tpl = items[at[0]]
+    title, detail = ("title", "detail") if "title" in tpl else ("t", "d")
+    made = [{**tpl, title: f"{s['name']} · {s['status']}", detail: s["vendor"]} for s in stale]
+    rest = [x for k, x in enumerate(items) if k not in at]
+    return rest[: at[0]] + made + rest[at[0] :]
+
+
+def with_live_inbox(want: dict, got: dict) -> dict:
+    """A golden Developer inbox.get output with its live Connection Fabric parts (decision-log D-Fabric): the
+    Source-map items and the briefing's sources line from the live fabric; the briefing's conflicts line as the server
+    gave it (Home's briefing test checks its text against the conflict queue); `total` follows the items."""
+    stale = live_stale_sources()
+    items = with_live_source_tasks(want["items"], stale)
+    names = (": " + ", ".join(s["name"] for s in stale)) if stale else ""
+    line = {"go": "integration/map", "n": len(stale),
+            "text": f"{len(stale)} source{'' if len(stale) == 1 else 's'} stale or not connected{names}."}  # fmt: skip
+    briefing = [line if b.get("go") == "integration/map" else b for b in want["briefing"]]
+    live_cf = [b for b in got.get("briefing", []) if b.get("go") == "integration/conflicts"]
+    briefing = [live_cf[0] if b.get("go") == "integration/conflicts" and live_cf else b for b in briefing]
+    return {**want, "items": items, "briefing": briefing, "total": len(items)}
+
+
 def strict(x):
     """Booleans tagged, so True and 1 differ when two structures are compared with == (JSON and the demo keep them
     apart; Python does not)."""

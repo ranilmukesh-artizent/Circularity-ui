@@ -15,7 +15,7 @@ from sqlalchemy import text
 from di import golden, state
 from di.cases import store
 from di.db import engine
-from tests.helpers import client, h, norm
+from tests.helpers import client, h, norm, with_live_inbox
 
 READS = golden.load("reads")
 ACTIONS = ("inbox.get", "receiving.plan", "access.lookup", "kpi.explain")
@@ -62,8 +62,13 @@ READS_UNDER_TEST = [
 
 @pytest.mark.parametrize(("acct", "action", "body", "expected"), READS_UNDER_TEST)
 def test_workspace_read(acct, action, body, expected):
+    """The Developer's inbox (inbox.get) is the demo's but its stale or unconnected sources (decision-log D-Fabric):
+    its Source-map items and its briefing's sources line read the live Connection Fabric, as Home's briefing does."""
     got = call(action, body, acct)
-    assert norm(got) == norm(_expected(expected))
+    want = _expected(expected)
+    if acct == "developer" and action == "inbox.get":
+        want = {**want, "output": with_live_inbox(want["output"], got["output"])}
+    assert norm(got) == norm(want)
 
 
 def test_every_golden_read_is_covered():

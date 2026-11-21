@@ -17,7 +17,7 @@ from sqlalchemy import text
 from di import golden, policy, state
 from di.cases import store
 from di.db import SessionLocal, engine
-from tests.helpers import call, client, h, strict
+from tests.helpers import call, client, h, strict, with_live_inbox
 from tests.test_writes_decisions import Replay
 
 WRITES = golden.load("writes")
@@ -54,6 +54,9 @@ def test_scenario(fresh, name):
             # an unlimited approval limit: the dump's "Infinity" is null on the server (see test_reads_workspace)
             exp = {**exp, "output": {**exp["output"], "rows": [
                 {**x, "limit": None if x["limit"] == "Infinity" else x["limit"]} for x in exp["output"]["rows"]]}}  # fmt: skip
+        if step["action"] == "inbox.get" and step["as"] == "developer" and exp.get("ok"):
+            # the Developer's stale or unconnected sources are the live Connection Fabric's (decision-log D-Fabric)
+            exp = {**exp, "output": with_live_inbox(exp["output"], got["output"])}
         assert strict(got) == strict(exp), f"{name} read {k}: {step['as']} {step['action']} {step['input']}"
 
 
