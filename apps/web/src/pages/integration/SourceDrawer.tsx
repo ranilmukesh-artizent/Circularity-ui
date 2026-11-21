@@ -5,7 +5,7 @@ import { fmtDateYear } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {
   addComment, authOpts, hashId, canon, canonPrefix, cfgDefaults, commentsOf, connMethods, credDays, failedRecords, isoTime, mappings,
-  saveSource, series, source, sources, srcAgeText, srcFailing, srcFresh, srcTypes, successRate, testDraft, wfUsing, type Draft, type Source,
+  mappingVersions, previewMapping, revertMapping, type MapPreview, saveSource, series, source, sources, srcAgeText, srcFailing, srcFresh, srcTypes, successRate, testDraft, wfUsing, type Draft, type Source,
 } from '../../api/integration';
 import { can } from '../../api/session';
 import { Drawer } from '../../ui/Overlay';
@@ -178,7 +178,7 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
   let body: ReactNode;
   if (tab === 'conn') body = mode === 'edit' ? <>{conn}<div className="frops2">{opsTab}</div></> : conn;
   else if (tab === 'ops') body = opsTab;
-  else if (tab === 'map') body = <MapTab d={d} maps={maps} errs={errs} onChange={(m, k) => { setMaps(m); if (k) clearErr(k, 'maps'); touch(); }} />;
+  else if (tab === 'map') body = <MapTab s={s} dirty={dirty} d={d} maps={maps} errs={errs} onChange={(m, k) => { setMaps(m); if (k) clearErr(k, 'maps'); touch(); }} onReverted={(m) => { setMaps(m.map((r) => r.slice())); }} />;
   else if (tab === 'cm' && s) body = <Comments k={'src:' + s.id} label="source" />;
   else if (tab === 'ov' && s) body = <OvTab s={s} use={use} setUse={setUse} />;
   else if (tab === 'sec' && s) body = <SecTab s={s} />;
@@ -383,7 +383,83 @@ function OpsTab({ ops, err, onChange }: { ops: { read: string[]; write: string[]
   );
 }
 
-function MapTab({ d, maps, errs: e, onChange }: { d: Draft; maps: string[][]; errs: Errs; onChange: (m: string[][], k?: string) => void }) {
+/** The mapping version a sync applies, Revert to an older version, and a preview of the rows on a sample record. */
+function MapVersionBar({ s, maps, dirty, onReverted }: { s: Source; maps: string[][]; dirty: boolean; onReverted: (m: string[][]) => void }) {
+  const mv = mappingVersions(s.id);
+  const [pv, setPv] = useState<MapPreview | { state: 'running' } | { fail: string } | null>(null);
+  const [to, setTo] = useState('');
+  const action = useAction();
+  const older = mv.versions.filter((v) => v.version !== mv.version);
+  async function preview() {
+    setPv({ state: 'running' });
+    const r = await previewMapping(s.id, maps);
+    setPv(r.ok ? r.output : { fail: r.error.message });
+  }
+  async function revert() {
+    const v = +to;
+    if (!v) return;
+    const r = await action.run(() => revertMapping(s.id, v));
+    if (!r.ok) return;
+    setTo(''); setPv(null);
+    onReverted(r.output.maps);
+    toast('Field mapping reverted to v' + v + ' (now v' + r.output.version + '). The next sync applies it.');
+  }
+  return (
+    <div className="callout info" style={{ marginBottom: 12 }}>
+      <div className="row" style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span>
+          {mv.version == null ? <>Mapping: <b>the connector's built-in mapping</b> (no saved version)</> : <>Mapping <b>v{mv.version}</b> runs on every sync{mv.versions[0] ? <> · saved by {mv.versions[0].by}</> : null}</>}
+        </span>
+        <span className="grow" />
+        <button className="btn sm" onClick={preview}>Preview on a sample record</button>
+        {older.length > 0 && (
+          <>
+            <select aria-label="Mapping version to revert to" value={to} onChange={(ev) => setTo(ev.target.value)} disabled={dirty}>
+              <option value="">Revert to…</option>
+              {older.map((v) => <option key={v.version} value={v.version}>v{v.version}{v.note ? ' · ' + v.note : ''}</option>)}
+            </select>
+            <button className="btn sm" disabled={!to || dirty} onClick={revert}>Revert</button>
+          </>
+        )}
+      </div>
+      <div className="note">Rules a sync applies: copy, upper, lower, number, int, date, utc, units:kg&gt;t, fx:INR, code:grade. Any other text keeps the connector's own rule on a built-in row and copies the value on a row you add.</div>
+      {pv && ('state' in pv ? <div className="note"><span className="spin" /> Mapping a sample record…</div>
+        : 'fail' in pv ? <div className="err">{pv.fail}</div>
+        : <MapPreviewView pv={pv} />)}
+    </div>
+  );
+}
+
+function MapPreviewView({ pv }: { pv: MapPreview }) {
+  const show = (v: unknown) => (v == null ? '—' : typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v));
+  return (
+    <div style={{ marginTop: 10 }}>
+      {pv.record && <div className="note">Sample record <span className="mono">{pv.record.resource}/{pv.record.ext_id}</span> (the newest landed)</div>}
+      {pv.error && <div className="err">{pv.record ? 'This record would fail: ' : ''}{pv.error}</div>}
+      {pv.facts.length > 0 && (
+        <div className="tw">
+          <table className="t static">
+            <thead><tr><th>Canonical field</th><th>Value</th><th>From</th><th>Rule</th><th /></tr></thead>
+            <tbody>
+              {pv.facts.map((f, i) => (
+                <tr key={i}>
+                  <td className="mono">{f.target}</td><td className="mono">{show(f.value)}</td>
+                  <td className="mono">{f.source_field ?? '—'}</td><td>{f.transform ?? '—'}</td>
+                  <td>{f.status === 'kept' ? null : <span className={'chip ' + (f.status === 'changed' ? 'y' : 'g')}>{f.status === 'changed' ? 'Changed' : 'Added'}</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {pv.dropped.length > 0 && <div className="note">Not mapped any more: <span className="mono">{pv.dropped.join(', ')}</span></div>}
+    </div>
+  );
+}
+
+function MapTab({ s, dirty, d, maps, errs: e, onChange, onReverted }: {
+  s?: Source; dirty: boolean; d: Draft; maps: string[][]; errs: Errs; onChange: (m: string[][], k?: string) => void; onReverted: (m: string[][]) => void;
+}) {
   const P = canonPrefix();
   const opts = useMemo(() => canon().flatMap((m) => m.fields.map((f) => P[m.n] + '.' + f.replace(/\[\]$/, ''))), [P]);
   const H = ['Source field', 'Sample value', 'Canonical field', 'Normalised', 'Rule'];
@@ -392,6 +468,7 @@ function MapTab({ d, maps, errs: e, onChange }: { d: Draft; maps: string[][]; er
       <p className="note" style={{ marginTop: 0 }}>
         Source field → canonical field. Units, currency, timestamps and status codes are normalised; source values and provenance are retained. Target model: <b>{srcTypes()[d.type].target}</b>.
       </p>
+      {s && <MapVersionBar s={s} maps={maps} dirty={dirty} onReverted={onReverted} />}
       <datalist id="canonFields">{opts.map((o) => <option key={o} value={o} />)}</datalist>
       {maps.length ? (
         <div className="tw">

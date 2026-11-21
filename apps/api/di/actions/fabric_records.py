@@ -37,7 +37,7 @@ from di.actions.registry import ACTIONS, ActionError, guard, implement
 from di.canonical import store
 from di.canonical.schema import MODEL_FIELDS, check_fact, top_field
 from di.canonical.store import Fact
-from di.connectors import manual
+from di.connectors import discover, lifecycle, manual
 
 state.register("imports", list)
 state.register("conflict_escalations", list)
@@ -59,7 +59,15 @@ def table_height(t: dict) -> int:
 
 
 def _model(ctx: CallContext, src: str) -> dict | None:
-    return state.get(ctx.session, "table_models", src, for_update=True)
+    """The stored model; a configured source with nothing stored yet starts from what it sends (plan 6 B5)."""
+    m = state.get(ctx.session, "table_models", src, for_update=True)
+    if m is not None and m.get("discovered"):
+        found = discover.merge(ctx.session, src, m)
+        return None if found is None else found | {"source": src}
+    if m is None and src and not lifecycle.is_deleted(ctx.session, src):
+        found = discover.materialize(ctx.session, src)
+        return None if found is None else found | {"source": src}
+    return m
 
 
 @guard("tables.update")
@@ -190,6 +198,8 @@ def tables_update(i: dict[str, Any], ctx: CallContext):
         if not isinstance(k, int | float) or not 0 <= int(k) < len(m["fk"]):
             raise ActionError("not_found", "No such foreign key.")
         f = m["fk"].pop(int(k))
+        if m.get("discovered") and str(f[2] if len(f) > 2 else "").startswith("Suggested:"):
+            m["fkOff"] = [*(m.get("fkOff") or []), [f[0], f[1]]]  # not suggested again (plan 6 B5)
         out = {"op": "fkDel", "from": f[0], "to": f[1], "fk": f, "index": int(k)}
     elif op == "describe":
         cur = _table(m, i.get("name"))
@@ -211,6 +221,11 @@ def tables_update(i: dict[str, Any], ctx: CallContext):
         out = {"op": "layout", "moved": moved}
     else:
         raise ActionError("validation_error", f"Unknown table operation {op}.")
+    if m.get("discovered") and op in ("add", "edit", "describe", "restore"):  # a person's table is kept as it is (B5)
+        name = out["name"]
+        for y in m["t"]:
+            if y["n"] == name:
+                y["manual"] = True
     state.put(ctx.session, "table_models", src, m)
     return out
 

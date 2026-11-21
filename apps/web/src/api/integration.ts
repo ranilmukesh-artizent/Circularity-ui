@@ -75,6 +75,7 @@ type ApiSource = Source & { health?: Health };
 interface Detail {
   source: ApiSource; sync_history: { ts: number; ok: boolean; rows: number; dur: string }[]; series: number[]; failed: number;
   mappings: MapRow[]; models: Record<string, MapRow[]>; table_model: TableModel | null; comments: Comment[];
+  mapping?: { version: number | null; versions: MapVersion[] };
 }
 interface OverviewAnswer {
   integrations: (Omit<Integration, 'src' | 'c'> & { src: string | null; catalog: string | null })[];
@@ -467,6 +468,27 @@ export interface TestInput { source_id: string; reauth?: boolean; auth?: string 
 export const testConnection = (input: TestInput) =>
   invoke<{ source_id: string; steps: TestStep[]; ok: boolean; at: string }>('source.test', { ...input });
 /** The drawer's one-line test of the settings being edited (source.test with `draft`). */
+/* ---- the field mapping a sync applies (plan 6 A4: di/connectors/mapping.py) ---- */
+export interface MapVersion { version: number; by: string; at: string; note: string | null; rows: number }
+export interface MapPreviewFact {
+  target: string; key: string; value: unknown; source_field: string | null; source_value: unknown; transform: string | null;
+  status: 'kept' | 'changed' | 'added';
+}
+export interface MapPreview {
+  source_id: string; version: number | null; record: { resource: string; ext_id: string; payload: unknown } | null;
+  facts: MapPreviewFact[]; dropped: string[]; error: string | null;
+}
+/** The saved versions of a source's mapping, newest first; version null: the adapter's own mapping runs. */
+export function mappingVersions(id: string): { version: number | null; versions: MapVersion[] } {
+  return detail(id)?.mapping ?? { version: null, versions: [] };
+}
+/** A sample record of the source mapped with the draft rows (or the saved mapping): a read, nothing is saved. */
+export const previewMapping = (id: string, maps?: string[][]) =>
+  invoke<MapPreview>('mapping.preview', maps ? { source_id: id, maps } : { source_id: id });
+/** Revert: a new mapping version equal to an older one; the next sync applies it. */
+export const revertMapping = (id: string, version: number) =>
+  invoke<{ source_id: string; version: number; ver: string; rows: number; maps: string[][] }>('mapping.revert', { source_id: id, version });
+
 export const testDraft = (id: string, d: Draft, ops: { read: string[]; write: string[] }) =>
   invoke<{ ok: boolean; msg: string }>('source.test', {
     source_id: id,

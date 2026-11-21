@@ -93,7 +93,7 @@ from di import clock, golden, policy, state
 from di.actions.decisions import comments
 from di.actions.fabric_records import escalations
 from di.auth import Principal
-from di.connectors import lifecycle
+from di.connectors import discover, lifecycle, mapping
 from di.connectors.registry import ADAPTERS
 from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round
@@ -500,7 +500,8 @@ class Fabric:
 
 def _table_models(s: Session) -> list[tuple[str, dict]]:
     """The table models (the demo's tgModel for every source in TBL_MODELS), keyed by source."""
-    return [(m["source"], {k: v for k, v in m.items() if k != "source"}) for m in state.items(s, "table_models")]
+    stored = [(m["source"], {k: v for k, v in m.items() if k != "source"}) for m in state.items(s, "table_models")]
+    return discover.with_discovered(s, stored)  # sources created here: the tables they really send (plan 6 B5)
 
 
 def _catalog(f: Fabric) -> list[dict]:
@@ -613,6 +614,8 @@ def source_detail(source_id: str, p: CurrentPrincipal, session: DbSession, days:
         "series": f.series(source_id, days),
         "failed": f.failed_in(source_id, days),
         "mappings": f.maps.get(source_id, []),
+        # the saved versions of the mapping a sync applies (plan 6 A4); none: the adapter's own mapping
+        "mapping": {"version": mapping.active_version(session, source_id), "versions": mapping.versions(session, source_id)},
         "models": src_models(s, f.maps),
         "table_model": f.tables.get(source_id),
         "comments": comments(session, "src:" + source_id),

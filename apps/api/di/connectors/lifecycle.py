@@ -7,7 +7,9 @@ version and audit trail) and its field mapping in the browser; the backend keeps
     {"id": "erp", "name": ..., "cfgVer": "1.1", "audit": [...], "maps": [[...], ...], "prev": "live", "discBy": "Admin"}
 
 - the item's descriptive fields overlay the demo's reference record (fixtures/golden/sources.json) on every screen;
-- `maps` replaces the demo's field mapping (MAPPINGS) for that source;
+- `maps` replaces the demo's field mapping (MAPPINGS) for that source, as the Data Mapping tab shows it; what a sync
+  applies is its versioned copy in table field_mapping (di.connectors.mapping, plan 6 A4: source.update writes a
+  version when the rows change, mapping.revert a new version equal to an older one);
 - `prev` is the connector status a paused or disconnected source goes back to; `discBy` who disconnected it;
 - `created` marks a source made here ("new": by hand in the source drawer, "catalog": from the catalogue).
 The collection starts empty, so the seeded state is the demo's exactly.

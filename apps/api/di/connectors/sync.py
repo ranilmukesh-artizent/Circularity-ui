@@ -24,7 +24,7 @@ from di import golden
 from di.canonical import store
 from di.canonical.failed import hold
 from di.canonical.schema import split_facts
-from di.connectors import connection, lifecycle, manual
+from di.connectors import connection, lifecycle, manual, mapping
 from di.connectors.http import SourceError
 from di.connectors.registry import ADAPTERS, adapter_for, has_adapter
 from di.db import SessionLocal, engine
@@ -101,6 +101,7 @@ def reset_sources(conn: Connection) -> None:
     conn.execute(text("DELETE FROM source_secret"))  # credentials stored in the app (plan 6 A1)
     manual.remove(Session(bind=conn))  # Manual Import data (plan 6 B3); the imports list is reset with the workspace
     connection.reset_demo(conn, ids)  # the demo sources' connections back on source-sim (plan 6 A2)
+    conn.execute(text("DELETE FROM field_mapping"))  # edited mappings (plan 6 A4): every source maps as its code does
     if made:
         for t in SOURCE_TABLES:
             conn.execute(text(f"DELETE FROM {t} WHERE source_id = ANY(:i)"), {"i": made})  # noqa: S608 - fixed names
@@ -340,6 +341,8 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
         client = connection.client_for(s, source_id, adapter, run_id)  # its URL and stored secret (plan 6 A2)
         read = written = failed = 0
         status, error = "ok", None
+        # the field mapping a person saved, over a Python adapter's own (plan 6 A4); None: the adapter's mapping as is
+        remap = mapping.mapper(s, source_id, source_id in ADAPTERS)
         try:
             connection.check_credential(s, source_id)  # an expired stored credential is not used (plan 6 A5)
             for res in adapter.resources():
@@ -367,7 +370,7 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
                             with s.begin_nested():
                                 facts = [
                                     f if f.resource else type(f)(**{**f.__dict__, "resource": rec.resource, "ext_id": rec.ext_id})
-                                    for f in adapter.map(rec)
+                                    for f in (remap(rec, adapter.map(rec)) if remap else adapter.map(rec))
                                 ]
                                 facts, bad = split_facts(facts)  # plan 6 B1: a fact that does not fit its model is held
                                 written += store.apply(s, source_id, facts, conf)

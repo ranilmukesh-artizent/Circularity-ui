@@ -373,6 +373,19 @@ source_secret = Table(
     Index("source_secret_one_active", "source_id", "kind", unique=True, postgresql_where=text("active")),
 )
 
+# --- 0014 versioned field mappings (plan 6 A4; di/connectors/mapping.py) --------------------------------------------
+
+field_mapping = Table(
+    "field_mapping",
+    metadata,
+    Column("source_id", Text, primary_key=True),
+    Column("version", Integer, primary_key=True),
+    Column("rows", JSONB, nullable=False, server_default=text("'[]'::jsonb")),  # MapRow dicts plus the row as shown
+    Column("note", Text),
+    Column("created_by", Text, nullable=False),
+    _ts("created_at", now=True),
+)
+
 # --- 0011 per-source connection settings (plan 6 A2; di/connectors/connection.py) ----------------------------------
 
 source_connection = Table(
@@ -387,17 +400,6 @@ source_connection = Table(
     Column("resources", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
     Column("updated_by", Text),  # NULL: the seeded default of a demo source
     _ts("updated_at", now=True),
-)
-
-# --- 0017 dated currency rates (plan 6 C4; di/workflow/steps/transform.py x_fx) --------------------------------------
-
-fx_rate = Table(
-    "fx_rate",
-    metadata,
-    Column("date", Date, primary_key=True),
-    Column("currency", Text, primary_key=True),
-    Column("usd_rate", Numeric(18, 6), nullable=False),  # units of the currency per USD
-    CheckConstraint("usd_rate > 0", name="fx_rate_positive"),
 )
 
 # --- 0013 webhook events received, for dedupe (plan 6 A7; di/connectors/webhook.py) ---------------------------------
@@ -436,4 +438,15 @@ failed_record = Table(
     CheckConstraint("status IN ('held', 'reprocessed', 'dropped')", name="failed_record_status_check"),
     Index("ix_failed_record_run", "run_kind", "run_id"),
     Index("ix_failed_record_source", "source_id", "status"),
+)
+
+# --- 0017 dated currency rates (plan 6 C4; di/workflow/steps/transform.py x_fx) --------------------------------------
+
+fx_rate = Table(
+    "fx_rate",
+    metadata,
+    Column("date", Date, primary_key=True),
+    Column("currency", Text, primary_key=True),
+    Column("usd_rate", Numeric(18, 6), nullable=False),  # units of the currency per USD
+    CheckConstraint("usd_rate > 0", name="fx_rate_positive"),
 )

@@ -42,7 +42,7 @@ from di import golden
 from di.actions.decisions import push_event
 from di.actions.pipeline import CallContext
 from di.actions.registry import ACTIONS, ActionDef, ActionError, implement
-from di.connectors import catalog, connection, lifecycle, registry, secrets, sync
+from di.connectors import catalog, connection, lifecycle, mapping, registry, secrets, sync
 from di.connectors.probe import probe
 from di.connectors.registry import ADAPTERS
 from di.reads.common import fmt_dy, hash_id, iso, ms
@@ -153,6 +153,7 @@ def _event(ctx: CallContext, cur: dict, type_: str, ack: str, note: str) -> None
          "sim": True},
         None,
     )  # fmt: skip
+
 
 
 # ---------------------------------------------------------------- source.update
@@ -298,6 +299,7 @@ def source_update(i: dict[str, Any], ctx: CallContext):
     write = [str(y).strip() for y in ops.get("write") or [] if str(y).strip()]
     csv = d["method"] == "file"
     maps = [[str(y).strip() for y in m] for m in i["maps"]]
+    _check_maps(cur["id"] if cur else "", maps)
     iv = _interval(d, cm)
     base = {
         "name": str(d["name"]).strip(), "vendor": d.get("vendor") or "", "ver": str(d.get("ver") or "").strip(),
@@ -346,6 +348,8 @@ def source_update(i: dict[str, Any], ctx: CallContext):
     ver = _bump(ctx, cur, cfg, "Updated " + ", ".join(ch) + why)
     cfg["updatedBy"] = _by(ctx)
     lifecycle.save(ctx.session, cfg)
+    if any(c.startswith("field mapping") for c in ch):  # the mapping the next sync applies (plan 6 A4)
+        mapping.save_version(ctx.session, sid, maps, _by(ctx), f"Config v{ver}", ctx.now)
     ctx.session.execute(
         text("UPDATE source_system SET vendor = :v, interval_min = :iv, owner = :o, updated_at = now() WHERE id = :i"),
         {"v": base["vendor"], "iv": iv, "o": base["owner"], "i": sid},
@@ -407,6 +411,7 @@ def _create(ctx: CallContext, d: dict, base: dict, maps: list, csv: bool, cm: di
     lifecycle.save(ctx.session, item)
     if not csv and registry.has_adapter(ctx.session, sid):  # its endpoint answers like a spec: the first sync reads it
         sync.enqueue_sync(ctx.session, sid, "initial", full=True)
+    mapping.save_version(ctx.session, sid, maps, _by(ctx), "Connection created", ctx.now, strict=False)  # plan 6 A4
     cur = item | {"vendor": base["vendor"]}
     _event(
         ctx,
@@ -465,6 +470,7 @@ def _connect_catalog(i: dict[str, Any], ctx: CallContext) -> dict:
     # the credential source-sim's mock accepts (synthetic, apps/README.md), or the one the person entered
     secrets.put_secret(ctx.session, sid, "auth", str(i.get("secret") or tpl["demo_secret"]), 180, _by(ctx), ctx.now)
     lifecycle.save(ctx.session, item)
+    mapping.save_version(ctx.session, sid, maps, _by(ctx), "Connected from the catalogue", ctx.now, strict=False)  # A4
     job = sync.enqueue_sync(ctx.session, sid, "initial", full=True)  # the first sync really reads the system
     _event(ctx, item, "source.connected", "acknowledged", "Connected from the catalogue by " + _by(ctx))
     return {"mode": "catalog", "source_id": sid, "name": item["name"], "vendor": c["vendor"], "records": None,
@@ -697,3 +703,98 @@ def source_test(i: dict[str, Any], ctx: CallContext):
         steps = _probe_steps(ctx, sid, cur["status"], i.get("auth") or cur.get("auth") or "", reauth)
     ok = all(x["ok"] for x in steps) and len(steps) == 5
     return {"source_id": sid, "steps": steps, "ok": ok, "at": iso(_now_ms(ctx))}
+
+# ---------------------------------------------------------------- field mapping versions (plan 6 A4)
+_declare(
+    "mapping.preview", "Preview a field mapping", "preview field mappings",
+    "Map a sample record of a source with a mapping (the saved one, or a draft) and show the facts. Changes nothing.",
+    "read", _SRC | {"maps": {"req": False, "t": "array"}, "ext_id": {"req": False, "t": "string"}}, _MGR,
+)  # fmt: skip
+_declare(
+    "mapping.revert", "Revert a field mapping", "revert field mappings",
+    "Save a new version of a source's field mapping equal to an older one; the next sync applies it.", "act",
+    _SRC | {"version": {"req": True, "t": "number"}}, _MGR,
+)  # fmt: skip
+
+
+def _check_maps(sid: str, maps: list) -> None:
+    """The rows a sync can apply: a source field, a canonical model.field of a store model, a known rule."""
+    try:
+        mapping.rows_from_maps(sid, maps)
+    except ValueError as e:
+        raise ActionError("validation_error", str(e)) from None
+
+
+def _fact_view(f: Any, status: str) -> dict:
+    return {
+        "target": f"{f.model}.{f.field}", "key": f.key, "value": f.value, "source_field": f.source_field,
+        "source_value": f.source_value, "transform": f.transform, "status": status,
+    }  # fmt: skip
+
+
+@implement("mapping.preview")
+def mapping_preview(i: dict[str, Any], ctx: CallContext):
+    """The newest landed record of the source (or `ext_id`) mapped with `maps` (a draft of the Data Mapping tab's rows)
+    or the saved mapping: each fact with its status (kept: as the adapter's code maps it; changed; added), the fields
+    the mapping drops, or the error that would fail the record (e.g. "missing field grade_txt")."""
+    cur, _ = _current(ctx, i["source_id"])
+    sid = cur["id"]
+    maps = i.get("maps")
+    if maps is not None:
+        maps = [[str(y).strip() for y in m] for m in maps if isinstance(m, list)]
+        _check_maps(sid, maps)
+    version = mapping.active_version(ctx.session, sid)
+    if maps is not None:
+        rows = mapping.to_rows(mapping.rows_from_maps(sid, maps))
+    elif version is not None:
+        rows = mapping.active_rows(ctx.session, sid)
+    else:
+        rows = mapping.to_rows(mapping.rows_from_maps(sid, cur["maps"], strict=False))
+    q = "SELECT resource, ext_id, payload FROM raw_record WHERE source_id = :s"
+    args: dict[str, Any] = {"s": sid}
+    if i.get("ext_id"):
+        q, args["e"] = q + " AND ext_id = :e", str(i["ext_id"])
+    raw = ctx.session.execute(text(q + " ORDER BY fetched_at DESC, ext_id DESC LIMIT 1"), args).first()
+    out: dict[str, Any] = {"source_id": sid, "version": version, "record": None, "facts": [], "dropped": [], "error": None}
+    if raw is None:
+        out["error"] = "No record has landed from this source yet: sync it first."
+        return out
+    from di.connectors.base import Record
+
+    rec = Record(raw.resource, raw.ext_id, raw.payload)
+    out["record"] = {"resource": raw.resource, "ext_id": raw.ext_id, "payload": raw.payload}
+    adapter = ADAPTERS.get(sid)
+    try:
+        if adapter is None:
+            out["facts"] = [_fact_view(f, "added") for f in mapping.apply_rows(rows, rec)]
+            return out
+        code = adapter.map(rec)
+        got = mapping.overlay(code, rec, rows, mapping.builtin(sid))
+    except Exception as e:  # noqa: BLE001 - the record would fail the same way in a sync: say why
+        out["error"] = str(e) or type(e).__name__
+        return out
+    before = {(f.model, f.field): f for f in code}
+    after = {(f.model, f.field) for f in got}
+    for f in got:
+        b = before.get((f.model, f.field))
+        status = "added" if b is None else "kept" if (b.value, b.transform) == (f.value, f.transform) else "changed"
+        out["facts"].append(_fact_view(f, status))
+    out["dropped"] = [f"{m}.{fl}" for (m, fl) in before if (m, fl) not in after]
+    return out
+
+
+@implement("mapping.revert")
+def mapping_revert(i: dict[str, Any], ctx: CallContext):
+    """A new mapping version equal to an older one; the Data Mapping tab shows its rows; the next sync applies it."""
+    cur, cfg = _current(ctx, i["source_id"])
+    sid = cur["id"]
+    try:
+        new, maps = mapping.revert(ctx.session, sid, int(i["version"]), _by(ctx), ctx.now)
+    except KeyError as e:
+        raise ActionError("not_found", str(e).strip("'\"")) from None
+    cfg["maps"] = maps
+    ver = _bump(ctx, cur, cfg, f"Field mapping reverted to v{int(i['version'])} (mapping v{new})")
+    cfg["updatedBy"] = _by(ctx)
+    lifecycle.save(ctx.session, cfg)
+    _event(ctx, cur, "connector.updated", "acknowledged", f"Config v{ver}: field mapping reverted to v{int(i['version'])}")
+    return {"source_id": sid, "version": new, "ver": ver, "rows": len(maps), "maps": maps}

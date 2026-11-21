@@ -81,7 +81,7 @@ const ACTION_EXACT: Record<string, Scope> = Object.fromEntries(
     'cases.list', 'case.get', 'case.evidence', 'case.routes', 'case.whatIf', 'case.trace', 'demand.find', 'pool.optimize',
     'analytics.query', 'analytics.models', 'audit.search', 'sources.health', 'sources.diagnose', 'workflow.validate',
     'inbox.get', 'receiving.plan', 'access.lookup', 'asset.compare', 'asset.summary', 'kpi.explain', 'conflict.suggest',
-    'event.explain',
+    'event.explain', 'mapping.preview',
   ].map((id) => [id, [] as Area[]]), // prettier-ignore
 );
 const ACTION_FAMILY: Record<string, Scope> = {
