@@ -1,11 +1,13 @@
 """The Connection Fabric's health as Home and the Command Center read it: the starting workflow catalogue without its
 random run data (wfSeed, wfStat), the live fabric (the same object the Connection Fabric screens read, so the tiles equal
-the Monitor and the Source Map), the stale sources and open conflicts the alerts list, and the event stream.
+the Monitor and the Source Map), and the event stream.
 
 Plan 6 B4: the integration health is real. The demo drew its hourly buckets from a hash (hhInit); they are gone. Home's
 and the Command Center's health figures, hourly line, exceptions, stale sources, open conflicts and failing workflows come
 from `live(s)` (di.screens.integration.Fabric: source_system, sync_run, conflict, the stored workflows), and the event
-stream is the workspace log plus the backend's real messages (`stream`)."""
+stream is the workspace log plus the backend's real messages (`stream`). Home's alerts and the Developer briefing list
+the sources, conflicts and failed workflows of the live fabric too (`stale_now`, `open_conflicts_now`, `failing_now`),
+not the demo's three stale sources and starting conflicts."""
 
 from __future__ import annotations
 
@@ -18,7 +20,7 @@ from sqlalchemy.orm import Session
 from di import golden, state
 from di.actions.pipeline import CallContext
 from di.reads import workspace as ws
-from di.reads.common import SOURCES, STARTING_CONFLICTS, iso, ms
+from di.reads.common import SOURCES, iso, ms
 from di.reads.constants import SRC_TYPES
 from di.reads.workflows import wf_stat as stored_stat
 
@@ -95,17 +97,6 @@ def failing_now(f: Fabric) -> int:
 def open_conflicts_now(f: Fabric) -> int:
     """Open (and escalated) conflicts in the conflict table (the Source Map's open_conflicts)."""
     return f.conflicts("open", limit=1)[1]
-
-
-# ---------------------------------------------------------------- the demo's reference, for the alert lists
-def open_conflicts() -> list[dict]:
-    """The demo's open conflicts (its alerts and briefing lines still list these; the tiles count the real ones)."""
-    return [c for c in STARTING_CONFLICTS if c["status"] == "open"]
-
-
-def stale_sources() -> list[dict]:
-    """The demo's stale or unconnected sources (its alerts still list these; the tiles count the real ones)."""
-    return [s for s in SOURCES.values() if s["status"] in ("stale", "unavailable")]
 
 
 # ---------------------------------------------------------------- the event stream (plan 6 B4)
