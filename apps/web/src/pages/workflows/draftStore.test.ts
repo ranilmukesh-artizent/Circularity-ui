@@ -9,7 +9,7 @@ vi.mock('../../api/workflows', () => ({
   graphStamp: (id: string) => backend.get(id)?.stamp ?? '',
 }));
 
-import { draftOf, edit, forget, isDirty, nextId, reload, undoRedo } from './draftStore';
+import { draftOf, edit, forget, isDirty, nextId, reload, setCfg, undoRedo } from './draftStore';
 
 const graph = (...ids: string[]): WfGraph => ({
   nodes: ids.map((id, i) => ({ id, k: 'xf', ref: 'x_utc', x: i * 200, y: 0 })),
@@ -191,5 +191,28 @@ describe('nextId', () => {
     expect(nextId(d, 'n')).toBe('n103');
     expect(d.seq).toBe(103);
     expect(nextId(d, 'e')).toBe('e104');
+  });
+});
+
+describe('setCfg (block settings)', () => {
+  it('sets one setting, marks the copy unsaved and can be undone', () => {
+    seed('WF-1');
+    setCfg('WF-1', 'a', 'currency', 'EUR');
+    const d = draftOf('WF-1')!;
+    expect(d.dirty).toBe(true);
+    expect(d.graph.nodes[0].cfg).toEqual({ currency: 'EUR' });
+    setCfg('WF-1', 'a', 'rate_date', 'run');
+    expect(d.graph.nodes[0].cfg).toEqual({ currency: 'EUR', rate_date: 'run' });
+    undoRedo('WF-1', -1);
+    expect(draftOf('WF-1')!.graph.nodes[0].cfg).toEqual({ currency: 'EUR' });
+    undoRedo('WF-1', -1);
+    expect(draftOf('WF-1')!.graph.nodes[0].cfg).toBeUndefined();
+    undoRedo('WF-1', 1);
+    expect(draftOf('WF-1')!.graph.nodes[0].cfg).toEqual({ currency: 'EUR' });
+  });
+  it('ignores a step that is not in the copy', () => {
+    seed('WF-1');
+    setCfg('WF-1', 'zz', 'currency', 'EUR');
+    expect(draftOf('WF-1')!.graph.nodes.every((n) => n.cfg === undefined)).toBe(true);
   });
 });

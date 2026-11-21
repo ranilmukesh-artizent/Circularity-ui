@@ -84,6 +84,15 @@ export function edit(id: string, f: (d: Draft) => void, o: { dirty?: boolean; tr
   emit();
 }
 
+/** Change one block setting of a step (an undo step; marks the copy unsaved). The server keeps only the settings that
+ *  differ from the defaults, so setting a value back to its default needs no special case here. */
+export function setCfg(id: string, nodeId: string, key: string, value: unknown) {
+  edit(id, (d) => {
+    const n = d.graph.nodes.find((x) => x.id === nodeId);
+    if (n) n.cfg = { ...(n.cfg ?? {}), [key]: value };
+  }, { track: true });
+}
+
 export function undoRedo(id: string, step: -1 | 1) {
   const d = draftOf(id);
   if (!d) return;
