@@ -211,7 +211,7 @@ def _pairs(units) -> list[tuple[str, str | None, str]]:
     """The units setting -> (field, from or None, to): blocks.py's {field: to unit}, or rows {field, from, to}, or
     {field: "W>kW"}."""
     if isinstance(units, dict):
-        out = []
+        out: list[tuple[str, str | None, str]] = []
         for f, to in units.items():
             frm, sep, t = str(to).replace("->", ">").partition(">")
             out.append((f, frm.strip(), t.strip()) if sep else (f, None, str(to)))
@@ -360,8 +360,8 @@ def _total(fn: str, vals: list):
     r = {"sum": sum(ns), "min": min(ns), "max": max(ns), "avg": sum(ns) / len(ns)}.get(fn)
     if r is None:
         raise StepError(f"unknown total {fn} (sum, count, min, max, avg)")
-    r = round(r, 6)
-    return int(r) if r == int(r) else r
+    total = round(r, 6)
+    return int(total) if total == int(total) else total
 
 
 def x_agg(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:

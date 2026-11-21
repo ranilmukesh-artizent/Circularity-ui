@@ -290,7 +290,9 @@ class _Run:
         self.emit(nid, "running")
         inp = self.gather(n)
         t0 = time.monotonic()
-        tries, res, err = 0, None, None
+        tries = 0
+        res: StepResult | None = None
+        err: Exception | None = None
         while True:
             tries += 1
             try:

@@ -294,8 +294,8 @@ def overlay(facts: list[Fact], rec: Any, rows: Iterable[MapRow], builtin: set[tu
             if (r.model, r.field) in produced:
                 raise MissingField(r.src)
             continue
-        if (f := _fact(r, rec, key, raw)) is not None:
-            out.append(f)
+        if (made := _fact(r, rec, key, raw)) is not None:
+            out.append(made)
     return out
 
 

@@ -138,10 +138,10 @@ def discover(s: Session, source_id: str) -> list[dict]:
     samples = _samples(s, source_id)
     if not samples:
         return []
-    counts = dict(
-        s.execute(
-            text("SELECT resource, count(*) FROM raw_record WHERE source_id = :s GROUP BY resource"), {"s": source_id}
-        ).all()
+    counts: dict[str, int] = dict(
+        s.execute(text("SELECT resource, count(*) FROM raw_record WHERE source_id = :s GROUP BY resource"), {"s": source_id})
+        .tuples()
+        .all()
     )
     given = _id_fields(s, source_id)
     tables = []
@@ -268,8 +268,8 @@ def with_discovered(s: Session, stored: list[tuple[str, dict]]) -> list[tuple[st
         else:
             out.append((sid, m))
     for sid in configured_sources(s):
-        if sid not in seen and (m := merge(s, sid, None)) is not None:
-            out.append((sid, m))
+        if sid not in seen and (found := merge(s, sid, None)) is not None:
+            out.append((sid, found))
     return out
 
 

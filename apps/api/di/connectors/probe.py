@@ -77,7 +77,11 @@ def _tls(host: str, port: int) -> Check:
         with socket.create_connection((host, port), timeout=5) as raw, ctx.wrap_socket(raw, server_hostname=host) as s:
             version, cert = s.version(), s.getpeercert() or {}
         ends = cert.get("notAfter")
-        until = datetime.fromtimestamp(ssl.cert_time_to_seconds(ends), UTC).date().isoformat() if ends else "unknown"
+        until = (
+            datetime.fromtimestamp(ssl.cert_time_to_seconds(ends), UTC).date().isoformat()
+            if isinstance(ends, str) and ends
+            else "unknown"
+        )
         return Check(True, _ms(t0), detail=f"{version} · certificate valid until {until}")
     except (OSError, ssl.SSLError, ValueError) as e:
         return Check(False, _ms(t0), f"TLS handshake with {host} failed: {e}")

@@ -392,7 +392,7 @@ def resolve(
     if choose == "other":
         others = sorted(k for k in vals if k != c["authority"])
         kept = source or (others[0] if others else None)
-        if kept not in others:
+        if kept is None or kept not in others:
             raise ActionError("validation_error", f"{source or 'Another source'} has no value in {c['ref']}.")
         kept_name, chosen = _name(ctx, kept), vals[kept]
     elif choose == "value":

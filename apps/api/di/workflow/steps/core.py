@@ -244,8 +244,8 @@ class _Parser:
 
     def parse(self):
         node = self.or_()
-        if self.peek() is not None:
-            raise ExprError(f"unexpected {self.peek()[1]!r}")
+        if (p := self.peek()) is not None:
+            raise ExprError(f"unexpected {p[1]!r}")
         return node
 
     def or_(self):
@@ -429,8 +429,8 @@ def range_test(arg: Any) -> tuple[Callable[[float], bool], str]:
     elif isinstance(arg, list | tuple) and len(arg) == 2:
         lo, hi = num(arg[0]), num(arg[1])
     elif isinstance(arg, str) and ".." in arg:
-        a, _, b = arg.partition("..")
-        lo, hi = num(a) if a.strip() else None, num(b) if b.strip() else None
+        lo_s, _, hi_s = arg.partition("..")
+        lo, hi = num(lo_s) if lo_s.strip() else None, num(hi_s) if hi_s.strip() else None
     else:
         raise StepError(f"range needs min..max or a comparison such as >0, not {arg!r}")
     if lo is None and hi is None:

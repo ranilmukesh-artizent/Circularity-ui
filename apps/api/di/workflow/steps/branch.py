@@ -11,7 +11,8 @@ def x_branch(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
     """Records that meet the condition go on (`out`, also side.then); the rest take the else path (side.else).
     An empty condition sends everything down the then path."""
     test = condition(opt(cfg, KEYS["x_branch"]["condition"], []))
-    then, other = [], []
+    then: list[Rec] = []
+    other: list[Rec] = []
     for r in recs:
         (then if test(r) else other).append(clone(r))
     return StepResult(then, [], {"then": then, "else": other})

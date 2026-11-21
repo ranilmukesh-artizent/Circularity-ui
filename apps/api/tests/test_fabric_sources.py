@@ -422,6 +422,7 @@ def test_an_expired_credential_is_not_used():
         with engine.begin() as c:
             c.execute(text("DELETE FROM source_secret WHERE source_id = :i"), {"i": sid})
 
+
 def test_people_without_the_permission_are_refused():
     for action, body in (("source.pause", {"source_id": "erp"}), ("source.disconnect", {"source_id": "erp", "confirm": "x"})):
         r = client.post(f"/api/actions/{action}", json=body, headers=h("planner.a"))

@@ -31,7 +31,7 @@ from di.connectors.connection import Connection
 from di.connectors.generic import source_clock
 from di.connectors.http import ApiKey, Auth, Basic, OAuthClientCredentials, SourceClient, SourceError
 
-DEFAULT_PAGING = {"style": "offset", "limit_param": "limit", "offset_param": "offset", "page_param": "page",
+DEFAULT_PAGING: dict[str, Any] = {"style": "offset", "limit_param": "limit", "offset_param": "offset", "page_param": "page",
                   "size_param": "page_size", "cursor_param": "cursor", "items_key": "items", "next_key": "next",
                   "total_key": "total", "max_size": 100}  # fmt: skip
 

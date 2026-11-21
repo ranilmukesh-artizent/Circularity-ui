@@ -30,7 +30,8 @@ def x_wait(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
     k = KEYS["x_wait"]
     minutes, until = opt(cfg, k["duration"], 0), opt(cfg, k["until"], "")
     test = condition(until)
-    out, waiting = [], []
+    out: list[Rec] = []
+    waiting: list[Rec] = []
     for r in recs:
         (out if test(r) else waiting).append(clone(r))
     side: dict = {"waiting": waiting}

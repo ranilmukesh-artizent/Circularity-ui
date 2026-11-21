@@ -56,6 +56,8 @@ class SftpLogin(Auth):
 
     def __init__(self, user: str, password: str):
         self.user, self.password = user, password
+
+
 HOST_KEY = ("ssh-ed25519", "AAAAC3NzaC1lZDI1NTE5AAAAIICdS6y8VTdaxChH2KIr/5NFdZfbbDo9/WELgbDCNDuf")
 DIR = "/outbound"
 TIMEOUT = 20

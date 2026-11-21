@@ -26,14 +26,18 @@ def test_a_lost_run_is_closed_and_a_live_one_is_not():
         lost = state.get(s, "workflows", "WF-103")
         lost["running"] = True
         state.put(s, "workflows", "WF-103", lost)
-        state.add(s, "workflow_runs", "RUN-LOST1", {"id": "RUN-LOST1", "wf": "WF-103", "name": lost["name"],
-                  "ts": lost["last"]["ts"], "trig": "Manual", "dur": None, "rows": None, "state": "running", "note": ""})  # fmt: skip
+        run = {"id": "RUN-LOST1", "wf": "WF-103", "name": lost["name"], "ts": lost["last"]["ts"], "trig": "Manual",
+               "dur": None, "rows": None, "state": "running", "note": ""}  # fmt: skip
+        state.add(s, "workflow_runs", "RUN-LOST1", run)
         live = state.get(s, "workflows", "WF-110")
         live["running"] = True
         state.put(s, "workflows", "WF-110", live)
         s.execute(
             # a job a worker has just claimed (a longer run is seen by the run lock it holds)
-            text("INSERT INTO job (kind, payload, status, locked_at) VALUES ('workflow.run', CAST(:p AS jsonb), 'running', now())"),
+            text(
+                "INSERT INTO job (kind, payload, status, locked_at)"
+                " VALUES ('workflow.run', CAST(:p AS jsonb), 'running', now())"
+            ),
             {"p": '{"wf": "WF-110", "run": "RUN-LIVE1"}'},
         )
         s.commit()

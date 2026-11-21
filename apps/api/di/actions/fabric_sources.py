@@ -158,7 +158,6 @@ def _event(ctx: CallContext, cur: dict, type_: str, ack: str, note: str) -> None
     )  # fmt: skip
 
 
-
 # ---------------------------------------------------------------- source.update
 def _build_url(d: dict) -> str:
     """The demo's buildUrl."""
@@ -240,7 +239,8 @@ def _save_connection(ctx: CallContext, sid: str, i: dict, new_url: str, url_chan
     source-sim. A source made here (`made`: its auth label and read operations) is read from the endpoint entered.
     `conn` (from the API) sets the connection's fields directly. Returns what changed, for the audit."""
     s, ch = ctx.session, []
-    conn_in = i.get("conn") if isinstance(i.get("conn"), dict) else {}
+    raw_conn = i.get("conn")
+    conn_in: dict = raw_conn if isinstance(raw_conn, dict) else {}
     if any(w in k.lower() for k in (conn_in.get("auth_params") or {}) for w in ("secret", "password", "token")):
         raise ActionError("validation_error", "Send the secret as `secret`; it is stored encrypted, never in the settings.")
     fields = {k: conn_in[k] for k in ("base_url", "protocol", "auth_kind", "auth_params", "resources", "paging") if k in conn_in}
@@ -617,6 +617,7 @@ def credentials_rotate(i: dict[str, Any], ctx: CallContext):
     if not reauth and not i.get("secret"):
         raise ActionError("validation_error", "Enter the new secret.")
     cfg["credAt"], cfg["credDays"] = _now_ms(ctx), int(days)
+    meta: secrets.SecretMeta | None
     if i.get("secret"):
         meta = secrets.put_secret(ctx.session, cur["id"], "auth", str(i["secret"]), int(days), _by(ctx), ctx.now)
     else:
@@ -797,6 +798,7 @@ def source_test(i: dict[str, Any], ctx: CallContext):
         steps = _probe_steps(ctx, sid, cur["status"], i.get("auth") or cur.get("auth") or "", reauth)
     ok = all(x["ok"] for x in steps) and len(steps) == 5
     return {"source_id": sid, "steps": steps, "ok": ok, "at": iso(_now_ms(ctx))}
+
 
 # ---------------------------------------------------------------- field mapping versions (plan 6 A4)
 _declare(
