@@ -24,7 +24,8 @@ import { useTick } from '../../ui/useTick';
 import { QuickActions, WorkflowMenu } from './WorkflowMenus';
 import { SourceMark, WorkflowStatus } from './WorkflowMarks';
 import { DeleteModal, FailedRecordsModal, RunViewModal } from './WorkflowModals';
-import { duplicate, exportOne, NOT_YET, runNow, saveTemplate, studioHref } from './workflowActions';
+import { applyFix, duplicate, exportOne, runNow, saveTemplate, studioHref } from './workflowActions';
+import { errorLog, failedAfter, retriesOf } from './investigation';
 
 type Tab = 'studio' | 'settings' | 'history' | 'docs';
 type View = 'overview' | 'details' | 'flow';
@@ -137,11 +138,12 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
 
   // ---- save, publish, discard, reset, back
   /** What was just saved: the copy keeps it until the backend's newer graph arrives (with the API it comes a moment later). */
-  const kept = (): Partial<Draft> => ({ graph: d.graph, name: d.name, owner: d.owner, trig: d.trig, hist: { s: [JSON.stringify(d.graph)], i: 0 } });
+  const kept = (): Partial<Draft> => ({ graph: d.graph, name: d.name, owner: d.owner, trig: d.trig, retries: d.retries, alert: d.alert, hist: { s: [JSON.stringify(d.graph)], i: 0 } });
+  const body = () => ({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '', retries: d.retries, alert: d.alert });
   async function save() {
     if (!mgr) return toast(NOWF());
     if (!d.name.trim()) return toast('Enter a workflow name before saving.');
-    const r = await action.run(() => saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' }), 4200);
+    const r = await action.run(() => saveWorkflow(body()), 4200);
     if (!r.ok) return;
     reload(w.id, kept());
     toast(r.output.name + ' saved as v' + r.output.ver + '.');
@@ -158,7 +160,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     if (d.dirty) {
       // the name, owner and trigger are part of the change, so they are saved with the graph first
       if (!d.name.trim()) return toast('Enter a workflow name before saving.');
-      const s = await action.run(() => saveWorkflow({ id: w.id, name: d.name, owner: d.owner, trig: d.trig, graph: d.graph, note: w.aiNote || '' }), 4200);
+      const s = await action.run(() => saveWorkflow(body()), 4200);
       if (!s.ok) return;
     }
     const r = await action.run(() => publishWorkflow(w.id));
@@ -171,7 +173,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     if (!s) return;
     clearRun();
     setSel(null);
-    reload(w.id, { graph: s.graph, name: s.name, owner: s.owner, trig: s.trig, hist: { s: [JSON.stringify(s.graph)], i: 0 } });
+    reload(w.id, { graph: s.graph, name: s.name, owner: s.owner, trig: s.trig, retries: s.retries ?? 3, alert: s.alert || 'A run fails', hist: { s: [JSON.stringify(s.graph)], i: 0 } });
     toast('Changes discarded. Back to v' + w.ver + '.');
   }
   function reset() {
@@ -189,6 +191,8 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     nav(studioHref());
   }
   const meta = (f: (x: Draft) => void) => edit(w.id, f);
+  /** A run setting (ACT.frWfSet): kept in the copy, so Save sends it with the workflow. */
+  const setRun = (f: (x: Draft) => void) => { meta(f); toast('Saved with the workflow.'); };
   async function dup() {
     const nid = await duplicate(w.id);
     if (nid) nav(studioHref(nid));
@@ -345,11 +349,11 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
             <div className="fld"><label htmlFor="wfOwn">Owner (role or team)</label>
               <input id="wfOwn" value={d.owner} maxLength={60} onChange={(e) => meta((x) => { x.owner = e.target.value; })} /></div>
             <div className="fld"><label htmlFor="frRetry">Retries</label>
-              <select id="frRetry" value={String(w.retries ?? 3)} onChange={() => toast(NOT_YET)}>
+              <select id="frRetry" value={String(d.retries)} onChange={(e) => setRun((x) => { x.retries = +e.target.value; })}>
                 {[0, 1, 3, 5].map((n) => <option key={n}>{n}</option>)}
               </select></div>
             <div className="fld"><label htmlFor="frAlert">Alert when</label>
-              <select id="frAlert" value={w.alert || 'A run fails'} onChange={() => toast(NOT_YET)}>
+              <select id="frAlert" value={d.alert} onChange={(e) => setRun((x) => { x.alert = e.target.value; })}>
                 {['A run fails', 'Two runs fail in a row', 'Success rate drops below 95%', 'Never'].map((o) => <option key={o}>{o}</option>)}
               </select></div>
           </div>
@@ -420,7 +424,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
       </div>
       <div className="wfbot" ref={checksRef}>
         <ChecksPanel g={g} checks={checks} onPick={pick} />
-        <TaskInstances g={g} run={run} onPick={pick} onApprove={approve} onClear={clearRun} />
+        <TaskInstances g={g} run={run} retries={retriesOf(run?.id === w.lastRun?.id ? w.lastRun : undefined, d)} onPick={pick} onApprove={approve} onClear={clearRun} />
       </div>
       {ghost && <div className="wfghost" style={{ left: ghost.x, top: ghost.y }}>{ghost.label}</div>}
       {modals}
@@ -510,12 +514,12 @@ function Details({ w, d, mgr, onDup, onDelete }: { w: Workflow; d: Draft; mgr: b
 function Investigation({ w, mgr, onRun }: { w: Workflow; mgr: boolean; onRun: () => void }) {
   const r = w.lastRun, bad = r?.order.find((x) => r.states[x] === 'failed'), g = draftOf(w.id)!.graph, n = bad ? g.nodes.find((x) => x.id === bad) : undefined;
   if (!r || !n) return null;
-  const i = stepInfo(n), m = mappings(w.src).slice(0, 3), t = (o: number) => new Date(r.ts - o).toISOString().slice(11, 19);
+  const i = stepInfo(n), m = mappings(w.src).slice(0, 3), tries = retriesOf(r, w);
   const soon = () => openAsk(`Why did ${w.name} (${w.id}) fail at ${i.label} in run ${r.id}, and how do I fix it?`);
   return (
     <section className="panel frinvp" id="frInvest">
       <div className="ph">
-        <div><h3><Icon name="alert" /> Investigation · {r.id}</h3><span className="note">{i.label} failed after 3 retries · {ago(nowMs() - r.ts)}</span></div>
+        <div><h3><Icon name="alert" /> Investigation · {r.id}</h3><span className="note">{i.label} {failedAfter(tries)} · {ago(nowMs() - r.ts)}</span></div>
         <span className="row">
           <button className="btn sm" onClick={soon}><Icon name="spark" /> Diagnose</button>
           <button className="btn sm" onClick={soon}><Icon name="spark" /> Fix</button>
@@ -523,17 +527,15 @@ function Investigation({ w, mgr, onRun }: { w: Workflow; mgr: boolean; onRun: ()
         </span>
       </div>
       <div className="pb frinvg">
-        <div><h4>Error log</h4><pre className="frlog">{`${t(9000)} INFO  run ${r.id} started · trigger ${r.trig}
-${t(6000)} WARN  ${i.label}: attempt 1 failed
-${t(4000)} WARN  ${i.label}: attempt 2 failed
-${t(2000)} ERROR ${r.note || i.label + ' failed'}
-${t(0)} INFO  downstream steps marked upstream failed; held records kept`}</pre></div>
+        <div><h4>Error log</h4><pre className="frlog">{errorLog(tries, r, i.label)}</pre></div>
         <div><h4>Schema drift</h4>
           {m.length ? (
             <table className="t static tight"><thead><tr><th>Field</th><th>Expected</th><th>Received</th></tr></thead>
               <tbody>{m.map((f, k) => <tr key={k}><td className="mono">{f[0]}</td><td className="mono">{f[1]}</td><td className={'mono ' + (k === 0 ? 'neg' : '')}>{k === 0 ? f[1] + ' → renamed in source' : f[1]}</td></tr>)}</tbody></table>
           ) : <p className="note">No field-level drift recorded.</p>}
-          {mgr && <button className="btn sm" style={{ marginTop: 8 }} onClick={() => toast(NOT_YET)}>Apply the suggested fix</button>}
+          {w.frFix
+            ? <p className="callout ok" style={{ marginTop: 8 }}><b>Fix applied.</b> {w.frFix} Run now to confirm.</p>
+            : mgr && <button className="btn sm" style={{ marginTop: 8 }} onClick={() => applyFix(w.id)}>Apply the suggested fix</button>}
         </div>
       </div>
     </section>

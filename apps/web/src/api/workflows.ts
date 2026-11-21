@@ -2,7 +2,8 @@
  * Workflow Studio: typed reads over the workflow list, the step catalogue (XF, FXD, ACT_TYPES, TOOLS), the workflow
  * checks and the run simulation. Changes go through invoke() with the demo's action ids: workflow.save,
  * workflow.publish, workflow.setStatus, workflow.create, workflow.duplicate, workflow.delete, workflow.run (and
- * workflow.validate as a read).
+ * workflow.validate as a read), and the server's workflow.saveTemplate, workflow.reprocess and workflow.applyFix for
+ * the controls the demo ran in the browser.
  *
  * apps/api/di/screens/workflows.py has the mapping, export by export:
  * - the list, the recent runs and the attention list: GET /api/screens/workflows; one workflow's graph, saved
@@ -33,7 +34,8 @@ export interface Workflow {
   id: string; name: string; status: WfStatus; ver: string; cat: 'Ingest' | 'Outbound' | 'Decision'; kind: 'pipe' | 'dec';
   src: string | null; owner: string; trig: Trigger; desc: string; running: boolean; dirty: boolean;
   last: LastRun | null; runsN: number; okN: number; updated: number | string;
-  lastRun?: { id: string; ts: number; t0: number; trig: string; states: Record<string, RunState>; dur: Record<string, number>; order: string[]; status: string; note: string };
+  /** `retries`: the retries setting the run used (once one is saved). */
+  lastRun?: { id: string; ts: number; t0: number; trig: string; states: Record<string, RunState>; dur: Record<string, number>; order: string[]; status: string; note: string; retries?: number };
   frFix?: string; frReproc?: string; retries?: number; alert?: string; aiNote?: string;
 }
 export interface RunRow { id: string; wf: string; name: string; ts: number; trig: string; dur: number; rows: number; state: RunState; note: string }
@@ -53,10 +55,12 @@ export interface Counts { in: number; out: number; rej: number }
 type Attention = { ic: string; h: string; t: string; s: string; arg: string; go?: string };
 
 // ---------------------------------------------------------------- the API answers
-interface ListAnswer { workflows: Workflow[]; runs: RunRow[]; attention: Attention[]; now?: number }
+export interface WfTemplate { id: string; from: string; name: string; cat: string; kind: string; src: string | null; owner: string; trig: Trigger }
+interface ListAnswer { workflows: Workflow[]; runs: RunRow[]; attention: Attention[]; templates?: WfTemplate[]; now?: number }
+export interface Saved { graph: WfGraph; name: string; owner: string; trig: Trigger; retries?: number; alert?: string }
 interface Detail {
   workflow: Workflow & { graph: WfGraph };
-  saved: { graph: WfGraph; name: string; owner: string; trig: Trigger } | null;
+  saved: Saved | null;
   template: WfGraph | null;
   history: HistoryRow[];
   failed_rows: { rec: string; field: string; value: string; rule: string }[];
@@ -118,6 +122,8 @@ export const NOWF = (): string => ref('NOWF');
 
 /** Items that need attention in the right column: failing workflows, expired credentials, high failure rates. */
 export const attention = (): Attention[] => listA().attention;
+/** The templates saved from workflows (S.frTpl), oldest first; New workflow lists them. */
+export const templates = (): WfTemplate[] => listA().templates ?? [];
 
 /** Follow a run started with runWorkflow (by the run key it returned) until it finishes; returns the unsubscribe. */
 export function followRun(key: string, done: (r: RunRow) => void): () => void {
@@ -147,7 +153,7 @@ export function graphStamp(id: string): string {
   return w ? w.ver + '|' + String(w.updated) : '';
 }
 /** The last saved version, for Discard. */
-export function savedOf(id: string): { graph: WfGraph; name: string; owner: string; trig: Trigger } | null {
+export function savedOf(id: string): Saved | null {
   return workflow(id) ? clone(detailA(id).saved) : null;
 }
 /** A fresh graph from the workflow's template, for Reset to template. */
@@ -263,8 +269,17 @@ export const fixedStep = (id: string): { label: string; fields?: string[]; canon
 export const sourceGroups = (): [string, string[], string][] => ref('FR_SRCG');
 
 // ---- changes (invoke) ----
-export const saveWorkflow = (i: { id: string; name: string; owner: string; trig: Trigger; graph: WfGraph; note?: string }) =>
+/** Save the draft; `retries` and `alert` are the Settings tab's run settings (frWfSet), saved with the workflow. */
+export const saveWorkflow = (i: { id: string; name: string; owner: string; trig: Trigger; graph: WfGraph; note?: string; retries?: number; alert?: string }) =>
   invoke<{ id: string; ver: string; name: string }>('workflow.save', i);
+/** Save as template (frWfTpl): one per workflow; it appears under New workflow. */
+export const saveAsTemplate = (id: string) => invoke<{ id: string; name: string; from: string }>('workflow.saveTemplate', { id });
+/** A new draft from a saved template (frTplUse). */
+export const createFromTemplate = (tpl: string) => invoke<{ id: string; name: string }>('workflow.create', { type: 'template', tpl });
+/** Send the latest run's held records back through validation (frReproc). */
+export const reprocessFailed = (id: string) => invoke<{ id: string; name: string; n: number }>('workflow.reprocess', { id });
+/** Apply the investigation's suggested fix (frFixApply). */
+export const applySuggestedFix = (id: string) => invoke<{ id: string; name: string; ver: string; fix: string }>('workflow.applyFix', { id });
 export const publishWorkflow = (id: string, graph?: WfGraph) =>
   invoke<{ id: string; ver: string; name: string; trig: string }>('workflow.publish', graph ? { id, graph } : { id });
 export const setWorkflowStatus = (id: string, status: WfStatus) =>

@@ -11,6 +11,10 @@ const m = vi.hoisted(() => ({
   duplicateWorkflow: vi.fn(),
   exportJson: vi.fn(),
   followRun: vi.fn(),
+  saveAsTemplate: vi.fn(),
+  createFromTemplate: vi.fn(),
+  reprocessFailed: vi.fn(),
+  applySuggestedFix: vi.fn(),
 }));
 vi.mock('../../api/session', () => ({ can: () => m.allowed }));
 vi.mock('../../ui/toast', () => ({ toast: m.toast }));
@@ -23,9 +27,13 @@ vi.mock('../../api/workflows', () => ({
   duplicateWorkflow: m.duplicateWorkflow,
   exportJson: m.exportJson,
   followRun: m.followRun,
+  saveAsTemplate: m.saveAsTemplate,
+  createFromTemplate: m.createFromTemplate,
+  reprocessFailed: m.reprocessFailed,
+  applySuggestedFix: m.applySuggestedFix,
 }));
 
-import { bulk, duplicate, exportOne, NOT_YET, runNow, saveTemplate, studioHref, toggle } from './workflowActions';
+import { applyFix, bulk, duplicate, exportOne, fromTemplate, reprocess, runNow, saveTemplate, studioHref, toggle } from './workflowActions';
 
 const NOWF = 'Only workflow managers can change workflows.';
 const wf = (id: string, status: 'published' | 'draft' | 'paused') => m.list.set(id, { id, name: 'Flow ' + id, status });
@@ -113,9 +121,52 @@ describe('duplicate, export and templates', () => {
     expect(m.download).not.toHaveBeenCalled();
     expect(m.toast.mock.calls).toEqual([['Network down.', 4200]]);
   });
-  it('saving a template is not available yet', () => {
-    saveTemplate('WF-1');
-    expect(toasts()).toEqual([NOT_YET]);
+  it('saves a template through workflow.saveTemplate, with the demo\'s text', async () => {
+    m.saveAsTemplate.mockResolvedValue({ ok: true, output: { id: 'TPL-1', name: 'Flow template', from: 'WF-1' } });
+    await saveTemplate('WF-1');
+    expect(m.saveAsTemplate).toHaveBeenCalledWith('WF-1');
+    expect(toasts()).toEqual(['Saved as a template. It appears under New workflow.']);
+  });
+  it('creates a draft from a template and returns its id', async () => {
+    m.createFromTemplate.mockResolvedValue({ ok: true, output: { id: 'WF-136', name: 'Flow (from template)' } });
+    expect(await fromTemplate('TPL-1')).toBe('WF-136');
+    expect(toasts()).toEqual(['Created from the template as a draft.']);
+    m.createFromTemplate.mockResolvedValue({ ok: false, error: { code: 'not_found', message: 'No template TPL-9.' } });
+    expect(await fromTemplate('TPL-9')).toBeNull();
+  });
+  it('template actions need the manage permission', async () => {
+    m.allowed = false;
+    await saveTemplate('WF-1');
+    expect(await fromTemplate('TPL-1')).toBeNull();
+    expect(m.saveAsTemplate).not.toHaveBeenCalled();
+    expect(m.createFromTemplate).not.toHaveBeenCalled();
+    expect(toasts()).toEqual([NOWF, NOWF]);
+  });
+});
+
+describe('failed records and the suggested fix', () => {
+  it('reprocess reports how many records went back', async () => {
+    m.reprocessFailed.mockResolvedValue({ ok: true, output: { id: 'WF-1', name: 'Flow', n: 4 } });
+    expect(await reprocess('WF-1')).toBe(true);
+    expect(toasts()).toEqual(['4 records sent back through validation. Rows that still break a rule stay held.']);
+  });
+  it('reprocess shows a refusal', async () => {
+    m.reprocessFailed.mockResolvedValue({ ok: false, error: { code: 'duplicate', message: 'Already reprocessed: 4 records at 10:00' } });
+    expect(await reprocess('WF-1')).toBe(false);
+    expect(m.toast).toHaveBeenCalledTimes(1);
+  });
+  it('apply fix gives the demo\'s text', async () => {
+    m.applySuggestedFix.mockResolvedValue({ ok: true, output: { id: 'WF-1', name: 'Flow', ver: '1.5', fix: 'x' } });
+    await applyFix('WF-1');
+    expect(m.applySuggestedFix).toHaveBeenCalledWith('WF-1');
+    expect(toasts()).toEqual(['Fix applied. Run now to confirm it turns green.']);
+  });
+  it('need the manage permission', async () => {
+    m.allowed = false;
+    expect(await reprocess('WF-1')).toBe(false);
+    await applyFix('WF-1');
+    expect(m.reprocessFailed).not.toHaveBeenCalled();
+    expect(m.applySuggestedFix).not.toHaveBeenCalled();
   });
 });
 

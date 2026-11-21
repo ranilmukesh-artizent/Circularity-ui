@@ -2,15 +2,14 @@
 import { can } from '../../api/session';
 import { fmtNumber } from '../../api/format';
 import {
-  duplicateWorkflow, exportJson, followRun, NOWF, runWorkflow, setWorkflowStatus, workflow,
+  applySuggestedFix, createFromTemplate, duplicateWorkflow, exportJson, followRun, NOWF, reprocessFailed, runWorkflow,
+  saveAsTemplate, setWorkflowStatus, workflow,
 } from '../../api/workflows';
 import { toast } from '../../ui/toast';
 import { refused } from '../../ui/useAction';
 import { download } from '../../lib/download';
 
 export const studioHref = (id?: string) => '/integration/studio' + (id ? '/' + id : '');
-/** A change the backend has no action for yet. */
-export const NOT_YET = 'Not available yet.';
 
 /** Pause, resume or publish from the list (ACT.wfToggle). */
 export async function toggle(id: string) {
@@ -51,9 +50,38 @@ export async function exportOne(id: string) {
   toast(workflow(id)!.name + ' exported as JSON.');
 }
 
-export function saveTemplate(_id: string) {
+/** Save as template (ACT.frWfTpl). */
+export async function saveTemplate(id: string) {
   if (!can('manageWorkflows')) return toast(NOWF());
-  toast(NOT_YET); // no backend action saves a template yet
+  const r = await saveAsTemplate(id);
+  if (refused(r, 4200)) return;
+  toast('Saved as a template. It appears under New workflow.');
+}
+
+/** A new draft from a saved template (ACT.frTplUse). Returns the new workflow's id. */
+export async function fromTemplate(tpl: string): Promise<string | null> {
+  if (!can('manageWorkflows')) { toast(NOWF()); return null; }
+  const r = await createFromTemplate(tpl);
+  if (refused(r, 4200)) return null;
+  toast('Created from the template as a draft.');
+  return r.output.id;
+}
+
+/** Reprocess the held records (ACT.frReproc). True when they were sent. */
+export async function reprocess(id: string): Promise<boolean> {
+  if (!can('manageWorkflows')) { toast(NOWF()); return false; }
+  const r = await reprocessFailed(id);
+  if (refused(r, 4200)) return false;
+  toast(r.output.n + ' records sent back through validation. Rows that still break a rule stay held.');
+  return true;
+}
+
+/** Apply the investigation's suggested fix (ACT.frFixApply). */
+export async function applyFix(id: string) {
+  if (!can('manageWorkflows')) return toast(NOWF());
+  const r = await applySuggestedFix(id);
+  if (refused(r, 4200)) return;
+  toast('Fix applied. Run now to confirm it turns green.');
 }
 
 /** Bulk run, pause or export from the list (ACT.frWfBulk), each run and pause through invoke(). */

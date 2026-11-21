@@ -41,6 +41,13 @@ describe('draftOf', () => {
     expect(d.trig).not.toBe(backend.get('WF-1')!.w.trig);
     expect(d.hist).toEqual({ s: [JSON.stringify(graph('a', 'b'))], i: 0 });
   });
+  it('copies the run settings, with the demo\'s defaults (3 retries, alert when a run fails)', () => {
+    seed('WF-1');
+    expect(draftOf('WF-1')).toMatchObject({ retries: 3, alert: 'A run fails' });
+    seed('WF-2');
+    Object.assign(backend.get('WF-2')!.w, { retries: 0, alert: 'Never' });
+    expect(draftOf('WF-2')).toMatchObject({ retries: 0, alert: 'Never' });
+  });
   it('keeps the same copy while the backend version is unchanged', () => {
     seed('WF-1');
     expect(draftOf('WF-1')).toBe(draftOf('WF-1'));

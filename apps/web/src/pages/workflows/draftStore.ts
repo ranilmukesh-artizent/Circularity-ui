@@ -13,6 +13,9 @@ export interface Draft {
   name: string;
   owner: string;
   trig: Trigger;
+  /** The run settings (Settings tab): retries 0, 1, 3 or 5 (default 3) and when to alert (default "A run fails"). */
+  retries: number;
+  alert: string;
   dirty: boolean;
   /** "Leave with unsaved changes" was already warned once. */
   warned: boolean;
@@ -39,7 +42,8 @@ function fresh(id: string): Draft {
   const w = workflow(id)!;
   const graph = graphOf(id);
   return {
-    id, graph, name: w.name, owner: w.owner, trig: { ...w.trig }, dirty: !!w.dirty, warned: false, base: baseOf(id),
+    id, graph, name: w.name, owner: w.owner, trig: { ...w.trig }, retries: w.retries ?? 3, alert: w.alert || 'A run fails',
+    dirty: !!w.dirty, warned: false, base: baseOf(id),
     hist: { s: [JSON.stringify(graph)], i: 0 }, seq: 100,
   };
 }

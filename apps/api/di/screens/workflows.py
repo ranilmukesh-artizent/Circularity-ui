@@ -44,8 +44,10 @@ Facade (apps/web/src/api/workflows.ts) → here, export by export:
   draft's test-run states
 - actions (di/actions/workflows.py): saveWorkflow, publishWorkflow, setWorkflowStatus, createWorkflow,
   duplicateWorkflow, deleteWorkflow, runWorkflow (a worker job; progress as `workflow` stream events), validateSaved
-- browser-only view flags in the demo (not journaled there), need actions before B17: exportJson, saveAsTemplate,
-  applySuggestedFix, reprocessFailed, setRunSetting
+- the controls the demo kept in browser memory, now actions (di/actions/workflows.py): saveAsTemplate
+  (workflow.saveTemplate; the list's `templates`, S.frTpl, empty at the start), createFromTemplate (workflow.create
+  with `tpl`), the run settings Retries and Alert when (workflow.save with `retries` and `alert`), reprocessFailed
+  (workflow.reprocess), applySuggestedFix (workflow.applyFix); exportJson is built in the browser from this read
 """
 
 import json
@@ -56,28 +58,13 @@ from di import clock, state
 from di.auth import Principal
 from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round
-from di.reads.common import AS_OF, SOURCES, STARTING_MAPPINGS, hash_id, ms, to_fixed
-from di.reads.workflows import GOLDEN, all_workflows, recent_runs, run_counts, wf_stat
+from di.reads.common import AS_OF, SOURCES, hash_id, ms, to_fixed
+from di.reads.workflows import GOLDEN, all_workflows, failed_rows, recent_runs, run_counts, templates, wf_stat
 
 router = APIRouter(prefix="/api/screens/workflows", tags=["screens: workflows"])
 
 # wfBuild(tpl): the template graphs, keyed by template (a pure function of the template and the source reference)
 _TEMPLATES = {json.dumps(w["tpl"], sort_keys=True): GOLDEN["detail"][w["id"]]["template"] for w in GOLDEN["starting"]}
-_FAILED_RULES = [
-    "Required field is empty",
-    "Date is not in ISO 8601",
-    "Unknown status code",
-    "Currency has no dated rate",
-    "Value outside allowed range",
-    "Duplicate key in this batch",
-]
-_FAILED_VALUE = {
-    "Required field is empty": "",
-    "Date is not in ISO 8601": "31/13/2026",
-    "Unknown status code": "ZZ",
-    "Currency has no dated rate": "1250 XAU",
-    "Value outside allowed range": "-4",
-}
 _LIST_HIDDEN = ("graph", "saved", "tpl")  # the list leaves the graph out; GET /{id} has it
 
 
@@ -85,9 +72,12 @@ def require_studio(p: Principal) -> None:
     p.require_page("integration", "studio")
 
 
-def template(tpl: dict | None) -> dict | None:
+def template(tpl: dict | None, saved: list[dict] | None = None) -> dict | None:
     """wfBuild(tpl): the recorded template graph, or (for a template no starting workflow uses, such as a new blank
-    pipeline) the port in di.actions.workflows."""
+    pipeline) the port in di.actions.workflows. A workflow created from a saved template ({k: "tpl", id}) resets to
+    that template's graph, from `saved` (the demo gives it {k: "none"}, which resets it to an empty canvas)."""
+    if tpl and tpl.get("k") == "tpl":
+        return next((t["tpl"] for t in saved or [] if t["id"] == tpl.get("id")), {"nodes": [], "edges": []})
     t = _TEMPLATES.get(json.dumps(tpl, sort_keys=True))
     if t is None and tpl:
         from di.actions.workflows import build
@@ -186,27 +176,6 @@ def history(w: dict, runs: list[dict], now: int = AS_OF) -> list[dict]:
     return sorted(out, key=lambda r: -r["ts"])  # stable, as the demo's sort
 
 
-def failed_rows(w: dict, counts: dict[str, dict] | None = None) -> list[dict]:
-    """frFailedRows: the invalid rows of the latest run, with the field and the rule each broke."""
-    m = STARTING_MAPPINGS.get(w.get("src") or "", [])
-    c = counts if counts is not None else run_counts(w)
-    n = min(40, next((x["rej"] for x in c.values() if x["rej"] > 0), 0))
-    out = []
-    for i in range(n):
-        f = m[i % len(m)] if m else ["record_id", "—"]
-        h = int(hash_id(f"{w['id']}f{i}"), 16)
-        rule = _FAILED_RULES[h % len(_FAILED_RULES)]
-        out.append(
-            {
-                "rec": (w.get("src") or "rec").upper() + "-" + str(10000 + h % 89999),
-                "field": f[0],
-                "value": _FAILED_VALUE.get(rule, str(f[1])),
-                "rule": rule,
-            }
-        )
-    return out
-
-
 def attention(workflows: list[dict], now: int = AS_OF) -> list[dict]:
     """frWfAttn: failing workflows, expired source credentials (the demo's stale sources), high failure rates."""
     o = []
@@ -281,6 +250,7 @@ def workflow_list(
         "counts": counts(wl),
         "runs": recent_runs(session),
         "attention": attention(wl),
+        "templates": [{k: v for k, v in t.items() if k != "tpl"} for t in templates(session)],  # S.frTpl, no graphs
         "now": ms(clock.now().isoformat()),  # the workspace clock, which run times are on (the frontend's "ago")
     }
 
@@ -293,11 +263,13 @@ def workflow_detail(workflow_id: str, p: CurrentPrincipal, session: DbSession):
         raise HTTPException(404, {"code": "not_found", "message": f"No workflow {workflow_id}."})
     c = run_counts(w)
     saved = json.loads(w["saved"]) if w.get("saved") else None
+    tpl = w.get("tpl")
     return {
         "workflow": w | {"stat": wf_stat(w)},
         "saved": saved
-        and {"graph": saved["g"], "name": saved["m"]["name"], "owner": saved["m"]["owner"], "trig": saved["m"]["trig"]},
-        "template": template(w.get("tpl")),
+        and {"graph": saved["g"], "name": saved["m"]["name"], "owner": saved["m"]["owner"], "trig": saved["m"]["trig"]}
+        | {k: saved["m"][k] for k in ("retries", "alert") if k in saved["m"]},  # the run settings, once saved
+        "template": template(tpl, templates(session) if tpl and tpl.get("k") == "tpl" else None),
         "history": history(w, recent_runs(session)),
         "run_counts": c,
         "run_from_last": run_from_last(w),

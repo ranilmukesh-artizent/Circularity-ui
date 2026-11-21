@@ -1,5 +1,8 @@
 """Workflow Studio actions (docs/backend-steps.md, B15 part 2): workflow.save, publish, setStatus, create, duplicate,
-delete and run, and the read workflow.validate.
+delete and run, and the read workflow.validate; and three the demo ran in the browser without an action, declared
+here beside the catalog: workflow.saveTemplate (frWfTpl), workflow.reprocess (frReproc), workflow.applyFix
+(frFixApply). workflow.save also takes the Settings tab's run settings (`retries`, `alert`: frWfSet) and
+workflow.create a saved template (`tpl`: frTplUse). Runs use the retries and raise the alert the settings ask for.
 
 Ports of the demo's handlers (index.html, `defAction('workflow.save', ...)` and the ones after it) and of what they call:
 the template graphs (wfBuild with the Connection Fabric's extra branches), the checks (wfValidate, with the Fabric's
@@ -43,11 +46,13 @@ from typing import Any, cast
 
 from sqlalchemy import text
 
-from di import clock, jobs, state
+from di import clock, jobs, policy, state
+from di.actions.decisions import NOTE_SEQ_START, rb_log
 from di.actions.pipeline import CallContext
-from di.actions.registry import ActionError, guard, implement
+from di.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
+from di.engine.jsmath import js_round
 from di.reads import workflows as studio
-from di.reads.common import SOURCES, hash_id, iso, ms, to_fixed
+from di.reads.common import SOURCES, STARTING_MAPPINGS, hash_id, iso, ms, to_fixed
 from di.reads.constants import MAP_TARGET, MAPPINGS, SRC_TYPES, TOOLS
 from di.reads.reference import channels, lists
 
@@ -63,6 +68,32 @@ CH_DEL: dict[str, str] = _REF["CH_DEL"]
 SH: dict[str, str] = _REF["SH"]
 
 RUNS_KEPT = 40  # S.wf.runs.length = Math.min(S.wf.runs.length, 40)
+# the Settings tab's run settings (frWfSet): retries default 3, alert default "A run fails"
+RETRIES = (0, 1, 3, 5)
+ALERTS = ("A run fails", "Two runs fail in a row", "Success rate drops below 95%", "Never")
+ALERT_TO = "developer"  # who a workflow alert is addressed to (Admin sees every notification too)
+
+
+# ---------------------------------------------------------------- actions the demo's catalog does not name
+# The demo ran these controls in the browser without an action (ACT.frWfTpl, frReproc, frFixApply, frWfSet). Here every
+# write goes through the pipeline, so they are declared beside the catalog's 76: the same permission as the other
+# workflow actions (manageWorkflows; the demo adds them to PERM_ACTS.manageWorkflows), journaled like them.
+def _declare(action_id: str, title: str, desc: str, inp: dict[str, dict[str, Any]]) -> None:
+    ACTIONS.setdefault(
+        action_id,
+        ActionDef(
+            id=action_id, title=title, desc=desc, risk="act", perm="manageWorkflows", scope="none", input=inp,
+            verb="change workflows",
+        ),
+    )  # fmt: skip
+
+
+_ID = {"id": {"req": True, "t": "string"}}
+_declare("workflow.saveTemplate", "Save workflow as template", "Save a workflow's graph as a template for New workflow.", _ID)
+_declare("workflow.reprocess", "Reprocess failed records", "Send the records the latest run held back through validation.", _ID)
+_declare("workflow.applyFix", "Apply the suggested fix", "Apply the suggested fix for the step the last run failed at.", _ID)
+ACTIONS["workflow.save"].input |= {"retries": {"req": False, "t": "number"}, "alert": {"req": False, "t": "string"}}
+ACTIONS["workflow.create"].input |= {"tpl": {"req": False, "t": "string"}}
 # the canvas' test run (wfStep): a step that runs shows "running" for 320 ms; one that does nothing takes 25 ms.
 # Tests set both to 0.
 STEP_SECONDS = 0.32
@@ -195,6 +226,7 @@ def label(n: dict) -> str:
 def snap(w: dict) -> str:
     """wfSnap: the saved snapshot, as the demo's JSON.stringify writes it."""
     m = {"name": w.get("name"), "owner": w.get("owner"), "trig": w.get("trig")}
+    m |= {k: w[k] for k in ("retries", "alert") if k in w}  # the run settings, once a person has saved them
     return json.dumps({"g": w.get("graph"), "m": m}, separators=(",", ":"), ensure_ascii=False)
 
 
@@ -811,7 +843,20 @@ def _ids(ctx: CallContext) -> set[str]:
 # ---------------------------------------------------------------- the actions
 @guard("workflow.save")
 def save_guard(i: dict[str, Any], ctx: CallContext):
-    return _wf_guard(i, ctx) or (None if i["name"].strip() else ("validation_error", "Enter a workflow name before saving."))
+    return (
+        _wf_guard(i, ctx)
+        or (None if i["name"].strip() else ("validation_error", "Enter a workflow name before saving."))
+        or _settings_problem(i)
+    )
+
+
+def _settings_problem(i: dict[str, Any]) -> tuple[str, str] | None:
+    """The run settings offer fixed choices (the Settings tab's two selects)."""
+    if i.get("retries") is not None and (isinstance(i["retries"], bool) or i["retries"] not in RETRIES):
+        return "validation_error", "Retries must be 0, 1, 3 or 5."
+    if i.get("alert") is not None and i["alert"] not in ALERTS:
+        return "validation_error", "Alert when must be one of: " + ", ".join(ALERTS) + "."
+    return None
 
 
 @implement("workflow.save")
@@ -823,6 +868,10 @@ def save(i: dict[str, Any], ctx: CallContext):
         w["owner"] = i["owner"]
     if i.get("trig") is not None:
         w["trig"] = dict(i["trig"])
+    if i.get("retries") is not None:
+        w["retries"] = int(i["retries"])
+    if i.get("alert") is not None:
+        w["alert"] = i["alert"]
     bump(w)
     now = _now(ctx)
     w.update(updated=now, dirty=False, warned=False)
@@ -884,12 +933,20 @@ def set_status(i: dict[str, Any], ctx: CallContext):
 
 
 @guard("workflow.create")
-def create_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)
+def create_guard(i: dict[str, Any], ctx: CallContext):
+    if i.get("tpl") is not None:
+        return None if _template(ctx, i["tpl"]) else ("not_found", f"No template {i['tpl']}.")
     return ("validation_error", "Choose a system first.") if i["type"] in ("ingest", "out") and not src(i.get("src")) else None
+
+
+def _template(ctx: CallContext, tid: str) -> dict | None:
+    return state.get(ctx.session, "workflow_templates", tid)
 
 
 @implement("workflow.create")
 def create(i: dict[str, Any], ctx: CallContext):
+    if i.get("tpl") is not None:
+        return _create_from_template(i["tpl"], ctx)
     state.next_number(ctx.session, "workflows", "WF-", 0)  # holds the numbering lock for this transaction
     ids = _ids(ctx)
     k = 100
@@ -979,6 +1036,120 @@ def delete(i: dict[str, Any], ctx: CallContext):
     w = _must(ctx, i["id"], for_update=True)
     state.delete(ctx.session, "workflows", w["id"])
     return {"id": w["id"], "name": w["name"]}
+
+
+# ---------------------------------------------------------------- templates (ACT.frWfTpl, frTplUse)
+@guard("workflow.saveTemplate")
+def save_template_guard(i: dict[str, Any], ctx: CallContext):
+    return _wf_guard(i, ctx)
+
+
+@implement("workflow.saveTemplate")
+def save_template(i: dict[str, Any], ctx: CallContext):
+    """frWfTpl: one template per workflow (saving again keeps the first), numbered TPL-1, TPL-2 ... in order."""
+    w = _must(ctx, i["id"])
+    have = studio.templates(ctx.session)
+    t = next((x for x in have if x["from"] == w["id"]), None)
+    if t is None:
+        t = {
+            "id": f"TPL-{len(have) + 1}", "from": w["id"], "name": f"{w['name']} template",
+            "tpl": copy.deepcopy(graph_of(w)), "cat": w["cat"], "kind": w["kind"], "src": w.get("src"),
+            "owner": w["owner"], "trig": dict(w["trig"]),
+        }  # fmt: skip
+        state.add(ctx.session, "workflow_templates", t["id"], t)
+    rb_log(ctx, "workflow.template.saved", f"{w['id']} · {w['name']}", "workflow.saveTemplate")
+    return {"id": t["id"], "name": t["name"], "from": w["id"]}
+
+
+def _create_from_template(tid: str, ctx: CallContext) -> dict[str, Any]:
+    """frTplUse: a draft with the template's graph, system, owner and trigger, under the first free id from WF-100."""
+    t = _template(ctx, tid)
+    if t is None:  # the guard refused an unknown template
+        raise ActionError("not_found", f"No template {tid}.")
+    state.next_number(ctx.session, "workflows", "WF-", 0)  # the numbering lock
+    ids = _ids(ctx)
+    n = 100
+    while f"WF-{n}" in ids:
+        n += 1
+    name = t["name"].removesuffix(" template") + " (from template)"
+    w: dict[str, Any] = {
+        "id": f"WF-{n}", "status": "draft", "ver": "0.1", "graph": copy.deepcopy(t["tpl"]), "saved": None,
+        "dirty": False, "running": False, "updated": _now(ctx), "name": name, "desc": f"Created from {t['name']}.",
+        "cat": t["cat"], "kind": t["kind"], "tpl": {"k": "tpl", "id": t["id"]}, "src": t["src"], "owner": t["owner"],
+        "trig": dict(t["trig"]), "runsN": 0, "okN": 0, "last": None, "prep": ctx.preparer,
+    }  # fmt: skip
+    w["saved"] = snap(w)
+    state.add(ctx.session, "workflows", w["id"], w)
+    return {"id": w["id"], "name": name}
+
+
+# ---------------------------------------------------------------- failed records (ACT.frReproc)
+def _failed_rows(w: dict) -> list[dict]:
+    return studio.failed_rows(w)
+
+
+@guard("workflow.reprocess")
+def reprocess_guard(i: dict[str, Any], ctx: CallContext):
+    w = _get(ctx, i["id"])
+    if w is None:
+        return _not_found(i)
+    if w.get("frReproc"):
+        return "duplicate", f"Already reprocessed: {w['frReproc']}"
+    return None if _failed_rows(w) else ("conflict", "The latest run held no failed records.")
+
+
+@implement("workflow.reprocess")
+def reprocess(i: dict[str, Any], ctx: CallContext):
+    """frReproc: the held records go back through validation; the dialog then says when. The next run's held records
+    can be reprocessed again (the run job clears the mark)."""
+    w = _must(ctx, i["id"], for_update=True)
+    n = len(_failed_rows(w))
+    w["frReproc"] = f"{n} records at {ctx.now:%H:%M}"
+    _put(ctx, w)
+    rb_log(ctx, "workflow.reprocessed", f"{w['id']} · {n} held records sent back through validation", "workflow.reprocess")
+    return {"id": w["id"], "name": w["name"], "n": n}
+
+
+# ---------------------------------------------------------------- the suggested fix (ACT.frFixApply)
+@guard("workflow.applyFix")
+def apply_fix_guard(i: dict[str, Any], ctx: CallContext):
+    w = _get(ctx, i["id"])
+    if w is None:
+        return _not_found(i)
+    if w.get("frFix"):
+        return "duplicate", "The suggested fix is already applied. Run now to confirm."
+    if (w.get("last") or {}).get("state") != "failed":
+        return "conflict", f"The last run of {w['name']} did not fail, so there is nothing to fix."
+    return None
+
+
+@implement("workflow.applyFix")
+def apply_fix(i: dict[str, Any], ctx: CallContext):
+    """frFixApply: the demo's text for the fix (the renamed source field mapped again, or the step reset). Here the fix
+    also takes effect: the failing step's failure flag is cleared, so Run now can confirm it, and the change is kept as
+    a new version, as the text says."""
+    w = _must(ctx, i["id"], for_update=True)
+    m = STARTING_MAPPINGS.get(w.get("src") or "") or []
+    fix = (
+        f"The renamed source field now maps to {m[0][2]} again (mapping kept as a new version)."
+        if m
+        else "The step is reset to its last good configuration."
+    )
+    states = (w.get("lastRun") or {}).get("states") or {}
+    for n in graph_of(w)["nodes"]:
+        if states.get(n["id"]) == "failed":
+            n.pop("fail", None)
+    bump(w)
+    now = _now(ctx)
+    w.update(frFix=fix, updated=now, dirty=False)
+    w["saved"] = snap(w)
+    w["hist"] = [
+        {"ver": w["ver"], "by": _by(ctx), "at": iso(now), "note": "Fix applied", "prep": ctx.preparer},
+        *(w.get("hist") or []),
+    ]
+    _put(ctx, w)
+    rb_log(ctx, "workflow.fixed", f"{w['id']} · {fix}", "workflow.applyFix")
+    return {"id": w["id"], "name": w["name"], "ver": w["ver"], "fix": fix}
 
 
 @guard("workflow.validate")
@@ -1145,6 +1316,11 @@ def run_job(payload: dict) -> dict:
         o = sim_outcome(w)  # the demo decides the outcome when the run finishes, on the graph as it is then
         now = _now()
         trig = payload.get("trig") or "Manual"
+        before = {
+            "failed": (w.get("last") or {}).get("state") == "failed",
+            "okN": w.get("okN") or 0,
+            "runsN": w.get("runsN") or 0,
+        }
         w["running"] = False
         w["last"] = {"ts": now, "state": o["state"], "dur": dur, "rows": rows, "note": o["note"]}
         w["runsN"] = (w.get("runsN") or 0) + 1
@@ -1154,7 +1330,14 @@ def run_job(payload: dict) -> dict:
             "id": (record or {}).get("id") or run_id(wid, now), "ts": now, "t0": now - dur * 1000, "trig": trig,
             "states": o["states"], "dur": o["dur"], "order": o["order"], "status": o["status"], "note": o["note"],
         }  # fmt: skip
+        if w.get("retries") is not None:  # the saved setting this run used (the investigation's "failed after N retries")
+            w["lastRun"]["retries"] = w["retries"]
+        # a new latest run: its held records and its failures are new, so the marks for the previous run go
+        w.pop("frReproc", None)
+        w.pop("frFix", None)
         state.put(s, "workflows", wid, w)
+        if alert := _alert(w, before):
+            _raise_alert(s, w, alert, now)
         final = {
             "id": w["lastRun"]["id"], "wf": wid, "name": w["name"], "ts": now, "trig": trig, "dur": dur, "rows": rows,
             "state": o["state"], "note": o["note"],
@@ -1175,3 +1358,35 @@ def _keep_recent_runs(s) -> None:
         ),
         {"n": RUNS_KEPT},
     )
+
+
+# ---------------------------------------------------------------- run alerts (the Settings tab's "Alert when")
+def _alert(w: dict, before: dict) -> tuple[str, str] | None:
+    """The alert a finished run raises under the workflow's rule, as (severity, message), or None. The demo offers the
+    rule but raises nothing; here a run that meets it adds a notification (the "notes" collection, as notify.send
+    does), which reaches its addressee on the live stream and on the Alerts page."""
+    rule = w.get("alert") or ALERTS[0]
+    last, lr = w["last"], w["lastRun"]
+    failed = last["state"] == "failed"
+    note = f" {last['note']}" if last.get("note") else ""
+    if rule == "A run fails" and failed:
+        return "High", f"{w['name']}: run {lr['id']} failed.{note}"
+    if rule == "Two runs fail in a row" and failed and before["failed"]:
+        return "High", f"{w['name']}: two runs failed in a row. Latest run {lr['id']}.{note}"
+    if rule == "Success rate drops below 95%" and w["runsN"]:
+        was = before["okN"] / before["runsN"] if before["runsN"] else 1
+        now = w["okN"] / w["runsN"]
+        if was >= 0.95 > now:
+            return "Medium", f"{w['name']}: success rate dropped to {js_round(now * 100)}%, below 95%."
+    return None
+
+
+def _raise_alert(s, w: dict, alert: tuple[str, str], now: int) -> None:
+    to = policy.account(ALERT_TO)
+    n = state.next_number(s, "notes", "NTF-", NOTE_SEQ_START)
+    note: dict[str, Any] = {
+        "id": f"NTF-{n}", "exId": f"wf:{w['id']}", "title": f"Workflow alert · {w['name']}", "msg": alert[1],
+        "sev": alert[0], "to": ALERT_TO, "toLabel": to.label if to else ALERT_TO, "from": "Workflow Studio",
+        "at": iso(now), "status": "open", "ids": [],
+    }  # fmt: skip
+    state.add(s, "notes", note["id"], note)

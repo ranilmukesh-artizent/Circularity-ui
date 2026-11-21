@@ -4,7 +4,7 @@ import { fmtNumber } from '../../api/format';
 import { can } from '../../api/session';
 import {
   createWorkflow, deleteWorkflow, deliverOf, failedRows, graphOf, history, readableSources, runCounts, RUN_CHIP, RUN_LABEL,
-  runTimes, sourceExists, sourceLabel, source, stepInfo, workflow, writableSources, type TestRun,
+  runTimes, sourceExists, sourceLabel, source, stepInfo, templates, workflow, writableSources, type TestRun,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
@@ -13,7 +13,7 @@ import { refused } from '../../ui/useAction';
 import { forget } from './draftStore';
 import { download } from '../../lib/download';
 import { WorkflowStatus } from './WorkflowMarks';
-import { NOT_YET } from './workflowActions';
+import { fromTemplate, reprocess } from './workflowActions';
 
 type NewType = 'ingest' | 'out' | 'dec' | 'blank';
 const CH_NAME: Record<string, string> = { api: 'Outbound API call', event: 'Event trigger', file: 'Interface file', proc: 'Process orchestration' };
@@ -42,6 +42,11 @@ export function NewWorkflowModal({ onClose, onCreated }: { onClose: () => void; 
     toast(r.output.name + ' created as a draft. Arrange it, then Save and Publish.');
     onCreated(r.output.id);
   }
+  async function pickTpl(id: string) {
+    const nid = await fromTemplate(id);
+    if (nid) onCreated(nid);
+  }
+  const tpls = templates();
 
   return (
     <Modal title="New workflow" onClose={onClose}
@@ -75,6 +80,10 @@ export function NewWorkflowModal({ onClose, onCreated }: { onClose: () => void; 
         <label htmlFor="nwName">Name</label>
         <input id="nwName" value={n.name} placeholder={auto} maxLength={80} onChange={(e) => setN({ ...n, name: e.target.value })} />
       </div>
+      {tpls.length > 0 && <>
+        <h4 style={{ margin: '14px 0 6px' }}>Your templates</h4>
+        <div className="row">{tpls.map((t) => <button key={t.id} className="btn sm" onClick={() => pickTpl(t.id)}><Icon name="file" /> {t.name}</button>)}</div>
+      </>}
     </Modal>
   );
 }
@@ -145,17 +154,20 @@ export function FailedRecordsModal({ id, onClose }: { id: string; onClose: () =>
     download(w!.id + '-failed-records.csv', rows.map((r) => r.map(q).join(',')).join('\n'), 'text/csv');
     toast('Failed records exported as CSV.');
   }
-  const reproc = () => toast(NOT_YET); // no backend action reprocesses held records yet
+  const done = w.frReproc;
+  async function reproc() {
+    if (await reprocess(id)) onClose();
+  }
   return (
     <Modal title={'Failed records · ' + w.name} wide onClose={onClose}
       foot={<>
         <button className="btn" onClick={onClose}>Close</button>
         <button className="btn" onClick={csv} disabled={!L.length}><Icon name="download" /> Export CSV</button>
-        {can('manageWorkflows') && <button className="btn pri" onClick={reproc} disabled={!L.length}>Reprocess</button>}
+        {can('manageWorkflows') && <button className="btn pri" onClick={reproc} disabled={!L.length || !!done}>Reprocess</button>}
       </>}>
       {L.length ? (
         <>
-          <p className="note" style={{ marginTop: 0 }}>{L.length} record{L.length > 1 ? 's' : ''} from the latest run broke a validation rule. They are held by the error handler, not dropped.</p>
+          <p className="note" style={{ marginTop: 0 }}>{L.length} record{L.length > 1 ? 's' : ''} from the latest run broke a validation rule. They are held by the error handler, not dropped.{done && <> <b>Reprocessed {done}.</b></>}</p>
           <div className="tw"><table className="t static tight">
             <thead><tr><th>Record</th><th>Field</th><th>Value</th><th>Rule broken</th></tr></thead>
             <tbody>{L.map((r, i) => <tr key={i}><td className="mono">{r.rec}</td><td className="mono">{r.field}</td><td className="mono">{r.value || <span className="note">(empty)</span>}</td><td>{r.rule}</td></tr>)}</tbody>

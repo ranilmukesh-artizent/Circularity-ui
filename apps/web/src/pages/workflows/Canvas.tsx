@@ -413,7 +413,8 @@ export function ChecksPanel({ g, checks, onPick }: { g: WfGraph; checks: Check[]
   );
 }
 
-export function TaskInstances({ g, run, onPick, onApprove, onClear }: { g: WfGraph; run: TestRun | null; onPick: (id: string) => void; onApprove: () => void; onClear: () => void }) {
+/** The run's step table (wfRunHTML). `retries`: the Retries setting; a failed step shows that many tries (the demo's fixed 3). */
+export function TaskInstances({ g, run, retries = 3, onPick, onApprove, onClear }: { g: WfGraph; run: TestRun | null; retries?: number; onPick: (id: string) => void; onApprove: () => void; onClear: () => void }) {
   const [f, setF] = useState<{ q: string; st: string }>({ q: '', st: '' });
   const L = RUN_LABEL(), C = RUN_CHIP(), by: Record<string, WfNode> = {};
   g.nodes.forEach((n) => (by[n.id] = n));
@@ -439,7 +440,7 @@ export function TaskInstances({ g, run, onPick, onApprove, onClear }: { g: WfGra
           return <tr key={id} tabIndex={0} onClick={() => onPick(id)} onKeyDown={onActivateKey(() => onPick(id))} style={{ cursor: 'pointer' }}>
             <td><b>{stepInfo(n).label}</b></td><td><span className={'chip ' + C[st]}>{ICO[st] ?? ''} {L[st]}</span></td>
             <td className="num nowrap">{ex ? hms(t.s) : '—'}</td><td className="num nowrap">{ex && st !== 'running' ? hms(t.e) : '—'}</td>
-            <td className="r num">{ex && st !== 'running' ? t.d.toFixed(2) + ' s' : '—'}</td><td className="r num">{st === 'failed' ? 3 : ex ? 1 : 0}</td><td className="mono">{POOL(n)}</td>
+            <td className="r num">{ex && st !== 'running' ? t.d.toFixed(2) + ' s' : '—'}</td><td className="r num">{st === 'failed' ? Math.max(1, retries) : ex ? 1 : 0}</td><td className="mono">{POOL(n)}</td>
           </tr>;
         }) : <tr><td colSpan={7}><div className="empty"><b>No steps match</b></div></td></tr>}</tbody>
       </table></div>

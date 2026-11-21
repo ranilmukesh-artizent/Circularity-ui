@@ -1,22 +1,29 @@
 """The Workflow Studio's collections and the demo's workflow helpers, read by the studio and integration screens and the
 workflow actions (di.actions.workflows): the workspace collections "workflows" (S.wf.list, each with its graph) and
-"workflow_runs" (S.wf.runs), seeded from fixtures/golden/screens/workflows.json; wfStat, wfUsing, wfAnalyze, wfOrder
-and frRunCounts."""
+"workflow_runs" (S.wf.runs), seeded from fixtures/golden/screens/workflows.json, and "workflow_templates" (S.frTpl,
+empty at the start); wfStat, wfUsing, wfAnalyze, wfOrder and frRunCounts."""
 
 from sqlalchemy.orm import Session
 
 from di import golden, state
 from di.engine.jsmath import js_round
-from di.reads.common import hash_id
+from di.reads.common import STARTING_MAPPINGS, hash_id
 
 GOLDEN = golden.load("screens/workflows")
 state.register("workflows", lambda: [(w["id"], w) for w in GOLDEN["starting"]])
 # S.wf.runs is newest first; the collection keeps insertion order, so it is seeded oldest first and read newest first
 state.register("workflow_runs", lambda: [(r["id"], r) for r in reversed(GOLDEN["runs"])])
+# S.frTpl: the templates saved from workflows (workflow.saveTemplate), oldest first; none at the start
+state.register("workflow_templates", lambda: [])
 
 
 def all_workflows(s: Session) -> list[dict]:
     return state.items(s, "workflows")
+
+
+def templates(s: Session) -> list[dict]:
+    """The saved templates, oldest first, each with its graph (`tpl`)."""
+    return state.items(s, "workflow_templates")
 
 
 def recent_runs(s: Session) -> list[dict]:
@@ -102,3 +109,42 @@ def run_counts(w: dict) -> dict[str, dict]:
             out = inn - r
         o[i] = {"in": inn, "out": out, "rej": r}
     return o
+
+
+# frFailedRows: the rules a held record broke, and the value shown for each
+_FAILED_RULES = [
+    "Required field is empty",
+    "Date is not in ISO 8601",
+    "Unknown status code",
+    "Currency has no dated rate",
+    "Value outside allowed range",
+    "Duplicate key in this batch",
+]
+_FAILED_VALUE = {
+    "Required field is empty": "",
+    "Date is not in ISO 8601": "31/13/2026",
+    "Unknown status code": "ZZ",
+    "Currency has no dated rate": "1250 XAU",
+    "Value outside allowed range": "-4",
+}
+
+
+def failed_rows(w: dict, counts: dict[str, dict] | None = None) -> list[dict]:
+    """frFailedRows: the invalid rows of the latest run, with the field and the rule each broke."""
+    m = STARTING_MAPPINGS.get(w.get("src") or "", [])
+    c = counts if counts is not None else run_counts(w)
+    n = min(40, next((x["rej"] for x in c.values() if x["rej"] > 0), 0))
+    out = []
+    for i in range(n):
+        f = m[i % len(m)] if m else ["record_id", "—"]
+        h = int(hash_id(f"{w['id']}f{i}"), 16)
+        rule = _FAILED_RULES[h % len(_FAILED_RULES)]
+        out.append(
+            {
+                "rec": (w.get("src") or "rec").upper() + "-" + str(10000 + h % 89999),
+                "field": f[0],
+                "value": _FAILED_VALUE.get(rule, str(f[1])),
+                "rule": rule,
+            }
+        )
+    return out
