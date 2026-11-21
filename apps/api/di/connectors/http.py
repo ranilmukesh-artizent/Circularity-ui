@@ -14,19 +14,24 @@ Strategies combine: Combined(ApiKey(...), OAuthClientCredentials(...)) for Ariba
 import base64
 import time
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Any
 
 import httpx
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from di.config import get_settings
+
 
 class SourceError(Exception):
     """A source call failed. `kind`: auth (401/403), unavailable (5xx, network), client (other 4xx)."""
 
-    def __init__(self, kind: str, message: str, status: int | None = None):
+    def __init__(self, kind: str, message: str, status: int | None = None, retry_after: float | None = None):
         super().__init__(message)
         self.kind, self.status = kind, status
+        self.retry_after = retry_after  # seconds, from the answer's Retry-After header (429, 503)
 
 
 class Auth:
@@ -99,6 +104,46 @@ class Combined(Auth):
         return out
 
 
+# ---------------------------------------------------------------- retries (plan 6 A6)
+RETRIES = 3  # after the first try
+RETRY_AFTER_MAX = 30.0  # seconds: a longer Retry-After is cut to this
+_TIMEOUTS = (httpx.ConnectTimeout, httpx.ReadTimeout)
+
+
+def _sleep(seconds: float) -> None:
+    """The backoff wait (a module function, so tests can record the waits instead of sleeping)."""
+    time.sleep(seconds)
+
+
+def _retryable(e: SourceError) -> bool:
+    if e.status is not None:
+        return e.status == 429 or e.status >= 500
+    return isinstance(e.__cause__, _TIMEOUTS)  # a refused connection or an unknown host fails at once
+
+
+def _retry_after(value: str | None) -> float | None:
+    """Retry-After in seconds (a number or an HTTP date), or None when absent or unreadable."""
+    if not value:
+        return None
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    return max(0.0, (when - datetime.now(UTC)).total_seconds())
+
+
+def _wait(e: SourceError, attempt: int) -> float:
+    if e.retry_after is not None:
+        return min(e.retry_after, RETRY_AFTER_MAX)
+    return get_settings().source_retry_base_seconds * 2**attempt
+
+
 class SourceClient:
     """One source's HTTP client for one sync run."""
 
@@ -137,17 +182,34 @@ class SourceClient:
         return r
 
     def request(self, method: str, path: str, **kw) -> httpx.Response:
-        """An authenticated call; refreshes OAuth once on a 401. Raises SourceError for failures."""
+        """An authenticated call; refreshes OAuth once on a 401. Raises SourceError for failures.
+
+        A GET (plan 6 A6) is tried again up to RETRIES times on 429, 5xx and connect or read timeouts, after the
+        configured base wait doubled per retry (0.5 s, 1 s, 2 s), or after the answer's Retry-After (at most 30 s).
+        Every try has its own fetch-log row. Writes are never repeated here: a repeated POST could act twice.
+        """
+        attempt = 0
+        while True:
+            try:
+                return self._request_once(method, path, **kw)
+            except SourceError as e:
+                if method.upper() != "GET" or attempt >= RETRIES or not _retryable(e):
+                    raise
+                _sleep(_wait(e, attempt))
+                attempt += 1
+
+    def _request_once(self, method: str, path: str, **kw) -> httpx.Response:
         headers = kw.pop("headers", {})
         r = self.raw(method, path, headers=self.auth.headers(self) | headers, **kw)
         if r.status_code == 401:
             r = self.raw(method, path, headers=self.auth.headers(self, force_refresh=True) | headers, **kw)
         if r.status_code in (401, 403):
             raise SourceError("auth", f"{self.source_id}: HTTP {r.status_code} {r.text[:200]}", r.status_code)
+        after = _retry_after(r.headers.get("retry-after"))
         if r.status_code >= 500:
-            raise SourceError("unavailable", f"{self.source_id}: HTTP {r.status_code}", r.status_code)
+            raise SourceError("unavailable", f"{self.source_id}: HTTP {r.status_code}", r.status_code, after)
         if r.status_code >= 400:
-            raise SourceError("client", f"{self.source_id}: HTTP {r.status_code} {r.text[:300]}", r.status_code)
+            raise SourceError("client", f"{self.source_id}: HTTP {r.status_code} {r.text[:300]}", r.status_code, after)
         return r
 
     def get_json(self, path: str, **kw) -> Any:

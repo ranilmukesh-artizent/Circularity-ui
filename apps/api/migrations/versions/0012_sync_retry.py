@@ -1,4 +1,7 @@
-"""plan 6 A6 sync retry columns (reserved; filled by that task)
+"""plan 6 A6: a failing source is retried sooner than its interval
+
+`fail_streak` counts the source's failed syncs in a row; `next_retry_at` is when the next try is due
+(last sync + min(2**fail_streak minutes, the interval)). A successful sync resets both (di/connectors/sync.py).
 
 Revision ID: 0012
 Revises: 0011
@@ -9,7 +12,7 @@ DROP ... IF EXISTS, inserts ON CONFLICT DO NOTHING) so they can be re-applied wi
 upgrade head while the chain is being filled.
 """
 
-from alembic import op  # noqa: F401 - used once the task fills this migration
+from alembic import op
 
 revision = "0012"
 down_revision = "0011"
@@ -18,8 +21,18 @@ depends_on = None
 
 
 def upgrade() -> None:
-    pass
+    op.execute(
+        """
+ALTER TABLE source_system ADD COLUMN IF NOT EXISTS fail_streak integer NOT NULL DEFAULT 0;
+ALTER TABLE source_system ADD COLUMN IF NOT EXISTS next_retry_at timestamptz;
+"""
+    )
 
 
 def downgrade() -> None:
-    pass
+    op.execute(
+        """
+ALTER TABLE source_system DROP COLUMN IF EXISTS next_retry_at;
+ALTER TABLE source_system DROP COLUMN IF EXISTS fail_streak;
+"""
+    )

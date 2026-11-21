@@ -151,6 +151,9 @@ source_system = Table(
     Column("confidence", Numeric(5, 2)),
     Column("note", Text),
     _ts("updated_at", now=True),
+    # 0012 (plan 6 A6): failed syncs in a row, and when the next try is due (min(2**streak minutes, interval))
+    Column("fail_streak", Integer, nullable=False, server_default="0"),
+    _ts("next_retry_at"),
 )
 
 sync_run = Table(

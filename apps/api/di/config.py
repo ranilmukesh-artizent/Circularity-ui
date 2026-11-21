@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     # B9: where source-sim delivers change events, and the shared signing secret (DI_WEBHOOK_SECRET; empty: dev default)
     webhook_url: str = "http://api:8000/api/webhooks/source-sim"
     webhook_secret: SecretStr = SecretStr(DEV_WEBHOOK_SECRET)
+    # plan 6 A6: the wait before the first retry of a source GET (429, 5xx, timeout); doubled for each next retry
+    source_retry_base_seconds: float = 0.5
     # plan 6 A1: the Fernet key for source credentials (urlsafe base64 of 32 bytes); empty means the dev key (dev only)
     secret_key: SecretStr = SecretStr("")
     # B13b: what "now" is (di/clock.py): "pinned" to the demo's as-of time, or "sim" = source-sim's simulated clock

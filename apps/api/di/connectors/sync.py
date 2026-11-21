@@ -9,6 +9,7 @@ refused). paused / disconnected / unavailable are set by people (Connection Fabr
 deleted source (di.connectors.lifecycle).
 """
 
+import functools
 import json
 import logging
 import time
@@ -25,7 +26,7 @@ from di.config import get_settings
 from di.connectors import lifecycle
 from di.connectors.http import SourceClient, SourceError
 from di.connectors.registry import ADAPTERS
-from di.db import SessionLocal
+from di.db import SessionLocal, engine
 from di.jobs import enqueue
 
 log = logging.getLogger("di.sync")
@@ -281,6 +282,59 @@ def _set_cursor(session: Session, source_id: str, resource: str, cursor: str) ->
     )
 
 
+# ---------------------------------------------------------------- one sync per source, retries (plan 6 A6)
+def _one_at_a_time(fn):
+    """One sync of a source at a time, and its retry schedule.
+
+    The lock is `pg_try_advisory_xact_lock(hashtext('sync:' || source_id))`, held by a transaction on a connection of
+    its own for the whole run (the sync commits as it goes, which would release a lock taken in its own session). A sync
+    of a source that is already syncing returns `skipped` / `running` and records no run. The lock goes when the run
+    ends, or with the connection if the process dies.
+
+    After the run: a failed one adds 1 to `fail_streak` and sets `next_retry_at` = last sync + min(2**fail_streak
+    minutes, the source's interval), which enqueue_due honours; any other finished run resets both."""
+
+    @functools.wraps(fn)
+    def run(source_id: str, *args, **kw) -> dict:
+        with engine.connect() as lock:
+            got = lock.execute(text("SELECT pg_try_advisory_xact_lock(hashtext('sync:' || :s))"), {"s": source_id}).scalar()
+            if not got:
+                lock.rollback()
+                return {"source_id": source_id, "status": "skipped", "reason": "running"}
+            try:
+                out = fn(source_id, *args, **kw)
+                if out.get("status") in ("ok", "partial", "failed"):
+                    _settle_streak(source_id, out["status"] == "failed")
+                return out
+            finally:
+                lock.rollback()  # releases the lock
+
+    return run
+
+
+def _settle_streak(source_id: str, failed: bool) -> None:
+    with SessionLocal() as s:
+        if failed:
+            s.execute(
+                text(
+                    "UPDATE source_system SET fail_streak = fail_streak + 1, next_retry_at = coalesce(last_sync_at, now()) "
+                    "+ make_interval(mins => least(CAST(power(2, least(fail_streak + 1, 20)) AS integer), "
+                    "CASE WHEN interval_min > 0 THEN interval_min ELSE :safety END)) WHERE id = :i"
+                ),
+                {"i": source_id, "safety": SAFETY_INTERVAL_MIN},
+            )
+        else:
+            s.execute(
+                text(
+                    "UPDATE source_system SET fail_streak = 0, next_retry_at = NULL "
+                    "WHERE id = :i AND (fail_streak > 0 OR next_retry_at IS NOT NULL)"
+                ),
+                {"i": source_id},
+            )
+        s.commit()
+
+
+@_one_at_a_time
 def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dict:
     adapter = ADAPTERS.get(source_id)
     if adapter is None:
@@ -398,15 +452,21 @@ def enqueue_sync(session: Session, source_id: str, trigger: str, full: bool = Fa
     return enqueue(session, "sync.source", {"source_id": source_id, "trigger": trigger, "full": full}).id
 
 
-def enqueue_due(session: Session) -> list[str]:
-    now = datetime.now(UTC)
+def enqueue_due(session: Session, now: datetime | None = None) -> list[str]:
+    """`now` defaults to the wall clock (the sync times are the database's now()); tests pass one."""
+    now = now or datetime.now(UTC)
     queued = []
     gone = lifecycle.deleted(session)
-    for r in session.execute(text("SELECT id, status, interval_min, last_sync_at FROM source_system ORDER BY id")).all():
-        if r.id not in ADAPTERS or r.status in NOT_SYNCED or r.id in gone:
+    rows = session.execute(
+        text("SELECT id, status, interval_min, last_sync_at, next_retry_at FROM source_system ORDER BY id")
+    ).all()
+    for r in rows:
+        if r.status in NOT_SYNCED or r.id in gone or not has_adapter(session, r.id):  # Python or configured (A3)
             continue
         every = timedelta(minutes=r.interval_min or SAFETY_INTERVAL_MIN)
         due = r.last_sync_at is None or now - r.last_sync_at >= every
+        if r.next_retry_at is not None:  # a failing source: its retry time (never later than the interval) decides
+            due = now >= r.next_retry_at
         if due and enqueue_sync(session, r.id, "initial" if r.last_sync_at is None else "schedule"):
             queued.append(r.id)
     session.commit()
