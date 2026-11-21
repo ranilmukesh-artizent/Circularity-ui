@@ -146,8 +146,11 @@ def test_run_guard(i: dict[str, Any], ctx: CallContext):
     n = i.get("sample")
     if n is not None and (isinstance(n, bool) or not isinstance(n, int) or not 1 <= n <= SAMPLE_MAX):
         return "validation_error", f"Sample must be a whole number from 1 to {SAMPLE_MAX}."
-    e = len(wf.errors(_test_graph(i, w), w["kind"], ctx.session))
-    return ("conflict", f"Fix {e} error{'s' if e > 1 else ''} before running. The checks say what and why.") if e else None
+    er = wf.errors(_test_graph(i, w), w["kind"], ctx.session)
+    e = len(er)
+    # the refusal names the first error, so it is clear even when the canvas showed none (plan 6 follow-up, G2)
+    return ("conflict", f"Fix {e} error{'s' if e > 1 else ''} before running. The checks say what and why. "
+            f"First: {er[0]['msg']}") if e else None  # fmt: skip
 
 
 def _descendants(succ: dict[str, list[str]], nid: str) -> set[str]:
@@ -165,7 +168,9 @@ def _descendants(succ: dict[str, list[str]], nid: str) -> set[str]:
 def test_run(i: dict[str, Any], ctx: CallContext):
     """A dry run of the graph through the engine (see the module docstring). Human approval stops it, as a real run
     waits for a person: the steps after it are `waiting` and the run `held`, until it is run again with `approved`
-    (Approve and continue; still dry, so no instruction reaches any system)."""
+    (Approve and continue; still dry, so no instruction reaches any system). That approval is simulated: whoever may
+    run the test run (manageWorkflows) may give it, and the answer says so (`simulated_approval`); real approvals stay
+    with approvers (decision.approve and the like keep their own permissions)."""
     from di.reads.workflows import _analyze, _order
     from di.workflow.engine import run_graph
 
@@ -202,5 +207,5 @@ def test_run(i: dict[str, Any], ctx: CallContext):
     return {
         "id": w["id"], "name": w["name"], "dry": True, "status": status, "states": {k: states[k] for k in order if k in states},
         "counts": counts, "dur": dur, "order": order, "samples": samples, "rows": r.rows, "held": r.held,
-        "note": r.note, "approved": approved,
+        "note": r.note, "approved": approved, "simulated_approval": approved,
     }  # fmt: skip

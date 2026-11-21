@@ -57,6 +57,10 @@ export function frAgo(ms: number): string {
   return s < 60 ? s + ' sec ago' : s < 3600 ? Math.floor(s / 60) + ' min ago' : s < 172800 ? Math.floor(s / 3600) + ' h ago' : Math.floor(s / 86400) + ' days ago';
 }
 
+/** The saved version a published workflow can publish (Publish v{x}): its current version when that is newer than the
+ *  one runs use (`pub`, the server's published_ver), else null. A paused or draft workflow has none. */
+export const republishVer = (w: Pick<Workflow, 'status' | 'ver'>, pub: string | null): string | null =>
+  w.status === 'published' && pub != null && pub !== w.ver ? w.ver : null;
 export const wfStat = (w: Workflow): WfStat => (w.status === 'published' && w.last && w.last.state === 'failed' ? 'failing' : w.status);
 
 // ---------------------------------------------------------------- sources
@@ -201,6 +205,22 @@ export function validate(L: Lookups, g: WfGraph, kind: 'pipe' | 'dec'): Check[] 
     if (x?.start && fed) out.push({ sev: 'warn', id: n.id, msg: x.label + ' starts a workflow, so nothing should feed it.' });
   });
   out.push(...cfgChecks(L, g));
+  const rk = { error: 0, warn: 1, info: 2 };
+  return out.sort((a, b) => rk[a.sev] - rk[b.sev]);
+}
+
+/** The canvas' checks merged with the server's for the draft (workflow.validate with the graph: live sources and the
+ *  fields records really carry, which the browser cannot check). Each check once, keyed by step and text; on a
+ *  duplicate the server's wins. A server check for a step or link no longer in the graph is dropped (the answer was for
+ *  an earlier edit). Errors first, then warnings, then notes; the browser's order within each. */
+export function mergeChecks(browser: Check[], server: Check[] | null | undefined, g: WfGraph): Check[] {
+  if (!server?.length) return browser;
+  const ids = new Set<string>([...g.nodes.map((n) => n.id), ...g.edges.map((e) => e.id)]);
+  const key = (c: Check) => c.id + '\u0000' + c.msg;
+  const srv = new Map(server.filter((c) => ids.has(c.id)).map((c) => [key(c), c] as const));
+  const out = browser.map((c) => srv.get(key(c)) ?? c);
+  const seen = new Set(out.map(key));
+  srv.forEach((c, k) => { if (!seen.has(k)) { seen.add(k); out.push(c); } });
   const rk = { error: 0, warn: 1, info: 2 };
   return out.sort((a, b) => rk[a.sev] - rk[b.sev]);
 }
