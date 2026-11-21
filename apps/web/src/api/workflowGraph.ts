@@ -66,6 +66,19 @@ export const srcOr = (L: Lookups, id: string): Source =>
     id, name: L.SH[id] || 'Deleted source', vendor: 'Deleted', status: 'unavailable', mode: '—', auth: '—', read: [], write: [], cat: 'internal',
     fresh: '—', deleted: true, owner: '', type: '',
   };
+/** What the server's checks know about each source now (GET /api/screens/workflows `live`, di/workflow/live.py). */
+export type LiveState = Record<string, { status: Source['status']; fresh: string; paused?: boolean }>;
+/** The sources as the checks read them: the integration screen's sources with the status, age and paused flag the
+ *  server's checks use (so the canvas and the server agree), without the sources the server no longer has. */
+export function liveSources(sources: Source[], live: LiveState | undefined): Source[] {
+  if (!live) return sources;
+  return sources.filter((s) => live[s.id]).map((s) => {
+    const x = live[s.id], o: Source = { ...s, status: x.status, fresh: x.fresh };
+    if (x.paused) o.paused = true;
+    else delete o.paused;
+    return o;
+  });
+}
 export const srcLabel = (L: Lookups, s: Source): string => (L.sources.some((o) => o.id !== s.id && o.name === s.name) ? s.name + ' · ' + s.vendor : s.name);
 export function srcCh(x: Source): string[] {
   const m = (x.mode + ' ' + x.auth).toLowerCase(), c: string[] = [];
@@ -207,6 +220,7 @@ function validateBase(L: Lookups, g: WfGraph, kind: 'pipe' | 'dec'): Check[] {
       if (s.status === 'unavailable') add('error', n.id, `${s.name} has no connected feed. Circularity will not infer data, so this evidence would be missing.`);
       else if (s.status === 'stale') add('warn', n.id, `${s.name} is ${s.fresh} old. Predictions fall back to the last fresh data and say so.`);
       else if (s.status === 'manual') add('info', n.id, `${s.name} is a manual import. It supports evaluation, not live automation.`);
+      if (s.paused) add('warn', n.id, `${s.name} is paused. Runs read nothing from it until it is resumed.`);
       const st: [string, boolean, boolean, boolean][] = [[n.id, false, false, false]], vis = new Set<string>(), bad = new Set<string>();
       let hit = false, noIng = false, noVal = false;
       while (st.length) {

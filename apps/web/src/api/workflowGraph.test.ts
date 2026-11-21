@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { BlockSpec, FieldSpec, RunState, Source, StepKind, TestRun, WfGraph, WfNode, Workflow } from './workflows';
 import {
   ageShort, analyze, canLink, cfgErrors, compactCfg, evalStep, frAgo, hashId, info, nodeCfg, order, pathXY, runCounts, runTimes, specKey, srcCh, srcLabel, srcOr, trigText,
-  validate, wfStat, type Fixed, type Lookups,
+  liveSources, validate, wfStat, type Fixed, type Lookups,
 } from './workflowGraph';
 
 // ---------------------------------------------------------------- hand-built lookups (shapes as ref() serves them)
@@ -660,5 +660,24 @@ describe('block settings', () => {
     expect(checksOn(g, 'v')).toEqual([]); // no catalogue in L: not checked
     const c = validate({ ...L, blocks: BS }, g, 'pipe').filter((x) => x.id === 'v');
     expect(c).toEqual([{ sev: 'error', id: 'v', msg: 'Validation & enrichment: Rules rule 1 has no field.' }]);
+  });
+});
+
+// ---------------------------------------------------------------- live source state (plan 6 C10)
+describe('live source state in the checks', () => {
+  const live = { crm: { status: 'live' as const, fresh: '4 min', paused: true }, erp: { status: 'stale' as const, fresh: '2 h' }, old: { status: 'stale' as const, fresh: '3 days' }, off: { status: 'unavailable' as const, fresh: '—' }, man: { status: 'manual' as const, fresh: '—' } };
+  it('reads the status, age and paused flag the server reads, and drops sources the server no longer has', () => {
+    const S = liveSources([...L.sources, src('gone', 'Retired WMS', 'live', 'API', { paused: true })], live);
+    expect(S.map((s) => s.id)).toEqual(['crm', 'erp', 'old', 'off', 'man']);
+    expect(S.find((s) => s.id === 'erp')).toMatchObject({ status: 'stale', fresh: '2 h' });
+    expect(S.find((s) => s.id === 'crm')?.paused).toBe(true);
+    expect(liveSources(L.sources, undefined)).toBe(L.sources);
+    expect(liveSources([src('crm', 'CRM', 'live', 'API', { paused: true })], { crm: { status: 'live', fresh: '1 min' } })[0].paused).toBeUndefined();
+  });
+  it('warns that a paused source feeds nothing, as the server does', () => {
+    const LL = { ...L, sources: liveSources(L.sources, live) };
+    expect(validate(LL, G(GOOD, GOOD_E), 'pipe').map((c) => [c.sev, c.id, c.msg])).toEqual([
+      ['warn', 'r', 'CRM is paused. Runs read nothing from it until it is resumed.'],
+    ]);
   });
 });

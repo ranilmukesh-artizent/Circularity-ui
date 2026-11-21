@@ -1,15 +1,17 @@
 /** The workflow list (frWfList): tiles, filters, the table with Open / Investigate and ⋯, bulk actions, and the right column. */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { fmtNumber } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import {
-  ago, ageShort, attention, nowMs, recentRuns, RUN_LABEL, source, sources, systemOf, trigText, wfStat, workflows, type Workflow, type WfStat,
+  ago, ageShort, attention, importWorkflow, nowMs, recentRuns, RUN_LABEL, source, sources, systemOf, trigText, wfStat, workflows, type Workflow, type WfStat,
 } from '../../api/workflows';
 import { openAsk } from '../../ui/askBus';
 import { Icon } from '../../ui/Icon';
+import { toast } from '../../ui/toast';
+import { refused } from '../../ui/useAction';
 import { isDirty, useDrafts } from './draftStore';
 import { IconTile } from '../../ui/kit/IconTile';
 import { Kpi } from '../../ui/kit/Kpi';
@@ -74,6 +76,23 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
     if (a !== 'export' || !mgr) setSel(new Set());
   }
 
+  // Import (workflow.import): a file Export JSON wrote becomes a new draft, checked on the server
+  const fileRef = useRef<HTMLInputElement>(null);
+  async function importFile(file: File | undefined) {
+    if (fileRef.current) fileRef.current.value = '';
+    if (!file) return;
+    let data: unknown;
+    try {
+      data = JSON.parse(await file.text());
+    } catch {
+      return toast(file.name + ' is not a JSON file. Choose a file that Export JSON wrote.', 4200);
+    }
+    const r = await importWorkflow(data);
+    if (refused(r, 4200)) return;
+    toast(r.output.name + ' imported as a draft (' + r.output.id + ').');
+    open(r.output.id);
+  }
+
   return (
     <div className="frwfl">
       <div className="frwfm">
@@ -108,6 +127,10 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
           </select>
           <span className="grow" />
           {mgr && <button className="btn" onClick={() => setModal({ k: 'ai', prompt: '' })}><Icon name="spark" /> Build with AI</button>}
+          {mgr && <>
+            <input ref={fileRef} type="file" accept=".json,application/json" hidden aria-hidden="true" tabIndex={-1} onChange={(e) => { void importFile(e.target.files?.[0]); }} />
+            <button className="btn" id="frWfImport" onClick={() => fileRef.current?.click()}><Icon name="upload" /> Import</button>
+          </>}
           {mgr && <button className="btn pri" onClick={() => setModal({ k: 'new' })}><Icon name="plus" /> New workflow</button>}
         </div>
         <div className="frbulk" id="frWfBulk" hidden={!sel.size}>
@@ -154,7 +177,7 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
 function Row({ w, sel, mgr, onPick, onOpen, onDelete, onInvestigate, onDup }: {
   w: Workflow; sel: boolean; mgr: boolean; onPick: (id: string, on: boolean) => void; onOpen: (id: string) => void; onDelete: () => void; onInvestigate: () => void; onDup: () => void;
 }) {
-  const s = systemOf(w), st = wfStat(w), l = w.last, ok = w.runsN ? Math.round((w.okN / w.runsN) * 100) : null, up = !!s?.paused, fail = st === 'failing';
+  const s = systemOf(w), st = wfStat(w), l = w.last, ok = w.runsN ? Math.round((w.okN / w.runsN) * 100) : null, up = w.upstream === 'paused', fail = st === 'failing';
   const L = RUN_LABEL();
   return (
     <tr data-wid={w.id} className={fail ? 'frfail' : ''}>
