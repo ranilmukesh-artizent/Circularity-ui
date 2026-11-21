@@ -85,11 +85,16 @@ class Settings(BaseSettings):
         key = self.secret_key.get_secret_value()
         if not key:
             raise ValueError(f"DI_SECRET_KEY is required for DI_ENV={self.env} (it encrypts source credentials)")
+        # several keys for a rotation: comma-separated, the first the current one (di.connectors.secrets)
         try:
-            if len(base64.urlsafe_b64decode(key.encode())) != 32:
-                raise ValueError
+            for k in key.split(","):
+                if len(base64.urlsafe_b64decode(k.strip().encode())) != 32:
+                    raise ValueError
         except ValueError:
-            raise ValueError("DI_SECRET_KEY must be urlsafe base64 of 32 bytes (Fernet.generate_key())") from None
+            raise ValueError(
+                "DI_SECRET_KEY must be urlsafe base64 of 32 bytes (Fernet.generate_key()), or several such keys "
+                "separated by commas"
+            ) from None
         return self
 
 

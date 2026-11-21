@@ -7,8 +7,10 @@
 
 Secrets are Fernet ciphertext in `source_secret` (one row per version; one active per source and kind). The key is
 DI_SECRET_KEY (urlsafe base64 of 32 bytes); in dev an empty key is derived from a fixed seed (di.config refuses that
-outside dev). The plain value is returned only by active_secret, to the connector that signs in; it is never logged,
-journaled (the pipeline drops `secret`), streamed or sent to the browser.
+outside dev). Rotation: DI_SECRET_KEY may list several keys, comma-separated (MultiFernet): the first encrypts, every
+one decrypts; reencrypt(s) (scripts/reencrypt_secrets.py) rewrites every row with the first, then the old keys can go.
+The plain value is returned only by active_secret, to the connector that signs in; it is never logged, journaled (the
+pipeline drops `secret`), streamed or sent to the browser.
 """
 
 import base64
@@ -18,7 +20,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet, InvalidToken, MultiFernet
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -49,15 +51,20 @@ class SecretMeta:
         }
 
 
+def keys_of(raw: str) -> list[str]:
+    """DI_SECRET_KEY's keys: comma-separated, the first the current one (it encrypts), the others old ones."""
+    return [k.strip() for k in raw.split(",") if k.strip()]
+
+
 @lru_cache
-def _fernet(raw: str) -> Fernet:
-    if raw:
-        return Fernet(raw.encode())
+def _fernet(raw: str) -> MultiFernet:
+    if keys := keys_of(raw):
+        return MultiFernet([Fernet(k.encode()) for k in keys])
     log.warning("DI_SECRET_KEY is not set: source credentials use the development key")
-    return Fernet(base64.urlsafe_b64encode(hashlib.sha256(DEV_SECRET_SEED.encode()).digest()))
+    return MultiFernet([Fernet(base64.urlsafe_b64encode(hashlib.sha256(DEV_SECRET_SEED.encode()).digest()))])
 
 
-def _f() -> Fernet:
+def _f() -> MultiFernet:
     return _fernet(get_settings().secret_key.get_secret_value())
 
 
@@ -70,6 +77,28 @@ def decrypt(token: bytes) -> str:
         return _f().decrypt(bytes(token)).decode()
     except InvalidToken as e:
         raise SecretUnreadable("The stored credential cannot be read with the configured DI_SECRET_KEY.") from e
+
+
+def reencrypt(s: Session) -> dict:
+    """Re-encrypt every stored credential (every version, active or not) with the current key, in the caller's
+    transaction (scripts/reencrypt_secrets.py commits). A row no configured key opens is left as it is and reported
+    by source, kind and version. Returns {"reencrypted": n, "unreadable": [{source_id, kind, version}]}."""
+    f = _f()
+    done, bad = 0, []
+    rows = s.execute(
+        text("SELECT source_id, kind, version, ciphertext FROM source_secret ORDER BY source_id, kind, version FOR UPDATE")
+    ).all()
+    for r in rows:
+        key = {"s": r.source_id, "k": r.kind, "v": r.version}
+        try:
+            token = f.rotate(bytes(r.ciphertext))
+        except InvalidToken:
+            bad.append({"source_id": r.source_id, "kind": r.kind, "version": r.version})
+            continue
+        s.execute(text("UPDATE source_secret SET ciphertext = :c WHERE source_id = :s AND kind = :k AND version = :v"),
+                  key | {"c": token})  # fmt: skip
+        done += 1
+    return {"reencrypted": done, "unreadable": bad}
 
 
 def _meta(row) -> SecretMeta:
