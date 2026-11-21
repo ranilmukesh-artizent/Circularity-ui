@@ -1,8 +1,9 @@
 """Workflow Studio actions (docs/backend-steps.md, B15 part 2): workflow.save, publish, setStatus, create, duplicate,
 delete and run, and the read workflow.validate; and three the demo ran in the browser without an action, declared
 here beside the catalog: workflow.saveTemplate (frWfTpl), workflow.reprocess (frReproc), workflow.applyFix
-(frFixApply); and workflow.restore (plan 6 C8). workflow.save also takes the Settings tab's run settings (`retries`, `alert`: frWfSet) and
-workflow.create a saved template (`tpl`: frTplUse). Runs use the retries and raise the alert the settings ask for.
+(frFixApply); and workflow.restore (plan 6 C8). workflow.save also takes the Settings tab's run settings (`retries`,
+`alert`: frWfSet) and workflow.create a saved template (`tpl`: frTplUse). Runs use the retries and raise the alert the
+settings ask for.
 
 Ports of the demo's handlers (index.html, `defAction('workflow.save', ...)` and the ones after it) and of what they call:
 the template graphs (wfBuild with the Connection Fabric's extra branches), the checks (wfValidate, with the Fabric's
