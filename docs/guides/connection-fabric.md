@@ -196,12 +196,18 @@ All of these are in the ⋯ menu and the drawer footer (managers).
 
 Press **+ New workflow** (or **New workflow** in Home's quick actions):
 
-| Type | You choose | Draft it creates |
+A new workflow holds **only the blocks it needs to run**; you mix and match everything else from the palette.
+
+| Type | You choose | Blocks it starts with |
 |---|---|---|
-| Ingest pipeline | a source system | connector → ingestion channel (or the file steps) → validation & enrichment → a transform for the source type → field mapping → canonical model → evidence snapshot, plus error handler, audit log and event-stream branches |
-| Outbound instruction | a target system and a delivery method (API call, event, interface file, process orchestration) | decision → human approval → instruction envelope → delivery → write connector → outcome |
+| Ingest pipeline | a source system | connector → one ingestion channel (API gateway, or event ingestion for an event source; the file steps for a file-only source) → validation & enrichment → field mapping → canonical model → evidence snapshot |
+| Outbound instruction | a target system and a delivery method (API call, event, interface file, process orchestration) | decision → human approval → instruction envelope → delivery method (plus a manifest for a file) → write connector → outcome |
 | Decision workflow | — | evidence → six eligibility gates → routes → predictions → approval request → human approval → decision → send instruction → outcome → reconcile |
 | Blank pipeline | — | an empty canvas |
+
+Optional blocks (a transform such as Convert currency or Timestamps to UTC, the error handler, audit log, event
+stream, a second ingestion channel, the import-log steps) are never added for you. **Reset to template** returns to
+the starting blocks.
 
 Name is optional (max 80). **Your templates** lists the templates you saved (see 7.5); pick one to create a draft
 from it: *"Created from the template as a draft."*
@@ -219,15 +225,15 @@ whatever it still needs:
 2. The *Understood* row shows what it took from your words (type, system, trigger, steps); **Change** reopens any of
    them. It then asks only what is missing or unclear, each question with a sensible default:
    - the workflow type; the source system, or the target system and a delivery method it accepts;
-   - how records arrive, the trigger and interval;
-   - extra steps (pre-ticked from your words), and whether to keep the standard ones;
-   - error handling and logging, retries, the alert rule, name and owner.
+   - how records arrive (one channel unless you want both), the trigger and interval;
+   - extra blocks (ticked only if you mentioned them; the source type's usual transform is marked but not added);
+   - error handling and logging (optional, unticked), retries, the alert rule, name and owner.
    **Use defaults for the rest** skips the remaining questions; **Back** goes one round back.
 3. If you name a system that is not connected (e.g. *Workday*), or one it reads but cannot write to, it says so and
    offers the closest real systems.
-4. The plan shows a tailored name and description, every step in run order with why it is there, a small graph,
-   **what differs from the standard template** (added, left out, changed), and the checks (always 0 errors; if a
-   choice would break a rule it says so instead).
+4. The plan does not start from a template: it holds the blocks **required to run** plus exactly the ones **you
+   asked for**, and shows both lists, every block in run order with why it is there, a small graph, the settings you
+   changed, and the checks (always 0 errors; if a choice would break a rule it says so instead).
 5. Nothing exists until you press **Create workflow**: it creates the draft as you, with the settings you chose, and
    opens it. Then Save, Publish and Run now as usual.
 
