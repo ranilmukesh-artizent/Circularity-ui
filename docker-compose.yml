@@ -77,9 +77,11 @@ services:
       <<: *api-env
       DEV_POLLING: ${DEV_POLLING:-}
     # DEV_POLLING 1/0 -> watchfiles' WATCHFILES_FORCE_POLLING true/false (unset: its own default, polling only on WSL2)
+    # --timeout-graceful-shutdown 3: a reload closes open connections after 3 s; without it uvicorn waits for the
+    # browser's live stream (SSE, never ends by itself) and the api hangs "waiting for connections to close"
     command: >-
       sh -c 'case "$${DEV_POLLING}" in 1|true) export WATCHFILES_FORCE_POLLING=true ;; 0|false) export WATCHFILES_FORCE_POLLING=false ;; esac;
-      alembic upgrade head && exec uvicorn di.main:app --host 0.0.0.0 --port 8000 --reload'
+      alembic upgrade head && exec uvicorn di.main:app --host 0.0.0.0 --port 8000 --reload --timeout-graceful-shutdown 3'
     volumes:
       - ./apps/api:/app
       - ./fixtures:/fixtures:ro # B1 golden files: access policy and reference data (B7)
