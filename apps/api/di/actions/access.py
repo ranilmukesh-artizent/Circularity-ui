@@ -23,10 +23,12 @@ from di import golden, policy, state
 from di.actions.decisions import NOW, rb_log
 from di.actions.pipeline import CallContext
 from di.actions.registry import ACTIONS, ActionError, guard, implement
+from di.reads import constants as C
 from di.reads.common import REQ_SCOPE, REQ_SEQ_START, can, money, requests
 
-# The demo's DELEG: the kinds of request Admin may let the Approver decide (key, label).
-DELEG = {"decisions": "Decisions and overrides", "mcp": "MCP server proposals", "tenantAccess": "Tenant access"}
+# The demo's DELEG (di.reads.constants, shared with the Access screen): the kinds of request Admin may let the
+# Approver decide, here by key -> label.
+DELEG = {d["k"]: d["label"] for d in C.DELEG}
 
 # The demo's CLIENT_SERVERS at the start: the enterprise MCP servers Circularity consumes, plus the one approved from
 # REQ-302 (the demo adds it at load).
@@ -285,10 +287,10 @@ def clear_out_of_office(i: dict[str, Any], ctx: CallContext):
 # reads into every rule: decision.approve and decision.override check them), autonomy per role and action type
 # ("autonomy"), stopped agents ("agents_off", which the MCP server refuses) and run limits ("run_limits"). All in the
 # collection "access_settings"; di.screens.access reads them back.
-_GOLD = golden.load("screens/access")
-LEVELS = {x["k"]: x["label"] for x in _GOLD["levels"]}
-LEVEL_RANK = {"off": 0, "suggest": 1, "prepare": 2, "act": 3}  # the demo's AF_LV_RANK
-AUTO_TYPES = {t["k"]: t for t in _GOLD["auto_types"]}
+# The autonomy levels and action types are di.reads.constants' (shared with the Access screen), here keyed by `k`.
+LEVELS = {x["k"]: x["label"] for x in C.LEVELS}
+LEVEL_RANK = C.LEVEL_RANK  # the demo's AF_LV_RANK
+AUTO_TYPES = {t["k"]: t for t in C.AUTO_TYPES}
 AGENT_NAMES = {a["id"]: a["name"] for a in golden.load("tools")["agents"]}
 
 

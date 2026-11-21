@@ -52,6 +52,7 @@ from di.deps import CurrentPrincipal, DbSession
 from di.reads.access import can_decide, request_rows
 from di.reads.common import af_days, requests
 from di.reads.constants import AGENTS, AUTO_TYPES, DELEG, HARD_RULES, LEVEL_RANK, LEVELS
+from di.reads.decisions import median
 
 router = APIRouter(prefix="/api/screens/access", tags=["screens: access"])
 
@@ -141,13 +142,6 @@ def agents(s: Session) -> dict:
     return {"agents": rows, "hard_rules": HARD_RULES}
 
 
-def _median(xs: list[float]) -> float:
-    """The demo's med."""
-    s = sorted(xs)
-    m = len(s) >> 1
-    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2
-
-
 def metrics(s: Session) -> dict:
     """afMetrics, from the action journal (see the module docstring for what stays in the browser)."""
     rows = s.execute(text("SELECT action, role, preparer, undone, case_id, at FROM action_journal ORDER BY seq")).mappings().all()
@@ -173,7 +167,7 @@ def metrics(s: Session) -> dict:
         "edit": None,
         "undo": (sum(1 for r in prep if r["undone"]) / len(prep)) if prep else None,
         "fallback": None,
-        "ttd": _median(ttd) if ttd else None,
+        "ttd": median(ttd) if ttd else None,
         "runs": 0,
         "ms": None,
     }

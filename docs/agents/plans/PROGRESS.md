@@ -89,8 +89,8 @@ One line per step: date, plan and step, commit, the tests that gated it, result.
   one commit.
   - `can_see_case` stays a plain bool. A new `case_refusal()` gives the reason ("tenant"/"warehouse"), because a
     returned "tenant" string would be truthy.
-  - Not merged yet: `di/actions/access.py` keeps its own DELEG/LEVELS/AUTO_TYPES, and a third `_median` remains in
-    `screens/access.py`.
+  - Merged later (21 Nov): `di/actions/access.py` now derives DELEG/LEVELS/AUTO_TYPES/LEVEL_RANK from
+    `di/reads/constants.py`, and `screens/access.py` uses `di.reads.decisions.median` instead of a third copy.
 - **25954ea:** the commit subject starts with a stray byte-order mark (the PowerShell `Set-Content` encoding).
   Fixing it would need a force-push, so it stays.
 - **G2:** the web Dockerfile is split in two.
@@ -112,8 +112,8 @@ One line per step: date, plan and step, commit, the tests that gated it, result.
   - The client now does its own reconnect with a backoff, because the browser's retry would reuse an expired
     ticket.
 - **F4:** with `SIM_DEMO_FAULTS` on, resetting one system also clears custom faults on that system.
-  - Not fixed: `test_adapter_aws_iot` depends on eam data that `test_connectors` deletes. In the full suite's
-    alphabetical order it passes; run alone after `test_connectors`, it fails. Worth a follow-up.
+  - Fixed later (21 Nov): `test_adapter_aws_iot` depended on eam data that `test_connectors` deletes; its module
+    fixture now syncs Maximo when no eam run hours are in the canonical store, so it passes in any order.
 - **Verification method from D6 on:** each commit's staged tree is exported and tested on its own (web: tsc, vitest,
   eslint, build; api: ruff and the touched tests in a one-off container against a private api), so other agents'
   uncommitted work can't hide a broken commit.

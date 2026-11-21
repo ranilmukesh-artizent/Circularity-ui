@@ -106,6 +106,17 @@ def restore() -> None:
         disconnect_source(s, SID, purge=True)
 
 
+def ensure_maximo() -> None:
+    """These tests compare IoT telemetry with Maximo's meter readings (the canonical run hours before iot connects).
+    test_connectors empties the connector tables, so after it Maximo has no facts: sync it here instead of relying on
+    the order the test files run in."""
+    with engine.connect() as conn:
+        n = conn.execute(text("SELECT count(*) FROM provenance WHERE source_id = 'eam' AND field = 'run_hours'")).scalar_one()
+    if not n:
+        r = run_sync("eam", "manual", full=True)
+        assert r["status"] in ("ok", "partial"), r
+
+
 @pytest.fixture(scope="module", autouse=True)
 def clean():
     sim("DELETE", "/_sim/faults", params={"system": SID})
@@ -113,6 +124,7 @@ def clean():
     sim("POST", "/_sim/webhooks/deliver")
     with SessionLocal() as s:
         ensure_sources(s)
+    ensure_maximo()
     restore()
     before = run_hours()
     yield before
