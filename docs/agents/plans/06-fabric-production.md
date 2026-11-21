@@ -293,7 +293,7 @@ currency, usd_rate) seeded with today's fixed rates from `generic.to_usd`, so nu
 **Files:** Create `di/workflow/engine.py`; Modify `di/connectors/sync.py` (`run_sync` runs the source's bound
 workflow, or `minimal_graph({"k": "min", "type": "ingest", "src": sid})` when none), `di/actions/workflows.py`
 (`run_job` calls the engine; delete `sim_outcome`, `draws`, `step_dur`, the hash counts), `di/reads/workflows.py`
-(`run_counts`, `failed_rows` read the run record and `failed_record`). Test: Create `tests/test_engine.py`.
+(`run_counts`, `failed_rows` read the run record and `failed_record`). Test: Create `tests/test_workflow_engine.py`.
 **Interfaces:** `run_graph(s, wf: dict, graph: dict, *, trigger: str, dry: bool = False, sample: int | None = None)
 -> RunResult(states: dict, counts: dict[str, Counts], dur_ms: dict, rows: int, failed: int, error: str | None)`.
 Steps run in `studio._order`; a node gets the union of its predecessors' `out`; `x_err` gets their `rejected`; a
@@ -318,7 +318,7 @@ with `dedupe_key = "wf:" + id`.
 
 ### Task C7: retries, one run at a time, alerts
 **Files:** Modify `di/workflow/engine.py`, `di/actions/workflows.py` (`run`, `run_job`, `_alert`), `Canvas.tsx:454`
-(Try column from the record). Test: extend `tests/test_engine.py`, `tests/test_workflow_extras.py`.
+(Try column from the record). Test: extend `tests/test_workflow_engine.py`, `tests/test_workflow_extras.py`.
 - [ ] Tests: `test_one_run_at_a_time` (Review Focus 4); a step that raises is retried `w.retries` times with backoff
   1 s, 2 s, 4 s and the run shows the real attempts; the alert rules fire on real failures; a crashed job clears
   `running` (the reaper from plan 2 marks the run `failed: worker lost`). Commit.
@@ -335,7 +335,7 @@ with `dedupe_key = "wf:" + id`.
 ### Task C9: drafts on the server and an honest test run
 **Files:** Modify `apps/web/src/pages/workflows/draftStore.ts` (autosave to `workflow.draft.save` every 2 s of quiet),
 `WorkflowPage.tsx:93-130` (Test run calls `workflow.testRun`, a dry run of the draft); Create those two actions.
-Test: extend `draftStore.test.ts`, `tests/test_engine.py`.
+Test: extend `draftStore.test.ts`, `tests/test_workflow_engine.py`.
 - [ ] Tests: a reload keeps the draft; Test run shows real per-step counts and before/after samples and writes nothing;
   the browser `setTimeout` simulation is deleted. Commit.
 
