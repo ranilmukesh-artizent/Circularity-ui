@@ -11,6 +11,7 @@
  * - sources: GET /api/screens/integration/sources; field mappings: GET /api/screens/integration/models; the agents
  *   (agentsUsing): GET /api/screens/mcp/agents; the static lists: ref();
  * - the canvas checks and the test-run simulation run in the browser on the unsaved draft (src/api/workflowGraph.ts);
+ *   the page merges in the server's full checks for the same draft (workflow.validate with `graph`: serverChecks);
  * - a run is followed on the stream (kind `workflow`) by the run key workflow.run returns.
  *
  * The canvas edits a copy of the graph held by the page (src/pages/workflows/draftStore.ts).
@@ -47,6 +48,13 @@ export interface Workflow {
 }
 export interface RunRow { id: string; wf: string; name: string; ts: number; trig: string; dur: number; rows: number; state: RunState; note: string }
 export interface HistoryRow { id: string; ts: number; state: RunState; dur: number; rows: number; trig: string; note: string }
+/** A run's figures as the server counts them: records read (`in`), still held (failed_record) and `out` = in - held
+ *  (null for a failed run); null while it runs. A seeded run that never ran in the app is `{ real: false }`. */
+export interface RunFigure { real: boolean; key?: string; in?: number | null; out?: number | null; held?: number | null }
+/** Held records of one step, field and rule (each record once). */
+export interface HeldGroup { step: string; label: string; field: string; rule: string; n: number }
+/** The latest real run: its records read, held and passed, and its held records grouped. */
+export interface RunQuality { real: true; key: string; run: string; state: string; in: number | null; held: number; valid: number | null; groups: HeldGroup[] }
 export interface Check { sev: 'error' | 'warn' | 'info'; id: string; msg: string }
 export interface StepInfo { label: string; sub: string; tag: string; in: boolean; out: boolean; desc: string }
 export interface Source {
@@ -84,7 +92,11 @@ interface Detail {
   saved: Saved | null;
   template: WfGraph | null;
   history: HistoryRow[];
+  /** One per history entry: the run's real in / out / held, or `{ real: false }` for a seeded run (plan 6 follow-up). */
+  run_figures?: RunFigure[];
   failed_rows: { rec: string; field: string; value: string; rule: string }[];
+  /** The latest real run's figures and held records by step, field and rule; null when the last run is seeded. */
+  quality?: RunQuality | null;
   versions?: WfVersion[];
   published_ver?: string | null;
   /** The signed-in person's autosaved working copy (plan 6 C9, workflow.draft.save), or null. */
@@ -209,6 +221,18 @@ export function templateOf(id: string): WfGraph {
 export const stepInfo = (n: WfNode): StepInfo => G.info(lk(), n);
 /** Errors, warnings and notes, each with the step it belongs to (sorted errors first). */
 export const validate = (g: WfGraph, kind: 'pipe' | 'dec'): Check[] => G.validate({ ...lk(), ...blocksL() }, g, kind);
+type ServerCheck = { msg: string; node: string; sev: Check['sev'] };
+/** The server's full checks for a draft (workflow.validate with the graph): the browser's rules plus the live sources
+ *  and the fields records really carry, each with its step. null when the call is refused or fails. */
+export async function serverChecks(id: string, graph: WfGraph): Promise<Check[] | null> {
+  const r = await invoke<{ errors: ServerCheck[]; warnings: ServerCheck[] }>('workflow.validate', { id, graph });
+  if (!r.ok) return null;
+  return [...r.output.errors, ...r.output.warnings].map((x) => ({ sev: x.sev, id: x.node, msg: x.msg }));
+}
+/** The browser's checks with the server's for the same draft; the server's win on a duplicate. */
+export const mergeChecks = (browser: Check[], server: Check[] | null | undefined, g: WfGraph): Check[] => G.mergeChecks(browser, server, g);
+/** The saved version a published workflow can publish (newer than the one runs use), or null. */
+export const republishVer = (w: Workflow): string | null => G.republishVer(w, publishedVersion(w.id));
 /** null when a → b may be connected, otherwise the reason it may not. */
 export const canLink = (g: WfGraph, a: string, b: string): string | null => G.canLink(lk(), g, a, b);
 export const runOrder = (g: WfGraph): string[] => G.order(g);
@@ -226,6 +250,8 @@ export function runFromLast(id: string): TestRun | null {
     status: (l.status === 'warning' ? 'success' : l.status) as TestRun['status'], warn: l.status === 'warning', states: { ...l.states }, dur: l.dur,
     order: l.order.filter((x) => ids.has(x)), i: l.order.length, approved: true, t0: l.t0, id: l.id, trig: l.trig,
     ...(l.attempts ? { attempts: { ...l.attempts } } : {}),
+    // the records in and out of each step that the run really counted (Task instances shows them)
+    ...(l.counts ? { counts: { ...l.counts } } : {}),
   };
 }
 export const runTimes = (r: TestRun): Record<string, { s: number; e: number; d: number; ex: boolean }> => G.runTimes(r, nowMs());
@@ -260,7 +286,12 @@ export const failedRows = (id: string): { rec: string; field: string; value: str
   if (!w) return [];
   return detailA(id).failed_rows;
 };
-/** Errors in a run row: every row of a failed run, otherwise the fixed share validation rejects. */
+/** The figures of each history entry, in the history's order (empty entries when the server sends none). */
+export const runFigures = (id: string): RunFigure[] => (workflow(id) ? detailA(id).run_figures ?? [] : []);
+/** The latest real run's figures and held records, or null when the workflow has not really run. */
+export const runQuality = (id: string): RunQuality | null => (workflow(id) ? detailA(id).quality ?? null : null);
+/** The demo's estimate of errors in a seeded run row (one that never ran in the app): every row of a failed run,
+ *  otherwise a fixed share. Real runs use runFigures. */
 export function runErrors(id: string, r: HistoryRow): number {
   return r.state === 'failed' ? r.rows : Math.max(1, Math.round(r.rows * (0.004 + (parseInt(hashId(id + 'rej'), 16) % 9) / 1000)));
 }
@@ -405,11 +436,6 @@ export async function exportJson(id: string): Promise<{ file: string; json: stri
     });
   });
 }
-/** The source completeness for the data quality meters. */
-export const sourceCompleteness = (id: string | null): number | null => {
-  const s = id ? sourcesA().find((x) => x.id === id) : undefined;
-  return s ? s.compl ?? 95 : null;
-};
 /** New workflow form: systems that can be read (ingest) or written (outbound). */
 export const readableSources = (): Source[] => sources().filter((s) => s.read.length || s.status === 'unavailable');
 export const writableSources = (): Source[] => sources().filter((s) => s.write.length);

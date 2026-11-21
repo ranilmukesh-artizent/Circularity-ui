@@ -85,7 +85,8 @@ BLOCKS: dict[str, BlockSpec] = {
               help="Delta reads what changed since the last sync; full reads everything."),
             _num("lookback_days", "Lookback (days)", 0, 0, 365, "Re-read this many days before the cursor."),
         )),
-        _S("wconn", (F("operation", "Target operation", "text", "", help="Empty: the operation the delivery method uses."),)),
+        _S("wconn", (F("operation", "Target operation", "text", "", source="operations",
+                       help="Empty: each step's own write. Oracle Depot Repair: repair or teardown."),)),
         _S("map", (F("version", "Mapping version", "select", "latest", required=True, choices=["latest"],
                      help="latest, or a saved version number."),)),
         _S("act", (_num("timeout_s", "Timeout (s)", 30, 1, 600), _num("retries", "Retries", 3, 0, 5))),
@@ -95,7 +96,10 @@ BLOCKS: dict[str, BlockSpec] = {
         _S("x_gw", (_num("rate_limit_per_min", "Rate limit (per min)", 0, 0, 100000, "0: no limit."),
                     _num("timeout_s", "Timeout (s)", 30, 1, 600))),
         _S("x_evt", (F("ordering_key", "Ordering key", "text", "", help="Events with the same key are kept in order."),
-                     _num("replay_window_min", "Replay window (min)", 60, 0, 10080))),
+                     _num("replay_window_min", "Replay window (min)", 60, 0, 10080),
+                     F("time_field", "Time field", "text", "",
+                       help="Set: an event whose time is more than the replay window before the newest event's in the "
+                            "run is rejected. Empty: only events that carry their arrival time are checked."))),
         _S("x_file", (F("path", "Path", "text", "", help="Folder or object prefix; empty: the source's own."),
                       F("checksum_required", "Checksum required", "bool", True))),
         _S("x_val", (
@@ -119,6 +123,12 @@ BLOCKS: dict[str, BlockSpec] = {
             F("rate_date", "Rate date", "select", "record", required=True, choices=["record", "run"],
               help="The rate of the record's date, or of the run's."),
             F("rate_table", "Rate table", "select", "fx_rate", required=True, choices=["fx_rate"]),
+            F("fields", "Amount fields", "fields", ["amount"], help="The fields converted."),
+            F("currency_field", "Currency field", "text", "currency",
+              help="The field that says what the amounts are in; it becomes the target. Empty: none."),
+            F("source_currency", "Source currency", "select", "", choices=CURRENCIES,
+              help="For a record with no currency field value. Empty: USD."),
+            F("date_field", "Date field", "text", "date", help="The rate of this date. Empty: the run's date."),
         )),
         _S("x_utc", (F("fields", "Fields", "fields", [], help="Empty: every timestamp field."),
                      F("source_zone", "Source zone", "select", "record", required=True, choices=ZONES,
@@ -126,9 +136,13 @@ BLOCKS: dict[str, BlockSpec] = {
         _S("x_lookup", (F("tables", "Code tables", "mapping", {}, choices=CODE_TABLES, help="Field → code table."),)),
         _S("x_ident", (F("keys", "Identity keys", "fields", [], help="Matched within the tenant only."),)),
         _S("x_late", (
-            F("keys", "Key fields", "fields", [], help="Records with the same key are de-duplicated."),
+            F("keys", "Key fields", "fields", [],
+              help="Records with the same key are de-duplicated; a record missing one goes on untouched."),
             F("newest_by", "Newest wins by", "text", "", help="Empty: the source's change time."),
             _num("late_window_min", "Late window (min)", 1440, 0, 43200),
+            F("time_field", "Time field", "text", "",
+              help="Set: a record whose time is more than the late window before the newest record's in the run is "
+                   "rejected. Empty: only records that carry their arrival time are checked."),
         )),
         _S("x_env", ()),
         _S("x_flag", (F("notify", "Notify", "text", "", help="Empty: the workshop lead."),)),
@@ -143,16 +157,24 @@ BLOCKS: dict[str, BlockSpec] = {
         _S("x_evtrig", (F("event_type", "Event type", "text", "", help="Empty: any event from the source."),)),
         _S("x_branch", (F("condition", "Condition", "rules", [], help="Rows that pass go on; the rest take the else path."),)),
         _S("x_loop", (F("items_path", "Items path", "text", "", help="Empty: each record."),)),
-        _S("x_call", (F("workflow", "Workflow", "text", "", source="workflows"),)),
-        _S("x_wait", (_num("duration_min", "Duration (min)", 0, 0, 10080), F("until", "Until", "text", ""))),
+        _S("x_call", (F("workflow", "Workflow", "text", "", source="workflows",
+                        help="Starts this published workflow (not itself, nor one that calls back)."),)),
+        _S("x_wait", (_num("duration_min", "Duration (min)", 0, 0, 10080,
+                           "Records wait this long, then the run goes on. With Until: how often it is checked again "
+                           "(0: every 15 min)."),
+                      F("until", "Until", "text", "",
+                        help="An expression: records that meet it go on; the others wait (at most 7 days)."))),
         # ---- branches
         _S("x_err", (F("action", "Failed records", "select", "hold", required=True, choices=["hold", "drop"]),)),
-        _S("x_audit", (F("level", "Level", "select", "info", required=True, choices=["info", "warn", "debug"]),)),
+        _S("x_audit", (F("level", "Level", "select", "info", required=True, choices=["info", "warn", "debug"],
+                         help="One entry per run in the audit log, with this level and the record count."),)),
         _S("x_pub", (F("topic", "Topic", "text", "model.updated", required=True),)),
     )
 }  # fmt: skip
 # a pair of settings that only make sense together: (block, field, needs)
 _PAIRS = (("x_expr", "target", "expression"), ("x_expr", "expression", "target"), ("x_join", "input", "key"))
+# text settings that name one field of the records: checked against the fields the source sends, as `fields` are
+_NAMES_A_FIELD = {("x_fx", "currency_field"), ("x_fx", "date_field"), ("x_late", "time_field"), ("x_evt", "time_field")}
 
 
 def spec_key(node: dict) -> str:
@@ -252,6 +274,9 @@ def _field_errors(f: FieldSpec, v: Any, ctx: dict) -> list[str]:
     if f.type == "text":
         if not isinstance(v, str):
             return [f"{lb} must be text."]
+        ops = ctx.get("operations") if f.source == "operations" else None
+        if ops is not None and v.strip() and v.strip() not in ops:  # a write connector's Target operation
+            return [f"{lb} {v.strip()} is not a write of this system ({', '.join(ops) or 'it takes none'})."]
         return [f"{lb} is needed."] if f.required and not v.strip() else []
     if f.type == "number":
         if not _is_num(v):
@@ -321,9 +346,19 @@ def cfg_errors(node: dict, ctx: dict | None = None) -> list[str]:
         return [f"{label}: this step has no settings to change."]
     keys = {f.key for f in s.fields}
     out = [f"{k} is not a setting of this block." for k in raw if k not in keys]
+    if s.ref == "wconn" and "operations" not in ctx and isinstance(node.get("ref"), str):
+        from di.instructions.writers import operations  # the writes the target takes (static)
+
+        ctx = ctx | {"operations": operations(node["ref"])}
     cfg = default_cfg(s.ref) | raw
+    blind = {k: v for k, v in ctx.items() if k != "fields"}
     for f in s.fields:
-        out += _field_errors(f, cfg[f.key], ctx)
+        # only a setting a person set is held against the source's fields (a default such as x_fx's `amount` is not)
+        fctx = ctx if f.key in raw else blind
+        out += _field_errors(f, cfg[f.key], fctx)
+        v, have = cfg[f.key], fctx.get("fields")
+        if (s.ref, f.key) in _NAMES_A_FIELD and have is not None and isinstance(v, str) and v.strip() and v not in have:
+            out.append(f"{f.label} {v} is not a field the records carry.")
     for ref, a, b in _PAIRS:
         fa = next((f for f in s.fields if f.key == a), None)
         fb = next((f for f in s.fields if f.key == b), None)

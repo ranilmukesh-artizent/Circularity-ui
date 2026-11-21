@@ -1,7 +1,8 @@
 """di-worker: claims jobs from the Postgres queue and runs their handler.
 
 Run with:  python -m di.worker
-Handlers register by job kind: `sync.source` (B9), `instruction.send` (B13b, di/instructions) and `workflow.run`
+Handlers register by job kind: `sync.source` (B9; a sync of a file source that read new files then runs the source's
+file-triggered workflows, di/workflow/triggers.py file_arrived), `instruction.send` (B13b, di/instructions) and `workflow.run`
 (B15, di/actions/workflows: a workflow run, step by step, its progress on the live-update stream). Besides jobs, the
 loop queues due syncs and due scheduled workflow runs (di/workflow/triggers.py) every 30 s and, while sending
 instructions is on, acknowledges due simulated steps every 5 s.
@@ -93,6 +94,10 @@ def _sync(payload: dict[str, Any]) -> None:
 
     out = run_sync(payload["source_id"], payload.get("trigger", "schedule"), bool(payload.get("full")))
     log.info("sync %s: %s", payload["source_id"], out)
+    if out.get("status") in ("ok", "partial"):  # new files read: the file-triggered workflows run (never raises)
+        from di.workflow.triggers import file_arrived
+
+        file_arrived(payload["source_id"], int(out.get("records_read") or 0))
 
 
 # ---------------------------------------------------------------- outbound instructions (B13b)
@@ -120,6 +125,14 @@ def _workflow_run(payload: dict[str, Any]) -> None:
         payload = started
     out = run_job(payload)
     log.info("workflow run %s: %s", payload.get("run"), out)
+
+
+@handler("workflow.resume")
+def _workflow_resume(payload: dict[str, Any]) -> None:
+    """A Wait step's parked records are due: the workflow runs on from that step (di/workflow/waits.py)."""
+    from di.workflow.waits import resume
+
+    log.info("workflow resume %s: %s", payload.get("wait"), resume(payload))
 
 
 def tick_instructions() -> None:

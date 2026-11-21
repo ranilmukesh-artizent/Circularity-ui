@@ -6,8 +6,8 @@ import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import {
-  ago, analyze, hashId, history, mappings, nowMs, NOWF, publishWorkflow, runCounts, runErrors,
-  runFromLast, runOrder, saveWorkflow, savedOf, setWorkflowStatus, sourceCategoryLabel, sourceCompleteness,
+  ago, analyze, hashId, history, mergeChecks, nowMs, NOWF, publishedVersion, publishWorkflow, republishVer, runCounts, runErrors, runFigures,
+  runFromLast, runOrder, runQuality, saveWorkflow, savedOf, serverChecks, setWorkflowStatus, type Check, sourceCategoryLabel,
   stepInfo, systemOf, templateOf, testRunWorkflow, trigText, usedBy, validate, wfStat, workflow, WF_H, WF_W, WF_WH, worldWidth, type TestRun, type Trigger, type Workflow,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
@@ -85,7 +85,26 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   const clearRun = useCallback(() => { runRef.current = null; paint(); }, []);
 
   const g = d.graph;
-  const checks = validate(g, w.kind);
+  // the server's full checks for this draft (live sources, the fields records really carry) merged with the browser's:
+  // asked 600 ms after the last edit, and again before Validate, Test run and Publish (plan 6 follow-up, G2)
+  const gStamp = JSON.stringify(g);
+  const [srv, setSrv] = useState<Check[] | null>(null);
+  const asked = useRef('');
+  const checkOnServer = useCallback(async (graph: typeof g): Promise<Check[] | null> => {
+    const stamp = JSON.stringify(graph);
+    asked.current = stamp;
+    const c = await serverChecks(w.id, graph);
+    if (asked.current === stamp && c) setSrv(c); // a later edit asked again: its answer wins
+    return c;
+  }, [w.id]);
+  useEffect(() => {
+    const t = setTimeout(() => { void checkOnServer(JSON.parse(gStamp)); }, 600);
+    return () => clearTimeout(t);
+  }, [gStamp, checkOnServer]);
+  const checks = mergeChecks(validate(g, w.kind), srv, g);
+  /** The checks with a fresh server answer for the draft as it is now (the button's moment, not the last debounce). */
+  const checksNow = async (): Promise<Check[]> => mergeChecks(validate(g, w.kind), (await checkOnServer(g)) ?? srv, g);
+  const firstErr = (er: Check[]) => (er.length ? ' First: ' + er[0].msg : '');
   // a test run carries the records that really went in and out of each step
   const counts = run?.counts ?? runCounts(w.id, g, run ? run.states : null);
   const ops = canvasOps(d, w.kind, setSel, clearRun);
@@ -108,23 +127,25 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     paint();
     if (o.status !== 'held') toast('Test run ' + (o.status === 'failed' ? 'failed' : 'finished') + ': ' + fmtNumber(o.rows) + ' records' + (o.note ? '. ' + o.note : '') + '. Nothing was written.', 4200);
   }
-  function testRun() {
-    const e = checks.filter((x) => x.sev === 'error').length;
-    if (e) { toast(`Fix ${e} error${e > 1 ? 's' : ''} before running. The checks below say what and why.`); scrollChecks(); return; }
+  async function testRun() {
+    const er = (await checksNow()).filter((x) => x.sev === 'error'), e = er.length;
+    if (e) { toast(`Fix ${e} error${e > 1 ? 's' : ''} before running. The checks below say what and why.` + firstErr(er), 6000); scrollChecks(); return; }
     if (tab !== 'studio') setTab('studio');
     void dryRun(false);
   }
   function approve() {
     const r = runRef.current;
     if (!r || r.status !== 'held') return;
-    if (!can('approve')) return toast('Your role cannot approve. Switch to Approver to continue the run.');
+    // a test run is a dry run: whoever may run it approves its simulated Human approval; nothing is sent
+    if (r.dry ? !mgr : !can('approve')) return toast(r.dry ? NOWF() : 'Your role cannot approve. Switch to Approver to continue the run.');
     void dryRun(true, r);
-    toast('Approved in the test run. No instruction is sent to any system.');
+    toast('Approved in the test run. Simulated approval (dry run): nothing is sent to any system.');
   }
   const scrollChecks = () => checksRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
-  function validateNow() {
-    const e = checks.filter((x) => x.sev === 'error').length, wn = checks.filter((x) => x.sev === 'warn').length;
+  async function validateNow() {
+    const all = await checksNow();
+    const e = all.filter((x) => x.sev === 'error').length, wn = all.filter((x) => x.sev === 'warn').length;
     toast(e ? `${e} error${e > 1 ? 's' : ''} to fix before this can run.` : wn ? `No errors. ${wn} warning${wn > 1 ? 's' : ''} to review.` : 'No errors or warnings. This workflow is ready to run.');
     if (tab === 'studio') scrollChecks();
   }
@@ -148,8 +169,8 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
       if (r.ok) toast(d.name + ' unpublished. It will no longer run on its trigger.');
       return;
     }
-    const er = checks.filter((x) => x.sev === 'error');
-    if (er.length) { toast('Cannot publish: ' + er.length + ' error' + (er.length > 1 ? 's' : '') + ' in the checks. Fix them first.'); scrollChecks(); return; }
+    const er = (await checksNow()).filter((x) => x.sev === 'error');
+    if (er.length) { toast('Cannot publish: ' + er.length + ' error' + (er.length > 1 ? 's' : '') + ' in the checks. Fix them first.' + firstErr(er), 6000); scrollChecks(); return; }
     if (d.dirty) {
       // the name, owner and trigger are part of the change, so they are saved with the graph first
       if (!d.name.trim()) return toast('Enter a workflow name before saving.');
@@ -161,6 +182,14 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     reload(w.id, kept());
     toast(r.output.name + ' published as v' + r.output.ver + '. It runs on its trigger: ' + r.output.trig + '.');
   }
+  /** Publish v{x}: a published workflow's newer saved version (not the unsaved draft), as History's Publish does. */
+  async function republish() {
+    if (!mgr) return toast(NOWF());
+    const r = await action.run(() => publishWorkflow(w.id), 4200);
+    if (!r.ok) { if (/error/.test(r.error.message)) scrollChecks(); return; }
+    toast(`v${r.output.ver} published. Runs now use it.` + (d.dirty ? ' Your unsaved changes are still a draft: save and publish them to run them.' : ''));
+  }
+  const newer = republishVer(w), pubVer = publishedVersion(w.id);
   function discard() {
     const s = savedOf(w.id);
     if (!s) return;
@@ -296,6 +325,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
           <input id="wfName" value={d.name} maxLength={80} onChange={(e) => meta((x) => { x.name = e.target.value; })} /></div>
         <span id="wfStat">{w.running ? <WorkflowStatus k="running" /> : <WorkflowStatus k={stat} />}</span>
         <span className="note num">{w.id} · v{w.ver}</span>
+        {newer && pubVer && <span className="chip y" id="wfPubVer" title={`Runs use v${pubVer}. Publish v${newer} from More actions to make runs use it.`}>Runs v{pubVer} · v{newer} not published</span>}
         {l && <span className="note">Last run {ago(nowMs() - l.ts)}</span>}
         <span id="wfDirty">{d.dirty && <span className="chip y">Unsaved changes</span>}</span>
         <span className="grow" />
@@ -303,6 +333,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
           {mgr && <button role="menuitem" id="wfSaveB" disabled={!d.dirty} onClick={save}><Icon name="check" /><span>Save</span></button>}
           <button role="menuitem" id="wfDiscB" disabled={!d.dirty} onClick={discard}><Icon name="undo" /><span>Discard changes</span></button>
           <button role="menuitem" onClick={reset}><Icon name="rotate" /><span>Reset to template</span></button>
+          {mgr && newer && <button role="menuitem" id="wfRepubB" onClick={republish}><Icon name="upload" /><span>Publish v{newer}</span></button>}
           {mgr && <button role="menuitem" onClick={publish}><Icon name="upload" /><span>{w.status === 'published' ? 'Unpublish' : 'Publish'}</span></button>}
           {mgr && <button role="menuitem" onClick={dup}><Icon name="copy" /><span>Duplicate</span></button>}
           {mgr && <button role="menuitem" onClick={() => saveTemplate(w.id)}><Icon name="file" /><span>Save as template</span></button>}
@@ -328,17 +359,24 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   );
 
   if (tab === 'settings') {
-    const t = d.trig;
+    // a Scheduler or Event trigger block on the canvas sets the trigger (the server reads it the same way: triggers.from_graph)
+    const tb = d.graph.nodes.find((n) => n.k === 'xf' && (n.ref === 'x_sched' || n.ref === 'x_evtrig'));
+    const evType = tb?.ref === 'x_evtrig' && typeof tb.cfg?.event_type === 'string' ? tb.cfg.event_type.trim() : '';
+    const bt: Trigger | null = !tb ? null : tb.ref === 'x_sched' ? { t: 'schedule', min: Number(tb.cfg?.interval_min ?? 60) } : { t: 'event' };
+    const t = bt ?? d.trig;
+    const byBlock = tb ? 'Set by the ' + (tb.ref === 'x_sched' ? 'Scheduler' : 'Event trigger') + ' block' + (evType ? ' (event type ' + evType + ')' : '') + '.' : '';
     return (
       <>{head}
         <Panel title="Settings">
           <div className="wfset frwset">
             <div className="fld"><label htmlFor="wfTrig">Trigger</label>
-              <select id="wfTrig" value={t.t} onChange={(e) => meta((x) => { x.trig = (e.target.value === 'schedule' ? { t: 'schedule', min: 15 } : { t: e.target.value }) as Trigger; })}>
+              <select id="wfTrig" value={t.t} disabled={!!bt} aria-describedby={bt ? 'wfTrigBy' : undefined} onChange={(e) => meta((x) => { x.trig = (e.target.value === 'schedule' ? { t: 'schedule', min: 15 } : { t: e.target.value }) as Trigger; })}>
                 {TRIGS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select></div>
+              </select>
+              {bt && <div className="note" id="wfTrigBy">{byBlock}</div>}</div>
             {t.t === 'schedule' && <div className="fld" style={{ width: 120 }}><label htmlFor="wfMin">Every (min)</label>
-              <input id="wfMin" type="number" min={1} max={1440} defaultValue={t.min} onChange={(e) => { const m = +e.target.value; if (m >= 1 && m <= 1440) meta((x) => { x.trig = { t: 'schedule', min: m }; }); }} /></div>}
+              {bt ? <input id="wfMin" type="number" value={t.min} readOnly disabled aria-describedby="wfTrigBy" />
+                : <input id="wfMin" type="number" min={1} max={1440} defaultValue={t.min} onChange={(e) => { const m = +e.target.value; if (m >= 1 && m <= 1440) meta((x) => { x.trig = { t: 'schedule', min: m }; }); }} />}</div>}
             <div className="fld"><label htmlFor="wfOwn">Owner (role or team)</label>
               <input id="wfOwn" value={d.owner} maxLength={60} onChange={(e) => meta((x) => { x.owner = e.target.value; })} /></div>
             <div className="fld"><label htmlFor="frRetry">Retries</label>
@@ -413,7 +451,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
         <Panel title="Recent runs" right={<button className="lnk" onClick={() => setTab('history')}>View all →</button>}>
           <div id="frRuns"><RunsTable w={w} n={5} onView={(r) => setModal({ k: 'run', run: r })} /></div>
         </Panel>
-        <Panel title="Data quality (latest run)"><div id="frDq"><DataQuality w={w} counts={counts} onFailed={() => setModal({ k: 'failed' })} /></div></Panel>
+        <Panel title="Data quality (latest run)"><div id="frDq"><DataQuality w={w} run={run} onFailed={() => setModal({ k: 'failed' })} /></div></Panel>
       </div>
       <div className="wfbot" ref={checksRef}>
         <ChecksPanel g={g} checks={checks} onPick={pick} />
@@ -427,45 +465,74 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
 
 // ---------------------------------------------------------------- panels
 function RunsTable({ w, n, onView }: { w: Workflow; n: number; onView: (run: string) => void }) {
-  const L = history(w.id).slice(0, n);
+  const L = history(w.id).slice(0, n), F = runFigures(w.id);
   if (!L.length) return <div className="empty"><b>No runs yet</b>Runs appear here once the workflow is published and its trigger fires.</div>;
+  const seeded = L.some((_, i) => F[i] && !F[i].real);
+  const num = (v: number | null | undefined) => (v == null ? '—' : fmtNumber(v));
   return (
-    <div className="tw"><table className="t static tight">
-      <thead><tr><th>Run ID</th><th>Status</th><th>Start time</th><th className="r">Duration</th><th className="r">Records (in / out)</th><th className="r">Errors</th><th>Triggered by</th><th /></tr></thead>
-      <tbody>{L.map((r) => {
-        // a run still in progress (the API's worker job) has no duration or record count yet
-        const going = r.state === 'running', rej = going ? 0 : runErrors(w.id, r);
-        return (
-          <tr key={r.id + r.ts} className={r.state === 'failed' ? 'frfail' : ''}>
-            <td className="mono">{r.id}</td><td><WorkflowStatus k={r.state === 'failed' ? 'failed' : going ? 'running' : 'success'} /></td>
-            <td className="num nowrap">{stamp(r.ts)}</td><td className="r num">{going ? '—' : r.dur + ' s'}</td>
-            <td className="r num">{going ? '—' : fmtNumber(r.rows) + ' / ' + fmtNumber(r.state === 'failed' ? 0 : r.rows - rej)}</td>
-            <td className={'r num ' + (rej ? 'neg' : '')}>{going ? '—' : fmtNumber(rej)}</td><td>{r.trig}</td>
-            <td><button className="btn sm" onClick={() => onView(r.id)}>View</button></td>
-          </tr>
-        );
-      })}</tbody>
-    </table></div>
+    <>
+      <div className="tw"><table className="t static tight">
+        <thead><tr><th>Run ID</th><th>Status</th><th>Start time</th><th className="r">Duration</th><th className="r">Records (in / out)</th><th className="r">Held</th><th>Triggered by</th><th /></tr></thead>
+        <tbody>{L.map((r, i) => {
+          // a run still in progress (the API's worker job) has no duration or record count yet. A run that happened in
+          // the app shows the server's figures (its held records are the ones View failed records lists); a seeded run
+          // of the demo's history keeps the demo's estimate (as the Monitor keeps its seeded figures)
+          const f = F[i], going = r.state === 'running';
+          const est = f && !f.real ? runErrors(w.id, r) : 0;
+          const rin = f?.real ? f.in : r.rows, held = going ? null : f?.real ? f.held : est;
+          const out = going ? null : f?.real ? f.out : r.state === 'failed' ? 0 : r.rows - est;
+          return (
+            <tr key={r.id + r.ts} className={r.state === 'failed' ? 'frfail' : ''}>
+              <td className="mono">{r.id}</td><td><WorkflowStatus k={r.state === 'failed' ? 'failed' : going ? 'running' : 'success'} /></td>
+              <td className="num nowrap">{stamp(r.ts)}</td><td className="r num">{going || r.dur == null ? '—' : r.dur + ' s'}</td>
+              <td className="r num">{going || rin == null ? '—' : fmtNumber(rin) + ' / ' + num(out)}</td>
+              <td className={'r num ' + (held ? 'neg' : '')}>{num(held)}</td><td>{r.trig}</td>
+              <td><button className="btn sm" onClick={() => onView(r.id)}>View</button></td>
+            </tr>
+          );
+        })}</tbody>
+      </table></div>
+      {seeded && <p className="note" id="frRunsSeeded">Seeded runs from the demo's history never ran in the app: their out and held figures are the demo's estimate.</p>}
+    </>
   );
 }
 
-function DataQuality({ w, counts, onFailed }: { w: Workflow; counts: Record<string, { in: number; out: number; rej: number }>; onFailed: () => void }) {
-  const v = Object.values(counts).find((x) => x.rej > 0) ?? { in: w.last ? w.last.rows : 0, out: w.last ? w.last.rows : 0, rej: 0 };
-  const tot = v.in || 0, err = v.rej, warn = w.src && systemOf(w)?.status === 'stale' ? Math.round(tot * 0.02) : 0, ok = Math.max(0, tot - err - warn);
-  const compl = sourceCompleteness(w.src);
-  const flds = mappings(w.src).slice(0, 5).map((m) => [m[0], Math.min(100, Math.max(60, (compl ?? 95) + 4 - (parseInt(hashId(w.id + m[0]), 16) % 7)))] as const);
+/** The latest real run's records read, passed and held, and the fields its held records failed on most (the server's
+ *  `quality`: the same held records as the Runs table and View failed records). A dry test run on the canvas shows its
+ *  own figures, labelled as such; a workflow that never ran in the app has none. */
+function DataQuality({ w, run, onFailed }: { w: Workflow; run: TestRun | null; onFailed: () => void }) {
+  const q = runQuality(w.id);
+  const ring = (tot: number, held: number, l: string) => (
+    <Ring segs={[{ v: Math.max(0, tot - held), c: 'var(--ok)', l: 'Passed' }, { v: held, c: 'var(--bad)', l }]}
+      center={tot ? ((Math.max(0, tot - held) / tot) * 100).toFixed(1) + '%' : '—'} sub="valid records" />
+  );
+  const failed = <div className="row" style={{ marginTop: 10 }}><button className="btn sm" disabled={!q?.held} onClick={onFailed}>View failed records ({fmtNumber(q?.held ?? 0)})</button></div>;
+  if (run?.dry && run.status !== 'running' && run.rows != null) {
+    return (
+      <>
+        <p className="note" id="frDqDry" style={{ marginTop: 0 }}><b>Test run (dry)</b>: {fmtNumber(run.rows)} sampled records, {fmtNumber(run.held ?? 0)} would be held. Nothing was written.</p>
+        {ring(run.rows, run.held ?? 0, 'Would be held')}
+        {q && <p className="note">Latest real run {q.run}: {fmtNumber(q.held)} held.</p>}
+        {failed}
+      </>
+    );
+  }
+  if (!q) return <div className="empty"><b>No real run yet</b>The figures appear after the workflow's first run in the app.</div>;
+  const by = new Map<string, { n: number; rules: string[] }>();
+  q.groups.forEach((x) => { const e = by.get(x.field) ?? { n: 0, rules: [] }; e.n += x.n; if (!e.rules.includes(x.rule)) e.rules.push(x.rule); by.set(x.field, e); });
+  const flds = [...by].sort((a, b) => b[1].n - a[1].n).slice(0, 5), top = flds.length ? flds[0][1].n : 1;
   return (
     <>
-      <Ring segs={[{ v: ok, c: 'var(--ok)', l: 'Valid' }, { v: warn, c: 'var(--h-dec)', l: 'Warnings' }, { v: err, c: 'var(--bad)', l: 'Errors' }]}
-        center={tot ? ((ok / tot) * 100).toFixed(1) + '%' : '—'} sub="valid records" />
+      <p className="note" style={{ marginTop: 0 }}>Run {q.run}{q.state === 'failed' ? ' (failed)' : ''}: {q.in == null ? 'no records counted' : fmtNumber(q.in) + ' records read'}.</p>
+      {ring(q.in ?? 0, q.held, 'Held')}
       {flds.length > 0 && <>
-        <h4 style={{ margin: '14px 0 6px' }}>Field completeness</h4>
-        {flds.map(([f, p]) => (
-          <div key={f} className="meter"><span className="mono" style={{ width: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{f}</span>
-            <div className="bar"><i style={{ width: p + '%' }} /></div><b className="num" style={{ width: 40, textAlign: 'right' }}>{p}%</b></div>
+        <h4 style={{ margin: '14px 0 6px' }}>Fields that failed most</h4>
+        {flds.map(([f, e]) => (
+          <div key={f} className="meter"><span className="mono" title={'Rules: ' + e.rules.join(', ')} style={{ width: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{f}</span>
+            <div className="bar"><i style={{ width: (e.n / top) * 100 + '%' }} /></div><b className="num" style={{ width: 40, textAlign: 'right' }}>{fmtNumber(e.n)}</b></div>
         ))}
       </>}
-      <div className="row" style={{ marginTop: 10 }}><button className="btn sm" disabled={!err} onClick={onFailed}>View failed records ({fmtNumber(err)})</button></div>
+      {failed}
     </>
   );
 }
@@ -507,7 +574,8 @@ function Details({ w, d, mgr, onDup, onDelete }: { w: Workflow; d: Draft; mgr: b
 function Investigation({ w, mgr, onRun }: { w: Workflow; mgr: boolean; onRun: () => void }) {
   const r = w.lastRun, bad = r?.order.find((x) => r.states[x] === 'failed'), g = draftOf(w.id)!.graph, n = bad ? g.nodes.find((x) => x.id === bad) : undefined;
   if (!r || !n) return null;
-  const i = stepInfo(n), m = mappings(w.src).slice(0, 3), tries = retriesOf(r, w);
+  const i = stepInfo(n), q = runQuality(w.id), tries = retriesOf(r, w);
+  const mine = q && r.key && q.key === r.key ? q : null; // the held records of this run (a seeded run has none)
   const soon = () => openAsk(`Why did ${w.name} (${w.id}) fail at ${i.label} in run ${r.id}, and how do I fix it?`);
   return (
     <section className="panel frinvp" id="frInvest">
@@ -521,11 +589,12 @@ function Investigation({ w, mgr, onRun }: { w: Workflow; mgr: boolean; onRun: ()
       </div>
       <div className="pb frinvg">
         <div><h4>Error log</h4><pre className="frlog">{errorLog(tries, r, i.label)}</pre></div>
-        <div><h4>Schema drift</h4>
-          {m.length ? (
-            <table className="t static tight"><thead><tr><th>Field</th><th>Expected</th><th>Received</th></tr></thead>
-              <tbody>{m.map((f, k) => <tr key={k}><td className="mono">{f[0]}</td><td className="mono">{f[1]}</td><td className={'mono ' + (k === 0 ? 'neg' : '')}>{k === 0 ? f[1] + ' → renamed in source' : f[1]}</td></tr>)}</tbody></table>
-          ) : <p className="note">No field-level drift recorded.</p>}
+        <div><h4>Held records</h4>
+          {!mine ? <p className="note">This failed run is the demo's seeded history: nothing was held for real. Run now to see what a real run holds.</p>
+            : mine.groups.length ? (
+              <table className="t static tight"><thead><tr><th>Step</th><th>Field</th><th>Rule</th><th className="r">Records</th></tr></thead>
+                <tbody>{mine.groups.map((x) => <tr key={x.step + x.field + x.rule}><td>{x.label}</td><td className="mono">{x.field}</td><td>{x.rule}</td><td className="r num neg">{fmtNumber(x.n)}</td></tr>)}</tbody></table>
+            ) : <p className="note">The run held no records.</p>}
           {w.frFix
             ? <p className="callout ok" style={{ marginTop: 8 }}><b>Fix applied.</b> {w.frFix} Run now to confirm.</p>
             : mgr && <button className="btn sm" style={{ marginTop: 8 }} onClick={() => applyFix(w.id)}>Apply the suggested fix</button>}

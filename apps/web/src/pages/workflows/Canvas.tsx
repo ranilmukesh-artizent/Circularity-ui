@@ -8,7 +8,7 @@ import { fmtNumber } from '../../api/format';
 import { can } from '../../api/session';
 import {
   actTypes, agentsUsing, blockResources, blockSpecOf, nodeSettings, settingErrors, CH, channelsOf, deliverMap, deliverOf, edgePath, fixedStep, frTransforms, mappings, mapTarget,
-  nowMs, RUN_CHIP, RUN_LABEL, runTimes, sourceGroups, sourceLabel, sources, source, sourceShortLabel, stepInfo, tools,
+  NOWF, nowMs, RUN_CHIP, RUN_LABEL, runTimes, sourceGroups, sourceLabel, sources, source, sourceShortLabel, stepInfo, tools,
   transforms, canLink, WF_H, WF_W, WF_WH, worldWidth, type Check, type Counts, type RunState, type TestRun, type WfGraph, type WfNode, type Workflow,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
@@ -492,7 +492,10 @@ export function TaskInstances({ g, run, retries = 3, onPick, onApprove, onClear 
     const tot = run.order.filter((id) => ['success', 'warning', 'failed'].includes(run.states[id])).reduce((a, id) => a + +run.dur[id], 0);
     sum = <>
       <span className={'chip ' + m[0]}>{m[1]}</span> <span className="note num">{run.id || 'Run'} · {hms(run.t0 || nowMs())} · {tot.toFixed(1)} s · {run.trig || 'Manual'}</span>
-      {run.status === 'held' && <> <button className="btn sm pri" onClick={onApprove} aria-disabled={can('approve') ? undefined : true} data-why={can('approve') ? undefined : 'Your role cannot approve. Switch to Approver to continue the run.'}>Approve and continue</button></>}
+      {run.status === 'held' && (run.dry
+        // a test run is a dry run: whoever may run it approves its simulated Human approval; real approvals stay with approvers
+        ? <> <button className="btn sm pri" onClick={onApprove} aria-disabled={can('manageWorkflows') ? undefined : true} data-why={can('manageWorkflows') ? undefined : NOWF()}>Approve and continue</button> <span className="note" id="wfSimAppr">Simulated approval (dry run): nothing is sent.</span></>
+        : <> <button className="btn sm pri" onClick={onApprove} aria-disabled={can('approve') ? undefined : true} data-why={can('approve') ? undefined : 'Your role cannot approve. Switch to Approver to continue the run.'}>Approve and continue</button></>)}
       {' '}<button className="btn sm ghost" onClick={onClear}>Clear run</button>
     </>;
     body = <>
@@ -506,7 +509,7 @@ export function TaskInstances({ g, run, retries = 3, onPick, onApprove, onClear 
             <td><b>{stepInfo(n).label}</b></td><td><span className={'chip ' + C[st]}>{ICO[st] ?? ''} {L[st]}</span></td>
             <td className="num nowrap">{ex ? hms(t.s) : '—'}</td><td className="num nowrap">{ex && st !== 'running' ? hms(t.e) : '—'}</td>
             <td className="r num">{ex && st !== 'running' ? t.d.toFixed(2) + ' s' : '—'}</td><td className="r num">{run.attempts?.[id] ?? (st === 'failed' ? Math.max(1, retries) : ex ? 1 : 0)}</td>
-            {run.counts && <td className="r num nowrap">{c ? fmtNumber(c.in) + ' / ' + fmtNumber(c.out) + (c.rej ? ' · ' + fmtNumber(c.rej) + ' held' : '') : '—'}
+            {run.counts && <td className="r num nowrap">{c ? fmtNumber(c.in) + ' / ' + fmtNumber(c.out) + (c.rej ? ' · ' + fmtNumber(c.rej) + ' rejected' : '') : '—'}
               {sm && (sm.before.length > 0 || sm.after.length > 0) && <> <button className="lnk" aria-expanded={peek === id} onClick={(e) => { e.stopPropagation(); setPeek(peek === id ? null : id); }}>Samples</button></>}</td>}
             <td className="mono">{POOL(n)}</td>
           </tr>;

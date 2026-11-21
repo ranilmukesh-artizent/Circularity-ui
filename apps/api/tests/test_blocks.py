@@ -48,13 +48,16 @@ def test_fixed_and_tool_blocks_have_no_settings_and_are_read_only():
 def test_the_settings_table_keys():
     keys = {ref: [f.key for f in s.fields] for ref, s in B.BLOCKS.items()}
     assert keys["conn"] == ["resources", "mode", "lookback_days"]
-    assert keys["x_fx"] == ["currency", "rate_date", "rate_table"]
+    assert keys["x_fx"] == ["currency", "rate_date", "rate_table", "fields", "currency_field", "source_currency", "date_field"]
     assert keys["x_val"] == ["required", "rules", "on_failure"]
-    assert keys["x_late"] == ["keys", "newest_by", "late_window_min"]
+    assert keys["x_late"] == ["keys", "newest_by", "late_window_min", "time_field"]
     assert keys["map"] == ["version"]
     assert keys["act"] == ["timeout_s", "retries"]
     assert keys["wconn"] == ["operation"]
-    assert B.default_cfg("x_fx") == {"currency": "USD", "rate_date": "record", "rate_table": "fx_rate"}
+    assert B.default_cfg("x_fx") == {
+        "currency": "USD", "rate_date": "record", "rate_table": "fx_rate", "fields": ["amount"],
+        "currency_field": "currency", "source_currency": "", "date_field": "date",
+    }  # fmt: skip
 
 
 def test_errors_name_the_block_and_the_field():

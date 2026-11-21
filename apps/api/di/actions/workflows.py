@@ -54,7 +54,8 @@ import copy
 import json
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, cast
 
@@ -69,7 +70,7 @@ from di.reads import workflows as studio
 from di.reads.common import SOURCES, hash_id, iso, ms
 from di.reads.constants import MAP_TARGET, MAPPINGS, SRC_TYPES, TOOLS
 from di.reads.reference import channels, lists
-from di.workflow import binding, blocks, versions
+from di.workflow import binding, blocks, triggers, versions
 
 log = logging.getLogger("di.workflows")
 _REF = lists()
@@ -218,6 +219,49 @@ def src_or(sid: str) -> dict:
     }  # fmt: skip
 
 
+@contextmanager
+def live_sources(s: Any) -> Iterator[None]:
+    """src() reads the sources as they are now (di/workflow/live.py) while the block runs: New workflow does, so a
+    source connected from the catalogue or made by hand gets a workflow too (and a deleted one none). A demo source
+    that people have not changed is the demo's reference record itself, so its workflow is built as before."""
+    from di.workflow import live
+
+    tok = _LIVE.set(live.sources(s))
+    try:
+        yield
+    finally:
+        _LIVE.reset(tok)
+
+
+def made_here(sid: str) -> bool:
+    """A source the demo does not know (connected from the catalogue or made by hand) that exists now."""
+    return sid not in SOURCES and src(sid) is not None
+
+
+def sh(sid: str) -> str | None:
+    """SH: the demo's short name of a source, or the name of one made in the Connection Fabric."""
+    return (src(sid) or {}).get("name") if made_here(sid) else SH.get(sid)
+
+
+def map_target(sid: str) -> str | None:
+    """MAP_TARGET: the canonical model a source's field mapping feeds. A source made in the Connection Fabric feeds
+    its type's target when that is a canonical step (CANON_FIX), else Outcome."""
+    if not made_here(sid):
+        return MAP_TARGET.get(sid)
+    from di.reads.fabric import type_of
+
+    t = type_of(str((src(sid) or {}).get("type") or ""))["target"]
+    return t if t in CANON_FIX else "Outcome"
+
+
+def deliver(sid: str) -> list:
+    """DELIVER: how a source accepts instructions. A source made in the Connection Fabric with write operations takes
+    API calls (its POST operations)."""
+    if made_here(sid):
+        return ["api"] if (src(sid) or {}).get("write") else []
+    return DELIVER.get(sid) or []
+
+
 def trig_text(t: dict) -> str:
     kind: Any = t.get("t")
     return TRIG_L.get(kind, TRIG_L["manual"])(t)
@@ -252,7 +296,7 @@ def label(n: dict) -> str:
     if k == "xf":
         return _xf_req(ref)["label"]
     if k == "map":
-        return f"{SH.get(ref)} fields"
+        return f"{sh(ref)} fields"
     t = next((x for x in TOOLS if x["id"] == ref), None)
     return t["id"] if t else ref
 
@@ -609,14 +653,14 @@ def _validate_base(g: dict, kind: str) -> list[dict]:
                 add(
                     "error",
                     nid,
-                    f"{lb} is fed by {', '.join(str(SH.get(c['ref'])) for c in anc)}. Field names would not line up.",
+                    f"{lb} is fed by {', '.join(str(sh(c['ref'])) for c in anc)}. Field names would not line up.",
                 )
             if not _maps().get(ref):
-                add("error", nid, f"No field mapping is defined for {SH.get(ref)} yet.")
+                add("error", nid, f"No field mapping is defined for {sh(ref)} yet.")
             if not ns:
                 add("warn", nid, f"{lb} does not lead to a canonical model.")
-            elif canon and MAP_TARGET.get(ref) not in canon:
-                add("error", nid, f"{lb} maps to {MAP_TARGET.get(ref)}, but it is wired to {', '.join(canon)}.")
+            elif canon and map_target(ref) not in canon:
+                add("error", nid, f"{lb} maps to {map_target(ref)}, but it is wired to {', '.join(canon)}.")
         if k == "xf":
             x = cast(Any, _xf(ref))  # used only on a wired step
             anc_ids = A.anc(nid)
@@ -624,7 +668,7 @@ def _validate_base(g: dict, kind: str) -> list[dict]:
             conns = [m for m in anc_n if m["k"] == "conn"]
 
             def names(lst: list[dict]) -> str:
-                return ", ".join(dict.fromkeys(str(SH.get(c["ref"])) for c in lst))
+                return ", ".join(dict.fromkeys(str(sh(c["ref"])) for c in lst))
 
             if not np_ or (not ns and ref != "x_notify"):
                 add("warn", nid, f"{lb} is not wired between a source and a target.")
@@ -672,12 +716,12 @@ def _validate_base(g: dict, kind: str) -> list[dict]:
                 if not dsc:
                     add("warn", nid, f"{lb} does not lead to a system that receives it.")
                 for w in dsc:
-                    acc = DELIVER.get(w["ref"]) or []
+                    acc = deliver(w["ref"])
                     if a["ch"] not in acc:
                         add(
                             "error",
                             nid,
-                            f"{SH.get(w['ref'])} does not accept {CH_DEL[a['ch']]}. "
+                            f"{sh(w['ref'])} does not accept {CH_DEL[a['ch']]}. "
                             f"It accepts {', '.join(CH_DEL[c] for c in acc)}.",
                         )
         if k == "wconn":
@@ -906,6 +950,8 @@ def save(i: dict[str, Any], ctx: CallContext):
         w["owner"] = i["owner"]
     if i.get("trig") is not None:
         w["trig"] = dict(i["trig"])
+    if (blk := triggers.from_graph(w["graph"])) is not None:  # a Scheduler / Event trigger block sets the trigger
+        w["trig"] = blk
     if i.get("retries") is not None:
         w["retries"] = int(i["retries"])
     if i.get("alert") is not None:
@@ -1058,17 +1104,36 @@ def set_status(i: dict[str, Any], ctx: CallContext):
 def create_guard(i: dict[str, Any], ctx: CallContext):
     if i.get("tpl") is not None:
         return None if _template(ctx, i["tpl"]) else ("not_found", f"No template {i['tpl']}.")
-    return ("validation_error", "Choose a system first.") if i["type"] in ("ingest", "out") and not src(i.get("src")) else None
+    if i["type"] not in ("ingest", "out"):
+        return None
+    with live_sources(ctx.session):  # any source that exists now: the demo's, or one made in the Connection Fabric
+        so = src(i.get("src"))
+        if not so:
+            return "validation_error", "Choose a system first."
+        if i["type"] == "out" and made_here(so["id"]) and not deliver(so["id"]):
+            return "validation_error", f"{so['name']} takes no instructions. Grant it write access first."
+    return None
 
 
 def _template(ctx: CallContext, tid: str) -> dict | None:
     return state.get(ctx.session, "workflow_templates", tid)
 
 
+def _interval_min(ctx: CallContext, sid: str) -> int:
+    """The sync interval of a source made in the Connection Fabric (source_system), 0 for one that syncs on events."""
+    iv = ctx.session.execute(text("SELECT interval_min FROM source_system WHERE id = :i"), {"i": sid}).scalar()
+    return int(iv or 0)
+
+
 @implement("workflow.create")
 def create(i: dict[str, Any], ctx: CallContext):
     if i.get("tpl") is not None:
         return _create_from_template(i["tpl"], ctx)
+    with live_sources(ctx.session):  # the guard's sources: a source made in the Connection Fabric gets a workflow too
+        return _create_new(i, ctx)
+
+
+def _create_new(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     state.next_number(ctx.session, "workflows", "WF-", 0)  # holds the numbering lock for this transaction
     ids = _ids(ctx)
     k = 100
@@ -1091,14 +1156,17 @@ def create(i: dict[str, Any], ctx: CallContext):
     # New workflow starts from the blocks the workflow needs to run (tpl {k: "min"}), not the demo's full template:
     # the person adds the rest from the palette (decision log, 21 Nov 2026)
     if t == "ingest":
-        trig = {"t": "schedule", "min": so["interval"]} if so.get("interval") else {"t": "event"}
+        made = made_here(so["id"])  # made in the Connection Fabric: its schedule and model from source_system, its type
+        iv = _interval_min(ctx, so["id"]) if made else so.get("interval")
+        trig = {"t": "schedule", "min": iv} if iv else {"t": "event"}
+        target = map_target(so["id"]) if made else SRC_TYPES[so["type"]]["target"]
         base = {
             "cat": "Ingest", "kind": "pipe", "src": so["id"], "owner": so["owner"], "trig": trig,
             "tpl": {"k": "min", "type": "ingest", "src": so["id"], "arrive": "event" if trig["t"] == "event" else "api"},
-            "desc": f"{so['name']} into the {SRC_TYPES[so['type']]['target']} model through validation and field mapping.",
+            "desc": f"{so['name']} into the {target} model through validation and field mapping.",
         }  # fmt: skip
     elif t == "out":
-        tpl = {"k": "min", "type": "out", "src": so["id"], "ch": i.get("ch") or (DELIVER.get(so["id"]) or ["api"])[0]}
+        tpl = {"k": "min", "type": "out", "src": so["id"], "ch": i.get("ch") or (deliver(so["id"]) or ["api"])[0]}
         base = {
             "cat": "Outbound", "kind": "pipe", "tpl": tpl, "src": so["id"], "owner": so["owner"], "trig": {"t": "approval"},
             "desc": f"Approved instruction to {so['name']}.",
@@ -1598,14 +1666,31 @@ def apply_fix(i: dict[str, Any], ctx: CallContext):
     return {"id": w["id"], "name": w["name"], "ver": w["ver"], "fix": text_}
 
 
+# `graph`: an unsaved draft (the canvas' copy), checked with the server's full checks (live sources, field-aware
+# settings) so the Checks panel shows what Test run and Publish would refuse on (plan 6 follow-up, G2)
+ACTIONS["workflow.validate"].input |= {"graph": {"req": False, "t": "object"}}
+
+
 @guard("workflow.validate")
 def validate_guard(i: dict[str, Any], ctx: CallContext):
+    from di.actions.workflow_drafts import _graph_problem
+
+    if i.get("graph") is not None and (p := _graph_problem(i["graph"])):
+        return "validation_error", p
     return _wf_guard(i, ctx)
 
 
 @implement("workflow.validate")
 def validate_action(i: dict[str, Any], ctx: CallContext):
     w = _must(ctx, i["id"])
+    if i.get("graph") is not None:  # a draft: each check carries its step (`node`) and severity for the canvas
+        d = validate(blocks.compact_graph(copy.deepcopy(i["graph"])), w["kind"], ctx.session)
+        return {
+            "id": w["id"],
+            "name": w["name"],
+            "errors": [{"msg": x["msg"], "node": x["id"], "sev": x["sev"]} for x in d if x["sev"] == "error"],
+            "warnings": [{"msg": x["msg"], "node": x["id"], "sev": x["sev"]} for x in d if x["sev"] != "error"],
+        }
     v = validate(graph_of(w), w["kind"], ctx.session)
     # the demo reads x.node, which its checks never set (they carry the step as `id`), so `node` is always null
     return {
@@ -1627,7 +1712,7 @@ def run_guard(i: dict[str, Any], ctx: CallContext):
         g = graph_for_run(w)
         msg = next((f"{label(n)} has no connected feed" for n in (_Graph(g).by[i] for i in studio._order(g))
                     if n["k"] in ("conn", "wconn") and not _connected(ctx.session, n["ref"])), None)  # fmt: skip
-        if msg is None and (er := errors(g, w["kind"])):
+        if msg is None and (er := errors(g, w["kind"], ctx.session)):  # the sources now (catalogue ones too)
             msg = er[0]["msg"]
         if msg:
             return "conflict", f"{w['name']} is a draft with errors: {msg[:94] + '…' if len(msg) > 96 else msg}"
@@ -1852,7 +1937,7 @@ def _run_locked(payload: dict) -> dict:
         else:
             res = engine.run_graph(
                 s, w, g, trigger=trig, on_step=on_step, retries=_retries(w), backoff=BACKOFF_SECONDS, run_id=key,
-                run_kind="workflow",
+                run_kind="workflow", resume=payload.get("wait"),  # a Wait step's parked records (di/workflow/waits.py)
             )  # fmt: skip
     dur = round(time.monotonic() - t0, 2)
     with SessionLocal() as s:

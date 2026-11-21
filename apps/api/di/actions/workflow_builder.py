@@ -1008,7 +1008,7 @@ def _ingest(sh: dict) -> dict:
     """The required ingest blocks (MINIMAL) with bIngest's step ids, the chosen ingestion channel(s), the requested steps
     between validation and the field mapping in run order, and the requested branches; laid out left to right."""
     sid = sh["sid"]
-    s = SOURCES[sid]
+    s = wf.src(sid) or SOURCES[sid]  # New workflow reads the sources as they are now (wf.live_sources)
     ch = channels(s)
     file_only = "file" in ch and "api" not in ch and "event" not in ch
     chain = [r for r in STEP_ORDER if r in sh["steps"]]
@@ -1056,7 +1056,7 @@ def _ingest(sh: dict) -> dict:
             branch_at = nid
     nodes.append(wf._n("m", "map", sid, x(), y0))
     edges.append(wf._e(prev[0], "m"))
-    c: Any = wf.CANON_FIX.get(MAP_TARGET.get(sid) or "Outcome")
+    c: Any = wf.CANON_FIX.get(wf.map_target(sid) or "Outcome")
     nodes.append(wf._n(c, "fixed", c, x(), y0))
     edges.append(wf._e("m", c))
     if c != "c_out" and not file_only:

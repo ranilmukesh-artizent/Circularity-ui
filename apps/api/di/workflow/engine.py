@@ -14,7 +14,8 @@ it). Per node kind:
   `raw_record`. It holds the source's sync lock (`sync:<id>`, as `di.connectors.sync.run_sync` does) for the rest of
   the run, so a run and a sync of one source never interleave.
 - `map` turns a record into canonical facts: the adapter's `map` with the mapping a person saved over it (A4,
-  `mapping.mapper`), exactly as a sync maps.
+  `mapping.mapper`), exactly as a sync maps; with setting `version` a number, that saved version of the mapping instead
+  (`version_map`).
 - a canonical fixed step (`FXD[ref].canon`: c_asset, c_out ...) writes the facts through `store.apply` per record, in a
   savepoint (a deadlock with a concurrent writer is tried again), holding facts that do not fit their model in
   `failed_record` (B1, `schema.split_facts`); records without facts pass through.
@@ -23,6 +24,11 @@ it). Per node kind:
   its records on.
 Records a step rejects that no error handler takes are held in `failed_record` by the engine (unless the step's
 `on_failure` is `reject`), so a rejected record is never silently lost.
+
+**Waiting (x_wait).** The records a Wait step holds back (side.waiting, side.resume_at) are parked with a
+`workflow.resume` job due at resume_at (di/workflow/waits.py; not in a dry run), and the run's note says how many wait.
+That job runs the graph with `resume=<key>`: only the Wait step (given the parked records, `ctx.resumed`) and the steps
+after it run; the others are skipped.
 
 **States.** A step's state comes first from its predecessors (as the demo's wfEval): one failed or upstream failed ->
 `upstream_failed`; one held or waiting -> `waiting`; a step that needs input with none -> `skipped`. Otherwise it runs:
@@ -195,7 +201,8 @@ def refused(graph: dict, nid: str, msg: str) -> RunResult:
 class _Run:
     def __init__(self, s: Session, wf: dict, graph: dict, *, trigger: str, dry: bool, sample: int | None,
                  feeds: dict[str, Feed] | None, on_step: Callable[[dict], None] | None, retries: int, backoff: float,
-                 sleep: Callable[[float], None], run_id: Any, run_kind: str, now: datetime | None, full: bool):  # fmt: skip
+                 sleep: Callable[[float], None], run_id: Any, run_kind: str, now: datetime | None, full: bool,
+                 resume: str | None = None):  # fmt: skip
         from di.reads.workflows import _analyze, _order
 
         self.s, self.wf, self.g, self.trigger, self.dry, self.sample = s, wf, graph, trigger, dry, sample
@@ -220,6 +227,20 @@ class _Run:
         self.held = 0
         self.steps = 0
         self.fxd = _fxd()
+        # a run coming back for the records a Wait step parked (di/workflow/waits.py): that step and the steps after it
+        self.resume: tuple[str, list[Rec]] | None = None
+        self.after: set[str] = set()
+        self.waiting: list[tuple[str, int]] = []  # (Wait step, records it holds back)
+        if resume is not None:
+            from di.workflow import waits
+
+            self.resume = waits.load(s, resume) or ("", [])
+            st = [self.resume[0]]
+            while st:
+                for y in self.succ.get(st.pop(), []):
+                    if y not in self.after:
+                        self.after.add(y)
+                        st.append(y)
 
     # ------------------------------------------------------------ progress
     def emit(self, nid: str, st: str) -> None:
@@ -284,7 +305,9 @@ class _Run:
 
     def node(self, n: dict) -> None:
         nid = n["id"]
-        if st := self.upstream(n):
+        resumed = self.resume is not None and nid == self.resume[0]
+        st = None if resumed else "skipped" if self.resume is not None and nid not in self.after else self.upstream(n)
+        if st:
             self.states[nid] = st
             self.counts[nid] = {"in": 0, "out": 0, "rej": 0}
             self.dur[nid] = 0
@@ -292,7 +315,7 @@ class _Run:
             return
         self.states[nid] = "running"
         self.emit(nid, "running")
-        inp = self.gather(n)
+        inp = list(self.resume[1]) if resumed and self.resume is not None else self.gather(n)
         t0 = time.monotonic()
         tries = 0
         res: StepResult | None = None
@@ -353,6 +376,12 @@ class _Run:
         if res.rejected and not self.has_handler(nid) and str(res.side.get("on_failure") or "hold") == "hold":
             self.hold(nid, res.rejected)
         waiting = res.side.get("waiting") or []
+        if waiting and res.side.get("resume_at") and not self.dry:
+            from di.workflow import waits
+
+            res.side["parked"] = waits.park(self.s, self.wf, n, self.run_id, waiting, res.side["resume_at"], self.now)
+        if waiting:
+            self.waiting.append((nid, len(waiting)))
         self.states[nid] = "waiting" if waiting and not res.out else "success"
         if not self.dry:
             self.s.commit()
@@ -402,7 +431,8 @@ class _Run:
         if k == "fixed" and (self.fxd.get(ref) or {}).get("canon"):
             return self.store(n, inp)
         if k == "xf" and ref in STEPS:
-            ctx = StepCtx(self.s, self.run_id, self.wf, n, self.source_id(), self.now, self.dry, None)
+            resumed = self.resume is not None and n["id"] == self.resume[0]
+            ctx = StepCtx(self.s, self.run_id, self.wf, n, self.source_id(), self.now, self.dry, None, resumed)
             return STEPS[ref](inp, node_cfg(n), ctx)
         return StepResult([_pass(r) for r in inp], [], {})
 
@@ -527,11 +557,12 @@ class _Run:
             conf = float(row.confidence) if row and row.confidence is not None else None
             f = Feed(sid, a, None, self.run_id, self.full, conf, mapping.mapper(self.s, sid, sid in ADAPTERS))
             self.feeds[sid] = f
+        mapfn = self.version_map(n, f)
         out, rejected = [], []
         for r in inp:
             rec = Record(r.resource, r.ext_id, r.data, r.meta.get("request"), r.meta.get("changed"))
             try:
-                facts = f.remap(rec, f.adapter.map(rec)) if f.remap else f.adapter.map(rec)
+                facts = mapfn(rec)
                 facts = [
                     x if x.resource else type(x)(**{**x.__dict__, "resource": rec.resource, "ext_id": rec.ext_id}) for x in facts
                 ]
@@ -543,6 +574,30 @@ class _Run:
                 continue
             out.append(Rec(r.ext_id, r.resource, r.data, facts, {**r.meta, "source_id": r.meta.get("source_id") or sid}))
         return StepResult(out, rejected, {"on_failure": "hold"})
+
+    def version_map(self, n: dict, f: Feed) -> Callable[[Any], list]:
+        """How the map step maps a record: setting `version` "latest" maps with the saved mapping (the feed's, as a
+        sync does); a version number with that version of the source's field_mapping (di/connectors/mapping.py):
+        over a Python adapter's own mapping (overlay), or alone for a configured source (apply_rows). A version the
+        source does not have fails the step (not retried)."""
+        v = node_cfg(n).get("version", "latest")
+        if v == "latest" or v is None:
+            remap = f.remap
+            return (lambda rec: remap(rec, f.adapter.map(rec))) if remap is not None else f.adapter.map
+        from di.connectors import mapping
+        from di.connectors.registry import ADAPTERS
+
+        sid = n["ref"]
+        stored = self.s.execute(
+            text("SELECT rows FROM field_mapping WHERE source_id = :s AND version = :v"), {"s": sid, "v": int(v)}
+        ).scalar()
+        if stored is None:
+            raise Unreadable(f"{label(n)}: no field mapping version {int(v)} for {sid}")
+        rows = mapping.to_rows(stored)
+        if sid in ADAPTERS:
+            base = mapping.builtin(sid)
+            return lambda rec: mapping.overlay(f.adapter.map(rec), rec, rows, base)
+        return lambda rec: mapping.apply_rows(rows, rec)
 
     # ------------------------------------------------------------ canonical
     def store(self, n: dict, inp: list[Rec]) -> StepResult:  # noqa: ARG002 - every node step takes its node
@@ -622,6 +677,9 @@ class _Run:
             note = f"{self.held} record{'s' if self.held != 1 else ''} held" + (f" at {label(at)}" if at else "")
         else:
             status = "success"
+            if self.waiting:
+                at_wait, cnt = self.waiting[0]
+                note = f"{cnt} record{'s' if cnt != 1 else ''} waiting at {label(self.by[at_wait])}"
         return RunResult(
             dict(self.states), self.counts, self.dur, rows, rejected, error, list(self.order), status, note,
             dict(self.attempts), self.samples, self.held, self.error_kind, self.steps,
@@ -669,9 +727,11 @@ def run_graph(
     run_kind: str = "workflow",
     now: datetime | None = None,
     full: bool = False,
+    resume: str | None = None,
 ) -> RunResult:
-    """Run the graph's steps over real records (see the module docstring). Commits as it goes unless `dry`."""
+    """Run the graph's steps over real records (see the module docstring). Commits as it goes unless `dry`. `resume`:
+    the key of records a Wait step parked; the run goes on from that step only (di/workflow/waits.py)."""
     return _Run(
         s, wf, graph, trigger=trigger, dry=dry, sample=sample, feeds=feeds, on_step=on_step, retries=retries,
-        backoff=backoff, sleep=sleep, run_id=run_id, run_kind=run_kind, now=now, full=full,
+        backoff=backoff, sleep=sleep, run_id=run_id, run_kind=run_kind, now=now, full=full, resume=resume,
     ).run()  # fmt: skip

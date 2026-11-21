@@ -487,3 +487,176 @@ def test_the_default_graph_is_the_minimal_ingest_graph(sid):
     kinds = [n["k"] for n in g["nodes"]]
     assert kinds[0] == "conn" and "map" in kinds and any(n["k"] == "fixed" for n in g["nodes"])
     assert eng.default_graph("made-by-hand")["nodes"][0] == {"id": "r", "k": "conn", "ref": "made-by-hand", "x": 24, "y": 170}
+
+
+# ---------------------------------------------------------------- plan 6 follow-up: Wait, Call workflow, audit log
+def _jobs(kind: str) -> list[tuple[int, dict, float]]:
+    with engine.connect() as c:
+        q = text("SELECT id, payload, EXTRACT(EPOCH FROM run_after - now()) FROM job WHERE kind = :k AND status = 'queued' "
+                 "ORDER BY id")  # fmt: skip
+        return [(r[0], r[1], float(r[2])) for r in c.execute(q, {"k": kind}).all()]
+
+
+def _waits() -> list[dict]:
+    from di import state
+    from di.workflow import waits
+
+    with SessionLocal() as s:
+        return state.items(s, waits.COLLECTION)
+
+
+def _as_wait_workflow(graph: dict) -> dict:
+    """WF-133 (a published decision workflow, no source) with `graph` as the graph that runs."""
+    from di import state
+
+    with SessionLocal() as s:
+        w = state.get(s, "workflows", DEC)
+        w["graph"] = graph
+        w.pop("pub", None)
+        state.put(s, "workflows", DEC, w)
+        s.commit()
+    return w
+
+
+@pytest.fixture
+def waiting(studio, monkeypatch):
+    from di.workflow import waits  # noqa: F401 - registers the collection, so the resets clear it
+
+    monkeypatch.setattr(studio, "errors", lambda g, kind, s=None: [])  # the test graphs are not complete workflows
+    with engine.begin() as c:
+        c.execute(text("DELETE FROM job WHERE kind = 'workflow.resume'"))
+        c.execute(text("DELETE FROM state_item WHERE collection = 'workflow_waits'"))
+        c.execute(text("DELETE FROM failed_record WHERE source_id = 'fake'"))  # run keys repeat on the pinned clock
+    yield studio
+    with engine.begin() as c:
+        c.execute(text("DELETE FROM job WHERE kind = 'workflow.resume'"))
+        c.execute(text("DELETE FROM state_item WHERE collection = 'workflow_waits'"))
+        c.execute(text("DELETE FROM failed_record WHERE source_id = 'fake'"))
+        c.execute(text("DELETE FROM raw_record WHERE source_id = 'fake'"))
+
+
+def wait_graph(cfg: dict) -> dict:
+    nodes = [N("r", "conn", "fake"), N("wt", "xf", "x_wait", cfg), N("v", "xf", "x_val", {"rules": [
+        {"field": "qty", "check": "range", "arg": ">0"}]}), N("aud", "xf", "x_audit")]  # fmt: skip
+    return {"nodes": nodes, "edges": [E("r", "wt"), E("wt", "v"), E("v", "aud")]}
+
+
+def test_a_wait_duration_parks_the_records_and_the_run_comes_back_for_them(waiting):
+    from di.workflow import waits
+
+    w = _as_wait_workflow(wait_graph({"duration_min": 30}))
+    with SessionLocal() as s:
+        r = eng.run_graph(s, w, wait_graph({"duration_min": 30}), trigger="Manual", feeds=feed(), run_id="RUN-ENGW1")
+    assert r.states == {"r": "success", "wt": "waiting", "v": "waiting", "aud": "waiting"}
+    assert r.counts["wt"] == {"in": 4, "out": 0, "rej": 0} and r.note == "4 records waiting at Wait"
+    [item] = _waits()
+    assert item["wf"] == DEC and item["node"] == "wt" and item["run"] == "RUN-ENGW1"
+    assert [x["ext_id"] for x in item["records"]] == ["A1", "A2", "A3", "A4"]
+    [(_jid, payload, due_in)] = _jobs("workflow.resume")
+    assert payload == {"wait": item["id"], "wf": DEC} and 1700 < due_in <= 1800  # due 30 min later (wall clock)
+    # a test run parks nothing
+    with SessionLocal() as s:
+        eng.run_graph(s, w, wait_graph({"duration_min": 30}), trigger="Test", dry=True, feeds=feed())
+    assert len(_waits()) == 1
+
+    out = waits.resume(payload)
+    assert out["state"] == "warning" and _waits() == []
+    lr = _wf(DEC)["lastRun"]
+    assert lr["trig"] == "Resume" and lr["states"] == {"r": "skipped", "wt": "success", "v": "success", "aud": "success"}
+    assert lr["counts"]["wt"] == {"in": 4, "out": 4, "rej": 0} and lr["counts"]["v"] == {"in": 4, "out": 2, "rej": 2}
+    assert _runs(DEC)[out["run"]]["trig"] == "Resume"
+    assert [h["ext_id"] for h in held_for(out["run"])] == ["A2", "A4"]
+    assert waits.resume(payload) == {"wait": item["id"], "skipped": "gone"}
+
+
+def test_a_wait_until_checks_the_newest_landed_records_again(waiting):
+    from di.workflow import waits
+
+    cfg = {"until": "qty > 0", "duration_min": 10}
+    w = _as_wait_workflow(wait_graph(cfg))
+    with SessionLocal() as s:
+        r = eng.run_graph(s, w, wait_graph(cfg), trigger="Manual", feeds=feed(), run_id="RUN-ENGW2")
+    assert r.counts["wt"] == {"in": 4, "out": 2, "rej": 0} and r.states["v"] == "success"
+    [item] = _waits()
+    assert [x["ext_id"] for x in item["records"]] == ["A2", "A4"]
+    with engine.begin() as c:  # A2 is corrected at the source and lands again
+        c.execute(text("UPDATE raw_record SET payload = jsonb_set(payload, '{qty}', '3') "
+                       "WHERE source_id = 'fake' AND ext_id = 'A2'"))  # fmt: skip
+    out = waits.resume(_jobs("workflow.resume")[0][1])
+    lr = _wf(DEC)["lastRun"]
+    assert lr["counts"]["wt"] == {"in": 2, "out": 1, "rej": 0} and lr["counts"]["v"] == {"in": 1, "out": 1, "rej": 0}
+    assert out["state"] == "success" and lr["note"] == "1 record waiting at Wait"
+    [again] = _waits()  # A4 still does not meet Until: parked again, from when it first waited
+    assert again["id"] != item["id"] and [x["ext_id"] for x in again["records"]] == ["A4"]
+    assert again["records"][0]["meta"]["wait_since"] == item["records"][1]["meta"]["wait_since"]
+
+
+def test_a_wait_step_no_longer_in_the_workflow_holds_its_records(waiting):
+    from di.workflow import waits
+
+    w = _as_wait_workflow(wait_graph({"duration_min": 5}))
+    with SessionLocal() as s:
+        eng.run_graph(s, w, wait_graph({"duration_min": 5}), trigger="Manual", feeds=feed(), run_id="RUN-ENGW3")
+    _as_wait_workflow(val_graph([{"field": "qty", "check": "present"}]))
+    assert waits.resume(_jobs("workflow.resume")[0][1])["held"] == 4
+    assert [(h["rule"], h["step"]) for h in held_for("RUN-ENGW3")] == [("wait", "wt")] * 4 and _waits() == []
+
+
+def call_graph(target: str) -> dict:
+    return {"nodes": [N("r", "conn", "fake"), N("c", "xf", "x_call", {"workflow": target})], "edges": [E("r", "c")]}
+
+
+def test_call_workflow_starts_the_other_workflow(studio, monkeypatch):
+    from di import state
+
+    monkeypatch.setenv("DI_WORKFLOW_TRIGGERS", "true")
+    me = {"id": "WF-134", "name": "Caller"}
+    with SessionLocal() as s:
+        r = eng.run_graph(s, me, call_graph(DEC), trigger="Test", dry=True, feeds=feed())
+    assert r.states["c"] == "success" and _jobs("workflow.run") == []  # a test run starts nothing
+    with SessionLocal() as s:
+        r = eng.run_graph(s, me, call_graph(DEC), trigger="Manual", feeds=feed(), run_id="RUN-ENGC1")
+    assert r.states["c"] == "success" and r.counts["c"] == {"in": 4, "out": 4, "rej": 0}
+    assert [p for _i, p, _a in _jobs("workflow.run")] == [{"wf": DEC, "trig": "Workflow"}]
+    # once queued it is not queued twice
+    with SessionLocal() as s:
+        eng.run_graph(s, me, call_graph(DEC), trigger="Manual", feeds=feed(), run_id="RUN-ENGC2")
+    [(jid, payload, _due)] = _jobs("workflow.run")
+    from di.worker import _workflow_run  # as the worker takes a triggered run: its run record is made now
+
+    _workflow_run(payload)
+    with engine.begin() as c:
+        c.execute(text("UPDATE job SET status = 'done' WHERE id = :i"), {"i": jid})
+    assert _wf(DEC)["lastRun"]["trig"] == "Workflow"
+
+    # a workflow that does not exist, and one that calls the caller back, fail the step
+    with SessionLocal() as s:
+        r = eng.run_graph(s, me, call_graph("WF-NOPE"), trigger="Manual", feeds=feed(), run_id="RUN-ENGC3")
+    assert r.states["c"] == "failed" and "there is no workflow WF-NOPE" in r.note
+    with SessionLocal() as s:
+        w = state.get(s, "workflows", DEC)
+        g = copy.deepcopy(studio.graph_for_run(w))
+        g["nodes"].append(N("back", "xf", "x_call", {"workflow": "WF-134"}))
+        (w["pub"] if w.get("pub") else w)["graph"] = g
+        state.put(s, "workflows", DEC, w)
+        s.commit()
+    with SessionLocal() as s:
+        r = eng.run_graph(s, me, call_graph(DEC), trigger="Manual", feeds=feed(), run_id="RUN-ENGC4")
+    assert r.states["c"] == "failed" and "calls WF-134 back" in r.note
+
+
+def test_the_audit_log_step_writes_one_entry_per_run():
+    from di import state
+
+    def entries(run_id: str) -> list[dict]:
+        with SessionLocal() as s:
+            return [e for e in state.items(s, "events") if e.get("run") == run_id]
+
+    g = val_graph([{"field": "qty", "check": "range", "arg": ">0"}])
+    with SessionLocal() as s:
+        eng.run_graph(s, WF, g, trigger="Manual", feeds=feed(), run_id="RUN-ENGA1")
+        eng.run_graph(s, WF, g, trigger="Test", dry=True, feeds=feed(), run_id="RUN-ENGA2")
+    [e] = entries("RUN-ENGA1")
+    assert e["type"] == "workflow.audit" and e["records"] == 2 and e["level"] == "info" and e["step"] == "aud"
+    assert e["note"] == "WF-T · run RUN-ENGA1 · step Write to audit log: 2 records (info)"
+    assert entries("RUN-ENGA2") == []
