@@ -82,6 +82,9 @@ const ACTION_EXACT: Record<string, Scope> = Object.fromEntries(
     'analytics.query', 'analytics.models', 'audit.search', 'sources.health', 'sources.diagnose', 'workflow.validate',
     'inbox.get', 'receiving.plan', 'access.lookup', 'asset.compare', 'asset.summary', 'kpi.explain', 'conflict.suggest',
     'event.explain', 'mapping.preview',
+    // plan 6 C9: the canvas' autosave (the copy stays in memory; the server's copy is read only when a workflow opens
+    // afresh) and the dry test run change nothing any page shows
+    'workflow.draft.save', 'workflow.testRun',
   ].map((id) => [id, [] as Area[]]), // prettier-ignore
 );
 const ACTION_FAMILY: Record<string, Scope> = {

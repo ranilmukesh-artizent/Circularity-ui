@@ -3,13 +3,18 @@ import type { WfGraph } from '../../api/workflows';
 
 /** A fake of the workflow facade the drafts read: the list entry, the backend's graph and its version stamp. */
 const backend = vi.hoisted(() => new Map<string, { w: { id: string; name: string; owner: string; trig: { t: string; min?: number }; dirty: boolean }; graph: WfGraph; stamp: string }>());
+/** The working copies kept on the server (workflow.draft.save / discard), and the calls made. */
+const server = vi.hoisted(() => ({ drafts: new Map<string, Record<string, unknown>>(), saves: [] as Record<string, unknown>[], discards: [] as string[] }));
 vi.mock('../../api/workflows', () => ({
   workflow: (id: string) => backend.get(id)?.w,
   graphOf: (id: string) => JSON.parse(JSON.stringify(backend.get(id)?.graph ?? { nodes: [], edges: [] })),
   graphStamp: (id: string) => backend.get(id)?.stamp ?? '',
+  serverDraftOf: (id: string) => server.drafts.get(id) ?? null,
+  saveDraft: async (d: { id: string }) => { server.saves.push(JSON.parse(JSON.stringify(d))); server.drafts.set(d.id, JSON.parse(JSON.stringify(d))); return { ok: true, output: { id: d.id, at: '' } }; },
+  discardDraft: async (id: string) => { server.discards.push(id); server.drafts.delete(id); return { ok: true, output: { id, discarded: true } }; },
 }));
 
-import { draftOf, edit, forget, isDirty, nextId, reload, setCfg, undoRedo } from './draftStore';
+import { AUTOSAVE_MS, draftOf, edit, forget, isDirty, nextId, reload, setCfg, undoRedo } from './draftStore';
 
 const graph = (...ids: string[]): WfGraph => ({
   nodes: ids.map((id, i) => ({ id, k: 'xf', ref: 'x_utc', x: i * 200, y: 0 })),
@@ -26,6 +31,10 @@ const addNode = (id: string) => (d: { graph: WfGraph }) => { d.graph.nodes.push(
 afterEach(() => {
   for (const id of backend.keys()) forget(id);
   backend.clear();
+  server.drafts.clear();
+  server.saves.length = 0;
+  server.discards.length = 0;
+  vi.useRealTimers();
 });
 
 describe('draftOf', () => {
@@ -216,3 +225,76 @@ describe('setCfg (block settings)', () => {
     expect(draftOf('WF-1')!.graph.nodes.every((n) => n.cfg === undefined)).toBe(true);
   });
 });
+
+describe('drafts on the server (plan 6 C9)', () => {
+  it('autosaves an unsaved copy after two seconds of quiet, once per burst of changes', async () => {
+    vi.useFakeTimers();
+    seed('WF-1');
+    edit('WF-1', addNode('c'), { track: true });
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_MS - 500);
+    edit('WF-1', addNode('d'), { track: true });
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_MS - 1);
+    expect(server.saves).toEqual([]);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(server.saves).toHaveLength(1);
+    expect(server.saves[0]).toMatchObject({ id: 'WF-1', name: 'Ingest · WF-1', owner: 'Ops', retries: 3, alert: 'A run fails', base: '1.0|100' });
+    expect((server.saves[0].graph as WfGraph).nodes.map((n) => n.id)).toEqual(['a', 'b', 'c', 'd']);
+  });
+  it('does not autosave a change that leaves the copy clean', async () => {
+    vi.useFakeTimers();
+    seed('WF-1');
+    edit('WF-1', (d) => { d.warned = true; }, { dirty: false });
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_MS * 2);
+    expect(server.saves).toEqual([]);
+  });
+  it('undo and redo are autosaved too', async () => {
+    vi.useFakeTimers();
+    seed('WF-1');
+    edit('WF-1', addNode('c'), { track: true });
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_MS);
+    undoRedo('WF-1', -1);
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_MS);
+    expect(server.saves).toHaveLength(2);
+    expect((server.saves[1].graph as WfGraph).nodes.map((n) => n.id)).toEqual(['a', 'b']);
+  });
+  it('a reload (no copy in memory) takes up the copy kept on the server, still unsaved', async () => {
+    vi.useFakeTimers();
+    seed('WF-1');
+    edit('WF-1', (d) => { d.name = 'Renamed'; addNode('c')(d); }, { track: true });
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_MS);
+    forgetLocal('WF-1'); // what a page reload or a new sign-in does: the memory is gone, the server keeps the copy
+    const d = draftOf('WF-1')!;
+    expect(d).toMatchObject({ name: 'Renamed', dirty: true, base: '1.0|100' });
+    expect(d.graph.nodes.map((n) => n.id)).toEqual(['a', 'b', 'c']);
+    expect(isDirty('WF-1')).toBe(true);
+  });
+  it('Save, Publish or Discard (reload) drops the copy on the server and cancels a pending autosave', async () => {
+    vi.useFakeTimers();
+    seed('WF-1');
+    edit('WF-1', addNode('c'), { track: true });
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_MS);
+    edit('WF-1', addNode('d'), { track: true });
+    reload('WF-1');
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_MS * 2);
+    expect(server.saves).toHaveLength(1);
+    expect(server.discards).toEqual(['WF-1']);
+    expect(server.drafts.has('WF-1')).toBe(false);
+    forgetLocal('WF-1');
+    expect(draftOf('WF-1')).toMatchObject({ dirty: false });
+  });
+  it('does not ask the server to discard a copy it never kept', () => {
+    seed('WF-1');
+    draftOf('WF-1');
+    reload('WF-1');
+    expect(server.discards).toEqual([]);
+  });
+});
+
+/** Drop the in-memory copies as a page reload does (the module state is fresh; the server keeps its copies). */
+function forgetLocal(id: string) {
+  const keep = new Map(server.drafts);
+  forget(id);
+  server.drafts.clear();
+  keep.forEach((v, k) => server.drafts.set(k, v));
+  server.discards.length = 0;
+}
