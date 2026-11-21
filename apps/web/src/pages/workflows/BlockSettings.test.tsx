@@ -108,6 +108,25 @@ describe('BlockSettings', () => {
     expect([...host.querySelectorAll('button')].length).toBe(0);
   });
 
+  it("offers a write connector's Target operation from its target's writes (G3b)", () => {
+    const spec: BlockSpec = { ref: 'wconn', readonly: false, fields: [F('operation', 'Target operation', 'text', '', { source: 'operations' })] };
+    const on = vi.fn();
+    act(() => root.render(<BlockSettings nodeId="n1" spec={spec} cfg={{ operation: 'scrap' }} readonly={false} errors={errors}
+      operations={['repair', 'teardown']} onChange={on} />));
+    const s = el<HTMLSelectElement>('#cfg-n1-operation');
+    expect(s.tagName).toBe('SELECT');
+    // empty: each step's own write; a saved value the target does not take stays visible
+    expect([...s.options].map((o) => o.value)).toEqual(['', 'repair', 'teardown', 'scrap']);
+    act(() => {
+      s.value = 'teardown';
+      s.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(on).toHaveBeenLastCalledWith('operation', 'teardown');
+    // without the target's writes it stays a text box (the server's check covers it)
+    act(() => root.render(<BlockSettings nodeId="n1" spec={spec} cfg={{ operation: '' }} readonly={false} errors={errors} onChange={on} />));
+    expect(el('#cfg-n1-operation').tagName).toBe('INPUT');
+  });
+
   it('says a fixed step has no settings', () => {
     render({ ref: 'fixed', readonly: true, fields: [] }, {});
     expect(host.textContent).toContain('This step has no settings');

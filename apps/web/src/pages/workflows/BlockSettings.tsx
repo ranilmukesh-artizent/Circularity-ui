@@ -19,10 +19,12 @@ export interface BlockSettingsProps {
   errors: (f: FieldSpec, v: unknown) => string[];
   /** The resources the block's connection reads (a connector's Resources setting). */
   resources?: string[];
+  /** The writes the block's target takes (a write connector's Target operation); absent: not known, a text box. */
+  operations?: string[];
   onChange: (key: string, value: unknown) => void;
 }
 
-export function BlockSettings({ nodeId, spec, cfg, readonly, errors, resources, onChange }: BlockSettingsProps) {
+export function BlockSettings({ nodeId, spec, cfg, readonly, errors, resources, operations, onChange }: BlockSettingsProps) {
   if (!spec || !spec.fields.length)
     return <p className="note" style={{ margin: 0 }}>{spec?.readonly ? 'This step has no settings: Circularity runs it the same way in every workflow.' : 'This block has no settings.'}</p>;
   const ro = readonly || spec.readonly;
@@ -33,7 +35,7 @@ export function BlockSettings({ nodeId, spec, cfg, readonly, errors, resources, 
         return (
           <div key={f.key} className="wfcfgf" style={{ marginBottom: 10 }}>
             {f.type !== 'bool' && <label className="note" htmlFor={id} style={{ display: 'block', fontWeight: 600 }}>{f.label}{f.required ? ' *' : ''}</label>}
-            <Control f={f} id={id} v={v} ro={ro} resources={resources} onChange={(x) => onChange(f.key, x)} />
+            <Control f={f} id={id} v={v} ro={ro} resources={resources} operations={operations} onChange={(x) => onChange(f.key, x)} />
             {f.help && <div className="note" style={{ marginTop: 2 }}>{f.help}</div>}
             {errs.map((m, k) => <div key={k} className="callout bad" role="alert" style={{ marginTop: 4 }}>{m}</div>)}
           </div>
@@ -43,11 +45,21 @@ export function BlockSettings({ nodeId, spec, cfg, readonly, errors, resources, 
   );
 }
 
-type CtlProps = { f: FieldSpec; id: string; v: unknown; ro: boolean; resources?: string[]; onChange: (v: unknown) => void };
+type CtlProps = { f: FieldSpec; id: string; v: unknown; ro: boolean; resources?: string[]; operations?: string[]; onChange: (v: unknown) => void };
 
-function Control({ f, id, v, ro, resources, onChange }: CtlProps): ReactNode {
+function Control({ f, id, v, ro, resources, operations, onChange }: CtlProps): ReactNode {
   switch (f.type) {
     case 'text':
+      if (f.source === 'operations' && operations) {
+        const cur = typeof v === 'string' ? v : String(v ?? ''), opts = [...operations];
+        if (cur && !opts.includes(cur)) opts.push(cur); // a saved value the target does not take (its check says so)
+        return (
+          <select className="sel" id={id} value={cur} disabled={ro} onChange={(e) => onChange(e.target.value)}>
+            <option value="">Each step's own write</option>
+            {opts.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        );
+      }
       return <Committed id={id} value={typeof v === 'string' ? v : String(v ?? '')} ro={ro} onCommit={onChange} />;
     case 'number':
       return <Committed id={id} type="number" value={v == null ? '' : String(v)} ro={ro} min={f.min} max={f.max}

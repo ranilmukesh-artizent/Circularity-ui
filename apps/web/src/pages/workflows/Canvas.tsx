@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type R
 import { fmtNumber } from '../../api/format';
 import { can } from '../../api/session';
 import {
-  actTypes, agentsUsing, blockResources, blockSpecOf, nodeSettings, settingErrors, CH, channelsOf, deliverMap, deliverOf, edgePath, fixedStep, frTransforms, mappings, mapTarget,
+  actTypes, agentsUsing, blockOperations, blockResources, blockSpecOf, nodeSettings, settingErrors, CH, channelsOf, deliverMap, deliverOf, edgePath, fixedStep, frTransforms, mappings, mapTarget,
   NOWF, nowMs, RUN_CHIP, RUN_LABEL, runTimes, sourceGroups, sourceLabel, sources, source, sourceShortLabel, stepInfo, tools,
   transforms, canLink, WF_H, WF_W, WF_WH, worldWidth, type Check, type Counts, type RunState, type TestRun, type WfGraph, type WfNode, type Workflow,
 } from '../../api/workflows';
@@ -393,7 +393,8 @@ export function Inspector({ d, sel, checks, ops, onFail }: { d: Draft; sel: Sel;
       <h3>{i.label}</h3><p>{i.desc}</p>{det}
       <InspSection title="Settings">
         <BlockSettings key={n.id} nodeId={n.id} spec={blockSpecOf(n)} cfg={nodeSettings(n)} readonly={fx} errors={(f, v) => settingErrors(f, v, n)}
-          resources={n.k === 'conn' ? blockResources()[n.ref] : undefined} onChange={(k, v) => setCfg(d.id, n.id, k, v)} />
+          resources={n.k === 'conn' ? blockResources()[n.ref] : undefined} operations={n.k === 'wconn' ? blockOperations()[n.ref] ?? [] : undefined}
+          onChange={(k, v) => setCfg(d.id, n.id, k, v)} />
       </InspSection>
       {mine.length > 0 && <InspSection title="Problems">{mine.map((m, k) => <div key={k} className={'callout ' + (m.sev === 'error' ? 'bad' : '')} style={{ marginBottom: 6 }}>{m.msg}</div>)}</InspSection>}
       <InspSection title="Connections">

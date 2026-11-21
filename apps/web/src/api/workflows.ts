@@ -60,6 +60,8 @@ export interface StepInfo { label: string; sub: string; tag: string; in: boolean
 export interface Source {
   id: string; name: string; vendor: string; short?: string; status: 'live' | 'stale' | 'manual' | 'unavailable'; mode: string; auth: string;
   read: string[]; write: string[]; cat: string; fresh: string; owner: string; type: string; url?: string; paused?: boolean; deleted?: boolean;
+  /** A source made in the Connection Fabric (from the list's `live`): the model its mapping feeds, how it takes instructions. */
+  target?: string; deliver?: string[];
 }
 /** A test run on the canvas (the demo's S.wf.run). */
 export interface TestRun {
@@ -122,7 +124,7 @@ export interface FieldSpec {
 }
 export interface BlockSpec { ref: string; readonly: boolean; fields: FieldSpec[] }
 export interface Rule { field: string; check: string; arg?: string }
-interface BlocksAnswer { blocks: BlockSpec[]; resources?: Record<string, string[]> }
+interface BlocksAnswer { blocks: BlockSpec[]; resources?: Record<string, string[]>; operations?: Record<string, string[]> }
 
 const listA = () => cached<ListAnswer>('/api/screens/workflows');
 const detailA = (id: string) => cached<Detail>('/api/screens/workflows/' + encodeURIComponent(id));
@@ -140,6 +142,8 @@ function lk(): G.Lookups {
 
 /** Enough of the lookups for the source helpers (srcOr, srcLabel), without the field mappings. */
 const srcL = () => ({ sources: sourcesA(), SH: ref('SH') }) as unknown as G.Lookups;
+/** The source lookups with the list's overlay: a source made in the Connection Fabric's target and delivery. */
+const srcLive = () => ({ sources: G.liveSources(sourcesA(), listA().live), SH: ref('SH'), MAP_TARGET: ref('MAP_TARGET'), DELIVER: ref('DELIVER') });
 
 /** Run f, waiting for the reads it suspends on (for event handlers and timers, which cannot suspend). */
 async function settle<T>(f: () => T): Promise<T> {
@@ -301,11 +305,15 @@ export const sources = (): Source[] => sourcesA();
 export const source = (id: string): Source => G.srcOr(srcL(), id);
 export const sourceExists = (id: string): boolean => sourcesA().some((s) => s.id === id);
 export const sourceLabel = (s: Source): string => G.srcLabel(srcL(), s);
-export const sourceShortLabel = (id: string): string => ref('SH')[id] ?? id;
-export const mapTarget = (id: string): string => ref('MAP_TARGET')[id] ?? '';
+export const sourceShortLabel = (id: string): string => G.srcShort(srcL(), id);
+export const mapTarget = (id: string): string => G.srcTarget(srcLive(), id) ?? '';
 export const mappings = (id: string | null): string[][] => (id ? mappingsA()[id] ?? [] : []);
-export const deliverMap = (): Record<string, string[]> => ref('DELIVER');
-export const deliverOf = (id: string): string[] => deliverMap()[id] ?? [];
+/** DELIVER, with the sources made in the Connection Fabric that take instructions. */
+export const deliverMap = (): Record<string, string[]> => {
+  const made = srcLive().sources.filter((s) => s.deliver?.length).map((s) => [s.id, s.deliver!] as const);
+  return made.length ? { ...ref('DELIVER'), ...Object.fromEntries(made) } : ref('DELIVER');
+};
+export const deliverOf = (id: string): string[] => G.srcDeliver(srcLive(), id);
 export const channelsOf = (s: Source): string[] => G.srcCh(s);
 export const CH = () => ({ arr: ref('CH_ARR'), ing: ref('CH_ING'), del: ref('CH_DEL') });
 export const sourceCategoryLabel = (s: Source): string => ref('FR_CATOF')[s.type] ?? s.short ?? '';
@@ -362,10 +370,12 @@ export function blockSpecs(): Record<string, BlockSpec> {
 }
 /** The resources each connection reads (the choices of a connector's Resources setting). */
 export const blockResources = (): Record<string, string[]> => blocksA().resources ?? {};
+/** Each target system's writes (the choices of a write connector's Target operation; a target not listed takes none). */
+export const blockOperations = (): Record<string, string[]> => blocksA().operations ?? {};
 /** The catalogue for the checks; an account that cannot read it gets the checks without settings. */
-function blocksL(): Pick<G.Lookups, 'blocks' | 'resources'> {
+function blocksL(): Pick<G.Lookups, 'blocks' | 'resources' | 'operations'> {
   try {
-    return { blocks: blockSpecs(), resources: blockResources() };
+    return { blocks: blockSpecs(), resources: blockResources(), operations: blockOperations() };
   } catch (x) {
     if (x instanceof ApiError) return {};
     throw x;
@@ -377,7 +387,7 @@ export const blockSpecOf = (n: WfNode): BlockSpec | null => blockSpecs()[G.specK
 export const nodeSettings = (n: WfNode): Record<string, unknown> => G.nodeCfg(blockSpecs(), n);
 /** One setting's problems, for the inspector (the same rule as the checks). */
 export const settingErrors = (f: FieldSpec, v: unknown, n: WfNode): string[] =>
-  G.fieldErrors(f, v, { resources: n.k === 'conn' ? blockResources()[n.ref] ?? null : null });
+  G.fieldErrors(f, v, { resources: n.k === 'conn' ? blockResources()[n.ref] ?? null : null, operations: n.k === 'wconn' ? blockOperations()[n.ref] ?? [] : null });
 
 // ---- changes (invoke) ----
 /** Save the draft; `retries` and `alert` are the Settings tab's run settings (frWfSet), saved with the workflow. */

@@ -27,6 +27,8 @@ export interface Lookups {
   blocks?: Record<string, BlockSpec>;
   /** Each connection's resources (the choices of a connector's Resources setting). */
   resources?: Record<string, string[]>;
+  /** Each target system's writes (the choices of a write connector's Target operation); a target not listed takes none. */
+  operations?: Record<string, string[]>;
 }
 
 export const WF_W = 176, WF_H = 62;
@@ -64,14 +66,16 @@ export const republishVer = (w: Pick<Workflow, 'status' | 'ver'>, pub: string | 
 export const wfStat = (w: Workflow): WfStat => (w.status === 'published' && w.last && w.last.state === 'failed' ? 'failing' : w.status);
 
 // ---------------------------------------------------------------- sources
-export const srcById = (L: Lookups, id: string): Source | undefined => L.sources.find((s) => s.id === id);
+export const srcById = (L: Pick<Lookups, 'sources'>, id: string): Source | undefined => L.sources.find((s) => s.id === id);
 export const srcOr = (L: Lookups, id: string): Source =>
   srcById(L, id) ?? {
     id, name: L.SH[id] || 'Deleted source', vendor: 'Deleted', status: 'unavailable', mode: '—', auth: '—', read: [], write: [], cat: 'internal',
     fresh: '—', deleted: true, owner: '', type: '',
   };
-/** What the server's checks know about each source now (GET /api/screens/workflows `live`, di/workflow/live.py). */
-export type LiveState = Record<string, { status: Source['status']; fresh: string; paused?: boolean }>;
+/** What the server's checks know about each source now (GET /api/screens/workflows `live`, di/workflow/live.py); for a
+ *  source made in the Connection Fabric also the model its mapping feeds (`target`) and how it takes instructions
+ *  (`deliver`), which the demo's MAP_TARGET and DELIVER do not know. */
+export type LiveState = Record<string, { status: Source['status']; fresh: string; paused?: boolean; target?: string; deliver?: string[] }>;
 /** The sources as the checks read them: the integration screen's sources with the status, age and paused flag the
  *  server's checks use (so the canvas and the server agree), without the sources the server no longer has. */
 export function liveSources(sources: Source[], live: LiveState | undefined): Source[] {
@@ -80,9 +84,18 @@ export function liveSources(sources: Source[], live: LiveState | undefined): Sou
     const x = live[s.id], o: Source = { ...s, status: x.status, fresh: x.fresh };
     if (x.paused) o.paused = true;
     else delete o.paused;
+    if (x.target !== undefined) o.target = x.target;
+    if (x.deliver !== undefined) o.deliver = x.deliver;
     return o;
   });
 }
+/** SH: the demo's short name of a source, or the name of one made in the Connection Fabric (the server's `sh`). */
+export const srcShort = (L: Pick<Lookups, 'SH' | 'sources'>, id: string): string => L.SH[id] ?? srcById(L, id)?.name ?? id;
+/** MAP_TARGET: the canonical model a source's mapping feeds (one made here: the server's `map_target`, from `live`). */
+export const srcTarget = (L: Pick<Lookups, 'MAP_TARGET' | 'sources'>, id: string): string | undefined =>
+  L.MAP_TARGET[id] ?? srcById(L, id)?.target;
+/** DELIVER: how a source accepts instructions (one made here: the server's `deliver`, from `live`). */
+export const srcDeliver = (L: Pick<Lookups, 'DELIVER' | 'sources'>, id: string): string[] => L.DELIVER[id] ?? srcById(L, id)?.deliver ?? [];
 export const srcLabel = (L: Lookups, s: Source): string => (L.sources.some((o) => o.id !== s.id && o.name === s.name) ? s.name + ' · ' + s.vendor : s.name);
 export function srcCh(x: Source): string[] {
   const m = (x.mode + ' ' + x.auth).toLowerCase(), c: string[] = [];
@@ -119,8 +132,8 @@ export function info(L: Lookups, n: WfNode): StepInfo {
   if (n.k === 'map') {
     const m = (L.mappings[n.ref] || []).length;
     return {
-      label: L.SH[n.ref] + ' fields', sub: '→ ' + L.MAP_TARGET[n.ref] + ' · ' + m + ' mapped', tag: 'Field mapping', in: true, out: true,
-      desc: 'Maps ' + L.SH[n.ref] + ' field names and values into the ' + L.MAP_TARGET[n.ref] + ' canonical model.',
+      label: srcShort(L, n.ref) + ' fields', sub: '→ ' + srcTarget(L, n.ref) + ' · ' + m + ' mapped', tag: 'Field mapping', in: true, out: true,
+      desc: 'Maps ' + srcShort(L, n.ref) + ' field names and values into the ' + srcTarget(L, n.ref) + ' canonical model.',
     };
   }
   const t = L.TOOLS.find((x) => x.id === n.ref)!;
@@ -266,14 +279,14 @@ function validateBase(L: Lookups, g: WfGraph, kind: 'pipe' | 'dec'): Check[] {
       const canon = [...A.desc(n.id)].map((i) => A.by[i]).filter((m) => m.k === 'fixed' && L.FXD[m.ref].canon).map((m) => L.FXD[m.ref].model!);
       if (!np) add('warn', n.id, `${lb} is not fed by a connector.`);
       else if (!anc.length) add('error', n.id, `${lb} has no connector upstream, so there is nothing to map.`);
-      else if (!anc.some((c) => c.ref === n.ref)) add('error', n.id, `${lb} is fed by ${anc.map((c) => L.SH[c.ref]).join(', ')}. Field names would not line up.`);
-      if (!(L.mappings[n.ref] || []).length) add('error', n.id, `No field mapping is defined for ${L.SH[n.ref]} yet.`);
+      else if (!anc.some((c) => c.ref === n.ref)) add('error', n.id, `${lb} is fed by ${anc.map((c) => srcShort(L, c.ref)).join(', ')}. Field names would not line up.`);
+      if (!(L.mappings[n.ref] || []).length) add('error', n.id, `No field mapping is defined for ${srcShort(L, n.ref)} yet.`);
       if (!ns) add('warn', n.id, `${lb} does not lead to a canonical model.`);
-      else if (canon.length && !canon.includes(L.MAP_TARGET[n.ref])) add('error', n.id, `${lb} maps to ${L.MAP_TARGET[n.ref]}, but it is wired to ${canon.join(', ')}.`);
+      else if (canon.length && !canon.includes(srcTarget(L, n.ref) ?? '')) add('error', n.id, `${lb} maps to ${srcTarget(L, n.ref)}, but it is wired to ${canon.join(', ')}.`);
     }
     if (n.k === 'xf') {
       const x = xfOf(n.ref)!, anc = A.anc(n.id), conns = [...anc].map((i) => A.by[i]).filter((m) => m.k === 'conn');
-      const names = (l: WfNode[]) => [...new Set(l.map((c) => L.SH[c.ref]))].join(', ');
+      const names = (l: WfNode[]) => [...new Set(l.map((c) => srcShort(L, c.ref)))].join(', ');
       if (!np || (!ns && n.ref !== 'x_notify')) add('warn', n.id, `${lb} is not wired between a source and a target.`);
       else {
         if (x.ingest) {
@@ -295,8 +308,8 @@ function validateBase(L: Lookups, g: WfGraph, kind: 'pipe' | 'dec'): Check[] {
       if (np) {
         if (!dsc.length) add('warn', n.id, `${lb} does not lead to a system that receives it.`);
         dsc.forEach((w) => {
-          const dl = L.DELIVER[w.ref] || [];
-          if (!dl.includes(a.ch)) add('error', n.id, `${L.SH[w.ref]} does not accept ${L.CH_DEL[a.ch]}. It accepts ${dl.map((c) => L.CH_DEL[c]).join(', ')}.`);
+          const dl = srcDeliver(L, w.ref);
+          if (!dl.includes(a.ch)) add('error', n.id, `${srcShort(L, w.ref)} does not accept ${L.CH_DEL[a.ch]}. It accepts ${dl.map((c) => L.CH_DEL[c]).join(', ')}.`);
         });
       }
     }
@@ -415,7 +428,7 @@ const TYPES = ['string', 'number', 'integer', 'bool', 'date'];
 const RANGE = /^\s*(?:(-?\d+(?:\.\d+)?)?\s*\.\.\s*(-?\d+(?:\.\d+)?)?|(>=|<=|!=|>|<|=)\s*(-?\d+(?:\.\d+)?))\s*$/;
 const PAIRS: [string, string, string][] = [['x_expr', 'target', 'expression'], ['x_expr', 'expression', 'target'], ['x_join', 'input', 'key']];
 /** What the checks may know about the source: its records' field names and its connection's resources. */
-export interface CfgCtx { label?: string; fields?: string[] | null; resources?: string[] | null }
+export interface CfgCtx { label?: string; fields?: string[] | null; resources?: string[] | null; operations?: string[] | null }
 
 const copyV = (v: unknown): unknown => (Array.isArray(v) ? [...v] : v && typeof v === 'object' ? { ...(v as object) } : v);
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -466,6 +479,8 @@ export function fieldErrors(f: FieldSpec, v: unknown, ctx: CfgCtx = {}): string[
   switch (f.type) {
     case 'text':
       if (typeof v !== 'string') return [`${lb} must be text.`];
+      if (f.source === 'operations' && ctx.operations && v.trim() && !ctx.operations.includes(v.trim())) // a write connector's Target operation
+        return [`${lb} ${v.trim()} is not a write of this system (${ctx.operations.join(', ') || 'it takes none'}).`];
       return f.required && !v.trim() ? [`${lb} is needed.`] : [];
     case 'number':
       if (!isNum(v)) return [`${lb} must be a number.`];
@@ -531,7 +546,10 @@ export function cfgChecks(L: Lookups, g: WfGraph): Check[] {
   if (!B) return [];
   return g.nodes.flatMap((n) => {
     if (n.cfg == null) return [];
-    const ctx: CfgCtx = { label: info(L, n).label, resources: n.k === 'conn' ? L.resources?.[n.ref] ?? null : null };
+    const ctx: CfgCtx = {
+      label: info(L, n).label, resources: n.k === 'conn' ? L.resources?.[n.ref] ?? null : null,
+      operations: n.k === 'wconn' && L.operations ? L.operations[n.ref] ?? [] : null,
+    };
     return cfgErrors(B, n, ctx).map((msg) => ({ sev: 'error' as const, id: n.id, msg }));
   });
 }
