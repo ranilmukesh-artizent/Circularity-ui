@@ -371,7 +371,7 @@ steps with **Refine in Workflow Studio**, which opens the builder with that requ
     listed under **Recent runs** and on the **History** tab with Records (in / out), **Held** (the records it still
     holds, the same ones **View failed records** lists) and Triggered by. The demo's seeded runs keep the demo's
     estimate, with a note saying so.
-- **Triggers fire** for published workflows: *On a schedule* every N minutes after the later of the last run and the
+- **Triggers fire** for workflows published in the app (the demo's seeded workflows fire on no trigger until someone publishes one here): *On a schedule* every N minutes after the later of the last run and the
   last save or publish; *On event* when the source sends Circularity a webhook (of the event type an Event trigger
   block names, if any; `offer.*` matches every `offer.` event); *On approval* when an instruction is queued for the
   target system; *On file arrival* when a sync of a file-drop source (the recycler partner) reads new files; *On case

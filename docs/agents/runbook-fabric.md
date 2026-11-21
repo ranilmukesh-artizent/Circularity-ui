@@ -58,7 +58,7 @@ CLAUDE.md). `psql` means `docker compose exec -T postgres psql -U circ -d di`.
   workflow's Retries setting, backoff 1 s, 2 s, 4 s), and its error. **Apply the suggested fix** restores the failed
   block's settings from the last version where they were different; **History** lists every version with Compare and
   Restore. Runs use the **published** version: publish after a fix.
-- Triggers (`di/workflow/triggers.py`) start published workflows: schedules (worker, every 30 s), source webhooks
+- Triggers (`di/workflow/triggers.py`) start workflows published in the app (`pub`; the seeded demo workflows never fire): schedules (worker, every 30 s), source webhooks
   (filtered by the Event trigger block's event type, `fnmatch` patterns), approvals (an instruction queued for the
   target), file arrival (after a `sync.source` job of a file-drop source read new records: `file_arrived`), case
   requests (a case moving to `reeval`, in a savepoint of that move) and Call workflow steps (label *Workflow*). A

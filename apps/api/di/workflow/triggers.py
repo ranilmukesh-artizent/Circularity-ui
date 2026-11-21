@@ -1,6 +1,7 @@
 """Workflow triggers (plan 6 C6): a published workflow runs on its trigger, not only on Run now.
 
-Which workflows a trigger starts: published (a draft or a paused workflow never runs on its own), not running, and,
+Which workflows a trigger starts: published in the app (`published_here`: a draft, a paused workflow or one of the
+demo's seeded workflows never runs on its own), not running, and,
 when the workflow belongs to a source, that source not paused, disconnected, unavailable or deleted (the connectors do
 not read it either). Such a workflow is skipped silently: its trigger fires again later, and a skipped run would only
 add noise to the run list. Run now (workflow.run) is not a trigger and keeps its own guard.
@@ -98,8 +99,16 @@ def _source_ok(s: Session, w: dict) -> bool:
     return status not in NOT_RUN and not lifecycle.is_deleted(s, sid)
 
 
+def published_here(w: dict) -> bool:
+    """Published in the app (it has a published version, `pub`, set by workflow.publish / setStatus). The demo's
+    seeded "published" workflows have none: they stay illustrations and fire on no trigger, as they bind no sync and
+    carry no outbound settings (binding.py, di/instructions/outbound.py); otherwise ~30 of them would run on every
+    source event, approval and schedule and queue ahead of people's own work."""
+    return bool(w.get("pub"))
+
+
 def may_run(s: Session, w: dict) -> bool:
-    return w.get("status") == "published" and not w.get("running") and _source_ok(s, w)
+    return w.get("status") == "published" and published_here(w) and not w.get("running") and _source_ok(s, w)
 
 
 def _pending(s: Session, wid: str) -> bool:
@@ -139,7 +148,7 @@ def _matching(s: Session, kind: str, src: str | None = None) -> list[dict]:
     return [
         w
         for w in studio.all_workflows(s)
-        if _kind(w) == kind and w.get("status") == "published" and (src is None or w.get("src") == src)
+        if _kind(w) == kind and w.get("status") == "published" and published_here(w) and (src is None or w.get("src") == src)
     ]
 
 

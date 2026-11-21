@@ -731,7 +731,7 @@ First: {message}"*.
 version. A draft runs only when its sources are connected and its checks are clean; otherwise *"{name} is a draft with
 errors: …"*. When it ends: *"{name}: run finished, N records."* or *"{name}: run failed. {reason}"*.
 
-**Triggers** start published workflows on their own:
+**Triggers** start workflows published in the app on their own (the demo's seeded workflows are illustrations and fire on no trigger until a person publishes one):
 
 | Trigger | When it runs |
 |---|---|

@@ -27,6 +27,25 @@ def call(action: str, body: dict, user: str) -> dict:
     return client.post(f"/api/actions/{action}", json=body, headers=h(user)).json()
 
 
+def publish_seeded_here() -> None:
+    """Mark the demo's seeded published workflows as published in the app (their `pub`, as workflow.publish sets it),
+    so triggers fire for them (di/workflow/triggers.py published_here); a test of triggers stands in for a person who
+    pressed Publish."""
+    from di import state
+    from di.actions import workflows as wf
+    from di.db import SessionLocal
+    from di.reads.workflows import all_workflows
+
+    with SessionLocal() as s:
+        for w in all_workflows(s):
+            if w.get("status") == "published" and not w.get("pub"):
+                w = state.get(s, "workflows", w["id"], for_update=True)
+                wf.graph_of(w)
+                wf._set_pub(w)
+                state.put(s, "workflows", w["id"], w)
+        s.commit()
+
+
 def live_stale_sources() -> list[dict]:
     """The sources the live Connection Fabric shows stale or not connected (the Source Map's list), in its order."""
     srcs = client.get("/api/screens/integration/sources", headers=h("developer")).json()["sources"]

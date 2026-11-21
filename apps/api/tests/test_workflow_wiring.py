@@ -33,7 +33,7 @@ from di.instructions import outbound, send, writers
 from di.reads.common import ms
 from di.workflow import blocks, triggers
 from di.workflow import engine as eng
-from tests.helpers import call, client
+from tests.helpers import call, client, publish_seeded_here
 
 GLOBAL = get_settings().webhook_secret.get_secret_value()
 
@@ -51,6 +51,8 @@ def patch_wf(wid: str, **kw) -> dict:
     with SessionLocal() as s:
         w = state.get(s, "workflows", wid, for_update=True)
         w.update(kw)
+        if "graph" in kw and w.get("pub"):  # published again, as a person would: triggers read the published graph
+            w["pub"] = {**w["pub"], "graph": kw["graph"]}
         state.put(s, "workflows", wid, w)
         s.commit()
         return w
@@ -71,6 +73,7 @@ def fresh(monkeypatch):
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM job WHERE kind IN ('workflow.run', 'sync.source')"))
     state.reset(["workflows", "workflow_runs", "notes", "source_config"])
+    publish_seeded_here()  # triggers fire only for workflows published in the app
     yield
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM job WHERE kind IN ('workflow.run', 'sync.source')"))

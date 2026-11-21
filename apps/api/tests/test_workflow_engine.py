@@ -610,6 +610,9 @@ def test_call_workflow_starts_the_other_workflow(studio, monkeypatch):
     from di import state
 
     monkeypatch.setenv("DI_WORKFLOW_TRIGGERS", "true")
+    from tests.helpers import publish_seeded_here
+
+    publish_seeded_here()  # a called workflow starts only when it is published in the app
     me = {"id": "WF-134", "name": "Caller"}
     with SessionLocal() as s:
         r = eng.run_graph(s, me, call_graph(DEC), trigger="Test", dry=True, feeds=feed())

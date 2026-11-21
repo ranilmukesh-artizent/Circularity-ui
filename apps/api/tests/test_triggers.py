@@ -11,7 +11,7 @@ import hashlib
 import hmac
 import json
 import uuid
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import text
@@ -23,7 +23,7 @@ from di.connectors.sync import ensure_sources
 from di.db import SessionLocal, engine
 from di.reads.common import ms
 from di.workflow import triggers
-from tests.helpers import client
+from tests.helpers import client, publish_seeded_here
 
 GLOBAL = get_settings().webhook_secret.get_secret_value()
 MIN = 60_000
@@ -62,6 +62,18 @@ def patch_wf(wid: str, **kw) -> None:
         s.commit()
 
 
+def test_seeded_workflows_not_published_in_the_app_fire_on_no_trigger():
+    """The demo's seeded "published" workflows are illustrations: until a person publishes one in the app (it then
+    has `pub`), no schedule, event, file, approval or case starts it (they would flood the worker)."""
+    state.reset(["workflows"])  # back to the seeded workflows, without the fixture's pub
+    with SessionLocal() as s:
+        w = next(x for x in state.items(s, "workflows") if x.get("status") == "published")
+        assert not triggers.published_here(w) and not triggers.may_run(s, w)
+        assert triggers.fire(s, w["id"], "Event") is None
+        assert triggers.due(s, datetime(2099, 1, 1, tzinfo=UTC)) == []
+        s.rollback()
+
+
 def source_status(sid: str, status: str) -> None:
     with engine.begin() as conn:
         conn.execute(text("UPDATE source_system SET status = :st WHERE id = :i"), {"st": status, "i": sid})
@@ -78,6 +90,7 @@ def fresh(monkeypatch):
         conn.execute(text("DELETE FROM job WHERE kind IN ('workflow.run', 'sync.source')"))
         was = dict(conn.execute(text("SELECT id, status FROM source_system WHERE id IN ('proc', 'dlr')")).all())
     state.reset(["workflows", "workflow_runs", "notes", "source_config"])
+    publish_seeded_here()  # triggers fire only for workflows published in the app
     yield
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM job WHERE kind IN ('workflow.run', 'sync.source')"))
