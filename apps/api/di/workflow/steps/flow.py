@@ -107,13 +107,17 @@ def x_audit(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
 
 def x_pub(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
     """A model-updated event on the live stream (stream_event, kind workflow) naming the topic and the records' keys;
-    not when ctx.dry or nothing changed. The records pass on."""
+    not when ctx.dry or nothing changed. The records pass on. The payload has the stream's workflow shape
+    ({collection, op, id, data}, as migration 0009's trigger writes it) under its own collection, "published", so the
+    Studio's listeners, which read workflow_runs and workflows, are not confused by it."""
     topic = opt(cfg, KEYS["x_pub"]["topic"], "model.updated")
     keys = [r.ext_id for r in recs]
     sent = bool(recs) and not ctx.dry and ctx.s is not None
     if sent:
-        payload = {"type": "model.updated", "topic": topic, "workflow": (ctx.wf or {}).get("id"),
-                   "run_id": ctx.run_id, "count": len(keys), "keys": keys[:50]}  # fmt: skip
+        data = {"type": "model.updated", "topic": topic, "workflow": (ctx.wf or {}).get("id"),
+                "run_id": ctx.run_id, "count": len(keys), "keys": keys[:50]}  # fmt: skip
+        payload = {"collection": "published", "op": "insert", "id": f"{ctx.run_id}:{(ctx.node or {}).get('id', '')}",
+                   "data": data}  # fmt: skip
         ctx.s.execute(text("SELECT stream_put('workflow', NULL, CAST(:p AS jsonb))"), {"p": json.dumps(payload, default=str)})
     return StepResult(
         [clone(r) for r in recs], [], {"publish": {"topic": topic, "count": len(keys), "keys": keys[:50], "sent": sent}}

@@ -66,6 +66,7 @@ from di.workflow.steps.core import Rec, Reject, StepCtx, StepError, StepResult, 
 log = logging.getLogger("di.workflow.engine")
 COMMIT_EVERY = 200
 SAMPLE_N = 3
+CHANNEL_STEPS = ("x_gw", "x_evt", "x_file")  # ingestion channels: what they refuse is read again on the next sync
 NOT_READ = ("paused", "disconnected", "unavailable")  # statuses people set: such a source is not read
 FAILED = ("failed", "upstream_failed")
 HELD = ("held", "waiting")
@@ -91,6 +92,9 @@ class Feed:
     newest: dict[str, str | None] = field(default_factory=dict)
     delta: set[str] = field(default_factory=set)
     bad: set[str] = field(default_factory=set)  # resources with a record that could not be mapped or stored
+    # a record's own resource name -> the adapter resource that read it (they differ: Sims' "files" resource yields
+    # records named after each file), so a failure holds back the cursor of the resource it came from
+    res_of: dict[str, str] = field(default_factory=dict)
     read: int = 0
     written: int = 0
     failed: int = 0
@@ -327,6 +331,13 @@ class _Run:
             return
         for r in res.out:
             r.meta["node"] = nid
+        if n["k"] == "xf" and n["ref"] in CHANNEL_STEPS:
+            # a record an ingestion channel refuses (a file that does not match its manifest, a transport problem) is
+            # the source's problem, not the data's: its resource's cursor stays, so the next sync reads it again
+            for rj in res.rejected:
+                f = self.feeds.get(rj.rec.meta.get("source_id") or "")
+                if f is not None:
+                    f.bad.add(rj.rec.resource)
         self.outs[nid], self.rejs[nid], self.side[nid] = res.out, res.rejected, res.side
         held_direct = int(res.side.get("schema_held") or 0)
         took = len(res.out) + len(res.rejected) if n["k"] == "conn" else len(inp)  # a connector takes what it reads
@@ -475,6 +486,7 @@ class _Run:
                     )  # fmt: skip
                     if f.read % COMMIT_EVERY == 0:
                         self.s.commit()
+                f.res_of[rec.resource] = res.name
                 meta = {"source_id": sid, "request": rec.request, "changed": rec.changed, "cursor": rec.changed}
                 out.append(Rec(rec.ext_id, rec.resource, rec.payload, None, meta))
                 if rec.changed and (newest is None or rec.changed > newest):
@@ -492,8 +504,9 @@ class _Run:
         from di.connectors.sync import _set_cursor
 
         for f in self.feeds.values():
+            bad = {f.res_of.get(r, r) for r in f.bad}
             for res, newest in f.newest.items():
-                if res in f.delta and newest and res not in f.bad:
+                if res in f.delta and newest and res not in bad:
                     _set_cursor(self.s, f.source_id, res, newest)
 
     # ------------------------------------------------------------ mapping
