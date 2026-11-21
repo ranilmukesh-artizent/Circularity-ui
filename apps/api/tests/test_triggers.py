@@ -77,14 +77,14 @@ def fresh(monkeypatch):
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM job WHERE kind IN ('workflow.run', 'sync.source')"))
         was = dict(conn.execute(text("SELECT id, status FROM source_system WHERE id IN ('proc', 'dlr')")).all())
-    state.reset(["workflows", "workflow_runs", "notes"])
+    state.reset(["workflows", "workflow_runs", "notes", "source_config"])
     yield
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM job WHERE kind IN ('workflow.run', 'sync.source')"))
         conn.execute(text("DELETE FROM webhook_event WHERE event_id LIKE 'trg-%'"))
     for sid, st in was.items():
         source_status(sid, st)
-    state.reset(["workflows", "workflow_runs", "notes"])
+    state.reset(["workflows", "workflow_runs", "notes", "source_config"])
 
 
 # ---------------------------------------------------------------- schedule
@@ -210,8 +210,46 @@ def test_a_job_whose_workflow_started_meanwhile_makes_no_second_run():
         s.commit()
     patch_wf("WF-119", running=True)
     before = len(state.items(SessionLocal(), "workflow_runs"))
-    run_jobs()
+    with engine.connect() as lk:  # the run that started meanwhile is going: its job holds the run lock (plan 6 C7)
+        lk.execute(text("SELECT pg_advisory_xact_lock(:c, hashtext(:k))"), {"c": wf.RUN_LOCK, "k": "wf:WF-119"})
+        run_jobs()
+        lk.rollback()
     assert len(state.items(SessionLocal(), "workflow_runs")) == before
+
+
+def test_a_triggered_run_closes_a_run_its_worker_lost_and_runs():
+    """Plan 6 C7: `running` left by a dead worker (no lock, no other job) does not block the trigger for ever: the
+    triggered run closes the lost run as "Failed: worker lost" and runs."""
+    with SessionLocal() as s:
+        w = state.get(s, "workflows", "WF-119", for_update=True)
+        lost = wf.start_run(s, w, "Event", now_ms() - 1, enqueue=False)
+        s.commit()
+    with SessionLocal() as s:
+        s.execute(
+            text("INSERT INTO job (kind, payload) VALUES ('workflow.run', CAST(:p AS jsonb))"),
+            {"p": json.dumps({"wf": "WF-119", "trig": "Event"})},
+        )
+        s.commit()
+    run_jobs()
+    with SessionLocal() as s:
+        assert state.get(s, "workflow_runs", lost)["note"] == "Failed: worker lost"
+        w = state.get(s, "workflows", "WF-119")
+    assert not w["running"] and w["lastRun"]["trig"] == "Event"
+
+
+def test_a_webhook_does_not_also_trigger_the_workflow_its_source_syncs_with():
+    """Plan 6 C5: once WF-119 is published here it is the dealer source's sync workflow (source_config.workflow); the
+    webhook queues the sync, which runs it, so the event trigger does not run it a second time."""
+    from tests.helpers import call
+
+    for st in ("draft", "published"):  # published again here (the seeded one is published already)
+        r = call("workflow.setStatus", {"id": "WF-119", "status": st}, "developer")
+        assert r["ok"], r
+    with SessionLocal() as s:
+        assert (state.get(s, "source_config", "dlr") or {}).get("workflow") == "WF-119"
+    r = _post("dlr")
+    assert r.status_code == 202 and r.json()["queued_job"], r.text
+    assert [p for p in queued() if p.get("wf") == "WF-119"] == []
 
 
 # ---------------------------------------------------------------- approval, file, case

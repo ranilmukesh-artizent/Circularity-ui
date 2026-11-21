@@ -1,13 +1,15 @@
 """The Workflow Studio's collections and the demo's workflow helpers, read by the studio and integration screens and the
 workflow actions (di.actions.workflows): the workspace collections "workflows" (S.wf.list, each with its graph) and
 "workflow_runs" (S.wf.runs), seeded from fixtures/golden/screens/workflows.json, and "workflow_templates" (S.frTpl,
-empty at the start); wfStat, wfUsing, wfAnalyze, wfOrder and frRunCounts."""
+empty at the start); wfStat, wfUsing, wfAnalyze, wfOrder; and what the last real run counted and held (plan 6 C5)."""
 
+import json
+from typing import Any
+
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di import golden, state
-from di.engine.jsmath import js_round
-from di.reads.common import STARTING_MAPPINGS, hash_id
 
 GOLDEN = golden.load("screens/workflows")
 state.register("workflows", lambda: [(w["id"], w) for w in GOLDEN["starting"]])
@@ -78,73 +80,35 @@ def _order(g: dict) -> list[str]:
     return out
 
 
-def _rej(w: dict, rows: float) -> int:
-    return max(1, js_round(rows * (0.004 + (int(hash_id(w["id"] + "rej"), 16) % 9) / 1000)))
-
-
 def run_counts(w: dict) -> dict[str, dict]:
-    """frRunCounts: records in and out of each step in the last run (validation rejects a fixed share)."""
-    g = w.get("graph") or {"nodes": [], "edges": []}
-    by, _, pred = _analyze(g)
-    last = w.get("last")
-    rows = last["rows"] if last else 0
-    st = (w.get("lastRun") or {}).get("states") or {}
-    rej = _rej(w, rows)
-    o: dict[str, dict] = {}
-    for i in _order(g):
-        n = by[i]
-        ps = [(o[p]["out"] if p in o else 0) or 0 for p in pred[i]]
-        if n["k"] == "conn":
-            inn = rows
-        elif n["ref"] == "x_err":
-            first = o.get(pred[i][0]) if pred[i] else None
-            inn = (first["rej"] if first else 0) or 0
-        else:
-            inn = max([0, *ps, 0])
-        s = st.get(i)
-        out = 0 if s in ("failed", "upstream_failed", "skipped") else inn
-        r = 0
-        if n["k"] == "xf" and n["ref"] == "x_val" and s != "failed":
-            r = min(rej, inn)
-            out = inn - r
-        o[i] = {"in": inn, "out": out, "rej": r}
-    return o
+    """Records in, out and rejected at each step of the last run, as the engine counted them (plan 6 C5; the run job
+    keeps them in `lastRun.counts`). A workflow that has not really run (the demo's seeded last runs) has none: the
+    demo's counts (frRunCounts, a fixed share of an invented record count) are gone with the simulation."""
+    return dict((w.get("lastRun") or {}).get("counts") or {})
 
 
-# frFailedRows: the rules a held record broke, and the value shown for each
-_FAILED_RULES = [
-    "Required field is empty",
-    "Date is not in ISO 8601",
-    "Unknown status code",
-    "Currency has no dated rate",
-    "Value outside allowed range",
-    "Duplicate key in this batch",
-]
-_FAILED_VALUE = {
-    "Required field is empty": "",
-    "Date is not in ISO 8601": "31/13/2026",
-    "Unknown status code": "ZZ",
-    "Currency has no dated rate": "1250 XAU",
-    "Value outside allowed range": "-4",
-}
+def _shown(v: Any) -> str:
+    if v is None:
+        return ""
+    return v if isinstance(v, str) else json.dumps(v, default=str)
 
 
-def failed_rows(w: dict, counts: dict[str, dict] | None = None) -> list[dict]:
-    """frFailedRows: the invalid rows of the latest run, with the field and the rule each broke."""
-    m = STARTING_MAPPINGS.get(w.get("src") or "", [])
-    c = counts if counts is not None else run_counts(w)
-    n = min(40, next((x["rej"] for x in c.values() if x["rej"] > 0), 0))
-    out = []
-    for i in range(n):
-        f = m[i % len(m)] if m else ["record_id", "—"]
-        h = int(hash_id(f"{w['id']}f{i}"), 16)
-        rule = _FAILED_RULES[h % len(_FAILED_RULES)]
-        out.append(
-            {
-                "rec": (w.get("src") or "rec").upper() + "-" + str(10000 + h % 89999),
-                "field": f[0],
-                "value": _FAILED_VALUE.get(rule, str(f[1])),
-                "rule": rule,
-            }
-        )
-    return out
+def failed_rows(w: dict, counts: dict[str, dict] | None = None, s: Session | None = None) -> list[dict]:  # noqa: ARG001
+    """The records the latest run held (failed_record under the run's key), oldest first, at most 40: the record, the
+    field, its real value, the rule it broke and why. None for a workflow that has not really run, or without a
+    session. `counts` is accepted for the callers of the demo's frFailedRows and not needed."""
+    key = (w.get("lastRun") or {}).get("key")
+    if s is None or not key:
+        return []
+    rows = s.execute(
+        text(
+            "SELECT ext_id, resource, field, value, rule, reason, step FROM failed_record WHERE run_kind = 'workflow' "
+            "AND run_id = :k AND status = 'held' ORDER BY id LIMIT 40"
+        ),
+        {"k": str(key)},
+    ).mappings()
+    return [
+        {"rec": r["ext_id"] or "—", "field": r["field"] or "—", "value": _shown(r["value"]), "rule": r["rule"] or "error",
+         "reason": r["reason"], "resource": r["resource"], "step": r["step"]}
+        for r in rows
+    ]  # fmt: skip

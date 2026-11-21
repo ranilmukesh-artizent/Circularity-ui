@@ -7,31 +7,35 @@
 Status of a source after a run: live (ok or partial), failing (the system did not answer), auth_expired (credentials
 refused). paused / disconnected / unavailable are set by people (Connection Fabric) and are never synced, nor is a
 deleted source (di.connectors.lifecycle).
+
+**A sync is the run of the source's ingest workflow (plan 6 C5).** run_sync keeps what a sync owns (the per-source
+lock, the sync_run row, the credential check, the source's status, completeness and retry schedule) and hands the data
+to the workflow engine (di.workflow.engine.run_graph) with a Feed on its client: the published ingest workflow bound to
+the source (di.workflow.binding), else the default ingest graph, whose steps pass every record on unchanged, so the
+canonical data and provenance are exactly what the adapter (and the saved field mapping) produce
+(tests/test_workflow_engine.py, test_engine_parity_canonical). Reading, raw records, cursors, mapping, the canonical
+writes and the held records are the engine's.
 """
 
 import functools
-import json
 import logging
-import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import Connection, text
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from di import golden
 from di.canonical import store
-from di.canonical.failed import hold
-from di.canonical.schema import split_facts
 from di.connectors import connection, lifecycle, manual, mapping
 from di.connectors.http import SourceError
 from di.connectors.registry import ADAPTERS, adapter_for, has_adapter
 from di.db import SessionLocal, engine
 from di.jobs import enqueue
+from di.workflow import binding
+from di.workflow.engine import Feed, run_graph
 
 log = logging.getLogger("di.sync")
-COMMIT_EVERY = 200
 NOT_SYNCED = ("paused", "disconnected", "unavailable")
 SAFETY_INTERVAL_MIN = 60  # event-driven sources (interval 0) still get a full check every hour
 # vendors replaced on purpose (docs/backend-steps.md, B5b); the same list as source-sim's registry
@@ -339,78 +343,31 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
         s.commit()
         conf = float(src.confidence) if src and src.confidence is not None else None
         client = connection.client_for(s, source_id, adapter, run_id)  # its URL and stored secret (plan 6 A2)
-        read = written = failed = 0
-        status, error = "ok", None
         # the field mapping a person saved, over a Python adapter's own (plan 6 A4); None: the adapter's mapping as is
         remap = mapping.mapper(s, source_id, source_id in ADAPTERS)
+        # plan 6 C5: the sync is the run of the source's ingest workflow (the bound published one, else the default
+        # graph, whose steps pass every record on: the canonical data is what the adapter maps, as before)
+        feed = Feed(source_id, adapter, client, run_id, full, conf, remap)
+        wf, graph = binding.bound(s, source_id)
+        status, error, new_status = "ok", None, "live"
         try:
             connection.check_credential(s, source_id)  # an expired stored credential is not used (plan 6 A5)
-            for res in adapter.resources():
-                since = None if (full or not res.delta) else _cursor(s, source_id, res.name)
-                newest = since
-                failed_here = 0
-                for rec in res.read(client, since):
-                    read += 1
-                    s.execute(
-                        text(
-                            "INSERT INTO raw_record (source_id, resource, ext_id, payload, request, fetched_at) "
-                            "VALUES (:s, :r, :e, CAST(:p AS jsonb), :q, now()) ON CONFLICT (source_id, resource, ext_id) "
-                            "DO UPDATE SET payload = EXCLUDED.payload, request = EXCLUDED.request, fetched_at = now()"
-                        ),
-                        {
-                            "s": source_id,
-                            "r": rec.resource,
-                            "e": rec.ext_id,
-                            "p": json.dumps(rec.payload, default=str),
-                            "q": rec.request,
-                        },
-                    )
-                    for attempt in range(3):
-                        try:
-                            with s.begin_nested():
-                                facts = [
-                                    f if f.resource else type(f)(**{**f.__dict__, "resource": rec.resource, "ext_id": rec.ext_id})
-                                    for f in (remap(rec, adapter.map(rec)) if remap else adapter.map(rec))
-                                ]
-                                facts, bad = split_facts(facts)  # plan 6 B1: a fact that does not fit its model is held
-                                written += store.apply(s, source_id, facts, conf)
-                                for f, why in bad:
-                                    hold(
-                                        s, run_kind="sync", run_id=run_id, source_id=source_id, step="canonical",
-                                        resource=rec.resource, ext_id=rec.ext_id, field=f"{f.model}.{f.field}", rule="schema",
-                                        value=f.value, reason=why, payload=rec.payload,
-                                    )  # fmt: skip
-                            if bad:  # counted, but the cursor moves on: the record is kept in failed_record to reprocess
-                                failed += 1
-                                status, error = "partial", error or f"{rec.resource}/{rec.ext_id}: {bad[0][1]}"[:500]
-                            break
-                        except OperationalError as e:  # a deadlock with a concurrent sync: try the record again
-                            if "deadlock" not in str(e).lower() or attempt == 2:
-                                failed, failed_here = failed + 1, failed_here + 1
-                                status, error = "partial", error or f"{rec.resource}/{rec.ext_id}: {str(e).splitlines()[0]}"[:500]
-                                break
-                            time.sleep(0.05 * (attempt + 1))
-                        except Exception as e:  # noqa: BLE001 - a record that cannot be mapped is counted, not fatal
-                            failed, failed_here = failed + 1, failed_here + 1
-                            status = "partial"
-                            error = error or f"{rec.resource}/{rec.ext_id}: {type(e).__name__}: {e}"[:500]
-                            log.warning("map failed %s %s/%s: %s", source_id, rec.resource, rec.ext_id, e)
-                            break
-                    if rec.changed and (newest is None or rec.changed > newest):
-                        newest = rec.changed
-                    if read % COMMIT_EVERY == 0:
-                        s.commit()
-                # a resource with failed records keeps its old cursor, so the next sync reads them again
-                if res.delta and newest and not failed_here:
-                    _set_cursor(s, source_id, res.name, newest)
-                s.commit()
-            new_status = "live"
+            res = run_graph(s, wf, graph, trigger=trigger, feeds={source_id: feed}, run_id=run_id, run_kind="sync", full=full)
+            if res.status == "failed":
+                status, error = "failed", (res.error or "the sync failed")[:500]
+                if res.error_kind is not None:  # the system did not answer, or refused the credential
+                    new_status = "auth_expired" if res.error_kind == "auth" else "failing"
         except SourceError as e:
             s.rollback()
             status, error = "failed", str(e)[:500]
             new_status = "auth_expired" if e.kind == "auth" else "failing"
         finally:
             client.close()
+        read, written = feed.read, feed.written
+        # records a step of the workflow held (validation ...) count as failed, beside those that could not be stored
+        failed = feed.failed + (sum(c["rej"] for n, c in res.counts.items() if _is_xf(graph, n)) if status != "failed" else 0)
+        if status == "ok" and failed:
+            status, error = "partial", feed.first_error or f"{failed} records held by {wf.get('name')}"
         s.execute(
             text(
                 "UPDATE sync_run SET status = :st, finished_at = now(), records_read = :r, facts_written = :w, "
@@ -439,6 +396,10 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
         "records_failed": failed,
         "error": error,
     }
+
+
+def _is_xf(graph: dict, nid: str) -> bool:
+    return any(n.get("id") == nid and n.get("k") == "xf" for n in graph.get("nodes") or [])
 
 
 def enqueue_sync(session: Session, source_id: str, trigger: str, full: bool = False) -> int | None:

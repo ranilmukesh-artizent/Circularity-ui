@@ -83,8 +83,10 @@ def test_a_run_streams_one_event_per_step_change_to_the_studio_only():
         for a, b in itertools.pairwise(steps):
             changed = [i for i in order if a["states"][i] != b["states"][i]]
             assert changed == [b["step"]], (a["step"], b["step"], changed)
-        # the records in and out of each finished step come with it
-        assert steps[-1]["counts"]["r"]["in"] == steps[-1]["counts"]["r"]["out"] > 0
+        # the records in and out of each finished step come with it: what the run really read (plan 6 C5; a delta read
+        # of the source, so as many as changed since its cursor)
+        assert set(steps[-1]["counts"]) == set(order)
+        assert steps[-1]["counts"]["r"]["in"] == steps[-1]["counts"]["r"]["out"] == result["rows"] >= 0
         # the last event is the demo's run record
         assert set(evs[-1]["data"]) == {"id", "wf", "name", "ts", "trig", "dur", "rows", "state", "note"}
         assert evs[-1]["data"]["state"] == "success"

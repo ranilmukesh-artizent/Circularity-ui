@@ -127,8 +127,16 @@ def tick(s: Session, now: datetime) -> list[str]:
 
 # ---------------------------------------------------------------- the other triggers
 def on_event(s: Session, source_id: str) -> list[str]:
-    """A webhook for this source: its published event-triggered workflows."""
-    return _fire_all(s, "event", source_id)
+    """A webhook for this source: its published event-triggered workflows, except the one bound to the source's sync
+    (source_config.workflow, plan 6 C5): the webhook already queues the sync, which runs that workflow, so firing it
+    here too would ingest the same change twice."""
+    from di.connectors import lifecycle
+
+    bound = (state.get(s, lifecycle.COLLECTION, source_id) or {}).get("workflow")
+    return [
+        w["id"] for w in _matching(s, "event", source_id)
+        if w["id"] != bound and fire(s, w["id"], LABEL["event"]) is not None
+    ]  # fmt: skip
 
 
 def on_file(s: Session, source_id: str) -> list[str]:
@@ -168,7 +176,10 @@ def start(payload: dict[str, Any]) -> dict[str, Any] | None:
     wid, trig = payload["wf"], payload.get("trig") or "Schedule"
     with SessionLocal() as s:
         w = state.get(s, "workflows", wid, for_update=True)
+        if w is not None:  # a run a dead worker left open is closed first (plan 6 C7); this job is the caller's own
+            wf.reap_lost_run(s, w, wf._now(), jobs_ok=1)
         if w is None or not may_run(s, w):
+            s.commit()
             return None
         key = wf.start_run(s, w, trig, wf._now(), enqueue=False)
         s.commit()
