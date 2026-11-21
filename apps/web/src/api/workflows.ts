@@ -215,10 +215,6 @@ export const runOrder = (g: WfGraph): string[] => G.order(g);
 export function analyze(g: WfGraph): { pred: Record<string, string[]>; succ: Record<string, string[]>; desc: (id: string) => Set<string> } {
   return G.analyze(g);
 }
-/** The state a step reaches in a test run, given the states of the steps before it. */
-export function evalStep(run: TestRun, g: WfGraph, n: WfNode): RunState {
-  return G.evalStep(lk(), run, G.analyze(g), n);
-}
 /** The last real run, painted on the canvas when the workflow opens. */
 export function runFromLast(id: string): TestRun | null {
   const w = workflow(id);
@@ -348,8 +344,6 @@ function blocksL(): Pick<G.Lookups, 'blocks' | 'resources'> {
 export const blockSpecOf = (n: WfNode): BlockSpec | null => blockSpecs()[G.specKey(n)] ?? null;
 /** A node's settings with the defaults filled in. */
 export const nodeSettings = (n: WfNode): Record<string, unknown> => G.nodeCfg(blockSpecs(), n);
-/** The node with only the settings that differ from the defaults (what is saved). */
-export const compactSettings = (n: WfNode): WfNode => G.compactCfg(blockSpecs(), n);
 /** One setting's problems, for the inspector (the same rule as the checks). */
 export const settingErrors = (f: FieldSpec, v: unknown, n: WfNode): string[] =>
   G.fieldErrors(f, v, { resources: n.k === 'conn' ? blockResources()[n.ref] ?? null : null });

@@ -170,10 +170,6 @@ export function tableModelIds(): string[] {
 }
 export const tableSuggestions = (src: string): { n: string; cl: string; desc: string; cols: string[] }[] =>
   ref('TBL_AVAIL')[src] ?? [];
-export const frSample = (type: string): [string, string, string, string, number][] => {
-  const S = ref('FR_SAMPLE');
-  return (S[type] || S.db).map((r) => r.slice() as [string, string, string, string, number]);
-};
 export const frAuthOptions = (): [string, string, string][] => ref('FR_AUTH');
 export function caseExists(id: string): boolean {
   return !!session() && id in cached<Record<string, unknown>>('/api/screens/nav/scope');
