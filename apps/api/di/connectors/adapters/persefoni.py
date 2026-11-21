@@ -45,11 +45,11 @@ class PersefoniAdapter(Adapter):
     source_id = "esg"
     base_path = "/persefoni"
 
-    def auth(self):
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
         return OAuthClientCredentials(
             "/oauth/token",
             "circularity-di-connector",
-            "circularity-demo-persefoni-secret",
+            secret or "circularity-demo-persefoni-secret",
             form=True,
             extra={"audience": "https://api.persefoni.com"},
         )

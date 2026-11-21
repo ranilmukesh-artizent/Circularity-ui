@@ -24,7 +24,6 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 
 from di.canonical.store import Fact
-from di.config import get_settings
 from di.connectors.base import Adapter, Record, Resource
 from di.connectors.generic import keep
 from di.connectors.http import OAuthClientCredentials, SourceClient
@@ -44,11 +43,11 @@ class AssetWiseAdapter(Adapter):
     source_id = "eng"
     base_path = "/assetwise/eB/Service/OData/Engineering"
 
-    def auth(self):
+    def auth(self, conn=None, secret=None):
         return OAuthClientCredentials(
-            get_settings().source_sim_url.rstrip("/") + "/assetwise/ims/connect/token",
+            self.origin(conn) + "/assetwise/ims/connect/token",
             "service-circularity-di",
-            "circularity-demo-ims-secret",
+            secret or "circularity-demo-ims-secret",
             form=True,
             extra={"scope": "assetwise-odata"},
         )

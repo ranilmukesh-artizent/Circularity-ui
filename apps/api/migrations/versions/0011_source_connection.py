@@ -1,15 +1,19 @@
-"""plan 6 A2 per-source connection settings (reserved; filled by that task)
+"""per-source connection settings (plan 6, task A2)
+
+One row per source: the URL its connector calls, the protocol, how it signs in (`auth_kind`, with the non-secret
+`auth_params` such as the header name or the client id; the secret itself is in source_secret), and, for a source read
+by the configured adapter (di.connectors.configured), its paging and resources. `updated_by` is NULL while the row is
+the seeded default of a demo source (di.connectors.connection.seed_demo keeps those in step with DI_SOURCE_SIM_URL).
+
+Plan 6 runs in parallel: every plan-6 migration is idempotent (CREATE ... IF NOT EXISTS, DROP ... IF EXISTS) so the
+chain can be re-applied with alembic downgrade 0010 && alembic upgrade head while it is being filled.
 
 Revision ID: 0011
 Revises: 0010
 Create Date: 2026-11-21
-
-Plan 6 runs in parallel: every plan-6 migration is idempotent (CREATE ... IF NOT EXISTS, ADD COLUMN IF NOT EXISTS,
-DROP ... IF EXISTS, inserts ON CONFLICT DO NOTHING) so they can be re-applied with alembic downgrade 0010 && alembic
-upgrade head while the chain is being filled.
 """
 
-from alembic import op  # noqa: F401 - used once the task fills this migration
+from alembic import op
 
 revision = "0011"
 down_revision = "0010"
@@ -18,8 +22,22 @@ depends_on = None
 
 
 def upgrade() -> None:
-    pass
+    op.execute(
+        """
+CREATE TABLE IF NOT EXISTS source_connection (
+  source_id    text        PRIMARY KEY,
+  base_url     text        NOT NULL,
+  protocol     text        NOT NULL DEFAULT 'rest',
+  auth_kind    text        NOT NULL DEFAULT 'builtin',
+  auth_params  jsonb       NOT NULL DEFAULT '{}'::jsonb,
+  paging       jsonb       NOT NULL DEFAULT '{}'::jsonb,
+  resources    jsonb       NOT NULL DEFAULT '[]'::jsonb,
+  updated_by   text,
+  updated_at   timestamptz NOT NULL DEFAULT now()
+);
+"""
+    )
 
 
 def downgrade() -> None:
-    pass
+    op.execute("DROP TABLE IF EXISTS source_connection")

@@ -14,7 +14,7 @@ from di.actions import (
 from di.actions.pipeline import CallContext
 from di.actions.registry import ActionError, implement
 from di.connectors import lifecycle
-from di.connectors.registry import ADAPTERS
+from di.connectors.registry import ADAPTERS, has_adapter
 from di.connectors.sync import enqueue_sync, provisioned
 
 
@@ -24,13 +24,12 @@ def source_sync(i: dict[str, Any], ctx: CallContext):
     status = ctx.session.execute(text("SELECT status FROM source_system WHERE id = :i"), {"i": sid}).scalar()
     if status is not None and lifecycle.is_deleted(ctx.session, sid):
         raise ActionError("not_found", f"No source {sid}.")
-    if status is not None and sid not in ADAPTERS and status not in ("paused", "disconnected", "unavailable"):
-        # connected from the catalogue or set up by hand (di.actions.fabric_sources): nothing simulated behind it
-        raise ActionError(
-            "conflict", f"No simulated system is behind {sid}, so there is nothing to sync. Its first sync was synthetic."
-        )
+    readable = has_adapter(ctx.session, sid)  # a Python adapter, or a configured connection (plan 6 A3)
+    if status is not None and not readable and status not in ("paused", "disconnected", "unavailable"):
+        # set up by hand with no resources to read (or a file import): nothing for a sync to call
+        raise ActionError("conflict", f"{sid} has no resources to read: add a read operation (GET /path) to its connection.")
     # a connector that is not provisioned yet (AWS IoT at start, B5c) counts as no connector, as in the demo
-    if sid not in ADAPTERS or (status == "unavailable" and not provisioned(sid)):
+    if not readable or (sid in ADAPTERS and status == "unavailable" and not provisioned(sid)):
         raise ActionError("not_found", f"No connector for {sid}.")
     if status in ("paused", "disconnected", "unavailable"):
         raise ActionError("conflict", f"{sid} is {status}. Resume or reconnect it first.")
@@ -45,8 +44,9 @@ def source_sync(i: dict[str, Any], ctx: CallContext):
 
 @implement("conflict.resolve")
 def conflict_resolve(i: dict[str, Any], ctx: CallContext):
-    """Accept the authority's value, also after an escalation (an escalated conflict stays open, as in the demo)."""
-    return fabric_records.resolve(ctx, i["id"])
+    """Accept the authority's value (the demo's), or keep another source's value or one a person enters, with a reason
+    (plan 6 B2); also after an escalation."""
+    return fabric_records.resolve(ctx, i["id"], i.get("choose"), i.get("value"), i.get("reason"), i.get("source"))
 
 
 @implement("conflict.escalate")

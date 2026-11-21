@@ -22,10 +22,9 @@ from sqlalchemy.orm import Session
 
 from di import golden
 from di.canonical import store
-from di.config import get_settings
-from di.connectors import lifecycle
-from di.connectors.http import SourceClient, SourceError
-from di.connectors.registry import ADAPTERS
+from di.connectors import connection, lifecycle
+from di.connectors.http import SourceError
+from di.connectors.registry import ADAPTERS, adapter_for, has_adapter
 from di.db import SessionLocal, engine
 from di.jobs import enqueue
 
@@ -77,6 +76,7 @@ def ensure_sources(session: Session) -> None:
     for sid, a in ADAPTERS.items():
         if a.connected_confidence is not None:
             _connected_confidence(session, sid, a.connected_confidence)
+    connection.seed_demo(session)  # their connections: source-sim's mocks (plan 6 A2)
     session.commit()
     for sid, a in ADAPTERS.items():  # configured to start connected (DI_IOT_CONNECTED): its rules deliver from the start
         if hasattr(a, "set_delivery") and provisioned(sid):
@@ -97,6 +97,7 @@ def reset_sources(conn: Connection) -> None:
     ids = [s["id"] for s in ref]
     made = list(conn.execute(text("SELECT id FROM source_system WHERE NOT (id = ANY(:i))"), {"i": ids}).scalars())
     conn.execute(text("DELETE FROM source_secret"))  # credentials stored in the app (plan 6 A1)
+    connection.reset_demo(conn, ids)  # the demo sources' connections back on source-sim (plan 6 A2)
     if made:
         for t in SOURCE_TABLES:
             conn.execute(text(f"DELETE FROM {t} WHERE source_id = ANY(:i)"), {"i": made})  # noqa: S608 - fixed names
@@ -175,24 +176,6 @@ def set_delivery(source_id: str, enabled: bool) -> None:
     """Switch the source's own event delivery on or off (AWS IoT topic rules), where it has one."""
     if (adapter := ADAPTERS.get(source_id)) is not None:
         _set_delivery(adapter, enabled)
-
-
-def record_synthetic_run(session: Session, source_id: str, rows: int, at: datetime, note: str) -> int:
-    """A finished first sync for a source that has no connector (one connected from the catalogue or set up by hand):
-    source-sim simulates no system behind it, so nothing is read. The run says so in its note; `rows` is the count
-    the demo's connect flow shows. The source's sync times become `at`."""
-    run = session.execute(
-        text(
-            "INSERT INTO sync_run (source_id, trigger, status, started_at, finished_at, records_read, error) "
-            "VALUES (:s, 'manual', 'ok', :at, :end, :n, :note) RETURNING id"
-        ),
-        {"s": source_id, "at": at, "end": at + timedelta(seconds=4.2), "n": rows, "note": note},
-    ).scalar_one()
-    session.execute(
-        text("UPDATE source_system SET last_sync_at = :at, last_success_at = :at, updated_at = now() WHERE id = :s"),
-        {"s": source_id, "at": at},
-    )
-    return int(run)
 
 
 def _set_delivery(adapter, enabled: bool) -> None:
@@ -336,10 +319,10 @@ def _settle_streak(source_id: str, failed: bool) -> None:
 
 @_one_at_a_time
 def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dict:
-    adapter = ADAPTERS.get(source_id)
-    if adapter is None:
-        raise KeyError(f"No adapter for {source_id}")
     with SessionLocal() as s:
+        adapter = adapter_for(s, source_id)  # the Python adapter, or the configured one (plan 6 A3)
+        if adapter is None:
+            raise KeyError(f"No adapter for {source_id}")
         src = s.execute(text("SELECT status, confidence FROM source_system WHERE id = :i"), {"i": source_id}).first()
         if src and src.status in NOT_SYNCED:
             return {"source_id": source_id, "status": "skipped", "reason": src.status}
@@ -351,10 +334,11 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
         ).scalar_one()
         s.commit()
         conf = float(src.confidence) if src and src.confidence is not None else None
-        client = SourceClient(source_id, get_settings().source_sim_url + adapter.base_path, adapter.auth(), s, run_id)
+        client = connection.client_for(s, source_id, adapter, run_id)  # its URL and stored secret (plan 6 A2)
         read = written = failed = 0
         status, error = "ok", None
         try:
+            connection.check_credential(s, source_id)  # an expired stored credential is not used (plan 6 A5)
             for res in adapter.resources():
                 since = None if (full or not res.delta) else _cursor(s, source_id, res.name)
                 newest = since
@@ -461,7 +445,7 @@ def enqueue_due(session: Session, now: datetime | None = None) -> list[str]:
         text("SELECT id, status, interval_min, last_sync_at, next_retry_at FROM source_system ORDER BY id")
     ).all()
     for r in rows:
-        if r.id not in ADAPTERS or r.status in NOT_SYNCED or r.id in gone:
+        if r.status in NOT_SYNCED or r.id in gone or not has_adapter(session, r.id):  # Python or configured (A3)
             continue
         every = timedelta(minutes=r.interval_min or SAFETY_INTERVAL_MIN)
         due = r.last_sync_at is None or now - r.last_sync_at >= every

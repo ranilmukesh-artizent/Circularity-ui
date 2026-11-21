@@ -52,8 +52,8 @@ def usd(inr: Decimal) -> float:
 class S4Adapter(Adapter):
     source_id = "erp"
 
-    def auth(self):
-        return Basic("DI_CONNECTOR", "Circularity-demo-1")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return Basic("DI_CONNECTOR", secret or "Circularity-demo-1")
 
     def resources(self):
         return [

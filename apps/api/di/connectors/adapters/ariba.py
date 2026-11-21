@@ -29,11 +29,12 @@ def usd_from_eur(eur: Decimal) -> float:
 class AribaAdapter(Adapter):
     source_id = "proc"
 
-    def auth(self):
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        """The application key identifies the client (kept here); the stored secret is the OAuth client secret."""
         return Combined(
             [
                 ApiKey("apiKey", "circularity-demo-ariba-key"),
-                OAuthClientCredentials("/ariba/v2/oauth/token", "di-connector", "circularity-demo-ariba-secret"),
+                OAuthClientCredentials("/ariba/v2/oauth/token", "di-connector", secret or "circularity-demo-ariba-secret"),
             ]
         )
 

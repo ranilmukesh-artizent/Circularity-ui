@@ -5,7 +5,7 @@ since a cursor, and how to turn each record into canonical facts.
 
     class S4Adapter(Adapter):
         source_id = "erp"
-        def auth(self): return Basic(...)
+        def auth(self, conn=None, secret=None): return Basic("DI_CONNECTOR", secret or DEMO)
         def resources(self): return [Resource("stock", self.read_stock), ...]
         def read_stock(self, client, since): yield Record("stock", ext_id, payload, request_url)   # pages handled inside
         def map(self, record): return [Fact("asset", ..., ...), ...]
@@ -19,10 +19,13 @@ When a source gives no change time per record, the adapter can use the source's 
 
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from di.canonical.store import Fact
 from di.connectors.http import Auth, SourceClient
+
+if TYPE_CHECKING:
+    from di.connectors.connection import Connection
 
 
 @dataclass(frozen=True)
@@ -46,12 +49,23 @@ class Resource:
 
 class Adapter:
     source_id: str = ""
-    base_path: str = ""  # appended to settings.source_sim_url (the mock) or a real system's URL from config
+    base_path: str = ""  # with settings.source_sim_url, the seeded URL of its connection (di.connectors.connection)
+    protocol: str = "rest"
     # the source's confidence once connected, for a source the demo lists with confidence 0 (no data yet); None: keep it
     connected_confidence: float | None = None
 
-    def auth(self) -> Auth:
+    def auth(self, conn: "Connection | None" = None, secret: str | None = None) -> Auth:
+        """How to sign in. `conn` is the source's connection (its URL, for token endpoints outside the base path);
+        `secret` the stored credential (di.connectors.secrets), or None: then the adapter's built-in demo credential,
+        the synthetic one source-sim accepts. Called with no arguments, it is the demo setup."""
         raise NotImplementedError
+
+    @staticmethod
+    def origin(conn: "Connection | None") -> str:
+        """scheme://host[:port] of the connection, or of source-sim without one."""
+        from di.connectors.connection import sim_url
+
+        return conn.origin if conn is not None else sim_url()
 
     def resources(self) -> list[Resource]:
         raise NotImplementedError

@@ -37,8 +37,8 @@ class OracleLeaseAdapter(Adapter):
     source_id = "lease"
     base_path = "/oracle-lease/webservices/rest"
 
-    def auth(self):
-        return Basic("DI_CONNECTOR", "lease-demo-password")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return Basic("DI_CONNECTOR", secret or "lease-demo-password")
 
     def resources(self):
         return [

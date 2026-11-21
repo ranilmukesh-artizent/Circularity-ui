@@ -45,8 +45,8 @@ class MachinioAdapter(Adapter):
     source_id = "dlr"
     base_path = "/machinio/v1"
 
-    def auth(self):
-        return ApiKey("X-Api-Key", "mch_demo_circularity_4f7b2e91")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return ApiKey("X-Api-Key", secret or "mch_demo_circularity_4f7b2e91")
 
     def resources(self):
         return [Resource("offers", self.read_offers), Resource("listings", self.read_listings)]

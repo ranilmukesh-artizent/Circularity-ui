@@ -63,8 +63,8 @@ class OptoroAdapter(Adapter):
     source_id = "rl"
     base_path = "/optoro"
 
-    def auth(self):
-        return OAuthClientCredentials("/auth/oauth/token", "di-connector", "rl-demo-secret", form=True)
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return OAuthClientCredentials("/auth/oauth/token", "di-connector", secret or "rl-demo-secret", form=True)
 
     def resources(self):
         return [Resource(name, self.reader(path, key, id_field), True) for name, path, key, id_field in RESOURCES]

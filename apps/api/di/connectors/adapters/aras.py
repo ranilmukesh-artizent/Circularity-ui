@@ -85,8 +85,8 @@ class ArasAdapter(Adapter):
     source_id = "bom"
     base_path = ODATA
 
-    def auth(self):
-        return ArasPassword("di-connector", "Circularity-demo-aras-1", "InnovatorDB")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return ArasPassword("di-connector", secret or "Circularity-demo-aras-1", "InnovatorDB")
 
     def resources(self):
         return [Resource("structure", self.read_structure)]

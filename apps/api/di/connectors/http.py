@@ -172,7 +172,7 @@ class SourceClient:
         try:
             r = self.http.request(method, url, **kw)
         except httpx.HTTPError as e:
-            err = f"{type(e).__name__}: {e}"
+            err = f"{type(e).__name__}: {httpx.URL(url).host}: {e}"  # the host, so a wrong URL shows (plan 6 A2)
             self._log(method, str(httpx.URL(url, params=kw.get("params"))), None, None, t0, err)
             raise SourceError("unavailable", err) from e
         error = None

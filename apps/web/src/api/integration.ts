@@ -466,6 +466,6 @@ export const testDraft = (id: string, d: Draft, ops: { read: string[]; write: st
 
 /** Finish connecting a catalogue system: the source, its accepted mappings (source.update, mode "catalog"). */
 export const connectFromCatalog = (cat: string, auth: string, scopes: string[], maps: [string, string, string, string, number][]) =>
-  invoke<{ mode: 'catalog'; source_id: string; name: string; vendor: string; records: number; csv: boolean }>('source.update', {
+  invoke<{ mode: 'catalog'; source_id: string; name: string; vendor: string; records: number | null; queued: boolean; csv: boolean }>('source.update', {
     mode: 'catalog', id: '', d: { catalog: cat, auth, scopes }, maps, ops: {},
   });

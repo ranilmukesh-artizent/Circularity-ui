@@ -370,6 +370,21 @@ source_secret = Table(
     Index("source_secret_one_active", "source_id", "kind", unique=True, postgresql_where=text("active")),
 )
 
+# --- 0011 per-source connection settings (plan 6 A2; di/connectors/connection.py) ----------------------------------
+
+source_connection = Table(
+    "source_connection",
+    metadata,
+    Column("source_id", Text, primary_key=True),
+    Column("base_url", Text, nullable=False),
+    Column("protocol", Text, nullable=False, server_default="rest"),
+    Column("auth_kind", Text, nullable=False, server_default="builtin"),  # builtin, none, api_key, bearer, basic, oauth_cc
+    Column("auth_params", JSONB, nullable=False, server_default=text("'{}'::jsonb")),  # never the secret
+    Column("paging", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column("resources", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column("updated_by", Text),  # NULL: the seeded default of a demo source
+    _ts("updated_at", now=True),
+)
 # --- 0017 dated currency rates (plan 6 C4; di/workflow/steps/transform.py x_fx) --------------------------------------
 
 fx_rate = Table(
@@ -379,17 +394,4 @@ fx_rate = Table(
     Column("currency", Text, primary_key=True),
     Column("usd_rate", Numeric(18, 6), nullable=False),  # units of the currency per USD
     CheckConstraint("usd_rate > 0", name="fx_rate_positive"),
-)
-
-# --- 0013 webhook events received, for dedupe (plan 6 A7; di/connectors/webhook.py) ---------------------------------
-
-webhook_event = Table(
-    "webhook_event",
-    metadata,
-    Column("source_id", Text, primary_key=True),
-    Column("event_id", Text, primary_key=True),
-    Column("event_type", Text),
-    _ts("event_time"),
-    _ts("received_at", now=True),
-    Index("ix_webhook_event_received", "received_at"),
 )

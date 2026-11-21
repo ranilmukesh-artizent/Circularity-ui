@@ -14,14 +14,15 @@ other source actions' permission (manageIntegrations; the demo adds them to PERM
     source.resume       act     back to the status it had (live, stale, manual ...); the scheduler picks it up again
     source.disconnect   commit  Circularity stops reading; settings are kept; `confirm` must be the vendor's name
     source.test         read    the five checks (DNS, TLS, Auth, Permissions, Sample read), or the drawer's one-line
-                                test of a draft (`draft`), probed against source-sim (di.connectors.probe)
+                                test of a draft (`draft`), probed against the source's connection (di.connectors.probe)
 Reconnecting after a disconnect is source.reconnect, as in the demo. Connecting from the catalogue is source.update with
 mode "catalog" (d = {catalog, auth, scopes}, maps = the accepted rows): it creates the source, as mode "new" does.
 
-**Sources without a connector.** A source connected from the catalogue or set up by hand has no adapter: source-sim
-simulates no system behind it. It is recorded honestly: its first sync is a finished run whose note says it was
-synthetic (the row count is the one the demo's connect flow shows), a later source.sync is refused with that reason,
-and its connection test passes on its settings with a sample-read line that says nothing was read.
+**Sources without a Python adapter** (plan 6 A3). A source connected from the catalogue gets a connection from its
+template (di.connectors.catalog: source-sim's synthetic mock of that system) and a stored credential; one set up by
+hand is read from the endpoint entered, its read operations ("GET /path") being its resources. Both are read by the
+configured adapter (di.connectors.configured), and their first sync is queued: it really reads. The connection test
+probes every step for real (di.connectors.probe, plan 6 A5).
 
 **Not ported.** The demo's Source Map activity lines (smLogAdd; the map's activity is the real sync runs), the draft
 ingest workflow the demo adds for a new source (wfAddForSource; Workflow Studio's list is its own), and the connection
@@ -31,7 +32,9 @@ test's `source.tested` event (a read action changes nothing).
 import copy
 import math
 import re
+import socket
 from typing import Any
+from urllib.parse import urlparse
 
 from sqlalchemy import text
 
@@ -39,7 +42,7 @@ from di import golden
 from di.actions.decisions import push_event
 from di.actions.pipeline import CallContext
 from di.actions.registry import ACTIONS, ActionDef, ActionError, implement
-from di.connectors import lifecycle, secrets, sync
+from di.connectors import catalog, connection, lifecycle, registry, secrets, sync
 from di.connectors.probe import probe
 from di.connectors.registry import ADAPTERS
 from di.reads.common import fmt_dy, hash_id, iso, ms
@@ -61,7 +64,6 @@ DESC = (
     "authority", "method", "cfg", "cfgVer", "credAt", "credDays", "audit", "owner", "interval", "updatedBy",
     "frConnectedAt", "records",
 )  # fmt: skip
-NO_CONNECTOR = "First sync (synthetic): no simulated system behind this connection, so nothing was read"
 ACCEPTED = "Accepted from the agent’s suggestion"
 
 
@@ -92,6 +94,9 @@ _declare(
 )  # fmt: skip
 # the secret, when a caller sends it, is only checked (never stored); reauth: the Re-authenticate dialog's renewal
 ACTIONS["credentials.rotate"].input |= {"secret": {"req": False, "t": "string"}, "reauth": {"req": False, "t": "boolean"}}
+# plan 6 A2: the connection itself (base_url, auth_kind, auth_params, resources, paging) and the secret to sign in with;
+# the secret is stored encrypted (di.connectors.secrets) and, like every input named secret, never journaled
+ACTIONS["source.update"].input |= {"conn": {"req": False, "t": "object"}, "secret": {"req": False, "t": "string"}}
 
 
 # ---------------------------------------------------------------- the source as the screens show it
@@ -150,11 +155,6 @@ def _event(ctx: CallContext, cur: dict, type_: str, ack: str, note: str) -> None
     )  # fmt: skip
 
 
-def first_sync_rows(key: str) -> int:
-    """The demo's connect flow: 1200 + hashId(id) % 9000 records in the first sync."""
-    return 1200 + int(hash_id(key), 16) % 9000
-
-
 # ---------------------------------------------------------------- source.update
 def _build_url(d: dict) -> str:
     """The demo's buildUrl."""
@@ -202,6 +202,72 @@ def _js_str(v: Any) -> str:
     return str(v)
 
 
+AUTH_KIND_OF = (  # the auth label a person picked → how the connector signs in (first match wins)
+    ("client credentials", "oauth_cc"), ("oauth", "oauth_cc"), ("service principal", "oauth_cc"), ("api key", "api_key"),
+    ("bearer", "bearer"), ("password", "basic"), ("basic", "basic"),
+)  # fmt: skip
+
+
+def auth_kind_of(label: str) -> str:
+    low = (label or "").lower()
+    return next((k for word, k in AUTH_KIND_OF if word in low), "none")
+
+
+def _resources_of(read: list[str]) -> list[dict]:
+    """A hand-made source's read operations ("GET /records") as configured resources (name, path, id_field id)."""
+    out = []
+    for op in read:
+        m = re.match(r"^(?:GET\s+)?(/\S*)$", op.strip(), re.I)
+        if m and "{" not in m.group(1):
+            path = m.group(1).split("?")[0]
+            out.append({"name": path.strip("/").replace("/", "_") or "records", "path": path, "id_field": "id"})
+    return out
+
+
+def _is_http(url: str) -> bool:
+    return bool(re.match(r"^https?://[^/\s]+", url or ""))
+
+
+def _save_connection(ctx: CallContext, sid: str, i: dict, new_url: str, url_changed: bool, made: dict | None) -> list[str]:
+    """source.update's connection part (plan 6 A2): the URL the connector calls, how it signs in, and the secret.
+
+    A demo source keeps source-sim as its URL while the endpoint shown is the demo's (its reference `url`); a person who
+    enters another http(s) endpoint points the connector there, and entering the demo's endpoint again puts it back on
+    source-sim. A source made here (`made`: its auth label and read operations) is read from the endpoint entered.
+    `conn` (from the API) sets the connection's fields directly. Returns what changed, for the audit."""
+    s, ch = ctx.session, []
+    conn_in = i.get("conn") if isinstance(i.get("conn"), dict) else {}
+    if any(w in k.lower() for k in (conn_in.get("auth_params") or {}) for w in ("secret", "password", "token")):
+        raise ActionError("validation_error", "Send the secret as `secret`; it is stored encrypted, never in the settings.")
+    fields = {k: conn_in[k] for k in ("base_url", "protocol", "auth_kind", "auth_params", "resources", "paging") if k in conn_in}
+    if "auth_kind" in fields and fields["auth_kind"] not in connection.AUTH_KINDS:
+        raise ActionError("validation_error", f"No authentication kind {fields['auth_kind']}.")
+    if "base_url" not in fields and url_changed:
+        if sid in ADAPTERS and new_url == (REF.get(sid) or {}).get("url"):
+            connection.restore_default(s, sid)
+        elif _is_http(new_url):
+            fields["base_url"] = new_url
+    if made is not None:  # a new source: a stale row left by an earlier one of this id is replaced
+        if "base_url" not in fields and _is_http(new_url):
+            fields["base_url"] = new_url
+        fields.setdefault("auth_kind", auth_kind_of(made["auth"]))
+        fields.setdefault("resources", _resources_of(made["read"]))
+        fields.setdefault("paging", {"style": "offset"})
+    if fields and (fields.get("base_url") or connection.connection_for(s, sid) is not None):
+        try:
+            connection.save_connection(s, sid, _by(ctx), **fields)
+        except ValueError as e:
+            raise ActionError("validation_error", str(e)) from e
+    if conn_in:  # an endpoint change is already in the audit as "endpoint"
+        ch.append("connection settings")
+    if i.get("secret"):
+        if len(str(i["secret"])) < 8:
+            raise ActionError("validation_error", "Enter at least 8 characters.")
+        secrets.put_secret(s, sid, "auth", str(i["secret"]), 180, _by(ctx), ctx.now)
+        ch.append("credential")
+    return ch
+
+
 def _interval(d: dict, cm: dict) -> int:
     if not cm.get("sched"):
         return 0
@@ -243,7 +309,7 @@ def source_update(i: dict[str, Any], ctx: CallContext):
     why = f" ({i['note']})" if i.get("note") else ""
     now = _now_ms(ctx)
     if mode == "new":
-        return _create(ctx, d, base, maps, csv, cm, why, now)
+        return _create(ctx, d, base, maps, csv, cm, why, now, i)
     assert cur is not None  # noqa: S101 - edit mode loaded both
     assert cfg is not None  # noqa: S101
     ch: list[str] = []
@@ -260,6 +326,7 @@ def source_update(i: dict[str, Any], ctx: CallContext):
         ch.append("operations")
     if maps != cur["maps"]:
         ch.append(f"field mapping ({len(maps)} rows)")
+    ch += _save_connection(ctx, cur["id"], i, base["url"], _js_str(cur.get("url")) != _js_str(base["url"]), None)
     was_off = cur["status"] == "unavailable" and not off and not csv
     if not ch and not was_off and not (csv and cur["status"] != "manual") and not (not csv and cur["status"] == "manual"):
         raise ActionError("conflict", "No changes to save.")
@@ -316,7 +383,7 @@ def _insert_source(ctx: CallContext, sid: str, vendor: str, type_: str, status: 
     )  # fmt: skip
 
 
-def _create(ctx: CallContext, d: dict, base: dict, maps: list, csv: bool, cm: dict, why: str, now: int) -> dict:
+def _create(ctx: CallContext, d: dict, base: dict, maps: list, csv: bool, cm: dict, why: str, now: int, i: dict) -> dict:
     t = SRC_TYPES.get(d.get("type") or "")
     if t is None:
         raise ActionError("validation_error", f"No source type {d.get('type')}.")
@@ -331,14 +398,15 @@ def _create(ctx: CallContext, d: dict, base: dict, maps: list, csv: bool, cm: di
     _insert_source(
         ctx, sid, base["vendor"], d["type"], "manual" if csv else "live", base["interval"], base["owner"], compl=0, conf=0
     )
+    if not csv:  # the endpoint entered is the one its connector reads (plan 6 A2)
+        _save_connection(ctx, sid, i, base["url"], True, {"auth": base["auth"], "read": base["read"]})
     if csv:  # the demo: a manual import counts as just synced
         ctx.session.execute(
             text("UPDATE source_system SET last_sync_at = :at, last_success_at = :at WHERE id = :i"), {"at": ctx.now, "i": sid}
         )
-    else:
-        item["records"] = first_sync_rows(sid)
-        sync.record_synthetic_run(ctx.session, sid, item["records"], ctx.now, NO_CONNECTOR)
     lifecycle.save(ctx.session, item)
+    if not csv and registry.has_adapter(ctx.session, sid):  # its endpoint answers like a spec: the first sync reads it
+        sync.enqueue_sync(ctx.session, sid, "initial", full=True)
     cur = item | {"vendor": base["vendor"]}
     _event(
         ctx,
@@ -373,23 +441,34 @@ def _connect_catalog(i: dict[str, Any], ctx: CallContext) -> dict:
     T = type_of(t)
     now, events = _now_ms(ctx), "events" in scopes
     iv = 0 if m == "file" or events else 30
-    rows = first_sync_rows(sid)
+    tpl = catalog.template(sid)
+    if tpl is None:
+        raise ActionError("not_found", f"No connection template for {c['vendor']}.")
+    base_url = connection.sim_url(tpl["base_path"])  # source-sim's synthetic mock of the system (plan 6 A3)
     item = {
-        "id": sid, "created": "catalog", "vendor": c["vendor"], "ver": "Connected " + fmt_dy(now),
-        "url": f"sftp://{sid}.northfield.example/outbound" if m == "file" else f"https://{sid}.northfield.example/api",
+        "id": sid, "created": "catalog", "vendor": c["vendor"], "ver": "Connected " + fmt_dy(now), "url": base_url,
         "mode": "Controlled CSV import" if m == "file" else "API + events" if events else "Polling · 30 min",
         "interval": iv, "auth": auth, "rw": "Read / write" if "write" in scopes else "Read", "inputs": c["desc"],
-        "read": ["GET /records"], "write": ["POST /records"] if "write" in scopes else [], "step": [1], "authority": [],
-        "owner": "Integration Engineering", "records": rows, "frConnectedAt": now, "cat": T.get("cat", "internal"),
+        "read": [f"GET {r['path']}" for r in tpl["resources"]], "write": ["POST /records"] if "write" in scopes else [],
+        "step": [1], "authority": [],
+        "owner": "Integration Engineering", "frConnectedAt": now, "cat": T.get("cat", "internal"),
         "name": T["label"], "short": T["short"], "env": "Production", "cfgVer": "1.0", "method": m, "cfg": cfg_defaults(m),
         "credAt": now, "credDays": 180, "updatedBy": _by(ctx), "scopes": scopes,
         "audit": [{"ver": "1.0", "who": _by(ctx), "ts": now, "change": "Connected from the catalogue"}], "maps": maps,
     }  # fmt: skip
     _insert_source(ctx, sid, c["vendor"], t, "manual" if m == "file" else "live", iv, item["owner"], compl=92, conf=88)
-    sync.record_synthetic_run(ctx.session, sid, rows, ctx.now, NO_CONNECTOR)
+    ctx.session.execute(text("DELETE FROM source_connection WHERE source_id = :i"), {"i": sid})  # a stale row of this id
+    connection.save_connection(
+        ctx.session, sid, _by(ctx), base_url=base_url, protocol="rest", auth_kind=tpl["auth_kind"],
+        auth_params=tpl["auth_params"], paging=tpl["paging"], resources=tpl["resources"],
+    )  # fmt: skip
+    # the credential source-sim's mock accepts (synthetic, apps/README.md), or the one the person entered
+    secrets.put_secret(ctx.session, sid, "auth", str(i.get("secret") or tpl["demo_secret"]), 180, _by(ctx), ctx.now)
     lifecycle.save(ctx.session, item)
+    job = sync.enqueue_sync(ctx.session, sid, "initial", full=True)  # the first sync really reads the system
     _event(ctx, item, "source.connected", "acknowledged", "Connected from the catalogue by " + _by(ctx))
-    return {"mode": "catalog", "source_id": sid, "name": item["name"], "vendor": c["vendor"], "records": rows, "csv": m == "file"}
+    return {"mode": "catalog", "source_id": sid, "name": item["name"], "vendor": c["vendor"], "records": None,
+            "queued": job is not None, "csv": m == "file"}  # fmt: skip
 
 
 # ---------------------------------------------------------------- delete, reconnect, rotate
@@ -508,90 +587,95 @@ def source_disconnect(i: dict[str, Any], ctx: CallContext):
     return {"source_id": cur["id"], "name": cur["name"], "vendor": cur["vendor"]}
 
 
-# ---------------------------------------------------------------- test connection
+# ---------------------------------------------------------------- test connection (plan 6 A5: every step real)
 def _plural(n: int, word: str) -> str:
     return f"{n} {word}" + ("" if n == 1 else "s")
 
 
-def _host(url: str, vendor: str) -> str:
-    return re.sub(r"^[a-z]+://", "", url or "").split("/")[0] or vendor
+def _steps_of(p, auth: str, reauth: bool) -> list[dict]:
+    """frTestRun's five steps from a real probe (di.connectors.probe): DNS (the resolved address), TLS (the handshake,
+    or a warning for http), Auth, Permissions (one record from each read resource), Sample read. Stops at the first
+    failure, as the demo does. Re-authenticating: a refused old credential does not stop the test."""
+    out: list[dict] = []
 
-
-def _ip(key: str) -> str:
-    """The demo's address line: 10.<hash % 200>.<hash % 250>.<hash % 250>, from the source id."""
-    h = lambda k: int(hash_id(k), 16)  # noqa: E731 - the demo's one-line helper
-    return f"10.{h(key) % 200}.{h(key + 'b') % 250}.{h(key + 'c') % 250}"
-
-
-def _steps(ctx: CallContext, key: str, vendor: str, url: str, status: str, auth: str, read: list, sid: str | None, reauth: bool):
-    """frTestRun: DNS, TLS, Auth, Permissions, Sample read; stops at the first failure, as the demo does."""
-    host = _host(url, vendor)
-    out = []
-
-    def add(ok: bool, msg: str) -> bool:
-        out.append({"ok": ok, "msg": msg})
+    def add(ok: bool, msg: str, warn: bool = False) -> bool:
+        out.append({"ok": ok, "msg": msg} | ({"warn": True} if warn else {}))
         return ok
 
-    if status == "unavailable":  # not provisioned, not configured or disconnected: the demo's first-step failure
-        add(False, "No route to host: the system is not provisioned")
+    if not add(p.dns.ok, f"{p.host} → {p.dns.detail}" if p.dns.ok else p.dns.error):
         return out
-    if sid is None or sid not in ADAPTERS:  # nothing behind it to probe: the settings only
-        add(True, f"{host} → {_ip(key)}")
-        add(True, "TLS 1.3 · certificate valid")
-        add(True, auth)
-        add(True, _plural(len(read), "read scope") + " granted")
-        add(True, "No simulated system behind this connection: nothing was read")
+    if not p.tcp.ok:
+        add(False, p.tcp.error)
         return out
-    p = probe(ctx.session, sid)
-    if not add(p.dns.ok, f"{host} → {_ip(key)}" if p.dns.ok else p.dns.error):
+    if not add(p.tls.ok, p.tls.detail if p.tls.ok else p.tls.error, p.tls.warn):
         return out
-    if not add(p.tcp.ok, "TLS 1.3 · certificate valid" if p.tcp.ok else p.tcp.error):
-        return out
-    rejected = (status == "stale" and not reauth) or (p.auth.status == 401 and not reauth)
-    if rejected:
-        add(False, "Token rejected: expired")
-        return out
-    if p.auth.status == 403:
-        add(True, auth)
-        add(False, "Access denied: the read scopes are missing (HTTP 403)")
+    if not p.auth.ok and not reauth:
+        refused = "Token rejected (HTTP 401): the credential is expired or revoked"
+        add(False, p.auth.error if p.auth.error.startswith("Credential expired") or p.auth.status != 401 else refused)
         return out
     add(True, auth)
-    add(True, _plural(len(read), "read scope") + " granted")
-    if not p.auth.ok and reauth:  # the old credential was refused; the new one is used from Finish on
+    if not p.auth.ok:  # reauth: the old credential was refused; the new one is used from Finish on
+        add(True, "Permissions are checked with the new credential once you finish")
         add(True, "Reads with the new credential once you finish")
-    elif p.read.ok:
-        add(True, f"{_plural(p.records, 'record')} in {p.read.ms} ms")
-    else:
-        add(False, p.read.error)
+        return out
+    if not add(p.perms.ok, _plural(p.resources, "read resource") + " answered" if p.perms.ok else p.perms.error):
+        return out
+    add(p.read.ok, f"{_plural(p.records, 'record')} in {p.read.ms} ms" if p.read.ok else p.read.error)
     return out
 
 
+def _probe_steps(ctx: CallContext, sid: str, status: str, auth: str, reauth: bool) -> list[dict]:
+    if status == "unavailable":  # not provisioned, not configured or disconnected: nothing to connect to
+        return [{"ok": False, "msg": "No route to host: the system is not provisioned"}]
+    if not registry.has_adapter(ctx.session, sid):  # a file import, or set up by hand with no read resources
+        return [{"ok": False, "msg": "Nothing to probe: this connection has no read resources (add GET /path operations)"}]
+    return _steps_of(probe(ctx.session, sid), auth, reauth)
+
+
+def _catalog_steps(ctx: CallContext, c: dict, auth: str) -> list[dict]:
+    """A catalogue system being connected: its template's connection, probed with the simulator's demo credential."""
+    from di.connectors.configured import ConfiguredAdapter
+    from di.connectors.probe import probe_connection
+
+    tpl = catalog.template(c["id"])
+    if tpl is None:
+        return [{"ok": False, "msg": f"No connection template for {c['vendor']}"}]
+    conn = connection.Connection(
+        c["id"], connection.sim_url(tpl["base_path"]), "rest", tpl["auth_kind"], tpl["auth_params"], tpl["paging"],
+        tpl["resources"],
+    )  # fmt: skip
+    return _steps_of(probe_connection(ctx.session, c["id"], ConfiguredAdapter(conn), conn, tpl["demo_secret"]), auth, False)
+
+
 def _draft_test(ctx: CallContext, cur: dict | None, draft: dict) -> dict:
-    """sdTest: the source drawer's one-line test of the settings being edited."""
+    """sdTest: the source drawer's one-line test of the settings being edited. The saved connection is probed when the
+    endpoint is unchanged; a new endpoint is checked for DNS and a TCP connection."""
     cm = CONN_METHODS.get(str(draft.get("method") or "")) or {"label": "The connection"}
     url, auth = str(draft.get("url") or ""), str(draft.get("auth") or "")
     nr, nw = int(draft.get("read") or 0), int(draft.get("write") or 0)
     ops = f"{nr} read and {nw} write operations available."
-    if cur and cur["status"] == "stale" and cur.get("url") == url:
-        return {
-            "ok": False,
-            "msg": "HTTP 401 Unauthorized. The feed token expired; use Refresh token and re-sync or rotate credentials.",
-        }
     if cur and cur["status"] == "unavailable" and auth.startswith("Pending"):
         return {"ok": False, "msg": "No connection configured. Choose an authentication method and complete the settings."}
-    if cur and cur["id"] in ADAPTERS and cur.get("url") == url and cur["status"] != "unavailable":
+    if cur and cur.get("url") == url and cur["status"] != "unavailable" and registry.has_adapter(ctx.session, cur["id"]):
         p = probe(ctx.session, cur["id"])
-        bad = next((c for c in (p.dns, p.tcp, p.auth, p.read) if not c.ok), None)
+        bad = next((c for c in (p.dns, p.tcp, p.tls, p.auth, p.perms, p.read) if not c.ok), None)
         if bad is None:
             return {"ok": True, "msg": f"{cm['label']} reached in {p.read.ms} ms. {ops}"}
         if bad.status == 401:
             return {
                 "ok": False,
-                "msg": "HTTP 401 Unauthorized. The feed token expired; use Refresh token and re-sync or rotate credentials.",
+                "msg": "HTTP 401 Unauthorized. The credential was refused or has expired; "
+                "use Refresh token and re-sync or rotate credentials.",
             }
         return {"ok": False, "msg": f"{cm['label']} did not answer: {bad.error}"}
-    nothing = "No simulated system answers at this endpoint, so nothing was reached."
-    return {"ok": True, "msg": f"{cm['label']} settings are complete. {ops} {nothing}"}
+    if _is_http(url):
+        u = urlparse(url)
+        try:
+            socket.create_connection((u.hostname or "", u.port or (443 if u.scheme == "https" else 80)), timeout=3).close()
+        except (OSError, UnicodeError) as e:
+            return {"ok": False, "msg": f"{cm['label']} did not answer: {u.hostname}: {e}"}
+        return {"ok": True, "msg": f"{u.hostname} answers. {ops} Save to test signing in and reading."}
+    return {"ok": True, "msg": f"{cm['label']} settings are complete. {ops} Nothing to connect to until it is saved."}
 
 
 @implement("source.test")
@@ -601,27 +685,15 @@ def source_test(i: dict[str, Any], ctx: CallContext):
     if isinstance(i.get("draft"), dict):
         cur = _current(ctx, sid)[0] if sid else None
         return _draft_test(ctx, cur, i["draft"])
-    if sid.startswith("cat:"):  # a catalogue system being connected: what it will be once connected
+    if sid.startswith("cat:"):  # a catalogue system being connected: its template, really probed
         c = CATALOG.get(sid[4:])
         if c is None:
             raise ActionError("not_found", f"No catalogue system {sid[4:]}.")
-        url = f"https://{c['id']}.northfield.example/api"
-        steps = _steps(ctx, sid, c["vendor"], url, "live", i.get("auth") or c["auth"][0], ["GET /records"], None, False)
+        steps = _catalog_steps(ctx, c, i.get("auth") or c["auth"][0])
     else:
         if not sid:
             raise ActionError("validation_error", 'Missing "source_id".')
         cur = _current(ctx, sid)[0]
-        status = "live" if reauth and cur["status"] == "stale" else cur["status"]
-        steps = _steps(
-            ctx,
-            sid,
-            cur["vendor"],
-            cur.get("url") or "",
-            status,
-            i.get("auth") or cur.get("auth") or "",
-            cur.get("read") or [],
-            sid,
-            reauth,
-        )
+        steps = _probe_steps(ctx, sid, cur["status"], i.get("auth") or cur.get("auth") or "", reauth)
     ok = all(x["ok"] for x in steps) and len(steps) == 5
     return {"source_id": sid, "steps": steps, "ok": ok, "at": iso(_now_ms(ctx))}

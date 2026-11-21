@@ -50,6 +50,29 @@ SYSTEMS: tuple[System, ...] = (
 
 BY_SOURCE_ID = {s.source_id: s for s in SYSTEMS}
 
+# Plan 6 A3: the Connection Fabric's catalogue (systems a person can connect; not demo sources). Each has a generic
+# mock (sim/generic/specs/catalog_*.py), synthetic like every mock here, so that connecting one really reads records.
+CATALOG_SYSTEMS: tuple[System, ...] = (
+    System("workday", "Workday HCM", "cat_workday", "generic-rest", "/workday/ccx/api/v1/northfield"),
+    System("jira", "Atlassian Jira", "cat_jira", "generic-rest", "/jira/rest/api/3"),
+    System("confluence", "Atlassian Confluence", "cat_confluence", "generic-rest", "/confluence/wiki/api/v2"),
+    System("postgres", "PostgreSQL", "cat_postgres", "generic-rest", "/postgres/rest/v1"),
+    System("mysql", "MySQL", "cat_mysql", "generic-rest", "/mysql/api/v1"),
+    System("sqlserver", "Microsoft SQL Server", "cat_sqlserver", "generic-rest", "/sqlserver/api/v1"),
+    System("s3", "Amazon S3", "cat_s3", "generic-rest", "/s3/northfield-partner-drop"),
+    System("azureblob", "Azure Blob Storage", "cat_azureblob", "generic-rest", "/azureblob/partner-files"),
+    System("excel", "Microsoft Excel and SharePoint", "cat_excel", "generic-rest", "/excel/v1.0/sites/northfield/drive"),
+    System("dynamics", "Microsoft Dynamics 365", "cat_dynamics", "generic-rest", "/dynamics/api/data/v9.2"),
+    System("ebs", "Oracle E-Business Suite", "cat_ebs", "generic-rest", "/ebs/webservices/rest/ap"),
+    System("netsuite", "Oracle NetSuite", "cat_netsuite", "generic-rest", "/netsuite/services/rest/record/v1"),
+    System("teams", "Microsoft Teams", "cat_teams", "generic-rest", "/teams/v1.0"),
+    System("gdrive", "Google Drive", "cat_gdrive", "generic-rest", "/gdrive/drive/v3"),
+    System(
+        "snowflake", "Snowflake", "cat_snowflake", "generic-rest", "/snowflake/api/v2/databases/CIRCULARITY/schemas/HISTORY"
+    ),
+)
+CATALOG_BY_ID = {s.source_id: s for s in CATALOG_SYSTEMS}
+
 # Vendors replaced on purpose (docs/backend-steps.md, B5b). The frontend (index.html data) still shows the old name
 # until it switches to the API (B17).
 VENDOR_OVERRIDES = {"tms": "Oracle Transportation Management"}  # was the fictional "ShipLane TMS"

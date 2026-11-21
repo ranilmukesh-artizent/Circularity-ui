@@ -127,8 +127,8 @@ class AwsIotAdapter(Adapter):
         """Whether the source starts connected (registered `live`); the demo starts it not provisioned."""
         return get_settings().iot_connected
 
-    def auth(self):
-        return SigV4(ACCESS_KEY, SECRET_KEY, REGION)
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return SigV4(ACCESS_KEY, secret or SECRET_KEY, REGION)
 
     def set_delivery(self, enabled: bool) -> int:
         """Enable (on connect) or disable (on disconnect) the topic rules that deliver telemetry to Circularity

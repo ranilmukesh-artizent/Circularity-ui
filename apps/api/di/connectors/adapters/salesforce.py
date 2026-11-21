@@ -115,8 +115,8 @@ class SalesforceAdapter(Adapter):
     source_id = "crm"
     base_path = "/salesforce"  # the instance URL
 
-    def auth(self):
-        return JwtBearer("/services/oauth2/token", CLIENT_ID, USERNAME, CLIENT_SECRET)
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return JwtBearer("/services/oauth2/token", CLIENT_ID, USERNAME, secret or CLIENT_SECRET)
 
     def resources(self):
         return [

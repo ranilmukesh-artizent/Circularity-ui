@@ -71,8 +71,8 @@ class MaximoAdapter(Adapter):
     source_id = "eam"
     base_path = "/maximo/api"
 
-    def auth(self):
-        return ApiKey("apikey", "circularity-demo-maximo-apikey")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return ApiKey("apikey", secret or "circularity-demo-maximo-apikey")
 
     def resources(self):
         return [Resource("asset", self.read_assets), Resource("workorders", self.read_workorders)]

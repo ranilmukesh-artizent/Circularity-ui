@@ -46,8 +46,8 @@ class MasterControlAdapter(Adapter):
     source_id = "qms"
     base_path = "/mastercontrol/mc/api"
 
-    def auth(self):
-        return OAuthClientCredentials("/oauth2/token", "circularity-di", "circularity-demo-mastercontrol-secret")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return OAuthClientCredentials("/oauth2/token", "circularity-di", secret or "circularity-demo-mastercontrol-secret")
 
     def resources(self):
         return [Resource("policies", self.read_policies, delta=False), Resource("certificates", self.read_certificates)]

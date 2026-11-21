@@ -73,11 +73,11 @@ class ManhattanAdapter(Adapter):
         self.facilities: dict[str, str] = dict(FACILITIES)
         self.today: date | None = None
 
-    def auth(self):
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
         return OAuthClientCredentials(
             "/oauth/token",
             "di-connector",
-            "wms-demo-secret",
+            secret or "wms-demo-secret",
             extra={"grant_type": "password", "username": "circularity.integration@northfield", "password": "wms-demo-password"},
         )
 

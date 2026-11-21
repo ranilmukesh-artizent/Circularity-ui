@@ -1,9 +1,10 @@
 /* Connect an integration from the catalogue (auth → scopes → test → mappings → first sync), and re-authenticate a source (5.10).
    The test is the server's probe (source.test); finishing creates the source (source.update, mode "catalog"); the
    re-authentication renews the credential (credentials.rotate) or, for a stale feed, refreshes the token (source.reconnect).
-   A catalogue system has no simulated system behind it: its first sync is recorded as synthetic (see fabric_sources.py). */
+   Every catalogue system is synthetic: source-sim mocks it. Connecting stores its connection and credential (encrypted)
+   and queues a first sync that really reads it; its records then show in Sync & History (plan 6 A3). */
 import { useEffect, useRef, useState } from 'react';
-import { catalog, connectFromCatalog, frAuthOptions, frSample, hashId, nowLabel, reauthenticated, source, typeOf } from '../../api/integration';
+import { catalog, connectFromCatalog, frAuthOptions, frSample, nowLabel, reauthenticated, source, typeOf } from '../../api/integration';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
@@ -11,12 +12,10 @@ import { refused } from '../../ui/useAction';
 import { VendorLogo } from '../../ui/kit/VendorLogo';
 import { runTest, TestSteps } from './ConnectionTests';
 import { useInt } from './FabricContext';
-import { fmtN } from './fabricFormat';
 import { FabricStatus } from './FabricStatus';
 
 export type CxStart = { mode: 'new'; cat: string } | { mode: 'reauth'; src: string };
 const STEPS = ['Authentication', 'Scopes', 'Test connection', 'Field mapping', 'First sync'];
-const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 function initialAuth(start: CxStart): string {
   if (start.mode === 'reauth') {
@@ -42,9 +41,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   const [passed, setPassed] = useState(false);
   const [maps, setMaps] = useState<[string, string, string, string, number][] | null>(null);
   const [acc, setAcc] = useState<Record<number, boolean>>({});
-  const [sync, setSync] = useState(0);
   const [connected, setDone] = useState(false);
-  const n = useRef(1200 + (parseInt(hashId(start.mode === 'new' ? start.cat : start.src), 16) % 9000));
   const live = useRef(true);
   useEffect(() => {
     live.current = true;
@@ -60,23 +57,14 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   function next() {
     if (!reauth && step === 4) {
       setStep(5);
-      // the connection is made on the server when the first sync's progress bar fills (the demo's frCxFinish)
+      // the connection is made on the server now (the demo's frCxFinish); the first sync runs in the worker
       const accepted = (maps ?? []).filter((_, i) => acc[i]);
-      let p = 0;
-      const tick = async () => {
+      void (async () => {
+        const r = await connectFromCatalog(c!.id, auth, scopes, accepted);
         if (!live.current) return;
-        p = Math.min(100, p + (reduced() ? 100 : 20));
-        if (p >= 100) {
-          const r = await connectFromCatalog(c!.id, auth, scopes, accepted);
-          if (!live.current) return;
-          if (refused(r)) { onClose(); return; }
-          n.current = r.output.records;
-          setDone(true);
-        }
-        setSync(p);
-        if (p < 100) window.setTimeout(tick, 220);
-      };
-      window.setTimeout(tick, reduced() ? 0 : 220);
+        if (refused(r)) { onClose(); return; }
+        setDone(true);
+      })();
       return;
     }
     setStep(reauth ? 3 : step + 1);
@@ -197,13 +185,12 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
     );
     foot = <><button className="btn" onClick={back}>Back</button><button className="btn pri" disabled={!Object.values(acc).some(Boolean)} onClick={next}>Continue</button></>;
   } else {
-    const p = connected ? 100 : Math.min(sync, 99);
     body = (
       <>
         <p className="note" style={{ marginTop: 0 }}>The first sync reads a full extract; after that, {scopes.includes('events') ? 'events arrive as they happen' : 'it runs on a schedule'}.</p>
-        <div className="frprog"><i style={{ width: p + '%' }} /></div>
-        <p className="num">{connected ? 'Connected · ' + fmtN(n.current) + ' records in the first sync' : 'Syncing… ' + p + '% · ' + fmtN(Math.round((p * n.current) / 100)) + ' records'}</p>
-        {connected && <div className="callout ok"><b>{v} is connected.</b> It appears in the Source Map.</div>}
+        <div className="frprog"><i style={{ width: connected ? '100%' : '30%' }} /></div>
+        <p className="num">{connected ? 'Connected · first sync queued' : 'Connecting…'}</p>
+        {connected && <div className="callout ok"><b>{v} is connected.</b> It appears in the Source Map; its records show in Sync &amp; History once the first sync has run. {v} is a synthetic system simulated for this environment.</div>}
       </>
     );
     foot = connected ? <button className="btn pri" onClick={onClose}>Done</button> : <button className="btn" disabled>Syncing…</button>;

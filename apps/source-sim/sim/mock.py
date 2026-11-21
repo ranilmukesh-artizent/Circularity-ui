@@ -1,7 +1,8 @@
 """What every mocked system provides, and how source-sim finds them (docs/backend-steps.md, B3-B5).
 
 A full mock is a package in `sim/vendors/` whose `__init__.py` defines `MOCK = Mock(...)`.
-A generic mock is a module in `sim/generic/specs/` that defines `SPEC = Spec(...)` (see sim/generic/spec.py).
+A generic mock is a module in `sim/generic/specs/` that defines `SPEC = Spec(...)` (see sim/generic/spec.py); a module there
+that defines `MOCK` instead is taken as it is (sim/generic/specs/sandbox.py).
 Both are picked up at start-up; no shared file needs editing to add one.
 """
 
@@ -57,7 +58,11 @@ def discover() -> dict[str, Mock]:
     for info in pkgutil.iter_modules(specs_pkg.__path__):
         name = f"sim.generic.specs.{info.name}"
         try:
-            spec = importlib.import_module(name).SPEC
+            mod = importlib.import_module(name)
+            if not hasattr(mod, "SPEC") and hasattr(mod, "MOCK"):  # a hand-written mock beside the specs (the sandbox)
+                mocks[mod.MOCK.source_id] = mod.MOCK
+                continue
+            spec = mod.SPEC
             if spec.source_id in mocks:
                 raise RuntimeError(f"{spec.source_id} is mocked twice")
             mocks[spec.source_id] = build(spec)

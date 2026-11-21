@@ -91,8 +91,8 @@ class OtmAdapter(Adapter):
         self.locations: dict[str, dict] = {}  # locationGid → location
         self.offerings: dict[str, dict] = {}  # rateOfferingGid → rate offering
 
-    def auth(self):
-        return OAuthClientCredentials("/oauth2/v1/token", "di-connector", "tms-demo-secret")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return OAuthClientCredentials("/oauth2/v1/token", "di-connector", secret or "tms-demo-secret")
 
     def resources(self):
         return [

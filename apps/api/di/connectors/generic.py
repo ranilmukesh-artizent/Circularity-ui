@@ -123,13 +123,13 @@ class GenericAdapter(Adapter):
     page_size: int = 200
     since_param: str = "updated_since"
 
-    def auth(self):
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
         sid = self.source_id
         if self.auth_kind == "api_key":
-            return ApiKey(self.api_key_header, f"{sid}-demo-key")
+            return ApiKey(self.api_key_header, secret or f"{sid}-demo-key")
         if self.auth_kind == "basic":
-            return Basic("di-connector", f"{sid}-demo")
-        return OAuthClientCredentials(self.token_path, "di-connector", f"{sid}-demo-secret")
+            return Basic("di-connector", secret or f"{sid}-demo")
+        return OAuthClientCredentials(self.token_path, "di-connector", secret or f"{sid}-demo-secret")
 
     # ------------------------------------------------------------- reading
     def pages(self, client: SourceClient, path: str, since: str | None = None, **params) -> Iterator[tuple[dict, str]]:

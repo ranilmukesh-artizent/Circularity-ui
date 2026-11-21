@@ -49,6 +49,13 @@ from di.connectors.http import Auth, SourceClient, SourceError
 
 SIGNING_KEY = b"rcy-demo-signing-key"  # the partner's signing key (demo value)
 USER, PASSWORD = "di-connector", "rcy-demo"
+
+
+class SftpLogin(Auth):
+    """The SFTP user and password (no HTTP headers): the stored secret, or the partner's demo password."""
+
+    def __init__(self, user: str, password: str):
+        self.user, self.password = user, password
 HOST_KEY = ("ssh-ed25519", "AAAAC3NzaC1lZDI1NTE5AAAAIICdS6y8VTdaxChH2KIr/5NFdZfbbDo9/WELgbDCNDuf")
 DIR = "/outbound"
 TIMEOUT = 20
@@ -197,14 +204,15 @@ class SimsAdapter(Adapter):
     source_id = "rcy"
     base_path = "/sims"  # source-sim's admin view; the data itself comes over SFTP (sftp_target)
 
-    def auth(self) -> Auth:
-        return Auth()  # no HTTP calls: the SFTP login is in Drop
+    def auth(self, conn=None, secret=None) -> Auth:  # noqa: ARG002 - conn: the Adapter interface
+        return SftpLogin(USER, secret or PASSWORD)  # no HTTP headers: Drop signs in over SFTP with it
 
     def resources(self):
         return [Resource("files", self.read_files)]
 
     def read_files(self, client: SourceClient, since: str | None):
-        drop = Drop(client, *sftp_target())
+        login = client.auth if isinstance(client.auth, SftpLogin) else SftpLogin(USER, PASSWORD)
+        drop = Drop(client, *sftp_target(), user=login.user, password=login.password)
         try:
             yield from self.read_drop(drop, since)
         finally:

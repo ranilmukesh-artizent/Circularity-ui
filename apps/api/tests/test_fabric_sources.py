@@ -6,6 +6,10 @@ These change source_system rows, which `starting.reset()` leaves alone, so the m
 see the seeded state.
 """
 
+import re
+import socket
+from urllib.parse import urlparse
+
 import httpx
 import pytest
 from sqlalchemy import text
@@ -148,11 +152,17 @@ def test_create_a_connection_by_hand():
         "live", "Unassigned", ["GET /materials"], "Read", "1.0", "API extractor · Polling · 15 min",
     )  # fmt: skip
     assert s["audit"][0]["change"] == "Connection created" and s["credDays"] == 180
-    assert s["runs"][0]["note"].startswith("First sync (synthetic)") and s["records"] == s["runs"][0]["rows"] > 0
     assert detail("erp_2")["mappings"] == body["maps"]
-    # nothing simulated behind it: a sync is refused with the reason
+    # plan 6 A3: its endpoint is its connection, read by the configured adapter; the first sync is queued (no synthetic
+    # run any more), so Sync now finds it waiting
+    with engine.connect() as c:
+        conn = c.execute(text("SELECT base_url, auth_kind, resources FROM source_connection WHERE source_id = 'erp_2'")).one()
+        queued = c.execute(text("SELECT count(*) FROM job WHERE kind = 'sync.source' AND payload->>'source_id' = 'erp_2'"))
+        assert queued.scalar_one() == 1
+    assert (conn.base_url, conn.auth_kind) == ("https://erp2.example/api", "oauth_cc")
+    assert conn.resources == [{"name": "materials", "path": "/materials", "id_field": "id"}]
     sy = call("source.sync", {"source_id": "erp_2"}, "developer")
-    assert sy["error"]["code"] == "conflict" and "nothing to sync" in sy["error"]["message"]
+    assert sy["ok"] and sy["output"]["queued"] is False, sy
     # ensure_sources (at start-up) leaves it live
     with SessionLocal() as ss:
         sync.ensure_sources(ss)
@@ -173,7 +183,8 @@ def test_connect_from_the_catalogue():
     r = call("source.update", body, "developer")
     assert r["ok"], r
     o = r["output"]
-    assert o["mode"] == "catalog" and o["source_id"] == c["id"] and o["vendor"] == c["vendor"] and o["records"] >= 1200
+    # plan 6 A3: the first sync is queued and really reads the system (tests/test_configured_adapter.py)
+    assert o["mode"] == "catalog" and o["source_id"] == c["id"] and o["vendor"] == c["vendor"] and o["queued"] is True
     after = listed("overview")
     assert c["id"] not in after["available"] and next(x for x in after["catalog"] if x["id"] == c["id"])["connected"]
     row = next(i for i in after["integrations"] if i["src"] == c["id"])
@@ -181,11 +192,12 @@ def test_connect_from_the_catalogue():
     got = detail(c["id"])
     s = got["source"]
     assert s["auth"] == "API key" and s["mode"] == ("Controlled CSV import" if c["type"] == "store" else "API + events")
-    assert s["audit"][0]["change"] == "Connected from the catalogue" and s["records"] == o["records"]
+    assert s["audit"][0]["change"] == "Connected from the catalogue"
     assert got["mappings"] == [
         [*m[:4], "Accepted from the agent’s suggestion"] for m in [[str(y) for y in x] for x in body["maps"]]
     ]
-    assert s["runs"][0]["rows"] == o["records"] and s["owner"] == "Integration Engineering"
+    assert s["owner"] == "Integration Engineering" and s["read"]
+    assert s["url"].startswith(get_settings().source_sim_url.rstrip("/"))  # the URL its connector really calls
     assert call("source.update", body, "developer")["error"] == {
         "code": "conflict",
         "message": f"{c['vendor']} is already connected.",
@@ -260,7 +272,8 @@ def test_reconnect_a_stale_feed_refreshes_its_token():
         c.execute(text("UPDATE source_system SET status = 'auth_expired' WHERE id = 'mkt'"))
     assert detail("mkt")["source"]["status"] == "stale"
     t = call("source.test", {"source_id": "mkt"}, "developer")["output"]
-    assert [x["ok"] for x in t["steps"]] == [True, True, False] and t["steps"][2]["msg"] == "Token rejected: expired"
+    assert [x["ok"] for x in t["steps"]] == [True, True, False], t  # DNS, TLS (http: a warning), Auth refused (401)
+    assert t["steps"][2]["msg"] == "Token rejected (HTTP 401): the credential is expired or revoked"
     r = call("source.reconnect", {"source_id": "mkt"}, "developer")
     assert r["ok"], r
     assert db_status("mkt") == "live" and detail("mkt")["source"].get("note") is None
@@ -273,6 +286,8 @@ def test_reconnect_a_stale_feed_refreshes_its_token():
 # ---------------------------------------------------------------- credentials
 def test_rotate_credentials():
     sid = "crm"
+    with engine.begin() as c:  # a sync with a credential an earlier test stored may have left it auth_expired
+        c.execute(text("UPDATE source_system SET status = 'live' WHERE id = :i"), {"i": sid})
     short = call("credentials.rotate", {"source_id": sid, "days": 90, "secret": "short"}, "developer")
     assert short["error"] == {"code": "validation_error", "message": "Enter at least 8 characters."}
     r = call("credentials.rotate", {"source_id": sid, "days": 90, "secret": "a-new-secret-123"}, "developer")
@@ -291,23 +306,25 @@ def test_rotate_credentials():
 
 # ---------------------------------------------------------------- the connection test
 def test_connection_test_probes_the_connector():
+    """Plan 6 A5: every step is real, against the connection's own URL (source-sim's in dev)."""
     t = call("source.test", {"source_id": "iot"}, "developer")["output"]
     assert t["steps"] == [{"ok": False, "msg": "No route to host: the system is not provisioned"}]
     t = call("source.test", {"source_id": "erp"}, "developer")["output"]
     assert t["ok"] and [x["ok"] for x in t["steps"]] == [True] * 5, t
     s = detail("erp")["source"]
-    host = s["url"].split("://")[-1].split("/")[0]
-    assert t["steps"][0]["msg"].startswith(host + " → 10.") and t["steps"][1]["msg"] == "TLS 1.3 · certificate valid"
-    assert t["steps"][2]["msg"] == s["auth"] and t["steps"][4]["msg"].endswith(" ms")
-    # a catalogue system being connected: nothing simulated behind it, said so
+    sim_host = urlparse(get_settings().source_sim_url).hostname
+    addr = socket.getaddrinfo(sim_host, None)[0][4][0]
+    assert t["steps"][0]["msg"] == f"{sim_host} → {addr}"  # the address it really resolved to
+    assert t["steps"][1] == {"ok": True, "msg": "Not encrypted: http", "warn": True}
+    assert t["steps"][2]["msg"] == s["auth"] and re.fullmatch(r"\d+ read resources? answered", t["steps"][3]["msg"])
+    assert t["steps"][4]["msg"].endswith(" ms")
+    # a catalogue system being connected: its template's connection, really probed (source-sim's synthetic mock)
     cat = call("source.test", {"source_id": "cat:salesforce_x", "auth": "OAuth 2.0"}, "developer")
     assert cat["error"]["code"] == "not_found"
     c = golden.load("screens/reference")["CATALOG"][-1]
     t = call("source.test", {"source_id": "cat:" + c["id"], "auth": "API key"}, "developer")["output"]
-    assert (
-        t["ok"] and t["steps"][0]["msg"].startswith(c["id"] + ".northfield.example → 10.") and t["steps"][2]["msg"] == "API key"
-    )
-    assert "nothing was read" in t["steps"][4]["msg"]
+    assert t["ok"] and t["steps"][0]["msg"].startswith(sim_host + " → ") and t["steps"][2]["msg"] == "API key", t
+    assert re.fullmatch(r"1 record in \d+ ms", t["steps"][4]["msg"]), t
     # the drawer's one-line test of a draft
     d = call(
         "source.test",
@@ -319,13 +336,90 @@ def test_connection_test_probes_the_connector():
         and d["output"]["msg"].startswith("Native connector reached in ")
         and d["output"]["msg"].endswith("2 read and 1 write operations available.")
     )
-    nothing = call(
+    nowhere = call(
         "source.test",
         {"draft": {"method": "api", "url": "https://x.example", "auth": "API key", "read": 1, "write": 0}},
         "developer",
     )
-    assert nothing["output"]["ok"] and "nothing was reached" in nothing["output"]["msg"]
+    assert not nowhere["output"]["ok"] and "x.example" in nowhere["output"]["msg"], nowhere
 
+
+def test_tls_is_a_real_handshake():
+    """An https endpoint gets a TLS handshake with certificate checks: a self-signed certificate is refused."""
+    import datetime as dt
+    import ssl
+    import tempfile
+    import threading
+
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.x509.oid import NameOID
+
+    from di.connectors.probe import _tls
+
+    key = ec.generate_private_key(ec.SECP256R1())
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "localhost")])
+    now = dt.datetime.now(dt.UTC)
+    cert = (
+        x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(key.public_key())
+        .serial_number(1).not_valid_before(now - dt.timedelta(days=1)).not_valid_after(now + dt.timedelta(days=30))
+        .sign(key, hashes.SHA256())
+    )  # fmt: skip
+    with tempfile.NamedTemporaryFile("wb", suffix=".pem", delete=False) as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
+        f.write(key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(f.name)
+    srv = socket.create_server(("127.0.0.1", 0))
+    port = srv.getsockname()[1]
+
+    def serve():
+        conn, _ = srv.accept()
+        try:
+            ctx.wrap_socket(conn, server_side=True).close()
+        except (OSError, ssl.SSLError):
+            conn.close()
+
+    th = threading.Thread(target=serve, daemon=True)
+    th.start()
+    c = _tls("localhost", port)
+    th.join(5)
+    srv.close()
+    assert not c.ok and c.error.startswith("TLS handshake with localhost failed") and "certificate" in c.error.lower(), c
+
+
+def test_permissions_name_the_first_refused_resource():
+    sim = get_settings().source_sim_url.rstrip("/")
+    d = {"type": "erp", "name": "Probe ERP", "vendor": "Probe sandbox", "ver": "", "env": "Test", "url": sim + "/sandbox/probe",
+         "method": "api", "cfg": {"spec": "REST"}, "interval": 15, "auth": "No authentication", "owner": ""}  # fmt: skip
+    body = {"mode": "new", "id": "", "d": d, "maps": [["sku", "x", "asset.asset_id", "x", "Pass-through"]],
+            "ops": {"read": ["GET /records", "GET /restricted"], "write": []}, "note": ""}  # fmt: skip
+    r = call("source.update", body, "developer")
+    assert r["ok"], r
+    t = call("source.test", {"source_id": r["output"]["source_id"]}, "developer")["output"]
+    assert [x["ok"] for x in t["steps"]] == [True, True, True, False], t
+    assert t["steps"][3]["msg"] == "Could not read restricted (HTTP 404)"
+
+
+def test_an_expired_credential_is_not_used():
+    sid = "eam"
+    r = call("credentials.rotate", {"source_id": sid, "days": 30, "secret": "circularity-demo-maximo-apikey"}, "developer")
+    assert r["ok"], r
+    with engine.begin() as c:
+        c.execute(text("UPDATE source_system SET status = 'live' WHERE id = :i"), {"i": sid})
+        c.execute(
+            text("UPDATE source_secret SET expires_at = '2026-10-01T00:00:00Z' WHERE source_id = :i AND active"), {"i": sid}
+        )
+    try:
+        out = sync.run_sync(sid, "manual")
+        assert out["status"] == "failed" and out["error"] == "Credential expired on 2026-10-01", out
+        assert db_status(sid) == "auth_expired"
+        t = call("source.test", {"source_id": sid}, "developer")["output"]
+        assert t["steps"][-1] == {"ok": False, "msg": "Credential expired on 2026-10-01"} and len(t["steps"]) == 3, t
+    finally:
+        with engine.begin() as c:
+            c.execute(text("DELETE FROM source_secret WHERE source_id = :i"), {"i": sid})
 
 def test_people_without_the_permission_are_refused():
     for action, body in (("source.pause", {"source_id": "erp"}), ("source.disconnect", {"source_id": "erp", "confirm": "x"})):

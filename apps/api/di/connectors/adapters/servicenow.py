@@ -92,8 +92,10 @@ def hours(duration: str) -> float | None:
 class ServiceNowAdapter(Adapter):
     source_id = "fsm"
 
-    def auth(self):
-        return OAuthClientCredentials("/servicenow/oauth_token.do", "circularity-di", "circularity-demo-sn-secret", form=True)
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return OAuthClientCredentials(
+            "/servicenow/oauth_token.do", "circularity-di", secret or "circularity-demo-sn-secret", form=True
+        )
 
     def resources(self):
         return [

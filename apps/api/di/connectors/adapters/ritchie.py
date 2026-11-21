@@ -69,8 +69,8 @@ class RitchieAdapter(Adapter):
     source_id = "mkt"
     base_path = "/ritchie/v2"
 
-    def auth(self):
-        return ApiKey("X-Api-Key", "mkt-demo-key")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return ApiKey("X-Api-Key", secret or "mkt-demo-key")
 
     def resources(self):
         return [Resource("comparables", self.read_comparables), Resource("price_index", self.read_price_index, delta=False)]

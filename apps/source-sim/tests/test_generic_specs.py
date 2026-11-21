@@ -10,12 +10,11 @@ from fastapi.testclient import TestClient
 import sim.generic.specs as specs_pkg
 from sim.generic.spec import Spec, credentials
 from sim.main import app
-from sim.registry import BY_SOURCE_ID
+from sim.registry import BY_SOURCE_ID, CATALOG_BY_ID
 from sim.seed import seed
 
-SPECS: list[Spec] = [
-    importlib.import_module(f"sim.generic.specs.{m.name}").SPEC for m in pkgutil.iter_modules(specs_pkg.__path__)
-]
+_MODULES = [importlib.import_module(f"sim.generic.specs.{m.name}") for m in pkgutil.iter_modules(specs_pkg.__path__)]
+SPECS: list[Spec] = [m.SPEC for m in _MODULES if hasattr(m, "SPEC")]  # the sandbox is a hand-written MOCK
 
 
 @pytest.fixture(scope="module")
@@ -58,7 +57,7 @@ def list_all(client, spec: Spec, path: str, h: dict, params: dict | None = None)
 
 @pytest.mark.parametrize("spec", SPECS, ids=lambda s: s.source_id)
 def test_spec_matches_the_registry(spec: Spec):
-    sysm = BY_SOURCE_ID[spec.source_id]
+    sysm = (BY_SOURCE_ID | CATALOG_BY_ID)[spec.source_id]  # a demo source or a catalogue system (plan 6 A3)
     assert (spec.schema, spec.base_path, spec.title) == (sysm.schema, sysm.base_path, sysm.vendor)
     data = spec.seed(seed())
     assert set(data) == {r.name for r in spec.resources}

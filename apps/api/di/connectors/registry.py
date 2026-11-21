@@ -1,4 +1,8 @@
-"""Adapters are discovered from di/connectors/adapters/*.py, each defining ADAPTER = <Adapter instance>."""
+"""Adapters are discovered from di/connectors/adapters/*.py, each defining ADAPTER = <Adapter instance>.
+
+adapter_for(s, "erp")       → the Python adapter of a demo source
+adapter_for(s, "workday")   → a ConfiguredAdapter on the source's stored connection (plan 6 A3), or None
+"""
 
 import importlib
 import logging
@@ -28,3 +32,31 @@ def _discover() -> dict[str, Adapter]:
 
 
 ADAPTERS: dict[str, Adapter] = _discover()
+
+
+def adapter_for(s, source_id: str) -> Adapter | None:
+    """The Python adapter if the source has one; else a ConfiguredAdapter on its stored connection (with the source's
+    field mapping), when it has one with resources to read; else None."""
+    if source_id in ADAPTERS:
+        return ADAPTERS[source_id]
+    from di.connectors.configured import ConfiguredAdapter, active_rows
+    from di.connectors.connection import connection_for
+
+    conn = connection_for(s, source_id)
+    if conn is None or not conn.resources:
+        return None
+    return ConfiguredAdapter(conn, active_rows(s, source_id))
+
+
+def has_adapter(s, source_id: str) -> bool:
+    """A sync can read this source: a Python adapter, or a stored connection with resources."""
+    if source_id in ADAPTERS:
+        return True
+    from sqlalchemy import text
+
+    return bool(
+        s.execute(
+            text("SELECT 1 FROM source_connection WHERE source_id = :i AND jsonb_array_length(resources) > 0"),
+            {"i": source_id},
+        ).first()
+    )

@@ -45,8 +45,8 @@ class DepotRepairAdapter(Adapter):
     source_id = "repair"
     base_path = "/depot-repair/webservices/rest"
 
-    def auth(self):
-        return Basic("DI_CONNECTOR", "repair-demo-password")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return Basic("DI_CONNECTOR", secret or "repair-demo-password")
 
     def resources(self):
         return [

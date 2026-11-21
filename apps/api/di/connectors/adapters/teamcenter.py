@@ -108,8 +108,8 @@ class TeamcenterAdapter(Adapter):
     source_id = "plm"
     base_path = "/teamcenter/tc"
 
-    def auth(self):
-        return TcSession("di_connector", "Circularity-demo-tc-1", "Engineering", "Designer")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return TcSession("di_connector", secret or "Circularity-demo-tc-1", "Engineering", "Designer")
 
     def resources(self):
         return [Resource("compatibility", self.read_compatibility)]

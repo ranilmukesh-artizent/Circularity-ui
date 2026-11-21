@@ -32,8 +32,8 @@ class SafetyCultureAdapter(Adapter):
     source_id = "insp"
     base_path = "/safetyculture"
 
-    def auth(self):
-        return OAuthClientCredentials("/oauth/token", "di-connector", "insp-demo-secret")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return OAuthClientCredentials("/oauth/token", "di-connector", secret or "insp-demo-secret")
 
     def resources(self):
         return [Resource("audits", self.read_audits)]

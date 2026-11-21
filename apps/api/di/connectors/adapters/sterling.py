@@ -58,8 +58,8 @@ def number(v: str | None) -> int | float | None:
 class SterlingAdapter(Adapter):
     source_id = "oms"
 
-    def auth(self):
-        return OAuthClientCredentials(f"{API}/oauth/token", "di-connector", "circularity-demo-sterling-secret")
+    def auth(self, conn=None, secret=None):  # noqa: ARG002 - conn: the Adapter interface
+        return OAuthClientCredentials(f"{API}/oauth/token", "di-connector", secret or "circularity-demo-sterling-secret")
 
     def resources(self):
         return [Resource("order", self.read_orders), Resource("return", self.read_returns)]
