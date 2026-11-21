@@ -15,6 +15,7 @@ import { Icon } from '../../ui/Icon';
 import { onActivateKey } from '../../ui/keys';
 import { toast } from '../../ui/toast';
 import { edit, nextId, type Draft } from './draftStore';
+import { nearestLine, samplePath } from './edgePick';
 import { GRIP_SVG, LOCK_SVG, NodeMark, SourceMark, StateChip, TileMark } from './WorkflowMarks';
 
 export type Sel = { t: 'n' | 'e'; id: string } | null;
@@ -225,6 +226,16 @@ export function CanvasView({ w, d, z, sel, run, checks, counts, flow, mini, onSe
     };
   });
 
+  /** The link whose line passes closest to the click (edgePick.ts), not the hit area that happens to be on top. */
+  function pickEdge(e: RPointerEvent): string | null {
+    const svg = viewRef.current?.querySelector<SVGSVGElement>('svg.wfe');
+    const paths = [...(svg?.querySelectorAll<SVGPathElement>('g[data-e] > path.hit') ?? [])];
+    const m = svg?.getScreenCTM?.();
+    if (!svg || !m || !paths.length || typeof paths[0].getTotalLength !== 'function') return null; // no SVG geometry (tests)
+    const at = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse()); // the click in the lines' own coordinates
+    return nearestLine(paths.map((p) => ({ id: (p.parentNode as SVGGElement).dataset.e!, points: samplePath(p) })), { x: at.x, y: at.y });
+  }
+
   function down(e: RPointerEvent) {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const t = e.target as Element;
@@ -247,7 +258,7 @@ export function CanvasView({ w, d, z, sel, run, checks, counts, flow, mini, onSe
       return;
     }
     const eh = t.closest('.wfe .hit');
-    if (eh) { onSel({ t: 'e', id: (eh.parentNode as SVGGElement).dataset.e! }); return; }
+    if (eh) { onSel({ t: 'e', id: pickEdge(e) ?? (eh.parentNode as SVGGElement).dataset.e! }); return; }
     if (sel) onSel(null);
   }
 

@@ -69,8 +69,8 @@ Tip: press **Fit to width** in the canvas toolbar so every block is visible.
 
 ## Part 2: make room on the main line
 
-5. **Remove the link Validation & enrichment → ERP fields.** Click that line close to the arrowhead that points at
-   *ERP fields*. The right-hand inspector shows the link; press **Remove connection**.
+5. **Remove the link Validation & enrichment → ERP fields.** Click that line. The right-hand inspector shows the link
+   (*Validation & enrichment → ERP fields*); press **Remove connection**.
    - Checks now show a few warnings (the mapping is no longer fed). That is expected until step 11.
 
 ## Part 3: add four blocks to the main line
@@ -157,7 +157,7 @@ If a warning remains, select the block it names in the Checks panel: usually one
 ## More workflows to build
 
 Six more workflows, each built from a different starting point and with different blocks. They use exactly the same
-moves as the main tutorial: **+ New workflow**, remove a link (click it near its arrowhead → **Remove connection**),
+moves as the main tutorial: **+ New workflow**, remove a link (click it → **Remove connection**),
 click blocks in the palette, wire them with **Connect output to**, then **Auto layout**, **Validate**, the
 **Settings** tab, **More actions → Save**, **Test run**, **More actions → Publish** and **Run now**.
 
@@ -292,7 +292,7 @@ pipeline blocks.*
 | What you see | What to do |
 |---|---|
 | **+ New workflow** is missing | Sign in as `developer` or `admin`. |
-| Clicking a line selects a different link | Click closer to the arrowhead of the link you mean; near a block's output dot, branch links overlap. Remove links before you add branches. |
+| The inspector shows a different link than you meant | Where two links leave the same block they run on top of each other for a moment; click a little further along the line you mean. |
 | *"That connection is part of the fixed structure."* | That link is locked (Demand opportunity → Evidence snapshot); leave it. |
 | *"That would create a loop."* / *"Those two steps are already connected."* | Pick another target in **Connect output to**. |
 | Warnings after removing a link | Normal until the new blocks are wired in; finish the next steps. |

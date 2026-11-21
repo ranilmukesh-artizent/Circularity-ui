@@ -250,8 +250,8 @@ steps with **Refine in Workflow Studio**, which opens the builder with that requ
   loop, call workflow, wait), branches (error handler, audit log, event stream) and *More* (integration layer, file
   exchange, delivery methods, write connectors, all field mappings). Decision workflows show the agent tools instead.
 - **Connect** steps by dragging from a step's right dot to another step, or with *Connect output to* in the inspector.
-- **Remove a link**: click the line close to its arrowhead (near a step's output dot, branch lines overlap) and press
-  **Remove connection**.
+- **Remove a link**: click the line (the canvas selects the line nearest your click, also where branch lines leave
+  the same step) and press **Remove connection**.
 - **Move** by dragging (8 px grid) or with the arrow keys (Shift = 40 px). **Delete** with Delete/Backspace or
   *Remove from workflow*.
 - **Fixed steps** (canonical models, evidence snapshot, decision, send instruction) and **locked links** belong to
