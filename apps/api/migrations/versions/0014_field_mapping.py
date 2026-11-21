@@ -1,4 +1,9 @@
-"""plan 6 A4 versioned field mappings (reserved; filled by that task)
+"""plan 6 A4 versioned field mappings (di/connectors/mapping.py)
+
+One row per saved version of a source's field mapping. `rows` is the mapping a sync applies: a list of
+{src, model, field, rule, resource?} (di.connectors.mapping.MapRow) plus the row as the Data Mapping tab shows it
+(`show`: source field, sample, canonical field, normalised, rule text). A source without a row runs its adapter's
+own mapping unchanged; Revert writes a new version equal to an older one, so versions only grow.
 
 Revision ID: 0014
 Revises: 0013
@@ -9,7 +14,7 @@ DROP ... IF EXISTS, inserts ON CONFLICT DO NOTHING) so they can be re-applied wi
 upgrade head while the chain is being filled.
 """
 
-from alembic import op  # noqa: F401 - used once the task fills this migration
+from alembic import op
 
 revision = "0014"
 down_revision = "0013"
@@ -18,8 +23,20 @@ depends_on = None
 
 
 def upgrade() -> None:
-    pass
+    op.execute(
+        """
+CREATE TABLE IF NOT EXISTS field_mapping (
+  source_id   text        NOT NULL,
+  version     integer     NOT NULL,
+  rows        jsonb       NOT NULL DEFAULT '[]'::jsonb,
+  note        text,
+  created_by  text        NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (source_id, version)
+);
+"""
+    )
 
 
 def downgrade() -> None:
-    pass
+    op.execute("DROP TABLE IF EXISTS field_mapping")
