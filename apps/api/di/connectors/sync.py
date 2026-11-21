@@ -461,7 +461,7 @@ def enqueue_due(session: Session, now: datetime | None = None) -> list[str]:
         text("SELECT id, status, interval_min, last_sync_at, next_retry_at FROM source_system ORDER BY id")
     ).all()
     for r in rows:
-        if r.status in NOT_SYNCED or r.id in gone or not has_adapter(session, r.id):  # Python or configured (A3)
+        if r.id not in ADAPTERS or r.status in NOT_SYNCED or r.id in gone:
             continue
         every = timedelta(minutes=r.interval_min or SAFETY_INTERVAL_MIN)
         due = r.last_sync_at is None or now - r.last_sync_at >= every
