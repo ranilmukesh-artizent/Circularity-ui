@@ -1,6 +1,9 @@
-/* Monitor (W9): integration health over time, per source and per workflow, against SLA. */
+/* Monitor (W9): integration health over time, per source and per workflow, against SLA. Per workflow (plan 6 D1): the
+ * real runs of the last 24 hours (runs, success, last run, mean and p95 duration) and, expanded, each step's p95
+ * duration and the records it still holds by rule; a workflow without a real run shows its seeded history. */
+import { Fragment, useState } from 'react';
 import { useBackend } from '../../api/useBackend';
-import { failedRecords, hourly, latency, slaMinutes, sources, srcAge, srcFailing, successRate, totals, wfStat, workflows } from '../../api/integration';
+import { failedRecords, hourly, latency, monitorWorkflows, slaMinutes, sources, srcAge, srcFailing, successRate, totals, wfStat, workflows } from '../../api/integration';
 import { toast } from '../../ui/toast';
 import { Kpi } from '../../ui/kit/Kpi';
 import { Panel } from '../../ui/kit/Panel';
@@ -18,6 +21,8 @@ const hh2 = (i: number) => String(i).padStart(2, '0') + ':00';
 export function Monitor() {
   useBackend();
   const ui = useInt();
+  const [open, setOpen] = useState<string | null>(null);
+  const MW = monitorWorkflows();
   const W = workflows(), hh = hourly(), t = totals(), S = sources(), srcs = S.filter((s) => s.status !== 'unavailable');
   const inSla = srcs.filter((s) => s.freshMin != null && s.freshMin <= slaMinutes(s));
   const L = srcs.map(latency).filter((l): l is number => l != null); // a source with no measured call has no latency
@@ -81,17 +86,48 @@ export function Monitor() {
         <Panel title="Per workflow" sub="Lowest success first">
           <div className="tw">
             <table className="t static tight">
-              <thead><tr><th>Workflow</th><th className="r">Runs (24 h)</th><th className="r">Success</th><th>Last run</th><th className="r">Avg duration</th></tr></thead>
+              <thead><tr><th>Workflow</th><th className="r">Runs (24 h)</th><th className="r">Success</th><th>Last run</th><th className="r">Avg duration</th><th className="r">p95 duration</th></tr></thead>
               <tbody>
-                {W.filter((w) => w.runsN).sort((a, b) => a.okN! / a.runsN! - b.okN! / b.runsN!).slice(0, 14).map((w) => (
-                  <tr key={w.id}>
-                    <td><button className="lnk b" onClick={() => ui.go('integration/studio/' + w.id)}>{w.name}</button></td>
-                    <td className="r num">{w.runsN}</td>
-                    <td className={'r num ' + (w.okN! / w.runsN! < 0.9 ? 'neg' : '')}>{Math.round((w.okN! / w.runsN!) * 100)}%</td>
-                    <td>{w.last ? <><FabricStatus k={w.last.state === 'failed' ? 'failed' : 'success'} /> <span className="note">{ago(Date.now() - w.last.ts)}</span></> : '—'}</td>
-                    <td className="r num">{w.last ? w.last.dur + ' s' : '—'}</td>
-                  </tr>
-                ))}
+                {MW.filter((w) => w.runs24).sort((a, b) => a.ok24 / a.runs24 - b.ok24 / b.runs24).slice(0, 14).map((w) => {
+                  const st = w.lastState ?? w.last?.state, on = open === w.id;
+                  return (
+                    <Fragment key={w.id}>
+                      <tr>
+                        <td>
+                          <button className="lnk" aria-expanded={on} aria-label={(on ? 'Hide' : 'Show') + ' the steps of ' + w.name} onClick={() => setOpen(on ? null : w.id)}>{on ? '▾' : '▸'}</button>{' '}
+                          <button className="lnk b" onClick={() => ui.go('integration/studio/' + w.id)}>{w.name}</button>
+                        </td>
+                        <td className="r num">{w.runs24}</td>
+                        <td className={'r num ' + (w.ok24 / w.runs24 < 0.9 ? 'neg' : '')}>{Math.round((w.ok24 / w.runs24) * 100)}%</td>
+                        <td>{w.last ? <><FabricStatus k={st === 'failed' ? 'failed' : 'success'} /> <span className="note">{ago(Date.now() - w.last.ts)}</span></> : '—'}</td>
+                        <td className="r num">{w.avg == null ? '—' : w.avg + ' s'}</td>
+                        <td className="r num">{w.p95 == null ? '—' : w.p95 + ' s'}</td>
+                      </tr>
+                      {on && (
+                        <tr>
+                          <td colSpan={6}>
+                            {!w.real ? (
+                              <span className="note">No real run in the last 24 hours: the figures are the workflow's seeded history, without steps.</span>
+                            ) : (
+                              <table className="t static tight">
+                                <thead><tr><th>Step</th><th className="r">p95 duration</th><th>Held records by rule</th></tr></thead>
+                                <tbody>
+                                  {w.steps.map((s) => (
+                                    <tr key={s.id}>
+                                      <td>{s.label}</td>
+                                      <td className="r num">{s.p95 == null ? '—' : s.p95 + ' s'}</td>
+                                      <td>{s.heldN ? Object.entries(s.held).map(([r, n]) => `${r} ${fmtN(n)}`).join(', ') : <span className="note">None held</span>}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>

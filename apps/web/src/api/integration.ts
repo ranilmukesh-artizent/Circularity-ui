@@ -86,7 +86,14 @@ interface MapAnswer {
   kpis: { workflows_published: number }; exceptions: MapException[]; activity: SmLog[]; open_conflicts: number; hourly: HourBucket[]; totals: Totals;
   mappings: Record<string, MapRow[]>; source_models: Record<string, Record<string, MapRow[]>>; table_models: Record<string, TableModel>;
 }
-interface MonitorAnswer { hourly: HourBucket[]; totals: Totals; workflows: (Workflow & { stat: string })[] }
+/** One step of a workflow over the Monitor's window: p95 duration (s) and the records it still holds, by rule. */
+export interface MonitorStep { id: string; label: string; p95: number | null; held: Record<string, number>; heldN: number }
+/** The Monitor's per-workflow row: the real runs of the last 24 hours (`real`), or the demo's stats when it has none. */
+export interface MonitorWorkflow {
+  id: string; name: string; runsN: number; okN: number; last: Workflow['last']; stat: string; real: boolean; runs24: number; ok24: number; success: number | null; p95: number | null; avg: number | null;
+  lastState: string | null; steps: MonitorStep[];
+}
+interface MonitorAnswer { hourly: HourBucket[]; totals: Totals; workflows: (MonitorWorkflow & Workflow)[] }
 interface ConflictAnswer { conflicts: Conflict[]; total: number; counts: { open: number; closed: number; systems: number } }
 
 /** A read that may be refused (not found, out of scope): undefined instead of the error; a pending fetch still suspends. */
@@ -243,6 +250,8 @@ export function workflows(): Workflow[] {
   if (may('studio')) return cached<{ workflows: Workflow[] }>('/api/screens/workflows').workflows;
   return monitorAnswer()?.workflows ?? [];
 }
+/** The Monitor's per-workflow rows (the workflows that ran), with their 24-hour and per-step stats. */
+export const monitorWorkflows = (): MonitorWorkflow[] => monitorAnswer()?.workflows ?? [];
 export const wfStat = (w: Workflow): string => (w as Workflow & { stat?: string }).stat ?? w.status;
 /** Published workflows (the Source Map's tile). */
 export function publishedWorkflowCount(): number {

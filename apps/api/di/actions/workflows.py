@@ -1715,6 +1715,7 @@ def reap_lost_run(s, w: dict[str, Any], now: int, jobs_ok: int = 0) -> bool:
     for key, r in _run_keys(s, w["id"]):
         if r.get("state") == "running":
             state.put(s, "workflow_runs", key, _final_record(r, w, now, "failed", "Failed: worker lost", r.get("rows")))
+            studio.record_run_stats(s, key, w["id"], now, None, "failed")  # the Monitor counts it, without a duration
     w["running"] = False
     w["last"] = {"ts": now, "state": "failed", "dur": None, "rows": None, "note": "Failed: worker lost"}
     state.put(s, "workflows", w["id"], w)
@@ -1796,6 +1797,7 @@ def _crashed(payload: dict, e: Exception) -> dict:
             state.put(s, "workflows", wid, w)
             if r is not None:
                 state.put(s, "workflow_runs", key, _final_record(r, w, now, "failed", note, None))
+                studio.record_run_stats(s, key, wid, now, None, "failed")  # a failed run, no duration measured
         s.commit()
     return {"run": key, "state": "failed", "error": note}
 
@@ -1891,6 +1893,9 @@ def _run_locked(payload: dict) -> dict:
             "state": res.status, "note": res.note,
         }  # fmt: skip
         state.put(s, "workflow_runs", key, final)
+        steps = w["lastRun"]["dur"]  # what the Monitor reads (plan 6 D1): the run, and each step with its label
+        studio.record_run_stats(s, key, wid, now, dur, res.status, steps,
+                                {n["id"]: engine.label(n) for n in g["nodes"] if n["id"] in steps})  # fmt: skip
         _keep_recent_runs(s)
         s.commit()
     log.info("workflow run %s (%s): %s", key, wid, res.status)

@@ -401,6 +401,109 @@ def test_monitor(acct):
         1 for w in wf if w["status"] == "published" and w.get("last") and w["last"]["state"] == "failed"
     )
     assert len(got["hourly"]) == 24
+    for w in got["workflows"]:  # no real run in the window: the demo's stats, as the demo shows them
+        if not w["real"]:
+            assert (w["runs24"], w["ok24"], w["p95"], w["steps"]) == (w["runsN"], w["okN"], None, [])
+            assert w["avg"] == (w["last"] or {}).get("dur")
+
+
+# ---------------------------------------------------------------- monitor: per workflow and per step, from real runs
+MON_WF = "WF-133"  # a decision workflow: quick runs, no source to read
+MON_KEYS = [f"RUN-MONT{k}" for k in range(21)]
+
+
+def _forget_monitor_seed() -> None:
+    with engine.begin() as c:
+        c.execute(text("DELETE FROM failed_record WHERE run_id LIKE 'RUN-MONT%'"))
+        c.execute(text("DELETE FROM state_item WHERE collection = 'workflow_run_stats' AND id LIKE 'RUN-MONT%'"))
+
+
+@pytest.fixture
+def monitor_seed():
+    """20 real runs of MON_WF in the last 24 hours (durations 1..20 s, runs 0, 5 and 10 failed; steps `a` 0.1..2.0 s and
+    `b` 2..40 s) and one 25 hours old, with held records: 2 `required` and 1 `format` at step b in the window, one
+    reprocessed (not held), one in the old run and one of a sync with the same key (neither counted)."""
+    from di import clock
+    from di.db import SessionLocal
+    from di.reads.common import ms
+    from di.reads.workflows import record_run_stats
+
+    _forget_monitor_seed()
+    now = ms(clock.now().isoformat())
+    with SessionLocal() as s:
+        for k, key in enumerate(MON_KEYS):
+            old = k == 20
+            record_run_stats(
+                s, key, MON_WF, now - (25 * 3_600_000 if old else (20 - k) * 60_000), 99.0 if old else float(k + 1),
+                "failed" if k in (0, 5, 10) or old else "success" if k % 2 else "warning",
+                {"a": 50.0 if old else round((k + 1) / 10, 2), "b": 500.0 if old else float(2 * (k + 1))},
+                {"a": "Read", "b": "Validate"},
+            )  # fmt: skip
+        s.commit()
+    rows = [
+        ("workflow", "RUN-MONT1", "b", "required", "held"),
+        ("workflow", "RUN-MONT1", "b", "required", "held"),
+        ("workflow", "RUN-MONT2", "b", "format", "held"),
+        ("workflow", "RUN-MONT2", "b", "format", "reprocessed"),
+        ("workflow", "RUN-MONT20", "b", "required", "held"),
+        ("sync", "RUN-MONT3", "b", "required", "held"),
+    ]
+    with engine.begin() as c:
+        for kind, rid, step, rule, st in rows:
+            c.execute(
+                text(
+                    "INSERT INTO failed_record (run_kind, run_id, step, rule, reason, status) "
+                    "VALUES (:k, :r, :s, :u, 'seeded by the monitor test', :st)"
+                ),
+                {"k": kind, "r": rid, "s": step, "u": rule, "st": st},
+            )
+    yield
+    _forget_monitor_seed()
+
+
+def test_monitor_per_workflow_and_step_from_real_runs(monitor_seed):
+    got = get("admin", "monitor")
+    w = next(x for x in got["workflows"] if x["id"] == MON_WF)
+    assert w["real"] is True
+    assert (w["runs24"], w["ok24"], w["success"]) == (20, 17, 85)  # the old run is outside the window
+    assert w["p95"] == 19.0  # nearest rank: the 19th of 20 durations
+    assert w["avg"] == 10.5
+    assert w["lastState"] == "success"  # the newest run in the window (k = 19)
+    a, b = w["steps"]
+    assert (a["id"], a["label"], a["p95"], a["held"], a["heldN"]) == ("a", "Read", 1.9, {}, 0)
+    assert (b["id"], b["label"], b["p95"], b["held"], b["heldN"]) == ("b", "Validate", 38.0, {"required": 2, "format": 1}, 3)
+    # the per-workflow and per-source sections are unchanged: the demo's workflows are all still listed
+    wf = golden.load("screens/workflows")["starting"]
+    assert [x["id"] for x in got["workflows"]] == [x["id"] for x in wf if x.get("runsN")]
+
+
+def test_monitor_counts_a_real_run(monkeypatch):
+    """A run through the run job writes the stats the Monitor reads: its duration, state and per-step durations."""
+    from di import state
+    from di.actions import workflows as wf
+    from tests.helpers import call
+
+    for k in ("STEP_SECONDS", "QUICK_SECONDS", "BACKOFF_SECONDS"):
+        monkeypatch.setattr(wf, k, 0)
+    try:
+        r = call("workflow.run", {"id": MON_WF}, "developer")
+        assert r["ok"], r
+        key = r["output"]["run"]
+        with engine.begin() as c:  # the test runs the job itself (as test_workflow_engine does)
+            payload = c.execute(
+                text("UPDATE job SET status = 'done' WHERE kind = 'workflow.run' AND payload->>'run' = :r RETURNING payload"),
+                {"r": key},
+            ).scalar_one()
+        out = wf.run_job(payload)
+        assert out["state"] in ("success", "warning"), out
+        w = next(x for x in get("admin", "monitor")["workflows"] if x["id"] == MON_WF)
+        assert w["real"] is True and w["runs24"] == 1 and w["ok24"] == 1 and w["success"] == 100
+        assert w["lastState"] == out["state"] and w["p95"] is not None and w["p95"] >= 0
+        assert w["steps"] and all(st["p95"] is not None and st["label"] for st in w["steps"])
+    finally:
+        with engine.begin() as c:
+            c.execute(text("DELETE FROM job WHERE kind = 'workflow.run'"))
+        state.reset(["workflows", "workflow_runs", "workflow_run_stats", "notes"])
 
 
 def test_every_account_and_endpoint_covered():

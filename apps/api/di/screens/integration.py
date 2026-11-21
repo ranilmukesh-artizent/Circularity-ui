@@ -45,7 +45,12 @@ Still the demo's reference:
   in the Connection Fabric, and the deleted sources (left out of every endpoint until their deletion is undone);
 - workspace collection "events": the event stream's log (the demo's EVENTS and what actions add), merged with the real
   messages (sync runs that carried records, instructions sent or failed, webhook deliveries; di.reads.fabric.stream);
-- workspace collection "workflows" (di.reads.workflows): the workflows reading a source, failing ingest workflows.
+- workspace collection "workflows" (di.reads.workflows): the workflows reading a source, failing ingest workflows;
+- workspace collection "workflow_run_stats" and table failed_record (plan 6 D1): the Monitor's per-workflow row over
+  the last 24 hours (runs, success share, last state, p95 and mean run duration) and per step (p95 duration, records
+  still held by rule), from the real runs. A workflow without a real run in the window (the demo's seeded workflows)
+  shows the demo's stats as before (`real` false: runs and successes since it was made, the last run's duration), so
+  the seeded screen stays the demo's.
 
 Texts the demo computes (recommendations, exceptions, activity lines) are built the demo's way from these values.
 Where the backend has no value the demo invented one: a conflict's `impact` names what the backend does (dependent
@@ -66,7 +71,8 @@ Facade (apps/web/src/api/integration.ts) → here, export by export:
 - endpoint GET /models: canon, canonExample (`examples`), canonPrefix (`prefix`), mappings, allMappings
 - endpoint GET /events: events
 - endpoint GET /conflicts: conflicts
-- endpoint GET /monitor: totals, hourly, workflows and wfStat (`workflows`; the full list is GET /api/screens/workflows)
+- endpoint GET /monitor: totals, hourly, workflows and wfStat (`workflows`; the full list is GET /api/screens/workflows),
+  monitorWorkflows (`workflows` with their 24-hour and per-step stats)
 - another area: openDecisionCount (the open decisions, from the cases)
 - reference: connMethods, srcTypes, srcCats, srcCatNote, authOpts, frCats, frDecisions, intSub, intKids, sampleCsv,
   facilities, tenantList, tableSuggestions, frSample, frAuthOptions, typeOf
@@ -102,7 +108,7 @@ from di.reads.constants import MAP_TARGET, MAPPINGS
 from di.reads.context import case_openable
 from di.reads.fabric import SCREEN_STATUS, stream, type_of
 from di.reads.reference import channels
-from di.reads.workflows import all_workflows, wf_stat, wf_using
+from di.reads.workflows import all_workflows, monitor_stats, wf_stat, wf_using
 
 router = APIRouter(prefix="/api/screens/integration", tags=["screens: integration"])
 
@@ -775,6 +781,19 @@ def conflicts(
     return {"conflicts": rows, "total": total, "counts": {"open": n_open, "closed": n_all - n_open, "systems": systems}}
 
 
+def _wf_window(w: dict, r: dict | None) -> dict:
+    """The Monitor's per-workflow stats for the last 24 hours. From the workflow's real runs (monitor_stats) when it
+    has any in the window; otherwise the demo's stats as the demo shows them (runs and successes since it was made,
+    the last run's duration as the duration, no p95 and no steps), so a seeded workflow's row stays the demo's."""
+    if r is not None:
+        return {"real": True, "runs24": r["runs"], "ok24": r["ok"], "success": r["success"], "p95": r["p95"],
+                "avg": r["avg"], "lastState": r["lastState"], "steps": r["steps"]}  # fmt: skip
+    last = w.get("last") or {}
+    runs, ok = w.get("runsN") or 0, w.get("okN") or 0
+    return {"real": False, "runs24": runs, "ok24": ok, "success": js_round(ok / runs * 100) if runs else None, "p95": None,
+            "avg": last.get("dur"), "lastState": last.get("state"), "steps": []}  # fmt: skip
+
+
 @router.get("/monitor")
 def monitor(p: CurrentPrincipal, session: DbSession):
     _require_any(p, "monitor")
@@ -789,8 +808,10 @@ def monitor(p: CurrentPrincipal, session: DbSession):
         for s in f.sources
     ]  # fmt: skip
     lat = [x["latency"] for x in per if x["status"] != "unavailable" and x["latency"] is not None]
+    real = monitor_stats(session, f.now - DAY)
     wfs = [
         {"id": w["id"], "name": w["name"], "runsN": w["runsN"], "okN": w["okN"], "last": w.get("last"), "stat": wf_stat(w)}
+        | _wf_window(w, real.get(w["id"]))
         for w in f.workflows
         if w.get("runsN")
     ]

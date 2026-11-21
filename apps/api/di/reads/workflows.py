@@ -1,15 +1,19 @@
 """The Workflow Studio's collections and the demo's workflow helpers, read by the studio and integration screens and the
 workflow actions (di.actions.workflows): the workspace collections "workflows" (S.wf.list, each with its graph) and
 "workflow_runs" (S.wf.runs), seeded from fixtures/golden/screens/workflows.json, and "workflow_templates" (S.frTpl,
-empty at the start); wfStat, wfUsing, wfAnalyze, wfOrder; and what the last real run counted and held (plan 6 C5)."""
+empty at the start); wfStat, wfUsing, wfAnalyze, wfOrder; what the last real run counted and held (plan 6 C5); and
+"workflow_run_stats", what every real run measured (duration, state, per-step durations), which the Monitor reads
+(plan 6 D1)."""
 
 import json
+import math
 from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di import golden, state
+from di.engine.jsmath import js_round
 
 GOLDEN = golden.load("screens/workflows")
 state.register("workflows", lambda: [(w["id"], w) for w in GOLDEN["starting"]])
@@ -17,6 +21,8 @@ state.register("workflows", lambda: [(w["id"], w) for w in GOLDEN["starting"]])
 state.register("workflow_runs", lambda: [(r["id"], r) for r in reversed(GOLDEN["runs"])])
 # S.frTpl: the templates saved from workflows (workflow.saveTemplate), oldest first; none at the start
 state.register("workflow_templates", lambda: [])
+# what each real run measured, for the Monitor (plan 6 D1; record_run_stats): none at the start, the demo's runs have none
+state.register("workflow_run_stats", lambda: [])
 
 
 def all_workflows(s: Session) -> list[dict]:
@@ -85,6 +91,83 @@ def run_counts(w: dict) -> dict[str, dict]:
     keeps them in `lastRun.counts`). A workflow that has not really run (the demo's seeded last runs) has none: the
     demo's counts (frRunCounts, a fixed share of an invented record count) are gone with the simulation."""
     return dict((w.get("lastRun") or {}).get("counts") or {})
+
+
+STATS_KEPT = 2000  # run stats kept (newest); the run records themselves keep the demo's 40
+
+
+def record_run_stats(
+    s: Session, key: str, wid: str, ts: int, dur: float | None, st: str, steps: dict[str, float] | None = None,
+    labels: dict[str, str] | None = None,
+) -> None:  # fmt: skip
+    """File what a real run measured for the Monitor (plan 6 D1), under the run's key (its held records' run_id): when
+    it finished, its duration in seconds, its state and each step's duration and label. The run record keeps the
+    demo's shape {id, wf, name, ts, trig, dur, rows, state, note}, so the stats are a collection of their own."""
+    state.put(s, "workflow_run_stats", key, {"key": key, "wf": wid, "ts": ts, "dur": dur, "state": st,
+                                              "steps": steps or {}, "labels": labels or {}})  # fmt: skip
+    s.execute(
+        text(
+            "DELETE FROM state_item WHERE collection = 'workflow_run_stats' AND seq NOT IN "
+            "(SELECT seq FROM state_item WHERE collection = 'workflow_run_stats' ORDER BY seq DESC LIMIT :n)"
+        ),
+        {"n": STATS_KEPT},
+    )
+
+
+def p95(xs: list[float]) -> float | None:
+    """The 95th percentile by nearest rank (the smallest value at least 95 % of the values are not above)."""
+    v = sorted(xs)
+    return v[max(0, math.ceil(0.95 * len(v)) - 1)] if v else None
+
+
+def monitor_stats(s: Session, since: int) -> dict[str, dict]:
+    """Per workflow, its real runs that finished at or after `since` (ms): runs, ok (not failed), success share,
+    p95 and mean duration, the newest run's state, and per step the p95 duration and the records still held by rule
+    (failed_record, run_kind 'workflow', status 'held', under the runs' keys). Workflows without real runs are absent."""
+    state.get(s, "workflow_run_stats", "")  # seeds the (empty) collection on its first read
+    runs = s.execute(
+        text(
+            "SELECT data FROM state_item WHERE collection = 'workflow_run_stats' "
+            "AND (data->>'ts')::bigint >= :t ORDER BY (data->>'ts')::bigint, seq"
+        ),
+        {"t": since},
+    ).scalars()
+    by: dict[str, list[dict]] = {}
+    for r in runs:
+        by.setdefault(r["wf"], []).append(r)
+    held: dict[tuple[str, str], dict[str, int]] = {}  # (workflow, step) -> rule -> records
+    wf_of = {r["key"]: wid for wid, rs in by.items() for r in rs}
+    if wf_of:
+        for rid, step, rule, n in s.execute(
+            text(
+                "SELECT run_id, coalesce(step, ''), coalesce(rule, 'error'), count(*) FROM failed_record "
+                "WHERE run_kind = 'workflow' AND status = 'held' AND run_id = ANY(:k) GROUP BY 1, 2, 3 ORDER BY 4 DESC, 3"
+            ),
+            {"k": list(wf_of)},
+        ).all():
+            d = held.setdefault((wf_of[rid], step), {})
+            d[rule] = d.get(rule, 0) + n
+    out = {}
+    for wid, rs in by.items():
+        durs = [float(r["dur"]) for r in rs if r.get("dur") is not None]
+        ok = sum(1 for r in rs if r["state"] != "failed")
+        order: list[str] = []  # the newest run's steps first, then those only older runs had
+        for r in reversed(rs):
+            order += [k for k in r.get("steps") or {} if k not in order]
+        order += [st for (w, st) in held if w == wid and st not in order]
+        labels: dict[str, str] = {}
+        for r in rs:
+            labels |= r.get("labels") or {}
+        steps = []
+        for sid in order:
+            sd = [float(r["steps"][sid]) for r in rs if (r.get("steps") or {}).get(sid) is not None]
+            h = dict(sorted(held.get((wid, sid), {}).items(), key=lambda kv: (-kv[1], kv[0])))
+            steps.append({"id": sid, "label": labels.get(sid) or sid or "—", "p95": p95(sd), "held": h, "heldN": sum(h.values())})
+        out[wid] = {
+            "runs": len(rs), "ok": ok, "success": js_round(ok / len(rs) * 100), "p95": p95(durs),
+            "avg": round(sum(durs) / len(durs), 2) if durs else None, "lastState": rs[-1]["state"], "steps": steps,
+        }  # fmt: skip
+    return out
 
 
 def _shown(v: Any) -> str:
