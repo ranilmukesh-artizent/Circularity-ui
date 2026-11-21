@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const m = vi.hoisted(() => ({ invoke: vi.fn(async () => ({ ok: true, output: {}, key: null, action: 'x' })) }));
 vi.mock('./actions', () => ({ invoke: m.invoke }));
 
-import { connectFromCatalog, disconnectSource, pauseSource, resumeSource, testConnection, testDraft, type Draft } from './integration';
+import { connectFromCatalog, disconnectSource, pauseSource, resumeSource, suggestMappings, testConnection, testDraft, type Draft } from './integration';
 
 beforeEach(() => m.invoke.mockClear());
 const call = () => m.invoke.mock.calls[0] as unknown as [string, Record<string, unknown>];
@@ -32,6 +32,11 @@ describe('source lifecycle actions', () => {
     };
     await testDraft('erp', d, { read: ['SELECT * FROM a', ' '], write: [] });
     expect(call()).toEqual(['source.test', { source_id: 'erp', draft: { method: 'jdbc', url: 'jdbc:oracledb://db1:1521/ORCL', auth: 'Basic', read: 1, write: 0 } }]);
+  });
+
+  it('Suggest mappings is the server read mapping.catalogSuggest for the catalogue system', async () => {
+    await suggestMappings('postgres');
+    expect(call()).toEqual(['mapping.catalogSuggest', { catalog_id: 'postgres' }]);
   });
 
   it('connecting from the catalogue is source.update in catalog mode with the accepted rows', async () => {

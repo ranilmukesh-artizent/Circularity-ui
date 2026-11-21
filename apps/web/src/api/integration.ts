@@ -495,8 +495,17 @@ export const testDraft = (id: string, d: Draft, ops: { read: string[]; write: st
     draft: { method: d.method, url: buildUrl(d), auth: d.auth, read: ops.read.filter((x) => x.trim()).length, write: ops.write.filter((x) => x.trim()).length },
   });
 
+/** A suggested row: source field, sample, canonical model.field, normalised, confidence %, resource. */
+export type SuggestedMap = [string, string, string, string, number, string?];
+/**
+ * Suggest mappings for a catalogue system (mapping.catalogSuggest, a read): the rows its template maps, each with a sample read
+ * from the system now; only fields its records really have, none for a system with no circularity data.
+ */
+export const suggestMappings = (cat: string) =>
+  invoke<{ catalog_id: string; rows: SuggestedMap[]; error: string | null }>('mapping.catalogSuggest', { catalog_id: cat });
+
 /** Finish connecting a catalogue system: the source, its accepted mappings (source.update, mode "catalog"). */
-export const connectFromCatalog = (cat: string, auth: string, scopes: string[], maps: [string, string, string, string, number][]) =>
+export const connectFromCatalog = (cat: string, auth: string, scopes: string[], maps: SuggestedMap[]) =>
   invoke<{ mode: 'catalog'; source_id: string; name: string; vendor: string; records: number | null; queued: boolean; csv: boolean }>('source.update', {
     mode: 'catalog', id: '', d: { catalog: cat, auth, scopes }, maps, ops: {},
   });

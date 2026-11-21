@@ -7,8 +7,10 @@ to an older one). A version holds `MapRow`s:
 
 - `src` is a dotted path into the source record's payload ("audit_data.status", "items.0.label"); a key that itself
   contains dots or dashes ("EKPO-NETPR") is found as it is first.
-- `rule`: copy | upper | lower | number | int | date | utc | units:<from>><to> | fx:<currency> | code:<table>, and
-  the internal rule `code`: "keep what the adapter's own code maps for this canonical field".
+- `rule`: copy | upper | lower | number | int | date | utc | units:<from>><to> | fx:<currency> | code:<table> |
+  prefix:<ns> (value → "<ns>:<value>", for a key of its own), and the internal rule `code`: "keep what the adapter's
+  own code maps for this canonical field".
+- `resource` (optional, the tab's 6th column): the row applies only to records of that resource.
 
 How a sync uses it (sync.run_sync, at the adapter.map call):
 - **No version** (every demo source at the start): the adapter's code mapping runs unchanged.
@@ -127,6 +129,8 @@ def parse_rule(t: str | None) -> str | None:
         return None
     if m := re.fullmatch(r"code:\s*([a-z0-9_]+)", low):
         return f"code:{m.group(1)}" if m.group(1) in CODE_TABLES else None
+    if m := re.fullmatch(r"prefix:\s*([a-z0-9_]+)", low):  # a key of its own: "postgres:MTR-2041" (catalogue systems)
+        return f"prefix:{m.group(1)}"
     return None
 
 
@@ -142,6 +146,8 @@ def rule_label(rule: str) -> str:
         return f"Currency at {FX_NOTE[arg]}" if arg in FX_NOTE else f"Currency {arg} to USD"
     if kind == "code":
         return f"Code table {arg}"
+    if kind == "prefix":
+        return f"Prefixed with {arg}:"
     return rule
 
 
@@ -193,6 +199,8 @@ def apply_rule(rule: str, v: Any) -> Any:
         return to_usd(_number(v), arg)
     if kind == "code":
         return CODE_TABLES[arg](v)
+    if kind == "prefix":
+        return f"{arg}:{v}"
     raise ValueError(f"unknown rule {rule}")
 
 
@@ -321,6 +329,7 @@ def rows_from_maps(source_id: str, maps: list[list[str]], strict: bool = True) -
     for i, m in enumerate(maps):
         m = [str(x).strip() for x in m] + [""] * (5 - len(m))
         src, tgt, txt = m[0], m[2], m[4]
+        res = m[5] if len(m) > 5 else ""  # optional 6th column: only records of this resource (catalogue systems)
         t = _target(tgt)
         bad = None
         if not src or t is None:
@@ -336,7 +345,8 @@ def rows_from_maps(source_id: str, maps: list[list[str]], strict: bool = True) -
                 raise ValueError(bad)
             continue
         assert t is not None  # noqa: S101 - checked above
-        out.append({"src": src, "model": t[0], "field": t[1], "rule": rule, "show": m[:5]})
+        row = {"src": src, "model": t[0], "field": t[1], "rule": rule, "show": m[:5] + ([res] if res else [])}
+        out.append(row | ({"resource": res} if res else {}))
     return out
 
 

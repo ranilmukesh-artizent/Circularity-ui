@@ -2,9 +2,11 @@
    The test is the server's probe (source.test); finishing creates the source (source.update, mode "catalog"); the
    re-authentication renews the credential (credentials.rotate) or, for a stale feed, refreshes the token (source.reconnect).
    Every catalogue system is synthetic: source-sim mocks it. Connecting stores its connection and credential (encrypted)
-   and queues a first sync that really reads it; its records then show in Sync & History (plan 6 A3). */
+   and queues a first sync that really reads it; its records then show in Sync & History (plan 6 A3). Suggest mappings
+   asks the server (mapping.catalogSuggest): the rows the system's records really support, none for a system with no
+   circularity data (its records are kept raw). */
 import { useEffect, useRef, useState } from 'react';
-import { catalog, connectFromCatalog, frAuthOptions, frSample, nowLabel, reauthenticated, source, typeOf } from '../../api/integration';
+import { catalog, connectFromCatalog, frAuthOptions, nowLabel, reauthenticated, source, suggestMappings, typeOf, type SuggestedMap } from '../../api/integration';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Overlay';
 import { toast } from '../../ui/toast';
@@ -39,7 +41,9 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   const [scopes, setScopes] = useState<string[]>(() => (reauth ? (s?.read ?? []).slice() : ['read']));
   const [tested, setTested] = useState(false);
   const [passed, setPassed] = useState(false);
-  const [maps, setMaps] = useState<[string, string, string, string, number][] | null>(null);
+  const [maps, setMaps] = useState<SuggestedMap[] | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
+  const [sampleErr, setSampleErr] = useState<string | null>(null);
   const [acc, setAcc] = useState<Record<number, boolean>>({});
   const [connected, setDone] = useState(false);
   const live = useRef(true);
@@ -73,6 +77,17 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   function test() {
     setTested(true);
     runTest(reauth ? { source_id: s!.id, reauth: true, auth: authLabel() } : { source_id: 'cat:' + c!.id, auth: authLabel() }, (ok) => live.current && setPassed(ok));
+  }
+  // the rows the system's records really support, from the server (mapping.catalogSuggest): none for a system with no circularity data
+  async function suggest() {
+    setSuggesting(true);
+    const r = await suggestMappings(c!.id);
+    if (!live.current) return;
+    setSuggesting(false);
+    if (refused(r)) return;
+    setMaps(r.output.rows);
+    setSampleErr(r.output.error);
+    setAcc({});
   }
   async function done() {
     if (!s) return;
@@ -177,13 +192,17 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
               <button className="btn sm" onClick={() => { const a = { ...acc }; rows.forEach((r, i) => { if (r[4] >= 85) a[i] = true; }); setAcc(a); }}>Accept all high</button>
               <span className="note">{nAcc} of {rows.length} accepted</span>
             </div>
+            {sampleErr && <p className="note">{sampleErr}</p>}
           </>
+        ) : maps ? (
+          <div className="callout">No field of {v} maps to a canonical model. Its records are kept as source records (Sync &amp; History, Source Tables) and add no canonical data.</div>
         ) : (
-          <button className="btn pri" onClick={() => { setMaps(frSample(c!.type)); setAcc({}); }}><Icon name="spark" /> Suggest mappings</button>
+          <button className="btn pri" disabled={suggesting} onClick={() => void suggest()}><Icon name="spark" /> Suggest mappings</button>
         )}
       </>
     );
-    foot = <><button className="btn" onClick={back}>Back</button><button className="btn pri" disabled={!Object.values(acc).some(Boolean)} onClick={next}>Continue</button></>;
+    const ready = maps !== null && (maps.length === 0 || Object.values(acc).some(Boolean));
+    foot = <><button className="btn" onClick={back}>Back</button><button className="btn pri" disabled={!ready} onClick={next}>Continue</button></>;
   } else {
     body = (
       <>

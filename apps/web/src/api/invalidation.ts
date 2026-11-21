@@ -81,7 +81,7 @@ const ACTION_EXACT: Record<string, Scope> = Object.fromEntries(
     'cases.list', 'case.get', 'case.evidence', 'case.routes', 'case.whatIf', 'case.trace', 'demand.find', 'pool.optimize',
     'analytics.query', 'analytics.models', 'audit.search', 'sources.health', 'sources.diagnose', 'workflow.validate',
     'inbox.get', 'receiving.plan', 'access.lookup', 'asset.compare', 'asset.summary', 'kpi.explain', 'conflict.suggest',
-    'event.explain', 'mapping.preview',
+    'event.explain', 'mapping.preview', 'mapping.catalogSuggest',
     // plan 6 C9: the canvas' autosave (the copy stays in memory; the server's copy is read only when a workflow opens
     // afresh) and the dry test run change nothing any page shows
     'workflow.draft.save', 'workflow.testRun',

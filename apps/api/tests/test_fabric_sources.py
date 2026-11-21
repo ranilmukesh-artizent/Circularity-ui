@@ -172,7 +172,8 @@ def test_create_a_connection_by_hand():
 def test_connect_from_the_catalogue():
     cat = listed("overview")
     c = next(x for x in cat["catalog"] if not x["connected"])
-    maps = [["a.b", "1", "asset.asset_id", "1", 97], ["c.d", "2", "asset.location", "Site 3", 60]]
+    # T8: the rows Suggest mappings offers (the template's, tests/test_catalog_mappings.py); others would not be saved
+    maps = call("mapping.catalogSuggest", {"catalog_id": c["id"]}, "developer")["output"]["rows"]
     body = {
         "mode": "catalog",
         "id": "",
@@ -193,9 +194,9 @@ def test_connect_from_the_catalogue():
     s = got["source"]
     assert s["auth"] == "API key" and s["mode"] == ("Controlled CSV import" if c["type"] == "store" else "API + events")
     assert s["audit"][0]["change"] == "Connected from the catalogue"
-    assert got["mappings"] == [
-        [*m[:4], "Accepted from the agent’s suggestion"] for m in [[str(y) for y in x] for x in body["maps"]]
-    ]
+    shown = [m for m in got["mappings"] if not m[2].endswith(".key")]  # the key rows connecting adds come first
+    assert [(m[0], m[2], m[5]) for m in shown] == [(m[0], m[2], m[5]) for m in maps]
+    assert all(m[4] == "prefix:" + c["id"] for m in got["mappings"] if m[2].endswith(".key"))
     assert s["owner"] == "Integration Engineering" and s["read"]
     assert s["url"].startswith(get_settings().source_sim_url.rstrip("/"))  # the URL its connector really calls
     assert call("source.update", body, "developer")["error"] == {
@@ -441,7 +442,7 @@ def test_demo_reset_removes_created_sources_and_restores_paused_ones():
         "mode": "catalog",
         "id": "",
         "d": {"catalog": c["id"], "auth": "key", "scopes": ["read"]},
-        "maps": [["a.b", "1", "asset.asset_id", "1", 97]],
+        "maps": call("mapping.catalogSuggest", {"catalog_id": c["id"]}, "developer")["output"]["rows"],
         "ops": {},
     }
     r = call("source.update", body, "developer")

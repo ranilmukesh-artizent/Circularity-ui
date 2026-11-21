@@ -21,7 +21,10 @@ mode "catalog" (d = {catalog, auth, scopes}, maps = the accepted rows): it creat
 **Sources without a Python adapter** (plan 6 A3). A source connected from the catalogue gets a connection from its
 template (di.connectors.catalog: source-sim's synthetic mock of that system) and a stored credential; one set up by
 hand is read from the endpoint entered, its read operations ("GET /path") being its resources. Both are read by the
-configured adapter (di.connectors.configured), and their first sync is queued: it really reads. The connection test
+configured adapter (di.connectors.configured), and their first sync is queued: it really reads. A catalogue system's
+first mapping version is its template's rows that the person accepted (the read mapping.catalogSuggest offers them
+with a sample read from the system; the demo's mapping.suggest, a draft on a source, is another action), on keys of
+their own; a system with no rows keeps its records raw. The connection test
 probes every step for real (di.connectors.probe, plan 6 A5).
 
 **Not ported.** The demo's Source Map activity lines (smLogAdd; the map's activity is the real sync runs), the draft
@@ -423,6 +426,29 @@ def _create(ctx: CallContext, d: dict, base: dict, maps: list, csv: bool, cm: di
     return {"mode": "new", "source_id": sid, "name": base["name"], "vendor": base["vendor"], "csv": csv}
 
 
+def _catalog_maps(sid: str, sent: list) -> list[list[str]]:
+    """The rows a catalogue connection saves: the template's rows (di.connectors.catalog) the person accepted, matched
+    on source field and canonical field (and resource, the 6th column, when sent), with the template's rule; then the
+    key rows they need. Rows that are not the template's (the demo's FR_SAMPLE) are not saved: their fields are not in
+    the system's records. A pass-through row keeps the demo's text."""
+    offered = catalog.maps(sid)
+    seen: dict[int, tuple[str, str]] = {}
+    for m in sent:
+        if not isinstance(m, list) or len(m) < 3:
+            continue
+        m = [str(x).strip() for x in m] + [""] * (6 - len(m))
+        for n, r in enumerate(offered):
+            if r["src"] == m[0] and f"{r['model']}.{r['field']}" == m[2] and m[5] in ("", r["resource"]):
+                seen.setdefault(n, (m[1], m[3]))
+    chosen = [offered[n] for n in sorted(seen)]
+    out = [[r["src"], "", f"{r['model']}.key", "", r["rule"], r["resource"]] for r in catalog.key_rows(sid, chosen)]
+    for n in sorted(seen):
+        r = offered[n]
+        out.append([r["src"], seen[n][0], f"{r['model']}.{r['field']}", seen[n][1],
+                    ACCEPTED if r["rule"] == "copy" else r["rule"], r["resource"]])  # fmt: skip
+    return out
+
+
 def _connect_catalog(i: dict[str, Any], ctx: CallContext) -> dict:
     """frCxFinish: the new connection from the catalogue, live (a file drop is a manual import), with its accepted
     mappings; the catalogue entry shows connected from now on."""
@@ -438,8 +464,8 @@ def _connect_catalog(i: dict[str, Any], ctx: CallContext) -> dict:
     if auth is None:
         raise ActionError("validation_error", "Choose how Circularity signs in.")
     scopes = [str(x) for x in d.get("scopes") or []]
-    maps = [[str(y) for y in m[:4]] + [ACCEPTED] for m in i["maps"] if len(m) >= 4]
-    if not maps:
+    maps = _catalog_maps(sid, i["maps"])
+    if catalog.maps(sid) and not maps:
         raise ActionError("validation_error", "Accept at least one mapping.")
     t = c["type"]
     m = "jdbc" if t == "db" else "file" if t == "store" else "delta" if t == "dw" else "api"
@@ -475,6 +501,74 @@ def _connect_catalog(i: dict[str, Any], ctx: CallContext) -> dict:
     _event(ctx, item, "source.connected", "acknowledged", "Connected from the catalogue by " + _by(ctx))
     return {"mode": "catalog", "source_id": sid, "name": item["name"], "vendor": c["vendor"], "records": None,
             "queued": job is not None, "csv": m == "file"}  # fmt: skip
+
+
+_declare(
+    "mapping.catalogSuggest", "Suggest field mappings", "suggest field mappings",
+    "The field mappings a catalogue system's records support, each with a sample value read from the system. "
+    "Changes nothing.", "read", {"catalog_id": {"req": True, "t": "string"}}, _MGR,
+)  # fmt: skip
+
+
+def _cell(v: Any) -> str:
+    return "" if v is None else str(v)[:80]
+
+
+@implement("mapping.catalogSuggest")
+def mapping_suggest(i: dict[str, Any], ctx: CallContext):
+    """Suggest mappings in the Connect dialog: the template's rows (di.connectors.catalog), each with the value of its
+    source field in the first record of its resource, read from the system now (source-sim's synthetic mock, with its
+    demo credential), and the value the rule makes of it. A row whose field that record does not have is left out; no
+    row is invented for fields the template does not map. Rows: [source field, sample, model.field, normalised,
+    confidence %, resource]; template rows are High (≥ 85 %). The key rows are not offered: connecting adds them."""
+    import httpx
+
+    from di.connectors.configured import ConfiguredAdapter
+    from di.connectors.http import SourceClient, SourceError
+
+    cid = str(i.get("catalog_id") or "")
+    c, tpl = CATALOG.get(cid), catalog.template(cid)
+    if c is None or tpl is None:
+        raise ActionError("not_found", f"No catalogue system {cid}.")
+    offered = catalog.maps(cid)
+    out: dict[str, Any] = {"catalog_id": cid, "rows": [], "error": None}
+    if not offered:
+        return out
+    conn = connection.Connection(
+        cid, connection.sim_url(tpl["base_path"]), "rest", tpl["auth_kind"], tpl["auth_params"], tpl["paging"],
+        tpl["resources"],
+    )  # fmt: skip
+    adapter = ConfiguredAdapter(conn)
+    first: dict[str, Any] = {}
+    client = SourceClient(cid, conn.base_url, adapter.auth(conn, tpl["demo_secret"]), ctx.session, None, timeout=10)
+    try:
+        for res in adapter.resources():
+            if any(r["resource"] == res.name for r in offered):
+                records = res.read(client, None)
+                try:
+                    first[res.name] = next(iter(records), None)
+                finally:
+                    getattr(records, "close", lambda: None)()
+    except (SourceError, httpx.HTTPError) as e:
+        out["error"] = f"Could not read a sample from {c['vendor']}: {e}"
+    finally:
+        client.close()
+    for r in offered:
+        rec = first.get(r["resource"])
+        sample = norm = None
+        if rec is not None:
+            sample = mapping.lookup(rec.payload, r["src"])
+            if sample is mapping._MISSING:
+                continue  # the system's records do not have this field
+            try:
+                norm = mapping.apply_rule(r["rule"], sample)
+            except (ValueError, TypeError):
+                norm = None
+        elif r["resource"] in first:  # the resource is empty: nothing shows the field exists
+            continue
+        conf = 96 if r["rule"] == "copy" else 91
+        out["rows"].append([r["src"], _cell(sample), f"{r['model']}.{r['field']}", _cell(norm), conf, r["resource"]])
+    return out
 
 
 # ---------------------------------------------------------------- delete, reconnect, rotate

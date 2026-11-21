@@ -6,8 +6,9 @@
 - a source set up by hand that points at source-sim's sandbox syncs its 25 records
 - one that points at an unknown host fails Test connection at DNS
 
-The mappings used here name source fields the records do not have, so every record fails with "missing field ..."
-(counted, not fatal) and nothing reaches the canonical store. The module removes every source it made.
+The hand-made sources' mappings name source fields the records do not have, so every record fails with "missing
+field ..." (counted, not fatal) and nothing reaches the canonical store. Workday's catalogue template maps nothing
+(tests/test_catalog_mappings.py), so its records are kept raw and none fails. The module removes every source it made.
 """
 
 import httpx
@@ -90,7 +91,8 @@ def test_connect_workday_from_the_catalogue_reads_its_records():
     seeded = mock_count("workday")
     out = run_sync("workday", "initial", full=True)
     assert out["records_read"] == seeded > 30, out
-    assert out["status"] == "partial" and out["records_failed"] == seeded and "missing field" in out["error"], out
+    # Workday's template maps nothing, and rows that are not the template's are not saved (T8): kept raw, none failed
+    assert out["status"] == "ok" and out["records_failed"] == 0, out
     with engine.connect() as c:
         n = c.execute(text("SELECT count(*) FROM raw_record WHERE source_id = 'workday'")).scalar_one()
         assert n == seeded
