@@ -6,6 +6,46 @@ This repository is the proof of concept that turns the earlier single-file demo 
 
 > All data is synthetic (the demo company *Northfield Industrial Leasing*, three customer tenants, eight sites, 128 returned assets). No real system is connected: the vendor systems are mocks that copy each vendor's API style. Nobody should state or imply that a named vendor product is connected.
 
+### Who can do what
+
+Sign in with the ID in the first row and any password. The server enforces every cell (role policy in
+`fixtures/golden/policy.json`, `apps/api/di/policy.py`); the app only hides what a role cannot use.
+
+| | Admin | Approver | Planner | Engineer | Finance | Developer | Executive | Warehouse Mgr |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| **Sign-in ID** | `admin` | `approver` | `planner.a` / `.b` / `.c` | `engineer` | `finance` | `developer` | `exec` | `warehouse1` / `2` |
+| **Scope** | all tenants | all tenants | own tenant only | all tenants | all tenants | all tenants | all tenants | own warehouse only |
+| **Decisions and cases** | | | | | | | | |
+| Open the Decision Workbench (cases, assets) | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ (read) | ✓ |
+| Request evidence or an inspection | ✓ | ✓ | ✓ | ✓ | – | – | – | ✓ |
+| Record an inspection or test result | ✓ | – | – | ✓ | – | – | – | – |
+| Save and run what-if scenarios | ✓ | ✓ | ✓ | – | – | – | – | – |
+| Re-evaluate a case | ✓ | ✓ | ✓ | – | – | – | – | – |
+| Submit a decision for approval | ✓ | – | ✓ | – | – | – | – | – |
+| Approve, override or decline a decision | ✓ | ✓ | – | – | – | – | – | – |
+| Confirm the outcome (actual vs predicted) | ✓ | – | – | – | ✓ | – | – | – |
+| Advance or replay the simulated execution | ✓ | ✓ | ✓ | ✓ | – | – | – | – |
+| **Connection Fabric** ([guide](docs/guides/connection-fabric.md)) | | | | | | | | |
+| See it | all tabs | Event Streams, Conflict Queue | – | Overview, Source Map, Tables, Models, Monitor | Overview, Source Map, Monitor | all tabs | – | – |
+| Connect, configure, sync, pause, disconnect, delete sources; edit tables; import; resolve conflicts | ✓ | – | – | – | – | ✓ | – | – |
+| Build, publish and run workflows (Workflow Studio) | ✓ | – | – | – | – | ✓ | – | – |
+| Comment on a source | ✓ | – | – | – | ✓ | ✓ | – | – |
+| **Agents and access** | | | | | | | | |
+| MCP & Tools pages | ✓ | ✓ | – | ✓ | – | ✓ | – | – |
+| Run agent tools in the playground | ✓ | – | – | – | – | ✓ | – | – |
+| Propose an MCP server | ✓ | – | – | – | – | ✓ | – | – |
+| Approve MCP proposals and tenant-access requests | ✓ | ✓ | – | – | – | – | – | – |
+| Request access to another tenant | ✓ | – | ✓ | – | – | – | – | – |
+| Access & Governance (accounts, identity, delegations, autonomy, limits) | ✓ | – | – | – | – | – | – | – |
+| **Everyone** | | | | | | | | |
+| Home, Command Center, Tasks, Alerts, Audit, Data Checks, Reports, Settings | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Analytics | ✓ | ✓ | ✓ | engineering, sustainability | ✓ | – | ✓ | – |
+| Notify an owner | ✓ | – | – | – | – | – | ✓ | – |
+| Acknowledge notifications | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ |
+
+Agents (Ask Circularity, the MCP server, the workflow builder) act as the signed-in person and only read or draft;
+they never approve, override, decline or change access.
+
 ---
 
 ## Start it
@@ -238,6 +278,8 @@ docker-compose.yml
 docker-compose.prod.yml  opt-in: the runtime images (no dev tools, non-root, the web app built and served by nginx;
                          the web image is apps/web/Dockerfile.runtime, built from the repo root)
 docs/reference/        source documents: the agent-first product spec, the user journey deck, the IFS process fit
+docs/guides/           user guides: the Connection Fabric (connectors, Workflow Studio, AI builder) and a
+                       step-by-step workflow tutorial for demos
 docs/plan-fullstack-poc.md   decisions and architecture
 docs/backend-steps.md        the backend build, step by step, with the status of each step
 docs/agents/           working notes for agents: scripts, testing, plans, decisions
