@@ -40,7 +40,7 @@ from pydantic import BaseModel, Field
 from di import policy
 from di.actions.pipeline import Actor, CallContext
 from di.ask import memory
-from di.ask.fallback import ask_rule
+from di.ask.fallback import ask_rule, rules_first
 from di.ask.model import AskModel, AskRequest, Done, ModelUnavailable, NoModel, TextDelta, ToolUse, get_model
 from di.ask.prompt import system_prompt
 from di.ask.tools import Toolbox, log_call
@@ -65,6 +65,7 @@ WHY = {
     "unavailable": "the language model is unavailable",
     "model_error": "the language model could not answer",
     "error": "the language model answer failed",
+    "rules_first": "workflow drafts come from the workflow builder, which uses the real palette and checks every step",
 }
 
 
@@ -159,6 +160,8 @@ def answer_stream(body: AskBody, p: Principal, model: AskModel) -> Iterator[str]
         box = Toolbox(session=s, account=account, pctx=pctx)
         text, reason, streamed = None, None, False
         try:
+            if rules_first(q, ctx, page):
+                raise ModelUnavailable("rules_first", "answered by the rules")
             req = AskRequest(question=q, system=system_prompt(account, pctx, page), conversation=memory.messages(turns))
             for ev in model.answer(req, box):
                 if isinstance(ev, TextDelta):

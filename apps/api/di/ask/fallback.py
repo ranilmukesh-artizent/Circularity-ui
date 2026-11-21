@@ -18,10 +18,10 @@ The runners ported (the starters' and the data checks' intents whose actions hav
     exceptions.top      kpi.explain                 access.who       access.lookup
     run.explain         case.trace                  expected.plan    receiving.plan
     wms.stuck           cases.list                  asset.compare    asset.compare
-    analytics.accuracy  analytics.models
+    analytics.accuracy  analytics.models            workflow.draft   workflow.draft (skipped; the draft is computed)
 Not ported: the intents whose reads have no server handler yet (analytics.query, audit.search, sources.health,
 sources.diagnose, conflict.suggest, event.explain, asset.summary) and the drafting intents that keep browser state
-(mappings, table links, workflow drafts and edits, file cleaning, watches, the MCP proposal review, the pool
+(mappings, table links, workflow edits, file cleaning, watches, the MCP proposal review, the pool
 explanation, notifications). They are still recognised; the answer says the server cannot do that yet, as the demo
 does for an intent without a runner.
 
@@ -1076,6 +1076,30 @@ def r_analytics_accuracy(R: Run, p: dict) -> dict:  # noqa: ARG001 - every runne
     return {"text": t, "cards": [{"type": "cxacc", "data": o}]}
 
 
+def need_source(p: dict) -> dict:
+    """The demo's afNeedSource: ask which source, offering the first four live ones."""
+    opts = [{"label": s["name"], "ask": f"{p['raw']} {s['name']}"} for s in SOURCES.values() if s["status"] == "live"][:4]
+    card = {"type": "clarify", "data": {"q": "Which source?", "options": opts}}
+    return {"text": "Which source?", "result": "clarify", "cards": [card]}
+
+
+def r_workflow_draft(R: Run, p: dict) -> dict:
+    """AF_INTENT_RUN['workflow.draft']: the draft is a draft-risk action, so Ask records the call as skipped (it never
+    writes) and computes the same draft, as the demo's eval mode does (di.actions.workflow_builder.af_wf_draft)."""
+    from di.actions.workflow_builder import af_wf_draft, draft_text
+
+    sid = p.get("source")
+    if not sid:
+        return need_source(p)
+    r = R.call("workflow.draft", {"source_id": sid, "desc": p["raw"]})
+    if not r["ok"]:
+        return fail1(R, r)
+    d = af_wf_draft(sid, p["raw"])
+    if d is None:
+        return fail1(R, err("not_found", "No source."))
+    return {"text": draft_text(sid, d), "cards": [{"type": "wfdiff", "data": {"title": "Workflow draft", **d}}]}
+
+
 RUNNERS: dict[str, Callable[[Run, dict], dict]] = {
     "briefing": r_briefing,
     "case.explain": r_case_explain,
@@ -1102,11 +1126,25 @@ RUNNERS: dict[str, Callable[[Run, dict], dict]] = {
     "wms.stuck": r_wms_stuck,
     "asset.compare": r_asset_compare,
     "analytics.accuracy": r_analytics_accuracy,
+    "workflow.draft": r_workflow_draft,
 }
 assert set(RUNNERS) <= set(INTENT), "every runner belongs to an intent in the catalog"  # noqa: S101 - import-time check of the catalog
 
 
 # ---------------------------------------------------------------- one request (afAsk)
+# Intents answered by these rules even when a language model is configured: drafting a workflow needs the palette, the
+# source reference and the checks, which only the rule runner has; a model would answer from its lookups and say it
+# cannot see the request.
+RULE_FIRST = {"workflow.draft"}
+
+
+def rules_first(text: str, ctx: CallContext, ui: dict) -> bool:
+    """Does the question's best intent belong to RULE_FIRST (so Ask skips the model)?"""
+    obj = ui.get("object")
+    hits = match(parse(text, obj, {c["id"] for c in store.all_cases(ctx.session)}), obj)
+    return bool(hits) and hits[0].intent.id in RULE_FIRST
+
+
 def ask_rule(text: str, ctx: CallContext, ui: dict, inject: Callable[[str, dict], dict] | None = None) -> dict:
     """The demo's afAsk without a model: match, run reads through the pipeline, compose. `ui` is the page context:
     {page, role, object: {kind, id} | None}. `inject` (tests, data checks) may rewrite what a read returns."""

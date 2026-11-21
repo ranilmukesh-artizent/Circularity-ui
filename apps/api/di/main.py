@@ -9,6 +9,7 @@ import di.actions.decisions  # registers action handlers
 import di.actions.engine  # registers action handlers
 import di.actions.execution  # registers action handlers
 import di.actions.integration  # registers action handlers
+import di.actions.workflow_builder  # registers action handlers (workflow.draft, workflow.plan)
 import di.actions.workflows  # registers action handlers
 import di.reads.cases  # registers action handlers
 import di.reads.workspace  # noqa: F401  (registers action handlers)

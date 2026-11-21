@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { invoke } from '../api/actions';
 import { ask, type AskCard, type AskEvent, type AskFinal, type AskNext, type AskTool } from '../api/ask';
 import { ref } from '../api/client';
-import { currentAccount } from '../api/session';
+import { can, currentAccount } from '../api/session';
 import type { RouteRef } from '../api/types';
 import { onOpenAsk } from '../ui/askBus';
 import { Icon } from '../ui/Icon';
@@ -246,7 +246,7 @@ function AnswerTurn({ t, onNext }: { t: Turn; onNext: (n: AskNext) => void }) {
       <div className="afc">
         {t.text ? <div style={{ whiteSpace: 'pre-wrap' }}>{t.text}</div> : t.busy ? <span className="afdots note">Thinking…</span> : null}
         {t.error && <p className="note">{t.error}</p>}
-        {f?.cards.map((c, i) => <Card key={i} c={c} onNext={onNext} />)}
+        {f?.cards.map((c, i) => <Card key={i} c={c} q={t.q} onNext={onNext} />)}
         {f && (f.case_ids.length > 0 || f.sources.length > 0) && (
           <p className="note" style={{ marginTop: 8 }}>
             {f.case_ids.length > 0 && (
@@ -281,8 +281,35 @@ function AnswerTurn({ t, onNext }: { t: Turn; onNext: (n: AskNext) => void }) {
 }
 
 /** The fallback's cards: the common ones drawn, the rest as a compact summary. */
-function Card({ c, onNext }: { c: AskCard; onNext: (n: AskNext) => void }) {
+function Card({ c, q, onNext }: { c: AskCard; q: string; onNext: (n: AskNext) => void }) {
   const d = c.data as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (c.type === 'wfdiff' && Array.isArray(d.steps)) {
+    // the demo's workflow draft card; the draft is created only on the person's confirmed click, or refined in the
+    // Workflow Studio builder with the same description
+    const steps = d.steps as { id: string; label: string; kind: string; fixed: boolean }[];
+    const errors: string[] = d.errors ?? [], warnings: string[] = d.warnings ?? [];
+    return (
+      <div style={{ marginTop: 8 }}>
+        <b>{String(d.title ?? 'Workflow draft')} · {String(d.name ?? '')}</b>
+        <p className="note" style={{ margin: '2px 0 6px' }}>{steps.filter((s) => !s.fixed).length} new steps shown as ghosts · checks: {errors.length} errors, {warnings.length} warnings</p>
+        <ol className="afplan afwf">
+          {steps.map((s) => (
+            <li key={s.id} className={s.fixed ? 'fx' : 'ghost'}><b>{s.label}</b>
+              <span className="note">{s.fixed ? 'Fixed step (Circularity owns it; never moved or removed)' : 'New step · ' + s.kind}</span></li>
+          ))}
+        </ol>
+        {errors.length ? <p className="callout bad"><b>Checks:</b> {errors.join(' ')}</p> : <p className="note">Checks: no errors. The draft is never published by the agent.</p>}
+        {can('manageWorkflows') && (
+          <div className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
+            <button className="btn sm pri" onClick={() => onNext({ label: 'Accept all as a new draft', action: 'workflow.create',
+              input: { type: 'ingest', src: d.src, name: d.name, graph: d.graph, desc: 'AI-suggested draft. ' } })}>Accept all as a new draft</button>
+            <button className="btn sm" onClick={() => onNext({ label: 'Refine in Workflow Studio', go: 'integration/studio?build=' + encodeURIComponent(q) })}>
+              <Icon name="spark" /> Refine in Workflow Studio</button>
+          </div>
+        )}
+      </div>
+    );
+  }
   if (c.type === 'cantdo') return <p className="note" role="note">{String(d.what ?? '')}</p>;
   if (c.type === 'clarify')
     return (

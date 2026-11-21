@@ -128,6 +128,16 @@ def use(model) -> None:
 
 
 # ---------------------------------------------------------------- the model path, with a fake model
+def test_workflow_drafts_take_the_rules_even_with_a_model():
+    fake = Fake(lambda seen: [], lambda seen: "I can't see any record about that.")
+    use(fake)
+    _, final = ask("developer", "Build an ingest for Dealer network with currency conversion", context={"page": "integration"})
+    assert fake.requests == []  # the model was not asked
+    assert final["provider"] == "fallback" and final["fallback_reason"] == "rules_first"
+    assert final["intent"] == "workflow.draft" and final["cards"][0]["type"] == "wfdiff"
+    assert "workflow builder" in final["notice"]
+
+
 def test_grounded_answer_from_tool_results():
     def say(seen):
         case = seen[0][1]["data"]
@@ -402,9 +412,9 @@ def test_fallback_matches_the_demo(a):
 def test_fallback_covers_every_starter_intent_the_server_can_read():
     starters = [a for a in G["answers"] if a["kind"] == "starter"]
     ported = [a for a in starters if a["run"]["intent"] in RUNNERS or a["run"]["intent"] is None]
-    assert len(starters) == 24 and len(ported) == 18
+    assert len(starters) == 24 and len(ported) == 19
     left = sorted({a["run"]["intent"] for a in starters} - set(RUNNERS) - {None})
-    assert left == ["agents.today", "analytics.why", "mapping.suggest", "sources.stale", "workflow.diagnose", "workflow.draft"]
+    assert left == ["agents.today", "analytics.why", "mapping.suggest", "sources.stale", "workflow.diagnose"]
 
 
 @pytest.mark.parametrize("sf", G["safety"], ids=[x["name"][:50] for x in G["safety"]])

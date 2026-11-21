@@ -1,5 +1,5 @@
 /** The workflow list (frWfList): tiles, filters, the table with Open / Investigate and ⋯, bulk actions, and the right column. */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fmtNumber } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
@@ -20,6 +20,7 @@ import { useTick } from '../../ui/useTick';
 import { WorkflowMenu } from './WorkflowMenus';
 import { SourceMark, WorkflowStatus } from './WorkflowMarks';
 import { DeleteModal, NewWorkflowModal } from './WorkflowModals';
+import { WorkflowBuilder } from './WorkflowBuilder';
 import { bulk, duplicate, exportOne, runNow, studioHref, toggle } from './workflowActions';
 
 interface Filters { q: string; type: string; sys: string; st: string; sort: 'last' | 'name' | 'ok' | 'status'; pg: number }
@@ -49,7 +50,14 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
   const setF = (p: Partial<Filters>) => setF0((o) => (kept.current = { ...o, ...p }));
   const [sel, setSel] = useState<Set<string>>(new Set());
   // ?new=1 (Home's "New workflow" quick action, the demo's wfNew) opens the New workflow dialog at once
-  const [modal, setModal] = useState<{ k: 'new' } | { k: 'del'; id: string } | null>(() => (mgr && query.get('new') === '1' ? { k: 'new' } : null));
+  // ?build=<description> (Ask's "Refine in Workflow Studio") opens Build with AI with that description
+  const [modal, setModal] = useState<{ k: 'new' } | { k: 'del'; id: string } | { k: 'ai'; prompt: string } | null>(() =>
+    mgr && query.get('build') !== null ? { k: 'ai', prompt: query.get('build') ?? '' } : mgr && query.get('new') === '1' ? { k: 'new' } : null);
+  const build = query.get('build');
+  useEffect(() => {
+    // Ask can hand over a description while the list is already open
+    if (mgr && build !== null) setModal((m) => (m?.k === 'ai' && m.prompt === build ? m : { k: 'ai', prompt: build }));
+  }, [build, mgr]);
 
   const all = workflows();
   sources(); // the system column and filter read the sources: load them with the list, not row by row
@@ -99,6 +107,7 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
             {[['last', 'Last run (recent)'], ['name', 'Name (A–Z)'], ['ok', '24 h success (lowest)'], ['status', 'Status (failing first)']].map(([k, t]) => <option key={k} value={k}>{t}</option>)}
           </select>
           <span className="grow" />
+          {mgr && <button className="btn" onClick={() => setModal({ k: 'ai', prompt: '' })}><Icon name="spark" /> Build with AI</button>}
           {mgr && <button className="btn pri" onClick={() => setModal({ k: 'new' })}><Icon name="plus" /> New workflow</button>}
         </div>
         <div className="frbulk" id="frWfBulk" hidden={!sel.size}>
@@ -136,6 +145,7 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
       </div>
       <aside className="frwfs" id="frWfSide"><Side c={c} total={all.length} onInvestigate={(id) => nav(studioHref(id) + '?run=last')} /></aside>
       {modal?.k === 'new' && <NewWorkflowModal onClose={() => setModal(null)} onCreated={(id) => { setModal(null); open(id); }} />}
+      {modal?.k === 'ai' && <WorkflowBuilder key={modal.prompt} initialPrompt={modal.prompt} onClose={() => { setModal(null); if (build !== null) nav(studioHref(), { replace: true }); }} onCreated={(id) => { setModal(null); open(id); }} />}
       {modal?.k === 'del' && <DeleteModal id={modal.id} onClose={() => setModal(null)} onDeleted={() => setModal(null)} />}
     </div>
   );
