@@ -14,7 +14,9 @@ to the workflow engine (di.workflow.engine.run_graph) with a Feed on its client:
 the source (di.workflow.binding), else the default ingest graph, whose steps pass every record on unchanged, so the
 canonical data and provenance are exactly what the adapter (and the saved field mapping) produce
 (tests/test_workflow_engine.py, test_engine_parity_canonical). Reading, raw records, cursors, mapping, the canonical
-writes and the held records are the engine's.
+writes and the held records are the engine's. A bound workflow handles the resources its connector reads; the
+source's other resources are read through the default graph narrowed to them (binding.rest_graph), in the same
+sync_run, whose counts are both parts' (tests/test_sync_binding.py).
 """
 
 import functools
@@ -349,27 +351,37 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
         remap = mapping.mapper(s, source_id, source_id in ADAPTERS)
         # plan 6 C5: the sync is the run of the source's ingest workflow (the bound published one, else the default
         # graph, whose steps pass every record on: the canonical data is what the adapter maps, as before)
-        feed = Feed(source_id, adapter, client, run_id, full, conf, remap)
         wf, graph = binding.bound(s, source_id)
+        parts = [(wf, graph, Feed(source_id, adapter, client, run_id, full, conf, remap))]
+        # the resources a bound workflow does not read sync through the default graph, in this same run
+        if wf.get("id") and (rest := binding.unread(graph, source_id, [r.name for r in adapter.resources()])):
+            rest_feed = Feed(source_id, adapter, client, run_id, full, conf, remap)
+            parts.append((binding.default_wf(source_id), binding.rest_graph(source_id, rest), rest_feed))
         status, error, new_status = "ok", None, "live"
+        held = 0
         try:
             connection.check_credential(s, source_id)  # an expired stored credential is not used (plan 6 A5)
-            res = run_graph(s, wf, graph, trigger=trigger, feeds={source_id: feed}, run_id=run_id, run_kind="sync", full=full)
-            if res.status == "failed":
-                status, error = "failed", (res.error or "the sync failed")[:500]
-                if res.error_kind is not None:  # the system did not answer, or refused the credential
-                    new_status = "auth_expired" if res.error_kind == "auth" else "failing"
+            for w, g, feed in parts:
+                res = run_graph(s, w, g, trigger=trigger, feeds={source_id: feed}, run_id=run_id, run_kind="sync", full=full)
+                # records a step of the workflow held (validation ...) count as failed, beside those not stored
+                held += sum(c["rej"] for n, c in res.counts.items() if _is_xf(g, n))
+                if res.status == "failed":
+                    if status != "failed":
+                        status, error = "failed", (res.error or "the sync failed")[:500]
+                    if res.error_kind is not None:  # the system did not answer, or refused the credential
+                        new_status = "auth_expired" if res.error_kind == "auth" else "failing"
+                        break
         except SourceError as e:
             s.rollback()
             status, error = "failed", str(e)[:500]
             new_status = "auth_expired" if e.kind == "auth" else "failing"
         finally:
             client.close()
-        read, written = feed.read, feed.written
-        # records a step of the workflow held (validation ...) count as failed, beside those that could not be stored
-        failed = feed.failed + (sum(c["rej"] for n, c in res.counts.items() if _is_xf(graph, n)) if status != "failed" else 0)
+        read, written = sum(p[2].read for p in parts), sum(p[2].written for p in parts)
+        failed = sum(p[2].failed for p in parts) + (held if status != "failed" else 0)
         if status == "ok" and failed:
-            status, error = "partial", feed.first_error or f"{failed} records held by {wf.get('name')}"
+            first = next((p[2].first_error for p in parts if p[2].first_error), None)
+            status, error = "partial", first or f"{failed} records held by {wf.get('name')}"
         s.execute(
             text(
                 "UPDATE sync_run SET status = :st, finished_at = now(), records_read = :r, facts_written = :w, "

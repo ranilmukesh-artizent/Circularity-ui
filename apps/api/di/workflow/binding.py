@@ -11,6 +11,14 @@ until a person publishes one. A source without one syncs with `engine.default_gr
 steps pass every record on unchanged, so its canonical data is exactly what the source's adapter maps
 (tests/test_workflow_engine.py, test_engine_parity_canonical). A source nobody bound keeps no item in source_config,
 so the seeded state stays the demo's.
+
+A bound workflow handles only the resources its connector steps read (`resources` ticked; none ticked: every one).
+The sync reads the source's other resources through `rest_graph`, the default graph narrowed to them, in the same
+sync_run (di.connectors.sync.run_sync), so publishing a workflow that reads one resource (the tutorial's SAP workflow
+reads purchase_order) never stops the rest of the source from syncing.
+
+    unread(graph, "erp", ["product", "purchase_order"])  -> the resources no connector step of the graph reads
+    rest_graph("erp", ["product"])                       -> the default graph reading only those
 """
 
 from typing import Any
@@ -75,6 +83,32 @@ def rebind_for(s: Session, w: dict, *also: str | None) -> None:
         rebind(s, sid)
 
 
+def unread(g: dict, sid: str, names: list[str]) -> list[str]:
+    """The resources among `names` (the adapter's, in its order) that no connector step of the graph reading the
+    source reads: none when a connector step ticks no resource (it reads every one)."""
+    from di.workflow.blocks import node_cfg
+
+    read: set[str] = set()
+    for n in g.get("nodes") or []:
+        if isinstance(n, dict) and n.get("k") == "conn" and n.get("ref") == sid:
+            want = node_cfg(n).get("resources") or []
+            if not want:
+                return []
+            read.update(want)
+    return [x for x in names if x not in read]
+
+
+def rest_graph(sid: str, names: list[str]) -> dict:
+    """The default ingest graph reading only these resources of the source."""
+    from di.workflow.engine import default_graph
+
+    g = default_graph(sid)
+    for n in g["nodes"]:
+        if n.get("k") == "conn" and n.get("ref") == sid:
+            n["cfg"] = {**(n.get("cfg") or {}), "resources": list(names)}
+    return g
+
+
 def bound(s: Session, sid: str) -> tuple[dict[str, Any], dict]:
     """The workflow a sync of the source runs and its graph: the bound one while it is still published and still
     reads the source, otherwise the default ingest graph."""
@@ -86,4 +120,9 @@ def bound(s: Session, sid: str) -> tuple[dict[str, Any], dict]:
     w = state.get(s, "workflows", wid) if wid else None
     if w is not None and _runs_on(w, sid):
         return w, graph_for_run(w)
-    return {"id": None, "name": f"Default ingest · {sid}", "src": sid, "kind": "pipe", "cat": "Ingest"}, default_graph(sid)
+    return default_wf(sid), default_graph(sid)
+
+
+def default_wf(sid: str) -> dict[str, Any]:
+    """The workflow record a sync with the default graph runs as."""
+    return {"id": None, "name": f"Default ingest · {sid}", "src": sid, "kind": "pipe", "cat": "Ingest"}
