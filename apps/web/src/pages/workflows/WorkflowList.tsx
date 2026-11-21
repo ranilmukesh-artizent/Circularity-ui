@@ -48,7 +48,8 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
   });
   const setF = (p: Partial<Filters>) => setF0((o) => (kept.current = { ...o, ...p }));
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const [modal, setModal] = useState<{ k: 'new' } | { k: 'del'; id: string } | null>(null);
+  // ?new=1 (Home's "New workflow" quick action, the demo's wfNew) opens the New workflow dialog at once
+  const [modal, setModal] = useState<{ k: 'new' } | { k: 'del'; id: string } | null>(() => (mgr && query.get('new') === '1' ? { k: 'new' } : null));
 
   const all = workflows();
   sources(); // the system column and filter read the sources: load them with the list, not row by row

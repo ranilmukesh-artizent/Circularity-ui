@@ -32,7 +32,10 @@ export function App() {
     return (
       <>
         <div id="app" className="app signedout">
-          <SignInPage next={next} />
+          {/* the account list is a cached read: after sign-out clears the cache it suspends until it is refetched */}
+          <Boundary>
+            <SignInPage next={next} />
+          </Boundary>
         </div>
         <Toasts />
       </>

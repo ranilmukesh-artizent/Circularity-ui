@@ -196,7 +196,7 @@ function QuickActions() {
     if (act === 'frConnect') return nav('/integration/overview');
     if (act === 'wfNew') {
       if (!canManageWorkflows()) return toast(noWorkflowsMessage());
-      return nav('/integration/studio');
+      return nav('/integration/studio?new=1');
     }
     askSoon(); // frCompare opens Ask Circularity
   };
