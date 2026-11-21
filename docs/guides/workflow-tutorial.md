@@ -81,11 +81,11 @@ Tip: press **Fit to width** in the canvas toolbar so every block is visible.
    - **Convert currency** (*Dated rate, USD base*)
    - **Filter and condition** (*Keep rows that match*)
    - **Normalise units** (*W → kW, EA, months*)
-7. Click **Validation & enrichment**. In the inspector, open **Connect output to** and choose **Order late events**.
-8. Click **Order late events** → **Connect output to** → **Convert currency**.
-9. Click **Convert currency** → **Connect output to** → **Filter and condition**.
-10. Click **Filter and condition** → **Connect output to** → **Normalise units**.
-11. Click **Normalise units** → **Connect output to** → **ERP fields** (*Field mapping → Demand opportunity*).
+7. Click **Validation & enrichment**. In the inspector, under **Connections → Sends to**, open **Next step** and choose **Order late events**.
+8. Click **Order late events** → **Next step** → **Convert currency**.
+9. Click **Convert currency** → **Next step** → **Filter and condition**.
+10. Click **Filter and condition** → **Next step** → **Normalise units**.
+11. Click **Normalise units** → **Next step** → **ERP fields** (*Field mapping → Demand opportunity*).
     ✅ Checks: **No errors**, no warnings.
 
 You can also connect by dragging from a block's right-hand dot onto the next block; the dropdown is easier to do
@@ -94,10 +94,10 @@ precisely in front of an audience.
 ## Part 4: add two side branches
 
 12. In the palette, open **Branches** and click **Error handler**.
-13. Click **Validation & enrichment** → **Connect output to** → **Error handler**. (A step can feed more than one
+13. Click **Validation & enrichment** → **+ Add another connection** → **Also send to** → **Error handler**. (A step can feed more than one
     block: the main line continues, rejected rows go to the error handler.)
 14. Under **Branches**, click **Write to audit log**.
-15. Click **ERP fields** → **Connect output to** → **Write to audit log**.
+15. Click **ERP fields** → **+ Add another connection** → **Also send to** → **Write to audit log**.
     ✅ Checks: **No errors**.
 16. Press **Auto layout** in the canvas toolbar.
     ✅ Toast: *"Steps laid out left to right in run order."*
@@ -158,7 +158,7 @@ If a warning remains, select the block it names in the Checks panel: usually one
 
 Six more workflows, each built from a different starting point and with different blocks. They use exactly the same
 moves as the main tutorial: **+ New workflow**, remove a link (click it → **Remove connection**),
-click blocks in the palette, wire them with **Connect output to**, then **Auto layout**, **Validate**, the
+click blocks in the palette, wire them in the inspector (**Next step**, or **+ Add another connection** when the block already sends somewhere), then **Auto layout**, **Validate**, the
 **Settings** tab, **More actions → Save**, **Test run**, **More actions → Publish** and **Run now**.
 
 Each one was built this way in the app on 21 Nov 2026 as Developer. Every one passed **Validate** with *"No errors
@@ -294,7 +294,7 @@ pipeline blocks.*
 | **+ New workflow** is missing | Sign in as `developer` or `admin`. |
 | The inspector shows a different link than you meant | Where two links leave the same block they run on top of each other for a moment; click a little further along the line you mean. |
 | *"That connection is part of the fixed structure."* | That link is locked (Demand opportunity → Evidence snapshot); leave it. |
-| *"That would create a loop."* / *"Those two steps are already connected."* | Pick another target in **Connect output to**. |
+| *"That would create a loop."* / *"Those two steps are already connected."* | Pick another step in **Next step** / **Also send to**. |
 | Warnings after removing a link | Normal until the new blocks are wired in; finish the next steps. |
 | *"Cannot publish: N error(s) in the checks. Fix them first."* | Select each error in the Checks panel; it names the block and the missing link. |
 | **Save** is greyed out | Nothing changed since the last save (marking a block to fail alone does not count as a change). |

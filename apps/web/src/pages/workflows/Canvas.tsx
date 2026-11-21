@@ -384,25 +384,71 @@ export function Inspector({ d, sel, checks, ops, onFail }: { d: Draft; sel: Sel;
   }
   const fields = fx ? fixedStep(n.ref)?.fields : undefined;
   if (fields) det = <div className="row" style={{ gap: 4, margin: '8px 0' }}>{fields.map((f) => <span key={f} className="chip line mono">{f}</span>)}</div>;
+  const ins = g.edges.filter((e) => e.b === n.id), outs = g.edges.filter((e) => e.a === n.id);
   const opts = g.nodes.filter((x) => x.id !== n.id && !canLink(g, n.id, x.id));
   return (
     <aside className="wfinsp" id="wfInsp"><div className="pb">
       <div className="row" style={{ marginBottom: 6 }}><span className={'chip ' + (fx ? 'dk' : 'y')}>{fx ? 'Fixed' : 'Movable'}</span><span className="note">{i.tag.replace(/^Fixed · /, '')}</span></div>
       <h3>{i.label}</h3><p>{i.desc}</p>{det}
-      {mine.length > 0 && <div style={{ margin: '10px 0' }}>{mine.map((m, k) => <div key={k} className={'callout ' + (m.sev === 'error' ? 'bad' : '')} style={{ marginBottom: 6 }}>{m.msg}</div>)}</div>}
-      <div className="acts">
-        {i.out && opts.length > 0 && <>
-          <label className="note" htmlFor="wfTo">Connect output to</label>
-          <select className="sel" id="wfTo" value="" onChange={(e) => e.target.value && ops.link(n.id, e.target.value)}>
-            <option value="">Choose a step</option>{opts.map((x) => <option key={x.id} value={x.id}>{stepInfo(x).label}</option>)}
-          </select>
-        </>}
-        {fx ? <div className="callout">Fixed step. It cannot be moved or removed, and its rules apply to everything wired through it.</div> : <>
+      {mine.length > 0 && <InspSection title="Problems">{mine.map((m, k) => <div key={k} className={'callout ' + (m.sev === 'error' ? 'bad' : '')} style={{ marginBottom: 6 }}>{m.msg}</div>)}</InspSection>}
+      <InspSection title="Connections">
+        <EdgeList label="Receives from" edges={ins} name={(e) => stepInfo(node(e.a)!).label} none={!i.in ?'Nothing: this block starts the flow.' : 'Nothing yet. Connect a step into this one.'} onRemove={ops.delEdge} />
+        {i.out && <EdgeList label="Sends to" edges={outs} name={(e) => stepInfo(node(e.b)!).label} none="Nothing yet. Choose the next step below." onRemove={ops.delEdge} />}
+        {i.out && opts.length > 0 && <ConnectTo key={n.id} first={!outs.length} opts={opts.map((x) => ({ id: x.id, label: stepInfo(x).label }))} onPick={(to) => ops.link(n.id, to)} />}
+      </InspSection>
+      {fx ? <div className="callout" style={{ marginTop: 10 }}>Fixed step. It cannot be moved or removed, and its rules apply to everything wired through it.</div> : <>
+        <InspSection title="Testing">
+          <p className="note" style={{ margin: '0 0 6px' }}>Rehearse the failure path: the next run stops at this step and its error handling takes over.</p>
           <button className="btn sm" aria-pressed={!!n.fail} onClick={() => onFail(n.id)}>{n.fail ? 'Stop failing this step' : 'Fail this step in the next run'}</button>
+        </InspSection>
+        <div className="acts" style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--line)' }}>
           <button className="btn sm" onClick={() => ops.del(sel)}>Remove from workflow</button>
-        </>}
-      </div>
+        </div>
+      </>}
     </div></aside>
+  );
+}
+
+function InspSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="wfsec" style={{ marginTop: 12 }}>
+      <div className="note" style={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>{title}</div>
+      {children}
+    </section>
+  );
+}
+
+/** The block's links on one side, each removable unless it belongs to the fixed structure. */
+function EdgeList({ label, edges, name, none, onRemove }: { label: string; edges: WfGraph['edges']; name: (e: WfGraph['edges'][number]) => string; none: string; onRemove: (id: string) => void }) {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div className="note">{label}</div>
+      {edges.length ? (
+        <ul className="wflinks" style={{ listStyle: 'none', padding: 0, margin: '4px 0 0' }}>
+          {edges.map((e) => (
+            <li key={e.id} className="row" style={{ justifyContent: 'space-between', gap: 6, padding: '3px 0' }}>
+              <b>{name(e)}</b>
+              {e.locked ? <span className="note" title="Part of the fixed structure; it cannot be removed.">Locked</span>
+                : <button className="btn sm ghost" aria-label={'Remove the connection to ' + name(e)} title="Remove this connection" onClick={() => onRemove(e.id)}>Remove</button>}
+            </li>
+          ))}
+        </ul>
+      ) : <div className="note" style={{ marginTop: 2 }}><i>{none}</i></div>}
+    </div>
+  );
+}
+
+/** "Choose the next step" when the block sends nowhere yet; otherwise a button that opens the same picker. */
+function ConnectTo({ first, opts, onPick }: { first: boolean; opts: { id: string; label: string }[]; onPick: (id: string) => void }) {
+  const [open, setOpen] = useState(first);
+  if (!open) return <button className="btn sm" onClick={() => setOpen(true)}>+ Add another connection</button>;
+  return (
+    <div>
+      <label className="note" htmlFor="wfTo">{first ? 'Next step' : 'Also send to'}</label>
+      <select className="sel" id="wfTo" value="" onChange={(e) => { if (e.target.value) { onPick(e.target.value); setOpen(false); } }}>
+        <option value="">Choose a step</option>{opts.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+      </select>
+    </div>
   );
 }
 

@@ -249,7 +249,7 @@ steps with **Refine in Workflow Studio**, which opens the builder with that requ
   timestamps to UTC, currency, units, identity, late events), orchestration steps (scheduler, event trigger, branch,
   loop, call workflow, wait), branches (error handler, audit log, event stream) and *More* (integration layer, file
   exchange, delivery methods, write connectors, all field mappings). Decision workflows show the agent tools instead.
-- **Connect** steps by dragging from a step's right dot to another step, or with *Connect output to* in the inspector.
+- **Connect** steps by dragging from a step's right dot to another step, or in the inspector: **Connections** lists what the block receives from and sends to; **Next step** (or **+ Add another connection** when it already sends somewhere) adds a link, and **Remove** next to a link removes it (locked links show *Locked*).
 - **Remove a link**: click the line (the canvas selects the line nearest your click, also where branch lines leave
   the same step) and press **Remove connection**.
 - **Move** by dragging (8 px grid) or with the arrow keys (Shift = 40 px). **Delete** with Delete/Backspace or
@@ -270,7 +270,7 @@ steps with **Refine in Workflow Studio**, which opens the builder with that requ
 - **Test run** runs the *draft* in the browser, step by step, and stops at Human approval: **Approve and continue**
   needs approval rights (Admin; a Developer is told to switch to Approver). Nothing is sent to any system.
 - **Run now** runs the *saved* version on the server and records the run (History tab, Recent runs, Task instances).
-- **Fail this step in the next run** (inspector) makes a run fail at that step, to rehearse the failure path.
+- **Fail this step in the next run** (inspector, under **Testing**) makes a run fail at that step, to rehearse the failure path.
 
 ### 7.5 Settings, history, templates
 
