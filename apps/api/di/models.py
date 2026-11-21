@@ -409,3 +409,28 @@ webhook_event = Table(
     _ts("received_at", now=True),
     Index("ix_webhook_event_received", "received_at"),
 )
+
+# --- 0015 failed records (plan 6 B1; di/canonical/failed.py) --------------------------------------------------------
+
+failed_record = Table(
+    "failed_record",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("run_kind", Text, nullable=False),  # sync, workflow, import
+    Column("run_id", Text),  # sync_run.id, the workflow run's id or the import's IMP-n
+    Column("source_id", Text),
+    Column("step", Text),  # where it was held: canonical (the schema check), a workflow node, import
+    Column("resource", Text),
+    Column("ext_id", Text),
+    Column("field", Text),  # model.field
+    Column("rule", Text),  # schema, a validation rule ...
+    Column("value", JSONB),
+    Column("reason", Text, nullable=False),
+    Column("payload", JSONB),  # the record it came from, for reprocessing
+    Column("status", Text, nullable=False, server_default="held"),  # held, reprocessed, dropped
+    _ts("created_at", now=True),
+    CheckConstraint("run_kind IN ('sync', 'workflow', 'import')", name="failed_record_run_kind_check"),
+    CheckConstraint("status IN ('held', 'reprocessed', 'dropped')", name="failed_record_status_check"),
+    Index("ix_failed_record_run", "run_kind", "run_id"),
+    Index("ix_failed_record_source", "source_id", "status"),
+)

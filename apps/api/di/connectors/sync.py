@@ -22,6 +22,8 @@ from sqlalchemy.orm import Session
 
 from di import golden
 from di.canonical import store
+from di.canonical.failed import hold
+from di.canonical.schema import split_facts
 from di.connectors import connection, lifecycle
 from di.connectors.http import SourceError
 from di.connectors.registry import ADAPTERS, adapter_for, has_adapter
@@ -366,7 +368,17 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
                                     f if f.resource else type(f)(**{**f.__dict__, "resource": rec.resource, "ext_id": rec.ext_id})
                                     for f in adapter.map(rec)
                                 ]
+                                facts, bad = split_facts(facts)  # plan 6 B1: a fact that does not fit its model is held
                                 written += store.apply(s, source_id, facts, conf)
+                                for f, why in bad:
+                                    hold(
+                                        s, run_kind="sync", run_id=run_id, source_id=source_id, step="canonical",
+                                        resource=rec.resource, ext_id=rec.ext_id, field=f"{f.model}.{f.field}", rule="schema",
+                                        value=f.value, reason=why, payload=rec.payload,
+                                    )  # fmt: skip
+                            if bad:  # counted, but the cursor moves on: the record is kept in failed_record to reprocess
+                                failed += 1
+                                status, error = "partial", error or f"{rec.resource}/{rec.ext_id}: {bad[0][1]}"[:500]
                             break
                         except OperationalError as e:  # a deadlock with a concurrent sync: try the record again
                             if "deadlock" not in str(e).lower() or attempt == 2:
