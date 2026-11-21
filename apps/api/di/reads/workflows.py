@@ -3,7 +3,9 @@ workflow actions (di.actions.workflows): the workspace collections "workflows" (
 "workflow_runs" (S.wf.runs), seeded from fixtures/golden/screens/workflows.json, and "workflow_templates" (S.frTpl,
 empty at the start); wfStat, wfUsing, wfAnalyze, wfOrder; what the last real run counted and held (plan 6 C5); and
 "workflow_run_stats", what every real run measured (duration, state, per-step durations), which the Monitor reads
-(plan 6 D1)."""
+(plan 6 D1); and the run views' figures (plan 6 follow-up): per run its records in, out and still held (run_figures)
+and the latest real run's held records by step, field and rule (run_quality), counted from failed_record like View
+failed records, so the Runs table, the Data quality panel and the failed records agree."""
 
 import json
 import math
@@ -168,6 +170,94 @@ def monitor_stats(s: Session, since: int) -> dict[str, dict]:
             "avg": round(sum(durs) / len(durs), 2) if durs else None, "lastState": rs[-1]["state"], "steps": steps,
         }  # fmt: skip
     return out
+
+
+# ---------------------------------------------------------------- the run views' figures (plan 6 follow-up)
+_SEEDED_RUNS = {r["id"]: r for r in GOLDEN["runs"]}  # the demo's S.wf.runs, as seeded (keyed by their ids)
+# a held record counted once however many of its fields broke a rule (the canonical step holds one row per fact)
+_HELD_RECORDS = "count(DISTINCT coalesce(resource, '') || '/' || coalesce(ext_id, 'row:' || id::text))"
+
+
+def keyed_runs(s: Session, wid: str) -> list[tuple[str, dict]]:
+    """The workflow's run records with their keys (the run id their held records are filed under), newest first."""
+    state.get(s, "workflow_runs", "")  # seeds the collection on its first read
+    rows = s.execute(
+        text("SELECT id, data FROM state_item WHERE collection = 'workflow_runs' AND data->>'wf' = :w ORDER BY seq DESC"),
+        {"w": wid},
+    ).all()
+    return [(r.id, r.data) for r in rows]
+
+
+def seeded_run(key: str, r: dict) -> bool:
+    """A run record of the demo's seeded history (never ran in the app), as it was seeded."""
+    return _SEEDED_RUNS.get(key) == r
+
+
+def held_records(s: Session, keys: list[str]) -> dict[str, int]:
+    """The records each workflow run (by key) still holds in failed_record (status 'held'), one per record."""
+    if not keys:
+        return {}
+    q = text(
+        f"SELECT run_id, {_HELD_RECORDS} FROM failed_record WHERE run_kind = 'workflow' AND status = 'held' "  # noqa: S608 - a fixed expression
+        "AND run_id = ANY(:k) GROUP BY 1"
+    )
+    return {k: int(n) for k, n in s.execute(q, {"k": keys}).all()}
+
+
+def run_figures(s: Session, runs: list[tuple[str, dict]]) -> list[dict]:
+    """What the Runs table shows for each run (key, record), in order: a seeded run `{"real": False}` (the page keeps
+    the demo's estimate, as the Monitor keeps its seeded figures); a run in progress no figures yet; a finished run the
+    records it read (`in`), the records it still holds (`held`, as View failed records and the Data quality panel count
+    them) and `out` = in - held (None for a failed run, which did not finish its records)."""
+    held = held_records(s, [k for k, r in runs if not seeded_run(k, r)])
+    out: list[dict] = []
+    for k, r in runs:
+        if seeded_run(k, r):
+            out.append({"real": False})
+        elif r.get("state") == "running":
+            out.append({"real": True, "key": k, "in": None, "out": None, "held": None})
+        else:
+            rows, n = r.get("rows"), held.get(k, 0)
+            passed = None if r.get("state") == "failed" or rows is None else max(0, int(rows) - n)
+            out.append({"real": True, "key": k, "in": rows, "out": passed, "held": n})
+    return out
+
+
+def run_quality(s: Session, w: dict) -> dict | None:
+    """The Data quality panel and the Investigation's held records: the latest real run (`lastRun.key`), the records it
+    read, still holds and passed, and its held records by step, field and rule (most first, at most 8). None when the
+    latest run is seeded (never ran in the app)."""
+    lr = w.get("lastRun") or {}
+    key = lr.get("key")
+    if not key:
+        return None
+    rec = state.get(s, "workflow_runs", str(key))
+    last = w.get("last") or {}
+    rows = rec.get("rows") if rec else last.get("rows") if last.get("ts") == lr.get("ts") else None
+    held = held_records(s, [str(key)]).get(str(key), 0)
+    by = {n["id"]: n for n in (w.get("graph") or {}).get("nodes") or []}
+    groups = s.execute(
+        text(
+            f"SELECT coalesce(step, '') AS step, coalesce(field, '') AS field, coalesce(rule, 'error') AS rule, "  # noqa: S608 - a fixed expression
+            f"{_HELD_RECORDS} AS n FROM failed_record WHERE run_kind = 'workflow' AND status = 'held' AND run_id = :k "
+            "GROUP BY 1, 2, 3 ORDER BY 4 DESC, 2, 3, 1 LIMIT 8"
+        ),
+        {"k": str(key)},
+    ).mappings()
+    return {
+        "real": True, "key": key, "run": lr.get("id"), "state": lr.get("status"), "in": rows, "held": held,
+        "valid": max(0, rows - held) if rows is not None else None,
+        "groups": [{"step": g["step"], "label": _step_label(by.get(g["step"]), g["step"]), "field": g["field"] or "—",
+                    "rule": g["rule"], "n": int(g["n"])} for g in groups],
+    }  # fmt: skip
+
+
+def _step_label(n: dict | None, step: str) -> str:
+    if n is not None:
+        from di.workflow.engine import label
+
+        return label(n)
+    return "Canonical model" if step == "canonical" else step or "—"
 
 
 def _shown(v: Any) -> str:

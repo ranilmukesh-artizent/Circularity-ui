@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { fmtNumber } from '../../api/format';
 import { can } from '../../api/session';
 import {
-  createWorkflow, deleteWorkflow, deliverOf, failedRows, graphOf, history, readableSources, runCounts, RUN_CHIP, RUN_LABEL,
+  createWorkflow, deleteWorkflow, deliverOf, failedRows, graphOf, history, readableSources, runCounts, runFigures, runQuality, RUN_CHIP, RUN_LABEL,
   runTimes, sourceExists, sourceLabel, source, stepInfo, templates, workflow, writableSources, type TestRun,
 } from '../../api/workflows';
 import { Icon } from '../../ui/Icon';
@@ -112,18 +112,23 @@ const stamp = (ts: number, o?: Intl.DateTimeFormatOptions) => new Date(ts).toLoc
 export function RunViewModal({ id, runId, onClose, onFailed }: { id: string; runId: string; onClose: () => void; onFailed: () => void }) {
   const w = workflow(id);
   if (!w) return null;
-  const r = history(id).find((x) => x.id === runId);
+  const H = history(id), at = H.findIndex((x) => x.id === runId), r = at >= 0 ? H[at] : undefined;
   const g = graphOf(id), run = w.lastRun && w.lastRun.id === runId ? w.lastRun : null;
+  // the run's real figures (the same held records as the Runs table and View failed records); none for a seeded run
+  const f = at >= 0 ? runFigures(id)[at] : undefined, fig = f?.real && r?.state !== 'running' ? f : null;
+  const n = (v: number | null | undefined) => (v == null ? '—' : fmtNumber(v));
+  const latest = !!run && runQuality(id)?.key === run.key; // View failed records lists the latest real run's records
   const T = run ? runTimes(run as unknown as TestRun) : null, c = runCounts(id, g, null), L = RUN_LABEL(), C = RUN_CHIP();
   return (
     <Modal title={w.name + ' · ' + runId} wide onClose={onClose}
-      foot={<><button className="btn" onClick={onClose}>Close</button>{w.src && <button className="btn" onClick={onFailed}>View failed records</button>}</>}>
+      foot={<><button className="btn" onClick={onClose}>Close</button>{w.src && latest && <button className="btn" onClick={onFailed}>View failed records</button>}</>}>
       <dl className="frdl">
         <dt>Status</dt><dd><WorkflowStatus k={r?.state === 'failed' ? 'failed' : 'success'} /></dd>
         <dt>Started</dt><dd>{stamp(r?.ts ?? Date.now())}</dd>
         <dt>Duration</dt><dd>{r?.dur ?? '—'} s</dd>
         <dt>Triggered by</dt><dd>{r?.trig ?? '—'}</dd>
         {r?.note && <><dt>Reason</dt><dd>{r.note}</dd></>}
+        {fig && <><dt>Records (in / out)</dt><dd className="num">{n(fig.in)} / {n(fig.out)}</dd><dt>Held</dt><dd className="num">{n(fig.held)}</dd></>}
       </dl>
       {run ? (
         <>
@@ -147,7 +152,7 @@ export function RunViewModal({ id, runId, onClose, onFailed }: { id: string; run
 export function FailedRecordsModal({ id, onClose }: { id: string; onClose: () => void }) {
   const w = workflow(id);
   if (!w) return null;
-  const L = failedRows(id);
+  const L = failedRows(id), held = runQuality(id)?.held ?? L.length; // records (a record held on two fields is one)
   function csv() {
     const q = (v: string) => (/[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v);
     const rows = [['record', 'field', 'value', 'rule'], ...L.map((r) => [r.rec, r.field, r.value, r.rule])];
@@ -167,7 +172,7 @@ export function FailedRecordsModal({ id, onClose }: { id: string; onClose: () =>
       </>}>
       {L.length ? (
         <>
-          <p className="note" style={{ marginTop: 0 }}>{L.length} record{L.length > 1 ? 's' : ''} from the latest run broke a validation rule. They are held by the error handler, not dropped.{done && <> <b>Reprocessed {done}.</b></>}</p>
+          <p className="note" style={{ marginTop: 0 }}>{fmtNumber(held)} record{held === 1 ? '' : 's'} from the latest run broke a validation rule. They are held by the error handler, not dropped.{L.length >= 40 && ' The first 40 rows are listed.'}{done && <> <b>Reprocessed {done}.</b></>}</p>
           <div className="tw"><table className="t static tight">
             <thead><tr><th>Record</th><th>Field</th><th>Value</th><th>Rule broken</th></tr></thead>
             <tbody>{L.map((r, i) => <tr key={i}><td className="mono">{r.rec}</td><td className="mono">{r.field}</td><td className="mono">{r.value || <span className="note">(empty)</span>}</td><td>{r.rule}</td></tr>)}</tbody>

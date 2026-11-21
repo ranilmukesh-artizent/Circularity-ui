@@ -35,7 +35,10 @@ Facade (apps/web/src/api/workflows.ts) → here, export by export:
   attention, nowMs (`now`, the workspace clock the run times are on)
 - endpoint GET /api/screens/workflows/{id}: graphOf (`workflow.graph`), savedOf (`saved`), templateOf (`template`),
   history, runCounts for the last run (`run_counts`), runFromLast (`run_from_last`), failedRows (`failed_rows`),
-  versions, publishedVersion (`published_ver`)
+  versions, publishedVersion (`published_ver`), runFigures (`run_figures`: per history entry the run's real in / out /
+  held, or `{"real": false}` for a seeded run, whose figures stay the demo's estimate in the page), runQuality
+  (`quality`: the latest real run's records read, held and passed and its held records by step, field and rule; None
+  when the last run is seeded)
 - endpoint GET /api/screens/workflows/{id}/compare: compareVersions; action workflow.restore: restoreVersion
 - endpoint GET /api/screens/workflows/blocks: blockSpecs, blockResources
 - endpoint GET /api/screens/integration/sources: usedBy (`health.workflows`), sources, source, sourceExists,
@@ -67,7 +70,18 @@ from di.auth import Principal
 from di.deps import CurrentPrincipal, DbSession
 from di.engine.jsmath import js_round
 from di.reads.common import AS_OF, SOURCES, hash_id, iso, ms
-from di.reads.workflows import GOLDEN, all_workflows, failed_rows, recent_runs, run_counts, templates, wf_stat
+from di.reads.workflows import (
+    GOLDEN,
+    all_workflows,
+    failed_rows,
+    keyed_runs,
+    recent_runs,
+    run_counts,
+    run_figures,
+    run_quality,
+    templates,
+    wf_stat,
+)
 from di.workflow import live, versions
 
 router = APIRouter(prefix="/api/screens/workflows", tags=["screens: workflows"])
@@ -158,6 +172,19 @@ def history(w: dict, runs: list[dict]) -> list[dict]:
             "note": last["note"],
         }
     ]
+
+
+def figures(session, w: dict, runs: list[tuple[str, dict]]) -> list[dict]:
+    """The Runs table's figures, one per `history` entry (di.reads.workflows.run_figures): from the run records, or for
+    the recorded last run that history lists without one, real only when that run happened in the app (has a key)."""
+    if runs:
+        return run_figures(session, runs)
+    last, lr = w.get("last"), w.get("lastRun") or {}
+    if not last:
+        return []
+    if lr.get("key"):
+        return run_figures(session, [(str(lr["key"]), last | {"wf": w["id"]})])
+    return [{"real": False}]
 
 
 def attention(workflows: list[dict], now: int = AS_OF) -> list[dict]:
@@ -282,6 +309,7 @@ def workflow_detail(workflow_id: str, p: CurrentPrincipal, session: DbSession):
     c = run_counts(w)
     saved = json.loads(w["saved"]) if w.get("saved") else None
     tpl = w.get("tpl")
+    runs = keyed_runs(session, w["id"])
     return {
         "workflow": {k: v for k, v in w.items() if k not in _HIDDEN}
         | {"stat": wf_stat(w)}
@@ -290,10 +318,12 @@ def workflow_detail(workflow_id: str, p: CurrentPrincipal, session: DbSession):
         and {"graph": saved["g"], "name": saved["m"]["name"], "owner": saved["m"]["owner"], "trig": saved["m"]["trig"]}
         | {k: saved["m"][k] for k in ("retries", "alert") if k in saved["m"]},  # the run settings, once saved
         "template": template(tpl, templates(session) if tpl and tpl.get("k") == "tpl" else None),
-        "history": history(w, recent_runs(session)),
+        "history": history(w, [r for _, r in runs]),
+        "run_figures": figures(session, w, runs),  # one per history entry: in / out / held of the runs that happened
         "run_counts": c,
         "run_from_last": run_from_last(w),
         "failed_rows": failed_rows(w, c, session),  # the latest run's held records (failed_record, plan 6 C5)
+        "quality": run_quality(session, w),  # the latest real run's figures and held records by rule, or None
         "success_pct": js_round(w["okN"] / w["runsN"] * 100) if w.get("runsN") else None,
         "versions": versions.listing(session, w, iso),  # plan 6 C8: every version, newest first
         "published_ver": (w.get("pub") or {}).get("ver"),  # the version runs use (None: not published)
