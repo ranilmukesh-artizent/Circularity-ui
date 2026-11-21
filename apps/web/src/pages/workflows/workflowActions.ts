@@ -67,21 +67,23 @@ export async function fromTemplate(tpl: string): Promise<string | null> {
   return r.output.id;
 }
 
-/** Reprocess the held records (ACT.frReproc). True when they were sent. */
+/** Reprocess the held records (plan 6 C8): they go back through the steps from the one that rejected them. True when
+ *  they were sent. */
 export async function reprocess(id: string): Promise<boolean> {
   if (!can('manageWorkflows')) { toast(NOWF()); return false; }
   const r = await reprocessFailed(id);
   if (refused(r, 4200)) return false;
-  toast(r.output.n + ' records sent back through validation. Rows that still break a rule stay held.');
+  const o = r.output;
+  toast(fmtNumber(o.n) + ' records sent back: ' + fmtNumber(o.reprocessed) + ' reprocessed, ' + fmtNumber(o.held) + ' still held.' + (o.held ? ' Those still break a rule.' : ''), 4200);
   return true;
 }
 
-/** Apply the investigation's suggested fix (ACT.frFixApply). */
+/** Apply the fix (plan 6 C8): the failed step's settings from the last good version; the server says what changed. */
 export async function applyFix(id: string) {
   if (!can('manageWorkflows')) return toast(NOWF());
   const r = await applySuggestedFix(id);
   if (refused(r, 4200)) return;
-  toast('Fix applied. Run now to confirm it turns green.');
+  toast(r.output.fix + ' Run now to confirm it turns green.', 4200);
 }
 
 /** Bulk run, pause or export from the list (ACT.frWfBulk), each run and pause through invoke(). */

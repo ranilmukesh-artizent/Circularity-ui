@@ -145,21 +145,22 @@ describe('duplicate, export and templates', () => {
 });
 
 describe('failed records and the suggested fix', () => {
-  it('reprocess reports how many records went back', async () => {
-    m.reprocessFailed.mockResolvedValue({ ok: true, output: { id: 'WF-1', name: 'Flow', n: 4 } });
+  it('reprocess reports how many records went back and how many are still held', async () => {
+    m.reprocessFailed.mockResolvedValue({ ok: true, output: { id: 'WF-1', name: 'Flow', n: 4, reprocessed: 3, held: 1 } });
     expect(await reprocess('WF-1')).toBe(true);
-    expect(toasts()).toEqual(['4 records sent back through validation. Rows that still break a rule stay held.']);
+    expect(toasts()).toEqual(['4 records sent back: 3 reprocessed, 1 still held. Those still break a rule.']);
   });
   it('reprocess shows a refusal', async () => {
     m.reprocessFailed.mockResolvedValue({ ok: false, error: { code: 'duplicate', message: 'Already reprocessed: 4 records at 10:00' } });
     expect(await reprocess('WF-1')).toBe(false);
     expect(m.toast).toHaveBeenCalledTimes(1);
   });
-  it('apply fix gives the demo\'s text', async () => {
-    m.applySuggestedFix.mockResolvedValue({ ok: true, output: { id: 'WF-1', name: 'Flow', ver: '1.5', fix: 'x' } });
+  it('apply fix says what the server changed', async () => {
+    const fix = 'Validation & enrichment is back to its settings from v1.4: failure toggle off.';
+    m.applySuggestedFix.mockResolvedValue({ ok: true, output: { id: 'WF-1', name: 'Flow', ver: '1.5', fix } });
     await applyFix('WF-1');
     expect(m.applySuggestedFix).toHaveBeenCalledWith('WF-1');
-    expect(toasts()).toEqual(['Fix applied. Run now to confirm it turns green.']);
+    expect(toasts()).toEqual([fix + ' Run now to confirm it turns green.']);
   });
   it('need the manage permission', async () => {
     m.allowed = false;

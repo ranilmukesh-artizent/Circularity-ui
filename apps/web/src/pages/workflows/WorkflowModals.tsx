@@ -163,7 +163,7 @@ export function FailedRecordsModal({ id, onClose }: { id: string; onClose: () =>
       foot={<>
         <button className="btn" onClick={onClose}>Close</button>
         <button className="btn" onClick={csv} disabled={!L.length}><Icon name="download" /> Export CSV</button>
-        {can('manageWorkflows') && <button className="btn pri" onClick={reproc} disabled={!L.length || !!done}>Reprocess</button>}
+        {can('manageWorkflows') && <button className="btn pri" onClick={reproc} disabled={!L.length}>Reprocess</button>}
       </>}>
       {L.length ? (
         <>
