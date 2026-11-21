@@ -1,6 +1,6 @@
 /** The workflow list (frWfList): tiles, filters, the table with Open / Investigate and ⋯, bulk actions, and the right column. */
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { fmtNumber } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';

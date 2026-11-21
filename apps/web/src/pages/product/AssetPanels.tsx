@@ -1,6 +1,6 @@
 /** Building blocks of Asset & Product Intelligence (asPanel, provB, asPhoto, asRing, asCond, asProduct, asEcon …). */
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { fmtDateYear } from '../../api/format';
 import {
   addDays, asHex, asModel, asMoney, asRMA, asReceipt, asRev, asSC, asSerial, asTitle, assetEcon, assetEligibility, assetEvents, assetRelated,

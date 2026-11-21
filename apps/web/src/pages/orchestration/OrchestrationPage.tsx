@@ -3,7 +3,7 @@
  * layer leaves it: the live run board, run details, the run trace and the agents and services.
  */
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { fmtDate, money } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {

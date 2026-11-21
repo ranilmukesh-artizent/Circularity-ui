@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { logos } from '../api/nav';
 import { accounts, homeRoute, rolePolicy, signInEmail, signInWith } from '../api/session';
 import type { Account } from '../api/types';

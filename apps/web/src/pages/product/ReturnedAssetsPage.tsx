@@ -3,7 +3,7 @@
  * expectedTable, kpiStrip, openCase, expDetail, ntCallout in index.html).
  */
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import { invoke } from '../../api/actions';
 import { fmtDate, fmtDateYear, money } from '../../api/format';
 import { useBackend } from '../../api/useBackend';

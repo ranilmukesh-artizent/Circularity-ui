@@ -3,7 +3,7 @@
  * case's own records. Pause, 1×/2×, Skip to now and Replay; a box opens in place. Reduced motion shows the end state.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { fmtDateYear } from '../../api/format';
 import {
   escalationDraft, failDrill, LR_PACE, modelTag, nextStep, orCaseById, orDur, runModel, runNext, runSignature, runStates, runTimeline,

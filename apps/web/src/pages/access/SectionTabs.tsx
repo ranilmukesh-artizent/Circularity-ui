@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { navigation } from '../../api/nav';
 
 /** The sections of a page the account may see (the demo's navKids), and the one the route asks for (secKey). */

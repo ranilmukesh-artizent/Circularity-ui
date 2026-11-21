@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
   activity, alerts, allModules, askExamples, askModes, askStarters, attention, briefing, canManageWorkflows, figures, frPref, greeting, homeUi,
   isTechnical, kfmt, kpis, noWorkflowsMessage, middlePanel, modules, providerLabel, quickActions, setFrPref, setHomeUi, taskItems, unwatch, watches,

@@ -1,6 +1,6 @@
 /** Command Center panels: exceptions, Notify, Actions on me, handed off, approvals inbox, outcomes and the ranked table. */
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
   acknowledge, aomeItems, approvalCards, approvalLimit, awaitingApproval, ccFilters, clsIcon, decideRequest, decisionsAwaiting,
   exOwner, exRows, handedRows, inboxRequests, inboxScope, kfmt, rbPath, notifyRecipients, opScopeInfo, opsAwaiting, oppRow, oppRows, outcomesToConfirm,

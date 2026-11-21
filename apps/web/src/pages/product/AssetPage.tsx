@@ -3,7 +3,7 @@
  * systems supplied (Retrieved data) and what Circularity predicts (Predictions), with per-role detail tabs (assetPage in index.html).
  */
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import { fmtDate, fmtDateYear, fmtNumber, money } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {

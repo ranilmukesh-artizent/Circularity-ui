@@ -4,7 +4,7 @@
  * Conflict Queue, Manual Import and Monitor. Drawers and dialogs shared by several tabs live here.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useBackend } from '../../api/useBackend';
 import {
   available, deleteSource, disconnectSource, followSync, intKids, intSub, mappings, openConflictCount, openDecisionCount, pauseSource,

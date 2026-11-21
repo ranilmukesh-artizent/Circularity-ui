@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
   autonomy, frPref, livePaused, notifTypes, presenterOn, region, regionOptions, roleDescription, setFrPref, setLivePaused, setPresenter, setRegion,
 } from '../../api/home';

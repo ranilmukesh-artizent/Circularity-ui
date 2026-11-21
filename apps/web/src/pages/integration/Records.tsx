@@ -1,6 +1,6 @@
 /* Canonical Models, Event Streams (with the event drawer), Conflict Queue and Manual Import. */
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { fmtDate } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {

@@ -1,5 +1,5 @@
 import { Suspense, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
   activeClock, approverRole, assetModel, caseAnalysis, caseScreen, lc, nextStep, phaseOf, phases, rememberTab, rememberedTab, runOf,
   sources, stageData, stageHref, stageSentence, stageState, stageTitle, stageWillHappen, stages, when,

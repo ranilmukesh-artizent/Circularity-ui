@@ -4,7 +4,7 @@
  * runs only after the person confirms it, through invoke() like any other click.
  */
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { invoke } from '../api/actions';
 import { ask, type AskCard, type AskEvent, type AskFinal, type AskNext, type AskTool } from '../api/ask';
 import { ref } from '../api/client';

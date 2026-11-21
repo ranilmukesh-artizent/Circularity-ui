@@ -3,7 +3,7 @@
  * sees the sections its layout has (CC_LAYOUT, ccSecOK) and the access policy allows (canPage).
  */
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
   capacity, ccFilters, ccKeys, ccLayout, ccMetrics, ccMode, ccOps, ccPick, ccRows, ccScope, ccSecDesc, ccSecLabel, ccSecOK, ccSection,
   classLabel, clearCcFilters, clockText, CC_STAGES, dueSlices, filterOptions, healthDetail, healthStrip, insights, kfmt, kpiTiles,

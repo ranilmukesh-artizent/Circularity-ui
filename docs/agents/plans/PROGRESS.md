@@ -45,8 +45,9 @@ One line per step: date, plan and step, commit, the tests that gated it, result.
   jsdom 31.0.0, all at least 2 weeks old.
   - The demo's stylesheet has two invalid `@container or (...)` rules. Browsers ignore them; Vite 8's CSS minifier
     rejected them, so `css.lightningcss.errorRecovery` drops them with a warning.
-  - react-router stays on 6.x. Its 2 moderate advisories need v7, which changes the routing APIs; that upgrade is left
-    for a separate step.
+  - react-router stayed on 6.x here. Upgraded later (21 Nov) to `react-router` 7.18.5 (react-router-dom removed),
+    which clears its 2 moderate advisories; `RouterProvider useTransitions={false}` keeps v6's behaviour of showing
+    the Suspense fallback on navigation instead of holding the old page.
 - **C5, gitleaks:** `.gitleaks.toml` allowlists the source-sim mocks' synthetic AWS demo keys (`AKIACIRCULARITY…`).
   With that, a full-history scan finds no leaks.
 - **C2, CasePage effect:** fixing the suppressed hook dependencies changed one small behaviour. After a landing
@@ -120,8 +121,8 @@ One line per step: date, plan and step, commit, the tests that gated it, result.
 - **E6:** a network error or 5xx is now retried twice (0.5 s, then 1 s) before the page shows the error, so a real
   outage shows about 1.5 s later. A 4xx refusal still shows at once.
   - Buttons are not yet disabled while an action is pending.
-  - Invalidation is still "everything" on every stream event; mapping event kinds to reads is a follow-up (see the
-    design note).
+  - Invalidation was "everything" on every stream event here; scoped per event kind and action family later (21 Nov,
+    `src/api/invalidation.ts`; see the design note).
 - **G3:** when `DEV_POLLING` is unset, file watching uses watchfiles' own default (polling under a WSL2 kernel).
   `DEV_POLLING=1` forces polling and `0` turns it off. A strict "off" default would have broken hot reload on this
   machine's `/mnt/c` mount.

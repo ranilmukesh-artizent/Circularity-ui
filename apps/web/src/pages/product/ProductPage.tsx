@@ -2,7 +2,7 @@
  * The `product` page (Decision Workbench): Returned assets, Expected returns, Pool optimizer, Asset intelligence,
  * and live cases (#/product/<CASE_ID>[/<view>]), which the case area draws.
  */
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 import { money } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import { caseById, demoVisible, isCaseId, pool, tenantOK } from '../../api/product';

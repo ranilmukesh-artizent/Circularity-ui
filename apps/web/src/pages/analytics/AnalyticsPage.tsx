@@ -3,7 +3,7 @@
  * (#/analytics/predicted puts that chart first, with the agent's answer beside it).
  */
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
   analyticsRows, assetClasses, classIcon, closedRow, DEFAULT_FILTER, journeyStep, kfmt, metrics, modelAccuracy, months, routeById, routes,
   type AnalyticsFilter, type ClosedRow,

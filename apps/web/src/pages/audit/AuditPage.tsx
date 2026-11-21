@@ -1,6 +1,6 @@
 /** Audit & provenance (#/audit/log, #/audit/gaps): the demo's renderAudit, its entry drawers, the data trace and comments. */
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
   ackKind, auditEntries, auditGaps, comments, eventJson, isoT, postComment, provenanceOf, type AuditEntry, type Provenance,
 } from '../../api/audit';

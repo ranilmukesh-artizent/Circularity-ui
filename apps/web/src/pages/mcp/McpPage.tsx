@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { invoke } from '../../api/actions';
 import { mcpProposals } from '../../api/access';
 import { useBackend } from '../../api/useBackend';

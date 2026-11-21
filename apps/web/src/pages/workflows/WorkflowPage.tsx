@@ -1,6 +1,6 @@
 /** A workflow's own page (frWfPage): header, Workflow studio · Settings · History · Documentation. */
 import { useCallback, useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { fmtNumber } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
