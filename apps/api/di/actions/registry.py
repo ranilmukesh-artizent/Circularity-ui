@@ -53,6 +53,9 @@ class ActionDef:
     guard: Guard | None = None
     idem: IdemKey | None = None
     emits: list[str] = field(default_factory=list)
+    # a write that is not journaled and emits no event: a person's own scratch state (an autosaved workflow draft),
+    # which would otherwise fill the journal and the audit views every few seconds. Still a write for every gate.
+    journaled: bool = True
 
     @property
     def permission(self) -> str | None:

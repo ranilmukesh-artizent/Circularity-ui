@@ -195,7 +195,7 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[s
     try:
         with ctx.session.begin_nested():
             out = a.handler(i, ctx) or {}
-            if not a.changes_state:
+            if not a.changes_state or not a.journaled:
                 return {"ok": True, "output": out, "key": None, "action": a.id}
             # 11 journal
             seq = ctx.session.execute(

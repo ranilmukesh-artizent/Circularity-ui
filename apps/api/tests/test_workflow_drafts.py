@@ -57,6 +57,28 @@ def test_a_draft_survives_a_reload_and_is_per_person():
         call("workflow.delete", {"id": w["id"]}, "developer")
 
 
+def test_autosaves_are_not_journaled():
+    """An autosave every few seconds is the person's scratch copy: it is stored but writes no journal row and no domain
+    event (they would fill the activity and audit views). The permission check still applies (a write)."""
+    from sqlalchemy import text
+
+    from di.db import engine
+
+    w = _new()
+    try:
+        with engine.connect() as c:
+            before = c.execute(text("SELECT count(*) FROM action_journal WHERE action LIKE 'workflow.draft.%'")).scalar_one()
+        assert call("workflow.draft.save", _draft_body(w), "developer")["ok"]
+        assert call("workflow.draft.discard", {"id": w["id"]}, "developer")["ok"]
+        with engine.connect() as c:
+            after = c.execute(text("SELECT count(*) FROM action_journal WHERE action LIKE 'workflow.draft.%'")).scalar_one()
+            events = c.execute(text("SELECT count(*) FROM domain_event WHERE type LIKE 'action.workflow.draft.%'")).scalar_one()
+        assert (after - before, events) == (0, 0)
+        assert call("workflow.draft.save", _draft_body(w), "planner-a")["error"]["code"] == "out_of_scope"
+    finally:
+        call("workflow.delete", {"id": w["id"]}, "developer")
+
+
 def test_discard_drops_the_draft():
     w = _new()
     try:

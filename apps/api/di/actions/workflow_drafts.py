@@ -44,11 +44,12 @@ _FIELDS = ("graph", "name", "owner", "trig", "retries", "alert", "base")
 
 
 def _declare(action_id: str, title: str, desc: str, risk: Any, inp: dict[str, dict[str, Any]]) -> None:
+    # not journaled: an autosave every few seconds is the person's scratch copy, not an activity worth an audit row
     ACTIONS.setdefault(
         action_id,
         ActionDef(
             id=action_id, title=title, desc=desc, risk=risk, perm="manageWorkflows", scope="none", input=inp,
-            verb="change workflows",
+            verb="change workflows", journaled=False,
         ),
     )  # fmt: skip
 
