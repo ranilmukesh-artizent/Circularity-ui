@@ -5,7 +5,8 @@ from pydantic import SecretStr, ValidationError
 
 from di.config import DEV_JWT_SECRET, DEV_WEBHOOK_SECRET, Settings
 
-STRONG = {"jwt_secret": "j" * 32, "webhook_secret": "w" * 40}
+# secret_key: a Fernet key (plan 6 A1), required outside dev; this one exists only in this test
+STRONG = {"jwt_secret": "j" * 32, "webhook_secret": "w" * 40, "secret_key": "q8bKOUNwqZ6s3lI2v0WmP3y0S0a7jF8cUxn1JmB6s1Y="}
 
 
 def settings(**kw) -> Settings:

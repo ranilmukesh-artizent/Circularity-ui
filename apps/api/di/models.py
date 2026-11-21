@@ -1,6 +1,6 @@
 """The database schema, declared once on Base.metadata (finding F16).
 
-The migrations (migrations/versions/0001-0009) create these tables; this module declares the same tables so that
+The migrations (migrations/versions/0001-0010) create these tables; this module declares the same tables so that
 `alembic check` (tests/test_models_migrations.py) can prove the two agree, and so that autogenerate starts from the
 real schema. The database and the migrations are the source of truth: a change goes into a new migration first and
 is mirrored here.
@@ -26,6 +26,7 @@ from sqlalchemy import (
     Identity,
     Index,
     Integer,
+    LargeBinary,
     Numeric,
     Table,
     Text,
@@ -345,4 +346,22 @@ stream_event = Table(
     Column("location", Text),  # the case's location, for the warehouse lock
     Column("payload", JSONB, nullable=False),
     _ts("at", now=True),
+)
+
+# --- 0010 source credentials, encrypted (plan 6 A1; di/connectors/secrets.py) ---------------------------------------
+
+source_secret = Table(
+    "source_secret",
+    metadata,
+    Column("source_id", Text, primary_key=True),
+    Column("kind", Text, primary_key=True, server_default="auth"),  # auth, webhook
+    Column("version", Integer, primary_key=True),
+    Column("ciphertext", LargeBinary, nullable=False),  # Fernet, key DI_SECRET_KEY
+    Column("last4", Text, nullable=False),
+    _ts("issued_at", now=True),
+    _ts("expires_at"),
+    Column("active", Boolean, nullable=False, server_default=text("true")),
+    Column("created_by", Text, nullable=False),
+    CheckConstraint("kind IN ('auth', 'webhook')", name="source_secret_kind_check"),
+    Index("source_secret_one_active", "source_id", "kind", unique=True, postgresql_where=text("active")),
 )

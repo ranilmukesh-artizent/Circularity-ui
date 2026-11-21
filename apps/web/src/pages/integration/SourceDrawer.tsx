@@ -339,7 +339,7 @@ function ConnTab({ s, d, errs: e, setField, setCfg, test }: {
       <div className="credrow">
         <div>
           <b>Credentials</b>
-          <div className="note">{s && s.credAt ? (left < 0 ? 'Secret expired ' + -left + ' days ago.' : 'Secret rotated ' + age + ' days ago · expires in ' + left + ' days.') : 'Stored in the secrets vault after you save.'}</div>
+          <div className="note">{s && s.credAt ? (left < 0 ? 'Secret expired ' + -left + ' days ago.' : 'Secret rotated ' + age + ' days ago · expires in ' + left + ' days.') : 'Encrypted and stored by Circularity after you save.'}</div>
         </div>
         {s && <RotateBtn id={s.id} label="Rotate credentials" />}
       </div>
@@ -597,7 +597,7 @@ function SecTab({ s }: { s: Source }) {
         <dt>Credential issued</dt><dd>{s.credAt ? fmtDateYear(new Date(s.credAt)) : '—'}</dd>
         <dt>Expires</dt>
         <dd>{exp && d != null ? <>{fmtDateYear(exp)} · {d < 0 ? 'expired' : d + ' days'}{d <= 14 && <> <FabricStatus k="expiring" /></>}</> : '—'}</dd>
-        <dt>Stored in</dt><dd>Platform secret store; never shown in the interface</dd>
+        <dt>Stored</dt><dd>{s.credential ? <>Encrypted by Circularity · version {s.credential.version} · ends in ••••{s.credential.last4}</> : 'Encrypted by Circularity when you rotate it; never shown in the interface'}</dd>
       </dl>
       {canMgr() && (
         <div className="row" style={{ margin: '8px 0 14px' }}>

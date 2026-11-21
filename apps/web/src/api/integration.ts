@@ -24,7 +24,7 @@ export interface Source {
   status: SrcStatus; mode: string; interval: number; auth: string; freshMin: number | null; fresh: string; compl: number; conf: number;
   rw: string; inputs: string; read: string[]; write: string[]; step: number[]; authority: string[]; owner: string; records: number;
   note?: string; cfgVer: string; lastSync: number | null; updatedAt: number; runs: SyncRun[]; audit: AuditEntry[];
-  method: string; cfg: Record<string, string | number>; credAt: number; credDays: number;
+  method: string; cfg: Record<string, string | number>; credAt: number; credDays: number; credential?: Credential;
   syncing?: boolean; syncPct?: number; paused?: boolean; disconnected?: boolean; discBy?: string | null; frConnectedAt?: number;
   /** The connector's own state (live, failing, auth_expired, unavailable); `status` shows failing and auth_expired as stale. */
   connectorStatus?: string;
@@ -314,8 +314,10 @@ export function journeyStep(n: number): { n: number; label: string; kind: string
 /* ---- changes through the action registry ---- */
 export const syncSource = (id: string) => invoke('source.sync', { source_id: id });
 export const reconnectSource = (id: string) => invoke('source.reconnect', { source_id: id });
-/** Rotate credentials: the page checks the secret (8 characters or more) and does not send it; the vault is simulated. */
-export const rotateCredentials = (id: string, days: number) => invoke<{ source_id: string; ver: string; stale: boolean }>('credentials.rotate', { source_id: id, days });
+/** Rotate credentials: the new secret (8 characters or more) is stored encrypted on the server and never returned. */
+export interface Credential { kind: string; version: number; last4: string; issued_at: number | string | null; expires_at: number | string | null }
+export const rotateCredentials = (id: string, days: number, secret: string) =>
+  invoke<{ source_id: string; ver: string; stale: boolean; credential: Credential | null }>('credentials.rotate', { source_id: id, days, secret });
 export const deleteSource = (id: string) => invoke<{ source_id: string; name: string; vendor: string }>('source.delete', { source_id: id });
 export interface Draft {
   type: string; name: string; vendor: string; ver: string; env: string; url: string; method: string;

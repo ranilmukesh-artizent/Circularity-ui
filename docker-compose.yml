@@ -20,6 +20,7 @@ x-api-env: &api-env
   DI_ENV: ${DI_ENV:-dev}
   DI_JWT_SECRET: ${DI_JWT_SECRET:-}
   DI_WEBHOOK_SECRET: ${DI_WEBHOOK_SECRET:-}
+  DI_SECRET_KEY: ${DI_SECRET_KEY:-}
   # B16b, Ask Circularity on a language model (di/ask): the key stays in the repository's local .env (git-ignored);
   # without it, or with ASK_PROVIDER=none, Ask answers with the demo's rule-based fallback
   GROQ_API_KEY: ${GROQ_API_KEY:-}

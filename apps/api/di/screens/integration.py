@@ -262,6 +262,14 @@ class Fabric:
         }
         self.workflows = all_workflows(s)
         self.tables = dict(_table_models(s))
+        # stored credentials (plan 6 A1): what the Security tab shows, never the value
+        self.creds = {
+            r.source_id: {
+                "kind": r.kind, "version": r.version, "last4": r.last4,
+                "issued_at": _ts(r.issued_at), "expires_at": _ts(r.expires_at),
+            }
+            for r in s.execute(text("SELECT source_id, kind, version, last4, issued_at, expires_at FROM source_secret WHERE active AND kind = 'auth'"))
+        }  # fmt: skip
         ids = [x["id"] for x in REF_SOURCES if x["id"] in self.rows] + sorted(i for i in self.rows if i not in REF_BY_ID)
         self.sources = [self._source(i) for i in ids]
         self.by_id = {x["id"]: x for x in self.sources}
@@ -307,6 +315,8 @@ class Fabric:
         """What people changed (di.actions.fabric_sources) over the demo's record: saved settings, the paused and
         disconnected flags. A source nobody changed is returned as it is, so the seeded state stays the demo's."""
         cfg = self.cfg.get(base["id"])
+        if base["id"] in self.creds:
+            base["credential"] = self.creds[base["id"]]
         if cfg:
             base.update({k: v for k, v in cfg.items() if k in OVERLAY})
             if not base["records"] and cfg.get("records"):  # no connector: the synthetic first sync's count

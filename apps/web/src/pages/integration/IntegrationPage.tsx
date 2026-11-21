@@ -273,7 +273,7 @@ function RotateModal({ id, onClose }: { id: string; onClose: () => void }) {
   if (!s) return null;
   const ok = async () => {
     if (secret.length < 8) return setErr('Enter at least 8 characters.');
-    const r = await rotateCredentials(id, +days);
+    const r = await rotateCredentials(id, +days, secret);
     if (refused(r, { all: setErr })) return;
     onClose();
     if (r.output.stale) {
@@ -288,7 +288,7 @@ function RotateModal({ id, onClose }: { id: string; onClose: () => void }) {
       <button className="btn ghost" onClick={onClose}>Cancel</button>
       <button className="btn pri" onClick={ok}>Save credentials</button>
     </>}>
-      <p className="note" style={{ marginTop: 0 }}>{s.vendor} · {s.auth}. The new secret is written to the vault. It is never shown again.</p>
+      <p className="note" style={{ marginTop: 0 }}>{s.vendor} · {s.auth}. The new secret is encrypted and stored by Circularity; the previous one is revoked. It is never shown again.</p>
       <div className="fld">
         <label htmlFor="rotSecret">New client secret or API key</label>
         <input id="rotSecret" type="password" autoComplete="new-password" placeholder="Paste the new secret" value={secret} onChange={(e) => setSecret(e.target.value)} />

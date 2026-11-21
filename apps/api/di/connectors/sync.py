@@ -95,6 +95,7 @@ def reset_sources(conn: Connection) -> None:
     ref = golden.load("sources")["sources"]
     ids = [s["id"] for s in ref]
     made = list(conn.execute(text("SELECT id FROM source_system WHERE NOT (id = ANY(:i))"), {"i": ids}).scalars())
+    conn.execute(text("DELETE FROM source_secret"))  # credentials stored in the app (plan 6 A1)
     if made:
         for t in SOURCE_TABLES:
             conn.execute(text(f"DELETE FROM {t} WHERE source_id = ANY(:i)"), {"i": made})  # noqa: S608 - fixed names

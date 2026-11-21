@@ -99,7 +99,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
     const ready = auth === 'oauth' ? allowed : key.length >= 6 || auth === 'sftp';
     body = (
       <>
-        <p className="note" style={{ marginTop: 0 }}>How Circularity signs in to {v}. Credentials go to the platform secret store and are never shown again.</p>
+        <p className="note" style={{ marginTop: 0 }}>How Circularity signs in to {v}. Credentials are encrypted and stored by Circularity, and never shown again.</p>
         <div className="frauth">
           {frAuthOptions().filter((a) => !c || a[0] !== 'sftp' || c.type === 'store').map((a) => (
             <label key={a[0]} className={'frao ' + (auth === a[0] ? 'on' : '')}>

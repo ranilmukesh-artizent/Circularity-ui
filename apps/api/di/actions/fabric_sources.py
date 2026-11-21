@@ -39,7 +39,7 @@ from di import golden
 from di.actions.decisions import push_event
 from di.actions.pipeline import CallContext
 from di.actions.registry import ACTIONS, ActionDef, ActionError, implement
-from di.connectors import lifecycle, sync
+from di.connectors import lifecycle, secrets, sync
 from di.connectors.probe import probe
 from di.connectors.registry import ADAPTERS
 from di.reads.common import fmt_dy, hash_id, iso, ms
@@ -426,15 +426,22 @@ def source_reconnect(i: dict[str, Any], ctx: CallContext):
 
 @implement("credentials.rotate")
 def credentials_rotate(i: dict[str, Any], ctx: CallContext):
-    """A new secret and its term. The secret itself is never stored (nor journaled: the pipeline drops it)."""
+    """A new secret and its term, or (reauth) the consent rerun and the term renewed. The secret is stored encrypted
+    (di.connectors.secrets, plan 6 A1); it is never journaled (the pipeline drops `secret`) nor returned."""
     if i.get("secret") is not None and len(str(i["secret"])) < 8:
         raise ActionError("validation_error", "Enter at least 8 characters.")
     days = i["days"]
     if not (isinstance(days, int | float) and 1 <= days <= 3650):
         raise ActionError("validation_error", '"days" must be from 1 to 3650.')
-    cur, cfg = _current(ctx, i["source_id"])
-    cfg["credAt"], cfg["credDays"] = _now_ms(ctx), int(days)
     reauth = bool(i.get("reauth"))  # frCxDone: the consent step rerun, the credential renewed
+    cur, cfg = _current(ctx, i["source_id"])
+    if not reauth and not i.get("secret"):
+        raise ActionError("validation_error", "Enter the new secret.")
+    cfg["credAt"], cfg["credDays"] = _now_ms(ctx), int(days)
+    if i.get("secret"):
+        meta = secrets.put_secret(ctx.session, cur["id"], "auth", str(i["secret"]), int(days), _by(ctx), ctx.now)
+    else:
+        meta = secrets.renew(ctx.session, cur["id"], int(days), now=ctx.now)
     ver = _bump(ctx, cur, cfg, "Re-authenticated; credential renewed" if reauth else "Credentials rotated")
     lifecycle.save(ctx.session, cfg)
     if reauth:
@@ -447,6 +454,7 @@ def credentials_rotate(i: dict[str, Any], ctx: CallContext):
         "stale": cur["status"] == "stale",
         "credAt": cfg["credAt"],
         "credDays": cfg["credDays"],
+        "credential": meta.public() if meta else None,
     }
 
 

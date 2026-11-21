@@ -1,3 +1,4 @@
+import base64
 from functools import lru_cache
 from typing import Literal, Self
 
@@ -12,6 +13,8 @@ DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 DEV_JWT_SECRET = "dev-only-change-me-circularity-di-api-secret"  # noqa: S105 - dev-only default, refused outside dev
 DEV_WEBHOOK_SECRET = "dev-only-source-sim-webhook-secret"  # noqa: S105 - dev-only default, refused outside dev
 MIN_SECRET_BYTES = 32
+# plan 6 A1: source credentials are encrypted with DI_SECRET_KEY; in dev an empty key is derived from this seed
+DEV_SECRET_SEED = "dev-only-circularity-source-credentials"  # noqa: S105 - dev-only seed, refused outside dev
 
 
 class Settings(BaseSettings):
@@ -32,6 +35,8 @@ class Settings(BaseSettings):
     # B9: where source-sim delivers change events, and the shared signing secret (DI_WEBHOOK_SECRET; empty: dev default)
     webhook_url: str = "http://api:8000/api/webhooks/source-sim"
     webhook_secret: SecretStr = SecretStr(DEV_WEBHOOK_SECRET)
+    # plan 6 A1: the Fernet key for source credentials (urlsafe base64 of 32 bytes); empty means the dev key (dev only)
+    secret_key: SecretStr = SecretStr("")
     # B13b: what "now" is (di/clock.py): "pinned" to the demo's as-of time, or "sim" = source-sim's simulated clock
     clock: Literal["pinned", "sim"] = "pinned"
     clock_cache_seconds: float = 2.0  # how long the simulated clock's anchor is reused before it is read again
@@ -75,6 +80,14 @@ class Settings(BaseSettings):
                 raise ValueError(f"DI_{name.upper()} is the shipped development secret; set your own for DI_ENV={self.env}")
             if len(value.encode()) < MIN_SECRET_BYTES:
                 raise ValueError(f"DI_{name.upper()} must be at least {MIN_SECRET_BYTES} bytes for DI_ENV={self.env}")
+        key = self.secret_key.get_secret_value()
+        if not key:
+            raise ValueError(f"DI_SECRET_KEY is required for DI_ENV={self.env} (it encrypts source credentials)")
+        try:
+            if len(base64.urlsafe_b64decode(key.encode())) != 32:
+                raise ValueError
+        except ValueError:
+            raise ValueError("DI_SECRET_KEY must be urlsafe base64 of 32 bytes (Fernet.generate_key())") from None
         return self
 
 
