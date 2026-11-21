@@ -18,6 +18,11 @@ describe('importInput (import.commit)', () => {
     expect(i.rows.map((r) => r.asset_id)).toEqual(['MTR-3101', 'PMP-2210']);
     expect(Object.keys(i.rows[0]).sort()).toEqual(['asset_id', 'grade', 'location', 'owner', 'qty', 'received']);
   });
+  it('sends the rejected rows too, so the server holds them as failed records (plan 6 B3)', () => {
+    const i = importInput(1, 1, [row('MTR-3101'), row('BAT-0201', ['qty must be a positive whole number'])]);
+    expect(i.rejected.map((r) => r.asset_id)).toEqual(['BAT-0201']);
+    expect(Object.keys(i.rejected[0]).sort()).toEqual(['asset_id', 'grade', 'location', 'owner', 'qty', 'received']);
+  });
 });
 
 describe('layoutTables (tgLayout)', () => {

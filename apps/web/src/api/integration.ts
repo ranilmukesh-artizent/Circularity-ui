@@ -343,10 +343,13 @@ export async function resolveConflict(id: string, choice?: ConflictChoice) {
 export const escalateConflict = (id: string) => invoke('conflict.escalate', { id });
 export interface ImportRow { asset_id: string; qty: string; grade: string; location: string; owner: string; received: string; errors: string[] }
 /** The import.commit input: the demo's counts and hash (of every validated row, so the same file loads once), plus
- *  the valid rows themselves, which the server checks again and keeps, tagged manual. */
+ *  the valid rows themselves, which the server checks again and loads, tagged manual, and the rejected rows, which it
+ *  holds as failed records (plan 6 B3). */
 export function importInput(ok: number, err: number, rows: ImportRow[]) {
-  const valid = rows.filter((r) => !r.errors.length).map(({ asset_id, qty, grade, location, owner, received }) => ({ asset_id, qty, grade, location, owner, received }));
-  return { ok, err, hash: hashId(JSON.stringify(rows)), rows: valid };
+  const pick = ({ asset_id, qty, grade, location, owner, received }: ImportRow) => ({ asset_id, qty, grade, location, owner, received });
+  const valid = rows.filter((r) => !r.errors.length).map(pick);
+  const rejected = rows.filter((r) => r.errors.length).map(pick);
+  return { ok, err, hash: hashId(JSON.stringify(rows)), rows: valid, rejected };
 }
 export const commitImport = (ok: number, err: number, rows: ImportRow[]) => invoke('import.commit', importInput(ok, err, rows));
 export const updateTables = (input: Record<string, unknown>) =>

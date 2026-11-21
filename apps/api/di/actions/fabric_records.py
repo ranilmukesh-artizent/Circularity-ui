@@ -37,6 +37,7 @@ from di.actions.registry import ACTIONS, ActionError, guard, implement
 from di.canonical import store
 from di.canonical.schema import MODEL_FIELDS, check_fact, top_field
 from di.canonical.store import Fact
+from di.connectors import manual
 
 state.register("imports", list)
 state.register("conflict_escalations", list)
@@ -239,12 +240,19 @@ def import_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards 
 
 
 KEEP = ("asset_id", "qty", "grade", "location", "owner", "received")
+MAX_REJECTED = 5000  # rejected rows held per import (the page caps a file at 200 KB)
+ACTIONS["import.commit"].input |= {
+    "rejected": {"req": False, "t": "array"},  # the rows the page rejected, held as failed records (plan 6 B3)
+}
 
 
 @implement("import.commit", idem=lambda i, ctx: f"imp:{i['hash']}")  # noqa: ARG005 - idem keys take (input, ctx)
 def import_commit(i: dict[str, Any], ctx: CallContext):
     """Loads the valid rows as manual evaluation data. The page sends the rows it validated (beyond the demo's counts);
-    the server checks them again, and refuses the whole import if any fails: rejected rows are never partially loaded."""
+    the server checks them again, and refuses the whole import if any fails: rejected rows are never partially loaded.
+    The rows land through the pipeline like a sync (di/connectors/manual.py, plan 6 B3): raw records from source
+    `manual`, then canonical facts with no confidence and no freshness, never an instruction. The rejected rows the
+    page sends are held in failed_record (run_kind 'import') with their reasons."""
     rows = i.get("rows")
     kept: list[dict] | None = None
     if rows is not None:
@@ -256,8 +264,12 @@ def import_commit(i: dict[str, Any], ctx: CallContext):
                     "validation_error", f"{r.get('asset_id') or 'A row'}: {bad[0]}. Rejected rows are never partially loaded."
                 )
         kept = [{k: r.get(k) for k in KEEP} for r in rows]
+    rejected = [r for r in (i.get("rejected") or []) if isinstance(r, dict)]
     s = ctx.session
     n = state.next_number(s, "imports", "IMP-", 0)
+    landed = manual.load(
+        s, f"IMP-{n}", kept or [], [({k: r.get(k) for k in KEEP}, row_errors(r)) for r in rejected[:MAX_REJECTED]]
+    )
     item = {
         "id": f"IMP-{n}",
         "at": NOW,
@@ -267,6 +279,8 @@ def import_commit(i: dict[str, Any], ctx: CallContext):
         "hash": i["hash"],
         "tag": "manual",
         "rows": kept,
+        "facts": landed["facts"],
+        "held": landed["held"],
     }
     state.add(s, "imports", item["id"], item)
     push_event(
@@ -278,7 +292,7 @@ def import_commit(i: dict[str, Any], ctx: CallContext):
         },
         f"import.commit:imp:{i['hash']}",
     )  # fmt: skip
-    return {"id": item["id"], "ref": item["id"], "ok": int(i["ok"])}
+    return {"id": item["id"], "ref": item["id"], "ok": int(i["ok"]), "facts": landed["facts"], "held": landed["held"]}
 
 
 def _by(ctx: CallContext) -> str:

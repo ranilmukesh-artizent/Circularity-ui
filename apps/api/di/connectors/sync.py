@@ -24,7 +24,7 @@ from di import golden
 from di.canonical import store
 from di.canonical.failed import hold
 from di.canonical.schema import split_facts
-from di.connectors import connection, lifecycle
+from di.connectors import connection, lifecycle, manual
 from di.connectors.http import SourceError
 from di.connectors.registry import ADAPTERS, adapter_for, has_adapter
 from di.db import SessionLocal, engine
@@ -99,6 +99,7 @@ def reset_sources(conn: Connection) -> None:
     ids = [s["id"] for s in ref]
     made = list(conn.execute(text("SELECT id FROM source_system WHERE NOT (id = ANY(:i))"), {"i": ids}).scalars())
     conn.execute(text("DELETE FROM source_secret"))  # credentials stored in the app (plan 6 A1)
+    manual.remove(Session(bind=conn))  # Manual Import data (plan 6 B3); the imports list is reset with the workspace
     connection.reset_demo(conn, ids)  # the demo sources' connections back on source-sim (plan 6 A2)
     if made:
         for t in SOURCE_TABLES:

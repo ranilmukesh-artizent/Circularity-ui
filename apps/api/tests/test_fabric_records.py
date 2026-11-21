@@ -5,8 +5,9 @@ ACT.tgAddOk ..., defAction('import.commit' ...), defAction('conflict.resolve' ..
 from sqlalchemy import text
 
 from di import state
-from di.canonical import store
+from di.canonical import failed, store
 from di.canonical.store import Fact
+from di.connectors import manual
 from di.db import SessionLocal, engine
 from tests import starting
 from tests.helpers import call, client, h
@@ -14,11 +15,17 @@ from tests.helpers import call, client, h
 
 def setup_module():
     starting.reset()
+    with SessionLocal() as s:
+        manual.remove(s)
+        s.commit()
 
 
 def teardown_module():
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM conflict WHERE key LIKE 'FRT-%'"))
+    with SessionLocal() as s:  # the imports' canonical data, raw records and held rows (plan 6 B3)
+        manual.remove(s)
+        s.commit()
     starting.reset()
 
 
@@ -185,6 +192,51 @@ def test_import_commit_refusals():
     assert r.status_code == 403
     # counts only (the demo's input) still loads
     assert call("import.commit", {"ok": 4, "err": 0, "hash": "countsonly"}, "admin")["ok"]
+
+
+IMP_ROWS = [
+    {"asset_id": "MTR-9901", "qty": "2", "grade": "C", "location": "Warehouse 1", "owner": "Customer A", "received": "2026-10-07"}
+]
+REJECTED = [{"asset_id": "XYZ-1", "qty": "0", "grade": "F", "location": "Mars", "owner": "Customer A", "received": "07/10/2026"}]
+
+
+def test_import_lands_through_the_pipeline_and_holds_rejected_rows():
+    """Plan 6 B3: rows land in raw_record from source `manual`, map to canonical facts (no confidence, no freshness)
+    that the asset's canonical record shows, never queue an instruction or a job; rejected rows are held."""
+    with SessionLocal() as s:
+        before = s.execute(text("SELECT (SELECT count(*) FROM instruction), (SELECT count(*) FROM job)")).one()
+    r = call("import.commit", {"ok": 1, "err": 1, "hash": "b3pipeline1", "rows": IMP_ROWS, "rejected": REJECTED}, "developer")
+    assert r["ok"] and r["output"]["facts"] == 6 and r["output"]["held"] == 1, r
+    imp = r["output"]["id"]
+    with SessionLocal() as s:
+        raw = s.execute(
+            text("SELECT ext_id, payload FROM raw_record WHERE source_id = 'manual' AND resource = 'import' AND ext_id LIKE :l"),
+            {"l": imp + ":%"},
+        ).all()
+        assert [(x.ext_id, x.payload) for x in raw] == [(imp + ":1", IMP_ROWS[0])]
+        held = failed.held(s, run_kind="import", run_id=imp)
+        after = s.execute(text("SELECT (SELECT count(*) FROM instruction), (SELECT count(*) FROM job)")).one()
+        assert s.execute(text("SELECT count(*) FROM source_system WHERE id = 'manual'")).scalar_one() == 0  # not a source
+    assert len(held) == 1 and held[0]["step"] == "validate" and held[0]["payload"]["asset_id"] == "XYZ-1"
+    assert "qty must be a positive whole number" in held[0]["reason"] and "received must be YYYY-MM-DD" in held[0]["reason"]
+    assert tuple(after) == tuple(before)  # no instruction, no job
+    a = client.get("/api/canonical/asset/MTR-9901", headers=h("admin")).json()
+    assert (a["data"]["location"], a["data"]["qty"], a["data"]["owner_tenant"], a["data"]["received_at"]) == (
+        "Warehouse 1", 2, "Customer A", "2026-10-07",
+    )  # fmt: skip
+    p = a["provenance"]["location"][0]
+    assert (
+        p["source_id"] == "manual" and p["confidence"] is None and p["resource"] == "import" and "Manual import" in p["transform"]
+    )
+    assert client.get("/api/canonical/condition/MTR-9901", headers=h("admin")).json()["data"]["grade"] == "C"
+    dup = call("import.commit", {"ok": 1, "err": 1, "hash": "b3pipeline1", "rows": IMP_ROWS, "rejected": REJECTED}, "developer")
+    assert dup["error"]["code"] == "duplicate"
+    with SessionLocal() as s:
+        n = s.execute(text("SELECT count(*) FROM raw_record WHERE source_id = 'manual' AND ext_id LIKE 'IMP-%'")).scalar_one()
+        assert n == 3  # this import's row and the two of test_import_commit_records_the_rows_once, loaded once each
+        manual.remove(s, imp)
+        s.commit()
+        assert store.get(s, "asset", "MTR-9901") is None and failed.held(s, run_kind="import", run_id=imp) == []
 
 
 # ---------------------------------------------------------------- conflicts
