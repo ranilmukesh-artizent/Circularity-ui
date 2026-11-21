@@ -2,6 +2,18 @@
 
 Problems already hit, newest first. Each entry gives the symptom, the root cause, the fix, and how to avoid it.
 
+## 2026-11-22: The dev api hung on reload while a browser was open
+
+- **Symptom:** after a code change the dev api stopped answering for minutes; its log ended with uvicorn's "Waiting
+  for connections to close".
+- **Cause:** `uvicorn --reload` waits for every open connection to close before it restarts, and the browser's live
+  stream (SSE) never closes by itself.
+- **Fix:** the dev api's command adds `--timeout-graceful-shutdown 3` (`docker-compose.yml`, `29704d4`): uvicorn
+  0.34.0 cancels the open connections after 3 s ("timeout graceful shutdown exceeded") and the api answers again about
+  15 s after the change, start-up included. Production (no `--reload`) is unchanged.
+- **Avoid:** a change to a service's `command` (or its environment) reaches the container only when it is recreated:
+  `docker compose up -d api`. `docker compose restart` and `scripts/dev/restart.sh` keep the old command.
+
 ## 2026-11-21: Commits from inside WSL had author `root`
 
 - **Symptom:** plan-6 commits made by agents showed `root <root@…>` as author in `git log`.

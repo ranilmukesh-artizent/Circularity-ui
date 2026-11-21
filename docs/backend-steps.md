@@ -760,23 +760,36 @@ Plan: `docs/agents/plans/06-fabric-production.md` (task → commit list in its s
   /api/screens/workflows/blocks`), node `cfg` checked on save and publish, the step implementations (`steps/`,
   `fx_rate` table 0017), the engine (`engine.py`, `run_graph`), the source binding (`binding.py`: a source's sync
   **is** the run of its bound published ingest workflow, else the default graph; `test_engine_parity_canonical`
-  proves identical canonical and provenance), triggers (`triggers.py`: schedule, event, approval; off with
-  `DI_WORKFLOW_TRIGGERS=false`), versions (`versions.py`: Compare, Restore; runs use the published version) and the
-  live source overlay for the checks (`live.py`). One run at a time per workflow (advisory lock), retries with backoff
+  proves identical canonical and provenance), triggers (`triggers.py`: schedule, event, approval; since the gap
+  fixes also file, case and the trigger blocks; off with `DI_WORKFLOW_TRIGGERS=false`), versions (`versions.py`:
+  Compare, Restore; runs use the published version) and the live source overlay for the checks (`live.py`). One run at a time per workflow (advisory lock), retries with backoff
   1 s, 2 s, 4 s, Reprocess and Apply fix through the engine; drafts autosave on the server, unjournaled
   (`ActionDef.journaled=False`); Test run is a dry run on the server; JSON import.
 - **Operate:** the worker's periodic step closes runs a dead worker left ("worker lost", `di/worker.py
   reap_lost_runs`); the Monitor shows per-workflow success, p95 run and step durations and held records by rule from
   real runs (`workflow_run_stats`); the demo reset clears stored credentials, edited mappings, imports, app-made
   versions and drafts, and returns demo sources left `failing` or `auth_expired` to their starting status.
+- **Gap fixes (22 Nov 2026,** `53da7b6` … `2a9ba51`, listed in the plan's status section**):** any connected source
+  (demo, catalogue, hand-made) gets an ingest workflow, a writable app-made one an outbound one; the Connect dialog
+  prefills and stores the typed key (`source.sandboxKey`), a re-connected deleted catalogue source starts clean
+  (`lifecycle.purge`); the page merges the server's full checks (`workflow.validate` with `graph`) into the Checks
+  panel, inspector and canvas, refusals name the first error, *Publish v{x}*, simulated approval in a dry test run;
+  block settings do what they say (Convert currency's fields, Order late events' keys and Time field, Event
+  ingestion's Time field, Mapping version, Wait parks and resumes through `di/workflow/waits.py` and the
+  `workflow.resume` job, Call workflow starts the other workflow, Write to audit log adds `workflow.audit` entries);
+  file, case and trigger-block triggers fire, event-type patterns; outbound sends use the bound outbound workflow's
+  Timeout, Retries and Target operation (`di/instructions/outbound.py`); a bound ingest workflow handles only its
+  resources, the rest sync through the default graph (`binding.rest_graph`); run views show one set of real figures
+  (`run_figures`, `run_quality`); Home's alerts and briefing read the live fabric; `DI_SECRET_KEY` key lists and
+  `scripts/dev/reencrypt-secrets.sh`; the dev api's `--timeout-graceful-shutdown 3`.
 - **Checks:** (full suite and smoke results: added by the lead)
-- **Known gaps:** file and case triggers exist as helpers (`triggers.on_file`, `on_case`) that nothing calls yet; no
-  tool re-encrypts stored secrets when `DI_SECRET_KEY` changes (runbook: rotate each again); plan 2 tasks 1–3 (job
-  priorities, `dedupe_key`, dead letters) were not done first, so one-run-at-a-time is a query on `job` plus the run
-  lock and plan 6 has its own run reaper; catalogue systems without circularity data (Workday, Jira, Confluence,
-  Teams, Google Drive, S3, Azure Blob, NetSuite) keep records raw and map nothing; the demo's `mapping.suggest` stays
-  unported; the integration screen still shows the market feed and the recycler as live while the workflow checks
-  say otherwise (demo parity on both screens).
+- **Known gaps:** plan 2 tasks 1–3 (job priorities, `dedupe_key`, dead letters) were not done first, so
+  one-run-at-a-time is a query on `job` plus the run lock and plan 6 has its own run reaper; the file exchange steps'
+  settings are checked but not used at run time; catalogue systems without circularity data (Workday, Jira,
+  Confluence, Teams, Google Drive, S3, Azure Blob, NetSuite) keep records raw and map nothing; the demo's
+  `mapping.suggest` stays unported; the integration screen still shows the market feed and the recycler as live while
+  the workflow checks say otherwise (demo parity on both screens); the demo's seeded workflow runs keep the demo's
+  estimated figures (marked as such).
 
 ## B18. Hardening
 

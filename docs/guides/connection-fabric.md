@@ -102,7 +102,10 @@ search shortcut. The dialog has five steps:
 1. **Authentication**: how Circularity signs in. Credentials are encrypted and stored by Circularity, and never shown
    again.
    - **OAuth 2.0**: press **Allow** on the consent box (Deny closes the dialog).
-   - **API key**: paste the key (at least 6 characters).
+   - **API key**: the field starts with the simulated system's sandbox key, and says *"This is the sandbox key of the
+     simulated system."* The key in the field is the one Test connection signs in with and the one stored when you
+     connect. Type another and the note says *"The simulated system accepts only its sandbox key; another key fails
+     the test at Auth."*
    - **Service principal**: enter its ID, e.g. `svc-circularity-read` (at least 6 characters).
    - **SFTP** (file storage systems only): the drop path; each file must arrive with a signed manifest.
    **Continue** unlocks once the step is complete.
@@ -120,7 +123,13 @@ search shortcut. The dialog has five steps:
 The system is then a connected source: it appears as **Connected** on Overview, on the Source Map and in the Monitor,
 with the authentication, scopes and accepted mappings you chose, and **Sync now** reads it again. Its canonical data is
 kept under keys of its own (for example `postgres:MTR-2041`), so connecting a catalogue system never changes the demo's
-data or opens conflicts.
+data or opens conflicts. Until its record reaches the list, its row in **All integrations** shows *Connecting…* and
+opens nothing. Like the demo's sources, it can have its own ingest workflow in Workflow Studio (and an outbound one
+when it has write operations).
+
+Connecting a catalogue system you deleted earlier **starts clean**: the deleted source's sync runs, landed records,
+cursors, held records, webhook events, mapping versions, connection and credentials are removed when you connect it
+again. Until then, **Undo** of the delete brings it back with everything it had.
 
 ### 4.2 By hand (any other system)
 
@@ -283,8 +292,12 @@ steps with **Refine in Workflow Studio**, which opens the builder with that requ
   - Validation & enrichment: **Required fields**, **Rules** (**+ Add rule**: a field, a check *present*, *type*,
     *regex*, *range* or *in*, and its value, e.g. `>0` or `0..100`), **On failure** (*hold* keeps failed records for
     reprocessing, *reject* drops them);
-  - Order late events: **Key fields**, **Newest wins by**, **Late window (min)**;
-  - Convert currency: **Target currency** (USD, EUR or INR), **Rate date** (*record* or *run*), **Rate table**;
+  - Order late events: **Key fields** (a record missing one goes on untouched), **Newest wins by**, **Late window
+    (min)**, **Time field** (the late window counted back from the newest record's time in the run);
+  - Convert currency: **Target currency** (USD, EUR or INR), **Rate date** (*record* or *run*), **Rate table**,
+    **Amount fields**, **Currency field**, **Source currency**, **Date field**;
+  - Wait: **Duration (min)**, **Until** (records really wait and the run comes back for them); Call workflow:
+    **Workflow** (starts that published workflow); Write to audit log: **Level** (one Audit entry per run);
   - Filter and condition: **Condition** (rules; rows that pass every rule are kept); Normalise units: **Field
     units**; Code-table lookup: **Code tables**; Timestamps to UTC: **Fields**, **Source zone**.
 
@@ -294,10 +307,10 @@ steps with **Refine in Workflow Studio**, which opens the builder with that requ
 - A setting the step cannot use (an unknown currency, an empty rule, a number out of range) **is saved anyway**, but it
   is a check error, so Test run and Publish refuse until you fix it. Checks that need the fields the source's records
   really carry run on the server: a key, rule or mapping field the records do not have, e.g. *"Order late events: Key
-  fields opportunity_id is not a field the records carry."* Test run then refuses with *"Fix 1 error before running.
-  The checks say what and why."* and Publish with *"Cannot publish: 1 error in the checks. Fix them first."* The
-  canvas's Checks panel and **Validate** do not list these field checks yet: compare the names with the connector's
-  **Samples** in a test run.
+  fields opportunity_id is not a field the records carry."* The page asks the server about 0.6 s after each edit (and
+  again on Validate, Test run and Publish) and shows its answer in the **Checks** panel, the inspector's **Problems**
+  and on the canvas. Test run then refuses with *"Fix 1 error before running. The checks below say what and why.
+  First: {message}"* and Publish with *"Cannot publish: 1 error in the checks. Fix them first. First: {message}"*.
 - **Connect** steps by dragging from a step's right dot to another step, or in the inspector: **Connections** lists
   what the block **Receives from** and **Sends to**; **Next step** (or **+ Add another connection**, then **Also send
   to**, when it already sends somewhere) adds a link, and **Remove** next to a link removes it (locked links show
@@ -310,8 +323,9 @@ steps with **Refine in Workflow Studio**, which opens the builder with that requ
   Circularity: they cannot be moved, re-wired or removed.
 - Toolbar: zoom (50–140 %), fit, undo/redo (40 steps), auto layout, minimap, Overview / Details / Data flow views,
   expand canvas. On a phone the canvas is read-only.
-- The **Checks** panel lists errors and warnings (for example a write that bypasses human approval, a mapping fed by
-  the wrong connector, a connector with no connected feed). **Validate** runs them on demand.
+- The **Checks** panel lists errors and warnings, the browser's and the server's (for example a write that bypasses
+  human approval, a mapping fed by the wrong connector, a connector with no connected feed, a field the records do not
+  carry). **Validate** runs them on demand.
 
 ### 7.4 Drafts, test run, save, publish, run
 
@@ -320,47 +334,61 @@ steps with **Refine in Workflow Studio**, which opens the builder with that requ
   with your changes, still unsaved. Each person has their own copy. **More actions → Save** makes a new version
   (*"{name} saved as v{x}."*). **Discard changes** drops the copy and goes back to the last saved version (*"Changes
   discarded. Back to v{x}."*). Leaving with unsaved changes warns you once.
-- **Validate** checks the draft on the canvas: *"No errors or warnings. This workflow is ready to run."*, *"No errors.
-  N warnings to review."* or *"N errors to fix before this can run."* (see 7.3 for the field checks it does not do).
+- **Validate** checks the draft with the server's full checks: *"No errors or warnings. This workflow is ready to
+  run."*, *"No errors. N warnings to review."* or *"N errors to fix before this can run."*
 - **Test run** is a dry run of the *draft* on the server, over a sample of real records (up to 25 per connector).
   Every step runs with its settings; nothing is written (no records, canonical values, held records or events) and
   nothing is sent to any system.
-  - **Task instances** shows each step's state, **Try** and **Records (in / out)**, with *· N held* where a step
+  - **Task instances** shows each step's state, **Try** and **Records (in / out)**, with *· N rejected* where a step
     rejected records. **Samples** next to the counts opens **Before** and **After**: the first three records into and
     out of that step. After the field mapping the records also carry their canonical `facts`.
   - The note under the counts says *"Dry run on N sampled records. Nothing was written."*, and the toast *"Test run
     finished: N records. Nothing was written."* (or *failed*, with the reason, e.g. a source that is syncing at that
     moment: *"{source} is syncing now"*; try again a little later). Records held by a rule are named, e.g. *"25 records
     held at Validation & enrichment"*.
-  - At **Human approval** the test run stops (*Awaiting approval*). **Approve and continue** needs approval rights
-    (Admin; a Developer sees *"Your role cannot approve. Switch to Approver to continue the run."*) and runs the rest,
-    still dry: *"Approved in the test run. No instruction is sent to any system."*
-  - With errors in the checks it does not start: *"Fix N errors before running. The checks below say what and why."*
+  - At **Human approval** the test run stops (*Awaiting approval*). **Approve and continue** (Developer or Admin) is a
+    simulated approval, *"Simulated approval (dry run): nothing is sent."*, and runs the rest, still dry: *"Approved
+    in the test run. Simulated approval (dry run): nothing is sent to any system."* Real approvals of decisions stay
+    with the approvers.
+  - With errors in the checks it does not start: *"Fix N errors before running. The checks below say what and why.
+    First: {message}"*
+  - The **Data quality** panel then shows the test run's figures, marked *Test run (dry)*.
 - **Publish** saves first if needed and refuses while there are check errors (*"Cannot publish: N errors in the
-  checks. Fix them first."*): *"{name} published as v{x}. It runs on its trigger: {trigger}."* From then on **runs use
-  the published version**. A later Save makes a new version that does not run until you publish it: on a published
-  workflow, use **Publish** on the current row of **History → Versions** (*"v{x} published. Runs now use it."*); the
-  menu item has become **Unpublish** (*"{name} unpublished. It will no longer run on its trigger."*). Pause and Resume
-  are in the list's ⋯ menu.
+  checks. Fix them first. First: {message}"*): *"{name} published as v{x}. It runs on its trigger: {trigger}."* From
+  then on **runs use the published version**. A later Save makes a new version that does not run until you publish
+  it: the header shows *Runs v{pub} · v{x} not published*, and **More actions → Publish v{x}** (or **Publish** on the
+  current row of **History → Versions**) publishes it (*"v{x} published. Runs now use it."*); the Publish menu item
+  has become **Unpublish** (*"{name} unpublished. It will no longer run on its trigger."*). Pause and Resume are in
+  the list's ⋯ menu.
 - **Run now** processes real records now, on the server, with the **published** version (a workflow that was never
-  published runs its saved version, if its sources are connected and its canvas checks are clean; otherwise *"{name}
-  is a draft with errors: …"*). Run now does not do the field checks; Test run and Publish do.
+  published runs its saved version, if its sources are connected and its checks, field checks included, are clean;
+  otherwise *"{name} is a draft with errors: …"*).
   - One run at a time: *"{name} is already running"*. A run whose worker stopped is closed as failed (*worker lost*)
     within a minute, so the workflow can run again.
   - A step that fails is tried again as often as **Retries** says, waiting 1, 2, 4, 8 … seconds; **Try** shows the
     real tries.
   - The toast follows the run: *"{name}: run finished, N records."* or *"{name}: run failed. {reason}"*. The run is
-    listed under **Recent runs** and on the **History** tab with Records (in / out), Errors (records held) and
-    Triggered by.
+    listed under **Recent runs** and on the **History** tab with Records (in / out), **Held** (the records it still
+    holds, the same ones **View failed records** lists) and Triggered by. The demo's seeded runs keep the demo's
+    estimate, with a note saying so.
 - **Triggers fire** for published workflows: *On a schedule* every N minutes after the later of the last run and the
-  last save or publish; *On event* when the source sends Circularity a webhook; *On approval* when an instruction is
-  queued for the target system. *On file arrival* and *On case request* can be chosen, but nothing starts them yet
-  (use Run now). A workflow whose source is paused, disconnected or unavailable is skipped until it is back. The run
-  shows its trigger under Triggered by (Schedule, Event, Approval; Manual for Run now).
+  last save or publish; *On event* when the source sends Circularity a webhook (of the event type an Event trigger
+  block names, if any; `offer.*` matches every `offer.` event); *On approval* when an instruction is queued for the
+  target system; *On file arrival* when a sync of a file-drop source (the recycler partner) reads new files; *On case
+  request* when a case moves to re-evaluation. A **Scheduler** or **Event trigger** block on the canvas sets the
+  trigger (the Settings tab then says *"Set by the Scheduler block."* or *"Set by the Event trigger block …"*). A
+  workflow whose source is paused, disconnected or unavailable is skipped until it is back. The run shows its trigger
+  under Triggered by (Schedule, Event, File, Approval, Case, Workflow for a Call workflow step, Resume for a Wait step;
+  Manual for Run now).
 - **A source's sync is the run of its ingest workflow.** Publish an ingest workflow and its source's syncs (scheduled,
-  **Sync now**, webhooks) run that workflow in its published version, settings included. A source with no published
-  ingest workflow syncs with the default graph, which passes every record on unchanged. Only workflows published in the
-  app count (the starting workflows do not); Unpublish or Delete returns the source to the default.
+  **Sync now**, webhooks) run that workflow in its published version, settings included, for the resources its
+  connector reads; the source's other resources keep syncing through the default graph in the same sync run. A source
+  with no published ingest workflow syncs with the default graph, which passes every record on unchanged. Only
+  workflows published in the app count (the starting workflows do not); Unpublish or Delete returns the source to the
+  default.
+- **Outbound settings apply once published here.** When an outbound workflow writing to a target is published in the
+  app, the instructions sent to that target use its delivery method's **Timeout** and **Retries** and its write
+  connector's **Target operation** (where changed from the defaults). Until then instructions go out as in the demo.
 - **Fail this step in the next run** (inspector, under **Testing**) makes the step fail, to rehearse the failure path.
   A test run uses it at once; a real run once you save and publish it.
 
@@ -390,8 +418,11 @@ steps with **Refine in Workflow Studio**, which opens the builder with that requ
 
 ### 7.6 When a run fails
 
-- **Investigate** (or `?run=last`) shows which step failed after how many retries, the error log and a schema drift
-  table. **Diagnose** and **Fix** ask Ask Circularity; **Run now** runs again.
+- **Investigate** (or `?run=last`) shows which step failed after how many retries, the error log and the run's
+  **Held records** by step, field and rule (for the demo's seeded failed run it says nothing was held for real).
+  **Diagnose** and **Fix** ask Ask Circularity; **Run now** runs again.
+- **Data quality (latest run)** shows the latest real run's records read, passed and held and the fields that failed
+  most (*No real run yet* before the first run in the app).
 - **Apply the suggested fix** gives the failed step back its settings (and its failure toggle) from the newest earlier
   version in which they were different, as a new version, and says exactly what changed: *"{step} is back to its
   settings from v{x}: {setting} back to {value}. Run now to confirm it turns green."* (*failure toggle off* for a
@@ -543,14 +574,15 @@ Values are split on plain commas: quoted values and values containing commas are
 | Enter a full URL starting with https:// | Base URLs must be HTTPS. |
 | Add at least one read operation. | A source must read something. |
 | A source with this name and vendor already exists. | Pick another display name. |
-| Cannot publish: N error(s) in the checks. Fix them first. | Open the Checks panel; a field the records do not carry is checked on the server only (7.3). |
-| Fix N error(s) before running. The checks say what and why. | Test run refused by the server's checks, including the field checks. |
+| Cannot publish: N error(s) in the checks. Fix them first. First: {message} | Open the Checks panel; it lists the server's checks too, field checks included (7.3). |
+| Fix N error(s) before running. The checks (below) say what and why. First: {message} | Test run refused by the checks, including the field checks. |
+| The simulated system accepts only its sandbox key; another key fails the test at Auth. | Connect dialog: the key typed is not the simulated system's sandbox key. |
 | {step}: {setting} … is not a field the records carry. | A block setting names a field the source's records do not have. |
 | {step}: Target currency XYZ is not one of USD, EUR, INR. | A setting outside its choices (the same form for other settings). |
 | {source} is syncing now | A test run or run reached the source while its sync was running; try again shortly. |
 | {name} is a draft with errors: … | Run now refuses a draft whose run would fail. |
 | {name} is already running | One run per workflow at a time; wait for the current one. |
-| {name} is already published | Publish a newer saved version from History → Versions instead. |
+| {name} is already published | Publish a newer saved version with More actions → Publish v{x} (or History → Versions) instead. |
 | v{x} is the current version. | Restore needs an older version. |
 | No held records to reprocess. | The workflow's runs hold no records. |
 | The last run of {name} did not fail, so there is nothing to fix. | Apply the suggested fix works only after a failed run. |
@@ -572,8 +604,12 @@ page: a bad signature gets 401, an event older than 300 seconds 400 `stale_event
   systems sync from their mocks in source-sim, and a hand-made source syncs from the base URL you gave it (in the dev
   stack, the `http://source-sim:8100/sandbox/<any-name>` test API), every time, like the demo's 21 sources. The AI
   builder offers only the demo's 21 systems.
-- Publishing an ingest workflow changes what its source's syncs do (7.4): its settings apply to that source's data. In
-  a demo, reset afterwards (below) to return the demo's data.
+- Publishing an ingest workflow changes what its source's syncs do (7.4): its settings apply to the resources its
+  connector reads (the other resources sync as before). In a demo, reset afterwards (below) to return the demo's data.
+- Home's alerts and the Developer's briefing read the live Connection Fabric: one alert per source the Source Map
+  shows stale or not connected (*"{name} · feed is stale"*, *sync failing*, *credential expired* or *not connected*),
+  one per workflow whose last run failed, and one alert for all open conflicts (*"N open source conflicts"*, *"M hold
+  up a decision"*).
 - In the dev stack no source starts stale: the simulator's *expired token* fault on Ritchie Bros. Market Data is off by
   default. To show *Needs attention*, *Refresh token and re-sync* and *Re-authenticate*, switch it on with
   `curl -X POST http://localhost:8100/_sim/faults/demo` and press **Sync now** on Ritchie Bros. (or start source-sim
@@ -585,6 +621,8 @@ page: a bad signature gets 401, an event older than 300 seconds 400 `stale_event
   source drawer belong to your browser session; signing out drops them.
 - *Run now* uses the published version (the saved one if never published); *Export JSON* the saved version; *Test
   run* and *Validate* the draft.
+- The demo's seeded workflow runs keep the demo's estimated figures in the Runs table (marked by a note); every run
+  made in the app shows real figures.
 - Event Streams shows the 70 newest matching events; the Conflict Queue shows 60 cards at a time (*Show more*).
 - The CloudEvents the simulated systems send to Circularity (`POST /api/webhooks/source-sim`, HMAC-signed) trigger
   syncs, which Event Streams lists as `sync.completed` or `sync.failed`; the shared delivery itself is not listed

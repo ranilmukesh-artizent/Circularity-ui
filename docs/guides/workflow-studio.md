@@ -67,19 +67,25 @@ The starting workflows the demo seeds as *Published* are **not** bound until som
 demo's sources keep syncing as their adapters map. A sync that runs a bound workflow is recorded in the source's
 **Sync & History**, not in the workflow's run list; records a step held there make the sync *partial*.
 
+**A bound workflow handles only the resources its connector reads.** When its connector ticks some **Resources** (the
+tutorial's SAP workflow reads `purchase_order` only), the sync reads the source's other resources through the default
+graph, narrowed to them, in the same sync run (whose counts are both parts'). Publishing a workflow that reads one
+resource therefore never stops the rest of the source from syncing. A connector that ticks none reads every resource,
+so nothing is left to the default graph.
+
 ## 2. Who can do what
 
 | Role | Opens Workflow Studio | Creates, edits, saves, publishes, runs | Approves a held test run |
 |---|---|---|---|
 | Admin | yes | yes | yes |
-| Developer | yes | yes | no |
+| Developer | yes | yes | yes (simulated approval) |
 | Every other role | no (the server answers `out_of_scope`) | no | — |
 
 - The server enforces this on every action (permission *manageWorkflows*). A refused change says *"Only the Developer
   or Admin changes workflows."*
-- **Approve and continue** in a test run needs the approval permission. The Approver role has it but cannot open the
-  studio, so in practice an **Admin** continues a held test run; a Developer is told *"Your role cannot approve. Switch
-  to Approver to continue the run."*
+- **Approve and continue** in a test run is a **simulated approval**: a test run is a dry run, so whoever may run it
+  (*manageWorkflows*: Developer and Admin) may continue it, and the run says *"Simulated approval (dry run): nothing is
+  sent."* Real approvals of decisions stay with the roles that have the approval permission.
 
 ## 3. The list
 
@@ -129,7 +135,7 @@ JSON file. Choose a file that Export JSON wrote."* The other refusals are in [se
 | Field | Values |
 |---|---|
 | **Workflow type** | Ingest pipeline · Outbound instruction · Decision workflow · Blank pipeline |
-| **Source system** (ingest) / **Target system** (outbound) | systems Circularity reads / writes to |
+| **Source system** (ingest) / **Target system** (outbound) | systems Circularity reads / writes to: the demo's, and any source connected from the catalogue or made by hand (an outbound one needs write operations) |
 | **Delivery method** (outbound) | the ones the target accepts: Outbound API call, Event trigger, Interface file, Process orchestration |
 | **Name** | optional, max 80; empty gives *Ingest · {vendor}*, *Outbound · {vendor}*, *Decision workflow* or *New pipeline* |
 
@@ -145,6 +151,11 @@ JSON file. Choose a file that Export JSON wrote."* The other refusals are in [se
 *"{name} created as a draft with only the blocks it needs to run. Add more from the palette, then Save and Publish."*
 Optional blocks (a transform, the error handler, audit log, event stream, a second channel) are never added for you.
 **Reset to template** (More actions) brings back this starting graph.
+
+A source connected from the catalogue or made by hand gets the same starting graph: its schedule is its poll interval
+(none: On event), and its field mapping feeds its system type's canonical model, else Outcome. An outbound workflow
+to such a source needs write operations on it; otherwise *"{name} takes no instructions. Grant it write access
+first."*
 
 **Your templates** (in the same dialog, once you have saved one): pick one to create a draft *"{workflow name} (from
 template)"* with its graph, system, owner and trigger: *"Created from the template as a draft."*
@@ -192,9 +203,10 @@ Documentation**), and on the studio tab: the palette, the canvas, the inspector,
 Tags, Related systems with *Open connection →*, Quick actions), then **Recent runs**, **Data quality (latest run)**,
 **Checks** and **Task instances**.
 
-**Header**: back arrow and breadcrumb, the name (editable, max 80), status, `id · version`, *Last run …*, *Unsaved
-changes*, then **More actions** (Save, Discard changes, Reset to template, Publish / Unpublish, Duplicate, Save as
-template, Export JSON, Delete), **Validate**, **Test run** and **Run now**.
+**Header**: back arrow and breadcrumb, the name (editable, max 80), status, `id · version`, the chip *Runs v{pub} ·
+v{x} not published* when a published workflow has a newer saved version, *Last run …*, *Unsaved changes*, then **More
+actions** (Save, Discard changes, Reset to template, **Publish v{x}** when there is such a newer version, Publish /
+Unpublish, Duplicate, Save as template, Export JSON, Delete), **Validate**, **Test run** and **Run now**.
 
 ### 5.1 Palette
 
@@ -248,7 +260,9 @@ the agents that use it.
 
 **Settings**: one control per setting of the block (see [section 7](#7-block-reference)).
 
-- A required setting has a `*`; the help text sits under the control; a problem shows in red under it, in place.
+- A required setting has a `*`; the help text sits under the control; a problem the browser can see (a value outside
+  its choices, an empty rule) shows in red under it, in place. Problems only the server can see (a field the records
+  do not carry, a Target operation the system does not take) show under **Problems** below.
 - Text, number and list fields take effect when you leave the field or press Enter (one undo step per edit); selects
   and ticks at once. A select that is not required has a *None* option.
 - **Field lists** take names separated by commas (*field_a, field_b*).
@@ -260,7 +274,8 @@ the agents that use it.
   block without settings: *"This block has no settings."*
 - Only settings that differ from the default are stored. Every change marks the draft unsaved.
 
-**Problems**: the checks that belong to this block (errors in red).
+**Problems**: the checks that belong to this block (errors in red), the server's included (see
+[section 8](#8-checks)).
 
 **Connections**
 
@@ -288,8 +303,12 @@ otherwise, records a step **rejects** are held for reprocessing (see [Error hand
 
 **Field-aware checks.** Settings that name fields (field lists, rule fields, pair fields) are also checked against the
 fields the source's records really carry: the keys of its newest 300 landed records and the names its field mapping
-uses. The server runs it when you publish or test run, and only once the source has synced or has a mapping; before
-that it is skipped. The inspector, the **Validate** button and Run now's checks do not run it.
+uses. So are the text settings that name one field (Convert currency's Currency field and Date field, the Time field
+of Order late events and Event ingestion), and only a setting someone set is checked (a default such as Convert
+currency's `amount` is not). The server runs it on every check of the draft (the page asks about 0.6 s after an edit,
+and again on Validate, Test run and Publish), on Publish and on Run now of a draft, and only once the source has
+synced or has a mapping; before that it is skipped. Its errors show in the Checks panel, the inspector's Problems and
+on the canvas.
 
 ### 7.1 Sources and targets
 
@@ -313,28 +332,41 @@ record that cannot be mapped is rejected (rule `map`).
 |---|---|---|---|
 | Mapping version | *latest, or a saved version number* | latest | latest, or a whole number ≥ 1 |
 
-The run always applies the source's current saved mapping; this setting is checked but not used yet.
+*latest* applies the source's current saved mapping, as a sync does. A number applies that saved version of the
+source's mapping (Data Mapping keeps every version) over the adapter's own mapping, or alone for a catalogue or
+hand-made source. A version the source does not have fails the step without retries (*"{step}: no field mapping
+version N for {source}"*).
 
 **Canonical model** (fixed: Asset & component, Condition & eligibility, Demand opportunity, Outcome …). Writes each
 record's facts to the canonical store; a fact that does not fit its model is held (rule `schema`) and the record's
 other facts are stored. Records without facts pass through. Evidence snapshot, Human approval, Decision and the other
 fixed steps pass their records on in a run. No settings.
 
-**Write to a system** (write connector). In this version it passes the instruction on; nothing is sent to the target.
+**Write to a system** (write connector). In a workflow run it passes the instruction on; the instruction itself is sent
+by Circularity's instruction queue after a person approves the decision.
 
 | Setting | Meaning | Default | Allowed |
 |---|---|---|---|
-| Target operation | *Empty: the operation the delivery method uses.* | empty | text |
+| Target operation | *Empty: each step's own write. Oracle Depot Repair: repair or teardown.* | empty | one of the writes the target takes |
+
+A value the target does not take is an error: *"Target operation {x} is not a write of this system ({writes})."*
 
 **Delivery methods** (Outbound API call, Event trigger, File generation, Process orchestration). They pass the
-instruction on.
+instruction on in a run.
 
 | Setting | Default | Allowed |
 |---|---|---|
 | Timeout (s) | 30 | 1–600 |
 | Retries | 3 | 0–5 |
 
-These are checked but not used at run time; a run's retries come from the Settings tab.
+**Where the outbound settings apply.** Once an outbound workflow writing to a target is **published in the app**
+(the newest such one counts), the instructions sent to that target use its settings: the delivery method's
+**Timeout** is the HTTP timeout of each write, its **Retries** how many times a write that failed on a transient error
+(system down, timeout, refused credentials) is tried again before the instruction fails (never more than the job
+queue's own limit), and the write connector's **Target operation** picks the repair order type for Oracle Depot
+Repair (*repair* or *teardown*). Only settings changed from their defaults count. Without such a workflow (the demo's
+seeded outbound workflows are not published in the app) instructions go out exactly as before. A workflow run's own
+retries come from the Settings tab.
 
 ### 7.2 Transforms
 
@@ -354,19 +386,24 @@ comparison `>0`, `>=0`, `<5`, `<=5`, `=3`, `!=3`; **in** with the accepted value
 handler wired after it, the handler's *Failed records* setting decides instead of *On failure*.
 
 **Order late events**. Keeps the newest record per key and drops the others (counted, not held). Newest by the *Newest
-wins by* field, else the change time the record carries; a tie goes to the later arrival.
+wins by* field, else the change time the record carries; a tie goes to the later arrival. A record missing one of the
+key fields is never merged with another: it goes on untouched.
 
 | Setting | Meaning | Default | Allowed |
 |---|---|---|---|
-| Key fields | *Records with the same key are de-duplicated.* | none: the record id | field names |
+| Key fields | *Records with the same key are de-duplicated; a record missing one goes on untouched.* | none: the record id | field names |
 | Newest wins by | *Empty: the source's change time.* | empty | a field name |
-| Late window (min) | a record that arrived more than this after its own time is rejected | 1440 | 0–43200 |
+| Late window (min) | how late a record may be before it is rejected (rule `late_window`) | 1440 | 0–43200 |
+| Time field | *Set: a record whose time is more than the late window before the newest record's in the run is rejected. Empty: only records that carry their arrival time are checked.* | empty | a field name |
 
-The late window applies only to records that carry their arrival time; records read by a connector carry none.
+Records read by a connector carry no arrival time, so for synced records the late window works through the **Time
+field**: it is measured from the newest time in the same run, not from the clock, so replaying old data does not
+reject all of it.
 
-**Convert currency**. Converts the record's `amount` from the currency in its `currency` field (none: USD) to the target
-currency at a **dated rate** from the rate table: the newest rate dated on or before the record's `date` field (or the
-run's date), going through USD and rounding to cents. The rate used is kept with the record, and the `currency` field
+**Convert currency**. Converts each **Amount field** from the currency the record is in to the target currency at a
+**dated rate** from the rate table: the newest rate dated on or before the record's **Date field** (or the run's
+date), going through USD and rounding to cents. The currency a record is in is its **Currency field**, else the
+**Source currency**, else USD. The rate used is kept with the record, and the Currency field (when there is one)
 becomes the target. A currency without a rate is rejected (*"no rate for GBP on 2026-10-06"*); a target without a rate
 fails the step.
 
@@ -375,6 +412,10 @@ fails the step.
 | Target currency | the currency to convert to | USD | USD, EUR, INR |
 | Rate date | *The rate of the record's date, or of the run's.* | record | record, run |
 | Rate table | where the rates come from | fx_rate | fx_rate |
+| Amount fields | *The fields converted.* | amount | field names |
+| Currency field | *The field that says what the amounts are in; it becomes the target. Empty: none.* | currency | a field name, or empty |
+| Source currency | *For a record with no currency field value. Empty: USD.* | empty | USD, EUR, INR |
+| Date field | *The rate of this date. Empty: the run's date.* | date | a field name, or empty |
 
 **Timestamps to UTC**. Rewrites date-time values as UTC (`…Z`), keeping the source value. A value with an offset keeps
 its instant; a local value is read in the source zone. A value that is not a timestamp is rejected (rule `utc`).
@@ -469,11 +510,12 @@ broke. Nothing goes on from it. It must follow Validation & enrichment.
 Without an error handler, the engine holds a step's rejected records itself (unless Validation's *On failure* is
 *reject*), so a rejected record is never lost silently.
 
-**Write to audit log**. Passes records on.
+**Write to audit log**. Passes records on and adds one entry per run to the audit log (the Audit page's event log,
+type `workflow.audit`): *"{workflow} · run {run} · step {step}: N records ({level})"*. Not in a test run.
 
-| Setting | Default | Allowed |
-|---|---|---|
-| Level | info | info, warn, debug |
+| Setting | Meaning | Default | Allowed |
+|---|---|---|---|
+| Level | *One entry per run in the audit log, with this level and the record count.* | info | info, warn, debug |
 
 **Publish to event stream**. Puts a `model.updated` event on the live stream naming the topic, the workflow, the run and
 up to 50 record keys. Not in a test run, and not when no records reached it. It must follow a canonical model.
@@ -498,23 +540,44 @@ as it is.
 |---|---|---|
 | Items path | empty: each record as it is | a field path |
 
-**Wait**. Records that meet *Until* go on; the others are not passed on (the step shows waiting when none pass). The run
-does not come back for them, and *Duration* is recorded but does not pause the run.
+**Wait**. Holds records back and comes back for them later. The records it holds back are parked on the server and a
+resume job is queued; when it is due, the workflow runs again from the Wait step only (the run is listed with
+*Resume* under Triggered by; the steps before the Wait step show *Skipped*), and the steps after it get the records
+that may go on.
 
-| Setting | Default | Allowed |
-|---|---|---|
-| Duration (min) | 0 | 0–10080 |
-| Until | empty: all go on | an expression |
+- Duration and Until empty: every record goes on at once (the default).
+- **Duration** only: every record waits that many minutes, then all go on.
+- **Until**: records that meet the expression go on now; the others wait and are checked again every Duration
+  minutes (0: every 15 minutes), each time on their newest landed version. A record still waiting 7 days after it
+  first waited is held (rule `wait`, *"Until (…) was not met within 7 days"*).
+- While records wait, the step shows *waiting* (when none went on) and the run's note says *"N records waiting at
+  {step}"*. A test run parks nothing.
+- When the resume job finds the workflow running or paused it tries again a minute later; a deleted workflow takes
+  its waiting records with it; if the Wait step was removed from the workflow, its records are held (rule `wait`) for
+  Reprocess.
 
-**Call workflow**. Passes its records on and names the workflow; in this version the other workflow is not started.
+| Setting | Meaning | Default | Allowed |
+|---|---|---|---|
+| Duration (min) | *Records wait this long, then the run goes on. With Until: how often it is checked again (0: every 15 min).* | 0 | 0–10080 |
+| Until | *An expression: records that meet it go on; the others wait (at most 7 days).* | empty | an expression |
 
-| Setting | Default | Allowed |
-|---|---|---|
-| Workflow | empty | text |
+**Call workflow**. Starts the named workflow (a run listed with *Workflow* under Triggered by), passing it no records,
+and passes its own records on. The other workflow starts only when it is published, not already running or queued,
+and workflow triggers are on; otherwise it is not started, and the step still succeeds. Calling its own workflow, a
+workflow that does not exist, or one that calls this one back fails the step: *"Call workflow cannot call its own
+workflow ({id})"*, *"Call workflow: there is no workflow {id}"*, *"Call workflow: {id} calls {id} back, so the calls
+would go round in a circle"*. A test run starts nothing.
+
+| Setting | Meaning | Default | Allowed |
+|---|---|---|---|
+| Workflow | *Starts this published workflow (not itself, nor one that calls back).* | empty | a workflow id |
 
 **Scheduler** (Interval (min), 60, 1–10080) and **Event trigger** (Event type, *Empty: any event from the source.*)
-start a workflow, so nothing should feed them. In a run they pass records on; when a workflow runs is set on the
-**Settings** tab (see [section 12](#12-running)), not by these blocks.
+start a workflow, so nothing should feed them. In a run they pass records on. A graph with one of them **sets the
+workflow's trigger** (the first such block): the Scheduler *every Interval minutes*, the Event trigger *On event* of
+that event type (a pattern such as `offer.*` matches every `offer.` event). Saving keeps the trigger in step with the
+block, and the Settings tab shows the trigger greyed out with *"Set by the Scheduler block."* or *"Set by the Event
+trigger block (event type {type})."* (see [section 12](#12-running)).
 
 ### 7.5 Ingestion and file steps
 
@@ -526,13 +589,16 @@ start a workflow, so nothing should feed them. In a run they pass records on; wh
 | Timeout (s) | | 30 | 1–600 |
 
 **Event ingestion**. Drops exact replays (same id, same payload) and orders events by the ordering key (events without
-it keep their place after the others). The replay window rejects only events that carry their arrival time; records read
-by a connector carry none.
+it keep their place after the others). The replay window rejects (rule `replay_window`) an event that carries its
+arrival time more than the window after its own time and, with a **Time field**, an event whose time is more than the
+window before the newest event's time in the run (records read by a connector carry no arrival time, so this is how
+the window applies to them).
 
 | Setting | Meaning | Default | Allowed |
 |---|---|---|---|
 | Ordering key | *Events with the same key are kept in order.* | empty | a field name |
 | Replay window (min) | | 60 | 0–10080 |
+| Time field | *Set: an event whose time is more than the replay window before the newest event's in the run is rejected. Empty: only events that carry their arrival time are checked.* | empty | a field name |
 
 **File ingestion**. Records each record's checksum (sha256 of its payload). With *Checksum required*, a record from a
 file whose checksum is missing or does not match is rejected (rule `checksum`); records read from an API pass.
@@ -563,7 +629,12 @@ empty list says *Ready to run. Every step follows the fixed rules.* **Validate**
 errors to fix before this can run."*, *"No errors. N warnings to review."* or *"No errors or warnings. This workflow
 is ready to run."*
 
-- **Errors** block Publish, Test run, and Run now of a draft. **Warnings** and notes do not.
+- **The panel shows the server's checks too.** The browser checks the draft at once; about 0.6 s after your last edit
+  (and again when you press Validate, Test run or Publish) the page asks the server to check the same draft, with the
+  sources as they are now and the field-aware checks, and merges the answer in (the server's wins on a duplicate).
+  So every error that would refuse Test run or Publish is listed, with its step, before you press them.
+- **Errors** block Publish, Test run, and Run now of a draft. **Warnings** and notes do not. The refusals of Test run
+  and Publish end with the first error: *"… First: {message}"*.
 - **Bad settings save but block Publish**: Save keeps any setting; each bad one is an error naming the block and the
   field (*"Convert currency: Target currency GBP is not one of USD, EUR, INR."*).
 - The checks read the sources **as they are now**: a deleted source is an error, a disconnected one has no connected
@@ -609,7 +680,8 @@ The main rules:
   (min) for a schedule (1–1440; 15 when you switch to it), Owner (role or team, max 60), **Retries** (0, 1, 3 or 5;
   default 3) and **Alert when** (A run fails, Two runs fail in a row, Success rate drops below 95%, Never; default A
   run fails). A change says *"Saved with the workflow."*: it is kept in the draft and saved with the next Save;
-  *"Changes are saved with the workflow; publish to apply them to the running version."*
+  *"Changes are saved with the workflow; publish to apply them to the running version."* With a Scheduler or Event
+  trigger block on the canvas the Trigger (and Every) fields are greyed out and say which block sets them.
 - **Save as template**: *"Saved as a template. It appears under New workflow."* (one template per workflow).
 - **Export JSON** downloads the saved version (with each block's changed settings), the file Import reads.
 - **Delete** asks first (*Delete workflow*); a published one warns that anything depending on its trigger stops. Its
@@ -619,28 +691,33 @@ The main rules:
 
 **Test run** runs **your draft** on the server as a **dry run**: each connector reads up to **25 real records** from the
 source (a full read, not from the cursor), and every step runs over them for real, but **nothing is written**: no
-landed records, cursors, canonical data, held records or events. It refuses while there are errors: *"Fix N errors
-before running. The checks below say what and why."*
+landed records, cursors, canonical data, held records, events, audit entries, parked Wait records or called
+workflows. It refuses while there are errors: *"Fix N errors before running. The checks below say what and why.
+First: {message}"*.
 
 - The canvas and **Task instances** fill in: each step's state, start, end, duration, Try, **Records (in / out)** with
-  *· N held*, and **Samples**, which opens the step's first three records **Before** and **After**. The chips on top
-  filter by state; *Search steps* filters by name; **Clear run** clears it.
+  *· N rejected*, and **Samples**, which opens the step's first three records **Before** and **After**. The chips on
+  top filter by state; *Search steps* filters by name; **Clear run** clears it.
 - At the end: *"Test run finished: N records. {note}. Nothing was written."* and the note *Dry run on N sampled
-  records. Nothing was written.*
+  records. Nothing was written.* The **Data quality** panel shows the test run's own figures, marked *Test run (dry)*
+  (see [section 13](#13-history)).
 - **Human approval stops it**: the approval step shows *Awaiting approval*, the steps after it *Waiting on approval*.
-  **Approve and continue** (Admin) runs it again past the approval, still dry: *"Approved in the test run. No
-  instruction is sent to any system."*
+  **Approve and continue** (Developer or Admin) runs it again past the approval, still dry, beside the note
+  *"Simulated approval (dry run): nothing is sent."*; the toast says *"Approved in the test run. Simulated approval
+  (dry run): nothing is sent to any system."*
 - A test run reads the source live, so it can take a few seconds. If the source is syncing at that moment, the
   connector fails with *"{source} is syncing now"*; run it again.
 
 ## 11. Publish, unpublish, pause
 
-- **Publish** (More actions) checks the draft (errors refuse it: *"Cannot publish: N errors in the checks. Fix them
-  first."*), saves it first if it has changes, and publishes that version: *"{name} published as v{x}. It runs on its
-  trigger: {trigger}."* The server checks again, including the field-aware checks, and may refuse with the same text.
-- **Runs use the published version.** Saving later makes newer versions but runs keep using the published one. To
-  publish a newer saved version, open **History** and press **Publish** on the current version: *"v{x} published.
-  Runs now use it."*
+- **Publish** (More actions) checks the draft with the server's full checks (errors refuse it: *"Cannot publish: N
+  errors in the checks. Fix them first. First: {message}"*), saves it first if it has changes, and publishes that
+  version: *"{name} published as v{x}. It runs on its trigger: {trigger}."* The server checks again and refuses with
+  *"Cannot publish: N errors in the checks. Fix them first."* if anything changed in between.
+- **Runs use the published version.** Saving later makes newer versions but runs keep using the published one; the
+  header then shows *Runs v{pub} · v{x} not published*. To publish the newer saved version, choose **Publish v{x}**
+  in More actions (or **Publish** on the current version in **History**): *"v{x} published. Runs now use it."* With
+  unsaved changes it adds *"Your unsaved changes are still a draft: save and publish them to run them."*
 - An ingest workflow you publish becomes the one its source's syncs run ([section 1](#1-what-a-workflow-is)).
 - **Unpublish** (More actions, on a published workflow) returns it to draft: *"{name} unpublished. It will no longer
   run on its trigger."*
@@ -659,13 +736,18 @@ errors: …"*. When it ends: *"{name}: run finished, N records."* or *"{name}: r
 | Trigger | When it runs |
 |---|---|
 | On a schedule (*Every n min*) | *n* minutes after the later of its last run and its last publish or save (the worker checks every 30 s) |
-| On event | a webhook arrives for the workflow's source (the bound ingest workflow is left out: the webhook's sync already runs it) |
+| On event | a webhook arrives for the workflow's source, of the workflow's event type when an Event trigger block sets one (`offer.*` matches every `offer.` event) (the bound ingest workflow is left out: the webhook's sync already runs it) |
 | On approval | an instruction is queued for the workflow's target system |
-| On file arrival, On case request | accepted, but nothing starts them yet |
+| On file arrival | a sync of the workflow's source, a source that delivers files (the recycler partner's file drop), read new records (an unchanged drop reads none); the bound ingest workflow is left out, as its sync already ran it |
+| On case request | a case needs a new decision: it moves to re-evaluation (declined, or changed after approval); every published case-triggered workflow runs |
 | Manual only | only Run now |
 
+A **Scheduler** or **Event trigger** block on the canvas sets the trigger instead of the Settings tab (see
+[section 7.4](#74-orchestration)).
+
 A triggered run is skipped silently when the workflow is not published, is already running, or its source is paused,
-disconnected, not connected or deleted. The run list shows what started it (Manual, Schedule, Event, Approval).
+disconnected, not connected or deleted. The run list shows what started it: Manual, Schedule, Event, File, Approval,
+Case, *Workflow* (a Call workflow step) or *Resume* (a Wait step coming back).
 
 **One run at a time.** While a run is queued or going, Run now says *"{name} is already running"* and a trigger does
 not queue another. A run whose worker died is closed as *Failed: worker lost*.
@@ -679,8 +761,9 @@ held at {step}*), else **success**. A published workflow whose graph has errors 
 
 **What a run writes**: the records it read (landed records) and the source's cursors (moved only when no step failed),
 the canonical facts the canonical step stores, the held records, a `model.updated` event for Publish to event stream,
-the run record, and the workflow's last run (states, per-step counts, durations, tries). A workflow run is not listed
-in the source's Sync & History.
+an audit entry for Write to audit log, the records a Wait step parks (with their resume job), the run a Call workflow
+step starts, the run record, and the workflow's last run (states, per-step counts, durations, tries). A workflow run
+is not listed in the source's Sync & History.
 
 **Alerts.** When a finished run matches the **Alert when** rule, a *Workflow alert · {name}* notification goes to the
 Developer (Admin sees every notification) on the Alerts page: *"{name}: run {id} failed. {reason}"* (High), *"{name}:
@@ -703,18 +786,33 @@ v{x}, Fix applied …), and chips *Current* and *Published*.
 - **Publish** on the current row, when the workflow is published but runs an older version.
 
 **Runs** (*Every run of this workflow that happened, latest first*): Run ID, Status, Start time, Duration, Records (in /
-out), Errors, Triggered by and **View**. Only runs that really happened are listed. **View** opens the run: status,
-start, duration, trigger, reason, and for the latest run every step with its state, duration and records in and out
-(*Step timings are kept for the latest run; earlier runs keep their totals.*), plus **View failed records**.
+out), **Held**, Triggered by and **View**. Only runs that really happened are listed. For a run made in the app the
+figures are the server's: *in* the records it read, **Held** the records it still holds (the ones View failed records
+lists), *out* = in − held (— for a failed run, and every figure — while it runs). A **seeded** run from the demo's
+history never ran in the app and keeps the demo's estimate, with the note *"Seeded runs from the demo's history never
+ran in the app: their out and held figures are the demo's estimate."* **View** opens the run: status, start,
+duration, trigger, reason, for a real run its *Records (in / out)* and *Held*, and for the latest run every step with
+its state, duration and records in and out (*Step timings are kept for the latest run; earlier runs keep their
+totals.*), plus **View failed records** (for the latest real run only).
 
-**Recent runs** on the studio tab shows the five newest (*View all →*). The **Documentation** tab describes every step
-in run order; **Explain this workflow** asks Ask Circularity.
+**Recent runs** on the studio tab shows the five newest (*View all →*).
+
+**Data quality (latest run)**, on the studio tab, shows one set of real figures: the latest real run's records read
+(*"Run {id}: N records read."*), a ring of *Passed* and *Held* with the share of valid records, **Fields that failed
+most** (the held records by field; hover a field for its rules) and **View failed records (N)**. After a test run on
+the canvas it shows that run instead: *"Test run (dry): N sampled records, M would be held. Nothing was written."*,
+with the latest real run's held count below. A workflow that never ran in the app shows *No real run yet* (*The
+figures appear after the workflow's first run in the app.*).
+
+The **Documentation** tab describes every step in run order; **Explain this workflow** asks Ask Circularity.
 
 ## 14. When a run fails
 
 A failing workflow shows **Investigate** in the list (or open it with `?run=last`). The **Investigation** panel names
-the failed step, how many retries it took and when, an **Error log**, and the buttons **Diagnose** and **Fix** (both ask
-Ask Circularity) and **Run now**.
+the failed step, how many retries it took and when, an **Error log**, **Held records** (the records that run holds, by
+step, field and rule; *"The run held no records."*, or for the demo's seeded failed run *"This failed run is the
+demo's seeded history: nothing was held for real. Run now to see what a real run holds."*), and the buttons
+**Diagnose** and **Fix** (both ask Ask Circularity) and **Run now**.
 
 **Apply the suggested fix** gives the failed step back its settings (block settings and the failure toggle) from the
 newest earlier version in which they were different, as a new version. The message says exactly what changed: *"{step}
@@ -725,7 +823,8 @@ with other settings for {step} to restore. Change its settings by hand."* Once a
 
 **View failed records** (the Data quality panel, or a run's **View**) lists the records the latest run held:
 record, field, value and the rule broken (*N records from the latest run broke a validation rule. They are held by the
-error handler, not dropped.*).
+error handler, not dropped.*; a record held on two fields counts once, and with 40 rows or more it adds *The first 40
+rows are listed.*).
 
 - **Export CSV** downloads them (record, field, value, rule): *"Failed records exported as CSV."*
 - **Reprocess** sends every held record of the workflow's runs back through the published version, **starting at the
@@ -754,10 +853,15 @@ the success rate over the workflow's runs and the last run's duration.
 | Choose a system first. | New workflow needs a source or target system. |
 | Enter a workflow name before saving. | The name is empty. |
 | Retries must be 0, 1, 3 or 5. | A run setting outside its choices. |
-| Cannot publish: N errors in the checks. Fix them first. | Open the Checks panel (field-aware errors may only show here). |
+| Cannot publish: N errors in the checks. Fix them first. First: {message} | Open the Checks panel; the first error is named. |
 | Cannot publish {name}: {first error} | Publish from the list refused. |
-| {name} is already published | Nothing new to publish; use History → Publish for a newer version. |
-| Fix N errors before running. The checks say what and why. | Test run refused. |
+| {name} is already published | Nothing new to publish; use More actions → Publish v{x} (or History → Publish) for a newer version. |
+| Fix N errors before running. The checks (below) say what and why. First: {message} | Test run refused. |
+| {name} takes no instructions. Grant it write access first. | New workflow: an outbound workflow to a source made in the app with no write operations. |
+| Target operation {x} is not a write of this system ({writes}). | The write connector names a write the target does not take. |
+| {step}: no field mapping version N for {source} | The field mapping's Mapping version does not exist (the step fails). |
+| Call workflow cannot call its own workflow ({id}) / Call workflow: there is no workflow {id} / Call workflow: {id} calls {id} back, so the calls would go round in a circle | Call workflow refused (the step fails). |
+| N records waiting at {step} | A Wait step parked records; a run labelled Resume comes back for them. |
 | {name} is already running | One run at a time. |
 | {name} is a draft with errors: … | Run now refuses a draft that would fail. |
 | {source} has no connected feed | A connector's source is not connected (run or checks). |
@@ -778,7 +882,7 @@ the success rate over the workflow's runs and the last run's duration.
 | Fixed steps are wired by Circularity and cannot be re-wired. | Two fixed steps cannot be linked. |
 | Fixed steps belong to Circularity and cannot be moved or removed. | A fixed block. |
 | That connection is part of the fixed structure. | A locked link. |
-| Your role cannot approve. Switch to Approver to continue the run. | Approve and continue needs the approval permission. |
+| Simulated approval (dry run): nothing is sent. | Approve and continue in a test run: nothing reaches any system. |
 | {block}: {setting} … is not a field the records carry. | A field-aware check: the source does not send that field. |
 | {block}: {setting} rule N needs a range such as 0..100, >0 or <=5. | A rule's value does not fit its check. |
 
@@ -788,16 +892,14 @@ the success rate over the workflow's runs and the last run's duration.
 - The **seeded demo workflows** keep the demo's figures (last run, success, Monitor row) until they run in the app; they
   show no step counts, and their sources are not bound to them until someone publishes one.
 - **Test runs read the source live** (up to 25 records per connector) and can take a few seconds.
-- The **Validate** button and the inspector use the checks in the browser, without the field-aware checks; Publish and
-  Test run use the server's full checks.
-- In the Runs table, the **Errors** and *out* figures are the demo's estimate; the real held records are in **View
-  failed records** and **Task instances**. The **Schema drift** table in the Investigation is the demo's illustration
-  (it marks the first mapped field as renamed), and the Data quality panel's warnings and field completeness are
-  illustrative too; its error count and **View failed records** are real.
-- Not used at run time yet: Mapping version, the delivery methods' Timeout and Retries, Target operation, the file
-  exchange steps' settings, the Scheduler and Event trigger blocks, Call workflow (the other workflow is not started),
-  Wait's Duration; the audit log entry is not stored where you can see it. On file arrival and On case request triggers
-  are not started by anything yet.
+- The server's checks reach the Checks panel, Validate and the inspector about 0.6 s after an edit; the red text
+  under a setting is the browser's own check only.
+- The **seeded demo runs** keep the demo's estimate in the Runs table (with a note); every run made in the app shows
+  the server's figures.
+- Not used at run time yet: the file exchange steps' settings. The delivery methods' Timeout and Retries and the
+  Target operation apply to the instructions sent to a target only once an outbound workflow for it is published in
+  the app.
+- A Wait step's resume is due on the wall clock, even when the workspace clock is pinned.
 - A bound ingest workflow with a schedule trigger runs on the source's syncs **and** on its own schedule.
 - The run list keeps the 40 newest runs across all workflows; the Monitor keeps the last 2000 runs' figures.
 - The demo reset (`bash scripts/dev/reset.sh`) clears the versions and drafts made in the app.

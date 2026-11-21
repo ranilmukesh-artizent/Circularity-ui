@@ -35,6 +35,23 @@ the demo, on purpose: decision-log *D-Fabric* and the rows below it; operating i
 | D1 Monitor per workflow and step | `4b9c095` |
 | D2 `smoke-fabric.mjs`, D3 guides, runbook, these docs | `3932fbe` (decisions, runbook); the rest with the lead's closing commits |
 
+**Gap fixes (22 Nov 2026).** The gaps the guides listed as "not yet" were closed in follow-up commits (decision-log
+rows of 22 Nov 2026):
+
+| Gap fix | Commit(s) |
+|---|---|
+| Sync: a bound ingest workflow handles its own resources, the rest through the default graph | `53da7b6` |
+| G1 any connected source gets an ingest workflow, a writable app-made one an outbound one | `2a9ba51` |
+| Fabric: typed key used (sandbox key prefilled), re-connected source starts clean, *Connecting…* row | `ffbb076` |
+| G2 server checks merged into the Checks panel, first error in refusals, *Publish v{x}*, simulated dry-run approval | `ae42130`, `2a9ba51` |
+| G3a block settings do what they say (Convert currency, Order late events, Time fields, Wait parks and resumes, Call workflow, audit entries) | `9bbabec`, `2a9ba51` |
+| G3b file, case and trigger-block triggers, event-type patterns, outbound Timeout / Retries / Target operation, Mapping version | `4828c77`, `2a9ba51` |
+| G4 run views: one set of real figures (Runs table *Held*, Data quality, Investigation *Held records*) | `3d75206`, `2a9ba51` |
+| Home alerts and Developer briefing from the live fabric | `91863d7` |
+| `DI_SECRET_KEY` key list and `scripts/dev/reencrypt-secrets.sh` | `26f4ce4` |
+| Dev api `--timeout-graceful-shutdown 3` | `29704d4` |
+| Docs for the gap fixes | this commit's docs (guides, runbook, decisions, scripts, learnings) |
+
 Deviations worth knowing:
 - **Plan 2 tasks 1–3 were not done first.** One run at a time is the run's advisory lock plus a query on `job`
   (`run_active` in `di/actions/workflows.py`), not `dedupe_key`; plan 6 has its own reaper (`di/worker.py
@@ -49,8 +66,9 @@ Deviations worth knowing:
 - **Block settings are stored only where they differ from the defaults** (`compact_cfg`), so the demo's graphs and the
   golden replay are unchanged.
 - **Only workflows published in the app are bound** to a source's sync; a webhook runs the bound workflow through the
-  sync only, never also through its Event trigger. File and case triggers are helpers nothing calls yet. Triggers are
-  off in the api suite (`DI_WORKFLOW_TRIGGERS=false`, `tests/conftest.py`).
+  sync only, never also through its Event trigger. File and case triggers fire since the gap fixes (`4828c77`), and
+  the bound workflow handles only the resources its connector reads (`53da7b6`). Triggers are off in the api suite
+  (`DI_WORKFLOW_TRIGGERS=false`, `tests/conftest.py`).
 - **Versions, drafts and run stats live in state collections** (`workflow_versions`, `workflow_drafts`,
   `workflow_run_stats`), not new tables; draft autosaves are unjournaled (`ActionDef.journaled=False`).
 - **Catalogue systems** map only where their mock holds circularity data, on keys of their own (`<system>:<key>`), so
