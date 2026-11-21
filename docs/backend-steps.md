@@ -782,7 +782,12 @@ Plan: `docs/agents/plans/06-fabric-production.md` (task → commit list in its s
   resources, the rest sync through the default graph (`binding.rest_graph`); run views show one set of real figures
   (`run_figures`, `run_quality`); Home's alerts and briefing read the live fabric; `DI_SECRET_KEY` key lists and
   `scripts/dev/reencrypt-secrets.sh`; the dev api's `--timeout-graceful-shutdown 3`.
-- **Checks:** (full suite and smoke results: added by the lead)
+- **Checks (22 Nov 2026, after the gap fixes, at `b41e78c`):** full suite api 3,948 passed, source-sim 260 passed;
+  web tsc 0, vitest 250, eslint and knip clean; ruff, ruff format and mypy clean; `smoke-pages.mjs` all 11 accounts
+  0 failing; `smoke-rt1048.mjs` stage 10 twice in a row; `smoke-fabric.mjs` 12 of 12 steps (catalogue connect,
+  rotate, mapping edit and revert, conflict, import, a workflow built, tested, published, run, reprocessed, cleaned
+  up). Three rounds of the final check found and fixed: a file source's cursor after a failed file, x_pub's stream
+  events, the Developer's task list against the live fabric, and triggers firing for the seeded workflows.
 - **Known gaps:** plan 2 tasks 1–3 (job priorities, `dedupe_key`, dead letters) were not done first, so
   one-run-at-a-time is a query on `job` plus the run lock and plan 6 has its own run reaper; the file exchange steps'
   settings are checked but not used at run time; catalogue systems without circularity data (Workday, Jira,

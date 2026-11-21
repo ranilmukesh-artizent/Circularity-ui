@@ -33,7 +33,7 @@ the demo, on purpose: decision-log *D-Fabric* and the rows below it; operating i
 | T8 (added) catalogue mappings on the mocks' real fields | `df9cee3` |
 | Type checks (mypy, ruff) | `fc9e7dc`, `93e57e5` |
 | D1 Monitor per workflow and step | `4b9c095` |
-| D2 `smoke-fabric.mjs`, D3 guides, runbook, these docs | `3932fbe` (decisions, runbook); the rest with the lead's closing commits |
+| D2 `smoke-fabric.mjs`, D3 guides, runbook, these docs | `7a6e58c` (suite), `3932fbe` (decisions, runbook), `7f24e36`, `5801873`, `652df37`, `92ad3b5` (guides and agent docs) |
 
 **Gap fixes (22 Nov 2026).** The gaps the guides listed as "not yet" were closed in follow-up commits (decision-log
 rows of 22 Nov 2026):
@@ -434,13 +434,13 @@ validation rule, see held records, fix, Reprocess.
 ### Task D2: browser suite for the Fabric
 **Files:** Create `apps/web/scripts/smoke-fabric.mjs` (connect a catalogue system, rotate, edit mapping, resolve a
 conflict, import, build/publish/run a workflow, reprocess), referenced from `docs/agents/testing.md`.
-- [ ] Runs green twice in a row on a reset stack. Commit.
+- [x] Runs green twice in a row on a reset stack. Commit.
 
 ### Task D3: docs and runbook
 **Files:** `docs/guides/connection-fabric.md`, `docs/guides/workflow-tutorial.md` (settings, real runs; remove "all
 simulated" caveats that no longer apply, keep the synthetic-vendor statement), `docs/agents/runbook-fabric.md` (key
 rotation, a stuck run, a failing source, replaying held records), `docs/backend-steps.md` B17b.
-- [ ] Commit.
+- [x] Commit.
 
 **Phase D gate** = the plan's done line in `00-overview.md`.
 

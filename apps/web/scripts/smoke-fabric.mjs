@@ -429,7 +429,10 @@ await step('6d Save, Publish, Run now (a real run with real counts)', async () =
   check(/finished/.test(r), r);
   runRows = +r.match(/([\d,]+) records/)[1].replace(/,/g, '');
   check(runRows > 0, 'the run read no records: ' + r);
-  const dq = await page.locator('#frDq').innerText();
+  // the Data quality panel follows once the page has the finished run (the toast comes first): wait for it to show the
+  // run's held records (this workflow's validation rule holds some), up to 15 s
+  const dq = await until(async () => { const x = await page.locator('#frDq').innerText(); return /View failed records \([1-9][\d,]*\)/.test(x) ? x : null; },
+    'the Data quality panel never showed the run\'s held records', 15000, 500).catch(async (e) => { throw new Error(e.message + ': ' + (await page.locator('#frDq').innerText()).replace(/\s+/g, ' ').slice(0, 200)); });
   held = +(dq.match(/View failed records \(([\d,]+)\)/)?.[1] ?? '0').replace(/,/g, '');
   return `"${s}"; "${p}"; "${r}"; ${held} held`;
 });
@@ -459,6 +462,7 @@ await step('6f Failed records of the run (held by the rule): Reprocess', async (
   const txt = await dlg().innerText();
   const n = +(txt.match(/([\d,]+) records? from the latest run broke a validation rule/)?.[1] ?? '0').replace(/,/g, '');
   check(n > 0, `the run held no records (the ${WF_RULE} rule should hold some): ${txt.replace(/\s+/g, ' ').slice(0, 200)}`);
+  check(n === held, `Data quality said ${held} held but the run's failed records list ${n}`);
   const rule = (await dlg().locator('tbody tr').first().innerText()).replace(/\s+/g, ' ');
   const t = await clickToast(dlg().getByRole('button', { name: 'Reprocess' }), /records sent back/, T.run);
   return `${state.runRow}: ${n} held (Data quality said ${held}; first: ${rule}); "${t}"`;

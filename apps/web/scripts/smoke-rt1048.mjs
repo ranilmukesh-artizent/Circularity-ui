@@ -76,10 +76,21 @@ await confirm.first().click();
 await finance.waitForTimeout(2000);
 say('finance:', (await finance.$$eval('.toast', (t) => t.map((x) => x.textContent))).join(' | '));
 await go(finance, 10);
-say('stage 10 for finance:', await stage(finance));
-await watcher.waitForTimeout(2000);
-say('watcher (no reload) ends at', await stage(watcher));
-const done = /^10 · Every stage is done/.test(await stage(watcher));
+// the case closes on the server at once; the pages follow through the action's refresh and the live stream. Poll
+// (up to 20 s) rather than read once, and say how long each took, so a slow refresh and a missing one are told apart.
+const until10 = async (p, who) => {
+  const t0 = Date.now();
+  for (;;) {
+    const st = await stage(p);
+    if (/^10 · Every stage is done/.test(st) || Date.now() - t0 > 20000) {
+      say(`${who} sees after ${((Date.now() - t0) / 1000).toFixed(1)} s:`, st);
+      return /^10 · Every stage is done/.test(st);
+    }
+    await p.waitForTimeout(500);
+  }
+};
+await until10(finance, 'stage 10 for finance');
+const done = await until10(watcher, 'watcher (no reload)');
 say('page errors:', errors.length ? errors : 'none');
 say(done ? 'RT-1048 reached stage 10 (every stage done)' : 'RT-1048 did NOT reach stage 10');
 await browser.close();

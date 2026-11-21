@@ -70,8 +70,9 @@ phase gate is the last row.
 | 2026-11-21 | 06 · type checks | `fc9e7dc`, `93e57e5` | mypy: 26 errors fixed, no ignores; ruff clean | done |
 | 2026-11-21 | 06 · D1 Monitor per workflow and per step | `4b9c095` | test_screens_integration | done |
 | 2026-11-21 | 06 · D3 decisions (D-Fabric), runbook | `3932fbe` | — | done |
-| 2026-11-21 | 06 · D2 `smoke-fabric.mjs`, D3 guides and agent docs | (lead) | (lead) | (lead) |
-| 2026-11-21 | 06 · **phase gate** | — | (full suite and smoke results: added by the lead) | (lead) |
+| 2026-11-21 | 06 · D2 `smoke-fabric.mjs`, D3 guides and agent docs | `7a6e58c`, `7f24e36`, `5801873`, `652df37`, `92ad3b5` | smoke-fabric 12/12 twice on a reset stack | done |
+| 2026-11-22 | 06 · gap fixes (G1–G5, follow-ons) | `53da7b6` … `b41e78c` | targeted sets per fix (401, 1238, 1005 passed …) | done |
+| 2026-11-22 | 06 · **phase gate** | — | api 3,948 + source-sim 260 passed; tsc 0, vitest 250, eslint, knip, ruff, mypy clean; smoke 11 accounts 0 failing; RT-1048 stage 10 twice; smoke-fabric 12/12 | done |
 
 ### Lessons from running 7+ agents in parallel
 
