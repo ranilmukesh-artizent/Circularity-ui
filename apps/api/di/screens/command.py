@@ -47,7 +47,11 @@ Differences from the demo, by design:
   two letters ("o → r"); B17 fixed the facade to use these labels in both modes.
 - kpis.counts.workflows: the demo counts its workflows only once a page has opened them (S.wf is created lazily);
   the server always counts the catalogue (35).
-- Integration health (hhTotals) has no workflow runs in progress on the server; the demo has none at the start either.
+- The Connection Fabric figures are real (plan 6 B4, decision-log D-Fabric): the health strip (sources by status, the
+  24 hours' success share), the integration health, sources needing attention, failing workflows and open conflicts
+  tiles, and the health detail (/health: the Monitor's totals and hourly buckets, the Source Map's exceptions, the head
+  of Event Streams) come from di.reads.fabric.live, the object the Connection Fabric screens read, not from the demo's
+  hash-generated buckets (hhInit) and fixed sources. The tests assert they equal the Monitor and the Source Map.
 """
 
 import re
@@ -69,7 +73,6 @@ from di.reads.common import (
     DAY_MS,
     REQ_KIND,
     SOURCES,
-    STARTING_CONFLICTS,
     Case,
     add_days,
     as_model,
@@ -87,7 +90,7 @@ from di.reads.common import (
 from di.reads.constants import DELEG, ROUTES
 from di.reads.context import call_ctx, can_page, visible_cases, visible_rows
 from di.reads.decisions import metrics
-from di.reads.fabric import hh, hh_totals, sm_exceptions, stale_sources, wf_stat, workflows, ws_events
+from di.reads.fabric import failing_now, health, live, open_conflicts_now, stale_now, workflows, ws_events
 
 router = APIRouter(prefix="/api/screens/command", tags=["screens: command"])
 
@@ -440,8 +443,15 @@ def kpi_tiles(ctx: CallContext, ks: list[str], sc: dict, rows: list[dict], f: Fi
             "Additional net recovery on reconciled decisions compared with the sell-or-scrap baseline. Same number as Analytics.",
         )
 
+    fab: list = []  # the live Connection Fabric, read once if a tile needs it (plan 6 B4)
+
+    def fabric():
+        if not fab:
+            fab.append(live(ctx.session))
+        return fab[0]
+
     def ihealth():
-        t = hh_totals()
+        t = health(fabric())[1]
         return k(
             "ihealth",
             "ok" if t["pct"] >= 95 else "bad",
@@ -456,7 +466,7 @@ def kpi_tiles(ctx: CallContext, ks: list[str], sc: dict, rows: list[dict], f: Fi
         )
 
     def srcattn():
-        lst = stale_sources()
+        lst = stale_now(fabric())
         return k(
             "srcattn",
             "bad" if lst else "ok",
@@ -471,7 +481,7 @@ def kpi_tiles(ctx: CallContext, ks: list[str], sc: dict, rows: list[dict], f: Fi
         )
 
     def wffail():
-        n = sum(1 for w in workflows() if wf_stat(w) == "failing")
+        n = failing_now(fabric())
         return k(
             "wffail",
             "bad" if n else "ok",
@@ -486,7 +496,7 @@ def kpi_tiles(ctx: CallContext, ks: list[str], sc: dict, rows: list[dict], f: Fi
         )
 
     def conf():
-        n = sum(1 for c in STARTING_CONFLICTS if c["status"] == "open")
+        n = open_conflicts_now(fabric())
         return k(
             "conf",
             "bad" if n else "ok",
@@ -783,11 +793,12 @@ def cc_metrics(rows: list[dict]) -> dict:
     }
 
 
-def health_strip() -> dict:
+def health_strip(f) -> dict:
+    """The sources by status and the 24 hours' success share, as the Connection Fabric shows them now (plan 6 B4)."""
     st = {"live": 0, "stale": 0, "manual": 0, "unavailable": 0}
-    for s in SOURCES.values():
-        st[s["status"]] += 1
-    return {"pct": hh_totals()["pct"], **st}
+    for s in f.sources:
+        st[s["status"]] = st.get(s["status"], 0) + 1
+    return {"pct": health(f)[1]["pct"], **st}
 
 
 # ---------------------------------------------------------------- charts
@@ -1369,14 +1380,17 @@ def ack_kind(a: str) -> str:
 
 
 def health_detail(ctx: CallContext) -> dict:
-    t, ex = hh_totals(), sm_exceptions()
+    """The Monitor's totals and hourly buckets, the Source Map's exceptions and the head of Event Streams (plan 6 B4)."""
+    f = live(ctx.session)
+    hh, t = health(f)
+    ex = f.exceptions()
     return {
         "ok": t["ok"],
         "warn": t["warn"],
         "bad": t["bad"],
         "run": t["run"],
         "pct": t["pct"],
-        "hours": hh(),
+        "hours": hh,
         "exceptions": ex[:6],
         "exceptionCount": len(ex),
         "events": [
@@ -1416,7 +1430,7 @@ def get_kpis(
         "tiles": kpi_tiles(ctx, keys(_layout_or_kpis(p, mode)), sc, rows, f),
         "insights": insights(sc),
         "metrics": cc_metrics(rows),
-        "health": health_strip(),
+        "health": health_strip(live(session)),
         "counts": {
             "cases": len(visible_cases(ctx, f.tenant)),
             "rows": len(visible_rows(ctx, f.tenant)),

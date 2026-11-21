@@ -38,6 +38,10 @@ Differences from the demo, by design (each documented where it is computed, and 
   runs (AF.ui.runs) are not on the server; the rows are the agent-prepared journal entries and the hand-off events.
 - reports/audit: the audit extract is the audit area's fetch log (auditEntries); this endpoint answers 404 for it.
 - The workflow catalogue (names, statuses, the one failing ingest) is the demo's wfSeed without its random run data.
+- kpis (Developer): the Connection Fabric tiles are real (plan 6 B4, decision-log D-Fabric): failing workflows, stale
+  or unconnected sources, exceptions, open conflicts and the integration health with its hourly line equal the Monitor
+  and the Source Map at the same moment (di.reads.fabric.live), not the demo's hash buckets and fixed sources. The
+  alerts still list the demo's stale sources and conflicts.
 """
 
 import math
@@ -76,7 +80,18 @@ from di.reads.constants import ROUTES
 from di.reads.context import call_ctx, can_page, visible_cases, visible_rows
 from di.reads.decisions import metrics
 from di.reads.expected import exp_vis
-from di.reads.fabric import hh, hh_totals, open_conflicts, sm_exceptions, stale_sources, wf_stat, workflows, ws_events
+from di.reads.fabric import (
+    failing_now,
+    health,
+    live,
+    open_conflicts,
+    open_conflicts_now,
+    stale_now,
+    stale_sources,
+    wf_stat,
+    workflows,
+    ws_events,
+)
 
 router = APIRouter(prefix="/api/screens/home", tags=["screens: home"])
 
@@ -113,9 +128,6 @@ def delta(cur: float | None, prev: float | None, good_up: bool | None) -> dict |
 
 # ---------------------------------------------------------------- the workflow catalogue (the demo's wfSeed)
 WF_FAILED_NOTE = "Validation & enrichment: 3 retries exhausted (connection reset)"
-
-
-# ---------------------------------------------------------------- integration health (the demo's hhTotals)
 
 
 # ---------------------------------------------------------------- tasks and alerts
@@ -294,14 +306,16 @@ def kpis(ctx: CallContext) -> list[dict]:
         T.append(o)
 
     if role == "Developer":
-        fl = sum(1 for w in workflows() if wf_stat(w) == "failing")
-        st, ex, cf, t = len(stale_sources()), len(sm_exceptions()), len(open_conflicts()), hh_totals()
+        # the live Connection Fabric (plan 6 B4): the same numbers as the Monitor and the Source Map
+        f = live(ctx.session)
+        hh, t = health(f)
+        fl, st, ex, cf = failing_now(f), len(stale_now(f)), len(f.exceptions()), open_conflicts_now(f)
         add("workflow", "alert", "wffail", fl, fl, "Failing workflows", "integration/studio")
         add("clock", "dec", "stale", st, st, "Stale sources", "integration/map")
         add("mapping", "insp", "mapx", ex, ex, "Mappings needing attention", "integration/map")
         add("conflict", "ev", "conf", cf, cf, "Conflicts open", "integration/conflicts")
         pct = to_fixed(t["pct"], 1)
-        sp = [b["ok"] / ((b["ok"] + b["warn"] + b["bad"]) or 1) for b in hh()]
+        sp = [b["ok"] / ((b["ok"] + b["warn"] + b["bad"]) or 1) for b in hh]
         add(
             "activity",
             "int",

@@ -9,6 +9,9 @@ Two golden values are synthetic in the demo and are not compared, by design (see
   workflows; the server answers the failure note alone, so the age is cut from the expected text;
 - Home's activity includes the demo's seeded workflow runs (random times and record counts): the server has none, so
   the expected activity is the demo's own frActivity with those runs removed (`activity_without_workflow_runs`).
+
+Plan 6 B4 (decision-log D-Fabric): the Developer's Connection Fabric KPI tiles are real; their numbers are asserted to
+equal the Monitor and the Source Map at the same moment instead of the demo's (test_kpis).
 """
 
 import os
@@ -18,6 +21,7 @@ import pytest
 
 from di import golden
 from di.engine.jsmath import js_round
+from di.reads.common import to_fixed
 from tests import starting
 from tests.helpers import client, h
 
@@ -76,9 +80,58 @@ def test_alerts(acct):
     same(get("/alerts", acct), expected)
 
 
+FABRIC_TILES = ("wffail", "stale", "mapx", "conf", "health")  # the Developer's Connection Fabric tiles
+
+
+def fabric_now(read):
+    """`read()` together with the Monitor, the Source Map and the sources as they are at the same moment: the reads
+    are repeated when a sync lands between them (the worker keeps syncing while the tests run)."""
+
+    def fabric():
+        hd = h("developer")
+        return [
+            client.get(f"/api/screens/integration/{x}", params={"limit": 2000}, headers=hd).json()
+            for x in ("monitor", "map", "sources")
+        ]
+
+    for _ in range(5):
+        before, got, after = fabric(), read(), fabric()
+        if before == after:
+            return got, before
+    raise AssertionError("the Connection Fabric kept changing")
+
+
 @pytest.mark.parametrize("acct", ACCOUNTS)
 def test_kpis(acct):
-    same(get("/kpis", acct), HOME[acct]["kpis"])
+    """Plan 6 B4: the Developer's Connection Fabric tiles are real (decision-log D-Fabric). They no longer replay the
+    demo's hash-generated health buckets or its fixed sources and conflicts: each equals what the Monitor and the Source
+    Map show for the same moment (failing workflows, stale or unconnected sources, exceptions, open conflicts, the
+    24 hours' success share and its hourly line). Their label, icon and link stay the demo's; every other tile and
+    every other account is compared with the demo exactly."""
+    got, (mon, smap, srcs) = fabric_now(lambda: get("/kpis", acct))
+    want = HOME[acct]["kpis"]
+    real = {k["k"]: k for k in got if k["k"] in FABRIC_TILES}
+    if acct != "developer":
+        assert not real
+        same(got, want)
+        return
+
+    def labels(tiles):
+        return [{k: v for k, v in t.items() if k not in ("v", "n", "sp")} for t in tiles]
+
+    same(labels(got), labels(want))
+    stale = sum(1 for s in srcs["sources"] if s["status"] in ("stale", "unavailable"))
+    pct = to_fixed(mon["totals"]["pct"], 1)
+    expect = {
+        "wffail": mon["kpis"]["failing_workflows"],
+        "stale": stale,
+        "mapx": smap["kpis"]["exceptions"],
+        "conf": smap["open_conflicts"],
+    }
+    for k, n in expect.items():
+        assert (real[k]["v"], real[k]["n"]) == (n, n), k
+    assert real["health"]["v"] == pct + "%" and real["health"]["n"] == float(pct)
+    assert real["health"]["sp"] == [b["ok"] / ((b["ok"] + b["warn"] + b["bad"]) or 1) for b in mon["hourly"]]
 
 
 @pytest.mark.parametrize("win", ["live", "today", "week"])

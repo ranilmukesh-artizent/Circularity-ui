@@ -9,6 +9,10 @@ answer is rounded the same way and sends null for no limit. Booleans compare str
 One value is not compared, by design (di/screens/command.py): kpis.counts.workflows. The demo counts its workflows only
 once a page has opened them (S.wf is created lazily, so the count depends on what the session visited first); the server
 always counts the catalogue. It is checked against the demo's catalogue size instead.
+
+Plan 6 B4 (decision-log D-Fabric): the Connection Fabric figures are real, so they are not compared with the demo's
+hash-generated buckets and fixed sources: the kpis' health strip and fabric tiles and the whole /health detail are
+asserted to equal the Monitor, the Source Map, the sources and Event Streams at the same moment.
 """
 
 import os
@@ -17,6 +21,7 @@ import pytest
 
 from di import golden
 from di.engine.jsmath import js_round
+from di.reads.common import fmt_n, to_fixed
 from tests import starting
 from tests.helpers import client, h
 
@@ -88,13 +93,66 @@ KPI_CASES = [
 ]
 
 
+FABRIC_TILES = ("ihealth", "srcattn", "wffail", "conf")
+
+
+def fabric_now(read):
+    """`read()` with the Monitor, the Source Map, the sources and the event stream at the same moment (repeated when a
+    sync lands between the reads: the worker keeps syncing while the tests run)."""
+
+    def fabric():
+        hd = h("developer")
+        return [
+            client.get(f"/api/screens/integration/{x}", params={"limit": 2000}, headers=hd).json()
+            for x in ("monitor", "map", "sources", "events")
+        ]
+
+    for _ in range(5):
+        before, got, after = fabric(), read(), fabric()
+        if before == after:
+            return got, before
+    raise AssertionError("the Connection Fabric kept changing")
+
+
+def check_fabric_tiles(tiles: list[dict], mon: dict, smap: dict, srcs: dict) -> None:
+    """The Connection Fabric tiles equal the Monitor and the Source Map (plan 6 B4)."""
+    stale = [s for s in srcs["sources"] if s["status"] in ("stale", "unavailable")]
+    pct = mon["totals"]["pct"]
+    n_wf, n_cf = mon["kpis"]["failing_workflows"], smap["open_conflicts"]
+    expect = {
+        "ihealth": ("ok" if pct >= 95 else "bad", to_fixed(pct, 1) + "%", "successful syncs and events · 24 h"),
+        "srcattn": ("bad" if stale else "ok", fmt_n(len(stale)), ", ".join(s["name"] for s in stale) or "all sources fresh"),
+        "wffail": ("bad" if n_wf else "ok", fmt_n(n_wf), "published, last run failed"),
+        "conf": ("bad" if n_cf else "ok", fmt_n(n_cf), "systems that disagree"),
+    }
+    for t in tiles:
+        if t["key"] in expect:
+            assert (t["cls"], t["val"], t["sub"]) == expect[t["key"]], t["key"]
+
+
 @pytest.mark.parametrize(("acct", "mode", "i"), KPI_CASES)
 def test_key_figures(acct, mode, i):
+    """Plan 6 B4: the health strip and the Connection Fabric tiles (integration health, sources needing attention,
+    failing workflows, open conflicts) are real (decision-log D-Fabric): they equal the Monitor, the Source Map and the
+    sources for the same moment, not the demo's hash-generated buckets and fixed sources. Their label, icon, link and
+    tip stay the demo's; everything else is compared with the demo exactly."""
     want = CMD[acct]["kpis"][mode][i]
-    got = get("/kpis", acct, mode=mode, **want["filters"])
+    got, (mon, smap, srcs, _) = fabric_now(lambda: get("/kpis", acct, mode=mode, **want["filters"]))
     assert got["counts"].pop("workflows") == 35  # the demo's catalogue (docstring)
     want = {k: v for k, v in want.items() if k != "filters"}
     want["counts"] = {k: v for k, v in want["counts"].items() if k != "workflows"}
+    health = got.pop("health")
+    want.pop("health")
+    st = {"live": 0, "stale": 0, "manual": 0, "unavailable": 0}
+    for s in srcs["sources"]:
+        st[s["status"]] = st.get(s["status"], 0) + 1
+    assert health == {"pct": mon["totals"]["pct"], **st}
+    check_fabric_tiles(got["tiles"], mon, smap, srcs)
+
+    def cut(tiles):
+        return [{k: v for k, v in t.items() if k not in ("cls", "val", "sub")} if t["key"] in FABRIC_TILES else t for t in tiles]
+
+    got["tiles"], want["tiles"] = cut(got["tiles"]), cut(want["tiles"])
     same(got, want)
 
 
@@ -179,7 +237,19 @@ def test_pre_approval_checks(session):
 
 @pytest.mark.parametrize("acct", ACCOUNTS)
 def test_integration_health(acct):
-    same(get("/health", acct), CMD[acct]["health"])
+    """Plan 6 B4: the integration health detail is real (decision-log D-Fabric): its totals and hourly buckets are the
+    Monitor's, its exceptions the Source Map's and its events the head of Event Streams, for the same moment. The demo's
+    hash-generated buckets are gone. The golden file still fixes its shape."""
+    got, (mon, smap, _, ev) = fabric_now(lambda: get("/health", acct))
+    assert set(got) == set(CMD[acct]["health"])
+    t = mon["totals"]
+    assert {k: got[k] for k in ("ok", "warn", "bad", "run", "pct")} == {k: t[k] for k in ("ok", "warn", "bad", "run", "pct")}
+    assert got["hours"] == mon["hourly"]
+    assert got["exceptions"] == smap["exceptions"][:6] and got["exceptionCount"] == smap["kpis"]["exceptions"]
+    assert [(e["id"], e["ts"], e["dest"], e["type"], e["ack"]) for e in got["events"]] == [
+        (e["id"], e["ts"], e["dest"], e["type"], e["ack"]) for e in ev["events"][:6]
+    ]
+    assert all(e["kind"] == "ok" for e in got["events"] if e["ack"] == "acknowledged")
 
 
 def test_signed_out_is_refused():

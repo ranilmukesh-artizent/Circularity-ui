@@ -9,7 +9,9 @@ catalogue, the event stream (with which cases this account may open), and what i
 models, channels, category and workflows per source).
 
 The event log is a workspace collection that actions append to: the golden events are compared with the oldest
-events of the log (all of it after `starting.reset()`).
+events of the log (all of it after `starting.reset()`). Since plan 6 B4 Event Streams also lists real messages (sync
+runs, instructions, webhook deliveries; ids SYNC-, INS-, WH-), merged newest first; the golden comparison takes the
+log's EV- events only, and test_events_include_real_messages checks the real ones (decision-log D-Fabric).
 """
 
 import os
@@ -257,12 +259,14 @@ def test_events(acct):
     if got is None:
         return
     ev, want = got["events"], G["events"]
-    assert len(ev) >= len(want)
+    log = [e for e in ev if e["id"].startswith("EV-")]  # the workspace log; the rest are real messages (below)
+    assert len(log) >= len(want)
     if os.environ.get("B14_PARALLEL") != "1":
-        assert len(ev) == len(want)
-    tail = ev[len(ev) - len(want) :]
+        assert len(log) == len(want)
+    tail = log[len(log) - len(want) :]
     expected = [e | {"openable": ok} for e, ok in zip(want, G["accounts"][acct]["events_openable"], strict=True)]
     assert starting.strict(tail) == starting.strict(expected)
+    assert all(re.fullmatch(r"(EV|SYNC|INS|WH)-.+", e["id"]) for e in ev)
     c = got["counts"]
     assert c["total"] == len(ev) == c["inbound"] + c["outbound"]
     assert c["errors"] == sum(1 for e in ev if re.search("error|fail|duplicate|escalat", e["ack"] or "", re.I))
@@ -272,6 +276,81 @@ def test_events(acct):
     assert len(q) <= 5 and all(
         "rt-1009" in ((e["caseId"] or "") + (e["decisionId"] or "") + e["type"] + e["dest"]).lower() for e in q
     )
+
+
+def test_events_include_real_messages():
+    """Plan 6 B4: Event Streams lists the workspace log (the demo's seeded messages and what actions add) plus the
+    backend's real messages: sync runs that read or failed records (sync_run), instructions that went out or failed
+    (instruction), and webhook deliveries (webhook_event, when that table exists), newest first by when they were
+    recorded. The real rows have the page's row shape, so its filters, search and drawer work on them unchanged.
+    This replaces the demo's fixed stream for those rows (decision-log D-Fabric)."""
+    with engine.begin() as c:
+        ins = c.execute(
+            text(
+                "INSERT INTO instruction (case_id, approval_ref, step, kind, system, idem_key, status, attempts, last_error) "
+                "VALUES ('RT-9999', 'B4-TEST', 0, 'order', 'oms', 'b4-test-idem', 'failed', 3, 'HTTP 503 from oms') "
+                "RETURNING id"
+            )
+        ).scalar_one()
+    with engine.begin() as c:
+        bad = c.execute(
+            text(
+                "INSERT INTO sync_run (source_id, trigger, status, started_at, finished_at, error) "
+                "VALUES ('erp', 'manual', 'failed', now(), now(), 'connect timeout (b4 test)') RETURNING id"
+            )
+        ).scalar_one()
+    with engine.begin() as c:
+        ok = c.execute(
+            text(
+                "INSERT INTO sync_run (source_id, trigger, status, started_at, finished_at, records_read, facts_written) "
+                "VALUES ('wms', 'webhook', 'ok', now(), now(), 7, 21) RETURNING id"
+            )
+        ).scalar_one()
+    try:
+        ev = get("admin", "events")["events"]
+        ids = [e["id"] for e in ev]
+        i_ok, i_bad, i_ins = ids.index(f"SYNC-{ok}"), ids.index(f"SYNC-{bad}"), ids.index(f"INS-{ins}")
+        assert i_ok < i_bad < i_ins < ids.index(next(i for i in ids if i.startswith("EV-")))  # newest first
+        e = ev[i_ok]
+        assert e["dir"] == "in" and e["type"] == "sync.completed" and e["ack"] == "acknowledged"
+        assert e["caseId"] is None and e["decisionId"] is None and e["approval"] is None and e["ver"] is None
+        assert e["key"] == f"sync-{ok}" and "7 records" in e["note"] and e["openable"] is False
+        assert isinstance(e["dest"], str) and e["dest"] and isinstance(e["ts"], str)
+        e = ev[i_bad]
+        assert e["type"] == "sync.failed" and e["ack"].startswith("failed") and "connect timeout (b4 test)" in e["ack"]
+        e = ev[i_ins]
+        assert e["dir"] == "out" and e["type"] == "instruction.failed" and e["caseId"] == "RT-9999"
+        assert e["approval"] == "B4-TEST" and e["key"] == "b4-test-idem" and e["retries"] == 2
+        assert e["ack"] == "failed · HTTP 503 from oms"
+        # counts, filters and search see them
+        got = get("admin", "events")
+        assert got["counts"]["total"] == len(ev) and got["counts"]["inbound"] == sum(1 for x in ev if x["dir"] == "in")
+        issues = get("admin", "events", issues=True)["events"]
+        assert {f"SYNC-{bad}", f"INS-{ins}"} <= {x["id"] for x in issues} and f"SYNC-{ok}" not in {x["id"] for x in issues}
+        assert [x["id"] for x in get("admin", "events", q="b4-test")["events"]] == []  # search: case, decision, type, dest
+        assert f"INS-{ins}" in [x["id"] for x in get("admin", "events", q="rt-9999")["events"]]
+        assert f"INS-{ins}" in [x["id"] for x in get("admin", "events", dir="out")["events"]]
+    finally:
+        with engine.begin() as c:
+            c.execute(text("DELETE FROM sync_run WHERE id IN (:a, :b)"), {"a": ok, "b": bad})
+            c.execute(text("DELETE FROM instruction WHERE id = :i"), {"i": ins})
+
+
+def test_events_leave_out_syncs_that_carried_nothing():
+    """A scheduled sync that read nothing and failed nothing carried no message: it is not in the stream (the Monitor
+    still counts it)."""
+    with engine.begin() as c:
+        rid = c.execute(
+            text(
+                "INSERT INTO sync_run (source_id, trigger, status, started_at, finished_at) "
+                "VALUES ('erp', 'schedule', 'ok', now(), now()) RETURNING id"
+            )
+        ).scalar_one()
+    try:
+        assert f"SYNC-{rid}" not in {e["id"] for e in get("admin", "events")["events"]}
+    finally:
+        with engine.begin() as c:
+            c.execute(text("DELETE FROM sync_run WHERE id = :i"), {"i": rid})
 
 
 @pytest.mark.parametrize("acct", ACCOUNTS)

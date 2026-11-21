@@ -43,7 +43,8 @@ Still the demo's reference:
 - workspace collection "source_config" (di.connectors.lifecycle): what people saved about a source (its descriptive
   fields, credential, configuration version, audit trail and field mapping) over the reference above, sources created
   in the Connection Fabric, and the deleted sources (left out of every endpoint until their deletion is undone);
-- workspace collection "events": the event stream (the demo's EVENTS and what actions add);
+- workspace collection "events": the event stream's log (the demo's EVENTS and what actions add), merged with the real
+  messages (sync runs that carried records, instructions sent or failed, webhook deliveries; di.reads.fabric.stream);
 - workspace collection "workflows" (di.reads.workflows): the workflows reading a source, failing ingest workflows.
 
 Texts the demo computes (recommendations, exceptions, activity lines) are built the demo's way from these values.
@@ -99,7 +100,7 @@ from di.engine.jsmath import js_round
 from di.reads.common import ms
 from di.reads.constants import MAP_TARGET, MAPPINGS
 from di.reads.context import case_openable
-from di.reads.fabric import SCREEN_STATUS, type_of
+from di.reads.fabric import SCREEN_STATUS, stream, type_of
 from di.reads.reference import channels
 from di.reads.workflows import all_workflows, wf_stat, wf_using
 
@@ -216,7 +217,7 @@ def _run_view(r) -> dict:
 class Fabric:
     """Everything the Connection Fabric screens read, loaded once per request."""
 
-    def __init__(self, s: Session, p: Principal):
+    def __init__(self, s: Session, p: Principal | None = None):  # Home and the Command Center read it without one
         self.s, self.p = s, p
         self.now = _now()
         rows = s.execute(
@@ -724,7 +725,7 @@ def events(
     limit: Annotated[int | None, Query(ge=1, le=5000)] = None,
 ):
     _require_any(p, "events")
-    ev = state.items(session, "events", newest_first=True)
+    ev = stream(session)  # the workspace log and the real messages (plan 6 B4)
     ok = case_openable(session, p, {e["caseId"] for e in ev if e.get("caseId")})
     qq = (q or "").lower()
 
