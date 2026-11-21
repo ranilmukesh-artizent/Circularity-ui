@@ -7,8 +7,12 @@ the action that makes it due commits.
 A row's `match_refs` are written when it is queued, from values di chooses itself (the idempotency key, the planned
 document number, the order-release id ...): an event can be matched even if it arrives before the send job has
 recorded its own result.
+
+Plan 6 C6: queuing a step also queues a run of the target system's approval-triggered (outbound) workflows
+(di/workflow/triggers.py), in a savepoint, so a trigger that fails never fails the instruction.
 """
 
+import logging
 from datetime import timedelta
 
 from sqlalchemy import text
@@ -71,6 +75,7 @@ def queue(s: Session, c: store.Case, step: int) -> int | None:
     key = instruction_key(ref, step, kind)
     # a reset reopens cases with their old approval references; their earlier rows no longer mean anything
     s.execute(text("DELETE FROM instruction WHERE approval_ref = :r AND step = :n"), {"r": ref, "n": step})
+    system = SYSTEM_OF.get(kind) or (EX_STEP.get(kind) or {}).get("sys") or st["sys"]
     iid = s.execute(
         text(
             "INSERT INTO instruction (case_id, approval_ref, step, kind, system, idem_key, match_refs, queued_at) "
@@ -81,14 +86,26 @@ def queue(s: Session, c: store.Case, step: int) -> int | None:
             "r": ref,
             "n": step,
             "k": kind,
-            "sys": SYSTEM_OF.get(kind) or (EX_STEP.get(kind) or {}).get("sys") or st["sys"],
+            "sys": system,
             "key": key,
             "refs": _json(_match_refs(c, st, key, ref)),
             "at": clock.now(),
         },
     ).scalar_one()
     jobs.enqueue(s, "instruction.send", {"instruction_id": iid})
+    _trigger_outbound(s, system)
     return iid
+
+
+def _trigger_outbound(s: Session, system: str) -> None:
+    """Plan 6 C6: an instruction queued for a system runs its approval-triggered (outbound) workflows. In a savepoint
+    (triggers.safely): a trigger that fails is logged and never fails the instruction."""
+    try:
+        from di.workflow import triggers
+
+        triggers.safely(triggers.on_approval, s, system)
+    except Exception:  # never let a trigger break the instruction
+        logging.getLogger("di.instructions").exception("workflow triggers for %s failed", system)
 
 
 def queue_first(s: Session, c: store.Case) -> int | None:

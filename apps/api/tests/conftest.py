@@ -12,6 +12,7 @@ import os
 
 os.environ["DI_CLOCK"] = "pinned"  # before di is imported: settings are read once
 os.environ["DI_INSTRUCTIONS"] = "false"
+os.environ["DI_WORKFLOW_TRIGGERS"] = "false"  # plan 6 C6: no triggered runs (test_triggers turns them on)
 os.environ["DI_SOURCE_RETRY_BASE_SECONDS"] = "0.01"  # plan 6 A6: source GET retries wait 10, 20, 40 ms in the suite
 
 import pytest

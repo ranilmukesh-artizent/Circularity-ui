@@ -6,7 +6,8 @@ subscription at start-up and checks it on every periodic tick (it is put back if
 
 B13b: before the sync is queued, an event that completes an instruction's step acknowledges it
 (di/instructions/events.py: which event completes which step, and how it is matched). Every event still queues the
-delta sync, matched or not.
+delta sync, matched or not. Plan 6 C6: every event (not `sim.reset`) also queues a run of the source's published,
+event-triggered workflows (di/workflow/triggers.py), in its own transaction so a trigger never fails the event.
 
 Plan 6 A7, one source's own webhook: POST /api/webhooks/{source_id}. The body is a CloudEvent with an `id` and a
 `time`, signed `X-Signature: sha256=<HMAC-SHA256 of the body>` (source-sim's `X-Sim-Signature` is accepted too) with the
@@ -103,8 +104,23 @@ def _accept(ev: dict, source_id: str) -> dict:
         status = s.execute(text("SELECT status FROM source_system WHERE id = :i"), {"i": source_id}).scalar()
         job = None if status in ("paused", "disconnected", "unavailable") else enqueue_sync(s, source_id, "webhook")
         s.commit()
+    if ev.get("type") != "sim.reset":
+        _trigger_workflows(source_id)
     out = {"accepted": True, "source_id": source_id, "type": ev.get("type"), "queued_job": job}
     return out | ({"instruction": instruction} if instruction else {})
+
+
+def _trigger_workflows(source_id: str) -> None:
+    """Plan 6 C6: the source's event-triggered workflows run (di/workflow/triggers.py). Its own transaction, after the
+    sync was committed: a trigger that fails is logged and never fails the event."""
+    from di.workflow import triggers
+
+    try:
+        with SessionLocal() as s:
+            triggers.safely(triggers.on_event, s, source_id)
+            s.commit()
+    except Exception:
+        log.exception("workflow triggers for %s failed", source_id)
 
 
 # ---------------------------------------------------------------- one source's own webhook (plan 6 A7)

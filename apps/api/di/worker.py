@@ -3,7 +3,8 @@
 Run with:  python -m di.worker
 Handlers register by job kind: `sync.source` (B9), `instruction.send` (B13b, di/instructions) and `workflow.run`
 (B15, di/actions/workflows: a workflow run, step by step, its progress on the live-update stream). Besides jobs, the
-loop queues due syncs every 30 s and, while sending instructions is on, acknowledges due simulated steps every 5 s.
+loop queues due syncs and due scheduled workflow runs (di/workflow/triggers.py) every 30 s and, while sending
+instructions is on, acknowledges due simulated steps every 5 s.
 """
 
 import logging
@@ -109,6 +110,14 @@ def _instruction_send(payload: dict[str, Any]) -> None:
 def _workflow_run(payload: dict[str, Any]) -> None:
     from di.actions.workflows import run_job
 
+    if "run" not in payload:  # queued by a trigger (plan 6 C6, di/workflow/triggers.py): its run record is made now
+        from di.workflow.triggers import start
+
+        started = start(payload)
+        if started is None:
+            log.info("triggered run of %s skipped: it may not run now", payload.get("wf"))
+            return
+        payload = started
     out = run_job(payload)
     log.info("workflow run %s: %s", payload.get("run"), out)
 
@@ -160,6 +169,22 @@ def periodic() -> None:
             log.info("queued syncs: %s", ", ".join(queued))
     except Exception:
         log.exception("periodic step failed")
+    tick_triggers()
+
+
+def tick_triggers() -> None:
+    """Queue the workflows whose schedule is due on the workspace clock (plan 6 C6)."""
+    from di import clock
+    from di.workflow import triggers
+
+    try:
+        with SessionLocal() as s:
+            queued = triggers.tick(s, clock.now())
+            s.commit()
+        if queued:
+            log.info("queued scheduled workflow runs: %s", ", ".join(queued))
+    except Exception:
+        log.exception("workflow triggers failed")
 
 
 if __name__ == "__main__":
