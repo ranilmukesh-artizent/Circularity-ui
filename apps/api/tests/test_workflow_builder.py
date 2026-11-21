@@ -290,3 +290,19 @@ def test_ask_builds_an_ingest_like_the_demo():
     card = got["cards"][0]["data"]
     assert any(st["fixed"] for st in card["steps"]) and any("currency" in st["label"].lower() for st in card["steps"])
     assert [(c["action"], c["skipped"]) for c in got["calls"]] == [("workflow.draft", True)]
+
+
+# ---------------------------------------------------------------- block settings from the description (plan 6 C2)
+def test_the_builder_fills_block_settings_from_the_description():
+    out = plan("ingest from salesforce with currency conversion to EUR and dedupe by opportunity_id, every 30 minutes",
+               {"_defaults": True})  # fmt: skip
+    assert out["status"] == "ready", out
+    p = out["plan"]
+    by = {n["ref"]: n for n in p["graph"]["nodes"]}
+    assert by["x_fx"]["cfg"] == {"currency": "EUR"}
+    assert by["x_late"]["cfg"] == {"keys": ["opportunity_id"]}
+    assert p["checks"]["errors"] == []
+    assert p["save"]["graph"] == p["graph"]
+    # no currency named: the defaults, stored as no settings at all
+    q = plan("ingest from salesforce with currency conversion, every 30 minutes", {"_defaults": True})["plan"]
+    assert "cfg" not in next(n for n in q["graph"]["nodes"] if n["ref"] == "x_fx")

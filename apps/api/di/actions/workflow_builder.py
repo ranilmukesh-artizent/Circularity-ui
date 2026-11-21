@@ -70,6 +70,7 @@ from di.reads import workflows as studio
 from di.reads.common import SOURCES
 from di.reads.constants import MAP_TARGET, MAPPINGS, SRC_TYPES
 from di.reads.reference import channels
+from di.workflow import blocks
 
 log = logging.getLogger("di.workflow_builder")
 
@@ -921,6 +922,11 @@ def plan(prompt: str, answers: dict[str, Any], ctx: CallContext, use_model: bool
         "handling": handling,
     }
     g = tailored_graph(shape)
+    for ref, cfg in read_settings(prompt).items():
+        for n in g["nodes"]:
+            if n["k"] == "xf" and n["ref"] == ref:
+                n.update(wf._n(n["id"], n["k"], n["ref"], n["x"], n["y"], cfg))
+                said("settings", wf._xf_req(ref)["label"], ", ".join(f"{k} {_val(v)}" for k, v in cfg.items()), "prompt")
     name0 = tailored_name(shape, trig)
     owner0 = SOURCES[sid]["owner"] if sid else "Decision Services" if kind == "dec" else "Unassigned"
     name = str(a.get("name") or p.get("name") or name0).strip()[:80]
@@ -937,6 +943,28 @@ def plan(prompt: str, answers: dict[str, Any], ctx: CallContext, use_model: bool
 
 
 PRIMARY = ("trigger", "steps", "handling", "retries", "alert")
+
+# block settings the description can state (di/workflow/blocks.py keys): "to EUR" → x_fx currency, "dedupe by id" →
+# x_late keys. Only values the block accepts are taken; the rest stay the defaults.
+_CUR = re.compile(r"\b(?:to|into|in)\s+(usd|eur|inr)\b")
+_DEDUPE_BY = re.compile(r"\b(?:de-?dup\w*|duplicat\w*|order(?:ed)?)\s+(?:by|on)\s+([a-z_][\w.]*(?:\s*(?:,|and)\s*[a-z_][\w.]*)*)")
+
+
+def read_settings(prompt: str) -> dict[str, dict]:
+    """The block settings the description states, by transform: {"x_fx": {"currency": "EUR"}, ...}."""
+    t = _norm(prompt)
+    out: dict[str, dict] = {}
+    if (m := _CUR.search(t)) and m.group(1).upper() != "USD":
+        out["x_fx"] = {"currency": m.group(1).upper()}
+    if m := _DEDUPE_BY.search(t):
+        keys = [k for k in re.split(r"\s*(?:,|\band\b)\s*", m.group(1)) if k and k not in GENERIC]
+        if keys:
+            out["x_late"] = {"keys": keys}
+    return {ref: cfg for ref, cfg in out.items() if not blocks.cfg_errors({"k": "xf", "ref": ref, "cfg": cfg})}
+
+
+def _val(v: Any) -> str:
+    return ", ".join(map(str, v)) if isinstance(v, list) else str(v)
 
 
 def _questions(qs: list[dict], notes: list[str], understood: list[dict], a: dict) -> dict[str, Any]:

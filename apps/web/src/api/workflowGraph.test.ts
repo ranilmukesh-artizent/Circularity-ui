@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { RunState, Source, StepKind, TestRun, WfGraph, Workflow } from './workflows';
+import type { BlockSpec, FieldSpec, RunState, Source, StepKind, TestRun, WfGraph, WfNode, Workflow } from './workflows';
 import {
-  ageShort, analyze, canLink, evalStep, frAgo, hashId, info, order, pathXY, runCounts, runTimes, srcCh, srcLabel, srcOr, trigText,
+  ageShort, analyze, canLink, cfgErrors, compactCfg, evalStep, frAgo, hashId, info, nodeCfg, order, pathXY, runCounts, runTimes, specKey, srcCh, srcLabel, srcOr, trigText,
   validate, wfStat, type Fixed, type Lookups,
 } from './workflowGraph';
 
@@ -623,4 +623,42 @@ describe('seeded workflows WF-101 and WF-105 (golden data)', () => {
       expect(runCounts({ id: w.id, last: w.last } as unknown as Workflow, g, w.states as Record<string, RunState>)).toEqual(w.runCounts);
     });
   }
+});
+
+// ---------------------------------------------------------------- block settings (plan 6 C2: the server's rules)
+const fs_ = (key: string, label: string, type: FieldSpec['type'], dflt: unknown, more: Partial<FieldSpec> = {}): FieldSpec => ({
+  key, label, type, default: dflt, required: false, choices: null, help: '', min: null, max: null, source: null, ...more,
+});
+const BS: Record<string, BlockSpec> = {
+  x_fx: { ref: 'x_fx', readonly: false, fields: [fs_('currency', 'Target currency', 'select', 'USD', { required: true, choices: ['USD', 'EUR', 'INR'] })] },
+  x_val: { ref: 'x_val', readonly: false, fields: [fs_('required', 'Required fields', 'fields', []), fs_('rules', 'Rules', 'rules', [])] },
+  x_gw: { ref: 'x_gw', readonly: false, fields: [fs_('timeout_s', 'Timeout (s)', 'number', 30, { min: 1, max: 600 })] },
+  conn: { ref: 'conn', readonly: false, fields: [fs_('resources', 'Resources', 'multi', [], { source: 'resources' })] },
+  fixed: { ref: 'fixed', readonly: true, fields: [] },
+};
+describe('block settings', () => {
+  const n = (k: StepKind, ref: string, cfg?: Record<string, unknown>): WfNode => ({ id: 'n', k, ref, x: 0, y: 0, ...(cfg ? { cfg } : {}) });
+  it('reads a node without settings as the defaults, and stores only what differs', () => {
+    expect(specKey(n('xf', 'x_fx'))).toBe('x_fx');
+    expect(specKey(n('conn', 'crm'))).toBe('conn');
+    expect(nodeCfg(BS, n('xf', 'x_fx'))).toEqual({ currency: 'USD' });
+    expect(compactCfg(BS, n('xf', 'x_fx', { currency: 'USD' }))).toEqual(n('xf', 'x_fx'));
+    expect(compactCfg(BS, n('xf', 'x_fx', { currency: 'EUR' })).cfg).toEqual({ currency: 'EUR' });
+  });
+  it('names the block and the field, as the server does', () => {
+    expect(cfgErrors(BS, n('xf', 'x_fx', { currency: 'XYZ' }), { label: 'Convert currency' })).toEqual(['Convert currency: Target currency XYZ is not one of USD, EUR, INR.']);
+    expect(cfgErrors(BS, n('xf', 'x_val', { rules: [{ field: '', check: 'present' }] }), { label: 'V' })).toEqual(['V: Rules rule 1 has no field.']);
+    expect(cfgErrors(BS, n('xf', 'x_val', { rules: [{ field: 'qty', check: 'range', arg: '>0' }] }), { label: 'V' })).toEqual([]);
+    expect(cfgErrors(BS, n('xf', 'x_gw', { timeout_s: 0 }), { label: 'G' })).toEqual(['G: Timeout (s) must be at least 1.']);
+    expect(cfgErrors(BS, n('xf', 'x_gw', { colour: 'red' }), { label: 'G' })).toEqual(['G: colour is not a setting of this block.']);
+    expect(cfgErrors(BS, n('conn', 'crm', { resources: ['ghosts'] }), { label: 'CRM', resources: ['opps'] })).toEqual(['CRM: Resources ghosts is not a resource of this connection.']);
+    expect(cfgErrors(BS, n('fixed', 'c_dem', { a: 1 }), { label: 'D' })).toEqual(['D: this step has no settings to change.']);
+  });
+  it('adds settings errors to the checks when the catalogue is known', () => {
+    const g = G(GOOD, GOOD_E);
+    g.nodes.find((x) => x.id === 'v')!.cfg = { rules: [{ field: '', check: 'present' }] };
+    expect(checksOn(g, 'v')).toEqual([]); // no catalogue in L: not checked
+    const c = validate({ ...L, blocks: BS }, g, 'pipe').filter((x) => x.id === 'v');
+    expect(c).toEqual([{ sev: 'error', id: 'v', msg: 'Validation & enrichment: Rules rule 1 has no field.' }]);
+  });
 });

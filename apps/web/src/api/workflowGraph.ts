@@ -5,7 +5,7 @@
  * Ported from index.html: wfInfo, wfAnalyze, wfValidate, wfBypass, wfCanLink, wfOrder, wfEval, wfRunTimes, frRunCounts,
  * wfRound, wfPathXY, trigText, ageShort, frAgo, hashId, srcLabel, srcCh, srcOr, wfStat.
  */
-import type { Check, Counts, RunState, Source, StepInfo, TestRun, Trigger, WfGraph, WfNode, WfStat, Workflow, Xf } from './workflows';
+import type { BlockSpec, Check, Counts, FieldSpec, Rule, RunState, Source, StepInfo, TestRun, Trigger, WfGraph, WfNode, WfStat, Workflow, Xf } from './workflows';
 
 export interface Fixed { label: string; sub: string; desc: string; canon?: boolean; model?: string; in: boolean; out: boolean; start?: boolean; fields?: string[] }
 export interface ActType { id: string; ch: string; label: string; sub: string; desc: string }
@@ -23,6 +23,10 @@ export interface Lookups {
   DELIVER: Record<string, string[]>;
   CH_ARR: Record<string, string>;
   CH_DEL: Record<string, string>;
+  /** The block catalogue (GET /api/screens/workflows/blocks); without it the settings are not checked. */
+  blocks?: Record<string, BlockSpec>;
+  /** Each connection's resources (the choices of a connector's Resources setting). */
+  resources?: Record<string, string[]>;
 }
 
 export const WF_W = 176, WF_H = 62;
@@ -183,6 +187,7 @@ export function validate(L: Lookups, g: WfGraph, kind: 'pipe' | 'dec'): Check[] 
       out.push({ sev: 'error', id: n.id, msg: 'Publish to event stream announces a model update, so it follows a canonical model.' });
     if (x?.start && fed) out.push({ sev: 'warn', id: n.id, msg: x.label + ' starts a workflow, so nothing should feed it.' });
   });
+  out.push(...cfgChecks(L, g));
   const rk = { error: 0, warn: 1, info: 2 };
   return out.sort((a, b) => rk[a.sev] - rk[b.sev]);
 }
@@ -366,4 +371,133 @@ export function pathXY(sx: number, sy: number, tx: number, ty: number): string {
   }
   const mid = Math.abs(sy - ty) < WF_H + 10 ? Math.max(sy, ty) + WF_H / 2 + 24 : (sy + ty) / 2, lx = Math.max(8, tx - 22);
   return round([[sx, sy], [sx + 22, sy], [sx + 22, mid], [lx, mid], [lx, ty], [tx, ty]], 10);
+}
+
+// ---------------------------------------------------------------- block settings (di/workflow/blocks.py, plan 6 C2)
+// A node's `cfg` holds only the settings that differ from its block's defaults; these port the server's rules exactly,
+// so the canvas shows the same settings errors the server's checks report (and Publish refuses).
+const CHECKS = ['present', 'type', 'regex', 'range', 'in'];
+const TYPES = ['string', 'number', 'integer', 'bool', 'date'];
+const RANGE = /^\s*(?:(-?\d+(?:\.\d+)?)?\s*\.\.\s*(-?\d+(?:\.\d+)?)?|(>=|<=|!=|>|<|=)\s*(-?\d+(?:\.\d+)?))\s*$/;
+const PAIRS: [string, string, string][] = [['x_expr', 'target', 'expression'], ['x_expr', 'expression', 'target'], ['x_join', 'input', 'key']];
+/** What the checks may know about the source: its records' field names and its connection's resources. */
+export interface CfgCtx { label?: string; fields?: string[] | null; resources?: string[] | null }
+
+const copyV = (v: unknown): unknown => (Array.isArray(v) ? [...v] : v && typeof v === 'object' ? { ...(v as object) } : v);
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const strs = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string');
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** The catalogue key of a node: its transform id for an xf node, else its kind. */
+export const specKey = (n: Pick<WfNode, 'k' | 'ref'>): string => (n.k === 'xf' ? n.ref : n.k);
+export function defaultCfg(B: Record<string, BlockSpec>, key: string): Record<string, unknown> {
+  return Object.fromEntries((B[key]?.fields ?? []).map((f) => [f.key, copyV(f.default)]));
+}
+/** A node's settings with the defaults filled in. */
+export const nodeCfg = (B: Record<string, BlockSpec>, n: WfNode): Record<string, unknown> => ({ ...defaultCfg(B, specKey(n)), ...(n.cfg ?? {}) });
+/** The node as stored: `cfg` keeps only what differs from the defaults, and goes when nothing does. */
+export function compactCfg(B: Record<string, BlockSpec>, n: WfNode): WfNode {
+  const { cfg, ...rest } = n;
+  if (!isObj(cfg)) return cfg == null ? rest : n;
+  const d = defaultCfg(B, specKey(n));
+  const keep = Object.fromEntries(Object.entries(cfg).filter(([k, v]) => !(k in d) || !same(d[k], v)));
+  return Object.keys(keep).length ? { ...rest, cfg: keep } : rest;
+}
+
+function ruleErrors(f: FieldSpec, rules: unknown): string[] {
+  if (!Array.isArray(rules) || !rules.every(isObj)) return [`${f.label} must be a list of rules.`];
+  const out: string[] = [];
+  rules.forEach((r, i) => {
+    const at = `${f.label} rule ${i + 1}`, fld = r.field, check = r.check, arg = r.arg == null ? '' : String(r.arg);
+    if (typeof fld !== 'string' || !fld.trim()) { out.push(`${at} has no field.`); return; }
+    if (!CHECKS.includes(check as string)) out.push(`${at} has an unknown check ${String(check)} (present, type, regex, range or in).`);
+    else if (check === 'type' && !TYPES.includes(arg)) out.push(`${at} needs a type: ${TYPES.join(', ')}.`);
+    else if (check === 'regex') {
+      let ok = true;
+      try { new RegExp(arg); } catch { ok = false; }
+      if (!ok) out.push(`${at} has a pattern that does not compile.`);
+      else if (!arg) out.push(`${at} needs a pattern.`);
+    } else if (check === 'range') {
+      const m = RANGE.exec(arg);
+      if (!(m && (m[1] || m[2] || m[4]))) out.push(`${at} needs a range such as 0..100, >0 or <=5.`);
+    } else if (check === 'in' && !arg.split(',').some((x) => x.trim())) out.push(`${at} needs the values it accepts, separated by commas.`);
+  });
+  return out;
+}
+
+/** One setting's problems (without the block's name). */
+export function fieldErrors(f: FieldSpec, v: unknown, ctx: CfgCtx = {}): string[] {
+  const lb = f.label, choices = f.choices;
+  switch (f.type) {
+    case 'text':
+      if (typeof v !== 'string') return [`${lb} must be text.`];
+      return f.required && !v.trim() ? [`${lb} is needed.`] : [];
+    case 'number':
+      if (!isNum(v)) return [`${lb} must be a number.`];
+      if (f.min != null && v < f.min) return [`${lb} must be at least ${f.min}.`];
+      if (f.max != null && v > f.max) return [`${lb} must be at most ${f.max}.`];
+      return [];
+    case 'bool':
+      return typeof v === 'boolean' ? [] : [`${lb} must be yes or no.`];
+    case 'select':
+      if (f.key === 'version') return v === 'latest' || (isNum(v) && Number.isInteger(v) && v >= 1) ? [] : [`${lb} must be latest or a version number.`];
+      if (v === '' && !f.required) return [];
+      if (v === '' || v == null) return [`${lb} is needed.`];
+      return (choices ?? []).includes(v as string) ? [] : [`${lb} ${String(v)} is not one of ${(choices ?? []).join(', ')}.`];
+    case 'multi':
+    case 'fields': {
+      if (!strs(v)) return [`${lb} must be a list of ${f.type === 'fields' ? 'field names' : 'values'}.`];
+      if (f.required && !v.length) return [`${lb} needs at least one.`];
+      const out: string[] = [];
+      if (choices) v.filter((x) => !choices.includes(x)).forEach((x) => out.push(`${lb} ${x} is not one of ${choices.join(', ')}.`));
+      if (f.source === 'resources' && ctx.resources) v.filter((x) => !ctx.resources!.includes(x)).forEach((x) => out.push(`${lb} ${x} is not a resource of this connection.`));
+      if (f.type === 'fields' && ctx.fields) v.filter((x) => !ctx.fields!.includes(x)).forEach((x) => out.push(`${lb} ${x} is not a field the records carry.`));
+      return out;
+    }
+    case 'rules': {
+      let errs = ruleErrors(f, v);
+      const rs = v as Rule[];
+      if (!errs.length && f.required && !rs.length) errs = [`${lb} needs at least one rule.`];
+      if (!errs.length && ctx.fields)
+        errs = rs.flatMap((r, i) => (ctx.fields!.includes(r.field) ? [] : [`${lb} rule ${i + 1}: ${r.field} is not a field the records carry.`]));
+      return errs;
+    }
+    case 'mapping': {
+      if (!isObj(v) || !Object.values(v).every((x) => typeof x === 'string')) return [`${lb} must pair each field with a value.`];
+      const out: string[] = Object.keys(v).some((k) => !k.trim()) ? [`${lb}: a field name is empty.`] : [];
+      if (choices) Object.values(v).filter((x) => !choices.includes(x as string)).forEach((x) => out.push(`${lb}: ${String(x)} is not one of ${choices.join(', ')}.`));
+      if (ctx.fields) Object.keys(v).filter((k) => k.trim() && !ctx.fields!.includes(k)).forEach((k) => out.push(`${lb}: ${k} is not a field the records carry.`));
+      return out;
+    }
+  }
+  return [];
+}
+
+/** The problems with a node's settings, each "<block>: <field> <problem>" ([] for the defaults). */
+export function cfgErrors(B: Record<string, BlockSpec>, n: WfNode, ctx: CfgCtx = {}): string[] {
+  const s = B[specKey(n)], label = ctx.label || n.ref || 'This step', raw = n.cfg as unknown;
+  if (raw == null || !s) return [];
+  if (!isObj(raw)) return [`${label}: the settings must be an object.`];
+  if (s.readonly && Object.keys(raw).length) return [`${label}: this step has no settings to change.`];
+  const keys = new Set(s.fields.map((f) => f.key));
+  const out = Object.keys(raw).filter((k) => !keys.has(k)).map((k) => `${k} is not a setting of this block.`);
+  const cfg = { ...defaultCfg(B, s.ref), ...raw };
+  s.fields.forEach((f) => out.push(...fieldErrors(f, cfg[f.key], ctx)));
+  PAIRS.forEach(([ref, a, b]) => {
+    const fa = s.fields.find((f) => f.key === a), fb = s.fields.find((f) => f.key === b), va = cfg[a], vb = cfg[b];
+    if (s.ref === ref && fa && fb && typeof va === 'string' && typeof vb === 'string' && va.trim() && !vb.trim()) out.push(`${fb.label} is needed with ${fa.label}.`);
+  });
+  return out.map((m) => `${label}: ${m}`);
+}
+
+/** The settings errors of every node in a graph, as checks (the server's cfg_checks). */
+export function cfgChecks(L: Lookups, g: WfGraph): Check[] {
+  const B = L.blocks;
+  if (!B) return [];
+  return g.nodes.flatMap((n) => {
+    if (n.cfg == null) return [];
+    const ctx: CfgCtx = { label: info(L, n).label, resources: n.k === 'conn' ? L.resources?.[n.ref] ?? null : null };
+    return cfgErrors(B, n, ctx).map((msg) => ({ sev: 'error' as const, id: n.id, msg }));
+  });
 }

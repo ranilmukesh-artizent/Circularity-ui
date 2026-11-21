@@ -28,6 +28,11 @@ generator), so they cannot be reproduced; here they come from mulberry32 seeded 
 demo's ranges. Everything else in a run (the step states, the note, the per-step durations, the run id) is
 a function of the graph and the sources, as in the demo.
 
+**Block settings (plan 6 C2).** A node may carry `cfg`, the settings of its block (di/workflow/blocks.py) that differ
+from the defaults; save, publish and create store only those (blocks.compact_graph), so a graph whose settings are all
+the defaults is the demo's graph. The checks add one error per bad setting, naming the block and the field
+(cfg_checks); save keeps a bad setting, publish refuses it (its guard counts the errors).
+
 **Not ported.** A manual run of an ingest workflow also starts the demo's simulated sync of its source (startSync)
 and bumps the Command Centre's hourly health bar (hhBump); the backend's sources sync through the connectors (B9)
 and its health bars are fixed, so neither happens here.
@@ -55,6 +60,7 @@ from di.reads import workflows as studio
 from di.reads.common import SOURCES, STARTING_MAPPINGS, hash_id, iso, ms, to_fixed
 from di.reads.constants import MAP_TARGET, MAPPINGS, SRC_TYPES, TOOLS
 from di.reads.reference import channels, lists
+from di.workflow import blocks
 
 log = logging.getLogger("di.workflows")
 _REF = lists()
@@ -238,8 +244,10 @@ def bump(w: dict) -> None:
 
 
 # ---------------------------------------------------------------- template graphs (wfBuild)
-def _n(nid: str, k: str, ref: str, x: float, y: float) -> dict:
-    return {"id": nid, "k": k, "ref": ref, "x": x, "y": y}
+def _n(nid: str, k: str, ref: str, x: float, y: float, cfg: dict | None = None) -> dict:
+    """A graph node. `cfg`: the block's settings (di/workflow/blocks.py); only those that differ from the defaults are
+    kept, and a node with none has no `cfg` (so the template graphs stay the demo's)."""
+    return blocks.compact_cfg({"id": nid, "k": k, "ref": ref, "x": x, "y": y, "cfg": cfg})
 
 
 def _e(a: str, b: str, locked: bool = False) -> dict:
@@ -725,7 +733,37 @@ def validate(g: dict, kind: str) -> list[dict]:
         x = _fr_xf(n["ref"])
         if x and x.get("start") and has_pred:
             out.append({"sev": "warn", "id": n["id"], "msg": f"{x['label']} starts a workflow, so nothing should feed it."})
+    out += cfg_checks(g)
     return sorted(out, key=lambda o: _RANK[o["sev"]])
+
+
+def _resources(sid: str) -> list[str] | None:
+    """The resources a source's adapter reads, or None (no adapter: not checked)."""
+    try:
+        from di.connectors.registry import ADAPTERS
+
+        a = ADAPTERS.get(sid)
+        return [r.name for r in a.resources()] if a else None
+    except Exception:  # noqa: BLE001 - without the adapters the setting is not checked against them
+        return None
+
+
+def cfg_checks(g: dict) -> list[dict]:
+    """The block settings' errors (plan 6 C2), one per problem, each naming the block and the field. A node without
+    `cfg` has the defaults, which always pass, so the demo's graphs get none."""
+    out = []
+    for n in g["nodes"]:
+        if n.get("cfg") is None:
+            continue
+        try:
+            lb = label(n)
+        except (LookupError, StopIteration, KeyError):
+            lb = n.get("ref") or "This step"
+        ctx: dict[str, Any] = {"label": lb}
+        if n["k"] == "conn":
+            ctx["resources"] = _resources(n["ref"])
+        out += [{"sev": "error", "id": n["id"], "msg": m} for m in blocks.cfg_errors(n, ctx)]
+    return out
 
 
 def errors(g: dict, kind: str) -> list[dict]:
@@ -866,7 +904,7 @@ def _settings_problem(i: dict[str, Any]) -> tuple[str, str] | None:
 @implement("workflow.save")
 def save(i: dict[str, Any], ctx: CallContext):
     w = _must(ctx, i["id"], for_update=True)
-    w["graph"] = copy.deepcopy(i["graph"])
+    w["graph"] = blocks.compact_graph(copy.deepcopy(i["graph"]))  # settings: only those that differ from the defaults
     w["name"] = i["name"].strip()
     if i.get("owner") is not None:
         w["owner"] = i["owner"]
@@ -903,8 +941,9 @@ def publish_guard(i: dict[str, Any], ctx: CallContext):
 def publish(i: dict[str, Any], ctx: CallContext):
     w = _must(ctx, i["id"], for_update=True)
     graph_of(w)
-    if i.get("graph") is not None and (w.get("dirty") or i["graph"] != w.get("graph")):
-        w["graph"] = copy.deepcopy(i["graph"])
+    gi = blocks.compact_graph(copy.deepcopy(i["graph"])) if i.get("graph") is not None else None
+    if gi is not None and (w.get("dirty") or gi != w.get("graph")):
+        w["graph"] = gi
         w["saved"] = snap(w)
         bump(w)
         w["dirty"] = False
@@ -1002,7 +1041,7 @@ def create(i: dict[str, Any], ctx: CallContext):
     if i.get("desc"):
         w["desc"] = i["desc"]
     if i.get("graph") is not None:
-        w["graph"] = copy.deepcopy(i["graph"])
+        w["graph"] = blocks.compact_graph(copy.deepcopy(i["graph"]))
         w["saved"] = snap(w)
     else:
         graph_of(w)  # what opening it does in the demo: the graph built from its template, and its saved snapshot

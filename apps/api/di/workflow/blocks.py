@@ -189,8 +189,11 @@ def compact_cfg(node: dict) -> dict:
     return out
 
 
-def compact_graph(g: dict) -> dict:
-    return g | {"nodes": [compact_cfg(n) for n in g.get("nodes") or []]}
+def compact_graph(g: Any) -> Any:
+    """The graph as stored: every node through compact_cfg (anything that is not a graph is returned as it is)."""
+    if not isinstance(g, dict) or not isinstance(g.get("nodes"), list):
+        return g
+    return g | {"nodes": [compact_cfg(n) if isinstance(n, dict) else n for n in g["nodes"]]}
 
 
 def catalogue() -> list[dict]:
@@ -200,6 +203,10 @@ def catalogue() -> list[dict]:
 
 def _copy(v: Any) -> Any:
     return list(v) if isinstance(v, list) else dict(v) if isinstance(v, dict) else v
+
+
+def _fmt(x: float) -> str:
+    return str(int(x)) if float(x).is_integer() else str(x)
 
 
 def _is_num(v: Any) -> bool:
@@ -228,8 +235,8 @@ def _rule_errors(f: FieldSpec, rules: Any) -> list[str]:
         elif check == "regex":
             try:
                 re.compile(arg)
-            except re.error as e:
-                out.append(f"{at} has a pattern that does not compile ({e}).")
+            except re.error:
+                out.append(f"{at} has a pattern that does not compile.")
             else:
                 if not arg:
                     out.append(f"{at} needs a pattern.")
@@ -250,9 +257,9 @@ def _field_errors(f: FieldSpec, v: Any, ctx: dict) -> list[str]:
         if not _is_num(v):
             return [f"{lb} must be a number."]
         if f.min is not None and v < f.min:
-            return [f"{lb} must be at least {f.min:g}."]
+            return [f"{lb} must be at least {_fmt(f.min)}."]
         if f.max is not None and v > f.max:
-            return [f"{lb} must be at most {f.max:g}."]
+            return [f"{lb} must be at most {_fmt(f.max)}."]
         return []
     if f.type == "bool":
         return [] if isinstance(v, bool) else [f"{lb} must be yes or no."]
@@ -320,9 +327,11 @@ def cfg_errors(node: dict, ctx: dict | None = None) -> list[str]:
     for ref, a, b in _PAIRS:
         fa = next((f for f in s.fields if f.key == a), None)
         fb = next((f for f in s.fields if f.key == b), None)
-        if s.ref == ref and fa and fb and isinstance(cfg[a], str) and isinstance(cfg[b], str):
-            if cfg[a].strip() and not cfg[b].strip():
-                out.append(f"{fb.label} is needed with {fa.label}.")
+        if s.ref != ref or fa is None or fb is None:
+            continue
+        va, vb = cfg[a], cfg[b]
+        if isinstance(va, str) and isinstance(vb, str) and va.strip() and not vb.strip():
+            out.append(f"{fb.label} is needed with {fa.label}.")
     return [f"{label}: {m}" for m in out]
 
 

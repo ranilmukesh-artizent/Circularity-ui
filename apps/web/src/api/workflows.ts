@@ -21,7 +21,8 @@ import { ApiError, cached, onStream, ref, session } from './client';
 import type { ActionResult } from './types';
 
 export type StepKind = 'fixed' | 'conn' | 'wconn' | 'act' | 'xf' | 'map' | 'tool';
-export interface WfNode { id: string; k: StepKind; ref: string; x: number; y: number; fail?: boolean; ai?: number }
+/** `cfg`: the block's settings that differ from its defaults (di/workflow/blocks.py); absent: all defaults. */
+export interface WfNode { id: string; k: StepKind; ref: string; x: number; y: number; fail?: boolean; ai?: number; cfg?: Record<string, unknown> }
 export interface WfEdge { id: string; a: string; b: string; locked: boolean }
 export interface WfGraph { nodes: WfNode[]; edges: WfEdge[] }
 export interface Trigger { t: string; min?: number }
@@ -171,7 +172,7 @@ export function templateOf(id: string): WfGraph {
 }
 export const stepInfo = (n: WfNode): StepInfo => G.info(lk(), n);
 /** Errors, warnings and notes, each with the step it belongs to (sorted errors first). */
-export const validate = (g: WfGraph, kind: 'pipe' | 'dec'): Check[] => G.validate(lk(), g, kind);
+export const validate = (g: WfGraph, kind: 'pipe' | 'dec'): Check[] => G.validate({ ...lk(), ...blocksL() }, g, kind);
 /** null when a → b may be connected, otherwise the reason it may not. */
 export const canLink = (g: WfGraph, a: string, b: string): string | null => G.canLink(lk(), g, a, b);
 export const runOrder = (g: WfGraph): string[] => G.order(g);
@@ -286,6 +287,24 @@ export function blockSpecs(): Record<string, BlockSpec> {
 }
 /** The resources each connection reads (the choices of a connector's Resources setting). */
 export const blockResources = (): Record<string, string[]> => blocksA().resources ?? {};
+/** The catalogue for the checks; an account that cannot read it gets the checks without settings. */
+function blocksL(): Pick<G.Lookups, 'blocks' | 'resources'> {
+  try {
+    return { blocks: blockSpecs(), resources: blockResources() };
+  } catch (x) {
+    if (x instanceof ApiError) return {};
+    throw x;
+  }
+}
+/** A node's block spec (null for a block the catalogue does not know). */
+export const blockSpecOf = (n: WfNode): BlockSpec | null => blockSpecs()[G.specKey(n)] ?? null;
+/** A node's settings with the defaults filled in. */
+export const nodeSettings = (n: WfNode): Record<string, unknown> => G.nodeCfg(blockSpecs(), n);
+/** The node with only the settings that differ from the defaults (what is saved). */
+export const compactSettings = (n: WfNode): WfNode => G.compactCfg(blockSpecs(), n);
+/** One setting's problems, for the inspector (the same rule as the checks). */
+export const settingErrors = (f: FieldSpec, v: unknown, n: WfNode): string[] =>
+  G.fieldErrors(f, v, { resources: n.k === 'conn' ? blockResources()[n.ref] ?? null : null });
 
 // ---- changes (invoke) ----
 /** Save the draft; `retries` and `alert` are the Settings tab's run settings (frWfSet), saved with the workflow. */

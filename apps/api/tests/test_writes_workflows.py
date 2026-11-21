@@ -270,3 +270,62 @@ def test_run_simulation_matches_last_runs(w):
     assert o["states"] == lr["states"] and o["order"] == lr["order"] and o["status"] == lr["status"]
     assert norm(o["dur"]) == norm(lr["dur"])
     assert o["note"] == lr["note"]
+
+
+# ---------------------------------------------------------------- block settings (plan 6, task C2)
+def _new_ingest(src: str = "erp") -> tuple[str, dict]:
+    r = call("workflow.create", {"type": "ingest", "src": src}, "developer")
+    assert r["ok"], r
+    wid = r["output"]["id"]
+    return wid, client.get(f"/api/screens/workflows/{wid}", headers=h("developer")).json()["workflow"]
+
+
+def _save(w: dict, graph: dict) -> dict:
+    body = {"id": w["id"], "name": w["name"], "owner": w["owner"], "trig": w["trig"], "graph": graph}
+    return call("workflow.save", body, "developer")
+
+
+def test_bad_settings_block_publish(fresh):
+    """Review Focus 5: a setting the step cannot use is saved, the checks name the block and the field, and Publish is
+    refused until it is fixed."""
+    wid, w = _new_ingest()
+    g = copy.deepcopy(w["graph"])
+    v = next(n for n in g["nodes"] if n["ref"] == "x_val")
+    v["cfg"] = {"rules": [{"field": "", "check": "present"}]}
+    g["nodes"].append({"id": "fx", "k": "xf", "ref": "x_fx", "x": 0, "y": 400, "cfg": {"currency": "XYZ"}})
+    assert _save(w, g)["ok"]
+    stored = client.get(f"/api/screens/workflows/{wid}", headers=h("developer")).json()["workflow"]["graph"]
+    assert next(n for n in stored["nodes"] if n["id"] == v["id"])["cfg"] == v["cfg"]  # kept as entered
+    errs = [e["msg"] for e in call("workflow.validate", {"id": wid}, "developer")["output"]["errors"]]
+    assert "Validation & enrichment: Rules rule 1 has no field." in errs
+    assert "Convert currency: Target currency XYZ is not one of USD, EUR, INR." in errs
+    r = call("workflow.publish", {"id": wid}, "developer")
+    assert not r["ok"] and r["error"]["code"] == "conflict", r
+    # fixed: the checks are clean of settings errors and it publishes
+    v["cfg"] = {"rules": [{"field": "qty", "check": "range", "arg": ">0"}]}
+    g["nodes"] = [n for n in g["nodes"] if n["id"] != "fx"]
+    assert _save(w, g)["ok"]
+    assert not [e for e in call("workflow.validate", {"id": wid}, "developer")["output"]["errors"] if ":" in e["msg"]]
+    assert call("workflow.publish", {"id": wid}, "developer")["ok"]
+
+
+def test_settings_are_stored_only_where_they_differ_from_the_defaults(fresh):
+    """A graph saved without `cfg` (every workflow before settings existed) is stored as it is and reads as the defaults;
+    settings equal to the defaults are not stored, so the graph stays the one the demo has."""
+    from di.workflow.blocks import default_cfg, node_cfg
+
+    wid, w = _new_ingest()
+    g = copy.deepcopy(w["graph"])
+    assert all("cfg" not in n for n in g["nodes"])
+    v = next(n for n in g["nodes"] if n["ref"] == "x_val")
+    v["cfg"] = default_cfg("x_val") | {"on_failure": "reject"}
+    assert _save(w, g)["ok"]
+    stored = client.get(f"/api/screens/workflows/{wid}", headers=h("developer")).json()["workflow"]["graph"]
+    by = {n["id"]: n for n in stored["nodes"]}
+    assert by[v["id"]]["cfg"] == {"on_failure": "reject"}
+    assert all("cfg" not in n for nid, n in by.items() if nid != v["id"])
+    assert node_cfg(by["r"]) == default_cfg("conn")
+    # the starting workflows open with the defaults and no settings errors
+    for sw in B14["starting"]:
+        g0 = sw.get("graph") or wf.build(sw["tpl"])
+        assert wf.cfg_checks(g0) == []
