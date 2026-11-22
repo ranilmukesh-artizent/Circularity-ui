@@ -91,4 +91,6 @@ across shared layer folders would scatter them. Inside each, the same names: `ro
 - [x] Phase 1 baseline
 - [x] Phase 2: S1, S2, R, SIM, F
 - [x] Phase 3 top-level rename, docs
-- [ ] Phase 4 full check, commit, push
+- [x] Phase 4 full check, commit, push (22 Nov 2026, 9854f18): api 3,948 passed, source-sim 260 passed; tsc 0,
+  vitest 250, eslint and knip clean, vite build OK; ruff, ruff format, mypy, lint-imports (5 contracts) clean;
+  smoke-pages 11 accounts 0 failing; smoke-rt1048 stage 10; smoke-fabric 12/12; fresh clone dev and prod passed
