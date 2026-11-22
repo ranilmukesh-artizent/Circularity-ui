@@ -1,5 +1,5 @@
 # pre-commit hooks (docs/agents/plans/01b-refactor.md, step C5). Install once: `pre-commit install`.
-# The ruff rev matches the ruff pin in apps/api/requirements-dev.txt and apps/source-sim/requirements.txt;
+# The ruff rev matches the ruff pin in backend/requirements-dev.txt and source-sim/requirements.txt;
 # the root ruff.toml holds the ruff settings, which each service's pyproject.toml extends.
 # fixtures/ is excluded from the text fixers: the golden files are compared byte for byte (parity).
 repos:
@@ -12,9 +12,9 @@ repos:
     rev: v0.8.4
     hooks:
       - id: ruff
-        files: ^apps/(api|source-sim)/
+        files: ^(backend|source-sim)/
       - id: ruff-format
-        files: ^apps/(api|source-sim)/
+        files: ^(backend|source-sim)/
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

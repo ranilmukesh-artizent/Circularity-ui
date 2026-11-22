@@ -1,0 +1,17 @@
+# Build context of the dev image (frontend/Dockerfile, context frontend). The production image
+# (Dockerfile.runtime) is built from the repo root and uses the root .dockerignore instead.
+.env
+.env.*
+.git
+.gitignore
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+e2e/
+playwright-report/
+test-results/
+**/*.test.ts
+**/*.test.tsx
+Dockerfile*
+.dockerignore

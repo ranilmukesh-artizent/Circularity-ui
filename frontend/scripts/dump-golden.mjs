@@ -1,0 +1,338 @@
+// B1 (docs/backend-steps.md): dump what the static demo computes, as golden JSON for the Python backend's parity tests.
+//
+//   node frontend/scripts/dump-golden.mjs            -> fixtures/golden/*.json at the repository root
+//
+// The demo's script runs headless in a sandbox with inert DOM shims, the clock pinned to its as-of time
+// (7 Oct 2026 09:00 UTC) and Math.random seeded, so two runs give identical files.
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { freshDemo, goldenDir as out, plain } from './golden-sandbox.mjs';
+
+const g = freshDemo();
+
+const files = {};
+const put = (name, data) => { files[name] = plain(data); };
+
+// ---------- the world ----------
+put('world.json', {
+  as_of: g('AS_OF'), months: g('MONTHS'), tenants: g('TENANTS'), sites: g('SITES'), facilities: g('FACILITIES'),
+  routes: g('ROUTES'), route_mix: g('ROUTE_MIX'), models: g('MODELS'), gates: g('GATES'), classes: g('CLASSES'), grade_factor: g('GRADE_F'),
+});
+put('cases.json', g('CASES'));
+put('decisions.json', g('ROWS'));
+put('sources.json', { types: g('SRC_TYPES'), sources: g('SOURCES') });
+put('canonical.json', { models: g('CANON'), mappings: g('MAPPINGS') });
+put('events.json', { events: g('EVENTS'), conflicts: g('CONFLICTS') });
+put('tools.json', { tools: g('TOOLS'), agents: g('AGENTS'), hard_rules: g('HARD_RULES'), client_servers: g('CLIENT_SERVERS') });
+put('policy.json', {
+  role_policy: g('ROLE_POLICY'), accounts: g('ACCOUNTS'), perm_acts: g('PERM_ACTS'), perm_alias: g('PERM_ALIAS'), sections: g('RB_SECS'),
+  signin_ids: g('SIGNIN_IDS'), signin_domain: g('SIGNIN_DOMAIN'),
+});
+put('actions_catalog.json', Object.values(g('ACTIONS')).map(({ id, title, desc, risk, perm, scope, input, verb, dupText, idem }) => ({ id, title, desc, risk, perm, scope, input, verb: verb ?? null, dup_text: dupText ?? null, idempotent: !!idem })));
+
+// ---------- per-account answers: access, scope and headline figures ----------
+const setAcct = g('setAcct'), ACCT = g('ACCT'), invoke = g('invoke'), S = g('S');
+const read = (id, input = {}) => { const r = invoke(id, input); return r.ok ? r.output : { error: r.error }; };
+const perms = Object.keys(g('PERM_ACTS')).concat('approve.mcp', 'approve.tenantAccess');
+const pages = Object.keys(g('PAGES'));
+const accounts = {};
+for (const a of g('ACCOUNTS')) {
+  setAcct(ACCT(a.id));
+  const cases = read('cases.list', { limit: 1000 });
+  accounts[a.id] = {
+    can: Object.fromEntries(perms.map((p) => [p, g('can')(p)])),
+    pages: Object.fromEntries(pages.map((p) => [p, (g('RB_SECS')[p] ?? []).filter((s) => g('canPage')(p, s)).concat(g('canPage')(p) ? [''] : [])])),
+    allowed_tenants: g('allowedTenants')(),
+    home: g('homeOf')(S.acct),
+    visible_case_ids: g('myCases')().map((c) => c.id).sort(),
+    cases_total: cases.total, cases_value_total: cases.value_total,
+    counts: g('frCounts')(),
+    kpis: typeof g('frKpis') === 'function' ? g('frKpis')(a.role) : null,
+    inbox: read('inbox.get'),
+  };
+}
+setAcct(ACCT('admin')); // the agent-layer checks (intents, safety tests) need a signed-in account, as in the demo
+const invariants = g('runInvariants')();
+setAcct(null);
+put('figures.json', { invariants, accounts });
+
+// ---------- a scripted RT-1048 journey: every invoke() call and its result ----------
+const steps = [];
+const AF_SYS = g('AF_SYS');
+function call(acct, id, input, opts) {
+  if (acct) setAcct(ACCT(acct));
+  const r = invoke(id, input, opts);
+  const c = g('CASE_BY_ID')[input.case_id];
+  steps.push({ as: acct ?? 'system', action: id, input, result: r, case_after: c && { stage: c.stage, approval: c.approval, exec: c.exec, outcome: c.outcome } });
+  return r;
+}
+const ID = 'RT-1048';
+call('planner-a', 'case.get', { case_id: ID });
+call('planner-b', 'case.get', { case_id: ID }); // tenant boundary
+call('planner-a', 'decision.submit', { case_id: ID });
+call('planner-a', 'decision.submit', { case_id: ID }); // duplicate
+setAcct(ACCT('approver'));
+const c = g('CASE_BY_ID')[ID], rec = c.recommendation;
+const rationale = c.packet ? c.packet.rationale : g('afDraftRationale')(c);
+call('approver', 'decision.approve', { case_id: ID, route: rec.plan, rationale: 'short', reviewed: true, spend: g('defaultSpend')(c, rec), terms: '' }); // validation
+call('approver', 'decision.approve', {
+  case_id: ID, route: rec.plan, rationale, reviewed: true, spend: g('defaultSpend')(c, rec),
+  terms: `Transfer to ${rec.target || 'receiving site'} by ${c.timing || 'Day 10'}; cancel planned purchase PO-${48000 + parseInt(ID.slice(3))}`,
+});
+for (let i = 0; i < 12; i++) {
+  const r = call(null, 'adapter.acknowledge', { case_id: ID }, { via: 'system', actor: AF_SYS });
+  if (!r.ok) break;
+}
+call('finance', 'outcome.confirm', { case_id: ID });
+call('finance', 'outcome.confirm', { case_id: ID }); // duplicate
+setAcct(null);
+put('actions.json', { case_id: ID, steps });
+
+// ---------- the decision engine's read answers: what-if scenarios and pool optimisation (B10) ----------
+// After the journey, so nothing above moves; both actions are read-only and draw no random numbers.
+const SCENARIOS = [
+  { purchase: 0.8 }, { purchase: 1.25 }, { cost: 1.3 }, { cost: 0.7 }, { service: 1.5 }, { market: 0.7 }, { market: 1.2 },
+  { demandOff: true }, { purchase: 0.9, cost: 1.2, market: 1.1 }, { purchase: 0.6, service: 2, demandOff: true },
+];
+setAcct(ACCT('admin'));
+const whatIf = {}, pools = {};
+for (const cs of g('CASES')) {
+  if (!cs.routes.length) continue;
+  whatIf[cs.id] = SCENARIOS.map((s) => ({ input: s, output: read('case.whatIf', { case_id: cs.id, ...s }) }));
+  if (cs.pool) pools[cs.id] = read('pool.optimize', { case_id: cs.id });
+}
+setAcct(null);
+put('engine.json', { scenarios: SCENARIOS, what_if: whatIf, pools });
+
+// ---------- read actions as each account, from a fresh copy of the demo (B11) ----------
+// A fresh copy, so the reads see the demo's starting state and nothing above moves.
+{
+  const h = freshDemo();
+  const inv = h('invoke'), setA = h('setAcct'), acct = h('ACCT');
+  const rd = (id, input) => { const r = inv(id, input); return r.ok ? { ok: true, output: r.output } : { ok: false, error: r.error }; };
+  const all = h('CASES');
+  // every hand-modelled case, and generated cases from each stage and readiness (the first two of each)
+  const pickIds = new Set(all.filter((c) => c.hero || ['RT-1062', 'RT-1044'].includes(c.id)).map((c) => c.id));
+  const seen = {};
+  for (const c of all) {
+    const k = c.readiness + '|' + c.stage + '|' + (c.blocked ? 'b' : '');
+    if (!c.hero && (seen[k] = (seen[k] || 0) + 1) <= 2) pickIds.add(c.id);
+  }
+  const caseIds = [...pickIds].sort();
+  const CASE_READS = ['case.get', 'case.evidence', 'case.routes', 'case.trace', 'demand.find', 'asset.compare'];
+  const CASE_AS = ['admin', 'planner-a', 'planner-b', 'wm-1', 'executive'];
+  const LIST_INPUTS = [
+    {}, { sort: 'priority' }, { sort: 'value', limit: 10 }, { sort: 'received', limit: 5 }, { stage: 'awaiting_approval' },
+    { location: 'Warehouse 1' }, { missing: true }, { owner: 'Customer B' }, { cls: 'motor' }, { q: 'RT-1048' },
+    { route: 'redeploy' }, { submitted: true }, { received_within_days: 3 }, { assessment: 'Pending' }, { product: 'Industrial motor' },
+  ];
+  const OTHER_READS = [
+    ...LIST_INPUTS.map((i) => ['cases.list', i]),
+    ['inbox.get', {}], ['receiving.plan', {}],
+    ['access.lookup', { perm: 'approve' }], ['access.lookup', { perm: 'approve', amount: 20000 }], ['access.lookup', { perm: 'confirm' }],
+    ['access.lookup', { perm: 'assess' }],
+    ...Object.keys(h('AF_KPI')).map((k) => ['kpi.explain', { kpi: k }]),
+  ];
+  const reads = { case_ids: caseIds, case_reads: {}, other_reads: {} };
+  for (const a of h('ACCOUNTS')) {
+    setA(acct(a.id));
+    if (CASE_AS.includes(a.id)) {
+      reads.case_reads[a.id] = {};
+      for (const id of caseIds) reads.case_reads[a.id][id] = Object.fromEntries(CASE_READS.map((x) => [x, rd(x, { case_id: id })]));
+    }
+    reads.other_reads[a.id] = OTHER_READS.map(([x, i]) => ({ action: x, input: i, result: rd(x, i) }));
+  }
+  setA(null);
+  put('reads.json', reads);
+}
+
+// ---------- write actions: scripted scenarios, each in a fresh copy of the demo (B12) ----------
+// A call is [account, action, input] (input may be a function of the demo and the results so far); after the calls,
+// `observe` reads ([account, action, input]) show what changed through the read actions B11 matched.
+{
+  const RATIONALE = 'Redeploy to Site 3 as recommended; evidence snapshot reviewed.';
+  const approve = (id, route, extra = {}) => ({ case_id: id, ...(route ? { route } : {}), rationale: RATIONALE, reviewed: true, ...extra });
+  const look = (id, as = ['admin']) => as.flatMap((a) => [[a, 'case.get', { case_id: id }], [a, 'case.trace', { case_id: id }], [a, 'case.routes', { case_id: id }]]);
+  const inbox = (...as) => as.map((a) => [a, 'inbox.get', {}]);
+  const idpUser = (h, pred) => h('S').idp.users.find(pred);
+  const lastReq = (h) => h('S').reqs[0].id;
+  const SCENARIOS = {
+    submit_and_approve: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1048' }], ['planner-a', 'decision.submit', { case_id: 'RT-1048' }],
+        ['approver', 'decision.approve', { case_id: 'RT-1048', rationale: 'too short', reviewed: true }],
+        ['approver', 'decision.approve', { case_id: 'RT-1048', rationale: RATIONALE, reviewed: false }],
+        ['approver', 'decision.approve', approve('RT-1048', 'Sell + buy for Site 3')],
+        ['approver', 'decision.approve', approve('RT-1048', null, { spend: 12000, terms: 'Transfer to Site 3 by Day 10' })],
+        ['approver', 'decision.approve', approve('RT-1048')]],
+      observe: [...look('RT-1048', ['admin', 'approver']), ...inbox('approver', 'planner-a', 'admin'), ['admin', 'cases.list', { submitted: true }]],
+    },
+    override: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1048' }], ['approver', 'decision.override', approve('RT-1048', 'Sell parts externally')],
+        ['approver', 'decision.override', approve('RT-1048', 'No such route')], ['approver', 'decision.override', approve('RT-1048', 'Sell + buy for Site 3')]],
+      observe: [...look('RT-1048'), ...inbox('approver', 'planner-a')],
+    },
+    decline_and_reevaluate: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1049' }], ['approver', 'decision.decline', { case_id: 'RT-1049', reason: 'short' }],
+        ['approver', 'decision.decline', { case_id: 'RT-1049', reason: 'Refurbish first: grade A listings are open.' }],
+        ['planner-a', 'decision.submit', { case_id: 'RT-1049' }], ['planner-a', 'case.reevaluate', { case_id: 'RT-1049' }],
+        ['planner-a', 'decision.submit', { case_id: 'RT-1049' }], ['approver', 'decision.approve', approve('RT-1049')]],
+      observe: [...look('RT-1049'), ...inbox('approver', 'planner-a')],
+    },
+    approve_without_submit_and_by_planner: {
+      calls: [['planner-a', 'decision.approve', approve('RT-1048')], ['admin', 'decision.approve', approve('RT-1049')],
+        ['approver', 'decision.approve', approve('RT-1050')], ['planner-b', 'decision.submit', { case_id: 'RT-1048' }]],
+      observe: [...look('RT-1049'), ...inbox('admin')],
+    },
+    evidence: {
+      calls: [['executive', 'evidence.request', { case_id: 'RT-1051' }], ['planner-a', 'evidence.request', { case_id: 'RT-1051' }],
+        ['planner-a', 'evidence.request', { case_id: 'RT-1051' }], ['engineer', 'evidence.recordResult', { case_id: 'RT-1051' }],
+        ['wm-1', 'evidence.request', { case_id: 'RT-1050' }], ['wm-2', 'evidence.request', { case_id: 'RT-1050' }],
+        ['engineer', 'evidence.recordResult', { case_id: 'RT-1050' }], ['planner-b', 'decision.submit', { case_id: 'RT-1050' }]],
+      observe: [...look('RT-1051'), ...look('RT-1050'), ...inbox('engineer', 'planner-a', 'planner-b', 'wm-2')],
+    },
+    prepare: {
+      calls: [['planner-a', 'decision.prepare', { case_id: 'RT-1049' }], ['planner-a', 'decision.prepare', { case_id: 'RT-1051' }],
+        ['approver', 'decision.prepare', { case_id: 'RT-1048' }]],
+      observe: [...look('RT-1049'), ...inbox('planner-a')],
+    },
+    scenarios: {
+      calls: [['planner-a', 'scenario.save', { case_id: 'RT-1048', name: 'Cheaper new motor', scen: { purchase: 0.8, cost: 1, service: 1, market: 1, demandOff: false } }],
+        ['planner-a', 'scenario.save', { case_id: 'RT-1048', name: 'Demand cancelled', scen: { purchase: 1, cost: 1, service: 1, market: 1, demandOff: true }, top: 'Sell + buy for Site 3' }],
+        ['planner-a', 'scenario.delete', (h, res) => ({ case_id: 'RT-1048', id: res[0].output && res[0].output.id })],
+        ['planner-a', 'scenario.delete', { case_id: 'RT-1048', id: 'SCN-NONE' }], ['executive', 'scenario.save', { case_id: 'RT-1048', name: 'x', scen: {} }]],
+      observe: [...look('RT-1048', ['planner-a'])],
+    },
+    notifications: {
+      calls: [['executive', 'notify.send', { ex_id: 'risk:RT-1048', title: 'Value at risk: RT-1048', msg: 'Approve RT-1048 before Day 10.', sev: 'High', to: 'approver', ids: ['RT-1048'] }],
+        ['approver', 'notify.acknowledge', { id: 'NTF-101' }], ['approver', 'notify.acknowledge', { id: 'NTF-101' }],
+        ['planner-a', 'notify.acknowledge', { id: 'NTF-999' }], ['planner-a', 'comment.add', { key: 'RT-1048', text: 'Site 3 confirmed the need date.' }],
+        ['approver', 'comment.add', { key: 'RT-1048', text: 'Checked the Site 3 contract terms.' }],
+        ['finance', 'comment.add', { key: 'RT-1048', text: 'Purchase baseline checked against PO 49048.' }], ['finance', 'comment.add', { key: 'RT-1048', text: '' }],
+        ['planner-a', 'escalation.send', { case_id: 'RT-1048', to: 'approver', msg: 'Needed at Site 3 in 10 days.', blocker: 'Approval pending' }]],
+      observe: [...inbox('approver', 'executive', 'planner-a'), ['admin', 'case.trace', { case_id: 'RT-1048' }]],
+    },
+    tenant_access: {
+      calls: [['planner-b', 'access.requestTenant', { tenant: 'Customer A', reason: 'Pooled motor demand at Site 3 needs RT-1048.' }],
+        ['planner-b', 'access.requestTenant', { tenant: 'Customer C', reason: 'Shared battery pool with Customer C.' }],
+        ['planner-b', 'access.requestTenant', { tenant: 'Customer C', reason: 'again' }], ['admin', 'access.decideRequest', (h) => ({ id: lastReq(h), decision: 'decline', note: 'Use the pool view' })],
+        ['planner-b', 'case.get', { case_id: 'RT-1048' }], ['planner-b', 'access.decideRequest', { id: 'REQ-304', decision: 'approve' }],
+        ['approver', 'access.decideRequest', { id: 'REQ-304', decision: 'approve', note: 'For the motor pool' }],
+        ['planner-b', 'case.get', { case_id: 'RT-1048' }], ['admin', 'access.decideRequest', { id: 'REQ-304', decision: 'decline', note: 'Not needed' }],
+        ['admin', 'access.decideRequest', { id: 'REQ-303', decision: 'approve' }]],
+      observe: [...inbox('approver', 'planner-b', 'admin'), ['planner-b', 'cases.list', { owner: 'Customer A', limit: 3 }]],
+    },
+    mcp_proposals: {
+      calls: [['developer', 'mcp.propose', { name: 'Fleet telemetry', owner: 'Operations', purpose: 'Read run hours for remaining life.', data: 'Run hours, alarms', access: 'read', tools: ['get_run_hours'] }],
+        ['planner-a', 'mcp.propose', { name: 'x', owner: 'y', purpose: 'z', data: 'd', access: 'read', tools: [] }],
+        ['approver', 'access.decideRequest', (h) => ({ id: lastReq(h), decision: 'approve' })], ['admin', 'access.decideRequest', { id: 'REQ-301', decision: 'decline', note: 'Duplicate' }]],
+      observe: [...inbox('approver', 'developer', 'admin')],
+    },
+    delegation: {
+      calls: [['approver', 'access.setDelegation', { k: 'decisions', on: false }], ['admin', 'access.setDelegation', { k: 'decisions', on: false }],
+        ['planner-a', 'decision.submit', { case_id: 'RT-1048' }], ['approver', 'decision.approve', approve('RT-1048')],
+        ['admin', 'access.setDelegation', { k: 'tenantAccess', on: false }], ['approver', 'access.decideRequest', { id: 'REQ-304', decision: 'approve' }],
+        ['admin', 'access.setDelegation', { k: 'decisions', on: true }]],
+      observe: [['admin', 'access.lookup', { perm: 'approve' }], ...inbox('approver', 'admin')],
+    },
+    identity: {
+      calls: [['planner-a', 'access.syncDirectory', {}], ['admin', 'access.syncDirectory', {}], ['admin', 'access.setRoleSource', { src: 'groups' }],
+        ['admin', 'access.mapIdentity', { acct: 'admin', field: 'role', value: 'Planner' }], ['admin', 'access.mapIdentity', { acct: 'planner-c', field: 'role', value: 'Wizard' }],
+        ['admin', 'access.mapIdentity', { acct: 'wm-2', field: 'site', value: 'Warehouse 1' }],
+        ['admin', 'access.setOutOfOffice', (h) => ({ to: idpUser(h, (u) => h('idpRoleOf')(u) === 'Planner').id, from: '2026-10-08', until: '2026-10-15' })],
+        ['admin', 'access.setOutOfOffice', (h) => ({ to: idpUser(h, (u) => h('idpRoleOf')(u) === 'Approver').id, from: '2026-10-15', until: '2026-10-08' })],
+        ['admin', 'access.setOutOfOffice', (h) => ({ to: idpUser(h, (u) => h('idpRoleOf')(u) === 'Approver').id, from: '2026-10-08', until: '2026-10-15' })],
+        ['admin', 'access.clearOutOfOffice', { index: 0 }], ['admin', 'access.clearOutOfOffice', { index: 5 }],
+        ['admin', 'access.removeUser', (h) => ({ id: h('S').idp.users[h('S').idp.users.length - 1].id })], ['admin', 'access.removeUser', { id: 'nobody' }]],
+      observe: [['admin', 'access.lookup', { perm: 'assess' }], ['wm-2', 'cases.list', { limit: 3 }], ...inbox('admin')],
+    },
+  };
+  // B13: execution. 'system' is the enterprise-system adapter (as in the journey); `ackAll` acknowledges every step.
+  const sys = (id) => ['system', 'adapter.acknowledge', { case_id: id }];
+  const ackAll = (id, n = 8) => Array.from({ length: n }, () => sys(id));
+  const firstAt = (h, stage) => h('CASES').find((c) => c.stage === stage && !c.hero).id;
+  const execLook = (id) => [...look(id), ['finance', 'case.get', { case_id: id }], ['admin', 'case.evidence', { case_id: id }]];
+  Object.assign(SCENARIOS, {
+    exec_redeploy: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1048' }], ['approver', 'decision.approve', approve('RT-1048')],
+        ['finance', 'outcome.confirm', { case_id: 'RT-1048' }], ['planner-a', 'adapter.acknowledge', { case_id: 'RT-1048' }],
+        ['system', 'adapter.acknowledge', { case_id: 'RT-1048', step: 3 }], ['system', 'instruction.resend', { case_id: 'RT-1048' }],
+        ['system', 'instruction.resend', { case_id: 'RT-1048' }], ...ackAll('RT-1048'),
+        ['finance', 'outcome.confirm', { case_id: 'RT-1048' }], ['finance', 'outcome.confirm', { case_id: 'RT-1048' }]],
+      observe: [...execLook('RT-1048'), ...inbox('finance', 'approver', 'planner-a')],
+    },
+    exec_override_resale: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1048' }], ['approver', 'decision.override', approve('RT-1048', 'Sell + buy for Site 3')],
+        ...ackAll('RT-1048'), ['finance', 'outcome.confirm', { case_id: 'RT-1048' }]],
+      observe: [...execLook('RT-1048')],
+    },
+    exec_other_routes: {
+      calls: [['planner-a', 'decision.submit', { case_id: 'RT-1049' }], ['approver', 'decision.approve', approve('RT-1049')], ...ackAll('RT-1049'),
+        ['finance', 'outcome.confirm', { case_id: 'RT-1049' }],
+        ['planner-a', 'decision.submit', { case_id: 'RT-1027' }], ['approver', 'decision.approve', approve('RT-1027')], ...ackAll('RT-1027'),
+        ['finance', 'outcome.confirm', { case_id: 'RT-1027' }],
+        ['planner-b', 'decision.submit', { case_id: 'RT-1104' }], ['approver', 'decision.approve', approve('RT-1104')], ...ackAll('RT-1104'),
+        ['finance', 'outcome.confirm', { case_id: 'RT-1104' }],
+        ['planner-c', 'decision.submit', { case_id: 'RT-1052' }], ['approver', 'decision.approve', approve('RT-1052')], ...ackAll('RT-1052'),
+        ['finance', 'outcome.confirm', { case_id: 'RT-1052' }]],
+      observe: [...execLook('RT-1049'), ...execLook('RT-1027'), ...execLook('RT-1104'), ...execLook('RT-1052'), ...inbox('finance')],
+    },
+    exec_seeded: {
+      calls: [
+        ['system', 'adapter.acknowledge', (h) => ({ case_id: firstAt(h, 'executing') })],
+        ['system', 'instruction.resend', (h) => ({ case_id: firstAt(h, 'executing') })],
+        ['system', 'adapter.acknowledge', (h) => ({ case_id: firstAt(h, 'approved') })],
+        ['system', 'adapter.acknowledge', (h) => ({ case_id: firstAt(h, 'awaiting_approval') })],
+        ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }], ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }],
+        ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }], ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }],
+        ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }], ['system', 'adapter.acknowledge', { case_id: 'RT-1009' }],
+        ['finance', 'outcome.confirm', { case_id: 'RT-1009' }]],
+      observe: [...execLook('RT-1009'), ...inbox('finance', 'approver', 'admin')],
+    },
+  });
+  const writes = {};
+  for (const [name, sc] of Object.entries(SCENARIOS)) {
+    const h = freshDemo();
+    const inv = h('invoke'), setA = h('setAcct'), acct = h('ACCT'), SYS = h('AF_SYS');
+    const results = [], calls = [];
+    for (const [as, id, input] of sc.calls) {
+      const inp = typeof input === 'function' ? input(h, results) : input;
+      let r;
+      if (as === 'system') { setA(null); r = inv(id, inp, { via: 'system', actor: SYS }); } else { setA(acct(as)); r = inv(id, inp); }
+      calls.push({ as, action: id, input: inp });
+      results.push(r);
+    }
+    const observed = sc.observe.map(([as, id, input]) => { setA(acct(as)); return { as, action: id, input, result: inv(id, input) }; });
+    setA(null);
+    writes[name] = { calls: calls.map((c, k) => ({ ...c, result: results[k] })), observed };
+  }
+  put('writes.json', writes);
+}
+
+// ---------- execution detail and cost trace for the screens (B13): plan, move, what-if guidance, every term's lines ----------
+{
+  const h = freshDemo();
+  const CASE_BY_ID = h('CASE_BY_ID'), exPlan = h('exPlan'), exMove = h('exMove'), exWhatIf = h('exWhatIf'), exTrace = h('exTrace'), asOfNow = h('asOfNow');
+  const ids = files['reads.json'].case_ids; // the same 22 cases as the read fixture
+  const execution = {};
+  for (const id of ids) {
+    const c = CASE_BY_ID[id];
+    if (!c.routes.length) continue;
+    const r = c.chosen || c.recommendation;
+    execution[id] = {
+      route: r ? r.plan : null,
+      plan: r ? exPlan(c, r, asOfNow()) : [],
+      move: r ? exMove(c, r) : null,
+      what_if: r ? exWhatIf(c, r) : [],
+      traces: c.routes.filter((x) => !x.excluded).map((x) => ({ plan: x.plan, terms: x.terms.map((t) => exTrace(c, x, t)) })),
+    };
+  }
+  put('execution.json', execution);
+}
+
+// ---------- write ----------
+mkdirSync(out, { recursive: true });
+for (const [name, data] of Object.entries(files)) writeFileSync(join(out, name), JSON.stringify(data, null, 1) + '\n');
+const inv = files['figures.json'].invariants;
+console.log(`[golden] wrote ${Object.keys(files).length} files to ${out}`);
+console.log(`[golden] cases ${files['cases.json'].length}, decisions ${files['decisions.json'].length}, accounts ${Object.keys(accounts).length}, journey steps ${steps.length}`);
+console.log('[golden] invariants:', JSON.stringify(inv).slice(0, 300));

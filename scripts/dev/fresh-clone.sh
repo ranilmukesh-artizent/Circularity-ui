@@ -139,17 +139,17 @@ code=$(curl -sS -m 30 -o /dev/null -w '%{http_code}' "$WEB/api/screens/case/RT-1
 pass "/api/screens/case/RT-1048 without a token: 401"
 
 echo "== browser smoke (admin)"
-# The smoke runs from this checkout's apps/web (the clone has no host node_modules) against the clone's web port.
+# The smoke runs from this checkout's frontend (the clone has no host node_modules) against the clone's web port.
 smoke=${FRESH_SMOKE:-auto}
 if [ "$smoke" = 0 ]; then
   echo "SKIP  browser smoke (FRESH_SMOKE=0)"
-elif command -v node >/dev/null 2>&1 && [ -d "$REPO/apps/web/node_modules/@playwright/test" ]; then
-  (cd "$REPO/apps/web" && node scripts/smoke-pages.mjs "$WEB" admin) || fail "smoke-pages.mjs $WEB admin"
+elif command -v node >/dev/null 2>&1 && [ -d "$REPO/frontend/node_modules/@playwright/test" ]; then
+  (cd "$REPO/frontend" && node scripts/smoke-pages.mjs "$WEB" admin) || fail "smoke-pages.mjs $WEB admin"
   pass "smoke-pages.mjs admin"
 elif [ "$smoke" = 1 ]; then
-  fail "browser smoke: needs node on PATH and apps/web/node_modules/@playwright/test (npm ci in apps/web) and Chrome"
+  fail "browser smoke: needs node on PATH and frontend/node_modules/@playwright/test (npm ci in frontend) and Chrome"
 else
-  echo "SKIP  browser smoke: no host node or no apps/web/node_modules/@playwright/test here (npm ci in apps/web; it uses the installed Chrome)"
+  echo "SKIP  browser smoke: no host node or no frontend/node_modules/@playwright/test here (npm ci in frontend; it uses the installed Chrome)"
 fi
 
 rc=0

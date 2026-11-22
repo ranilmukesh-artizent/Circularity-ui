@@ -7,7 +7,7 @@ Gate: tests/test_jobs.py tests/test_worker.py tests/test_tasks_api.py
 **Goal:** a hardened Postgres job queue (priorities, delayed runs, dead letters, stale-lock recovery, instant wake-up)
 and CRUD over it at `/api/v1/tasks`.
 
-**Architecture:** keep the hand-rolled queue (`apps/api/di/jobs.py`, table `job`, worker `di/worker.py`); the research
+**Architecture:** keep the hand-rolled queue (`backend/di/core/jobs.py`, table `job`, worker `di/worker.py`); the research
 (20 Nov 2026) found no library worth a second schema owner for this POC (procrastinate 3.12, pgqueuer 2.0 considered).
 Add columns and a trigger with an Alembic migration, a `NOTIFY di_jobs` wake-up the worker listens to (polling stays as
 the fallback), and a router over the same functions.
@@ -33,7 +33,7 @@ the fallback), and a router over the same functions.
 ---
 
 ### Task 1: schema
-**Files:** Create `apps/api/migrations/versions/0010_job_queue.py`; Modify `apps/api/di/models.py` (`Job`). Test: `tests/test_jobs.py`.
+**Files:** Create `backend/migrations/versions/0010_job_queue.py`; Modify `backend/di/models/` (`Job`). Test: `tests/test_jobs.py`.
 Columns: `priority int not null default 100`, `max_attempts int not null default 5`, `heartbeat_at timestamptz`,
 `dedupe_key text`, `history jsonb not null default '[]'`; status adds `dead`, `cancelled`; partial unique index on
 `dedupe_key where status in ('queued','running')`; index `(status, priority, run_after, id)`; trigger
@@ -41,7 +41,7 @@ Columns: `priority int not null default 100`, `max_attempts int not null default
 - [ ] Test: migration up/down round-trips; inserting two queued jobs with one `dedupe_key` raises `IntegrityError`. Fails → implement → passes. Commit.
 
 ### Task 2: queue functions
-**Files:** Modify `apps/api/di/jobs.py`. Test: `tests/test_jobs.py`.
+**Files:** Modify `backend/di/core/jobs.py`. Test: `tests/test_jobs.py`.
 **Interfaces:** Produces
 `enqueue(session, kind: str, payload: dict | None = None, *, priority: int = 100, run_after: datetime | None = None, max_attempts: int = 5, dedupe_key: str | None = None) -> Job`
 (returns the existing queued job on a dedupe hit); `claim(session) -> ClaimedJob | None` ordered by `priority, run_after, id`;
@@ -53,18 +53,18 @@ Columns: `priority int not null default 100`, `max_attempts int not null default
 - [ ] Fail → implement → pass. Commit.
 
 ### Task 3: worker wake-up and heartbeats
-**Files:** Modify `apps/api/di/worker.py`. Test: Create `tests/test_worker.py`.
+**Files:** Modify `backend/di/worker.py`. Test: Create `tests/test_worker.py`.
 The worker `LISTEN di_jobs` on a dedicated psycopg connection (autocommit) and wakes on a notification or after
 `poll` seconds; it heartbeats long jobs every 30 s from a thread; `periodic()` calls `reap_stale`.
 - [ ] Test: a job enqueued while the worker waits is picked up in < 1 s (worker loop run in a thread with `poll=30`). Fails → implement → passes. Commit.
 
 ### Task 4: task CRUD
-**Files:** Create `apps/api/di/routers/tasks.py`; Modify `apps/api/di/main.py`. Test: Create `tests/test_tasks_api.py`.
+**Files:** Create `backend/di/routes/tasks.py`; Modify `backend/di/main.py`. Test: Create `tests/test_tasks_api.py`.
 **Interfaces:** `GET /api/v1/tasks?status=&kind=&limit=50&cursor=` → `{items: [Task], next_cursor}`; `GET /api/v1/tasks/{id}`;
 `POST /api/v1/tasks` `{kind, payload, priority?, run_after?, dedupe_key?}` (kind must be a registered `HANDLERS` key) → 201;
 `PATCH /api/v1/tasks/{id}` `{action: "retry"|"cancel"|"reprioritise", priority?}`; `DELETE /api/v1/tasks/{id}` = cancel.
 `Task` = `{id, kind, payload, status, priority, attempts, max_attempts, run_after, last_error, history, created_at, updated_at}`.
 Every write is journalled through the action pipeline (`task.enqueue`, `task.retry`, `task.cancel`, `task.reprioritise`
-registered in `di/actions/`), so audit and permissions stay in one place.
+registered in `di/services/actions/`), so audit and permissions stay in one place.
 - [ ] Tests: 403 for planner-a; unknown kind → 422; cancel running → 409; retry dead → queued; list paging; journal row per write.
 - [ ] Fail → implement → pass. Phase gate (`loop.md`). Commit.

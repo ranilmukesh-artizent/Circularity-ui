@@ -2,35 +2,35 @@
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 # No source bind mounts, no --reload, no dev tools or tests in the images, non-root users. The golden files are
 # mounted read-only, as in dev. The web app is the built bundle behind nginx (8080 in the container, published on
-# WEB_PORT, 5173 by default, as in dev) with a Content-Security-Policy (apps/web/nginx/default.conf.template). Its
-# image is built from the repo root (apps/web/Dockerfile.runtime, root .dockerignore) so the build generates the demo's stylesheet and product
+# WEB_PORT, 5173 by default, as in dev) with a Content-Security-Policy (frontend/nginx/default.conf.template). Its
+# image is built from the repo root (frontend/Dockerfile.runtime, root .dockerignore) so the build generates the demo's stylesheet and product
 # photos from fixtures/demo itself.
 # Outside DI_ENV=dev the api refuses the shipped signing secrets: set DI_ENV, DI_JWT_SECRET, DI_WEBHOOK_SECRET and
 # DI_SECRET_KEY (a Fernet key: it encrypts the source credentials).
 
 services:
   source-sim:
-    build: { context: ./apps/source-sim, target: runtime }
+    build: { context: ./source-sim, target: runtime }
     image: circularity-ui-source-sim:runtime
     command: !reset null
     volumes: !override
       - ./fixtures/golden:/fixtures/golden:ro
 
   api:
-    build: { context: ./apps/api, target: runtime }
+    build: { context: ./backend, target: runtime }
     image: circularity-ui-api:runtime
     command: !reset null
     volumes: !override
       - ./fixtures/golden:/fixtures/golden:ro
 
   worker:
-    build: { context: ./apps/api, target: runtime }
+    build: { context: ./backend, target: runtime }
     image: circularity-ui-worker:runtime
     volumes: !override
       - ./fixtures/golden:/fixtures/golden:ro
 
   web:
-    build: { context: ., dockerfile: apps/web/Dockerfile.runtime, target: runtime }
+    build: { context: ., dockerfile: frontend/Dockerfile.runtime, target: runtime }
     image: circularity-ui-web:runtime
     environment: !override
       API_UPSTREAM: http://api:8000

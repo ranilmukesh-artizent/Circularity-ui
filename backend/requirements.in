@@ -1,0 +1,16 @@
+# di-api runtime dependencies (direct only). Compiled to requirements.lock with hashes; see
+# docs/agents/dos-and-donts.md, "Dependencies". Unpinned names take their version from the shared constraints.
+-c ../requirements/constraints.txt
+fastapi
+uvicorn[standard]
+SQLAlchemy
+psycopg[binary]
+alembic==1.14.0
+pydantic-settings
+httpx
+PyJWT==2.10.1
+cryptography==50.0.2  # plan 6 A1: source credentials encrypted at rest (Fernet); already locked via paramiko and pyjwt
+paramiko==3.5.0
+mcp==2.3.0
+sse-starlette==3.0.3  # mcp needs it; 3.0.x still runs on the Starlette that fastapi 0.115 pins (<0.42)
+groq==1.7.0  # Ask Circularity's first model provider (B16b, di/services/ask); needs httpx, pydantic, anyio, not Starlette

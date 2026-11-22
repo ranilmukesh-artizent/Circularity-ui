@@ -2,7 +2,7 @@
 # Checks that the dev scripts report failures through their exit status (the agent loop's gate relies on it).
 #   bash scripts/dev/selftest.sh
 # Also checks that the api test lock serializes takers and is released when its holder dies.
-# Takes ~2 min. Plants a temporary type error under apps/web/src and removes it again.
+# Takes ~2 min. Plants a temporary type error under frontend/src and removes it again.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 dev="$REPO/scripts/dev"
 fails=0
@@ -49,7 +49,7 @@ expect 0 "api lock, released when its holder is killed (0-15s)" take_lock_within
 expect 0 "api-test.sh, a passing test" bash "$dev/api-test.sh" tests/test_screens_reference.py::test_case_scope_map
 expect nonzero "api-test.sh, a missing test file" bash "$dev/api-test.sh" tests/test_no_such_file.py
 
-planted="$REPO/apps/web/src/__selftest_type_error.ts"
+planted="$REPO/frontend/src/__selftest_type_error.ts"
 trap 'rm -f "$planted" "$mark"' EXIT
 printf 'export const broken: number = "not a number";\n' >"$planted"
 expect nonzero "web-check.sh tsc, with a type error" bash "$dev/web-check.sh" tsc

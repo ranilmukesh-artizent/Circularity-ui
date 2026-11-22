@@ -54,7 +54,7 @@ rows of 22 Nov 2026):
 
 Deviations worth knowing:
 - **Plan 2 tasks 1–3 were not done first.** One run at a time is the run's advisory lock plus a query on `job`
-  (`run_active` in `di/actions/workflows.py`), not `dedupe_key`; plan 6 has its own reaper (`di/worker.py
+  (`run_active` in `di/services/actions/workflows.py`), not `dedupe_key`; plan 6 has its own reaper (`di/worker.py
   reap_lost_runs`, `reap_lost_run`) instead of plan 2's.
 - **Migrations 0010–0017**, not "numbered at the time": 0010 is A1's `source_secret`, 0011–0017 were reserved empty
   so tracks could fill them in parallel (`scripts/dev/migrate-reapply.sh`).
@@ -62,7 +62,7 @@ Deviations worth knowing:
   `source_secret` (the plan said seed through `put_secret`).
 - **Retries:** 3 retries = 4 tries per GET (`DI_SOURCE_RETRY_BASE_SECONDS`, 0.5 s doubled).
 - **Canonical schema** is canonical.json plus a documented table of the fields the connectors write
-  (`di/canonical/fields.py`); canonical.json alone would hold most demo data.
+  (`di/services/canonical/fields.py`); canonical.json alone would hold most demo data.
 - **Block settings are stored only where they differ from the defaults** (`compact_cfg`), so the demo's graphs and the
   golden replay are unchanged.
 - **Only workflows published in the app are bound** to a source's sync; a webhook runs the bound workflow through the
@@ -73,12 +73,12 @@ Deviations worth knowing:
   `workflow_run_stats`), not new tables; draft autosaves are unjournaled (`ActionDef.journaled=False`).
 - **Catalogue systems** map only where their mock holds circularity data, on keys of their own (`<system>:<key>`), so
   they never touch demo canonical data (T8, not in the original plan).
-- **Shared files** (`di/actions/workflows.py`, `di/screens/workflows.py`, `fabric_sources.py`, `sync.py`,
-  `apps/web/src/api/workflows.ts`, `Canvas.tsx`) were committed by the lead in `8ee1d29` and `8b0417c`; the
+- **Shared files** (`di/services/actions/workflows.py`, `di/services/screens/workflows.py`, `fabric_sources.py`, `sync.py`,
+  `frontend/src/api/workflows.ts`, `Canvas.tsx`) were committed by the lead in `8ee1d29` and `8b0417c`; the
   "(part)" commits hold only their track's own files.
 
 Gate per phase: the phase's tests below, then `scripts/dev/full-suite.sh`, `scripts/dev/web-check.sh`,
-`node apps/web/scripts/smoke-pages.mjs` and `node apps/web/scripts/smoke-rt1048.mjs` (reset before and after).
+`node frontend/scripts/smoke-pages.mjs` and `node frontend/scripts/smoke-rt1048.mjs` (reset before and after).
 
 **Goal:** everything under the Connection Fabric menu does real work: sources connect with stored, encrypted
 credentials to the URL a person configured; the mapping a person edits is the mapping a sync applies; canonical data is
@@ -97,8 +97,8 @@ there is one data path.
 **Tech Stack:** FastAPI, SQLAlchemy 2 + Alembic, psycopg 3, `cryptography` (Fernet, already in the lock at 50.0.2),
 httpx, React 18 + TS, Vitest, pytest, Node Playwright with Chrome.
 
-**Spec:** this plan, from the audit of 21 Nov 2026 (two read-only audits of `apps/api/di/connectors`,
-`di/actions/fabric_*.py`, `di/actions/workflows.py`, `di/reads/workflows.py`, `apps/web/src/pages/{integration,workflows}`),
+**Spec:** this plan, from the audit of 21 Nov 2026 (two read-only audits of `backend/di/connectors`,
+`di/services/actions/fabric_*.py`, `di/services/actions/workflows.py`, `di/repositories/workflows.py`, `frontend/src/pages/{integration,workflows}`),
 summarised under *Where we start*. User request (21 Nov 2026): "all the things under the connector menu should be
 production grade".
 
@@ -142,7 +142,7 @@ production grade".
   identical), the 11 accounts' page smoke, RT-1048 end to end, and the access rules.
 - Dependencies at least 2 weeks old; no new service (no Redis, no vault server: decision D6).
 - Each task: failing test first, one commit, one line in `PROGRESS.md`. Migrations are numbered after the newest in
-  `apps/api/migrations/versions/` at the time (plan 2 may have taken 0010).
+  `backend/migrations/versions/` at the time (plan 2 may have taken 0010).
 - Prerequisite: plan 2 tasks 1–3 (job priorities, `dedupe_key`, dead letters, heartbeats). If plan 2 is not done when
   phase C starts, do those three tasks first.
 
@@ -166,8 +166,8 @@ production grade".
 ## Phase A: connections that are real
 
 ### Task A1: encrypted credentials
-**Files:** Create `apps/api/di/connectors/secrets.py`, migration `00NN_source_secret.py`; Modify `di/config.py`
-(`secret_key`, `env`), `di/actions/fabric_sources.py` (`credentials.rotate`, re-auth, `source.update` new/catalog).
+**Files:** Create `backend/di/connectors/secrets.py`, migration `00NN_source_secret.py`; Modify `di/core/config.py`
+(`secret_key`, `env`), `di/services/actions/fabric_sources.py` (`credentials.rotate`, re-auth, `source.update` new/catalog).
 Test: Create `tests/test_secrets.py`.
 **Interfaces:** Produces `put_secret(s, source_id: str, kind: str, value: str, days: int, by: str) -> SecretMeta`
 (new active version, old one inactive), `active_secret(s, source_id: str, kind: str = "auth") -> str | None`,
@@ -196,10 +196,10 @@ and their demo secret written through `put_secret` (so behaviour is unchanged).
 ### Task A3: a configured adapter for any spec-shaped API
 **Files:** Create `di/connectors/configured.py`; Modify `registry.py`, `sync.py:284`, `actions/integration.py:27-33`,
 `actions/fabric_sources.py` (catalogue connect, hand-made create: no more synthetic run). Source-sim: Create
-`apps/source-sim/sim/generic/specs/catalog_*.py`, one spec per catalogue system (15; resources and fields that read
+`source-sim/sim/generic/specs/catalog_*.py`, one spec per catalogue system (15; resources and fields that read
 like that product's API, seeded deterministically), and `sim/generic/specs/sandbox.py` (`/sandbox/{name}/records`,
 offset paging) for hand-made sources. Test: Create `tests/test_configured_adapter.py`,
-`apps/source-sim/tests/test_catalog_specs.py`.
+`source-sim/tests/test_catalog_specs.py`.
 **Interfaces:** `ConfiguredAdapter(conn: Connection)` implements the `base.Adapter` contract: `resources()` from
 `conn.resources` (`{name, path, id_field, delta_param?}`), paging from `conn.paging` (offset, page, cursor; the same
 keys as `sim.generic.spec.Paging`), auth `api_key | bearer | basic | oauth_cc`. `map()` comes from Task A4.
@@ -260,8 +260,8 @@ secret, Sync now still works; edit a mapping rule and see the canonical value ch
 ## Phase B: data that is real
 
 ### Task B1: canonical schema checks and failed records
-**Files:** Modify `di/canonical/schema.py`, `store.py:41-66`; Create migration `00NN_failed_record.py`,
-`di/canonical/failed.py`. Test: Create `tests/test_canonical_schema.py`.
+**Files:** Modify `di/services/canonical/schema.py`, `store.py:41-66`; Create migration `00NN_failed_record.py`,
+`di/services/canonical/failed.py`. Test: Create `tests/test_canonical_schema.py`.
 **Interfaces:** `MODEL_FIELDS: dict[str, dict[str, FieldSpec]]` built once from `fixtures/golden/canonical.json`
 (`FieldSpec(type: "text"|"number"|"date"|"bool"|"ref", required: bool)`). `check_fact(f: Fact) -> str | None`.
 Table `failed_record(id, run_kind 'sync'|'workflow'|'import', run_id, source_id, step, resource, ext_id, field, rule,
@@ -270,7 +270,7 @@ value, reason, payload jsonb, status 'held'|'reprocessed'|'dropped', created_at)
   21 demo sources produce **zero** held records on a full sync (proves the schema matches the demo data). Commit.
 
 ### Task B2: conflicts that stay resolved
-**Files:** Modify `actions/fabric_records.py:310-349`, `di/canonical/store.py:102-152`, migration
+**Files:** Modify `actions/fabric_records.py:310-349`, `di/services/canonical/store.py:102-152`, migration
 `00NN_conflict_resolution.py`. Test: extend `tests/test_conflicts.py` (or create).
 **Interfaces:** `conflict.resolve` input `{id, choose: "authority"|"other"|"value", value?: str, reason: str}`.
 `store.override(s, model, key, field, value, by) -> None` writes canonical and a provenance row from source
@@ -287,7 +287,7 @@ value, reason, payload jsonb, status 'held'|'reprocessed'|'dropped', created_at)
   `failed_record` with `run_kind='import'`; loading twice is still refused. Commit.
 
 ### Task B4: Event Streams and fabric tiles from real data
-**Files:** Modify `screens/integration.py:707-739`, `di/reads/fabric.py`, `screens/home.py:79`, `screens/command.py:90`.
+**Files:** Modify `screens/integration.py:707-739`, `di/repositories/fabric.py`, `screens/home.py:79`, `screens/command.py:90`.
 Test: extend `tests/test_screens_integration.py`, `test_screens_home.py`, `test_screens_command.py`.
 - [x] Tests: Event Streams lists the seeded decision messages **plus** real ones (sync runs, webhook deliveries,
   instruction acks from `domain_event` / `stream_event`), newest first; Home and Command Center tiles equal the
@@ -307,8 +307,8 @@ another table's key (≥ 90 % of a sample of 200).
 ## Phase C: workflows that run
 
 ### Task C1: block catalogue with settings
-**Files:** Create `apps/api/di/workflow/__init__.py`, `di/workflow/blocks.py`; route
-`GET /api/screens/workflows/blocks`; Modify `apps/web/src/api/workflows.ts` (`blockSpecs()`). Test: Create
+**Files:** Create `backend/di/workflow/__init__.py`, `di/workflow/blocks.py`; route
+`GET /api/screens/workflows/blocks`; Modify `frontend/src/api/workflows.ts` (`blockSpecs()`). Test: Create
 `tests/test_blocks.py`.
 **Interfaces:** `FieldSpec(key, label, type: "text"|"number"|"select"|"multi"|"bool"|"fields"|"rules"|"mapping",
 default, required: bool, choices: list | None, help: str)`; `BlockSpec(ref, fields: tuple[FieldSpec, ...])`;
@@ -336,15 +336,15 @@ Settings per block (defaults reproduce today's behaviour):
   Developer only. Commit.
 
 ### Task C2: settings on nodes, checked on the server
-**Files:** Modify `di/actions/workflows.py` (`_n` gains `cfg`, `workflow.save` and `workflow.publish` validate),
-`validate()` (adds `cfg_errors`), `apps/web/src/api/workflowGraph.ts` (same rule in the browser),
-`di/actions/workflow_builder.py` (fills `cfg` from the description: e.g. *"to EUR"* → `x_fx.currency = "EUR"`). Test:
+**Files:** Modify `di/services/actions/workflows.py` (`_n` gains `cfg`, `workflow.save` and `workflow.publish` validate),
+`validate()` (adds `cfg_errors`), `frontend/src/api/workflowGraph.ts` (same rule in the browser),
+`di/services/actions/workflow_builder.py` (fills `cfg` from the description: e.g. *"to EUR"* → `x_fx.currency = "EUR"`). Test:
 extend `tests/test_writes_workflows.py`, `test_workflow_builder.py`, `workflowGraph.test.ts`.
 - [x] Tests: `test_bad_settings_block_publish` (Review Focus 5); a graph saved without `cfg` gets defaults (old
   workflows still open); the builder sets the currency. Commit.
 
 ### Task C3: settings in the inspector
-**Files:** Create `apps/web/src/pages/workflows/BlockSettings.tsx`; Modify `Canvas.tsx` (Inspector: a *Settings*
+**Files:** Create `frontend/src/pages/workflows/BlockSettings.tsx`; Modify `Canvas.tsx` (Inspector: a *Settings*
 section between About and Connections), `draftStore.ts` (`setCfg(nodeId, key, value)`, undoable). Test: Create
 `BlockSettings.test.tsx`.
 - [x] Tests: renders each field type from a spec; a required empty field shows its error in place; editing marks the
@@ -366,8 +366,8 @@ currency, usd_rate) seeded with today's fixed rates from `generic.to_usd`, so nu
 
 ### Task C5: the engine, and sync = the ingest workflow
 **Files:** Create `di/workflow/engine.py`; Modify `di/connectors/sync.py` (`run_sync` runs the source's bound
-workflow, or `minimal_graph({"k": "min", "type": "ingest", "src": sid})` when none), `di/actions/workflows.py`
-(`run_job` calls the engine; delete `sim_outcome`, `draws`, `step_dur`, the hash counts), `di/reads/workflows.py`
+workflow, or `minimal_graph({"k": "min", "type": "ingest", "src": sid})` when none), `di/services/actions/workflows.py`
+(`run_job` calls the engine; delete `sim_outcome`, `draws`, `step_dur`, the hash counts), `di/repositories/workflows.py`
 (`run_counts`, `failed_rows` read the run record and `failed_record`). Test: Create `tests/test_workflow_engine.py`.
 **Interfaces:** `run_graph(s, wf: dict, graph: dict, *, trigger: str, dry: bool = False, sample: int | None = None)
 -> RunResult(states: dict, counts: dict[str, Counts], dur_ms: dict, rows: int, failed: int, error: str | None)`.
@@ -383,7 +383,7 @@ source; set on publish, cleared on unpublish or delete.
 
 ### Task C6: triggers
 **Files:** Create `di/workflow/triggers.py`; Modify `di/worker.py` (`periodic()`), `di/connectors/webhook.py`,
-`di/instructions/queue.py` (approval hook). Test: Create `tests/test_triggers.py`.
+`di/services/instructions/queue.py` (approval hook). Test: Create `tests/test_triggers.py`.
 **Interfaces:** `due(s, now) -> list[tuple[str, str]]` (workflow id, trigger label) for published, not paused
 workflows: schedule (`lastAt + min`), event (a webhook for the bound source), file (a file landed for an `x_trig`),
 approval (an instruction queued for the outbound workflow's target), case (a case request). Enqueues `workflow.run`
@@ -392,15 +392,15 @@ with `dedupe_key = "wf:" + id`.
   bound workflow with trigger *Event*; the UI text *"It runs on its trigger"* is now true. Commit.
 
 ### Task C7: retries, one run at a time, alerts
-**Files:** Modify `di/workflow/engine.py`, `di/actions/workflows.py` (`run`, `run_job`, `_alert`), `Canvas.tsx:454`
+**Files:** Modify `di/workflow/engine.py`, `di/services/actions/workflows.py` (`run`, `run_job`, `_alert`), `Canvas.tsx:454`
 (Try column from the record). Test: extend `tests/test_workflow_engine.py`, `tests/test_workflow_extras.py`.
 - [x] Tests: `test_one_run_at_a_time` (Review Focus 4); a step that raises is retried `w.retries` times with backoff
   1 s, 2 s, 4 s and the run shows the real attempts; the alert rules fire on real failures; a crashed job clears
   `running` (the reaper from plan 2 marks the run `failed: worker lost`). Commit.
 
 ### Task C8: versions, real history and reprocess
-**Files:** Modify `di/actions/workflows.py` (save/publish store every version; `workflow.restore`; runs use the
-**published** version), `di/screens/workflows.py:127-176` (history from stored runs only), `workflow.reprocess` and
+**Files:** Modify `di/services/actions/workflows.py` (save/publish store every version; `workflow.restore`; runs use the
+**published** version), `di/services/screens/workflows.py:127-176` (history from stored runs only), `workflow.reprocess` and
 `applyFix`. Web: History tab lists versions with *Compare* and *Restore*. Test: extend `tests/test_workflow_extras.py`.
 - [x] Tests: v0.2 and v0.3 both restorable; a run uses the published version even with an unsaved or saved draft;
   history shows only runs that happened; Reprocess sends held records through the steps after the one that rejected
@@ -408,14 +408,14 @@ with `dedupe_key = "wf:" + id`.
   failed block (no canned text). Commit.
 
 ### Task C9: drafts on the server and an honest test run
-**Files:** Modify `apps/web/src/pages/workflows/draftStore.ts` (autosave to `workflow.draft.save` every 2 s of quiet),
+**Files:** Modify `frontend/src/pages/workflows/draftStore.ts` (autosave to `workflow.draft.save` every 2 s of quiet),
 `WorkflowPage.tsx:93-130` (Test run calls `workflow.testRun`, a dry run of the draft); Create those two actions.
 Test: extend `draftStore.test.ts`, `tests/test_workflow_engine.py`.
 - [x] Tests: a reload keeps the draft; Test run shows real per-step counts and before/after samples and writes nothing;
   the browser `setTimeout` simulation is deleted. Commit.
 
 ### Task C10: live source state in the checks, palette gaps, import
-**Files:** `di/actions/workflows.py:174-184` (checks read `source_system`, not golden `SOURCES`),
+**Files:** `di/services/actions/workflows.py:174-184` (checks read `source_system`, not golden `SOURCES`),
 `Canvas.tsx:139-158` (add x_env, x_flag), `workflow.import` (JSON, the export's shape, validated). Test: extend
 `tests/test_writes_workflows.py`.
 - [x] Tests: pausing a source shows *Paused upstream* on its workflows from the server; importing an export recreates
@@ -432,7 +432,7 @@ validation rule, see held records, fix, Reprocess.
 - [x] Tests on seeded runs. Commit.
 
 ### Task D2: browser suite for the Fabric
-**Files:** Create `apps/web/scripts/smoke-fabric.mjs` (connect a catalogue system, rotate, edit mapping, resolve a
+**Files:** Create `frontend/scripts/smoke-fabric.mjs` (connect a catalogue system, rotate, edit mapping, resolve a
 conflict, import, build/publish/run a workflow, reprocess), referenced from `docs/agents/testing.md`.
 - [x] Runs green twice in a row on a reset stack. Commit.
 

@@ -37,7 +37,7 @@ httpx `AsyncClient`, `pytest-asyncio==1.5.0` (or anyio's plugin), FastAPI.
 ---
 
 ### Task 1: async engine and session dependency
-**Files:** Modify `apps/api/di/db.py`, `requirements.in` + recompiled lock (`SQLAlchemy[asyncio]`, `pytest-asyncio==1.5.0`), `pyproject.toml`
+**Files:** Modify `backend/di/core/db.py`, `requirements.in` + recompiled lock (`SQLAlchemy[asyncio]`, `pytest-asyncio==1.5.0`), `pyproject.toml`
 (`asyncio_default_fixture_loop_scope = "function"`). Test: `tests/test_async_db.py`.
 **Interfaces:** Produces `async_engine`, `AsyncSessionLocal`, `async def get_async_session() -> AsyncIterator[AsyncSession]`.
 - [ ] Tests: a query through `get_async_session`; `expire_on_commit` honoured; `run_sync` executes a sync helper on the same connection. Fail → implement → pass. Commit.
@@ -50,14 +50,14 @@ change `def` → `async def`, the dependency to `get_async_session`, and wrap to
 
 ### Task 3 (phase B): native async in the hot paths
 One task each, each with its module tests plus the concurrency test:
-- [ ] `di/actions/pipeline.py` `invoke` → `async def ainvoke(...)`; `invoke` stays as a sync shim for the worker until Task 4.
-- [ ] `di/reads/*` and `di/screens/*` helpers used by the busiest screens (nav, home, command, case) → `async` queries.
+- [ ] `di/services/actions/pipeline.py` `invoke` → `async def ainvoke(...)`; `invoke` stays as a sync shim for the worker until Task 4.
+- [ ] `di/repositories/*` and `di/services/screens/*` helpers used by the busiest screens (nav, home, command, case) → `async` queries.
 - [ ] `di/connectors/http.py` `SourceClient` → `httpx.AsyncClient`; adapters' `call` → `async`.
-- [ ] `di/ask/` → the Groq async client (`groq.AsyncGroq`); tool calls awaited.
-- [ ] `di/stream.py` listener → psycopg async `notifies()` generator, no thread.
+- [ ] `di/services/ask/` → the Groq async client (`groq.AsyncGroq`); tool calls awaited.
+- [ ] `di/services/stream.py` listener → psycopg async `notifies()` generator, no thread.
 
 ### Task 4: async worker
-**Files:** Modify `apps/api/di/worker.py`. Test: `tests/test_worker.py`.
+**Files:** Modify `backend/di/worker.py`. Test: `tests/test_worker.py`.
 `asyncio` loop with `concurrency` (default 4) claimers, `LISTEN di_jobs` wake-up (plan 2), handlers awaited
 (`instruction.send`, `workflow.run`, `sync.source`).
 - [ ] Tests: 4 jobs run concurrently; a failing job does not stop the others; graceful stop finishes running jobs. Commit.
@@ -67,4 +67,4 @@ One task each, each with its module tests plus the concurrency test:
   Full suite + phase gate. Commit.
 
 ### Task 6: source-sim
-- [ ] Same treatment for `apps/source-sim` (its `sim/db.py`, routes, scheduler); its 208 tests stay green. Commit.
+- [ ] Same treatment for `source-sim` (its `sim/core/db.py`, routes, scheduler); its 208 tests stay green. Commit.

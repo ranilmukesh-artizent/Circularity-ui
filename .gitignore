@@ -17,7 +17,7 @@ __pycache__/
 
 # web
 node_modules/
-apps/web/dist/
+frontend/dist/
 test-results/
 playwright-report/
 shots/

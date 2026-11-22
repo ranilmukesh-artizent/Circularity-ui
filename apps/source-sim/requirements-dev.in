@@ -1,6 +1,0 @@
-# source-sim dev tools (direct only), resolved against the runtime lock so nothing in it moves. Compiled to
-# requirements-dev.lock; the image installs both locks.
--c ../../requirements/constraints.txt
--c requirements.lock
-pytest
-ruff

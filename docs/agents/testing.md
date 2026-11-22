@@ -7,10 +7,10 @@ From Windows, run every script below through WSL:
 
 | Suite | Where | Command | Size and time (20 Nov 2026) |
 |---|---|---|---|
-| api (di) | `apps/api/tests` | `bash scripts/dev/full-suite.sh` (all) / `bash scripts/dev/api-test.sh tests/test_x.py` | ~3,490 tests, ~25–30 min |
-| source-sim | `apps/source-sim/tests` | part of `full-suite.sh`; alone: `docker compose exec -T source-sim pytest -q` | 210 tests, ~1 min |
-| web unit | `apps/web/src/**/*.test.ts` (vitest, jsdom) | `bash scripts/dev/web-check.sh` | 12 tests + tsc, ~1 min |
-| browser smoke | `apps/web/scripts/smoke-*.mjs` (Node Playwright, installed Chrome) | `node apps/web/scripts/smoke-pages.mjs <baseUrl> [accounts…]` from `apps/web` on the host | ~5 min per mode for 11 accounts |
+| api (di) | `backend/tests` | `bash scripts/dev/full-suite.sh` (all) / `bash scripts/dev/api-test.sh tests/test_x.py` | ~3,490 tests, ~25–30 min |
+| source-sim | `source-sim/tests` | part of `full-suite.sh`; alone: `docker compose exec -T source-sim pytest -q` | 210 tests, ~1 min |
+| web unit | `frontend/src/**/*.test.ts` (vitest, jsdom) | `bash scripts/dev/web-check.sh` | 12 tests + tsc, ~1 min |
+| browser smoke | `frontend/scripts/smoke-*.mjs` (Node Playwright, installed Chrome) | `node frontend/scripts/smoke-pages.mjs <baseUrl> [accounts…]` from `frontend` on the host | ~5 min per mode for 11 accounts |
 | fresh clone | committed HEAD cloned to a temp dir, project `circfresh`, ports 15173/18000/18100/12222/15432 | `bash scripts/dev/fresh-clone.sh [--prod]` | up --wait, health, doctor, sign-in + RT-1048 screen, smoke for admin if host Node; ~5–15 min (build) |
 | CI | `.github/workflows/ci.yml` | see "CI" below | ~30 min (the `stack` job) |
 
@@ -45,22 +45,22 @@ After `full-suite.sh`, run `bash scripts/dev/reset.sh` (the suite leaves test st
   container (no host `flock`; the scripts run on Linux, macOS and Git Bash). It is released when the script exits or is
   killed; two `api-test.sh` started together run one after the other, and `status.sh` lists the holder and the waiters.
   `selftest.sh` checks both. Never run `docker compose exec api pytest` by hand while anyone else may be testing.
-- **Module resets.** Most test modules reset di to the starting state (`apps/api/tests/starting.py reset()`). Set
+- **Module resets.** Most test modules reset di to the starting state (`backend/tests/starting.py reset()`). Set
   `B14_PARALLEL=1` only if you run the B14 screen modules in parallel processes and reset once yourself; otherwise
   leave it unset.
 - **Clock and instructions.** `tests/conftest.py` forces `DI_CLOCK=pinned` and `DI_INSTRUCTIONS=false`. The real
   loop is tested only in `tests/test_milestone_rt1048.py`, which pauses the simulated clock, removes the live api's
   webhook subscription, and needs the worker stopped (`full-suite.sh` stops it).
-- **source-sim tests use their own database.** `apps/source-sim/tests/conftest.py` points them at `sources_test`
+- **source-sim tests use their own database.** `source-sim/tests/conftest.py` points them at `sources_test`
   (created if missing, schemas and seed from the app's start-up), so the live service on `sources` (its background
   loops, di's webhook subscription) is never touched; tests delete only the subscriptions they made.
 - **Live-server tests.** `test_stream.py` and the MCP/Ask live tests call the running api on `localhost:8000` inside the api container (any `API_PORT`), so the
   api must be healthy. Run `bash scripts/dev/status.sh` first.
 - **Groq.** The live Ask smoke test spends real free-tier requests (about 1,000 a day). Don't loop it.
-- **Shared helpers.** `apps/api/tests/helpers.py` holds the one in-process `client`, `h(user)` (the Authorization
+- **Shared helpers.** `backend/tests/helpers.py` holds the one in-process `client`, `h(user)` (the Authorization
   header for a demo account, signed in once per session), `call(action, body, user)`, and the golden comparisons
   `strict()` (booleans apart from numbers) and `norm()` (numbers to 1e-6, as the dump writes them). `conftest.py` also
-  offers `client` and `login` as fixtures. Read golden files with `di.golden.load(name)`. Don't add per-file copies.
+  offers `client` and `login` as fixtures. Read golden files with `di.core.golden.load(name)`. Don't add per-file copies.
 
 ## Slowest api tests
 
@@ -98,9 +98,9 @@ Then 20 more between 6.2s and 2.5s, the same kinds (adapter syncs, `test_connect
 ## Parity (golden files)
 
 - `fixtures/golden/*.json` is what the demo computes, dumped headless from `fixtures/demo/index.html` by:
-  - `apps/web/scripts/dump-golden.mjs` (base files: world, cases, decisions, sources, …);
-  - `apps/web/scripts/golden/<area>.mjs` (screens, ask, mcp, workflow writes), all on the shared sandbox
-    `apps/web/scripts/golden-sandbox.mjs` (`freshDemo`, `plain`, `writeGolden`).
+  - `frontend/scripts/dump-golden.mjs` (base files: world, cases, decisions, sources, …);
+  - `frontend/scripts/golden/<area>.mjs` (screens, ask, mcp, workflow writes), all on the shared sandbox
+    `frontend/scripts/golden-sandbox.mjs` (`freshDemo`, `plain`, `writeGolden`).
 - Backend tests compare endpoint and action output to these files for all 11 accounts. `strict()` and `norm()`
   (`tests/helpers.py`; `starting.strict()` is the same function) compare strictly.
 - Values the demo draws unseeded, and real connector data, are excluded where they occur, with the reason in a comment.
@@ -108,8 +108,8 @@ Then 20 more between 6.2s and 2.5s, the same kinds (adapter syncs, `test_connect
 ### Regenerating golden files
 
 1. Change `fixtures/demo/index.html` (or a dump script), never the JSON.
-2. Regenerate everything from `apps/web` on the host:
-   `node scripts/dump-golden.mjs;` then each `node scripts/golden/<area>.mjs` (and `node scripts/dump-assets.mjs` if
+2. Regenerate everything from `frontend` on the host:
+   `node scripts/dump-golden.mjs;` then each `node scripts/golden/<area>.mjs` (and `node frontend/scripts/dump-assets.mjs` if
    the demo's logos or icons changed).
 3. Prove the diff is only what you meant. Load `git show HEAD:<file>`, apply your intended change to the parsed JSON,
    and deep-compare it with the new file. Every file must report "only the intended change". Text diffs are too
@@ -117,7 +117,7 @@ Then 20 more between 6.2s and 2.5s, the same kinds (adapter syncs, `test_connect
 4. Restart api and worker (`bash scripts/dev/restart.sh`); they read the golden files at start-up.
 5. Run the full suite.
 
-## Browser smoke scripts (apps/web/scripts)
+## Browser smoke scripts (frontend/scripts)
 
 | Script | Checks |
 |---|---|

@@ -60,7 +60,7 @@ Problems already hit, newest first. Each entry gives the symptom, the root cause
 
 - **Symptom:** reading the query, a workflow run longer than 2 minutes seems to stop counting as active, so the
   reaper or a second Run now would close or double it.
-- **Cause / design:** `run_active` (`di/actions/workflows.py`) counts a `job` row in `running` only while
+- **Cause / design:** `run_active` (`di/services/actions/workflows.py`) counts a `job` row in `running` only while
   `locked_at` is under 2 minutes old: that covers a claimed job that is still starting. A run past its start is seen
   by its advisory lock (`RUN_LOCK`, `hashtext('wf:'||id)`), which the job holds on its own connection for the whole
   run and loses when its worker dies.
@@ -72,7 +72,7 @@ Problems already hit, newest first. Each entry gives the symptom, the root cause
 - **Symptom:** di-api stopped answering. The container showed unhealthy. In Postgres, one session was
   `idle in transaction` (last query `SELECT data FROM state_item WHERE collection = $1`), and others waited on
   `pg_advisory_xact_lock(hashtext($1))`.
-- **Cause:** `di/state.py` seeded a collection on its first read inside the caller's transaction, holding the seed
+- **Cause:** `di/core/state.py` seeded a collection on its first read inside the caller's transaction, holding the seed
   advisory lock and uncommitted rows. If the same request then opened a second session (`store.ensure`,
   `load_context` …) and read that collection, the second session found it unseeded and waited for the lock its own
   request held. Test resets empty the collections, so the next read reseeds them, which is why it happened under
@@ -112,7 +112,7 @@ Problems already hit, newest first. Each entry gives the symptom, the root cause
 
 ## 2026-11-20: Reporting a subagent's claim without checking it
 
-- **Example:** an agent reported that `escalation.send` had no handler. It has one (`di/actions/decisions.py`).
+- **Example:** an agent reported that `escalation.send` had no handler. It has one (`di/services/actions/decisions.py`).
   Another reported that the "o → r" bug was not in its area; it was in the Command Center's inbox cards.
 - **Avoid:** verify claims in the code before passing them on, and run the suites yourself before a commit.
 
@@ -124,7 +124,7 @@ Problems already hit, newest first. Each entry gives the symptom, the root cause
 ## 2026-11-20: Starting-state reset script failed
 
 - **Symptom:** `ModuleNotFoundError: No module named 'tests'`.
-- **Cause:** `apps/api/scripts/reset_starting.py` imports `tests.starting`.
+- **Cause:** `backend/scripts/reset_starting.py` imports `tests.starting`.
 - **Fix:** run it with `-e PYTHONPATH=/app` (`scripts/dev/reset.sh` does).
 
 ## 2026-11-20: The "o → r" approval cards
@@ -154,7 +154,7 @@ Problems already hit, newest first. Each entry gives the symptom, the root cause
 
 - **Symptom:** the Connection Fabric passed through connector states `failing` and `auth_expired`, which the
   frontend didn't know.
-- **Fix:** show them as `stale` and keep the real state in `connectorStatus` (`di/screens/integration.py
+- **Fix:** show them as `stale` and keep the real state in `connectorStatus` (`di/services/screens/integration.py
   SCREEN_STATUS`). The menu's sources-with-issues badge counts them.
 
 ## 2026-11-19: Tests that depend on order

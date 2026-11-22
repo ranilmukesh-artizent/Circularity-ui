@@ -1,4 +1,4 @@
-# Versions the two Python services share (apps/api, apps/source-sim). Both requirements*.in files read this with -c,
+# Versions the two Python services share (backend, source-sim). Both requirements*.in files read this with -c,
 # so a bump here moves both services together. Edit, re-compile both services' locks, rebuild
 # (docs/agents/dos-and-donts.md, "Dependencies"). No extras here: constraints cannot carry them.
 fastapi==0.115.6

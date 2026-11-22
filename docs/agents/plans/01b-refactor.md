@@ -66,14 +66,14 @@ repo root.
   `golden-sandbox.mjs`, `dump-assets.mjs`, the compose mount and `LEGACY_HTML`, CI, `assets/products` path if needed,
   every doc. Gate: regenerate every golden file and `assets.gen.ts` → no change (parsed-JSON compare); web build.
 - [x] **B2** docs to kebab-case (the old upper-case names are in the git history): `docs/backend-steps.md`,
-  `docs/plan-fullstack-poc.md`, `apps/web/porting.md`, the three `docs/reference/*` files →
+  `docs/plan-fullstack-poc.md`, `frontend/porting.md`, the three `docs/reference/*` files →
   `cvl-user-journey-v1.1.pptx`, `ifs-process-inventory-and-di-pipeline-fit.pdf`,
   `agent-first-workbench-pr.md`; fold the README under `apps/` into `README.md` [D1]. Update every link and the many
   code docstrings that cite the backend steps doc. Gate: grep for old names → none; link check.
 - [x] **B3** web renames (table in the findings index, "Naming A"): `src/api.ts` → `src/api/health.ts`,
   `api/hooks.ts` → `api/useBackend.ts`, lower-case component modules → PascalCase, vague names → specific ones,
   page code out of `integration/index.tsx` and `product/index.tsx`, `workflows/graph.ts` → `src/api/workflowGraph.ts`,
-  `audit/csv.ts` → `src/lib/csv.ts`, `e2e/shot.mjs` → `scripts/screenshot.mjs`. Do after C2 (dead code gone). Add
+  `audit/csv.ts` → `src/utils/csv.ts`, `e2e/shot.mjs` → `scripts/screenshot.mjs`. Do after C2 (dead code gone). Add
   `eslint-plugin-check-file` rules. Gate: tsc, vitest, smoke.
 - [x] **B4** line endings and editor config: `.gitattributes` `* text=auto eol=lf` with binaries marked, `.editorconfig`,
   `git add --renormalize` [X4]. Gate: golden regeneration unchanged; full suite.
@@ -100,19 +100,19 @@ repo root.
 
 ## Phase D: backend structure
 
-- [x] **D1** one error envelope: `di/errors.py` `ApiError`; handlers for it, `HTTPException`, validation errors and
+- [x] **D1** one error envelope: `di/core/errors.py` `ApiError`; handlers for it, `HTTPException`, validation errors and
   unhandled exceptions, all emitting `{ok:false,error:{code,message}}`; update the 21 tests that read `["detail"]`
   and `client.ts` parsing [F4].
 - [x] **D2** settings and auth hardening: `DI_ENV`; refuse default `jwt_secret`/`webhook_secret` outside dev; secrets
   as `SecretStr`; `Literal` settings; JWT `iss`/`aud` and required claims; source-sim subscription secret required;
   `.env.example` and compose pass-through [F7, F14, S1].
-- [x] **D3** table metadata for all ~19 tables in `di/models.py` (Core `Table`s matching the migrations); tests:
+- [x] **D3** table metadata for all ~19 tables in `di/models/` (Core `Table`s matching the migrations); tests:
   `alembic check` clean and downgrade→upgrade round trip [F16]. Prerequisite of plan 03.
 - [x] **D4** consolidate duplicated helpers, one family per commit: account context; visible cases/rows;
   `can_see_case` used by auth, screens, stream, Ask (closes the warehouse gap in Ask suggestions) [F13]; provenance
   (`PMAP`: the Audit and Case copies differ, `str` vs `js_text`; pick what the golden files show, test both pages);
   expected returns; `cc_scope`/`aome_items`; shared constants [F2]. Screen golden tests per commit.
-- [x] **D5** dependency direction: move cross-imported domain functions from `di/screens/*` into `di/reads/`; screens
+- [x] **D5** dependency direction: move cross-imported domain functions from `di/services/screens/*` into `di/repositories/`; screens
   become leaves; import-linter contracts in CI [F1].
 - [x] **D6** tests and small performance: shared `client`/login fixtures and golden helpers in `conftest.py`;
   `--durations=50` recorded in testing.md; the journal query filters in SQL before LIMIT [F20 steps 1–3, F17];
@@ -126,7 +126,7 @@ pytest-xdist with per-worker databases [F20 step 4] with plan 04 (env-before-imp
 - [x] **E1** render purity and session-scoped state: no in-place sorts of cached arrays, `enterCase` out of render,
   module-level page state reset on sign-in/out [W-04, W-05].
 - [x] **E2** one UI kit: the duplicated primitives (icon tile, status pill, KPI, segmented control, panel, spark, delta,
-  ring, timeline, vendor logo, JSON view) move to `src/ui/kit/` one file each; area-only pieces get specific names
+  ring, timeline, vendor logo, JSON view) move to `src/components/kit/` one file each; area-only pieces get specific names
   ("Naming B" in the index); `Raw` and HTML-string builders replaced by components [W-16, W-15]. Gate: smoke plus
   screenshot comparison on the smoke routes.
 - [x] **E3** lazy-load each area (non-eager glob + `React.lazy`) [W-18]. Gate: bundle has per-area chunks; smoke.
@@ -222,6 +222,6 @@ Naming A (web, mechanical): `src/api.ts`→`api/health.ts`; `api/hooks.ts`→`ap
 `integration/Overview.tsx`→`FabricOverview.tsx`; page code to `integration/IntegrationPage.tsx` and
 `product/ProductPage.tsx`; `workflows/ops.ts`→`workflowActions.ts`; `workflows/draft.ts`→`draftStore.ts`.
 
-Naming B (with E2): `home/kit.tsx`, `workflows/kit.tsx`, `integration/ui.tsx`, `case/kit.tsx` split into `src/ui/kit/*`
+Naming B (with E2): `home/kit.tsx`, `workflows/kit.tsx`, `integration/ui.tsx`, `case/kit.tsx` split into `src/components/kit/*`
 plus area files (`HomeHeader.tsx`, `WorkflowMenus.tsx`, `FabricContext.tsx`, `ConnectionTests.tsx`, `SourceMenu.tsx`,
 `CaseBlocks.tsx`); `case/ui.tsx` → `CaseContext.tsx` + `caseActions.ts`.

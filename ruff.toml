@@ -1,5 +1,5 @@
 # Shared ruff settings for the Python services (docs/agents/plans/01b-refactor.md, step C1).
-# apps/api/pyproject.toml and apps/source-sim/pyproject.toml `extend` this file and add only their own exceptions.
+# backend/pyproject.toml and source-sim/pyproject.toml `extend` this file and add only their own exceptions.
 # The ruff version is the one each service's requirements-dev.lock pins (CI and pre-commit use the same).
 line-length = 130
 target-version = "py312"

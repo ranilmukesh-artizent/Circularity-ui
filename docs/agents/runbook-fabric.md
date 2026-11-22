@@ -77,7 +77,7 @@ CLAUDE.md). `psql` means `docker compose exec -T postgres psql -U circ -d di`.
   reads, and the default graph for the rest (`binding.unread`, `binding.rest_graph`), in one `sync_run`. Only
   workflows published in the app bind; Unpublish, Pause or Delete unbinds.
 - **Outbound settings**: the instructions to a target use the changed Timeout, Retries and Target operation of the
-  newest outbound workflow to that target **published in the app** (`di/instructions/outbound.py`); with none, sends
+  newest outbound workflow to that target **published in the app** (`di/services/instructions/outbound.py`); with none, sends
   are as in the demo. Retries never exceed the job queue's `job_max_attempts`.
 
 ## Held records
@@ -89,7 +89,7 @@ CLAUDE.md). `psql` means `docker compose exec -T postgres psql -U circ -d di`.
   rejected them: fixed ones become `reprocessed`, the rest stay held. Fix the rule or the source first.
 - The run views count the same rows, one per record (`resource/ext_id`), by `run_id`: the Runs table's **Held**,
   Data quality (the latest real run, `lastRun.key`), the Investigation's **Held records** by step, field and rule,
-  and View failed records (`di/reads/workflows.py` `run_figures`, `run_quality`). A seeded demo run has none and keeps
+  and View failed records (`di/repositories/workflows.py` `run_figures`, `run_quality`). A seeded demo run has none and keeps
   the demo's estimate:
   `SELECT run_id, count(DISTINCT coalesce(resource,'') || '/' || coalesce(ext_id,'row:' || id::text)) FROM failed_record WHERE run_kind = 'workflow' AND status = 'held' GROUP BY 1;`
 - Manual Import rejects are held with `run_kind = 'import'`.
@@ -100,7 +100,7 @@ CLAUDE.md). `psql` means `docker compose exec -T postgres psql -U circ -d di`.
   decides. A person's decision sticks until a source changes its value; then a new conflict opens.
 - Escalated conflicts stay in the queue (status `escalated`) and their routes stay held.
 - Home shows them as one alert, *"N open source conflicts"* with *"M hold up a decision"* (the menu badge's rule,
-  `di.screens.nav.held_conflicts`); the Developer's briefing says the same. Home's source alerts are one per source
+  `di.services.screens.nav.held_conflicts`); the Developer's briefing says the same. Home's source alerts are one per source
   the Source Map shows stale or not connected (`source_system` status stale, failing, auth_expired, unavailable or
   disconnected), so they clear when the source is live again.
 

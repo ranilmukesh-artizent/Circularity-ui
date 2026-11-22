@@ -5,7 +5,7 @@ What the static demo (`fixtures/demo/index.html`) computes, frozen as JSON. The 
 **Regenerate** only when `fixtures/demo/index.html` changes on purpose, then review the diff:
 
 ```sh
-cd apps/web && npm run golden          # or: node apps/web/scripts/dump-golden.mjs from the repository root
+cd frontend && npm run golden          # or: node frontend/scripts/dump-golden.mjs from the repository root
 ```
 
 The demo's script runs headless with the clock pinned to its as-of time (7 Oct 2026 09:00 UTC) and `Math.random` seeded, so the output is identical on every run. Numbers are rounded to 6 decimal places. A repeated object is written once and referenced afterwards as `{"$ref": "<path>"}`.

@@ -21,8 +21,8 @@ Don't edit them; apply these adaptations when you use them:
 | test-driven-development, systematic-debugging, verification-before-completion | superpowers | Test commands are `scripts/dev/*.sh` (api-test, full-suite, web-check), not `npm test`. |
 | writing-plans | superpowers | Save plans under `docs/agents/plans/`, not `docs/superpowers/`. |
 | requesting-code-review, receiving-code-review, finishing-a-development-branch | superpowers | Commit and push only when the user asks; branch `feature/fullstack-poc`. |
-| webapp-testing | anthropics | Use the repo's Node Playwright with the installed Chrome (`channel: 'chrome'`, see `apps/web/scripts/smoke-*.mjs`), not Python Playwright. Write outputs to the session scratchpad, never `/tmp` or `/mnt/user-data`. |
-| mcp-builder | anthropics | Its `scripts/` folder was removed (its evaluation sent tool results to an external API). This repo's MCP server is Python (`apps/api/di/mcp/`), so use the Python guide. |
+| webapp-testing | anthropics | Use the repo's Node Playwright with the installed Chrome (`channel: 'chrome'`, see `frontend/scripts/smoke-*.mjs`), not Python Playwright. Write outputs to the session scratchpad, never `/tmp` or `/mnt/user-data`. |
+| mcp-builder | anthropics | Its `scripts/` folder was removed (its evaluation sent tool results to an external API). This repo's MCP server is Python (`backend/di/mcp/`), so use the Python guide. |
 
 - A cross-reference like `superpowers:test-driven-development` means the project skill of the same name, without
   the prefix.

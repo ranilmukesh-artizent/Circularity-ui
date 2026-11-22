@@ -6,7 +6,7 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 
 - **Do** treat `fixtures/demo/index.html` as the reference for behaviour, numbers and texts. A difference from the demo is a bug
   unless [decision-log.md](decision-log.md) records it.
-- **Do** reproduce JS arithmetic exactly in Python: use `di.engine.jsmath` (`js_round`, `js_sum`) and the seeded
+- **Do** reproduce JS arithmetic exactly in Python: use `di.services.engine.jsmath` (`js_round`, `js_sum`) and the seeded
   mulberry32 draws the demo uses. Python's `round` and `sum` differ from JavaScript's.
 - **Don't** hand-edit `fixtures/golden/*`. Change `fixtures/demo/index.html` or the dump script, regenerate, then prove the diff is
   only what you meant ([testing.md](testing.md#regenerating-golden-files)).
@@ -17,12 +17,12 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 
 ## Backend
 
-- **Do** route every write through `di.actions.pipeline.invoke` (journal, idempotency key, sequence, permissions,
+- **Do** route every write through `di.services.actions.pipeline.invoke` (journal, idempotency key, sequence, permissions,
   tenant and warehouse scope). No direct table writes from routers.
 - **Do** enforce access on the server. The frontend's `can`/`canPage`/`canRoute` only shape the display.
 - **Don't** give agents (MCP tools, Ask) a write that skips a person. They may read, request evidence, or hold for
   approval. `di/mcp` refuses to start if a forbidden action is mapped.
-- **Do** use `di.state` for workspace collections (events, notes, requests, workflows …). Never seed a collection
+- **Do** use `di.core.state` for workspace collections (events, notes, requests, workflows …). Never seed a collection
   inside the caller's transaction (see the deadlock in learnings).
 - **Don't** open a second database session inside a request that holds locks it needs, unless that session only
   reads committed data.
@@ -34,7 +34,7 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 
 ## Frontend
 
-- **Do** keep pages calling only `apps/web/src/api/*.ts`. Signatures stay stable; the facade adapts endpoint shapes
+- **Do** keep pages calling only `frontend/src/api/*.ts`. Signatures stay stable; the facade adapts endpoint shapes
   (ids instead of embedded objects, ISO timestamps).
 - **Do** read through `cached(path)` / `cachedAction(id, input)` in api mode and pass view settings as query
   parameters (`withQuery`), so the cache key changes when they change.
@@ -56,7 +56,7 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 
 ## Dependencies (Python)
 
-- **Do** add or bump a dependency in the `.in` file, never in a `.lock`: `apps/<svc>/requirements.in` (runtime) or
+- **Do** add or bump a dependency in the `.in` file, never in a `.lock`: `backend/requirements.in` or `source-sim/requirements.in` (runtime) or
   `requirements-dev.in` (pytest, ruff). Versions both services share (fastapi, uvicorn, SQLAlchemy, psycopg,
   pydantic-settings, httpx, pytest, ruff) live in `requirements/constraints.txt`; bump them there so both move.
 - **Do** re-compile both locks of every service you touched (shared bump: both services) with the uv command in

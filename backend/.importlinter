@@ -1,0 +1,97 @@
+# Dependency direction of the di package (docs/agents/plans/01b-refactor.md, D5; finding F1; the layer folders of
+# docs/agents/plans/07-restructure.md). Run from the backend folder:
+#   lint-imports
+# 1. Endpoints are leaves: di.routes holds every HTTP endpoint; only di.main (which mounts the routers) imports it.
+# 2. The screen services (what each page area shows) are used only by their routes, and never import each other.
+# 3. Layers: routes over the screen services, over the repositories (reads), over the case store, the canonical store
+#    and the engine.
+# 4. The foundations (di.core, di.models) import nothing above them.
+[importlinter]
+root_package = di
+include_external_packages = False
+# Imports under `if TYPE_CHECKING:` exist only for mypy (di.services.actions.registry names CallContext that way) and
+# set no runtime dependency direction.
+exclude_type_checking_imports = True
+
+[importlinter:contract:routes-are-leaves]
+name = Only di.main imports di.routes
+type = forbidden
+source_modules =
+    di.connectors
+    di.core
+    di.mcp
+    di.models
+    di.repositories
+    di.services
+    di.worker
+    di.workflow
+forbidden_modules =
+    di.routes
+
+[importlinter:contract:screen-services-behind-routes]
+name = Only di.routes imports the screen services
+type = forbidden
+source_modules =
+    di.connectors
+    di.core
+    di.mcp
+    di.models
+    di.repositories
+    di.services.actions
+    di.services.ask
+    di.services.canonical
+    di.services.cases
+    di.services.engine
+    di.services.execution
+    di.services.instructions
+    di.worker
+    di.workflow
+forbidden_modules =
+    di.services.screens
+
+[importlinter:contract:screens-independent]
+name = Screen services do not import each other
+type = independence
+modules =
+    di.services.screens.access
+    di.services.screens.analytics
+    di.services.screens.audit
+    di.services.screens.case
+    di.services.screens.checks
+    di.services.screens.command
+    di.services.screens.home
+    di.services.screens.integration
+    di.services.screens.mcp
+    di.services.screens.nav
+    di.services.screens.orchestration
+    di.services.screens.product
+    di.services.screens.reference
+    di.services.screens.workflows
+
+[importlinter:contract:layers]
+name = Routes over screen services over repositories over the case store, canonical store and engine
+type = layers
+layers =
+    di.routes
+    di.services.screens
+    di.repositories
+    di.services.cases : di.services.canonical : di.services.engine
+# A stage move asks for the published case-triggered workflows (plan 6 C6): a lazy call-out in a savepoint that never
+# fails the move, not a read dependency of the case store.
+ignore_imports =
+    di.services.cases.lifecycle -> di.workflow.triggers
+
+[importlinter:contract:foundations]
+name = di.core and di.models import nothing above them
+type = forbidden
+source_modules =
+    di.core
+    di.models
+forbidden_modules =
+    di.connectors
+    di.mcp
+    di.repositories
+    di.routes
+    di.services
+    di.worker
+    di.workflow

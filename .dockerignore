@@ -1,23 +1,23 @@
-# Build context for images built from the repo root. Only apps/web/Dockerfile.runtime does that (docker-compose.prod.yml
-# web service); every other image has its own context (apps/api, apps/source-sim, apps/web) and its own .dockerignore.
+# Build context for images built from the repo root. Only frontend/Dockerfile.runtime does that (docker-compose.prod.yml
+# web service); every other image has its own context (backend, source-sim, frontend) and its own .dockerignore.
 # Allow-list: everything is out except the web app's sources and the demo it extracts its stylesheet and photos from.
 *
-!apps/web
+!frontend
 !fixtures/demo
 
 # inside the allowed folders: secrets, dependencies, build output, generated files (the build regenerates them), tests
 **/.env
 **/.env.*
 **/node_modules
-apps/web/dist
-apps/web/src/styles/legacy.gen.css
-apps/web/public/assets/products
-apps/web/*.tsbuildinfo
-apps/web/coverage
-apps/web/e2e
-apps/web/playwright-report
-apps/web/test-results
-apps/web/**/*.test.ts
-apps/web/**/*.test.tsx
-apps/web/.dockerignore
-apps/web/Dockerfile*
+frontend/dist
+frontend/src/styles/legacy.gen.css
+frontend/public/assets/products
+frontend/*.tsbuildinfo
+frontend/coverage
+frontend/e2e
+frontend/playwright-report
+frontend/test-results
+frontend/**/*.test.ts
+frontend/**/*.test.tsx
+frontend/.dockerignore
+frontend/Dockerfile*

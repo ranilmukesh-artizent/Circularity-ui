@@ -1,0 +1,29 @@
+# The production web image (docker-compose.prod.yml): nginx (unprivileged, port 8080) serving the built app with a
+# Content-Security-Policy and proxying /api and /mcp to di-api (nginx/default.conf.template; API_UPSTREAM, default
+# http://api:8000). The dev server is frontend/Dockerfile (target dev, context frontend, as docker-compose.yml uses it).
+#
+# The build context is the REPO ROOT, so that fixtures/demo is in it: the build stage generates the demo's stylesheet
+# and product photos itself (scripts/extract-styles.mjs), and the host needs no Node. The root .dockerignore keeps the
+# context to frontend and fixtures/demo.
+#   docker build -f frontend/Dockerfile.runtime -t circularity-ui-web:runtime .
+# It is a separate file because docker-compose.yml builds frontend/Dockerfile with context frontend, and the classic
+# builder (no BuildKit) builds every stage before the target, so one file cannot serve both contexts.
+# Base images are pinned by digest (same as frontend/Dockerfile): node 24.22.2-alpine3.24 (2026-11-05),
+# nginx-unprivileged 1.30.6-alpine3.24 (stable, 2026-10-19). Classic-builder compatible (no BuildKit-only syntax).
+FROM node:24.22.2-alpine3.24@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8 AS build
+# same layout as the repo, so extract-styles.mjs finds ../fixtures/demo/index.html
+WORKDIR /src/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY fixtures/demo /src/fixtures/demo
+COPY frontend/ ./
+RUN node scripts/extract-styles.mjs --force \
+    && test -s src/styles/legacy.gen.css && test -d public/assets/products
+# `vite build` without the typecheck (scripts/dev/web-check.sh and CI run tsc)
+RUN npx vite build
+
+FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03 AS runtime
+ENV API_UPSTREAM=http://api:8000
+COPY frontend/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /src/frontend/dist /usr/share/nginx/html
+EXPOSE 8080

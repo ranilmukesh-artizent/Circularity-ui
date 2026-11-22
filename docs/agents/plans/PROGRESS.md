@@ -109,8 +109,8 @@ phase gate is the last row.
 - **C2, `_` parameters:** ESLint ignores unused names that start with `_`. The B17c engine removal left deliberate
   `_sc`/`_r` parameters so the functions keep their signatures.
 - **C1, ignored rules:** FAST002 (`Annotated` dependencies) is left for C3. PERF401 is ignored on code the golden
-  tests compare. source-sim's `sim/s4` ignores SIM300: its autofix would flip comparisons on upper-case SAP columns.
-- **C1, possible bug, not fixed:** `HttpClient.raw(log_records=…)` in `apps/api/di/connectors/http.py` ignores
+  tests compare. source-sim's `sim/vendors/s4` ignores SIM300: its autofix would flip comparisons on upper-case SAP columns.
+- **C1, possible bug, not fixed:** `HttpClient.raw(log_records=…)` in `backend/di/connectors/http.py` ignores
   its flag, so token calls are logged anyway. Left for Phase D. It is marked with a noqa.
 - **Process:** twice, a commit swept in another agent's staged `git mv` renames. Both commits were unpushed; I split
   them again with `git reset --soft` and re-staged, which touches only the index. Commits now use
@@ -143,14 +143,14 @@ phase gate is the last row.
   one commit.
   - `can_see_case` stays a plain bool. A new `case_refusal()` gives the reason ("tenant"/"warehouse"), because a
     returned "tenant" string would be truthy.
-  - Merged later (21 Nov): `di/actions/access.py` now derives DELEG/LEVELS/AUTO_TYPES/LEVEL_RANK from
-    `di/reads/constants.py`, and `screens/access.py` uses `di.reads.decisions.median` instead of a third copy.
+  - Merged later (21 Nov): `di/services/actions/access.py` now derives DELEG/LEVELS/AUTO_TYPES/LEVEL_RANK from
+    `di/repositories/constants.py`, and `screens/access.py` uses `di.repositories.decisions.median` instead of a third copy.
 - **25954ea:** the commit subject starts with a stray byte-order mark (the PowerShell `Set-Content` encoding).
   Fixing it would need a force-push, so it stays.
 - **G2:** the web Dockerfile is split in two.
   - Why: the classic builder (WSL's Docker has no buildx) runs every stage before the target, so one file can't serve
-    both the `apps/web` context (dev) and the repo-root context (runtime).
-  - `apps/web/Dockerfile` holds dev; `apps/web/Dockerfile.runtime` holds the production image.
+    both the `frontend` context (dev) and the repo-root context (runtime).
+  - `frontend/Dockerfile` holds dev; `frontend/Dockerfile.runtime` holds the production image.
   - A Windows-only `doctor.ps1` was not added: Git for Windows ships Git Bash, which runs `doctor.sh`.
 - **E2:** the integration pill tabs now move with ← / → like the other tab bars. That is the only behaviour
   change.

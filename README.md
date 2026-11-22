@@ -9,7 +9,7 @@ This repository is the proof of concept that turns the earlier single-file demo 
 ### Who can do what
 
 Sign in with the ID in the first row and any password. The server enforces every cell (role policy in
-`fixtures/golden/policy.json`, `apps/api/di/policy.py`); the app only hides what a role cannot use.
+`fixtures/golden/policy.json`, `backend/di/core/policy.py`); the app only hides what a role cannot use.
 
 | | Admin | Approver | Planner | Engineer | Finance | Developer | Executive | Warehouse Mgr |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -144,7 +144,7 @@ session closes (the services have `restart: unless-stopped`, so they come back w
 ### Frontend only (no Docker)
 
 ```sh
-cd apps/web
+cd frontend
 npm install
 npm run dev          # http://localhost:5173
 ```
@@ -156,38 +156,47 @@ The app has no built-in backend: the dev server proxies `/api` and `/mcp` to `di
 ## How it works
 
 ```
- Browser ── React app (apps/web)
+ Browser ── React app (frontend)
               │  src/api/*  typed functions over di-api (HTTP), kept live by its
               │             event stream (GET /api/stream)
               ▼
- di-api (apps/api) ─────────────── Postgres "di"
+ di-api (backend) ─────────────── Postgres "di"
    sign-in, access policy            action journal, events, canonical store,
    POST /api/actions/{id}            provenance, conflicts, sync runs, fetch log
    connectors ─── sync jobs ── di-worker
               │  HTTP: OData, REST, SOQL, OSLC, SFTP … as each vendor speaks
               ▼
- source-sim (apps/source-sim) ──── Postgres "sources" (one schema per system)
+ source-sim (source-sim) ──── Postgres "sources" (one schema per system)
    20 mocked systems, simulated clock, scheduled work, webhooks, fault injection
 ```
 
-### The frontend (`apps/web`)
+### The frontend (`frontend`)
 
 React and TypeScript (Vite). Every screen of the original demo has been rebuilt: Home, My Tasks, Alerts, Command Center, Returned assets, Asset intelligence, the ten stage pages of a case with its approval card, Analytics, Audit, Process orchestration with the live run board, Connection Fabric, Workflow Studio, MCP & Tools, Access, Reports, Data Checks and Settings, for all eight roles.
 
-Pages only call the typed API layer (`src/api/*`), which reads `di-api` through a cache that the live event stream keeps current, and every change goes through `invoke(actionId, input)` (`POST /api/actions/{id}`). Ask Circularity (Ctrl+J) answers through `POST /api/ask`. Conventions for pages: [`apps/web/porting.md`](apps/web/porting.md).
+The source is in `frontend/src`: `api/` (the typed API layer), `pages/<area>/`, `components/` (shared UI),
+`hooks/`, `utils/`, `layout/` (the app shell: sidebar, top bar, the Ask panel), `assets/` and `styles/`.
 
-### The backend (`apps/api`, package `di`)
+Pages only call the typed API layer (`src/api/*`), which reads `di-api` through a cache that the live event stream keeps current, and every change goes through `invoke(actionId, input)` (`POST /api/actions/{id}`). Ask Circularity (Ctrl+J) answers through `POST /api/ask`. Conventions for pages: [`frontend/porting.md`](frontend/porting.md).
+
+### The backend (`backend`, package `di`)
+
+The package is in layer folders: `routes/` (every HTTP endpoint, thin), `schemas/` (request and response shapes),
+`services/` (business logic), `repositories/` (read queries), `models/` (database tables, one module per domain) and
+`core/` (config, database, sign-in, access policy, errors, clock), plus `connectors/`, `workflow/` and `mcp/`. The
+dependency direction is checked by `lint-imports` (`backend/.importlinter`): routes over services over repositories,
+and core imports nothing above it.
 
 | Part | What it does |
 |---|---|
-| **Sign-in and access** (`di/auth.py`, `di/policy.py`) | `POST /api/auth/login` takes the IDs above and returns a JWT. The access policy (roles, pages, permissions, tenant boundary, warehouse lock, Approver delegations) is enforced on every endpoint, with the same answers as the demo for all 11 accounts |
-| **Actions** (`di/actions/`) | `POST /api/actions/{id}` runs the demo's 76 named actions through one pipeline: validation, permission, case scope, agent gate, guards, idempotency, the handler, the **journal** and **events**. Errors use the demo's codes and wording |
+| **Sign-in and access** (`di/core/auth.py`, `di/core/policy.py`) | `POST /api/auth/login` takes the IDs above and returns a JWT. The access policy (roles, pages, permissions, tenant boundary, warehouse lock, Approver delegations) is enforced on every endpoint, with the same answers as the demo for all 11 accounts |
+| **Actions** (`di/services/actions/`) | `POST /api/actions/{id}` runs the demo's 76 named actions through one pipeline: validation, permission, case scope, agent gate, guards, idempotency, the handler, the **journal** and **events**. Errors use the demo's codes and wording |
 | **Connectors** (`di/connectors/`) | One adapter per source system. A sync reads each system the way that vendor's API works (paging, delta reads, auth), keeps every record as received, and maps it to canonical facts |
-| **Canonical store** (`di/canonical/`) | Every value every source gave for every field, with its source field, original value, transform and request (provenance). The canonical value follows the system with **authority** over that field; when systems disagree a **conflict** is opened that names the authority |
+| **Canonical store** (`di/services/canonical/`) | Every value every source gave for every field, with its source field, original value, transform and request (provenance). The canonical value follows the system with **authority** over that field; when systems disagree a **conflict** is opened that names the authority |
 | **Sync and webhooks** | The worker syncs each source on its interval; source changes arrive as signed webhooks and trigger a delta sync of just that source |
 | **Worker** (`di/worker.py`) | Postgres job queue (no Redis): sync jobs, scheduled syncs |
 
-### The mocked systems (`apps/source-sim`)
+### The mocked systems (`source-sim`)
 
 Twenty enterprise systems, each in its own Postgres schema, seeded with the demo's world so they agree with each other (RT-1048 is motor `MTR-2041` in Warehouse 1 everywhere, wanted by sales order `SO-48102`, with planned purchase PO `49048` in S/4).
 
@@ -213,11 +222,11 @@ curl localhost:8100/_sim/sink                                                   
 curl -X POST localhost:8100/_sim/reset                                               # every system back to the seed, clock reset
 ```
 
-Demo credentials of each mocked system are in its module docstring (`apps/source-sim/sim/s4`, `sim/ariba`, `sim/vendors/*`). The generic specs (`sim/generic/specs/*`, e.g. SafetyCulture) follow `sim/generic/spec.py`: API key `<id>-demo-key`; Basic `di-connector` / `<id>-demo`; OAuth `di-connector` / `<id>-demo-secret`.
+Demo credentials of each mocked system are in its module docstring (`source-sim/sim/vendors/*`, e.g. `sim/vendors/s4`, `sim/vendors/ariba`). The generic specs (`sim/generic/specs/*`, e.g. SafetyCulture) follow `sim/generic/spec.py`: API key `<id>-demo-key`; Basic `di-connector` / `<id>-demo`; OAuth `di-connector` / `<id>-demo-secret`.
 
 ### Where the data comes from
 
-The original single-file demo, `fixtures/demo/index.html`, is the specification. `apps/web/scripts/dump-golden.mjs` runs its logic headless and writes `fixtures/golden/*.json` (the 128 cases, 1,400 closed decisions, policy, actions, figures and a scripted RT-1048 journey). The mocks are seeded from those files, and the backend's tests compare against them, so the backend gives the demo's answers.
+The original single-file demo, `fixtures/demo/index.html`, is the specification. `frontend/scripts/dump-golden.mjs` runs its logic headless and writes `fixtures/golden/*.json` (the 128 cases, 1,400 closed decisions, policy, actions, figures and a scripted RT-1048 journey). The mocks are seeded from those files, and the backend's tests compare against them, so the backend gives the demo's answers.
 
 ---
 
@@ -246,7 +255,7 @@ bash scripts/dev/api-test.sh tests/test_milestone_rt1048.py   # selected api tes
 bash scripts/dev/full-suite.sh                                # the whole api suite (~25 min) and the source-sim suite
 bash scripts/dev/web-check.sh                                 # tsc and vitest in the web container
 bash scripts/dev/reset.sh                                     # afterwards: the demo's starting state, worker started
-cd apps/web && npm test && npm run lint && npm run build      # the frontend on the host (Node 24)
+cd frontend && npm test && npm run lint && npm run build      # the frontend on the host (Node 24)
 
 # sync every source once and summarise conflicts
 docker compose exec -T -e PYTHONPATH=/app api python scripts/full_sync.py
@@ -255,7 +264,7 @@ docker compose exec -T -e PYTHONPATH=/app api python scripts/full_sync.py
 docker compose exec api alembic revision --autogenerate -m "what changed"
 
 # regenerate the golden data after changing fixtures/demo/index.html on purpose
-cd apps/web && npm run golden
+cd frontend && npm run golden
 ```
 
 The tests use the same databases as the running services, so run `scripts/dev/reset.sh` after them. To delete everything, database volume included: `docker compose down -v`.
@@ -265,9 +274,18 @@ CI (`.github/workflows/ci.yml`) brings the stack up and runs the api and source-
 ### Repository
 
 ```
-apps/web/              React app (Vite, TypeScript); porting.md has the page conventions
-apps/api/              di-api and di-worker (python -m di.worker): FastAPI, SQLAlchemy, Alembic; package `di`
-apps/source-sim/       the mocked enterprise systems, package `sim`
+frontend/              React app (Vite, TypeScript); porting.md has the page conventions
+  src/api/             the typed API layer over di-api (pages call only this)
+  src/pages/<area>/    the pages, one folder per area
+  src/components/      shared UI (kit/ holds the small building blocks)
+  src/hooks/ src/utils/ src/layout/ src/assets/ src/styles/
+backend/               di-api and di-worker (python -m di.worker): FastAPI, SQLAlchemy, Alembic; package `di`
+  di/routes/           every HTTP endpoint (thin)        di/schemas/       request and response shapes
+  di/services/         business logic                    di/repositories/  read queries and read models
+  di/models/           database tables, per domain       di/core/          config, db, auth, policy, errors …
+  di/connectors/ di/workflow/ di/mcp/                    the Connection Fabric, the workflow engine, the MCP server
+source-sim/            the mocked enterprise systems, package `sim`
+  sim/core/  sim/routes/  sim/vendors/<system>/ (routes.py, models.py, seed.py)  sim/generic/  sim/seed/
 fixtures/golden/       the demo's computed data, the backend's test reference
 fixtures/demo/index.html         the original single-file demo: the specification and the source of the golden data
 fixtures/demo/assets/products/   product photos
@@ -276,7 +294,7 @@ scripts/doctor.sh      checks this machine can run the stack (read-only)
 scripts/dev/           test and maintenance scripts (bash)
 docker-compose.yml
 docker-compose.prod.yml  opt-in: the runtime images (no dev tools, non-root, the web app built and served by nginx;
-                         the web image is apps/web/Dockerfile.runtime, built from the repo root)
+                         the web image is frontend/Dockerfile.runtime, built from the repo root)
 docs/reference/        source documents: the agent-first product spec, the user journey deck, the IFS process fit
 docs/guides/           user guides: the Connection Fabric (connectors, Workflow Studio, AI builder) and a
                        step-by-step workflow tutorial for demos

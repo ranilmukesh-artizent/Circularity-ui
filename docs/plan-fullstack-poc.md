@@ -127,7 +127,7 @@ One generic router serves every spec. Two exceptions keep their current status:
 ## 6. Frontend (web)
 
 - **Stack:** React 18, TypeScript, Vite, React Router, TanStack Query.
-- **Look and routes:** the demo's tokens and CSS move into `apps/web/src/styles`, so the look carries over. The routes keep the demo's hash paths (`#/product/asset/RT-1048`), so existing links and the demo script still work.
+- **Look and routes:** the demo's tokens and CSS move into `frontend/src/styles`, so the look carries over. The routes keep the demo's hash paths (`#/product/asset/RT-1048`), so existing links and the demo script still work.
 - **Porting order:**
   1. Sign-in
   2. Returned assets
@@ -145,9 +145,9 @@ One generic router serves every spec. Two exceptions keep their current status:
 ## 7. Repository layout
 
 ```
-apps/api/            di-api and di-worker (one Python package: di)
-apps/source-sim/     mock source systems and the seed (package: sim)
-apps/web/            React app
+backend/            di-api and di-worker (one Python package: di)
+source-sim/     mock source systems and the seed (package: sim)
+frontend/            React app
 infra/postgres/      init scripts (databases, roles)
 docker-compose.yml
 .env.example

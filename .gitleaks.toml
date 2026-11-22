@@ -1,5 +1,5 @@
 # gitleaks: the default rules, plus one allowlist for the synthetic credentials the source-sim mocks use (AWS IoT
-# Core demo IAM users, apps/source-sim/sim/vendors/aws_iot). They are documented demo values, not secrets.
+# Core demo IAM users, source-sim/sim/vendors/aws_iot). They are documented demo values, not secrets.
 [extend]
 useDefault = true
 

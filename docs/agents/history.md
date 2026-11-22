@@ -19,7 +19,7 @@ polish layouts while switching data sources.
 
 ## 2. Full-stack POC scaffold
 
-- `0fe771e`: React frontend (`apps/web`) that runs the demo's own script as an in-browser engine behind a typed
+- `0fe771e`: React frontend (`frontend`) that runs the demo's own script as an in-browser engine behind a typed
   facade (`src/api/*.ts`); service skeleton; Docker Compose in WSL.
 - `a903e12`: the step plan B1–B18 (`docs/backend-steps.md`).
 
@@ -60,10 +60,10 @@ Commits: `fbd2122` (B17b, B5c, ShipLane rename), `b47f7f9` (repo cleanup), `266d
 - **Ask panel:** opens with Ctrl+J.
 - **Admin settings actions:** limit, self-approve, autonomy, run limits, kill switch.
 - **I18N** added to the reference lists.
-- **Deadlock fix** in `di/state.py`.
+- **Deadlock fix** in `di/core/state.py`.
 - **ShipLane renamed** to OTM in the demo itself, with the golden files regenerated.
 - **B5c:** AWS IoT Core mock and adapter. It starts not provisioned, and its topic rules are disabled until di connects it.
-- **B17c:** the in-browser engine and the `VITE_BACKEND` switch deleted; assets bundled (`src/ui/assets.gen.ts`);
+- **B17c:** the in-browser engine and the `VITE_BACKEND` switch deleted; assets bundled (`src/assets/assets.gen.ts`);
   RT-1048 runs through all ten stages in the browser (`scripts/smoke-rt1048.mjs`). B17 complete.
 
 ## 5. Plan 6, the Connection Fabric for real (21 Nov 2026)

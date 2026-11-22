@@ -1,0 +1,437 @@
+/**
+ * The HTTP side of the facade: the app reads di-api only. The signed-in session, a read cache that lets the facade
+ * stay synchronous, actions, and the live stream.
+ *
+ * How the facade stays synchronous: pages call facade functions during render (listCases(), navBadges() …). Those
+ * call cached(path), which returns the last answer for that path at once. On the first read there is no
+ * answer yet, so cached() throws the pending fetch: React Suspense shows the page's fallback and renders again when it
+ * arrives. When data may have changed (an action, a stream event), invalidate() marks the answers it may have changed
+ * stale (invalidation.ts maps each action and stream event to the reads it can touch; anything unknown marks every
+ * answer stale); the pages keep showing the old answer while the new one loads, then re-render (stale-while-revalidate). The answers live in a
+ * TanStack Query cache (step E6, docs/agents/plans/e6-tanstack-design.md): retries, eviction, scoped invalidation.
+ */
+import { QueryClient, type Query } from '@tanstack/react-query';
+import type { Account, ActionResult } from './types';
+import type { Reference } from './reference';
+import { bump, sessionChanged } from './store';
+import { actionScope, matcher, streamScope, union, type Scope } from './invalidation';
+
+// ---------------------------------------------------------------- session
+const TOKEN_KEY = 'circ-api-token';
+
+export interface Me {
+  account: Account & { email: string };
+  description: string;
+  home: string;
+  permissions: string[];
+  pages: Record<string, string[]>;
+  tenants: string[];
+  tenant_scoped: boolean;
+  warehouse: string | null;
+}
+
+let token: string | null = readToken();
+let me: Me | null = null;
+let reference: Partial<Reference> | null = null;
+
+function readToken(): string | null {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+function writeToken(t: string | null) {
+  token = t;
+  try {
+    if (t) sessionStorage.setItem(TOKEN_KEY, t);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* private window: the session lasts for this page only */
+  }
+}
+
+export const session = (): Me | null => me;
+export const accessToken = (): string | null => token;
+
+/** An error from di-api, with its code ("tenant_boundary", "out_of_scope" …) and HTTP status. */
+export class ApiError extends Error {
+  constructor(readonly status: number, readonly code: string, message: string) {
+    super(message);
+  }
+}
+
+async function errorOf(res: Response): Promise<ApiError> {
+  let code = 'error';
+  let message = `${res.status} ${res.statusText}`;
+  try {
+    // di-api answers {ok: false, error: {code, message}}; {detail: {code, message} | string} and FastAPI's own 422
+    // {detail: [{loc, msg}]} are still read
+    const body = await res.json();
+    const e = body?.error ?? body?.detail ?? body;
+    if (Array.isArray(e) && e[0]?.msg) {
+      const loc: unknown[] = Array.isArray(e[0].loc) ? e[0].loc : [];
+      const field = (['body', 'query', 'path', 'header', 'cookie'].includes(String(loc[0])) ? loc.slice(1) : loc).join('.');
+      code = 'validation_error';
+      message = field ? `${field}: ${e[0].msg}` : String(e[0].msg);
+    }
+    if (e?.code) code = e.code;
+    if (e?.message) message = e.message;
+    else if (typeof e === 'string') message = e;
+  } catch {
+    /* not JSON */
+  }
+  return new ApiError(res.status, code, message);
+}
+
+function headers(extra: Record<string, string> = {}): Record<string, string> {
+  return { Accept: 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...extra };
+}
+
+const NETWORK_MESSAGE = 'Could not reach the server. Check your connection and try again.';
+
+/** GET or POST JSON; on 401 the session has expired, so sign out. An unreachable server throws ApiError 'network'. */
+export async function http<T>(path: string, init: { method?: string; body?: unknown; headers?: Record<string, string> } = {}): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method: init.method ?? 'GET',
+      headers: headers({ ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...init.headers }),
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+    });
+  } catch {
+    throw new ApiError(0, 'network', NETWORK_MESSAGE);
+  }
+  if (res.status === 401 && token) expire();
+  if (!res.ok) throw await errorOf(res);
+  return res.json() as Promise<T>;
+}
+
+/** Sign in with an ID or work email and a password. Throws ApiError with the server's message on a refusal. */
+export async function login(username: string, password: string): Promise<Me> {
+  const out = await http<Me & { access_token: string }>('/api/auth/login', { method: 'POST', body: { username, password } });
+  writeToken(out.access_token);
+  me = { account: out.account, description: out.description, home: out.home, permissions: out.permissions, pages: out.pages,
+         tenants: out.tenants, tenant_scoped: out.tenant_scoped, warehouse: out.warehouse }; // prettier-ignore
+  await loadReference();
+  clearCache();
+  sessionChanged();
+  startStream();
+  bump();
+  return me;
+}
+
+export function logout(): void {
+  writeToken(null);
+  me = null;
+  stopStream();
+  clearCache();
+  sessionChanged();
+  bump();
+}
+
+function expire() {
+  if (!me) return;
+  logout();
+}
+
+/** Called once before the first render: restore the session from the token this tab holds, and load the reference. */
+export async function bootApi(): Promise<void> {
+  await loadReference();
+  if (!token) return;
+  try {
+    me = await http<Me>('/api/auth/me');
+    startStream();
+  } catch {
+    writeToken(null);
+    me = null;
+  }
+}
+
+/** Re-read /api/auth/me (after an access change, e.g. a delegation or the identity mapping). */
+export async function refreshMe(): Promise<void> {
+  if (!token) return;
+  me = await http<Me>('/api/auth/me');
+  bump();
+}
+
+// ---------------------------------------------------------------- reference lists (static, loaded once)
+async function loadReference(): Promise<void> {
+  if (reference) return;
+  reference = await http<Partial<Reference>>('/api/screens/reference');
+}
+
+/** One of the demo's static lists (ROLE_POLICY, NAV, ROUTES …), from GET /api/screens/reference. */
+export function ref<K extends keyof Reference>(name: K): Reference[K] {
+  if (!reference) throw new Error('Reference lists are not loaded yet.');
+  if (!(name in reference)) throw new Error(`No reference list ${name}.`);
+  return reference[name] as Reference[K];
+}
+
+// ---------------------------------------------------------------- the read cache (TanStack Query, step E6)
+// Design: docs/agents/plans/e6-tanstack-design.md. The facade reads in render (not in hooks), so the QueryClient is
+// used imperatively: a read returns the query's answer at once, starts a refetch when the query was invalidated, and
+// throws the fetch to Suspense when there is no answer yet. Pages re-render through store.ts (bump), as before.
+
+/** Retry an unreachable server or a 5xx twice (0.5 s, 1 s); a refusal (4xx) is final. */
+const retry = (n: number, err: unknown): boolean => n < 2 && err instanceof ApiError && (err.status === 0 || err.status >= 500);
+const retryDelay = (n: number): number => 500 * 2 ** n;
+
+/** The one QueryClient (main.tsx hands it to QueryClientProvider too). */
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: Infinity, // fresh until invalidate()
+      gcTime: Infinity, // queries have no observers; eviction is sweep() below
+      retry,
+      retryDelay,
+      networkMode: 'always', // fetch even when the browser says offline: the error shows, as before
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
+const queries = queryClient.getQueryCache();
+
+// A query invalidated while its fetch runs: the answer on its way may predate the change, and TanStack clears
+// isInvalidated when that fetch succeeds, so the change would be lost. invalidate() notes such queries here, and the
+// listener below marks them stale again when the fetch ends, so the next read fetches once more.
+const changedDuringFetch = new WeakSet<Query>();
+
+// a fetch that ends (an answer or a refusal) re-renders the pages; not for a query already removed (sign-out)
+queries.subscribe((e) => {
+  if (e.type === 'updated' && (e.action.type === 'success' || e.action.type === 'error') && queries.get(e.query.queryHash) === e.query) {
+    if (changedDuringFetch.delete(e.query)) void queryClient.invalidateQueries({ queryKey: e.query.queryKey, exact: true, refetchType: 'none' });
+    bump();
+  }
+});
+
+const settled = () => undefined;
+const thrown = new WeakMap<Query, Promise<void>>(); // what Suspense waits on: the query's current fetch
+const lastRead = new WeakMap<Query, number>();
+
+function readThrough<T>(queryKey: readonly unknown[], queryFn: () => Promise<unknown>): T {
+  const q = queries.build(queryClient, { queryKey, queryFn });
+  lastRead.set(q, Date.now());
+  if (q.state.fetchStatus === 'idle' && (q.state.isInvalidated || q.state.status === 'pending')) {
+    thrown.set(q, queryClient.fetchQuery({ queryKey, queryFn, retry, retryDelay }).then(settled, settled));
+  }
+  const s = q.state;
+  if (s.data !== undefined) return s.data as T;
+  if (s.status === 'error' && s.fetchStatus === 'idle') throw s.error;
+  throw thrown.get(q);
+}
+
+/** Path with query parameters, leaving out empty ones. */
+export function withQuery(path: string, q: Record<string, string | number | boolean | null | undefined> = {}): string {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(q)) if (v !== null && v !== undefined && v !== '') p.set(k, String(v));
+  const s = p.toString();
+  return s ? path + (path.includes('?') ? '&' : '?') + s : path;
+}
+
+/** The answer of GET path, synchronously (suspends on the first read). */
+export function cached<T>(path: string): T {
+  return readThrough<T>(['GET', path], () => http(path));
+}
+
+/** The answer of a read action (POST /api/actions/{id}), synchronously; throws ApiError on a refusal. */
+export function cachedAction<T>(id: string, input: Record<string, unknown> = {}): T {
+  return readThrough<T>(['ACT', id, input], async () => {
+    const r = await postAction<T>(id, input);
+    if (!r.ok) throw new ApiError(400, r.error.code, r.error.message);
+    return r.output;
+  });
+}
+
+/** Has GET path an answer already (no suspending)? For pages that prefetch. */
+export function peek<T>(path: string): T | undefined {
+  return queryClient.getQueryData<T>(['GET', path]);
+}
+
+/**
+ * Everything may have changed (or only what `match` selects, by query key: ['GET', path] or ['ACT', id, input]):
+ * refetch what pages read, keeping the old answers on screen meanwhile.
+ */
+export function invalidate(match?: (key: readonly unknown[]) => boolean): void {
+  const pick = (q: Query) => {
+    if (match && !match(q.queryKey)) return false;
+    if (q.state.fetchStatus === 'fetching') changedDuringFetch.add(q);
+    return true;
+  };
+  void queryClient.invalidateQueries({ refetchType: 'none', predicate: pick });
+  bump();
+  scheduleSweep();
+}
+
+/** Invalidate what a change can have touched (invalidation.ts); nothing for a change that touches nothing. */
+function invalidateScope(scope: Scope): void {
+  const m = matcher(scope);
+  if (m !== null) invalidate(m);
+}
+
+/** "Try again" after a failed read: refetch every answer that failed (a refusal or an unreachable server). */
+export function retryFailed(): void {
+  void queryClient.invalidateQueries({ refetchType: 'none', predicate: (q) => q.state.status === 'error' });
+  bump();
+}
+
+function clearCache() {
+  queryClient.clear();
+}
+
+// Eviction. App subscribes to bump() at the root and nothing is memoised, so every page on screen re-renders on a bump
+// and reads its answers again. A query nobody has read for SWEEP_IDLE_MS is not on screen. The sweep runs a second
+// after invalidate()'s bump, once the re-render has recorded its reads.
+const SWEEP_IDLE_MS = 15 * 60_000;
+let sweepTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleSweep() {
+  if (sweepTimer !== null) return;
+  sweepTimer = setTimeout(() => {
+    sweepTimer = null;
+    sweep(Date.now());
+  }, 1000);
+}
+/** Drop the answers not read for SWEEP_IDLE_MS (exported for the tests). */
+export function sweep(now: number): void {
+  for (const q of queries.getAll()) {
+    if (q.state.fetchStatus === 'idle' && now - (lastRead.get(q) ?? 0) >= SWEEP_IDLE_MS) queries.remove(q);
+  }
+}
+
+// ---------------------------------------------------------------- actions
+export interface ActionOptions {
+  idempotencyKey?: string;
+  confirmed?: boolean;
+}
+
+async function postAction<T>(id: string, input: Record<string, unknown>, opts: ActionOptions = {}): Promise<ActionResult<T>> {
+  let res: Response;
+  try {
+    res = await fetch('/api/actions/' + encodeURIComponent(id), {
+      method: 'POST',
+      headers: headers({
+        'Content-Type': 'application/json',
+        ...(opts.idempotencyKey ? { 'Idempotency-Key': opts.idempotencyKey } : {}),
+        ...(opts.confirmed ? { 'X-Circularity-Confirmed': 'true' } : {}),
+      }),
+      body: JSON.stringify(input),
+    });
+  } catch {
+    return { ok: false, error: { code: 'network', message: NETWORK_MESSAGE } };
+  }
+  if (res.status === 401 && token) expire();
+  try {
+    return (await res.json()) as ActionResult<T>;
+  } catch {
+    return { ok: false, error: { code: 'validation_error', message: `${res.status} ${res.statusText}` } };
+  }
+}
+
+/** POST /api/actions/{id}; a change makes the cached reads it can touch stale (invalidation.ts actionScope). */
+export async function apiInvoke<T>(id: string, input: Record<string, unknown> = {}, opts: ActionOptions = {}): Promise<ActionResult<T>> {
+  const r = await postAction<T>(id, input, opts);
+  if (r.ok) invalidateScope(actionScope(id));
+  return r;
+}
+
+// ---------------------------------------------------------------- the live stream (B15)
+type StreamListener = (kind: string, data: unknown) => void;
+const streamListeners = new Set<StreamListener>();
+let source: EventSource | null = null;
+let pending: number | null = null;
+let burst: Scope[] = []; // what the events since the last refetch can have changed
+
+const KINDS = ['journal', 'event', 'notification', 'sync', 'step', 'workflow']; // di/services/stream.py, migrations 0008-0009
+
+/** Listen to stream events (kind, data); returns the unsubscribe function. */
+export function onStream(l: StreamListener): () => void {
+  streamListeners.add(l);
+  return () => {
+    streamListeners.delete(l);
+  };
+}
+
+// F3: EventSource cannot send headers, and the access token must not go in a URL (access logs keep URLs). So every
+// connection first trades the token for a short-lived stream ticket (POST /api/auth/stream-ticket, aud "stream") and
+// opens /api/stream?ticket=. The server checks the ticket only when the stream opens. EventSource's own retry would
+// reuse the old URL, whose ticket has expired, so on an error the stream is closed and reopened here with a fresh
+// ticket, resuming after the last event seen (last_event_id), with a growing delay that resets once a stream opens.
+const RETRY_MS = [1000, 2000, 5000, 10000, 30000];
+let generation = 0; // bumped by stopStream: a ticket or a timer of an older connection is dropped
+let attempts = 0;
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let lastEventId = '';
+
+function startStream() {
+  stopStream();
+  lastEventId = '';
+  if (!token || typeof EventSource === 'undefined') return;
+  void connect(generation);
+}
+
+async function connect(gen: number) {
+  let ticket: string;
+  try {
+    ({ ticket } = await http<{ ticket: string; expires_in: number }>('/api/auth/stream-ticket', { method: 'POST' }));
+  } catch {
+    reconnectLater(gen); // a 401 has signed out already (http), which ends the stream
+    return;
+  }
+  if (gen !== generation || !token) return;
+  const reopened = attempts > 0;
+  const es = new EventSource(withQuery('/api/stream', { ticket, last_event_id: lastEventId }));
+  source = es;
+  es.onopen = () => {
+    attempts = 0;
+    if (reopened) invalidate(); // what changed while the stream was down
+  };
+  es.onerror = () => {
+    if (source !== es) return;
+    es.close();
+    source = null;
+    reconnectLater(gen);
+  };
+  const handle = (kind: string) => (ev: MessageEvent) => {
+    if (ev.lastEventId) lastEventId = ev.lastEventId;
+    let data: unknown = ev.data;
+    try {
+      data = JSON.parse(ev.data);
+    } catch {
+      /* plain text */
+    }
+    streamListeners.forEach((l) => l(kind, data));
+    // several events often arrive together (a sync, an approval's journal and events): refetch once, what any of
+    // them can have changed (invalidation.ts streamScope; an unknown kind: everything)
+    burst.push(streamScope(kind, data));
+    if (pending === null) pending = window.setTimeout(flushBurst, 150);
+  };
+  for (const k of KINDS) es.addEventListener(k, handle(k) as EventListener);
+  es.onmessage = handle('message');
+}
+
+function flushBurst() {
+  pending = null;
+  const scope = union(burst);
+  burst = [];
+  invalidateScope(scope);
+}
+
+function reconnectLater(gen: number) {
+  if (gen !== generation || !token || retryTimer !== null) return;
+  const delay = RETRY_MS[Math.min(attempts, RETRY_MS.length - 1)];
+  attempts += 1;
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    if (gen === generation && token) void connect(gen);
+  }, delay);
+}
+
+function stopStream() {
+  generation += 1;
+  source?.close();
+  source = null;
+  if (retryTimer !== null) clearTimeout(retryTimer);
+  retryTimer = null;
+  attempts = 0;
+}

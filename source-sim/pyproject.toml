@@ -1,0 +1,19 @@
+[project]
+name = "circularity-source-sim"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+# Shared settings (line length, target, rule selection) live in the repo-root ruff.toml.
+extend = "../ruff.toml"
+
+[tool.ruff.lint.extend-per-file-ignores]
+# SAP's upper-case column names (t.MARD.c.MATNR) read as constants to SIM300, which would flip `column == value`.
+"sim/vendors/s4/*.py" = ["SIM300"]
+# The simulator's RNGs are seeded on purpose (repeatable demo data), and its MD5/SHA-1 calls derive stable ids or
+# emulate the vendors' own protocols; neither guards anything.
+"sim/**" = ["S311", "S324"]

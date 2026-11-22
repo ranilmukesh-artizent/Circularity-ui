@@ -3,7 +3,7 @@
 # Host ports from the environment or .env (container ports stay fixed): WEB_PORT (5173), API_PORT (8000), SIM_PORT
 # (8100), SFTP_PORT (2222), POSTGRES_PORT (5432); BIND_ADDR (127.0.0.1) is the host address they bind to.
 # DEV_POLLING=1 makes the reloaders poll for file changes (bind mounts that deliver no events: a Windows drive, some
-# VMs), DEV_POLLING=0 never; unset, they poll only under a WSL2 kernel (watchfiles' default; apps/web/vite.config.ts).
+# VMs), DEV_POLLING=0 never; unset, they poll only under a WSL2 kernel (watchfiles' default; frontend/vite.config.ts).
 
 x-pg: &pg
   POSTGRES_USER: ${POSTGRES_USER:-circ}
@@ -13,7 +13,7 @@ x-api-env: &api-env
   DI_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-circ}:${POSTGRES_PASSWORD:-circ}@postgres:5432/di
   DI_SOURCE_SIM_URL: http://source-sim:8100
   # B13b, the real loop: follow source-sim's simulated clock, and send approved steps to the mocked systems
-  # (the test suite pins the clock and turns sending off for itself: apps/api/tests/conftest.py)
+  # (the test suite pins the clock and turns sending off for itself: backend/tests/conftest.py)
   DI_CLOCK: sim
   DI_INSTRUCTIONS: "true"
   # D2: dev, test or prod; outside dev the api refuses the shipped signing secrets (empty secrets = the dev defaults)
@@ -21,7 +21,7 @@ x-api-env: &api-env
   DI_JWT_SECRET: ${DI_JWT_SECRET:-}
   DI_WEBHOOK_SECRET: ${DI_WEBHOOK_SECRET:-}
   DI_SECRET_KEY: ${DI_SECRET_KEY:-}
-  # B16b, Ask Circularity on a language model (di/ask): the key stays in the repository's local .env (git-ignored);
+  # B16b, Ask Circularity on a language model (di/services/ask): the key stays in the repository's local .env (git-ignored);
   # without it, or with ASK_PROVIDER=none, Ask answers with the demo's rule-based fallback
   GROQ_API_KEY: ${GROQ_API_KEY:-}
   ASK_PROVIDER: ${ASK_PROVIDER:-groq}
@@ -47,7 +47,7 @@ services:
 
   source-sim:
     restart: unless-stopped
-    build: { context: ./apps/source-sim, target: dev } # runtime target: docker-compose.prod.yml
+    build: { context: ./source-sim, target: dev } # runtime target: docker-compose.prod.yml
     environment:
       SIM_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-circ}:${POSTGRES_PASSWORD:-circ}@postgres:5432/sources
       DEV_POLLING: ${DEV_POLLING:-}
@@ -56,7 +56,7 @@ services:
       sh -c 'case "$${DEV_POLLING}" in 1|true) export WATCHFILES_FORCE_POLLING=true ;; 0|false) export WATCHFILES_FORCE_POLLING=false ;; esac;
       exec uvicorn sim.main:app --host 0.0.0.0 --port 8100 --reload'
     volumes:
-      - ./apps/source-sim:/app
+      - ./source-sim:/app
       - ./fixtures:/fixtures:ro # B1 golden files: the seed (docs/backend-steps.md, B2)
       - ./ruff.toml:/ruff.toml:ro # the shared ruff config the service's pyproject extends (../../ruff.toml)
     ports:
@@ -72,7 +72,7 @@ services:
 
   api:
     restart: unless-stopped
-    build: { context: ./apps/api, target: dev } # runtime target: docker-compose.prod.yml
+    build: { context: ./backend, target: dev } # runtime target: docker-compose.prod.yml
     environment:
       <<: *api-env
       DEV_POLLING: ${DEV_POLLING:-}
@@ -83,7 +83,7 @@ services:
       sh -c 'case "$${DEV_POLLING}" in 1|true) export WATCHFILES_FORCE_POLLING=true ;; 0|false) export WATCHFILES_FORCE_POLLING=false ;; esac;
       alembic upgrade head && exec uvicorn di.main:app --host 0.0.0.0 --port 8000 --reload --timeout-graceful-shutdown 3'
     volumes:
-      - ./apps/api:/app
+      - ./backend:/app
       - ./fixtures:/fixtures:ro # B1 golden files: access policy and reference data (B7)
       - ./ruff.toml:/ruff.toml:ro # the shared ruff config the service's pyproject extends (../../ruff.toml)
     ports: ["${BIND_ADDR:-127.0.0.1}:${API_PORT:-8000}:8000"]
@@ -98,11 +98,11 @@ services:
 
   worker:
     restart: unless-stopped
-    build: { context: ./apps/api, target: dev } # runtime target: docker-compose.prod.yml
+    build: { context: ./backend, target: dev } # runtime target: docker-compose.prod.yml
     environment: *api-env
     command: python -m di.worker
     volumes:
-      - ./apps/api:/app
+      - ./backend:/app
       - ./fixtures:/fixtures:ro
     depends_on:
       api: { condition: service_healthy }   # api runs the migrations first
@@ -117,7 +117,7 @@ services:
 
   web:
     restart: unless-stopped
-    build: { context: ./apps/web, target: dev } # runtime target: docker-compose.prod.yml
+    build: { context: ./frontend, target: dev } # runtime target: docker-compose.prod.yml
     environment:
       API_PROXY_TARGET: http://api:8000
       VITE_BACKEND: ${VITE_BACKEND:-api} # the app reads di-api (B17)
@@ -126,9 +126,9 @@ services:
       DEV_POLLING: ${DEV_POLLING:-}
     ports: ["${BIND_ADDR:-127.0.0.1}:${WEB_PORT:-5173}:5173"]
     volumes:
-      - ./apps/web:/app
+      - ./frontend:/app
       - web_node_modules:/app/node_modules
-      # the static demo supplies the stylesheet and product photos (apps/web/scripts/extract-styles.mjs reads /legacy/index.html)
+      # the static demo supplies the stylesheet and product photos (frontend/scripts/extract-styles.mjs reads /legacy/index.html)
       - ./fixtures/demo/index.html:/legacy/index.html:ro
       - ./fixtures/demo/assets:/legacy/assets:ro
     depends_on:

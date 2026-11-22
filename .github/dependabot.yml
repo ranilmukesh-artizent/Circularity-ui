@@ -3,7 +3,7 @@ version: 2
 
 updates:
   - package-ecosystem: pip
-    directories: ["/apps/api", "/apps/source-sim"]
+    directories: ["/backend", "/source-sim"]
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
     groups:
@@ -11,7 +11,7 @@ updates:
         update-types: [minor, patch]
 
   - package-ecosystem: npm
-    directory: /apps/web
+    directory: /frontend
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
     groups:
@@ -19,7 +19,7 @@ updates:
         update-types: [minor, patch]
 
   - package-ecosystem: docker
-    directories: ["/apps/api", "/apps/source-sim", "/apps/web"]
+    directories: ["/backend", "/source-sim", "/frontend"]
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
     groups:

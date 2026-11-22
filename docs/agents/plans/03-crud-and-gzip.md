@@ -7,8 +7,8 @@ Gate: tests/test_gzip.py tests/test_resources.py tests/test_actions.py tests/tes
 **Goal:** every entity has a REST resource under `/api/v1/` with list/get/create/update/delete (or an explicit 405 that
 says why), all writes go through the action pipeline, and JSON responses are gzip-compressed while streams never are.
 
-**Architecture:** a resource registry (`apps/api/di/resources/`) declares, per resource, its read functions and the action
-ids that implement create/update/delete; one generic router builds the endpoints from it. Reads reuse `di/reads` and the
+**Architecture:** a resource registry (`backend/di/resources/`) declares, per resource, its read functions and the action
+ids that implement create/update/delete; one generic router builds the endpoints from it. Reads reuse `di/repositories` and the
 screen helpers; writes call `pipeline.invoke`, so permissions, tenant scope, guards, idempotency and the journal stay in
 one place. The actions B17b listed as "not available on the server yet" get handlers here.
 
@@ -35,13 +35,13 @@ one place. The actions B17b listed as "not available on the server yet" get hand
 ---
 
 ### Task 1: dependency bump and gzip
-**Files:** Modify `apps/api/requirements.in` (recompile `requirements.lock`, see docs/agents/scripts.md), `apps/api/di/main.py`. Test: Create `tests/test_gzip.py`.
+**Files:** Modify `backend/requirements.in` (recompile `requirements.lock`, see docs/agents/scripts.md), `backend/di/main.py`. Test: Create `tests/test_gzip.py`.
 - [ ] Tests: `/api/screens/reference` with `Accept-Encoding: gzip` → `content-encoding: gzip`; a < 1000-byte answer → not compressed;
   `/api/stream` (read the first event, then close) and `/api/ask` → no `content-encoding`.
 - [ ] Fail → bump pins, rebuild the api image, add the middleware → pass; also run `tests/test_mcp*.py` and `tests/test_stream.py`. Commit.
 
 ### Task 2: the registry and generic router
-**Files:** Create `apps/api/di/resources/__init__.py` (registry), `apps/api/di/resources/router.py`. Test: `tests/test_resources.py`.
+**Files:** Create `backend/di/resources/__init__.py` (registry), `backend/di/resources/router.py`. Test: `tests/test_resources.py`.
 **Interfaces:** Produces
 `@dataclass Resource(name: str, list: Callable[[CallContext, dict], list[dict]], get: Callable[[CallContext, str], dict | None], create: str | None, update: str | None, delete: str | None, id_field: str = "id", why_not: dict[str, str] = {})`
 and `register(r: Resource) -> None`. The router serves `GET /api/v1/{name}` (`?limit&cursor` + resource filters),
@@ -64,5 +64,5 @@ implementation of the same id) and the effect visible in the reads: `source.upda
 `credentials.rotate`, `source.pause`, `source.resume`, `source.connect` (from the catalogue; `iot` uses
 `di.connectors.sync.connect_source`), `import.commit`, `tables.update`, `workflow.saveAsTemplate`,
 `workflow.applySuggestedFix`, `workflow.reprocessFailed`, `workflow.setRunSetting`. Then remove the matching
-"not available on the server yet" branches in `apps/web/src/api/integration.ts` and `workflows.ts`.
+"not available on the server yet" branches in `frontend/src/api/integration.ts` and `workflows.ts`.
 - [ ] Per action: fail → implement → pass → commit. Phase gate after the last one.

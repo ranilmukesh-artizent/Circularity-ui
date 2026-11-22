@@ -7,8 +7,8 @@ Gate: tests/test_otel.py tests/test_otel_genai.py tests/test_mcp_server.py
 **Goal:** every request, job, database call and outbound HTTP call is traced; logs carry the trace id; Ask's model calls
 and tool calls, and MCP tool calls, emit OpenTelemetry GenAI/MCP spans; a local Grafana LGTM stack shows it all.
 
-**Architecture:** `apps/api/di/telemetry.py` sets up the SDK once (api, worker) from env (`OTEL_*`); auto-instrumentation
-for FastAPI, SQLAlchemy, psycopg, httpx and logging; hand-written GenAI spans in `di/ask/` and MCP spans in `di/mcp/`
+**Architecture:** `backend/di/telemetry.py` sets up the SDK once (api, worker) from env (`OTEL_*`); auto-instrumentation
+for FastAPI, SQLAlchemy, psycopg, httpx and logging; hand-written GenAI spans in `di/services/ask/` and MCP spans in `di/mcp/`
 (the GenAI conventions are Development status and their env names are changing, so we do not depend on a
 third-party LLM instrumentation). Off unless `OTEL_EXPORTER_OTLP_ENDPOINT` is set; tests use the in-memory exporter.
 
@@ -44,7 +44,7 @@ inference span `chat {gen_ai.request.model}` (CLIENT) with `gen_ai.operation.nam
 ---
 
 ### Task 1: setup, off by default
-**Files:** Create `apps/api/di/telemetry.py`; Modify `di/main.py`, `di/worker.py`, `requirements.in` (+ recompiled lock), `.env.example`
+**Files:** Create `backend/di/telemetry.py`; Modify `di/main.py`, `di/worker.py`, `requirements.in` (+ recompiled lock), `.env.example`
 (`OTEL_EXPORTER_OTLP_ENDPOINT=` empty). Test: `tests/test_otel.py`.
 **Interfaces:** Produces `setup_telemetry(service_name: str, app: FastAPI | None = None) -> None` and
 `tracer = trace.get_tracer("di")`; tests use `InMemorySpanExporter` via `setup_telemetry(..., exporter=...)`.
@@ -56,7 +56,7 @@ inference span `chat {gen_ai.request.model}` (CLIENT) with `gen_ai.operation.nam
   to it. Test: request → job → span link present. Commit.
 
 ### Task 3: GenAI spans for Ask
-**Files:** Modify `apps/api/di/ask/groq_model.py`, `di/ask/service.py`, `di/ask/tools.py`. Test: `tests/test_otel_genai.py`
+**Files:** Modify `backend/di/services/ask/groq_model.py`, `di/services/ask/service.py`, `di/services/ask/tools.py`. Test: `tests/test_otel_genai.py`
 (uses the fake model from the Ask tests).
 - [ ] Tests: one `chat openai/gpt-oss-120b` span with the attributes listed in Spec (token counts from Groq's `usage`);
   one `execute_tool get_case` span per tool call as a child; no `gen_ai.input.messages` by default; a 429 sets
@@ -64,7 +64,7 @@ inference span `chat {gen_ai.request.model}` (CLIENT) with `gen_ai.operation.nam
 - [ ] Fail → implement → pass. Commit.
 
 ### Task 4: MCP spans
-**Files:** Modify `apps/api/di/mcp/server.py`. Test: extend `tests/test_mcp_server.py`.
+**Files:** Modify `backend/di/mcp/server.py`. Test: extend `tests/test_mcp_server.py`.
 - [ ] Tests: a `tools/call get_case_evidence` SERVER span with `mcp.method.name`, `gen_ai.tool.name`, `jsonrpc.request.id`;
   a held or refused call sets `error.type=tool_error`; `traceparent` in `params._meta` becomes the parent. Commit.
 
