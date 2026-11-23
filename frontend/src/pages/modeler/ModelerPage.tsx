@@ -6,15 +6,17 @@ import { useBackend } from '../../api/useBackend';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import type { PageProps } from '../registry';
+import { ChecksPanel } from './ChecksPanel';
 import { FlowCanvas } from './FlowCanvas';
 import { FlowInspector } from './FlowInspector';
 import { addRule, connect, disconnect, moveNode, nextRid, removeNode, updateRule } from './flowEdit';
+import { HistoryPanel } from './HistoryPanel';
+import { ImpactPanel } from './ImpactPanel';
+import { LifecycleBar } from './LifecycleBar';
 import './modeler.css';
 
 /** Edits are saved as a draft this long after the last one (as workflow drafts are, decision log 2026-11-21). */
 export const AUTOSAVE_MS = 2000;
-
-export const STATUS_LABEL: Record<ModelerScreen['flow']['status'], string> = { draft: 'Draft', review: 'In review', shadow: 'Shadow', pub: 'Published' };
 
 /** The Modeler (plan 8, MVP-4.4): a decision flow per template and org unit, edited on a canvas and saved as a draft. */
 export function ModelerPage({ query }: PageProps) {
@@ -79,6 +81,12 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
     }
   }, [s.flow.id]);
 
+  /** Save a pending edit now (before a lifecycle step). */
+  const flush = async () => {
+    if (!timer.current) return;
+    clearTimeout(timer.current);
+    await save();
+  };
   const schedule = () => {
     dirty.current = true;
     if (timer.current) clearTimeout(timer.current);
@@ -108,7 +116,7 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
     <>
       <div className="mdl-bar">
         <span className="chip line">{s.flow.name} · {s.flow.org_unit_id}</span>
-        <span className={'pill mdl-st ' + s.flow.status}>{STATUS_LABEL[s.flow.status]} · v{s.flow.dver ?? s.flow.ver}</span>
+        <LifecycleBar s={s} flush={flush} />
         {s.flow.org_unit_id !== s.org && <span className="note">{s.org} uses this flow from {s.flow.org_unit_id}.</span>}
         <span className="grow" />
         {s.can.fork && <button className="btn sm" disabled={action.pending} onClick={fork}>Give {s.org} its own flow</button>}
@@ -126,19 +134,26 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
           onMove={(id, x, y) => editable && setGraph((g) => moveNode(g, id, x, y))}
           onMoved={schedule}
         />
-        <FlowInspector
-          s={s}
-          graph={graph}
-          node={node}
-          editable={editable}
-          onRule={(id, patch) => edit(updateRule(graph, id, patch))}
-          onConnect={(a, b) => edit(connect(graph, a, b))}
-          onDisconnect={(id) => edit(disconnect(graph, id))}
-          onRemove={(id) => {
-            edit(removeNode(graph, id));
-            setSel(null);
-          }}
-        />
+        <div className="mdl-side">
+          <FlowInspector
+            s={s}
+            graph={graph}
+            node={node}
+            editable={editable}
+            onRule={(id, patch) => edit(updateRule(graph, id, patch))}
+            onConnect={(a, b) => edit(connect(graph, a, b))}
+            onDisconnect={(id) => edit(disconnect(graph, id))}
+            onRemove={(id) => {
+              edit(removeNode(graph, id));
+              setSel(null);
+            }}
+          />
+          <ChecksPanel checks={checks} onSelect={setSel} />
+        </div>
+      </div>
+      <div className="mdl-main mdl-lower">
+        <ImpactPanel s={s} graph={graph} />
+        <HistoryPanel s={s} />
       </div>
     </>
   );
