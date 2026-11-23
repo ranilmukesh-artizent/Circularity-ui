@@ -12,6 +12,10 @@ journal entry (which the case run reads back as "who acted, when") carries the s
 **Random draws.** The demo runs each state-changing handler on a generator seeded from the action's key
 (`seeded(ctx.key, ...)`), so its draws are a function of the key, not of history. `_seeded` is that generator, which
 lets evidence.recordResult and case.reevaluate rebuild routes to the dollar.
+
+**Business rules** (plan 8, MVP-3.3). Rebuilding or re-ranking applies the compiled rules of the published flow the
+case's owner uses (di.repositories.live_rules) after the gate rules, and records that flow's version as `flowVer`.
+Publishing a flow never touches a case: only the next evaluation applies it. The seeded defaults have no rules.
 """
 
 import copy
@@ -21,14 +25,16 @@ from typing import Any
 
 from di.core import policy, state
 from di.repositories.common import AS_OF, case_demand, hash_id, iso, limit_for, money
+from di.repositories.live_rules import live_rules
 from di.services import instructions
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionError, guard, implement
 from di.services.cases import lifecycle, store
-from di.services.engine.evaluate import build_routes
+from di.services.engine.evaluate import build_routes, draft_of, evaluate
 from di.services.engine.predictor import FormulaPredictor
-from di.services.engine.routes import GATES, SUSTAINABILITY, fail, rank_routes
+from di.services.engine.routes import GATES, POLICY, SUSTAINABILITY, fail, rank_routes
 from di.services.execution.steps import approval_ref, steps_for  # the execution steps (B13 moved them to di.services.execution)
+from di.services.modeler.apply import FLOW_REMOVED
 
 NOW = iso(AS_OF)  # the demo's asOfNow(), pinned
 
@@ -39,6 +45,7 @@ state.register("comments", list)
 WORKBENCH_WEIGHTS = {"net": 50, "time": 20, "env": 15, "serv": 15}  # S.ti.w: the Workbench's default fit weights
 NOTE_SEQ_START = 101  # S.ntSeq starts at 102
 EVENT_SEQ_START = 9091  # EV_SEQ: the starting log ends at EV-9091
+RULE_REASONS = ("Excluded by business rule ", "Business rule ", FLOW_REMOVED)  # di.services.modeler.apply's reasons
 
 
 # ---------------------------------------------------------------- helpers
@@ -137,21 +144,51 @@ def _decision_id(c: store.Case) -> str:
     return "DI-2026-" + c["id"][3:]
 
 
-def _rebuild(c: store.Case, rnd: Callable[[], float]) -> None:
+def _rebuild(ctx: CallContext, c: store.Case, rnd: Callable[[], float]) -> None:
     """The demo's buildRoutes on the action's generator, then rankRoutes. The demo's last draw decides whether the
     recycler needs a hazardous-waste route for a battery or IT lot; it comes after every valuation draw, so it is
-    taken after build_routes (the engine's only later rule, Economics, never excludes material: its net is positive)."""
-    routes = build_routes({**c, "hazardousMaterial": False}, FormulaPredictor(rnd))
+    taken after build_routes (the engine's only later rule, Economics, never excludes material: its net is positive).
+    The business rules of the case's published flow run after the gate rules (plan 8, MVP-3.3)."""
+    t, rules, ver = live_rules(ctx.session, c)
+    probe = {**c, "hazardousMaterial": False}
+    routes = build_routes(probe, FormulaPredictor(rnd), rules, t)
     if c["cls"] in ("batch", "it"):
         m = next((r for r in routes if r["id"] == "material"), None)
         if m and rnd() < 0.12:
             fail(m, SUSTAINABILITY, "Cell chemistry requires an approved hazardous-waste route")
     c["routes"] = routes
-    c["recommendation"] = rank_routes(routes, c.get("blocked"))
+    c["recommendation"] = rank_routes(routes, c.get("blocked"), probe["preferred"])
+    _record_rules(c, probe, ver)
 
 
-def _rerank(c: store.Case) -> None:
-    c["recommendation"] = rank_routes(c["routes"], c.get("blocked"))
+def _rerank(ctx: CallContext, c: store.Case) -> None:
+    """A hand-modelled case keeps its route terms and is ranked again. With business rules (or after them: a case a
+    rule excluded routes of), its routes are evaluated again from their drafts, keeping the hand-modelled exclusions
+    and dropping the earlier rules' ones, and the published rules apply on top."""
+    t, rules, ver = live_rules(ctx.session, c)
+    if not rules and not any(_by_rule(r) for r in c["routes"]):
+        c["recommendation"] = rank_routes(c["routes"], c.get("blocked"))
+        _record_rules(c, {"rulesApplied": [], "rulesWaived": False, "preferred": None}, ver)
+        return
+    drafts = [draft_of(r, keep_exclusion=not _by_rule(r)) for r in c["routes"]]
+    probe = dict(c)
+    c["routes"], c["recommendation"] = evaluate(probe, drafts, rules=False, business=rules, template=t)
+    _record_rules(c, probe, ver)
+
+
+def _by_rule(r: dict) -> bool:
+    """A route a business rule excluded (not a gate rule or a hand-modelled exclusion)."""
+    why = r.get("failReason") or ""
+    return bool(r.get("excluded")) and r.get("failGate") == POLICY and why.startswith(RULE_REASONS)
+
+
+def _record_rules(c: store.Case, probe: dict, ver: int) -> None:
+    """The flow version the case was evaluated with, and what its rules did (kept only when they did something)."""
+    c["flowVer"] = ver
+    for k in ("rulesApplied", "rulesWaived", "preferred"):
+        c.pop(k, None)
+    if probe["rulesApplied"] or probe["rulesWaived"] or probe["preferred"]:
+        c.update(rulesApplied=probe["rulesApplied"], rulesWaived=probe["rulesWaived"], preferred=probe["preferred"])
 
 
 # ---------------------------------------------------------------- decision flow
@@ -451,7 +488,7 @@ def record_result(i: dict[str, Any], ctx: CallContext):
         e["state"], e["note"], e["fresh"] = "ready", "", "just now"
     if hero:
         c["demand"] = {"internal": True, "confirmed": True, "site": "Site 4", "lease": None, "parts": True}
-    _rebuild(c, rnd)
+    _rebuild(ctx, c, rnd)
     c["requested"], c["predictions"] = None, None
     r = c["recommendation"]
     if r:
@@ -489,9 +526,9 @@ def reevaluate(i: dict[str, Any], ctx: CallContext):
     was = c["recommendation"]["plan"] if c.get("recommendation") else None
     # a hand-modelled case keeps its routes and is ranked again; any other is valued again from the formulas
     if c.get("hero"):
-        _rerank(c)
+        _rerank(ctx, c)
     else:
-        _rebuild(c, _seeded(key))
+        _rebuild(ctx, c, _seeded(key))
     r = c["recommendation"]
     c["reevalReason"] = None
     c["snapshot"] = {"id": "EVS-" + hash_id(f"{c['id']}re{cyc(c)}"), "takenAt": NOW, "items": len(c.get("evidence") or [])}
