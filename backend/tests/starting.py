@@ -40,8 +40,14 @@ def reset() -> None:
         conn.execute(text("DELETE FROM agent_run_step"))
         conn.execute(text("DELETE FROM agent_run"))
         conn.execute(text("DELETE FROM agent_proposal"))
-        conn.execute(text("DELETE FROM agent_identity WHERE kind <> 'internal'"))
-        conn.execute(text("UPDATE agent_identity SET enabled = true"))
+        # back to the seeded registry rows exactly (autonomy, tools, org scope), as migration 0023 inserts them:
+        # a person may have changed an agent's autonomy on the Agents page
+        conn.execute(text("DELETE FROM agent_identity"))
+        for aid, name, tools, autonomy in SEED_AGENTS:
+            conn.execute(
+                text("INSERT INTO agent_identity (id, name, kind, tools, autonomy) " "VALUES (:i, :n, 'internal', :t, :a)"),
+                {"i": aid, "n": name, "t": list(tools), "a": autonomy},
+            )
         conn.execute(text("DELETE FROM model_version"))  # plan 8 MVP-12.2: no candidate or promoted model
         _reset_flows(conn)
         reset_sources(conn)
@@ -52,6 +58,38 @@ def reset() -> None:
 
 
 SEED_ORGS = ("workspace", "Customer A", "Customer B", "Customer C")
+
+# The agents migration 0023 seeds: (id, name, tools, autonomy). Keep in step with that migration
+# (tests/test_agent_registry.py::test_seeded_agents checks the live rows).
+SEED_AGENTS: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
+    ("assembler", "Evidence Assembler", ("get_case_evidence", "list_eligible_routes", "get_model_validation"), "act"),
+    (
+        "finder",
+        "Opportunity Finder",
+        ("find_demand", "predict_outcomes", "optimize_pool", "list_eligible_routes", "get_case_evidence"),
+        "act",
+    ),
+    ("gap", "Gap Requester", ("get_case_evidence", "request_missing_evidence"), "act"),
+    ("coordinator", "Handoff Coordinator", ("get_case_evidence", "request_approval", "send_instruction"), "act"),
+    ("reconciler", "Reconciler", ("get_case_evidence", "reconcile_outcome", "get_model_validation"), "act"),
+    ("briefer", "Briefing Agent", ("inbox.get", "cases.list", "analytics.query"), "act"),
+    ("analyst", "Analytics Explainer", ("analytics.query", "kpi.explain", "analytics.models"), "act"),
+    (
+        "integrator",
+        "Integration Assistant",
+        (
+            "sources.health",
+            "mapping.suggest",
+            "tables.suggestLinks",
+            "workflow.draft",
+            "workflow.validate",
+            "import.clean",
+        ),
+        "act",
+    ),
+    ("auditor", "Audit Assistant", ("audit.search", "case.trace"), "act"),
+    ("ask", "Ask Circularity", (), "read"),
+)
 
 
 def _reset_flows(conn: Connection) -> None:
