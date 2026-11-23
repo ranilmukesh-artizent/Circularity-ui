@@ -14,6 +14,7 @@ import di.services.actions.integration  # registers action handlers
 import di.services.actions.modeler  # registers action handlers (flow.*: the decision flow lifecycle; plan 8)
 import di.services.actions.modeler_suggest  # registers action handlers (flow.suggestions; plan 8)
 import di.services.actions.models  # registers action handlers (model.fit, model.promote; plan 8)
+import di.services.actions.org_pack  # registers action handlers (org.exportPack, org.importPack; plan 8)
 import di.services.actions.org_pilot  # registers action handlers (org.setPilot, org.pilotReport; plan 8)
 import di.services.actions.orgs  # registers action handlers (org.create, org.update, org.move, org.tree; plan 8)
 import di.services.actions.proposals  # registers action handlers (proposal.accept, proposal.reject; plan 8)
