@@ -16,6 +16,10 @@ decision_flow_version for rollback. Decisions use the published graph only, from
     flow.get        read    {flow_id}                    {flow, template, checks, compiled}
     flow.simulate   read    {flow_id, graph?}            the graph (or draft) against the published rules on the open
                                                          queue (di.services.actions.modeler_sim); manageFlows or approve.flows
+    flow.propose    read    {flow_id, text}              a plain-language change as a checked proposal on the draft
+                                                         (di.services.modeler.propose), simulated against the draft; saves
+                                                         nothing. A person applies it with flow.saveDraft {graph, source:
+                                                         "assistant", note: "Proposed by the assistant: <text>"}
 
 Every write is journaled. The org scope is the flow's org unit: a tenant-scoped person (a Planner) reaches only the
 flows of the units they may see (policy.tenant_ok); everyone else reaches every flow. Agents never approve, return,
@@ -32,11 +36,12 @@ from di.core import policy
 from di.repositories import flows as repo
 from di.repositories.flows import FlowRow
 from di.repositories.orgs import units
-from di.services.actions.modeler_sim import sim_json, simulate_graph
+from di.services.actions.modeler_sim import sim_json, simulate_graph, simulate_rules
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
 from di.services.modeler.compile import compile_flow
 from di.services.modeler.flow import Flow
+from di.services.modeler.propose import Proposal, build_proposal
 from di.services.modeler.templates import TEMPLATE_KEYS, Template, load_template
 from di.services.modeler.validate import blocking, validate_flow
 
@@ -57,7 +62,8 @@ def _declare(
 
 
 _declare("flow.saveDraft", "Save a flow draft", "edit decision flows",
-         "Save your changes to a decision flow as a draft and check it.", "act", {**_ID, "graph": {"req": True, "t": "object"}},
+         "Save your changes to a decision flow as a draft and check it.", "act",
+         {**_ID, "graph": {"req": True, "t": "object"}, "source": {"t": "string"}, "note": {"t": "string"}},
          _MANAGE)  # fmt: skip
 _declare("flow.fork", "Give an org its own flow", "edit decision flows",
          "Start an org unit's own decision flow from the one it uses now.", "act",
@@ -81,6 +87,10 @@ _declare("flow.get", "Read a flow", "read decision flows",
 _declare("flow.simulate", "Simulate a flow", "simulate decision flows",
          "Run a flow's draft (or the graph given) against its published rules on the open queue. Changes nothing.",
          "read", {**_ID, "graph": {"t": "object"}}, None)  # fmt: skip
+_declare("flow.propose", "Propose a flow change", "propose decision flow changes",
+         "Turn a plain-language change into a checked, simulated proposal for the draft. Saves nothing.", "read",
+         {**_ID, "text": {"req": True, "t": "string", "min": 3, "minText": "Describe the change in a few words."}},
+         _MANAGE)  # fmt: skip
 
 
 # ---------------------------------------------------------------- helpers
@@ -371,3 +381,28 @@ def simulate(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow(ctx, i)
     g = cast(Flow, i["graph"]) if i.get("graph") is not None else _graph(f)
     return sim_json(simulate_graph(ctx, f, g))
+
+
+# ---------------------------------------------------------------- propose
+@guard("flow.propose")
+def propose_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    f = _reach(i, ctx)
+    return f if isinstance(f, tuple) else None
+
+
+def proposal_json(p: Proposal) -> dict[str, Any]:
+    return {
+        "kind": p.kind, "text": p.text, "graph": p.graph, "node_id": p.node_id, "rid": p.rid, "label": p.label,
+        "guard": p.guard, "checks": [c._asdict() for c in p.checks], "sim": sim_json(p.sim) if p.sim else None,
+        "msg": p.msg, "note": f"Proposed by the assistant: {p.text}",
+    }  # fmt: skip
+
+
+@implement("flow.propose")
+def propose(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    """The proposal for the text on the flow's draft (or published graph), simulated against it on the open queue."""
+    f = _flow(ctx, i)
+    t, draft, text = load_template(f.template_key), _graph(f), i["text"].strip()
+    base = compile_flow(t, draft)
+    p = build_proposal(t, draft, text, ctx.actor.role, lambda cand: simulate_rules(ctx, f, cand, base))
+    return proposal_json(p) | {"read_by": "rules"}
