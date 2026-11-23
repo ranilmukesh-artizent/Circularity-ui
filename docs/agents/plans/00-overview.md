@@ -13,6 +13,8 @@ iteration, in this order. Do not start a plan before the previous one's phase ga
 | 4 | `04-async.md` | async database access, async endpoints and an async worker, end to end | same + a concurrency smoke |
 | 5 | `05-otel.md` | OpenTelemetry traces, metrics, logs; GenAI spans for Ask (Groq) and MCP spans; local Grafana LGTM | same + spans visible for a sample request |
 | 6 | `06-fabric-production.md` (user request 21 Nov 2026) | **done 21 Nov 2026** (ran before plan 2; see its status section): the Connection Fabric for real: encrypted per-source credentials and URLs, a configured adapter for catalogue and hand-made sources, mappings that run, canonical checks, sticky conflicts, block settings, a workflow engine that processes records on its triggers | per phase: full suites, web checks, smoke for 11 accounts, RT-1048, and the phase's Chrome walk-through |
+| 7 | `07-restructure.md` (user request 22 Nov 2026) | **done 22 Nov 2026:** `frontend/`, `backend/`, `source-sim/` in layer folders, behaviour unchanged | full suites, web checks, smoke for 11 accounts, RT-1048, smoke-fabric, fresh clone |
+| 8 | 08-mvp-decision-platform.md | the decision platform MVP (Modeler, rules, templates, multi-org, intake, agent foundation) | per phase: the phase gate task |
 
 ## Order and why
 
