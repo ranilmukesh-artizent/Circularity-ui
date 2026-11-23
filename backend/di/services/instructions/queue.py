@@ -93,7 +93,10 @@ def queue(s: Session, c: store.Case, step: int) -> int | None:
         },
     ).scalar_one()
     jobs.enqueue(s, "instruction.send", {"instruction_id": iid})
-    _trigger_outbound(s, system)
+    from di.services.actions.org_pilot import is_pilot  # plan 8 MVP-10.3; lazy: the actions import this package
+
+    if not is_pilot(s, c["owner"]):  # pilot mode never sends, not even through an outbound workflow
+        _trigger_outbound(s, system)
     return iid
 
 

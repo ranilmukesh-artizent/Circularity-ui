@@ -9,6 +9,9 @@ A send locks its row, calls the step's writer and records the outcome:
     waiting        the step cannot go yet (delivery waits for the carrier's proof of delivery); the event that brings
                    what it waits for queues the send again (di/services/instructions/events.py)
     failed         the system refused it for a business reason (writers.Refused), or the job ran out of attempts
+    held           plan 8 MVP-10.3: the case's org unit, or one above it, is in pilot mode (di.services.actions.
+                   org_pilot): nothing is sent; the row is marked held with the note "Pilot mode: not sent to <target>"
+                   (detail.held, detail.note) and acknowledged by the simulated adapter like a simulated step
 A system that is down or refuses the credentials raises; the error is kept on the row and the job queue retries with
 exponential backoff (di/core/jobs.py), up to `job_max_attempts`.
 
@@ -30,6 +33,7 @@ from sqlalchemy.orm import Session
 from di.core import clock
 from di.core.config import get_settings
 from di.core.db import SessionLocal
+from di.services.actions.org_pilot import is_pilot
 from di.services.actions.pipeline import SYSTEM, CallContext, invoke
 from di.services.cases import store
 from di.services.instructions import outbound, queue, writers
@@ -50,6 +54,8 @@ def send(iid: int, resend: bool = False) -> str:
             _update(s, iid, status="failed", last_error="The approval this instruction belongs to is no longer current")
             s.commit()
             return "failed"
+        if is_pilot(s, c["owner"]):
+            return _hold(s, ins, resend)
         prev = _earlier(s, ins)
         cfg = outbound.settings(s, ins["system"])  # the target's outbound workflow published here; {}: none (the demo)
         kind = writers.operation_for(ins["kind"], cfg.get("operation"))
@@ -100,6 +106,24 @@ def send(iid: int, resend: bool = False) -> str:
         )
         s.commit()
         return "sent"
+
+
+def _hold(s: Session, ins: dict, resend: bool) -> str:
+    """Plan 8 MVP-10.3: the case's org unit (or one above it) is in pilot mode. Nothing is sent; the row is held with
+    a note and acknowledged later by the simulated adapter, so the run goes on as with a simulated step."""
+    if not resend:
+        target = s.execute(text("SELECT vendor FROM source_system WHERE id = :i"), {"i": ins["system"]}).scalar()
+        note = f"Pilot mode: not sent to {target or ins['system']}"
+        s.execute(
+            text("UPDATE instruction SET detail = detail || CAST(:d AS jsonb) WHERE id = :i"),
+            {"d": json.dumps({"held": True, "note": note}), "i": ins["id"]},
+        )
+        _update(
+            s, ins["id"], status="sent", simulated=True, due_at=queue.simulated_due_at(), sent_at=clock.now(),
+            request=[{"call": "held", "body": {"note": note}}], waiting_for=None, last_error=None,
+        )  # fmt: skip
+    s.commit()
+    return "held"
 
 
 def tick() -> int:
