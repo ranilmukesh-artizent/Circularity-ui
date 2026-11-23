@@ -25,7 +25,7 @@
 export type Area =
   | 'home' | 'alerts' | 'command' | 'nav' | 'scope' | 'accounts'
   | 'product' | 'case' | 'orchestration' | 'analytics' | 'audit'
-  | 'integration' | 'workflows' | 'mcp' | 'access' | 'reference' | 'catalog'; // prettier-ignore
+  | 'integration' | 'workflows' | 'mcp' | 'access' | 'reference' | 'catalog' | 'modeler'; // prettier-ignore
 
 /** A change: invalidate everything, or the reads in these areas (plus every read without a known area). */
 export type Scope = 'all' | readonly Area[];
@@ -34,7 +34,7 @@ export type Scope = 'all' | readonly Area[];
 const SCREEN = '/api/screens/';
 /** Sub-paths with an area of their own, checked before the first path segment. */
 const SUB: Record<string, Area> = { 'home/alerts': 'alerts', 'nav/scope': 'scope', 'nav/accounts': 'accounts' };
-const SCREEN_AREAS = new Set<Area>(['home', 'command', 'nav', 'product', 'case', 'orchestration', 'analytics', 'audit', 'integration', 'workflows', 'mcp', 'access', 'reference']);
+const SCREEN_AREAS = new Set<Area>(['home', 'command', 'nav', 'product', 'case', 'orchestration', 'analytics', 'audit', 'integration', 'workflows', 'mcp', 'access', 'reference', 'modeler']);
 /** The read actions the pages cache (cachedAction): case.get and case.evidence on the Case pages, analytics.models. */
 const READ_ACTION_AREA: Record<string, Area> = { 'case.get': 'case', 'case.evidence': 'case', 'analytics.models': 'analytics' };
 
@@ -85,6 +85,8 @@ const ACTION_EXACT: Record<string, Scope> = Object.fromEntries(
     // plan 6 C9: the canvas' autosave (the copy stays in memory; the server's copy is read only when a workflow opens
     // afresh) and the dry test run change nothing any page shows
     'workflow.draft.save', 'workflow.testRun',
+    // plan 8: the Modeler's reads (a simulation and a proposal change nothing)
+    'flow.get', 'flow.simulate', 'flow.propose',
   ].map((id) => [id, [] as Area[]]), // prettier-ignore
 );
 const ACTION_FAMILY: Record<string, Scope> = {
@@ -105,6 +107,7 @@ const ACTION_FAMILY: Record<string, Scope> = {
   tables: FABRIC_WRITE,
   mapping: FABRIC_WRITE,
   workflow: WORKFLOW_WRITE, // what a run then changes elsewhere arrives as its own stream events
+  flow: ['modeler', ...CASES], // a decision flow (plan 8): the Modeler, and the case pages that show the rules applied
   mcp: [...SUMMARY, 'mcp', 'access'], // mcp.propose: a request for a person, in the inboxes and the MCP page
   access: 'all', // who may see or do what: every page can change
   agent: 'all', // agent.setEnabled: what the agents may do (access)
