@@ -38,7 +38,7 @@ Columns: `priority int not null default 100`, `max_attempts int not null default
 `dedupe_key text`, `history jsonb not null default '[]'`; status adds `dead`, `cancelled`; partial unique index on
 `dedupe_key where status in ('queued','running')`; index `(status, priority, run_after, id)`; trigger
 `AFTER INSERT ... EXECUTE pg_notify('di_jobs', NEW.kind)`.
-- [ ] Test: migration up/down round-trips; inserting two queued jobs with one `dedupe_key` raises `IntegrityError`. Fails → implement → passes. Commit.
+- [x] Test: migration up/down round-trips; inserting two queued jobs with one `dedupe_key` raises `IntegrityError`. Fails → implement → passes. Commit.
 
 ### Task 2: queue functions
 **Files:** Modify `backend/di/core/jobs.py`. Test: `tests/test_jobs.py`.
@@ -48,15 +48,15 @@ Columns: `priority int not null default 100`, `max_attempts int not null default
 `heartbeat(session, job_id: int) -> None`; `fail(...)` marks `dead` at `max_attempts` and appends `{at, error}` to `history`;
 `reap_stale(session, stale_after: timedelta = timedelta(minutes=5)) -> int`; `cancel(session, job_id) -> bool`;
 `retry(session, job_id) -> bool`.
-- [ ] Tests (one each): priority order; delayed `run_after` not claimed early; dead after `max_attempts`; reaper requeues a
+- [x] Tests (one each): priority order; delayed `run_after` not claimed early; dead after `max_attempts`; reaper requeues a
   running job whose `heartbeat_at` is older than `stale_after`; two concurrent claimers never get the same id; dedupe hit.
-- [ ] Fail → implement → pass. Commit.
+- [x] Fail → implement → pass. Commit.
 
 ### Task 3: worker wake-up and heartbeats
 **Files:** Modify `backend/di/worker.py`. Test: Create `tests/test_worker.py`.
 The worker `LISTEN di_jobs` on a dedicated psycopg connection (autocommit) and wakes on a notification or after
 `poll` seconds; it heartbeats long jobs every 30 s from a thread; `periodic()` calls `reap_stale`.
-- [ ] Test: a job enqueued while the worker waits is picked up in < 1 s (worker loop run in a thread with `poll=30`). Fails → implement → passes. Commit.
+- [x] Test: a job enqueued while the worker waits is picked up in < 1 s (worker loop run in a thread with `poll=30`). Fails → implement → passes. Commit.
 
 ### Task 4: task CRUD
 **Files:** Create `backend/di/routes/tasks.py`; Modify `backend/di/main.py`. Test: Create `tests/test_tasks_api.py`.
@@ -66,5 +66,5 @@ The worker `LISTEN di_jobs` on a dedicated psycopg connection (autocommit) and w
 `Task` = `{id, kind, payload, status, priority, attempts, max_attempts, run_after, last_error, history, created_at, updated_at}`.
 Every write is journalled through the action pipeline (`task.enqueue`, `task.retry`, `task.cancel`, `task.reprioritise`
 registered in `di/services/actions/`), so audit and permissions stay in one place.
-- [ ] Tests: 403 for planner-a; unknown kind → 422; cancel running → 409; retry dead → queued; list paging; journal row per write.
-- [ ] Fail → implement → pass. Phase gate (`loop.md`). Commit.
+- [x] Tests: 403 for planner-a; unknown kind → 422; cancel running → 409; retry dead → queued; list paging; journal row per write.
+- [x] Fail → implement → pass. Phase gate (`loop.md`). Commit.

@@ -16,12 +16,15 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 |---|---|
 | `fixtures/demo/index.html` | The demo. Source of truth for parity: every golden file, the web app's stylesheet and its static assets are extracted from it. |
 | `frontend` | React 18 + TS + Vite. `src/api` the facade (pages call only it), `src/pages/<area>` the pages, `src/components` shared UI (incl. `kit/`), `src/hooks`, `src/utils`, `src/layout` the app shell (sidebar, top bar, Ask panel), `src/assets`, `src/styles`. |
+| `frontend/src/pages/modeler/`, `frontend/src/pages/agents/` | Plan 8: the Modeler (canvas, inspector, checks, impact, lifecycle, history, assistant) and the Agents page (registry, proposals, runs, tool catalogue). |
 | `frontend/src/api/client.ts` | HTTP client: Suspense read cache, actions, sign-in token, live stream. |
 | `frontend/src/assets/assets.gen.ts` | The demo's logos, icons and vendor logos (`frontend/scripts/dump-assets.mjs`, committed). |
 | `backend` | `di-api` + `di-worker` (FastAPI, SQLAlchemy 2, Alembic, psycopg 3). Package `di`, in layer folders (plan 7; `backend/.importlinter` enforces the direction): |
 | `backend/di/routes/` | Every HTTP endpoint, thin: auth, actions, sources, webhooks, stream, ask, health, `screens/<area>`. |
 | `backend/di/schemas/` | Pydantic request and response shapes of the routes. |
 | `backend/di/services/` | Business logic: `actions/` (every write and read action, `POST /api/actions/{id}` through `pipeline.invoke`), `screens/<area>` (what each page shows; each docstring maps the facade exports), `engine/`, `execution/`, `instructions/`, `cases/`, `canonical/`, `ask/`, `stream`, `auth`, `sources`, `journal`. |
+| `backend/di/services/modeler/` | Plan 8, pure: template packs (`packs/`), flow graph, compile, scope, apply (business rules after the gate rules), validate, guardrails, simulate, parse, propose, suggest, telemetry facts; `valuers/` (tool fleet, device, routes adapter). Tested against `fixtures/golden/po/`. |
+| `backend/di/services/agents/` | Plan 8: autonomy and run limits, tool catalogue, registry, proposals that hold for a person, runtime and playbooks (`case_autopilot`). |
 | `backend/di/repositories/` | Read queries and read models, incl. the live Connection Fabric (`fabric.py`). |
 | `backend/di/models/` | SQLAlchemy tables, one module per domain (mirrors the migrations). |
 | `backend/di/core/` | Foundations: config, db, auth, policy, errors, clock, dates, logs, golden, state, jobs. |
@@ -127,7 +130,7 @@ Full list: [docs/agents/dos-and-donts.md](docs/agents/dos-and-donts.md).
 - `backend/di/services/screens/<area>.py` docstrings: what each screen endpoint serves and how the facade maps to it.
 - `frontend/src/api/client.ts` docstring: how the synchronous facade works over HTTP.
 
-## Current state (22 Nov 2026)
+## Current state (24 Nov 2026)
 
 B1–B17 done: the web app reads only di-api; the in-browser engine is gone. Plan 1b (refactor) and plan 6 done: the
 Connection Fabric runs for real (encrypted credentials, configured connections, mappings that run, canonical checks,
@@ -135,8 +138,16 @@ a workflow engine on triggers) while every vendor system stays synthetic; see th
 `docs/backend-steps.md` and [docs/agents/runbook-fabric.md](docs/agents/runbook-fabric.md). Plan 7 done: the folders
 are `frontend/`, `backend/` and `source-sim/`, each in layer folders (routes, schemas, services, repositories,
 models, core; components, hooks, utils, layout), with no change in behaviour
-([plan 7](docs/agents/plans/07-restructure.md)). Next: the trial package for customers, then plans 2–5 in
-`docs/agents/plans/` (queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry), then B18
-(Playwright suites, demo reset endpoint, run book, security review).
+([plan 7](docs/agents/plans/07-restructure.md)). Plan 2 done (job queue: priorities, dedupe, dead letters, reaper,
+LISTEN/NOTIFY wake-up, task CRUD at `/api/v1/tasks`). Plan 8 done, the decision platform MVP
+([plan 8](docs/agents/plans/08-mvp-decision-platform.md), status in `docs/backend-steps.md`): org units, the Modeler
+(flows, business rules after the gate rules, guardrails, simulation, maker-checker lifecycle with shadow and
+rollback, the plain-language assistant), template packs (industrial, tool fleet, device recommerce), cases opened
+from data, read-only PLM (Windchill), group reporting and pilot mode, the agent foundation (registry, autonomy,
+proposals that hold for a person, runtime and case autopilot, per-agent MCP tools, MCP client sources), learning
+(calibration, model candidates, rule suggestions); the demo's 128 cases and RT-1048 are unchanged while the default
+flows have no rules. End-user guides: [docs/guides/users/README.md](docs/guides/users/README.md).
+Next: close the UI gaps plan 8 left (listed in its status section), the trial package for customers, then plans 3–5
+(CRUD for every resource and gzip, async, OpenTelemetry), then B18.
 
-Known server gaps are listed under B17b and plan 6 in `docs/backend-steps.md`.
+Known server gaps are listed under B17b, plan 6 and plan 8 in `docs/backend-steps.md`.

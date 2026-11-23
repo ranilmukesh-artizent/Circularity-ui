@@ -84,9 +84,36 @@ in `docs/agents/plans/06-fabric-production.md`, one line per task in `docs/agent
 - **How:** 7+ agents in parallel on one tree, migrations reserved in advance; the lessons are in `PROGRESS.md`.
   Parity changes on purpose: decision-log *D-Fabric*. Vendors stay synthetic.
 
-## 6. Next
+## 6. Plan 7, the folder restructure (22 Nov 2026)
 
-- **The plans:** queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry (plans 2–5).
+Commits `9854f18`, `62dbfed`. `frontend/`, `backend/`, `source-sim/` replace `apps/*`; inside, layer folders
+(routes, schemas, services, repositories, models, core; components, hooks, utils, layout; sim core/routes/vendors).
+Behaviour unchanged; five parallel sessions, one per area.
+
+## 7. Plans 2 and 8, the job queue and the decision platform MVP (23–24 Nov 2026)
+
+Commits `a6f93a4` (one migration chain, reserved stubs 0018–0026) … `d0bfad4`; one commit per task, listed in
+`docs/agents/plans/PROGRESS.md`; status and known gaps in `docs/backend-steps.md` ("Plan 8 status").
+
+- **User request:** run plan 8 (pushed by a teammate: the MVP plan, the PO's Modeler prototype, the Dover stories),
+  plan 2 first, "as fast as possible without breaking", on `feature/fullstack-poc`.
+- **Plan 2:** a hardened job queue (priorities, dedupe, dead letters, stale-lock reaper, LISTEN/NOTIFY) and task
+  CRUD.
+- **Plan 8:** org units, the Modeler (flows, business rules after the gate rules, guardrails, simulation, maker-checker
+  with shadow and rollback, the assistant), three template packs, cases opened from data, read-only PLM, group
+  reporting and pilot mode, the agent foundation, learning. Ported logic is tested against reference data dumped
+  from the PO prototype.
+- **How:** up to six sessions in parallel on one tree (path-limited commits, the shared api test lock, reserved
+  migrations), the lead running every phase gate together at the end. The end-to-end MVP smoke found four real bugs
+  (access to new orgs, opened cases stuck, a "Promise" crash on the agent button, nothing starting the autopilot) and
+  the gate found the reset not restoring agents; all fixed with tests. End-user guides per role were written from
+  the code (`docs/guides/users/`).
+
+## 8. Next
+
+- **Plan 8's UI gaps** (listed in its status block in `docs/backend-steps.md`): request access in the app, a proposals
+  list for Planners and Approvers, screens for pilot mode, models and org packs, revocable grants, maker-checker on
+  access and MCP proposals.
+- **The trial package** for customers on their own machine.
+- **The plans:** CRUD for every resource and gzip, async, OpenTelemetry (plans 3–5).
 - **B18:** Playwright suites, `POST /api/admin/reset`, run book, security review.
-- **Server gaps** (from B17b): the MCP agent test bench and the pipeline's agent gate (autonomy levels, run limits,
-  the kill switch outside MCP). Plan 6's known gaps are in its status block in `docs/backend-steps.md`.

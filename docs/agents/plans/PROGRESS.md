@@ -73,6 +73,81 @@ phase gate is the last row.
 | 2026-11-21 | 06 · D2 `smoke-fabric.mjs`, D3 guides and agent docs | `7a6e58c`, `7f24e36`, `5801873`, `652df37`, `92ad3b5` | smoke-fabric 12/12 twice on a reset stack | done |
 | 2026-11-22 | 06 · gap fixes (G1–G5, follow-ons) | `53da7b6` … `b41e78c` | targeted sets per fix (401, 1238, 1005 passed …) | done |
 | 2026-11-22 | 06 · **phase gate** | — | api 3,948 + source-sim 260 passed; tsc 0, vitest 250, eslint, knip, ruff, mypy clean; smoke 11 accounts 0 failing; RT-1048 stage 10 twice; smoke-fabric 12/12 | done |
+| 2026-11-23 | 08 · lead: Plans 2 and 8: one migration chain, reserved stubs 0018-0026 | `a6f93a4` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-0.1 record the MVP decisions and plan row | `94576ed` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 02 · task 1 job queue schema (migration 0018) | `2b1c9e8` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-1.1 org unit table and seed | `6d00daa` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-0.3 dump PO prototype goldens | `5bc3a69` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · lead: Decision: the device template is named "Device recommerce" | `c2fc670` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-9.1 PLM part and BOM canonical models | `4123ec9` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 02 · task 2 queue functions (priority, dedupe, dead, reaper) | `c5633df` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 02 · task 3 worker wakes on NOTIFY di_jobs, heartbeats, reaps | `a5c1eca` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-0.2 lint, shard and gate scripts | `cfcad7c` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-1.2 policy reads org units and new permissions | `8d5786f` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-6.1 Tool fleet valuer port | `f4ba162` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-9.2 Windchill mock in source-sim | `9660821` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-2.1 template packs as data | `b13100a` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-2.2 flow graph model and default flows | `3538f01` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-6.2 Device valuer port | `6b2a6d7` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-1.3 org actions create update move | `9101ec0` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 02 · task 4 task CRUD at /api/v1/tasks | `3cbf161` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-2.3 compile a flow into rules | `8e6f003` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-1.4 bind sources to org units | `b6f9fee` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-2.4 apply business rules after gate rules | `3081f1b` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-2.5 validate a flow | `89a5ca2` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-2.6 guardrail checks on rules and text | `2f1d240` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-2.7 simulate a flow on a queue | `fda04f0` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · lead: Decision: industrial template pack values | `e6c884d` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-3.1 flow tables and repository | `3e10e66` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-1.5 organisation section in the Access page | `9b6f1f8` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-6.4 routes adapter for template cases | `45c6edf` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-12.1 outcome dataset and calibration | `fdb5964` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-3.2 flow lifecycle actions with maker checker | `8b6f394` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-11.1 enforce agent autonomy and run limits | `5c5e647` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-11.2 tool catalogue generated from actions | `ef3ee98` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-3.3 live rules in re-evaluation | `6280a04` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-9.3 Windchill adapter | `b31e3c1` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-12.2 model candidate shadow and promote | `97cf7a2` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-10.1 org roll-up in analytics | `160d49b` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-10.3 pilot mode per org and pilot report | `9ca8fe4` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-3.4 rule version pinned on decisions | `b03bdf8` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-11.3 agent registry at runtime | `c174044` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-3.5 shadow decisions recorded | `ea449cd` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-7.1 telemetry facts as rule scope | `1547428` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-4.1 simulation action over the open queue | `2345617` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-11.4 proposals that hold for a person | `dd4e13e` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-4.3 Modeler API facade | `7aea431` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-4.4 Modeler page canvas and inspector | `693ca6e` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-8.1 open case action with dedupe | `2d0c081` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-4.2 Modeler screen endpoint and navigation | `8aabfff` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-4.5 Modeler checks, impact, lifecycle and history panels | `f34975f` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-5.1 rule parser per template | `8cb83e8` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-8.2 open case workflow block | `f238b1c` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-6.3 template sample queues for simulation | `3a970b1` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-5.2 proposal action for plain language changes | `1908a82` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-5.3 optional model reading for proposals | `375dd65` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-12.3 rule suggestions from overrides | `f0fa7ed` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-8.3 case screens render any template | `e480def` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-10.2 org configuration pack export and import | `af45f49` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-8.4 manual import rows open cases | `2a38aaa` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-4.6 Modeler browser smoke | `94d5c86` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-5.4 assistant panel in the Modeler | `41ada2c` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-11.5 agent runtime and case autopilot playbook | `49bd40b` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-11.6 MCP tools filtered per agent | `f7a41ee` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-9.4 where-used query and BOM parts value | `797aa73` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-11.7 MCP client source kind | `84204af` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-5.1 parser reads pack phrase dims; suggestion round trip | `a6d5e3b` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-5.5 Modeler tools for MCP and Ask | `6d4f619` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · lead: Demo reset returns plan 8 state to the start | `cd862d0` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-11.8 Agents page | `ce70b27` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-12.4 tenant access requests reach new org units | `959b02e` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-12.4 an opened case with a recommendation awaits approval | `bedf6ea` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-12.4 the agent's next-step button no longer throws "Promise" | `4807dd1` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-12.4 start the case autopilot from the Agents page | `0e5cf6f` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · lead: Docs: user guides per role, case journey, approvals | `2b221f7` | the task's own tests (in its commit body) | done |
+| 2026-11-23 | 08 · MVP-12.4 end to end MVP smoke | `aa020a2` | the task's own tests (in its commit body) | done |
+| 2026-11-24 | 08 · lead: Demo reset restores the seeded agents exactly; format a test | `d0bfad4` | the task's own tests (in its commit body) | done |
+| 2026-11-24 | 02 + 08 · **phase gates (all, run together)** | — | api 4,374 passed (5 agent/MCP failures found: the reset did not restore an agent's autonomy; fixed in d0bfad4 and re-run green, 50 passed); source-sim 271; lint clean; web-check tsc 0, 278 tests; smoke-pages 11 accounts 0 failing; smoke-rt1048 stage 10; smoke-modeler passed; smoke-mvp 12/12 (after fixing a race in its clock loop) | done |
 
 ### Lessons from running 7+ agents in parallel
 

@@ -343,78 +343,78 @@ verbatim:
 
 ## Task list (Ralphy reads only this list; one task per iteration, top to bottom)
 
-- [ ] MVP-0.1 Record the MVP decisions and plan row
-- [ ] MVP-0.2 Lint, shard and gate scripts for this plan
-- [ ] MVP-0.3 Dump PO prototype goldens
-- [ ] MVP-0.4 Phase 0 gate
-- [ ] MVP-1.1 Org unit table and seed
-- [ ] MVP-1.2 Policy reads org units and new permissions
-- [ ] MVP-1.3 Org actions create update move
-- [ ] MVP-1.4 Bind sources to org units
-- [ ] MVP-1.5 Organisation section in the Access page
-- [ ] MVP-1.6 Phase 1 gate
-- [ ] MVP-2.1 Template packs as data
-- [ ] MVP-2.2 Flow graph model and default flows
-- [ ] MVP-2.3 Compile a flow into rules
-- [ ] MVP-2.4 Apply business rules after gate rules
-- [ ] MVP-2.5 Validate a flow
-- [ ] MVP-2.6 Guardrail checks on rules and text
-- [ ] MVP-2.7 Simulate a flow on a queue
-- [ ] MVP-2.8 Phase 2 gate
-- [ ] MVP-3.1 Flow tables and repository
-- [ ] MVP-3.2 Flow lifecycle actions with maker checker
-- [ ] MVP-3.3 Live rules in re-evaluation
-- [ ] MVP-3.4 Rule version pinned on decisions
-- [ ] MVP-3.5 Shadow decisions recorded
-- [ ] MVP-3.6 Phase 3 gate
-- [ ] MVP-4.1 Simulation action over the open queue
-- [ ] MVP-4.2 Modeler screen endpoint and navigation
-- [ ] MVP-4.3 Modeler API facade
-- [ ] MVP-4.4 Modeler page canvas and inspector
-- [ ] MVP-4.5 Modeler checks impact lifecycle panels
-- [ ] MVP-4.6 Modeler browser smoke
-- [ ] MVP-4.7 Phase 4 gate
-- [ ] MVP-5.1 Rule parser per template
-- [ ] MVP-5.2 Proposal action for plain language changes
-- [ ] MVP-5.3 Optional model reading for proposals
-- [ ] MVP-5.4 Assistant panel in the Modeler
-- [ ] MVP-5.5 Modeler tools for MCP and Ask
-- [ ] MVP-5.6 Phase 5 gate
-- [ ] MVP-6.1 Tool fleet valuer port
-- [ ] MVP-6.2 Device valuer port
-- [ ] MVP-6.3 Template sample queues for simulation
-- [ ] MVP-6.4 Routes adapter for template cases
-- [ ] MVP-6.5 Phase 6 gate
-- [ ] MVP-7.1 Telemetry facts as rule scope
-- [ ] MVP-7.2 Phase 7 gate
-- [ ] MVP-8.1 Open case action with dedupe
-- [ ] MVP-8.2 Open case workflow block
-- [ ] MVP-8.3 Case screens render any template
-- [ ] MVP-8.4 Manual import rows open cases
-- [ ] MVP-8.5 Phase 8 gate
-- [ ] MVP-9.1 PLM part and BOM canonical models
-- [ ] MVP-9.2 Windchill mock in source-sim
-- [ ] MVP-9.3 Windchill adapter
-- [ ] MVP-9.4 Where-used query and BOM parts value
-- [ ] MVP-9.5 Phase 9 gate
-- [ ] MVP-10.1 Org roll-up in analytics
-- [ ] MVP-10.2 Org configuration pack export and import
-- [ ] MVP-10.3 Pilot mode per org and pilot report
-- [ ] MVP-10.4 Phase 10 gate
-- [ ] MVP-11.1 Enforce agent autonomy and run limits
-- [ ] MVP-11.2 Tool catalogue generated from actions
-- [ ] MVP-11.3 Agent registry at runtime
-- [ ] MVP-11.4 Proposals that hold for a person
-- [ ] MVP-11.5 Agent runtime and case autopilot playbook
-- [ ] MVP-11.6 MCP tools filtered per agent
-- [ ] MVP-11.7 MCP client source kind
-- [ ] MVP-11.8 Agents page
-- [ ] MVP-11.9 Phase 11 gate
-- [ ] MVP-12.1 Outcome dataset and calibration
-- [ ] MVP-12.2 Model candidate shadow and promote
-- [ ] MVP-12.3 Rule suggestions from overrides
-- [ ] MVP-12.4 End to end MVP smoke
-- [ ] MVP-12.5 Final gate and status
+- [x] MVP-0.1 Record the MVP decisions and plan row
+- [x] MVP-0.2 Lint, shard and gate scripts for this plan
+- [x] MVP-0.3 Dump PO prototype goldens
+- [x] MVP-0.4 Phase 0 gate
+- [x] MVP-1.1 Org unit table and seed
+- [x] MVP-1.2 Policy reads org units and new permissions
+- [x] MVP-1.3 Org actions create update move
+- [x] MVP-1.4 Bind sources to org units
+- [x] MVP-1.5 Organisation section in the Access page
+- [x] MVP-1.6 Phase 1 gate
+- [x] MVP-2.1 Template packs as data
+- [x] MVP-2.2 Flow graph model and default flows
+- [x] MVP-2.3 Compile a flow into rules
+- [x] MVP-2.4 Apply business rules after gate rules
+- [x] MVP-2.5 Validate a flow
+- [x] MVP-2.6 Guardrail checks on rules and text
+- [x] MVP-2.7 Simulate a flow on a queue
+- [x] MVP-2.8 Phase 2 gate
+- [x] MVP-3.1 Flow tables and repository
+- [x] MVP-3.2 Flow lifecycle actions with maker checker
+- [x] MVP-3.3 Live rules in re-evaluation
+- [x] MVP-3.4 Rule version pinned on decisions
+- [x] MVP-3.5 Shadow decisions recorded
+- [x] MVP-3.6 Phase 3 gate
+- [x] MVP-4.1 Simulation action over the open queue
+- [x] MVP-4.2 Modeler screen endpoint and navigation
+- [x] MVP-4.3 Modeler API facade
+- [x] MVP-4.4 Modeler page canvas and inspector
+- [x] MVP-4.5 Modeler checks impact lifecycle panels
+- [x] MVP-4.6 Modeler browser smoke
+- [x] MVP-4.7 Phase 4 gate
+- [x] MVP-5.1 Rule parser per template
+- [x] MVP-5.2 Proposal action for plain language changes
+- [x] MVP-5.3 Optional model reading for proposals
+- [x] MVP-5.4 Assistant panel in the Modeler
+- [x] MVP-5.5 Modeler tools for MCP and Ask
+- [x] MVP-5.6 Phase 5 gate
+- [x] MVP-6.1 Tool fleet valuer port
+- [x] MVP-6.2 Device valuer port
+- [x] MVP-6.3 Template sample queues for simulation
+- [x] MVP-6.4 Routes adapter for template cases
+- [x] MVP-6.5 Phase 6 gate
+- [x] MVP-7.1 Telemetry facts as rule scope
+- [x] MVP-7.2 Phase 7 gate
+- [x] MVP-8.1 Open case action with dedupe
+- [x] MVP-8.2 Open case workflow block
+- [x] MVP-8.3 Case screens render any template
+- [x] MVP-8.4 Manual import rows open cases
+- [x] MVP-8.5 Phase 8 gate
+- [x] MVP-9.1 PLM part and BOM canonical models
+- [x] MVP-9.2 Windchill mock in source-sim
+- [x] MVP-9.3 Windchill adapter
+- [x] MVP-9.4 Where-used query and BOM parts value
+- [x] MVP-9.5 Phase 9 gate
+- [x] MVP-10.1 Org roll-up in analytics
+- [x] MVP-10.2 Org configuration pack export and import
+- [x] MVP-10.3 Pilot mode per org and pilot report
+- [x] MVP-10.4 Phase 10 gate
+- [x] MVP-11.1 Enforce agent autonomy and run limits
+- [x] MVP-11.2 Tool catalogue generated from actions
+- [x] MVP-11.3 Agent registry at runtime
+- [x] MVP-11.4 Proposals that hold for a person
+- [x] MVP-11.5 Agent runtime and case autopilot playbook
+- [x] MVP-11.6 MCP tools filtered per agent
+- [x] MVP-11.7 MCP client source kind
+- [x] MVP-11.8 Agents page
+- [x] MVP-11.9 Phase 11 gate
+- [x] MVP-12.1 Outcome dataset and calibration
+- [x] MVP-12.2 Model candidate shadow and promote
+- [x] MVP-12.3 Rule suggestions from overrides
+- [x] MVP-12.4 End to end MVP smoke
+- [x] MVP-12.5 Final gate and status
 
 ---
 
