@@ -45,6 +45,8 @@ FORBIDDEN_ACTIONS = (
     "access.", "agent.", "workflow.publish", "workflow.setStatus", "workflow.delete", "source.", "mcp.",
     "org.create", "org.update", "org.move",  # plan 8 MVP-1.3: the org tree decides who sees what (access)
     "org.setPilot",  # plan 8 MVP-10.3: whether a pilot org's instructions are sent (outbound sending)
+    "org.importPack",  # plan 8 MVP-10.2: sets up another org's sources, workflows and flows
+    "proposal.",  # plan 8 MVP-11.4: only a person accepts or rejects an agent's proposal
     "flow.approve", "flow.publish", "flow.reject", "flow.rollback",  # plan 8 MVP-3.2: a person decides the policy
     "model.promote",  # plan 8 MVP-12.2: a person decides which model values new cases
 )  # fmt: skip

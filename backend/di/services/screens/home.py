@@ -16,6 +16,7 @@ middlePanel(role)              | GET /api/screens/home/middle                   
 figures(per)                   | GET /api/screens/home/figures?per=30|90|365        -> [Figure]
 reports                        | GET /api/screens/home/reports                      -> [{id, t, ic, h, d}]
 reportRows(id, tenant, period) | GET /api/screens/home/reports/{id}?tenant=&period= -> rows, header first
+(plan 8 MVP-11.4)              | GET /api/screens/home/proposals                    -> agents' proposals for this person
 attention                      | frontend-only: composed from /alerts and /tasks (the facade's own rule)
 role, canManageWorkflows,      | session and policy (the session area: the account, its role and permissions)
   roleDescription              |
@@ -96,6 +97,7 @@ from di.repositories.fabric import (
 from di.repositories.workflows import wf_stat as stored_stat
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS
+from di.services.agents import proposals
 from di.services.cases import store
 from di.services.engine.jsmath import js_round, js_sum
 
@@ -915,3 +917,9 @@ def report_page(p: Principal, session: Session, report_id: str, tenant: str, per
     if tenant != "All" and not p.tenant_ok(tenant):
         raise ApiError("tenant_boundary", f"{tenant} is a tenant you cannot see.", 403)
     return report_rows(ctx, report_id, tenant, period)
+
+
+def proposals_page(p: Principal, session: Session) -> list[dict]:
+    """The agents' proposals waiting for this person (plan 8 MVP-11.4): those whose held action they may run, on cases
+    in their tenants (di.services.agents.proposals.pending_for). Accept or reject with proposal.accept/reject."""
+    return proposals.pending_for(session, p.account, p.ctx)

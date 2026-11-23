@@ -73,3 +73,9 @@ def get_report_rows(
 ) -> list[list]:
     """A report's rows (header first) for a tenant ('All' or one the account may see) and a period."""
     return svc.report_page(p, session, report_id, tenant, period)
+
+
+@router.get("/proposals")
+def get_proposals(p: CurrentPrincipal, session: DbSession) -> list[dict]:
+    """The agents' proposals waiting for the signed-in person (plan 8 MVP-11.4)."""
+    return svc.proposals_page(p, session)

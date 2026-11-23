@@ -14,6 +14,7 @@ import di.services.actions.modeler  # registers action handlers (flow.*: the dec
 import di.services.actions.models  # registers action handlers (model.fit, model.promote; plan 8)
 import di.services.actions.org_pilot  # registers action handlers (org.setPilot, org.pilotReport; plan 8)
 import di.services.actions.orgs  # registers action handlers (org.create, org.update, org.move, org.tree; plan 8)
+import di.services.actions.proposals  # registers action handlers (proposal.accept, proposal.reject; plan 8)
 import di.services.actions.workflow_builder  # registers action handlers (workflow.draft, workflow.plan)
 import di.services.actions.workflow_drafts  # registers action handlers (workflow.draft.save, workflow.draft.discard, testRun)
 import di.services.actions.workflows  # noqa: F401  (registers action handlers)

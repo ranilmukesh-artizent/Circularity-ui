@@ -78,6 +78,10 @@ class ToolCall:
         if action_id not in ACTIONS_OF[self.tool["id"]]:  # the tool table is the only way from a tool to an action
             raise RuntimeError(f"{self.tool['id']} may not run {action_id}")
         r = invoke(action_id, i, self.ctx)
+        if r["ok"] and isinstance(r["output"], dict) and "held" in r["output"]:  # an agent that proposes (MVP-11.4)
+            p = r["output"]["held"]
+            self.step("Hold for human approval", False, f"Proposal {p} waits for a person")
+            raise Refused("held", f"Held for a person: proposal {p} waits until someone accepts it.", {"proposal": p})
         if r["ok"]:
             return r["output"]
         e = r["error"]

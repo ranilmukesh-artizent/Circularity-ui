@@ -4,7 +4,7 @@
     4 the permission            5 case scope: exists, tenant boundary, warehouse lock
     6 the agent gate (when an agent prepared it)              7 the action's own guard
     8 policy limits (approval limits, B12; an agent's kill switch, autonomy and run limits, MVP-11.1)
-    9 idempotency
+    9 idempotency                (then: an agent with autonomy "propose" holds a write for a person, MVP-11.4)
     10 run the handler           11 journal it                  12 emit events
 Read actions stop after the handler: they are not journaled.
 Every result is the demo's shape: {ok: true, output, key, action, seq} or {ok: false, error: {code, message}}.
@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from di.core import clock, policy
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError
 from di.services.actions.scope import case_scope
-from di.services.agents import limits
+from di.services.agents import limits, proposals
 
 # HTTP status per error code (the body always carries the demo's code and message)
 ERROR_STATUS = {
@@ -194,6 +194,10 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[s
         seen = ctx.session.execute(text("SELECT seq FROM action_journal WHERE idem_key = :k AND NOT undone"), {"k": key}).first()
         if seen:
             return fail("duplicate", f"{a.dup_text or 'Already done'}. Nothing was created twice.")
+    # 9b an agent registered with autonomy "propose" does not run a write: it holds for a person (MVP-11.4)
+    if ctx.preparer and a.changes_state and not ctx.confirmed and proposals.holds(ctx.session, ctx.preparer):
+        pid = proposals.hold(ctx, a.id, _clean(i), case_id)
+        return {"ok": True, "output": {"held": pid}, "key": None, "action": a.id}
     # 10 run
     if a.handler is None:
         return fail("not_implemented", f"{a.title} is not available on the server yet.")
