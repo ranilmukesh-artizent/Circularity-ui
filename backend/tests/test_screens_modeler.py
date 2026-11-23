@@ -97,3 +97,9 @@ def test_nav_shows_modeler_for_allowed_roles(acct):
 def test_warehouse_manager_no_access():
     r = _get("wm-1")
     assert r.status_code == 403 and r.json()["error"]["code"] == "out_of_scope"
+
+
+def test_session_lists_the_modeler_page():
+    """/api/auth/me lists the code-declared page (policy.EXTRA_PAGES), so the web app routes to it."""
+    assert client.get("/api/auth/me", headers=h("planner-a")).json()["pages"]["modeler"] == []
+    assert "modeler" not in client.get("/api/auth/me", headers=h("wm-1")).json()["pages"]

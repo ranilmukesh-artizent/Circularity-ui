@@ -80,7 +80,8 @@ function recordOK(caseId: string | null): boolean | null {
 /** true, false, or 'tenant' when the record belongs to a tenant or warehouse the account cannot see. */
 export function canRoute(r: RouteRef): boolean | 'tenant' {
   const p = r.page;
-  if (!(p in ref('PAGES')) || !canPage(p)) return false;
+  // a page of the demo's PAGES, or one the server declares beyond them (plan 8: modeler, agents; in me.pages)
+  if (!(p in ref('PAGES') || p in (session()?.pages ?? {})) || !canPage(p)) return false;
   if (p === 'product') {
     if (!r.a || ['received', 'expected', 'pools'].includes(r.a)) return canPage(p, r.a || 'received');
     if (r.a === 'asset') {
