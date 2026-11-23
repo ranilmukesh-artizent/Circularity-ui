@@ -119,6 +119,7 @@ from di.repositories.provenance import ordered_spec, prov_for, snap_time
 from di.repositories.workspace import cc_stage
 from di.services.cases import store
 from di.services.engine.jsmath import js_round, js_sum
+from di.services.engine.predictor import engine_class
 from di.services.execution import as_sc, ex_prep_parts, ex_trace
 from di.services.execution.plan import value_order
 from di.services.execution.trace import learn_ver
@@ -406,8 +407,8 @@ def baseline(c: Case) -> float | None:
 
 def asset_econ(c: Case) -> dict:
     """The facade's assetEcon (the demo's asEcon): recovery, cost, net, service history, resale demand and price."""
-    r, K, q = c.get("recommendation"), CLASSES[c["cls"]], c["qty"]
-    pos = js_sum(t["amt"] for t in r["terms"] if t["amt"] > 0) if r else js_round(CC_EST[c["cls"]] * q)
+    r, K, q = c.get("recommendation"), CLASSES[engine_class(c)], c["qty"]
+    pos = js_sum(t["amt"] for t in r["terms"] if t["amt"] > 0) if r else js_round(CC_EST[engine_class(c)] * q)
     neg = js_sum(t["amt"] for t in r["terms"] if t["amt"] < 0) if r else 0
     net = r["net"] if r else js_round(pos * 0.8)
     rg = js_round((r["p90"] - r["p10"]) / 2 / max(1, abs(net)) * 100) if r else None
@@ -457,7 +458,7 @@ def asset_econ(c: Case) -> dict:
 def asset_eligibility(c: Case) -> list[list[str]]:
     """The facade's assetEligibility (the demo's asElig): ownership, contract, warranty, safety and environment."""
     d, spec = c.get("demand") or {}, c.get("spec") or {}
-    yr = int(iso(c["received"])[:4]) - max(0, js_round(c["age"])) + min(6, js_round(CLASSES[c["cls"]]["tau"] / 2))
+    yr = int(iso(c["received"])[:4]) - max(0, js_round(c["age"])) + min(6, js_round(CLASSES[engine_class(c)]["tau"] / 2))
     warr = yr >= int(iso(AS_OF)[:4])
     sil = "SIL" in (spec.get("Safety rating") or "")
     lith = c["cls"] in ("drill", "batch", "it")

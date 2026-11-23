@@ -8,6 +8,7 @@ from typing import Any
 
 from di.repositories.common import AS_OF, CLASSES, WORLD, Case, as_model, case_demand, fmt_d, hash_id, inr, jg_lc
 from di.services.engine.jsmath import js_round, js_sum
+from di.services.engine.predictor import engine_class
 from di.services.execution.lanes import RATE_CARD, ex_kg, ex_move_raw
 from di.services.execution.prep import EX_BOM, EX_FX_AT, EX_SCOPE, as_sc, asset_health, ex_inr, ex_prep_parts, ex_svc
 from di.services.execution.steps import ex_doc_num, ex_doc_ref
@@ -35,7 +36,7 @@ def ex_trace(c: Case, r: dict, t: dict) -> dict:
 
     pos = next(iter(sorted((x for x in r["terms"] if x["amt"] > 0), key=lambda x: -x["amt"])), None)
     k = t["kind"]
-    cls = CLASSES[c["cls"]]
+    cls = CLASSES[engine_class(c)]
     P = ex_prep_parts(c, r) if k == "prep" else None
     if k == "purchase":
         po = M.get("avoidedPo") if M else None
@@ -158,7 +159,7 @@ def ex_trace(c: Case, r: dict, t: dict) -> dict:
     elif k == "parts":
         h = asset_health(c) if c.get("grade") else None
         ok = [x["n"] for x in h["comps"] if x["cls"] == "ok"] if h else []
-        bom = [p for p in EX_BOM[c["cls"]] if not ok or p[2] in ok][:4]
+        bom = [p for p in EX_BOM[engine_class(c)] if not ok or p[2] in ok][:4]
         tw = js_sum(p[3] for p in bom) or 1
         left = B
         o.update(method="Modelled", sys="Aras Innovator BOM · Circularity ML", rec="resale-price v1.3")

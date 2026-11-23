@@ -12,6 +12,7 @@ from di.repositories.common import (
     fmt_dy,
 )
 from di.services.engine.jsmath import js_round
+from di.services.engine.predictor import engine_class
 from di.services.execution import asset_health, ex_prep_parts
 
 DIAG = {
@@ -116,7 +117,7 @@ def part_prices(c: Case, h: dict) -> list[dict]:
         ]
     sc = [x for x in h["comps"] if x["cls"] != "ok"]
     prep = prep_cost(c)
-    base = prep * 0.55 if prep else CLASSES[c["cls"]]["pnew"] * c["qty"] * 0.06
+    base = prep * 0.55 if prep else CLASSES[engine_class(c)]["pnew"] * c["qty"] * 0.06
     if not sc:
         return []
     w = [1 + as_hex(c, "pw" + x["n"]) % 5 for x in sc]
@@ -134,7 +135,7 @@ def part_prices(c: Case, h: dict) -> list[dict]:
 def catalogue(c: Case) -> float:
     """The demo's asCatalogue: the planned purchase price, else the class's new price."""
     amts = [next((t["amt"] for t in r["terms"] if t["kind"] == "purchase"), None) for r in c.get("routes") or []]
-    return next((a for a in amts if a), None) or js_round(CLASSES[c["cls"]]["pnew"] * c["qty"])
+    return next((a for a in amts if a), None) or js_round(CLASSES[engine_class(c)]["pnew"] * c["qty"])
 
 
 def case_diag(c: Case, h: dict) -> dict | None:

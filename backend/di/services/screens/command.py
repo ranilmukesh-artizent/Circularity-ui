@@ -90,6 +90,7 @@ from di.repositories.decisions import metrics
 from di.repositories.fabric import failing_now, health, live, open_conflicts_now, stale_now, workflows, ws_events
 from di.services.actions.pipeline import CallContext
 from di.services.engine.jsmath import js_round, js_sum
+from di.services.engine.predictor import engine_class
 from di.services.execution.steps import EX_STEP, STEP_TPL, steps_for
 
 FEAT_UPLIFT = False  # the demo's FEAT.uplift: the uplift figure is hidden
@@ -283,7 +284,7 @@ def _parts_backorder(c: Case) -> bool:
     """The demo's asParts(c, assetHealth(c)): a component is on backorder when its stock draw is below 0.3."""
     from di.repositories.common import as_hex
 
-    comps = AS_COMPS[c["cls"]]
+    comps = AS_COMPS[engine_class(c)]
     return any((as_hex(c, "pt" + n) % 100) / 100 < 0.3 for n in comps)
 
 

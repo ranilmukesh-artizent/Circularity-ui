@@ -9,7 +9,7 @@ from typing import Any
 
 from di.repositories.common import CLASSES, EX_FX, Case, as_hex, inr
 from di.services.engine.jsmath import js_round, js_sum
-from di.services.engine.predictor import GRADE_F
+from di.services.engine.predictor import GRADE_F, engine_class
 from di.services.execution.lanes import ex_move_legs_for
 from di.services.execution.util import js_str, num_or, parse_float
 
@@ -130,9 +130,9 @@ def _clamp(v: float, a: float, b: float) -> float:
 def asset_health(c: Case) -> dict:
     """The demo's assetHealth (score and per-component state; the band counts only draw the ring on screen)."""
     g = GRADE_F[c.get("grade") or "C"] * (1 if c.get("grade") else 0.92)
-    life = math.exp(-c["age"] / CLASSES[c["cls"]]["tau"])
+    life = math.exp(-c["age"] / CLASSES[engine_class(c)]["tau"])
     comps = []
-    for n in AS_COMPS[c["cls"]]:
+    for n in AS_COMPS[engine_class(c)]:
         h = _clamp(g + ((as_hex(c, n) % 40) - 18) / 100, 0.22, 1)
         st = "Good" if h >= 0.85 else "Moderate wear" if h >= 0.65 else "Replace soon"
         comps.append({"n": n, "h": h, "st": st, "cls": "ok" if h >= 0.85 else "warn" if h >= 0.65 else "bad"})
@@ -172,7 +172,7 @@ def ex_prep_parts(c: Case, r: dict) -> dict[str, Any] | None:
     B = ex_inr(t["amt"])
     f = ex_size(c)
     u = c["qty"] if ex_per_unit(c) else 1
-    rate, std_h, role = EX_LAB[c["cls"]]
+    rate, std_h, role = EX_LAB[engine_class(c)]
     std = js_round((std_h * 0.45 if mode == "teardown" else std_h) * max(0.4, f) * u * 10) / 10
     h = asset_health(c) if c.get("grade") else None
     bad = [x["n"] for x in h["comps"] if x["cls"] != "ok"] if h else []
@@ -184,7 +184,7 @@ def ex_prep_parts(c: Case, r: dict) -> dict[str, Any] | None:
             "unit": js_round(p[3] * f / 50) * 50 if c["cls"] == "motor" else p[3],
             "qty": p[4] * u,
         }
-        for p in EX_BOM[c["cls"]]
+        for p in EX_BOM[engine_class(c)]
     ]
     if mode == "teardown":
         parts, extra = [], []
@@ -193,12 +193,12 @@ def ex_prep_parts(c: Case, r: dict) -> dict[str, Any] | None:
         parts = [p for p in bom if p["pn"] in scope] if scope else [p for p in bom if p["comp"] in bad]
         extra = [p for p in bom if not any(p is q for q in parts)]
     ops: list[dict[str, Any]] = []
-    for name, oh, orate in EX_OPS[c["cls"]]:
+    for name, oh, orate in EX_OPS[engine_class(c)]:
         hh = js_round(oh * (u if oh < 1 else max(1, u * 0.6)) * 10) / 10
         ops.append({"name": name, "h": hh, "rate": orate, "inr": js_round(hh * orate)})
     if mode == "teardown":
         ops = ops[-1:]
-    pack = js_round(EX_PACK[c["cls"]] * (max(0.35, f) if c["cls"] == "motor" else 1) * u / 10) * 10
+    pack = js_round(EX_PACK[engine_class(c)] * (max(0.35, f) if c["cls"] == "motor" else 1) * u / 10) * 10
     mv = ex_move_legs_for(c, r) if mode == "refurb" else []
     legs: list[dict[str, Any]] = [
         {"n": x["n"], "from": x["from"], "to": x["to"], "inr": x["inr"], "calc": x["calc"], "share": 1} for x in mv

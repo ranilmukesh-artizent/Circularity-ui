@@ -26,6 +26,18 @@ CLASSES: dict[str, dict[str, float]] = {
     "it": {"pnew": 820, "tau": 3.2},
 }
 GRADE_F = {"A": 1, "B": 0.86, "C": 0.64, "D": 0.38}
+# A case of another template (plan 8, MVP-8.3) has the template's own class (a tool-fleet class such as CMH, or
+# "device"): the industrial reference tables the case pages read (new price, components, labour, packing ...) take the
+# nearest engine class instead. Its routes and value come from the template's valuer, never from these tables.
+STAND_IN = {"tool_fleet": "drill", "device": "it"}
+
+
+def engine_class(c: dict) -> str:
+    """The case's engine class: its own when it is one (every book case), else its template's stand-in."""
+    cls = c.get("cls")
+    return cls if cls in CLASSES else STAND_IN.get(c.get("template") or "", "drill")
+
+
 HEAVY = ("motor", "pump")  # crated freight, not parcel
 
 

@@ -31,6 +31,7 @@ from di.repositories.provenance import ordered_spec
 from di.services.cases import store
 from di.services.engine.jsmath import js_round, js_sum
 from di.services.engine.pool import solve_pool
+from di.services.engine.predictor import engine_class
 from di.services.execution import (
     ex_kg,
     ex_move,
@@ -91,7 +92,7 @@ def af_lease(c: Case) -> dict:
     auth = add_days(end, 3 + h("ra") % 6)
     pk = add_days(auth, 2 + h("pk") % 5)
     eta = add_days(rec, -(h("eta") % 2))
-    k = CLASSES[c["cls"]]
+    k = CLASSES[engine_class(c)]
     book = js_round(k["pnew"] * c["qty"] * math.exp(-c["age"] / (k["tau"] * 1.6)) / 10) * 10
     if c["cls"] in ("motor", "pump"):
         usage = f"{9000 + h('u') % 26000} operating hours"
