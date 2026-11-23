@@ -44,6 +44,7 @@ source_modules =
     di.services.engine
     di.services.execution
     di.services.instructions
+    di.services.modeler
     di.worker
     di.workflow
 forbidden_modules =
@@ -93,5 +94,33 @@ forbidden_modules =
     di.repositories
     di.routes
     di.services
+    di.worker
+    di.workflow
+
+# 5. The engine and the Modeler's policy core are pure (plan 8, R5): no database, state, clock or jobs, and nothing
+#    above them. They read only the golden files and their packaged JSON.
+[importlinter:contract:pure-core]
+name = The engine and di.services.modeler are pure
+type = forbidden
+source_modules =
+    di.services.engine
+    di.services.modeler
+forbidden_modules =
+    di.connectors
+    di.core.clock
+    di.core.db
+    di.core.jobs
+    di.core.state
+    di.mcp
+    di.models
+    di.repositories
+    di.routes
+    di.services.actions
+    di.services.ask
+    di.services.canonical
+    di.services.cases
+    di.services.execution
+    di.services.instructions
+    di.services.screens
     di.worker
     di.workflow

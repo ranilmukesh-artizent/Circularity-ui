@@ -1,0 +1,37 @@
+{
+  "key": "industrial",
+  "name": "Industrial returns",
+  "pre": "IR",
+  "paths": [
+    {"id": "redeploy", "name": "Redeploy", "app": "OMS · order allocation", "owner": "Customer operations · order desk", "lead_days": null},
+    {"id": "resale", "name": "Whole-asset resale", "app": "OMS · sale order", "owner": "Sales operations", "lead_days": null},
+    {"id": "intparts", "name": "Internal recovered-part use", "app": "ERP · stock transfer", "owner": "Materials planner", "lead_days": null},
+    {"id": "relase", "name": "Re-lease", "app": "Lease · contract", "owner": "Lease administration", "lead_days": null},
+    {"id": "material", "name": "Material recovery", "app": "Recycler / Exit partner", "owner": "Exit partner", "lead_days": null},
+    {"id": "extparts", "name": "External parts sale", "app": "CRM · sale task", "owner": "Sales operations", "lead_days": null},
+    {"id": "exit", "name": "Responsible exit", "app": "Recycler / Exit partner", "owner": "Exit partner", "lead_days": null}
+  ],
+  "guardrails": [
+    {"id": "GR-I1", "text": "Data-erasure certificate not issued; sanitization required before release", "owner": "Compliance", "forbids": [], "protects": []},
+    {"id": "GR-I2", "text": "Safety-rated unit: criticality restriction needs recertification", "owner": "Quality", "forbids": [], "protects": []},
+    {"id": "GR-I3", "text": "Demand belongs to another client; customer consent not on file", "owner": "Customer operations", "forbids": [], "protects": []},
+    {"id": "GR-I4", "text": "Cell chemistry requires an approved hazardous-waste route", "owner": "Sustainability lead", "forbids": [], "protects": []},
+    {"id": "GR-I5", "text": "Every decision is approved by a named owner before execution", "owner": "Governance board", "forbids": [], "protects": [["auto-?approv|without approval|skip approval"]]}
+  ],
+  "dims": [
+    {"key": "cls", "label": "Asset class", "kind": "set", "values": ["batch", "control", "drill", "it", "motor", "pump"], "fields": ["cls"]},
+    {"key": "grade", "label": "Grade", "kind": "set", "values": ["A", "B", "C", "D"], "fields": ["grade"]},
+    {"key": "site", "label": "Site", "kind": "set", "values": ["Site 1", "Site 2", "Site 3", "Site 4", "Site 5", "Site 6", "Site 7", "Site 8"], "fields": ["demand.site"]},
+    {"key": "owner", "label": "Organisation", "kind": "set", "values": ["Customer A", "Customer B", "Customer C"], "fields": ["owner"]}
+  ],
+  "actors": [],
+  "wording": {
+    "every": "every return",
+    "phrases": [
+      {"key": "cls", "fmt": "{}", "joiner": " or ", "words": {"batch": "tool-fleet batches", "control": "control units", "drill": "power tools", "it": "IT electronics", "motor": "industrial motors", "pump": "hydraulic pumps"}},
+      {"key": "grade", "fmt": "grade {}", "joiner": "/", "words": {}},
+      {"key": "site", "fmt": "at {}", "joiner": " or ", "words": {}},
+      {"key": "owner", "fmt": "for {}", "joiner": " or ", "words": {}}
+    ]
+  }
+}
