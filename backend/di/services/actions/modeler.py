@@ -39,9 +39,12 @@ from di.repositories.orgs import units
 from di.services.actions.modeler_sim import sim_json, simulate_graph, simulate_rules
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
+from di.services.ask.modeler_read import model_rule
 from di.services.modeler.compile import compile_flow
 from di.services.modeler.flow import Flow
-from di.services.modeler.propose import Proposal, build_proposal
+from di.services.modeler.guard import text_breaks
+from di.services.modeler.parse import parse_rule
+from di.services.modeler.propose import STEP, Proposal, build_proposal, fill_parsed
 from di.services.modeler.templates import TEMPLATE_KEYS, Template, load_template
 from di.services.modeler.validate import blocking, validate_flow
 
@@ -404,5 +407,15 @@ def propose(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow(ctx, i)
     t, draft, text = load_template(f.template_key), _graph(f), i["text"].strip()
     base = compile_flow(t, draft)
-    p = build_proposal(t, draft, text, ctx.actor.role, lambda cand: simulate_rules(ctx, f, cand, base))
-    return proposal_json(p) | {"read_by": "rules"}
+    fill = _model_fill(t, text)
+    p = build_proposal(t, draft, text, ctx.actor.role, lambda cand: simulate_rules(ctx, f, cand, base), fill)
+    used = bool(fill) and fill_parsed(parse_rule(t, text), fill) != parse_rule(t, text)
+    return proposal_json(p) | {"read_by": "rules+model" if used else "rules"}
+
+
+def _model_fill(t: Template, text: str) -> dict[str, Any]:
+    """The optional model reading (MVP-5.3), asked only when the parser finds no path in a sentence that is neither a
+    guardrail change nor a step: {} without a key or on any failure."""
+    if text_breaks(t, text) or STEP.search(text) or parse_rule(t, text).path:
+        return {}
+    return model_rule(text, t)
