@@ -15,7 +15,7 @@ Not metadata (they live in the migrations only, and `alembic check` does not see
 """
 
 from di.models.access import delegation, tenant_grant
-from di.models.agents import agent_identity, agent_proposal
+from di.models.agents import agent_identity, agent_proposal, agent_run, agent_run_step
 from di.models.base import Base, metadata
 from di.models.canonical import canonical, conflict, failed_record, provenance
 from di.models.cases import case_record, case_stage_log
@@ -45,6 +45,8 @@ __all__ = [
     "action_journal",
     "agent_identity",
     "agent_proposal",
+    "agent_run",
+    "agent_run_step",
     "canonical",
     "case_record",
     "case_stage_log",

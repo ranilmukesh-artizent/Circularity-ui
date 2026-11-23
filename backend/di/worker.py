@@ -4,7 +4,8 @@ Run with:  python -m di.worker
 Handlers register by job kind: `sync.source` (B9; a sync of a file source that read new files then runs the source's
 file-triggered workflows, di/workflow/triggers.py file_arrived), `instruction.send` (B13b, di/services/instructions)
 and `workflow.run` (B15, di/services/actions/workflows: a workflow run, step by step, its progress on the live-update
-stream). Besides jobs, the loop queues due syncs and due scheduled workflow runs (di/workflow/triggers.py) every 30 s
+stream), and `agent.step` (plan 8 MVP-11.5, di/services/agents/runtime: an agent run's steps until it blocks).
+Besides jobs, the loop queues due syncs and due scheduled workflow runs (di/workflow/triggers.py) every 30 s
 and, while sending instructions is on, acknowledges due simulated steps every 5 s.
 
 Plan 2: the loop waits on LISTEN di_jobs (a dedicated autocommit connection; the trigger job_notify NOTIFYs it when a
@@ -209,6 +210,16 @@ def _workflow_resume(payload: dict[str, Any]) -> None:
     from di.workflow.waits import resume
 
     log.info("workflow resume %s: %s", payload.get("wait"), resume(payload))
+
+
+# ---------------------------------------------------------------- agent runs (plan 8 MVP-11.5)
+@handler("agent.step")
+def _agent_step(payload: dict[str, Any]) -> None:
+    """An agent run's next steps, until it waits for a person, ends or stops (di/services/agents/runtime.py)."""
+    from di.services.agents import runtime  # registers the handlers its playbooks call
+
+    with SessionLocal() as s:
+        log.info("agent run %s: %s", payload["run_id"], runtime.run_until_blocked(s, payload["run_id"]))
 
 
 def tick_instructions() -> None:

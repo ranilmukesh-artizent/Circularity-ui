@@ -1,6 +1,6 @@
-"""Agents (plan 8, phase 11): the registry (migration 0023)."""
+"""Agents (plan 8, phase 11): the registry (0023), proposals (0024) and runs (0025)."""
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Column, DateTime, Index, Table, Text, func
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Column, DateTime, ForeignKey, Index, Integer, Table, Text, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 from di.models.base import metadata, ts
@@ -41,4 +41,33 @@ agent_proposal = Table(
     Column("result", JSONB),
     CheckConstraint("status IN ('pending','accepted','rejected','expired')", name="agent_proposal_status"),
     Index("ix_agent_proposal_status", "status", "created_at"),
+)
+
+# --- 0025 runs: an agent's run of a playbook, and each call it made -----------------------------------------------------
+
+agent_run = Table(
+    "agent_run",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("agent", Text, nullable=False),
+    Column("playbook", Text, nullable=False),
+    Column("case_id", Text),
+    Column("status", Text, nullable=False, server_default="running"),  # running, waiting, done, failed, stopped
+    Column("step", Integer, nullable=False, server_default="0"),
+    Column("state", JSONB, nullable=False, server_default="{}"),
+    ts("created_at", now=True),
+    ts("updated_at", now=True),
+    CheckConstraint("status IN ('running','waiting','done','failed','stopped')", name="agent_run_status"),
+    Index("ix_agent_run_case", "case_id", "status"),
+)
+
+agent_run_step = Table(
+    "agent_run_step",
+    metadata,
+    Column("run_id", Text, ForeignKey("agent_run.id", ondelete="CASCADE"), primary_key=True),
+    Column("n", Integer, primary_key=True),
+    Column("tool", Text, nullable=False),
+    Column("input", JSONB, nullable=False, server_default="{}"),
+    Column("output", JSONB),
+    ts("at", now=True),
 )

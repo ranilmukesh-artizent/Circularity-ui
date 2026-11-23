@@ -5,11 +5,12 @@
     6 the agent gate (when an agent prepared it)              7 the action's own guard
     8 policy limits (approval limits, B12; an agent's kill switch, autonomy and run limits, MVP-11.1)
     9 idempotency                (then: an agent with autonomy "propose" holds a write for a person, MVP-11.4)
-    10 run the handler           11 journal it                  12 emit events
+    10 run the handler           11 journal it (and run its `after` hooks)   12 emit events
 Read actions stop after the handler: they are not journaled.
 Every result is the demo's shape: {ok: true, output, key, action, seq} or {ok: false, error: {code, message}}.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -74,6 +75,20 @@ class CallContext:
     run_id: str | None = None
     idem_key: str | None = None  # an Idempotency-Key from the client, for actions without their own key
     now: datetime = field(default_factory=clock.now)  # the workspace clock (di/core/clock.py)
+
+
+AfterHook = Callable[[dict[str, Any], dict[str, Any], CallContext], None]
+AFTER: dict[str, list[AfterHook]] = {}  # action id -> what runs after it is journaled (e.g. the agent runtime)
+
+
+def after(action_id: str) -> Callable[[AfterHook], AfterHook]:
+    """Run `fn(input, output, ctx)` after the action succeeded and was journaled, in its transaction."""
+
+    def register(fn: AfterHook) -> AfterHook:
+        AFTER.setdefault(action_id, []).append(fn)
+        return fn
+
+    return register
 
 
 def fail(code: str, message: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -227,6 +242,8 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[s
                     "at": ctx.now,
                 },
             ).scalar_one()
+            for hook in AFTER.get(a.id, ()):  # in the action's transaction: a failing hook undoes the action
+                hook(i, out, ctx)
             # 12 events: one for the action, plus any the action declares
             for t in [f"action.{a.id}", *a.emits]:
                 ctx.session.execute(

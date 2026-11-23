@@ -5,6 +5,7 @@ reject it. Declared here, beside the catalog's actions; agents never run them (d
                                             agent and confirmed (so the agent gate lets a commit through, never a
                                             decision.*); its result is stored. Needs the held action's own permission.
     proposal.reject  commit  {id, reason}   the proposal is closed with the person's reason
+A proposal from an agent run (run_id) wakes the run when it is decided (di.services.agents.runtime.wake).
 
 """
 
@@ -13,7 +14,7 @@ from typing import Any
 from di.core import policy
 from di.services.actions.pipeline import CallContext, invoke
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
-from di.services.agents import proposals
+from di.services.agents import proposals, runtime
 
 ACTIONS.setdefault(
     "proposal.accept",
@@ -67,6 +68,8 @@ def accept(i: dict[str, Any], ctx: CallContext):
         e = r["error"]
         raise ActionError(e["code"], e["message"], {k: v for k, v in e.items() if k not in ("code", "message")} or None)
     proposals.decide(ctx.session, p["id"], "accepted", ctx.actor.id, ctx.now, {"output": r["output"], "seq": r.get("seq")})
+    if p["run_id"]:  # an agent run waits for this proposal: it runs on (MVP-11.5)
+        runtime.wake(ctx.session, p["run_id"])
     return {"id": p["id"], "status": "accepted", "action": p["action"], "output": r["output"]}
 
 
@@ -76,4 +79,6 @@ def reject(i: dict[str, Any], ctx: CallContext):
     if p is None:  # not reached: the guard refused it
         raise ActionError("not_found", f"No proposal {i['id']}.")
     proposals.decide(ctx.session, p["id"], "rejected", ctx.actor.id, ctx.now, {"reason": i["reason"].strip()})
+    if p["run_id"]:  # the agent run that waits for it stops
+        runtime.wake(ctx.session, p["run_id"])
     return {"id": p["id"], "status": "rejected"}
