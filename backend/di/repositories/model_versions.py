@@ -1,0 +1,51 @@
+"""The calibration models (table `model_version`, plan 8 MVP-12.2) as read by the model actions, intake and the
+orchestration screen. `factors` is stored as `[{route, cls, factor}]`; `as_factors` gives the calibration's keys."""
+
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
+
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from di.services.engine.calibration import Key
+
+_COLS = "id, template, factors, status, created_by, approved_by, metrics, created_at"
+
+
+@dataclass(frozen=True)
+class ModelRow:
+    id: str
+    template: str
+    factors: list[dict[str, Any]]
+    status: str
+    created_by: str
+    approved_by: str | None
+    metrics: dict[str, Any]
+    created_at: datetime
+
+    def as_factors(self) -> dict[Key, float]:
+        return {(self.template, f["route"], f["cls"]): float(f["factor"]) for f in self.factors}
+
+
+def _one(s: Session, where: str, p: dict[str, Any]) -> ModelRow | None:
+    row = s.execute(text(f"SELECT {_COLS} FROM model_version WHERE {where}"), p).first()  # noqa: S608 - fixed clauses of this module; values are bound
+    return ModelRow(*row) if row else None
+
+
+def get(s: Session, model_id: str, for_update: bool = False) -> ModelRow | None:
+    return _one(s, "id = :i" + (" FOR UPDATE" if for_update else ""), {"i": model_id})
+
+
+def active(s: Session, template: str) -> ModelRow | None:
+    return _one(s, "template = :t AND status = 'active'", {"t": template})
+
+
+def candidate(s: Session, template: str) -> ModelRow | None:
+    """The newest candidate of the template, if any."""
+    return _one(s, "template = :t AND status = 'candidate' ORDER BY created_at DESC, id DESC LIMIT 1", {"t": template})
+
+
+def next_id(s: Session) -> str:
+    n = s.execute(text("SELECT coalesce(max(substring(id from 4)::int), 0) FROM model_version")).scalar_one()
+    return f"MV-{n + 1:03d}"

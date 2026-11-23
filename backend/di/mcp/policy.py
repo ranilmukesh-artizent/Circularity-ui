@@ -43,6 +43,7 @@ FORBIDDEN_ACTIONS = (
     "access.", "agent.", "workflow.publish", "workflow.setStatus", "workflow.delete", "source.", "mcp.",
     "org.create", "org.update", "org.move",  # plan 8 MVP-1.3: the org tree decides who sees what (access)
     "flow.approve", "flow.publish", "flow.reject", "flow.rollback",  # plan 8 MVP-3.2: a person decides the policy
+    "model.promote",  # plan 8 MVP-12.2: a person decides which model values new cases
 )  # fmt: skip
 _REACHED = [a for acts in ACTIONS_OF.values() for a in acts if a.startswith(FORBIDDEN_ACTIONS)]
 if _REACHED:

@@ -56,6 +56,7 @@ from sqlalchemy.orm import Session
 
 from di.core import policy
 from di.core.auth import Principal
+from di.repositories import model_versions
 from di.repositories.case_detail import af_lease, case_journal
 from di.repositories.common import (
     AS_OF,
@@ -601,7 +602,7 @@ def stage_lines(c: Case, n: int, rn: dict, session: Session) -> list[dict]:
                     "reconcile_outcome",
                     "Circularity",
                     f"Proposed {lr} learning records",
-                    "queued for the next retraining, for review",
+                    learning_status(session, c),
                 ),
                 A(
                     "finder",
@@ -613,6 +614,13 @@ def stage_lines(c: Case, n: int, rn: dict, session: Session) -> list[dict]:
             ]
     out = [x for x in out if x]
     return ([x for x in out if x["st"] == "done"] + [x for x in out if x["st"] != "done"])[:6]
+
+
+def learning_status(session: Session, c: Case) -> str:
+    """Where the learning records of a confirmed outcome stand (plan 8 MVP-12.2): the template's candidate model
+    waiting for promotion if there is one; otherwise they wait for the next fit (the demo's text)."""
+    cand = model_versions.candidate(session, c.get("template") or "industrial")
+    return f"candidate model {cand.id} awaiting promotion, for review" if cand else "queued for the next retraining, for review"
 
 
 # ---------------------------------------------------------------- the live board (the demo's lrModel, lrTimeline, lrSig)
