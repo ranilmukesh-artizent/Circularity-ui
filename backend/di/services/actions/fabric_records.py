@@ -31,7 +31,7 @@ from typing import Any
 from sqlalchemy import text
 
 from di.connectors import discover, lifecycle, manual
-from di.core import golden, state
+from di.core import golden, policy, state
 from di.services.actions.decisions import NOW, push_event
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionError, guard, implement
@@ -252,14 +252,21 @@ def row_errors(r: dict) -> list[str]:
 
 
 @guard("import.commit")
-def import_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)
-    return ("conflict", "No valid rows to load.") if i["ok"] < 1 else None
+def import_guard(i: dict[str, Any], ctx: CallContext):
+    if i["ok"] < 1:
+        return "conflict", "No valid rows to load."
+    acct = ctx.actor.account  # opening cases from the rows (plan 8 MVP-8.4) also needs openCases
+    if i.get("open_cases") is not None and acct is not None and not policy.can(acct, "openCases", ctx.actor.ctx):
+        return "out_of_scope", f"The {ctx.actor.role} view cannot open cases."
+    return None
 
 
 KEEP = ("asset_id", "qty", "grade", "location", "owner", "received")
 MAX_REJECTED = 5000  # rejected rows held per import (the page caps a file at 200 KB)
 ACTIONS["import.commit"].input |= {
     "rejected": {"req": False, "t": "array"},  # the rows the page rejected, held as failed records (plan 6 B3)
+    # plan 8 MVP-8.4: {template, reason, org_unit_id, asset_field}: a case for each loaded row (needs openCases)
+    "open_cases": {"req": False, "t": "object"},
 }
 
 
@@ -309,7 +316,10 @@ def import_commit(i: dict[str, Any], ctx: CallContext):
         },
         f"import.commit:imp:{i['hash']}",
     )  # fmt: skip
-    return {"id": item["id"], "ref": item["id"], "ok": int(i["ok"]), "facts": landed["facts"], "held": landed["held"]}
+    out = {"id": item["id"], "ref": item["id"], "ok": int(i["ok"]), "facts": landed["facts"], "held": landed["held"]}
+    if isinstance(i.get("open_cases"), dict):
+        out |= manual.open_cases(s, kept or [], i["open_cases"], _by(ctx))
+    return out
 
 
 def _by(ctx: CallContext) -> str:

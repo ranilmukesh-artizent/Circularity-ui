@@ -37,6 +37,10 @@ COLUMNS = (
 )
 
 
+# the asset id prefixes an import row may carry (the page's "known class pattern") -> the engine's asset class
+CLASS_OF_PREFIX = {"MTR": "motor", "PMP": "pump", "CTL": "control", "DRL": "drill", "BAT": "batch", "ITE": "it"}
+
+
 def _value(col: str, raw: Any) -> Any:
     if col == "qty":
         try:
@@ -86,6 +90,37 @@ def load(s: Session, import_id: str, rows: list[dict], rejected: list[tuple[dict
             reason="; ".join(errors) or "Rejected by the import's checks", payload=row,
         )  # fmt: skip
     return {"records": len(rows), "facts": facts, "held": held}
+
+
+def open_cases(s: Session, rows: list[dict], spec: dict[str, Any], by: str) -> dict[str, Any]:
+    """Plan 8 (MVP-8.4): after the rows' facts are stored, a case for each row through di.services.cases.intake (a bulk
+    end-of-lease file, edge case 24). `spec` is {template, reason, org_unit_id, asset_field}: the asset key is the row's
+    `asset_field` (default asset_id), the org unit the setting or else the row's owner; an industrial case's class
+    comes from the asset id's prefix. A row whose asset and reason already have a case is skipped (an import read
+    twice), as is one the intake refuses. Each in a savepoint, so one refusal undoes nothing else."""
+    from di.services.actions.registry import ActionError
+    from di.services.cases import intake
+
+    field = spec.get("asset_field") or "asset_id"
+    opened: list[str] = []
+    skipped = 0
+    for row in rows:
+        key = str(row.get(field) or "")
+        cls = CLASS_OF_PREFIX.get(key.split("-")[0])
+        i = {
+            "org_unit_id": spec.get("org_unit_id") or row.get("owner"),
+            "template_key": spec.get("template") or "industrial",
+            "reason": spec.get("reason") or "manual",
+            "asset_key": key,
+            "facts": {"cls": cls} if cls and (spec.get("template") or "industrial") == "industrial" else {},
+            "by": by,
+        }
+        try:
+            with s.begin_nested():
+                opened.append(intake.open_case(s, i, "system")["id"])
+        except ActionError:
+            skipped += 1
+    return {"cases_opened": len(opened), "cases_skipped": skipped, "case_ids": opened}
 
 
 def remove(s: Session, import_id: str | None = None) -> int:

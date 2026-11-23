@@ -351,13 +351,19 @@ export interface ImportRow { asset_id: string; qty: string; grade: string; locat
 /** The import.commit input: the demo's counts and hash (of every validated row, so the same file loads once), plus
  *  the valid rows themselves, which the server checks again and loads, tagged manual, and the rejected rows, which it
  *  holds as failed records (plan 6 B3). */
-export function importInput(ok: number, err: number, rows: ImportRow[]) {
+/** Open a case for each loaded row (plan 8): the template, the reason, the org unit (empty: each row's owner) and the
+ *  column holding the asset key. */
+export interface OpenCases { template: string; reason: string; org_unit_id: string; asset_field: string }
+export const CASE_TEMPLATES = ['industrial', 'tool_fleet', 'device'];
+export const CASE_REASONS = ['lease_end', 'rma', 'trade_in', 'contract_end', 'iot_alarm', 'manual'];
+export function importInput(ok: number, err: number, rows: ImportRow[], open?: OpenCases) {
   const pick = ({ asset_id, qty, grade, location, owner, received }: ImportRow) => ({ asset_id, qty, grade, location, owner, received });
   const valid = rows.filter((r) => !r.errors.length).map(pick);
   const rejected = rows.filter((r) => r.errors.length).map(pick);
-  return { ok, err, hash: hashId(JSON.stringify(rows)), rows: valid, rejected };
+  return { ok, err, hash: hashId(JSON.stringify(rows)), rows: valid, rejected, ...(open ? { open_cases: open } : {}) };
 }
-export const commitImport = (ok: number, err: number, rows: ImportRow[]) => invoke('import.commit', importInput(ok, err, rows));
+export const commitImport = (ok: number, err: number, rows: ImportRow[], open?: OpenCases) =>
+  invoke<{ id: string; ok: number; cases_opened?: number; cases_skipped?: number }>('import.commit', importInput(ok, err, rows, open));
 export const updateTables = (input: Record<string, unknown>) =>
   invoke<{ op: string; name?: string; fks?: number; from?: string; to?: string; table?: Table; index?: number; gone?: string[][]; fk?: string[] }>('tables.update', input);
 export const addComment = (key: string, text: string) => invoke('comment.add', { key, text });

@@ -2,6 +2,7 @@
 (conflict.resolve, conflict.escalate), with the demo's rules and texts (index.html, defAction('tables.update' ...),
 ACT.tgAddOk ..., defAction('import.commit' ...), defAction('conflict.resolve' ...))."""
 
+import pytest
 from sqlalchemy import text
 
 from di.connectors import manual
@@ -237,6 +238,73 @@ def test_import_lands_through_the_pipeline_and_holds_rejected_rows():
         manual.remove(s, imp)
         s.commit()
         assert store.get(s, "asset", "MTR-9901") is None and failed.held(s, run_kind="import", run_id=imp) == []
+
+
+# plan 8 MVP-8.4: a bulk end-of-lease file opens a case for each row (edge case 24)
+LEASE_ROWS = [
+    {
+        "asset_id": "MTR-9811",
+        "qty": "1",
+        "grade": "B",
+        "location": "Warehouse 1",
+        "owner": "Customer A",
+        "received": "2026-10-08",
+    },
+    {
+        "asset_id": "PMP-9812",
+        "qty": "2",
+        "grade": "C",
+        "location": "Warehouse 2",
+        "owner": "Customer C",
+        "received": "2026-10-08",
+    },
+]
+OPEN = {"template": "industrial", "reason": "lease_end", "org_unit_id": "", "asset_field": "asset_id"}
+
+
+def _intake_cases() -> list[dict]:
+    with SessionLocal() as s:
+        q = text("SELECT data FROM case_record WHERE data->'intake'->>'reason' = 'lease_end' ORDER BY id")
+        return list(s.execute(q).scalars())
+
+
+@pytest.fixture
+def lease_import():
+    made: list[str] = []
+    yield made
+    with SessionLocal() as s:
+        for imp in made:
+            manual.remove(s, imp)
+        s.commit()
+    starting.reset()
+
+
+def test_import_opens_cases(lease_import):
+    r = call("import.commit", {"ok": 2, "err": 0, "hash": "lease1", "rows": LEASE_ROWS, "open_cases": OPEN}, "developer")
+    assert r["ok"], r
+    lease_import.append(r["output"]["id"])
+    assert (r["output"]["cases_opened"], r["output"]["cases_skipped"]) == (2, 0)
+    cases = _intake_cases()
+    assert [(c["assetId"], c["owner"], c["cls"], c["grade"], c["qty"], c["location"]) for c in cases] == [
+        ("MTR-9811", "Customer A", "motor", "B", 1, "Warehouse 1"),
+        ("PMP-9812", "Customer C", "pump", "C", 2, "Warehouse 2"),
+    ]
+    assert sorted(c["id"] for c in cases) == sorted(r["output"]["case_ids"])
+    assert all(c["routes"] and c["intake"]["by"] for c in cases)
+    # opening cases needs openCases as well: the Planner cannot import, the Approver cannot open
+    body = {"ok": 2, "err": 0, "hash": "lease-x", "rows": LEASE_ROWS, "open_cases": OPEN}
+    assert call("import.commit", body, "approver")["error"]["code"] == "out_of_scope"
+
+
+def test_import_twice_opens_once(lease_import):
+    first = call("import.commit", {"ok": 2, "err": 0, "hash": "lease2", "rows": LEASE_ROWS, "open_cases": OPEN}, "developer")
+    assert first["ok"], first
+    lease_import.append(first["output"]["id"])
+    again = call("import.commit", {"ok": 2, "err": 0, "hash": "lease3", "rows": LEASE_ROWS, "open_cases": OPEN}, "developer")
+    assert again["ok"], again  # the same rows in another file: loaded, but no case twice
+    lease_import.append(again["output"]["id"])
+    assert (again["output"]["cases_opened"], again["output"]["cases_skipped"]) == (0, 2)
+    assert len(_intake_cases()) == 2
 
 
 # ---------------------------------------------------------------- conflicts

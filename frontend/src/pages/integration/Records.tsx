@@ -4,9 +4,10 @@ import { Link } from 'react-router';
 import { fmtDate } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {
-  ackKind, canon, canonExample, caseExists, commitImport, conflictPage, escalateConflict, events, facilities, mappings, pct, rbPath, resolveConflict,
+  ackKind, canon, canonExample, CASE_REASONS, CASE_TEMPLATES, caseExists, commitImport, conflictPage, escalateConflict, events, facilities, mappings, pct, rbPath, resolveConflict,
   sampleCsv, sources, tenantList, type Conflict, type ConflictChoice, type StreamEvent,
 } from '../../api/integration';
+import { can } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import { onActivateKey } from '../../utils/keys';
 import { Drawer } from '../../components/Overlay';
@@ -240,7 +241,10 @@ export function Conflicts() {
 /* ---- Manual import ---- */
 type Row = { asset_id: string; qty: string; grade: string; location: string; owner: string; received: string; errors: string[]; warn: string[] };
 type Csv = { rows: Row[]; ok: number; err: number; committed?: boolean };
-const impKept = sessionScoped<{ text: string; csv: Csv | null }>(() => ({ text: '', csv: null }));
+/** cases: open a case for each loaded row (plan 8), with this template and reason; each row's owner is its org unit. */
+const impKept = sessionScoped<{ text: string; csv: Csv | null; cases: { on: boolean; template: string; reason: string } }>(() => ({
+  text: '', csv: null, cases: { on: false, template: 'industrial', reason: 'lease_end' },
+}));
 
 function validateCsv(t: string): Csv | string {
   const lines = t.split(/\r?\n/).filter(Boolean), hd = lines[0].split(',').map((x) => x.trim().toLowerCase());
@@ -287,10 +291,13 @@ export function Import() {
   };
   const commit = async () => {
     if (!st) return;
-    const r = await action.run(() => commitImport(st.ok, st.err, st.rows));
+    const oc = imp.cases.on ? { template: imp.cases.template, reason: imp.cases.reason, org_unit_id: '', asset_field: 'asset_id' } : undefined;
+    const r = await action.run(() => commitImport(st.ok, st.err, st.rows, oc));
     if (!r.ok) return;
     up(() => { st.committed = true; });
-    toast(st.ok + ' rows loaded for evaluation. They are tagged manual and will not trigger any instruction.', 4200);
+    const o = r.output;
+    const opened = o.cases_opened !== undefined ? ' ' + o.cases_opened + ' cases opened, ' + (o.cases_skipped ?? 0) + ' already open.' : '';
+    toast(st.ok + ' rows loaded for evaluation. They are tagged manual and will not trigger any instruction.' + opened, 4200);
   };
   return (
     <>
@@ -336,6 +343,17 @@ export function Import() {
               </div>
               <div className="filters" style={{ borderTop: '1px solid var(--line2)', borderBottom: 0 }}>
                 <span className="note grow">Rejected rows are never partially loaded. {st.committed && <b>Loaded for evaluation.</b>}</span>
+                {mgr && can('openCases') && (
+                  <span className="row" style={{ gap: 6 }}>
+                    <label><input type="checkbox" checked={imp.cases.on} disabled={st.committed} onChange={(e) => up(() => { imp.cases.on = e.target.checked; })} /> Open a case for each row</label>
+                    <select aria-label="Template" value={imp.cases.template} disabled={!imp.cases.on || st.committed} onChange={(e) => up(() => { imp.cases.template = e.target.value; })}>
+                      {CASE_TEMPLATES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <select aria-label="Reason" value={imp.cases.reason} disabled={!imp.cases.on || st.committed} onChange={(e) => up(() => { imp.cases.reason = e.target.value; })}>
+                      {CASE_REASONS.map((x) => <option key={x} value={x}>{x}</option>)}
+                    </select>
+                  </span>
+                )}
                 {mgr && <button className="btn pri" disabled={!(st.ok && !st.committed)} onClick={commit}>Load {st.ok} rows for evaluation</button>}
               </div>
             </>
