@@ -58,8 +58,8 @@ These Ralphy facts were verified in `ralphy.sh` (michaelshimeles/ralphy, README 
 Before the first iteration:
 1. On the lead's machine, commit and push `docs/agents/plans/08-mvp-decision-platform.md`,
    `docs/reference/po-modeler/recover-app-prototype.html` and `business-reviews/dover-user-stories.md` to
-   `feature/fullstack-poc`. Then create the branch `feature/mvp-platform` from it and push it.
-2. On the build machine: `git checkout feature/mvp-platform`, `bash scripts/doctor.sh`, `docker compose up -d --build`,
+   `feature/fullstack-poc`. The work stays on that branch (the user's choice, 23 Nov 2026).
+2. On the build machine: `git checkout feature/fullstack-poc`, `bash scripts/doctor.sh`, `docker compose up -d --build`,
    then `bash scripts/dev/reset.sh`.
 3. Recommended first: run `docs/agents/plans/02-queue-and-tasks.md` (4 tasks: priorities, dead letters). Agent runs
    (Phase 11) and case intake (Phase 8) enqueue jobs, and the decision log (22 Nov 2026) already asks for priorities.
@@ -153,9 +153,10 @@ R17. **Done means:**
 
 ## Global Constraints
 
-- Branch `feature/mvp-platform`. Python 3 as in the api image, Node 24 for the host smoke scripts (AGENTS.md).
+- Branch `feature/fullstack-poc` (the user's choice, 23 Nov 2026: no separate MVP branch). Python 3 as in the api image, Node 24 for the host smoke scripts (AGENTS.md).
 - **Migrations:**
-  - continue from `0017`;
+  - continue from `0018` (plan 2's `0018_job_queue.py`); the numbers below are reserved and already exist as empty,
+    idempotent stubs (re-apply a filled one with `bash scripts/dev/migrate-reapply.sh 0017`);
   - one file per task, `backend/migrations/versions/00NN_<name>.py`, with `revision = "00NN"` and
     `down_revision = "00NN-1"`;
   - idempotent SQL as `0017_fx_rate.py` does;
@@ -542,7 +543,7 @@ Record the counts in `PROGRESS.md`. Any failure → R13. Commit only `PROGRESS.m
 
 #### MVP-1.1 Org unit table and seed
 **Files:**
-- Create `backend/migrations/versions/0018_org_unit.py` and `backend/di/models/org.py`.
+- Create `backend/migrations/versions/0019_org_unit.py` and `backend/di/models/org.py`.
 - Modify `backend/di/models/__init__.py`.
 - Test: create `backend/tests/test_org_units.py`.
 
@@ -609,7 +610,7 @@ Record the counts in `PROGRESS.md`. Any failure → R13. Commit only `PROGRESS.m
 
 #### MVP-1.4 Bind sources to org units
 **Files:**
-- Create `backend/migrations/versions/0019_source_org.py`.
+- Create `backend/migrations/versions/0020_source_org.py`.
 - Modify `backend/di/models/connectors.py`, `backend/di/services/actions/fabric_sources.py` (`source.update` accepts
   `org_unit_id`), and `backend/di/services/screens/integration.py` (each source row carries `org_unit_id`).
 - Test: create `backend/tests/test_source_org.py`.
@@ -793,7 +794,7 @@ Same as MVP-0.4.
 
 #### MVP-3.1 Flow tables and repository
 **Files:**
-- Create `backend/migrations/versions/0020_decision_flow.py`, `backend/di/models/modeler.py` and
+- Create `backend/migrations/versions/0021_decision_flow.py`, `backend/di/models/modeler.py` and
   `backend/di/repositories/flows.py`.
 - Test: `backend/tests/test_flows_repo.py`.
 
@@ -886,7 +887,7 @@ only `case.reevaluate` applies new rules. The decision payload and the case scre
 
 #### MVP-3.5 Shadow decisions recorded
 **Files:**
-- Create `backend/migrations/versions/0021_shadow_decision.py`.
+- Create `backend/migrations/versions/0022_shadow_decision.py`.
 - Modify `backend/di/models/modeler.py`, `backend/di/services/actions/decisions.py` and
   `backend/di/repositories/flows.py`.
 - Test: `backend/tests/test_shadow.py`.
@@ -1432,7 +1433,7 @@ required fields.
 
 #### MVP-11.3 Agent registry at runtime
 **Files:**
-- Create `backend/migrations/versions/0022_agent_identity.py`, `backend/di/models/agents.py` and
+- Create `backend/migrations/versions/0023_agent_identity.py`, `backend/di/models/agents.py` and
   `backend/di/services/actions/agents.py`.
 - Modify `backend/di/mcp/policy.py` (the `X-Agent` header is accepted if it is in the registry and enabled).
 - Test: `backend/tests/test_agent_registry.py`.
@@ -1453,7 +1454,7 @@ required fields.
 
 #### MVP-11.4 Proposals that hold for a person
 **Files:**
-- Create `backend/migrations/versions/0023_agent_proposal.py` and `backend/di/services/agents/proposals.py`.
+- Create `backend/migrations/versions/0024_agent_proposal.py` and `backend/di/services/agents/proposals.py`.
 - Modify `pipeline.py` (step 8: an agent with autonomy `propose` calling a non-read action → insert a proposal and
   answer `{"ok": true, "output": {"held": proposal_id}}`).
 - Add actions `proposal.accept` and `proposal.reject`; the inbox reads them.
@@ -1477,7 +1478,7 @@ required fields.
 
 #### MVP-11.5 Agent runtime and case autopilot playbook
 **Files:**
-- Create `backend/migrations/versions/0024_agent_run.py`, `backend/di/services/agents/runtime.py` and
+- Create `backend/migrations/versions/0025_agent_run.py`, `backend/di/services/agents/runtime.py` and
   `backend/di/services/agents/playbooks/case_autopilot.py`.
 - Register the job kind `agent.step` in `backend/di/worker.py`.
 - Test: `backend/tests/test_agent_runtime.py`.
@@ -1569,7 +1570,7 @@ Same as MVP-4.7.
 
 #### MVP-12.2 Model candidate shadow and promote
 **Files:**
-- Create `backend/migrations/versions/0025_model_version.py` and `backend/di/services/actions/models.py`.
+- Create `backend/migrations/versions/0026_model_version.py` and `backend/di/services/actions/models.py`.
 - Modify `backend/di/services/screens/orchestration.py:599-605`: replace the display text with the real candidate
   status.
 - Test: `backend/tests/test_model_promote.py`.

@@ -33,7 +33,7 @@ the fallback), and a router over the same functions.
 ---
 
 ### Task 1: schema
-**Files:** Create `backend/migrations/versions/0010_job_queue.py`; Modify `backend/di/models/` (`Job`). Test: `tests/test_jobs.py`.
+**Files:** Create `backend/migrations/versions/0018_job_queue.py`; Modify `backend/di/models/` (`Job`). Test: `tests/test_jobs.py`.
 Columns: `priority int not null default 100`, `max_attempts int not null default 5`, `heartbeat_at timestamptz`,
 `dedupe_key text`, `history jsonb not null default '[]'`; status adds `dead`, `cancelled`; partial unique index on
 `dedupe_key where status in ('queued','running')`; index `(status, priority, run_after, id)`; trigger
