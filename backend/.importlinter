@@ -63,6 +63,7 @@ modules =
     di.services.screens.home
     di.services.screens.integration
     di.services.screens.mcp
+    di.services.screens.modeler
     di.services.screens.nav
     di.services.screens.orchestration
     di.services.screens.product

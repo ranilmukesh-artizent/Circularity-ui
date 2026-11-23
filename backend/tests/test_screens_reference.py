@@ -78,10 +78,21 @@ def test_reference_has_no_state():
 def with_org_section(acct: str, groups: list[dict]) -> list[dict]:
     """The demo's menu, with Access's Organisation section for whoever may see it (plan 8 MVP-1.5: a deliberate
     change, decision-log "Org units replace the fixed tenants"; policy.EXTRA_SECTIONS)."""
+    groups = with_modeler(acct, groups)
     if not policy.can_page(policy.account(acct), "access", "orgs"):
         return groups
     kid = {"id": "orgs", "label": "Organisation", "sub": "Groups, companies, sites and customers", "href": "#/access/orgs"}
     return [g | {"kids": [*g["kids"], kid]} if g["id"] == "access" else g for g in groups]
+
+
+def with_modeler(acct: str, groups: list[dict]) -> list[dict]:
+    """The Modeler page (plan 8 MVP-4.2, a new page: policy.EXTRA_PAGES) before the first group of the More section."""
+    if not policy.can_page(policy.account(acct), "modeler"):
+        return groups
+    g = {"id": "modeler", "label": "Modeler", "sub": "Decision process and business rules", "icon": "branch",
+         "section": "Integration", "leaf": True, "href": "#/modeler", "kids": []}  # fmt: skip
+    at = next((i for i, x in enumerate(groups) if x["section"] == "More"), len(groups))
+    return [*groups[:at], g, *groups[at:]]
 
 
 @pytest.mark.parametrize("acct", list(NAV["accounts"]))

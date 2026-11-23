@@ -77,6 +77,19 @@ from di.services.cases import store
 ISSUE_SQL = "SELECT count(*) FROM source_system WHERE status IN ('stale', 'unavailable', 'failing', 'auth_expired')"
 # Sections beyond the demo's NAV (plan 8; visible as policy.EXTRA_SECTIONS allows): [id, label, sub], after the golden ones
 EXTRA_KIDS: dict[str, list[list[str]]] = {"access": [["orgs", "Organisation", "Groups, companies, sites and customers"]]}
+# Pages beyond the demo's NAV (plan 8; visible as policy.EXTRA_PAGES allows): (the section it goes before, the entry)
+EXTRA_NAV: list[tuple[str, dict]] = [
+    ("More", {"id": "modeler", "label": "Modeler", "sub": "Decision process and business rules", "icon": "branch",
+              "sec": "Integration", "leaf": True}),
+]  # fmt: skip
+
+
+def nav_groups() -> list[dict]:
+    """The demo's NAV with the EXTRA_NAV entries, each before the first group of the section it names (else last)."""
+    out = list(lists()["NAV"])
+    for before, g in EXTRA_NAV:
+        out.insert(next((i for i, x in enumerate(out) if x.get("sec") == before), len(out)), g)
+    return out
 
 
 def cc_layout(a: policy.Account, cc_mode: str) -> dict | None:
@@ -121,7 +134,7 @@ def navigation(p: Principal, cases: list[dict], cc_mode: str = "operational", la
         return "#/" + g["id"] + ("/asset/" + asset if g["id"] == "product" and k == "asset" else "/" + k if k else "")
 
     out = []
-    for g in lists()["NAV"]:
+    for g in nav_groups():
         if not policy.can_page(a, g["id"]):
             continue
         kids = [] if g.get("leaf") else kids_of(g)
