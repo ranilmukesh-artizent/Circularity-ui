@@ -11,6 +11,9 @@ model versions' accuracy.
                               reconciled decisions); over every closed decision, as in the demo, not only the account's
         telemetry_unavailable the ESG telemetry source (iot) is not connected: read from the backend's source_system
                               table (the real connector state), which agrees with the demo's SRC('iot')
+        orgs                  plan 8 MVP-10.1: the org units the account may pick in the page's org select (depth
+                              first, with their depth); `org=<unit>` narrows rows and metrics to the unit's subtree
+                              (the group roll-up: `workspace` is every case). No `org`: the demo's answer.
     POST /api/actions/analytics.models   the read action the page's agent answer calls (registered here; it had no
                               handler before B14): the demo's handler, over every reconciled decision
 
@@ -29,6 +32,7 @@ Facade mapping (frontend/src/api/analytics.ts), for the switch-over (B17):
 | metrics(rows)                  | endpoint: same answer (metrics; rc = rows with status 'reconciled')         |
 | modelStats(v)                  | endpoint: same answer (model_stats, in MODELS order)                         |
 | telemetryUnavailable()         | endpoint: same answer (telemetry_unavailable)                                |
+| analyticsOrgs()                | endpoint: same answer (orgs; plan 8 MVP-10.1), `org` in the filter           |
 | modelAccuracy()                | endpoint: POST /api/actions/analytics.models (registered in this module)     |
 | closedRow(id)                  | frontend-only: find the row in `rows` (the drawer opens from the drill list) |
 | months()                       | reference: MONTHS                                                            |
@@ -48,6 +52,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from di.core import orgs, policy
 from di.core.auth import Principal
 from di.repositories.common import to_fixed
 from di.repositories.constants import MODELS
@@ -127,6 +132,32 @@ def telemetry_unavailable(session: Session) -> bool:
     return (st or "unavailable") == "unavailable"
 
 
+def actor_units(p: Principal) -> list[dict]:
+    """Plan 8 MVP-10.1: the org units the page's org select lists, depth first with their depth: the whole tree for an
+    account that sees every tenant, else the subtrees of its own tenant and of the units granted to it."""
+    units = policy.org_units(p.ctx)
+    a = p.account
+    roots = [u.id for u in units.values() if u.parent_id is None or u.parent_id not in units]
+    if policy.policy(a).get("tenantScoped"):
+        roots = [r for r in (a.tenant, *(p.ctx or policy.Context()).grants.get(a.id, [])) if r and r in units]
+    kids: dict[str, list[str]] = {}
+    for u in units.values():
+        kids.setdefault(u.parent_id or "", []).append(u.id)
+    out: list[dict] = []
+
+    def walk(uid: str, depth: int) -> None:
+        if any(x["id"] == uid for x in out):
+            return
+        u = units[uid]
+        out.append({"id": u.id, "name": u.name, "kind": u.kind, "depth": depth})
+        for k in kids.get(uid, []):
+            walk(k, depth + 1)
+
+    for r in roots:
+        walk(r, 0)
+    return out
+
+
 def page(
     p: Principal,
     session: Session,
@@ -137,9 +168,13 @@ def page(
     to: int = 11,
     model: str = "",
     tenant_filter: str = "All",
+    org: str = "",
 ) -> dict:
-    """GET /api/screens/analytics: the rows in the filters, their metrics, the model versions' stats, telemetry."""
+    """GET /api/screens/analytics: the rows in the filters, their metrics, the model versions' stats, telemetry, and
+    (plan 8 MVP-10.1) the org units the account may pick; `org` narrows everything to the cases of that unit's subtree
+    (a unit that does not exist: none). Without `org` the answer is the demo's."""
     ctx = call_ctx(p, session)
+    within = orgs.subtree(policy.org_units(p.ctx), org) if org else None
     rows = [
         r
         for r in visible_rows(ctx, tenant_filter)
@@ -148,11 +183,17 @@ def page(
         and (not route or r["route"] == route)
         and from_ <= r["mi"] <= to
         and (not model or r["model"] == model)
+        and (within is None or r["tenant"] in within)
     ]
-    live = sum(1 for c in visible_cases(ctx, tenant_filter) if c["stage"] == "awaiting_approval")
+    live = sum(
+        1
+        for c in visible_cases(ctx, tenant_filter)
+        if c["stage"] == "awaiting_approval" and (within is None or c["owner"] in within)
+    )
     return {
         "rows": rows,
         "metrics": metrics(rows, live),
         "model_stats": [model_stats(m["v"]) for m in MODELS],
         "telemetry_unavailable": telemetry_unavailable(session),
+        "orgs": actor_units(p),
     }

@@ -22,6 +22,7 @@ def analytics(
     to: int = 11,
     model: str = "",
     tenant_filter: str = "All",
+    org: str = "",
 ):
     p.require_page("analytics")
-    return svc.page(p, session, tenant, cls, route, from_, to, model, tenant_filter)
+    return svc.page(p, session, tenant, cls, route, from_, to, model, tenant_filter, org)

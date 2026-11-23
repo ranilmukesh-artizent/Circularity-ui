@@ -1,6 +1,6 @@
 /**
  * Analytics (#/analytics): closed decisions (the demo's ROWS), their metrics and the reference lists the charts use.
- * GET /api/screens/analytics (rows, metrics, model_stats, telemetry_unavailable), the read action
+ * GET /api/screens/analytics (rows, metrics, model_stats, telemetry_unavailable, orgs), the read action
  * analytics.models, and the reference lists (di/services/screens/analytics.py has the mapping).
  */
 import { read } from './actions';
@@ -22,11 +22,14 @@ export interface Metrics {
   rc: ClosedRow[]; base: number; act: number; uplift: number; avoided: number; days: number; baseDays: number;
   pend: number; liveOpen: number; unresolved: number; canc: number; exp: number; n: number;
 }
-export interface AnalyticsFilter { tenant: string; cls: string; route: string; from: number; to: number; model: string }
-export const DEFAULT_FILTER: AnalyticsFilter = { tenant: '', cls: '', route: '', from: 0, to: 11, model: '' };
+/** org: an org unit id (plan 8 MVP-10.1, the group roll-up): only the cases of its subtree; '' every case. */
+export interface AnalyticsFilter { tenant: string; cls: string; route: string; from: number; to: number; model: string; org?: string }
+export const DEFAULT_FILTER: AnalyticsFilter = { tenant: '', cls: '', route: '', from: 0, to: 11, model: '', org: '' };
+/** An org unit the account may pick, depth first with its depth (for an indented select). */
+export interface OrgOption { id: string; name: string; kind: string; depth: number }
 
 // ---------------------------------------------------------------- API answer
-interface Answer { rows: ClosedRow[]; metrics: Omit<Metrics, 'rc'>; model_stats: (ModelStats | null)[]; telemetry_unavailable: boolean }
+interface Answer { rows: ClosedRow[]; metrics: Omit<Metrics, 'rc'>; model_stats: (ModelStats | null)[]; telemetry_unavailable: boolean; orgs: OrgOption[] }
 /** Which answer a rows array came from, so metrics(rows) can use that answer's totals. */
 const answerOf = new WeakMap<ClosedRow[], Answer>();
 let last: Answer | null = null;
@@ -93,6 +96,11 @@ export function kfmt(n: number): string {
 /** 12.3% (the demo's pct). */
 export const pct = (n: number, d = 0): string => (n * 100).toFixed(d) + '%';
 export const sum = (a: number[]): number => a.reduce((s, x) => s + x, 0);
+
+/** The org units the account may roll the page up to (the org select). */
+export function analyticsOrgs(): OrgOption[] {
+  return (last ?? answer()).orgs ?? [];
+}
 
 /** The ESG telemetry source is not connected (the sustainability callout says so). */
 export function telemetryUnavailable(): boolean {

@@ -78,6 +78,36 @@ def test_analytics_models_action(acct):
     assert norm(got) == norm(G["accounts"][acct]["models"])
 
 
+def _get(acct: str, **params) -> dict:
+    r = client.get("/api/screens/analytics", params=params, headers=h(acct))
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def test_analytics_org_subtree():
+    """Plan 8 MVP-10.1: `org` narrows to the cases of the unit's subtree; `workspace` is everything, a customer only
+    its own. With no `org` the answer is the demo's (test_rows_and_metrics)."""
+    every = _get("admin")
+    assert _get("admin", org="workspace") == every
+    a = _get("admin", org="Customer A")
+    assert a["rows"] and [x["id"] for x in a["rows"]] == [x["id"] for x in every["rows"] if x["tenant"] == "Customer A"]
+    assert a["metrics"]["n"] == len(a["rows"]) < every["metrics"]["n"]
+    with_tf = _get("admin", tenant_filter="Customer A")
+    assert a["metrics"] == with_tf["metrics"]  # the same cases as the top bar's filter
+    assert _get("admin", org="t-no-such-unit")["rows"] == []
+
+
+def test_analytics_orgs_are_the_actors_units():
+    """The org select lists the units the actor may see: all for Admin, a tenant-scoped Planner only its own."""
+    seeded = [(u["id"], u["depth"]) for u in _get("admin")["orgs"] if not u["id"].startswith("t-")]  # other tests' units
+    assert seeded == [
+        ("workspace", 0), ("Customer A", 1), ("Customer B", 1), ("Customer C", 1),
+    ]  # fmt: skip
+    assert [u["id"] for u in _get("planner-a")["orgs"]] == ["Customer A"]
+    b_only = _get("planner-a", org="Customer B")
+    assert b_only["rows"] == [] and b_only["metrics"]["n"] == 0  # outside its tenants: nothing
+
+
 def test_every_account_is_covered():
     assert len(G["accounts"]) == 11
     assert all(len(x["views"]) == 3 * len(G["filters"]) for x in G["accounts"].values())

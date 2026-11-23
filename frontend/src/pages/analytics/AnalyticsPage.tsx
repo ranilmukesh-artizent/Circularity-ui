@@ -5,7 +5,7 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  analyticsRows, assetClasses, classIcon, closedRow, DEFAULT_FILTER, journeyStep, kfmt, metrics, modelAccuracy, months, routeById, routes,
+  analyticsOrgs, analyticsRows, assetClasses, classIcon, closedRow, DEFAULT_FILTER, journeyStep, kfmt, metrics, modelAccuracy, months, routeById, routes,
   type AnalyticsFilter, type ClosedRow,
 } from '../../api/analytics';
 import { fmtDateYear, money } from '../../api/format';
@@ -70,7 +70,7 @@ export function AnalyticsPage({ route }: PageProps) {
     return () => window.clearTimeout(t);
   }, [sec, focus]);
 
-  const rows = analyticsRows(f), m = metrics(rows), M = months(), CL = assetClasses();
+  const rows = analyticsRows(f), m = metrics(rows), M = months(), CL = assetClasses(), orgs = analyticsOrgs();
   const sel = (k: 'tenant' | 'cls' | 'route', opts: [string, string][], label: string) => (
     <select className="sel" aria-label={label} value={f[k]} onChange={(e) => setFilter({ ...f, [k]: e.target.value })}>
       <option value="">{label}</option>
@@ -137,6 +137,12 @@ export function AnalyticsPage({ route }: PageProps) {
             {M.map((x, i) => <option key={x} value={i}>{x}</option>)}
           </select>
           {sel('tenant', allowedTenants().map((t) => [t, t]), 'Tenant: ' + (tenantFilter() === 'All' ? 'all' : 'global filter on'))}
+          {orgs.length > 1 && (
+            <select className="sel" aria-label="Org unit" value={f.org ?? ''} onChange={(e) => setFilter({ ...f, org: e.target.value })}>
+              <option value="">Org unit: all</option>
+              {orgs.map((o) => <option key={o.id} value={o.id}>{'  '.repeat(o.depth) + o.name}</option>)}
+            </select>
+          )}
           {sel('cls', Object.entries(CL).map(([k, v]) => [k, v.label]), 'Asset class')}
           {sel('route', routes().map((r) => [r.id, r.name]), 'Route')}
           <button className="btn ghost sm" onClick={() => { setFilter({ ...DEFAULT_FILTER }); setDrill(null); }}>Reset filters</button>
