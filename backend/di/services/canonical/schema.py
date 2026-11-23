@@ -13,6 +13,11 @@ Models use the namespaces of the demo's field mappings (MAPPINGS in index.html):
     vendor         (partner eligibility)        recycler certification, yields
     outcome        Outcome (B13b)               the actual cost lines S/4HANA posted against a decision, keyed by the
                                                 approval reference (the journal entry's DocumentReferenceID)
+    part           PLM part (plan 8, MVP-9.1)   number, revision, lifecycle state, name, unit cost, org unit; keyed by
+                                                part_key: `<org unit or "shared">:<number>`, so the same number in two
+                                                org units never collides and each key keeps its own revision
+    bom            PLM BOM line (MVP-9.1)       parent, child, quantity, parent revision, harvestable; keyed by bom_key,
+                                                one line per parent revision (as built next to released)
 Route candidate and Decision are produced by Circularity itself (B10-B13), not by connectors; an Outcome's actuals
 are read back from S/4HANA.
 
@@ -33,7 +38,21 @@ from typing import Any
 from di.core import golden
 from di.services.canonical.fields import CONNECTOR_FIELDS
 
-MODELS = ("asset", "condition", "demand", "intervention", "market", "route", "sustainability", "vendor", "outcome")
+MODELS = (
+    "asset", "condition", "demand", "intervention", "market", "route", "sustainability", "vendor", "outcome", "part", "bom",
+)  # fmt: skip
+SHARED_ORG = "shared"  # the key prefix of PLM data bound to no org unit
+
+
+def part_key(org_unit_id: str | None, number: str) -> str:
+    """The canonical key of a PLM part: `<org unit or "shared">:<number>` (two org units may reuse a number)."""
+    return f"{org_unit_id or SHARED_ORG}:{number}"
+
+
+def bom_key(org_unit_id: str | None, parent: str, parent_revision: str, child: str) -> str:
+    """The canonical key of a BOM line: the parent's part key, its revision and the child's number."""
+    return f"{part_key(org_unit_id, parent)}@{parent_revision}>{child}"
+
 
 FIELD_AUTHORITY: dict[str, str] = {
     # asset
@@ -113,7 +132,8 @@ _CANON_NS = {
     "Intervention": "intervention",
     "Outcome": "outcome",
 }
-REQUIRED = {("asset", "asset_id"), ("demand", "demand_id")}  # the identity keys of canonical.json's models
+# the identity keys of canonical.json's models, and of the PLM part and BOM line (MVP-9.1)
+REQUIRED = {("asset", "asset_id"), ("demand", "demand_id"), ("part", "number"), ("bom", "parent"), ("bom", "child")}
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 

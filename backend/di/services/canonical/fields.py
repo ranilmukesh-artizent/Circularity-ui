@@ -13,6 +13,8 @@ field name in `Fact(...)` calls and their local helpers in di/connectors/adapter
 fields (not provisioned at start, B5c) and S/4HANA's outcome lines (only after a posting, B13b), typed by reading
 their adapters. tests/test_canonical_schema.py proves a full sync of the demo sources holds no record.
 
+The `part` and `bom` models (plan 8, MVP-9.1) are no demo model: their fields are listed here alone.
+
 A field a connector starts to write must be added here (with its type), or its facts are held as failed records.
 Types: text, ref (a reference string), date (ISO 8601 date or timestamp string), number, bool, list, object, any.
 """
@@ -396,5 +398,22 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "role": "text",
         "status": "text",
         "yields": "object",
+    },
+    # PLM parts and BOM lines (plan 8, MVP-9.1): written by the PLM adapters beyond the demo (Windchill, MVP-9.3);
+    # keys from schema.part_key and schema.bom_key
+    "part": {
+        "name": "text",
+        "number": "text",
+        "org_unit_id": "text",
+        "revision": "text",
+        "state": "text",
+        "unit_cost": "number",
+    },
+    "bom": {
+        "child": "text",
+        "harvestable": "bool",
+        "parent": "text",
+        "parent_revision": "text",
+        "qty": "number",
     },
 }

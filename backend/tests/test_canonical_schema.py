@@ -18,8 +18,8 @@ from di.connectors.registry import ADAPTERS
 from di.connectors.sync import run_sync
 from di.core import golden
 from di.core.db import SessionLocal, engine
-from di.services.canonical import failed
-from di.services.canonical.schema import MODEL_FIELDS, check_fact, split_facts
+from di.services.canonical import failed, store
+from di.services.canonical.schema import MODEL_FIELDS, MODELS, bom_key, check_fact, part_key, split_facts
 from di.services.canonical.store import Fact
 
 
@@ -70,6 +70,54 @@ def test_iot_facts_fit_the_schema():
     facts = ADAPTERS["iot"].map(rec)
     assert len(facts) >= 8
     assert [(f.field, check_fact(f)) for f in facts if check_fact(f)] == []
+
+
+# ---------------------------------------------------------------- PLM parts and BOM lines (plan 8, MVP-9.1)
+def test_part_keys_per_org():
+    """The same part number in two org units never collides (edge case 4); each key keeps its own revision (5)."""
+    assert {"part", "bom"} <= set(MODELS)
+    assert part_key("Customer A", "PN-100") == "Customer A:PN-100"
+    assert part_key(None, "PN-100") == part_key("", "PN-100") == "shared:PN-100"
+    assert part_key("Customer A", "PN-100") != part_key("Customer B", "PN-100")
+    assert {f: s.type for f, s in MODEL_FIELDS["part"].items()} == {
+        "number": "text", "revision": "text", "state": "text", "name": "text", "unit_cost": "number", "org_unit_id": "text",
+    }  # fmt: skip
+    assert MODEL_FIELDS["part"]["number"].required
+    assert check_fact(Fact("part", part_key("Customer A", "PN-100"), "unit_cost", "cheap")).startswith(
+        "part.unit_cost must be a number"
+    )
+    with SessionLocal() as s:
+        a, b = part_key("Customer A", "PN-T91"), part_key("Customer B", "PN-T91")
+        store.apply(s, "manual", [
+            Fact("part", a, "number", "PN-T91"), Fact("part", a, "revision", "B.2"), Fact("part", a, "org_unit_id", "Customer A"),
+            Fact("part", b, "number", "PN-T91"), Fact("part", b, "revision", "C.1"), Fact("part", b, "org_unit_id", "Customer B"),
+        ])  # fmt: skip
+        q = "SELECT key, data FROM canonical WHERE model = 'part' AND key = ANY(:k)"
+        rows = dict(s.execute(text(q), {"k": [a, b]}).all())
+        assert {k: (d["revision"], d["org_unit_id"]) for k, d in rows.items()} == {
+            a: ("B.2", "Customer A"), b: ("C.1", "Customer B"),
+        }  # fmt: skip
+        q = "SELECT count(*) FROM conflict WHERE model = 'part' AND key = ANY(:k)"
+        assert s.execute(text(q), {"k": [a, b]}).scalar() == 0
+        s.rollback()
+
+
+def test_bom_line_fields():
+    assert {f: s.type for f, s in MODEL_FIELDS["bom"].items()} == {
+        "parent": "text", "child": "text", "qty": "number", "parent_revision": "text", "harvestable": "bool",
+    }  # fmt: skip
+    assert MODEL_FIELDS["bom"]["parent"].required and MODEL_FIELDS["bom"]["child"].required
+    k1, k2 = bom_key("Customer A", "ASM-1", "A.1", "PN-100"), bom_key("Customer A", "ASM-1", "B.1", "PN-100")
+    assert k1 == "Customer A:ASM-1@A.1>PN-100" and k1 != k2  # a line per parent revision (as built vs released)
+    assert bom_key(None, "ASM-1", "A.1", "PN-100").startswith("shared:ASM-1@")
+    line = [
+        Fact("bom", k1, "parent", "ASM-1"), Fact("bom", k1, "child", "PN-100"), Fact("bom", k1, "qty", 2),
+        Fact("bom", k1, "parent_revision", "A.1"), Fact("bom", k1, "harvestable", True),
+    ]  # fmt: skip
+    assert [check_fact(f) for f in line] == [None] * 5
+    assert check_fact(Fact("bom", k1, "harvestable", "yes")).startswith("bom.harvestable must be true or false")
+    assert check_fact(Fact("bom", k1, "qty", "2")).startswith("bom.qty must be a number")
+    assert check_fact(Fact("bom", k1, "child", "")) == "bom.child is required"
 
 
 # ---------------------------------------------------------------- holding
