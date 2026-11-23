@@ -78,7 +78,7 @@ def test_reference_has_no_state():
 def with_org_section(acct: str, groups: list[dict]) -> list[dict]:
     """The demo's menu, with Access's Organisation section for whoever may see it (plan 8 MVP-1.5: a deliberate
     change, decision-log "Org units replace the fixed tenants"; policy.EXTRA_SECTIONS)."""
-    groups = with_modeler(acct, groups)
+    groups = with_agents(acct, with_modeler(acct, groups))
     if not policy.can_page(policy.account(acct), "access", "orgs"):
         return groups
     kid = {"id": "orgs", "label": "Organisation", "sub": "Groups, companies, sites and customers", "href": "#/access/orgs"}
@@ -92,6 +92,17 @@ def with_modeler(acct: str, groups: list[dict]) -> list[dict]:
     g = {"id": "modeler", "label": "Modeler", "sub": "Decision process and business rules", "icon": "branch",
          "section": "Integration", "leaf": True, "href": "#/modeler", "kids": []}  # fmt: skip
     at = next((i for i, x in enumerate(groups) if x["section"] == "More"), len(groups))
+    return [*groups[:at], g, *groups[at:]]
+
+
+def with_agents(acct: str, groups: list[dict]) -> list[dict]:
+    """The Agents page (plan 8 MVP-11.8, a new page: policy.EXTRA_PAGES) after MCP & Tools (before Process
+    Orchestration); both accounts that see it see MCP & Tools."""
+    if not policy.can_page(policy.account(acct), "agents"):
+        return groups
+    g = {"id": "agents", "label": "Agents", "sub": "Registry, runs, proposals and tools", "icon": "bot",
+         "section": "More", "leaf": True, "href": "#/agents", "kids": []}  # fmt: skip
+    at = [x["id"] for x in groups].index("mcp") + 1
     return [*groups[:at], g, *groups[at:]]
 
 

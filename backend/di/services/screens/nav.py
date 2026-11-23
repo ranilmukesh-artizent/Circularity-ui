@@ -77,18 +77,21 @@ from di.services.cases import store
 ISSUE_SQL = "SELECT count(*) FROM source_system WHERE status IN ('stale', 'unavailable', 'failing', 'auth_expired')"
 # Sections beyond the demo's NAV (plan 8; visible as policy.EXTRA_SECTIONS allows): [id, label, sub], after the golden ones
 EXTRA_KIDS: dict[str, list[list[str]]] = {"access": [["orgs", "Organisation", "Groups, companies, sites and customers"]]}
-# Pages beyond the demo's NAV (plan 8; visible as policy.EXTRA_PAGES allows): (the section it goes before, the entry)
+# Pages beyond the demo's NAV (plan 8; visible as policy.EXTRA_PAGES allows): (the group or section it goes before, the entry)
 EXTRA_NAV: list[tuple[str, dict]] = [
     ("More", {"id": "modeler", "label": "Modeler", "sub": "Decision process and business rules", "icon": "branch",
               "sec": "Integration", "leaf": True}),
+    ("orchestration", {"id": "agents", "label": "Agents", "sub": "Registry, runs, proposals and tools", "icon": "bot",
+                       "sec": "More", "leaf": True}),
 ]  # fmt: skip
 
 
 def nav_groups() -> list[dict]:
-    """The demo's NAV with the EXTRA_NAV entries, each before the first group of the section it names (else last)."""
+    """The demo's NAV with the EXTRA_NAV entries, each before the group it names, or the first group of the section
+    it names (else last)."""
     out = list(lists()["NAV"])
     for before, g in EXTRA_NAV:
-        out.insert(next((i for i, x in enumerate(out) if x.get("sec") == before), len(out)), g)
+        out.insert(next((i for i, x in enumerate(out) if before in (x["id"], x.get("sec"))), len(out)), g)
     return out
 
 

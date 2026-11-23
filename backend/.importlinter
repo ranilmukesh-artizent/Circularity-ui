@@ -55,6 +55,7 @@ name = Screen services do not import each other
 type = independence
 modules =
     di.services.screens.access
+    di.services.screens.agents
     di.services.screens.analytics
     di.services.screens.audit
     di.services.screens.case
