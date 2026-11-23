@@ -1,7 +1,8 @@
 """One tool call, checked in the demo's order (index.html, `runTool`), run, and logged.
 
-    1 Authenticate agent token   the account (bearer token) and the agent (X-Agent) are known, the agent is not
-                                 stopped by its kill switch (the demo's afAgentAllowed), and the account may act for
+    1 Authenticate agent token   the account (bearer token) and the agent (X-Agent, in the agent registry: plan 8
+                                 MVP-11.3) are known, the agent is not stopped by its kill switch (the demo's
+                                 afAgentAllowed), the tenant is in the agent's org scope, and the account may act for
                                  the tenant it names (tenant consent; the server's addition, checked on every call)
     2 Check agent scope          the tool is one of the agent's tools (AGENTS)
       (hard rule)                send_instruction with no approval reference stops here
@@ -34,6 +35,7 @@ from di.core.auth import principal
 from di.mcp import calllog
 from di.mcp.tools import ACTIONS_OF, AGENTS, NO_APPROVAL_REF, RUN, TOOLS, Refused, ToolCall, cross_tenant
 from di.services.actions.pipeline import Actor, CallContext
+from di.services.agents import registry as agent_registry
 from di.services.cases import store
 
 # Actions no tool may ever run (hard rules: no approving, overriding or declining a decision, no access, publishing or
@@ -42,6 +44,7 @@ FORBIDDEN_ACTIONS = (
     "decision.approve", "decision.override", "decision.decline", "outcome.confirm", "adapter.acknowledge",
     "access.", "agent.", "workflow.publish", "workflow.setStatus", "workflow.delete", "source.", "mcp.",
     "org.create", "org.update", "org.move",  # plan 8 MVP-1.3: the org tree decides who sees what (access)
+    "org.setPilot",  # plan 8 MVP-10.3: whether a pilot org's instructions are sent (outbound sending)
     "flow.approve", "flow.publish", "flow.reject", "flow.rollback",  # plan 8 MVP-3.2: a person decides the policy
     "model.promote",  # plan 8 MVP-12.2: a person decides which model values new cases
 )  # fmt: skip
@@ -102,6 +105,15 @@ class Call:
 
     def fail(self, code: str, message: str, extra: dict | None = None) -> dict:
         return self.answer(False, outcome_of(code), {"error": {"code": code, "message": message, **(extra or {})}})
+
+
+def agent_of(row: agent_registry.Agent | None) -> dict | None:
+    """The agent as the checks read it: a registered agent, with the tools its registry row allows (MVP-11.3). The
+    demo's nine keep their scopes text; another agent's scopes are its tools."""
+    if row is None:
+        return None
+    base = AGENTS.get(row.id) or {"id": row.id, "scopes": row.tools}
+    return {**base, "id": row.id, "name": row.name, "tools": row.tools}
 
 
 def outcome_of(code: str) -> str:
@@ -165,16 +177,20 @@ def _run(s: Session, who: Caller, call: Call, tool_id: str, args: dict) -> dict:
         return call.fail("out_of_scope", "Sign in first.")
     account, pctx = acct
     call.account = account.id
-    # 1 authenticate: the agent, its kill switch, the tenant it acts for
-    ag = AGENTS.get(who.agent_id or "")
+    # 1 authenticate: the agent (registered), its kill switch, the tenant it acts for
+    row = agent_registry.get(s, who.agent_id) if who.agent_id else None
+    ag = agent_of(row)
     call.agent = ag
     call.tenant = who.tenant or account.tenant
-    if ag is None:
+    if ag is None or row is None:
         call.step("Authenticate agent token", False, f"Unknown agent {who.agent_id}" if who.agent_id else "No agent named")
         return call.fail("out_of_scope", f"Name the agent you act as in the X-Agent header: one of {', '.join(AGENTS)}.")
-    if (state.get(s, "access_settings", "agents_off") or {}).get(ag["id"]):
+    if not row.enabled or (state.get(s, "access_settings", "agents_off") or {}).get(ag["id"]):
         call.step("Authenticate agent token", False, f"{ag['name']} is stopped")
         return call.fail("out_of_scope", f"{ag['name']} is stopped by Admin, so it cannot prepare anything.")
+    if call.tenant is not None and not agent_registry.in_scope(row, call.tenant, policy.org_units(pctx)):
+        call.step("Authenticate agent token", False, f"{call.tenant} is outside the org scope of {ag['name']}")
+        return call.fail("tenant_boundary", f"{ag['name']} is not scoped for {call.tenant}.")
     if call.tenant is not None and not policy.tenant_ok(account, call.tenant, pctx):
         call.step("Authenticate agent token", False, f"No consent on file for {account.label} to act for {call.tenant}")
         return call.fail(

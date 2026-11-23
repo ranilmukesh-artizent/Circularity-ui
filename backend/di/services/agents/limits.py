@@ -1,7 +1,12 @@
 """What an agent may do in one pipeline call (plan 8, MVP-11.1): the pipeline's step 8 when `ctx.preparer` is set.
 
-Admin's settings in Access (di.services.actions.access, workspace collection "access_settings"), checked in order:
-    kill switch   "agents_off" ({agent: true}): a stopped agent does nothing, reads included (the demo's afAgentAllowed)
+The agent itself (the registry, di.services.agents.registry; MVP-11.3), then Admin's settings in Access
+(di.services.actions.access, workspace collection "access_settings"), checked in order:
+    registry      an agent that is not registered prepares nothing
+    kill switch   agent_identity.enabled, and "agents_off" ({agent: true}) that agent.setEnabled keeps beside it: a
+                  stopped agent does nothing, reads included (the demo's afAgentAllowed)
+    read only     an agent registered with autonomy "read" changes nothing
+    org scope     a case-scoped action on a case whose owner is outside the agent's org scope (edge case 25)
     autonomy      "autonomy" ({role: {type: level}}): the level of the actor's role for the action's type (the demo's
                   AF_AUTO_TYPES, afAutoLevel). Off refuses with the demo's text. Suggest allows no write unless a person
                   confirmed it. Prepare and Act let the agent prepare it as the person (a commit still needs `confirmed`:
@@ -15,25 +20,21 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import text
 
-from di.core import golden, state
+from di.core import golden, policy, state
+from di.services.actions.scope import case_scope
+from di.services.agents import registry
 
 if TYPE_CHECKING:
     from di.services.actions.pipeline import CallContext
     from di.services.actions.registry import ActionDef
 
-# Read from the golden files, not di.repositories.constants: the pipeline imports this module, and the repositories
+# Read from the golden file, not di.repositories.constants: the pipeline imports this module, and the repositories
 # import the pipeline.
-AGENTS_BY_ID: dict[str, dict] = {a["id"]: a for a in golden.load("tools")["agents"]}
 AUTO_TYPES: list[dict] = golden.load("screens/access")["auto_types"]  # the demo's AF_AUTO_TYPES
 LEVEL_RANK = {"off": 0, "suggest": 1, "prepare": 2, "act": 3}  # the demo's AF_LV_RANK
 RUN_LIMITS = {"actions": 50, "bulk": 100}  # the demo's AF.cfg.max at the start (as the Access screen shows it)
 TYPE_OF = {act: t for t in AUTO_TYPES for act in t["acts"]}  # the demo's afAutoType, by action id
 Refusal = tuple[str, str]
-
-
-def name_of(agent_id: str) -> str:
-    a = AGENTS_BY_ID.get(agent_id)
-    return a["name"] if a else agent_id
 
 
 def _settings(ctx: "CallContext", item: str) -> Any:
@@ -46,11 +47,20 @@ def auto_level(stored: dict, role: str, t: dict) -> str:
     return str(t["max"] if LEVEL_RANK[v] > LEVEL_RANK[t["max"]] else v)
 
 
-def stopped(ctx: "CallContext", agent_id: str) -> bool:
-    return bool((_settings(ctx, "agents_off") or {}).get(agent_id))
+def stopped(ctx: "CallContext", agent: registry.Agent) -> bool:
+    return not agent.enabled or bool((_settings(ctx, "agents_off") or {}).get(agent.id))
 
 
-def _autonomy(a: "ActionDef", ctx: "CallContext", agent: str) -> Refusal | None:
+def _org_scope(a: "ActionDef", i: dict[str, Any], ctx: "CallContext", agent: registry.Agent) -> Refusal | None:
+    if a.scope != "case" or not agent.org_scope:
+        return None
+    where = case_scope(str(i.get("case_id", "")))
+    if where is None or registry.in_scope(agent, where[0], policy.org_units(ctx.actor.ctx)):
+        return None
+    return "tenant_boundary", f"{i['case_id']} belongs to {where[0]}, outside the org scope of {agent.name}."
+
+
+def _autonomy(a: "ActionDef", ctx: "CallContext", agent: registry.Agent) -> Refusal | None:
     t = TYPE_OF.get(a.id)
     if t is None or not a.changes_state:
         return None
@@ -58,7 +68,7 @@ def _autonomy(a: "ActionDef", ctx: "CallContext", agent: str) -> Refusal | None:
     if level == "off":
         return "out_of_scope", f"The agent may not {a.verb or a.title.lower()} for the {ctx.actor.role} role (autonomy: Off)."
     if LEVEL_RANK[level] < LEVEL_RANK["prepare"] and not ctx.confirmed:
-        return "approval_required", f"{name_of(agent)} may only prepare this; a person must confirm it."
+        return "approval_required", f"{agent.name} may only prepare this; a person must confirm it."
     return None
 
 
@@ -83,7 +93,11 @@ def _run_limits(a: "ActionDef", i: dict[str, Any], ctx: "CallContext") -> Refusa
 
 def check(a: "ActionDef", i: dict[str, Any], ctx: "CallContext") -> Refusal | None:
     """The first refusal for an agent-prepared call, or None."""
-    agent = ctx.preparer or ""
+    agent = registry.get(ctx.session, ctx.preparer or "")
+    if agent is None:
+        return "out_of_scope", f"Unknown agent {ctx.preparer}. Admin registers agents in Agents."
     if stopped(ctx, agent):
-        return "out_of_scope", f"{name_of(agent)} is stopped by Admin, so it cannot prepare anything."
-    return _autonomy(a, ctx, agent) or _run_limits(a, i, ctx)
+        return "out_of_scope", f"{agent.name} is stopped by Admin, so it cannot prepare anything."
+    if agent.autonomy == "read" and a.changes_state:
+        return "out_of_scope", f"{agent.name} may only read."
+    return _org_scope(a, i, ctx, agent) or _autonomy(a, ctx, agent) or _run_limits(a, i, ctx)

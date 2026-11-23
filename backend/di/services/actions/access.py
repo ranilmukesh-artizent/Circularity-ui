@@ -19,12 +19,14 @@ from typing import Any
 
 from sqlalchemy import text
 
-from di.core import golden, policy, state
+from di.core import policy, state
 from di.repositories import constants as C
 from di.repositories.common import REQ_SCOPE, REQ_SEQ_START, can, money, requests
+from di.services.actions import agents
 from di.services.actions.decisions import NOW, rb_log
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionError, guard, implement
+from di.services.agents import registry as agent_registry
 
 # The demo's DELEG (di.repositories.constants, shared with the Access screen): the kinds of request Admin may let the
 # Approver decide, here by key -> label.
@@ -291,7 +293,6 @@ def clear_out_of_office(i: dict[str, Any], ctx: CallContext):
 LEVELS = {x["k"]: x["label"] for x in C.LEVELS}
 LEVEL_RANK = C.LEVEL_RANK  # the demo's AF_LV_RANK
 AUTO_TYPES = {t["k"]: t for t in C.AUTO_TYPES}
-AGENT_NAMES = {a["id"]: a["name"] for a in golden.load("tools")["agents"]}
 
 
 def _settings(ctx: CallContext, item: str, default):
@@ -352,20 +353,17 @@ def set_self_approve(i: dict[str, Any], ctx: CallContext):
 
 
 @guard("agent.setEnabled")
-def agent_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)
-    return None if i["id"] in AGENT_NAMES else ("not_found", "Unknown agent.")
+def agent_guard(i: dict[str, Any], ctx: CallContext):
+    return None if agent_registry.get(ctx.session, i["id"]) else ("not_found", "Unknown agent.")
 
 
 @implement("agent.setEnabled")
 def set_agent_enabled(i: dict[str, Any], ctx: CallContext):
+    """The kill switch, for any registered agent (plan 8 MVP-11.3: the registry row and "agents_off")."""
     on = bool(i["on"])
-    off = _settings(ctx, "agents_off", {})
-    if on:
-        off.pop(i["id"], None)
-    else:
-        off[i["id"]] = True
-    state.put(ctx.session, "access_settings", "agents_off", off)
-    rb_log(ctx, "agent." + ("started" if on else "stopped"), AGENT_NAMES[i["id"]], "agent.setEnabled")
+    agents.set_enabled(ctx, i["id"], on)
+    a = agent_registry.get(ctx.session, i["id"])
+    rb_log(ctx, "agent." + ("started" if on else "stopped"), a.name if a else i["id"], "agent.setEnabled")
     return {"id": i["id"], "on": on}
 
 
