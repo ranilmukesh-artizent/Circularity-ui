@@ -484,14 +484,16 @@ await step('9 The instructions are acknowledged (sim clock); Finance confirms th
   const w = await as('approver');
   await go(w, `product/${id}/stage/8`);
   let s = '';
+  // keep the clock moving until the case waits for Finance: stage 9 first reads "Waiting on <ERP>" while the outcome
+  // is still being reported, and only "Waiting on Finance" (the case closed) offers Confirm (as smoke-rt1048 waits)
   for (let i = 0; i < 40; i++) {
     s = await caseStage(w);
-    if (/^(9|10) /.test(s)) break;
+    if (/^9 .*Finance|^10 /.test(s)) break;
     const r = await fetch(SIM + '/_sim/clock/advance', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ hours: 3 }) });
     check(r.ok, 'clock advance failed: ' + r.status);
     await w.waitForTimeout(3000);
   }
-  check(/^9 /.test(s), `${id} did not reach stage 9 (Finance): ${s}`);
+  check(/^9 .*Finance/.test(s), `${id} did not reach stage 9 waiting on Finance: ${s}`);
   const fin = await as('finance');
   await go(fin, `product/${id}/stage/9`);
   const confirm = fin.locator('button', { hasText: 'Confirm the outcome' });
