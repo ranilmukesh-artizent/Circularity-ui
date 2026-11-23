@@ -52,7 +52,8 @@ def test_open_industrial_case():
         log = s.execute(text("SELECT reason, actor FROM case_stage_log WHERE case_id = :c"), {"c": cid}).all()
         ev = s.execute(text("SELECT count(*) FROM domain_event WHERE type = 'case.opened' AND case_id = :c"), {"c": cid})
         assert ev.scalar_one() == 1
-    assert (c["owner"], c["template"], c["stage"], c["assetId"]) == ("Customer A", "industrial", "none", "T-MTR-1")
+    # a recommendation waits for approval, as after a re-evaluation (MVP-12.4: "none" left it stuck)
+    assert (c["owner"], c["template"], c["stage"], c["assetId"]) == ("Customer A", "industrial", "awaiting_approval", "T-MTR-1")
     assert (c["cls"], c["grade"], c["age"], c["qty"]) == ("motor", "B", 4, 1)
     assert [r["id"] for r in c["routes"]] == ["resale", "redeploy", "relase", "intparts", "extparts", "material", "exit"]
     assert c["recommendation"] is rank_routes(c["routes"], None)
@@ -61,6 +62,13 @@ def test_open_industrial_case():
     rows = call("cases.list", {"q": "T-MTR-1"}, "planner-a")["output"]["rows"]
     assert [x["id"] for x in rows] == [cid]
     assert call("cases.list", {"q": "T-MTR-1"}, "planner-b")["output"]["rows"] == []
+
+
+def test_opened_case_can_be_submitted():
+    """MVP-12.4: the case page offers Submit for an opened case with a recommendation, and the server takes it."""
+    cid = _open("T-MTR-9")["output"]["case_id"]
+    r = call("decision.submit", {"case_id": cid}, "planner-a")
+    assert r["ok"], r
 
 
 def test_ids_count_up():

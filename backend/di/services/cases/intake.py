@@ -7,7 +7,8 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
 - **Owner and template.** The case belongs to the org unit (`owner`, what the tenant boundary reads) and keeps its
   template key (`template`; the book's cases have none and are `industrial`).
 - **Base fields.** `facts` first, then the canonical store for the asset key (asset and condition models): class,
-  grade, age, quantity, spec, demand, location. The stage is the first of di.services.cases.lifecycle.
+  grade, age, quantity, spec, demand, location. The stage is the first of di.services.cases.lifecycle ("none")
+  until it is valued; with a recommendation it is `awaiting_approval`, as a re-evaluation leaves it.
 - **Routes.** `industrial`: the engine's seven routes (`build_routes`) valued by the formulas on a random source
   seeded from the case id (a stable hash: sha256, never Python's per-process `hash()`), calibrated by the template's
   active model if one was promoted (di.services.actions.models.intake_predictor, MVP-12.2); when the asset's bom_ref
@@ -223,6 +224,8 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     c["routes"] = routes
     c["recommendation"] = rank_routes(routes, c.get("blocked"), c.get("preferred"))
     c["flowVer"] = ver
+    # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
+    c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
     if not (c.get("rulesApplied") or c.get("rulesWaived") or c.get("preferred")):
         for k in ("rulesApplied", "rulesWaived", "preferred"):
             c.pop(k, None)
