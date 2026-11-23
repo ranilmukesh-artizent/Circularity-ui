@@ -28,6 +28,34 @@ export const publishFlow = (flowId: number): Promise<Done> => invoke('flow.publi
 export const discardFlow = (flowId: number): Promise<Done> => invoke('flow.discard', { flow_id: flowId });
 export const rollbackFlow = (flowId: number): Promise<Done> => invoke('flow.rollback', { flow_id: flowId });
 
+/** The assistant's proposal for a plain-language change (flow.propose, MVP-5.2): nothing is saved until applied. */
+export interface Proposal {
+  kind: 'rule' | 'step' | 'blocked' | 'unclear';
+  text: string;
+  graph: FlowGraph | null;
+  node_id: string | null;
+  rid: string | null;
+  label: string | null;
+  guard: string | null;
+  checks: ModelerScreen['checks'];
+  sim: SimResult | null;
+  msg: string;
+  /** the saveDraft note that applies it: "Proposed by the assistant: <text>" */
+  note: string;
+  read_by: 'rules' | 'rules+model';
+}
+
+/** A plain-language change read into a checked, simulated proposal; rejects with the refusal message. */
+export async function proposeChange(flowId: number, text: string): Promise<Proposal> {
+  const r = await invoke<Proposal>('flow.propose', { flow_id: flowId, text });
+  if (!r.ok) throw new Error(r.error.message);
+  return r.output;
+}
+
+/** Apply a proposal: the person's own saveDraft of its graph, with the assistant's note in the journal. */
+export const applyProposal = (flowId: number, p: Proposal): Promise<ActionResult<{ id: number; checks: ModelerScreen['checks'] }>> =>
+  invoke('flow.saveDraft', { flow_id: flowId, graph: p.graph, source: 'assistant', note: p.note });
+
 /** The graph (or the saved draft) against the published rules on the open queue; rejects with the refusal message. */
 export async function simulateFlow(flowId: number, graph?: FlowGraph): Promise<SimResult> {
   const r = await invoke<SimResult>('flow.simulate', graph ? { flow_id: flowId, graph } : { flow_id: flowId });

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { forkFlow, saveDraft, useModeler } from '../../api/modeler';
+import { applyProposal, forkFlow, saveDraft, useModeler, type Proposal } from '../../api/modeler';
 import type { Check, FlowGraph, ModelerScreen } from '../../api/types';
 import { currentAccount } from '../../api/session';
 import { useBackend } from '../../api/useBackend';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import type { PageProps } from '../registry';
+import { AssistantPanel } from './AssistantPanel';
 import { ChecksPanel } from './ChecksPanel';
 import { FlowCanvas } from './FlowCanvas';
 import { FlowInspector } from './FlowInspector';
@@ -53,6 +54,7 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
   const [graph, setGraph] = useState<FlowGraph>(s.flow.graph);
   const [checks, setChecks] = useState<Check[]>(s.checks);
   const [sel, setSel] = useState<string | null>(null);
+  const [proposal, setProposal] = useState<Proposal | null>(null);
   const dirty = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(graph);
@@ -109,8 +111,22 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
     setSel(g.nodes.at(-1)?.id ?? null);
   };
 
+  /** Apply the assistant's proposal: the person's own saveDraft, with the assistant's note. */
+  const apply = async (p: Proposal) => {
+    if (!p.graph) return false;
+    await flush();
+    const r = await action.run(() => applyProposal(s.flow.id, p));
+    if (!r.ok) return false;
+    setGraph(p.graph);
+    setChecks(r.output.checks);
+    setSel(p.node_id);
+    return true;
+  };
+  // a proposal is drawn on the canvas (dashed) until it is applied or dismissed
+  const shown = proposal?.graph ?? graph;
+
   const bad = new Set(checks.filter((c) => c.level === 'fail' && c.node_id).map((c) => c.node_id as string));
-  const node = graph.nodes.find((n) => n.id === sel) ?? null;
+  const node = shown.nodes.find((n) => n.id === sel) ?? null;
 
   return (
     <>
@@ -126,10 +142,11 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
       <div className="mdl-main">
         <FlowCanvas
           s={s}
-          graph={graph}
+          graph={shown}
           selected={sel}
-          bad={bad}
-          editable={editable}
+          bad={proposal?.kind === 'blocked' && proposal.node_id ? new Set([...bad, proposal.node_id]) : bad}
+          proposed={proposal?.node_id ?? null}
+          editable={editable && !proposal}
           onSelect={setSel}
           onMove={(id, x, y) => editable && setGraph((g) => moveNode(g, id, x, y))}
           onMoved={schedule}
@@ -137,9 +154,9 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
         <div className="mdl-side">
           <FlowInspector
             s={s}
-            graph={graph}
+            graph={shown}
             node={node}
-            editable={editable}
+            editable={editable && !proposal}
             onRule={(id, patch) => edit(updateRule(graph, id, patch))}
             onConnect={(a, b) => edit(connect(graph, a, b))}
             onDisconnect={(id) => edit(disconnect(graph, id))}
@@ -148,6 +165,7 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
               setSel(null);
             }}
           />
+          <AssistantPanel s={s} proposal={proposal} onProposal={setProposal} onApply={apply} />
           <ChecksPanel checks={checks} onSelect={setSel} />
         </div>
       </div>

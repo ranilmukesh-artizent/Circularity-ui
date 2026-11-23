@@ -107,8 +107,18 @@ for (const stage of found ? [] : [6, 7]) {
 }
 check(found, `the case page shows "Excluded by business rule IR-01"`);
 
+// 6. The assistant (MVP-5.4): the Admin asks for a change to the tool-fleet flow on the workspace
+const admin = await session('admin');
+await admin.goto(base + '/#/modeler?template=tool_fleet&org=workspace');
+check(await waitText(admin, /I watch this flow and the decisions it produces/), 'the assistant opens with its line');
+await admin.fill('#mdl-ask', 'Never recycle construction lasers');
+await admin.press('#mdl-ask', 'Enter');
+check(await waitText(admin, /Proposed change/i, 20000), 'the assistant shows "Proposed change"');
+check(await waitText(admin, /BR-03: construction lasers: never recycle/), 'the proposal reads "BR-03: construction lasers: never recycle"');
+check(await admin.locator('.mdl-node.prop').count() === 1, 'the proposed rule is drawn dashed on the canvas');
+
 if (planner.errors.length > onModeler) console.log('info: case page errors', JSON.stringify(planner.errors.slice(onModeler)));
-const errors = [...planner.errors.slice(0, onModeler).map((e) => 'planner: ' + e), ...approver.errors.map((e) => 'approver: ' + e)];
+const errors = [...planner.errors.slice(0, onModeler).map((e) => 'planner: ' + e), ...approver.errors.map((e) => 'approver: ' + e), ...admin.errors.map((e) => 'admin: ' + e)];
 check(errors.length === 0, 'no page errors ' + JSON.stringify(errors));
 await browser.close();
 if (fails.length) {
