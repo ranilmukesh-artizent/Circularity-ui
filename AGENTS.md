@@ -117,6 +117,7 @@ Full list: [docs/agents/dos-and-donts.md](docs/agents/dos-and-donts.md).
 
 ## Where to read more
 
+- [docs/guides/users/README.md](docs/guides/users/README.md): end-user guides per role, the case journey and approvals.
 - [docs/backend-steps.md](docs/backend-steps.md): the plan and the status of every step (B1–B18).
 - [docs/agents/history.md](docs/agents/history.md): how the repo got here, with commits.
 - [docs/agents/decision-log.md](docs/agents/decision-log.md): decisions and why.

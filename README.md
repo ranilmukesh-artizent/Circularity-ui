@@ -298,6 +298,7 @@ docker-compose.prod.yml  opt-in: the runtime images (no dev tools, non-root, the
 docs/reference/        source documents: the agent-first product spec, the user journey deck, the IFS process fit
 docs/guides/           user guides: the Connection Fabric (connectors, Workflow Studio, AI builder) and a
                        step-by-step workflow tutorial for demos
+docs/guides/users/README.md  end-user guides: one per role, the case journey and approvals (start here)
 docs/plan-fullstack-poc.md   decisions and architecture
 docs/backend-steps.md        the backend build, step by step, with the status of each step
 docs/agents/           working notes for agents: scripts, testing, plans, decisions
