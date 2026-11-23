@@ -59,7 +59,9 @@ _declare(
 def _fields_problem(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     if i.get("autonomy") is not None and i["autonomy"] not in AUTONOMY:
         return "validation_error", "Autonomy is read, propose or act."
-    known = set(TOOLS_BY_ID) | set(ACTIONS)
+    from di.mcp.tools import MODELER_TOOLS  # plan 8 MVP-5.5: the MCP table's tools beyond the demo's ten
+
+    known = set(TOOLS_BY_ID) | set(MODELER_TOOLS) | set(ACTIONS)
     if bad := [t for t in i.get("tools") or [] if t not in known]:
         return "validation_error", f"Unknown tools: {', '.join(map(str, bad))}."
     units = policy.org_units(ctx.actor.ctx)

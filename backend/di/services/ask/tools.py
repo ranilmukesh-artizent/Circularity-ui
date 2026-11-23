@@ -7,6 +7,7 @@
     find_demand           demand.find                                  B16 MCP tool
     optimize_pool         pool.optimize                                B16 MCP tool
     get_model_validation  analytics.models                             B16 MCP tool
+    get_decision_flow     flow.get {template, org}                     plan 8 MCP tool (MVP-5.5)
     list_cases            cases.list                                   read action
     get_case              case.get, then case.evidence                 read actions (the case with its evidence sources)
     get_case_run          case.trace                                   read action
@@ -53,6 +54,7 @@ MCP_TOOLS = (
     "find_demand",
     "optimize_pool",
     "get_model_validation",
+    "get_decision_flow",  # plan 8 MVP-5.5: the decision flow (flow.get), a read
 )
 
 

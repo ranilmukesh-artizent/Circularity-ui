@@ -12,6 +12,8 @@ its answer is shaped (index.html, `runTool`, one `case` per tool).
     request_approval          decision.submit, then held for a person           held: the approval request
     send_instruction          (approval reference checked) instruction.resend   the approved instruction, deduplicated
     reconcile_outcome         none: reads the closed decision (the demo's ROWS)  predicted against actual
+    get_decision_flow         flow.get {template, org} (plan 8, MVP-5.5)        the flow, template, checks, compiled rules
+    propose_rule_change       flow.propose (read; never applies it)             the checked, simulated proposal
 
 A tool runs the action first, so every refusal of the pipeline (permission, tenant boundary, warehouse lock, agent
 gate, state guard, duplicate) comes back as the tool's refusal. Its answer is shaped from the action's output; a few
@@ -32,7 +34,21 @@ from di.repositories.constants import AGENTS_BY_ID, HARD_RULES, TOOLS_BY_ID
 from di.repositories.decisions import all_rows, model_stats
 from di.services.actions.pipeline import CallContext, invoke
 
-TOOLS: dict[str, dict] = TOOLS_BY_ID  # keyed by id (the tables below and di.mcp.policy look tools up by id)
+# plan 8 MVP-5.5: the Modeler's two read tools, beside the demo's ten (they read; neither saves nor publishes a flow)
+MODELER_TOOLS: dict[str, dict] = {
+    "get_decision_flow": {
+        "id": "get_decision_flow", "rw": "read", "approval": "none", "step": [6],
+        "desc": "Read the decision flow a template uses for an org unit: its graph, checks and compiled business rules.",
+        "input": {"template": {"t": "string", "req": True, "ex": "industrial"}, "org": {"t": "string", "ex": "Customer A"}},
+    },
+    "propose_rule_change": {
+        "id": "propose_rule_change", "rw": "read", "approval": "none", "step": [6],
+        "desc": "Turn a plain-language change into a checked, simulated proposal for a decision flow. Never applies it.",
+        "input": {"flow_id": {"t": "number", "req": True, "ex": 1},
+                  "text": {"t": "string", "req": True, "ex": "Never send grade D motors to resale"}},
+    },
+}  # fmt: skip
+TOOLS: dict[str, dict] = {**TOOLS_BY_ID, **MODELER_TOOLS}  # keyed by id (the tables below and di.mcp.policy look tools up by id)
 AGENTS: dict[str, dict] = AGENTS_BY_ID
 NO_APPROVAL_REF = HARD_RULES[2]  # "Nothing is sent to an enterprise system without an approval reference."
 
@@ -48,6 +64,8 @@ ACTIONS_OF: dict[str, tuple[str, ...]] = {
     "request_approval": ("decision.submit",),
     "send_instruction": ("instruction.resend",),
     "reconcile_outcome": (),
+    "get_decision_flow": ("flow.get",),
+    "propose_rule_change": ("flow.propose",),
 }
 
 
@@ -290,6 +308,16 @@ def reconcile_outcome(t: ToolCall) -> dict:
     }
 
 
+def get_decision_flow(t: ToolCall) -> dict:
+    """The flow.get output for the template and org (MVP-5.5)."""
+    return t.run("flow.get", {"template": t.args["template"], "org": t.args.get("org") or "workspace"})
+
+
+def propose_rule_change(t: ToolCall) -> dict:
+    """The flow.propose output: a checked, simulated proposal; nothing is saved (MVP-5.5)."""
+    return t.run("flow.propose", {"flow_id": t.args["flow_id"], "text": t.args["text"]})
+
+
 def cross_tenant(record: str, owner: str, tenant: str) -> str:
     """The demo's tenant-boundary message for a tool call."""
     return f"Case {record} belongs to {owner}. Cross-client access needs customer consent, which is not on file for {tenant}."
@@ -306,6 +334,8 @@ RUN: dict[str, Callable[[ToolCall], dict]] = {
     "request_approval": request_approval,
     "send_instruction": send_instruction,
     "reconcile_outcome": reconcile_outcome,
+    "get_decision_flow": get_decision_flow,
+    "propose_rule_change": propose_rule_change,
 }
 assert set(RUN) == set(TOOLS) == set(ACTIONS_OF), "every tool in TOOLS needs a runner and an action mapping"  # noqa: S101 - import-time check of the tool tables
 

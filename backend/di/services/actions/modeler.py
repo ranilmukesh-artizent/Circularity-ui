@@ -13,7 +13,7 @@ decision_flow_version for rollback. Decisions use the published graph only, from
     flow.publish    commit  {flow_id}                    shadow -> pub (not by the maker); old graph to history
     flow.discard    act     {flow_id}                    the draft back to the published graph
     flow.rollback   commit  {flow_id}                    the latest history entry becomes the published graph
-    flow.get        read    {flow_id}                    {flow, template, checks, compiled}
+    flow.get        read    {flow_id} | {template, org}  {flow, template, checks, compiled} (by org: the flow it uses)
     flow.simulate   read    {flow_id, graph?}            the graph (or draft) against the published rules on the open
                                                          queue (di.services.actions.modeler_sim); manageFlows or approve.flows
     flow.propose    read    {flow_id, text}              a plain-language change as a checked proposal on the draft
@@ -86,7 +86,8 @@ _declare("flow.discard", "Discard a flow draft", "edit decision flows",
 _declare("flow.rollback", "Roll back a flow", "roll back decision flows",
          "Restore the decision flow published before the current one.", "commit", _ID, _APPROVE)  # fmt: skip
 _declare("flow.get", "Read a flow", "read decision flows",
-         "A decision flow with its template, checks and compiled rules. Changes nothing.", "read", _ID, None)  # fmt: skip
+         "A decision flow with its template, checks and compiled rules. Changes nothing.", "read",
+         {"flow_id": {"t": "number"}, "template": {"t": "string"}, "org": {"t": "string"}}, None)  # fmt: skip
 _declare("flow.simulate", "Simulate a flow", "simulate decision flows",
          "Run a flow's draft (or the graph given) against its published rules on the open queue. Changes nothing.",
          "read", {**_ID, "graph": {"t": "object"}}, None)  # fmt: skip
@@ -337,9 +338,27 @@ def rollback(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------- read
+def _by_org(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | FlowRow:
+    """flow.get by {template, org} (MVP-5.5, the MCP and Ask tool): the flow the org uses, its own or inherited; the
+    org (default `workspace`) must be one the actor may see."""
+    key, org = i.get("template") or "industrial", i.get("org") or "workspace"
+    if key not in TEMPLATE_KEYS:
+        return "validation_error", f"The template is one of {', '.join(TEMPLATE_KEYS)}."
+    if org not in units(ctx.session):
+        return "not_found", f"No org unit {org}."
+    if not _org_ok(ctx, org):
+        return _boundary(org)
+    f = repo.flow_for(ctx.session, key, org)
+    return f if f is not None else ("not_found", f"No decision flow for {key} above {org}.")
+
+
+def _get_target(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | FlowRow:
+    return _reach(i, ctx) if i.get("flow_id") is not None else _by_org(i, ctx)
+
+
 @guard("flow.get")
 def get_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
-    f = _reach(i, ctx)
+    f = _get_target(i, ctx)
     return f if isinstance(f, tuple) else None
 
 
@@ -351,7 +370,9 @@ def flow_json(f: FlowRow) -> dict[str, Any]:
 
 @implement("flow.get")
 def get(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
-    f = _flow(ctx, i)
+    f = _get_target(i, ctx)
+    if isinstance(f, tuple):  # not reached: the guard refused it
+        raise ActionError(*f)
     t, g = load_template(f.template_key), _graph(f)
     return {
         "flow": flow_json(f),

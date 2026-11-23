@@ -173,6 +173,20 @@ def test_grounded_answer_from_tool_results():
     ]
 
 
+def test_get_decision_flow_is_a_read_tool():
+    """Plan 8 MVP-5.5: Ask reads a decision flow (flow.get by template and org); another tenant's org is refused."""
+    assert "get_decision_flow" in tools.TOOL_NAMES and tools.TOOLS["get_decision_flow"]["rw"] == "read"
+    fake = Fake(once(("get_decision_flow", {"template": "industrial", "org": "Customer A"}),
+                     ("get_decision_flow", {"template": "industrial", "org": "Customer B"})),
+                lambda seen: "Read the flow.")  # fmt: skip
+    use(fake)
+    ask("planner-a", "Which business rules apply to Customer A?")
+    (_, mine), (_, other) = fake.seen
+    assert mine["ok"] is True and mine["data"]["flow"]["name"] == "Industrial returns"
+    assert mine["data"]["template"]["key"] == "industrial" and mine["data"]["compiled"] == []
+    assert other == {"ok": False, "error": {"code": "tenant_boundary", "message": other["error"]["message"]}}
+
+
 def test_tenant_boundary_refuses_customer_b():
     fake = Fake(once(("get_case", {"case_id": "RT-1048"}), ("get_case_evidence", {"case_id": "RT-1048"})),
                 lambda seen: "I cannot see RT-1048: " + seen[0][1]["error"]["message"])  # fmt: skip
