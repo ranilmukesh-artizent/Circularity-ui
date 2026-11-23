@@ -116,6 +116,22 @@ def _industrial_paths(t: Template, s: str) -> list[tuple[str, str]]:
     return [*table, (parts, r"\bparts?\b|recovered-part")]
 
 
+INDUSTRIAL_READ = ("cls", "grade", "site", "owner")  # the dims read above; any other set dim is read by its phrase
+
+
+def _phrased(t: Template, s: str, scope: dict[str, Any]) -> None:
+    """Any other set dim of the pack (e.g. the telemetry `alarm`, MVP-7.1): a value whose rule-text phrase (the
+    pack's wording) occurs in the text as whole words."""
+    phrases = {p.key: p for p in t.wording.phrases}
+    for d in t.dims:
+        p = phrases.get(d.key)
+        if d.kind != "set" or d.key in INDUSTRIAL_READ or p is None:
+            continue
+        hits = [v for v in d.values if re.search(_words([p.fmt.format(p.words.get(v, v)).lower()]) + r"\b", s)]
+        if hits:
+            scope[d.key] = hits
+
+
 def _industrial(t: Template, s: str) -> ParsedRule:
     world = golden.load("world")
     scope: dict[str, Any] = {}
@@ -134,6 +150,7 @@ def _industrial(t: Template, s: str) -> ParsedRule:
     owner = [o for o in owners if re.search(_words([o.lower()]) + r"\b", s)]
     if owner:
         scope["owner"] = owner
+    _phrased(t, s, scope)
     return ParsedRule(_first_path(s, _industrial_paths(t, s)), _action(s), scope)
 
 

@@ -41,3 +41,12 @@ def test_industrial_parts_and_no_path():
     assert parse_rule(t, "Prefer recovered parts for IT electronics").path == "intparts"
     assert parse_rule(t, "Prefer recovered parts for IT electronics").scope == {"cls": ["it"]}
     assert parse_rule(t, "Keep it simple for grade D") == ParsedRule(None, "prefer", {"grade": ["D"]})
+
+
+def test_industrial_reads_other_dims_by_their_phrase():
+    """A dim added to the pack (the telemetry alarm, MVP-7.1) is read by its rule-text phrase."""
+    t = load_template("industrial")
+    assert parse_rule(t, "Industrial motors with a telemetry alarm: never whole-asset resale").scope == {
+        "cls": ["motor"], "alarm": ["yes"],
+    }  # fmt: skip
+    assert parse_rule(t, "Pumps without a telemetry alarm: prefer redeploy").scope == {"cls": ["pump"], "alarm": ["no"]}
