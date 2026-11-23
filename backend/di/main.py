@@ -17,7 +17,7 @@ import di.services.actions.workflows  # noqa: F401  (registers action handlers)
 from di.core.errors import register as register_error_handlers
 from di.core.logs import configure_logging
 from di.mcp import server as mcp_server
-from di.routes import actions, ask, auth, health, screens, sources, stream, tasks, webhooks
+from di.routes import actions, agents, ask, auth, health, screens, sources, stream, tasks, webhooks
 from di.services.cases import use_database_scope
 
 configure_logging()  # one format and level for di and uvicorn; secrets masked in access lines (di/core/logs.py)
@@ -31,6 +31,7 @@ app.include_router(webhooks.router)
 app.include_router(screens.router)
 app.include_router(stream.router)
 app.include_router(ask.router)  # POST /api/ask (B16b; di.services.ask)
+app.include_router(agents.router)  # /api/agents (plan 8 phase 11; di.services.agents)
 mcp_server.mount(app)  # the MCP server at /mcp (B16; di.mcp)
 use_database_scope()
 app.include_router(health.router)  # GET /api/health/live, GET /api/health
