@@ -87,6 +87,23 @@ def test_move_sub_company():
     assert not policy.tenant_ok(planner_c, "Customer A", ctx)
 
 
+def test_tenant_access_to_a_new_company():
+    """MVP-12.4: the existing tenant access flow reaches a unit Admin created (not only the seeded customers)."""
+    _create("t-org-co", "workspace", "company")
+    planner_a = policy.account("planner-a")
+    try:
+        r = call("access.requestTenant", {"tenant": "t-org-co", "reason": "Planning its returns"}, "planner-a")
+        assert r["ok"], r
+        d = call("access.decideRequest", {"id": r["output"]["id"], "decision": "approve"}, "approver")
+        assert d["ok"], d
+        assert policy.tenant_ok(planner_a, "t-org-co", _ctx())
+        nowhere = call("access.requestTenant", {"tenant": "t-org-nowhere", "reason": "No such unit"}, "planner-a")
+        assert nowhere["error"]["code"] == "not_found"
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM state_item WHERE collection = 'requests' AND data->>'tenant' LIKE 't-org-%'"))
+
+
 def test_cycle_refused():
     _create("t-org-top", "workspace", "group")
     _create("t-org-mid", "t-org-top", "segment")

@@ -80,7 +80,7 @@ def _can_decide(ctx: CallContext, r: dict) -> bool:
 # ---------------------------------------------------------------- tenant access and MCP proposals
 @guard("access.requestTenant")
 def request_tenant_guard(i: dict[str, Any], ctx: CallContext):
-    if i["tenant"] not in policy.tenants():
+    if i["tenant"] not in policy.tenants(ctx.actor.ctx):  # the org tree's units, those Admin added too
         return "not_found", "Unknown tenant."
     mine = (r for r in requests(ctx.session) if r["kind"] == "tenant" and r["status"] == "pending" and r["byId"] == ctx.actor.id)
     if any(r["tenant"] == i["tenant"] for r in mine):
