@@ -44,7 +44,7 @@ from sqlalchemy import text
 from di.connectors import catalog, connection, lifecycle, mapping, registry, secrets, sync
 from di.connectors.probe import probe
 from di.connectors.registry import ADAPTERS
-from di.core import golden
+from di.core import golden, policy
 from di.repositories.common import fmt_dy, hash_id, iso, ms
 from di.repositories.constants import MAPPINGS, SRC_TYPES
 from di.repositories.fabric import SCREEN_STATUS, type_of
@@ -106,6 +106,8 @@ ACTIONS["credentials.rotate"].input |= {"secret": {"req": False, "t": "string"},
 # plan 6 A2: the connection itself (base_url, auth_kind, auth_params, resources, paging) and the secret to sign in with;
 # the secret is stored encrypted (di.connectors.secrets) and, like every input named secret, never journaled
 ACTIONS["source.update"].input |= {"conn": {"req": False, "t": "object"}, "secret": {"req": False, "t": "string"}}
+# plan 8 MVP-1.4: the org unit the source belongs to (null: shared by every org); sent only to set it
+ACTIONS["source.update"].input |= {"org_unit_id": {"req": False, "t": "string"}}
 
 
 # ---------------------------------------------------------------- the source as the screens show it
@@ -288,11 +290,43 @@ def _interval(d: dict, cm: dict) -> int:
     return int(v) if math.isfinite(v) else 0
 
 
+def _check_org(i: dict[str, Any], ctx: CallContext) -> None:
+    """plan 8 MVP-1.4: `org_unit_id`, when sent, is an org unit the actor may see (Admin and unscoped roles: any)."""
+    org = i.get("org_unit_id")
+    if org is None:
+        return
+    if ctx.session.execute(text("SELECT 1 FROM org_unit WHERE id = :i"), {"i": org}).first() is None:
+        raise ActionError("validation_error", f"No org unit {org}.")
+    a = ctx.actor.account
+    if a is not None and policy.policy(a).get("tenantScoped") and not policy.tenant_ok(a, org, ctx.actor.ctx):
+        raise ActionError("tenant_boundary", f"{org} is an org unit you cannot see. Request tenant access first.")
+
+
+def _bind_org(ctx: CallContext, sid: str, i: dict[str, Any]) -> list[str]:
+    """Bind the source to the org unit sent (null: shared by every org); what changed, for the audit."""
+    if "org_unit_id" not in i:
+        return []
+    r = ctx.session.execute(
+        text(
+            "UPDATE source_system SET org_unit_id = CAST(:o AS text) "
+            "WHERE id = :i AND org_unit_id IS DISTINCT FROM CAST(:o AS text) RETURNING id"
+        ),
+        {"o": i["org_unit_id"], "i": sid},
+    )
+    return ["org unit"] if r.first() else []
+
+
+def _bound(ctx: CallContext, out: dict[str, Any], i: dict[str, Any]) -> dict[str, Any]:
+    _bind_org(ctx, out["source_id"], i)
+    return out
+
+
 @implement("source.update")
 def source_update(i: dict[str, Any], ctx: CallContext):
     mode = i["mode"]
+    _check_org(i, ctx)
     if mode == "catalog":
-        return _connect_catalog(i, ctx)
+        return _bound(ctx, _connect_catalog(i, ctx), i)
     if mode not in ("new", "edit"):
         raise ActionError("validation_error", '"mode" must be new, edit or catalog.')
     d = i["d"]
@@ -320,7 +354,7 @@ def source_update(i: dict[str, Any], ctx: CallContext):
     why = f" ({i['note']})" if i.get("note") else ""
     now = _now_ms(ctx)
     if mode == "new":
-        return _create(ctx, d, base, maps, csv, cm, why, now, i)
+        return _bound(ctx, _create(ctx, d, base, maps, csv, cm, why, now, i), i)
     assert cur is not None  # noqa: S101 - edit mode loaded both
     assert cfg is not None  # noqa: S101
     ch: list[str] = []
@@ -338,6 +372,7 @@ def source_update(i: dict[str, Any], ctx: CallContext):
     if maps != cur["maps"]:
         ch.append(f"field mapping ({len(maps)} rows)")
     ch += _save_connection(ctx, cur["id"], i, base["url"], _js_str(cur.get("url")) != _js_str(base["url"]), None)
+    ch += _bind_org(ctx, cur["id"], i)
     was_off = cur["status"] == "unavailable" and not off and not csv
     if not ch and not was_off and not (csv and cur["status"] != "manual") and not (not csv and cur["status"] == "manual"):
         raise ActionError("conflict", "No changes to save.")

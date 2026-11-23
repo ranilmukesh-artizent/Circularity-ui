@@ -40,6 +40,8 @@ source_system = Table(
     # 0012 (plan 6 A6): failed syncs in a row, and when the next try is due (min(2**streak minutes, interval))
     Column("fail_streak", Integer, nullable=False, server_default="0"),
     ts("next_retry_at"),
+    # 0020 (plan 8 MVP-1.4): the org unit the source belongs to; null = shared by every org (every demo source)
+    Column("org_unit_id", Text, ForeignKey("org_unit.id")),
 )
 
 

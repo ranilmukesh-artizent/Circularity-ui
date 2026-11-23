@@ -209,7 +209,13 @@ def _status_counts(f: Fabric) -> dict:
 def sources(session: Session, p: Principal, cat: str | None, status: str | None, method: str | None, q: str | None) -> dict:
     """GET /sources: every source (with its health) the filters keep, and the status counts."""
     f = Fabric(session, p)
-    rows = [s | {"health": f.health(s)} for s in f.sources if _source_filter(s, f, cat, status, method, q)]
+    # plan 8 MVP-1.4: the org unit each source belongs to (None: shared by every org)
+    org = dict(session.execute(text("SELECT id, org_unit_id FROM source_system")).tuples().all())
+    rows = [
+        s | {"health": f.health(s), "org_unit_id": org.get(s["id"])}
+        for s in f.sources
+        if _source_filter(s, f, cat, status, method, q)
+    ]
     return {"sources": rows, "counts": _status_counts(f)}
 
 

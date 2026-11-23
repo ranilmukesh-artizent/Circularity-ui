@@ -120,7 +120,7 @@ def reset_sources(conn: Connection) -> None:
             text(
                 "UPDATE source_system SET vendor = :v, interval_min = :iv, owner = :o, note = :n, "
                 "status = CASE WHEN status IN ('paused', 'disconnected', 'failing', 'auth_expired') OR (:st = 'unavailable') "
-                "THEN :st ELSE status END, fail_streak = 0, next_retry_at = NULL "
+                "THEN :st ELSE status END, fail_streak = 0, next_retry_at = NULL, org_unit_id = NULL "  # 0020: shared
                 "WHERE id = :id"
             ),
             {
