@@ -1,0 +1,145 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { forkFlow, saveDraft, useModeler } from '../../api/modeler';
+import type { Check, FlowGraph, ModelerScreen } from '../../api/types';
+import { currentAccount } from '../../api/session';
+import { useBackend } from '../../api/useBackend';
+import { toast } from '../../components/toast';
+import { useAction } from '../../hooks/useAction';
+import type { PageProps } from '../registry';
+import { FlowCanvas } from './FlowCanvas';
+import { FlowInspector } from './FlowInspector';
+import { addRule, connect, disconnect, moveNode, nextRid, removeNode, updateRule } from './flowEdit';
+import './modeler.css';
+
+/** Edits are saved as a draft this long after the last one (as workflow drafts are, decision log 2026-11-21). */
+export const AUTOSAVE_MS = 2000;
+
+export const STATUS_LABEL: Record<ModelerScreen['flow']['status'], string> = { draft: 'Draft', review: 'In review', shadow: 'Shadow', pub: 'Published' };
+
+/** The Modeler (plan 8, MVP-4.4): a decision flow per template and org unit, edited on a canvas and saved as a draft. */
+export function ModelerPage({ query }: PageProps) {
+  useBackend();
+  const [template, setTemplate] = useState(query.get('template') ?? '');
+  const [org, setOrg] = useState(query.get('org') ?? '');
+  const s = useModeler(template, org);
+  return (
+    <div className="frpage mdl" id="modeler">
+      <div className="phead frph">
+        <div>
+          <h1>Modeler</h1>
+          <p>The decision process and its business rules. Locked guardrails and the core prediction stay fixed; rules change which path a decision may take.</p>
+        </div>
+        <div className="row">
+          <label className="sr" htmlFor="mdl-tpl">Template</label>
+          <select id="mdl-tpl" value={s.template.key} onChange={(e) => setTemplate(e.target.value)}>
+            {s.templates.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
+          </select>
+          <label className="sr" htmlFor="mdl-org">Organisation</label>
+          <select id="mdl-org" value={s.org} onChange={(e) => setOrg(e.target.value)}>
+            {s.orgs.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+      </div>
+      <ModelerBody key={s.flow.id} s={s} />
+    </div>
+  );
+}
+
+function ModelerBody({ s }: { s: ModelerScreen }) {
+  const editable = s.can.edit;
+  const action = useAction();
+  const [graph, setGraph] = useState<FlowGraph>(s.flow.graph);
+  const [checks, setChecks] = useState<Check[]>(s.checks);
+  const [sel, setSel] = useState<string | null>(null);
+  const dirty = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latest = useRef(graph);
+  latest.current = graph;
+
+  // the server's copy wins while nothing is waiting to be saved (another person's change, a lifecycle step)
+  const server = JSON.stringify(s.flow.graph);
+  useEffect(() => {
+    if (!dirty.current) {
+      setGraph(JSON.parse(server) as FlowGraph);
+      setChecks(s.checks);
+    }
+  }, [server, s.checks]);
+
+  const save = useCallback(async () => {
+    timer.current = null;
+    const r = await action.run(() => saveDraft(s.flow.id, latest.current));
+    dirty.current = false;
+    if (r.ok) setChecks(r.output.checks);
+  }, [action, s.flow.id]);
+
+  useEffect(() => () => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      void saveDraft(s.flow.id, latest.current);
+    }
+  }, [s.flow.id]);
+
+  const schedule = () => {
+    dirty.current = true;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => void save(), AUTOSAVE_MS);
+  };
+  const edit = (g: FlowGraph) => {
+    if (!editable || g === graph) return;
+    setGraph(g);
+    schedule();
+  };
+
+  const fork = async () => {
+    const r = await action.run(() => forkFlow(s.template.key, s.org));
+    if (r.ok) toast(s.org + ' now has its own ' + s.flow.name + ' flow.');
+  };
+  const add = () => {
+    const rid = nextRid(graph, s.template.pre);
+    const g = addRule(graph, rid, currentAccount()?.role ?? '');
+    edit(g);
+    setSel(g.nodes.at(-1)?.id ?? null);
+  };
+
+  const bad = new Set(checks.filter((c) => c.level === 'fail' && c.node_id).map((c) => c.node_id as string));
+  const node = graph.nodes.find((n) => n.id === sel) ?? null;
+
+  return (
+    <>
+      <div className="mdl-bar">
+        <span className="chip line">{s.flow.name} · {s.flow.org_unit_id}</span>
+        <span className={'pill mdl-st ' + s.flow.status}>{STATUS_LABEL[s.flow.status]} · v{s.flow.dver ?? s.flow.ver}</span>
+        {s.flow.org_unit_id !== s.org && <span className="note">{s.org} uses this flow from {s.flow.org_unit_id}.</span>}
+        <span className="grow" />
+        {s.can.fork && <button className="btn sm" disabled={action.pending} onClick={fork}>Give {s.org} its own flow</button>}
+        {editable && <button className="btn sm pri" onClick={add}>Add rule</button>}
+        {!editable && !s.can.fork && <span className="note">Read only</span>}
+      </div>
+      <div className="mdl-main">
+        <FlowCanvas
+          s={s}
+          graph={graph}
+          selected={sel}
+          bad={bad}
+          editable={editable}
+          onSelect={setSel}
+          onMove={(id, x, y) => editable && setGraph((g) => moveNode(g, id, x, y))}
+          onMoved={schedule}
+        />
+        <FlowInspector
+          s={s}
+          graph={graph}
+          node={node}
+          editable={editable}
+          onRule={(id, patch) => edit(updateRule(graph, id, patch))}
+          onConnect={(a, b) => edit(connect(graph, a, b))}
+          onDisconnect={(id) => edit(disconnect(graph, id))}
+          onRemove={(id) => {
+            edit(removeNode(graph, id));
+            setSel(null);
+          }}
+        />
+      </div>
+    </>
+  );
+}

@@ -1,0 +1,57 @@
+/* The Modeler page (plan 8, MVP-4.4/4.5): canvas, inspector and panels, on the demo's tokens. */
+.mdl-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+.mdl-bar .grow { flex: 1; }
+.mdl-st.draft { background: var(--panel3); color: var(--ink2); }
+.mdl-st.review { background: var(--warn-soft); color: var(--warn); }
+.mdl-st.shadow { background: var(--info-soft); color: var(--info); }
+.mdl-st.pub { background: var(--ok-soft); color: var(--ok); }
+.mdl-main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; align-items: start; }
+.mdl-side { display: grid; gap: 12px; }
+.mdl-canvas { overflow: auto; max-height: 640px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); }
+.mdl-fc { position: relative; }
+.mdl-edges { position: absolute; left: 0; top: 0; pointer-events: none; }
+.mdl-ed { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.mdl-ed.pe { stroke-dasharray: 5 4; stroke: var(--h-agent); }
+.mdl-band rect { fill: var(--panel3); stroke: var(--line); stroke-dasharray: 4 4; }
+.mdl-band text { fill: var(--muted); font-size: 11px; }
+.mdl-node { position: absolute; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 8px 10px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); cursor: grab;
+  touch-action: none; user-select: none; font-size: 12px; overflow: hidden; }
+.mdl-node .hd { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: .03em; }
+.mdl-node b { font-size: 12.5px; line-height: 1.3; }
+.mdl-node .s, .mdl-node .ow { color: var(--muted); font-size: 11px; }
+.mdl-node.t-rule { border-left: 3px solid var(--h-dec); }
+.mdl-node.t-path { border-left: 3px solid var(--h-re); }
+.mdl-node.t-gate, .mdl-node.t-guard, .mdl-node.t-approval { border-left: 3px solid var(--bad); }
+.mdl-node.sel { outline: 2px solid var(--yellow); outline-offset: 1px; }
+.mdl-node.bad { border-color: var(--bad); background: var(--bad-soft); }
+.mdl-node.prop { border-style: dashed; border-color: var(--h-agent); }
+.mdl-node.prop.bad { border-color: var(--bad); }
+.mdl-lock { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; vertical-align: -1px; }
+.mdl-insp { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 12px; display: grid; gap: 8px; }
+.mdl-insp h3 { margin: 0; font-size: 14px; }
+.mdl-insp h4 { margin: 4px 0; font-size: 12px; color: var(--muted); }
+.mdl-insp ul { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 4px; }
+.mdl-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.mdl-f { display: grid; gap: 3px; font-size: 12px; border: 0; padding: 0; margin: 0; }
+.mdl-f > span, .mdl-f > legend { color: var(--muted); }
+.mdl-chk { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.mdl-read { font-size: 14px; margin: 0; }
+.mdl-checks li, .mdl-flips li { display: flex; gap: 6px; align-items: baseline; padding: 3px 0; }
+.mdl-checks li button { all: unset; cursor: pointer; }
+.mdl-checks .ic { width: 14px; text-align: center; font-weight: 700; }
+.mdl-checks .ok .ic { color: var(--ok); }
+.mdl-checks .warn .ic { color: var(--warn); }
+.mdl-checks .fail .ic { color: var(--bad); }
+.mdl-checks ul, .mdl-flips ul { list-style: none; margin: 0; padding: 0; }
+.mdl-impact .good { color: var(--ok); }
+.mdl-impact .bad { color: var(--bad); }
+.mdl-life { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.mdl-chat { display: grid; gap: 8px; max-height: 360px; overflow: auto; }
+.mdl-msg { padding: 8px 10px; border-radius: 10px; background: var(--panel2); font-size: 12.5px; }
+.mdl-msg.user { background: var(--yellow-soft); justify-self: end; }
+.mdl-msg.blk { color: var(--bad); background: var(--bad-soft); }
+.mdl-prop { border: 1px dashed var(--h-agent); border-radius: 10px; padding: 10px; display: grid; gap: 6px; }
+.mdl-prop .label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+@media (max-width: 1100px) { .mdl-main { grid-template-columns: minmax(0, 1fr); } }
