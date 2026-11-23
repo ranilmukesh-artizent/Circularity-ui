@@ -225,7 +225,11 @@ def summary(a: Account, ctx: Context | None = None) -> dict:
         "description": policy(a)["desc"],
         "home": home(a),
         "permissions": [p for p in permissions() if can(a, p, ctx)],
-        "pages": {pg: [s for s in secs if can_page(a, pg, s)] for pg, secs in sections().items() if can_page(a, pg)},
+        "pages": {
+            pg: [s for s in [*secs, *(x for p_, x in EXTRA_SECTIONS if p_ == pg)] if can_page(a, pg, s)]
+            for pg, secs in sections().items()
+            if can_page(a, pg)
+        },
         "tenants": allowed_tenants(a, ctx),
         "tenant_scoped": bool(policy(a).get("tenantScoped")),
         "warehouse": a.warehouse if policy(a).get("warehouseScoped") else None,

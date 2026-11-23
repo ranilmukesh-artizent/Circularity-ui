@@ -18,6 +18,13 @@ from tests.helpers import client, h
 
 G = golden.load("screens/access")
 ACCOUNTS = list(G["accounts"])
+# Plan 8 MVP-1.5 (decision-log "Org units replace the fixed tenants"): Admin's Access page also has the section `orgs`,
+# the org tree; at the start it is the seeded one (migration 0019): the workspace with the demo's three tenants.
+SEEDED_TREE = {
+    "id": "workspace", "parent_id": None, "kind": "group", "name": "Workspace",
+    "children": [{"id": t, "parent_id": "workspace", "kind": "customer", "name": t, "children": []}
+                 for t in ("Customer A", "Customer B", "Customer C")],
+}  # fmt: skip
 
 
 def setup_module():
@@ -47,7 +54,10 @@ def expected(acct: str) -> dict:
         "limits": {"limits": G["limits"], "self_approve": G["self_approve"], "run_limits": G["run_limits"]},
         "agentsx": {"agents": G["agents"], "hard_rules": G["hard_rules"]},
         "metrics": G["metrics"],
+        "orgs": {"units": [SEEDED_TREE]},
     }
+    if acct == "admin":  # plan 8 MVP-1.5: the Organisation section (Admin; a deliberate change, see SEEDED_TREE)
+        secs = [*secs, "orgs"]
     return {"sections": secs} | {k: out[k] for k in secs}
 
 

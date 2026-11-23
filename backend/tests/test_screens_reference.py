@@ -75,12 +75,21 @@ def test_reference_has_no_state():
 
 
 # ---------------------------------------------------------------- the menu
+def with_org_section(acct: str, groups: list[dict]) -> list[dict]:
+    """The demo's menu, with Access's Organisation section for whoever may see it (plan 8 MVP-1.5: a deliberate
+    change, decision-log "Org units replace the fixed tenants"; policy.EXTRA_SECTIONS)."""
+    if not policy.can_page(policy.account(acct), "access", "orgs"):
+        return groups
+    kid = {"id": "orgs", "label": "Organisation", "sub": "Groups, companies, sites and customers", "href": "#/access/orgs"}
+    return [g | {"kids": [*g["kids"], kid]} if g["id"] == "access" else g for g in groups]
+
+
 @pytest.mark.parametrize("acct", list(NAV["accounts"]))
 def test_navigation(acct):
     r = client.get("/api/screens/nav", headers=h(acct))
     assert r.status_code == 200, r.text
     out, want = r.json(), NAV["accounts"][acct]
-    assert starting.strict(out["groups"]) == starting.strict(want["navigation"])
+    assert starting.strict(out["groups"]) == starting.strict(with_org_section(acct, want["navigation"]))
     tasks = want["tasks"]
     if acct == "developer":  # its stale or unconnected sources are the live Connection Fabric's (decision-log D-Fabric)
         demo_stale = sum(1 for s in common.SOURCES.values() if s["status"] in ("stale", "unavailable"))
@@ -125,7 +134,7 @@ def test_case_scope_map():
 
 def test_admin_senior_view():
     out = client.get("/api/screens/nav", params={"cc_mode": "senior"}, headers=h("admin")).json()
-    assert starting.strict(out["groups"]) == starting.strict(NAV["admin_senior"])
+    assert starting.strict(out["groups"]) == starting.strict(with_org_section("admin", NAV["admin_senior"]))
 
 
 def test_last_asset_link():

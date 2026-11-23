@@ -36,6 +36,7 @@ Facade (frontend/src/api/access.ts) → here:
 | approvalLimit, selfApproveAllowed, runLimits | `limits` |
 | governedAgents, hardRules | `agentsx` |
 | agentMetrics | `metrics` |
+| useOrgTree (frontend/src/api/orgs.ts) | `orgs` (`units`: the org tree; plan 8) |
 | REQ_KIND, facilities, roles, levelRank | reference |
 | delegationLabel, fmtDateTime, pctTxt | frontend-only (formatting) |
 """
@@ -51,13 +52,15 @@ from di.repositories.access import can_decide, request_rows
 from di.repositories.common import af_days, requests
 from di.repositories.constants import AGENTS, AUTO_TYPES, DELEG, HARD_RULES, LEVEL_RANK, LEVELS
 from di.repositories.decisions import median
+from di.repositories.orgs import tree as org_tree
 from di.services.actions.registry import ACTIONS
 
 _REF = golden.load("screens/access")
 IDP_ROLES = _REF["idp_roles"]  # the demo's IDP_ROLES, in its order (policy.idp_roles() has policy.json's sorted keys)
 HOME_LABEL = _REF["home_label"]  # the demo's HOME_LABEL: landing route -> page name
 RUN_LIMITS = {"actions": 50, "bulk": 100}  # AF.cfg.max at the start
-SECTIONS = ("accounts", "identity", "delegations", "requests", "autonomy", "limits", "agentsx", "metrics")
+SECTIONS = ("accounts", "identity", "delegations", "requests", "autonomy", "limits", "agentsx", "metrics", "orgs")
+# `orgs` (plan 8 MVP-1.5; policy.EXTRA_SECTIONS, Admin): the org tree, as the read action org.tree answers it
 
 
 # ---------------------------------------------------------------- shared with the MCP screen (proposals)
@@ -186,5 +189,6 @@ def page(p: Principal, session: Session) -> dict:
         "limits": lambda: limits(session, p),
         "agentsx": lambda: agents(session),
         "metrics": lambda: metrics(session),
+        "orgs": lambda: {"units": org_tree(session)},
     }
     return {"sections": secs} | {x: build[x]() for x in secs}

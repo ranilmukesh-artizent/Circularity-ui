@@ -11,6 +11,7 @@ import { accounts, can, rolePolicy } from '../../api/session';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import type { PageProps } from '../registry';
+import { Orgs } from './AccessOrgs';
 import { ReqList } from './AccessRequests';
 import { SectionTabs, sectionsOf } from './SectionTabs';
 
@@ -38,6 +39,7 @@ export function AccessPage({ route }: PageProps) {
       {key === 'limits' && <Limits />}
       {key === 'agentsx' && <Agents />}
       {key === 'metrics' && <Metrics />}
+      {key === 'orgs' && <Orgs />}
     </>
   );
 }

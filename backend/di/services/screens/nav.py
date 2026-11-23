@@ -75,6 +75,8 @@ from di.services.cases import store
 
 # sources with an issue: stale or unavailable, and the connector states the screens show as stale
 ISSUE_SQL = "SELECT count(*) FROM source_system WHERE status IN ('stale', 'unavailable', 'failing', 'auth_expired')"
+# Sections beyond the demo's NAV (plan 8; visible as policy.EXTRA_SECTIONS allows): [id, label, sub], after the golden ones
+EXTRA_KIDS: dict[str, list[list[str]]] = {"access": [["orgs", "Organisation", "Groups, companies, sites and customers"]]}
 
 
 def cc_layout(a: policy.Account, cc_mode: str) -> dict | None:
@@ -112,7 +114,8 @@ def navigation(p: Principal, cases: list[dict], cc_mode: str = "operational", la
     asset = last["id"] if last and p.tenant_ok(last["owner"]) else (mine[0]["id"] if mine else "RT-1048")  # rbLastAsset
 
     def kids_of(g: dict) -> list[list]:
-        return [k for k in g["kids"] if policy.can_page(a, g["id"], k[0]) and (g["id"] != "command" or cc_sec_ok(lay, k[0]))]
+        kids = [*g["kids"], *EXTRA_KIDS.get(g["id"], [])]
+        return [k for k in kids if policy.can_page(a, g["id"], k[0]) and (g["id"] != "command" or cc_sec_ok(lay, k[0]))]
 
     def href(g: dict, k: str) -> str:
         return "#/" + g["id"] + ("/asset/" + asset if g["id"] == "product" and k == "asset" else "/" + k if k else "")
