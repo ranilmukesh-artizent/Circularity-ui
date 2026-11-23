@@ -2,6 +2,7 @@
 # Checks that the dev scripts report failures through their exit status (the agent loop's gate relies on it).
 #   bash scripts/dev/selftest.sh
 # Also checks that the api test lock serializes takers and is released when its holder dies.
+# Also checks that gate-mvp.sh fails when one step fails (steps stubbed through GATE_LINT, GATE_API, GATE_WEB).
 # Takes ~2 min. Plants a temporary type error under frontend/src and removes it again.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 dev="$REPO/scripts/dev"
@@ -55,6 +56,14 @@ printf 'export const broken: number = "not a number";\n' >"$planted"
 expect nonzero "web-check.sh tsc, with a type error" bash "$dev/web-check.sh" tsc
 rm -f "$planted"
 expect 0 "web-check.sh tsc, clean" bash "$dev/web-check.sh" tsc
+
+# gate-mvp.sh (plan 08) with its steps stubbed through GATE_LINT, GATE_API and GATE_WEB.
+expect nonzero "gate-mvp.sh, failing api step" \
+  env GATE_LINT=true GATE_WEB=true GATE_API=false bash "$dev/gate-mvp.sh" tests/test_health.py
+expect 0 "gate-mvp.sh, every step passing" \
+  env GATE_LINT=true GATE_WEB=true GATE_API=true bash "$dev/gate-mvp.sh" tests/test_health.py
+expect 0 "gate-mvp.sh, the real api-test.sh on a passing test" \
+  env GATE_LINT=true GATE_WEB=true bash "$dev/gate-mvp.sh" tests/test_health.py
 
 [ $fails -eq 0 ] && echo "selftest: all passed" || echo "selftest: $fails failed"
 [ $fails -eq 0 ]
