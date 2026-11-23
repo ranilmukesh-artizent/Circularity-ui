@@ -1,6 +1,8 @@
 """MVP-3.3 and 3.4: a re-evaluation applies the business rules of the case's published flow, and records the flow
 version; publishing never rewrites a decision already made or submitted (Review Focus 4)."""
 
+import copy
+
 import pytest
 from sqlalchemy import text
 
@@ -10,7 +12,7 @@ from di.services.cases import store
 from di.services.engine import book
 from tests import flowkit
 from tests.flowkit import ok
-from tests.helpers import call
+from tests.helpers import call, client, h
 
 SCOPE_A_C = {"grade": ["C"], "owner": ["Customer A"]}
 
@@ -98,3 +100,28 @@ def test_rule_on_hand_modelled_case_and_rollback():
     c = _case("RT-1048")
     assert c["routes"] == want["routes"] and c["flowVer"] == 1
     assert not {"rulesApplied", "rulesWaived", "preferred"} & c.keys()
+
+
+def test_publish_does_not_rewrite_submitted_decision():
+    ok(call("decision.submit", {"case_id": "RT-1065"}, "planner-a"))
+    before = copy.deepcopy(_case("RT-1065"))
+    rec = before["recommendation"]["id"]
+    flowkit.fork_and_publish("Customer A", [("IR-01", "exclude", rec, SCOPE_A_C)])
+    after = _case("RT-1065")
+    assert after == before
+    out = ok(call("decision.approve", {"case_id": "RT-1065", "reviewed": True, "rationale": "As recommended, checked."},
+                  "approver"))  # fmt: skip
+    assert out["route"] == before["recommendation"]["plan"]
+    assert _case("RT-1065")["chosen"]["id"] == rec
+
+
+def test_decision_records_flow_ver():
+    flowkit.fork_and_publish("Customer A", [("IR-01", "exclude", "material", SCOPE_A_C)])
+    _reevaluate("RT-1065")
+    ok(call("decision.submit", {"case_id": "RT-1065"}, "planner-a"))
+    c = _case("RT-1065")
+    assert c["flowVer"] == 2 and c["submitted"]["flowVer"] == 2
+    facts = client.get("/api/screens/case/RT-1065", headers=h("planner-a")).json()["stages"][5]["facts"]
+    assert {"l": "Decision flow", "v": "v2 · rules IR-01", "k": "rul", "sys": "Decision Modeler"} in facts
+    ok(call("decision.submit", {"case_id": "RT-1062"}, "planner-a"))  # never re-evaluated: the seeded evaluation
+    assert _case("RT-1062")["submitted"]["flowVer"] is None

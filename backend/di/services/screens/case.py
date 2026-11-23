@@ -401,6 +401,9 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
                 F("Alternatives", " · ".join(f"{z['plan']} {money(z['net'])}" for z in alt), "mod", "Prediction model")
             if ex:
                 F("Not eligible", ", ".join(z["plan"] for z in ex), "rul", "Gate engine")
+            if c.get("flowVer") is not None:  # plan 8, MVP-3.4: evaluated with a stored decision flow
+                rules = ", ".join(c.get("rulesApplied") or [])
+                F("Decision flow", f"v{c['flowVer']}" + (f" · rules {rules}" if rules else ""), "rul", "Decision Modeler")
             o["docs"] = [
                 d
                 for d in (c["snapshot"]["id"] if c.get("snapshot") else None, f"Model {c['model']}" if c.get("model") else None)

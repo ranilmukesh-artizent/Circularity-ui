@@ -211,8 +211,10 @@ def _submit_idem(i: dict[str, Any], ctx: CallContext):
 def submit(i: dict[str, Any], ctx: CallContext):
     key = _key("decision.submit", i, ctx)
     c, by = _case(ctx, i["case_id"]), _by(ctx)
-    # byId: the demo adds it right after (afOn('action')), for the self-approval rule
-    c["submitted"] = {"by": by, "at": NOW, "byId": ctx.actor.id}
+    # byId: the demo adds it right after (afOn('action')), for the self-approval rule. flowVer (plan 8, MVP-3.4): the
+    # decision flow version the routes were evaluated with (None: never evaluated with a stored flow); approval keeps
+    # these routes, whatever is published later.
+    c["submitted"] = {"by": by, "at": NOW, "byId": ctx.actor.id, "flowVer": c.get("flowVer")}
     push_event(
         ctx,
         {
