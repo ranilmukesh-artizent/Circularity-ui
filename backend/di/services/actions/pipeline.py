@@ -3,7 +3,8 @@
     1 validate the input        2 someone is signed in        3 system-only actions refuse people
     4 the permission            5 case scope: exists, tenant boundary, warehouse lock
     6 the agent gate (when an agent prepared it)              7 the action's own guard
-    8 policy limits (approval limits, B12)                     9 idempotency
+    8 policy limits (approval limits, B12; an agent's kill switch, autonomy and run limits, MVP-11.1)
+    9 idempotency
     10 run the handler           11 journal it                  12 emit events
 Read actions stop after the handler: they are not journaled.
 Every result is the demo's shape: {ok: true, output, key, action, seq} or {ok: false, error: {code, message}}.
@@ -20,6 +21,7 @@ from sqlalchemy.orm import Session
 from di.core import clock, policy
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError
 from di.services.actions.scope import case_scope
+from di.services.agents import limits
 
 # HTTP status per error code (the body always carries the demo's code and message)
 ERROR_STATUS = {
@@ -182,7 +184,10 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[s
     # 7 the action's own guard
     if a.guard and (refusal := a.guard(i, ctx)):
         return fail(*refusal)
-    # 8 policy limits: approval limits and agent autonomy arrive with their handlers (B12)
+    # 8 policy limits: approval limits are the decision handlers' guards (B12); an agent's kill switch, autonomy and
+    # run limits are checked here (plan 8 MVP-11.1, di.services.agents.limits)
+    if ctx.preparer and (refusal := limits.check(a, i, ctx)):
+        return fail(*refusal)
     # 9 idempotency
     key = f"{a.id}:{a.idem(i, ctx)}" if a.idem else (f"{a.id}:{ctx.idem_key}" if ctx.idem_key and a.changes_state else None)
     if key and a.changes_state:
