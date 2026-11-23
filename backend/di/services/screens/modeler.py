@@ -14,6 +14,8 @@
         versions   the graphs earlier publishes replaced, newest first ({ver, published_by, published_at, note, graph})
         shadow     the shadow-run stats ({n, agree, disagree, dv}) while the flow is in shadow, else null
         log        the journal rows of the flow's actions, newest first ({at, actor, role, action, note})
+        queue      the open queue the flow decides, under its published rules ({id, label, best, net}): the live cases
+                   the account may see; for tool_fleet and device also the template's sample queue (MVP-6.3)
         can        {edit, approve, fork}: what the account may do (edit: manageFlows on the flow's own org; fork: give
                    the shown org its own flow; approve: approve.flows). The actions check again.
 
@@ -34,9 +36,11 @@ from sqlalchemy.orm import Session
 from di.core import golden, policy
 from di.core.auth import Principal
 from di.repositories import flows as repo
+from di.repositories.context import call_ctx
 from di.repositories.flows import FlowRow
 from di.repositories.orgs import units
 from di.services.actions.modeler import checks_json
+from di.services.actions.modeler_sim import queue_rows
 from di.services.modeler.compile import compile_flow
 from di.services.modeler.flow import PO_FLOW, Flow
 from di.services.modeler.templates import TEMPLATE_KEYS, Template, load_template
@@ -116,5 +120,6 @@ def page(p: Principal, s: Session, template: str | None = None, org: str | None 
         "versions": versions,
         "shadow": repo.shadow_stats(s, f.id) if f.status == "shadow" else None,
         "log": _log(s, p, f),
+        "queue": queue_rows(call_ctx(p, s), f),
         "can": _can(p, f, org),
     }

@@ -3,13 +3,14 @@
 
 import pytest
 
+from di.core import golden
 from di.core.db import SessionLocal
 from di.services.cases import store
-from di.services.modeler.flow import default_flow
+from di.services.modeler.flow import default_flow, fe
 from di.services.modeler.templates import load_template
 from tests import flowkit
 from tests.flowkit import ok, with_rule
-from tests.helpers import call
+from tests.helpers import call, client, h
 
 
 @pytest.fixture(autouse=True)
@@ -85,3 +86,40 @@ def test_simulate_needs_a_flow_permission():
     assert ok(call("flow.simulate", {"flow_id": fid}, "approver"))["kind"] == "equip"
     r = call("flow.simulate", {"flow_id": fid}, "warehouse1")
     assert r["ok"] is False and r["error"]["code"] == "out_of_scope"
+
+
+# ---------------------------------------------------------------- MVP-6.3: the template sample queues
+def test_tool_fleet_simulation_equals_golden():
+    fid = flowkit.flow_id("tool_fleet", "workspace")
+    flows = {c["name"]: {"nodes": c["flow"]["n"], "edges": c["flow"]["e"]} for c in golden.load("po/compile_cases")["cases"]}
+    for row in golden.load("po/sim_cases")["equip"]:
+        out = ok(call("flow.simulate", {"flow_id": fid, "graph": flows[row["name"]]}, "admin"))
+        want = row["sim"]
+        assert (out["kind"], out["n"]) == (want["kind"], want["n"]), row["name"]
+        got = [(f["case_id"], f["from"], f["to"]) for f in out["flips"]]
+        assert got == [(f["id"], f["from"], f["to"]) for f in want["flips"]], row["name"]
+        assert out["dv"] == pytest.approx(want["dv"], abs=1e-6), row["name"]
+
+
+def test_device_simulation_equals_golden():
+    fid = flowkit.flow_id("device", "workspace")
+    row = golden.load("po/sim_cases")["device"][0]
+    g = default_flow(load_template("device"))
+    rule = row["rule"]
+    into = next(e for e in g["edges"] if e["b"] == "dec")
+    g["nodes"].append(rule)
+    g["edges"] = [e for e in g["edges"] if e is not into] + [fe(into["a"], rule["id"]), fe(rule["id"], "dec")]
+    out = ok(call("flow.simulate", {"flow_id": fid, "graph": g}, "admin"))
+    want = row["sim"]
+    assert (out["kind"], out["n"]) == ("device", want["n"])
+    assert [(f["case_id"], f["from"], f["to"]) for f in out["flips"]] == [(f["id"], f["from"], f["to"]) for f in want["flips"]]
+    assert out["dv"] == pytest.approx(want["dv"], abs=1e-6)
+    for k in ("u", "cash", "dd", "days", "dl"):
+        assert out["extra"][k] == pytest.approx(want[k], abs=1e-6), k
+
+
+def test_modeler_screen_lists_the_queue():
+    out = client.get("/api/screens/modeler", params={"template": "tool_fleet"}, headers=h("admin")).json()
+    assert len(out["queue"]) == 26 and set(out["queue"][0]) == {"id", "label", "best", "net"}
+    out = client.get("/api/screens/modeler", params={"template": "industrial"}, headers=h("planner-a")).json()
+    assert {q["id"] for q in out["queue"]} == {c["id"] for c in _open_cases() if c["owner"] == "Customer A"}

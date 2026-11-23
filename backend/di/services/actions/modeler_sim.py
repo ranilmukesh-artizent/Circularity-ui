@@ -7,9 +7,13 @@ proposals (MVP-5.2) answer.
 - `industrial` cases are decided by the engine on their stored route terms: the drafts keep their hand-modelled and
   gate exclusions, drop the ones earlier business rules made, and are evaluated with the rule set (no predictor draws,
   so the answer is deterministic).
+- `tool_fleet` and `device` (MVP-6.3): the template's sample queue (the prototype's open tool returns, rng(26110); its
+  device lots, rng(4242)) plus any live cases of the template, decided by the template's valuer
+  (di.services.modeler.valuers), so a simulation equals the prototype's fSim on the same flows.
 """
 
 import copy
+import dataclasses
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, cast
 
@@ -24,6 +28,7 @@ from di.services.modeler.compile import CompiledRule, compile_flow
 from di.services.modeler.flow import Flow
 from di.services.modeler.simulate import Decider, Decision, SimResult, simulate
 from di.services.modeler.templates import Template, load_template
+from di.services.modeler.valuers import device, tool_fleet
 
 OPEN_STAGES = tuple(s for s in STAGES if s != "closed")
 BUSINESS_REASONS = ("Excluded by business rule ", "Business rule ", FLOW_REMOVED)
@@ -71,15 +76,60 @@ def _industrial(ctx: CallContext, f: FlowRow, t: Template) -> tuple[list[dict[st
     return open_queue(ctx, f), industrial_decider(t)
 
 
-SOURCES: dict[str, QueueDecider] = {"industrial": _industrial}
+def _rule_dicts(rules: Sequence[CompiledRule]) -> list[dict[str, Any]]:
+    return [dataclasses.asdict(r) for r in rules]
 
 
-def simulate_rules(ctx: CallContext, f: FlowRow, cand: Sequence[CompiledRule]) -> SimResult:
-    """The candidate rules against the flow's published ones on its queue."""
+def tool_fleet_decider(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
+    """The tool-fleet valuer (the prototype's decide, within the sample queue's plan)."""
+    best = tool_fleet.decide(dict(c), rules=_rule_dicts(rules))["best"]
+    return Decision(best["k"], float(best["net"])) if best else Decision(None, 0.0)
+
+
+def device_decider(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
+    """The device valuer (dDecide): the expected cash a unit and its days to sell."""
+    best = device.decide(dict(c), _rule_dicts(rules))["best"]
+    return Decision(best["k"], float(best["cash"]), {"days": best["days"]}) if best else Decision(None, 0.0, {"days": 0.0})
+
+
+def _tool_fleet(ctx: CallContext, f: FlowRow, _t: Template) -> tuple[list[dict[str, Any]], Decider]:
+    return tool_fleet.sample_queue() + open_queue(ctx, f), tool_fleet_decider
+
+
+def _device(ctx: CallContext, f: FlowRow, _t: Template) -> tuple[list[dict[str, Any]], Decider]:
+    return device.sample_lots() + open_queue(ctx, f), device_decider
+
+
+# industrial: the live cases; tool_fleet and device: the template's sample queue plus any live cases of the template
+SOURCES: dict[str, QueueDecider] = {"industrial": _industrial, "tool_fleet": _tool_fleet, "device": _device}
+
+
+def simulate_rules(
+    ctx: CallContext, f: FlowRow, cand: Sequence[CompiledRule], base: Sequence[CompiledRule] | None = None
+) -> SimResult:
+    """The candidate rules against `base` (default: the flow's published rules) on its queue."""
+    t = load_template(f.template_key)
+    base = compile_flow(t, cast(Flow, f.published)) if base is None else base
+    queue, decide = SOURCES.get(f.template_key, _industrial)(ctx, f, t)
+    return simulate(t, base, cand, queue, decide)
+
+
+def queue_rows(ctx: CallContext, f: FlowRow) -> list[dict[str, Any]]:
+    """The queue as the Modeler lists it: {id, label, best, net} under the flow's published rules."""
     t = load_template(f.template_key)
     base = compile_flow(t, cast(Flow, f.published))
     queue, decide = SOURCES.get(f.template_key, _industrial)(ctx, f, t)
-    return simulate(t, base, cand, queue, decide)
+    out = []
+    for c in queue:
+        d = decide(c, base)
+        out.append({"id": c["id"], "label": _label(c), "best": d.best, "net": d.net})
+    return out
+
+
+def _label(c: Mapping[str, Any]) -> str:
+    """A case's product and model (industrial), serial (tool fleet) or brand and model (device)."""
+    parts = [c[k] for k in ("product", "brand", "model", "serial") if isinstance(c.get(k), str) and c[k]]
+    return " · ".join(parts[:2]) or str(c["id"])
 
 
 def simulate_graph(ctx: CallContext, f: FlowRow, graph: Flow) -> SimResult:
