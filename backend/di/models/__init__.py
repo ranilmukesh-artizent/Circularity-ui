@@ -32,6 +32,7 @@ from di.models.connectors import (
 from di.models.instructions import instruction
 from di.models.jobs import Job
 from di.models.journal import action_journal, domain_event, stream_event
+from di.models.modeler import decision_flow, decision_flow_version
 from di.models.org import org_unit
 from di.models.reference import fx_rate
 from di.models.workspace import state_item, state_seed
@@ -44,6 +45,8 @@ __all__ = [
     "case_record",
     "case_stage_log",
     "conflict",
+    "decision_flow",
+    "decision_flow_version",
     "delegation",
     "domain_event",
     "failed_record",
