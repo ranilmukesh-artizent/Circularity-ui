@@ -1,0 +1,2859 @@
+{
+ "cases": [
+  {
+   "age": 40,
+   "cls": "CMH",
+   "days": 4,
+   "dem": {
+    "bid": [
+     {
+      "exp": 6,
+      "gmin": "C",
+      "id": "BID-13129",
+      "kind": "bid",
+      "price": 340,
+      "what": "Bid BID-13129 from Gulf Coast Tool Exchange for grade C or better, cleaned and tested, valid to 7 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Gulf Coast Tool Exchange"
+     },
+     {
+      "exp": 9,
+      "gmin": "C",
+      "id": "BID-75500",
+      "kind": "bid",
+      "price": 360,
+      "what": "Bid BID-75500 from Northline Trade Tools for grade C or better, cleaned and tested, valid to 10 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Northline Trade Tools"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FC-1433",
+      "kind": "lease",
+      "need": 6,
+      "rate": 60,
+      "renew": true,
+      "site": "Houston",
+      "term": 18,
+      "what": "Fleet contract FC-1433 with Westmark Supply renews 7 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 26 Oct",
+      "who": "Westmark Supply"
+     },
+     {
+      "id": "FO-1522",
+      "kind": "lease",
+      "need": 18,
+      "rate": 60,
+      "renew": false,
+      "site": "Houston",
+      "term": 12,
+      "what": "New fleet order FO-1522 from Ridgeway Facilities, start 19 Nov",
+      "when": "order entered 31 Oct",
+      "who": "Ridgeway Facilities"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-8473",
+    "so": [],
+    "wo": {
+     "Electronics module": [],
+     "Gearbox": [
+      {
+       "backorder": false,
+       "id": "RO-77586",
+       "who": "Granite Civil"
+      },
+      {
+       "backorder": false,
+       "id": "RO-62835",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "Motor armature": [
+      {
+       "backorder": true,
+       "id": "RO-10853",
+       "who": "Westmark Supply"
+      },
+      {
+       "backorder": true,
+       "id": "RO-72621",
+       "who": "Pinecrest Builders"
+      },
+      {
+       "backorder": true,
+       "id": "RO-75045",
+       "who": "Brightline Mechanical"
+      }
+     ],
+     "Piston and seal kit": []
+    }
+   },
+   "estGrade": "A",
+   "ft": "Tool pool",
+   "grade": null,
+   "id": "RC-26121",
+   "log": [],
+   "partRul": [
+    98,
+    73,
+    87,
+    87
+   ],
+   "rul": 83,
+   "serial": "CMH-55765",
+   "site": "Houston",
+   "src": "Pool excess",
+   "status": "data"
+  },
+  {
+   "age": 41,
+   "cls": "BRK",
+   "days": 1,
+   "dem": {
+    "bid": [
+     {
+      "exp": 8,
+      "gmin": "B",
+      "id": "BID-93240",
+      "kind": "bid",
+      "price": 750,
+      "what": "Bid BID-93240 from Mesa Pre-Owned Tools for grade B or better, cleaned and tested, valid to 9 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Mesa Pre-Owned Tools"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FC-9000",
+      "kind": "lease",
+      "need": 25,
+      "rate": 70,
+      "renew": true,
+      "site": "Houston",
+      "term": 12,
+      "what": "Fleet contract FC-9000 with Harborview Utilities renews 26 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 31 Oct",
+      "who": "Harborview Utilities"
+     },
+     {
+      "id": "FO-9647",
+      "kind": "lease",
+      "need": 28,
+      "rate": 70,
+      "renew": false,
+      "site": "Houston",
+      "term": 12,
+      "what": "New fleet order FO-9647 from Westmark Supply, start 29 Nov",
+      "when": "order entered 31 Oct",
+      "who": "Westmark Supply"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-4062",
+    "so": [],
+    "wo": {
+     "Chisel holder": [],
+     "Handle and vibration damper": [],
+     "Impact mechanism": [
+      {
+       "backorder": true,
+       "id": "RO-91481",
+       "who": "Tri-County Paving"
+      },
+      {
+       "backorder": true,
+       "id": "RO-18913",
+       "who": "Harborview Utilities"
+      },
+      {
+       "backorder": true,
+       "id": "RO-28999",
+       "who": "Granite Civil"
+      }
+     ],
+     "Motor": [
+      {
+       "backorder": true,
+       "id": "RO-46286",
+       "who": "Harborview Utilities"
+      },
+      {
+       "backorder": true,
+       "id": "RO-53951",
+       "who": "Summit Industrial Services"
+      }
+     ]
+    }
+   },
+   "estGrade": "C",
+   "ft": "Remarketing",
+   "grade": "C",
+   "id": "RC-26113",
+   "log": [],
+   "order": "FO-1637",
+   "partRul": [
+    74,
+    40,
+    65,
+    44
+   ],
+   "path": "refurb",
+   "rul": 52,
+   "sentAt": "31 Oct",
+   "serial": "BRK-13222",
+   "site": "Houston",
+   "src": "Customer trade-in",
+   "status": "sent"
+  },
+  {
+   "age": 41,
+   "cls": "DCD",
+   "days": 8,
+   "dem": {
+    "bid": [
+     {
+      "exp": 4,
+      "gmin": "C",
+      "id": "BID-43214",
+      "kind": "bid",
+      "price": 860,
+      "what": "Bid BID-43214 from Prairie Contractor Supply for grade C or better, cleaned and tested, valid to 5 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Prairie Contractor Supply"
+     },
+     {
+      "exp": 4,
+      "gmin": "C",
+      "id": "BID-32248",
+      "kind": "bid",
+      "price": 850,
+      "what": "Bid BID-32248 from Northline Trade Tools for grade C or better, cleaned and tested, valid to 5 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Northline Trade Tools"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FC-1444",
+      "kind": "lease",
+      "need": 6,
+      "rate": 115,
+      "renew": true,
+      "site": "Atlanta",
+      "term": 24,
+      "what": "Fleet contract FC-1444 with Lakeshore Contractors renews 7 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 31 Oct",
+      "who": "Lakeshore Contractors"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-8709",
+    "so": [],
+    "wo": {
+     "Control electronics": [],
+     "Drill motor": [],
+     "Drill stand": [],
+     "Gearbox": []
+    }
+   },
+   "estGrade": "B",
+   "ft": "Tool pool",
+   "grade": "B",
+   "id": "RC-26141",
+   "log": [],
+   "partRul": [
+    57,
+    72,
+    86,
+    49
+   ],
+   "rul": 64,
+   "serial": "DCD-87875",
+   "site": "Chicago",
+   "src": "Pool excess",
+   "status": "new"
+  },
+  {
+   "age": 3,
+   "cls": "DCD",
+   "days": 3,
+   "dem": {
+    "bid": [
+     {
+      "exp": 8,
+      "gmin": "C",
+      "id": "BID-31653",
+      "kind": "bid",
+      "price": 820,
+      "what": "Bid BID-31653 from Mesa Pre-Owned Tools for grade C or better, cleaned and tested, valid to 9 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Mesa Pre-Owned Tools"
+     },
+     {
+      "exp": 3,
+      "gmin": "B",
+      "id": "BID-51133",
+      "kind": "bid",
+      "price": 1420,
+      "what": "Bid BID-51133 from Gulf Coast Tool Exchange for grade B or better, cleaned and tested, valid to 4 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Gulf Coast Tool Exchange"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FC-4098",
+      "kind": "lease",
+      "need": 27,
+      "rate": 120,
+      "renew": true,
+      "site": "Phoenix",
+      "term": 12,
+      "what": "Fleet contract FC-4098 with Brightline Mechanical renews 28 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 29 Oct",
+      "who": "Brightline Mechanical"
+     },
+     {
+      "id": "FO-8038",
+      "kind": "lease",
+      "need": 28,
+      "rate": 115,
+      "renew": false,
+      "site": "Houston",
+      "term": 12,
+      "what": "New fleet order FO-8038 from Granite Civil, start 29 Nov",
+      "when": "order entered 29 Oct",
+      "who": "Granite Civil"
+     }
+    ],
+    "proj": {
+     "id": "TPR-9546",
+     "kind": "proj",
+     "need": 22,
+     "quote": "PR-5374",
+     "rental": 1340,
+     "site": "Phoenix",
+     "what": "Tool pool request TPR-9546: Phoenix loaner pool is 1 unit short from 23 Nov",
+     "when": "pool shortage raised 29 Oct",
+     "who": "Phoenix tool pool"
+    },
+    "rcq": "RCQ-5363",
+    "so": [],
+    "wo": {
+     "Control electronics": [
+      {
+       "backorder": false,
+       "id": "RO-11662",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "Drill motor": [],
+     "Drill stand": [],
+     "Gearbox": [
+      {
+       "backorder": false,
+       "id": "RO-15138",
+       "who": "Harborview Utilities"
+      },
+      {
+       "backorder": false,
+       "id": "RO-94726",
+       "who": "Tri-County Paving"
+      }
+     ]
+    }
+   },
+   "estGrade": "C",
+   "ft": "Remarketing",
+   "grade": "C",
+   "id": "RC-26128",
+   "log": [],
+   "partRul": [
+    28,
+    61,
+    53,
+    62
+   ],
+   "rul": 44,
+   "serial": "DCD-11644",
+   "site": "Houston",
+   "src": "Customer trade-in",
+   "status": "new"
+  },
+  {
+   "age": 20,
+   "cls": "BRK",
+   "days": 3,
+   "dem": {
+    "bid": [
+     {
+      "exp": 10,
+      "gmin": "C",
+      "id": "BID-36280",
+      "kind": "bid",
+      "price": 440,
+      "what": "Bid BID-36280 from Prairie Contractor Supply for grade C or better, cleaned and tested, valid to 11 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Prairie Contractor Supply"
+     }
+    ],
+    "lease": [],
+    "proj": null,
+    "rcq": "RCQ-5475",
+    "so": [],
+    "wo": {
+     "Chisel holder": [
+      {
+       "backorder": false,
+       "id": "RO-14748",
+       "who": "Granite Ridge Mining"
+      },
+      {
+       "backorder": false,
+       "id": "RO-71291",
+       "who": "Granite Civil"
+      },
+      {
+       "backorder": false,
+       "id": "RO-44696",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "Handle and vibration damper": [
+      {
+       "backorder": false,
+       "id": "RO-27383",
+       "who": "Granite Civil"
+      }
+     ],
+     "Impact mechanism": [],
+     "Motor": [
+      {
+       "backorder": true,
+       "id": "RO-88692",
+       "who": "Westmark Supply"
+      },
+      {
+       "backorder": true,
+       "id": "RO-94555",
+       "who": "Granite Civil"
+      },
+      {
+       "backorder": true,
+       "id": "RO-96828",
+       "who": "Tri-County Paving"
+      }
+     ]
+    }
+   },
+   "estGrade": "C",
+   "ft": "Remarketing",
+   "grade": "C",
+   "id": "RC-26117",
+   "log": [],
+   "order": "FC-4442",
+   "partRul": [
+    40,
+    57,
+    57,
+    52
+   ],
+   "path": "refurb",
+   "rul": 43,
+   "sentAt": "31 Oct",
+   "serial": "BRK-80063",
+   "site": "Houston",
+   "src": "Customer trade-in",
+   "status": "sent"
+  },
+  {
+   "age": 12,
+   "cls": "DCD",
+   "days": 3,
+   "dem": {
+    "bid": [
+     {
+      "exp": 4,
+      "gmin": "C",
+      "id": "BID-46700",
+      "kind": "bid",
+      "price": 850,
+      "what": "Bid BID-46700 from Gulf Coast Tool Exchange for grade C or better, cleaned and tested, valid to 5 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Gulf Coast Tool Exchange"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FO-6487",
+      "kind": "lease",
+      "need": 19,
+      "rate": 120,
+      "renew": false,
+      "site": "Chicago",
+      "term": 12,
+      "what": "New fleet order FO-6487 from Granite Civil, start 20 Nov",
+      "when": "order entered 29 Oct",
+      "who": "Granite Civil"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-3688",
+    "so": [],
+    "wo": {
+     "Control electronics": [
+      {
+       "backorder": true,
+       "id": "RO-76163",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "Drill motor": [
+      {
+       "backorder": true,
+       "id": "RO-45960",
+       "who": "Tri-County Paving"
+      },
+      {
+       "backorder": true,
+       "id": "RO-67387",
+       "who": "Granite Ridge Mining"
+      }
+     ],
+     "Drill stand": [],
+     "Gearbox": []
+    }
+   },
+   "estGrade": "C",
+   "ft": "Remarketing",
+   "grade": "C",
+   "id": "RC-26135",
+   "log": [],
+   "partRul": [
+    70,
+    52,
+    52,
+    48
+   ],
+   "rul": 51,
+   "serial": "DCD-17142",
+   "site": "Chicago",
+   "src": "Customer trade-in",
+   "status": "new"
+  },
+  {
+   "age": 17,
+   "cls": "CMH",
+   "days": 9,
+   "dem": {
+    "bid": [],
+    "lease": [
+     {
+      "id": "FO-8623",
+      "kind": "lease",
+      "need": 32,
+      "rate": 60,
+      "renew": false,
+      "site": "Houston",
+      "term": 12,
+      "what": "New fleet order FO-8623 from Granite Civil, start 3 Dec",
+      "when": "order entered 31 Oct",
+      "who": "Granite Civil"
+     },
+     {
+      "id": "FC-7172",
+      "kind": "lease",
+      "need": 21,
+      "rate": 55,
+      "renew": true,
+      "site": "Phoenix",
+      "term": 18,
+      "what": "Fleet contract FC-7172 with Harborview Utilities renews 22 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 31 Oct",
+      "who": "Harborview Utilities"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-9855",
+    "so": [
+     {
+      "id": "SO-76516",
+      "kind": "so",
+      "need": 38,
+      "price": 820,
+      "site": "Denver",
+      "what": "Sales order SO-76516 from Harborview Utilities: 1 certified pre-owned tool, ship by 9 Dec",
+      "when": "order booked 28 Oct",
+      "who": "Harborview Utilities"
+     }
+    ],
+    "wo": {
+     "Electronics module": [
+      {
+       "backorder": false,
+       "id": "RO-25989",
+       "who": "Brightline Mechanical"
+      }
+     ],
+     "Gearbox": [
+      {
+       "backorder": false,
+       "id": "RO-15006",
+       "who": "Granite Civil"
+      },
+      {
+       "backorder": false,
+       "id": "RO-95593",
+       "who": "Granite Civil"
+      },
+      {
+       "backorder": false,
+       "id": "RO-99646",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "Motor armature": [],
+     "Piston and seal kit": [
+      {
+       "backorder": false,
+       "id": "RO-12798",
+       "who": "Pinecrest Builders"
+      },
+      {
+       "backorder": false,
+       "id": "RO-18122",
+       "who": "Pinecrest Builders"
+      }
+     ]
+    }
+   },
+   "estGrade": "B",
+   "ft": "Remarketing",
+   "grade": "B",
+   "id": "RC-26138",
+   "log": [],
+   "partRul": [
+    70,
+    72,
+    37,
+    45
+   ],
+   "rul": 51,
+   "serial": "CMH-28078",
+   "site": "Phoenix",
+   "src": "Customer trade-in",
+   "status": "new"
+  },
+  {
+   "age": 22,
+   "cls": "CMH",
+   "days": 5,
+   "dem": {
+    "bid": [
+     {
+      "exp": 8,
+      "gmin": "C",
+      "id": "BID-34358",
+      "kind": "bid",
+      "price": 350,
+      "what": "Bid BID-34358 from Mesa Pre-Owned Tools for grade C or better, cleaned and tested, valid to 9 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Mesa Pre-Owned Tools"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FC-2231",
+      "kind": "lease",
+      "need": 19,
+      "rate": 55,
+      "renew": true,
+      "site": "Houston",
+      "term": 12,
+      "what": "Fleet contract FC-2231 with Brightline Mechanical renews 20 Nov; customer confirmed one more combihammer",
+      "when": "renewal confirmed 29 Oct",
+      "who": "Brightline Mechanical"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-8990",
+    "so": [
+     {
+      "id": "SO-88412",
+      "kind": "so",
+      "need": 12,
+      "price": 880,
+      "site": "Atlanta",
+      "what": "Sales order SO-88412 from Westmark Supply: 1 certified pre-owned combihammer, ship by 13 Nov",
+      "when": "order booked 27 Oct",
+      "who": "Westmark Supply"
+     }
+    ],
+    "wo": {
+     "Electronics module": [
+      {
+       "backorder": true,
+       "id": "RO-80270",
+       "who": "Granite Ridge Mining"
+      },
+      {
+       "backorder": true,
+       "id": "RO-17767",
+       "who": "Pinecrest Builders"
+      }
+     ],
+     "Gearbox": [
+      {
+       "backorder": false,
+       "id": "RO-60728",
+       "who": "Summit Industrial Services"
+      },
+      {
+       "backorder": false,
+       "id": "RO-21779",
+       "who": "Lakeshore Contractors"
+      },
+      {
+       "backorder": false,
+       "id": "RO-10080",
+       "who": "Tri-County Paving"
+      }
+     ],
+     "Motor armature": [
+      {
+       "backorder": false,
+       "id": "RO-96701",
+       "who": "Tri-County Paving"
+      },
+      {
+       "backorder": false,
+       "id": "RO-28778",
+       "who": "Summit Industrial Services"
+      },
+      {
+       "backorder": false,
+       "id": "RO-46896",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "Piston and seal kit": []
+    }
+   },
+   "estGrade": "C",
+   "ft": "Repair center",
+   "grade": "C",
+   "id": "RC-26142",
+   "log": [],
+   "partRul": [
+    72,
+    55,
+    59,
+    41
+   ],
+   "rul": 44,
+   "serial": "CMH-81309",
+   "site": "Houston",
+   "src": "Repair request",
+   "status": "new"
+  },
+  {
+   "age": 13,
+   "cls": "CRH",
+   "days": 5,
+   "dem": {
+    "bid": [],
+    "lease": [
+     {
+      "id": "FC-8948",
+      "kind": "lease",
+      "need": 28,
+      "rate": 25,
+      "renew": true,
+      "site": "Atlanta",
+      "term": 24,
+      "what": "Fleet contract FC-8948 with Westmark Supply renews 29 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 26 Oct",
+      "who": "Westmark Supply"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-4760",
+    "so": [],
+    "wo": {
+     "Brushless motor": [],
+     "Chuck assembly": [
+      {
+       "backorder": false,
+       "id": "RO-21706",
+       "who": "Brightline Mechanical"
+      },
+      {
+       "backorder": false,
+       "id": "RO-51941",
+       "who": "Westmark Supply"
+      },
+      {
+       "backorder": false,
+       "id": "RO-84413",
+       "who": "Granite Ridge Mining"
+      }
+     ],
+     "Electronics module": []
+    }
+   },
+   "estGrade": "B",
+   "ft": "Fleet management",
+   "grade": "B",
+   "id": "RC-26129",
+   "log": [],
+   "order": "FC-8948",
+   "partRul": [
+    77,
+    68,
+    59
+   ],
+   "path": "refurb",
+   "rul": 57,
+   "sentAt": "31 Oct",
+   "serial": "CRH-85592",
+   "site": "Houston",
+   "src": "Contract end or fleet swap",
+   "status": "sent"
+  },
+  {
+   "age": 15,
+   "cls": "CRH",
+   "days": 2,
+   "dem": {
+    "bid": [
+     {
+      "exp": 4,
+      "gmin": "C",
+      "id": "BID-40425",
+      "kind": "bid",
+      "price": 160,
+      "what": "Bid BID-40425 from Mesa Pre-Owned Tools for grade C or better, cleaned and tested, valid to 5 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Mesa Pre-Owned Tools"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FO-1212",
+      "kind": "lease",
+      "need": 6,
+      "rate": 25,
+      "renew": false,
+      "site": "Houston",
+      "term": 12,
+      "what": "New fleet order FO-1212 from Brightline Mechanical, start 7 Nov",
+      "when": "order entered 30 Oct",
+      "who": "Brightline Mechanical"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-9387",
+    "so": [
+     {
+      "id": "SO-87260",
+      "kind": "so",
+      "need": 22,
+      "price": 390,
+      "site": "Chicago",
+      "what": "Sales order SO-87260 from Ridgeway Facilities: 1 certified pre-owned tool, ship by 23 Nov",
+      "when": "order booked 27 Oct",
+      "who": "Ridgeway Facilities"
+     }
+    ],
+    "wo": {
+     "Brushless motor": [
+      {
+       "backorder": false,
+       "id": "RO-59505",
+       "who": "Westmark Supply"
+      },
+      {
+       "backorder": false,
+       "id": "RO-63414",
+       "who": "Granite Ridge Mining"
+      },
+      {
+       "backorder": false,
+       "id": "RO-54506",
+       "who": "Lakeshore Contractors"
+      }
+     ],
+     "Chuck assembly": [],
+     "Electronics module": []
+    }
+   },
+   "estGrade": "A",
+   "ft": "Remarketing",
+   "grade": "A",
+   "id": "RC-26143",
+   "log": [],
+   "partRul": [
+    97,
+    76,
+    72
+   ],
+   "rul": 81,
+   "serial": "CRH-42438",
+   "site": "Houston",
+   "src": "Customer trade-in",
+   "status": "new"
+  },
+  {
+   "age": 3,
+   "cls": "BRK",
+   "days": 9,
+   "dem": {
+    "bid": [
+     {
+      "exp": 10,
+      "gmin": "C",
+      "id": "BID-60151",
+      "kind": "bid",
+      "price": 440,
+      "what": "Bid BID-60151 from Prairie Contractor Supply for grade C or better, cleaned and tested, valid to 11 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Prairie Contractor Supply"
+     }
+    ],
+    "lease": [],
+    "proj": {
+     "id": "TPR-8695",
+     "kind": "proj",
+     "need": 5,
+     "quote": "PR-9382",
+     "rental": 800,
+     "site": "Atlanta",
+     "what": "Tool pool request TPR-8695: Atlanta loaner pool is 1 unit short from 6 Nov",
+     "when": "pool shortage raised 27 Oct",
+     "who": "Atlanta tool pool"
+    },
+    "rcq": "RCQ-8966",
+    "so": [],
+    "wo": {
+     "Chisel holder": [],
+     "Handle and vibration damper": [
+      {
+       "backorder": true,
+       "id": "RO-83291",
+       "who": "Granite Ridge Mining"
+      },
+      {
+       "backorder": true,
+       "id": "RO-42067",
+       "who": "Westmark Supply"
+      }
+     ],
+     "Impact mechanism": [],
+     "Motor": []
+    }
+   },
+   "estGrade": "C",
+   "ft": "Fleet management",
+   "grade": null,
+   "id": "RC-26133",
+   "log": [],
+   "partRul": [
+    62,
+    51,
+    49,
+    38
+   ],
+   "rul": 53,
+   "serial": "BRK-31028",
+   "site": "Chicago",
+   "src": "Contract end or fleet swap",
+   "status": "data"
+  },
+  {
+   "age": 28,
+   "cls": "CMH",
+   "days": 5,
+   "dem": {
+    "bid": [
+     {
+      "exp": 6,
+      "gmin": "C",
+      "id": "BID-33418",
+      "kind": "bid",
+      "price": 330,
+      "what": "Bid BID-33418 from Gulf Coast Tool Exchange for grade C or better, cleaned and tested, valid to 7 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Gulf Coast Tool Exchange"
+     }
+    ],
+    "lease": [],
+    "proj": {
+     "id": "TPR-7172",
+     "kind": "proj",
+     "need": 5,
+     "quote": "PR-1718",
+     "rental": 610,
+     "site": "Atlanta",
+     "what": "Tool pool request TPR-7172: Atlanta loaner pool is 1 unit short from 6 Nov",
+     "when": "pool shortage raised 1 Nov",
+     "who": "Atlanta tool pool"
+    },
+    "rcq": "RCQ-3520",
+    "so": [],
+    "wo": {
+     "Electronics module": [
+      {
+       "backorder": true,
+       "id": "RO-31383",
+       "who": "Harborview Utilities"
+      },
+      {
+       "backorder": true,
+       "id": "RO-34106",
+       "who": "Lakeshore Contractors"
+      }
+     ],
+     "Gearbox": [],
+     "Motor armature": [],
+     "Piston and seal kit": [
+      {
+       "backorder": true,
+       "id": "RO-90571",
+       "who": "Granite Ridge Mining"
+      },
+      {
+       "backorder": true,
+       "id": "RO-69717",
+       "who": "Brightline Mechanical"
+      }
+     ]
+    }
+   },
+   "estGrade": "B",
+   "ft": "Tool pool",
+   "grade": "B",
+   "id": "RC-26134",
+   "log": [],
+   "partRul": [
+    72,
+    70,
+    62,
+    37
+   ],
+   "rul": 52,
+   "serial": "CMH-41894",
+   "site": "Houston",
+   "src": "Pool excess",
+   "status": "new"
+  },
+  {
+   "age": 5,
+   "cls": "AGR",
+   "days": 3,
+   "dem": {
+    "bid": [
+     {
+      "exp": 3,
+      "gmin": "C",
+      "id": "BID-90876",
+      "kind": "bid",
+      "price": 50,
+      "what": "Bid BID-90876 from Gulf Coast Tool Exchange for grade C or better, cleaned and tested, valid to 4 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Gulf Coast Tool Exchange"
+     },
+     {
+      "exp": 9,
+      "gmin": "C",
+      "id": "BID-84767",
+      "kind": "bid",
+      "price": 50,
+      "what": "Bid BID-84767 from Prairie Contractor Supply for grade C or better, cleaned and tested, valid to 10 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Prairie Contractor Supply"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FC-9109",
+      "kind": "lease",
+      "need": 12,
+      "rate": 10,
+      "renew": true,
+      "site": "Atlanta",
+      "term": 18,
+      "what": "Fleet contract FC-9109 with Summit Industrial Services renews 13 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 28 Oct",
+      "who": "Summit Industrial Services"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-9687",
+    "so": [
+     {
+      "id": "SO-92872",
+      "kind": "so",
+      "need": 38,
+      "price": 150,
+      "site": "Houston",
+      "what": "Sales order SO-92872 from Pinecrest Builders: 1 certified pre-owned tool, ship by 9 Dec",
+      "when": "order booked 26 Oct",
+      "who": "Pinecrest Builders"
+     }
+    ],
+    "wo": {
+     "Armature": [
+      {
+       "backorder": false,
+       "id": "RO-79173",
+       "who": "Ridgeway Facilities"
+      },
+      {
+       "backorder": false,
+       "id": "RO-74094",
+       "who": "Brightline Mechanical"
+      },
+      {
+       "backorder": false,
+       "id": "RO-12472",
+       "who": "Granite Ridge Mining"
+      }
+     ],
+     "Gear set": [
+      {
+       "backorder": true,
+       "id": "RO-60988",
+       "who": "Pinecrest Builders"
+      },
+      {
+       "backorder": true,
+       "id": "RO-94445",
+       "who": "Westmark Supply"
+      },
+      {
+       "backorder": true,
+       "id": "RO-72586",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "On/off switch": []
+    }
+   },
+   "estGrade": "A",
+   "ft": "Tool pool",
+   "grade": "A",
+   "id": "RC-26119",
+   "log": [],
+   "partRul": [
+    89,
+    65,
+    79
+   ],
+   "rul": 67,
+   "serial": "AGR-49830",
+   "site": "Denver",
+   "src": "Pool excess",
+   "status": "new"
+  },
+  {
+   "age": 15,
+   "cls": "AGR",
+   "days": 8,
+   "dem": {
+    "bid": [],
+    "lease": [],
+    "proj": null,
+    "rcq": "RCQ-9386",
+    "so": [],
+    "wo": {
+     "Armature": [],
+     "Gear set": [
+      {
+       "backorder": false,
+       "id": "RO-60277",
+       "who": "Tri-County Paving"
+      }
+     ],
+     "On/off switch": [
+      {
+       "backorder": true,
+       "id": "RO-75399",
+       "who": "Lakeshore Contractors"
+      },
+      {
+       "backorder": true,
+       "id": "RO-56871",
+       "who": "Ridgeway Facilities"
+      },
+      {
+       "backorder": true,
+       "id": "RO-23925",
+       "who": "Granite Civil"
+      }
+     ]
+    }
+   },
+   "estGrade": "A",
+   "ft": "Remarketing",
+   "grade": "A",
+   "id": "RC-26126",
+   "log": [],
+   "partRul": [
+    61,
+    77,
+    70
+   ],
+   "rul": 71,
+   "serial": "AGR-36128",
+   "site": "Atlanta",
+   "src": "Customer trade-in",
+   "status": "new"
+  },
+  {
+   "age": 26,
+   "cls": "DCD",
+   "days": 1,
+   "dem": {
+    "bid": [],
+    "lease": [],
+    "proj": null,
+    "rcq": "RCQ-3531",
+    "so": [
+     {
+      "id": "SO-98040",
+      "kind": "so",
+      "need": 39,
+      "price": 1890,
+      "site": "Atlanta",
+      "what": "Sales order SO-98040 from Brightline Mechanical: 1 certified pre-owned tool, ship by 10 Dec",
+      "when": "order booked 26 Oct",
+      "who": "Brightline Mechanical"
+     }
+    ],
+    "wo": {
+     "Control electronics": [
+      {
+       "backorder": false,
+       "id": "RO-81708",
+       "who": "Granite Civil"
+      },
+      {
+       "backorder": false,
+       "id": "RO-61328",
+       "who": "Westmark Supply"
+      }
+     ],
+     "Drill motor": [
+      {
+       "backorder": false,
+       "id": "RO-55779",
+       "who": "Granite Civil"
+      }
+     ],
+     "Drill stand": [
+      {
+       "backorder": false,
+       "id": "RO-61253",
+       "who": "Tri-County Paving"
+      }
+     ],
+     "Gearbox": [
+      {
+       "backorder": false,
+       "id": "RO-53017",
+       "who": "Ridgeway Facilities"
+      },
+      {
+       "backorder": false,
+       "id": "RO-84142",
+       "who": "Lakeshore Contractors"
+      },
+      {
+       "backorder": false,
+       "id": "RO-99047",
+       "who": "Tri-County Paving"
+      }
+     ]
+    }
+   },
+   "estGrade": "B",
+   "ft": "Remarketing",
+   "grade": "B",
+   "id": "RC-26131",
+   "log": [],
+   "partRul": [
+    64,
+    64,
+    65,
+    40
+   ],
+   "rul": 56,
+   "serial": "DCD-13083",
+   "site": "Houston",
+   "src": "Customer trade-in",
+   "status": "new"
+  },
+  {
+   "age": 12,
+   "cls": "AGR",
+   "days": 5,
+   "dem": {
+    "bid": [
+     {
+      "exp": 5,
+      "gmin": "C",
+      "id": "BID-43808",
+      "kind": "bid",
+      "price": 50,
+      "what": "Bid BID-43808 from Gulf Coast Tool Exchange for grade C or better, cleaned and tested, valid to 6 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Gulf Coast Tool Exchange"
+     }
+    ],
+    "lease": [],
+    "proj": {
+     "id": "TPR-8309",
+     "kind": "proj",
+     "need": 17,
+     "quote": "PR-2970",
+     "rental": 110,
+     "site": "Denver",
+     "what": "Tool pool request TPR-8309: Denver loaner pool is 1 unit short from 18 Nov",
+     "when": "pool shortage raised 31 Oct",
+     "who": "Denver tool pool"
+    },
+    "rcq": "RCQ-4699",
+    "so": [
+     {
+      "id": "SO-18860",
+      "kind": "so",
+      "need": 17,
+      "price": 140,
+      "site": "Denver",
+      "what": "Sales order SO-18860 from Brightline Mechanical: 1 certified pre-owned tool, ship by 18 Nov",
+      "when": "order booked 26 Oct",
+      "who": "Brightline Mechanical"
+     }
+    ],
+    "wo": {
+     "Armature": [
+      {
+       "backorder": false,
+       "id": "RO-32293",
+       "who": "Brightline Mechanical"
+      },
+      {
+       "backorder": false,
+       "id": "RO-35567",
+       "who": "Lakeshore Contractors"
+      },
+      {
+       "backorder": false,
+       "id": "RO-51485",
+       "who": "Tri-County Paving"
+      }
+     ],
+     "Gear set": [
+      {
+       "backorder": true,
+       "id": "RO-38433",
+       "who": "Granite Ridge Mining"
+      },
+      {
+       "backorder": true,
+       "id": "RO-35315",
+       "who": "Brightline Mechanical"
+      },
+      {
+       "backorder": true,
+       "id": "RO-55836",
+       "who": "Westmark Supply"
+      }
+     ],
+     "On/off switch": []
+    }
+   },
+   "estGrade": "A",
+   "ft": "Remarketing",
+   "grade": null,
+   "id": "RC-26115",
+   "log": [],
+   "partRul": [
+    98,
+    83,
+    62
+   ],
+   "rul": 76,
+   "serial": "AGR-71439",
+   "site": "Phoenix",
+   "src": "Customer trade-in",
+   "status": "data"
+  },
+  {
+   "age": 28,
+   "cls": "AGR",
+   "days": 6,
+   "dem": {
+    "bid": [
+     {
+      "exp": 5,
+      "gmin": "B",
+      "id": "BID-16132",
+      "kind": "bid",
+      "price": 100,
+      "what": "Bid BID-16132 from Northline Trade Tools for grade B or better, cleaned and tested, valid to 6 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Northline Trade Tools"
+     }
+    ],
+    "lease": [],
+    "proj": null,
+    "rcq": "RCQ-3654",
+    "so": [],
+    "wo": {
+     "Armature": [
+      {
+       "backorder": false,
+       "id": "RO-61654",
+       "who": "Harborview Utilities"
+      },
+      {
+       "backorder": false,
+       "id": "RO-99483",
+       "who": "Granite Ridge Mining"
+      },
+      {
+       "backorder": false,
+       "id": "RO-56529",
+       "who": "Summit Industrial Services"
+      }
+     ],
+     "Gear set": [
+      {
+       "backorder": false,
+       "id": "RO-12880",
+       "who": "Brightline Mechanical"
+      },
+      {
+       "backorder": false,
+       "id": "RO-63198",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "On/off switch": [
+      {
+       "backorder": false,
+       "id": "RO-11656",
+       "who": "Granite Ridge Mining"
+      },
+      {
+       "backorder": false,
+       "id": "RO-87621",
+       "who": "Summit Industrial Services"
+      }
+     ]
+    }
+   },
+   "estGrade": "C",
+   "ft": "Fleet management",
+   "grade": "C",
+   "id": "RC-26114",
+   "log": [],
+   "partRul": [
+    45,
+    61,
+    46
+   ],
+   "rul": 56,
+   "serial": "AGR-64589",
+   "site": "Atlanta",
+   "src": "Contract end or fleet swap",
+   "status": "new"
+  },
+  {
+   "age": 22,
+   "cls": "LSR",
+   "days": 2,
+   "dem": {
+    "bid": [],
+    "lease": [
+     {
+      "id": "FC-9060",
+      "kind": "lease",
+      "need": 12,
+      "rate": 40,
+      "renew": true,
+      "site": "Denver",
+      "term": 12,
+      "what": "Fleet contract FC-9060 with Tri-County Paving renews 13 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 26 Oct",
+      "who": "Tri-County Paving"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-8531",
+    "so": [
+     {
+      "id": "SO-30523",
+      "kind": "so",
+      "need": 32,
+      "price": 700,
+      "site": "Denver",
+      "what": "Sales order SO-30523 from Ridgeway Facilities: 1 certified pre-owned tool, ship by 3 Dec",
+      "when": "order booked 26 Oct",
+      "who": "Ridgeway Facilities"
+     }
+    ],
+    "wo": {
+     "Laser module": [
+      {
+       "backorder": false,
+       "id": "RO-61812",
+       "who": "Ridgeway Facilities"
+      },
+      {
+       "backorder": false,
+       "id": "RO-16661",
+       "who": "Westmark Supply"
+      }
+     ],
+     "Receiver": [
+      {
+       "backorder": true,
+       "id": "RO-62987",
+       "who": "Pinecrest Builders"
+      },
+      {
+       "backorder": true,
+       "id": "RO-58915",
+       "who": "Westmark Supply"
+      }
+     ],
+     "Rotor head": []
+    }
+   },
+   "estGrade": "B",
+   "ft": "Tool pool",
+   "grade": "B",
+   "id": "RC-26123",
+   "log": [],
+   "partRul": [
+    57,
+    67,
+    83
+   ],
+   "rul": 61,
+   "serial": "LSR-30684",
+   "site": "Denver",
+   "src": "Pool excess",
+   "status": "new"
+  },
+  {
+   "age": 29,
+   "cls": "AGR",
+   "days": 6,
+   "dem": {
+    "bid": [
+     {
+      "exp": 10,
+      "gmin": "C",
+      "id": "BID-73359",
+      "kind": "bid",
+      "price": 50,
+      "what": "Bid BID-73359 from Gulf Coast Tool Exchange for grade C or better, cleaned and tested, valid to 11 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Gulf Coast Tool Exchange"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FO-3536",
+      "kind": "lease",
+      "need": 30,
+      "rate": 10,
+      "renew": false,
+      "site": "Atlanta",
+      "term": 24,
+      "what": "New fleet order FO-3536 from Brightline Mechanical, start 1 Dec",
+      "when": "order entered 28 Oct",
+      "who": "Brightline Mechanical"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-3198",
+    "so": [
+     {
+      "id": "SO-65918",
+      "kind": "so",
+      "need": 36,
+      "price": 140,
+      "site": "Chicago",
+      "what": "Sales order SO-65918 from Harborview Utilities: 1 certified pre-owned tool, ship by 7 Dec",
+      "when": "order booked 28 Oct",
+      "who": "Harborview Utilities"
+     }
+    ],
+    "wo": {
+     "Armature": [
+      {
+       "backorder": false,
+       "id": "RO-17235",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "Gear set": [],
+     "On/off switch": []
+    }
+   },
+   "estGrade": "B",
+   "ft": "Repair center",
+   "grade": "B",
+   "id": "RC-26118",
+   "log": [],
+   "partRul": [
+    51,
+    57,
+    66
+   ],
+   "rul": 51,
+   "serial": "AGR-89056",
+   "site": "Atlanta",
+   "src": "Repair request",
+   "status": "new"
+  },
+  {
+   "age": 40,
+   "cls": "AGR",
+   "days": 4,
+   "dem": {
+    "bid": [
+     {
+      "exp": 7,
+      "gmin": "C",
+      "id": "BID-78177",
+      "kind": "bid",
+      "price": 50,
+      "what": "Bid BID-78177 from Prairie Contractor Supply for grade C or better, cleaned and tested, valid to 8 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Prairie Contractor Supply"
+     },
+     {
+      "exp": 8,
+      "gmin": "C",
+      "id": "BID-68412",
+      "kind": "bid",
+      "price": 60,
+      "what": "Bid BID-68412 from Mesa Pre-Owned Tools for grade C or better, cleaned and tested, valid to 9 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Mesa Pre-Owned Tools"
+     }
+    ],
+    "lease": [],
+    "proj": null,
+    "rcq": "RCQ-3582",
+    "so": [],
+    "wo": {
+     "Armature": [],
+     "Gear set": [],
+     "On/off switch": []
+    }
+   },
+   "estGrade": "D",
+   "ft": "Fleet management",
+   "grade": "D",
+   "id": "RC-26120",
+   "log": [],
+   "order": null,
+   "partRul": [
+    55,
+    53,
+    41
+   ],
+   "path": "exit",
+   "rul": 34,
+   "sentAt": "31 Oct",
+   "serial": "AGR-14758",
+   "site": "Phoenix",
+   "src": "Contract end or fleet swap",
+   "status": "sent"
+  },
+  {
+   "age": 25,
+   "cls": "CRH",
+   "days": 9,
+   "dem": {
+    "bid": [
+     {
+      "exp": 3,
+      "gmin": "C",
+      "id": "BID-16231",
+      "kind": "bid",
+      "price": 150,
+      "what": "Bid BID-16231 from Prairie Contractor Supply for grade C or better, cleaned and tested, valid to 4 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Prairie Contractor Supply"
+     },
+     {
+      "exp": 7,
+      "gmin": "C",
+      "id": "BID-32624",
+      "kind": "bid",
+      "price": 150,
+      "what": "Bid BID-32624 from Northline Trade Tools for grade C or better, cleaned and tested, valid to 8 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Northline Trade Tools"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FO-5546",
+      "kind": "lease",
+      "need": 29,
+      "rate": 25,
+      "renew": false,
+      "site": "Denver",
+      "term": 18,
+      "what": "New fleet order FO-5546 from Tri-County Paving, start 30 Nov",
+      "when": "order entered 31 Oct",
+      "who": "Tri-County Paving"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-4311",
+    "so": [],
+    "wo": {
+     "Brushless motor": [],
+     "Chuck assembly": [
+      {
+       "backorder": false,
+       "id": "RO-32047",
+       "who": "Lakeshore Contractors"
+      },
+      {
+       "backorder": false,
+       "id": "RO-84000",
+       "who": "Granite Ridge Mining"
+      }
+     ],
+     "Electronics module": [
+      {
+       "backorder": true,
+       "id": "RO-76356",
+       "who": "Pinecrest Builders"
+      }
+     ]
+    }
+   },
+   "estGrade": "D",
+   "ft": "Remarketing",
+   "grade": "D",
+   "id": "RC-26137",
+   "log": [],
+   "partRul": [
+    40,
+    24,
+    15
+   ],
+   "rul": 30,
+   "serial": "CRH-37854",
+   "site": "Denver",
+   "src": "Customer trade-in",
+   "status": "new"
+  },
+  {
+   "age": 22,
+   "cls": "CRH",
+   "days": 9,
+   "dem": {
+    "bid": [
+     {
+      "exp": 8,
+      "gmin": "C",
+      "id": "BID-58955",
+      "kind": "bid",
+      "price": 160,
+      "what": "Bid BID-58955 from Prairie Contractor Supply for grade C or better, cleaned and tested, valid to 9 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Prairie Contractor Supply"
+     }
+    ],
+    "lease": [],
+    "proj": null,
+    "rcq": "RCQ-7404",
+    "so": [],
+    "wo": {
+     "Brushless motor": [],
+     "Chuck assembly": [],
+     "Electronics module": [
+      {
+       "backorder": false,
+       "id": "RO-48408",
+       "who": "Summit Industrial Services"
+      },
+      {
+       "backorder": false,
+       "id": "RO-98482",
+       "who": "Westmark Supply"
+      },
+      {
+       "backorder": false,
+       "id": "RO-34767",
+       "who": "Tri-County Paving"
+      }
+     ]
+    }
+   },
+   "estGrade": "D",
+   "ft": "Fleet management",
+   "grade": "D",
+   "id": "RC-26122",
+   "log": [],
+   "partRul": [
+    41,
+    26,
+    37
+   ],
+   "rul": 34,
+   "serial": "CRH-64968",
+   "site": "Atlanta",
+   "src": "Contract end or fleet swap",
+   "status": "new"
+  },
+  {
+   "age": 9,
+   "cls": "CRH",
+   "days": 4,
+   "dem": {
+    "bid": [
+     {
+      "exp": 8,
+      "gmin": "C",
+      "id": "BID-93419",
+      "kind": "bid",
+      "price": 170,
+      "what": "Bid BID-93419 from Gulf Coast Tool Exchange for grade C or better, cleaned and tested, valid to 9 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Gulf Coast Tool Exchange"
+     }
+    ],
+    "lease": [],
+    "proj": null,
+    "rcq": "RCQ-2665",
+    "so": [
+     {
+      "id": "SO-68951",
+      "kind": "so",
+      "need": 31,
+      "price": 390,
+      "site": "Houston",
+      "what": "Sales order SO-68951 from Westmark Supply: 1 certified pre-owned tool, ship by 2 Dec",
+      "when": "order booked 1 Nov",
+      "who": "Westmark Supply"
+     }
+    ],
+    "wo": {
+     "Brushless motor": [
+      {
+       "backorder": true,
+       "id": "RO-92938",
+       "who": "Lakeshore Contractors"
+      },
+      {
+       "backorder": true,
+       "id": "RO-21274",
+       "who": "Granite Civil"
+      },
+      {
+       "backorder": true,
+       "id": "RO-73309",
+       "who": "Pinecrest Builders"
+      }
+     ],
+     "Chuck assembly": [
+      {
+       "backorder": false,
+       "id": "RO-31002",
+       "who": "Granite Ridge Mining"
+      },
+      {
+       "backorder": false,
+       "id": "RO-35339",
+       "who": "Harborview Utilities"
+      },
+      {
+       "backorder": false,
+       "id": "RO-51983",
+       "who": "Granite Ridge Mining"
+      }
+     ],
+     "Electronics module": [
+      {
+       "backorder": false,
+       "id": "RO-24727",
+       "who": "Summit Industrial Services"
+      },
+      {
+       "backorder": false,
+       "id": "RO-44791",
+       "who": "Brightline Mechanical"
+      }
+     ]
+    }
+   },
+   "estGrade": "D",
+   "ft": "Remarketing",
+   "grade": "D",
+   "id": "RC-26125",
+   "log": [],
+   "partRul": [
+    29,
+    40,
+    50
+   ],
+   "rul": 37,
+   "serial": "CRH-12163",
+   "site": "Phoenix",
+   "src": "Customer trade-in",
+   "status": "new"
+  },
+  {
+   "age": 27,
+   "cls": "BRK",
+   "days": 7,
+   "dem": {
+    "bid": [
+     {
+      "exp": 4,
+      "gmin": "C",
+      "id": "BID-40620",
+      "kind": "bid",
+      "price": 440,
+      "what": "Bid BID-40620 from Northline Trade Tools for grade C or better, cleaned and tested, valid to 5 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Northline Trade Tools"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FO-4075",
+      "kind": "lease",
+      "need": 32,
+      "rate": 75,
+      "renew": false,
+      "site": "Chicago",
+      "term": 12,
+      "what": "New fleet order FO-4075 from Granite Civil, start 3 Dec",
+      "when": "order entered 28 Oct",
+      "who": "Granite Civil"
+     },
+     {
+      "id": "FO-1637",
+      "kind": "lease",
+      "need": 17,
+      "rate": 75,
+      "renew": false,
+      "site": "Phoenix",
+      "term": 18,
+      "what": "New fleet order FO-1637 from Ridgeway Facilities, start 18 Nov",
+      "when": "order entered 28 Oct",
+      "who": "Ridgeway Facilities"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-5350",
+    "so": [],
+    "wo": {
+     "Chisel holder": [
+      {
+       "backorder": true,
+       "id": "RO-44650",
+       "who": "Westmark Supply"
+      },
+      {
+       "backorder": true,
+       "id": "RO-34818",
+       "who": "Pinecrest Builders"
+      }
+     ],
+     "Handle and vibration damper": [
+      {
+       "backorder": false,
+       "id": "RO-76687",
+       "who": "Tri-County Paving"
+      },
+      {
+       "backorder": false,
+       "id": "RO-29464",
+       "who": "Granite Civil"
+      },
+      {
+       "backorder": false,
+       "id": "RO-67769",
+       "who": "Lakeshore Contractors"
+      }
+     ],
+     "Impact mechanism": [
+      {
+       "backorder": false,
+       "id": "RO-86302",
+       "who": "Brightline Mechanical"
+      },
+      {
+       "backorder": false,
+       "id": "RO-13370",
+       "who": "Tri-County Paving"
+      }
+     ],
+     "Motor": []
+    }
+   },
+   "estGrade": "B",
+   "ft": "Remarketing",
+   "grade": "B",
+   "id": "RC-26112",
+   "log": [],
+   "partRul": [
+    66,
+    75,
+    74,
+    67
+   ],
+   "rul": 68,
+   "serial": "BRK-32960",
+   "site": "Phoenix",
+   "src": "Customer trade-in",
+   "status": "new"
+  },
+  {
+   "age": 19,
+   "cls": "CRH",
+   "days": 2,
+   "dem": {
+    "bid": [
+     {
+      "exp": 7,
+      "gmin": "C",
+      "id": "BID-35706",
+      "kind": "bid",
+      "price": 150,
+      "what": "Bid BID-35706 from Mesa Pre-Owned Tools for grade C or better, cleaned and tested, valid to 8 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Mesa Pre-Owned Tools"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FC-6269",
+      "kind": "lease",
+      "need": 29,
+      "rate": 25,
+      "renew": true,
+      "site": "Denver",
+      "term": 12,
+      "what": "Fleet contract FC-6269 with Lakeshore Contractors renews 30 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 30 Oct",
+      "who": "Lakeshore Contractors"
+     }
+    ],
+    "proj": {
+     "id": "TPR-6753",
+     "kind": "proj",
+     "need": 14,
+     "quote": "PR-8642",
+     "rental": 260,
+     "site": "Phoenix",
+     "what": "Tool pool request TPR-6753: Phoenix loaner pool is 1 unit short from 15 Nov",
+     "when": "pool shortage raised 29 Oct",
+     "who": "Phoenix tool pool"
+    },
+    "rcq": "RCQ-9345",
+    "so": [],
+    "wo": {
+     "Brushless motor": [
+      {
+       "backorder": false,
+       "id": "RO-12372",
+       "who": "Summit Industrial Services"
+      },
+      {
+       "backorder": false,
+       "id": "RO-32863",
+       "who": "Granite Civil"
+      }
+     ],
+     "Chuck assembly": [
+      {
+       "backorder": false,
+       "id": "RO-40015",
+       "who": "Ridgeway Facilities"
+      },
+      {
+       "backorder": false,
+       "id": "RO-60618",
+       "who": "Granite Civil"
+      },
+      {
+       "backorder": false,
+       "id": "RO-15375",
+       "who": "Ridgeway Facilities"
+      }
+     ],
+     "Electronics module": [
+      {
+       "backorder": false,
+       "id": "RO-61535",
+       "who": "Tri-County Paving"
+      }
+     ]
+    }
+   },
+   "estGrade": "C",
+   "ft": "Remarketing",
+   "grade": "C",
+   "id": "RC-26116",
+   "log": [],
+   "partRul": [
+    36,
+    49,
+    47
+   ],
+   "rul": 42,
+   "serial": "CRH-25110",
+   "site": "Atlanta",
+   "src": "Customer trade-in",
+   "status": "new"
+  },
+  {
+   "age": 37,
+   "cls": "BRK",
+   "days": 1,
+   "dem": {
+    "bid": [
+     {
+      "exp": 6,
+      "gmin": "C",
+      "id": "BID-72066",
+      "kind": "bid",
+      "price": 460,
+      "what": "Bid BID-72066 from Prairie Contractor Supply for grade C or better, cleaned and tested, valid to 7 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Prairie Contractor Supply"
+     }
+    ],
+    "lease": [],
+    "proj": null,
+    "rcq": "RCQ-9550",
+    "so": [
+     {
+      "id": "SO-40657",
+      "kind": "so",
+      "need": 25,
+      "price": 1100,
+      "site": "Denver",
+      "what": "Sales order SO-40657 from Tri-County Paving: 1 certified pre-owned tool, ship by 26 Nov",
+      "when": "order booked 27 Oct",
+      "who": "Tri-County Paving"
+     }
+    ],
+    "wo": {
+     "Chisel holder": [],
+     "Handle and vibration damper": [],
+     "Impact mechanism": [],
+     "Motor": [
+      {
+       "backorder": false,
+       "id": "RO-24591",
+       "who": "Lakeshore Contractors"
+      },
+      {
+       "backorder": false,
+       "id": "RO-15522",
+       "who": "Brightline Mechanical"
+      }
+     ]
+    }
+   },
+   "estGrade": "A",
+   "ft": "Repair center",
+   "grade": "A",
+   "id": "RC-26124",
+   "log": [],
+   "order": "FO-4075",
+   "partRul": [
+    69,
+    95,
+    84,
+    63
+   ],
+   "path": "release",
+   "rul": 77,
+   "sentAt": "31 Oct",
+   "serial": "BRK-25372",
+   "site": "Atlanta",
+   "src": "Repair request",
+   "status": "sent"
+  },
+  {
+   "age": 30,
+   "cls": "CMH",
+   "days": 5,
+   "dem": {
+    "bid": [
+     {
+      "exp": 10,
+      "gmin": "C",
+      "id": "BID-25930",
+      "kind": "bid",
+      "price": 350,
+      "what": "Bid BID-25930 from Gulf Coast Tool Exchange for grade C or better, cleaned and tested, valid to 11 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Gulf Coast Tool Exchange"
+     },
+     {
+      "exp": 7,
+      "gmin": "C",
+      "id": "BID-69438",
+      "kind": "bid",
+      "price": 360,
+      "what": "Bid BID-69438 from Northline Trade Tools for grade C or better, cleaned and tested, valid to 8 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Northline Trade Tools"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FC-2154",
+      "kind": "lease",
+      "need": 15,
+      "rate": 55,
+      "renew": true,
+      "site": "Denver",
+      "term": 12,
+      "what": "Fleet contract FC-2154 with Ridgeway Facilities renews 16 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 26 Oct",
+      "who": "Ridgeway Facilities"
+     },
+     {
+      "id": "FO-4000",
+      "kind": "lease",
+      "need": 24,
+      "rate": 60,
+      "renew": false,
+      "site": "Denver",
+      "term": 12,
+      "what": "New fleet order FO-4000 from Granite Civil, start 25 Nov",
+      "when": "order entered 1 Nov",
+      "who": "Granite Civil"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-1569",
+    "so": [],
+    "wo": {
+     "Electronics module": [
+      {
+       "backorder": false,
+       "id": "RO-43316",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "Gearbox": [
+      {
+       "backorder": false,
+       "id": "RO-15342",
+       "who": "Granite Ridge Mining"
+      }
+     ],
+     "Motor armature": [],
+     "Piston and seal kit": []
+    }
+   },
+   "estGrade": "C",
+   "ft": "Fleet management",
+   "grade": null,
+   "id": "RC-26127",
+   "log": [],
+   "partRul": [
+    33,
+    30,
+    45,
+    39
+   ],
+   "rul": 35,
+   "serial": "CMH-39551",
+   "site": "Denver",
+   "src": "Contract end or fleet swap",
+   "status": "data"
+  },
+  {
+   "age": 3,
+   "cls": "CMH",
+   "days": 9,
+   "dem": {
+    "bid": [],
+    "lease": [],
+    "proj": {
+     "id": "TPR-8299",
+     "kind": "proj",
+     "need": 22,
+     "quote": "PR-9227",
+     "rental": 610,
+     "site": "Atlanta",
+     "what": "Tool pool request TPR-8299: Atlanta loaner pool is 1 unit short from 23 Nov",
+     "when": "pool shortage raised 31 Oct",
+     "who": "Atlanta tool pool"
+    },
+    "rcq": "RCQ-3427",
+    "so": [
+     {
+      "id": "SO-88046",
+      "kind": "so",
+      "need": 38,
+      "price": 890,
+      "site": "Atlanta",
+      "what": "Sales order SO-88046 from Westmark Supply: 1 certified pre-owned tool, ship by 9 Dec",
+      "when": "order booked 31 Oct",
+      "who": "Westmark Supply"
+     }
+    ],
+    "wo": {
+     "Electronics module": [
+      {
+       "backorder": true,
+       "id": "RO-21798",
+       "who": "Ridgeway Facilities"
+      },
+      {
+       "backorder": true,
+       "id": "RO-62917",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "Gearbox": [],
+     "Motor armature": [
+      {
+       "backorder": false,
+       "id": "RO-90540",
+       "who": "Ridgeway Facilities"
+      },
+      {
+       "backorder": false,
+       "id": "RO-52931",
+       "who": "Westmark Supply"
+      }
+     ],
+     "Piston and seal kit": [
+      {
+       "backorder": true,
+       "id": "RO-29271",
+       "who": "Pinecrest Builders"
+      }
+     ]
+    }
+   },
+   "estGrade": "C",
+   "ft": "Repair center",
+   "grade": "C",
+   "id": "RC-26130",
+   "log": [],
+   "partRul": [
+    29,
+    33,
+    49,
+    49
+   ],
+   "rul": 40,
+   "serial": "CMH-80297",
+   "site": "Phoenix",
+   "src": "Repair request",
+   "status": "new"
+  },
+  {
+   "age": 21,
+   "cls": "LSR",
+   "days": 5,
+   "dem": {
+    "bid": [
+     {
+      "exp": 10,
+      "gmin": "C",
+      "id": "BID-42744",
+      "kind": "bid",
+      "price": 290,
+      "what": "Bid BID-42744 from Mesa Pre-Owned Tools for grade C or better, cleaned and tested, valid to 11 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Mesa Pre-Owned Tools"
+     },
+     {
+      "exp": 3,
+      "gmin": "B",
+      "id": "BID-73715",
+      "kind": "bid",
+      "price": 470,
+      "what": "Bid BID-73715 from Gulf Coast Tool Exchange for grade B or better, cleaned and tested, valid to 4 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Gulf Coast Tool Exchange"
+     }
+    ],
+    "lease": [],
+    "proj": null,
+    "rcq": "RCQ-4900",
+    "so": [
+     {
+      "id": "SO-52026",
+      "kind": "so",
+      "need": 31,
+      "price": 760,
+      "site": "Phoenix",
+      "what": "Sales order SO-52026 from Brightline Mechanical: 1 certified pre-owned tool, ship by 2 Dec",
+      "when": "order booked 30 Oct",
+      "who": "Brightline Mechanical"
+     }
+    ],
+    "wo": {
+     "Laser module": [],
+     "Receiver": [
+      {
+       "backorder": true,
+       "id": "RO-67412",
+       "who": "Brightline Mechanical"
+      },
+      {
+       "backorder": true,
+       "id": "RO-34735",
+       "who": "Summit Industrial Services"
+      }
+     ],
+     "Rotor head": []
+    }
+   },
+   "estGrade": "B",
+   "ft": "Fleet management",
+   "grade": "B",
+   "id": "RC-26132",
+   "log": [],
+   "partRul": [
+    79,
+    87,
+    82
+   ],
+   "rul": 66,
+   "serial": "LSR-19733",
+   "site": "Denver",
+   "src": "Contract end or fleet swap",
+   "status": "new"
+  },
+  {
+   "age": 35,
+   "cls": "CRH",
+   "days": 4,
+   "dem": {
+    "bid": [
+     {
+      "exp": 10,
+      "gmin": "C",
+      "id": "BID-19677",
+      "kind": "bid",
+      "price": 170,
+      "what": "Bid BID-19677 from Gulf Coast Tool Exchange for grade C or better, cleaned and tested, valid to 11 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Gulf Coast Tool Exchange"
+     },
+     {
+      "exp": 9,
+      "gmin": "C",
+      "id": "BID-30448",
+      "kind": "bid",
+      "price": 160,
+      "what": "Bid BID-30448 from Prairie Contractor Supply for grade C or better, cleaned and tested, valid to 10 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Prairie Contractor Supply"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FC-1716",
+      "kind": "lease",
+      "need": 22,
+      "rate": 25,
+      "renew": true,
+      "site": "Atlanta",
+      "term": 12,
+      "what": "Fleet contract FC-1716 with Tri-County Paving renews 23 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 31 Oct",
+      "who": "Tri-County Paving"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-8987",
+    "so": [
+     {
+      "id": "SO-21946",
+      "kind": "so",
+      "need": 30,
+      "price": 410,
+      "site": "Atlanta",
+      "what": "Sales order SO-21946 from Granite Civil: 1 certified pre-owned tool, ship by 1 Dec",
+      "when": "order booked 30 Oct",
+      "who": "Granite Civil"
+     }
+    ],
+    "wo": {
+     "Brushless motor": [
+      {
+       "backorder": true,
+       "id": "RO-45005",
+       "who": "Tri-County Paving"
+      },
+      {
+       "backorder": true,
+       "id": "RO-61673",
+       "who": "Ridgeway Facilities"
+      }
+     ],
+     "Chuck assembly": [
+      {
+       "backorder": true,
+       "id": "RO-63196",
+       "who": "Granite Ridge Mining"
+      }
+     ],
+     "Electronics module": [
+      {
+       "backorder": true,
+       "id": "RO-37639",
+       "who": "Ridgeway Facilities"
+      }
+     ]
+    }
+   },
+   "estGrade": "A",
+   "ft": "Repair center",
+   "grade": "A",
+   "id": "RC-26136",
+   "log": [],
+   "order": "FO-5546",
+   "partRul": [
+    98,
+    91,
+    97
+   ],
+   "path": "release",
+   "rul": 82,
+   "sentAt": "31 Oct",
+   "serial": "CRH-30383",
+   "site": "Phoenix",
+   "src": "Repair request",
+   "status": "sent"
+  },
+  {
+   "age": 17,
+   "cls": "DCD",
+   "days": 5,
+   "dem": {
+    "bid": [
+     {
+      "exp": 3,
+      "gmin": "C",
+      "id": "BID-92497",
+      "kind": "bid",
+      "price": 870,
+      "what": "Bid BID-92497 from Northline Trade Tools for grade C or better, cleaned and tested, valid to 4 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Northline Trade Tools"
+     },
+     {
+      "exp": 10,
+      "gmin": "C",
+      "id": "BID-64074",
+      "kind": "bid",
+      "price": 800,
+      "what": "Bid BID-64074 from Northline Trade Tools for grade C or better, cleaned and tested, valid to 11 Nov",
+      "when": "bid received 30 Oct",
+      "who": "Northline Trade Tools"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FO-8626",
+      "kind": "lease",
+      "need": 7,
+      "rate": 120,
+      "renew": false,
+      "site": "Denver",
+      "term": 18,
+      "what": "New fleet order FO-8626 from Westmark Supply, start 8 Nov",
+      "when": "order entered 28 Oct",
+      "who": "Westmark Supply"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-1130",
+    "so": [
+     {
+      "id": "SO-21714",
+      "kind": "so",
+      "need": 25,
+      "price": 2040,
+      "site": "Atlanta",
+      "what": "Sales order SO-21714 from Westmark Supply: 1 certified pre-owned tool, ship by 26 Nov",
+      "when": "order booked 1 Nov",
+      "who": "Westmark Supply"
+     }
+    ],
+    "wo": {
+     "Control electronics": [
+      {
+       "backorder": true,
+       "id": "RO-54047",
+       "who": "Lakeshore Contractors"
+      }
+     ],
+     "Drill motor": [],
+     "Drill stand": [
+      {
+       "backorder": true,
+       "id": "RO-44311",
+       "who": "Harborview Utilities"
+      },
+      {
+       "backorder": true,
+       "id": "RO-95393",
+       "who": "Granite Ridge Mining"
+      }
+     ],
+     "Gearbox": [
+      {
+       "backorder": false,
+       "id": "RO-11673",
+       "who": "Brightline Mechanical"
+      }
+     ]
+    }
+   },
+   "estGrade": "B",
+   "ft": "Repair center",
+   "grade": "B",
+   "id": "RC-26139",
+   "log": [],
+   "order": "FO-8038",
+   "partRul": [
+    59,
+    58,
+    54,
+    76
+   ],
+   "path": "refurb",
+   "rul": 58,
+   "sentAt": "31 Oct",
+   "serial": "DCD-79069",
+   "site": "Houston",
+   "src": "Repair request",
+   "status": "sent"
+  },
+  {
+   "age": 7,
+   "cls": "AGR",
+   "days": 8,
+   "dem": {
+    "bid": [
+     {
+      "exp": 5,
+      "gmin": "C",
+      "id": "BID-85915",
+      "kind": "bid",
+      "price": 50,
+      "what": "Bid BID-85915 from Mesa Pre-Owned Tools for grade C or better, cleaned and tested, valid to 6 Nov",
+      "when": "bid received 1 Nov",
+      "who": "Mesa Pre-Owned Tools"
+     }
+    ],
+    "lease": [],
+    "proj": null,
+    "rcq": "RCQ-3745",
+    "so": [],
+    "wo": {
+     "Armature": [],
+     "Gear set": [
+      {
+       "backorder": false,
+       "id": "RO-17735",
+       "who": "Pinecrest Builders"
+      },
+      {
+       "backorder": false,
+       "id": "RO-44921",
+       "who": "Granite Civil"
+      }
+     ],
+     "On/off switch": [
+      {
+       "backorder": false,
+       "id": "RO-92977",
+       "who": "Harborview Utilities"
+      },
+      {
+       "backorder": false,
+       "id": "RO-47135",
+       "who": "Summit Industrial Services"
+      }
+     ]
+    }
+   },
+   "estGrade": "C",
+   "ft": "Tool pool",
+   "grade": "C",
+   "id": "RC-26140",
+   "log": [],
+   "partRul": [
+    60,
+    33,
+    44
+   ],
+   "rul": 49,
+   "serial": "AGR-16430",
+   "site": "Phoenix",
+   "src": "Pool excess",
+   "status": "new"
+  },
+  {
+   "age": 39,
+   "cls": "BRK",
+   "days": 4,
+   "dem": {
+    "bid": [
+     {
+      "exp": 4,
+      "gmin": "B",
+      "id": "BID-15944",
+      "kind": "bid",
+      "price": 810,
+      "what": "Bid BID-15944 from Prairie Contractor Supply for grade B or better, cleaned and tested, valid to 5 Nov",
+      "when": "bid received 31 Oct",
+      "who": "Prairie Contractor Supply"
+     }
+    ],
+    "lease": [
+     {
+      "id": "FC-4442",
+      "kind": "lease",
+      "need": 14,
+      "rate": 65,
+      "renew": true,
+      "site": "Atlanta",
+      "term": 18,
+      "what": "Fleet contract FC-4442 with Granite Ridge Mining renews 15 Nov; customer confirmed one more unit of this model",
+      "when": "renewal confirmed 29 Oct",
+      "who": "Granite Ridge Mining"
+     },
+     {
+      "id": "FO-1712",
+      "kind": "lease",
+      "need": 11,
+      "rate": 70,
+      "renew": false,
+      "site": "Atlanta",
+      "term": 12,
+      "what": "New fleet order FO-1712 from Tri-County Paving, start 12 Nov",
+      "when": "order entered 31 Oct",
+      "who": "Tri-County Paving"
+     }
+    ],
+    "proj": null,
+    "rcq": "RCQ-4668",
+    "so": [
+     {
+      "id": "SO-72723",
+      "kind": "so",
+      "need": 18,
+      "price": 1140,
+      "site": "Denver",
+      "what": "Sales order SO-72723 from Lakeshore Contractors: 1 certified pre-owned tool, ship by 19 Nov",
+      "when": "order booked 29 Oct",
+      "who": "Lakeshore Contractors"
+     }
+    ],
+    "wo": {
+     "Chisel holder": [
+      {
+       "backorder": true,
+       "id": "RO-89362",
+       "who": "Brightline Mechanical"
+      },
+      {
+       "backorder": true,
+       "id": "RO-19945",
+       "who": "Brightline Mechanical"
+      }
+     ],
+     "Handle and vibration damper": [
+      {
+       "backorder": true,
+       "id": "RO-66563",
+       "who": "Pinecrest Builders"
+      }
+     ],
+     "Impact mechanism": [
+      {
+       "backorder": true,
+       "id": "RO-86631",
+       "who": "Summit Industrial Services"
+      },
+      {
+       "backorder": true,
+       "id": "RO-37799",
+       "who": "Harborview Utilities"
+      }
+     ],
+     "Motor": []
+    }
+   },
+   "estGrade": "B",
+   "ft": "Tool pool",
+   "grade": "B",
+   "id": "RC-26144",
+   "log": [],
+   "partRul": [
+    72,
+    56,
+    77,
+    85
+   ],
+   "rul": 63,
+   "serial": "BRK-70254",
+   "site": "Atlanta",
+   "src": "Pool excess",
+   "status": "new"
+  }
+ ],
+ "open_ids": [
+  "RC-26121",
+  "RC-26141",
+  "RC-26128",
+  "RC-26135",
+  "RC-26138",
+  "RC-26142",
+  "RC-26143",
+  "RC-26133",
+  "RC-26134",
+  "RC-26119",
+  "RC-26126",
+  "RC-26131",
+  "RC-26115",
+  "RC-26114",
+  "RC-26123",
+  "RC-26118",
+  "RC-26137",
+  "RC-26122",
+  "RC-26125",
+  "RC-26112",
+  "RC-26116",
+  "RC-26127",
+  "RC-26130",
+  "RC-26132",
+  "RC-26140",
+  "RC-26144"
+ ]
+}

@@ -1,0 +1,1241 @@
+{
+ "decisions": [
+  {
+   "best": {
+    "k": "release",
+    "net": 1311.021933
+   },
+   "id": "RC-26121",
+   "paths": [
+    {
+     "k": "release",
+     "net": 1311.021933,
+     "ok": true,
+     "why": "Clean, inspect and issue to Westmark Supply"
+    },
+    {
+     "k": "refurb",
+     "net": 985.612508,
+     "ok": false,
+     "why": "Grade A needs only a clean and inspect (priced under Re-issue and Pre-owned sale)"
+    },
+    {
+     "k": "redeploy",
+     "net": 512,
+     "ok": true,
+     "why": "Place in the Atlanta loaner pool (TPR-7172), from 6 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 276.45,
+     "ok": true,
+     "why": "Clean, test and sell to Northline Trade Tools on bid BID-75500"
+    },
+    {
+     "k": "harvest",
+     "net": 329.4,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-10853, RO-77586"
+    },
+    {
+     "k": "exit",
+     "net": -4,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-8473"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "refurb",
+    "net": 1711.987379
+   },
+   "id": "RC-26141",
+   "paths": [
+    {
+     "k": "release",
+     "net": 2984.951312,
+     "ok": false,
+     "why": "Grade B must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": 1711.987379,
+     "ok": true,
+     "why": "Refurbish, then issue to Granite Civil on fleet order FO-6487"
+    },
+    {
+     "k": "redeploy",
+     "net": 1146,
+     "ok": true,
+     "why": "Place in the Phoenix loaner pool (TPR-9546), from 23 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 710.2,
+     "ok": true,
+     "why": "Clean, test and sell to Prairie Contractor Supply on bid BID-43214"
+    },
+    {
+     "k": "harvest",
+     "net": -130.2,
+     "ok": false,
+     "why": "No part both passes the 50% life test and has an open repair order"
+    },
+    {
+     "k": "exit",
+     "net": 14,
+     "ok": false,
+     "why": "Excluded by business rule BR-01: construction lasers or core drill rigs: never recycle"
+    }
+   ],
+   "rules": [
+    "BR-01"
+   ]
+  },
+  {
+   "best": {
+    "k": "refurb",
+    "net": 1376.369391
+   },
+   "id": "RC-26128",
+   "paths": [
+    {
+     "k": "release",
+     "net": 2899.362176,
+     "ok": false,
+     "why": "Grade C must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": 1376.369391,
+     "ok": true,
+     "why": "Refurbish, then issue to Brightline Mechanical on fleet renewal FC-4098"
+    },
+    {
+     "k": "redeploy",
+     "net": 1146,
+     "ok": false,
+     "why": "Condition too low for the loaner pool"
+    },
+    {
+     "k": "resell",
+     "net": 673.4,
+     "ok": true,
+     "why": "Clean, test and sell to Mesa Pre-Owned Tools on bid BID-31653"
+    },
+    {
+     "k": "harvest",
+     "net": 286.8,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-15138, RO-11662"
+    },
+    {
+     "k": "exit",
+     "net": 14,
+     "ok": false,
+     "why": "Excluded by business rule BR-01: construction lasers or core drill rigs: never recycle"
+    }
+   ],
+   "rules": [
+    "BR-01"
+   ]
+  },
+  {
+   "best": {
+    "k": "redeploy",
+    "net": 1146
+   },
+   "id": "RC-26135",
+   "paths": [
+    {
+     "k": "release",
+     "net": 2929.318373,
+     "ok": false,
+     "why": "Grade C must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": 1146,
+     "ok": true,
+     "why": "Place in the Phoenix loaner pool (TPR-9546), from 23 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 701,
+     "ok": true,
+     "why": "Clean, test and sell to Gulf Coast Tool Exchange on bid BID-46700"
+    },
+    {
+     "k": "harvest",
+     "net": 607.8,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-45960"
+    },
+    {
+     "k": "exit",
+     "net": 14,
+     "ok": false,
+     "why": "Excluded by business rule BR-01: construction lasers or core drill rigs: never recycle"
+    }
+   ],
+   "rules": [
+    "BR-01"
+   ]
+  },
+  {
+   "best": {
+    "k": "refurb",
+    "net": 767.695805
+   },
+   "id": "RC-26138",
+   "paths": [
+    {
+     "k": "release",
+     "net": 1215.369448,
+     "ok": false,
+     "why": "Grade B must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": 767.695805,
+     "ok": true,
+     "why": "Refurbish, then issue to Granite Civil on fleet order FO-8623"
+    },
+    {
+     "k": "redeploy",
+     "net": 512,
+     "ok": true,
+     "why": "Place in the Atlanta loaner pool (TPR-7172), from 6 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 352.81368,
+     "ok": true,
+     "why": "No live bid; outlet estimate for grade B at 51% life"
+    },
+    {
+     "k": "harvest",
+     "net": 39.4,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-15006"
+    },
+    {
+     "k": "exit",
+     "net": -4,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-9855"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "harvest",
+    "net": 401.4
+   },
+   "id": "RC-26142",
+   "paths": [
+    {
+     "k": "release",
+     "net": 1235.882967,
+     "ok": false,
+     "why": "Grade C must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": 512,
+     "ok": false,
+     "why": "Condition too low for the loaner pool"
+    },
+    {
+     "k": "resell",
+     "net": 267.25,
+     "ok": true,
+     "why": "Clean, test and sell to Mesa Pre-Owned Tools on bid BID-34358"
+    },
+    {
+     "k": "harvest",
+     "net": 401.4,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-96701, RO-60728, RO-80270"
+    },
+    {
+     "k": "exit",
+     "net": -4,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-8990"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "release",
+    "net": 636.115893
+   },
+   "id": "RC-26143",
+   "paths": [
+    {
+     "k": "release",
+     "net": 636.115893,
+     "ok": true,
+     "why": "Clean, inspect and issue to Summit Industrial Services"
+    },
+    {
+     "k": "refurb",
+     "net": 558.978196,
+     "ok": false,
+     "why": "Grade A needs only a clean and inspect (priced under Re-issue and Pre-owned sale)"
+    },
+    {
+     "k": "redeploy",
+     "net": 208.2,
+     "ok": true,
+     "why": "Place in the Phoenix loaner pool (TPR-6753), from 15 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 104.9,
+     "ok": true,
+     "why": "Clean, test and sell to Mesa Pre-Owned Tools on bid BID-40425"
+    },
+    {
+     "k": "harvest",
+     "net": 53.8,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-59505"
+    },
+    {
+     "k": "exit",
+     "net": -9,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-9387"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "redeploy",
+    "net": 677
+   },
+   "id": "RC-26133",
+   "paths": [
+    {
+     "k": "release",
+     "net": 1155.464328,
+     "ok": false,
+     "why": "Grade C must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": 677,
+     "ok": true,
+     "why": "Place in the Atlanta loaner pool (TPR-8695), from 6 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 343.3,
+     "ok": true,
+     "why": "Clean, test and sell to Prairie Contractor Supply on bid BID-60151"
+    },
+    {
+     "k": "harvest",
+     "net": -87.8,
+     "ok": false,
+     "why": "No part both passes the 50% life test and has an open repair order"
+    },
+    {
+     "k": "exit",
+     "net": 2,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-8966"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "redeploy",
+    "net": 512
+   },
+   "id": "RC-26134",
+   "paths": [
+    {
+     "k": "release",
+     "net": 1251.296089,
+     "ok": false,
+     "why": "Grade B must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": 512,
+     "ok": true,
+     "why": "Place in the Atlanta loaner pool (TPR-7172), from 6 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 248.85,
+     "ok": true,
+     "why": "Clean, test and sell to Gulf Coast Tool Exchange on bid BID-33418"
+    },
+    {
+     "k": "harvest",
+     "net": 117.4,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-31383"
+    },
+    {
+     "k": "exit",
+     "net": -4,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-3520"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "release",
+    "net": 232.923294
+   },
+   "id": "RC-26119",
+   "paths": [
+    {
+     "k": "release",
+     "net": 232.923294,
+     "ok": true,
+     "why": "Clean, inspect and issue to Brightline Mechanical"
+    },
+    {
+     "k": "refurb",
+     "net": 177.381999,
+     "ok": false,
+     "why": "Grade A needs only a clean and inspect (priced under Re-issue and Pre-owned sale)"
+    },
+    {
+     "k": "redeploy",
+     "net": 93.6,
+     "ok": true,
+     "why": "Place in the Denver loaner pool (TPR-8309), from 18 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 9.1,
+     "ok": true,
+     "why": "Clean, test and sell to Gulf Coast Tool Exchange on bid BID-90876"
+    },
+    {
+     "k": "harvest",
+     "net": 138,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-79173, RO-60988"
+    },
+    {
+     "k": "exit",
+     "net": -11,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-9687"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "release",
+    "net": 208.021339
+   },
+   "id": "RC-26126",
+   "paths": [
+    {
+     "k": "release",
+     "net": 208.021339,
+     "ok": true,
+     "why": "Clean, inspect and issue to Summit Industrial Services"
+    },
+    {
+     "k": "refurb",
+     "net": 152.439736,
+     "ok": false,
+     "why": "Grade A needs only a clean and inspect (priced under Re-issue and Pre-owned sale)"
+    },
+    {
+     "k": "redeploy",
+     "net": 77.6,
+     "ok": true,
+     "why": "Place in the Denver loaner pool (TPR-8309), from 18 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 64.597344,
+     "ok": true,
+     "why": "No live bid; outlet estimate for grade A at 71% life"
+    },
+    {
+     "k": "harvest",
+     "net": 104.4,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-60277, RO-75399"
+    },
+    {
+     "k": "exit",
+     "net": -11,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-9386"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "harvest",
+    "net": 1023.8
+   },
+   "id": "RC-26131",
+   "paths": [
+    {
+     "k": "release",
+     "net": 2950.715657,
+     "ok": false,
+     "why": "Grade B must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": -6,
+     "ok": false,
+     "why": "TPR-9546 (Phoenix tool pool) is planned for RC-26135, where it adds more across the queue"
+    },
+    {
+     "k": "resell",
+     "net": 889.3424,
+     "ok": true,
+     "why": "No live bid; outlet estimate for grade B at 56% life"
+    },
+    {
+     "k": "harvest",
+     "net": 1023.8,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-55779, RO-53017, RO-61253"
+    },
+    {
+     "k": "exit",
+     "net": 14,
+     "ok": false,
+     "why": "Excluded by business rule BR-01: construction lasers or core drill rigs: never recycle"
+    }
+   ],
+   "rules": [
+    "BR-01"
+   ]
+  },
+  {
+   "best": {
+    "k": "harvest",
+    "net": 138
+   },
+   "id": "RC-26115",
+   "paths": [
+    {
+     "k": "release",
+     "net": -8,
+     "ok": false,
+     "why": "FC-9109 (Summit Industrial Services) is planned for RC-26126, where it adds more across the queue"
+    },
+    {
+     "k": "refurb",
+     "net": 59,
+     "ok": false,
+     "why": "Grade A needs only a clean and inspect (priced under Re-issue and Pre-owned sale)"
+    },
+    {
+     "k": "redeploy",
+     "net": 77.6,
+     "ok": true,
+     "why": "Place in the Denver loaner pool (TPR-8309), from 18 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 9.1,
+     "ok": true,
+     "why": "Clean, test and sell to Gulf Coast Tool Exchange on bid BID-43808"
+    },
+    {
+     "k": "harvest",
+     "net": 138,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-32293, RO-38433"
+    },
+    {
+     "k": "exit",
+     "net": -11,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-4699"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "redeploy",
+    "net": 77.6
+   },
+   "id": "RC-26114",
+   "paths": [
+    {
+     "k": "release",
+     "net": 203.112078,
+     "ok": false,
+     "why": "Grade C must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": 77.6,
+     "ok": true,
+     "why": "Place in the Denver loaner pool (TPR-8309), from 18 Nov"
+    },
+    {
+     "k": "resell",
+     "net": 2.52016,
+     "ok": true,
+     "why": "No live bid; outlet estimate for grade C at 56% life"
+    },
+    {
+     "k": "harvest",
+     "net": -19,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-12880"
+    },
+    {
+     "k": "exit",
+     "net": -11,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-3654"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "harvest",
+    "net": 332.8
+   },
+   "id": "RC-26123",
+   "paths": [
+    {
+     "k": "release",
+     "net": -8,
+     "ok": false,
+     "why": "Grade B must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": -6,
+     "ok": false,
+     "why": "No service center pool is short of this model"
+    },
+    {
+     "k": "resell",
+     "net": 309.23376,
+     "ok": true,
+     "why": "No live bid; outlet estimate for grade B at 61% life"
+    },
+    {
+     "k": "harvest",
+     "net": 332.8,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-61812, RO-62987"
+    },
+    {
+     "k": "exit",
+     "net": -8,
+     "ok": false,
+     "why": "Excluded by business rule BR-01: construction lasers or core drill rigs: never recycle"
+    }
+   ],
+   "rules": [
+    "BR-01"
+   ]
+  },
+  {
+   "best": {
+    "k": "resell",
+    "net": 9.1
+   },
+   "id": "RC-26118",
+   "paths": [
+    {
+     "k": "release",
+     "net": 201.475657,
+     "ok": false,
+     "why": "Grade B must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": -6,
+     "ok": false,
+     "why": "TPR-8309 (Denver tool pool) is planned for RC-26114, where it adds more across the queue"
+    },
+    {
+     "k": "resell",
+     "net": 9.1,
+     "ok": true,
+     "why": "Clean, test and sell to Gulf Coast Tool Exchange on bid BID-73359"
+    },
+    {
+     "k": "harvest",
+     "net": 3.4,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-17235"
+    },
+    {
+     "k": "exit",
+     "net": -11,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-3198"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "exit",
+    "net": -9
+   },
+   "id": "RC-26137",
+   "paths": [
+    {
+     "k": "release",
+     "net": 597.14609,
+     "ok": false,
+     "why": "Grade D cannot be issued to a fleet"
+    },
+    {
+     "k": "refurb",
+     "net": 525.812406,
+     "ok": false,
+     "why": "Remaining life 30% is too short to justify refurbishment"
+    },
+    {
+     "k": "redeploy",
+     "net": 208.2,
+     "ok": false,
+     "why": "Condition too low for the loaner pool"
+    },
+    {
+     "k": "resell",
+     "net": -17.65872,
+     "ok": true,
+     "why": "No live bid; outlet estimate for grade D at 30% life"
+    },
+    {
+     "k": "harvest",
+     "net": -46.2,
+     "ok": false,
+     "why": "No part both passes the 50% life test and has an open repair order"
+    },
+    {
+     "k": "exit",
+     "net": -9,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-4311"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "exit",
+    "net": -9
+   },
+   "id": "RC-26122",
+   "paths": [
+    {
+     "k": "release",
+     "net": 618.14609,
+     "ok": false,
+     "why": "Grade D cannot be issued to a fleet"
+    },
+    {
+     "k": "refurb",
+     "net": 550.128985,
+     "ok": false,
+     "why": "Remaining life 34% is too short to justify refurbishment"
+    },
+    {
+     "k": "redeploy",
+     "net": 208.2,
+     "ok": false,
+     "why": "Condition too low for the loaner pool"
+    },
+    {
+     "k": "resell",
+     "net": -17.111136,
+     "ok": true,
+     "why": "No live bid; outlet estimate for grade D at 34% life"
+    },
+    {
+     "k": "harvest",
+     "net": -46.2,
+     "ok": false,
+     "why": "No part both passes the 50% life test and has an open repair order"
+    },
+    {
+     "k": "exit",
+     "net": -9,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-7404"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "exit",
+    "net": -9
+   },
+   "id": "RC-26125",
+   "paths": [
+    {
+     "k": "release",
+     "net": 599.633524,
+     "ok": false,
+     "why": "Grade D cannot be issued to a fleet"
+    },
+    {
+     "k": "refurb",
+     "net": 531.616419,
+     "ok": false,
+     "why": "Remaining life 37% is too short to justify refurbishment"
+    },
+    {
+     "k": "redeploy",
+     "net": 229.2,
+     "ok": false,
+     "why": "Condition too low for the loaner pool"
+    },
+    {
+     "k": "resell",
+     "net": -16.700448,
+     "ok": true,
+     "why": "No live bid; outlet estimate for grade D at 37% life"
+    },
+    {
+     "k": "harvest",
+     "net": -26.7,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-31002"
+    },
+    {
+     "k": "exit",
+     "net": -9,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-2665"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "harvest",
+    "net": 346.2
+   },
+   "id": "RC-26112",
+   "paths": [
+    {
+     "k": "release",
+     "net": 1195.069125,
+     "ok": false,
+     "why": "Grade B must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": -6,
+     "ok": false,
+     "why": "TPR-8695 (Atlanta tool pool) is planned for RC-26133, where it adds more across the queue"
+    },
+    {
+     "k": "resell",
+     "net": 343.3,
+     "ok": true,
+     "why": "Clean, test and sell to Northline Trade Tools on bid BID-40620"
+    },
+    {
+     "k": "harvest",
+     "net": 346.2,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-86302, RO-44650, RO-76687"
+    },
+    {
+     "k": "exit",
+     "net": 2,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-5350"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "resell",
+    "net": 95.7
+   },
+   "id": "RC-26116",
+   "paths": [
+    {
+     "k": "release",
+     "net": 624.779248,
+     "ok": false,
+     "why": "Grade C must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": 208.2,
+     "ok": false,
+     "why": "Condition too low for the loaner pool"
+    },
+    {
+     "k": "resell",
+     "net": 95.7,
+     "ok": true,
+     "why": "Clean, test and sell to Mesa Pre-Owned Tools on bid BID-35706"
+    },
+    {
+     "k": "harvest",
+     "net": -46.2,
+     "ok": false,
+     "why": "No part both passes the 50% life test and has an open repair order"
+    },
+    {
+     "k": "exit",
+     "net": -9,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-9345"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "resell",
+    "net": 276.45
+   },
+   "id": "RC-26127",
+   "paths": [
+    {
+     "k": "release",
+     "net": 1184.543206,
+     "ok": false,
+     "why": "Grade C must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": 844.680104,
+     "ok": false,
+     "why": "Remaining life 35% is too short to justify refurbishment"
+    },
+    {
+     "k": "redeploy",
+     "net": 512,
+     "ok": false,
+     "why": "Condition too low for the loaner pool"
+    },
+    {
+     "k": "resell",
+     "net": 276.45,
+     "ok": true,
+     "why": "Clean, test and sell to Northline Trade Tools on bid BID-69438"
+    },
+    {
+     "k": "harvest",
+     "net": -74.6,
+     "ok": false,
+     "why": "No part both passes the 50% life test and has an open repair order"
+    },
+    {
+     "k": "exit",
+     "net": -4,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-1569"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "refurb",
+    "net": 888.313304
+   },
+   "id": "RC-26130",
+   "paths": [
+    {
+     "k": "release",
+     "net": 1194.176407,
+     "ok": false,
+     "why": "Grade C must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": 888.313304,
+     "ok": true,
+     "why": "Refurbish, then issue to Harborview Utilities on fleet renewal FC-7172"
+    },
+    {
+     "k": "redeploy",
+     "net": 512,
+     "ok": false,
+     "why": "Condition too low for the loaner pool"
+    },
+    {
+     "k": "resell",
+     "net": 168.2948,
+     "ok": true,
+     "why": "No live bid; outlet estimate for grade C at 40% life"
+    },
+    {
+     "k": "harvest",
+     "net": -74.6,
+     "ok": false,
+     "why": "No part both passes the 50% life test and has an open repair order"
+    },
+    {
+     "k": "exit",
+     "net": -4,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-3427"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "resell",
+    "net": 382.9
+   },
+   "id": "RC-26132",
+   "paths": [
+    {
+     "k": "release",
+     "net": 735.677953,
+     "ok": false,
+     "why": "Grade B must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": -6,
+     "ok": false,
+     "why": "No service center pool is short of this model"
+    },
+    {
+     "k": "resell",
+     "net": 382.9,
+     "ok": true,
+     "why": "Clean, test and sell to Gulf Coast Tool Exchange on bid BID-73715"
+    },
+    {
+     "k": "harvest",
+     "net": 120.8,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-67412"
+    },
+    {
+     "k": "exit",
+     "net": -8,
+     "ok": false,
+     "why": "Excluded by business rule BR-01: construction lasers or core drill rigs: never recycle"
+    }
+   ],
+   "rules": [
+    "BR-01"
+   ]
+  },
+  {
+   "best": {
+    "k": "resell",
+    "net": 9.1
+   },
+   "id": "RC-26140",
+   "paths": [
+    {
+     "k": "release",
+     "net": 184.821089,
+     "ok": false,
+     "why": "Grade C must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": -6,
+     "ok": false,
+     "why": "TPR-8309 (Denver tool pool) is planned for RC-26114, where it adds more across the queue"
+    },
+    {
+     "k": "resell",
+     "net": 9.1,
+     "ok": true,
+     "why": "Clean, test and sell to Mesa Pre-Owned Tools on bid BID-85915"
+    },
+    {
+     "k": "harvest",
+     "net": -33.6,
+     "ok": false,
+     "why": "No part both passes the 50% life test and has an open repair order"
+    },
+    {
+     "k": "exit",
+     "net": -11,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-3745"
+    }
+   ],
+   "rules": []
+  },
+  {
+   "best": {
+    "k": "resell",
+    "net": 683.7
+   },
+   "id": "RC-26144",
+   "paths": [
+    {
+     "k": "release",
+     "net": 1222.867526,
+     "ok": false,
+     "why": "Grade B must be refurbished before it can be issued to a fleet (see Refurbish)"
+    },
+    {
+     "k": "refurb",
+     "net": -14,
+     "ok": false,
+     "why": "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"
+    },
+    {
+     "k": "redeploy",
+     "net": -6,
+     "ok": false,
+     "why": "TPR-8695 (Atlanta tool pool) is planned for RC-26133, where it adds more across the queue"
+    },
+    {
+     "k": "resell",
+     "net": 683.7,
+     "ok": true,
+     "why": "Clean, test and sell to Prairie Contractor Supply on bid BID-15944"
+    },
+    {
+     "k": "harvest",
+     "net": 586.2,
+     "ok": true,
+     "why": "Certified parts issued to repair orders RO-86631, RO-89362, RO-66563"
+    },
+    {
+     "k": "exit",
+     "net": 2,
+     "ok": true,
+     "why": "Certified recycling on quote RCQ-4668"
+    }
+   ],
+   "rules": []
+  }
+ ],
+ "rules": [
+  {
+   "action": "exclude",
+   "id": "BR-01",
+   "path": "exit",
+   "scope": {
+    "cls": [
+     "LSR",
+     "DCD"
+    ]
+   },
+   "text": "construction lasers or core drill rigs: never recycle"
+  },
+  {
+   "action": "prefer",
+   "id": "BR-02",
+   "path": "redeploy",
+   "scope": {
+    "ft": [
+     "Repair center"
+    ],
+    "grade": [
+     "A",
+     "B"
+    ]
+   },
+   "text": "Repair center returns, grade A/B: prefer tool pool"
+  }
+ ]
+}

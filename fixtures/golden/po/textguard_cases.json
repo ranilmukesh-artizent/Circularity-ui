@@ -1,0 +1,44 @@
+{
+ "cases": [
+  {
+   "device": null,
+   "equip": null,
+   "text": "Never recycle construction lasers"
+  },
+  {
+   "device": null,
+   "equip": null,
+   "text": "Prefer tool pool for grade A or B from Repair center"
+  },
+  {
+   "device": null,
+   "equip": null,
+   "text": "Only harvest parts for breakers under 30% life"
+  },
+  {
+   "device": null,
+   "equip": "GR-03",
+   "text": "Lower the fit-for-use threshold to 60"
+  },
+  {
+   "device": "GR-D6",
+   "equip": "GR-05",
+   "text": "Skip approval for grade A"
+  },
+  {
+   "device": null,
+   "equip": null,
+   "text": "Lots over 45 days on hand: Auction only"
+  },
+  {
+   "device": null,
+   "equip": null,
+   "text": "Never list grade D on Buy Now"
+  },
+  {
+   "device": null,
+   "equip": null,
+   "text": "Samsung under 24 months prefer offers"
+  }
+ ]
+}

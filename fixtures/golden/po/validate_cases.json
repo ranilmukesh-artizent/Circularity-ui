@@ -1,0 +1,169 @@
+{
+ "cases": [
+  {
+   "checks": [
+    [
+     "ok",
+     "Every step is connected from tool returned.",
+     null
+    ],
+    [
+     "ok",
+     "Every outcome passes the locked guardrail gate.",
+     null
+    ],
+    [
+     "ok",
+     "Every outcome passes owner approval.",
+     null
+    ],
+    [
+     "ok",
+     "BR-01 active: construction lasers or core drill rigs: never recycle.",
+     "r1"
+    ],
+    [
+     "ok",
+     "BR-02 active: Repair center returns, grade A/B: prefer tool pool.",
+     "r2"
+    ]
+   ],
+   "name": "default"
+  },
+  {
+   "checks": [
+    [
+     "warn",
+     "1 step is not connected to the flow and will be ignored: BR-01 · never recycle",
+     "r1"
+    ],
+    [
+     "ok",
+     "Every outcome passes the locked guardrail gate.",
+     null
+    ],
+    [
+     "ok",
+     "Every outcome passes owner approval.",
+     null
+    ],
+    [
+     "warn",
+     "BR-01 is inactive: it must sit between the guardrail gate and choose best path.",
+     "r1"
+    ],
+    [
+     "ok",
+     "BR-02 active: Repair center returns, grade A/B: prefer tool pool.",
+     "r2"
+    ]
+   ],
+   "name": "r1_disconnected"
+  },
+  {
+   "checks": [
+    [
+     "ok",
+     "Every step is connected from tool returned.",
+     null
+    ],
+    [
+     "ok",
+     "Every outcome passes the locked guardrail gate.",
+     null
+    ],
+    [
+     "ok",
+     "Every outcome passes owner approval.",
+     null
+    ],
+    [
+     "warn",
+     "Not offered in this flow: Harvest parts. Removing a path stops Recover from choosing it.",
+     null
+    ],
+    [
+     "ok",
+     "BR-01 active: construction lasers or core drill rigs: never recycle.",
+     "r1"
+    ],
+    [
+     "ok",
+     "BR-02 active: Repair center returns, grade A/B: prefer tool pool.",
+     "r2"
+    ]
+   ],
+   "name": "harvest_removed"
+  },
+  {
+   "checks": [
+    [
+     "ok",
+     "Every step is connected from tool returned.",
+     null
+    ],
+    [
+     "ok",
+     "Every outcome passes the locked guardrail gate.",
+     null
+    ],
+    [
+     "ok",
+     "Every outcome passes owner approval.",
+     null
+    ],
+    [
+     "ok",
+     "BR-01 active: construction lasers or core drill rigs: never recycle.",
+     "r1"
+    ],
+    [
+     "ok",
+     "BR-02 active: Repair center returns, grade A/B: prefer tool pool.",
+     "r2"
+    ],
+    [
+     "fail",
+     "BR-03 breaks GR-01: Grade C and D tools are never issued to a fleet without refurbishment (owner Fleet desk). Blocked, not warned.",
+     "r3"
+    ]
+   ],
+   "name": "release_grade_c"
+  },
+  {
+   "checks": [
+    [
+     "ok",
+     "Every step is connected from tool returned.",
+     null
+    ],
+    [
+     "ok",
+     "Every outcome passes the locked guardrail gate.",
+     null
+    ],
+    [
+     "ok",
+     "Every outcome passes owner approval.",
+     null
+    ],
+    [
+     "ok",
+     "BR-01 active: construction lasers or core drill rigs: never recycle.",
+     "r1"
+    ],
+    [
+     "ok",
+     "BR-02 active: Repair center returns, grade A/B: prefer tool pool.",
+     "r2"
+    ],
+    [
+     "fail",
+     "BR-03 has no path. Pick one in the inspector.",
+     "r3"
+    ]
+   ],
+   "name": "rule_without_path"
+  }
+ ]
+}

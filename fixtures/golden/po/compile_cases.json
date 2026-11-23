@@ -1,0 +1,1950 @@
+{
+ "cases": [
+  {
+   "flow": {
+    "e": [
+     {
+      "a": "in",
+      "b": "cond",
+      "id": "in>cond",
+      "l": ""
+     },
+     {
+      "a": "cond",
+      "b": "dem",
+      "id": "cond>dem",
+      "l": ""
+     },
+     {
+      "a": "dem",
+      "b": "fit",
+      "id": "dem>fit",
+      "l": ""
+     },
+     {
+      "a": "fit",
+      "b": "val",
+      "id": "fit>val",
+      "l": ""
+     },
+     {
+      "a": "val",
+      "b": "gate",
+      "id": "val>gate",
+      "l": ""
+     },
+     {
+      "a": "gate",
+      "b": "r1",
+      "id": "gate>r1",
+      "l": ""
+     },
+     {
+      "a": "r1",
+      "b": "r2",
+      "id": "r1>r2",
+      "l": ""
+     },
+     {
+      "a": "r2",
+      "b": "dec",
+      "id": "r2>dec",
+      "l": ""
+     },
+     {
+      "a": "dec",
+      "b": "apr",
+      "id": "dec>apr",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-release",
+      "id": "apr>p-release",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-refurb",
+      "id": "apr>p-refurb",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-redeploy",
+      "id": "apr>p-redeploy",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-resell",
+      "id": "apr>p-resell",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-harvest",
+      "id": "apr>p-harvest",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-exit",
+      "id": "apr>p-exit",
+      "l": ""
+     },
+     {
+      "a": "p-release",
+      "b": "exe",
+      "id": "p-release>exe",
+      "l": ""
+     },
+     {
+      "a": "p-refurb",
+      "b": "exe",
+      "id": "p-refurb>exe",
+      "l": ""
+     },
+     {
+      "a": "p-redeploy",
+      "b": "exe",
+      "id": "p-redeploy>exe",
+      "l": ""
+     },
+     {
+      "a": "p-resell",
+      "b": "exe",
+      "id": "p-resell>exe",
+      "l": ""
+     },
+     {
+      "a": "p-harvest",
+      "b": "exe",
+      "id": "p-harvest>exe",
+      "l": ""
+     },
+     {
+      "a": "p-exit",
+      "b": "exe",
+      "id": "p-exit>exe",
+      "l": ""
+     },
+     {
+      "a": "exe",
+      "b": "lrn",
+      "id": "exe>lrn",
+      "l": ""
+     }
+    ],
+    "key": "equip",
+    "n": [
+     {
+      "h": 112,
+      "id": "in",
+      "label": "Tool returned",
+      "lock": true,
+      "sub": "Intake agent · contract end, repair, trade-in, pool",
+      "t": "trigger",
+      "x": 24,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "cond",
+      "label": "Read condition and life",
+      "lock": true,
+      "sub": "Condition and life agent",
+      "t": "agent",
+      "x": 220,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "dem",
+      "label": "Find real demand",
+      "lock": true,
+      "sub": "Demand discovery agent",
+      "t": "agent",
+      "x": 416,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "fit",
+      "label": "Fit-for-use test",
+      "lock": true,
+      "sub": "Fit-for-use agent",
+      "t": "agent",
+      "x": 612,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "val",
+      "label": "Price all six paths",
+      "lock": true,
+      "sub": "Valuation agent · net of cost and time",
+      "t": "agent",
+      "x": 808,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "gate",
+      "label": "Guardrail gate",
+      "lock": true,
+      "sub": "GR-01 · GR-02 · GR-03 · GR-04 · GR-06",
+      "t": "gate",
+      "x": 1004,
+      "y": 40
+     },
+     {
+      "action": "exclude",
+      "h": 112,
+      "id": "r1",
+      "label": "",
+      "lock": false,
+      "owner": "Remarketing lead",
+      "path": "exit",
+      "rid": "BR-01",
+      "scope": {
+       "cls": [
+        "LSR",
+        "DCD"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 190
+     },
+     {
+      "action": "prefer",
+      "h": 112,
+      "id": "r2",
+      "label": "",
+      "lock": false,
+      "owner": "Disposition owner",
+      "path": "redeploy",
+      "rid": "BR-02",
+      "scope": {
+       "ft": [
+        "Repair center"
+       ],
+       "grade": [
+        "A",
+        "B"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 330
+     },
+     {
+      "h": 112,
+      "id": "dec",
+      "label": "Choose best path",
+      "lock": true,
+      "sub": "Disposition agent",
+      "t": "decision",
+      "x": 1200,
+      "y": 330
+     },
+     {
+      "h": 112,
+      "id": "apr",
+      "label": "Owner approves",
+      "lock": true,
+      "sub": "GR-05 · named owner",
+      "t": "approval",
+      "x": 1396,
+      "y": 330
+     },
+     {
+      "h": 104,
+      "id": "p-release",
+      "label": "Re-issue to fleet",
+      "lock": false,
+      "owner": "Fleet desk",
+      "path": "release",
+      "sub": "Fleet contract system",
+      "t": "path",
+      "x": 1592,
+      "y": 20
+     },
+     {
+      "h": 104,
+      "id": "p-refurb",
+      "label": "Refurbish → place",
+      "lock": false,
+      "owner": "Repair center lead",
+      "path": "refurb",
+      "sub": "Repair center work orders (ERP service)",
+      "t": "path",
+      "x": 1592,
+      "y": 136
+     },
+     {
+      "h": 104,
+      "id": "p-redeploy",
+      "label": "Tool pool",
+      "lock": false,
+      "owner": "Tool pool planner",
+      "path": "redeploy",
+      "sub": "ERP stock transfer (tool pool)",
+      "t": "path",
+      "x": 1592,
+      "y": 252
+     },
+     {
+      "h": 104,
+      "id": "p-resell",
+      "label": "Pre-owned sale",
+      "lock": false,
+      "owner": "Remarketing lead",
+      "path": "resell",
+      "sub": "Pre-owned sales channel",
+      "t": "path",
+      "x": 1592,
+      "y": 368
+     },
+     {
+      "h": 104,
+      "id": "p-harvest",
+      "label": "Harvest parts",
+      "lock": false,
+      "owner": "Service parts planner",
+      "path": "harvest",
+      "sub": "Repair center teardown + spare parts (ERP)",
+      "t": "path",
+      "x": 1592,
+      "y": 484
+     },
+     {
+      "h": 104,
+      "id": "p-exit",
+      "label": "Recycle",
+      "lock": false,
+      "owner": "Sustainability lead",
+      "path": "exit",
+      "sub": "Recycler portal + circularity ledger",
+      "t": "path",
+      "x": 1592,
+      "y": 600
+     },
+     {
+      "h": 112,
+      "id": "exe",
+      "label": "Execute in owning application",
+      "lock": true,
+      "sub": "Follow-through agent",
+      "t": "execute",
+      "x": 1984,
+      "y": 280
+     },
+     {
+      "h": 112,
+      "id": "lrn",
+      "label": "Outcome to learning memory",
+      "lock": true,
+      "sub": "Feeds valuation and disposition models",
+      "t": "learn",
+      "x": 1984,
+      "y": 420
+     }
+    ]
+   },
+   "name": "default",
+   "rules": [
+    {
+     "action": "exclude",
+     "id": "BR-01",
+     "path": "exit",
+     "scope": {
+      "cls": [
+       "LSR",
+       "DCD"
+      ]
+     },
+     "text": "construction lasers or core drill rigs: never recycle"
+    },
+    {
+     "action": "prefer",
+     "id": "BR-02",
+     "path": "redeploy",
+     "scope": {
+      "ft": [
+       "Repair center"
+      ],
+      "grade": [
+       "A",
+       "B"
+      ]
+     },
+     "text": "Repair center returns, grade A/B: prefer tool pool"
+    }
+   ]
+  },
+  {
+   "flow": {
+    "e": [
+     {
+      "a": "in",
+      "b": "cond",
+      "id": "in>cond",
+      "l": ""
+     },
+     {
+      "a": "cond",
+      "b": "dem",
+      "id": "cond>dem",
+      "l": ""
+     },
+     {
+      "a": "dem",
+      "b": "fit",
+      "id": "dem>fit",
+      "l": ""
+     },
+     {
+      "a": "fit",
+      "b": "val",
+      "id": "fit>val",
+      "l": ""
+     },
+     {
+      "a": "val",
+      "b": "gate",
+      "id": "val>gate",
+      "l": ""
+     },
+     {
+      "a": "r1",
+      "b": "r2",
+      "id": "r1>r2",
+      "l": ""
+     },
+     {
+      "a": "r2",
+      "b": "dec",
+      "id": "r2>dec",
+      "l": ""
+     },
+     {
+      "a": "dec",
+      "b": "apr",
+      "id": "dec>apr",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-release",
+      "id": "apr>p-release",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-refurb",
+      "id": "apr>p-refurb",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-redeploy",
+      "id": "apr>p-redeploy",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-resell",
+      "id": "apr>p-resell",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-harvest",
+      "id": "apr>p-harvest",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-exit",
+      "id": "apr>p-exit",
+      "l": ""
+     },
+     {
+      "a": "p-release",
+      "b": "exe",
+      "id": "p-release>exe",
+      "l": ""
+     },
+     {
+      "a": "p-refurb",
+      "b": "exe",
+      "id": "p-refurb>exe",
+      "l": ""
+     },
+     {
+      "a": "p-redeploy",
+      "b": "exe",
+      "id": "p-redeploy>exe",
+      "l": ""
+     },
+     {
+      "a": "p-resell",
+      "b": "exe",
+      "id": "p-resell>exe",
+      "l": ""
+     },
+     {
+      "a": "p-harvest",
+      "b": "exe",
+      "id": "p-harvest>exe",
+      "l": ""
+     },
+     {
+      "a": "p-exit",
+      "b": "exe",
+      "id": "p-exit>exe",
+      "l": ""
+     },
+     {
+      "a": "exe",
+      "b": "lrn",
+      "id": "exe>lrn",
+      "l": ""
+     },
+     {
+      "a": "gate",
+      "b": "r2",
+      "id": "gate>r2",
+      "l": ""
+     }
+    ],
+    "key": "equip",
+    "n": [
+     {
+      "h": 112,
+      "id": "in",
+      "label": "Tool returned",
+      "lock": true,
+      "sub": "Intake agent · contract end, repair, trade-in, pool",
+      "t": "trigger",
+      "x": 24,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "cond",
+      "label": "Read condition and life",
+      "lock": true,
+      "sub": "Condition and life agent",
+      "t": "agent",
+      "x": 220,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "dem",
+      "label": "Find real demand",
+      "lock": true,
+      "sub": "Demand discovery agent",
+      "t": "agent",
+      "x": 416,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "fit",
+      "label": "Fit-for-use test",
+      "lock": true,
+      "sub": "Fit-for-use agent",
+      "t": "agent",
+      "x": 612,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "val",
+      "label": "Price all six paths",
+      "lock": true,
+      "sub": "Valuation agent · net of cost and time",
+      "t": "agent",
+      "x": 808,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "gate",
+      "label": "Guardrail gate",
+      "lock": true,
+      "sub": "GR-01 · GR-02 · GR-03 · GR-04 · GR-06",
+      "t": "gate",
+      "x": 1004,
+      "y": 40
+     },
+     {
+      "action": "exclude",
+      "h": 112,
+      "id": "r1",
+      "label": "",
+      "lock": false,
+      "owner": "Remarketing lead",
+      "path": "exit",
+      "rid": "BR-01",
+      "scope": {
+       "cls": [
+        "LSR",
+        "DCD"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 190
+     },
+     {
+      "action": "prefer",
+      "h": 112,
+      "id": "r2",
+      "label": "",
+      "lock": false,
+      "owner": "Disposition owner",
+      "path": "redeploy",
+      "rid": "BR-02",
+      "scope": {
+       "ft": [
+        "Repair center"
+       ],
+       "grade": [
+        "A",
+        "B"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 330
+     },
+     {
+      "h": 112,
+      "id": "dec",
+      "label": "Choose best path",
+      "lock": true,
+      "sub": "Disposition agent",
+      "t": "decision",
+      "x": 1200,
+      "y": 330
+     },
+     {
+      "h": 112,
+      "id": "apr",
+      "label": "Owner approves",
+      "lock": true,
+      "sub": "GR-05 · named owner",
+      "t": "approval",
+      "x": 1396,
+      "y": 330
+     },
+     {
+      "h": 104,
+      "id": "p-release",
+      "label": "Re-issue to fleet",
+      "lock": false,
+      "owner": "Fleet desk",
+      "path": "release",
+      "sub": "Fleet contract system",
+      "t": "path",
+      "x": 1592,
+      "y": 20
+     },
+     {
+      "h": 104,
+      "id": "p-refurb",
+      "label": "Refurbish → place",
+      "lock": false,
+      "owner": "Repair center lead",
+      "path": "refurb",
+      "sub": "Repair center work orders (ERP service)",
+      "t": "path",
+      "x": 1592,
+      "y": 136
+     },
+     {
+      "h": 104,
+      "id": "p-redeploy",
+      "label": "Tool pool",
+      "lock": false,
+      "owner": "Tool pool planner",
+      "path": "redeploy",
+      "sub": "ERP stock transfer (tool pool)",
+      "t": "path",
+      "x": 1592,
+      "y": 252
+     },
+     {
+      "h": 104,
+      "id": "p-resell",
+      "label": "Pre-owned sale",
+      "lock": false,
+      "owner": "Remarketing lead",
+      "path": "resell",
+      "sub": "Pre-owned sales channel",
+      "t": "path",
+      "x": 1592,
+      "y": 368
+     },
+     {
+      "h": 104,
+      "id": "p-harvest",
+      "label": "Harvest parts",
+      "lock": false,
+      "owner": "Service parts planner",
+      "path": "harvest",
+      "sub": "Repair center teardown + spare parts (ERP)",
+      "t": "path",
+      "x": 1592,
+      "y": 484
+     },
+     {
+      "h": 104,
+      "id": "p-exit",
+      "label": "Recycle",
+      "lock": false,
+      "owner": "Sustainability lead",
+      "path": "exit",
+      "sub": "Recycler portal + circularity ledger",
+      "t": "path",
+      "x": 1592,
+      "y": 600
+     },
+     {
+      "h": 112,
+      "id": "exe",
+      "label": "Execute in owning application",
+      "lock": true,
+      "sub": "Follow-through agent",
+      "t": "execute",
+      "x": 1984,
+      "y": 280
+     },
+     {
+      "h": 112,
+      "id": "lrn",
+      "label": "Outcome to learning memory",
+      "lock": true,
+      "sub": "Feeds valuation and disposition models",
+      "t": "learn",
+      "x": 1984,
+      "y": 420
+     }
+    ]
+   },
+   "name": "r1_disconnected",
+   "rules": [
+    {
+     "action": "prefer",
+     "id": "BR-02",
+     "path": "redeploy",
+     "scope": {
+      "ft": [
+       "Repair center"
+      ],
+      "grade": [
+       "A",
+       "B"
+      ]
+     },
+     "text": "Repair center returns, grade A/B: prefer tool pool"
+    }
+   ]
+  },
+  {
+   "flow": {
+    "e": [
+     {
+      "a": "in",
+      "b": "cond",
+      "id": "in>cond",
+      "l": ""
+     },
+     {
+      "a": "cond",
+      "b": "dem",
+      "id": "cond>dem",
+      "l": ""
+     },
+     {
+      "a": "dem",
+      "b": "fit",
+      "id": "dem>fit",
+      "l": ""
+     },
+     {
+      "a": "fit",
+      "b": "val",
+      "id": "fit>val",
+      "l": ""
+     },
+     {
+      "a": "val",
+      "b": "gate",
+      "id": "val>gate",
+      "l": ""
+     },
+     {
+      "a": "gate",
+      "b": "r1",
+      "id": "gate>r1",
+      "l": ""
+     },
+     {
+      "a": "r1",
+      "b": "r2",
+      "id": "r1>r2",
+      "l": ""
+     },
+     {
+      "a": "r2",
+      "b": "dec",
+      "id": "r2>dec",
+      "l": ""
+     },
+     {
+      "a": "dec",
+      "b": "apr",
+      "id": "dec>apr",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-release",
+      "id": "apr>p-release",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-refurb",
+      "id": "apr>p-refurb",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-redeploy",
+      "id": "apr>p-redeploy",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-resell",
+      "id": "apr>p-resell",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-exit",
+      "id": "apr>p-exit",
+      "l": ""
+     },
+     {
+      "a": "p-release",
+      "b": "exe",
+      "id": "p-release>exe",
+      "l": ""
+     },
+     {
+      "a": "p-refurb",
+      "b": "exe",
+      "id": "p-refurb>exe",
+      "l": ""
+     },
+     {
+      "a": "p-redeploy",
+      "b": "exe",
+      "id": "p-redeploy>exe",
+      "l": ""
+     },
+     {
+      "a": "p-resell",
+      "b": "exe",
+      "id": "p-resell>exe",
+      "l": ""
+     },
+     {
+      "a": "p-exit",
+      "b": "exe",
+      "id": "p-exit>exe",
+      "l": ""
+     },
+     {
+      "a": "exe",
+      "b": "lrn",
+      "id": "exe>lrn",
+      "l": ""
+     }
+    ],
+    "key": "equip",
+    "n": [
+     {
+      "h": 112,
+      "id": "in",
+      "label": "Tool returned",
+      "lock": true,
+      "sub": "Intake agent · contract end, repair, trade-in, pool",
+      "t": "trigger",
+      "x": 24,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "cond",
+      "label": "Read condition and life",
+      "lock": true,
+      "sub": "Condition and life agent",
+      "t": "agent",
+      "x": 220,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "dem",
+      "label": "Find real demand",
+      "lock": true,
+      "sub": "Demand discovery agent",
+      "t": "agent",
+      "x": 416,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "fit",
+      "label": "Fit-for-use test",
+      "lock": true,
+      "sub": "Fit-for-use agent",
+      "t": "agent",
+      "x": 612,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "val",
+      "label": "Price all six paths",
+      "lock": true,
+      "sub": "Valuation agent · net of cost and time",
+      "t": "agent",
+      "x": 808,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "gate",
+      "label": "Guardrail gate",
+      "lock": true,
+      "sub": "GR-01 · GR-02 · GR-03 · GR-04 · GR-06",
+      "t": "gate",
+      "x": 1004,
+      "y": 40
+     },
+     {
+      "action": "exclude",
+      "h": 112,
+      "id": "r1",
+      "label": "",
+      "lock": false,
+      "owner": "Remarketing lead",
+      "path": "exit",
+      "rid": "BR-01",
+      "scope": {
+       "cls": [
+        "LSR",
+        "DCD"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 190
+     },
+     {
+      "action": "prefer",
+      "h": 112,
+      "id": "r2",
+      "label": "",
+      "lock": false,
+      "owner": "Disposition owner",
+      "path": "redeploy",
+      "rid": "BR-02",
+      "scope": {
+       "ft": [
+        "Repair center"
+       ],
+       "grade": [
+        "A",
+        "B"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 330
+     },
+     {
+      "h": 112,
+      "id": "dec",
+      "label": "Choose best path",
+      "lock": true,
+      "sub": "Disposition agent",
+      "t": "decision",
+      "x": 1200,
+      "y": 330
+     },
+     {
+      "h": 112,
+      "id": "apr",
+      "label": "Owner approves",
+      "lock": true,
+      "sub": "GR-05 · named owner",
+      "t": "approval",
+      "x": 1396,
+      "y": 330
+     },
+     {
+      "h": 104,
+      "id": "p-release",
+      "label": "Re-issue to fleet",
+      "lock": false,
+      "owner": "Fleet desk",
+      "path": "release",
+      "sub": "Fleet contract system",
+      "t": "path",
+      "x": 1592,
+      "y": 20
+     },
+     {
+      "h": 104,
+      "id": "p-refurb",
+      "label": "Refurbish → place",
+      "lock": false,
+      "owner": "Repair center lead",
+      "path": "refurb",
+      "sub": "Repair center work orders (ERP service)",
+      "t": "path",
+      "x": 1592,
+      "y": 136
+     },
+     {
+      "h": 104,
+      "id": "p-redeploy",
+      "label": "Tool pool",
+      "lock": false,
+      "owner": "Tool pool planner",
+      "path": "redeploy",
+      "sub": "ERP stock transfer (tool pool)",
+      "t": "path",
+      "x": 1592,
+      "y": 252
+     },
+     {
+      "h": 104,
+      "id": "p-resell",
+      "label": "Pre-owned sale",
+      "lock": false,
+      "owner": "Remarketing lead",
+      "path": "resell",
+      "sub": "Pre-owned sales channel",
+      "t": "path",
+      "x": 1592,
+      "y": 368
+     },
+     {
+      "h": 104,
+      "id": "p-exit",
+      "label": "Recycle",
+      "lock": false,
+      "owner": "Sustainability lead",
+      "path": "exit",
+      "sub": "Recycler portal + circularity ledger",
+      "t": "path",
+      "x": 1592,
+      "y": 600
+     },
+     {
+      "h": 112,
+      "id": "exe",
+      "label": "Execute in owning application",
+      "lock": true,
+      "sub": "Follow-through agent",
+      "t": "execute",
+      "x": 1984,
+      "y": 280
+     },
+     {
+      "h": 112,
+      "id": "lrn",
+      "label": "Outcome to learning memory",
+      "lock": true,
+      "sub": "Feeds valuation and disposition models",
+      "t": "learn",
+      "x": 1984,
+      "y": 420
+     }
+    ]
+   },
+   "name": "harvest_removed",
+   "rules": [
+    {
+     "action": "exclude",
+     "id": "BR-01",
+     "path": "exit",
+     "scope": {
+      "cls": [
+       "LSR",
+       "DCD"
+      ]
+     },
+     "text": "construction lasers or core drill rigs: never recycle"
+    },
+    {
+     "action": "prefer",
+     "id": "BR-02",
+     "path": "redeploy",
+     "scope": {
+      "ft": [
+       "Repair center"
+      ],
+      "grade": [
+       "A",
+       "B"
+      ]
+     },
+     "text": "Repair center returns, grade A/B: prefer tool pool"
+    },
+    {
+     "action": "exclude",
+     "id": "FLOW",
+     "path": "harvest",
+     "scope": {},
+     "text": "removed from flow"
+    }
+   ]
+  },
+  {
+   "flow": {
+    "e": [
+     {
+      "a": "in",
+      "b": "cond",
+      "id": "in>cond",
+      "l": ""
+     },
+     {
+      "a": "cond",
+      "b": "dem",
+      "id": "cond>dem",
+      "l": ""
+     },
+     {
+      "a": "dem",
+      "b": "fit",
+      "id": "dem>fit",
+      "l": ""
+     },
+     {
+      "a": "fit",
+      "b": "val",
+      "id": "fit>val",
+      "l": ""
+     },
+     {
+      "a": "val",
+      "b": "gate",
+      "id": "val>gate",
+      "l": ""
+     },
+     {
+      "a": "gate",
+      "b": "r1",
+      "id": "gate>r1",
+      "l": ""
+     },
+     {
+      "a": "r1",
+      "b": "r2",
+      "id": "r1>r2",
+      "l": ""
+     },
+     {
+      "a": "dec",
+      "b": "apr",
+      "id": "dec>apr",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-release",
+      "id": "apr>p-release",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-refurb",
+      "id": "apr>p-refurb",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-redeploy",
+      "id": "apr>p-redeploy",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-resell",
+      "id": "apr>p-resell",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-harvest",
+      "id": "apr>p-harvest",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-exit",
+      "id": "apr>p-exit",
+      "l": ""
+     },
+     {
+      "a": "p-release",
+      "b": "exe",
+      "id": "p-release>exe",
+      "l": ""
+     },
+     {
+      "a": "p-refurb",
+      "b": "exe",
+      "id": "p-refurb>exe",
+      "l": ""
+     },
+     {
+      "a": "p-redeploy",
+      "b": "exe",
+      "id": "p-redeploy>exe",
+      "l": ""
+     },
+     {
+      "a": "p-resell",
+      "b": "exe",
+      "id": "p-resell>exe",
+      "l": ""
+     },
+     {
+      "a": "p-harvest",
+      "b": "exe",
+      "id": "p-harvest>exe",
+      "l": ""
+     },
+     {
+      "a": "p-exit",
+      "b": "exe",
+      "id": "p-exit>exe",
+      "l": ""
+     },
+     {
+      "a": "exe",
+      "b": "lrn",
+      "id": "exe>lrn",
+      "l": ""
+     },
+     {
+      "a": "r2",
+      "b": "r3",
+      "id": "r2>r3",
+      "l": ""
+     },
+     {
+      "a": "r3",
+      "b": "dec",
+      "id": "r3>dec",
+      "l": ""
+     }
+    ],
+    "key": "equip",
+    "n": [
+     {
+      "h": 112,
+      "id": "in",
+      "label": "Tool returned",
+      "lock": true,
+      "sub": "Intake agent · contract end, repair, trade-in, pool",
+      "t": "trigger",
+      "x": 24,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "cond",
+      "label": "Read condition and life",
+      "lock": true,
+      "sub": "Condition and life agent",
+      "t": "agent",
+      "x": 220,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "dem",
+      "label": "Find real demand",
+      "lock": true,
+      "sub": "Demand discovery agent",
+      "t": "agent",
+      "x": 416,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "fit",
+      "label": "Fit-for-use test",
+      "lock": true,
+      "sub": "Fit-for-use agent",
+      "t": "agent",
+      "x": 612,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "val",
+      "label": "Price all six paths",
+      "lock": true,
+      "sub": "Valuation agent · net of cost and time",
+      "t": "agent",
+      "x": 808,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "gate",
+      "label": "Guardrail gate",
+      "lock": true,
+      "sub": "GR-01 · GR-02 · GR-03 · GR-04 · GR-06",
+      "t": "gate",
+      "x": 1004,
+      "y": 40
+     },
+     {
+      "action": "exclude",
+      "h": 112,
+      "id": "r1",
+      "label": "",
+      "lock": false,
+      "owner": "Remarketing lead",
+      "path": "exit",
+      "rid": "BR-01",
+      "scope": {
+       "cls": [
+        "LSR",
+        "DCD"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 190
+     },
+     {
+      "action": "prefer",
+      "h": 112,
+      "id": "r2",
+      "label": "",
+      "lock": false,
+      "owner": "Disposition owner",
+      "path": "redeploy",
+      "rid": "BR-02",
+      "scope": {
+       "ft": [
+        "Repair center"
+       ],
+       "grade": [
+        "A",
+        "B"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 330
+     },
+     {
+      "h": 112,
+      "id": "dec",
+      "label": "Choose best path",
+      "lock": true,
+      "sub": "Disposition agent",
+      "t": "decision",
+      "x": 1200,
+      "y": 330
+     },
+     {
+      "h": 112,
+      "id": "apr",
+      "label": "Owner approves",
+      "lock": true,
+      "sub": "GR-05 · named owner",
+      "t": "approval",
+      "x": 1396,
+      "y": 330
+     },
+     {
+      "h": 104,
+      "id": "p-release",
+      "label": "Re-issue to fleet",
+      "lock": false,
+      "owner": "Fleet desk",
+      "path": "release",
+      "sub": "Fleet contract system",
+      "t": "path",
+      "x": 1592,
+      "y": 20
+     },
+     {
+      "h": 104,
+      "id": "p-refurb",
+      "label": "Refurbish → place",
+      "lock": false,
+      "owner": "Repair center lead",
+      "path": "refurb",
+      "sub": "Repair center work orders (ERP service)",
+      "t": "path",
+      "x": 1592,
+      "y": 136
+     },
+     {
+      "h": 104,
+      "id": "p-redeploy",
+      "label": "Tool pool",
+      "lock": false,
+      "owner": "Tool pool planner",
+      "path": "redeploy",
+      "sub": "ERP stock transfer (tool pool)",
+      "t": "path",
+      "x": 1592,
+      "y": 252
+     },
+     {
+      "h": 104,
+      "id": "p-resell",
+      "label": "Pre-owned sale",
+      "lock": false,
+      "owner": "Remarketing lead",
+      "path": "resell",
+      "sub": "Pre-owned sales channel",
+      "t": "path",
+      "x": 1592,
+      "y": 368
+     },
+     {
+      "h": 104,
+      "id": "p-harvest",
+      "label": "Harvest parts",
+      "lock": false,
+      "owner": "Service parts planner",
+      "path": "harvest",
+      "sub": "Repair center teardown + spare parts (ERP)",
+      "t": "path",
+      "x": 1592,
+      "y": 484
+     },
+     {
+      "h": 104,
+      "id": "p-exit",
+      "label": "Recycle",
+      "lock": false,
+      "owner": "Sustainability lead",
+      "path": "exit",
+      "sub": "Recycler portal + circularity ledger",
+      "t": "path",
+      "x": 1592,
+      "y": 600
+     },
+     {
+      "h": 112,
+      "id": "exe",
+      "label": "Execute in owning application",
+      "lock": true,
+      "sub": "Follow-through agent",
+      "t": "execute",
+      "x": 1984,
+      "y": 280
+     },
+     {
+      "h": 112,
+      "id": "lrn",
+      "label": "Outcome to learning memory",
+      "lock": true,
+      "sub": "Feeds valuation and disposition models",
+      "t": "learn",
+      "x": 1984,
+      "y": 420
+     },
+     {
+      "action": "prefer",
+      "h": 112,
+      "id": "r3",
+      "label": "",
+      "lock": false,
+      "owner": "Fleet desk",
+      "path": "release",
+      "rid": "BR-03",
+      "scope": {
+       "grade": [
+        "C"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 470
+     }
+    ]
+   },
+   "name": "release_grade_c",
+   "rules": [
+    {
+     "action": "exclude",
+     "id": "BR-01",
+     "path": "exit",
+     "scope": {
+      "cls": [
+       "LSR",
+       "DCD"
+      ]
+     },
+     "text": "construction lasers or core drill rigs: never recycle"
+    },
+    {
+     "action": "prefer",
+     "id": "BR-02",
+     "path": "redeploy",
+     "scope": {
+      "ft": [
+       "Repair center"
+      ],
+      "grade": [
+       "A",
+       "B"
+      ]
+     },
+     "text": "Repair center returns, grade A/B: prefer tool pool"
+    }
+   ]
+  },
+  {
+   "flow": {
+    "e": [
+     {
+      "a": "in",
+      "b": "cond",
+      "id": "in>cond",
+      "l": ""
+     },
+     {
+      "a": "cond",
+      "b": "dem",
+      "id": "cond>dem",
+      "l": ""
+     },
+     {
+      "a": "dem",
+      "b": "fit",
+      "id": "dem>fit",
+      "l": ""
+     },
+     {
+      "a": "fit",
+      "b": "val",
+      "id": "fit>val",
+      "l": ""
+     },
+     {
+      "a": "val",
+      "b": "gate",
+      "id": "val>gate",
+      "l": ""
+     },
+     {
+      "a": "gate",
+      "b": "r1",
+      "id": "gate>r1",
+      "l": ""
+     },
+     {
+      "a": "r1",
+      "b": "r2",
+      "id": "r1>r2",
+      "l": ""
+     },
+     {
+      "a": "dec",
+      "b": "apr",
+      "id": "dec>apr",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-release",
+      "id": "apr>p-release",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-refurb",
+      "id": "apr>p-refurb",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-redeploy",
+      "id": "apr>p-redeploy",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-resell",
+      "id": "apr>p-resell",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-harvest",
+      "id": "apr>p-harvest",
+      "l": ""
+     },
+     {
+      "a": "apr",
+      "b": "p-exit",
+      "id": "apr>p-exit",
+      "l": ""
+     },
+     {
+      "a": "p-release",
+      "b": "exe",
+      "id": "p-release>exe",
+      "l": ""
+     },
+     {
+      "a": "p-refurb",
+      "b": "exe",
+      "id": "p-refurb>exe",
+      "l": ""
+     },
+     {
+      "a": "p-redeploy",
+      "b": "exe",
+      "id": "p-redeploy>exe",
+      "l": ""
+     },
+     {
+      "a": "p-resell",
+      "b": "exe",
+      "id": "p-resell>exe",
+      "l": ""
+     },
+     {
+      "a": "p-harvest",
+      "b": "exe",
+      "id": "p-harvest>exe",
+      "l": ""
+     },
+     {
+      "a": "p-exit",
+      "b": "exe",
+      "id": "p-exit>exe",
+      "l": ""
+     },
+     {
+      "a": "exe",
+      "b": "lrn",
+      "id": "exe>lrn",
+      "l": ""
+     },
+     {
+      "a": "r2",
+      "b": "r3",
+      "id": "r2>r3",
+      "l": ""
+     },
+     {
+      "a": "r3",
+      "b": "dec",
+      "id": "r3>dec",
+      "l": ""
+     }
+    ],
+    "key": "equip",
+    "n": [
+     {
+      "h": 112,
+      "id": "in",
+      "label": "Tool returned",
+      "lock": true,
+      "sub": "Intake agent · contract end, repair, trade-in, pool",
+      "t": "trigger",
+      "x": 24,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "cond",
+      "label": "Read condition and life",
+      "lock": true,
+      "sub": "Condition and life agent",
+      "t": "agent",
+      "x": 220,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "dem",
+      "label": "Find real demand",
+      "lock": true,
+      "sub": "Demand discovery agent",
+      "t": "agent",
+      "x": 416,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "fit",
+      "label": "Fit-for-use test",
+      "lock": true,
+      "sub": "Fit-for-use agent",
+      "t": "agent",
+      "x": 612,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "val",
+      "label": "Price all six paths",
+      "lock": true,
+      "sub": "Valuation agent · net of cost and time",
+      "t": "agent",
+      "x": 808,
+      "y": 40
+     },
+     {
+      "h": 112,
+      "id": "gate",
+      "label": "Guardrail gate",
+      "lock": true,
+      "sub": "GR-01 · GR-02 · GR-03 · GR-04 · GR-06",
+      "t": "gate",
+      "x": 1004,
+      "y": 40
+     },
+     {
+      "action": "exclude",
+      "h": 112,
+      "id": "r1",
+      "label": "",
+      "lock": false,
+      "owner": "Remarketing lead",
+      "path": "exit",
+      "rid": "BR-01",
+      "scope": {
+       "cls": [
+        "LSR",
+        "DCD"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 190
+     },
+     {
+      "action": "prefer",
+      "h": 112,
+      "id": "r2",
+      "label": "",
+      "lock": false,
+      "owner": "Disposition owner",
+      "path": "redeploy",
+      "rid": "BR-02",
+      "scope": {
+       "ft": [
+        "Repair center"
+       ],
+       "grade": [
+        "A",
+        "B"
+       ]
+      },
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 330
+     },
+     {
+      "h": 112,
+      "id": "dec",
+      "label": "Choose best path",
+      "lock": true,
+      "sub": "Disposition agent",
+      "t": "decision",
+      "x": 1200,
+      "y": 330
+     },
+     {
+      "h": 112,
+      "id": "apr",
+      "label": "Owner approves",
+      "lock": true,
+      "sub": "GR-05 · named owner",
+      "t": "approval",
+      "x": 1396,
+      "y": 330
+     },
+     {
+      "h": 104,
+      "id": "p-release",
+      "label": "Re-issue to fleet",
+      "lock": false,
+      "owner": "Fleet desk",
+      "path": "release",
+      "sub": "Fleet contract system",
+      "t": "path",
+      "x": 1592,
+      "y": 20
+     },
+     {
+      "h": 104,
+      "id": "p-refurb",
+      "label": "Refurbish → place",
+      "lock": false,
+      "owner": "Repair center lead",
+      "path": "refurb",
+      "sub": "Repair center work orders (ERP service)",
+      "t": "path",
+      "x": 1592,
+      "y": 136
+     },
+     {
+      "h": 104,
+      "id": "p-redeploy",
+      "label": "Tool pool",
+      "lock": false,
+      "owner": "Tool pool planner",
+      "path": "redeploy",
+      "sub": "ERP stock transfer (tool pool)",
+      "t": "path",
+      "x": 1592,
+      "y": 252
+     },
+     {
+      "h": 104,
+      "id": "p-resell",
+      "label": "Pre-owned sale",
+      "lock": false,
+      "owner": "Remarketing lead",
+      "path": "resell",
+      "sub": "Pre-owned sales channel",
+      "t": "path",
+      "x": 1592,
+      "y": 368
+     },
+     {
+      "h": 104,
+      "id": "p-harvest",
+      "label": "Harvest parts",
+      "lock": false,
+      "owner": "Service parts planner",
+      "path": "harvest",
+      "sub": "Repair center teardown + spare parts (ERP)",
+      "t": "path",
+      "x": 1592,
+      "y": 484
+     },
+     {
+      "h": 104,
+      "id": "p-exit",
+      "label": "Recycle",
+      "lock": false,
+      "owner": "Sustainability lead",
+      "path": "exit",
+      "sub": "Recycler portal + circularity ledger",
+      "t": "path",
+      "x": 1592,
+      "y": 600
+     },
+     {
+      "h": 112,
+      "id": "exe",
+      "label": "Execute in owning application",
+      "lock": true,
+      "sub": "Follow-through agent",
+      "t": "execute",
+      "x": 1984,
+      "y": 280
+     },
+     {
+      "h": 112,
+      "id": "lrn",
+      "label": "Outcome to learning memory",
+      "lock": true,
+      "sub": "Feeds valuation and disposition models",
+      "t": "learn",
+      "x": 1984,
+      "y": 420
+     },
+     {
+      "action": "exclude",
+      "h": 112,
+      "id": "r3",
+      "label": "",
+      "lock": false,
+      "owner": "Fleet desk",
+      "rid": "BR-03",
+      "scope": {},
+      "sub": "",
+      "t": "rule",
+      "x": 1004,
+      "y": 470
+     }
+    ]
+   },
+   "name": "rule_without_path",
+   "rules": [
+    {
+     "action": "exclude",
+     "id": "BR-01",
+     "path": "exit",
+     "scope": {
+      "cls": [
+       "LSR",
+       "DCD"
+      ]
+     },
+     "text": "construction lasers or core drill rigs: never recycle"
+    },
+    {
+     "action": "prefer",
+     "id": "BR-02",
+     "path": "redeploy",
+     "scope": {
+      "ft": [
+       "Repair center"
+      ],
+      "grade": [
+       "A",
+       "B"
+      ]
+     },
+     "text": "Repair center returns, grade A/B: prefer tool pool"
+    }
+   ]
+  }
+ ]
+}

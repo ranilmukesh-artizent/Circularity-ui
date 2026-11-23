@@ -1,0 +1,484 @@
+{
+ "lots": [
+  {
+   "band": "25-48m",
+   "brand": "Samsung",
+   "doh": 41,
+   "grade": "B",
+   "id": "LOT-40210",
+   "model": "Galaxy S23",
+   "qty": 166,
+   "ref": 255
+  },
+  {
+   "band": "49m+",
+   "brand": "Samsung",
+   "doh": 33,
+   "grade": "B",
+   "id": "LOT-40211",
+   "model": "Galaxy S21",
+   "qty": 10,
+   "ref": 145
+  },
+  {
+   "band": "49m+",
+   "brand": "Apple",
+   "doh": 61,
+   "grade": "C",
+   "id": "LOT-40212",
+   "model": "iPhone 12",
+   "qty": 72,
+   "ref": 143
+  },
+  {
+   "band": "49m+",
+   "brand": "Samsung",
+   "doh": 61,
+   "grade": "D",
+   "id": "LOT-40213",
+   "model": "Galaxy S21",
+   "qty": 14,
+   "ref": 77
+  },
+  {
+   "band": "25-48m",
+   "brand": "Google",
+   "doh": 9,
+   "grade": "B",
+   "id": "LOT-40214",
+   "model": "Pixel 8",
+   "qty": 49,
+   "ref": 213
+  },
+  {
+   "band": "25-48m",
+   "brand": "Apple",
+   "doh": 17,
+   "grade": "B",
+   "id": "LOT-40215",
+   "model": "iPhone 14",
+   "qty": 6,
+   "ref": 315
+  },
+  {
+   "band": "25-48m",
+   "brand": "Apple",
+   "doh": 35,
+   "grade": "B",
+   "id": "LOT-40216",
+   "model": "iPhone 14",
+   "qty": 22,
+   "ref": 315
+  },
+  {
+   "band": "25-48m",
+   "brand": "Samsung",
+   "doh": 29,
+   "grade": "B",
+   "id": "LOT-40217",
+   "model": "Galaxy S23",
+   "qty": 161,
+   "ref": 255
+  },
+  {
+   "band": "25-48m",
+   "brand": "Apple",
+   "doh": 53,
+   "grade": "D",
+   "id": "LOT-40218",
+   "model": "iPhone 14",
+   "qty": 5,
+   "ref": 167
+  },
+  {
+   "band": "49m+",
+   "brand": "Samsung",
+   "doh": 2,
+   "grade": "B",
+   "id": "LOT-40219",
+   "model": "Galaxy S21",
+   "qty": 118,
+   "ref": 145
+  },
+  {
+   "band": "0-24m",
+   "brand": "Motorola",
+   "doh": 49,
+   "grade": "A",
+   "id": "LOT-40220",
+   "model": "Moto G Power 2024",
+   "qty": 26,
+   "ref": 95
+  },
+  {
+   "band": "0-24m",
+   "brand": "Google",
+   "doh": 49,
+   "grade": "B",
+   "id": "LOT-40221",
+   "model": "Pixel 9",
+   "qty": 67,
+   "ref": 306
+  },
+  {
+   "band": "0-24m",
+   "brand": "Motorola",
+   "doh": 80,
+   "grade": "B",
+   "id": "LOT-40222",
+   "model": "Moto G Power 2024",
+   "qty": 162,
+   "ref": 81
+  },
+  {
+   "band": "0-24m",
+   "brand": "Apple",
+   "doh": 15,
+   "grade": "B",
+   "id": "LOT-40223",
+   "model": "iPhone 15",
+   "qty": 83,
+   "ref": 400
+  },
+  {
+   "band": "0-24m",
+   "brand": "Motorola",
+   "doh": 17,
+   "grade": "C",
+   "id": "LOT-40224",
+   "model": "Moto G Power 2024",
+   "qty": 48,
+   "ref": 65
+  },
+  {
+   "band": "25-48m",
+   "brand": "Google",
+   "doh": 57,
+   "grade": "D",
+   "id": "LOT-40225",
+   "model": "Pixel 8",
+   "qty": 79,
+   "ref": 113
+  },
+  {
+   "band": "25-48m",
+   "brand": "Apple",
+   "doh": 34,
+   "grade": "C",
+   "id": "LOT-40226",
+   "model": "iPhone 14",
+   "qty": 114,
+   "ref": 252
+  },
+  {
+   "band": "25-48m",
+   "brand": "Google",
+   "doh": 64,
+   "grade": "D",
+   "id": "LOT-40227",
+   "model": "Pixel 8",
+   "qty": 7,
+   "ref": 113
+  },
+  {
+   "band": "0-24m",
+   "brand": "Motorola",
+   "doh": 49,
+   "grade": "C",
+   "id": "LOT-40228",
+   "model": "Moto G Power 2024",
+   "qty": 80,
+   "ref": 65
+  },
+  {
+   "band": "0-24m",
+   "brand": "Samsung",
+   "doh": 27,
+   "grade": "C",
+   "id": "LOT-40229",
+   "model": "Galaxy S24",
+   "qty": 4,
+   "ref": 272
+  },
+  {
+   "band": "49m+",
+   "brand": "Samsung",
+   "doh": 34,
+   "grade": "C",
+   "id": "LOT-40230",
+   "model": "Galaxy S21",
+   "qty": 7,
+   "ref": 116
+  },
+  {
+   "band": "49m+",
+   "brand": "Samsung",
+   "doh": 56,
+   "grade": "B",
+   "id": "LOT-40231",
+   "model": "Galaxy S21",
+   "qty": 7,
+   "ref": 145
+  },
+  {
+   "band": "25-48m",
+   "brand": "Samsung",
+   "doh": 80,
+   "grade": "A",
+   "id": "LOT-40232",
+   "model": "Galaxy S23",
+   "qty": 46,
+   "ref": 300
+  },
+  {
+   "band": "25-48m",
+   "brand": "Apple",
+   "doh": 51,
+   "grade": "C",
+   "id": "LOT-40233",
+   "model": "iPhone 13",
+   "qty": 138,
+   "ref": 197
+  },
+  {
+   "band": "0-24m",
+   "brand": "Apple",
+   "doh": 60,
+   "grade": "C",
+   "id": "LOT-40234",
+   "model": "iPhone 15",
+   "qty": 13,
+   "ref": 320
+  },
+  {
+   "band": "0-24m",
+   "brand": "Apple",
+   "doh": 69,
+   "grade": "C",
+   "id": "LOT-40235",
+   "model": "iPhone 15",
+   "qty": 115,
+   "ref": 320
+  },
+  {
+   "band": "49m+",
+   "brand": "Samsung",
+   "doh": 69,
+   "grade": "C",
+   "id": "LOT-40236",
+   "model": "Galaxy S21",
+   "qty": 4,
+   "ref": 116
+  },
+  {
+   "band": "0-24m",
+   "brand": "Samsung",
+   "doh": 70,
+   "grade": "C",
+   "id": "LOT-40237",
+   "model": "Galaxy S24",
+   "qty": 109,
+   "ref": 272
+  },
+  {
+   "band": "0-24m",
+   "brand": "Motorola",
+   "doh": 40,
+   "grade": "B",
+   "id": "LOT-40238",
+   "model": "Moto G Power 2024",
+   "qty": 4,
+   "ref": 81
+  },
+  {
+   "band": "0-24m",
+   "brand": "Samsung",
+   "doh": 34,
+   "grade": "D",
+   "id": "LOT-40239",
+   "model": "Galaxy S24",
+   "qty": 74,
+   "ref": 180
+  },
+  {
+   "band": "49m+",
+   "brand": "Apple",
+   "doh": 78,
+   "grade": "B",
+   "id": "LOT-40240",
+   "model": "iPhone 12",
+   "qty": 80,
+   "ref": 179
+  },
+  {
+   "band": "0-24m",
+   "brand": "Apple",
+   "doh": 41,
+   "grade": "B",
+   "id": "LOT-40241",
+   "model": "iPhone 15",
+   "qty": 33,
+   "ref": 400
+  },
+  {
+   "band": "49m+",
+   "brand": "Samsung",
+   "doh": 13,
+   "grade": "A",
+   "id": "LOT-40242",
+   "model": "Galaxy S21",
+   "qty": 7,
+   "ref": 170
+  },
+  {
+   "band": "25-48m",
+   "brand": "Google",
+   "doh": 5,
+   "grade": "A",
+   "id": "LOT-40243",
+   "model": "Pixel 8",
+   "qty": 8,
+   "ref": 250
+  },
+  {
+   "band": "25-48m",
+   "brand": "Samsung",
+   "doh": 62,
+   "grade": "A",
+   "id": "LOT-40244",
+   "model": "Galaxy S23",
+   "qty": 5,
+   "ref": 300
+  },
+  {
+   "band": "0-24m",
+   "brand": "Apple",
+   "doh": 12,
+   "grade": "D",
+   "id": "LOT-40245",
+   "model": "iPhone 15",
+   "qty": 15,
+   "ref": 212
+  },
+  {
+   "band": "0-24m",
+   "brand": "Samsung",
+   "doh": 17,
+   "grade": "B",
+   "id": "LOT-40246",
+   "model": "Galaxy S24",
+   "qty": 10,
+   "ref": 340
+  },
+  {
+   "band": "0-24m",
+   "brand": "Samsung",
+   "doh": 10,
+   "grade": "C",
+   "id": "LOT-40247",
+   "model": "Galaxy S24",
+   "qty": 8,
+   "ref": 272
+  },
+  {
+   "band": "0-24m",
+   "brand": "Apple",
+   "doh": 37,
+   "grade": "C",
+   "id": "LOT-40248",
+   "model": "iPhone 15",
+   "qty": 25,
+   "ref": 320
+  },
+  {
+   "band": "25-48m",
+   "brand": "Samsung",
+   "doh": 9,
+   "grade": "C",
+   "id": "LOT-40249",
+   "model": "Galaxy S23",
+   "qty": 15,
+   "ref": 204
+  },
+  {
+   "band": "0-24m",
+   "brand": "Samsung",
+   "doh": 5,
+   "grade": "B",
+   "id": "LOT-40250",
+   "model": "Galaxy S24",
+   "qty": 33,
+   "ref": 340
+  },
+  {
+   "band": "0-24m",
+   "brand": "Motorola",
+   "doh": 57,
+   "grade": "C",
+   "id": "LOT-40251",
+   "model": "Moto G Power 2024",
+   "qty": 5,
+   "ref": 65
+  },
+  {
+   "band": "0-24m",
+   "brand": "Google",
+   "doh": 22,
+   "grade": "B",
+   "id": "LOT-40252",
+   "model": "Pixel 9",
+   "qty": 57,
+   "ref": 306
+  },
+  {
+   "band": "25-48m",
+   "brand": "Apple",
+   "doh": 54,
+   "grade": "C",
+   "id": "LOT-40253",
+   "model": "iPhone 14",
+   "qty": 7,
+   "ref": 252
+  },
+  {
+   "band": "0-24m",
+   "brand": "Motorola",
+   "doh": 16,
+   "grade": "A",
+   "id": "LOT-40254",
+   "model": "Moto G Power 2024",
+   "qty": 69,
+   "ref": 95
+  },
+  {
+   "band": "0-24m",
+   "brand": "Apple",
+   "doh": 64,
+   "grade": "B",
+   "id": "LOT-40255",
+   "model": "iPhone 15",
+   "qty": 15,
+   "ref": 400
+  },
+  {
+   "band": "25-48m",
+   "brand": "Apple",
+   "doh": 13,
+   "grade": "D",
+   "id": "LOT-40256",
+   "model": "iPhone 14",
+   "qty": 5,
+   "ref": 167
+  },
+  {
+   "band": "0-24m",
+   "brand": "Samsung",
+   "doh": 31,
+   "grade": "D",
+   "id": "LOT-40257",
+   "model": "Galaxy S24",
+   "qty": 180,
+   "ref": 180
+  }
+ ]
+}

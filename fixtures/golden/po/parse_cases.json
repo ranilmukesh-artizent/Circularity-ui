@@ -1,0 +1,156 @@
+{
+ "cases": [
+  {
+   "device": {
+    "action": "exclude",
+    "path": null,
+    "scope": {}
+   },
+   "equip": {
+    "action": "exclude",
+    "path": "exit",
+    "scope": {
+     "cls": [
+      "LSR"
+     ]
+    }
+   },
+   "text": "Never recycle construction lasers"
+  },
+  {
+   "device": {
+    "action": "prefer",
+    "path": null,
+    "scope": {
+     "grade": [
+      "A",
+      "B"
+     ]
+    }
+   },
+   "equip": {
+    "action": "prefer",
+    "path": null,
+    "scope": {
+     "ft": [
+      "Repair center",
+      "Tool pool"
+     ],
+     "grade": [
+      "A",
+      "B"
+     ]
+    }
+   },
+   "text": "Prefer tool pool for grade A or B from Repair center"
+  },
+  {
+   "device": {
+    "action": "require",
+    "path": null,
+    "scope": {}
+   },
+   "equip": {
+    "action": "require",
+    "path": "harvest",
+    "scope": {
+     "cls": [
+      "BRK"
+     ],
+     "rulMax": 30
+    }
+   },
+   "text": "Only harvest parts for breakers under 30% life"
+  },
+  {
+   "device": {
+    "action": "prefer",
+    "path": null,
+    "scope": {}
+   },
+   "equip": {
+    "action": "prefer",
+    "path": null,
+    "scope": {}
+   },
+   "text": "Lower the fit-for-use threshold to 60"
+  },
+  {
+   "device": {
+    "action": "prefer",
+    "path": null,
+    "scope": {
+     "grade": [
+      "A"
+     ]
+    }
+   },
+   "equip": {
+    "action": "prefer",
+    "path": null,
+    "scope": {
+     "grade": [
+      "A"
+     ]
+    }
+   },
+   "text": "Skip approval for grade A"
+  },
+  {
+   "device": {
+    "action": "require",
+    "path": "auction",
+    "scope": {
+     "dohMin": 45
+    }
+   },
+   "equip": {
+    "action": "require",
+    "path": null,
+    "scope": {}
+   },
+   "text": "Lots over 45 days on hand: Auction only"
+  },
+  {
+   "device": {
+    "action": "exclude",
+    "path": "buynow",
+    "scope": {
+     "grade": [
+      "D"
+     ]
+    }
+   },
+   "equip": {
+    "action": "exclude",
+    "path": null,
+    "scope": {
+     "grade": [
+      "D"
+     ]
+    }
+   },
+   "text": "Never list grade D on Buy Now"
+  },
+  {
+   "device": {
+    "action": "prefer",
+    "path": "offers",
+    "scope": {
+     "band": [
+      "0-24m"
+     ],
+     "brand": [
+      "Samsung"
+     ]
+    }
+   },
+   "equip": {
+    "action": "prefer",
+    "path": null,
+    "scope": {}
+   },
+   "text": "Samsung under 24 months prefer offers"
+  }
+ ]
+}

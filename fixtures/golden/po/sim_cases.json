@@ -1,0 +1,151 @@
+{
+ "device": [
+  {
+   "rule": {
+    "action": "require",
+    "ai": true,
+    "h": 112,
+    "id": "rmjuohs00",
+    "label": "",
+    "lock": false,
+    "owner": "Remarketing lead",
+    "path": "auction",
+    "rid": "DR-02",
+    "scope": {
+     "dohMin": 45
+    },
+    "src": "Lots over 45 days on hand: Auction only",
+    "sub": "",
+    "t": "rule",
+    "x": 1200,
+    "y": 330
+   },
+   "sim": {
+    "cash": 386026.58096,
+    "days": 8.98799,
+    "dd": -0.346023,
+    "dl": 0,
+    "dv": -2618.400557,
+    "flips": [
+     {
+      "from": "offers",
+      "id": "LOT-40220",
+      "to": "auction"
+     },
+     {
+      "from": "offers",
+      "id": "LOT-40221",
+      "to": "auction"
+     },
+     {
+      "from": "offers",
+      "id": "LOT-40232",
+      "to": "auction"
+     },
+     {
+      "from": "offers",
+      "id": "LOT-40244",
+      "to": "auction"
+     },
+     {
+      "from": "offers",
+      "id": "LOT-40255",
+      "to": "auction"
+     }
+    ],
+    "kind": "device",
+    "n": 48,
+    "u": 2387
+   },
+   "text": "Lots over 45 days on hand: Auction only"
+  }
+ ],
+ "equip": [
+  {
+   "name": "r1_disconnected",
+   "sim": {
+    "dv": 0,
+    "flips": [],
+    "kind": "equip",
+    "n": 26
+   }
+  },
+  {
+   "name": "harvest_removed",
+   "sim": {
+    "dv": -495.978706,
+    "flips": [
+     {
+      "from": "refurb",
+      "from_net": 767.695805,
+      "id": "RC-26138",
+      "to": "redeploy",
+      "to_net": 512
+     },
+     {
+      "from": "harvest",
+      "from_net": 401.4,
+      "id": "RC-26142",
+      "to": "refurb",
+      "to_net": 714.090939
+     },
+     {
+      "from": "redeploy",
+      "from_net": 512,
+      "id": "RC-26134",
+      "to": "resell",
+      "to_net": 248.85
+     },
+     {
+      "from": "harvest",
+      "from_net": 1023.8,
+      "id": "RC-26131",
+      "to": "resell",
+      "to_net": 889.3424
+     },
+     {
+      "from": "harvest",
+      "from_net": 138,
+      "id": "RC-26115",
+      "to": "resell",
+      "to_net": 9.1
+     },
+     {
+      "from": "harvest",
+      "from_net": 332.8,
+      "id": "RC-26123",
+      "to": "resell",
+      "to_net": 309.23376
+     },
+     {
+      "from": "harvest",
+      "from_net": 346.2,
+      "id": "RC-26112",
+      "to": "resell",
+      "to_net": 343.3
+     }
+    ],
+    "kind": "equip",
+    "n": 26
+   }
+  },
+  {
+   "name": "release_grade_c",
+   "sim": {
+    "dv": 0,
+    "flips": [],
+    "kind": "equip",
+    "n": 26
+   }
+  },
+  {
+   "name": "rule_without_path",
+   "sim": {
+    "dv": 0,
+    "flips": [],
+    "kind": "equip",
+    "n": 26
+   }
+  }
+ ]
+}

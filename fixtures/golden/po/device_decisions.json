@@ -1,0 +1,2174 @@
+{
+ "decisions": [
+  {
+   "best": {
+    "cash": 200.704963,
+    "days": 12.058,
+    "k": "offers",
+    "ok": true,
+    "score": 200.704963,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 191.908254,
+     "days": 23.3842,
+     "k": "buynow",
+     "ok": false,
+     "score": 185.331954,
+     "why": ""
+    },
+    {
+     "cash": 200.704963,
+     "days": 12.058,
+     "k": "offers",
+     "ok": true,
+     "score": 200.704963,
+     "why": ""
+    },
+    {
+     "cash": 190.464259,
+     "days": 5.769,
+     "k": "auction",
+     "ok": true,
+     "score": 190.464259,
+     "why": ""
+    },
+    {
+     "cash": 188.473151,
+     "days": 31.39,
+     "k": "market",
+     "ok": false,
+     "score": 169.888151,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40210"
+  },
+  {
+   "best": {
+    "cash": 104.093517,
+    "days": 14.577,
+    "k": "offers",
+    "ok": true,
+    "score": 104.093517,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 97.579381,
+     "days": 25.5278,
+     "k": "buynow",
+     "ok": true,
+     "score": 97.579381,
+     "why": ""
+    },
+    {
+     "cash": 104.093517,
+     "days": 14.577,
+     "k": "offers",
+     "ok": true,
+     "score": 104.093517,
+     "why": ""
+    },
+    {
+     "cash": 101.301721,
+     "days": 6.55,
+     "k": "auction",
+     "ok": true,
+     "score": 101.301721,
+     "why": ""
+    },
+    {
+     "cash": 91.80082,
+     "days": 35.4629,
+     "k": "market",
+     "ok": true,
+     "score": 79.10647,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40211"
+  },
+  {
+   "best": {
+    "cash": 98.345605,
+    "days": 6.906,
+    "k": "auction",
+    "ok": true,
+    "score": 86.486605,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 86.917841,
+     "days": 31.8184,
+     "k": "buynow",
+     "ok": true,
+     "score": 37.690241,
+     "why": ""
+    },
+    {
+     "cash": 99.063307,
+     "days": 15.5882,
+     "k": "offers",
+     "ok": true,
+     "score": 74.181007,
+     "why": ""
+    },
+    {
+     "cash": 98.345605,
+     "days": 6.906,
+     "k": "auction",
+     "ok": true,
+     "score": 86.486605,
+     "why": ""
+    },
+    {
+     "cash": 80.081553,
+     "days": 41.0665,
+     "k": "market",
+     "ok": false,
+     "score": 16.981803,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40212"
+  },
+  {
+   "best": {
+    "cash": 47.459942,
+    "days": 6.948,
+    "k": "auction",
+    "ok": true,
+    "score": 35.537942,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 36.006756,
+     "days": 32.5821,
+     "k": "buynow",
+     "ok": false,
+     "score": -14.366394,
+     "why": ""
+    },
+    {
+     "cash": 43.665828,
+     "days": 19.1448,
+     "k": "offers",
+     "ok": true,
+     "score": 13.448628,
+     "why": ""
+    },
+    {
+     "cash": 47.459942,
+     "days": 6.948,
+     "k": "auction",
+     "ok": true,
+     "score": 35.537942,
+     "why": ""
+    },
+    {
+     "cash": 29.086388,
+     "days": 46.4425,
+     "k": "market",
+     "ok": false,
+     "score": -42.077362,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40213"
+  },
+  {
+   "best": {
+    "cash": 166.052888,
+    "days": 12.058,
+    "k": "offers",
+    "ok": true,
+    "score": 166.052888,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 157.9118,
+     "days": 23.3842,
+     "k": "buynow",
+     "ok": true,
+     "score": 157.9118,
+     "why": ""
+    },
+    {
+     "cash": 166.052888,
+     "days": 12.058,
+     "k": "offers",
+     "ok": true,
+     "score": 166.052888,
+     "why": ""
+    },
+    {
+     "cash": 157.924577,
+     "days": 5.769,
+     "k": "auction",
+     "ok": true,
+     "score": 157.924577,
+     "why": ""
+    },
+    {
+     "cash": 154.274328,
+     "days": 31.39,
+     "k": "market",
+     "ok": false,
+     "score": 154.274328,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40214"
+  },
+  {
+   "best": {
+    "cash": 250.207927,
+    "days": 12.058,
+    "k": "offers",
+    "ok": true,
+    "score": 250.207927,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 240.474617,
+     "days": 23.3842,
+     "k": "buynow",
+     "ok": true,
+     "score": 240.474617,
+     "why": ""
+    },
+    {
+     "cash": 250.207927,
+     "days": 12.058,
+     "k": "offers",
+     "ok": true,
+     "score": 250.207927,
+     "why": ""
+    },
+    {
+     "cash": 236.94952,
+     "days": 5.769,
+     "k": "auction",
+     "ok": true,
+     "score": 236.94952,
+     "why": ""
+    },
+    {
+     "cash": 237.328614,
+     "days": 31.39,
+     "k": "market",
+     "ok": true,
+     "score": 237.328614,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40215"
+  },
+  {
+   "best": {
+    "cash": 250.207927,
+    "days": 12.058,
+    "k": "offers",
+    "ok": true,
+    "score": 250.207927,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 240.474617,
+     "days": 23.3842,
+     "k": "buynow",
+     "ok": true,
+     "score": 240.474617,
+     "why": ""
+    },
+    {
+     "cash": 250.207927,
+     "days": 12.058,
+     "k": "offers",
+     "ok": true,
+     "score": 250.207927,
+     "why": ""
+    },
+    {
+     "cash": 236.94952,
+     "days": 5.769,
+     "k": "auction",
+     "ok": true,
+     "score": 236.94952,
+     "why": ""
+    },
+    {
+     "cash": 237.328614,
+     "days": 31.39,
+     "k": "market",
+     "ok": true,
+     "score": 227.743614,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40216"
+  },
+  {
+   "best": {
+    "cash": 200.704963,
+    "days": 12.058,
+    "k": "offers",
+    "ok": true,
+    "score": 200.704963,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 191.908254,
+     "days": 23.3842,
+     "k": "buynow",
+     "ok": false,
+     "score": 191.908254,
+     "why": ""
+    },
+    {
+     "cash": 200.704963,
+     "days": 12.058,
+     "k": "offers",
+     "ok": true,
+     "score": 200.704963,
+     "why": ""
+    },
+    {
+     "cash": 190.464259,
+     "days": 5.769,
+     "k": "auction",
+     "ok": true,
+     "score": 190.464259,
+     "why": ""
+    },
+    {
+     "cash": 188.473151,
+     "days": 31.39,
+     "k": "market",
+     "ok": false,
+     "score": 187.888151,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40217"
+  },
+  {
+   "best": {
+    "cash": 115.9394,
+    "days": 5.636,
+    "k": "auction",
+    "ok": true,
+    "score": 115.9394,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 103.409902,
+     "days": 30.5998,
+     "k": "buynow",
+     "ok": false,
+     "score": 68.010202,
+     "why": ""
+    },
+    {
+     "cash": 115.555001,
+     "days": 15.4965,
+     "k": "offers",
+     "ok": true,
+     "score": 102.810251,
+     "why": ""
+    },
+    {
+     "cash": 115.9394,
+     "days": 5.636,
+     "k": "auction",
+     "ok": true,
+     "score": 115.9394,
+     "why": ""
+    },
+    {
+     "cash": 94.663166,
+     "days": 42.1273,
+     "k": "market",
+     "ok": false,
+     "score": 41.972216,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40218"
+  },
+  {
+   "best": {
+    "cash": 104.093517,
+    "days": 14.577,
+    "k": "offers",
+    "ok": true,
+    "score": 104.093517,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 97.579381,
+     "days": 25.5278,
+     "k": "buynow",
+     "ok": false,
+     "score": 97.579381,
+     "why": ""
+    },
+    {
+     "cash": 104.093517,
+     "days": 14.577,
+     "k": "offers",
+     "ok": true,
+     "score": 104.093517,
+     "why": ""
+    },
+    {
+     "cash": 101.301721,
+     "days": 6.55,
+     "k": "auction",
+     "ok": true,
+     "score": 101.301721,
+     "why": ""
+    },
+    {
+     "cash": 91.80082,
+     "days": 35.4629,
+     "k": "market",
+     "ok": false,
+     "score": 91.80082,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40219"
+  },
+  {
+   "best": {
+    "cash": 74.670728,
+    "days": 8.5055,
+    "k": "offers",
+    "ok": true,
+    "score": 74.670728,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 72.314431,
+     "days": 16.01,
+     "k": "buynow",
+     "ok": true,
+     "score": 64.799431,
+     "why": ""
+    },
+    {
+     "cash": 74.670728,
+     "days": 8.5055,
+     "k": "offers",
+     "ok": true,
+     "score": 74.670728,
+     "why": ""
+    },
+    {
+     "cash": 69.23005,
+     "days": 4.226,
+     "k": "auction",
+     "ok": true,
+     "score": 69.23005,
+     "why": ""
+    },
+    {
+     "cash": 73.763083,
+     "days": 18.7644,
+     "k": "market",
+     "ok": true,
+     "score": 62.116483,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40220"
+  },
+  {
+   "best": {
+    "cash": 251.487099,
+    "days": 10.0595,
+    "k": "offers",
+    "ok": true,
+    "score": 251.487099,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 239.624522,
+     "days": 21.314,
+     "k": "buynow",
+     "ok": true,
+     "score": 224.153522,
+     "why": ""
+    },
+    {
+     "cash": 251.487099,
+     "days": 10.0595,
+     "k": "offers",
+     "ok": true,
+     "score": 251.487099,
+     "why": ""
+    },
+    {
+     "cash": 234.104544,
+     "days": 4.37,
+     "k": "auction",
+     "ok": true,
+     "score": 234.104544,
+     "why": ""
+    },
+    {
+     "cash": 237.475569,
+     "days": 29.6422,
+     "k": "market",
+     "ok": false,
+     "score": 209.512269,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40221"
+  },
+  {
+   "best": {
+    "cash": 57.102057,
+    "days": 4.37,
+    "k": "auction",
+    "ok": true,
+    "score": 20.547057,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 53.122945,
+     "days": 21.314,
+     "k": "buynow",
+     "ok": false,
+     "score": -8.848055,
+     "why": ""
+    },
+    {
+     "cash": 59.911713,
+     "days": 10.0595,
+     "k": "offers",
+     "ok": true,
+     "score": 14.822463,
+     "why": ""
+    },
+    {
+     "cash": 57.102057,
+     "days": 4.37,
+     "k": "auction",
+     "ok": true,
+     "score": 20.547057,
+     "why": ""
+    },
+    {
+     "cash": 49.293671,
+     "days": 29.6422,
+     "k": "market",
+     "ok": false,
+     "score": -25.169629,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40222"
+  },
+  {
+   "best": {
+    "cash": 331.523037,
+    "days": 10.0595,
+    "k": "offers",
+    "ok": true,
+    "score": 331.523037,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 317.540737,
+     "days": 21.314,
+     "k": "buynow",
+     "ok": true,
+     "score": 317.540737,
+     "why": ""
+    },
+    {
+     "cash": 331.523037,
+     "days": 10.0595,
+     "k": "offers",
+     "ok": true,
+     "score": 331.523037,
+     "why": ""
+    },
+    {
+     "cash": 308.052249,
+     "days": 4.37,
+     "k": "auction",
+     "ok": true,
+     "score": 308.052249,
+     "why": ""
+    },
+    {
+     "cash": 316.093784,
+     "days": 29.6422,
+     "k": "market",
+     "ok": false,
+     "score": 316.093784,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40223"
+  },
+  {
+   "best": {
+    "cash": 44.240344,
+    "days": 4.401,
+    "k": "auction",
+    "ok": true,
+    "score": 44.240344,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 35.218654,
+     "days": 26.3496,
+     "k": "buynow",
+     "ok": true,
+     "score": 35.218654,
+     "why": ""
+    },
+    {
+     "cash": 43.50688,
+     "days": 12.4632,
+     "k": "offers",
+     "ok": true,
+     "score": 43.50688,
+     "why": ""
+    },
+    {
+     "cash": 44.240344,
+     "days": 4.401,
+     "k": "auction",
+     "ok": true,
+     "score": 44.240344,
+     "why": ""
+    },
+    {
+     "cash": 29.909086,
+     "days": 34.6728,
+     "k": "market",
+     "ok": false,
+     "score": 29.909086,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40224"
+  },
+  {
+   "best": {
+    "cash": 76.169465,
+    "days": 5.636,
+    "k": "auction",
+    "ok": true,
+    "score": 72.215465,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 64.572557,
+     "days": 30.5998,
+     "k": "buynow",
+     "ok": false,
+     "score": 23.172857,
+     "why": ""
+    },
+    {
+     "cash": 74.657596,
+     "days": 15.4965,
+     "k": "offers",
+     "ok": true,
+     "score": 55.912846,
+     "why": ""
+    },
+    {
+     "cash": 76.169465,
+     "days": 5.636,
+     "k": "auction",
+     "ok": true,
+     "score": 72.215465,
+     "why": ""
+    },
+    {
+     "cash": 57.026753,
+     "days": 42.1273,
+     "k": "market",
+     "ok": false,
+     "score": -1.664197,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40225"
+  },
+  {
+   "best": {
+    "cash": 191.966911,
+    "days": 13.207,
+    "k": "offers",
+    "ok": true,
+    "score": 191.966911,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 174.700162,
+     "days": 29.8585,
+     "k": "buynow",
+     "ok": false,
+     "score": 168.912412,
+     "why": ""
+    },
+    {
+     "cash": 191.966911,
+     "days": 13.207,
+     "k": "offers",
+     "ok": true,
+     "score": 191.966911,
+     "why": ""
+    },
+    {
+     "cash": 186.381446,
+     "days": 5.58,
+     "k": "auction",
+     "ok": true,
+     "score": 186.381446,
+     "why": ""
+    },
+    {
+     "cash": 163.717685,
+     "days": 40.955,
+     "k": "market",
+     "ok": false,
+     "score": 141.285185,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40226"
+  },
+  {
+   "best": {
+    "cash": 76.169465,
+    "days": 5.636,
+    "k": "auction",
+    "ok": true,
+    "score": 61.715465,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 64.572557,
+     "days": 30.5998,
+     "k": "buynow",
+     "ok": false,
+     "score": 12.672857,
+     "why": ""
+    },
+    {
+     "cash": 74.657596,
+     "days": 15.4965,
+     "k": "offers",
+     "ok": true,
+     "score": 45.412846,
+     "why": ""
+    },
+    {
+     "cash": 76.169465,
+     "days": 5.636,
+     "k": "auction",
+     "ok": true,
+     "score": 61.715465,
+     "why": ""
+    },
+    {
+     "cash": 57.026753,
+     "days": 42.1273,
+     "k": "market",
+     "ok": false,
+     "score": -12.164197,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40227"
+  },
+  {
+   "best": {
+    "cash": 44.240344,
+    "days": 4.401,
+    "k": "auction",
+    "ok": true,
+    "score": 44.240344,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 35.218654,
+     "days": 26.3496,
+     "k": "buynow",
+     "ok": true,
+     "score": 12.194254,
+     "why": ""
+    },
+    {
+     "cash": 43.50688,
+     "days": 12.4632,
+     "k": "offers",
+     "ok": true,
+     "score": 41.31208,
+     "why": ""
+    },
+    {
+     "cash": 44.240344,
+     "days": 4.401,
+     "k": "auction",
+     "ok": true,
+     "score": 44.240344,
+     "why": ""
+    },
+    {
+     "cash": 29.909086,
+     "days": 34.6728,
+     "k": "market",
+     "ok": false,
+     "score": -5.600114,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40228"
+  },
+  {
+   "best": {
+    "cash": 213.457501,
+    "days": 12.4632,
+    "k": "offers",
+    "ok": true,
+    "score": 213.457501,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 196.810805,
+     "days": 26.3496,
+     "k": "buynow",
+     "ok": true,
+     "score": 196.810805,
+     "why": ""
+    },
+    {
+     "cash": 213.457501,
+     "days": 12.4632,
+     "k": "offers",
+     "ok": true,
+     "score": 213.457501,
+     "why": ""
+    },
+    {
+     "cash": 206.234879,
+     "days": 4.401,
+     "k": "auction",
+     "ok": true,
+     "score": 206.234879,
+     "why": ""
+    },
+    {
+     "cash": 188.492196,
+     "days": 34.6728,
+     "k": "market",
+     "ok": true,
+     "score": 185.982996,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40229"
+  },
+  {
+   "best": {
+    "cash": 78.362653,
+    "days": 6.906,
+    "k": "auction",
+    "ok": true,
+    "score": 78.362653,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 67.299753,
+     "days": 31.8184,
+     "k": "buynow",
+     "ok": true,
+     "score": 58.572153,
+     "why": ""
+    },
+    {
+     "cash": 78.304107,
+     "days": 15.5882,
+     "k": "offers",
+     "ok": true,
+     "score": 78.304107,
+     "why": ""
+    },
+    {
+     "cash": 78.362653,
+     "days": 6.906,
+     "k": "auction",
+     "ok": true,
+     "score": 78.362653,
+     "why": ""
+    },
+    {
+     "cash": 60.833012,
+     "days": 41.0665,
+     "k": "market",
+     "ok": true,
+     "score": 38.233262,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40230"
+  },
+  {
+   "best": {
+    "cash": 101.301721,
+    "days": 6.55,
+    "k": "auction",
+    "ok": true,
+    "score": 97.476721,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 97.579381,
+     "days": 25.5278,
+     "k": "buynow",
+     "ok": true,
+     "score": 65.287681,
+     "why": ""
+    },
+    {
+     "cash": 104.093517,
+     "days": 14.577,
+     "k": "offers",
+     "ok": true,
+     "score": 88.228017,
+     "why": ""
+    },
+    {
+     "cash": 101.301721,
+     "days": 6.55,
+     "k": "auction",
+     "ok": true,
+     "score": 97.476721,
+     "why": ""
+    },
+    {
+     "cash": 91.80082,
+     "days": 35.4629,
+     "k": "market",
+     "ok": true,
+     "score": 44.60647,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40231"
+  },
+  {
+   "best": {
+    "cash": 244.917439,
+    "days": 10.4337,
+    "k": "offers",
+    "ok": true,
+    "score": 199.266889,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 243.886981,
+     "days": 19.3262,
+     "k": "buynow",
+     "ok": true,
+     "score": 184.897681,
+     "why": ""
+    },
+    {
+     "cash": 244.917439,
+     "days": 10.4337,
+     "k": "offers",
+     "ok": true,
+     "score": 199.266889,
+     "why": ""
+    },
+    {
+     "cash": 226.08901,
+     "days": 5.568,
+     "k": "auction",
+     "ok": true,
+     "score": 187.73701,
+     "why": ""
+    },
+    {
+     "cash": 252.78124,
+     "days": 23.9873,
+     "k": "market",
+     "ok": false,
+     "score": 186.80029,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40232"
+  },
+  {
+   "best": {
+    "cash": 144.167815,
+    "days": 5.58,
+    "k": "auction",
+    "ok": true,
+    "score": 144.167815,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 133.014476,
+     "days": 29.8585,
+     "k": "buynow",
+     "ok": false,
+     "score": 101.726726,
+     "why": ""
+    },
+    {
+     "cash": 147.850122,
+     "days": 13.207,
+     "k": "offers",
+     "ok": true,
+     "score": 141.539622,
+     "why": ""
+    },
+    {
+     "cash": 144.167815,
+     "days": 5.58,
+     "k": "auction",
+     "ok": true,
+     "score": 144.167815,
+     "why": ""
+    },
+    {
+     "cash": 123.373808,
+     "days": 40.955,
+     "k": "market",
+     "ok": false,
+     "score": 75.441308,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40233"
+  },
+  {
+   "best": {
+    "cash": 243.798829,
+    "days": 4.401,
+    "k": "auction",
+    "ok": true,
+    "score": 237.197329,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 234.281449,
+     "days": 26.3496,
+     "k": "buynow",
+     "ok": true,
+     "score": 194.757049,
+     "why": ""
+    },
+    {
+     "cash": 252.866341,
+     "days": 12.4632,
+     "k": "offers",
+     "ok": true,
+     "score": 234.171541,
+     "why": ""
+    },
+    {
+     "cash": 243.798829,
+     "days": 4.401,
+     "k": "auction",
+     "ok": true,
+     "score": 237.197329,
+     "why": ""
+    },
+    {
+     "cash": 225.26509,
+     "days": 34.6728,
+     "k": "market",
+     "ok": true,
+     "score": 173.25589,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40234"
+  },
+  {
+   "best": {
+    "cash": 243.798829,
+    "days": 4.401,
+    "k": "auction",
+    "ok": true,
+    "score": 223.697329,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 234.281449,
+     "days": 26.3496,
+     "k": "buynow",
+     "ok": false,
+     "score": 181.257049,
+     "why": ""
+    },
+    {
+     "cash": 252.866341,
+     "days": 12.4632,
+     "k": "offers",
+     "ok": true,
+     "score": 220.671541,
+     "why": ""
+    },
+    {
+     "cash": 243.798829,
+     "days": 4.401,
+     "k": "auction",
+     "ok": true,
+     "score": 223.697329,
+     "why": ""
+    },
+    {
+     "cash": 225.26509,
+     "days": 34.6728,
+     "k": "market",
+     "ok": false,
+     "score": 159.75589,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40235"
+  },
+  {
+   "best": {
+    "cash": 78.362653,
+    "days": 6.906,
+    "k": "auction",
+    "ok": true,
+    "score": 54.503653,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 67.299753,
+     "days": 31.8184,
+     "k": "buynow",
+     "ok": true,
+     "score": 6.072153,
+     "why": ""
+    },
+    {
+     "cash": 78.304107,
+     "days": 15.5882,
+     "k": "offers",
+     "ok": true,
+     "score": 41.421807,
+     "why": ""
+    },
+    {
+     "cash": 78.362653,
+     "days": 6.906,
+     "k": "auction",
+     "ok": true,
+     "score": 54.503653,
+     "why": ""
+    },
+    {
+     "cash": 60.833012,
+     "days": 41.0665,
+     "k": "market",
+     "ok": true,
+     "score": -14.266738,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40236"
+  },
+  {
+   "best": {
+    "cash": 206.234879,
+    "days": 4.401,
+    "k": "auction",
+    "ok": true,
+    "score": 184.633379,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 196.810805,
+     "days": 26.3496,
+     "k": "buynow",
+     "ok": false,
+     "score": 142.286405,
+     "why": ""
+    },
+    {
+     "cash": 213.457501,
+     "days": 12.4632,
+     "k": "offers",
+     "ok": true,
+     "score": 179.762701,
+     "why": ""
+    },
+    {
+     "cash": 206.234879,
+     "days": 4.401,
+     "k": "auction",
+     "ok": true,
+     "score": 184.633379,
+     "why": ""
+    },
+    {
+     "cash": 188.492196,
+     "days": 34.6728,
+     "k": "market",
+     "ok": false,
+     "score": 121.482996,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40237"
+  },
+  {
+   "best": {
+    "cash": 59.911713,
+    "days": 10.0595,
+    "k": "offers",
+    "ok": true,
+    "score": 59.911713,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 53.122945,
+     "days": 21.314,
+     "k": "buynow",
+     "ok": true,
+     "score": 51.151945,
+     "why": ""
+    },
+    {
+     "cash": 59.911713,
+     "days": 10.0595,
+     "k": "offers",
+     "ok": true,
+     "score": 59.911713,
+     "why": ""
+    },
+    {
+     "cash": 57.102057,
+     "days": 4.37,
+     "k": "auction",
+     "ok": true,
+     "score": 57.102057,
+     "why": ""
+    },
+    {
+     "cash": 49.293671,
+     "days": 29.6422,
+     "k": "market",
+     "ok": true,
+     "score": 34.830371,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40238"
+  },
+  {
+   "best": {
+    "cash": 129.61625,
+    "days": 13.698,
+    "k": "offers",
+    "ok": true,
+    "score": 129.61625,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 117.214135,
+     "days": 29.4732,
+     "k": "buynow",
+     "ok": false,
+     "score": 112.004335,
+     "why": ""
+    },
+    {
+     "cash": 129.61625,
+     "days": 13.698,
+     "k": "offers",
+     "ok": true,
+     "score": 129.61625,
+     "why": ""
+    },
+    {
+     "cash": 129.43412,
+     "days": 4.557,
+     "k": "auction",
+     "ok": true,
+     "score": 129.43412,
+     "why": ""
+    },
+    {
+     "cash": 106.680817,
+     "days": 41.5,
+     "k": "market",
+     "ok": false,
+     "score": 83.430817,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40239"
+  },
+  {
+   "best": {
+    "cash": 126.786625,
+    "days": 6.55,
+    "k": "auction",
+    "ok": true,
+    "score": 89.961625,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 124.025498,
+     "days": 25.5278,
+     "k": "buynow",
+     "ok": true,
+     "score": 58.733798,
+     "why": ""
+    },
+    {
+     "cash": 130.965851,
+     "days": 14.577,
+     "k": "offers",
+     "ok": true,
+     "score": 82.100351,
+     "why": ""
+    },
+    {
+     "cash": 126.786625,
+     "days": 6.55,
+     "k": "auction",
+     "ok": true,
+     "score": 89.961625,
+     "why": ""
+    },
+    {
+     "cash": 117.927826,
+     "days": 35.4629,
+     "k": "market",
+     "ok": false,
+     "score": 37.733476,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40240"
+  },
+  {
+   "best": {
+    "cash": 331.523037,
+    "days": 10.0595,
+    "k": "offers",
+    "ok": true,
+    "score": 331.523037,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 317.540737,
+     "days": 21.314,
+     "k": "buynow",
+     "ok": true,
+     "score": 314.069737,
+     "why": ""
+    },
+    {
+     "cash": 331.523037,
+     "days": 10.0595,
+     "k": "offers",
+     "ok": true,
+     "score": 331.523037,
+     "why": ""
+    },
+    {
+     "cash": 308.052249,
+     "days": 4.37,
+     "k": "auction",
+     "ok": true,
+     "score": 308.052249,
+     "why": ""
+    },
+    {
+     "cash": 316.093784,
+     "days": 29.6422,
+     "k": "market",
+     "ok": true,
+     "score": 300.130484,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40241"
+  },
+  {
+   "best": {
+    "cash": 127.083991,
+    "days": 28.086,
+    "k": "market",
+    "ok": true,
+    "score": 127.083991,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 124.536063,
+     "days": 22.6411,
+     "k": "buynow",
+     "ok": true,
+     "score": 124.536063,
+     "why": ""
+    },
+    {
+     "cash": 125.855278,
+     "days": 14.5208,
+     "k": "offers",
+     "ok": true,
+     "score": 125.855278,
+     "why": ""
+    },
+    {
+     "cash": 121.434367,
+     "days": 6.375,
+     "k": "auction",
+     "ok": true,
+     "score": 121.434367,
+     "why": ""
+    },
+    {
+     "cash": 127.083991,
+     "days": 28.086,
+     "k": "market",
+     "ok": true,
+     "score": 127.083991,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40242"
+  },
+  {
+   "best": {
+    "cash": 207.836024,
+    "days": 23.9873,
+    "k": "market",
+    "ok": true,
+    "score": 207.836024,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 200.986381,
+     "days": 19.3262,
+     "k": "buynow",
+     "ok": true,
+     "score": 200.986381,
+     "why": ""
+    },
+    {
+     "cash": 202.569944,
+     "days": 10.4337,
+     "k": "offers",
+     "ok": true,
+     "score": 202.569944,
+     "why": ""
+    },
+    {
+     "cash": 187.235742,
+     "days": 5.568,
+     "k": "auction",
+     "ok": true,
+     "score": 187.235742,
+     "why": ""
+    },
+    {
+     "cash": 207.836024,
+     "days": 23.9873,
+     "k": "market",
+     "ok": true,
+     "score": 207.836024,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40243"
+  },
+  {
+   "best": {
+    "cash": 244.917439,
+    "days": 10.4337,
+    "k": "offers",
+    "ok": true,
+    "score": 226.266889,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 243.886981,
+     "days": 19.3262,
+     "k": "buynow",
+     "ok": true,
+     "score": 211.897681,
+     "why": ""
+    },
+    {
+     "cash": 244.917439,
+     "days": 10.4337,
+     "k": "offers",
+     "ok": true,
+     "score": 226.266889,
+     "why": ""
+    },
+    {
+     "cash": 226.08901,
+     "days": 5.568,
+     "k": "auction",
+     "ok": true,
+     "score": 214.73701,
+     "why": ""
+    },
+    {
+     "cash": 252.78124,
+     "days": 23.9873,
+     "k": "market",
+     "ok": true,
+     "score": 213.80029,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40244"
+  },
+  {
+   "best": {
+    "cash": 154.50571,
+    "days": 13.698,
+    "k": "offers",
+    "ok": true,
+    "score": 154.50571,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 141.016394,
+     "days": 29.4732,
+     "k": "buynow",
+     "ok": false,
+     "score": 141.016394,
+     "why": ""
+    },
+    {
+     "cash": 154.50571,
+     "days": 13.698,
+     "k": "offers",
+     "ok": true,
+     "score": 154.50571,
+     "why": ""
+    },
+    {
+     "cash": 153.632466,
+     "days": 4.557,
+     "k": "auction",
+     "ok": true,
+     "score": 153.632466,
+     "why": ""
+    },
+    {
+     "cash": 129.352431,
+     "days": 41.5,
+     "k": "market",
+     "ok": false,
+     "score": 129.352431,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40245"
+  },
+  {
+   "best": {
+    "cash": 280.436268,
+    "days": 10.0595,
+    "k": "offers",
+    "ok": true,
+    "score": 280.436268,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 267.806983,
+     "days": 21.314,
+     "k": "buynow",
+     "ok": true,
+     "score": 267.806983,
+     "why": ""
+    },
+    {
+     "cash": 280.436268,
+     "days": 10.0595,
+     "k": "offers",
+     "ok": true,
+     "score": 280.436268,
+     "why": ""
+    },
+    {
+     "cash": 260.851586,
+     "days": 4.37,
+     "k": "auction",
+     "ok": true,
+     "score": 260.851586,
+     "why": ""
+    },
+    {
+     "cash": 265.911945,
+     "days": 29.6422,
+     "k": "market",
+     "ok": true,
+     "score": 265.911945,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40246"
+  },
+  {
+   "best": {
+    "cash": 213.457501,
+    "days": 12.4632,
+    "k": "offers",
+    "ok": true,
+    "score": 213.457501,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 196.810805,
+     "days": 26.3496,
+     "k": "buynow",
+     "ok": true,
+     "score": 196.810805,
+     "why": ""
+    },
+    {
+     "cash": 213.457501,
+     "days": 12.4632,
+     "k": "offers",
+     "ok": true,
+     "score": 213.457501,
+     "why": ""
+    },
+    {
+     "cash": 206.234879,
+     "days": 4.401,
+     "k": "auction",
+     "ok": true,
+     "score": 206.234879,
+     "why": ""
+    },
+    {
+     "cash": 188.492196,
+     "days": 34.6728,
+     "k": "market",
+     "ok": true,
+     "score": 188.492196,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40247"
+  },
+  {
+   "best": {
+    "cash": 252.866341,
+    "days": 12.4632,
+    "k": "offers",
+    "ok": true,
+    "score": 252.866341,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 234.281449,
+     "days": 26.3496,
+     "k": "buynow",
+     "ok": true,
+     "score": 229.257049,
+     "why": ""
+    },
+    {
+     "cash": 252.866341,
+     "days": 12.4632,
+     "k": "offers",
+     "ok": true,
+     "score": 252.866341,
+     "why": ""
+    },
+    {
+     "cash": 243.798829,
+     "days": 4.401,
+     "k": "auction",
+     "ok": true,
+     "score": 243.798829,
+     "why": ""
+    },
+    {
+     "cash": 225.26509,
+     "days": 34.6728,
+     "k": "market",
+     "ok": true,
+     "score": 207.75589,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40248"
+  },
+  {
+   "best": {
+    "cash": 153.464986,
+    "days": 13.207,
+    "k": "offers",
+    "ok": true,
+    "score": 153.464986,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 138.319927,
+     "days": 29.8585,
+     "k": "buynow",
+     "ok": true,
+     "score": 138.319927,
+     "why": ""
+    },
+    {
+     "cash": 153.464986,
+     "days": 13.207,
+     "k": "offers",
+     "ok": true,
+     "score": 153.464986,
+     "why": ""
+    },
+    {
+     "cash": 149.540459,
+     "days": 5.58,
+     "k": "auction",
+     "ok": true,
+     "score": 149.540459,
+     "why": ""
+    },
+    {
+     "cash": 128.508483,
+     "days": 40.955,
+     "k": "market",
+     "ok": true,
+     "score": 128.508483,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40249"
+  },
+  {
+   "best": {
+    "cash": 280.436268,
+    "days": 10.0595,
+    "k": "offers",
+    "ok": true,
+    "score": 280.436268,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 267.806983,
+     "days": 21.314,
+     "k": "buynow",
+     "ok": true,
+     "score": 267.806983,
+     "why": ""
+    },
+    {
+     "cash": 280.436268,
+     "days": 10.0595,
+     "k": "offers",
+     "ok": true,
+     "score": 280.436268,
+     "why": ""
+    },
+    {
+     "cash": 260.851586,
+     "days": 4.37,
+     "k": "auction",
+     "ok": true,
+     "score": 260.851586,
+     "why": ""
+    },
+    {
+     "cash": 265.911945,
+     "days": 29.6422,
+     "k": "market",
+     "ok": true,
+     "score": 265.911945,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40250"
+  },
+  {
+   "best": {
+    "cash": 44.240344,
+    "days": 4.401,
+    "k": "auction",
+    "ok": true,
+    "score": 42.138844,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 35.218654,
+     "days": 26.3496,
+     "k": "buynow",
+     "ok": true,
+     "score": 0.194254,
+     "why": ""
+    },
+    {
+     "cash": 43.50688,
+     "days": 12.4632,
+     "k": "offers",
+     "ok": true,
+     "score": 29.31208,
+     "why": ""
+    },
+    {
+     "cash": 44.240344,
+     "days": 4.401,
+     "k": "auction",
+     "ok": true,
+     "score": 42.138844,
+     "why": ""
+    },
+    {
+     "cash": 29.909086,
+     "days": 34.6728,
+     "k": "market",
+     "ok": true,
+     "score": -17.600114,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40251"
+  },
+  {
+   "best": {
+    "cash": 251.487099,
+    "days": 10.0595,
+    "k": "offers",
+    "ok": true,
+    "score": 251.487099,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 239.624522,
+     "days": 21.314,
+     "k": "buynow",
+     "ok": true,
+     "score": 239.624522,
+     "why": ""
+    },
+    {
+     "cash": 251.487099,
+     "days": 10.0595,
+     "k": "offers",
+     "ok": true,
+     "score": 251.487099,
+     "why": ""
+    },
+    {
+     "cash": 234.104544,
+     "days": 4.37,
+     "k": "auction",
+     "ok": true,
+     "score": 234.104544,
+     "why": ""
+    },
+    {
+     "cash": 237.475569,
+     "days": 29.6422,
+     "k": "market",
+     "ok": false,
+     "score": 237.475569,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40252"
+  },
+  {
+   "best": {
+    "cash": 186.381446,
+    "days": 5.58,
+    "k": "auction",
+    "ok": true,
+    "score": 186.381446,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 174.700162,
+     "days": 29.8585,
+     "k": "buynow",
+     "ok": true,
+     "score": 138.912412,
+     "why": ""
+    },
+    {
+     "cash": 191.966911,
+     "days": 13.207,
+     "k": "offers",
+     "ok": true,
+     "score": 181.156411,
+     "why": ""
+    },
+    {
+     "cash": 186.381446,
+     "days": 5.58,
+     "k": "auction",
+     "ok": true,
+     "score": 186.381446,
+     "why": ""
+    },
+    {
+     "cash": 163.717685,
+     "days": 40.955,
+     "k": "market",
+     "ok": true,
+     "score": 111.285185,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40253"
+  },
+  {
+   "best": {
+    "cash": 74.670728,
+    "days": 8.5055,
+    "k": "offers",
+    "ok": true,
+    "score": 74.670728,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 72.314431,
+     "days": 16.01,
+     "k": "buynow",
+     "ok": true,
+     "score": 72.314431,
+     "why": ""
+    },
+    {
+     "cash": 74.670728,
+     "days": 8.5055,
+     "k": "offers",
+     "ok": true,
+     "score": 74.670728,
+     "why": ""
+    },
+    {
+     "cash": 69.23005,
+     "days": 4.226,
+     "k": "auction",
+     "ok": true,
+     "score": 69.23005,
+     "why": ""
+    },
+    {
+     "cash": 73.763083,
+     "days": 18.7644,
+     "k": "market",
+     "ok": false,
+     "score": 73.763083,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40254"
+  },
+  {
+   "best": {
+    "cash": 331.523037,
+    "days": 10.0595,
+    "k": "offers",
+    "ok": true,
+    "score": 310.433787,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 317.540737,
+     "days": 21.314,
+     "k": "buynow",
+     "ok": true,
+     "score": 279.569737,
+     "why": ""
+    },
+    {
+     "cash": 331.523037,
+     "days": 10.0595,
+     "k": "offers",
+     "ok": true,
+     "score": 310.433787,
+     "why": ""
+    },
+    {
+     "cash": 308.052249,
+     "days": 4.37,
+     "k": "auction",
+     "ok": true,
+     "score": 295.497249,
+     "why": ""
+    },
+    {
+     "cash": 316.093784,
+     "days": 29.6422,
+     "k": "market",
+     "ok": true,
+     "score": 265.630484,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40255"
+  },
+  {
+   "best": {
+    "cash": 115.9394,
+    "days": 5.636,
+    "k": "auction",
+    "ok": true,
+    "score": 115.9394,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 103.409902,
+     "days": 30.5998,
+     "k": "buynow",
+     "ok": false,
+     "score": 103.409902,
+     "why": ""
+    },
+    {
+     "cash": 115.555001,
+     "days": 15.4965,
+     "k": "offers",
+     "ok": true,
+     "score": 115.555001,
+     "why": ""
+    },
+    {
+     "cash": 115.9394,
+     "days": 5.636,
+     "k": "auction",
+     "ok": true,
+     "score": 115.9394,
+     "why": ""
+    },
+    {
+     "cash": 94.663166,
+     "days": 42.1273,
+     "k": "market",
+     "ok": false,
+     "score": 94.663166,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40256"
+  },
+  {
+   "best": {
+    "cash": 129.61625,
+    "days": 13.698,
+    "k": "offers",
+    "ok": true,
+    "score": 129.61625,
+    "why": ""
+   },
+   "channels": [
+    {
+     "cash": 117.214135,
+     "days": 29.4732,
+     "k": "buynow",
+     "ok": false,
+     "score": 116.504335,
+     "why": ""
+    },
+    {
+     "cash": 129.61625,
+     "days": 13.698,
+     "k": "offers",
+     "ok": true,
+     "score": 129.61625,
+     "why": ""
+    },
+    {
+     "cash": 129.43412,
+     "days": 4.557,
+     "k": "auction",
+     "ok": true,
+     "score": 129.43412,
+     "why": ""
+    },
+    {
+     "cash": 106.680817,
+     "days": 41.5,
+     "k": "market",
+     "ok": false,
+     "score": 87.930817,
+     "why": ""
+    }
+   ],
+   "id": "LOT-40257"
+  }
+ ],
+ "rules": [
+  {
+   "action": "exclude",
+   "id": "DR-01",
+   "path": "buynow",
+   "scope": {
+    "dohMin": 45
+   }
+  }
+ ]
+}

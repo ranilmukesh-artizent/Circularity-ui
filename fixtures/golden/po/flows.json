@@ -1,0 +1,662 @@
+{
+ "device": {
+  "H": 640,
+  "W": 2380,
+  "band": [
+   12,
+   22,
+   1180,
+   148,
+   "Core prediction and agents · fixed"
+  ],
+  "e": [
+   {
+    "a": "in",
+    "b": "wipe",
+    "id": "in>wipe",
+    "l": ""
+   },
+   {
+    "a": "wipe",
+    "b": "grd",
+    "id": "wipe>grd",
+    "l": ""
+   },
+   {
+    "a": "grd",
+    "b": "mkt",
+    "id": "grd>mkt",
+    "l": ""
+   },
+   {
+    "a": "mkt",
+    "b": "chs",
+    "id": "mkt>chs",
+    "l": ""
+   },
+   {
+    "a": "chs",
+    "b": "val",
+    "id": "chs>val",
+    "l": ""
+   },
+   {
+    "a": "val",
+    "b": "gate",
+    "id": "val>gate",
+    "l": ""
+   },
+   {
+    "a": "gate",
+    "b": "r1",
+    "id": "gate>r1",
+    "l": ""
+   },
+   {
+    "a": "r1",
+    "b": "dec",
+    "id": "r1>dec",
+    "l": ""
+   },
+   {
+    "a": "dec",
+    "b": "apr",
+    "id": "dec>apr",
+    "l": ""
+   },
+   {
+    "a": "apr",
+    "b": "p-buynow",
+    "id": "apr>p-buynow",
+    "l": ""
+   },
+   {
+    "a": "apr",
+    "b": "p-offers",
+    "id": "apr>p-offers",
+    "l": ""
+   },
+   {
+    "a": "apr",
+    "b": "p-auction",
+    "id": "apr>p-auction",
+    "l": ""
+   },
+   {
+    "a": "apr",
+    "b": "p-market",
+    "id": "apr>p-market",
+    "l": ""
+   },
+   {
+    "a": "p-buynow",
+    "b": "exe",
+    "id": "p-buynow>exe",
+    "l": ""
+   },
+   {
+    "a": "p-offers",
+    "b": "exe",
+    "id": "p-offers>exe",
+    "l": ""
+   },
+   {
+    "a": "p-auction",
+    "b": "exe",
+    "id": "p-auction>exe",
+    "l": ""
+   },
+   {
+    "a": "p-market",
+    "b": "exe",
+    "id": "p-market>exe",
+    "l": ""
+   },
+   {
+    "a": "exe",
+    "b": "lrn",
+    "id": "exe>lrn",
+    "l": ""
+   }
+  ],
+  "n": [
+   {
+    "h": 112,
+    "id": "in",
+    "label": "Device lot received",
+    "lock": true,
+    "sub": "Intake agent · trade-in, claim, upgrade, excess",
+    "t": "trigger",
+    "x": 24,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "wipe",
+    "label": "Data wipe and certificate",
+    "lock": true,
+    "sub": "GR-D1 · locked",
+    "t": "guard",
+    "x": 220,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "grd",
+    "label": "Grade A–D and age band",
+    "lock": true,
+    "sub": "Grading agent",
+    "t": "agent",
+    "x": 416,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "mkt",
+    "label": "Market signals",
+    "lock": true,
+    "sub": "Market agent · price index, launches",
+    "t": "agent",
+    "x": 612,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "chs",
+    "label": "Channel learning",
+    "lock": true,
+    "sub": "Sell-through, days, price, returns",
+    "t": "agent",
+    "x": 808,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "val",
+    "label": "Value every channel",
+    "lock": true,
+    "sub": "Valuation agent · cash per unit vs days on hand",
+    "t": "agent",
+    "x": 1004,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "gate",
+    "label": "Guardrail gate",
+    "lock": true,
+    "sub": "GR-D2 floor · GR-D3 grade D · GR-D4 lots · GR-D5 price",
+    "t": "gate",
+    "x": 1200,
+    "y": 40
+   },
+   {
+    "action": "exclude",
+    "h": 112,
+    "id": "r1",
+    "label": "",
+    "lock": false,
+    "owner": "Channel Ops lead",
+    "path": "buynow",
+    "rid": "DR-01",
+    "scope": {
+     "dohMin": 45
+    },
+    "sub": "",
+    "t": "rule",
+    "x": 1200,
+    "y": 190
+   },
+   {
+    "h": 112,
+    "id": "dec",
+    "label": "Next best channel",
+    "lock": true,
+    "sub": "Routing agent",
+    "t": "decision",
+    "x": 1396,
+    "y": 330
+   },
+   {
+    "h": 112,
+    "id": "apr",
+    "label": "Owner approves",
+    "lock": true,
+    "sub": "GR-D6 · named owner",
+    "t": "approval",
+    "x": 1592,
+    "y": 330
+   },
+   {
+    "h": 104,
+    "id": "p-buynow",
+    "label": "Buy Now",
+    "lock": false,
+    "owner": "Channel Ops lead",
+    "path": "buynow",
+    "sub": "Storefront · 30-day window",
+    "t": "path",
+    "x": 1788,
+    "y": 60
+   },
+   {
+    "h": 104,
+    "id": "p-offers",
+    "label": "Offers",
+    "lock": false,
+    "owner": "Channel Ops lead",
+    "path": "offers",
+    "sub": "Offer management · 21 days",
+    "t": "path",
+    "x": 1788,
+    "y": 190
+   },
+   {
+    "h": 104,
+    "id": "p-auction",
+    "label": "Auction",
+    "lock": false,
+    "owner": "Channel Ops lead",
+    "path": "auction",
+    "sub": "Auction platform · 7 days · unsold fallback",
+    "t": "path",
+    "x": 1788,
+    "y": 320
+   },
+   {
+    "h": 104,
+    "id": "p-market",
+    "label": "Marketplace",
+    "lock": false,
+    "owner": "Channel Ops lead",
+    "path": "market",
+    "sub": "Marketplace connector · 45 days",
+    "t": "path",
+    "x": 1788,
+    "y": 450
+   },
+   {
+    "h": 112,
+    "id": "exe",
+    "label": "List in channel system",
+    "lock": true,
+    "sub": "Follow-through agent",
+    "t": "execute",
+    "x": 2180,
+    "y": 280
+   },
+   {
+    "h": 112,
+    "id": "lrn",
+    "label": "Settle and learn",
+    "lock": true,
+    "sub": "Sale, returns, days feed channel learning",
+    "t": "learn",
+    "x": 2180,
+    "y": 420
+   }
+  ]
+ },
+ "equip": {
+  "H": 730,
+  "W": 2180,
+  "band": [
+   12,
+   22,
+   984,
+   148,
+   "Core prediction and agents · fixed"
+  ],
+  "e": [
+   {
+    "a": "in",
+    "b": "cond",
+    "id": "in>cond",
+    "l": ""
+   },
+   {
+    "a": "cond",
+    "b": "dem",
+    "id": "cond>dem",
+    "l": ""
+   },
+   {
+    "a": "dem",
+    "b": "fit",
+    "id": "dem>fit",
+    "l": ""
+   },
+   {
+    "a": "fit",
+    "b": "val",
+    "id": "fit>val",
+    "l": ""
+   },
+   {
+    "a": "val",
+    "b": "gate",
+    "id": "val>gate",
+    "l": ""
+   },
+   {
+    "a": "gate",
+    "b": "r1",
+    "id": "gate>r1",
+    "l": ""
+   },
+   {
+    "a": "r1",
+    "b": "r2",
+    "id": "r1>r2",
+    "l": ""
+   },
+   {
+    "a": "r2",
+    "b": "dec",
+    "id": "r2>dec",
+    "l": ""
+   },
+   {
+    "a": "dec",
+    "b": "apr",
+    "id": "dec>apr",
+    "l": ""
+   },
+   {
+    "a": "apr",
+    "b": "p-release",
+    "id": "apr>p-release",
+    "l": ""
+   },
+   {
+    "a": "apr",
+    "b": "p-refurb",
+    "id": "apr>p-refurb",
+    "l": ""
+   },
+   {
+    "a": "apr",
+    "b": "p-redeploy",
+    "id": "apr>p-redeploy",
+    "l": ""
+   },
+   {
+    "a": "apr",
+    "b": "p-resell",
+    "id": "apr>p-resell",
+    "l": ""
+   },
+   {
+    "a": "apr",
+    "b": "p-harvest",
+    "id": "apr>p-harvest",
+    "l": ""
+   },
+   {
+    "a": "apr",
+    "b": "p-exit",
+    "id": "apr>p-exit",
+    "l": ""
+   },
+   {
+    "a": "p-release",
+    "b": "exe",
+    "id": "p-release>exe",
+    "l": ""
+   },
+   {
+    "a": "p-refurb",
+    "b": "exe",
+    "id": "p-refurb>exe",
+    "l": ""
+   },
+   {
+    "a": "p-redeploy",
+    "b": "exe",
+    "id": "p-redeploy>exe",
+    "l": ""
+   },
+   {
+    "a": "p-resell",
+    "b": "exe",
+    "id": "p-resell>exe",
+    "l": ""
+   },
+   {
+    "a": "p-harvest",
+    "b": "exe",
+    "id": "p-harvest>exe",
+    "l": ""
+   },
+   {
+    "a": "p-exit",
+    "b": "exe",
+    "id": "p-exit>exe",
+    "l": ""
+   },
+   {
+    "a": "exe",
+    "b": "lrn",
+    "id": "exe>lrn",
+    "l": ""
+   }
+  ],
+  "n": [
+   {
+    "h": 112,
+    "id": "in",
+    "label": "Tool returned",
+    "lock": true,
+    "sub": "Intake agent · contract end, repair, trade-in, pool",
+    "t": "trigger",
+    "x": 24,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "cond",
+    "label": "Read condition and life",
+    "lock": true,
+    "sub": "Condition and life agent",
+    "t": "agent",
+    "x": 220,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "dem",
+    "label": "Find real demand",
+    "lock": true,
+    "sub": "Demand discovery agent",
+    "t": "agent",
+    "x": 416,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "fit",
+    "label": "Fit-for-use test",
+    "lock": true,
+    "sub": "Fit-for-use agent",
+    "t": "agent",
+    "x": 612,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "val",
+    "label": "Price all six paths",
+    "lock": true,
+    "sub": "Valuation agent · net of cost and time",
+    "t": "agent",
+    "x": 808,
+    "y": 40
+   },
+   {
+    "h": 112,
+    "id": "gate",
+    "label": "Guardrail gate",
+    "lock": true,
+    "sub": "GR-01 · GR-02 · GR-03 · GR-04 · GR-06",
+    "t": "gate",
+    "x": 1004,
+    "y": 40
+   },
+   {
+    "action": "exclude",
+    "h": 112,
+    "id": "r1",
+    "label": "",
+    "lock": false,
+    "owner": "Remarketing lead",
+    "path": "exit",
+    "rid": "BR-01",
+    "scope": {
+     "cls": [
+      "LSR",
+      "DCD"
+     ]
+    },
+    "sub": "",
+    "t": "rule",
+    "x": 1004,
+    "y": 190
+   },
+   {
+    "action": "prefer",
+    "h": 112,
+    "id": "r2",
+    "label": "",
+    "lock": false,
+    "owner": "Disposition owner",
+    "path": "redeploy",
+    "rid": "BR-02",
+    "scope": {
+     "ft": [
+      "Repair center"
+     ],
+     "grade": [
+      "A",
+      "B"
+     ]
+    },
+    "sub": "",
+    "t": "rule",
+    "x": 1004,
+    "y": 330
+   },
+   {
+    "h": 112,
+    "id": "dec",
+    "label": "Choose best path",
+    "lock": true,
+    "sub": "Disposition agent",
+    "t": "decision",
+    "x": 1200,
+    "y": 330
+   },
+   {
+    "h": 112,
+    "id": "apr",
+    "label": "Owner approves",
+    "lock": true,
+    "sub": "GR-05 · named owner",
+    "t": "approval",
+    "x": 1396,
+    "y": 330
+   },
+   {
+    "h": 104,
+    "id": "p-release",
+    "label": "Re-issue to fleet",
+    "lock": false,
+    "owner": "Fleet desk",
+    "path": "release",
+    "sub": "Fleet contract system",
+    "t": "path",
+    "x": 1592,
+    "y": 20
+   },
+   {
+    "h": 104,
+    "id": "p-refurb",
+    "label": "Refurbish → place",
+    "lock": false,
+    "owner": "Repair center lead",
+    "path": "refurb",
+    "sub": "Repair center work orders (ERP service)",
+    "t": "path",
+    "x": 1592,
+    "y": 136
+   },
+   {
+    "h": 104,
+    "id": "p-redeploy",
+    "label": "Tool pool",
+    "lock": false,
+    "owner": "Tool pool planner",
+    "path": "redeploy",
+    "sub": "ERP stock transfer (tool pool)",
+    "t": "path",
+    "x": 1592,
+    "y": 252
+   },
+   {
+    "h": 104,
+    "id": "p-resell",
+    "label": "Pre-owned sale",
+    "lock": false,
+    "owner": "Remarketing lead",
+    "path": "resell",
+    "sub": "Pre-owned sales channel",
+    "t": "path",
+    "x": 1592,
+    "y": 368
+   },
+   {
+    "h": 104,
+    "id": "p-harvest",
+    "label": "Harvest parts",
+    "lock": false,
+    "owner": "Service parts planner",
+    "path": "harvest",
+    "sub": "Repair center teardown + spare parts (ERP)",
+    "t": "path",
+    "x": 1592,
+    "y": 484
+   },
+   {
+    "h": 104,
+    "id": "p-exit",
+    "label": "Recycle",
+    "lock": false,
+    "owner": "Sustainability lead",
+    "path": "exit",
+    "sub": "Recycler portal + circularity ledger",
+    "t": "path",
+    "x": 1592,
+    "y": 600
+   },
+   {
+    "h": 112,
+    "id": "exe",
+    "label": "Execute in owning application",
+    "lock": true,
+    "sub": "Follow-through agent",
+    "t": "execute",
+    "x": 1984,
+    "y": 280
+   },
+   {
+    "h": 112,
+    "id": "lrn",
+    "label": "Outcome to learning memory",
+    "lock": true,
+    "sub": "Feeds valuation and disposition models",
+    "t": "learn",
+    "x": 1984,
+    "y": 420
+   }
+  ]
+ }
+}

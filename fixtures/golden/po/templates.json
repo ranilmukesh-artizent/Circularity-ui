@@ -1,0 +1,295 @@
+{
+ "ACTORS": [
+  {
+   "id": "pshah",
+   "name": "Priya Shah",
+   "role": "Remarketing lead"
+  },
+  {
+   "id": "tbecker",
+   "name": "Tom Becker",
+   "role": "Disposition owner"
+  },
+  {
+   "id": "lng",
+   "name": "Lena Ng",
+   "role": "Tool pool planner"
+  }
+ ],
+ "CLSWORDS": {
+  "AGR": "angle grinders",
+  "BRK": "breakers",
+  "CMH": "combihammers",
+  "CRH": "cordless rotary hammers",
+  "DCD": "core drill rigs",
+  "LSR": "construction lasers"
+ },
+ "FUNCS": [
+  "Fleet management",
+  "Repair center",
+  "Remarketing",
+  "Tool pool"
+ ],
+ "SITES": [
+  "Houston",
+  "Denver",
+  "Atlanta",
+  "Chicago",
+  "Phoenix"
+ ],
+ "prototype_tpl_keys": [
+  "equip"
+ ],
+ "templates": [
+  {
+   "chips": [
+    "Never refurbish grade C",
+    "Angle grinders under 40% remaining life: do not refurbish",
+    "Add a safety inspection step before Pre-owned sale",
+    "Allow re-issuing grade C tools without refurbishment",
+    "Lower the fit-for-use threshold to 35%"
+   ],
+   "dims": [
+    {
+     "key": "cls",
+     "label": "Model",
+     "values": [
+      "CMH",
+      "BRK",
+      "DCD",
+      "CRH",
+      "AGR",
+      "LSR"
+     ]
+    },
+    {
+     "key": "grade",
+     "label": "Grade",
+     "values": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    {
+     "key": "ft",
+     "label": "Return channel",
+     "values": [
+      "Fleet management",
+      "Repair center",
+      "Remarketing",
+      "Tool pool"
+     ]
+    },
+    {
+     "key": "site",
+     "label": "Site",
+     "values": [
+      "Houston",
+      "Denver",
+      "Atlanta",
+      "Chicago",
+      "Phoenix"
+     ]
+    },
+    {
+     "key": "rulMax",
+     "label": "Life under %",
+     "values": null
+    },
+    {
+     "key": "rulMin",
+     "label": "Life at least %",
+     "values": null
+    }
+   ],
+   "guards": [
+    {
+     "id": "GR-01",
+     "owner": "Fleet desk",
+     "text": "Grade C and D tools are never issued to a fleet without refurbishment"
+    },
+    {
+     "id": "GR-02",
+     "owner": "Repair center lead",
+     "text": "Refurbishment always ends in a named fleet contract, sales order or pool request"
+    },
+    {
+     "id": "GR-03",
+     "owner": "Quality",
+     "text": "Harvested parts are certified only at or above the fit-for-use threshold"
+    },
+    {
+     "id": "GR-04",
+     "owner": "Finance",
+     "text": "The holding cost rate is set by Finance"
+    },
+    {
+     "id": "GR-05",
+     "owner": "Governance board",
+     "text": "Every decision is approved by a named owner before execution"
+    },
+    {
+     "id": "GR-06",
+     "owner": "Sustainability lead",
+     "text": "Recycling only through a certified recycler, certificate and CO2 record on file"
+    }
+   ],
+   "in_prototype_tpl": true,
+   "key": "equip",
+   "name": "Tool fleet returns",
+   "paths": [
+    {
+     "app": "Fleet contract system",
+     "full": "Clean and inspect, then issue against a named fleet contract renewal or new fleet order",
+     "key": "release",
+     "lead": 4,
+     "name": "Re-issue to fleet",
+     "owner": "Fleet desk"
+    },
+    {
+     "app": "Repair center work orders (ERP service)",
+     "full": "Refurbish, then re-issue to a fleet contract or sell certified pre-owned against a named order",
+     "key": "refurb",
+     "lead": 7,
+     "name": "Refurbish → place",
+     "owner": "Repair center lead"
+    },
+    {
+     "app": "ERP stock transfer (tool pool)",
+     "full": "Prepare, then place in a named service center's loaner or tool pool",
+     "key": "redeploy",
+     "lead": 3,
+     "name": "Tool pool",
+     "owner": "Tool pool planner"
+    },
+    {
+     "app": "Pre-owned sales channel",
+     "full": "Clean and test, then sell certified pre-owned to a named trade buyer or in the outlet",
+     "key": "resell",
+     "lead": 9,
+     "name": "Pre-owned sale",
+     "owner": "Remarketing lead"
+    },
+    {
+     "app": "Repair center teardown + spare parts (ERP)",
+     "full": "Harvest certified parts for open repair orders",
+     "key": "harvest",
+     "lead": 5,
+     "name": "Harvest parts",
+     "owner": "Service parts planner"
+    },
+    {
+     "app": "Recycler portal + circularity ledger",
+     "full": "Certified recycling, material recovery and circularity record",
+     "key": "exit",
+     "lead": 6,
+     "name": "Recycle",
+     "owner": "Sustainability lead"
+    }
+   ],
+   "pre": "BR",
+   "sub": "Fleet contracts, repair centers and tool pools · drives this desk's live decisions"
+  },
+  {
+   "chips": [],
+   "dims": [
+    {
+     "key": "brand",
+     "label": "Brand",
+     "values": [
+      "Apple",
+      "Samsung",
+      "Google",
+      "Motorola"
+     ]
+    },
+    {
+     "key": "grade",
+     "label": "Grade",
+     "values": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    {
+     "key": "band",
+     "label": "Age band",
+     "values": [
+      "0-24m",
+      "25-48m",
+      "49m+"
+     ]
+    },
+    {
+     "key": "dohMin",
+     "label": "Days on hand ≥",
+     "values": null
+    },
+    {
+     "key": "qtyMin",
+     "label": "Lot units ≥",
+     "values": null
+    }
+   ],
+   "guards": [
+    {
+     "id": "GR-D1",
+     "owner": "Compliance",
+     "text": "Certified data wipe before any listing"
+    },
+    {
+     "id": "GR-D2",
+     "owner": "Recommerce Finance",
+     "text": "Recovery floor: below 55% of reference value goes to human review"
+    },
+    {
+     "id": "GR-D3",
+     "owner": "Channel Ops",
+     "text": "Grade D never listed on Buy Now or Marketplace"
+    },
+    {
+     "id": "GR-D4",
+     "owner": "Channel Ops",
+     "text": "Maximum lot size per channel"
+    },
+    {
+     "id": "GR-D5",
+     "owner": "Pricing",
+     "text": "Marketplace never undercuts the live Buy Now price"
+    },
+    {
+     "id": "GR-D6",
+     "owner": "Governance board",
+     "text": "Every routing approved by a named owner"
+    }
+   ],
+   "in_prototype_tpl": false,
+   "key": "device",
+   "name": null,
+   "paths": [
+    {
+     "key": "buynow",
+     "name": "Buy Now"
+    },
+    {
+     "key": "offers",
+     "name": "Offers"
+    },
+    {
+     "key": "auction",
+     "name": "Auction"
+    },
+    {
+     "key": "market",
+     "name": "Marketplace"
+    }
+   ],
+   "pre": "DR",
+   "sub": null
+  }
+ ]
+}

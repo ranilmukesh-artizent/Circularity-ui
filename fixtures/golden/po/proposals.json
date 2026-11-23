@@ -1,0 +1,404 @@
+{
+ "actor": "pshah",
+ "device": [
+  {
+   "checks": null,
+   "g": null,
+   "kind": "unclear",
+   "label": null,
+   "msg": "I couldn't tell which channel this is about. Name one of: Buy Now, Offers, Auction, Marketplace.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Never recycle construction lasers"
+  },
+  {
+   "checks": null,
+   "g": null,
+   "kind": "unclear",
+   "label": null,
+   "msg": "I couldn't tell which channel this is about. Name one of: Buy Now, Offers, Auction, Marketplace.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Prefer tool pool for grade A or B from Repair center"
+  },
+  {
+   "checks": null,
+   "g": null,
+   "kind": "unclear",
+   "label": null,
+   "msg": "I couldn't tell which channel this is about. Name one of: Buy Now, Offers, Auction, Marketplace.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Only harvest parts for breakers under 30% life"
+  },
+  {
+   "checks": null,
+   "g": null,
+   "kind": "unclear",
+   "label": null,
+   "msg": "I couldn't tell which channel this is about. Name one of: Buy Now, Offers, Auction, Marketplace.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Lower the fit-for-use threshold to 60"
+  },
+  {
+   "checks": null,
+   "g": null,
+   "kind": "blocked",
+   "label": null,
+   "msg": "I can't draft this. It would change GR-D6 (Every routing approved by a named owner), which is owned by Governance board. Guardrails are changed only by their owner, never by me or the Modeler.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Skip approval for grade A"
+  },
+  {
+   "checks": [
+    [
+     "ok",
+     "DR-02 active: 45+ days on hand: only Auction.",
+     "rmjuohs00"
+    ]
+   ],
+   "g": null,
+   "kind": "rule",
+   "label": "DR-02: 45+ days on hand: only Auction",
+   "msg": "",
+   "nid": "rmjuohs00",
+   "node": {
+    "action": "require",
+    "ai": true,
+    "h": 112,
+    "id": "rmjuohs00",
+    "label": "",
+    "lock": false,
+    "owner": "Remarketing lead",
+    "path": "auction",
+    "rid": "DR-02",
+    "scope": {
+     "dohMin": 45
+    },
+    "src": "Lots over 45 days on hand: Auction only",
+    "sub": "",
+    "t": "rule",
+    "x": 1200,
+    "y": 330
+   },
+   "rid": "DR-02",
+   "sim": {
+    "cash": 386026.58096,
+    "days": 8.98799,
+    "dd": -0.346023,
+    "dl": 0,
+    "dv": -2618.400557,
+    "flips": [
+     {
+      "from": "offers",
+      "id": "LOT-40220",
+      "to": "auction"
+     },
+     {
+      "from": "offers",
+      "id": "LOT-40221",
+      "to": "auction"
+     },
+     {
+      "from": "offers",
+      "id": "LOT-40232",
+      "to": "auction"
+     },
+     {
+      "from": "offers",
+      "id": "LOT-40244",
+      "to": "auction"
+     },
+     {
+      "from": "offers",
+      "id": "LOT-40255",
+      "to": "auction"
+     }
+    ],
+    "kind": "device",
+    "n": 48,
+    "u": 2387
+   },
+   "text": "Lots over 45 days on hand: Auction only"
+  },
+  {
+   "checks": [
+    [
+     "ok",
+     "DR-02 active: grade D: never Buy Now.",
+     "rmjuohs00"
+    ]
+   ],
+   "g": null,
+   "kind": "rule",
+   "label": "DR-02: grade D: never Buy Now",
+   "msg": "",
+   "nid": "rmjuohs00",
+   "node": {
+    "action": "exclude",
+    "ai": true,
+    "h": 112,
+    "id": "rmjuohs00",
+    "label": "",
+    "lock": false,
+    "owner": "Remarketing lead",
+    "path": "buynow",
+    "rid": "DR-02",
+    "scope": {
+     "grade": [
+      "D"
+     ]
+    },
+    "src": "Never list grade D on Buy Now",
+    "sub": "",
+    "t": "rule",
+    "x": 1200,
+    "y": 330
+   },
+   "rid": "DR-02",
+   "sim": {
+    "cash": 388644.981517,
+    "days": 9.334013,
+    "dd": 0,
+    "dl": 0,
+    "dv": 0,
+    "flips": [],
+    "kind": "device",
+    "n": 48,
+    "u": 2387
+   },
+   "text": "Never list grade D on Buy Now"
+  },
+  {
+   "checks": [
+    [
+     "ok",
+     "DR-02 active: Samsung, 0-24m age: prefer Offers.",
+     "rmjuohs00"
+    ]
+   ],
+   "g": null,
+   "kind": "rule",
+   "label": "DR-02: Samsung, 0-24m age: prefer Offers",
+   "msg": "",
+   "nid": "rmjuohs00",
+   "node": {
+    "action": "prefer",
+    "ai": true,
+    "h": 112,
+    "id": "rmjuohs00",
+    "label": "",
+    "lock": false,
+    "owner": "Remarketing lead",
+    "path": "offers",
+    "rid": "DR-02",
+    "scope": {
+     "band": [
+      "0-24m"
+     ],
+     "brand": [
+      "Samsung"
+     ]
+    },
+    "src": "Samsung under 24 months prefer offers",
+    "sub": "",
+    "t": "rule",
+    "x": 1200,
+    "y": 330
+   },
+   "rid": "DR-02",
+   "sim": {
+    "cash": 389432.247369,
+    "days": 9.702165,
+    "dd": 0.368152,
+    "dl": 0,
+    "dv": 787.265851,
+    "flips": [
+     {
+      "from": "auction",
+      "id": "LOT-40237",
+      "to": "offers"
+     }
+    ],
+    "kind": "device",
+    "n": 48,
+    "u": 2387
+   },
+   "text": "Samsung under 24 months prefer offers"
+  }
+ ],
+ "equip": [
+  {
+   "checks": [
+    [
+     "ok",
+     "BR-03 active: construction lasers: never recycle.",
+     "rmjuohs00"
+    ]
+   ],
+   "g": null,
+   "kind": "rule",
+   "label": "BR-03: construction lasers: never recycle",
+   "msg": "",
+   "nid": "rmjuohs00",
+   "node": {
+    "action": "exclude",
+    "ai": true,
+    "h": 112,
+    "id": "rmjuohs00",
+    "label": "",
+    "lock": false,
+    "owner": "Remarketing lead",
+    "path": "exit",
+    "rid": "BR-03",
+    "scope": {
+     "cls": [
+      "LSR"
+     ]
+    },
+    "src": "Never recycle construction lasers",
+    "sub": "",
+    "t": "rule",
+    "x": 1004,
+    "y": 470
+   },
+   "rid": "BR-03",
+   "sim": {
+    "dv": 0,
+    "flips": [],
+    "kind": "equip",
+    "n": 26
+   },
+   "text": "Never recycle construction lasers"
+  },
+  {
+   "checks": null,
+   "g": null,
+   "kind": "unclear",
+   "label": null,
+   "msg": "I couldn't tell which path this is about. Name one of: Re-issue to fleet, Refurbish → place, Tool pool, Pre-owned sale, Harvest parts, Recycle.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Prefer tool pool for grade A or B from Repair center"
+  },
+  {
+   "checks": [
+    [
+     "ok",
+     "BR-03 active: breakers, under 30% life: only harvest parts.",
+     "rmjuohs00"
+    ]
+   ],
+   "g": null,
+   "kind": "rule",
+   "label": "BR-03: breakers, under 30% life: only harvest parts",
+   "msg": "",
+   "nid": "rmjuohs00",
+   "node": {
+    "action": "require",
+    "ai": true,
+    "h": 112,
+    "id": "rmjuohs00",
+    "label": "",
+    "lock": false,
+    "owner": "Remarketing lead",
+    "path": "harvest",
+    "rid": "BR-03",
+    "scope": {
+     "cls": [
+      "BRK"
+     ],
+     "rulMax": 30
+    },
+    "src": "Only harvest parts for breakers under 30% life",
+    "sub": "",
+    "t": "rule",
+    "x": 1004,
+    "y": 470
+   },
+   "rid": "BR-03",
+   "sim": {
+    "dv": 0,
+    "flips": [],
+    "kind": "equip",
+    "n": 26
+   },
+   "text": "Only harvest parts for breakers under 30% life"
+  },
+  {
+   "checks": null,
+   "g": null,
+   "kind": "blocked",
+   "label": null,
+   "msg": "I can't draft this. It would change GR-03 (Harvested parts are certified only at or above the fit-for-use threshold), which is owned by Quality. Guardrails are changed only by their owner, never by me or the Modeler.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Lower the fit-for-use threshold to 60"
+  },
+  {
+   "checks": null,
+   "g": null,
+   "kind": "blocked",
+   "label": null,
+   "msg": "I can't draft this. It would change GR-05 (Every decision is approved by a named owner before execution), which is owned by Governance board. Guardrails are changed only by their owner, never by me or the Modeler.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Skip approval for grade A"
+  },
+  {
+   "checks": null,
+   "g": null,
+   "kind": "unclear",
+   "label": null,
+   "msg": "I couldn't tell which path this is about. Name one of: Re-issue to fleet, Refurbish → place, Tool pool, Pre-owned sale, Harvest parts, Recycle.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Lots over 45 days on hand: Auction only"
+  },
+  {
+   "checks": null,
+   "g": null,
+   "kind": "unclear",
+   "label": null,
+   "msg": "I couldn't tell which path this is about. Name one of: Re-issue to fleet, Refurbish → place, Tool pool, Pre-owned sale, Harvest parts, Recycle.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Never list grade D on Buy Now"
+  },
+  {
+   "checks": null,
+   "g": null,
+   "kind": "unclear",
+   "label": null,
+   "msg": "I couldn't tell which path this is about. Name one of: Re-issue to fleet, Refurbish → place, Tool pool, Pre-owned sale, Harvest parts, Recycle.",
+   "nid": null,
+   "node": null,
+   "rid": null,
+   "sim": null,
+   "text": "Samsung under 24 months prefer offers"
+  }
+ ],
+ "now": 1767225600000
+}
