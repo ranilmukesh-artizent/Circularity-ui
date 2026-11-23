@@ -39,6 +39,7 @@ KEYS = {
     "x_err": {"action": "action"},
     "x_audit": {"level": "level"},
     "x_pub": {"topic": "topic"},
+    "x_case": {"template": "template", "reason": "reason", "asset": "asset_field", "org": "org_unit_id", "only": "only_if"},
 }
 
 
@@ -225,4 +226,69 @@ def x_pub(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
     )
 
 
-STEPS = {"x_wait": x_wait, "x_loop": x_loop, "x_call": x_call, "x_err": x_err, "x_audit": x_audit, "x_pub": x_pub}
+def _only_if(spec: str) -> tuple[str, str] | None:
+    """Only if's "field=value" (None: every record)."""
+    if not spec.strip():
+        return None
+    field_, sep, value = spec.partition("=")
+    if not sep or not field_.strip():
+        raise StepError(f"Open case: Only if must read field=value, not {spec!r}")
+    return field_.strip(), value.strip()
+
+
+def _publisher(wf: dict) -> str:
+    """Who published the workflow (its newest "Published" history line), else its owner."""
+    pub = next((h.get("by") for h in wf.get("hist") or [] if h.get("note") == "Published" and h.get("by")), None)
+    return str(pub or wf.get("owner") or "system")
+
+
+def _source_org(ctx: StepCtx) -> str | None:
+    if ctx.s is None or not ctx.source_id:
+        return None
+    return ctx.s.execute(text("SELECT org_unit_id FROM source_system WHERE id = :i"), {"i": ctx.source_id}).scalar()
+
+
+def x_case(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
+    """A case for each record passing Only if (field=value), for the asset key at Asset field, through
+    di.services.cases.intake.open_case as the system, with the workflow's publisher recorded as `by`; the org unit is
+    the setting or else the source's. A record whose asset and reason already have a case is skipped (a re-sync, a
+    replay), as is one without an asset key; one intake refuses (no asset class ...) is counted with its reason. In a
+    dry run nothing opens: the step says "Would open N cases". The records pass on; side.cases says what happened."""
+    k = KEYS["x_case"]
+    only = _only_if(str(opt(cfg, k["only"], "")))
+    field_ = str(opt(cfg, k["asset"], "")).strip()
+    if not field_:
+        raise StepError("Open case needs the Asset field that holds the asset key")
+    org = str(opt(cfg, k["org"], "")).strip() or _source_org(ctx)
+    if not org:
+        raise StepError("Open case needs an Org unit: set one, or bind the source to an org unit")
+    picked = [r for r in recs if only is None or str(get(r, only[0], "")) == only[1]]
+    keys = [str(v) for r in picked if (v := get(r, field_)) not in (None, "")]
+    out = [clone(r) for r in recs]
+    cases: dict = {"passing": len(picked), "opened": [], "skipped": len(picked) - len(keys), "failed": []}
+    if ctx.dry or ctx.s is None:
+        cases["would_open"] = len(keys)
+        log(ctx, f"Would open {len(keys)} cases")
+        return StepResult(out, [], {"cases": cases})
+    from di.services.actions.registry import ActionError
+    from di.services.cases import intake
+
+    base = {"org_unit_id": org, "template_key": opt(cfg, k["template"], "industrial"),
+            "reason": opt(cfg, k["reason"], "rma"), "by": _publisher(ctx.wf or {})}  # fmt: skip
+    for key in keys:
+        try:
+            with ctx.s.begin_nested():
+                cases["opened"].append(intake.open_case(ctx.s, base | {"asset_key": key}, "system")["id"])
+        except ActionError as e:
+            if e.code == "duplicate":
+                cases["skipped"] += 1
+            else:
+                cases["failed"].append({"asset_key": key, "reason": e.message})
+    log(ctx, f"open case: {len(cases['opened'])} opened, {cases['skipped']} skipped, {len(cases['failed'])} not opened")
+    return StepResult(out, [], {"cases": cases})
+
+
+STEPS = {
+    "x_wait": x_wait, "x_loop": x_loop, "x_call": x_call, "x_err": x_err, "x_audit": x_audit, "x_pub": x_pub,
+    "x_case": x_case,
+}  # fmt: skip

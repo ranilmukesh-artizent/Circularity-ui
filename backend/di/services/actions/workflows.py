@@ -74,8 +74,8 @@ from di.workflow import binding, blocks, triggers, versions
 
 log = logging.getLogger("di.workflows")
 _REF = lists()
-XF: list[dict] = _REF["XF"]
-FR_XF: list[dict] = _REF["FR_XF"]
+XF: list[dict] = [*_REF["XF"], *blocks.PALETTE]  # plus the blocks the demo has no tile for (plan 8: Open case)
+FR_XF: list[dict] = [*_REF["FR_XF"], *blocks.PALETTE]
 FXD: dict[str, dict] = _REF["FXD"]
 ACT_TYPES: list[dict] = _REF["ACT_TYPES"]
 DELIVER: dict[str, list] = _REF["DELIVER"]

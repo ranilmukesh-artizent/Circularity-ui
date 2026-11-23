@@ -124,7 +124,7 @@ export interface FieldSpec {
 }
 export interface BlockSpec { ref: string; readonly: boolean; fields: FieldSpec[] }
 export interface Rule { field: string; check: string; arg?: string }
-interface BlocksAnswer { blocks: BlockSpec[]; resources?: Record<string, string[]>; operations?: Record<string, string[]> }
+interface BlocksAnswer { blocks: BlockSpec[]; resources?: Record<string, string[]>; operations?: Record<string, string[]>; palette?: Xf[] }
 
 const listA = () => cached<ListAnswer>('/api/screens/workflows');
 const detailA = (id: string) => cached<Detail>('/api/screens/workflows/' + encodeURIComponent(id));
@@ -135,7 +135,7 @@ const mappingsA = () => cached<{ mappings: Record<string, string[][]> }>('/api/s
  *  (paused, disconnected ... over the demo's statuses), so the canvas checks agree with workflow.validate. */
 function lk(): G.Lookups {
   return {
-    sources: G.liveSources(sourcesA(), listA().live), mappings: mappingsA(), XF: ref('XF'), FR_XF: ref('FR_XF'), FXD: ref('FXD'), ACT_TYPES: ref('ACT_TYPES'), TOOLS: ref('TOOLS'),
+    sources: G.liveSources(sourcesA(), listA().live), mappings: mappingsA(), XF: transforms(), FR_XF: frTransforms(), FXD: ref('FXD'), ACT_TYPES: ref('ACT_TYPES'), TOOLS: ref('TOOLS'),
     MAP_TARGET: ref('MAP_TARGET'), SH: ref('SH'), DELIVER: ref('DELIVER'), CH_ARR: ref('CH_ARR'), CH_DEL: ref('CH_DEL'),
   };
 }
@@ -333,7 +333,7 @@ const FR_NIC: Record<string, string> = { conn: 'database', wconn: 'send', map: '
 export function nodeMark(n: WfNode): NodeMark {
   if (n.k === 'conn' || n.k === 'wconn') return { source: source(n.ref) };
   if (n.k === 'xf') {
-    const x = ref('FR_XF').find((y) => y.id === n.ref);
+    const x = frTransforms().find((y) => y.id === n.ref);
     return { ic: x?.ic ?? XF_IC[n.ref] ?? 'workflow', h: x?.sink ? (n.ref === 'x_err' ? 'alert' : 'agent') : 'insp' };
   }
   if (n.k === 'fixed') {
@@ -345,8 +345,18 @@ export function nodeMark(n: WfNode): NodeMark {
 
 // ---- step catalogue (palette and inspector) ----
 export interface Xf { id: string; label: string; sub: string; desc: string; group?: string; ingest?: string; ic?: string; start?: boolean; sink?: boolean }
-export const transforms = (): Xf[] => ref('XF');
-export const frTransforms = (): Xf[] => ref('FR_XF');
+/** The tiles of blocks the demo has none for (plan 8: Open case), from the block catalogue; none for an account that
+ *  cannot read it (it cannot open the Studio either). */
+function extraTransforms(): Xf[] {
+  try {
+    return blocksA().palette ?? [];
+  } catch (x) {
+    if (x instanceof ApiError) return [];
+    throw x;
+  }
+}
+export const transforms = (): Xf[] => [...ref('XF'), ...extraTransforms()];
+export const frTransforms = (): Xf[] => [...ref('FR_XF'), ...extraTransforms()];
 export const actTypes = (): { id: string; ch: string; label: string; sub: string; desc: string }[] => ref('ACT_TYPES');
 export const tools = (): { id: string; rw: 'read' | 'write'; approval: string; desc: string }[] => ref('TOOLS');
 function agents(): { name: string; tools: string[] }[] {

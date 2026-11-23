@@ -274,10 +274,11 @@ def workflow_blocks() -> dict:
     write operations (the choices of a write connector's Target operation, di/services/instructions/writers.py; a target not
     listed takes none)."""
     from di.services.instructions.writers import SYSTEM_OF, operations
-    from di.workflow.blocks import catalogue
+    from di.workflow.blocks import PALETTE, catalogue
 
     ops = {sid: operations(sid) for sid in dict.fromkeys(SYSTEM_OF.values())}
-    return {"blocks": catalogue(), "resources": _resources(), "operations": ops}
+    # palette: the tiles of blocks the demo has none for (plan 8: Open case), added to its transforms by the Studio
+    return {"blocks": catalogue(), "resources": _resources(), "operations": ops, "palette": list(PALETTE)}
 
 
 def _resources() -> dict[str, list[str]]:

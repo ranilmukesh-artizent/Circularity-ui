@@ -53,6 +53,16 @@ class BlockSpec:
     readonly: bool = False
 
 
+# Palette entries of the blocks the demo has no tile for (its palette is the golden XF / FR_XF lists, served unchanged
+# by /api/screens/reference): di.services.actions.workflows adds them to its lists, and the blocks endpoint serves them
+# to the Studio's palette (frontend/src/api/workflows.ts transforms, frTransforms).
+PALETTE: tuple[dict[str, Any], ...] = (
+    {"id": "x_case", "label": "Open case", "sub": "A case for each record", "group": "branch", "ic": "branch",
+     "desc": "Opens a case for each record that passes, for the asset it names, valued by the template and the org's "
+             "published flow. A record whose asset already has a case for the reason is skipped."},
+)  # fmt: skip
+CASE_TEMPLATES = ("industrial", "tool_fleet", "device")  # di.services.modeler.templates.TEMPLATE_KEYS
+CASE_REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual")  # di.services.cases.intake.REASONS
 CURRENCIES = ["USD", "EUR", "INR"]  # the ISO 4217 codes the rate table has rates for (generic.to_usd)
 ZONES = [
     "record", "UTC", "Europe/London", "Europe/Berlin", "America/New_York", "America/Chicago", "America/Los_Angeles",
@@ -169,6 +179,14 @@ BLOCKS: dict[str, BlockSpec] = {
         _S("x_audit", (F("level", "Level", "select", "info", required=True, choices=["info", "warn", "debug"],
                          help="One entry per run in the audit log, with this level and the record count."),)),
         _S("x_pub", (F("topic", "Topic", "text", "model.updated", required=True),)),
+        # ---- plan 8 (MVP-8.2): a case for each record passing the step (di/workflow/steps/flow.py x_case)
+        _S("x_case", (F("template", "Template", "select", "industrial", required=True, choices=list(CASE_TEMPLATES)),
+                      F("reason", "Reason", "select", "rma", required=True, choices=list(CASE_REASONS)),
+                      F("asset_field", "Asset field", "text", "", required=True,
+                        help="The field holding the asset key a case is opened for (e.g. sku)."),
+                      F("org_unit_id", "Org unit", "text", "", help="Empty: the source's org unit."),
+                      F("only_if", "Only if", "text", "",
+                        help="field=value: only records with that value open a case. Empty: every record."))),
     )
 }  # fmt: skip
 # a pair of settings that only make sense together: (block, field, needs)

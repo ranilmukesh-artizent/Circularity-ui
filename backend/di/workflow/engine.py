@@ -720,6 +720,8 @@ class _Run:
             if self.waiting:
                 at_wait, cnt = self.waiting[0]
                 note = f"{cnt} record{'s' if cnt != 1 else ''} waiting at {self.label(self.by[at_wait])}"
+            elif would := [x["cases"]["would_open"] for x in self.side.values() if "would_open" in (x.get("cases") or {})]:
+                note = f"Would open {sum(would)} cases"  # a dry run's Open case steps (plan 8, MVP-8.2)
         return RunResult(
             dict(self.states), self.counts, self.dur, rows, rejected, error, list(self.order), status, note,
             dict(self.attempts), self.samples, self.held, self.error_kind, self.steps,

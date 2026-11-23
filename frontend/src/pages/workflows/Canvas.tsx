@@ -149,7 +149,7 @@ export function Palette({ w, onDown, onKeyAdd }: { w: Workflow; onDown: (e: RPoi
       ])}
       <h4 className="frpalh">Orchestration</h4>
       {grp('frO', 'Orchestration steps', ['x_sched', 'x_evtrig', 'x_branch', 'x_loop', 'x_call', 'x_wait'].map(xf))}
-      {grp('frB', 'Branches', ['x_err', 'x_audit', 'x_pub'].map(xf))}
+      {grp('frB', 'Branches', ['x_err', 'x_audit', 'x_pub', 'x_case'].map(xf))}
       <h4 className="frpalh">More</h4>
       {grp('ing', 'Integration layer', XF.filter((x) => x.group === 'ingest').map((x) => xf(x.id)))}
       {grp('file', 'File exchange steps', XF.filter((x) => x.group === 'file').map((x) => xf(x.id)))}
