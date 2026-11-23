@@ -86,6 +86,7 @@ ignore_imports =
     # one place a case is opened from data reads them, as a re-evaluation does.
     di.services.cases.intake -> di.repositories.live_rules
     di.services.cases.intake -> di.services.actions.models
+    di.services.cases.intake -> di.repositories.plm
 
 [importlinter:contract:foundations]
 name = di.core and di.models import nothing above them

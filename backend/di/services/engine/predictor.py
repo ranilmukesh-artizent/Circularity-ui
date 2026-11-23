@@ -10,7 +10,7 @@ source, so tests can pin it; the draws happen in the demo's order.
 
 import math
 import random
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -127,3 +127,60 @@ class FormulaPredictor:
     def material(self, a: Asset) -> tuple[int, int]:
         mat = js_round(a.pnew * a.qty * (0.03 + self.rnd() * 0.025))
         return mat, js_round(mat * 0.4 + 10 * math.sqrt(a.qty))
+
+
+@dataclass(frozen=True)
+class BomLine:
+    """One line of the asset's bill of materials (plan 8, MVP-9.4): the used part, how many, its unit cost, and whether
+    it can be harvested (a released or obsolete part, di.connectors.adapters.windchill)."""
+
+    part: str
+    qty: float
+    unit_cost: float
+    harvestable: bool
+
+
+class BomPartsPredictor:
+    """Values the recovered parts from the asset's BOM and the demand for them (plan 8, MVP-9.4); every other estimate
+    is the base's. For each harvestable line: unit cost x quantity x the share of it the demand takes
+    (min(1, demand / quantity); demand: how many active assemblies use the part) x the grade factor (at least 0.5), at
+    full value for internal use and 80% sold outside. Only an intake case whose asset has BOM facts uses it; the
+    book's cases never do (parity)."""
+
+    def __init__(self, base: Predictor, lines: Sequence[BomLine], demand: Mapping[str, int]):
+        self.base, self.lines, self.demand = base, list(lines), dict(demand)
+
+    def market_value(self, a: Asset) -> float:
+        return self.base.market_value(a)
+
+    def sale(self, a: Asset, mv: float) -> tuple[int, int]:
+        return self.base.sale(a, mv)
+
+    def refurbishment(self, a: Asset, sale: int) -> tuple[int, int]:
+        return self.base.refurbishment(a, sale)
+
+    def avoided_purchase(self, a: Asset) -> int:
+        return self.base.avoided_purchase(a)
+
+    def prep_cost(self, a: Asset) -> int:
+        return self.base.prep_cost(a)
+
+    def service_cost(self, a: Asset) -> int:
+        return self.base.service_cost(a)
+
+    def residual(self, a: Asset) -> int:
+        return self.base.residual(a)
+
+    def lease_income(self, a: Asset) -> int:
+        return self.base.lease_income(a)
+
+    def parts_value(self, a: Asset, internal: bool) -> int:
+        self.base.parts_value(a, internal)  # its draw is taken, so the estimates after it stay the base's
+        total = 0.0
+        for x in self.lines:
+            if x.harvestable and x.qty > 0:
+                total += x.unit_cost * x.qty * min(1, self.demand.get(x.part, 0) / x.qty)
+        return js_round(total * max(a.gf, 0.5) * (1.0 if internal else 0.8))
+
+    def material(self, a: Asset) -> tuple[int, int]:
+        return self.base.material(a)

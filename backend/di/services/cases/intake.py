@@ -10,14 +10,16 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   grade, age, quantity, spec, demand, location. The stage is the first of di.services.cases.lifecycle.
 - **Routes.** `industrial`: the engine's seven routes (`build_routes`) valued by the formulas on a random source
   seeded from the case id (a stable hash: sha256, never Python's per-process `hash()`), calibrated by the template's
-  active model if one was promoted (di.services.actions.models.intake_predictor, MVP-12.2). Other templates: the
+  active model if one was promoted (di.services.actions.models.intake_predictor, MVP-12.2); when the asset's bom_ref
+  names an assembly PLM holds, its parts are valued from that BOM and the demand for them (BomPartsPredictor,
+  MVP-9.4). Other templates: the
   template's valuer (tool fleet, device) through `to_routes`. Then the business rules of the owner's published flow
   (di.repositories.live_rules), and `rank_routes` gives the recommendation.
 - **Dedupe** (Review Focus 5). The same asset key and reason open one case: a second intake (a webhook replay, a
   re-sync, an import read twice) is refused with `duplicate`. The action's idempotency key is the same pair.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
 
-The case reads (live rules, the active model) sit above the case store; this is the one place a case is opened from
+The case reads (live rules, the active model, PLM) sit above the case store; this is the one place a case is opened from
 data, so it reads them here (backend/.importlinter names these imports).
 """
 
@@ -30,6 +32,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
+from di.repositories import plm
 from di.repositories.live_rules import live_rules
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
@@ -37,7 +40,7 @@ from di.services.canonical import store as canonical
 from di.services.cases import store
 from di.services.cases.lifecycle import STAGES
 from di.services.engine.evaluate import apply_business, build_routes
-from di.services.engine.predictor import CLASSES, GRADE_F, FormulaPredictor
+from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
 from di.services.engine.routes import Route, rank_routes
 from di.services.modeler.templates import TEMPLATE_KEYS, Template
 from di.services.modeler.valuers import device, tool_fleet
@@ -103,6 +106,8 @@ def _canonical(s: Session, asset_key: str) -> dict[str, Any]:
         out["mfr"] = asset["manufacturer"]
     if asset.get("model"):
         out["product"] = asset["model"]
+    if asset.get("bom_ref"):
+        out["bom_ref"] = asset["bom_ref"]
     if isinstance(asset.get("nameplate"), dict):
         out["spec"] = asset["nameplate"]
     if isinstance(asset.get("install_date"), str):
@@ -130,7 +135,7 @@ def _base(case_id: str, i: dict[str, Any], known: dict[str, Any], by: str) -> st
         "hero": False, "readiness": "ready", "evidence": [], "notes": [], "approval": None, "exec": None,
         "override": None, "blocked": None, "facts": None, "predictions": None, "timeline": None,
         "condition": known.get("condition") or "", "assessment": None, "engLife": "Not assessed",
-        "nextInspection": "—", "model": FormulaPredictor.model_version,
+        "nextInspection": "—", "model": FormulaPredictor.model_version, "bomRef": known.get("bom_ref"),
         "snapshot": {"id": "EVS-" + hashlib.sha256(case_id.encode()).hexdigest()[:8].upper(), "items": 0,
                      "takenAt": _received(now)},
         "intake": {"key": intake_key(i["asset_key"], i["reason"]), "reason": i["reason"], "by": by,
@@ -179,7 +184,17 @@ def _industrial_routes(s: Session, c: store.Case, t: Template, rules: list) -> l
     if c.get("grade") is not None and c["grade"] not in GRADE_F:
         raise ActionError("validation_error", "The grade is one of A, B, C, D.")
     p = intake_predictor(s, FormulaPredictor(mulberry32(seed_of(c["id"]))), c["cls"])
-    return build_routes(c, p, rules, t)
+    return build_routes(c, _with_bom(s, c, p), rules, t)
+
+
+def _with_bom(s: Session, c: store.Case, p: Predictor) -> Predictor:
+    """The parts value from the asset's BOM (plan 8, MVP-9.4) when PLM holds the assembly its bom_ref names: the
+    owner's PLM data first, else the shared; otherwise the predictor as it is."""
+    ref = str(c.get("bomRef") or "")
+    for org in (c["owner"], None) if ref else ():
+        if lines := plm.bom_lines(s, org, ref):
+            return BomPartsPredictor(p, lines, plm.demand(s, org, [x.part for x in lines]))
+    return p
 
 
 def _template_routes(c: store.Case, facts: dict[str, Any], t: Template, rules: list) -> list[Route]:
