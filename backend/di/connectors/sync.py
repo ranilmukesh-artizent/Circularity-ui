@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 
 from di.connectors import connection, lifecycle, manual, mapping
 from di.connectors.http import SourceError
-from di.connectors.registry import ADAPTERS, adapter_for, has_adapter
+from di.connectors.registry import ADAPTERS, adapter_for, has_adapter, python_adapter
 from di.core import golden
 from di.core.db import SessionLocal, engine
 from di.core.jobs import enqueue
@@ -166,7 +166,7 @@ def mark_connected(session: Session, source_id: str, was: str) -> int | None:
     when it was not provisioned (`unavailable`), else a manual one. Returns the queued job (None if one is waiting).
     A source without a connector (created in the Connection Fabric) only becomes live."""
     session.execute(text("UPDATE source_system SET status = 'live', updated_at = now() WHERE id = :i"), {"i": source_id})
-    adapter = ADAPTERS.get(source_id)
+    adapter = python_adapter(source_id)  # another instance's too (plm_wc_2, plan 8 MVP-9.3)
     if adapter is None:
         return None
     if adapter.connected_confidence is not None:
@@ -336,7 +336,9 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
         if adapter is None:
             raise KeyError(f"No adapter for {source_id}")
         src = s.execute(text("SELECT status, confidence FROM source_system WHERE id = :i"), {"i": source_id}).first()
-        if src and src.status in NOT_SYNCED:
+        if src is None:  # a connector beyond the demo's sources that nobody registered yet (di.connectors.extra)
+            return {"source_id": source_id, "status": "skipped", "reason": "not registered"}
+        if src.status in NOT_SYNCED:
             return {"source_id": source_id, "status": "skipped", "reason": src.status}
         if lifecycle.is_deleted(s, source_id):
             return {"source_id": source_id, "status": "skipped", "reason": "deleted"}

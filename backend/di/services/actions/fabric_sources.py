@@ -41,7 +41,7 @@ from urllib.parse import urlparse
 
 from sqlalchemy import text
 
-from di.connectors import catalog, connection, lifecycle, mapping, registry, secrets, sync
+from di.connectors import catalog, connection, extra, lifecycle, mapping, registry, secrets, sync
 from di.connectors.probe import probe
 from di.connectors.registry import ADAPTERS
 from di.core import golden, policy
@@ -639,7 +639,9 @@ def source_delete(i: dict[str, Any], ctx: CallContext):
 @implement("source.reconnect")
 def source_reconnect(i: dict[str, Any], ctx: CallContext):
     """Refresh the feed token and re-sync: the source is live again (also after Pause or Disconnect, as in the demo),
-    its credential is renewed, source-sim's expired-token fault is cleared and a sync is queued."""
+    its credential is renewed, source-sim's expired-token fault is cleared and a sync is queued. A connector beyond the
+    demo's sources (Windchill, plan 8 MVP-9.3) that nobody registered yet is registered first (di.connectors.extra)."""
+    extra.ensure_registered(ctx.session, str(i["source_id"]))
     cur, cfg = _current(ctx, i["source_id"])
     sid, was = cur["id"], cur["db"]
     if was == "auth_expired" or cur["status"] == "stale":

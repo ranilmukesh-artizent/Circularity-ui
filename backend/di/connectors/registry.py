@@ -34,11 +34,21 @@ def _discover() -> dict[str, Adapter]:
 ADAPTERS: dict[str, Adapter] = _discover()
 
 
+def python_adapter(source_id: str) -> Adapter | None:
+    """The source's Python adapter: its own, or (plan 8 MVP-9.3) the adapter of another instance of a system whose
+    adapter makes instances (plm_wc_2 → the Windchill adapter, reading as plm_wc_2)."""
+    if source_id in ADAPTERS:
+        return ADAPTERS[source_id]
+    base, _, n = source_id.rpartition("_")
+    make = getattr(ADAPTERS.get(base), "instance", None)
+    return make(source_id) if n.isdigit() and make is not None else None
+
+
 def adapter_for(s, source_id: str) -> Adapter | None:
     """The Python adapter if the source has one; else a ConfiguredAdapter on its stored connection (with the source's
     field mapping), when it has one with resources to read; else None."""
-    if source_id in ADAPTERS:
-        return ADAPTERS[source_id]
+    if (a := python_adapter(source_id)) is not None:
+        return a
     from di.connectors.configured import ConfiguredAdapter, active_rows
     from di.connectors.connection import connection_for
 
@@ -50,7 +60,7 @@ def adapter_for(s, source_id: str) -> Adapter | None:
 
 def has_adapter(s, source_id: str) -> bool:
     """A sync can read this source: a Python adapter, or a stored connection with resources."""
-    if source_id in ADAPTERS:
+    if python_adapter(source_id) is not None:
         return True
     from sqlalchemy import text
 
