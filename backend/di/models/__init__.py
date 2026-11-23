@@ -32,6 +32,7 @@ from di.models.connectors import (
 from di.models.instructions import instruction
 from di.models.jobs import Job
 from di.models.journal import action_journal, domain_event, stream_event
+from di.models.org import org_unit
 from di.models.reference import fx_rate
 from di.models.workspace import state_item, state_seed
 
@@ -51,6 +52,7 @@ __all__ = [
     "fx_rate",
     "instruction",
     "metadata",
+    "org_unit",
     "provenance",
     "raw_record",
     "source_connection",
