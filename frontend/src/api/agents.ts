@@ -1,7 +1,7 @@
 /**
  * The Agents page (plan 8, MVP-11.8): the agent registry, the agents' runs, the proposals waiting for a person and the
  * tool catalogue, read from GET /api/screens/agents (backend/di/services/screens/agents.py). Admin changes an agent
- * with agent.update (backend/di/services/actions/agents.py); the signed-in person accepts or rejects a proposal with
+ * with agent.update and starts a playbook run on a case with agent.startRun (backend/di/services/actions/agents.py); the signed-in person accepts or rejects a proposal with
  * proposal.accept and proposal.reject (backend/di/services/actions/proposals.py). Agents never run these. A successful
  * write invalidates every read (invalidation.ts: the `agent` family and unknown families refresh everything).
  */
@@ -86,6 +86,14 @@ export type AgentPatch = Partial<Pick<AgentRow, 'name' | 'org_scope' | 'tools' |
 
 /** Change an agent: stop or start it, its autonomy, tools or org scope (Admin, manageAgents). */
 export const updateAgent = (id: string, patch: AgentPatch): Promise<ActionResult<AgentRow>> => invoke('agent.update', { id, ...patch });
+
+/** Start an agent's playbook on a case (Admin, manageAgents; agent.startRun). The agent acts as the signed-in person. */
+export const startRun = (
+  agent: string,
+  caseId: string,
+  playbook = 'case_autopilot',
+): Promise<ActionResult<{ run_id: string; agent: string; playbook: string; case_id: string }>> =>
+  invoke('agent.startRun', { agent, case_id: caseId, playbook });
 
 /** Run the action an agent prepared, as the signed-in person. */
 export const acceptProposal = (id: number): Promise<ActionResult<{ id: number; status: string; action: string }>> =>

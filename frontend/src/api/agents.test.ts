@@ -7,7 +7,7 @@ const m = vi.hoisted(() => ({
 vi.mock('./actions', () => ({ invoke: m.invoke }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
-import { acceptProposal, rejectProposal, updateAgent, useAgents } from './agents';
+import { acceptProposal, rejectProposal, startRun, updateAgent, useAgents } from './agents';
 import { actionScope } from './invalidation';
 
 const last = () => m.invoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
@@ -35,6 +35,7 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
       ],
       [() => acceptProposal(4), 'proposal.accept', { id: 4 }],
       [() => rejectProposal(4, 'Not for this case.'), 'proposal.reject', { id: 4, reason: 'Not for this case.' }],
+      [() => startRun('ext-a', 'RT-1048'), 'agent.startRun', { agent: 'ext-a', case_id: 'RT-1048', playbook: 'case_autopilot' }],
     ];
     for (const [run, id, body] of cases) {
       await run();
@@ -43,6 +44,6 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
   });
 
   it('an agent change or a decided proposal refreshes every page', () => {
-    for (const id of ['agent.update', 'proposal.accept', 'proposal.reject']) expect(actionScope(id)).toBe('all');
+    for (const id of ['agent.update', 'agent.startRun', 'proposal.accept', 'proposal.reject']) expect(actionScope(id)).toBe('all');
   });
 });

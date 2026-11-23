@@ -7,6 +7,8 @@ The demo has a fixed list of nine agents, so these are declared here, beside the
     agent.register  commit  {id, name, kind?, org_scope?, tools?, autonomy?}   a new agent (kind external, autonomy
                                                                                 propose unless given)
     agent.update    commit  {id, name?, org_scope?, tools?, autonomy?, enabled?}   change what is sent
+    agent.startRun  act     {agent, case_id, playbook?}   start a playbook run on a case (default case_autopilot); the
+                                                          agent acts as the person who started it (MVP-12.4)
 
 agent.setEnabled (di.services.actions.access, the demo's kill switch) writes the row too, through `set_enabled`.
 `tools` are MCP tool ids (di.mcp.tools.TOOLS) or action ids; `org_scope` are org unit ids (empty: every org).
@@ -22,7 +24,7 @@ from di.repositories.constants import TOOLS_BY_ID
 from di.services.actions.decisions import rb_log
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, guard, implement
-from di.services.agents import registry
+from di.services.agents import registry, runtime
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{1,63}$")
 KINDS = ("internal", "external")
@@ -53,6 +55,17 @@ _declare(
     "agent.update", "Change an agent", "change agents",
     "Change an agent's name, tools, org scope or autonomy, or stop and start it.",
     {"id": {"req": True, "t": "string"}, **_FIELDS, "enabled": {**_OPT, "t": "boolean"}},
+)  # fmt: skip
+
+
+ACTIONS.setdefault(
+    "agent.startRun",
+    ActionDef(
+        id="agent.startRun", title="Start an agent run", verb="start agent runs", risk="act", perm=_PERM, scope="case",
+        desc="Start an agent's playbook on a case. The agent acts as you; what it holds waits for a person.",
+        input={"agent": {"req": True, "t": "string"}, "case_id": {"req": True, "t": "string"},
+               "playbook": {**_OPT, "t": "string"}},
+    ),
 )  # fmt: skip
 
 
@@ -126,3 +139,21 @@ def update(i: dict[str, Any], ctx: CallContext):
     changed = [*cols, *(["enabled"] if i.get("enabled") is not None else [])]
     rb_log(ctx, "agent.updated", f"{a.name if a else i['id']} · {', '.join(changed) or 'no change'}", "agent.update")
     return a.as_dict() if a else {"id": i["id"]}
+
+
+@guard("agent.startRun")
+def start_run_guard(i: dict[str, Any], ctx: CallContext):
+    if registry.get(ctx.session, i["agent"]) is None:
+        return "not_found", "Unknown agent."
+    if (i.get("playbook") or runtime.autopilot.NAME) not in runtime.PLAYBOOKS:
+        return "validation_error", f"The playbook is one of {', '.join(runtime.PLAYBOOKS)}."
+    return None
+
+
+@implement("agent.startRun")
+def start_run(i: dict[str, Any], ctx: CallContext):
+    """plan 8 MVP-12.4: the runtime's way in (runtime.start); the worker's agent.step job runs it, as the person."""
+    playbook = i.get("playbook") or runtime.autopilot.NAME
+    run_id = runtime.start(ctx.session, i["agent"], playbook, i["case_id"], account=ctx.actor.id)
+    rb_log(ctx, "agent.run.started", f"{i['agent']} · {playbook} · {i['case_id']}", "agent.startRun")
+    return {"run_id": run_id, "agent": i["agent"], "playbook": playbook, "case_id": i["case_id"]}

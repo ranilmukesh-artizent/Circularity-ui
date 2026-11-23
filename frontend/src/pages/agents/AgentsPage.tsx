@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import {
-  acceptProposal, rejectProposal, updateAgent, useAgents,
+  acceptProposal, rejectProposal, startRun, updateAgent, useAgents,
   type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy,
 } from '../../api/agents'; // prettier-ignore
 import { useBackend } from '../../api/useBackend';
@@ -37,7 +37,7 @@ export function AgentsPage() {
       )}
       <Registry s={s} />
       <Proposals list={s.proposals} />
-      <Runs runs={s.runs} />
+      <Runs s={s} />
       <Catalogue s={s} />
     </div>
   );
@@ -239,7 +239,36 @@ function Waiting({ run }: { run: AgentRun }) {
   return w.case_id ? <a className="btn sm" href={caseHref(w.case_id)}>Approval of {w.case_id}</a> : <span className="note">A person</span>;
 }
 
-function Runs({ runs }: { runs: AgentRun[] }) {
+/** Start the case autopilot on a case (Admin): the agent acts as the person who starts it (agent.startRun). */
+function StartRun({ agents }: { agents: AgentRow[] }) {
+  const action = useAction();
+  const on = agents.filter((a) => a.enabled);
+  const [agent, setAgent] = useState(on[0]?.id ?? '');
+  const [caseId, setCaseId] = useState('');
+  const [err, setErr] = useState('');
+  const start = async () => {
+    const r = await action.run(() => startRun(agent, caseId.trim()), { all: setErr });
+    if (!r.ok) return;
+    setErr('');
+    setCaseId('');
+    toast(`Run ${r.output.run_id} started: case autopilot on ${r.output.case_id}.`);
+  };
+  return (
+    <div className="pb axrl" style={{ borderBottom: '1px solid var(--line)' }}>
+      <label htmlFor="ag-run-agent">Agent</label>
+      <select id="ag-run-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
+        {on.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+      </select>
+      <label htmlFor="ag-run-case">Case</label>
+      <input id="ag-run-case" value={caseId} onChange={(e) => setCaseId(e.target.value)} placeholder="e.g. RT-1048" style={{ width: 120 }} />
+      <button className="btn sm pri" disabled={action.pending || !agent || !caseId.trim()} onClick={start}>Start case autopilot</button>
+      {err && <span className="note err">{err}</span>}
+    </div>
+  );
+}
+
+function Runs({ s }: { s: AgentsScreen }) {
+  const runs = s.runs;
   const [open, setOpen] = useState<string | null>(null);
   return (
     <section className="sect" id="agRuns">
@@ -248,6 +277,7 @@ function Runs({ runs }: { runs: AgentRun[] }) {
         <span className="note">{runs.length} recent · {runs.filter((r) => r.status === 'waiting').length} waiting for a person</span>
       </div>
       <div className="panel">
+        {s.can.manage && <StartRun agents={s.agents} />}
         {runs.length ? (
           <div className="tw">
             <table className="t static">

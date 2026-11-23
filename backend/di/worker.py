@@ -217,7 +217,9 @@ def _workflow_resume(payload: dict[str, Any]) -> None:
 def _agent_step(payload: dict[str, Any]) -> None:
     """An agent run's next steps, until it waits for a person, ends or stops (di/services/agents/runtime.py)."""
     from di.services.agents import runtime  # registers the handlers its playbooks call
+    from di.services.cases import use_database_scope
 
+    use_database_scope()  # the run acts as a person: a case's owner and location from the database, as in the api
     with SessionLocal() as s:
         log.info("agent run %s: %s", payload["run_id"], runtime.run_until_blocked(s, payload["run_id"]))
 
