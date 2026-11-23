@@ -3,7 +3,7 @@
  * registry checks permission, tenant and warehouse scope, state guards and idempotency, journals the change and
  * notifies the live stream.
  */
-import { apiInvoke, cached, cachedAction, type ActionOptions } from './client';
+import { apiInvoke, cached, cachedAction, http, peek, type ActionOptions } from './client';
 import type { ActionResult } from './types';
 
 export function invoke<T = Record<string, unknown>>(id: string, input: Record<string, unknown> = {}, opts: ActionOptions = {}): Promise<ActionResult<T>> {
@@ -28,3 +28,9 @@ export interface ActionMeta {
 
 export const actionCatalog = (): ActionMeta[] =>
   cached<ActionMeta[]>('/api/actions').map(({ id, title, desc, risk, perm }) => ({ id, title, desc, risk, perm }));
+
+/** An action's title for an event handler, which must not suspend: the cached catalogue, else fetched once now. */
+export async function actionTitle(id: string): Promise<string | undefined> {
+  const all = peek<ActionMeta[]>('/api/actions') ?? (await http<ActionMeta[]>('/api/actions').catch(() => []));
+  return all.find((a) => a.id === id)?.title;
+}

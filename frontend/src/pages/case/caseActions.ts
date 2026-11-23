@@ -1,5 +1,5 @@
 /** The human-in-the-loop actions of the case pages, each one invoke() with the demo's action id and its toast. */
-import { actionCatalog, invoke } from '../../api/actions';
+import { actionTitle, invoke } from '../../api/actions';
 import { approverRole, caseById, checkAcknowledgement, evidencePack, nextStep } from '../../api/case';
 import { money } from '../../api/format';
 import { can } from '../../api/session';
@@ -76,7 +76,7 @@ export async function runNextStep(id: string, ui: CaseUi, quiet = false) {
   else return toast(st.label, 4200);
   if (refused(r, 4200)) return;
   if (quiet) return toast('Stage ' + st.n + ': ' + st.label + ' · done.');
-  const o = r.output, title = actionCatalog().find((a) => a.id === r.action)?.title;
+  const o = r.output, title = await actionTitle(r.action); // not actionCatalog(): a click handler must not suspend
   toast((title ?? 'Done') + (o.ref ? ' · ' + o.ref : '') + (o.case_id ? ' · ' + o.case_id : '') + '.', 3600);
 }
 
