@@ -71,6 +71,11 @@ CATALOG_SYSTEMS: tuple[System, ...] = (
 )
 CATALOG_BY_ID = {s.source_id: s for s in CATALOG_SYSTEMS}
 
+# Plan 8 (MVP-9.2): full vendor mocks beyond the demo's sources, for the platform's own stories (a second PLM). Not in
+# SYSTEMS, so the demo's systems and counts stay as they were; /_sim/systems lists them after the demo's.
+EXTRA_SYSTEMS: tuple[System, ...] = (System("plm_wc", "PTC Windchill", "windchill", "vendor", "/Windchill"),)
+EXTRA_BY_ID = {s.source_id: s for s in EXTRA_SYSTEMS}
+
 # Vendors replaced on purpose (docs/backend-steps.md, B5b). The frontend (index.html data) still shows the old name
 # until it switches to the API (B17).
 VENDOR_OVERRIDES = {"tms": "Oracle Transportation Management"}  # was the fictional "ShipLane TMS"

@@ -11,7 +11,7 @@ from sim.core import clock, events, faults, scheduler, webhooks
 from sim.core.config import get_settings
 from sim.core.db import engine, ensure_schemas
 from sim.core.mock import discover
-from sim.core.registry import SYSTEMS
+from sim.core.registry import EXTRA_SYSTEMS, SYSTEMS
 from sim.routes import admin
 from sim.seed import seed
 
@@ -85,7 +85,7 @@ def health() -> dict:
     with engine.connect() as conn:
         schemas = set(conn.execute(text("SELECT schema_name FROM information_schema.schemata")).scalars())
         now = clock.now(conn)
-    missing = [s.schema for s in SYSTEMS if s.schema not in schemas]
+    missing = [s.schema for s in (*SYSTEMS, *EXTRA_SYSTEMS) if s.schema not in schemas]
     from sim.core.mock import DISCOVERY_ERRORS
 
     return {
@@ -100,7 +100,7 @@ def health() -> dict:
 
 @app.get("/_sim/systems")
 def systems() -> list[dict]:
-    return [asdict(s) | {"implemented": s.source_id in MOCKS} for s in SYSTEMS]
+    return [asdict(s) | {"implemented": s.source_id in MOCKS} for s in (*SYSTEMS, *EXTRA_SYSTEMS)]
 
 
 @app.post("/_sim/reset")
