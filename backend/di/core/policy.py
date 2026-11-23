@@ -18,7 +18,7 @@ import re
 from dataclasses import dataclass, field
 from functools import cache
 
-from di.core import golden, state
+from di.core import golden, orgs, state
 from di.core.dates import AS_OF, add_days, iso
 
 # Features the demo keeps hidden (index.html FEAT: pools:false): these sections are never visible.
@@ -27,6 +27,20 @@ DELEGATION_SCOPES = ("decisions", "mcp", "tenantAccess")
 # AF.cfg.limits at the start, in dollars per role; None is the demo's Infinity (no limit). A role not listed falls
 # back to afLimitFor's default: unlimited for Approver and Admin, $0 for everyone else.
 STARTING_LIMITS: dict[str, float | None] = {"Approver": None, "Admin": None, "Planner": 0}
+# Plan 8 (MVP-1.2): permissions, pages and sections beyond the demo's, declared here beside the golden ones (role ->
+# allowed). They are not delegations: an Approver's approve.flows does not depend on the delegation switches.
+EXTRA_PERMS: dict[str, tuple[str, ...]] = {
+    "manageOrgs": ("Admin",),
+    "manageFlows": ("Admin", "Planner"),
+    "approve.flows": ("Admin", "Approver"),
+    "manageAgents": ("Admin",),
+    "openCases": ("Admin", "Developer", "Planner"),
+}
+EXTRA_PAGES: dict[str, tuple[str, ...]] = {
+    "modeler": ("Admin", "Planner", "Approver", "Executive"),
+    "agents": ("Admin", "Developer"),
+}
+EXTRA_SECTIONS: dict[tuple[str, str], tuple[str, ...]] = {("access", "orgs"): ("Admin",)}
 
 
 @dataclass(frozen=True)
@@ -49,6 +63,7 @@ class Context:
     accounts: dict[str, Account] | None = None  # id -> account as mapped now, in the demo's order; None: the starting ones
     limits: dict[str, float | None] = field(default_factory=lambda: dict(STARTING_LIMITS))
     self_approval: bool = False
+    org_units: dict[str, orgs.OrgUnit] | None = None  # the org tree (table org_unit); None: the seeded one
 
 
 @cache
@@ -69,12 +84,23 @@ def sections() -> dict[str, list[str]]:
     return _data()["sections"]
 
 
-def tenants() -> list[str]:
-    return _world()["tenants"]
+def org_units(ctx: Context | None = None) -> dict[str, orgs.OrgUnit]:
+    """The org tree: the context's (the table's rows) or the seeded one."""
+    if ctx is not None and ctx.org_units is not None:
+        return ctx.org_units
+    return orgs.SEEDED
+
+
+def tenants(ctx: Context | None = None) -> list[str]:
+    """The units a case can belong to (customers and companies), in the tree's order. Without a context, the demo's
+    tenants (world.json), which are the seeded units."""
+    if ctx is None or ctx.org_units is None:
+        return _world()["tenants"]
+    return [u.id for u in ctx.org_units.values() if u.kind in orgs.TENANT_KINDS]
 
 
 def permissions() -> list[str]:
-    return [*_data()["perm_acts"], "approve.mcp", "approve.tenantAccess"]
+    return [*_data()["perm_acts"], "approve.mcp", "approve.tenantAccess", *EXTRA_PERMS]
 
 
 @cache
@@ -135,6 +161,8 @@ def can(a: Account | None, perm: str, ctx: Context | None = None) -> bool:
     if a is None:
         return False
     perm = _data()["perm_alias"].get(perm, perm)
+    if perm in EXTRA_PERMS:
+        return a.role in EXTRA_PERMS[perm]
     # the demo's later can(): a Planner may approve once Admin raises the Planner approval limit above $0
     if perm == "approve.decisions" and a.role == "Planner" and limit_for(a, ctx) > 0:
         return True
@@ -151,6 +179,10 @@ def can(a: Account | None, perm: str, ctx: Context | None = None) -> bool:
 def can_page(a: Account | None, page: str, section: str | None = None) -> bool:
     if a is None or (page, section) in HIDDEN_SECTIONS:
         return False
+    if page in EXTRA_PAGES:
+        return section is None and a.role in EXTRA_PAGES[page]
+    if section is not None and (page, section) in EXTRA_SECTIONS:
+        return a.role in EXTRA_SECTIONS[(page, section)]
     secs = policy(a)["pages"].get(page)
     if secs is None:
         return False
@@ -158,14 +190,20 @@ def can_page(a: Account | None, page: str, section: str | None = None) -> bool:
 
 
 def allowed_tenants(a: Account, ctx: Context | None = None) -> list[str]:
+    """The tenants (customer and company units) the account may see: every one, or for a tenant-scoped role those in
+    the subtree of its own tenant or of a unit granted to it (a grant on a group covers the units below it)."""
     if not policy(a).get("tenantScoped"):
-        return list(tenants())
-    extra = (ctx or Context()).grants.get(a.id, [])
-    return [t for t in tenants() if t == a.tenant or t in extra]
+        return list(tenants(ctx))
+    units = org_units(ctx)
+    roots = [r for r in (a.tenant, *(ctx or Context()).grants.get(a.id, [])) if r]
+    covered = set().union(*(orgs.subtree(units, r) for r in roots))
+    return [t for t in tenants(ctx) if t in covered]
 
 
 def tenant_ok(a: Account, tenant: str, ctx: Context | None = None) -> bool:
-    return tenant in allowed_tenants(a, ctx)
+    """True if `tenant` (an org unit id) is in the subtree of a tenant the account may see."""
+    units = org_units(ctx)
+    return any(tenant in orgs.subtree(units, t) for t in allowed_tenants(a, ctx))
 
 
 def location_ok(a: Account, location: str) -> bool:

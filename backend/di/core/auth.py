@@ -22,7 +22,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.core import policy, state
+from di.core import orgs, policy, state
 from di.core.config import get_settings
 from di.core.db import get_session
 
@@ -80,6 +80,7 @@ def load_context(session: Session) -> policy.Context:
     for r in session.execute(text("SELECT account_id, tenant FROM tenant_grant ORDER BY tenant")):
         grants.setdefault(r.account_id, []).append(r.tenant)
     approval = state.get(session, "access_settings", "approval") or {}
+    units = session.execute(text("SELECT id, parent_id, kind, name FROM org_unit ORDER BY created_at, id"))
     return policy.Context(
         delegations={k: deleg.get(k, True) for k in policy.DELEGATION_SCOPES},
         grants=grants,
@@ -87,6 +88,7 @@ def load_context(session: Session) -> policy.Context:
         accounts={d["id"]: policy.Account(**d) for d in state.items(session, "accounts")},
         limits=approval.get("limits", dict(policy.STARTING_LIMITS)),
         self_approval=bool(approval.get("self")),
+        org_units={r.id: orgs.OrgUnit(r.id, r.parent_id, r.kind, r.name) for r in units},  # plan 8 MVP-1.2
     )
 
 
