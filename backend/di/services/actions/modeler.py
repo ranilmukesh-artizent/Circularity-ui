@@ -14,6 +14,8 @@ decision_flow_version for rollback. Decisions use the published graph only, from
     flow.discard    act     {flow_id}                    the draft back to the published graph
     flow.rollback   commit  {flow_id}                    the latest history entry becomes the published graph
     flow.get        read    {flow_id}                    {flow, template, checks, compiled}
+    flow.simulate   read    {flow_id, graph?}            the graph (or draft) against the published rules on the open
+                                                         queue (di.services.actions.modeler_sim); manageFlows or approve.flows
 
 Every write is journaled. The org scope is the flow's org unit: a tenant-scoped person (a Planner) reaches only the
 flows of the units they may see (policy.tenant_ok); everyone else reaches every flow. Agents never approve, return,
@@ -30,6 +32,7 @@ from di.core import policy
 from di.repositories import flows as repo
 from di.repositories.flows import FlowRow
 from di.repositories.orgs import units
+from di.services.actions.modeler_sim import sim_json, simulate_graph
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
 from di.services.modeler.compile import compile_flow
@@ -75,6 +78,9 @@ _declare("flow.rollback", "Roll back a flow", "roll back decision flows",
          "Restore the decision flow published before the current one.", "commit", _ID, _APPROVE)  # fmt: skip
 _declare("flow.get", "Read a flow", "read decision flows",
          "A decision flow with its template, checks and compiled rules. Changes nothing.", "read", _ID, None)  # fmt: skip
+_declare("flow.simulate", "Simulate a flow", "simulate decision flows",
+         "Run a flow's draft (or the graph given) against its published rules on the open queue. Changes nothing.",
+         "read", {**_ID, "graph": {"t": "object"}}, None)  # fmt: skip
 
 
 # ---------------------------------------------------------------- helpers
@@ -340,3 +346,28 @@ def get(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         "checks": checks_json(t, g),
         "compiled": [dataclasses.asdict(r) for r in compile_flow(t, g)],
     }
+
+
+# ---------------------------------------------------------------- simulate
+def may_model(ctx: CallContext) -> bool:
+    """A person who may edit or approve flows."""
+    acct = ctx.actor.account
+    return acct is not None and any(policy.can(acct, p, ctx.actor.ctx) for p in (_MANAGE, _APPROVE))
+
+
+@guard("flow.simulate")
+def simulate_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if not may_model(ctx):
+        return "out_of_scope", f"The {ctx.actor.role} view cannot simulate decision flows."
+    f = _reach(i, ctx)
+    if isinstance(f, tuple):
+        return f
+    bad = _graph_problem(i["graph"]) if i.get("graph") is not None else None
+    return ("validation_error", bad) if bad else None
+
+
+@implement("flow.simulate")
+def simulate(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    f = _flow(ctx, i)
+    g = cast(Flow, i["graph"]) if i.get("graph") is not None else _graph(f)
+    return sim_json(simulate_graph(ctx, f, g))

@@ -70,6 +70,14 @@ def test_exclude_reason_text():
     assert out == RuleOutcome(["BR-07"], None, False)
 
 
+def test_exclude_covers_every_offer_of_the_path():
+    """A hand-modelled case may offer one path twice (RT-1049 has two resale offers): an exclusion fails both."""
+    routes = _stubs([{"k": k, "ok": True, "why": "fine"} for k in ("resale", "resale", "redeploy")])
+    out = apply_rules({}, routes, [CompiledRule("IR-01", {}, "exclude", "resale", "every return: never resale")], IND)
+    assert [r["excluded"] for r in routes] == [True, True, False]
+    assert out == RuleOutcome(["IR-01"], None, False)
+
+
 def test_require_excludes_others():
     routes = _stubs([{"k": k, "ok": k != "resell", "why": "x"} for k in TF.path_ids()])
     out = apply_rules({}, routes, [CompiledRule("BR-04", {}, "require", "refurb", "every return: only refurbish")], TF)

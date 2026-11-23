@@ -38,18 +38,19 @@ def apply_rules(case: Mapping[str, Any], routes: list[Route], rules: Sequence[Co
     for rule in rules:
         if not in_scope(case, rule.scope, t.dims):
             continue
-        hit = next((r for r in routes if r["id"] == rule.path), None)
-        if hit is None or hit["excluded"]:
+        hits = [r for r in routes if r["id"] == rule.path and not r["excluded"]]  # a case may offer a path twice
+        if not hits:
             continue
         if rule.action == "exclude":
-            fail(hit, POLICY, FLOW_REMOVED if rule.id == FLOW else f"Excluded by business rule {rule.id}: {rule.text}")
+            for hit in hits:
+                fail(hit, POLICY, FLOW_REMOVED if rule.id == FLOW else f"Excluded by business rule {rule.id}: {rule.text}")
             if rule.id != FLOW:
                 ids.append(rule.id)
         elif rule.action == "require":
             p = t.path(rule.path)
             name = (p.name if p else rule.path).lower()
             for r in routes:
-                if r is not hit and not r["excluded"]:
+                if r["id"] != rule.path and not r["excluded"]:
                     fail(r, POLICY, f"Business rule {rule.id} sends this return to {name}")
             ids.append(rule.id)
         elif rule.action == "prefer":
