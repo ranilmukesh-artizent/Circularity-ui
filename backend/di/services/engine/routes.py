@@ -60,10 +60,15 @@ def fail(r: Route, gate: int, reason: str) -> Route:
     return r
 
 
-def rank_routes(routes: list[Route], blocked: Any = None) -> Route | None:
+def rank_routes(routes: list[Route], blocked: Any = None, prefer: str | None = None) -> Route | None:
     """Rank the eligible routes by net (highest first, ties in their listed order); excluded routes get no rank.
-    Returns the recommendation: the top eligible route, or None when the case is blocked or nothing is eligible."""
+    Returns the recommendation: the top eligible route, or None when the case is blocked or nothing is eligible.
+    `prefer` (a business rule's preferred route id): when that route is eligible it ranks first, the others keep
+    their net order."""
     eligible = sorted((r for r in routes if not r["excluded"]), key=lambda r: -r["net"])
+    preferred = next((r for r in eligible if r["id"] == prefer), None) if prefer else None
+    if preferred is not None:
+        eligible = [preferred, *(r for r in eligible if r is not preferred)]
     for i, r in enumerate(eligible):
         r["rank"] = i + 1
     for r in routes:

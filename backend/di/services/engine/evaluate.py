@@ -7,21 +7,46 @@ Two ways in:
   hero cases are, or as received). The engine computes the net, range, gates, ranks and recommendation.
 
 A draft is a route without its computed fields; a hand-modelled exclusion is given as `preset_fail: (gate, reason)`.
+
+Business rules (a published flow compiled by `di.services.modeler`) run after the gate rules when given; the case
+then gains `rulesApplied`, `rulesWaived` and `preferred`. Without them (None) nothing changes.
 """
 
 import copy
 import math
+from collections.abc import Sequence
 
 from di.services.engine.gates import apply_gate_rules
 from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import Asset, Predictor
 from di.services.engine.routes import Route, fail, mk_route, rank_routes, term
+from di.services.modeler.apply import apply_rules
+from di.services.modeler.compile import CompiledRule
+from di.services.modeler.templates import Template, load_template
 
 COMPUTED = ("gates", "excluded", "failGate", "failReason", "net", "p10", "p90", "rank")
 
 
-def build_routes(case: dict, p: Predictor) -> list[Route]:
-    """The demo's buildRoutes: value all seven routes for this asset and apply the gate rules."""
+def apply_business(case: dict, routes: list[Route], rules: Sequence[CompiledRule], template: Template | None) -> None:
+    """Business rules after the gate rules, in place; the outcome is recorded on the case."""
+    out = apply_rules(case, routes, rules, template or load_template("industrial"))
+    case["rulesApplied"], case["rulesWaived"], case["preferred"] = out.ids, out.waived, out.preferred
+
+
+def build_routes(
+    case: dict, p: Predictor, rules: Sequence[CompiledRule] | None = None, template: Template | None = None
+) -> list[Route]:
+    """The demo's buildRoutes: value all seven routes for this asset and apply the gate rules, then any business
+    rules (`template`: the pack whose dims scope them, by default `industrial`)."""
+    routes = _value_routes(case, p)
+    apply_gate_rules(case, routes)
+    if rules is not None:
+        apply_business(case, routes, rules, template)
+    return routes
+
+
+def _value_routes(case: dict, p: Predictor) -> list[Route]:
+    """The seven standard routes valued by the predictor, before any rule."""
     a = Asset(case["cls"], case.get("grade") or "C", case["age"], case.get("qty") or 1)
     dem = case.get("demand") or {}
     q = a.qty
@@ -118,7 +143,7 @@ def build_routes(case: dict, p: Predictor) -> list[Route]:
                   term("Vendor credit", js_round(30 * math.sqrt(q)), "credit")],
         "unc": "Vendor fees", "why": "Compliant fallback only", "sigma": 0.08,
     }))  # fmt: skip
-    return apply_gate_rules(case, routes)
+    return routes
 
 
 def draft_of(route: Route, keep_exclusion: bool) -> Route:
@@ -130,9 +155,16 @@ def draft_of(route: Route, keep_exclusion: bool) -> Route:
     return d
 
 
-def evaluate(case: dict, drafts: list[Route], rules: bool) -> tuple[list[Route], Route | None]:
+def evaluate(
+    case: dict,
+    drafts: list[Route],
+    rules: bool,
+    business: Sequence[CompiledRule] | None = None,
+    template: Template | None = None,
+) -> tuple[list[Route], Route | None]:
     """Route drafts to ranked routes and the recommendation. `rules=True` runs the gate rules (a case valued by
-    the formulas); `False` keeps only the hand-modelled exclusions (`preset_fail`), as the demo's hero cases do."""
+    the formulas); `False` keeps only the hand-modelled exclusions (`preset_fail`), as the demo's hero cases do.
+    `business`: rules applied after them; a preferred eligible route then ranks first."""
     routes = []
     for d in drafts:
         d = dict(d)
@@ -143,4 +175,7 @@ def evaluate(case: dict, drafts: list[Route], rules: bool) -> tuple[list[Route],
         routes.append(r)
     if rules:
         apply_gate_rules(case, routes)
-    return routes, rank_routes(routes, case.get("blocked"))
+    if business is None:
+        return routes, rank_routes(routes, case.get("blocked"))
+    apply_business(case, routes, business, template)
+    return routes, rank_routes(routes, case.get("blocked"), case["preferred"])
