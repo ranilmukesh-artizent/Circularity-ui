@@ -17,6 +17,8 @@ other source actions' permission (manageIntegrations; the demo adds them to PERM
                                 test of a draft (`draft`), probed against the source's connection (di.connectors.probe)
 Reconnecting after a disconnect is source.reconnect, as in the demo. Connecting from the catalogue is source.update with
 mode "catalog" (d = {catalog, auth, scopes}, maps = the accepted rows): it creates the source, as mode "new" does.
+Mode "mcp" (plan 8 MVP-11.7; d = {url, tool, arguments, resource_key, id_field?}) reads an existing source through an
+MCP server from then on (di.connectors.mcp_client), with its field mapping kept.
 
 **Sources without a Python adapter** (plan 6 A3). A source connected from the catalogue gets a connection from its
 template (di.connectors.catalog: source-sim's synthetic mock of that system) and a stored credential; one set up by
@@ -41,7 +43,7 @@ from urllib.parse import urlparse
 
 from sqlalchemy import text
 
-from di.connectors import catalog, connection, extra, lifecycle, mapping, registry, secrets, sync
+from di.connectors import catalog, connection, extra, lifecycle, mapping, mcp_client, registry, secrets, sync
 from di.connectors.probe import probe
 from di.connectors.registry import ADAPTERS
 from di.core import golden, policy
@@ -321,12 +323,39 @@ def _bound(ctx: CallContext, out: dict[str, Any], i: dict[str, Any]) -> dict[str
     return out
 
 
+def _connect_mcp(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    """plan 8 MVP-11.7: an existing source is read through an MCP server from now on (di.connectors.mcp_client).
+    d = {url, tool, arguments?, resource_key, id_field?}; its field mapping is kept. Its first sync is queued."""
+    d, sid = i["d"], str(i.get("id") or "")
+    cur, _ = _current(ctx, sid)
+    url, tool, key = str(d.get("url") or ""), str(d.get("tool") or "").strip(), str(d.get("resource_key") or "").strip()
+    args = d.get("arguments") if d.get("arguments") is not None else {}
+    if not _is_http(url):
+        raise ActionError("validation_error", "Enter the MCP server's http(s) URL.")
+    if not tool or not key:
+        raise ActionError("validation_error", "Name the tool to call and the resource key.")
+    if not isinstance(args, dict):
+        raise ActionError("validation_error", '"arguments" must be an object.')
+    res = mcp_client.resource(tool, args, key, str(d["id_field"]) if d.get("id_field") else None)
+    s = ctx.session
+    connection.save_connection(
+        s, sid, _by(ctx), base_url=url, protocol=mcp_client.PROTOCOL, auth_kind="none", auth_params={}, paging={},
+        resources=[res],
+    )  # fmt: skip
+    s.execute(text("UPDATE source_system SET status = 'live', updated_at = now() WHERE id = :i AND status <> 'live'"), {"i": sid})
+    sync.enqueue_sync(s, sid, "initial", full=True)
+    _event(ctx, cur, "connector.updated", "acknowledged", f"Reads {tool} on the MCP server {url}")
+    return {"source_id": sid, "protocol": mcp_client.PROTOCOL}
+
+
 @implement("source.update")
 def source_update(i: dict[str, Any], ctx: CallContext):
     mode = i["mode"]
     _check_org(i, ctx)
     if mode == "catalog":
         return _bound(ctx, _connect_catalog(i, ctx), i)
+    if mode == "mcp":  # plan 8 MVP-11.7
+        return _bound(ctx, _connect_mcp(i, ctx), i)
     if mode not in ("new", "edit"):
         raise ActionError("validation_error", '"mode" must be new, edit or catalog.')
     d = i["d"]

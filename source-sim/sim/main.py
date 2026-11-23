@@ -12,7 +12,7 @@ from sim.core.config import get_settings
 from sim.core.db import engine, ensure_schemas
 from sim.core.mock import discover
 from sim.core.registry import EXTRA_SYSTEMS, SYSTEMS
-from sim.routes import admin
+from sim.routes import admin, mcp_demo
 from sim.seed import seed
 
 log = logging.getLogger("sim")
@@ -75,6 +75,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="Circularity source-sim", version="0.4.0", lifespan=lifespan)
 app.add_middleware(faults.FaultMiddleware)
 app.include_router(admin.router)
+app.include_router(mcp_demo.router)  # POST /mcp-demo: a tiny MCP server for di's MCP client source (plan 8 MVP-11.7)
 for _m in MOCKS.values():
     if _m.router is not None:
         app.include_router(_m.router, tags=[_m.title or _m.source_id])

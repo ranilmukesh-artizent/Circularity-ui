@@ -27,7 +27,7 @@ from typing import Any
 from sqlalchemy import Connection, text
 from sqlalchemy.orm import Session
 
-from di.connectors import connection, lifecycle, manual, mapping
+from di.connectors import connection, lifecycle, manual, mapping, mcp_client
 from di.connectors.http import SourceError
 from di.connectors.registry import ADAPTERS, adapter_for, has_adapter, python_adapter
 from di.core import golden
@@ -332,7 +332,8 @@ def _settle_streak(source_id: str, failed: bool) -> None:
 @_one_at_a_time
 def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dict:
     with SessionLocal() as s:
-        adapter = adapter_for(s, source_id)  # the Python adapter, or the configured one (plan 6 A3)
+        # an MCP connection (plan 8 MVP-11.7, di.connectors.mcp_client), else the Python adapter, or the configured one
+        adapter = mcp_client.adapter_for(s, source_id) or adapter_for(s, source_id)
         if adapter is None:
             raise KeyError(f"No adapter for {source_id}")
         src = s.execute(text("SELECT status, confidence FROM source_system WHERE id = :i"), {"i": source_id}).first()
