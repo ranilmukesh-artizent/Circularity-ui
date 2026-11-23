@@ -81,6 +81,10 @@ layers =
 # fails the move, not a read dependency of the case store.
 ignore_imports =
     di.services.cases.lifecycle -> di.workflow.triggers
+    # Opening a case from data (plan 8, MVP-8.1) values it with the owner's published flow and the active model: the
+    # one place a case is opened from data reads them, as a re-evaluation does.
+    di.services.cases.intake -> di.repositories.live_rules
+    di.services.cases.intake -> di.services.actions.models
 
 [importlinter:contract:foundations]
 name = di.core and di.models import nothing above them

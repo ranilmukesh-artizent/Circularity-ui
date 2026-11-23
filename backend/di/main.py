@@ -6,6 +6,7 @@ import di.repositories.cases  # registers action handlers
 import di.repositories.workspace  # registers action handlers
 import di.services.actions.access  # registers action handlers
 import di.services.actions.agents  # registers action handlers (agent.register, agent.update; plan 8)
+import di.services.actions.cases_intake  # registers action handlers (case.open; plan 8)
 import di.services.actions.decisions  # registers action handlers
 import di.services.actions.engine  # registers action handlers
 import di.services.actions.execution  # registers action handlers

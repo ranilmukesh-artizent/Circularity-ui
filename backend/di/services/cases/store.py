@@ -6,7 +6,8 @@ load `case["recommendation"] is case["routes"][i]`, as in the demo.
 **Intake.** The cases are opened from the engine's book (`di.services.engine.book`): each case's facts and route terms with
 the engine's evaluation. That is the one place di takes data other than through a connector, because the demo's route
 values are random draws that no source system holds (see B10). Opening happens once, when the table is empty;
-`reset` reopens every case.
+`reset` reopens every case (and drops the cases opened from data). Cases opened from data (plan 8, Phase 8) come in
+through `insert_new` (di.services.cases.intake).
 """
 
 import json
@@ -35,10 +36,17 @@ def _case(d: dict) -> Case:
     return c
 
 
-def _insert(s: Session, c: Case) -> None:
-    p = {"i": c["id"], "o": c["owner"], "l": c["location"], "st": c["stage"], "d": json.dumps(_doc(c))}
+def _insert(s: Session, c: Case, reason: str = "Case opened", actor: str = "system") -> None:
+    p = {"i": c["id"], "o": c["owner"], "l": c["location"], "st": c["stage"], "d": json.dumps(_doc(c)), "r": reason, "a": actor}
     s.execute(text("INSERT INTO case_record (id, owner, location, stage, data) VALUES (:i, :o, :l, :st, CAST(:d AS jsonb))"), p)
-    s.execute(text("INSERT INTO case_stage_log (case_id, to_stage, reason, actor) VALUES (:i, :st, 'Case opened', 'system')"), p)
+    s.execute(text("INSERT INTO case_stage_log (case_id, to_stage, reason, actor) VALUES (:i, :st, :r, :a)"), p)
+
+
+def insert_new(s: Session, c: Case, reason: str = "Case opened", actor: str = "system") -> None:
+    """Add a case opened from data (di.services.cases.intake, plan 8 MVP-8.1) beside the book's, with its stage log
+    row. In the caller's transaction; the book's cases are opened first, so a reset never mixes the two."""
+    ensure(s)
+    _insert(s, c, reason, actor)
 
 
 def ensure(_: Session | None = None) -> int:
