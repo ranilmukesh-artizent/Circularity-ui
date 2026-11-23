@@ -4,8 +4,10 @@
                    responses. Every request needs `Authorization: Bearer <JWT from /api/auth/login>` (401 without).
         headers    X-Agent: the agent the client acts as (assembler, finder, gap, coordinator, reconciler ...)
                    X-Tenant: the tenant it acts for (optional; defaults to the account's own tenant)
-        tools/list the ten tools of the demo's TOOLS, with their input schemas and approval rules
-        tools/call one tool; the answer is structured content in the demo's shape:
+        tools/list the ten tools of the demo's TOOLS, with their input schemas and approval rules; when X-Agent names
+                   an agent, only the tools of its row in the agent registry (plan 8 MVP-11.6)
+        tools/call one tool (refused when it is not one of the agent's registry tools); the answer is structured
+                   content in the demo's shape:
                    {ok, outcome, case_id, result | error, trace, ms, tool, agent, tenant}
 
 Modules:

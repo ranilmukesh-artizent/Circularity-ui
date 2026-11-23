@@ -106,7 +106,7 @@ def test_lists_the_ten_tools_with_their_schemas_and_approval_rules():
     async def go(c):
         return (await c.list_tools()).tools
 
-    tools = with_client(headers("planner-a", "assembler"), go)
+    tools = with_client(headers("planner-a"), go)  # no agent named: the whole table (plan 8 MVP-11.6)
     assert [t.name for t in tools] == TOOL_IDS
     for t, ref in zip(tools, REF["tools"], strict=True):
         assert t.description == ref["desc"]
@@ -184,6 +184,31 @@ def test_the_account_behind_the_agent_keeps_its_own_permissions():
     assert a["error"] == {"code": "out_of_scope", "message": "The Approver view cannot submit decisions."}
     assert a["trace"][-1] == {"n": "Run tool", "ok": False, "detail": "decision.submit: out_of_scope"}
     assert action("planner-a", "case.get", {"case_id": "RT-1049"})["output"]["submitted"] is None
+
+
+def test_tools_are_filtered_per_agent():
+    """Plan 8 MVP-11.6: tools/list shows the calling agent's registry tools; tools/call refuses the others."""
+
+    async def go(c):
+        return [t.name for t in (await c.list_tools()).tools]
+
+    assert with_client(headers("planner-a", "assembler"), go) == [
+        "get_case_evidence", "list_eligible_routes", "get_model_validation",
+    ]  # fmt: skip
+    assert with_client(headers("planner-a", "intruder"), go) == []
+    ext = {"id": "ext-reader", "name": "External reader", "tools": ["get_case_evidence"], "autonomy": "read"}
+    assert action("admin", "agent.register", ext)["ok"] is True
+    try:
+        assert with_client(headers("planner-a", "ext-reader"), go) == ["get_case_evidence"]
+        assert call("planner-a", "ext-reader", "get_case_evidence", {"case_id": "RT-1048"})["ok"] is True
+        no = call("planner-a", "ext-reader", "find_demand", {"case_id": "RT-1048"})
+        assert no["error"] == {
+            "code": "out_of_scope",
+            "message": "External reader cannot call find_demand. Scopes: get_case_evidence.",
+        }
+        assert no["outcome"] == "denied · out of_scope"
+    finally:
+        starting.reset()  # removes the registered agent
 
 
 def test_an_unknown_agent_and_a_stopped_agent_are_denied():

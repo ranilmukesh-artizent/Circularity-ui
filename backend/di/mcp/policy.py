@@ -145,6 +145,18 @@ def _account(s: Session, token: str | None) -> tuple[policy.Account, policy.Cont
     return p.account, p.ctx
 
 
+def tools_for(agent_id: str | None) -> set[str] | None:
+    """The tools tools/list shows (plan 8 MVP-11.6): None (all) when no agent is named, else the agent's registry
+    row's tools (none for an agent that is not registered). tools/call checks the same row (step 2, scope)."""
+    if not agent_id:
+        return None
+    from di.core.db import SessionLocal
+
+    with SessionLocal() as s:
+        row = agent_registry.get(s, agent_id)
+    return set(row.tools) if row else set()
+
+
 def account_of(token: str | None) -> policy.Account | None:
     """For the HTTP gate: the token's account, or None."""
     from di.core.db import SessionLocal
