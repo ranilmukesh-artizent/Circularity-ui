@@ -3,8 +3,9 @@
 Line numbers below cite that file. What is ported:
 
 - `value(c, k, p)` (928-1008): one path's net value for one returned tool, with its value lines and destination.
-- `applyRules` (1035-1043), `decide1` (1107-1114), `decide` (1102-1106) and the queue plan `planQueue` (1065-1101): an
-  open return competes with the other open returns for the same named orders and for the repair center's slots.
+- `applyRules` (1035-1043, through the shared `di.services.modeler.apply.apply_rules`), `decide1` (1107-1114),
+  `decide` (1102-1106) and the queue plan `planQueue` (1065-1101): an open return competes with the other open
+  returns for the same named orders and for the repair center's slots.
 - The sample world: the 33 cases `CASES` (1117-1138, `mkCase`/`mkDemand`, random draws from `rng(26110)`), the 168
   history cases that only consume draws (1141-1150) and the 3 waiting returns `INBOX` (1153). The goldens
   (fixtures/golden/po/equip_cases.json, equip_decisions.json) were dumped from the prototype in that state.
@@ -24,6 +25,10 @@ from datetime import date, timedelta
 from typing import Any, TypedDict
 
 from di.services.engine.jsmath import js_round, js_sum
+from di.services.engine.routes import Route
+from di.services.modeler.apply import apply_rules as shared_apply_rules
+from di.services.modeler.compile import CompiledRule
+from di.services.modeler.templates import load_template
 from di.services.modeler.valuers.rng import mulberry32
 
 Case = dict[str, Any]
@@ -598,57 +603,20 @@ def _value(c: Case, k: str, p: Params, ctx: _Ctx) -> PathValue:
 # ---------------------------------------------------------------- rules (1027-1043)
 
 
-def in_scope(c: Case, s: dict[str, Any]) -> bool:  # 1027
-    g = _grade(c)
-    if s.get("cls") and c["cls"] not in s["cls"]:
-        return False
-    if s.get("grade") and g not in s["grade"]:
-        return False
-    if s.get("ft") and c["ft"] not in s["ft"]:
-        return False
-    if s.get("site") and c["site"] not in s["site"]:
-        return False
-    if s.get("rulMax") not in (None, "") and not c["rul"] < float(s["rulMax"]):
-        return False
-    return not (s.get("rulMin") not in (None, "") and not c["rul"] >= float(s["rulMin"]))
-
-
 def apply_rules(c: Case, values: list[PathValue], rules: Sequence[Rule]) -> dict[str, Any]:
-    """applyRules (1035): marks the paths the rules exclude (or a require rule leaves out) as not ok, in place. Returns
-    `{ids, pref}`, or `{ids: [], pref: None, waived: True}` when the rules would leave no path (then nothing changes)."""
-    keep = [(v["ok"], v["why"]) for v in values]
-    ids: list[str] = []
-    pref = None
-    for r in rules:
-        if not in_scope(c, r.get("scope") or {}):
-            continue
-        v = next((x for x in values if x["k"] == r.get("path")), None)
-        if not v:
-            continue
-        if r["action"] == "exclude" and v["ok"]:
-            v["ok"] = False
-            v["why"] = (
-                "Path removed from the published process flow"
-                if r["id"] == "FLOW"
-                else f"Excluded by business rule {r['id']}: {r.get('text')}"
-            )
-            if r["id"] != "FLOW":
-                ids.append(r["id"])
-        elif r["action"] == "require" and v["ok"]:
-            for x in values:
-                if x is not v and x["ok"]:
-                    x["ok"] = False
-                    x["why"] = f"Business rule {r['id']} sends this return to {PATHS[r['path']]['name'].lower()}"
-            ids.append(r["id"])
-        elif r["action"] == "prefer" and v["ok"]:
-            pref = r["path"]
-            ids.append(r["id"])
-    if not any(v["ok"] for v in values):
-        for v, (ok0, why0) in zip(values, keep, strict=True):
-            v["ok"] = ok0
-            v["why"] = why0
+    """applyRules (1035) through the shared `di.services.modeler.apply.apply_rules`: marks the paths the rules exclude
+    (or a require rule leaves out) as not ok, in place. Returns `{ids, pref}`, or `{ids: [], pref: None, waived: True}`
+    when the rules would leave no path (then nothing changes)."""
+    routes: list[Route] = [
+        {"id": v["k"], "excluded": not v["ok"], "failGate": -1, "failReason": v["why"], "gates": ["pass"] * 6} for v in values
+    ]
+    compiled = [CompiledRule(r["id"], r.get("scope") or {}, r["action"], r.get("path", ""), str(r.get("text"))) for r in rules]
+    out = shared_apply_rules(c, routes, compiled, load_template("tool_fleet"))
+    for v, r in zip(values, routes, strict=True):
+        v["ok"], v["why"] = not r["excluded"], r["failReason"]
+    if out.waived or not any(v["ok"] for v in values):
         return {"ids": [], "pref": None, "waived": True}
-    return {"ids": ids, "pref": pref}
+    return {"ids": out.ids, "pref": out.preferred}
 
 
 # ---------------------------------------------------------------- decide (1102-1114, 872-879)
