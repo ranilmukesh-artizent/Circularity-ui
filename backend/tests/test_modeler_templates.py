@@ -57,7 +57,7 @@ def test_industrial_paths_are_world_routes():
     assert next(x for x in t.guardrails if x.id == "GR-I5").protects == gr05.protects
     assert [x.owner for x in t.guardrails][-1] == "Governance board"
     dims = {d.key: d for d in t.dims}
-    assert list(dims) == ["cls", "grade", "site", "owner"]
+    assert list(dims) == ["cls", "grade", "site", "owner", "alarm"]  # alarm: telemetry scope (MVP-7.1)
     assert dims["cls"].values == tuple(WORLD["classes"])
     assert dims["grade"].values == ("A", "B", "C", "D")
     assert dims["site"].values == tuple(s["id"] for s in WORLD["sites"])

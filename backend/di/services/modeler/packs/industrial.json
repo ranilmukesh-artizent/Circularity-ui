@@ -22,7 +22,8 @@
     {"key": "cls", "label": "Asset class", "kind": "set", "values": ["batch", "control", "drill", "it", "motor", "pump"], "fields": ["cls"]},
     {"key": "grade", "label": "Grade", "kind": "set", "values": ["A", "B", "C", "D"], "fields": ["grade"]},
     {"key": "site", "label": "Site", "kind": "set", "values": ["Site 1", "Site 2", "Site 3", "Site 4", "Site 5", "Site 6", "Site 7", "Site 8"], "fields": ["demand.site"]},
-    {"key": "owner", "label": "Organisation", "kind": "set", "values": ["Customer A", "Customer B", "Customer C"], "fields": ["owner"]}
+    {"key": "owner", "label": "Organisation", "kind": "set", "values": ["Customer A", "Customer B", "Customer C"], "fields": ["owner"]},
+    {"key": "alarm", "label": "Telemetry alarm", "kind": "set", "values": ["yes", "no"], "fields": ["alarm"]}
   ],
   "actors": [],
   "wording": {
@@ -31,7 +32,8 @@
       {"key": "cls", "fmt": "{}", "joiner": " or ", "words": {"batch": "tool-fleet batches", "control": "control units", "drill": "power tools", "it": "IT electronics", "motor": "industrial motors", "pump": "hydraulic pumps"}},
       {"key": "grade", "fmt": "grade {}", "joiner": "/", "words": {}},
       {"key": "site", "fmt": "at {}", "joiner": " or ", "words": {}},
-      {"key": "owner", "fmt": "for {}", "joiner": " or ", "words": {}}
+      {"key": "owner", "fmt": "for {}", "joiner": " or ", "words": {}},
+      {"key": "alarm", "fmt": "{}", "joiner": " or ", "words": {"yes": "with a telemetry alarm", "no": "without a telemetry alarm"}}
     ]
   }
 }
