@@ -6,13 +6,22 @@ file-triggered workflows, di/workflow/triggers.py file_arrived), `instruction.se
 and `workflow.run` (B15, di/services/actions/workflows: a workflow run, step by step, its progress on the live-update
 stream). Besides jobs, the loop queues due syncs and due scheduled workflow runs (di/workflow/triggers.py) every 30 s
 and, while sending instructions is on, acknowledges due simulated steps every 5 s.
+
+Plan 2: the loop waits on LISTEN di_jobs (a dedicated autocommit connection; the trigger job_notify NOTIFYs it when a
+job is queued) or `worker_poll_seconds`, whichever comes first; a running job heartbeats every 30 s from a thread, and
+the periodic step requeues jobs whose heartbeat went quiet for 5 minutes (jobs.reap_stale; dead when spent).
 """
 
 import logging
 import signal
+import threading
 import time
 from collections.abc import Callable
+from datetime import timedelta
 from typing import Any
+
+import psycopg
+from sqlalchemy.engine import make_url
 
 from di.core import jobs
 from di.core.config import get_settings
@@ -38,27 +47,104 @@ def _ping(payload: dict[str, Any]) -> None:
     log.info("ping %s", payload)
 
 
+HEARTBEAT_SECONDS = 30.0  # a running job's heartbeat (jobs.heartbeat); the reaper requeues one quiet for STALE_AFTER
+STALE_AFTER = timedelta(minutes=5)
+CHANNEL = "di_jobs"  # NOTIFY'd by the trigger job_notify whenever a job is queued (migration 0018)
+
+
+def _beat(job_id: int, done: threading.Event) -> None:
+    while not done.wait(HEARTBEAT_SECONDS):
+        try:
+            with SessionLocal() as session:
+                jobs.heartbeat(session, job_id)
+                session.commit()
+        except Exception:  # a missed beat is retried; only a long silence lets the reaper take the job
+            log.exception("heartbeat of job %s failed", job_id)
+
+
 def run_once() -> bool:
-    """Claim and run one job. Returns False when the queue had nothing ready."""
-    settings = get_settings()
+    """Claim and run one job, heartbeating it from a thread while it runs. Returns False when nothing was ready."""
     with SessionLocal() as session:
         job = jobs.claim(session)
         session.commit()
     if job is None:
         return False
 
-    with SessionLocal() as session:
-        try:
-            fn = HANDLERS.get(job.kind)
-            if fn is None:
-                raise LookupError(f"no handler for job kind {job.kind!r}")
-            fn(job.payload)
-            jobs.complete(session, job.id)
-        except Exception as exc:  # every failure is recorded on the job
-            log.exception("job %s (%s) failed", job.id, job.kind)
-            jobs.fail(session, job, f"{type(exc).__name__}: {exc}", settings.job_max_attempts)
-        session.commit()
+    done = threading.Event()
+    beat = threading.Thread(target=_beat, args=(job.id, done), name=f"heartbeat-{job.id}", daemon=True)
+    beat.start()
+    try:
+        with SessionLocal() as session:
+            try:
+                fn = HANDLERS.get(job.kind)
+                if fn is None:
+                    raise LookupError(f"no handler for job kind {job.kind!r}")
+                fn(job.payload)
+                jobs.complete(session, job.id)
+            except Exception as exc:  # every failure is recorded on the job
+                log.exception("job %s (%s) failed", job.id, job.kind)
+                jobs.fail(session, job, f"{type(exc).__name__}: {exc}")  # dead at the job's own max_attempts
+            session.commit()
+    finally:
+        done.set()
+        beat.join()
     return True
+
+
+class Wakeup:
+    """Waits for NOTIFY di_jobs on a dedicated autocommit connection, or `poll` seconds, whichever comes first. If the
+    connection cannot be had (or drops), it sleeps `poll` and tries again next time: polling is the fallback."""
+
+    def __init__(self) -> None:
+        self.conn: psycopg.Connection | None = None
+
+    def _connect(self) -> psycopg.Connection | None:
+        url = make_url(get_settings().database_url).set(drivername="postgresql")
+        try:
+            conn = psycopg.connect(url.render_as_string(hide_password=False), autocommit=True)
+            conn.execute(f"LISTEN {CHANNEL}")
+            return conn
+        except Exception:
+            log.exception("cannot listen on %s; polling instead", CHANNEL)
+            return None
+
+    def wait(self, poll: float) -> None:
+        if self.conn is None or self.conn.closed:
+            self.conn = self._connect()
+        if self.conn is None:
+            time.sleep(poll)
+            return
+        try:
+            for _ in self.conn.notifies(timeout=poll, stop_after=1):
+                pass
+        except Exception:
+            log.exception("listening on %s failed; reconnecting", CHANNEL)
+            self.close()
+            time.sleep(min(poll, 1.0))
+
+    def close(self) -> None:
+        if self.conn is not None:
+            self.conn.close()
+            self.conn = None
+
+
+def serve(stopping: Callable[[], bool], poll: float, *, housekeeping: bool = True) -> None:
+    """The worker loop: run every ready job, then wait for a NOTIFY or `poll` seconds. With `housekeeping`, also the
+    periodic step every 30 s and the simulated acknowledgements every 5 s."""
+    wakeup = Wakeup()
+    next_periodic = next_tick = 0.0
+    try:
+        while not stopping():
+            if housekeeping and time.monotonic() >= next_periodic:
+                periodic()
+                next_periodic = time.monotonic() + 30
+            if housekeeping and time.monotonic() >= next_tick and get_settings().instructions:
+                tick_instructions()  # simulated acknowledgements fall due as the simulated clock moves
+                next_tick = time.monotonic() + 5
+            if not run_once():
+                wakeup.wait(poll)
+    finally:
+        wakeup.close()
 
 
 def main() -> None:
@@ -71,19 +157,9 @@ def main() -> None:
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    poll = get_settings().worker_poll_seconds
     startup()
     log.info("worker started; handlers: %s", ", ".join(sorted(HANDLERS)))
-    next_periodic = next_tick = 0.0
-    while not stopping:
-        if time.monotonic() >= next_periodic:
-            periodic()
-            next_periodic = time.monotonic() + 30
-        if time.monotonic() >= next_tick and get_settings().instructions:
-            tick_instructions()  # simulated acknowledgements fall due as the simulated clock moves
-            next_tick = time.monotonic() + 5
-        if not run_once():
-            time.sleep(poll)
+    serve(lambda: stopping, get_settings().worker_poll_seconds)
     log.info("worker stopped")
 
 
@@ -182,7 +258,15 @@ def periodic() -> None:
             log.info("queued syncs: %s", ", ".join(queued))
     except Exception:
         log.exception("periodic step failed")
-    tick_triggers()
+    tick_triggers()  # first: a lost workflow run is closed ("worker lost") before its stale job is requeued
+    try:
+        with SessionLocal() as s:
+            reaped = jobs.reap_stale(s, STALE_AFTER)
+            s.commit()
+        if reaped:
+            log.warning("requeued %s job(s) whose worker was lost", reaped)
+    except Exception:
+        log.exception("reaping stale jobs failed")
 
 
 def tick_triggers() -> None:
