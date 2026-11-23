@@ -34,7 +34,7 @@ from di.models.instructions import instruction
 from di.models.jobs import Job
 from di.models.journal import action_journal, domain_event, stream_event
 from di.models.learning import model_version
-from di.models.modeler import decision_flow, decision_flow_version
+from di.models.modeler import decision_flow, decision_flow_version, shadow_decision
 from di.models.org import org_unit
 from di.models.reference import fx_rate
 from di.models.workspace import state_item, state_seed
@@ -62,6 +62,7 @@ __all__ = [
     "org_unit",
     "provenance",
     "raw_record",
+    "shadow_decision",
     "source_connection",
     "source_secret",
     "source_system",

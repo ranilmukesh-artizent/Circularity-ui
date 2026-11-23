@@ -6,6 +6,7 @@ rule nodes and offers every route, so it compiles to no rules and the demo's cas
 """
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any, cast
 
 from sqlalchemy.orm import Session
@@ -28,3 +29,21 @@ def live_rules(s: Session, case: Mapping[str, Any]) -> tuple[Template, list[Comp
     if f is None:
         return t, [], 0
     return t, compile_flow(t, cast(Flow, f.published)), f.ver
+
+
+@dataclass(frozen=True)
+class Shadow:
+    """A flow approved into shadow (MVP-3.5): its id, the draft's version and the draft's compiled rules."""
+
+    flow_id: int
+    dver: int
+    rules: list[CompiledRule]
+
+
+def shadow_rules(s: Session, case: Mapping[str, Any]) -> Shadow | None:
+    """The shadow run the case takes part in: its flow is in `shadow`, else None."""
+    t = template_of(case)
+    f = flow_for(s, t.key, case["owner"])
+    if f is None or f.status != "shadow" or f.draft is None:
+        return None
+    return Shadow(f.id, f.dver or f.ver + 1, compile_flow(t, cast(Flow, f.draft)))

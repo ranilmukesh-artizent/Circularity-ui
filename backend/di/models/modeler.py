@@ -1,12 +1,14 @@
 """The Modeler's process flows (migration 0021; plan 8 MVP-3.1): one flow per template and org unit, and the graphs
-each publish replaced."""
+each publish replaced; and the shadow decisions of a flow approved into shadow (migration 0022, MVP-3.5)."""
 
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
     Column,
     ForeignKey,
+    Index,
     Integer,
+    Numeric,
     Table,
     Text,
     UniqueConstraint,
@@ -45,4 +47,21 @@ decision_flow_version = Table(
     Column("published_by", Text),
     ts("published_at"),
     Column("note", Text),
+)
+
+# --- 0022 shadow decisions (plan 8 MVP-3.5): what a flow in shadow would have decided, beside the live decision ------
+
+shadow_decision = Table(
+    "shadow_decision",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("flow_id", BigInteger, ForeignKey("decision_flow.id", ondelete="CASCADE"), nullable=False),
+    Column("dver", Integer, nullable=False),
+    Column("case_id", Text, nullable=False),
+    Column("live_route", Text),
+    Column("shadow_route", Text),
+    Column("live_net", Numeric),
+    Column("shadow_net", Numeric),
+    ts("at", now=True),
+    Index("ix_shadow_decision_flow", "flow_id", "dver"),
 )

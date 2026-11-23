@@ -16,6 +16,8 @@ lets evidence.recordResult and case.reevaluate rebuild routes to the dollar.
 **Business rules** (plan 8, MVP-3.3). Rebuilding or re-ranking applies the compiled rules of the published flow the
 case's owner uses (di.repositories.live_rules) after the gate rules, and records that flow's version as `flowVer`.
 Publishing a flow never touches a case: only the next evaluation applies it. The seeded defaults have no rules.
+While the flow is in shadow, each evaluation also decides with the draft's rules on a copy and records both in
+shadow_decision (MVP-3.5); the live decision is unchanged.
 """
 
 import copy
@@ -23,14 +25,16 @@ import math
 from collections.abc import Callable
 from typing import Any
 
+from sqlalchemy import text
+
 from di.core import policy, state
 from di.repositories.common import AS_OF, case_demand, hash_id, iso, limit_for, money
-from di.repositories.live_rules import live_rules
+from di.repositories.live_rules import Shadow, live_rules, shadow_rules
 from di.services import instructions
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionError, guard, implement
 from di.services.cases import lifecycle, store
-from di.services.engine.evaluate import build_routes, draft_of, evaluate
+from di.services.engine.evaluate import apply_business, build_routes, draft_of, evaluate
 from di.services.engine.predictor import FormulaPredictor
 from di.services.engine.routes import GATES, POLICY, SUSTAINABILITY, fail, rank_routes
 from di.services.execution.steps import approval_ref, steps_for  # the execution steps (B13 moved them to di.services.execution)
@@ -45,6 +49,7 @@ state.register("comments", list)
 WORKBENCH_WEIGHTS = {"net": 50, "time": 20, "env": 15, "serv": 15}  # S.ti.w: the Workbench's default fit weights
 NOTE_SEQ_START = 101  # S.ntSeq starts at 102
 EVENT_SEQ_START = 9091  # EV_SEQ: the starting log ends at EV-9091
+HAZARD = "Cell chemistry requires an approved hazardous-waste route"
 RULE_REASONS = ("Excluded by business rule ", "Business rule ", FLOW_REMOVED)  # di.services.modeler.apply's reasons
 
 
@@ -148,32 +153,64 @@ def _rebuild(ctx: CallContext, c: store.Case, rnd: Callable[[], float]) -> None:
     """The demo's buildRoutes on the action's generator, then rankRoutes. The demo's last draw decides whether the
     recycler needs a hazardous-waste route for a battery or IT lot; it comes after every valuation draw, so it is
     taken after build_routes (the engine's only later rule, Economics, never excludes material: its net is positive).
-    The business rules of the case's published flow run after the gate rules (plan 8, MVP-3.3)."""
+    The business rules of the case's published flow run after the gate rules (plan 8, MVP-3.3); when that flow is in
+    shadow, the draft's rules also run on a copy of the same valued routes (MVP-3.5)."""
     t, rules, ver = live_rules(ctx.session, c)
+    shadow = shadow_rules(ctx.session, c)
     probe = {**c, "hazardousMaterial": False}
-    routes = build_routes(probe, FormulaPredictor(rnd), rules, t)
+    routes = build_routes(probe, FormulaPredictor(rnd))  # valued, gate rules applied
+    copied = copy.deepcopy(routes) if shadow else None
+    apply_business(probe, routes, rules, t)
+    hazard = False
     if c["cls"] in ("batch", "it"):
         m = next((r for r in routes if r["id"] == "material"), None)
-        if m and rnd() < 0.12:
-            fail(m, SUSTAINABILITY, "Cell chemistry requires an approved hazardous-waste route")
+        hazard = bool(m) and rnd() < 0.12
+        if m and hazard:
+            fail(m, SUSTAINABILITY, HAZARD)
     c["routes"] = routes
     c["recommendation"] = rank_routes(routes, c.get("blocked"), probe["preferred"])
     _record_rules(c, probe, ver)
+    if shadow and copied is not None:
+        sprobe = {**c, "hazardousMaterial": False}
+        apply_business(sprobe, copied, shadow.rules, t)
+        m = next((r for r in copied if r["id"] == "material"), None)
+        if m and hazard:
+            fail(m, SUSTAINABILITY, HAZARD)
+        _record_shadow(ctx, c, shadow, rank_routes(copied, c.get("blocked"), sprobe["preferred"]))
 
 
 def _rerank(ctx: CallContext, c: store.Case) -> None:
     """A hand-modelled case keeps its route terms and is ranked again. With business rules (or after them: a case a
     rule excluded routes of), its routes are evaluated again from their drafts, keeping the hand-modelled exclusions
-    and dropping the earlier rules' ones, and the published rules apply on top."""
+    and dropping the earlier rules' ones, and the published rules apply on top. A flow in shadow evaluates the same
+    drafts with its draft's rules (MVP-3.5)."""
     t, rules, ver = live_rules(ctx.session, c)
+    shadow = shadow_rules(ctx.session, c)
+    drafts = [draft_of(r, keep_exclusion=not _by_rule(r)) for r in c["routes"]]
+    shadow_rec = evaluate(dict(c), copy.deepcopy(drafts), False, shadow.rules, t)[1] if shadow else None
     if not rules and not any(_by_rule(r) for r in c["routes"]):
         c["recommendation"] = rank_routes(c["routes"], c.get("blocked"))
         _record_rules(c, {"rulesApplied": [], "rulesWaived": False, "preferred": None}, ver)
-        return
-    drafts = [draft_of(r, keep_exclusion=not _by_rule(r)) for r in c["routes"]]
-    probe = dict(c)
-    c["routes"], c["recommendation"] = evaluate(probe, drafts, rules=False, business=rules, template=t)
-    _record_rules(c, probe, ver)
+    else:
+        probe = dict(c)
+        c["routes"], c["recommendation"] = evaluate(probe, drafts, rules=False, business=rules, template=t)
+        _record_rules(c, probe, ver)
+    if shadow:
+        _record_shadow(ctx, c, shadow, shadow_rec)
+
+
+def _record_shadow(ctx: CallContext, c: store.Case, shadow: Shadow, rec: dict | None) -> None:
+    """One shadow decision: what the live evaluation recommended and what the shadow flow would have."""
+    live = c.get("recommendation")
+    ctx.session.execute(
+        text(
+            "INSERT INTO shadow_decision (flow_id, dver, case_id, live_route, shadow_route, live_net, shadow_net, at) "
+            "VALUES (:f, :d, :c, :lr, :sr, :ln, :sn, :at)"
+        ),
+        {"f": shadow.flow_id, "d": shadow.dver, "c": c["id"], "lr": live["id"] if live else None,
+         "sr": rec["id"] if rec else None, "ln": live["net"] if live else None, "sn": rec["net"] if rec else None,
+         "at": ctx.now},
+    )  # fmt: skip
 
 
 def _by_rule(r: dict) -> bool:

@@ -77,6 +77,20 @@ def flows(s: Session, org_ids: set[str]) -> list[FlowRow]:
     return [_flow(r) for r in rows]
 
 
+def shadow_stats(s: Session, flow_id: int) -> dict[str, Any]:
+    """The flow's shadow decisions (MVP-3.5): how many, how many chose the live route and how many another, and dv,
+    the sum of (shadow net - live net)."""
+    r = s.execute(
+        text(
+            "SELECT count(*) AS n, count(*) FILTER (WHERE live_route IS NOT DISTINCT FROM shadow_route) AS agree, "
+            "coalesce(sum(coalesce(shadow_net, 0) - coalesce(live_net, 0)), 0) AS dv "
+            "FROM shadow_decision WHERE flow_id = :i"
+        ),
+        {"i": flow_id},
+    ).one()
+    return {"n": r.n, "agree": r.agree, "disagree": r.n - r.agree, "dv": float(r.dv)}
+
+
 def versions(s: Session, flow_id: int) -> list[VersionRow]:
     """The graphs earlier publishes replaced, newest first."""
     rows = s.execute(
