@@ -31,3 +31,4 @@ unattended". Times are local (IST).
 | 25 Nov 06:20 | P9-0.10 and P9-0.9 merged. P9-0.13 to w3, P9-0.14 to w4. P9-0.7 verifying on main (workflow and org tests 329 passed). |
 | 25 Nov 04:08 | P9-0.7 merged. Sonnet; red first quoted; jsonschema docs read. Outside its file list it removed the import_guard call from org.importPack (pack workflows may name sources not connected yet; schema and importer rules still apply): flagged for review. |
 | 25 Nov 04:12 | P9-0.12 merged. Sonnet; red first quoted; migration 0030 filled. Note for later: flowkit.reset_flows() does not clear returned (test fixture does). |
+| 25 Nov 06:50 | P9-0.7 and P9-0.12 merged (phase 0: 12 of 17). P9-0.8 to w1, P9-0.15 to w2. |

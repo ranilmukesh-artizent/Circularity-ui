@@ -791,7 +791,7 @@ each story went.
 - [x] P9-0.11 Guardrail type and stage on existing guardrails
 - [x] P9-0.12 Pin a sent-back flow change to a step
 - [ ] P9-0.13 Role matrix and test a user in Access
-- [ ] P9-0.14 Read-only sources refused and discovery at 500
+- [x] P9-0.14 Read-only sources refused and discovery at 500
 - [ ] P9-0.15 What-if over the tool-fleet queue
 - [x] P9-0.16 Relabel Studio decision workflows to point to the Modeler
 - [ ] P9-0.17 Phase 0 gate

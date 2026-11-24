@@ -101,3 +101,35 @@ def test_demo_models_unchanged():
     with SessionLocal() as s:
         assert discover.materialize(s, "crm") is None and SID in discover.configured_sources(s)
         assert not set(discover.configured_sources(s)) & discover.demo_ids()
+
+
+def test_discovery_samples_500():  # G6-12 (P9-0.14): the newest 500 records are the sample
+    sid = "t3disc500"
+    with engine.begin() as c:
+        c.execute(
+            text(
+                "INSERT INTO source_system (id, vendor, type, status, interval_min, authority, owner) "
+                "VALUES (:i, 'Sandbox HR', 'crm', 'live', 30, '{}', 'Integration Engineering') ON CONFLICT (id) DO NOTHING"
+            ),
+            {"i": sid},
+        )
+        for n in range(520):  # n = 0 is the newest; the oldest 20 are the only ones with "old_only"
+            p = {"rec_id": f"R{n}", "common": n} | ({"old_only": 1} if n >= 500 else {}) | ({"new_only": 1} if n < 5 else {})
+            c.execute(
+                text(
+                    "INSERT INTO raw_record (source_id, resource, ext_id, payload, fetched_at) VALUES "
+                    "(:s, 'items', :e, CAST(:p AS jsonb), now() - make_interval(secs => :age)) "
+                    "ON CONFLICT (source_id, resource, ext_id) DO NOTHING"
+                ),
+                {"s": sid, "e": f"R{n}", "p": json.dumps(p), "age": n + 1},
+            )
+    try:
+        with SessionLocal() as s:
+            tables = discover.discover(s, sid)
+        cols = {col[0] for t in tables for col in t["cols"]}
+        assert discover.SAMPLE == 500
+        assert "new_only" in cols and "common" in cols and "old_only" not in cols
+    finally:
+        with engine.begin() as c:
+            c.execute(text("DELETE FROM raw_record WHERE source_id = :s"), {"s": sid})
+            c.execute(text("DELETE FROM source_system WHERE id = :s"), {"s": sid})

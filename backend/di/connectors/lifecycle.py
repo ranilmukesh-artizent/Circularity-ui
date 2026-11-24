@@ -27,13 +27,13 @@ again, so the re-sync that follows really reads. Other faults of that system are
 """
 
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.core import state
+from di.core import golden, state
 from di.core.config import get_settings
 
 log = logging.getLogger("di.lifecycle")
@@ -118,3 +118,18 @@ def refresh_credentials(source_id: str) -> bool:
     except (httpx.HTTPError, ValueError):
         log.warning("could not refresh the credential of %s in source-sim", source_id, exc_info=True)
         return False
+
+
+_REF_RW: dict[str, str] = {x["id"]: x.get("rw", "Read") for x in golden.load("sources")["sources"]}
+_READ_ONLY = {"Read", "Read (import)", "—"}
+
+
+def access_of(s: Session, source_id: str) -> Literal["read", "read_write"]:
+    """Plan 9 P9-0.14 (I-18 keeps this its one reader): whether instructions may be sent to the source. Its current
+    `rw` is the saved config over the demo reference (as fabric_sources._current resolves it); "Read", "Read (import)"
+    and "—" are "read", anything else "read_write". A source that does not exist gives "read_write"."""
+    exists = s.execute(text("SELECT 1 FROM source_system WHERE id = :i"), {"i": source_id}).first()
+    if exists is None:
+        return "read_write"
+    rw = config(s, source_id).get("rw") or _REF_RW.get(source_id) or "Read"
+    return "read" if rw in _READ_ONLY else "read_write"

@@ -4,7 +4,7 @@
     suggest_fks(s, "workday", tables) → [["workers.dept_id", "departments.dept_id", "Suggested: 100% of ... match"]]
 
 One table per resource landed in `raw_record`: its columns are the union of the payload keys of a sample of the newest
-200 records, each with an inferred type (text, number, bool, date, datetime, object, list); the record's id field comes
+500 records, each with an inferred type (text, number, bool, date, datetime, object, list); the record's id field comes
 first (the connection's `id_field` for the resource when it has one, else the key whose values are the records'
 ext_id, else `id`). A foreign key is suggested where at least 90 % of a column's distinct sampled values are keys
 (ext_id) of another table of the same source.
@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 
 from di.core import golden
 
-SAMPLE = 200
+SAMPLE = 500
 FK_MATCH = 0.9
 FK_MIN_VALUES = 2
 CLUSTER = ["data", "Source tables"]
