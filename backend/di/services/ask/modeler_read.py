@@ -7,7 +7,6 @@ against the template's paths, actions and scope dimensions; anything else is dro
 deterministic answer stands. The key goes to the SDK only; it is never logged or returned.
 """
 
-import json
 import logging
 from typing import Any
 
@@ -26,25 +25,12 @@ def _key() -> str:
     return key if key and (st.ask_provider or "groq").strip().lower() == "groq" else ""
 
 
-def _ask(key: str, system: str, text: str) -> dict[str, Any]:
-    """One JSON completion (the network call)."""
-    from di.core.config import DEFAULT_GROQ_MODEL, get_settings
-    from di.services.ask.groq_model import _client
+def _ask(key: str, system: str, text: str) -> dict[str, Any]:  # noqa: ARG001 - complete_json reads the key itself
+    """One JSON completion through the model chain (di.services.ask.complete); {} when every model fails."""
+    from di.core.config import get_settings
+    from di.services.ask import complete
 
-    st = get_settings()
-    model = st.groq_model.strip() or DEFAULT_GROQ_MODEL
-    extra = {"reasoning_effort": "low", "include_reasoning": False} if model.startswith("openai/gpt-oss") else {}
-    client = _client(key, min(st.ask_timeout_seconds, 10.0))
-    r = client.chat.completions.create(  # type: ignore[call-overload]
-        model=model,
-        messages=[{"role": "system", "content": system}, {"role": "user", "content": text[:500]}],
-        temperature=0,
-        max_completion_tokens=200,
-        response_format={"type": "json_object"},
-        **extra,
-    )
-    out = json.loads(r.choices[0].message.content or "{}")
-    return out if isinstance(out, dict) else {}
+    return complete.complete_json(system, text[:500], max_tokens=200, timeout=min(get_settings().ask_timeout_seconds, 10))
 
 
 def _system(t: Template) -> str:

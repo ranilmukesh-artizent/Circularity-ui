@@ -18,7 +18,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from di.core.config import DEFAULT_GROQ_MODEL, get_settings
+from di.core.config import get_settings
 
 
 @dataclass
@@ -93,12 +93,13 @@ def get_model() -> AskModel:
         key = s.groq_api_key.get_secret_value().strip()
         if not key:
             return NoModel("no_key")
+        from di.core.config import model_chain
         from di.services.ask.groq_model import GroqModel
 
-        return GroqModel(
-            api_key=key,
-            model=s.groq_model.strip() or DEFAULT_GROQ_MODEL,
-            timeout=s.ask_timeout_seconds,
-            max_rounds=s.ask_max_rounds,
-        )
+        models: list[AskModel] = [GroqModel(key, m, s.ask_timeout_seconds, s.ask_max_rounds) for _, m in model_chain(s)]
+        if len(models) > 1:
+            from di.services.ask.chain import ChainModel
+
+            return ChainModel(models)
+        return models[0]
     return NoModel("unknown_provider")

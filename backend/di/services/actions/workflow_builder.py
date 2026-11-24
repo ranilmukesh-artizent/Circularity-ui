@@ -56,7 +56,6 @@ template, validate() for the checks, label() for step names.
 
 import copy
 import difflib
-import json
 import logging
 import re
 from typing import Any
@@ -517,13 +516,7 @@ def model_slots(prompt: str) -> dict[str, Any]:
     """The description read by Groq into the same slots, or {} (no key, disabled, any failure). Only values that pass
     the checks in `_merge_model` are used. The key goes to the SDK only."""
     try:
-        from di.core.config import DEFAULT_GROQ_MODEL, get_settings
-
-        st = get_settings()
-        key = st.groq_api_key.get_secret_value().strip()
-        if not key or (st.ask_provider or "groq").strip().lower() != "groq":
-            return {}
-        from di.services.ask.groq_model import _client
+        from di.services.ask import complete
 
         names = "; ".join(f"{sid}={s['name']} ({s['vendor']})" for sid, s in SOURCES.items())
         system = (
@@ -533,20 +526,7 @@ def model_slots(prompt: str) -> dict[str, Any]:
             f"steps (list of: {', '.join(STEP_ORDER)}). Leave out every key the request does not state; never guess. "
             f"Systems: {names}"
         )
-        model = st.groq_model.strip() or DEFAULT_GROQ_MODEL
-        extra = {"reasoning_effort": "low", "include_reasoning": False} if model.startswith("openai/gpt-oss") else {}
-        r = _client(
-            key, min(st.ask_timeout_seconds, 10.0)
-        ).chat.completions.create(  # type: ignore[call-overload]
-            model=model,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt[:1000]}],
-            temperature=0,
-            max_completion_tokens=300,
-            response_format={"type": "json_object"},
-            **extra,
-        )
-        out = json.loads(r.choices[0].message.content or "{}")
-        return out if isinstance(out, dict) else {}
+        return complete.complete_json(system, prompt[:1000], max_tokens=300)
     except Exception:  # noqa: BLE001 - the model is an optional helper; the keyword reading stands on its own
         log.info("workflow.plan: the language model did not answer; using the keyword reading")
         return {}

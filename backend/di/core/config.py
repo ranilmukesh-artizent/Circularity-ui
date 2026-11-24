@@ -1,4 +1,5 @@
 import base64
+import logging
 from functools import lru_cache
 from typing import Literal, Self
 
@@ -55,6 +56,8 @@ class Settings(BaseSettings):
     ask_provider: Literal["groq", "none", "off", "fallback"] = Field("groq", validation_alias="ASK_PROVIDER")
     groq_api_key: SecretStr = Field(SecretStr(""), validation_alias="GROQ_API_KEY")
     groq_model: str = Field("", validation_alias="GROQ_MODEL")  # empty: DEFAULT_GROQ_MODEL
+    # P9-0.5: comma-separated "groq:<model id>" entries tried in order when one is rate limited; empty = the one model above
+    ask_model_chain: str = Field("", validation_alias="ASK_MODEL_CHAIN")
     ask_timeout_seconds: float = 20.0  # one model request; on timeout Ask falls back
     ask_max_rounds: int = 4  # model requests per question (tool rounds), the last one without tools
 
@@ -96,6 +99,22 @@ class Settings(BaseSettings):
                 "separated by commas"
             ) from None
         return self
+
+
+def model_chain(s: Settings) -> list[tuple[str, str]]:
+    """The (provider, model id) pairs Ask tries in order (P9-0.5). Empty ASK_MODEL_CHAIN is today's single model;
+    an entry of another provider is skipped with one info line (never the key)."""
+    out: list[tuple[str, str]] = []
+    for raw in s.ask_model_chain.split(","):
+        entry = raw.strip()
+        if not entry:
+            continue
+        provider, _, model = entry.partition(":")
+        if provider.strip().lower() != "groq" or not model.strip():
+            logging.getLogger("di.config").info("ASK_MODEL_CHAIN: skipping entry with provider %r", provider.strip())
+            continue
+        out.append(("groq", model.strip()))
+    return out or [("groq", s.groq_model.strip() or DEFAULT_GROQ_MODEL)]
 
 
 @lru_cache

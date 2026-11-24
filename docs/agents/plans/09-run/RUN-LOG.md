@@ -21,3 +21,4 @@ unattended". Times are local (IST).
 | 25 Nov 03:12 | P9-0.16 merged. Sonnet, 25 min and 324 tool calls (Docker contention in its checks); one extra file (actions/workflows.py, needed by the spec's interface); serial-only test_stream_workflows run by the lead: green. |
 | 25 Nov 03:21 | P9-0.6 merged. Sonnet; R8 diff report 09-diffs/P9-0.6.md (only CO2e moves on tool-fleet and device cards; no route or net change); decision-log conflict resolved keeping both rows; tests written after the code (not red first). |
 | 25 Nov 04:40 | Brief tightened after phase-0 reports: red-first run quoted (two writers wrote tests after code), no subagents (the P9-0.4 writer started an auditor), one check run at a time (P9-0.16 overlapped its own runs). P9-0.7 to w1, P9-0.11 to w2. |
+| 25 Nov 03:24 | P9-0.5 merged. Sonnet; also touched workflow_builder.py (auto-merged with P9-0.16) and .env.example (model chain variable, no secret); tests after code; no Groq docs read. |
