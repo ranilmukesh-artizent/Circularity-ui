@@ -1,0 +1,70 @@
+# Plan 9 writer brief (the lead points every writer here)
+
+You are writer `<k>` on plan 9 of the Circularity repo, in your own git worktree, doing exactly one task. The lead
+named `<k>` and the task in your prompt.
+
+## Step 0, before anything else
+
+Your worktree may start from the default branch. Run `git merge --ff-only feature/plan-09-recover` (PowerShell tool
+for git). It must succeed; if not, stop and report.
+
+## Read
+
+- `AGENTS.md` and `CLAUDE.md`.
+- In `docs/agents/plans/09-agentic-platform.md`:
+  - the sections "Agent briefing", "Operating rules", "Standard task cycle", "Global Constraints", "Interface
+    registry" (and "Registry details") and "Review Focus";
+  - your task's spec under `#### <task id>`.
+- Every file in the spec's **Files** list.
+- The stories and research the spec cites (`docs/agents/research/2026-11-platform/`: A and B stories, E libraries,
+  G agent design).
+
+## Work: the standard task cycle S1–S6, changed for the parallel run
+
+- **Tests** run only through `bash scripts/dev/wt-check.sh <k> <api test files>` from your worktree root, in Git
+  Bash. Use `WT_LINT=0` for the red-first run.
+  - It also runs tsc, vitest and eslint when `frontend/` changed.
+  - It refuses test files that call the shared source-sim (`/_sim/`, faults); the lead runs those after the merge.
+    Say which in your report.
+  - Never run `api-test.sh`, `full-suite.sh`, `reset.sh`, `restart.sh`, `selftest.sh`, a smoke, or
+    `docker compose exec`. They act on the main stack, which belongs to the lead.
+  - For a shell-script task, run your new cases directly with stubs, and list what the lead must run.
+- **Scope.** Change only the files in your spec, plus your tests and the registration files it names. If you need
+  another file, stop and say so.
+- **Migrations.** If your task has a migration, the file already exists, empty and chained: fill it, idempotent
+  (`IF NOT EXISTS`, `if not exists` checks).
+- **Libraries.** The libraries for phases 0–3 are installed already (`backend/requirements.in`). If yours is missing,
+  stop and say so; do not edit the locks.
+- **Current docs, not memory.** Before code that uses a library, framework feature or agent pattern, read its
+  current official docs for the pinned version (WebFetch) and name the page in your report. Follow the spec where
+  they disagree, and say so.
+- **Write for the next agent:**
+  - a module docstring: what it owns, what it never does, which registry entry (I-n) it implements;
+  - registry names unchanged;
+  - small typed files, one responsibility each;
+  - story IDs in test names (R22);
+  - the security tests of R21 for a new approvable object, red first.
+- **Parity.** The industrial demo's 128 cases, RT-1048 and the golden tests stay green. Never hand-edit
+  `fixtures/golden/`.
+- **Names.** No client, prospect or vendor names in code, data or UI text (except the existing vendor mocks).
+- **Never** tick the box or edit `PROGRESS.md`, the plan file or `docs/agents/plans/09-run/`; the lead does that.
+
+## Commit
+
+Commit once on your branch with `git commit -F <file>`:
+- first line `<task id>: <summary>`, at most 72 characters;
+- a short body, then the checks run with their summary lines;
+- last line, the attribution trailer for your model, for example
+  `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
+
+Before committing, `git diff --cached | grep -E 'gsk_[A-Za-z0-9]{20,}'` must print nothing. Never push, stash,
+reset, rebase, clean or `checkout --`. Do not start other agents.
+
+## Report, at most 15 lines
+
+- the commit SHA;
+- the files changed;
+- the wt-check summary lines;
+- what the lead must run after the merge (serial-only tests, selftest);
+- anything you could not do;
+- any decision you took that the spec did not make, and the docs pages you read.

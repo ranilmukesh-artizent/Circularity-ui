@@ -15,3 +15,4 @@ unattended". Times are local (IST).
 | 25 Nov 03:20 | P9-0.1 merged (Haiku, docs only). Found: Agent worktrees start from the default branch, not the run branch; briefs now begin with a fast-forward to `feature/plan-09-recover`. Licence rows for the three libraries installed at setup got their versions. |
 | 25 Nov 03:25 | Scheduler fix: only "Phase N gate" tasks are gates (P9-0.2 "gate script" was taken for one). P9-0.2 to writer 1, P9-0.16 to writer 2 (Sonnet). |
 | 25 Nov 02:53 | P9-0.2 merged. Sonnet; the writer could not run the real api-test case from its worktree (other compose project); the lead ran selftest.sh: all passed. |
+| 25 Nov 03:40 | Writer brief moved to `09-run/WRITER-BRIEF.md` (shared by every writer). P9-0.3 to w1, P9-0.4 to w3, P9-0.5 to w4 (Sonnet). |
