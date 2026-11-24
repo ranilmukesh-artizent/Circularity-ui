@@ -154,7 +154,7 @@ def _clean(i: dict[str, Any]) -> dict[str, Any]:
 def _output_ref(o: dict[str, Any] | None) -> dict[str, Any] | None:
     if not isinstance(o, dict):
         return None
-    ref = {k: o[k] for k in ("id", "ref", "case_id", "source_id") if o.get(k) is not None}
+    ref = {k: o[k] for k in ("id", "ref", "case_id", "source_id", "on_behalf_of") if o.get(k) is not None}
     return ref or None
 
 

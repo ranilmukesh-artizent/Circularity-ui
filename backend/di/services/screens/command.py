@@ -81,6 +81,7 @@ from di.repositories.common import (
     limit_for,
     ms,
     notes,
+    ooo_cover,
     requests,
     to_fixed,
 )
@@ -1273,8 +1274,9 @@ def handed_rows(ctx: CallContext, widen: bool, tenant: str = "All") -> list[dict
 
 def awaiting_approval(ctx: CallContext, widen: bool, tenant: str = "All") -> dict:
     ap = [c for c in ws.op_scoped(ctx, widen, tenant) if c["stage"] == "awaiting_approval"]
+    cover = ooo_cover(ctx)  # an out-of-office delegate in force decides in the Approver's place
     return {
-        "decider": "Approver" if decisions_delegated(ctx) else "Admin",
+        "decider": f"{cover['delegate']} (for the Approver)" if cover else "Approver" if decisions_delegated(ctx) else "Admin",
         "rows": [
             {
                 "id": c["id"],
@@ -1344,7 +1346,8 @@ def approval_cards(ctx: CallContext, tenant: str = "All") -> list[dict]:
 def inbox(ctx: CallContext, tenant: str = "All") -> dict:
     a = ctx.actor.person
     lim = limit_for(a, ctx.actor.ctx)
-    return {
+    cover = ooo_cover(ctx)  # only while an out-of-office delegation is in force: the seeded answer is the demo's
+    return ({"cover": {k: cover[k] for k in ("delegate", "for", "from", "until", "you")}} if cover else {}) | {
         "requests": [{**r, "kindLabel": REQ_KIND[r["kind"]], "canDecide": True} for r in inbox_requests(ctx)],
         "scope": [d["label"].lower().replace("mcp", "MCP") for d in DELEG if ctx.actor.ctx.delegations.get(d["k"], True)]
         if a.role == "Approver"

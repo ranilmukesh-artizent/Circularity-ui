@@ -211,6 +211,49 @@ def decisions_delegated(ctx: CallContext) -> bool:
     return ctx.actor.ctx.delegations.get("decisions", True)
 
 
+def ooo_cover(ctx: CallContext) -> dict | None:
+    """The out-of-office delegation in force (access.setOutOfOffice, the directory's "ooo" list), or None.
+
+    It counts while Admin has delegated decisions to the Approver, the workspace's as-of day is within its dates, and
+    its delegate signs in to an account that holds the Approver role now (the seeded deputy has no account, so it
+    is only recorded). The first such entry wins. `for` names the Approvers it covers for (their directory emails),
+    `acct` is the delegate's account and `you` says whether that is the caller."""
+    if not decisions_delegated(ctx):
+        return None
+    idp = state.get(ctx.session, "access_settings", "idp") or {}
+    if not idp.get("ooo"):
+        return None
+    today = iso(AS_OF)[:10]
+    users = state.items(ctx.session, "idp_users")
+    for d in idp["ooo"]:
+        if not d["from"] <= today <= d["until"]:
+            continue
+        u = next((x for x in users if x["email"] == d["email"]), None)
+        a = policy.account(u["acct"], ctx.actor.ctx) if u and u.get("acct") else None
+        if a is None or a.role != "Approver":
+            continue
+        away = [x for x in policy.accounts(ctx.actor.ctx) if x.role == "Approver" and x.id != a.id]
+        mails = [next((x["email"] for x in users if x.get("acct") == b.id), b.label) for b in away]
+        me = account(ctx)
+        return {
+            "delegate": d["email"],
+            "for": ", ".join(mails) or "the Approver",
+            "from": d["from"],
+            "until": d["until"],
+            "acct": a.id,
+            "you": bool(me and me.id == a.id),
+        }
+    return None
+
+
+def approver_waiting(ctx: CallContext, article: str = "an") -> str:
+    """Who a submitted decision waits for: the delegate in force, else "an Approver" (or "the Approver"), else Admin."""
+    if not decisions_delegated(ctx):
+        return "Admin"
+    cover = ooo_cover(ctx)
+    return f"{cover['delegate']} (covering for the Approver)" if cover else f"{article} Approver"
+
+
 # ---------------------------------------------------------------- facts derived from a case
 def as_model(c: Case) -> str:
     """The demo's asModel: the product model of the case's class."""
@@ -598,10 +641,11 @@ def stage_states(c: Case, ctx: CallContext) -> list[dict]:
     # stage 7: approve
     appr: Any = c.get("approval")
     if s7 == "done":
-        res7 = ("Override approved" if c.get("override") else "Approved") + f" by {appr['by']} under {appr['ref']}"
+        who = f"{appr['delegate']} on behalf of {appr['onBehalfOf']}" if appr.get("onBehalfOf") else appr["by"]
+        res7 = ("Override approved" if c.get("override") else "Approved") + f" by {who} under {appr['ref']}"
     elif s7 == "waiting":
         res7 = (
-            f"Submitted by {c['submitted']['by']}; waiting for {'an Approver' if deleg else 'Admin'}"
+            f"Submitted by {c['submitted']['by']}; waiting for {approver_waiting(ctx) if deleg else 'Admin'}"
             if c.get("submitted")
             else "Waiting for the Planner to submit, then an Approver"
         )
@@ -736,7 +780,7 @@ def next_step(c: Case, ctx: CallContext) -> dict:
         if not c.get("submitted") and can(ctx, "submit"):
             return act("decision.submit", f"Submit {cid} for review")
         if c.get("submitted"):
-            return wait("Waiting for " + ("an Approver" if decisions_delegated(ctx) else "Admin"), "Approver")
+            return wait("Waiting for " + approver_waiting(ctx), "Approver")
         return wait("Waiting for the Planner to submit it", "Planner")
     if n == 8 or (n == 9 and state == "running"):
         return (

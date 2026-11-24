@@ -119,6 +119,7 @@ from di.repositories.common import (
     money,
     ms,
     next_step,
+    ooo_cover,
     run,
     stage_label,
     step_owner,
@@ -273,7 +274,7 @@ def rc_story(o: dict) -> str:
     )
 
 
-def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
+def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool, waiting: str | None = None) -> dict:
     """The demo's stData without its detail tabs: what a stage established (res), its facts (each with the kind of
     provenance and the system behind it), documents, what it means, when and who."""
     L = af_lease(c)
@@ -433,11 +434,11 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool) -> dict:
         apps = list(dict.fromkeys(ex_app(y) for y in steps_of(c))) if r else []
         apps = [a for a in apps if not re.match(r"^Circularity|^Planning", a)]
         if appr:
-            o["res"] = (
-                f"{'Override approved' if c.get('override') else 'Approved'} by {appr['by']} under {appr['ref']}: {r['plan']}."
-            )
+            who = f"{appr['delegate']} on behalf of {appr['onBehalfOf']}" if appr.get("onBehalfOf") else appr["by"]
+            o["res"] = f"{'Override approved' if c.get('override') else 'Approved'} by {who} under {appr['ref']}: {r['plan']}."
         elif sub:
-            o["res"] = f"Submitted by {sub['by']} on {fmt_d(sub['at'])}; waiting for {'the Approver' if deleg else 'Admin'}."
+            waits = waiting or ("the Approver" if deleg else "Admin")  # waiting: an out-of-office delegate in force
+            o["res"] = f"Submitted by {sub['by']} on {fmt_d(sub['at'])}; waiting for {waits}."
         elif r:
             o["res"] = "The decision packet is ready; it waits for the Planner to submit it."
         else:
@@ -574,6 +575,8 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
     c = load_case(p, session, case_id, "product", "case")
     ctx = call_ctx(p, session)
     deleg = decisions_delegated(ctx)
+    cover = ooo_cover(ctx) if c.get("submitted") else None
+    waiting = f"{cover['delegate']} (covering for the Approver)" if cover else None
     rn = run(c, ctx)
     return {
         "case": case_record(c, session),
@@ -581,7 +584,7 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
         "serial": "SN" + str(as_hex(c, "sn"))[:7].rjust(7, "0"),
         "run": rn,
         "tags": [stage_tag(c, n, rn, p, deleg) for n in range(1, 11)],
-        "stages": [stage_data(c, n, rn, p, deleg) for n in range(1, 11)],
+        "stages": [stage_data(c, n, rn, p, deleg, waiting) for n in range(1, 11)],
         "landing": landing(rn, p.account.role),
         "next": next_step(c, ctx),
         "clock": active_clock(c),

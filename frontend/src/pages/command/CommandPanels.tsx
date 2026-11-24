@@ -3,10 +3,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   acknowledge, aomeItems, approvalCards, approvalLimit, awaitingApproval, ccFilters, clsIcon, decideRequest, decisionsAwaiting,
-  exOwner, exRows, handedRows, inboxRequests, inboxScope, kfmt, rbPath, notifyRecipients, opScopeInfo, opsAwaiting, oppRow, oppRows, outcomesToConfirm,
-  sendNotification, setCcFilters, toggleOpScope, type AccessRequest, type CcCase, type CcScope, type ExRow,
+  exOwner, exRows, handedRows, inboxCover, inboxRequests, inboxScope, kfmt, rbPath, notifyRecipients, opScopeInfo, opsAwaiting, oppRow, oppRows, outcomesToConfirm,
+  ownRequest, sendNotification, setCcFilters, toggleOpScope, type AccessRequest, type CcCase, type CcScope, type ExRow,
 } from '../../api/command';
+import { GRANT_ENDS, OWN_REQUEST_NOTE } from '../../api/access';
 import { fmtDateYear, money } from '../../api/format';
+import { GrantList } from '../access/AccessRequests';
 import { can, canPage } from '../../api/session';
 import { Icon } from '../../components/Icon';
 import { onActivateKey } from '../../utils/keys';
@@ -392,7 +394,13 @@ function ReqRow({ r, onDecide }: { r: AccessRequest; onDecide: (dec: 'approve' |
           {r.decidedBy && <> · {r.status === 'approved' ? 'approved' : 'declined'} by {r.decidedBy} on {fmtDateYear(r.decidedAt!)}{r.note ? ': ' + r.note : ''}</>}
         </div>
       </div>
-      {r.canDecide && (
+      {r.canDecide && ownRequest(r) && (
+        <div className="rqa">
+          <button className="btn sm pri" disabled title={OWN_REQUEST_NOTE}>{r.kind === 'tenant' ? 'Approve access' : 'Approve proposal'}</button>
+          <span className="note">{OWN_REQUEST_NOTE}</span>
+        </div>
+      )}
+      {r.canDecide && !ownRequest(r) && (
         <div className="rqa">
           <button className="btn sm pri" onClick={() => onDecide('approve')}>{r.kind === 'tenant' ? 'Approve access' : 'Approve proposal'}</button>
           <button className="btn sm" onClick={() => onDecide('decline')}>Decline</button>
@@ -404,10 +412,12 @@ function ReqRow({ r, onDecide }: { r: AccessRequest; onDecide: (dec: 'approve' |
 
 function DecideModal({ r, dec, onClose }: { r: AccessRequest; dec: 'approve' | 'decline'; onClose: () => void }) {
   const [note, setNote] = useState('');
+  const [end, setEnd] = useState<number | null>(null); // hours; null: no end
   const action = useAction();
   const [err, setErr] = useState('');
+  const grant = r.kind === 'tenant' && dec === 'approve';
   const ok = async () => {
-    const res = await action.run(() => decideRequest(r.id, dec, note.trim()), { inline: setErr });
+    const res = await action.run(() => decideRequest(r.id, dec, note.trim(), grant ? end : null), { inline: setErr });
     if (!res.ok) return;
     onClose();
     toast(r.id + ' ' + res.output.status + '.' + (r.kind === 'tenant' && res.output.status === 'approved' ? ' ' + r.by + ' can now open ' + r.tenant + '.' : ''), 4200);
@@ -426,21 +436,42 @@ function DecideModal({ r, dec, onClose }: { r: AccessRequest; dec: 'approve' | '
         <div className="hint">Recorded in the audit log. Do not enter personal data.</div>
         <div className="err" id="rq-err" hidden={!err}>{err}</div>
       </div>
-      {r.kind === 'tenant' && dec === 'approve' && <p className="note" style={{ margin: 0 }}>{r.by} will see {r.tenant} cases for the rest of this session.</p>}
+      {grant && (
+        <>
+          <div className="fld">
+            <label htmlFor="rq-end">Access ends</label>
+            <select id="rq-end" className="sel" value={end ?? ''} onChange={(e) => setEnd(e.target.value ? Number(e.target.value) : null)}>
+              {GRANT_ENDS.map((g) => <option key={g.label} value={g.hours ?? ''}>{g.hours === null ? g.label : 'After ' + g.label}</option>)}
+            </select>
+          </div>
+          <p className="note" style={{ margin: 0 }}>
+            {r.by} sees {r.tenant} cases at once, without signing in again.{' '}
+            {end === null ? 'Access lasts until Admin or the Approver revokes it.' : 'Access ends after ' + GRANT_ENDS.find((g) => g.hours === end)!.label + '. It can be revoked earlier.'}
+          </p>
+        </>
+      )}
       {r.kind === 'mcp' && dec === 'approve' && <p className="note" style={{ margin: 0 }}>The server joins the MCP client list as approved. Connecting it is a separate step.</p>}
     </Modal>
   );
 }
 
 export function Inbox({ onPick }: { onPick: (arg: string) => void }) {
-  const l = inboxRequests(), dec = can('approve.decisions') ? decisionsAwaiting() : 0, scope = inboxScope();
+  const l = inboxRequests(), dec = can('approve.decisions') ? decisionsAwaiting() : 0, scope = inboxScope(), cover = inboxCover();
   const [deciding, setDeciding] = useState<{ r: AccessRequest; dec: 'approve' | 'decline' } | null>(null);
   return (
+    <>
     <section className="panel" id="ccApprovals">
       <div className="ph">
         <div>
           <h3>Approvals inbox</h3>
           <div className="note">{scope ? 'Delegated to you by Admin: ' + (scope.join(', ') || 'nothing at the moment') : 'Every scope, as Admin'}</div>
+          {cover && (
+            <div className="note">
+              {cover.you
+                ? `You cover for ${cover.for} until ${cover.until}. Decisions you approve or decline are recorded on behalf of ${cover.for}.`
+                : `Out of office until ${cover.until}: ${cover.delegate} approves or declines decisions on behalf of ${cover.for}. Whoever acts first completes the item.`}
+            </div>
+          )}
         </div>
         <span className="sp" />
         {dec > 0 && <button className="btn sm" onClick={() => onPick('stage:approval')}>{dec} decision{dec > 1 ? 's' : ''} await approval</button>}
@@ -451,6 +482,9 @@ export function Inbox({ onPick }: { onPick: (arg: string) => void }) {
       </div>
       {deciding && <DecideModal r={deciding.r} dec={deciding.dec} onClose={() => setDeciding(null)} />}
     </section>
+    {/* the live tenant grants with Revoke: the Approver has no Access page (nothing renders while there is none) */}
+    <GrantList />
+    </>
   );
 }
 

@@ -39,6 +39,7 @@ from di.repositories.common import (
     money,
     ms,
     notes,
+    ooo_cover,
     step_owner,
     ti_conf,
     to_fixed,
@@ -809,9 +810,11 @@ def aome_items(ctx: CallContext, widen: bool = False, tenant: str = "All") -> li
             )
     every = visible_cases(ctx, tenant) if role in ("Approver", "Finance") else []
     if role == "Approver":
+        cover = ooo_cover(ctx)  # the delegate in force decides on behalf of the absent Approver
+        also = f" · on behalf of {cover['for']}" if cover and cover["you"] else ""
         for c in every:
             if c["stage"] == "awaiting_approval" and c.get("submitted"):
-                d = f"Submitted by {c['submitted']['by']} · {money(c['recommendation']['net'])}"
+                d = f"Submitted by {c['submitted']['by']} · {money(c['recommendation']['net'])}" + also
                 out.append({"t": c["id"] + " · approve or decline", "d": d, "btn": "Decide", "go": st5(c["id"])})
     if role == "Finance":
         for c in every:

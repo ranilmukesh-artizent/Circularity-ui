@@ -28,7 +28,7 @@ from typing import Any
 from sqlalchemy import text
 
 from di.core import policy, state
-from di.repositories.common import AS_OF, case_demand, hash_id, iso, limit_for, money
+from di.repositories.common import AS_OF, case_demand, hash_id, iso, limit_for, money, ooo_cover
 from di.repositories.live_rules import Shadow, live_rules, shadow_rules
 from di.services import instructions
 from di.services.actions.pipeline import CallContext
@@ -90,6 +90,14 @@ def _key(action: str, i: dict, ctx: CallContext) -> str:
 def _by(ctx: CallContext) -> str:
     """Who acts (the demo's x.by)."""
     return ctx.actor.account.label if ctx.actor.account else "Enterprise system adapter"
+
+
+def _covering(ctx: CallContext) -> dict | None:
+    """The out-of-office delegation in force when the caller is its delegate (di.repositories.common.ooo_cover): they
+    approve or decline on behalf of the absent Approver, under their own limit and the self-approval rule. Whoever acts
+    first completes the item; the absent Approver acting is recorded as usual."""
+    cover = ooo_cover(ctx)
+    return cover if cover and cover["you"] else None
 
 
 def _case(ctx: CallContext, case_id: str) -> store.Case:
@@ -358,6 +366,9 @@ def _approve(action: str, i: dict[str, Any], ctx: CallContext) -> dict:
         "ref": ref, "by": by, "at": NOW, "rationale": i["rationale"], "spend": _spend(i), "terms": i.get("terms") or "",
         "prep": ctx.preparer,
     }  # fmt: skip
+    cover = _covering(ctx)
+    if cover:
+        c["approval"] |= {"delegate": cover["delegate"], "onBehalfOf": cover["for"]}
     if is_ov:
         c["override"] = {"rec": rec["plan"], "chosen": t["plan"], "reason": i["rationale"]}
     push_event(
@@ -370,9 +381,11 @@ def _approve(action: str, i: dict[str, Any], ctx: CallContext) -> dict:
         },
         key,
     )  # fmt: skip
-    lifecycle.move(ctx.session, c, "approved", f"{'Override approved' if is_ov else 'Approved'} under {ref}", ctx.actor.id)
+    why = f"{'Override approved' if is_ov else 'Approved'} under {ref}"
+    lifecycle.move(ctx.session, c, "approved", why + (f" on behalf of {cover['for']}" if cover else ""), ctx.actor.id)
     instructions.queue_first(ctx.session, c)  # B13b: the first step goes to its system (when sending is on)
-    return {"case_id": c["id"], "ref": ref, "route": t["plan"], "net": t["net"], "override": is_ov, "sent_to": steps[0]["sys"]}
+    out = {"case_id": c["id"], "ref": ref, "route": t["plan"], "net": t["net"], "override": is_ov, "sent_to": steps[0]["sys"]}
+    return out | ({"on_behalf_of": cover["for"]} if cover else {})
 
 
 @implement("decision.approve", idem=_approve_idem, emits=["instruction.sent"])
@@ -400,6 +413,9 @@ def _decline_idem(i: dict[str, Any], ctx: CallContext):
 def decline(i: dict[str, Any], ctx: CallContext):
     key = _key("decision.decline", i, ctx)
     c, by = _case(ctx, i["case_id"]), _by(ctx)
+    cover = _covering(ctx)
+    if cover:
+        by = f"{cover['delegate']} on behalf of {cover['for']}"
     c["reevalReason"] = f"Declined by {by}: {i['reason']}"
     c["submitted"] = None
     c["cycle"] = cyc(c) + 1  # a new decision cycle: new keys for submit, approve and decline
@@ -413,7 +429,7 @@ def decline(i: dict[str, Any], ctx: CallContext):
         key,
     )  # fmt: skip
     lifecycle.move(ctx.session, c, "reeval", c["reevalReason"], ctx.actor.id)
-    return {"case_id": c["id"], "stage": "reeval"}
+    return {"case_id": c["id"], "stage": "reeval"} | ({"on_behalf_of": cover["for"]} if cover else {})
 
 
 def draft_rationale(c: store.Case) -> str:

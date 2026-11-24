@@ -8,7 +8,7 @@
 import { invoke } from './actions';
 import { cached, ref, session, withQuery } from './client';
 import { asOfNow, fmtDY, kfmt as kfmtLocal, rgTime } from './home';
-import { accounts, canRoute } from './session';
+import { accounts, canRoute, currentAccount } from './session';
 import { bump } from './store';
 import type { Account, ActionResult } from './types';
 import { setView, view } from './view';
@@ -76,6 +76,7 @@ type ActionRow = Omit<OppRow, 'c'> & { case: CcCase };
 interface InboxAnswer {
   requests: AccessRequest[]; scope: string[] | null; decisions_awaiting: number;
   cards: (Omit<ApprovalCard, 'steps'> & { kinds: string[]; steps?: string[] })[]; limit: number | null;
+  cover?: InboxCover;
 }
 type OpScope = { home: string; scope: string; locked: boolean };
 
@@ -283,14 +284,23 @@ export interface AccessRequest {
   id: string; kind: 'tenant' | 'mcp'; status: 'pending' | 'approved' | 'declined'; by: string; at: string; tenant?: string; reason?: string;
   decidedBy?: string; decidedAt?: string; note?: string;
   server?: { name: string; owner: string; purpose: string; tools: string[]; access: 'read' | 'write'; data: string };
-  kindLabel: string; canDecide: boolean;
+  kindLabel: string; canDecide: boolean; byId?: string;
 }
 export const inboxRequests = (): AccessRequest[] => inboxA().requests;
 /** What Admin delegated to the Approver (null for Admin, who sees every scope). */
 export const inboxScope = (): string[] | null => inboxA().scope;
 export const decisionsAwaiting = (): number => inboxA().decisions_awaiting;
-export const decideRequest = (id: string, decision: 'approve' | 'decline', note: string): Promise<ActionResult<{ status: string }>> =>
-  invoke<{ status: string }>('access.decideRequest', { id, decision, note });
+/** The out-of-office delegation in force (Access → Identity): the delegate decides on behalf of the absent Approver
+ *  (`for`); `you` when that is the signed-in account. Absent when none is in force. */
+export interface InboxCover { delegate: string; for: string; from: string; until: string; you: boolean }
+export const inboxCover = (): InboxCover | null => inboxA().cover ?? null;
+/** A request the signed-in account made itself: another person must decide it (the server refuses it too). */
+export const ownRequest = (r: AccessRequest): boolean => !!r.byId && r.byId === currentAccount()?.id;
+/** access.decideRequest; `expiresHours` (a tenant grant's end, in hours) is sent only when set, as AccessRequests does. */
+export const decideRequest = (
+  id: string, decision: 'approve' | 'decline', note: string, expiresHours: number | null = null,
+): Promise<ActionResult<{ status: string }>> =>
+  invoke<{ status: string }>('access.decideRequest', { id, decision, note, ...(expiresHours !== null ? { expires_hours: expiresHours } : {}) });
 
 /** Submitted decisions as approval cards, by value then deadline, each with its pre-approval check (afApprovalQueue)
  *  and the instructions it would send ("<step> → <system>"). */
