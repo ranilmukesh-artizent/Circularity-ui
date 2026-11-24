@@ -793,7 +793,7 @@ each story went.
 - [ ] P9-0.13 Role matrix and test a user in Access
 - [ ] P9-0.14 Read-only sources refused and discovery at 500
 - [ ] P9-0.15 What-if over the tool-fleet queue
-- [ ] P9-0.16 Relabel Studio decision workflows to point to the Modeler
+- [x] P9-0.16 Relabel Studio decision workflows to point to the Modeler
 - [ ] P9-0.17 Phase 0 gate
 - [ ] P9-1.1 Pack format v1 with tool fleet and device as data
 - [ ] P9-1.2 Gate catalogue with evidence and batch hold

@@ -958,9 +958,19 @@ def _ids(ctx: CallContext) -> set[str]:
 def save_guard(i: dict[str, Any], ctx: CallContext):
     return (
         _wf_guard(i, ctx)
+        or _new_decision_draft(i, ctx)
         or (None if i["name"].strip() else ("validation_error", "Enter a workflow name before saving."))
         or _settings_problem(i)
     )
+
+
+def _new_decision_draft(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    """P9-0.16: a decision workflow that was never published or run is a new draft, and Studio no longer saves those
+    (business rules live in the Modeler). The demo's published ones, and any that ran, save, run and export as before."""
+    w = _get(ctx, i["id"])
+    if w and w.get("kind") == "dec" and w.get("status") == "draft" and not w.get("runsN") and not w.get("pub"):
+        return "validation_error", "Decision rules live in the Modeler"
+    return None
 
 
 def _settings_problem(i: dict[str, Any]) -> tuple[str, str] | None:

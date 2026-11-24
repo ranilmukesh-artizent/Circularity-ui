@@ -18,6 +18,27 @@ import { fromTemplate, reprocess } from './workflowActions';
 type NewType = 'ingest' | 'out' | 'dec' | 'blank';
 const CH_NAME: Record<string, string> = { api: 'Outbound API call', event: 'Event trigger', file: 'Interface file', proc: 'Process orchestration' };
 
+/** Where business rules live: Workflow Studio builds connection workflows only (P9-0.16). */
+export function ModelerLink({ text }: { text?: string }) {
+  return <a className="lnk" href="#/modeler"><Icon name="branch" /> {text ?? 'Open the Modeler'}</a>;
+}
+
+/** The type picker of New workflow: the decision type stays listed for the demo's three graphs, read only. */
+export function TypePicker({ type, onChange }: { type: string; onChange: (v: string) => void }) {
+  return (
+    <div className="fld">
+      <label htmlFor="nwType">Workflow type</label>
+      <select id="nwType" value={type} onChange={(e) => onChange(e.target.value)}>
+        <option value="ingest">Ingest pipeline · one source system into a canonical model</option>
+        <option value="out">Outbound instruction · one target system</option>
+        <option value="dec" disabled>Decision workflow (demo, read only) · business rules live in the Modeler</option>
+        <option value="blank">Blank pipeline</option>
+      </select>
+      <div className="hint" data-testid="nwDecNote">Decision workflows are demo only and read only. Business rules live in the Modeler. <ModelerLink /></div>
+    </div>
+  );
+}
+
 export function NewWorkflowModal({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
   const first = readableSources().find((s) => s.read.length) ?? readableSources()[0];
   const [n, setN] = useState<{ type: NewType; src: string; ch: string; name: string }>({ type: 'ingest', src: first?.id ?? '', ch: 'api', name: '' });
@@ -51,15 +72,7 @@ export function NewWorkflowModal({ onClose, onCreated }: { onClose: () => void; 
   return (
     <Modal title="New workflow" onClose={onClose}
       foot={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn pri" onClick={create}>Create workflow</button></>}>
-      <div className="fld">
-        <label htmlFor="nwType">Workflow type</label>
-        <select id="nwType" value={n.type} onChange={(e) => change('type', e.target.value)}>
-          <option value="ingest">Ingest pipeline · one source system into a canonical model</option>
-          <option value="out">Outbound instruction · one target system</option>
-          <option value="dec">Decision workflow · six gates to approval</option>
-          <option value="blank">Blank pipeline</option>
-        </select>
-      </div>
+      <TypePicker type={n.type} onChange={(v) => change('type', v)} />
       {(n.type === 'ingest' || n.type === 'out') && (
         <div className="fld">
           <label htmlFor="nwSrc">{n.type === 'ingest' ? 'Source system' : 'Target system'}</label>

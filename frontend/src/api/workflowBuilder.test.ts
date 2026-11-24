@@ -23,7 +23,7 @@ const Q = (id: string, kind: Question['kind'], def: Question['default'], choices
   id, text: id, kind, multi: kind === 'multi', default: def, choices: choices.map((v) => ({ value: v, label: String(v), hint: '' })),
 });
 const reply = (questions: Question[], answers = {}, status: PlanReply['status'] = 'questions'): PlanReply => ({
-  status, questions, notes: [], understood: [], answers, plan: null,
+  status, questions, notes: [], understood: [], answers, plan: null, redirect: null,
 });
 
 beforeEach(() => {
@@ -37,6 +37,12 @@ describe('the planner call', () => {
     const r = await planWorkflow('make a workflow', { a: 1 });
     expect(m.http).toHaveBeenCalledWith('/api/actions/workflow.plan', { method: 'POST', body: { prompt: 'make a workflow', answers: { a: 1 } } });
     expect(r.questions[0].id).toBe('type');
+  });
+
+  it('returns the redirect to the Modeler for a decision sentence (P9-0.16)', async () => {
+    const redirect = { to: 'modeler' as const, reason: 'Business rules live in the Modeler.' };
+    m.http.mockResolvedValue({ ok: true, output: { ...reply([], {}, 'blocked'), redirect } });
+    expect((await planWorkflow('route grade C tools to recycling')).redirect).toEqual(redirect);
   });
 
   it('throws the refusal message', async () => {

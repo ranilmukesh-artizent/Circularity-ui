@@ -81,6 +81,8 @@ export interface PlanReply {
   understood: Understood[];
   answers: Answers;
   plan: Plan | null;
+  /** Set for a decision sentence: business rules live in the Modeler (P9-0.16). null for every connection workflow. */
+  redirect: { to: 'modeler'; reason: string } | null;
 }
 
 /** Example descriptions shown under the prompt box (they plan cleanly against the synthetic systems). */
@@ -89,7 +91,6 @@ export const EXAMPLES = [
   'Build an ingest from Dealer network without currency conversion, with unit normalisation, every 15 minutes',
   'Send approved instructions to SAP S/4HANA by file with a code lookup',
   'Ingest from IBM Maximo in real time with a filter and a branch, alert when two runs fail in a row',
-  'Decision workflow for pool allocation',
 ];
 
 /** workflow.plan: the next questions, or the complete plan. Throws ApiError with the server's message on a refusal. */

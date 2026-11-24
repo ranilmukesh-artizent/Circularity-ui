@@ -12,6 +12,7 @@ import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { refused } from '../../hooks/useAction';
+import { ModelerLink } from './WorkflowModals';
 
 export function WorkflowBuilder({ initialPrompt = '', onClose, onCreated }: { initialPrompt?: string; onClose: () => void; onCreated: (id: string) => void }) {
   const [s, dispatch] = useReducer(builderReducer, initialPrompt, initialBuilder);
@@ -88,12 +89,23 @@ export function WorkflowBuilder({ initialPrompt = '', onClose, onCreated }: { in
       {s.busy && <p className="note" aria-live="polite"><span className="afdots">Working…</span></p>}
       {s.error && <p className="callout bad" role="alert">{s.error}</p>}
       {reply && <Understood s={s} onEdit={(slot) => dispatch({ t: 'edit', slot })} />}
-      {reply && reply.notes.length > 0 && <div className="callout" role="note" style={{ margin: '10px 0' }}>{reply.notes.map((n, i) => <p key={i} style={{ margin: i ? '4px 0 0' : 0 }}>{n}</p>)}</div>}
+      {reply && !reply.redirect && reply.notes.length > 0 && <div className="callout" role="note" style={{ margin: '10px 0' }}>{reply.notes.map((n, i) => <p key={i} style={{ margin: i ? '4px 0 0' : 0 }}>{n}</p>)}</div>}
       {qs.length > 0 && <Questions qs={qs} form={s.form} set={(id, value) => dispatch({ t: 'set', id, value })} />}
       {plan && <PlanView plan={plan} />}
-      {reply?.status === 'blocked' && <p className="callout bad">The plan would not pass its checks. Go back and change an answer, or edit the description.</p>}
+      {reply?.redirect && <RedirectNote reason={reply.redirect.reason} />}
+      {reply?.status === 'blocked' && !reply.redirect && <p className="callout bad">The plan would not pass its checks. Go back and change an answer, or edit the description.</p>}
       <p className="note" style={{ marginTop: 12 }}>The assistant only proposes. Nothing is created until you press Create workflow; the new workflow starts as a draft and is never published for you.</p>
     </Modal>
+  );
+}
+
+/** A decision sentence: the planner builds no draft and points to the Modeler (P9-0.16). */
+export function RedirectNote({ reason }: { reason: string }) {
+  return (
+    <div className="callout" role="note" data-testid="wbRedirect">
+      <p style={{ margin: 0 }}>{reason}</p>
+      <p style={{ margin: '6px 0 0' }}><ModelerLink /></p>
+    </div>
   );
 }
 

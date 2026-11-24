@@ -152,7 +152,7 @@ def draft(i: dict[str, Any], ctx: CallContext):
 TYPES = {
     "ingest": ("Ingest pipeline", "One source system into a canonical model"),
     "out": ("Outbound instruction", "An approved decision sent to one target system"),
-    "dec": ("Decision workflow", "Evidence, six gates and routes to a person's approval"),
+    "dec": ("Decision workflow (demo, read only)", "Business rules live in the Modeler"),
     "blank": ("Blank pipeline", "An empty canvas you wire yourself"),
 }
 DECISIONS = {
@@ -377,7 +377,7 @@ def _type(t: str) -> list[str]:
     found = []
     if re.search(r"\bblank\b|\bempty\b|from scratch", t):
         found.append("blank")
-    if re.search(r"\bdecision|six[- ]gate|\bgates\b|\ballocat|\bpool\b", t):
+    if re.search(r"\bdecision|six[- ]gate|\bgates?\b|\ballocat|\bpool\b|\broutes?\b|\b(approval|business|routing) rules?\b", t):
         found.append("dec")
     if re.search(
         r"outbound|\b(send|push|write|deliver|post|export)\b.{0,60}\b(to|into)\b|instructions? to\b|\bwrite[- ]?back", t
@@ -720,6 +720,8 @@ def plan(prompt: str, answers: dict[str, Any], ctx: CallContext, use_model: bool
 
     # ---- round 1: the type
     kind = a.get("type") if a.get("type") in TYPES else p.get("type")
+    if kind == "dec":  # decisions, gates, approval rules and routes are the Modeler's, never a new Studio draft
+        return _redirect(notes, understood, a)
     if kind is None:
         why = None
         if p.get("ambiguous_type"):
@@ -968,7 +970,24 @@ def _val(v: Any) -> str:
 
 
 def _questions(qs: list[dict], notes: list[str], understood: list[dict], a: dict) -> dict[str, Any]:
-    return {"status": "questions", "questions": qs, "notes": notes, "understood": understood, "answers": a, "plan": None}
+    return {
+        "status": "questions", "questions": qs, "notes": notes, "understood": understood, "answers": a, "plan": None,
+        "redirect": None,
+    }  # fmt: skip
+
+
+MODELER_REASON = (
+    "Decisions, gates, approval rules and routes are business rules, and they live in the Modeler. Workflow Studio "
+    "builds the connection workflows: ingest from a system and outbound instructions to one."
+)
+
+
+def _redirect(notes: list[str], understood: list[dict], a: dict) -> dict[str, Any]:
+    """The reply to a decision sentence: no questions and no plan, a pointer to the Modeler (P9-0.16)."""
+    return {
+        "status": "blocked", "questions": [], "notes": [*notes, MODELER_REASON], "understood": understood, "answers": a,
+        "plan": None, "redirect": {"to": "modeler", "reason": MODELER_REASON},
+    }  # fmt: skip
 
 
 # ---------------------------------------------------------------- the tailored graph
@@ -1221,7 +1240,7 @@ def _ready(sh: dict, g: dict, name: str, owner: str, trig: dict, retries: int, a
     errs = [x for x in v if x["sev"] == "error"]
     if errs:
         return {"status": "blocked", "questions": [], "notes": notes + [x["msg"] for x in errs], "understood": understood,
-                "answers": a, "plan": None}  # fmt: skip
+                "answers": a, "plan": None, "redirect": None}  # fmt: skip
     # every block is either required to run (MINIMAL) or one the person asked for; nothing comes from a template
     asked = set(sh["steps"]) | set(sh["handling"]) | ({"x_evt"} if sh.get("arrive") == "both" else set())
     order = studio._order(g)
@@ -1277,7 +1296,7 @@ def _ready(sh: dict, g: dict, name: str, owner: str, trig: dict, retries: int, a
     if kind != "blank":
         save |= {"retries": retries, "alert": alert}
     return {
-        "status": "ready", "questions": [], "notes": notes, "understood": understood, "answers": a,
+        "status": "ready", "questions": [], "notes": notes, "understood": understood, "answers": a, "redirect": None,
         "plan": {
             "name": name, "desc": desc, "type": kind, "type_label": TYPES[kind][0], "src": sid, "ch": ch,
             "decision": sh["dec"] if kind == "dec" else None, "trigger": trig, "trigger_text": wf.trig_text(trig),

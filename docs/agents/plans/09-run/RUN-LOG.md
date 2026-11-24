@@ -17,3 +17,5 @@ unattended". Times are local (IST).
 | 25 Nov 02:53 | P9-0.2 merged. Sonnet; the writer could not run the real api-test case from its worktree (other compose project); the lead ran selftest.sh: all passed. |
 | 25 Nov 03:40 | Writer brief moved to `09-run/WRITER-BRIEF.md` (shared by every writer). P9-0.3 to w1, P9-0.4 to w3, P9-0.5 to w4 (Sonnet). |
 | 25 Nov 02:57 | P9-0.3 merged. Sonnet. |
+| 25 Nov 03:50 | P9-0.6 to w1 (Sonnet). |
+| 25 Nov 03:12 | P9-0.16 merged. Sonnet, 25 min and 324 tool calls (Docker contention in its checks); one extra file (actions/workflows.py, needed by the spec's interface); serial-only test_stream_workflows run by the lead: green. |

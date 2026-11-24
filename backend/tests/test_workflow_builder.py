@@ -216,12 +216,8 @@ def test_every_plan_graph_passes_the_server_checks():
                     out = B.plan("outbound", {"type": "out", "system": sid, "delivery": ch, "steps": steps, "_defaults": True},
                                  ctx, use_model=False)  # fmt: skip
                     assert wf.errors(out["plan"]["graph"], "pipe") == [], (sid, ch)
-        for dk in B.DECISIONS:
-            for handling in (["x_audit"], []):
-                out = B.plan(
-                    "decision", {"type": "dec", "decision": dk, "handling": handling, "_defaults": True}, ctx, use_model=False
-                )
-                assert wf.errors(out["plan"]["graph"], "dec") == [], dk
+        for dk in B.DECISIONS:  # the demo's three decision graphs stay valid (parity); the planner no longer builds them
+            assert wf.errors(B.minimal_graph({"k": "min", "type": "dec", "id": dk}), "dec") == [], dk
         s.rollback()
 
 
@@ -306,3 +302,59 @@ def test_the_builder_fills_block_settings_from_the_description():
     # no currency named: the defaults, stored as no settings at all
     q = plan("ingest from salesforce with currency conversion, every 30 minutes", {"_defaults": True})["plan"]
     assert "cfg" not in next(n for n in q["graph"]["nodes"] if n["ref"] == "x_fx")
+
+
+# ---------------------------------------------------------------- P9-0.16: decision rules live in the Modeler
+def test_plan_decision_sentence_redirects_to_modeler():
+    sentences = (
+        "route grade C tools to recycling",
+        "make a decision workflow with six gates",
+        "new approval rules for returns",
+    )
+    for sentence in sentences:
+        out = plan(sentence)
+        assert out["plan"] is None and out["questions"] == [], sentence
+        assert out["redirect"]["to"] == "modeler" and "Modeler" in out["redirect"]["reason"], sentence
+    # choosing the decision type in the first round redirects too, and never makes a dec draft
+    out = plan("make a workflow", {"type": "dec", "_defaults": True})
+    assert out["redirect"]["to"] == "modeler" and out["plan"] is None
+
+
+def test_plan_connection_sentence_unchanged():
+    sentence = "ingest from salesforce with currency conversion and dedupe, every 30 minutes"
+    out = plan(sentence, {"_defaults": True})
+    assert out["status"] == "ready" and out["redirect"] is None
+    assert out["plan"]["type"] == "ingest" and out["plan"]["checks"]["errors"] == []
+    assert plan("make a workflow")["redirect"] is None
+    sent = plan("send approved instructions to sap s/4hana by file", {"_defaults": True})
+    assert sent["redirect"] is None and sent["plan"]["type"] == "out"
+    assert B.TYPES["dec"] == ("Decision workflow (demo, read only)", "Business rules live in the Modeler")
+
+
+def test_new_dec_draft_refused():
+    state.reset(["workflows", "workflow_runs"])
+    made = call("workflow.create", {"type": "dec"}, DEV)
+    assert made["ok"], made
+    wid = made["output"]["id"]
+    with SessionLocal() as s:
+        w = state.get(s, "workflows", wid)
+    saved = call("workflow.save", {"id": wid, "name": "Mine", "graph": w["graph"]}, DEV)
+    assert not saved["ok"] and saved["error"]["code"] == "validation_error"
+    assert saved["error"]["message"] == "Decision rules live in the Modeler"
+    state.reset(["workflows", "workflow_runs"])
+
+
+def test_existing_dec_workflows_still_run():
+    state.reset(["workflows", "workflow_runs"])
+    for wid in ("WF-133", "WF-134", "WF-135"):
+        assert call("workflow.validate", {"id": wid}, DEV)["output"]["errors"] == [], wid
+        with SessionLocal() as s:
+            w = state.get(s, "workflows", wid)
+        assert w["kind"] == "dec" and w["status"] == "published"
+        saved = call("workflow.save", {"id": wid, "name": w["name"], "graph": w["graph"]}, DEV)
+        assert saved["ok"], saved
+        run = call("workflow.run", {"id": wid}, DEV)
+        assert run["ok"], run
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM job WHERE kind = 'workflow.run'"))
+    state.reset(["workflows", "workflow_runs"])
