@@ -1,0 +1,441 @@
+{
+ "total": 125,
+ "allowed": 77,
+ "mcp_reach": [
+  "analytics.models",
+  "case.evidence",
+  "case.routes",
+  "decision.submit",
+  "demand.find",
+  "evidence.request",
+  "flow.get",
+  "flow.propose",
+  "instruction.resend",
+  "pool.optimize"
+ ],
+ "playbook": [
+  "ACTIONS",
+  "NAME",
+  "STEPS"
+ ],
+ "families": {
+  "decision": {
+   "total": 5,
+   "writes": 5,
+   "agent_allowed": 2,
+   "allowed_ids": [
+    "decision.submit",
+    "decision.prepare"
+   ],
+   "forbidden_ids": [
+    "decision.approve",
+    "decision.override",
+    "decision.decline"
+   ]
+  },
+  "outcome": {
+   "total": 1,
+   "writes": 1,
+   "agent_allowed": 0,
+   "allowed_ids": [],
+   "forbidden_ids": [
+    "outcome.confirm"
+   ]
+  },
+  "adapter": {
+   "total": 1,
+   "writes": 1,
+   "agent_allowed": 0,
+   "allowed_ids": [],
+   "forbidden_ids": [
+    "adapter.acknowledge"
+   ]
+  },
+  "instruction": {
+   "total": 1,
+   "writes": 1,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "instruction.resend"
+   ],
+   "forbidden_ids": []
+  },
+  "evidence": {
+   "total": 2,
+   "writes": 2,
+   "agent_allowed": 2,
+   "allowed_ids": [
+    "evidence.request",
+    "evidence.recordResult"
+   ],
+   "forbidden_ids": []
+  },
+  "case": {
+   "total": 7,
+   "writes": 2,
+   "agent_allowed": 7,
+   "allowed_ids": [
+    "case.reevaluate",
+    "case.get",
+    "case.evidence",
+    "case.routes",
+    "case.whatIf",
+    "case.trace",
+    "case.open"
+   ],
+   "forbidden_ids": []
+  },
+  "scenario": {
+   "total": 2,
+   "writes": 2,
+   "agent_allowed": 2,
+   "allowed_ids": [
+    "scenario.save",
+    "scenario.delete"
+   ],
+   "forbidden_ids": []
+  },
+  "notify": {
+   "total": 2,
+   "writes": 2,
+   "agent_allowed": 2,
+   "allowed_ids": [
+    "notify.send",
+    "notify.acknowledge"
+   ],
+   "forbidden_ids": []
+  },
+  "comment": {
+   "total": 1,
+   "writes": 1,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "comment.add"
+   ],
+   "forbidden_ids": []
+  },
+  "access": {
+   "total": 14,
+   "writes": 13,
+   "agent_allowed": 0,
+   "allowed_ids": [],
+   "forbidden_ids": [
+    "access.requestTenant",
+    "access.decideRequest",
+    "access.setDelegation",
+    "access.syncDirectory",
+    "access.mapIdentity",
+    "access.removeUser",
+    "access.setRoleSource",
+    "access.setOutOfOffice",
+    "access.clearOutOfOffice",
+    "access.lookup",
+    "access.setAutonomy",
+    "access.setLimit",
+    "access.setSelfApprove",
+    "access.setRunLimits"
+   ]
+  },
+  "mcp": {
+   "total": 1,
+   "writes": 1,
+   "agent_allowed": 0,
+   "allowed_ids": [],
+   "forbidden_ids": [
+    "mcp.propose"
+   ]
+  },
+  "source": {
+   "total": 9,
+   "writes": 7,
+   "agent_allowed": 0,
+   "allowed_ids": [],
+   "forbidden_ids": [
+    "source.sync",
+    "source.reconnect",
+    "source.delete",
+    "source.update",
+    "source.pause",
+    "source.resume",
+    "source.disconnect",
+    "source.test",
+    "source.sandboxKey"
+   ]
+  },
+  "credentials": {
+   "total": 1,
+   "writes": 1,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "credentials.rotate"
+   ],
+   "forbidden_ids": []
+  },
+  "conflict": {
+   "total": 3,
+   "writes": 2,
+   "agent_allowed": 3,
+   "allowed_ids": [
+    "conflict.resolve",
+    "conflict.escalate",
+    "conflict.suggest"
+   ],
+   "forbidden_ids": []
+  },
+  "import": {
+   "total": 2,
+   "writes": 2,
+   "agent_allowed": 2,
+   "allowed_ids": [
+    "import.commit",
+    "import.clean"
+   ],
+   "forbidden_ids": []
+  },
+  "tables": {
+   "total": 3,
+   "writes": 3,
+   "agent_allowed": 3,
+   "allowed_ids": [
+    "tables.update",
+    "tables.suggestLinks",
+    "tables.describe"
+   ],
+   "forbidden_ids": []
+  },
+  "workflow": {
+   "total": 18,
+   "writes": 15,
+   "agent_allowed": 15,
+   "allowed_ids": [
+    "workflow.save",
+    "workflow.create",
+    "workflow.duplicate",
+    "workflow.run",
+    "workflow.validate",
+    "workflow.draft",
+    "workflow.saveTemplate",
+    "workflow.reprocess",
+    "workflow.applyFix",
+    "workflow.restore",
+    "workflow.import",
+    "workflow.plan",
+    "workflow.draft.save",
+    "workflow.draft.discard",
+    "workflow.testRun"
+   ],
+   "forbidden_ids": [
+    "workflow.publish",
+    "workflow.setStatus",
+    "workflow.delete"
+   ]
+  },
+  "cases": {
+   "total": 1,
+   "writes": 0,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "cases.list"
+   ],
+   "forbidden_ids": []
+  },
+  "demand": {
+   "total": 1,
+   "writes": 0,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "demand.find"
+   ],
+   "forbidden_ids": []
+  },
+  "pool": {
+   "total": 1,
+   "writes": 0,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "pool.optimize"
+   ],
+   "forbidden_ids": []
+  },
+  "analytics": {
+   "total": 2,
+   "writes": 0,
+   "agent_allowed": 2,
+   "allowed_ids": [
+    "analytics.query",
+    "analytics.models"
+   ],
+   "forbidden_ids": []
+  },
+  "audit": {
+   "total": 1,
+   "writes": 0,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "audit.search"
+   ],
+   "forbidden_ids": []
+  },
+  "sources": {
+   "total": 2,
+   "writes": 0,
+   "agent_allowed": 2,
+   "allowed_ids": [
+    "sources.health",
+    "sources.diagnose"
+   ],
+   "forbidden_ids": []
+  },
+  "inbox": {
+   "total": 1,
+   "writes": 0,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "inbox.get"
+   ],
+   "forbidden_ids": []
+  },
+  "receiving": {
+   "total": 1,
+   "writes": 0,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "receiving.plan"
+   ],
+   "forbidden_ids": []
+  },
+  "asset": {
+   "total": 2,
+   "writes": 0,
+   "agent_allowed": 2,
+   "allowed_ids": [
+    "asset.compare",
+    "asset.summary"
+   ],
+   "forbidden_ids": []
+  },
+  "escalation": {
+   "total": 1,
+   "writes": 1,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "escalation.send"
+   ],
+   "forbidden_ids": []
+  },
+  "kpi": {
+   "total": 1,
+   "writes": 0,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "kpi.explain"
+   ],
+   "forbidden_ids": []
+  },
+  "agent": {
+   "total": 4,
+   "writes": 4,
+   "agent_allowed": 0,
+   "allowed_ids": [],
+   "forbidden_ids": [
+    "agent.setEnabled",
+    "agent.register",
+    "agent.update",
+    "agent.startRun"
+   ]
+  },
+  "mapping": {
+   "total": 5,
+   "writes": 3,
+   "agent_allowed": 5,
+   "allowed_ids": [
+    "mapping.suggest",
+    "mapping.apply",
+    "mapping.catalogSuggest",
+    "mapping.preview",
+    "mapping.revert"
+   ],
+   "forbidden_ids": []
+  },
+  "event": {
+   "total": 1,
+   "writes": 0,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "event.explain"
+   ],
+   "forbidden_ids": []
+  },
+  "model": {
+   "total": 2,
+   "writes": 2,
+   "agent_allowed": 1,
+   "allowed_ids": [
+    "model.fit"
+   ],
+   "forbidden_ids": [
+    "model.promote"
+   ]
+  },
+  "flow": {
+   "total": 12,
+   "writes": 8,
+   "agent_allowed": 8,
+   "allowed_ids": [
+    "flow.saveDraft",
+    "flow.fork",
+    "flow.submit",
+    "flow.discard",
+    "flow.get",
+    "flow.simulate",
+    "flow.propose",
+    "flow.suggestions"
+   ],
+   "forbidden_ids": [
+    "flow.approve",
+    "flow.reject",
+    "flow.publish",
+    "flow.rollback"
+   ]
+  },
+  "org": {
+   "total": 8,
+   "writes": 5,
+   "agent_allowed": 3,
+   "allowed_ids": [
+    "org.exportPack",
+    "org.pilotReport",
+    "org.tree"
+   ],
+   "forbidden_ids": [
+    "org.importPack",
+    "org.setPilot",
+    "org.create",
+    "org.update",
+    "org.move"
+   ]
+  },
+  "proposal": {
+   "total": 2,
+   "writes": 2,
+   "agent_allowed": 0,
+   "allowed_ids": [],
+   "forbidden_ids": [
+    "proposal.accept",
+    "proposal.reject"
+   ]
+  },
+  "task": {
+   "total": 4,
+   "writes": 4,
+   "agent_allowed": 4,
+   "allowed_ids": [
+    "task.enqueue",
+    "task.retry",
+    "task.cancel",
+    "task.reprioritise"
+   ],
+   "forbidden_ids": []
+  }
+ }
+}

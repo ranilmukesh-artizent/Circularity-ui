@@ -14,6 +14,18 @@ From Windows, run every script below through WSL:
 | fresh clone | committed HEAD cloned to a temp dir, project `circfresh`, ports 15173/18000/18100/12222/15432 | `bash scripts/dev/fresh-clone.sh [--prod]` | up --wait, health, doctor, sign-in + RT-1048 screen, smoke for admin if host Node; ~5–15 min (build) |
 | CI | `.github/workflows/ci.yml` | see "CI" below | ~30 min (the `stack` job) |
 
+### Parallel shards (faster, partial)
+
+`docs/agents/audits/2026-11-24-plan-08/work/parallel.sh` (Git Bash; `WT=<worktree> N=4 TAG=<tag> bash parallel.sh`)
+runs the api test files that are safe side by side in N shards at once, each in a one-off api-image container on its
+own fresh database (`di_p1..di_pN` on the shared postgres: migrated, then `ensure_sources` as the worker runs at
+start). Shards are balanced by each file's time in a junit file; logs go to `evidence/par-<TAG>-<k>.log`.
+It leaves out the files that reset or fault the shared source-sim (every shard would see it), call the running api
+(MCP, stream, webhooks, health) or need a fabric synced by the running stack; those run only in the serial suite.
+With 4 shards it took ~7 min against ~40 min serial (24 Nov 2026). It is a pre-check: the serial
+`scripts/dev/full-suite.sh` stays the gate. The script has the lead's paths hard-coded and needs host python and
+`cygpath`; copy and adapt it rather than run it elsewhere as is.
+
 ## CI
 
 `.github/workflows/ci.yml` runs on every pull request and on pushes to `main` and `feature/fullstack-poc`. It needs no

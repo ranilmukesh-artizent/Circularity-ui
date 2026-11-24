@@ -2,6 +2,39 @@
 
 Problems already hit, newest first. Each entry gives the symptom, the root cause, the fix, and how to avoid it.
 
+## 2026-11-24: Test shards on fresh databases failed for setup, not code
+
+- **Symptom:** api tests run on a new private database (audit fix agents, parallel shards) failed with "No table
+  model for erp", empty source lists in integration tests, or workflow/home/access/reference screen tests that pass in
+  the serial suite.
+- **Cause:** the running stack prepares its database beyond the migrations: the worker's start-up registers the
+  sources (`di.connectors.sync.ensure_sources`), and some tests expect a fabric the stack has already synced.
+- **Fix:** each shard runs `alembic upgrade head`, then `ensure_sources` and a commit, before pytest
+  (`docs/agents/audits/2026-11-24-plan-08/work/parallel.sh`); the files that need a synced fabric stay serial-only.
+- **Avoid:** a failure that shows only on a fresh database is checked on the base commit's code on a fresh database
+  before it is called a regression.
+
+## 2026-11-24: Git Bash loops lost their input and kept stray CRs
+
+- **Symptom:** in `parallel.sh`, a `while read` loop that starts one `docker run` per shard lost the shards after the
+  first; the shard file lists from host python carried CRs, and a raw CR typed into the script to remove them was gone.
+- **Cause:** `docker run` and `docker compose exec` read stdin, so they eat the rest of the loop's input. Windows
+  programs (host python) write CRLF, and Git Bash strips raw CR characters from the script text itself.
+- **Fix:** give every docker call in such a loop `</dev/null`; remove CRs with the escape, `tr -d '\r'`, never a
+  literal CR.
+- **Avoid:** same rules in any new Git Bash script; scripts keep LF endings (AGENTS.md rule 13).
+
+## 2026-11-24: A renumbered migration on a dev database that had run the old number
+
+- **Symptom (found in review, prevented):** after the merge our `0027_proposal_requester` became `0028` behind the
+  colleague's `0027_access_grants`. A database that had run our old `0027` would count his `0027` as applied, run only
+  `0028`, and lack `tenant_grant.expires_at`/`revoked_at`, so every signed-in request would fail in `load_context`.
+- **Cause:** Alembic tracks only the revision id in `alembic_version`, not which file produced it.
+- **Fix:** with the OLD code still checked out, `alembic downgrade 0026`; then switch to the new code and
+  `alembic upgrade head` (it runs `0027` and `0028`). Check the new columns exist.
+- **Avoid:** renumber only migrations no shared database has run; otherwise say in the commit or handover which
+  databases need the downgrade first. `backup/audit-fixes-pre-merge` (`9b14697`) still has the old code.
+
 ## 2026-11-22: The dev api hung on reload while a browser was open
 
 - **Symptom:** after a code change the dev api stopped answering for minutes; its log ended with uvicorn's "Waiting
