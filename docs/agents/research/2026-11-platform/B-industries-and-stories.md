@@ -9,8 +9,7 @@ CR- and DV-. This report owns **used cars (UC-)**, **telecom network equipment (
 also owns the shared parts: the gate catalogue, the roles, the pack format, cross-segment stories (X-) and the next
 segments (NS-).
 
-Names used: **Recover** is the circularity product on the shared core, which Resolve and Reconcile also use (other
-reports cover those two). **Compose** is where a flow is written. **Decide** (Pulse, Cases, Exceptions) and
+Names used: **Recover** is the circularity product on the Decision Intelligence core. **Compose** is where a flow is written. **Decide** (Pulse, Cases, Exceptions) and
 **Understand** (Analytics, Agents) are the screens Compose generates. Numbers marked *sample, modelled* come from the
 prototype's synthetic data. They are not facts or forecasts.
 
@@ -37,6 +36,7 @@ prototype's synthetic data. They are not facts or forecasts.
 | 13 | Removed the old summary claim "the two pilot packs need 6 new parts" and the old roadmap order "ITAD first". | Deleted | Both are replaced by the five-segment plan and the new pack contract. |
 | 14 | Corrected the battery note. Reg. (EU) 2026/1738 is the new **End-of-Life Vehicles Regulation** (signed 8 Jul 2026, Official Journal 24 Jul 2026). It is not an unknown battery amendment. Which battery articles it changes is still **unconfirmed**. | Updated | Found while researching the used-car salvage route. The old open question was wrong. |
 | 15 | Carbon section: added notes on how the formula applies to cars, network gear and rental devices. | Updated | Without them, the displacement factor `d` would be over-stated for retail of used cars and for re-rent. |
+| 16 | Resolve and Reconcile removed (parked as out of scope, user decision 25 Nov 2026). | Deleted | The product is Recover only. |
 
 ## Summary
 

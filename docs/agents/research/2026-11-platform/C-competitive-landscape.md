@@ -21,7 +21,7 @@ hands-on. Licence lines need review by Kinective's Legal team before anyone reli
 | §4.1 Short pointers for tool fleet AMS and device recommerce | These two segments were already covered in §2.5 and §3.2. They now sit beside the other three. |
 | §5.1 "Describe your business → generated flow or app" (Appian Composer, ServiceNow Build Agent, Power Apps Plans, UiPath Autopilot for Maestro, Camunda BPMN Copilot, Pega Blueprint, Manhattan Agent Foundry, Aera Skill Building) | Compose (01 §2) is now the front door of the product. We need to know what others generate, which guardrails they keep, whether they have maker-checker, and whether they offer a percentage rollout. |
 | §5.2 Decision intelligence platforms (Aera Technology, the Gartner Magic Quadrant for Decision Intelligence Platforms) | The product is now framed as a "Decision Intelligence core" (01 §1). Buyers will compare it with the vendors that category list names. Aera's Oct 2026 Policy Studio and Decision Ledger are the nearest analogue to our guardrails and journal. |
-| §7.5 Positioning of the Recover / Resolve / Reconcile family, at summary level | 01 §1. The detailed rivals for Resolve and Reconcile are in reports H and I. |
+| §7.5 Positioning of Recover, at summary level | 01 §1. |
 | New rows in §6 (strengths and weaknesses) and §7 (matrix, table stakes, "what nobody else does", "what to copy"), and segment lines in §8 (the window) | These sections now cover the five segments and Compose. |
 
 **Updated**
@@ -43,6 +43,7 @@ hands-on. Licence lines need review by Kinective's Legal team before anyone reli
 |---|---|
 | The open question "exact GA date of Camunda 8.10" | V-verification.md answered it (13 Oct 2026). |
 | "Template-pack gallery (industrial, tool fleet, device)" in "what to copy" | Replaced by the five-segment pack gallery with a locked compliance layer (§7.4). |
+| Resolve and Reconcile removed (parked as out of scope, user decision 25 Nov 2026). | The product is Recover only. |
 
 No verified fact from revision 1 was removed. The verification correction on Blue Yonder (§8) is kept word for word.
 
@@ -430,18 +431,17 @@ No verified fact from revision 1 was removed. The verification correction on Blu
 - **IFS.** IFS Cloud 25R2 (27 Nov 2025) introduced agentic Digital Workers across ERP, EAM and FSM. IFS Loops Agent
   Studio (23 Apr 2026) configures and governs them, with built-in guardrails and outcome metrics [S21]. No
   returns/repair Digital Worker found. IFS owns many industrial asset and service-repair processes, so it is an
-  adjacent threat for the tool-fleet AMS pack and for Resolve.
+  adjacent threat for the tool-fleet AMS pack.
 - **Syncron.** Aftermarket (service parts, pricing, warranty). 2026 news [S22]:
   - a field-data partnership for warranty decisions (29 May);
   - enterprise data platform integrations (30 Jun);
   - Service Contract Performance (7 Oct).
 
-  No agentic disposition found. A possible partner rather than a rival; relevant to Resolve and Reconcile (reports
-  H and I).
+  No agentic disposition found. A possible partner rather than a rival.
 - **PTC Servigistics.** A service parts planning tool. An AI Assistant for planners (GA Oct 2025 per PTC's 2025
   release). A 2026 PTC blog describes an agent that turns a business request into planning scenarios and runs the
   planning engines, with "defined limits" on its authority and human review points [S43]. It is a **source** for
-  the telecom pack's spares-planning system (01 §7) and a neighbour of Resolve.
+  the telecom pack's spares-planning system (01 §7).
 
 ---
 
@@ -875,18 +875,16 @@ Architecture patterns:
 | Recipes and skills exposed as MCP tools via a registry | Workato [S15] | MCP generated from the action catalogue (already decided) plus a registry page |
 | MCP server for operators' coding tools (incidents, instances, tasks) | Camunda 8.9 [S6] | Our MCP server should cover operations, not only business actions |
 
-### 7.5 The Recover / Resolve / Reconcile family (summary)
+### 7.5 Recover's position (summary)
 
 | Product | Nearest competitor types (summary) | Our position | Detail |
 |---|---|---|---|
 | **Recover** (circularity) | Retail returns SaaS (§3.1); suites (§2); segment tools: used-car pricing and auctions (§4.2), telecom asset recovery services (§4.3), biomedical asset intelligence (§4.4); DI platforms (§5.2) | The only cross-segment, vendor-neutral disposition decision with locked guardrails, replay and maker-checker found | This report |
-| **Resolve** (service network disruptions) | Service parts planning (PTC Servigistics, Syncron [S22, S43]); FSM/EAM suites with agents (IFS, ServiceNow, SAP [S13, S19, S21]); supply-chain control towers and DI platforms (Blue Yonder, Aera, o9 [S18, S54]) | Crowded and well funded. The angle is tracing the ripple (part shortage → repair backlog → empty loaner pool → missed turnaround) across vendors' systems with the same core | Report H |
-| **Reconcile** (service and logistics settlement) | Freight audit and payment services, warranty management (Syncron warranty [S22]), ERP settlement | Evidence-first ("what actually happened") before an invoice is disputed, using the same journal and canonical model | Report I |
 
-**Family-level claim.** One core (models, agents, governance, memory) serves three decisions. Most rivals sell one
-of the three, or sell the core without the decisions (Aera, Camunda, Pega). The risk: the claim is only credible
-once Recover is live in at least one segment. Until then the family is a roadmap slide, and buyers will treat it as
-one.
+**Core-level claim.** One core (models, agents, governance, memory) serves Recover's decision across five segments.
+Most rivals sell one segment's tool, or sell the core without the decision (Aera, Camunda, Pega). The risk: the claim
+is only credible once Recover is live in at least one segment. Until then it is a roadmap slide, and buyers will
+treat it as one.
 
 ---
 

@@ -10,7 +10,10 @@ target the research and plan 9 build towards.
 "01 §n". Numbers marked *sample* are the prototype's sample data (modelled, synthetic), not facts or forecasts.
 Sample company, hospital and person names are left out.
 
-## 1. Product family: one core, three decisions
+What changed in this revision and why:
+- Resolve and Reconcile removed (parked as out of scope, user decision 25 Nov 2026).
+
+## 1. Recover on the Decision Intelligence core
 
 **Decision Intelligence core:** models, agents, governance and memory. It reads signals from the enterprise
 applications already in place. It puts one governed, explainable decision in front of the right owner and hands the
@@ -21,8 +24,9 @@ adapters. If Recover is unavailable, returns follow the standard route.
 | Product | Decision it answers | Signals | Status in the prototype |
 |---|---|---|---|
 | **Recover**: circularity | "Where is this returned item worth most?" It weighs every next life on total value against *named* demand (renewals, short pools, open repair orders, buyer bids). | Repair requests, contract ends, fleet swaps, pool excess, trade-ins, service desk, contract refresh | Live demo |
-| **Resolve**: service network disruptions | "What is the best action to protect the turnaround promise, given cost and alternatives?" It catches a disruption at the first signal and traces the ripple: part shortage → repair backlog → empty loaner pool → missed turnaround promise. | Part shortages, repair backlog, loaner depletion, inbound delays, turnaround breach | Next, same core |
-| **Reconcile**: service and logistics settlement | "What should be paid, charged, recovered or settled for this repair or shipment?" It establishes what actually happened and what is economically correct, with evidence, before anyone disputes an invoice. | Tool logistics freight, third-party repairs, warranty attribution, carrier accessorials | Next, same core |
+
+The prototype also showed two later products on the same core, Resolve and Reconcile. They are out of scope (user
+decision, 25 Nov 2026); see parked/.
 
 ## 2. Recover's surfaces
 

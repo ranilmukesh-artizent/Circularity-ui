@@ -1,4 +1,8 @@
-# V. Verification of claims (round 1: 24 Nov 2026, reports A–G; round 2: 25 Nov 2026, revision 2 and reports H, I)
+# V. Verification of claims (round 1: 24 Nov 2026, reports A–G; round 2: 25 Nov 2026, revision 2 and reports H, I, now parked)
+
+What changed in this revision and why:
+- Resolve and Reconcile removed (parked as out of scope, user decision 25 Nov 2026). Round 2 keeps the facts checked
+  for them, marked "(claim from a parked report)".
 
 A fact-check of 21 claims from the reports in this folder: 15 web claims against primary sources (licence files,
 package registries, official docs, vendor releases, security advisories) and 6 code claims read from the repository
@@ -67,7 +71,7 @@ Report C's open question on the Camunda 8.10 GA date is answered above (13 Oct 2
 
 ---
 
-## Round 2 (25 Nov 2026): revision 2 and the new reports H, I
+## Round 2 (25 Nov 2026): revision 2 and reports H, I (reports H, I now parked)
 
 Two checkers ran in parallel after revision 2 aligned every report with the Recover concept ([01](01-recover-segments.md)):
 - one read the code (nothing was run);
@@ -81,7 +85,7 @@ The lead then re-read the key code evidence (`intake.py:233–239`, `discover.py
 
 | Checked | Confirmed | Corrected | Unconfirmed |
 |---|---|---|---|
-| 23 web claims | 22 (3 with a detail added or a wording fix: alibi-detect date, "sell, lease, or rent", NIST Rev. 2 scope) | 1 (Timefold) | 3 details: the Timefold 1.25.0 note (search snippet only), PTC's "Spring 2026 agentic" item, the full Gartner Leader list |
+| 23 web claims | 22 (3 with a detail added or a wording fix: alibi-detect date, "sell, lease, or rent", NIST Rev. 2 scope) | 1 (Timefold; claim from a parked report) | 3 details: the Timefold 1.25.0 note (search snippet only) (claim from a parked report), PTC's "Spring 2026 agentic" item (claim from a parked report), the full Gartner Leader list |
 | 11 code claims | 6 | 5 | 0 |
 | 36 spot-checked file:line citations | 33 | 3 | 0 |
 
@@ -97,7 +101,7 @@ Confirmed against the source named:
 | Licences | statsforecast, OR-Tools, scim2-models, scim2-tester, Evidently: Apache-2.0 | PyPI metadata |
 | Licences | Authlib and jsonpatch BSD-3; factur-x BSD | PyPI metadata |
 | Licences | highspy, deepdiff, pydifact, pdfplumber, RapidFuzz, invoice2data 1.0.1 (1 Aug 2026): MIT | PyPI metadata |
-| Licences | PuLP is MIT: its LICENSE file is MIT text; old PyPI classifiers said BSD | LICENSE file |
+| Licences | PuLP is MIT: its LICENSE file is MIT text; old PyPI classifiers said BSD (claim from a parked report) | LICENSE file |
 | Licences | pm4py AGPL-3.0-or-later; PyMuPDF AGPL or commercial; python-mip EPL-2.0 | PyPI metadata |
 | Licences | Zitadel AGPL-3.0 since v3 | vendor's blog |
 | Licences | alibi-detect on BSL 1.1 since 22 Jan 2024; earlier releases stay Apache-2.0 (date added to E) | vendor's licensing FAQ |
@@ -109,15 +113,15 @@ Confirmed against the source named:
 | Competitors | TRIMEDX-AIQ agentic capabilities, 21 May 2026 | release |
 | Competitors | Gartner's first Magic Quadrant for Decision Intelligence Platforms, 26 Jan 2026 | secondary sources; the Gartner page was not reachable |
 | Competitors | Aera's prompt-built decision automations, announced 27–28 Oct 2026 | release |
-| Competitors | Loop freight-audit agents, 4 May 2026 | release |
-| Competitors | Basware AP agents, 24 Feb 2026; its Supplier Agent is planned, not live | release |
-| Competitors | PTC service-lifecycle AI, Sep–Oct 2025 | release |
-| Competitors | IFS Loops Agent Studio, 23 Apr 2026 | release |
+| Competitors | Loop freight-audit agents, 4 May 2026 (claim from a parked report) | release |
+| Competitors | Basware AP agents, 24 Feb 2026; its Supplier Agent is planned, not live (claim from a parked report) | release |
+| Competitors | PTC service-lifecycle AI, Sep–Oct 2025 (claim from a parked report) | release |
+| Competitors | IFS Loops Agent Studio, 23 Apr 2026 (claim from a parked report) | release |
 | Names | No customer or prospect names in any report: every company named is a competitor, OSS project, regulator or academic author | local scan |
 
 Corrected:
 - **H:** the Timefold Python solver is not "reportedly discontinued". Solver 1.25.0 (12 Aug 2025) dropped Python, and
-  the Python repository was archived on 6 Nov 2026.
+  the Python repository was archived on 6 Nov 2026. (claim from a parked report)
 - **B:**
   - The statute says "sell, lease, or rent", not "loan".
   - NIST Rev. 2 removed the media-specific appendices, including routers and switches, and points to IEEE 2883.
@@ -133,7 +137,7 @@ Confirmed:
 - Group-to-role mapping, flow versions and flow maker-checker exist.
 - Device recommerce has no wipe, diagnostics or device-registry mock. Used cars, telecom and medical rental have no
   pack code.
-- Detention terms are declared but unused, and the TMS adapter reads rate terms 1–3 only.
+- Detention terms are declared but unused, and the TMS adapter reads rate terms 1–3 only. (claim from a parked report)
 - Discovery samples 200 records today (`discover.py:31`).
 - `credentials.rotate` is not in `FORBIDDEN_ACTIONS`.
 - 33 of 36 spot-checked file:line citations in G §7 and A's "today in repo" columns were right.
@@ -144,7 +148,7 @@ Corrected:
   The README was corrected to match.
 - **G:** `BASEP` is at `tool_fleet.py:166`, not 167. The resale-price model card's validation line is measured, not
   fixed.
-- **I:** every other actual is a ±25% hash, except the pinned lines `LEARN_PIN` and `LINE_EXACT`.
+- **I:** every other actual is a ±25% hash, except the pinned lines `LEARN_PIN` and `LINE_EXACT`. (claim from a parked report)
 - **A:** the depot-repair adapter has authority over grade and test result, not teardown findings. The `dem` keys
   are lease, so, bid, proj, wo and rcq; there is no `pool` key.
 - **F:** only five `org.` actions are forbidden, not `org.*`. The forbidden list also names `outcome.confirm`,

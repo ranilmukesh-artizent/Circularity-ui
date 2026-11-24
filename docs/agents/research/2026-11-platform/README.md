@@ -1,4 +1,4 @@
-# Platform direction: research synthesis and decisions (revision 2, 25 Nov 2026)
+# Platform direction: research synthesis and decisions (revision 3, 25 Nov 2026)
 
 Research reports, a source note and two verification passes. This page is the synthesis:
 - what we decided (assumed best decisions, open to the team's challenge);
@@ -6,9 +6,10 @@ Research reports, a source note and two verification passes. This page is the sy
 
 The plan that follows from it is the draft [plan 9](../../plans/09-agentic-platform.md).
 
-**Revision 2** aligns everything with the product owner's **Recover** concept: five industry segments, one Decision
-Intelligence core, and three products: Recover, Resolve and Reconcile ([01](01-recover-segments.md)). The prototype
-was shared **for the concept, not the UI design**. These docs take capabilities, rules and data from it, never layout.
+**Revision 3 scope: Recover only.** Recover is the reverse-logistics decision: where a returned item is worth most.
+Revision 2 aligned everything with the product owner's **Recover** concept: five industry segments on one Decision
+Intelligence core ([01](01-recover-segments.md)). Resolve and Reconcile, also shown in the prototype, are out of scope
+and parked in [parked/](parked/README.md). The prototype was shared **for the concept, not the UI design**. These docs take capabilities, rules and data from it, never layout.
 The changes and the reasons for each are in §7.
 
 | Report | Question |
@@ -22,8 +23,7 @@ The changes and the reasons for each are in §7.
 | [E-tier3a-decision-oss.md](E-tier3a-decision-oss.md) | Open source for flows and rules: customer layer, decision tables, model catalogue, queue plan, canary |
 | [F-tier3b-agent-stack.md](F-tier3b-agent-stack.md) | The agent stack: stage-agent chain, configuration agent, loop, models, tracing, evals, safety |
 | [G-capability-gaps.md](G-capability-gaps.md) | What the code does today against the asks and the Recover concept (file:line evidence) |
-| [H-resolve.md](H-resolve.md) | **New.** Resolve: service network disruptions |
-| [I-reconcile.md](I-reconcile.md) | **New.** Reconcile: service and logistics settlement |
+| [parked/](parked/README.md) | Out of scope: the Resolve and Reconcile reports |
 | [V-verification.md](V-verification.md) | Fact-checks of licence, version, regulatory, competitor and code claims (rounds 1 and 2) |
 
 Licence, regulatory, accounting and contract findings in these reports need review by Kinective's Legal team before
@@ -35,8 +35,8 @@ anyone relies on or acts on them. Effort estimates are first-pass, not commitmen
   - Decide → approve → execute is the strongest part: gates, valuers, ranking, maker-checker, one action pipeline,
     instructions and outcomes.
   - Stage 1 fraud triage is thin.
-  - Settlement stops at a cost posting: actuals are synthetic, and a detention check the demo describes is not
-    computed (I §8). That is Reconcile's job.
+  - "Close and learn" records outcomes, but most actual costs are still synthetic. Plan 9 brings real actuals into
+    the outcome so realised value can be compared with the forecast.
 - **Already close to the concept.**
   - The six tool-fleet routes match Recover's six paths.
   - A queue planner fills each order once (`plan_queue`).
@@ -69,13 +69,9 @@ anyone relies on or acts on them. Effort estimates are first-pass, not commitmen
   - **Telecom network equipment:** no software rival was found; service firms and maker take-back programmes do the
     work.
   - **Medical rental:** asset-management tools serve fleets that hospitals own, not rental routing.
-- **Resolve:** service-parts and field-service suites (PTC, IFS) plan parts and visits. None prices a returned unit
-  as a loaner or a parts donor at its Recover value.
-- **Reconcile:** freight-audit, warranty and AP-automation vendors each audit one invoice type. None ties an invoice
-  to the decision that caused the cost.
 - **Our edge:**
   - every route is valued with value, risk and carbon, against named demand;
-  - one core runs three decisions (Recover, Resolve, Reconcile) on the same chain and evidence;
+  - every case runs through the same chain and evidence, in every segment;
   - agents can't approve;
   - packs with locked compliance and a customer layer;
   - replay before publishing;
@@ -91,7 +87,7 @@ store, approval store, workflow engine or API server. Nothing below adds a conta
 | Layer | Choice |
 |---|---|
 | Control plane | Ours: `pipeline.invoke`, proposals, `agent_run`, Postgres job queue, journal |
-| **Orchestration (new)** | A **deterministic chain of stage agents** owned by our runtime: Intake → Condition and life → Demand → Fit-for-use → Valuation → Disposition (queue plan) → Follow-through, with Analytics learning after close. Each stage has its own tools, autonomy (Recommend only / Act within limits / Act alone), limits and a calibrated confidence. Below the flow's threshold the item goes to a person. Application code picks the next stage. Resolve and Reconcile run on the same chain. `case_planner` is no longer the main path; it becomes an exception assistant |
+| **Orchestration (new)** | A **deterministic chain of stage agents** owned by our runtime: Intake → Condition and life → Demand → Fit-for-use → Valuation → Disposition (queue plan) → Follow-through, with Analytics learning after close. Each stage has its own tools, autonomy (Recommend only / Act within limits / Act alone), limits and a calibrated confidence. Below the flow's threshold the item goes to a person. Application code picks the next stage. `case_planner` is no longer the main path; it becomes an exception assistant |
 | Agent loop | **Pydantic AI** *inside* a stage, behind our `AgentLoop` port. Approvals map to external-call deferred tools: the resumed run receives the person's result and never re-runs the tool. Fallbacks: LangGraph, then the OpenAI Agents SDK |
 | **Configuration agent (new)** | Same stack. It reads a description, matches a pack and asks one clarifying question. It outputs a pack change set (configuration, never code), which is validated and held for maker-checker. It has its own eval set |
 | Durability | Own queue, conversation persisted after each model turn, idempotency key `run_id:tool_call_id`. DBOS (MIT) is the first upgrade |
@@ -123,7 +119,7 @@ store, approval store, workflow engine or API server. Nothing below adds a conta
   | Refurbishment cost | regression |
   | Condition estimate | classifier fallback, always labelled an estimate |
 - **Queue plan:** `plan_queue` (a heuristic pinned by the golden files) stays the default. SciPy `milp` (HiGHS) sits
-  behind a `QueuePlanner` port for bigger queues and for Resolve's allocation.
+  behind a `QueuePlanner` port for bigger queues.
 - **Publishing in steps (new):** replay, then shadow, then **canary by region and share of volume**, then full.
 - Authorization stays in `policy.py`.
 
@@ -154,16 +150,11 @@ store, approval store, workflow engine or API server. Nothing below adds a conta
   - No identity-provider server in the trial package. Zitadel is AGPL-3.0, so we don't use it.
 - Agents draft *declarative* adapter specs. A person publishes them and enters the credentials.
 
-### D4. Product and domain (01, A, B, H, I)
+### D4. Product and domain (01, A, B)
 
-- **One core, three products.**
-  - **Recover** decides where a returned item is worth most.
-  - **Resolve** protects the turnaround promise in a service network disruption (H). Its case is one disruption with
-    every promise at risk listed inside it, and it shares scarce fixes across them. A returned unit used as a loaner
-    or parts donor costs its Recover value.
-  - **Reconcile** decides what to pay, charge, recover or settle (I). It checks each invoice against the cost Recover
-    predicted. It absorbs stage 4: credit settlement, asset retirement and the variance queue. The ERP pays; every
-    money move needs a person or a standing policy.
+- **Recover only.** Recover decides where a returned item is worth most. Its last stage, "close and learn", covers
+  outcomes, realised value against forecast, credit settlement, asset retirement and lease residual (stories X-13 and
+  X-16), sent to the ERP as instructions.
 - **Five segments first, in this order:**
   1. Tool fleet AMS: returns, service desk and contract refresh, all P0.
   2. Device recommerce.
@@ -198,7 +189,7 @@ store, approval store, workflow engine or API server. Nothing below adds a conta
 ## 4. Stories
 
 IDs: TF tool-fleet returns, SD service desk, CR contract refresh, DV device recommerce (A); UC used cars, TN telecom
-network equipment, MR medical rental, X cross-segment (B); RS Resolve (H); RC Reconcile (I). Each story has
+network equipment, MR medical rental, X cross-segment, NS next segments (B). Each story has
 Given/When/Then acceptance in its report.
 
 | Set | P0 | P1 | P2 | Today (P0) |
@@ -211,8 +202,6 @@ Given/When/Then acceptance in its report.
 | Telecom network TN | 13 | 8 | 3 | no code |
 | Medical rental MR | 12 | 8 | 3 | no code |
 | Cross-segment X | 8 | 7 | 1 | pack contract, configuration agent, gates as data, customer layer, agents plan / people approve, replay and canary, evidence gates, match to the system of record |
-| Resolve RS | 9 | 8 | 5 | about 60% of the core reusable (H §8) |
-| Reconcile RC | 8 | 9 | 5 | outcome and instructions exist; actuals synthetic |
 | Next segments | 21 later-phase stories (B §7) | | | |
 
 **Pilot P0, tool fleet:**
@@ -274,7 +263,7 @@ Detail and acceptance are in [plan 9](../../plans/09-agentic-platform.md).
 3. **Agent chain:** the stage-chain runtime with per-stage autonomy and confidence, the router, the hold policy,
    tracing, evals, the configuration agent, generated MCP tools.
 4. **Tool fleet pilot**, returns, service desk and contract refresh on real inputs, then the **device recommerce
-   pilot**, with real actuals into the outcome (RC-08).
+   pilot**, with real actuals into the outcome.
 5. **Replay and back-test**, then publishing to a share of volume.
 6. **Compose end to end:**
    - adapter registry with owner approval;
@@ -285,8 +274,8 @@ Detail and acceptance are in [plan 9](../../plans/09-agentic-platform.md).
    - decision tables;
    - case process layer.
 7. **Three more packs:** used cars, telecom network equipment, medical rental.
-8. **Reconcile v1** (replaces P9-5.2), then the **Resolve** spike, then Resolve R1 and R2.
-9. **Next segments:** complete the remaining industries' stories.
+8. **Next segments:** complete the remaining industries' stories.
+9. **Close and learn across packs**, then the final end-to-end proof.
 
 ## 6. Open questions for the team
 
@@ -298,21 +287,16 @@ Detail and acceptance are in [plan 9](../../plans/09-agentic-platform.md).
 4. **Adapter code:** stay declarative-only (recommended), or approve a sandbox?
 5. **Service desk** (A): who is "sales" for credits, and is the $300 limit per tool or per proposal? Does contract
    refresh trigger at 90 days before the end or before the notice deadline?
-6. **Resolve** (H): one case per disruption (recommended) or one per promise at risk? Do pilot contracts state breach
-   penalties? Which wins when Resolve and Recover both want a returned unit?
-7. **Reconcile** (I): which money moves can a standing policy approve (short-pay under tolerance?), and which always
-   need a person?
-8. **Used cars** (B): no US federal rule stops a dealer retailing a car with an open recall (unconfirmed). Is "no
+6. **Used cars** (B): no US federal rule stops a dealer retailing a car with an open recall (unconfirmed). Is "no
    retail with an open recall" pack policy?
-9. **Legal sign-off** for the gate catalogue, carbon factors, regulatory gates and every bundled licence before the
+7. **Legal sign-off** for the gate catalogue, carbon factors, regulatory gates and every bundled licence before the
    trial package changes.
 
-## 7. What changed in revision 2 and why
+## 7. What changed in revisions 2 and 3, and why
 
 | Change | What | Why |
 |---|---|---|
 | Added | [01-recover-segments.md](01-recover-segments.md) | The product owner's Recover concept is the target; one note all reports cite. It is a concept share, not a UI design |
-| Added | [H-resolve.md](H-resolve.md), [I-reconcile.md](I-reconcile.md) | The user asked for full research on both products now |
 | Updated | A | Tool fleet now has three flows, all P0 (service desk and contract refresh added). Device trade-in became device recommerce per the concept, with protection kept as a P1 replacement-stock channel. Stories renumbered; demos start in Compose |
 | Updated | B | The five segments lead, with full chapters for used cars, telecom network equipment and medical rental. Gate catalogue grows from 24 to 41. The pack format matches the concept's pack contract plus a customer layer. Four stages became seven |
 | Moved, not deleted | B: ITAD, rental fleets, telecom CPE, batteries, automotive cores, medical capital equipment, B2C | The user wants them completed later in the same plan |
@@ -320,6 +304,8 @@ Detail and acceptance are in [plan 9](../../plans/09-agentic-platform.md).
 | Updated | D, E, F | Adapter registry, field mapping, identity provider; customer layer, per-market tables, model catalogue, queue plan, canary; stage-agent chain and configuration agent |
 | Changed decision | D1 | `case_planner` replaced by the stage-agent chain, because the concept's agents are stages with their own autonomy; a chain gives per-stage audit, replay and bounded cost |
 | Changed decision | D4 industry order | ITAD-first became the five segments, because the product owner's concept names them |
-| Moved | Stage-4 finance reconciliation | It becomes Reconcile v1, because the concept makes settlement a product on the same core |
 | Updated | G | 27 ranked gaps (was 16) and quick wins 9–16 against the concept |
 | Deleted | README's P0 table of revision 1 (TF-01..07, DV-01..07, X-01..02) | Replaced by the renumbered stories in §4; the old-to-new ID map is in A |
+| Revision 3: moved | Reports H (Resolve) and I (Reconcile) to [parked/](parked/README.md) | User decision, 25 Nov 2026: the product is Recover, the reverse-logistics decision. Resolve and Reconcile are not reverse logistics, so they are out of scope (parked, not deleted) |
+| Revision 3: updated | §1–§6 and reports 00, 01, B, C, F, G, V | Resolve and Reconcile removed. Settlement items stay in Recover's "close and learn" stage (X-13, X-16) |
+| Revision 3: replaced | Plan 9 | Rebuilt as a loop-ready plan for agents covering every Recover story ([plan 9](../../plans/09-agentic-platform.md)) |

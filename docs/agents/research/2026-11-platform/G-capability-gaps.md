@@ -22,8 +22,7 @@ The code read is the same as the first pass (the only later commit, `5b1fcfd`, i
 this is **unconfirmed** but every new citation below was read from the working tree).
 
 - **Added §7, "Against the Recover prototype (01)":** one table per area (Compose, customer layer, access from the
-  identity provider, adapter registry, agents, models catalogue, tool-fleet flows, packs, and a short Resolve/Reconcile
-  inventory), each row with what 01 requires, what the code has (exists / partial / missing) with file:line, the gap,
+  identity provider, adapter registry, agents, models catalogue, tool-fleet flows and packs), each row with what 01 requires, what the code has (exists / partial / missing) with file:line, the gap,
   a size and a plan-9 placement (task ids from [plans/09-agentic-platform.md](../../plans/09-agentic-platform.md)).
   Reason: 01 turns the pack into the unit of everything (flow, guardrails, agents, systems, screens, KPIs), which the
   13 asks did not spell out.
@@ -34,6 +33,7 @@ this is **unconfirmed** but every new citation below was read from the working t
   new packs all depend on it. Back-testing stays near the top: 01's publish step needs the same replay.
 - **Updated §6 (quick wins):** eight new items (9–16) found in §7.
 - **Deleted:** nothing. The first-pass findings were verified ([V-verification.md](V-verification.md)) and still hold.
+- Resolve and Reconcile removed (parked as out of scope, user decision 25 Nov 2026).
 
 ---
 
@@ -506,7 +506,7 @@ Re-ranked in the second pass to include 01 (§7). "Source" is the brief's ask nu
 | 23 | **LLM playbook** in the agent runtime behind the port | Agentic CRUD beyond Ask | ask 7 | M |
 | 24 | **Three new packs**: used cars, telecom network equipment, medical rental, with their missing mocks (§7.8) | 01's segments 3–5; after rank 1 | 01 §6–8 | L each |
 | 25 | **Fraud triage** (rules) | Stage A; only if the pilot covers intake | stage A | M |
-| 26 | **Financial reconciliation** (credit memo, resale invoice, variance queue); the base for Reconcile (§7.9) | Stage D; only if the pilot covers finance | stage D; 01 §1 | L |
+| 26 | **Financial reconciliation** (credit memo, resale invoice, variance queue) | Stage D; only if the pilot covers finance | stage D | L |
 | 27 | Per-agent credentials, OAuth for outside MCP clients, B18 security review | Before anyone outside the team connects an agent | ask 13 | M |
 
 ## 6. Quick wins (S, each a day or less unless noted)
@@ -690,21 +690,6 @@ System coverage (✔ a mock exists; ~ a mock of a related system could stand in;
 
 Mock counts are by system *type*; a "~" mock serves other objects than the pack needs and would need new resources.
 None of the five packs' sample replays (3,420 tools, 18,600 devices …, all *sample*) exists as data.
-
-### 7.9 Resolve and Reconcile: reusable core pieces (short inventory; other reports go deep)
-
-- **Shared by both:** the action pipeline, proposals held for a person, maker-checker, the journal with provenance, the
-  job queue, the live event stream, the conflict queue, org units and pilot mode, the agent registry and runtime,
-  the Connection Fabric with canonical checks.
-- **Resolve** (part shortage → repair backlog → empty loaner pool → missed turnaround): repair orders and tasks
-  (Depot Repair), inbound shipments and carriers (OTM, Optoro ASNs), pool allocation (`pool.optimize`; the pool screens
-  are hidden by the demo's feature flag), repair-centre capacity on Command Center
-  ([command.py:940](../../../../backend/di/services/screens/command.py#L940)). Missing: a disruption signal, the ripple
-  trace and a turnaround-promise measure.
-- **Reconcile** (freight, third-party repairs, warranty, accessorials): Finance's `outcome.confirm`, predicted vs actual
-  and calibration (§2.7), the S/4 journal post (§2.12), OTM freight lanes, AP mocks for Oracle EBS and NetSuite (EBS's
-  spec says "for Reconcile", [catalog_ebs.py:1](../../../../source-sim/sim/generic/specs/catalog_ebs.py#L1)), cost
-  traces per case. Missing: invoice matching, accessorial rules, warranty attribution, an evidence pack per dispute.
 
 ---
 

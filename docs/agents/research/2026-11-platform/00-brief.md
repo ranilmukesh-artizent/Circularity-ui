@@ -1,7 +1,10 @@
 # Research brief: platform direction (24 Nov 2026)
 
-Shared context for the research reports in this folder. Each report (`A-…` to `I-…`) answers one part; `README.md`
+Shared context for the research reports in this folder. Each report (`A-…` to `G-…`) answers one part; `README.md`
 is the synthesis with the decisions.
+
+What changed in this revision and why:
+- Resolve and Reconcile removed (parked as out of scope, user decision 25 Nov 2026).
 
 ## The target: Recover and its five industry segments (added 24 Nov 2026)
 
@@ -9,10 +12,7 @@ The team's Recover prototype ("5 Industry Segments", pre-final) is the target th
 summarised in [01-recover-segments.md](01-recover-segments.md). The product owner shared it **for the concept, not
 the UI design**. Use it for capabilities, rules, data and flows. Never treat its screens or layout as requirements.
 
-- **One Decision Intelligence core, three products:**
-  - **Recover** (circularity: where is this returned item worth most?);
-  - **Resolve** (service network disruptions: what protects the turnaround promise?);
-  - **Reconcile** (service and logistics settlement: what should be paid, charged, recovered or settled?).
+- **The Decision Intelligence core behind Recover** (circularity: where is this returned item worth most?).
 - **Compose** is the authoring experience: describe a business → adapter mapping → agent mapping → approve or
   modify → publish. Publishing generates the run-time screens: **Decide** (Pulse, Cases, Exceptions) and
   **Understand** (Analytics, Agents).
@@ -26,7 +26,8 @@ the UI design**. Use it for capabilities, rules, data and flows. Never treat its
 **The user's answers on 24 Nov 2026 (second round):**
 1. **The five segments.** Build towards them first, with user stories for each. Then complete the stories of the
    other industries researched earlier in the same plan. They stay, as later segments.
-2. **Resolve and Reconcile** get full research now: reports H and I.
+2. Resolve and Reconcile were researched, then parked as out of scope on 25 Nov 2026 (not reverse logistics); see
+   parked/.
 3. **Tool fleet AMS:** returns, service desk and contract refresh are all P0.
 4. **Naming:** the docs use Recover, Compose, Decide and Understand. The code and repo names stay as they are.
 

@@ -21,13 +21,14 @@ Revision 1 assumed a single LLM planner per case (`case_planner`). **01 is used 
 | **Added** §8a | Decision: one runtime running a **deterministic chain of typed stage steps** (application code picks the next stage; each stage has its own tools, autonomy, limits and confidence), instead of one LLM planner per case | Recover's agents *are* stages; per-stage autonomy, audit, replay and cost all favour the chain (§8a) |
 | **Added** §8b | How Recover's seven agents and Compose's six map onto stages; the three autonomy levels mapped onto our registry, the hold policy and the role ceiling; how confidence is defined and calibrated; where "Act alone" meets the standing-policy approval (README D4) | 01 §2 step 3, §3 |
 | **Added** §8c | The configuration agent on the same stack: steps, tools, the one clarifying question, change-set output, validation, and its eval set | 01 §2, §9 |
-| **Added** §8d | Multi-agent interop only where needed: Resolve and Reconcile reuse the same chain runtime; no A2A between our own products | 01 §1 |
+| **Added** §8d | Multi-agent interop only where needed: the chain runtime is generic; no A2A between our own agents | 01 §1 |
 | **Updated** §8 components and the **sequence diagram** | Now the stage chain: tool-fleet return → Intake (LLM stage) → deterministic stages → queue plan → a guardrail hold → a person accepts → Follow-through | Follows §8a |
 | **Updated** §6 layer 2 (hold policy) | Adds stage autonomy and the flow's confidence threshold as inputs | 01 §2 |
 | **Updated** **ADR-F1** (§9) | New row "Orchestration: stage chain (ours)"; `case_planner` moved from the main path to an `exception_assistant`; pydantic-graph and model-driven delegation added to the alternatives; two switch triggers added | Follows §8a |
 | **Updated** §10 first steps and acceptance | Step 4 builds the chain runtime and the configuration agent instead of `case_planner`; two acceptance tests added | Same |
 | **Updated** Summary, unconfirmed items, sources (S61–S63) | — | — |
 | **Deleted** `case_planner` as the main LLM playbook (§10 step 4 of revision 1) | Replaced by the stage chain; its useful part survives as the exception assistant | A free-form planner cannot give per-stage autonomy, deterministic replay or bounded cost |
+| **Deleted** | Resolve and Reconcile removed (parked as out of scope, user decision 25 Nov 2026). | The product is Recover only |
 
 **Decisions:** README decision **D1 is kept** (Pydantic AI behind `AgentLoop`, external-call deferred tools, own
 queue, router, Postgres spans, pydantic-evals, hold policy, MCP-first interop). This revision **adds one layer** to
@@ -415,7 +416,7 @@ and learn). Two ways to run that on the D1 stack:
 | Cost and rate limits | LLM calls only in a few stages, bounded per stage | Several model turns per case, every case |
 | Audit | One typed, journaled record per stage with its confidence, sources and gate result: the decision record 01 describes (facts with source and age, recommendation, alternatives, evidence, guardrail results) | A transcript; the typed record has to be reconstructed |
 | Queue-wide steps | Natural: Disposition is a queue stage (E §11.4) that waits for the plan | Awkward: a per-case loop cannot plan the whole queue |
-| Reuse | Resolve and Reconcile are other stage lists on the same runtime (§8d) | A new prompt per product |
+| Reuse | Every pack is another stage list on the same runtime (§8d) | A new prompt per pack |
 | Flexibility for odd cases | Exceptions leave the chain to a person with an `exception_assistant` draft | Higher in principle |
 
 **Recommendation: A.** One runtime runs the pack's stages as a deterministic chain of typed steps; each stage is an
@@ -542,13 +543,9 @@ the sets on test models (our validators and toolset rules); the nightly live run
 
 ### 8d. Multi-agent interop, only where needed (added in revision 2)
 
-- **Resolve and Reconcile reuse the chain.** They are other stage lists (other packs) on the same runtime, with the
-  same stage gate, hold policy, journal and run-time capabilities ("one engine for every industry pack", 01 §9).
-  Their stages are covered by reports H and I; nothing here depends on their exact names.
-- **Between our products, events, not agent protocols.** A Recover outcome that matters to Resolve (certified
-  harvested parts add supply; a loaner pool refilled) or to Reconcile (an executed instruction and its confirmations)
-  is a domain event and a link between cases. No A2A or MCP between our own agents: they share Postgres, the journal
-  and typed stage records.
+- **The chain is generic.** Any pack is another stage list on the same runtime, with the same stage gate, hold
+  policy, journal and run-time capabilities ("one engine for every industry pack", 01 §9); our own agents share
+  Postgres, the journal and typed stage records, with no A2A or MCP between them.
 - **A2A and MCP stay at the edge** (§7): MCP generated from the action catalogue for outside clients; an A2A agent card
   later for outside agents (a customer's ERP or service agent), whose answers are untrusted inputs to a stage, never
   steps in our chain.
@@ -694,7 +691,7 @@ configuration agent refuses all five blocked compliance skips of 01 and never as
 - Revision 2: the details of Pydantic AI's harness `SubAgents` capability (only named on the multi-agent page [S61]);
   how a `CallDeferred(kind='question')` call is resumed (the kind is confirmed in V claim 9, the resume shape is not
   read); whether calibration data (accept/override outcomes per stage) will be rich enough at pilot volumes to make a
-  75 % threshold meaningful; Resolve's and Reconcile's stage lists (reports H and I).
+  75 % threshold meaningful.
 
 ## Legal note
 
