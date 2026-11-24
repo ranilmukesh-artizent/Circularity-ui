@@ -709,7 +709,7 @@ function OrgUnitSelect({ id, value, onChange, disabled }: { id: string; value: s
   return (
     <div className="fld" style={{ marginTop: 12 }}>
       <label htmlFor={id}>Org unit</label>
-      <select id={id} className="sel" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
+      <select id={id} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
         <option value="">Shared by every org unit</option>
         {value && !units.some((u) => u.id === value) && <option value={value}>{value}</option>}
         {units.map((u) => <option key={u.id} value={u.id}>{' '.repeat(u.depth * 2) + u.name}</option>)}
