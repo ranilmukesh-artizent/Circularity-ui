@@ -22,6 +22,10 @@ owns approves. The decision goes back to the systems as instructions, and the ou
 A business sets all this up in **Compose**: it describes the process, confirms the adapters and agents, approves, and
 publishes in steps. You build that, pack by pack and story by story, with tests that carry each story's ID.
 
+**Which role are you?** If a lead briefed you as writer `<k>` on one task, follow this briefing with the changes in
+your brief ("How to run this plan unattended"). If you are the lead, read that section first. If Ralphy runs you,
+follow this briefing as written.
+
 ### Before you write any code (every iteration)
 
 1. Run `git status` and `git log --oneline -5`.
@@ -248,7 +252,194 @@ build. This plan prevents each kind up front.
 
 ---
 
-## How to run this plan with Ralphy (for the human, before the first iteration)
+## How to run this plan unattended: one lead, parallel writers (the primary way)
+
+This is how plan 9 is built: one **lead** session runs the whole list without a person, day and night, with up to
+four **writer** subagents at a time, as plans 6 and 8 were built, with their incidents designed out. Ralphy (next
+section) is the fallback. A lead that starts or resumes the run reads this section, then `docs/agents/plans/09-run/RUN-LOG.md`.
+
+Grounded in Anthropic's long-running-agent guidance:
+- state lives in files and git, so a fresh session picks up from them
+  ([effective harnesses](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents));
+- a separate, sceptical evaluator, and compaction instead of resets on current models
+  ([harness design](https://www.anthropic.com/engineering/harness-design-long-running-apps));
+- independent work units claimed by file, near-perfect tests as the oracle, short test output, CI that stops
+  regressions ([parallel Claudes](https://www.anthropic.com/engineering/building-c-compiler));
+- three to five teammates, each on its own files ([agent teams](https://code.claude.com/docs/en/agent-teams)).
+
+### Roles
+
+| Role | Who | Does | Never |
+|---|---|---|---|
+| Lead | One session, Opus | Picks tasks with `plan-next.py`, briefs writers, verifies, merges, ticks boxes, writes PROGRESS and the run log, runs gates, does the barrier tasks itself | Writes feature code for a writer's task; pushes; asks a person mid-run |
+| Writer | `Agent` tool, `run_in_background`, `isolation: "worktree"`, one task each | The standard task cycle (S1–S6) for its one task in its own worktree, tests on its own database, one commit on its worktree branch, a short report | Edits the plan file or PROGRESS; runs `api-test.sh`, `full-suite.sh`, `reset.sh` or a smoke; starts agents; pushes |
+| Reviewer | One `general-purpose` agent per phase gate (it must write its report) | Reads the phase's commits against the Review Focus and the phase's stories; writes `09-work/review-phase-<n>.md` | Fixes code; starts agents |
+
+**Models (cost).** The lead and the phase-gate reviewer are Opus: they judge, merge and review. Writers are Sonnet.
+Haiku writes the tasks that are only docs, decision-log rows, licence rows or a script's doc row. A writer that fails
+twice is not retried on a bigger model: the lead reads the failure and either fixes a small slip itself or blocks the
+task. Agent teams are not used: their teammates do not run headless, and in-process teammates lose state on resume.
+
+**Up-to-date practice, not memory.** Before code that uses a library, a framework feature or an agent pattern, the
+writer reads the current official docs for the pinned version (WebFetch), and its report names the page. The
+patterns this plan follows are already researched: agent runtime and interop in
+`docs/agents/research/2026-11-agent-foundation.md`, the platform in `docs/agents/research/2026-11-platform/` (G for
+agent design, E for libraries). Where a doc and the spec disagree, the writer follows the spec and says so in its
+report.
+
+**Code for agents first.** The next reader is an agent with no memory of this run, so every task leaves:
+- a module docstring that says what the module owns, what it must never do, and which registry entry (I-n) it
+  implements;
+- names from the Interface registry, unchanged;
+- small files with one responsibility, and typed public functions;
+- a row in the nearest map (AGENTS.md "Map", or the screen docstring) when it adds a folder or an entry point;
+- tests named after the story, so a search for a story ID finds its code and its proof.
+
+### Before the first task (the lead, once; three commits, none of them a plan task)
+
+1. **Run folder.** Create `docs/agents/plans/09-run/`:
+   - `RUN-LOG.md`: one line per event (start, merge, retry, block, gate), newest last;
+   - `REPORT.md`: the morning report (below), rewritten after every merge;
+   - `inflight.txt`, `blocked.txt`: one task id per line, then the writer, the model and the time.
+2. **Reserve the migrations.** Create the 33 files `backend/migrations/versions/0029_…` to `0061_…`, with the exact
+   names the specs use, each with its revision and `down_revision` chained and an empty `upgrade`/`downgrade`. A task
+   fills its own file. A filled migration is idempotent (`IF NOT EXISTS`), so `migrate-reapply.sh 0028` picks it up
+   whatever the merge order (plan 8's lesson).
+3. **Add every plan-9 library at once.** Collect each `requirements.in` and `package.json` addition from the specs
+   with its pinned version, add them all, re-lock, rebuild the images once (`docker compose up -d --build`), and
+   record them in `09-licences.md`. Tasks then only check their library is there. Every new library is pending review
+   by Kinective's Legal team (decision in P9-0.1).
+4. **Guardrails.** Add deny rules to `.claude/settings.json` for `git push`, `git push --force`, `git reset --hard`,
+   `git checkout --`, `git rebase`, `git stash`, and for edits to the existing migrations `0001`–`0028` and
+   to `fixtures/golden/**`. Keep the machine awake for the run.
+5. **Baseline.** `bash scripts/dev/reset.sh`, then record the api, source-sim and web test counts from the last gate
+   in `RUN-LOG.md`.
+
+### The loop (the lead repeats until every box is ticked)
+
+1. **Pick.** `python scripts/dev/plan-next.py --max 4 [--upto <last phase>]` prints the ready tasks and their files. Ready means:
+   - its dependencies and its phase's prerequisite phases are done;
+   - no earlier unticked task changes the same logic file;
+   - no in-flight task changes them.
+   Tests, smoke steps, facade functions, pack JSON, docs and the registration files (`fields.py`, `registry.py`,
+   `forbidden.py`, `policy.py`, `worker.py`, `main.py`, `models/__init__.py`, the decision log) do not order tasks;
+   the lead merges both sides. A **barrier** task (a phase gate, a Docker change) runs alone, done by the lead in the
+   main tree.
+2. **Brief.** For each ready task, add its line to `inflight.txt` and start a writer with the brief below. Writer
+   numbers 1–4 name their databases (`di_w1` … `di_w4`).
+3. **Verify** each report as it arrives. Read the report and `git show --stat <sha>`, not the whole diff.
+   - The commit touches only the task's files, plus tests and the registration files.
+   - The commit message starts with the task id.
+   - The report quotes a passing `wt-check.sh`.
+   Then rerun the writer's checks yourself from its worktree, as writer 0: `bash scripts/dev/wt-check.sh 0 <tests>`
+   (AGENTS.md rule 15).
+4. **Merge.** In the main tree, run `git cherry-pick -n <sha>`.
+   - Resolve conflicts in append-like and registration files by keeping both sides.
+   - A conflict in a logic file means the scheduler missed an overlap. `git cherry-pick --abort`, put the task back
+     (remove it from `inflight.txt`) and log it.
+   - If the task filled a migration, run `migrate-reapply.sh 0028`. Run `restart.sh` when R14 says so.
+   - Run the task's tests on the main database through `api-test.sh`, including any serial-only files that
+     `wt-check.sh` refused. Run `lint.sh`, and `web-check.sh` if `frontend/` changed.
+   - Green: tick the box, add the PROGRESS row, and commit with the writer's message plus a "Verified by the lead:"
+     line quoting the summaries.
+   - Red: run `git restore --staged --worktree -- <the task's files>` and log it.
+5. **Retry once.** Send the failure (the last 40 lines) to the same writer with `SendMessage`; it keeps its context.
+   On a second failure:
+   - move the task to `blocked.txt` with the reason and a one-line decision needed;
+   - keep going with tasks that do not depend on it.
+   Three blocked tasks in one phase, or a gate red twice, stops new work in that phase and its dependent phases; the
+   other lanes go on.
+6. **Gates.** When a phase's last task is merged, the scheduler offers its gate as a barrier. Writers already
+   running finish; no new writer starts until the gate is green.
+   - **Fast gate** (phases 0, 1, 3–7, 9–12):
+     - `lint.sh`, `web-check.sh`, `parallel-suite.sh` (N=4);
+     - `api-test.sh` on the serial-only files the phase touched;
+     - `story-matrix.sh <phase>`;
+     - the phase's demo smoke, then `reset.sh`;
+     - the reviewer.
+   - **Full gate** (phases 2, 8, 13): everything in "Phase gates" below, including `full-suite.sh`, every smoke and
+     the security auditor when the phase added an approvable object.
+   - A real reviewer finding becomes a fix task for a writer, or a blocked entry.
+7. **Log.** Append to `RUN-LOG.md` and rewrite `REPORT.md`. Remove finished worktrees (the Agent tool cleans up
+   unchanged ones; the web container's `node_modules` is a volume, so there is no junction to remove).
+
+### The writer's brief (the lead fills in the angle brackets)
+
+```
+You are writer <k> on plan 9 of the Circularity repo, in your own git worktree. Do exactly one task: <task id> <title>.
+Read: AGENTS.md; in docs/agents/plans/09-agentic-platform.md the sections "Agent briefing", "Operating rules",
+"Standard task cycle", "Global Constraints", "Interface registry", "Review Focus", and your task's spec under
+"#### <task id>"; every file in its Files list; the stories it cites in research A or B.
+Follow the standard task cycle S1–S6 with these changes for the parallel run:
+- Tests run only through `bash scripts/dev/wt-check.sh <k> <test files>` from your worktree root (WT_LINT=0 for the
+  red-first run). Never run api-test.sh, full-suite.sh, reset.sh, restart.sh, a smoke, or docker compose exec.
+- Change only the files in your spec, plus your tests and the registration files it names. If you need another
+  file, stop and say so in your report.
+- If your task fills a migration, the file already exists (empty): fill it, idempotent (IF NOT EXISTS).
+- Libraries are installed already; if yours is missing, stop and say so.
+- Do not tick the box or edit PROGRESS.md or the plan file; the lead does that.
+- Commit once on your branch with `git commit -F <file>`: first line "<task id>: <summary>" (at most 72
+  characters), the tests run with their summary line, then the attribution trailer. Never push.
+- Before code that uses a library, framework feature or agent pattern, read its current official docs for the
+  pinned version (WebFetch) and name the page in your report. Follow the spec where they disagree, and say so.
+- Write for the next agent: a module docstring (what it owns, what it never does, which I-n it implements),
+  registry names unchanged, small typed files, story IDs in test names.
+- Do not start other agents.
+Report in at most 15 lines: the commit SHA, the files changed, the wt-check summary lines, anything you could not do,
+and any decision you took that the spec did not make.
+```
+
+### Unattended safety
+
+- No step waits on a person: no questions, no permission prompts (the run needs a permission mode that does not
+  prompt, chosen by the person before the start), no pushes.
+- The forbidden git commands and edits are denied by settings, not only by these rules.
+- Commits stay local on the run branch `feature/plan-09-recover` (cut from `feature/fullstack-poc` on 25 Nov 2026),
+  committed often. The person reviews `REPORT.md` and the gates, then pushes and merges.
+- Secrets: R10 on every merge; no `.env` in any worktree.
+- **If Docker Desktop fails** (the engine stops, hangs or will not restart after `restart.sh`): do not stop the run.
+  Run the same scripts through WSL instead, each through a `.sh` file:
+  `wsl -d <distro> -u root -- bash /mnt/c/<path>/scripts/dev/<script>.sh` (CLAUDE.md). Log the switch in
+  `RUN-LOG.md`. Never use Docker Desktop's "Reset to factory defaults".
+
+### If the lead stops
+
+Every fact the run needs is on disk: the ticked boxes, `inflight.txt`, `blocked.txt`, `RUN-LOG.md` and git.
+A new lead session:
+1. reads this section and `RUN-LOG.md`;
+2. runs `python scripts/dev/plan-next.py --status`;
+3. for each task in `inflight.txt`: merges a finished writer commit (step 3) or clears the line to restart the
+   task;
+4. continues the loop.
+
+### The morning report (`09-run/REPORT.md`)
+
+- Done since the last report: task ids and titles.
+- Gates: the counts quoted from the scripts.
+- In flight now.
+- Blocked: each with the reason and the decision needed from the person.
+- Decisions taken without the person.
+- Retries and reverted merges.
+- How many writers ran, and on which models.
+
+### How long it takes (measured on this plan's dependencies, `plan-next.py --simulate`)
+
+| Writers | Task time S / M | Whole plan, nonstop |
+|---|---|---|
+| 4 | 15 / 30 min (plan 8's pace) | about 80 h |
+| 4 | 25 / 50 min | about 113 h |
+| 6 or more | either | no faster than 4 |
+
+Plan 8 had 72 tasks and many independent tracks: 7.5 hours with up to six sessions. Plan 9 is a chain:
+- 133 of its 232 dependencies point to the task just before;
+- each pack's tasks change the same pack, case page and decider files in order.
+So more writers do not help past four. The run is three to five days of nonstop work, not one night. The first night
+(7 hours) covers about 22–27 tasks: phase 0 and most of phase 1. After 24 hours, about 60–75 tasks; after 48, about
+105–150.
+
+---
+
+## How to run this plan with Ralphy (the fallback; for the human, before the first iteration)
 
 These Ralphy facts were verified for plan 8 (`ralphy.sh`, michaelshimeles/ralphy v4.7.x, 23 Nov 2026) and still hold:
 - **Task lines** match `^- \[ \]` at column 0.
@@ -9754,7 +9945,7 @@ power units and microwave links removed from network sites; never home equipment
 value line of reuse routes is new spend avoided, and the tool-fleet queue planner (I-5) fills each demand once.
 
 #### P9-10.1 Telecom network pack data file
-**Stories:** enabler: the pack every TN story runs on (B §3.1–3.6, 01 §7). **Size:** M. **Depends on:** P9-9.22.
+**Stories:** enabler: the pack every TN story runs on (B §3.1–3.6, 01 §7). **Size:** M. **Depends on:** phase 8 gate (P9-8.23). Runs beside phases 9 and 11: the packs share only registration files.
 
 **Files:**
 - Create `backend/di/services/modeler/packs/telecom_network.json`.
@@ -10384,7 +10575,7 @@ fleet of pumps, monitors, beds, syringe drivers, transport ventilators and pulse
 to new owners is `medical_capital` (P9-12.9). Clinical-safety gates: every one carries the Legal note.
 
 #### P9-11.1 Medical rental pack data file
-**Stories:** enabler: the pack every MR story runs on (B §4.1–4.6, 01 §8). **Size:** M. **Depends on:** P9-10.19.
+**Stories:** enabler: the pack every MR story runs on (B §4.1–4.6, 01 §8). **Size:** M. **Depends on:** phase 8 gate (P9-8.23). Runs beside phases 9 and 10: the packs share only registration files.
 
 **Files:**
 - Create `backend/di/services/modeler/packs/medical_rental.json`.
@@ -12244,6 +12435,9 @@ Every researched Recover story (159) and the task and test that prove it. `scrip
 ## Phase gates (what "green" means)
 
 Every `Phase N gate` task runs all of these, and commits only `PROGRESS.md` and the review note.
+In the unattended run, phases 2, 8 and 13 run all of them (the full gate); the other phases run the fast gate
+described in "How to run this plan unattended", and the full gate at phase 8 and the final gate cover their
+changes again.
 
 - **Backend:**
   - `suite-shard.sh` 1–4 of 4 and `suite-shard.sh sim` all pass. The counts are at least the previous gate's plus the
