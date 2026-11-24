@@ -779,7 +779,7 @@ each story went.
 ## Task list (Ralphy reads only this list; one task per iteration, top to bottom)
 
 - [x] P9-0.1 Record plan 9 decisions and the licence list
-- [ ] P9-0.2 Plan 9 gate script with the plan-file check
+- [x] P9-0.2 Plan 9 gate script with the plan-file check
 - [ ] P9-0.3 Story matrix check script with its own test
 - [ ] P9-0.4 Catalogue hygiene and credentials rotation forbidden
 - [ ] P9-0.5 Model chain with rate-limit fallback

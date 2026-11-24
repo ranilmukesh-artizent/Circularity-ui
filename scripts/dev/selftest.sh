@@ -2,7 +2,8 @@
 # Checks that the dev scripts report failures through their exit status (the agent loop's gate relies on it).
 #   bash scripts/dev/selftest.sh
 # Also checks that the api test lock serializes takers and is released when its holder dies.
-# Also checks that gate-mvp.sh fails when one step fails (steps stubbed through GATE_LINT, GATE_API, GATE_WEB).
+# Also checks that gate-mvp.sh and gate-p9.sh (incl. its plan-file check) fail when one step fails (steps stubbed
+# through GATE_LINT, GATE_API, GATE_WEB).
 # Takes ~2 min. Plants a temporary type error under frontend/src and removes it again.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 dev="$REPO/scripts/dev"
@@ -23,7 +24,9 @@ expect() { # expect <0|nonzero> <label> <command...>
 # The api test lock lives in the api container (lib.sh api_lock). A holder takes it in the background and says so in
 # $mark; its sleep runs with fd 9 closed, so only the holder's own shell keeps the lock.
 mark=$(mktemp "${TMPDIR:-/tmp}/di-selftest.XXXXXX")
-trap 'rm -f "$mark"' EXIT
+plan_base=$(mktemp "${TMPDIR:-/tmp}/di-selftest-base.XXXXXX")
+plan_new=$(mktemp "${TMPDIR:-/tmp}/di-selftest-plan.XXXXXX")
+trap 'rm -f "$mark" "$plan_base" "$plan_new"' EXIT
 hold_lock() { # seconds
   : >"$mark"
   # shellcheck disable=SC2016  # expanded by the inner bash
@@ -51,7 +54,7 @@ expect 0 "api-test.sh, a passing test" bash "$dev/api-test.sh" tests/test_screen
 expect nonzero "api-test.sh, a missing test file" bash "$dev/api-test.sh" tests/test_no_such_file.py
 
 planted="$REPO/frontend/src/__selftest_type_error.ts"
-trap 'rm -f "$planted" "$mark"' EXIT
+trap 'rm -f "$planted" "$mark" "$plan_base" "$plan_new"' EXIT
 printf 'export const broken: number = "not a number";\n' >"$planted"
 expect nonzero "web-check.sh tsc, with a type error" bash "$dev/web-check.sh" tsc
 rm -f "$planted"
@@ -64,6 +67,22 @@ expect 0 "gate-mvp.sh, every step passing" \
   env GATE_LINT=true GATE_WEB=true GATE_API=true bash "$dev/gate-mvp.sh" tests/test_health.py
 expect 0 "gate-mvp.sh, the real api-test.sh on a passing test" \
   env GATE_LINT=true GATE_WEB=true bash "$dev/gate-mvp.sh" tests/test_health.py
+
+# gate-p9.sh (plan 9): the same three stubs, and the plan-file check with GATE_PLAN_BASE and GATE_PLAN.
+expect nonzero "gate-p9.sh, failing api step"   env GATE_LINT=true GATE_WEB=true GATE_API=false bash "$dev/gate-p9.sh" tests/test_health.py
+expect 0 "gate-p9.sh, every step passing"   env GATE_LINT=true GATE_WEB=true GATE_API=true bash "$dev/gate-p9.sh" tests/test_health.py
+printf -- '- [ ] P9-0.1 x
+text
+' >"$plan_base"
+printf -- '- [x] P9-0.1 x
+text
+' >"$plan_new"
+expect 0 "gate-p9.sh, plan file with only a ticked box"   env GATE_LINT=true GATE_WEB=true GATE_API=true GATE_PLAN_BASE="$plan_base" GATE_PLAN="$plan_new" bash "$dev/gate-p9.sh"
+printf -- '- [x] P9-0.1 x
+text changed
+' >"$plan_new"
+expect nonzero "gate-p9.sh, plan file changed beyond a ticked box"   env GATE_LINT=true GATE_WEB=true GATE_API=true GATE_PLAN_BASE="$plan_base" GATE_PLAN="$plan_new" bash "$dev/gate-p9.sh"
+expect 0 "gate-p9.sh, the real api-test.sh on a passing test"   env GATE_LINT=true GATE_WEB=true bash "$dev/gate-p9.sh" tests/test_health.py
 
 [ $fails -eq 0 ] && echo "selftest: all passed" || echo "selftest: $fails failed"
 [ $fails -eq 0 ]
