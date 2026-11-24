@@ -1,4 +1,4 @@
-# V. Verification of claims in reports A–G (24 Nov 2026)
+# V. Verification of claims (round 1: 24 Nov 2026, reports A–G; round 2: 25 Nov 2026, revision 2 and reports H, I)
 
 A fact-check of 21 claims from the reports in this folder: 15 web claims against primary sources (licence files,
 package registries, official docs, vendor releases, security advisories) and 6 code claims read from the repository
@@ -64,3 +64,88 @@ way.
 
 Not edited, because the reports were already right: D (elkjs dual licence, Langfuse not mentioned), F (Langfuse v4).
 Report C's open question on the Camunda 8.10 GA date is answered above (13 Oct 2026).
+
+---
+
+## Round 2 (25 Nov 2026): revision 2 and the new reports H, I
+
+Two checkers ran in parallel after revision 2 aligned every report with the Recover concept ([01](01-recover-segments.md)):
+- one read the code (nothing was run);
+- one checked web claims against primary sources (licence files, PyPI metadata, regulation texts, vendor releases),
+  with no company, product or people names of ours in searches.
+
+The lead then re-read the key code evidence (`intake.py:233–239`, `discover.py:31`, `forbidden.py`) and the edits.
+**Licence and regulatory findings need review by Kinective's Legal team before anyone relies on them.**
+
+### Summary
+
+| Checked | Confirmed | Corrected | Unconfirmed |
+|---|---|---|---|
+| 23 web claims | 22 (3 with a detail added or a wording fix: alibi-detect date, "sell, lease, or rent", NIST Rev. 2 scope) | 1 (Timefold) | 3 details: the Timefold 1.25.0 note (search snippet only), PTC's "Spring 2026 agentic" item, the full Gartner Leader list |
+| 11 code claims | 6 | 5 | 0 |
+| 36 spot-checked file:line citations | 33 | 3 | 0 |
+
+No claim was false or invented.
+
+### Web claims (licences, regulation, competitors)
+
+Confirmed against the source named:
+
+| Area | Claim | Source |
+|---|---|---|
+| Licences | scikit-survival GPL-3.0-or-later, lifelines MIT | PyPI metadata |
+| Licences | statsforecast, OR-Tools, scim2-models, scim2-tester, Evidently: Apache-2.0 | PyPI metadata |
+| Licences | Authlib and jsonpatch BSD-3; factur-x BSD | PyPI metadata |
+| Licences | highspy, deepdiff, pydifact, pdfplumber, RapidFuzz, invoice2data 1.0.1 (1 Aug 2026): MIT | PyPI metadata |
+| Licences | PuLP is MIT: its LICENSE file is MIT text; old PyPI classifiers said BSD | LICENSE file |
+| Licences | pm4py AGPL-3.0-or-later; PyMuPDF AGPL or commercial; python-mip EPL-2.0 | PyPI metadata |
+| Licences | Zitadel AGPL-3.0 since v3 | vendor's blog |
+| Licences | alibi-detect on BSL 1.1 since 22 Jan 2024; earlier releases stay Apache-2.0 (date added to E) | vendor's licensing FAQ |
+| Regulation | Reg. (EU) 2026/1738 is the new End-of-Life Vehicles Regulation (OJ 24 Jul 2026) | EUR-Lex |
+| Regulation | US federal law bars rental fleets of 35+ vehicles from renting, leasing or selling vehicles with open recalls; there is no federal bar on dealers retailing used cars with open recalls | 49 U.S.C. 30102(a)(11), 30120(i) |
+| Regulation | NIST SP 800-88 Rev. 2 is final (26 Sep 2025) and supersedes Rev. 1 | NIST |
+| Regulation | EU battery passport from 18 Feb 2027, a date the Commission calls indicative | European Commission |
+| Competitors | ACV MAX Recommendations, 19 Mar 2026 | release |
+| Competitors | TRIMEDX-AIQ agentic capabilities, 21 May 2026 | release |
+| Competitors | Gartner's first Magic Quadrant for Decision Intelligence Platforms, 26 Jan 2026 | secondary sources; the Gartner page was not reachable |
+| Competitors | Aera's prompt-built decision automations, announced 27–28 Oct 2026 | release |
+| Competitors | Loop freight-audit agents, 4 May 2026 | release |
+| Competitors | Basware AP agents, 24 Feb 2026; its Supplier Agent is planned, not live | release |
+| Competitors | PTC service-lifecycle AI, Sep–Oct 2025 | release |
+| Competitors | IFS Loops Agent Studio, 23 Apr 2026 | release |
+| Names | No customer or prospect names in any report: every company named is a competitor, OSS project, regulator or academic author | local scan |
+
+Corrected:
+- **H:** the Timefold Python solver is not "reportedly discontinued". Solver 1.25.0 (12 Aug 2025) dropped Python, and
+  the Python repository was archived on 6 Nov 2026.
+- **B:**
+  - The statute says "sell, lease, or rent", not "loan".
+  - NIST Rev. 2 removed the media-specific appendices, including routers and switches, and points to IEEE 2883.
+    B's open question on network devices is resolved.
+
+### Code claims
+
+Confirmed:
+- `plan_queue` is a heuristic in `services/modeler/valuers/tool_fleet.py:684`, not in `services/engine/`. It fills
+  each order once, and the golden files pin it.
+- Steps the Modeler assistant adds are never compiled: `compile.py:34–48` reads only rule and path nodes.
+- Four of the ten seeded agents list tools that answer 501 (`0023_agent_identity.py:49–53`).
+- Group-to-role mapping, flow versions and flow maker-checker exist.
+- Device recommerce has no wipe, diagnostics or device-registry mock. Used cars, telecom and medical rental have no
+  pack code.
+- Detention terms are declared but unused, and the TMS adapter reads rate terms 1–3 only.
+- Discovery samples 200 records today (`discover.py:31`).
+- `credentials.rotate` is not in `FORBIDDEN_ACTIONS`.
+- 33 of 36 spot-checked file:line citations in G §7 and A's "today in repo" columns were right.
+
+Corrected:
+- **G:** live tool-fleet cases are planned in a queue of one (`intake.py:233–239`, `queue=[v]`). The planner is not
+  skipped. Named orders can come in through the intake facts (`dem`, `intake.py:172–174`), but no source fills them.
+  The README was corrected to match.
+- **G:** `BASEP` is at `tool_fleet.py:166`, not 167. The resale-price model card's validation line is measured, not
+  fixed.
+- **I:** every other actual is a ±25% hash, except the pinned lines `LEARN_PIN` and `LINE_EXACT`.
+- **A:** the depot-repair adapter has authority over grade and test result, not teardown findings. The `dem` keys
+  are lease, so, bid, proj, wo and rcq; there is no `pool` key.
+- **F:** only five `org.` actions are forbidden, not `org.*`. The forbidden list also names `outcome.confirm`,
+  `adapter.acknowledge` and the `mcp.` prefix.

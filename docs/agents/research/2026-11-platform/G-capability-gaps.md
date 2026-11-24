@@ -1,5 +1,7 @@
 # G. Capability gaps: what the repo does against what the team wants next
 
+> Plan task IDs (P9-x.y) in this report follow [plan 9 revision 2](../../plans/09-agentic-platform.md) (remapped 25 Nov 2026; its last table maps old to new).
+
 Report G of the platform research (brief: [00-brief.md](00-brief.md)). Read from the code at `0c71585`
 (`feature/fullstack-poc`, 24 Nov 2026). Nothing was run: no tests, no Docker, no git. Every claim cites the file and
 line it comes from; links are relative to this folder (`../../../../` is the repo root). Anything I could not confirm
@@ -8,7 +10,30 @@ from the code is marked **unconfirmed**.
 Sizes: **S** ≤ 2 days, **M** ≤ 1 week, **L** > 1 week (one engineer who knows the repo, tests included).
 
 Compliance note: the data-erasure and certification items below touch regulatory obligations (data sanitisation,
-certified recycling). Kinective's Legal team should review those items before anyone relies on them.
+certified recycling). §7 adds more (safety recalls, export control, vehicle title and liens, medical
+decontamination and service certification, compliance guardrails that customers cannot weaken). Kinective's Legal
+team should review those items before anyone relies on them.
+
+## What changed in this revision and why (24 Nov 2026, second pass)
+
+The team's Recover prototype (summarised in [01-recover-segments.md](01-recover-segments.md), cited "01 §n") is now
+the target. The first pass measured the code against the 13 asks of the brief; this pass also measures it against 01.
+The code read is the same as the first pass (the only later commit, `5b1fcfd`, is documentation; git was not run, so
+this is **unconfirmed** but every new citation below was read from the working tree).
+
+- **Added §7, "Against the Recover prototype (01)":** one table per area (Compose, customer layer, access from the
+  identity provider, adapter registry, agents, models catalogue, tool-fleet flows, packs, and a short Resolve/Reconcile
+  inventory), each row with what 01 requires, what the code has (exists / partial / missing) with file:line, the gap,
+  a size and a plan-9 placement (task ids from [plans/09-agentic-platform.md](../../plans/09-agentic-platform.md)).
+  Reason: 01 turns the pack into the unit of everything (flow, guardrails, agents, systems, screens, KPIs), which the
+  13 asks did not spell out.
+- **Updated §1 (summary)** with one paragraph on 01. Reason: the headline changes: the biggest gap is no longer one
+  feature but the missing *pack contract* that every Compose step and every run-time screen hangs off.
+- **Updated §5 (prioritised gap list):** re-ranked, with 11 new rows from §7 and a "Source" column (ask number or
+  01 section). The pack format moved to the top because Compose, the customer layer, pack-driven run-time views and the three
+  new packs all depend on it. Back-testing stays near the top: 01's publish step needs the same replay.
+- **Updated §6 (quick wins):** eight new items (9–16) found in §7.
+- **Deleted:** nothing. The first-pass findings were verified ([V-verification.md](V-verification.md)) and still hold.
 
 ---
 
@@ -20,6 +45,17 @@ fraud triage, finance stops at a cost posting) and on everything **generative**:
 deterministic parser that uses a language model only to settle what its keywords could not read. No agent creates or
 edits a workflow, source, mapping or flow today; the action catalogue would allow most of it, but only 17 actions
 are reachable from an agent path.
+
+Against the Recover prototype (01, §7 below) the gap is mostly **structural**. 01 makes the *pack* the unit of
+everything: seven stages with an agent each, typed guardrails placed at stages, the systems and canonical entities a
+pack needs, its KPIs and exception types, its replay data, and the run-time screens generated from it. Today a
+template is three fixed Python builders with paths, untyped guardrail texts and scope dimensions; the flow has one
+guardrail gate and no stages; pages are fixed React screens shaped by the industrial demo. Much of the machinery 01
+needs is already there in some form (maker-checker, version history, shadow decisions, pilot mode, per-agent
+autonomy, a queue planner, a simulated directory with group-to-role mapping, encrypted credentials, discovery), so
+the work is mostly re-shaping and wiring, plus three things that are genuinely new: the configuration agent, generated
+screens, and the Service desk and Contract refresh flows. Two of 01's five packs exist (tool fleet, device); used
+cars, telecom network equipment and medical rental have nothing, and about half of the systems they need have no mock.
 
 | # | Ask | State | Size of the gap |
 |---|---|---|---|
@@ -440,24 +476,38 @@ Two pages over largely the same data:
 
 ## 5. Prioritised gap list (pilot-critical first)
 
-| Rank | Gap | Why it is pilot-critical | Size |
-|---|---|---|---|
-| 1 | **Back-testing harness**: historical import with actual route and value, as-of valuation, counterfactual uplift report | The sales motion (ask 4); nothing like it exists | L |
-| 2 | **Tool-fleet template on real inputs**: contract entitlement gate, explainable RUL/wear from `run_hours` + duty + PLM life, customer tool classes as data | Pilot template (a); today RUL is a typed number and classes are the prototype's | M–L |
-| 3 | **Evidence gates per asset type** (erasure certificate for IT, RUL + grade certificate for tools/motors) as pack data | Ask 3; compliance exposure (Legal review) | M |
-| 4 | **Carbon for every pack** with factor provenance | Ask 6; tool-fleet and device cards show 0 | S |
-| 5 | **LLM model/provider chain** | Ask 9; one 429 drops every AI feature to rules | S |
-| 6 | **MCP tools generated from the catalogue** + read actions for workflows, sources, mappings, agents + `mapping.save` | Ask 7; 17 of 79 allowed actions are reachable | M |
-| 7 | **Workflow JSON Schema, validated import, auto-layout** | Ask 10; prerequisite for agent-generated workflows | S–M |
-| 8 | **Device template pricing**: wipe gate, a trained price model behind `Predictor` | Pilot template (b) | M (L with ML) |
-| 9 | **Confidence and value routing**, exceptions-only queue, autopilot on every new case | Ask 2 | M |
-| 10 | **One "My work" home** | Ask 11; demo walk-through clarity | M |
-| 11 | **Process-template drafting** ("create a template for my AMS process") as an org-pack proposal | Ask 1, the pitch | L |
-| 12 | **Adapter from OpenAPI** (connection row + source-sim spec + suggested mapping), held for a person | Ask 8 | M |
-| 13 | **LLM playbook** in the agent runtime behind the port | Ask 7's "by natural language" beyond Ask | M |
-| 14 | **Fraud triage** (rules) | Stage A; only if the pilot covers intake | M |
-| 15 | **Financial reconciliation** (credit memo, resale invoice, variance queue) | Stage D; only if the pilot covers finance | L |
-| 16 | Per-agent credentials, OAuth for outside MCP clients, B18 security review | Before anyone outside the team connects an agent | M |
+Re-ranked in the second pass to include 01 (§7). "Source" is the brief's ask number or the 01 section; the §7 row ids
+(C1, L2 …) point at the evidence.
+
+| Rank | Gap | Why it is pilot-critical | Source | Size |
+|---|---|---|---|---|
+| 1 | **Pack format v1 carrying 01's pack contract**: stages (the seven), typed guardrails placed at stages, routes, systems with adapter status, canonical entities, KPIs, exception types with owners, sample prompts, replay dataset, a version (§7.8 P0, §7.2 L1) | Compose, the customer layer, pack-driven run-time views and the three new packs all hang off it; today a template is a code builder with no stages, types or version | 01 §9; ask 1 | L |
+| 2 | **Back-testing and replay**: historical import with actual route and value, as-of valuation, counterfactual uplift; the same engine reports 01's route mix, straight-through %, approvals and exceptions per day (§2.7, §7.1 C10) | The sales motion and Compose's publish step | ask 4; 01 §2 step 5 | L |
+| 3 | **Stage agents**: one named agent per stage bound in the flow, autonomy Recommend only / Act within limits / Act alone, a confidence threshold that sends the item to a person, and a live queue planner (§7.5, §7.1 C7) | "Humans approve, agents plan"; today one playbook, no stage binding, no threshold, the queue plan sees each live case alone (a queue of one) | ask 2; 01 §3 | L (M for threshold + queue planner) |
+| 4 | **Tool-fleet template on real inputs**: contract entitlement gate, explainable RUL/wear, customer tool classes as data, named demand from live sources, 01's guardrails (recall, telematics freshness, repair limit, early write-off) (§3 ask 5a, §7.8 P1) | Pilot template (a) | ask 5a; 01 §4.1 | M–L |
+| 5 | **Customer layer**: pack updates never overwrite customer changes (overlay on a pinned pack version), compliance guardrails tighten-only, diversions that run at a stage for a condition and are blocked when they skip a compliance guardrail (§7.2) | 01's governance story; today steps added by the assistant are drawn but never executed | 01 §2 extensions; ask 3 | M–L |
+| 6 | **Evidence gates per asset type** (erasure certificate for IT, RUL + grade certificate for tools/motors, blacklist/lock for devices) as typed pack guardrails | Compliance exposure (Legal review); merges with rank 5's typed guardrails | ask 3; 01 §4–5 | M |
+| 7 | **Compose configuration agent**: description → matching pack → one clarifying question → draft flow, adapter list and KPIs, with its reading log (§7.1 C1–C3) | The pitch, Studio first | ask 1; 01 §2 step 1 | L |
+| 8 | **Adapter-mapping step**: per-field confidence with a reason, the five person choices (accept, other field, conversion, not needed, ask the owner), system-owner approval, test-then-production, discovery on 500 records (§7.1 C4–C5, §7.4) | Compose step 2; today confidence is a constant and "ask the owner" / "not needed" do not exist | ask 8; 01 §2 step 2 | M |
+| 9 | **Canary publish**: one region at a share of volume, compared with the rest (§7.1 C9) | Compose step 5; today shadow (all cases, no effect) and pilot (all instructions held) only | 01 §2 step 5 | M |
+| 10 | **Sign-in from the identity provider**: OIDC, group claims to roles, sync, a role × permission matrix and "test a user" (§7.3) | Any customer pilot; today any password signs in and the directory is seeded state | 01 §2 access; ask 13 | M |
+| 11 | **Decide and Understand driven by pack data** (cases, exceptions with types and owners, KPIs, suggestion rules, analytics questions, agents) with no screen code per pack (§7.1 C11). A capability, not the prototype's layout (01 is a concept share) | 01's "one engine for every industry pack"; today pages are fixed and industrial-shaped | 01 §2, §9 | L |
+| 12 | **Carbon for every pack** with factor provenance | Tool-fleet and device cards show 0 | ask 6 | S |
+| 13 | **LLM model/provider chain** | One 429 drops every AI feature to rules | ask 9 | S |
+| 14 | **Model catalogue with quality, drift, last-trained and cadence** for six models; the models themselves (§7.6) | 01's Models page; today seven reference cards with fixed figures, plus calibration candidates | 01 §3 | S–M registry; L models |
+| 15 | **Device template pricing**: wipe gate, a trained price model behind `Predictor`, ageing suggestion rules (§7.7 T4) | Pilot template (b) | ask 5b; 01 §5 | M (L with ML) |
+| 16 | **Exceptions routed by role per pack** with cause, recommended action and owner; inside one "My work" home (§2.11, §7.7 T5) | Asks 2 and 11; 01's Decide · Exceptions | ask 11; 01 §2 | M |
+| 17 | **MCP tools generated from the catalogue** + read actions for workflows, sources, mappings, agents + `mapping.save` | 17 of 79 allowed actions are reachable | ask 7 | M |
+| 18 | **Workflow JSON Schema, validated import, auto-layout** | Prerequisite for agent-generated workflows | ask 10 | S–M |
+| 19 | **Service desk** flow: ticket → estimate from similar past repairs, cover check, per-market labour and credit rules, fix / covered swap / upgrade, batches, credit lever (§7.7 T1) | Tool-fleet extra in 01; nothing exists | 01 §4.2 | L (M rules-only) |
+| 20 | **Contract refresh** flow: proposal 90 days ahead, keep / like-life swap / upgrade, fee and renewal likelihood, sales approval, email + contract lines + reservation (§7.7 T2) | Tool-fleet extra in 01; nothing exists | 01 §4.3 | L |
+| 21 | **Analytics by prompt**, saved shared views, alerts on a measure (§7.7 T6) | 01's Understand · Analytics; `analytics.query` answers 501 | 01 §2 | M–L |
+| 22 | **Adapter from OpenAPI** (connection row + source-sim spec + suggested mapping), held for a person | Adapters in hours | ask 8; 01 §2 extensions | M |
+| 23 | **LLM playbook** in the agent runtime behind the port | Agentic CRUD beyond Ask | ask 7 | M |
+| 24 | **Three new packs**: used cars, telecom network equipment, medical rental, with their missing mocks (§7.8) | 01's segments 3–5; after rank 1 | 01 §6–8 | L each |
+| 25 | **Fraud triage** (rules) | Stage A; only if the pilot covers intake | stage A | M |
+| 26 | **Financial reconciliation** (credit memo, resale invoice, variance queue); the base for Reconcile (§7.9) | Stage D; only if the pilot covers finance | stage D; 01 §1 | L |
+| 27 | Per-agent credentials, OAuth for outside MCP clients, B18 security review | Before anyone outside the team connects an agent | ask 13 | M |
 
 ## 6. Quick wins (S, each a day or less unless noted)
 
@@ -475,6 +525,187 @@ Two pages over largely the same data:
 7. **Autopilot trigger**: start `case_autopilot` on `case.opened` for agents with autonomy `act` (behind a setting).
 8. **`mapping.save`** split out of `source.update`, agent-allowed with hold-for-a-person.
 
+Added in the second pass (from §7):
+
+9. **Guardrail type** (`Compliance | Data quality | Threshold | Approval`) and a `stage` on the 17 existing guardrails
+   (`Guardrail`, [templates.py:52](../../../../backend/di/services/modeler/templates.py#L52);
+   [industrial.json:14–20](../../../../backend/di/services/modeler/packs/industrial.json)). Data only, no decision
+   changes; the first step of pack format v1.
+10. **Pin a sent-back change to a step:** an optional `node_id` on `flow.reject` (today `{flow_id, reason}`,
+    [modeler.py:13](../../../../backend/di/services/actions/modeler.py#L13)), shown on that node in the canvas.
+11. **Access: role × permission matrix and "Test a user"** as one read action over the policy and the directory
+    (`policy.idp_role_of`, [policy.py:280](../../../../backend/di/core/policy.py#L280)); the Access page has only the
+    per-account "What the role does" column ([AccessPage.tsx:58](../../../../frontend/src/pages/access/AccessPage.tsx#L58)).
+12. **Enforce read-only sources:** refuse an outbound instruction to a source whose access is "Read" (today `rw` is a
+    label, [fabric_sources.py:381](../../../../backend/di/services/actions/fabric_sources.py#L381)).
+13. **Discovery sample 200 → 500 records** ([discover.py:31](../../../../backend/di/connectors/discover.py#L31)), as 01
+    states; check the discovery tests for counts first.
+14. **Fit-for-use threshold as a Quality-owned setting** changed through maker-checker (today `rulMin` 50 in
+    `BASEP`, [tool_fleet.py:167](../../../../backend/di/services/modeler/valuers/tool_fleet.py#L167), protected only by
+    guardrail GR-03's text pattern). Changing the default changes tool-fleet numbers: decision-log entry first.
+15. **Seeded agents' tool lists:** four of the ten seeded agents list tools that answer 501 (§7.5); drop those tools or
+    implement the reads, together with quick win 3.
+16. **What-if over the tool-fleet queue:** pass `BASEP` overrides (market, labour, lease, slots) through
+    `flow.simulate` so a person can "move the market, see decisions change" (§7.7 T3). **S–M**.
+
+---
+
+## 7. Against the Recover prototype (01)
+
+What 01 requires, what the code has, the gap, the size and where it fits in the draft
+[plan 9](../../plans/09-agentic-platform.md) (task ids `P9-x.y`; "new" means plan 9 has no task for it yet). State:
+**exists**, **partial** or **missing**. Every citation was read for this pass.
+
+### 7.1 Compose (01 §2, the five steps)
+
+| Id | 01 requires | Today | Gap | Size | Plan 9 |
+|---|---|---|---|---|---|
+| C1 | A *configuration agent* reads a description (with a reading log), matches an industry pack and lists asset fields, stages, routes, guardrails (stated + pack), systems (with adapter or needing one) and KPIs. "Writes configuration, never code." | **Missing.** Two keyword parsers: `workflow.plan` drafts **one ingest/outbound workflow** for systems already connected ([workflow_builder.py:7](../../../../backend/di/services/actions/workflow_builder.py#L7), §2.1); `flow.propose` turns a sentence into **one rule or one step** ([propose.py:1–10](../../../../backend/di/services/modeler/propose.py#L1), §2.2). Nothing picks a pack from words; the packs are three fixed keys ([templates.py:20](../../../../backend/di/services/modeler/templates.py#L20)). | A pack-matching agent that emits a draft *composition* (pack id + overrides: stages, routes, guardrails, systems, KPIs) as data, checked deterministically, with its reading log. Needs the pack format (§7.8 P0) first. | L | P9-2.6 (pack drafting), after P9-1.1 |
+| C2 | Exactly **one** clarifying question. | **Partial.** `workflow.plan` asks slot questions (type, system, delivery, trigger …), as many as it needs ([workflow_builder.py:28](../../../../backend/di/services/actions/workflow_builder.py#L28)). | Pick the one most ambiguous slot for the pack; the rest take the pack's defaults. | S (inside C1) | P9-2.6 |
+| C3 | Drafts the flow in the modeler. | **Partial.** A flow is a fork of the template's default graph (`flow.fork`, [modeler.py:238](../../../../backend/di/services/actions/modeler.py#L238)); the assistant edits it one rule at a time. The graph has no stages: one locked `guard` node and fixed node types ([flow.py:16–17](../../../../backend/di/services/modeler/flow.py#L16)). | Generate the seven-stage graph with stage agents and guardrails placed at stages. | M | P9-2.6 + P9-5.8 |
+| C4 | Adapter mapping: each field proposed from the connected systems **with a confidence score**; a low-confidence field carries a **reason**. | **Partial.** `mapping.catalogSuggest` offers a catalogue template's rows with one sample value and a **constant** confidence (96 % for a copy rule, else 91 %; [fabric_sources.py:596, 642](../../../../backend/di/services/actions/fabric_sources.py#L642)); no reason text; `mapping.suggest` (the demo's free suggestion) answers 501 (§2.8). | Confidence from evidence (name, type, sample values, documentation), a reason for anything below a bar, mapped to the pack's canonical entities. LLM-assisted, checked by `mapping.preview` ([fabric_sources.py:919](../../../../backend/di/services/actions/fabric_sources.py#L919)). | M | P9-5.1 |
+| C5 | Five person choices per field: accept, choose another field, accept with a conversion, mark not needed, **ask the system owner**. | **Partial.** Accept (the "Accepted from the agent's suggestion" note, [fabric_sources.py:72](../../../../backend/di/services/actions/fabric_sources.py#L72)), choose another field and conversions (mapping rules) exist through the Data Mapping tab via `source.update`. "Not needed" and "ask the owner" do not. | A per-field decision record; "ask the owner" opens a task for the source's owner and holds the composition. | S–M | P9-0.6 (`mapping.save`) + P9-5.1 |
+| C6 | A **test run** puts past items through the draft flow and shows **where cases stopped**. | **Partial.** `workflow.testRun` runs one ingest workflow on sample records ([workflow_drafts.py:167](../../../../backend/di/services/actions/workflow_drafts.py#L167)); `flow.simulate` compares the draft's route choice with the published one on the open or sample queue ([modeler.py:431](../../../../backend/di/services/actions/modeler.py#L431)). Neither reports the stage each case reached or what stopped it (missing field, guardrail, threshold). | A stage-by-stage trace per past item over the draft composition, grouped by stop reason. Reuses the back-test import. | M | P9-4.1/3.2 + new |
+| C7 | Agent mapping: an agent per stage, autonomy per agent **Recommend only / Act within limits / Act alone**; a **confidence threshold** (65–85 %, default 75 %) below which any agent sends the item to a person; guardrails enforced whatever the autonomy. | **Partial.** Per agent: autonomy `read | propose | act` ([0023_agent_identity.py:34–35](../../../../backend/migrations/versions/0023_agent_identity.py#L34)); per role and action type: `off | suggest | prepare | act`, plus run limits of 50 actions and 100 items ([limits.py:34–35](../../../../backend/di/services/agents/limits.py#L34)). Guardrails and the forbidden list hold whatever the autonomy (§2.8). No stage binding; no confidence threshold (a route's `prob` drives nothing, §3 ask 2). | Map Recommend only → `propose`, Act within limits → `act` + value/count limits + approval limits ([policy.py:152](../../../../backend/di/core/policy.py#L152)), Act alone → `act`; a `stage → agent` binding in the flow; a per-flow threshold checked in the pipeline's hold step. | M | P9-2.4 (hold policy) + new |
+| C8 | Approve or modify: the approver sees steps 1–3 together and can send it back **with a change pinned to the step**; maker-checker. | **Mostly exists for the flow.** Maker-checker: whoever saved or submitted cannot approve or publish ([modeler.py:156, 175](../../../../backend/di/services/actions/modeler.py#L156)); reject with a reason ([modeler.py:299](../../../../backend/di/services/actions/modeler.py#L299)). Sources, mappings and agents are approved separately or not at all. | Pin the reason to a node (quick win 10, **S**); one *composition* object approved as a whole (**M**). | S / M | new (phase 4) |
+| C9 | Publish v1.0 to **one region at 20 % of volume**. | **Partial.** A flow is per template **and org unit** ([models/modeler.py:22–38](../../../../backend/di/models/modeler.py#L22), unique on both), so "one region" can be a `segment` or `site` unit (kinds: group, segment, company, site, customer; [orgs.py:27](../../../../backend/di/services/actions/orgs.py#L27); no "region" kind). **Shadow** records, for **every** case of the unit, what the approved flow would have chosen beside the live decision, with no effect ([decisions.py:207–217](../../../../backend/di/services/actions/decisions.py#L207)). **Pilot mode** keeps deciding but holds **every** instruction of the unit's subtree ([org_pilot.py:1–15](../../../../backend/di/services/actions/org_pilot.py#L1)). Neither splits volume. | A canary state: a deterministic share of the unit's cases (hash of case id) decided by the new version for real, the rest by the old, with the comparison kept per case (the `shadow_decision` shape fits). | M | new (phase 4, beside P9-2.4) |
+| C10 | A **replay** compares the route mix (actual against flow) and reports straight-through %, approvals and exceptions per day, modelled uplift. | **Partial.** Shadow stats give count, agree/disagree and the summed net difference ([flows.py:80–91](../../../../backend/di/repositories/flows.py#L80)); simulation gives route changes. No route-mix table, no straight-through %, no per-day approval or exception load, and no "actual" (§2.7). | Same engine as back-testing, plus the four 01 measures. | M on top of P9-3 | P9-4.2/3.3 |
+| C11 | **Publishing makes the run-time views pack-driven**: Decide (cases, exceptions, suggestions) and Understand (analytics, agents) take their KPIs, exception types and questions from the pack. A capability, not the prototype's layout. | **Missing.** Pages are fixed React areas loaded by id ([registry.tsx:12](../../../../frontend/src/pages/registry.tsx#L12)); Home, Command Center and Analytics compute the industrial demo's KPIs and exceptions (§2.11). Tool-fleet and device cases use the generic case page. | Pack-driven screen configuration (KPIs + trend, exception types with owners, two analytics questions, the agents of the flow) rendered by one set of generic pages. | L | new (phase 4), with P9-5.8 |
+| C12 | Version history: each version with its audit log. | **Exists for the flow.** `decision_flow_version` ([models/modeler.py:41–50](../../../../backend/di/models/modeler.py#L41)); the History panel lists versions, the flow's log and rollback ([HistoryPanel.tsx:13–27](../../../../frontend/src/pages/modeler/HistoryPanel.tsx#L13)). | Version the whole composition (flow + mappings + agent settings + screens), not the flow alone. | S–M | with C8 |
+
+### 7.2 Customer layer (01 §2 extensions; every pack §4–8 "diversions")
+
+| Id | 01 requires | Today | Gap | Size | Plan 9 |
+|---|---|---|---|---|---|
+| L1 | **Pack updates never overwrite the customer's changes.** | **Partial, by accident.** An org's flow is its own copy (fork), so a later default graph does not replace it. But paths, guardrails, dimensions and valuers are code (`BUILDERS`, [templates.py:215](../../../../backend/di/services/modeler/templates.py#L215)); a `Template` has no version ([templates.py:98–106](../../../../backend/di/services/modeler/templates.py#L98)); a change ships to every org at once, and an imported org pack lands as drafts ([org_pack.py:22–25](../../../../backend/di/services/actions/org_pack.py#L22)), not as a layer. | Pack versions; the customer layer stored as an overlay (diff) on a pinned pack version; an upgrade rebases the overlay and shows conflicts to a person. | M–L | P9-1.1 (add to its scope) |
+| L2 | Guardrails typed *Compliance / Data quality / Threshold / Approval*; a guardrail can be **tightened** or given an **extra approver**; pack-locked compliance guardrails **cannot be weakened, suspended or removed**. | **Partial.** Guardrails are locked texts with an owner ([templates.py:52–58](../../../../backend/di/services/modeler/templates.py#L52)): a rule that breaks one is blocked and dropped at compile ([guard.py:20](../../../../backend/di/services/modeler/guard.py#L20), [compile.py:36–41](../../../../backend/di/services/modeler/compile.py#L36)); a plain-language text that would weaken one is blocked by regex ([guard.py:34](../../../../backend/di/services/modeler/guard.py#L34)). No type, no parameter (the fit-for-use 50 % is a valuer constant, [tool_fleet.py:166](../../../../backend/di/services/modeler/valuers/tool_fleet.py#L166)), no "tighten" or "add approver" operation. | Typed guardrails with a structured parameter and a direction (raise-only / lower-only), an extra-approver list, and refusals for weaken/suspend/remove of a compliance one. | M | P9-1.2 |
+| L3 | **Diversions**: add a step or a shortcut at a stage **for a condition**; a diversion that skips a compliance guardrail is **blocked** (e.g. "new tool under 3 months: skip the recall check"). | **Partial, and not executed.** The assistant adds a `step` node after a path ("add … step before/for/after …", [propose.py:28, 74–90](../../../../backend/di/services/modeler/propose.py#L74)), with no condition; **nothing runs it**: compile reads only `rule` nodes ([compile.py:36–41](../../../../backend/di/services/modeler/compile.py#L36)) and no other code reads `step` nodes. No shortcuts. Blocking works only by text pattern: the device wipe guardrail blocks "skip … wipe" ([templates.py:125](../../../../backend/di/services/modeler/templates.py#L125)), but there is no recall, blacklist, title, configuration-wipe or decontamination guardrail to protect. | A diversion node (condition from scope dimensions + an inserted step or a jump to a later stage); a graph check that refuses a diversion whose path bypasses a compliance gate (the `reach` check compile already uses); execution in the case process. | M–L | P9-5.8 (case process layer) |
+| L4 | **Guardrails in plain words**: the assistant places a typed control on the right stage; screens, inbox, audit trail and KPIs update with it. | **Missing.** Plain words become a business rule only (`exclude / require / prefer`, §2.2); guardrails cannot be authored; there are no stages to place them on. | A guardrail reading into the typed form of L2, placed at a stage, with "% held by guardrails" (a KPI in every 01 pack) counted per guardrail. | M | P9-1.2 + P9-2.6 |
+
+### 7.3 Access from the identity provider (01 §2 "Access")
+
+| Id | 01 requires | Today | Gap | Size | Plan 9 |
+|---|---|---|---|---|---|
+| A1 | Directory groups map to roles. | **Exists as a simulation.** Group-to-account table `IDP_GROUPS` ([policy.py:252–263](../../../../backend/di/core/policy.py#L252)), `access.mapIdentity` ([policy.py:288](../../../../backend/di/core/policy.py#L288)), role source "Directory groups" or "App Roles" ([AccessPage.tsx:145–153](../../../../frontend/src/pages/access/AccessPage.tsx#L145)). The directory is seeded state, not read from a provider. | Read groups from a real provider. | in A2 | — |
+| A2 | Members get access on the next sync. | **Simulated.** `access.syncDirectory` only stamps `lastSync` and journals ([access.py:320–325](../../../../backend/di/services/actions/access.py#L320)). Sign-in accepts any non-empty password for a known ID ([services/auth.py:11–21](../../../../backend/di/services/auth.py#L11)); OIDC is named as the later replacement ([core/auth.py:3–5](../../../../backend/di/core/auth.py#L3)). | OIDC sign-in (Keycloak as the local stand-in), group or app-role claims → roles at sign-in, optional SCIM provisioning. | M | P9-8.2 (extend), but pilot-critical |
+| A3 | A "what each role can do" matrix. | **Partial.** One row per account with "What the role does" ([AccessPage.tsx:58](../../../../frontend/src/pages/access/AccessPage.tsx#L58)); permissions live in `policy.json`. | A role × permission (and page) matrix. | S | quick win 11 |
+| A4 | "Test a user". | **Missing.** | A read action: pick a directory user, show their roles, tenants, pages and permissions. | S | quick win 11 |
+
+### 7.4 Adapter registry (01 §2 extensions)
+
+| Id | 01 requires | Today | Gap | Size | Plan 9 |
+|---|---|---|---|---|---|
+| R1 | Catalogue connectors maintained by us. | **Exists.** 21 hand-written adapters, catalogue templates for 15 systems (§2.10), 15 catalogue mocks in source-sim ([generic/specs/](../../../../source-sim/sim/generic/specs)). | — | — | — |
+| R2 | A generic REST adapter. | **Exists, read only.** `ConfiguredAdapter`, GET only (§2.10). | Generic writes. | L | P9-5.1 (later) |
+| R3 | A connector built once from an API specification. | **Missing** (§2.10). | OpenAPI → connection row + source-sim spec + mapping draft. | M | P9-5.1 |
+| R4 | Sign-in by OAuth 2.0, service account or API key. | **Exists.** none / api_key / bearer / basic / oauth_cc (§2.10). | — | — | — |
+| R5 | Test environment first, then production. | **Partial.** `env` is a free label, default "Production" ([fabric_sources.py:68, 135](../../../../backend/di/services/actions/fabric_sources.py#L135)); catalogue systems have a sandbox key ([fabric_sources.py:647](../../../../backend/di/services/actions/fabric_sources.py#L647)); `source.test` probes one connection ([fabric_sources.py:870](../../../../backend/di/services/actions/fabric_sources.py#L870)). | Two connections per source (test, production) with separate credentials and a promote step. | S–M | new (with P9-5.1) |
+| R6 | Read-only, or read plus writing decisions back. | **Partial.** `rw` is a label ("Read", "Read / write", [fabric_sources.py:381, 554](../../../../backend/di/services/actions/fabric_sources.py#L381)); writes are hand-written per system (§2.10). | Enforce it (quick win 12). | S | Phase 0 |
+| R7 | Credentials go to the vault and are never shown again. | **Exists in-house.** Fernet at rest, the plain value only to the connector, never journaled or sent to the browser ([secrets.py:1–13](../../../../backend/di/connectors/secrets.py#L1)). Whether customers need an external vault (cloud key vault) is **unconfirmed**. | Optional external-vault port. | M if needed | — |
+| R8 | The **system owner approves** the connection. | **Missing.** `owner` is a text field ([fabric_sources.py:380](../../../../backend/di/services/actions/fabric_sources.py#L380)); a person with the permission connects directly. | A held connection that the named owner (a directory user) approves; reuse the proposal/maker-checker pattern. | S–M | new (with P9-5.1) |
+| R9 | Discovery reads objects and fields, **samples 500 records** and proposes mappings. | **Partial.** Discovery samples the newest **200** landed records per resource and proposes tables, columns, types and foreign keys ([discover.py:6–9, 31](../../../../backend/di/connectors/discover.py#L31)); mapping proposals only from catalogue templates (C4). | 500 (quick win 13); mapping proposals from the samples (C4). | S / M | P9-5.1 |
+
+### 7.5 Agents (01 §3)
+
+01 names a **seven-agent decision chain** for the tool fleet and **six stage agents** for Compose. Today ten agents are
+seeded ([0023_agent_identity.py:41–54](../../../../backend/migrations/versions/0023_agent_identity.py#L41)): Evidence
+Assembler, Opportunity Finder, Gap Requester, Handoff Coordinator, Reconciler, Briefing Agent, Analytics Explainer,
+Integration Assistant, Audit Assistant, Ask. They are tool allow-lists, not stage owners; the runtime has **one**
+playbook ([runtime.py:38](../../../../backend/di/services/agents/runtime.py#L38),
+[case_autopilot.py:20–22](../../../../backend/di/services/agents/playbooks/case_autopilot.py#L20)).
+
+| 01 agent (Compose name, default autonomy) | Today | State | Gap | Size | Plan 9 |
+|---|---|---|---|---|---|
+| 1 Intake (Intake, act alone) | `case.open` with dedupe and the *Open case* workflow block (§4 A); a workflow step, no agent. | Partial | Name an Intake agent that runs on return events; per-pack event types. | S | P9-2.1 |
+| 2 Condition and life (Condition, act within limits) | Grade **read** from the inspection app and the repair centre (§2.6); tool-fleet RUL is an input number; the grade falls back to `estGrade` ([templates.py:136](../../../../backend/di/services/modeler/templates.py#L136)) but is not shown as an estimate. | Partial | Agent + explainable RUL/wear; "estimate" label when the workbench grade is late. | M | P9-3.1 |
+| 3 Demand discovery (part of Valuation/Routing) | Opportunity Finder (`find_demand`). In the tool fleet, named demand (renewals, orders, pool requests, open repair orders) exists only in the generated sample world ([tool_fleet.py:970](../../../../backend/di/services/modeler/valuers/tool_fleet.py#L970)) or in intake facts a caller passes as `dem` ([intake.py:172–174](../../../../backend/di/services/cases/intake.py#L172); no source fills it); a live case is decided "in a queue of its own (no sample orders)" ([intake.py:233–239](../../../../backend/di/services/cases/intake.py#L233)). | Partial | Demand as canonical records from the lease, ERP, pool and repair-order sources (the `demand` model exists, [schema.py:41–43](../../../../backend/di/services/canonical/schema.py#L41)), read per org. | M–L | new (phase 2) |
+| 4 Fit-for-use | The rule is in the valuer: a harvested part counts only at or above `rulMin` ([tool_fleet.py:526–529](../../../../backend/di/services/modeler/valuers/tool_fleet.py#L526)); guardrail GR-03 says Quality owns the threshold. No agent; the threshold is a constant. | Partial | Agent + Quality-owned threshold (quick win 14). | S | P9-1.2 |
+| 5 Valuation (Valuation, act alone) | Three valuers (industrial predictor, tool fleet, device). | Exists | Carbon in two of three (§2.5). | S | P9-0.3 |
+| 6 Disposition, whole-queue plan (Routing, act within limits) | `plan_queue` fills each named order once and keeps refurbishment within repair slots ([tool_fleet.py:684, 1089–1090](../../../../backend/di/services/modeler/valuers/tool_fleet.py#L1089)), used by the sample world and simulation only; live cases are planned alone (row 3). Industrial: `pool.optimize` per pool ([engine.py:25–40](../../../../backend/di/services/actions/engine.py#L25)). | Partial | A `queue_planner` playbook over the live open queue per org, re-planned on each arrival, explained against the standard route. | M | new (next to P9-2.1) |
+| 7 Follow-through (Follow-through, act within limits) | Handoff Coordinator; the autopilot resends a failed instruction; execution plans and instructions (§4 C). | Exists | "Reminds the owner": a timed task when an instruction or approval waits. | S | P9-2.1 |
+| — Analytics (act alone) | Analytics Explainer and Briefing Agent, whose `analytics.query` answers 501. | Partial | See T6. | M | — |
+
+Runtime gaps: stage binding and the confidence threshold (C7); an LLM loop (§2.13, P9-2.2); the autopilot never starts
+on its own (§3 ask 2). **Surprise:** four seeded agents list tools that answer 501: Integration Assistant
+(`sources.health`, `mapping.suggest`, `tables.suggestLinks`, `import.clean`), Briefing Agent and Analytics Explainer
+(`analytics.query`), Audit Assistant (`audit.search`) ([0023_agent_identity.py:49–53](../../../../backend/migrations/versions/0023_agent_identity.py#L49)
+against §2.8's list). The Agents page therefore shows capabilities that do not work (quick win 15).
+
+### 7.6 Models catalogue (01 §3)
+
+A catalogue already exists **as reference cards**: seven models with fixed versions and fixed validation lines (resale-price's line is measured on reconciled decisions)
+(condition-vision, rul-survival, demand-match, resale-price, prep-cost-time, service-exposure, repair-success;
+[orchestration.py:93–101, 693–701](../../../../backend/di/services/screens/orchestration.py#L93)). Only resale-price,
+prep-cost-time and service-exposure take their version from reconciled decisions
+([orchestration.py:686](../../../../backend/di/services/screens/orchestration.py#L686)). Real learning is the
+calibration candidates: `model.fit` on Finance-confirmed outcomes, MAE as the metric, propose and promote under
+maker-checker, agents forbidden ([models.py:1–14, 122](../../../../backend/di/services/actions/models.py#L1)). Every
+prediction is a formula behind the `Predictor` seam ([predictor.py:1–8](../../../../backend/di/services/engine/predictor.py#L1)).
+
+| 01 model | Today | State | Gap | Size |
+|---|---|---|---|---|
+| Condition estimate (classifier; fallback only when the workbench grade is late; always labelled) | Card only; `estGrade` field in the tool fleet, unlabelled. | Missing | Rule-based estimate from telemetry and repair history, labelled; a trained classifier later. | M / L |
+| Remaining-life estimator (survival; per tool and per part) | Card only; RUL is an input; per-part RUL is input data. | Missing | Explainable wear index first (P9-3.1), survival model later. | M / L |
+| Demand forecaster (time series per path) | "demand-match" card is a matcher, not a forecaster. | Missing | Per-path demand series from canonical `demand`. | L |
+| Resale price estimator (gradient boosting) | Formulas + calibration factors; device uses a fixed table (§3 ask 5b). | Partial | P9-3.4 (LightGBM + intervals). | L |
+| Refurbishment cost estimator (regression) | Formulas; prep-cost-time card versioned from reconciled cost lines. | Partial | Regression on depot-repair actuals. | M–L |
+| Disposition optimiser (constrained, over the queue; learns from every closed outcome) | `plan_queue` and `pool.optimize`, no learning. | Partial | Live queue planner (§7.5 row 6); learning from outcomes later. | M / L |
+| Quality, drift, last-trained date, retraining cadence per model | MAE on calibration candidates; no drift, no trained date on cards, no cadence. | Partial | One model registry for all six (metrics, trained_at, cadence, input and residual drift), the cards read from it. Thresholds and factor tables change only with a person's approval: true for calibration, not for valuer constants (code). | S–M |
+
+### 7.7 Tool-fleet flows and run-time features (01 §2, §4.2, §4.3, §5)
+
+| Id | 01 requires | Today | State | Gap | Size | Plan 9 |
+|---|---|---|---|---|---|---|
+| T1 | **Service desk**: every ticket → intake, estimate from **similar past repairs** (family, age band, fault, 3 years; ≥ 50 matches priced without a technician; accuracy on held-out repairs), cover check, per-market labour rates, price lists and **credit rules**, options fix / covered swap / upgrade with credit (upgrade only past 50 % life or when cover allows), **batches** (e.g. 22 tools split 9/11/2), a **credit lever** using 24 months of offer take-up. | Nothing. The ServiceNow mock exists as a source ([vendors/servicenow/](../../../../source-sim/sim/vendors/servicenow)) and the Depot Repair mock holds repair orders, tasks, hours and parts ([depot_repair/__init__.py:1–3](../../../../source-sim/sim/vendors/depot_repair/__init__.py#L1)); whether its seed has enough history for ≥ 50 similar repairs is **unconfirmed**. No markets, no cover terms, no credit. | Missing | A ticket case type, a nearest-neighbour estimate over repair history, market and cover tables as pack data, three priced options, a batch action, a credit what-if. | L (M rules-only) | new (phase 5 or a tool-fleet phase) |
+| T2 | **Contract refresh**: one proposal per contract 90 days before its end: keep good-life tools, **swap** worn ones (below 25 % life) for refurbished units of similar life, **upgrade** where parts end before the next term; fee, saving against new, likelihood to renew; credits over $300 need sales approval; on approval: email, draft contract lines, reserve the refurbished tools. | Nothing. The lease mock has contract end dates and renewal options ([oracle_lease/__init__.py:1–3](../../../../source-sim/sim/vendors/oracle_lease/__init__.py#L1)); renewals appear only as sample-world demand. | Missing | A scheduled trigger, a proposal object per contract, like-life matching against refurbished stock, approval by credit size, three instruction steps. | L | new |
+| T3 | **What-if**: "move the market, see decisions change". | Per case, industrial: `case.whatIf` with market, cost and service levers ([engine.py:20](../../../../backend/di/services/actions/engine.py#L20); [case.ts:259–262](../../../../frontend/src/api/case.ts#L259)). The tool-fleet valuer already takes market, labour, lease, slots parameters (`BASEP`, [tool_fleet.py:166](../../../../backend/di/services/modeler/valuers/tool_fleet.py#L166)); nothing exposes them over the queue. | Partial | Quick win 16. | S–M | Phase 0 |
+| T4 | **Pulse suggestion rules** that target the oldest value bands first (device: Offers → Auction after 14 days with no offer; Buy Now → Offers after 21 days). | Nothing. The device valuer scores a lot once ([device.py:1–10](../../../../backend/di/services/modeler/valuers/device.py#L1)); the Machinio mock already exposes `listing_age_days` ([machinio/__init__.py:3–5](../../../../source-sim/sim/vendors/machinio/__init__.py#L3)). | Missing | A suggestion-rule type (condition on listing age → move channel), evaluated daily, raised as a proposal. | M | new (with P9-3.4) |
+| T5 | **Exceptions inbox** routed by role: each item with cause, recommended action and owner; per-pack exception types (e.g. "telematics and inspection disagree", "no active contract for the serial"). | Command Center groups value at risk by risk type over industrial cases ([command.py:1082](../../../../backend/di/services/screens/command.py#L1082)); inbox ([command.py:1346](../../../../backend/di/services/screens/command.py#L1346)); Home alerts; the conflict queue. | Partial | Exception types as pack data with an owner role and a recommended action, listed in "My work". | M | P9-5.8 |
+| T6 | **Analytics**: rates by item with drill-down; analysis **from a prompt** as a chart plus example records; **saved shared views**; **alerts on a measure**. | Drill-down exists over the demo's closed decisions (§2.11); Ask answers questions (§2.4); `analytics.query` answers 501 (§2.8). No saved views, no measure alerts. | Partial | `analytics.query` over a semantic layer of the pack's KPIs; views and alerts stored per org. | M–L | new |
+
+### 7.8 Packs (01 §4–9)
+
+**P0, the pack contract (01 §9).** 01's pack carries: identity and version, author role, three sample prompts, the
+configuration agent's reading log and question, seven stages each with an agent, routes, typed guardrails at stages,
+the systems (with adapter or not), about seven canonical entities, field mappings with confidence and reasons, a replay
+dataset, an example asset, exception types with owners, six KPIs and a trend, two analytics questions, and the customer
+layer. Today's `Template` has key, name, prefix, paths, guardrails (id, text, owner, block patterns), scope dimensions,
+actors and wording ([templates.py:98–106](../../../../backend/di/services/modeler/templates.py#L98)); the valuer is code.
+Of 01's parts, only routes, untyped guardrails and the industrial pack's JSON file exist. The canonical store has 11
+models (asset, condition, demand, intervention, market, route, sustainability, vendor, outcome, part, bom;
+[schema.py:41–43](../../../../backend/di/services/canonical/schema.py#L41)); 01's "return event", "cost rate",
+"compliance record", "channel" and a contract entitlement have no model. **L**, P9-1.1 (whose scope must grow to the
+full contract).
+
+System coverage (✔ a mock exists; ~ a mock of a related system could stand in; ✖ none). Mocks:
+[source-sim/sim/vendors/](../../../../source-sim/sim/vendors) and [generic/specs/](../../../../source-sim/sim/generic/specs).
+
+| Pack (01) | Exists in code | Systems 01 lists → mocks | Missing |
+|---|---|---|---|
+| **P1 Tool fleet AMS** (§4) | Pack, valuer, flow. The six paths match 01 §4.1 one to one ([tool_fleet.py:40–58](../../../../backend/di/services/modeler/valuers/tool_fleet.py#L40)). Guardrails GR-01–06: grade C/D not re-issued, refurbishment ends in a named destination, fit-for-use threshold, holding cost set by Finance, owner approval, certified recycler. | ERP ✔ S/4HANA; CRM ✔ Salesforce; fleet contract system ~ Oracle Lease; telematics ✔ AWS IoT; service desk ✔ ServiceNow; spare-parts catalogue ~ PLM BOM (Windchill, Teamcenter) or S/4 materials (**unconfirmed** which fits); legacy depot repair log ✔ Depot Repair. **6–7 of 7.** | 01's pack guardrails: safety recall check (compliance; no recall source anywhere), telematics under 7 days old (data quality); stated: repair over $600 → fleet manager (approval limits exist per role, [policy.py:152](../../../../backend/di/core/policy.py#L152), not per action value); write-off under 24 months. Diversions (recall → quarantine; key account → account manager). Live demand (§7.5 row 3). Service desk, Contract refresh (T1, T2). KPIs: days to next use, upgrade offers accepted, % held by guardrails. **M–L** |
+| **P2 Device recommerce** (§5) | Pack, valuer, flow. Channels Buy Now, Offers, Auction, Marketplace ([device.py:27–35](../../../../backend/di/services/modeler/valuers/device.py#L27)); 01 has wholesale lot instead of Marketplace. Guardrails: wipe (text only), recovery floor 55 % (01 states 60 %, a customer value), grade D, lot size, no undercut, owner approval. | Trade-in platform ~ Optoro (returns); diagnostics ✖; photo grading ✖ (Google Drive photos ~); data-wipe tool ✖; device registry (blacklist/lock) ✖; marketplaces ~ Machinio (listings, offers), Ritchie (auction comparables); price feeds ✖ (Ritchie ~); ERP ✔. **1 ✔, 4 ~, 3 ✖ of 8.** | Blacklist/lock gate (pack compliance), wipe gate as data, payout adjustment within 10 % of the quote, wholesale lots from approved-buyer bids, ageing rules (T4), lot over $25,000 → commercial manager. P9-3.4–2.7 cover the gates and mocks. **M (L with ML)** |
+| **P3 Used cars** (§6) | Nothing. | Lease system ~ Oracle Lease; dealer management ✖; title and lien ✖; inspection app ✔ SafetyCulture; recall database ✖; auction platform ~ Ritchie; pricing guide ✖; legacy body shop ✖. **1 ✔, 2 ~, 5 ✖ of 8.** | Pack, valuer (retail by lot vs auction net of fees and transport, recon cost), title/lien and open-recall gates, five mocks. **L** |
+| **P4 Telecom network equipment** (§7) | Nothing. | Network inventory ~ Maximo (EAM); decommission tracker ✖; ERP ✔; field service ✔ ServiceNow / Maximo; test bench ~ Depot Repair bench tests; spares planning ~ S/4; broker marketplace ~ Machinio; recycler portal ✔ Sims. **3 ✔, 4 ~, 1 ✖ of 8.** | Pack, valuer (spares-before-new across regions, 6-month need), inventory-match and configuration-wipe gates, export-control check, firmware-gap diversion. **L** |
+| **P5 Medical rental** (§8) | Nothing. | Rental system ~ Oracle Lease; asset management ✔ Maximo; decontamination log ✖; biomedical service ~ ServiceNow / MasterControl (QMS); CRM ✔; ERP ✔; parts supplier portal ~ Ariba; disposal partner ✔ Sims. **4 ✔, 3 ~, 1 ✖ of 8.** | Pack, valuer (next hospital with least travel while certification stays in date), decontamination and certification gates, utilisation KPIs. Compliance-heavy: Legal review. **L** |
+
+Mock counts are by system *type*; a "~" mock serves other objects than the pack needs and would need new resources.
+None of the five packs' sample replays (3,420 tools, 18,600 devices …, all *sample*) exists as data.
+
+### 7.9 Resolve and Reconcile: reusable core pieces (short inventory; other reports go deep)
+
+- **Shared by both:** the action pipeline, proposals held for a person, maker-checker, the journal with provenance, the
+  job queue, the live event stream, the conflict queue, org units and pilot mode, the agent registry and runtime,
+  the Connection Fabric with canonical checks.
+- **Resolve** (part shortage → repair backlog → empty loaner pool → missed turnaround): repair orders and tasks
+  (Depot Repair), inbound shipments and carriers (OTM, Optoro ASNs), pool allocation (`pool.optimize`; the pool screens
+  are hidden by the demo's feature flag), repair-centre capacity on Command Center
+  ([command.py:940](../../../../backend/di/services/screens/command.py#L940)). Missing: a disruption signal, the ripple
+  trace and a turnaround-promise measure.
+- **Reconcile** (freight, third-party repairs, warranty, accessorials): Finance's `outcome.confirm`, predicted vs actual
+  and calibration (§2.7), the S/4 journal post (§2.12), OTM freight lanes, AP mocks for Oracle EBS and NetSuite (EBS's
+  spec says "for Reconcile", [catalog_ebs.py:1](../../../../source-sim/sim/generic/specs/catalog_ebs.py#L1)), cost
+  traces per case. Missing: invoice matching, accessorial rules, warranty attribution, an evidence pack per dispute.
+
 ---
 
 ## Sources read
@@ -483,3 +714,10 @@ Two pages over largely the same data:
 status), and the code cited inline. Action counts come from `fixtures/golden/actions_catalog.json` plus a scan of
 `ACTIONS.setdefault`/`_declare` calls and `@implement` decorators under `backend/di` (24 Nov 2026); a runtime count
 through `GET /api/agents/tools` was not taken (**unconfirmed** at runtime, expected 131).
+
+Second pass: [01-recover-segments.md](01-recover-segments.md), [V-verification.md](V-verification.md), the draft
+[plan 9](../../plans/09-agentic-platform.md) (for task ids), `fixtures/golden/po/templates.json` (the tool-fleet and
+device guardrails), the source-sim vendor and generic-spec docstrings (for the system coverage table), and the code
+cited in §7. Nothing was run. **Unconfirmed** in §7: whether the Depot Repair seed holds enough repair history for
+the Service desk estimate (T1); which mock best stands in for a spare-parts catalogue (P1); whether customers need an
+external vault (R7); and that no code changed between `0c71585` and `5b1fcfd`.

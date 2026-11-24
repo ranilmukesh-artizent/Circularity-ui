@@ -8,6 +8,32 @@ from or avoid, and should it switch its model format to BPMN/DMN.
 > on 24 Nov 2026. It is not legal advice. It needs review by Kinective's Legal team before anyone relies on it,
 > in particular for anything we would redistribute in the customer trial package.
 
+## What changed in this revision and why (revision 2, 24 Nov 2026)
+
+The target is now the team's Recover prototype ([01-recover-segments.md](01-recover-segments.md), "01"). Its flow
+authoring, guardrails, customer layer, per-market rules, model catalogue and staged publish (01 §2–§4) need answers
+that revision 1 did not give. New material is in **§11**. **01 is used for its concept only** (capabilities, data, rules, agents): its screens, menus, panels and step tabs are not UI requirements, and this report describes capabilities, not layout.
+
+| Change | What | Why |
+|---|---|---|
+| **Added** §11.1 | The customer layer as layered configuration: base pack + customer overlay of typed operations + a 3-way rebase on pack updates; tighten-only locked guardrails; diversions; blocked compliance skips; JSON patch/merge/diff libraries with licences | 01 §2 "Customer layer" and every pack's blocked diversion (01 §4–§9) |
+| **Added** §11.2 | Per-market decision tables (labour rates, credit rules, cover terms) on GoRules ZEN: fit confirmed, with the split between rate cards (data) and rules (tables) | 01 §4.2 |
+| **Added** §11.3 | The model catalogue: remaining-life survival model, demand forecaster, resale price GBM, refurbishment cost, condition classifier fallback, with licences and dependency weight | 01 §3 "Model catalogue" |
+| **Added** §11.4 | The disposition optimiser: what `plan_queue` does today, whether a solver is needed, solver options with licences and wheel sizes | 01 §3 agent 6 "plans the whole queue" |
+| **Added** §11.5 | Model registry fields (quality, drift, last trained, cadence) and drift-detection OSS with licences | 01 §3 "quality, drift, last-trained date and retraining cadence" |
+| **Added** §11.6 | Design note: publishing to a share of volume in one region (canary) vs shadow, and the replay report | 01 §2 |
+| **Updated** Summary items 8–12, §5.1 canary row, §6 (pointer to §11.3), §9 ranks 13 and 27–43, §10 order of work, unconfirmed, sources, legal note | Follow the additions | — |
+| **Updated** sktime: from "adopt if needed" to "learn from" | **statsforecast** (Apache-2.0) is the forecasting choice: lighter, and it has the intermittent-demand models the paths need | §11.3 |
+| **Updated** the location of the queue planner | It is `plan_queue` in `services/modeler/valuers/tool_fleet.py` (not in `services/engine/`); the engine has a separate pool optimiser `services/engine/pool.py` | Code read in this revision |
+| **Deleted** | Nothing | The new target adds needs; it does not contradict revision 1 |
+
+**Decisions:** README decision **D2 is kept** (own flow graph, ZEN for tables, no BPMN engine, LightGBM + MAPIE, our
+own model registry, authorization in `policy.py`). This revision **adds** to D2 (proposed): customer overlays of typed
+operations with a 3-way rebase (own code, jsonpatch and deepdiff as helpers); lifelines for survival; statsforecast
+for forecasting; SciPy's `milp` (HiGHS) behind a `QueuePlanner` port, with `plan_queue` kept as the parity default;
+our own drift metrics (no drift library); canary by region and share of volume after shadow. The README is not edited
+here.
+
 ## Summary
 
 1. **Keep our own flow graph as the model of record.** It carries what BPMN/DMN do not: locked nodes, guardrails with
@@ -29,6 +55,23 @@ from or avoid, and should it switch its model format to BPMN/DMN.
    as-of data, golden test cases per flow, and hash-bucket canary by org unit. Avoid Unleash (AGPLv3 since v8, Jun 2026).
 7. **ML**: LightGBM/XGBoost quantile models behind the existing `Predictor` interface, MAPIE conformal intervals to
    drive "low confidence goes to a person", our own model-candidate table as the registry (MLflow only as a file format).
+8. **Customer layer (§11.1)**: the effective flow = base pack version + the customer's overlay, an ordered list of
+   *typed* operations keyed by stable ids (tighten a guardrail, add an approver, add a diversion, add a rule, set a
+   parameter). A pack update replays the overlay on the new base (a 3-way rebase); conflicts go to a person; the
+   stricter value always wins for locked compliance guardrails; a diversion that skips a compliance guardrail fails
+   validation. Own code; `jsonpatch` (BSD-3-Clause) and `deepdiff` (MIT) only as helpers.
+9. **Per-market rules (§11.2)**: ZEN fits credit rules and cover terms; labour rates and price lists are dated
+   *rate cards* (pack data) that tables read, not rules.
+10. **Models (§11.3)**: lifelines (MIT) for remaining life, **not scikit-survival (GPL-3.0-or-later, confirmed)**;
+    statsforecast (Apache-2.0) for demand; LightGBM + MAPIE for price, refurbishment cost and the condition fallback;
+    the service-desk estimate is a "similar past repairs" lookup, not a model.
+11. **Queue plan (§11.4)**: no solver is needed for the pilot or for parity; `plan_queue` is a regret heuristic that the
+    golden files pin. Add SciPy's `milp` (BSD-3-Clause, HiGHS inside, arrives with the ML stack) behind a port for
+    larger queues and to report the gap to optimal. OR-Tools (Apache-2.0, ~30 MB wheel) only if scheduling over time
+    slots is needed. Avoid PuLP's CBC extra (EPL-2.0, large).
+12. **Drift and rollout (§11.5, §11.6)**: own drift metrics in Postgres (PSI, interval coverage, error on closed
+    outcomes). Avoid alibi-detect (**BSL 1.1**); Evidently is Apache-2.0 but heavy. Canary = one region at a share of
+    volume, decided by a stable hash, after a replay and optionally a shadow period; widening needs a person.
 
 ## 1. What we have today (the ground this advice stands on)
 
@@ -201,7 +244,7 @@ rollback from `decision_flow_version`.
 | **Golden test cases per flow** (the DMN TCK idea, applied to one customer's rules) | A flow version carries example cases with the expected route; `validate` fails if a change flips one without an explicit "expected change" | A `tests` array in the flow JSON; reuse `simulate` to run them; show failures as `fail` checks | Small (days) |
 | **Back-test replay** (want 4, the sales motion) | Load a month or quarter of historical returns with their actual disposition and realised value; decide each with the candidate flow using data **as known at decision time**; compare | New import (CSV template) into canonical records with an `as_of`; a replay job over the queue; a report: uplift as a range, per route, per class, with flips listed | Medium (2–4 weeks) |
 | **Shadow** | Exists | Add a shadow report that aggregates `shadow_decision` by template/org: flip rate, value delta, guardrail hits | Small |
-| **Canary by bucket** | Publish to a share of cases before all | New status `canary` with a percentage; bucket by a stable hash of case id (or by org unit); the decision records which flow version decided it | Medium |
+| **Canary by bucket** | Publish to a share of cases before all | New status `canary` with a percentage; bucket by a stable hash of case id (or by org unit); the decision records which flow version decided it. Revision 2: Recover scopes it as one region at a share of volume (§11.6) | Medium |
 | **Champion/challenger for models** | Two models score; one decides | Extend `model_version` with `challenger`; log both predictions; promote with maker-checker | Medium |
 
 Back-test pitfalls to design in from the start (these decide whether the uplift number survives a customer's finance
@@ -231,7 +274,8 @@ journals which version decided.
 
 Seam: `services/engine/predictor.py` says a trained model can replace one formula at a time; `calibration.py` fits
 factors on confirmed outcomes; `model.fit/propose/promote` give maker-checker. Missing: a stored model artefact, a
-prediction interval, and confidence as a hold reason.
+prediction interval, and confidence as a hold reason. Revision 2: the full Recover model catalogue (survival,
+forecasting, cost, condition fallback, queue optimiser) and the registry fields are in §11.3–§11.5.
 
 | Library | Licence | Latest release seen | Use |
 |---|---|---|---|
@@ -369,7 +413,7 @@ a business rule task (Operaton, Flowable, Camunda).
 | 10 | SpiffWorkflow | **Learn from / plan B** | Only in-process BPMN engine for Python | **LGPL-3.0** |
 | 11 | Flowable (CMMN), Apache KIE (DMN/FEEL, TCK), Operaton | **Learn from / interop targets** | Case-management concepts, DMN conformance, export targets | Apache-2.0 (KIE incubating) |
 | 12 | GrowthBook | **Learn from** | Experiment statistics for back-test and canary reports | MIT + enterprise dirs |
-| 13 | sktime | **Learn from / adopt if needed** | Telemetry trend features for RUL | BSD-3 |
+| 13 | sktime | **Learn from** (updated in revision 2; was "adopt if needed") | Broad toolbox, 36.5 MB wheel; statsforecast covers our forecasting (§11.3) | BSD-3 |
 | 14 | MLflow | **Learn from** (file format only) | Registry concepts; server not shipped | Apache-2.0 |
 | 15 | OPA / Rego | **Learn from** | Mature but a sidecar and a new language; maintainer concentration since Aug 2025 | Apache-2.0 |
 | 16 | Casbin | **Avoid for now** | Duplicates `policy.py` without analysis | Apache-2.0 |
@@ -383,6 +427,23 @@ a business rule task (Operaton, Flowable, Camunda).
 | 24 | Unleash | **Avoid** | AGPLv3 from v8 (June 2026); second server | **AGPLv3** |
 | 25 | Camunda 7 CE | **Avoid** | End of life Oct 2025, no security patches | Apache-2.0 |
 | 26 | Camunda 8 Self-Managed | **Avoid** to embed or ship; interop only | Production needs a paid Enterprise licence (8.6+) | **Source-available (Camunda License v1) + proprietary** |
+| 27 | Customer overlay of typed operations + 3-way rebase (§11.1) | **Build (ours)** | Tighten-only and blocked-skip rules are domain checks no merge library knows | — |
+| 28 | `jsonpatch` (+ `jsonpointer`) | **Adopt** as a helper | RFC 6902 patches for the audit view of an overlay | BSD-3-Clause |
+| 29 | `deepdiff` | **Adopt** as a helper | Readable diffs for reviewing a pack update and approving an overlay | MIT |
+| 30 | `json-merge-patch`, `jsonmerge`, `dictdiffer` | **Learn from** / not needed | RFC 7386 cannot address list items; `jsonmerge` last released Jul 2023 | BSD / MIT |
+| 31 | lifelines | **Adopt** (worker, training) | Weibull AFT and Cox models for remaining life, explainable | MIT |
+| 32 | scikit-survival | **Avoid** in anything shipped | Copyleft | **GPL-3.0-or-later** |
+| 33 | statsforecast | **Adopt** (worker, training) | Intermittent-demand models (Croston family, TSB, ADIDA) and AutoETS | Apache-2.0 |
+| 34 | Darts, Prophet | **Avoid** | Heavy (Darts: shap, pyod; Prophet: CmdStan binaries); wrong shape for intermittent demand | Apache-2.0 / MIT |
+| 35 | SciPy `milp` (HiGHS) and `linear_sum_assignment` | **Adopt** behind `QueuePlanner` | Arrives with the ML stack; exact queue plans for larger queues and the "gap to optimal" report | BSD-3-Clause (HiGHS MIT) |
+| 36 | highspy | **Optional** | Direct HiGHS API if incremental solves are needed | MIT |
+| 37 | OR-Tools | **Only if** time-slot scheduling is needed | CP-SAT is strong, but ~30 MB wheel and a protobuf pin | Apache-2.0 |
+| 38 | PuLP with CBC, Python-MIP, Timefold (Python) | **Avoid** | CBC is EPL-2.0 and ~200 MB; Timefold Python runs a JVM through JPype and is a beta | EPL-2.0 / Apache-2.0 |
+| 39 | Own drift metrics (PSI, KS, interval coverage, error on closed outcomes) | **Build (ours)** | Small, in Postgres, readable through the model actions | — |
+| 40 | alibi-detect | **Avoid** | Licence | **BSL 1.1** |
+| 41 | Evidently | **Learn from** / dev tool | Apache-2.0, but heavy (Litestar, uvicorn, Plotly, NLTK, statsmodels) and a telemetry dependency (UI only, opt-out) | Apache-2.0 |
+| 42 | NannyML, frouros | **Avoid** | Stale (Jul 2025, Oct 2024) with pins that clash with our stack (`lightgbm<4.6`, `numpy<2.2`) | Apache-2.0 / BSD-3 |
+| 43 | river | **Optional** | Streaming drift detectors (ADWIN, Page-Hinkley) if we need online alarms | BSD-3-Clause |
 
 ## 10. Target Tier 3a architecture
 
@@ -433,7 +494,248 @@ Order of work (suggested; each step independently useful):
 7. Canary status and champion/challenger models (2 weeks).
 8. Later, on demand: Cedar behind the policy port; SpiffWorkflow (plan B).
 
+Added in revision 2 (Recover):
+
+9. Customer layer: overlay operations, validator (tighten-only, blocked skips), rebase report (3–4 weeks; §11.1).
+10. Rate cards and per-market ZEN tables for the service desk (credit rules, cover terms) (1.5 weeks after step 2;
+    §11.2).
+11. Model registry fields and drift metrics (1.5 weeks; §11.5).
+12. Models: refurbishment-cost lookup and quantile model, condition fallback, remaining-life model, demand forecaster
+    (1–2 weeks each, after the pilots supply data; §11.3).
+13. `QueuePlanner` port: `plan_queue` as the default, `milp` adapter, gap-to-optimal in the back-test report (1.5 weeks;
+    §11.4).
+14. Canary by region and share of volume, with the replay report before publish (extends step 7; §11.6).
+
 Estimates are rough single-engineer figures, not commitments.
+
+## 11. Recover additions (added in revision 2)
+
+### 11.1 The customer layer: base pack + customer overlay + rebase
+
+**What 01 §2 requires.** A customer may tighten a guardrail or give it an extra approver. Compliance guardrails locked
+by the pack cannot be weakened, suspended or removed. Diversions add a step or a shortcut at a stage for a condition;
+a diversion that skips a compliance guardrail is blocked (each pack has one example, such as "quote under $50: skip
+the blacklist check"). Pack updates never overwrite the customer's changes.
+
+**Model: three layers, folded at publish time.**
+
+| Layer | Owner | Holds | Changes through |
+|---|---|---|---|
+| L0 platform | Us (code) | Invariants: forbidden list, guardrails run after rules, one write path | Releases |
+| L1 pack base | Us (pack author) | Pack version (for example tool fleet v3.2): stages, routes, guardrails with `type` (Compliance, Data quality, Threshold, Approval) and `locked`, default rules, parameters, stage agents | Pack releases |
+| L2 customer overlay | The customer (per tenant or org unit) | An **ordered list of typed operations**, each keyed by stable ids, each recording the base value it saw | Flow authoring, maker-checker |
+
+Effective flow = `apply(L2, L1)`, compiled as today (`compile.py`), so `apply.py`, guardrails, simulation and shadow are
+unchanged. A market layer (DE, FR …) between L1 and L2 can come later with the same mechanics.
+
+**Why typed operations, not a JSON patch, as the overlay.** RFC 7386 merge patch cannot address an item in a list and
+uses `null` to delete; RFC 6902 JSON Patch addresses list items by index, which breaks when the next pack version
+inserts a guardrail. Neither knows that "threshold 600 → 500" is a tightening and "600 → 800" a weakening. So the
+overlay is a closed set of operations our validator understands:
+
+| Operation | Allowed on | Check |
+|---|---|---|
+| `guardrail.tighten {id, field, value, seen}` | Any guardrail | The new value is stricter, using the field's direction from the pack (`stricter: lower` for "repair over $600 → fleet manager", `higher` for "never below 60 % of the forecast price") |
+| `guardrail.addApprover {id, role}` | Any guardrail | Adds only |
+| `guardrail.add {type, stage, condition, owner}` | — | A new, customer-owned guardrail ("write-off under 24 months → service operations") |
+| `guardrail.relax / suspend / remove {id}` | Customer-owned guardrails only | Refused on any pack guardrail marked `locked` |
+| `diversion.add {stage, condition, kind: step \| shortcut, target}` | Any stage | **Blocked** if, for items matching the condition, any Compliance guardrail of a skipped stage would no longer be evaluated |
+| `rule.add / update / remove` | Customer-owned business rules | As today (`validate.py`, guardrails last) |
+| `param.set {path, value}` | Declared parameters | Range from the pack (confidence threshold 65–85 %, ageing days 7/10/14/21, repair slots) |
+| `stageAgent.set {stage, autonomy, limits}` | Any stage (the flow's agent mapping) | Within the role ceiling (F §8b) |
+
+The blocked-skip check is a graph check, not a text match: compile the effective flow, and for each diversion walk the
+stages its items would pass; if a Compliance guardrail sits on a stage they no longer pass, refuse with "skips
+compliance guardrail *safety recall check*". The same validator runs on overlays drafted by the configuration agent
+(F §8c).
+
+**Pack update = a 3-way rebase** (base old, base new, overlay), like a git rebase or Helm 3's three-way merge
+(learned from, not used):
+
+1. Replay each operation in order on the new base, finding its target by id.
+2. Target gone (removed or renamed in the pack) → conflict for a person.
+3. `seen` equals the new base's value → apply unchanged.
+4. A tighten on a guardrail the pack also changed → keep the **stricter** of the two; if the pack is now stricter,
+   drop the operation with a note. No person needed: the direction is known.
+5. Any other field the pack changed → conflict: keep mine, take the pack's, or edit.
+6. Re-validate every diversion against the new base: a diversion that now skips a *new* compliance guardrail is
+   disabled and flagged (fail safe).
+7. Output a rebase report: the diff of the effective flow before and after (deepdiff), the conflicts, and a replay
+   (§11.6) of the new effective flow; then maker-checker publish as for any flow version.
+
+So "pack updates never overwrite customer changes" holds by construction: the overlay is stored apart and every
+collision is either resolved by a known rule (stricter wins) or shown to a person.
+
+**Libraries (PyPI, 24 Nov 2026).** None does the domain part; two help with display and audit:
+
+| Library | Licence | Latest | Use |
+|---|---|---|---|
+| `jsonpatch` (+ `jsonpointer` 3.12) | BSD-3-Clause | 1.48, 19 Nov 2026 | Render an overlay as an RFC 6902 patch (paths by id after turning lists into maps) for audit and export |
+| `deepdiff` | MIT | 9.2.1, 18 Nov 2026 | Human-readable diffs (reviewing a pack update, approving an overlay); `Delta` objects for tests |
+| `json-merge-patch` | BSD (PyPI field) | 0.3.0, 25 Mar 2025 | Not needed (RFC 7386 limits above) |
+| `jsonmerge` | MIT | 1.9.2, 19 Jul 2023 | Learn from its per-key merge strategies in a schema; stale |
+| `dictdiffer` | MIT | 0.10.0, 16 Jul 2026 | Not needed beside deepdiff |
+| Kustomize overlays, Helm 3 three-way merge | Apache-2.0 (Go tools) | — | Learn from; not embedded (general knowledge, **not re-read**) |
+
+Effort: 3–4 weeks (operation set, validator incl. the graph check, fold into compile, rebase and report, actions).
+
+### 11.2 Per-market decision tables: GoRules ZEN fit confirmed
+
+01 §4.2 (service desk): labour rates per market (for example €42/h DE, €46/h FR), price lists and credit rules per
+market, cover terms ("swap allowed for cordless tools"), the rule "upgrade only when the tool is past 50 % of its life
+or the cover rules allow it", credits above $300 need sales approval, markets DE, UK, US, AU with FR in pilot.
+
+ZEN (MIT, `zen-engine` 2.1.8, 20 Nov 2026, still the latest on PyPI) fits the *rules* part. Split it this way:
+
+| Item | Where it lives | Why |
+|---|---|---|
+| Labour rates, price lists, logistics rates | **Rate cards**: pack data, versioned, dated (`market, kind, valid_from, valid_to, currency, values`), maker-checker | They are numbers that change monthly, not rules; replay must read the card valid at the decision date (§5.1 as-of). ZEN has no effective dating |
+| Cover terms ("swap allowed for cordless tools") | ZEN decision table: inputs `market, family, cover_type, age_months`; outputs `swap_allowed, reason`; first hit | A classic table a business user edits |
+| Credit rules per market | ZEN table: outputs `credit_pct, credit_cap` | Same |
+| "Upgrade only past 50 % of life or when cover allows" | ZEN expression or a business rule in the flow | Uses the remaining-life fact (§11.3) |
+| "Credits above $300 need sales approval" | A **guardrail** of type Approval, not a table row | Guardrails cannot be weakened by a table or by an overlay (§11.1) |
+| FR "in pilot" | The table's market scope + canary (§11.6) | Rollout, not logic |
+
+Money stays in our code (Decimal), multiplied by the rate card; ZEN returns booleans, percentages and classes, which
+sidesteps the open question on the wheel's decimal precision (§3.1, still **unconfirmed**). "Test this decision" (the
+credit lever with take-up from the last 24 months) is a what-if over the table plus a take-up curve fitted on past
+offers (logistic regression, scikit-learn), never a publish.
+
+### 11.3 The model catalogue (01 §3)
+
+Rule from 01: every model shows quality, drift, last-trained date and retraining cadence; thresholds and factor tables
+change only with a person's approval. The brief's rule still holds: **read** grade and remaining life from the repair
+centre and PLM when they exist; models are fallbacks, labelled as estimates.
+
+| Model (01 §3) | Recommended method | Library | Licence | Latest (PyPI, read 24 Nov 2026) | Weight and notes |
+|---|---|---|---|---|---|
+| Remaining-life estimator (per tool and per part) | Weibull accelerated failure time per family, covariates hours × load, repair resets; censored data (tools still running) handled properly; output median remaining life and P(survives the next term) | **lifelines** | MIT | 0.30.3, 5 Mar 2026 | Pure Python; needs autograd, formulaic, matplotlib, `pandas<3` (watch the pin). The Weibull parameters and covariate effects are readable on the card |
+| (alternative) | Same, gradient-boosted | scikit-survival | **GPL-3.0-or-later** (PyPI licence expression; confirmed) | 0.28.0, 5 Jul 2026 | **Avoid in anything shipped**; copyleft in a redistributed image |
+| (alternative) | `survival:aft` objective | XGBoost | Apache-2.0 | 3.4.1, 15 Aug 2026 | The Linux wheel is ~58 MB and depends on `nvidia-nccl-cu13`; another reason to stay on LightGBM |
+| Demand forecaster (per path) | Forecast only the *unnamed* part: named demand (renewals 60–90 days ahead, open orders, pool requests, bids) is read, not forecast. Intermittent counts → Croston SBA / TSB / ADIDA; smooth series → AutoETS | **statsforecast** | Apache-2.0 | 2.1.1, 16 Jul 2026 | Brings statsmodels, fugue, coreforecast, `pandas<3`; weight of fugue's tree **unconfirmed** |
+| (alternatives) | — | sktime (BSD-3, 1.3.0, 36.5 MB wheel); Darts (Apache-2.0, 0.48.1, 16 Oct 2026; shap, pyod, matplotlib, holidays); Prophet (MIT, 1.5.0, 5 Oct 2026; cmdstanpy + CmdStan in an ~12 MB wheel) | — | — | Learn from / avoid: heavier, and Prophet suits smooth seasonal series, not sparse return-path demand |
+| Resale price estimator | LightGBM quantile (P10/P50/P90) per channel + MAPIE intervals (unchanged, §6.1) | LightGBM, MAPIE | MIT, BSD-3-Clause | 4.7.0 (18 Jul 2026), 1.6.0 (19 Oct 2026) | Already chosen (D2) |
+| Refurbishment cost estimator | Two tiers. (a) **Similar past repairs** (01 §4.2: same family, age band and fault, last 3 years): empirical median and P10–P90 from SQL; ≥ 50 matches → priced without a technician. (b) Fewer matches → LightGBM quantile on hours and parts + MAPIE; a technician checks. Predict **hours and parts**, then multiply by the market's rate card, so a rate change needs no retraining | Postgres; LightGBM, MAPIE | — | — | Accuracy shown on held-out repairs (01 §4.2) |
+| Condition estimate (fallback) | LightGBM multiclass on telematics, age, repair history and return reason; calibrated probabilities; MAPIE conformal **prediction sets**: a set of more than one grade = low confidence → wait for the workbench or ask a person. Never overrides a real grade; when the grade arrives the case is re-evaluated and the hit is logged | LightGBM, MAPIE, scikit-learn (BSD-3, 1.9.1) | — | — | Always labelled "estimate" |
+| Disposition optimiser | §11.4 | SciPy | BSD-3-Clause | 1.18.1, 21 Aug 2026 | Arrives with scikit-learn, LightGBM and MAPIE (none of numpy, scipy or scikit-learn is in `requirements.lock` today) |
+
+Packaging: today's backend image has no numeric stack. Put the training libraries (lifelines, statsforecast) in the
+**worker** image's dependency group only, and keep inference light (LightGBM boosters, Weibull parameters and
+forecasts stored as numbers). The trial package gains image weight, not a container.
+
+### 11.4 The disposition optimiser: is a solver needed?
+
+**What exists.** `plan_queue` / `_plan_queue` in `backend/di/services/modeler/valuers/tool_fleet.py` (a port of the
+prototype, "planQueue") plans every open return of the queue:
+
+- one return per named order (lease renewal, sales order, project: `POOLK`), refurbishment within the repair centre's
+  free slots (`BASEP["slots"] = 8` minus refurbishments in progress);
+- a **regret heuristic**, up to 40 rounds: each return is decided with its blocked set; an order claimed by two or
+  more returns goes to the one that would lose most without it; if refurbishments exceed the slots, the ones with the
+  highest regret keep them; then freed slots and unused orders are handed back to whoever gains most (up to 6 rounds);
+- two baselines: each return decided alone (orders promised twice) and first come, first served (oldest first); the
+  plan reports its gain over FCFS and the contested orders; results are memoised per (parameters, rules, queue).
+
+`backend/di/services/engine/pool.py` (the demo's `solvePool`) is a separate allocator: greedy vs an **exact
+enumeration** of every split, fine because "pools are small", exponential otherwise.
+
+**Answer: not for the pilot or parity; yes as an option behind a port.** The golden files pin the heuristic's
+outcomes and texts (`fixtures/golden/po/equip_decisions.json` includes "No repair center slot in the next two weeks:
+the queue plan gives the slots to refurbishments that add more"), so replacing it would break parity (golden rule 1).
+But the heuristic has no optimality guarantee, and Recover adds constraints it was not built for: several depots each
+with capacity, labour hours per market, lot caps (device pack), budgets, and replays of thousands of items. Plan:
+
+1. A `QueuePlanner` port with two adapters: `regret` (today's code, the default for the tool-fleet pack and the demo)
+   and `milp`. A pack setting chooses.
+2. The MILP: for each open case *c* and each option *k* (a path and, where relevant, a named destination) a binary
+   `x[c,k]` with value `v[c,k]` from the valuer (net of cost, logistics and time held); each case takes exactly one
+   option; each named order at most once; refurbishments per depot ≤ its slots; later, lot caps and budgets as more
+   linear rows. Maximise total value. A few hundred cases × ~10 options is small for HiGHS (no benchmark run:
+   **unconfirmed**).
+3. Explanations stay per case: "regret" = the value lost if this case had to take its second option, obtained by
+   re-solving with that option forced (cheap at this size), and the uplift against the standard route as today.
+4. Back-test reports both: the heuristic's plan and the optimal one, and the gap, the same way `pool.py` shows greedy
+   vs optimal. If the gap is material on real queues, switch the pack's default.
+5. "Learns from every closed outcome" is about the **inputs** (prices, costs, pass rates, remaining life from §11.3),
+   not the solver.
+
+**Solver options (PyPI, read 24 Nov 2026):**
+
+| Option | Licence | Latest | Linux wheel | Notes | Verdict |
+|---|---|---|---|---|---|
+| **SciPy** `optimize.milp` (HiGHS inside) and `linear_sum_assignment` | BSD-3-Clause (HiGHS is MIT) | 1.18.1, 21 Aug 2026 | ~35 MB, but it arrives anyway with scikit-learn, LightGBM and MAPIE | `linear_sum_assignment` handles the pure one-to-one case (slots can be modelled as extra columns) but no further side constraints; `milp` handles all of the above, with a time limit | **Adopt** |
+| highspy | MIT | 1.16.0, 11 Nov 2026 | ~3 MB | Direct HiGHS API: incremental models, warm starts | Optional |
+| OR-Tools (CP-SAT, MIP, routing) | Apache-2.0 | 9.15.6755, 14 Jan 2026 | ~30 MB | Pins `protobuf>=6.33.1,<6.34` and needs absl-py; best for scheduling over time slots (technician calendars) | Only if scheduling is needed |
+| PuLP | MIT (modelling layer) | 4.3.1, 19 Nov 2026 | <1 MB | Solvers through extras; the `cbc` extra installs `cbcbox` (EPL-2.0, ~200 MB) | Avoid (EPL and size; a modelling layer we don't need) |
+| Python-MIP | EPL-2.0 | 2.0.2, 9 Nov 2026 | ~10 MB + cbcbox | Copyleft (weak) | Avoid |
+| Pyomo, CVXPY | BSD-3 / Apache-2.0 | 6.11.0 / 1.9.3 | 16.5 MB / 4.5 MB + solvers | General modelling frameworks | Not needed |
+| Timefold Solver (Python) | Apache-2.0 | 1.24.0b0, 8 Jul 2025 | ~22 MB, runs a JVM through JPype | Beta, JVM | Avoid |
+
+### 11.5 Model registry fields and drift
+
+Keep our registry (`model.fit/propose/promote`, maker-checker; `model.propose/promote` are forbidden to agents). Add
+these fields so every model carries what 01 asks for:
+
+| Field | Content |
+|---|---|
+| Identity | `model_id`, `version`, `kind` (classifier, survival, time series, GBM, regression, optimiser), `target`, `pack`, scope (markets, classes) |
+| Training | data window, row count, feature list with a schema hash, code version, trained by (job), **last trained** |
+| **Quality** | metric and value on a held-out window (MAE/MAPE for prices and costs, concordance index and calibration for survival, MASE for forecasts, accuracy and set size for the classifier), the baseline it beats (formula or previous champion), interval coverage target vs observed |
+| **Drift** | per top feature: population stability index (PSI) and a KS test against training; prediction drift; error drift on closed outcomes; coverage drift; a status `ok`, `watch`, `alert` with the rule that set it |
+| **Cadence** | retraining schedule (weekly, monthly) or trigger (drift alert, N new closed outcomes), next due |
+| State | candidate, challenger, champion, retired; who proposed, who approved, when |
+| Thresholds used | the confidence thresholds and factor tables that flows read from this model; changing one is a maker-checker change (01 §3) |
+
+**Drift detection: compute it ourselves.** The metrics are a few dozen lines on SciPy (`stats.ks_2samp`) and SQL over
+our prediction and outcome tables, run by a weekly worker job, stored in Postgres. The libraries checked:
+
+| Library | Licence | Latest | Finding | Verdict |
+|---|---|---|---|---|
+| Evidently | **Apache-2.0** (repo LICENSE file read 24 Nov 2026; PyPI licence field agrees) | 0.7.23, 11 Sep 2026 | Not a licence problem. Heavy: Litestar, uvicorn, Plotly, NLTK, statsmodels, dynaconf; an `iterative-telemetry` dependency. Its docs say telemetry is collected only in the Monitoring UI, not when used as a library, with a `DO_NOT_TRACK` opt-out (one page names `EVIDENTLY_DISABLE_TELEMETRY` instead) | **Learn from** / a dev tool for our data scientists; not in the image |
+| alibi-detect | **Business Source License 1.1** (PyPI licence field; classifier "Other/Proprietary") | 0.13.0, 11 Dec 2025 | Source-available; changed from Apache-2.0 on 22 Jan 2024 (Seldon licensing FAQ); earlier releases stay Apache-2.0 | **Avoid** |
+| NannyML | Apache-2.0 | 0.13.1, 12 Jul 2025 | Pins `lightgbm<4.6` (we choose 4.7.0), pulls FLAML and gcsfs; no release for 16 months | Avoid |
+| frouros | BSD-3-Clause | 0.9.0, 5 Oct 2024 | Pins `numpy<2.2`, `scipy<1.15`; stale | Avoid |
+| river | BSD-3-Clause | 0.27.0, 13 Nov 2026 | Streaming detectors (ADWIN, Page-Hinkley); ~3 MB | Optional, for online alarms later |
+
+### 11.6 Canary publish vs shadow (design note)
+
+01 §2 (concept): a capability to publish a new version to **one region at a share of volume** (20 % in the
+prototype), and a replay of past items compares the route
+mix (actual against flow) and reports straight-through %, approvals and exceptions per day, and modelled value
+uplift.
+
+| | Replay (before publish) | Shadow | Canary |
+|---|---|---|---|
+| What runs | The new version over past items, as of each decision date | The new version beside the live one on live items; it never acts | The new version **decides** for a slice of live items |
+| Risk | None | None | Real, bounded by the slice; guardrails and approvals unchanged |
+| What it tells | Route mix vs actual, straight-through %, approvals and exceptions per day, modelled uplift | Flip rate and value delta on today's data (`shadow_decision` exists) | Real outcomes: override rate, exceptions, days to next use, realised value |
+| Weakness | Counterfactual values are model estimates (§5.1) | No realised outcomes for the flipped items | Needs enough volume to tell a difference |
+
+Recommended sequence: **replay (always) → shadow (optional, when the replay shows many flips) → canary → full**.
+
+Canary mechanics:
+
+- Assignment: `region == R and hash(case_id, flow_id, salt) mod 100 < p`. Stable and **sticky**: a case keeps the
+  version that first decided it through approval, execution and close (the decision records `flow_version`). Raising
+  `p` only adds cases.
+- Control group: the rest of the same region in the same period, so canary and control share market and season; the
+  report compares the two with a bootstrap band, as the back-test does, and states the sample size needed before a
+  difference means anything.
+- Stop rules, set at publish: if the canary's exception rate, override rate or guardrail holds exceed the control's by
+  a set margin, the platform **pauses** the canary (new cases go back to the previous version) and tells the owner.
+  Pausing moves towards the known-good version, so it may be automatic; **widening (raising `p`, adding regions,
+  going full) is always a person's action** through maker-checker, and is forbidden to agents (`flow.publish` already
+  is).
+- Market pilots ("FR in pilot", 01 §4.2) use the same mechanism with the market as the region.
+
+### 11.7 Unconfirmed in §11
+
+- Whether `plan_queue`'s heuristic is optimal on the demo queue (no MILP comparison was run); HiGHS solve times at
+  Recover's queue sizes (no benchmark).
+- Evidently's exact telemetry variable (its docs disagree).
+- statsforecast's full dependency weight (fugue's tree); lifelines' `pandas<3` pin against our future pandas.
+- Kustomize and Helm three-way merge behaviour (general knowledge, not re-read).
+- That the device pack's lot caps and budgets are linear (assumed for the MILP).
 
 ## Unconfirmed
 
@@ -454,6 +756,7 @@ Estimates are rough single-engineer figures, not commitments.
 - Which DMN minor version (1.3/1.4/1.5) each interop target imports.
 - The effort estimates in sections 3.1, 8.2 and 10 are judgement, not measured.
 - `rule-engine` 5.2.1 shows an upload time of 24 Nov 2026 00:30 UTC (today); taken from PyPI JSON as read.
+- Revision 2: see §11.7.
 
 ## Sources (read 24 Nov 2026 unless stated)
 
@@ -509,12 +812,41 @@ ML:
 - XGBoost (3.4.1, 15 Aug 2026): https://pypi.org/project/xgboost/
 - sktime (1.3.0, 8 Nov 2026): https://pypi.org/project/sktime/
 - MLflow (3.18.0, 3 Nov 2026): https://pypi.org/project/mlflow/
-- Darts: https://pypi.org/project/darts/ (page did not load; details unconfirmed)
+- Darts: https://pypi.org/project/darts/ (page did not load; details unconfirmed). Revision 2: PyPI JSON read; 0.48.1
+  (16 Oct 2026), Apache-2.0.
+
+Revision 2 (read 24 Nov 2026; PyPI JSON `https://pypi.org/pypi/<name>/json` for version, upload date, licence field,
+dependencies and wheel size):
+- Target: [01-recover-segments.md](01-recover-segments.md) §2, §3, §4.1, §4.2, §9
+- Repo (read, not changed): `backend/di/services/modeler/valuers/tool_fleet.py` (`plan_queue`, `_plan_queue`, `BASEP`,
+  `POOLK`), `backend/di/services/engine/pool.py`, `fixtures/golden/po/equip_decisions.json`,
+  `backend/requirements.in`, `backend/requirements.lock`, `backend/Dockerfile`
+- Customer layer: jsonpatch 1.48 (19 Nov 2026) and jsonpointer 3.12 (11 Nov 2026), BSD-3-Clause; deepdiff 9.2.1
+  (18 Nov 2026), MIT; json-merge-patch 0.3.0 (25 Mar 2025), BSD; jsonmerge 1.9.2 (19 Jul 2023), MIT; dictdiffer
+  0.10.0 (16 Jul 2026), MIT. Standards: RFC 6902 (JSON Patch), RFC 7386 (JSON Merge Patch), IETF (not re-read)
+- Decision tables: zen-engine 2.1.8 (20 Nov 2026), still the latest: https://pypi.org/project/zen-engine/
+- Survival: lifelines 0.30.3 (5 Mar 2026), MIT: https://pypi.org/project/lifelines/ ; scikit-survival 0.28.0
+  (5 Jul 2026), licence expression GPL-3.0-or-later: https://pypi.org/project/scikit-survival/ ; XGBoost 3.4.1
+  (15 Aug 2026), Apache-2.0, Linux wheel depends on `nvidia-nccl-cu13`: https://pypi.org/project/xgboost/
+- Forecasting: statsforecast 2.1.1 (16 Jul 2026), Apache-2.0: https://pypi.org/project/statsforecast/ ; sktime 1.3.0
+  (8 Nov 2026), BSD-3-Clause; darts 0.48.1 (16 Oct 2026), Apache-2.0; prophet 1.5.0 (5 Oct 2026), MIT
+- Optimisation: SciPy 1.18.1 (21 Aug 2026), BSD: https://pypi.org/project/scipy/ ; highspy 1.16.0 (11 Nov 2026), MIT;
+  ortools 9.15.6755 (14 Jan 2026), Apache-2.0; PuLP 4.3.1 (19 Nov 2026), MIT, `cbc` extra = cbcbox 2.937 (EPL-2.0);
+  mip 2.0.2 (9 Nov 2026), EPL-2.0; Pyomo 6.11.0, BSD-3-Clause; CVXPY 1.9.3, Apache-2.0; timefold 1.24.0b0
+  (8 Jul 2025), Apache-2.0, depends on JPype1
+- ML: scikit-learn 1.9.1 (10 Sep 2026), BSD-3-Clause
+- Drift: Evidently 0.7.23 (11 Sep 2026), Apache-2.0: https://pypi.org/project/evidently/ , LICENSE:
+  https://raw.githubusercontent.com/evidentlyai/evidently/main/LICENSE ; telemetry:
+  https://docs.evidentlyai.com/faq/telemetry ; alibi-detect 0.13.0 (11 Dec 2025), licence field "Business Source
+  License 1.1": https://pypi.org/project/alibi-detect/ ; nannyml 0.13.1 (12 Jul 2025), Apache-2.0; frouros 0.9.0
+  (5 Oct 2024), BSD-3-Clause; river 0.27.0 (13 Nov 2026), BSD-3-Clause
 
 ## Legal note
 
 All licence statements in this report (Camunda License v1 and the Enterprise requirement, LGPL for SpiffWorkflow and
 SpiffArena, GPLv3 for pyDMNrules, AGPLv3 for Unleash, the bpmn.io watermark clause, the GrowthBook enterprise
-directories, and every permissive licence listed) are findings from public pages read on 24 Nov 2026. They must be
+directories, and every permissive licence listed; revision 2 adds GPL-3.0-or-later for scikit-survival, BSL 1.1 for
+alibi-detect, EPL-2.0 for CBC (`cbcbox`) and Python-MIP, and the permissive licences of lifelines, statsforecast,
+SciPy, HiGHS, OR-Tools, jsonpatch, deepdiff and Evidently) are findings from public pages read on 24 Nov 2026. They must be
 reviewed by Kinective's Legal team before anyone relies on them, and in particular before any of these components is
 included in the customer trial package or another redistributed artefact.

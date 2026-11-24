@@ -1,522 +1,903 @@
-# B. Industries, guardrails, roles, template packs and stories (24 Nov 2026)
+# B. Industries, gates, roles, template packs and stories (revision 2, 24 Nov 2026)
 
-Part B of the platform research ([brief](00-brief.md)). Business and subject-matter view: where returned-asset
-disposition decisions matter, which rules from regulation and standards become gate rules, who uses the product, what a
-domain-agnostic template pack must hold, the epics and stories across the four stages, and the industry order after the
-two pilot templates (tool-fleet AMS, device trade-in).
+Part B of the platform research ([brief](00-brief.md)). It is the business and subject-matter view. It covers the five
+Recover industry segments ([01](01-recover-segments.md)), the gate rules that regulation turns into, who uses the
+product, what a template pack must hold, and the stories. It ends with the segments that come after the five.
 
-> **Legal review.** Sections 2 and parts of 1 and 5 describe regulation, standards, accounting and reporting rules.
-> They are a research summary, not legal advice, and must be reviewed by Kinective's Legal team before anyone relies
-> on them or builds them into a shipped template pack. Several items are marked **unconfirmed**.
+Report A ([A-pilot-templates.md](A-pilot-templates.md)) owns tool-fleet AMS and device recommerce, with stories TF-, SD-,
+CR- and DV-. This report owns **used cars (UC-)**, **telecom network equipment (TN-)** and **medical rental (MR-)**. It
+also owns the shared parts: the gate catalogue, the roles, the pack format, cross-segment stories (X-) and the next
+segments (NS-).
+
+Names used: **Recover** is the circularity product on the shared core, which Resolve and Reconcile also use (other
+reports cover those two). **Compose** is where a flow is written. **Decide** (Pulse, Cases, Exceptions) and
+**Understand** (Analytics, Agents) are the screens Compose generates. Numbers marked *sample, modelled* come from the
+prototype's synthetic data. They are not facts or forecasts.
+
+> **Legal review.** Sections 2–5 and 9 describe regulation, standards, export control, accounting and reporting rules.
+> They are a research summary, not legal advice. Kinective's Legal team must review them before anyone relies on them
+> or builds them into a shipped template pack. Items we could not confirm are marked **unconfirmed**.
+
+## What changed in this revision and why
+
+| # | Change | Type | Why |
+|---|---|---|---|
+| 1 | Three new segment chapters: used cars (§2), telecom network equipment (§3) and medical rental (§4). Each covers process, gates, roles, routes, systems, entities, KPIs, exceptions, valuer and stories. | Added | The user decided today to build towards the five segments of the Recover prototype ([01](01-recover-segments.md)). B owns the three new ones in depth. |
+| 2 | 72 segment stories (UC-01–25, TN-01–24, MR-01–23), each with P0/P1/P2, actor (Agent or Person) and Given/When/Then. | Added | The plan needs stories it can build and test. They cover the seven stages, guardrails, customer rules, diversions (including the blocked compliance skip), exceptions and analytics questions from the prototype. |
+| 3 | 17 new gates in the catalogue (§5.2): tool safety recall, telematics freshness, device data-wipe, blacklist and lock, vehicle title and finance, odometer, open vehicle recall, title brand, salvage reporting, network inventory match, configuration wipe, export control, covered network equipment, decontamination, service and certification in date, medical recall, and refurbish-stays-servicing. Every gate now has a **type** and a **stage**. | Added | The five packs need these gates. 01 §9 types each guardrail (Compliance / Data quality / Threshold / Approval) and places it at a stage, so the catalogue must carry both. |
+| 4 | Stage model changed from four stages (S1–S4) to the **seven stages** every pack uses (01 §3), with a mapping from the old four. | Updated | The prototype's packs, agents and screens all use seven stages. The four stages stay as a mapping because the team gave them to an outside assistant (brief). |
+| 5 | Template-pack format (§7) rewritten to match 01 §9. Now included: sample prompts and the configuration agent's question, per-stage agents with autonomy, typed guardrails placed at a stage, the **customer layer**, the replay dataset, pack-driven Decide/Understand behaviour (concept, not layout), exception types with owners, and KPIs with a trend and worked questions. | Updated | The old 13 parts came from the code. The prototype defines the contract every pack must meet. We still keep 13 parts so the plan's references stay stable. |
+| 6 | Roles (§6): the prototype's standard roles (flow author, flow approver, operator, analyst, administrator) and the segment roles are mapped onto the platform's roles. New rows were added for Compose, the customer layer and identity-provider groups. | Updated | Each pack's approval guardrails name owners (used-car manager, trade compliance, clinical engineering…) that must resolve to sign-in roles. |
+| 7 | Epics re-cut to the seven stages plus Compose. The old "top 15 stories" became 16 cross-segment stories (X-01–16), re-prioritised for the five segments. | Updated | Stories that serve all five packs (pack contract, customer layer, gates as data, replay) are now P0. Fraud triage, credit settlement and reporting moved down because the new three segments need them less. |
+| 8 | Roadmap (§10): the five segments come first. Order: the pilots (A), then telecom network equipment, used cars and medical rental, then the next segments. | Updated | User decision of 24 Nov 2026. |
+| 9 | ITAD / IT lease end, rental and construction fleets, telecom CPE, EV and industrial batteries, automotive cores, medical capital equipment, B2C retail and the industrial base moved to **§9 Next segments (after the five)**. Their text was tightened and each got later-phase stories (NS-). | Moved | The user asked not to delete them. The plan will "enhance and complete all the stories" for them later. |
+| 10 | Telecom CPE (home routers, set-top boxes) is now kept apart from telecom **network** equipment. | Updated | 01 §7 excludes home CPE. The two differ in value per unit, decision unit (lot versus unit) and gates. |
+| 11 | Medical **capital equipment** refurbishment (trade-in, resale) is now kept apart from medical **rental**. | Updated | The rental pack re-rents its own fleet. Capital-equipment refurbishment resells to new owners and carries the remanufacturing questions. |
+| 12 | Removed the per-stage process text for tool fleet and device (old §1.3). | Deleted | Report A owns those segments. Two copies would drift. |
+| 13 | Removed the old summary claim "the two pilot packs need 6 new parts" and the old roadmap order "ITAD first". | Deleted | Both are replaced by the five-segment plan and the new pack contract. |
+| 14 | Corrected the battery note. Reg. (EU) 2026/1738 is the new **End-of-Life Vehicles Regulation** (signed 8 Jul 2026, Official Journal 24 Jul 2026). It is not an unknown battery amendment. Which battery articles it changes is still **unconfirmed**. | Updated | Found while researching the used-car salvage route. The old open question was wrong. |
+| 15 | Carbon section: added notes on how the formula applies to cars, network gear and rental devices. | Updated | Without them, the displacement factor `d` would be over-stated for retail of used cars and for re-rent. |
 
 ## Summary
 
-1. The product fits best where the returned item is **serialised, worth more than the cost of deciding, has 3+ real
-   routes, and its data sits in enterprise systems**: industrial lease end (base), rental/construction fleets, ITAD,
-   telecom CPE, device trade-in. Medical devices and EV/industrial batteries fit well but carry heavy regulatory effort.
-   Automotive cores fit stages 1 and 4 (fraud triage, core credit) more than stage 3. B2C retail returns are a weak fit.
-2. Regulation turns into a small, reusable set of **gate rules** (about 20), each with trigger, evidence and effect.
-   The same six or seven gate *types* recur across industries: data sanitisation, hazardous handling, certified
-   downstream, cross-border waste consent, regulated-product status, contract/consent, reporting evidence.
-3. Today's packs hold **authoring guardrails** (what a business rule may not say), not runtime **gates** with evidence.
-   Runtime gates are six fixed engine gates; the regulatory gates live in valuer code. A pack needs declarative gates.
-4. Carbon today is `embodied(class) × qty × route share` (`backend/di/repositories/common.py`, `EMB`, `CO2S`), with no
-   factor source. A deterministic method per route with cited, licence-safe factors is specified in section 2.4.
-5. Stage 1 (fraud triage) and stage 4 (financial reconciliation) are the biggest gaps: no fraud logic in the backend,
-   and "reconcile" today means predicted-versus-actual cost learning, not credits, refunds or asset retirement.
-6. A template pack should be a versioned bundle of 13 parts (section 4); the two pilot packs need 6 new parts.
-7. Roadmap after the pilots: **ITAD / IT lease end → rental and construction fleets → telecom CPE → EV and industrial
-   batteries (aim at 18 Feb 2027) → automotive cores → medical devices**. B2C retail only for serialised electronics.
+1. **Five segments, one engine.** Tool-fleet AMS and device recommerce (report A), plus used cars, telecom network
+   equipment and medical rental (this report). Every pack has the same seven stages, the same six stage agents and
+   the same Decide/Understand screens. What differs is pack data: routes, typed guardrails, systems, entities, mappings,
+   valuer parameters, KPIs and sample replay.
+2. **Each new segment has one or two hard compliance gates.** Used cars: title and finance clear, odometer, and no
+   retail with an open recall. Network equipment: configuration wipe and export control (plus, in the US, covered
+   equipment that must be disposed of). Medical rental: decontamination record, and service and certification in date
+   for the whole rental. All of them are evidence checks on records that already exist in a named system type. That
+   is what makes them good gates.
+3. **The customer layer is the new platform capability all five need.** A customer can tighten a locked compliance
+   guardrail but never weaken it. They can add diversions (extra steps or shortcuts), but a diversion that skips a
+   compliance guardrail is blocked. Pack updates never overwrite customer changes. Nothing like this exists in the code
+   today.
+4. **The gate catalogue grows from 24 to 41 gates.** Each has a type, a stage, an owner, evidence and a dated citation.
+   A pack lists the gates it uses and their parameters. It does not copy them.
+5. **Stories:** 72 segment stories (UC 25, TN 24, MR 23: 39 P0, 24 P1, 9 P2), 16 cross-segment stories and 21
+   later-phase stories for the next segments.
+6. **Roadmap:** first the pilots (A). Then telecom network equipment (all 8 systems have adapters; it reuses the
+   tool-fleet spares and harvest logic and the device wipe gate). Then used cars (US-first rules are clear; one legacy
+   connector is needed). Then medical rental (simple valuer, but clinical-safety gates and the hospital's own duties).
+   After the five come ITAD, rental and construction fleets, telecom CPE, batteries, automotive cores, medical capital
+   equipment, and B2C retail for serialised goods only.
 
 ---
 
-## 1. Industry scan
+## 1. The five segments and what they share
 
-### 1.1 What makes a good fit
+### 1.1 The five packs
 
-Scored 1 (poor) to 5 (strong) against what the platform does well today: per-case decision over many routes, data from
-many enterprise systems, explainable value/risk/carbon, a person approves anything consequential, instructions to ERP.
+| Segment | Pack (01) | Written by | Unit | Routes | Sample replay (*modelled*) | Owner report |
+|---|---|---|---|---|---|---|
+| Tool-fleet AMS | After-market services · power tools, v3.2 | Fleet services lead | tools | 6 | 3,420 tools, 81% straight-through, +9% value | A (TF, SD, CR) |
+| Device recommerce | Recommerce · phones and devices, v2.7 | Recommerce operations lead | devices | 4 channels | 18,600 devices, 88%, +6% net recovery | A (DV) |
+| Used cars | Used vehicles · lease and trade-in returns, v1.9 | Remarketing director | cars | 4 channels | 2,140 cars, 79%, +$410 gross per car | B §2 (UC) |
+| Telecom network equipment | Telecom network equipment, v1.4 | Network asset manager | units | 5 | 1,260 units, 84%, $1.1M new spend avoided | B §3 (TN) |
+| Medical rental | Medical rental · hospital equipment, v1.6 | Rental fleet director | devices | 4 | 1,880 devices, 83%, +6 pts utilisation | B §4 (MR) |
+
+### 1.2 Seven stages, and the four stages of the brief
+
+Every pack uses the same seven stages (01 §3): **1 return/receive → 2 match/verify → 3 condition → 4 value each route
+→ 5 decide → 6 execute → 7 close and learn**. Each pack renames them in its own words (for example "Title and
+finance" is stage 2 for cars).
+
+| Brief's stage (00-brief) | Seven stages | Used cars | Network equipment | Medical rental |
+|---|---|---|---|---|
+| S1 RMA intake and fraud triage | 1, 2 | Car returned; title and finance | Decommission notified; match to inventory | Device returned; decontamination |
+| S2 Receiving and grading | 2, 3 | Inspect and estimate | Wipe and test | Inspect and test |
+| S3 Disposition and recommerce | 4, 5, (6) | Price by channel; decide channel; recondition and list | Value each route; decide; broker listing | Value each route; decide |
+| S4 Financial reconciliation | 6, 7 | Sold and learn (gain/loss against residual, lessee charges) | Close and learn (new spend avoided, asset transfer) | Close and learn (utilisation, write-offs) |
+
+### 1.3 Stage agents and autonomy
+
+Compose puts one agent on each stage (01 §3). Default autonomy, and how it maps onto today's agent registry, which
+offers *act* or *propose*:
+
+| Agent | Stages | Default autonomy (01) | On the platform |
+|---|---|---|---|
+| Intake | 1, 2 | Act alone | *act*, read and case-open actions only |
+| Condition | 3 | Act within limits | *act* inside run limits; a fallback estimate is always labelled |
+| Valuation | 4 | Act alone | *act* (compute only) |
+| Routing | 5 | Act within limits | *propose* above thresholds, low confidence or a guardrail hit; *act* inside a standing policy (needs the decision in X-05) |
+| Follow-through | 6 | Act within limits | *act* for instructions inside limits; never approve (`forbidden.py`) |
+| Analytics | 7 | Act alone | *act*, read only |
+
+The confidence threshold is 65–85%, with 75% as the default. Below it, any agent hands the item to a person with its
+recommendation. Guardrails are enforced by the platform whatever the autonomy level.
+
+### 1.4 What makes a good fit (kept; used to rank the next segments)
 
 | Criterion | Why it matters |
 |---|---|
 | Value per unit or lot | Deciding must cost less than the uplift. Low-value goods need lot-level or fully automatic decisions. |
-| Route count | With one or two routes (restock or liquidate) there is little to optimise. |
-| Serialisation and data | Serial numbers, telemetry, service history and contracts make a case explainable. |
-| Regulatory weight | Gates add value (we enforce them) but add effort (evidence, certificates, legal review). |
-| Enterprise systems | ERP/EAM/WMS/leasing in place means our adapters matter; a single SaaS returns portal means they don't. |
-| Approval culture | B2B asset owners already approve disposals (asset retirement, write-offs); B2C does not. |
-
-### 1.2 Fit overview
-
-| Industry | Fit | Effort | Market signal (see sources) | Nearest existing pack |
-|---|---|---|---|---|
-| Industrial equipment, lease end (base) | 5 | built | Base demo, 128 cases | `industrial` |
-| Tool fleet / aftermarket service (pilot a) | 5 | built (pilot) | Pilot | `tool_fleet` |
-| Device trade-in / protection (pilot b) | 4 | built (pilot) | Refurbished phones +3% H1 2025; used shipments +3.2% 2025 | `device` |
-| IT asset disposition (ITAD) | 5 | low | Global ITAD ~USD 13–26 bn 2025, CAGR 7–14% (vendor estimates vary widely) | `device` + data gates |
-| Rental and construction fleets | 5 | low | US rental penetration ~57% (Q1 2025); rental fleets cycle ~7 years | `tool_fleet` |
-| Telecom CPE (routers, set-top boxes) | 4 | low–medium | One operator: ~2.45 m refurbished fixed devices in 2025; another: 3 m routers/STBs reused or recycled | `device` (lots) |
-| EV and industrial batteries | 4 | high | Second-life market ~USD 1–2 bn 2025–26, very wide estimates; EU passport 18 Feb 2027 | new pack |
-| Automotive cores / reman | 3 | medium | Global auto reman ~USD 62–69 bn 2025 (vendor estimates) | new pack |
-| Medical devices | 3 | high | Strong (capital equipment refurbishment), heavy rules | new pack |
-| Consumer electronics recommerce | 4 | low | Same as device trade-in | `device` |
-| B2C retail returns | 2 | medium | US returns ~USD 850 bn 2025; 9% fraudulent (NRF) | — |
-
-### 1.3 Per industry: process across the four stages
-
-Stages: **S1** RMA intake and fraud triage, **S2** receiving and grading, **S3** smart disposition and recommerce,
-**S4** ERP/WMS financial reconciliation.
-
-**Industrial equipment, lease end (base).**
-- S1: lease-end notice from the leasing system, return authorisation, entitlement (owner, lessee, contract terms on
-  refurbish/resale), early disposition before shipping. Fraud is rare; the risk is wrong identity or missing parts.
-- S2: receipt against return, inspection grade from the repair centre, bench test, life assessment from engineering,
-  telemetry hours and alarms, certificates (QMS).
-- S3: redeploy, re-lease, whole resale, internal parts, external parts, material recovery, responsible exit (the
-  demo's seven routes). Value drivers: avoided new purchase, lease income, part avoidance, holding cost, demand fit.
-- S4: excess wear-and-tear charges to the lessee, asset transfer or retirement in the fixed-asset register, gain or
-  loss on disposal, actual cost versus predicted (built as "reconcile and learn").
-- Systems: ERP, EAM, leasing, PLM, QMS, WMS, TMS, field service, IoT. Data: serial, configuration, BOM, run hours.
-
-**Tool fleet / aftermarket service (pilot a).** Same as above with contracts per tool, a repair centre that grades (we
-read the grade), a tool pool, fleet renewal and pre-owned dealers. S4: credit for fleet swap, refurbishment work orders
-costed, pool transfers. Value drivers: avoided new tool, refurbishment cost, wear index and RUL from IoT + PLM.
-
-**IT asset disposition (ITAD) and IT lease end.**
-- S1: decommission request from ITSM/CMDB or lease-end schedule; serial list, asset tags, data classification of the
-  owner; chain-of-custody starts at pickup (sealed containers, serial count at pickup).
-- S2: serial reconciliation against the manifest (missing serials are the main incident), data sanitisation (clear,
-  purge, destruct per media type) with a certificate per serial, functional test, cosmetic grade, configuration
-  (CPU, RAM, storage) read by diagnostic tools.
-- S3: redeploy internally, return to lessor, resell (wholesale, B2B refurbished, marketplace), harvest parts (memory,
-  drives where policy allows), recycle via certified downstream. Value drivers: residual value decays monthly, so time
-  to sale matters; data risk dominates.
-- S4: settlement to the asset owner (revenue share or buy-back), certificates of sanitisation and recycling, asset
-  retirement in the CMDB and fixed-asset register, lease buy-out or return credit.
-- Systems: ITSM/CMDB, ERP fixed assets, ITAD vendor portal, diagnostic and erasure tools, marketplace.
-
-**Medical devices (capital equipment, imaging, monitors, pumps).**
-- S1: trade-in at new sale, lease end, end of service contract; check device class, whether it is single-use, recall
-  and field-safety notices, service history.
-- S2: inspection and functional test against OEM specification by a qualified servicer; patient data on the device
-  (imaging, monitors) must be sanitised.
-- S3: redeploy within the hospital network, refurbish and resell (where the work stays "servicing"), remanufacture (a
-  regulated activity: the remanufacturer takes on manufacturer duties), parts harvest, recycle. Export rules per
-  destination market.
-- S4: trade-in credit against the new sale, asset retirement, service-contract close-out.
-- Systems: CMMS/HTM (healthcare technology management), ERP, QMS (complaints, CAPA), UDI database, service management.
-
-**Automotive cores / remanufacturing (starters, alternators, turbos, ECUs, transmissions, injectors).**
-- S1: core return against a core charge (deposit) paid by the buyer; entitlement (was a core charge paid, which part
-  number, within the return window). **Fraud and abuse is the main issue**: wrong core, non-rebuildable core, core from
-  a different product family, cracked housings.
-- S2: core inspection against acceptance criteria per part number; accept, partial credit or reject.
-- S3: remanufacture, harvest components, sell core to a broker, scrap for material. Value drivers: core availability
-  (constrained supply), reman yield, credit cost.
-- S4: **core credit** back to the customer (full, partial, none), core-bank inventory valuation, deposit liability
-  clearing. This stage carries most of the money.
-- Systems: dealer management, ERP, warranty system, core-management tools, parts catalogue (interchange data).
-
-**EV and industrial batteries (second life).**
-- S1: pack return from vehicle end of life, warranty replacement, or stationary storage decommissioning; check
-  chemistry, pack ID, state of health (SoH) from the battery management system, damage or thermal event history.
-- S2: diagnostics (SoH, internal resistance, cell imbalance), safety classification (damaged / defective / critical),
-  discharge for storage.
-- S3: reuse in vehicle, remanufacture (replace modules), repurpose to stationary storage, harvest modules, recycle
-  (black mass). Value drivers: SoH and chemistry (LFP versus NMC), demand for second-life storage, recycling payable
-  for nickel/cobalt/lithium, hazardous transport cost.
-- S4: warranty claim reconciliation, battery passport update (new economic operator for repurposed packs), recycled
-  content and recovery reporting, producer-responsibility fees.
-- Systems: BMS data platforms, vehicle telematics, ERP, WMS with dangerous-goods handling, recycler portals.
-
-**Telecom CPE (routers, set-top boxes, ONTs, mobile handsets from operator programmes).**
-- S1: return at contract end, upgrade, fault swap; device linked to subscriber account; check lock status and
-  provisioning.
-- S2: high volume, low value: test in lots, factory reset and firmware refresh, cosmetic grade.
-- S3: refurbish and redeploy to new subscribers (main route), sell to brokers, harvest power supplies and remotes,
-  recycle. Decisions are per **lot**, not per unit; value comes from avoided new-CPE purchase.
-- S4: unreturned-equipment charges to subscribers, inventory revaluation of refurbished stock, recycling certificates.
-- Systems: BSS/OSS (subscriber, provisioning), ERP, WMS, refurbishment partner portals.
-
-**Rental and construction equipment.**
-- S1: off-rent return, end of fleet life (age or hours), damage claim; telematics hours and fault codes.
-- S2: check-in inspection (damage, wear parts), repair estimate.
-- S3: keep in fleet, refurbish/rebuild, transfer to another branch, sell retail, sell at auction, sell to dealer,
-  parts harvest, scrap. Value drivers: used-equipment price indices, utilisation by branch, rebuild cost versus new.
-- S4: damage recovery from renter, fixed-asset disposal gain/loss, auction settlement, rebuild capitalisation.
-- Systems: rental management, telematics, ERP, auction and marketplace platforms. Closest to the tool-fleet pack.
-
-**Consumer electronics recommerce (device trade-in pilot and related).**
-- S1: trade-in quote from customer-declared condition; **fraud triage**: activation/anti-theft lock, blacklisted IMEI,
-  finance not paid off, swapped or non-genuine parts, declared grade far above received grade.
-- S2: automated diagnostics, cosmetic grade, data wipe certificate.
-- S3: channel routing (buy now, offers, auction, marketplace, wholesale), lot building, repair or parts. ML price
-  prediction and dynamic routing (pilot b).
-- S4: **re-quote** when received grade differs (credit adjustment), trade-in credit settlement, channel fee and sale
-  reconciliation, return-from-buyer handling.
-
-**B2C retail returns (apparel, home, general merchandise). Weak fit, because:**
-- Value per item is low (often below the cost of a reverse shipment), so a per-case decision with a human approver is
-  uneconomic; decisions must be instant rules at the returns portal or in the warehouse.
-- Few real routes: restock, return to vendor, liquidate in bulk, donate, recycle. Little to optimise per item.
-- Items are rarely serialised; there is little telemetry, contract or service data to explain a decision.
-- The main money is fraud and abuse (NRF: 9% of returns fraudulent in 2025; a second study counts most of it as abuse,
-  not fraud), which is a point-of-return identity and policy problem solved by returns-management and fraud SaaS.
-- The buyer is a retailer with a returns portal, not an asset owner with ERP/EAM; our connection fabric matters less.
-- Where it does fit: serialised electronics and high-value goods (handled by the device pack), and the EU ban on
-  destroying unsold apparel and footwear for large companies from 19 July 2026, which makes "exit" a gated route.
+| Route count | With one or two routes there is little to optimise. |
+| Serialisation and data | Serial numbers, VINs, asset tags, telemetry, service history and contracts make a case explainable. |
+| Regulatory weight | Gates add value (we enforce them) but also add effort (evidence, certificates, legal review). |
+| Enterprise systems | With ERP, EAM, WMS, leasing or rental systems in place, our adapters matter. With a single SaaS returns portal, they don't. |
+| Approval culture | B2B asset owners already approve disposals and write-offs. B2C does not. |
 
 ---
 
-## 2. Guardrails from regulation and standards, as gate rules
+## 2. Used cars (lease and trade-in returns), pack v1.9
 
-Each gate rule: **ID, trigger** (when it applies), **evidence** (what must be on file), **effect** (which route it
-blocks or requires), **owner** role. "Blocks" means the route fails the gate with the reason; "requires" means the route
-is only eligible after the evidence exists or the step is added to execution. All of this needs review by Kinective's
-Legal team before it is built into a pack.
+### 2.1 How the process works
 
-### 2.1 Data, devices and e-waste
+Sources are cited in §2.2 and in the source list. Process details marked *practice* are from general industry
+knowledge, are **unconfirmed** in detail, and should be checked with a design partner.
 
-| ID | Source | Trigger | Required evidence | Effect | Owner |
+- **Return.** A leased car comes back at lease end. Lease contracts usually give the lessee, and often the dealer, an
+  option to buy at the residual value before the car goes back to the lessor (*practice*). A trade-in arrives at a
+  dealer against a new sale. Both open one case per VIN.
+- **Title and finance.** The lessor or dealer needs a clear title before selling. Liens from lenders must be released.
+  For a trade-in, the payoff of the customer's loan must be confirmed. Title, lien and brand rules (salvage, flood,
+  rebuilt, lemon buyback) are **state law in the US and vary by state**. The national title database (NMVTIS) holds
+  title brands and junk/salvage reports.
+- **Odometer.** For a leased car, the lessor must tell the lessee that a mileage disclosure is required. The lessee
+  must then give a signed written or electronic odometer statement (49 CFR 580.7). Under the amended exemption (49 CFR
+  580.17), vehicles from model year 2011 on need a disclosure until they are 20 model years old (in force from 1 Jan
+  2021).
+- **Inspect and estimate.** Condition report with photos, damage, tyres and brakes, and a reconditioning ("recon")
+  estimate. For EVs, battery state of health matters to price. The prototype's diversion sends EVs under 80% to a
+  battery assessment.
+- **Recalls.** A VIN-level recall lookup is available from NHTSA. US law forbids rental companies with 35 or more
+  vehicles from renting, leasing **or selling** vehicles under open recall (Safe Rental Car Act, part of the FAST Act,
+  Dec 2015, effective 1 Jun 2016). We found **no federal ban for used-car dealers** (**unconfirmed**; state law not
+  checked). The FTC Buyers Guide, as amended in 2016 (effective 27 Jan 2017), points buyers to the recall check. "No
+  retail with an open recall" is therefore pack policy for most customers, and law for rental-fleet sellers.
+- **Channels.** Retail on one of the group's lots (which lot matters for days to sale), wholesale auction (fees,
+  transport, arbitration risk), dealer trade to a partner, or salvage (when recon exceeds value or the car is a total
+  loss).
+- **Execute.** Recon order to the body shop or service bay, transfer to the lot, listing; or consignment to auction
+  with the title; or a salvage sale to a buyer that reports to NMVTIS.
+- **Close and learn.** Sale price and days to sale against forecast. For a lease, the lessor's gain or loss is measured
+  against the booked residual, and excess mileage and wear charges go to the lessee (finance).
+- **Outside the US** (**unconfirmed**, not researched in depth): in the EU, a car that becomes waste falls under the new
+  End-of-Life Vehicles Regulation (EU) 2026/1738 (Official Journal 24 Jul 2026), which replaces Directive 2000/53/EC
+  and also governs the line between a used car and an end-of-life vehicle at export. In the UK, a private buyer of a
+  car under hire purchase has statutory protection, which makes the outstanding-finance check a seller duty in
+  practice.
+
+### 2.2 Gates and guardrails (pack v1.9 plus research)
+
+| Guardrail | Type | Stage | Owner | Evidence | Source |
 |---|---|---|---|---|---|
-| G-DATA-1 | NIST SP 800-88 Rev. 2 (Sep 2025); IEEE 2883-2022 | Asset class has storage media (IT, phones, CPE, medical imaging, controllers with logs) and route leaves the owner's control (resale, redeploy to another customer, parts sale, recycle) | Sanitisation record **per serial**: method (clear / purge / destruct per IEEE 2883), tool and version, verification result, date, operator, media serial | Blocks all release routes until present; redeploy inside the same owner and security level may accept "clear" | Compliance |
-| G-DATA-2 | NIST SP 800-88 Rev. 2 | Sanitisation verification failed or media not sanitisable | Destruction record | Requires "destruct" step; blocks parts sale of that media | Compliance |
-| G-DATA-3 | HIPAA Security Rule 45 CFR 164.310(d) (US); GDPR Art. 32 (EU) | Device held personal or patient data | As G-DATA-1, plus data-controller sign-off where contract requires | Blocks release routes | Compliance |
-| G-DS-1 | R2v3 (SERI, 2020); e-Stewards v4.0 (BAN, 2020) | Route sends equipment or focus materials to a downstream processor | Downstream vendor on approved list with valid certificate (R2v3 or e-Stewards) and expiry date; focus-material chain to final disposition | Blocks recycle/exit/parts-broker routes to non-qualified vendors | Sustainability lead |
-| G-DS-2 | e-Stewards v4.0 | Owner's policy is e-Stewards | No export of hazardous e-waste to non-OECD countries; no landfill or incineration of hazardous e-waste | Blocks such routes | Sustainability lead |
-| G-WEEE-1 | WEEE Directive 2012/19/EU, Annex VI | Used EEE is shipped (cross-border) as "not waste" for reuse | Per item: functionality test record, copy of invoice/contract of transfer, declaration that it is not waste, protective packaging | Requires the evidence for cross-border resale/redeploy; without it the item is treated as WEEE (G-WASTE-1) | Compliance |
-| G-WEEE-2 | WEEE Directive 2012/19/EU, Art. 8 and Annex VII | Route is material recovery or exit for EEE | Authorised treatment facility; WEEE category and weight recorded; selective treatment items (batteries, circuit boards, etc.) removed | Blocks recycle routes to non-authorised facilities; requires weight and category | Sustainability lead |
-| G-WASTE-1 | Basel Convention e-waste amendments (in force 1 Jan 2025); EU Waste Shipment Regulation 2024/1157 | Cross-border shipment of e-waste (hazardous *or* non-hazardous) | Prior informed consent (notification and consent of the countries concerned) on file; shipment documents | Blocks cross-border waste routes without consent | Compliance |
-| G-WASTE-2 | EU WSR 2024/1157 (most export rules from 21 May 2027, **unconfirmed** detail) | Destination outside OECD and item is waste | Destination on the Commission's list of countries that may receive it, plus consent | Blocks export routes otherwise | Compliance |
+| Clear title, no open finance (G-VEH-TITLE) | Compliance, locked | 2 Title and finance | Title desk | Title status, lien search, payoff or lien release | Pack v1.9; state title law; NMVTIS (49 U.S.C. 30502–30505, 28 CFR Part 25 Subpart B) |
+| Odometer verified and disclosed (G-VEH-ODO) | Compliance, locked | 2 (disclosure), 3 (photo match) | Title desk / inspection lead | Lessee's odometer statement, odometer photo, match within tolerance | 49 U.S.C. Ch. 327; 49 CFR 580.7, 580.17; NHTSA final rule 2 Oct 2019, date moved 26 Nov 2019 |
+| No retail with an open recall (G-VEH-RECALL) | Compliance, locked | 3 Inspect and estimate | Used-car manager | VIN recall result with check date; remedy record | Pack v1.9; 49 U.S.C. 30120(i) for rental fleets; FTC 16 CFR 455 (81 FR, 18 Nov 2016) |
+| Title brand disclosed (G-VEH-BRAND) | Compliance | 2 | Title desk | Brand from title service or NMVTIS | State law (**unconfirmed** per state) |
+| Salvage buyer reports to NMVTIS (G-VEH-SALV) | Compliance | 6 Execute | Remarketing manager | Buyer's reporting status | 49 U.S.C. 30504; 28 CFR 25.56 |
+| Recon over $2,500 → used-car manager | Approval | 5 Decide | Used-car manager | Recon estimate | Stated in the description |
+| Auction under 40,000 miles → remarketing manager | Approval (added in plain words) | 5 Decide | Remarketing manager | Mileage, channel | Added by the user; 31 replay cases affected (*sample*) |
 
-### 2.2 Batteries
+**Customer rules** (business rules, editable): send each retail-ready car to the lot where it will sell fastest at the
+best price; compare retail gross after recon with auction net of fees and transport; flag cars on a lot for more than
+45 days; hail damage under the recon limit stays retail-eligible (the answer to the clarifying question).
 
-| ID | Source | Trigger | Required evidence | Effect | Owner |
-|---|---|---|---|---|---|
-| G-BAT-1 | EU Battery Regulation 2023/1542, Art. 14 | EV, LMT or rechargeable industrial battery | State of health and expected lifetime read from the BMS (with read date) | Requires SoH for reuse, remanufacture or repurpose routes; without it only recycle | Engineer |
-| G-BAT-2 | Reg. 2023/1542, Art. 73 (preparation for re-use or repurposing of waste batteries; details **unconfirmed**) | Battery is waste and route is reuse or repurpose | Examination and test results on SoH, documentation that it is fit for the new use, conformity of the repurposed battery as a product placed on the market | Requires these before repurpose/reuse | Quality |
-| G-BAT-3 | Reg. 2023/1542, Art. 77 (passport mandatory from 18 Feb 2027 for LMT, industrial > 2 kWh and EV batteries) | Battery placed on the EU market after repurposing or remanufacturing | New passport linked to the original passport, under the new economic operator (**unconfirmed** wording) | Requires passport step in execution for repurpose/reman routes | Compliance |
-| G-BAT-4 | ADR / IATA dangerous-goods rules for lithium batteries (damaged or defective batteries; **unconfirmed** special-provision numbers) | Battery classified damaged, defective or with a thermal event | Safety classification; packaging and carrier approved for that class | Blocks standard lanes; requires dangerous-goods lane; blocks resale | Warehouse / Compliance |
-| G-BAT-5 | Reg. 2023/1542, Art. 71 (recycling efficiency, material recovery targets) | Route is recycle | Recycler permitted for the chemistry; recovery reporting | Blocks recyclers without the permit | Sustainability lead |
+**Diversions** (customer layer): EV with battery health under 80% → battery assessment (new step at stage 3); over
+120,000 miles → wholesale auction directly (stage 4); "dealer trade within the group: skip the title check" (stage 2)
+→ **blocked**, because it would bypass the locked compliance guardrail "Clear title, no open finance".
 
-Note: Regulation 2023/1542 has been amended (due-diligence date moved to 18 Aug 2027 by Reg. 2025/1561; a further
-amendment, Reg. 2026/1738 of 8 Jul 2026, whose contents we could not confirm). Check the consolidated text before
-building the battery pack.
+### 2.3 Roles
 
-### 2.3 Products, medical devices, contracts
-
-| ID | Source | Trigger | Required evidence | Effect | Owner |
-|---|---|---|---|---|---|
-| G-MED-1 | FDA guidance "Remanufacturing of Medical Devices" (May 2024) | Planned work on a medical device significantly changes performance, safety specs or intended use | Regulatory assessment (servicing versus remanufacturing, using the guidance's flowchart) | If remanufacturing: requires registration/listing/clearance status of the remanufacturer; else blocks reman route | Quality / Regulatory |
-| G-MED-2 | FDA (reprocessed single-use devices need premarket clearance); EU MDR 2017/745 Art. 17 (only where national law allows; reprocessor takes manufacturer duties) | Device is labelled single-use | Clearance (US) or national permission plus reprocessor's MDR obligations (EU) | Blocks reuse/resale of single-use devices otherwise; default is recycle | Quality / Regulatory |
-| G-MED-3 | EU MDR (economic operators, UDI); national rules | Resale of a refurbished device into another market | Distributor/importer obligations, UDI kept, service record by qualified servicer, open recalls closed | Blocks cross-market resale without it | Regulatory |
-| G-ESPR-1 | ESPR 2024/1781, destruction ban (large companies from 19 Jul 2026; medium from 2030) | Unsold (incl. returned unsold) apparel, clothing accessories, footwear held by a large company | One of the allowed exceptions with evidence (unsafe, damaged, counterfeit, rejected by donation schemes …) | Blocks destruction/exit; requires reuse, donation, recycling first; disclosure of discarded volumes | Compliance |
-| G-DPP-1 | ESPR digital product passport (registry live 20 Jul 2026; product rules by delegated act, textiles ~2027, iron and steel ~2028, timing **unconfirmed**) | Product group has a delegated act in force | Passport identifier read at intake; update after refurbishment/remanufacture where the act requires | Requires passport step on reman/refurbish routes for that group | Compliance |
-| G-CON-1 | Contract (lease, fleet, service) | Owner is not the operator, or contract restricts refurbishment or resale | Contract clause read from the leasing/fleet system; consent on file | Blocks resale/re-lease to another client without consent (today GR-I3) | Customer operations |
-| G-SAFE-1 | Product safety and quality (OEM spec, QMS) | Safety-rated unit or recertification needed | Recertification / test certificate with expiry | Blocks redeploy/resale until certified (today GR-I2) | Quality |
-
-### 2.4 Reporting and carbon
-
-These rules don't block routes; they **require evidence before a case can close** so the reports are complete.
-
-| ID | Source | Trigger | Required evidence | Effect | Owner |
-|---|---|---|---|---|---|
-| G-REP-1 | CSRD as amended by Omnibus I (Directive (EU) 2026/470: > 1,000 employees and > EUR 450 m turnover); ESRS E5 (resource outflows; simplified ESRS pending, **unconfirmed** final datapoints) | Owner is in CSRD scope | Mass, material and waste-treatment category per closed case (prepared for reuse / recycling / other recovery / incineration / landfill; hazardous flag) | Blocks case close without it | Sustainability lead |
-| G-REP-2 | Waste Framework Directive 2008/98/EC, Annexes I and II (R- and D-codes) | Route is recycle or exit | Recovery or disposal operation code from the receiving facility | Blocks close without it | Sustainability lead |
-| G-REP-3 | GHG Protocol Scope 3 Standard, category 12 (end-of-life treatment of sold products); WBCSD avoided-emissions guidance (Mar 2023) | Carbon shown on a card or report | Factor source, version and year per factor; avoided emissions labelled as outside the inventory and never netted against it | Blocks publishing a carbon figure without provenance | Sustainability lead |
-
-**Deterministic CO2e avoided per route.** Same inputs give the same number; every factor carries source, version and
-year. Avoided emissions are reported separately from the scope 1–3 inventory (WBCSD 2023), and the GHG Protocol's
-cut-off method gives recycling credits to the user of recycled material, not to the end-of-life treatment line, so the
-card must say "avoided, not inventory".
-
-| Route | Formula (per unit; × quantity) | Main factors and credible sources |
+| Prototype role | Decides / approves | Platform role |
 |---|---|---|
-| Redeploy / re-lease / reuse as is | `E_new × d − E_prep − E_log` | `E_new` cradle-to-gate footprint of the equivalent new product: manufacturer PCF (PACT methodology), EPD (ISO 14025; EN 15804 for construction products), or LCA database; `d` displacement (1 if it replaces a planned purchase, lower if not; take `d` from the demand line: confirmed order = 1); `E_prep` cleaning/test energy |
-| Refurbish then place | `E_new × d − E_refurb − E_parts − E_log` | `E_refurb` from repair-centre energy and hours; `E_parts` embodied in replacement parts (PCF or database) |
-| Remanufacture | `E_new × d − E_reman − E_log` | Remanufacturer's own footprint or study for the product family |
-| Harvest parts | `Σ(E_part × d_part) − E_teardown − E_log` | Part footprints from PLM/BOM mass × material factors; `d_part` = 1 only for parts that replace a purchase order |
-| Repurpose (batteries) | `E_alt × d − E_repurpose − E_log` | `E_alt` footprint of the new stationary battery displaced; EU battery carbon-footprint declaration where available |
-| Recycle / material recovery | `Σ mass_m × (EF_virgin,m − EF_recycled,m) − E_treat − E_log` | US EPA WARM v16 (Dec 2023, public domain); UK DESNZ conversion factors (2025 and 2026 sets, Open Government Licence) for waste routes; ADEME Base Empreinte (France) |
-| Exit (landfill, incineration) | `−E_treat − E_log` (avoided = 0 or negative) | WARM, DESNZ waste-disposal factors |
-| Logistics term `E_log` (all routes) | `Σ tkm × EF_mode` | ISO 14083:2023 and the GLEC Framework for transport chains |
+| Remarketing director | Writes the flow (flow author); owns channel policy | Planner (author); FDE helps |
+| Operations director | Approves and publishes the flow (flow approver, maker-checker) | Approver |
+| Used-car manager | Approves recon over $2,500; owns the recall policy | Approver |
+| Remarketing manager | Approves auction under 40,000 miles; owns salvage buyers | Approver |
+| Title desk | Resolves liens, title brands and odometer disclosure | Compliance (operator scope) |
+| Inspection lead | Second inspection on an odometer or condition mismatch | Warehouse / Engineer |
+| Lot manager | Acts on ageing alerts and lot transfers | Planner (operator scope) |
+| Finance | Lease-end gain or loss, lessee charges | Finance |
 
-Notes on factors:
-- **Licence check before shipping factors in a trial package.** Commercial LCA databases (for example ecoinvent)
-  restrict redistribution of their datasets; public sources (WARM, DESNZ, ADEME) are safer to bundle. Licence findings
-  need review by Kinective's Legal team.
-- Telecom has a sector method: the GSMA guide "Quantifying the Carbon Savings of Circularity" (Feb 2025) covers
-  refurbished phones and CPE. Use it for the CPE pack.
-- The current demo's `CO2S` shares (redeploy 0.7, resale 0.55, re-lease 0.65, internal parts 0.3, external parts 0.25,
-  material 0.08, exit 0) are a reasonable shape (reuse > parts > material > exit) but have no source. Keep them as the
-  parity default and add a "factor set" per pack that the sustainability lead can publish (maker-checker like rules).
+### 2.4 Systems, entities and mappings
+
+- **Systems (8):** lease system (lease ends, residuals), dealer management system (lots, stock, sales), title and lien
+  service, inspection app (condition, photos, recon), recall database, auction platform (run lists, results, fees),
+  pricing guide (retail and wholesale values), and a legacy body-shop system (older damage history). The legacy system
+  **needs a connector**; the other 7 have adapters in the registry.
+- **Canonical entities (7):** Vehicle, Return event, Condition grade, Compliance record, Market price, Cost rate,
+  Channel. They map onto the platform model as follows: Asset & component ← Vehicle; Condition & eligibility ←
+  Condition grade and Compliance record; Demand opportunity ← Channel and Market price; Outcome ← sale result.
+- **Unsure mappings in the sample:** mileage at return (77%: two mileage fields, the agent picked the one taken at
+  return); condition score (72%: the direction of the 1–5 scale was inferred from photos and notes). Both need a person.
+
+### 2.5 Exceptions, KPIs and analytics
+
+| Exception or alert | Kind | Owner | Recommended action |
+|---|---|---|---|
+| Recon over $2,500 | Approval | Used-car manager | Approve and retail if retail gross after recon beats auction gross |
+| Auction under 40,000 miles | Approval | Remarketing manager | Auction when retail days-to-sale is far above average at every lot |
+| Lien found after check-in | Exception, critical | Title desk | Hold the car; customer care requests the lien release |
+| Odometer photo does not match the lease system | Exception, critical | Inspection lead | Second inspection before pricing |
+| One model type ageing at one lot | Alert | Lot manager | Move cars to the lot where demand is higher |
+
+**KPIs (6):** gross per car, days in stock, retail share, straight-through %, recon cost per car, % held by guardrails.
+**Trend:** days in stock (42 → 31 over 12 months, *sample*). **Worked questions:** "Why are EV crossovers sitting
+longer on our lots?" (answer: most returned EVs go to the lot nearest the return centre, where EV demand is lowest) and
+"Which lots sell lease returns fastest?"
+
+### 2.6 Valuer sketch (what each channel's value is net of)
+
+All values are gross to the group against the car's book value (the residual for a lease return, the trade allowance
+for a trade-in). Holding cost covers floor-plan interest plus depreciation per day.
+
+| Channel | Value | Net of |
+|---|---|---|
+| Retail lot *L* | Expected retail price at *L* (pricing guide plus own sales history per lot, segment and mileage band) | Recon (inspection estimate, plus recall remedy if needed), transport to *L*, holding cost × expected days to sale at *L*, retail selling cost (prep, warranty reserve) |
+| Wholesale auction | Expected auction price (wholesale guide adjusted for mileage and condition score) | Buy/sell fees, transport, holding × days to the next sale, arbitration risk (odometer or condition disputes) |
+| Dealer trade | Agreed trade price or partner bid | Transport, title transfer cost |
+| Salvage | Best salvage bid | Tow, title brand administration; only considered when recon exceeds a share of value or the car is a total loss |
+
+Confidence comes from the spread of comparable sales. Carbon: reselling a used car does not displace a new car
+one-for-one, so the pack sets `d` low for retail and auction (§5.7 note). Only salvage and parts carry material
+factors.
+
+### 2.7 Stories (UC)
+
+Actors: **Agent** means a stage agent or the configuration agent; **Person** names the role.
+
+| ID | Pri | Stage | Actor | Story and acceptance |
+|---|---|---|---|---|
+| UC-01 | P0 | Compose 1 | Person: remarketing director | Draft the flow from a sample prompt. **Given** the used-car pack v1.9 is installed, **when** I submit "Lease returns to best channel", **then** the configuration agent shows its reading log (word count, 1 explicit control), matches the pack, and lists asset fields (VIN, mileage, title, finance, damage history), 7 stages, 4 channels, 1 stated + 2 pack guardrails, 8 systems (7 with adapters, 1 needing a connector) and 6 KPIs. It asks exactly one clarifying question and drafts the flow; nothing is published. |
+| UC-02 | P0 | Compose 1 | Agent: configuration | Turn the clarifying answer into a rule. **Given** the question "Should cars with minor hail damage still be considered for retail?", **when** I pick "Yes, if repair is under the recon limit", **then** a customer rule "hail damage under the recon limit stays retail-eligible" is added at stage 5 and marked as coming from my answer. |
+| UC-03 | P0 | Compose 2 | Person: forward-deployed engineer | Resolve unsure mappings. **Given** mileage at return (77%) and condition score (72%) are below the mapping threshold, **when** I open adapter mapping, **then** each shows its reason and the five choices (accept, choose another field, accept with conversion, not needed, ask the system owner). A test run over past cars shows where cases stopped. The flow cannot be sent for approval while a required field has no decision. |
+| UC-04 | P1 | Compose 2 | Person: customer IT | Connect the legacy body-shop system. **Given** it is marked "needs a connector", **when** I build the connector once from its API specification or a file drop, **then** the system owner approves the connection, discovery samples 500 records and proposes mappings. Until then, cases show "older damage history not connected". |
+| UC-05 | P0 | 1 | Agent: intake | Open one case per VIN. **Given** a lease end in the lease system or a trade-in in the dealer system, **when** the return is checked in, **then** one case opens with VIN, mileage, lease end date and source, each fact showing its source and age. A second event for the same VIN joins the open case. |
+| UC-06 | P0 | 2 | Agent: intake; Person: title desk | Title and finance gate. **Given** the title service reports a lien or open finance, **when** stage 2 runs, **then** every sale channel fails "Clear title, no open finance" and an exception goes to the title desk with "hold; customer care to request the lien release". Only a person clears it, and only with the lien release on file. |
+| UC-07 | P0 | 2–3 | Agent: condition; Person: inspection lead | Odometer gate. **Given** the odometer photo reads 61,240 and the lease system shows 46,240, **when** the difference exceeds the pack tolerance, **then** pricing does not run, the case is held for a second inspection, and the lessee's odometer statement (49 CFR 580.7) is shown as evidence. A reading certified as "not actual mileage" sets the disclosure flag on every channel. |
+| UC-08 | P0 | 3 | Platform gate | Open-recall gate. **Given** the recall lookup reports an open recall for the VIN, **when** channels are evaluated, **then** retail fails "open recall" until a remedy record exists, while auction and dealer trade stay eligible with the recall disclosed. **Given** the seller is a rental fleet of 35+ vehicles, **then** sale is also blocked until remedied (pack parameter). The recall check date is shown, and a check older than the pack's limit is re-run. |
+| UC-09 | P0 | 3 | Agent: condition | Read the inspection; never compute it. **Given** the inspection app has a score, photos and a recon estimate, **then** the case shows them with source and age. **Given** the inspection is late, **then** the condition estimate is used, labelled "estimate", and routing confidence drops below the auto threshold. |
+| UC-10 | P0 | 4 | Agent: valuation | Price every channel net. **Given** an inspected car, **then** retail (per eligible lot), auction, dealer trade and salvage are valued net of the costs in §2.6. Each shows value, days and confidence, and salvage shows "not considered" when it is below its trigger. |
+| UC-11 | P0 | 5 | Agent: routing | Right car, right lot. **Given** a retail-eligible car, **when** the routing agent decides, **then** it picks the lot with the best gross after holding cost. Evidence lines show comparable sales and days at that lot, recon against the limit, the auction value before fees, and the guardrail results. |
+| UC-12 | P0 | 5 | Person: used-car manager | Recon approval. **Given** a recon estimate over $2,500, **then** the case goes to the used-car manager's inbox with cause, retail gross after recon, auction gross and a recommended action. The agent cannot approve. An override needs a reason, which is logged. |
+| UC-13 | P1 | Compose ext. | Person: remarketing director; flow approver | Add a guardrail in plain words. **When** I type "Any car sent to auction with fewer than 40,000 miles needs approval from the remarketing manager", **then** the assistant places an Approval guardrail at stage 5 and the replay shows how many past decisions it would change (31, *sample*). It goes to maker-checker approval, and once published the inbox, audit trail and KPIs include it. |
+| UC-14 | P1 | 3 | Person: remarketing director | EV battery diversion. **When** I insert "EV with battery health under 80% → battery assessment", **then** a new step appears at stage 3 in my layer, the template stays unchanged, and EV cases under 80% wait for the assessment before pricing. |
+| UC-15 | P1 | 4 | Person: remarketing director | High-mileage shortcut. **When** I insert "over 120,000 miles → wholesale auction directly", **then** such cars skip lot pricing but still pass the title, odometer and recall gates. |
+| UC-16 | P0 | 2 | Person: any author | Blocked compliance skip. **When** I try "dealer trade within the group: skip the title check", **then** Compose refuses with "would bypass the compliance guardrail 'Clear title, no open finance'; ask for a change to the guardrail instead", and the attempt is written to the audit log. |
+| UC-17 | P0 | Compose ext. | Person: any author | Locked guardrail is tighten-only. **When** I edit "Clear title, no open finance" or "No retail with an open recall", **then** threshold, scope, exception and suspend fields are disabled, the mode stays "Block until approved", and I can only add an extra approver. |
+| UC-18 | P1 | 6 | Agent: follow-through | Execute the channel. **Given** an approved decision, **then** the agent sends the recon order, lot transfer and listing (retail), the consignment with the title (auction), or the sale to a salvage buyer that reports to NMVTIS (salvage). It reminds the owner when a confirmation is late and records each confirmation. |
+| UC-19 | P1 | Decide · overview | Agent: analytics; Person: lot manager | Ageing on the lot. **Given** a car more than 45 days on a lot, **then** it is flagged. A suggestion rule proposes a transfer to the lot with demand, or auction, ordered oldest value band first. An alert fires when one model type ages at one lot. |
+| UC-20 | P1 | Understand | Person: remarketing director | Worked question 1. **When** I ask "Why are EV crossovers sitting longer on our lots?", **then** I get a chart (days in stock by lot), a plain answer and three example records, and I can save the view, share it and set an alert on the measure. |
+| UC-21 | P2 | Understand | Person: analyst | Worked question 2: "Which lots sell lease returns fastest?", with chart, answer and examples. |
+| UC-22 | P0 | Compose 5 | Person: flow approver | Publish to one region at 20%. **Given** the flow is approved by someone other than its author, **when** v1.0 is published, **then** it runs on 20% of one region's volume. The replay of 2,140 past cars shows the route mix (actual against flow), 79% straight-through, about 9 approvals and 5 exceptions a day, and +$410 gross per car, all labelled *modelled*. |
+| UC-23 | P1 | 7 | Agent: analytics; Person: finance | Sold and learn. **Given** a sale confirmation, **then** sale price and days to sale are recorded against forecast. For a lease return, the gain or loss against the residual and any excess mileage or wear charge are raised as instructions for finance to approve. |
+| UC-24 | P2 | 2, 6 | Platform gate | Title brands. **Given** the title carries a brand (salvage, flood, rebuilt, buyback), **then** every listing carries the disclosure, and retail is blocked if the pack parameter says so. |
+| UC-25 | P2 | 6 | Agent: follow-through | Personal data in the car. **Given** a returned car with paired phones or stored addresses, **then** a "reset infotainment and remove paired devices" step is added before release (**unconfirmed** as a legal duty in the US; required as data security under GDPR Art. 32 in the EU is our reading, Legal to confirm). |
 
 ---
 
-## 3. Roles across industries
+## 3. Telecom network equipment, pack v1.4
 
-The platform today signs in 11 accounts (`admin`, `exec`, `ops`/`planner.a`, `planner.b`, `planner.c`, `approver`,
-`engineer`, `finance`, `developer`, `warehouse1`, `warehouse2`). Packs name guardrail owners such as "Compliance",
-"Quality" and "Sustainability lead" that are not sign-in roles yet. Missing as roles: compliance, sustainability,
-forward-deployed engineer, customer IT integrator.
+### 3.1 How the process works
 
-Legend: **D** does it (creates, edits), **A** approves (the checker), **P** gets agent proposals for it, **R** reads,
-blank = no access.
+Scope: radios, baseband units, routers, line cards, power units and microwave links removed from mobile and fixed
+network sites during upgrades (site swaps, 5G modernisation, decommissioning). **Not** home CPE (see §9).
+
+- **Decommission notified.** A site swap or removal order in the decommission tracker or field service app lists what
+  comes off which site. One case per serial.
+- **Match to inventory.** The unit must exist in the network inventory (operations support system) with its model,
+  hardware revision, firmware and site. Serials removed but not in inventory are the main data incident (as with
+  manifest mismatches in ITAD).
+- **Wipe and test.** Network elements hold configuration, credentials, keys and certificates, and logs that reveal the
+  network. They are wiped and verified, bench-tested and firmware-checked. NIST SP 800-88 Rev. 2 (26 Sep 2025) is the
+  general sanitisation reference. Rev. 2 removed Rev. 1's media-specific appendices (which covered routers and switches)
+  and points to IEEE 2883 instead (Rev. 2 change list, read 25 Nov 2026).
+- **Value each route.** Open demand on other sites (by model and firmware), regional spares targets, broker bids, and
+  boards needed for repairs.
+- **Export control.** Network infrastructure equipment usually has encryption functions. Under the US EAR, network
+  infrastructure items described in License Exception ENC 740.17(b)(2) **cannot** be treated as mass market (BIS
+  guidance). The export classification (for example 5A002, 5A992, 5A991 or EAR99) must come from trade compliance, not
+  be guessed from a part number. In the EU, the dual-use control list (Annex I to Regulation (EU) 2021/821) was
+  replaced by Delegated Regulation (EU) 2025/2003 (published 14 Nov 2025, in force 15 Nov 2025). A 2026 update was
+  adopted on 14 Sep 2026; its publication is **unconfirmed**. Resale abroad also needs end-user and destination
+  screening.
+- **Covered equipment (US).** Operators that take part in the FCC's Secure and Trusted Communications Networks
+  Reimbursement Program must permanently remove, replace **and dispose of** covered equipment (47 CFR 1.50004; disposal
+  in paragraph (j), within one year of the first disbursement). Such units must never be redeployed, kept as spares or
+  resold. The exact disposal method is **unconfirmed**.
+- **Execute.** Transfer order to a site or spares pool, refurbishment order, broker listing, board harvest, recycler
+  pickup with a certificate. Power units may contain lead-acid or lithium batteries, which need dangerous-goods lanes
+  (G-BAT-4).
+- **Close and learn.** New spend avoided (the purchase that did not happen), reuse rate, days to redeploy.
+
+### 3.2 Gates and guardrails
+
+| Guardrail | Type | Stage | Owner | Evidence | Source |
+|---|---|---|---|---|---|
+| Unit matches network inventory (G-NET-INV) | Data quality, locked | 2 Match to inventory | Inventory lead | Serial, model, revision and site matched; removal job | Pack v1.4 |
+| Configuration wipe certificate (G-NET-CFG) | Compliance, locked | 3 Wipe and test | Test bench lead | Per-serial wipe record: configuration, credentials, keys and certificates, logs; tool and version; verification | Pack v1.4; NIST SP 800-88 Rev. 2 |
+| Export control check before resale (G-NET-EXP) | Compliance (stated) | 4 Value each route | Trade compliance | Classification by a person, end-user and destination screening, licence or exception record | 15 CFR 730–774, 740.17; Reg. (EU) 2021/821 as replaced by 2025/2003 |
+| Covered equipment: dispose only (G-NET-COV) | Compliance | 2 | Trade compliance | Manufacturer on the covered list; disposal evidence | 47 CFR 1.50004 (US only; research addition, not in the prototype) |
+| Resale of current-generation cards → network planning | Approval (added in plain words) | 5 Decide | Network planning | Generation flag, regional 6-month forecast | Added by the user; 14 replay cases affected (*sample*) |
+
+**Customer rules:** spares before new (stock each region's spares pool from returns before buying new); resell only
+what no region needs in the next 6 months; the site-swap programme matches units to open site demand by model and
+firmware; firmware two or more major versions behind must be upgraded before redeployment (the answer to the
+clarifying question).
+
+**Diversions:** unit from a core site → security inspection (new step at stage 3); firmware behind → upgrade step
+(stage 3); "urgent site outage: skip the configuration wipe" → **blocked**.
+
+### 3.3 Roles
+
+| Prototype role | Decides / approves | Platform role |
+|---|---|---|
+| Network asset manager | Flow author; owns route policy | Planner (author) |
+| Operations director | Flow approver | Approver |
+| Trade compliance | Approves every export-controlled resale; owns classification | Compliance |
+| Network planning | Approves resale of current-generation cards; owns the 6-month forecast | Approver |
+| Spares planner | Owns regional spares targets; acts on transfer alerts | Planner (operator scope) |
+| Test bench lead | Wipe, bench test, firmware; resolves failed wipes | Engineer / Warehouse |
+| Inventory lead | Resolves inventory mismatches with the field team | Planner or Warehouse (operator scope) |
+| Sustainability lead | Recycler qualification, WEEE records | Sustainability (new role) |
+
+### 3.4 Systems, entities and mappings
+
+- **Systems (8, all with adapters):** network inventory, decommission tracker, ERP (assets, costs, purchase orders),
+  field service app (removal and install jobs), test bench (results, firmware), spares planning (targets by region),
+  broker marketplace (bids, cleared prices), recycler portal (pickups, certificates).
+- **Canonical entities (7):** Network element, Return event, Test result, Compliance record, Demand signal, Market
+  price, Cost rate.
+- **Unsure mappings in the sample:** hardware revision (74%: revision codes differ by vendor; needs a conversion
+  table); export class (70%: inferred from the part number). The export class mapping must always go to a person
+  ("ask the system owner": trade compliance). The gate must treat an inferred class as missing.
+
+### 3.5 Exceptions, KPIs and analytics
+
+| Exception or alert | Kind | Owner | Recommended action |
+|---|---|---|---|
+| Export control: units to an overseas broker | Approval | Trade compliance | Confirm the end user; otherwise keep as spares |
+| Resale of current-generation cards | Approval | Network planning | Resell what the forecast doesn't need; keep the rest as regional spares |
+| Unit not in network inventory | Exception, critical | Inventory lead | Field team confirms serial and site |
+| Configuration wipe failed | Exception, critical | Test bench lead | Re-run the wipe; units held |
+| Power units idle in one region while another buys new | Alert | Spares planner | Transfer to the region buying new (cross-region transfer rule) |
+
+**KPIs (6):** new spend avoided, reuse rate, spares filled from returns, straight-through %, days to redeploy, export
+holds. **Trend:** days to redeploy (21 → 12, *sample*). **Worked questions:** "Why are we still buying new power units
+when returns are coming in?" (answer: spares targets are set per region, so one region's surplus is never offered to
+another) and "Which regions hold the most idle spares?"
+
+### 3.6 Valuer sketch
+
+The value line is **new spend avoided** wherever a named demand exists. This is the same logic as tool-fleet re-issue
+and parts harvest, so the tool-fleet queue planner can be reused.
+
+| Route | Value | Net of |
+|---|---|---|
+| Redeploy to a site | New purchase price (ERP purchase order price) × displacement (1 for a named open site demand) | Test, firmware upgrade, logistics, install job |
+| Refurbish as a spare | New spare price × probability of use within the horizon (regional spares target and failure rate) | Refurbishment, storage holding cost, logistics |
+| Resell to a broker | Best broker bid (cleared prices for confidence) | Fees, logistics, export compliance cost; only eligible if no region needs it within 6 months (otherwise the future buy is an opportunity cost) |
+| Harvest boards | Σ board value for open repair needs | Teardown, test of each board |
+| Recycle | Material value | Recycling fee, logistics; certified downstream (G-DS-1) |
+
+Queue rule: each open site or spares demand is filled once. When two units compete for one demand, the second goes to
+its next best route (01 §4.1 pattern).
+
+### 3.7 Stories (TN)
+
+| ID | Pri | Stage | Actor | Story and acceptance |
+|---|---|---|---|---|
+| TN-01 | P0 | Compose 1 | Person: network asset manager | Draft from "Decommissioned network kit". **Then** the reading log shows the word count and 1 explicit control. The draft lists asset fields (model, revision, firmware, configuration, export class), 7 stages, 5 routes, 1 stated + 2 pack guardrails, 8 systems (all with adapters) and 6 KPIs. One clarifying question is asked. |
+| TN-02 | P0 | Compose 1 | Agent: configuration | Firmware question. **When** I answer "Yes, always upgrade first" (or "Only for core sites") to the firmware question, **then** the customer rule "two or more major versions behind → upgrade before redeploy" is added with that scope. |
+| TN-03 | P0 | Compose 2 | Person: forward-deployed engineer; trade compliance | Export class is never guessed. **Given** export class mapped at 70% from the part number, **then** the field is marked "needs a person". The only allowed choices are "ask the system owner" or a confirmed source field, and until then G-NET-EXP treats the class as missing. Hardware revision (74%) offers a vendor conversion table. |
+| TN-04 | P0 | 1 | Agent: intake | One case per serial from the decommission tracker or a field-service removal job, with site, removal date and source and age on each fact. |
+| TN-05 | P0 | 2 | Platform gate; Person: inventory lead | Inventory match. **Given** a serial removed from a site but not in the network inventory, **then** no route is valued, an exception goes to the inventory lead ("field team to confirm serial and site"), and the case resumes on its own once the match exists. |
+| TN-06 | P0 | 3 | Platform gate; Person: test bench lead | Configuration wipe. **Given** no wipe certificate, or a failed wipe, **then** every route fails G-NET-CFG, the units are held, and the test bench lead gets "re-run the wipe". A unit that fails twice requires a destroy-storage step and loses the resale route. |
+| TN-07 | P0 | 4 | Platform gate | Export control before resale. **Given** a resale route and an export class that is controlled or unconfirmed, **then** the route needs trade compliance approval with destination and end-user screening on file. Reuse routes (redeploy, spare, harvest) are not triggered, and the guardrail result says "not triggered for reuse". |
+| TN-08 | P0 | 5 | Person: trade compliance | Approve or refuse a controlled resale. **Given** 40 controlled radio units with a best overseas bid, **then** the inbox shows the bid, the classification and the alternative ("keep as spares"). Only trade compliance can approve. An agent's proposal is held. |
+| TN-09 | P1 | 2 | Platform gate | Covered equipment (US). **Given** a unit whose manufacturer is on the FCC covered list and that was removed under the reimbursement programme, **then** redeploy, spare, resale and harvest are blocked and only recycle/destroy with a disposal record is eligible. |
+| TN-10 | P0 | 3 | Agent: condition | Read the bench result (for example 18 of 18 passed), firmware version and wipe certificate from the test bench. Never compute a pass. |
+| TN-11 | P0 | 4 | Agent: valuation | Value all five routes net (§3.6). New spend avoided is shown as the value line for reuse routes. |
+| TN-12 | P0 | 5 | Agent: routing | Spares before new. **Given** a region below its spares target and a unit with no open site demand, **then** the recommendation is "refurbish as a spare for that region". Resale is proposed only when no region's 6-month forecast needs the model, and the queue fills each demand once. |
+| TN-13 | P1 | 4–5 | Agent: routing | Site-swap matching by model and firmware. **Given** open site demand, **then** units are matched by model and firmware, and those needing an upgrade get the upgrade step before transfer. |
+| TN-14 | P1 | Compose ext. | Person: network asset manager; flow approver | Add "resale of current-generation cards → network planning" in plain words. Placed at stage 5 as an Approval guardrail; replay shows the affected decisions (14, *sample*); maker-checker applies. |
+| TN-15 | P1 | 3 | Person: author | Core-site diversion: a unit from a core site gets a security inspection step at stage 3. The template is unchanged. |
+| TN-16 | P1 | 3 | Person: author | Firmware diversion: an upgrade step is inserted when firmware is behind. |
+| TN-17 | P0 | 3 | Person: any author | Blocked skip. "Urgent site outage: skip the configuration wipe" is refused with the reason and logged. The suggestion offered instead is "send an already wiped spare from the nearest pool". |
+| TN-18 | P1 | Decide · overview | Agent: analytics; Person: spares planner | Cross-region transfer. **Given** returned power units idle more than 30 days in one region while another raises purchase orders for the same model, **then** an alert proposes the transfer, and a suggestion rule "offer surplus across regions before a new purchase order" can be adopted (needs approval). |
+| TN-19 | P1 | 6 | Agent: follow-through | Execute: transfer order, refurbishment order, broker listing or recycler pickup. On reuse, a proposal to cancel or reduce the matching purchase requisition is held for a person. The ERP asset transfer or retirement is confirmed. |
+| TN-20 | P0 | Compose 5 | Person: flow approver | Publish to one region at 20%. The replay of 1,260 units shows the route mix, 84% straight-through, about 6 approvals and 4 exceptions a day, and $1.1M new spend avoided, all *modelled*. |
+| TN-21 | P2 | Understand | Person: analyst | Worked question: "Which regions hold the most idle spares?", with chart and example records. |
+| TN-22 | P1 | 7 | Agent: analytics | Close and learn: new spend avoided is recorded against the purchase price at close, along with days to redeploy and reuse rate. Worked question "Why are we still buying new power units…" is answered from these records. |
+| TN-23 | P2 | 6 | Platform gate | Power units with batteries: lithium modules route through a dangerous-goods lane (G-BAT-4); damaged ones cannot be resold. |
+| TN-24 | P2 | 6–7 | Platform gate; Person: sustainability lead | Recycle only through a qualified downstream vendor (G-DS-1), with WEEE category and weight recorded (G-WEEE-2) for EU sites. |
+
+---
+
+## 4. Medical rental (hospital equipment), pack v1.6
+
+### 4.1 How the process works
+
+Scope: infusion pumps, patient monitors, electric beds, syringe drivers, transport ventilators and pulse oximeters
+that a rental company owns and rents to hospitals, usually for peaks in need. The rental company re-rents its own fleet.
+Selling refurbished devices to new owners is the next segment "medical capital equipment" (§9).
+
+- **Return.** The device is collected from the ward and checked in at a depot. One case per asset tag.
+- **Decontamination.** Returned devices are treated as contaminated until a cleaning/disinfection cycle is recorded.
+  The method follows the manufacturer's instructions. Pumps, monitors and beds are usually "non-critical" items in the
+  Spaulding scheme used by the US CDC guideline, which means low- or intermediate-level disinfection (guideline not
+  re-read). UK and Scottish NHS guidance expects a decontamination certificate or declaration to travel with loaned
+  devices when they go back to the supplier or to repair (MHRA *Managing Medical Devices*, 2021, section 9;
+  NHSScotland loan-device guidance). We could not read the exact wording; **unconfirmed**.
+- **Inspect and test.** Functional test, electrical safety test (IEC 62353:2014 covers recurrent tests and tests
+  after repair of medical electrical equipment), and service status (preventive maintenance due date, certification or
+  calibration expiry).
+- **Why service dates are a gate.** US hospitals must keep equipment maintained, following the manufacturer's
+  recommendations or a written risk-based alternate equipment maintenance programme (CMS conditions of participation,
+  42 CFR 482.41; CMS S&C 14-07-Hospital, 20 Dec 2013). That duty sits with the hospital, so the hospital expects the
+  rental company to prove each device's service is in date for the rental. How this flows down through rental
+  contracts is **unconfirmed**.
+- **Routes.** Re-rent; service then re-rent; refurbish; retire (sell for parts, harvest the motor or controller, or
+  dispose through a partner).
+- **Refurbish versus remanufacture.** In the US, servicing restores a device to its specifications; remanufacturing
+  significantly changes performance, safety or intended use and brings manufacturer duties (FDA guidance, May 2024). The
+  FDA's Quality Management System Regulation (in force 2 Feb 2026, built on ISO 13485) applies to manufacturers and
+  remanufacturers, **not** to third-party servicers. In the EU, a person who "fully refurbishes" a device (complete
+  rebuild with a new lifetime) is a manufacturer under the MDR (Art. 2 definitions; paragraph number to be checked on
+  EUR-Lex). The refurbish route must stay "servicing" unless the company holds manufacturer status.
+- **Recalls and safety notices.** Manufacturers' recalls and field safety notices apply to the rental fleet. A device
+  under an open correction should not go out. This is not in the prototype; we recommend adding it (G-MED-FSN).
+- **Patient data.** Monitors and some pumps store patient data. When a device leaves the company (retire, sale for
+  parts), G-DATA-3 applies.
+- **Close and learn.** Utilisation, turnaround, re-rented within 48 h, and repairs over the limit.
+
+### 4.2 Gates and guardrails
+
+| Guardrail | Type | Stage | Owner | Evidence | Source |
+|---|---|---|---|---|---|
+| Decontamination record required (G-MED-DECON) | Compliance, locked (stated, and locked by our proposal) | 2 Decontamination | Decontamination lead | Per-tag record: cycle, method, end time after check-in, operator | Stated in the description; CDC guideline; MHRA guidance (**unconfirmed** wording) |
+| Service and certification in date for the whole rental (G-MED-SVC) | Compliance, locked | 3 Inspect and test | Biomedical engineer | Preventive-maintenance record; IEC 62353 test; certification expiry later than rental end | Pack v1.6; 42 CFR 482.41 and S&C 14-07 (hospital duty); IEC 62353:2014 |
+| No open recall or field safety notice (G-MED-FSN) | Compliance | 3 | Biomedical engineer | Manufacturer correction status per model and serial; correction record | Research addition |
+| Refurbish stays servicing (G-MED-REFURB) | Compliance | 5 Decide | Clinical engineering | Servicing-versus-remanufacturing assessment | FDA May 2024; QMSR; EU MDR |
+| Repair over $1,000 → fleet manager | Approval (stated) | 5 | Fleet manager | Repair estimate | Stated in the description |
+| Retire under 5 years → clinical engineering | Approval (added in plain words) | 5 | Clinical engineering | Age, repair estimate, residual | Added by the user; 11 replay cases affected (*sample*) |
+
+The prototype types the stated decontamination rule as Compliance. We recommend that the pack locks it, so customers
+can tighten it but never weaken it. The blocked diversion depends on it.
+
+**Customer rules:** send each device to the hospital that needs it next with the least travel, while service and
+certification stay in date for the rental; bring servicing forward when it falls due within the next rental (the answer
+to the clarifying question: always, or only for rentals over 30 days), and schedule it when the region's demand is
+lowest.
+
+**Diversions:** from an isolation ward → enhanced decontamination (new step at stage 2); the same hospital asks again
+within 24 h → re-rent directly (stage 5; still passes both gates); "emergency request: skip the decontamination record"
+→ **blocked**.
+
+### 4.3 Roles
+
+| Prototype role | Decides / approves | Platform role |
+|---|---|---|
+| Rental fleet director | Flow author; route policy | Planner (author) |
+| Operations director | Flow approver | Approver |
+| Fleet manager | Approves repairs over $1,000 | Approver |
+| Clinical engineering | Approves retiring devices under 5 years; owns the refurbish assessment | Engineer (approver scope) |
+| Biomedical engineer | Service, certification, electrical safety tests, recalls | Engineer |
+| Decontamination lead | Decontamination records; enhanced decontamination | Warehouse / Compliance (operator scope) |
+| Operations manager | Depot turnaround, capacity moves | Planner (operator scope) |
+
+### 4.4 Systems, entities and mappings
+
+- **Systems (8, all with adapters):** rental system (orders, returns, customers), asset management (devices, models,
+  ages), decontamination log (cycles, records), biomedical service system (service, certification), CRM (hospitals,
+  contracts), ERP (costs, write-offs), parts supplier portal (parts, lead times), disposal partner (collections,
+  certificates).
+- **Canonical entities (7):** Device, Return event, Test result, Compliance record, Demand signal, Cost rate, Location.
+- **Unsure mappings in the sample:** decontamination timestamp (79%: two timestamps; the agent chose the end of the
+  cycle); preventive-maintenance code (73%: meaning taken from the service manual). The gate must use the end of the
+  cycle and must compare it with the check-in time.
+
+### 4.5 Exceptions, KPIs and analytics
+
+| Exception or alert | Kind | Owner | Recommended action |
+|---|---|---|---|
+| Repair over $1,000 | Approval | Fleet manager | Approve when modelled rental income over the next period clearly exceeds the repair |
+| Retire under 5 years | Approval | Clinical engineering | Retire and harvest when repair exceeds residual value |
+| No decontamination record | Exception, critical | Decontamination lead | Re-run decontamination; held until the record exists |
+| Certification expires during the rental | Exception, critical | Biomedical engineer | Send a different unit; book certification for this one |
+| Turnaround slipping at a depot | Alert | Operations manager | Move decontamination capacity from a quieter depot |
+
+**KPIs (6):** fleet utilisation, turnaround time, re-rented within 48 h, straight-through %, compliance exceptions,
+repairs over the limit. **Trend:** turnaround (2.9 → 1.6 days, *sample*). **Worked questions:** "Why did turnaround slip
+at the East depot?" (answer: one decontamination line against two elsewhere, after returns rose 30%) and "Which device
+models are retired earliest?"
+
+### 4.6 Valuer sketch
+
+| Route | Value | Net of |
+|---|---|---|
+| Re-rent | Rental rate × expected rental days for the next named request (or the probability of a request within the horizon) | Transport to the hospital, preparation; eligible only if service and certification stay in date for the whole rental |
+| Service then re-rent | As re-rent, starting after the service days | Service parts and labour, rental days lost while in service |
+| Refurbish | Extra years of rental life × annual rental margin | Refurbishment cost, downtime; must stay servicing (G-MED-REFURB) |
+| Retire | Residual sale or harvested parts (for example motor and controller), plus service costs avoided | Disposal fee, data sanitisation for devices with patient data |
+
+Demand is named (an open rental request within a distance) or forecast by region. The "least travel" rule is a
+tie-break inside the value, not a separate route.
+
+### 4.7 Stories (MR)
+
+| ID | Pri | Stage | Actor | Story and acceptance |
+|---|---|---|---|---|
+| MR-01 | P0 | Compose 1 | Person: rental fleet director | Draft from "Return to re-rent". **Then** the reading log shows the word count and 2 explicit controls. The draft lists asset fields (model, service interval, certification, decontamination), 7 stages, 4 routes, 2 stated + 1 pack guardrails, 8 systems (all with adapters) and 6 KPIs. One clarifying question is asked. |
+| MR-02 | P0 | Compose 1 | Agent: configuration | Service question. **When** I answer "Yes, always service first" or "Only if the rental is longer than 30 days", **then** the customer rule is added at stage 5 with that scope. |
+| MR-03 | P0 | Compose 2 | Person: forward-deployed engineer | Resolve decontamination timestamp (79%) and preventive-maintenance code (73%). The test run shows how many past devices would have stopped at the decontamination gate under each choice. |
+| MR-04 | P0 | 1 | Agent: intake | One case per asset tag from the rental system's return, with hospital, depot and check-in time, each with source and age. |
+| MR-05 | P0 | 2 | Platform gate; Person: decontamination lead | Decontamination gate. **Given** no record, or a record that ends before check-in, **then** every route fails (including service, to protect technicians). The device is held, the exception goes to the decontamination lead, and the case is released automatically when a valid record arrives. Batches are held and released per tag. |
+| MR-06 | P0 | 3 | Platform gate; Person: biomedical engineer | In date for the whole rental. **Given** certification ends in 12 days and the requested rental is 30 days, **then** this unit fails for that request, the recommendation is "send a different unit", and a certification booking is proposed for this one. |
+| MR-07 | P0 | 3 | Agent: condition | Read the functional test, IEC 62353 electrical safety result, inspection notes and service dates from the biomedical service system. A cosmetic note (for example a housing scuff) is shown but does not change eligibility unless the test fails. |
+| MR-08 | P0 | 4 | Agent: valuation | Value the four routes net (§4.6) with confidence. |
+| MR-09 | P0 | 5 | Agent: routing | Nearest next hospital. **Given** several open requests, **then** the device goes to the request with the best value and least travel among those its service window covers. Evidence lines show the distance, request date, service due date against rental end, and decontamination age. |
+| MR-10 | P0 | 5 | Person: fleet manager | Repair approval over $1,000, with modelled rental income and the alternative. The agent cannot approve. |
+| MR-11 | P1 | Compose ext. | Person: rental fleet director; flow approver | Add "retire under 5 years → clinical engineering" in plain words: Approval at stage 5, replay count shown (11, *sample*), maker-checker. |
+| MR-12 | P1 | 2 | Person: author | Isolation-ward diversion: an enhanced decontamination step is inserted for devices returned from isolation wards (source field from the rental system). |
+| MR-13 | P1 | 5 | Person: author | Same-hospital shortcut: when the same hospital asks again within 24 h, re-rent directly, still after both compliance gates pass. |
+| MR-14 | P0 | 2 | Person: any author | Blocked skip: "emergency request: skip the decontamination record" is refused with the reason and logged. The suggestion offered instead is "dispatch an already decontaminated unit from the nearest depot". |
+| MR-15 | P1 | 3 | Platform gate; Person: biomedical engineer | Recall or field safety notice open for the model or serial → re-rent held until the correction record exists. |
+| MR-16 | P1 | 5 | Platform gate; Person: clinical engineering | The refurbish route needs a recorded servicing assessment; work that would be remanufacturing or full refurbishment is blocked unless the company holds manufacturer status in that market. |
+| MR-17 | P1 | Decide · overview | Agent: analytics; Person: rental fleet director | Plan servicing around demand: devices due within the next rental period are proposed for service in the week of lowest regional demand. |
+| MR-18 | P1 | Understand | Person: operations manager | Turnaround alert at a depot, and the worked question "Why did turnaround slip at the East depot?", answered with waiting days by cause and example records. |
+| MR-19 | P1 | 6 | Agent: follow-through | Execute: dispatch order, service order, or retirement (ERP write-off proposal for finance, disposal partner collection with certificate, data sanitisation for devices with patient data). |
+| MR-20 | P0 | Compose 5 | Person: flow approver | Publish to one region at 20%. The replay of 1,880 devices shows the route mix, 83% straight-through, about 7 approvals and 5 exceptions a day, and +6 pts utilisation, all *modelled*. |
+| MR-21 | P2 | Understand | Person: analyst | Worked question "Which device models are retired earliest?", with chart and examples. |
+| MR-22 | P2 | 7 | Agent: analytics | Close and learn: utilisation, turnaround and re-rented-within-48-h recorded per case; retraining data for demand and repair-cost models. |
+| MR-23 | P2 | 6 | Agent: follow-through | Evidence for the hospital: on dispatch, the service record, certification date and decontamination record reference are sent with the device (supports the hospital's own maintenance duty). |
+
+---
+
+## 5. Gate catalogue
+
+### 5.1 How a gate is written
+
+Each gate has: **ID; type** (Compliance / Data quality / Threshold / Approval, as in 01 §9); **stage** where the pack
+places it; **trigger; evidence; effect** ("blocks" a route with a reason, or "requires" a step, evidence or approval);
+**owner; source** with date. Compliance gates are **locked by the pack**: the customer layer may tighten them or add
+an approver, never weaken, suspend or remove them (§7.3). Threshold and Approval guardrails are per pack and editable
+(§2.2, §3.2, §4.2). The catalogue is shared; a pack lists the gates it uses with parameters.
+
+Size: **41 gates** (24 kept from revision 1, 17 added). All need review by Kinective's Legal team before they go into a
+shipped pack.
+
+### 5.2 Gates for the five segments (new)
+
+| ID | Gate | Type | Stage | Pack | Trigger | Evidence | Effect | Owner | Source |
+|---|---|---|---|---|---|---|---|---|---|
+| G-TOOL-REC | Safety recall check | Compliance | 1–2 | Tool fleet | Model or serial under an active safety recall | Recall lookup with date; remedy record | Quarantine step; blocks re-issue, pool, pre-owned sale and harvest of the recalled part until remedied | Quality | Pack v3.2 (01 §4.1); US Consumer Product Safety Act §15 (15 U.S.C. 2064); EU General Product Safety Regulation (EU) 2023/988 (applies 13 Dec 2024). Texts not re-read; detail in A |
+| G-TOOL-TEL | Telematics under 7 days old | Data quality | 3 | Tool fleet | RUL or usage used in the decision | Last telematics reading and its date | Stale: RUL shown as estimate; routes that need RUL go to a person | Engineer | Pack v3.2 (no regulation) |
+| G-DEV-WIPE | Data-wipe certificate | Compliance | 3 | Device | Any release route | Per-IMEI certificate: method, tool, verification | Blocks listing; batch held and released automatically | Compliance | Specialises G-DATA-1 (NIST SP 800-88 Rev. 2, 26 Sep 2025); detail in A |
+| G-DEV-LOCK | Blacklist and lock | Compliance | 2 | Device | Any | Registry status (blacklist, activation lock, finance) with check date | Blocks every channel; hold for a person | Compliance | Pack v2.7; industry registries (GSMA Device Registry; CTIA stolen-phone checker). Practice, not law, in most places (**unconfirmed**); detail in A |
+| G-VEH-TITLE | Clear title, no open finance | Compliance | 2 | Used cars | Any route that transfers ownership | Title status, lien search, payoff or lien release | Blocks every sale channel until released; title desk exception | Title desk | Pack v1.9; state title law; 49 U.S.C. 30502–30505; 28 CFR Part 25 Subpart B |
+| G-VEH-ODO | Odometer verified and disclosed | Compliance | 2–3 | Used cars | Transfer of a vehicle not exempt (model year 2011+ until 20 years old) | Lessee statement (lease); odometer photo match within tolerance | Mismatch holds pricing; "not actual mileage" sets the disclosure on every channel | Title desk / inspection lead | 49 CFR 580.7, 580.17; NHTSA final rule 2 Oct 2019, effective 1 Jan 2021 (FR 26 Nov 2019) |
+| G-VEH-RECALL | No retail with an open recall | Compliance | 3 | Used cars | Retail channel (any sale for rental fleets of 35+) | VIN recall result with date; remedy record | Blocks retail until remedied; other channels carry the disclosure | Used-car manager | Pack v1.9; 49 U.S.C. 30120(i) (Safe Rental Car Act, in force 1 Jun 2016); FTC Used Car Rule amendment (81 FR, 18 Nov 2016, effective 27 Jan 2017); NHTSA VIN lookup |
+| G-VEH-BRAND | Title brand disclosed | Compliance | 2 | Used cars | Title carries a brand | Brand from title service or NMVTIS | Disclosure on every listing; retail blocked if the pack says so | Title desk | State law (**unconfirmed** per state) |
+| G-VEH-SALV | Salvage reporting | Compliance | 6 | Used cars | Salvage channel | Buyer is an NMVTIS reporting entity; (EU) certificate of destruction from an authorised facility | Blocks salvage to other buyers | Remarketing manager | 49 U.S.C. 30504; 28 CFR 25.56; EU ELV Reg. 2026/1738 (OJ 24 Jul 2026; detail **unconfirmed**) |
+| G-NET-INV | Unit matches network inventory | Data quality | 2 | Network equipment | Any | Serial, model, revision, site matched | Hold; no valuation; inventory lead exception | Inventory lead | Pack v1.4 |
+| G-NET-CFG | Configuration wipe certificate | Compliance | 3 | Network equipment | Any route leaving the site | Per-serial wipe record and verification | Blocks all routes; failed twice → destroy storage, no resale | Test bench lead | Pack v1.4; NIST SP 800-88 Rev. 2 (no router/switch appendix since Rev. 2; IEEE 2883) |
+| G-NET-EXP | Export control before resale | Compliance | 4 | Network equipment | Resale or any cross-border shipment | Classification by trade compliance; end-user and destination screening; licence or exception | Requires trade compliance approval; inferred class counts as missing | Trade compliance | 15 CFR 730–774; 15 CFR 740.17(b)(2) (BIS guidance); Reg. (EU) 2021/821 Annex I as replaced by Del. Reg. (EU) 2025/2003 (in force 15 Nov 2025) |
+| G-NET-COV | Covered equipment: dispose only | Compliance | 2 | Network equipment (US) | Manufacturer on the FCC covered list; removed under the reimbursement programme | Disposal record | Blocks redeploy, spare, resale, harvest | Trade compliance | Secure and Trusted Communications Networks Act of 2019; 47 CFR 1.50004 (disposal: (j)); FCC best practices, FR 27 Oct 2021 |
+| G-MED-DECON | Decontamination record | Compliance | 2 | Medical rental | Any route | Per-tag cycle record ending after check-in | Blocks all routes; held and released automatically | Decontamination lead | Pack v1.6; CDC disinfection guideline (Spaulding, not re-read); MHRA *Managing Medical Devices* (2021) and NHSScotland loan-device guidance (**unconfirmed** wording) |
+| G-MED-SVC | Service and certification in date for the whole rental | Compliance | 3 | Medical rental | Re-rent or dispatch | PM record; IEC 62353 test; expiry later than rental end | Blocks that request; another unit proposed | Biomedical engineer | Pack v1.6; 42 CFR 482.41 and CMS S&C 14-07-Hospital (20 Dec 2013); IEC 62353:2014 |
+| G-MED-FSN | No open recall or field safety notice | Compliance | 3 | Medical rental | Re-rent | Correction status per model and serial | Holds re-rent until corrected | Biomedical engineer | FDA recalls (21 CFR Part 7; Part 806 for manufacturers); EU MDR field safety corrective actions. Not re-read |
+| G-MED-REFURB | Refurbish stays servicing | Compliance | 5 | Medical rental; next: medical capital | Refurbish route | Servicing-versus-remanufacturing assessment | Remanufacturing or full refurbishment needs manufacturer status, else blocked | Clinical engineering / Regulatory | FDA *Remanufacturing of Medical Devices* (May 2024); QMSR in force 2 Feb 2026; EU MDR 2017/745 Art. 2 ("fully refurbishing") |
+
+Gates from §5.3–5.6 used by the five segments: G-DATA-1/3 (device; patient monitors; car infotainment), G-DS-1
+(recycle routes in all five), G-WEEE-1/2 (EU sites), G-BAT-4 (power units, EV cars), G-CON-1 (tool fleet, lease
+returns), G-SAFE-1 (tool fleet), G-REP-3 (carbon on every card).
+
+### 5.3 Data, devices and e-waste (kept from revision 1; all type Compliance)
+
+| ID | Source | Trigger | Required evidence | Effect | Owner |
+|---|---|---|---|---|---|
+| G-DATA-1 | NIST SP 800-88 Rev. 2 (Sep 2025); IEEE 2883-2022 | Asset class has storage media and the route leaves the owner's control | Sanitisation record **per serial**: method (clear / purge / destruct), tool and version, verification, date, operator, media serial | Blocks release routes until present; redeploy inside the same owner and security level may accept "clear" | Compliance |
+| G-DATA-2 | NIST SP 800-88 Rev. 2 | Verification failed or media not sanitisable | Destruction record | Requires a destruct step; blocks parts sale of that media | Compliance |
+| G-DATA-3 | HIPAA 45 CFR 164.310(d) (US); GDPR Art. 32 (EU) | Device held personal or patient data | As G-DATA-1, plus data-controller sign-off where the contract requires it | Blocks release routes | Compliance |
+| G-DS-1 | R2v3 (SERI, 2020); e-Stewards v4.0 (BAN, 2020) | Route sends equipment or focus materials downstream | Vendor on the approved list with a valid certificate and expiry | Blocks recycle, exit and parts-broker routes to unqualified vendors | Sustainability lead |
+| G-DS-2 | e-Stewards v4.0 | Owner's policy is e-Stewards | No hazardous e-waste export to non-OECD countries; no landfill or incineration | Blocks such routes | Sustainability lead |
+| G-WEEE-1 | WEEE Directive 2012/19/EU, Annex VI | Used EEE shipped cross-border as "not waste" | Functionality test, invoice or contract of transfer, declaration, protective packaging | Required for cross-border reuse; without it the item is WEEE | Compliance |
+| G-WEEE-2 | WEEE Directive, Art. 8 and Annex VII | Recycle or exit of EEE | Authorised treatment facility; category and weight; selective-treatment items removed | Blocks non-authorised facilities | Sustainability lead |
+| G-WASTE-1 | Basel e-waste amendments (in force 1 Jan 2025); EU WSR 2024/1157 | Cross-border shipment of e-waste | Prior informed consent; shipment documents | Blocks without consent | Compliance |
+| G-WASTE-2 | EU WSR 2024/1157 (export rules from 21 May 2027, **unconfirmed** detail) | Waste to a non-OECD destination | Destination on the Commission's list, plus consent | Blocks otherwise | Compliance |
+
+### 5.4 Batteries (kept; type Compliance)
+
+| ID | Source | Trigger | Required evidence | Effect | Owner |
+|---|---|---|---|---|---|
+| G-BAT-1 | Reg. (EU) 2023/1542, Art. 14 | EV, LMT or rechargeable industrial battery | State of health and expected lifetime from the BMS, with read date | Required for reuse, reman, repurpose; otherwise only recycle | Engineer |
+| G-BAT-2 | Reg. 2023/1542, Art. 73 (details **unconfirmed**) | Waste battery to reuse or repurpose | SoH tests, fitness documentation, conformity of the repurposed product | Required before those routes | Quality |
+| G-BAT-3 | Reg. 2023/1542, Art. 77 (passport from 18 Feb 2027) | Battery placed on the EU market after repurpose or reman | New passport linked to the original (**unconfirmed** wording) | Passport step required | Compliance |
+| G-BAT-4 | ADR / IATA lithium battery rules (special provisions **unconfirmed**) | Damaged, defective or thermal-event battery | Safety class; approved packaging and carrier | Blocks standard lanes and resale | Warehouse / Compliance |
+| G-BAT-5 | Reg. 2023/1542, Art. 71 | Recycle | Recycler permitted for the chemistry; recovery reporting | Blocks others | Sustainability lead |
+
+Note: Regulation 2023/1542 has been amended. The due-diligence date moved to 18 Aug 2027 (Reg. 2025/1561). The new
+End-of-Life Vehicles Regulation (EU) 2026/1738 (signed 8 Jul 2026, OJ 24 Jul 2026) appears in the battery
+regulation's consolidated text of 13 Aug 2026. Which battery provisions it changes is **unconfirmed**. Check the
+consolidated text before building the battery pack.
+
+### 5.5 Products, medical devices, contracts (kept; type Compliance)
+
+| ID | Source | Trigger | Required evidence | Effect | Owner |
+|---|---|---|---|---|---|
+| G-MED-1 | FDA *Remanufacturing of Medical Devices* (May 2024) | Work significantly changes performance, safety or intended use | Servicing-versus-remanufacturing assessment | Reman requires the remanufacturer's registration/clearance, else blocked | Quality / Regulatory |
+| G-MED-2 | FDA (reprocessed single-use devices need clearance); EU MDR Art. 17 | Device labelled single-use | Clearance (US) or national permission plus reprocessor duties (EU) | Blocks reuse/resale; default recycle | Quality / Regulatory |
+| G-MED-3 | EU MDR (economic operators, UDI) | Refurbished device resold into another market | Distributor/importer duties, UDI, service record, recalls closed | Blocks cross-market resale otherwise | Regulatory |
+| G-ESPR-1 | ESPR 2024/1781 destruction ban (large companies from 19 Jul 2026) | Unsold apparel, accessories, footwear | An allowed exception with evidence | Blocks destruction; reuse, donation, recycling first | Compliance |
+| G-DPP-1 | ESPR digital product passport (registry live 20 Jul 2026; product rules by delegated act, timing **unconfirmed**) | Product group with a delegated act in force | Passport ID read at intake; update after refurbish/reman | Passport step required | Compliance |
+| G-CON-1 | Contract (lease, fleet, service) | Owner is not the operator, or the contract restricts refurbish/resale | Clause from the leasing or fleet system; consent | Blocks resale/re-lease without consent (today GR-I3) | Customer operations |
+| G-SAFE-1 | Product safety and quality (OEM spec, QMS) | Safety-rated unit or recertification needed | Test certificate with expiry | Blocks redeploy/resale until certified (today GR-I2) | Quality |
+
+G-MED-REFURB (§5.2) is G-MED-1 applied to a rental fleet's own devices, with the EU "fully refurbishing" test added.
+
+### 5.6 Reporting (kept; type Compliance, placed at stage 7)
+
+These rules don't block routes. They **require evidence before a case can close**.
+
+| ID | Source | Trigger | Required evidence | Effect | Owner |
+|---|---|---|---|---|---|
+| G-REP-1 | CSRD as amended by Omnibus I (Directive (EU) 2026/470); ESRS E5 (simplified datapoints **unconfirmed**) | Owner in CSRD scope | Mass, material, treatment category per closed case | Blocks close without it | Sustainability lead |
+| G-REP-2 | Waste Framework Directive 2008/98/EC, Annexes I–II | Recycle or exit | R- or D-code from the facility | Blocks close without it | Sustainability lead |
+| G-REP-3 | GHG Protocol Scope 3 cat. 12; WBCSD avoided-emissions guidance (Mar 2023) | Carbon shown on a card or report | Factor source, version, year; "avoided, not inventory" | Blocks publishing a figure without provenance | Sustainability lead |
+
+### 5.7 Deterministic CO2e avoided per route (kept, with segment notes)
+
+Same inputs give the same number. Every factor carries source, version and year. Avoided emissions are reported
+separately from the inventory (WBCSD 2023).
+
+| Route | Formula (per unit; × quantity) | Main factors and sources |
+|---|---|---|
+| Redeploy / re-lease / reuse as is | `E_new × d − E_prep − E_log` | Product carbon footprint (PACT), EPD (ISO 14025; EN 15804), or LCA database; `d` from the demand line (confirmed order = 1) |
+| Refurbish then place | `E_new × d − E_refurb − E_parts − E_log` | Repair-centre energy and hours; embodied parts |
+| Remanufacture | `E_new × d − E_reman − E_log` | Remanufacturer's footprint |
+| Harvest parts | `Σ(E_part × d_part) − E_teardown − E_log` | BOM mass × material factors; `d_part` = 1 only when replacing a purchase order |
+| Repurpose (batteries) | `E_alt × d − E_repurpose − E_log` | EU battery carbon-footprint declaration where available |
+| Recycle | `Σ mass_m × (EF_virgin,m − EF_recycled,m) − E_treat − E_log` | US EPA WARM v16 (Dec 2023); UK DESNZ factors (OGL); ADEME Base Empreinte |
+| Exit | `−E_treat − E_log` | WARM, DESNZ |
+| Logistics `E_log` | `Σ tkm × EF_mode` | ISO 14083:2023; GLEC Framework |
+
+Segment notes (new):
+- **Used cars:** retail or auction of a used car rarely displaces a new car one-for-one. Set `d` low (a pack parameter
+  the sustainability lead publishes), or show carbon only for salvage, parts and recycle. Do not claim "a new car
+  avoided".
+- **Network equipment:** `d` = 1 when a named site or spares demand would otherwise have produced a purchase order.
+  This is the same evidence as "new spend avoided", so the two numbers stay consistent. Telecom sector method: GSMA
+  (Feb 2025).
+- **Medical rental:** re-rent displaces nothing new. Carbon is avoided only when higher utilisation avoids a fleet
+  purchase, which belongs at fleet level (Understand), not on a case card. Show transport `E_log` on the card.
+- Licence check before bundling factors in the trial package (ecoinvent restricts redistribution; WARM, DESNZ and
+  ADEME are safer). Needs review by Kinective's Legal team.
+- The demo's `CO2S` shares stay as the parity default for the industrial pack only.
+
+---
+
+## 6. Roles
+
+### 6.1 Prototype roles mapped onto platform roles
+
+The prototype has five standard roles, plus the operator roles each published flow creates (01 §2, Access). Directory
+groups from the identity provider map to roles, with a scope (everywhere, or one source or region).
+
+| Prototype standard role | Can do | Platform role today |
+|---|---|---|
+| Flow author | Compose: describe, map, request approval | Planner, FDE (new) |
+| Flow approver | Compose: approve or modify, publish (never their own flow) | Approver |
+| Operator | Decide: approve, override, handle exceptions in their scope | Approver / Planner / Engineer / Warehouse / Compliance, by guardrail owner |
+| Analyst | Understand: analytics, saved views, alerts | any role with read; Exec |
+| Administrator | Access, adapters, audit | Admin, Customer IT (new) |
+
+Segment operator roles (from §2.3, §3.3, §4.3, and A for the pilots) resolve to platform roles. Approval owners:
+used-car manager, remarketing manager, trade compliance, network planning, fleet manager, clinical engineering.
+Exception owners: title desk, inspection lead, lot manager, inventory lead, test bench lead, spares planner,
+decontamination lead, biomedical engineer, operations manager. A pack names its owners; installing it creates them as
+operator roles. A customer maps directory groups to them.
+
+### 6.2 Capability matrix (updated)
+
+Legend: **D** does it, **A** approves (checker), **P** gets agent proposals, **R** reads, blank = no access. New rows
+are marked *(new)*.
 
 | Capability | Planner | Approver | Engineer | Finance | Warehouse | Compliance | Sustain. | Admin | FDE | Cust. IT | Exec |
 |---|---|---|---|---|---|---|---|---|---|---|---|
+| Compose: describe a flow, answer the agent's question *(new)* | D | R | R | R |  | R | R |  | D |  | R |
+| Compose: approve or modify, publish (maker-checker) *(new)* |  | A |  |  |  | A (compliance parts) |  |  |  |  |  |
+| Customer layer: diversions, guardrail tightening *(new)* | D | A |  |  |  | A (locked gates) |  |  | D |  |  |
 | Connect sources, credentials, mappings |  |  |  |  |  |  |  | A | D | D |  |
 | Ingest workflows (ETL) |  |  |  |  |  |  |  | A | D | D |  |
-| Decision flows and business rules (Modeler) | D | A | R | R |  | R | R |  | D |  | R |
-| Gate rules and guardrails (regulatory) | R | R | R | R |  | D / A | D / A |  | D |  | R |
+| Decision flows and business rules | D | A | R | R |  | R | R |  | D |  | R |
+| Gate rules and compliance guardrails | R | R | R | R |  | D / A | D / A |  | D |  | R |
 | Finance parameters (holding cost, floors, thresholds) | R | R |  | D / A |  |  |  |  |  |  | R |
 | Carbon factor sets | R | R |  | R |  | R | D / A |  | D |  | R |
-| Intake and fraud triage queue | P / D | A (high risk) |  | R | R | R |  |  |  |  |  |
+| Agent mapping per stage, autonomy, confidence threshold *(new)* | P | A |  |  |  |  |  | D / A | D |  |  |
+| Intake, match and fraud triage queue | P / D | A (high risk) |  | R | R | R |  |  |  |  |  |
+| Compliance records: title, lock, wipe, decontamination, export class *(new)* | R | R | D | | D | D / A | R |  |  |  |  |
 | Receiving, serial match, grade capture | R |  | R |  | D |  |  |  |  |  |  |
-| Evidence: sanitisation, test, certificates | R | R | D | | D | A | R |  |  |  |  |
-| RUL / wear assessment, requalification | R | R | D / A |  | |  |  |  |  |  |  |
-| Case decision (route) | P / D | A |  R | R | | | |  |  |  | R |
-| Overrides of a recommendation | D (with reason) | A |  |  |  |  |  |  |  |  | R |
+| RUL, wear, service and certification | R | R | D / A |  |  |  |  |  |  |  |  |
+| Case decision (route) | P / D | A | R | R |  |  |  |  |  |  | R |
+| Overrides (reason logged, used to tune rules) | D | A |  |  |  |  |  |  |  |  | R |
+| Exceptions and alerts in "My work" (by owner) | D | D | D | D | D | D | D |  |  |  |  |
 | Conflicts between sources | P / D |  | D |  |  |  |  | R | D | D |  |
-| Execution confirmations, exceptions | D | R |  | R | D |  |  |  | R |  |  |
-| Financial reconciliation (credits, retirements, variances) | R | R |  | D / A | |  |  |  |  |  | R |
+| Execution confirmations | D | R |  | R | D |  |  |  | R |  |  |
+| Financial reconciliation (credits, retirements, residual gain/loss) | R | R |  | D / A |  |  |  |  |  |  | R |
 | Regulatory and sustainability reports | | | | R | | D | D |  |  |  | R |
-| Back-test / simulation | D | R | R | D | | | R | | D | | R |
-| Users, roles, tenants, access grants |  |  |  |  |  |  |  | D (maker-checker) |  |  |  |
-| Agent registry, autonomy, tool allow-lists |  |  |  |  |  |  |  | D / A | D |  |  |
-| Analytics and pilot report | R | R | R | R | R | R | R | R | R |  | R |
+| Replay / back-test / simulation | D | R | R | D | | | R | | D | | R |
+| Analytics from a prompt, saved views, alerts *(new)* | D | D | D | D | R | D | D | R | D |  | D |
+| Users, roles, tenants, access grants; directory groups → roles *(new)* |  |  |  |  |  |  |  | D (maker-checker) |  | D (groups) |  |
+| "Test a user" access check *(new)* |  |  |  |  |  |  |  | D |  | D |  |
+| Agent registry, tool allow-lists |  |  |  |  |  |  |  | D / A | D |  |  |
 
-What each does in "agents plan, humans approve":
-
-- **Planner (operations).** Works the exception queue, not every case: low confidence, conflicts, missing evidence,
-  near-ties. Accepts or edits agent proposals; writes business rules in plain language and runs simulations.
-- **Approver (disposition owner).** Approves decisions above value or risk thresholds and every override; the only role
-  that may release a high-risk fraud case. Approvals stay out of agents' reach (`forbidden.py`).
-- **Engineer (reliability / quality).** Owns RUL, wear index, requalification, test evidence; approves model candidates
-  for life estimates; resolves conflicts in technical fields.
-- **Finance.** Owns holding cost, recovery floors, approval thresholds; reconciles credits, refunds, core credits,
-  asset retirements and the predicted-versus-actual variance.
-- **Warehouse.** Receives against the RMA, matches serials, captures grade and photos (or confirms the external grade),
-  runs sanitisation and tests, confirms physical moves. The agent prepares pick lists and labels.
-- **Compliance (new role).** Owns data, waste-shipment, regulated-product and contract gates; approves gate-rule
-  changes; holds certificates and consents.
-- **Sustainability lead (new role).** Owns certified downstream vendors, carbon factor sets, CSRD E5 and WEEE reporting.
-- **Admin.** Users, tenants, access grants (maker-checker), agent autonomy and limits.
-- **Forward-deployed engineer (new role, internal).** Uses Connection Studio and the pack builder in the first week:
-  connects sources, generates adapters, imports a template pack, runs the back-test.
-- **Customer IT integrator (new role).** Owns credentials, network access, webhooks and the ERP side of instructions;
-  approves mappings that write into their systems.
-- **Executive.** Reads outcomes: recovery uplift, back-test result, carbon avoided, cycle time, approval load.
+What each does in "agents plan, humans approve" (unchanged from revision 1 except the additions):
+- **Planner.** Works exceptions, not every case. Authors flows in Compose. Adds diversions.
+- **Approver.** Approves flows (never their own), thresholds, overrides, and Approval guardrails that name them.
+- **Engineer.** RUL, wear, service and certification, test evidence; biomedical engineer and test bench lead sit here.
+- **Finance.** Thresholds, floors, credits, residual gain or loss, retirements.
+- **Warehouse.** Receiving, serial match, decontamination and wipe operations, physical moves.
+- **Compliance (new role).** Owns locked gates; approves gate changes and any customer-layer change to them; trade
+  compliance and title desk sit here.
+- **Sustainability lead (new role).** Downstream vendors, carbon factor sets, CSRD E5 and WEEE.
+- **Admin.** Access, groups, agent autonomy and limits.
+- **Forward-deployed engineer (new role, internal).** First-week set-up: mappings, connectors, pack import, replay.
+- **Customer IT (new role).** Credentials, directory groups, the write-back side.
+- **Executive.** Outcomes: uplift, replay result, carbon, cycle time, approval load.
 
 ---
 
-## 4. A generic template-pack structure
+## 7. Template-pack format (matches 01 §9)
 
-### 4.1 What exists today
+### 7.1 What exists today (kept)
 
-Read from `backend/di/services/modeler/templates.py`, `packs/industrial.json`, `valuers/*.py`:
+Read from `backend/di/services/modeler/templates.py`, `packs/industrial.json` and `valuers/*.py` (24 Nov 2026):
+- A `Template` has `key`, `name`, `pre`, `paths`, `guardrails` (authoring checks with `forbids`/`protects`), `dims`,
+  `actors`, `wording`. Only `industrial` is a data file; `tool_fleet` and `device` are built in code.
+- Guardrails are **authoring checks** on rule text, not runtime evidence checks. Runtime gates are the six fixed engine
+  gates in `di/services/engine/routes.py`; pack-specific reasons come from valuer code.
+- Valuers are code (`tool_fleet.py`, `device.py`) with constants. Grades A–D are hard-coded. Carbon factors exist only
+  for industrial classes. Execution step templates are per route kind. Sample data are generated with a seeded RNG.
+- Agents: the registry has autonomy *act/propose* per agent, not per stage. "Build with AI" maps a prompt onto the
+  nearest known topology. There is no customer layer.
 
-- A `Template` has: `key`, `name`, `pre` (case prefix), `paths` (id, name, executing app, owner, lead days),
-  `guardrails` (id, text, owner, plus `forbids` and `protects` checks), `dims` (scope dimensions: set/min/max over case
-  fields), `actors`, `wording` (how a rule reads).
-- Only `industrial` is a data file (`packs/industrial.json`, 39 lines). `tool_fleet` and `device` are built in code
-  from the PO golden files plus guard checks written as Python constants (`TOOL_FLEET_GUARDS`, `DEVICE_GUARDS`).
-- **Guardrails are authoring checks**: they stop a business rule from saying something (for example "prefer re-issue
-  for grade C/D" breaks GR-01; any text matching "skip approval" breaks GR-05). They do not check evidence at runtime.
-- **Runtime gates** are the six engine gates in `di/services/engine/routes.py` (`Condition & life`,
-  `Post-intervention`, `Policy & certification`, `Demand fit`, `Economics`, `Sustainability`). Pack-specific reasons are
-  set by the valuer (`routes_adapter.to_routes` fails gate 2 with the valuer's reason).
-- **Valuers are code**: `tool_fleet.py` (1,116 lines, classes `CLS` with prices and residual curves, finance `FIN`,
-  queue planning across open returns) and `device.py` (286 lines, channel config `DCFG`, channel statistics `DST` by
-  grade × age band × channel, policy `DG` with SLA 60 days and recovery floor 55%). Parameters are constants.
-- Grades are A–D everywhere. Carbon factors are only in `repositories/common.py` for the industrial classes.
-- Execution step templates are per route kind in `services/execution/steps.py`, not per pack.
-- Sample data are generated inside the valuers with a seeded RNG (`valuers/rng.py`).
+### 7.2 The 13 parts
 
-### 4.2 What a pack must contain
-
-A pack is a versioned bundle (one folder or one JSON document plus optional valuer code), imported through the action
-pipeline, published with maker-checker, and shown in the Modeler. Parts marked **new** do not exist today.
+A pack is a versioned bundle (one folder or JSON document plus optional valuer code). It is imported through the action
+pipeline, published with maker-checker, and shown in Compose. "Today" says what exists.
 
 | # | Part | Contents | Today |
 |---|---|---|---|
-| 1 | Manifest | key, name, version, case prefix, industry, regions the gates were written for, legal-review status and date, licence of bundled data | partial (`key`, `name`, `pre`) |
-| 2 | Asset classes | class id, name, family, attributes (serialised? has media? hazardous? regulated?), unit of measure, new-price reference, residual curve | in valuer code (`CLS`) or `dims` values |
-| 3 | Grade scale | grades, meaning, who grades (read or computed), mapping from external scales (e.g. a repair centre's 1–5 to A–D) | **new** (A–D hard-coded) |
-| 4 | Routes | id, name, executing system, owner, lead days, execution step template, required instructions (sales order, transfer, work order, credit memo) | partial (`paths`; steps elsewhere) |
-| 5 | Gate rules | declarative: trigger (class attribute, route, region, owner), evidence types, effect (block / require step / require approval), owner, source citation | **new** (today valuer code + six fixed gates) |
-| 6 | Authoring guardrails | what a business rule may not say (today's `guardrails`) | yes |
-| 7 | Evidence types | sanitisation record, test record, certificate, consent, passport ID, SoH reading: fields, issuer, expiry, which adapter supplies it | **new** |
-| 8 | Valuer | either a parameterised standard valuer (value lines: sale, avoided purchase, lease, parts, material; costs: prep, logistics, fees, holding; risk) with parameters as data, or a code plug-in with a declared interface | code only |
-| 9 | Carbon factor set | per class and route: factors, source, version, year, licence; formula per route (section 2.4) | **new** (industrial constants only) |
-| 10 | Required adapters and canonical fields | system types the pack needs (e.g. leasing, IoT, PLM, repair), canonical fields per stage with authority, minimum fields to open a case | **new** (canonical model is global) |
-| 11 | Scope dimensions and wording | today's `dims`, `wording`, `actors` | yes |
-| 12 | KPIs | recovery rate, uplift versus actual, cycle time, approval load, override rate, fraud catch rate, credit accuracy, carbon avoided, evidence completeness | **new** |
-| 13 | Stories, fraud rules, reconciliation map, demo data | user stories and acceptance tests for the pack; fraud signals and thresholds; mapping of each route to its financial postings; seeded sample cases and a back-test dataset | partial (sample data in valuers) |
+| 1 | Identity and manifest | Name, pack version, unit, author role, case prefix, industry, regions the gates were written for, legal-review status and date, licence of bundled data | partial (`key`, `name`, `pre`) |
+| 2 | Sample prompts and configuration agent | Three sample prompts; what the reading log reports (word count, explicit controls, matched pack, asset fields, stages, routes, guardrails stated + from the pack, systems with or without adapter, KPIs); **one** clarifying question with its options and the rule each answer adds | **new** ("Build with AI" and the Modeler assistant are the nearest) |
+| 3 | Asset classes and grade scale | Class attributes (serialised, has media, hazardous, regulated, has patient data), unit, new-price reference, residual curve; grades, who grades (read or computed), mapping from external scales (e.g. a 1–5 score with its direction) | in valuer code; grades **new** |
+| 4 | Stages and agents | The seven stages in the pack's words; the agent per stage and its default autonomy (Recommend only / Act within limits / Act alone); default confidence threshold (65–85%, 75% default) | **new** per stage (registry has per-agent autonomy) |
+| 5 | Routes or channels | Id, name, executing system, owner, lead days, execution step template, instructions (sales order, transfer, work order, credit memo, listing) | partial (`paths`; steps elsewhere) |
+| 6 | Guardrails and gates | Each typed **Compliance / Data quality / Threshold / Approval**, placed at a stage, with owner, evidence types, effect, citation, and a **locked** flag (all Compliance). References gates in the catalogue (§5) with parameters. Authoring guardrails (what a business rule may not say) stay here too. | authoring only; runtime gates **new** |
+| 7 | Customer-layer contract | Which guardrails are locked; which fields of each guardrail a customer may change; sample diversions, including **one blocked compliance skip**; the merge rule for pack updates (§7.3) | **new** |
+| 8 | Data | Systems needed, each marked "adapter in the registry" or "needs a connector"; about seven canonical entities and their mapping onto the platform's canonical model; field mappings with confidence and a reason when unsure; minimum fields to open a case | **new** per pack (canonical model is global) |
+| 9 | Valuer and carbon factor set | Standard parameterised valuer (value lines and cost lines as data) or a declared code plug-in (e.g. queue planning); carbon factors per class and route with source, version, year, licence | code only; carbon **new** |
+| 10 | Evidence and replay | Replay dataset (past items, actual routes, realised values); an example asset with facts (each with source and age), recommendation, alternatives with values, evidence lines and guardrail results; replay outputs (route mix actual against flow, straight-through %, approvals and exceptions per day, modelled uplift) | partial (simulation of drafts; pilot mode) |
+| 11 | Run-time behaviour from pack data (concept; our own UI) | Decide: overview suggestion rules (such as ageing moves), cases, exceptions with **exception and alert types, each with an owner and a recommended action**; Understand: analytics and the agents in the flow. The pack supplies the data; no screen code per pack | **new** (pages are hand-built per template) |
+| 12 | KPIs and analytics | Six KPIs with definitions and a trend; **two worked analytics questions** with expected chart and example records | **new** |
+| 13 | Stories and tests | The pack's stories and acceptance tests (§2.7, §3.7, §4.7, and A), fraud signals where relevant, reconciliation map (route → postings), sample cases | partial (sample data in valuers) |
 
-Design points:
-- Keep the **gate catalogue** (section 2) shared across packs; a pack only lists which gates apply and with which
-  parameters. That is what makes "data-erasure only for IT/compute assets, RUL and grade certification for tools and
-  motors" (brief, item 3) a configuration, not code.
-- A pack's valuer should be the standard valuer with parameters unless the domain truly needs code (tool-fleet queue
-  planning is a real case for code).
-- Packs are business policy: they stay separate from connection workflows (brief, item 12); a pack *declares* the
-  adapters and fields it needs and the Connection Studio fills them.
-- "Create a template for my AMS process" (brief, item 1) becomes: an agent drafts a pack from the closest existing pack
-  plus the user's sentence, the user confirms, and the pack goes through maker-checker like a rule.
+### 7.3 Customer layer rules
+
+From the prototype (01 §2), with our proposals marked:
+- The layer sits on top of the pack version. The template itself is never edited.
+- **Locked (Compliance) guardrails:** threshold, scope, exception and suspend-until are disabled; the mode stays "block
+  until approved"; the customer may add an extra approver. The guardrail cannot be weakened, suspended or removed.
+- **Other guardrails** (Data quality, Threshold, Approval): the customer may change threshold, mode (block until
+  approved / require approval / warn and log), approver, scope, exception and suspend-until. Each change is replayed on
+  90 days, shows how many decisions it would have changed, and goes to approval.
+- **Diversions:** "at stage *s*, if *condition*, go to *step or route*". They can add a step or a shortcut. A
+  diversion that would skip a compliance guardrail is **blocked** with a reason, and the attempt is audited.
+- **Pack updates never overwrite the customer's changes.** *Our proposal:* when a new pack version changes a guardrail
+  that the customer layer also changed, the stricter of the two applies and the flow approver gets a review item.
+  A new locked gate in the pack applies at once and is shown as "added by the pack".
+- Every layer change is versioned with the flow and listed in the version history with its audit log.
+
+### 7.4 Design points (kept and updated)
+
+- The gate catalogue (§5) is shared across packs. A pack lists which gates apply and with which parameters. That makes
+  "data-erasure only for IT/compute assets, RUL and grade certification for tools" (brief, item 3) a configuration.
+- Use the standard valuer unless the domain needs code (tool-fleet and network-equipment queue planning do).
+- Packs are business policy, kept apart from connection workflows (brief, item 12). A pack declares adapters and fields;
+  the Connection Studio fills them.
+- The engine is the same for every pack (01 §9). A new pack must not need new screens or new engine code. That is the
+  acceptance test for the format.
 
 ---
 
-## 5. Epics, stories and flows
+## 8. Epics, cross-segment stories and flows
 
-### 5.1 Epics per stage (industry-neutral)
+### 8.1 Epics by stage
 
-| Stage | Epic | Covered today |
-|---|---|---|
-| S1 | E1.1 Open a case from any trigger (RMA, lease end, trade-in, contract end, IoT alarm, manual, file) | yes |
-| S1 | E1.2 Entitlement and contract check (owner, warranty, lease terms, may we refurbish/resell, consent) | partial |
-| S1 | E1.3 Fraud and abuse triage with explainable signals and a hold for a person | **no** |
-| S1 | E1.4 Early disposition: decide the destination before the item ships (nearest capable site) | partial |
-| S2 | E2.1 Receive against the RMA: serial and quantity match, discrepancy case | partial |
-| S2 | E2.2 Read grading and test results from the repair centre or inspection app (not compute) | yes (read) |
-| S2 | E2.3 Evidence capture: sanitisation, test, certificates, SoH, passport ID | partial |
-| S2 | E2.4 Life and wear: RUL and wear index from IoT + PLM with an explanation | partial |
-| S2 | E2.5 Declared-versus-received discrepancy and re-quote | **no** |
-| S3 | E3.1 Value every route with the pack's valuer, with ranges and confidence | yes |
-| S3 | E3.2 Apply gate rules per asset type with evidence | partial (fixed gates) |
-| S3 | E3.3 Carbon per route with factor provenance | partial (no provenance) |
-| S3 | E3.4 Agent proposes; person approves on thresholds, low confidence, exceptions | partial (proposals exist) |
-| S3 | E3.5 Channel routing and lot building for recommerce | yes (device pack) |
-| S3 | E3.6 Back-test a period of historical returns against actual outcomes | partial (simulation of drafts) |
-| S4 | E4.1 Hand the decision to the systems as instructions and track confirmations | yes |
-| S4 | E4.2 Customer credit settlement (trade-in credit, core credit, return credit, wear charges) | **no** |
-| S4 | E4.3 Fixed-asset retirement or transfer with gain/loss | **no** |
-| S4 | E4.4 Inventory valuation of refurbished and harvested stock | **no** |
-| S4 | E4.5 Predicted-versus-actual variance and learning | yes |
-| S4 | E4.6 Regulatory and sustainability reporting (WEEE, CSRD E5, battery, scope 3 cat 12) | **no** |
-| X | EX.1 Template pack authoring, import and maker-checker | partial |
-| X | EX.2 Role-based home with "My work" (exceptions, approvals, proposals) | partial |
+| Stage | Epic | Segments that need it first | Today |
+|---|---|---|---|
+| Compose | EX.1 Pack contract (13 parts), import, maker-checker | all | partial |
+| Compose | EX.2 Configuration agent: reading log, pack match, one clarifying question, drafted flow | all | partial |
+| Compose | EX.3 Adapter mapping with confidence, reasons, five choices, test run | all | partial |
+| Compose | EX.4 Agent mapping per stage, autonomy, confidence threshold | all | partial |
+| Compose | EX.5 Publish to one region at a share of volume, with replay | all | partial (pilot mode, simulation) |
+| Compose | EX.6 Customer layer: locked guardrails, diversions, blocked skips, pack-update merge | all | **no** |
+| Compose | EX.7 Identity-provider groups → roles, "test a user" | all | **no** |
+| Compose | EX.8 Decide and Understand driven by pack data (no screen code per pack) | all | **no** |
+| 1 Return/receive | E1.1 Open a case from any trigger (one per serial, VIN or tag) | all | yes |
+| 1 | E1.2 Entitlement and contract check | tool fleet, cars (lease) | partial |
+| 1 | E1.3 Fraud and abuse triage | device; later cores | **no** |
+| 2 Match/verify | E2.1 Match to the system of record (inventory, lease, quote, rental order) | network, cars, device | partial |
+| 2 | E2.2 Compliance records: title and lien, lock and blacklist, decontamination, covered equipment | cars, device, medical, network | **no** |
+| 2 | E2.3 Declared versus received, re-quote | device | **no** |
+| 3 Condition | E3.1 Read grade and test results (never compute) | all | yes (read) |
+| 3 | E3.2 Evidence capture: wipe, configuration wipe, safety test, certification, SoH | all | partial |
+| 3 | E3.3 Life and wear (RUL, service due) with explanation | tool fleet, medical | partial |
+| 4 Value | E4.1 Value every route net, with confidence | all | yes |
+| 4 | E4.2 Carbon with provenance | all | partial |
+| 4 | E4.3 Queue planning: each demand filled once | tool fleet, network | tool fleet only |
+| 5 Decide | E5.1 Typed gates placed at stages, as pack data | all | partial (six fixed gates) |
+| 5 | E5.2 Agent proposes; person approves thresholds, low confidence, exceptions | all | partial |
+| 5 | E5.3 Channel routing and lot choice | device, cars | device |
+| 6 Execute | E6.1 Instructions and confirmations | all | yes |
+| 6 | E6.2 Customer credit settlement | device, tool fleet | **no** |
+| 6 | E6.3 Fixed-asset retirement or transfer; lease residual gain/loss | cars, network, medical | **no** |
+| 7 Close and learn | E7.1 Predicted versus actual, learning | all | yes |
+| 7 | E7.2 Analytics from a prompt, saved views, alerts, overview suggestion rules | all | partial |
+| 7 | E7.3 Regulatory and sustainability reporting | later | **no** |
+| 7 | E7.4 Inventory valuation of refurbished and harvested stock | later | **no** |
 
-### 5.2 Top 15 stories with acceptance criteria
+### 8.2 Cross-segment stories (X)
 
-1. **Fraud triage on intake (E1.3).** As a planner, I want every new return scored against fraud and abuse signals so
-   that suspicious returns are held before credit is issued.
-   - Given a trade-in with an activation lock, blacklisted identifier or unpaid finance flag, the case opens with
-     status "held: fraud check" and no credit instruction can be sent.
-   - Each hold lists the signals that fired, their source system and the rule version.
-   - Only an approver can release a held case; the agent can propose "release" or "reject" but not do it.
-   - Fraud rules and thresholds are pack data, simulated over history before publishing.
-2. **Declared-versus-received re-quote (E2.5).** As a finance user, I want a re-quote when the received grade is lower
-   than the declared grade so that credits match what arrived.
-   - When received grade ≠ declared grade, the case recalculates the credit with the pack's price table and shows old,
-     new and the difference.
-   - Differences below a pack threshold apply automatically; above it they go to an approver.
-   - The customer-facing notice is drafted by the agent and sent only after a person approves (sending on the user's
-     behalf is a held action).
-3. **Serial match on receipt (E2.1).** As a warehouse user, I want the received serials matched to the RMA or pickup
-   manifest so that missing or extra units are caught at the dock.
-   - Missing serials open a discrepancy linked to the original case within one sync cycle.
-   - Extra serials open new cases with source "unexpected receipt".
-   - Chain-of-custody records (who, when, seal ID) are kept per serial.
-4. **Sanitisation gate (E2.3, G-DATA-1).** As compliance, I want release routes blocked until a sanitisation record
-   exists for every media-bearing serial so that no data leaves the owner.
-   - For a class with `has_media = true`, resale, redeploy-to-other-customer, parts sale and recycle fail the
-     "Policy & certification" gate with reason "no sanitisation record" until a record arrives.
-   - A record with failed verification requires the destruct step and blocks parts sale of that media.
-   - Classes without media (motors, tools) never show the gate.
-5. **Grade and RUL certification gate (E2.4).** As an engineer, I want refurbish/redeploy for tools, motors and
-   hardware to need a grade and an RUL assessment so that unsafe units don't return to service.
-   - The RUL shows its inputs (run hours from IoT, design life from PLM, wear factors) and the formula version.
-   - With RUL below the pack threshold, redeploy and re-issue fail; refurbish stays eligible only with a requalification
-     step.
-6. **Gate rules as pack data (E3.2).** As a compliance owner, I want to edit a gate rule's trigger and evidence in the
-   Modeler so that regulation changes don't need a code release.
-   - A gate rule change goes draft → submit → approve → publish, with simulation over the last 90 days of cases.
-   - The simulation shows how many decisions would change route and the value difference.
-   - Agents can draft a gate change but cannot approve or publish it.
-7. **Agent proposes, person approves on thresholds (E3.4).** As an approver, I want only cases above value or risk
-   thresholds, below a confidence level, or with a conflict to reach me.
-   - Thresholds (value, confidence, risk class) are finance-owned pack parameters.
-   - Cases inside thresholds follow the agent's proposal under a standing approval that names the approver and the
-     policy version (if the governance guardrail allows it; GR-05/GR-D6 today require a named approver per decision, so
-     this needs a decision in the decision log).
-   - Every routed case shows why it came to a person.
-8. **Carbon with provenance (E3.3).** As a sustainability lead, I want each route's CO2e avoided to show its formula and
-   factor sources so that numbers survive an audit.
-   - The card shows "avoided, not inventory", the factor set version and each factor's source and year.
-   - Same case and factor set give the same number on every run.
-   - A factor set is published with maker-checker; changing it does not change closed cases.
-9. **Back-test a quarter (E3.6).** As a forward-deployed engineer, I want to load one quarter of historical returns and
-   actual dispositions and see the uplift so that the customer sees value before a pilot.
-   - Import accepts CSV for cases, routes taken and realised values; failing rows are held with reasons.
-   - The result shows per class: actual recovery, recommended recovery, uplift, and cases where gates would have
-     blocked the actual route.
-   - The report states the pack version, factor set and assumptions.
-10. **Contract entitlement (E1.2, G-CON-1).** As customer operations, I want contract terms read at intake so that we
-    never resell or re-lease an asset the contract forbids.
-    - The clause and its source are shown on the case.
-    - Routes forbidden by the clause fail the gate; with consent on file they pass and show the consent reference.
-11. **Customer credit settlement (E4.2).** As finance, I want the credit memo (trade-in credit, core credit, return
-    credit or wear charge) generated from the decision and the received grade so that settlement matches the case.
-    - The instruction carries the case ID and approval reference; ERP confirmation closes the step.
-    - A mismatch between the ERP amount and the case amount opens a reconciliation exception.
-12. **Fixed-asset retirement (E4.3).** As finance, I want owned assets retired or transferred in the fixed-asset
-    register when the route executes so that the books match the floor.
-    - Resale or exit triggers a retirement instruction with sale proceeds; redeploy triggers a transfer.
-    - The gain or loss returned by the ERP is stored on the case and shown in the outcome.
-13. **Downstream vendor qualification (G-DS-1).** As a sustainability lead, I want recycle and exit routes limited to
-    vendors with a valid certification so that we can prove responsible end of life.
-    - A vendor whose certificate expired is excluded with the reason "certificate expired on <date>".
-    - The case keeps the vendor's certificate reference used at decision time.
-14. **Close with reporting evidence (G-REP-1/2).** As a sustainability lead, I want a case to close only with mass,
-    material and treatment code so that WEEE and CSRD E5 reports come straight from the cases.
-    - Missing evidence keeps the case in "awaiting evidence" and puts it in the owner's queue.
-    - An export gives totals by treatment category and period.
-15. **Pack drafted from a sentence (EX.1).** As an operations manager, I want to type "create a template for my AMS
-    process" and get a draft pack so that set-up takes days, not weeks.
-    - The draft starts from the closest existing pack and lists routes, gates, valuer parameters, required adapters
-      and missing fields, each marked "assumed" until confirmed.
-    - Nothing is published until a person approves; the import runs through the action pipeline.
+| ID | Pri | Story | Acceptance (short) |
+|---|---|---|---|
+| X-01 | P0 | Pack contract (EX.1) | A pack with all 13 parts imports through the action pipeline, is validated (missing part → named error), goes through maker-checker, and appears in Compose. The five packs import with no new engine code. |
+| X-02 | P0 | Configuration agent (EX.2; was story 15) | From a sentence or sample prompt, the agent shows the reading log, matches the closest pack, asks exactly one question and drafts the flow; every assumed item is marked until confirmed; nothing publishes without a person. |
+| X-03 | P0 | Gates as typed pack data (E5.1; was story 6) | A gate has type, stage, trigger, evidence, effect, owner and citation; a change goes draft → submit → approve → publish with a 90-day replay; agents may draft but never approve or publish. |
+| X-04 | P0 | Customer layer (EX.6) | Locked guardrails are tighten-only; diversions add steps or shortcuts; a compliance skip is blocked and audited; a pack update keeps customer changes (§7.3). |
+| X-05 | P0 | Agents plan, people approve (EX.4, E5.2; was story 7) | Per-stage autonomy and a confidence threshold (default 75%); below it, or on a guardrail hit, the item goes to a person with the recommendation and the reason it came to them. Standing approval inside policy needs a decision-log entry (conflicts with GR-05 / GR-D6). |
+| X-06 | P0 | Replay and publish to a share of volume (EX.5; was story 9) | Import a period of past items (CSV), held rows with reasons; output route mix actual against flow, straight-through %, approvals and exceptions per day, modelled uplift; publish v1.0 to one region at 20%. |
+| X-07 | P0 | Evidence gates with batch hold and auto-release (E3.2; was story 4) | Wipe, configuration-wipe and decontamination records gate every release route per serial; a batch waits and each item releases on its own when its record arrives; a failed verification adds a destroy or re-run step. |
+| X-08 | P0 | Match to the system of record (E2.1; was story 3) | A serial, VIN or tag not found in the owner's system opens an exception to its owner within one sync; extra or missing units are caught; chain of custody kept. |
+| X-09 | P1 | Pack-driven run-time views (EX.8) | Publishing a pack makes its cases, exceptions (types and owners from the pack), KPIs, suggestion rules, analytics questions and agents available in our existing pages, with no screen code per pack. Layout follows our own design, not the prototype's. |
+| X-10 | P1 | Identity-provider roles (EX.7) | Directory groups map to roles with scope; joiners get access on the next sync; "test a user" shows roles and why. |
+| X-11 | P1 | Contract entitlement (E1.2; was story 10) | Clause and source on the case; forbidden routes fail; consent on file passes with its reference. |
+| X-12 | P1 | Carbon with provenance (E4.2; was story 8) | "Avoided, not inventory", factor set version, each factor's source and year; same inputs give the same number; segment `d` rules (§5.7). |
+| X-13 | P1 | Fixed-asset retirement and lease residual (E6.3; was story 12) | Resale, salvage or retire triggers a retirement instruction with proceeds; redeploy triggers a transfer; ERP gain or loss is stored on the case. |
+| X-14 | P1 | Downstream vendor qualification (G-DS-1; was story 13) | Expired certificates exclude the vendor with the date; the certificate reference used is kept. |
+| X-15 | P1 | Fraud triage on intake (E1.3; was story 1) | Signals, source and rule version on each hold; only a person releases; rules are pack data, simulated first. Device detail in A. |
+| X-16 | P2 | Credit settlement, re-quote and close-with-reporting (E6.2, E2.3, E7.3; were stories 2, 11, 14) | Credit memo from decision and received grade; ERP mismatch opens an exception; a case closes only with mass, material and treatment code where G-REP applies. |
 
-### 5.3 End-to-end flow
+### 8.3 End-to-end flow (seven stages, with the customer layer)
 
 ```mermaid
 flowchart LR
-  T[Trigger: RMA, lease end, trade-in, IoT alarm, file] --> O[Open case]
-  O --> EN{Entitlement and contract}
-  EN -- not entitled --> RJ[Reject or route to customer service]
-  EN -- ok --> FR{Fraud triage}
-  FR -- high risk --> HF[Hold for approver]
-  HF -- released --> ED
-  HF -- rejected --> RJ
-  FR -- low risk --> ED[Early disposition: destination site]
-  ED --> RC[Receive: serial match, chain of custody]
-  RC -- discrepancy --> DQ[Discrepancy case]
-  RC --> GR[Read grade, tests, SoH, RUL]
-  GR --> EV[Evidence: sanitisation, certificates]
-  GR -- declared differs --> RQ[Re-quote credit]
-  EV --> VA[Value every route + carbon]
-  VA --> GT{Gate rules per asset type}
-  GT --> PR[Agent proposal: best eligible route]
-  PR --> TH{Above threshold, low confidence, conflict?}
-  TH -- yes --> AP[Person approves or overrides]
-  TH -- no --> SA[Standing approval within policy]
-  AP --> EX[Instructions: SO, transfer, WO, credit memo]
-  SA --> EX
-  EX --> CF[Confirmations from ERP, WMS, TMS]
-  CF --> RE[Reconcile: credits, asset retirement, stock value, variance]
-  RE --> RP[Reports: WEEE, E5, battery, carbon]
-  RP --> CL[Close and learn]
+  T[Return event: lease end, trade-in, decommission, rental return, RMA] --> S1[1 Return: open case per serial, VIN or tag]
+  S1 --> S2{2 Match and verify}
+  S2 -- not in system of record --> XM[Exception to owner]
+  S2 -- compliance record missing: title, lock, decontamination, covered list --> H1[Held until evidence]
+  S2 -- ok --> S3[3 Condition: read grade, tests, wipe, service dates]
+  S3 -- wipe or test failed --> H2[Re-run or destroy step]
+  S3 --> S4[4 Value each route net + carbon]
+  S4 --> GT{Typed guardrails at their stages}
+  GT --> S5[5 Routing agent proposes best eligible route]
+  S5 --> TH{Approval guardrail, low confidence, exception?}
+  TH -- yes --> AP[Person approves or overrides with reason]
+  TH -- no --> SA[Within limits: standing policy]
+  AP --> S6[6 Execute: transfer, order, listing, dispatch]
+  SA --> S6
+  S6 --> CF[Confirmations from the executing systems]
+  CF --> S7[7 Close and learn: outcome, KPIs, retrain]
+  DV[Customer layer: diversions add steps or shortcuts, never skip Compliance] -.-> S2
+  DV -.-> S3
+  DV -.-> S5
 ```
 
-### 5.4 Fraud triage (stage 1)
+### 8.4 Fraud triage (stage 1–2) and 8.5 financial reconciliation (stage 6–7)
+
+Kept from revision 1 without change. They now matter most for device (A) and the next segments (automotive cores,
+ITAD), and for lease returns in used cars (residual gain or loss).
 
 ```mermaid
 sequenceDiagram
   participant Src as Source (portal, OMS, BSS, DMS)
   participant DI as Platform (case, rules)
-  participant Ag as Triage agent
-  participant Ext as Checks (lock status, device registry, finance, contract)
+  participant Ag as Intake agent
+  participant Ext as Checks (lock status, registry, finance, title, contract)
   participant Ap as Approver
   Src->>DI: Return request (identity, serial, declared condition)
   DI->>Ag: New case event
@@ -524,7 +905,7 @@ sequenceDiagram
   Ext-->>Ag: Signals
   Ag->>DI: Score + signals + proposal (release / hold / reject)
   alt Score below pack threshold
-    DI->>DI: Continue to early disposition
+    DI->>DI: Continue
   else Score at or above threshold
     DI->>Ap: Held case in "My work"
     Ap->>DI: Release or reject (person only)
@@ -532,116 +913,206 @@ sequenceDiagram
   DI-->>Src: Status back to the source system
 ```
 
-Typical signals by industry (pack data): device lock or blacklist status, finance not paid, declared-versus-received
-grade gap, serial not in the owner's register, repeat returns per customer, core part number family mismatch, warranty
-claim outside coverage, return after a price drop, mismatch between pickup manifest and receipt.
-
-### 5.5 Financial reconciliation (stage 4)
-
 ```mermaid
 flowchart TB
   D[Approved decision + received grade] --> C1{Who is owed what?}
   C1 --> CR[Customer credit: trade-in, core, return, buy-back]
-  C1 --> CH[Customer charge: excess wear, unreturned equipment]
+  C1 --> CH[Customer charge: excess wear or mileage, unreturned equipment]
   D --> FA{Asset owned by us?}
-  FA -- yes, leaves --> RT[Fixed-asset retirement + proceeds -> gain/loss]
-  FA -- yes, stays --> TR[Transfer or reclassify to inventory]
+  FA -- yes, leaves --> RT[Retirement + proceeds -> gain/loss vs book or residual]
+  FA -- yes, stays --> TR[Transfer or reclassify to inventory or spares]
   D --> INV[Refurbished / harvested stock at value]
   CR & CH & RT & TR & INV --> ERP[(ERP postings)]
   ERP --> M{ERP amount = case amount?}
-  M -- no --> X[Reconciliation exception -> finance queue]
-  M -- yes --> V[Variance: predicted vs actual cost and value]
+  M -- no --> X[Reconciliation exception -> finance]
+  M -- yes --> V[Variance: predicted vs actual]
   V --> L[Calibration and rule suggestions]
 ```
 
-Accounting references for orientation only (Finance and Kinective's Legal team to confirm): asset derecognition and
-gain or loss on disposal (IAS 16 / ASC 360), inventory at the lower of cost and net realisable value (IAS 2 / ASC 330),
-refund liabilities and right-of-return assets for sales with a right of return (IFRS 15 / ASC 606).
+Accounting references, for orientation only (Finance and Kinective's Legal team to confirm): IAS 16 / ASC 360
+(derecognition, gain or loss on disposal), IAS 2 / ASC 330 (inventory at lower of cost and net realisable value), IFRS
+15 / ASC 606 (right of return), IFRS 16 / ASC 842 (lessor accounting at lease end; not re-read).
 
 ---
 
-## 6. Industry roadmap after the two pilots
+## 9. Next segments (after the five)
 
-Scores 1–5; priority = fit × market ÷ effort, then judgement.
+These segments stay in the plan as a **later phase**. Their stories (NS-) are short so that the plan can "enhance and
+complete all the stories" later. Each reuses the five-segment engine; what is new is listed.
 
-| Order | Industry | Fit | Market | Effort (5 = low) | Reasons |
-|---|---|---|---|---|---|
-| 1 | ITAD and IT lease end | 5 | 4 | 5 | Reuses the device valuer and channel routing; the data-erasure gate is already the brief's example; buyers are enterprises and lessors with ERP/CMDB; standards are clear (NIST 800-88 Rev. 2, IEEE 2883, R2v3, e-Stewards). |
-| 2 | Rental and construction fleets | 5 | 4 | 5 | Near copy of the tool-fleet pack (hours from telematics, rebuild versus sell, auction channels); clear value from used-equipment price data; few regulatory gates. |
-| 3 | Telecom CPE | 4 | 4 | 4 | Large volumes reported by operators; lot-level decisions fit the device pack's lots; carbon method exists (GSMA 2025). Low unit value: needs automatic decisions within policy, so it depends on story 7. |
-| 4 | EV and industrial batteries | 4 | 4 | 2 | Strong regulatory pull (SoH, Art. 73, passport from 18 Feb 2027); many routes (reuse, reman, repurpose, recycle); but safety and dangerous-goods gates, chemistry-specific valuers and a young market. Start with a design partner in 2027. |
-| 5 | Automotive cores | 3 | 4 | 3 | Value sits in stage 1 (core fraud) and stage 4 (core credit); routes are fewer; incumbents have core-management tools. Good after fraud triage and credit settlement exist. |
-| 6 | Medical devices | 3 | 3 | 1 | High value per unit, but servicing-versus-remanufacturing assessment, single-use rules, patient data and long sales cycles. Partner with a refurbisher; keep for later. |
-| — | B2C retail returns | 2 | 5 | 2 | Big market, weak fit (section 1.3). Only via the device pack for serialised electronics, plus the ESPR destruction-ban gate for apparel brands that already use us elsewhere. |
+### 9.1 Fit overview
 
-What the roadmap needs from the platform, in order: declarative gate rules and evidence types (packs 1–6), fraud
-triage (3, 5 and device), credit settlement and asset retirement (all, critical for 5), automatic decisions within a
-standing policy (3), dangerous-goods lanes and passport steps (4), regulatory assessment workflow (6).
+| Segment | Fit | Effort | Market signal (directional) | Builds on |
+|---|---|---|---|---|
+| Industrial equipment, lease end (base) | 5 | built | Base demo, 128 cases | `industrial` pack |
+| IT asset disposition (ITAD), IT lease end | 5 | low | ITAD USD ~13–26 bn 2025 (vendor estimates vary) | device pack + G-DATA |
+| Rental and construction fleets | 5 | low | US rental penetration ~57% (Q1 2025) | tool fleet + medical rental (re-rent) |
+| Telecom CPE (home routers, set-top boxes, ONTs) | 4 | low–medium | Operators report millions of devices reused a year | device pack (lots), network pack (spares) |
+| EV and industrial batteries | 4 | high | Second-life market ~USD 1–2 bn; EU passport 18 Feb 2027 | used-car EV diversion; G-BAT |
+| Automotive cores / remanufacturing | 3 | medium | Auto reman ~USD 62–69 bn (vendor estimates) | used cars (DMS adapter), fraud triage |
+| Medical capital equipment (trade-in, refurbish, resale) | 3 | high | Strong, heavy rules | medical rental gates + G-MED-1/2/3 |
+| B2C retail returns | 2 | medium | US returns ~USD 850 bn 2025; 9% fraudulent (NRF) | device pack for serialised goods only |
+
+### 9.2 Per segment (tightened), with later-phase stories
+
+**Industrial lease end (base, built).** Lease-end notice → receipt and grading → seven routes (redeploy, re-lease,
+resale, internal and external parts, material, exit) → wear charges and asset retirement. Must stay at parity with the
+demo. NS-IND-01: migrate `packs/industrial.json` to the 13-part format with no change in the 128 cases (parity test).
+
+**ITAD and IT lease end.** Decommission from ITSM/CMDB or a lease-end schedule; chain of custody from pickup; serial
+reconciliation against the manifest; sanitisation per serial (G-DATA-1/2); test and configuration read; routes:
+redeploy, return to lessor, resell, harvest, certified recycle (G-DS-1); settlement to the owner and CMDB retirement.
+- NS-IT-01: manifest reconciliation at pickup and receipt (X-08 reused), with missing serials as critical exceptions.
+- NS-IT-02: sanitisation certificate per serial with the method by media type; redeploy inside the same owner accepts "clear".
+- NS-IT-03: residual value decays monthly; the overview suggests moving ageing stock to wholesale.
+
+**Rental and construction fleets.** Off-rent return or end of fleet life (age or hours); check-in inspection and
+damage claim; keep, rebuild, transfer to a branch, retail, auction, dealer, parts, scrap. Closest to tool fleet
+(hours from telematics) and medical rental (re-rent, turnaround).
+- NS-RC-01: re-rent versus rebuild versus sell using hours, utilisation by branch and used-equipment price indices.
+- NS-RC-02: damage recovery from the renter raised as a finance instruction.
+- NS-RC-03: cross-branch transfer rule (as in TN-18).
+
+**Telecom CPE.** Return at contract end, upgrade or fault swap; subscriber link; factory reset and firmware refresh;
+grading in lots; refurbish to new subscribers (main route), broker, harvest, recycle; unreturned-equipment charges.
+Kept apart from network equipment (lower value, lot decisions, subscriber data).
+- NS-CPE-01: decisions per lot under a standing policy (depends on X-05).
+- NS-CPE-02: factory-reset record per serial (G-DATA-1 "clear") before redeploy to a new subscriber.
+- NS-CPE-03: carbon with the GSMA (Feb 2025) method.
+
+**EV and industrial batteries.** Pack return; SoH from the BMS (G-BAT-1); safety class and dangerous-goods lane
+(G-BAT-4); reuse, reman, repurpose (G-BAT-2), recycle (G-BAT-5); passport from 18 Feb 2027 (G-BAT-3). The used-car
+pack's "EV battery under 80%" diversion is the first entry point.
+- NS-BAT-01: battery assessment step from the used-car diversion feeds a battery case.
+- NS-BAT-02: passport step on repurpose and reman routes.
+- NS-BAT-03: damaged batteries never take a standard lane.
+
+**Automotive cores / remanufacturing.** Core return against a deposit; fraud and abuse (wrong or non-rebuildable core)
+is the main issue; inspection per part number; reman, harvest, broker, scrap; core credit carries most of the money.
+- NS-CORE-01: core acceptance criteria per part number as pack data; full, partial or no credit.
+- NS-CORE-02: core credit settlement (X-16) with ERP match.
+- NS-CORE-03: fraud signals (part-family mismatch, repeat returners) with a hold for a person (X-15).
+
+**Medical capital equipment (trade-in, refurbish, resale).** Trade-in at a new sale, lease end, service contract end;
+device class, single-use status (G-MED-2), recalls; servicing versus remanufacturing (G-MED-1); patient data (G-DATA-3);
+cross-market resale duties (G-MED-3). Partner with a refurbisher.
+- NS-MED-01: regulatory assessment workflow (servicing / remanufacturing / full refurbishment) per planned work.
+- NS-MED-02: patient-data sanitisation for imaging and monitors before any release.
+- NS-MED-03: cross-market resale blocked without UDI, service record and recall closure.
+
+**B2C retail returns (weak fit).** Low value per item, few routes, no serial or contract data; fraud and abuse is a
+point-of-return problem solved by returns SaaS. It fits only for serialised electronics (device pack), and for the EU
+destruction ban on unsold apparel and footwear (G-ESPR-1, from 19 Jul 2026).
+- NS-B2C-01: serialised electronics enter through the device pack.
+- NS-B2C-02: exit route gated by G-ESPR-1 for apparel brands already using the platform.
+
+---
+
+## 10. Roadmap
+
+| Phase | Segments | Why this order | Platform work it needs first |
+|---|---|---|---|
+| 1 (pilots) | Tool-fleet AMS, device recommerce (report A) | Pilot commitments | X-01–X-08: pack contract, configuration agent, typed gates, customer layer, autonomy and threshold, replay, evidence gates, record match |
+| 2a | Telecom network equipment | All 8 systems have adapters. It reuses tool-fleet queue planning (spares, harvest) and the device wipe gate. High value per unit; clear "new spend avoided" story. Export control is a person's approval, which the platform already supports. | G-NET-*; cross-region transfer suggestion; FCC covered list as a reference table |
+| 2b | Used cars | Clear US rules with dated sources (odometer, recalls, NMVTIS). The channel and lot choice reuses device routing. One legacy connector is needed. | G-VEH-*; lot choice in the valuer; lease residual gain or loss (X-13) |
+| 2c | Medical rental | Simple valuer (re-rent), but clinical-safety gates, the hospital's own maintenance duty, and decontamination evidence need a design partner and careful legal review. | G-MED-DECON/SVC/FSN/REFURB; service planning against demand |
+| 3 | ITAD → rental and construction → telecom CPE → EV and industrial batteries → automotive cores → medical capital equipment; B2C retail only via the device pack | Fit × market ÷ effort, as in revision 1. ITAD and rental reuse almost everything from phase 1–2. | Lot decisions under standing policy (CPE); passport and dangerous goods (batteries); fraud and core credit (cores); regulatory assessment workflow (medical capital) |
+
+All five phase-1/2 packs run on one engine (01 §9). The test that the engine is done: phase 2 packs import with no new
+screens and no engine code; only pack data, gate entries and (for queue planning) a declared valuer plug-in.
 
 ---
 
 ## Unconfirmed / open questions
 
-- **Battery Regulation amendments:** Reg. (EU) 2026/1738 (8 Jul 2026) amends 2023/1542; we could not confirm which
-  provisions. Art. 73 and Art. 77 details in G-BAT-2/3 are from article titles and memory, not the operative text.
-- **ADR/IATA special provisions** for damaged lithium batteries: numbers not checked.
-- **EU WSR export dates:** sources give 21 May 2026 (most provisions) and 21 May 2027 (most export rules); the EU
-  application of e-waste consent inside the Union (from 1 Jan 2027 per one source) not confirmed.
-- **WEEE revision / Circular Economy Act:** expected 11 Nov 2026 after a delay; we found no confirmation that it was
-  published. Gate G-WEEE-* follow the current directive.
-- **ESRS E5 datapoints after Omnibus I:** the simplified ESRS delegated act was pending in the sources; G-REP-1 uses the
-  original E5 categories.
-- **ESPR delegated-act timing** (textiles ~2027, iron and steel 2026 or 2028): Commission sources conflict.
-- **ESPR destruction ban disclosure start date:** sources conflict (already in force versus standard format from
-  Feb 2027).
-- **EU MDR Art. 17 revision** (a 2026 industry paper refers to a Commission proposal) and the MDR definition used for
-  refurbished resale: not confirmed.
-- **R2v3 and e-Stewards current versions:** we found no 2025–26 revision of R2v3 and only e-Stewards v4.0 (2020); check
-  the standard owners' sites. The R2v3 appendix structure was not checked.
-- **NIST SP 800-88 Rev. 2 FAQ** is dated 16 Jul 2026, after the Sep 2025 final; content consistent, date odd.
-- **Carbon factors:** DESNZ 2026 WEEE/closed-loop values and WARM's status after v16 not checked row by row; ecoinvent
-  licence terms not read (flagged as a redistribution risk only).
-- **Market sizes** are vendor estimates with wide spreads (ITAD USD 13–26 bn; second-life batteries USD 0.1–2 bn);
-  treat as directional. Returns-fraud share differs by definition (NRF 9% fraudulent versus a 2026 loss study: 2%
-  fraud, 12% abuse of returns-related loss).
-- **Accounting references** in 5.5 are orientation only.
-- **Product decision needed:** standing approvals within policy (story 7) conflict with today's guardrails GR-05 and
-  GR-D6 ("every decision approved by a named owner"); the brief's "people step in only on thresholds" needs a decision
-  log entry.
-- **Regions:** gates are written for EU, UK and US rules; the demo's industrial sites suggest India too (E-Waste
-  Management Rules, battery rules) — not researched here.
+New in this revision:
+- **Used-car open recalls:** we found no federal ban on dealers selling used cars with open recalls (only rental
+  fleets of 35+). State laws were not checked. "No retail with an open recall" is pack policy unless the seller is a
+  rental fleet.
+- **Title, lien and brand rules** are state law and differ; G-VEH-TITLE and G-VEH-BRAND use generic evidence.
+  NMVTIS reporting timing (monthly versus within a month of receipt) and the 5-vehicle threshold come from a 2026
+  Federal Register document whose status we could not confirm.
+- **49 CFR 573.15** (manufacturers' VIN recall lookup, 15 years) is cited from memory; text not re-read.
+- **EU and UK used-car rules** (ELV Regulation 2026/1738 detail, used-vehicle versus end-of-life export criteria,
+  certificate of destruction; UK outstanding-finance protection) not researched in depth.
+- **Personal data in returned cars** (UC-25): a legal duty in the US not found; the GDPR reading is ours.
+- **NIST SP 800-88 Rev. 2** dropped Rev. 1's media-specific appendices (incl. routers, switches); device detail now
+  comes from IEEE 2883 or the vendor (checked 25 Nov 2026).
+- **Export classification** of specific network equipment is case by case; the ECCNs named are examples, not a
+  classification. The EU 2026 Annex I update's publication was not confirmed.
+- **FCC covered equipment disposal** method under 47 CFR 1.50004(j) not read; the gate assumes "no reuse of any kind".
+- **Medical decontamination evidence:** MHRA *Managing Medical Devices* section 9 and NHSScotland loan-device guidance
+  wording not read (the PDF did not parse). CDC guideline cited without re-reading.
+- **Hospital maintenance duty flowing to rental suppliers** through contracts is our reading of CMS S&C 14-07.
+- **EU MDR "fully refurbishing"** paragraph number (Art. 2(30)/(31)) differs across secondary sources; check EUR-Lex.
+  Whether renting a device is "making available" with distributor duties under the MDR was not checked.
+- **Medical recall rules** (21 CFR Part 7 / 806; MDR Art. 89) cited from general knowledge.
+- **Customer-layer merge rule** on pack updates ("stricter applies, review item") is our proposal; the prototype only
+  says updates never overwrite customer changes.
+- **Industry process details** marked *practice* in §2.1 (lease buy-out options, auction arbitration) should be
+  checked with a design partner.
+
+Kept from revision 1:
+- Battery Regulation: Reg. 2026/1738 is the ELV Regulation (corrected); which battery provisions it amends is
+  unconfirmed. Art. 73 and 77 details are from article titles.
+- ADR/IATA special provisions for damaged lithium batteries not checked.
+- EU WSR export dates; WEEE revision / Circular Economy Act publication; ESRS E5 datapoints after Omnibus I; ESPR
+  delegated-act timing and destruction-ban disclosure date; EU MDR Art. 17 revision; R2v3 and e-Stewards current
+  versions; NIST SP 800-88 Rev. 2 FAQ date; carbon factors row by row; ecoinvent licence terms.
+- Market sizes are vendor estimates with wide spreads.
+- **Product decision needed:** standing approval within policy (X-05) conflicts with guardrails GR-05 and GR-D6
+  ("every decision approved by a named owner"). The prototype's "Act within limits" and straight-through % depend on it.
+- Regions: gates are written for US, EU and UK rules. India and other regions not researched.
 
 ## Sources (accessed 24 Nov 2026 unless stated)
 
-Repository (read 24 Nov 2026): `backend/di/services/modeler/templates.py`, `backend/di/services/modeler/packs/industrial.json`,
-`backend/di/services/modeler/valuers/tool_fleet.py`, `valuers/device.py`, `valuers/routes_adapter.py`,
-`backend/di/services/engine/routes.py`, `backend/di/services/canonical/schema.py`, `backend/di/repositories/common.py`
-(`EMB`, `CO2S`), `backend/di/services/execution/steps.py`, `fixtures/golden/po/templates.json`.
+Repository and team sources: [01-recover-segments.md](01-recover-segments.md) (Recover prototype "5 Industry
+Segments", pre-final, received 24 Nov 2026) and the prototype script it summarises (packs, diversions, customer layer;
+sample names left out); `backend/di/services/modeler/templates.py`, `packs/industrial.json`, `valuers/tool_fleet.py`,
+`valuers/device.py`, `valuers/routes_adapter.py`, `backend/di/services/engine/routes.py`,
+`backend/di/services/canonical/schema.py`, `backend/di/repositories/common.py`, `backend/di/services/execution/steps.py`,
+`fixtures/golden/po/templates.json` (read 24 Nov 2026).
 
-Regulation and standards:
-- NIST, SP 800-88 Rev. 2 *Guidelines for Media Sanitization*, final 26 Sep 2025: https://csrc.nist.gov/pubs/sp/800/88/r2/final ; FAQ: https://csrc.nist.gov/files/pubs/sp/800/88/r2/final/docs/sp800-88r2-faq.pdf
-- IEEE 2883-2022 *Standard for Sanitizing Storage* (cited by NIST SP 800-88 Rev. 2; standard text not read).
-- EU Battery Regulation 2023/1542, consolidated text 13 Aug 2026: https://eur-lex.europa.eu/eli/reg/2023/1542/2026-08-13/eng ; Commission batteries page: https://environment.ec.europa.eu/waste/batteries_en ; article titles: https://lexaris.de/library/tableofcontents/4633453 ; Baker McKenzie radar (updated 1 Jan 2026): https://www.bakermckenzie.com/en/insight/publications/resources/product-risk-radar-articles/eu-sustainable-batteries-regulation
-- Basel Convention e-waste amendments (in force 1 Jan 2025): https://www.basel.int/Implementation/Ewaste/EwasteAmendments/Overview/tabid/9266/Default.aspx ; US EPA: https://www.epa.gov/node/291575 ; OECD (Jun 2024): https://www.oecd.org/en/about/news/announcements/2024/06/oecd-countries-update-rules-on-international-shipments-of-electronic-waste
-- EU Waste Shipment Regulation 2024/1157: https://environment.ec.europa.eu/topics/waste-and-recycling/waste-shipments_en ; go-live 21 May 2026: https://environment.ec.europa.eu/news/new-waste-shipment-regulation-and-diwass-platform-go-live-2026-05-21_en
-- WEEE Directive 2012/19/EU (Annex VI, VII; text not re-read); evaluation 2 Jul 2025: https://environment.ec.europa.eu/news/new-evaluation-looks-how-improve-weee-directive-2025-07-02_en ; Circular Economy Act timing (Oct 2026): https://erp-recycling.org/news-and-events/2026/10/circular-economy-act-2/
-- R2v3 (SERI): https://sustainableelectronics.org/r2-standard-development/ ; e-Stewards v4.0 (Feb 2020): https://resource-recycling.com/e-scrap/2020/02/27/ban-publishes-latest-e-stewards-standard/
-- ESPR destruction ban in application (Commission, 17 Jul 2026): https://environment.ec.europa.eu/news/ban-destruction-unsold-clothes-and-shoes-enters-application-2026-07-17_en ; DPP registry live 20 Jul 2026: https://single-market-economy.ec.europa.eu/news/digital-product-passport-registry-now-live-2026-07-20_en ; Implementing Reg. 2026/1778: https://eur-lex.europa.eu/eli/reg_impl/2026/1778/oj ; DPP page: https://single-market-economy.ec.europa.eu/single-market/digital-product-passport_en
-- FDA, *Remanufacturing of Medical Devices*, final guidance May 2024: https://www.fda.gov/regulatory-information/search-fda-guidance-documents/remanufacturing-medical-devices ; FDA page (updated 2 Feb 2026): https://www.fda.gov/medical-devices/quality-and-compliance-medical-devices/remanufacturing-and-servicing-medical-devices
-- EU MDR Art. 17 reprocessing (Commission): https://health.ec.europa.eu/medical-devices-topics-interest/reprocessing-medical-devices_en ; national rules: https://health.ec.europa.eu/medical-devices-topics-interest/reprocessing-devices/national-rules-reprocessing-single-use-devices_en
-- Omnibus I, Directive (EU) 2026/470 (in force 18 Mar 2026): https://knowledge.dlapiper.com/dlapiperknowledge/globalemploymentlatestdevelopments/2026/corporate-sustainability-reporting-directive-amendments-under-omnibus-i-finalised ; https://cms.law/en/lux/legal-updates/final-adoption-of-omnibus-i-directive-simplifying-csrd-and-csddd
-- GHG Protocol, *Corporate Value Chain (Scope 3) Standard* (2011) and *Technical Guidance* (2013), category 12 (not re-read); GHG Protocol AMI meeting deck (1 Jul 2026, draft): https://ghgprotocol.org/sites/default/files/2026-09/AMI-InPersonMeeting-Presentation-2026.07.01.pdf
-- WBCSD *Guidance on Avoided Emissions* (Mar 2023; consultation Nov 2024): https://www.wbcsd.org/Imperatives/Climate-Action/Resources/Guidance-on-Avoided-Emissions ; https://wbcsd.org/wp-content/uploads/2024/11/Technical-Document_Open-Consultation_WBCSD-Guidance-on-Avoided-Emissions.pdf
-- US EPA WARM v16 (Dec 2023): https://www.epa.gov/node/137733 ; electronics chapter: https://www.epa.gov/system/files/documents/2023-12/warm_electronics_v16_dec.pdf
-- UK DESNZ GHG conversion factors 2025 (10 Jun 2025): https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2025 ; 2026 methodology: https://assets.publishing.service.gov.uk/media/6a2940543b15d05a7ce3202e/2026-GHG-conversion-factors-methodology-report.pdf
-- GSMA, *Quantifying the Carbon Savings of Circularity* (Feb 2025): https://www.gsma.com/solutions-and-impact/connectivity-for-good/external-affairs/wp-content/uploads/2025/02/Quantifying-the-Carbon-Savings-of-Circularity.pdf ; GSMA circularity target definitions (Mar 2025): https://gsma.com/solutions-and-impact/connectivity-for-good/external-affairs/wp-content/uploads/2025/03/GSMA-Circularity-Targets-Definitions.pdf
-- ISO 14083:2023 and GLEC Framework (transport emissions), Waste Framework Directive 2008/98/EC Annexes I–II, HIPAA 45 CFR 164.310(d), IAS 16 / IAS 2 / IFRS 15: cited from general knowledge, not re-read.
+Used cars:
+- NHTSA odometer disclosure exemption change (final rule 2 Oct 2019; effective date moved, FR 26 Nov 2019): https://www.govinfo.gov/content/pkg/FR-2019-11-26/html/2019-25657.htm ; https://www.nhtsa.gov/press-releases/odometer-disclosure-requirements-change
+- 49 CFR Part 580, §580.7 (leased vehicles): https://www.law.cornell.edu/cfr/text/49/580.7 ; Part 580: https://www.law.cornell.edu/cfr/text/49/part-580
+- FTC Used Car Rule amendment (81 FR, 18 Nov 2016, effective 27 Jan 2017; Buyers Guide points to recall check): https://www.govinfo.gov/content/pkg/FR-2016-11-18/html/2016-27694.htm ; https://www.ftc.gov/enforcement/rules/rulemaking-regulatory-reform-proceedings/used-car-rule
+- Safe Rental Car Act (FAST Act, Dec 2015; effective 1 Jun 2016; 49 U.S.C. 30120(i)): https://www.autorentalnews.com/news/safe-rental-car-act-effective-today ; NHTSA audit query citing 30120(i) (2026): https://static.nhtsa.gov/odi/inv/2026/INOA-AQ26001-14347.pdf
+- NHTSA recall lookup by VIN: https://www.nhtsa.gov/recalls ; https://vinrcl.safercar.gov/vin/
+- NMVTIS: 49 U.S.C. 30504: https://www.law.cornell.edu/uscode/text/49/30504 ; 28 CFR 25.56: https://www.law.cornell.edu/cfr/text/28/25.56 ; 2026 FR public-inspection document (status unconfirmed): https://public-inspection.federalregister.gov/2026-07895.pdf ; BJA reporting page: https://vehiclehistory.bja.ojp.gov/es/node/36
+- EU End-of-Life Vehicles Regulation (EU) 2026/1738 (OJ 24 Jul 2026): https://eur-lex.europa.eu/eli/reg/2026/1738/oj ; Commission ELV page: https://environment.ec.europa.eu/waste/elv/ ; Commission news 12 Aug 2026: https://environment.ec.europa.eu/news/new-rules-more-circular-european-automotive-sector-2026-08-12_en
 
-Market signals:
-- NRF and Happy Returns, *2025 Retail Returns Landscape* (USD 849.9 bn, 15.8% return rate, 9% fraudulent): https://nrf.com/media-center/press-releases/consumers-expected-to-return-nearly-850-billion-in-merchandise-in-2025 ; Appriss Retail loss study (2025 data): https://chainstoreage.com/study-returns-shrink-totaled-nearly-800b-2025
-- Counterpoint, refurbished smartphones H1 2025 (+3%): https://counterpointresearch.com/en/insights/global-refurbished-smartphone-market-h1-2025 ; IDC (27 Aug 2025, used +3.2%): https://www.idc.com/resource-center/blog/the-smartphone-shifts-why-second-hand-devices-are-outpacing-new-ones/
-- ITAD market estimates: https://www.marketsandmarkets.com/Market-Reports/it-asset-disposition-market-28474391.html ; https://www.imarcgroup.com/it-asset-disposition-market ; https://www.gminsights.com/industry-analysis/data-center-it-asset-disposition-market
-- Second-life batteries: https://www.idtechex.com/en/research-article/key-second-life-bess-market-developments/32762 ; https://www.marketsandmarkets.com/Market-Reports/second-life-battery-market-247281850.html
-- Automotive remanufacturing: https://www.globenewswire.com/news-release/2026/01/06/3213820/0/en/Remanufactured-Automotive-Parts-Global-Market-Report-2025-2029-and-2034-Featuring-Prominent-Players-Robert-Bosch-BorgWarner-ZF-Friedrichshafen-and-Denso.html ; https://www.ibisworld.com/united-states/industry/auto-parts-remanufacturing/5933/
-- Rental and used equipment: Rouse used-equipment trends Q3 2025: https://s24.q4cdn.com/560830410/files/doc_downloads/2025/11/Rouse-Used-Equipment-Market-Trends-Summary-US-CA-Edition-Q3-2025.pdf ; https://www.internationalrentalnews.com/news/when-is-the-right-time-to-sell-your-rental-fleet/8042482.article ; https://equipmentfinancenews.com/news/construction/used-construction-equipment-market-stabilizing
-- Telecom CPE reuse (operator disclosures, 2025–26): https://telecomlead.com/telecom-equipment/telecom-equipment-reuse-in-2026-how-operators-extend-hardware-life-to-control-procurement-costs-128147 (operator names left out of this report; figures are self-reported)
+Telecom network equipment:
+- BIS encryption controls, mass market and License Exception ENC 740.17(b)(2) (network infrastructure not mass market): https://www.bis.gov/learn-support/encryption-controls/mass-market ; https://www.law.cornell.edu/cfr/text/15/740.17
+- EU dual-use list update, Delegated Reg. (EU) 2025/2003 (adopted 8 Sep 2025, OJ 14 Nov 2025): https://policy.trade.ec.europa.eu/news/2025-update-eu-control-list-dual-use-items-2025-09-08_en ; 2026 update adopted 14 Sep 2026: https://sanctionsnews.bakermckenzie.com/eu-commission-adopts-2026-delegated-regulation-updating-annex-i-of-the-eu-dual-use-regulation/
+- FCC Secure and Trusted Communications Networks Reimbursement Program, 47 CFR 1.50004: https://www.law.cornell.edu/cfr/text/47/1.50004 ; disposal best practices (FR 27 Oct 2021): https://www.govinfo.gov/content/pkg/FR-2021-10-27/pdf/2021-23213.pdf ; FCC DA 21-1234: https://docs.fcc.gov/public/attachments/DA-21-1234A1.txt ; FAQ 2025: https://www.fcc.gov/sites/default/files/SCRP-FAQ-2025.pdf
+- NIST SP 800-88 Rev. 2 (26 Sep 2025): https://csrc.nist.gov/pubs/sp/800/88/r2/final
+
+Medical rental:
+- CMS S&C 14-07-Hospital (posted 20 Dec 2013), equipment maintenance and AEM programme: https://www.cms.gov/Medicare/Provider-Enrollment-and-Certification/SurveyCertificationGenInfo/Policy-and-Memos-to-States-and-Regions-Items/Survey-and-Cert-Letter-14-07
+- IEC 62353:2014 (ed. 2.0, Sep 2014): https://webstore.iec.ch/en/publication/6913
+- FDA, *Remanufacturing and Servicing Medical Devices* (page updated 2 Feb 2026): https://www.fda.gov/medical-devices/quality-and-compliance-medical-devices/remanufacturing-and-servicing-medical-devices ; guidance (May 2024): https://www.fda.gov/regulatory-information/search-fda-guidance-documents/remanufacturing-medical-devices
+- FDA QMSR (in force 2 Feb 2026): https://www.fda.gov/medical-devices/postmarket-requirements-devices/quality-system-qs-regulationmedical-device-good-manufacturing-practices ; scope for servicers (law-firm summaries): https://www.gtlaw.com/it/insights/2024/2/fda-final-rule-harmonizes-medical-device-quality-system-regulation-with-international-standard ; https://m.jonesday.com/en/insights/2024/03/fdas-final-device-manufacturing-rulenot-quite-harmonious-with-status-quo
+- EU MDR 2017/745 Art. 2 definitions (manufacturer, fully refurbishing): https://www.legislation.gov.uk/eur/2017/745/adopted/data.pdf (check EUR-Lex for current text)
+- MHRA, *Managing Medical Devices* (2021; text not parsed): https://assets.publishing.service.gov.uk/media/6089dc938fa8f51b91f3d82f/Managing_medical_devices.pdf ; NHSScotland, loan medical devices guidance (SHTM 01-08): https://www.nss.nhs.scot/publications/national-decontamination-guidance-on-loan-medical-devices-reusable-roles-and-responsibilities-shtm-01-08/
+- CDC *Guideline for Disinfection and Sterilization in Healthcare Facilities* (2008, with updates): cited from general knowledge, not re-read.
+
+Kept from revision 1 (regulation, standards, carbon, market): NIST SP 800-88 Rev. 2 and FAQ; IEEE 2883-2022; EU
+Battery Regulation 2023/1542 consolidated 13 Aug 2026 (https://eur-lex.europa.eu/eli/reg/2023/1542/2026-08-13/eng);
+Basel e-waste amendments; EU WSR 2024/1157; WEEE 2012/19/EU; R2v3; e-Stewards v4.0; ESPR destruction ban and DPP
+registry; FDA remanufacturing guidance; EU MDR Art. 17; Omnibus I (Directive (EU) 2026/470); GHG Protocol Scope 3;
+WBCSD avoided emissions (Mar 2023); US EPA WARM v16; UK DESNZ factors 2025/2026; GSMA *Quantifying the Carbon Savings
+of Circularity* (Feb 2025); ISO 14083:2023; NRF 2025 returns; Counterpoint and IDC device markets; ITAD, second-life
+battery, automotive reman and rental market estimates; telecom CPE reuse disclosures. Full URLs are in revision 1 of
+this file (git history) and unchanged; the main ones:
+https://csrc.nist.gov/pubs/sp/800/88/r2/final ·
+https://www.basel.int/Implementation/Ewaste/EwasteAmendments/Overview/tabid/9266/Default.aspx ·
+https://environment.ec.europa.eu/topics/waste-and-recycling/waste-shipments_en ·
+https://sustainableelectronics.org/r2-standard-development/ ·
+https://environment.ec.europa.eu/news/ban-destruction-unsold-clothes-and-shoes-enters-application-2026-07-17_en ·
+https://health.ec.europa.eu/medical-devices-topics-interest/reprocessing-medical-devices_en ·
+https://www.wbcsd.org/Imperatives/Climate-Action/Resources/Guidance-on-Avoided-Emissions ·
+https://www.epa.gov/node/137733 ·
+https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2025 ·
+https://www.gsma.com/solutions-and-impact/connectivity-for-good/external-affairs/wp-content/uploads/2025/02/Quantifying-the-Carbon-Savings-of-Circularity.pdf ·
+https://nrf.com/media-center/press-releases/consumers-expected-to-return-nearly-850-billion-in-merchandise-in-2025

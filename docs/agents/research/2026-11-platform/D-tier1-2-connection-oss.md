@@ -4,6 +4,26 @@ Scope: the Connection Fabric (adapters, formats, mappings, quality, CDC) and the
 contract, canvas). Context and rules: [00-brief.md](00-brief.md). Licence findings in this report need review by
 Kinective's Legal team before anyone relies on them.
 
+## What changed in this revision and why (revision 2, 24 Nov 2026)
+
+The target is now the team's Recover prototype ([01-recover-segments.md](01-recover-segments.md), "01"). Its adapter mapping, adapter registry and
+identity-provider access (01 §2) ask for capabilities revision 1 did not cover. **01 is used for its concept only** (capabilities, data, rules, agents): its screens, menus, panels and step tabs are not UI requirements, and this report describes capabilities, not layout.
+
+| Change | What | Why |
+|---|---|---|
+| **Added** §1.4 | The adapter registry: three connector sources, sign-in types, test → production environments, read-only vs write-back, the credential vault, **system-owner approval**, discovery that samples 500 records, mapping proposals with confidence and a reason, the five person choices, the test run | 01 §2 specifies each of these; revision 1 covered only adapter *generation* |
+| **Added** §3.4 | Field-mapping suggestion: embedding-free and LLM-assisted options with licences, dependency weight and a recommended pipeline | 01 asks for a confidence score and a reason per field; revision 1 had only a sketch |
+| **Added** §8b | Identity provider access: OIDC sign-in, SCIM 2.0 provisioning, directory groups → roles, sync, checking what a user gets; Python libraries with licences; fit with `core/policy.py` | 01 §2 "Access"; not in revision 1 |
+| **Added** rows 23–33 in §9; build-order items 9–10; sources; unconfirmed items; legal list | New libraries and IdP servers | Follows from the three sections above |
+| **Updated** §0 discovery row, §1.3 steps 5 and 9 | Discovery samples up to 500 records from the *test* environment (was: the newest 200 already landed); publish needs the system owner's approval as well as maker-checker | 01 §2 "samples 500 records", "the system owner approves the connection" |
+| **Updated** §3.2, rank 8 | Valentine stays offline only: its current release pulls PuLP with CBC (`cbcbox`, EPL-2.0, a ~200 MB wheel) | Found in this revision's PyPI check |
+| **Updated** Summary (items 6–8), §10 diagram | Registry, identity and mapping pieces | Same |
+| **Deleted** | Nothing. Every revision-1 recommendation stands | The new target adds needs; it does not contradict the earlier choices |
+
+**Decisions:** README decision **D3 is unchanged**. This revision proposes one addition to D3 (call it D3b): "OIDC sign-in
+with Authlib, SCIM 2.0 provisioning on scim2-models, group → role mapping as data in `policy`, no IdP server in the
+trial package". The README is not edited here.
+
 ## Summary
 
 1. **Keep our workflow engine.** Every candidate brings a second runtime/state store; n8n (Sustainable Use), Windmill
@@ -17,6 +37,18 @@ Kinective's Legal team before anyone relies on them.
    before/after samples from the existing dry run.
 5. **Quality:** pydantic + our rule codes for hold-and-explain; pandera for back-test imports; avoid GX and Soda Core
    (now Elastic License 2.0). **CDC:** not needed now; Debezium Server only as an optional customer-run sidecar.
+6. **Adapter registry (new, §1.4):** one registry of versioned connector entries of three kinds (catalogue, generic
+   REST, built once from an API spec), each connection with an environment (test, then production), an access mode
+   (read-only or read + write-back), credentials in our vault (write-only), and a **system-owner approval** before it
+   goes live or gains write-back. All of it is our own code on Postgres; no new library.
+7. **Field mapping (new, §3.4):** in-house pipeline: RapidFuzz (MIT) name scores + value profiles from the 500-record
+   sample + a synonym memory of accepted mappings, then an LLM rerank that may abstain. Confidence is calibrated on a
+   gold set, and every proposal carries a reason. Valentine and bdi-kit (both Apache-2.0) stay offline: too heavy for
+   the image.
+8. **Identity (new, §8b):** OIDC sign-in with **Authlib** (BSD-3-Clause), SCIM 2.0 provisioning endpoints of our own
+   built on **scim2-models** (Apache-2.0, pydantic), and **scim2-tester** in CI. The group → role mapping becomes data
+   in `policy`. No IdP server ships: Keycloak (Apache-2.0) is only a dev/test stand-in; Zitadel is AGPL-3.0 since
+   v3 (31 Mar 2025).
 
 ## 0. What we have today (grounding)
 
@@ -28,7 +60,7 @@ Read for this report (no code changed):
 | Engine | `backend/di/workflow/engine.py` (779 lines) | Runs the graph over real records; states, retries with backoff, error branches, held records (`failed_record`), waits parked as jobs, dry runs with before/after samples (`SAMPLE_N = 3`), progress callback, sync lock; a sync *is* the source's ingest workflow | No expression language beyond `x_expr`; no per-node pinned test data; graph positions stored in the contract |
 | Configured adapter | `backend/di/connectors/configured.py` | Declarative HTTP connector from the connection row: resources (path, id_field, delta_param, changed_field), paging (offset/page/cursor, items/next/total keys), auth (none, api_key, bearer, basic, oauth_cc) | No dependent (parent → child) resources, no link-header paging, no record selector paths beyond `items_key`, no rate-limit hints, no non-JSON bodies |
 | Mapping | `backend/di/connectors/mapping.py` | Versioned `MapRow(src, model, field, rule, resource)`, rules copy/upper/number/date/utc/units/fx/code/prefix; missing field fails one record | No confidence or provenance per row (who/what proposed it) |
-| Discovery / probe | `discover.py`, `probe.py` | Column inference from the newest 200 raw records, FK suggestions (≥ 90 % key overlap); probe dns → tcp → tls → auth → perms → read | Discovery needs records already landed; no OpenAPI-based discovery |
+| Discovery / probe | `discover.py`, `probe.py` | Column inference from the newest 200 raw records, FK suggestions (≥ 90 % key overlap); probe dns → tcp → tls → auth → perms → read | Discovery needs records already landed; no OpenAPI-based discovery; Recover wants a 500-record sample from the test environment (§1.4, updated in revision 2) |
 | MCP source | `mcp_client.py` | One MCP tool call → rows, mapped like a configured source (`mcp==2.3.0`) | No `tools/list`-driven discovery; single tool per resource |
 | Build with AI | `services/actions/workflow_builder.py` | Keyword rules (`AF_WF_KW`, `read_prompt`) insert known blocks into the default ingest graph; validates | Not an LLM; cannot express a new topology |
 | Canvas | `frontend/src/pages/workflows/Canvas.tsx` (532 lines), `modeler/FlowCanvas.tsx` | Hand-built: fixed world width, `transform: scale(z)`, scroll container, minimap, drag-connect | Scrollbars, no infinite pan, no auto-layout; frontend has no graph library (`package.json`: react, react-router, react-query only) |
@@ -100,11 +132,11 @@ prompt hash, inputs). Nothing an agent produces is live until a person publishes
 | 2. Spec draft | Agent: OpenAPI importer first; LLM fills gaps from docs text with **structured output against the spec's JSON Schema** | Draft spec + rationale per field + confidence | LLM never sees credentials; output is data validated by schema, never code |
 | 3. Static checks | Validator: schema, URL host = connection host, only GET/HEAD for reads, paging terminates, no secrets in spec | Errors back to the agent for repair (max 3 rounds) | Deterministic |
 | 4. Probe | Existing `probe_connection` (dns, tcp, tls, auth, perms, read) on a **sandbox** connection; then read ≤ N pages per resource | Probe report; sample records in a quarantined raw store (`dry`) | Egress allow-list = the connection's host; read-only methods; rate limit + page cap + time budget; credentials stored by a person (encrypted, `secrets.py`) |
-| 5. Discovery | `discover.py` on the sample (types, keys, FKs) | Source tables | — |
+| 5. Discovery | `discover.py` on a sample of up to **500 records** per resource read from the *test* environment (§1.4) (types, keys, FKs, value profiles) | Source tables + profiles | Read-only, page cap; personal data masked before any LLM sees it |
 | 6. Mapping draft | Section 3: candidates + LLM choice + rule per field | `MapRow` set with `confidence`, `why`, `proposed_by` | Low-confidence rows marked "needs a person"; required canonical fields unmapped = blocking warning |
 | 7. Test run | `workflow.testRun` dry run of the default ingest graph with the draft spec + mapping | Per-step counts, before/after samples, held records with reasons | Writes nothing (engine dry mode) |
 | 8. Proposal | Agent files a proposal (existing proposals service) with diff, probe report, test run, open questions | Held for a person | `adapter.publish` / `source.publish` must be on `FORBIDDEN_ACTIONS` for agents |
-| 9. Publish | Person (maker) submits, another (checker) approves for production connections | Versioned spec + mapping | Maker-checker as in the Modeler |
+| 9. Publish | Person (maker) submits; the **system owner** approves the connection (§1.4); another person (checker) approves the flow for production | Versioned spec + mapping | Maker-checker as in the Modeler; system-owner approval again for production and for write-back |
 | 10. Watch | Health states, first-sync diff vs. test run; auto-pause on error spike | Alerts in "My work" | Rollback = previous spec version |
 
 Eval harness (makes "hours" measurable): the 21 source-sim mocks already have hand-written adapters and demo mappings.
@@ -112,6 +144,78 @@ Generate a spec + mapping for each from its OpenAPI (source-sim's FastAPI apps p
 vendor mock) and compare records and facts with the hand-written adapter's output. Metrics: share of resources read
 correctly, mapping precision@1, records held, minutes of person time. Target for the pilot: ≥ 80 % of resources right
 first time on the generic mocks; a person fixes the rest in < 2 hours.
+
+### 1.4 The adapter registry and adapter mapping (added in revision 2)
+
+What 01 §2 asks for, and how each part fits what we have. Everything here is our own code on Postgres; the only
+libraries involved are the ones already chosen (dlt `rest_api` vocabulary, the OpenAPI importer) and RapidFuzz for
+mapping (§3.4).
+
+**Registry entries.** One table `adapter_registry` of versioned entries, separate from the customer's connections:
+
+| Field | Meaning |
+|---|---|
+| `id`, `version`, `system_type` (ERP, fleet contract, telematics, …), `vendor_family` | What the entry connects to |
+| `kind` | `catalogue` (we build and maintain it, Python or ConfiguredAdapter), `generic_rest` (ConfiguredAdapter with no preset), `spec_built` (built once from an API spec through §1.3, then reused by every customer of that system) |
+| `auth_methods` | `oauth2_client_credentials`, `oauth2_auth_code` (a person consents once), `service_account` (user + secret or key file), `api_key` |
+| `resources`, `canonical_entities` | What it reads and which canonical entities it feeds (tool, return event, condition grade, remaining life, demand signal, market price, cost rate; 01 §4.1) |
+| `write_actions` | Instructions it can carry back (sales order, transfer, work order, credit memo); empty = read-only by design |
+| `mapping_templates` | Default mappings per pack, with the confidence each earned in past use |
+| `contract_tests`, `status` (`draft`, `tested`, `released`, `deprecated`), `maintainer`, `source_licence` | Quality and provenance. `source_licence` records the licence of any imported manifest (Airbyte connectors vary, §1.1) |
+
+"A connector built once from an API specification" is a `spec_built` entry: the agent flow of §1.3 produces it for
+the first customer, a person releases it, and the next customer starts from the released entry instead of from the
+spec. The legacy depot repair log in the tool-fleet pack (01 §4.1, "needs a connector") is the first candidate; for a
+system with no API, the entry is a file-drop adapter (§2.3).
+
+**Connections** (`source` rows today) gain three fields:
+
+- `environment`: `test` or `production`. A new connection always starts in `test`. "Promote to production" copies
+  the released spec and the accepted mapping, asks for new production credentials, and needs the system owner's
+  approval. The test connection stays for later test runs.
+- `access_mode`: `read` (default) or `read_write`. The execution step that sends instructions refuses a connection
+  in `read` mode (a pipeline check, not a UI hint, golden rule 9). Turning on write-back is a separate approval by the
+  system owner.
+- `system_owner`: a person from the directory (§8b), named when the connection is created; they cannot be the maker.
+
+**Credential vault.** Keep today's encrypted store (`secrets.py`, Fernet, plan 6): the secret field is write-only; no
+API, log, span or agent ever reads it back ("never shown again"). Rotation replaces it. The key comes from the
+environment or, at a customer, from their KMS. An external vault is optional and the customer's choice; if one is
+asked for, note that HashiCorp Vault has been BSL 1.1 since August 2023 and OpenBao is its MPL-2.0 fork (general
+knowledge, **not re-read this session**). Agents never handle credentials (§1.3, step 2).
+
+**System-owner approval.** New actions `connection.requestApproval` and `connection.approve` / `connection.decline`.
+The approval is per (connection, environment, access mode): "Fleet contract system, production, read-only" is one
+approval; adding write-back later is another. Approvals and declines are person-only: they sit under the `source.`
+prefix family that `FORBIDDEN_ACTIONS` already refuses to agents, or get their own entry there. The approval card
+shows the scopes requested, the resources read, the write actions (if any), the sample counts and who asked.
+
+**Discovery samples 500 records.** Today `discover.py` profiles the newest 200 records already landed. When a new connection is authored,
+discovery reads up to 500 records per resource from the *test* connection into the quarantined raw store (`dry`), with
+the egress allow-list, page cap and time budget of §1.3. To avoid only seeing this week's records, take half from the
+newest pages and half spread over the time window when the API allows offsets or date filters (otherwise the newest
+500, and say so). The profile per field: type, null rate, distinct count, top values, patterns, ranges, code-set
+overlap. Personal data is masked in the profile before any LLM sees it (organisation rule; §3.1).
+
+**Mapping proposals with confidence and a reason** (§3.4 for the method). Each proposed `MapRow` carries
+`confidence` (0–1, calibrated), `why` (one line a person can check, for example "coded 0/1; meaning taken from the
+registry documentation"), `proposed_by` (rule, memory, model) and the normalised sample values.
+
+**The five person choices** become a `decision` on each row, journaled with who and when:
+
+| Choice (01 §2) | Stored as | Effect |
+|---|---|---|
+| Accept as suggested | `accepted` | Row goes into the draft mapping; becomes a memory example |
+| Choose a different field | `replaced` (+ `src`) | The corrected row is a strong memory example (a negative for the old one) |
+| Accept with a conversion | `accepted_with_rule` (+ `rule`: `units`, `fx`, `code`, `date`, `utc` …) | The rule is applied to the sample at once, so the person sees the converted values |
+| Not needed | `not_needed` | Excluded; a required canonical field marked not needed is a blocking warning |
+| Ask the system owner | `asked_owner` | A task in the system owner's "My work" with the field, the sample values and the reason; their answer sets one of the four choices above |
+
+**Test run** ("puts past items through the draft flow and shows where cases stopped"): `workflow.testRun` on the
+sample (ingest, writes nothing), then the Modeler's replay (E §11.6) over the canonical records it produced. The
+report counts, per stage, how many items stopped and why (missing field, held record code, guardrail). Effort for
+§1.4 without §3.4 and §8b: about 3 weeks (registry table and actions, environment and access-mode checks, approvals,
+sampling, row decisions).
 
 ## 2. Formats
 
@@ -187,8 +291,9 @@ data, not instructions.
 
 ### 3.2 Libraries
 
-- Valentine: adopt as an offline baseline and feature source (Apache-2.0); don't put it in the request path until its
-  dependency weight is checked (**unconfirmed**).
+- Valentine: adopt as an offline baseline and feature source (Apache-2.0); don't put it in the request path.
+  Revision 2 checked its weight: 1.1.1 (12 Nov 2026, Python ≥ 3.12) requires `PuLP[cbc]`, which pulls `cbcbox`
+  (EPL-2.0, the manylinux x86_64 wheel is ~200 MB), plus POT, NLTK and NetworkX. Keep it on the eval machine only.
 - Embeddings: through our LLM port (provider-neutral); a local small embedding model is an option for air-gapped
   customers (licence per model).
 - Everything else in-house (≈ 600 lines): candidate retrieval, prompt, validation, apply-to-sample.
@@ -202,7 +307,42 @@ data, not instructions.
 - Gate: auto-accept nothing in production; pre-tick suggestions with confidence ≥ a threshold calibrated on the gold
   set so that precision ≥ 95 %; everything else "needs a person". Re-run the eval on every prompt or model change
   (fits the "LLM resilience" fallback: each fallback model must pass the same eval).
-- Effort: 6–8 days (retrieval, prompt, schema, UI hooks in the Data Mapping tab, eval script).
+- Effort: 6–8 days (retrieval, prompt, schema, mapping actions, eval script).
+
+### 3.4 Field-mapping suggestion: libraries and the pipeline (added in revision 2)
+
+Recover's adapter mapping gives each field a confidence score and, when unsure, a reason (01 §2; the telecom pack's
+"export class inferred from the part number at low confidence", 01 §7). Options checked on PyPI on 24 Nov 2026:
+
+| Option | Kind | Licence | Latest | Weight | Verdict |
+|---|---|---|---|---|---|
+| **RapidFuzz** | Embedding-free string similarity (Levenshtein, Jaro-Winkler, token-set ratios), C++ core | MIT | 3.14.6, 30 Aug 2026 | ~3 MB wheel, no dependencies | **Adopt** for name and description scores |
+| Valentine | Classic schema matchers (COMA-style, Cupid, Similarity Flooding, distribution-based, Jaccard) | Apache-2.0 | 1.1.1, 12 Nov 2026 | PuLP + CBC (EPL-2.0, ~200 MB), POT, NLTK | **Offline only** (eval baseline, §3.2) |
+| bdi-kit (VIDA-NYU) | Toolkit for schema and value matching for biomedical data integration; also an MCP server extra | Apache-2.0 (README badge, PyPI) | 0.11.0, 29 May 2026 | torch, transformers, sentence-transformers, flair, gensim, Valentine 0.5.0 | **Learn from**, avoid in the image. Which matchers it ships (for example the Magneto two-stage method, small model to retrieve and LLM to rerank) is **unconfirmed**: the README does not name them |
+| Embedding model via our LLM port | Semantic similarity of names and descriptions | Per model | — | A provider call, or a local model for air-gapped customers | **Optional**, not needed for v1 |
+| LLM rerank with abstain | Pick one of the top-k candidates or "none", name the conversion rule, give a one-line reason | Our port | — | One structured call per source table (batched fields) | **Adopt** (§3.1, approach 3) |
+
+**Pipeline (all in-house, ≈ 700 lines):**
+
+1. **Candidates (no LLM, no embeddings).** For each source field and each canonical field of the pack's entities:
+   RapidFuzz scores on names, after splitting vendor codes and expanding abbreviations from a synonym list
+   (`NETPR` → net price, `SERNR` → serial); value-profile features from the 500-record sample (type, pattern, range,
+   distinct ratio, overlap with known code tables such as grades or ISO currency); **memory**: the same field of the same
+   vendor family accepted before (§3.1 approach 4). A small logistic model, trained on the gold set (§3.3), turns these
+   features into a score; the top 5 per field are kept.
+2. **LLM rerank (optional; skipped with no key).** Inputs: field names, types, masked sample values, the candidates and
+   their scores, and the vendor docs as *data*. Structured output per field: `{canonical | none, rule, why}`. The model
+   may abstain.
+3. **Confidence.** Not the model's own number: calibrate a score from (step 1 score, agreement between the step-1 top
+   candidate and the LLM pick, memory hit) with isotonic regression on the gold set (scikit-learn, BSD-3, which
+   arrives with the ML stack of E §6). The score is "the share of past proposals like this that a person accepted".
+4. **Reason.** A template per signal, filled from the evidence: "name match 0.92 with `serial_number`", "values look
+   like ISO 4217 codes", "coded 0/1; meaning taken from the registry documentation" (the docs snippet is quoted), "used
+   for this vendor family by 3 customers before".
+5. **Thresholds.** Pre-tick at confidence ≥ the value that gave ≥ 95 % precision on the gold set; between that and a
+   lower bound, show "check"; below it, show "no proposal" with the candidates. Nothing is auto-accepted.
+
+Without a model key the pipeline still proposes (steps 1, 3, 4), which keeps the trial package useful offline.
 
 ## 4. Data quality: hold the record and explain
 
@@ -363,6 +503,76 @@ scrollbars out of the box (pan by drag/trackpad, zoom by wheel/pinch, `fitView`)
 visuals and texts, or a decision-log entry must accept the change. Effort: Workflow Studio canvas 8–10 days, Modeler
 canvas 3–4 days, previews 4–5 days, browser smokes updated 2 days.
 
+## 8b. Identity provider access (Recover "Access") (added in revision 2)
+
+01 §2 (concept): roles and scopes come from the identity provider; directory groups map to roles; it must be possible
+to say what each role can do and to check what a given user would get; members get access on the next sync.
+
+### 8b.1 What we have
+
+- `di/core/policy.py` already models the directory as the demo did: `IDP_GROUPS` (a hard-coded account → group map),
+  the `idp_users` state collection, `idp_roles()` (every role except Admin; Admin is never assigned through a group),
+  `map_identity()` and the role source setting (`approles` or groups, `_idp_start`).
+- Actions in `services/actions/access.py`: `access.syncDirectory` (today it only stamps `lastSync` and counts users),
+  `access.mapIdentity`, `access.removeUser`, `access.setRoleSource`, out-of-office delegation. All `access.*` actions
+  are forbidden to agents.
+- `di/core/auth.py` signs our own HS256 JWT after the demo sign-in; its docstring already plans "real single sign-on
+  (OIDC, Keycloak as the stand-in)" with the token and dependencies unchanged. `PyJWT==2.10.1` is pinned (latest is
+  2.15.1, 28 Sep 2026).
+
+So the policy side exists; what is missing is a real protocol on both ends: sign-in (OIDC) and provisioning (SCIM 2.0
+push, or a pull sync through an adapter).
+
+### 8b.2 Libraries (PyPI, read 24 Nov 2026)
+
+| Library | Role | Licence | Latest | Notes | Verdict |
+|---|---|---|---|---|---|
+| **Authlib** | OAuth 2.0 / OIDC client (and server) with Starlette/FastAPI integration, discovery, PKCE, nonce, JWKS | BSD-3-Clause | 1.9.10, 20 Nov 2026 | Depends on `cryptography` and `joserfc`; Python ≥ 3.10 | **Adopt** for the OIDC authorization-code + PKCE flow |
+| joserfc | JWS/JWE/JWK/JWT (Authlib's JOSE layer) | BSD-3-Clause | 1.8.0, 3 Nov 2026 | Same author as Authlib | Comes with Authlib |
+| PyJWT | JWT encode/decode, `PyJWKClient` | MIT | 2.15.1, 28 Sep 2026 (we pin 2.10.1) | Already ours | **Keep** for our own session tokens |
+| **scim2-models** | SCIM 2.0 resources (User, Group, EnterpriseUser, PatchOp, ListResponse, errors) as **pydantic v2** models, filter parsing (lark) | Apache-2.0 | 0.12.4, 29 Oct 2026 | Python ≥ 3.11 (we run 3.12); python-scim project, developed by Yaal Coop | **Adopt** to parse and validate SCIM requests in our own FastAPI routes |
+| scim2-server | Framework-agnostic SCIM server core (WSGI/ASGI apps, in-memory storage, RFC 7643/7644 validation) | Apache-2.0 | 0.8.8, 24 Nov 2026 | 15 GitHub stars: a small community | **Learn from**; don't depend on it for the routes (bus factor; we need our pipeline and journal on every write) |
+| **scim2-tester** | Checks a SCIM server against the RFCs | Apache-2.0 | 0.6.5, 17 Nov 2026 | Uses scim2-client | **Adopt in CI** (dev dependency) |
+| scim2-filter-parser | SCIM filter → SQL/Django query | MIT | 0.7.0, 20 Jul 2024 | Older; Django-oriented extra | Avoid (scim2-models parses filters) |
+| django-scim2 | SCIM server for Django | MIT | 0.24.0, 9 Nov 2026 | Django only | Avoid |
+| python3-saml | SAML 2.0 service provider | MIT | 1.16.0, 9 Oct 2023 | Needs `xmlsec` native library; no release for 3 years | Avoid for now: ask SAML-only customers to use their IdP's OIDC endpoint |
+| python-keycloak | Keycloak admin/OIDC client | MIT | 7.1.1, 15 Feb 2026 | Vendor-specific | Not needed (Authlib is IdP-neutral) |
+
+IdP *servers* (never in the trial package; customers bring theirs): **Keycloak** (Apache-2.0, JVM) is the dev and
+test stand-in our `auth.py` already names, run as an optional Compose profile for our own tests only. **Zitadel moved
+from Apache-2.0 to AGPL-3.0 with v3 (31 Mar 2025)** per its own announcement and FAQ, so avoid shipping it. Dex
+(Apache-2.0, Go) is a lighter stand-in (licence from general knowledge, **unconfirmed** this session).
+
+### 8b.3 Design and fit with `core/policy.py`
+
+1. **Group → role mapping becomes data.** A table `idp_group_map` (external group id or app role → role, tenant or org
+   unit, site/warehouse, valid from/to) replaces the hard-coded `IDP_GROUPS`; the demo's map is its seed, so parity
+   holds. `idp_roles()` keeps refusing Admin through a group. Changes are `access.*` actions: person-only, journaled,
+   and maker-checker for production (a mapping change is an access change).
+2. **Sign-in (OIDC).** Authlib runs the authorization-code flow with PKCE against the customer's IdP (discovery URL,
+   client id; the client secret in the vault of §1.4). On callback we validate the ID token (issuer, audience, nonce,
+   signature from JWKS), read the `groups` or `roles` claim (the role source setting chooses which), resolve the
+   account through the same mapping, and issue **our own** JWT exactly as today, so `Principal`, `policy.can()`,
+   tenant and warehouse checks stay unchanged. The demo sign-in stays for the trial and for tests.
+3. **Provisioning (SCIM 2.0 push).** New routes `/scim/v2/Users`, `/Groups`, `/ServiceProviderConfig`, `/Schemas`,
+   `/ResourceTypes`, authenticated by a per-IdP bearer token from the vault. Requests are parsed with scim2-models
+   and each write becomes an action through `pipeline.invoke` (golden rule 8) under a system principal "directory
+   sync", journaled. `active: false` or a delete removes the user from `idp_users`, ends their sessions (short token
+   TTL plus a revocation check on the account), ends their tenant grants, and moves their open approvals to their
+   delegate.
+4. **Sync (pull).** For IdPs without SCIM push, a directory adapter (an entry in the adapter registry, §1.4, for the
+   IdP's users and groups API) runs on a schedule; `access.syncDirectory` then does what its name says. "Members get
+   access on the next sync" holds for both: push is near real time, pull is at the next run.
+5. **What each role can do** is a read action over `policy.roles()` plus `EXTRA_PERMS`, `EXTRA_PAGES` and
+   `EXTRA_SECTIONS`; no new logic.
+6. **Check a user**: a read action `access.testUser(email)` that resolves the user through the directory and the
+   mapping without signing in, and returns `policy.summary()` (role, tenant, pages, permissions, approval limit,
+   delegations) plus *which group* gave the role. Read-only, so agents may call it.
+7. **Agents are not directory users.** Per-agent credentials stay a separate plan (F §7).
+
+Effort (first-pass): OIDC sign-in 1 week; mapping as data plus the role and user checks 1 week; SCIM endpoints with
+scim2-tester in CI 1.5 weeks; deprovisioning and session revocation 0.5 week.
+
 ## 9. Ranked: adopt / learn from / avoid
 
 | Rank | Item | Verdict | Why |
@@ -389,6 +599,17 @@ canvas 3–4 days, previews 4–5 days, browser smokes updated 2 days.
 | 20 | Windmill runtime, n8n runtime, Bots, Singer taps | **Avoid** | AGPL / Sustainable Use / GPL / AGPL |
 | 21 | Great Expectations | **Avoid** | Heavy, dataset-level, own stores |
 | 22 | `badx12`, LinuxForHealth `x12` | **Avoid** | Unmaintained / healthcare-only |
+| 23 | Adapter registry, environments, access modes, system-owner approval (§1.4) | **Build (ours)** | Policy on connections; Postgres only (added in revision 2) |
+| 24 | RapidFuzz | **Adopt** | MIT, no dependencies; embedding-free name scores for mapping (§3.4) |
+| 25 | Authlib (+ joserfc) | **Adopt** | BSD-3-Clause; OIDC sign-in with PKCE (§8b) |
+| 26 | scim2-models | **Adopt** | Apache-2.0, pydantic v2; SCIM 2.0 parsing in our own routes (§8b) |
+| 27 | scim2-tester | **Adopt (CI only)** | Apache-2.0; RFC compliance checks |
+| 28 | scim2-server | **Learn from** | Apache-2.0 but a very small community |
+| 29 | bdi-kit | **Learn from** | Apache-2.0; torch and transformers too heavy for the image |
+| 30 | Keycloak, Dex | **Dev/test stand-in only**, never shipped | Apache-2.0, own servers |
+| 31 | Zitadel | **Avoid** shipping | **AGPL-3.0 since v3 (31 Mar 2025)** |
+| 32 | python3-saml, scim2-filter-parser, django-scim2 | **Avoid** | Stale (2023, 2024) or Django-only |
+| 33 | HashiCorp Vault (if a customer asks for an external vault) | **Customer's choice**, not shipped | BSL 1.1 since Aug 2023; OpenBao is the MPL-2.0 fork (**not re-read**) |
 
 ## 10. Recommended Tier 1 + 2 target architecture
 
@@ -397,8 +618,13 @@ canvas 3–4 days, previews 4–5 days, browser smokes updated 2 days.
                           │  every write: POST /api/actions/{id} (pipeline, forbidden list, journal)
                           ▼
 ┌────────────── Connection Studio (FastAPI, Postgres only) ──────────────────────────────────────────────┐
+│ Adapter registry (rev. 2): catalogue │ generic REST │ spec-built-once entries, versioned, released     │
+│   connections: environment test→production, access read | read+write-back, vault (write-only),         │
+│   system-owner approval; discovery samples 500 records; mapping rows with confidence + why + choice    │
+│ Identity (rev. 2): OIDC sign-in (Authlib) → our JWT; SCIM 2.0 routes (scim2-models) → access actions;  │
+│   idp_group_map (data) → policy.py roles; user check; role capabilities                               │
 │ Adapter generator: importers (OpenAPI, Arazzo, Airbyte-manifest later) + LLM fill (structured output)  │
-│   → spec JSON Schema validator → sandbox probe (read-only, egress allow-list) → discovery → mapping     │
+│   → spec JSON Schema validator → sandbox probe (read-only, egress allow-list) → discovery → mapping    │
 │   draft (retrieval + LLM + eval-calibrated confidence) → dry run → PROPOSAL held for a person          │
 │                                                                                                        │
 │ Runtime adapters: Python adapters (21) │ ConfiguredAdapter v2 (dlt-style paging, selectors, parents,   │
@@ -408,7 +634,7 @@ canvas 3–4 days, previews 4–5 days, browser smokes updated 2 days.
 │ Workflow engine (ours): typed block ports, expression subset, pinned data, replay-from-node,           │
 │   held records with DQ codes + owner, dry runs with samples; sync = ingest workflow                    │
 │ Contract: workflow JSON + published JSON Schema (from blocks.py), layout separate; OWS export later    │
-│ Canonical store + checks (pydantic-generated JSON Schemas = data contracts); conflict queue           │
+│ Canonical store + checks (pydantic-generated JSON Schemas = data contracts); conflict queue            │
 │ Job queue (Postgres, LISTEN/NOTIFY), outbox for events                                                 │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                           ▲
@@ -424,6 +650,10 @@ Build order (Tier 1 + 2, ≈ 10–12 weeks for 2 engineers, estimates **unvalida
 6. Formats: CSV sniffing, X12 180/856, EDIFACT, XML (2 weeks, in parallel).
 7. LLM workflow generation (two-stage, repair loop, eval set) (2 weeks).
 8. DQ codes + batch monitors; SQL query-delta source (1 week).
+9. Adapter registry, environments, access modes, system-owner approval, 500-record discovery, the five mapping choices
+   and the §3.4 pipeline (3 weeks + the 1.5 weeks of item 4; added in revision 2).
+10. Identity: OIDC sign-in, group mapping as data, user check, SCIM 2.0 endpoints with scim2-tester (4 weeks; added in
+    revision 2).
 
 ## Unconfirmed
 
@@ -442,6 +672,12 @@ Build order (Tier 1 + 2, ≈ 10–12 weeks for 2 engineers, estimates **unvalida
 - Structured-output (strict JSON Schema) support and schema-size limits of our hosted inference provider's models.
 - React Flow 13.0.0 date inferred from the "What's new" permalink (16 Nov 2026).
 - All effort estimates are first-pass and not validated against the team's velocity.
+- Revision 2: which matchers bdi-kit 0.11.0 ships (Magneto or others) and whether its LLM matchers call an outside
+  API; `cbcbox`'s wheel size was read as the largest manylinux x86_64 file on PyPI (it may bundle several solvers);
+  Authlib's Starlette client needing a session middleware; scim2-server's release history (GitHub shows no releases;
+  PyPI shows 0.8.8 on 24 Nov 2026); Dex's licence; HashiCorp Vault BSL 1.1 date and OpenBao MPL-2.0 (general
+  knowledge, not re-read); whether every target IdP sends groups in the ID token (some send only an overage link);
+  that a 50/50 newest/spread sample is possible depends on each API's filters.
 
 ## Sources (all read 24 Nov 2026 unless stated)
 
@@ -516,6 +752,29 @@ Canvas
 - elkjs 0.12.1 (2026-10-28), EPL-2.0 OR GPL-3.0-or-later: https://github.com/kieler/elkjs, npm registry
 - @dagrejs/dagre 3.1.3, MIT: npm registry, https://github.com/dagrejs/dagre
 
+Revision 2 (read 24 Nov 2026; PyPI JSON `https://pypi.org/pypi/<name>/json` for version, upload date, licence field and
+dependencies)
+- Target: [01-recover-segments.md](01-recover-segments.md) §2, §4.1, §7, §9
+- Repo (read, not changed): `backend/di/core/policy.py` (IDP_GROUPS, idp_users, map_identity), `backend/di/core/auth.py`,
+  `backend/di/services/actions/access.py` (syncDirectory, mapIdentity), `backend/requirements.in`, `backend/Dockerfile`
+  (Python 3.12)
+- RapidFuzz 3.14.6 (30 Aug 2026), MIT: https://pypi.org/project/RapidFuzz/
+- Valentine 1.1.1 (12 Nov 2026), Apache-2.0, requires `PuLP[cbc]`, POT, NLTK: https://pypi.org/project/valentine/ ;
+  PuLP 4.3.1 (19 Nov 2026), MIT, `cbc` extra = `cbcbox`: https://pypi.org/project/PuLP/ ; cbcbox 2.937 (9 Nov 2026),
+  EPL-2.0: https://pypi.org/project/cbcbox/
+- bdi-kit 0.11.0 (29 May 2026), Apache-2.0, dependencies incl. torch, transformers, flair, gensim:
+  https://pypi.org/project/bdi-kit/ ; README: https://github.com/VIDA-NYU/bdi-kit
+- Authlib 1.9.10 (20 Nov 2026), BSD-3-Clause: https://pypi.org/project/Authlib/ ; joserfc 1.8.0 (3 Nov 2026),
+  BSD-3-Clause: https://pypi.org/project/joserfc/ ; PyJWT 2.15.1 (28 Sep 2026), MIT: https://pypi.org/project/PyJWT/
+- scim2-models 0.12.4 (29 Oct 2026), scim2-client 0.14.1 (29 Oct 2026), scim2-server 0.8.8 (24 Nov 2026), scim2-tester
+  0.6.5 (17 Nov 2026), all Apache-2.0: https://pypi.org/project/scim2-models/ and siblings; scim2-server README (python-scim,
+  Yaal Coop, WSGI/ASGI, 15 stars): https://github.com/python-scim/scim2-server
+- scim2-filter-parser 0.7.0 (20 Jul 2024), MIT; django-scim2 0.24.0 (9 Nov 2026), MIT; python3-saml 1.16.0 (9 Oct 2023),
+  MIT; python-keycloak 7.1.1 (15 Feb 2026), MIT: PyPI pages of each
+- Zitadel licence change to AGPL-3.0 with v3 (scheduled 31 Mar 2025): https://zitadel.com/blog/apache-to-agpl ,
+  https://zitadel.com/license-faq
+- SCIM 2.0: RFC 7643 (core schema) and RFC 7644 (protocol), IETF, Sep 2015 (standards, not re-read)
+
 ## Legal review note
 
 Every licence statement above (MIT, Apache-2.0, BSD, MPL-2.0, EPL-2.0, GPL-3.0, AGPL-3.0, Elastic License 2.0,
@@ -523,4 +782,6 @@ Sustainable Use License, Activepieces' and n8n's enterprise licences) is a readi
 package metadata on 24 Nov 2026 for engineering triage only. It is not legal advice. Because the trial package is
 redistributed to customers, these findings must be reviewed by Kinective's Legal team before anyone relies on or
 acts on them, in particular: ELv2 (PyAirbyte, Soda Core), Sustainable Use (n8n), AGPL (Windmill, Singer taps), GPL
-(Bots), EPL-2.0 OR GPL-3.0 (elkjs), MPL-2.0 (JointJS) and the Activepieces `ee` terms.
+(Bots), EPL-2.0 OR GPL-3.0 (elkjs), MPL-2.0 (JointJS) and the Activepieces `ee` terms. Revision 2 adds: AGPL-3.0
+(Zitadel since v3), EPL-2.0 (CBC through Valentine's PuLP extra, kept off the image), BSL 1.1 (HashiCorp Vault, if a
+customer brings it) and the permissive licences of Authlib, joserfc, scim2-* and RapidFuzz.
