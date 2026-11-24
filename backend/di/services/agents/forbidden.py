@@ -24,7 +24,7 @@ FORBIDDEN_ACTIONS = (
 
 # Writes an agent may prepare but never run, whatever its autonomy: the pipeline (step 9b) holds them for a person.
 # P9-2.4 folds this tuple into HoldReason.destructive (I-10).
-HELD_FOR_PERSON = ("mapping.revert", "tables.update")
+HELD_FOR_PERSON = ("mapping.revert", "tables.update", "mapping.save")
 
 # Reads no agent may call: they handle a secret (step 6 of the pipeline refuses them).
 NO_AGENT_READS = ("source.test", "source.sandboxKey")

@@ -787,7 +787,7 @@ each story went.
 - [ ] P9-0.7 Workflow JSON Schema and validated import
 - [ ] P9-0.8 Server-side workflow export read action
 - [ ] P9-0.9 Autopilot on case opened behind a setting
-- [ ] P9-0.10 Mapping save split out of source update
+- [x] P9-0.10 Mapping save split out of source update
 - [x] P9-0.11 Guardrail type and stage on existing guardrails
 - [ ] P9-0.12 Pin a sent-back flow change to a step
 - [ ] P9-0.13 Role matrix and test a user in Access

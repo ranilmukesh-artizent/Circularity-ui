@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const m = vi.hoisted(() => ({ invoke: vi.fn(async () => ({ ok: true, output: {}, key: null, action: 'x' })) }));
 vi.mock('./actions', () => ({ invoke: m.invoke }));
 
-import { connectFromCatalog, disconnectSource, pauseSource, resumeSource, sandboxKey, suggestMappings, testConnection, testDraft, type Draft } from './integration';
+import { connectFromCatalog, disconnectSource, pauseSource, saveMapping, resumeSource, sandboxKey, suggestMappings, testConnection, testDraft, type Draft } from './integration';
 
 beforeEach(() => m.invoke.mockClear());
 const call = () => m.invoke.mock.calls[0] as unknown as [string, Record<string, unknown>];
@@ -64,5 +64,16 @@ describe('source lifecycle actions', () => {
   it('the sandbox key is the server read source.sandboxKey', async () => {
     await sandboxKey('postgres');
     expect(call()).toEqual(['source.sandboxKey', { catalog_id: 'postgres' }]);
+  });
+});
+
+describe('P9-0.10 the Data Mapping tab saves its own rows', () => {
+  it('saveMapping invokes mapping.save with source_id, maps and note', async () => {
+    const maps = [['grade', '', 'condition.grade', '', 'code:grade']];
+    await saveMapping('insp', maps, 'tidy up');
+    expect(call()).toEqual(['mapping.save', { source_id: 'insp', maps, note: 'tidy up' }]);
+    m.invoke.mockClear();
+    await saveMapping('insp', maps);
+    expect(call()).toEqual(['mapping.save', { source_id: 'insp', maps }]);
   });
 });

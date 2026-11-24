@@ -25,3 +25,5 @@ unattended". Times are local (IST).
 | 25 Nov 03:30 | P9-0.4 merged. Sonnet; migration 0029 filled; credentials.rotate forbidden; the writer broke the no-subagent rule (ran a security auditor; its 3 notes are in the commit and the report for the phase-0 review); tests after code. |
 | 25 Nov 05:05 | P9-0.9 to w3, P9-0.10 to w4 (Sonnet). Phase 0: 7 of 17 merged. |
 | 25 Nov 03:45 | P9-0.11 merged. Sonnet; red first quoted; inspector checked by tsc and vitest only, a browser look comes at the phase-0 gate smoke. |
+| 25 Nov 05:35 | P9-0.12 to w2 (Sonnet). Phase 0: 8 of 17 merged. |
+| 25 Nov 03:52 | P9-0.10 merged. Sonnet; red first quoted; mapping.save held for a person when an agent prepares it. |

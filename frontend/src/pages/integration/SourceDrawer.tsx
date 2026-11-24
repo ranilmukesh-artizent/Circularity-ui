@@ -5,7 +5,7 @@ import { fmtDateYear } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {
   addComment, authOpts, hashId, canon, canonPrefix, cfgDefaults, commentsOf, connMethods, credDays, failedRecords, isoTime, mappings,
-  mappingVersions, previewMapping, revertMapping, type MapPreview, saveSource, series, source, sources, srcAgeText, srcFailing, srcFresh, srcTypes, successRate, testDraft, wfUsing, type Draft, type Source,
+  mappingVersions, previewMapping, revertMapping, type MapPreview, saveMapping, saveSource, series, source, sources, srcAgeText, srcFailing, srcFresh, srcTypes, successRate, testDraft, wfUsing, type Draft, type Source,
 } from '../../api/integration';
 import { useOrgUnits } from '../../api/orgs';
 import { can } from '../../api/session';
@@ -125,6 +125,19 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
       const n = Object.keys(e).filter((k) => k !== 'maps' && k !== 'ops' && !/^m\d/.test(k)).length + (e.maps ? 1 : 0) + (e.ops ? 1 : 0);
       setTab(Object.keys(e).some(CONN_KEY) ? 'conn' : e.ops ? (mode === 'new' ? 'ops' : 'conn') : 'map');
       toast('Fix ' + n + ' item' + (n > 1 ? 's' : '') + ' before saving. Errors are marked in the form.');
+      return;
+    }
+    // only the Data Mapping rows changed: save them as a mapping version (mapping.save), the connection is not touched
+    const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+    const mapsOnly = mode === 'edit' && !!s && same(d, draftOf(s)) && same(ops, { read: s.read, write: s.write }) && org === savedOrg
+      && !same(maps, mappings(s.id));
+    if (mapsOnly) {
+      const m = await action.run(() => saveMapping(at.id, maps), {
+        all: (msg, code) => { if (code === 'conflict' && /No changes/.test(msg)) { toast('No changes to save.'); setDirty(false); } else toast(msg); },
+      });
+      if (!m.ok) return;
+      setDirty(false); setErrs({}); setTest(null);
+      toast('Field mapping saved (' + m.output.rows + ' rows). Configuration is now v' + m.output.ver + '.');
       return;
     }
     const r = await action.run(() => saveSource(mode, at.id, d, maps, ops, org !== savedOrg ? org : undefined), {

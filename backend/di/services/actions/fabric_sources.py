@@ -899,6 +899,11 @@ _declare(
     "Save a new version of a source's field mapping equal to an older one; the next sync applies it.", "act",
     _SRC | {"version": {"req": True, "t": "number"}}, _MGR,
 )  # fmt: skip
+_declare(
+    "mapping.save", "Save a field mapping", "save field mappings",
+    "Save a new version of a source's field mapping without touching its connection; the next sync applies it.", "act",
+    _SRC | {"maps": {"req": True, "t": "array"}, "note": {"req": False, "t": "string"}}, _MGR,
+)  # fmt: skip
 
 
 def _check_maps(sid: str, maps: list) -> None:
@@ -982,3 +987,23 @@ def mapping_revert(i: dict[str, Any], ctx: CallContext):
     lifecycle.save(ctx.session, cfg)
     _event(ctx, cur, "connector.updated", "acknowledged", f"Config v{ver}: field mapping reverted to v{int(i['version'])}")
     return {"source_id": sid, "version": new, "ver": ver, "rows": len(maps), "maps": maps}
+
+
+@implement("mapping.save")
+def mapping_save(i: dict[str, Any], ctx: CallContext):
+    """plan 9 P9-0.10: the Data Mapping tab's rows saved as a new mapping version, apart from the rest of the source
+    (source.update still takes `maps`). Held for a person when an agent prepares it (HELD_FOR_PERSON)."""
+    cur, cfg = _current(ctx, i["source_id"])
+    sid = cur["id"]
+    maps = [[str(y).strip() for y in m] for m in i["maps"] if isinstance(m, list)]
+    _check_maps(sid, maps)
+    if maps == cur["maps"]:
+        raise ActionError("conflict", "No changes to save.")
+    note = str(i.get("note") or "").strip() or "Field mapping saved"
+    version = mapping.save_version(ctx.session, sid, maps, _by(ctx), note, ctx.now)
+    ver = _bump(ctx, cur, cfg, f"Field mapping saved ({len(maps)} rows)")
+    cfg["maps"] = maps
+    cfg["updatedBy"] = _by(ctx)
+    lifecycle.save(ctx.session, cfg)
+    _event(ctx, cur, "connector.updated", "acknowledged", f"Config v{ver}: field mapping saved")
+    return {"source_id": sid, "version": version, "ver": ver, "rows": len(maps)}

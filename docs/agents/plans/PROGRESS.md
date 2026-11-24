@@ -196,6 +196,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-0.5 model chain with rate-limit fallback | this commit | lead on main: test_ask_chain, test_ask, test_flow_propose_model, test_workflow_builder, test_config 118 passed; lint all passed | done |
 | 2026-11-25 | 09 · P9-0.4 catalogue hygiene and credentials rotation forbidden | this commit | lead on main after migrate-reapply 0028 and restart: 10 files incl. serial-only test_mcp_server and test_fabric_sources 153 passed; lint all passed; tsc 0, vitest 318 passed | done |
 | 2026-11-25 | 09 · P9-0.11 guardrail type and stage on existing guardrails | this commit | lead on main: test_guardrail_types, test_modeler_templates, test_screens_modeler, test_modeler_guard, test_po_golden, test_engine 260 passed; lint all passed; tsc 0, vitest 319 passed | done |
+| 2026-11-25 | 09 · P9-0.10 mapping save split out of source update | this commit | lead on main: test_mapping_save, test_agent_proposals, test_catalog_hygiene and serial-only test_fabric_sources, test_mapping_runs, test_catalog_mappings 84 passed; lint all passed; tsc 0, vitest 320 passed | done |
 
 ## Decisions taken without the user (to review)
 

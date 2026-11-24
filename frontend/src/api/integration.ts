@@ -340,6 +340,11 @@ export const saveSource = (mode: 'new' | 'edit', id: string, d: Draft, maps: str
   invoke<{ mode: 'new' | 'edit'; source_id: string; name: string; vendor?: string; ver?: string; csv?: boolean; wasOff?: boolean }>('source.update', {
     mode, id, d, maps, ops, note: '', ...(org === undefined ? {} : { org_unit_id: org || null }),
   });
+/** Save only the Data Mapping tab's rows as a new mapping version (mapping.save); the rest of the source is untouched. */
+export const saveMapping = (id: string, maps: string[][], note?: string) =>
+  invoke<{ source_id: string; version: number; ver: string; rows: number }>('mapping.save', {
+    source_id: id, maps, ...(note ? { note } : {}),
+  });
 export async function resolveConflict(id: string, choice?: ConflictChoice) {
   // the server names the authority and the kind; the queue's copy is the fallback
   const c = (lastConflicts ? peek<ConflictAnswer>(lastConflicts)?.conflicts : undefined)?.find((x) => x.id === id);
