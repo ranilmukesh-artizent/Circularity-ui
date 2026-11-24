@@ -21,6 +21,12 @@ for git). It must succeed; if not, stop and report.
 
 ## Work: the standard task cycle S1–S6, changed for the parallel run
 
+- **Red first is checked.** Write the spec's tests first and run them with `WT_LINT=0`; they must fail for the
+  expected reason. Quote that red summary line in your report and commit body. A report without it is sent back.
+- **No subagents.** Do not start any agent (no reviewers, no auditors); the lead runs one reviewer per phase gate.
+- **One check run at a time.** Never start a second `wt-check.sh` while one runs, and never leave one running in the
+  background when you finish: the Docker host is shared by four writers.
+
 - **Tests** run only through `bash scripts/dev/wt-check.sh <k> <api test files>` from your worktree root, in Git
   Bash. Use `WT_LINT=0` for the red-first run.
   - It also runs tsc, vitest and eslint when `frontend/` changed.
