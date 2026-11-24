@@ -19,6 +19,7 @@ import { openExSrc, openExSrcAll, openModels, openSources, openTrace } from '../
 import { AfBadge, CasePanel, ExMethod, ProvB, RangeBar, Stp, Tbl } from '../CaseBlocks';
 import { approveGuarded, caseActions, runNextStep, scrollToId } from '../caseActions';
 import { useCaseUi } from '../CaseContext';
+import { co2Label } from '../co2';
 import type { TabProps } from './index';
 
 type P = { c: CaseRec; a: CaseAnalysis };
@@ -332,7 +333,7 @@ function TiP2({ c, rows }: PS) {
                 <td><b>{z.r.plan}</b>{sameR(z.r, rec) && <> <span className="chip y">Recommended</span></>}</td>
                 <td className="r num">{money(z.gross)}</td><td className="r num">{money(z.cost)}</td>
                 <td><span className="tinet"><b className="num">{money(z.net)}</b><span className="bar"><i style={{ width: Math.max(4, (Math.abs(z.net) / mxn) * 100) + '%', background: z.net < 0 ? 'var(--bad)' : 'var(--ok)' }}></i></span></span></td>
-                <td className="r num">{z.days}</td><td className="r num">{z.prob}%</td><td className="r num">{z.life}</td><td className="r num">{fmtN(z.co2)} kg</td><td className="r num"><b>{z.fit}</b></td>
+                <td className="r num">{z.days}</td><td className="r num">{z.prob}%</td><td className="r num">{z.life}</td><td className="r num">{fmtN(z.co2)} kg{co2Label(z.r).source && <div className="note">{co2Label(z.r).source}</div>}</td><td className="r num"><b>{z.fit}</b></td>
               </tr>
             ))}</tbody>
           </table>

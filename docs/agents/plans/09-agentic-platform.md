@@ -783,7 +783,7 @@ each story went.
 - [x] P9-0.3 Story matrix check script with its own test
 - [ ] P9-0.4 Catalogue hygiene and credentials rotation forbidden
 - [ ] P9-0.5 Model chain with rate-limit fallback
-- [ ] P9-0.6 Carbon factor set and a co2 line in both valuers
+- [x] P9-0.6 Carbon factor set and a co2 line in both valuers
 - [ ] P9-0.7 Workflow JSON Schema and validated import
 - [ ] P9-0.8 Server-side workflow export read action
 - [ ] P9-0.9 Autopilot on case opened behind a setting

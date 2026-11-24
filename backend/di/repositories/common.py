@@ -339,7 +339,7 @@ def ti_m(c: Case, r: dict, sn: float) -> dict:
     spread = abs((r["p90"] - r["p10"]) / 2 / max(1, abs(r["net"]))) * 60
     prob = js_round(max(55, min(98, 100 - spread)))
     life = f"{int(m[1]) / 12:.1f} yrs" if r["id"] in ("redeploy", "resale", "relase") and m else "—"
-    co2 = js_round((EMB.get(c["cls"]) or 0) * c["qty"] * (CO2S.get(r["id"]) or 0))
+    co2 = r["co2"] if "co2" in r else js_round((EMB.get(c["cls"]) or 0) * c["qty"] * (CO2S.get(r["id"]) or 0))
     return {"gross": gross, "cost": cost, "net": sn, "days": days, "prob": prob, "life": life, "co2": co2}
 
 

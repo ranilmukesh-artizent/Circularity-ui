@@ -19,3 +19,4 @@ unattended". Times are local (IST).
 | 25 Nov 02:57 | P9-0.3 merged. Sonnet. |
 | 25 Nov 03:50 | P9-0.6 to w1 (Sonnet). |
 | 25 Nov 03:12 | P9-0.16 merged. Sonnet, 25 min and 324 tool calls (Docker contention in its checks); one extra file (actions/workflows.py, needed by the spec's interface); serial-only test_stream_workflows run by the lead: green. |
+| 25 Nov 03:21 | P9-0.6 merged. Sonnet; R8 diff report 09-diffs/P9-0.6.md (only CO2e moves on tool-fleet and device cards; no route or net change); decision-log conflict resolved keeping both rows; tests written after the code (not red first). |

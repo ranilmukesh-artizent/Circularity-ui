@@ -21,6 +21,7 @@ export interface CostTerm { kind: string; label: string; amt: number }
 export interface Route {
   id: string; plan: string; net: number; p10: number; p90: number; why?: string; target?: string; unc?: string;
   excluded?: boolean; failReason?: string; failGate?: number; terms: CostTerm[]; gates: string[]; gateNotes?: string[];
+  co2?: number; co2Src?: string;
   demandStatus?: string; demandLabel?: string; variant?: string; vendor?: string; refurbDelta?: number | null; poolNet?: number;
   hold?: { forecast: number; holding: number; headline: number; sellNow: number; opp: string; review: string; days: number; fallback: number };
   components?: { n: string; dest: string; ref: string; v: number }[];

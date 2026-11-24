@@ -192,6 +192,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-0.2 plan 9 gate script with the plan-file check | this commit | selftest.sh all passed (15 cases, incl. the 5 new gate-p9 cases and the real api-test.sh case, run by the lead on the main stack) | done |
 | 2026-11-25 | 09 · P9-0.3 story matrix check script with its own test | this commit | story-matrix-test.sh all passed (11 cases) and bash -n selftest.sh, run by the lead; full selftest at the phase gate | done |
 | 2026-11-25 | 09 · P9-0.16 relabel Studio decision workflows to point to the Modeler | this commit | lead on main: api-test.sh 7 files incl. serial-only test_stream_workflows 197 passed; lint.sh all passed; web-check tsc 0, vitest 315 passed | done |
+| 2026-11-25 | 09 · P9-0.6 carbon factor set and a co2 line in both valuers | this commit | lead on main: 19 files incl. golden and parity tests 657 passed; lint all passed; tsc 0, vitest 317 passed | done |
 
 ## Decisions taken without the user (to review)
 

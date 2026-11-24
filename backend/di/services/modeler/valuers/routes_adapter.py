@@ -64,6 +64,8 @@ def to_routes(t: Template, values: Sequence[PathValue | ChannelValue]) -> list[R
         p = t.path(v["k"])
         name = p.name if p else v["k"]
         r = mk_route({"id": v["k"], "plan": name, "terms": _terms(v), "why": v["why"]})
+        r["co2"] = v["co2"]
+        r["co2Src"] = v["co2Src"]
         if not v["ok"]:
             fail(r, POLICY, v["why"] or f"{name} cannot take this lot")
         out.append(r)

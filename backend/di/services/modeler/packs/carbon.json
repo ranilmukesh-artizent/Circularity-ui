@@ -1,0 +1,10 @@
+{"set": "cfs-2026.1", "basis": "sample",
+ "note": "Sample factors for the synthetic packs. Replace with a customer's factor set before any report.",
+ "source": {"source": "Sample value (synthetic)", "method": "E_new x route share (B 5.7, simplified)",
+            "year": 2026, "licence": "synthetic, no third-party data"},
+ "packs": {
+   "tool_fleet": {"unit": "tool",
+     "e_new": {"CMH": 62, "BRK": 85, "DCD": 140, "CRH": 28, "AGR": 12, "LSR": 35},
+     "share": {"release": 0.7, "refurb": 0.6, "redeploy": 0.7, "resell": 0.55, "harvest": 0.3, "exit": 0.08}},
+   "device": {"unit": "device", "e_new": {"*": 55},
+     "share": {"buynow": 0.55, "offers": 0.55, "auction": 0.5, "market": 0.55}}}}

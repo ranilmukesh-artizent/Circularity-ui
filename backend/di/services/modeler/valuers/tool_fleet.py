@@ -27,6 +27,7 @@ from typing import Any, TypedDict
 from di.services.engine.jsmath import js_round, js_sum
 from di.services.engine.routes import Route
 from di.services.modeler.apply import apply_rules as shared_apply_rules
+from di.services.modeler.carbon import co2_avoided
 from di.services.modeler.compile import CompiledRule
 from di.services.modeler.templates import load_template
 from di.services.modeler.valuers.rng import mulberry32
@@ -204,6 +205,8 @@ class PathValue(TypedDict):
     lines: list[ValueLine]
     dest: dict[str, Any] | None
     misses: list[str]
+    co2: float  # kg CO2e avoided, information only (carbon.co2_avoided); 0 without a factor
+    co2Src: str
 
 
 class Decision(TypedDict, total=False):
@@ -586,6 +589,7 @@ def _value(c: Case, k: str, p: Params, ctx: _Ctx) -> PathValue:
     cost = js_sum(x["amt"] for x in L if x["type"] == "c")
     hold = p["hold"] * lead_k
     net = gross - cost - hold
+    cv = co2_avoided("tool_fleet", c["cls"], k, 1)
     return {
         "k": k,
         "ok": bool(ok),
@@ -597,6 +601,8 @@ def _value(c: Case, k: str, p: Params, ctx: _Ctx) -> PathValue:
         "lines": L,
         "dest": dest,
         "misses": misses,
+        "co2": cv.kg if cv else 0,
+        "co2Src": cv.label if cv else "",
     }
 
 
