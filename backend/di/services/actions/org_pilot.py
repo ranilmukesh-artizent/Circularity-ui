@@ -96,7 +96,9 @@ def report_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
         return "out_of_scope", f"The {a.role} view cannot read pilot reports."
     if bad := _unit_problem(ctx, i["org_unit_id"]):
         return bad
-    if not a.system and not policy.tenant_ok(a.person, i["org_unit_id"], a.ctx):  # audit F8
+    # audit F8: a tenant-scoped person reads only units within their tenants (an unscoped one sees every unit, the group too)
+    scoped = not a.system and policy.policy(a.person).get("tenantScoped")
+    if scoped and not policy.tenant_ok(a.person, i["org_unit_id"], a.ctx):
         return "tenant_boundary", f"{i['org_unit_id']} is outside your tenants. Request tenant access first."
     return None
 

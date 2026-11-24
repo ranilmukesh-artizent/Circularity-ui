@@ -157,6 +157,8 @@ def test_f8_pilot_report_needs_the_tenant(monkeypatch):
     r = call("org.pilotReport", {"org_unit_id": "Customer B"}, "planner-a")
     assert r["ok"] is False and r["error"]["code"] == "tenant_boundary", r
     assert call("org.pilotReport", {"org_unit_id": "Customer A"}, "planner-a")["ok"] is True
+    assert call("org.pilotReport", {"org_unit_id": "workspace"}, "planner-a")["error"]["code"] == "tenant_boundary"
+    assert call("org.pilotReport", {"org_unit_id": "workspace"}, "approver")["ok"] is True  # sees every tenant
 
 
 # ---------------------------------------------------------------- F10
