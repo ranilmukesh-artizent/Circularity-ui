@@ -180,6 +180,16 @@ phase gate is the last row.
 - **Demo reset now clears connector-set `failing`/`auth_expired` statuses** (`8b0417c`): a test that rotated a junk
   secret left a demo source `auth_expired`, and the live checks then warned.
 
+## Plan 9: Recover, unattended run (25 Nov 2026 on)
+
+Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the local branch
+`feature/plan-09-recover`. The lead re-ran each task's checks before the merge; the run log is
+`docs/agents/plans/09-run/RUN-LOG.md`.
+
+| Date | Plan · step | Commit | Gate | Result |
+|---|---|---|---|---|
+| 2026-11-25 | 09 · P9-0.1 record plan 9 decisions and the licence list | this commit | docs only: 8 decision rows, 17 licence rows, table column counts checked by the lead | done |
+
 ## Decisions taken without the user (to review)
 
 - **A5b, web toolchain majors:** chosen versions are vite 8.3.6, vitest 5.1.0, @vitejs/plugin-react 6.2.1 and
