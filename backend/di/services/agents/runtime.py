@@ -18,6 +18,7 @@ by the person's action. The runtime never calls an action no agent may run (asse
 """
 
 import json
+import logging
 import uuid
 from typing import Any
 
@@ -29,12 +30,14 @@ import di.services.actions.decisions  # registers evidence.request, case.reevalu
 import di.services.actions.execution  # noqa: F401 - registers instruction.resend
 from di.core import jobs, policy
 from di.core.auth import load_context
+from di.core.config import get_settings
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
 from di.services.agents import limits, registry
 from di.services.agents.forbidden import FORBIDDEN_ACTIONS
 from di.services.agents.playbooks import case_autopilot as autopilot
 from di.services.cases import store
 
+log = logging.getLogger(__name__)
 PLAYBOOKS = {autopilot.NAME: autopilot}
 JOB = "agent.step"
 _FORBIDDEN = [a for p in PLAYBOOKS.values() for a in p.ACTIONS if a.startswith(FORBIDDEN_ACTIONS)]
@@ -62,6 +65,34 @@ def start(s: Session, agent: str, playbook: str, case_id: str | None, *, account
     )
     _enqueue(s, run_id)
     return run_id
+
+
+def autostart(s: Session, case_id: str, account: str | None) -> str | None:
+    """P9-0.9: start the case autopilot for a case just opened (the worker's `agent.autostart` job), or say why not.
+
+    Starts only when DI_AUTOPILOT_ON_OPEN is on, the agent DI_AUTOPILOT_AGENT is enabled with autonomy `act`, there is
+    an account to act for (the opener's, else DI_AUTOPILOT_ACCOUNT) and the agent has no run on the case yet. Returns the
+    run id, or None after one info line naming the reason. The run still holds its decision for a person."""
+    cfg = get_settings()
+
+    def skip(why: str) -> str | None:
+        log.info("autopilot not started for %s: %s", case_id, why)
+        return None
+
+    if not cfg.autopilot_on_open:
+        return skip("autopilot off")
+    agent = registry.get(s, cfg.autopilot_agent)
+    if agent is None or not agent.enabled:
+        return skip(f"agent {cfg.autopilot_agent} is stopped")
+    if agent.autonomy != "act":
+        return skip(f"agent {cfg.autopilot_agent} only proposes")
+    who = account or cfg.autopilot_account
+    if not who:
+        return skip("no account to act for")
+    q = text("SELECT 1 FROM agent_run WHERE agent = :a AND case_id = :c LIMIT 1")
+    if s.execute(q, {"a": agent.id, "c": case_id}).first():
+        return skip("already running")
+    return start(s, agent.id, autopilot.NAME, case_id, account=who)
 
 
 def get(s: Session, run_id: str, for_update: bool = False) -> dict | None:

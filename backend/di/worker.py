@@ -224,6 +224,17 @@ def _agent_step(payload: dict[str, Any]) -> None:
         log.info("agent run %s: %s", payload["run_id"], runtime.run_until_blocked(s, payload["run_id"]))
 
 
+@handler("agent.autostart")
+def _agent_autostart(payload: dict[str, Any]) -> None:
+    """A case was opened and the autopilot setting is on: start its run (runtime.autostart, P9-0.9). The run's own
+    `agent.step` job does the work."""
+    from di.services.agents import runtime
+
+    with SessionLocal() as s:
+        log.info("autopilot on open %s: %s", payload["case_id"], runtime.autostart(s, payload["case_id"], payload.get("account")))
+        s.commit()
+
+
 def tick_instructions() -> None:
     """Acknowledge the simulated steps that are due on the simulated clock."""
     import di.services.actions.execution  # noqa: F401

@@ -49,7 +49,7 @@ def open_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
 @implement("case.open", idem=_idem)
 def open_case(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     by = ctx.actor.account.label if ctx.actor.account else "system"
-    c = intake.open_case(ctx.session, i, by)
+    c = intake.open_case(ctx.session, i, by, account_id=ctx.actor.account.id if ctx.actor.account else None)
     rec = c.get("recommendation")
     return {"case_id": c["id"], "owner": c["owner"], "template": c["template"], "stage": c["stage"],
             "recommendation": rec["id"] if rec else None}  # fmt: skip

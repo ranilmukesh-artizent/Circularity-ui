@@ -35,7 +35,8 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.core import clock
+from di.core import clock, jobs
+from di.core.config import get_settings
 from di.repositories import plm
 from di.repositories.live_rules import live_rules
 from di.services.actions.models import intake_predictor
@@ -307,10 +308,11 @@ def _next_id(s: Session) -> str:
     return f"RT-{(top or 1000) + 1}"
 
 
-def open_case(s: Session, i: dict[str, Any], actor: str) -> store.Case:
+def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | None = None) -> store.Case:
     """Open a case for the input (see the module docstring) and return it; ActionError when refused (a duplicate
     included). `actor` is who opens it (a person's name, or "system" for a workflow or an import, whose `by` names
-    who set that up). In the caller's transaction."""
+    who set that up). `account_id` is the person's account when one opens it (P9-0.9): with DI_AUTOPILOT_ON_OPEN the case
+    autopilot then starts for it (an `agent.autostart` job). In the caller's transaction."""
     store.ensure(s)
     if bad := problem(s, i):
         raise ActionError(*bad)
@@ -329,4 +331,6 @@ def open_case(s: Session, i: dict[str, Any], actor: str) -> store.Case:
         text("INSERT INTO domain_event (type, case_id, payload) VALUES ('case.opened', :c, CAST(:p AS jsonb))"),
         {"c": case_id, "p": json.dumps(payload)},
     )
+    if get_settings().autopilot_on_open:
+        jobs.enqueue(s, "agent.autostart", {"case_id": case_id, "account": account_id}, dedupe_key=f"agent.autostart:{case_id}")
     return c

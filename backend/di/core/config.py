@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     ask_timeout_seconds: float = 20.0  # one model request; on timeout Ask falls back
     ask_max_rounds: int = 4  # model requests per question (tool rounds), the last one without tools
 
+    # P9-0.9: start the case autopilot (a playbook run of `autopilot_agent`) when a case opens; off by default. A case
+    # opened by the system (a workflow, an import) has no person: `autopilot_account` is who the agent then acts for.
+    autopilot_on_open: bool = False
+    autopilot_agent: str = "coordinator"
+    autopilot_account: str = ""
+
     @field_validator("jwt_secret", "webhook_secret", mode="before")
     @classmethod
     def _empty_is_the_dev_default(cls, v: object, info: ValidationInfo) -> object:

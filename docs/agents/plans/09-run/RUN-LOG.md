@@ -27,3 +27,4 @@ unattended". Times are local (IST).
 | 25 Nov 03:45 | P9-0.11 merged. Sonnet; red first quoted; inspector checked by tsc and vitest only, a browser look comes at the phase-0 gate smoke. |
 | 25 Nov 05:35 | P9-0.12 to w2 (Sonnet). Phase 0: 8 of 17 merged. |
 | 25 Nov 03:52 | P9-0.10 merged. Sonnet; red first quoted; mapping.save held for a person when an agent prepares it. |
+| 25 Nov 03:55 | P9-0.9 merged. Sonnet; red first quoted; the 2 workflow_open_case failures were the private database's missing fabric, green on main. |
