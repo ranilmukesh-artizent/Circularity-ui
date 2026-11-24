@@ -43,6 +43,7 @@ from di.services.actions.modeler import checks_json
 from di.services.actions.modeler_sim import queue_rows
 from di.services.modeler.compile import compile_flow
 from di.services.modeler.flow import PO_FLOW, Flow
+from di.services.modeler.stages import STAGE_LABELS
 from di.services.modeler.templates import TEMPLATE_KEYS, Template, load_template
 
 LOG_SQL = (
@@ -58,7 +59,12 @@ def _org_ok(p: Principal, org: str) -> bool:
 
 def _template(t: Template) -> dict[str, Any]:
     d = dataclasses.asdict(t)
-    return {k: d[k] for k in ("key", "name", "pre", "paths", "guardrails", "dims", "actors")}
+    out = {k: d[k] for k in ("key", "name", "pre", "paths", "guardrails", "dims", "actors")}
+    out["guardrails"] = [
+        {k: g[k] for k in ("id", "text", "owner", "type", "stage", "locked")} | {"stage_label": STAGE_LABELS[g["stage"]]}
+        for g in d["guardrails"]
+    ]
+    return out
 
 
 def _flow(f: FlowRow) -> dict[str, Any]:

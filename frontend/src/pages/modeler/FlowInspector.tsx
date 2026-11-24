@@ -1,5 +1,6 @@
 import type { FlowGraph, FlowNode, ModelerScreen, ScopeDim } from '../../api/types';
 import { LockIcon, nodeTitle, TTAG } from './FlowCanvas';
+import { byStage } from './guardrails';
 
 type Scope = NonNullable<FlowNode['scope']>;
 
@@ -89,13 +90,24 @@ export function FlowInspector({ s, graph, node, editable, onRule, onConnect, onD
       <div className="mdl-insp">
         <h3>{node.label} <LockIcon /></h3>
         <p className="note">Locked. Changed only by the guardrail owner, never through the Modeler. Every outcome must pass through it.</p>
-        <table className="t static tight">
-          <tbody>
-            {s.template.guardrails.filter((g) => ids.includes(g.id)).map((g) => (
-              <tr key={g.id}><td className="num">{g.id}</td><td>{g.text}<div className="note">Owner: {g.owner}</div></td></tr>
-            ))}
-          </tbody>
-        </table>
+        {byStage(s.template.guardrails.filter((g) => ids.includes(g.id))).map((grp) => (
+          <div key={grp.stage}>
+            <h4>{grp.label}</h4>
+            <table className="t static tight">
+              <tbody>
+                {grp.items.map((g) => (
+                  <tr key={g.id}>
+                    <td className="num">{g.id}</td>
+                    <td>
+                      {g.text} <span className="chip">{g.type}</span> {g.locked && <LockIcon />}
+                      <div className="note">Owner: {g.owner}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
         {next}
       </div>
     );

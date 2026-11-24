@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 from di.core import golden
+from di.services.modeler.stages import GuardType, StageKey
 
 TEMPLATE_KEYS = ("industrial", "tool_fleet", "device")
 PACKS = Path(__file__).parent / "packs"
@@ -55,6 +56,9 @@ class Guardrail:
     owner: str
     forbids: tuple[Forbid, ...]
     protects: tuple[TextPattern, ...]
+    type: GuardType
+    stage: StageKey
+    locked: bool  # `type == "Compliance"`: only the guardrail owner changes it
 
 
 @dataclass(frozen=True)
@@ -132,6 +136,13 @@ DEVICE_GUARDS: dict[str, tuple[tuple[Forbid, ...], tuple[TextPattern, ...]]] = {
     "GR-D5": ((), (TextPattern(("undercut",)),)),
     "GR-D6": ((), (APPROVAL,)),
 }
+# (type, stage) of the tool-fleet and device guardrails (P9-0.11); P9-1.1 moves these into the pack files
+GUARD_META: dict[str, tuple[GuardType, StageKey]] = {
+    "GR-01": ("Compliance", "decide"), "GR-02": ("Compliance", "decide"), "GR-03": ("Threshold", "condition"),
+    "GR-04": ("Threshold", "value"), "GR-05": ("Approval", "decide"), "GR-06": ("Compliance", "execute"),
+    "GR-D1": ("Compliance", "condition"), "GR-D2": ("Threshold", "value"), "GR-D3": ("Compliance", "decide"),
+    "GR-D4": ("Threshold", "decide"), "GR-D5": ("Threshold", "value"), "GR-D6": ("Approval", "decide"),
+}  # fmt: skip
 DIM_KIND: dict[str, DimKind] = {"rulMax": "max", "rulMin": "min", "dohMin": "min", "qtyMin": "min"}
 DIM_FIELDS = {"grade": ("grade", "estGrade"), "rulMax": ("rul",), "rulMin": ("rul",), "dohMin": ("doh",),
               "qtyMin": ("qty",)}  # fmt: skip
@@ -168,7 +179,12 @@ def _po(key: str) -> dict[str, Any]:
 
 def _guards(rows: Sequence[Mapping[str, str]], checks: Mapping[str, tuple[tuple[Forbid, ...], tuple[TextPattern, ...]]]
             ) -> tuple[Guardrail, ...]:  # fmt: skip
-    return tuple(Guardrail(g["id"], g["text"], g["owner"], *checks.get(g["id"], ((), ()))) for g in rows)
+    out = []
+    for g in rows:
+        forbids, protects = checks.get(g["id"], ((), ()))
+        gtype, stage = GUARD_META[g["id"]]
+        out.append(Guardrail(g["id"], g["text"], g["owner"], forbids, protects, gtype, stage, gtype == "Compliance"))
+    return tuple(out)
 
 
 def _po_dims(rows: Sequence[Mapping[str, Any]], fields: Mapping[str, tuple[str, ...]]) -> tuple[ScopeDim, ...]:
@@ -201,7 +217,16 @@ def _industrial() -> Template:
     d = json.loads((PACKS / "industrial.json").read_text(encoding="utf-8"))
     paths = tuple(PathDef(p["id"], p["name"], p["app"], p["owner"], p["lead_days"]) for p in d["paths"])
     guards = tuple(
-        Guardrail(g["id"], g["text"], g["owner"], (), tuple(TextPattern(tuple(p)) for p in g["protects"]))
+        Guardrail(
+            g["id"],
+            g["text"],
+            g["owner"],
+            (),
+            tuple(TextPattern(tuple(p)) for p in g["protects"]),
+            g["type"],
+            g["stage"],
+            g["type"] == "Compliance",
+        )
         for g in d["guardrails"]
     )
     dims = tuple(ScopeDim(x["key"], x["label"], x["kind"], tuple(x["values"]), tuple(x["fields"])) for x in d["dims"])

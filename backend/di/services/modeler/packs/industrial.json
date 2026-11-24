@@ -12,11 +12,11 @@
     {"id": "exit", "name": "Responsible exit", "app": "Recycler / Exit partner", "owner": "Exit partner", "lead_days": null}
   ],
   "guardrails": [
-    {"id": "GR-I1", "text": "Data-erasure certificate not issued; sanitization required before release", "owner": "Compliance", "forbids": [], "protects": []},
-    {"id": "GR-I2", "text": "Safety-rated unit: criticality restriction needs recertification", "owner": "Quality", "forbids": [], "protects": []},
-    {"id": "GR-I3", "text": "Demand belongs to another client; customer consent not on file", "owner": "Customer operations", "forbids": [], "protects": []},
-    {"id": "GR-I4", "text": "Cell chemistry requires an approved hazardous-waste route", "owner": "Sustainability lead", "forbids": [], "protects": []},
-    {"id": "GR-I5", "text": "Every decision is approved by a named owner before execution", "owner": "Governance board", "forbids": [], "protects": [["auto-?approv|without approval|skip approval"]]}
+    {"id": "GR-I1", "text": "Data-erasure certificate not issued; sanitization required before release", "owner": "Compliance", "type": "Compliance", "stage": "condition", "forbids": [], "protects": []},
+    {"id": "GR-I2", "text": "Safety-rated unit: criticality restriction needs recertification", "owner": "Quality", "type": "Compliance", "stage": "condition", "forbids": [], "protects": []},
+    {"id": "GR-I3", "text": "Demand belongs to another client; customer consent not on file", "owner": "Customer operations", "type": "Compliance", "stage": "match", "forbids": [], "protects": []},
+    {"id": "GR-I4", "text": "Cell chemistry requires an approved hazardous-waste route", "owner": "Sustainability lead", "type": "Compliance", "stage": "execute", "forbids": [], "protects": []},
+    {"id": "GR-I5", "text": "Every decision is approved by a named owner before execution", "owner": "Governance board", "type": "Approval", "stage": "decide", "forbids": [], "protects": [["auto-?approv|without approval|skip approval"]]}
   ],
   "dims": [
     {"key": "cls", "label": "Asset class", "kind": "set", "values": ["batch", "control", "drill", "it", "motor", "pump"], "fields": ["cls"]},

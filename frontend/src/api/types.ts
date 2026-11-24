@@ -96,10 +96,17 @@ export interface FlowPathDef {
   lead_days: number | null;
 }
 
+export type GuardrailStage = 'receive' | 'match' | 'condition' | 'value' | 'decide' | 'execute' | 'close';
+export type GuardrailType = 'Compliance' | 'Data quality' | 'Threshold' | 'Approval';
+
 export interface FlowGuardrail {
   id: string;
   text: string;
   owner: string;
+  type: GuardrailType;
+  stage: GuardrailStage;
+  stage_label: string;
+  locked: boolean;
 }
 
 export interface ScopeDim {
