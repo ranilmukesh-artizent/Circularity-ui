@@ -6,8 +6,12 @@
    fails at Auth. Connecting stores its connection and credential (encrypted)
    and queues a first sync that really reads it; its records then show in Sync & History (plan 6 A3). Suggest mappings
    asks the server (mapping.catalogSuggest): the rows the system's records really support, none for a system with no
-   circularity data (its records are kept raw). */
-import { useEffect, useRef, useState } from 'react';
+   circularity data (its records are kept raw). The Scopes step also asks which org unit the source belongs to (plan 8,
+   GET /api/screens/orgs): by default the top bar's tenant when it is one, else none, so the source is shared by every
+   org unit as before. */
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { defaultConnectOrg, useOrgUnits } from '../../api/orgs';
+import { tenantFilter } from '../../api/session';
 import { catalog, connectFromCatalog, frAuthOptions, nowLabel, reauthenticated, sandboxKey, source, suggestMappings, typeOf, type SuggestedMap } from '../../api/integration';
 import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Overlay';
@@ -49,6 +53,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   const [acc, setAcc] = useState<Record<number, boolean>>({});
   const [connected, setDone] = useState(false);
   const [sandbox, setSandbox] = useState<string | null>(null);
+  const [org, setOrg] = useState<string | null>(null); // null until the org units have loaded: shared, as before
   const live = useRef(true);
   useEffect(() => {
     live.current = true;
@@ -81,7 +86,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
       // the connection is made on the server now (the demo's frCxFinish); the first sync runs in the worker
       const accepted = (maps ?? []).filter((_, i) => acc[i]);
       void (async () => {
-        const r = await connectFromCatalog(c!.id, auth, scopes, accepted, typedKey());
+        const r = await connectFromCatalog(c!.id, auth, scopes, accepted, typedKey(), org ?? undefined);
         if (!live.current) return;
         if (refused(r)) { onClose(); return; }
         setDone(true);
@@ -173,6 +178,9 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
             </label>
           ))}
         </div>
+        <Suspense fallback={<p className="note">Loading org units…</p>}>
+          <OrgField value={org} onChange={setOrg} />
+        </Suspense>
       </>
     );
     foot = <><button className="btn" onClick={back}>Back</button><button className="btn pri" onClick={next}>Continue</button></>;
@@ -247,5 +255,24 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
       </ol>
       {body}
     </Modal>
+  );
+}
+
+/** Which org unit the new source belongs to: one the account may see, or none (shared by every org unit). */
+function OrgField({ value, onChange }: { value: string | null; onChange: (v: string) => void }) {
+  const { units } = useOrgUnits();
+  const start = defaultConnectOrg(units, tenantFilter());
+  useEffect(() => {
+    if (value === null) onChange(start);
+  }, [value, start, onChange]);
+  return (
+    <div style={{ marginTop: 12 }}>
+      <label htmlFor="frOrg">Org unit</label>
+      <select id="frOrg" className="sel" value={value ?? start} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Shared by every org unit</option>
+        {units.map((u) => <option key={u.id} value={u.id}>{' '.repeat(u.depth * 2) + u.name}</option>)}
+      </select>
+      <p className="note">The org unit whose cases and configuration use this source. Its configuration pack includes it.</p>
+    </div>
   );
 }

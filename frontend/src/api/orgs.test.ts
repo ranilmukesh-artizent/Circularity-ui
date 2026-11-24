@@ -8,7 +8,10 @@ vi.mock('./actions', () => ({ invoke: m.invoke }));
 vi.mock('./client', () => ({ cached: m.cached }));
 
 import { actionScope, matcher } from './invalidation';
-import { createOrg, flatten, moveOrg, renameOrg, useOrgTree, type OrgNode } from './orgs';
+import {
+  createOrg, exportPack, flatten, importPack, moveOrg, packFileName, parsePack, pilotPath, previewPack, renameOrg, setPilot,
+  useOrgTree, useOrgUnits, usePilotReport, type OrgNode, type OrgPack,
+} from './orgs';
 
 beforeEach(() => {
   m.invoke.mockClear();
@@ -58,5 +61,52 @@ describe('org units', () => {
     expect(flatten(tree).map(({ node, depth }) => [node.id, depth])).toEqual([
       ['workspace', 0], ['Customer A', 1], ['East', 1], ['Sub Co', 2],
     ]); // prettier-ignore
+  });
+});
+
+const pack: OrgPack = { version: 1, org: { id: 'Customer A', parent_id: 'workspace', kind: 'customer', name: 'Customer A' }, sources: [], mappings: {}, workflows: [], flows: {} };
+
+describe('org screens (plan 8 UI gaps)', () => {
+  it('units and the pilot report are screen reads', () => {
+    const screen = { units: [], can: { manage: true, report: true } };
+    m.cached.mockReturnValue(screen);
+    expect(useOrgUnits()).toBe(screen);
+    expect(m.cached).toHaveBeenCalledWith('/api/screens/orgs');
+    usePilotReport('Customer A');
+    expect(m.cached).toHaveBeenLastCalledWith('/api/screens/orgs/Customer%20A/pilot');
+    expect(pilotPath('a/b')).toBe('/api/screens/orgs/a%2Fb/pilot');
+  });
+
+  it('pilot mode and the pack go to their server actions', async () => {
+    await setPilot('Customer A', true);
+    expect(call()).toEqual(['org.setPilot', { org_unit_id: 'Customer A', on: true }]);
+    m.invoke.mockClear();
+    await exportPack('Customer A');
+    expect(call()).toEqual(['org.exportPack', { org_unit_id: 'Customer A' }]);
+    m.invoke.mockClear();
+    await previewPack(pack, 'Customer B');
+    expect(call()).toEqual(['org.previewPack', { pack, target_org_unit_id: 'Customer B' }]);
+    m.invoke.mockClear();
+    await importPack(pack, 'Customer B');
+    expect(call()).toEqual(['org.importPack', { pack, target_org_unit_id: 'Customer B' }]);
+  });
+
+  it('pilot mode and an import refresh every cached read, the org screens included', () => {
+    for (const id of ['org.setPilot', 'org.importPack']) {
+      const match = matcher(actionScope(id));
+      expect(match === undefined || (match !== null && match(['GET', '/api/screens/orgs']))).toBe(true);
+    }
+  });
+
+  it('parsePack takes a pack and refuses other files', () => {
+    expect(parsePack(JSON.stringify(pack))).toEqual({ pack });
+    expect(parsePack('not json')).toEqual({ error: 'The file is not JSON.' });
+    expect(parsePack('[1]')).toEqual({ error: 'The file is not an org configuration pack.' });
+    expect(parsePack('{"version": 1}')).toEqual({ error: 'The file is not an org configuration pack.' });
+  });
+
+  it('packFileName is a safe file name', () => {
+    expect(packFileName('Customer A')).toBe('org-pack-customer-a.json');
+    expect(packFileName('!!')).toBe('org-pack-org.json');
   });
 });

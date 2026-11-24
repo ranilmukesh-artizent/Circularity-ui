@@ -519,8 +519,10 @@ export const suggestMappings = (cat: string) =>
 export const sandboxKey = (cat: string) => invoke<{ catalog_id: string; key: string }>('source.sandboxKey', { catalog_id: cat });
 
 /** Finish connecting a catalogue system: the source, its accepted mappings and the key typed, stored encrypted
- *  (source.update, mode "catalog"); without a key the server stores the simulated system's sandbox key. */
-export const connectFromCatalog = (cat: string, auth: string, scopes: string[], maps: SuggestedMap[], secret?: string) =>
+ *  (source.update, mode "catalog"); without a key the server stores the simulated system's sandbox key. `orgUnit`
+ *  binds the source to an org unit (plan 8; the server checks the account may see it); left out, the source is shared
+ *  by every org unit, as before. */
+export const connectFromCatalog = (cat: string, auth: string, scopes: string[], maps: SuggestedMap[], secret?: string, orgUnit?: string) =>
   invoke<{ mode: 'catalog'; source_id: string; name: string; vendor: string; records: number | null; queued: boolean; csv: boolean }>('source.update', {
-    mode: 'catalog', id: '', d: { catalog: cat, auth, scopes }, maps, ops: {}, ...(secret ? { secret } : {}),
+    mode: 'catalog', id: '', d: { catalog: cat, auth, scopes }, maps, ops: {}, ...(secret ? { secret } : {}), ...(orgUnit ? { org_unit_id: orgUnit } : {}),
   });

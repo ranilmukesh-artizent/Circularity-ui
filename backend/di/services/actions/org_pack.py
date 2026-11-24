@@ -10,6 +10,9 @@
          flows:     {template key: the published graph of the flow the unit uses}}
     org.importPack  commit  {pack, target_org_unit_id}  perm manageOrgs
         {created: {org_unit_id, sources, mappings, workflows, flows}, needs: ["credentials for <source>", ...]}
+    org.previewPack read    {pack, target_org_unit_id}  perm manageOrgs; refused as org.importPack would be. Changes nothing.
+        {target_org_unit_id, origin, sources: [{id, new_id, name, vendor, type}], mappings: [new ids with rows],
+         workflows: [{name, source_id}], flows: [{template, fork, flow_id}], needs: [...]}  (the Access page's import)
 
 **Secrets never travel.** A source's secret is in source_secret (di.connectors.secrets), never in its connection or
 settings; the export reads neither the secret nor its last four characters, and drops any setting whose name says it is
@@ -172,6 +175,18 @@ def export_pack(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------- import
+ACTIONS.setdefault(
+    "org.previewPack",
+    ActionDef(
+        id="org.previewPack", title="Preview an org configuration import", verb="preview org configuration imports",
+        risk="read", perm="manageOrgs", scope="none",
+        desc="What importing a pack into an org unit would create: its sources (with their new ids), mappings, "
+        "workflows and decision flows as drafts, and the credentials to enter. Changes nothing.",
+        input={"pack": {"req": True, "t": "object"}, "target_org_unit_id": _STR},
+    ),
+)  # fmt: skip
+
+
 def _pack_problem(p: dict[str, Any]) -> str | None:
     if p.get("version") != VERSION:
         return f"This is not an org configuration pack (version {VERSION})."
@@ -302,3 +317,43 @@ def import_pack(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         "flows": flow_ids,
     }
     return {"created": created, "needs": needs}
+
+
+# ---------------------------------------------------------------- preview
+@guard("org.previewPack")
+def preview_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    return import_guard(i, ctx)
+
+
+@implement("org.previewPack")
+def preview_pack(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    """What org.importPack would create, computed as it does, without writing anything."""
+    p, target = i["pack"], i["target_org_unit_id"]
+    taken = set(ctx.session.execute(text("SELECT id FROM source_system")).scalars())
+    sources = []
+    for x in p["sources"]:
+        sid, n = x["id"], 2
+        while sid in taken:
+            sid, n = f"{x['id']}_{n}", n + 1
+        taken.add(sid)
+        sources.append({"id": x["id"], "new_id": sid, "name": x.get("name") or x["id"], "vendor": x["vendor"],
+                        "type": x["type"]})  # fmt: skip
+    renamed = {x["id"]: x["new_id"] for x in sources}
+    flows = []
+    for key in p["flows"]:
+        base = flow_repo.flow_for(ctx.session, key, target)
+        own = base is not None and base.org_unit_id == target
+        flows.append({"template": key, "fork": not own, "flow_id": base.id if own and base is not None else None})
+    return {
+        "target_org_unit_id": target,
+        "origin": (p.get("org") or {}).get("name") or (p.get("org") or {}).get("id") or "another org",
+        "sources": sources,
+        "mappings": [x["new_id"] for x in sources if _rows(p["mappings"].get(x["id"]))],
+        "workflows": [
+            {"name": w.get("name"), "source_id": renamed.get(w.get("source_id"), w.get("source_id"))}
+            for w in p["workflows"]
+            if isinstance(w, dict)
+        ],  # fmt: skip
+        "flows": flows,
+        "needs": [f"credentials for {x['name']}" for x in sources],
+    }

@@ -10,7 +10,10 @@ acknowledges it, so the run goes on. Pilot mode never sends.
         {org_unit_id, cases_opened, decisions_submitted, decisions_approved, recommended_net_total,
          rules_applied_count, instructions_held, by_route: {route: count}}
 
-`is_pilot(s, owner)`: the case owner, or any unit above it, is in pilot mode.
+`is_pilot(s, owner)`: the case owner, or any unit above it, is in pilot mode. `pilot_via(units, on, uid)`: the unit whose
+setting puts `uid` in pilot mode (itself or the nearest unit above it), or None. `report(s, uid)` and `held(s, uid)`
+(the held instructions: what would have been sent) also serve GET /api/screens/orgs/{unit}/pilot
+(di.services.screens.orgs).
 """
 
 from typing import Any
@@ -61,6 +64,11 @@ def is_pilot(s: Session, owner: str) -> bool:
     return bool(on) and any(u in on for u in orgs.ancestors(repo.units(s), owner))
 
 
+def pilot_via(units: dict[str, orgs.OrgUnit], on: set[str], uid: str) -> str | None:
+    """The unit whose pilot setting covers `uid`: itself or the nearest unit above it in pilot mode; None if none."""
+    return next((u for u in orgs.ancestors(units, uid) if u in on), None)
+
+
 def _unit_problem(ctx: CallContext, uid: str) -> tuple[str, str] | None:
     if ctx.session.execute(text("SELECT 1 FROM org_unit WHERE id = :i"), {"i": uid}).first() is None:
         return "not_found", f"No org unit {uid}."
@@ -91,9 +99,31 @@ def report_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
 
 @implement("org.pilotReport")
 def pilot_report(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
-    s, uid = ctx.session, i["org_unit_id"]
+    return report(ctx.session, i["org_unit_id"])
+
+
+def _cases(s: Session, uid: str) -> list[dict[str, Any]]:
     within = orgs.subtree(repo.units(s), uid)
-    cases = [c for c in store.all_cases(s) if c["owner"] in within]
+    return [c for c in store.all_cases(s) if c["owner"] in within]
+
+
+def held(s: Session, uid: str) -> list[dict[str, Any]]:
+    """The instructions held for the cases of the unit's subtree (what would have been sent), oldest first:
+    {id, case_id, step, kind, system, target (the system's vendor), note, sent_at}."""
+    rows = s.execute(
+        text(
+            "SELECT i.id, i.case_id, i.step, i.kind, i.system, s.vendor AS target, i.detail->>'note' AS note, i.sent_at "
+            "FROM instruction i LEFT JOIN source_system s ON s.id = i.system "
+            "WHERE i.case_id = ANY(:c) AND i.detail->>'held' = 'true' ORDER BY i.id"
+        ),
+        {"c": [c["id"] for c in _cases(s, uid)]},
+    ).mappings()
+    return [dict(r) | {"target": r["target"] or r["system"]} for r in rows]
+
+
+def report(s: Session, uid: str) -> dict[str, Any]:
+    """org.pilotReport's answer for the unit's subtree."""
+    cases = _cases(s, uid)
     recs = [c["recommendation"] for c in cases if c.get("recommendation")]
     by_route: dict[str, int] = {}
     for r in recs:
