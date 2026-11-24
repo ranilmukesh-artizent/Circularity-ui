@@ -35,3 +35,4 @@ unattended". Times are local (IST).
 | 25 Nov 07:20 | P9-0.14 merged (46 tests on main incl. serial-only RT-1048 milestone). Lead slip: the helper failed writing inflight.txt and the commit took the previous message; fixed by amending the message only (`12aa6df`), helper now fails closed. |
 | 25 Nov 04:34 | P9-0.13 merged. Sonnet; red first quoted for the api tests; Roles shown as a panel under Identity (no nav change). |
 | 25 Nov 04:37 | P9-0.8 merged. Sonnet; red first quoted; org-pack workflow entries now carry the full export shape (import ignores extra keys). |
+| 25 Nov 04:40 | P9-0.15 merged. Sonnet; red first quoted; flow.simulate answers now carry params (null when none). |

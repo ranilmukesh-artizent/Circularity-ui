@@ -28,3 +28,25 @@ export function tradeOff(s: SimResult): string | null {
   const faster = s.kind === 'device' && dd < 0 ? ' to dispose ' + (-dd).toFixed(1) + ' days faster' : '';
   return `Trade-off: the models already pick the highest-value ${s.kind === 'equip' ? 'path' : 'channel'}, so this rule gives up ${poMoney(-s.dv)}${faster}. Approve it for a business reason such as a customer commitment, risk or capacity.`;
 }
+
+/** The what-if levers on the tool-fleet flow (flow.simulate `params`): label, bounds and the neutral value. The server
+ *  refuses anything outside the bounds (backend/di/services/actions/modeler_sim.py LEVER_BOUNDS). */
+export const LEVERS = {
+  market: { label: 'Market', lo: 0.5, hi: 1.5, base: 1, pct: true },
+  labor: { label: 'Labour', lo: 0.5, hi: 1.5, base: 1, pct: true },
+  lease: { label: 'Lease', lo: 0.5, hi: 1.5, base: 1, pct: true },
+  slots: { label: 'Repair slots', lo: 0, hi: 20, base: 8, pct: false },
+} as const;
+
+export type LeverName = keyof typeof LEVERS;
+export type Levers = Record<LeverName, number>;
+
+/** The server's refusal text for a lever out of range, or null when the value is allowed. */
+export function leverError(name: LeverName, value: number): string | null {
+  const { lo, hi } = LEVERS[name];
+  const whole = name !== 'slots' || Number.isInteger(value);
+  return Number.isFinite(value) && whole && value >= lo && value <= hi ? null : `${name} must be between ${lo} and ${hi}.`;
+}
+
+/** "<n> decisions change, total net <±$>" for a what-if answer. */
+export const formatWhatIf = (s: SimResult): string => `${s.flips.length} decisions change, total net ${signed(s.dv)}`;

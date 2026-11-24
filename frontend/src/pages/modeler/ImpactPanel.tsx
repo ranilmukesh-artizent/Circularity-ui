@@ -4,6 +4,7 @@ import type { FlowGraph, ModelerScreen, SimResult } from '../../api/types';
 import { Panel } from '../../components/kit/Panel';
 import { toast } from '../../components/toast';
 import { formatImpact, poMoney, tradeOff } from './impact';
+import { WhatIf } from './WhatIf';
 
 /** Impact on the open queue (flow.simulate), run on demand against the published rules. */
 export function ImpactPanel({ s, graph }: { s: ModelerScreen; graph: FlowGraph }) {
@@ -41,6 +42,7 @@ export function ImpactPanel({ s, graph }: { s: ModelerScreen; graph: FlowGraph }
           </div>
         </>
       )}
+      {s.template.key === 'tool_fleet' && <WhatIf s={s} graph={graph} />}
     </Panel>
   ); // prettier-ignore
 }

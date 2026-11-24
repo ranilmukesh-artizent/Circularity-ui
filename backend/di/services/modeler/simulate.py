@@ -73,7 +73,14 @@ def _device(xs: list[Row]) -> SimResult:
 
 
 def simulate(
-    t: Template, base: Sequence[CompiledRule], cand: Sequence[CompiledRule], queue: Sequence[Mapping[str, Any]], decide: Decider
+    t: Template,
+    base: Sequence[CompiledRule],
+    cand: Sequence[CompiledRule],
+    queue: Sequence[Mapping[str, Any]],
+    decide: Decider,
+    decide_cand: Decider | None = None,
 ) -> SimResult:
-    xs = [(c, decide(c, base), decide(c, cand)) for c in queue]
+    """`decide_cand` (default `decide`) decides the candidate side, so a what-if can value it under other parameters."""
+    dc = decide_cand or decide
+    xs = [(c, decide(c, base), dc(c, cand)) for c in queue]
     return _device(xs) if t.key == "device" else _equip(xs)

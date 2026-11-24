@@ -58,8 +58,9 @@ export const applyProposal = (flowId: number, p: Proposal): Promise<ActionResult
   invoke('flow.saveDraft', { flow_id: flowId, graph: p.graph, source: 'assistant', note: p.note });
 
 /** The graph (or the saved draft) against the published rules on the open queue; rejects with the refusal message. */
-export async function simulateFlow(flowId: number, graph?: FlowGraph): Promise<SimResult> {
-  const r = await invoke<SimResult>('flow.simulate', graph ? { flow_id: flowId, graph } : { flow_id: flowId });
+export async function simulateFlow(flowId: number, graph?: FlowGraph, params?: Partial<Record<'market' | 'labor' | 'lease' | 'slots', number>>): Promise<SimResult> {
+  const input = { flow_id: flowId, ...(graph ? { graph } : {}), ...(params ? { params } : {}) };
+  const r = await invoke<SimResult>('flow.simulate', input);
   if (!r.ok) throw new Error(r.error.message);
   return r.output;
 }

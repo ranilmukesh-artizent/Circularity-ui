@@ -16,8 +16,10 @@ decision_flow_version for rollback. Decisions use the published graph only, from
     flow.discard    act     {flow_id}                    the draft back to the published graph
     flow.rollback   commit  {flow_id}                    the latest history entry becomes the published graph
     flow.get        read    {flow_id} | {template, org}  {flow, template, checks, compiled} (by org: the flow it uses)
-    flow.simulate   read    {flow_id, graph?}            the graph (or draft) against the published rules on the open
-                                                         queue (di.services.actions.modeler_sim); manageFlows or approve.flows
+    flow.simulate   read    {flow_id, graph?, params?}   the graph (or draft) against the published rules on the open
+                                                         queue (di.services.actions.modeler_sim); manageFlows or approve.flows.
+                                                         `params` {market, labor, lease, slots}: tool-fleet what-if levers
+                                                         (P9-0.15), the candidate valued at BASEP | params; nothing is saved
     flow.propose    read    {flow_id, text}              a plain-language change as a checked proposal on the draft
                                                          (di.services.modeler.propose), simulated against the draft; saves
                                                          nothing. A person applies it with flow.saveDraft {graph, source:
@@ -38,7 +40,7 @@ from di.core import policy
 from di.repositories import flows as repo
 from di.repositories.flows import FlowRow
 from di.repositories.orgs import units
-from di.services.actions.modeler_sim import sim_json, simulate_graph, simulate_rules
+from di.services.actions.modeler_sim import lever_problem, sim_json, simulate_graph, simulate_rules
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
 from di.services.ask.modeler_read import model_rule
@@ -93,7 +95,7 @@ _declare("flow.get", "Read a flow", "read decision flows",
          {"flow_id": {"t": "number"}, "template": {"t": "string"}, "org": {"t": "string"}}, None)  # fmt: skip
 _declare("flow.simulate", "Simulate a flow", "simulate decision flows",
          "Run a flow's draft (or the graph given) against its published rules on the open queue. Changes nothing.",
-         "read", {**_ID, "graph": {"t": "object"}}, None)  # fmt: skip
+         "read", {**_ID, "graph": {"t": "object"}, "params": {"t": "object"}}, None)  # fmt: skip
 _declare("flow.propose", "Propose a flow change", "propose decision flow changes",
          "Turn a plain-language change into a checked, simulated proposal for the draft. Saves nothing.", "read",
          {**_ID, "text": {"req": True, "t": "string", "min": 3, "minText": "Describe the change in a few words."}},
@@ -438,6 +440,7 @@ def simulate_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | Non
     if isinstance(f, tuple):
         return f
     bad = _graph_problem(i["graph"]) if i.get("graph") is not None else None
+    bad = bad or (lever_problem(f, i["params"]) if i.get("params") is not None else None)
     return ("validation_error", bad) if bad else None
 
 
@@ -445,7 +448,8 @@ def simulate_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | Non
 def simulate(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow(ctx, i)
     g = cast(Flow, i["graph"]) if i.get("graph") is not None else _graph(f)
-    return sim_json(simulate_graph(ctx, f, g))
+    params = i.get("params")
+    return sim_json(simulate_graph(ctx, f, g, params), params)
 
 
 # ---------------------------------------------------------------- propose

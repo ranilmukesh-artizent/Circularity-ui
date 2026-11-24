@@ -203,6 +203,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-0.14 read-only sources refused and discovery at 500 | this commit | lead on main: test_read_only_sources, test_discover, test_instructions_send, test_execution, test_workflow_wiring and serial-only test_milestone_rt1048, test_org_pilot 46 passed; lint all passed | done |
 | 2026-11-25 | 09 · P9-0.13 role matrix and test a user in Access | this commit | lead on main: test_access_matrix, test_screens_access, test_policy, test_writes_access (incl. the mcp_proposals scenario that failed only on the private db), test_access_gaps 80 passed; lint all passed; tsc 0, vitest 326 passed | done |
 | 2026-11-25 | 09 · P9-0.8 server-side workflow export read action | this commit | lead on main: test_workflow_export, test_org_pack, test_writes_workflows, test_screens_workflows, test_workflow_schema, test_actions 429 passed; lint all passed; tsc 0, vitest 328 passed | done |
+| 2026-11-25 | 09 · P9-0.15 what-if over the tool-fleet queue | this commit | lead on main: test_flow_whatif, test_flow_simulate, test_modeler_simulate, test_valuer_tool_fleet, test_flow_propose, test_suggest_proposal, test_po_golden, test_engine and intake tests 273 passed; lint all passed; tsc 0, vitest 329 passed | done |
 
 ## Decisions taken without the user (to review)
 

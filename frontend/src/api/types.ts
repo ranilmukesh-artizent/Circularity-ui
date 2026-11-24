@@ -88,6 +88,8 @@ export interface SimResult {
   flips: { case_id: string; from: string | null; to: string | null; dv: number }[];
   dv: number;
   extra: Record<string, number>;
+  /** The what-if levers the run used (tool-fleet flows), else null. */
+  params?: Record<string, number> | null;
 }
 
 export interface FlowPathDef {

@@ -7,6 +7,8 @@ proposals (MVP-5.2) answer.
 - `industrial` cases are decided by the engine on their stored route terms: the drafts keep their hand-modelled and
   gate exclusions, drop the ones earlier business rules made, and are evaluated with the rule set (no predictor draws,
   so the answer is deterministic).
+- What-if (P9-0.15): on the tool-fleet template `params` {market, labor, lease, slots} are laid over the valuer's
+  base parameters (BASEP) on the candidate side only; the base side stays the published rules at BASEP. Read only.
 - `tool_fleet` and `device` (MVP-6.3): the template's sample queue (the prototype's open tool returns, rng(26110); its
   device lots, rng(4242)) plus any live cases of the template, decided by the template's valuer
   (di.services.modeler.valuers), so a simulation equals the prototype's fSim on the same flows.
@@ -86,14 +88,23 @@ def _live(c: Mapping[str, Any]) -> bool:
     return "stage" in c
 
 
-def tool_fleet_decider(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
+def tool_fleet_decider_at(params: Mapping[str, float] | None = None) -> Decider:
     """The tool-fleet valuer (the prototype's decide): a sample return within the sample queue's plan; an open case
-    as it is valued when it opens or is re-evaluated (di.services.cases.intake.template_decide; audit F1)."""
-    if _live(c):
-        best = intake.template_decide("tool_fleet", intake.valuer_input(c, "tool_fleet"), rules)["best"]
-    else:
-        best = tool_fleet.decide(dict(c), rules=_rule_dicts(rules))["best"]
-    return Decision(best["k"], float(best["net"])) if best else Decision(None, 0.0)
+    as it is valued when it opens or is re-evaluated (di.services.cases.intake.template_decide; audit F1). `params`
+    are what-if levers over BASEP (None: the published numbers)."""
+    p = None if params is None else tool_fleet.BASEP | dict(params)
+
+    def decide(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
+        if _live(c):
+            best = intake.template_decide("tool_fleet", intake.valuer_input(c, "tool_fleet"), rules, params)["best"]
+        else:
+            best = tool_fleet.decide(dict(c), p, _rule_dicts(rules))["best"]
+        return Decision(best["k"], float(best["net"])) if best else Decision(None, 0.0)
+
+    return decide
+
+
+tool_fleet_decider = tool_fleet_decider_at()
 
 
 def device_decider(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
@@ -115,14 +126,36 @@ def _device(ctx: CallContext, f: FlowRow, _t: Template) -> tuple[list[dict[str, 
 SOURCES: dict[str, QueueDecider] = {"industrial": _industrial, "tool_fleet": _tool_fleet, "device": _device}
 
 
+LEVER_BOUNDS: dict[str, tuple[float, float]] = {"market": (0.5, 1.5), "labor": (0.5, 1.5), "lease": (0.5, 1.5), "slots": (0, 20)}
+
+
+def lever_problem(f: FlowRow, params: Mapping[str, Any]) -> str | None:
+    """Why the what-if levers are refused: not the tool-fleet template, an unknown lever, or a value out of range."""
+    if f.template_key != "tool_fleet":
+        return "What-if levers apply to the tool-fleet template."
+    for k, v in params.items():
+        if k not in LEVER_BOUNDS:
+            return f"{k} is not a what-if lever."
+        lo, hi = LEVER_BOUNDS[k]
+        whole = k != "slots" or (isinstance(v, int | float) and float(v).is_integer())
+        if isinstance(v, bool) or not isinstance(v, int | float) or not whole or not lo <= v <= hi:
+            return f"{k} must be between {lo:g} and {hi:g}."
+    return None
+
+
 def simulate_rules(
-    ctx: CallContext, f: FlowRow, cand: Sequence[CompiledRule], base: Sequence[CompiledRule] | None = None
+    ctx: CallContext,
+    f: FlowRow,
+    cand: Sequence[CompiledRule],
+    base: Sequence[CompiledRule] | None = None,
+    params: Mapping[str, float] | None = None,
 ) -> SimResult:
-    """The candidate rules against `base` (default: the flow's published rules) on its queue."""
+    """The candidate rules against `base` (default: the flow's published rules) on its queue; `params` (tool fleet)
+    value the candidate side at BASEP | params."""
     t = load_template(f.template_key)
     base = compile_flow(t, cast(Flow, f.published)) if base is None else base
     queue, decide = SOURCES.get(f.template_key, _industrial)(ctx, f, t)
-    return simulate(t, base, cand, queue, decide)
+    return simulate(t, base, cand, queue, decide, tool_fleet_decider_at(params) if params else None)
 
 
 def queue_rows(ctx: CallContext, f: FlowRow) -> list[dict[str, Any]]:
@@ -143,10 +176,11 @@ def _label(c: Mapping[str, Any]) -> str:
     return " · ".join(parts[:2]) or str(c["id"])
 
 
-def simulate_graph(ctx: CallContext, f: FlowRow, graph: Flow) -> SimResult:
-    return simulate_rules(ctx, f, compile_flow(load_template(f.template_key), graph))
+def simulate_graph(ctx: CallContext, f: FlowRow, graph: Flow, params: Mapping[str, float] | None = None) -> SimResult:
+    return simulate_rules(ctx, f, compile_flow(load_template(f.template_key), graph), params=params)
 
 
-def sim_json(r: SimResult) -> dict[str, Any]:
+def sim_json(r: SimResult, params: Mapping[str, float] | None = None) -> dict[str, Any]:
     flips = [{"case_id": x.case_id, "from": x.from_path, "to": x.to_path, "dv": x.dv} for x in r.flips]
-    return {"kind": r.kind, "n": r.n, "flips": flips, "dv": r.dv, "extra": dict(r.extra)}
+    used = dict(params) if params else None
+    return {"kind": r.kind, "n": r.n, "flips": flips, "dv": r.dv, "extra": dict(r.extra), "params": used}

@@ -231,13 +231,16 @@ def valuer_input(c: Mapping[str, Any], template_key: str) -> dict[str, Any]:
     return tool_fleet_case(c["id"], facts) if template_key == "tool_fleet" else device_lot(c["id"], facts | {"model": ""})
 
 
-def template_decide(template_key: str, v: dict[str, Any], rules: Sequence[Any]) -> dict[str, Any]:
+def template_decide(
+    template_key: str, v: dict[str, Any], rules: Sequence[Any], params: Mapping[str, float] | None = None
+) -> dict[str, Any]:
     """The template's valuer on one case, with the flow's compiled rules (audit F1, F6): the tool fleet decides the
     return in a queue of its own (no sample orders), the device lot alone. The simulation ranks open cases the same way
-    (di.services.actions.modeler_sim), so a case's recommendation is what the Modeler predicts for it."""
+    (di.services.actions.modeler_sim), so a case's recommendation is what the Modeler predicts for it. `params` are the
+    tool-fleet what-if levers laid over the base parameters (P9-0.15); None is the published numbers."""
     rd = [dataclasses.asdict(r) if dataclasses.is_dataclass(r) and not isinstance(r, type) else dict(r) for r in rules]
     if template_key == "tool_fleet":
-        return dict(tool_fleet.decide(dict(v), rules=rd, queue=[v]))
+        return dict(tool_fleet.decide(dict(v), None if params is None else tool_fleet.BASEP | dict(params), rd, queue=[v]))
     return dict(device.decide(dict(v), rd))
 
 

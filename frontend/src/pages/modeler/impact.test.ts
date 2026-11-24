@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SimResult } from '../../api/types';
-import { formatImpact, poMoney, tradeOff } from './impact';
+import { formatImpact, leverError, LEVERS, poMoney, tradeOff } from './impact';
 
 const flip = { case_id: 'A', from: 'resell', to: 'refurb', dv: -20 };
 const equip = (dv: number): SimResult => ({ kind: 'equip', n: 26, flips: [flip, flip, flip], dv, extra: {} });
@@ -26,5 +26,20 @@ describe('impact wording (the prototype propHtml)', () => {
     const s: SimResult = { kind: 'device', n: 40, flips: [flip], dv: -1500, extra: { dd: -3.25, u: 900 } };
     expect(formatImpact(s)).toBe('1 of 40 lots change channel · −$1,500 expected cash · -3.3 days');
     expect(tradeOff(s)).toContain('gives up $1,500 to dispose 3.3 days faster.');
+  });
+});
+
+describe('what-if lever bounds (flow.simulate params, P9-0.15)', () => {
+  it('leverError matches the server bounds', () => {
+    expect(leverError('market', 0.5)).toBeNull();
+    expect(leverError('market', 1.5)).toBeNull();
+    expect(leverError('market', 0.4)).toBe('market must be between 0.5 and 1.5.');
+    expect(leverError('labor', 1.6)).toBe('labor must be between 0.5 and 1.5.');
+    expect(leverError('lease', Number.NaN)).toBe('lease must be between 0.5 and 1.5.');
+    expect(leverError('slots', 0)).toBeNull();
+    expect(leverError('slots', 20)).toBeNull();
+    expect(leverError('slots', 21)).toBe('slots must be between 0 and 20.');
+    expect(leverError('slots', 2.5)).toBe('slots must be between 0 and 20.');
+    expect(Object.keys(LEVERS)).toEqual(['market', 'labor', 'lease', 'slots']);
   });
 });
