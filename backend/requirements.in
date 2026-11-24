@@ -14,3 +14,10 @@ paramiko==3.5.0
 mcp==2.3.0
 sse-starlette==3.0.3  # mcp needs it; 3.0.x still runs on the Starlette that fastapi 0.115 pins (<0.42)
 groq==1.7.0  # Ask Circularity's first model provider (B16b, di/services/ask); needs httpx, pydantic, anyio, not Starlette
+# Plan 9, phases 0-3, added at once before the parallel run (docs/agents/plans/09-licences.md; every new library is
+# pending review by Kinective's Legal team).
+jsonschema==4.26.0  # P9-0.7: pack and workflow JSON Schema checks; was already locked through mcp
+pydantic-ai-slim[groq]==2.73.0  # P9-2.2: the AgentLoop adapter (I-8)
+rapidfuzz==3.14.6  # P9-2.7: fuzzy matching of names in the configuration agent
+lifelines==0.30.3  # P9-3.10: remaining-life (Weibull) fitting, worker only
+pandas<3  # lifelines needs pandas 2.x (research E 11.7)
