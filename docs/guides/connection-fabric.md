@@ -110,7 +110,9 @@ search shortcut. The dialog has five steps:
    - **SFTP** (file storage systems only): the drop path; each file must arrive with a signed manifest.
    **Continue** unlocks once the step is complete.
 2. **Scopes**: *Read records* is always on. Turn on *Write approved instructions* (writes run only after a person
-   approves) and *Receive events* (webhook or queue delivery) only if you need them.
+   approves) and *Receive events* (webhook or queue delivery) only if you need them. **Org unit** says whose cases
+   and configuration use this source; it starts at the tenant picked in the top bar, or else *Shared by every org
+   unit*. The unit's configuration pack includes the source.
 3. **Test connection**: runs DNS, TLS, Auth, Permissions and Sample read. Continue unlocks when it passes.
 4. **Field mapping**: **Suggest mappings** reads a sample record from the system and proposes source field →
    canonical field rows with a confidence (High ≥ 85 %, Medium ≥ 70 %, else Low); it never proposes a field the

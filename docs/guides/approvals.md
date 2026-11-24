@@ -24,20 +24,20 @@ maker-checker rule and what agents may never do.
 
 | What | Who requests or makes it | Who approves | Where in the app | What happens after |
 |---|---|---|---|---|
-| A decision on a case | Planner (or Admin) submits | Approver (if Admin delegates decisions), Admin; a Planner only if Admin gives Planners a limit above $0 | The case, stage 7 *Approve*; **Command Center → Approvals** (approval cards) | Approve or override: an approval reference is created and the instructions go to the enterprise systems. Decline: back to *Re-evaluate*, nothing sent |
+| A decision on a case | Planner (or Admin) submits | Approver (if Admin delegates decisions), Admin; the Approver's out-of-office delegate while that delegation is in force; a Planner only if Admin gives Planners a limit above $0 | The case, stage 7 *Approve*; **Command Center → Approvals** (approval cards) | Approve or override: an approval reference is created and the instructions go to the enterprise systems. Decline: back to *Re-evaluate*, nothing sent |
 | A decision above the approver's limit | The approver who tries it | Admin | The approval card escalates it | An escalation goes to Admin |
 | A decision flow (business rules) change | Planner or Admin edits a draft and submits it | Approver or Admin, **never the maker** | **Modeler** | Approve: shadow run beside the published flow. Publish: cases use it from their next valuation. Return to draft, or roll back later |
-| Access to another customer (tenant) | Planner | Approver (if Admin delegates tenant access), Admin | **Command Center → Approvals** (Approvals inbox); **Access & Governance → All requests** | Approved: the Planner can see that customer's cases. Declined: the note tells them why |
-| A new MCP server | Developer or Admin proposes | Approver (if Admin delegates MCP proposals), Admin | **MCP & Tools → Server proposals**; Approvals inbox; All requests | Approved: the server joins the MCP client list as *approved · not yet connected*. Connecting it is a separate step |
-| An agent's held action | An agent with autonomy *Propose for a person* | A person who holds that action's own permission (and may see the case) | **Agents → Proposals waiting for you** | Accept: the action runs as that person. Reject: closed with the reason |
-| A calibration model | Admin or Planner fits a candidate | Approver or Admin, **never the person who fitted it** | No button yet (technical team) | The candidate becomes active and values new cases; the old model is retired |
-| Pilot mode for an organisation | Admin switches it | (Admin's own decision) | No button yet (technical team) | Decisions run as usual, but no instruction is sent to any enterprise system |
+| Access to another customer (tenant) | Planner, in the account menu's **Request tenant access** | Approver (if Admin delegates tenant access), Admin; **never the requester** | **Command Center → Approvals** (Approvals inbox); **Access & Governance → All requests** | Approved: the Planner sees that customer's cases at once, until the chosen end or a revoke. Declined: the note tells them why |
+| A new MCP server | Developer or Admin proposes | Approver (if Admin delegates MCP proposals), Admin; **never the proposer** | **MCP & Tools → Server proposals**; Approvals inbox; All requests | Approved: the server joins the MCP client list as *approved · not yet connected*. Connecting it is a separate step |
+| An agent's held action | An agent with autonomy *Propose for a person* | A person who holds that action's own permission (and may see the case) | **Home → Proposals for you**; **Agents → Proposals waiting for you** | Accept: the action runs as that person. Reject: closed with the reason |
+| A calibration model | Admin or Planner fits a candidate and proposes it | Approver or Admin, **never the person who fitted it or proposed it** | **Models** panel on the Modeler and on the Agents page | The candidate becomes active and values new cases; the old model is retired |
+| Pilot mode for an organisation | Admin switches it | (Admin's own decision) | **Access & Governance → Organisation** (*Pilot mode* switch, **Pilot report**) | Decisions run as usual, but no instruction is sent to any enterprise system |
 | Delegations, limits, self-approval, agent autonomy, kill switches, organisation tree | Admin | (Admin's own decision) | **Access & Governance** | Takes effect on the next request; recorded in the audit log |
 
 ## The ground rules
 
 **A person presses the final button.** Approving, overriding or declining a decision, approving, returning,
-publishing or rolling back a rule change, promoting a model, accepting an agent's proposal, deciding an access request
+publishing or rolling back a rule change, proposing or promoting a model, accepting an agent's proposal, deciding an access request
 and every change to access are done only by a signed-in person.
 
 **What agents may never do.** The agents (Ask Circularity, the MCP tools, the case autopilot, the workflow builder
@@ -48,10 +48,11 @@ and prepare. The server refuses, whatever the agent's settings, any attempt by a
   only in the approval card, by a person.");
 - approve, return, publish or roll back a decision flow ("Decision flows are approved, returned, published or rolled
   back only by a person.");
-- promote a model ("Models are promoted only by a person.");
+- propose or promote a model ("Models are proposed for promotion only by a person.", "Models are promoted only by a
+  person.");
 - accept or reject an agent's proposal;
-- change access, the organisation tree, pilot mode, the agents themselves, MCP servers, source connections, or
-  publish, pause or delete a workflow.
+- register an agent, or change access, the organisation tree, pilot mode, the agents themselves, MCP servers, source
+  connections, or publish, pause or delete a workflow.
 
 The Access page lists the hard rules that are never configurable, among them: the agent cannot waive a failed gate;
 the agent cannot approve, publish, change access or change live source connections; nothing is sent to an enterprise
@@ -61,8 +62,11 @@ system without an approval reference.
 
 - a decision flow change is approved and published by a different person from the one who made the draft ("Maker-
   checker: you made these changes, so you cannot approve them.");
-- a model is promoted by a different person from the one who fitted it ("Maker-checker: you created this model, so you
-  cannot promote it.");
+- a model is promoted by a different person from the one who fitted it and from the one who proposed it ("Maker-checker:
+  you created this model, so you cannot promote it.", "Maker-checker: you proposed this model, so you cannot promote
+  it.");
+- a tenant access request or an MCP server proposal is decided by someone other than the person who made it, whatever
+  the self-approval setting ("You made this request, so another person must decide it.");
 - a decision you submitted is approved by someone else ("You submitted RT-…, so another person must approve it. Admin
   can allow self-approval within a limit."), unless Admin turns self-approval on.
 
@@ -76,6 +80,8 @@ system without an approval reference.
 - **Approver**, while Admin has the *Decisions and overrides* delegation switched on (it is on at the start).
 - **Planner**, only if Admin raises the Planner approval limit above $0 (it starts at $0, which means Planners cannot
   approve). Self-approval rules still apply.
+- **The Approver's out-of-office delegate**, while that delegation is in force (see
+  [section 8](#8-admins-settings-limits-self-approval-delegations)).
 
 **Approval limits.** Each approver has a dollar limit; the value checked is the larger of the route's net value and
 the spend authority entered on the card. At the start: Approver unlimited, Admin unlimited, Planner $0. Admin changes
@@ -153,23 +159,29 @@ it, the server would refuse with the maker-checker message.
 A Planner sees only their own customer. To plan across customers (for example a shared motor pool), a Planner asks
 for access to another customer (tenant).
 
-- **Who asks:** Planner (Admin has the permission too, but already sees everything). The request needs a reason of at
-  least 10 characters; a second pending request for the same customer is refused.
-- **Who decides:** Approver while Admin delegates *Tenant access*, and Admin.
+- **Who asks:** Planner (Admin has the permission too, but already sees everything). Open the account menu (top
+  right) and press **Request tenant access**. The dialog shows *Extra tenants you can see* (your live grants and when
+  each ends), *Your requests* with their status, and a form: pick a **Tenant** you cannot see yet, give a **Reason**
+  of at least 10 characters and press **Send request**. A second pending request for the same customer is refused;
+  that customer shows "request waiting" in the list.
+- **Who decides:** Approver while Admin delegates *Tenant access*, and Admin. Nobody decides their own request: the
+  **Approve access** button is disabled with "You made this request, so another person must decide it."
 - **Where:** **Command Center → Approvals** (the *Approvals inbox*: "Tenant access requests and MCP server proposals
   appear here"), and **Access & Governance → All requests** for Admin.
 - **Deciding:** **Approve access** or **Decline**. A note is optional for approval and required (at least 5
-  characters) for a decline: "Say what would change your decision."
-- **After:** approved, the Planner can see that customer's cases (and every unit below it in the organisation tree);
-  declined, the requester sees the note.
+  characters) for a decline: "Say what would change your decision." When you approve, pick **Access ends**: *After 8
+  hours*, *After 1 day*, *After 7 days*, *After 30 days* or *No end* (the default: access lasts until it is revoked).
+- **After:** approved, the Planner sees that customer's cases (and every unit below it in the organisation tree) at
+  once, in the session already open, without signing in again. Access ends on its own when its time is up. Declined,
+  the requester sees the note.
+- **Revoke:** Admin, or the Approver while Admin delegates *Tenant access*, presses **Revoke** on a grant under
+  *Tenant access granted* (below **All requests** on the Access page, and below the Approvals inbox), with an optional
+  note. The Planner loses access at once; open pages lock.
 
 **Worked example.** The demo starts with REQ-304: Planner · Customer B asks for Customer A, because "Customer A and
 Customer B share the Site 3 motor pool". Sign in as `approver`, open **Command Center → Approvals**, press **Approve
-access** on REQ-304, add a note, **Approve**. Planner · Customer B can now open Customer A's cases.
-
-> **In this version** the account menu shows *Request tenant access*, but the item is not active yet. Until it is,
-> a Planner asks Admin, and the technical team files the request for them. Deciding requests works in the app as
-> described above.
+access** on REQ-304, add a note, choose **Access ends** (for example *After 7 days*) and press **Approve**. Planner ·
+Customer B can now open Customer A's cases, and sees the end under *Extra tenants you can see*.
 
 ## 4. MCP server proposals
 
@@ -179,7 +191,9 @@ An MCP server is a set of tools an outside system offers to agents. A new one is
   vendor or owner, purpose (at least 10 characters), the tools it exposes, access (*Read only* or *Read and write*),
   and the data it touches (categories only, never real records). A second pending proposal with the same name is
   refused.
-- **Who decides:** Approver while Admin delegates *MCP server proposals*, and Admin.
+- **Who decides:** Approver while Admin delegates *MCP server proposals*, and Admin. Nobody decides their own
+  proposal, whatever the self-approval setting: **Approve proposal** is disabled with "You made this request, so
+  another person must decide it." When Admin proposes a server, the Approver decides it.
 - **Where:** **MCP & Tools → Server proposals**, the Approvals inbox, **Access & Governance → All requests**.
 - **After:** approved, "The server joins the MCP client list as approved. Connecting it is a separate step."
   Declined, the note says what to change.
@@ -197,47 +211,60 @@ a person.
 
 - **Who decides:** a person who holds the held action's own permission and, for a case, may see that case. For
   example, a held *Submit for review* needs someone with the submit permission for that customer.
-- **Where:** **Agents → Proposals waiting for you** ("An agent prepared these; nothing runs until a person accepts
-  it"). The Agents page is open to Admin and Developer.
+- **Where:** **Home → Proposals for you** ("An agent prepared these. Nothing runs until you accept."), for every
+  account that may act on a pending proposal. Each shows what the agent proposes, the case, why, the agent and the
+  time. The card is not drawn when nothing is pending. Admin and Developer also see the proposals on **Agents →
+  Proposals waiting for you**.
 - **Accept** runs the held action as you, through the same checks as if you had pressed the button yourself. A held
   approval, override or decline can never be accepted this way: decisions are approved only in the approval card.
-- **Reject** asks for a short reason for the agent's owner (at least 5 characters).
+- **Reject** asks for a short reason for the agent's owner ("Why not? The agent's owner sees this."; at least 5
+  characters).
 - **After:** if the proposal came from an agent run, the run continues (or stops, if rejected).
 
 **Worked example (case autopilot).** `admin` opens **Agents**, picks an agent under *Runs*, types `RT-1048` and
 presses **Start case autopilot**. The autopilot reads the evidence, requests missing evidence if any, re-evaluates if
 needed, and submits the decision. If the agent's autonomy is *Propose for a person*, the submit is held: the run shows
-*waiting* with a link to the proposal. A person accepts it; the run then waits for the approval, which a person gives
-in the approval card as in [section 1](#1-decisions-case-approval).
-
-> **In this version** only Admin and Developer can open the Agents page, so other roles cannot yet see the proposals
-> they could accept in the app.
+*waiting* with a link to the proposal. `ops` (or any account that may submit for Customer A) sees it on Home under
+*Proposals for you* and accepts it; the run then waits for the approval, which a person gives in the approval card as
+in [section 1](#1-decisions-case-approval).
 
 ## 6. Model promotion
 
 Circularity learns from confirmed outcomes. A **calibration model** adjusts the predictions of new cases using the
 difference between predicted and actual on past outcomes.
 
-- **Fit a candidate:** Admin or Planner (manage flows). The candidate records its error against the active model on
-  the same outcomes. It is not used until promoted.
-- **Promote:** Approver or Admin (approve flows), never the person who fitted it. An agent never promotes a model.
+Promotion takes two steps after the fit: a proposal, then an approval by a different person.
+
+- **Where:** the **Models** panel, at the foot of the **Modeler** and on the **Agents** page. It shows the base model
+  and the active calibration per template, and the fitted models: outcome count, the error of the current model and
+  of this model, the factors, who fitted it and when, and the promotion status (*Not proposed*, *Proposed by …*,
+  *Approved by …*).
+- **Fit a candidate:** Admin or Planner (manage flows). Pick the **Template** and press **Fit a candidate**. The
+  candidate records its error against the active model on the same outcomes. It is not used until promoted.
+- **Propose promotion:** Admin or Planner (manage flows) presses **Propose promotion** on a candidate.
+- **Approve promotion:** Approver or Admin (approve flows), never the person who fitted it and never the person who
+  proposed it. A candidate that is not proposed yet cannot be approved ("Propose … for promotion first.").
+- A disabled button shows the server's reason beside it.
+- An agent never proposes or promotes a model.
 - **After:** the candidate becomes active, the model it replaces is retired, and only **new** cases are valued with
   it; cases already open keep their routes. A confirmed case's *Learning record* (stage 10) says whether a candidate
   is awaiting promotion.
-- **Where:** there is no button for fitting or promoting in this version; the technical team does it while signed in
-  as the right person.
 
 ## 7. Pilot mode
 
 Pilot mode lets an organisation try Circularity without touching its enterprise systems.
 
 - **Who:** Admin only (manage organisations). It applies to the unit and everything below it.
+- **Where:** **Access & Governance → Organisation**, the *Pilot mode* column: a switch per unit (*On* / *Off*). A
+  unit below a pilot unit shows "On, through <parent>"; switch it at that parent.
 - **What happens:** cases are decided, submitted and approved as usual, but no instruction is sent: each one is held
   with "Pilot mode: not sent to …" and acknowledged by the simulation, so the case still runs to the end. Pilot mode
   never sends.
-- **Pilot report:** cases opened, decisions submitted and approved, the total recommended net value, how many cases
-  rules applied to, instructions held, and the recommended routes. Admin and Approver may read it.
-- **Where:** no button in this version; the technical team switches it and reads the report for Admin.
+- **Pilot report:** **Pilot report** on the unit's row. It gives cases, decisions submitted and approved, the total
+  recommended net value, cases with business rules applied, instructions held and the recommended routes, then *What
+  would have been sent*: each held instruction with its case, step, instruction, target system and time. The figures
+  cover the unit and every unit below it. Admin and Approver may read it; the Organisation section is shown to Admin
+  only.
 - Agents can never switch pilot mode.
 
 ## 8. Admin's settings: limits, self-approval, delegations
@@ -250,8 +277,17 @@ All in **Access & Governance**, Admin only; every change is recorded.
 - **Approval limits** (*A decision above the approver's limit escalates to Admin*): a dollar limit per role; empty
   means unlimited. "$0 means Planners cannot approve. Raise it to let them approve within the limit."
 - **Self-approval:** off at the start. When on, the person who submitted a decision may approve it within their limit.
-- **Out-of-office delegation** (in *Identity and users*): records a delegate who already holds the Approver role, with
-  dates. In this version it is recorded and shown; it does not change who can approve in the app.
+- **Out-of-office delegation** (in *Identity and users*): a delegate who already holds the Approver role, with *From*
+  and *Until* dates. It counts while Admin delegates decisions to the Approver, the workspace day is within the dates,
+  and the delegate signs in to an account that holds the Approver role. Then:
+  - waiting texts and the Approvals inbox name the delegate ("Waiting for <delegate> (covering for the Approver)");
+    the delegate's inbox says "You cover for … until …";
+  - the delegate may approve or decline decisions in the Approver's place, under the delegate's own limit and the
+    no-self-approval rule. The approval reads "Approved by <delegate> on behalf of <Approver> under APR-…", and the
+    audit log records on whose behalf;
+  - whoever acts first completes the item.
+
+  A delegate without a sign-in account (the demo's seeded deputy) is recorded only.
 - **Agent autonomy:** how far the agent may go per role and type of action (*Off*, *Suggest*, *Prepare*, *Act and
   notify*), capped by the action's risk: approving, overriding or declining decisions, confirming outcomes, publishing
   workflows, changing source connections and changing access are capped at *Prepare*, so a person always presses the

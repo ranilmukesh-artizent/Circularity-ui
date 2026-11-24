@@ -858,16 +858,26 @@ autonomy — fixed and re-run green); source-sim 271 passed; lint (ruff, format,
 clean; web-check tsc 0, 278 tests; smoke-pages 11 accounts 0 failing; smoke-rt1048 stage 10; smoke-modeler passed;
 smoke-mvp 12/12 (after a race fix in the smoke's clock loop).
 
-**Known gaps (UI and behaviour)**, found by the end-to-end smoke and the user guides:
-- A Planner cannot request tenant/org access in the app (the menu item is still disabled; the action works).
-- Agent proposals are shown only on the Agents page (Admin, Developer); a Planner or Approver has no proposals list
-  (`GET /api/screens/home/proposals` exists, unused).
-- No screens for pilot mode and the pilot report, model fit and promotion, org pack export/import, renaming an org
-  unit, registering an agent; the Connect dialog has no org-unit field.
-- A tenant grant reaches an open session only after a reload, is permanent, and cannot be revoked (the dialog says
-  "for this session").
-- Out-of-office delegation is recorded but not used when deciding who may approve.
-- Access requests and MCP proposals have no maker-checker (an Admin could approve their own MCP proposal).
+**Known gaps (UI and behaviour)**, found by the end-to-end smoke and the user guides, were **closed on 24 Nov 2026**
+(commits `baf90a4`, `bf0c010`, `5bb95a7`, `38647d6`, `31268c5`; decision log 2026-11-24):
+- Gaps-A: a Planner requests tenant access from the account menu (`access.myAccess`); a grant may end
+  (`expires_hours`, migration 0027) and can be revoked (`access.revokeGrant`) by Admin or a delegated Approver; a
+  grant or revocation reaches an open session without a reload (the client re-reads `/api/auth/me`); nobody decides
+  their own access request or MCP proposal.
+- Gaps-B: "Proposals for you" on Home for every account that may act on a pending agent proposal; fail-closed on
+  cases the server cannot place; the `proposal.held` event refreshes inboxes live.
+- Gaps-C: an out-of-office delegation counts (decisions delegated, the as-of day within its dates, a delegate with an
+  Approver account): waiting texts and the inbox name the delegate, who approves or declines `on_behalf_of` the
+  Approver under their own limit. The Approvals inbox also gained the grant end and revoke controls.
+- Gaps-D: Access › Organisation renames units, exports and imports org packs (with a preview, `org.previewPack`),
+  switches pilot mode and shows the pilot report with what would have been sent (`GET /api/screens/orgs`,
+  `/api/screens/orgs/{unit}/pilot`); the Connect dialog has an org-unit field.
+- Gaps-E: Register agent (tools an agent may never use are refused on the server too) and a Models panel on the
+  Agents page and the Modeler: fit, propose (`model.propose`) and approve promotion by another person (the maker and
+  the proposer are refused).
+
+Still open: the seeded out-of-office deputy has no sign-in account, so its delegation is recorded only; the task queue
+API has no screen.
 
 **Good-to-haves (not in this MVP)**, from the plan: plans 03–05 (REST CRUD + gzip, async, OpenTelemetry); PLM writes;
 re-evaluate the open queue on publish; guardrail editing by their owners; DMN import/export; an A2A agent card; newer

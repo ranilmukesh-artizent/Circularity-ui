@@ -152,6 +152,9 @@ What a person does here:
 - Choosing another eligible route is an **override**; your rationale is recorded and counted in override analytics.
   An excluded route cannot be approved.
 - **Decline** needs a reason (at least 10 characters). Nothing is sent; the case goes to *Re-evaluate*.
+- When the Approver is out of office and Admin has recorded a delegate, the stage names the delegate ("waiting for …
+  (covering for the Approver)"). The delegate approves or declines in the Approver's place, and the stage then reads
+  "Approved by … on behalf of … under APR-…". Whoever acts first completes it.
 - Limits and who may approve: see [Approvals](approvals.md#1-decisions-case-approval).
 - Tabs: *Rationale*, *Checks*, *History*.
 
@@ -182,7 +185,8 @@ the receipt; a re-lease refurbishes, moves, puts away and signs a lease contract
   the simulation itself, two simulated hours later.
 - **Pilot mode.** If the case's organisation (or one above it) is in pilot mode, nothing is sent to any system: each
   instruction is held with "Pilot mode: not sent to …" and acknowledged by the simulation, so the case still runs to
-  the end. See [Approvals](approvals.md#7-pilot-mode).
+  the end. Admin switches it in **Access & Governance → Organisation**, and the unit's **Pilot report** lists what
+  would have been sent. See [Approvals](approvals.md#7-pilot-mode).
 - Tabs: *Plan*, *Route and timing*, *Messages and acknowledgements*, *Instruction*.
 
 ### Stage 9: Outcome
@@ -203,7 +207,8 @@ cases). A person reviews the variances; with the right page, **Open in Analytics
 actual*.
 
 Learning never changes a decision already made: a newly promoted model values only new cases, and retraining never
-overwrites the evidence snapshot behind an earlier decision.
+overwrites the evidence snapshot behind an earlier decision. Candidates are fitted, proposed and promoted in the
+**Models** panel (Modeler, Agents); see [Approvals](approvals.md#6-model-promotion).
 
 ## 5. Declines and re-evaluation
 

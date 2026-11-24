@@ -19,7 +19,7 @@ MCP server proposals."
 | Command Center | Key figures, Actions on me, Integration health |
 | Connection Fabric | All tabs: Overview, Workflow Studio, Source Map, Source Tables, Canonical Models, Event Streams, Conflict Queue, Manual Import, Monitor |
 | MCP & Tools | All sections, including the Playground |
-| Agents | Registry, Runs, Proposals waiting for you, the tool catalogue (read only, except proposals you may decide) |
+| Agents | Registry, Runs, Proposals waiting for you, the tool catalogue, Models (read only, except proposals you may decide) |
 | Also | My Tasks, Alerts, Process Orchestration, Audit & Provenance, Reports, Data Checks, Settings |
 
 You do not see the Decision Workbench, Analytics, the Modeler or Access: decisions and access belong to other roles.
@@ -35,7 +35,7 @@ You do not see the Decision Workbench, Analytics, the Modeler or Access: decisio
 | Comment on a source | Connection Fabric (source drawer) |
 | Try agent tools in the playground | MCP & Tools → Playground |
 | Propose a new MCP server | MCP & Tools → Server proposals |
-| Accept or reject an agent's proposal for an action you hold | Agents → Proposals waiting for you |
+| Accept or reject an agent's proposal for an action you hold | Home → Proposals for you; Agents → Proposals waiting for you |
 | Acknowledge notifications | Home, My Tasks, Alerts |
 
 ## Your day
@@ -88,18 +88,21 @@ log and gate** shows every agent call and the write gate that stops agents from 
 ### 6. Watch the agents
 
 The **Agents** page lists the registered agents (kind, on or stopped, autonomy, tools, organisation scope), their runs
-step by step, and the tool catalogue (which actions an agent may call). It is read only for you: Admin registers,
-changes, starts and stops agents and starts the case autopilot.
+step by step, the tool catalogue (which actions an agent may call) and the **Models** panel (the base model, the
+active calibration per template and the fitted models). It is read only for you: Admin registers (**Register
+agent**), changes, starts and stops agents and starts the case autopilot; Planners and Admin fit and propose models,
+and an Approver or Admin approves their promotion.
 
 **Proposals waiting for you** lists actions an agent prepared and held for a person, filtered to those you may
-decide: the held action must be one your role may run (for example a source sync). **Accept** runs it as you;
-**Reject** asks for a short reason for the agent's owner. See [Approvals](../approvals.md#5-agent-proposals).
+decide: the held action must be one your role may run (for example a source sync). The same proposals show on Home
+under *Proposals for you*. **Accept** runs it as you; **Reject** asks for a short reason for the agent's owner. See
+[Approvals](../approvals.md#5-agent-proposals).
 
 ## What you cannot do, and why
 
 - **Open a case's decision, approve, override or decline**: you do not see the Decision Workbench; decisions belong to
   planners and approvers.
-- **Approve your own MCP proposal**: an Approver or Admin reviews every new server.
+- **Approve your own MCP proposal**: another person (an Approver or Admin) reviews every new server.
 - **Change agents, autonomy, limits or access**: Admin governs them.
 - **Edit business rules**: the Modeler belongs to Planners, Approvers and Admin.
 

@@ -36,6 +36,15 @@ host Node. Lint the shell scripts with shellcheck (`.shellcheckrc` at the root):
 
 From Windows with Docker in WSL: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path>/Circularity-ui/scripts/dev/status.sh`.
 
+## scripts/trial and trial/ (the trial package for customers)
+
+| Script | What it does |
+|---|---|
+| `scripts/trial/build.sh` | Packages the committed HEAD (`git archive`; uncommitted changes are never included): builds the runtime images (`docker-compose.prod.yml`'s targets) tagged `circularity-trial-{api,web,source-sim}:<yyyy.mm.dd>-<sha>` (`TRIAL_VERSION` overrides), saves them with `postgres:16-alpine` into `images.tar.gz`, and assembles `dist/circularity-trial-<version>/` (`trial/*` with the version in `compose.yml`, `VERSION`, `postgres-init/`, `data/golden/`, `guides/` from `docs/guides`) plus `.tar.gz` and `.zip` (zip made by Python in the api image). Fails if a `.env` would be packed. |
+| `scripts/trial/check.sh [package.tar.gz]` | The clean-install check (default: the newest package in `dist/`): unpacks it into a temp dir, refuses a `.env` or a key-shaped string, removes the package's images so `start.sh` must load them, then start (project `circtrialcheck`, port `TRIAL_CHECK_PORT` 15190), sign in as planner.a through the web port, read RT-1048 and `/api/health`, check that only the web port is published, stop and start (the 128 cases are still there), `reset.sh --yes`, and `smoke-pages.mjs <web> admin` when host Node and Playwright are there (`TRIAL_SMOKE=0` skips, `=1` requires). Always runs `down -v` and removes the temp dir. |
+| `trial/start.sh`, `stop.sh`, `reset.sh [--yes]`, `status.sh`, `uninstall.sh [--yes]` (`lib.sh`) | What the customer runs on macOS/Linux. `start` checks Docker, loads `images.tar.gz` if the images are missing, writes `.env` once (random Postgres password, JWT and webhook secrets, a Fernet key; `TRIAL_PORT` 5173), `docker compose up -d --wait`. `stop` keeps the data; `reset` is `down -v` then start; `uninstall` also removes the package's images. |
+| `trial/*.ps1` (`lib.ps1`) and `*.cmd` | The same for Windows PowerShell 5.1+; each `.cmd` runs its `.ps1` with `-ExecutionPolicy Bypass` so it can be double-clicked. `start` opens the browser (`TRIAL_NO_BROWSER=1` stops that). |
+
 ## Python dependency locks
 
 `backend` and `source-sim` each have `requirements.in` → `requirements.lock` and `requirements-dev.in` →

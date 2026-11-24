@@ -109,11 +109,21 @@ Commits `a6f93a4` (one migration chain, reserved stubs 0018–0026) … `d0bfad4
   the gate found the reset not restoring agents; all fixed with tests. End-user guides per role were written from
   the code (`docs/guides/users/`).
 
-## 8. Next
+## 8. Plan 8's UI gaps and the trial package (24 Nov 2026)
 
-- **Plan 8's UI gaps** (listed in its status block in `docs/backend-steps.md`): request access in the app, a proposals
-  list for Planners and Approvers, screens for pilot mode, models and org packs, revocable grants, maker-checker on
-  access and MCP proposals.
-- **The trial package** for customers on their own machine.
+Commits `3b6a15b` (trial package), `baf90a4`, `bf0c010`, `5bb95a7`, `38647d6`, `31268c5` (gaps B, A, D, C, E), then
+the lead's gate and docs. User request: "complete everything and push it".
+
+- **Gaps:** tenant access requested in the app, grants that end and can be revoked and reach an open session at once,
+  maker-checker on access and MCP proposals; "Proposals for you" on Home; out-of-office delegation used in approvals;
+  org screens (rename, pack export/import with a preview, pilot mode and report) and the Connect dialog's org unit;
+  Register agent and the Models panel (fit, propose, approve promotion).
+- **Trial package:** `trial/` and `scripts/trial/` (build from HEAD, clean-install check).
+- **How:** five agents in parallel on disjoint files, as in plan 8; the lead ran lint, the full suite and the smokes
+  on the combined tree.
+
+## 9. Next
+
 - **The plans:** CRUD for every resource and gzip, async, OpenTelemetry (plans 3–5).
 - **B18:** Playwright suites, `POST /api/admin/reset`, run book, security review.
+- **Demo-ready work last** (the user's order).

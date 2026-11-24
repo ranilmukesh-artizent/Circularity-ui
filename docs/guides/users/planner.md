@@ -14,11 +14,11 @@ organisation's decisions follow, in the Modeler, which another person approves.
 
 | Page | Sections |
 |---|---|
-| Home | Briefing, Needs you, Agent activity, Key figures |
+| Home | Briefing, Needs you, Agent activity, Key figures; *Proposals for you* when an agent holds one you may act on |
 | Command Center | Key figures, Actions on me, Handed off, Portfolio charts, Actions to prioritise, Signals and capacity |
 | Decision Workbench | Returned assets, Expected returns, Asset intelligence, the case pages |
 | Analytics | Recovery waterfall, Pipeline, Route mix, Predicted vs actual, Model versions, Overrides |
-| Modeler | Your organisation's decision flow and business rules |
+| Modeler | Your organisation's decision flow and business rules; the **Models** panel |
 | Process Orchestration | Live run, Stages, Case run, Agents and services |
 | Also | My Tasks, Alerts, Audit & Provenance, Reports, Data Checks, Settings |
 
@@ -39,6 +39,9 @@ Your Command Center is described as: "Prepare cases, close evidence gaps and sub
 | Check for the next acknowledgement during execution | Case, stage 8 |
 | Edit your organisation's business rules, submit them for approval, discard a draft | Modeler |
 | Give your organisation its own decision flow | Modeler |
+| Fit a candidate model and propose it for promotion | Modeler → Models |
+| Accept or reject an agent's proposal | Home → Proposals for you |
+| Request access to another customer | Account menu → Request tenant access |
 | Acknowledge notifications | Home, My Tasks, Alerts |
 
 ## Your day
@@ -47,6 +50,11 @@ Your Command Center is described as: "Prepare cases, close evidence gaps and sub
 
 Open **Home → Needs you** or **My Tasks**. Cases appear there when their next step is yours: evidence to request,
 decisions to submit, cases to re-evaluate. **Command Center → Actions on me** shows the same work ranked.
+
+If an agent prepared something for you (for example the case autopilot held a *Submit for review*), Home shows
+**Proposals for you**: what the agent proposes, the case, why, the agent and the time. **Accept** runs it as you, with
+the same checks as if you pressed the button yourself; **Reject** asks for a reason for the agent's owner. The card is
+not shown when nothing is waiting.
 
 ### 2. Close an evidence gap
 
@@ -143,12 +151,20 @@ After an approver approves, the flow runs in **Shadow** beside the published one
 from their **next valuation**. To apply it to a case already *Awaiting approval*, the case must be valued again
 (for example after a decline and **Re-evaluate**). See [Approvals](../approvals.md#2-decision-flow-and-business-rule-changes).
 
+**Models.** The **Models** panel at the foot of the Modeler shows the base model, the active calibration per template
+and the fitted models (outcomes, error figures, factors, who fitted them, promotion status). Pick the **Template** and
+press **Fit a candidate** to fit one on the confirmed outcomes; then **Propose promotion**. A different person (an
+Approver or Admin) approves the promotion; you cannot approve a model you fitted or proposed. See
+[Approvals](../approvals.md#6-model-promotion).
+
 ### Requesting access to another customer
 
-If you need to plan across customers (for example a shared pool), you ask for access to another customer (tenant),
-with a reason. An Approver or Admin decides. In this version the account menu's **Request tenant access** item is not
-active yet: ask Admin, who has the request filed for you. Once approved, the other customer's cases appear in your
-lists.
+If you need to plan across customers (for example a shared pool), open the account menu (top right) and press
+**Request tenant access**. The dialog shows the extra customers you can already see and when each grant ends, your
+requests with their status, and a form: pick the **Tenant**, give a **Reason** of at least 10 characters ("Why you
+need to see this tenant's cases.") and press **Send request**. An Approver or Admin decides it and chooses when the
+access ends. Once approved, the other customer's cases appear in your lists at once, without signing in again. The
+access ends on its own at its end date, or when Admin or the Approver revokes it.
 
 ## What you cannot do, and why
 
@@ -156,7 +172,8 @@ lists.
   Planner approval limit.)
 - **Confirm outcomes**: Finance owns the actual numbers.
 - **Record inspection results**: the Engineer owns technical eligibility.
-- **Approve or publish your own rule change**: maker-checker.
+- **Approve or publish your own rule change, or promote a model**: maker-checker, and promoting needs an Approver or
+  Admin.
 - **Edit the workspace flow or another customer's flow**: you edit only your own organisation's flow.
 - **See the Connection Fabric, MCP & Tools, Agents or Access**: those belong to integration and administration.
 - **Waive a failed gate**: nobody can; engineering and policy owners resolve the cause.
@@ -172,6 +189,6 @@ lists.
 ## For the technical team
 
 Planner permissions: submit, request, reeval, execSim, scenario, requestTenant, ack; plan 8 adds manageFlows (Modeler
-edit, model.fit) and openCases (no screen path for a Planner yet). Tenant-scoped. Pages: home, command, tasks,
-alerts, product, analytics (no pool), modeler, orchestration, audit, reports, checks, settings.
-`access.requestTenant` has no active button yet.
+edit, model.fit, model.propose) and openCases (no screen path for a Planner yet). Tenant-scoped; a tenant grant may
+have an end (`expires_at`) and reaches the open session through the live stream. Pages: home, command, tasks, alerts,
+product, analytics (no pool), modeler, orchestration, audit, reports, checks, settings.

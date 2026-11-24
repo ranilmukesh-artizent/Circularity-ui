@@ -151,6 +151,14 @@ npm run dev          # http://localhost:5173
 
 The app has no built-in backend: the dev server proxies `/api` and `/mcp` to `di-api` on http://localhost:8000 (`API_PROXY_TARGET` overrides it), so start the backend with Docker as above. Without it, sign-in fails and no page has data.
 
+### Trial package (customers, no source code)
+
+`bash scripts/trial/build.sh` packages the committed HEAD as `dist/circularity-trial-<version>.zip` (and `.tar.gz`):
+prebuilt images, a Compose file that publishes only the web port, start/stop/reset/status/uninstall scripts for
+Windows (double-click `start.cmd`) and macOS/Linux (`bash start.sh`), the user guides, and
+[trial/START-HERE.md](trial/START-HERE.md), which is what the customer reads. The customer needs only Docker. Check a
+package before sending it with `bash scripts/trial/check.sh` (a clean install on this machine, then torn down).
+
 ---
 
 ## How it works

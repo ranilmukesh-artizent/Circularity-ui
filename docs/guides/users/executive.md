@@ -60,7 +60,8 @@ buttons that change a case are not shown to you.
 ### 4. Look at the rules
 
 The **Modeler** shows the decision flow and business rules each organisation uses, their versions and history. It is
-read only for you; Planners and Admin change rules, and an Approver or Admin approves them.
+read only for you; Planners and Admin change rules, and an Approver or Admin approves them. The **Models** panel at its
+foot shows the model that values new cases, its calibration and the fitted candidates, also read only.
 
 ## What you cannot do, and why
 

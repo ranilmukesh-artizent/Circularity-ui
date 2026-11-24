@@ -89,6 +89,8 @@ const ACTION_EXACT: Record<string, Scope> = Object.fromEntries(
     'flow.get', 'flow.simulate', 'flow.propose',
     // plan 8 UI gaps: the live tenant grants and the requester's own view (reads)
     'access.grants', 'access.myAccess',
+    // the org pack's export and import preview and the pilot report (reads)
+    'org.exportPack', 'org.previewPack', 'org.pilotReport',
   ].map((id) => [id, [] as Area[]]), // prettier-ignore
 );
 const ACTION_FAMILY: Record<string, Scope> = {

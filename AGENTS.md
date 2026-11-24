@@ -37,6 +37,7 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 | `docs/agents/` | Dos and don'ts, learnings, decisions, history, testing, scripts. |
 | `docs/agents/runbook-fabric.md` | Operating the Connection Fabric: failing source, credentials and key, webhooks, stuck runs, held records. |
 | `scripts/dev/` | Dev scripts (tests with the lock, reset, restart, unstick, status). |
+| `trial/`, `scripts/trial/` | The trial package for customers (Compose on prebuilt images, start/stop/reset scripts, `START-HERE.md`) and its build and clean-install check. |
 | `fixtures/demo/assets/products/` | Product photos, beside the demo; `frontend/scripts/extract-styles.mjs` copies them into the web app. |
 | `docs/reference/` | Source documents (agent-first product spec, user journey deck, IFS process fit). Read-only background. |
 
@@ -78,6 +79,7 @@ The Node smoke scripts need host Node 24 and Chrome; the URL argument defaults t
 | Browser smoke, 11 accounts | `node frontend/scripts/smoke-pages.mjs http://localhost:5173` | ~5 min |
 | RT-1048 end to end (changes state: reset before and after) | `node frontend/scripts/smoke-rt1048.mjs http://localhost:5173` | ~3 min |
 | Fresh clone of HEAD, own project `circfresh` and ports (main stack untouched; `--prod` for the runtime images) | `bash scripts/dev/fresh-clone.sh [--prod]` | ~5–15 min |
+| Trial package of HEAD, then its clean install (project `circtrialcheck`, port 15190) | `bash scripts/trial/build.sh`, then `bash scripts/trial/check.sh` | ~10 min + ~5 min |
 
 - **One api pytest at a time.** All suites share one database and reset it. The dev scripts take a flock on
   `/tmp/di-pytest.lock` inside the api container (`scripts/dev/lib.sh api_lock`). Never call `docker compose exec api pytest` directly while anyone else may be testing.
@@ -147,7 +149,10 @@ from data, read-only PLM (Windchill), group reporting and pilot mode, the agent 
 proposals that hold for a person, runtime and case autopilot, per-agent MCP tools, MCP client sources), learning
 (calibration, model candidates, rule suggestions); the demo's 128 cases and RT-1048 are unchanged while the default
 flows have no rules. End-user guides: [docs/guides/users/README.md](docs/guides/users/README.md).
-Next: close the UI gaps plan 8 left (listed in its status section), the trial package for customers, then plans 3–5
-(CRUD for every resource and gzip, async, OpenTelemetry), then B18.
+Plan 8's UI gaps closed (24 Nov: request and revoke tenant access with grants that end, maker-checker on access,
+proposals on Home, out-of-office delegation in approvals, org screens and pilot mode, Register agent and the Models
+panel; status in `docs/backend-steps.md`). The trial package for customers: `trial/` (what they unpack, read
+`trial/START-HERE.md`), built by `scripts/trial/build.sh`, checked by `scripts/trial/check.sh`.
+Next: plans 3–5 (CRUD for every resource and gzip, async, OpenTelemetry), then B18; demo-ready work last.
 
 Known server gaps are listed under B17b, plan 6 and plan 8 in `docs/backend-steps.md`.

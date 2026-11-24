@@ -13,11 +13,11 @@ second person (maker-checker). You see **all customers**.
 
 | Page | Sections |
 |---|---|
-| Home | Briefing, Needs you, Agent activity, Key figures |
-| Command Center | Key figures, Actions on me, **Approvals** (approval cards and the Approvals inbox), Portfolio charts, Actions to prioritise, Signals and capacity, Value realisation |
+| Home | Briefing, Needs you, Agent activity, Key figures; *Proposals for you* when an agent holds one you may act on |
+| Command Center | Key figures, Actions on me, **Approvals** (approval cards, the Approvals inbox and the tenant access granted), Portfolio charts, Actions to prioritise, Signals and capacity, Value realisation |
 | Decision Workbench | Returned assets, Expected returns, Asset intelligence, the case pages |
 | Analytics | All sections (Recovery waterfall, Pipeline, Route mix, Predicted vs actual, Model versions, Overrides, Engineering economics, Sustainability) |
-| Modeler | Every organisation's decision flow, with Approve, Publish, Return to draft and Roll back |
+| Modeler | Every organisation's decision flow, with Approve, Publish, Return to draft and Roll back; the **Models** panel |
 | Connection Fabric | Event Streams and Conflict Queue (read only) |
 | MCP & Tools | Tool catalog, Agent registry, Permission matrix, Call log and gate, As MCP client, Server proposals |
 | Also | My Tasks, Alerts, Process Orchestration, Audit & Provenance, Reports, Data Checks, Settings |
@@ -30,10 +30,12 @@ the requests Admin delegated to you."
 | Action | Where | Depends on |
 |---|---|---|
 | Approve, override or decline a decision | Case, stage 7 (approval card) | Admin's *Decisions and overrides* delegation; your approval limit |
-| Approve or decline a tenant access request | Command Center → Approvals inbox | Admin's *Tenant access* delegation |
-| Approve or decline an MCP server proposal | MCP & Tools → Server proposals; Approvals inbox | Admin's *MCP server proposals* delegation |
+| Approve or decline a tenant access request, and choose when the access ends | Command Center → Approvals inbox | Admin's *Tenant access* delegation; never your own request |
+| Revoke a tenant access grant | Command Center → Approvals (*Tenant access granted*) | Admin's *Tenant access* delegation |
+| Approve or decline an MCP server proposal | MCP & Tools → Server proposals; Approvals inbox | Admin's *MCP server proposals* delegation; never your own proposal |
 | Approve, publish, return or roll back a decision flow | Modeler | Never on a flow you made yourself |
-| Promote a calibration model | (no button yet) | Never a model you fitted yourself |
+| Approve a model promotion | Modeler → Models (**Approve promotion**) | Never a model you fitted or proposed yourself |
+| Accept or reject an agent's proposal | Home → Proposals for you | The held action must be one you may run |
 | Request evidence, re-evaluate a case, save what-if scenarios | Case | |
 | Check for the next acknowledgement during execution | Case, stage 8 | |
 | Acknowledge notifications | Home, My Tasks, Alerts | |
@@ -55,7 +57,14 @@ You cannot submit decisions, confirm outcomes, record inspections, edit rules, c
 - **Review all … in turn** lists every item with the instructions it would send. Each is still approved separately;
   "there is no unlisted 'approve all'".
 - **Approvals inbox**: tenant access requests and MCP server proposals you may decide, and a button with the number
-  of decisions awaiting approval.
+  of decisions awaiting approval. Below it, *Tenant access granted* lists the live grants.
+
+**Out of office.** When Admin records an out-of-office delegate for you (Access → Identity and users), the delegate
+covers your decisions between the dates, while *Decisions and overrides* is delegated. Your inbox then says "Out of
+office until …: … approves or declines decisions on behalf of …. Whoever acts first completes the item.", and waiting
+texts name the delegate ("Waiting for … (covering for the Approver)"). If you are the delegate, your inbox says "You
+cover for … until …". You decide under your own limit, never your own submission, and the approval reads "Approved by
+you on behalf of … under APR-…".
 
 **Home → Needs you** and **My Tasks** list the same work.
 
@@ -95,10 +104,15 @@ confirm. Nothing is sent to any system; the case goes to *Re-evaluate* and the P
 
 In the **Approvals inbox**, each request shows its kind, status, who asked, when, and the details.
 
-- **Approve access** / **Approve proposal**, with an optional note.
+- **Approve access** / **Approve proposal**, with an optional note. For tenant access, pick **Access ends**: *After
+  8 hours*, *After 1 day*, *After 7 days*, *After 30 days* or *No end* (the default).
 - **Decline**, with a required note (at least 5 characters): "Say what would change your decision."
-- An approved tenant request lets the Planner see that customer's cases. An approved MCP server joins the MCP client
-  list as approved; connecting it is a separate step for the Developer.
+- An approved tenant request lets the Planner see that customer's cases at once, without signing in again, until the
+  access ends. An approved MCP server joins the MCP client list as approved; connecting it is a separate step for the
+  Developer.
+- A request or proposal you made yourself shows a disabled button: "You made this request, so another person must
+  decide it."
+- **Revoke** on a grant under *Tenant access granted* ends it now, with an optional note.
 
 ### 6. Approve a rule change (Modeler)
 
@@ -114,12 +128,27 @@ In the **Approvals inbox**, each request shows its kind, status, who asked, when
 You cannot approve or publish a flow you edited yourself: "Maker-checker: you made these changes, so you cannot
 approve them."
 
+### 7. Approve a model promotion
+
+The **Models** panel at the foot of the Modeler lists the fitted models with their outcome count, error figures,
+factors, who fitted them and their promotion status. A Planner or Admin fits a candidate and presses **Propose
+promotion**. You press **Approve promotion** on a proposed candidate; it then values new cases, and the model it
+replaces is retired. The button is disabled, with the reason beside it, on a model you fitted or proposed, or one not
+proposed yet. See [Approvals](../approvals.md#6-model-promotion).
+
+### 8. Act on an agent's proposal
+
+When an agent holds an action that you may run, Home shows **Proposals for you**: what the agent proposes, the case,
+why, the agent and the time. **Accept** runs it as you; **Reject** asks for a reason for the agent's owner. See
+[Approvals](../approvals.md#5-agent-proposals).
+
 ## What you cannot do, and why
 
 - **Submit a decision**: the Planner prepares and submits; you check.
 - **Approve above your limit**: it escalates to Admin.
 - **Approve what Admin has not delegated**: if Admin switches off a delegation, those items leave your inbox.
-- **Approve your own submission or your own rule change**: maker-checker.
+- **Approve your own submission, your own rule change, or a model you fitted or proposed**: maker-checker.
+- **Decide your own access request or MCP proposal**: another person decides it.
 - **Approve an excluded route**: a failed gate is never waived.
 - **Let an agent approve for you**: decisions are approved only in the approval card, by a person.
 
@@ -135,4 +164,6 @@ See [Approvals](../approvals.md) for every approval type and [the case journey](
 
 Approver permissions: approve.decisions, approve.mcp, approve.tenantAccess (each gated by Admin's delegation switch),
 request, reeval, execSim, scenario, ack; plan 8 adds approve.flows (flows, model.promote, pilot report; not gated by
-delegations). Not tenant-scoped. The Agents page is not open to the Approver.
+delegations). `access.revokeGrant` is allowed to Admin and to the Approver with the tenantAccess delegation. Not tenant-scoped. The Agents page and Access →
+Organisation are not open to the Approver, so the Models panel is reached on the Modeler and the pilot report has no
+screen path for the Approver.
