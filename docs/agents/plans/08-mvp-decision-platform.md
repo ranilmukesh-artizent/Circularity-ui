@@ -32,6 +32,13 @@ autonomy, and a person approves every commit.
 
 Gate (per task): the tests named in the task's spec, through `scripts/dev/gate-mvp.sh` (created in MVP-0.2).
 
+**Status (24 Nov 2026):** all 72 tasks done (`2a3ee00`). The UI gaps were closed by the gaps commits
+`baf90a4..5c20ddb`; the audit of this plan
+([docs/agents/audits/2026-11-24-plan-08/README.md](../audits/2026-11-24-plan-08/README.md)) was fixed in `95a45ed`,
+`8fea98c` and `23c7f81` (F1–F4, F6–F8, F10 fixed; F5, F9, F11 kept by decision), and the combined tree passed the
+gate. What is done and still open: the plan-8 status in `docs/backend-steps.md`. Next: plans 3–5, then B18;
+per-agent credentials are an open follow-up (agents still act on a person's token, named by a header).
+
 ---
 
 ## How to run this plan with Ralphy (for the human, before the first iteration)

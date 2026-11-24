@@ -43,8 +43,11 @@ Sign in with the ID in the first row and any password. The server enforces every
 | Notify an owner | ✓ | – | – | – | – | – | ✓ | – |
 | Acknowledge notifications | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ |
 
-Agents (Ask Circularity, the MCP server, the workflow builder) act as the signed-in person and only read or draft;
-they never approve, override, decline or change access.
+Agents (Ask Circularity, the MCP server, the case autopilot, the workflow builder, registered agents) act as the
+signed-in person and only read, draft or prepare; they never approve, override, decline, publish, promote or change
+access, however their call arrives. What an agent prepares can wait as a proposal, which a person other than the one
+the agent acted for accepts. The plan-8 features (the Modeler and its business rules, the Agents page, models,
+organisation units, pilot mode) and who may use them are in the [user guides](docs/guides/users/README.md).
 
 ---
 
@@ -180,7 +183,7 @@ package before sending it with `bash scripts/trial/check.sh` (a clean install on
 
 ### The frontend (`frontend`)
 
-React and TypeScript (Vite). Every screen of the original demo has been rebuilt: Home, My Tasks, Alerts, Command Center, Returned assets, Asset intelligence, the ten stage pages of a case with its approval card, Analytics, Audit, Process orchestration with the live run board, Connection Fabric, Workflow Studio, MCP & Tools, Access, Reports, Data Checks and Settings, for all eight roles.
+React and TypeScript (Vite). Every screen of the original demo has been rebuilt: Home, My Tasks, Alerts, Command Center, Returned assets, Asset intelligence, the ten stage pages of a case with its approval card, Analytics, Audit, Process orchestration with the live run board, Connection Fabric, Workflow Studio, MCP & Tools, Access, Reports, Data Checks and Settings, for all eight roles. Beyond the demo (plan 8): the Modeler (decision flows, business rules, simulation, the assistant, rule suggestions, models), the Agents page (registry, proposals, runs, tool catalogue), the organisation tree with configuration packs and pilot mode, and cases opened from data for the industrial, tool-fleet and device templates.
 
 The source is in `frontend/src`: `api/` (the typed API layer), `pages/<area>/`, `components/` (shared UI),
 `hooks/`, `utils/`, `layout/` (the app shell: sidebar, top bar, the Ask panel), `assets/` and `styles/`.
@@ -335,7 +338,9 @@ docs/agents/           working notes for agents: scripts, testing, plans, decisi
 | B16 | MCP server at `/mcp`: the ten agent tools, agent scopes and hard rules in code, every call logged | done |
 | B16b | Ask Circularity on a language model (Groq free tier; `POST /api/ask`, read-only, falls back to the demo's answers) | done |
 | B17 | the frontend on the backend: every page reads di-api, live updates, the Ask Circularity panel; the in-browser engine deleted; RT-1048 end to end in the browser | done |
-| next | the plans in `docs/agents/plans/`: agent loop, queue and task CRUD, CRUD for every resource and gzip, async, OpenTelemetry | planned |
+| plans 1b, 2, 6, 7 | refactor; job queue and task CRUD; the Connection Fabric for real (credentials, mappings, workflows on triggers); folders in layers | done |
+| plan 8 | decision platform MVP: org units, the Modeler with business rules and maker-checker, templates (industrial, tool fleet, device), cases opened from data, read-only PLM, pilot mode, agents with proposals, learning; its UI gaps, the trial package and the audit fixes (24 Nov 2026) | done |
+| next | plans 3–5 in `docs/agents/plans/`: CRUD for every resource and gzip, async, OpenTelemetry; per-agent credentials | planned |
 | B18 | browser tests, run book, security review | to do |
 
 Details, decisions and known limits of each step: [`docs/backend-steps.md`](docs/backend-steps.md).

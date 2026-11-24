@@ -26,18 +26,19 @@ maker-checker rule and what agents may never do.
 |---|---|---|---|---|
 | A decision on a case | Planner (or Admin) submits | Approver (if Admin delegates decisions), Admin; the Approver's out-of-office delegate while that delegation is in force; a Planner only if Admin gives Planners a limit above $0 | The case, stage 7 *Approve*; **Command Center → Approvals** (approval cards) | Approve or override: an approval reference is created and the instructions go to the enterprise systems. Decline: back to *Re-evaluate*, nothing sent |
 | A decision above the approver's limit | The approver who tries it | Admin | The approval card escalates it | An escalation goes to Admin |
-| A decision flow (business rules) change | Planner or Admin edits a draft and submits it | Approver or Admin, **never the maker** | **Modeler** | Approve: shadow run beside the published flow. Publish: cases use it from their next valuation. Return to draft, or roll back later |
+| A decision flow (business rules) change | Planner or Admin edits a draft and submits it | Approver or Admin, **never a maker** (anyone who saved or submitted the draft) | **Modeler** | Approve: shadow run beside the published flow. Publish: cases use it from their next valuation. Return to draft, or roll back later |
 | Access to another customer (tenant) | Planner, in the account menu's **Request tenant access** | Approver (if Admin delegates tenant access), Admin; **never the requester** | **Command Center → Approvals** (Approvals inbox); **Access & Governance → All requests** | Approved: the Planner sees that customer's cases at once, until the chosen end or a revoke. Declined: the note tells them why |
 | A new MCP server | Developer or Admin proposes | Approver (if Admin delegates MCP proposals), Admin; **never the proposer** | **MCP & Tools → Server proposals**; Approvals inbox; All requests | Approved: the server joins the MCP client list as *approved · not yet connected*. Connecting it is a separate step |
-| An agent's held action | An agent with autonomy *Propose for a person* | A person who holds that action's own permission (and may see the case) | **Home → Proposals for you**; **Agents → Proposals waiting for you** | Accept: the action runs as that person. Reject: closed with the reason |
+| An agent's held action | An agent with autonomy *Propose for a person* | A person who holds that action's own permission (and may see the case), **never the person the agent acted for** (they may reject it) | **Home → Proposals for you**; **Agents → Proposals waiting for you** | Accept: the action runs as that person. Reject: closed with the reason |
 | A calibration model | Admin or Planner fits a candidate and proposes it | Approver or Admin, **never the person who fitted it or proposed it** | **Models** panel on the Modeler and on the Agents page | The candidate becomes active and values new cases; the old model is retired |
-| Pilot mode for an organisation | Admin switches it | (Admin's own decision) | **Access & Governance → Organisation** (*Pilot mode* switch, **Pilot report**) | Decisions run as usual, but no instruction is sent to any enterprise system |
+| Pilot mode for an organisation | Admin switches it | (Admin's own decision) | **Access & Governance → Organisation** (*Pilot mode* switch, **Pilot report**); **Analytics** (**Pilot report** for the chosen *Org unit*) | Decisions run as usual, but no instruction is sent to any enterprise system |
 | Delegations, limits, self-approval, agent autonomy, kill switches, organisation tree | Admin | (Admin's own decision) | **Access & Governance** | Takes effect on the next request; recorded in the audit log |
 
 ## The ground rules
 
 **A person presses the final button.** Approving, overriding or declining a decision, approving, returning,
-publishing or rolling back a rule change, proposing or promoting a model, accepting an agent's proposal, deciding an access request
+publishing or rolling back a rule change, proposing or promoting a model, accepting an agent's proposal (never the
+person the agent acted for), deciding an access request
 and every change to access are done only by a signed-in person.
 
 **What agents may never do.** The agents (Ask Circularity, the MCP tools, the case autopilot, the workflow builder
@@ -54,14 +55,19 @@ and prepare. The server refuses, whatever the agent's settings, any attempt by a
 - register an agent, or change access, the organisation tree, pilot mode, the agents themselves, MCP servers, source
   connections, or publish, pause or delete a workflow.
 
+The server refuses these however the agent's call arrives (Ask, the MCP tools, an agent run or a direct call), even
+when it claims a person confirmed it. Reading stays open to agents, for example "Who can approve above $5,000?".
+
 The Access page lists the hard rules that are never configurable, among them: the agent cannot waive a failed gate;
 the agent cannot approve, publish, change access or change live source connections; nothing is sent to an enterprise
 system without an approval reference.
 
 **Maker-checker.** Nobody approves their own change:
 
-- a decision flow change is approved and published by a different person from the one who made the draft ("Maker-
-  checker: you made these changes, so you cannot approve them.");
+- a decision flow change is approved and published by a different person from everyone who saved or submitted the
+  draft ("Maker-checker: you made these changes, so you cannot approve them.");
+- an agent's proposal is accepted by a different person from the one the agent acted for; that person sees it marked
+  "Your agent's proposal: another person accepts it." and can only reject it;
 - a model is promoted by a different person from the one who fitted it and from the one who proposed it ("Maker-checker:
   you created this model, so you cannot promote it.", "Maker-checker: you proposed this model, so you cannot promote
   it.");
@@ -126,22 +132,24 @@ that exclude, require or prefer a route. Flows are edited in the **Modeler** (se
 | Step | Who | Permission |
 |---|---|---|
 | Edit a draft, submit it, discard it, give an organisation its own flow | Planner (own organisation only), Admin | manage flows |
-| Approve, publish, return to draft, roll back | Approver, Admin, never the maker | approve flows |
+| Approve, publish | Approver, Admin, never a maker | approve flows |
+| Return to draft, roll back | Approver, Admin | approve flows |
 | View the Modeler | Planner, Approver, Executive (read only), Admin | Modeler page |
 
 The Approver's right to approve flows does not depend on the delegation switches.
 
 **Lifecycle.** The status pill shows *Draft*, *In review*, *Shadow* or *Published*, with the version.
 
-1. **Draft.** The first edit to a published flow makes a draft of the next version, owned by the person who made it.
-   Changes save automatically; **Checks** shows what blocks a submit. **Simulate on open queue** shows which open
+1. **Draft.** The first edit to a published flow makes a draft of the next version. Everyone who saves a change to
+   the draft or submits it is a **maker** of that version, until it is published, discarded or rolled back. Changes
+   save automatically; **Checks** shows what blocks a submit. **Simulate on open queue** shows which open
    decisions the draft would change and the value impact.
 2. **Submit for approval** (the maker). Refused while a blocking check remains: "Fix the blocking checks before
    submitting."
-3. **Approve** (a different person). The flow enters **Shadow**: every case valued while it is in shadow is also
+3. **Approve** (a person who is not a maker). The flow enters **Shadow**: every case valued while it is in shadow is also
    decided with the draft's rules on a copy, and the bar shows "Shadow: N decisions, X agree, Y differ" with the value
    difference. Live decisions are unchanged.
-4. **Publish** (a different person). The draft becomes the published version; the version it replaces is kept in
+4. **Publish** (a person who is not a maker). The draft becomes the published version; the version it replaces is kept in
    *History*. Cases use the new rules from their next valuation (a new case, a recorded inspection, a
    re-evaluation). Publishing never changes a case by itself, and approved decisions keep their routes.
 5. **Return to draft** (in review or shadow) needs a reason of at least 15 characters.
@@ -152,7 +160,14 @@ own flow** (Customer A then stops inheriting the workspace flow), and asks the a
 resale". The proposal is drawn dashed on the canvas with its checks and impact; **Approve · AI applies it** puts it
 into ops's draft (this is ops's own edit, not an approval). ops presses **Submit for approval**. `approver` opens the
 same flow, reviews checks and impact, presses **Approve** (shadow starts), later **Publish**. If `ops` tried to approve
-it, the server would refuse with the maker-checker message.
+it, the server would refuse with the maker-checker message. So would it if `admin` had also saved a change to the
+draft before it was submitted: Admin would then be a maker too, and only `approver` could approve it.
+
+**Suggestions from overrides.** In the Modeler, **Find suggestions** (in *Suggestions from overrides*) reads the
+approvals and overrides of the decisions the flow made and suggests a rule where approvers keep overriding one group of
+assets to the same path, checked and simulated like an assistant proposal. Planners, Approvers and Admin can read
+them. **Apply as draft** (Planner or Admin) saves the rule into the draft as that person's own edit; it never submits
+or approves anything, so the change then goes through the steps above.
 
 ## 3. Tenant (customer) access requests
 
@@ -210,13 +225,17 @@ agent set to **Propose for a person** tries to change something, it does not run
 a person.
 
 - **Who decides:** a person who holds the held action's own permission and, for a case, may see that case. For
-  example, a held *Submit for review* needs someone with the submit permission for that customer.
+  example, a held *Submit for review* needs someone with the submit permission for that customer. The person the
+  agent acted for (the agent worked under their sign-in, or they started its run) never accepts it: maker-checker.
 - **Where:** **Home → Proposals for you** ("An agent prepared these. Nothing runs until you accept."), for every
   account that may act on a pending proposal. Each shows what the agent proposes, the case, why, the agent and the
   time. The card is not drawn when nothing is pending. Admin and Developer also see the proposals on **Agents →
   Proposals waiting for you**.
 - **Accept** runs the held action as you, through the same checks as if you had pressed the button yourself. A held
   approval, override or decline can never be accepted this way: decisions are approved only in the approval card.
+- **Your own agent's proposal** is still listed to you, with "Your agent's proposal: another person accepts it." in
+  place of **Accept**. You can reject it; if you try to accept it another way, the server refuses with the
+  maker-checker message.
 - **Reject** asks for a short reason for the agent's owner ("Why not? The agent's owner sees this."; at least 5
   characters).
 - **After:** if the proposal came from an agent run, the run continues (or stops, if rejected).
@@ -226,7 +245,8 @@ presses **Start case autopilot**. The autopilot reads the evidence, requests mis
 needed, and submits the decision. If the agent's autonomy is *Propose for a person*, the submit is held: the run shows
 *waiting* with a link to the proposal. `ops` (or any account that may submit for Customer A) sees it on Home under
 *Proposals for you* and accepts it; the run then waits for the approval, which a person gives in the approval card as
-in [section 1](#1-decisions-case-approval).
+in [section 1](#1-decisions-case-approval). `admin`, who started the run, sees the same proposal marked as their own
+agent's and can only reject it.
 
 ## 6. Model promotion
 
@@ -263,8 +283,9 @@ Pilot mode lets an organisation try Circularity without touching its enterprise 
 - **Pilot report:** **Pilot report** on the unit's row. It gives cases, decisions submitted and approved, the total
   recommended net value, cases with business rules applied, instructions held and the recommended routes, then *What
   would have been sent*: each held instruction with its case, step, instruction, target system and time. The figures
-  cover the unit and every unit below it. Admin and Approver may read it; the Organisation section is shown to Admin
-  only.
+  cover the unit and every unit below it. Admin and Approver may read it for any unit, the workspace at the top too;
+  an account limited to some customers reads only units within them. The Organisation section is shown to Admin only;
+  both also find **Pilot report** in **Analytics** after picking an *Org unit*.
 - Agents can never switch pilot mode.
 
 ## 8. Admin's settings: limits, self-approval, delegations

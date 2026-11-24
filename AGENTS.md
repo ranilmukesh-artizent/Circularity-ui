@@ -25,6 +25,7 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 | `backend/di/services/` | Business logic: `actions/` (every write and read action, `POST /api/actions/{id}` through `pipeline.invoke`), `screens/<area>` (what each page shows; each docstring maps the facade exports), `engine/`, `execution/`, `instructions/`, `cases/`, `canonical/`, `ask/`, `stream`, `auth`, `sources`, `journal`. |
 | `backend/di/services/modeler/` | Plan 8, pure: template packs (`packs/`), flow graph, compile, scope, apply (business rules after the gate rules), validate, guardrails, simulate, parse, propose, suggest, telemetry facts; `valuers/` (tool fleet, device, routes adapter). Tested against `fixtures/golden/po/`. |
 | `backend/di/services/agents/` | Plan 8: autonomy and run limits, tool catalogue, registry, proposals that hold for a person, runtime and playbooks (`case_autopilot`). |
+| `backend/di/services/agents/forbidden.py` | `FORBIDDEN_ACTIONS`, the one list of actions no agent may run: checked by the action pipeline (step 6) for every agent-prepared call, by the tool catalogue (`agent_allowed`), and at import against the MCP, playbook and Ask tool tables. |
 | `backend/di/repositories/` | Read queries and read models, incl. the live Connection Fabric (`fabric.py`). |
 | `backend/di/models/` | SQLAlchemy tables, one module per domain (mirrors the migrations). |
 | `backend/di/core/` | Foundations: config, db, auth, policy, errors, clock, dates, logs, golden, state, jobs. |
@@ -36,6 +37,8 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 | `docs/backend-steps.md` | The build plan B1–B18 with a status section per step. Read the step you work on. |
 | `docs/agents/` | Dos and don'ts, learnings, decisions, history, testing, scripts. |
 | `docs/agents/runbook-fabric.md` | Operating the Connection Fabric: failing source, credentials and key, webhooks, stuck runs, held records. |
+| `docs/agents/audits/` | Audits with their evidence (logs, junit, screenshots) and the agents' reports, one folder per audit. Latest: `2026-11-24-plan-08/` (findings F1–F11, UI gaps U1–U9, the merge record). |
+| `docs/agents/research/` | Research notes behind decisions to come (e.g. `2026-11-agent-foundation.md`: agent runtime and interop). |
 | `scripts/dev/` | Dev scripts (tests with the lock, reset, restart, unstick, status). |
 | `trial/`, `scripts/trial/` | The trial package for customers (Compose on prebuilt images, start/stop/reset scripts, `START-HERE.md`) and its build and clean-install check. |
 | `fixtures/demo/assets/products/` | Product photos, beside the demo; `frontend/scripts/extract-styles.mjs` copies them into the web app. |
@@ -63,9 +66,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build   
   file changes (bind mounts without change events), `0` never; unset, they poll only under a WSL2 kernel.
 
 Shell scripts are bash (3.2 or later); run them from the repo root in a Linux/macOS terminal, WSL or Git Bash. The host
-needs only `docker` and `curl`: the test lock, timeouts, psql, python and node run inside the containers. If Docker
-runs inside WSL (as on the lead's Windows machine, see CLAUDE.md), run each through a script file:
-`wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/Users/<you>/Documents/Circularity-ui/scripts/dev/<script>.sh`
+needs only `docker` and `curl`: the test lock, timeouts, psql, python and node run inside the containers. With Docker
+Desktop on Windows, run them from Git Bash (see CLAUDE.md for its pitfalls). If Docker runs inside WSL instead, run
+each through a script file: `wsl -d <distro> -u root -- bash /mnt/c/<path-to>/Circularity-ui/scripts/dev/<script>.sh`
 
 ## Test
 
@@ -74,15 +77,19 @@ The Node smoke scripts need host Node 24 and Chrome; the URL argument defaults t
 | What | Command | Time |
 |---|---|---|
 | Selected api tests | `bash scripts/dev/api-test.sh tests/test_x.py` | seconds to minutes |
-| Full api + source-sim | `bash scripts/dev/full-suite.sh`, then `bash scripts/dev/reset.sh` | ~25 min + 1 min |
+| Full api + source-sim (the gate) | `bash scripts/dev/full-suite.sh`, then `bash scripts/dev/reset.sh` | ~32 min + 1 min |
+| api pre-check in 4 shards on private databases (not the gate; 38 files stay serial-only) | `bash scripts/dev/parallel-suite.sh` (`--list` shows the shards) | ~7-11 min |
 | Web typecheck + unit | `bash scripts/dev/web-check.sh` | ~1 min |
 | Browser smoke, 11 accounts | `node frontend/scripts/smoke-pages.mjs http://localhost:5173` | ~5 min |
 | RT-1048 end to end (changes state: reset before and after) | `node frontend/scripts/smoke-rt1048.mjs http://localhost:5173` | ~3 min |
+| Modeler and MVP end to end (change state: reset before and after) | `node frontend/scripts/smoke-modeler.mjs …`, `node frontend/scripts/smoke-mvp.mjs …` | a few min each |
 | Fresh clone of HEAD, own project `circfresh` and ports (main stack untouched; `--prod` for the runtime images) | `bash scripts/dev/fresh-clone.sh [--prod]` | ~5–15 min |
 | Trial package of HEAD, then its clean install (project `circtrialcheck`, port 15190) | `bash scripts/trial/build.sh`, then `bash scripts/trial/check.sh` | ~10 min + ~5 min |
 
 - **One api pytest at a time.** All suites share one database and reset it. The dev scripts take a flock on
   `/tmp/di-pytest.lock` inside the api container (`scripts/dev/lib.sh api_lock`). Never call `docker compose exec api pytest` directly while anyone else may be testing.
+  The one exception is a run on a private database (`parallel-suite.sh`, or `docker compose run --rm --no-deps -e
+  DI_DATABASE_URL=…/<own db> api …`); it leaves the main database and the lock alone.
 - The api suite forces the pinned clock and no outbound instructions (`backend/tests/conftest.py`).
 - Details, counts, flaky tests: [docs/agents/testing.md](docs/agents/testing.md).
 
@@ -99,11 +106,15 @@ The Node smoke scripts need host Node 24 and Chrome; the URL argument defaults t
 7. Static assets come from `src/assets/assets.gen.ts`; regenerate it with `node frontend/scripts/dump-assets.mjs`, never hand-edit.
 8. Every write goes through the action pipeline (`POST /api/actions/{id}`, `invoke()` in the web app).
 9. Enforce access on the server (tenant boundary, warehouse lock, permissions). The frontend checks are only for display.
-10. Agents (MCP, Ask) only read or hold for a person. They never approve, override, decline or change access.
-11. Run api tests through `scripts/dev/api-test.sh` or `full-suite.sh` (the lock), never in parallel.
+10. Agents (MCP, Ask, playbooks) only read or hold for a person. They never approve, override, decline or change
+    access. The pipeline refuses every non-read action in `services/agents/forbidden.py` when an agent prepared the
+    call, whatever the headers say (audit F4); add a new action that only a person may take to that list.
+11. On the main database, run api tests only through `scripts/dev/api-test.sh` or `full-suite.sh` (the lock); never
+    two runs there at once. `scripts/dev/parallel-suite.sh` runs shards side by side on private databases as a
+    pre-check; the serial `full-suite.sh` stays the gate.
 12. Restart containers after changing code they don't reload (worker always; source-sim; golden files).
-13. Shell from Windows: write a `.sh` file with LF endings and run it via `wsl ... bash`. No inline `bash -lc '...'`
-    with nested quotes.
+13. Shell from Windows: write a `.sh` file with LF endings and run it with bash (Git Bash with Docker Desktop;
+    `wsl ... bash` where Docker runs inside WSL). No inline `bash -lc '...'` with nested quotes.
 14. Don't claim a named vendor is really connected. Every mock is synthetic.
 15. Verify before you report: run the tests yourself and quote the result. Don't relay a subagent's claim unchecked.
 
@@ -151,8 +162,16 @@ proposals that hold for a person, runtime and case autopilot, per-agent MCP tool
 flows have no rules. End-user guides: [docs/guides/users/README.md](docs/guides/users/README.md).
 Plan 8's UI gaps closed (24 Nov: request and revoke tenant access with grants that end, maker-checker on access,
 proposals on Home, out-of-office delegation in approvals, org screens and pilot mode, Register agent and the Models
-panel; status in `docs/backend-steps.md`). The trial package for customers: `trial/` (what they unpack, read
-`trial/START-HERE.md`), built by `scripts/trial/build.sh`, checked by `scripts/trial/check.sh`.
-Next: plans 3–5 (CRUD for every resource and gzip, async, OpenTelemetry), then B18; demo-ready work last.
+panel; then the Source drawer's org unit, template import in Records, rule suggestions in the Modeler and the
+Analytics pilot report; status in `docs/backend-steps.md`). The trial package for customers: `trial/` (what they
+unpack, read `trial/START-HERE.md`), built by `scripts/trial/build.sh`, checked by `scripts/trial/check.sh`.
+The plan-8 audit ([docs/agents/audits/2026-11-24-plan-08/](docs/agents/audits/2026-11-24-plan-08/README.md)):
+findings F1–F11 fixed or kept by a decision in the decision log (`95a45ed`, `8fea98c`); tool-fleet and device cases
+opened from data are valued and ranked end to end; the gate after the merge passed (4,459 api tests, 271 source-sim,
+312 web, the four browser smokes, lint).
+Next: per-agent credentials (today an agent is named by a header on a person's token); MCP tools generated from the
+action catalogue, with OAuth for outside clients
+([research](docs/agents/research/2026-11-agent-foundation.md)); plans 3–5 (CRUD for every resource and gzip, async,
+OpenTelemetry), then B18; demo-ready work last.
 
 Known server gaps are listed under B17b, plan 6 and plan 8 in `docs/backend-steps.md`.

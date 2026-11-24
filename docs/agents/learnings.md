@@ -170,7 +170,8 @@ Problems already hit, newest first. Each entry gives the symptom, the root cause
 ## 2026-11-19/20: Windows shell pitfalls
 
 - **Quoting:** PowerShell mangles `bash -lc '...'` with inner double quotes, and the pieces get executed as commands.
-  Write a `.sh` file and run `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/.../x.sh`.
+  Write a `.sh` file and run `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/.../x.sh`. (That machine ran Docker inside
+  WSL; with Docker Desktop, run the script from Git Bash with `MSYS_NO_PATHCONV=1`, see CLAUDE.md.)
 - **CRLF:** a `.sh` written with CRLF fails in bash (`$'\r': command not found`, `cd: ...\r`).
   `.gitattributes` forces LF for `*.sh`. `Set-Content` writes CRLF, so use the Write tool.
 - **Git Bash:** fails with "fork: Resource temporarily unavailable" (exit 66). Use PowerShell.

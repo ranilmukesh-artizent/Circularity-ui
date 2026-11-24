@@ -26,20 +26,21 @@ Everything the other roles can do (see their guides), and in addition:
 | Accounts and roles; identity provider sync, role source, group-to-role mapping, directory removals | Access & Governance → Accounts and roles, Identity and users |
 | The organisation tree: add units, move them, rename them | Access & Governance → Organisation |
 | Export and import an organisation's configuration pack | Access & Governance → Organisation |
-| Pilot mode for an organisation; the pilot report | Access & Governance → Organisation |
+| Pilot mode for an organisation; the pilot report | Access & Governance → Organisation (the report also on Analytics, for the chosen *Org unit*) |
 | Approver delegations | Access & Governance → Approver delegations |
 | Decide tenant access requests and MCP proposals (not your own); revoke tenant access | Access & Governance → All requests; Command Center → Approvals |
 | Agent autonomy per role and action type | Access & Governance → Agent autonomy |
 | Approval limits, self-approval, agent run limits | Access & Governance → Approval limits |
 | Stop or start any agent (kill switch) | Access & Governance → Agents and kill switches; Agents |
 | Register an agent; change an agent's autonomy, tools and organisation scope; start the case autopilot on a case | Agents |
-| Accept or reject an agent's proposal | Home → Proposals for you; Agents |
+| Accept or reject an agent's proposal (reject only, when the agent acted for you) | Home → Proposals for you; Agents |
 | Fit a candidate model, propose it, approve another person's proposal | Models panel (Agents, Modeler) |
 | Out-of-office delegation for the Approver | Access & Governance → Identity and users |
 
-The same rules bind you as everyone else: you cannot approve or publish a rule change you made, or promote a model you
-fitted or proposed (maker-checker); you cannot decide your own tenant access request or MCP proposal; you cannot
-approve a decision you submitted unless self-approval is on; you cannot approve an excluded route.
+The same rules bind you as everyone else: you cannot approve or publish a rule change you made (or saved or submitted
+along the way), or promote a model you fitted or proposed (maker-checker); you cannot accept a proposal from an agent
+that acted for you; you cannot decide your own tenant access request or MCP proposal; you cannot approve a decision
+you submitted unless self-approval is on; you cannot approve an excluded route.
 
 ## Your tasks
 
@@ -76,8 +77,8 @@ belongs to a customer or company unit, and **a tenant grant on a unit covers eve
 - **Move** a unit by changing its parent in the table. Moving a unit "changes who sees its cases": grants on the new
   parent now cover it.
 - **Rename** a unit: type the new name and **Save**. Its id stays, so grants and cases keep pointing at it.
-- New units can have their own decision flow (Modeler) and sources bound to them (Connection Fabric: the Connect
-  dialog's *Org unit* field).
+- New units can have their own decision flow (Modeler) and sources bound to them (Connection Fabric: the *Org unit*
+  field in the Connect dialog, and on a connected source's drawer under *Configuration*).
 
 **Configuration packs.** A pack holds a unit's source settings, field mappings, workflows and decision flows. It never
 holds passwords, keys or tokens.
@@ -148,12 +149,15 @@ The **Agents** page is the fuller view:
   it may use**. Only tools an agent may use are offered; actions that only a person may run, such as approving or
   changing access, are not, and the server refuses them. **Register** adds the agent.
 - **Proposals waiting for you**: actions an agent held for a person. **Accept** runs it as you; **Reject** asks for a
-  reason. The same proposals show on Home under *Proposals for you*. See
+  reason. A proposal from an agent that acted for you (for example a case autopilot you started) shows "Your agent's
+  proposal: another person accepts it." instead of **Accept**; you can only reject it. The same proposals show on Home
+  under *Proposals for you*. See
   [Approvals](../approvals.md#5-agent-proposals).
 - **Runs**: each agent run step by step, and what it waits for. **Start case autopilot**: pick an agent, type a case
   (for example `RT-1048`) and start it. The autopilot gathers evidence, requests what is missing, re-evaluates if
   needed and submits the decision, acting as you; a submit by an agent set to *Propose for a person* waits as a
-  proposal, and the run always waits for a person to approve the decision.
+  proposal that another person (for example the customer's Planner) accepts, and the run always waits for a person to
+  approve the decision.
 - **Tool catalogue**: every action as a tool, and whether an agent may call it.
 - **Models**: the base model, the active calibration per template and the fitted models. See
   [Models](#models) below.
@@ -197,6 +201,10 @@ See [Approvals](../approvals.md#6-model-promotion).
 
 Admin has every golden permission ("all") and the plan-8 ones: manageOrgs, manageFlows, approve.flows, manageAgents,
 openCases. Screens for the plan-8 actions: Access → Organisation (`org.update` rename, `org.exportPack`,
-`org.previewPack`, `org.importPack`, `org.setPilot`, the pilot report), Agents (`agent.register`), the Models panel
-(`model.fit`, `model.propose`, `model.promote`), and tenant grants (`access.decideRequest` with `expires_hours`,
-`access.revokeGrant`).
+`org.previewPack`, `org.importPack`, `org.setPilot`, the pilot report), Analytics (the pilot report for the org-unit
+filter), the source drawer and the Connect dialog (`org_unit_id`), Manual Import (open tool-fleet and device cases),
+the Modeler (`flow.suggestions`; Apply as draft is the person's own `flow.saveDraft`), Agents (`agent.register`), the
+Models panel (`model.fit`, `model.propose`, `model.promote`; `model.list` is a read for agents and API clients), and
+tenant grants (`access.decideRequest` with `expires_hours`, `access.revokeGrant`). `proposal.accept` refuses the
+person the agent acted for (`own`); the pack export drops credential- and key-named settings; an agent-prepared call
+to a forbidden action is refused whatever its headers say (reads excepted).

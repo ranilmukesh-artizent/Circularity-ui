@@ -1,30 +1,42 @@
 # Testing
 
-From Windows, run every script below through WSL:
-`wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path>/Circularity-ui/scripts/dev/<script>.sh [args]`.
+From Windows with Docker Desktop, run the scripts below from the repo root in Git Bash (`export MSYS_NO_PATHCONV=1`
+first; see CLAUDE.md, "Git Bash pitfalls"). Where Docker runs inside WSL:
+`wsl -d <distro> -u root -- bash /mnt/c/<path>/Circularity-ui/scripts/dev/<script>.sh [args]`.
 
 ## Suites
 
-| Suite | Where | Command | Size and time (20 Nov 2026) |
+| Suite | Where | Command | Size and time (24 Nov 2026) |
 |---|---|---|---|
-| api (di) | `backend/tests` | `bash scripts/dev/full-suite.sh` (all) / `bash scripts/dev/api-test.sh tests/test_x.py` | ~3,490 tests, ~25–30 min |
-| source-sim | `source-sim/tests` | part of `full-suite.sh`; alone: `docker compose exec -T source-sim pytest -q` | 210 tests, ~1 min |
-| web unit | `frontend/src/**/*.test.ts` (vitest, jsdom) | `bash scripts/dev/web-check.sh` | 12 tests + tsc, ~1 min |
+| api (di) | `backend/tests` (140 files) | `bash scripts/dev/full-suite.sh` (all) / `bash scripts/dev/api-test.sh tests/test_x.py` | 4,460 tests: 4,458 passed, 1 skipped, 1 failed then fixed in `8fea98c` (re-run targeted); ~32 min |
+| api pre-check | the 102 files safe side by side | `bash scripts/dev/parallel-suite.sh` | 4 shards on private databases, ~7-11 min; see "Parallel shards" |
+| source-sim | `source-sim/tests` | part of `full-suite.sh`; alone: `docker compose exec -T source-sim pytest -q` | 271 tests, ~1 min |
+| web unit | `frontend/src/**/*.test.ts(x)` (vitest, jsdom) | `bash scripts/dev/web-check.sh` | 312 tests in 39 files + tsc, ~1 min |
 | browser smoke | `frontend/scripts/smoke-*.mjs` (Node Playwright, installed Chrome) | `node frontend/scripts/smoke-pages.mjs <baseUrl> [accounts…]` from `frontend` on the host | ~5 min per mode for 11 accounts |
 | fresh clone | committed HEAD cloned to a temp dir, project `circfresh`, ports 15173/18000/18100/12222/15432 | `bash scripts/dev/fresh-clone.sh [--prod]` | up --wait, health, doctor, sign-in + RT-1048 screen, smoke for admin if host Node; ~5–15 min (build) |
 | CI | `.github/workflows/ci.yml` | see "CI" below | ~30 min (the `stack` job) |
 
 ### Parallel shards (faster, partial)
 
-`docs/agents/audits/2026-11-24-plan-08/work/parallel.sh` (Git Bash; `WT=<worktree> N=4 TAG=<tag> bash parallel.sh`)
-runs the api test files that are safe side by side in N shards at once, each in a one-off api-image container on its
-own fresh database (`di_p1..di_pN` on the shared postgres: migrated, then `ensure_sources` as the worker runs at
-start). Shards are balanced by each file's time in a junit file; logs go to `evidence/par-<TAG>-<k>.log`.
-It leaves out the files that reset or fault the shared source-sim (every shard would see it), call the running api
-(MCP, stream, webhooks, health) or need a fabric synced by the running stack; those run only in the serial suite.
-With 4 shards it took ~7 min against ~40 min serial (24 Nov 2026). It is a pre-check: the serial
-`scripts/dev/full-suite.sh` stays the gate. The script has the lead's paths hard-coded and needs host python and
-`cygpath`; copy and adapt it rather than run it elsewhere as is.
+`bash scripts/dev/parallel-suite.sh` (`N=6` for six shards, `--list` to print the shards and run nothing, `KEEP=1`
+to keep the databases) runs the api test files that are safe side by side in N shards at once (default 4). Each shard
+is a `docker compose run --rm --no-deps api` container on its own fresh database `di_par1..di_parN` on the stack's
+postgres: dropped and created, `alembic upgrade head`, then `ensure_sources` as the worker runs at start, then pytest.
+Shards are balanced by `scripts/dev/test-times.txt` (how to regenerate it: [scripts.md](scripts.md)); logs go to
+`test-results/parallel/shard-<k>.log` (git-ignored).
+It leaves out 38 files (24 Nov 2026): those that reset or fault the shared source-sim (every shard would see it), call
+the running api (MCP, stream, webhooks, health) or need a fabric synced by the running stack; they run only in the
+serial suite. With 4 shards it takes ~7-11 min (more when the machine is busy) against ~32 min serial. It does not touch the main database or the api
+test lock, so it can run beside other work, but not beside `full-suite.sh` (both use the shared source-sim). It is a
+pre-check: the serial `scripts/dev/full-suite.sh` stays the gate. It replaces the audit's
+`docs/agents/audits/2026-11-24-plan-08/work/parallel.sh` (kept there as evidence only).
+
+**Known environmental failures on a fresh database** (not regressions; [learnings](learnings.md)): without
+`ensure_sources`, "No table model for erp" and empty source lists; the workflow, home, access-writes and reference
+screen files fail on any fresh database, also on unchanged code, because they expect a fabric the stack has synced
+(they are in the script's serial-only list); MCP and other live-server tests get "Connection refused" in a one-off
+container, which serves no api. Check such a failure on the base commit's code on a fresh database before you call
+it a regression.
 
 ## CI
 
@@ -140,20 +152,28 @@ Then 20 more between 6.2s and 2.5s, the same kinds (adapter syncs, `test_connect
 | `smoke-rt1048.mjs <base>` | RT-1048 through all ten stages: Planner A submits, the Approver approves, source-sim's clock advances until the systems have acknowledged every instruction, Finance confirms; a watcher follows without reloading. Exits 1 unless stage 10 is reached with no page errors. **Changes state:** `reset.sh`, then `wait-idle.sh`, before and `reset.sh` after. |
 | `smoke-fabric.mjs <base>` | The Connection Fabric as Developer (plan 6 D2), one line per step: connect PostgreSQL from the catalogue (five steps, first sync with records), rotate its credential and Sync now, edit a mapping rule on SafetyCulture (Preview, Save, Revert), resolve a conflict with another value and a reason (still resolved after a reload), Manual Import, then a Salesforce ingest workflow (Convert currency EUR, Order late events, error handler; Validate, Test run, Save, Publish, Run now, History, failed records), and deletes the workflow and the source. Exits 1 on any failed step or page error; `SMOKE_SHOTS=<dir>` saves a screenshot per failure. Needs the worker running. ~2–4 min. **Changes state:** `reset.sh`, then `wait-idle.sh`, before and `reset.sh` after, holding the api test lock throughout (api-test.sh would stop the worker). |
 
+| `smoke-modeler.mjs <base>` | The Modeler (plan 8): Planner A gives Customer A its own flow with a rule, simulates and submits; the Approver approves (shadow) and publishes; a re-evaluated case shows the exclusion. 17 checks. **Changes state:** `reset.sh` before and after. |
+| `smoke-mvp.mjs <base>` | The MVP end to end (plan 8), one PASS/FAIL line per step: a new org unit, a connected source that opens cases, access asked and granted, a flow changed with the assistant, an agent's held proposal accepted, approval, outcome confirmed by Finance, a model fitted. 12 steps (1–10, with 2 and 4 in two parts). Needs the worker. **Changes state:** `reset.sh` and `wait-idle.sh` before, `reset.sh` after, holding the api test lock. |
+
 - The app (container on :5173, or a host Vite on :5174) reads only di-api; there is no other mode since B17c.
-- **Last full result** (20 Nov 2026, after B17c): 0 failing pages for all 11 accounts; `smoke-rt1048.mjs` reached
-  stage 10 (predicted $9,600, actual $9,230). Route counts: admin 70,
-  executive 33, planner-a 41, planner-b 41, planner-c 38, approver 47, engineer 48, finance 38, developer 39,
-  wm-1 29, wm-2 29.
+- **Last full result** (24 Nov 2026, at `8fea98c`; `docs/agents/audits/2026-11-24-plan-08/work/S-smokes.md`):
+  `smoke-pages.mjs` 0 failing routes for all 11 accounts; `smoke-rt1048.mjs` reached stage 10; `smoke-modeler.mjs`
+  all 17 checks; `smoke-mvp.mjs` all 12 steps. Route counts per account vary between runs (links are collected
+  800 ms after sign-in, before Home has fully rendered), so compare failures, not counts.
 
 ## Known flaky tests
 
 - Browser smoke failures with "Failed to fetch" or `ERR_NETWORK_IO_SUSPENDED` while the api restarts, or while
   another agent's half-finished edit is hot-reloading. Re-run when the stack is healthy and the tree typechecks.
+- A console 404 for `/favicon.ico` (the index has no icon link). Benign; `smoke-pages.mjs` filters it.
+- Failures that show only in a parallel shard or another fresh database: see "Known environmental failures" under
+  "Parallel shards".
 
 ## Before you claim done
 
 1. `bash scripts/dev/web-check.sh` → `tsc errors: 0`, vitest all passed.
-2. The api tests for what you touched → passed. Before a commit, run the full suite with only accepted failures.
-3. The browser smoke in both modes if you touched the frontend.
+2. The api tests for what you touched → passed. `parallel-suite.sh` is a quick pre-check; before a commit, run the
+   serial full suite with only accepted failures.
+3. `smoke-pages.mjs` for all 11 accounts if you touched the frontend; the end-to-end smokes (rt1048, modeler, mvp)
+   if you touched what they cover.
 4. `bash scripts/dev/reset.sh` so the next person starts from the demo's state.

@@ -145,6 +145,7 @@ again. Until then, **Undo** of the delete brings it back with everything it had.
   - **Authentication**: OAuth 2.0 client credentials, JWT bearer, mTLS, API key (optionally with an IP allow-list),
     service principal, basic auth over TLS, SFTP drop with a signed manifest, database user and password (vault), or a
     Delta Sharing bearer token.
+  - **Org unit**: whose cases and configuration use this source (*Shared by every org unit* when empty).
 - **Operations**: at least one read operation; each starts with a verb (`GET /assets`, `SELECT * FROM table`). Add
   write operations if Circularity should send instructions back.
 - **Field mapping**: source field → canonical field rows; no row may be empty or repeated.
@@ -165,6 +166,8 @@ Security, Comments (n)**.
   access*, *Key features* and *Troubleshooting* (opens by itself when something is wrong, and holds **Test connection**).
 - **Configuration**: the same fields as *Add source*, plus live facts (status, freshness, completeness, confidence,
   records, what the source has authority for) and the read and write operation lists. The system type cannot change.
+  **Org unit** names the organisation whose cases and configuration use the source (*Shared by every org unit* when
+  empty); its configuration pack includes the source. Managers change it and **Save changes**.
 - **Data Mapping**: the field mapping (source field, sample value, canonical field, normalised value, rule). Edit
   cells, remove rows (✕) or **+ Add field mapping**. The mapping you save is the one the next sync applies: each save
   is a new version (the bar above the table shows the version that runs); **Preview on a sample record** shows what
@@ -538,6 +541,17 @@ evaluation, not live automation: they are tagged manual, carry no live freshness
 3. **Load N rows for evaluation**: the server checks the rows again and loads them: *"{n} rows loaded for
    evaluation. They are tagged manual and will not trigger any instruction."* Loading the same rows twice is
    refused: *"These rows were already loaded. Nothing was created twice."*
+
+**Opening cases from the rows** (accounts that may open cases): before loading, tick **Open a case for each row** and
+pick the **Template** (`industrial`, `tool_fleet` or `device`) and the **Reason**. Each row's *owner* names the
+organisation unit of its case.
+- For a tool-fleet or device case the rows are checked for that template: the asset id may be any id (letters,
+  digits, `.`, `_`, `-`), and the note under the required columns names the extra columns the template reads
+  (tool fleet: `cls, ft, site, rul`; device: `brand, model, band, ref, doh`; the grade comes from
+  `condition_grade`). Changing the template checks the rows again.
+- Each case is valued at once by its template, with its organisation's published business rules, and ranked.
+- The message after loading counts the cases: *"Cases: {n} opened, {n} already open, {n} not opened."*, with each
+  refused row's asset and reason. A row whose asset already has a case for that reason is counted as already open.
 
 Loaded rows really reach the data: each row becomes canonical values (asset, quantity, condition grade, location,
 owner, received date) from the source *manual*, checked like a sync's. They rank below every connected source (a field

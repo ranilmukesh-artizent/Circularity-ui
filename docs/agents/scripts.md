@@ -19,10 +19,12 @@ host Node. Lint the shell scripts with shellcheck (`.shellcheckrc` at the root):
 |---|---|
 | `lib.sh` | Sourced by the others. `cd`s to the repo root; `api_url`/`sim_url` (the host ports Compose published, else `API_PORT`/`SIM_PORT`, else 8000/8100); `api_lock` (a flock on `/tmp/di-pytest.lock` inside the api container, held by a `flock … cat` there whose stdin is a pipe from the script: it is released when the script exits or is killed; exits 1 if the api container is not running); `wait_healthy` (api and source-sim health). |
 | `api-test.sh <pytest args>` | Selected api tests behind the lock, `-x` (`API_TEST_NO_X=1` drops it and runs every test), last 40 lines, `timeout 1800` in the container. Stops the worker for the run and starts it on exit. |
-| `full-suite.sh [pytest args]` | Stops the worker, resets source-sim, runs the whole api suite (~25 min) and the source-sim suite, prints failures and summaries. Holds the lock. Follow with `reset.sh`. |
+| `full-suite.sh [pytest args]` | Stops the worker, resets source-sim, runs the whole api suite (~32 min, 4,460 tests on 24 Nov 2026; the script's header still says 16–25 min) and the source-sim suite, prints failures and summaries. Holds the lock. Follow with `reset.sh`. The gate before a commit. |
+| `parallel-suite.sh [--list]` | A pre-check, not the gate: the api test files that are safe side by side in `N` shards (default 4) at once, each in `docker compose run --rm --no-deps api` on its own database `di_par1..N` on the stack's postgres (dropped and created, `alembic upgrade head`, `ensure_sources` as the worker does, then pytest). ~7-11 min with 4 shards. Leaves out (serial-only, 38 files on 24 Nov) the files that reset or fault the shared source-sim, call the running api (MCP, stream, webhooks, health) or need a fabric the stack has synced. Does not touch the main database or the lock, so it may run beside other work, but not beside `full-suite.sh` (shared source-sim). `--list` prints the shards and the serial-only files and runs nothing. Logs in `OUT` (default `test-results/parallel/shard-<k>.log`); `KEEP=1` keeps the databases. Exits 0 only if every shard passed. Sets `MSYS_NO_PATHCONV=1` itself. |
+| `test-times.txt` | Seconds per api test file from a full serial run; `parallel-suite.sh` balances its shards with it (a file not listed counts as 30 s). Regenerate after big changes: run `MSYS_NO_PATHCONV=1 bash scripts/dev/full-suite.sh --junitxml=/tmp/api-junit.xml` (the junit is written inside the api container), then replace the lines below the two `#` header lines with the output of `docker compose exec -T api python -c "import collections as C,xml.etree.ElementTree as E;t=C.Counter();[t.update({'tests/'+c.get('classname').split('.')[1]+'.py':float(c.get('time'))}) for c in E.parse('/tmp/api-junit.xml').iter('testcase')];print('\n'.join(f'{round(v)} {k}' for k,v in t.most_common()))"` (sums each file's test times, slowest first). Run on the 24 Nov junit, it reproduces the committed file exactly. |
 | `web-check.sh [tsc]` | `tsc -b` (app and Node configs, tsconfig.app.json + tsconfig.node.json) in the web container, then vitest. With `tsc`, the typecheck only. |
 | `lint.sh` | In the api container `ruff check .`, `ruff format --check .`, `mypy`, `lint-imports`; in the web container `npx eslint .` and `npx knip`. Runs every check, prints one ok/FAIL line each (with the last 8 lines of a failing one; at most 60 lines in all) and exits non-zero if any failed. |
-| `suite-shard.sh <n> <m> [--list] \| sim` | Every m-th file of the sorted `tests/test_*.py` (listed in the api container), starting at the n-th (1-based), through `api-test.sh` with `API_TEST_NO_X=1`; `--list` only prints the shard's files. `sim` runs the source-sim suite (`pytest -q` in its container). Exits 2 on bad arguments. |
+| `suite-shard.sh <n> <m> [--list] \| sim` | Serial, on the main database (for parallel shards see `parallel-suite.sh`): every m-th file of the sorted `tests/test_*.py` (listed in the api container), starting at the n-th (1-based), through `api-test.sh` with `API_TEST_NO_X=1`; `--list` only prints the shard's files. `sim` runs the source-sim suite (`pytest -q` in its container). Exits 2 on bad arguments. |
 | `gate-mvp.sh [test files]` | Plan 08's per-task gate: `lint.sh`, then `api-test.sh <files>` (if any), then `web-check.sh` if `git diff --name-only HEAD` or an untracked file touches `frontend/`, then the secret scan (no `gsk_` key-shaped string in `git diff HEAD`; the match is never printed). Runs every step, prints a summary, exits 0 only if all pass. `GATE_LINT`, `GATE_API`, `GATE_WEB` replace the three commands (e.g. `true`/`false` in `selftest.sh`). |
 | `restart.sh [services]` | Restarts api, worker and source-sim (or the ones given) and waits for health. |
 | `reset.sh` | Demo starting state: source-sim reset, `scripts/reset_starting.py` (with `PYTHONPATH=/app`), worker started. |
@@ -30,11 +32,13 @@ host Node. Lint the shell scripts with shellcheck (`.shellcheckrc` at the root):
 | `selftest.sh` | Proves the scripts report failures through their exit status (a passing and a missing test, a planted type error) and that the api test lock makes a second taker wait and is released when its holder is killed, and that `gate-mvp.sh` fails when a stubbed step fails and passes with the real `api-test.sh` on `tests/test_health.py`. Every script exits non-zero on failure; `lib.sh` sets `pipefail` and offers `filtered PATTERN N cmd…`. |
 | `wait-idle.sh [max_s]` | Waits until the worker has no due jobs (after a reset it syncs every source first, ~2–3 min). Use before `smoke-rt1048.mjs`. |
 | `fresh-clone.sh [--prod]` | Proves the committed HEAD comes up from nothing: `git clone --no-local` of HEAD into a temp dir (uncommitted changes are not included), `docker compose up -d --build --wait` there as project `circfresh` on ports 15173/18000/18100/12222/15432 (`FRESH_WEB_PORT`, `FRESH_API_PORT` …), health checks, `scripts/doctor.sh` in the clone, sign-in as admin through the web port and `GET /api/screens/case/RT-1048` (and 401 without the token), then `smoke-pages.mjs <web> admin` from this checkout's `frontend` if host Node and Playwright are there (`FRESH_SMOKE=0` skips, `=1` requires). Always tears down (`down -v`, its images, the temp dir) and exits non-zero on any failure; does not touch the main stack. `--prod` layers `docker-compose.prod.yml` (images tagged `circfresh-*:runtime`). Needs git, docker, curl. |
-| `migrate-reapply.sh` | Behind the api test lock: `alembic downgrade 0010`, then `upgrade head`, then prints `alembic current`. Plan 6 reserved migrations 0011–0017 empty so parallel tracks could each fill one; every plan-6 migration is idempotent, so re-applying the chain picks up a migration that was first applied empty. Use it after filling (or changing) one of 0011 onwards on a database that already ran it. It drops and rebuilds only plan 6's tables (connections, retry columns, webhook events, mappings, failed records, conflict hash, fx rates); the fx rates come back from 0017 and the demo sources' connection rows from the api's start-up seeding or `reset.sh`; rows saved there by people or tests (connections of app-made sources, mapping versions, held records) are lost, so run `reset.sh` after it. |
+| `migrate-reapply.sh [BASE]` | Behind the api test lock: `alembic downgrade <BASE>` (default `0010`; `0017` for plans 2 and 8's migrations), then `upgrade head`, then prints `alembic current`. Plan 6 reserved migrations 0011–0017 empty so parallel tracks could each fill one; every plan-6 migration is idempotent, so re-applying the chain picks up a migration that was first applied empty. Use it after filling (or changing) one of 0011 onwards on a database that already ran it. It drops and rebuilds only plan 6's tables (connections, retry columns, webhook events, mappings, failed records, conflict hash, fx rates); the fx rates come back from 0017 and the demo sources' connection rows from the api's start-up seeding or `reset.sh`; rows saved there by people or tests (connections of app-made sources, mapping versions, held records) are lost, so run `reset.sh` after it. |
 | `reencrypt-secrets.sh` | Runs `backend/scripts/reencrypt_secrets.py` in the api container: re-encrypts every stored source credential with the current `DI_SECRET_KEY` (the first key of the comma-separated list). Step 3 of a key rotation (`DI_SECRET_KEY="NEW,OLD"`, recreate api and worker, run this, then keep only NEW; [runbook-fabric.md](runbook-fabric.md#credentials)). Prints counts only; exits 1 if a credential opens with none of the keys. |
 | `status.sh` | Health of api and source-sim, container status, api tests running or waiting for the lock (pid, elapsed, args, read from `/proc` in the api container), non-idle db sessions. |
 
-From Windows with Docker in WSL: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<path>/Circularity-ui/scripts/dev/status.sh`.
+From Windows with Docker Desktop: `bash scripts/dev/status.sh` in Git Bash (`export MSYS_NO_PATHCONV=1` first for
+scripts that pass container paths, see CLAUDE.md). With Docker inside WSL:
+`wsl -d <distro> -u root -- bash /mnt/c/<path>/Circularity-ui/scripts/dev/status.sh`.
 
 ## scripts/trial and trial/ (the trial package for customers)
 
@@ -50,8 +54,9 @@ From Windows with Docker in WSL: `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/<pa
 `backend` and `source-sim` each have `requirements.in` → `requirements.lock` and `requirements-dev.in` →
 `requirements-dev.lock` (hashes for every package, transitive included); shared versions are in
 `requirements/constraints.txt`. Why and when: [dos-and-donts.md](dos-and-donts.md#dependencies-python).
-Re-compile with uv 0.13.5 in a throwaway container (in bash; on this Windows machine put it in a `.sh` file for WSL). Runtime first, then dev (the dev
-`.in` reads the runtime lock):
+Re-compile with uv 0.13.5 in a throwaway container (in bash; on Windows put it in a `.sh` file and run it with Git
+Bash, `MSYS_NO_PATHCONV=1` set, or through WSL if Docker runs there). Runtime first, then dev (the dev `.in` reads the
+runtime lock):
 
 ```bash
 cd <repo root>      # in WSL: /mnt/c/<path>/Circularity-ui
@@ -100,7 +105,9 @@ digest from Docker Hub (`https://hub.docker.com/v2/repositories/library/<image>/
 | `dump-golden.mjs` | Writes the base golden files (`fixtures/golden/*.json`) from the demo. `npm run golden`. |
 | `golden-sandbox.mjs` | Shared headless sandbox for the golden scripts (`freshDemo`, `plain`, `writeGolden`). |
 | `golden/<area>.mjs` | Per-area golden files: `analytics_audit` (screens reference, analytics, audit, nav, checks), `ask`, `fabric` (screens integration, mcp, access, workflows), `home_command` (home, command), `mcp_calls` (mcp.json), `product_case` (product, case, orchestration), `workflow_writes`. See `golden/README.md`. |
-| `smoke-pages.mjs`, `smoke-signin.mjs`, `smoke-ask.mjs`, `smoke-approve.mjs`, `smoke-rt1048.mjs` | Browser smoke checks with Chrome: see [testing.md](testing.md#browser-smoke-scripts-appswebscripts). |
+| `dump-po-golden.mjs` | Writes `fixtures/golden/po/*.json` from the PO Modeler prototype (`docs/reference/po-modeler/recover-app-prototype.html`), the reference plan 8's Modeler code is tested against. |
+| `smoke-pages.mjs`, `smoke-signin.mjs`, `smoke-ask.mjs`, `smoke-approve.mjs`, `smoke-rt1048.mjs`, `smoke-fabric.mjs`, `smoke-modeler.mjs`, `smoke-mvp.mjs` | Browser smoke checks with Chrome: see [testing.md](testing.md#browser-smoke-scripts-frontendscripts). |
+| `screenshot.mjs <outDir> <account\|-> <route> [route…]` | Dev helper: screenshots routes of the running app, signed in as the account. |
 
 ## npm scripts (frontend/package.json)
 
@@ -110,6 +117,8 @@ digest from Docker Hub (`https://hub.docker.com/v2/repositories/library/<image>/
 | `build` | `prebuild` (extract-styles), then `tsc -b && vite build`. |
 | `test` | `pretest` (extract-styles), then `vitest run`. |
 | `typecheck` | `tsc -b`: the app (tsconfig.app.json) and the Node-side configs (tsconfig.node.json). |
+| `lint`, `knip` | `eslint .`, `knip` (both run by `scripts/dev/lint.sh` in the web container). |
+| `preview` | `vite preview` of a build. |
 | `assets` | `dump-assets.mjs`. |
 | `golden` | `dump-golden.mjs`. |
 

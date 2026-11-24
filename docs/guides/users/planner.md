@@ -39,8 +39,9 @@ Your Command Center is described as: "Prepare cases, close evidence gaps and sub
 | Check for the next acknowledgement during execution | Case, stage 8 |
 | Edit your organisation's business rules, submit them for approval, discard a draft | Modeler |
 | Give your organisation its own decision flow | Modeler |
+| Apply a rule suggested by repeated overrides to your draft | Modeler → Suggestions from overrides |
 | Fit a candidate model and propose it for promotion | Modeler → Models |
-| Accept or reject an agent's proposal | Home → Proposals for you |
+| Accept or reject an agent's proposal (reject only, when the agent acted for you) | Home → Proposals for you |
 | Request access to another customer | Account menu → Request tenant access |
 | Acknowledge notifications | Home, My Tasks, Alerts |
 
@@ -55,6 +56,10 @@ If an agent prepared something for you (for example the case autopilot held a *S
 **Proposals for you**: what the agent proposes, the case, why, the agent and the time. **Accept** runs it as you, with
 the same checks as if you pressed the button yourself; **Reject** asks for a reason for the agent's owner. The card is
 not shown when nothing is waiting.
+
+When the agent acted for you (it worked under your sign-in), the proposal is yours: it shows "Your agent's proposal:
+another person accepts it." instead of **Accept**. You can still **Reject** it; another person who may run the action
+accepts it (maker-checker).
 
 ### 2. Close an evidence gap
 
@@ -143,8 +148,14 @@ guardrail is refused in red. Nothing changes until you apply it.
 **Impact.** **Simulate on open queue** runs your draft against the open decisions and shows which would change and
 the value impact against the published flow.
 
+**Suggestions from overrides.** **Find suggestions** reads the approvals and overrides of the decisions this flow
+made. When approvers keep overriding one group of assets to the same path, it suggests a rule, for example "3 of 4
+motor decisions overridden to …", checked and simulated like an assistant proposal. **Apply as draft** puts it into
+your draft only; you still submit it yourself, and another person approves it. Nothing changes until you apply one.
+
 **Submit.** **Submit for approval** sends the draft to an Approver (or Admin). You cannot approve or publish your own
-change (maker-checker). **Discard draft** goes back to the published flow. *History* shows earlier versions and the
+change (maker-checker). Everyone who saved or submitted the draft counts as its maker, so none of them approves or
+publishes it. **Discard draft** goes back to the published flow. *History* shows earlier versions and the
 log of every change.
 
 After an approver approves, the flow runs in **Shadow** beside the published one; after they publish, cases use it
@@ -174,6 +185,7 @@ access ends on its own at its end date, or when Admin or the Approver revokes it
 - **Record inspection results**: the Engineer owns technical eligibility.
 - **Approve or publish your own rule change, or promote a model**: maker-checker, and promoting needs an Approver or
   Admin.
+- **Accept a proposal from an agent that acted for you**: another person accepts it; you can reject it.
 - **Edit the workspace flow or another customer's flow**: you edit only your own organisation's flow.
 - **See the Connection Fabric, MCP & Tools, Agents or Access**: those belong to integration and administration.
 - **Waive a failed gate**: nobody can; engineering and policy owners resolve the cause.

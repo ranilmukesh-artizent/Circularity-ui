@@ -879,6 +879,52 @@ smoke-mvp 12/12 (after a race fix in the smoke's clock loop).
 Still open: the seeded out-of-office deputy has no sign-in account, so its delegation is recorded only; the task queue
 API has no screen.
 
+**Audit and merge (24 Nov 2026).** An audit of plan 8 at `2a3ee00`
+([docs/agents/audits/2026-11-24-plan-08/README.md](agents/audits/2026-11-24-plan-08/README.md)) found findings F1–F11
+and nine backend features without a screen (U1–U9). The fixes are `95a45ed`, built on the gaps commits above, plus
+`8fea98c` (F8) and `23c7f81` (the Source drawer's org field at the drawer's width). Where both sides built the same
+screen, the gaps version was kept.
+- **F1/F6 template cases:** tool-fleet and device cases opened from data (a workflow's Open case block, a manual
+  import, fabric records) are valued and ranked by their template's valuer, as the simulation ranks them
+  (`cases/intake.py`); re-evaluating one revalues it; the Modeler, simulation and proposals work with an opened
+  tool-fleet case. A template case honours its flow's business rules and records a shadow decision while its flow is in
+  shadow. Every template route has execution steps (`services/execution/steps.py` `STEP_TPL`). A manual-import row the
+  intake refuses counts as failed with the intake's reason, not as "already open" (task 8.4).
+- **F2:** the hazardous-waste exclusion (battery and IT lots) runs before the business rules, so the waiver sees it
+  (`actions/decisions.py` `_rebuild`).
+- **F3a:** `agent_proposal.requested_by` (migration 0028, after the gaps' 0027). The person an agent acted for still sees
+  the proposal on Home and Agents › Proposals, marked as their own ("Your agent's proposal: another person accepts
+  it."); they can reject it, and `proposal.accept` refuses them with `conflict`.
+- **F3b:** everyone who saved or submitted a flow draft since its last publish, discard or rollback (from the journal)
+  is a maker; none of them approves or publishes it (`actions/modeler.py` `makers`).
+- **F4:** an agent-prepared call never runs a forbidden action, whatever the request headers say (pipeline step 6;
+  the list is `services/agents/forbidden.py`, shared by the pipeline, the tool catalogue, MCP, Ask and the playbooks).
+  Reads stay open to agents (Ask's `access.lookup`).
+- **F7:** the org pack also drops credential- and key-named settings (`api_key`, `access_key` …). **F8:**
+  `org.pilotReport` refuses a tenant-scoped person a unit outside their tenants; Approver and Admin read every unit,
+  the group too. **F10:** tool-fleet text guards in the prototype's order.
+- **Kept by decision** (decision log): F5 (`waived`), F9 (the seeded agents keep autonomy `act`), F11 (migration 0021's
+  seed).
+- **Screens added beside the gaps work:** the Source drawer's *Org unit* field; Records › Manual Import opens
+  tool-fleet and device cases (their template columns travel with each row, `pages/integration/importCsv.ts`);
+  Modeler *Suggestions from overrides* (`flow.suggestions`; *Apply as draft* saves into the draft and never submits);
+  Analytics *Pilot report* for the chosen org unit; Home and Agents › Proposals show the `own` note instead of Accept.
+  `model.list` stays as a read for agents and API clients beside the Models panel.
+- **Gate after the merge:** api 4,459 passed (serial run at `95a45ed` plus the F8 fix in `8fea98c`), source-sim 271;
+  smoke-pages, smoke-rt1048, smoke-modeler and smoke-mvp exit 0; lint green; web tsc 0, vitest 312 (merge worktree).
+
+**Still open after the audit:**
+- Agents are named by a request header on a person's token: per-agent credentials are the follow-up (decision log
+  "Audit F3a/F3b/F4"). Of the catalogue's agent-allowed actions, only those behind MCP tools and the case autopilot
+  have an agent path; no agent creates, edits or deletes workflows, sources, mappings, org units, tasks or Modeler
+  drafts.
+- Telemetry reaches decisions only as the rule-scope `alarm` fact; the engine and valuers read no telemetry.
+- Smaller gaps the audit lists: the workflow block's *Only if* is equality only; `shadow_stats` counts earlier shadow
+  rounds too; four of the MVP smoke's twelve steps call the API, not the UI; the MVP-8.5 "128 + opened" check has no
+  record; the agent catalogue evidence was not regenerated after the merge.
+- Not yet checked in a browser: the `own` note with a live proposal and *Apply as draft* (each covered by a web unit
+  test).
+
 **Good-to-haves (not in this MVP)**, from the plan: plans 03–05 (REST CRUD + gzip, async, OpenTelemetry); PLM writes;
 re-evaluate the open queue on publish; guardrail editing by their owners; DMN import/export; an A2A agent card; newer
 MCP revisions; a LangGraph-style adapter behind the agent runtime; email/Teams notifications; a production language-

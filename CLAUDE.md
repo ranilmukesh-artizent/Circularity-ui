@@ -4,12 +4,39 @@
 
 - Shared project settings are in `.claude/settings.json`; personal ones go in `.claude/settings.local.json` (never
   commit it).
-- This machine is Windows with Docker inside WSL; the WSL notes here and in AGENTS.md are about this machine, not a
-  requirement of the repo (any machine with Git and Docker runs it, see README). Use the PowerShell tool for git and for `wsl ... bash scripts/dev/*.sh`. Git Bash often
-  fails here with "fork: Resource temporarily unavailable".
-- Subagents share one database and one dev server. Give each a disjoint set of files. Serialize api tests through
-  the lock (`scripts/dev/api-test.sh`), and keep browser checks read-only unless the lead runs them.
+- This machine is Windows 11 with Docker Desktop (context `desktop-linux`): `docker` and `docker compose` work
+  directly from PowerShell and Git Bash, so run `bash scripts/dev/*.sh` from the repo root in Git Bash (the Bash
+  tool). These notes are about this machine, not a requirement of the repo (any machine with Git and Docker runs it,
+  see README). On a machine whose Docker runs inside a WSL distro instead, run the scripts through a `.sh` file with
+  `wsl -d <distro> -u root -- bash /mnt/c/<path>/scripts/dev/<script>.sh`.
+- Use the PowerShell tool for git. Git Bash sometimes fails with "fork: Resource temporarily unavailable"; retry,
+  or use PowerShell.
 - Commit messages: write them to a file and use `git commit -F <file>`; PowerShell here-strings have broken them.
+
+### Git Bash pitfalls
+
+- `export MSYS_NO_PATHCONV=1` before a script or command that passes a container path (`/tmp/...`, `/app/...`).
+  Without it Git Bash rewrites the path to a Windows one; `api-test.sh`'s lock on `/tmp/di-pytest.lock` failed that
+  way. `parallel-suite.sh` sets it itself.
+- In a loop, give every `docker` / `docker compose` call `</dev/null`. They read stdin and eat the rest of the
+  loop's input.
+- Output of Windows programs (host Python, PowerShell) ends lines with CRLF: strip it with `tr -d '\r'`, never with a
+  literal CR in the script (Git Bash drops it).
+- Host Python on Windows opens files as cp1252: pass `encoding="utf-8"` to every `open()`.
+
+## Working with subagents
+
+- Subagents share one database, one dev server and one working tree. Give each a disjoint set of files and a report
+  path under the task's folder (e.g. `docs/agents/audits/<audit>/work/<letter>-<topic>.md`).
+- api tests on the main database go through the lock (`scripts/dev/api-test.sh`), one at a time. Parallel api tests
+  run only on private databases: `scripts/dev/parallel-suite.sh`, or a worktree with
+  `docker compose run --rm --no-deps -e DI_DATABASE_URL=…/<own db> api …` (migrate it and run `ensure_sources`
+  first; see the script). Keep browser checks read-only unless the lead runs them.
+- A git worktree's `frontend/node_modules` may be a junction to the main tree's. Remove the junction with `rmdir`
+  BEFORE `git worktree remove`, or the removal deletes the main tree's `node_modules`.
+- Read-only agent types (`code-reviewer`, `code-explorer`, `Explore`) cannot write a report file or run git. Use
+  `general-purpose` for a review that must write its report.
+- Verify every subagent claim before you report it (AGENTS.md rule 15): rerun its test or read its log yourself.
 
 ## Skills in this repo
 
@@ -30,4 +57,5 @@ Don't edit them; apply these adaptations when you use them:
   brainstorming): do that step inline.
 - "Your human partner" means the user.
 
-Being added by another agent (see `.claude/SETUP_SOURCES.md`): `.claude/agents/`, `.claude/commands/`, `.mcp.json`.
+Also installed (sources and licences in `.claude/SETUP_SOURCES.md`): `.claude/agents/` (8 subagents),
+`.claude/commands/` (`/feature-dev`, `/commit`, `/smart-debug`) and `.mcp.json` (Playwright MCP).

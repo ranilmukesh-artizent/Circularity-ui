@@ -121,9 +121,36 @@ the lead's gate and docs. User request: "complete everything and push it".
 - **Trial package:** `trial/` and `scripts/trial/` (build from HEAD, clean-install check).
 - **How:** five agents in parallel on disjoint files, as in plan 8; the lead ran lint, the full suite and the smokes
   on the combined tree.
+- Commits: `2a3ee00` (MVP-12.5 gate) … `5c20ddb` (final gate), with `69acbc4` (guides, status, decisions).
 
-## 9. Next
+## 9. The plan-8 audit, its fixes and the merge (24 Nov 2026)
 
+Commits `95a45ed` (audit fixes, template cases end to end, remaining UI gaps), `8fea98c` (F8 fix), `23c7f81` (Source
+drawer org field width), `2e985ff` (audit docs, evidence, research). Audit, findings and merge record:
+`docs/agents/audits/2026-11-24-plan-08/README.md`.
+
+- **What:** an audit of plan 8 against what was asked (phases 0–12, the stories), fixes for what it found, then the
+  merge with the colleague's gaps work, which had reached origin meanwhile.
+- **Fixes:** F1–F11 fixed or kept by a decision-log row. Tool-fleet and device cases opened from data are valued and
+  ranked by their template's valuer, as the simulation ranks them; the hazardous-waste exclusion runs before the
+  business rules; the person an agent acted for cannot accept that agent's proposal (`own`, migration 0028); every
+  editor of a flow draft is a maker; an agent-prepared call never runs a forbidden non-read action (pipeline step 6,
+  `services/agents/forbidden.py`); the pilot report checks the tenant of tenant-scoped people.
+- **UI:** the Source drawer's org unit, template import in Records, rule suggestions in the Modeler, the Analytics
+  pilot report button, "Your agent's proposal" instead of Accept.
+- **Merge:** where both sides built the same screen, the colleague's was kept and ours dropped; migrations renumbered
+  (his `0027_access_grants`, ours `0028_proposal_requester`; the dev database was downgraded first). An independent
+  review found five issues, all fixed before the commit.
+- **How:** fix agents in a separate worktree on disjoint files, each with a report in the audit's `work/`; api tests
+  in 4 shards on private databases (~7 min, now `scripts/dev/parallel-suite.sh`) as a pre-check, then the serial suite
+  as the gate: 4,458 passed + the F8 one fixed in `8fea98c`, 271 source-sim, 312 web, the four browser smokes.
+- **Research:** `docs/agents/research/2026-11-agent-foundation.md` (keep the in-house agent runtime; MCP first, then
+  OpenAPI/CLI and an A2A card).
+
+## 10. Next
+
+- **Agents:** per-agent credentials instead of a person's token plus a header; MCP tools generated from the action
+  catalogue, with OAuth for outside clients (the research above).
 - **The plans:** CRUD for every resource and gzip, async, OpenTelemetry (plans 3–5).
 - **B18:** Playwright suites, `POST /api/admin/reset`, run book, security review.
 - **Demo-ready work last** (the user's order).

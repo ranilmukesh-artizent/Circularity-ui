@@ -69,13 +69,17 @@ Developer):
   [Workflow Studio guide](workflow-studio.md).
 - **Manual Import.** In Connection Fabric → *Manual Import*, after validating a CSV, tick **Open a case for each row**
   and pick the template and the reason before **Load … rows for evaluation**. Each row's owner column names the
-  organisation unit.
+  organisation unit. Tool-fleet and device rows carry their template's extra columns (see the
+  [Connection Fabric guide](connection-fabric.md#13-manual-import)).
 - **Directly through the API** (the technical team, as a signed-in person with the permission).
 
 What happens when a case opens: it gets the next free number (RT-…), belongs to the organisation unit (which decides
 who may see it), takes its facts from the record and from what the source systems say about the asset, and is valued
 at once: every route is built, the published business rules of its organisation are applied, and the routes are
-ranked. With a recommendation it waits for approval; without one it waits for evidence.
+ranked. With a recommendation it waits for approval; without one it waits for evidence. A tool-fleet or device case
+is valued and ranked by its own template (its paths, such as *Re-issue to fleet* or *Refurbish → place* for a tool,
+or the sale channels *Buy Now*, *Offers*, *Auction* and *Marketplace* for a device lot), the same way the Modeler's simulation ranks it; a re-evaluation values it again the same way, and
+after approval each of its paths has its own execution steps.
 
 **One case per asset and reason.** If the same asset arrives again for the same reason (a re-sync, a replayed event,
 a file loaded twice), no second case opens: the workflow and the import skip it, and a direct request is refused with
@@ -120,8 +124,9 @@ inspection result is recorded, and when it is re-evaluated):
    timing and a range from pessimistic to optimistic, P10–P90).
 2. **Gates.** Every route must pass six gates: *Condition & life*, *Post-intervention*, *Policy & certification*,
    *Demand fit*, *Economics* and *Sustainability*. A route that fails a gate is excluded and shows why. Failed gates
-   are resolved by engineering and policy owners, never waived, and the agent cannot waive them.
-3. **Business rules.** Then the rules of the published decision flow of the case's organisation apply (see the
+   are resolved by engineering and policy owners, never waived, and the agent cannot waive them. For a battery or IT
+   lot, the gates include the need for an approved hazardous-waste route.
+3. **Business rules.** Then, after every gate, the rules of the published decision flow of the case's organisation apply (see the
    [Planner guide](users/planner.md#the-modeler-business-rules)): a rule can exclude a route, require one, or prefer
    one. If the rules would leave no eligible route, they are waived for that case. The case records which rules
    applied and which flow version it was valued with.

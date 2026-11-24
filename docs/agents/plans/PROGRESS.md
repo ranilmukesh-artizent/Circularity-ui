@@ -156,6 +156,11 @@ phase gate is the last row.
 | 2026-11-24 | gaps · E Register agent and the Models panel (fit, propose, approve) | `31268c5` | 55 + 23 api, web 298 | done |
 | 2026-11-24 | gaps · lead: docs and guides; org reads refresh nothing | `69acbc4` | web-check 298 | done |
 | 2026-11-24 | gaps · **gate (lead, combined tree)** | — | lint all passed; api 4,438 passed; source-sim 271 passed; web-check tsc 0, 298 tests; smoke-pages 11 accounts 0 failing; smoke-rt1048 stage 10; smoke-modeler passed; smoke-mvp 12/12; trial package rebuilt from HEAD and clean-install check passed | done |
+| 2026-11-24 | 08 · audit: fixes F1–F4, F6–F8, F10; template cases end to end; remaining UI gaps (Source drawer org unit, template import, rule suggestions, Analytics pilot report, `own` proposals); migration 0028 after the gaps' 0027 | `95a45ed` | 8 audit tests red first, then green; parallel shards 3,840 passed (3 failures = review findings 2–3, fixed; affected files 245 passed); lint green; web 312 (merge worktree) | done |
+| 2026-11-24 | 08 · audit F8: the pilot report's tenant check applies to tenant-scoped people only | `8fea98c` | `test_org_pilot.py` + `test_audit_fixes.py` 14 passed | done |
+| 2026-11-24 | 08 · audit: Source drawer org unit field at the drawer's width | `23c7f81` | browser check (`after-ui-source-drawer-org.png`) | done |
+| 2026-11-24 | 08 · audit docs: report with evidence, merge record, parallel shards, agent foundation research | `2e985ff` | — | done |
+| 2026-11-24 | 08 · **audit gate (combined tree)** | — | api 4,459 passed (4,458 at `95a45ed` + the F8 fix); source-sim 271; smoke-pages, smoke-rt1048, smoke-modeler, smoke-mvp exit 0; lint green; not pushed | done |
 
 ### Lessons from running 7+ agents in parallel
 

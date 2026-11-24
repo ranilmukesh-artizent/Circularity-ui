@@ -35,7 +35,8 @@ the requests Admin delegated to you."
 | Approve or decline an MCP server proposal | MCP & Tools → Server proposals; Approvals inbox | Admin's *MCP server proposals* delegation; never your own proposal |
 | Approve, publish, return or roll back a decision flow | Modeler | Never on a flow you made yourself |
 | Approve a model promotion | Modeler → Models (**Approve promotion**) | Never a model you fitted or proposed yourself |
-| Accept or reject an agent's proposal | Home → Proposals for you | The held action must be one you may run |
+| Accept or reject an agent's proposal | Home → Proposals for you | The held action must be one you may run; reject only when the agent acted for you |
+| Read the pilot report of an organisation | Analytics (pick the *Org unit*, then **Pilot report**) | |
 | Request evidence, re-evaluate a case, save what-if scenarios | Case | |
 | Check for the next acknowledgement during execution | Case, stage 8 | |
 | Acknowledge notifications | Home, My Tasks, Alerts | |
@@ -126,7 +127,10 @@ In the **Approvals inbox**, each request shows its kind, status, who asked, when
 6. Later, **Roll back to v…** in *History* restores the version published before.
 
 You cannot approve or publish a flow you edited yourself: "Maker-checker: you made these changes, so you cannot
-approve them."
+approve them." This holds for everyone who saved or submitted the draft, not only the person who started it.
+
+The Modeler's **Suggestions from overrides** shows rules that repeated overrides point to, checked and simulated.
+You can read them; a Planner or Admin applies one to a draft, and it then comes to you for approval like any change.
 
 ### 7. Approve a model promotion
 
@@ -139,8 +143,16 @@ proposed yet. See [Approvals](../approvals.md#6-model-promotion).
 ### 8. Act on an agent's proposal
 
 When an agent holds an action that you may run, Home shows **Proposals for you**: what the agent proposes, the case,
-why, the agent and the time. **Accept** runs it as you; **Reject** asks for a reason for the agent's owner. See
-[Approvals](../approvals.md#5-agent-proposals).
+why, the agent and the time. **Accept** runs it as you; **Reject** asks for a reason for the agent's owner. A
+proposal from an agent that acted for you shows "Your agent's proposal: another person accepts it." instead of
+**Accept**; you can only reject it. See [Approvals](../approvals.md#5-agent-proposals).
+
+### 9. Read a pilot report
+
+In **Analytics**, pick an organisation under *Org unit* and press **Pilot report**. It shows what that organisation's
+cases did (cases, decisions submitted and approved, the recommended net value, cases with business rules applied,
+instructions held, the routes) and *What would have been sent* while it was in pilot mode. Admin switches pilot mode.
+See [Approvals](../approvals.md#7-pilot-mode).
 
 ## What you cannot do, and why
 
@@ -151,6 +163,7 @@ why, the agent and the time. **Accept** runs it as you; **Reject** asks for a re
 - **Decide your own access request or MCP proposal**: another person decides it.
 - **Approve an excluded route**: a failed gate is never waived.
 - **Let an agent approve for you**: decisions are approved only in the approval card, by a person.
+- **Accept a proposal from an agent that acted for you**: another person accepts it; you can reject it.
 
 ## Tips
 
@@ -165,5 +178,6 @@ See [Approvals](../approvals.md) for every approval type and [the case journey](
 Approver permissions: approve.decisions, approve.mcp, approve.tenantAccess (each gated by Admin's delegation switch),
 request, reeval, execSim, scenario, ack; plan 8 adds approve.flows (flows, model.promote, pilot report; not gated by
 delegations). `access.revokeGrant` is allowed to Admin and to the Approver with the tenantAccess delegation. Not tenant-scoped. The Agents page and Access →
-Organisation are not open to the Approver, so the Models panel is reached on the Modeler and the pilot report has no
-screen path for the Approver.
+Organisation are not open to the Approver, so the Models panel is reached on the Modeler and the pilot report on
+Analytics (org unit filter; `org.pilotReport` reads any unit for an account that is not tenant-scoped, the group too).
+`proposal.accept` refuses the person an agent acted for (`own`, conflict); `flow.suggestions` is a read.

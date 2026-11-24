@@ -20,8 +20,16 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 - **Do** route every write through `di.services.actions.pipeline.invoke` (journal, idempotency key, sequence, permissions,
   tenant and warehouse scope). No direct table writes from routers.
 - **Do** enforce access on the server. The frontend's `can`/`canPage`/`canRoute` only shape the display.
-- **Don't** give agents (MCP tools, Ask) a write that skips a person. They may read, request evidence, or hold for
-  approval. `di/mcp` refuses to start if a forbidden action is mapped.
+- **Don't** give agents (MCP tools, Ask, playbooks) a write that skips a person. They may read, request evidence, or
+  hold for approval. `FORBIDDEN_ACTIONS` lives in `di/services/agents/forbidden.py`: the pipeline refuses those
+  non-read actions for any agent-prepared call (audit F4), the catalogue marks them not `agent_allowed`, and `di/mcp`
+  refuses to start if one is mapped. **Do** add a new person-only action there in the same commit.
+- **Do** make a tenant check consider every kind of caller: tenant-scoped people, accounts that see every tenant
+  (Approver, Admin) and group units such as `workspace`. The F8 fix first refused the Approver the group's pilot
+  report; only the full suite caught it (`8fea98c`).
+- **Don't** renumber a migration that a shared database (the dev stack, a colleague's) has already run. Alembic
+  stores only the revision id, so the other file of that number is skipped. If you must, say in the commit which
+  databases need `alembic downgrade <previous>` with the OLD code first ([learnings](learnings.md)).
 - **Do** use `di.core.state` for workspace collections (events, notes, requests, workflows …). Never seed a collection
   inside the caller's transaction (see the deadlock in learnings).
 - **Don't** open a second database session inside a request that holds locks it needs, unless that session only
@@ -40,7 +48,7 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
   parameters (`withQuery`), so the cache key changes when they change.
 - **Don't** call `engine()` in an api branch. Static lists come from `ref(name)`, the session from `session()`,
   and browser-only settings from `view()`/`setView()`.
-- **Do** await `invoke()`. It is async in both modes.
+- **Do** await `invoke()`. It is async (an HTTP call to di-api).
 - **Don't** build HTML strings for `dangerouslySetInnerHTML`. Render React, and keep the demo's CSS classes.
 - **Don't** redesign pages while switching data sources. A UI redesign is planned separately.
 
@@ -49,10 +57,14 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 - **Do** run api tests through `scripts/dev/api-test.sh` or `scripts/dev/full-suite.sh`. They hold the flock, so
   only one api pytest runs at a time.
 - **Don't** run the full api suite from several agents at once. It deadlocked the shared database twice.
+- **Do** run api tests side by side only on private databases (`scripts/dev/parallel-suite.sh`). It is a pre-check;
+  the serial `full-suite.sh` stays the gate.
+- **Don't** call a failure that shows only on a fresh database a regression until the base commit's code fails or
+  passes the same way on a fresh database. Some files need the stack's synced fabric.
 - **Do** run `bash scripts/dev/reset.sh` after the full suite or after clicking writes in the browser.
 - **Do** keep browser checks read-only on the shared stack unless you own the stack. To test a write, reset afterwards.
-- **Do** run the browser smoke in both modes for all 11 accounts after any frontend change that touches routing,
-  the facade or the shell.
+- **Do** run `smoke-pages.mjs` for all 11 accounts after any frontend change that touches routing, the facade or
+  the shell (there is one mode since B17c).
 
 ## Dependencies (Python)
 
@@ -74,17 +86,27 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
   matches these docs, so scan for the key's shape, and read the scan's result before you commit, not after.)
 - **Do** stage explicit paths, never `git add -A`. Other agents' work may be in the tree.
 - **Do** commit and push only when the user asks: one step per commit on `feature/fullstack-poc`, then a short report.
+- **Do** `git fetch` and read `git log HEAD..origin/feature/fullstack-poc` before starting big work. A colleague may
+  have pushed the same screens; on 24 Nov the gaps work and the audit fixes both built proposals, models, pilot, pack, rename and
+  request-access screens.
+- **Do** keep one version when two people built the same screen: take the one already on origin, add yours only
+  where it has nothing, and delete your duplicate readers and fields (record what was dropped, as in the
+  [plan-8 merge record](audits/2026-11-24-plan-08/README.md#merge-record)).
 - **Don't** publish to GitHub Pages; it isn't needed.
 - **Don't** imply a named vendor product is connected. Mocks are synthetic, and docs and UI must say so where it matters.
 - **Don't** run formatters over the whole tree. Format only the files you changed.
 
-## Shell on this machine (Windows + WSL)
+## Shell on this machine (Windows + Docker Desktop)
 
-This machine runs Docker inside WSL. The repo itself needs only Git and Docker (README, "Start it"); on Linux, macOS or
-Docker Desktop run the same commands in a terminal, without `wsl ...`.
+This machine runs Docker Desktop, so `docker` works from PowerShell and Git Bash. The repo itself needs only Git and
+Docker (README, "Start it"); on Linux or macOS run the same commands in a terminal. Where Docker runs inside WSL
+instead, run each `.sh` file with `wsl -d <distro> -u root -- bash /mnt/c/.../file.sh`.
 
-- **Do** put commands in a `.sh` file (LF endings) and run it with
-  `wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/.../file.sh`. Inline `bash -lc '...'` with nested quotes breaks in PowerShell.
-- **Don't** rely on Git Bash. It fails to fork here (exit 66, "Resource temporarily unavailable").
+- **Do** put commands in a `.sh` file (LF endings) and run it with bash. Inline `bash -lc '...'` with nested quotes
+  breaks in PowerShell.
+- **Do** `export MSYS_NO_PATHCONV=1` in Git Bash before passing a container path (`/tmp/...`); give docker calls in a
+  loop `</dev/null`; strip CRs with `tr -d '\r'`. Details in CLAUDE.md, "Git Bash pitfalls".
+- **Don't** count on Git Bash for git. It sometimes fails to fork (exit 66, "Resource temporarily unavailable"); use
+  PowerShell for git.
 - **Do** keep scripts you want to reuse in `scripts/dev/`. The session scratchpad gets wiped.
 - **Don't** pipe a command that waits on stdin (for example `cat > file` with no input). It hangs the tool call.

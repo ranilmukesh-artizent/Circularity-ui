@@ -71,9 +71,10 @@ Planner also finds **Request tenant access** there. Use **Switch account** or **
 1. **A person decides.** Agents (Ask Circularity, the MCP tools, the case autopilot, the workflow builder) act as the
    signed-in person and can only read, draft or prepare. They never approve, override, decline, publish, propose or
    promote a model, register agents or change access. What they prepare waits for a person (on Home, under
-   *Proposals for you*). See [Approvals](../approvals.md).
-2. **Nobody checks their own work.** A rule change or a model is approved by a different person from the one who made
-   it (for a model, also from the one who proposed it). A tenant access request or an MCP server proposal is decided
+   *Proposals for you*), and the person the agent acted for does not accept it: another person does. See
+   [Approvals](../approvals.md).
+2. **Nobody checks their own work.** A rule change or a model is approved by a different person from the ones who made
+   it (for a rule change, everyone who saved or submitted the draft; for a model, also the one who proposed it). A tenant access request or an MCP server proposal is decided
    by someone other than the person who made it. A decision you submitted is approved by someone else unless Admin
    allows self-approval within a limit.
 3. **Nothing reaches an enterprise system without an approval reference.**

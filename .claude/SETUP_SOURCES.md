@@ -1,9 +1,9 @@
 # Sources of third-party Claude Code configuration
 
 Everything listed under "Installed" was copied verbatim (frontmatter and body unchanged) from the
-public source named in the table. Nothing in these files was written for this repo. The only
-difference from upstream is line endings: the files are in the working tree with CRLF because this
-repo has `core.autocrlf=true`. Git stores them with LF on commit, which matches upstream.
+public source named in the table. Nothing in these files was written for this repo. Line endings
+match upstream: the root `.gitattributes` (`* text=auto eol=lf`) stores and checks them out with LF
+on every OS.
 
 Retrieved 2026-11-20. Upstream commits:
 

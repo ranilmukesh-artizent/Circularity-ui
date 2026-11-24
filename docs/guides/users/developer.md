@@ -60,8 +60,8 @@ Workflows move data in (ingest) and approved instructions out, and can react to 
 
 **Opening cases from data.** Add the **Open case** block ("A case for each record") to an ingest workflow. Set the
 *Asset field* that holds the asset key, the template (*industrial*, *tool_fleet* or *device*), the reason (*rma*,
-*lease_end*, *trade_in*, *contract_end*, *iot_alarm*, *manual*) and the *Org unit* (or bind the source to an org unit
-and leave it empty). *Only if* takes `field=value` to open cases only for matching records. A test run opens nothing
+*lease_end*, *trade_in*, *contract_end*, *iot_alarm*, *manual*) and the *Org unit* (or bind the source to an org unit,
+in the Connect dialog or under *Configuration* in its drawer, and leave it empty). *Only if* takes `field=value` to open cases only for matching records. A test run opens nothing
 ("Would open N cases"). When the published workflow runs, each new asset and reason opens one case, valued at once by
 the template and the organisation's published business rules; a record whose asset already has a case for that reason
 is skipped. See
@@ -69,7 +69,9 @@ is skipped. See
 
 **From a file.** In **Manual Import**, validate the CSV, tick **Open a case for each row**, pick the template and
 reason, and press **Load … rows for evaluation**. Each row's *owner* names the organisation unit. Rejected rows are
-never partially loaded.
+never partially loaded. Tool-fleet and device rows carry their template's extra columns and are valued by that
+template; the message after loading counts the cases opened, already open and not opened (with the reason). See
+[Manual Import](../connection-fabric.md#13-manual-import).
 
 ### 4. Propose an MCP server
 
@@ -95,7 +97,9 @@ and an Approver or Admin approves their promotion.
 
 **Proposals waiting for you** lists actions an agent prepared and held for a person, filtered to those you may
 decide: the held action must be one your role may run (for example a source sync). The same proposals show on Home
-under *Proposals for you*. **Accept** runs it as you; **Reject** asks for a short reason for the agent's owner. See
+under *Proposals for you*. **Accept** runs it as you; **Reject** asks for a short reason for the agent's owner. A
+proposal from an agent that acted for you (for example an MCP client using your sign-in) shows "Your agent's
+proposal: another person accepts it." instead of **Accept**; you can only reject it. See
 [Approvals](../approvals.md#5-agent-proposals).
 
 ## What you cannot do, and why
