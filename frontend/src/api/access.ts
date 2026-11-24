@@ -79,6 +79,22 @@ export const GRANT_ENDS: { hours: number | null; label: string }[] = [
 export const grantEndText = (expires: string | null | undefined): string =>
   expires ? 'Ends ' + fmtDateYear(expires) + ' ' + new Date(expires).toISOString().slice(11, 16) + ' UTC' : 'No end';
 
+// ---------------------------------------------------------------- role matrix and "test a user" (P9-0.13)
+export interface MatrixPermRow { perm: string; roles: Record<string, boolean> }
+export interface MatrixPageRow { page: string; roles: Record<string, boolean> }
+export interface RoleMatrix { roles: string[]; permissions: MatrixPermRow[]; pages: MatrixPageRow[] }
+export interface TestUserResult {
+  user_id: string; email: string; group: string | null; role: string; why: string;
+  account: { id: string; label: string } | null;
+  tenants: string[]; warehouse: string | null; pages: string[]; permissions: string[];
+  /** Approval limit in dollars; null: no limit. */
+  limit: number | null; self_approve: boolean;
+}
+/** Which role may do what and see which page (access.roleMatrix; needs manageIdentity). */
+export const roleMatrix = (): RoleMatrix => read<RoleMatrix>('access.roleMatrix');
+/** What a directory user gets today (access.testUser; needs manageIdentity). */
+export const testUser = (id: string): TestUserResult => read<TestUserResult>('access.testUser', { user_id: id });
+
 // ---------------------------------------------------------------- delegations
 export interface Delegation { k: string; label: string; desc: string; on: boolean }
 export function delegations(): Delegation[] {

@@ -289,6 +289,75 @@ def my_access(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - handlers t
     return {"requests": mine, "grants": grants, "options": options}
 
 
+# ---------------------------------------------------------------- the role matrix and "test a user" (P9-0.13)
+# Two reads for Access (permission manageIdentity). They show the policy as it is today, computed with policy.can and
+# policy.can_page; they change nothing. Sign-in from a real identity provider is P9-8.9 to P9-8.11.
+ACTIONS.setdefault(
+    "access.roleMatrix",
+    ActionDef(id="access.roleMatrix", title="Read the role matrix", verb="read the role matrix", risk="read",
+              perm="manageIdentity", scope="none", input={},
+              desc="Which role may do what and see which page, as the policy stands now. Changes nothing."),
+)  # fmt: skip
+ACTIONS.setdefault(
+    "access.testUser",
+    ActionDef(id="access.testUser", title="Test a user", verb="test a user", risk="read", perm="manageIdentity",
+              scope="none", input={"user_id": _STR},
+              desc="What a directory user gets: role, tenants, warehouse, pages, permissions and approval limit. "
+              "Changes nothing."),
+)  # fmt: skip
+
+
+def _account_of_role(role: str, ctx: CallContext) -> policy.Account:
+    """An account of the role: the first mapped one, else a bare one (the role's ROLE_POLICY entry and EXTRA_PERMS)."""
+    found = next((a for a in policy.accounts(ctx.actor.ctx) if a.role == role), None)
+    return found or policy.Account(id="role:" + role, role=role, label=role)
+
+
+@implement("access.roleMatrix")
+def role_matrix(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - handlers take (input, ctx)
+    actx = ctx.actor.ctx
+    roles = list(policy.roles())
+    by_role = {r: _account_of_role(r, ctx) for r in roles}
+    pages = [*policy.sections(), *(p for p in policy.EXTRA_PAGES if p not in policy.sections())]
+    return {
+        "roles": roles,
+        "permissions": [{"perm": p, "roles": {r: policy.can(by_role[r], p, actx) for r in roles}} for p in policy.permissions()],
+        "pages": [{"page": pg, "roles": {r: policy.can_page(by_role[r], pg) for r in roles}} for pg in pages],
+    }
+
+
+@guard("access.testUser")
+def test_user_guard(i: dict[str, Any], ctx: CallContext):
+    if state.get(ctx.session, "idp_users", i["user_id"]) is None:
+        return "not_found", f"No directory user {i['user_id']}."
+    return None
+
+
+@implement("access.testUser")
+def test_user(i: dict[str, Any], ctx: CallContext):
+    """What a directory user gets today: the role from the directory (the account's as mapped, or a deputy's own), and
+    everything policy gives that role for this account."""
+    u = state.need(ctx.session, "idp_users", i["user_id"])
+    actx = ctx.actor.ctx
+    role = policy.idp_role_of(u, actx) or ""
+    acct = policy.account(u["acct"], actx) if u.get("acct") else None
+    group = policy.IDP_GROUPS.get(u["acct"]) if u.get("acct") else None
+    who = acct or policy.Account(id="deputy:" + u["id"], role=role, label=role)
+    why = f"Group {group} maps to {role}" if group else f"Directory deputy without an account: role {role} from the directory"
+    limit = policy.limit_for(who, actx)
+    perms = [p for p in policy.permissions() if policy.can(who, p, actx)]
+    return {
+        "user_id": u["id"], "email": u["email"], "group": group, "role": role, "why": why,
+        "account": {"id": acct.id, "label": acct.label} if acct else None,
+        "tenants": policy.allowed_tenants(who, actx),
+        "warehouse": who.warehouse if policy.policy(who).get("warehouseScoped") else None,
+        "pages": [pg for pg in [*policy.sections(), *policy.EXTRA_PAGES] if policy.can_page(who, pg)],
+        "permissions": perms,
+        "limit": None if math.isinf(limit) else limit,  # None: no limit
+        "self_approve": actx.self_approval and "approve.decisions" in perms,
+    }  # fmt: skip
+
+
 # ---------------------------------------------------------------- the Approver's delegations
 @guard("access.setDelegation")
 def delegation_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)

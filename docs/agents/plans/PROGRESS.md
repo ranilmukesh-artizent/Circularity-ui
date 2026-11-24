@@ -201,6 +201,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-0.7 workflow JSON Schema and validated import | this commit | lead on main: 16 workflow and org test files 329 passed; lint all passed; tsc 0, vitest 322 passed | done |
 | 2026-11-25 | 09 · P9-0.12 pin a sent-back flow change to a step | this commit | lead on main after migrate-reapply 0028 and restart: flow and modeler tests incl. test_models_migrations 160 passed; lint all passed; web-check passed | done |
 | 2026-11-25 | 09 · P9-0.14 read-only sources refused and discovery at 500 | this commit | lead on main: test_read_only_sources, test_discover, test_instructions_send, test_execution, test_workflow_wiring and serial-only test_milestone_rt1048, test_org_pilot 46 passed; lint all passed | done |
+| 2026-11-25 | 09 · P9-0.13 role matrix and test a user in Access | this commit | lead on main: test_access_matrix, test_screens_access, test_policy, test_writes_access (incl. the mcp_proposals scenario that failed only on the private db), test_access_gaps 80 passed; lint all passed; tsc 0, vitest 326 passed | done |
 
 ## Decisions taken without the user (to review)
 

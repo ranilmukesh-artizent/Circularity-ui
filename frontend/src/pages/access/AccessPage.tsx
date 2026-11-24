@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { invoke } from '../../api/actions';
 import {
   accountRows, agentMetrics, approvalLimit, autoLevel, autoTypes, delegationLabel, delegations, facilities, fmtDateTime,
   governedAgents, hardRules, idp, idpRoleOf, idpRoles, levelRank, levels, pctTxt, refreshAccess, requests, roles, runLimits,
-  selfApproveAllowed, type Level,
+  roleMatrix, selfApproveAllowed, testUser, type Level,
 } from '../../api/access';
 import { money } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
@@ -13,6 +13,7 @@ import { useAction } from '../../hooks/useAction';
 import type { PageProps } from '../registry';
 import { Orgs } from './AccessOrgs';
 import { GrantList, ReqList } from './AccessRequests';
+import { rowsFor, userCard, type MatrixRow } from './roleMatrix';
 import { SectionTabs, sectionsOf } from './SectionTabs';
 
 /** Access & Governance (Admin): the demo's renderAccess plus afAccessHTML, one section per route. */
@@ -33,6 +34,7 @@ export function AccessPage({ route }: PageProps) {
       <SectionTabs page="access" a={route.a} />
       {key === 'accounts' && <Accounts />}
       {key === 'identity' && <Identity />}
+      {key === 'identity' && can('manageIdentity') && <Roles />}
       {key === 'delegations' && <Delegations />}
       {key === 'requests' && <AllRequests />}
       {key === 'autonomy' && <Autonomy />}
@@ -252,6 +254,75 @@ function Identity() {
         )}
       </div>
     </section>
+  );
+}
+
+/** Roles (P9-0.13): who may do what and see which page, and what one directory user would get. Display only: the server decides. */
+function Roles() {
+  const matrix = roleMatrix();
+  const m = rowsFor(matrix);
+  const roleNames = matrix.roles;
+  const users = idp().users;
+  const [pick, setPick] = useState('');
+  const table = (title: string, id: string, rows: MatrixRow[]) => (
+    <>
+      <h4 style={{ margin: '14px 0 6px' }}>{title}</h4>
+      <div className="tw">
+        <table className="t static tight" id={id}>
+          <thead>
+            <tr><th>{title === 'Pages' ? 'Page' : 'Permission'}</th>{roleNames.map((r) => <th key={r}>{r}</th>)}</tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.key}>
+                <td className="mono">{row.label}</td>
+                {row.cells.map((c) => (
+                  <td key={c.role} aria-label={c.role + (c.allowed ? ': allowed' : ': not allowed')}>{c.allowed ? '✓' : ''}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+  return (
+    <section className="panel sect" id="axRoles">
+      <div className="ph">
+        <h3>Roles</h3>
+        <span className="note">What each role may do today, as the policy stands</span>
+      </div>
+      <div className="pb">
+        {table('Permissions', 'roleMatrixPerms', m.permissions)}
+        {table('Pages', 'roleMatrixPages', m.pages)}
+        <h4 style={{ margin: '14px 0 6px' }}>Test a user</h4>
+        <div className="fld">
+          <label htmlFor="tu-user">Directory user</label>
+          <select id="tu-user" value={pick} onChange={(e) => setPick(e.target.value)}>
+            <option value="">Choose a user</option>
+            {users.map((u) => <option key={u.id} value={u.id}>{u.email}</option>)}
+          </select>
+        </div>
+        {pick && (
+          <Suspense fallback={<div className="note">Reading…</div>}>
+            <TestUserCard id={pick} />
+          </Suspense>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function TestUserCard({ id }: { id: string }) {
+  const c = userCard(testUser(id));
+  return (
+    <div className="idpc" id="testUserCard">
+      <b>{c.title}</b>
+      <span className="note">{c.why}</span>
+      <dl className="tikv">
+        {c.lines.map((l) => <div key={l.label}><dt>{l.label}</dt><dd>{l.value}</dd></div>)}
+      </dl>
+    </div>
   );
 }
 

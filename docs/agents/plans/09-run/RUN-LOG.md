@@ -32,3 +32,5 @@ unattended". Times are local (IST).
 | 25 Nov 04:08 | P9-0.7 merged. Sonnet; red first quoted; jsonschema docs read. Outside its file list it removed the import_guard call from org.importPack (pack workflows may name sources not connected yet; schema and importer rules still apply): flagged for review. |
 | 25 Nov 04:12 | P9-0.12 merged. Sonnet; red first quoted; migration 0030 filled. Note for later: flowkit.reset_flows() does not clear returned (test fixture does). |
 | 25 Nov 06:50 | P9-0.7 and P9-0.12 merged (phase 0: 12 of 17). P9-0.8 to w1, P9-0.15 to w2. |
+| 25 Nov 07:20 | P9-0.14 merged (46 tests on main incl. serial-only RT-1048 milestone). Lead slip: the helper failed writing inflight.txt and the commit took the previous message; fixed by amending the message only (`12aa6df`), helper now fails closed. |
+| 25 Nov 04:34 | P9-0.13 merged. Sonnet; red first quoted for the api tests; Roles shown as a panel under Identity (no nav change). |
