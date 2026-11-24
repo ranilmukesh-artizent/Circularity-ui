@@ -2,8 +2,9 @@
 
     model.fit      act     {template?}  a candidate: the calibration factors and the mean absolute error of the active
                                         model vs the candidate on the outcome rows (manageFlows)
-    model.promote  commit  {id}         candidate -> active, the previous active one retired (approve.flows; never by
-                                        its maker, never by an agent)
+    model.propose  act     {id}         a person proposes the candidate for promotion (plan 8 UI gaps)
+    model.promote  commit  {id}         a proposed candidate -> active, the previous active one retired (approve.flows;
+                                        never by its maker or proposer, never by an agent)
 
 The outcomes are written straight onto five cases (as outcome.confirm stores them) and taken off again afterwards.
 """
@@ -105,11 +106,13 @@ def test_promote_affects_new_intake_only(outcomes):
         before = store.get(s, rt)
         assert isinstance(intake_predictor(s, FormulaPredictor(mulberry32(5)), outcomes[0]["cls"]), FormulaPredictor)
     first = call("model.fit", {}, "planner-a")["output"]["id"]
+    assert call("model.propose", {"id": first}, "planner-a")["ok"]  # plan 8 UI gaps: promoted once proposed
     out = call("model.promote", {"id": first}, "approver")
     assert out["ok"], out
     assert out["output"]["status"] == "active"
     second = call("model.fit", {}, "planner-a")["output"]
     assert second["metrics"]["active_id"] == first
+    assert call("model.propose", {"id": second["id"]}, "planner-a")["ok"]
     assert call("model.promote", {"id": second["id"]}, "approver")["ok"]
     with SessionLocal() as s:
         st = dict(s.execute(text("SELECT id, status FROM model_version")).all())

@@ -49,6 +49,7 @@ FORBIDDEN_ACTIONS = (
     "proposal.",  # plan 8 MVP-11.4: only a person accepts or rejects an agent's proposal
     "flow.approve", "flow.publish", "flow.reject", "flow.rollback",  # plan 8 MVP-3.2: a person decides the policy
     "model.promote",  # plan 8 MVP-12.2: a person decides which model values new cases
+    "model.propose",  # plan 8 UI gaps: a person proposes a model for promotion
 )  # fmt: skip
 _REACHED = [a for acts in ACTIONS_OF.values() for a in acts if a.startswith(FORBIDDEN_ACTIONS)]
 if _REACHED:

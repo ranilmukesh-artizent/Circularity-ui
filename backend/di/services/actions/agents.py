@@ -11,7 +11,9 @@ The demo has a fixed list of nine agents, so these are declared here, beside the
                                                           agent acts as the person who started it (MVP-12.4)
 
 agent.setEnabled (di.services.actions.access, the demo's kill switch) writes the row too, through `set_enabled`.
-`tools` are MCP tool ids (di.mcp.tools.TOOLS) or action ids; `org_scope` are org unit ids (empty: every org).
+`tools` are MCP tool ids (di.mcp.tools.TOOLS) or action ids; `org_scope` are org unit ids (empty: every org). An action
+no agent may run (di.services.agents.catalog.agent_allowed: FORBIDDEN_ACTIONS and system actions) is refused as a tool.
+The Agents page registers one with its Register agent dialog (frontend/src/pages/agents/RegisterAgentDialog.tsx).
 """
 
 import re
@@ -73,10 +75,14 @@ def _fields_problem(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | No
     if i.get("autonomy") is not None and i["autonomy"] not in AUTONOMY:
         return "validation_error", "Autonomy is read, propose or act."
     from di.mcp.tools import MODELER_TOOLS  # plan 8 MVP-5.5: the MCP table's tools beyond the demo's ten
+    from di.services.agents import catalog  # imports di.mcp.policy, which imports the pipeline
 
     known = set(TOOLS_BY_ID) | set(MODELER_TOOLS) | set(ACTIONS)
     if bad := [t for t in i.get("tools") or [] if t not in known]:
         return "validation_error", f"Unknown tools: {', '.join(map(str, bad))}."
+    # plan 8 UI gaps: an action no agent may run (FORBIDDEN_ACTIONS, system actions) is never one of its tools
+    if bad := [t for t in i.get("tools") or [] if t in ACTIONS and not catalog.agent_allowed(ACTIONS[t])]:
+        return "validation_error", f"No agent may use: {', '.join(bad)}."
     units = policy.org_units(ctx.actor.ctx)
     if bad := [u for u in i.get("org_scope") or [] if u not in units]:
         return "validation_error", f"Unknown org units: {', '.join(map(str, bad))}."

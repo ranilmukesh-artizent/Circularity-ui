@@ -7,7 +7,9 @@ const m = vi.hoisted(() => ({
 vi.mock('./actions', () => ({ invoke: m.invoke }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
-import { acceptProposal, rejectProposal, startRun, updateAgent, useAgents } from './agents';
+import {
+  acceptProposal, fitModel, promoteModel, proposeModel, registerAgent, rejectProposal, startRun, updateAgent, useAgents, useModels,
+} from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
 
 const last = () => m.invoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
@@ -24,6 +26,12 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
     expect(m.cached).toHaveBeenCalledWith('/api/screens/agents');
   });
 
+  it('reads the Models panel (plan 8 UI gaps)', () => {
+    m.cached.mockReturnValue({ models: [] });
+    expect(useModels()).toEqual({ models: [] });
+    expect(m.cached).toHaveBeenCalledWith('/api/screens/agents/models');
+  });
+
   it('each write invokes its action with its body', async () => {
     const cases: [() => Promise<unknown>, string, Record<string, unknown>][] = [
       [() => updateAgent('ext-a', { enabled: false }), 'agent.update', { id: 'ext-a', enabled: false }],
@@ -36,6 +44,15 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
       [() => acceptProposal(4), 'proposal.accept', { id: 4 }],
       [() => rejectProposal(4, 'Not for this case.'), 'proposal.reject', { id: 4, reason: 'Not for this case.' }],
       [() => startRun('ext-a', 'RT-1048'), 'agent.startRun', { agent: 'ext-a', case_id: 'RT-1048', playbook: 'case_autopilot' }],
+      [
+        () => registerAgent({ id: 'ext-b', name: 'B', kind: 'external', tools: ['cases.list'], org_scope: [], autonomy: 'propose' }),
+        'agent.register',
+        { id: 'ext-b', name: 'B', kind: 'external', tools: ['cases.list'], org_scope: [], autonomy: 'propose' },
+      ],
+      [() => fitModel(), 'model.fit', { template: 'industrial' }],
+      [() => fitModel('device'), 'model.fit', { template: 'device' }],
+      [() => proposeModel('MV-001'), 'model.propose', { id: 'MV-001' }],
+      [() => promoteModel('MV-001'), 'model.promote', { id: 'MV-001' }],
     ];
     for (const [run, id, body] of cases) {
       await run();
@@ -44,6 +61,6 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
   });
 
   it('an agent change or a decided proposal refreshes every page', () => {
-    for (const id of ['agent.update', 'agent.startRun', 'proposal.accept', 'proposal.reject']) expect(actionScope(id)).toBe('all');
+    for (const id of ['agent.update', 'agent.register', 'agent.startRun', 'proposal.accept', 'proposal.reject', 'model.fit', 'model.propose', 'model.promote']) expect(actionScope(id)).toBe('all');
   });
 });

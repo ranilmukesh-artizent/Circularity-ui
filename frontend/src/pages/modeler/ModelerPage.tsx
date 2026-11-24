@@ -5,6 +5,7 @@ import { currentAccount } from '../../api/session';
 import { useBackend } from '../../api/useBackend';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import { ModelsPanel } from '../agents/ModelsPanel';
 import type { PageProps } from '../registry';
 import { AssistantPanel } from './AssistantPanel';
 import { ChecksPanel } from './ChecksPanel';
@@ -173,6 +174,7 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
         <ImpactPanel s={s} graph={graph} />
         <HistoryPanel s={s} />
       </div>
+      <ModelsPanel />
     </>
   );
 }

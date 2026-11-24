@@ -7,6 +7,8 @@ import { useBackend } from '../../api/useBackend';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import { ModelsPanel } from './ModelsPanel';
+import { RegisterAgentDialog } from './RegisterAgentDialog';
 
 const AUTONOMY: [Autonomy, string][] = [['read', 'Read only'], ['propose', 'Propose for a person'], ['act', 'Act within its tools']];
 const RUN_CHIP: Record<AgentRun['status'], string> = { running: 'line', waiting: 'y', done: 'ok', failed: 'bad', stopped: 'warn' };
@@ -38,6 +40,7 @@ export function AgentsPage() {
       <Registry s={s} />
       <Proposals list={s.proposals} />
       <Runs s={s} />
+      <ModelsPanel />
       <Catalogue s={s} />
     </div>
   );
@@ -46,6 +49,7 @@ export function AgentsPage() {
 function Registry({ s }: { s: AgentsScreen }) {
   const action = useAction();
   const [editing, setEditing] = useState<AgentRow | null>(null);
+  const [registering, setRegistering] = useState(false);
   const change = async (a: AgentRow, patch: AgentPatch, done: string) => {
     const r = await action.run(() => updateAgent(a.id, patch));
     if (r.ok) toast(done);
@@ -56,6 +60,8 @@ function Registry({ s }: { s: AgentsScreen }) {
       <div className="sh">
         <h2>Registry</h2>
         <span className="note">{s.agents.length} agents · {s.agents.filter((a) => !a.enabled).length} stopped</span>
+        <span className="grow" />
+        {s.can.manage && <button className="btn sm pri" id="ag-register" onClick={() => setRegistering(true)}>Register agent</button>}
       </div>
       <div className="panel">
         <div className="tw">
@@ -95,6 +101,7 @@ function Registry({ s }: { s: AgentsScreen }) {
           </table>
         </div>
       </div>
+      {registering && <RegisterAgentDialog s={s} onClose={() => setRegistering(false)} />}
       {editing && (
         <EditModal
           s={s}

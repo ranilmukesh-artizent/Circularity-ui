@@ -22,8 +22,22 @@ the tool catalogue.
 Access: the `agents` page (Admin, Developer). Agents never decide a proposal or change an agent: the page's buttons
 are the signed-in person's actions.
 
+    GET /api/screens/agents/models   (plan 8 UI gaps: the Models panel, on the Agents page and the Modeler)
+        base       the base predictor's model version (FormulaPredictor.model_version, "v1.3")
+        active     {template: id of its active calibration model, or null} for every template
+        models     every fitted model (table model_version), newest first: [{id, template, status, created_by,
+                   approved_by, created_at, factors: [{route, cls, factor}], metrics: {n, active_id, mae_active,
+                   mae_candidate}, proposal: {by, at} | null, blocks: {propose, promote}}]
+                   blocks  why the signed-in person may not propose or approve it (its permission, maker-checker, not
+                           proposed yet, already proposed), else null: the buttons show the reason, the actions check
+                           again (di.services.actions.models)
+        can        {fit, promote}: manageFlows (fit and propose) and approve.flows (approve the promotion)
+    Access: the `agents` or the `modeler` page (Admin, Developer, Planner, Approver, Executive), so an Approver can
+    approve what a Planner proposed.
+
 Facade (frontend/src/api/agents.ts): useAgents() reads this; updateAgent, acceptProposal and rejectProposal are the
-agent.update, proposal.accept and proposal.reject actions.
+agent.update, proposal.accept and proposal.reject actions; registerAgent is agent.register. useModels() reads the
+models; fitModel, proposeModel and promoteModel are model.fit, model.propose and model.promote.
 """
 
 from typing import Any
@@ -34,9 +48,13 @@ from sqlalchemy.orm import Session
 from di.core import policy
 from di.core.auth import Principal
 from di.repositories.constants import TOOLS_BY_ID
+from di.repositories.model_versions import ModelRow
 from di.repositories.orgs import units
+from di.services.actions.models import model_json, promote_block, proposal_of, propose_block
 from di.services.agents import proposals, registry
 from di.services.agents.catalog import catalog
+from di.services.engine.predictor import FormulaPredictor
+from di.services.modeler.templates import TEMPLATE_KEYS
 
 RUNS = 50
 RUNS_SQL = (
@@ -96,3 +114,29 @@ def page(p: Principal, s: Session) -> dict[str, Any]:
         "tools": catalog(),
         "can": {"manage": policy.can(p.account, "manageAgents", p.ctx)},
     }
+
+
+MODELS_SQL = (
+    "SELECT id, template, factors, status, created_by, approved_by, metrics, created_at FROM model_version "
+    "ORDER BY created_at DESC, id DESC"
+)
+
+
+def models(p: Principal, s: Session) -> dict[str, Any]:
+    p.require_any_page(("agents", None), ("modeler", None))
+    can_fit, can_promote = p.can("manageFlows"), p.can("approve.flows")
+    rows = [ModelRow(*r) for r in s.execute(text(MODELS_SQL))]
+    active = {t: None for t in TEMPLATE_KEYS} | {m.template: m.id for m in rows if m.status == "active"}
+    out = []
+    for m in rows:
+        j = model_json(m)
+        metrics = {k: v for k, v in (m.metrics or {}).items() if k != "proposal"}
+        blocks: dict[str, str | None] = {"propose": None, "promote": None}
+        if m.status == "candidate":
+            blocks = {
+                "propose": propose_block(m) if can_fit else "Only a Planner or Admin proposes a model for promotion.",
+                "promote": promote_block(m, p.account.id) if can_promote else "Only an Approver or Admin approves a promotion.",
+            }
+        out.append({**j, "metrics": metrics, "proposal": proposal_of(m), "blocks": blocks})
+    can = {"fit": can_fit, "promote": can_promote}
+    return {"base": FormulaPredictor.model_version, "active": active, "models": out, "can": can}

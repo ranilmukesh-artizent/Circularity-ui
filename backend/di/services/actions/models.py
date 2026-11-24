@@ -3,10 +3,14 @@
     model.fit      act     {template?}  a candidate model of the template (default industrial): the calibration factors
                                         (di.services.engine.calibration.fit) and, as metrics, the mean absolute error
                                         of the active model vs the candidate on the template's outcome rows
-    model.promote  commit  {id}         candidate -> active; the active model it replaces is retired
+    model.propose  act     {id}         a person proposes a candidate for promotion (plan 8 UI gaps): stored as
+                                        metrics.proposal {by, at}; manageFlows
+    model.promote  commit  {id}         a proposed candidate -> active; the active model it replaces is retired
 
-Maker-checker as for decision flows (Domain spec D7): the person who fitted a model cannot promote it, and an agent
-never promotes one (di.mcp.policy.FORBIDDEN_ACTIONS). An active model calibrates the predictor of new intake cases only
+Maker-checker as for decision flows (Domain spec D7): the person who fitted a model, or who proposed it, cannot promote
+it, and an agent never proposes or promotes one (di.mcp.policy.FORBIDDEN_ACTIONS; the guards refuse a prepared call
+too). `promote_block` and `propose_block` say why a person may not, for the guards and the Agents page's Models panel
+(di.services.screens.agents.models). An active model calibrates the predictor of new intake cases only
 (`intake_predictor`); the cases opened from the engine's book keep their routes.
 """
 
@@ -27,6 +31,7 @@ from di.services.engine.predictor import Predictor
 from di.services.modeler.templates import TEMPLATE_KEYS
 
 MAKER_CHECKER = "Maker-checker: you created this model, so you cannot promote it."
+PROPOSER_CHECKER = "Maker-checker: you proposed this model, so you cannot promote it."
 
 ACTIONS.setdefault(
     "model.fit",
@@ -44,6 +49,39 @@ ACTIONS.setdefault(
         input={"id": {"req": True, "t": "string"}},
     ),
 )  # fmt: skip
+ACTIONS.setdefault(
+    "model.propose",
+    ActionDef(
+        id="model.propose", title="Propose a model for promotion", risk="act", perm="manageFlows", scope="none",
+        verb="propose models", desc="Ask a different person to promote a candidate calibration model.",
+        input={"id": {"req": True, "t": "string"}},
+    ),
+)  # fmt: skip
+
+
+def proposal_of(m: ModelRow) -> dict[str, Any] | None:
+    """Who proposed the model for promotion, and when ({by, at}), or None."""
+    p = (m.metrics or {}).get("proposal")
+    return p if isinstance(p, dict) else None
+
+
+def propose_block(m: ModelRow) -> str | None:
+    """Why the model cannot be proposed (the person's permission aside), or None."""
+    if m.status != "candidate":
+        return f"{m.id} is not a candidate."
+    return f"{m.id} is already proposed." if proposal_of(m) else None
+
+
+def promote_block(m: ModelRow, actor: str) -> str | None:
+    """Why `actor` cannot promote the model (the permission aside), or None: maker-checker, then the proposal."""
+    if m.status != "candidate":
+        return f"{m.id} is not a candidate."
+    if m.created_by == actor:
+        return MAKER_CHECKER
+    p = proposal_of(m)
+    if p is None:
+        return f"Propose {m.id} for promotion first."
+    return PROPOSER_CHECKER if p.get("by") == actor else None
 
 
 def _mae(rows: Sequence[OutcomeRow], factors: Mapping[Key, float]) -> float | None:
@@ -95,6 +133,31 @@ def fit_model(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     return model_json(m)
 
 
+# ---------------------------------------------------------------- propose
+@guard("model.propose")
+def propose_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    m = repo.get(ctx.session, i["id"])
+    if m is None:
+        return "not_found", f"No model {i['id']}."
+    if ctx.preparer:
+        return "approval_required", "Models are proposed for promotion only by a person."
+    block = propose_block(m)
+    return ("conflict", block) if block else None
+
+
+@implement("model.propose")
+def propose(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    p = {"by": ctx.actor.id, "at": ctx.now.isoformat()}
+    ctx.session.execute(
+        text("UPDATE model_version SET metrics = metrics || jsonb_build_object('proposal', CAST(:p AS jsonb)) WHERE id = :i"),
+        {"i": i["id"], "p": json.dumps(p)},
+    )
+    m = repo.get(ctx.session, i["id"])
+    if m is None:  # not reached: the guard found it
+        raise ActionError("not_found", f"No model {i['id']}.")
+    return {**model_json(m), "proposal": p, "log": f"Proposed {m.id} for promotion"}
+
+
 # ---------------------------------------------------------------- promote
 @guard("model.promote")
 def promote_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
@@ -103,9 +166,8 @@ def promote_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None
         return "not_found", f"No model {i['id']}."
     if ctx.preparer:
         return "approval_required", "Models are promoted only by a person."
-    if m.status != "candidate":
-        return "conflict", f"{m.id} is not a candidate."
-    return ("conflict", MAKER_CHECKER) if m.created_by == ctx.actor.id else None
+    block = promote_block(m, ctx.actor.id)
+    return ("conflict", block) if block else None
 
 
 @implement("model.promote")

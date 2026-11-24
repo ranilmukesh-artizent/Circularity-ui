@@ -12,3 +12,8 @@ router = APIRouter(prefix="/api/screens/agents", tags=["screens: agents"])
 @router.get("")
 def agents(p: CurrentPrincipal, session: DbSession):
     return svc.page(p, session)
+
+
+@router.get("/models")
+def models(p: CurrentPrincipal, session: DbSession):
+    return svc.models(p, session)
