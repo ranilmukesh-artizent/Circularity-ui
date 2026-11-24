@@ -36,3 +36,4 @@ unattended". Times are local (IST).
 | 25 Nov 04:34 | P9-0.13 merged. Sonnet; red first quoted for the api tests; Roles shown as a panel under Identity (no nav change). |
 | 25 Nov 04:37 | P9-0.8 merged. Sonnet; red first quoted; org-pack workflow entries now carry the full export shape (import ignores extra keys). |
 | 25 Nov 04:40 | P9-0.15 merged. Sonnet; red first quoted; flow.simulate answers now carry params (null when none). |
+| 25 Nov 07:55 | Phase 0 tasks all merged (16). Phase 0 fast gate started (parallel suite, serial-only files, sim, lint, web, smoke-pages, smoke-rt1048, story matrix, selftest) with one Opus reviewer. Writer brief: checks in the foreground, no Monitor or timers (leftover timers flooded the lead). |

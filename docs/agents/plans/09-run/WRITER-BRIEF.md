@@ -24,6 +24,9 @@ for git). It must succeed; if not, stop and report.
 - **Red first is checked.** Write the spec's tests first and run them with `WT_LINT=0`; they must fail for the
   expected reason. Quote that red summary line in your report and commit body. A report without it is sent back.
 - **No subagents.** Do not start any agent (no reviewers, no auditors); the lead runs one reviewer per phase gate.
+- **Checks in the foreground.** Run `wt-check.sh` as a normal (foreground) command with a long timeout. Do not use
+  background runs, Monitor, timers or sleep loops to wait for it: leftover timers keep notifying the lead after you
+  finish.
 - **One check run at a time.** Never start a second `wt-check.sh` while one runs, and never leave one running in the
   background when you finish: the Docker host is shared by four writers.
 
