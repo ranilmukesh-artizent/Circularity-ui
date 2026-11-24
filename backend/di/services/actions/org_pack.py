@@ -139,16 +139,17 @@ def _maps(ctx: CallContext, sid: str) -> list[list[str]]:
     return copy.deepcopy(cfg["maps"]) if "maps" in cfg else copy.deepcopy(MAPPINGS.get(sid, []))
 
 
-def _workflow_export(w: dict[str, Any]) -> dict[str, Any]:
-    """The published version of a workflow in the workflow export's JSON."""
-    g = workflows.graph_for_run(w)
-    return {
-        "name": w["name"], "version": w.get("ver"), "type": w.get("cat"), "owner": w.get("owner"), "trigger": w.get("trig"),
-        "source_id": w.get("src"), "description": w.get("desc"),
-        "steps": [{"id": n["id"], "kind": n["k"], "ref": n["ref"], "x": n["x"], "y": n["y"]}
-                  | ({"cfg": _no_secrets(n["cfg"])} if n.get("cfg") else {}) for n in g["nodes"]],
-        "links": [{"from": e["a"], "to": e["b"], "fixed": bool(e.get("locked"))} for e in g["edges"]],
-    }  # fmt: skip
+def _workflow_export(ctx: CallContext, w: dict[str, Any]) -> dict[str, Any]:
+    """The published version of a workflow in the workflow export's JSON (workflows.export_json), without secrets."""
+    out = workflows.export_json(ctx.session, w["id"], workflows._by(ctx), ctx.now.isoformat(), published=True)
+    if out is None:
+        raise ActionError("not_found", f"No workflow {w['id']}.")
+    for st in out["steps"]:
+        if "cfg" in st:
+            st["cfg"] = _no_secrets(st["cfg"])
+            if not st["cfg"]:
+                del st["cfg"]
+    return out
 
 
 def _uses(w: dict[str, Any], ids: set[str]) -> bool:
@@ -177,7 +178,7 @@ def export_pack(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         "org": dict(us[uid].__dict__),
         "sources": sources,
         "mappings": {sid: _maps(ctx, sid) for sid in sorted(ids)},
-        "workflows": [_workflow_export(w) for w in all_workflows(s) if w.get("status") == "published" and _uses(w, ids)],
+        "workflows": [_workflow_export(ctx, w) for w in all_workflows(s) if w.get("status") == "published" and _uses(w, ids)],
         "flows": flows,
     }
 

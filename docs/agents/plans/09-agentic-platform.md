@@ -785,7 +785,7 @@ each story went.
 - [x] P9-0.5 Model chain with rate-limit fallback
 - [x] P9-0.6 Carbon factor set and a co2 line in both valuers
 - [x] P9-0.7 Workflow JSON Schema and validated import
-- [ ] P9-0.8 Server-side workflow export read action
+- [x] P9-0.8 Server-side workflow export read action
 - [x] P9-0.9 Autopilot on case opened behind a setting
 - [x] P9-0.10 Mapping save split out of source update
 - [x] P9-0.11 Guardrail type and stage on existing guardrails

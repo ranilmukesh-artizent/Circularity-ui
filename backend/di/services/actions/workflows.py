@@ -1281,6 +1281,71 @@ def delete(i: dict[str, Any], ctx: CallContext):
     return {"id": w["id"], "name": w["name"]}
 
 
+# ---------------------------------------------------------------- export (plan 9, P9-0.8)
+ACTIONS.setdefault(
+    "workflow.export",
+    ActionDef(
+        id="workflow.export", title="Export a workflow", verb="export workflows", risk="read", perm=None, scope="none",
+        desc="A workflow as the JSON a workflow export file holds (steps, links and only the settings that differ from "
+        "the defaults). Changes nothing; workflow.import reads the same shape.",
+        input={"workflow_id": {"req": True, "t": "string"}},
+    ),
+)  # fmt: skip
+
+
+def export_json(
+    s: Any, workflow_id: str, by: str, at: str, *, published: bool = False, sources: dict[str, dict] | None = None
+) -> dict[str, Any] | None:
+    """The one workflow export (the browser's Export button, the MCP tool and the org pack share it): the keys of
+    exportJson in its order, `cfg` only where a setting differs from its block's default. `published`: the graph runs
+    use (the org pack exports what is live), not the saved one. None for an unknown id."""
+    w = state.get(s, "workflows", workflow_id)
+    if w is None:
+        return None
+    g = blocks.compact_graph(copy.deepcopy(graph_for_run(w) if published else graph_of(w)))
+    live = sources if sources is not None else _live_sources_now(s)
+    return {
+        "id": w["id"], "name": w["name"], "version": w.get("ver"), "type": w.get("cat"), "status": w.get("status"),
+        "owner": w.get("owner"), "trigger": w.get("trig"),
+        "source": src_or_in(w["src"], live)["vendor"] if w.get("src") else None,
+        "source_id": w.get("src"), "description": w.get("desc"),
+        "steps": [{"id": n["id"], "kind": n["k"], "ref": n["ref"], "label": label_in(n, live), "x": n["x"], "y": n["y"]}
+                  | ({"cfg": n["cfg"]} if n.get("cfg") else {}) for n in g["nodes"]],
+        "links": [{"from": e["a"], "to": e["b"], "fixed": bool(e.get("locked"))} for e in g["edges"]],
+        "exported_by": by, "exported_at": at,
+    }  # fmt: skip
+
+
+def _live_sources_now(s: Any) -> dict[str, dict]:
+    from di.workflow import live
+
+    return live.sources(s)
+
+
+def src_or_in(sid: str, sources: dict[str, dict]) -> dict:
+    """srcOr with the sources as `sources` has them."""
+    tok = _LIVE.set(sources)
+    try:
+        return src_or(sid)
+    finally:
+        _LIVE.reset(tok)
+
+
+@guard("workflow.export")
+def export_guard(i: dict[str, Any], ctx: CallContext):
+    if not policy.can_page(ctx.actor.account, "integration", "studio"):
+        return "out_of_scope", "Not available for this view."
+    return None if _get(ctx, i["workflow_id"]) else ("not_found", f"No workflow {i['workflow_id']}.")
+
+
+@implement("workflow.export")
+def export_action(i: dict[str, Any], ctx: CallContext):
+    out = export_json(ctx.session, i["workflow_id"], _by(ctx), ctx.now.isoformat())
+    if out is None:
+        raise ActionError("not_found", f"No workflow {i['workflow_id']}.")
+    return out
+
+
 # ---------------------------------------------------------------- import (plan 6 C10)
 # The JSON Export JSON writes (frontend/src/api/workflows.ts exportJson): {name, type, owner, trigger, source,
 # source_id, description, steps: [{id, kind, ref, label, x, y, cfg?}], links: [{from, to, fixed}], ...}. It becomes a

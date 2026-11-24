@@ -18,7 +18,7 @@
  */
 import * as G from './workflowGraph';
 import { invoke } from './actions';
-import { ApiError, cached, onStream, ref, session } from './client';
+import { ApiError, cached, onStream, ref } from './client';
 import type { ActionResult } from './types';
 
 export type StepKind = 'fixed' | 'conn' | 'wconn' | 'act' | 'xf' | 'map' | 'tool';
@@ -145,17 +145,6 @@ const srcL = () => ({ sources: sourcesA(), SH: ref('SH') }) as unknown as G.Look
 /** The source lookups with the list's overlay: a source made in the Connection Fabric's target and delivery. */
 const srcLive = () => ({ sources: G.liveSources(sourcesA(), listA().live), SH: ref('SH'), MAP_TARGET: ref('MAP_TARGET'), DELIVER: ref('DELIVER') });
 
-/** Run f, waiting for the reads it suspends on (for event handlers and timers, which cannot suspend). */
-async function settle<T>(f: () => T): Promise<T> {
-  for (;;) {
-    try {
-      return f();
-    } catch (x) {
-      if (x instanceof Promise) await x;
-      else throw x;
-    }
-  }
-}
 
 // ---------------------------------------------------------------- the clock
 const seenAt = new WeakMap<object, number>();
@@ -439,22 +428,11 @@ export const deleteWorkflow = (id: string) => invoke<{ id: string; name: string 
 export const runWorkflow = (id: string): Promise<ActionResult<{ id: string; name: string; run?: string }>> =>
   invoke<{ id: string; name: string; run?: string }>('workflow.run', { id });
 
-const exportFile = (w: Workflow, o: unknown) => ({ file: w.id + '-' + w.name.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase() + '.json', json: JSON.stringify(o, null, 2) });
-/** The JSON export (frWfJSON) of the saved workflow. */
+const exportFile = (id: string, name: string, o: unknown) => ({ file: id + '-' + name.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase() + '.json', json: JSON.stringify(o, null, 2) });
+/** The JSON export (frWfJSON) of the saved workflow: what the server's workflow.export returns (P9-0.8), or null for an unknown one. */
 export async function exportJson(id: string): Promise<{ file: string; json: string } | null> {
-  return settle(() => {
-    const w = workflow(id);
-    if (!w) return null;
-    const g = detailA(id).workflow.graph, L = lk();
-    return exportFile(w, {
-      id: w.id, name: w.name, version: w.ver, type: w.cat, status: w.status, owner: w.owner, trigger: w.trig,
-      source: w.src ? G.srcOr(L, w.src).vendor : null, source_id: w.src, description: w.desc,
-      // `cfg`: the block settings that differ from the defaults, so Import (workflow.import) recreates them
-      steps: g.nodes.map((n) => ({ id: n.id, kind: n.k, ref: n.ref, label: G.info(L, n).label, x: n.x, y: n.y, ...(n.cfg ? { cfg: n.cfg } : {}) })),
-      links: g.edges.map((x) => ({ from: x.a, to: x.b, fixed: !!x.locked })),
-      exported_by: session()?.account.label ?? '', exported_at: new Date(nowMs()).toISOString(),
-    });
-  });
+  const r = await invoke<{ id: string; name: string }>('workflow.export', { workflow_id: id });
+  return r.ok ? exportFile(r.output.id, r.output.name, r.output) : null;
 }
 /** New workflow form: systems that can be read (ingest) or written (outbound). */
 export const readableSources = (): Source[] => sources().filter((s) => s.read.length || s.status === 'unavailable');
