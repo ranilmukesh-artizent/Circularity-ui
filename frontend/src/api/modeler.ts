@@ -23,7 +23,8 @@ export const forkFlow = (template: string, org: string): Promise<ActionResult<{ 
 
 export const submitFlow = (flowId: number): Promise<Done> => invoke('flow.submit', { flow_id: flowId });
 export const approveFlow = (flowId: number): Promise<Done> => invoke('flow.approve', { flow_id: flowId });
-export const rejectFlow = (flowId: number, reason: string): Promise<Done> => invoke('flow.reject', { flow_id: flowId, reason });
+export const rejectFlow = (flowId: number, reason: string, nodeId?: string): Promise<Done> =>
+  invoke('flow.reject', { flow_id: flowId, reason, ...(nodeId ? { node_id: nodeId } : {}) });
 export const publishFlow = (flowId: number): Promise<Done> => invoke('flow.publish', { flow_id: flowId });
 export const discardFlow = (flowId: number): Promise<Done> => invoke('flow.discard', { flow_id: flowId });
 export const rollbackFlow = (flowId: number): Promise<Done> => invoke('flow.rollback', { flow_id: flowId });

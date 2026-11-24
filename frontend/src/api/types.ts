@@ -141,6 +141,8 @@ export interface ModelerScreen {
     dver: number | null;
     maker: string | null;
     checker: string | null;
+    /** the last return to the maker, pinned to a step when node_id is set (flow.reject, P9-0.12) */
+    returned: { reason: string; node_id: string | null; by: string; at: string } | null;
     graph: FlowGraph;
     published: FlowGraph;
   };

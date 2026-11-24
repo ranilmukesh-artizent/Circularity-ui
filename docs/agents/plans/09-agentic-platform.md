@@ -789,7 +789,7 @@ each story went.
 - [x] P9-0.9 Autopilot on case opened behind a setting
 - [x] P9-0.10 Mapping save split out of source update
 - [x] P9-0.11 Guardrail type and stage on existing guardrails
-- [ ] P9-0.12 Pin a sent-back flow change to a step
+- [x] P9-0.12 Pin a sent-back flow change to a step
 - [ ] P9-0.13 Role matrix and test a user in Access
 - [ ] P9-0.14 Read-only sources refused and discovery at 500
 - [ ] P9-0.15 What-if over the tool-fleet queue

@@ -10,7 +10,8 @@ decision_flow_version for rollback. Decisions use the published graph only, from
     flow.submit     act     {flow_id}                    draft -> review (no blocking checks)
     flow.approve    commit  {flow_id}                    review -> shadow (not by a maker: anyone who saved or
                                                          submitted this draft, from the journal; audit F3b)
-    flow.reject     commit  {flow_id, reason}            review or shadow -> draft
+    flow.reject     commit  {flow_id, reason,    review or shadow -> draft; stores `returned` {reason, node_id, by, at};
+                            node_id?}        flow.saveDraft keeps it, flow.submit clears it
     flow.publish    commit  {flow_id}                    shadow -> pub (not by the maker); old graph to history
     flow.discard    act     {flow_id}                    the draft back to the published graph
     flow.rollback   commit  {flow_id}                    the latest history entry becomes the published graph
@@ -78,7 +79,8 @@ _declare("flow.approve", "Approve a flow", "approve decision flows",
          "Approve a submitted decision flow; it runs in shadow beside the published one.", "commit", _ID, _APPROVE)  # fmt: skip
 _declare("flow.reject", "Return a flow to draft", "return decision flows",
          "Return a submitted decision flow to its maker with a reason.", "commit",
-         {**_ID, "reason": {"req": True, "t": "string", "min": 15, "minText": "Add a reason of at least 15 characters."}},
+         {**_ID, "reason": {"req": True, "t": "string", "min": 15, "minText": "Add a reason of at least 15 characters."},
+          "node_id": {"t": "string"}},
          _APPROVE)  # fmt: skip
 _declare("flow.publish", "Publish a flow", "publish decision flows",
          "Publish an approved decision flow. Decisions use it from the next re-evaluation.", "commit", _ID, _APPROVE)  # fmt: skip
@@ -136,9 +138,12 @@ def _who(ctx: CallContext, account_id: str | None) -> str:
     return a.label if a else (account_id or "")
 
 
+_JSON_COLS = ("draft", "published", "returned")
+
+
 def _update(ctx: CallContext, f: FlowRow, **cols: Any) -> None:
-    sets = ", ".join(f"{k} = CAST(:{k} AS jsonb)" if k in ("draft", "published") else f"{k} = :{k}" for k in cols)
-    vals = {k: json.dumps(v) if k in ("draft", "published") and v is not None else v for k, v in cols.items()}
+    sets = ", ".join(f"{k} = CAST(:{k} AS jsonb)" if k in _JSON_COLS else f"{k} = :{k}" for k in cols)
+    vals = {k: json.dumps(v) if k in _JSON_COLS and v is not None else v for k, v in cols.items()}
     ctx.session.execute(text(f"UPDATE decision_flow SET {sets}, updated_at = :now WHERE id = :id"),  # noqa: S608 - column names are this module's; values are bound
                         {**vals, "id": f.id, "now": ctx.now})  # fmt: skip
 
@@ -265,7 +270,7 @@ def submit_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
 @implement("flow.submit")
 def submit(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow(ctx, i, for_update=True)
-    _update(ctx, f, status="review")
+    _update(ctx, f, status="review", returned=None)
     return {"id": f.id, "status": "review", "log": f"Submitted {f.name} v{f.dver} for approval"}
 
 
@@ -292,14 +297,22 @@ def reject_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     f = _reach(i, ctx)
     if isinstance(f, tuple):
         return f
-    return _agent_refusal(ctx) or _status(f, ("review", "shadow"), f"{f.name} is not waiting for approval.")
+    if bad := _agent_refusal(ctx) or _status(f, ("review", "shadow"), f"{f.name} is not waiting for approval."):
+        return bad
+    node = i.get("node_id")
+    if node is not None and node not in {n.get("id") for n in _graph(f)["nodes"]}:
+        return "validation_error", f"No step {node} in this draft."
+    return None
 
 
 @implement("flow.reject")
 def reject(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow(ctx, i, for_update=True)
-    _update(ctx, f, status="draft", checker=None)
-    return {"id": f.id, "status": "draft", "log": f"Returned {f.name} v{f.dver} to draft", "reason": i["reason"]}
+    node = i.get("node_id")
+    returned = {"reason": i["reason"], "node_id": node, "by": ctx.actor.id, "at": ctx.now.isoformat()}
+    _update(ctx, f, status="draft", checker=None, returned=returned)
+    out = {"id": f.id, "status": "draft", "log": f"Returned {f.name} v{f.dver} to draft", "reason": i["reason"]}
+    return {**out, "node_id": node} if node is not None else out
 
 
 # ---------------------------------------------------------------- publish, discard, rollback
@@ -342,7 +355,7 @@ def discard_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None
 @implement("flow.discard")
 def discard(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow(ctx, i, for_update=True)
-    _update(ctx, f, status="pub", dver=None, maker=None, checker=None, draft=None)
+    _update(ctx, f, status="pub", dver=None, maker=None, checker=None, draft=None, returned=None)
     return {"id": f.id, "status": "pub", "log": f"Discarded draft changes to {f.name}"}
 
 

@@ -46,6 +46,7 @@ export function FlowCanvas({ s, graph, selected, bad, proposed, editable, onSele
   const drag = useRef<{ id: string; dx: number; dy: number; moved: boolean } | null>(null);
   const { w, h } = extent(graph);
   const by = Object.fromEntries(graph.nodes.map((n) => [n.id, n]));
+  const ret = s.flow.returned;
 
   const down = (e: ReactPointerEvent<HTMLDivElement>, n: FlowNode) => {
     onSelect(n.id);
@@ -94,6 +95,7 @@ export function FlowCanvas({ s, graph, selected, bad, proposed, editable, onSele
               key={n.id}
               className={cls.filter(Boolean).join(' ')}
               data-node={n.id}
+              title={ret && n.id === ret.node_id ? 'Returned: ' + ret.reason : undefined}
               style={{ left: n.x, top: n.y, height: n.h, width: NODE_W }}
               role="button"
               tabIndex={0}
@@ -108,6 +110,17 @@ export function FlowCanvas({ s, graph, selected, bad, proposed, editable, onSele
               <b>{nodeTitle(n, s)}</b>
               <span className="s">{n.t === 'rule' ? n.owner ?? '' : n.sub}</span>
               {p && <span className="ow">{p.owner}</span>}
+              {ret && n.id === ret.node_id && (
+                <span
+                  className="pill"
+                  data-returned={n.id}
+                  title={ret.reason}
+                  aria-label={'Returned: ' + ret.reason}
+                  style={{ alignSelf: 'flex-start', color: 'var(--bad)', background: 'var(--bad-soft)' }}
+                >
+                  Returned
+                </span>
+              )}
             </div>
           );
         })}

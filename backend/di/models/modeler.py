@@ -34,6 +34,7 @@ decision_flow = Table(
     Column("draft", JSONB),
     Column("published", JSONB, nullable=False),
     ts("updated_at", now=True),
+    Column("returned", JSONB),  # 0030: {reason, node_id, by, at} of the last return
     CheckConstraint("status IN ('draft','review','shadow','pub')", name="decision_flow_status"),
     UniqueConstraint("template_key", "org_unit_id", name="uq_decision_flow_template_org"),
 )

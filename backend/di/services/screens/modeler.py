@@ -69,7 +69,7 @@ def _template(t: Template) -> dict[str, Any]:
 
 def _flow(f: FlowRow) -> dict[str, Any]:
     graph = f.draft if f.draft is not None else f.published
-    keys = ("id", "name", "org_unit_id", "status", "ver", "dver", "maker", "checker", "published")
+    keys = ("id", "name", "org_unit_id", "status", "ver", "dver", "maker", "checker", "published", "returned")
     return {**{k: getattr(f, k) for k in keys}, "graph": graph}
 
 

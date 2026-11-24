@@ -48,6 +48,13 @@ describe('the Modeler facade (plan 8 MVP-4.3)', () => {
     }
   });
 
+  it('P9-0.12 rejectFlow sends node_id only when given', async () => {
+    await rejectFlow(3, 'Scope this to grade D as well.', 'p-resale');
+    expect(last()).toEqual(['flow.reject', { flow_id: 3, reason: 'Scope this to grade D as well.', node_id: 'p-resale' }]);
+    await rejectFlow(3, 'Scope this to grade D as well.');
+    expect(last()).toEqual(['flow.reject', { flow_id: 3, reason: 'Scope this to grade D as well.' }]);
+  });
+
   it('simulates the draft or a graph, and throws the refusal', async () => {
     const sim = { kind: 'equip', n: 2, flips: [], dv: 0, extra: {} };
     m.invoke.mockResolvedValueOnce({ ok: true, output: sim, key: null, action: 'flow.simulate' });

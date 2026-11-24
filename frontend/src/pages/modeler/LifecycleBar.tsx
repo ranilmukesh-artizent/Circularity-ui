@@ -16,6 +16,7 @@ export function LifecycleBar({ s, flush }: { s: ModelerScreen; flush: () => Prom
   const action = useAction();
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
+  const [step, setStep] = useState('');
   const { flow, can } = s;
   const go = async (call: () => Promise<ActionResult<{ log?: string }>>) => {
     await flush();
@@ -24,9 +25,10 @@ export function LifecycleBar({ s, flush }: { s: ModelerScreen; flush: () => Prom
     return r.ok;
   };
   const reject = async () => {
-    if (await go(() => rejectFlow(flow.id, reason.trim()))) {
+    if (await go(() => rejectFlow(flow.id, reason.trim(), step || undefined))) {
       setRejecting(false);
       setReason('');
+      setStep('');
     }
   };
   const waiting = flow.status === 'review' || flow.status === 'shadow';
@@ -43,10 +45,21 @@ export function LifecycleBar({ s, flush }: { s: ModelerScreen; flush: () => Prom
       {can.approve && flow.status === 'shadow' && <button className="btn sm pri" disabled={action.pending} onClick={() => go(() => publishFlow(flow.id))}>Publish</button>}
       {can.approve && waiting && !rejecting && <button className="btn sm" onClick={() => setRejecting(true)}>Return to draft</button>}
       {can.edit && flow.status !== 'pub' && <button className="btn sm ghost" disabled={action.pending} onClick={() => go(() => discardFlow(flow.id))}>Discard draft</button>}
+      {flow.returned && flow.status === 'draft' && (
+        <span className="note" data-returned-note>
+          Returned: {flow.returned.reason}
+          {flow.returned.node_id && ` (step: ${flow.graph.nodes.find((n) => n.id === flow.returned?.node_id)?.label ?? flow.returned.node_id})`}
+        </span>
+      )}
       {rejecting && (
         <span className="mdl-row">
           <label className="sr" htmlFor="mdl-reason">Reason</label>
           <input id="mdl-reason" value={reason} placeholder="Why it goes back (15 characters or more)" style={{ width: 280 }} onChange={(e) => setReason(e.target.value)} />
+          <label className="sr" htmlFor="mdl-step">Step</label>
+          <select id="mdl-step" value={step} onChange={(e) => setStep(e.target.value)}>
+            <option value="">Whole flow</option>
+            {flow.graph.nodes.map((n) => <option key={n.id} value={n.id}>{n.label}</option>)}
+          </select>
           <button className="btn sm" disabled={action.pending || reason.trim().length < MIN_REASON} onClick={reject}>Return</button>
           <button className="btn sm ghost" onClick={() => setRejecting(false)}>Cancel</button>
         </span>

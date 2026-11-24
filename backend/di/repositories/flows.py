@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from di.core import orgs
 from di.repositories.orgs import units
 
-_COLS = "id, template_key, org_unit_id, name, status, ver, dver, maker, checker, draft, published, updated_at"
+_COLS = "id, template_key, org_unit_id, name, status, ver, dver, maker, checker, draft, published, updated_at, returned"
 
 
 @dataclass(frozen=True)
@@ -33,6 +33,7 @@ class FlowRow:
     draft: dict[str, Any] | None
     published: dict[str, Any]
     updated_at: datetime
+    returned: dict[str, Any] | None = None  # {reason, node_id, by, at} of the last return to the maker (0030)
 
 
 @dataclass(frozen=True)
