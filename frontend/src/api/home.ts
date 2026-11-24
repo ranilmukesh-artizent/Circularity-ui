@@ -151,6 +151,23 @@ export function assignAlert(id: string, toRole: string): void {
   bump();
 }
 
+// ---------- Home: the agents' proposals for this person (Gaps-B) ----------
+/**
+ * A write an agent prepared that holds for a person (backend/di/services/agents/proposals.py): only those the
+ * signed-in person may act on (the held action's permission, the case in their tenants). Accepting runs the action as
+ * that person; the `proposal` family refreshes every page (invalidation.ts), and a newly held one arrives on the live
+ * stream as the journal type `proposal.held`.
+ */
+export interface HomeProposal {
+  id: number; agent: string; agentName: string; action: string; title: string; why: string;
+  input: Record<string, unknown>; case_id: string | null; run_id: string | null; at: string;
+}
+export const proposals = (): HomeProposal[] => cached<HomeProposal[]>(H + '/proposals');
+/** Run the action the agent prepared, as the signed-in person. */
+export const acceptProposal = (id: number) => invoke<{ id: number; status: string; action: string }>('proposal.accept', { id });
+/** Close the proposal without running it; the reason goes to the agent's owner. */
+export const rejectProposal = (id: number, reason: string) => invoke<{ id: number; status: string }>('proposal.reject', { id, reason });
+
 // ---------- Home: KPIs, activity, middle panel, figures ----------
 export interface Kpi { ic: string; h: string; k: string; v: string | number; n?: number | null; l: string; sub?: string; go?: string; delta?: Delta; sp?: number[] }
 /** Home's KPI tiles for the signed-in account's role (the argument is kept for callers; the server knows the role). */

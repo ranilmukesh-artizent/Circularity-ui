@@ -19,6 +19,7 @@ import { StatusPill } from '../../components/kit/StatusPill';
 import { Timeline } from '../../components/kit/Timeline';
 import { AttentionCard } from './AttentionCard';
 import { HomeKpi } from './HomeKpi';
+import { ProposalsCard } from './ProposalsCard';
 import { TaskRow } from './TasksPage';
 
 /** Hero drawing (FR_HERO): hidden on phones and in Technical mode. */
@@ -399,6 +400,7 @@ export function HomePage() {
         </div>
         <aside className="frhside">
           <RightTabs />
+          <ProposalsCard />
           {attn && <AttentionCard head={attn.head} line={attn.line} btn={attn.btn} onClick={() => nav('/' + attn.go)} />}
           <QuickActions />
         </aside>
