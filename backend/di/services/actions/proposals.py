@@ -1,5 +1,5 @@
 """A person's side of an agent's proposal (plan 8, MVP-11.4): accept it, and the held action runs as that person, or
-reject it. Declared here, beside the catalog's actions; agents never run them (di.mcp.policy.FORBIDDEN_ACTIONS).
+reject it. Declared here, beside the catalog's actions; agents never run them (di.services.agents.forbidden.FORBIDDEN_ACTIONS).
 
     proposal.accept  commit  {id}           the held action runs through the pipeline as the person, prepared by the
                                             agent and confirmed (so the agent gate lets a commit through, never a
@@ -53,7 +53,17 @@ def _pending(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     return None
 
 
-guard("proposal.accept")(_pending)
+OWN = "Maker-checker: the agent prepared this for you, so another person accepts it. You can reject it."
+
+
+@guard("proposal.accept")
+def accept_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if bad := _pending(i, ctx):
+        return bad
+    p = proposals.get(ctx.session, int(i["id"]))
+    return ("conflict", OWN) if p is not None and proposals.own(p, ctx.actor.person) else None
+
+
 guard("proposal.reject")(_pending)
 
 

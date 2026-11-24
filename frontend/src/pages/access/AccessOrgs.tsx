@@ -5,7 +5,7 @@ import { can } from '../../api/session';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { ExportPackButton, ImportPackDialog } from './orgs/OrgPack';
-import { PILOT_TEXT, PilotReportDialog } from './orgs/PilotReport';
+import { PILOT_TEXT, PilotReportDialog } from '../../components/PilotReport';
 import { RenameOrg } from './orgs/RenameOrg';
 
 type Open = { kind: 'import' | 'report'; unit: string; name: string };

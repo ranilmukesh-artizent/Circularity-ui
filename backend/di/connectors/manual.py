@@ -39,6 +39,33 @@ COLUMNS = (
 
 # the asset id prefixes an import row may carry (the page's "known class pattern") -> the engine's asset class
 CLASS_OF_PREFIX = {"MTR": "motor", "PMP": "pump", "CTL": "control", "DRL": "drill", "BAT": "batch", "ITE": "it"}
+# plan 8 MVP-8.4: the columns a row that opens a tool-fleet or device case carries beside the import's own; they are the
+# facts the template's valuer decides on (di.services.cases.intake.tool_fleet_case, device_lot)
+TEMPLATE_COLUMNS: dict[str, tuple[str, ...]] = {
+    "tool_fleet": ("cls", "grade", "ft", "site", "rul"),
+    "device": ("brand", "model", "band", "grade", "ref", "qty", "doh"),
+}
+_NUMBERS = ("rul", "ref", "qty", "doh")  # a CSV holds them as text; the valuers read numbers
+
+
+def _number(raw: Any) -> Any:
+    """A CSV number as int or float; anything else as it is (the intake refuses it with its own reason)."""
+    if isinstance(raw, int | float) and not isinstance(raw, bool):
+        return raw
+    try:
+        f = float(str(raw).strip())
+    except ValueError:
+        return raw
+    return int(f) if f.is_integer() else f
+
+
+def template_facts(row: dict, template: str) -> dict[str, Any]:
+    """The case facts a row gives its template: its template columns that are filled, numbers as numbers."""
+    return {
+        k: _number(row[k]) if k in _NUMBERS else row[k]
+        for k in TEMPLATE_COLUMNS.get(template, ())
+        if row.get(k) not in (None, "")
+    }
 
 
 def _value(col: str, raw: Any) -> Any:
@@ -96,31 +123,40 @@ def open_cases(s: Session, rows: list[dict], spec: dict[str, Any], by: str) -> d
     """Plan 8 (MVP-8.4): after the rows' facts are stored, a case for each row through di.services.cases.intake (a bulk
     end-of-lease file, edge case 24). `spec` is {template, reason, org_unit_id, asset_field}: the asset key is the row's
     `asset_field` (default asset_id), the org unit the setting or else the row's owner; an industrial case's class
-    comes from the asset id's prefix. A row whose asset and reason already have a case is skipped (an import read
-    twice), as is one the intake refuses. Each in a savepoint, so one refusal undoes nothing else."""
+    comes from the asset id's prefix; a tool-fleet or device case's facts are the row's template columns
+    (TEMPLATE_COLUMNS). A row whose asset and reason already have a case is skipped (an import read twice); one the
+    intake refuses for another reason (a missing fact, an unknown org unit) fails, with the intake's code and reason in
+    `case_failures`. Each in a savepoint, so one refusal undoes nothing else."""
     from di.services.actions.registry import ActionError
     from di.services.cases import intake
 
     field = spec.get("asset_field") or "asset_id"
+    template = spec.get("template") or "industrial"
     opened: list[str] = []
+    failures: list[dict[str, str]] = []
     skipped = 0
     for row in rows:
         key = str(row.get(field) or "")
         cls = CLASS_OF_PREFIX.get(key.split("-")[0])
+        facts = ({"cls": cls} if cls else {}) if template == "industrial" else template_facts(row, template)
         i = {
             "org_unit_id": spec.get("org_unit_id") or row.get("owner"),
-            "template_key": spec.get("template") or "industrial",
+            "template_key": template,
             "reason": spec.get("reason") or "manual",
             "asset_key": key,
-            "facts": {"cls": cls} if cls and (spec.get("template") or "industrial") == "industrial" else {},
+            "facts": facts,
             "by": by,
         }
         try:
             with s.begin_nested():
                 opened.append(intake.open_case(s, i, "system")["id"])
-        except ActionError:
-            skipped += 1
-    return {"cases_opened": len(opened), "cases_skipped": skipped, "case_ids": opened}
+        except ActionError as e:
+            if e.code == "duplicate":
+                skipped += 1
+            else:
+                failures.append({"asset_id": key, "code": e.code, "reason": e.message})
+    return {"cases_opened": len(opened), "cases_skipped": skipped, "cases_failed": len(failures),
+            "case_failures": failures, "case_ids": opened}  # fmt: skip
 
 
 def remove(s: Session, import_id: str | None = None) -> int:

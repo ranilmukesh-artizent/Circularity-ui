@@ -63,20 +63,25 @@ def test_propose_holds():
     assert journal("evidence.request") == []  # nothing ran
     # reads are not held
     assert prepared("case.evidence", EVIDENCE)["output"].get("held") is None
-    # Home lists it for the person who may decide it, not for another tenant's planner
-    mine = client.get("/api/screens/home/proposals", headers=h("planner-a")).json()
+    # Home lists it for a person who may decide it, and for the person the agent acted for as their own (they only
+    # reject it: maker-checker, audit F3a); not for another tenant's planner
+    mine = client.get("/api/screens/home/proposals", headers=h("admin")).json()
     assert [x["id"] for x in mine] == [pid] and mine[0]["agentName"] == "External proposer"
+    [own] = client.get("/api/screens/home/proposals", headers=h("planner-a")).json()
+    assert own["id"] == pid and own["own"] is True  # listed, but only to reject: accept refuses them
     assert client.get("/api/screens/home/proposals", headers=h("planner-b")).json() == []
 
 
 def test_accept_runs_as_person():
     pid = held()
-    r = call("proposal.accept", {"id": pid}, "planner-a")
+    assert call("proposal.accept", {"id": pid}, "planner-a")["error"]["code"] == "conflict"  # the agent acted for them
+    r = call("proposal.accept", {"id": pid}, "admin")
     assert r["ok"] is True and r["output"]["status"] == "accepted" and r["output"]["output"]["ref"].startswith("WO-")
-    assert journal("evidence.request") == [{"actor": "planner-a", "preparer": "ext-proposer"}]
+    assert journal("evidence.request") == [{"actor": "admin", "preparer": "ext-proposer"}]
     p = proposal(pid)
-    assert (p["status"], p["decided_by"]) == ("accepted", "planner-a") and p["result"]["output"]["ref"].startswith("WO-")
-    assert call("proposal.accept", {"id": pid}, "planner-a")["error"]["code"] == "conflict"
+    assert (p["status"], p["decided_by"], p["requested_by"]) == ("accepted", "admin", "planner-a")
+    assert p["result"]["output"]["ref"].startswith("WO-")
+    assert call("proposal.accept", {"id": pid}, "admin")["error"]["code"] == "conflict"
 
 
 def test_accept_needs_permission():

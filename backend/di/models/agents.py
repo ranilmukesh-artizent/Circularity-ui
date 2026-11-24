@@ -39,6 +39,7 @@ agent_proposal = Table(
     Column("decided_by", Text),
     ts("decided_at"),
     Column("result", JSONB),
+    Column("requested_by", Text),  # 0028: the person the agent acted for (audit F3a)
     CheckConstraint("status IN ('pending','accepted','rejected','expired')", name="agent_proposal_status"),
     Index("ix_agent_proposal_status", "status", "created_at"),
 )

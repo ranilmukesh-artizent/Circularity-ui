@@ -4,9 +4,10 @@
     hold(ctx, action, input, case_id) -> id   store the call (the pipeline does this instead of running it)
     get(s, id, for_update) -> dict | None
     decide(s, id, status, by, at, result)    accepted or rejected, by whom and when, with the result
-    pending_for(s, account, pctx) -> [dict]  the pending proposals a person may decide: the held action's own
+    pending_for(s, account, pctx) -> [dict]  the pending proposals a person may act on: the held action's own
                                              permission, and the case in their tenants (Home's proposals); a case
-                                             the server cannot place is nobody's (fail closed). Each with `why`.
+                                             the server cannot place is nobody's (fail closed). Each with `why`, and
+                                             `own` when the agent acted for this person: they only reject it (F3a).
 Holding a proposal adds a domain_event `proposal.held` ({id, action, agent}, with the case), so the live stream
 refreshes the inboxes.
 
@@ -29,7 +30,7 @@ from di.services.agents import registry
 if TYPE_CHECKING:
     from di.services.actions.pipeline import CallContext
 
-_COLS = "id, agent, action, input, case_id, run_id, status, created_at, decided_by, decided_at, result"
+_COLS = "id, agent, action, input, case_id, run_id, status, created_at, decided_by, decided_at, result, requested_by"
 
 
 def holds(s: Session, agent_id: str) -> bool:
@@ -40,10 +41,18 @@ def holds(s: Session, agent_id: str) -> bool:
 def hold(ctx: "CallContext", action: str, i: dict[str, Any], case_id: str | None) -> int:
     pid: int = ctx.session.execute(
         text(
-            "INSERT INTO agent_proposal (agent, action, input, case_id, run_id, status, created_at) "
-            "VALUES (:a, :act, CAST(:i AS jsonb), :c, :r, 'pending', :at) RETURNING id"
+            "INSERT INTO agent_proposal (agent, action, input, case_id, run_id, status, created_at, requested_by) "
+            "VALUES (:a, :act, CAST(:i AS jsonb), :c, :r, 'pending', :at, :by) RETURNING id"
         ),
-        {"a": ctx.preparer, "act": action, "i": json.dumps(i, default=str), "c": case_id, "r": ctx.run_id, "at": ctx.now},
+        {
+            "a": ctx.preparer,
+            "act": action,
+            "i": json.dumps(i, default=str),
+            "c": case_id,
+            "r": ctx.run_id,
+            "at": ctx.now,
+            "by": ctx.actor.id,
+        },
     ).scalar_one()
     # a journal event, so the live stream (filtered by the case's tenant) refreshes the inboxes; never the input
     ctx.session.execute(
@@ -69,8 +78,14 @@ def decide(s: Session, pid: int, status: str, by: str, at: datetime, result: dic
     )
 
 
+def own(p: dict, account: policy.Account) -> bool:
+    """The person the agent acted for (audit F3a): they do not accept their own agent's proposal."""
+    return bool(p.get("requested_by")) and p["requested_by"] == account.id
+
+
 def may_decide(p: dict, account: policy.Account, pctx: policy.Context) -> bool:
-    """The person holds the held action's permission and, for a case, may see its tenant."""
+    """The person holds the held action's permission and, for a case, may see its tenant. The person the agent acted
+    for is listed too (`own`), but only rejects it: proposal.accept refuses them (maker-checker, audit F3a)."""
     a = ACTIONS.get(p["action"])
     if a is None or (a.permission and not policy.can(account, a.permission, pctx)):
         return False
@@ -106,7 +121,7 @@ def pending_for(s: Session, account: policy.Account, pctx: policy.Context) -> li
                 {
                     "id": r["id"], "agent": r["agent"], "agentName": names.get(r["agent"], r["agent"]), "action": r["action"],
                     "title": a.title, "why": why(r), "input": r["input"], "case_id": r["case_id"], "run_id": r["run_id"],
-                    "at": r["created_at"].isoformat(),
+                    "at": r["created_at"].isoformat(), "own": own(r, account),
                 }
             )  # fmt: skip
     return out

@@ -95,6 +95,18 @@ STEP_TPL: dict[str, list[str]] = {
     "material": ["release", "collect", "process", "cert"],
     "exit": ["release", "collect", "process", "custody"],
     "hold": ["holdput", "holdrev", "reeval", "holdout"],
+    # template paths (plan 8; audit: they fell back to the resale plan). Tool fleet: re-issue to a fleet contract is a
+    # re-lease; refurbish → place repairs then puts away for the named order; pre-owned sale is a sale; harvest is a
+    # teardown into service stock; recycle (`exit`) and tool pool (`redeploy`) share the industrial ids.
+    "release": ["repair", "transport", "putaway", "lease", "finance"],
+    "refurb": ["repair", "transport", "putaway", "finance"],
+    "resell": ["reserve", "sale", "ship", "fulfil", "receipt"],
+    "harvest": ["teardown", "partsput", "partsxfer", "finance"],
+    # device recommerce channels: each is a sale of the lot
+    "buynow": ["reserve", "sale", "ship", "fulfil", "receipt"],
+    "offers": ["reserve", "sale", "ship", "fulfil", "receipt"],
+    "auction": ["reserve", "sale", "ship", "fulfil", "receipt"],
+    "market": ["reserve", "sale", "ship", "fulfil", "receipt"],
 }
 # The demo's ACK_NOTE: notes for steps without a kind (none are created any more; kept for stored plans)
 ACK_NOTE = {

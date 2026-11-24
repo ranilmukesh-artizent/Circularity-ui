@@ -89,7 +89,7 @@ def test_admin_sees_registry_runs_proposals_and_tools():
 
 def test_run_waiting_for_approval_links_the_case():
     run_id, pid = _held_run()
-    assert client.post("/api/actions/proposal.accept", json={"id": pid}, headers=h("planner-a")).json()["ok"] is True
+    assert client.post("/api/actions/proposal.accept", json={"id": pid}, headers=h("admin")).json()["ok"] is True
     with SessionLocal() as s:
         runtime.run_until_blocked(s, run_id)
     (run,) = _get("admin").json()["runs"]

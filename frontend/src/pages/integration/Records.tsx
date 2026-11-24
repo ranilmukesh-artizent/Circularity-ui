@@ -12,6 +12,7 @@ import { sessionScoped } from '../../api/view';
 import { onActivateKey } from '../../utils/keys';
 import { Drawer } from '../../components/Overlay';
 import { toast } from '../../components/toast';
+import { importSummary, templateColumnsNote, validateCsv, type Csv } from './importCsv';
 import { useAction } from '../../hooks/useAction';
 import { JsonView } from '../../components/kit/JsonView';
 import { Kpi } from '../../components/kit/Kpi';
@@ -239,34 +240,12 @@ export function Conflicts() {
 }
 
 /* ---- Manual import ---- */
-type Row = { asset_id: string; qty: string; grade: string; location: string; owner: string; received: string; errors: string[]; warn: string[] };
-type Csv = { rows: Row[]; ok: number; err: number; committed?: boolean };
 /** cases: open a case for each loaded row (plan 8), with this template and reason; each row's owner is its org unit. */
 const impKept = sessionScoped<{ text: string; csv: Csv | null; cases: { on: boolean; template: string; reason: string } }>(() => ({
   text: '', csv: null, cases: { on: false, template: 'industrial', reason: 'lease_end' },
 }));
-
-function validateCsv(t: string): Csv | string {
-  const lines = t.split(/\r?\n/).filter(Boolean), hd = lines[0].split(',').map((x) => x.trim().toLowerCase());
-  const need = ['asset_id', 'qty', 'condition_grade', 'location', 'owner', 'received'], miss = need.filter((n) => !hd.includes(n));
-  if (miss.length) return 'Missing required column: ' + miss.join(', ');
-  const F = facilities(), T = tenantList();
-  const rows = lines.slice(1).map((l) => {
-    const c = l.split(',').map((x) => x.trim()), o: Record<string, string> = {};
-    hd.forEach((h, i) => { o[h] = c[i] || ''; });
-    const errors: string[] = [], warn: string[] = [];
-    if (!/^(MTR|PMP|CTL|DRL|BAT|ITE)-\d{4}$/.test(o.asset_id)) errors.push('asset_id does not match a known class pattern');
-    if (!/^[1-9]\d*$/.test(o.qty)) errors.push('qty must be a positive whole number');
-    let g = o.condition_grade;
-    if (/^[ABCD]\+$/.test(g)) { warn.push(g + ' mapped to ' + g[0]); g = g[0]; } else if (!/^[ABCD]$/.test(g)) errors.push('grade must be A–D');
-    if (!F.includes(o.location)) errors.push('unknown location "' + o.location + '"');
-    if (!T.includes(o.owner)) errors.push('owner is not a tenant on this account');
-    let d = o.received;
-    if (/^\d{4}\/\d{2}\/\d{2}$/.test(d)) { warn.push('date reformatted'); d = d.replace(/\//g, '-'); } else if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) errors.push('received must be YYYY-MM-DD');
-    return { asset_id: o.asset_id, qty: o.qty, grade: g, location: o.location, owner: o.owner, received: d, errors, warn };
-  });
-  return { rows, ok: rows.filter((r) => !r.errors.length).length, err: rows.filter((r) => r.errors.length).length };
-}
+/** The template the rows are checked for: the cases' template when cases are opened, else industrial. */
+const importTemplate = (c: { on: boolean; template: string }) => (c.on ? c.template : 'industrial');
 
 export function Import() {
   useBackend();
@@ -278,9 +257,15 @@ export function Import() {
   const validate = () => {
     const t = imp.text.trim();
     if (!t) return toast('Add a CSV file or rows first.');
-    const r = validateCsv(t);
+    const r = validateCsv(t, importTemplate(imp.cases), facilities(), tenantList());
     if (typeof r === 'string') { up(() => { imp.csv = { rows: [], ok: 0, err: 0 }; }); return toast(r); }
     up(() => { imp.csv = r; });
+  };
+  /** The cases' template or switch changed: check the validated rows again for it (not after they are loaded). */
+  const recheck = () => {
+    if (!imp.csv || imp.csv.committed || !imp.text.trim()) return;
+    const r = validateCsv(imp.text.trim(), importTemplate(imp.cases), facilities(), tenantList());
+    if (typeof r !== 'string') imp.csv = r;
   };
   const file = (f: File | undefined) => {
     if (!f) return;
@@ -295,9 +280,7 @@ export function Import() {
     const r = await action.run(() => commitImport(st.ok, st.err, st.rows, oc));
     if (!r.ok) return;
     up(() => { st.committed = true; });
-    const o = r.output;
-    const opened = o.cases_opened !== undefined ? ' ' + o.cases_opened + ' cases opened, ' + (o.cases_skipped ?? 0) + ' already open.' : '';
-    toast(st.ok + ' rows loaded for evaluation. They are tagged manual and will not trigger any instruction.' + opened, 4200);
+    toast(importSummary(st.ok, r.output), r.output.cases_failed ? 8000 : 4200);
   };
   return (
     <>
@@ -319,6 +302,7 @@ export function Import() {
               <button className="btn pri" onClick={validate}>Validate</button>
             </div>
             <div className="note" style={{ marginTop: 8 }}>Required columns: asset_id, qty, condition_grade, location, owner, received.</div>
+            {templateColumnsNote(importTemplate(imp.cases)) && <div className="note" style={{ marginTop: 4 }}>{templateColumnsNote(importTemplate(imp.cases))}</div>}
           </div>
         </div>
         <div className="panel">
@@ -345,8 +329,8 @@ export function Import() {
                 <span className="note grow">Rejected rows are never partially loaded. {st.committed && <b>Loaded for evaluation.</b>}</span>
                 {mgr && can('openCases') && (
                   <span className="row" style={{ gap: 6 }}>
-                    <label><input type="checkbox" checked={imp.cases.on} disabled={st.committed} onChange={(e) => up(() => { imp.cases.on = e.target.checked; })} /> Open a case for each row</label>
-                    <select aria-label="Template" value={imp.cases.template} disabled={!imp.cases.on || st.committed} onChange={(e) => up(() => { imp.cases.template = e.target.value; })}>
+                    <label><input type="checkbox" checked={imp.cases.on} disabled={st.committed} onChange={(e) => up(() => { imp.cases.on = e.target.checked; recheck(); })} /> Open a case for each row</label>
+                    <select aria-label="Template" value={imp.cases.template} disabled={!imp.cases.on || st.committed} onChange={(e) => up(() => { imp.cases.template = e.target.value; recheck(); })}>
                       {CASE_TEMPLATES.map((t) => <option key={t} value={t}>{t}</option>)}
                     </select>
                     <select aria-label="Reason" value={imp.cases.reason} disabled={!imp.cases.on || st.committed} onChange={(e) => up(() => { imp.cases.reason = e.target.value; })}>

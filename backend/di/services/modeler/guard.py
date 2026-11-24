@@ -26,8 +26,15 @@ def _matches(p: TextPattern, low: str) -> bool:
     return all(re.search(rx, low) for rx in p.all_of)
 
 
+# The order the prototype's textGuard (line 2435) checks a template's text patterns in, where it is not the guardrails'
+# own order (audit F10): the tool fleet checks GR-02 last. A text that matches two gets the prototype's guardrail id.
+TEXT_ORDER: dict[str, tuple[str, ...]] = {"tool_fleet": ("GR-03", "GR-04", "GR-05", "GR-02")}
+
+
 def text_breaks(t: Template, text: str) -> str | None:
     """The first guardrail whose `protects` pattern matches the text (lowercased), or None: a plain-language change
     that would alter a guardrail, which only its owner may change."""
     low = text.lower()
-    return next((g.id for g in t.guardrails if any(_matches(p, low) for p in g.protects)), None)
+    rank = {g: i for i, g in enumerate(TEXT_ORDER.get(t.key, ()))}
+    ordered = sorted(t.guardrails, key=lambda g: rank.get(g.id, -1))  # stable: unranked guardrails keep their order
+    return next((g.id for g in ordered if any(_matches(p, low) for p in g.protects)), None)

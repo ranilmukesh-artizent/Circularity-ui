@@ -8,7 +8,8 @@ decision_flow_version for rollback. Decisions use the published graph only, from
     flow.saveDraft  act     {flow_id, graph}             touch() and store the draft; answers {checks}
     flow.fork       act     {template_key, org_unit_id}  the org's own flow, from its nearest ancestor's published one
     flow.submit     act     {flow_id}                    draft -> review (no blocking checks)
-    flow.approve    commit  {flow_id}                    review -> shadow (not by the maker)
+    flow.approve    commit  {flow_id}                    review -> shadow (not by a maker: anyone who saved or
+                                                         submitted this draft, from the journal; audit F3b)
     flow.reject     commit  {flow_id, reason}            review or shadow -> draft
     flow.publish    commit  {flow_id}                    shadow -> pub (not by the maker); old graph to history
     flow.discard    act     {flow_id}                    the draft back to the published graph
@@ -23,7 +24,7 @@ decision_flow_version for rollback. Decisions use the published graph only, from
 
 Every write is journaled. The org scope is the flow's org unit: a tenant-scoped person (a Planner) reaches only the
 flows of the units they may see (policy.tenant_ok); everyone else reaches every flow. Agents never approve, return,
-publish or roll back a flow (di.mcp.policy.FORBIDDEN_ACTIONS, and refused here when an agent prepared the call).
+publish or roll back a flow (di.services.agents.forbidden.FORBIDDEN_ACTIONS, and refused here when an agent prepared the call).
 """
 
 import dataclasses
@@ -148,6 +149,33 @@ def _agent_refusal(ctx: CallContext) -> tuple[str, str] | None:
     return None
 
 
+# a draft's history in the journal: these actions make someone a maker; these end the draft
+_MAKES, _ENDS = ("flow.saveDraft", "flow.submit"), ("flow.publish", "flow.discard", "flow.rollback")
+
+
+def makers(ctx: CallContext, f: FlowRow) -> set[str]:
+    """Everyone who saved or submitted the flow's current draft (audit F3b): the journaled saves and submits since its
+    last publish, discard or rollback, and the recorded maker."""
+    rows = ctx.session.execute(
+        text(
+            "SELECT action, actor FROM action_journal WHERE NOT undone AND action = ANY(:acts) "
+            "AND input->>'flow_id' = :fid ORDER BY seq"
+        ),
+        {"acts": [*_MAKES, *_ENDS], "fid": str(f.id)},
+    )
+    out: set[str] = set()
+    for action, actor in rows:
+        if action in _ENDS:
+            out.clear()
+        else:
+            out.add(actor)
+    return out | ({f.maker} if f.maker else set())
+
+
+def _maker_refusal(ctx: CallContext, f: FlowRow) -> tuple[str, str] | None:
+    return ("conflict", MAKER_CHECKER) if ctx.actor.id in makers(ctx, f) else None
+
+
 def _status(f: FlowRow, want: tuple[str, ...], msg: str) -> tuple[str, str] | None:
     return None if f.status in want else ("conflict", msg)
 
@@ -248,7 +276,7 @@ def approve_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None
         return f
     if bad := _agent_refusal(ctx) or _status(f, ("review",), f"{f.name} is not waiting for approval."):
         return bad
-    return ("conflict", MAKER_CHECKER) if f.maker == ctx.actor.id else None
+    return _maker_refusal(ctx, f)
 
 
 @implement("flow.approve")
@@ -282,7 +310,7 @@ def publish_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None
         return f
     if bad := _agent_refusal(ctx) or _status(f, ("shadow",), f"{f.name} must be approved before it is published."):
         return bad
-    return ("conflict", MAKER_CHECKER) if f.maker == ctx.actor.id else None
+    return _maker_refusal(ctx, f)
 
 
 @implement("flow.publish")

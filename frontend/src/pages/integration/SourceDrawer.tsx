@@ -1,12 +1,13 @@
 /* The source drawer (the demo's sdOpen / sdRender with the Connection Fabric tabs): Overview, Configuration, Data Mapping,
    Sync & History, Security, Comments for a connected system; Connection, Operations, Field mapping for a new one. */
-import { useMemo, useState, type ReactNode } from 'react';
+import { Suspense, useMemo, useState, type ReactNode } from 'react';
 import { fmtDateYear } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {
   addComment, authOpts, hashId, canon, canonPrefix, cfgDefaults, commentsOf, connMethods, credDays, failedRecords, isoTime, mappings,
   mappingVersions, previewMapping, revertMapping, type MapPreview, saveSource, series, source, sources, srcAgeText, srcFailing, srcFresh, srcTypes, successRate, testDraft, wfUsing, type Draft, type Source,
 } from '../../api/integration';
+import { useOrgUnits } from '../../api/orgs';
 import { can } from '../../api/session';
 import { Drawer } from '../../components/Overlay';
 import { Icon } from '../../components/Icon';
@@ -88,6 +89,9 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
   const [maps, setMaps] = useState<string[][]>(() => (s ? mappings(s.id).map((r) => r.slice()) : []));
   const [ops, setOps] = useState(() => ({ read: s ? s.read.slice() : [], write: s ? s.write.slice() : [] }));
   const [errs, setErrs] = useState<Errs>({});
+  // the org unit the source belongs to ('': shared by every org); sent only when changed (source.update org_unit_id)
+  const savedOrg = s?.org_unit_id ?? '';
+  const [org, setOrg] = useState(savedOrg);
   const [dirty, setDirty] = useState(mode === 'new');
   const [test, setTest] = useState<Test>(null);
   const [use, setUse] = useState('30');
@@ -123,7 +127,7 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
       toast('Fix ' + n + ' item' + (n > 1 ? 's' : '') + ' before saving. Errors are marked in the form.');
       return;
     }
-    const r = await action.run(() => saveSource(mode, at.id, d, maps, ops), {
+    const r = await action.run(() => saveSource(mode, at.id, d, maps, ops, org !== savedOrg ? org : undefined), {
       all: (m, code) => {
         if (code === 'conflict' && /No changes/.test(m)) { toast('No changes to save.'); setDirty(false); } else toast(m);
       },
@@ -152,7 +156,7 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
 
   function revert() {
     if (!s) return;
-    setD(draftOf(s)); setMaps(mappings(s.id).map((r) => r.slice())); setOps({ read: s.read.slice(), write: s.write.slice() });
+    setD(draftOf(s)); setMaps(mappings(s.id).map((r) => r.slice())); setOps({ read: s.read.slice(), write: s.write.slice() }); setOrg(savedOrg);
     setErrs({}); setDirty(false); setTest(null);
     toast('Changes reverted to the saved configuration.');
   }
@@ -171,7 +175,14 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
   ) : 'Add source';
   const sub = s ? s.vendor + ' adapter · config v' + s.cfgVer : 'Connect a system. Each system is its own connector.';
 
-  const conn = <ConnTab s={s} d={d} errs={errs} setField={setField} setCfg={(k, v) => { setD({ ...d, cfg: { ...d.cfg, [k]: v } }); clearErr('c_' + k); touch(); }} test={test} />;
+  const conn = (
+    <>
+      <ConnTab s={s} d={d} errs={errs} setField={setField} setCfg={(k, v) => { setD({ ...d, cfg: { ...d.cfg, [k]: v } }); clearErr('c_' + k); touch(); }} test={test} />
+      <Suspense fallback={<p className="note">Loading org units…</p>}>
+        <OrgUnitSelect id="sd_org" value={org} disabled={!mgr} onChange={(v) => { setOrg(v); touch(); }} />
+      </Suspense>
+    </>
+  );
   const opsTab = (
     <OpsTab ops={ops} err={errs.ops} onChange={(o) => { setOps(o); clearErr('ops'); touch(); }} />
   );
@@ -687,5 +698,23 @@ function SecTab({ s }: { s: Source }) {
       <h4>Audit</h4>
       <AuditTable s={s} rev />
     </>
+  );
+}
+
+/** The org unit a source belongs to (plan 8 MVP-1.4; source.update's org_unit_id), from the units the account may see
+ *  (GET /api/screens/orgs, as the Connect dialog). A unit the account cannot see stays shown by its id. Suspends while
+ *  the list loads (wrap it in Suspense). */
+function OrgUnitSelect({ id, value, onChange, disabled }: { id: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const { units } = useOrgUnits();
+  return (
+    <div className="fld" style={{ marginTop: 12 }}>
+      <label htmlFor={id}>Org unit</label>
+      <select id={id} className="sel" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Shared by every org unit</option>
+        {value && !units.some((u) => u.id === value) && <option value={value}>{value}</option>}
+        {units.map((u) => <option key={u.id} value={u.id}>{' '.repeat(u.depth * 2) + u.name}</option>)}
+      </select>
+      <p className="note">The org unit whose cases and configuration use this source. Its configuration pack includes it.</p>
+    </div>
   );
 }

@@ -61,7 +61,12 @@ export interface AgentProposal {
   case_id: string | null;
   run_id: string | null;
   at: string;
+  /** The agent acted for this signed-in person: they may only reject it (proposal.accept refuses them, maker-checker). */
+  own?: boolean;
 }
+
+/** Shown in place of Accept on a proposal the person's own agent prepared. */
+export const OWN_PROPOSAL_NOTE = "Your agent's proposal: another person accepts it.";
 
 interface CatalogTool {
   name: string;

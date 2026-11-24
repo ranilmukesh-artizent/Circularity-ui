@@ -4,8 +4,9 @@
         name           the action id as a tool name ("case.evidence" -> "case_evidence")
         input_schema   JSON Schema draft 2020-12 from ActionDef.input (t -> type, req -> required, ex -> examples,
                        min -> minLength)
-        agent_allowed  false for the actions no agent may run (di.mcp.policy.FORBIDDEN_ACTIONS: approving, overriding,
-                       declining, access, publishing, connection changes ...) and for system-only actions
+        agent_allowed  false for the actions no agent may run (di.services.agents.forbidden.FORBIDDEN_ACTIONS:
+                       approving, overriding, declining, access, publishing, connection changes ...) and for system-only
+                       actions
 
 Generated from the registry each call, so an action declared in code shows up as soon as its module is imported.
 GET /api/agents/tools (di.routes.agents) serves it, filtered to what the signed-in account may call.
@@ -13,8 +14,8 @@ GET /api/agents/tools (di.routes.agents) serves it, filtered to what the signed-
 
 from typing import Any
 
-from di.mcp.policy import FORBIDDEN_ACTIONS
 from di.services.actions.registry import ACTIONS, ActionDef
+from di.services.agents.forbidden import FORBIDDEN_ACTIONS
 
 SCHEMA = "https://json-schema.org/draft/2020-12/schema"
 

@@ -6,9 +6,11 @@
     model.propose  act     {id}         a person proposes a candidate for promotion (plan 8 UI gaps): stored as
                                         metrics.proposal {by, at}; manageFlows
     model.promote  commit  {id}         a proposed candidate -> active; the active model it replaces is retired
+    model.list     read    {template?}  the template's models, the newest first (for agents and API clients); for a
+                                        person who may fit or promote models
 
 Maker-checker as for decision flows (Domain spec D7): the person who fitted a model, or who proposed it, cannot promote
-it, and an agent never proposes or promotes one (di.mcp.policy.FORBIDDEN_ACTIONS; the guards refuse a prepared call
+it, and an agent never proposes or promotes one (di.services.agents.forbidden.FORBIDDEN_ACTIONS; the guards refuse a prepared call
 too). `promote_block` and `propose_block` say why a person may not, for the guards and the Agents page's Models panel
 (di.services.screens.agents.models). An active model calibrates the predictor of new intake cases only
 (`intake_predictor`); the cases opened from the engine's book keep their routes.
@@ -21,6 +23,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from di.core import policy
 from di.repositories import model_versions as repo
 from di.repositories.model_versions import ModelRow
 from di.repositories.outcomes import outcome_rows
@@ -82,6 +85,16 @@ def promote_block(m: ModelRow, actor: str) -> str | None:
     if p is None:
         return f"Propose {m.id} for promotion first."
     return PROPOSER_CHECKER if p.get("by") == actor else None
+
+
+ACTIONS.setdefault(
+    "model.list",
+    ActionDef(
+        id="model.list", title="List calibration models", risk="read", perm=None, scope="none", verb="read models",
+        desc="The calibration models of a template, the newest first. Changes nothing.",
+        input={"template": {"req": False, "t": "string"}},
+    ),
+)  # fmt: skip
 
 
 def _mae(rows: Sequence[OutcomeRow], factors: Mapping[Key, float]) -> float | None:
@@ -156,6 +169,21 @@ def propose(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     if m is None:  # not reached: the guard found it
         raise ActionError("not_found", f"No model {i['id']}.")
     return {**model_json(m), "proposal": p, "log": f"Proposed {m.id} for promotion"}
+
+
+# ---------------------------------------------------------------- list
+@guard("model.list")
+def list_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    acct = ctx.actor.account
+    if acct is None or not any(policy.can(acct, p, ctx.actor.ctx) for p in ("manageFlows", "approve.flows")):
+        return "out_of_scope", f"The {ctx.actor.role} view cannot read models."
+    return fit_guard(i, ctx)
+
+
+@implement("model.list")
+def list_models(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    t = i.get("template") or "industrial"
+    return {"template": t, "models": [model_json(m) for m in repo.of_template(ctx.session, t)]}
 
 
 # ---------------------------------------------------------------- promote

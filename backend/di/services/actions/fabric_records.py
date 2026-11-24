@@ -233,10 +233,14 @@ def tables_update(i: dict[str, Any], ctx: CallContext):
 
 
 # ---------------------------------------------------------------- import.commit
-def row_errors(r: dict) -> list[str]:
-    """ACT.csvValidate's checks on a row the page already normalised (grade A-D, date YYYY-MM-DD)."""
+def row_errors(r: dict, template: str = "industrial") -> list[str]:
+    """ACT.csvValidate's checks on a row the page already normalised (grade A-D, date YYYY-MM-DD). A row that opens a
+    tool-fleet or device case (plan 8 MVP-8.4) may carry any asset id; its template facts are the intake's to check."""
     e = []
-    if not re.fullmatch(r"(MTR|PMP|CTL|DRL|BAT|ITE)-\d{4}", str(r.get("asset_id", ""))):
+    if template != "industrial":
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", str(r.get("asset_id", ""))):
+            e.append("asset_id is required (letters, digits, '.', '_' or '-')")
+    elif not re.fullmatch(r"(MTR|PMP|CTL|DRL|BAT|ITE)-\d{4}", str(r.get("asset_id", ""))):
         e.append("asset_id does not match a known class pattern")
     if not re.fullmatch(r"[1-9]\d*", str(r.get("qty", ""))):
         e.append("qty must be a positive whole number")
@@ -278,21 +282,24 @@ def import_commit(i: dict[str, Any], ctx: CallContext):
     `manual`, then canonical facts with no confidence and no freshness, never an instruction. The rejected rows the
     page sends are held in failed_record (run_kind 'import') with their reasons."""
     rows = i.get("rows")
+    oc = i.get("open_cases")  # plan 8 MVP-8.4: a tool-fleet or device case per row keeps the template's columns
+    template = str(oc.get("template") or "industrial") if isinstance(oc, dict) else "industrial"
+    cols = tuple(dict.fromkeys(KEEP + manual.TEMPLATE_COLUMNS.get(template, ())))
     kept: list[dict] | None = None
     if rows is not None:
         if not isinstance(rows, list) or len(rows) != int(i["ok"]) or not all(isinstance(r, dict) for r in rows):
             raise ActionError("validation_error", f"Expected the {int(i['ok'])} valid rows.")
         for r in rows:
-            if bad := row_errors(r):
+            if bad := row_errors(r, template):
                 raise ActionError(
                     "validation_error", f"{r.get('asset_id') or 'A row'}: {bad[0]}. Rejected rows are never partially loaded."
                 )
-        kept = [{k: r.get(k) for k in KEEP} for r in rows]
+        kept = [{k: r.get(k) for k in cols} for r in rows]
     rejected = [r for r in (i.get("rejected") or []) if isinstance(r, dict)]
     s = ctx.session
     n = state.next_number(s, "imports", "IMP-", 0)
     landed = manual.load(
-        s, f"IMP-{n}", kept or [], [({k: r.get(k) for k in KEEP}, row_errors(r)) for r in rejected[:MAX_REJECTED]]
+        s, f"IMP-{n}", kept or [], [({k: r.get(k) for k in cols}, row_errors(r, template)) for r in rejected[:MAX_REJECTED]]
     )
     item = {
         "id": f"IMP-{n}",

@@ -22,7 +22,7 @@ and no sync queued: a person enters its credentials and reconnects it (edge case
 **Drafts only.** Each source gets a new id (the pack's id, then `_2`, `_3` ...), and the workflows' steps are pointed at
 the new ids. Workflows are imported as drafts (workflow.import); the flows become the target's own (flow.fork when it
 has none yet) with the pack's graph as a draft (flow.saveDraft), so nothing imported is published or decides a case
-until people take it through the usual review. Agents never import (di.mcp.policy.FORBIDDEN_ACTIONS).
+until people take it through the usual review. Agents never import (di.services.agents.forbidden.FORBIDDEN_ACTIONS).
 """
 
 import copy
@@ -43,7 +43,10 @@ from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard,
 from di.services.modeler.templates import TEMPLATE_KEYS
 
 VERSION = 1
-SECRET_WORDS = ("secret", "password", "token", "credential")
+# a setting whose name holds one of these (case and "_"/"-" ignored) is never exported. Audit F7 added the key-shaped
+# names; the plain words "key" and "auth" are not here: they name settings (a mapping's key field, auth_kind).
+SECRET_WORDS = ("secret", "password", "passwd", "token", "credential", "apikey", "privatekey", "accesskey",
+                "signingkey", "sessionkey", "cookie")  # fmt: skip
 CONFIG_KEYS = (
     "name", "short", "cat", "vendor", "ver", "env", "url", "mode", "auth", "rw", "inputs", "read", "write", "step",
     "authority", "method", "cfg", "interval", "owner", "scopes", "created",
@@ -75,10 +78,15 @@ ACTIONS.setdefault(
 )  # fmt: skip
 
 
+def _secret_name(k: str) -> bool:
+    low = k.lower().replace("_", "").replace("-", "")
+    return any(w in low for w in SECRET_WORDS)
+
+
 def _no_secrets(d: Any) -> Any:
     """A copy without the keys that name a secret (at any depth)."""
     if isinstance(d, dict):
-        return {k: _no_secrets(v) for k, v in d.items() if not any(w in str(k).lower() for w in SECRET_WORDS)}
+        return {k: _no_secrets(v) for k, v in d.items() if not _secret_name(str(k))}
     if isinstance(d, list):
         return [_no_secrets(v) for v in d]
     return copy.deepcopy(d)

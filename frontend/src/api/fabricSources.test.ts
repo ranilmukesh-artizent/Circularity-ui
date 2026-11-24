@@ -53,6 +53,14 @@ describe('source lifecycle actions', () => {
     expect(call()).toEqual(['source.test', { source_id: 'cat:postgres', auth: 'API key', secret: 'typed-key-0001' }]);
   });
 
+  it('the org unit picked in the Connect dialog binds the new source (left out: shared by every org)', async () => {
+    await connectFromCatalog('postgres', 'key', ['read'], [], undefined, 'Customer A');
+    expect(call()).toEqual(['source.update', { mode: 'catalog', id: '', d: { catalog: 'postgres', auth: 'key', scopes: ['read'] }, maps: [], ops: {}, org_unit_id: 'Customer A' }]);
+    m.invoke.mockClear();
+    await connectFromCatalog('postgres', 'key', ['read'], [], undefined, '');
+    expect(call()[1]).not.toHaveProperty('org_unit_id');
+  });
+
   it('the sandbox key is the server read source.sandboxKey', async () => {
     await sandboxKey('postgres');
     expect(call()).toEqual(['source.sandboxKey', { catalog_id: 'postgres' }]);

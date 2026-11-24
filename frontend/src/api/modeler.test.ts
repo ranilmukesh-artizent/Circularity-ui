@@ -9,7 +9,8 @@ vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>
 
 import { actionScope, matcher } from './invalidation';
 import {
-  approveFlow, discardFlow, forkFlow, publishFlow, rejectFlow, rollbackFlow, saveDraft, simulateFlow, submitFlow, useModeler,
+  applySuggestion, approveFlow, discardFlow, forkFlow, publishFlow, rejectFlow, rollbackFlow, ruleSuggestions, saveDraft, simulateFlow,
+  submitFlow, useModeler, type RuleSuggestion,
 } from './modeler'; // prettier-ignore
 import type { FlowGraph } from './types';
 
@@ -66,5 +67,31 @@ describe('the Modeler facade (plan 8 MVP-4.3)', () => {
       expect(match!(['GET', '/api/screens/home'])).toBe(false);
     }
     expect(matcher(actionScope('flow.simulate'))).toBeNull();
+  });
+
+  it('reads the rule suggestions of a flow, and throws the refusal', async () => {
+    const out = { flow_id: 3, decisions: 4, groups: [], suggestions: [] };
+    m.invoke.mockResolvedValueOnce({ ok: true, output: out, key: null, action: 'flow.suggestions' });
+    expect(await ruleSuggestions(3)).toEqual(out);
+    expect(last()).toEqual(['flow.suggestions', { flow_id: 3 }]);
+    m.invoke.mockResolvedValueOnce({ ok: false, error: { code: 'out_of_scope', message: 'The Finance view cannot read rule suggestions.' } });
+    await expect(ruleSuggestions(3)).rejects.toThrow('The Finance view cannot read rule suggestions.');
+  });
+
+  it('applies a suggestion as a draft save by the person, never a publish', async () => {
+    const s = {
+      dim: 'cls', value: 'motor', path: 'resale', overrides: 3, decisions: 4, share: 0.75, text: 'industrial motors: prefer whole-asset resale',
+      rule: { action: 'prefer', path: 'resale', scope: { cls: ['motor'] } },
+      proposal: { kind: 'rule', text: 'industrial motors: prefer whole-asset resale', graph, node_id: 'r-IR-01', rid: 'IR-01', label: 'IR-01: x', guard: null, checks: [], sim: null, msg: '' },
+    } as RuleSuggestion; // prettier-ignore
+    await applySuggestion(3, s);
+    expect(last()).toEqual([
+      'flow.saveDraft',
+      { flow_id: 3, graph, source: 'assistant', note: 'Suggested from overrides: industrial motors: prefer whole-asset resale' },
+    ]);
+  });
+
+  it('reading suggestions changes nothing', () => {
+    expect(matcher(actionScope('flow.suggestions'))).toBeNull();
   });
 });

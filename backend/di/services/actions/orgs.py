@@ -2,7 +2,7 @@
 
 The demo has no org tree, so these are declared here, beside the catalog's actions (as di.services.actions.fabric_sources
 declares the source lifecycle). The writes need `manageOrgs` (Admin, di.core.policy.EXTRA_PERMS), are commits and are
-journaled by the pipeline. Agents never run them (di.mcp.policy.FORBIDDEN_ACTIONS: they change access).
+journaled by the pipeline. Agents never run them (di.services.agents.forbidden.FORBIDDEN_ACTIONS: they change access).
 
     org.create  commit  {id, parent_id, kind, name}  a new unit under an existing one
     org.update  commit  {id, name}                   rename a unit

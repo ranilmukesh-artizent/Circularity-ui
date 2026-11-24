@@ -29,9 +29,9 @@ import di.services.actions.decisions  # registers evidence.request, case.reevalu
 import di.services.actions.execution  # noqa: F401 - registers instruction.resend
 from di.core import jobs, policy
 from di.core.auth import load_context
-from di.mcp.policy import FORBIDDEN_ACTIONS
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
 from di.services.agents import limits, registry
+from di.services.agents.forbidden import FORBIDDEN_ACTIONS
 from di.services.agents.playbooks import case_autopilot as autopilot
 from di.services.cases import store
 

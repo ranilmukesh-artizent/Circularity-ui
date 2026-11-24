@@ -194,7 +194,8 @@ def _hours_text(h: float) -> str:
 
 
 # ---------------------------------------------------------------- live tenant grants: list, revoke, the requester's view
-# Declared beside the catalog's actions (plan 8 UI gaps). Agents never run them (di.mcp.policy.FORBIDDEN_ACTIONS: "access.").
+# Declared beside the catalog's actions (plan 8 UI gaps). Agents never run them
+# (di.services.agents.forbidden.FORBIDDEN_ACTIONS: "access.").
 _STR = {"req": True, "t": "string"}
 ACTIONS.setdefault(
     "access.revokeGrant",

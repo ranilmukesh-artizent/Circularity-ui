@@ -90,7 +90,8 @@ def test_accept_resumes():
     with SessionLocal() as s:
         s.execute(text("DELETE FROM job"))
         s.commit()
-    assert call("proposal.accept", {"id": pid}, "planner-a")["ok"] is True
+    assert call("proposal.accept", {"id": pid}, "planner-a")["error"]["code"] == "conflict"  # the run acts for them
+    assert call("proposal.accept", {"id": pid}, "admin")["ok"] is True
     assert run(run_id)["status"] == "running" and queued(run_id) == 1
     r = drive(run_id)
     assert r["status"] == "waiting" and r["state"]["waiting"] == "approval"
@@ -104,7 +105,7 @@ def test_accept_resumes():
     assert drive(run_id)["status"] == "done"
     with SessionLocal() as s:
         q = text("SELECT actor, preparer, run_id FROM action_journal WHERE action = 'decision.submit'")
-        assert [tuple(x) for x in s.execute(q)] == [("planner-a", "ext-autopilot", run_id)]
+        assert [tuple(x) for x in s.execute(q)] == [("admin", "ext-autopilot", run_id)]  # the person who accepted
 
 
 def test_rejected_proposal_stops_run():

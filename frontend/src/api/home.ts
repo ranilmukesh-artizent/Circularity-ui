@@ -161,6 +161,8 @@ export function assignAlert(id: string, toRole: string): void {
 export interface HomeProposal {
   id: number; agent: string; agentName: string; action: string; title: string; why: string;
   input: Record<string, unknown>; case_id: string | null; run_id: string | null; at: string;
+  /** The agent acted for this signed-in person: they may only reject it (proposal.accept refuses them, maker-checker). */
+  own?: boolean;
 }
 export const proposals = (): HomeProposal[] => cached<HomeProposal[]>(H + '/proposals');
 /** Run the action the agent prepared, as the signed-in person. */

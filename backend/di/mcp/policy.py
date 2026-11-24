@@ -36,21 +36,10 @@ from di.mcp import calllog
 from di.mcp.tools import ACTIONS_OF, AGENTS, NO_APPROVAL_REF, RUN, TOOLS, Refused, ToolCall, cross_tenant
 from di.services.actions.pipeline import Actor, CallContext
 from di.services.agents import registry as agent_registry
+from di.services.agents.forbidden import FORBIDDEN_ACTIONS
 from di.services.cases import store
 
-# Actions no tool may ever run (hard rules: no approving, overriding or declining a decision, no access, publishing or
-# connection changes, no confirming outcomes on a person's behalf). Checked once, against the whole tool table.
-FORBIDDEN_ACTIONS = (
-    "decision.approve", "decision.override", "decision.decline", "outcome.confirm", "adapter.acknowledge",
-    "access.", "agent.", "workflow.publish", "workflow.setStatus", "workflow.delete", "source.", "mcp.",
-    "org.create", "org.update", "org.move",  # plan 8 MVP-1.3: the org tree decides who sees what (access)
-    "org.setPilot",  # plan 8 MVP-10.3: whether a pilot org's instructions are sent (outbound sending)
-    "org.importPack",  # plan 8 MVP-10.2: sets up another org's sources, workflows and flows
-    "proposal.",  # plan 8 MVP-11.4: only a person accepts or rejects an agent's proposal
-    "flow.approve", "flow.publish", "flow.reject", "flow.rollback",  # plan 8 MVP-3.2: a person decides the policy
-    "model.promote",  # plan 8 MVP-12.2: a person decides which model values new cases
-    "model.propose",  # plan 8 UI gaps: a person proposes a model for promotion
-)  # fmt: skip
+# Actions no tool may ever run (di.services.agents.forbidden). Checked once, against the whole tool table.
 _REACHED = [a for acts in ACTIONS_OF.values() for a in acts if a.startswith(FORBIDDEN_ACTIONS)]
 if _REACHED:
     raise RuntimeError(f"tools reach actions no agent may run: {_REACHED}")

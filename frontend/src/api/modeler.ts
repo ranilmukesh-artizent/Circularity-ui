@@ -3,7 +3,7 @@
  * log, read from GET /api/screens/modeler (backend/di/services/screens/modeler.py). Every change is a flow.* action
  * (backend/di/services/actions/modeler.py): a person edits a draft and submits it, a different person approves it (a
  * shadow run starts) and publishes it. A successful write invalidates the Modeler read and the case reads
- * (invalidation.ts, the `flow` family). simulateFlow is a read action run on demand, not cached.
+ * (invalidation.ts, the `flow` family). simulateFlow and ruleSuggestions are read actions run on demand, not cached.
  */
 import { invoke } from './actions';
 import { cached, withQuery } from './client';
@@ -62,3 +62,35 @@ export async function simulateFlow(flowId: number, graph?: FlowGraph): Promise<S
   if (!r.ok) throw new Error(r.error.message);
   return r.output;
 }
+
+/** A prefer rule suggested by repeated Approver overrides (flow.suggestions, MVP-12.3; audit U8), drafted as a proposal. */
+export interface RuleSuggestion {
+  dim: string;
+  value: string;
+  path: string;
+  overrides: number;
+  decisions: number;
+  share: number;
+  text: string;
+  rule: Record<string, unknown>;
+  proposal: Omit<Proposal, 'note' | 'read_by'>;
+}
+
+export interface RuleSuggestions {
+  flow_id: number;
+  /** the journaled decisions of this flow's cases that were read */
+  decisions: number;
+  groups: { template: string; from: string; to: string; n: number }[];
+  suggestions: RuleSuggestion[];
+}
+
+/** The rules the overrides of this flow's decisions suggest; nothing is saved. Rejects with the refusal message. */
+export async function ruleSuggestions(flowId: number): Promise<RuleSuggestions> {
+  const r = await invoke<RuleSuggestions>('flow.suggestions', { flow_id: flowId });
+  if (!r.ok) throw new Error(r.error.message);
+  return r.output;
+}
+
+/** Apply a suggestion to the draft: the person's own saveDraft of its graph. Submitting and publishing stay separate. */
+export const applySuggestion = (flowId: number, s: RuleSuggestion): Promise<ActionResult<{ id: number; checks: ModelerScreen['checks'] }>> =>
+  invoke('flow.saveDraft', { flow_id: flowId, graph: s.proposal.graph, source: 'assistant', note: 'Suggested from overrides: ' + s.text });

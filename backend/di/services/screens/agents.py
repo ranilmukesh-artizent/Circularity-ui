@@ -13,8 +13,8 @@ the tool catalogue.
                             from a person, else null
                    reason   why it failed or stopped, or the note it finished with, else null
                    steps    the calls it made: [{n, tool, ok, note, at}] (note: the refusal, or the proposal it held)
-        proposals  the pending proposals the account may decide (di.services.agents.proposals.pending_for): accept
-                   or reject them with proposal.accept and proposal.reject, as the person
+        proposals  the pending proposals the account may act on (di.services.agents.proposals.pending_for): accept
+                   or reject them with proposal.accept and proposal.reject, as the person (`own`: only reject)
         tools      the tool catalogue (di.services.agents.catalog), read only: every action with its input schema and
                    whether an agent may call it
         can        {manage}: the account may change agents (manageAgents). The actions check again.

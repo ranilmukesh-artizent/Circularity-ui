@@ -62,6 +62,14 @@ describe('ProposalsCard', () => {
     expect(m.accept).toHaveBeenCalledWith(7);
   });
 
+  it("the person's own agent's proposal: no Accept (the server refuses it), a note, Reject stays", () => {
+    m.list = [{ ...P, own: true }];
+    draw();
+    expect(button('Accept')).toBeUndefined();
+    expect(host.textContent).toContain("Your agent's proposal: another person accepts it.");
+    expect(button('Reject')).toBeDefined();
+  });
+
   it('reject asks for a reason first', async () => {
     m.list = [P];
     draw();

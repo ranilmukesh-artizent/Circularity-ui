@@ -20,6 +20,7 @@ from typing import Any, cast
 from di.repositories.context import visible_cases
 from di.repositories.flows import FlowRow, flow_for
 from di.services.actions.pipeline import CallContext
+from di.services.cases import intake
 from di.services.cases.lifecycle import STAGES
 from di.services.engine.evaluate import draft_of, evaluate
 from di.services.engine.routes import POLICY, Route
@@ -80,15 +81,25 @@ def _rule_dicts(rules: Sequence[CompiledRule]) -> list[dict[str, Any]]:
     return [dataclasses.asdict(r) for r in rules]
 
 
+def _live(c: Mapping[str, Any]) -> bool:
+    """An open case of the workspace (it has a stage), not one of the template's sample queue."""
+    return "stage" in c
+
+
 def tool_fleet_decider(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
-    """The tool-fleet valuer (the prototype's decide, within the sample queue's plan)."""
-    best = tool_fleet.decide(dict(c), rules=_rule_dicts(rules))["best"]
+    """The tool-fleet valuer (the prototype's decide): a sample return within the sample queue's plan; an open case
+    as it is valued when it opens or is re-evaluated (di.services.cases.intake.template_decide; audit F1)."""
+    if _live(c):
+        best = intake.template_decide("tool_fleet", intake.valuer_input(c, "tool_fleet"), rules)["best"]
+    else:
+        best = tool_fleet.decide(dict(c), rules=_rule_dicts(rules))["best"]
     return Decision(best["k"], float(best["net"])) if best else Decision(None, 0.0)
 
 
 def device_decider(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
     """The device valuer (dDecide): the expected cash a unit and its days to sell."""
-    best = device.decide(dict(c), _rule_dicts(rules))["best"]
+    lot = intake.valuer_input(c, "device") if _live(c) else dict(c)
+    best = device.decide(lot, _rule_dicts(rules))["best"]
     return Decision(best["k"], float(best["cash"]), {"days": best["days"]}) if best else Decision(None, 0.0, {"days": 0.0})
 
 

@@ -16,6 +16,7 @@ import type { PageProps } from '../registry';
 import { Icon } from '../../components/Icon';
 import { openAsk } from '../../utils/askBus';
 import { Drawer } from '../../components/Overlay';
+import { PilotReportButton } from '../../components/PilotReport';
 import { toast } from '../../components/toast';
 import { downloadCsv } from '../../utils/csv';
 import { drills, Funnel, Heat, MixChart, ModelTable, Overrides, PoolChart, Scatter, Sustain, Waterfall, type Drill } from './AnalyticsCharts';
@@ -143,6 +144,7 @@ export function AnalyticsPage({ route }: PageProps) {
               {orgs.map((o) => <option key={o.id} value={o.id}>{'  '.repeat(o.depth) + o.name}</option>)}
             </select>
           )}
+          {f.org && <PilotReportButton id={f.org} name={orgs.find((o) => o.id === f.org)?.name ?? f.org} className="btn ghost sm" />}
           {sel('cls', Object.entries(CL).map(([k, v]) => [k, v.label]), 'Asset class')}
           {sel('route', routes().map((r) => [r.id, r.name]), 'Route')}
           <button className="btn ghost sm" onClick={() => { setFilter({ ...DEFAULT_FILTER }); setDrill(null); }}>Reset filters</button>

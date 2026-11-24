@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { applyProposal, forkFlow, saveDraft, useModeler, type Proposal } from '../../api/modeler';
+import { applyProposal, applySuggestion, forkFlow, saveDraft, useModeler, type Proposal, type RuleSuggestion } from '../../api/modeler';
 import type { Check, FlowGraph, ModelerScreen } from '../../api/types';
 import { currentAccount } from '../../api/session';
 import { useBackend } from '../../api/useBackend';
@@ -15,6 +15,7 @@ import { addRule, connect, disconnect, moveNode, nextRid, removeNode, updateRule
 import { HistoryPanel } from './HistoryPanel';
 import { ImpactPanel } from './ImpactPanel';
 import { LifecycleBar } from './LifecycleBar';
+import { SuggestionsPanel } from './SuggestionsPanel';
 import './modeler.css';
 
 /** Edits are saved as a draft this long after the last one (as workflow drafts are, decision log 2026-11-21). */
@@ -112,17 +113,21 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
     setSel(g.nodes.at(-1)?.id ?? null);
   };
 
-  /** Apply the assistant's proposal: the person's own saveDraft, with the assistant's note. */
-  const apply = async (p: Proposal) => {
-    if (!p.graph) return false;
+  /** Save a proposed graph as the draft (the person's own saveDraft), then show it with its new rule selected. */
+  const applyGraph = async (g: FlowGraph | null, nodeId: string | null, call: () => ReturnType<typeof saveDraft>) => {
+    if (!g) return false;
     await flush();
-    const r = await action.run(() => applyProposal(s.flow.id, p));
+    const r = await action.run(call);
     if (!r.ok) return false;
-    setGraph(p.graph);
+    setGraph(g);
     setChecks(r.output.checks);
-    setSel(p.node_id);
+    setSel(nodeId);
     return true;
   };
+  /** Apply the assistant's proposal, with the assistant's note. */
+  const apply = (p: Proposal) => applyGraph(p.graph, p.node_id, () => applyProposal(s.flow.id, p));
+  /** Apply a rule suggested by overrides (audit U8): into the draft only, never published. */
+  const applySug = (sg: RuleSuggestion) => applyGraph(sg.proposal.graph, sg.proposal.node_id, () => applySuggestion(s.flow.id, sg));
   // a proposal is drawn on the canvas (dashed) until it is applied or dismissed
   const shown = proposal?.graph ?? graph;
 
@@ -174,6 +179,11 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
         <ImpactPanel s={s} graph={graph} />
         <HistoryPanel s={s} />
       </div>
+      {(s.can.edit || s.can.approve) && (
+        <div className="mdl-main mdl-lower">
+          <SuggestionsPanel s={s} onApply={applySug} />
+        </div>
+      )}
       <ModelsPanel />
     </>
   );

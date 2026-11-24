@@ -46,6 +46,12 @@ def candidate(s: Session, template: str) -> ModelRow | None:
     return _one(s, "template = :t AND status = 'candidate' ORDER BY created_at DESC, id DESC LIMIT 1", {"t": template})
 
 
+def of_template(s: Session, template: str) -> list[ModelRow]:
+    """The template's models, the newest first (the read action model.list, U2)."""
+    sql = f"SELECT {_COLS} FROM model_version WHERE template = :t ORDER BY created_at DESC, id DESC"  # noqa: S608 - fixed columns
+    return [ModelRow(*r) for r in s.execute(text(sql), {"t": template})]
+
+
 def next_id(s: Session) -> str:
     n = s.execute(text("SELECT coalesce(max(substring(id from 4)::int), 0) FROM model_version")).scalar_one()
     return f"MV-{n + 1:03d}"

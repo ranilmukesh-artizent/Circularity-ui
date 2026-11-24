@@ -86,7 +86,7 @@ const ACTION_EXACT: Record<string, Scope> = Object.fromEntries(
     // afresh) and the dry test run change nothing any page shows
     'workflow.draft.save', 'workflow.testRun',
     // plan 8: the Modeler's reads (a simulation and a proposal change nothing)
-    'flow.get', 'flow.simulate', 'flow.propose',
+    'flow.get', 'flow.simulate', 'flow.propose', 'flow.suggestions',
     // plan 8 UI gaps: the live tenant grants and the requester's own view (reads)
     'access.grants', 'access.myAccess',
     // the org pack's export and import preview and the pilot report (reads)

@@ -28,6 +28,8 @@ export interface Source {
   syncing?: boolean; syncPct?: number; paused?: boolean; disconnected?: boolean; discBy?: string | null; frConnectedAt?: number;
   /** The connector's own state (live, failing, auth_expired, unavailable); `status` shows failing and auth_expired as stale. */
   connectorStatus?: string;
+  /** The org unit the source belongs to (plan 8 MVP-1.4); null: shared by every org. */
+  org_unit_id?: string | null;
 }
 export interface CmField { k: string; l: string; t: 'select' | 'text' | 'number'; def: string | number; o: string | string[]; req?: number }
 export interface ConnMethod { label: string; badge: string; sub: string; tip: string; sched: number; url: number; auth: string; fields: CmField[] }
@@ -333,9 +335,10 @@ export interface Draft {
   type: string; name: string; vendor: string; ver: string; env: string; url: string; method: string;
   cfg: Record<string, string | number>; interval: number | ''; auth: string; owner: string;
 }
-export const saveSource = (mode: 'new' | 'edit', id: string, d: Draft, maps: string[][], ops: { read: string[]; write: string[] }) =>
+/** Save a source; `org` (when given) binds it to an org unit, '' to none (shared by every org); left out, unchanged. */
+export const saveSource = (mode: 'new' | 'edit', id: string, d: Draft, maps: string[][], ops: { read: string[]; write: string[] }, org?: string) =>
   invoke<{ mode: 'new' | 'edit'; source_id: string; name: string; vendor?: string; ver?: string; csv?: boolean; wasOff?: boolean }>('source.update', {
-    mode, id, d, maps, ops, note: '',
+    mode, id, d, maps, ops, note: '', ...(org === undefined ? {} : { org_unit_id: org || null }),
   });
 export async function resolveConflict(id: string, choice?: ConflictChoice) {
   // the server names the authority and the kind; the queue's copy is the fallback
@@ -347,7 +350,11 @@ export async function resolveConflict(id: string, choice?: ConflictChoice) {
   return r;
 }
 export const escalateConflict = (id: string) => invoke('conflict.escalate', { id });
-export interface ImportRow { asset_id: string; qty: string; grade: string; location: string; owner: string; received: string; errors: string[] }
+/** The columns a tool-fleet or device case reads besides the common ones (backend/di/connectors/manual.py TEMPLATE_COLUMNS;
+ *  grade comes from condition_grade and qty from qty). */
+export const TEMPLATE_IMPORT_COLUMNS = { tool_fleet: ['cls', 'ft', 'site', 'rul'], device: ['brand', 'model', 'band', 'ref', 'doh'] } as const;
+type TemplateColumn = (typeof TEMPLATE_IMPORT_COLUMNS)[keyof typeof TEMPLATE_IMPORT_COLUMNS][number];
+export interface ImportRow extends Partial<Record<TemplateColumn, string>> { asset_id: string; qty: string; grade: string; location: string; owner: string; received: string; errors: string[] }
 /** The import.commit input: the demo's counts and hash (of every validated row, so the same file loads once), plus
  *  the valid rows themselves, which the server checks again and loads, tagged manual, and the rejected rows, which it
  *  holds as failed records (plan 6 B3). */
@@ -357,13 +364,26 @@ export interface OpenCases { template: string; reason: string; org_unit_id: stri
 export const CASE_TEMPLATES = ['industrial', 'tool_fleet', 'device'];
 export const CASE_REASONS = ['lease_end', 'rma', 'trade_in', 'contract_end', 'iot_alarm', 'manual'];
 export function importInput(ok: number, err: number, rows: ImportRow[], open?: OpenCases) {
-  const pick = ({ asset_id, qty, grade, location, owner, received }: ImportRow) => ({ asset_id, qty, grade, location, owner, received });
+  const extra = Object.values(TEMPLATE_IMPORT_COLUMNS).flat();
+  const pick = (r: ImportRow) => ({
+    asset_id: r.asset_id, qty: r.qty, grade: r.grade, location: r.location, owner: r.owner, received: r.received,
+    ...Object.fromEntries(extra.filter((k) => r[k] !== undefined).map((k) => [k, r[k]])),
+  });
   const valid = rows.filter((r) => !r.errors.length).map(pick);
   const rejected = rows.filter((r) => r.errors.length).map(pick);
   return { ok, err, hash: hashId(JSON.stringify(rows)), rows: valid, rejected, ...(open ? { open_cases: open } : {}) };
 }
 export const commitImport = (ok: number, err: number, rows: ImportRow[], open?: OpenCases) =>
-  invoke<{ id: string; ok: number; cases_opened?: number; cases_skipped?: number }>('import.commit', importInput(ok, err, rows, open));
+  invoke<ImportResult>('import.commit', importInput(ok, err, rows, open));
+/** import.commit's answer: cases_* only when cases were opened; a refusal other than "already open" is a failure. */
+export interface ImportResult {
+  id: string;
+  ok: number;
+  cases_opened?: number;
+  cases_skipped?: number;
+  cases_failed?: number;
+  case_failures?: { asset_id: string; code: string; reason: string }[];
+}
 export const updateTables = (input: Record<string, unknown>) =>
   invoke<{ op: string; name?: string; fks?: number; from?: string; to?: string; table?: Table; index?: number; gone?: string[][]; fk?: string[] }>('tables.update', input);
 export const addComment = (key: string, text: string) => invoke('comment.add', { key, text });

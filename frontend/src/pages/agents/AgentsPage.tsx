@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import {
-  acceptProposal, rejectProposal, startRun, updateAgent, useAgents,
+  acceptProposal, OWN_PROPOSAL_NOTE, rejectProposal, startRun, updateAgent, useAgents,
   type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy,
 } from '../../api/agents'; // prettier-ignore
 import { useBackend } from '../../api/useBackend';
@@ -203,7 +203,7 @@ function Proposals({ list }: { list: AgentProposal[] }) {
                     <td>{p.case_id ? <a href={caseHref(p.case_id)}>{p.case_id}</a> : <span className="note">—</span>}</td>
                     <td className="num nowrap">{p.at.slice(0, 16).replace('T', ' ')}</td>
                     <td className="nowrap">
-                      <button className="btn sm pri" disabled={action.pending} onClick={() => accept(p)}>Accept</button>{' '}
+                      {p.own ? <span className="note">{OWN_PROPOSAL_NOTE}</span> : <button className="btn sm pri" disabled={action.pending} onClick={() => accept(p)}>Accept</button>}{' '}
                       <button className="btn sm" disabled={action.pending} onClick={() => setRejecting(p)}>Reject</button>
                     </td>
                   </tr>

@@ -24,8 +24,11 @@ The case reads (live rules, the active model, PLM) sit above the case store; thi
 data, so it reads them here (backend/.importlinter names these imports).
 """
 
+import copy
+import dataclasses
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -152,6 +155,13 @@ def tool_fleet_case(case_id: str, facts: dict[str, Any]) -> dict[str, Any]:
     if cls not in tool_fleet.CLS:
         raise ActionError("validation_error", f"A tool fleet case needs a tool class, one of {', '.join(tool_fleet.CK)}.")
     grade = facts.get("grade") or "C"
+    if grade not in GRADE_F:
+        raise ActionError("validation_error", "The grade is one of A, B, C, D.")
+    for k, allowed in (("ft", tool_fleet.FUNCS), ("site", tool_fleet.SITES)):
+        if facts.get(k) is not None and facts[k] not in allowed:
+            raise ActionError("validation_error", f"A tool fleet case's {k} is one of {', '.join(allowed)}.")
+    if facts.get("rul") is not None and (not isinstance(facts["rul"], int | float) or isinstance(facts["rul"], bool)):
+        raise ActionError("validation_error", "A tool fleet case's remaining life (rul) is a number of months.")
     rul = facts.get("rul") or (75 if grade == "A" else 60 if grade == "B" else 46 if grade == "C" else 28)
     c: dict[str, Any] = {
         "id": case_id, "cls": cls, "ft": tool_fleet.FUNCS[0], "site": tool_fleet.SITES[0], "grade": grade,
@@ -198,31 +208,91 @@ def _with_bom(s: Session, c: store.Case, p: Predictor) -> Predictor:
     return p
 
 
-def _template_routes(c: store.Case, facts: dict[str, Any], t: Template, rules: list) -> list[Route]:
+def _template_routes(c: store.Case, facts: dict[str, Any], t: Template, rules: list) -> tuple[list[Route], str | None]:
     if t.key == "tool_fleet":
         vc = tool_fleet_case(c["id"], facts)
-        c |= {k: vc[k] for k in ("cls", "ft", "site", "grade", "rul", "partRul", "dem")}
-        values: list = tool_fleet.decide(vc, rules=[], queue=[vc])["all"]
+        c |= {k: vc[k] for k in ("cls", "ft", "site", "grade", "rul", "partRul", "dem")} | {"valuer": vc}
         c["product"] = c["product"] or tool_fleet.CLS[vc["cls"]]["name"]
     else:
         lot = device_lot(c["id"], facts)
         c |= {k: lot[k] for k in ("brand", "band", "grade", "ref", "doh")} | {"qty": lot["qty"], "cls": "device"}
+        c |= {"valuer": lot}
         c["product"] = c["product"] or f"{lot['brand']} {lot['model']}".strip()
-        values = device.decide(lot, rules=[])["all"]
-    routes = to_routes(t, values)
+    return template_routes(c, t, rules)
+
+
+def valuer_input(c: Mapping[str, Any], template_key: str) -> dict[str, Any]:
+    """What the template's valuer decides a case on: the snapshot taken when it opened (`valuer`), else rebuilt from
+    the case's own fields (a case opened before the snapshot was kept)."""
+    if isinstance(c.get("valuer"), dict):
+        return copy.deepcopy(c["valuer"])
+    facts = dict(c)
+    return tool_fleet_case(c["id"], facts) if template_key == "tool_fleet" else device_lot(c["id"], facts | {"model": ""})
+
+
+def template_decide(template_key: str, v: dict[str, Any], rules: Sequence[Any]) -> dict[str, Any]:
+    """The template's valuer on one case, with the flow's compiled rules (audit F1, F6): the tool fleet decides the
+    return in a queue of its own (no sample orders), the device lot alone. The simulation ranks open cases the same way
+    (di.services.actions.modeler_sim), so a case's recommendation is what the Modeler predicts for it."""
+    rd = [dataclasses.asdict(r) if dataclasses.is_dataclass(r) and not isinstance(r, type) else dict(r) for r in rules]
+    if template_key == "tool_fleet":
+        return dict(tool_fleet.decide(dict(v), rules=rd, queue=[v]))
+    return dict(device.decide(dict(v), rd))
+
+
+def template_routes(c: store.Case, t: Template, rules: list) -> tuple[list[Route], str | None]:
+    """The case's routes from its template's valuer, with the business rules recorded on the case, and the path the
+    valuer chose (it ranks first; the device valuer's "prefer" wins only within 15% of the best). The routes keep only
+    the valuer's own exclusions: the business rules are applied to them as to an industrial case, so an excluded path
+    says which rule excluded it and `rulesApplied` lists the rule (the valuer's run with the rules gives the values and
+    the chosen path)."""
+    v = valuer_input(c, t.key)
+    dec = template_decide(t.key, v, rules)
+    own = {x["k"]: x for x in template_decide(t.key, v, [])["all"]}  # what the valuer alone leaves out, and why
+    routes = to_routes(t, [x | {"ok": own[x["k"]]["ok"], "why": own[x["k"]]["why"]} for x in dec["all"]])
     for r in routes:  # what the case pages read of a route: who takes it, through which application
         p = t.path(r["id"])
         r |= {"demandLabel": f"{p.owner} · {p.app}" if p else r["plan"], "demandStatus": "forecast", "unc": ""}
     apply_business(c, routes, rules, t)
-    return routes
+    best = dec.get("best")
+    return routes, best["k"] if best else None
+
+
+def _rank(c: store.Case, routes: list[Route], best: str | None) -> Route | None:
+    """The recommendation: the valuer's chosen path when it is still eligible, else the ranking (a rule's preference
+    first)."""
+    eligible = {r["id"] for r in routes if not r["excluded"]}
+    return rank_routes(routes, c.get("blocked"), best if best in eligible else c.get("preferred"))
+
+
+def recommend(s: Session, c: store.Case, rules: list) -> Route | None:
+    """What a template case would be recommended under other rules (a flow's draft in shadow, MVP-3.5), from the
+    snapshot it opened with, on a copy: the case itself is unchanged."""
+    t = live_rules(s, c)[0]
+    probe = copy.deepcopy(c)
+    routes, best = template_routes(probe, t, rules)
+    return _rank(probe, routes, best)
+
+
+def revalue(s: Session, c: store.Case) -> None:
+    """A template case valued again (case.reevaluate): its valuer and the owner's published rules, as at opening. The
+    stage is the caller's to move."""
+    stage = c["stage"]
+    _value(s, c, {})
+    c["stage"] = stage
 
 
 def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     """Routes, recommendation and the flow version they were evaluated with (as a re-evaluation records them)."""
     t, rules, ver = live_rules(s, c)
-    routes = _industrial_routes(s, c, t, rules) if t.key == "industrial" else _template_routes(c, facts, t, rules)
+    if t.key == "industrial":
+        routes, best = _industrial_routes(s, c, t, rules), None
+    elif facts or not c.get("routes"):
+        routes, best = _template_routes(c, facts, t, rules)
+    else:  # a re-evaluation: the snapshot the case opened with
+        routes, best = template_routes(c, t, rules)
     c["routes"] = routes
-    c["recommendation"] = rank_routes(routes, c.get("blocked"), c.get("preferred"))
+    c["recommendation"] = _rank(c, routes, best)
     c["flowVer"] = ver
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]

@@ -94,7 +94,11 @@ def report_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     a = ctx.actor
     if not a.system and not any(policy.can(a.account, p, a.ctx) for p in REPORT_PERMS):
         return "out_of_scope", f"The {a.role} view cannot read pilot reports."
-    return _unit_problem(ctx, i["org_unit_id"])
+    if bad := _unit_problem(ctx, i["org_unit_id"]):
+        return bad
+    if not a.system and not policy.tenant_ok(a.person, i["org_unit_id"], a.ctx):  # audit F8
+        return "tenant_boundary", f"{i['org_unit_id']} is outside your tenants. Request tenant access first."
+    return None
 
 
 @implement("org.pilotReport")

@@ -23,6 +23,7 @@ from di.core import clock, policy
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError
 from di.services.actions.scope import case_scope
 from di.services.agents import limits, proposals
+from di.services.agents.forbidden import forbidden
 
 # HTTP status per error code (the body always carries the demo's code and message)
 ERROR_STATUS = {
@@ -36,7 +37,7 @@ ERROR_STATUS = {
     "duplicate": 409,
     "not_implemented": 501,
 }
-SECRET_WORDS = ("secret", "password", "token")
+SECRET_WORDS = ("secret", "password", "token", "credential", "api_key", "apikey", "private_key")
 
 
 @dataclass
@@ -127,7 +128,11 @@ def validate(a: ActionDef, i: dict[str, Any]) -> str:
 
 
 def _agent_gate(a: ActionDef, ctx: CallContext) -> tuple[str, str] | None:
-    """The agent acts as the signed-in person and never commits on its own (the demo's afAgentGate)."""
+    """The agent acts as the signed-in person and never commits on its own (the demo's afAgentGate); an action no
+    agent may run is refused however the call arrived, confirmed or not (di.services.agents.forbidden; audit F4). Reads
+    stay open to agents (Ask's access.lookup): the list is about what an agent may change."""
+    if forbidden(a.id) and a.risk != "read" and not a.id.startswith("decision."):
+        return "approval_required", f"No agent may {a.verb or a.title.lower()}: a person does this, without an agent."
     if a.risk == "commit" and (not ctx.confirmed or a.id.startswith("decision.")):
         if a.id.startswith("decision."):
             return "approval_required", "Decisions are approved, overridden or declined only in the approval card, by a person."

@@ -5,6 +5,7 @@
  * drawn, so Home looks as before.
  */
 import { useState } from 'react';
+import { OWN_PROPOSAL_NOTE } from '../../api/agents';
 import { acceptProposal, proposals, rgTime, rejectProposal, type HomeProposal } from '../../api/home';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
@@ -47,7 +48,7 @@ export function ProposalsCard() {
               <span className="note">{p.why}</span>
               <span className="note">{p.agentName} · {rgTime(p.at)}</span>
               <span className="row">
-                <button className="btn sm pri" disabled={action.pending} onClick={() => accept(p)}>Accept</button>
+                {p.own ? <span className="note">{OWN_PROPOSAL_NOTE}</span> : <button className="btn sm pri" disabled={action.pending} onClick={() => accept(p)}>Accept</button>}
                 <button className="btn sm" disabled={action.pending} onClick={() => setRejecting(p)}>Reject</button>
               </span>
             </span>

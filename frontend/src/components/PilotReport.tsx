@@ -1,8 +1,9 @@
-import { Suspense } from 'react';
-import { fmtDateTime } from '../../../api/access';
-import { money } from '../../../api/format';
-import { usePilotReport } from '../../../api/orgs';
-import { Modal } from '../../../components/Overlay';
+import { Suspense, useState } from 'react';
+import { fmtDateTime } from '../api/access';
+import { money } from '../api/format';
+import { usePilotReport } from '../api/orgs';
+import { can } from '../api/session';
+import { Modal } from './Overlay';
 
 /** What pilot mode means, in one place (the Organisation section and the report show it). */
 export const PILOT_TEXT =
@@ -17,6 +18,18 @@ export function PilotReportDialog({ unit, name, onClose }: { unit: string; name:
         <Report unit={unit} />
       </Suspense>
     </Modal>
+  );
+}
+
+/** "Pilot report" for one org unit (Analytics), only for accounts that may read it (manageOrgs or approve.flows). */
+export function PilotReportButton({ id, name, className = 'btn sm' }: { id: string; name: string; className?: string }) {
+  const [open, setOpen] = useState(false);
+  if (!can('manageOrgs') && !can('approve.flows')) return null;
+  return (
+    <>
+      <button className={className} aria-label={'Pilot report for ' + name} onClick={() => setOpen(true)}>Pilot report</button>
+      {open && <PilotReportDialog unit={id} name={name} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 

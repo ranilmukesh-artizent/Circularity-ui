@@ -40,10 +40,11 @@ from typing import Any
 
 from di.core import clock, policy
 from di.mcp import calllog
-from di.mcp.policy import FORBIDDEN_ACTIONS, outcome_of
+from di.mcp.policy import outcome_of
 from di.mcp.tools import ACTIONS_OF, RUN, TOOLS, Refused, ToolCall, schema
 from di.services.actions.pipeline import Actor, CallContext, invoke
 from di.services.actions.registry import ACTIONS
+from di.services.agents.forbidden import FORBIDDEN_ACTIONS
 from di.services.cases import store
 
 AGENT_ID, AGENT_NAME = "ask", "Ask Circularity"

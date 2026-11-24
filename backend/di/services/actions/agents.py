@@ -2,7 +2,7 @@
 
 The demo has a fixed list of nine agents, so these are declared here, beside the catalog's actions. They need
 `manageAgents` (Admin, di.core.policy.EXTRA_PERMS), are commits and are journaled. Agents never run them
-(di.mcp.policy.FORBIDDEN_ACTIONS covers "agent.").
+(di.services.agents.forbidden.FORBIDDEN_ACTIONS covers "agent.").
 
     agent.register  commit  {id, name, kind?, org_scope?, tools?, autonomy?}   a new agent (kind external, autonomy
                                                                                 propose unless given)

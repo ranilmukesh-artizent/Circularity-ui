@@ -23,6 +23,14 @@ describe('importInput (import.commit)', () => {
     expect(i.rejected.map((r) => r.asset_id)).toEqual(['BAT-0201']);
     expect(Object.keys(i.rejected[0]).sort()).toEqual(['asset_id', 'grade', 'location', 'owner', 'qty', 'received']);
   });
+  it("sends a template row's own columns in rows and rejected (tool fleet, device)", () => {
+    const tf = { ...row('T-CMH-9911'), cls: 'core_drill', ft: 'rental', site: 'Site 3', rul: '40' };
+    const dv = { ...row('D-77', ['qty must be a positive whole number']), brand: 'Acme', model: 'X1', band: 'mid', ref: '320', doh: '12' };
+    const i = importInput(1, 1, [tf, dv]);
+    expect(i.rows[0]).toEqual({ asset_id: 'T-CMH-9911', qty: '1', grade: 'B', location: 'Warehouse 1', owner: 'Customer A', received: '2026-10-05', cls: 'core_drill', ft: 'rental', site: 'Site 3', rul: '40' });
+    expect(i.rejected[0]).toMatchObject({ asset_id: 'D-77', brand: 'Acme', model: 'X1', band: 'mid', ref: '320', doh: '12' });
+    expect(Object.keys(i.rejected[0])).not.toContain('errors');
+  });
 });
 
 describe('layoutTables (tgLayout)', () => {

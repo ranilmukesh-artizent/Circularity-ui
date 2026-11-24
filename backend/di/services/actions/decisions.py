@@ -33,7 +33,7 @@ from di.repositories.live_rules import Shadow, live_rules, shadow_rules
 from di.services import instructions
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionError, guard, implement
-from di.services.cases import lifecycle, store
+from di.services.cases import intake, lifecycle, store
 from di.services.engine.evaluate import apply_business, build_routes, draft_of, evaluate
 from di.services.engine.predictor import FormulaPredictor
 from di.services.engine.routes import GATES, POLICY, SUSTAINABILITY, fail, rank_routes
@@ -161,29 +161,26 @@ def _rebuild(ctx: CallContext, c: store.Case, rnd: Callable[[], float]) -> None:
     """The demo's buildRoutes on the action's generator, then rankRoutes. The demo's last draw decides whether the
     recycler needs a hazardous-waste route for a battery or IT lot; it comes after every valuation draw, so it is
     taken after build_routes (the engine's only later rule, Economics, never excludes material: its net is positive).
-    The business rules of the case's published flow run after the gate rules (plan 8, MVP-3.3); when that flow is in
-    shadow, the draft's rules also run on a copy of the same valued routes (MVP-3.5)."""
+    The hazardous-waste exclusion is a gate rule, so it is applied before the business rules of the case's published
+    flow (plan 8, MVP-3.3): the waiver then sees it, and a rule can never leave a battery or IT lot with no eligible
+    route (audit F2). Business rules draw nothing, so the draws are the demo's. When the flow is in shadow, the
+    draft's rules also run on a copy of the same gated routes (MVP-3.5)."""
     t, rules, ver = live_rules(ctx.session, c)
     shadow = shadow_rules(ctx.session, c)
     probe = {**c, "hazardousMaterial": False}
     routes = build_routes(probe, FormulaPredictor(rnd))  # valued, gate rules applied
-    copied = copy.deepcopy(routes) if shadow else None
-    apply_business(probe, routes, rules, t)
-    hazard = False
     if c["cls"] in ("batch", "it"):
         m = next((r for r in routes if r["id"] == "material"), None)
-        hazard = bool(m) and rnd() < 0.12
-        if m and hazard:
+        if m and rnd() < 0.12:
             fail(m, SUSTAINABILITY, HAZARD)
+    copied = copy.deepcopy(routes) if shadow else None
+    apply_business(probe, routes, rules, t)
     c["routes"] = routes
     c["recommendation"] = rank_routes(routes, c.get("blocked"), probe["preferred"])
     _record_rules(c, probe, ver)
     if shadow and copied is not None:
         sprobe = {**c, "hazardousMaterial": False}
         apply_business(sprobe, copied, shadow.rules, t)
-        m = next((r for r in copied if r["id"] == "material"), None)
-        if m and hazard:
-            fail(m, SUSTAINABILITY, HAZARD)
         _record_shadow(ctx, c, shadow, rank_routes(copied, c.get("blocked"), sprobe["preferred"]))
 
 
@@ -579,9 +576,14 @@ def reevaluate(i: dict[str, Any], ctx: CallContext):
     key = _key("case.reevaluate", i, ctx)
     c, by = _case(ctx, i["case_id"]), _by(ctx)
     was = c["recommendation"]["plan"] if c.get("recommendation") else None
-    # a hand-modelled case keeps its routes and is ranked again; any other is valued again from the formulas
+    # a hand-modelled case keeps its routes and is ranked again; a template case (tool fleet, device) is valued again by
+    # its template's valuer; any other is valued again from the formulas
     if c.get("hero"):
         _rerank(ctx, c)
+    elif (c.get("template") or "industrial") != "industrial":
+        intake.revalue(ctx.session, c)
+        if shadow := shadow_rules(ctx.session, c):  # a flow in shadow: the draft's choice beside the live one (MVP-3.5)
+            _record_shadow(ctx, c, shadow, intake.recommend(ctx.session, c, shadow.rules))
     else:
         _rebuild(ctx, c, _seeded(key))
     r = c["recommendation"]
