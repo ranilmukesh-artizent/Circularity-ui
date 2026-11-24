@@ -148,6 +148,14 @@ phase gate is the last row.
 | 2026-11-23 | 08 · MVP-12.4 end to end MVP smoke | `aa020a2` | the task's own tests (in its commit body) | done |
 | 2026-11-24 | 08 · lead: Demo reset restores the seeded agents exactly; format a test | `d0bfad4` | the task's own tests (in its commit body) | done |
 | 2026-11-24 | 02 + 08 · **phase gates (all, run together)** | — | api 4,374 passed (5 agent/MCP failures found: the reset did not restore an agent's autonomy; fixed in d0bfad4 and re-run green, 50 passed); source-sim 271; lint clean; web-check tsc 0, 278 tests; smoke-pages 11 accounts 0 failing; smoke-rt1048 stage 10; smoke-modeler passed; smoke-mvp 12/12 (after fixing a race in its clock loop) | done |
+| 2026-11-24 | trial · Trial package: prebuilt images, start/stop/reset scripts, Start here | `3b6a15b` | build.sh, then check.sh: clean install passed (load, start, sign in, RT-1048, only web published, stop/start keeps 128 cases, reset) | done |
+| 2026-11-24 | gaps · B Proposals for you on Home | `baf90a4` | 12 + 382 api, web 289 (its commit body) | done |
+| 2026-11-24 | gaps · A tenant access requests, grants that end and can be revoked, maker-checker | `bf0c010` | 12 + 445 api, web 298 | done |
+| 2026-11-24 | gaps · D org screens (rename, pack, pilot mode and report) and the Connect org unit | `5bb95a7` | 251 api, web 19 (own files) | done |
+| 2026-11-24 | gaps · C approvals honour the out-of-office delegation; inbox grant controls | `38647d6` | 8 + 688 api, web 298 | done |
+| 2026-11-24 | gaps · E Register agent and the Models panel (fit, propose, approve) | `31268c5` | 55 + 23 api, web 298 | done |
+| 2026-11-24 | gaps · lead: docs and guides; org reads refresh nothing | `69acbc4` | web-check 298 | done |
+| 2026-11-24 | gaps · **gate (lead, combined tree)** | — | lint all passed; api 4,438 passed; source-sim 271 passed; web-check tsc 0, 298 tests; smoke-pages 11 accounts 0 failing; smoke-rt1048 stage 10; smoke-modeler passed; smoke-mvp 12/12; trial package rebuilt from HEAD and clean-install check passed | done |
 
 ### Lessons from running 7+ agents in parallel
 
