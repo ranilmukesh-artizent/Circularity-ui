@@ -26,6 +26,8 @@ export interface ActionError {
     | 'validation_error' | 'out_of_scope' | 'tenant_boundary' | 'approval_required' | 'limit_exceeded'
     | 'not_found' | 'conflict' | 'duplicate' | 'network';
   message: string;
+  /** every problem a refused workflow.import found (P9-0.7): where in the file, and what is wrong */
+  problems?: { path: string; message: string }[];
 }
 
 export type ActionResult<T = Record<string, unknown>> =

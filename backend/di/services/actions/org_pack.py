@@ -313,8 +313,6 @@ def import_pack(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     wf_ids = []
     for w in p["workflows"]:
         data = _workflow_data(w, new_ids) if isinstance(w, dict) else {}
-        if bad := workflows.import_guard({"data": data}, ctx):
-            raise ActionError(*bad)
         wf_ids.append(workflows.import_workflow({"data": data}, ctx)["id"])
     flow_ids = [_import_flow(ctx, key, g, target) for key, g in p["flows"].items()]
     created = {

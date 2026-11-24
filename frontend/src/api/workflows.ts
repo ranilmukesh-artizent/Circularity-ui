@@ -422,7 +422,7 @@ export const setWorkflowStatus = (id: string, status: WfStatus) =>
 export const createWorkflow = (i: { type: string; src?: string; ch?: string; name?: string; graph?: WfGraph; desc?: string }) =>
   invoke<{ id: string; name: string }>('workflow.create', i);
 export const duplicateWorkflow = (id: string) => invoke<{ id: string; name: string }>('workflow.duplicate', { id });
-/** A new draft from the JSON Export JSON wrote (workflow.import, plan 6 C10); an unknown block or source is refused. */
+/** A new draft from the JSON Export JSON wrote (workflow.import, plan 6 C10); a refusal lists every problem in `error.problems` (P9-0.7). */
 export const importWorkflow = (data: unknown) => invoke<{ id: string; name: string }>('workflow.import', { data });
 /** The signed-in person's working copy kept on the server, read when the workflow opens (plan 6 C9). Suspends. */
 export const serverDraftOf = (id: string): ServerDraft | null => (workflow(id) ? detailA(id).draft ?? null : null);

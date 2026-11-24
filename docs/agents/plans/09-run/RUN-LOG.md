@@ -28,3 +28,5 @@ unattended". Times are local (IST).
 | 25 Nov 05:35 | P9-0.12 to w2 (Sonnet). Phase 0: 8 of 17 merged. |
 | 25 Nov 03:52 | P9-0.10 merged. Sonnet; red first quoted; mapping.save held for a person when an agent prepares it. |
 | 25 Nov 03:55 | P9-0.9 merged. Sonnet; red first quoted; the 2 workflow_open_case failures were the private database's missing fabric, green on main. |
+| 25 Nov 06:20 | P9-0.10 and P9-0.9 merged. P9-0.13 to w3, P9-0.14 to w4. P9-0.7 verifying on main (workflow and org tests 329 passed). |
+| 25 Nov 04:08 | P9-0.7 merged. Sonnet; red first quoted; jsonschema docs read. Outside its file list it removed the import_guard call from org.importPack (pack workflows may name sources not connected yet; schema and importer rules still apply): flagged for review. |

@@ -37,6 +37,12 @@ def workflow_blocks(p: CurrentPrincipal):
     return svc.workflow_blocks()
 
 
+@router.get("/schema")
+def workflow_schema(p: CurrentPrincipal):
+    require_studio(p)
+    return svc.workflow_schema()
+
+
 @router.get("/{workflow_id}")
 def workflow_detail(workflow_id: str, p: CurrentPrincipal, session: DbSession):
     require_studio(p)

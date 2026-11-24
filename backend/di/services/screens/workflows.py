@@ -3,6 +3,7 @@
     GET /api/screens/workflows?cat=&status=&src=&q=   the list (filtered), the status counts, the recent runs and what
                                                       needs attention
     GET /api/screens/workflows/blocks                 the block catalogue: every palette block's settings (plan 6 C1)
+    GET /api/screens/workflows/schema                 the workflow export's JSON Schema (P9-0.7); no facade function
     GET /api/screens/workflows/{id}                   one workflow: its graph, the saved version, the template graph,
                                                       the run history, records in and out of each step in the last run,
                                                       the last run as the canvas paints it, and its failed records;
@@ -279,6 +280,14 @@ def workflow_blocks() -> dict:
     ops = {sid: operations(sid) for sid in dict.fromkeys(SYSTEM_OF.values())}
     # palette: the tiles of blocks the demo has none for (plan 8: Open case), added to its transforms by the Studio
     return {"blocks": catalogue(), "resources": _resources(), "operations": ops, "palette": list(PALETTE)}
+
+
+def workflow_schema() -> dict:
+    """The JSON Schema of a workflow export (di/workflow/schema.py, P9-0.7): what `workflow.import` validates a file
+    against. No facade function: agents and tools read it."""
+    from di.workflow.schema import workflow_schema as build
+
+    return build()
 
 
 def _resources() -> dict[str, list[str]]:

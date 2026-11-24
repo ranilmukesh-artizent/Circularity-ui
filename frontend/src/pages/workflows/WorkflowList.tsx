@@ -10,6 +10,8 @@ import {
 } from '../../api/workflows';
 import { openAsk } from '../../utils/askBus';
 import { Icon } from '../../components/Icon';
+import { Modal } from '../../components/Overlay';
+import { problemRows, type ProblemRow } from './importProblems';
 import { toast } from '../../components/toast';
 import { refused } from '../../hooks/useAction';
 import { isDirty, useDrafts } from './draftStore';
@@ -78,6 +80,7 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
 
   // Import (workflow.import): a file Export JSON wrote becomes a new draft, checked on the server
   const fileRef = useRef<HTMLInputElement>(null);
+  const [problems, setProblems] = useState<{ file: string; rows: ProblemRow[] } | null>(null);
   async function importFile(file: File | undefined) {
     if (fileRef.current) fileRef.current.value = '';
     if (!file) return;
@@ -88,6 +91,7 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
       return toast(file.name + ' is not a JSON file. Choose a file that Export JSON wrote.', 4200);
     }
     const r = await importWorkflow(data);
+    if (!r.ok && r.error.problems?.length) return setProblems({ file: file.name, rows: problemRows(r.error) });
     if (refused(r, 4200)) return;
     toast(r.output.name + ' imported as a draft (' + r.output.id + ').');
     open(r.output.id);
@@ -170,6 +174,14 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
       {modal?.k === 'new' && <NewWorkflowModal onClose={() => setModal(null)} onCreated={(id) => { setModal(null); open(id); }} />}
       {modal?.k === 'ai' && <WorkflowBuilder key={modal.prompt} initialPrompt={modal.prompt} onClose={() => { setModal(null); if (build !== null) nav(studioHref(), { replace: true }); }} onCreated={(id) => { setModal(null); open(id); }} />}
       {modal?.k === 'del' && <DeleteModal id={modal.id} onClose={() => setModal(null)} onDeleted={() => setModal(null)} />}
+      {problems && (
+        <Modal title={'Cannot import ' + problems.file} onClose={() => setProblems(null)} foot={<button className="btn" onClick={() => setProblems(null)}>Close</button>}>
+          <p style={{ marginTop: 0 }}>This file has {problems.rows.length} {problems.rows.length === 1 ? 'problem' : 'problems'}. Fix them in the file and import it again.</p>
+          <ul className="importProblems" style={{ margin: 0, paddingLeft: 18 }}>
+            {problems.rows.map((r, i) => <li key={i}>{r.path && <code>{r.path}</code>} {r.message}</li>)}
+          </ul>
+        </Modal>
+      )}
     </div>
   );
 }

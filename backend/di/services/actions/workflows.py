@@ -59,6 +59,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, cast
 
+from jsonschema import Draft202012Validator  # type: ignore[import-untyped]  # no stubs in the dev lock
 from sqlalchemy import text
 
 from di.core import clock, jobs, policy, state
@@ -71,6 +72,7 @@ from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
 from di.services.engine.jsmath import js_round
 from di.workflow import binding, blocks, triggers, versions
+from di.workflow.schema import STEP_KINDS, workflow_schema
 
 log = logging.getLogger("di.workflows")
 _REF = lists()
@@ -1287,8 +1289,10 @@ _declare(
     "workflow.import", "Import a workflow", "Create a draft workflow from the JSON a workflow export wrote.",
     {"data": {"req": True, "t": "object"}},
 )  # fmt: skip
-_KINDS = ("fixed", "conn", "wconn", "act", "xf", "map", "tool")
+_KINDS = STEP_KINDS
 _CAT_KIND = {"Ingest": "pipe", "Outbound": "pipe", "Decision": "dec"}
+Problem = dict[str, str]  # {"path": "steps[2].cfg.interval", "message": ...}
+Report = Callable[[str, str], None]
 
 
 def _known_block(k: str, ref: str) -> bool:
@@ -1301,56 +1305,114 @@ def _known_block(k: str, ref: str) -> bool:
     return any(t["id"] == ref for t in TOOLS)  # tool
 
 
-def _parse_import(data: dict[str, Any], sources: dict[str, dict]) -> tuple[str, str] | dict[str, Any]:
-    """The draft an export describes, or the refusal (code, message) naming the first unknown block or source."""
-    steps, links = data.get("steps"), data.get("links", [])
-    if not isinstance(steps, list) or not steps:
-        return "validation_error", "This is not a workflow export: it has no steps."
-    if not isinstance(links, list):
-        return "validation_error", "This is not a workflow export: its links are not a list."
+def _path(error: Any) -> str:
+    """`steps[2].cfg.interval` for a schema error's location in the file."""
+    out = ""
+    for part in error.absolute_path:
+        out += f"[{part}]" if isinstance(part, int) else f".{part}" if out else str(part)
+    return out
+
+
+def _schema_problems(data: dict[str, Any]) -> list[Problem]:
+    """Pass 1: every way the file departs from the workflow JSON Schema (di/workflow/schema.py), in file order."""
+    found: list[Problem] = []
+    errors = Draft202012Validator(workflow_schema()).iter_errors(data)
+    for e in sorted(errors, key=lambda x: [str(p) for p in x.absolute_path]):
+        at = _path(e)
+        if e.validator == "required" and isinstance(e.instance, dict):
+            names = [n for n in e.validator_value if n not in e.instance]
+            found += [{"path": f"{at}.{n}" if at else n, "message": f"'{n}' is a required property"} for n in names]
+        else:
+            found.append({"path": at, "message": e.message})
+    return found
+
+
+def _import_nodes(steps: list[Any], sources: dict[str, dict], bad: Report) -> list[dict]:
+    """The nodes the steps describe; every problem found goes to `bad(path, message)`."""
     nodes: list[dict] = []
-    for st in steps:
-        if not isinstance(st, dict) or not isinstance(st.get("id"), str) or not st["id"].strip():
-            return "validation_error", "Every step needs an id."
-        sid, k, ref = st["id"], st.get("kind"), st.get("ref")
-        if not isinstance(k, str) or k not in _KINDS:
-            return "validation_error", f"Unknown block {k} in step {sid}."
-        if not isinstance(ref, str) or not ref:
-            return "validation_error", f"Step {sid} does not say which block it is."
-        if k in ("conn", "wconn", "map"):
-            if ref not in sources:
-                return "not_found", f"Unknown source {ref} in step {sid}."
-        elif not _known_block(k, ref):
-            return "validation_error", f"Unknown block {ref} in step {sid}."
+    for i, st in enumerate(steps):
+        at = f"steps[{i}]"
+        if not isinstance(st, dict):
+            bad(at, "A step must be an object.")
+            continue
+        sid, k, ref = st.get("id"), st.get("kind"), st.get("ref")
+        if not isinstance(sid, str) or not sid.strip():
+            bad(f"{at}.id", "Every step needs an id.")
+            continue
         if any(n["id"] == sid for n in nodes):
-            return "validation_error", f"Step {sid} appears twice."
+            bad(f"{at}.id", f"Step {sid} appears twice.")
+        if not isinstance(k, str) or k not in _KINDS:
+            bad(f"{at}.kind", f"Unknown block {k} in step {sid}.")
+        elif not isinstance(ref, str) or not ref:
+            bad(f"{at}.ref", f"Step {sid} does not say which block it is.")
+        elif k in ("conn", "wconn", "map"):
+            if ref not in sources:
+                bad(f"{at}.ref", f"Unknown source {ref} in step {sid}.")
+        elif not _known_block(k, ref):
+            bad(f"{at}.ref", f"Unknown block {ref} in step {sid}.")
         x, y = st.get("x", 0), st.get("y", 0)
         if not all(isinstance(v, int | float) and not isinstance(v, bool) for v in (x, y)):
-            return "validation_error", f"Step {sid} needs a position (x and y)."
+            bad(at, f"Step {sid} needs a position (x and y).")
         cfg = st.get("cfg")
         if cfg is not None and not isinstance(cfg, dict):
-            return "validation_error", f"The settings of step {sid} must be an object."
+            bad(f"{at}.cfg", f"The settings of step {sid} must be an object.")
         nodes.append({"id": sid, "k": k, "ref": ref, "x": x, "y": y} | ({"cfg": copy.deepcopy(cfg)} if cfg else {}))
-    ids = {n["id"] for n in nodes}
+    return nodes
+
+
+def _import_edges(links: list[Any], ids: set[str], bad: Report) -> list[dict]:
     edges: list[dict] = []
     for i, ln in enumerate(links):
         a, b = (ln.get("from"), ln.get("to")) if isinstance(ln, dict) else (None, None)
-        if a not in ids or b not in ids:
-            return "validation_error", f"Link {a} → {b} names a step the workflow does not have."
-        edges.append({"id": f"e{i}", "a": a, "b": b, "locked": bool(ln.get("fixed"))})
+        for end, v in (("from", a), ("to", b)):
+            if v not in ids:
+                bad(f"links[{i}].{end}", f"Link {a} → {b} names a step the workflow does not have.")
+        edges.append({"id": f"e{i}", "a": a, "b": b, "locked": bool(isinstance(ln, dict) and ln.get("fixed"))})
+    return edges
+
+
+def _import_source(data: dict[str, Any], nodes: list[dict], sources: dict[str, dict], bad: Report) -> str | None:
     conns = [n["ref"] for n in nodes if n["k"] in ("conn", "wconn")]
     sid_given, vendor = data.get("source_id"), data.get("source")
     if isinstance(sid_given, str) and sid_given:
         if sid_given not in sources:
-            return "not_found", f"Unknown source {sid_given}."
-        src_id: str | None = sid_given
-    elif isinstance(vendor, str) and vendor:
+            bad("source_id", f"Unknown source {sid_given}.")
+            return None
+        return sid_given
+    if isinstance(vendor, str) and vendor:
         same = [x for x in sources if sources[x].get("vendor") == vendor]
         if not same:
-            return "not_found", f"Unknown source {vendor}."
-        src_id = next((x for x in same if x in conns), same[0])
-    else:
-        src_id = conns[0] if conns else None
+            bad("source", f"Unknown source {vendor}.")
+            return None
+        return next((x for x in same if x in conns), same[0])
+    return conns[0] if conns else None
+
+
+def _parse_import(data: dict[str, Any], sources: dict[str, dict]) -> tuple[dict[str, Any] | None, list[Problem]]:
+    """Passes 1 and 2: the draft an export describes and every problem with the file (the importer's own checks, whose
+    texts name the step, then what the schema adds; a second problem at the same path is dropped). The draft is None
+    when there is a problem."""
+    problems: list[Problem] = []
+    seen: set[str] = set()
+
+    def bad(path: str, message: str) -> None:
+        if path not in seen:
+            seen.add(path)
+            problems.append({"path": path, "message": message})
+
+    steps, links = data.get("steps"), data.get("links", [])
+    if not isinstance(steps, list) or not steps:
+        bad("steps", "This is not a workflow export: it has no steps.")
+    if not isinstance(links, list):
+        bad("links", "This is not a workflow export: its links are not a list.")
+    nodes = _import_nodes(steps if isinstance(steps, list) else [], sources, bad)
+    edges = _import_edges(links if isinstance(links, list) and nodes else [], {n["id"] for n in nodes}, bad)
+    src_id = _import_source(data, nodes, sources, bad)
+    for p in _schema_problems(data):
+        bad(p["path"], p["message"])
+    if problems:
+        return None, problems
+    conns = any(n["k"] == "conn" for n in nodes)
     cat = data.get("type")
     if cat not in _CAT_KIND:
         cat = "Outbound" if any(n["k"] == "wconn" for n in nodes) else "Ingest" if conns else "Decision"
@@ -1368,7 +1430,15 @@ def _parse_import(data: dict[str, Any], sources: dict[str, dict]) -> tuple[str, 
         "name": name, "cat": cat, "kind": _CAT_KIND[cat], "src": src_id, "owner": owner, "trig": trig,
         "desc": str(data.get("description") or "").strip() or "Imported from a workflow export.",
         "graph": {"nodes": nodes, "edges": edges},
-    }  # fmt: skip
+    }, []  # fmt: skip
+
+
+def _graph_problems(draft: dict[str, Any], s: Any) -> list[Problem]:
+    """Pass 3: each error `workflow.validate` finds on the graph the import would create, at the step it names."""
+    g = blocks.compact_graph(copy.deepcopy(draft["graph"]))
+    at = {n["id"]: f"steps[{i}]" for i, n in enumerate(g["nodes"])}
+    checks = validate(g, draft["kind"], s)
+    return [{"path": at.get(c["id"], "graph"), "message": c["msg"]} for c in checks if c["sev"] == "error"]
 
 
 def _import_sources(ctx: CallContext) -> dict[str, dict]:
@@ -1377,17 +1447,32 @@ def _import_sources(ctx: CallContext) -> dict[str, dict]:
     return live.sources(ctx.session)
 
 
+def _import_check(i: dict[str, Any], ctx: CallContext, graph_checks: bool) -> tuple[dict[str, Any] | None, list[Problem]]:
+    """The draft the file makes, or every problem with it: schema and the importer's checks, then (the guard asks for
+    them; the org pack's import calls the handler for sources that are not connected yet) the graph checks."""
+    draft, problems = _parse_import(i["data"], _import_sources(ctx))
+    if draft is not None and graph_checks:
+        problems = _graph_problems(draft, ctx.session)
+    return (None, problems) if problems else (draft, [])
+
+
+def _refusal(problems: list[Problem]) -> tuple[str, str, dict[str, Any]]:
+    n = len(problems)
+    head = f"{n} {'problem' if n == 1 else 'problems'} in this file. The first: {problems[0]['message']}"
+    return "validation_error", head, {"problems": problems}
+
+
 @guard("workflow.import")
 def import_guard(i: dict[str, Any], ctx: CallContext):
-    p = _parse_import(i["data"], _import_sources(ctx))
-    return p if isinstance(p, tuple) else None
+    _, problems = _import_check(i, ctx, True)
+    return _refusal(problems) if problems else None
 
 
 @implement("workflow.import")
 def import_workflow(i: dict[str, Any], ctx: CallContext):
-    p = _parse_import(i["data"], _import_sources(ctx))
-    if isinstance(p, tuple):  # the guard refused it
-        raise ActionError(*p)
+    p, problems = _import_check(i, ctx, False)
+    if p is None:  # the guard refused it
+        raise ActionError(*_refusal(problems))
     state.next_number(ctx.session, "workflows", "WF-", 0)  # the numbering lock
     ids = _ids(ctx)
     n = 100

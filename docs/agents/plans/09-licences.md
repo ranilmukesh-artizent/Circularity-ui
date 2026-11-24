@@ -21,4 +21,4 @@ that adds a library fills in its pinned version.
 | @xyflow/react | npm | MIT | set by the adding task | P9-8.13 | Studio and Modeler canvas | pending |
 | @dagrejs/dagre | npm | MIT | set by the adding task | P9-8.13 | auto-layout of imported flows | pending |
 | @gorules/jdm-editor | npm | MIT | set by the adding task | P9-8.16 | decision table editor in the Modeler | pending |
-| jsonschema | PyPI | MIT | 4.26.0 | P9-0.7 | validate workflow imports and pack files | pending |
+| jsonschema | PyPI | MIT | 4.26.0 (pinned in `backend/requirements.in`; already locked through `mcp`) | P9-0.7 | validate workflow imports and pack files | pending |

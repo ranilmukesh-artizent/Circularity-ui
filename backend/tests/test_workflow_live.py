@@ -6,7 +6,7 @@ workflow.import.
   test_writes_workflows.py cover that).
 - A dedupe key the source's records do not carry is an error naming the block and the field.
 - workflow.import takes the JSON the export writes and creates the workflow as a draft; an unknown block or source is
-  refused with its name.
+  refused with its name (P9-0.7: as a validation_error that lists every problem).
 """
 
 import copy
@@ -210,8 +210,8 @@ def test_import_keeps_block_settings():
          "Unknown block x_teleport in step zz."),
         (lambda e: e["steps"].append({"id": "zz", "kind": "gadget", "ref": "x_val", "x": 0, "y": 0}), "validation_error",
          "Unknown block gadget in step zz."),
-        (lambda e: e.update(source_id="nope", source="Nope Corp"), "not_found", "Unknown source nope."),
-        (lambda e: e["steps"].append({"id": "zz", "kind": "conn", "ref": "nope", "x": 0, "y": 0}), "not_found",
+        (lambda e: e.update(source_id="nope", source="Nope Corp"), "validation_error", "Unknown source nope."),
+        (lambda e: e["steps"].append({"id": "zz", "kind": "conn", "ref": "nope", "x": 0, "y": 0}), "validation_error",
          "Unknown source nope in step zz."),
         (lambda e: e["links"].append({"from": "r", "to": "ghost", "fixed": False}), "validation_error",
          "Link r → ghost names a step the workflow does not have."),
@@ -223,7 +223,9 @@ def test_import_refusals(change, code, msg):
     change(exp)
     n = len(_list()["workflows"])
     r = call("workflow.import", {"data": exp}, "developer")
-    assert not r["ok"] and r["error"]["code"] == code and r["error"]["message"] == msg, r
+    # P9-0.7: every refusal is a validation_error that lists its problems (the unknown source is no longer not_found)
+    assert not r["ok"] and r["error"]["code"] == code, r
+    assert msg in [p["message"] for p in r["error"]["problems"]], r
     assert len(_list()["workflows"]) == n
 
 
