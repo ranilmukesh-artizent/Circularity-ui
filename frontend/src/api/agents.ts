@@ -76,6 +76,10 @@ interface CatalogTool {
   risk: string;
   input_schema: Record<string, unknown>;
   agent_allowed: boolean;
+  /** may an agent call it: yes, held for a person (it prepares, a person runs), or no */
+  agent_mode: 'yes' | 'held' | 'no';
+  /** the action has a handler on the server */
+  implemented: boolean;
 }
 
 export interface AgentsScreen {

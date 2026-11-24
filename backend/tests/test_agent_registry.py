@@ -37,6 +37,9 @@ def prepared(action: str, body: dict, user: str, agent: str) -> dict:
     return client.post(f"/api/actions/{action}", json=body, headers=h(user) | {"X-Circularity-Preparer": agent}).json()
 
 
+UNBUILT = {"analytics.query", "audit.search", "sources.health", "mapping.suggest", "tables.suggestLinks", "import.clean"}
+
+
 def test_seeded_agents():
     with SessionLocal() as s:
         got = {a.id: a for a in registry.all_agents(s)}
@@ -47,7 +50,7 @@ def test_seeded_agents():
         assert (g.name, g.kind, g.tools, g.enabled, g.org_scope, g.autonomy) == (
             a["name"],
             "internal",
-            a["tools"],
+            [t for t in a["tools"] if t not in UNBUILT],  # P9-0.4: migration 0029 drops the tools with no handler
             True,
             [],
             "act",

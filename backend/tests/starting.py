@@ -59,7 +59,8 @@ def reset() -> None:
 
 SEED_ORGS = ("workspace", "Customer A", "Customer B", "Customer C")
 
-# The agents migration 0023 seeds: (id, name, tools, autonomy). Keep in step with that migration
+# The agents migration 0023 seeds, less the tools migration 0029 removes (no handler): (id, name, tools, autonomy).
+# Keep in step with those migrations
 # (tests/test_agent_registry.py::test_seeded_agents checks the live rows).
 SEED_AGENTS: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("assembler", "Evidence Assembler", ("get_case_evidence", "list_eligible_routes", "get_model_validation"), "act"),
@@ -72,22 +73,15 @@ SEED_AGENTS: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("gap", "Gap Requester", ("get_case_evidence", "request_missing_evidence"), "act"),
     ("coordinator", "Handoff Coordinator", ("get_case_evidence", "request_approval", "send_instruction"), "act"),
     ("reconciler", "Reconciler", ("get_case_evidence", "reconcile_outcome", "get_model_validation"), "act"),
-    ("briefer", "Briefing Agent", ("inbox.get", "cases.list", "analytics.query"), "act"),
-    ("analyst", "Analytics Explainer", ("analytics.query", "kpi.explain", "analytics.models"), "act"),
+    ("briefer", "Briefing Agent", ("inbox.get", "cases.list"), "act"),
+    ("analyst", "Analytics Explainer", ("kpi.explain", "analytics.models"), "act"),
     (
         "integrator",
         "Integration Assistant",
-        (
-            "sources.health",
-            "mapping.suggest",
-            "tables.suggestLinks",
-            "workflow.draft",
-            "workflow.validate",
-            "import.clean",
-        ),
+        ("workflow.draft", "workflow.validate"),
         "act",
     ),
-    ("auditor", "Audit Assistant", ("audit.search", "case.trace"), "act"),
+    ("auditor", "Audit Assistant", ("case.trace",), "act"),
     ("ask", "Ask Circularity", (), "read"),
 )
 

@@ -1,21 +1,24 @@
 """The tool catalogue (plan 8, MVP-11.2): every action of the registry as a tool an agent could call.
 
-    catalog() -> [{name, action, title, description, risk, input_schema, agent_allowed}]
+    catalog() -> [{name, action, title, description, risk, input_schema, agent_allowed, agent_mode, implemented}]
         name           the action id as a tool name ("case.evidence" -> "case_evidence")
         input_schema   JSON Schema draft 2020-12 from ActionDef.input (t -> type, req -> required, ex -> examples,
                        min -> minLength)
-        agent_allowed  false for the actions no agent may run (di.services.agents.forbidden.FORBIDDEN_ACTIONS:
-                       approving, overriding, declining, access, publishing, connection changes ...) and for system-only
-                       actions
+        agent_mode     "no" for the actions no agent may run (di.services.agents.forbidden.FORBIDDEN_ACTIONS:
+                       approving, overriding, declining, access, publishing, connection changes ...; the reads of
+                       NO_AGENT_READS that handle a secret; system-only actions; actions with no handler yet),
+                       "held" for HELD_FOR_PERSON (an agent prepares it, a person runs it), else "yes"
+        agent_allowed  agent_mode != "no"
+        implemented    the action has a handler (an unbuilt one answers 501)
 
 Generated from the registry each call, so an action declared in code shows up as soon as its module is imported.
 GET /api/agents/tools (di.routes.agents) serves it, filtered to what the signed-in account may call.
 """
 
-from typing import Any
+from typing import Any, Literal
 
 from di.services.actions.registry import ACTIONS, ActionDef
-from di.services.agents.forbidden import FORBIDDEN_ACTIONS
+from di.services.agents.forbidden import FORBIDDEN_ACTIONS, NO_AGENT_READS, held_for_person
 
 SCHEMA = "https://json-schema.org/draft/2020-12/schema"
 
@@ -37,8 +40,17 @@ def input_schema(a: ActionDef) -> dict[str, Any]:
     return {"$schema": SCHEMA, "type": "object", "properties": props, "required": req}
 
 
+def agent_mode(a: ActionDef) -> Literal["yes", "held", "no"]:
+    """May an agent call it? A read under a forbidden prefix (access.lookup) is a yes; one that handles a secret is not."""
+    if a.risk == "system" or a.handler is None or a.id in NO_AGENT_READS:
+        return "no"
+    if a.id.startswith(FORBIDDEN_ACTIONS) and a.risk != "read":
+        return "no"
+    return "held" if held_for_person(a.id) else "yes"
+
+
 def agent_allowed(a: ActionDef) -> bool:
-    return a.risk != "system" and not a.id.startswith(FORBIDDEN_ACTIONS)
+    return agent_mode(a) != "no"
 
 
 def entry(a: ActionDef) -> dict[str, Any]:
@@ -50,6 +62,8 @@ def entry(a: ActionDef) -> dict[str, Any]:
         "risk": a.risk,
         "input_schema": input_schema(a),
         "agent_allowed": agent_allowed(a),
+        "agent_mode": agent_mode(a),
+        "implemented": a.handler is not None,
     }
 
 

@@ -24,12 +24,13 @@ export interface ToolOption {
   title: string;
 }
 
-/** The tools an agent may be given: every MCP tool, then the catalogue's actions an agent may call. The actions no
- * agent may run (approving, access, publishing, promoting models, registering agents ...) are never offered. */
+/** The tools an agent may be given: every MCP tool, then the catalogue's actions an agent may call or prepare (yes and
+ * held). The actions no agent may run (approving, access, publishing, promoting models, registering agents ...) and
+ * those not built yet are never offered. */
 export function toolOptions(s: Pick<AgentsScreen, 'mcp_tools' | 'tools'>): ToolOption[] {
   const mcp = s.mcp_tools.map((id): ToolOption => ({ id, kind: 'mcp', title: id }));
   const seen = new Set(s.mcp_tools);
-  const acts = s.tools.filter((t) => t.agent_allowed && !seen.has(t.action)).map((t): ToolOption => ({ id: t.action, kind: 'action', title: t.title }));
+  const acts = s.tools.filter((t) => t.agent_mode !== 'no' && t.implemented && !seen.has(t.action)).map((t): ToolOption => ({ id: t.action, kind: 'action', title: t.title }));
   return [...mcp, ...acts];
 }
 

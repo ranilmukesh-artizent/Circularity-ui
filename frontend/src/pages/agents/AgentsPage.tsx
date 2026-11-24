@@ -122,7 +122,7 @@ function EditModal({ s, agent, busy, onClose, onSave }: {
 }) {
   const [tools, setTools] = useState(new Set(agent.tools));
   const [scope, setScope] = useState(new Set(agent.org_scope));
-  const actions = s.tools.filter((t) => t.agent_allowed).map((t) => t.action);
+  const actions = s.tools.filter((t) => t.agent_mode !== 'no' && t.implemented).map((t) => t.action);
   const options = [...new Set([...s.mcp_tools, ...actions, ...agent.tools])];
   const flip = (set: Set<string>, k: string) => {
     const n = new Set(set);
@@ -330,14 +330,21 @@ function Runs({ s }: { s: AgentsScreen }) {
   );
 }
 
+/** One chip per mode: May call, Held for a person, A person only, or Not built yet. */
+function ModeChip({ t }: { t: AgentsScreen['tools'][number] }) {
+  if (!t.implemented) return <span className="chip line">Not built yet</span>;
+  if (t.agent_mode === 'held') return <span className="chip warn">Held for a person</span>;
+  return t.agent_mode === 'yes' ? <span className="chip ok">May call</span> : <span className="chip line">A person only</span>;
+}
+
 function Catalogue({ s }: { s: AgentsScreen }) {
   const [only, setOnly] = useState(false);
-  const list = s.tools.filter((t) => !only || t.agent_allowed);
+  const list = s.tools.filter((t) => !only || t.agent_mode !== 'no');
   return (
     <section className="sect" id="agTools">
       <div className="sh">
         <h2>Tool catalogue</h2>
-        <span className="note">{s.tools.length} actions · {s.tools.filter((t) => t.agent_allowed).length} an agent may call</span>
+        <span className="note">{s.tools.length} actions · {s.tools.filter((t) => t.agent_mode !== 'no').length} an agent may call or prepare</span>
         <span className="grow" />
         <div className="seg">
           <button aria-pressed={!only} onClick={() => setOnly(false)}>All</button>
@@ -354,7 +361,7 @@ function Catalogue({ s }: { s: AgentsScreen }) {
                   <td className="mono">{t.name}</td>
                   <td>{t.title}</td>
                   <td><span className={'chip ' + (t.risk === 'read' ? 'ok' : t.risk === 'commit' ? 'bad' : 'line')}>{t.risk}</span></td>
-                  <td>{t.agent_allowed ? <span className="chip ok">May call</span> : <span className="chip line">A person only</span>}</td>
+                  <td><ModeChip t={t} /></td>
                   <td className="note">{t.description}</td>
                 </tr>
               ))}

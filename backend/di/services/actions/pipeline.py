@@ -4,7 +4,8 @@
     4 the permission            5 case scope: exists, tenant boundary, warehouse lock
     6 the agent gate (when an agent prepared it)              7 the action's own guard
     8 policy limits (approval limits, B12; an agent's kill switch, autonomy and run limits, MVP-11.1)
-    9 idempotency                (then: an agent with autonomy "propose" holds a write for a person, MVP-11.4)
+    9 idempotency                (then: an agent with autonomy "propose" holds a write for a person, MVP-11.4;
+                                 every agent holds a HELD_FOR_PERSON write, P9-0.4)
     10 run the handler           11 journal it (and run its `after` hooks)   12 emit events
 Read actions stop after the handler: they are not journaled.
 Every result is the demo's shape: {ok: true, output, key, action, seq} or {ok: false, error: {code, message}}.
@@ -13,7 +14,7 @@ Every result is the demo's shape: {ok: true, output, key, action, seq} or {ok: f
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -23,7 +24,7 @@ from di.core import clock, policy
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError
 from di.services.actions.scope import case_scope
 from di.services.agents import limits, proposals
-from di.services.agents.forbidden import forbidden
+from di.services.agents.forbidden import NO_AGENT_READS, forbidden, held_for_person
 
 # HTTP status per error code (the body always carries the demo's code and message)
 ERROR_STATUS = {
@@ -131,6 +132,8 @@ def _agent_gate(a: ActionDef, ctx: CallContext) -> tuple[str, str] | None:
     """The agent acts as the signed-in person and never commits on its own (the demo's afAgentGate); an action no
     agent may run is refused however the call arrived, confirmed or not (di.services.agents.forbidden; audit F4). Reads
     stay open to agents (Ask's access.lookup): the list is about what an agent may change."""
+    if a.id in NO_AGENT_READS:
+        return "approval_required", f"No agent may {a.verb or a.title.lower()}: it handles a secret."
     if forbidden(a.id) and a.risk != "read" and not a.id.startswith("decision."):
         return "approval_required", f"No agent may {a.verb or a.title.lower()}: a person does this, without an agent."
     if a.risk == "commit" and (not ctx.confirmed or a.id.startswith("decision.")):
@@ -140,6 +143,21 @@ def _agent_gate(a: ActionDef, ctx: CallContext) -> tuple[str, str] | None:
     if a.risk == "system":
         return "out_of_scope", "Only an enterprise system acknowledges instructions."
     return None
+
+
+def agent_route(a: ActionDef, ctx: CallContext) -> Literal["refused", "held", "runs"]:
+    """What steps 6, 9b and 10 decide for an agent-prepared call, without running the handler. `invoke` uses it for
+    step 9b, so the catalogue's agent_mode (di.services.agents.catalog) and the pipeline cannot drift apart."""
+    if _agent_gate(a, ctx) or a.handler is None:
+        return "refused"
+    if (
+        a.changes_state
+        and not ctx.confirmed
+        and ctx.preparer
+        and (held_for_person(a.id) or proposals.holds(ctx.session, ctx.preparer))
+    ):
+        return "held"
+    return "runs"
 
 
 def _clean(i: dict[str, Any]) -> dict[str, Any]:
@@ -214,8 +232,9 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[s
         seen = ctx.session.execute(text("SELECT seq FROM action_journal WHERE idem_key = :k AND NOT undone"), {"k": key}).first()
         if seen:
             return fail("duplicate", f"{a.dup_text or 'Already done'}. Nothing was created twice.")
-    # 9b an agent registered with autonomy "propose" does not run a write: it holds for a person (MVP-11.4)
-    if ctx.preparer and a.changes_state and not ctx.confirmed and proposals.holds(ctx.session, ctx.preparer):
+    # 9b an agent registered with autonomy "propose" does not run a write, and no agent runs a HELD_FOR_PERSON one:
+    # it holds for a person (MVP-11.4, P9-0.4)
+    if ctx.preparer and agent_route(a, ctx) == "held":
         pid = proposals.hold(ctx, a.id, _clean(i), case_id)
         return {"ok": True, "output": {"held": pid}, "key": None, "action": a.id}
     # 10 run

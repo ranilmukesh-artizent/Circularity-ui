@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { NewAgent } from '../../api/agents';
 import { idFromName, problem, toolOptions } from './register';
 
-const tool = (action: string, agent_allowed: boolean) => ({
-  name: action.replace('.', '_'), action, title: action, description: '', risk: 'read', input_schema: {}, agent_allowed,
+const tool = (action: string, agent_allowed: boolean, agent_mode: 'yes' | 'held' | 'no' = agent_allowed ? 'yes' : 'no', implemented = true) => ({
+  name: action.replace('.', '_'), action, title: action, description: '', risk: 'read', input_schema: {}, agent_allowed, agent_mode, implemented,
 }); // prettier-ignore
 
 describe('the Register agent dialog (plan 8 UI gaps)', () => {
@@ -22,6 +22,14 @@ describe('the Register agent dialog (plan 8 UI gaps)', () => {
       ['get_case_evidence', 'mcp'],
       ['cases.list', 'action'],
     ]);
+  });
+
+  it('offers held actions and hides actions that are not built', () => {
+    const opts = toolOptions({
+      mcp_tools: [],
+      tools: [tool('cases.list', true), tool('mapping.revert', true, 'held'), tool('analytics.query', false, 'no', false), tool('credentials.rotate', false)],
+    });
+    expect(opts.map((o) => o.id)).toEqual(['cases.list', 'mapping.revert']);
   });
 
   it('checks the form before it is sent', () => {

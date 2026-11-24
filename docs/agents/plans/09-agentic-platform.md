@@ -781,7 +781,7 @@ each story went.
 - [x] P9-0.1 Record plan 9 decisions and the licence list
 - [x] P9-0.2 Plan 9 gate script with the plan-file check
 - [x] P9-0.3 Story matrix check script with its own test
-- [ ] P9-0.4 Catalogue hygiene and credentials rotation forbidden
+- [x] P9-0.4 Catalogue hygiene and credentials rotation forbidden
 - [x] P9-0.5 Model chain with rate-limit fallback
 - [x] P9-0.6 Carbon factor set and a co2 line in both valuers
 - [ ] P9-0.7 Workflow JSON Schema and validated import
