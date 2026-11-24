@@ -2,12 +2,17 @@
 (syncDirectory, mapIdentity, removeUser, setRoleSource, setOutOfOffice, clearOutOfOffice), mcp.propose, and Admin's
 agent-first settings (access.setAutonomy, setLimit, setSelfApprove, setRunLimits, agent.setEnabled; B17).
 
+Beyond the demo (plan 8 UI gaps): nobody decides their own request or proposal (maker-checker); a tenant grant may end
+(access.decideRequest's `expires_hours`) and Admin, or the Approver with the tenantAccess delegation, may revoke it
+(access.revokeGrant); access.grants lists the live grants and access.myAccess is the requester's own view.
+
 Ports of the demo's handlers (index.html, `/* ---- access: requests, delegations, identity ---- */`). The pipeline has
 already validated the input and checked the permission; the guards here are the demo's state checks, in its order.
 
 Where the state lives:
 - requests (S.reqs): the workspace collection "requests" (di.repositories.common), newest first;
-- delegations (S.deleg) and tenant grants (S.grants): the delegation and tenant_grant tables (B7);
+- delegations (S.deleg) and tenant grants (S.grants): the delegation and tenant_grant tables (B7; 0027 adds the end
+  and the revocation);
 - the accounts as mapped (ACCOUNTS), the directory users (S.idp.users) and the directory settings (S.idp.src,
   lastSync, ooo): the collections "accounts", "idp_users" and "access_settings" (di.core.policy);
 - MCP servers Circularity consumes (CLIENT_SERVERS): the collection "mcp_servers", which an approved proposal joins.
@@ -20,12 +25,14 @@ from typing import Any
 from sqlalchemy import text
 
 from di.core import policy, state
+from di.core.auth import LIVE_GRANT, grant_end
+from di.repositories import access as access_repo
 from di.repositories import constants as C
 from di.repositories.common import REQ_SCOPE, REQ_SEQ_START, can, money, requests
 from di.services.actions import agents
 from di.services.actions.decisions import NOW, rb_log
 from di.services.actions.pipeline import CallContext
-from di.services.actions.registry import ACTIONS, ActionError, guard, implement
+from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
 from di.services.agents import registry as agent_registry
 
 # The demo's DELEG (di.repositories.constants, shared with the Access screen): the kinds of request Admin may let the
@@ -115,6 +122,12 @@ def propose(i: dict[str, Any], ctx: CallContext):
     return {"id": r["id"]}
 
 
+OWN_REQUEST = "You made this request, so another person must decide it."
+# Plan 8 UI gaps: the approver may end a tenant grant after this many hours (absent or null: no end); 90 days at most
+ACTIONS["access.decideRequest"].input |= {"expires_hours": {"req": False, "t": "number"}}
+MAX_GRANT_HOURS = 2160
+
+
 @guard("access.decideRequest")
 def decide_guard(i: dict[str, Any], ctx: CallContext):
     r = _request(ctx, i["id"])
@@ -122,8 +135,13 @@ def decide_guard(i: dict[str, Any], ctx: CallContext):
         return "not_found", f"No request {i['id']}."
     if not _can_decide(ctx, r):
         return "out_of_scope", "This request is not yours to decide."
+    if access_repo.own(ctx.actor.id, r):  # maker-checker, for tenant requests and MCP proposals alike
+        return "out_of_scope", OWN_REQUEST
     if i["decision"] == "decline" and len((i.get("note") or "").strip()) < 5:
         return "validation_error", "Add a short reason so the requester knows what to change."
+    hours = i.get("expires_hours")
+    if hours is not None and not 1 <= hours <= MAX_GRANT_HOURS:
+        return "validation_error", f"Choose an end between 1 hour and {MAX_GRANT_HOURS // 24} days, or no end."
     return None
 
 
@@ -135,12 +153,18 @@ def decide_request(i: dict[str, Any], ctx: CallContext):
     state.put(ctx.session, "requests", r["id"], r)
     approved = r["status"] == "approved"
     if r["kind"] == "tenant" and approved:
+        # a grant ends after `expires_hours` of wall-clock time (di.core.auth.LIVE_GRANT), or never; approving again
+        # makes a revoked or ended grant live again
+        hours = i.get("expires_hours")
         ctx.session.execute(
             text(
-                "INSERT INTO tenant_grant (account_id, tenant, granted_by) VALUES (:a, :t, :by) "
-                "ON CONFLICT (account_id, tenant) DO NOTHING"
+                "INSERT INTO tenant_grant (account_id, tenant, granted_by, expires_at) "
+                "VALUES (:a, :t, :by, CASE WHEN CAST(:h AS float) IS NULL THEN NULL "
+                "                          ELSE now() + make_interval(secs => CAST(:h AS float) * 3600) END) "
+                "ON CONFLICT (account_id, tenant) DO UPDATE SET granted_by = EXCLUDED.granted_by, granted_at = now(), "
+                "expires_at = EXCLUDED.expires_at, revoked_at = NULL, revoked_by = NULL, revoke_note = NULL"
             ),
-            {"a": r["byId"], "t": r["tenant"], "by": ctx.actor.id},
+            {"a": r["byId"], "t": r["tenant"], "by": ctx.actor.id, "h": hours},
         )
     if r["kind"] == "mcp" and approved:
         v = r["server"]
@@ -154,10 +178,114 @@ def decide_request(i: dict[str, Any], ctx: CallContext):
         )  # fmt: skip
     if r["kind"] == "tenant":
         type_, what = "access." + ("granted" if approved else "declined"), f"{r['by']} → {r['tenant']}"
+        if approved and i.get("expires_hours") is not None:
+            what += f" · for {_hours_text(i['expires_hours'])}"
     else:
         type_, what = "mcp.proposal." + r["status"], r["server"]["name"]
     rb_log(ctx, type_, what + (f" · {note}" if note else ""), _key("access.decideRequest", i, ctx))
     return {"id": r["id"], "status": r["status"]}
+
+
+def _hours_text(h: float) -> str:
+    if h >= 24 and h % 24 == 0:
+        d = int(h // 24)
+        return f"{d} day" + ("s" if d != 1 else "")
+    return f"{h:g} hour" + ("s" if h != 1 else "")
+
+
+# ---------------------------------------------------------------- live tenant grants: list, revoke, the requester's view
+# Declared beside the catalog's actions (plan 8 UI gaps). Agents never run them (di.mcp.policy.FORBIDDEN_ACTIONS: "access.").
+_STR = {"req": True, "t": "string"}
+ACTIONS.setdefault(
+    "access.revokeGrant",
+    ActionDef(id="access.revokeGrant", title="Revoke tenant access", verb="revoke tenant access", risk="commit",
+              desc="End a tenant grant now. The person loses access to that tenant's cases at once.", perm=None,
+              scope="none", input={"account_id": _STR, "tenant": _STR, "note": {"req": False, "t": "string"}}),
+)  # fmt: skip
+ACTIONS.setdefault(
+    "access.grants",
+    ActionDef(id="access.grants", title="Read tenant grants", verb="read tenant grants", risk="read", perm=None,
+              desc="The live tenant grants, with who granted them and when they end. Changes nothing.", scope="none",
+              input={}),
+)  # fmt: skip
+ACTIONS.setdefault(
+    "access.myAccess",
+    ActionDef(id="access.myAccess", title="Read my tenant access", verb="read your tenant access", risk="read",
+              perm="requestTenant", scope="none", input={},
+              desc="Your tenant access requests, your live grants and the tenants you can still ask for. Changes nothing."),
+)  # fmt: skip
+_LIVE_ROWS = "SELECT account_id, tenant, granted_by, granted_at, expires_at FROM tenant_grant WHERE " + LIVE_GRANT  # noqa: S608
+
+
+def _may_revoke(ctx: CallContext) -> bool:
+    """Admin, or the Approver while Admin delegates tenant access (the same rule as deciding a tenant request)."""
+    return can(ctx, "approve.tenantAccess")
+
+
+def _grant_row(ctx: CallContext, r: Any) -> dict:
+    a = policy.account(r.account_id, ctx.actor.ctx)
+    by = policy.account(r.granted_by or "", ctx.actor.ctx)
+    return {
+        "account_id": r.account_id, "account": a.label if a else r.account_id, "tenant": r.tenant,
+        "granted_by": by.label if by else r.granted_by, "granted_at": grant_end(r.granted_at),
+        "expires_at": grant_end(r.expires_at),
+    }  # fmt: skip
+
+
+@guard("access.grants")
+def grants_guard(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - guards take (input, ctx)
+    return None if _may_revoke(ctx) else ("out_of_scope", f"The {ctx.actor.role} view cannot read tenant grants.")
+
+
+@implement("access.grants")
+def list_grants(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - handlers take (input, ctx)
+    rows = ctx.session.execute(text(_LIVE_ROWS + " ORDER BY granted_at DESC, account_id, tenant"))
+    return {"grants": [_grant_row(ctx, r) for r in rows]}
+
+
+@guard("access.revokeGrant")
+def revoke_guard(i: dict[str, Any], ctx: CallContext):
+    if not _may_revoke(ctx):
+        return "out_of_scope", f"The {ctx.actor.role} view cannot revoke tenant access."
+    q = text("SELECT 1 FROM tenant_grant WHERE account_id = :a AND tenant = :t AND " + LIVE_GRANT)  # noqa: S608 - a constant
+    if ctx.session.execute(q, {"a": i["account_id"], "t": i["tenant"]}).first() is None:
+        return "not_found", f"No live grant of {i['tenant']} to {i['account_id']}."
+    return None
+
+
+@implement("access.revokeGrant")
+def revoke_grant(i: dict[str, Any], ctx: CallContext):
+    note = (i.get("note") or "").strip()
+    ctx.session.execute(
+        text(
+            "UPDATE tenant_grant SET revoked_at = now(), revoked_by = :by, revoke_note = :n "
+            "WHERE account_id = :a AND tenant = :t"
+        ),
+        {"a": i["account_id"], "t": i["tenant"], "by": ctx.actor.id, "n": note or None},
+    )
+    a = policy.account(i["account_id"], ctx.actor.ctx)
+    what = f"{a.label if a else i['account_id']} → {i['tenant']}" + (f" · {note}" if note else "")
+    rb_log(ctx, "access.revoked", what, "access.revokeGrant")
+    return {"account_id": i["account_id"], "tenant": i["tenant"]}
+
+
+@implement("access.myAccess")
+def my_access(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - handlers take (input, ctx)
+    """The requester's own view (the account menu's Request tenant access): its tenant requests, newest first, its live
+    grants with their end, and the tenants it does not see yet (each marked when a request for it is waiting)."""
+    me, actx = ctx.actor.id, ctx.actor.ctx
+    mine = [r for r in requests(ctx.session) if r["kind"] == "tenant" and r["byId"] == me]
+    waiting = {r["tenant"] for r in mine if r["status"] == "pending"}
+    acct = ctx.actor.account
+    allowed = set(policy.allowed_tenants(acct, actx)) if acct else set()
+    units = policy.org_units(actx)
+    options = [
+        {"id": t, "name": units[t].name if t in units else t, "pending": t in waiting}
+        for t in policy.tenants(actx)
+        if t not in allowed
+    ]
+    grants = [{"tenant": t, "expires_at": e} for t, e in actx.grant_ends.get(me, {}).items()]
+    return {"requests": mine, "grants": grants, "options": options}
 
 
 # ---------------------------------------------------------------- the Approver's delegations

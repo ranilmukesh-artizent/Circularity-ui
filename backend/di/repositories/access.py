@@ -6,9 +6,15 @@ from di.core.auth import Principal
 from di.repositories.common import REQ_SCOPE, requests
 
 
+def own(account_id: str, r: dict) -> bool:
+    """Maker-checker: the account made this request or proposal, so another person must decide it."""
+    return r.get("byId") == account_id
+
+
 def can_decide(p: Principal, r: dict) -> bool:
-    """The demo's canDecide: a pending request of a kind this account may decide (Admin, or a delegated Approver)."""
-    return r["status"] == "pending" and p.can("approve." + REQ_SCOPE[r["kind"]])
+    """The demo's canDecide: a pending request of a kind this account may decide (Admin, or a delegated Approver),
+    and not one it made itself (maker-checker; the demo's seeded requests are never their decider's own)."""
+    return r["status"] == "pending" and p.can("approve." + REQ_SCOPE[r["kind"]]) and not own(p.account.id, r)
 
 
 def request_rows(s: Session, p: Principal, kind: str | None = None) -> list[dict]:

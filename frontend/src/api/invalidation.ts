@@ -87,6 +87,8 @@ const ACTION_EXACT: Record<string, Scope> = Object.fromEntries(
     'workflow.draft.save', 'workflow.testRun',
     // plan 8: the Modeler's reads (a simulation and a proposal change nothing)
     'flow.get', 'flow.simulate', 'flow.propose',
+    // plan 8 UI gaps: the live tenant grants and the requester's own view (reads)
+    'access.grants', 'access.myAccess',
   ].map((id) => [id, [] as Area[]]), // prettier-ignore
 );
 const ACTION_FAMILY: Record<string, Scope> = {
@@ -116,6 +118,26 @@ const ACTION_FAMILY: Record<string, Scope> = {
 /** What a successful action can have changed. */
 export function actionScope(id: string): Scope {
   return ACTION_EXACT[id] ?? ACTION_FAMILY[id.split('.')[0]] ?? 'all';
+}
+
+/**
+ * Action families that change who may see or do what: after one (by anyone, as it arrives on the stream) the signed-in
+ * session itself (/api/auth/me: tenants, grants, permissions) is re-read, not only the cached pages. A tenant grant
+ * approved or revoked for this account thus reaches its open session without a reload.
+ */
+const SESSION_FAMILIES = new Set(['access', 'agent', 'org']);
+
+/** Can this successful action have changed the signed-in session (its tenants, grants or permissions)? */
+export function actionTouchesSession(id: string): boolean {
+  return SESSION_FAMILIES.has(id.split('.')[0]) && !(id in ACTION_EXACT);
+}
+
+/** Can this stream event have changed the signed-in session? A journal event of such an action. */
+export function streamTouchesSession(kind: string, data: unknown): boolean {
+  if (kind !== 'journal') return false;
+  const d = (data && typeof data === 'object' ? data : {}) as StreamData;
+  const type = typeof d.payload?.type === 'string' ? d.payload.type : '';
+  return type.startsWith('action.') && actionTouchesSession(type.slice('action.'.length));
 }
 
 /** Journal event types besides "action.<id>": what the actions declare (emits) and the case lifecycle's stage moves. */

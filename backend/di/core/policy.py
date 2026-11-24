@@ -4,7 +4,8 @@
 The policy itself (roles, their pages and permissions, the demo accounts, sign-in IDs) is configuration, read from
 the B1 golden file `policy.json`. What changes at run time lives in the database and reaches the rules through
 `Context` (loaded per request by di.core.auth.load_context):
-- the Approver's delegations (decisions, MCP proposals, tenant access) and a Planner's tenant grants (their tables);
+- the Approver's delegations (decisions, MCP proposals, tenant access) and a Planner's live tenant grants (their
+  tables; a grant may end or be revoked, migration 0027);
 - the accounts as the identity mapping has them now (state collection "accounts"; access.mapIdentity changes an
   account's role, tenant, site, warehouse and label, and every rule then sees the changed account);
 - the approval settings, the demo's AF.cfg.limits and AF.cfg.self (state collection "access_settings", item
@@ -59,7 +60,9 @@ class Context:
     """Run-time access state (from the database). The defaults are the demo's starting state."""
 
     delegations: dict[str, bool] = field(default_factory=lambda: dict.fromkeys(DELEGATION_SCOPES, True))
-    grants: dict[str, list[str]] = field(default_factory=dict)  # account id -> extra tenants
+    grants: dict[str, list[str]] = field(default_factory=dict)  # account id -> extra tenants (live grants only)
+    # account id -> {tenant: when the grant ends, ISO; None: no end} for the live grants (migration 0027)
+    grant_ends: dict[str, dict[str, str | None]] = field(default_factory=dict)
     accounts: dict[str, Account] | None = None  # id -> account as mapped now, in the demo's order; None: the starting ones
     limits: dict[str, float | None] = field(default_factory=lambda: dict(STARTING_LIMITS))
     self_approval: bool = False
@@ -232,6 +235,8 @@ def summary(a: Account, ctx: Context | None = None) -> dict:
         }
         | {pg: [] for pg in EXTRA_PAGES if can_page(a, pg)},  # plan 8 pages without sections (modeler, agents)
         "tenants": allowed_tenants(a, ctx),
+        # the account's live tenant grants and when each ends (None: no end); the web app re-reads this at the end
+        "grants": [{"tenant": t, "expires_at": e} for t, e in (ctx or Context()).grant_ends.get(a.id, {}).items()],
         "tenant_scoped": bool(policy(a).get("tenantScoped")),
         "warehouse": a.warehouse if policy(a).get("warehouseScoped") else None,
     }

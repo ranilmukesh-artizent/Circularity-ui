@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // What a live-stream event or an action makes stale (invalidation.ts), and that client.ts uses it.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { actionScope, areaOf, matcher, streamScope, union, type Scope } from './invalidation';
-import { apiInvoke, cached, invalidate, login, logout, queryClient } from './client';
+import { actionScope, actionTouchesSession, areaOf, matcher, streamScope, streamTouchesSession, union, type Scope } from './invalidation';
+import { apiInvoke, cached, invalidate, login, logout, queryClient, session } from './client';
 
 const G = (path: string) => ['GET', path] as const;
 /** Representative keys, one or more per area, and keys with no known area. */
@@ -283,5 +283,87 @@ describe('client.ts: a burst of stream events', () => {
     for (const p of [WF, HOME, INT]) cached(p);
     await tick();
     expect([count(calls, 'GET ' + WF), count(calls, 'GET ' + HOME), count(calls, 'GET ' + INT)]).toEqual([3, 2, 3]);
+  });
+});
+
+// ---------------------------------------------------------------- the session itself (plan 8 UI gaps: tenant grants)
+describe('which changes re-read the signed-in session', () => {
+  it('access, agent and org writes do; reads and other writes do not', () => {
+    for (const id of ['access.decideRequest', 'access.revokeGrant', 'access.setDelegation', 'access.mapIdentity', 'agent.setEnabled', 'org.move'])
+      expect(actionTouchesSession(id)).toBe(true);
+    for (const id of ['access.lookup', 'access.grants', 'access.myAccess', 'decision.approve', 'mcp.propose', 'workflow.save'])
+      expect(actionTouchesSession(id)).toBe(false);
+  });
+  it('a journal event of such an action does; other events do not', () => {
+    expect(streamTouchesSession('journal', ev(null, { type: 'action.access.decideRequest' }))).toBe(true);
+    expect(streamTouchesSession('journal', ev(null, { type: 'action.access.revokeGrant' }))).toBe(true);
+    expect(streamTouchesSession('journal', ev('RT-1048', { type: 'action.decision.approve' }))).toBe(false);
+    expect(streamTouchesSession('event', ev(null, { type: 'action.access.decideRequest' }))).toBe(false);
+    expect(streamTouchesSession('journal', 'not json')).toBe(false);
+  });
+});
+
+describe('client.ts re-reads the session after an access change', () => {
+  const ME = { account: { id: 'planner-b' }, tenants: ['Customer B'], grants: [], permissions: [], pages: {} };
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+    queryClient.clear();
+    FakeEventSource.opened = [];
+    vi.stubGlobal('EventSource', FakeEventSource);
+  });
+  afterEach(() => {
+    logout();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  function answers(extra: Record<string, () => unknown> = {}) {
+    return fakeFetch({
+      'GET /api/screens/reference': () => ({}),
+      'POST /api/auth/login': () => ({ ...ME, access_token: 'T' }),
+      'POST /api/auth/stream-ticket': () => ({ ticket: 'k', expires_in: 60 }),
+      'GET /api/auth/me': () => ({ ...ME, tenants: ['Customer A', 'Customer B'] }),
+      ...extra,
+    });
+  }
+
+  it('when a grant arrives on the live stream (no reload)', async () => {
+    const calls = answers();
+    await login('planner.b', 'x');
+    await vi.waitFor(() => expect(FakeEventSource.opened).toHaveLength(1));
+    const es = FakeEventSource.opened[0];
+    es.emit('journal', ev('RT-1048', { type: 'action.decision.approve' }), '1');
+    await new Promise((r) => setTimeout(r, 200));
+    await tick();
+    expect(count(calls, 'GET /api/auth/me')).toBe(0);
+    es.emit('journal', ev(null, { type: 'action.access.decideRequest' }), '2');
+    await new Promise((r) => setTimeout(r, 200));
+    await tick();
+    expect(count(calls, 'GET /api/auth/me')).toBe(1);
+    expect(session()?.tenants).toEqual(['Customer A', 'Customer B']);
+  });
+
+  it('after its own access action succeeds', async () => {
+    const calls = answers({ 'POST /api/actions/access.revokeGrant': () => ({ ok: true, output: {} }) });
+    await login('admin', 'x');
+    await apiInvoke('access.revokeGrant', { account_id: 'planner-b', tenant: 'Customer A' });
+    await tick();
+    expect(count(calls, 'GET /api/auth/me')).toBe(1);
+  });
+
+  it('when a time-limited grant ends', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const ends = new Date(Date.now() + 5000).toISOString();
+    const calls = fakeFetch({
+      'GET /api/screens/reference': () => ({}),
+      'POST /api/auth/login': () => ({ ...ME, grants: [{ tenant: 'Customer A', expires_at: ends }], access_token: 'T' }),
+      'POST /api/auth/stream-ticket': () => ({ ticket: 'k', expires_in: 60 }),
+      'GET /api/auth/me': () => ME,
+    });
+    await login('planner.b', 'x');
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(count(calls, 'GET /api/auth/me')).toBe(0);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(count(calls, 'GET /api/auth/me')).toBe(1);
   });
 });

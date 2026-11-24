@@ -5,8 +5,10 @@
  * (di/services/screens/access.py has the mapping). Every change goes through invoke() in the page; after one that may change
  * what the signed-in account may do, call refreshAccess().
  */
+import { read } from './actions';
 import { cached, ref, refreshMe } from './client';
-import { fmtDate } from './format';
+import { fmtDate, fmtDateYear } from './format';
+import { can, currentAccount } from './session';
 import type { Account, RolePolicy } from './types';
 
 // ---------------------------------------------------------------- the API's answer
@@ -44,6 +46,38 @@ export const requests = (): AccessRequest[] => screen().requests.requests.slice(
 export const mcpProposals = (): AccessRequest[] => cached<{ proposals: AccessRequest[] }>('/api/screens/mcp/proposals').proposals.slice();
 /** May the signed-in account decide this request (pending, and the Approver holds the delegation or is Admin)? */
 export const canDecide = (r: AccessRequest): boolean => !!r.can_decide;
+/**
+ * Maker-checker: a pending request the signed-in account made itself and would otherwise decide. The server refuses
+ * it; the page shows why, with the buttons disabled.
+ */
+export const ownPending = (r: AccessRequest): boolean =>
+  r.status === 'pending' && r.byId === currentAccount()?.id && can(r.kind === 'tenant' ? 'approve.tenantAccess' : 'approve.mcp');
+export const OWN_REQUEST_NOTE = 'You made this request, so another person must decide it.';
+
+// ---------------------------------------------------------------- tenant grants (plan 8 UI gaps)
+/** A live tenant grant: not revoked, not past its end (expires_at null: no end). */
+export interface TenantGrant {
+  account_id: string; account: string; tenant: string; granted_by: string; granted_at: string; expires_at: string | null;
+}
+/** The live grants, for Admin and the Approver with the tenantAccess delegation (access.grants). */
+export const liveGrants = (): TenantGrant[] => (can('approve.tenantAccess') ? read<{ grants: TenantGrant[] }>('access.grants').grants : []);
+
+export interface TenantOption { id: string; name: string; pending: boolean }
+export interface MyAccess { requests: AccessRequest[]; grants: { tenant: string; expires_at: string | null }[]; options: TenantOption[] }
+/** The signed-in account's own tenant requests, live grants and the tenants it may still ask for (access.myAccess). */
+export const myAccess = (): MyAccess => read<MyAccess>('access.myAccess');
+
+/** The ends an approver can choose for a tenant grant, in hours (null: no end). */
+export const GRANT_ENDS: { hours: number | null; label: string }[] = [
+  { hours: 8, label: '8 hours' },
+  { hours: 24, label: '1 day' },
+  { hours: 168, label: '7 days' },
+  { hours: 720, label: '30 days' },
+  { hours: null, label: 'No end' },
+];
+/** "No end" or "Ends 07 Oct 2026 17:00 UTC". */
+export const grantEndText = (expires: string | null | undefined): string =>
+  expires ? 'Ends ' + fmtDateYear(expires) + ' ' + new Date(expires).toISOString().slice(11, 16) + ' UTC' : 'No end';
 
 // ---------------------------------------------------------------- delegations
 export interface Delegation { k: string; label: string; desc: string; on: boolean }

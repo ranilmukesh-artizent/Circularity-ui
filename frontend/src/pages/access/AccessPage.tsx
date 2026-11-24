@@ -12,7 +12,7 @@ import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import type { PageProps } from '../registry';
 import { Orgs } from './AccessOrgs';
-import { ReqList } from './AccessRequests';
+import { GrantList, ReqList } from './AccessRequests';
 import { SectionTabs, sectionsOf } from './SectionTabs';
 
 /** Access & Governance (Admin): the demo's renderAccess plus afAccessHTML, one section per route. */
@@ -291,15 +291,18 @@ function AllRequests() {
   const all = requests();
   const pend = all.filter((r) => r.status === 'pending').length;
   return (
-    <section className="panel sect" id="axReqs">
-      <div className="ph">
-        <h3>All requests</h3>
-        <span className={'chip ' + (pend ? 'warn' : 'ok')}>{pend} pending</span>
-      </div>
-      <div className="pb">
-        <ReqList list={all} empty={['No requests yet', 'Tenant access requests and MCP server proposals appear here.']} />
-      </div>
-    </section>
+    <>
+      <section className="panel sect" id="axReqs">
+        <div className="ph">
+          <h3>All requests</h3>
+          <span className={'chip ' + (pend ? 'warn' : 'ok')}>{pend} pending</span>
+        </div>
+        <div className="pb">
+          <ReqList list={all} empty={['No requests yet', 'Tenant access requests and MCP server proposals appear here.']} />
+        </div>
+      </section>
+      <GrantList />
+    </>
   );
 }
 

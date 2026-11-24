@@ -35,6 +35,14 @@ REQUIRED_CLAIMS = ["exp", "sub", "iat", "iss", "aud"]
 STREAM_AUDIENCE = "stream"
 STREAM_TICKET_SECONDS = 60
 _ENDED = {"code": "unauthenticated", "message": "Your session has ended. Sign in again."}
+# A tenant grant counts while it is not revoked and not past its end (migration 0027). The end is wall-clock time (the
+# database's now()), not the simulated workspace clock: access must not lapse faster when the simulation runs fast.
+LIVE_GRANT = "revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now())"
+
+
+def grant_end(at: datetime | None) -> str | None:
+    """A grant's end as the API sends it: ISO 8601 in UTC, or None for no end."""
+    return at.astimezone(UTC).isoformat() if at else None
 
 
 def _sign(a: policy.Account, audience: str, lifetime: timedelta) -> tuple[str, datetime]:
@@ -77,13 +85,17 @@ def _resolve(token: str, audience: str, session: Session) -> "Principal":
 def load_context(session: Session) -> policy.Context:
     deleg = {r.scope: r.enabled for r in session.execute(text("SELECT scope, enabled FROM delegation"))}
     grants: dict[str, list[str]] = {}
-    for r in session.execute(text("SELECT account_id, tenant FROM tenant_grant ORDER BY tenant")):
+    ends: dict[str, dict[str, str | None]] = {}
+    live = text(f"SELECT account_id, tenant, expires_at FROM tenant_grant WHERE {LIVE_GRANT} ORDER BY tenant")  # noqa: S608 - a constant
+    for r in session.execute(live):
         grants.setdefault(r.account_id, []).append(r.tenant)
+        ends.setdefault(r.account_id, {})[r.tenant] = grant_end(r.expires_at)
     approval = state.get(session, "access_settings", "approval") or {}
     units = session.execute(text("SELECT id, parent_id, kind, name FROM org_unit ORDER BY created_at, id"))
     return policy.Context(
         delegations={k: deleg.get(k, True) for k in policy.DELEGATION_SCOPES},
         grants=grants,
+        grant_ends=ends,
         # the accounts as the identity mapping has them now (access.mapIdentity)
         accounts={d["id"]: policy.Account(**d) for d in state.items(session, "accounts")},
         limits=approval.get("limits", dict(policy.STARTING_LIMITS)),

@@ -1,8 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { grantEndText, myAccess } from '../api/access';
+import { invoke } from '../api/actions';
+import { fmtDateYear } from '../api/format';
 import { alerts, liveAgo, regionSummary } from '../api/nav';
 import { allowedTenants, can, canPage, currentAccount, rolePolicy, roleAvatar, setTenantFilter, tenantFilter, tenants } from '../api/session';
 import { Icon } from '../components/Icon';
 import { IconTile } from '../components/kit/IconTile';
+import { Modal } from '../components/Overlay';
+import { toast } from '../components/toast';
+import { useAction } from '../hooks/useAction';
 import { toggleTheme, useTheme } from '../utils/theme';
 import { openAsk } from '../utils/askBus';
 
@@ -28,6 +34,7 @@ export function TopBar({ onMenu, onSignOut }: { onMenu: () => void; onSignOut: (
   useOutsideClose(acct);
   useOutsideClose(bell);
   const [ago, setAgo] = useState(liveAgo);
+  const [asking, setAsking] = useState(false);
   useEffect(() => {
     const t = window.setInterval(() => setAgo(liveAgo()), 15000);
     return () => window.clearInterval(t);
@@ -142,7 +149,7 @@ export function TopBar({ onMenu, onSignOut }: { onMenu: () => void; onSignOut: (
               )}
             </div>
             {can('requestTenant') && (
-              <button role="menuitem" disabled title="Arrives with the Access pages">
+              <button role="menuitem" onClick={() => setAsking(true)}>
                 Request tenant access
               </button>
             )}
@@ -155,6 +162,98 @@ export function TopBar({ onMenu, onSignOut }: { onMenu: () => void; onSignOut: (
           </div>
         </details>
       </div>
+      {asking && <TenantAccessDialog onClose={() => setAsking(false)} />}
     </header>
+  );
+}
+
+const REQ_STATUS: Record<string, [string, string]> = {
+  pending: ['warn', 'Waiting for a decision'],
+  approved: ['ok', 'Approved'],
+  declined: ['bad', 'Declined'],
+};
+
+/** The account menu's Request tenant access: your requests and grants, and a form for a tenant you cannot see yet. */
+function TenantAccessDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <Modal title="Request tenant access" onClose={onClose} foot={<button className="btn" onClick={onClose}>Close</button>}>
+      <Suspense fallback={<p className="note">Loading your access…</p>}>
+        <TenantAccessBody />
+      </Suspense>
+    </Modal>
+  );
+}
+
+function TenantAccessBody() {
+  const mine = myAccess();
+  const open = mine.options.filter((o) => !o.pending);
+  const [tenant, setTenant] = useState('');
+  const [reason, setReason] = useState('');
+  const [err, setErr] = useState('');
+  const action = useAction();
+  const pick = open.some((o) => o.id === tenant) ? tenant : (open[0]?.id ?? '');
+  async function send() {
+    setErr('');
+    const res = await action.run(() => invoke<{ id: string }>('access.requestTenant', { tenant: pick, reason: reason.trim() }), { ms: 4200, inline: setErr });
+    if (!res.ok) return;
+    setReason('');
+    toast(res.output.id + ' sent. An Approver or Admin decides it.', 4200);
+  }
+  return (
+    <>
+      {mine.grants.length > 0 && (
+        <div className="callout ok" style={{ marginBottom: 12 }}>
+          <b>Extra tenants you can see</b>
+          {mine.grants.map((g) => (
+            <div className="note" key={g.tenant}>
+              {g.tenant} · {grantEndText(g.expires_at)}
+            </div>
+          ))}
+        </div>
+      )}
+      {mine.requests.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <b>Your requests</b>
+          {mine.requests.map((r) => (
+            <div className="row" style={{ gap: 6, marginTop: 6 }} key={r.id} data-req={r.id}>
+              <span className={'chip ' + REQ_STATUS[r.status][0]}>{REQ_STATUS[r.status][1]}</span>
+              <span>{r.tenant}</span>
+              <span className="note num">
+                {r.id} · {fmtDateYear(r.at)}
+                {r.status === 'declined' && r.note ? ' · ' + r.note : ''}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {open.length ? (
+        <>
+          <div className="fld">
+            <label htmlFor="ta-tenant">Tenant</label>
+            <select id="ta-tenant" className="sel" value={pick} onChange={(e) => setTenant(e.target.value)}>
+              {mine.options.map((o) => (
+                <option key={o.id} value={o.id} disabled={o.pending}>
+                  {o.name}
+                  {o.pending ? ' · request waiting' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="fld">
+            <label htmlFor="ta-reason">Reason</label>
+            <textarea id="ta-reason" maxLength={300} placeholder="Why you need to see this tenant's cases." value={reason} onChange={(e) => setReason(e.target.value)} />
+            <div className="hint">At least 10 characters. An Approver or Admin reads it. Do not enter personal data.</div>
+            {err && <div className="err">{err}</div>}
+          </div>
+          <button className="btn pri" onClick={send} disabled={action.pending}>
+            Send request
+          </button>
+        </>
+      ) : (
+        <p className="note" style={{ margin: 0 }}>
+          {mine.options.length ? 'Your requests are waiting for a decision.' : 'You can already see every tenant.'}
+        </p>
+      )}
+    </>
   );
 }

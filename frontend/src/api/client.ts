@@ -14,7 +14,7 @@ import { QueryClient, type Query } from '@tanstack/react-query';
 import type { Account, ActionResult } from './types';
 import type { Reference } from './reference';
 import { bump, sessionChanged } from './store';
-import { actionScope, matcher, streamScope, union, type Scope } from './invalidation';
+import { actionScope, actionTouchesSession, matcher, streamScope, streamTouchesSession, union, type Scope } from './invalidation';
 
 // ---------------------------------------------------------------- session
 const TOKEN_KEY = 'circ-api-token';
@@ -28,6 +28,8 @@ export interface Me {
   tenants: string[];
   tenant_scoped: boolean;
   warehouse: string | null;
+  /** The account's live tenant grants and when each ends (null: no end). */
+  grants?: { tenant: string; expires_at: string | null }[];
 }
 
 let token: string | null = readToken();
@@ -112,7 +114,8 @@ export async function login(username: string, password: string): Promise<Me> {
   const out = await http<Me & { access_token: string }>('/api/auth/login', { method: 'POST', body: { username, password } });
   writeToken(out.access_token);
   me = { account: out.account, description: out.description, home: out.home, permissions: out.permissions, pages: out.pages,
-         tenants: out.tenants, tenant_scoped: out.tenant_scoped, warehouse: out.warehouse }; // prettier-ignore
+         tenants: out.tenants, tenant_scoped: out.tenant_scoped, warehouse: out.warehouse, grants: out.grants }; // prettier-ignore
+  scheduleGrantEnd();
   await loadReference();
   clearCache();
   sessionChanged();
@@ -124,6 +127,7 @@ export async function login(username: string, password: string): Promise<Me> {
 export function logout(): void {
   writeToken(null);
   me = null;
+  scheduleGrantEnd();
   stopStream();
   clearCache();
   sessionChanged();
@@ -141,6 +145,7 @@ export async function bootApi(): Promise<void> {
   if (!token) return;
   try {
     me = await http<Me>('/api/auth/me');
+    scheduleGrantEnd();
     startStream();
   } catch {
     writeToken(null);
@@ -152,7 +157,30 @@ export async function bootApi(): Promise<void> {
 export async function refreshMe(): Promise<void> {
   if (!token) return;
   me = await http<Me>('/api/auth/me');
+  scheduleGrantEnd();
   bump();
+}
+
+/** refreshMe for changes that arrive by themselves (the stream, a grant's end): a failure keeps the old session. */
+function refreshSession(): void {
+  refreshMe().catch(() => undefined);
+}
+
+// A time-limited tenant grant ends on the server at its expires_at; the session is re-read just after the earliest end
+// so the tenant locks again without a reload. Re-armed on every session read.
+const GRANT_END_MARGIN_MS = 500;
+const MAX_TIMER_MS = 2 ** 31 - 1;
+let grantTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleGrantEnd(): void {
+  if (grantTimer !== null) clearTimeout(grantTimer);
+  grantTimer = null;
+  const ends = (me?.grants ?? []).map((g) => (g.expires_at ? Date.parse(g.expires_at) : NaN)).filter((t) => !Number.isNaN(t));
+  if (!ends.length) return;
+  const wait = Math.min(Math.max(Math.min(...ends) - Date.now(), 0) + GRANT_END_MARGIN_MS, MAX_TIMER_MS);
+  grantTimer = setTimeout(() => {
+    grantTimer = null;
+    refreshSession();
+  }, wait);
 }
 
 // ---------------------------------------------------------------- reference lists (static, loaded once)
@@ -331,7 +359,10 @@ async function postAction<T>(id: string, input: Record<string, unknown>, opts: A
 /** POST /api/actions/{id}; a change makes the cached reads it can touch stale (invalidation.ts actionScope). */
 export async function apiInvoke<T>(id: string, input: Record<string, unknown> = {}, opts: ActionOptions = {}): Promise<ActionResult<T>> {
   const r = await postAction<T>(id, input, opts);
-  if (r.ok) invalidateScope(actionScope(id));
+  if (r.ok) {
+    invalidateScope(actionScope(id));
+    if (actionTouchesSession(id)) refreshSession(); // e.g. a delegation or a grant: what this account may do
+  }
   return r;
 }
 
@@ -341,6 +372,7 @@ const streamListeners = new Set<StreamListener>();
 let source: EventSource | null = null;
 let pending: number | null = null;
 let burst: Scope[] = []; // what the events since the last refetch can have changed
+let sessionStale = false; // an event in the burst can have changed the signed-in session (/api/auth/me)
 
 const KINDS = ['journal', 'event', 'notification', 'sync', 'step', 'workflow']; // di/services/stream.py, migrations 0008-0009
 
@@ -404,6 +436,7 @@ async function connect(gen: number) {
     // several events often arrive together (a sync, an approval's journal and events): refetch once, what any of
     // them can have changed (invalidation.ts streamScope; an unknown kind: everything)
     burst.push(streamScope(kind, data));
+    if (streamTouchesSession(kind, data)) sessionStale = true; // a grant, a revocation, a delegation …
     if (pending === null) pending = window.setTimeout(flushBurst, 150);
   };
   for (const k of KINDS) es.addEventListener(k, handle(k) as EventListener);
@@ -415,6 +448,10 @@ function flushBurst() {
   const scope = union(burst);
   burst = [];
   invalidateScope(scope);
+  if (sessionStale) {
+    sessionStale = false;
+    refreshSession();
+  }
 }
 
 function reconnectLater(gen: number) {

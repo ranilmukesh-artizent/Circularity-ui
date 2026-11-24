@@ -1,4 +1,4 @@
-"""Access state: Approver delegations and tenant grants (migration 0002)."""
+"""Access state: Approver delegations and tenant grants (migrations 0002 and 0027)."""
 
 from sqlalchemy import (
     Boolean,
@@ -30,4 +30,9 @@ tenant_grant = Table(
     Column("tenant", Text, primary_key=True),
     Column("granted_by", Text),
     ts("granted_at", now=True),
+    # 0027: an end the approver chose (NULL: none) and a revocation; only a live grant counts (di.core.auth)
+    ts("expires_at"),
+    ts("revoked_at"),
+    Column("revoked_by", Text),
+    Column("revoke_note", Text),
 )

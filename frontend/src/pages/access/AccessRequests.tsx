@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { invoke } from '../../api/actions';
-import { canDecide, REQ_KIND, refreshAccess, type AccessRequest } from '../../api/access';
+import {
+  canDecide, GRANT_ENDS, grantEndText, liveGrants, OWN_REQUEST_NOTE, ownPending, REQ_KIND, refreshAccess, type AccessRequest, type TenantGrant,
+} from '../../api/access';
 import { fmtDateYear } from '../../api/format';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
@@ -54,6 +56,14 @@ export function ReqRow({ r, onDecide }: { r: AccessRequest; onDecide: (r: Access
           {r.decidedBy && ` · ${r.status === 'approved' ? 'approved' : 'declined'} by ${r.decidedBy} on ${fmtDateYear(r.decidedAt!)}${r.note ? ': ' + r.note : ''}`}
         </div>
       </div>
+      {ownPending(r) && (
+        <div className="rqa">
+          <button className="btn sm pri" disabled title={OWN_REQUEST_NOTE}>
+            {r.kind === 'tenant' ? 'Approve access' : 'Approve proposal'}
+          </button>
+          <span className="note">{OWN_REQUEST_NOTE}</span>
+        </div>
+      )}
       {canDecide(r) && (
         <div className="rqa">
           <button className="btn sm pri" onClick={() => onDecide(r, 'approve')}>
@@ -71,14 +81,17 @@ export function ReqRow({ r, onDecide }: { r: AccessRequest; onDecide: (r: Access
 /** Approve or decline dialog (the demo's reqDecide / reqDecideOk), through access.decideRequest. */
 function DecideModal({ r, dec, onClose }: { r: AccessRequest; dec: Decision; onClose: () => void }) {
   const [note, setNote] = useState('');
+  const [end, setEnd] = useState<number | null>(null); // hours; null: no end
   const action = useAction();
   const [err, setErr] = useState('');
+  const grant = r.kind === 'tenant' && dec === 'approve';
   async function ok() {
     if (!canDecide(r)) {
-      toast('This request is not yours to decide.');
+      toast(ownPending(r) ? OWN_REQUEST_NOTE : 'This request is not yours to decide.');
       return onClose();
     }
-    const res = await action.run(() => invoke<{ id: string; status: string }>('access.decideRequest', { id: r.id, decision: dec, note: note.trim() }), { ms: 4200, inline: setErr });
+    const input = { id: r.id, decision: dec, note: note.trim(), ...(grant && end !== null ? { expires_hours: end } : {}) };
+    const res = await action.run(() => invoke<{ id: string; status: string }>('access.decideRequest', input), { ms: 4200, inline: setErr });
     if (!res.ok) {
       if (res.error.code !== 'validation_error') onClose();
       return;
@@ -118,8 +131,23 @@ function DecideModal({ r, dec, onClose }: { r: AccessRequest; dec: Decision; onC
         <div className="hint">Recorded in the audit log. Do not enter personal data.</div>
         {err && <div className="err">{err}</div>}
       </div>
-      {r.kind === 'tenant' && dec === 'approve' && (
-        <p className="note" style={{ margin: 0 }}>{r.by} will see {r.tenant} cases for the rest of this session.</p>
+      {grant && (
+        <>
+          <div className="fld">
+            <label htmlFor="rq-end">Access ends</label>
+            <select id="rq-end" className="sel" value={end ?? ''} onChange={(e) => setEnd(e.target.value ? Number(e.target.value) : null)}>
+              {GRANT_ENDS.map((g) => (
+                <option key={g.label} value={g.hours ?? ''}>
+                  {g.hours === null ? g.label : 'After ' + g.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="note" style={{ margin: 0 }}>
+            {r.by} sees {r.tenant} cases at once, without signing in again.{' '}
+            {end === null ? 'Access lasts until Admin or the Approver revokes it.' : 'Access ends after ' + GRANT_ENDS.find((g) => g.hours === end)!.label + '. It can be revoked earlier.'}
+          </p>
+        </>
       )}
       {r.kind === 'mcp' && dec === 'approve' && (
         <p className="note" style={{ margin: 0 }}>The server joins the MCP client list as approved. Connecting it is a separate step.</p>
@@ -143,5 +171,83 @@ export function ReqList({ list, empty }: { list: AccessRequest[]; empty: [string
       )}
       {deciding && <DecideModal r={deciding.r} dec={deciding.dec} onClose={() => setDeciding(null)} />}
     </>
+  );
+}
+
+/** Revoke dialog: ends a live tenant grant now, through access.revokeGrant. */
+function RevokeModal({ g, onClose }: { g: TenantGrant; onClose: () => void }) {
+  const [note, setNote] = useState('');
+  const [err, setErr] = useState('');
+  const action = useAction();
+  async function ok() {
+    const res = await action.run(() => invoke('access.revokeGrant', { account_id: g.account_id, tenant: g.tenant, note: note.trim() }), { ms: 4200, inline: setErr });
+    if (!res.ok) {
+      if (res.error.code !== 'validation_error') onClose();
+      return;
+    }
+    onClose();
+    toast(g.account + ' can no longer open ' + g.tenant + '.', 4200);
+  }
+  return (
+    <Modal
+      title={'Revoke access to ' + g.tenant}
+      onClose={onClose}
+      foot={
+        <>
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn danger" onClick={ok}>Revoke</button>
+        </>
+      }
+    >
+      <p style={{ marginTop: 0 }}>
+        {g.account} loses access to {g.tenant} cases now. Open pages lock at once.
+      </p>
+      <div className="fld">
+        <label htmlFor="rv-note">
+          Note <span className="muted">(optional)</span>
+        </label>
+        <textarea id="rv-note" maxLength={300} placeholder="Why the access ends." value={note} onChange={(e) => setNote(e.target.value)} />
+        <div className="hint">Recorded in the audit log. Do not enter personal data.</div>
+        {err && <div className="err">{err}</div>}
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * The live tenant grants with Revoke (Admin, or the Approver with the tenantAccess delegation). Nothing renders while
+ * there is none, so the starting state looks as before.
+ */
+export function GrantList() {
+  const list = liveGrants();
+  const [revoking, setRevoking] = useState<TenantGrant | null>(null);
+  if (!list.length) return null;
+  return (
+    <section className="panel sect" id="axGrants">
+      <div className="ph">
+        <h3>Tenant access granted</h3>
+        <span className="chip line">{list.length} active</span>
+      </div>
+      <div className="pb">
+        {list.map((g) => (
+          <div className="rqrow" key={g.account_id + '|' + g.tenant} data-grant={g.account_id + '|' + g.tenant}>
+            <div className="rqm">
+              <b>
+                {g.account} → {g.tenant}
+              </b>
+              <div className="note" style={{ marginTop: 4 }}>
+                Granted by {g.granted_by} · {fmtDateYear(g.granted_at)} · {grantEndText(g.expires_at)}
+              </div>
+            </div>
+            <div className="rqa">
+              <button className="btn sm" onClick={() => setRevoking(g)}>
+                Revoke
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {revoking && <RevokeModal g={revoking} onClose={() => setRevoking(null)} />}
+    </section>
   );
 }
