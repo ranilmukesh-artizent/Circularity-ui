@@ -1,0 +1,102 @@
+# Circularity Decision Workbench, trial package: the whole app from prebuilt images, on this machine only.
+# Start it with start.sh (macOS, Linux) or start.cmd (Windows); see START-HERE.md. Those scripts load the images from
+# images.tar.gz the first time and write .env (generated secrets, the port) before `docker compose up`.
+# Built by scripts/trial/build.sh, which replaces __VERSION__ with the package version.
+# Only the web port is published (TRIAL_PORT, default 5173, on 127.0.0.1); the api, the mocked source systems and the
+# database stay inside Docker's network. Ask Circularity uses its prepared answers unless GROQ_API_KEY is set in .env.
+
+name: circularity-trial
+
+x-api-env: &api-env
+  DI_DATABASE_URL: postgresql+psycopg://circ:${POSTGRES_PASSWORD:?run the start script first (it writes .env)}@postgres:5432/di
+  DI_SOURCE_SIM_URL: http://source-sim:8100
+  DI_CLOCK: sim
+  DI_INSTRUCTIONS: "true"
+  DI_ENV: prod
+  DI_JWT_SECRET: ${DI_JWT_SECRET:?run the start script first (it writes .env)}
+  DI_WEBHOOK_SECRET: ${DI_WEBHOOK_SECRET:?run the start script first (it writes .env)}
+  DI_SECRET_KEY: ${DI_SECRET_KEY:?run the start script first (it writes .env)}
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
+  ASK_PROVIDER: ${ASK_PROVIDER:-groq}
+  GROQ_MODEL: ${GROQ_MODEL:-}
+
+services:
+  postgres:
+    restart: unless-stopped
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: circ
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run the start script first (it writes .env)}
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "export PGPASSWORD=$${POSTGRES_PASSWORD}; psql -h 127.0.0.1 -U $${POSTGRES_USER} -d di -tAc 'select 1' && psql -h 127.0.0.1 -U $${POSTGRES_USER} -d sources -tAc 'select 1'"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  source-sim:
+    restart: unless-stopped
+    image: circularity-trial-source-sim:__VERSION__
+    environment:
+      SIM_DATABASE_URL: postgresql+psycopg://circ:${POSTGRES_PASSWORD}@postgres:5432/sources
+    volumes:
+      - ./data/golden:/fixtures/golden:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8100/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+
+  api:
+    restart: unless-stopped
+    image: circularity-trial-api:__VERSION__
+    environment: *api-env
+    volumes:
+      - ./data/golden:/fixtures/golden:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+      source-sim: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/api/health/live')"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+
+  worker:
+    restart: unless-stopped
+    image: circularity-trial-api:__VERSION__
+    environment: *api-env
+    command: python -m di.worker
+    volumes:
+      - ./data/golden:/fixtures/golden:ro
+    depends_on:
+      api: { condition: service_healthy }
+      source-sim: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys;sys.exit(b'di.worker' not in open('/proc/1/cmdline','rb').read())"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  web:
+    restart: unless-stopped
+    image: circularity-trial-web:__VERSION__
+    environment:
+      API_UPSTREAM: http://api:8000
+    ports:
+      - "${BIND_ADDR:-127.0.0.1}:${TRIAL_PORT:-5173}:8080"
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:

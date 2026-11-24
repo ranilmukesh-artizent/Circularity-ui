@@ -26,3 +26,6 @@ shots/
 .loop/
 
 *.log
+
+# trial packages built by scripts/trial/build.sh
+dist/
