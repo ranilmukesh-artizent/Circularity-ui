@@ -1,5 +1,5 @@
 #!/bin/bash
-# The full api suite (about 16-25 min, ~3,450 tests) from a reset simulator with the worker stopped, then the source-sim
+# The full api suite (about 32 min, ~4,460 tests on 24 Nov 2026) from a reset simulator with the worker stopped, then the source-sim
 # suite (about 1 min). Holds the api test lock. Prints only failures and the summary lines.
 # Exits non-zero if either suite failed. Afterwards run scripts/dev/reset.sh to put the demo back to its starting
 # state (it also restarts the worker).
