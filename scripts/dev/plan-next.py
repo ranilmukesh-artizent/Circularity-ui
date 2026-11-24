@@ -63,7 +63,7 @@ def parse() -> dict[str, dict]:
     tasks: dict[str, dict] = {}
     for m in re.finditer(rf"^- \[([ x])\] ({ID}) (.*)$", text, re.M):
         tasks[m.group(2)] = {"done": m.group(1) == "x", "title": m.group(3), "deps": set(), "files": set(),
-                             "size": "M", "gate": "gate" in m.group(3).lower()}
+                             "size": "M", "gate": bool(re.match(r"Phase \d+ gate", m.group(3)))}
     specs = re.split(rf"(?m)^(?=#### {ID} )", text[text.index("## Task specs"):text.index("## Story coverage matrix")])
     for blk in specs:
         m = re.match(rf"#### ({ID}) ", blk)

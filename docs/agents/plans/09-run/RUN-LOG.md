@@ -13,3 +13,4 @@ unattended". Times are local (IST).
 | 25 Nov 03:05 | Baseline (last gate, 24 Nov merge): 4,459 api, 271 source-sim, 312 web tests. Models: lead and gate reviewer Opus; writers Sonnet; Haiku for doc-only tasks. Max 4 writers. |
 | 25 Nov 03:10 | Phase 0 started: P9-0.1 to writer 1 (Haiku). |
 | 25 Nov 03:20 | P9-0.1 merged (Haiku, docs only). Found: Agent worktrees start from the default branch, not the run branch; briefs now begin with a fast-forward to `feature/plan-09-recover`. Licence rows for the three libraries installed at setup got their versions. |
+| 25 Nov 03:25 | Scheduler fix: only "Phase N gate" tasks are gates (P9-0.2 "gate script" was taken for one). P9-0.2 to writer 1, P9-0.16 to writer 2 (Sonnet). |
