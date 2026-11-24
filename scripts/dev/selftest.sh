@@ -84,5 +84,8 @@ text changed
 expect nonzero "gate-p9.sh, plan file changed beyond a ticked box"   env GATE_LINT=true GATE_WEB=true GATE_API=true GATE_PLAN_BASE="$plan_base" GATE_PLAN="$plan_new" bash "$dev/gate-p9.sh"
 expect 0 "gate-p9.sh, the real api-test.sh on a passing test"   env GATE_LINT=true GATE_WEB=true bash "$dev/gate-p9.sh" tests/test_health.py
 
+# story-matrix.sh (plan 9, R22): its own test against fixtures.
+expect 0 "story-matrix-test.sh, every case of the matrix check" bash "$dev/story-matrix-test.sh"
+
 [ $fails -eq 0 ] && echo "selftest: all passed" || echo "selftest: $fails failed"
 [ $fails -eq 0 ]
