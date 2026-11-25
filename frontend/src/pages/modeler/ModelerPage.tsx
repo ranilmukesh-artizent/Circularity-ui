@@ -9,6 +9,7 @@ import { ModelsPanel } from '../agents/ModelsPanel';
 import type { PageProps } from '../registry';
 import { AssistantPanel } from './AssistantPanel';
 import { ChecksPanel } from './ChecksPanel';
+import { ComposePanel } from './compose/ComposePanel';
 import { DescribeDialog } from './DescribeDialog';
 import { FlowCanvas } from './FlowCanvas';
 import { FlowInspector } from './FlowInspector';
@@ -50,12 +51,17 @@ export function ModelerPage({ query }: PageProps) {
           </select>
         </div>
       </div>
-      <ModelerBody key={s.flow.id} s={s} />
+      <ModelerBody key={s.flow.id} s={s} compose0={composeParam(query.get('compose'))} />
     </div>
   );
 }
 
-function ModelerBody({ s }: { s: ModelerScreen }) {
+/** `?compose=<id>` opens the Compose panel on that composition. */
+const composeParam = (v: string | null): number | null => (v && /^\d+$/.test(v) ? Number(v) : null);
+
+function ModelerBody({ s, compose0 }: { s: ModelerScreen; compose0: number | null }) {
+  const [composing, setComposing] = useState(compose0 != null);
+  const [composeId, setComposeId] = useState<number | null>(compose0);
   const editable = s.can.edit;
   const action = useAction();
   const [graph, setGraph] = useState<FlowGraph>(s.flow.graph);
@@ -154,9 +160,11 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
         <span className="grow" />
         {s.can.fork && <button className="btn sm" disabled={action.pending} onClick={fork}>Give {s.org} its own flow</button>}
         {can('managePacks') && <button className="btn sm" onClick={() => setDescribing(true)}>Describe your business</button>}
+        {can('managePacks') && <button className="btn sm" aria-pressed={composing} onClick={() => setComposing((v) => !v)}>Compose</button>}
         {editable && <button className="btn sm pri" onClick={add}>Add rule</button>}
         {!editable && !s.can.fork && <span className="note">Read only</span>}
       </div>
+      {composing && <ComposePanel org={s.org} pack={s.template.key} id={composeId} onId={setComposeId} onClose={() => setComposing(false)} />}
       <div className="mdl-main">
         <FlowCanvas
           s={s}
