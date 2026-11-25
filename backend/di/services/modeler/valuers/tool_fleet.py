@@ -431,6 +431,8 @@ def _value(c: Case, k: str, p: Params, ctx: _Ctx) -> PathValue:
         wos: list[str] = []
         for j, pr in enumerate(c["partRul"]):
             pn, pv = C["parts"][j]
+            if pn in (c.get("recallParts") or ()):  # a part a safety recall names is never certified (P9-3.7, GR-12)
+                continue
             w = dm["wo"][pn]
             if pr >= p["rulMin"] and w:
                 passed += 1

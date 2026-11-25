@@ -15,7 +15,7 @@ const m = vi.hoisted(() => ({ view: null as unknown }));
 vi.mock('../../../api/toolFleet', () => ({ toolFleetView: () => m.view }));
 
 const view = (grade: ToolFleetView['grade']): ToolFleetView => ({
-  case_id: 'RT-1', pack_version: '3.2.0', flow: 'returns', grade, gates: [], life: null, paths: [], plan: null, approval: null,
+  case_id: 'RT-1', pack_version: '3.2.0', flow: 'returns', grade, gates: [], quarantine: null, life: null, paths: [], plan: null, approval: null,
   followThrough: null,
 });
 const WORKBENCH = { grade: 'B', source: 'workbench', ref: 'DR-50412', at: '2026-10-07T03:00:00+00:00', age_hours: 6 } as const;

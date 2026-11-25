@@ -4,6 +4,8 @@
  * log's graded record with its test result ("workbench"), else the valuer's own estimate ("estimate"). `gates` (P9-3.6) are the gates that apply
  * to the case with the term a failed one names. The other fields are empty until the tasks that fill them. A read only; writes go through the action pipeline.
  */
+import { invoke } from './actions';
+import type { ActionResult } from './types';
 import { cached } from './client';
 
 export interface GradeView {
@@ -33,12 +35,25 @@ export interface GateView {
   locked: boolean;
 }
 
+/** The quarantine of a recalled tool (P9-3.7, GR-12): the recall, the paths and parts it blocks, and who released it after the fix. */
+export interface QuarantineView {
+  recall_id: string;
+  /** repair (released after the fix), replace or refund (never released) */
+  remedy: string;
+  /** the route ids the recall blocks now; empty once released */
+  blocked: string[];
+  affected_parts: string[];
+  released: { by: string; at: string; note: string } | null;
+}
+
 export interface ToolFleetView {
   case_id: string;
   pack_version: string;
   flow: string;
   grade: GradeView;
   gates: GateView[];
+  /** the recall quarantine, null for a tool no active recall names */
+  quarantine: QuarantineView | null;
   life: unknown | null;
   paths: unknown[];
   plan: unknown | null;
@@ -48,3 +63,7 @@ export interface ToolFleetView {
 
 /** The panel's read for a tool fleet case (GET /api/screens/toolfleet/{id}). */
 export const toolFleetView = (caseId: string): ToolFleetView => cached<ToolFleetView>('/api/screens/toolfleet/' + encodeURIComponent(caseId));
+
+/** Release a recalled tool from quarantine after the fix (recall.release, Approver or Admin; a replace or refund recall is never released). */
+export const releaseQuarantine = (caseId: string, note: string): Promise<ActionResult<{ released: boolean }>> =>
+  invoke<{ released: boolean }>('recall.release', { case_id: caseId, note });

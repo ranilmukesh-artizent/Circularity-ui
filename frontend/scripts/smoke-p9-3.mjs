@@ -10,6 +10,8 @@
  *   3  BRK-51007's case (a theft recovered with the claim still open) is blocked by GR-07: its Overview reads "Theft
  *      recovered: claim CLM-7781 is open" (My work's exception for planner.a is reported, not required); CMH-48213 (an
  *      end of term) passes the gate.
+ *   4  The recall register is synced; a case opened for BRK-51007 (repair recall RC-2026-017) shows its quarantine card; the
+ *      Approver releases it after the fix (the card reads released); a Planner is refused.
  *
  * The UI has no one-click setup for this, so the script calls the app's own actions as the signed-in person (the same
  * ones the Source Map and Workflow Studio call) and reads the result in the pages. Needs the worker (the sync runs on it)
@@ -20,7 +22,7 @@
  *   node frontend/scripts/smoke-p9-3.mjs http://localhost:5173
  *   bash scripts/dev/reset.sh
  * (hold the api test lock meanwhile). Screenshots of a failing step go to SMOKE_OUT (default: <OS temp>/smoke-p9-3).
- * The last line is "smoke-p9-3: all 3 steps passed".
+ * The last line is "smoke-p9-3: all 4 steps passed".
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -224,9 +226,43 @@ await step('3 Contract right: BRK-51007 blocked by GR-07, CMH-48213 passes', asy
   const work = JSON.stringify(await getJson(await as('planner.a'), '/api/screens/mywork'));
   return t.replace(/\s+/g, ' ') + (/Theft recovered|contract/i.test(work) ? ' \u00b7 My work lists it for planner.a' : '');
 });
+// ---------------------------------------------------------------- 4
+await step('4 Recall quarantine: BRK-51007 (repair recall RC-2026-017) is released by the Approver', async () => {
+  const dev = await as('developer');
+  await must(dev, 'source.reconnect', { source_id: 'recall' });
+  await must(dev, 'source.sync', { source_id: 'recall' });
+  const admin = await as('admin');
+  // a case opened after the notices are on file reads them (a notice that arrives later reaches an open case on its next re-evaluation)
+  const opened = await must(admin, 'case.open', {
+    org_unit_id: ORG, template_key: 'tool_fleet', asset_key: 'BRK-51007', reason: 'manual', facts: { cls: 'BRK', grade: 'B', site: 'Houston', rul: 62 },
+  });
+  const id = opened.case_id;
+  const approver = await as('approver');
+  await approver.goto(`${base}/#/product/${id}/overview`);
+  await approver.locator('#view').waitFor();
+  const card = approver.locator('[data-testid="tf-quarantine"]').first();
+  await card.waitFor({ timeout: UI });
+  const before = await card.innerText();
+  if (!/RC-2026-017 \(repair\)/.test(before) || !/release, redeploy, resell/.test(before)) throw new Error('the quarantine card reads: ' + before.replace(/\s+/g, ' '));
+  await approver.locator('textarea[aria-label="Why the tool is released"]').fill('Impact mechanism replaced at the depot');
+  await approver.locator('[data-testid="tf-quarantine-release"]').click();
+  const after = await until(
+    async () => {
+      const t = await approver.locator('[data-testid="tf-quarantine"]').first().innerText();
+      return /released/.test(t) && !/quarantined/.test(t) ? t : null;
+    },
+    `${id} did not show the release`,
+    UI,
+    approver,
+  );
+  const planner = await as('planner.a');
+  const denied = await callAction(planner, 'recall.release', { case_id: id, note: 'A planner may not release' });
+  if (denied.ok) throw new Error('a Planner released a quarantine');
+  return after.replace(/\s+/g, ' ');
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));
   process.exit(1);
 }
-say('smoke-p9-3: all 2 steps passed');
+say('smoke-p9-3: all 4 steps passed');

@@ -200,7 +200,11 @@ def _tool_fleet(
     first): the plan leaves them out (`gateBlocked`, so none wins a named order) and they are let through again here the
     same way, for `apply_gate_results` to fail them with the gate's reason."""
     v = _valuer_case(c, "tool_fleet")
+    if parts := fleet_evidence.blocked_parts(c):  # the parts harvest never certifies (GR-12, P9-3.7)
+        v["recallParts"] = sorted(parts)
     cases, demand = _queue_of(c, v, session, queue)
+    if v.get("recallParts"):  # the queue holds this case as it was read: the plan sees the same parts blocked
+        cases = [x | {"recallParts": v["recallParts"]} if x["id"] == v["id"] else x for x in cases]
     p = planner or planner_for(pack)
     cap = Capacity(slots=js_round(tool_fleet.BASEP["slots"]))
 

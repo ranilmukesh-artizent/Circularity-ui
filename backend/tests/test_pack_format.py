@@ -172,6 +172,7 @@ def test_runtime_and_kpis_of_the_two_packs():
         "Planner",
         "Planner",
         "Fleet desk",
+        "Quality",
         "Engineer",
         "Approver",
         "Planner",

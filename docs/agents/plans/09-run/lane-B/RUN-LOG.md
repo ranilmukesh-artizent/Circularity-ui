@@ -65,3 +65,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-26 00:39 | Hourly sync: merged lane A (a90414c models match migrations 0054/0057, P9-2.16 smoke, phase 9 order, their merge of lane B). test_models_migrations 3 passed, lint ok, web 478. Pushed. |
 | 25 Nov 19:12 | P9-6.8 merged. auto within GR-D11 10%; larger gaps held as payout_gap for a person; payout.decide forbidden to agents; maker-checker on prepared_by |
 | 2026-11-26 00:53 | Verify P9-6.8 green (12 api files, lint, web 481). Pushed. |
+| 25 Nov 19:34 | P9-3.7 merged. G-TOOL-REC with GR-12; recall.release forbidden to agents (Admin, Approver); conflicts in policy.py and test_gates.py merged with P9-6.x |

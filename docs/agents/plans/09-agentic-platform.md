@@ -862,7 +862,7 @@ each story went.
 - [x] P9-3.4 Tool returns open cases from the contract feed
 - [x] P9-3.5 Workbench grade on the tool fleet case panel
 - [x] P9-3.6 Contract right gate GR-07
-- [ ] P9-3.7 Safety recall check with quarantine
+- [x] P9-3.7 Safety recall check with quarantine
 - [ ] P9-3.8 Stale telematics guardrail GR-13
 - [ ] P9-3.9 Wear index and remaining life per component
 - [ ] P9-3.10 Remaining life model and teardown calibration

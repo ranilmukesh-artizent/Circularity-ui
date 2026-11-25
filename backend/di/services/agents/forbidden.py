@@ -35,6 +35,7 @@ FORBIDDEN_ACTIONS = (
     "mapping.answerOwner",  # plan 9 P9-8.4: only the system owner (a person) answers a mapping question
     "compose.sendBack", "compose.approve", "compose.publish",  # plan 9 P9-8.17: a person decides which composition takes effect
     "marketTable.approve", "marketTable.reject",  # plan 9 P9-4.2: a person decides which rates and tables price a repair (R21)
+    "recall.release",  # plan 9 P9-3.7: only a person releases a recalled tool from quarantine (R21)
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
     "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
     "payout.decide",  # plan 9 P9-6.8: the payout a customer is paid, above the automatic limit, is decided by a person (R21)

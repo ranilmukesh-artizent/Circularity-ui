@@ -117,7 +117,8 @@ def test_tf_03_view_shows_the_estimate(opened):
     v = r.json()
     assert v["case_id"] == opened and v["pack_version"] and v["flow"] == "returns"
     assert v["grade"]["source"] == "estimate" and v["grade"]["grade"] == "C" and v["grade"]["ref"] is None
-    assert [(g["id"], g["passed"]) for g in v["gates"]] == [("G-CON-2", True)]  # the contract right (P9-3.6)
+    # the recall check (P9-3.7) and the contract right (P9-3.6)
+    assert [(g["id"], g["passed"]) for g in v["gates"]] == [("G-TOOL-REC", True), ("G-CON-2", True)]
     assert (v["life"], v["paths"], v["plan"], v["approval"], v["followThrough"]) == (None, [], None, None, None)
 
 

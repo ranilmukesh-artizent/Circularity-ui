@@ -31,6 +31,7 @@ import di.services.actions.overlays  # registers action handlers (overlay.*: the
 import di.services.actions.packs  # registers action handlers (pack.*: pack versions with maker-checker; plan 9)
 import di.services.actions.proposals  # registers action handlers (proposal.accept, proposal.reject; plan 8)
 import di.services.actions.standing_policy  # registers action handlers (standingPolicy.*, policy approval; plan 9)
+import di.services.actions.tool_quarantine  # registers recall.release (safety recall quarantine; plan 9)
 import di.services.actions.tools  # registers action handlers (tools.find: the tool search; plan 9)
 import di.services.actions.work  # registers action handlers (case.needInfo, work.resolve, work.assign; plan 9)
 import di.services.actions.workflow_author  # registers action handlers (workflow.author: a draft from a sentence, P9-8.12)

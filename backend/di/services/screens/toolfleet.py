@@ -8,6 +8,8 @@ GET /api/screens/toolfleet/{case_id}
     null). `gates` (P9-3.6) is one row for each gate that applies to the case, as its gate step left it: `{id, name,
     passed, reason, guardrail, owner, kind, stage, stageLabel, hold, locked}`; a failed GR-07 (G-CON-2) says the term it
     failed on ("Theft recovered: claim CLM-7781 is open").
+    `quarantine` (P9-3.7) is the recall quarantine of the tool, `{recall_id, remedy, blocked, affected_parts, released}`
+    (`released`: `{by, at, note}` once Quality released a repair recall), or null when no active recall names its serial.
 
 Refuses as `screens.case.case_page` does: 403 out_of_scope without the case pages, 404 not_found for an unknown case (or a
 case of another template), 403 tenant_boundary outside the account's tenants or warehouse.
@@ -31,7 +33,7 @@ from di.core.auth import Principal
 from di.repositories.context import load_case
 from di.repositories.packs import active_pack
 from di.services.cases import regrade
-from di.services.modeler.valuers import tool_inputs
+from di.services.modeler.valuers import fleet_evidence, tool_inputs
 
 GATE_KEYS = ("id", "name", "passed", "reason", "guardrail", "owner", "kind", "stage", "stageLabel", "hold", "locked")
 
@@ -55,6 +57,7 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         "flow": c.get("flow") or "returns",
         "grade": dataclasses.asdict(grade),
         "gates": [_gate(g) for g in c.get("gates") or []],
+        "quarantine": fleet_evidence.quarantine_of(c),
         "life": None,
         "paths": [],
         "plan": None,

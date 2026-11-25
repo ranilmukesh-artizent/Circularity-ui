@@ -365,6 +365,13 @@
     "guardrail": "GR-07"
    },
    "active": true
+  },
+  {
+   "id": "G-TOOL-REC",
+   "params": {
+    "guardrail": "GR-12"
+   },
+   "active": true
   }
  ],
  "dims": [
@@ -1586,6 +1593,12 @@
     "label": "No active contract for the serial",
     "owner_role": "Fleet desk",
     "action": "Check the contract line in the fleet contract system"
+   },
+   {
+    "id": "recall_quarantine",
+    "label": "Safety recall quarantine",
+    "owner_role": "Quality",
+    "action": "Release the tool after the fix (repair), or send it to exit or safe harvest"
    },
    {
     "id": "grade_wear_disagree",
