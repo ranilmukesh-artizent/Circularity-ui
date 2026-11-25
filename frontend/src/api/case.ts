@@ -33,7 +33,7 @@ export interface ExecStep { k?: string; label: string; sys: string; state: strin
 export interface Prediction { src: string; inputs: string; model: string; ver: string; result: string; range: string; conf: string }
 export interface OutcomeLine { label: string; kind: string; pred: number; act: number; model: string | null; ver: string | null; src?: string | null }
 /** One gate result on a case (backend/di/services/cases/gate_hold.py, plan 9 P9-1.2). */
-export interface GateEvidenceOnFile { type: string; label: string; source: string; at: string }
+export interface GateEvidenceOnFile { type: string; label: string; source: string; at: string; value?: Record<string, unknown> }
 export interface GateRow {
   id: string; name: string; type: string; stage: string; stageLabel: string; passed: boolean;
   kind: 'block' | 'require_step' | 'require_approval' | 'close_block'; routes: string[]; routeNames: string[]; hold: boolean;

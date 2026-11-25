@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GateRow } from '../../api/case';
-import { gateLine, gateTime, holdLine } from './gates';
+import { clauseLine, gateLine, gateTime, holdLine } from './gates';
 
 const wipe: GateRow = {
   id: 'G-DEV-WIPE', name: 'Data-wipe certificate', type: 'Compliance', stage: 'condition', stageLabel: 'Condition', passed: false,
@@ -46,5 +46,36 @@ describe('P9-1.2 holdLine (X-07)', () => {
   it('falls back to the batch name, or to no batch at all', () => {
     expect(holdLine(hold)).toBe('Held until evidence arrives (batch B-7)');
     expect(holdLine({ ...hold, batch: null })).toBe('Held until evidence arrives');
+  });
+});
+
+describe('P9-1.11 contract result (X-11)', () => {
+  const clause = {
+    type: 'contract_clause', label: 'Contract clause', source: 'lease-system', at: '2026-10-01T08:00:00+00:00',
+    value: { contract_id: 'LS-5412', clause: '7.2', text: 'No resale without consent', restricts: ['sale'] },
+  };
+  const line = "Contract LS-5412 · clause 7.2 · 'No resale without consent' · from lease-system, 2026-10-01 08:00 UTC";
+  const blocked: GateRow = {
+    ...wipe, id: 'G-CON-1', name: 'Contract entitlement', hold: false, routes: ['resell'], routeNames: ['Pre-owned sale'],
+    owner: 'Customer operations', evidence: [clause], missing: ['Customer consent'],
+    reason: 'Contract LS-5412 clause 7.2: No resale without consent. Customer consent not on file.',
+  };
+
+  it('shows the contract, clause, text, source and date, then what it blocks', () => {
+    expect(clauseLine(blocked)).toBe(line);
+    expect(gateLine(blocked)).toBe(
+      `${line}. Blocks Pre-owned sale: Contract LS-5412 clause 7.2: No resale without consent. Customer consent not on file.`);
+  });
+
+  it('shows the consent reference when the gate passes', () => {
+    const g: GateRow = {
+      ...blocked, passed: true, missing: [], reason: 'Consent on file: CONS-88.',
+      evidence: [clause, { type: 'customer_consent', label: 'Customer consent', source: 'crm', at: clause.at, value: { ref: 'CONS-88' } }],
+    };
+    expect(gateLine(g)).toBe(`${line}. Consent on file: CONS-88.`);
+  });
+
+  it('has no clause line for another gate', () => {
+    expect(clauseLine(wipe)).toBeNull();
   });
 });

@@ -10,10 +10,24 @@ export function gateTime(iso: string): string {
 const list = (xs: string[]) => xs.join(', ');
 
 /**
+ * The contract clause a gate result carries, as "Contract LS-5412 · clause 7.2 · 'No resale without consent' · from <source>,
+ * <date>" (P9-1.11, story X-11); null when the result has no contract clause evidence. Contract wording is product text; it
+ * needs review by Kinective's Legal team.
+ */
+export function clauseLine(g: GateRow): string | null {
+  const e = g.evidence.find((x) => x.type === 'contract_clause');
+  if (!e) return null;
+  const v = e.value ?? {};
+  return `Contract ${String(v.contract_id ?? '')} · clause ${String(v.clause ?? '')} · '${String(v.text ?? '')}' · from ${e.source || 'a source'}, ${gateTime(e.at)}`;
+}
+
+/**
  * A gate's line: "Passed: <evidence> from <source>, <time>" when it passed, "Blocks <route names>: <reason>" when it blocks
  * routes. A failed gate that blocks no route says what it does instead (a required step or approval, a blocked close).
  */
 export function gateLine(g: GateRow): string {
+  const clause = clauseLine(g);
+  if (clause) return `${clause}. ${g.passed ? g.reason : `Blocks ${list(g.routeNames.length ? g.routeNames : g.routes)}: ${g.reason}`}`;
   if (g.passed) {
     const on = g.evidence.map((e) => `${e.label} from ${e.source || 'a source'}, ${gateTime(e.at)}`);
     return 'Passed: ' + (on.length ? list(on) : g.reason);

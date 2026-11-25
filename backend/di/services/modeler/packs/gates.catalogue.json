@@ -1163,21 +1163,15 @@
    "used_cars"
   ],
   "trigger": {
-   "routes": [
-    "release",
-    "reuse",
-    "sale"
-   ],
+   "routes": "any",
    "when": [
     {
-     "fact": "contract.restricts_resale",
-     "op": "eq",
-     "value": true
+     "fact": "evidence.contract_clause.restricts",
+     "op": "exists"
     }
    ]
   },
   "evidence": [
-   "contract_clause",
    "customer_consent"
   ],
   "effect": {

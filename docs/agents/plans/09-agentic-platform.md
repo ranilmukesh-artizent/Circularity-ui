@@ -805,7 +805,7 @@ each story went.
 - [ ] P9-1.8 My work replaces Home tasks and Actions on me
 - [x] P9-1.9 Standard valuer from pack value lines
 - [ ] P9-1.10 Match to the system of record with exceptions
-- [ ] P9-1.11 Contract entitlement gate with clause and consent
+- [x] P9-1.11 Contract entitlement gate with clause and consent
 - [x] P9-1.12 Carbon with provenance on every card
 - [ ] P9-1.13 Pack-driven views in existing pages
 - [ ] P9-1.14 Phase 1 demo smoke script

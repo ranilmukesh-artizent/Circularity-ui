@@ -336,7 +336,13 @@
    "param": null
   }
  ],
- "gates": [],
+ "gates": [
+  {
+   "id": "G-CON-1",
+   "params": {},
+   "active": true
+  }
+ ],
  "dims": [
   {
    "key": "cls",

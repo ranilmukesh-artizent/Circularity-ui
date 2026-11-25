@@ -210,10 +210,11 @@ def test_evidence_expiry():
     assert evidence_of(_case({"type": "data_wipe", "result": "maybe", "at": "x"}), "data_wipe") is None
 
 
-def test_shipped_packs_have_no_active_gates():
-    """A parity guard (plan 9): the pack phases flip it as they switch gates on."""
+def test_shipped_packs_have_only_the_gates_a_phase_switched_on():
+    """A parity guard (plan 9): the pack phases flip it as they switch gates on. P9-1.11 switched G-CON-1 on in the tool-fleet
+    pack; it triggers only on a restricting contract record, so a case without one is not gated."""
     for k in pack_keys():
-        assert load_pack(k).gates == [], k
+        assert [g.id for g in load_pack(k).gates] == (["G-CON-1"] if k == "tool_fleet" else []), k
         assert evaluate_gates({"cls": "x"}, load_pack(k)) == []
 
 

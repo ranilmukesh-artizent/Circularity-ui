@@ -24,6 +24,7 @@ the result to `apply`. The shipped packs have no active gates, so no shipped cas
 
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from contextvars import ContextVar
+from dataclasses import replace
 from datetime import datetime
 from typing import Any
 
@@ -44,6 +45,7 @@ _override: ContextVar[PackOf | None] = ContextVar("gate_hold_pack_of", default=N
 # the case's exception item (P9-1.7), once. `apply` has no session of its own (`decide_case` is pure on the case).
 _bound: ContextVar[tuple[Session, str] | None] = ContextVar("gate_hold_session", default=None)
 EVIDENCE_MISSING = "evidence_missing"  # the type of the exception item a hold opens
+CONTRACT_GATE = "G-CON-1"  # the contract entitlement gate (P9-1.11)
 
 
 def default_pack_of(case: Mapping[str, Any]) -> Pack:
@@ -68,9 +70,20 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
         | {"source": src or "", "value": d.get("value") if isinstance(d.get("value"), dict) else {}}
         for d, src in rows
     ]
+    _lease_on_clause(s, case.get("assetId"), recs)
     if recs or "evidenceRecords" in case:
         case["evidenceRecords"] = recs
     _bound.set((s, str(case.get("id"))))
+
+
+def _lease_on_clause(s: Session, asset_key: Any, recs: list[dict[str, Any]]) -> None:
+    """The lease's `lease_ref` and `contract_end` of the asset, copied into the value of the contract clause record when the
+    asset record has them."""
+    clause = next((r for r in recs if r["type"] == "contract_clause"), None)
+    if clause is None:
+        return
+    asset = s.execute(text("SELECT data FROM canonical WHERE model = 'asset' AND key = :a"), {"a": asset_key}).scalar() or {}
+    clause["value"] = {**clause["value"], **{k: asset[k] for k in ("lease_ref", "contract_end") if asset.get(k) is not None}}
 
 
 def _as_of(case: Mapping[str, Any]) -> datetime:
@@ -87,8 +100,8 @@ def _rows(case: Mapping[str, Any], pack: Pack, results: Sequence[GateResult], as
     for r in results:
         g = cat[r.gate_id]
         on_file = [
-            {"type": t, "label": label_of(t), "source": e.source, "at": e.at.isoformat()}
-            for t in g.evidence
+            {"type": t, "label": label_of(t), "source": e.source, "at": e.at.isoformat(), "value": dict(e.value)}
+            for t in (["contract_clause"] if g.id == CONTRACT_GATE else []) + g.evidence
             if (e := evidence_of(case, t, as_of)) is not None and e.result == "pass"
         ]
         out.append({
@@ -142,7 +155,7 @@ def apply(
     _bound.set(None)  # taken once, whether or not a gate applies
     pack = pack or base_pack(case)
     as_of = as_of or _as_of(case)
-    results = evaluate_gates(case, pack, as_of)
+    results = _contract(case, pack, evaluate_gates(_gate_view(case, as_of), pack, as_of), as_of)
     if not results and "gates" not in case:
         return results
     apply_gate_results(routes, results)
@@ -151,6 +164,43 @@ def apply(
     if bound is not None and bound[1] == str(case.get("id")):
         sync_item(bound[0], case, pack)
     return results
+
+
+# ---------------------------------------------------------------- the contract gate (P9-1.11)
+def _gate_view(case: Mapping[str, Any], as_of: datetime) -> Mapping[str, Any]:
+    """The case as its gates read it: the contract clause on file at `as_of` is the fact `evidence.contract_clause` (the
+    case's own `evidence` list is not touched; the view is a copy)."""
+    clause = evidence_of(case, "contract_clause", as_of)
+    if clause is None or clause.result != "pass":
+        return case
+    return {**case, "evidence": {"contract_clause": dict(clause.value)}}
+
+
+def _contract(case: Mapping[str, Any], pack: Pack, results: list[GateResult], as_of: datetime) -> list[GateResult]:
+    """G-CON-1 blocks only the routes whose class the clause restricts, and says why: "Contract <id> clause <n>: <text>.
+    Customer consent not on file." or "Consent on file: <ref>.". A clause that restricts none of the pack's routes leaves
+    no result. Contract wording is product text; Kinective's Legal team reviews it before it is relied on."""
+    out: list[GateResult] = []
+    for r in results:
+        if r.gate_id != CONTRACT_GATE:
+            out.append(r)
+            continue
+        clause = evidence_of(case, "contract_clause", as_of)
+        value = clause.value if clause is not None else {}
+        restricted = {str(c) for c in value.get("restricts") or []}
+        ids = tuple(x.id for x in pack.routes if restricted & set(x.classes))
+        if not ids:
+            continue
+        reason = r.reason
+        if r.passed:
+            consent = evidence_of(case, "customer_consent", as_of)
+            ref = consent.value.get("ref") if consent is not None else None
+            reason = f"Consent on file: {ref}." if ref else "Consent on file."
+        elif r.evidence_missing == ("customer_consent",):
+            who = f"Contract {value.get('contract_id')} clause {value.get('clause')}"
+            reason = f"{who}: {value.get('text')}. Customer consent not on file."
+        out.append(replace(r, effect=replace(r.effect, routes=ids), reason=reason))
+    return out
 
 
 # ---------------------------------------------------------------- the exception item of a hold (P9-1.7)
