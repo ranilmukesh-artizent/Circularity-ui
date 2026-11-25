@@ -112,11 +112,20 @@ def test_medical_rental_gates():
     assert (ap.type, ap.stage, ap.param.field, ap.param.value) == ("Approval", "decide", "intervention.repair_estimate", 1000)  # type: ignore[union-attr]
     assert ap.approvers == ["fleet_manager"]
     rule = next(r for r in p.runtime.suggestion_rules if r["id"] == "AP-MR-REPAIR")  # the op "gt" has no GuardParam field
-    assert (rule["op"], rule["field"], rule["value"], rule["owner"]) == ("gt", "intervention.repair_estimate", 1000, "fleet_manager")
+    assert (rule["op"], rule["field"], rule["value"], rule["owner"]) == (
+        "gt",
+        "intervention.repair_estimate",
+        1000,
+        "fleet_manager",
+    )
     cl = p.customer_layer
     assert set(cl.editable) == {"G-MED-FSN", "G-MED-REFURB", "G-DATA-3", "AP-MR-REPAIR"}  # the locked two are not editable
     ops = {d.op["id"]: d for d in cl.sample_diversions}
-    assert {k: v.op["op"] for k, v in ops.items()} == {"DV-MR-ISO": "add_step", "DV-MR-SAME": "shortcut", "DV-MR-SKIP": "shortcut"}
+    assert {k: v.op["op"] for k, v in ops.items()} == {
+        "DV-MR-ISO": "add_step",
+        "DV-MR-SAME": "shortcut",
+        "DV-MR-SKIP": "shortcut",
+    }
     assert [d.blocked for d in ops.values()] == [False, False, True]
     assert ops["DV-MR-SKIP"].op["blocked_suggestion"] == "dispatch an already decontaminated unit from the nearest depot"
     assert "G-MED-DECON" in ops["DV-MR-SKIP"].reason
@@ -137,7 +146,12 @@ def test_medical_rental_systems_kpis_questions():
     assert (hints["pmCode"]["canonical"], hints["pmCode"]["confidence"]) == ("condition.pm_code", 0.73)
     assert hints["pmCode"]["reason"] == "meaning taken from the service manual"
     trig = next(m for m in p.data.mappings if m["kind"] == "intake_trigger")
-    assert (trig["source"], trig["resource"], trig["reason"], trig["key"]) == ("mr_rental", "returns", "rental_return", "asset_tag")
+    assert (trig["source"], trig["resource"], trig["reason"], trig["key"]) == (
+        "mr_rental",
+        "returns",
+        "rental_return",
+        "asset_tag",
+    )
     ev = {m["evidence_type"]: m["source"] for m in p.data.mappings if m["kind"] == "evidence"}
     assert set(ev) == {
         "decon_record", "pm_record", "electrical_safety", "certification", "correction_status", "servicing_assessment",
