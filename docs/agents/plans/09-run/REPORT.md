@@ -1,6 +1,6 @@
 # Plan 9 run: report for the person
 
-Rewritten by the lead as the run goes. Last update: 25 Nov 09:15 IST.
+Rewritten by the lead as the run goes. Last update: 25 Nov 12:45 IST.
 
 ## Done
 - **Phase 0: all 16 tasks and the gate, green.** Each task was re-tested by the lead on the main stack before its
@@ -8,8 +8,13 @@ Rewritten by the lead as the run goes. Last update: 25 Nov 09:15 IST.
   matrix, selftest).
 - Phase 0 review: 4 findings (`docs/agents/plans/09-work/review-phase-0.md`), 3 fixed in `28fe893`.
 
+- **Phase 1: 5 of 15 merged**, each re-tested on the main stack (parallel suite of every non-serial api test, the
+  serial files it touches, lint, web): P9-1.1 pack format v1 (I-1), P9-1.2 gate catalogue (I-2/I-3), P9-1.3 customer
+  overlay with maker-checker (I-4), P9-1.4 queue planner port (I-5), P9-1.5 one decider (I-6; intake,
+  re-evaluation, shadow and simulation all call `decide_case`; RT-1048 browser run reaches stage 10).
+
 ## In flight
-- Phase 1: P9-1.1 pack format v1 (the base of every later phase; the rest of phase 1 waits on it).
+- P9-1.6 pack versions, P9-1.7 case process layer and My work (Sonnet), P9-1.12 carbon provenance (Haiku).
 
 ## Blocked (needs you)
 - None.
@@ -24,6 +29,10 @@ Rewritten by the lead as the run goes. Last update: 25 Nov 09:15 IST.
   lists) are known gaps planned for P9-13.9.
 
 ## Decisions taken without you
+- P9-1.5: under a flow with business rules, depot slots are planned with those rules (decision-log row); no seeded
+  case changes.
+- P9-1.1 invented pack data the research does not give (stage confidence 0.75, stage agent names, carbon `d_rule`,
+  device exception owners and KPI texts); listed in its commit for review.
 - Telecom (phase 10) and medical rental (phase 11) depend on the phase 8 gate, so the three asset packs can run side
   by side.
 - Libraries for phases 0-3 installed up front in one rebuild; `packaging` moved 26.3 -> 26.4 as uv required.
