@@ -60,3 +60,4 @@ One line per event, newest last, times from `date`.
 | 25 Nov 17:55 | P9-6.6 merged. G-DEV-LOCK and GR-D7; a received device with no registry check is held; overlay refuses the skip |
 | 2026-11-25 23:35 | Verify P9-6.5 + P9-6.6: device_sources + wipe_sim 13 passed, api 181 passed, lint ok, web ok. Pushed. Hourly sync: nothing new on lane A. |
 | 25 Nov 18:24 | P9-6.7 merged. G-DEV-WIPE via params.when; batch held as one, each case releases alone; bulk lots not wipe-gated |
+| 2026-11-26 00:04 | Verify P9-6.7 green (device sync tests, 17 api files, lint, web). Pushed. |
