@@ -5,6 +5,7 @@
  "unit": "tool",
  "author_role": "Planner",
  "prefix": "BR",
+ "owner": "Fleet North America",
  "industry": "Tool fleet",
  "regions": [
   "US"
@@ -353,6 +354,13 @@
    "id": "G-CON-1",
    "params": {},
    "active": true
+  },
+  {
+   "id": "G-CON-2",
+   "params": {
+    "guardrail": "GR-07"
+   },
+   "active": true
   }
  ],
  "dims": [
@@ -549,6 +557,21 @@
      "graded_at"
     ],
     "source": "repairlog"
+   },
+   {
+    "evidence_type": "contract_line",
+    "model": "contract_line",
+    "key": "serial",
+    "fields": [
+     "status",
+     "return_reason",
+     "theft_claim_open",
+     "claim_ref",
+     "damage_charge_open",
+     "charge_ref",
+     "contract_id"
+    ],
+    "source": "fleet"
    }
   ],
   "min_fields": [],
@@ -1538,8 +1561,8 @@
    {
     "id": "no_active_contract",
     "label": "No active contract for the serial",
-    "owner_role": "Planner",
-    "action": "Find the contract or hold the return"
+    "owner_role": "Fleet desk",
+    "action": "Check the contract line in the fleet contract system"
    },
    {
     "id": "grade_wear_disagree",
@@ -1668,5 +1691,15 @@
    }
   }
  ],
- "stories": []
+ "stories": [],
+ "roles": {
+  "Fleet desk": "Planner",
+  "Quality": "Approver",
+  "Fleet manager": "Approver",
+  "Service operations": "Approver",
+  "Account manager": "Approver",
+  "Sales": "Approver",
+  "Sustainability lead": "Approver",
+  "Finance": "Finance"
+ }
 }

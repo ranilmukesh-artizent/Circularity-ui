@@ -114,6 +114,18 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
     # new evidence may release the cases held for it (plan 9, P9-1.2): one recheck job per asset (deduped)
     for asset_key in sorted({compliance_asset(f.key) for f in facts if f.model == "compliance"}):
         jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+    # a change of a contract line re-checks the cases held on it (plan 9, P9-3.6): one recheck job per serial (deduped)
+    lines = sorted({f.key for f in facts if f.model == "contract_line"})
+    if lines:
+        held = session.execute(
+            text(
+                "SELECT DISTINCT data ->> 'assetId' FROM case_record WHERE stage <> 'closed' AND data ->> 'assetId' = ANY(:k) "
+                "AND data ->> 'template' = 'tool_fleet' AND jsonb_typeof(data -> 'gateHold') = 'object'"
+            ),
+            {"k": lines},
+        ).scalars()
+        for asset_key in sorted(held):
+            jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
     # a late workbench grade re-evaluates the open tool-fleet cases of the serial (plan 9, P9-3.5): one job per case (deduped)
     for serial in sorted({f.key for f in facts if f.model == "condition" and f.field in GRADE_FIELDS}):
         ids = session.execute(

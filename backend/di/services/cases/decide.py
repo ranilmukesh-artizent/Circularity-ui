@@ -51,7 +51,7 @@ from di.services.modeler.gates import Cond, GateDef, GateEffectDef, GateResult, 
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack
 from di.services.modeler.templates import Template, template_of_pack
-from di.services.modeler.valuers import VALUERS, device, tool_fleet
+from di.services.modeler.valuers import VALUERS, device, fleet_evidence, tool_fleet
 from di.services.modeler.valuers.routes_adapter import to_routes
 
 TRACE = ("gates", "valuation", "queue_plan", "rules", "rank")
@@ -285,6 +285,16 @@ def decide_case(
     c = _load(case_or_facts, session)
     t = template_of_pack(pack)
     rules = _compliant(t, flow_ver.rules)
+    if pack.valuer.kind == "tool_fleet" and "stage" not in c:  # a sample-world return (P9-3.6)
+        have = {r.get("type") for r in c.get("evidenceRecords") or []}
+        c["evidenceRecords"] = [
+            *(c.get("evidenceRecords") or []),
+            *(
+                {"type": e.type, "source": e.source, "at": e.at.isoformat(), "result": e.result, "value": dict(e.value)}
+                for e in fleet_evidence.sample_evidence(c).values()
+                if e.type not in have
+            ),
+        ]  # its evidence is complete: an active contract line, so the gates pass and the sample's numbers stay
     before = dict(c)  # what the valuers read: the case as it was before a hold set its stage and recommendation
     results = gate_hold.apply(c, [], pack, as_of)  # 1. gates (and the hold), before any valuation or queue plan
     blocked = frozenset(i for r in results if not r.passed and r.effect.kind == "block" for i in r.effect.routes)

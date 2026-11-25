@@ -25,6 +25,7 @@ EVIDENCE_TYPES: dict[str, str] = {
     "case_material_report": "Mass, material and treatment category",
     "config_wipe": "Configuration-wipe certificate",
     "contract_clause": "Contract clause",
+    "contract_line": "Fleet contract line",
     "controller_signoff": "Data-controller sign-off",
     "covered_list_clearance": "Covered-list clearance",
     "customer_consent": "Customer consent",

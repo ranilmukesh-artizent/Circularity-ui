@@ -24,7 +24,8 @@ from tests.helpers import call, client, h
 models.ALLOW_MODEL_REQUESTS = False
 
 A_CASE = "RT-1051"  # Customer A
-CONTRACT = "no_active_contract"  # a tool fleet pack exception type: owner Planner, "Find the contract or hold the return"
+# a tool fleet pack exception type: owner the Fleet desk (a Planner), "Check the contract line in the fleet contract system"
+CONTRACT = "no_active_contract"
 SERIAL_FACT = "Serial PMP-0470 has no active contract in the contract system"
 
 
@@ -99,7 +100,11 @@ def test_exception_assistant_deterministic_draft():
     r = call("exception.explain", {"exception_id": item}, "planner.a")
     assert r["ok"] is True, r
     d = r["output"]
-    assert (d["owner_role"], d["recommended_action"], d["by_model"]) == ("Planner", "Find the contract or hold the return", False)
+    assert (d["owner_role"], d["recommended_action"], d["by_model"]) == (
+        "Planner",
+        "Check the contract line in the fleet contract system",
+        False,
+    )
     assert d["cause"].startswith("No active contract for the serial: ")
     assert "PMP-0470" in d["cause"] and "no active contract in the contract system" in d["cause"]
     by_source = {s["source"]: s["fact"] for s in d["sources"]}
@@ -151,7 +156,7 @@ def test_exception_model_owner_outside_pack_roles_retried():
     d = call("exception.explain", {"exception_id": item}, "planner.a")["output"]
     assert len(SEEN) == 2
     assert d["by_model"] is False
-    assert (d["owner_role"], d["recommended_action"]) == ("Planner", "Find the contract or hold the return")
+    assert (d["owner_role"], d["recommended_action"]) == ("Planner", "Check the contract line in the fleet contract system")
     assert _runs() == []
 
 

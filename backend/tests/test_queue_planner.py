@@ -19,7 +19,7 @@ from di.services.engine.queue import Capacity, HeuristicPlanner, planner_for
 from di.services.modeler.pack import load_pack
 from di.services.modeler.valuers import tool_fleet
 from tests import starting
-from tests.helpers import call, client, h
+from tests.helpers import call, client, h, tool_case_facts
 
 ORDER = {"kind": "lease", "id": "L-1", "renew": True, "who": "Acme Rentals", "site": "Houston", "need": 9, "rate": 900,
          "term": 24, "what": "Fleet contract L-1 renews", "when": "renewal confirmed"}  # fmt: skip
@@ -44,7 +44,13 @@ def fresh():
 
 def _open(asset: str, grade: str, org: str = "Customer A", user: str = "planner-a", cls: str = "CMH") -> str:
     facts = {"cls": cls, "grade": grade, "ft": "Repair center", "site": "Houston", "rul": 62, "dem": {"lease": [ORDER]}}
-    body = {"org_unit_id": org, "template_key": "tool_fleet", "asset_key": asset, "reason": "manual", "facts": facts}
+    body = {
+        "org_unit_id": org,
+        "template_key": "tool_fleet",
+        "asset_key": asset,
+        "reason": "manual",
+        "facts": tool_case_facts(asset, facts),
+    }
     r = call("case.open", body, user)
     assert r["ok"], r
     return r["output"]["case_id"]

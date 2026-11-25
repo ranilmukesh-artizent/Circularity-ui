@@ -23,7 +23,7 @@ from di.services.modeler.evidence import Evidence
 from di.services.modeler.valuers import tool_inputs
 from di.services.modeler.valuers.tool_inputs import GradeView
 from tests import starting
-from tests.helpers import call, client, h
+from tests.helpers import call, client, h, tool_case_facts
 
 ORG = "tool-fleet-a"
 SERIAL = "CMH-48213"
@@ -88,7 +88,7 @@ def opened():
     with SessionLocal() as s:
         c = intake.open_case(
             s, {"org_unit_id": ORG, "template_key": "tool_fleet", "asset_key": SERIAL, "reason": "contract_end",
-                "facts": {"tool_class": "CMH", "site": "Houston"}}, "system")  # fmt: skip
+                "facts": tool_case_facts(SERIAL, {"tool_class": "CMH", "site": "Houston"})}, "system")  # fmt: skip
         s.commit()
     yield c["id"]
     _clear_jobs()
@@ -106,7 +106,8 @@ def test_tf_03_view_shows_the_estimate(opened):
     v = r.json()
     assert v["case_id"] == opened and v["pack_version"] and v["flow"] == "returns"
     assert v["grade"]["source"] == "estimate" and v["grade"]["grade"] == "C" and v["grade"]["ref"] is None
-    assert (v["gates"], v["life"], v["paths"], v["plan"], v["approval"], v["followThrough"]) == ([], None, [], None, None, None)
+    assert [(g["id"], g["passed"]) for g in v["gates"]] == [("G-CON-2", True)]  # the contract right (P9-3.6)
+    assert (v["life"], v["paths"], v["plan"], v["approval"], v["followThrough"]) == (None, [], None, None, None)
 
 
 def test_tf_03_late_grade_reevaluates(opened):

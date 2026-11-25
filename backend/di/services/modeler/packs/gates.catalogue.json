@@ -1185,6 +1185,34 @@
   "legal_review": "pending"
  },
  {
+  "id": "G-CON-2",
+  "name": "Contract right",
+  "type": "Compliance",
+  "stage": "match",
+  "packs": [
+   "tool_fleet"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": []
+  },
+  "evidence": [
+   "contract_line"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Fleet desk",
+  "citation": "Fleet contract line: status, open claim or charge, owner (GR-07)",
+  "legal_review": "pending",
+  "params": {
+   "guardrail": "GR-07"
+  }
+ },
+ {
   "id": "G-SAFE-1",
   "name": "Safety certification",
   "type": "Compliance",

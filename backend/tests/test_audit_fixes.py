@@ -28,7 +28,7 @@ from di.services.modeler.templates import load_template
 from di.services.modeler.valuers import device
 from tests import flowkit, starting
 from tests.flowkit import ok, with_rule
-from tests.helpers import call, client, h
+from tests.helpers import call, client, h, tool_case_facts
 
 
 @pytest.fixture(autouse=True)
@@ -57,7 +57,7 @@ LOT = {"brand": "Apple", "model": "iPhone 14", "band": "0-24m", "grade": "A", "r
 
 # ---------------------------------------------------------------- F1
 def test_f1_tool_fleet_modeler_works_with_an_opened_case():
-    assert _open("admin", template_key="tool_fleet", asset_key="T-CMH-F1", facts=TOOL)["ok"]
+    assert _open("admin", template_key="tool_fleet", asset_key="T-CMH-F1", facts=tool_case_facts("T-CMH-F1", TOOL))["ok"]
     r = client.get("/api/screens/modeler", params={"template": "tool_fleet"}, headers=h("admin"))
     assert r.status_code == 200, r.text
     fid = flowkit.flow_id("tool_fleet", "workspace")

@@ -20,7 +20,7 @@ from di.services.modeler.templates import load_template
 from di.services.modeler.valuers import tool_fleet
 from di.services.modeler.valuers.routes_adapter import to_routes
 from tests import starting
-from tests.helpers import call
+from tests.helpers import call, tool_case_facts
 
 MOTOR = {"cls": "motor", "grade": "B", "age": 4, "qty": 1, "demand": {"site": "Site 2", "confirmed": True}}
 
@@ -95,7 +95,7 @@ def test_open_case_is_idempotent():
 
 def test_open_tool_fleet_case_uses_valuer():
     facts = {"cls": "CMH", "grade": "B", "ft": "Repair center", "site": "Houston", "rul": 62}
-    r = _open("T-CMH-1", template_key="tool_fleet", reason="contract_end", facts=facts)
+    r = _open("T-CMH-1", template_key="tool_fleet", reason="contract_end", facts=tool_case_facts("T-CMH-1", facts))
     assert r["ok"], r
     with SessionLocal() as s:
         c = store.get(s, r["output"]["case_id"])
@@ -157,7 +157,9 @@ def test_r19_reevaluate_data_opened_industrial_case_keeps_open_numbers():
 
 def test_r19_record_result_on_tool_fleet_case_uses_decide_case():
     facts = {"cls": "CMH", "grade": "B", "ft": "Repair center", "site": "Houston", "rul": 62}
-    cid = _open("T-CMH-R19", template_key="tool_fleet", reason="contract_end", facts=facts)["output"]["case_id"]
+    cid = _open("T-CMH-R19", template_key="tool_fleet", reason="contract_end", facts=tool_case_facts("T-CMH-R19", facts))[
+        "output"
+    ]["case_id"]
     r = call("evidence.recordResult", {"case_id": cid}, "admin")
     assert r["ok"], r
     c = _stored(cid)

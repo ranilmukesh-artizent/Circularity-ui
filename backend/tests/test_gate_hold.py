@@ -17,7 +17,7 @@ from di.services.canonical.store import Fact
 from di.services.cases import gate_hold, intake, store
 from di.services.modeler.pack import Pack, load_pack, parse_pack
 from tests import starting
-from tests.helpers import client, h
+from tests.helpers import client, h, tool_case_facts
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "packs" / "evidence_test.json"
 LOT = {"brand": "Apple", "model": "iPhone 14", "band": "25-48m", "grade": "B", "ref": 315, "qty": 40, "doh": 12}
@@ -179,10 +179,14 @@ def test_x_07_case_screen_serves_gates_hold_and_batch():
 
 def test_shipped_templates_open_cases_without_gate_keys():
     facts = {"cls": "CMH", "grade": "B", "ft": "Repair center", "site": "Houston", "rul": 62}
-    i = {"org_unit_id": "Customer A", "template_key": "tool_fleet", "asset_key": "T-NOGATE", "reason": "manual", "facts": facts}
+    i = {"org_unit_id": "Customer A", "template_key": "tool_fleet", "asset_key": "T-NOGATE", "reason": "manual",
+         "facts": tool_case_facts("T-NOGATE", facts)}  # fmt: skip
     with SessionLocal() as s:
         c = intake.open_case(s, i, "admin")
         s.commit()
     got = _get(str(c["id"]))
     assert got["stage"] == "awaiting_approval" and got["recommendation"] is not None
-    assert not {"gates", "gateHold", "requiredSteps", "evidenceRecords", "batchRef"} & set(got)
+    assert not {"gateHold", "requiredSteps", "batchRef"} & set(got)
+    assert [g["id"] for g in got["gates"]] == ["G-CON-2"] and got["gates"][0][
+        "passed"
+    ]  # the tool fleet's contract right (P9-3.6)

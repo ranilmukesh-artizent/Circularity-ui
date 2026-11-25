@@ -52,7 +52,7 @@ KINDS = ("exception", "approval", "needs_info", "proposal", "conflict", "task")
 _OWNER_ROLES = {
     "compliance": "Approver", "trade compliance": "Approver", "regulatory": "Approver", "quality": "Engineer",
     "quality / regulatory": "Approver", "sustainability lead": "Engineer", "fleet manager": "Approver",
-    "service operations": "Approver", "sales": "Approver", "account manager": "Approver",
+    "service operations": "Approver", "fleet desk": "Planner", "sales": "Approver", "account manager": "Approver",
 }  # fmt: skip
 
 Outcome = Literal["escalated", "not_due", "closed"]

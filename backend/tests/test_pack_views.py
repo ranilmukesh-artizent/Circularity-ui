@@ -17,7 +17,7 @@ from di.services.cases import process
 from di.services.modeler import kpis
 from di.services.modeler.pack import load_pack, parse_pack
 from tests import flowkit, starting
-from tests.helpers import call, client, h
+from tests.helpers import call, client, h, tool_case_facts
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "packs" / "rental_std_test.json"
 ORG = "Customer A"
@@ -50,7 +50,13 @@ def ok(r: dict) -> dict:
 
 
 def _open(key: str, asset: str, facts: dict[str, Any]) -> str:
-    body = {"org_unit_id": ORG, "template_key": key, "asset_key": asset, "reason": "manual", "facts": facts}
+    body = {
+        "org_unit_id": ORG,
+        "template_key": key,
+        "asset_key": asset,
+        "reason": "manual",
+        "facts": tool_case_facts(asset, facts) if key == "tool_fleet" else facts,
+    }
     return str(ok(call("case.open", body, "planner-a"))["case_id"])
 
 

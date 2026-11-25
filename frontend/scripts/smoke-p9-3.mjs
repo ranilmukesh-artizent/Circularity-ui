@@ -6,6 +6,10 @@
  *      publishes an ingest workflow on `fleet` whose Open case step is set: template tool_fleet, org tool-fleet-a, asset
  *      field serial, reason field kind, facts toolClass, contractId, lineId, site. A sync opens 18 tool cases; the
  *      Returned assets list shows CMH-48213 with "Case opened from contract_end".
+ *   2  (see the step) CMH-48213 reads an estimate; a late workbench grade makes CRH-44120 workbench.
+ *   3  BRK-51007's case (a theft recovered with the claim still open) is blocked by GR-07: its Overview reads "Theft
+ *      recovered: claim CLM-7781 is open" (My work's exception for planner.a is reported, not required); CMH-48213 (an
+ *      end of term) passes the gate.
  *
  * The UI has no one-click setup for this, so the script calls the app's own actions as the signed-in person (the same
  * ones the Source Map and Workflow Studio call) and reads the result in the pages. Needs the worker (the sync runs on it)
@@ -16,7 +20,7 @@
  *   node frontend/scripts/smoke-p9-3.mjs http://localhost:5173
  *   bash scripts/dev/reset.sh
  * (hold the api test lock meanwhile). Screenshots of a failing step go to SMOKE_OUT (default: <OS temp>/smoke-p9-3).
- * The last line is "smoke-p9-3: all 2 steps passed".
+ * The last line is "smoke-p9-3: all 3 steps passed".
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -178,6 +182,47 @@ await step('2 Grade: CMH-48213 an estimate, a late workbench grade makes CRH-441
   );
   await panel('CMH-48213', /estimate/i, '"estimate"');
   return t;
+});
+
+// ---------------------------------------------------------------- 3
+await step('3 Contract right: BRK-51007 blocked by GR-07, CMH-48213 passes', async () => {
+  const admin = await as('admin');
+  const caseId = async (serial) => {
+    const r = await must(admin, 'cases.list', { q: serial, limit: 5 });
+    const row = (r.rows || []).find((x) => x.id);
+    if (!row) throw new Error('no case for ' + serial);
+    return row.id;
+  };
+  // the cases opened before the sync wrote their contract lines were held; the lines queued a recheck on the worker
+  const gateOf = async (serial, re, msg) => {
+    const id = await caseId(serial);
+    await until(
+      async () => {
+        const g = ((await getJson(admin, '/api/screens/toolfleet/' + id)).gates || []).find((x) => x.id === 'G-CON-2');
+        return g && re.test(g.passed ? 'passed' : g.reason);
+      },
+      `${serial} (${id}) never read ${msg}`,
+      SYNC,
+      admin,
+    );
+    await admin.goto(`${base}/#/product/${id}/overview`);
+    await admin.locator('#view').waitFor();
+    return until(
+      async () => {
+        const t = await admin.locator('[data-testid="tf-gates"]').first().innerText();
+        return re.test(t) ? t : null;
+      },
+      `${serial} (${id}) does not show ${msg} on the Overview`,
+      UI,
+      admin,
+    );
+  };
+  const t = await gateOf('BRK-51007', /Theft recovered: claim CLM-7781 is open/, '"Theft recovered: claim CLM-7781 is open"');
+  await gateOf('CMH-48213', /passed/, '"passed"');
+  // My work lists the held case's exception for the Fleet desk (a Planner) of the org's tenant: reported, not required here
+  // (planner.a sees its own tenant's items; the smoke's org unit is a company of its own)
+  const work = JSON.stringify(await getJson(await as('planner.a'), '/api/screens/mywork'));
+  return t.replace(/\s+/g, ' ') + (/Theft recovered|contract/i.test(work) ? ' \u00b7 My work lists it for planner.a' : '');
 });
 await browser.close();
 if (errors.length) {

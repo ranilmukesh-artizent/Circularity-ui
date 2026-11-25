@@ -11,7 +11,7 @@ from di.repositories.live_rules import flow_version, live_pack
 from di.services.cases import store
 from di.services.cases.decide import decide_case
 from tests import flowkit, starting
-from tests.helpers import call, client, h
+from tests.helpers import call, client, h, tool_case_facts
 
 ORG = "Customer A"
 ORDER = {"kind": "lease", "id": "L-1", "renew": True, "who": "Acme Rentals", "site": "Houston", "need": 9, "rate": 900,
@@ -50,7 +50,7 @@ def _paths_agree(template: str) -> None:
         "template_key": template,
         "asset_key": f"T-PA-{template}",
         "reason": "manual",
-        "facts": FACTS[template],
+        "facts": tool_case_facts(f"T-PA-{template}", FACTS[template]) if template == "tool_fleet" else FACTS[template],
     }
     opened = call("case.open", body, "planner-a")
     assert opened["ok"], opened

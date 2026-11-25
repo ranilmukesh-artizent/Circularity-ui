@@ -19,6 +19,7 @@ import httpx
 import pytest
 from sqlalchemy import text
 
+from di import worker
 from di.connectors import sync
 from di.connectors.base import Record
 from di.connectors.registry import ADAPTERS
@@ -87,6 +88,13 @@ def fleet():
     assert pub["ok"], pub
     out = sync.run_sync(SID, "manual", True)
     assert out["status"] in ("ok", "partial"), out
+    # the cases opened before the sync wrote their contract lines (GR-07, P9-3.6) were held: the lines queued a recheck of each
+    with engine.connect() as c:
+        rechecks = list(
+            c.execute(text("SELECT payload FROM job WHERE kind = 'case.gateRecheck' AND status = 'queued'")).scalars()
+        )
+    for payload in rechecks:
+        worker.HANDLERS["case.gateRecheck"](payload)
     yield wid
     starting.reset()
 
