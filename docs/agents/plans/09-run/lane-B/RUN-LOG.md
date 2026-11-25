@@ -66,3 +66,5 @@ One line per event, newest last, times from `date`.
 | 25 Nov 19:12 | P9-6.8 merged. auto within GR-D11 10%; larger gaps held as payout_gap for a person; payout.decide forbidden to agents; maker-checker on prepared_by |
 | 2026-11-26 00:53 | Verify P9-6.8 green (12 api files, lint, web 481). Pushed. |
 | 25 Nov 19:34 | P9-3.7 merged. G-TOOL-REC with GR-12; recall.release forbidden to agents (Admin, Approver); conflicts in policy.py and test_gates.py merged with P9-6.x |
+| 2026-11-26 01:05 | Committed P9-3.7 (w2 25039e6) as 5b97d01; policy.py and test_gates.py merged with P9-6.x. Decision: P9-4.3 dispatched to w3 now that GR-07 (3.6) and GR-12 (3.7) are in, although plan-next keeps it until all of phase 3 (its Depends on names those two tasks only). |
+| 2026-11-26 01:15 | Verify P9-3.7 green (15 api files incl. tf_intake against the synced sim, lint, web). Pushed. |
