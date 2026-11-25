@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react';
 import type { CaseAnalysis, CaseRec, CaseScreen } from '../../../api/case';
 import * as D from './DecideTabs';
-import { ComplianceTab, DeviceTab, QuoteTab } from './DeviceTabs';
+import { ComplianceTab, DeviceTab, PayoutTab, QuoteTab } from './DeviceTabs';
 import * as E from './EarlyTabs';
 import * as X from './ExecuteTabs';
 
@@ -24,6 +24,7 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
             ['device', 'Device', DeviceTab],
             ...(c.device.quoteCheck ? [['quote', 'Quote', QuoteTab] as TabDef] : []),
             ...(c.device.registry ? [['compliance', 'Compliance', ComplianceTab] as TabDef] : []), // the registry check (P9-6.6)
+            ...(c.device.payout ? [['payout', 'Payout', PayoutTab] as TabDef] : []), // the payout adjustment (P9-6.8)
           ]
         : [];
       return [...extra, ...early];

@@ -82,6 +82,9 @@ EX_STEP: dict[str, dict[str, Any]] = {
     "holdout": _s("Outcome reported", "ERP · finance", ("INV", "Invoice"), "Finance", 16, "outcome.reported", 65,
                   "outcome posted",
                   "Receipts post in SAP S/4HANA"),
+    # plan 9 P9-6.8: the payout of a received device; sent on its own (di.services.device.payout), never a step of a plan
+    "payout": _s("Payout adjusted", "Trade-in platform · payout", ("TI", "Trade-in"), "Customer care", None, "payout.adjusted", 0,
+                 "payout adjusted on the trade-in", "Customer care owns the payout the customer is paid"),
 }  # fmt: skip
 
 # The step plan per route; a refurbish-then-sell resale gets a repair step after the reservation. A step's identity is

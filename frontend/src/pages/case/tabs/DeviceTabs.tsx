@@ -1,9 +1,12 @@
 /** The Device tab of a received-device case (P9-6.4, DV-01): IMEI, model and storage, grade and quote, partner, batch, received
  * date and, for a bulk lot, the device lines. Starts stage 5 of a device case (tabs/index.tsx). */
-import { deviceView } from '../../../api/device';
+import { useState } from 'react';
+import { decidePayout, deviceView } from '../../../api/device';
 import { fmtDateYear } from '../../../api/format';
+import { can } from '../../../api/session';
+import { useAction } from '../../../hooks/useAction';
 import { Kv } from '../CaseBlocks';
-import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine, registryLine, registryState, wipeState } from '../device';
+import { deviceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, refLine, registryLine, registryState, usd, wipeState } from '../device';
 import type { TabProps } from './index';
 
 const LABEL = { imei: 'IMEI', model: 'Model', storage: 'Storage' } as const;
@@ -88,6 +91,52 @@ export function ComplianceTab({ c }: TabProps) {
         ['Re-check after', `${r.recheckDays} days`],
         ['Allowed routes', r.state === 'hit' ? (r.allowedRoutes.length ? r.allowedRoutes.join(', ') : 'None') : 'All'],
       ]} />
+    </>
+  );
+}
+/** The Payout tab of a received-device case (P9-6.8, DV-05): the quote, the payout the pack's table gives, the gap, the rule and
+ * its table version, and where it stands. A payout that waits shows the grading photos and, for a person with `decidePayouts`,
+ * a form (amount, reason) that calls `payout.decide`; the server refuses an amount above the quote. */
+export function PayoutTab({ c }: TabProps) {
+  const p = deviceView(c)?.payout;
+  const act = useAction();
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
+  const [err, setErr] = useState('');
+  if (!p) return null;
+  const submit = async () => {
+    setErr('');
+    const r = await act.run(() => decidePayout(c.id, Number(amount), reason.trim()), { inline: setErr });
+    if (r.ok) { setAmount(''); setReason(''); }
+  };
+  return (
+    <>
+      <p className="stpad" role="status">{payoutLine(p)}</p>
+      <Kv rows={[
+        ['Quote', usd(p.quote)],
+        ['Payout', usd(p.adjusted)],
+        ['Rule', `${p.reason} (${p.table})`],
+        ['Status', payoutState(p)],
+      ]} />
+      {p.status === 'waiting' && (
+        <>
+          <ul className="stsys stpad" aria-label="Grading photos">
+            {p.photos.length ? p.photos.map((id) => <li key={id} className="mono">{id}</li>) : <li>No grading photos on file</li>}
+          </ul>
+          {can('decidePayouts') && (
+            <form className="stpad" onSubmit={(e) => { e.preventDefault(); void submit(); }} aria-label="Decide the payout">
+              <label>Payout ($, at most {usd(p.quote)})
+                <input type="number" min={0} max={p.quote} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+              </label>
+              <label>Reason
+                <input type="text" minLength={10} value={reason} onChange={(e) => setReason(e.target.value)} required />
+              </label>
+              {err && <p role="alert" style={{ color: 'var(--bad)' }}>{err}</p>}
+              <button className="btn pri" type="submit" disabled={act.pending}>Decide the payout</button>
+            </form>
+          )}
+        </>
+      )}
     </>
   );
 }

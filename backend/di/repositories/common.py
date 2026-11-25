@@ -962,6 +962,7 @@ EX_STEP: dict[str, tuple[int | None, str]] = {
     "holdrev": (16, "Planner"),
     "reeval": (16, "Planner"),
     "holdout": (16, "Finance"),
+    "payout": (None, "Customer care"),
 }
 _HOUR_MS = 3_600_000
 

@@ -382,7 +382,28 @@ def _refused(e: SourceError) -> Exception:
     return Refused(str(e)) if e.kind == "client" else e
 
 
+def payout(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Device Lab (the trade-in platform): PATCH /tradeins/{tradeInId} {payoutAmount}, the payout now on the case (P9-6.8). The
+    trade-in id and the amount are the key: the same PATCH twice leaves the same payout."""
+    from di.repositories import device_tradeins  # lazy: the device repositories are only needed by this write
+
+    p = c.get("payout") or {}
+    row = device_tradeins.by_imei(s, str((c.get("valuer") or {}).get("imei") or ""))
+    if row is None or p.get("status") not in ("adjusted", "decided"):
+        raise NotApplicable("no trade-in or no payout to send")
+    body = {"payoutAmount": p["adjusted"]}
+    cl = client(s, "dvlab")
+    try:
+        cl.request("PATCH", f"/tradeins/{row.trade_in_id}", json=body)
+    except SourceError as e:
+        raise _refused(e) from e
+    finally:
+        cl.close()
+    return Sent([{"call": "PATCH tradeins/{tradeInId}", "body": body}], row.trade_in_id, {"tradeInId": row.trade_in_id, **body})
+
+
 WRITERS = {
+    "payout": payout,
     "order": order,
     "repair": repair,
     "teardown": repair,

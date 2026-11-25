@@ -1,6 +1,6 @@
 /** Wording of the case page's Device tab (P9-6.4, DV-01) over the `device` block of a case. */
 import { money } from '../../api/format';
-import type { DeviceView, QuoteCheck, QuoteRow, RegistryView, WipeView } from '../../api/device';
+import type { DeviceView, PayoutView, QuoteCheck, QuoteRow, RegistryView, WipeView } from '../../api/device';
 
 /** "iPhone 14 · 128 GB · declared B · quote $410 · partner P01"; a bulk lot: "20 devices · batch BATCH-0020 · grade B · partner P01". */
 export function deviceLine(v: DeviceView): string {
@@ -81,4 +81,26 @@ export function registryState(r: RegistryView): string {
 /** The lines of a bulk lot: "<imei> · iPhone 14 · 128 GB · grade B · quote $410". */
 export function lotLines(v: DeviceView): string[] {
   return v.lines.map((l) => [l.imei, l.model, `${l.storageGb} GB`, `grade ${l.grade}`, `quote ${money(l.quote)}`].join(' · '));
+}
+
+/** "$410" for a whole amount, "$385.40" otherwise (a payout is paid to the cent; the page's `money` rounds to dollars). */
+export const usd = (n: number): string => '$' + (Number.isInteger(n) ? n.toLocaleString('en-US') : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+/** "−6%" for a payout 6% below the quote, "+3%", "0%". */
+export const gapText = (g: number): string => {
+  const p = Math.round(g * 1000) / 10;
+  return (p < 0 ? '−' : p > 0 ? '+' : '') + Math.abs(p) + '%';
+};
+
+/** "$410 → $385.40 (−6%) · Battery health 80–84%": the quote, the adjusted payout, the gap and the rule (the table's words). */
+export function payoutLine(p: PayoutView): string {
+  return `${usd(p.quote)} → ${usd(p.adjusted)} (${gapText(p.gapPct)}) · ${p.reason}`;
+}
+
+/** Where a payout stands: "Adjusted by the table: US payout rules v1", "Waiting for Customer care: the gap is above 10%" or
+ * "Decided by planner.a: $300 (Cracked glass)". */
+export function payoutState(p: PayoutView): string {
+  if (p.status === 'decided' && p.decided) return `Decided by ${p.decided.by}: ${usd(p.adjusted)} (${p.decided.reason})`;
+  if (p.status === 'waiting') return `Waiting for Customer care: the gap is above ${gapText(p.limit).replace(/^[+−]/, '')}`;
+  return `Adjusted by the table: ${p.table}`;
 }

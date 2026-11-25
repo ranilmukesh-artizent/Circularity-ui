@@ -74,6 +74,7 @@ from di.services.cases.lifecycle import STAGES
 from di.services.device import inputs as device_inputs
 from di.services.device import intake as device_intake
 from di.services.device import lock as device_lock
+from di.services.device import payout as device_payout
 from di.services.device import verify as device_verify
 from di.services.device import wipe as device_wipe
 from di.services.engine.jsmath import js_round
@@ -421,6 +422,9 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
         if pack.valuer.kind == "device":
             device_lock.check(s, c, pack)  # a registry hit opens the blacklist_hit exception (P9-6.6)
             device_verify.check(s, c, pack)  # a mismatch opens the quote_mismatch exception (P9-6.5)
+            device_payout.assess_case(
+                s, c, pack
+            )  # the payout once graded: within the limit adjusted, else for Customer care (P9-6.8)
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
 
@@ -459,6 +463,7 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
         record_match.receive(s, c, i.get("by") or actor)
     _value(s, c, facts)
     store.insert_new(s, c, f"Case opened from {i['reason']}", actor)
+    device_payout.flush(s, c)  # the payout's journal line, now the case row exists (P9-6.8)
     payload = {"case_id": case_id, "owner": c["owner"], "template": c["template"], "asset_key": i["asset_key"],
                "reason": i["reason"], "by": c["intake"]["by"]}  # fmt: skip
     s.execute(

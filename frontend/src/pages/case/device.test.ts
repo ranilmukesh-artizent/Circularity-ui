@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { DeviceView } from '../../api/device';
+import type { DeviceView, PayoutView } from '../../api/device';
 import type { QuoteCheck, RegistryView, WipeView } from '../../api/device';
-import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine, registryLine, registryState, wipeLine, wipeState } from './device';
+import { deviceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, refLine, registryLine, registryState, wipeLine, wipeState } from './device';
 
 const cert = { id: 'WC-1', method: 'Purge', toolVersion: '4.2', verification: 'pass', operator: 'OP-17', at: '2026-10-06T08:00:00Z' };
 
@@ -104,5 +104,23 @@ describe('P9-6.4 reference, grade and lines', () => {
       '359990000100 · iPhone 14 · 128 GB · grade B · quote $410', '359990000101 · iPhone 13 · 256 GB · grade C · quote $300',
     ]);
     expect(lotLines(one)).toEqual([]);
+  });
+});
+
+describe('P9-6.8 payoutLine (DV-05)', () => {
+  const adjusted: PayoutView = {
+    status: 'adjusted', quote: 410, adjusted: 385.4, gapPct: -0.06, reason: 'Battery health 80–84%', table: 'US payout rules v1',
+    auto: true, limit: 0.1, currency: 'USD', photos: [], item: null, decided: null,
+  };
+  it('says the quote, the adjusted payout, the gap and the rule', () => {
+    expect(payoutLine(adjusted)).toBe('$410 → $385.40 (−6%) · Battery health 80–84%');
+    expect(payoutLine({ ...adjusted, adjusted: 410, gapPct: 0, reason: 'As quoted' })).toBe('$410 → $410 (0%) · As quoted');
+  });
+  it('names who decided a payout that waited', () => {
+    const waiting: PayoutView = { ...adjusted, status: 'waiting', adjusted: 287, gapPct: -0.3, reason: 'Graded two or more grades below the quote', auto: false };
+    expect(payoutState(waiting)).toBe('Waiting for Customer care: the gap is above 10%');
+    expect(payoutState({ ...waiting, status: 'decided', adjusted: 300, decided: { by: 'planner.a', reason: 'Cracked glass', at: '2026-10-07T10:00:00Z' } }))
+      .toBe('Decided by planner.a: $300 (Cracked glass)');
+    expect(payoutState(adjusted)).toBe('Adjusted by the table: US payout rules v1');
   });
 });

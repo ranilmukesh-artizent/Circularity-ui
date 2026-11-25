@@ -37,6 +37,7 @@ FORBIDDEN_ACTIONS = (
     "marketTable.approve", "marketTable.reject",  # plan 9 P9-4.2: a person decides which rates and tables price a repair (R21)
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
     "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
+    "payout.decide",  # plan 9 P9-6.8: the payout a customer is paid, above the automatic limit, is decided by a person (R21)
 )  # fmt: skip
 
 # Writes an agent may prepare but never run, whatever its autonomy: the pipeline (step 9b) holds them for a person.

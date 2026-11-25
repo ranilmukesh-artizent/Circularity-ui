@@ -11,6 +11,7 @@ import di.services.actions.compose  # registers action handlers (compose.*: the 
 import di.services.actions.config_agent  # registers action handlers (config.read, config.draft: the configuration agent; plan 9)
 import di.services.actions.connections  # registers action handlers (registry.*, connection.*: the adapter registry; plan 9)
 import di.services.actions.decisions  # registers action handlers
+import di.services.actions.device_cases  # registers action handlers (payout.decide; plan 9 P9-6.8)
 import di.services.actions.engine  # registers action handlers
 import di.services.actions.exceptions  # registers action handlers (exception.explain: the exception assistant; plan 9)
 import di.services.actions.execution  # registers action handlers

@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { CaseRec } from './case';
-import { deviceView, type DeviceView } from './device';
+const m = vi.hoisted(() => ({ invoke: vi.fn(async (): Promise<unknown> => ({ ok: true, output: { status: 'decided' }, key: null, action: 'x' })) }));
+vi.mock('./actions', () => ({ invoke: m.invoke }));
+import { decidePayout, deviceView, type DeviceView } from './device';
 
 const base = { id: 'RT-1', owner: 'Customer A', location: 'Warehouse 1', assetId: 'IMEI:359990000000428', stage: 'none' } as unknown as CaseRec;
 const view: DeviceView = {
@@ -16,5 +18,12 @@ describe('P9-6.4 deviceView (DV-01)', () => {
   it('is null for a case that is not a received device', () => {
     expect(deviceView(base)).toBeNull();
     expect(deviceView({ ...base, device: undefined })).toBeNull();
+  });
+});
+
+describe('P9-6.8 decidePayout (DV-05)', () => {
+  it('invokes payout.decide with the case, the amount and the reason', async () => {
+    await decidePayout('RT-1', 300, 'Photos show a cracked back glass');
+    expect(m.invoke.mock.calls.at(-1)).toEqual(['payout.decide', { case_id: 'RT-1', payout: 300, reason: 'Photos show a cracked back glass' }]);
   });
 });
