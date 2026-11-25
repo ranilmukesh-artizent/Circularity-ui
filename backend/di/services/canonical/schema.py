@@ -85,6 +85,8 @@ def serial_key(org_unit_id: str | None, serial: str) -> str:
     """The canonical key of a piece of network equipment (plan 9, P9-10.2): `<org unit or "shared">:<serial>`, as
     vin_key. The network inventory and the decommission tracker write the unit's `asset` facts under it."""
     return f"{org_unit_id or SHARED_ORG}:{serial}"
+
+
 def tag_key(org_unit_id: str | None, tag: str) -> str:
     """The canonical key of a rental device (plan 9, P9-11.2): `<org unit or "shared">:<asset tag>`, as vin_key. The rental
     system and asset management write the device's `asset`, `market` and `demand` facts under it."""
