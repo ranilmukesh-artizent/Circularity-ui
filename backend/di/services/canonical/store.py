@@ -13,7 +13,9 @@ source's value or entering one (`override`) writes a provenance row from source 
 is the canonical value while the resolution holds; when a value changes, a new conflict opens and the choice is
 dropped. Manual Import rows (di/connectors/manual.py) are ordinary facts from source `manual` (resource `import`).
 
-Any `compliance` fact (gate evidence, plan 9 P9-1.2) also enqueues a `case.gateRecheck` job for its asset.
+Any `compliance` fact (gate evidence, plan 9 P9-1.2) also enqueues a `case.gateRecheck` job for its asset. A `condition`
+`grade` or `test_result` fact (the workbench grade, P9-3.5) enqueues a `case.reevaluate` job for each open tool-fleet case
+of that serial.
 """
 
 import hashlib
@@ -34,6 +36,7 @@ NUMERIC_TOLERANCE = 0.005  # values within 0.5% count as the same (currency roun
 # list fields every source adds to: the canonical value is the union, and sources never conflict on them
 MERGE_FIELDS = {"asset.source_refs"}
 MANUAL = "manual"  # the source of data a person entered: Manual Import rows, choices in the Conflict Queue
+GRADE_FIELDS = ("grade", "test_result")  # the `condition` fields of a workbench grade (P9-3.5)
 OVERRIDE_RESOURCE = "conflict"  # a person's choice in the Conflict Queue (provenance.resource); imports are "import"
 
 
@@ -111,6 +114,17 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
     # new evidence may release the cases held for it (plan 9, P9-1.2): one recheck job per asset (deduped)
     for asset_key in sorted({compliance_asset(f.key) for f in facts if f.model == "compliance"}):
         jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+    # a late workbench grade re-evaluates the open tool-fleet cases of the serial (plan 9, P9-3.5): one job per case (deduped)
+    for serial in sorted({f.key for f in facts if f.model == "condition" and f.field in GRADE_FIELDS}):
+        ids = session.execute(
+            text(
+                "SELECT id FROM case_record WHERE stage <> 'closed' AND data ->> 'template' = 'tool_fleet' "
+                "AND data ->> 'serial' = :k ORDER BY id"
+            ),
+            {"k": serial},
+        ).scalars()
+        for case_id in list(ids):
+            jobs.enqueue(session, "case.reevaluate", {"case_id": case_id}, dedupe_key=f"case.reevaluate:{case_id}")
     return len(facts)
 
 

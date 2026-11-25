@@ -29,3 +29,7 @@ One line per event, newest last, times from `date`.
 | 25 Nov 14:34 | P9-3.3 merged. tool rows after the 48 industrial parts; illustrative rated lives for four classes |
 | 25 Nov 14:34 | P9-3.4 merged. x_case gains reason_field and facts; smoke-p9-3 step 1 written, runs at the gate |
 | 25 Nov 14:34 | P9-4.1 merged. sdesk reads New tickets only (40); 60-month nominal life |
+| 2026-11-25 20:09 | Committed P9-3.2, 3.3, 3.4, 4.1 (one commit each, from the writers' commits); batch verify after the restart. WSL restarted with 11 GB (person's go-ahead); check locks held while the images rebuild (phase 8 libraries, zen-engine). |
+| 2026-11-25 20:32 | P9-6.2 returned by w1 (dd5b3a1); sent back: dvlab landed rows in map() (a dry run would write); move to the reader via client.session as P9-4.1, and mark the mock-changing wipe test. P9-3.5 returned by w2 (d762559). Dispatch P9-6.3 to w3 (on 6.2) and P9-3.6 to w2 (on 3.5). |
+| 2026-11-25 20:49 | P9-6.2 fixed by w1 (cd95b5f): dvlab lands rows from the reader via client.session; dry-run test added; the wipe-in-mock test moved to serial-only test_device_wipe_sim.py. w1 idle: nothing ready until P9-6.3, 3.6, 3.7 or 4.2. |
+| 25 Nov 15:24 | P9-3.5 merged. grade_of takes now (pure core); evidence type in tool_fleet.json data.mappings; smoke step 1 org kind company |

@@ -45,7 +45,7 @@ export interface GateHold { gates: string[]; since: string; batch: string | null
 export interface RequiredStep { gate: string; step: string; owner: string }
 export interface BatchStatus { ref: string; total: number; held: number; released: number }
 export interface CaseRec {
-  id: string; owner: string; location: string; assetId: string; product: string; mfr: string; cls: string; qty: number; age: number;
+  id: string; owner: string; template?: string; location: string; assetId: string; product: string; mfr: string; cls: string; qty: number; age: number;
   received: string; stage: string; grade?: string; condition: string; assessment: string; engLife: string; nextInspection?: string;
   horizon?: string; timing?: string; model?: string; kind?: string; facts?: string[]; predictions?: Prediction[] | null;
   spec?: Record<string, string>; demand?: { site?: string; lease?: string; parts?: boolean; internal?: boolean; confirmed?: boolean } | null;

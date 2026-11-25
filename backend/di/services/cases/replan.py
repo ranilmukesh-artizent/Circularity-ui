@@ -3,6 +3,7 @@ P9-1.4; registry entry I-5 through di.services.engine.queue).
 
     queue_plan(s, case) -> {holds, contested, lost, kinds} | None   what the Case page shows (screen field `plan`)
     on_opened(s, org_unit_id) -> [case ids]                         the job `case.replan {org_unit_id, template}`
+    on_graded(s, case_id) -> bool                                   the job `case.reevaluate {case_id}` (P9-3.5)
 
 - `holds`: the named order the plan gives this return, or None. `lost`: the orders this return wanted and the plan gave
   to another (`order`, `to` the winner's case id, `gain` what the winner gains from it). `contested`: the orders this
@@ -22,7 +23,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.services.cases import intake, store
+from di.services.cases import intake, regrade, store
 
 REPLANNED = ("none", "awaiting_approval")
 _KIND = {"so": "sales order", "bid": "bid", "proj": "pool request"}
@@ -109,3 +110,25 @@ def on_opened(s: Session, org_unit_id: str) -> list[str]:
             )
             moved.append(cid)
     return moved
+
+
+def on_graded(s: Session, case_id: str) -> bool:
+    """A workbench grade landed for the case's serial (canonical.store.apply, P9-3.5): the open case is valued again with
+    the grade (di.services.cases.regrade) and, when its recommendation changed, planned with the queue. Only a case in
+    stage `none` or `awaiting_approval` is touched, and no stage changes. True when the case was valued again."""
+    c = store.get(s, case_id, for_update=True)
+    if c is None or c.get("template") != "tool_fleet" or c["stage"] not in REPLANNED:
+        return False
+    old = c.get("recommendation")
+    intake.revalue(s, c)
+    store.save(s, c)
+    ev = regrade.workbench_evidence(s, c.get("serial") or c.get("assetId"))["workbench_grade"]
+    ref = ev.value.get("inspection_ref") if ev else None
+    reason = f"Workbench grade {c['grade']}" + (f" from {ref}" if ref else "")
+    was, now = (old or {}).get("plan", "no route"), (c.get("recommendation") or {}).get("plan", "no route")
+    reason += f" is in: {was} -> {now}." if was != now else " is in; the recommendation stands."
+    s.execute(
+        text("INSERT INTO case_stage_log (case_id, from_stage, to_stage, reason, actor) VALUES (:c, :st, :st, :r, :a)"),
+        {"c": case_id, "st": c["stage"], "r": reason, "a": "system"},
+    )
+    return True

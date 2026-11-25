@@ -8,3 +8,4 @@
 | 2026-11-25 | 09 · P9-3.3 rated life and end of parts for tool classes in PLM | this commit | writer wt-check all passed, source-sim windchill 9 passed; lead batch verify after the WSL restart | done |
 | 2026-11-25 | 09 · P9-3.4 tool returns open cases from the contract feed | this commit | writer wt-check all passed (tf_intake, case_intake); lead batch verify after the WSL restart | done |
 | 2026-11-25 | 09 · P9-4.1 service desk mocks with repair history and offers | this commit | writer wt-check all passed, source-sim 41 passed; lead batch verify after the WSL restart | done |
+| 2026-11-25 | 09 · P9-3.5 workbench grade on the tool fleet case panel | this commit | writer wt-check all passed (tf_grade, valuer_tool_fleet, case_intake, screens_any_template, tf_intake, gate_hold; tsc, vitest, eslint); lead verify follows with P9-6.2 | done |

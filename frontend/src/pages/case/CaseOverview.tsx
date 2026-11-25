@@ -12,6 +12,7 @@ import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { Panel } from '../../components/kit/Panel';
 import { Photo, Pva, Tag } from './CaseBlocks';
+import { ToolFleetPanel } from './toolfleet/ToolFleetPanel';
 import { approveGuarded, caseActions, runNextStep } from './caseActions';
 import { AgentRunPanel } from './CaseDrawers';
 import { useCaseUi } from './CaseContext';
@@ -118,6 +119,7 @@ export function Overview({ c }: { c: CaseRec }) {
             </section>
           )}
           <AgentRunPanel c={c} ui={ui} />
+          {c.template === 'tool_fleet' && <ToolFleetPanel caseId={id} />}
           {(matchLine || trail.length > 0) && (
             <section className="panel frp" aria-label="System of record and custody">
               <div className="ph"><h3>Custody</h3></div>

@@ -2,7 +2,7 @@
  * Plan 9, Phase 3 demo smoke (P9-3): the tool fleet's returns, one line per step (PASS, or FAIL with the step and the
  * text that was missing, then exit 1 at once). This file holds the steps built so far; the later P9-3 tasks add theirs.
  *
- *   1  Admin creates org unit `tool-fleet-a` (segment). Developer registers and connects `fleet` bound to it, and
+ *   1  Admin creates org unit `tool-fleet-a` (company). Developer registers and connects `fleet` bound to it, and
  *      publishes an ingest workflow on `fleet` whose Open case step is set: template tool_fleet, org tool-fleet-a, asset
  *      field serial, reason field kind, facts toolClass, contractId, lineId, site. A sync opens 18 tool cases; the
  *      Returned assets list shows CMH-48213 with "Case opened from contract_end".
@@ -16,7 +16,7 @@
  *   node frontend/scripts/smoke-p9-3.mjs http://localhost:5173
  *   bash scripts/dev/reset.sh
  * (hold the api test lock meanwhile). Screenshots of a failing step go to SMOKE_OUT (default: <OS temp>/smoke-p9-3).
- * The last line is "smoke-p9-3: all 1 steps passed".
+ * The last line is "smoke-p9-3: all 2 steps passed".
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -99,7 +99,7 @@ async function step(name, fn) {
 // ---------------------------------------------------------------- 1
 await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async () => {
   const admin = await as('admin');
-  await must(admin, 'org.create', { id: ORG, parent_id: 'workspace', kind: 'segment', name: 'Tool fleet A' });
+  await must(admin, 'org.create', { id: ORG, parent_id: 'workspace', kind: 'company', name: 'Tool fleet A' });
   const dev = await as('developer');
   await must(dev, 'source.reconnect', { source_id: SID });
   // the Open case step names the org unit itself (source.update's edit form needs the whole connection, so no bind here)
@@ -140,9 +140,48 @@ await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async
   return `${n} cases`;
 });
 
+// ---------------------------------------------------------------- 2
+await step('2 Grade: CMH-48213 an estimate, a late workbench grade makes CRH-44120 workbench', async () => {
+  const admin = await as('admin');
+  const dev = await as('developer');
+  const caseId = async (serial) => {
+    const r = await must(admin, 'cases.list', { q: serial, limit: 5 });
+    const row = (r.rows || []).find((x) => x.id);
+    if (!row) throw new Error('no case for ' + serial);
+    return row.id;
+  };
+  const panel = async (serial, re, msg) => {
+    const id = await caseId(serial);
+    await admin.goto(`${base}/#/product/${id}/overview`);
+    await admin.locator('#view').waitFor();
+    return until(
+      async () => {
+        const t = await admin.locator('[data-testid="tf-grade"]').first().innerText();
+        return re.test(t) ? t : null;
+      },
+      `${serial} (${id}) does not read ${msg}`,
+      UI,
+      admin,
+    );
+  };
+  await panel('CMH-48213', /estimate/i, '"estimate"');
+  await must(dev, 'source.reconnect', { source_id: 'repairlog' });
+  await must(dev, 'source.sync', { source_id: 'repairlog' });
+  const t = await until(
+    async () => {
+      await admin.reload();
+      return panel('CRH-44120', /workbench DR-/, '"workbench"').catch(() => null);
+    },
+    'CRH-44120 never read "workbench" after the repairlog sync',
+    SYNC,
+    admin,
+  );
+  await panel('CMH-48213', /estimate/i, '"estimate"');
+  return t;
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));
   process.exit(1);
 }
-say('smoke-p9-3: all 1 steps passed');
+say('smoke-p9-3: all 2 steps passed');

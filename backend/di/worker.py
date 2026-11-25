@@ -285,6 +285,18 @@ def _case_replan(payload: dict[str, Any]) -> None:
     log.info("replan %s: moved %s", payload["org_unit_id"], moved or "none")
 
 
+@handler("case.reevaluate")
+def _case_reevaluate(payload: dict[str, Any]) -> None:
+    """A workbench grade landed for a tool-fleet case's serial (canonical.apply): the open case is valued again with it
+    (di.services.cases.replan.on_graded, P9-3.5)."""
+    from di.services.cases import replan
+
+    with SessionLocal() as s:
+        done = replan.on_graded(s, payload["case_id"])
+        s.commit()
+    log.info("regrade %s: %s", payload["case_id"], "valued again" if done else "left as it is")
+
+
 @handler("queue.plan")
 def _queue_plan(payload: dict[str, Any]) -> None:
     """A disposition stage waits for the queue plan: plan the pack's open cases of the org together and wake the runs

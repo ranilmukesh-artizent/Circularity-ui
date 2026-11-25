@@ -34,6 +34,8 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
 - **Tool returns** (plan 9, P9-3.4). The contract feed's returns open tool-fleet cases with the reasons `contract_end`,
   `swap`, `service_order`, `pool_excess` (`RETURN_FT`): `tool_return_facts` gives the case `cls`, `serial`, `ft`, `flow`
   `returns`, with `contract_id` and `line_id` kept on the case. The same serial with another reason is another case.
+- **Workbench grade** (plan 9, P9-3.5). A tool-fleet case's valuer reads the repair log's graded `condition` of the serial
+  when it has a test result (`regrade.apply`, on opening and on every re-check); otherwise its own estimate, labelled so.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
 
 The case reads (live rules, the active model, PLM) sit above the case store; this is the one place a case is opened from
@@ -59,7 +61,7 @@ from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
-from di.services.cases import decide, gate_hold, named_demand, record_match, store
+from di.services.cases import decide, gate_hold, named_demand, record_match, regrade, store
 from di.services.cases.lifecycle import STAGES
 from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
@@ -377,6 +379,8 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
         gate_hold.attach_evidence(s, c)  # the gates read the asset's compliance records (plan 9, P9-1.2)
         if facts or not c.get("routes"):
             _snapshot(c, facts, pack.valuer.kind)
+        if pack.valuer.kind == "tool_fleet" and regrade.apply(s, c):  # the workbench grade, else the estimate (P9-3.5)
+            fv = flow_version(s, c)  # the rules' scope reads the grade the case now shows
     decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
     if pack.key != "industrial":  # custody and the system of record (plan 9, P9-1.10)
         if was_held and c.get("gateHold") is None:

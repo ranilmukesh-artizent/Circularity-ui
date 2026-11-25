@@ -512,7 +512,20 @@
  "data": {
   "systems": [],
   "entities": [],
-  "mappings": [],
+  "mappings": [
+   {
+    "evidence_type": "workbench_grade",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "grade",
+     "test_result",
+     "inspection_ref",
+     "graded_at"
+    ],
+    "source": "repairlog"
+   }
+  ],
   "min_fields": [],
   "record_match": {
    "source_type": "lease",
