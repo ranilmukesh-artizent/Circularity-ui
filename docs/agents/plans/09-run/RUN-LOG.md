@@ -39,3 +39,4 @@ unattended". Times are local (IST).
 | 25 Nov 07:55 | Phase 0 tasks all merged (16). Phase 0 fast gate started (parallel suite, serial-only files, sim, lint, web, smoke-pages, smoke-rt1048, story matrix, selftest) with one Opus reviewer. Writer brief: checks in the foreground, no Monitor or timers (leftover timers flooded the lead). |
 | 25 Nov 08:10 | Phase 0 review in: 4 findings, all confirmed by the lead in the code; 3 go to a fix writer (w1), 1 (autopilot submits as the opener) left for the person. Note: 09-work/review-phase-0.md. |
 | 25 Nov 09:05 | **Phase 0 gate green** (counts in PROGRESS.md). Review fixes `28fe893`; the create/publish refusals for decision workflows were taken out (golden parity). Gate script fix: `wait-idle.sh` before the RT-1048 smoke. Phase 1 starts. |
+| 25 Nov 09:10 | Phase 1 started: P9-1.1 (pack format v1, I-1) to w1 (Sonnet); it is the only ready task (the rest of phase 1 depends on it). |

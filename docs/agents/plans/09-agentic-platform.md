@@ -355,7 +355,7 @@ report.
      - `lint.sh`, `web-check.sh`, `parallel-suite.sh` (N=4);
      - `api-test.sh` on the serial-only files the phase touched;
      - `story-matrix.sh <phase>`;
-     - the phase's demo smoke, then `reset.sh`;
+     - `reset.sh`, `wait-idle.sh` (the post-reset syncs delay instructions), the smokes, then `reset.sh`;
      - the reviewer.
    - **Full gate** (phases 2, 8, 13): everything in "Phase gates" below, including `full-suite.sh`, every smoke and
      the security auditor when the phase added an approvable object.
