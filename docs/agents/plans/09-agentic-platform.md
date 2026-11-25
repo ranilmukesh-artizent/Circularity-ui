@@ -935,7 +935,7 @@ each story went.
 - [x] P9-8.3 Discovery samples 500 records from the test connection
 - [ ] P9-8.4 Five mapping choices with ask the owner
 - [x] P9-8.5 Configured adapter reads dlt-style paging and selectors
-- [ ] P9-8.6 Connector from an API spec through an OpenAPI importer
+- [x] P9-8.6 Connector from an API spec through an OpenAPI importer
 - [ ] P9-8.7 Agent drafts an adapter spec held for a person
 - [x] P9-8.8 Directory mock with OIDC and a users API in source-sim
 - [x] P9-8.9 OIDC sign-in with authlib beside the demo sign-in

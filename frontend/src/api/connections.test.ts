@@ -8,7 +8,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 
 import { actionScope } from './invalidation';
 import {
-  connectionApprovals, createConnection, discoverConnection, ownerApprove, ownerDecline, promoteConnection, registryEntries, requestOwner,
+  connectionApprovals, createConnection, discoverConnection, importSpec, ownerApprove, ownerDecline, promoteConnection, registryEntries, requestOwner,
 } from './connections'; // prettier-ignore
 
 const last = () => m.invoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
@@ -58,5 +58,13 @@ describe('the adapter registry facade (plan 9, P9-8.1, X-10)', () => {
     await discoverConnection('parts-api');
     expect(last()).toEqual(['connection.discover', { source_id: 'parts-api' }]);
     expect(actionScope('connection.discover')).toBe('all');
+  });
+
+  it('p9-8.6: importSpec sends the pasted document, the base URL only when given, and a draft refreshes every read', async () => {
+    await importSpec({ name: 'Items API', systemType: 'erp', vendorFamily: 'Items', document: '{"openapi":"3.1.0"}' });
+    expect(last()).toEqual(['registry.importSpec', { name: 'Items API', system_type: 'erp', vendor_family: 'Items', document: '{"openapi":"3.1.0"}' }]);
+    await importSpec({ name: 'Items API', systemType: 'erp', vendorFamily: 'Items', document: '{}', baseUrl: 'https://t.example/api' });
+    expect(last()[1]).toMatchObject({ base_url: 'https://t.example/api' });
+    expect(actionScope('registry.importSpec')).toBe('all');
   });
 });

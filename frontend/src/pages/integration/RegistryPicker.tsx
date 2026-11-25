@@ -3,7 +3,7 @@
    read only (connection.create). Production access and write-back are the owner's to approve, from the Source drawer.
    The secret is a password field, sent once and cleared after the call; the server stores it encrypted and never returns it. */
 import { Suspense, useState } from 'react';
-import { createConnection, registryEntries, type ConnectorKind, type RegistryEntry } from '../../api/connections';
+import { createConnection, importSpec, registryEntries, type ConnectorKind, type RegistryEntry, type SpecImport } from '../../api/connections';
 import { useOrgUnits } from '../../api/orgs';
 import { toast } from '../../components/toast';
 import { refused } from '../../hooks/useAction';
@@ -15,6 +15,55 @@ export function RegistryPicker({ onClose, onCreated }: { onClose: () => void; on
     <Suspense fallback={<p className="note">Loading the adapter registry…</p>}>
       <Picker onClose={onClose} onCreated={onCreated} />
     </Suspense>
+  );
+}
+
+/* "From an API spec" (P9-8.6): paste or upload an OpenAPI 3 document (JSON or YAML; never a link), save it as a draft, and see what
+   was found: the resources with their id field, the operations left out, and the checks. A draft that needs fixes is still saved;
+   another person releases it, then "Create test connection" uses it like any entry. */
+function SpecImporter() {
+  const [doc, setDoc] = useState('');
+  const [name, setName] = useState('');
+  const [family, setFamily] = useState('');
+  const [base, setBase] = useState('');
+  const [found, setFound] = useState<SpecImport | null>(null);
+  const [busy, setBusy] = useState(false);
+  const ready = doc.trim() !== '' && name.trim() !== '' && family.trim() !== '' && (base === '' || /^https?:\/\/\S+/.test(base));
+
+  async function save() {
+    if (busy) return;
+    setBusy(true);
+    const r = await importSpec({ name: name.trim(), systemType: 'erp', vendorFamily: family.trim(), document: doc, ...(base ? { baseUrl: base } : {}) }); // prettier-ignore
+    setBusy(false);
+    if (refused(r)) return;
+    setFound(r.output);
+    toast(r.output.needs_fixes ? name.trim() + ' is saved as a draft that needs fixes.' : name.trim() + ' is saved as a draft.');
+  }
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <label htmlFor="spDoc">API specification (OpenAPI 3, JSON or YAML)</label>
+      <textarea id="spDoc" className="sel" style={{ width: '100%', minHeight: 90 }} placeholder="Paste the document, or choose a file" value={doc} onChange={(e) => { setDoc(e.target.value); setFound(null); }} />
+      <input type="file" aria-label="Upload an API specification" accept=".json,.yaml,.yml,application/json" onChange={(e) => void e.target.files?.[0]?.text().then((t) => { setDoc(t); setFound(null); })} />
+      <label htmlFor="spName" style={{ marginTop: 8, display: 'block' }}>Connector name</label>
+      <input id="spName" className="sel" style={{ width: '100%' }} value={name} onChange={(e) => setName(e.target.value)} />
+      <label htmlFor="spFamily" style={{ marginTop: 8, display: 'block' }}>Vendor family</label>
+      <input id="spFamily" className="sel" style={{ width: '100%' }} value={family} onChange={(e) => setFamily(e.target.value)} />
+      <label htmlFor="spBase" style={{ marginTop: 8, display: 'block' }}>Base URL (optional)</label>
+      <input id="spBase" className="sel" style={{ width: '100%' }} placeholder="https://test.example.com/api" value={base} onChange={(e) => setBase(e.target.value)} />
+      <div className="row" style={{ marginTop: 8 }}>
+        <button className="btn pri" disabled={!ready || busy} onClick={() => void save()}>Save draft</button>
+      </div>
+      {found && (
+        <div style={{ marginTop: 8 }}>
+          <b>{found.resources.length} resource(s) found</b>
+          <ul>{found.resources.map((r) => <li key={r.name}>{r.name} <span className="note">{r.path} · id {r.id_field ?? 'not found'} · records at {r.data_selector}</span></li>)}</ul>
+          {found.unsupported.length > 0 && <><b>Left out</b><ul>{found.unsupported.map((u) => <li key={u} className="note">{u}</li>)}</ul></>}
+          {found.notes.map((n) => <p key={n} className="note">{n}</p>)}
+          {found.checks.length > 0 && <><b>Needs fixes</b><ul>{found.checks.map((c) => <li key={c.field}>{c.message}</li>)}</ul></>}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -57,6 +106,7 @@ function Picker({ onClose, onCreated }: { onClose: () => void; onCreated?: (sour
           <button key={k} role="tab" aria-selected={kind === k} className={'btn sm' + (kind === k ? ' pri' : '')} onClick={() => { setKind(k); setPick(null); setAuth(''); }}>{label}</button>
         ))}
       </div>
+      {kind === 'from_spec' && <SpecImporter />}
       <div className="frpick" style={{ marginTop: 8 }}>
         {shown.length === 0 && <p className="note">{kind === 'from_spec' ? 'No API-spec connector is released yet. Draft one from an OpenAPI file; another person releases it.' : 'No connector of this kind.'}</p>}
         {shown.map((e) => (
