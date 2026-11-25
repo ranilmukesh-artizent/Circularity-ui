@@ -404,6 +404,13 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "refurb_sale_price": "number",
         "sale_price": "number",
         "time_to_sell": "number",
+        "retail_guide_price": "number",  # plan 9, P9-9.6: the pricing guide and the auction platform (uc_price, uc_auction)
+        "wholesale_guide_price": "number",
+        "auction_next_sale_days": "number",
+        "auction_sell_fee": "number",
+        "auction_transport": "number",
+        "salvage_bid": "number",
+        "salvage_buyer": "text",
     },
     "outcome": {
         "accounting_document": "text",
@@ -475,6 +482,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "role": "text",
         "status": "text",
         "yields": "object",
+        "title_db_reporting": "bool",  # plan 9, P9-9.6: per buyer, key = the buyer id (uc_auction)
     },
     # PLM parts and BOM lines (plan 8, MVP-9.1): written by the PLM adapters beyond the demo (Windchill, MVP-9.3);
     # keys from schema.part_key and schema.bom_key
