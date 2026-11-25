@@ -70,3 +70,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-26 01:15 | Verify P9-3.7 green (15 api files incl. tf_intake against the synced sim, lint, web). Pushed. |
 | 25 Nov 20:01 | P9-4.3 merged. no model in intake (fault text only shown; the P9-2.18 stage reasoner reads it); case valued on its worst line; dry run writes nothing |
 | 2026-11-26 01:41 | Verify P9-4.3 green. Hourly sync: merged lane A b51d1cb (mapping calibration refit, data only). Pushed. |
+| 25 Nov 20:22 | P9-4.4 merged. RepairCostModel (pure); GR-S1 params in pack service_desk params; no model step (fixed phrases over computed numbers) |

@@ -881,7 +881,7 @@ each story went.
 - [x] P9-4.1 Service desk mocks with repair history and offers
 - [x] P9-4.2 Per-market decision tables with maker-checker
 - [x] P9-4.3 One case per service ticket or batch
-- [ ] P9-4.4 Estimate from similar past repairs
+- [x] P9-4.4 Estimate from similar past repairs
 - [ ] P9-4.5 Estimate accuracy on held-out repairs
 - [ ] P9-4.6 Price fix, covered swap and upgrade options
 - [ ] P9-4.7 Re-run options when the fault is posted

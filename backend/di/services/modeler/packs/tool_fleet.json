@@ -644,6 +644,11 @@
      "CRH": 36,
      "AGR": 36,
      "LSR": 60
+    },
+    "gr_s1": {
+     "min_matches": 50,
+     "max_width_share": 0.3,
+     "window_years": 3
     }
    },
    "paths": {

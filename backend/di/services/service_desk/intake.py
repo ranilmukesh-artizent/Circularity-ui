@@ -41,6 +41,7 @@ from di.services.cases import contract_line, recall_evidence, store
 from di.services.engine.jsmath import js_round
 from di.services.modeler.pack import load_pack
 from di.services.modeler.valuers import fleet_evidence, tool_fleet
+from di.services.service_desk import estimate
 
 PACK = "tool_fleet"
 REASON = "service_ticket"
@@ -147,6 +148,8 @@ def open_from_ticket(s: Session, ticket: TicketRow, actor: str, org_unit_id: str
         actor,
     )  # fmt: skip
     s.execute(text("UPDATE service_ticket SET case_id = :c WHERE number = :n"), {"c": case["id"], "n": ticket.number})
+    estimate.estimate_case(s, case, ticket.opened_at.date())  # P9-4.4: the estimate of every line, kept on the line
+    store.save(s, case)
     return case
 
 
