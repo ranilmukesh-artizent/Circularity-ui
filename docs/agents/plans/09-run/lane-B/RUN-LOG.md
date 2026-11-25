@@ -74,3 +74,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-26 02:00 | Verify P9-4.4: 109 passed, 1 failed (test_pack_format exception roles missed P9-4.3's technician_check; fixed by the lead); lint ok, web 498. Pushed. |
 | 2026-11-26 02:00 | Note: commit 1753314 is mislabelled 'P9-4.4: Estimate from similar past repairs'. It holds only the lead's test fix (test_pack_format lists P9-4.3's technician_check, Engineer); the real P9-4.4 is ee2276e. Pushed history is not rewritten. |
 | 25 Nov 20:45 | P9-4.5 merged. accuracy per org and class, bar from gr_s1; instant pricing off below the bar; review item for the gate: fixed fx rates in code instead of the fx_rate table |
+| 2026-11-26 02:27 | Verify P9-4.5: 425 passed, 1 failed (alembic check: model index on as_of vs migration 0045's as_of DESC; fixed by the lead); migrations + accuracy 7 passed; web 501. Pushed. |
