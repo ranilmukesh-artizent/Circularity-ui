@@ -22,6 +22,10 @@ seller_fleet_size, lot_id, days_on_lot; on `condition` odometer_statement_ref, o
 and dealer_bid. The title fields (P9-9.3) are written by uc_title on `condition`: title_status, lien_open,
 lien_release_ref, title_brand, title_checked_at.
 
+The medical rental fields (plan 9, P9-11.2) are written by the extra adapters mr_rental and mr_assets, keyed by `tag_key`: on
+`asset` tag, device_class, serial, in_service_date, age_years, has_patient_data, depot, checked_in_at, hospital, ward_type,
+turnaround; on `market` residual_sale_value; on `demand` rental_requests and region_forecast.
+
 A field a connector starts to write must be added here (with its type), or its facts are held as failed records.
 Types: text, ref (a reference string), date (ISO 8601 date or timestamp string), number, bool, list, object, any.
 """
@@ -173,6 +177,18 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "work_order_state": "text",
         "work_order_status": "text",
         "work_order_type": "text",
+        # plan 9, P9-11.2: the rental system and asset management (keyed by tag_key)
+        "tag": "text",
+        "device_class": "text",
+        "serial": "text",
+        "in_service_date": "date",
+        "age_years": "number",
+        "has_patient_data": "bool",
+        "depot": "text",
+        "checked_in_at": "date",
+        "hospital": "text",
+        "ward_type": "text",
+        "turnaround": "object",
     },
     "condition": {
         "assessed_at": "date",
@@ -341,6 +357,9 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "term_months": "number",
         "tool_class": "text",
         "unit_price": "number",
+        # plan 9, P9-11.2: open rental requests with their distance, and the region's weekly forecast
+        "rental_requests": "list",
+        "region_forecast": "list",
     },
     "intervention": {
         "cost": "number",
@@ -411,6 +430,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "auction_transport": "number",
         "salvage_bid": "number",
         "salvage_buyer": "text",
+        "residual_sale_value": "number",  # plan 9, P9-11.2: asset management
     },
     "outcome": {
         "accounting_document": "text",
