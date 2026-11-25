@@ -1,6 +1,6 @@
 # Plan 9 run: report for the person
 
-Rewritten by the lead as the run goes. Last update: 25 Nov 12:45 IST.
+Rewritten by the lead as the run goes. Last update: 25 Nov 17:00 IST.
 
 ## Done
 - **Phase 0: all 16 tasks and the gate, green.** Each task was re-tested by the lead on the main stack before its
@@ -8,13 +8,14 @@ Rewritten by the lead as the run goes. Last update: 25 Nov 12:45 IST.
   matrix, selftest).
 - Phase 0 review: 4 findings (`docs/agents/plans/09-work/review-phase-0.md`), 3 fixed in `28fe893`.
 
-- **Phase 1: 5 of 15 merged**, each re-tested on the main stack (parallel suite of every non-serial api test, the
-  serial files it touches, lint, web): P9-1.1 pack format v1 (I-1), P9-1.2 gate catalogue (I-2/I-3), P9-1.3 customer
-  overlay with maker-checker (I-4), P9-1.4 queue planner port (I-5), P9-1.5 one decider (I-6; intake,
-  re-evaluation, shadow and simulation all call `decide_case`; RT-1048 browser run reaches stage 10).
+- **Phase 1: 12 of 15 merged**, each re-tested on the main stack (parallel suite of every non-serial api test, the
+  serial files it touches, lint, web; smoke-pages for 11 accounts after the menu change): pack format v1 (I-1), gate
+  catalogue (I-2/I-3), customer overlay (I-4), queue planner (I-5), one decider (I-6), pack versions with
+  maker-checker, case process layer and My work (I-20), My work in the menu, standard valuer (I-21), match to the
+  system of record, contract entitlement gate, carbon with provenance.
 
 ## In flight
-- P9-1.6 pack versions, P9-1.7 case process layer and My work (Sonnet), P9-1.12 carbon provenance (Haiku).
+- P9-1.13 pack-driven views. Then P9-1.14 and the phase 1 gate; phases 2 and 3 follow.
 
 ## Blocked (needs you)
 - None.
@@ -40,5 +41,7 @@ Rewritten by the lead as the run goes. Last update: 25 Nov 12:45 IST.
   connected yet); schema and importer checks still run, and publish runs the graph checks.
 
 ## Lessons the run applied
+- A task can break another task's tests through shared pack data (P9-1.11's gate broke 2 overlay tests); the lead's
+  parallel-suite run after every merge caught it, and the lead fixed the tests (`be9a839`).
 - Writers now quote a red-first run, start no agents, and run checks in the foreground (timers flooded the lead).
 - Browser smokes run after `wait-idle.sh` (the post-reset syncs delay the RT-1048 instruction).
