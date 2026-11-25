@@ -49,6 +49,21 @@ export interface QuarantineView {
   released: { by: string; at: string; note: string } | null;
 }
 
+/** The computed wear and remaining life of a tool (P9-3.9, TF-06): WTI 0 to 100, the weakest critical component's remaining life, a row per component. */
+export interface LifeView {
+  wti: number;
+  rul_tool: number;
+  rul_tool_hours: number;
+  weakest: string;
+  per_component: { name: string; used_hours: number; consumed_pct: number; rul_pct: number; source: 'plm' | 'pack' | string }[];
+  confidence: 'High' | 'Medium' | 'Low';
+  /** RUL_tool at the high and low duty, only without telematics */
+  range: [number, number] | null;
+  inputs: Record<string, unknown>;
+  table_version: string;
+  rule_version: string;
+}
+
 export interface ToolFleetView {
   case_id: string;
   pack_version: string;
@@ -57,7 +72,8 @@ export interface ToolFleetView {
   gates: GateView[];
   /** the recall quarantine, null for a tool no active recall names */
   quarantine: QuarantineView | null;
-  life: unknown | null;
+  /** null for a case with neither telematics hours nor months on contract */
+  life: LifeView | null;
   paths: unknown[];
   plan: unknown | null;
   approval: unknown | null;

@@ -18,7 +18,9 @@ from typing import Any, Literal
 
 from sqlalchemy.orm import Session
 
+from di.core import clock
 from di.services.canonical import store as canonical
+from di.services.cases import life_evidence
 from di.services.modeler.evidence import Evidence, parse_time
 from di.services.modeler.valuers import tool_inputs
 
@@ -44,9 +46,12 @@ def apply(s: Session, c: MutableMapping[str, Any]) -> bool:
     `grade` to what it shows. True when either changed. A case without a valuer snapshot is left as it is."""
     if not isinstance(c.get("valuer"), dict):
         return False
-    vc = tool_inputs.valuer_case(c["valuer"], workbench_evidence(s, c.get("serial") or c.get("assetId")))
+    ev = workbench_evidence(s, c.get("serial") or c.get("assetId")) | life_evidence.evidence(s, c)
+    vc = tool_inputs.valuer_case(c["valuer"], ev, clock.now())
     shown = vc["grade"] or vc["estGrade"]
     vc["grade"] = shown  # no workbench grade: the snapshot keeps its estimate as grade, as opened
     changed = vc != c["valuer"] or c.get("grade") != shown
     c["valuer"], c["grade"] = vc, shown
+    if vc.get("life") is not None:  # the computed life (P9-3.9): what the case shows and the decision records
+        c["rul"], c["partRul"], c["life"] = vc["rul"], vc["partRul"], vc["life"]
     return changed

@@ -91,6 +91,8 @@ ignore_imports =
     di.services.cases.intake -> di.repositories.live_rules
     di.services.cases.intake -> di.services.actions.models
     di.services.cases.intake -> di.repositories.plm
+    # The life facts of a tool (plan 9, P9-3.9) include PLM's rated life of its wear components: read here, as intake reads the BOM.
+    di.services.cases.life_evidence -> di.repositories.plm
     # The template of a case can be a pack version published for its owner (plan 9, P9-1.6): intake reads it, as it reads
     # the owner's flow.
     di.services.cases.intake -> di.repositories.packs

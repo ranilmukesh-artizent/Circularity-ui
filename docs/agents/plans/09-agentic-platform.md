@@ -865,7 +865,7 @@ each story went.
 - [x] P9-3.6 Contract right gate GR-07
 - [x] P9-3.7 Safety recall check with quarantine
 - [x] P9-3.8 Stale telematics guardrail GR-13
-- [ ] P9-3.9 Wear index and remaining life per component
+- [x] P9-3.9 Wear index and remaining life per component
 - [ ] P9-3.10 Remaining life model and teardown calibration
 - [ ] P9-3.11 Telematics and inspection disagreement exception
 - [ ] P9-3.12 Six paths valued against live named demand
