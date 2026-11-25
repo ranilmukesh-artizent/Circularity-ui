@@ -20,6 +20,11 @@ Plan 9 (P9-2.1): every playbook walks the stage chain (`playbooks/stage_chain.py
 `stage_chain` prepares each call as the stage's own agent (`StageDef.agent_id`, when the run's agent acts) with
 `ctx.stage` set; `case_autopilot` is an alias that makes the same calls in the same order as the run's own agent. After a
 stage's last call (or when it waits, is held or fails) its record is upserted in `agent_stage_record`.
+
+Plan 9 (P9-2.2, I-8): a playbook registered in `playbook_versions` is an LLM playbook: `step` runs it through the
+`AgentLoop` (`loop_runner()`; tests swap it with `set_loop`). A call the pipeline holds is a deferred call: the run waits with
+`state.deferred = {tool_call_id: proposal_id}`, and `wake` resumes the loop with each accepted proposal's output once all are
+decided. The run state keeps `playbook_version`; a resume whose version is gone stops the run.
 """
 
 import json
@@ -38,11 +43,13 @@ from di.core.auth import load_context
 from di.core.config import get_settings
 from di.repositories.live_rules import live_pack
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
-from di.services.agents import chain, limits, registry
+from di.services.agents import chain, limits, playbook_versions, registry
 from di.services.agents.forbidden import FORBIDDEN_ACTIONS
+from di.services.agents.loop import AgentLoop, LoopSpec
 from di.services.agents.playbooks import case_autopilot as autopilot
 from di.services.agents.playbooks import stage_chain
 from di.services.agents.playbooks.case_autopilot import Done, Halt, Skip, Wait
+from di.services.agents.pydantic_ai_loop import PydanticAILoop
 from di.services.agents.stages import CHAIN
 from di.services.cases import store
 
@@ -56,15 +63,30 @@ if _FORBIDDEN:
 STOPPING = ("Run limit reached", "is stopped by Admin")  # refusals that stop a run rather than fail it
 
 
+_LOOP: AgentLoop | None = None
+
+
+def set_loop(loop: AgentLoop | None) -> None:
+    """Use `loop` for LLM playbooks (a test's scripted model); None goes back to the Pydantic AI adapter."""
+    global _LOOP
+    _LOOP = loop
+
+
+def loop_runner() -> AgentLoop:
+    return _LOOP if _LOOP is not None else PydanticAILoop()
+
+
 def _enqueue(s: Session, run_id: str) -> None:
     jobs.enqueue(s, JOB, {"run_id": run_id}, dedupe_key=f"{JOB}:{run_id}")
 
 
 def start(s: Session, agent: str, playbook: str, case_id: str | None, *, account: str) -> str:
-    if playbook not in PLAYBOOKS:
+    llm = playbook not in PLAYBOOKS and playbook_versions.known(playbook)
+    if playbook not in PLAYBOOKS and not llm:
         raise ValueError(f"unknown playbook {playbook!r}")
     if registry.get(s, agent) is None:
         raise ValueError(f"unknown agent {agent!r}")
+    first = {"playbook_version": playbook_versions.latest(playbook)} if llm else stage_chain.start_state()
     run_id = "AR-" + uuid.uuid4().hex[:12]
     s.execute(
         text(
@@ -76,7 +98,7 @@ def start(s: Session, agent: str, playbook: str, case_id: str | None, *, account
             "a": agent,
             "p": playbook,
             "c": case_id,
-            "st": json.dumps({"account": account} | stage_chain.start_state()),
+            "st": json.dumps({"account": account} | first),
         },
     )
     _enqueue(s, run_id)
@@ -189,6 +211,8 @@ def step(s: Session, run_id: str) -> str:
     ctx = _context(s, run)
     if agent is None or ctx is None or limits.stopped(ctx, agent):
         return _save(s, run, "stopped", n, st | {"reason": "The agent is stopped."})
+    if run["playbook"] not in PLAYBOOKS:
+        return _llm_step(s, run, ctx)
     case = store.get(s, run["case_id"]) if run["case_id"] else None
     if case is None:
         return _save(s, run, "failed", n, st | {"reason": f"No live case {run['case_id']}."})
@@ -253,6 +277,8 @@ def wake(s: Session, run_id: str) -> None:
     if run is None or run["status"] != "waiting" or (run["state"] or {}).get("waiting") != "proposal":
         return
     st = dict(run["state"])
+    if st.get("deferred"):  # an LLM run: it resumes once every proposal it waits for is decided
+        return _wake_loop(s, run, st)
     p = s.execute(text("SELECT status FROM agent_proposal WHERE id = :i"), {"i": st.get("proposal")}).scalar()
     st.pop("waiting", None)
     if p == "accepted":
@@ -279,6 +305,71 @@ def resume_waiting(s: Session, case_id: str) -> int:
         _enqueue(s, run_id)
         n += 1
     return n
+
+
+# --- LLM playbooks (P9-2.2) ------------------------------------------------------------------------------------------
+
+
+def _accepted_results(s: Session, st: dict[str, Any]) -> dict[str, Any]:
+    """What each deferred call now has: an accepted proposal's output (what the person's call returned), or the
+    person's answer to a question."""
+    out: dict[str, Any] = dict(st.get("answers") or {})
+    for call_id, pid in (st.get("deferred") or {}).items():
+        res = s.execute(text("SELECT result FROM agent_proposal WHERE id = :i AND status = 'accepted'"), {"i": pid}).scalar()
+        out[call_id] = (res or {}).get("output")
+    return out
+
+
+def _wake_loop(s: Session, run: dict, st: dict[str, Any]) -> None:
+    statuses = [
+        s.execute(text("SELECT status FROM agent_proposal WHERE id = :i"), {"i": pid}).scalar() for pid in st["deferred"].values()
+    ]
+    rest = {k: v for k, v in st.items() if k != "waiting"}
+    if "rejected" in statuses:
+        _save(s, run, "stopped", int(run["step"]), rest | {"reason": "A person rejected the proposal."})
+    elif all(x == "accepted" for x in statuses):
+        _save(s, run, "running", int(run["step"]), rest)
+        _enqueue(s, run["id"])
+
+
+def _loop_prompt(run: dict, st: dict[str, Any]) -> str:
+    return str(st.get("prompt") or (f"Work on case {run['case_id']}." if run["case_id"] else "Begin."))
+
+
+def _llm_step(s: Session, run: dict, ctx: CallContext) -> str:
+    """One run of the loop for an LLM playbook: it ends done, waiting (a deferred call), stopped or failed."""
+    st, n = dict(run["state"] or {}), int(run["step"])
+    name, version = run["playbook"], str(st.get("playbook_version"))
+    spec: LoopSpec | None = playbook_versions.spec_for(name, version)
+    if spec is None:
+        now = playbook_versions.latest(name)
+        why = f"The playbook changed since this run started (v{version}, now v{now})."
+        return _save(s, run, "stopped", n, st | {"reason": why})
+    started = s.execute(text("SELECT 1 FROM agent_run_message WHERE run_id = :r LIMIT 1"), {"r": run["id"]}).first()
+    resume = _accepted_results(s, st) if started else None
+    try:
+        res = loop_runner().run(s, spec, _loop_prompt(run, st), ctx=ctx, resume=resume)
+    except Exception as e:  # noqa: BLE001 - a provider error, a tool out of retries, the turn limit: the run fails, the reason is kept
+        log.warning("agent run %s: the loop failed: %s", run["id"], e)
+        s.rollback()
+        return _save(s, run, "failed", n, st | {"reason": f"The model loop failed: {str(e)[:300]}"})
+    if res.model is None:
+        return _save(s, run, "stopped", n, st | {"reason": "No language model is configured."})
+    st = {k: v for k, v in st.items() if k not in ("deferred", "questions", "answers", "waiting")}
+    used = dict(st.get("usage") or {})
+    st["usage"] = {k: int(used.get(k, 0)) + v for k, v in res.usage.items()}
+    st["model"], st["tainted"] = res.model, bool(st.get("tainted")) or res.tainted
+    if res.deferred:
+        ext = {d.tool_call_id: d.proposal_id for d in res.deferred if d.kind == "external"}
+        asks = {d.tool_call_id: d.question for d in res.deferred if d.kind == "question"}
+        extra: dict[str, Any] = {"waiting": "proposal" if ext else "question", "deferred": ext}
+        if asks:
+            extra["questions"] = asks
+        if ext:
+            extra["proposal"] = next(iter(ext.values()))
+        return _save(s, run, "waiting", n + 1, st | extra)
+    out = res.output.model_dump(mode="json") if res.output is not None else None
+    return _save(s, run, "done", n + 1, st | {"output": out, "note": "playbook finished"})
 
 
 @after("decision.approve")

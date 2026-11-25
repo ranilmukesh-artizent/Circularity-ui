@@ -1,4 +1,4 @@
-"""Agents (plan 8, phase 11): the registry (0023), proposals (0024) and runs (0025); plan 9: stage records (0034)."""
+"""Agents (plan 8, phase 11): registry (0023), proposals (0024), runs (0025); plan 9: stage records (0034), messages (0035)."""
 
 from sqlalchemy import (
     BigInteger,
@@ -108,4 +108,16 @@ agent_stage_record = Table(
     CheckConstraint("autonomy IN ('recommend','limits','alone')", name="agent_stage_record_autonomy"),
     CheckConstraint("status IN ('done','skipped','held','waiting','exception')", name="agent_stage_record_status"),
     Index("ix_agent_stage_record_case", "case_id", "at"),
+)
+
+# --- 0035 model messages of an LLM run, one row per turn (plan 9, P9-2.2) -------------------------------------------------------
+
+agent_run_message = Table(
+    "agent_run_message",
+    metadata,
+    Column("run_id", Text, ForeignKey("agent_run.id", ondelete="CASCADE"), primary_key=True),
+    Column("n", Integer, primary_key=True),
+    Column("messages", JSONB, nullable=False),
+    Column("model", Text),
+    ts("at", now=True),
 )

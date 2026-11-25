@@ -1,13 +1,16 @@
-"""Reserved for P9-2.2 (plan 9): AgentLoop port with the Pydantic AI adapter.
+"""agent_run_message (plan 9, P9-2.2; registry entry I-8): the model messages of an LLM agent run, one row per turn.
 
-Empty until that task fills it. Plan 9's writers run in parallel and merge in any order, so every migration from
-0029 to 0061 exists, chained, from the start; a filled one is idempotent (IF NOT EXISTS), and
-`scripts/dev/migrate-reapply.sh 0028` applies it on a database that already ran it empty.
+`n` numbers the turns of a run from 1; `messages` holds the Pydantic AI messages that turn added (JSON mode), so
+concatenating the rows in `n` order gives the run's whole message history. A crash repeats at most one model call.
 
 Revision ID: 0035
 Revises: 0034
 Create Date: 2026-11-25
+
+Idempotent (IF NOT EXISTS), as every plan 9 migration is: bash scripts/dev/migrate-reapply.sh 0028
 """
+
+from alembic import op
 
 revision = "0035"
 down_revision = "0034"
@@ -16,8 +19,19 @@ depends_on = None
 
 
 def upgrade() -> None:
-    pass
+    op.execute(
+        """
+CREATE TABLE IF NOT EXISTS agent_run_message (
+  run_id   text         NOT NULL REFERENCES agent_run(id) ON DELETE CASCADE,
+  n        integer      NOT NULL,
+  messages jsonb        NOT NULL,
+  model    text         NULL,
+  at       timestamptz  NOT NULL DEFAULT now(),
+  PRIMARY KEY (run_id, n)
+);
+"""
+    )
 
 
 def downgrade() -> None:
-    pass
+    op.execute("DROP TABLE IF EXISTS agent_run_message")
