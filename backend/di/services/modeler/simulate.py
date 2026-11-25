@@ -10,7 +10,7 @@ the result lists the cases whose best path changes and the value difference.
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Protocol
 
 from di.services.modeler.compile import CompiledRule
 from di.services.modeler.templates import Template
@@ -26,6 +26,25 @@ class Decision:
 
 
 Decider = Callable[[Mapping[str, Any], Sequence[CompiledRule]], Decision]
+
+
+class Decided(Protocol):
+    """What the adapter reads of `di.services.cases.decide.Decision` (this module is pure and never imports it)."""
+
+    @property
+    def route(self) -> str | None: ...
+
+    @property
+    def net(self) -> float: ...
+
+    @property
+    def extra(self) -> Mapping[str, float]: ...
+
+
+def decision_to_sim(d: Decided) -> Decision:
+    """The simulation's decision from a case's decision: the route and its net; for a device lot the net is the expected
+    cash a unit (`extra["cash"]`) and `extra["days"]` its days to sell."""
+    return Decision(d.route, float(d.extra.get("cash", d.net)), {"days": d.extra["days"]} if "days" in d.extra else {})
 
 
 @dataclass(frozen=True)

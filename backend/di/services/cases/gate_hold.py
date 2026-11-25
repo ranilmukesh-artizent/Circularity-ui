@@ -3,7 +3,7 @@ P9-1.2; stories X-03 and X-07). Uses registry entries I-2 (`gates`) and I-3 (`ev
 
     attach_evidence(s, case)   the canonical `compliance` records of the case's asset become `case["evidenceRecords"]`
     apply(case, routes)        gates evaluated for the case's pack, applied to the routes, then `hold` (R20: before the
-                               business rules and before ranking; `intake.template_routes` calls it)
+                               business rules and before ranking; `decide.decide_case` calls it)
     hold(case, results)        a failed gate that holds sets `case["gateHold"]` and leaves no recommendation (stage
                                `none`); a failed gate with a step appends it to `case["requiredSteps"]`
     recheck(s, asset_key)      the worker job `case.gateRecheck`: evidence landed, so every held case of the asset is
@@ -14,9 +14,9 @@ Owns: those functions and the case keys `evidenceRecords`, `gates` (one row per 
 `gateHold` and `requiredSteps`. Never does: approve anything. A release makes the case decidable again; a person still
 approves the decision.
 
-The pack of a case is `default_pack_of(case)`: the pack file of its template (the live pack once P9-1.3 adds
-`live_rules.live_pack`). Tests and `recheck(pack_of=...)` replace it. The shipped packs have no active gates, so no
-shipped case is gated.
+The pack file of a case is `base_pack(case)`: `default_pack_of(case)`, the pack file of its template. Tests and
+`recheck(pack_of=...)` replace it; intake lays the owner's customer overlay on it (`live_rules.live_pack`) and passes
+the result to `apply`. The shipped packs have no active gates, so no shipped case is gated.
 """
 
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
@@ -116,11 +116,19 @@ def hold(case: MutableMapping[str, Any], results: Sequence[GateResult]) -> bool:
     return True
 
 
-def apply(case: MutableMapping[str, Any], routes: list[Route]) -> list[GateResult]:
+def base_pack(case: Mapping[str, Any]) -> Pack:
+    """The pack file the case's customer overlay is laid on (`default_pack_of`, or the pack a `recheck` is given)."""
+    return (_override.get() or default_pack_of)(case)
+
+
+def apply(
+    case: MutableMapping[str, Any], routes: list[Route], pack: Pack | None = None, as_of: datetime | None = None
+) -> list[GateResult]:
     """Evaluate the case's gates, fail the blocked routes and hold the case (R20: call it before the business rules
-    and before ranking). A case that no gate applies to, and has none recorded, is left untouched."""
-    pack = (_override.get() or default_pack_of)(case)
-    as_of = _as_of(case)
+    and before ranking). `pack` (default: `base_pack(case)`) and `as_of` (default: `_as_of(case)`) are what `decide_case`
+    decides with. A case that no gate applies to, and has none recorded, is left untouched."""
+    pack = pack or base_pack(case)
+    as_of = as_of or _as_of(case)
     results = evaluate_gates(case, pack, as_of)
     if not results and "gates" not in case:
         return results

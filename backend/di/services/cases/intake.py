@@ -9,21 +9,23 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
 - **Base fields.** `facts` first, then the canonical store for the asset key (asset and condition models): class,
   grade, age, quantity, spec, demand, location. The stage is the first of di.services.cases.lifecycle ("none")
   until it is valued; with a recommendation it is `awaiting_approval`, as a re-evaluation leaves it.
-- **Routes.** `industrial`: the engine's seven routes (`build_routes`) valued by the formulas on a random source
-  seeded from the case id (a stable hash: sha256, never Python's per-process `hash()`), calibrated by the template's
-  active model if one was promoted (di.services.actions.models.intake_predictor, MVP-12.2); when the asset's bom_ref
-  names an assembly PLM holds, its parts are valued from that BOM and the demand for them (BomPartsPredictor,
-  MVP-9.4). Other templates: the
-  template's valuer (tool fleet, device) through `to_routes`. Then the business rules of the owner's published flow
-  (di.repositories.live_rules), and `rank_routes` gives the recommendation.
+- **Routes** (plan 9, P9-1.5). The one decider, `decide_case` (di.services.cases.decide, R19), decides the case with its
+  pack (the template's pack and the owner's published customer overlay) and the owner's published flow
+  (di.repositories.live_rules), in the order of R20; `decide.write_back` sets the result on the case. `industrial`: the
+  engine's seven routes valued by the formulas on a random source seeded from the case id (a stable hash: sha256, never
+  Python's per-process `hash()`), calibrated by the template's active model if one was promoted
+  (di.services.actions.models.intake_predictor, MVP-12.2); when the asset's bom_ref names an assembly PLM holds, its
+  parts are valued from that BOM and the demand for them (BomPartsPredictor, MVP-9.4): `industrial_predictor` builds it.
+  Other templates: the template's valuer (tool fleet, device); this module keeps the valuer's input (`valuer`, from the
+  facts) and the queue loading (`tool_queue`).
 - **Queue plan** (plan 9, P9-1.4). A tool-fleet case is planned within its org's open tool-fleet cases (not closed;
   an approved or executing one keeps its order) with the named demand of the canonical store, through the pack's
   queue planner (di.services.engine.queue); `open_case` then queues `case.replan` so the org's other open cases are
   planned again (di.services.cases.replan).
 - **Gates** (plan 9, P9-1.2). A template case carries the asset's compliance records (`evidenceRecords`); the pack's
-  gates are evaluated and applied to the routes before the business rules, and a gate that holds leaves the case at
-  stage `none` with `gateHold` until the evidence arrives (di.services.cases.gate_hold). `facts.batch` is kept as
-  `batchRef`.
+  gates are evaluated and applied to the routes before the business rules (inside `decide_case`), and a gate that holds
+  leaves the case at stage `none` with `gateHold` until the evidence arrives (di.services.cases.gate_hold).
+  `facts.batch` is kept as `batchRef`.
 - **Dedupe** (Review Focus 5). The same asset key and reason open one case: a second intake (a webhook replay, a
   re-sync, an import read twice) is refused with `duplicate`. The action's idempotency key is the same pair.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
@@ -46,22 +48,21 @@ from sqlalchemy.orm import Session
 from di.core import clock, jobs
 from di.core.config import get_settings
 from di.repositories import plm
-from di.repositories.live_rules import live_rules
+from di.repositories.live_rules import flow_version, live_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
-from di.services.cases import gate_hold, named_demand, store
+from di.services.cases import decide, gate_hold, named_demand, store
 from di.services.cases.lifecycle import STAGES
-from di.services.engine.evaluate import apply_business, build_routes
 from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
 from di.services.engine.queue import Capacity, Dem, planner_for
-from di.services.engine.routes import Route, rank_routes
-from di.services.modeler.pack import load_pack
-from di.services.modeler.templates import TEMPLATE_KEYS, Template
+from di.services.engine.routes import Route
+from di.services.modeler.compile import FlowVersion
+from di.services.modeler.pack import Pack, load_pack
+from di.services.modeler.templates import TEMPLATE_KEYS
 from di.services.modeler.valuers import device, tool_fleet
 from di.services.modeler.valuers.rng import mulberry32
-from di.services.modeler.valuers.routes_adapter import to_routes
 
 REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual")
 LOCATION = "Warehouse 1"  # where a returned asset is received when no source says otherwise
@@ -201,13 +202,15 @@ def device_lot(case_id: str, facts: dict[str, Any]) -> dict[str, Any]:
     }  # fmt: skip
 
 
-def _industrial_routes(s: Session, c: store.Case, t: Template, rules: list) -> list[Route]:
+def industrial_predictor(s: Session, c: store.Case) -> Predictor:
+    """The predictor an industrial case is valued with: formulas on a random source seeded from the case id, calibrated by
+    the template's active model, its parts valued from the BOM PLM holds. A class or grade the engine does not know is
+    refused."""
     if c["cls"] not in CLASSES:
         raise ActionError("validation_error", f"An industrial case needs an asset class, one of {', '.join(CLASSES)}.")
     if c.get("grade") is not None and c["grade"] not in GRADE_F:
         raise ActionError("validation_error", "The grade is one of A, B, C, D.")
-    p = intake_predictor(s, FormulaPredictor(mulberry32(seed_of(c["id"]))), c["cls"])
-    return build_routes(c, _with_bom(s, c, p), rules, t)
+    return _with_bom(s, c, intake_predictor(s, FormulaPredictor(mulberry32(seed_of(c["id"]))), c["cls"]))
 
 
 def _with_bom(s: Session, c: store.Case, p: Predictor) -> Predictor:
@@ -220,10 +223,9 @@ def _with_bom(s: Session, c: store.Case, p: Predictor) -> Predictor:
     return p
 
 
-def _template_routes(
-    s: Session, c: store.Case, facts: dict[str, Any], t: Template, rules: list
-) -> tuple[list[Route], str | None]:
-    if t.key == "tool_fleet":
+def _snapshot(c: store.Case, facts: dict[str, Any], template_key: str) -> None:
+    """The valuer's input from the facts, kept on the case (`valuer`) with the fields its pages read."""
+    if template_key == "tool_fleet":
         vc = tool_fleet_case(c["id"], facts)
         c |= {k: vc[k] for k in ("cls", "ft", "site", "grade", "rul", "partRul", "dem")} | {"valuer": vc}
         c["product"] = c["product"] or tool_fleet.CLS[vc["cls"]]["name"]
@@ -232,7 +234,6 @@ def _template_routes(
         c |= {k: lot[k] for k in ("brand", "band", "grade", "ref", "doh")} | {"qty": lot["qty"], "cls": "device"}
         c |= {"valuer": lot}
         c["product"] = c["product"] or f"{lot['brand']} {lot['model']}".strip()
-    return template_routes(c, t, rules, s)
 
 
 def valuer_input(c: Mapping[str, Any], template_key: str) -> dict[str, Any]:
@@ -290,7 +291,7 @@ def tool_queue(s: Session, org_unit_id: str, v: dict[str, Any]) -> ToolQueue:
 
 def case_rules(s: Session, c: Mapping[str, Any]) -> list[Any]:
     """The rules of the case's owner's published flow (what its recommendation was valued with)."""
-    return live_rules(s, dict(c))[1]
+    return list(flow_version(s, dict(c)).rules)
 
 
 def _rule_dicts(rules: Sequence[Any]) -> list[dict[str, Any]]:
@@ -305,60 +306,16 @@ def tool_plan(q: ToolQueue, rules: Sequence[Any], params: Mapping[str, float] | 
     )
 
 
-def template_decide(
-    template_key: str,
-    v: dict[str, Any],
-    rules: Sequence[Any],
-    params: Mapping[str, float] | None = None,
-    *,
-    queue: ToolQueue | None = None,
-) -> dict[str, Any]:
-    """The template's valuer on one case, with the flow's compiled rules (audit F1, F6). The tool fleet plans the return
-    within its org's open queue (`queue`, with named demand; P9-1.4), so an order two returns want goes to one; with no
-    queue it is planned alone. The device lot is decided alone. The simulation ranks open cases the same way
-    (di.services.actions.modeler_sim), so a case's recommendation is what the Modeler predicts for it. `params` are the
-    tool-fleet what-if levers laid over the base parameters (P9-0.15); None is the published numbers."""
-    if template_key == "tool_fleet":
-        plan = tool_plan(queue or ToolQueue([v | {"status": "new"}], {}), rules, params)
-        return {**plan["res"][v["id"]], "indep": plan["indep"][v["id"]], "blk": sorted(plan["blk"][v["id"]])}
-    return dict(device.decide(dict(v), _rule_dicts(rules)))
+def _pack(s: Session, c: store.Case) -> Pack:
+    """The pack the case is decided with: its pack file (or the one a gate recheck is given) with its owner's published
+    customer overlay."""
+    return live_pack(s, c, gate_hold.base_pack(c))
 
 
-def template_routes(c: store.Case, t: Template, rules: list, s: Session | None = None) -> tuple[list[Route], str | None]:
-    """The case's routes from its template's valuer, with the business rules recorded on the case, and the path the
-    valuer chose (it ranks first; the device valuer's "prefer" wins only within 15% of the best). The routes keep only
-    the valuer's own exclusions: the business rules are applied to them as to an industrial case, so an excluded path
-    says which rule excluded it and `rulesApplied` lists the rule (the valuer's run with the rules gives the values and
-    the chosen path)."""
-    v = valuer_input(c, t.key)
-    queue = tool_queue(s, c["owner"], v) if s is not None and t.key == "tool_fleet" else None  # P9-1.4
-    dec = template_decide(t.key, v, rules, queue=queue)
-    own = {x["k"]: x for x in template_decide(t.key, v, [], queue=queue)["all"]}  # what the valuer alone leaves out, and why
-    routes = to_routes(t, [x | {"ok": own[x["k"]]["ok"], "why": own[x["k"]]["why"]} for x in dec["all"]])
-    for r in routes:  # what the case pages read of a route: who takes it, through which application
-        p = t.path(r["id"])
-        r |= {"demandLabel": f"{p.owner} · {p.app}" if p else r["plan"], "demandStatus": "forecast", "unc": ""}
-    gate_hold.apply(c, routes)  # the pack's gates fail their routes first (R20), then the business rules
-    apply_business(c, routes, rules, t)
-    best = dec.get("best")
-    return routes, best["k"] if best else None
-
-
-def _rank(c: store.Case, routes: list[Route], best: str | None) -> Route | None:
-    """The recommendation: the valuer's chosen path when it is still eligible, else the ranking (a rule's preference
-    first)."""
-    eligible = {r["id"] for r in routes if not r["excluded"]}
-    held = c.get("blocked") or c.get("gateHold")  # a case held for evidence has no recommendation
-    return rank_routes(routes, held, best if best in eligible else c.get("preferred"))
-
-
-def recommend(s: Session, c: store.Case, rules: list) -> Route | None:
-    """What a template case would be recommended under other rules (a flow's draft in shadow, MVP-3.5), from the
-    snapshot it opened with, on a copy: the case itself is unchanged."""
-    t = live_rules(s, c)[0]
-    probe = copy.deepcopy(c)
-    routes, best = template_routes(probe, t, rules, s)
-    return _rank(probe, routes, best)
+def recommend(s: Session, c: store.Case, fv: FlowVersion) -> Route | None:
+    """What a template case would be recommended under another flow version (a flow's draft in shadow, MVP-3.5), from the
+    snapshot it opened with: the case itself is unchanged."""
+    return decide.decide_case(c, _pack(s, c), fv, session=s).recommendation
 
 
 def revalue(s: Session, c: store.Case) -> None:
@@ -370,24 +327,17 @@ def revalue(s: Session, c: store.Case) -> None:
 
 
 def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
-    """Routes, recommendation and the flow version they were evaluated with (as a re-evaluation records them)."""
-    t, rules, ver = live_rules(s, c)
-    if t.key != "industrial":
+    """Routes, recommendation and the flow version they were evaluated with (as a re-evaluation records them): the one
+    decider's decision (di.services.cases.decide) set on the case."""
+    fv = flow_version(s, c)  # also refreshes the case's scope facts
+    pack = _pack(s, c)
+    if pack.key != "industrial":
         gate_hold.attach_evidence(s, c)  # the gates read the asset's compliance records (plan 9, P9-1.2)
-    if t.key == "industrial":
-        routes, best = _industrial_routes(s, c, t, rules), None
-    elif facts or not c.get("routes"):
-        routes, best = _template_routes(s, c, facts, t, rules)
-    else:  # a re-evaluation: the snapshot the case opened with
-        routes, best = template_routes(c, t, rules, s)
-    c["routes"] = routes
-    c["recommendation"] = _rank(c, routes, best)
-    c["flowVer"] = ver
+        if facts or not c.get("routes"):
+            _snapshot(c, facts, pack.key)
+    decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
-    if not (c.get("rulesApplied") or c.get("rulesWaived") or c.get("preferred")):
-        for k in ("rulesApplied", "rulesWaived", "preferred"):
-            c.pop(k, None)
 
 
 # ---------------------------------------------------------------- open

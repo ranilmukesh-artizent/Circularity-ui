@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from di.repositories.flows import flow_for
 from di.repositories.overlays import nearest_published
 from di.services.canonical import store as canonical
-from di.services.modeler.compile import CompiledRule, compile_flow
+from di.services.modeler.compile import CompiledRule, FlowVersion, compile_flow
 from di.services.modeler.facts import FACT_KEYS, TELEMETRY_FIELDS, case_scope_facts
 from di.services.modeler.flow import Flow
 from di.services.modeler.overlay import OverlayError, apply_overlay, parse_ops
@@ -31,12 +31,13 @@ def template_of(case: Mapping[str, Any]) -> Template:
     return load_template(case.get("template") or "industrial")
 
 
-def live_pack(s: Session, case: Mapping[str, Any]) -> Pack:
+def live_pack(s: Session, case: Mapping[str, Any], base: Pack | None = None) -> Pack:
     """The pack the case is decided with (plan 9, P9-1.3, I-4): its template's pack with the published customer overlay of
     the nearest org unit, from the case's owner up to `workspace`, that has one. An operation that no longer applies to
-    the pack (a newer version, until the overlay is rebased) is skipped: the pack's own value is the stricter safe one."""
+    the pack (a newer version, until the overlay is rebased) is skipped: the pack's own value is the stricter safe one.
+    `base` is the pack to lay the overlay on (default: the pack file of the case's template)."""
     key = case.get("template") or "industrial"
-    pack = load_pack(key)
+    pack = base or load_pack(key)
     row = nearest_published(s, key, case.get("owner") or "workspace")
     for op in parse_ops(row.published) if row else ():
         try:
@@ -65,15 +66,21 @@ def refresh_scope_facts(s: Session, case: MutableMapping[str, Any]) -> None:
             case.pop(k, None)
 
 
-def live_rules(s: Session, case: MutableMapping[str, Any]) -> tuple[Template, list[CompiledRule], int]:
-    """(the case's template, the compiled rules of its flow's published graph, that flow's `ver`); no flow: no rules,
-    version 0. Refreshes the case's scope facts first."""
+def flow_version(s: Session, case: MutableMapping[str, Any]) -> FlowVersion:
+    """The flow the case's owner decides with (plan 9, P9-1.5): its id, published `ver` and compiled published rules; no
+    flow: no id, no rules, version 0. Refreshes the case's scope facts first."""
     refresh_scope_facts(s, case)
-    t = template_of(case)
-    f = flow_for(s, t.key, case["owner"])
+    f = flow_for(s, template_of(case).key, case["owner"])
     if f is None:
-        return t, [], 0
-    return t, compile_flow(t, cast(Flow, f.published)), f.ver
+        return FlowVersion(None, 0, ())
+    return FlowVersion(f.id, f.ver, tuple(compile_flow(template_of(case), cast(Flow, f.published))))
+
+
+def live_rules(s: Session, case: MutableMapping[str, Any]) -> tuple[Template, list[CompiledRule], int]:
+    """(the case's template, the compiled rules of its flow's published graph, that flow's `ver`): the parts of
+    `flow_version`."""
+    fv = flow_version(s, case)
+    return template_of(case), list(fv.rules), fv.ver
 
 
 @dataclass(frozen=True)
@@ -83,6 +90,11 @@ class Shadow:
     flow_id: int
     dver: int
     rules: list[CompiledRule]
+
+    @property
+    def version(self) -> FlowVersion:
+        """The draft as a flow version, for `decide_case`."""
+        return FlowVersion(self.flow_id, self.dver, tuple(self.rules))
 
 
 def shadow_rules(s: Session, case: Mapping[str, Any]) -> Shadow | None:

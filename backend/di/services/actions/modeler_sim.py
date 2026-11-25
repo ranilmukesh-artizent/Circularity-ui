@@ -11,26 +11,31 @@ proposals (MVP-5.2) answer.
   base parameters (BASEP) on the candidate side only; the base side stays the published rules at BASEP. Read only.
 - `tool_fleet` and `device` (MVP-6.3): the template's sample queue (the prototype's open tool returns, rng(26110); its
   device lots, rng(4242)) plus any live cases of the template, decided by the template's valuer
-  (di.services.modeler.valuers), so a simulation equals the prototype's fSim on the same flows. A live tool-fleet case
-  is decided in the plan of its org's open queue, with named demand (P9-1.4), as it is when it opens.
+  (di.services.modeler.valuers), so a simulation equals the prototype's fSim on the same flows. Every one of them is
+  decided by `decide_case` (P9-1.5, R19), as it is when it opens: a live tool-fleet case in the plan of its org's open
+  queue, with named demand (P9-1.4); a sample return in the prototype's live world (its open returns and the inbox),
+  which is what keeps a simulation equal to the prototype's.
 """
 
 import copy
-import dataclasses
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, cast
 
 from di.repositories.context import visible_cases
 from di.repositories.flows import FlowRow, flow_for
+from di.repositories.live_rules import live_pack
 from di.services.actions.pipeline import CallContext
-from di.services.cases import intake
+from di.services.cases import gate_hold
+from di.services.cases.decide import WhatIfPlanner, decide_case
 from di.services.cases.lifecycle import STAGES
 from di.services.engine.evaluate import draft_of, evaluate
+from di.services.engine.queue import planner_for
 from di.services.engine.routes import POLICY, Route
 from di.services.modeler.apply import FLOW_REMOVED
-from di.services.modeler.compile import CompiledRule, compile_flow
+from di.services.modeler.compile import CompiledRule, FlowVersion, compile_flow
 from di.services.modeler.flow import Flow
-from di.services.modeler.simulate import Decider, Decision, SimResult, simulate
+from di.services.modeler.pack import Pack
+from di.services.modeler.simulate import Decider, Decision, SimResult, decision_to_sim, simulate
 from di.services.modeler.templates import Template, load_template
 from di.services.modeler.valuers import device, tool_fleet
 
@@ -80,47 +85,39 @@ def _industrial(ctx: CallContext, f: FlowRow, t: Template) -> tuple[list[dict[st
     return open_queue(ctx, f), industrial_decider(t)
 
 
-def _rule_dicts(rules: Sequence[CompiledRule]) -> list[dict[str, Any]]:
-    return [dataclasses.asdict(r) for r in rules]
-
-
 def _live(c: Mapping[str, Any]) -> bool:
     """An open case of the workspace (it has a stage), not one of the template's sample queue."""
     return "stage" in c
 
 
-def tool_fleet_decider_at(params: Mapping[str, float] | None = None, ctx: CallContext | None = None) -> Decider:
-    """The tool-fleet valuer (the prototype's decide): a sample return within the sample queue's plan; an open case
-    as it is valued when it opens or is re-evaluated (di.services.cases.intake.template_decide; audit F1), in the plan
-    of its org's open queue when `ctx` is given (P9-1.4), so live cases share named orders as they do when decided.
-    `params` are what-if levers over BASEP (None: the published numbers)."""
-    p = None if params is None else tool_fleet.BASEP | dict(params)
+def template_decider(ctx: CallContext, f: FlowRow, params: Mapping[str, float] | None = None) -> Decider:
+    """The template's decider: every case, live or a sample, is decided by `decide_case` (R19) under the rules given. A live
+    case is decided in the plan of its org's open queue with its named demand and with its owner's pack (the customer
+    overlay included), a sample as the flow's org's pack; a sample return is planned in the prototype's live world.
+    `params` are the tool-fleet what-if levers over BASEP (None: the published numbers)."""
+    world = tool_fleet.sample_live_cases() if f.template_key == "tool_fleet" else None
+    packs: dict[str, Pack] = {}
 
     def decide(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
-        if _live(c):
-            v = intake.valuer_input(c, "tool_fleet")
-            queue = intake.tool_queue(ctx.session, c["owner"], v) if ctx else None
-            best = intake.template_decide("tool_fleet", v, rules, params, queue=queue)["best"]
-        else:
-            best = tool_fleet.decide(dict(c), p, _rule_dicts(rules))["best"]
-        return Decision(best["k"], float(best["net"])) if best else Decision(None, 0.0)
+        live = _live(c)
+        owner = c["owner"] if live else f.org_unit_id
+        if owner not in packs:
+            probe = {"template": f.template_key, "owner": owner}
+            packs[owner] = live_pack(ctx.session, probe, gate_hold.base_pack(probe))
+        pack = packs[owner]
+        planner = WhatIfPlanner(planner_for(pack), params) if params else None
+        fv = FlowVersion(f.id, f.ver, tuple(rules))
+        return decision_to_sim(decide_case(c, pack, fv, session=ctx.session, queue=None if live else world, planner=planner))
 
     return decide
 
 
-def device_decider(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
-    """The device valuer (dDecide): the expected cash a unit and its days to sell."""
-    lot = intake.valuer_input(c, "device") if _live(c) else dict(c)
-    best = device.decide(lot, _rule_dicts(rules))["best"]
-    return Decision(best["k"], float(best["cash"]), {"days": best["days"]}) if best else Decision(None, 0.0, {"days": 0.0})
-
-
 def _tool_fleet(ctx: CallContext, f: FlowRow, _t: Template) -> tuple[list[dict[str, Any]], Decider]:
-    return tool_fleet.sample_queue() + open_queue(ctx, f), tool_fleet_decider_at(None, ctx)
+    return tool_fleet.sample_queue() + open_queue(ctx, f), template_decider(ctx, f)
 
 
 def _device(ctx: CallContext, f: FlowRow, _t: Template) -> tuple[list[dict[str, Any]], Decider]:
-    return device.sample_lots() + open_queue(ctx, f), device_decider
+    return device.sample_lots() + open_queue(ctx, f), template_decider(ctx, f)
 
 
 # industrial: the live cases; tool_fleet and device: the template's sample queue plus any live cases of the template
@@ -156,7 +153,7 @@ def simulate_rules(
     t = load_template(f.template_key)
     base = compile_flow(t, cast(Flow, f.published)) if base is None else base
     queue, decide = SOURCES.get(f.template_key, _industrial)(ctx, f, t)
-    return simulate(t, base, cand, queue, decide, tool_fleet_decider_at(params, ctx) if params else None)
+    return simulate(t, base, cand, queue, decide, template_decider(ctx, f, params) if params else None)
 
 
 def queue_rows(ctx: CallContext, f: FlowRow) -> list[dict[str, Any]]:

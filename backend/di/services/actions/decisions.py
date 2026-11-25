@@ -583,7 +583,7 @@ def reevaluate(i: dict[str, Any], ctx: CallContext):
     elif (c.get("template") or "industrial") != "industrial":
         intake.revalue(ctx.session, c)
         if shadow := shadow_rules(ctx.session, c):  # a flow in shadow: the draft's choice beside the live one (MVP-3.5)
-            _record_shadow(ctx, c, shadow, intake.recommend(ctx.session, c, shadow.rules))
+            _record_shadow(ctx, c, shadow, intake.recommend(ctx.session, c, shadow.version))
     else:
         _rebuild(ctx, c, _seeded(key))
     r = c["recommendation"]

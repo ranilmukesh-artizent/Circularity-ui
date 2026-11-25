@@ -46,3 +46,5 @@ unattended". Times are local (IST).
 | 25 Nov 10:35 | P9-1.2 merged (parallel 3,868 passed). P9-1.3 (overlay, I-4) to w1, P9-1.4 (queue planner, I-5) to w2. Phase 1: 2 of 15. |
 | 25 Nov 07:25 | P9-1.3 merged. Sonnet; R21 tests red first; overlay.approve and overlay.reject forbidden to agents; migration 0031 filled; jsonpatch and deepdiff not used. |
 | 25 Nov 07:37 | P9-1.4 merged. Sonnet; red first quoted; HeuristicPlanner parity with plan_queue; R8 report says no seeded case changes (all seeded cases are industrial). |
+| 25 Nov 11:55 | P9-1.3 and P9-1.4 merged. P9-1.5 (one decider, I-6, R19/R20) to w1; the only ready task. Phase 1: 4 of 15. |
+| 25 Nov 08:25 | P9-1.5 merged. Sonnet; red first quoted; intake, re-evaluation, shadow and simulation call decide_case; slot planning under a flow's rules recorded in the decision log by the lead (no seeded case changes). |

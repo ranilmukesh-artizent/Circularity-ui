@@ -13,7 +13,7 @@ from di.services.modeler.guard import rule_breaks
 from di.services.modeler.templates import Template
 from di.services.modeler.text import rule_text
 
-__all__ = ["FLOW", "CompiledRule", "compile_flow", "rule_text"]
+__all__ = ["FLOW", "CompiledRule", "FlowVersion", "compile_flow", "rule_text"]
 
 FLOW = "FLOW"
 
@@ -25,6 +25,16 @@ class CompiledRule:
     action: str
     path: str
     text: str
+
+
+@dataclass(frozen=True)
+class FlowVersion:
+    """The flow a decision is made under (registry I-6): its id (None for a rule set that belongs to no stored flow, such
+    as a sample), its published version and its compiled rules."""
+
+    flow_id: int | None
+    ver: int
+    rules: tuple[CompiledRule, ...]
 
 
 def _first(f: Flow, t: str) -> Node:
