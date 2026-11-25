@@ -1,0 +1,1197 @@
+{
+ "key": "used_cars",
+ "name": "Used vehicles · lease and trade-in returns",
+ "version": "1.9.0",
+ "unit": "cars",
+ "author_role": "remarketing_director",
+ "prefix": "UC",
+ "industry": "Automotive remarketing",
+ "regions": [
+  "US"
+ ],
+ "legal_review": {
+  "status": "pending"
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "returns",
+   "name": "Used-car returns"
+  }
+ ],
+ "prompts": [
+  "Lease returns to best channel: when a leased car or a trade-in comes back, check title and finance, inspect it and estimate reconditioning, price it for retail on each of our lots, wholesale auction, dealer trade and salvage, and send it to the channel with the best gross after costs. Reconditioning over $2,500 needs the used-car manager.",
+  "Trade-ins: retail or wholesale",
+  "Move ageing stock between lots"
+ ],
+ "clarify": {
+  "question": "Should cars with minor hail damage still be considered for retail?",
+  "options": [
+   {
+    "label": "Yes, if repair is under the recon limit",
+    "adds": "[{\"id\": \"BR-UC-HAIL\", \"op\": \"business_rule\", \"text\": \"hail damage under the recon limit stays retail-eligible\", \"stage\": \"decide\", \"scope\": \"condition.hail_damage == true and condition.recon_estimate <= 2500\", \"action\": \"allow\", \"path\": \"retail\"}]"
+   },
+   {
+    "label": "No, send them to auction",
+    "adds": "[{\"id\": \"BR-UC-HAIL-AUCTION\", \"op\": \"business_rule\", \"text\": \"hail damage goes to wholesale auction\", \"stage\": \"decide\", \"scope\": \"condition.hail_damage == true\", \"action\": \"require\", \"path\": \"auction\"}]"
+   }
+  ]
+ },
+ "classes": [
+  {
+   "id": "car_ice",
+   "name": "Car (combustion)",
+   "attrs": {
+    "serialised": true,
+    "has_media": true,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "car_ev",
+   "name": "Car (electric)",
+   "attrs": {
+    "serialised": true,
+    "has_media": true,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {
+   "5": "A",
+   "4": "B",
+   "3": "C",
+   "2": "D",
+   "1": "D"
+  }
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Car returned",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Title and finance",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Inspect and estimate",
+   "agent": "condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Price by channel",
+   "agent": "valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide the channel",
+   "agent": "routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Recondition and list",
+   "agent": "follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Sold and learn",
+   "agent": "analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "retail",
+   "name": "Retail lot",
+   "app": "uc_dms",
+   "owner": "lot_manager",
+   "lead_days": 7,
+   "classes": [
+    "sale"
+   ],
+   "instructions": [
+    "recon_order",
+    "lot_transfer",
+    "listing"
+   ]
+  },
+  {
+   "id": "auction",
+   "name": "Wholesale auction",
+   "app": "uc_auction",
+   "owner": "remarketing_manager",
+   "lead_days": 10,
+   "classes": [
+    "sale"
+   ],
+   "instructions": [
+    "consignment"
+   ]
+  },
+  {
+   "id": "dealer_trade",
+   "name": "Dealer trade",
+   "app": "uc_dms",
+   "owner": "remarketing_manager",
+   "lead_days": 3,
+   "classes": [
+    "sale"
+   ],
+   "instructions": [
+    "dealer_trade"
+   ]
+  },
+  {
+   "id": "salvage",
+   "name": "Salvage",
+   "app": "uc_auction",
+   "owner": "remarketing_manager",
+   "lead_days": 5,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": [
+    "salvage_sale"
+   ]
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "G-VEH-TITLE",
+   "text": "Clear title and no open finance before any sale channel",
+   "owner": "title_desk",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-VEH-ODO",
+   "text": "Odometer verified and disclosed",
+   "owner": "title_desk",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-VEH-RECALL",
+   "text": "No retail with an open recall",
+   "owner": "used_car_manager",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-VEH-BRAND",
+   "text": "Title brand disclosed; salvage and flood brands never go to retail",
+   "owner": "title_desk",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-VEH-SALV",
+   "text": "Salvage sales reported",
+   "owner": "remarketing_manager",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "AP-UC-RECON",
+   "text": "Recon over $2,500 → used-car manager",
+   "owner": "used_car_manager",
+   "type": "Approval",
+   "stage": "decide",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [
+    "used_car_manager"
+   ],
+   "param": {
+    "field": "condition.recon_estimate",
+    "value": 2500,
+    "stricter": "lower",
+    "min": 500,
+    "max": 5000
+   }
+  }
+ ],
+ "gates": [
+  {
+   "id": "G-VEH-TITLE",
+   "params": {
+    "stage": 2,
+    "locked": true,
+    "routes": [
+     "retail",
+     "auction",
+     "dealer_trade",
+     "salvage"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-VEH-ODO",
+   "params": {
+    "stages": [
+     2,
+     3
+    ],
+    "locked": true,
+    "tolerance_miles": 500,
+    "exempt_model_year_before": 2011,
+    "exempt_age_years": 20,
+    "research_addition": true,
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-VEH-RECALL",
+   "params": {
+    "stage": 3,
+    "locked": true,
+    "block_routes": [
+     "retail"
+    ],
+    "rental_fleet_min": 35,
+    "rental_fleet_block_routes": [
+     "retail",
+     "auction",
+     "dealer_trade",
+     "salvage"
+    ],
+    "check_max_age_days": 30,
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-VEH-BRAND",
+   "params": {
+    "stage": 2,
+    "retail_blocked_brands": [
+     "salvage",
+     "flood"
+    ],
+    "disclose_brands": [
+     "salvage",
+     "flood",
+     "rebuilt",
+     "buyback"
+    ],
+    "research_addition": true,
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-VEH-SALV",
+   "params": {
+    "stage": 6,
+    "routes": [
+     "salvage"
+    ],
+    "research_addition": true,
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": [
+    "grade"
+   ]
+  },
+  {
+   "key": "segment",
+   "label": "Segment",
+   "kind": "set",
+   "values": [
+    "compact",
+    "midsize",
+    "suv",
+    "ev_crossover",
+    "truck"
+   ],
+   "fields": []
+  },
+  {
+   "key": "powertrain",
+   "label": "Powertrain",
+   "kind": "set",
+   "values": [
+    "petrol",
+    "diesel",
+    "hybrid",
+    "ev"
+   ],
+   "fields": []
+  },
+  {
+   "key": "lot",
+   "label": "Lot",
+   "kind": "set",
+   "values": [
+    "LOT-N",
+    "LOT-C",
+    "LOT-S"
+   ],
+   "fields": []
+  }
+ ],
+ "actors": [
+  [
+   "ucdir",
+   "Casey Rowe",
+   "Remarketing director"
+  ],
+  [
+   "ucmgr",
+   "Jordan Blake",
+   "Used-car manager"
+  ],
+  [
+   "uclot",
+   "Morgan Hale",
+   "Lot manager"
+  ]
+ ],
+ "wording": {
+  "every": "every car",
+  "phrases": [
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "segment",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "suv": "SUVs",
+     "ev_crossover": "EV crossovers",
+     "compact": "compacts",
+     "midsize": "midsize cars",
+     "truck": "trucks"
+    }
+   },
+   {
+    "key": "powertrain",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "ev": "electric cars"
+    }
+   },
+   {
+    "key": "lot",
+    "fmt": "at {}",
+    "joiner": " or ",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "retail": "Retail lot",
+   "auction": "Wholesale auction",
+   "dealer_trade": "Dealer trade",
+   "salvage": "Salvage"
+  }
+ },
+ "customer_layer": {
+  "editable": {
+   "G-VEH-BRAND": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-VEH-SALV": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "AP-UC-RECON": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ]
+  },
+  "params": {},
+  "sample_diversions": [
+   {
+    "text": "EV with battery health under 80% → battery assessment",
+    "op": {
+     "id": "DV-UC-EV",
+     "op": "add_step",
+     "stage": "condition",
+     "step": "Battery assessment",
+     "owner_role": "inspection_lead",
+     "when": [
+      {
+       "fact": "condition.battery_soh",
+       "op": "lte",
+       "value": 79.99
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Adds a step at Inspect and estimate; no gate is skipped."
+   },
+   {
+    "text": "over 120,000 miles → wholesale auction directly",
+    "op": {
+     "id": "DV-UC-MILES",
+     "op": "shortcut",
+     "stage": "condition",
+     "to": "auction",
+     "when": [
+      {
+       "fact": "asset.mileage_at_return",
+       "op": "gte",
+       "value": 120000
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Starts after the title, odometer and recall gates; the decide stage still runs."
+   },
+   {
+    "text": "dealer trade within the group: skip the title check",
+    "op": {
+     "id": "DV-UC-SKIP",
+     "op": "shortcut",
+     "stage": "receive",
+     "to": "condition",
+     "when": [
+      {
+       "fact": "asset.return_kind",
+       "op": "eq",
+       "value": "trade_in"
+      }
+     ]
+    },
+    "blocked": true,
+    "reason": "Blocked: this skips the compliance guardrail G-VEH-TITLE, clear title and no open finance."
+   }
+  ],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [
+   {
+    "type": "uc_lease",
+    "name": "Lease system",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "uc_dms",
+    "name": "Dealer management system",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "uc_title",
+    "name": "Title and lien service",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "uc_insp",
+    "name": "Inspection app",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "uc_recall",
+    "name": "Recall database",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "uc_auction",
+    "name": "Auction platform",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "uc_price",
+    "name": "Pricing guide",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "uc_bodyshop",
+    "name": "Legacy body-shop system",
+    "adapter": "needs_connector",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Vehicle",
+    "canonical": "asset"
+   },
+   {
+    "name": "Return event",
+    "canonical": "asset.return_kind"
+   },
+   {
+    "name": "Condition grade",
+    "canonical": "condition.condition_score"
+   },
+   {
+    "name": "Compliance record",
+    "canonical": "condition.title_status"
+   },
+   {
+    "name": "Market price",
+    "canonical": "market.lot_avg_price"
+   },
+   {
+    "name": "Cost rate",
+    "canonical": "market.auction_sell_fee"
+   },
+   {
+    "name": "Channel",
+    "canonical": "recommendation.id"
+   }
+  ],
+  "mappings": [
+   {
+    "kind": "hint",
+    "source": "uc_lease",
+    "field": "odometerAtReturn",
+    "canonical": "asset.mileage_at_return",
+    "confidence": 0.77,
+    "reason": "two mileage fields; the one taken at return was picked"
+   },
+   {
+    "kind": "hint",
+    "source": "uc_insp",
+    "field": "conditionScore",
+    "canonical": "condition.condition_score",
+    "confidence": 0.72,
+    "reason": "direction of the 1–5 scale inferred from photos and notes"
+   },
+   {
+    "kind": "threshold",
+    "value": 0.8
+   },
+   {
+    "kind": "intake_trigger",
+    "source": "uc_lease",
+    "resource": "lease-returns",
+    "when": {
+     "field": "status",
+     "op": "eq",
+     "value": "returned"
+    },
+    "reason": "lease_end",
+    "key": "vin"
+   },
+   {
+    "kind": "intake_trigger",
+    "source": "uc_dms",
+    "resource": "trade-ins",
+    "when": null,
+    "reason": "trade_in",
+    "key": "vin"
+   },
+   {
+    "kind": "missing",
+    "source": "uc_bodyshop",
+    "missing_note": "Older damage history not connected"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "title_status",
+    "model": "condition",
+    "key": "vin",
+    "fields": [
+     "title_status"
+    ],
+    "source": "uc_title"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "lien_release",
+    "model": "condition",
+    "key": "vin",
+    "fields": [
+     "lien_open",
+     "lien_release_ref"
+    ],
+    "source": "uc_title"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "title_brand",
+    "model": "condition",
+    "key": "vin",
+    "fields": [
+     "title_brand"
+    ],
+    "source": "uc_title"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "odometer_statement",
+    "model": "condition",
+    "key": "vin",
+    "fields": [
+     "odometer_statement_ref"
+    ],
+    "source": "uc_lease"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "odometer_photo",
+    "model": "condition",
+    "key": "vin",
+    "fields": [
+     "odometer_photo_reading"
+    ],
+    "source": "uc_insp"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "inspection",
+    "model": "condition",
+    "key": "vin",
+    "fields": [
+     "inspection_ref",
+     "condition_score",
+     "recon_estimate",
+     "inspection_at"
+    ],
+    "source": "uc_insp"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "battery_assessment",
+    "model": "condition",
+    "key": "vin",
+    "fields": [
+     "battery_assessment_ref",
+     "battery_assessment_result"
+    ],
+    "source": "uc_insp"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "recall_check",
+    "model": "condition",
+    "key": "vin",
+    "fields": [
+     "recall_open",
+     "recall_checked_at"
+    ],
+    "source": "uc_recall"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "recall_remedy",
+    "model": "condition",
+    "key": "vin",
+    "fields": [
+     "recall_remedy_ref"
+    ],
+    "source": "uc_recall"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "salvage_buyer_reporting",
+    "model": "condition",
+    "key": "vin",
+    "fields": [
+     "salvage_reported"
+    ],
+    "source": "uc_auction"
+   }
+  ],
+  "min_fields": [
+   "vin",
+   "mileage",
+   "return_date",
+   "source"
+  ],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "cfs-2026.2",
+   "d_rule": "low"
+  },
+  "params": {
+   "params": {
+    "plugin": "used_cars",
+    "holding_cost_per_day": 38,
+    "transport_per_mile": 1.1,
+    "retail_selling_cost": 450,
+    "warranty_reserve_pct": 0.02,
+    "arbitration_risk_pct": 0.01,
+    "dealer_transport": 150,
+    "title_transfer_cost": 85,
+    "salvage_tow": 120,
+    "salvage_brand_admin": 60,
+    "salvage_trigger_recon_share": 0.6,
+    "confidence_min_comparables": 5,
+    "confidence_few_comparables_factor": 0.8,
+    "auction_condition_factor": {
+     "A": 1.0,
+     "B": 1.0,
+     "C": 0.94,
+     "D": 0.85
+    },
+    "mileage_factor_per_10k_over_band": -0.015,
+    "carbon_d": {
+     "retail": 0.05,
+     "auction": 0.05,
+     "dealer_trade": 0.05
+    },
+    "carbon_salvage": "material factors only"
+   }
+  }
+ },
+ "replay": {
+  "dataset": "used_cars",
+  "example": {
+   "case": "UC-S1",
+   "modelled": {
+    "cars": 2140,
+    "straight_through_pct": 79,
+    "approvals_per_day": 9,
+    "exceptions_per_day": 5,
+    "gross_per_car": 410
+   },
+   "samples": [
+    {
+     "id": "UC-S1",
+     "title": "Clean petrol SUV",
+     "vin": "SYNUC000000000001",
+     "facts": {
+      "asset.model_year": 2022,
+      "asset.segment": "suv",
+      "asset.powertrain": "petrol",
+      "asset.return_kind": "lease_end",
+      "asset.mileage_at_return": 38000,
+      "asset.mileage_lease_record": 38000,
+      "asset.book_value": 19500,
+      "condition.condition_score": 4,
+      "condition.recon_estimate": 1200,
+      "condition.title_status": "clear",
+      "condition.lien_open": false,
+      "condition.recall_open": false
+     }
+    },
+    {
+     "id": "UC-S2",
+     "title": "Open recall",
+     "vin": "SYNUC000000000002",
+     "facts": {
+      "asset.model_year": 2022,
+      "asset.segment": "suv",
+      "asset.powertrain": "petrol",
+      "asset.return_kind": "lease_end",
+      "asset.mileage_at_return": 38000,
+      "asset.mileage_lease_record": 38000,
+      "asset.book_value": 19500,
+      "condition.condition_score": 4,
+      "condition.recon_estimate": 1200,
+      "condition.title_status": "clear",
+      "condition.lien_open": false,
+      "condition.recall_open": true
+     }
+    },
+    {
+     "id": "UC-S3",
+     "title": "Open lien",
+     "vin": "SYNUC000000000003",
+     "facts": {
+      "asset.model_year": 2022,
+      "asset.segment": "suv",
+      "asset.powertrain": "petrol",
+      "asset.return_kind": "lease_end",
+      "asset.mileage_at_return": 38000,
+      "asset.mileage_lease_record": 38000,
+      "asset.book_value": 19500,
+      "condition.condition_score": 4,
+      "condition.recon_estimate": 1200,
+      "condition.title_status": "lien",
+      "condition.lien_open": true,
+      "condition.recall_open": false
+     }
+    },
+    {
+     "id": "UC-S4",
+     "title": "Odometer 61,240 against 46,240",
+     "vin": "SYNUC000000000004",
+     "facts": {
+      "asset.model_year": 2022,
+      "asset.segment": "suv",
+      "asset.powertrain": "petrol",
+      "asset.return_kind": "lease_end",
+      "asset.mileage_at_return": 61240,
+      "asset.mileage_lease_record": 46240,
+      "asset.book_value": 19500,
+      "condition.condition_score": 4,
+      "condition.recon_estimate": 1200,
+      "condition.title_status": "clear",
+      "condition.lien_open": false,
+      "condition.recall_open": false,
+      "condition.odometer_photo_reading": 61240
+     }
+    },
+    {
+     "id": "UC-S5",
+     "title": "133,000 miles",
+     "vin": "SYNUC000000000005",
+     "facts": {
+      "asset.model_year": 2022,
+      "asset.segment": "suv",
+      "asset.powertrain": "petrol",
+      "asset.return_kind": "lease_end",
+      "asset.mileage_at_return": 133000,
+      "asset.mileage_lease_record": 133000,
+      "asset.book_value": 19500,
+      "condition.condition_score": 4,
+      "condition.recon_estimate": 1200,
+      "condition.title_status": "clear",
+      "condition.lien_open": false,
+      "condition.recall_open": false
+     }
+    },
+    {
+     "id": "UC-S6",
+     "title": "EV with battery health 74 %",
+     "vin": "SYNUC000000000044",
+     "facts": {
+      "asset.model_year": 2022,
+      "asset.segment": "ev_crossover",
+      "asset.powertrain": "ev",
+      "asset.return_kind": "lease_end",
+      "asset.mileage_at_return": 38000,
+      "asset.mileage_lease_record": 38000,
+      "asset.book_value": 19500,
+      "condition.condition_score": 4,
+      "condition.recon_estimate": 1200,
+      "condition.title_status": "clear",
+      "condition.lien_open": false,
+      "condition.recall_open": false,
+      "condition.battery_soh": 74
+     }
+    },
+    {
+     "id": "UC-S7",
+     "title": "Recon $2,800",
+     "vin": "SYNUC000000000007",
+     "facts": {
+      "asset.model_year": 2022,
+      "asset.segment": "suv",
+      "asset.powertrain": "petrol",
+      "asset.return_kind": "lease_end",
+      "asset.mileage_at_return": 38000,
+      "asset.mileage_lease_record": 38000,
+      "asset.book_value": 19500,
+      "condition.condition_score": 4,
+      "condition.recon_estimate": 2800,
+      "condition.title_status": "clear",
+      "condition.lien_open": false,
+      "condition.recall_open": false
+     }
+    },
+    {
+     "id": "UC-S8",
+     "title": "Recon $16,500 on retail $21,000, salvage",
+     "vin": "SYNUC000000000008",
+     "facts": {
+      "asset.model_year": 2022,
+      "asset.segment": "suv",
+      "asset.powertrain": "petrol",
+      "asset.return_kind": "lease_end",
+      "asset.mileage_at_return": 38000,
+      "asset.mileage_lease_record": 38000,
+      "asset.book_value": 19500,
+      "condition.condition_score": 1,
+      "condition.recon_estimate": 16500,
+      "condition.title_status": "clear",
+      "condition.lien_open": false,
+      "condition.recall_open": false,
+      "market.lot_avg_price": {
+       "LOT-C": 21000
+      },
+      "market.salvage_bid": 3900
+     }
+    }
+   ]
+  }
+ },
+ "runtime": {
+  "exception_types": [
+   {
+    "id": "EX-UC-LIEN",
+    "label": "Lien found after check-in",
+    "owner_role": "title_desk",
+    "action": "Hold the car; customer care requests the lien release"
+   },
+   {
+    "id": "EX-UC-ODO",
+    "label": "Odometer photo does not match the lease system",
+    "owner_role": "inspection_lead",
+    "action": "Second inspection before pricing"
+   }
+  ],
+  "suggestion_rules": [
+   {
+    "id": "AP-UC-RECON",
+    "kind": "approval",
+    "owner": "used_car_manager",
+    "action": "Approve and retail if retail gross after recon beats auction gross"
+   },
+   {
+    "id": "AL-UC-AGEING",
+    "kind": "alert",
+    "label": "One model type ageing at one lot",
+    "owner": "lot_manager",
+    "action": "Move cars to the lot where demand is higher",
+    "params": {
+     "min_cars": 3,
+     "days_on_lot_gt": 45
+    }
+   },
+   {
+    "id": "SR-UC-AGE45",
+    "kind": "suggestion",
+    "label": "Car more than 45 days on a lot → transfer to the lot with demand, or auction",
+    "params": {
+     "days_on_lot_gt": 45
+    },
+    "order": "oldest value band first"
+   },
+   {
+    "id": "CLOSE-UC",
+    "kind": "close",
+    "params": {
+     "excess_mileage_rate": 0.2
+    },
+    "unit": "dollars a mile over the contract mileage"
+   }
+  ],
+  "sla_hours": {},
+  "escalate_to": null
+ },
+ "roles": {
+  "remarketing_director": "Planner",
+  "operations_director": "Approver",
+  "used_car_manager": "Approver",
+  "remarketing_manager": "Approver",
+  "title_desk": "Approver",
+  "inspection_lead": "Warehouse Manager",
+  "lot_manager": "Planner",
+  "finance": "Finance"
+ },
+ "kpis": [
+  {
+   "id": "gross_per_car",
+   "label": "Gross per car",
+   "definition": "realised net after channel costs / cars",
+   "measure": {
+    "kind": "avg",
+    "of": "recommendation.net",
+    "unit": "$"
+   },
+   "trend": "monthly"
+  },
+  {
+   "id": "days_in_stock",
+   "label": "Days in stock",
+   "definition": "receipt to sale; modelled trend 42 to 31 days over 12 months",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "retail_share",
+   "label": "Retail share",
+   "definition": "share of cars sent to a retail lot",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "straight_through_pct",
+   "label": "Straight-through share",
+   "definition": "cars decided with no person in the loop / cars",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "recon_cost_per_car",
+   "label": "Recon cost per car",
+   "definition": "reconditioning estimate / cars",
+   "measure": {
+    "kind": "avg",
+    "of": "condition.recon_estimate",
+    "unit": "$"
+   },
+   "trend": "monthly"
+  },
+  {
+   "id": "held_by_guardrails_pct",
+   "label": "Held by guardrails",
+   "definition": "cars held by a gate or guardrail / cars",
+   "measure": {
+    "kind": "share",
+    "where": [
+     {
+      "fact": "held_by_guardrails",
+      "op": "eq",
+      "value": true
+     }
+    ]
+   },
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Why are EV crossovers sitting longer on our lots?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.lot_id",
+    "measure": {
+     "kind": "avg",
+     "of": "asset.days_on_lot",
+     "where": [
+      {
+       "fact": "asset.segment",
+       "op": "eq",
+       "value": "ev_crossover"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "question": "Which lots sell lease returns fastest?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.lot_id",
+    "measure": {
+     "kind": "avg",
+     "of": "asset.days_on_lot",
+     "where": [
+      {
+       "fact": "asset.return_kind",
+       "op": "eq",
+       "value": "lease_end"
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "stories": [
+  "UC-01",
+  "UC-02",
+  "UC-03",
+  "UC-04",
+  "UC-05",
+  "UC-06",
+  "UC-07",
+  "UC-08",
+  "UC-09",
+  "UC-10",
+  "UC-11",
+  "UC-12",
+  "UC-13",
+  "UC-14",
+  "UC-15",
+  "UC-16",
+  "UC-17",
+  "UC-18",
+  "UC-19",
+  "UC-20",
+  "UC-21",
+  "UC-22",
+  "UC-23",
+  "UC-24",
+  "UC-25"
+ ]
+}
