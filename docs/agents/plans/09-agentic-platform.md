@@ -846,11 +846,11 @@ each story went.
 - [x] P9-2.11 Fraud triage on intake with a person release
 - [x] P9-2.12 Richer tool schemas and a find tools read
 - [x] P9-2.13 MCP tools generated from the action catalogue
-- [ ] P9-2.14 OAuth protected resource metadata for MCP
+- [x] P9-2.14 OAuth protected resource metadata for MCP
 - [ ] P9-2.15 Agent evals in CI with an injection corpus
 - [ ] P9-2.16 Phase 2 demo smoke script
 - [x] P9-2.18 Stage agents reason with the model
-- [ ] P9-2.19 Exception assistant and fraud review drafted by the model
+- [x] P9-2.19 Exception assistant and fraud review drafted by the model
 - [ ] P9-2.20 Lease end, return authorised and transit stage agents
 - [ ] P9-2.21 Ten-stage journey on the case run view
 - [x] P9-2.22 Gates before the queue plan in decide_case
@@ -936,16 +936,16 @@ each story went.
 - [ ] P9-8.5 Configured adapter reads dlt-style paging and selectors
 - [ ] P9-8.6 Connector from an API spec through an OpenAPI importer
 - [ ] P9-8.7 Agent drafts an adapter spec held for a person
-- [ ] P9-8.8 Directory mock with OIDC and a users API in source-sim
+- [x] P9-8.8 Directory mock with OIDC and a users API in source-sim
 - [ ] P9-8.9 OIDC sign-in with authlib beside the demo sign-in
 - [ ] P9-8.10 Directory groups to roles as data with test a user
 - [ ] P9-8.11 SCIM provisioning and directory sync for joiners
-- [ ] P9-8.12 Workflow author from a sentence with repair rounds
+- [x] P9-8.12 Workflow author from a sentence with repair rounds
 - [ ] P9-8.13 Studio canvas on xyflow with dagre layout
 - [ ] P9-8.14 Modeler canvas on xyflow
 - [ ] P9-8.15 Per-node input and output samples with pinned data
 - [ ] P9-8.16 Decision table editor in the Modeler
-- [ ] P9-8.17 Composition object with maker-checker
+- [x] P9-8.17 Composition object with maker-checker
 - [ ] P9-8.18 Compose describe and adapter mapping steps
 - [ ] P9-8.19 Compose test run shows where cases stopped
 - [ ] P9-8.20 Compose agent mapping, approve and publish steps
@@ -8822,6 +8822,8 @@ questions as today, then the drafted graph on the canvas with "Checked in N roun
 **Files:**
 - Modify `frontend/package.json` (`@xyflow/react` and `@dagrejs/dagre`, exact versions at least two weeks old on the day
   of the task; D §8 read 13.0.3 and 3.1.3).
+- Modify `frontend/knip.json`: remove `ignoreDependencies` (the lead added both libraries at 84da3dd, already
+  installed at 12.12.1 and 3.1.3; knip ignores them until this task imports them).
 - Modify `docs/agents/plans/09-licences.md` (rows: `@xyflow/react` MIT, `@dagrejs/dagre` MIT).
 - Create `frontend/src/components/graph/layout.ts` and `layout.test.ts` (dagre wrapper).
 - Create `frontend/src/components/graph/GraphView.tsx` (the shared ReactFlow wrapper: pan, zoom, minimap, controls,

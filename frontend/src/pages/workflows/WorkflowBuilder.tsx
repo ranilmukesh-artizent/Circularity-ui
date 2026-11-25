@@ -3,10 +3,11 @@
  * The planner (workflow.plan) only proposes; Create workflow is the person's own click (workflow.create, then
  * workflow.save with the settings), with their permissions. Nothing is created before that click.
  */
-import { useEffect, useReducer, useRef, type FormEvent } from 'react';
+import { useEffect, useReducer, useRef, useState, type FormEvent } from 'react';
 import {
-  builderReducer, createFromPlan, current, EXAMPLES, formComplete, initialBuilder, nextAnswers, planWorkflow, toggled,
-  type Answers, type BuilderState, type Plan, type Question,
+  authorWorkflow, builderReducer, createFromPlan, current, EXAMPLES, formComplete, initialBuilder, nextAnswers, planWorkflow, roundsText,
+  testRunText, toggled,
+  type Answers, type AuthorReply, type BuilderState, type Plan, type Question,
 } from '../../api/workflowBuilder';
 import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Overlay';
@@ -18,6 +19,18 @@ export function WorkflowBuilder({ initialPrompt = '', onClose, onCreated }: { in
   const [s, dispatch] = useReducer(builderReducer, initialPrompt, initialBuilder);
   const reply = current(s);
   const started = useRef(false);
+  const [authored, setAuthored] = useState<AuthorReply | null>(null);
+
+  /** workflow.author: the assistant drafts the graph, it is checked (up to three repair rounds) and test run; a draft is saved. */
+  async function draftIt() {
+    dispatch({ t: 'start' });
+    try {
+      setAuthored(await authorWorkflow(s.prompt.trim(), { ...(reply?.answers ?? {}), _defaults: true }));
+      dispatch({ t: 'fail', message: '' });
+    } catch (e) {
+      dispatch({ t: 'fail', message: (e as Error).message });
+    }
+  }
 
   async function ask(answers: Answers, prompt = s.prompt) {
     if (!prompt.trim()) return;
@@ -62,6 +75,8 @@ export function WorkflowBuilder({ initialPrompt = '', onClose, onCreated }: { in
         <button className="btn" onClick={() => void ask({ ...nextAnswers(s), _defaults: true })} disabled={s.busy}>Use defaults for the rest</button>
         <button className="btn pri" onClick={() => void ask(nextAnswers(s))} disabled={s.busy || !formComplete(qs, s.form)}>Continue</button>
       </>}
+      {plan && <button className="btn" onClick={() => void draftIt()} disabled={s.busy}><Icon name="spark" /> Draft with the assistant</button>}
+      {authored?.draft_id && <button className="btn pri" onClick={() => onCreated(authored.draft_id as string)}>Open the draft</button>}
       {plan && <button className="btn pri" onClick={() => void create(plan)} disabled={s.busy}><Icon name="plus" /> Create workflow</button>}
     </>
   );
@@ -92,10 +107,26 @@ export function WorkflowBuilder({ initialPrompt = '', onClose, onCreated }: { in
       {reply && !reply.redirect && reply.notes.length > 0 && <div className="callout" role="note" style={{ margin: '10px 0' }}>{reply.notes.map((n, i) => <p key={i} style={{ margin: i ? '4px 0 0' : 0 }}>{n}</p>)}</div>}
       {qs.length > 0 && <Questions qs={qs} form={s.form} set={(id, value) => dispatch({ t: 'set', id, value })} />}
       {plan && <PlanView plan={plan} />}
+      {authored && <Authored r={authored} />}
       {reply?.redirect && <RedirectNote reason={reply.redirect.reason} />}
       {reply?.status === 'blocked' && !reply.redirect && <p className="callout bad">The plan would not pass its checks. Go back and change an answer, or edit the description.</p>}
       <p className="note" style={{ marginTop: 12 }}>The assistant only proposes. Nothing is created until you press Create workflow; the new workflow starts as a draft and is never published for you.</p>
     </Modal>
+  );
+}
+
+/** The answer of workflow.author: the rounds it took, what the checks said, the dry run's counts. A draft only, never published. */
+function Authored({ r }: { r: AuthorReply }) {
+  return (
+    <section aria-label="The drafted workflow" className="callout" data-testid="wbAuthored" style={{ margin: '10px 0' }}>
+      {r.status === 'drafted' && <p style={{ margin: 0 }}><b>{r.name}</b> saved as a draft. {roundsText(r.rounds)}{r.by_model ? ' (drafted by the model, checked by the workbench)' : ''}.</p>}
+      {r.status === 'handed_over' && <p style={{ margin: 0 }}><b>{roundsText(r.rounds)} and it still failed its checks.</b> No draft was saved; the checks below say what to change.</p>}
+      {r.status === 'questions' && <p style={{ margin: 0 }}>The assistant needs an answer first: go back and answer {r.questions.map((q) => q.text).join(' ')}</p>}
+      {r.test_run && <p style={{ margin: '4px 0 0' }}>{testRunText(r.test_run)}</p>}
+      {r.errors.length > 0 && <ul style={{ margin: '6px 0 0' }}>{r.errors.map((e, i) => <li key={i}>{e.node ? `${e.node}: ` : ''}{e.message}</li>)}</ul>}
+      {r.notes.map((n, i) => <p key={i} className="note" style={{ margin: '4px 0 0' }}>{n}</p>)}
+      <p className="note" style={{ margin: '6px 0 0' }}>Publish stays your own button on the draft.</p>
+    </section>
   );
 }
 

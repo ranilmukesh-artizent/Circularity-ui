@@ -1,9 +1,9 @@
 """P9-2.10 (enabler: decision D1, the exception assistant replaces `case_planner`; registry I-8, I-9, I-20).
 
 An exception item of My work gets a draft (cause, recommended action, owner role) with the facts and sources behind it.
-Without a model it is complete from the pack (R16); with one the model only words the cause. It reads and proposes: nothing
-here resolves or hands on an item (golden rule 10). Every model is a `FunctionModel` (no test reaches a provider). Every test
-ends with the starting state."""
+Without a model it is complete from the pack (R16); with one (P9-2.19) the model drafts all three fields and code checks
+them. It reads and proposes: nothing here resolves or hands on an item (golden rule 10). Every model is a `FunctionModel`
+(no test reaches a provider). Every test ends with the starting state."""
 
 from typing import Any
 
@@ -65,8 +65,12 @@ def _open(type_: str = CONTRACT, cause: str | None = SERIAL_FACT, case_id: str =
     return item
 
 
+SEEN: list[int] = []  # one entry per request the scripted model has answered
+
+
 def _model(*turns: Any) -> PydanticAILoop:
-    seen: list = []
+    seen = SEEN
+    seen.clear()
 
     def fn(_messages: list, info: AgentInfo) -> ModelResponse:
         seen.append(1)
@@ -110,19 +114,80 @@ def test_exception_assistant_unknown_type_keeps_the_item_words():
     assert d["owner_role"] == "Planner" and d["recommended_action"] == "x" and d["by_model"] is False
 
 
-def test_exception_assistant_model_words_only():
-    """A model that also tries to set another owner and action: both stay the pack's; only the cause is replaced."""
+def test_exception_model_drafts_all_fields():
+    """P9-2.19, X-15: with a model it drafts the cause, the action and the owner from the case; `by_model` is true, the owner
+    differs from the pack's so the draft says what the pack default is, and the sources are the facts the model cited."""
     _template(A_CASE, "tool_fleet")
     item = _open()
-    runtime.set_loop(_model(_tool("case_get", {"case_id": A_CASE}), _final("The serial has no contract.", owner_role="Admin",
-                                                                          recommended_action="Close the case")))  # fmt: skip
+    runtime.set_loop(_model(_tool("case_get", {"case_id": A_CASE}), _final(
+        "The serial has no contract.", recommended_action="Ask the account manager for the contract.",
+        owner_role="Approver", sources=[SERIAL_FACT],
+    )))  # fmt: skip
     r = call("exception.explain", {"exception_id": item}, "planner.a")
     assert r["ok"] is True, r
     d = r["output"]
-    assert d["cause"] == "The serial has no contract." and d["by_model"] is True
-    assert (d["owner_role"], d["recommended_action"]) == ("Planner", "Find the contract or hold the return")
+    assert d["by_model"] is True and d["model"] and "function" in d["model"]
+    assert d["cause"] == "The serial has no contract." and d["recommended_action"] == "Ask the account manager for the contract."
+    assert (d["owner_role"], d["pack_default"]) == ("Approver", "Planner")
+    assert [s["fact"] for s in d["sources"]] == [SERIAL_FACT]
     runs = _runs()
     assert [(x["agent"], x["playbook"], x["status"]) for x in runs] == [("recover-exceptions", "exception_writer", "done")]
+
+
+def test_exception_model_pack_owner_shows_no_default():
+    """The model picks the pack's own owner: nothing to say about a default."""
+    _template(A_CASE, "tool_fleet")
+    item = _open()
+    runtime.set_loop(_model(_final("No contract.", recommended_action="Find it.", owner_role="Planner", sources=[])))
+    d = call("exception.explain", {"exception_id": item}, "planner.a")["output"]
+    assert d["by_model"] is True and d["owner_role"] == "Planner" and d["pack_default"] is None
+
+
+def test_exception_model_owner_outside_pack_roles_retried():
+    """An owner that is no role of the pack: told once, then the pack's own draft (the model is asked twice, no more)."""
+    _template(A_CASE, "tool_fleet")
+    item = _open()
+    runtime.set_loop(_model(_final("No contract.", recommended_action="Close it.", owner_role="Wizard", sources=[])))
+    d = call("exception.explain", {"exception_id": item}, "planner.a")["output"]
+    assert len(SEEN) == 2
+    assert d["by_model"] is False
+    assert (d["owner_role"], d["recommended_action"]) == ("Planner", "Find the contract or hold the return")
+    assert _runs() == []
+
+
+def test_exception_model_unknown_fact_retried_then_accepted():
+    """A source that is not a fact of the case is refused with the reason; the corrected draft stands."""
+    _template(A_CASE, "tool_fleet")
+    item = _open()
+    bad = _final("No contract.", recommended_action="Find it.", owner_role="Planner", sources=["The serial was stolen"])
+    good = _final("No contract.", recommended_action="Find it.", owner_role="Planner", sources=[SERIAL_FACT])
+    runtime.set_loop(_model(bad, good))
+    d = call("exception.explain", {"exception_id": item}, "planner.a")["output"]
+    assert len(SEEN) == 2 and d["by_model"] is True and [s["fact"] for s in d["sources"]] == [SERIAL_FACT]
+
+
+def test_exception_model_invented_number_retried():
+    """R16: a number in the cause or the action that no fact of the case gives is refused."""
+    _template(A_CASE, "tool_fleet")
+    item = _open()
+    runtime.set_loop(_model(_final("Losses of 424242 follow.", recommended_action="Find it.", owner_role="Planner", sources=[])))
+    d = call("exception.explain", {"exception_id": item}, "planner.a")["output"]
+    assert len(SEEN) == 2 and d["by_model"] is False
+
+
+def test_exception_model_never_assigns():
+    """The assistant drafts and writes nothing about the item or the case: no work action ran, the item is as it was, and
+    its own run is the only row it added."""
+    _template(A_CASE, "tool_fleet")
+    item = _open()
+    runtime.set_loop(_model(_final("No contract.", recommended_action="Find it.", owner_role="Approver", sources=[])))
+    assert call("exception.explain", {"exception_id": item}, "planner.a")["output"]["by_model"] is True
+    with SessionLocal() as s:
+        row = s.execute(text("SELECT status, owner_account, owner_role FROM work_item WHERE id = :i"), {"i": item}).one()
+        assert tuple(row) == ("open", None, "Planner")
+        count = s.execute(text("SELECT count(*) FROM action_journal WHERE action LIKE 'work.%' OR action LIKE 'decision.%'"))
+        assert count.scalar_one() == 0
+    assert [x["playbook"] for x in _runs()] == ["exception_writer"]
 
 
 def test_exception_assistant_tools_read_only():

@@ -16,3 +16,4 @@ types-paramiko==3.5.0.20250801
 # mypy's dependencies newer than two weeks, held at the release before
 mypy-extensions==1.1.0
 librt==0.16.0
+pydantic-evals==2.73.0  # P9-2.15: agent evals in CI; same release as pydantic-ai-slim

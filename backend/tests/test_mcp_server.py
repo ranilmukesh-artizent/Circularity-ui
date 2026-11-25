@@ -122,7 +122,9 @@ def test_lists_the_ten_tools_with_their_schemas_and_approval_rules():
 def test_a_request_without_a_valid_token_is_401():
     body = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
     r = httpx.post(f"{API}/mcp", json=body)
-    assert r.status_code == 401 and r.headers["www-authenticate"] == "Bearer"
+    # P9-2.14 (RFC 9728): the challenge names the protected resource metadata
+    assert r.status_code == 401 and r.headers["www-authenticate"].startswith("Bearer resource_metadata=")
+    assert r.headers["www-authenticate"].endswith('/.well-known/oauth-protected-resource"')
     assert r.json() == {
         "ok": False,
         "error": {"code": "unauthenticated", "message": "Sign in first: send the account's bearer token."},

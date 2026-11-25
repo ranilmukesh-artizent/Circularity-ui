@@ -329,10 +329,18 @@ def _spend(i) -> float:
     return v if isinstance(v, int | float) and not isinstance(v, bool) and not math.isnan(v) else 0
 
 
+def _fraud_held(c: dict[str, Any]) -> tuple[str, str] | None:
+    """A case held for fraud review is approved or overridden only after a person runs `fraud.release` (plan 9, P9-2.19)."""
+    f = c.get("fraud")
+    if isinstance(f, dict) and f.get("status") == "held":
+        return "conflict", "Held for fraud review: release it first."
+    return None
+
+
 @guard("decision.approve")
 def approve_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
-    g = _ap_guard(i, ctx, c)
+    g = _fraud_held(c) or _ap_guard(i, ctx, c)
     rec = c.get("recommendation")
     if not g and i.get("route") and rec and i["route"] != rec["plan"]:
         g = "conflict", "That route is not the recommendation; use Override."
@@ -342,7 +350,7 @@ def approve_guard(i: dict[str, Any], ctx: CallContext):
 @guard("decision.override")
 def override_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
-    return _ap_guard(i, ctx, c) or _ap_policy(i, ctx, c)
+    return _fraud_held(c) or _ap_guard(i, ctx, c) or _ap_policy(i, ctx, c)
 
 
 def _approve_idem(i: dict[str, Any], ctx: CallContext):

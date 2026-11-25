@@ -5,7 +5,7 @@
  * for a person (proposal.accept; the overlay's own maker-checker approves it, no agent does). Both are on-demand actions, not
  * cached reads: the text is the person's.
  */
-import { invoke } from './actions';
+import { invoke, read } from './actions';
 import type { ActionResult } from './types';
 
 export interface Control {
@@ -81,3 +81,72 @@ export const readDescription = (text: string, org: string): Promise<ActionResult
 /** The change set for a description; `answer` is an option id of the question or "skip" (required when there is a question). */
 export const draftChangeSet = (text: string, org: string, answer?: string): Promise<ActionResult<Drafted>> =>
   invoke('config.draft', { text, org_unit_id: org, ...(answer ? { answer } : {}) }) as Promise<ActionResult<Drafted>>;
+
+// ---------------------------------------------------------------- the composition (plan 9, P9-8.17; backend/di/services/actions/compose.py)
+
+export type CompositionStep = 'describe' | 'mapping' | 'agents' | 'approve' | 'publish';
+export type CompositionStatus = 'draft' | 'submitted' | 'sent_back' | 'approved' | 'published' | 'discarded';
+
+export interface StepNote {
+  reason: string;
+  node_id?: string;
+  by: string;
+  at: string;
+}
+
+export interface StepState {
+  state: 'todo' | 'done' | 'sent_back';
+  note?: StepNote;
+  [field: string]: unknown;
+}
+
+/** One approvable object: the change set, the mapping rows and the stage-agent settings, with maker-checker. */
+export interface Composition {
+  id: number;
+  org_unit_id: string;
+  pack_key: string;
+  base_version: string;
+  text: string;
+  reading: Reading;
+  change_set: ChangeSet;
+  steps: Record<CompositionStep, StepState>;
+  status: CompositionStatus;
+  version: number;
+  created_by: string;
+  editors: string[];
+  submitted_by: string | null;
+  approved_by: string | null;
+  published_by: string | null;
+}
+
+type Made = ActionResult<Composition & { log?: string }>;
+
+/** The composition with its steps and change set (a read, cached per id). */
+export const useComposition = (id: number): Composition => read<Composition>('compose.get', { id });
+
+/** The compositions of an org unit, or of every unit the person sees. */
+export const compositions = (org?: string): Composition[] =>
+  read<{ compositions: Composition[] }>('compose.list', org ? { org_unit_id: org } : {}).compositions;
+
+/** Describe a business: the configuration agent drafts the change set (status draft). */
+export const startComposition = (org: string, text: string, pack?: string): Promise<Made> =>
+  invoke('compose.start', { org_unit_id: org, text, ...(pack ? { pack_key: pack } : {}) }) as Promise<Made>;
+
+/** Answer the pack's one question (an option id or "skip"). */
+export const answerQuestion = (id: number, answer: string): Promise<Made> => invoke('compose.answer', { id, answer }) as Promise<Made>;
+
+/** Replace the typed operations; the server checks them against the pack. */
+export const editChangeSet = (id: number, ops: OverlayOpRef[]): Promise<Made> => invoke('compose.editChangeSet', { id, ops }) as Promise<Made>;
+
+/** Mark describe, mapping or agents done. */
+export const markStep = (id: number, step: CompositionStep): Promise<Made> => invoke('compose.markStep', { id, step }) as Promise<Made>;
+
+/** Submit for approval; refused with `blocking` (the list of what is left) when it is not ready. */
+export const submitComposition = (id: number): Promise<ActionResult> => invoke('compose.submit', { id });
+
+/** The checker sends it back with a reason (15 characters or more) pinned to a step, and to a node when given. */
+export const sendBack = (id: number, step: CompositionStep, reason: string, nodeId?: string): Promise<ActionResult> =>
+  invoke('compose.sendBack', { id, step, reason, ...(nodeId ? { node_id: nodeId } : {}) });
+
+/** The checker approves (never the maker, submitter or an editor): the changes, mapping and stage settings apply as one. */
+export const approveComposition = (id: number): Promise<ActionResult> => invoke('compose.approve', { id });

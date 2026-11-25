@@ -7,6 +7,7 @@ import di.repositories.workspace  # registers action handlers
 import di.services.actions.access  # registers action handlers
 import di.services.actions.agents  # registers action handlers (agent.register, agent.update; plan 8)
 import di.services.actions.cases_intake  # registers action handlers (case.open; plan 8)
+import di.services.actions.compose  # registers action handlers (compose.*: the composition object; plan 9 P9-8.17)
 import di.services.actions.config_agent  # registers action handlers (config.read, config.draft: the configuration agent; plan 9)
 import di.services.actions.connections  # registers action handlers (registry.*, connection.*: the adapter registry; plan 9)
 import di.services.actions.decisions  # registers action handlers
@@ -28,13 +29,14 @@ import di.services.actions.proposals  # registers action handlers (proposal.acce
 import di.services.actions.standing_policy  # registers action handlers (standingPolicy.*, policy approval; plan 9)
 import di.services.actions.tools  # registers action handlers (tools.find: the tool search; plan 9)
 import di.services.actions.work  # registers action handlers (case.needInfo, work.resolve, work.assign; plan 9)
+import di.services.actions.workflow_author  # registers action handlers (workflow.author: a draft from a sentence, P9-8.12)
 import di.services.actions.workflow_builder  # registers action handlers (workflow.draft, workflow.plan)
 import di.services.actions.workflow_drafts  # registers action handlers (workflow.draft.save, workflow.draft.discard, testRun)
 import di.services.actions.workflows  # noqa: F401  (registers action handlers)
 from di.core.errors import register as register_error_handlers
 from di.core.logs import configure_logging
 from di.mcp import server as mcp_server
-from di.routes import actions, agents, ask, auth, health, screens, sources, stream, tasks, webhooks
+from di.routes import actions, agents, ask, auth, health, screens, sources, stream, tasks, webhooks, wellknown
 from di.services.actions.registry import ACTIONS
 from di.services.agents.forbidden import check_person_only
 from di.services.cases import use_database_scope
@@ -53,6 +55,7 @@ app.include_router(screens.router)
 app.include_router(stream.router)
 app.include_router(ask.router)  # POST /api/ask (B16b; di.services.ask)
 app.include_router(agents.router)  # /api/agents (plan 8 phase 11; di.services.agents)
+app.include_router(wellknown.router)  # /.well-known/oauth-protected-resource (P9-2.14; di.mcp.oauth)
 mcp_server.mount(app)  # the MCP server at /mcp (B16; di.mcp)
 use_database_scope()
 app.include_router(health.router)  # GET /api/health/live, GET /api/health

@@ -15,7 +15,7 @@ vi.mock('./client', () => ({
 }));
 
 import {
-  builderReducer, createFromPlan, current, formComplete, formFor, initialBuilder, nextAnswers, planWorkflow, toggled,
+  authorWorkflow, builderReducer, createFromPlan, current, roundsText, testRunText, formComplete, formFor, initialBuilder, nextAnswers, planWorkflow, toggled,
   type Plan, type PlanReply, type Question,
 } from './workflowBuilder';
 
@@ -120,5 +120,24 @@ describe('the conversation state', () => {
     expect(s.rounds).toHaveLength(1);
     expect(s.error).toBe('Could not reach the server.');
     expect(builderReducer(s, { t: 'restart' })).toEqual(initialBuilder('x'));
+  });
+});
+
+describe('the workflow author (P9-8.12)', () => {
+  it('invokes workflow.author with the sentence and answers and returns the draft', async () => {
+    const out = { status: 'drafted', rounds: 3, errors: [], draft_id: 'WF-130', test_run: { status: 'success', in: 120, out: 117, held: 3, note: null } };
+    m.invoke.mockResolvedValue({ ok: true, output: out });
+    const r = await authorWorkflow('pull returns', { _defaults: true });
+    expect(m.invoke).toHaveBeenCalledWith('workflow.author', { prompt: 'pull returns', answers: { _defaults: true } });
+    expect(r.draft_id).toBe('WF-130');
+    expect(roundsText(r.rounds)).toBe('Checked in 3 rounds');
+    expect(testRunText(r.test_run!)).toBe('Test run: in 120 · out 117 · held 3');
+  });
+
+  it('words the rounds, and throws a refusal with the server message', async () => {
+    expect(roundsText(1)).toBe('Checked in 1 round');
+    expect(roundsText(0)).toBe('Built by the keyword planner');
+    m.invoke.mockResolvedValue({ ok: false, error: { code: 'validation_error', message: 'Device telemetry cannot be read.' } });
+    await expect(authorWorkflow('x')).rejects.toThrow('Device telemetry cannot be read.');
   });
 });

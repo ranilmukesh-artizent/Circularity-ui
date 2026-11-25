@@ -14,7 +14,14 @@ return, however the call arrives (golden rule 10). The record on the case is `ca
 signals, rule_version, held_at, by, item}` (`status` is `held`, then `released` or `rejected`, with `resolved_by`, `resolved_at`
 and `reason`). A case whose `fraud.status` is `held` blocks a standing policy (di.services.actions.standing_policy) and keeps the
 chain's intake stage held (di.services.agents.stages.intake). `triage_case` is what the chain runs on intake: the computed score
-of `di.services.modeler.fraud.triage` with the case's repeat-return counts. The model's review of fraud is P9-2.19.
+of `di.services.modeler.fraud.triage` with the case's repeat-return counts.
+
+`review_case` (P9-2.19, R16) is what the runtime runs after `triage_case`: when the router has a model, the model's review
+(`di.services.agents.fraud_review`) is asked once per run (kept in the run state as `fraud_review`). A review that asks for a hold
+on a case under the threshold adds the signal `model_review` and holds it; the score and the rule version stay computed, and a
+review never releases a hold. `fraud.hold` copies the run's review onto the record as `case["fraud"]["review"]`
+(`{narrative, concerns, raise_hold}`) for the person. `fraud.simulate` never asks the model.
+`decision.approve` and `decision.override` refuse a case whose `fraud.status` is `held` (di.services.actions.decisions).
 
 Needs review by Kinective's Legal team before a customer relies on it.
 """
@@ -32,11 +39,14 @@ from di.repositories.packs import active_pack
 from di.services.actions.modeler import _boundary, _org_ok
 from di.services.actions.pipeline import CallContext, after, invoke
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
+from di.services.agents.fraud_review import review_fraud
+from di.services.agents.loop import AgentLoop
 from di.services.cases import process, store
-from di.services.modeler.fraud import THRESHOLD_PARAM, FraudResult, FraudRules, repeat_windows, triage
+from di.services.modeler.fraud import THRESHOLD_PARAM, FraudResult, FraudRules, Signal, repeat_windows, triage
 from di.services.modeler.pack import Pack, pack_keys
 
 TYPE = "fraud_hold"
+MODEL_REVIEW = "model_review"  # the signal id of a hold the model's review asked for
 TITLE = "Fraud and compliance: held for fraud review"
 _STR = {"req": True, "t": "string"}
 _WHY = {"req": True, "t": "string", "min": 10, "minText": "Add a reason of at least 10 characters."}
@@ -69,6 +79,40 @@ _declare("fraud.simulate", "Simulate fraud rules", "simulate fraud rules",
 def triage_case(s: Session, case: dict[str, Any], pack: Pack) -> FraudResult:
     """The computed score of the case under the pack in force: the pure triage with the repeat-return counts it reads."""
     return triage(case, pack, repeat_counts(s, case, repeat_windows(pack)))
+
+
+def _loop() -> AgentLoop:
+    from di.services.agents import runtime  # the runtime imports this module
+
+    return runtime.loop_runner()  # with no model the loop answers None and the review is dropped
+
+
+def with_review(result: FraudResult, review: dict[str, Any] | None) -> FraudResult:
+    """The result with the model's request for a hold added as the signal `model_review`, only when the score did not hold the
+    case. The score, the threshold and the rule version are the computed ones; a result that holds is never released."""
+    if not review or not review.get("raise_hold") or result.held:
+        return result
+    sources = sorted({x for c in review.get("concerns") or [] for x in c.get("sources") or []})
+    signal = Signal(MODEL_REVIEW, True, review["narrative"], ", ".join(sources) or "fraud review", None)
+    return FraudResult(result.score, [*result.signals, signal], result.rule_version, True, result.threshold)
+
+
+def review_case(s: Session, ctx: CallContext, case: dict[str, Any], result: FraudResult, st: dict[str, Any]) -> FraudResult:
+    """`result` with the model's review of it (R16). The model is asked once per run: its review, or None, is kept in the run
+    state `st["fraud_review"]`. A case that already has a fraud record (held, released or rejected) is not reviewed again."""
+    if "fraud_review" not in st:
+        st["fraud_review"] = None
+        got = None if case.get("fraud") else review_fraud(s, ctx, case, result, loop=_loop())
+        st["fraud_review"] = got.model_dump(mode="json") if got is not None else None
+    return with_review(result, st["fraud_review"])
+
+
+def _run_review(ctx: CallContext) -> dict[str, Any] | None:
+    """The review kept in the state of the run that calls `fraud.hold`, if any."""
+    if ctx.run_id is None:
+        return None
+    got = ctx.session.execute(text("SELECT state -> 'fraud_review' FROM agent_run WHERE id = :i"), {"i": ctx.run_id}).scalar()
+    return got if isinstance(got, dict) else None
 
 
 def active_hold(case: dict[str, Any]) -> dict[str, Any] | None:
@@ -106,7 +150,13 @@ def hold(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     if c is None:
         raise ActionError("not_found", f"No live case {i['case_id']}.")
     threshold = i.get("threshold")
-    reach = f"{i['score']:g} reaches {threshold:g}" if isinstance(threshold, int | float) else f"{i['score']:g}"
+    review = _run_review(ctx)
+    if not isinstance(threshold, int | float):
+        reach = f"{i['score']:g}"
+    elif i["score"] < threshold:  # the model's review asked for the hold (P9-2.19)
+        reach = f"{i['score']:g} is under {threshold:g}; held on the model's review"
+    else:
+        reach = f"{i['score']:g} reaches {threshold:g}"
     item = process.open_item(
         ctx.session, kind="exception", case_id=c["id"], org_unit_id=c["owner"], type=TYPE, title=TITLE,
         cause=f"Fraud score {reach} (rule set {i['rule_version']}); signals: "
@@ -118,6 +168,8 @@ def hold(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         "status": "held", "score": i["score"], "threshold": threshold, "signals": i["signals"],
         "rule_version": i["rule_version"], "held_at": ctx.now.isoformat(), "by": ctx.preparer or ctx.actor.id, "item": item,
     }  # fmt: skip
+    if review:
+        c["fraud"]["review"] = review
     store.save(ctx.session, c)
     return {"case_id": c["id"], "item": item, "log": f"Held {c['id']} for fraud review (score {i['score']:g})"}
 

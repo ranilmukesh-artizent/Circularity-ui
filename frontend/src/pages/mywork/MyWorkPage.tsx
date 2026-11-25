@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { acceptProposal, rejectProposal } from '../../api/agents';
 import { isFraudItem } from '../../api/fraud';
-import { assignItem, explainException, resolveItem, useMyWork, type ExceptionDraft, type WorkItem, type WorkKind } from '../../api/mywork';
+import { assignItem, draftedBy, draftOwner, explainException, resolveItem, useMyWork, type ExceptionDraft, type WorkItem, type WorkKind } from '../../api/mywork';
 import { accounts } from '../../api/session';
 import { useBackend } from '../../api/useBackend';
 import { Modal } from '../../components/Overlay';
@@ -105,9 +105,9 @@ function AssistantDraft({ id }: { id: number }) {
   if (!draft) return null;
   return (
     <span className="note" data-testid="assistant-draft">
-      Assistant: {draft.cause} · {draft.recommended_action} · {draft.owner_role}
+      Assistant: {draft.cause} · {draft.recommended_action} · {draftOwner(draft)}
       <br />
-      Drafted by the exception assistant{draft.by_model ? ', worded by a model' : ''}
+      {draftedBy(draft)}
       {draft.sources.length > 0 && <> · from {[...new Set(draft.sources.map((s) => s.source))].join(', ')}</>}
     </span>
   );

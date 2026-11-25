@@ -51,7 +51,7 @@ from di.core.auth import load_context
 from di.core.config import get_settings
 from di.repositories import stage_outcomes
 from di.repositories.live_rules import live_pack
-from di.services.actions.fraud import triage_case  # also registers fraud.hold in the worker
+from di.services.actions.fraud import review_case, triage_case  # also registers fraud.hold in the worker
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
 from di.services.agents import calibrate, chain, limits, playbook_versions, registry, stage_reasoner
 from di.services.agents.forbidden import FORBIDDEN_ACTIONS
@@ -316,7 +316,7 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
         st["rul_min"] = floor
     st["queue_planner"] = disposition.planner_name(pack)  # the disposition stage waits for the queue plan (P9-2.8)
     if stage == 0 and pack.fraud is not None:  # the fraud triage of the intake stage (P9-2.11): intake holds on it
-        st["fraud"] = triage_case(s, case, pack).as_dict()
+        st["fraud"] = review_case(s, ctx, case, triage_case(s, case, pack), st).as_dict()  # the model may add a hold (P9-2.19)
     nxt = stage_chain.next_step(stage, sub, st, case)
     if nxt is None:
         return _save(s, run, "done", n, st | {"note": "playbook finished"})
