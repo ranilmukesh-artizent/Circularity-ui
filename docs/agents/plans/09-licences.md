@@ -15,10 +15,11 @@ that adds a library fills in its pinned version.
 | rapidfuzz | PyPI | MIT | 3.14.6 (installed at run setup) | P9-2.7 | fuzzy matching of text to pack names | pending |
 | jsonpatch | PyPI | BSD-3-Clause | set by the adding task | not named by a task yet; set when first needed | RFC 6902 patch view of a customer overlay | pending |
 | deepdiff | PyPI | MIT | set by the adding task | not named by a task yet; set when first needed | readable diffs when a pack update or overlay is reviewed | pending |
-| authlib | PyPI | BSD-3-Clause | set by the adding task | P9-8.9 | OIDC sign-in beside the demo sign-in | pending |
+| pydantic-evals | PyPI | MIT | 2.73.0 (dev lock only) | P9-2.15 | agent evals in CI with an injection corpus | pending |
+| authlib | PyPI | BSD-3-Clause | 1.9.5 (+ joserfc 1.8.0) | P9-8.9 | OIDC sign-in beside the demo sign-in | pending |
 | scim2-models | PyPI | Apache-2.0 | set by the adding task | P9-8.11 | SCIM provisioning and directory sync | pending |
 | pandera | PyPI | MIT | set by the adding task | P9-7.1 | checks on imported history batches | pending |
-| @xyflow/react | npm | MIT | set by the adding task | P9-8.13 | Studio and Modeler canvas | pending |
-| @dagrejs/dagre | npm | MIT | set by the adding task | P9-8.13 | auto-layout of imported flows | pending |
+| @xyflow/react | npm | MIT | 12.12.1 | P9-8.13 | Studio and Modeler canvas | pending |
+| @dagrejs/dagre | npm | MIT | 3.1.3 | P9-8.13 | auto-layout of imported flows | pending |
 | @gorules/jdm-editor | npm | MIT | set by the adding task | P9-8.16 | decision table editor in the Modeler | pending |
 | jsonschema | PyPI | MIT | 4.26.0 (pinned in `backend/requirements.in`; already locked through `mcp`) | P9-0.7 | validate workflow imports and pack files | pending |
