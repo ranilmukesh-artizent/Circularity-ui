@@ -29,10 +29,12 @@ RUN = Path(os.environ["PLAN_RUN"]) if os.environ.get("PLAN_RUN") else ROOT / "do
 
 # Phases that must be fully done before a phase starts. Tool fleet (3-5) and device (6) share core files, so rule 4
 # orders those files; the three asset packs (9, 10, 11) run side by side after Compose (8).
-PHASE_AFTER = {1: {0}, 2: {1}, 3: {1}, 4: {3}, 5: {4}, 6: {1}, 7: {2}, 8: {7},
+PHASE_AFTER = {1: {0}, 2: {1}, 3: {1}, 4: {3}, 5: {4}, 6: {1}, 7: {2}, 8: {1},
                9: {8}, 10: {8}, 11: {8}, 12: {8}, 13: set(range(13))}
 # Two lanes since 25 Nov 2026 (docs/agents/plans/09-lanes/): tool fleet (3-5) and device (6) need from phase 2 only
 # P9-2.1, P9-2.4 and P9-2.5, which their tasks name in "Depends on", so they start after phase 1, not phase 2.
+# Compose (8) starts after phase 1 too (25 Nov): 18 of its 23 tasks need only phases 0-2, and the rest name their
+# phase 4 and 7 tasks (P9-4.2, P9-7.1-7.3) in "Depends on". Phase 7 itself waits for lane B's phase 6 gate (P9-7.1).
 # Dependencies are added once, up front, by the lead (all plan-9 libraries in one rebuild), so tasks that list these
 # files only check that their library is there; they do not serialize on them.
 DEPENDENCY_FILES = ("pyproject.toml", "package.json", "package-lock.json", "requirements")

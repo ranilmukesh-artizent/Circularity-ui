@@ -853,6 +853,7 @@ each story went.
 - [ ] P9-2.19 Exception assistant and fraud review drafted by the model
 - [ ] P9-2.20 Lease end, return authorised and transit stage agents
 - [ ] P9-2.21 Ten-stage journey on the case run view
+- [ ] P9-2.22 Gates before the queue plan in decide_case
 - [ ] P9-2.17 Phase 2 gate
 - [ ] P9-3.1 Fleet contract and repair log mocks with adapters
 - [ ] P9-3.2 Recall, telematics and parts mocks with adapters
@@ -4469,6 +4470,35 @@ enablement); smoke step in P9-2.16.
 
 **Notes:** the prototype's screens are a concept only; follow our kit and the run view of P9-2.6. Hidden model
 reasoning is not shown; the reading's typed fields are.
+
+#### P9-2.22 Gates before the queue plan in decide_case
+**Stories:** R20 (phase 1 review finding 2). **Size:** S. **Depends on:** P9-1.5, P9-2.8.
+
+**Files:**
+- Modify `backend/di/services/cases/decide.py` (`decide_case`: gates and the hold first, then the tool fleet's
+  valuation and queue plan over the routes the gates left eligible).
+- Test: `backend/tests/test_decide_gate_order.py`.
+
+**Interfaces:**
+- Today `_tool_fleet` (valuation and queue plan) runs before `gate_hold.apply`, so a gate-blocked route can win a
+  named order in the queue plan and leave that order unfilled.
+- After the fix:
+  1. `gate_hold.apply` runs first.
+  2. The routes it blocks are passed to the planner as ineligible for this case.
+  3. The plan assigns orders only to eligible routes.
+  4. The trace order reads gates → valuation → queue plan → business rules → rank.
+- Industrial cases (no queue plan) and the demo's 128 cases are unchanged: same routes, nets and golden output.
+
+**UI slice:** none.
+
+**Tests (red first):**
+- `test_gate_blocked_route_never_wins_an_order`: a tool-fleet case whose contract clause blocks redeploy (G-CON-1)
+  and a named redeploy order → the order goes to the next eligible case or stays open; this case's plan has no
+  redeploy assignment.
+- `test_gate_order_in_trace`: the trace lists the gates before the queue plan.
+- `test_industrial_decide_unchanged`: RT-1048 and a book case give the same result as before.
+- Also run: `tests/test_decide_case.py tests/test_queue_planner.py tests/test_queue_stage.py
+  tests/test_milestone_rt1048.py tests/test_valuer_tool_fleet.py`, and the parity files.
 
 #### P9-3.1 Fleet contract and repair log mocks with adapters
 **Stories:** enabler: the fleet contract system and the legacy depot repair log are two of the seven systems of the
