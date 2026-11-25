@@ -18,7 +18,7 @@ import signal
 import threading
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import psycopg
@@ -250,6 +250,32 @@ def enqueue_trace_prune() -> None:
     _last_prune = today
 
 
+@handler("refresh.scan")
+def _refresh_scan(payload: dict[str, Any]) -> None:
+    """The daily scan (plan 9, P9-5.1): each org unit with a fleet source opens a refresh case for the contracts whose window
+    has opened (di.services.cases.refresh_intake.run); the next day's scan is queued with `run_after`. `payload.today`
+    (an ISO date) is for tests and `payload.org_unit_id` names the one org unit to scan (a shared fleet source has none);
+    the scan day is the workspace clock's."""
+    from di.core import clock
+    from di.services.cases import refresh_intake
+
+    today = date.fromisoformat(payload["today"]) if payload.get("today") else clock.now().date()
+    with SessionLocal() as s:
+        out = refresh_intake.run(s, today, [payload["org_unit_id"]] if payload.get("org_unit_id") else None)
+        s.commit()
+    log.info("refresh scan %s: %s", today, {org: ids for org, ids in out.items() if ids} or "nothing opened")
+
+
+def enqueue_refresh_scan() -> None:
+    """Make sure a `refresh.scan` job is queued or running (the periodic step; the job queues its own successor)."""
+    from di.core import clock
+    from di.services.cases import refresh_intake
+
+    with SessionLocal() as s:
+        refresh_intake.ensure_queued(s, clock.now().date())
+        s.commit()
+
+
 @handler("agent.autostart")
 def _agent_autostart(payload: dict[str, Any]) -> None:
     """A case was opened and the autopilot setting is on: start its run (runtime.autostart, P9-0.9). The run's own
@@ -286,6 +312,18 @@ def _case_replan(payload: dict[str, Any]) -> None:
         moved = replan.on_opened(s, payload["org_unit_id"])
         s.commit()
     log.info("replan %s: moved %s", payload["org_unit_id"], moved or "none")
+
+
+@handler("case.reevaluate")
+def _case_reevaluate(payload: dict[str, Any]) -> None:
+    """A workbench grade landed for a tool-fleet case's serial (canonical.apply): the open case is valued again with it
+    (di.services.cases.replan.on_graded, P9-3.5)."""
+    from di.services.cases import replan
+
+    with SessionLocal() as s:
+        done = replan.on_graded(s, payload["case_id"])
+        s.commit()
+    log.info("regrade %s: %s", payload["case_id"], "valued again" if done else "left as it is")
 
 
 @handler("queue.plan")
@@ -376,6 +414,10 @@ def periodic() -> None:
         enqueue_trace_prune()
     except Exception:
         log.exception("queueing the trace prune failed")
+    try:
+        enqueue_refresh_scan()
+    except Exception:
+        log.exception("queueing the refresh scan failed")
     tick_triggers()  # first: a lost workflow run is closed ("worker lost") before its stale job is requeued
     try:
         with SessionLocal() as s:

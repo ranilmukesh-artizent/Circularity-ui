@@ -99,7 +99,13 @@
   ],
   "trigger": {
    "routes": "any",
-   "when": []
+   "when": [
+    {
+     "fact": "valuer.imei",
+     "op": "exists",
+     "value": true
+    }
+   ]
   },
   "evidence": [
    "device_registry_check"
@@ -112,6 +118,35 @@
   },
   "owner": "Compliance",
   "citation": "Pack v2.7; industry registries (GSMA Device Registry; CTIA stolen-phone checker). Practice, not law, in most places (unconfirmed); detail in A",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-DEV-QUOTE",
+  "name": "Quote match",
+  "type": "Data quality",
+  "stage": "match",
+  "packs": [
+   "device"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": [
+    {
+     "fact": "valuer.imei",
+     "op": "exists",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Customer care",
+  "citation": "Plan 9 P9-6.5 (guardrail GR-D13): the device read must match the quote; no regulation",
   "legal_review": "pending"
  },
  {
@@ -1183,6 +1218,34 @@
   "owner": "Customer operations",
   "citation": "Contract (lease, fleet, service)",
   "legal_review": "pending"
+ },
+ {
+  "id": "G-CON-2",
+  "name": "Contract right",
+  "type": "Compliance",
+  "stage": "match",
+  "packs": [
+   "tool_fleet"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": []
+  },
+  "evidence": [
+   "contract_line"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Fleet desk",
+  "citation": "Fleet contract line: status, open claim or charge, owner (GR-07)",
+  "legal_review": "pending",
+  "params": {
+   "guardrail": "GR-07"
+  }
  },
  {
   "id": "G-SAFE-1",

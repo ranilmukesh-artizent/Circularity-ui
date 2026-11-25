@@ -17,7 +17,7 @@ from di.services.cases.decide import Decision, decide_case, write_back
 from di.services.modeler.compile import FlowVersion
 from di.services.modeler.pack import load_pack
 from tests import flowkit, starting
-from tests.helpers import call
+from tests.helpers import call, tool_case_facts
 
 ORG = "Customer A"
 FACTS = {"cls": "CMH", "grade": "B", "ft": "Repair center", "site": "Houston", "rul": 60}
@@ -45,7 +45,13 @@ def fresh():
 
 
 def _open(asset: str) -> str:
-    body = {"org_unit_id": ORG, "template_key": "tool_fleet", "asset_key": asset, "reason": "manual", "facts": FACTS}
+    body = {
+        "org_unit_id": ORG,
+        "template_key": "tool_fleet",
+        "asset_key": asset,
+        "reason": "manual",
+        "facts": tool_case_facts(asset, FACTS),
+    }
     r = call("case.open", body, "planner-a")
     assert r["ok"], r
     return str(r["output"]["case_id"])

@@ -20,6 +20,7 @@ import { OverlayPanel } from './OverlayPanel';
 import { PacksPanel } from './PacksPanel';
 import { StandingPolicyPanel } from './StandingPolicyPanel';
 import { SuggestionsPanel } from './SuggestionsPanel';
+import { TablesPanel } from './TablesPanel';
 import './modeler.css';
 
 /** Edits are saved as a draft this long after the last one (as workflow drafts are, decision log 2026-11-21). */
@@ -202,7 +203,8 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
         <PacksPanel s={s} />
       </div>
       <StandingPolicyPanel s={s} />
-      <ModelsPanel />
+      {s.template.key === 'tool_fleet' && <TablesPanel s={s} />}
+      {currentAccount()?.role !== 'Finance' && <ModelsPanel />}
       {describing && <DescribeDialog org={s.org} prompts={[]} onClose={() => setDescribing(false)} />}
     </>
   );

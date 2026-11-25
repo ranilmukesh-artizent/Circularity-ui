@@ -31,7 +31,10 @@ NAME = "Device recommerce"
 _PACK = load_pack("device")
 _PARAMS: dict[str, Any] = copy.deepcopy(_PACK.valuer.params)
 DCH: list[str] = _PARAMS["dch"]  # 2329
-DCN: dict[str, str] = _PARAMS["dcn"]  # 2330
+DCN: dict[str, str] = _PARAMS["dcn"]
+# The channels of a Recover device case (a lot with an `imei`, P9-6.4): the pack's `recover_channels`, the ones the valuer can
+# price today. A PO lot (no imei) keeps DCH.
+RECOVER: list[str] = _PARAMS["recover_channels"]  # 2330
 # Channel settings (2332): fee share, fixed fee, logistics per unit, listing window in days, maximum lot size.
 DCFG: dict[str, dict[str, float]] = _PARAMS["dcfg"]
 # Channel learning per grade, age band and channel (2333): [lots sold, sell-through, days to sell, price index, return rate].
@@ -140,10 +143,16 @@ def in_scope(lot: Lot, s: dict[str, Any]) -> bool:  # dIn (2345)
     return not (s.get("qtyMin") not in (None, "") and lot["qty"] < float(s["qtyMin"]))
 
 
+def channels_for(lot: Lot) -> list[str]:
+    """The channels a lot is scored on (P9-6.4): `DCH` for a PO lot (no `imei`: today's numbers), the pack's Recover list
+    for a received device. The channel list is the only switch between the two kinds of case."""
+    return list(RECOVER if lot.get("imei") else DCH)
+
+
 def decide(lot: Lot, rules: Sequence[Rule] | None = None) -> Decision:
     """dDecide (2347): rules in order; a prefer rule wins when within 15% of the best score; rules that would leave no
-    channel are waived. `rules` defaults to the published flow's rules."""
-    values = [score(lot, k) for k in DCH]
+    channel are waived. `rules` defaults to the published flow's rules. Only `channels_for(lot)` are scored."""
+    values = [score(lot, k) for k in channels_for(lot)]
     keep = [v["ok"] for v in values]
     pref = None
     for r in LIVE_RULES if rules is None else rules:

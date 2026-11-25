@@ -306,6 +306,7 @@ class Pack(_Part):
     unit: str
     author_role: str
     prefix: str
+    owner: str | None = None  # the programme's owner org: a contract line owned by another org is refused (P9-3.6)
     industry: str
     regions: list[str]
     legal_review: LegalReview
@@ -338,6 +339,7 @@ class Pack(_Part):
     replay: Replay
     # 11 runtime
     runtime: Runtime
+    roles: dict[str, str] = Field(default_factory=dict)  # business role label -> app role an item routes to (P9-3.6)
     # 12 KPIs
     kpis: list[Kpi]
     analytics: list[AnalyticsQuestion]
@@ -376,7 +378,7 @@ PACK_PARTS: dict[int, str] = {
 }  # fmt: skip
 FIELD_PART: dict[str, int] = {
     **dict.fromkeys(
-        ("key", "name", "version", "unit", "author_role", "prefix", "industry", "regions", "legal_review",
+        ("key", "name", "version", "unit", "author_role", "prefix", "owner", "industry", "regions", "legal_review",
          "data_licence", "flows"), 1),
     **dict.fromkeys(("prompts", "clarify"), 2),
     **dict.fromkeys(("classes", "grades"), 3),
@@ -388,6 +390,7 @@ FIELD_PART: dict[str, int] = {
     "valuer": 9,
     "replay": 10,
     "runtime": 11,
+    "roles": 11,
     **dict.fromkeys(("kpis", "analytics"), 12),
     "stories": 13,
     "fraud": 13,

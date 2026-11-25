@@ -2,3 +2,18 @@
 
 | Date | Plan · step | Commit | Gate | Result |
 |---|---|---|---|---|
+| 2026-11-25 | 09 · P9-6.1 device mocks for registry, lab and market | this commit | lead-verify: migrate, restart, lint ok, web 379 passed; source-sim device_mocks+generic_specs+registry+windchill+health 60 passed | done |
+| 2026-11-25 | 09 · P9-3.1 fleet contract and repair log mocks with adapters | this commit | lead-verify: lint ok, web 379; api adapter_fleet_contracts+adapter_repair_log+canonical_schema+adapter_windchill 23 passed; source-sim 8 files 98 passed | done |
+| 2026-11-25 | 09 · P9-3.2 recall, telematics and parts mocks with adapters | this commit | writer wt-check all passed (lint), source-sim 108 passed; lead batch verify after the WSL restart | done |
+| 2026-11-25 | 09 · P9-3.3 rated life and end of parts for tool classes in PLM | this commit | writer wt-check all passed, source-sim windchill 9 passed; lead batch verify after the WSL restart | done |
+| 2026-11-25 | 09 · P9-3.4 tool returns open cases from the contract feed | this commit | writer wt-check all passed (tf_intake, case_intake); lead batch verify after the WSL restart | done |
+| 2026-11-25 | 09 · P9-4.1 service desk mocks with repair history and offers | this commit | writer wt-check all passed, source-sim 41 passed; lead batch verify after the WSL restart | done |
+| 2026-11-25 | 09 · P9-3.5 workbench grade on the tool fleet case panel | this commit | writer wt-check all passed (tf_grade, valuer_tool_fleet, case_intake, screens_any_template, tf_intake, gate_hold; tsc, vitest, eslint); lead verify follows with P9-6.2 | done |
+| 2026-11-25 | 09 · P9-6.2 device data tables, registry and lab adapters | this commit | writer: 40 passed on a temporary source-sim (device_sources, device_wipe_sim, canonical_schema, models_migrations, pack_format), lint ok; lead verify follows | done |
+| 2026-11-25 | 09 · P9-6.3 device market adapter | this commit | writer wt-check all passed (device_market_source, device_sources; lint); lead verify follows | done |
+| 2026-11-25 | 09 · P9-4.2 per-market decision tables with maker-checker | this commit | writer wt-check all passed: 67 passed (market_tables, models_migrations, policy_orgs, modeler_templates, screens_modeler, audit_fixes), vitest 403, tsc, eslint; lead verify follows | done |
+| 2026-11-25 | 09 · P9-6.4 one case per received device | this commit | writer wt-check: 123 passed, 1 failed (template_e2e[tool_fleet], the P9-3.5 regression, fixed separately), lint, tsc, vitest, eslint ok; lead verify follows | done |
+| 2026-11-25 | 09 · P9-3.6 contract right gate GR-07 | this commit | writer wt-check all passed (117 tests incl. gates, contract_entitlement, decide_case, po_golden, template_e2e; tsc, vitest 411, eslint); lead verify follows | done |
+| 2026-11-25 | 09 · P9-5.1 refresh case per contract entering the window | this commit | writer wt-check: 89 passed, 2 failed (test_workflow_open_case, the known fresh-database pair), lint, tsc, vitest, eslint ok; lead verify follows | done |
+| 2026-11-25 | 09 · P9-6.5 verify the device against the quote | this commit | writer wt-check: 81 passed (device_verify, intake, gates, guardrail_types, templates, pack_format, process_layer, gate_hold, paths_agree_device), ported onto the head: 74 passed; lead verify follows | done |
+| 2026-11-25 | 09 · P9-6.6 blacklist and lock gate for devices | this commit | writer wt-check: 71 passed (device_lock_gate, verify, intake, gates, pack_format, guardrail_types, templates, paths_agree_device; lint, tsc, vitest 476, eslint); lead verify follows | done |

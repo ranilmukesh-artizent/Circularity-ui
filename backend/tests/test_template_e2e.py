@@ -27,7 +27,7 @@ from di.services.modeler.flow import default_flow
 from di.services.modeler.templates import load_template
 from tests import flowkit, starting
 from tests.flowkit import ok, with_rule
-from tests.helpers import call, client, h
+from tests.helpers import call, client, h, tool_case_facts
 
 FACTS = {
     "tool_fleet": {"cls": "CMH", "grade": "B", "ft": "Repair center", "site": "Houston", "rul": 62},
@@ -62,14 +62,20 @@ def _paths(t: str) -> list[str]:
     return list(load_template(t).path_ids())
 
 
+def _facts(template: str, asset: str) -> dict[str, Any]:
+    """The template's facts; a tool has an active contract line on file (GR-07, P9-3.6)."""
+    return tool_case_facts(asset, FACTS[template]) if template == "tool_fleet" else FACTS[template]
+
+
 @pytest.mark.parametrize("template", list(FACTS))
 def test_template_case_end_to_end(template, sending):
     ok(call("org.setPilot", {"org_unit_id": ORG, "on": True}, "admin"))
     before = ok(call("org.pilotReport", {"org_unit_id": ORG}, "admin"))
 
     # 1. Admin opens the case
-    opened = ok(call("case.open", {"org_unit_id": ORG, "template_key": template, "asset_key": f"T-E2E-{template}",
-                                   "reason": "contract_end", "facts": FACTS[template]}, "admin"))  # fmt: skip
+    asset = f"T-E2E-{template}"
+    opened = ok(call("case.open", {"org_unit_id": ORG, "template_key": template, "asset_key": asset,
+                                   "reason": "contract_end", "facts": _facts(template, asset)}, "admin"))  # fmt: skip
     cid, first = opened["case_id"], opened["recommendation"]
     assert opened["template"] == template and opened["stage"] == "awaiting_approval" and first in _paths(template)
 
@@ -162,6 +168,8 @@ def imports():
 def _import(template: str, tag: str) -> dict[str, Any]:
     spec = {"template": template, "reason": "lease_end", "org_unit_id": "", "asset_field": "asset_id"}
     body = {"ok": 2, "err": 0, "hash": f"e2e-{template}-{tag}", "rows": ROWS[template], "open_cases": spec}
+    if template == "tool_fleet":  # the tool on the good row has an active contract line (GR-07, P9-3.6)
+        tool_case_facts(ROWS[template][0]["asset_id"], {"cls": "CMH"})
     return ok(call("import.commit", body, "developer"))
 
 
@@ -210,7 +218,7 @@ def test_template_rows_need_an_asset_id(imports):
 @pytest.mark.parametrize("template", list(FACTS))
 def test_template_reevaluation_records_a_shadow_decision(template):
     first = ok(call("case.open", {"org_unit_id": ORG, "template_key": template, "asset_key": f"T-SH-{template}",
-                                  "reason": "contract_end", "facts": FACTS[template]}, "admin"))  # fmt: skip
+                                  "reason": "contract_end", "facts": _facts(template, f"T-SH-{template}")}, "admin"))  # fmt: skip
     cid, rec = first["case_id"], first["recommendation"]
     fid = ok(call("flow.fork", {"template_key": template, "org_unit_id": ORG}, "planner-a"))["flow_id"]
     g = with_rule(default_flow(load_template(template)), "XR-2", "exclude", rec, {})

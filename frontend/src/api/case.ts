@@ -11,6 +11,7 @@
  */
 import type { PackStage } from './analytics';
 import { ApiError, cached, invalidate, ref, withQuery } from './client';
+import type { DeviceView } from './device';
 import type { Reference } from './reference';
 import { fmtDate, fmtDateYear, fmtNumber, money } from './format';
 import { bump, onSessionChange } from './store';
@@ -45,7 +46,7 @@ export interface GateHold { gates: string[]; since: string; batch: string | null
 export interface RequiredStep { gate: string; step: string; owner: string }
 export interface BatchStatus { ref: string; total: number; held: number; released: number }
 export interface CaseRec {
-  id: string; owner: string; location: string; assetId: string; product: string; mfr: string; cls: string; qty: number; age: number;
+  id: string; owner: string; template?: string; location: string; assetId: string; product: string; mfr: string; cls: string; qty: number; age: number;
   received: string; stage: string; grade?: string; condition: string; assessment: string; engLife: string; nextInspection?: string;
   horizon?: string; timing?: string; model?: string; kind?: string; facts?: string[]; predictions?: Prediction[] | null;
   spec?: Record<string, string>; demand?: { site?: string; lease?: string; parts?: boolean; internal?: boolean; confirmed?: boolean } | null;
@@ -60,6 +61,8 @@ export interface CaseRec {
   evidence: Evidence[];
   gates?: GateRow[]; gateHold?: GateHold | null; requiredSteps?: RequiredStep[]; batch?: BatchStatus | null;
   snapshot?: { id: string; items?: number } | null;
+  /** A case opened from a received device or a bulk lot of devices (P9-6.4); read it with `deviceView` (device.ts). */
+  device?: DeviceView;
 }
 
 // ---------- stages ----------

@@ -1,5 +1,5 @@
 """The gate catalogue and its evaluation (plan 9, P9-1.2; research B section 5). Implements registry entry I-2:
-`GateDef`, `GateEffect`, `GateResult`, `evaluate_gates`, the catalogue `packs/gates.catalogue.json` (41 gates).
+`GateDef`, `GateEffect`, `GateResult`, `evaluate_gates`, the catalogue `packs/gates.catalogue.json` (42 gates).
 
 A gate is data: a type (Compliance, Data quality, ...), a stage, a trigger (which route classes, which case facts), the
 evidence it needs and its effect (block routes, require a step, require approval, block the close). A pack lists the
@@ -111,7 +111,7 @@ CHECKS: dict[str, Check] = {}
 
 @cache
 def catalogue() -> dict[str, GateDef]:
-    """The 41 gates of `packs/gates.catalogue.json`, by id, in file order. Cached: treat as read-only."""
+    """The 42 gates of `packs/gates.catalogue.json`, by id, in file order. Cached: treat as read-only."""
     rows = json.loads((PACKS_DIR / "gates.catalogue.json").read_text(encoding="utf-8"))
     return {g.id: g for g in (GateDef.model_validate(r) for r in rows)}
 
@@ -206,3 +206,7 @@ def apply_gate_results(routes: list[Route], results: Sequence[GateResult]) -> No
         for r in routes:
             if r["id"] in res.effect.routes and not r["excluded"]:
                 fail(r, POLICY, f"{catalogue()[res.gate_id].name}: {res.reason}")
+
+
+# a gate whose logic lives in a valuer module registers its check on import (`CHECKS`); that module imports this one
+from di.services.modeler.valuers import fleet_evidence as _fleet_evidence  # noqa: E402,F401

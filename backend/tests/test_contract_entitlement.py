@@ -28,8 +28,16 @@ def _rec(type: str, value: dict[str, Any], source: str = "lease-system", at: str
     return {"type": type, "source": source, "at": at, "result": "pass", "value": value}
 
 
+LINE = {"lineId": "FL-1", "serial": "CMH-1", "status": "active", "ownerOrg": "Fleet North America"}
+
+
 def _case(*records: dict[str, Any]) -> dict[str, Any]:
-    return {"id": "RT-9011", "cls": "CMH", "template": "tool_fleet", "evidenceRecords": list(records)}
+    """A tool-fleet case with an active contract line on file (GR-07, G-CON-2, passes), and these records."""
+    return {"id": "RT-9011", "cls": "CMH", "template": "tool_fleet", "evidenceRecords": [_rec("contract_line", LINE), *records]}
+
+
+def _row(case: dict[str, Any], gate_id: str) -> dict[str, Any]:
+    return next(g for g in case["gates"] if g["id"] == gate_id)
 
 
 def _routes() -> list[dict[str, Any]]:
@@ -62,14 +70,14 @@ def test_x_11_gate_is_in_the_pack_and_catalogue_as_specified():
     assert g.trigger.routes == "any" and g.owner == "Customer operations"
     assert [(c.fact, c.op) for c in g.trigger.when] == [("evidence.contract_clause.restricts", "exists")]
     assert g.evidence == ["customer_consent"] and g.effect.kind == "block" and g.effect.hold_until_evidence is False
-    assert [r.id for r in load_pack("tool_fleet").gates if r.active] == ["G-CON-1"]
+    assert [r.id for r in load_pack("tool_fleet").gates if r.active] == ["G-CON-1", "G-CON-2"]
 
 
 def test_x_11_clause_and_source_on_case():
     case = _case(_rec("contract_clause", CLAUSE, source="lease-system"))
     _apply(case)
-    (row,) = case["gates"]
-    assert row["id"] == "G-CON-1" and row["passed"] is False and row["reason"] == BLOCKED
+    row = _row(case, "G-CON-1")
+    assert row["passed"] is False and row["reason"] == BLOCKED
     (clause,) = row["evidence"]
     assert clause["type"] == "contract_clause" and clause["source"] == "lease-system" and clause["at"] == AT
     assert clause["value"] == CLAUSE
@@ -93,7 +101,7 @@ def test_x_11_restricts_every_class_it_names():
 def test_x_11_consent_passes_with_reference():
     case = _case(_rec("contract_clause", CLAUSE), _rec("customer_consent", {"ref": "CONS-88"}, source="crm"))
     routes = _apply(case)
-    (row,) = case["gates"]
+    row = _row(case, "G-CON-1")
     assert row["passed"] is True and row["reason"] == "Consent on file: CONS-88."
     assert {e["type"] for e in row["evidence"]} == {"contract_clause", "customer_consent"}
     assert all(not r["excluded"] for r in routes)  # resell is eligible
@@ -102,21 +110,22 @@ def test_x_11_consent_passes_with_reference():
 def test_x_11_clause_without_restricted_class_blocks_nothing():
     case = _case(_rec("contract_clause", CLAUSE | {"restricts": []}))
     routes = _apply(case)
-    assert all(not r["excluded"] for r in routes) and not case.get("gates")
+    assert all(not r["excluded"] for r in routes) and [g["id"] for g in case["gates"]] == ["G-CON-2"]
 
 
 def test_x_11_clause_after_as_of_does_not_gate():
     case = _case(_rec("contract_clause", CLAUSE, at="2026-12-01T00:00:00+00:00"))
     routes = _apply(case)
-    assert all(not r["excluded"] for r in routes) and not case.get("gates")
+    assert all(not r["excluded"] for r in routes) and [g["id"] for g in case["gates"]] == ["G-CON-2"]
 
 
 def test_x_11_no_clause_no_change():
     case = _case()
     routes = _apply(case)
     assert all(not r["excluded"] for r in routes)
-    assert not {"gates", "gateHold", "requiredSteps", "evidence"} & set(case)
-    assert evaluate_gates({"cls": "CMH"}, load_pack("tool_fleet")) == []
+    assert not {"gateHold", "requiredSteps", "evidence"} & set(case) and [g["id"] for g in case["gates"]] == ["G-CON-2"]
+    # no clause, no G-CON-1; the contract right (G-CON-2) is the only gate of a case with no line, and it fails
+    assert [(r.gate_id, r.passed) for r in evaluate_gates({"cls": "CMH"}, load_pack("tool_fleet"))] == [("G-CON-2", False)]
 
 
 def _facts(key: str, type: str, value: dict[str, Any]) -> list[Fact]:

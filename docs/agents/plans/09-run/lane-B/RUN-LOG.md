@@ -4,3 +4,58 @@ One line per event, newest last, times from `date`.
 
 | Time | Event |
 |---|---|
+| 2026-11-25 17:31 | Lane B started on feature/plan-09-lane-b from origin/feature/plan-09-recover (bf3b967); branch pushed. |
+| 2026-11-25 17:31 | Decision: 2 writers, not 3. The Docker VM has 8 GB (host 15.7 GB); raising it to 11 GB was refused by the session's permission check. |
+| 2026-11-25 17:31 | Decision: writers use manual worktrees C:/Users/mahizhans/Documents/circ-wt/w<k> (branches lane-b-w<k>). The Agent tool's worktree isolation refuses here (drive-letter case), so it is not used. Machine notes for writers: lane-B/MACHINE.md. |
+| 2026-11-25 17:31 | Dispatch P9-3.1 to w1 (sonnet), P9-6.1 to w2 (sonnet). |
+| 2026-11-25 17:39 | P9-6.1 returned by w2 (fca1306). Decision: P9-3.21 parked in blocked.txt, since its Depends on (P9-3.6 ... P9-3.20) is not met although plan-next shows it ready. |
+| 25 Nov 12:19 | P9-6.1 merged. bids gain buyerStatus (B05 unverified); /_sim/systems lists extras (windchill test 21+extras) |
+| 2026-11-25 17:49 | Merged P9-6.1 as a293b6d and pushed (lead-verify ok, web 379, source-sim 60 passed). Nothing else ready until P9-3.1 lands (shared logic files). |
+| 25 Nov 12:51 | P9-3.1 merged. EXTRA_SYSTEMS merged with P9-6.1 (both kept); 332 lines (320 + 12 BAT) |
+| 2026-11-25 18:21 | Merged P9-3.1 (w1 5e8e1e2); conflict in registry.py and test_generic_specs.py, kept both. lead-verify ok, api 23, source-sim 98 passed. |
+| 2026-11-25 18:21 | Dispatch P9-3.2 to w1, P9-3.4 to w2 (sonnet). |
+| 2026-11-25 18:54 | Fix: plan-next.py read 'Depends on' only to the end of its first line (wrapped lists were ignored) and did not expand 'P9-a.b ... P9-a.c' ranges; both fixed. P9-3.21 back from blocked (now correctly waits). |
+| 2026-11-25 18:54 | Decision (person asked for maximum parallelism): PLAN_DEPS_ONLY=1 for lane B. Phases 4 and 5 start on their tasks' own Depends on, not the whole previous phase; 'the Phase N task that ...' keeps phase N. Logic files are ordered within a track (tool fleet 3-5, device 6). 4 writers, wt-check runs take two slot locks (/tmp/wt-slot-0/1.lock). |
+| 2026-11-25 18:54 | Dispatch P9-3.3 to w3, P9-4.1 to w4 (sonnet). |
+| 2026-11-25 18:56 | Merged origin/feature/plan-09-recover (9 commits: P9-2.11, 2.12, 2.13, 2.18, 2.22, 8.1, plan-next fixes) as dc48cb2. Took lane A's Depends-on parsing fix and dropped mine; kept PLAN_DEPS_ONLY on top. |
+| 2026-11-25 19:00 | P9-3.2 returned by w1 (7ce1748; cherry-picked as e815a69 for the next base); waits for the suite to finish before merge. Dispatch P9-6.2 to w1 on top of e815a69. |
+| 2026-11-25 19:05 | P9-3.4 returned by w2 (eca5d15); waits for merge (check test_workflow_open_case on the main stack). Dispatch P9-3.5 to w2 on top of P9-3.2 + P9-3.4. |
+| 2026-11-25 19:50 | Suite after the lane A merge: shard 1 2027 passed; shard 2 2249 passed, 2 failed (test_ask_chain: empty chain, chain of two; llm_model rows, suspected order dependence); lint ok, web 395. Re-run alone after the restart. |
+| 2026-11-25 19:50 | P9-3.3 returned by w3 (08ff72e). Nothing ready for w3: each remaining task waits on P9-3.5, P9-4.1 or P9-6.2. Decision (person asked): WSL memory to 11 GB, restart when the check locks are held. |
+| 2026-11-25 19:55 | P9-4.1 returned by w4 (7bd11ff). Dispatch P9-4.2 to w4 on top of it; the lead adds zen-engine==2.1.8 to the locks with the WSL restart rebuild. |
+| 2026-11-25 19:58 | Merged origin/feature/plan-09-recover again (P9-2.14, 2.19, 8.8, 8.12, 8.17, phase 8 libraries) as 7324e9e and pushed, at the person's request. The lane is level with lane A. P9-3.21 waits through plan-next (lane A's range fix), not blocked.txt. Images rebuild at the WSL restart. |
+| 2026-11-25 20:01 | Decision: zen-engine pinned at 2.1.7, not the spec's 2.1.8 (released 2026-11-20, under two weeks). Writer 4 told. |
+| 25 Nov 14:34 | P9-3.2 merged. closed recall RC-2026-009 added; 30 serials without telematics |
+| 25 Nov 14:34 | P9-3.3 merged. tool rows after the 48 industrial parts; illustrative rated lives for four classes |
+| 25 Nov 14:34 | P9-3.4 merged. x_case gains reason_field and facts; smoke-p9-3 step 1 written, runs at the gate |
+| 25 Nov 14:34 | P9-4.1 merged. sdesk reads New tickets only (40); 60-month nominal life |
+| 2026-11-25 20:09 | Committed P9-3.2, 3.3, 3.4, 4.1 (one commit each, from the writers' commits); batch verify after the restart. WSL restarted with 11 GB (person's go-ahead); check locks held while the images rebuild (phase 8 libraries, zen-engine). |
+| 2026-11-25 20:32 | P9-6.2 returned by w1 (dd5b3a1); sent back: dvlab landed rows in map() (a dry run would write); move to the reader via client.session as P9-4.1, and mark the mock-changing wipe test. P9-3.5 returned by w2 (d762559). Dispatch P9-6.3 to w3 (on 6.2) and P9-3.6 to w2 (on 3.5). |
+| 2026-11-25 20:49 | P9-6.2 fixed by w1 (cd95b5f): dvlab lands rows from the reader via client.session; dry-run test added; the wipe-in-mock test moved to serial-only test_device_wipe_sim.py. w1 idle: nothing ready until P9-6.3, 3.6, 3.7 or 4.2. |
+| 25 Nov 15:24 | P9-3.5 merged. grade_of takes now (pure core); evidence type in tool_fleet.json data.mappings; smoke step 1 org kind company |
+| 25 Nov 15:24 | P9-6.2 merged. dvlab lands rows from the reader (dry run writes nothing); evidence types in valuer.params; wipe test serial-only |
+| 2026-11-25 21:08 | Verify P9-3.5 + P9-6.2: api 93/94 (test_device_sources 589 != 588: a wipe left in the main dvlab mock by w1's earlier runs); after /_sim/reset?system=dvlab, device_sources + device_wipe_sim 13 passed; lint ok, web 407, source-sim 13 passed. Pushed. |
+| 25 Nov 15:38 | P9-6.3 merged. dvmkt lands rows from the reader (dry run writes nothing); replacement_demand cannot filter by date (no raised-at column) |
+| 2026-11-25 21:09 | Committed P9-6.3 (w3 a812941) as ed81659, verify batched with the next merge. Dispatch P9-6.4 to w1. |
+| 2026-11-25 21:10 | P9-4.2 returned by w4 (6163dc1; stacked as c7aa20b, forbidden.py merged with P9-8.17's line). Dispatch P9-5.1 to w3 on top of it. |
+| 25 Nov 15:45 | P9-4.2 merged. zen-engine 2.1.7; tables under valuer.params.market_tables, seeded on first read; Finance sees Modeler |
+| 2026-11-25 21:55 | P9-6.4 returned by w1 (af07a1d). It found a regression from P9-3.5: test_template_e2e::test_import_rows_open_template_cases[tool_fleet] (grade None vs B), which my 3.5 verify did not include. Fix sent to w4 as its own commit. Dispatch P9-6.5 to w1 on top of 6.4. |
+| 2026-11-25 22:05 | Regression fix returned by w4 (c536518): regrade.apply keeps the estimate as the valuer grade when no workbench record exists. w4 idle (P9-4.3 waits for P9-3.6/3.7). |
+| 2026-11-25 22:06 | Suite (N=2) after P9-4.2: shard 1 2104 passed 1 failed, shard 2 2323 passed 3 failed: template_e2e[tool_fleet] (fixed, c536518), fx_rate seed (P9-4.1 GBP/AUD rows), models_screen_refused[finance] (P9-4.2 gave Finance the modeler page), migrations round trip (connection killed by administrator command, writers' DB drops; re-run alone). Fixes 2 and 3 to w4. P9-4.2 not pushed until green. |
+| 25 Nov 16:36 | P9-6.4 merged. no model step (intake reads no text); bulk lot keeps the four PO channels; .importlinter gains two ignores |
+| 2026-11-25 22:15 | P9-5.1 returned by w3 (04d331d); its 2 test_workflow_open_case failures are the known fresh-database ones (they need synced asset records), to confirm on the main stack. w3 idle: P9-5.2 needs P9-3.9. |
+| 2026-11-25 22:20 | Verify P9-6.4 + grade fix: api 104 passed, 1 failed (test_tf_grade::view_shows_the_estimate: the module leaves canonical condition rows, so a second run on the main stack sees a workbench grade; test bug from P9-3.5, fix to w3); lint ok, web 423. |
+| 2026-11-25 22:21 | Merged origin/feature/plan-09-recover (11 commits: P9-2.15, 2.20, 2.21, 2.23, 8.2, 8.3, 8.5, 8.9, 8.13, Ask fix), clean. Decision (person asked for speed): three check slots (k mod 3), shorter writer briefs (spec section and patterns, not the whole plan), wider batch checks. |
+| 2026-11-25 22:27 | P9-3.6 returned by w2 (32044f6); stacked on the lane head as 4c2dbdb (test_template_e2e's grade-None expectation dropped: the lane's fix keeps grade B). Dispatch P9-3.7 to w2 and P9-3.8 to w5 (new worktree), both on 4c2dbdb. |
+| 25 Nov 16:58 | P9-3.6 merged. new gate G-CON-2 (G-CON-1 unchanged); Pack.owner and Pack.roles; 14 tests use tool_case_facts |
+| 25 Nov 16:59 | P9-5.1 merged. refresh settings in valuer.params.contract_refresh; refresh_late exception (Fleet desk); job refresh.scan daily |
+| 2026-11-25 22:29 | Committed P9-3.6 (23a03d4) and P9-5.1 (0e7db08; conflicts in intake.py docstring and test_pack_format exception roles, both sides kept). Wide batch verify running (29 api files + 3 sim). |
+| 2026-11-25 22:34 | Fixes returned by w4: 9930d80 (fx seed test expects the 0043 GBP/AUD rows; no demo figure uses them) and f4bcd80 (Models screen 403 for Finance, panel hidden). Merge after the running verify. w4 idle until P9-3.7. |
+| 2026-11-25 22:47 | Wide verify: lint ok, source-sim 22 passed; api: test_mcp_modeler cannot import FORBIDDEN_ACTIONS from di.mcp.policy (lane A's file, same on their branch: reported to lane A); web: 13 tsc errors, the web_node_modules volume lacked @xyflow/react and @dagrejs/dagre (npm ci in the web container). Merged fixes 9930d80, f4bcd80, 0d15904 (w3: test_tf_grade clears its canonical rows). |
+| 2026-11-25 22:56 | Re-verify: web 0 tsc errors, 456 tests after npm ci; 7 test files failed on the di.mcp.policy FORBIDDEN_ACTIONS import (lane A removed it in P9-8.3 and put it back in a later commit). Merged lane A again (P9-8.4, 8.6, 8.10, 8.14) as d1f6e93. P9-6.5 returned by w1 (4a5ebbc); w1 ports it onto the lane head (gate counts with P9-3.6) and then does P9-6.6. |
+| 2026-11-25 23:06 | Pushed d1f6e93 at the person's request (P9-4.2, 6.4, 3.6, 5.1, three fixes, two lane A merges), while the post-merge verify was still running; any failure it finds gets a fix commit. |
+| 2026-11-25 23:09 | Post-merge verify of d1f6e93: api 154 passed, 1 failed (test_alembic_check_finds_no_differences: lane A's 0057 idp_group_map index and 0054 mapping_decision.confidence REAL vs Float; reported to lane A); the 7 FORBIDDEN_ACTIONS import failures are gone; web vitest 471/472, the failure passed on rerun (noEngine timeout). |
+| 2026-11-25 23:10 | Lane A lead confirmed lane B at 13/65 and will fast-forward lane B into recover and run the phase 2 gate. After phase 6, lane B takes phase 10, 11 or 12 tasks, split through inflight.txt. Writers told: check forbidden(id), not startswith(FORBIDDEN_ACTIONS) (AGENT_EXEMPT). |
+| 25 Nov 17:55 | P9-6.5 merged. gate G-DEV-QUOTE (catalogue 43 with G-CON-2); quote_mismatch item; no model step |
+| 25 Nov 17:55 | P9-6.6 merged. G-DEV-LOCK and GR-D7; a received device with no registry check is held; overlay refuses the skip |
+| 2026-11-25 23:35 | Verify P9-6.5 + P9-6.6: device_sources + wipe_sim 13 passed, api 181 passed, lint ok, web ok. Pushed. Hourly sync: nothing new on lane A. |

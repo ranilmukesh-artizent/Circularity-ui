@@ -856,12 +856,12 @@ each story went.
 - [x] P9-2.22 Gates before the queue plan in decide_case
 - [x] P9-2.23 Ask reads workflows and their runs
 - [ ] P9-2.17 Phase 2 gate
-- [ ] P9-3.1 Fleet contract and repair log mocks with adapters
-- [ ] P9-3.2 Recall, telematics and parts mocks with adapters
-- [ ] P9-3.3 Rated life and end of parts for tool classes in PLM
-- [ ] P9-3.4 Tool returns open cases from the contract feed
-- [ ] P9-3.5 Workbench grade on the tool fleet case panel
-- [ ] P9-3.6 Contract right gate GR-07
+- [x] P9-3.1 Fleet contract and repair log mocks with adapters
+- [x] P9-3.2 Recall, telematics and parts mocks with adapters
+- [x] P9-3.3 Rated life and end of parts for tool classes in PLM
+- [x] P9-3.4 Tool returns open cases from the contract feed
+- [x] P9-3.5 Workbench grade on the tool fleet case panel
+- [x] P9-3.6 Contract right gate GR-07
 - [ ] P9-3.7 Safety recall check with quarantine
 - [ ] P9-3.8 Stale telematics guardrail GR-13
 - [ ] P9-3.9 Wear index and remaining life per component
@@ -878,8 +878,8 @@ each story went.
 - [ ] P9-3.20 Fit-for-use threshold owned by Quality
 - [ ] P9-3.21 Paths agree and order invariant for tool returns
 - [ ] P9-3.22 Phase 3 gate
-- [ ] P9-4.1 Service desk mocks with repair history and offers
-- [ ] P9-4.2 Per-market decision tables with maker-checker
+- [x] P9-4.1 Service desk mocks with repair history and offers
+- [x] P9-4.2 Per-market decision tables with maker-checker
 - [ ] P9-4.3 One case per service ticket or batch
 - [ ] P9-4.4 Estimate from similar past repairs
 - [ ] P9-4.5 Estimate accuracy on held-out repairs
@@ -891,7 +891,7 @@ each story went.
 - [ ] P9-4.11 Take-up model learned from past offers
 - [ ] P9-4.12 Service desk browser smoke
 - [ ] P9-4.13 Phase 4 gate
-- [ ] P9-5.1 Refresh case per contract entering the window
+- [x] P9-5.1 Refresh case per contract entering the window
 - [ ] P9-5.2 Keep, like-life swap or upgrade per tool
 - [ ] P9-5.3 Like-life units matched and reserved once
 - [ ] P9-5.4 Refresh proposal priced with fee and renewal odds
@@ -900,12 +900,12 @@ each story went.
 - [ ] P9-5.7 Renewal outcomes recorded and compared
 - [ ] P9-5.8 Paths agree and order invariant for refresh
 - [ ] P9-5.9 Phase 5 gate
-- [ ] P9-6.1 Device mocks for registry, lab and market
-- [ ] P9-6.2 Device data tables, registry and lab adapters
-- [ ] P9-6.3 Device market adapter
-- [ ] P9-6.4 One case per received device
-- [ ] P9-6.5 Verify the device against the quote
-- [ ] P9-6.6 Blacklist and lock gate for devices
+- [x] P9-6.1 Device mocks for registry, lab and market
+- [x] P9-6.2 Device data tables, registry and lab adapters
+- [x] P9-6.3 Device market adapter
+- [x] P9-6.4 One case per received device
+- [x] P9-6.5 Verify the device against the quote
+- [x] P9-6.6 Blacklist and lock gate for devices
 - [ ] P9-6.7 Wipe certificate gate with batch hold
 - [ ] P9-6.8 Payout adjustment within 10 percent
 - [ ] P9-6.9 Price model behind the predictor

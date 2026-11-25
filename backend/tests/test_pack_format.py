@@ -116,7 +116,9 @@ def test_device_template_equals_po_golden():
     t, g = load_template("device"), PO["device"]
     assert t == template_of_pack(load_pack("device"))
     assert [(p.id, p.name) for p in t.paths] == [(p["key"], p["name"]) for p in g["paths"]]
-    assert [(x.id, x.text, x.owner) for x in t.guardrails] == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
+    # GR-D7 (blacklist, P9-6.6) and GR-D13 (quote match, P9-6.5) are plan 9 additions for received devices; the demo has neither
+    guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D13")]
+    assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
     assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
     assert [asdict(r) for r in compile_flow(t, default_flow(t))] == [
         {"id": "DR-01", "scope": {"dohMin": 45}, "action": "exclude", "path": "buynow", "text": "45+ days on hand: never Buy Now"}
@@ -164,8 +166,19 @@ def test_route_classes_and_guardrail_types():
 def test_runtime_and_kpis_of_the_two_packs():
     tf, dv = load_pack("tool_fleet"), load_pack("device")
     # P9-1.10 added not_in_system_of_record and expected_return_missing (both Planner) in front of the five of P9-1.1
-    assert [e.owner_role for e in tf.runtime.exception_types] == ["Planner"] * 3 + ["Engineer", "Approver", "Planner", "Planner"]
-    assert len(dv.runtime.exception_types) == 7 and len(dv.kpis) == 6
+    # no_active_contract belongs to the Fleet desk, which the pack's roles table routes to a Planner (P9-3.6);
+    # P9-5.1 added refresh_late (Fleet desk) at the end
+    assert [e.owner_role for e in tf.runtime.exception_types] == [
+        "Planner",
+        "Planner",
+        "Fleet desk",
+        "Engineer",
+        "Approver",
+        "Planner",
+        "Planner",
+        "Fleet desk",
+    ]
+    assert len(dv.runtime.exception_types) == 9 and len(dv.kpis) == 6  # P9-6.5 quote_mismatch, P9-6.6 blacklist_hit
     assert [k.label for k in tf.kpis][:2] == ["Value recovered per tool", "Days to next use"]
     # P9-1.13 gave three of the six a measure; the other three show "No data yet" until their phase
     assert len(tf.kpis) == 6 and [k.id for k in tf.kpis if k.measure] == ["value_per_tool", "redeploy_rate", "held_by_guardrails"]

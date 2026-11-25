@@ -34,6 +34,7 @@ FORBIDDEN_ACTIONS = (
     "connection.", "registry.release",
     "mapping.answerOwner",  # plan 9 P9-8.4: only the system owner (a person) answers a mapping question
     "compose.sendBack", "compose.approve", "compose.publish",  # plan 9 P9-8.17: a person decides which composition takes effect
+    "marketTable.approve", "marketTable.reject",  # plan 9 P9-4.2: a person decides which rates and tables price a repair (R21)
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
     "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
 )  # fmt: skip
@@ -46,6 +47,8 @@ HELD_FOR_PERSON = (
     "mapping.decide",  # plan 9 P9-8.4: a choice on a suggested mapping is a person's
     "mapping.apply",  # plan 9 P9-8.4: saves the accepted rows as a mapping version
     "standingPolicy.save",
+    "marketTable.save",  # P9-4.2: a rate card or table draft, and its submission, are a person's
+    "marketTable.submit",
 )  # a policy draft is a person's (P9-2.5)
 
 # Reads no agent may call: they handle a secret (step 6 of the pipeline refuses them).

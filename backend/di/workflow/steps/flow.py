@@ -9,6 +9,7 @@ of them happens when ctx.dry.
 """
 
 import json
+import re
 from datetime import UTC, timedelta
 
 from sqlalchemy import text
@@ -39,7 +40,15 @@ KEYS = {
     "x_err": {"action": "action"},
     "x_audit": {"level": "level"},
     "x_pub": {"topic": "topic"},
-    "x_case": {"template": "template", "reason": "reason", "asset": "asset_field", "org": "org_unit_id", "only": "only_if"},
+    "x_case": {
+        "template": "template",
+        "reason": "reason",
+        "asset": "asset_field",
+        "org": "org_unit_id",
+        "only": "only_if",
+        "reason_field": "reason_field",
+        "facts": "facts",
+    },
 }
 
 
@@ -236,6 +245,31 @@ def _only_if(spec: str) -> tuple[str, str] | None:
     return field_.strip(), value.strip()
 
 
+def _reason_spec(spec: str) -> tuple[str, dict[str, str]]:
+    """Reason field's "field" or "field: value=reason, value=reason" as (field, map); no field: ("", {})."""
+    field_, _, pairs = spec.partition(":")
+    out = {}
+    for pair in pairs.split(","):
+        if pair.strip():
+            value, _, reason = pair.partition("=")
+            out[value.strip()] = reason.strip()
+    return field_.strip(), out
+
+
+def reason_of(data: dict, fixed: str, spec: str) -> str:
+    """The reason a record opens its case for: the value of the Reason field through the map (a value the map leaves out
+    is used as it is), else the fixed Reason (no spec, or the record has no value)."""
+    field_, mapping = _reason_spec(spec)
+    value = data.get(field_) if field_ else None
+    return fixed if value in (None, "") else mapping.get(str(value), str(value))
+
+
+def facts_of_record(data: dict, fields: list) -> dict:
+    """The listed record fields as the case's facts, under their snake case names (toolClass -> tool_class); a field the
+    record lacks is left out."""
+    return {re.sub(r"(?<=[a-z0-9])([A-Z])", r"_\1", str(f)).lower(): data[f] for f in fields if data.get(f) not in (None, "")}
+
+
 def _publisher(wf: dict) -> str:
     """Who published the workflow (its newest "Published" history line), else its owner."""
     pub = next((h.get("by") for h in wf.get("hist") or [] if h.get("note") == "Published" and h.get("by")), None)
@@ -253,7 +287,9 @@ def x_case(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
     di.services.cases.intake.open_case as the system, with the workflow's publisher recorded as `by`; the org unit is
     the setting or else the source's. A record whose asset and reason already have a case is skipped (a re-sync, a
     replay), as is one without an asset key; one intake refuses (no asset class ...) is counted with its reason. In a
-    dry run nothing opens: the step says "Would open N cases". The records pass on; side.cases says what happened."""
+    dry run nothing opens: the step says "Would open N cases". The records pass on; side.cases says what happened.
+    Plan 9 (P9-3.4): Reason field ("kind", or "kind: value=reason, ...") takes each record's reason from the record,
+    Facts copies the listed record fields into the case's facts (snake case names); without them it is as before."""
     k = KEYS["x_case"]
     only = _only_if(str(opt(cfg, k["only"], "")))
     field_ = str(opt(cfg, k["asset"], "")).strip()
@@ -273,12 +309,17 @@ def x_case(recs: list[Rec], cfg: dict, ctx: StepCtx) -> StepResult:
     from di.services.actions.registry import ActionError
     from di.services.cases import intake
 
-    base = {"org_unit_id": org, "template_key": opt(cfg, k["template"], "industrial"),
-            "reason": opt(cfg, k["reason"], "rma"), "by": _publisher(ctx.wf or {})}  # fmt: skip
-    for key in keys:
+    base = {"org_unit_id": org, "template_key": opt(cfg, k["template"], "industrial"), "by": _publisher(ctx.wf or {})}
+    fixed, spec, fields = str(opt(cfg, k["reason"], "rma")), str(opt(cfg, k["reason_field"], "")), list(opt(cfg, k["facts"], []))
+    for r in picked:
+        if (key := get(r, field_)) in (None, ""):
+            continue
+        key = str(key)
+        reason = reason_of(r.data, fixed, spec)
+        i = base | {"asset_key": key, "reason": reason} | ({"facts": facts_of_record(r.data, fields)} if fields else {})
         try:
             with ctx.s.begin_nested():
-                cases["opened"].append(intake.open_case(ctx.s, base | {"asset_key": key}, "system")["id"])
+                cases["opened"].append(intake.open_case(ctx.s, i, "system")["id"])
         except ActionError as e:
             if e.code == "duplicate":
                 cases["skipped"] += 1

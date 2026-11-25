@@ -73,7 +73,20 @@ CATALOG_BY_ID = {s.source_id: s for s in CATALOG_SYSTEMS}
 
 # Plan 8 (MVP-9.2): full vendor mocks beyond the demo's sources, for the platform's own stories (a second PLM). Not in
 # SYSTEMS, so the demo's systems and counts stay as they were; /_sim/systems lists them after the demo's.
-EXTRA_SYSTEMS: tuple[System, ...] = (System("plm_wc", "PTC Windchill", "windchill", "vendor", "/Windchill"),)
+EXTRA_SYSTEMS: tuple[System, ...] = (
+    System("plm_wc", "PTC Windchill", "windchill", "vendor", "/Windchill"),
+    # Plan 9 P9-6.1: the device-recommerce mocks (sim/seed/devices.py), generic and synthetic
+    System("dvreg", "Device Registry", "device_registry", "generic-rest", "/device-registry/v1"),
+    System("dvlab", "Device Lab", "device_lab", "generic-rest", "/device-lab/v1"),
+    System("dvmkt", "Device Market", "device_market", "generic-rest", "/device-market/v1"),
+    # Plan 9 P9-3.1: the tool-fleet contract system and the legacy depot repair log, synthetic
+    System("fleet", "Fleet contract system (synthetic)", "fleet", "generic-rest", "/fleet/api/v1"),
+    System("repairlog", "Legacy depot repair log (synthetic)", "repairlog", "generic-rest", "/repairlog/api"),
+    # Plan 9 P9-3.2: the recall register, connected-tool telematics and the parts, stock and trade demand, synthetic
+    System("recall", "Safety recall register (synthetic)", "recall", "generic-rest", "/recalls/api"),
+    System("tooltel", "Connected-tool telematics (synthetic)", "tooltel", "generic-rest", "/tooltel/v2"),
+    System("parts", "Tool service, stock and trade demand (synthetic)", "parts", "generic-rest", "/parts/api"),
+)
 EXTRA_BY_ID = {s.source_id: s for s in EXTRA_SYSTEMS}
 
 # Vendors replaced on purpose (docs/backend-steps.md, B5b). The frontend (index.html data) still shows the old name

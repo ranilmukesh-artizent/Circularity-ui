@@ -2,6 +2,7 @@
 import type { ReactNode } from 'react';
 import type { CaseAnalysis, CaseRec, CaseScreen } from '../../../api/case';
 import * as D from './DecideTabs';
+import { ComplianceTab, DeviceTab, QuoteTab } from './DeviceTabs';
 import * as E from './EarlyTabs';
 import * as X from './ExecuteTabs';
 
@@ -15,7 +16,18 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
     case 2: return [['auth', 'Authorisation', E.AuthTab], ['finance', 'Finance', E.FinanceTab]];
     case 3: return [['route', 'Route', E.LaneTab], ['cost', 'Cost trace', E.LaneCostTab]];
     case 4: return [['evidence', 'Evidence checklist', E.EvidenceListTab], ['location', 'Location', E.LocationTab], ['holding', 'Holding cost', E.HoldingTab]];
-    case 5: return [['findings', 'Findings', E.FindingsTab], ['diag', 'Diagnostic condition', E.DiagTab], ['cert', 'Certified period', E.CertTab], ['photos', 'Photos', E.PhotosTab]];
+    case 5: {
+      const early: TabDef[] = [['findings', 'Findings', E.FindingsTab], ['diag', 'Diagnostic condition', E.DiagTab], ['cert', 'Certified period', E.CertTab], ['photos', 'Photos', E.PhotosTab]];
+      // a received device starts with its Device tab (P9-6.4), then the Quote tab when it has one (P9-6.5)
+      const extra: TabDef[] = c.device
+        ? [
+            ['device', 'Device', DeviceTab],
+            ...(c.device.quoteCheck ? [['quote', 'Quote', QuoteTab] as TabDef] : []),
+            ...(c.device.registry ? [['compliance', 'Compliance', ComplianceTab] as TabDef] : []), // the registry check (P9-6.6)
+          ]
+        : [];
+      return [...extra, ...early];
+    }
     case 6: return [
       ['packet', 'Decision packet', D.PacketTab], ['compare', 'Compare outcomes', D.CompareTab], ['why', 'Why this outcome', D.WhyTab],
       ['evidence', 'Evidence', D.EvidenceTab], ['whatif', 'What-if and edge cases', D.WhatIfTab], ['predicted', 'How it was predicted', D.PredictedTab],

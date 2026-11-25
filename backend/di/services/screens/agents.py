@@ -49,6 +49,7 @@ models; fitModel, proposeModel and promoteModel are model.fit, model.propose and
 
 from typing import Any
 
+from fastapi import HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -166,6 +167,8 @@ MODELS_SQL = (
 
 def models(p: Principal, s: Session) -> dict[str, Any]:
     p.require_any_page(("agents", None), ("modeler", None))
+    if p.account.role == "Finance":  # Finance opens the Modeler for the market tables (P9-4.2), not the model candidates
+        raise HTTPException(403, {"code": "out_of_scope", "message": "Not available for the Finance view."})
     can_fit, can_promote = p.can("manageFlows"), p.can("approve.flows")
     rows = [ModelRow(*r) for r in s.execute(text(MODELS_SQL))]
     active = {t: None for t in TEMPLATE_KEYS} | {m.template: m.id for m in rows if m.status == "active"}

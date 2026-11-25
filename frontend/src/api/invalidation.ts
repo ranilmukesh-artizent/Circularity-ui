@@ -36,7 +36,7 @@ const SCREEN = '/api/screens/';
 const SUB: Record<string, Area> = { 'home/alerts': 'alerts', 'nav/scope': 'scope', 'nav/accounts': 'accounts' };
 const SCREEN_AREAS = new Set<Area>(['home', 'command', 'nav', 'product', 'case', 'orchestration', 'analytics', 'audit', 'integration', 'workflows', 'mcp', 'access', 'reference', 'modeler']);
 /** The read actions the pages cache (cachedAction): case.get and case.evidence on the Case pages, analytics.models. */
-const READ_ACTION_AREA: Record<string, Area> = { 'case.get': 'case', 'case.evidence': 'case', 'analytics.models': 'analytics' };
+const READ_ACTION_AREA: Record<string, Area> = { 'case.get': 'case', 'case.evidence': 'case', 'analytics.models': 'analytics', 'marketTable.list': 'modeler' };
 
 /** The area of a query key (['GET', path] or ['ACT', id, input]), or null when it has none (always invalidated). */
 export function areaOf(key: readonly unknown[]): Area | null {
@@ -114,6 +114,7 @@ const ACTION_FAMILY: Record<string, Scope> = {
   flow: ['modeler', ...CASES], // a decision flow (plan 8): the Modeler, and the case pages that show the rules applied
   overlay: ['modeler', ...CASES], // a customer overlay of a pack (plan 9): the Modeler's Customer layer, and the cases it decides
   pack: ['modeler', ...CASES], // a pack version (plan 9, P9-1.6): the Modeler's Packs panel, and the cases it decides
+  marketTable: ['modeler'], // a per-market rate card or table version (plan 9, P9-4.2): the Modeler's Tables panel
   mcp: [...SUMMARY, 'mcp', 'access'], // mcp.propose: a request for a person, in the inboxes and the MCP page
   access: 'all', // who may see or do what: every page can change
   agent: 'all', // agent.setEnabled: what the agents may do (access)

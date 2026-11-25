@@ -1,1 +1,4 @@
-# Lane B tasks in flight (task id, writer, model, started)
+﻿# Lane B tasks in flight (task id, writer, model, started)
+P9-3.7 w2 sonnet 2026-11-25 22:27
+P9-3.8 w5 sonnet 2026-11-25 22:27
+P9-6.7 w1 sonnet 2026-11-25 23:25

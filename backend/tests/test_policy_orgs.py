@@ -100,7 +100,7 @@ def test_new_permissions():
 
 def test_can_page_modeler():
     seen = {a.id for a in policy.accounts() if policy.can_page(a, "modeler")}
-    assert seen == {"admin", "planner-a", "planner-b", "planner-c", "approver", "executive"}
+    assert seen == {"admin", "planner-a", "planner-b", "planner-c", "approver", "executive", "finance"}  # Finance: P9-4.2
     assert {a.id for a in policy.accounts() if policy.can_page(a, "agents")} == {"admin", "developer"}
     assert {a.id for a in policy.accounts() if policy.can_page(a, "access", "orgs")} == {"admin"}
     assert not policy.can_page(policy.account("planner-a"), "modeler", "anything")

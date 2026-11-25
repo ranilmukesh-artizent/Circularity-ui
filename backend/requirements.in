@@ -22,3 +22,4 @@ rapidfuzz==3.14.6  # P9-2.7: fuzzy matching of names in the configuration agent
 lifelines==0.30.3  # P9-3.10: remaining-life (Weibull) fitting, worker only
 pandas<3  # lifelines needs pandas 2.x (research E 11.7)
 authlib==1.9.5  # P9-8.9: OIDC sign-in beside the demo sign-in (released 2026-11-05)
+zen-engine==2.1.7  # P9-4.2: per-market decision tables (I-15); 2.1.7, as 2.1.8 (2026-11-20) is under two weeks old

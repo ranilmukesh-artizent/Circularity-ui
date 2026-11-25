@@ -104,6 +104,22 @@ def get_test_results(request: Request, conn: Connection):
     return _children(request, conn, t.QA_RESULTS, "collection_id", "get_test_results", "X_TEST_RESULTS")
 
 
+def get_repair_history(request: Request, conn: Connection):
+    """Closed repairs and released refurbishments (plan 9, P9-4.1; history.py). Filters: P_MODEL_CLASS, P_FAULT_CODE,
+    P_DATE_CLOSED_FROM (closed on or after that date); P_LAST_UPDATE_DATE_FROM is the delta."""
+    p = request.query_params
+    h = t.REPAIR_HISTORY
+    stmt = select(h).order_by(h.c.seq)
+    if v := p.get("P_MODEL_CLASS"):
+        stmt = stmt.where(h.c.model_class == v)
+    if v := p.get("P_FAULT_CODE"):
+        stmt = stmt.where(h.c.fault_code == v)
+    if v := parse_ts(p.get("P_DATE_CLOSED_FROM"), "P_DATE_CLOSED_FROM", QUERY, "get_repair_history"):
+        stmt = stmt.where(h.c.date_closed >= v)
+    rows = [{**r.doc, "LAST_UPDATE_DATE": ebs_ts(r.last_update_date)} for r in conn.execute(stmt)]
+    return _page(_changed(rows, _since(p, "get_repair_history")), p, "get_repair_history", "X_REPAIR_HISTORY")
+
+
 # ------------------------------------------------------------------ writes (CSD_REPAIRS_PUB)
 def _error(method: str, msg: str) -> dict:
     return output(PRODUCT, PUB, method, {}, "E", [msg])
@@ -250,6 +266,7 @@ SERVICES = {
         "get_repair_orders": ("GET", get_repair_orders),
         "get_repair_tasks": ("GET", get_repair_tasks),
         "get_test_results": ("GET", get_test_results),
+        "get_repair_history": ("GET", get_repair_history),
     },
     PUB: {"create_repair_order": ("POST", create_repair_order)},
 }

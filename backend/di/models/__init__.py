@@ -31,17 +31,29 @@ from di.models.connectors import (
     sync_run,
     webhook_event,
 )
+from di.models.device import (
+    device_bid,
+    device_dispute,
+    device_launch,
+    device_listing,
+    device_price_point,
+    device_replacement_demand,
+    device_sale,
+    device_tradein,
+)
 from di.models.instructions import instruction
 from di.models.jobs import Job
 from di.models.journal import action_journal, domain_event, stream_event
 from di.models.learning import model_version
 from di.models.llm import llm_budget, llm_model
+from di.models.market_tables import market_table
 from di.models.modeler import decision_flow, decision_flow_version, shadow_decision
 from di.models.org import org_unit
 from di.models.overlay import customer_overlay
 from di.models.packs import pack_version
 from di.models.policy import standing_policy, standing_policy_version
 from di.models.reference import fx_rate
+from di.models.service_desk import refurb_unit, repair_history, service_ticket, upgrade_offer
 from di.models.work import work_item
 from di.models.workspace import state_item, state_seed
 
@@ -64,6 +76,14 @@ __all__ = [
     "decision_flow",
     "decision_flow_version",
     "delegation",
+    "device_bid",
+    "device_dispute",
+    "device_launch",
+    "device_listing",
+    "device_price_point",
+    "device_replacement_demand",
+    "device_sale",
+    "device_tradein",
     "domain_event",
     "failed_record",
     "fetch_log",
@@ -72,12 +92,16 @@ __all__ = [
     "instruction",
     "llm_budget",
     "llm_model",
+    "market_table",
     "metadata",
     "model_version",
     "org_unit",
     "pack_version",
     "provenance",
     "raw_record",
+    "refurb_unit",
+    "repair_history",
+    "service_ticket",
     "shadow_decision",
     "source_connection",
     "source_secret",
@@ -90,6 +114,7 @@ __all__ = [
     "sync_cursor",
     "sync_run",
     "tenant_grant",
+    "upgrade_offer",
     "webhook_event",
     "work_item",
 ]

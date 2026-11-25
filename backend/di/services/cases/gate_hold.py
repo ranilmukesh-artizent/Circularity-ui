@@ -10,8 +10,10 @@ P9-1.2; stories X-03 and X-07). Uses registry entries I-2 (`gates`) and I-3 (`ev
                                valued again; a case that clears is released with a stage log row by `system`
     batch_status(s, ref)       {total, held, released} of the cases opened with the same `facts.batch`
 
-A hold also opens one exception item for the case (`sync_item`, type `evidence_missing`, P9-1.7: My work lists it, the
-pack's SLA escalates it) and a release closes it with the outcome "released".
+A hold also opens one exception item for the case (`sync_item`, type `evidence_missing`, or the type of `EXCEPTION_OF` for
+the gate that holds it: the contract right G-CON-2 opens `no_active_contract` for the Fleet desk, P9-3.6; P9-1.7: My work
+lists it, the pack's SLA escalates it) and a release closes it with the outcome "released". The tool fleet's contract line
+is read with the evidence (`contract_line.evidence`); a later write of the line queues `recheck` (canonical.store.apply).
 
 Owns: those functions and the case keys `evidenceRecords`, `gates` (one row per gate result, as the Case page shows it),
 `gateHold` and `requiredSteps`. Never does: approve anything. A release makes the case decidable again; a person still
@@ -32,7 +34,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
-from di.services.cases import lifecycle, store
+from di.services.cases import contract_line, lifecycle, store
 from di.services.engine.routes import Route
 from di.services.modeler.evidence import evidence_of, label_of, records_of
 from di.services.modeler.gates import GateResult, apply_gate_results, catalogue, evaluate_gates
@@ -45,6 +47,7 @@ _override: ContextVar[PackOf | None] = ContextVar("gate_hold_pack_of", default=N
 # the case's exception item (P9-1.7), once. `apply` has no session of its own (`decide_case` is pure on the case).
 _bound: ContextVar[tuple[Session, str] | None] = ContextVar("gate_hold_session", default=None)
 EVIDENCE_MISSING = "evidence_missing"  # the type of the exception item a hold opens
+EXCEPTION_OF = {"G-CON-2": "no_active_contract"}  # a hold by this gate opens an item of this type instead (P9-3.6)
 CONTRACT_GATE = "G-CON-1"  # the contract entitlement gate (P9-1.11)
 
 
@@ -71,6 +74,8 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
         for d, src in rows
     ]
     _lease_on_clause(s, case.get("assetId"), recs)
+    if case.get("template") == "tool_fleet" and (line := contract_line.evidence(s, case.get("serial") or case.get("assetId"))):
+        recs.append(line)  # the fleet contract line, for GR-07 (P9-3.6)
     if recs or "evidenceRecords" in case:
         case["evidenceRecords"] = recs
     _bound.set((s, str(case.get("id"))))
@@ -109,7 +114,7 @@ def _rows(case: Mapping[str, Any], pack: Pack, results: Sequence[GateResult], as
             "passed": r.passed, "kind": r.effect.kind, "routes": list(r.effect.routes),
             "routeNames": [names[i] for i in r.effect.routes if i in names], "hold": r.effect.hold, "step": r.effect.step,
             "owner": g.owner, "evidence": on_file, "missing": [label_of(t) for t in r.evidence_missing], "reason": r.reason,
-            "locked": g.locked,
+            "locked": g.locked, "guardrail": g.params.get("guardrail"),
         })  # fmt: skip
     return out
 
@@ -212,8 +217,8 @@ def sync_item(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
 
     cid = str(case["id"])
     open_id = s.execute(
-        text("SELECT id FROM work_item WHERE case_id = :c AND type = :t AND status = 'open' ORDER BY id LIMIT 1"),
-        {"c": cid, "t": EVIDENCE_MISSING},
+        text("SELECT id FROM work_item WHERE case_id = :c AND type = ANY(:t) AND status = 'open' ORDER BY id LIMIT 1"),
+        {"c": cid, "t": [EVIDENCE_MISSING, *EXCEPTION_OF.values()]},
     ).scalar()
     held = isinstance(case.get("gateHold"), dict)
     if not held:
@@ -224,12 +229,16 @@ def sync_item(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
         return
     failed = [g for g in case.get("gates") or [] if not g["passed"] and g["hold"]]
     missing = list(dict.fromkeys(m for g in failed for m in g["missing"]))
-    kind = next((t for t in pack.runtime.exception_types if t.id == EVIDENCE_MISSING), None)
-    role = kind.owner_role if kind else process.role_of_owner(failed[0]["owner"] if failed else "")
+    type_id = next((EXCEPTION_OF[g["id"]] for g in failed if g["id"] in EXCEPTION_OF), EVIDENCE_MISSING)
+    kind = next((t for t in pack.runtime.exception_types if t.id == type_id), None)
+    owner = kind.owner_role if kind else (failed[0]["owner"] if failed else "")
+    role = (
+        pack.roles.get(owner, owner) if kind else process.role_of_owner(owner)
+    )  # a business label routes by the pack roles table
     what = ", ".join(missing) or "the evidence"
     process.open_item(
-        s, kind="exception", case_id=cid, org_unit_id=case.get("owner"), type=EVIDENCE_MISSING,
-        title=f"{cid} is held: {what} missing",
+        s, kind="exception", case_id=cid, org_unit_id=case.get("owner"), type=type_id,
+        title=f"{cid} is held: {failed[0]['reason'] if type_id != EVIDENCE_MISSING else what + ' missing'}",
         cause="; ".join(g["reason"] for g in failed if g.get("reason")) or "A gate needs evidence the case does not have",
         action=kind.action if kind else f"Wait for {what} or chase the source system", owner_role=role,
         due_hours=pack.runtime.sla_hours.get("exception"), by="system",

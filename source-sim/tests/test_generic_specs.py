@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import sim.generic.specs as specs_pkg
-from sim.core.registry import BY_SOURCE_ID, CATALOG_BY_ID
+from sim.core.registry import BY_SOURCE_ID, CATALOG_BY_ID, EXTRA_BY_ID
 from sim.generic.spec import Spec, credentials
 from sim.main import app
 from sim.seed import seed
@@ -57,7 +57,7 @@ def list_all(client, spec: Spec, path: str, h: dict, params: dict | None = None)
 
 @pytest.mark.parametrize("spec", SPECS, ids=lambda s: s.source_id)
 def test_spec_matches_the_registry(spec: Spec):
-    sysm = (BY_SOURCE_ID | CATALOG_BY_ID)[spec.source_id]  # a demo source or a catalogue system (plan 6 A3)
+    sysm = (BY_SOURCE_ID | CATALOG_BY_ID | EXTRA_BY_ID)[spec.source_id]  # a demo, catalogue or extra system (plan 6 A3, plan 9)
     assert (spec.schema, spec.base_path, spec.title) == (sysm.schema, sysm.base_path, sysm.vendor)
     data = spec.seed(seed())
     assert set(data) == {r.name for r in spec.resources}

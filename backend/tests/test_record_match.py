@@ -18,7 +18,7 @@ from di.services.canonical.store import Fact
 from di.services.cases import intake, record_match, store
 from di.services.modeler.pack import load_pack
 from tests import starting
-from tests.helpers import client, h
+from tests.helpers import client, h, tool_case_facts
 
 KEYS = ("TF-NOPE-1", "TF-MISS-1", "TF-MOVE-1", "DV-NOPE-1")
 FACTS = {"cls": "CMH", "grade": "C", "ft": "Repair center", "site": "Houston", "rul": 62}
@@ -42,8 +42,9 @@ def fresh():
 
 
 def _open(asset: str, template: str = "tool_fleet", facts: dict[str, Any] | None = None) -> str:
+    given = FACTS if facts is None else facts
     body = {"org_unit_id": "Customer A", "template_key": template, "asset_key": asset, "reason": "manual",
-            "facts": FACTS if facts is None else facts}  # fmt: skip
+            "facts": tool_case_facts(asset, given) if template == "tool_fleet" else given}  # fmt: skip
     with SessionLocal() as s:
         c = intake.open_case(s, body, "planner.a")
         s.commit()

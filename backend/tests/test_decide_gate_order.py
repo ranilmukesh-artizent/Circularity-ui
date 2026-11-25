@@ -54,7 +54,7 @@ def test_gate_blocked_route_never_wins_an_order():
 def test_gate_order_in_trace():
     d = _decide(_case(True), [])
     assert d.trace == ("gates", "valuation", "queue_plan", "rules", "rank")
-    assert [g.gate_id for g in d.gates] == ["G-CON-1"]
+    assert [g.gate_id for g in d.gates] == ["G-CON-1", "G-CON-2"]  # the contract right passes on the sample line (P9-3.6)
 
 
 def test_industrial_decide_unchanged():

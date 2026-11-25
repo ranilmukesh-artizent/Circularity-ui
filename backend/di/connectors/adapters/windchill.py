@@ -14,7 +14,11 @@ source.reconnect connects it. A second instance (plm_wc_2, plm_wc_3 ...) reads w
 
 Facts, keyed per the source's org unit (schema.part_key, bom_key: two org units never collide)
     part.<org>:<Number>                       number, name, revision (Version; the provenance keeps Version.Iteration),
-                                              state (released, in_work, obsolete), unit_cost, org_unit_id
+                                              state (released, in_work, obsolete), unit_cost, org_unit_id; and, when the
+                                              part has them (plan 9, P9-3.3): rated_life_hours, criticality_weight,
+                                              critical, tool_class (soft attributes RatedLifeHours, CriticalityWeight,
+                                              Critical, ToolClass), end_of_parts and successor (EndOfPartsDate,
+                                              SuccessorNumber)
     bom.<org>:<parent>@<revision>><child>     parent, child, qty, parent_revision, harvestable
 ASSUMPTION: a used part is harvestable when it was released (Released or Obsolete); an In Work part is no spare part.
 """
@@ -35,6 +39,10 @@ from di.services.canonical.store import Fact
 PARTS = "/ProdMgmt/Parts"
 STATES = {"RELEASED": "released", "INWORK": "in_work", "OBSOLETE": "obsolete"}
 HARVESTABLE = {"RELEASED", "OBSOLETE"}
+SOFT = {  # canonical field -> the part's soft attribute (P9-3.3); `keep` drops the ones a part does not have
+    "rated_life_hours": "RatedLifeHours", "criticality_weight": "CriticalityWeight", "critical": "Critical",
+    "end_of_parts": "EndOfPartsDate", "successor": "SuccessorNumber", "tool_class": "ToolClass",
+}  # fmt: skip
 
 
 def _org(client: SourceClient) -> str | None:
@@ -107,6 +115,7 @@ class WindchillAdapter(Adapter):
                 Fact("part", key, "state", STATES.get(st or ""), "State", st, "Status map"),
                 Fact("part", key, "unit_cost", p.get("UnitCost"), "UnitCost", p.get("UnitCost"), "Pass-through"),
                 Fact("part", key, "org_unit_id", org, "source org unit", org, "Source binding"),
+                *(Fact("part", key, f, p.get(a), a, p.get(a), "Pass-through") for f, a in SOFT.items()),
             ]
         )  # fmt: skip
 

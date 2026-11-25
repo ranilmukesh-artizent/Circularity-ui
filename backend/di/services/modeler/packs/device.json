@@ -65,49 +65,49 @@
  "stages": [
   {
    "key": "receive",
-   "label": "Return and receive",
+   "label": "Trade-in received",
    "agent": "Intake",
    "autonomy": "alone",
    "confidence": 0.75
   },
   {
    "key": "match",
-   "label": "Match and verify",
+   "label": "Verify against the quote",
    "agent": "Intake",
    "autonomy": "alone",
    "confidence": 0.75
   },
   {
    "key": "condition",
-   "label": "Condition",
+   "label": "Diagnose and grade",
    "agent": "Condition",
    "autonomy": "limits",
    "confidence": 0.75
   },
   {
    "key": "value",
-   "label": "Value each route",
+   "label": "Price by channel",
    "agent": "Valuation",
    "autonomy": "alone",
    "confidence": 0.75
   },
   {
    "key": "decide",
-   "label": "Decide",
+   "label": "Decide the channel",
    "agent": "Routing",
    "autonomy": "limits",
    "confidence": 0.75
   },
   {
    "key": "execute",
-   "label": "Execute",
+   "label": "List and ship",
    "agent": "Follow-through",
    "autonomy": "limits",
    "confidence": 0.75
   },
   {
    "key": "close",
-   "label": "Close and learn",
+   "label": "Settle and learn",
    "agent": "Analytics",
    "autonomy": "alone",
    "confidence": 0.75
@@ -285,9 +285,58 @@
    ],
    "approvers": [],
    "param": null
+  },
+  {
+   "id": "GR-D7",
+   "text": "Blacklist and lock check before any sale",
+   "owner": "Compliance",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": true,
+   "forbids": [],
+   "protects": [
+    [
+     "blacklist|activation lock|lock check|registry check",
+     "skip|without|remove|\\bno\\b"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-D13",
+   "text": "Quote match: the device read must match the quote",
+   "owner": "Customer care",
+   "type": "Data quality",
+   "stage": "match",
+   "locked": false,
+   "forbids": [],
+   "protects": [
+    [
+     "quote match|quote check",
+     "skip|remove|without|\\bno\\b"
+    ]
+   ],
+   "approvers": [],
+   "param": null
   }
  ],
- "gates": [],
+ "gates": [
+  {
+   "id": "G-DEV-LOCK",
+   "params": {
+    "recheck_days": 7,
+    "locked_routes": [],
+    "exception": "blacklist_hit"
+   },
+   "active": true
+  },
+  {
+   "id": "G-DEV-QUOTE",
+   "params": {},
+   "active": true
+  }
+ ],
  "dims": [
   {
    "key": "brand",
@@ -408,7 +457,25 @@
    ]
   },
   "params": {},
-  "sample_diversions": [],
+  "sample_diversions": [
+   {
+    "text": "Quote under $50: skip the blacklist check",
+    "op": {
+     "op": "shortcut",
+     "stage": "receive",
+     "when": [
+      {
+       "fact": "quote.amount",
+       "op": "lte",
+       "value": 49
+      }
+     ],
+     "to": "condition"
+    },
+    "blocked": true,
+    "reason": "Blocked: this skips the compliance guardrail GR-D7 (G-DEV-LOCK), the blacklist and lock check."
+   }
+  ],
   "merge_rule": "stricter_wins"
  },
  "diversions": [],
@@ -457,6 +524,11 @@
     "offers",
     "auction",
     "market"
+   ],
+   "recover_channels": [
+    "buynow",
+    "offers",
+    "auction"
    ],
    "dcn": {
     "buynow": "Buy Now",
@@ -871,7 +943,51 @@
     "retc": 18,
     "ero": 0.013,
     "floor": 0.55
-   }
+   },
+   "evidence_types": [
+    {
+     "id": "quote",
+     "label": "Trade-in quote",
+     "source": "dvlab",
+     "field": "device_tradein.quote",
+     "freshness_days": 7
+    },
+    {
+     "id": "blacklist_check",
+     "label": "Registry check (blacklist, activation lock, finance)",
+     "source": "dvreg",
+     "field": "condition.device_blacklist",
+     "freshness_days": 2
+    },
+    {
+     "id": "diagnostics",
+     "label": "Diagnostics (IMEI, model and storage read, battery, functional tests)",
+     "source": "dvlab",
+     "field": "condition.imei_read",
+     "freshness_days": 30
+    },
+    {
+     "id": "photo_grade",
+     "label": "Cosmetic grade with photos",
+     "source": "dvlab",
+     "field": "condition.cosmetic_grade",
+     "freshness_days": 30
+    },
+    {
+     "id": "wipe_certificate",
+     "label": "Data-wipe certificate",
+     "source": "dvlab",
+     "field": "condition.wipe_certificate",
+     "freshness_days": null
+    },
+    {
+     "id": "parts_declaration",
+     "label": "Parts declaration",
+     "source": "dvlab",
+     "field": "condition.parts_status",
+     "freshness_days": null
+    }
+   ]
   },
   "carbon": {
    "set": "cfs-2026.2",
@@ -919,6 +1035,18 @@
     "label": "Auction reserve not met",
     "owner_role": "Planner",
     "action": "Compare the cost of holding with a lower reserve"
+   },
+   {
+    "id": "blacklist_hit",
+    "label": "Blacklist or lock check hit",
+    "owner_role": "Approver",
+    "action": "Hold the device; release only with a newer registry check"
+   },
+   {
+    "id": "quote_mismatch",
+    "label": "Device read differs from the quote",
+    "owner_role": "Planner",
+    "action": "Accept a re-quote or return the trade-in"
    },
    {
     "id": "wholesale_lot_over_limit",

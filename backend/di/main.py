@@ -19,6 +19,7 @@ import di.services.actions.group_map  # registers action handlers (access.saveGr
 import di.services.actions.integration  # registers action handlers
 import di.services.actions.lifecycle  # registers transit.flagDelay (plan 9 P9-2.20)
 import di.services.actions.llm  # registers action handlers (llm.models, llm.setModel; plan 9)
+import di.services.actions.market_tables  # registers action handlers (marketTable.*: per-market tables; plan 9)
 import di.services.actions.modeler  # registers action handlers (flow.*: the decision flow lifecycle; plan 8)
 import di.services.actions.modeler_suggest  # registers action handlers (flow.suggestions; plan 8)
 import di.services.actions.models  # registers action handlers (model.fit, model.promote; plan 8)

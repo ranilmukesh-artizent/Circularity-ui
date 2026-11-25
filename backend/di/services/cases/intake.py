@@ -31,6 +31,19 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   there, and `custody` (received on open, matched, moved, released when a gate hold clears), append-only.
 - **Dedupe** (Review Focus 5). The same asset key and reason open one case: a second intake (a webhook replay, a
   re-sync, an import read twice) is refused with `duplicate`. The action's idempotency key is the same pair.
+- **Tool returns** (plan 9, P9-3.4). The contract feed's returns open tool-fleet cases with the reasons `contract_end`,
+  `swap`, `service_order`, `pool_excess` (`RETURN_FT`): `tool_return_facts` gives the case `cls`, `serial`, `ft`, `flow`
+  `returns`, with `contract_id` and `line_id` kept on the case. The same serial with another reason is another case.
+- **Workbench grade** (plan 9, P9-3.5). A tool-fleet case's valuer reads the repair log's graded `condition` of the serial
+  when it has a test result (`regrade.apply`, on opening and on every re-check); otherwise its own estimate, labelled so.
+- **Received devices** (plan 9, P9-6.4). A `trade_in` device intake with an `imei` (and no `ref`) is built by
+  `di.services.device.intake.device_case` from the trade-in on file: the feed price as the reference value, the cosmetic
+  grade when graded; the valuer snapshot keeps the IMEI, quote, partner and the gathered inputs (`device.inputs`). The lab
+  adapter's hook (`device.intake.open_from_tradein`) calls this `open_case`; a bulk batch comes as a PO-shaped lot.
+- **Contract refresh** (plan 9, P9-5.1). The reason `contract_refresh` opens a refresh case for a contract (asset key the
+  contract id, `facts` the flow `contract_refresh`, `term_end`, `market`, `lines`: kept as `refresh`); `dedupe_as` names
+  the dedupe key's asset (`<contractId>@<endDate>`, once per term). It is valued by no valuer yet (no routes, stage
+  `none`), has no system-of-record match and stays out of the tool queue.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
 
 The case reads (live rules, the active model, PLM) sit above the case store; this is the one place a case is opened from
@@ -56,8 +69,12 @@ from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
-from di.services.cases import decide, gate_hold, named_demand, record_match, store
+from di.services.cases import decide, gate_hold, named_demand, record_match, regrade, store
 from di.services.cases.lifecycle import STAGES
+from di.services.device import inputs as device_inputs
+from di.services.device import intake as device_intake
+from di.services.device import lock as device_lock
+from di.services.device import verify as device_verify
 from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
 from di.services.engine.queue import Capacity, Dem, planner_for
@@ -68,7 +85,19 @@ from di.services.modeler.templates import TEMPLATE_KEYS
 from di.services.modeler.valuers import amount, device, tool_fleet
 from di.services.modeler.valuers.rng import mulberry32
 
-REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual")
+REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap", "service_order", "pool_excess",
+           "contract_refresh")  # fmt: skip
+REFRESH_FLOW = "contract_refresh"  # the flow of a refresh case (P9-5.1): opened for a contract, not valued as a return
+
+
+def is_refresh(c: Mapping[str, Any]) -> bool:
+    """Whether the case is a contract refresh (P9-5.1): it has no tool class and no route yet."""
+    return c.get("flow") == REFRESH_FLOW
+
+
+# the tool fleet's return kinds (P9-3.4) and the function each goes to: also the reasons of the contract feed's returns
+RETURN_FT = {"contract_end": "Fleet management", "swap": "Fleet management", "service_order": "Repair center",
+             "pool_excess": "Tool pool"}  # fmt: skip
 IMPORTED_VALUERS = ("tool_fleet", "device", "standard")  # valuers an imported pack (a key beyond TEMPLATE_KEYS) may use
 LOCATION = "Warehouse 1"  # where a returned asset is received when no source says otherwise
 # the sources' asset types (asset.asset_type, any case) that name an engine class otherwise than by its key
@@ -113,6 +142,17 @@ def missing_fields(s: Session, i: dict[str, Any], known: Mapping[str, Any]) -> l
     if pack.valuer.kind != "standard":
         return []
     return [f for f in pack.data.min_fields if amount.lookup(known, f) is None]
+
+
+def tool_return_facts(facts: Mapping[str, Any], asset_key: str, reason: str) -> dict[str, Any]:
+    """A tool return's facts (P9-3.4) in the case's names: `cls` from `tool_class`, the serial (the asset key), `ft` from
+    the reason (what the facts give wins), and `flow` `returns`. Other reasons (manual ...) keep their facts as given."""
+    f = dict(facts)
+    if reason not in RETURN_FT:
+        return f
+    if "tool_class" in f:
+        f.setdefault("cls", f.pop("tool_class"))
+    return {"ft": RETURN_FT[reason], "serial": asset_key, "flow": "returns"} | f
 
 
 def existing(s: Session, asset_key: str, reason: str) -> str | None:
@@ -175,7 +215,7 @@ def _base(case_id: str, i: dict[str, Any], known: dict[str, Any], by: str) -> st
         "nextInspection": "—", "model": FormulaPredictor.model_version, "bomRef": known.get("bom_ref"),
         "snapshot": {"id": "EVS-" + hashlib.sha256(case_id.encode()).hexdigest()[:8].upper(), "items": 0,
                      "takenAt": _received(now)},
-        "intake": {"key": intake_key(i["asset_key"], i["reason"]), "reason": i["reason"], "by": by,
+        "intake": {"key": intake_key(i.get("dedupe_as") or i["asset_key"], i["reason"]), "reason": i["reason"], "by": by,
                    "at": now.astimezone(UTC).isoformat()},
     } | ({"batchRef": str(known["batch"])} if known.get("batch") else {})  # fmt: skip
 
@@ -216,10 +256,11 @@ def device_lot(case_id: str, facts: dict[str, Any]) -> dict[str, Any]:
         raise ActionError("validation_error", "A device lot needs a grade (A-D) and an age band (0-24m, 25-48m, 49m+).")
     if not isinstance(facts.get("ref"), int | float) or not isinstance(facts.get("qty"), int) or facts["qty"] < 1:
         raise ActionError("validation_error", "A device lot needs a reference value (ref) and a number of units (qty).")
-    return {
+    lot = {
         "id": case_id, "brand": facts.get("brand") or "", "model": facts.get("model") or "", "band": band,
         "grade": grade, "ref": facts["ref"], "qty": facts["qty"], "doh": facts.get("doh") or 1,
     }  # fmt: skip
+    return lot | {k: facts[k] for k in device_intake.EXTRA if k in facts}  # a received device keeps its IMEI, quote ... (P9-6.4)
 
 
 def industrial_predictor(s: Session, c: store.Case) -> Predictor:
@@ -243,7 +284,7 @@ def _with_bom(s: Session, c: store.Case, p: Predictor) -> Predictor:
     return p
 
 
-def _snapshot(c: store.Case, facts: dict[str, Any], kind: str) -> None:
+def _snapshot(c: store.Case, facts: dict[str, Any], kind: str, s: Session | None = None) -> None:
     """The valuer's input from the facts, kept on the case (`valuer`) with the fields its pages read; `kind` is the pack's
     valuer kind."""
     if kind == "tool_fleet":
@@ -257,6 +298,8 @@ def _snapshot(c: store.Case, facts: dict[str, Any], kind: str) -> None:
         lot = device_lot(c["id"], facts)
         c |= {k: lot[k] for k in ("brand", "band", "grade", "ref", "doh")} | {"qty": lot["qty"], "cls": "device"}
         c |= {"valuer": lot}
+        if s is not None and lot.get("imei"):  # a received device: the feed price and evidence it opened with (P9-6.4)
+            lot["inputs"] = device_inputs.gather(s, lot, clock.now().date()).as_dict()
         c["product"] = c["product"] or f"{lot['brand']} {lot['model']}".strip()
 
 
@@ -298,9 +341,9 @@ def open_tool_cases(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
     rows = s.execute(
         text(
             "SELECT data FROM case_record WHERE owner = :o AND stage <> 'closed' "
-            "AND data ->> 'template' = 'tool_fleet' ORDER BY id"
+            "AND data ->> 'template' = 'tool_fleet' AND COALESCE(data ->> 'flow', '') <> :f ORDER BY id"
         ),
-        {"o": org_unit_id},
+        {"o": org_unit_id, "f": REFRESH_FLOW},
     ).scalars()
     return list(rows)
 
@@ -353,18 +396,29 @@ def revalue(s: Session, c: store.Case) -> None:
 def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     """Routes, recommendation and the flow version they were evaluated with (as a re-evaluation records them): the one
     decider's decision (di.services.cases.decide) set on the case."""
+    if is_refresh(c):  # a contract refresh is priced and matched by the later refresh tasks (P9-5.1): nothing to value yet
+        c |= {"routes": [], "recommendation": None, "stage": STAGES[0]}
+        return
     fv = flow_version(s, c)  # also refreshes the case's scope facts
     pack = _pack(s, c)
     was_held = isinstance(c.get("gateHold"), dict)
     if pack.key != "industrial":
         gate_hold.attach_evidence(s, c)  # the gates read the asset's compliance records (plan 9, P9-1.2)
         if facts or not c.get("routes"):
-            _snapshot(c, facts, pack.valuer.kind)
+            _snapshot(c, facts, pack.valuer.kind, s)
+        if pack.valuer.kind == "tool_fleet" and regrade.apply(s, c):  # the workbench grade, else the estimate (P9-3.5)
+            fv = flow_version(s, c)  # the rules' scope reads the grade the case now shows
+        if pack.valuer.kind == "device":  # the quote against the lab's read, on every valuation (P9-6.5)
+            device_verify.refresh(s, c)
+            device_lock.refresh(s, c, pack)  # and the registry check, its date and age (P9-6.6)
     decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
     if pack.key != "industrial":  # custody and the system of record (plan 9, P9-1.10)
         if was_held and c.get("gateHold") is None:
             record_match.released(c)
         record_match.check(s, c, pack)
+        if pack.valuer.kind == "device":
+            device_lock.check(s, c, pack)  # a registry hit opens the blacklist_hit exception (P9-6.6)
+            device_verify.check(s, c, pack)  # a mismatch opens the quote_mismatch exception (P9-6.5)
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
 
@@ -384,15 +438,23 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     if bad := problem(s, i):
         raise ActionError(*bad)
     s.execute(text("SELECT pg_advisory_xact_lock(1049)"))  # one intake at a time (api, worker): one case, one number
-    if dup := existing(s, i["asset_key"], i["reason"]):
+    if dup := existing(s, i.get("dedupe_as") or i["asset_key"], i["reason"]):
         raise ActionError("duplicate", f"{dup} is already open for {i['asset_key']} ({i['reason']}).")
     facts = dict(i.get("facts") or {})
+    case_id = _next_id(s)
+    if i["template_key"] == "tool_fleet":
+        facts = tool_return_facts(facts, i["asset_key"], i["reason"])
+    elif i["template_key"] == "device" and i["reason"] == "trade_in" and facts.get("imei") and "ref" not in facts:
+        facts = device_intake.intake_facts(s, case_id, facts)  # a received device (P9-6.4)
     known = _canonical(s, i["asset_key"]) | facts
     if gone := missing_fields(s, i, known):
         raise ActionError("validation_error", f"The case needs {', '.join(gone)} (the pack's minimum facts).")
-    case_id = _next_id(s)
     c = _base(case_id, i, known, i.get("by") or actor)
-    record_match.receive(s, c, i.get("by") or actor)
+    c |= {k: known[k] for k in ("serial", "contract_id", "line_id", "flow") if known.get(k) is not None}  # a return's (P9-3.4)
+    if is_refresh(c):
+        c["refresh"] = dict(facts)  # the contract, its window and its lines (P9-5.1)
+    else:
+        record_match.receive(s, c, i.get("by") or actor)
     _value(s, c, facts)
     store.insert_new(s, c, f"Case opened from {i['reason']}", actor)
     payload = {"case_id": case_id, "owner": c["owner"], "template": c["template"], "asset_key": i["asset_key"],
@@ -401,7 +463,9 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
         text("INSERT INTO domain_event (type, case_id, payload) VALUES ('case.opened', :c, CAST(:p AS jsonb))"),
         {"c": case_id, "p": json.dumps(payload)},
     )
-    if c["template"] == "tool_fleet":  # the org's other open returns are planned again with this one (P9-1.4)
+    if c["template"] == "tool_fleet" and not is_refresh(
+        c
+    ):  # the org's other open returns are planned again with this one (P9-1.4)
         jobs.enqueue(
             s, "case.replan", {"org_unit_id": c["owner"], "template": "tool_fleet"}, dedupe_key=f"case.replan:{c['owner']}"
         )

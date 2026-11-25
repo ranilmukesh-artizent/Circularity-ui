@@ -81,6 +81,8 @@ def test_part_keys_per_org():
     assert part_key("Customer A", "PN-100") != part_key("Customer B", "PN-100")
     assert {f: s.type for f, s in MODEL_FIELDS["part"].items()} == {
         "number": "text", "revision": "text", "state": "text", "name": "text", "unit_cost": "number", "org_unit_id": "text",
+        "rated_life_hours": "number", "criticality_weight": "number", "critical": "bool", "end_of_parts": "date",
+        "successor": "text", "tool_class": "text",
     }  # fmt: skip
     assert MODEL_FIELDS["part"]["number"].required
     assert check_fact(Fact("part", part_key("Customer A", "PN-100"), "unit_cost", "cheap")).startswith(

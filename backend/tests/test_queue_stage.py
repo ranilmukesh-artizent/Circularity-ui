@@ -15,7 +15,7 @@ from di.services.agents import chain, queue_job, runtime
 from di.services.cases import store
 from di.services.modeler.pack import load_pack
 from tests import starting
-from tests.helpers import call
+from tests.helpers import call, tool_case_facts
 
 pytestmark = pytest.mark.usefixtures("no_synced_conflicts")  # see conftest: synced conflicts and the hold policy
 
@@ -44,7 +44,13 @@ def fresh():
 
 def _open(asset: str, grade: str) -> str:
     facts = {"cls": "CMH", "grade": grade, "ft": "Repair center", "site": "Houston", "rul": 62, "dem": {"lease": [ORDER]}}
-    body = {"org_unit_id": "Customer A", "template_key": "tool_fleet", "asset_key": asset, "reason": "manual", "facts": facts}
+    body = {
+        "org_unit_id": "Customer A",
+        "template_key": "tool_fleet",
+        "asset_key": asset,
+        "reason": "manual",
+        "facts": tool_case_facts(asset, facts),
+    }
     r = call("case.open", body, "planner-a")
     assert r["ok"], r
     return r["output"]["case_id"]

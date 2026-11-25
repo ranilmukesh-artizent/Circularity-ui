@@ -62,7 +62,17 @@ PALETTE: tuple[dict[str, Any], ...] = (
              "published flow. A record whose asset already has a case for the reason is skipped."},
 )  # fmt: skip
 CASE_TEMPLATES = ("industrial", "tool_fleet", "device")  # di.services.modeler.templates.TEMPLATE_KEYS
-CASE_REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual")  # di.services.cases.intake.REASONS
+CASE_REASONS = (
+    "rma",
+    "lease_end",
+    "trade_in",
+    "contract_end",
+    "iot_alarm",
+    "manual",
+    "swap",
+    "service_order",
+    "pool_excess",
+)  # di.services.cases.intake.REASONS
 CURRENCIES = ["USD", "EUR", "INR"]  # the ISO 4217 codes the rate table has rates for (generic.to_usd)
 ZONES = [
     "record", "UTC", "Europe/London", "Europe/Berlin", "America/New_York", "America/Chicago", "America/Los_Angeles",
@@ -186,7 +196,12 @@ BLOCKS: dict[str, BlockSpec] = {
                         help="The field holding the asset key a case is opened for (e.g. sku)."),
                       F("org_unit_id", "Org unit", "text", "", help="Empty: the source's org unit."),
                       F("only_if", "Only if", "text", "",
-                        help="field=value: only records with that value open a case. Empty: every record."))),
+                        help="field=value: only records with that value open a case. Empty: every record."),
+                      F("reason_field", "Reason field", "text", "",
+                        help="The field whose value is each record's reason, e.g. kind; a map may follow: "
+                             "kind: end_of_term=contract_end. Empty: the Reason above for every record."),
+                      F("facts", "Case facts", "fields", [],
+                        help="Record fields copied into the case's facts (toolClass becomes tool_class)."))),
     )
 }  # fmt: skip
 # a pair of settings that only make sense together: (block, field, needs)
