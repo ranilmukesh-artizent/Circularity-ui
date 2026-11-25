@@ -25,6 +25,10 @@ Plan 9 (P9-2.4, I-10): the pipeline's hold policy (`di.services.actions.hold`) h
 autonomy, value, confidence and open exceptions, and every write of a tainted run (`ctx.taint`, from the run state); the held
 reasons go to the stage record. `stage_confidence` gives a case with no condition confidence none, so it is never held for it.
 
+Plan 9 (P9-2.18, R16): after a stage's deterministic step, when the router has a model for role `stage`, the stage's reasoner
+(`stage_reasoner`) reads it and its reading joins the stage record (`_stage_record`, `_read_stage`); a held concern holds the
+stage and every later write, and nothing is asked when no model answers.
+
 Plan 9 (P9-2.2, I-8): a playbook registered in `playbook_versions` is an LLM playbook: `step` runs it through the
 `AgentLoop` (`loop_runner()`; tests swap it with `set_loop`). A call the pipeline holds is a deferred call: the run waits with
 `state.deferred = {tool_call_id: proposal_id}`, and `wake` resumes the loop with each accepted proposal's output once all are
@@ -49,16 +53,18 @@ from di.repositories import stage_outcomes
 from di.repositories.live_rules import live_pack
 from di.services.actions.fraud import triage_case  # also registers fraud.hold in the worker
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
-from di.services.agents import calibrate, chain, limits, playbook_versions, registry
+from di.services.agents import calibrate, chain, limits, playbook_versions, registry, stage_reasoner
 from di.services.agents.forbidden import FORBIDDEN_ACTIONS
 from di.services.agents.loop import AgentLoop, LoopSpec
 from di.services.agents.playbooks import case_autopilot as autopilot
 from di.services.agents.playbooks import stage_chain
+from di.services.agents.playbooks import stage_reasoner as stage_playbook
 from di.services.agents.playbooks.case_autopilot import Done, Halt, Skip, Wait
 from di.services.agents.pydantic_ai_loop import PydanticAILoop
 from di.services.agents.stage_context import STAGE_IDS, StageContext
 from di.services.agents.stages import CHAIN, disposition
 from di.services.cases import store
+from di.services.llm import router
 from di.services.modeler.evidence import evidence_of
 
 log = logging.getLogger(__name__)
@@ -69,6 +75,7 @@ _REACHED = (*autopilot.ACTIONS, *stage_chain.ACTIONS, *(a for m in CHAIN for a i
 _FORBIDDEN = [a for a in _REACHED if a.startswith(FORBIDDEN_ACTIONS)]
 if _FORBIDDEN:
     raise RuntimeError(f"playbooks reach actions no agent may run: {_FORBIDDEN}")
+READ_STATUSES = ("done", "waiting", "held")  # the stage records a stage's model reads (P9-2.18)
 STOPPING = ("Run limit reached", "is stopped by Admin")  # refusals that stop a run rather than fail it
 
 
@@ -205,7 +212,34 @@ def _stage_record(
 ) -> None:
     rec = chain.build_record(defn, CHAIN[stage], st, case, status)
     rec.reasons = reasons or []  # why the hold policy held a call of the stage (P9-2.4)
+    if status in READ_STATUSES and defn.id in stage_playbook.REASONED:
+        _read_stage(s, run, defn, st, case, rec)
     chain.save_record(s, run["id"], run["case_id"], rec)
+
+
+def _stage_loop(s: Session) -> AgentLoop | None:
+    """The loop that reads a stage (P9-2.18): a scripted one (tests), else the router's when it has a model for role `stage`;
+    None leaves every stage record as the rules wrote it."""
+    if _LOOP is not None:
+        return _LOOP
+    return PydanticAILoop() if router.chain_for(s, "stage") else None
+
+
+def _read_stage(s: Session, run: dict, defn: chain.StageDef, st: dict[str, Any], case: dict, rec: chain.StageRecord) -> None:
+    """After the stage's deterministic step: its model's reading, asked once per stage and run (a miss too: the run state
+    keeps it), added to the record. An untrusted tool the reasoner read taints the run's later writes (P9-2.4)."""
+    readings = st.setdefault("readings", {})
+    if defn.id not in readings:
+        readings[defn.id] = None
+        loop = _stage_loop(s)
+        ctx = _context(s, run) if loop is not None else None
+        if loop is not None and ctx is not None:
+            got = stage_reasoner.reason_stage(s, ctx, defn.id, case, rec.output, loop=loop)
+            if got is not None:
+                readings[defn.id] = {"reading": got.reading.model_dump(mode="json"), "model": got.model}
+                st["tainted"] = bool(st.get("tainted")) or got.tainted
+    if readings[defn.id] is not None:
+        chain.apply_reading(rec, readings[defn.id], st)
 
 
 def stage_confidence(ctx_stage: StageContext, case: dict) -> StageContext:

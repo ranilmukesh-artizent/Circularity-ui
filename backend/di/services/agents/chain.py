@@ -10,7 +10,10 @@ picking the next stage, each stage leaving a typed record.
 
 The stage outputs live in `agent_stage_record`, a blackboard, not in messages between agents. No model is involved: the
 stage modules (`di.services.agents.stages`) are pure, the runtime runs their calls through the action pipeline as the
-stage's agent. The chain calls the one decider (`decide_case`, I-6) only through the actions it runs (R19), and never an
+stage's agent. Since P9-2.18, when the router has a model for role `stage` the runtime asks the stage's reasoner
+(`di.services.agents.stage_reasoner`) to read the stage after its deterministic step, and `apply_reading` adds the reading to
+the record (`kind` `llm`); no model leaves the record as it was. The chain calls the one decider (`decide_case`, I-6) only
+through the actions it runs (R19), and never an
 action in `FORBIDDEN_ACTIONS` (AGENTS.md rule 10). Holding by stage autonomy and confidence arrives with P9-2.4.
 """
 
@@ -29,7 +32,8 @@ from di.services.modeler.pack import Pack
 from di.services.modeler.stages import StageKey
 
 __all__ = [
-    "Autonomy", "ChainRun", "StageDef", "StageId", "StageKind", "StageRecord", "Status", "build_record", "case_value",
+    "Autonomy", "ChainRun", "StageDef", "StageId", "StageKind", "StageRecord", "Status", "apply_reading",
+    "build_record", "case_value",
     "pack_rul_min", "records_of", "run_chain", "save_record", "stage_context", "stage_defs",
 ]  # fmt: skip
 
@@ -130,7 +134,26 @@ def stage_context(defn: StageDef, mod: StageModule, st: dict[str, Any], case: Ma
     return StageContext(
         stage=defn.id, autonomy=defn.autonomy, confidence=mod.confidence(st, case), threshold=defn.threshold,
         value=case_value(case), value_limit=defn.value_limit, bulk_limit=defn.bulk_limit,
+        model_concerns=[t for texts in (st.get("concerns") or {}).values() for t in texts],
     )  # fmt: skip
+
+
+def apply_reading(rec: StageRecord, entry: Mapping[str, Any], st: dict[str, Any]) -> None:
+    """Add a stage model's reading (`stage_reasoner.StageReading` as JSON, with the `model` that answered) to the stage's record
+    (P9-2.18). The deterministic output, confidence and sources are kept as they are; the reading goes to `output.reading`
+    and the model to `output.model`, and a `deterministic` record becomes `llm`. A concern with `hold` holds the stage (a
+    status `done` or `waiting` becomes `held`, reason `model_concern`) and, through `st["concerns"]`, every later write of the
+    run. It only adds caution: a record that was held stays held, and a reading with no concern changes nothing else."""
+    reading = dict(entry["reading"])
+    rec.output = {**rec.output, "reading": reading, "model": entry.get("model")}
+    if rec.kind == "deterministic":
+        rec.kind = "llm"
+    held = [c["text"] for c in reading.get("concerns") or [] if c.get("hold")]
+    if held:
+        st.setdefault("concerns", {})[rec.stage] = held
+        rec.reasons = [*rec.reasons, *({"reason": "model_concern", "detail": t} for t in held)]
+        if rec.status in ("done", "waiting"):
+            rec.status = "held"
 
 
 def build_record(defn: StageDef, mod: StageModule, st: dict[str, Any], case: Mapping[str, Any], status: Status) -> StageRecord:

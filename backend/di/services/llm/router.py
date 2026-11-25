@@ -39,8 +39,11 @@ from sqlalchemy.orm import Session
 
 from di.core.config import get_settings
 
-Role = Literal["ask", "agent", "author", "judge"]
-ROLES: tuple[str, ...] = ("ask", "agent", "author", "judge")
+Role = Literal["ask", "agent", "author", "judge", "stage"]
+ROLES: tuple[str, ...] = ("ask", "agent", "author", "judge", "stage")
+# `stage` (the stage reasoners, P9-2.18) reads the case through tools; a model with the role `agent` serves it too, so a stack
+# seeded before the role existed still reasons. Each model's budget is its own, whatever the role.
+TOOL_ROLES = ("agent", "stage")
 SEED_ID = "groq-default"  # the row of migration 0036; GROQ_MODEL still overrides its model at run time
 DEFAULT_COOLDOWN = 60.0
 DEFAULT_MAX_TOKENS = 1024
@@ -73,7 +76,7 @@ _CHAIN_SQL = """
 SELECT m.id, m.provider, m.model, m.key_ref, m.request_timeout FROM llm_model m
 LEFT JOIN llm_budget bm ON bm.model_id = m.id AND bm."window" = 'minute' AND bm.window_start = date_trunc('minute', now())
 LEFT JOIN llm_budget bd ON bd.model_id = m.id AND bd."window" = 'day' AND bd.window_start = date_trunc('day', now())
-WHERE m.enabled AND :role = ANY(m.roles) AND (NOT :tools OR m.tools)
+WHERE m.enabled AND (:role = ANY(m.roles) OR (:role = 'stage' AND 'agent' = ANY(m.roles))) AND (NOT :tools OR m.tools)
   AND (m.cooldown_until IS NULL OR m.cooldown_until <= now())
   AND coalesce(bm.used_requests, 0) < m.rpm AND coalesce(bm.used_tokens, 0) < m.tpm
   AND coalesce(bd.used_requests, 0) < m.rpd
@@ -93,7 +96,7 @@ def _usable(ref: ModelRef) -> bool:
 
 
 def chain_for(s: Session, role: Role | str, *, needs_tools: bool = False) -> list[ModelRef]:
-    rows = s.execute(text(_CHAIN_SQL), {"role": role, "tools": needs_tools}).all()
+    rows = s.execute(text(_CHAIN_SQL), {"role": role, "tools": needs_tools or role in TOOL_ROLES}).all()
     return [r for r in map(_ref, rows) if _usable(r)]
 
 
@@ -154,7 +157,7 @@ def pick_model(s: Session, run_id: str, role: Role | str = "agent") -> ModelRef 
 
     A run's state may have lost `model_route` when the runtime saved it; its `model` (what the loop answered with) then
     names the sticky model too."""
-    chain = chain_for(s, role, needs_tools=role == "agent")
+    chain = chain_for(s, role, needs_tools=role in TOOL_ROLES)
     if not chain:
         return None
     st = s.execute(text("SELECT state FROM agent_run WHERE id = :i"), {"i": run_id}).scalar_one_or_none() or {}

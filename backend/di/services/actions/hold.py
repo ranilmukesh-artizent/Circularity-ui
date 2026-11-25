@@ -10,11 +10,13 @@
 Reasons (`HoldReason`): `risk` (a guardrail needs an owner, more items than the bulk limit, an open exception or a conflict
 on the case), `value` (above the stage's limit), `confidence` (below the stage's threshold), `taint` (the run read
 untrusted content), `destructive` (a delete, discard or revert), `autonomy` (the stage is set to Recommend only, or the
-agent may only propose).
+agent may only propose), `model_concern` (a stage's model raised a concern with `hold`, P9-2.18: it holds every later write
+of the run at every level; the model adds caution and never clears a hold, and a person's accept of the proposal is the
+only release).
 
 Which reasons apply depends on the effective autonomy, the lower of the stage's level and the Access ceiling (Admin's
 autonomy table, `di.services.agents.limits`):
-    every level   destructive, taint, each guardrail hold (reason `risk`)
+    every level   destructive, taint, model concerns, each guardrail hold (reason `risk`)
     recommend     also autonomy: nothing runs, the agent only recommends
     limits        also value above the limit, risk (bulk, open exception, conflict), confidence below the threshold
     alone         also confidence below the threshold
@@ -47,7 +49,7 @@ if TYPE_CHECKING:
 
 __all__ = ["Hold", "HoldPolicy", "HoldReason", "effective_autonomy", "evaluate_hold", "hold_check", "policy_of", "reasons_json"]
 
-HoldReason = Literal["risk", "value", "confidence", "taint", "destructive", "autonomy"]
+HoldReason = Literal["risk", "value", "confidence", "taint", "destructive", "autonomy", "model_concern"]
 RANK: dict[Autonomy, int] = {"recommend": 0, "limits": 1, "alone": 2}
 # the Access level of Admin's autonomy table, as the autonomy it allows (`off` is refused earlier, in limits.check)
 CEILING: dict[str, Autonomy] = {"off": "recommend", "suggest": "recommend", "prepare": "limits", "act": "alone"}
@@ -99,6 +101,7 @@ def evaluate_hold(
     taint: bool,
     policy: HoldPolicy,
     stage_name: str = "The stage",
+    model_concerns: list[str] | None = None,
 ) -> list[Hold]:
     """The reasons to hold `action` for a person at this autonomy, in the order they are decided (empty: it may run)."""
     out: list[Hold] = []
@@ -106,6 +109,7 @@ def evaluate_hold(
         out.append(Hold("destructive", f"{action.title} cannot be undone: a person does it."))
     if taint:
         out.append(Hold("taint", "The run read untrusted content, so a person confirms every write."))
+    out += [Hold("model_concern", c) for c in model_concerns or []]  # a stage's model raised it: it only ever adds caution
     out += [Hold("risk", _guardrail(g)) for g in guardrail_holds]
     if autonomy == "recommend":
         out.append(Hold("autonomy", f"{stage_name} is set to Recommend only"))
@@ -169,6 +173,7 @@ def hold_check(a: ActionDef, i: dict[str, Any], ctx: "CallContext") -> list[Hold
         exception = conflict = False
         policy = HoldPolicy(None, None, 0.0)
         guardrails: list[str] = []
+        concerns: list[str] = []
         confidence = value = None
         name = "The stage"
     else:
@@ -176,6 +181,7 @@ def hold_check(a: ActionDef, i: dict[str, Any], ctx: "CallContext") -> list[Hold
         exception, conflict = _case_state(a, i, ctx) if autonomy == "limits" else (False, False)
         policy = HoldPolicy(st.value_limit, st.bulk_limit, st.threshold)
         guardrails, confidence, value, name = st.guardrail_holds, st.confidence, st.value, st.stage.replace("_", " ").capitalize()
+        concerns = st.model_concerns
     holds = evaluate_hold(
         action=replace(a, destructive=True) if held_for_person(a.id) else a,  # P9-0.4's list is folded into `destructive`
         autonomy=autonomy,
@@ -188,6 +194,7 @@ def hold_check(a: ActionDef, i: dict[str, Any], ctx: "CallContext") -> list[Hold
         taint=ctx.taint,
         policy=policy,
         stage_name=name,
+        model_concerns=concerns,
     )
     agent = registry.get(ctx.session, ctx.preparer)
     if agent is not None and agent.autonomy == "propose":

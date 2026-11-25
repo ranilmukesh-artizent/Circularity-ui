@@ -849,7 +849,7 @@ each story went.
 - [ ] P9-2.14 OAuth protected resource metadata for MCP
 - [ ] P9-2.15 Agent evals in CI with an injection corpus
 - [ ] P9-2.16 Phase 2 demo smoke script
-- [ ] P9-2.18 Stage agents reason with the model
+- [x] P9-2.18 Stage agents reason with the model
 - [ ] P9-2.19 Exception assistant and fraud review drafted by the model
 - [ ] P9-2.20 Lease end, return authorised and transit stage agents
 - [ ] P9-2.21 Ten-stage journey on the case run view

@@ -109,7 +109,7 @@ export interface AgentsScreen {
   can: { manage: boolean };
 }
 
-export type LlmRole = 'ask' | 'agent' | 'author' | 'judge';
+export type LlmRole = 'ask' | 'agent' | 'author' | 'judge' | 'stage';
 
 /** A language model the router may use (plan 9, P9-2.3): its limits, use this minute and today, and any cooldown. */
 export interface LlmModel {
@@ -279,8 +279,26 @@ export interface TraceStage {
   /** what the stage read: the source system, its record and how old it was */
   sources: Record<string, unknown>[];
   reasons: HoldReason[];
+  /** the rules' output; with a model, `reading` (what it wrote) and `model` (which answered) are added (plan 9 P9-2.18) */
+  output?: { reading?: StageReading; model?: string | null } & Record<string, unknown>;
   at: string;
 }
+
+export interface StageConcern { kind: 'data_gap' | 'disagreement' | 'risk' | 'fraud_signal' | 'policy'; text: string; sources: string[]; hold: boolean }
+/** What a stage's model wrote (P9-2.18): no number of its own, every finding with its source. */
+export interface StageReading {
+  summary: string;
+  findings: { text: string; source: string }[];
+  concerns: StageConcern[];
+  recommendation: { route: string; why: string } | null;
+  questions: string[];
+}
+
+/** A stage's reading and the model that wrote it, or null when only the rules ran ("Rules only"). */
+export const stageReading = (s: Pick<TraceStage, 'output'>): { reading: StageReading; model: string } | null => {
+  const r = s.output?.reading;
+  return r ? { reading: r, model: s.output?.model ?? 'a model' } : null;
+};
 
 export interface TraceCall { n: number; tool: string; ok: boolean; held: number | null; input: Record<string, unknown>; at: string }
 export interface TraceProposal { id: number; action: string; status: string; case_id: string | null; reasons: HoldReason[]; decided_by: string | null }
