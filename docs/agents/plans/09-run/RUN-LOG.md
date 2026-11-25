@@ -82,3 +82,4 @@ unattended". Times are local (IST).
 | 25 Nov 15:32 | P9-2.10 merged and pushed. P9-2.6 to w2. |
 | 25 Nov 16:03 | P9-2.5 merged. Sonnet; R21 tests; standingPolicy approve/reject forbidden to agents; red proven by removing the hook (code first); demo and RT-1048 unchanged with no policy. |
 | 25 Nov 16:11 | P9-2.6 merged. Sonnet; red first quoted; spans in their own short sessions; content attributes only with trace_content; Pydantic AI agent docs read. |
+| 25 Nov 16:11 | P9-2.5 and P9-2.6 merged and pushed: lane B fully unblocked. Shared no_synced_conflicts fixture (`a2b5272`). P9-2.7 to w1, P9-2.8 to w2. Phase 2: 8 of 17. |

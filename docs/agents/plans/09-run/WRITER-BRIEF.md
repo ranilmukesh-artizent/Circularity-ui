@@ -55,6 +55,10 @@ run branch your lead named, `feature/plan-09-recover` unless the prompt says oth
   - small typed files, one responsibility each;
   - story IDs in test names (R22);
   - the security tests of R21 for a new approvable object, red first.
+- **Synced stack.** The lead verifies on a stack whose fabric has synced: hundreds of open conflicts, RT-1048's asset
+  among them. A test that drives an agent through the pipeline and is not about holds uses
+  `pytestmark = pytest.mark.usefixtures("no_synced_conflicts")` (backend/tests/conftest.py); never assume an empty
+  conflict table.
 - **Parity.** The industrial demo's 128 cases, RT-1048 and the golden tests stay green. Never hand-edit
   `fixtures/golden/`.
 - **Names.** No client, prospect or vendor names in code, data or UI text (except the existing vendor mocks).
