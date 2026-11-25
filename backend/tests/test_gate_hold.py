@@ -187,6 +187,6 @@ def test_shipped_templates_open_cases_without_gate_keys():
     got = _get(str(c["id"]))
     assert got["stage"] == "awaiting_approval" and got["recommendation"] is not None
     assert not {"gateHold", "requiredSteps", "batchRef"} & set(got)
-    assert [g["id"] for g in got["gates"]] == ["G-TOOL-REC", "G-CON-2"] and all(
+    assert [g["id"] for g in got["gates"]] == ["G-TOOL-REC", "G-TOOL-TEL", "G-CON-2"] and all(
         g["passed"] for g in got["gates"]
-    )  # the recall check (P9-3.7) and the contract right (P9-3.6)
+    )  # the recall check (P9-3.7), fresh telematics (P9-3.8) and the contract right (P9-3.6)

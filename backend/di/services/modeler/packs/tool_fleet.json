@@ -376,6 +376,15 @@
     "guardrail": "GR-12"
    },
    "active": true
+  },
+  {
+   "id": "G-TOOL-TEL",
+   "params": {
+    "guardrail": "GR-13",
+    "max_age_days": 7,
+    "locked": true
+   },
+   "active": true
   }
  ],
  "dims": [
@@ -652,7 +661,9 @@
      "min_coverage": 0.7,
      "max_mae_share": 0.15,
      "holdout_weeks": 8
-    }
+    },
+    "options": {"upgrade_life_pct": 50, "gr_14_usd": 600, "gr_c1_usd": 300, "take_up_prior": {"a": -3.2, "b": 9.0},
+     "fx_fallback": {"USD": 1, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52}, "owners": {"GR-14": "Fleet manager", "GR-C1": "Sales", "GR-S3": "Fleet manager", "GR-S1": "Engineer"}}
    },
    "paths": {
     "release": {
@@ -1674,6 +1685,12 @@
     "label": "Refresh proposal late",
     "owner_role": "Fleet desk",
     "action": "Send the renewal proposal or ask the customer for more time"
+   },
+   {
+    "id": "stale_telematics",
+    "label": "Telematics older than the limit",
+    "owner_role": "Quality",
+    "action": "Check the tool's telematics link or read the tool before it is re-issued or pooled"
    }
   ],
   "suggestion_rules": [],

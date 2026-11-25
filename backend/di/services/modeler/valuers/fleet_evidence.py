@@ -32,6 +32,11 @@ own fields.
 Never does: read the canonical store, the clock or a case (the caller passes the line), write language (the reasons are
 fixed text of the line's own terms; no model step), or touch the sample world's numbers: a sample-world case is decided
 with `sample_evidence`, an active line, so the gate passes there and the PO goldens keep their numbers.
+
+**GR-13, the stale telematics gate** (P9-3.8, TF-05; `telematics_check`, catalogue gate `G-TOOL-TEL`, params `max_age_days` 7):
+telematics a week old or missing hold `release` and `redeploy` (still valued, never recommended, a person decides) and open the
+exception `stale_telematics` for Quality. No model step: the check reads a date.
+
 """
 
 import dataclasses
@@ -103,7 +108,10 @@ def sample_evidence(case: Mapping[str, Any]) -> dict[str, Evidence]:
     serial = str(case.get("serial") or case.get("id") or "")
     value = {"lineId": f"FL-{serial}", "serial": serial, "status": "active", "returnReason": None, "theftClaimOpen": False,
              "claimRef": None, "damageChargeOpen": False, "chargeRef": None, "ownerOrg": None}  # fmt: skip
-    return {CONTRACT_LINE: Evidence(CONTRACT_LINE, "sample", SAMPLE_AT, "pass", value)} | recall_sample()
+    return {
+        CONTRACT_LINE: Evidence(CONTRACT_LINE, "sample", SAMPLE_AT, "pass", value),
+        TELEMATICS: sample_telematics(),
+    } | recall_sample()
 
 
 # ---------------------------------------------------------------- the safety recall check (P9-3.7, story TF-04)
@@ -235,3 +243,63 @@ CHECKS[RECALL_GATE] = _recall_gate
 def recall_sample() -> dict[str, Evidence]:
     """The sample world has no recall: the register's answer for it is complete and empty."""
     return {RECALL: Evidence(RECALL, "sample", SAMPLE_AT, "pass", {"recalls": [], "released": None})}
+
+
+# ---------------------------------------------------------------- GR-13, stale telematics (P9-3.8, story TF-05)
+TEL_GATE = "G-TOOL-TEL"
+TELEMATICS = "telematics_reading"
+NOW_KEY = "gateNow"  # the time the gates read a case at: `gate_hold.apply` puts it on the view of the case its gates see
+MAX_AGE_DAYS = 7
+
+
+def age_days(seen: Any, now: datetime) -> int | None:
+    """Whole days from `seen` (an ISO time or a datetime) to `now`; None when there is no time to read, 0 for the future."""
+    if isinstance(seen, str):
+        try:
+            seen = datetime.fromisoformat(seen.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if not isinstance(seen, datetime):
+        return None
+    seen = seen if seen.tzinfo else seen.replace(tzinfo=UTC)
+    return max((now - seen).days, 0)
+
+
+def telematics_check(evidence: Evidence | None, now: datetime, max_age_days: int = MAX_AGE_DAYS) -> GateResult:
+    """GR-13: whether the tool's telematics are fresh enough to re-issue it or pool it. A reading `max_age_days` or more old
+    fails with "Telematics last seen <n> days ago"; none fails with "No telematics for this tool"; else "Telematics <n> days old".
+    The effect is `require_approval`, and `_telematics` gives it the routes `release` and `redeploy` only: they stay valued
+    and shown, but are never the recommendation (`decide.decide_case`), and choosing one goes to a person (the hold policy,
+    reason `confidence`: the life confidence is Low, P9-3.9). Pure; the routes are the caller's."""
+
+    def res(passed: bool, reason: str) -> GateResult:
+        return GateResult(TEL_GATE, passed, GateEffect("require_approval", (), False, None), (), reason)
+
+    if evidence is None:
+        return res(False, "No telematics for this tool")
+    n = age_days(evidence.value.get("lastSeen") or evidence.at, now)
+    if n is None:
+        return res(False, "No telematics for this tool")
+    if n >= max_age_days:
+        return res(False, f"Telematics last seen {n} day{'' if n == 1 else 's'} ago")
+    return res(True, f"Telematics {n} day{'' if n == 1 else 's'} old")
+
+
+def _telematics(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult:
+    e = evidence_of(case, TELEMATICS)
+    now = case.get(NOW_KEY)
+    if isinstance(now, str):
+        now = datetime.fromisoformat(now)
+    if e is not None and e.source == "sample":  # a sample-world return: its telematics are on file, whatever the time
+        res = GateResult(TEL_GATE, True, GateEffect("require_approval", (), False, None), (), "Telematics on file")
+    else:
+        res = telematics_check(e, now or (e.at if e else SAMPLE_AT), int(gate.params.get("max_age_days") or MAX_AGE_DAYS))
+    return dataclasses.replace(res, effect=dataclasses.replace(res.effect, routes=gate_routes(gate, pack)))
+
+
+CHECKS[TEL_GATE] = _telematics
+
+
+def sample_telematics() -> Evidence:
+    """The telematics reading of a sample-world case: on file, so GR-13 passes and the PO goldens keep their numbers."""
+    return Evidence(TELEMATICS, "sample", SAMPLE_AT, "pass", {"lastSeen": None})

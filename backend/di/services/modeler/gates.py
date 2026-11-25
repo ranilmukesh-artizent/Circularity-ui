@@ -79,8 +79,9 @@ class GateDef(_M):
 
     @property
     def locked(self) -> bool:
-        """A compliance gate is locked by the pack: a customer may tighten it, never weaken it (B section 5.1)."""
-        return self.type == "Compliance"
+        """A compliance gate is locked by the pack, as is a gate whose pack ref says `locked` (GR-13): a customer may tighten it,
+        never weaken it (B section 5.1)."""
+        return self.type == "Compliance" or bool(self.params.get("locked"))
 
 
 @dataclass(frozen=True)

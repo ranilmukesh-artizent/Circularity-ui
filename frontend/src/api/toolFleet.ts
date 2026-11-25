@@ -33,6 +33,9 @@ export interface GateView {
   stageLabel: string;
   hold: boolean;
   locked: boolean;
+  /** GR-13 (G-TOOL-TEL) only: whole days since the telematics were last seen (null: none) and the limit (P9-3.8) */
+  age_days?: number | null;
+  max_age_days?: number;
 }
 
 /** The quarantine of a recalled tool (P9-3.7, GR-12): the recall, the paths and parts it blocks, and who released it after the fix. */

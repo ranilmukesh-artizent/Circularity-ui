@@ -109,13 +109,18 @@ def norm(x):
 LINE_OWNER = "Fleet North America"  # the tool-fleet pack's `owner` (identity): a line owned by another org is refused
 
 
+FRESH_SEEN = "2026-10-06T08:00:00+00:00"  # telematics last seen a day before the pinned clock (2026-10-07 09:00 UTC)
+
+
 def tool_case_facts(
-    asset_key: str, facts: dict | None = None, *, line: dict | None = None, owner: str = LINE_OWNER, **over
-) -> dict:
+    asset_key: str, facts: dict | None = None, *, line: dict | None = None, owner: str = LINE_OWNER,
+    seen: str | None = FRESH_SEEN, **over
+) -> dict:  # fmt: skip
     """The facts of a tool-fleet case with an active contract line on file (plan 9, P9-3.6, GR-07): the line of the serial
     `asset_key` and its contract are written to the canonical store as the fleet contract system's sync would (fields of
     `line` override the line's: `status`, `return_reason`, `theft_claim_open`, ...; `owner` is its contract's owner org), and
-    `facts` (with `over` on top) are returned for the case's intake. Call it after the test's reset, before opening the case."""
+    `facts` (with `over` on top) are returned for the case's intake. Call it after the test's reset, before opening the case.
+    The tool's telematics are last seen at `seen` (default: a day before the pinned clock; None: none), so GR-13 passes."""
     from di.core.db import SessionLocal
     from di.services.canonical import store as canonical
 
@@ -128,6 +133,8 @@ def tool_case_facts(
     } | (line or {})
     facts_ = [canonical.Fact("contract_line", asset_key, k, v, resource="lines") for k, v in row.items() if v is not None]
     facts_.append(canonical.Fact("contract", str(row["contract_id"]), "owner_org", owner, resource="contracts"))
+    if seen:  # the tool's telematics (GR-13, P9-3.8)
+        facts_.append(canonical.Fact("condition", asset_key, "telemetry_at", seen, resource="tools"))
     with SessionLocal() as s:
         canonical.apply(s, "fleet", facts_)
         s.commit()

@@ -34,6 +34,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from di.repositories import standing_policies
 from di.repositories.flows import flow_for
 from di.repositories.service_tickets import TicketRow, pending
 from di.services.actions.registry import ActionError
@@ -118,13 +119,28 @@ def view(s: Session, case: Mapping[str, Any]) -> dict[str, Any] | None:
     return {
         "ticket": base["ticket"], "account": base["account"], "market": base["market"], "site": base["site"],
         "batch": bool(base["batch"]), "batchId": base.get("batch_id"), "loanerPromised": bool(base.get("loaner_promised")),
-        "requesterRole": base.get("requester_role"),
+        "requesterRole": base.get("requester_role"), "options": base.get("options") or [], "approval": approval(s, case),
         "lines": [
             ln | {"family": tool_fleet.CLS.get(ln["model_class"], {}).get("name", ln["model_class"]),
                   "gates": line_gates(s, ln, pack.owner or "", own if ln["serial"] == case.get("serial") else None, notices)}
             for ln in base["lines"]
         ],
     }  # fmt: skip
+
+
+def approval(s: Session, case: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Who approves the recommendation (P9-4.6): the owner of the first hold (GR-14 the Fleet manager, GR-C1 Sales, ...), else the
+    standing policy in force ("Standing policy P1 v2": I-11 approves what it covers), else the Fleet manager. None without a
+    recommendation. The approval itself is `decision.approve` or the standing policy's: nothing here approves."""
+    rec = case.get("recommendation")
+    if not rec:
+        return None
+    holds = case.get("approvalHolds") or []
+    if holds:
+        return {"route": rec["id"], "owner": holds[0]["owner"], "holds": holds}
+    row = standing_policies.effective(s, PACK, case["owner"]) if case.get("owner") else None
+    owner = f"Standing policy {row.id} v{row.ver}" if row is not None else "Fleet manager"
+    return {"route": rec["id"], "owner": owner, "holds": []}
 
 
 # ---------------------------------------------------------------- open
@@ -149,6 +165,7 @@ def open_from_ticket(s: Session, ticket: TicketRow, actor: str, org_unit_id: str
     )  # fmt: skip
     s.execute(text("UPDATE service_ticket SET case_id = :c WHERE number = :n"), {"c": case["id"], "n": ticket.number})
     estimate.estimate_case(s, case, ticket.opened_at.date())  # P9-4.4: the estimate of every line, kept on the line
+    intake.revalue(s, case)  # P9-4.6: the options of every line, valued on the estimates just kept
     store.save(s, case)
     return case
 

@@ -331,8 +331,9 @@ def list_policies(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
 
 # ---------------------------------------------------------------- the decision a policy covers
 def _guardrail_holds(case: dict[str, Any]) -> list[str]:
-    """The failed gates that hold the case, by their ids."""
-    return [str(g["id"]) for g in case.get("gates") or [] if isinstance(g, dict) and not g.get("passed", True) and g.get("hold")]
+    """The failed gates that hold the case, by their ids, and the approval holds of a service ticket's recommendation (P9-4.6)."""
+    gates = [str(g["id"]) for g in case.get("gates") or [] if isinstance(g, dict) and not g.get("passed", True) and g.get("hold")]
+    return gates + [str(h["id"]) for h in case.get("approvalHolds") or [] if isinstance(h, dict)]
 
 
 def _fraud(case: dict[str, Any]) -> bool:

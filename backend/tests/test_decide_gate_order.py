@@ -54,7 +54,12 @@ def test_gate_blocked_route_never_wins_an_order():
 def test_gate_order_in_trace():
     d = _decide(_case(True), [])
     assert d.trace == ("gates", "valuation", "queue_plan", "rules", "rank")
-    assert [g.gate_id for g in d.gates] == ["G-CON-1", "G-CON-2"]  # the contract right passes on the sample line (P9-3.6)
+    assert [g.gate_id for g in d.gates] == [
+        "G-TOOL-REC",
+        "G-TOOL-TEL",
+        "G-CON-1",
+        "G-CON-2",
+    ]  # catalogue order; the sample line, recall answer and reading pass (P9-3.6, 3.7, 3.8)
 
 
 def test_industrial_decide_unchanged():

@@ -37,7 +37,8 @@ NUMERIC_TOLERANCE = 0.005  # values within 0.5% count as the same (currency roun
 # list fields every source adds to: the canonical value is the union, and sources never conflict on them
 MERGE_FIELDS = {"asset.source_refs"}
 MANUAL = "manual"  # the source of data a person entered: Manual Import rows, choices in the Conflict Queue
-GRADE_FIELDS = ("grade", "test_result")  # the `condition` fields of a workbench grade (P9-3.5)
+# the `condition` fields a tool-fleet case is valued again on: a workbench grade (P9-3.5), the telematics last seen (P9-3.8)
+GRADE_FIELDS = ("grade", "test_result", "telemetry_at")
 OVERRIDE_RESOURCE = "conflict"  # a person's choice in the Conflict Queue (provenance.resource); imports are "import"
 
 

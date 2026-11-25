@@ -33,8 +33,9 @@ def test_device_pack_matches_golden():
     t, g = load_template("device"), PO["device"]
     assert (t.key, t.name, t.pre) == ("device", "Device recommerce", g["pre"])
     assert [(p.id, p.name) for p in t.paths] == [(p["key"], p["name"]) for p in g["paths"]]
-    # GR-D7 (blacklist, P9-6.6) and GR-D13 (quote match, P9-6.5) are plan 9 additions for received devices; the demo has neither
-    guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D13")]
+    # GR-D7 (blacklist, P9-6.6), GR-D11 (payout gap, P9-6.8) and GR-D13 (quote match, P9-6.5) are plan 9 additions for
+    # received devices; the demo has none of them
+    guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D11", "GR-D13")]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
     assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
     assert [d.kind for d in t.dims] == ["set", "set", "set", "min", "min"]

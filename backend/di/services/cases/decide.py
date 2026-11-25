@@ -34,11 +34,13 @@ import copy
 import dataclasses
 from collections.abc import Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any
+from datetime import date, datetime
+from importlib import import_module
+from typing import Any, cast
 
 from sqlalchemy.orm import Session
 
+from di.core import clock
 from di.services.actions.registry import ActionError
 from di.services.cases import gate_hold, store
 from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
@@ -54,8 +56,10 @@ from di.services.modeler.gates import Cond, GateDef, GateEffectDef, GateResult, 
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack
 from di.services.modeler.templates import Template, template_of_pack
-from di.services.modeler.valuers import VALUERS, device, fleet_evidence, tool_fleet
+from di.services.modeler.valuers import VALUERS, device, fleet_evidence, service_desk, tool_fleet
+from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.routes_adapter import to_routes
+from di.services.modeler.valuers.tool_fleet import PathValue
 
 TRACE = ("gates", "valuation", "queue_plan", "rules", "rank")
 GATE_KEYS = ("gates", "gateHold", "requiredSteps")  # the case keys the gates and the diversions set
@@ -89,6 +93,7 @@ class Decision:
     as_of: datetime | None
     extra: Mapping[str, float] = field(default_factory=dict)
     case_fields: Mapping[str, Any] = field(default_factory=dict)
+    ticket: Mapping[str, Any] | None = None  # a service ticket's options, holds and inputs (P9-4.6)
 
 
 class WhatIfPlanner:
@@ -119,6 +124,7 @@ class _Valued:
     best: str | None
     plan: dict[str, Any] | None = None
     figures: Mapping[str, Mapping[str, float]] = field(default_factory=dict)
+    ticket: dict[str, Any] | None = None
 
 
 # ---------------------------------------------------------------- the steps
@@ -231,6 +237,45 @@ def _tool_fleet(
     return _Valued(routes, best["k"] if best else None, queue_plan)
 
 
+def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as_of: datetime | None) -> _Valued | None:
+    """A ticket case (flow `service_desk`) is valued as its three options: fix, covered swap, upgrade (P9-4.6). None when the
+    case is not one, or its market has no tables: it is then valued as a tool-fleet return, as before."""
+    sd = c.get("serviceDesk")
+    if c.get("flow") != "service_desk" or not isinstance(sd, dict) or "lines" not in sd:
+        return None
+    if session is not None:
+        on = (
+            as_of.date()
+            if as_of
+            else max(
+                (date.fromisoformat(ln["estimate"]["as_of"]) for ln in sd["lines"] if ln.get("estimate")),
+                default=clock.now().date(),
+            )
+        )
+        inputs = import_module("di.services.service_desk.inputs").gather(
+            session, c, on
+        )  # not imported: the case store may not import repositories
+    else:
+        inputs = sd.get("inputs")  # a replay or a simulation without a session: the snapshot the case holds
+    if inputs is None:
+        return None
+    ticket = service_desk.decide_ticket(inputs)
+    if (
+        ticket["best"] is None
+    ):  # nothing priced yet (a draft, no estimate): the return is valued as before, a technician checks first
+        return None
+    values = [
+        {"k": o["k"], "ok": o["eligible"], "gross": 0.0, "cost": 0.0, "hold": 0.0, "net": o["expected_margin"] or 0.0,
+         "why": o["why"], "lines": [{"type": "v" if (o["expected_margin"] or 0) >= 0 else "c", "label": "Expected margin",
+                                    "basis": o["why"], "amt": abs(o["expected_margin"] or 0.0)}],
+         "dest": None, "misses": [], "co2": None, "co2Prov": None}
+        for o in ticket["options"]
+    ]  # fmt: skip
+    routes = to_routes(t, cast(list[PathValue | ChannelValue], values))
+    _decorate(t, routes)
+    return _Valued(routes, ticket["best"], ticket=ticket | {"inputs": inputs})
+
+
 def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule]) -> _Valued:
     lot = _valuer_case(c, "device")
     dec = device.decide(dict(lot), _rule_dicts(rules))
@@ -265,6 +310,16 @@ def _shortcut(diversions: Sequence[Diversion], routes: list[Route]) -> str | Non
     """The route of the first shortcut whose route is still eligible."""
     open_ids = {r["id"] for r in routes if not r["excluded"]}
     return next((d.to for d in diversions if d.kind == "shortcut" and d.to in open_ids), None)
+
+
+def _not_held_for_person(rec: Route | None, routes: Sequence[Route], results: Sequence[GateResult]) -> Route | None:
+    """GR-13 (P9-3.8): the routes a failed stale-telematics gate leaves to a person (re-issue, pool) are valued and shown but
+    are never the recommendation: the best of the other eligible routes is. Choosing one goes to a person (the hold policy)."""
+    person = {i for r in results if r.gate_id == fleet_evidence.TEL_GATE and not r.passed for i in r.effect.routes}
+    if rec is None or rec["id"] not in person:
+        return rec
+    ranked = sorted((r for r in routes if not r["excluded"] and r["id"] not in person), key=lambda r: r["rank"])
+    return ranked[0] if ranked else None
 
 
 def _extra(rec: Route | None, figures: Mapping[str, Mapping[str, float]]) -> Mapping[str, float]:
@@ -309,7 +364,7 @@ def decide_case(
     if kind == "industrial":
         valued = _Valued(_industrial(before, session), None)
     elif kind == "tool_fleet":  # 2. valuation, then the queue plan, over the routes the gates left eligible
-        valued = _tool_fleet(before, pack, t, rules, session, queue, planner, blocked)
+        valued = _service_desk(before, t, session, as_of) or _tool_fleet(before, pack, t, rules, session, queue, planner, blocked)
     elif kind == "device":
         valued = _device(before, t, rules)
     elif kind in VALUERS:  # a data-only pack (`standard`) or a code plug-in (I-21)
@@ -337,6 +392,7 @@ def decide_case(
     eligible = {r["id"] for r in routes if not r["excluded"]}  # 5. rank
     chosen = go or (valued.best if valued.best in eligible else c.get("preferred"))
     rec = rank_routes(routes, c.get("blocked") or c.get("gateHold"), chosen)
+    rec = _not_held_for_person(rec, routes, results)
     return Decision(
         case_id=str(c.get("id")), pack_key=pack.key, pack_version=pack.version, flow_ver=flow_ver.ver,
         route=rec["id"] if rec else None, net=float(rec["net"]) if rec else 0.0, routes=routes, recommendation=rec,
@@ -344,8 +400,15 @@ def decide_case(
         waived=bool(c["rulesWaived"]), preferred=c.get("preferred"), plan=valued.plan,
         required_steps=list(c.get("requiredSteps") or []),
         hold=c.get("gateHold"), trace=TRACE, as_of=as_of, extra=_extra(rec, valued.figures),
-        case_fields={k: c[k] for k in GATE_KEYS if k in c},
+        case_fields={k: c[k] for k in GATE_KEYS if k in c}, ticket=_ticket_of(valued.ticket, rec),
     )  # fmt: skip
+
+
+def _ticket_of(ticket: dict[str, Any] | None, rec: Route | None) -> dict[str, Any] | None:
+    """The ticket's decision with the holds of the route finally recommended (R20: the holds come last)."""
+    if ticket is None:
+        return None
+    return ticket | {"holds": service_desk.approval_holds(ticket, rec["id"] if rec else None)}
 
 
 def write_back(case: MutableMapping[str, Any], d: Decision) -> None:
@@ -361,3 +424,15 @@ def write_back(case: MutableMapping[str, Any], d: Decision) -> None:
         case.pop(k, None)
     if d.rules_applied or d.waived or d.preferred:
         case.update(rulesApplied=d.rules_applied, rulesWaived=d.waived, preferred=d.preferred)
+    case.pop("approvalHolds", None)
+    if d.ticket is not None and isinstance(
+        case.get("serviceDesk"), dict
+    ):  # a ticket: each line's options, the holds I-10 and I-11 read
+        sd = case["serviceDesk"]
+        sd["inputs"] = d.ticket["inputs"]
+        sd["options"] = d.ticket["options"]
+        by_n = {ln["n"]: ln for ln in d.ticket["lines"]}
+        for line in sd["lines"]:
+            line["options"], line["best"] = by_n[line["n"]]["options"], by_n[line["n"]]["best"]
+        if d.ticket["holds"]:
+            case["approvalHolds"] = d.ticket["holds"]

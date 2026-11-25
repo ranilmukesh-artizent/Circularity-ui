@@ -3,7 +3,7 @@
  * stage 6 of a service-desk case (tabs/index.tsx). */
 import { serviceDeskView } from '../../../api/serviceDesk';
 import { Kv } from '../CaseBlocks';
-import { estimateLine, estimateStatus, gateLine, keyUsed, lineProblem, lineSummary, money, ticketLine } from '../serviceDesk';
+import { approvalLine, estimateLine, estimateStatus, expectedLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, ticketLine } from '../serviceDesk';
 import type { TabProps } from './index';
 
 export function TicketTab({ c }: TabProps) {
@@ -72,6 +72,46 @@ export function EstimateTab({ c }: TabProps) {
           </div>
         );
       })}
+    </>
+  );
+}
+
+/** The Options tab (P9-4.6, SD-04): per tool the three options side by side, the recommended one first, each with the customer's
+ * price, the margin, the days out of use, the expected take-up (upgrade), why, and its value lines with the table each cites. An
+ * option that cannot be offered shows its reason. Under them, who approves. The numbers are the server's, never a model's. */
+export function OptionsTab({ c }: TabProps) {
+  const v = serviceDeskView(c);
+  if (!v) return null;
+  return (
+    <>
+      {v.lines.map((l) => {
+        const cur = l.estimate?.currency ?? '';
+        return (
+          <div key={l.n} className="stpad" aria-label={`Options for ${l.serial}`}>
+            <h4>{l.n}. {l.serial} · {lineSummary(l)}</h4>
+            {!l.options ? <p>No options yet.</p> : optionOrder(l.options, l.best).map((o) => (
+              <div key={o.k} aria-label={`${o.name} for ${l.serial}`} style={o.eligible ? undefined : { opacity: 0.7 }}>
+                <h5>{o.name}{o.k === l.best ? ' (recommended)' : ''}</h5>
+                <p>{optionSummary(o, cur)}</p>
+                {o.eligible && (
+                  <>
+                    <p>{expectedLine(o, cur)}. {o.why}</p>
+                    <table aria-label={`Value lines of ${o.name} for ${l.serial}`}>
+                      <thead><tr><th>Line</th><th>Amount</th><th>Basis</th><th>Cites</th></tr></thead>
+                      <tbody>
+                        {o.lines.map((x) => (
+                          <tr key={x.label}><td>{x.label}</td><td>{x.type === 'c' ? '−' : ''}{money(x.amt, cur)}</td><td>{x.basis}</td><td>{x.cites}</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+      {v.approval && <p className="stpad">{approvalLine(v.approval)}</p>}
     </>
   );
 }

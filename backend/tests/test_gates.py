@@ -223,10 +223,11 @@ def test_shipped_packs_have_only_the_gates_a_phase_switched_on():
     """A parity guard (plan 9): the pack phases flip it as they switch gates on. P9-1.11 switched G-CON-1 on in the tool-fleet
     pack; it triggers only on a restricting contract record, so a case without one is not gated. P9-3.6 switched G-CON-2 on,
     P9-6.5 G-DEV-QUOTE, P9-6.6 G-DEV-LOCK and P9-6.7 G-DEV-WIPE (a received device only); P9-3.7 switched G-TOOL-REC on (a
-    case with no recall record fails it: "Recall check missing")."""
+    case with no recall record fails it: "Recall check missing") and P9-3.8 G-TOOL-TEL (a case with a remaining life and no
+    fresh telematics fails it for re-issue and pool only)."""
     for k in pack_keys():
         assert [g.id for g in load_pack(k).gates] == {
-            "tool_fleet": ["G-CON-1", "G-CON-2", "G-TOOL-REC"],
+            "tool_fleet": ["G-CON-1", "G-CON-2", "G-TOOL-REC", "G-TOOL-TEL"],
             "device": ["G-DEV-WIPE", "G-DEV-LOCK", "G-DEV-QUOTE"],
             "used_cars": ["G-VEH-TITLE", "G-VEH-ODO", "G-VEH-RECALL", "G-VEH-BRAND", "G-VEH-SALV"],  # P9-9.1, data only
         }.get(k, []), k

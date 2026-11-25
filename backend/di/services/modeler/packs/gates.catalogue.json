@@ -41,7 +41,10 @@
    "tool_fleet"
   ],
   "trigger": {
-   "routes": "any",
+   "routes": [
+    "release",
+    "reuse"
+   ],
    "when": [
     {
      "fact": "rul",

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { estimateLine, estimateStatus, gateLine, keyUsed, lineProblem, lineSummary, money, ticketLine } from './serviceDesk';
+import type { TicketOption } from '../../api/serviceDesk';
+import { approvalLine, estimateLine, estimateStatus, expectedLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, ticketLine } from './serviceDesk';
 
 describe('P9-4.4 estimateLine (SD-02)', () => {
   const e = { point: 430, p10: 395, p90: 470, confidence: 0.92, n: 186, currency: 'USD' };
@@ -44,5 +45,34 @@ describe('P9-4.3 gateLine, lineProblem and ticketLine (SD-01)', () => {
   it('counts the tools of a ticket', () => {
     expect(ticketLine({ ticket: 'CS0010050', batch: true, batchId: 'BATCH-0050', lines: new Array(22) })).toBe('Ticket CS0010050 · batch BATCH-0050 · 22 tools');
     expect(ticketLine({ ticket: 'CS0010042', batch: false, batchId: null, lines: [1] })).toBe('Ticket CS0010042 · 1 tool');
+  });
+});
+
+const opt = (k: TicketOption['k'], over: Partial<TicketOption> = {}): TicketOption => ({
+  k, name: k, eligible: true, why: 'because', customer_price: 580.5, margin: 126.5, expected_margin: 126.5, days: 5, take_up: null,
+  credit: null, cost: 430, lines: [], ...over,
+});
+
+describe('P9-4.6 options (SD-04)', () => {
+  it('puts the recommended option first and keeps the rest in order', () => {
+    const all = [opt('fix'), opt('swap'), opt('upgrade')];
+    expect(optionOrder(all, 'upgrade').map((o) => o.k)).toEqual(['upgrade', 'fix', 'swap']);
+    expect(optionOrder(all, null).map((o) => o.k)).toEqual(['fix', 'swap', 'upgrade']);
+  });
+  it('says the price, margin and days, or why an option is not offered', () => {
+    expect(optionSummary(opt('fix'), 'USD')).toBe('Customer pays $580.50 · margin $126.50 · 5 days out of use');
+    expect(optionSummary(opt('swap', { customer_price: 0, margin: 90, days: 1 }), 'USD')).toBe('Customer pays nothing · margin $90 · 1 day out of use');
+    expect(optionSummary(opt('swap', { eligible: false, why: 'No refurbished Combihammer in stock' }), 'USD')).toBe('Not offered: No refurbished Combihammer in stock');
+    expect(optionSummary(opt('fix', { days: null }), 'USD')).toContain('days out of use not known');
+  });
+  it('names the expected take-up of an upgrade', () => {
+    expect(expectedLine(opt('upgrade', { take_up: 0.62, expected_margin: 97.1 }), 'USD')).toBe('62% expected take-up · expected margin $97.10');
+    expect(expectedLine(opt('fix'), 'USD')).toBe('expected margin $126.50');
+  });
+  it('names the approval owner with the holds', () => {
+    expect(approvalLine({ owner: 'Standing policy P1 v2', holds: [] })).toBe('Approval: Standing policy P1 v2');
+    expect(approvalLine({ owner: 'Fleet manager', holds: [{ id: 'GR-14', reason: 'The repair costs over $600', owner: 'Fleet manager' }] })).toBe(
+      'Approval: Fleet manager (GR-14). The repair costs over $600',
+    );
   });
 });

@@ -15,11 +15,14 @@ from typing import Any, cast
 
 from di.services.engine.routes import POLICY, Route, fail, mk_route
 from di.services.modeler.templates import Template
+from di.services.modeler.valuers import service_desk
 from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.tool_fleet import PathValue, ValueLine
 
 # (paths or None for any, line type, label prefixes or None for any) -> term kind; the first match wins.
 _KINDS: tuple[tuple[frozenset[str] | None, str, tuple[str, ...] | None, str], ...] = (
+    (frozenset({"fix", "swap", "upgrade"}), "v", None, "sale"),  # a service ticket's expected margin (P9-4.6)
+    (frozenset({"fix", "swap", "upgrade"}), "c", None, "prep"),
     (frozenset({"release", "refurb"}), "v", ("Fleet renewal", "New fleet order"), "lease"),
     (frozenset({"release", "refurb"}), "v", ("Value when the contract ends", "Sales order"), "sale"),
     (frozenset({"redeploy"}), "v", None, "purchase"),
@@ -66,7 +69,7 @@ def to_routes(t: Template, values: Sequence[PathValue | ChannelValue]) -> list[R
     out = []
     for v in values:
         p = t.path(v["k"])
-        name = p.name if p else v["k"]
+        name = p.name if p else service_desk.NAMES.get(v["k"], v["k"])
         r = mk_route({"id": v["k"], "plan": name, "terms": _terms(v), "why": v["why"]})
         r["co2"] = v["co2"]
         r["co2Prov"] = v["co2Prov"]

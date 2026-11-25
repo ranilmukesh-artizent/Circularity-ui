@@ -7,7 +7,8 @@ GET /api/screens/toolfleet/{case_id}
     are empty until the tasks that fill them (`life` null, `paths` [], `plan` null, `approval` null, `followThrough`
     null). `gates` (P9-3.6) is one row for each gate that applies to the case, as its gate step left it: `{id, name,
     passed, reason, guardrail, owner, kind, stage, stageLabel, hold, locked}`; a failed GR-07 (G-CON-2) says the term it
-    failed on ("Theft recovered: claim CLM-7781 is open").
+    failed on ("Theft recovered: claim CLM-7781 is open"). GR-13 (G-TOOL-TEL, P9-3.8) also has `age_days` (whole days since the
+    tool's telematics were last seen, null with none) and `max_age_days`: its freshness line.
     `quarantine` (P9-3.7) is the recall quarantine of the tool, `{recall_id, remedy, blocked, affected_parts, released}`
     (`released`: `{by, at, note}` once Quality released a repair recall), or null when no active recall names its serial.
 
@@ -23,6 +24,7 @@ Never writes. Every write goes through the action pipeline.
 """
 
 import dataclasses
+from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException
@@ -33,14 +35,24 @@ from di.core.auth import Principal
 from di.repositories.context import load_case
 from di.repositories.packs import active_pack
 from di.services.cases import regrade
+from di.services.modeler import gates as gate_catalogue
 from di.services.modeler.valuers import fleet_evidence, tool_inputs
 
 GATE_KEYS = ("id", "name", "passed", "reason", "guardrail", "owner", "kind", "stage", "stageLabel", "hold", "locked")
 
 
-def _gate(row: dict[str, Any]) -> dict[str, Any]:
-    """The part of a case's gate row the panel shows."""
-    return {k: row.get(k) for k in GATE_KEYS}
+def _gate(row: dict[str, Any], now: datetime, params: dict[str, Any]) -> dict[str, Any]:
+    """The part of a case's gate row the panel shows; GR-13 (G-TOOL-TEL) adds the age of the telematics and its limit."""
+    out = {k: row.get(k) for k in GATE_KEYS}
+    if row.get("id") == fleet_evidence.TEL_GATE:
+        seen = next(
+            (e["value"].get("lastSeen") for e in row.get("evidence") or [] if e["type"] == fleet_evidence.TELEMATICS), None
+        )
+        out |= {
+            "age_days": fleet_evidence.age_days(seen, now),
+            "max_age_days": params.get("max_age_days", fleet_evidence.MAX_AGE_DAYS),
+        }
+    return out
 
 
 def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
@@ -50,14 +62,17 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         raise HTTPException(404, {"code": "not_found", "message": f"{case_id} is not a tool fleet case."})
     valuer = c.get("valuer") or {}
     est = str(valuer.get("estGrade") or c.get("grade") or "C")
-    grade = tool_inputs.grade_of(regrade.workbench_evidence(s, c.get("serial") or c["assetId"]), est, now=clock.now())
+    pack = active_pack(s, "tool_fleet", c["owner"])
+    params = next((g.params for g in gate_catalogue.pack_gates(pack) if g.id == fleet_evidence.TEL_GATE), {})
+    now = clock.now()
+    grade = tool_inputs.grade_of(regrade.workbench_evidence(s, c.get("serial") or c["assetId"]), est, now=now)
     return {
         "case_id": case_id,
-        "pack_version": active_pack(s, "tool_fleet", c["owner"]).version,
+        "pack_version": pack.version,
         "flow": c.get("flow") or "returns",
         "grade": dataclasses.asdict(grade),
-        "gates": [_gate(g) for g in c.get("gates") or []],
         "quarantine": fleet_evidence.quarantine_of(c),
+        "gates": [_gate(g, now, params) for g in c.get("gates") or []],
         "life": None,
         "paths": [],
         "plan": None,

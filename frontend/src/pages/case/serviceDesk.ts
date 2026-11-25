@@ -1,5 +1,5 @@
 /** Wording of the case page's Ticket tab (P9-4.3, SD-01) over the `serviceDesk` block of a case. */
-import type { LineEstimate, LineGate, TicketLine } from '../../api/serviceDesk';
+import type { Approval, LineEstimate, LineGate, OptionKey, TicketLine, TicketOption } from '../../api/serviceDesk';
 
 const SYMBOL: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', AUD: 'A$' };
 
@@ -49,4 +49,28 @@ export function lineProblem(l: Pick<TicketLine, 'gates'>): string | null {
 export function ticketLine(t: { ticket: string; batch: boolean; batchId: string | null; lines: unknown[] }): string {
   const n = t.lines.length;
   return [`Ticket ${t.ticket}`, t.batch && t.batchId ? `batch ${t.batchId}` : '', `${n} ${n === 1 ? 'tool' : 'tools'}`].filter(Boolean).join(' · ');
+}
+
+/** The options with the recommended one first, the others in the order fix, swap, upgrade (P9-4.6, SD-04). */
+export function optionOrder(options: TicketOption[], best: OptionKey | null | undefined): TicketOption[] {
+  return [...options].sort((a, b) => Number(b.k === best) - Number(a.k === best));
+}
+
+/** "Customer pays $580.50 · margin $126.50 · 5 days out of use"; an option that cannot be offered says why instead. */
+export function optionSummary(o: TicketOption, currency: string): string {
+  if (!o.eligible || o.customer_price === null || o.margin === null) return `Not offered: ${o.why}`;
+  const days = o.days === null ? 'days out of use not known' : `${o.days} ${o.days === 1 ? 'day' : 'days'} out of use`;
+  const pay = o.customer_price === 0 ? 'Customer pays nothing' : `Customer pays ${money(o.customer_price, currency)}`;
+  return `${pay} · margin ${money(o.margin, currency)} · ${days}`;
+}
+
+/** "62% expected take-up · expected margin $97.10" for an upgrade; the expected margin alone for the others. */
+export function expectedLine(o: TicketOption, currency: string): string {
+  const margin = `expected margin ${money(o.expected_margin ?? 0, currency)}`;
+  return o.take_up === null ? margin : `${Math.round(o.take_up * 100)}% expected take-up · ${margin}`;
+}
+
+/** "Approval: Fleet manager (GR-14)" with the first hold, or "Approval: Standing policy P1 v2". */
+export function approvalLine(a: Pick<Approval, 'owner' | 'holds'>): string {
+  return a.holds.length ? `Approval: ${a.owner} (${a.holds.map((h) => h.id).join(', ')}). ${a.holds[0].reason}` : `Approval: ${a.owner}`;
 }
