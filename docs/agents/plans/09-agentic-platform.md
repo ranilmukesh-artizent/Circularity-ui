@@ -854,7 +854,7 @@ each story went.
 - [ ] P9-2.20 Lease end, return authorised and transit stage agents
 - [ ] P9-2.21 Ten-stage journey on the case run view
 - [ ] P9-2.17 Phase 2 gate
-- [ ] P9-3.1 Fleet contract and repair log mocks with adapters
+- [x] P9-3.1 Fleet contract and repair log mocks with adapters
 - [ ] P9-3.2 Recall, telematics and parts mocks with adapters
 - [ ] P9-3.3 Rated life and end of parts for tool classes in PLM
 - [ ] P9-3.4 Tool returns open cases from the contract feed

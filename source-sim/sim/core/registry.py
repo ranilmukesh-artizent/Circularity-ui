@@ -79,6 +79,9 @@ EXTRA_SYSTEMS: tuple[System, ...] = (
     System("dvreg", "Device Registry", "device_registry", "generic-rest", "/device-registry/v1"),
     System("dvlab", "Device Lab", "device_lab", "generic-rest", "/device-lab/v1"),
     System("dvmkt", "Device Market", "device_market", "generic-rest", "/device-market/v1"),
+    # Plan 9 P9-3.1: the tool-fleet contract system and the legacy depot repair log, synthetic
+    System("fleet", "Fleet contract system (synthetic)", "fleet", "generic-rest", "/fleet/api/v1"),
+    System("repairlog", "Legacy depot repair log (synthetic)", "repairlog", "generic-rest", "/repairlog/api"),
 )
 EXTRA_BY_ID = {s.source_id: s for s in EXTRA_SYSTEMS}
 

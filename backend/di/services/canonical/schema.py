@@ -22,6 +22,12 @@ Models use the namespaces of the demo's field mappings (MAPPINGS in index.html):
                                                 recall check ...): result, method, tool, reference, time, expiry,
                                                 operator; keyed by compliance_key, written by one source each, so it
                                                 has no FIELD_AUTHORITY entry
+    contract       Fleet contract (P9-3.1)       one lease contract of the fleet contract system: customer, market,
+                                                term, notice date, rate card, key account, renewal status
+    contract_line  Fleet contract line (P9-3.1)  one tool on a contract: serial (the key), class, status, return
+                                                reason, claims, cover terms, non-return fee
+    repair_event   Repair event (P9-3.1)         one repair order of the legacy depot repair log (grade, components,
+                                                hours, cost) or one teardown verdict (kind `teardown`)
 Route candidate and Decision are produced by Circularity itself (B10-B13), not by connectors; an Outcome's actuals
 are read back from S/4HANA.
 
@@ -44,7 +50,7 @@ from di.services.canonical.fields import CONNECTOR_FIELDS
 
 MODELS = (
     "asset", "condition", "demand", "intervention", "market", "route", "sustainability", "vendor", "outcome", "part", "bom",
-    "compliance",
+    "compliance", "contract", "contract_line", "repair_event",
 )  # fmt: skip
 SHARED_ORG = "shared"  # the key prefix of PLM data bound to no org unit
 
@@ -157,7 +163,10 @@ NAMED_ORDER_FIELDS = {
 }  # fmt: skip
 
 # the identity keys of canonical.json's models, and of the PLM part and BOM line (MVP-9.1)
-REQUIRED = {("asset", "asset_id"), ("demand", "demand_id"), ("part", "number"), ("bom", "parent"), ("bom", "child")}
+REQUIRED = {
+    ("asset", "asset_id"), ("demand", "demand_id"), ("part", "number"), ("bom", "parent"), ("bom", "child"),
+    ("contract", "contract_id"), ("contract_line", "line_id"), ("repair_event", "event_id"),
+}  # fmt: skip
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
