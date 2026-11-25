@@ -31,6 +31,16 @@ from di.models.connectors import (
     sync_run,
     webhook_event,
 )
+from di.models.device import (
+    device_bid,
+    device_dispute,
+    device_launch,
+    device_listing,
+    device_price_point,
+    device_replacement_demand,
+    device_sale,
+    device_tradein,
+)
 from di.models.instructions import instruction
 from di.models.jobs import Job
 from di.models.journal import action_journal, domain_event, stream_event
@@ -65,6 +75,14 @@ __all__ = [
     "decision_flow",
     "decision_flow_version",
     "delegation",
+    "device_bid",
+    "device_dispute",
+    "device_launch",
+    "device_listing",
+    "device_price_point",
+    "device_replacement_demand",
+    "device_sale",
+    "device_tradein",
     "domain_event",
     "failed_record",
     "fetch_log",

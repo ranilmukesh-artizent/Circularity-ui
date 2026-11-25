@@ -1,5 +1,4 @@
 ﻿# Lane B tasks in flight (task id, writer, model, started)
-P9-6.2 w1 sonnet 2026-11-25 19:00
 P9-4.2 w4 sonnet 2026-11-25 19:55
 P9-6.3 w3 sonnet 2026-11-25 20:32
 P9-3.6 w2 sonnet 2026-11-25 20:32

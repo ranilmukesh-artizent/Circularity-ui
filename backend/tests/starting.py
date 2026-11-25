@@ -58,6 +58,12 @@ def reset() -> None:
         conn.execute(text("DELETE FROM standing_policy"))
         for table in ("repair_history", "upgrade_offer", "refurb_unit", "service_ticket"):  # plan 9 P9-4.1: no sync yet
             conn.execute(text(f"DELETE FROM {table}"))  # noqa: S608 - fixed names
+        # plan 9 P9-6.2: the device lab's and market's landed rows (their extra sources are removed below)
+        for table in (
+            "device_tradein", "device_price_point", "device_launch", "device_listing", "device_bid", "device_sale",
+            "device_dispute", "device_replacement_demand",
+        ):  # fmt: skip
+            conn.execute(text(f"DELETE FROM {table}"))  # noqa: S608 - fixed names
         _reset_flows(conn)
         reset_sources(conn)
         # plan 8 MVP-1.1: only the seeded org units (workspace and the three customers), once no source points at others

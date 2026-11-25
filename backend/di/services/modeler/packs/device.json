@@ -846,7 +846,51 @@
     "retc": 18,
     "ero": 0.013,
     "floor": 0.55
-   }
+   },
+   "evidence_types": [
+    {
+     "id": "quote",
+     "label": "Trade-in quote",
+     "source": "dvlab",
+     "field": "device_tradein.quote",
+     "freshness_days": 7
+    },
+    {
+     "id": "blacklist_check",
+     "label": "Registry check (blacklist, activation lock, finance)",
+     "source": "dvreg",
+     "field": "condition.device_blacklist",
+     "freshness_days": 2
+    },
+    {
+     "id": "diagnostics",
+     "label": "Diagnostics (IMEI, model and storage read, battery, functional tests)",
+     "source": "dvlab",
+     "field": "condition.imei_read",
+     "freshness_days": 30
+    },
+    {
+     "id": "photo_grade",
+     "label": "Cosmetic grade with photos",
+     "source": "dvlab",
+     "field": "condition.cosmetic_grade",
+     "freshness_days": 30
+    },
+    {
+     "id": "wipe_certificate",
+     "label": "Data-wipe certificate",
+     "source": "dvlab",
+     "field": "condition.wipe_certificate",
+     "freshness_days": null
+    },
+    {
+     "id": "parts_declaration",
+     "label": "Parts declaration",
+     "source": "dvlab",
+     "field": "condition.parts_status",
+     "freshness_days": null
+    }
+   ]
   },
   "carbon": {
    "set": "cfs-2026.2",
