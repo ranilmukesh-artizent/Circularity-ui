@@ -23,3 +23,5 @@ lifelines==0.30.3  # P9-3.10: remaining-life (Weibull) fitting, worker only
 pandas<3  # lifelines needs pandas 2.x (research E 11.7)
 authlib==1.9.5  # P9-8.9: OIDC sign-in beside the demo sign-in (released 2026-11-05)
 zen-engine==2.1.7  # P9-4.2: per-market decision tables (I-15); 2.1.7, as 2.1.8 (2026-11-20) is under two weeks old
+pandera[pandas]==0.36.0  # P9-7.1: checks on imported history batches (MIT)
+mypy-extensions==1.1.0  # pandera -> typing-inspect needs it; held at the release before 1.2.0 (under two weeks old), as in requirements-dev.in

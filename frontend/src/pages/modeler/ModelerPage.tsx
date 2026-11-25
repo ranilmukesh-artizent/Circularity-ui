@@ -19,6 +19,7 @@ import { ImpactPanel } from './ImpactPanel';
 import { LifecycleBar } from './LifecycleBar';
 import { OverlayPanel } from './OverlayPanel';
 import { PacksPanel } from './PacksPanel';
+import { ReplayPanel, showReplay } from './ReplayPanel';
 import { StandingPolicyPanel } from './StandingPolicyPanel';
 import { SuggestionsPanel } from './SuggestionsPanel';
 import { TablesPanel } from './TablesPanel';
@@ -212,6 +213,7 @@ function ModelerBody({ s, compose0 }: { s: ModelerScreen; compose0: number | nul
       </div>
       <StandingPolicyPanel s={s} />
       {s.template.key === 'tool_fleet' && <TablesPanel s={s} />}
+      {showReplay(s) && <ReplayPanel s={s} />}
       {currentAccount()?.role !== 'Finance' && <ModelsPanel />}
       {describing && <DescribeDialog org={s.org} prompts={[]} onClose={() => setDescribing(false)} />}
     </>

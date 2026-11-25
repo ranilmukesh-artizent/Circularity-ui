@@ -36,6 +36,7 @@ EXTRA_PERMS: dict[str, tuple[str, ...]] = {
     "approve.flows": ("Admin", "Approver"),
     "manageAgents": ("Admin",),
     "openCases": ("Admin", "Developer", "Planner"),
+    "runReplay": ("Admin", "Planner", "Executive"),  # plan 9 P9-7.1: import history, read replay reports (Executive reads)
     "managePacks": ("Admin", "Planner"),  # plan 9 P9-1.6: import and submit a pack version
     "approve.packs": ("Admin", "Approver"),  # plan 9 P9-1.6: approve or return a pack version
     "manageStandingPolicy": ("Admin",),  # plan 9 P9-2.5: draft and submit a standing policy
