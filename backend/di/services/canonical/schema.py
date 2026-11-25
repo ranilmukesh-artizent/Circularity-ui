@@ -28,6 +28,10 @@ Models use the namespaces of the demo's field mappings (MAPPINGS in index.html):
                                                 reason, claims, cover terms, non-return fee
     repair_event   Repair event (P9-3.1)         one repair order of the legacy depot repair log (grade, components,
                                                 hours, cost) or one teardown verdict (kind `teardown`)
+    recall         Safety recall (P9-3.2)        one notice of the recall register: tool class, serial range, remedy,
+                                                affected parts, status
+    stock_unit     Refurbished unit (P9-3.2)     one refurbished tool in stock: serial, class, grade, remaining life,
+                                                site, status
 Route candidate and Decision are produced by Circularity itself (B10-B13), not by connectors; an Outcome's actuals
 are read back from S/4HANA.
 
@@ -50,7 +54,7 @@ from di.services.canonical.fields import CONNECTOR_FIELDS
 
 MODELS = (
     "asset", "condition", "demand", "intervention", "market", "route", "sustainability", "vendor", "outcome", "part", "bom",
-    "compliance", "contract", "contract_line", "repair_event",
+    "compliance", "contract", "contract_line", "repair_event", "recall", "stock_unit",
 )  # fmt: skip
 SHARED_ORG = "shared"  # the key prefix of PLM data bound to no org unit
 
@@ -165,7 +169,8 @@ NAMED_ORDER_FIELDS = {
 # the identity keys of canonical.json's models, and of the PLM part and BOM line (MVP-9.1)
 REQUIRED = {
     ("asset", "asset_id"), ("demand", "demand_id"), ("part", "number"), ("bom", "parent"), ("bom", "child"),
-    ("contract", "contract_id"), ("contract_line", "line_id"), ("repair_event", "event_id"),
+    ("contract", "contract_id"), ("contract_line", "line_id"), ("repair_event", "event_id"), ("recall", "recall_id"),
+    ("stock_unit", "unit_id"),
 }  # fmt: skip
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
