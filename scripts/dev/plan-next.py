@@ -48,6 +48,12 @@ APPEND_FILES = {
     "docs/agents/plans/PROGRESS.md", "docs/backend-steps.md",
 }
 ID = r"P9-\d+\.\d+"
+# PLAN_DEPS_ONLY=1 (lane B, for more writers in parallel): inside the lane, a phase waits for its tasks' own
+# "Depends on" instead of the whole previous phase ("the Phase N task that ..." keeps phase N as a prerequisite), and
+# logic files are ordered only within one track (tool fleet 3-5, device 6). Prerequisite phases outside the lane
+# still apply.
+DEPS_ONLY = os.environ.get("PLAN_DEPS_ONLY") == "1"
+TRACK = {3: "tool fleet", 4: "tool fleet", 5: "tool fleet", 6: "device"}
 
 
 # Files that writers only append to in their own region (a test, a smoke step, a facade function, a pack entry, a
@@ -69,7 +75,7 @@ def parse() -> dict[str, dict]:
     tasks: dict[str, dict] = {}
     for m in re.finditer(rf"^- \[([ x])\] ({ID}) (.*)$", text, re.M):
         tasks[m.group(2)] = {"done": m.group(1) == "x", "title": m.group(3), "deps": set(), "files": set(),
-                             "size": "M", "gate": bool(re.match(r"Phase \d+ gate", m.group(3)))}
+                             "size": "M", "gate": bool(re.match(r"Phase \d+ gate", m.group(3))), "phase_deps": set()}
     specs = re.split(rf"(?m)^(?=#### {ID} )", text[text.index("## Task specs"):text.index("## Story coverage matrix")])
     for blk in specs:
         m = re.match(rf"#### ({ID}) ", blk)
@@ -83,6 +89,7 @@ def parse() -> dict[str, dict]:
             for a, b in re.findall(rf"({ID})\s*(?:to|…|\.\.\.|–|�)\s*({ID})", d.group(1)):
                 lo, hi = key(a), key(b)
                 t["deps"] |= {o for o in tasks if key(o)[0] == lo[0] and lo[1] <= key(o)[1] <= hi[1]} - {m.group(1)}
+            t["phase_deps"] = {int(p) for p in re.findall(r"Phase (\d+) tasks?\b", d.group(1))}
         s = re.search(r"\*\*Size:\*\*\s*([SML])", blk)
         if s:
             t["size"] = s.group(1)
@@ -116,9 +123,14 @@ def ready(tasks: dict, done: set, inflight: set, blocked: set, limit: int, lane:
         ph = key(tid)[0]
         if not t["deps"] <= done:
             continue
-        if any(key(o)[0] in PHASE_AFTER.get(ph, set()) and o not in done for o in tasks):
+        after = PHASE_AFTER.get(ph, set())
+        if DEPS_ONLY and lane is not None:
+            after = {p for p in after if not any(key(o)[0] == p for o in lane)} | t["phase_deps"]
+        if any(key(o)[0] in after and o not in done for o in tasks):
             continue
         earlier = [o for o in order[:i] if o not in done]
+        if DEPS_ONLY:
+            earlier = [o for o in earlier if TRACK.get(key(o)[0]) == TRACK.get(ph)]
         if any(tasks[o]["files"] & core(t["files"]) for o in earlier):
             continue
         if any(key(o)[0] == ph and o not in done and tasks[o]["gate"] for o in earlier):
