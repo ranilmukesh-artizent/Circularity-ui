@@ -898,7 +898,7 @@ each story went.
 - [ ] P9-5.7 Renewal outcomes recorded and compared
 - [ ] P9-5.8 Paths agree and order invariant for refresh
 - [ ] P9-5.9 Phase 5 gate
-- [ ] P9-6.1 Device mocks for registry, lab and market
+- [x] P9-6.1 Device mocks for registry, lab and market
 - [ ] P9-6.2 Device data tables, registry and lab adapters
 - [ ] P9-6.3 Device market adapter
 - [ ] P9-6.4 One case per received device

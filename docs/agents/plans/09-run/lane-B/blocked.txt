@@ -1,1 +1,2 @@
 # Lane B blocked tasks (task id, reason, decision needed)
+P9-3.21 waits for P9-3.6 ... P9-3.20 (plan-next.py does not expand the '...' range in Depends on, so it shows this task as ready); unblock when those are ticked

@@ -58,7 +58,7 @@ def test_health_stays_ok_with_the_demo_count(client):
     body = client.get("/health").json()
     assert (body["status"], body["systems"], body["missing_schemas"]) == ("ok", 21, [])
     listed = {s["source_id"]: s for s in client.get("/_sim/systems").json()}
-    assert listed["plm_wc"]["implemented"] and len(listed) == 22
+    assert listed["plm_wc"]["implemented"] and len(listed) == 21 + len(EXTRA_BY_ID)
 
 
 # ------------------------------------------------------------------ auth
