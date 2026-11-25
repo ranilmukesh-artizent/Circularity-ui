@@ -86,3 +86,6 @@ One line per event, newest last, times from `date`.
 | 25 Nov 22:18 | P9-3.9 merged. wear index and RUL per component from the PLM table; Low life holds release and redeploy (LOW_LIFE_HELD); no model step (P9-3.10 adds the model) |
 | 2026-11-26 03:48 | Committed P9-3.9 (w2 addfcdf) as cb266f8. Dispatch P9-3.10 w2, P9-3.11 w4, P9-5.2 w5, P9-3.12 w6 (new worktree; shares tool_inputs.py with 3.10 and screens/toolfleet.py with 3.11, merged by the lead). |
 | 25 Nov 22:19 | P9-4.7 merged. serviceDesk.postFault held for a person (HELD_FOR_PERSON); four fault codes; re-decision through intake.revalue (decide_case); no model step |
+| 2026-11-26 03:50 | Committed P9-4.7 (w3 edab27b) as 676e8b3. My first commit 211f194 kept a forbidden.py conflict (registry.saveEntry vs serviceDesk.postFault): resolved both kept, amended before any push. Lesson: stop the tick when the cherry-pick conflicts. Dispatch P9-4.10 to w3. |
+| 2026-11-26 03:58 | P9-4.8 returned by w1 (bb22730), partial: test_sd_07_one_set_of_orders deferred to P9-4.9 (needs its execution plan); paths-agree covers intake, reevaluate and decide_case only (simulate and chain go to the paths-agree tasks). w1 ports it onto the head (ServiceDeskTabs conflict with P9-4.7), then does P9-4.9. |
+| 2026-11-26 04:09 | Verify P9-3.9 + P9-4.7 green (20 api files, lint, web). Pushed. |
