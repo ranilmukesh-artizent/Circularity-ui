@@ -259,6 +259,17 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "vibration_mm_s": "number",
         "vibration_zone": "text",
         "wipe_certificate": "object",
+        # plan 9, P9-9.4: the vehicle inspection app (uc_insp); inspection_ref, inspection_status are the existing ones
+        "battery_assessment_ref": "ref",
+        "battery_assessment_result": "text",
+        "battery_soh": "number",
+        "condition_score": "number",
+        "hail_damage": "bool",
+        "inspection_at": "date",
+        "odometer_photo_reading": "number",
+        "paired_devices": "bool",
+        "recon_estimate": "number",
+        "recon_lines": "list",
     },
     "demand": {
         "accepts_refurbished": "bool",
