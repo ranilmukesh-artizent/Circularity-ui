@@ -31,3 +31,56 @@ Phases 9 to 13 are split later, once A and B are merged.
 3. After each lane B phase gate, the integrator merges `feature/plan-09-lane-b` into `feature/plan-09-recover`, runs
    the full gate, folds `lane-B/PROGRESS.md` into `PROGRESS.md`, and pushes.
 4. Nobody pushes to `main`. Each person pushes only their own lane branch.
+
+## Guardrails for an unattended lane
+
+Put these deny rules in `.claude/settings.local.json` (never committed) on the lane's machine, so no agent can push
+another branch by force, rewrite history, or edit what must not change:
+
+```json
+{
+  "permissions": {
+    "deny": [
+      "Bash(git reset --hard:*)",
+      "PowerShell(git reset --hard:*)",
+      "Bash(git rebase:*)",
+      "PowerShell(git rebase:*)",
+      "Bash(git stash:*)",
+      "PowerShell(git stash:*)",
+      "Bash(git checkout --:*)",
+      "PowerShell(git checkout --:*)",
+      "Bash(git clean:*)",
+      "PowerShell(git clean:*)",
+      "Edit(./fixtures/golden/**)",
+      "Write(./fixtures/golden/**)",
+      "Edit(./backend/migrations/versions/000*)",
+      "Write(./backend/migrations/versions/000*)",
+      "Edit(./backend/migrations/versions/001*)",
+      "Write(./backend/migrations/versions/001*)",
+      "Edit(./backend/migrations/versions/0020_*)",
+      "Edit(./backend/migrations/versions/0021_*)",
+      "Edit(./backend/migrations/versions/0022_*)",
+      "Edit(./backend/migrations/versions/0023_*)",
+      "Edit(./backend/migrations/versions/0024_*)",
+      "Edit(./backend/migrations/versions/0025_*)",
+      "Edit(./backend/migrations/versions/0026_*)",
+      "Edit(./backend/migrations/versions/0027_*)",
+      "Edit(./backend/migrations/versions/0028_*)",
+      "Bash(git push --force:*)",
+      "PowerShell(git push --force:*)"
+    ]
+  }
+}
+```
+
+Lane B may push its own branch (`git push origin feature/plan-09-lane-b`), so plain `git push` is not denied there.
+
+## Tools both lanes use
+
+| Tool | What |
+|---|---|
+| `scripts/dev/plan-next.py --phases <list> --max 2` | the lane's ready tasks (`PLAN_RUN` for the lane's run folder) |
+| `docs/agents/plans/09-run/WRITER-BRIEF.md` | what every writer follows |
+| `scripts/dev/wt-check.sh <k> <tests>` | a writer's checks from its worktree, on its own database |
+| `scripts/dev/lead-verify.sh [--suite] [--smoke] <tests>` | the lead's checks after a merge |
+| `scripts/dev/plan-tick.py <task> <sha> "<checks>" "<note>"` | tick, progress row, log, commit message |
