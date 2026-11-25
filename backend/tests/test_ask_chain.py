@@ -3,9 +3,11 @@
 import groq
 import httpx
 import pytest
+from sqlalchemy import text
 
 import di.main  # noqa: F401  (loads every action before Ask's tools check them)
 from di.core.config import get_settings, model_chain
+from di.core.db import SessionLocal
 from di.services.actions import workflow_builder
 from di.services.ask import complete, groq_model, modeler_read
 from di.services.ask.chain import ChainModel
@@ -145,8 +147,25 @@ def test_empty_chain_is_todays_single_model(monkeypatch):
 
 
 def test_chain_of_two_gives_a_chain_model_and_other_providers_are_skipped(chain_env, monkeypatch):
-    m = get_model()
-    assert isinstance(m, ChainModel) and m.model == "m1" and [x.model for x in m.models] == ["m1", "m2"]
+    # plan 9 P9-2.3: Ask's models are the router's rows (llm_model), no longer ASK_MODEL_CHAIN
+    with SessionLocal() as s:
+        s.execute(text("UPDATE llm_model SET model = 'm1' WHERE id = 'groq-default'"))
+        s.execute(
+            text(
+                "INSERT INTO llm_model (id, provider, model, key_ref, rpm, tpm, rpd, roles, priority) "
+                "VALUES ('groq-second', 'groq', 'm2', 'env:GROQ_API_KEY', 30, 8000, 1000, ARRAY['ask'], 2)"
+            )
+        )
+        s.commit()
+    monkeypatch.setenv("GROQ_MODEL", "")
+    try:
+        m = get_model()
+        assert isinstance(m, ChainModel) and m.model == "m1" and [x.model for x in m.models] == ["m1", "m2"]
+    finally:
+        with SessionLocal() as s:
+            s.execute(text("DELETE FROM llm_model WHERE id = 'groq-second'"))
+            s.execute(text("UPDATE llm_model SET model = 'openai/gpt-oss-120b' WHERE id = 'groq-default'"))
+            s.commit()
     monkeypatch.setenv("ASK_MODEL_CHAIN", "other:x, groq:m3")
     get_settings.cache_clear()
     assert model_chain(get_settings()) == [("groq", "m3")]

@@ -16,7 +16,10 @@ Each time the loop is about to send the next request (and at the end) the messag
 `message_history` and `deferred_tool_results`; a deferred tool is never invoked again.
 
 No model (the factory returns None): `LoopResult(output=None, model=None)` and no request, so the caller takes its
-deterministic path (R16). Never does: choose a model (the router, P9-2.3, will be the factory), start OpenTelemetry,
+deterministic path (R16). The model comes from the router (di.services.llm.router, P9-2.3: the default factory
+`router_model_factory(s, run_id, role)`): budgets, cooldowns, a fallback on 429 or 5xx, and the model that answered
+kept in `state.model_route`.
+Never does: start OpenTelemetry,
 or call an action outside the spec. Tests use `FunctionModel` or `TestModel`, never a live provider.
 """
 
@@ -41,15 +44,15 @@ from pydantic_ai.usage import UsageLimits
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.core.config import DEFAULT_GROQ_MODEL, get_settings
 from di.services.actions.pipeline import CallContext, invoke
 from di.services.actions.registry import ACTIONS
 from di.services.agents import catalog
 from di.services.agents.loop import ASK_PERSON, Deferred, LoopResult, LoopSpec
+from di.services.llm import router
 
 ALREADY_DONE = "Already done; nothing was created twice."
 TOOL_RETRIES = 2
-ModelFactory = Callable[[Session, str], Model | None]
+ModelFactory = Callable[[Session, str, str], Model | None]  # (session, run id, role)
 
 
 @dataclass
@@ -59,16 +62,21 @@ class _Deps:
     tainted: bool = False
 
 
-def default_model_factory(s: Session, role: str) -> Model | None:  # noqa: ARG001 - the router (P9-2.3) will use both
-    """The Groq model of the settings, or None without a key (so no request is ever made)."""
-    cfg = get_settings()
-    key = cfg.groq_api_key.get_secret_value()
-    if not key:
+def router_model_factory(s: Session, run_id: str, role: str) -> Model | None:
+    """The router's model for the run (P9-2.3): its sticky model first, then the rest of the chain as fallbacks; None
+    when every model is cooling, out of budget or without a key (so no request is ever made)."""
+    first = router.pick_model(s, run_id, role)
+    if first is None:
         return None
-    from pydantic_ai.models.groq import GroqModel
-    from pydantic_ai.providers.groq import GroqProvider
+    rest = [r for r in router.chain_for(s, role, needs_tools=role == "agent") if r.id != first.id]
+    return router.build_model(s, [first, *rest])
 
-    return GroqModel(cfg.groq_model.strip() or DEFAULT_GROQ_MODEL, provider=GroqProvider(api_key=key))
+
+def _name(model: Model) -> str | None:
+    """The model that answered (the router's), else the model's own name."""
+    if isinstance(model, router.RouterModel) and model.answered is not None:
+        return model.answered.model
+    return getattr(model, "model_name", None)
 
 
 def _action_tool(action_id: str) -> Tool[_Deps]:
@@ -126,17 +134,17 @@ def _save_turn(s: Session, run_id: str, new: list[ModelMessage], model: str | No
 
 
 class PydanticAILoop:
-    def __init__(self, model_factory: ModelFactory = default_model_factory) -> None:
+    def __init__(self, model_factory: ModelFactory = router_model_factory) -> None:
         self._factory = model_factory
 
     def run(
         self, s: Session, spec: LoopSpec, prompt: str, *, ctx: CallContext, resume: Mapping[str, Any] | None = None
     ) -> LoopResult:
-        model = self._factory(s, spec.role)
-        if model is None:
-            return LoopResult(output=None, model=None)
         if ctx.run_id is None:
             raise ValueError("an agent loop runs inside an agent run (ctx.run_id)")
+        model = self._factory(s, str(ctx.run_id), spec.role)
+        if model is None:
+            return LoopResult(output=None, model=None)
         return asyncio.run(self._run(s, spec, prompt, ctx, resume, model))
 
     async def _run(
@@ -155,7 +163,7 @@ class PydanticAILoop:
         deps = _Deps(ctx=ctx, untrusted=spec.untrusted_tools)
         answers = DeferredToolResults(calls=dict(resume)) if resume else None
         saved = len(history)
-        name = getattr(model, "model_name", None)
+        name = _name(model)
         async with agent.iter(
             None if resume is not None else prompt,
             message_history=history or None,
@@ -166,6 +174,9 @@ class PydanticAILoop:
             async for node in ar:
                 # a request node is next (the tools of the last response have run) or the run ended: save the new messages
                 if type(node).__name__ in ("ModelRequestNode", "End") and len(ar.all_messages()) > saved:
+                    name = _name(model)
+                    if isinstance(model, router.RouterModel) and model.answered is not None:
+                        router.record_route(s, run_id, model.answered.id)
                     _save_turn(s, run_id, ar.all_messages()[saved:], name)
                     saved = len(ar.all_messages())
         result = ar.result

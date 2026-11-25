@@ -111,7 +111,7 @@ def loop_run(script: Script, run_id: str, tools: tuple[str, ...], resume: dict |
     """The loop alone, on an existing run."""
     with SessionLocal() as s:
         ctx = runtime._context(s, runtime.get(s, run_id))
-        return PydanticAILoop(lambda _s, _role: script.model()).run(s, spec(tools, **kw), "Go.", ctx=ctx, resume=resume)
+        return PydanticAILoop(lambda _s, _run, _role: script.model()).run(s, spec(tools, **kw), "Go.", ctx=ctx, resume=resume)
 
 
 def tool_returns(messages: list) -> list[ToolReturnPart]:
@@ -122,7 +122,7 @@ def test_x_05_accept_resumes_with_person_result_no_rerun():
     register("propose")
     playbook_versions.register(PB, "1", lambda: spec(("evidence.request",)))
     script = Script(tool_call("evidence_request", {"case_id": BLOCKED}, "tc1"))
-    runtime.set_loop(PydanticAILoop(lambda _s, _role: script.model()))
+    runtime.set_loop(PydanticAILoop(lambda _s, _run, _role: script.model()))
     run_id = start(BLOCKED, "planner-a")
     r = drive(run_id)
     assert r["status"] == "waiting" and r["state"]["waiting"] == "proposal"
@@ -144,7 +144,9 @@ def test_x_05_accept_resumes_with_person_result_no_rerun():
 def test_x_05_rejected_deferred_call_stops_the_run():
     register("propose")
     playbook_versions.register(PB, "1", lambda: spec(("evidence.request",)))
-    runtime.set_loop(PydanticAILoop(lambda _s, _role: Script(tool_call("evidence_request", {"case_id": BLOCKED}, "tc1")).model()))
+    runtime.set_loop(
+        PydanticAILoop(lambda _s, _run, _role: Script(tool_call("evidence_request", {"case_id": BLOCKED}, "tc1")).model())
+    )
     run_id = start(BLOCKED, "planner-a")
     pid = next(iter(drive(run_id)["state"]["deferred"].values()))
     assert call("proposal.reject", {"id": pid, "reason": "Not this one, thanks."}, "admin")["ok"] is True
@@ -253,7 +255,7 @@ def test_loop_no_model_returns_none():
     run_id = start()
     with SessionLocal() as s:
         ctx = runtime._context(s, runtime.get(s, run_id))
-        r = PydanticAILoop(lambda _s, _role: None).run(s, spec(), "Go.", ctx=ctx)
+        r = PydanticAILoop(lambda _s, _run, _role: None).run(s, spec(), "Go.", ctx=ctx)
     assert r.output is None and r.model is None and r.deferred == []
     assert messages_rows(run_id) == 0
 
@@ -263,6 +265,6 @@ def test_loop_refusal_retries_then_fails_the_run():
     playbook_versions.register(PB, "1", lambda: spec(("evidence.request",)))
     # RT-1048 has no missing evidence: evidence.request refuses every time
     bad = tool_call("evidence_request", {"case_id": CASE}, "tc1")
-    runtime.set_loop(PydanticAILoop(lambda _s, _role: Script(bad, bad, bad, bad).model()))
+    runtime.set_loop(PydanticAILoop(lambda _s, _run, _role: Script(bad, bad, bad, bad).model()))
     r = drive(start())
     assert r["status"] == "failed" and "The model loop failed" in r["state"]["reason"]

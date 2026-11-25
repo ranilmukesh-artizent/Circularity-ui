@@ -8,7 +8,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, fitModel, promoteModel, proposeModel, registerAgent, rejectProposal, stageLabel, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, fitModel, promoteModel, proposeModel, registerAgent, rejectProposal, setLlmModel, stageLabel, startRun, updateAgent, useAgents, useModels,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
 
@@ -49,6 +49,7 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
         'agent.register',
         { id: 'ext-b', name: 'B', kind: 'external', tools: ['cases.list'], org_scope: [], autonomy: 'propose' },
       ],
+      [() => setLlmModel('groq-default', { enabled: false, priority: 2 }), 'llm.setModel', { id: 'groq-default', enabled: false, priority: 2 }],
       [() => fitModel(), 'model.fit', { template: 'industrial' }],
       [() => fitModel('device'), 'model.fit', { template: 'device' }],
       [() => proposeModel('MV-001'), 'model.propose', { id: 'MV-001' }],
@@ -69,6 +70,6 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
   });
 
   it('an agent change or a decided proposal refreshes every page', () => {
-    for (const id of ['agent.update', 'agent.register', 'agent.startRun', 'proposal.accept', 'proposal.reject', 'model.fit', 'model.propose', 'model.promote']) expect(actionScope(id)).toBe('all');
+    for (const id of ['agent.update', 'agent.register', 'agent.startRun', 'proposal.accept', 'proposal.reject', 'model.fit', 'model.propose', 'model.promote', 'llm.setModel']) expect(actionScope(id)).toBe('all');
   });
 });

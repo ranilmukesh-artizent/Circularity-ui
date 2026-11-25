@@ -34,6 +34,7 @@ from di.models.instructions import instruction
 from di.models.jobs import Job
 from di.models.journal import action_journal, domain_event, stream_event
 from di.models.learning import model_version
+from di.models.llm import llm_budget, llm_model
 from di.models.modeler import decision_flow, decision_flow_version, shadow_decision
 from di.models.org import org_unit
 from di.models.overlay import customer_overlay
@@ -64,6 +65,8 @@ __all__ = [
     "field_mapping",
     "fx_rate",
     "instruction",
+    "llm_budget",
+    "llm_model",
     "metadata",
     "model_version",
     "org_unit",

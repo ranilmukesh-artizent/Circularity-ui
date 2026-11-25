@@ -73,3 +73,5 @@ unattended". Times are local (IST).
 | 25 Nov 13:59 | P9-2.1 merged. Sonnet; red first quoted; nine stage agents seeded (starting.py re-seeds them on reset); watch for P9-2.4: industrial cases have no grade evidence, so condition confidence is 0. |
 | 25 Nov 13:59 | P9-2.1 merged and pushed after a test-isolation fix (`9d86967`: the RT-1048 milestone test kept a stale settings object; P9-0.9 tests clear the cache). P9-2.2 to w1. |
 | 25 Nov 14:28 | P9-2.2 merged. Sonnet; red proven after the code (base-commit collection error); Pydantic AI docs read; migration 0035 filled; licence row for pydantic-ai already has 2.73.0 from setup. |
+| 25 Nov 14:28 | P9-2.2 merged and pushed. P9-2.4 (lane B waits on it) to w1, P9-2.3 to w2. |
+| 25 Nov 14:59 | P9-2.3 merged. Sonnet; red first quoted; Pydantic AI FallbackModel docs read; open: runtime drops model_route on save (pick_model uses state.model), Ask has no budgets yet, complete_json still reads ASK_MODEL_CHAIN. |

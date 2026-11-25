@@ -19,6 +19,9 @@ the tool catalogue.
                    or reject them with proposal.accept and proposal.reject, as the person (`own`: only reject)
         tools      the tool catalogue (di.services.agents.catalog), read only: every action with its input schema and
                    whether an agent may call it
+        llm        the language models (di.services.llm.view): [{id, provider, model, roles, rpm, tpm, rpd, enabled,
+                   priority, used_minute: {requests, tokens}, used_day, cooling_until}]; Admin switches and orders them
+                   with llm.setModel (plan 9 P9-2.3), other roles see an empty list
         can        {manage}: the account may change agents (manageAgents). The actions check again.
 
 Access: the `agents` page (Admin, Developer). Agents never decide a proposal or change an agent: the page's buttons
@@ -57,6 +60,7 @@ from di.services.agents import proposals, registry
 from di.services.agents.catalog import catalog
 from di.services.agents.stage_context import STAGE_IDS
 from di.services.engine.predictor import FormulaPredictor
+from di.services.llm.view import models_view
 from di.services.modeler.templates import TEMPLATE_KEYS
 
 RUNS = 50
@@ -120,6 +124,7 @@ def page(p: Principal, s: Session) -> dict[str, Any]:
         "runs": _runs(p, s, {a.id: a.name for a in agents}),
         "proposals": proposals.pending_for(s, p.account, p.ctx),
         "tools": catalog(),
+        "llm": models_view(s) if policy.can(p.account, "manageAgents", p.ctx) else [],
         "can": {"manage": policy.can(p.account, "manageAgents", p.ctx)},
     }
 

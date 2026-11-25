@@ -7,6 +7,7 @@ import { useBackend } from '../../api/useBackend';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import { LlmModelsPanel } from './LlmModelsPanel';
 import { ModelsPanel } from './ModelsPanel';
 import { RegisterAgentDialog } from './RegisterAgentDialog';
 
@@ -40,6 +41,7 @@ export function AgentsPage() {
       <Registry s={s} />
       <Proposals list={s.proposals} />
       <Runs s={s} />
+      <LlmModelsPanel s={s} />
       <ModelsPanel />
       <Catalogue s={s} />
     </div>

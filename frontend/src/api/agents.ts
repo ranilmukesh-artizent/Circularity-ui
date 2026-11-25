@@ -8,6 +8,8 @@
  * Plan 8 UI gaps: Admin registers an agent (agent.register; a tool no agent may use is refused by the server). The Models
  * panel reads GET /api/screens/agents/models; a Planner or Admin fits a candidate (model.fit) and proposes it
  * (model.propose), a different person with approve.flows promotes it (model.promote). Agents never run these.
+ *
+ * Plan 9 P9-2.3: `useAgents().llm` lists the language models (Admin); setLlmModel is llm.setModel. Agents never run it.
  */
 import { invoke } from './actions';
 import { cached } from './client';
@@ -91,7 +93,28 @@ export interface AgentsScreen {
   runs: AgentRun[];
   proposals: AgentProposal[];
   tools: CatalogTool[];
+  /** the language models (Admin; an empty list for other roles) */
+  llm: LlmModel[];
   can: { manage: boolean };
+}
+
+export type LlmRole = 'ask' | 'agent' | 'author' | 'judge';
+
+/** A language model the router may use (plan 9, P9-2.3): its limits, use this minute and today, and any cooldown. */
+export interface LlmModel {
+  id: string;
+  provider: 'groq' | 'test';
+  model: string;
+  roles: LlmRole[];
+  rpm: number;
+  tpm: number;
+  rpd: number;
+  enabled: boolean;
+  priority: number;
+  used_minute: { requests: number; tokens: number };
+  used_day: { requests: number; tokens: number };
+  /** the model is out of the chain until this time (an ISO timestamp), else null */
+  cooling_until: string | null;
 }
 
 /** The Agents page (Suspense read cache). */
@@ -185,3 +208,8 @@ export const proposeModel = (id: string): Promise<ActionResult<ModelVersion>> =>
 /** Approve the promotion: the candidate becomes the active model (approve.flows; never its maker or proposer). */
 export const promoteModel = (id: string): Promise<ActionResult<{ id: string; status: string; retired: string | null }>> =>
   invoke('model.promote', { id });
+
+export type LlmModelPatch = Partial<Pick<LlmModel, 'enabled' | 'priority' | 'roles' | 'rpm' | 'tpm' | 'rpd'>>;
+
+/** Switch a language model on or off, order it, or change its roles or limits (Admin, manageAgents; llm.setModel). */
+export const setLlmModel = (id: string, patch: LlmModelPatch): Promise<ActionResult<LlmModel>> => invoke('llm.setModel', { id, ...patch });
