@@ -18,6 +18,7 @@ import { Delta, pctDelta } from '../../components/kit/Delta';
 import { IconTile } from '../../components/kit/IconTile';
 import { Segmented } from '../../components/kit/Segmented';
 import { StatusChip } from '../../components/kit/StatusChip';
+import { MappingSuggestions } from './MappingSuggestions';
 import { VendorLogo } from '../../components/kit/VendorLogo';
 import { TestSteps } from './ConnectionTests';
 import { canMgr, NOMGR, useInt } from './FabricContext';
@@ -494,6 +495,7 @@ function MapTab({ s, dirty, d, maps, errs: e, onChange, onReverted }: {
         Source field → canonical field. Units, currency, timestamps and status codes are normalised; source values and provenance are retained. Target model: <b>{srcTypes()[d.type].target}</b>.
       </p>
       {s && <MapVersionBar s={s} maps={maps} dirty={dirty} onReverted={onReverted} />}
+      {s && <MappingSuggestions sourceId={s.id} />}
       <datalist id="canonFields">{opts.map((o) => <option key={o} value={o} />)}</datalist>
       {maps.length ? (
         <div className="tw">

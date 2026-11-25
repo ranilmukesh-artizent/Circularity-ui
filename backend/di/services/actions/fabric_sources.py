@@ -1021,3 +1021,52 @@ def mapping_save(i: dict[str, Any], ctx: CallContext):
     lifecycle.save(ctx.session, cfg)
     _event(ctx, cur, "connector.updated", "acknowledged", f"Config v{ver}: field mapping saved")
     return {"source_id": sid, "version": version, "ver": ver, "rows": len(maps)}
+
+
+ACTIONS["mapping.suggest"].perm = _MGR  # the demo's PERM_ACTS.manageIntegrations (P9-8.2)
+ACTIONS["mapping.suggest"].input |= {"resource": {"req": False, "t": "string"}}
+
+
+def _family_memory(s: Any, sid: str, vendor: str) -> dict[str, str]:
+    """Source field -> model.field from the newest accepted mapping rows of every source of the vendor's family (its first
+    word, the source itself included): what a person accepted before for this kind of system."""
+    fam = vendor.split()[0].lower() if vendor.strip() else ""
+    same = "SELECT id FROM source_system WHERE lower(split_part(vendor, ' ', 1)) = :f OR id = :i"
+    rows = s.execute(text(same), {"f": fam, "i": sid})
+    memory: dict[str, str] = {}
+    for (other,) in rows.all():
+        for r in mapping.active_rows(s, other):
+            memory.setdefault(r.src, f"{r.model}.{r.field}")
+    return memory
+
+
+@implement("mapping.suggest")
+def mapping_suggest_fields(i: dict[str, Any], ctx: CallContext):
+    """P9-8.2 (I-19): propose canonical fields for the fields the source's stored sample has (up to 500 records per
+    resource, discover.SAMPLE), with calibrated confidence, a band and a reason. The profiles are masked before the model
+    reads them (di.connectors.mapping_suggest); the model, when the router has one, only reranks the candidates. Rows:
+    the proposal, its `resource` and its masked `samples`; `gaps`: required canonical fields of the models proposed with
+    no proposal. Writes nothing: a person accepts rows in the Data Mapping tab (P9-8.4)."""
+    from di.connectors import discover, mapping_suggest
+    from di.services.agents.mapping_rerank import make_reranker
+
+    sid, only = str(i["source_id"]), str(i.get("resource") or "")
+    s = ctx.session
+    row = s.execute(text("SELECT vendor FROM source_system WHERE id = :i"), {"i": sid}).first()
+    if row is None or lifecycle.is_deleted(s, sid):
+        raise ActionError("not_found", f"No source {sid}.")
+    canon = mapping_suggest.canonical_fields()
+    memory = _family_memory(s, sid, row.vendor)
+    rerank = make_reranker(ctx)
+    rows: list[dict[str, Any]] = []
+    for res, recs in discover._samples(s, sid).items():
+        if only and res != only:
+            continue
+        sample = [p for _, p in recs]
+        profiles = [mapping_suggest.profile(sample, f) for f in mapping_suggest.field_paths(sample)]
+        for p, prop in zip(profiles, mapping_suggest.suggest(profiles, sample, canon, memory=memory, rerank=rerank), strict=True):
+            rows.append(prop.as_dict() | {"resource": res, "samples": p.top_values})
+    models = {r["target"].split(".")[0] for r in rows if r["target"]}
+    have = {r["target"] for r in rows if r["target"]}
+    gaps = [c.target for c in canon if c.required and c.model in models and c.target not in have]
+    return {"source_id": sid, "rows": rows, "gaps": gaps, "by_model": any(r["proposed_by"] == "model" for r in rows)}

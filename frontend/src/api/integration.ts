@@ -345,6 +345,16 @@ export const saveMapping = (id: string, maps: string[][], note?: string) =>
   invoke<{ source_id: string; version: number; ver: string; rows: number }>('mapping.save', {
     source_id: id, maps, ...(note ? { note } : {}),
   });
+/** Suggested field mappings (mapping.suggest, plan 9 P9-8.2): a draft, nothing is saved. `confidence` is calibrated (0 to 1),
+ * never the model's own number; `band` says whether a row is pre-ticked, to check, or has no proposal; `samples` are masked. */
+export type MappingBand = 'pre_ticked' | 'check' | 'none';
+export interface MappingSuggestion {
+  field: string; target: string | null; confidence: number; reason: string; rule: string; proposed_by: 'rule' | 'memory' | 'model';
+  candidates: [string, number][]; band: MappingBand; resource: string; samples: string[];
+}
+export interface MappingSuggestions { source_id: string; rows: MappingSuggestion[]; gaps: string[]; by_model: boolean }
+export const suggestFieldMappings = (sourceId: string, resource?: string) =>
+  invoke<MappingSuggestions>('mapping.suggest', { source_id: sourceId, ...(resource ? { resource } : {}) });
 export async function resolveConflict(id: string, choice?: ConflictChoice) {
   // the server names the authority and the kind; the queue's copy is the fallback
   const c = (lastConflicts ? peek<ConflictAnswer>(lastConflicts)?.conflicts : undefined)?.find((x) => x.id === id);

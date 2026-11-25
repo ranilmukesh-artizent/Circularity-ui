@@ -107,3 +107,5 @@ unattended". Times are local (IST).
 | 25 Nov 20:04 | P9-2.20 merged. lease end, return authorised and transit stage agents |
 | 25 Nov 20:10 | P9-8.5 merged. configured adapter reads dlt-style paging and selectors (pattern, no dlt dependency) |
 | 25 Nov 21:00 | P9-8.5 merged. Sonnet; configured adapter reads dlt-style paging and JSONPath selectors (pattern only, no new library). 283 source-sim, 77 api, 402 web, lint. Lead: also ticks P9-2.20 (writer left it unticked) |
+| 25 Nov 20:15 | P9-8.2 merged. mapping suggestions with calibrated confidence; top-1 28% on the 93-row gold set, so nothing is pre_ticked (needs a bigger gold set) |
+| 25 Nov 21:10 | P9-8.2 merged. Sonnet; field mapping suggestions with calibrated confidence (model rerank, R16). Honest result: top-1 28% on a 93-row gold set, so nothing is pre_ticked at threshold 2.0; needs a bigger gold set. 79 api, 404 web, lint |

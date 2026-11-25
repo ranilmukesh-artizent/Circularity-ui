@@ -25,7 +25,7 @@ from tests.helpers import call, client, h
 
 AGENT = "coordinator"  # seeded, autonomy act
 UNBUILT = (
-    "analytics.query", "audit.search", "sources.health", "sources.diagnose", "mapping.suggest", "mapping.apply",
+    "analytics.query", "audit.search", "sources.health", "sources.diagnose", "mapping.apply",
     "tables.suggestLinks", "tables.describe", "conflict.suggest", "import.clean", "event.explain", "asset.summary",
 )  # fmt: skip
 SID = "insp"

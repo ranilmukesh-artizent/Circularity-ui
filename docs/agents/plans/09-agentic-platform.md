@@ -930,7 +930,7 @@ each story went.
 - [ ] P9-7.8 Phase 7 demo smoke script
 - [ ] P9-7.9 Phase 7 gate
 - [x] P9-8.1 Adapter registry with environments and owner approval
-- [ ] P9-8.2 Field mapping suggestions with calibrated confidence
+- [x] P9-8.2 Field mapping suggestions with calibrated confidence
 - [ ] P9-8.3 Discovery samples 500 records from the test connection
 - [ ] P9-8.4 Five mapping choices with ask the owner
 - [x] P9-8.5 Configured adapter reads dlt-style paging and selectors
