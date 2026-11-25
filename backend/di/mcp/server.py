@@ -9,6 +9,8 @@
   container's proxy).
 - **Mount:** `mount(app)` (di.main) adds the route `/mcp` (exactly, no redirect) to the FastAPI app and runs the session
   manager inside the app's lifespan, as the SDK's session manager documents (`async with session_manager.run()`).
+- **OAuth (P9-2.14):** the gate also answers 401 with the resource metadata URL, refuses a token for another audience
+  and a call outside the token's scope (403 insufficient_scope): di.mcp.oauth.
 - **Identity:** `BearerGate` refuses any request without a valid account token (`Authorization: Bearer <JWT>`, the one
   /api/auth/login issues) with 401 before the SDK sees it. Each tool call then reads the token, `X-Agent` and
   `X-Tenant` from its HTTP request (the SDK hands the request to the handler) and goes to di.mcp.policy.call_tool,
@@ -18,7 +20,8 @@
 
 import contextlib
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, MutableMapping
+from typing import Any
 
 import anyio
 import mcp_types as types
@@ -32,7 +35,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from di.core.db import SessionLocal
 from di.core.errors import envelope
-from di.mcp import policy
+from di.mcp import oauth, policy
 from di.mcp.tools import TOOLS, schema
 
 PATH = "/mcp"
@@ -101,23 +104,78 @@ SECURITY = TransportSecuritySettings(
 _manager: StreamableHTTPSessionManager | None = None  # the running one (a manager runs once; each lifespan makes one)
 
 
+def _refuse(status: int, code: str, message: str, www: str) -> list[dict]:
+    body = json.dumps(envelope(code, message)).encode()
+    return [
+        {"type": "http.response.start", "status": status,
+         "headers": [(b"content-type", b"application/json"), (b"www-authenticate", www.encode())]},
+        {"type": "http.response.body", "body": body},
+    ]  # fmt: skip
+
+
+def _tools_called(body: bytes) -> list[str]:
+    """The tool names of the tools/call requests in a JSON-RPC body (one request or a batch); [] if it is not JSON."""
+    try:
+        msgs = json.loads(body)
+    except ValueError:
+        return []
+    out = []
+    for m in msgs if isinstance(msgs, list) else [msgs]:
+        if isinstance(m, dict) and m.get("method") == "tools/call" and isinstance(m.get("params"), dict):
+            name = m["params"].get("name")
+            if isinstance(name, str):
+                out.append(name)
+    return out
+
+
 class BearerGate:
-    """401 for a request without a valid account token, before the MCP transport reads it."""
+    """The gate of /mcp: 401 for a request without a valid account token (the challenge names the resource metadata),
+    401 for a token that names another audience, 403 `insufficient_scope` for a token whose `scope` lacks a call's family
+    (di.mcp.oauth). A token without `scope` (the UI's account tokens) is checked as before."""
 
     def __init__(self, app: ASGIApp):
         self.app = app
 
+    async def _send(self, send: Send, status: int, code: str, message: str, www: str) -> None:
+        for m in _refuse(status, code, message, www):
+            await send(m)
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] == "http":
-            token = _bearer(Headers(scope=scope))
-            if await anyio.to_thread.run_sync(policy.account_of, token) is None:
-                body = json.dumps(envelope("unauthenticated", "Sign in first: send the account's bearer token."))
-                await send({
-                    "type": "http.response.start", "status": 401,
-                    "headers": [(b"content-type", b"application/json"), (b"www-authenticate", b"Bearer")],
-                })  # fmt: skip
-                await send({"type": "http.response.body", "body": body.encode()})
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        token = _bearer(Headers(scope=scope))
+        claims = oauth.peek(token) if token else None  # unverified: only to refuse early
+        if claims is not None and not oauth.audience_ok(claims):
+            wrong = "This token was not issued for this server."
+            await self._send(send, 401, "unauthenticated", wrong, oauth.challenge("invalid_token"))
+            return
+        if await anyio.to_thread.run_sync(policy.account_of, token) is None:
+            www = oauth.challenge("invalid_token") if token else oauth.challenge()
+            await self._send(send, 401, "unauthenticated", "Sign in first: send the account's bearer token.", www)
+            return
+        if claims is not None and oauth.granted(claims) is not None and scope["method"] == "POST":  # a verified token with scope
+            body, more = b"", True
+            while more:
+                chunk = await receive()
+                body += chunk.get("body", b"")
+                more = chunk.get("more_body", False)
+            lacking = oauth.missing(claims, _tools_called(body))
+            if lacking:
+                why = f"This token lacks the scope {lacking} for this call."
+                await self._send(send, 403, "out_of_scope", why, oauth.challenge("insufficient_scope", lacking))
                 return
+            sent = False
+
+            async def replay() -> MutableMapping[str, Any]:
+                nonlocal sent
+                if not sent:
+                    sent = True
+                    return {"type": "http.request", "body": body, "more_body": False}
+                return await receive()
+
+            await self.app(scope, replay, send)
+            return
         await self.app(scope, receive, send)
 
 

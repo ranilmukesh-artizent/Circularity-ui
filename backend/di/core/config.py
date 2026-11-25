@@ -1,5 +1,6 @@
 import base64
 import logging
+import os
 from functools import lru_cache
 from typing import Literal, Self
 
@@ -58,6 +59,10 @@ class Settings(BaseSettings):
     groq_model: str = Field("", validation_alias="GROQ_MODEL")  # empty: DEFAULT_GROQ_MODEL
     # P9-0.5: comma-separated "groq:<model id>" entries tried in order when one is rate limited; empty = the one model above
     ask_model_chain: str = Field("", validation_alias="ASK_MODEL_CHAIN")
+    # P9-2.14: the MCP server's resource identifier (RFC 9728 `resource`, the audience an outside token must name) and the
+    # authorization servers its metadata lists (DI_MCP_AUTH_SERVERS as a JSON list); none until per-agent credentials land
+    mcp_resource_url: str = Field(default_factory=lambda: f"http://localhost:{os.environ.get('API_PORT', '8000')}/mcp")
+    mcp_auth_servers: list[str] = []
     ask_timeout_seconds: float = 20.0  # one model request; on timeout Ask falls back
     ask_max_rounds: int = 4  # model requests per question (tool rounds), the last one without tools
 

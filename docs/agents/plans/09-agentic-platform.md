@@ -846,7 +846,7 @@ each story went.
 - [x] P9-2.11 Fraud triage on intake with a person release
 - [x] P9-2.12 Richer tool schemas and a find tools read
 - [x] P9-2.13 MCP tools generated from the action catalogue
-- [ ] P9-2.14 OAuth protected resource metadata for MCP
+- [x] P9-2.14 OAuth protected resource metadata for MCP
 - [ ] P9-2.15 Agent evals in CI with an injection corpus
 - [ ] P9-2.16 Phase 2 demo smoke script
 - [x] P9-2.18 Stage agents reason with the model
