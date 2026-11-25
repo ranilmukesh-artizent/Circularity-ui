@@ -12,6 +12,8 @@
  *      end of term) passes the gate.
  *   4  The recall register is synced; a case opened for BRK-51007 (repair recall RC-2026-017) shows its quarantine card; the
  *      Approver releases it after the fix (the card reads released); a Planner is refused.
+ *   5  (P9-3.8) after the telematics source syncs, CMH-48777 (last seen 2026-09-29) reads "Telematics last seen 8 days ago:
+ *      re-issue and pool need a person" on its Overview; CMH-48213 reads "Telematics 3 days old".
  *
  * The UI has no one-click setup for this, so the script calls the app's own actions as the signed-in person (the same
  * ones the Source Map and Workflow Studio call) and reads the result in the pages. Needs the worker (the sync runs on it)
@@ -22,7 +24,7 @@
  *   node frontend/scripts/smoke-p9-3.mjs http://localhost:5173
  *   bash scripts/dev/reset.sh
  * (hold the api test lock meanwhile). Screenshots of a failing step go to SMOKE_OUT (default: <OS temp>/smoke-p9-3).
- * The last line is "smoke-p9-3: all 4 steps passed".
+ * The last line is "smoke-p9-3: all 5 steps passed".
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -260,9 +262,50 @@ await step('4 Recall quarantine: BRK-51007 (repair recall RC-2026-017) is releas
   if (denied.ok) throw new Error('a Planner released a quarantine');
   return after.replace(/\s+/g, ' ');
 });
+
+// ---------------------------------------------------------------- 5
+await step('5 Telematics: CMH-48777 last seen 8 days ago needs a person for re-issue and pool, CMH-48213 is fresh', async () => {
+  const admin = await as('admin');
+  const dev = await as('developer');
+  await must(dev, 'source.reconnect', { source_id: 'tooltel' });
+  await must(dev, 'source.sync', { source_id: 'tooltel' });
+  const caseId = async (serial) => {
+    const r = await must(admin, 'cases.list', { q: serial, limit: 5 });
+    const row = (r.rows || []).find((x) => x.id);
+    if (!row) throw new Error('no case for ' + serial);
+    return row.id;
+  };
+  // the sync of the telematics queues a re-evaluation of each tool's open cases on the worker
+  const lineOf = async (serial, re, msg) => {
+    const id = await caseId(serial);
+    await until(
+      async () => {
+        const g = ((await getJson(admin, '/api/screens/toolfleet/' + id)).gates || []).find((x) => x.id === 'G-TOOL-TEL');
+        return g && re.test(g.reason);
+      },
+      `${serial} (${id}) never read ${msg}`,
+      SYNC,
+      admin,
+    );
+    await admin.goto(`${base}/#/product/${id}/overview`);
+    await admin.locator('#view').waitFor();
+    return until(
+      async () => {
+        const t = await admin.locator('[data-testid="tf-gate-G-TOOL-TEL"]').first().innerText();
+        return re.test(t) ? t : null;
+      },
+      `${serial} (${id}) does not show ${msg} on the Overview`,
+      UI,
+      admin,
+    );
+  };
+  const stale = await lineOf('CMH-48777', /Telematics last seen 8 days ago: re-issue and pool need a person/, '"Telematics last seen 8 days ago: re-issue and pool need a person"');
+  await lineOf('CMH-48213', /Telematics 3 days old/, '"Telematics 3 days old"');
+  return stale.replace(/\s+/g, ' ');
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));
   process.exit(1);
 }
-say('smoke-p9-3: all 4 steps passed');
+say('smoke-p9-3: all 5 steps passed');

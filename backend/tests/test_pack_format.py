@@ -167,20 +167,17 @@ def test_runtime_and_kpis_of_the_two_packs():
     tf, dv = load_pack("tool_fleet"), load_pack("device")
     # P9-1.10 added not_in_system_of_record and expected_return_missing (both Planner) in front of the five of P9-1.1
     # no_active_contract belongs to the Fleet desk, which the pack's roles table routes to a Planner (P9-3.6);
-    # P9-5.1 added refresh_late (Fleet desk) at the end; P9-3.7 recall_quarantine (Quality) and P9-4.3 technician_check
-    # (Engineer) after no_active_contract
+    # P9-5.1 added refresh_late (Fleet desk); P9-3.7 recall_quarantine (Quality), the technician check (Engineer) and P9-3.8
+    # stale_telematics (Quality, last)
+    assert [e.id for e in tf.runtime.exception_types] == [
+        "not_in_system_of_record", "expected_return_missing", "no_active_contract", "recall_quarantine", "technician_check",
+        "grade_wear_disagree", "repair_over_limit", "writeoff_under_24m", "inspection_backlog", "refresh_late",
+        "stale_telematics",
+    ]  # fmt: skip
     assert [e.owner_role for e in tf.runtime.exception_types] == [
-        "Planner",
-        "Planner",
-        "Fleet desk",
+        "Planner", "Planner", "Fleet desk", "Quality", "Engineer", "Engineer", "Approver", "Planner", "Planner", "Fleet desk",
         "Quality",
-        "Engineer",
-        "Engineer",
-        "Approver",
-        "Planner",
-        "Planner",
-        "Fleet desk",
-    ]
+    ]  # fmt: skip
     assert len(dv.runtime.exception_types) == 10 and len(dv.kpis) == 6  # P9-6.5 quote_mismatch, P9-6.6 blacklist_hit
     assert [k.label for k in tf.kpis][:2] == ["Value recovered per tool", "Days to next use"]
     # P9-1.13 gave three of the six a measure; the other three show "No data yet" until their phase

@@ -32,8 +32,14 @@ LINE = {"lineId": "FL-1", "serial": "CMH-1", "status": "active", "ownerOrg": "Fl
 
 
 def _case(*records: dict[str, Any]) -> dict[str, Any]:
-    """A tool-fleet case with an active contract line on file (GR-07, G-CON-2, passes), and these records."""
-    return {"id": "RT-9011", "cls": "CMH", "template": "tool_fleet", "evidenceRecords": [_rec("contract_line", LINE), *records]}
+    """A tool-fleet case with an active contract line (GR-07) and an empty recall answer (GR-12) on file, and these records."""
+    recall = _rec("recall_check", {"recalls": [], "released": None}, "recall")  # the register has no notice (P9-3.7)
+    return {
+        "id": "RT-9011",
+        "cls": "CMH",
+        "template": "tool_fleet",
+        "evidenceRecords": [_rec("contract_line", LINE), recall, *records],
+    }
 
 
 def _row(case: dict[str, Any], gate_id: str) -> dict[str, Any]:
@@ -70,7 +76,7 @@ def test_x_11_gate_is_in_the_pack_and_catalogue_as_specified():
     assert g.trigger.routes == "any" and g.owner == "Customer operations"
     assert [(c.fact, c.op) for c in g.trigger.when] == [("evidence.contract_clause.restricts", "exists")]
     assert g.evidence == ["customer_consent"] and g.effect.kind == "block" and g.effect.hold_until_evidence is False
-    assert [r.id for r in load_pack("tool_fleet").gates if r.active] == ["G-CON-1", "G-CON-2"]
+    assert [r.id for r in load_pack("tool_fleet").gates if r.active] == ["G-CON-1", "G-CON-2", "G-TOOL-REC", "G-TOOL-TEL"]
 
 
 def test_x_11_clause_and_source_on_case():
@@ -89,7 +95,7 @@ def test_x_11_restricted_routes_fail():
     by = {r["id"]: r for r in routes}
     assert by["resell"]["excluded"] is True and by["resell"]["failReason"] == "Contract entitlement: " + BLOCKED
     assert all(not by[i]["excluded"] for i in ROUTE_IDS if i != "resell")
-    assert case["gates"][0]["routes"] == ["resell"] and case.get("gateHold") is None
+    assert _row(case, "G-CON-1")["routes"] == ["resell"] and case.get("gateHold") is None
 
 
 def test_x_11_restricts_every_class_it_names():
@@ -110,22 +116,28 @@ def test_x_11_consent_passes_with_reference():
 def test_x_11_clause_without_restricted_class_blocks_nothing():
     case = _case(_rec("contract_clause", CLAUSE | {"restricts": []}))
     routes = _apply(case)
-    assert all(not r["excluded"] for r in routes) and [g["id"] for g in case["gates"]] == ["G-CON-2"]
+    assert all(not r["excluded"] for r in routes) and [g["id"] for g in case["gates"]] == ["G-TOOL-REC", "G-CON-2"]
 
 
 def test_x_11_clause_after_as_of_does_not_gate():
     case = _case(_rec("contract_clause", CLAUSE, at="2026-12-01T00:00:00+00:00"))
     routes = _apply(case)
-    assert all(not r["excluded"] for r in routes) and [g["id"] for g in case["gates"]] == ["G-CON-2"]
+    assert all(not r["excluded"] for r in routes) and [g["id"] for g in case["gates"]] == ["G-TOOL-REC", "G-CON-2"]
 
 
 def test_x_11_no_clause_no_change():
     case = _case()
     routes = _apply(case)
     assert all(not r["excluded"] for r in routes)
-    assert not {"gateHold", "requiredSteps", "evidence"} & set(case) and [g["id"] for g in case["gates"]] == ["G-CON-2"]
-    # no clause, no G-CON-1; the contract right (G-CON-2) is the only gate of a case with no line, and it fails
-    assert [(r.gate_id, r.passed) for r in evaluate_gates({"cls": "CMH"}, load_pack("tool_fleet"))] == [("G-CON-2", False)]
+    assert not {"gateHold", "requiredSteps", "evidence"} & set(case) and [g["id"] for g in case["gates"]] == [
+        "G-TOOL-REC",
+        "G-CON-2",
+    ]
+    # no clause, no G-CON-1; a case with no line and no recall answer fails the recall check (P9-3.7) and the contract right
+    assert [(r.gate_id, r.passed) for r in evaluate_gates({"cls": "CMH"}, load_pack("tool_fleet"))] == [
+        ("G-TOOL-REC", False),
+        ("G-CON-2", False),
+    ]
 
 
 def _facts(key: str, type: str, value: dict[str, Any]) -> list[Fact]:
@@ -143,9 +155,11 @@ def test_x_11_attach_evidence_builds_clause_and_consent_with_lease():
         s.commit()
         case: dict[str, Any] = {"id": "RT-9012", "assetId": key, "cls": "CMH", "template": "tool_fleet"}
         gate_hold.attach_evidence(s, case)
-    by = {r["type"]: r for r in case["evidenceRecords"]}
-    assert by["contract_clause"]["value"] == CLAUSE | {"lease_ref": "LS-5412", "contract_end": "2027-03-31"}
-    assert by["contract_clause"]["source"] == "lease-system"
-    assert by["customer_consent"]["value"] == {"ref": "CONS-88"}
-    _apply(case)
-    assert case["gates"][0]["reason"] == "Consent on file: CONS-88."
+        by = {r["type"]: r for r in case["evidenceRecords"]}
+        assert by["contract_clause"]["value"] == CLAUSE | {"lease_ref": "LS-5412", "contract_end": "2027-03-31"}
+        assert by["contract_clause"]["source"] == "lease-system"
+        assert by["customer_consent"]["value"] == {"ref": "CONS-88"}
+        _apply(
+            case
+        )  # inside the session `attach_evidence` bound: `apply` writes the hold's item through it (rolled back at exit)
+    assert _row(case, "G-CON-1")["reason"] == "Consent on file: CONS-88."

@@ -51,3 +51,22 @@ describe('GatesSection', () => {
     expect(render([]).innerHTML).toBe('');
   });
 });
+
+// Plan 9, P9-3.8 (TF-05): GR-13, the telematics freshness line; a stale tool needs a person for re-issue and pool.
+const tel = (over: Partial<GateView>): GateView =>
+  gate({ id: 'G-TOOL-TEL', name: 'Telematics under 7 days old', guardrail: 'GR-13', owner: 'Engineer', kind: 'require_approval', stage: 'condition', hold: false, ...over });
+
+describe('telematics gate (GR-13)', () => {
+  it('says how old the telematics are when fresh', () => {
+    const h = render([tel({ reason: 'Telematics 3 days old', age_days: 3, max_age_days: 7 })]);
+    expect(h.querySelector('[data-testid="tf-gate-G-TOOL-TEL"]')?.textContent).toContain('Telematics 3 days old');
+    expect(h.querySelector('.chip.ok')?.textContent).toBe('Passed');
+  });
+  it('says when it was last seen and that re-issue and pool need a person when stale', () => {
+    const g = tel({ passed: false, reason: 'Telematics last seen 8 days ago', age_days: 8, max_age_days: 7 });
+    expect(gateLine(g)).toBe('Telematics last seen 8 days ago: re-issue and pool need a person');
+    const h = render([g]);
+    expect(h.querySelector('[data-testid="tf-gate-G-TOOL-TEL"]')?.textContent).toContain('re-issue and pool need a person');
+    expect(h.querySelector('.chip.bad')?.textContent).toBe('Needs a person');
+  });
+});

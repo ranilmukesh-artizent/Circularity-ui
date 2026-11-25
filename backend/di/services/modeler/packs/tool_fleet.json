@@ -376,6 +376,15 @@
     "guardrail": "GR-12"
    },
    "active": true
+  },
+  {
+   "id": "G-TOOL-TEL",
+   "params": {
+    "guardrail": "GR-13",
+    "max_age_days": 7,
+    "locked": true
+   },
+   "active": true
   }
  ],
  "dims": [
@@ -1674,6 +1683,12 @@
     "label": "Refresh proposal late",
     "owner_role": "Fleet desk",
     "action": "Send the renewal proposal or ask the customer for more time"
+   },
+   {
+    "id": "stale_telematics",
+    "label": "Telematics older than the limit",
+    "owner_role": "Quality",
+    "action": "Check the tool's telematics link or read the tool before it is re-issued or pooled"
    }
   ],
   "suggestion_rules": [],

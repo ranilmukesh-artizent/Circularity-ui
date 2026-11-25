@@ -36,12 +36,13 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
-from di.services.cases import contract_line, lifecycle, recall_evidence, store
+from di.services.cases import contract_line, lifecycle, recall_evidence, store, telematics
 from di.services.engine.routes import Route
 from di.services.modeler.evidence import evidence_of, label_of, records_of
-from di.services.modeler.gates import GateResult, apply_gate_results, catalogue, evaluate_gates
+from di.services.modeler.gates import GateResult, apply_gate_results, catalogue, evaluate_gates, pack_gates
 from di.services.modeler.pack import Pack, load_pack
 from di.services.modeler.stages import STAGE_LABELS
+from di.services.modeler.valuers import fleet_evidence
 
 PackOf = Callable[[Mapping[str, Any]], Pack]
 _override: ContextVar[PackOf | None] = ContextVar("gate_hold_pack_of", default=None)
@@ -53,6 +54,7 @@ EXCEPTION_OF = {"G-CON-2": "no_active_contract"}  # a hold by this gate opens an
 QUARANTINE_ITEM = (
     "recall_quarantine"  # the item a failed recall check G-TOOL-REC keeps open while the tool is quarantined (P9-3.7)
 )
+ADVISORY = {"G-TOOL-TEL": "stale_telematics"}  # a failed gate that holds some routes, not the case, opens this item (P9-3.8)
 CONTRACT_GATE = "G-CON-1"  # the contract entitlement gate (P9-1.11)
 
 
@@ -83,6 +85,8 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
         recs.append(line)  # the fleet contract line, for GR-07 (P9-3.6)
     if case.get("template") == "tool_fleet":  # the register's notices and the case's release, for GR-12 (P9-3.7)
         recs.append(recall_evidence.evidence(s, case.get("cls"), case.get("recallRelease")))
+    if case.get("template") == "tool_fleet" and (tel := telematics.evidence(s, case.get("serial") or case.get("assetId"))):
+        recs.append(tel)  # the tool's telematics, for GR-13 (P9-3.8)
     if recs or "evidenceRecords" in case:
         case["evidenceRecords"] = recs
     _bound.set((s, str(case.get("id"))))
@@ -106,7 +110,7 @@ def _as_of(case: Mapping[str, Any]) -> datetime:
 
 # ---------------------------------------------------------------- gates on a case
 def _rows(case: Mapping[str, Any], pack: Pack, results: Sequence[GateResult], as_of: datetime) -> list[dict[str, Any]]:
-    cat = catalogue()
+    cat = {**catalogue(), **{g.id: g for g in pack_gates(pack)}}  # the pack's gates carry its params (guardrail, locked)
     names = {r.id: r.name for r in pack.routes}
     out = []
     for r in results:
@@ -166,8 +170,9 @@ def apply(
     bound = _bound.get()
     _bound.set(None)  # taken once, whether or not a gate applies
     pack = pack or base_pack(case)
+    now = as_of or clock.now()  # the time a gate reads the age of a record at (GR-13); evidence is read at `as_of`
     as_of = as_of or _as_of(case)
-    results = _contract(case, pack, evaluate_gates(_gate_view(case, as_of), pack, as_of), as_of)
+    results = _contract(case, pack, evaluate_gates(_gate_view(case, as_of, now), pack, as_of), as_of)
     if not results and "gates" not in case:
         return results
     apply_gate_results(routes, results)
@@ -179,13 +184,15 @@ def apply(
 
 
 # ---------------------------------------------------------------- the contract gate (P9-1.11)
-def _gate_view(case: Mapping[str, Any], as_of: datetime) -> Mapping[str, Any]:
-    """The case as its gates read it: the contract clause on file at `as_of` is the fact `evidence.contract_clause` (the
-    case's own `evidence` list is not touched; the view is a copy)."""
+def _gate_view(case: Mapping[str, Any], as_of: datetime, now: datetime) -> Mapping[str, Any]:
+    """The case as its gates read it: the time it is read at (`gateNow`, for the age of a record, GR-13) and the contract
+    clause on file at `as_of` as the fact `evidence.contract_clause` (the case's own `evidence` list is not touched; the view
+    is a copy)."""
+    view = {**case, fleet_evidence.NOW_KEY: now.isoformat()}
     clause = evidence_of(case, "contract_clause", as_of)
     if clause is None or clause.result != "pass":
-        return case
-    return {**case, "evidence": {"contract_clause": dict(clause.value)}}
+        return view
+    return {**view, "evidence": {"contract_clause": dict(clause.value)}}
 
 
 def _contract(case: Mapping[str, Any], pack: Pack, results: list[GateResult], as_of: datetime) -> list[GateResult]:
@@ -224,6 +231,7 @@ def sync_item(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
 
     cid = str(case["id"])
     sync_quarantine(s, case, pack)
+    _sync_advisory(s, case, pack)
     open_id = s.execute(
         text("SELECT id FROM work_item WHERE case_id = :c AND type = ANY(:t) AND status = 'open' ORDER BY id LIMIT 1"),
         {"c": cid, "t": [EVIDENCE_MISSING, *EXCEPTION_OF.values()]},
@@ -279,6 +287,33 @@ def sync_quarantine(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
         title=f"{cid} is quarantined: {failed['reason']}", cause=failed["reason"], action=action,
         owner_role=pack.roles.get(owner, owner), due_hours=pack.runtime.sla_hours.get("exception"), by="system",
     )  # fmt: skip
+
+
+def _sync_advisory(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
+    """One open exception item for each failed gate of `ADVISORY` (a gate that holds some routes, not the case: GR-13), none
+    once it passes. The item is for the owner of the pack's exception type, with the pack's `exception` SLA."""
+    from di.services.cases import process
+
+    cid = str(case["id"])
+    for gate_id, type_id in ADVISORY.items():
+        failed = [g for g in case.get("gates") or [] if g["id"] == gate_id and not g["passed"]]
+        open_id = s.execute(
+            text("SELECT id FROM work_item WHERE case_id = :c AND type = :t AND status = 'open' ORDER BY id LIMIT 1"),
+            {"c": cid, "t": type_id},
+        ).scalar()
+        if not failed:
+            if open_id is not None:
+                process.close_item(s, int(open_id), "released", "system")
+            continue
+        kind = next((t for t in pack.runtime.exception_types if t.id == type_id), None)
+        if open_id is not None or kind is None:
+            continue
+        process.open_item(
+            s, kind="exception", case_id=cid, org_unit_id=case.get("owner"), type=type_id,
+            title=f"{cid}: {failed[0]['reason']}", cause=failed[0]["reason"], action=kind.action,
+            owner_role=pack.roles.get(kind.owner_role, kind.owner_role),
+            due_hours=pack.runtime.sla_hours.get("exception"), by="system",
+        )  # fmt: skip
 
 
 # ---------------------------------------------------------------- release on evidence
