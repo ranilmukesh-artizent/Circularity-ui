@@ -8,7 +8,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 
 import { actionScope } from './invalidation';
 import {
-  connectionApprovals, createConnection, ownerApprove, ownerDecline, promoteConnection, registryEntries, requestOwner,
+  connectionApprovals, createConnection, discoverConnection, ownerApprove, ownerDecline, promoteConnection, registryEntries, requestOwner,
 } from './connections'; // prettier-ignore
 
 const last = () => m.invoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
@@ -52,5 +52,11 @@ describe('the adapter registry facade (plan 9, P9-8.1, X-10)', () => {
     connectionApprovals('workday');
     expect(m.read).toHaveBeenCalledWith('connection.approvals', { source_id: 'workday' });
     expect(actionScope('connection.ownerApprove')).toBe('all');
+  });
+
+  it('p9-8.3: discoverConnection invokes connection.discover and a sample refreshes every read', async () => {
+    await discoverConnection('parts-api');
+    expect(last()).toEqual(['connection.discover', { source_id: 'parts-api' }]);
+    expect(actionScope('connection.discover')).toBe('all');
   });
 });

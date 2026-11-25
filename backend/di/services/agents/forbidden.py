@@ -54,8 +54,15 @@ PERSON_ONLY_NAME = re.compile(
 )
 
 
+# Exceptions to a forbidden prefix: actions an agent may run although their prefix is a person's. Each only reads or creates
+# (25 Nov 2026: agents create, read and update, never delete or approve). The secret stays server-side.
+AGENT_EXEMPT = (
+    "connection.discover",  # plan 9 P9-8.3: reads up to 500 sample records from the test connection into dry-run rows
+)
+
+
 def forbidden(action_id: str) -> bool:
-    return action_id.startswith(FORBIDDEN_ACTIONS)
+    return action_id not in AGENT_EXEMPT and action_id.startswith(FORBIDDEN_ACTIONS)
 
 
 def held_for_person(action_id: str) -> bool:

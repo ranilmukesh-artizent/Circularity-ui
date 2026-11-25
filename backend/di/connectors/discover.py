@@ -9,6 +9,11 @@ first (the connection's `id_field` for the resource when it has one, else the ke
 ext_id, else `id`). A foreign key is suggested where at least 90 % of a column's distinct sampled values are keys
 (ext_id) of another table of the same source.
 
+A sample from the test connection (P9-8.3): `sample_test` reads up to 500 records per resource from a connection in the
+test environment into raw_record, marked dry (`request` starts with DRY), so this module's reads and the field mapping
+suggestions (P9-8.2) see them; no canonical fact is written. Owns: that read. Never does: call another host than the
+connection's, read a production connection, map or write facts.
+
 Which sources: the ones created in the Connection Fabric (from the catalogue or by hand). The demo's 21 sources keep
 their table models as the demo seeds them (workspace collection "table_models"), discovered or not, so the golden
 screens do not change.
@@ -278,3 +283,201 @@ def materialize(s: Session, source_id: str) -> dict | None:
     if source_id in demo_ids():
         return None
     return merge(s, source_id, None)
+
+
+# ---------------------------------------------------------------- a sample from the test connection (plan 9, P9-8.3)
+DRY = "dry-run sample"  # raw_record.request of a row read by sample_test: quarantined, never mapped to a fact
+PAGE_CAP = 25  # requests per resource
+TIME_BUDGET_S = 60.0
+_POSITIONAL = ("offset", "page_number")
+TEST_ONLY = "Samples are read from the test connection only."
+
+
+class _Stop(Exception):
+    """The page cap or the time budget is spent: keep what was read."""
+
+
+def open_client(s: Session, source_id: str, adapter: Any) -> Any:
+    """A client on the connection's URL, signed in with its stored secret (a module function so tests can fake it)."""
+    from di.connectors import connection
+
+    connection.check_credential(s, source_id)
+    return connection.client_for(s, source_id, adapter)
+
+
+def _pin_host(client: Any) -> None:
+    """Egress allow-list: this client calls the connection's own host only; a next link elsewhere is refused."""
+    import httpx
+
+    from di.connectors.http import SourceError
+
+    base = httpx.URL(client.base_url)
+    allowed = (base.scheme, base.host, base.port)
+
+    def check(req: Any) -> None:
+        u = req.url
+        if (u.scheme, u.host, u.port) != allowed:
+            raise SourceError("client", f"Refused a call to {u.host}: discovery reads {base.host} only.")
+
+    client.http.event_hooks = {"request": [check]}
+
+
+class _Reader:
+    """One resource's reads: counts requests, honours the page cap and the time budget."""
+
+    def __init__(self, adapter: Any, client: Any, res: dict[str, Any], deadline: float):
+        self.adapter, self.client, self.res, self.deadline = adapter, client, res, deadline
+        self.requests = 0
+        self.kind, self.p = adapter.kind, adapter.paging
+        self.size = max(1, int(self.p.get("max_size") or 100))
+        self.selector = str(res.get("data_selector") or self.p["items_key"])
+
+    def tick(self) -> None:
+        import time
+
+        if self.requests >= PAGE_CAP or time.monotonic() >= self.deadline:
+            raise _Stop
+        self.requests += 1
+
+    def fetch(self, start: int, n: int) -> tuple[list[dict], int | None, str]:
+        """The rows at position `start` (n of them for offset paging, a whole page for page_number), the total when the
+        body names it, and the request URL."""
+        from di.connectors.configured import _dig
+
+        self.tick()
+        p = self.p
+        q = (
+            {p["limit_param"]: n, p["offset_param"]: start}
+            if self.kind == "offset"
+            else {p["size_param"]: self.size, p["page_param"]: start // self.size + 1}
+        )
+        resp = self.client.request("GET", str(self.res["path"]), params=q)
+        body = resp.json()
+        found = _dig(body, self.selector) if isinstance(body, dict) else body
+        rows = [r for r in found if isinstance(r, dict)] if isinstance(found, list) else []
+        self.client.note_records(len(rows))
+        raw = _dig(body, str(p["total_key"])) if p.get("total_key") and isinstance(body, dict) else None
+        return rows, int(str(raw)) if str(raw).isdigit() else None, str(resp.request.url)
+
+
+def _positional(rd: _Reader, limit: int) -> tuple[list[tuple[dict, str]], bool]:
+    """Half from the newest pages (position 0 on), half spread over the rest of the window when the body names a total,
+    else the newest `limit`. Returns (row, url) pairs and whether the spread was used."""
+    out: list[tuple[dict, str]] = []
+    pos, total, done, spread = 0, None, False, False
+
+    def head(goal: int) -> None:
+        nonlocal pos, total, done
+        while len(out) < goal and not done:
+            n = min(rd.size, goal - len(out))
+            rows, t, url = rd.fetch(pos, n)
+            total = t if t is not None else total
+            out.extend((r, url) for r in rows[:n])
+            pos += len(rows)
+            done = len(rows) < (n if rd.kind == "offset" else rd.size)
+
+    try:
+        head((limit + 1) // 2)
+        if done:
+            return out, False
+        if total is None:  # no total: no window to spread over; the newest `limit`
+            head(limit)
+            return out, False
+        window = total - pos
+        want = min(limit - len(out), window)
+        if want <= 0:
+            return out, False
+        m = -(-want // rd.size)
+        sizes = [want // m + (1 if i < want % m else 0) for i in range(m)]
+        slack, cum, spread = window - want, 0, True
+        for i, n in enumerate(sizes):
+            start = pos + cum + (slack * i // (m - 1) if m > 1 else slack // 2)
+            if rd.kind == "page_number":
+                start -= start % rd.size
+            rows, _, url = rd.fetch(start, n)
+            out.extend((r, url) for r in rows[:n])
+            cum += n
+    except _Stop:
+        pass
+    return out, spread
+
+
+def _sequential(rd: _Reader, limit: int) -> list[tuple[dict, str]]:
+    """Any other paging (links, cursors, a dependent resource): the adapter's own pages, stopped at `limit`."""
+    out: list[tuple[dict, str]] = []
+    urls: set[str] = set()
+    try:
+        for row, url in rd.adapter.pages(rd.client, rd.res, None):
+            if url not in urls:
+                rd.tick()  # one tick per page the adapter fetched
+                urls.add(url)
+            out.append((row, url))
+            if len(out) >= limit:
+                break
+    except _Stop:
+        pass
+    return out
+
+
+def _land(s: Session, source_id: str, resource: str, rows: list[tuple[str, dict, str]]) -> None:
+    """Store the sample as raw records marked dry; a record a real sync landed is left as it is."""
+    import json
+
+    for ext, row, url in rows:
+        s.execute(
+            text(
+                "INSERT INTO raw_record (source_id, resource, ext_id, payload, request, fetched_at) "
+                "VALUES (:s, :r, :e, CAST(:p AS jsonb), :q, now()) ON CONFLICT (source_id, resource, ext_id) "
+                "DO UPDATE SET payload = EXCLUDED.payload, request = EXCLUDED.request, fetched_at = now() "
+                "WHERE raw_record.request LIKE :dry"
+            ),
+            {"s": source_id, "r": resource, "e": ext, "p": json.dumps(row, default=str), "q": f"{DRY}: {url}"[:2000],
+             "dry": DRY + "%"},
+        )  # fmt: skip
+
+
+def sample_report(
+    s: Session, source_id: str, limit: int = SAMPLE, time_budget_s: float = TIME_BUDGET_S, client: Any = None
+) -> dict[str, dict[str, Any]]:
+    """Read up to `limit` records per resource from the TEST connection into the raw store, marked dry; writes no fact.
+    Returns {resource: {"read": n, "spread": bool}}. Raises ValueError outside the test environment, SourceError when
+    the system fails or a next link leaves the connection's host. `client` is for tests (the fake host)."""
+    import time
+
+    from di.connectors import connection, registry
+
+    if not connection.in_test(s, source_id):
+        raise ValueError(TEST_ONLY)
+    adapter: Any = registry.adapter_for(s, source_id)
+    if adapter is None or not hasattr(adapter, "pages"):
+        raise ValueError(f"{source_id} has no resources to read.")
+    owned = client is None
+    client = client or open_client(s, source_id, adapter)
+    _pin_host(client)
+    deadline = time.monotonic() + time_budget_s
+    report: dict[str, dict[str, Any]] = {}
+    try:
+        for res in adapter.conn.resources or []:
+            if not res.get("name") or not res.get("path"):
+                continue
+            rd = _Reader(adapter, client, res, deadline)
+            if rd.kind in _POSITIONAL and "{resources." not in str(res["path"]):
+                rows, spread = _positional(rd, limit)
+            else:
+                rows, spread = _sequential(rd, limit), False
+            seen: dict[str, tuple[dict, str]] = {}
+            for row, url in rows:
+                seen.setdefault(adapter._ext_id(row, res.get("id_field")), (row, url))
+            _land(s, source_id, str(res["name"]), [(e, r, u) for e, (r, u) in seen.items()])
+            report[str(res["name"])] = {"read": len(seen), "spread": spread}
+    finally:
+        if owned:
+            client.close()
+    return report
+
+
+def sample_test(
+    s: Session, source_id: str, limit: int = SAMPLE, time_budget_s: float = TIME_BUDGET_S, client: Any = None
+) -> dict[str, int]:
+    """Resource → records read (see sample_report)."""
+    return {r: v["read"] for r, v in sample_report(s, source_id, limit, time_budget_s, client).items()}

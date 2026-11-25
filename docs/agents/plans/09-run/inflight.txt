@@ -1,5 +1,4 @@
 # Tasks in flight (task id, writer, model, started)
 P9-2.23 w2 sonnet 21:35 done 05b2c96, waiting to merge
-P9-8.3 w3 sonnet 21:35 done a1d7510, waiting to merge (spec: connection.discover agent-allowed, but the connection. prefix forbids it; decide at merge; run smoke-fabric)
 P9-8.10 w2 sonnet 22:20 done c823b63, waiting to merge (migration 0057; check test_writes_access[mcp_proposals] on synced stack)
 P9-8.14 w3 sonnet 22:20 done a7b3fca, waiting to merge (run smoke-modeler, smoke-mvp)

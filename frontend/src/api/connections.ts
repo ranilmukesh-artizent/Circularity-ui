@@ -87,5 +87,15 @@ export const ownerDecline = (id: number, reason: string): Promise<ActionResult<{
 export const promoteConnection = (sourceId: string, secret: string): Promise<ActionResult<{ source_id: string; environment: 'production' }>> =>
   invoke('connection.promote', { source_id: sourceId, secret });
 
+/** What a sample read found (P9-8.3): records read per resource, and whether the spread over the window was used. */
+export interface ConnectionSample {
+  source_id: string;
+  counts: Record<string, number>;
+  spread: Record<string, boolean>;
+}
+/** Read up to 500 records per resource from a TEST connection into the dry sample store; no canonical fact is written. The
+ *  stored sample is what "Suggest mappings" and the Source Tables read. A production connection is refused (conflict). */
+export const discoverConnection = (sourceId: string): Promise<ActionResult<ConnectionSample>> => invoke('connection.discover', { source_id: sourceId });
+
 /** Where a connection stands: environment, access, system owner and the owner's approvals (read action). */
 export const connectionApprovals = (sourceId: string): ConnectionState => read<ConnectionState>('connection.approvals', { source_id: sourceId });

@@ -44,7 +44,7 @@ from di.mcp.policy import outcome_of
 from di.mcp.tools import ACTIONS_OF, RUN, TOOLS, Refused, ToolCall, schema
 from di.services.actions.pipeline import Actor, CallContext, invoke
 from di.services.actions.registry import ACTIONS
-from di.services.agents.forbidden import FORBIDDEN_ACTIONS
+from di.services.agents.forbidden import forbidden
 from di.services.cases import store
 
 AGENT_ID, AGENT_NAME = "ask", "Ask Circularity"
@@ -118,7 +118,7 @@ for _n, (_a, *_rest) in ACTION_TOOLS.items():
     assert ACTIONS[_a].risk == "read", f"{_n} runs {_a}, which is not a read"  # noqa: S101 - import-time check: Ask reaches reads only
 _ALL = [a for t in MCP_TOOLS for a in ACTIONS_OF[t]] + [a for a, *_ in ACTION_TOOLS.values()] + ["case.evidence"]
 assert all(ACTIONS[a].risk == "read" for a in _ALL), "every action a tool runs is a read"  # noqa: S101 - import-time check: Ask reaches reads only
-assert not [a for a in _ALL if a.startswith(FORBIDDEN_ACTIONS)], "Ask may never reach an action an agent must not run"  # noqa: S101 - import-time check: Ask reaches reads only
+assert not [a for a in _ALL if forbidden(a)], "Ask may never reach an action an agent must not run"  # noqa: S101 - import-time check: Ask reaches reads only
 
 PY_TYPE: dict[str, type | tuple[type, ...]] = {
     "string": str,

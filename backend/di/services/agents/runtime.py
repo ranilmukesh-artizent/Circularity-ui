@@ -55,7 +55,7 @@ from di.repositories.live_rules import live_pack
 from di.services.actions.fraud import review_case, triage_case  # also registers fraud.hold in the worker
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
 from di.services.agents import calibrate, chain, lifecycle_evidence, limits, playbook_versions, registry, stage_reasoner
-from di.services.agents.forbidden import FORBIDDEN_ACTIONS
+from di.services.agents.forbidden import forbidden
 from di.services.agents.loop import AgentLoop, LoopSpec
 from di.services.agents.playbooks import case_autopilot as autopilot
 from di.services.agents.playbooks import stage_chain
@@ -73,7 +73,7 @@ PLAYBOOKS = {autopilot.NAME: stage_chain, stage_chain.NAME: stage_chain}  # case
 JOB = "agent.step"
 QUEUE_JOB = "queue.plan"  # P9-2.8: plans a pack's open queue of an org; its end wakes the runs waiting `queue`
 _REACHED = (*autopilot.ACTIONS, *stage_chain.ACTIONS, *(a for m in CHAIN for a in m.ACTIONS))
-_FORBIDDEN = [a for a in _REACHED if a.startswith(FORBIDDEN_ACTIONS)]
+_FORBIDDEN = [a for a in _REACHED if forbidden(a)]
 if _FORBIDDEN:
     raise RuntimeError(f"playbooks reach actions no agent may run: {_FORBIDDEN}")
 READ_STATUSES = ("done", "waiting", "held")  # the stage records a stage's model reads (P9-2.18)
