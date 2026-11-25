@@ -948,7 +948,7 @@ each story went.
 - [x] P9-8.15 Per-node input and output samples with pinned data
 - [x] P9-8.16 Decision table editor in the Modeler
 - [x] P9-8.17 Composition object with maker-checker
-- [ ] P9-8.18 Compose describe and adapter mapping steps
+- [x] P9-8.18 Compose describe and adapter mapping steps
 - [ ] P9-8.19 Compose test run shows where cases stopped
 - [ ] P9-8.20 Compose agent mapping, approve and publish steps
 - [x] P9-8.21 DMN and BPMN export from the Modeler
@@ -976,7 +976,7 @@ each story went.
 - [ ] P9-9.20 Sold and learn with residual gain or loss
 - [ ] P9-9.21 Used-car demo smoke
 - [ ] P9-9.22 Phase 9 gate
-- [ ] P9-10.1 Telecom network pack data file
+- [x] P9-10.1 Telecom network pack data file
 - [ ] P9-10.2 Network inventory and decommission tracker mocks
 - [ ] P9-10.3 Test bench mock with wipe and firmware
 - [ ] P9-10.4 Spares planning mock with requisitions
@@ -995,7 +995,7 @@ each story went.
 - [ ] P9-10.17 Telecom close and learn with worked questions
 - [ ] P9-10.18 Telecom demo smoke
 - [ ] P9-10.19 Phase 10 gate
-- [ ] P9-11.1 Medical rental pack data file
+- [x] P9-11.1 Medical rental pack data file
 - [ ] P9-11.2 Rental system and asset management mocks
 - [ ] P9-11.3 Decontamination log mock
 - [ ] P9-11.4 Biomedical service system mock
