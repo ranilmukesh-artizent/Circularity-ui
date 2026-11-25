@@ -220,7 +220,8 @@ def test_cr_01_view_shape():
     v = r.json()
     assert v["case_id"] == cid and v["contract"]["id"] == "FC-30117" and v["contract"]["end"] == "2027-01-05"
     assert v["window"] == {"opens": "2026-10-07", "basis": "end"} and len(v["lines"]) == 14
-    assert (v["tools"], v["match"], v["pricing"], v["approval"], v["execution"], v["outcome"]) == ([], [], None, None, None, None)
+    assert len(v["tools"]) == 14 and v["tools_totals"] == {"keep": 14, "swap": 0, "upgrade": 0}  # P9-5.2 fills the tools
+    assert (v["match"], v["pricing"], v["approval"], v["execution"], v["outcome"]) == ([], None, None, None, None)
 
 
 def test_cr_01_view_refuses_a_case_that_is_not_a_refresh():

@@ -92,3 +92,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-26 04:46 | Hourly sync: merged lane A (P9-2.24, P9-9.2 vehicle mocks); verify green (fraud, stage reasoner, po_golden, catalog; source-sim registry and mocks). Pushed. |
 | 25 Nov 23:34 | P9-4.10 merged. serviceDesk.whatIf is a read (nothing saved); credit crossing computed; no model step |
 | 25 Nov 23:36 | P9-3.12 merged. six paths against live named demand scoped by source org; held demand kept per case; R8 note: only a synced stack changes |
+| 25 Nov 23:36 | P9-5.2 merged. per-tool keep, like-life swap or upgrade from table refresh_tool_action; a tool with no life result holds; no model step |

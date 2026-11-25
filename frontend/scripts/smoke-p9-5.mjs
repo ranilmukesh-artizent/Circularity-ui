@@ -6,6 +6,8 @@
  *      scan from the worker's job (no UI: the smoke posts the job `refresh.scan` for 2026-10-07 to the tasks API,
  *      /api/v1/tasks, as Admin's Tasks screen does). The Returned assets list shows the refresh cases ("Case opened from
  *      contract_refresh") and FC-30117's panel shows 14 lines.
+ *   2  The same panel lists each tool with its action and reason and the split "keep N, swap M, upgrade K" (the three add
+ *      up to FC-30117's 14 lines).
  *
  * Needs the worker (the sync and the job run on it) and source-sim with the fleet mock. Changes state, and resets nothing
  * itself. The lead runs:
@@ -13,7 +15,7 @@
  *   node frontend/scripts/smoke-p9-5.mjs http://localhost:5173
  *   bash scripts/dev/reset.sh
  * (hold the api test lock meanwhile). Screenshots of a failing step go to SMOKE_OUT (default: <OS temp>/smoke-p9-5).
- * The last line is "smoke-p9-5: all 1 steps passed".
+ * The last line is "smoke-p9-5: all 2 steps passed".
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -144,9 +146,27 @@ await step('1 Refresh: the scan opens FC-30117 with 14 lines', async () => {
   );
   return `${id}: ${t}`;
 });
+// ---------------------------------------------------------------- 2
+await step('2 Refresh: FC-30117 shows its keep, swap and upgrade split', async () => {
+  const admin = await as('admin');
+  const text = await until(
+    async () => {
+      const x = await admin.locator('[data-testid="rf-tools-totals"]').first().innerText();
+      return /^keep \d+, swap \d+, upgrade \d+$/.test(x) ? x : null;
+    },
+    'the refresh panel does not show "keep N, swap M, upgrade K"',
+    UI,
+    admin,
+  );
+  const n = (text.match(/\d+/g) || []).reduce((a, b) => a + Number(b), 0);
+  if (n !== 14) throw new Error(`the split "${text}" does not add up to 14 tools`);
+  const rows = await admin.locator('[data-testid="rf-tools"] tbody tr').count();
+  if (rows !== 14) throw new Error(`the tools list has ${rows} rows, not 14`);
+  return text;
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));
   process.exit(1);
 }
-say('smoke-p9-5: all 1 steps passed');
+say('smoke-p9-5: all 2 steps passed');
