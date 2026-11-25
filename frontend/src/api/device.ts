@@ -22,6 +22,24 @@ export interface QuoteCheck {
   item: { id: number; state: 'open' | 'done'; outcome: string | null; by: string | null } | null;
 }
 
+/** The device registry's check of the device (P9-6.6, DV-03): blacklist, activation lock and finance, when and by whom. A hit
+ * fails every channel and opens a `blacklist_hit` item for Compliance; only a person releases it, with a newer check. */
+export interface RegistryView {
+  state: 'none' | 'stale' | 'clear' | 'hit';
+  /** "clear", or what the registry reports: "reported stolen", "activation lock on", "balance owed" (joined by "; ") */
+  status: string;
+  /** the check's calendar day (ISO), null when there is none */
+  checkedAt: string | null;
+  source: string;
+  ageDays: number | null;
+  recheckDays: number;
+  /** the owner label of the exception ("Compliance", role Approver) */
+  owner: string;
+  item: 'open' | 'done' | null;
+  /** the routes a locked or blacklisted device may still take (the pack's `locked_routes`) */
+  allowedRoutes: string[];
+}
+
 export interface DeviceView {
   /** the device's IMEI; null for a bulk lot */
   imei: string | null;
@@ -45,6 +63,8 @@ export interface DeviceView {
   lines: DeviceLine[];
   /** the quote against the lab's read; null for a bulk lot */
   quoteCheck?: QuoteCheck | null;
+  /** the registry's check; null for a bulk lot */
+  registry?: RegistryView | null;
 }
 
 /** The device block of a case, or null for a case that is not a received device (the industrial book, a tool return). */

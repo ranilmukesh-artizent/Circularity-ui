@@ -3,7 +3,7 @@
 import { deviceView } from '../../../api/device';
 import { fmtDateYear } from '../../../api/format';
 import { Kv } from '../CaseBlocks';
-import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine } from '../device';
+import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine, registryLine, registryState } from '../device';
 import type { TabProps } from './index';
 
 const LABEL = { imei: 'IMEI', model: 'Model', storage: 'Storage' } as const;
@@ -51,6 +51,26 @@ export function DeviceTab({ c }: TabProps) {
       {lines.length > 0 && (
         <ul className="stsys stpad" aria-label="Device lines">{lines.map((l) => <li key={l}>{l}</li>)}</ul>
       )}
+    </>
+  );
+}
+
+/** The Compliance tab of a received-device case (P9-6.6, DV-03): the registry's status, check date and source; on a hit the
+ * exception's owner and state ("Waiting for Compliance") and the routes the device may still take. Only a person releases a
+ * hit, and only with a registry check newer than the hit. */
+export function ComplianceTab({ c }: TabProps) {
+  const r = deviceView(c)?.registry;
+  if (!r) return null;
+  return (
+    <>
+      <p className="stpad" role="status" style={r.state === 'hit' ? { color: 'var(--bad)' } : undefined}>{registryLine(r)}</p>
+      <Kv rows={[
+        ['Status', registryState(r)],
+        ['Checked', r.checkedAt ? `${fmtDateYear(r.checkedAt)}${r.ageDays != null ? ` · ${r.ageDays} days ago` : ''}` : 'Never'],
+        ['Source', r.source || 'None'],
+        ['Re-check after', `${r.recheckDays} days`],
+        ['Allowed routes', r.state === 'hit' ? (r.allowedRoutes.length ? r.allowedRoutes.join(', ') : 'None') : 'All'],
+      ]} />
     </>
   );
 }

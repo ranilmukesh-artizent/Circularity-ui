@@ -10,7 +10,7 @@ GET /api/screens/case/{id}/analysis
 
 A case opened from a received device (plan 9, P9-6.4) also carries `device` ({imei, sku, model, storageGb, declaredGrade, grade,
 quote, partner, batch, received, ref, refSource, bulk, lines, quoteCheck}; the facade's `deviceView`; `quoteCheck` is the quote
-against the lab's read, P9-6.5).
+against the lab's read, P9-6.5; `registry` the registry's check of the device and its exception, P9-6.6).
 
 A template case with gates (plan 9, P9-1.2) also carries, inside `case`: `gates` (one row per gate result), `gateHold`
 (held until evidence arrives), `requiredSteps` and `batch` ({ref, total, held, released} of its batch); the facade's
@@ -150,6 +150,7 @@ from di.repositories.provenance import prov_for, snap_time
 from di.services.actions.decisions import draft_rationale
 from di.services.actions.pipeline import CallContext
 from di.services.cases import gate_hold, record_match, replan
+from di.services.device import lock as device_lock
 from di.services.device import verify as device_verify
 from di.services.execution import (
     as_sc,
@@ -621,6 +622,9 @@ def device_block(c: Case, session: Session | None = None) -> dict | None:
             for x in v.get("lines") or []
         ],
         "quoteCheck": device_verify.view(session, c) if session is not None else None,  # the quote against the read (P9-6.5)
+        "registry": (
+            device_lock.view(session, c, active_pack(session, c["template"], c["owner"])) if session is not None else None
+        ),
     }  # fmt: skip
 
 

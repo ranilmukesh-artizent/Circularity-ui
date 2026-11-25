@@ -16,6 +16,7 @@ from di.services.cases import store
 from di.services.cases.decide import decide_case
 from di.services.device import intake as device_intake
 from tests import flowkit, starting
+from tests.device_registry import seed_registry
 from tests.helpers import call, client, h
 
 pytestmark = pytest.mark.usefixtures("no_synced_conflicts")  # see conftest: synced conflicts and the hold policy
@@ -37,6 +38,8 @@ def _clean() -> None:
     with engine.begin() as conn:
         for t in ("device_tradein", "device_price_point"):
             conn.execute(text(f"DELETE FROM {t}"))  # noqa: S608 - fixed names
+        conn.execute(text("DELETE FROM provenance WHERE source_id = 'dvreg' AND key LIKE 'IMEI:%'"))
+        conn.execute(text("DELETE FROM canonical WHERE model = 'condition' AND key LIKE 'IMEI:%'"))
         conn.execute(text("DELETE FROM agent_run_step"))
         conn.execute(text("DELETE FROM agent_run"))
         conn.execute(text("DELETE FROM agent_proposal"))
@@ -73,6 +76,9 @@ def _open(*docs: dict) -> str:
     with SessionLocal() as s:
         for d in docs:
             lab.land_tradein(s, d, ORG)
+        s.commit()
+        for d in docs:  # a received device with no registry check is held (P9-6.6): these cases have a clear one
+            seed_registry(d["imei"])
         (cid,) = device_intake.open_pending(s, ORG)
         s.commit()
     return cid

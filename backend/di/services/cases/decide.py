@@ -41,6 +41,7 @@ from sqlalchemy.orm import Session
 
 from di.services.actions.registry import ActionError
 from di.services.cases import gate_hold, store
+from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
 from di.services.device import verify as _device_verify  # noqa: F401 - registers the check of the gate G-DEV-QUOTE (P9-6.5)
 from di.services.engine.evaluate import apply_business, build_routes
 from di.services.engine.jsmath import js_round

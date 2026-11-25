@@ -23,6 +23,7 @@ from di.services.device import verify
 from di.services.device.verify import Mismatch, compare_quote
 from di.services.modeler.pack import load_pack
 from tests import starting
+from tests.device_registry import seed_registry
 from tests.helpers import call, client, h
 
 ORG = "Customer A"
@@ -31,7 +32,7 @@ IMEI = "359990000000428"
 
 def _clean() -> None:
     with engine.begin() as conn:
-        conn.execute(text("DELETE FROM provenance WHERE source_id = 'dvlab' AND key LIKE 'IMEI:%'"))
+        conn.execute(text("DELETE FROM provenance WHERE source_id IN ('dvlab', 'dvreg') AND key LIKE 'IMEI:%'"))
         conn.execute(text("DELETE FROM canonical WHERE model IN ('condition', 'asset') AND key LIKE 'IMEI:%'"))
         conn.execute(text("DELETE FROM device_tradein"))
         conn.execute(text("DELETE FROM device_price_point"))
@@ -57,6 +58,7 @@ def _land(storage: int = 128, model: str = "iPhone 14") -> None:
     with SessionLocal() as s:
         lab.land_tradein(s, doc, ORG)
         s.commit()
+    seed_registry(IMEI)  # a received device with no registry check is held (P9-6.6): this one has a clear one
 
 
 def _read(**read) -> None:
@@ -120,7 +122,7 @@ def test_dv_02_mismatch_opens_exception_with_both_values():
     assert line in item["title"] and line in item["cause"] and "Customer care" in item["action"]
     assert c["routes"] and all(r["excluded"] and r["failReason"] == f"Quote match: {line}" for r in c["routes"])
     assert c["recommendation"] is None and c["stage"] == "none"
-    (g,) = c["gates"]
+    g = next(x for x in c["gates"] if x["id"] == "G-DEV-QUOTE")
     assert (g["id"], g["type"], g["passed"], g["owner"]) == ("G-DEV-QUOTE", "Data quality", False, "Customer care")
     rec = load_pack("device")
     assert next(x for x in rec.guardrails if x.id == "GR-D13").type == "Data quality"
@@ -174,7 +176,7 @@ def test_dv_02_a_person_resolves_it_and_the_channels_release():
     assert ok.get("ok") is not False, ok
     got = _get(c["id"])
     assert any(not r["excluded"] for r in got["routes"]) and got["stage"] == "awaiting_approval"
-    assert got["gates"][0]["passed"] is True and _items(c["id"])[0]["status"] == "done"
+    assert next(x for x in got["gates"] if x["id"] == "G-DEV-QUOTE")["passed"] is True and _items(c["id"])[0]["status"] == "done"
     assert len(_items(c["id"])) == 1  # resolved: not opened again
 
 

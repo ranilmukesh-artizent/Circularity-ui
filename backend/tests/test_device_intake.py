@@ -26,6 +26,7 @@ from di.services.device import intake as device_intake
 from di.services.modeler.pack import load_pack
 from di.services.modeler.valuers import device
 from tests import starting
+from tests.device_registry import seed_registry
 
 ORG = "Customer A"
 IMEI = "359990000000428"
@@ -52,6 +53,8 @@ def _land(*docs: dict, org: str | None = ORG) -> None:
         for d in docs:
             lab.land_tradein(s, d, org)
         s.commit()
+    for d in docs:  # a received device with no registry check is held (P9-6.6): these cases have a clear one
+        seed_registry(d["imei"])
 
 
 def _price(grade: str, price: float, days_ago: int = 3, sku: str = "iPhone 14|128") -> None:

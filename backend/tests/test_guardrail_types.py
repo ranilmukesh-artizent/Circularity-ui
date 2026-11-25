@@ -15,7 +15,7 @@ TABLE = {
     "device": {"GR-D1": ("Compliance", "condition"), "GR-D2": ("Threshold", "value"),
                "GR-D3": ("Compliance", "decide"), "GR-D4": ("Threshold", "decide"),
                "GR-D5": ("Threshold", "value"), "GR-D6": ("Approval", "decide"),
-               "GR-D13": ("Data quality", "match")},
+               "GR-D7": ("Compliance", "match"), "GR-D13": ("Data quality", "match")},
 }  # fmt: skip
 
 
@@ -32,7 +32,7 @@ def test_every_guardrail_has_type_and_stage():
         got = {g.id: (g.type, g.stage) for g in load_template(key).guardrails}
         assert got == rows, key
         n += len(got)
-    assert n == 18
+    assert n == 19
 
 
 def test_compliance_guardrails_are_locked():

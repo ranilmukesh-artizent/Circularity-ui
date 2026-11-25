@@ -99,7 +99,13 @@
   ],
   "trigger": {
    "routes": "any",
-   "when": []
+   "when": [
+    {
+     "fact": "valuer.imei",
+     "op": "exists",
+     "value": true
+    }
+   ]
   },
   "evidence": [
    "device_registry_check"

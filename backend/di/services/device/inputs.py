@@ -14,9 +14,10 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from di.core import clock
 from di.repositories import device_market, device_tradeins
 from di.services.canonical import store as canonical
-from di.services.device import verify
+from di.services.device import lock, verify
 from di.services.modeler.pack import load_pack
 
 
@@ -29,6 +30,8 @@ class DeviceInputs:
     evidence: dict[str, Any] = field(default_factory=dict)
     # the quote against the lab's read of the device (P9-6.5, `verify.comparison`)
     comparison: dict[str, Any] = field(default_factory=lambda: {"state": "waiting", "mismatches": []})
+    # the registry's check of the device (blacklist, lock, finance), its date and age (P9-6.6, `lock.registry_view`)
+    registry: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -56,4 +59,5 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
         feed_stale=point.stale if point else False,
         evidence=evidence,
         comparison=verify.comparison(verify.quote_of(case), verify.diagnostics_of(cond)),
+        registry=lock.registry_view(cond, clock.now(), float(lock.params(load_pack("device"))["recheck_days"])),
     )

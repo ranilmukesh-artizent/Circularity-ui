@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react';
 import type { CaseAnalysis, CaseRec, CaseScreen } from '../../../api/case';
 import * as D from './DecideTabs';
-import { DeviceTab, QuoteTab } from './DeviceTabs';
+import { ComplianceTab, DeviceTab, QuoteTab } from './DeviceTabs';
 import * as E from './EarlyTabs';
 import * as X from './ExecuteTabs';
 
@@ -19,7 +19,14 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
     case 5: {
       const early: TabDef[] = [['findings', 'Findings', E.FindingsTab], ['diag', 'Diagnostic condition', E.DiagTab], ['cert', 'Certified period', E.CertTab], ['photos', 'Photos', E.PhotosTab]];
       // a received device starts with its Device tab (P9-6.4), then the Quote tab when it has one (P9-6.5)
-      return c.device ? [['device', 'Device', DeviceTab], ...(c.device.quoteCheck ? [['quote', 'Quote', QuoteTab] as TabDef] : []), ...early] : early;
+      const extra: TabDef[] = c.device
+        ? [
+            ['device', 'Device', DeviceTab],
+            ...(c.device.quoteCheck ? [['quote', 'Quote', QuoteTab] as TabDef] : []),
+            ...(c.device.registry ? [['compliance', 'Compliance', ComplianceTab] as TabDef] : []), // the registry check (P9-6.6)
+          ]
+        : [];
+      return [...extra, ...early];
     }
     case 6: return [
       ['packet', 'Decision packet', D.PacketTab], ['compare', 'Compare outcomes', D.CompareTab], ['why', 'Why this outcome', D.WhyTab],

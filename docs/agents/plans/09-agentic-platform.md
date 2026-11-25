@@ -905,7 +905,7 @@ each story went.
 - [x] P9-6.3 Device market adapter
 - [x] P9-6.4 One case per received device
 - [x] P9-6.5 Verify the device against the quote
-- [ ] P9-6.6 Blacklist and lock gate for devices
+- [x] P9-6.6 Blacklist and lock gate for devices
 - [ ] P9-6.7 Wipe certificate gate with batch hold
 - [ ] P9-6.8 Payout adjustment within 10 percent
 - [ ] P9-6.9 Price model behind the predictor

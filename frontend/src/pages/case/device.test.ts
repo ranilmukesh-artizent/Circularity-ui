@@ -1,7 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceView } from '../../api/device';
-import type { QuoteCheck } from '../../api/device';
-import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine } from './device';
+import type { QuoteCheck, RegistryView } from '../../api/device';
+import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine, registryLine, registryState } from './device';
+
+const hit: RegistryView = {
+  state: 'hit', status: 'reported stolen', checkedAt: '2026-10-06', source: 'Device registry (synthetic)', ageDays: 2,
+  recheckDays: 7, owner: 'Compliance', item: 'open', allowedRoutes: [],
+};
+
+describe('P9-6.6 registryLine (DV-03)', () => {
+  it('names the status, the check day and the source', () => {
+    expect(registryLine(hit)).toBe('Registry: reported stolen · checked 6 Oct 2026 · Device registry (synthetic)');
+    expect(registryLine({ ...hit, status: 'clear' })).toBe('Registry: clear · checked 6 Oct 2026 · Device registry (synthetic)');
+    expect(registryLine({ ...hit, status: 'clear', checkedAt: null })).toBe('Registry: no check on file');
+  });
+  it('says who a hit waits for and where the device may still go', () => {
+    expect(registryState(hit)).toBe('Waiting for Compliance');
+    expect(registryState({ ...hit, item: 'done' })).toBe('Released by Compliance');
+    expect(registryState({ ...hit, allowedRoutes: ['parts', 'recycle'] })).toBe('Waiting for Compliance · may still go to parts, recycle');
+    expect(registryState({ ...hit, state: 'stale' })).toBe('Check older than 7 days: the case waits for a new one');
+    expect(registryState({ ...hit, state: 'none' })).toBe('No registry check yet: the case waits for one');
+    expect(registryState({ ...hit, state: 'clear' })).toBe('Clear');
+  });
+});
 
 describe('P9-6.5 mismatchLine (DV-02)', () => {
   it('names the quoted and the read value', () => {

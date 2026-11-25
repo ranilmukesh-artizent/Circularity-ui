@@ -73,6 +73,7 @@ from di.services.cases import decide, gate_hold, named_demand, record_match, reg
 from di.services.cases.lifecycle import STAGES
 from di.services.device import inputs as device_inputs
 from di.services.device import intake as device_intake
+from di.services.device import lock as device_lock
 from di.services.device import verify as device_verify
 from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
@@ -409,12 +410,14 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
             fv = flow_version(s, c)  # the rules' scope reads the grade the case now shows
         if pack.valuer.kind == "device":  # the quote against the lab's read, on every valuation (P9-6.5)
             device_verify.refresh(s, c)
+            device_lock.refresh(s, c, pack)  # and the registry check, its date and age (P9-6.6)
     decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
     if pack.key != "industrial":  # custody and the system of record (plan 9, P9-1.10)
         if was_held and c.get("gateHold") is None:
             record_match.released(c)
         record_match.check(s, c, pack)
         if pack.valuer.kind == "device":
+            device_lock.check(s, c, pack)  # a registry hit opens the blacklist_hit exception (P9-6.6)
             device_verify.check(s, c, pack)  # a mismatch opens the quote_mismatch exception (P9-6.5)
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]

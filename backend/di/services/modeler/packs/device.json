@@ -287,6 +287,23 @@
    "param": null
   },
   {
+   "id": "GR-D7",
+   "text": "Blacklist and lock check before any sale",
+   "owner": "Compliance",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": true,
+   "forbids": [],
+   "protects": [
+    [
+     "blacklist|activation lock|lock check|registry check",
+     "skip|without|remove|\\bno\\b"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  },
+  {
    "id": "GR-D13",
    "text": "Quote match: the device read must match the quote",
    "owner": "Customer care",
@@ -305,6 +322,15 @@
   }
  ],
  "gates": [
+  {
+   "id": "G-DEV-LOCK",
+   "params": {
+    "recheck_days": 7,
+    "locked_routes": [],
+    "exception": "blacklist_hit"
+   },
+   "active": true
+  },
   {
    "id": "G-DEV-QUOTE",
    "params": {},
@@ -431,7 +457,25 @@
    ]
   },
   "params": {},
-  "sample_diversions": [],
+  "sample_diversions": [
+   {
+    "text": "Quote under $50: skip the blacklist check",
+    "op": {
+     "op": "shortcut",
+     "stage": "receive",
+     "when": [
+      {
+       "fact": "quote.amount",
+       "op": "lte",
+       "value": 49
+      }
+     ],
+     "to": "condition"
+    },
+    "blocked": true,
+    "reason": "Blocked: this skips the compliance guardrail GR-D7 (G-DEV-LOCK), the blacklist and lock check."
+   }
+  ],
   "merge_rule": "stricter_wins"
  },
  "diversions": [],
@@ -991,6 +1035,12 @@
     "label": "Auction reserve not met",
     "owner_role": "Planner",
     "action": "Compare the cost of holding with a lower reserve"
+   },
+   {
+    "id": "blacklist_hit",
+    "label": "Blacklist or lock check hit",
+    "owner_role": "Approver",
+    "action": "Hold the device; release only with a newer registry check"
    },
    {
     "id": "quote_mismatch",
