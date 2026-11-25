@@ -99,7 +99,8 @@ def listed(name: str) -> set[str]:
 
 def ready(tasks: dict, done: set, inflight: set, blocked: set, limit: int, lane: set | None = None) -> list[str]:
     """`lane`: only these tasks are picked, and only they order each other (the other lane's tasks merge through git)."""
-    order = sorted(lane if lane is not None else tasks, key=key)
+    # a phase gate sorts last in its phase, so tasks added after it (P9-2.18 ...) still come before it
+    order = sorted(lane if lane is not None else tasks, key=lambda x: (key(x)[0], tasks[x]["gate"], key(x)[1]))
     busy = set().union(*(core(tasks[t]["files"]) for t in inflight)) if inflight else set()
     picked: list[str] = []
     for i, tid in enumerate(order):
