@@ -40,6 +40,12 @@ run branch your lead named, `feature/plan-09-recover` unless the prompt says oth
   - Never run `api-test.sh`, `full-suite.sh`, `reset.sh`, `restart.sh`, `selftest.sh`, a smoke, or
     `docker compose exec`. They act on the main stack, which belongs to the lead.
   - For a shell-script task, run your new cases directly with stubs, and list what the lead must run.
+- **Model first (R16, 25 Nov).** Anything that reads text, interprets evidence, drafts, explains, plans or writes a
+  question runs on the model through `AgentLoop` (I-8) when the router has one, as typed Pydantic AI output. Code checks
+  every model output and wins (validators, locked guardrails, gates, forbidden list, hold policy, cited sources exist).
+  A failed check gets a `ModelRetry`, then the deterministic path answers (`by_model: false`). The model adds caution,
+  never removes it, and never invents a computed number. Tests on `FunctionModel`/`TestModel`: model draft accepted,
+  refused by a check, retry then fallback, no model. Never write "model optional, rules first".
 - **Scope.** Change only the files in your spec, plus your tests and the registration files it names. If you need
   another file, stop and say so.
 - **Migrations.** If your task has a migration, the file already exists, empty and chained: fill it, idempotent

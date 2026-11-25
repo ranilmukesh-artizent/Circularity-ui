@@ -126,6 +126,11 @@ Set once in every shell: `export PLAN_RUN=docs/agents/plans/09-run/lane-B MSYS_N
 
 ## 7. Lessons from phases 0 and 1 (each one cost time)
 
+- **Model first (R16 changed 25 Nov, by the person).** Agents reason with the model; rules are the safety net. Read
+  the new R16 in the plan before you brief a task. In lane B this touches P9-4.3 (the intake reasoner of P9-2.18 reads
+  fault text), P9-6.17 (the model writes the worked-question sentence; its numbers are checked) and every Compose or
+  agent step. Writers follow the brief's "Model first" rule. A task that reads or writes language without the model
+  is sent back.
 - **Worktrees start from the default branch**: every writer must fast-forward to the lane branch first (the brief says
   so).
 - **Private-database failures are not always real**: `wt-check.sh` runs on a fresh database without the synced

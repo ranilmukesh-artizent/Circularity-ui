@@ -120,8 +120,9 @@ inline.
    `G-capability-gaps.md` has file:line pointers.
 7. **Every write goes through the pipeline,** and every person-only action joins `FORBIDDEN_ACTIONS` in the same
    commit.
-8. **Deterministic first.** Every capability works with no model key; a model only improves wording or ranking
-   (R16).
+8. **Model first, code holds the line.** When a model is available, it does the reading, drafting, explaining and
+   planning as typed Pydantic AI output; code checks every output and always wins; computed numbers stay computed; with
+   no key the deterministic path answers (R16).
 9. **Stage explicit paths** (`git add <file> …`), never `git add -A`. Other agents' work may be in the tree (incident
    of 21 Nov, when a shared-index commit swept up other agents' hunks).
 10. **Restart what doesn't reload:**
@@ -206,8 +207,9 @@ approves and publishes it in steps: replay, shadow, canary, full.
   - Application code picks the next stage.
   - Each stage has its own tools, autonomy (Recommend only / Act within limits / Act alone), limits and calibrated
     confidence.
-  - A language model is used only *inside* a stage, behind the `AgentLoop` port (Pydantic AI). Every stage also has a
-    deterministic path that works with no model key.
+  - Inside a stage, the language model does the reasoning behind the `AgentLoop` port (Pydantic AI): it reads the
+    case and its evidence, writes findings, concerns, questions and its recommendation (P9-2.18). Code computes the
+    numbers and checks every model output. Every stage also has a deterministic path that works with no model key.
 - **Every write goes through the action pipeline.**
   - Agent writes hold under the hold policy.
   - Actions only a person may take are in `FORBIDDEN_ACTIONS`.
@@ -557,9 +559,26 @@ R15. **Size and style.**
      - mypy strict and TypeScript strict.
      - No dead code, TODOs or commented-out code.
 
-R16. **Language models are optional.** Every capability has a deterministic path that gives a complete answer with no
-     key. A model may only improve wording, rank candidates or fill what the rules could not read. Tests run on the
-     deterministic path or a recorded test model (`TestModel` or `FunctionModel`), never a live provider.
+R16. **Model first; code holds the line** (decided by the person, 25 Nov 2026; replaces "language models are
+     optional").
+     - **The model does the reasoning.** Whenever the router (I-9) has a model, every capability that reads text,
+       interprets evidence, drafts a change, explains, plans or writes a question runs on it through `AgentLoop` (I-8),
+       as typed Pydantic AI output: stage agents, the configuration agent, the exception assistant, fraud review,
+       mapping, adapter and workflow authoring, worked questions, alerts and suggestions.
+     - **Code checks every model output and always wins:** typed validation (`extra="forbid"`), the pack's locked
+       guardrails and gates, the overlay and graph validators, `FORBIDDEN_ACTIONS`, the hold policy (I-10), and that
+       every fact or source the model cites exists. A failed check goes back to the model as `ModelRetry` (at most the
+       task's repair rounds), then the deterministic path answers.
+     - **The model can add caution, never remove it.** It may raise a concern, a hold or a question. It never clears a
+       hold, lowers a gate, approves, publishes or declines (golden rule 10).
+     - **Computed numbers stay computed.** Values, prices, gate results, calibrated confidence, queue plans and
+       replay figures come from code and trained models, never from the language model. The model reasons over them and
+       explains them. A number in model text must appear in the computed facts.
+     - **No key:** the deterministic path gives a complete answer, marked `by_model: false`. The demo's 128 cases and
+       RT-1048 stay at parity because tests run with no live model.
+     - **Tests** run on `TestModel` or `FunctionModel`, never a live provider. Each model-first task has tests for: a
+       model draft accepted, a model draft refused by a check, the retry then fallback, and no model.
+       `evals-live.sh` (P9-2.15) runs the eval datasets against the live router with a key, outside the gate.
 
 R17. **Done means:**
      - the task's tests pass;
@@ -826,6 +845,8 @@ each story went.
 - [ ] P9-2.14 OAuth protected resource metadata for MCP
 - [ ] P9-2.15 Agent evals in CI with an injection corpus
 - [ ] P9-2.16 Phase 2 demo smoke script
+- [ ] P9-2.18 Stage agents reason with the model
+- [ ] P9-2.19 Exception assistant and fraud review drafted by the model
 - [ ] P9-2.17 Phase 2 gate
 - [ ] P9-3.1 Fleet contract and repair log mocks with adapters
 - [ ] P9-3.2 Recall, telematics and parts mocks with adapters
@@ -3656,8 +3677,8 @@ drawer. vitest for `runTrace` and the span-tree helper; smoke step in P9-2.16.
 **Files:**
 - Create `backend/di/services/agents/config_agent.py` (`Reading`, `Control`, `PackMatch`, `ChangeSet`,
   `read_text`, `match_pack`, `draft_change_set`).
-- Create `backend/di/services/agents/playbooks/pack_author.py` (the optional model reading, a `LoopSpec` with typed
-  output `Reading`, registered in `playbook_versions` as v1).
+- Create `backend/di/services/agents/playbooks/pack_author.py` (the model drafter, a `LoopSpec` with typed output
+  `ModelDraft`, registered in `playbook_versions` as v1).
 - Create `backend/di/services/actions/config_agent.py` (actions below).
 - Create `backend/migrations/versions/0040_config_change_set.py`; add the `Table` to a new
   `backend/di/models/compose.py` and export it.
@@ -3692,9 +3713,18 @@ drawer. vitest for `runTrace` and the span-tree helper; smoke step in P9-2.16.
   4. every op not traceable to a stated control or the answer is listed in `assumed`;
   5. the result is validated by `apply_overlay(load_pack(pack), ops)` (I-4); a failure is a `validation_error` naming
      the op.
-- The model is optional (R16): with a model available (router role `author`), `pack_author` returns a typed `Reading`
-  that is merged with `read_text`'s (deterministic controls win on conflict) and breaks a pack-score tie within 5
-  points. `Reading.by_model` says whether it ran.
+- Model first (R16): with a model available (router role `author`), `pack_author` is the drafter. Its prompt holds
+  the candidate packs (name, unit, routes, guardrails with their locked flag, sample prompts, clarify) and
+  `read_text`'s Reading. Its typed output `ModelDraft` gives the pack key, `ops` (I-4 types), `assumed`, `kpis`,
+  `systems` and its own `question` written from the person's text (options with their ops), or none.
+  Code checks the draft in this order:
+  1. `ChangeSet` validation;
+  2. I-4 op types only;
+  3. a weaker value on a locked guardrail goes into `blocked`;
+  4. a control `read_text` found wins over the model's value for the same field;
+  5. `apply_overlay` must pass.
+  A failure goes back as one `ModelRetry`, then the deterministic steps 1-5 above answer with `by_model = False`.
+  The pack's `clarify` is the question when the model writes none. `Reading.by_model` says whether the model drafted.
 - Actions:
   - `config.read {text, org_unit_id}` (read; `agent_allowed`: yes; permission `managePacks`): Reading, PackMatch and
     the one question. Text over 4,000 characters → `validation_error`.
@@ -3736,8 +3766,12 @@ for approval" (the held proposal, with a link to it). vitest for both facade fun
   no field named code, script, function or expression.
 - `test_x_02_held_for_maker_checker`: `config.draft` by planner.a → one pending proposal from `recover-config`;
   planner.a may only reject it (own); approver accepts → an overlay draft exists; the agent cannot approve it.
-- `test_x_02_model_optional`: no model → the same pack and ops; a `FunctionModel` reading adds a control the regex missed
-  and `by_model` is true.
+- `test_x_02_model_draft_accepted`: a `FunctionModel` draft is checked, stored and held; `by_model` true.
+- `test_x_02_model_weakening_locked_guardrail_blocked`: a model op weakening a locked guardrail lands in `blocked`.
+- `test_x_02_model_invalid_op_retry_then_rules`: an invalid op gets one retry, then the deterministic path,
+  `by_model` false.
+- `test_x_02_model_question_over_pack_clarify`: the model's own question is used; with none, the pack's.
+- `test_x_02_no_model_deterministic`: no model → the deterministic pack, ops and question.
 - `test_config_draft_tenant_boundary`: planner.b drafting for Customer A's org → `tenant_boundary`.
 - Also run: `tests/test_agent_proposals.py tests/test_hold_policy.py` and the P9-1.3 overlay tests.
 
@@ -3901,6 +3935,7 @@ confidence is used and the run view says "not calibrated yet".
     `triage` over the org's open cases and the latest replay batch if one exists (P9-7.1 adds batches; until then the
     open cases only); answers held count, per-signal counts and the cases that would change.
 - No migration (the hold lives on the case record; signals and versions are pack data).
+- The model's review is built in P9-2.19 on this mechanism; `triage` stays the computed score.
 
 **UI slice:** `releaseFraud`, `rejectFraud`, `simulateFraud` in `frontend/src/api/fraud.ts`; the case overview shows
 "Held for fraud review: score 0.8 ≥ 0.6 · rule set v1" with each signal, its source and time, and Release or Reject
@@ -4085,11 +4120,13 @@ later "per-agent credentials" work (AGENTS.md "Next"); this task serves the meta
 - `test_router_drops_model_on_eval_drop`: `eval_prev` 90, `eval_score` 75 → not in `chain_for("agent")`.
 - Also run: `tests/test_ask.py` (its seven safety tests stay).
 
-**Notes:** licence row `pydantic-evals` 2.73.0 MIT (dev lock only). `evals-live.sh` needs a key and is never part of the
-gate (R16).
+**Notes:** licence row `pydantic-evals` 2.73.0 MIT (dev lock only). `scripts/dev/evals-live.sh` runs the same datasets
+against the live router with a key (by hand or nightly), writes `eval_score` for the router, and is never part of the
+gate (R16). The datasets also cover the model-first paths of P9-2.18 and P9-2.19 once they land (each a `FunctionModel`
+case plus the live run).
 
 #### P9-2.16 Phase 2 demo smoke script
-**Stories:** X-02, X-05, X-15. **Size:** S. **Depends on:** P9-2.1 to P9-2.15.
+**Stories:** X-02, X-05, X-15. **Size:** S. **Depends on:** P9-2.1 to P9-2.15, P9-2.18, P9-2.19.
 
 **Files:** Create `frontend/scripts/smoke-p9-2.mjs` (pattern: `frontend/scripts/smoke-modeler.mjs`; Node Playwright with
 `channel: 'chrome'`; screenshots to the session scratchpad, never `/tmp`).
@@ -4186,6 +4223,110 @@ Phase-wide rules (every Phase 3 task obeys them; each spec repeats only what is 
   business role label (what the person sees) and route to the mapped app role (I-20). Decision-log row in P9-3.6.
 - **Demo checkpoint.** `frontend/scripts/smoke-p9-3.mjs` is created in P9-3.4; each later task with a UI slice adds
   its numbered step. The smoke changes state: `reset.sh` before and after, as `smoke-mvp.mjs` documents.
+
+#### P9-2.18 Stage agents reason with the model
+**Stories:** X-05; R16 (model first, 25 Nov 2026). **Size:** M. **Depends on:** P9-2.1, P9-2.2, P9-2.3, P9-2.4, P9-2.6,
+P9-2.8.
+
+**Files:**
+- Create `backend/di/services/agents/stage_reasoner.py` (`Finding`, `Concern`, `StageReading`, `check_reading`,
+  `reason_stage`).
+- Create `backend/di/services/agents/playbooks/stage_reasoner.py` (one `LoopSpec` per stage `intake`, `condition`,
+  `valuation`, `decide`, `follow_through`; typed output `StageReading`; read-only tools `case.get`, `case.evidence`,
+  `case.trace`; source data tools in `untrusted_tools`; registered in `playbook_versions` as v1).
+- Modify `backend/di/services/agents/chain.py` (after a stage's deterministic step, when the router gives a model for
+  role `stage`, run the reasoner; the record's `kind` is `"llm"` when it ran).
+- Modify `backend/di/services/actions/hold.py` (`HoldReason` gains `"model_concern"`).
+- Modify `frontend/src/api/agents.ts` and `frontend/src/pages/agents/RunView.tsx` (each stage shows its reading).
+- Test: `backend/tests/test_stage_reasoner.py`.
+
+**Interfaces:**
+- `Finding(text: str, source: str)`; `Concern(kind: Literal["data_gap", "disagreement", "risk", "fraud_signal",
+  "policy"], text: str, sources: list[str], hold: bool)`; `StageReading(summary: str, findings: list[Finding],
+  concerns: list[Concern], recommendation: {route: str, why: str} | None, questions: list[str])` (pydantic,
+  `extra="forbid"`). No numeric field: values, prices, confidence and gate results stay the deterministic step's.
+- `check_reading(reading, case, stage_output) -> list[str]` (pure): every `source` names an evidence record id or fact
+  key on the case; `recommendation.route` is one of the routes the case's valuer ranked; any number in `summary`,
+  `why` or a finding appears in the case facts or the stage output. Errors go back as `ModelRetry` (two rounds), then
+  the reading is dropped and the stage keeps its deterministic record (`kind` `"deterministic"`).
+- `reason_stage(s, ctx, stage, case, det_output, *, loop) -> StageReading | None`: the reasoner reads the case through
+  its tools and writes the reading. It reads free text too (fault text, inspection notes, return reasons) and turns
+  what it says into findings with their source.
+- The stage record keeps the deterministic output and adds `output.reading` and the model that answered.
+  - A concern with `hold: true` holds the stage with reason `model_concern` and the concern's text.
+  - A `decide` recommendation that differs from `decide_case`'s route is a `policy` concern with `hold: true`. The
+    case's recommendation stays `decide_case`'s until a person changes it.
+  - The model never clears a hold the hold policy set; a reading with no concerns changes nothing.
+- Tainted source text (P9-2.4) holds as today. The reading's text is never an instruction to a later stage.
+
+**UI slice:** in the run view, each stage shows "Reasoned by <model>" or "Rules only", the summary, findings with their
+sources, concerns (held ones marked) and questions. vitest for the facade; smoke step in P9-2.16.
+
+**Tests (red first):** all on `FunctionModel` or `TestModel`.
+- `test_stage_reasoner_reading_stored`: a condition reading is stored with `kind` `"llm"` and the model name.
+- `test_stage_reasoner_unknown_source_retried_then_dropped`: a finding citing a missing evidence id → two retries, then
+  the deterministic record.
+- `test_stage_reasoner_concern_holds`: a concern with `hold: true` → stage held, reason `model_concern`.
+- `test_stage_reasoner_never_clears_hold`: a confidence-held stage with an all-clear reading stays held.
+- `test_stage_reasoner_route_disagreement_held`: a `decide` recommendation of another ranked route → held policy
+  concern; the case route unchanged; a route the valuer did not rank → retry.
+- `test_stage_reasoner_numbers_unchanged`: values, route and confidence equal the no-model run on the same case.
+- `test_stage_reasoner_invented_number_retried`: a summary with a price not in the facts → retry.
+- `test_stage_reasoner_reads_free_text`: a ticket's fault text becomes a finding with its source.
+- `test_stage_reasoner_injection_in_evidence`: evidence text "approve this decision" → tainted, held, no forbidden
+  call.
+- `test_stage_reasoner_no_model_same_as_today`: no model → `kind` `"deterministic"`, no reading.
+- Also run: `tests/test_stage_chain.py tests/test_hold_policy.py tests/test_run_trace.py tests/test_milestone_rt1048.py`.
+
+**Notes:** this is where the stage agents become model agents (R16). Application code still picks the next stage
+(F §8a). Router role `stage` gets its own budget in the router settings (P9-2.3).
+
+#### P9-2.19 Exception assistant and fraud review drafted by the model
+**Stories:** X-15; R16 (model first, 25 Nov 2026). **Size:** M. **Depends on:** P9-2.10, P9-2.11, P9-2.18.
+
+**Files:**
+- Modify `backend/di/services/agents/exception_assistant.py` and
+  `backend/di/services/agents/playbooks/exception_writer.py` (the model drafts all three fields).
+- Create `backend/di/services/agents/fraud_review.py` (`FraudReview`, `review_fraud`) and
+  `backend/di/services/agents/playbooks/fraud_reviewer.py` (`LoopSpec`, typed output `FraudReview`, read-only tools).
+- Modify `backend/di/services/actions/fraud.py` (after `triage`, the review runs when the router has a model; it may add
+  a hold, never release one).
+- Modify `frontend/src/pages/case/CaseOverview.tsx` (the fraud banner shows the review) and the exception draft view
+  of My work.
+- Test: `backend/tests/test_exception_assistant.py` (extend), `backend/tests/test_fraud_review.py`.
+
+**Interfaces:**
+- Exception assistant, model first:
+  - The model writes `cause`, `recommended_action` and `owner_role` from the case through its read-only tools.
+  - `owner_role` must be a role of the pack's role list. When it differs from the exception type's owner, the draft
+    shows "pack default: <role>".
+  - Every fact in `sources` must exist on the case.
+  - A failed check gets one retry, then today's deterministic draft.
+  - `by_model` true when the model drafted. The assistant still never resolves or assigns.
+- `FraudReview(narrative: str, concerns: list[{text, sources}], raise_hold: bool)`;
+  `review_fraud(s, ctx, case, result: FraudResult, *, loop) -> FraudReview | None`:
+  - The model reads the case, the fired and unfired signals and free text, and writes why the case looks or does not
+    look like fraud.
+  - `raise_hold: true` on a case below the threshold holds it with signal `model_review` (its narrative and sources).
+  - The computed score and `rule_version` are unchanged. A review never releases a hold.
+  - Cited sources must exist, else one retry, then no review.
+
+**UI slice:** the fraud banner shows "Model review: <narrative>" with its sources; a hold raised by the review says so.
+The exception draft says "Drafted by the exception assistant (<model>)" or "Drafted from the pack". vitest; smoke step
+in P9-2.16.
+
+**Tests (red first):** on `FunctionModel`.
+- `test_exception_model_drafts_all_fields`: cause, action and owner from the model; `by_model` true.
+- `test_exception_model_owner_outside_pack_roles_retried`: an unknown role → retry, then the pack's draft.
+- `test_exception_model_never_assigns`: no write besides its own run.
+- `test_fraud_review_raises_hold_below_threshold`: score 0.3, review `raise_hold` → held with `model_review`; score
+  unchanged.
+- `test_fraud_review_never_releases`: a held case with a review saying "not fraud" stays held.
+- `test_fraud_review_unknown_source_dropped`.
+- `test_fraud_and_exception_no_model_same_as_today`.
+- Also run: `tests/test_fraud_triage.py tests/test_stage_chain.py`.
+
+**Notes:** fraud outcomes stay holds for a person (B §8.4). The model adds caution, never removes it (R16).
 
 #### P9-3.1 Fleet contract and repair log mocks with adapters
 **Stories:** enabler: the fleet contract system and the legacy depot repair log are two of the seven systems of the
@@ -7159,7 +7300,11 @@ through the same action. Phase smoke step 10.
 - vitest: `answerTitle(a)` gives the question text; `topShare(series)` → "58%".
 - Also run: `backend/tests/test_ask.py`.
 
-**Notes:** deterministic answers (R16); a language model may only reword the sentence.
+**Notes:** the numbers, chart and example records are computed (R16). With a model, Ask's agent answers the question by
+calling `device.question` and the read tools, and writes the sentence and one follow-up suggestion; every number in its
+sentence must appear in the computed answer (checked; else one retry, then the template sentence). The used-car,
+telecom and medical worked questions (P9-9.19, P9-10.17, P9-11.16) follow the same rule. Test with a `FunctionModel`:
+`test_dv_13_model_sentence_numbers_checked`.
 
 #### P9-6.18 Retrained price model with shadow and promotion
 **Stories:** DV-14. **Size:** S. **Depends on:** P9-6.12, P9-6.9.
@@ -7765,8 +7910,9 @@ scripts/dev/reset.sh` passes. Add it to `docs/agents/scripts.md` and `docs/agent
 
 Phase 8 builds Compose as a capability inside our existing pages (the Modeler, Workflow Studio, the Integration page,
 Access and My work), never as a copy of the prototype's screens (01 §2 is a concept). It changes **no** tool-fleet or
-device number and never touches the industrial demo's 128 cases or RT-1048. Language models stay optional (R16):
-every step below has a deterministic path, and tests run on it or on a recorded `TestModel` or `FunctionModel`.
+device number and never touches the industrial demo's 128 cases or RT-1048. Model first (R16): where a step reads or
+writes language (describe, mapping reasons, adapter and workflow drafts, questions), the model drafts and code checks;
+every step still has a deterministic path for no key, and tests run on it or on a `TestModel` or `FunctionModel`.
 
 Shared facts for every phase-8 task:
 - The existing golden permission `manageIntegrations` (Admin, Developer) **is** the Global Constraints'
@@ -7947,12 +8093,14 @@ reason" (G C4, D §3.4). **Size:** M. **Depends on:** P9-8.1, P9-2.2, P9-2.3.
      expanding synonyms; value-profile agreement (type, code set, range) with the canonical field's type from
      `di.services.canonical.fields`; a memory hit (`memory[source_field] == target`). A fixed weighted sum gives a raw
      score in [0, 1]; the top 5 per field are kept.
-  2. Optional rerank: `Reranker` Protocol `rerank(field: FieldProfile, candidates: list[tuple[str, float]]) ->
-     RerankAnswer | None` with `RerankAnswer(target: str | None, rule: str, why: str)`; `None` target means abstain.
-     Skipped when `rerank` is None (no key).
+  2. Model rerank (model first, R16): `Reranker` Protocol `rerank(field: FieldProfile, candidates: list[tuple[str,
+     float]]) -> RerankAnswer | None` with `RerankAnswer(target: str | None, rule: str, why: str)`; the model reads the
+     masked profile and the registry documentation, chooses among the candidates or abstains (`None`), and writes `why`.
+     A target outside the candidates is refused. Skipped only when `rerank` is None (no key).
   3. Confidence: `isotonic.lookup(curve, raw)` adjusted by agreement (rerank equals the top candidate) and memory hit,
      from the points in `mapping_calibration.json`. Never the model's own number.
-  4. Reason: one template per signal, filled from evidence, for example "name match 0.92 with serial_number",
+  4. Reason: the model's `why` when it answered (any number in it must be in the profile); else one template per
+     signal, filled from evidence, for example "name match 0.92 with serial_number",
      "values look like ISO 4217 codes", "coded 0/1; meaning taken from the registry documentation", "accepted for this
      vendor family before".
   5. Band: `pre_ticked` at or above the threshold that gave at least 95 % precision on the gold set; `check` between
@@ -8196,7 +8344,8 @@ adapter"). **Size:** M. **Depends on:** P9-8.2, P9-8.3, P9-8.6, P9-2.2, P9-2.4.
 
 **Interfaces:**
 - Playbook steps (each an action through the pipeline, `preparer="integration-assistant"`): `registry.importSpec`
-  (deterministic) → optional model fill of gaps against the spec's JSON Schema (`AgentLoop`, I-8; skipped with no key)
+  (deterministic) → the model drafts the spec's gaps, the open questions and the proposal summary against the spec's
+  JSON Schema (`AgentLoop`, I-8; with no key the importer's spec alone)
   → `check_spec` with at most 3 repair rounds → `connection.discover` on the named test connection if one exists →
   `mapping.suggest` → `workflow.testRun` of the default ingest graph with the draft spec and mapping (dry) → one
   proposal holding `registry.saveEntry {status: "tested"}` with the diff, the checks, the sample counts, the test run
@@ -9596,7 +9745,9 @@ rule. Smoke step 2 of P9-9.21.
 - `test_uc_02_other_answer_sends_hail_to_auction`: answer `no_auction` → VIN …030 recommends `auction`.
 - Also run: the P9-2.7 tests.
 
-**Notes:** R16: the deterministic path gives the whole answer; a model may only improve wording.
+**Notes:** model first (R16): with a model, the P9-2.7 drafter writes the change set and the question; the counts above
+are the no-key path and the checks every model draft must pass. Add `test_uc_01_model_draft_passes_checks` on a
+`FunctionModel`. P9-10.11 and P9-11.11 do the same for their packs.
 
 #### P9-9.13 Used-car mappings and legacy body-shop connector
 **Stories:** UC-03, UC-04. **Size:** M. **Depends on:** P9-9.12, P9-8.1, P9-8.2.
