@@ -2,12 +2,12 @@
 connection settings, received webhooks and mapping decisions (migrations 0004, 0010, 0011, 0013, 0014, 0053, 0054)."""
 
 from sqlalchemy import (
+    REAL,
     BigInteger,
     Boolean,
     CheckConstraint,
     Column,
     DateTime,
-    Float,
     ForeignKey,
     Index,
     Integer,
@@ -235,7 +235,7 @@ mapping_decision = Table(
     Column("decision", Text, nullable=False),  # accepted, replaced, accepted_with_rule, not_needed, asked_owner
     Column("target", Text),
     Column("rule", Text),
-    Column("confidence", Float),
+    Column("confidence", REAL),  # migration 0054 creates it as real
     Column("reason", Text),
     Column("proposed_by", Text),
     Column("owner", Text),

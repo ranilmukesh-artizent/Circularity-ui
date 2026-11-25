@@ -7,6 +7,7 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     Date,
+    Index,
     Table,
     Text,
 )
@@ -58,6 +59,7 @@ idp_group_map = Table(
     ts("created_at", now=True),
     ts("approved_at"),
     CheckConstraint("status IN ('draft','approved','retired')", name="ck_idp_group_map_status"),
+    Index("ix_idp_group_map_group", "group_id", "status"),  # as migration 0057 creates it
 )
 
 tenant_grant = Table(

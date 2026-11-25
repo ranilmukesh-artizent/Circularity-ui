@@ -254,6 +254,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-8.10 directory groups to roles as data with test a user | this commit | 149 api (idp_group_map, access_matrix, screens_access, oidc_signin, access_gaps, writes_access, catalog_hygiene, tool_find, hold_policy + 6 files importing FORBIDDEN_ACTIONS from di.mcp.policy), 435 web, lint, mypy | done |
 | 2026-11-25 | 09 · P9-8.6 connector from an API spec through an OpenAPI importer | this commit | 89 api (openapi_import, adapter_registry, configured_paging, configured_adapter, catalog_hygiene, tool_find, agent_catalog), 436 web, lint | done |
 | 2026-11-25 | 09 · P9-8.4 five mapping choices with ask the owner | this commit | 155 api (mapping_decisions, mapping_suggest, mapping_save, mapping_runs, catalog_mappings, discover_sample, catalog_hygiene, agent_catalog, hold_policy, tool_find, process_layer, screens_mywork), 443 web, lint | done |
+| 2026-11-25 | 09 · P9-2.16 phase 2 demo smoke script | this commit | smoke-p9-2 8/8 on a fresh reset (live model) | done |
 
 ## Decisions taken without the user (to review)
 

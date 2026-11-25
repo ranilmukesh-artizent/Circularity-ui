@@ -15,11 +15,23 @@ from sqlalchemy import text
 from di.connectors import connection, mapping, mapping_suggest
 from di.core.db import SessionLocal, engine
 from di.repositories import mapping_decisions
+from di.services.agents import runtime
 from di.services.agents.forbidden import HELD_FOR_PERSON, forbidden
+from di.services.agents.pydantic_ai_loop import PydanticAILoop
 from tests import starting
 from tests.helpers import call, client, h
 
 pytestmark = pytest.mark.usefixtures("no_synced_conflicts")
+
+
+@pytest.fixture(autouse=True)
+def no_model():
+    """The deterministic path (R16): with a live key the model would rerank first and `proposed_by` would read model."""
+    runtime.set_loop(PydanticAILoop(lambda _s, _run, _role: None))
+    yield
+    runtime.set_loop(None)
+
+
 A, B = "t84a", "t84b"  # two sources of the vendor family "oracle"
 RES = "parts"
 AGENT = "coordinator"  # seeded, autonomy act
