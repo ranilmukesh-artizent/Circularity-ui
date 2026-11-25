@@ -4,10 +4,13 @@
  * the pack (`overlay`, plan 9 P9-1.3: the overlay.* actions of backend/di/services/actions/overlays.py). Every change is a flow.* action
  * (backend/di/services/actions/modeler.py): a person edits a draft and submits it, a different person approves it (a
  * shadow run starts) and publishes it. A successful write invalidates the Modeler read and the case reads
- * (invalidation.ts, the `flow` family). simulateFlow and ruleSuggestions are read actions run on demand, not cached.
+ * (invalidation.ts, the `flow` family). simulateFlow and ruleSuggestions are read actions run on demand, not cached;
+ * the last simulation's per-node counts are kept per flow for the canvas badges (useSimNodes, P9-8.15).
  */
+import { useSyncExternalStore } from 'react';
 import { invoke } from './actions';
 import { cached, withQuery } from './client';
+import { saveMarketTable, testMarketTable, type Jdm, type MarketTable } from './marketTables';
 import type { ActionResult, FlowGraph, ModelerScreen, OverlayConflict, OverlayOp, SimResult } from './types';
 
 /** The Modeler page for a template and an org unit (Suspense read cache). */
@@ -58,11 +61,27 @@ export async function proposeChange(flowId: number, text: string): Promise<Propo
 export const applyProposal = (flowId: number, p: Proposal): Promise<ActionResult<{ id: number; checks: ModelerScreen['checks'] }>> =>
   invoke('flow.saveDraft', { flow_id: flowId, graph: p.graph, source: 'assistant', note: p.note });
 
+/** How many cases reach a node and leave it towards the decision in a simulation, and up to three of them (P9-8.15). */
+export interface NodeFlow { in: number; out: number; examples: string[] }
+/** What flow.simulate answers: the Impact numbers and, per node, how the open queue flows through it. */
+export type SimWithNodes = SimResult & { per_node?: Record<string, NodeFlow> };
+
+// the last simulation's per-node counts of each flow, so the canvas and the inspector can show them without the Impact
+// panel passing them down; a new simulation of the flow replaces them
+const lastNodes = new Map<number, Record<string, NodeFlow>>();
+const watchers = new Set<() => void>();
+/** The per-node counts of the flow's last simulation in this session, or undefined (none yet, or a template without them). */
+export function useSimNodes(flowId: number | undefined): Record<string, NodeFlow> | undefined {
+  return useSyncExternalStore((f) => (watchers.add(f), () => watchers.delete(f)), () => (flowId == null ? undefined : lastNodes.get(flowId)));
+}
+
 /** The graph (or the saved draft) against the published rules on the open queue; rejects with the refusal message. */
-export async function simulateFlow(flowId: number, graph?: FlowGraph, params?: Partial<Record<'market' | 'labor' | 'lease' | 'slots', number>>): Promise<SimResult> {
+export async function simulateFlow(flowId: number, graph?: FlowGraph, params?: Partial<Record<'market' | 'labor' | 'lease' | 'slots', number>>): Promise<SimWithNodes> {
   const input = { flow_id: flowId, ...(graph ? { graph } : {}), ...(params ? { params } : {}) };
-  const r = await invoke<SimResult>('flow.simulate', input);
+  const r = await invoke<SimWithNodes>('flow.simulate', input);
   if (!r.ok) throw new Error(r.error.message);
+  if (r.output.per_node) lastNodes.set(flowId, r.output.per_node); else lastNodes.delete(flowId);
+  watchers.forEach((f) => f());
   return r.output;
 }
 
@@ -120,3 +139,22 @@ export const importPack = (doc: unknown, org?: string): Promise<PackDone> => inv
 export const submitPack = (id: number): Promise<PackDone> => invoke('pack.submit', { id });
 export const approvePack = (id: number): Promise<PackDone> => invoke('pack.approve', { id });
 export const rejectPack = (id: number, reason: string): Promise<PackDone> => invoke('pack.reject', { id, reason });
+
+// ---- decision tables in the editor (plan 9, P9-8.16): the marketTable.* actions of P9-4.2, one table store, no second path
+export { useMarketTables as decisionTable } from './marketTables';
+/** Save the editor's graph as a draft (your own draft is edited in place; otherwise a new version starting on `validFrom`). */
+export const saveDecisionTable = (t: MarketTable, body: Jdm, validFrom: string, own: boolean) =>
+  saveMarketTable({ pack: t.pack, flow: t.flow, market: t.market, name: t.name, kind: 'decision_table', valid_from: validFrom, ...(t.org_unit_id ? { org_unit_id: t.org_unit_id } : {}), body, ...(own ? { id: t.id } : {}) }); // prettier-ignore
+/** "Test this decision": the stored version on sample inputs; answers the outputs and the matched row. */
+export const testDecisionTable = testMarketTable;
+
+/** A flow exported for other tools (P9-8.21): the file name, its type and the XML text. */
+export interface FlowExport {
+  filename: string;
+  content_type: string;
+  xml: string;
+}
+/** The flow's rules, guardrails and decision tables as DMN 1.3 (flow.exportDmn, a read). */
+export const exportDmn = (flowId: number): Promise<ActionResult<FlowExport>> => invoke('flow.exportDmn', { flow_id: flowId });
+/** The flow's case process as BPMN 2.0 (flow.exportBpmn, a read). */
+export const exportBpmn = (flowId: number): Promise<ActionResult<FlowExport>> => invoke('flow.exportBpmn', { flow_id: flowId });

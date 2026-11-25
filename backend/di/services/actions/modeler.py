@@ -20,6 +20,10 @@ decision_flow_version for rollback. Decisions use the published graph only, from
                                                          queue (di.services.actions.modeler_sim); manageFlows or approve.flows.
                                                          `params` {market, labor, lease, slots}: tool-fleet what-if levers
                                                          (P9-0.15), the candidate valued at BASEP | params; nothing is saved
+    flow.exportDmn  read    {flow_id}                    {filename, content_type, xml}: the flow's rules, guardrails and the
+                                                         org's decision tables as DMN 1.3 (di.services.modeler.export_dmn)
+    flow.exportBpmn read    {flow_id}                    the same shape: the case process as BPMN 2.0 (export_bpmn); both
+                                                         need the Modeler page, change nothing and are open to agents
     flow.propose    read    {flow_id, text}              a plain-language change as a checked proposal on the draft
                                                          (di.services.modeler.propose), simulated against the draft; saves
                                                          nothing. A person applies it with flow.saveDraft {graph, source:
@@ -32,12 +36,14 @@ publish or roll back a flow (di.services.agents.forbidden.FORBIDDEN_ACTIONS, and
 
 import dataclasses
 import json
+import re
 from typing import Any, cast
 
 from sqlalchemy import text
 
 from di.core import policy
 from di.repositories import flows as repo
+from di.repositories import market_tables
 from di.repositories.flows import FlowRow
 from di.repositories.orgs import units
 from di.services.actions.modeler_sim import lever_problem, sim_json, simulate_graph, simulate_rules
@@ -45,10 +51,14 @@ from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement, mark_destructive
 from di.services.ask.modeler_read import model_rule
 from di.services.modeler.compile import compile_flow
+from di.services.modeler.export_bpmn import process_of, to_bpmn
+from di.services.modeler.export_dmn import Table, decision_id, to_dmn
 from di.services.modeler.flow import Flow
 from di.services.modeler.guard import text_breaks
+from di.services.modeler.pack import load_pack
 from di.services.modeler.parse import parse_rule
 from di.services.modeler.propose import STEP, Proposal, build_proposal, fill_parsed
+from di.services.modeler.tables import table_title
 from di.services.modeler.templates import TEMPLATE_KEYS, Template, load_template
 from di.services.modeler.validate import blocking, validate_flow
 
@@ -97,6 +107,17 @@ _declare("flow.get", "Read a flow", "read decision flows",
 _declare("flow.simulate", "Simulate a flow", "simulate decision flows",
          "Run a flow's draft (or the graph given) against its published rules on the open queue. Changes nothing.",
          "read", {**_ID, "graph": {"t": "object"}, "params": {"t": "object"}}, None)  # fmt: skip
+_declare(
+    "flow.exportDmn",
+    "Export a flow as DMN",
+    "export decision flows",
+    "The flow's rules, guardrails and decision tables as a DMN 1.3 file. Lossy by design. Changes nothing.",
+    "read",
+    _ID,
+    None,
+)
+_declare("flow.exportBpmn", "Export a flow as BPMN", "export decision flows",
+         "The case process of a flow as a BPMN 2.0 file. Lossy by design. Changes nothing.", "read", _ID, None)  # fmt: skip
 _declare("flow.propose", "Propose a flow change", "propose decision flow changes",
          "Turn a plain-language change into a checked, simulated proposal for the draft. Saves nothing.", "read",
          {**_ID, "text": {"req": True, "t": "string", "min": 3, "minText": "Describe the change in a few words."}},
@@ -450,7 +471,7 @@ def simulate(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow(ctx, i)
     g = cast(Flow, i["graph"]) if i.get("graph") is not None else _graph(f)
     params = i.get("params")
-    return sim_json(simulate_graph(ctx, f, g, params), params)
+    return sim_json(simulate_graph(ctx, f, g, params, with_nodes=True), params)
 
 
 # ---------------------------------------------------------------- propose
@@ -486,3 +507,51 @@ def _model_fill(t: Template, text: str) -> dict[str, Any]:
     if text_breaks(t, text) or STEP.search(text) or parse_rule(t, text).path:
         return {}
     return model_rule(text, t)
+
+
+# ---------------------------------------------------------------- export (plan 9, P9-8.21)
+def _export_refusal(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if not policy.can_page(ctx.actor.account, "modeler"):
+        return "out_of_scope", f"The {ctx.actor.role} view cannot export decision flows."
+    f = _reach(i, ctx)
+    return f if isinstance(f, tuple) else None
+
+
+@guard("flow.exportDmn")
+def export_dmn_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    return _export_refusal(i, ctx)
+
+
+@guard("flow.exportBpmn")
+def export_bpmn_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    return _export_refusal(i, ctx)
+
+
+def _export(f: FlowRow, ext: str, xml: str) -> dict[str, Any]:
+    org = re.sub(r"[^a-z0-9]+", "-", f.org_unit_id.lower()).strip("-")
+    return {"filename": f"{f.template_key}-{org}-v{f.ver}.{ext}", "content_type": "application/xml", "xml": xml}
+
+
+def _tables(ctx: CallContext, f: FlowRow) -> list[Table]:
+    """The org's approved decision tables, the newest version of each name and market."""
+    seen: set[tuple[str, str]] = set()
+    out: list[Table] = []
+    for r in market_tables.listed(ctx.session, f.template_key, None, None, f.org_unit_id):
+        if r.kind == "decision_table" and r.status == "approved" and (r.name, r.market) not in seen:
+            seen.add((r.name, r.market))
+            out.append(Table(r.name, table_title(f.template_key, r.name), r.market, r.version, r.body))
+    return out
+
+
+@implement("flow.exportDmn")
+def export_dmn(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    f = _flow(ctx, i)
+    t, g = load_template(f.template_key), _graph(f)
+    return _export(f, "dmn", to_dmn(load_pack(f.template_key), g, compile_flow(t, g), _tables(ctx, f)))
+
+
+@implement("flow.exportBpmn")
+def export_bpmn(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    f = _flow(ctx, i)
+    pack = load_pack(f.template_key)
+    return _export(f, "bpmn", to_bpmn(pack, process_of(pack, _graph(f)), decision_id(pack)))

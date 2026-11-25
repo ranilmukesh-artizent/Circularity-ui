@@ -3,7 +3,7 @@ import { invoke } from '../../api/actions';
 import {
   accountRows, agentMetrics, approvalLimit, autoLevel, autoTypes, delegationLabel, delegations, facilities, fmtDateTime,
   governedAgents, hardRules, idp, idpRoleOf, idpRoles, levelRank, levels, pctTxt, refreshAccess, requests, roles, runLimits,
-  roleMatrix, selfApproveAllowed, testUser, type Level,
+  roleMatrix, selfApproveAllowed, syncDirectory, syncLine, testUser, type Level, type SyncAnswer,
 } from '../../api/access';
 import { money } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
@@ -92,8 +92,12 @@ function Identity() {
   const [err, setErr] = useState('');
   const approles = I.src === 'approles';
 
+  const [synced, setSynced] = useState<SyncAnswer | null>(null);
   const sync = async () => {
-    if ((await invoke('access.syncDirectory', {})).ok) toast('Directory synced.');
+    const r = await syncDirectory();
+    if (!r.ok) return;
+    setSynced(r.output);
+    toast('Directory synced.');
   };
   const mapTo = async (acct: string, field: 'role' | 'site', value: string) => {
     const r = await action.run(() => invoke<{ label: string }>('access.mapIdentity', { acct, field, value }), 4200);
@@ -133,6 +137,13 @@ function Identity() {
               <div className="row" style={{ marginTop: 6 }}>
                 <button className="btn sm pri" onClick={sync}>Sync from directory</button>
               </div>
+            )}
+            {synced && syncLine(synced) && (
+              <span className="note" id="axSyncLine">
+                {syncLine(synced)}
+                {[...(synced.joiners ?? []), ...(synced.leavers ?? [])].length > 0 &&
+                  ': ' + [...(synced.joiners ?? []).map((e) => e + ' joined'), ...(synced.leavers ?? []).map((e) => e + ' left')].join(', ')}
+              </span>
             )}
           </div>
           <div className="idpc">

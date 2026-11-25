@@ -189,6 +189,25 @@ export const acceptProposal = (id: number): Promise<ActionResult<{ id: number; s
 export const rejectProposal = (id: number, reason: string): Promise<ActionResult<{ id: number; status: string }>> =>
   invoke('proposal.reject', { id, reason });
 
+export interface NewAdapterDraft {
+  name: string;
+  systemType: string;
+  vendorFamily: string;
+  /** the OpenAPI 3 document as pasted text (never a link) */
+  document: string;
+  baseUrl?: string;
+  /** a test connection to read a sample from (connection.discover) */
+  testSourceId?: string;
+}
+
+/** Ask the Integration Assistant to draft an adapter spec from an API document (registry.draftFromSpec, P9-8.7). The run appears on the
+ * Agents page; its proposal (registry.saveEntry as tested) waits in My work and on Home for another person. The agent never releases it. */
+export const startAdapterDraft = (d: NewAdapterDraft): Promise<ActionResult<{ run_id: string }>> =>
+  invoke('registry.draftFromSpec', {
+    name: d.name, system_type: d.systemType, vendor_family: d.vendorFamily, document: d.document,
+    ...(d.baseUrl ? { base_url: d.baseUrl } : {}), ...(d.testSourceId ? { test_source_id: d.testSourceId } : {}),
+  }); // prettier-ignore
+
 export type AgentKind = AgentRow['kind'];
 
 export interface NewAgent {

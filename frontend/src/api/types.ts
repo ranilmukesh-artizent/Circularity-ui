@@ -45,7 +45,7 @@ export interface RouteRef {
 /** A node of a decision flow (Domain spec D1). Rule nodes carry rid, action, path, scope and owner. */
 export interface FlowNode {
   id: string;
-  t: 'trigger' | 'agent' | 'gate' | 'guard' | 'rule' | 'decision' | 'approval' | 'path' | 'execute' | 'learn' | 'step';
+  t: 'trigger' | 'agent' | 'gate' | 'guard' | 'rule' | 'decision' | 'approval' | 'path' | 'execute' | 'learn' | 'step' | 'table';
   x: number;
   y: number;
   label: string;
@@ -59,6 +59,8 @@ export interface FlowNode {
   owner?: string;
   ai?: boolean;
   src?: string;
+  /** a `table` node (P9-8.16): the pack's decision table it stands for, e.g. `cover_terms` */
+  table?: string;
 }
 
 /** An edge `a > b` with its label. */

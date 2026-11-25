@@ -10,13 +10,14 @@ import { can } from '../../api/session';
 import {
   actTypes, agentsUsing, blockOperations, blockResources, blockSpecOf, nodeSettings, settingErrors, CH, channelsOf, deliverMap, deliverOf, fixedStep, frTransforms, mappings, mapTarget,
   NOWF, nowMs, RUN_CHIP, RUN_LABEL, runTimes, sourceGroups, sourceLabel, sources, source, sourceShortLabel, stepInfo, tools,
-  transforms, canLink, WF_H, WF_W, WF_WH, worldWidth, type Check, type Counts, type RunState, type TestRun, type WfGraph, type WfNode, type Workflow,
+  transforms, canLink, WF_H, WF_W, WF_WH, worldWidth, type Check, type Counts, type RunState, type SampleRec, type TestRun, type WfGraph, type WfNode, type Workflow,
 } from '../../api/workflows';
 import { Icon } from '../../components/Icon';
 import { onActivateKey } from '../../utils/keys';
 import { toast } from '../../components/toast';
 import { BlockSettings } from './BlockSettings';
 import { edit, nextId, setCfg, type Draft } from './draftStore';
+import { NodeSamples, nodeIo } from '../../components/graph/NodeSamples';
 import { GraphView, type GEdge, type GNode, type GraphApi } from '../../components/graph/GraphView';
 import { placeMissing } from '../../components/graph/layout';
 import { StepNode, type StepData } from './StepNode';
@@ -192,7 +193,7 @@ export function CanvasView({ w, d, sel, run, checks, counts, flow, mini, readOnl
   };
   const gnodes: GNode[] = g.nodes.map((n) => {
     const st = run?.states[n.id], c = counts[n.id], p = missing[n.id] ?? n;
-    const data: StepData = { n, st, stLabel: st ? L[st] : '', records: c && showCounts ? fmtNumber(c.out) + ' records' : '', sev: sevOf(n.id) };
+    const data: StepData = { n, st, stLabel: st ? L[st] : '', records: c && showCounts ? fmtNumber(c.out) + ' records' : '', io: c && run?.dry ? nodeIo(c) : undefined, pinned: !!d.pins[n.id]?.length, sev: sevOf(n.id) };
     return { id: n.id, x: p.x, y: p.y, w: WF_W, h: WF_H, type: 'step', data, selected: sel?.t === 'n' && sel.id === n.id, locked: n.k === 'fixed' };
   });
   const gedges: GEdge[] = g.edges.flatMap((e) => {
@@ -230,7 +231,7 @@ export function CanvasView({ w, d, sel, run, checks, counts, flow, mini, readOnl
 }
 
 // ---------------------------------------------------------------- inspector
-export function Inspector({ d, sel, checks, ops, onFail }: { d: Draft; sel: Sel; checks: Check[]; ops: ReturnType<typeof canvasOps>; onFail: (id: string) => void }) {
+export function Inspector({ d, sel, checks, ops, onFail, run, onPin }: { d: Draft; sel: Sel; checks: Check[]; ops: ReturnType<typeof canvasOps>; onFail: (id: string) => void; run?: TestRun | null; onPin?: (nodeId: string, records: SampleRec[]) => void }) {
   const g = d.graph;
   const node = (id: string) => g.nodes.find((n) => n.id === id);
   if (sel?.t === 'e') {
@@ -293,6 +294,12 @@ export function Inspector({ d, sel, checks, ops, onFail }: { d: Draft; sel: Sel;
           resources={n.k === 'conn' ? blockResources()[n.ref] : undefined} operations={n.k === 'wconn' ? blockOperations()[n.ref] ?? [] : undefined}
           onChange={(k, v) => setCfg(d.id, n.id, k, v)} />
       </InspSection>
+      {run?.dry && run.samples?.[n.id] && (
+        <InspSection title="Records">
+          <NodeSamples input={run.samples[n.id].before} output={run.samples[n.id].after} held={run.samples[n.id].held ?? []}
+            onPin={onPin && n.k !== 'conn' ? (recs) => onPin(n.id, recs) : undefined} pinned={!!d.pins[n.id]?.length} />
+        </InspSection>
+      )}
       {mine.length > 0 && <InspSection title="Problems">{mine.map((m, k) => <div key={k} className={'callout ' + (m.sev === 'error' ? 'bad' : '')} style={{ marginBottom: 6 }}>{m.msg}</div>)}</InspSection>}
       <InspSection title="Connections">
         <EdgeList label="Receives from" edges={ins} name={(e) => stepInfo(node(e.a)!).label} none={!i.in ?'Nothing: this block starts the flow.' : 'Nothing yet. Connect a step into this one.'} onRemove={ops.delEdge} />

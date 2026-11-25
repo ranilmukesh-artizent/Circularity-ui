@@ -855,7 +855,7 @@ each story went.
 - [x] P9-2.21 Ten-stage journey on the case run view
 - [x] P9-2.22 Gates before the queue plan in decide_case
 - [x] P9-2.23 Ask reads workflows and their runs
-- [ ] P9-2.17 Phase 2 gate
+- [x] P9-2.17 Phase 2 gate
 - [ ] P9-2.24 Phase 2 gate follow-ups: model reads off the lock, grounded concerns, tainted fraud text
 - [x] P9-3.1 Fleet contract and repair log mocks with adapters
 - [x] P9-3.2 Recall, telematics and parts mocks with adapters
@@ -937,24 +937,24 @@ each story went.
 - [x] P9-8.4 Five mapping choices with ask the owner
 - [x] P9-8.5 Configured adapter reads dlt-style paging and selectors
 - [x] P9-8.6 Connector from an API spec through an OpenAPI importer
-- [ ] P9-8.7 Agent drafts an adapter spec held for a person
+- [x] P9-8.7 Agent drafts an adapter spec held for a person
 - [x] P9-8.8 Directory mock with OIDC and a users API in source-sim
 - [x] P9-8.9 OIDC sign-in with authlib beside the demo sign-in
 - [x] P9-8.10 Directory groups to roles as data with test a user
-- [ ] P9-8.11 SCIM provisioning and directory sync for joiners
+- [x] P9-8.11 SCIM provisioning and directory sync for joiners
 - [x] P9-8.12 Workflow author from a sentence with repair rounds
 - [x] P9-8.13 Studio canvas on xyflow with dagre layout
 - [x] P9-8.14 Modeler canvas on xyflow
-- [ ] P9-8.15 Per-node input and output samples with pinned data
-- [ ] P9-8.16 Decision table editor in the Modeler
+- [x] P9-8.15 Per-node input and output samples with pinned data
+- [x] P9-8.16 Decision table editor in the Modeler
 - [x] P9-8.17 Composition object with maker-checker
 - [ ] P9-8.18 Compose describe and adapter mapping steps
 - [ ] P9-8.19 Compose test run shows where cases stopped
 - [ ] P9-8.20 Compose agent mapping, approve and publish steps
-- [ ] P9-8.21 DMN and BPMN export from the Modeler
+- [x] P9-8.21 DMN and BPMN export from the Modeler
 - [ ] P9-8.22 Compose demo smoke
 - [ ] P9-8.23 Phase 8 gate
-- [ ] P9-9.1 Used-car pack data file
+- [x] P9-9.1 Used-car pack data file
 - [ ] P9-9.2 Vehicle lease and dealer system mocks
 - [ ] P9-9.3 Title and lien service mock
 - [ ] P9-9.4 Vehicle inspection app mock

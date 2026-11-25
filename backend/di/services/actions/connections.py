@@ -12,12 +12,16 @@
     connection.approvals    read    {source_id}                           where a connection stands and its requests
     connection.discover     act     {source_id}                           read up to 500 records per resource from a TEST connection into the dry raw store (P9-8.3)
     registry.importSpec     act     {name, system_type, vendor_family, document, base_url?}   an OpenAPI 3 document to a from_spec draft, with its notes and checks (P9-8.6)
+    registry.draftFromSpec  act     {name, system_type, vendor_family, document, base_url?, test_source_id?}   starts the `adapter_author` run: the model drafts, code checks, one proposal holds it for a person (P9-8.7)
 
 A connection starts in the test environment with read access: no scheduled sync, no instruction (di.connectors.sync,
 di.services.instructions.send). Production access and write-back (`rw` "Read / write") are each a request the named
 system owner approves. The requester never approves their own request (maker-checker). The owner actions carry
 `perm=None` because `ownSystem` alone cannot say "the named owner": their guards check that the actor is the owner or
 holds `ownSystem` (Admin), and is not the requester.
+
+A saved entry is `draft`, or `tested` once it was checked and read from a test connection. An agent's `registry.saveEntry` is
+held for a person at every autonomy (HELD_FOR_PERSON, P9-8.7). Only `registry.release` makes an entry `released`.
 
 `connection.` and `registry.release` are in FORBIDDEN_ACTIONS (di.services.agents.forbidden): no agent creates a
 connection, asks for, grants or declines access, or releases a connector; an agent may read the registry and draft an
@@ -106,6 +110,10 @@ _declare("connection.discover", "Read a sample from the test connection", "read 
 _declare("registry.importSpec", "Import a connector from an API spec", "import connectors from API specs",
          "Turn an OpenAPI 3 document the person pasted or uploaded into a connector draft, with the resources it found, what it left out and the checks.",
          "act", {"name": _STR, "system_type": _STR, "vendor_family": _STR, "document": {"req": True}, "base_url": {"t": "string"}}, _MGR)  # fmt: skip
+_declare("registry.draftFromSpec", "Ask the Integration Assistant to draft a connector", "ask the Integration Assistant to draft connectors",
+         "Start the adapter author: it reads the OpenAPI 3 document, drafts the connector spec, checks it and holds the result as one proposal for a person. Nothing is saved or released until a person accepts it.",
+         "act", {"name": _STR, "system_type": _STR, "vendor_family": _STR, "document": {"req": True}, "base_url": {"t": "string"},
+                 "test_source_id": {"t": "string"}}, _MGR)  # fmt: skip
 
 
 # ---------------------------------------------------------------- helpers
@@ -176,6 +184,8 @@ def _entry_problem(e: dict[str, Any]) -> tuple[str, str] | None:
         return "validation_error", f"Authentication methods are among {', '.join(GENERIC_AUTH_METHODS)}."
     if not isinstance(e.get("resources") or [], list) or not isinstance(e.get("spec") or {}, dict):
         return "validation_error", '"resources" is a list and "spec" an object.'
+    if e.get("status", "draft") not in ("draft", "tested"):
+        return "validation_error", 'An entry is saved as "draft" or "tested"; only a release makes it released.'
     return None
 
 
@@ -203,16 +213,20 @@ def save_entry(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         text(
             "INSERT INTO adapter_registry (id, version, kind, system_type, vendor_family, auth_methods, resources, "
             "canonical_entities, write_actions, mapping_templates, status, maintainer, source_licence, spec, org_unit_id, "
-            "created_by) VALUES (:i, :v, :k, :t, :f, :am, CAST(:rs AS jsonb), :ce, :wa, CAST(:mt AS jsonb), 'draft', :m, :sl, "
+            "created_by) VALUES (:i, :v, :k, :t, :f, :am, CAST(:rs AS jsonb), :ce, :wa, CAST(:mt AS jsonb), :st, :m, :sl, "
             "CAST(:sp AS jsonb), :o, :by)"
         ),
-        {"i": e["id"], "v": ver, "k": e["kind"], "t": str(e["system_type"]).strip(), "f": str(e["vendor_family"]).strip(),
+        {"i": e["id"], "v": ver, "st": e.get("status", "draft"), "k": e["kind"], "t": str(e["system_type"]).strip(), "f": str(e["vendor_family"]).strip(),
          "am": [str(a) for a in e.get("auth_methods") or []], "rs": json.dumps(e.get("resources") or []),
          "ce": [str(a) for a in e.get("canonical_entities") or []], "wa": [str(a) for a in e.get("write_actions") or []],
          "mt": json.dumps(e.get("mapping_templates") or {}), "m": e.get("maintainer") or ctx.actor.id,
          "sl": e.get("source_licence"), "sp": json.dumps(e.get("spec") or {}), "o": e.get("org_unit_id"), "by": ctx.actor.id},
     )  # fmt: skip
-    return {"id": e["id"], "version": ver, "status": "draft", "log": f"Saved the draft of connector {e['id']} v{ver}"}
+    status = e.get("status", "draft")
+    log = (
+        f"Saved the draft of connector {e['id']} v{ver}" if status == "draft" else f"Saved connector {e['id']} v{ver} as {status}"
+    )
+    return {"id": e["id"], "version": ver, "status": status, "log": log}
 
 
 @guard("registry.release")
@@ -262,7 +276,7 @@ def _document(raw: Any) -> dict[str, Any]:
     return found
 
 
-def _imported_entry(i: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+def imported_entry(i: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     """(the from_spec entry to save, the answer): the draft carries the import's notes, what was left out and the checks."""
     base = str(i.get("base_url") or "").strip() or None
     if base and not _is_http(base):
@@ -290,7 +304,7 @@ def _imported_entry(i: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
 @guard("registry.importSpec")
 def import_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     try:
-        entry, _ = _imported_entry(i)
+        entry, _ = imported_entry(i)
     except ValueError as e:
         return "validation_error", str(e)
     return save_guard({"entry": entry}, ctx)
@@ -298,10 +312,44 @@ def import_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
 
 @implement("registry.importSpec")
 def import_spec(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
-    entry, answer = _imported_entry(i)
+    entry, answer = imported_entry(i)
     saved = save_entry({"entry": entry}, ctx)
     mark = " (needs fixes)" if answer["needs_fixes"] else ""
     return saved | answer | {"log": f"Imported the API spec as the draft of connector {entry['id']} v{saved['version']}{mark}"}
+
+
+# ---------------------------------------------------------------- registry.draftFromSpec (P9-8.7)
+MAX_DOCUMENT = 2_000_000  # characters of a pasted document
+
+
+@guard("registry.draftFromSpec")
+def draft_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if len(i["document"] if isinstance(i["document"], str) else json.dumps(i["document"])) > MAX_DOCUMENT:
+        return "validation_error", "The document is too long: paste the part that lists the records."
+    if bad := import_guard(i, ctx):
+        return bad
+    if sid := i.get("test_source_id"):
+        src = _source(ctx, str(sid))
+        if src is None:
+            return "not_found", f"No source {sid}."
+        if bad := _tenant_refusal(ctx, src["org"]):
+            return bad
+    return None
+
+
+@implement("registry.draftFromSpec")
+def draft_from_spec(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    """Start the adapter author run (agent Integration Assistant, as the person asking); the worker's `agent.step` job runs it."""
+    from di.services.agents import runtime  # late: the runtime imports the action modules
+    from di.services.agents.playbooks import adapter_author
+
+    run_id = runtime.start(ctx.session, adapter_author.AGENT_ID, adapter_author.NAME, None, account=ctx.actor.id)
+    given = {k: i[k] for k in ("name", "system_type", "vendor_family", "document", "base_url", "test_source_id") if i.get(k)}
+    ctx.session.execute(
+        text("UPDATE agent_run SET state = state || CAST(:x AS jsonb) WHERE id = :r"),
+        {"x": json.dumps({"input": given}), "r": run_id},
+    )
+    return {"run_id": run_id, "log": f"Asked the Integration Assistant to draft connector {i['name']} (run {run_id})"}
 
 
 # ---------------------------------------------------------------- connection.create

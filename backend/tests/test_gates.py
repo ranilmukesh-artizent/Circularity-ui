@@ -229,7 +229,10 @@ def test_shipped_packs_have_only_the_gates_a_phase_switched_on():
         assert [g.id for g in load_pack(k).gates] == {
             "tool_fleet": ["G-CON-1", "G-CON-2", "G-TOOL-REC", "G-TOOL-TEL"],
             "device": ["G-DEV-WIPE", "G-DEV-LOCK", "G-DEV-QUOTE"],
+            "used_cars": ["G-VEH-TITLE", "G-VEH-ODO", "G-VEH-RECALL", "G-VEH-BRAND", "G-VEH-SALV"],  # P9-9.1, data only
         }.get(k, []), k
+        if k == "used_cars":
+            continue  # its gates fire on a bare case by design; P9-9.6 to P9-9.9 test them
         got = evaluate_gates({"cls": "x"}, load_pack(k))
         # the tool fleet's contract right (P9-3.6) applies to every case: with no contract line it fails
         want = [("G-TOOL-REC", False), ("G-CON-2", False)] if k == "tool_fleet" else []

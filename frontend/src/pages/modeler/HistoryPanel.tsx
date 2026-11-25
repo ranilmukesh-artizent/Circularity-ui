@@ -1,9 +1,10 @@
 import { fmtDateYear } from '../../api/format';
-import { rollbackFlow } from '../../api/modeler';
-import type { ModelerScreen } from '../../api/types';
+import { exportBpmn, exportDmn, rollbackFlow, type FlowExport } from '../../api/modeler';
+import type { ActionResult, ModelerScreen } from '../../api/types';
 import { Panel } from '../../components/kit/Panel';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import { download } from '../../utils/download';
 
 const VERB: Record<string, string> = {
   'flow.saveDraft': 'Saved draft', 'flow.fork': 'Gave the org its own flow', 'flow.submit': 'Submitted', 'flow.approve': 'Approved',
@@ -17,9 +18,17 @@ export function HistoryPanel({ s }: { s: ModelerScreen }) {
     const r = await action.run(() => rollbackFlow(s.flow.id), 4200);
     if (r.ok && r.output.log) toast(r.output.log + '.');
   };
+  const save = async (make: (id: number) => Promise<ActionResult<FlowExport>>) => {
+    const r = await action.run(() => make(s.flow.id));
+    if (r.ok) download(r.output.filename, r.output.xml, r.output.content_type);
+  };
   return (
     <Panel title="History" sub={'Published v' + s.flow.ver}
            right={s.can.approve && s.versions.length > 0 ? <button className="btn sm" disabled={action.pending} onClick={rollback}>Roll back to v{s.versions[0].ver}</button> : undefined}>
+      <div className="row">
+        <button className="btn sm" disabled={action.pending} onClick={() => save(exportDmn)}>Export DMN</button>
+        <button className="btn sm" disabled={action.pending} onClick={() => save(exportBpmn)}>Export BPMN</button>
+      </div>
       {s.versions.length === 0 && <p className="note">No earlier versions.</p>}
       {s.versions.length > 0 && (
         <ul className="mdl-hist">

@@ -33,6 +33,9 @@ Plan 9 (P9-2.2, I-8): a playbook registered in `playbook_versions` is an LLM pla
 `AgentLoop` (`loop_runner()`; tests swap it with `set_loop`). A call the pipeline holds is a deferred call: the run waits with
 `state.deferred = {tool_call_id: proposal_id}`, and `wake` resumes the loop with each accepted proposal's output once all are
 decided. The run state keeps `playbook_version`; a resume whose version is gone stops the run.
+
+Plan 9 (P9-8.7): `adapter_author` is an LLM playbook with its own steps (`playbooks/adapter_author.run`): the model drafts a
+connector spec, code checks it, and one proposal holds `registry.saveEntry` for a person; a legacy `wake` runs it on to done.
 """
 
 import json
@@ -57,8 +60,8 @@ from di.services.actions.pipeline import Actor, CallContext, after, invoke
 from di.services.agents import calibrate, chain, lifecycle_evidence, limits, playbook_versions, registry, stage_reasoner
 from di.services.agents.forbidden import forbidden
 from di.services.agents.loop import AgentLoop, LoopSpec
+from di.services.agents.playbooks import adapter_author, stage_chain
 from di.services.agents.playbooks import case_autopilot as autopilot
-from di.services.agents.playbooks import stage_chain
 from di.services.agents.playbooks import stage_reasoner as stage_playbook
 from di.services.agents.playbooks.case_autopilot import Done, Halt, Skip, Wait
 from di.services.agents.pydantic_ai_loop import PydanticAILoop
@@ -72,7 +75,7 @@ log = logging.getLogger(__name__)
 PLAYBOOKS = {autopilot.NAME: stage_chain, stage_chain.NAME: stage_chain}  # case_autopilot is an alias of the chain
 JOB = "agent.step"
 QUEUE_JOB = "queue.plan"  # P9-2.8: plans a pack's open queue of an org; its end wakes the runs waiting `queue`
-_REACHED = (*autopilot.ACTIONS, *stage_chain.ACTIONS, *(a for m in CHAIN for a in m.ACTIONS))
+_REACHED = (*autopilot.ACTIONS, *stage_chain.ACTIONS, *adapter_author.ACTIONS, *(a for m in CHAIN for a in m.ACTIONS))
 _FORBIDDEN = [a for a in _REACHED if forbidden(a)]
 if _FORBIDDEN:
     raise RuntimeError(f"playbooks reach actions no agent may run: {_FORBIDDEN}")
@@ -293,6 +296,9 @@ def step(s: Session, run_id: str) -> str:
     ctx = _context(s, run)
     if agent is None or ctx is None or limits.stopped(ctx, agent):
         return _save(s, run, "stopped", n, st | {"reason": "The agent is stopped."})
+    if run["playbook"] == adapter_author.NAME:  # P9-8.7: its own steps, not one tool loop
+        status, new = adapter_author.run(s, ctx, st, loop_runner())
+        return _save(s, run, status, n + 1, new)
     if run["playbook"] not in PLAYBOOKS:
         return _llm_step(s, run, ctx)
     case = store.get(s, run["case_id"]) if run["case_id"] else None

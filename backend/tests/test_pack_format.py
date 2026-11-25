@@ -64,7 +64,7 @@ def test_x_01_bad_value_names_its_part():
 
 def test_three_packs_validate():
     assert TEMPLATE_KEYS == ("industrial", "tool_fleet", "device")
-    assert set(pack_keys()) == set(TEMPLATE_KEYS)
+    assert set(pack_keys()) - {"used_cars"} == set(TEMPLATE_KEYS)  # used_cars (P9-9.1) is a pack file, not a template yet
     got = {k: load_pack(k) for k in TEMPLATE_KEYS}
     assert {k: p.version for k, p in got.items()} == {"industrial": "1.0.0", "tool_fleet": "3.2.0", "device": "2.7.0"}
     assert all(isinstance(p, Pack) and p.key == k for k, p in got.items())

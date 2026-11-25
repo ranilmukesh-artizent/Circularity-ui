@@ -33,6 +33,11 @@ Records a step rejects that no error handler takes are held in `failed_record` b
 That job runs the graph with `resume=<key>`: only the Wait step (given the parked records, `ctx.resumed`) and the steps
 after it run; the others are skipped.
 
+**Pinned input (P9-8.15).** `run_graph(..., dry=True, pinned=(node_id, records))` starts a test run from one step: that step
+takes the records given as its input (data a person pinned on the canvas), only it and the steps after it run, the others
+are skipped. Modelled on `resume`, and dry only: a pinned run that is not dry is refused, so pinned data never reaches a
+sync, a canonical write or an instruction. Each step's samples also list the records it rejected (`held`).
+
 **States.** A step's state comes first from its predecessors (as the demo's wfEval): one failed or upstream failed ->
 `upstream_failed`; one held or waiting -> `waiting`; a step that needs input with none -> `skipped`. Otherwise it runs:
 `success`, or `failed` when it raised (after its retries) or its source cannot be read (no adapter, paused,
@@ -68,6 +73,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from di.services.canonical.store import Fact
 from di.workflow.blocks import node_cfg
 from di.workflow.steps import STEPS
 from di.workflow.steps.core import Rec, Reject, StepCtx, StepError, StepResult, digest
@@ -215,7 +221,7 @@ class _Run:
     def __init__(self, s: Session, wf: dict, graph: dict, *, trigger: str, dry: bool, sample: int | None,
                  feeds: dict[str, Feed] | None, on_step: Callable[[dict], None] | None, retries: int, backoff: float,
                  sleep: Callable[[float], None], run_id: Any, run_kind: str, now: datetime | None, full: bool,
-                 resume: str | None = None):  # fmt: skip
+                 resume: str | None = None, pinned: tuple[str, list[dict]] | None = None):  # fmt: skip
         from di.repositories.workflows import _analyze, _order
 
         self.s, self.wf, self.g, self.trigger, self.dry, self.sample = s, wf, graph, trigger, dry, sample
@@ -245,10 +251,14 @@ class _Run:
         self.resume: tuple[str, list[Rec]] | None = None
         self.after: set[str] = set()
         self.waiting: list[tuple[str, int]] = []  # (Wait step, records it holds back)
-        if resume is not None:
+        self.pinned = pinned is not None  # a pinned start is a resume from a node, with the person's records
+        if pinned is not None:
+            self.resume = (pinned[0], [_rec_of(p) for p in pinned[1]])
+        elif resume is not None:
             from di.workflow import waits
 
             self.resume = waits.load(s, resume) or ("", [])
+        if self.resume is not None:
             st = [self.resume[0]]
             while st:
                 for y in self.succ.get(st.pop(), []):
@@ -398,6 +408,7 @@ class _Run:
             self.samples[nid] = {
                 "before": [_show(r) for r in inp[:SAMPLE_N]],
                 "after": [_show(r) for r in res.out[:SAMPLE_N]],
+                "held": [_show(r) for r in res.rejected[:SAMPLE_N]],
             }
         if res.rejected and not self.has_handler(nid) and str(res.side.get("on_failure") or "hold") == "hold":
             self.hold(nid, res.rejected)
@@ -457,7 +468,7 @@ class _Run:
         if k == "fixed" and (self.fxd.get(ref) or {}).get("canon"):
             return self.store(n, inp)
         if k == "xf" and ref in STEPS:
-            resumed = self.resume is not None and n["id"] == self.resume[0]
+            resumed = self.resume is not None and n["id"] == self.resume[0] and not self.pinned
             ctx = StepCtx(self.s, self.run_id, self.wf, n, self.source_id(), self.now, self.dry, None, resumed)
             return STEPS[ref](inp, node_cfg(n), ctx)
         return StepResult([_pass(r) for r in inp], [], {})
@@ -733,6 +744,13 @@ def _pass(r: Rec) -> Rec:
     return Rec(r.ext_id, r.resource, r.data, r.facts, dict(r.meta))
 
 
+def _rec_of(p: dict) -> Rec:
+    """A record from the shape a test run shows (`_show`): what a person pinned on a step."""
+    facts = [Fact(f["model"], f["key"], f["field"], f.get("value")) for f in p["facts"]] if p.get("facts") else None
+    data = p.get("data")
+    return Rec(str(p.get("ext_id", "")), str(p.get("resource", "")), dict(data) if isinstance(data, dict) else {}, facts)
+
+
 def _show(r: Any) -> dict:
     if isinstance(r, Reject):
         return {"ext_id": r.rec.ext_id, "resource": r.rec.resource, "rule": r.rule, "field": r.field, "reason": r.reason}
@@ -770,10 +788,14 @@ def run_graph(
     now: datetime | None = None,
     full: bool = False,
     resume: str | None = None,
+    pinned: tuple[str, list[dict]] | None = None,
 ) -> RunResult:
     """Run the graph's steps over real records (see the module docstring). Commits as it goes unless `dry`. `resume`:
-    the key of records a Wait step parked; the run goes on from that step only (di/workflow/waits.py)."""
+    the key of records a Wait step parked; the run goes on from that step only (di/workflow/waits.py). `pinned`: the node
+    and the records (in the shape a test run shows them) it starts from; dry runs only (ValueError otherwise)."""
+    if pinned is not None and not dry:
+        raise ValueError("Pinned records are test data: they only run in a dry run.")
     return _Run(
         s, wf, graph, trigger=trigger, dry=dry, sample=sample, feeds=feeds, on_step=on_step, retries=retries,
-        backoff=backoff, sleep=sleep, run_id=run_id, run_kind=run_kind, now=now, full=full, resume=resume,
+        backoff=backoff, sleep=sleep, run_id=run_id, run_kind=run_kind, now=now, full=full, resume=resume, pinned=pinned,
     ).run()  # fmt: skip

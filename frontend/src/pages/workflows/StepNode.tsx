@@ -13,12 +13,16 @@ export interface StepData extends Record<string, unknown> {
   st?: string;
   stLabel: string;
   records: string;
+  /** "3 → 2 · 1 held" after a test run (P9-8.15). */
+  io?: string;
+  /** Records are pinned on this step: the next test run starts here. */
+  pinned?: boolean;
   /** The worst check on the step: 'error' or 'warn'. */
   sev?: string;
 }
 
 export function StepNode({ data, selected }: NodeProps) {
-  const { n, st, stLabel, records, sev } = data as StepData;
+  const { n, st, stLabel, records, io, pinned, sev } = data as StepData;
   const i = stepInfo(n), fx = n.k === 'fixed';
   return (
     <div className={'wfn frn ' + (fx ? 'fixed' : 'mov') + (selected ? ' sel' : '') + (n.fail ? ' inj' : '')}
@@ -27,7 +31,7 @@ export function StepNode({ data, selected }: NodeProps) {
       {i.in && <Handle type="target" position={Position.Left} className="port in" isConnectable />}
       {i.out && <Handle type="source" position={Position.Right} className="port out" />}
       <span className="frnh"><NodeMark n={n} /><span className="frnt"><span className="lb">{i.label}</span><span className="sb">{i.sub}</span></span>{fx && <span className="frlk" aria-hidden="true">{LOCK_SVG}</span>}</span>
-      <span className="frnf"><span className="st">{stLabel}</span><span className="frrcn num" data-rc={n.id}>{records}</span></span>
+      <span className="frnf"><span className="st">{stLabel}</span><span className="frrcn num" data-rc={n.id}>{records}</span>{io && <span className="frio num" data-io={n.id} style={{ marginLeft: 6, fontSize: 11 }}>{io}</span>}{pinned && <span className="chip line" data-pin={n.id} title="Pinned test input">pinned</span>}</span>
       <span className="tag">{i.tag}</span>
     </div>
   );

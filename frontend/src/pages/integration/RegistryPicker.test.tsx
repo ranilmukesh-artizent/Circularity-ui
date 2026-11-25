@@ -9,7 +9,9 @@ import type { RegistryEntry } from '../../api/connections';
 const m = vi.hoisted(() => ({
   create: vi.fn(async (): Promise<unknown> => ({ ok: true, output: { source_id: 'workday' } })),
   toast: vi.fn(),
+  draft: vi.fn(async (): Promise<unknown> => ({ ok: true, output: { run_id: 'AR-1' } })),
 }));
+vi.mock('../../api/agents', () => ({ startAdapterDraft: m.draft }));
 const entry = (o: Partial<RegistryEntry>): RegistryEntry => ({
   id: 'workday', version: 1, kind: 'catalogue', system_type: 'hr', vendor_family: 'Workday HCM', auth_methods: ['oauth_cc'], resources: [],
   canonical_entities: [], write_actions: [], status: 'released', maintainer: 'Circularity', source_licence: null, org_unit_id: null, ...o,
@@ -44,8 +46,8 @@ afterEach(() => {
 });
 
 const type = (id: string, value: string) => {
-  const el = host.querySelector<HTMLInputElement | HTMLSelectElement>('#' + id)!;
-  const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+  const el = host.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('#' + id)!;
+  const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
   act(() => {
     Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, value);
     el.dispatchEvent(new Event(el instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
@@ -78,6 +80,19 @@ describe('RegistryPicker', () => {
     expect(host.querySelector<HTMLInputElement>('#rgSecret')!.value).toBe('');
     expect(onClose).toHaveBeenCalled();
     expect(m.toast.mock.calls[0][0]).toContain('test environment');
+  });
+
+  it('p9-8.7: "Ask the Integration Assistant to draft it" starts a run from the pasted document', async () => {
+    click(host.querySelectorAll('[role=tab]')[2]);
+    const ask = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Ask the Integration Assistant to draft it')!;
+    expect(ask().disabled).toBe(true);
+    type('spDoc', '{"openapi":"3.1.0"}');
+    type('spName', 'Items API');
+    type('spFamily', 'Items');
+    expect(ask().disabled).toBe(false);
+    await act(async () => { ask().click(); });
+    expect(m.draft).toHaveBeenCalledWith({ name: 'Items API', systemType: 'erp', vendorFamily: 'Items', document: '{"openapi":"3.1.0"}' });
+    expect(m.toast.mock.calls.at(-1)![0]).toContain('Integration Assistant is drafting Items API');
   });
 
   it('x-10: a Generic REST entry needs a test base URL', () => {

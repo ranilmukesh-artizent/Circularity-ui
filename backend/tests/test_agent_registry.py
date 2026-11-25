@@ -46,12 +46,14 @@ def test_seeded_agents():
     want = golden.load("tools")["agents"]
     chain_agents = {a[0] for a in starting.SEED_AGENTS if a[0] == "recover-chain" or a[0].startswith("stage-")}  # P9-2.1, 0034
     assert set(got) == {a["id"] for a in want} | {"ask", "recover-exceptions", "recover-config"} | chain_agents  # 0041, 0040
+    seeded = {a[0]: list(a[2]) for a in starting.SEED_AGENTS}
     for a in want:
         g = got[a["id"]]
         assert (g.name, g.kind, g.tools, g.enabled, g.org_scope, g.autonomy) == (
             a["name"],
             "internal",
-            [t for t in a["tools"] if t not in UNBUILT],  # P9-0.4: migration 0029 drops the tools with no handler
+            # 0029 drops the tools with no handler; 0055 sets the integrator's (P9-8.7)
+            seeded[a["id"]] if a["id"] == "integrator" else [t for t in a["tools"] if t not in UNBUILT],
             True,
             [],
             "act",

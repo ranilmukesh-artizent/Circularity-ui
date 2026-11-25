@@ -9,7 +9,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 vi.mock('./client', () => ({ cached: m.cached, ref: vi.fn(), refreshMe: vi.fn() }));
 vi.mock('./session', () => ({ can: vi.fn(() => true), currentAccount: vi.fn() }));
 
-import { approveGroupMap, groupMap, saveGroupMap, testUser } from './access';
+import { approveGroupMap, groupMap, saveGroupMap, syncDirectory, syncLine, testUser } from './access';
 
 const lastInvoke = () => m.invoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
 const lastRead = () => m.read.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
@@ -36,5 +36,21 @@ describe('the directory group map facade (plan 9, P9-8.10, X-10)', () => {
     expect(lastRead()).toEqual(['access.testUser', { email: 'planner.b@example.com' }]);
     testUser('new@example.com', ['circ-approvers']);
     expect(lastRead()).toEqual(['access.testUser', { email: 'new@example.com', groups: ['circ-approvers'] }]);
+  });
+});
+
+describe('the directory sync facade (plan 9, P9-8.11, X-10)', () => {
+  it('x-10: syncDirectory invokes access.syncDirectory with no input', async () => {
+    await syncDirectory();
+    expect(lastInvoke()).toEqual(['access.syncDirectory', {}]);
+  });
+
+  it('x-10: the sync line names the joiners and leavers, singular and plural', () => {
+    expect(syncLine({ users: 13, joiners: ['a@example.com', 'b@example.com'], leavers: ['c@example.com'], mappings: 10 })).toBe('2 joiners, 1 leaver');
+    expect(syncLine({ users: 13, joiners: [], leavers: [] })).toBe('0 joiners, 0 leavers');
+  });
+
+  it('x-10: without a directory source the answer has no lists and no line (parity)', () => {
+    expect(syncLine({ users: 13 })).toBe('');
   });
 });

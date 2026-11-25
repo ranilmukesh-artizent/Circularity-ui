@@ -3,17 +3,22 @@
 **Drafts.** The canvas edits a copy of the workflow (frontend/src/pages/workflows/draftStore.ts). It used to live only in
 browser memory, so a reload or a sign-out lost it. Now the copy is autosaved after two seconds of quiet:
 
-    workflow.draft.save     {id, graph, name, owner?, trig?, retries?, alert?, base?}   one draft per workflow and person
+    workflow.draft.save     {id, graph, name, owner?, trig?, retries?, alert?, base?, pins?}   one draft per workflow and person
     workflow.draft.discard  {id}                                                         drops it (Discard, after Save)
+
+`pins` ({node id: records}, P9-8.15) are the records a person pinned on steps to test from: test data, kept in the draft only
+(never in a version, so publishing drops them) and never read by a real run.
 
 kept in the workspace collection "workflow_drafts" under "<workflow id>|<account id>". The workflow's own page reads
 the signed-in person's draft from GET /api/screens/workflows/{id} (`draft`) when it opens. A draft is not a version:
 Save (workflow.save) is still what makes one; the page drops the draft after Save, Publish and Discard. Deleting a
 workflow drops its drafts (`forget`), so a new workflow under a reused id starts clean.
 
-**Test run.** `workflow.testRun` {id, graph?, sample?} runs the draft's graph (or the saved one) through the workflow
-engine as a DRY run (di.workflow.engine.run_graph(..., dry=True, sample=N)): real records, real per-step counts and
-before/after samples, nothing written. It is a read action: the pipeline journals nothing and the engine writes
+**Test run.** `workflow.testRun` {id, graph?, sample?, approved?, pinned?} runs the draft's graph (or the saved one)
+through the workflow engine as a DRY run (di.workflow.engine.run_graph(..., dry=True, sample=N)): real records, real
+per-step counts and before/after samples, nothing written. With `pinned` {node_id, records} (at most 20, P9-8.15) the run
+starts from that step with those records: only it and the steps after it run, the others are `skipped`. The samples a
+person sees are masked (di.workflow.sample_mask). It is a read action: the pipeline journals nothing and the engine writes
 nothing in a dry run.
 """
 
@@ -26,6 +31,7 @@ from di.core import state
 from di.repositories.common import iso, ms
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement, mark_destructive
+from di.workflow.sample_mask import mask_samples
 
 COLLECTION = "workflow_drafts"
 state.register(COLLECTION, list)
@@ -39,8 +45,9 @@ _DRAFT_IN: dict[str, dict[str, Any]] = {
     "retries": {"req": False, "t": "number"},
     "alert": {"req": False, "t": "string"},
     "base": {"req": False, "t": "string"},
+    "pins": {"req": False, "t": "object"},
 }
-_FIELDS = ("graph", "name", "owner", "trig", "retries", "alert", "base")
+_FIELDS = ("graph", "name", "owner", "trig", "retries", "alert", "base", "pins")
 
 
 def _declare(action_id: str, title: str, desc: str, risk: Any, inp: dict[str, dict[str, Any]]) -> None:
@@ -122,8 +129,9 @@ _declare(
     "Run the draft dry over a sample of real records: every step's state, records in and out, samples. Writes nothing.",
     "read",
     {"id": {"req": True, "t": "string"}, "graph": {"req": False, "t": "object"}, "sample": {"req": False, "t": "number"},
-     "approved": {"req": False, "t": "boolean"}},
+     "approved": {"req": False, "t": "boolean"}, "pinned": {"req": False, "t": "object"}},
 )  # fmt: skip
+PIN_MAX = 20
 SAMPLE = 25  # records read per connector when the caller does not say
 SAMPLE_MAX = 500
 
@@ -147,11 +155,30 @@ def test_run_guard(i: dict[str, Any], ctx: CallContext):
     n = i.get("sample")
     if n is not None and (isinstance(n, bool) or not isinstance(n, int) or not 1 <= n <= SAMPLE_MAX):
         return "validation_error", f"Sample must be a whole number from 1 to {SAMPLE_MAX}."
-    er = wf.errors(_test_graph(i, w), w["kind"], ctx.session)
+    g = _test_graph(i, w)
+    if (i.get("pinned") is not None) and (bad := _pinned_problem(i["pinned"], g)):
+        return "validation_error", bad
+    er = wf.errors(g, w["kind"], ctx.session)
     e = len(er)
     # the refusal names the first error, so it is clear even when the canvas showed none (plan 6 follow-up, G2)
     return ("conflict", f"Fix {e} error{'s' if e > 1 else ''} before running. The checks say what and why. "
             f"First: {er[0]['msg']}") if e else None  # fmt: skip
+
+
+def _pinned_problem(p: Any, g: dict) -> str | None:
+    recs = p.get("records") if isinstance(p, dict) else None
+    if not isinstance(p, dict) or not isinstance(p.get("node_id"), str) or not isinstance(recs, list) or not recs:
+        return "Pin a step and at least one record."
+    if len(recs) > PIN_MAX:
+        return f"Pin at most {PIN_MAX} records."
+    if not all(isinstance(r, dict) and isinstance(r.get("ext_id"), str) for r in recs):
+        return "Every pinned record needs an id."
+    node = next((n for n in g["nodes"] if n["id"] == p["node_id"]), None)
+    if node is None:
+        return "The pinned step is not in this workflow."
+    if node["k"] == "conn":
+        return "A connector reads its source: pin the records going into a step after it."
+    return None
 
 
 def _descendants(succ: dict[str, list[str]], nid: str) -> set[str]:
@@ -182,7 +209,11 @@ def test_run(i: dict[str, Any], ctx: CallContext):
     _, succ, _ = _analyze(g)
     order = _order(g)
     approved = bool(i.get("approved"))
+    pin = i.get("pinned")
     stops = [] if approved else [n["id"] for n in g["nodes"] if n["k"] == "fixed" and n["ref"] == "appr"]
+    if pin:  # only the pinned step and its descendants run: an approval elsewhere stops nothing
+        reach = {pin["node_id"], *_descendants(succ, pin["node_id"])}
+        stops = [a for a in stops if a in reach]
     after: set[str] = set()
     for a in stops:
         after |= _descendants(succ, a)
@@ -190,7 +221,17 @@ def test_run(i: dict[str, Any], ctx: CallContext):
         "nodes": [n for n in g["nodes"] if n["id"] not in after],
         "edges": [e for e in g["edges"] if e["a"] not in after and e["b"] not in after],
     }  # fmt: skip
-    r = run_graph(ctx.session, w, run, trigger="Test", dry=True, sample=i.get("sample") or SAMPLE, full=True, now=ctx.now)
+    r = run_graph(
+        ctx.session,
+        w,
+        run,
+        trigger="Test",
+        dry=True,
+        sample=i.get("sample") or SAMPLE,
+        full=True,
+        now=ctx.now,
+        pinned=(pin["node_id"], pin["records"]) if pin else None,
+    )
     states, counts = dict(r.states), {k: dict(v) for k, v in r.counts.items()}
     dur = {k: round(v / 1000, 2) for k, v in r.dur_ms.items()}
     held = False
@@ -204,7 +245,7 @@ def test_run(i: dict[str, Any], ctx: CallContext):
         counts[x], dur[x] = {"in": 0, "out": 0, "rej": 0}, 0
     failed = any(v == "failed" for v in states.values())
     status = "failed" if failed else "held" if held else "success"
-    samples = {k: v for k, v in r.samples.items() if k not in after}
+    samples = mask_samples({k: v for k, v in r.samples.items() if k not in after})
     return {
         "id": w["id"], "name": w["name"], "dry": True, "status": status, "states": {k: states[k] for k in order if k in states},
         "counts": counts, "dur": dur, "order": order, "samples": samples, "rows": r.rows, "held": r.held,

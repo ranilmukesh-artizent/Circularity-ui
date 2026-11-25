@@ -19,6 +19,7 @@ proposals (MVP-5.2) answer.
 
 import copy
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import replace
 from typing import Any, cast
 
 from di.repositories.context import visible_cases
@@ -36,6 +37,7 @@ from di.services.modeler.apply import FLOW_REMOVED
 from di.services.modeler.compile import CompiledRule, FlowVersion, compile_flow
 from di.services.modeler.flow import Flow
 from di.services.modeler.pack import Pack
+from di.services.modeler.per_node import per_node
 from di.services.modeler.simulate import Decider, Decision, SimResult, decision_to_sim, simulate
 from di.services.modeler.templates import Template, load_template
 from di.services.modeler.valuers import device, tool_fleet
@@ -150,13 +152,16 @@ def simulate_rules(
     cand: Sequence[CompiledRule],
     base: Sequence[CompiledRule] | None = None,
     params: Mapping[str, float] | None = None,
+    nodes_of: Flow | None = None,
 ) -> SimResult:
     """The candidate rules against `base` (default: the flow's published rules) on its queue; `params` (tool fleet)
-    value the candidate side at BASEP | params."""
+    value the candidate side at BASEP | params. With `nodes_of` (the candidate's graph) the result also says how many cases
+    reach and leave each node (`per_node`, P9-8.15)."""
     t = load_template(f.template_key)
     base = compile_flow(t, cast(Flow, f.published)) if base is None else base
     queue, decide = SOURCES.get(f.template_key, _industrial)(ctx, f, t)
-    return simulate(t, base, cand, queue, decide, template_decider(ctx, f, params) if params else None)
+    r = simulate(t, base, cand, queue, decide, template_decider(ctx, f, params) if params else None)
+    return replace(r, per_node=per_node(t, nodes_of, queue)) if nodes_of is not None else r
 
 
 def queue_rows(ctx: CallContext, f: FlowRow) -> list[dict[str, Any]]:
@@ -177,11 +182,17 @@ def _label(c: Mapping[str, Any]) -> str:
     return " · ".join(parts[:2]) or str(c["id"])
 
 
-def simulate_graph(ctx: CallContext, f: FlowRow, graph: Flow, params: Mapping[str, float] | None = None) -> SimResult:
-    return simulate_rules(ctx, f, compile_flow(load_template(f.template_key), graph), params=params)
+def simulate_graph(
+    ctx: CallContext, f: FlowRow, graph: Flow, params: Mapping[str, float] | None = None, with_nodes: bool = False
+) -> SimResult:
+    return simulate_rules(ctx, f, compile_flow(load_template(f.template_key), graph), params=params,
+                          nodes_of=graph if with_nodes else None)  # fmt: skip
 
 
 def sim_json(r: SimResult, params: Mapping[str, float] | None = None) -> dict[str, Any]:
     flips = [{"case_id": x.case_id, "from": x.from_path, "to": x.to_path, "dv": x.dv} for x in r.flips]
     used = dict(params) if params else None
-    return {"kind": r.kind, "n": r.n, "flips": flips, "dv": r.dv, "extra": dict(r.extra), "params": used}
+    out: dict[str, Any] = {"kind": r.kind, "n": r.n, "flips": flips, "dv": r.dv, "extra": dict(r.extra), "params": used}
+    if r.per_node:
+        out["per_node"] = r.per_node
+    return out
