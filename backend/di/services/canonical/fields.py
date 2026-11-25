@@ -608,3 +608,23 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "unit_id": "text",
     },
 }
+
+# Telecom network equipment (plan 9, P9-10.2), written by the extra adapters tn_inv and tn_decom: on `asset`, keyed by
+# `serial_key`, the unit's identity (serial, part_number, hw_revision, firmware, site_kind, region), its inventory_status,
+# the export class the source confirmed (export_class) apart from the one inferred from the part number
+# (export_class_inferred), and the removal (removal_job, removed_at, programme); on `demand`, site_demand (an object).
+CONNECTOR_FIELDS["asset"] |= {
+    "export_class": "text",
+    "export_class_inferred": "text",
+    "firmware": "text",
+    "hw_revision": "text",
+    "inventory_status": "text",
+    "part_number": "text",
+    "programme": "text",
+    "region": "text",
+    "removal_job": "ref",
+    "removed_at": "date",
+    "serial": "text",
+    "site_kind": "text",
+}
+CONNECTOR_FIELDS["demand"] |= {"site_demand": "object"}

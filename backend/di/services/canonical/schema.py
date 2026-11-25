@@ -81,6 +81,12 @@ def vin_key(org_unit_id: str | None, vin: str) -> str:
     return f"{org_unit_id or SHARED_ORG}:{vin}"
 
 
+def serial_key(org_unit_id: str | None, serial: str) -> str:
+    """The canonical key of a piece of network equipment (plan 9, P9-10.2): `<org unit or "shared">:<serial>`, as
+    vin_key. The network inventory and the decommission tracker write the unit's `asset` facts under it."""
+    return f"{org_unit_id or SHARED_ORG}:{serial}"
+
+
 def bom_key(org_unit_id: str | None, parent: str, parent_revision: str, child: str) -> str:
     """The canonical key of a BOM line: the parent's part key, its revision and the child's number."""
     return f"{part_key(org_unit_id, parent)}@{parent_revision}>{child}"
