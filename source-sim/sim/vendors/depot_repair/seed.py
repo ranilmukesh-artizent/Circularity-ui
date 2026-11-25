@@ -9,13 +9,14 @@ RT-1048's parts are its workshop diagnosis (EX_SCOPE). Seeded orders are open (S
 AWAITING_INSPECTION, INSPECTION_PARTIAL or ESTIMATE_PENDING_APPROVAL.
 """
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import insert, text
 from sqlalchemy.engine import Connection
 
 from sim.seed import Seed
 from sim.seed.model import CaseFacts
+from sim.vendors.depot_repair import history
 from sim.vendors.depot_repair import models as t
 from sim.vendors.depot_repair.isg import ebs_ts
 from sim.vendors.depot_repair.plan import (
@@ -216,7 +217,36 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
     conn.execute(insert(t.CSD_REPAIRS), orders)
     conn.execute(insert(t.CSD_TASKS), tasks)
     conn.execute(insert(t.QA_RESULTS), tests)
-    return {"repair_orders": len(orders), "tasks": len(tasks), "test_results": len(tests)}
+    return {
+        "repair_orders": len(orders),
+        "tasks": len(tasks),
+        "test_results": len(tests),
+        "repair_history": load_history(conn),
+    }
+
+
+def load_history(conn: Connection) -> int:
+    """The repair history (history.py): closed repairs and released refurbishments of the last three years."""
+    rows = []
+    for r in history.generate():
+        closed = datetime.fromisoformat(r["DATE_CLOSED"])
+        doc = {**r, "DATE_CLOSED": ebs_ts(closed)}
+        doc.pop("LAST_UPDATE_DATE")
+        if release := doc["RELEASE_TO_SERVICE"]:
+            doc["RELEASE_TO_SERVICE"] = {**release, "RELEASED_AT": ebs_ts(release["RELEASED_AT"])}
+        rows.append(
+            {
+                "repair_number": r["REPAIR_NUMBER"],
+                "model_class": r["MODEL_CLASS"],
+                "fault_code": r["FAULT_CODE"],
+                "repair_type": r["REPAIR_TYPE"],
+                "date_closed": closed,
+                "doc": doc,
+                "last_update_date": closed,
+            }
+        )
+    conn.execute(insert(t.REPAIR_HISTORY), rows)
+    return len(rows)
 
 
 def create(conn: Connection) -> None:
@@ -234,3 +264,5 @@ def ensure(conn: Connection, seed: Seed) -> None:
     create(conn)
     if conn.execute(text("SELECT count(*) FROM depot_repair.csd_repairs")).scalar_one() == 0:
         load(conn, seed)
+    elif conn.execute(text("SELECT count(*) FROM depot_repair.repair_history")).scalar_one() == 0:
+        load_history(conn)  # a database from before plan 9 gains the history

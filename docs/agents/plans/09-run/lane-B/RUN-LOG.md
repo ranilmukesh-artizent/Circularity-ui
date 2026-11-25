@@ -28,3 +28,4 @@ One line per event, newest last, times from `date`.
 | 25 Nov 14:34 | P9-3.2 merged. closed recall RC-2026-009 added; 30 serials without telematics |
 | 25 Nov 14:34 | P9-3.3 merged. tool rows after the 48 industrial parts; illustrative rated lives for four classes |
 | 25 Nov 14:34 | P9-3.4 merged. x_case gains reason_field and facts; smoke-p9-3 step 1 written, runs at the gate |
+| 25 Nov 14:34 | P9-4.1 merged. sdesk reads New tickets only (40); 60-month nominal life |

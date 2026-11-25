@@ -71,6 +71,7 @@ TASK_STATE = {
 }
 PRIORITY = {1: "1 - Critical", 2: "2 - High", 3: "3 - Moderate", 4: "4 - Low"}
 CLOSED_STATES = (3, 4, 7)
+CASE_STATE = {1: "New", 6: "Resolved"}
 
 SPECS: dict[str, TableSpec] = {
     s.name: s
@@ -225,6 +226,42 @@ SPECS: dict[str, TableSpec] = {
                 Field("state", length=40),
             ],
             writable=True,
+        ),
+        # plan 9 P9-4.1: the service desk (read only; seed.py)
+        TableSpec(
+            "sn_customerservice_case",
+            "Customer Service Case",
+            "number",
+            "CS",
+            [
+                Field("number", length=40),
+                Field("account", length=40),  # a synthetic account code, ACC-<market>-<nnnn>
+                Field("u_market", length=8),
+                Field("u_site"),
+                Field("u_batch_id", length=40),  # empty for one tool
+                # a JSON list of {serial, model_class, age_months, fault_code, fault_text, cover_type, cover_until}
+                Field("u_lines", length=8000),
+                Field("u_requester_role", length=40),
+                Field("u_loaner_promised", "boolean"),
+                Field("state", "choice", choices=CASE_STATE),
+                Field("opened_at", "glide_date_time"),
+            ],
+        ),
+        TableSpec(
+            "u_upgrade_offer",
+            "Upgrade Offer",
+            "account",
+            None,
+            [
+                Field("account", length=40),
+                Field("u_market", length=8),
+                Field("u_model_class", length=8),
+                Field("u_offered_at", "glide_date_time"),
+                Field("u_credit_pct", "decimal"),  # a share, in steps of 0.01
+                Field("u_credit_amount", "decimal"),
+                Field("u_currency", length=8),
+                Field("u_accepted", "boolean"),
+            ],
         ),
     ]
 }

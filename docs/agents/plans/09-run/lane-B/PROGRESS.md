@@ -7,3 +7,4 @@
 | 2026-11-25 | 09 · P9-3.2 recall, telematics and parts mocks with adapters | this commit | writer wt-check all passed (lint), source-sim 108 passed; lead batch verify after the WSL restart | done |
 | 2026-11-25 | 09 · P9-3.3 rated life and end of parts for tool classes in PLM | this commit | writer wt-check all passed, source-sim windchill 9 passed; lead batch verify after the WSL restart | done |
 | 2026-11-25 | 09 · P9-3.4 tool returns open cases from the contract feed | this commit | writer wt-check all passed (tf_intake, case_intake); lead batch verify after the WSL restart | done |
+| 2026-11-25 | 09 · P9-4.1 service desk mocks with repair history and offers | this commit | writer wt-check all passed, source-sim 41 passed; lead batch verify after the WSL restart | done |

@@ -16,11 +16,16 @@ What FSM owns (the demo's SOURCES.fsm: "field service demand, technician dispatc
                  * field service demand: one install order per case whose demand names a site, e.g. RT-1048 → Customer A
                    at Site 3 (Chennai Foundry), needed in 10 days, correlated with the OMS order SO-48102; confirmed
                    demand is Ready with a task Pending Dispatch, forecast demand is Draft
+- sn_customerservice_case / u_upgrade_offer (plan 9 P9-4.1, own random sources, synthetic account codes only): 50
+                 customer service cases (40 New, 10 Resolved; CS0010042 one CRH tool, CS0010050 a 22-line batch) and
+                 2,400 upgrade offers over 24 months, acceptance logistic in the credit share
 Everything is deterministic (fixed random seed, sys_id = md5 of table and natural key) and dated on or before the
 as-of time, so a delta read `sys_updated_on>2026-10-07 09:00:00` returns only what changed through the API.
 """
 
 import hashlib
+import json
+import math
 import random
 import re
 from collections import Counter
@@ -565,7 +570,136 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
     for name in order:
         if R.rows[name]:
             conn.execute(insert(TABLES[name]), R.rows[name])
-    return {name: len(R.rows[name]) for name in order}
+    return {name: len(R.rows[name]) for name in order} | load_service_desk(conn, as_of)
+
+
+# ---------------------------------------------------------------- the service desk (plan 9, P9-4.1)
+# Synthetic: account codes only, no names. Own random source, so the FSM tables above are not touched.
+MARKETS = ("DE", "UK", "US", "AU", "FR")
+MARKET_WEIGHT = (22, 14, 40, 10, 14)
+CURRENCY = {"DE": "EUR", "FR": "EUR", "UK": "GBP", "US": "USD", "AU": "AUD"}
+FX = {"USD": 1.0, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52}  # units per USD, as the app's fx_rate
+NEW_PRICE = {"CMH": 1450, "BRK": 1900, "DCD": 3200, "CRH": 620, "AGR": 260, "LSR": 1100}
+FAULT_TEXT = {
+    "MOT": "Motor stalls under load",
+    "GBX": "Grinding noise from the gearbox",
+    "ELE": "Electronics fault, no power",
+    "WEA": "Worn parts, loose fit",
+}
+OFFER_COUNT = 2400
+OFFER_FIRST_DAY = 730  # offers span 24 months back from the as-of date
+TAKE_UP_INTERCEPT, TAKE_UP_SLOPE, TAKE_UP_NOISE = -3.2, 9.0, 0.25  # logit of acceptance on credit share, plus noise
+SAMPLE_ACCOUNT = "ACC-US-0042"  # 14 offers, 4 accepted
+NOMINAL_LIFE_MONTHS = 60  # "past 50% of life" is older than 30 months here; the life model of phase 3 decides later
+
+
+def _line(serial: str, cls: str, age: int, fault: str, cover: str, until: str) -> dict:
+    return {
+        "serial": serial,
+        "model_class": cls,
+        "age_months": age,
+        "fault_code": fault,
+        "fault_text": FAULT_TEXT.get(fault, ""),
+        "cover_type": cover,
+        "cover_until": until,
+    }
+
+
+def _tickets(R: _Rows, as_of: datetime) -> None:
+    rng = random.Random(20261107)
+    classes = list(NEW_PRICE)
+    faults = list(FAULT_TEXT)
+    for n in range(1, 51):
+        number = f"CS{10000 + n:07d}"
+        opened = (as_of - timedelta(days=rng.randint(1, 20), hours=rng.randint(0, 9))).replace(minute=0, second=0, microsecond=0)
+        market = rng.choices(MARKETS, MARKET_WEIGHT)[0]
+        account = f"ACC-{market}-{rng.randint(1, 80):04d}"
+        site, batch, role, loaner = f"Site {rng.randint(1, 40)}", "", "Site manager", n % 7 == 0
+        cls, age, fault = rng.choice(classes), rng.randint(3, 60), rng.choice(faults + [""])
+        cover = rng.choice(["fleet", "warranty", "none", "none"])
+        until = {"none": "2025-12-31"}.get(cover, "2027-06-30")
+        lines = [_line(f"{cls}-{46000 + n}", cls, age, fault, cover, until)]
+        if n == 42:  # the sample ticket: a US CRH motor fault at 18 months under fleet cover
+            account, market, site, loaner = SAMPLE_ACCOUNT, "US", "Austin", False
+            lines = [_line("CRH-46042", "CRH", 18, "MOT", "fleet", "2027-06-30")]
+        if n == 50:  # the sample batch: 22 lines, 9 past 50% of life without cover, 11 under it, 2 covered CRH
+            account, market, site, batch, role, loaner = "ACC-US-0057", "US", "Denver", "BATCH-0050", "Fleet desk", False
+            lines = []
+            for i in range(22):
+                serial = f"{classes[i % 6]}-{45000 + i}"
+                if i < 9:
+                    lines.append(_line(serial, classes[i % 6], 36 + 2 * i, faults[i % 4], "none", "2025-12-31"))
+                elif i < 20:
+                    fault = "" if i in (9, 14, 19) else faults[i % 4]  # three faults are unclear
+                    lines.append(_line(serial, classes[i % 6], 6 + 2 * (i - 9), fault, "none", "2025-12-31"))
+                else:
+                    lines.append(_line(f"CRH-{45000 + i}", "CRH", 14 + 6 * (i - 20), "MOT", "fleet", "2027-06-30"))
+        R.add(
+            "sn_customerservice_case",
+            number,
+            opened,
+            opened + timedelta(hours=1),
+            by="csm.intake",
+            number=number,
+            account=account,
+            u_market=market,
+            u_site=site,
+            u_batch_id=batch,
+            u_lines=json.dumps(lines),
+            u_requester_role=role,
+            u_loaner_promised=loaner,
+            state=6 if 31 <= n <= 40 else 1,  # ten resolved, forty open
+            opened_at=opened,
+        )
+
+
+def _offers(R: _Rows, as_of: datetime) -> None:
+    """2,400 offers over 24 months. Acceptance is logistic in the credit share, intercept -3.2 and slope 9.0, plus a
+    little noise on the logit from the seeded source; the sample account has 14 offers and 4 accepted."""
+    rng = random.Random(20261108)
+    classes = list(NEW_PRICE)
+    for i in range(OFFER_COUNT):
+        if i < 14:
+            account, market = SAMPLE_ACCOUNT, "US"
+        else:
+            market = rng.choices(MARKETS, MARKET_WEIGHT)[0]
+            account = f"ACC-{market}-{rng.randint(1, 80):04d}"
+            if account == SAMPLE_ACCOUNT:
+                account = "ACC-US-0043"
+        pct = rng.randint(2, 40) / 100
+        cls = rng.choice(classes)
+        when = (as_of - timedelta(days=rng.randint(0, OFFER_FIRST_DAY), minutes=rng.randint(0, 600))).replace(microsecond=0)
+        logit = TAKE_UP_INTERCEPT + TAKE_UP_SLOPE * pct + rng.gauss(0, TAKE_UP_NOISE)
+        accepted = rng.random() < 1 / (1 + math.exp(-logit))
+        if account == SAMPLE_ACCOUNT:
+            accepted = i < 4
+        cur = CURRENCY[market]
+        R.add(
+            "u_upgrade_offer",
+            f"offer:{i}",
+            when,
+            by="csm.sales",
+            account=account,
+            u_market=market,
+            u_model_class=cls,
+            u_offered_at=when,
+            u_credit_pct=Decimal(f"{pct:.2f}"),
+            u_credit_amount=Decimal(f"{NEW_PRICE[cls] * pct * FX[cur]:.2f}"),
+            u_currency=cur,
+            u_accepted=accepted,
+        )
+
+
+def load_service_desk(conn: Connection, as_of: datetime) -> dict[str, int]:
+    """Seed the service desk tables (tickets and offers); the FSM tables are loaded by `load`."""
+    R = _Rows()
+    _tickets(R, as_of)
+    _offers(R, as_of)
+    out = {}
+    for name in ("sn_customerservice_case", "u_upgrade_offer"):
+        conn.execute(insert(TABLES[name]), R.rows[name])
+        out[name] = len(R.rows[name])
+    return out
 
 
 def create(conn: Connection) -> None:
@@ -585,3 +719,5 @@ def ensure(conn: Connection, seed: Seed) -> None:
     create(conn)
     if conn.execute(text(f'SELECT count(*) FROM "{SCHEMA}".wm_order')).scalar_one() == 0:  # noqa: S608 - SCHEMA is a module constant
         load(conn, seed)
+    elif conn.execute(text(f'SELECT count(*) FROM "{SCHEMA}".u_upgrade_offer')).scalar_one() == 0:  # noqa: S608 - SCHEMA is a module constant
+        load_service_desk(conn, seed.world.as_of)  # a database from before plan 9 gains the service desk
