@@ -78,7 +78,7 @@ export interface Run { stage: number; stages: RunStage[]; done?: boolean }
 export type TagKind = 'done' | 'todo' | 'block' | 'wait' | 'cur';
 export interface StageTag { k: TagKind; icon: string; word: string; who?: string; since?: string | null; why?: string }
 /** A fact of a stage, with the kind of provenance (ret, mod, rul, rec) and the system behind it. */
-export interface Fact { l: string; v: string; k: string; sys: string }
+export interface Fact { l: string; v: string; k: string; sys: string; estimate?: boolean }
 export interface StageData { res: string; facts: Fact[]; docs: string[]; mean: string; when?: string | null; who: string }
 export interface NextStep { kind: 'act' | 'ack' | 'approve' | 'wait' | 'blocked' | 'done'; n: number; label: string; action?: string; input?: Record<string, unknown>; role?: string }
 export interface Clock { level?: number; lim?: string; to?: string | null; due?: string; due2?: string }

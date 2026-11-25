@@ -318,8 +318,8 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool, waiting: st
     o: dict[str, Any] = {"res": "", "facts": [], "docs": [], "mean": "", "when": s.get("at"), "who": s.get("by") or ""}
     facts: list[dict] = o["facts"]
 
-    def F(label: str, v: str, k: str, sys: str) -> None:
-        facts.append({"l": label, "v": v, "k": k, "sys": sys})
+    def F(label: str, v: str, k: str, sys: str, estimate: bool = False) -> None:
+        facts.append({"l": label, "v": v, "k": k, "sys": sys} | ({"estimate": True} if estimate else {}))
 
     lane = L["lane"]
     blocked: Any = c.get("blocked")
@@ -394,7 +394,13 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool, waiting: st
             o["res"] = f"{blocked['action']} requested ({c['requested']['ref']}); waiting for {blocked['owner']}."
         else:
             o["res"] = f"{blocked['reason'] if blocked else 'Not inspected yet'}."
-        F("Grade", f"Grade {c['grade']}" if c.get("grade") else "Not graded", "ret", "MRO" if ws == "MRO" else "Inspection")
+        F(
+            "Grade",
+            f"Grade {c['grade']}" if c.get("grade") else "Not graded",
+            "ret",
+            "MRO" if ws == "MRO" else "Inspection",
+            estimate=bool(((c.get("vehicle") or {}).get("inspection") or {}).get("estimate")),
+        )  # a car's estimated grade (P9-9.7)
         F("Condition", c["condition"], "ret", "Inspection")
         F("Inspection", (INSPECTION_WORD.get(ins["state"]) or ins["state"]) if ins else "—", "ret", "Inspection")
         if R:
