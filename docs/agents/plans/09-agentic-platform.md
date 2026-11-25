@@ -940,7 +940,7 @@ each story went.
 - [ ] P9-8.9 OIDC sign-in with authlib beside the demo sign-in
 - [ ] P9-8.10 Directory groups to roles as data with test a user
 - [ ] P9-8.11 SCIM provisioning and directory sync for joiners
-- [ ] P9-8.12 Workflow author from a sentence with repair rounds
+- [x] P9-8.12 Workflow author from a sentence with repair rounds
 - [ ] P9-8.13 Studio canvas on xyflow with dagre layout
 - [ ] P9-8.14 Modeler canvas on xyflow
 - [ ] P9-8.15 Per-node input and output samples with pinned data

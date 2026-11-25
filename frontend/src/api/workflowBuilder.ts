@@ -100,6 +100,38 @@ export async function planWorkflow(prompt: string, answers: Answers = {}): Promi
   return r.output;
 }
 
+export interface AuthorError {
+  node: string | null;
+  field: string;
+  message: string;
+}
+
+export interface AuthorReply {
+  /** drafted: saved as a draft; questions: the planner needs an answer; handed_over: three repair rounds were not enough. */
+  status: 'drafted' | 'questions' | 'handed_over' | 'blocked' | 'redirect';
+  graph: PlanGraph | null;
+  rounds: number;
+  errors: AuthorError[];
+  test_run: { status: string; in: number; out: number; held: number; note: string | null } | null;
+  draft_id: string | null;
+  questions: Question[];
+  notes: string[];
+  trigger: { t: string; min?: number } | null;
+  name: string | null;
+  by_model: boolean;
+  workflow_id: string | null;
+}
+
+/** workflow.author: a checked, test-run draft from the sentence. It saves a draft only; Publish stays the person's button. */
+export async function authorWorkflow(prompt: string, answers: Answers = {}): Promise<AuthorReply> {
+  const r = await invoke<AuthorReply>('workflow.author', { prompt, answers });
+  if (!r.ok) throw new ApiError(400, r.error.code, r.error.message);
+  return r.output;
+}
+
+export const roundsText = (n: number): string => (n === 0 ? 'Built by the keyword planner' : `Checked in ${n} round${n === 1 ? '' : 's'}`);
+export const testRunText = (t: NonNullable<AuthorReply['test_run']>): string => `Test run: in ${t.in} · out ${t.out} · held ${t.held}`;
+
 /** The person's Create workflow: workflow.create with the plan's graph, then workflow.save with its settings. */
 export async function createFromPlan(plan: Plan): Promise<ActionResult<{ id: string; name: string }>> {
   const made = await invoke<{ id: string; name: string }>('workflow.create', plan.create);

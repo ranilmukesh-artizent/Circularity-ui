@@ -28,6 +28,7 @@ import di.services.actions.proposals  # registers action handlers (proposal.acce
 import di.services.actions.standing_policy  # registers action handlers (standingPolicy.*, policy approval; plan 9)
 import di.services.actions.tools  # registers action handlers (tools.find: the tool search; plan 9)
 import di.services.actions.work  # registers action handlers (case.needInfo, work.resolve, work.assign; plan 9)
+import di.services.actions.workflow_author  # registers action handlers (workflow.author: a draft from a sentence, P9-8.12)
 import di.services.actions.workflow_builder  # registers action handlers (workflow.draft, workflow.plan)
 import di.services.actions.workflow_drafts  # registers action handlers (workflow.draft.save, workflow.draft.discard, testRun)
 import di.services.actions.workflows  # noqa: F401  (registers action handlers)

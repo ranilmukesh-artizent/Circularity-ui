@@ -236,6 +236,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-2.18 stage agents reason with the model | this commit | lead-verify: 146 passed api (stage_reasoner, stage_chain, hold_policy, run_trace, llm_router, agent_loop, config_agent, exception_assistant, agent_runtime, queue_stage, fraud_triage, stage_calibration, milestone_rt1048), lint, web 388 | done |
 | 2026-11-25 | 09 · P9-2.22 gates before the queue plan in decide_case | this commit | lead-verify: 300 passed api (decide_gate_order, decide_case, order_invariant, standard_valuer, queue_planner, queue_stage, valuer_tool_fleet, template_e2e, screens_any_template, contract_entitlement, milestone_rt1048, engine, cases), lint, web 388 | done |
 | 2026-11-25 | 09 · P9-8.1 adapter registry with environments and owner approval | this commit | lead-verify: 143 passed api (adapter_registry, models_migrations, agent_catalog, read_only_sources, instructions_send, policy_orgs, policy, agent_registry, catalog_hygiene, fabric_sources, discover, execution, milestone_rt1048), lint, web 395 | done |
+| 2026-11-25 | 09 · P9-8.12 workflow author from a sentence with repair rounds | this commit | lead-verify: workflow_builder, workflow_drafts, actions, tool_find, catalog_hygiene, agent_catalog, writes_workflows passed, lint, web 397; test_workflow_author 13 passed after a lead fix | done |
 
 ## Decisions taken without the user (to review)
 
