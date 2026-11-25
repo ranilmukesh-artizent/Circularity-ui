@@ -207,3 +207,27 @@ Problems already hit, newest first. Each entry gives the symptom, the root cause
 
 - **Symptom:** an open editor in the IDE reverted edits to README.md and backend-steps.md.
 - **Avoid:** re-read a file before editing it if a long time has passed, and check `git diff` before committing.
+
+## 2026-11-25: Plan 9's first unattended night (lead and parallel writers)
+
+- **Checks were the bottleneck, not the agents.** The lead ran the full api suite, the task's serial files, lint and
+  web after every merge: 15 to 20 minutes each, about 8 to 10 hours over 30 merges, while writers waited. Fix: per
+  merge only the task's tests plus golden and parity (`scripts/dev/lead-verify.sh`); full suite and smokes at gates.
+- **Agent tool worktrees start from the default branch,** not the lead's branch. Every writer brief starts with
+  `git merge --ff-only <run branch>` (`docs/agents/plans/09-run/WRITER-BRIEF.md`).
+- **A writer's private database lacks the synced fabric.** Tests such as `test_screens_home.py::test_briefing`,
+  `test_screens_reference.py`, `test_workflow_open_case.py` and `test_writes_access.py` fail there and pass on the
+  main stack. The lead re-runs them before calling a failure real.
+- **Leftover Monitor timers in writers flooded the lead** with dozens of wake-ups after the writer had finished. The
+  brief now asks for foreground checks only; the lead stops a noisy finished writer with TaskStop.
+- **One task can break another through shared data:** P9-1.11 switched on a gate in the tool-fleet pack and two
+  overlay tests from P9-1.3 broke. Only a wide run caught it; that is what the every-few-merges suite is for.
+- **A reviewer's fix can break golden parity:** refusing `workflow.create`/`publish` of a decision workflow broke
+  `fixtures/golden/workflow_writes.json`. Run the golden tests before tightening a demo action.
+- **A helper that writes the commit message must fail closed:** once it failed midway and the commit took the previous
+  task's message (fixed by amending the unpushed commit). `scripts/dev/plan-tick.py` deletes the message first and
+  writes it last.
+- **Docker's WSL VM keeps memory after peaks** (7 GB held with 1.3 GB in use). Cap it in `.wslconfig` and turn on
+  `autoMemoryReclaim`; run at most two writers and three test shards on a 32 GB laptop.
+- **Write times from `date`.** The lead wrote run-log hours from memory and got them wrong for half a day.
+

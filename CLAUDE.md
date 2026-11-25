@@ -37,6 +37,12 @@
 - Read-only agent types (`code-reviewer`, `code-explorer`, `Explore`) cannot write a report file or run git. Use
   `general-purpose` for a review that must write its report.
 - Verify every subagent claim before you report it (AGENTS.md rule 15): rerun its test or read its log yourself.
+- Agent tool worktrees (`isolation: "worktree"`) start from the default branch: brief each writer to
+  `git merge --ff-only <your branch>` first. Writers check from their worktree with `scripts/dev/wt-check.sh <k>`
+  (own database); the lead verifies a merge with `scripts/dev/lead-verify.sh` and keeps the full suite and smokes for
+  phase gates (docs/agents/dos-and-donts.md, Tests).
+- Writers run checks in the foreground: a background run watched by Monitor keeps waking the lead after the writer is
+  done. Stop such a writer with TaskStop.
 
 ## Skills in this repo
 

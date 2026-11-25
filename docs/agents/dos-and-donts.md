@@ -65,6 +65,15 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 - **Do** keep browser checks read-only on the shared stack unless you own the stack. To test a write, reset afterwards.
 - **Do** run `smoke-pages.mjs` for all 11 accounts after any frontend change that touches routing, the facade or
   the shell (there is one mode since B17c).
+- **Do** size checks to the step (plan 9 run, 25 Nov 2026). After each merged task: the task's own tests, its
+  serial-only files, the golden and parity tests, `lint.sh`, `web-check.sh` (`scripts/dev/lead-verify.sh`, about 3 to
+  5 minutes). The full api suite (`parallel-suite.sh`, 8 to 12 minutes and several GB of Docker memory) and the
+  browser smokes run at phase gates and every few merges. **Don't** run the full suite after every merge: in plan 9's
+  first night that cost 15 to 20 minutes per merge, about 8 to 10 hours in all, with writers idle behind it.
+- **Do** run `scripts/dev/wait-idle.sh` after `reset.sh` before any browser smoke. The reset re-syncs every mock
+  source (2 to 3 minutes) and instructions queue behind it; RT-1048 times out without the wait.
+- **Do** add every new table that holds demo state to `backend/tests/starting.py` `reset()` in the same task, or the
+  next reset keeps the old rows (plan 9: pack versions, overlays and work items survived resets until P9-1.14).
 
 ## Dependencies (Python)
 

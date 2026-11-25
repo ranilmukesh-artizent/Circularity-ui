@@ -174,4 +174,9 @@ action catalogue, with OAuth for outside clients
 ([research](docs/agents/research/2026-11-agent-foundation.md)); plans 3–5 (CRUD for every resource and gzip, async,
 OpenTelemetry), then B18; demo-ready work last.
 
+Plan 9 (Recover, [plan](docs/agents/plans/09-agentic-platform.md)) is being built from 25 Nov 2026 on branch
+`feature/plan-09-recover` by a lead with parallel writers, in two lanes ([docs/agents/plans/09-lanes/](docs/agents/plans/09-lanes/README.md));
+progress, blocked tasks and the report are in `docs/agents/plans/09-run/`. A lead starts with the plan's section "How
+to run this plan unattended".
+
 Known server gaps are listed under B17b, plan 6 and plan 8 in `docs/backend-steps.md`.
