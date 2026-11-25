@@ -68,7 +68,13 @@ def test_access_page(acct):
         assert r.status_code == 403 and r.json()["error"]["code"] == "out_of_scope"
         return
     assert r.status_code == 200, r.text
-    assert starting.strict(r.json()) == starting.strict(expected(acct))
+    body = r.json()
+    # P9-8.10: the identity section also lists the directory group map (table idp_group_map), seeded with the ten groups
+    rows = body["identity"].pop("group_map")
+    assert [(g["group_id"], g["status"], g["created_by"]) for g in rows] == sorted(
+        (g, "approved", "seed") for g in G["idp"]["groups"].values()
+    )
+    assert starting.strict(body) == starting.strict(expected(acct))
 
 
 def test_every_account_and_section_covered():

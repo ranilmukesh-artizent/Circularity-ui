@@ -53,6 +53,7 @@ from di.repositories.common import af_days, requests
 from di.repositories.constants import AGENTS, AUTO_TYPES, DELEG, HARD_RULES, LEVEL_RANK, LEVELS
 from di.repositories.decisions import median
 from di.repositories.orgs import tree as org_tree
+from di.services import group_map
 from di.services.actions.registry import ACTIONS
 
 _REF = golden.load("screens/access")
@@ -91,6 +92,7 @@ def identity(s: Session, p: Principal) -> dict:
         "lastSync": idp.get("lastSync"),
         "ooo": idp.get("ooo", []),
         "groups": policy.IDP_GROUPS,
+        "group_map": group_map.rows(s),  # P9-8.10: every mapping row with its status, maker and approver
         "users": users,
         "roles": IDP_ROLES,
     }

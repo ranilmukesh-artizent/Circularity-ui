@@ -15,6 +15,7 @@ import di.services.actions.engine  # registers action handlers
 import di.services.actions.exceptions  # registers action handlers (exception.explain: the exception assistant; plan 9)
 import di.services.actions.execution  # registers action handlers
 import di.services.actions.fraud  # registers action handlers (fraud.hold, release, reject, simulate; plan 9)
+import di.services.actions.group_map  # registers action handlers (access.saveGroupMap, approveGroupMap; plan 9 P9-8.10)
 import di.services.actions.integration  # registers action handlers
 import di.services.actions.lifecycle  # registers transit.flagDelay (plan 9 P9-2.20)
 import di.services.actions.llm  # registers action handlers (llm.models, llm.setModel; plan 9)

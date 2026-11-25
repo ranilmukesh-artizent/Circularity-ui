@@ -5,7 +5,7 @@
  * (di/services/screens/access.py has the mapping). Every change goes through invoke() in the page; after one that may change
  * what the signed-in account may do, call refreshAccess().
  */
-import { read } from './actions';
+import { invoke, read } from './actions';
 import { cached, ref, refreshMe } from './client';
 import { fmtDate, fmtDateYear } from './format';
 import { can, currentAccount } from './session';
@@ -84,16 +84,19 @@ export interface MatrixPermRow { perm: string; roles: Record<string, boolean> }
 export interface MatrixPageRow { page: string; roles: Record<string, boolean> }
 export interface RoleMatrix { roles: string[]; permissions: MatrixPermRow[]; pages: MatrixPageRow[] }
 export interface TestUserResult {
-  user_id: string; email: string; group: string | null; role: string; why: string;
+  user_id: string | null; email: string; found: boolean; role: string | null; why: string;
+  /** The directory group the role came from (P9-8.10), null for a deputy or an unknown person. */
+  via_group: string | null; source: 'directory' | 'group map' | 'none';
   account: { id: string; label: string } | null;
-  tenants: string[]; warehouse: string | null; pages: string[]; permissions: string[];
+  tenants: string[]; warehouse: string | null; pages: string[]; permissions: string[]; delegations: string[];
   /** Approval limit in dollars; null: no limit. */
-  limit: number | null; self_approve: boolean;
+  approval_limit: number | null; self_approve: boolean;
 }
 /** Which role may do what and see which page (access.roleMatrix; needs manageIdentity). */
 export const roleMatrix = (): RoleMatrix => read<RoleMatrix>('access.roleMatrix');
-/** What a directory user gets today (access.testUser; needs manageIdentity). */
-export const testUser = (id: string): TestUserResult => read<TestUserResult>('access.testUser', { user_id: id });
+/** What a person gets today, without signing in (access.testUser; manageIdentity or tenant access approval). */
+export const testUser = (email: string, groups?: string[]): TestUserResult =>
+  read<TestUserResult>('access.testUser', groups ? { email, groups } : { email });
 
 // ---------------------------------------------------------------- delegations
 export interface Delegation { k: string; label: string; desc: string; on: boolean }
@@ -112,9 +115,26 @@ export function accountRows(): AccountRow[] {
 // ---------------------------------------------------------------- identity provider
 export interface IdpUser { id: string; email: string; acct: string | null; role?: string }
 export interface Ooo { email: string; from: string; until: string }
-export interface Idp { src: 'approles' | 'groups'; lastSync: Date | string; groups: Record<string, string>; users: IdpUser[]; ooo: Ooo[] }
+/** One row of the directory group to role map (P9-8.10); only an approved row inside its dates is in force. */
+export interface GroupMapRow {
+  id: number; group_id: string; role: string; org_unit_id: string | null; site: string | null; warehouse: string | null;
+  valid_from: string | null; valid_to: string | null; status: 'draft' | 'approved' | 'retired';
+  created_by: string; approved_by: string | null; created_at: string; approved_at: string | null;
+}
+export interface GroupMapInput {
+  group_id: string; role: string; org_unit_id?: string; site?: string; warehouse?: string; valid_from?: string; valid_to?: string;
+}
+export interface Idp {
+  src: 'approles' | 'groups'; lastSync: Date | string; groups: Record<string, string>; users: IdpUser[]; ooo: Ooo[]; group_map: GroupMapRow[];
+}
 
 export const idp = (): Idp => screen().identity;
+/** The mapping rows, drafts and retired ones too (the Identity section). */
+export const groupMap = (): GroupMapRow[] => idp().group_map;
+/** Draft a mapping; another person approves it (access.saveGroupMap). */
+export const saveGroupMap = (row: GroupMapInput) => invoke<{ id: number; status: string }>('access.saveGroupMap', { ...row });
+/** Put a drafted mapping in force; not the person who drafted it (access.approveGroupMap). */
+export const approveGroupMap = (id: number) => invoke<{ id: number; status: string }>('access.approveGroupMap', { id });
 /** The role a directory user maps to (the server sends it with each user). */
 export const idpRoleOf = (u: IdpUser): string => u.role ?? '';
 export const idpRoles = (): string[] => ref('IDP_ROLES');

@@ -30,8 +30,8 @@ def test_test_user_planner_a():
     out = call("access.testUser", {"user_id": "planner-a"}, "admin")["output"]
     assert out["user_id"] == "planner-a" and out["role"] == "Planner"
     assert out["tenants"] == ["Customer A"]
-    assert "circ-planners-customer-a" in out["why"]
-    assert out["why"] == "Group circ-planners-customer-a maps to Planner"
+    assert out["via_group"] == "circ-planners-customer-a"
+    assert out["why"] == "Role from group circ-planners-customer-a"
     assert out["account"] is not None and out["group"] == "circ-planners-customer-a"
     assert "manageFlows" in out["permissions"] and "approve.flows" not in out["permissions"]
     assert "modeler" in out["pages"]

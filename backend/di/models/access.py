@@ -1,9 +1,12 @@
-"""Access state: Approver delegations and tenant grants (migrations 0002 and 0027) and OIDC sign-in attempts (0056)."""
+"""Access state: Approver delegations and tenant grants (migrations 0002 and 0027), OIDC sign-in attempts (0056) and the
+directory group to role map (0057)."""
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
+    Date,
     Table,
     Text,
 )
@@ -35,6 +38,26 @@ oidc_login = Table(
     Column("code", Text, unique=True),
     Column("account_id", Text),
     ts("code_expires_at"),
+)
+
+# 0057 (P9-8.10): which role and scope a directory group gives; a draft until another person approves it
+idp_group_map = Table(
+    "idp_group_map",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("group_id", Text, nullable=False),
+    Column("role", Text, nullable=False),
+    Column("org_unit_id", Text),
+    Column("site", Text),
+    Column("warehouse", Text),
+    Column("valid_from", Date),
+    Column("valid_to", Date),
+    Column("status", Text, nullable=False),
+    Column("created_by", Text, nullable=False),
+    Column("approved_by", Text),
+    ts("created_at", now=True),
+    ts("approved_at"),
+    CheckConstraint("status IN ('draft','approved','retired')", name="ck_idp_group_map_status"),
 )
 
 tenant_grant = Table(

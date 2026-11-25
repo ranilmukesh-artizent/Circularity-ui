@@ -36,6 +36,7 @@ from di.mcp import calllog, catalog_tools
 from di.mcp.tools import ACTIONS_OF, AGENTS, NO_APPROVAL_REF, RUN, TOOLS, Refused, ToolCall, cross_tenant
 from di.services.actions.pipeline import Actor, CallContext
 from di.services.agents import registry as agent_registry
+from di.services.agents.forbidden import FORBIDDEN_ACTIONS as FORBIDDEN_ACTIONS  # re-exported: tests read it here
 from di.services.agents.forbidden import forbidden
 from di.services.cases import store
 

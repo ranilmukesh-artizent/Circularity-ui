@@ -82,6 +82,19 @@ def _resolve(token: str, audience: str, session: Session) -> "Principal":
     return Principal(a, ctx)
 
 
+GROUP_RULES = text(
+    "SELECT group_id, role, org_unit_id, site, warehouse FROM idp_group_map WHERE status = 'approved' "
+    "AND (valid_from IS NULL OR valid_from <= current_date) AND (valid_to IS NULL OR valid_to >= current_date) ORDER BY id"
+)
+
+
+def load_group_map(session: Session) -> dict[str, policy.GroupRule]:
+    """The directory group rules in force: approved rows within their dates (a later row for a group wins)."""
+    return {
+        r.group_id: policy.GroupRule(r.group_id, r.role, r.org_unit_id, r.site, r.warehouse) for r in session.execute(GROUP_RULES)
+    }
+
+
 def load_context(session: Session) -> policy.Context:
     deleg = {r.scope: r.enabled for r in session.execute(text("SELECT scope, enabled FROM delegation"))}
     grants: dict[str, list[str]] = {}
@@ -93,6 +106,7 @@ def load_context(session: Session) -> policy.Context:
     approval = state.get(session, "access_settings", "approval") or {}
     units = session.execute(text("SELECT id, parent_id, kind, name FROM org_unit ORDER BY created_at, id"))
     return policy.Context(
+        group_map=load_group_map(session),
         delegations={k: deleg.get(k, True) for k in policy.DELEGATION_SCOPES},
         grants=grants,
         grant_ends=ends,

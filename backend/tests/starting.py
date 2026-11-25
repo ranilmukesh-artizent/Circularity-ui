@@ -30,6 +30,8 @@ def reset() -> None:
     with engine.begin() as conn:
         conn.execute(text("UPDATE delegation SET enabled = true"))
         conn.execute(text("DELETE FROM tenant_grant"))
+        conn.execute(text("DELETE FROM idp_group_map WHERE created_by <> 'seed'"))  # plan 9 P9-8.10: the seeded ten, in force
+        conn.execute(text("UPDATE idp_group_map SET status = 'approved', approved_by = NULL, approved_at = NULL"))
         conn.execute(text("DELETE FROM domain_event"))
         conn.execute(text("DELETE FROM case_stage_log WHERE seq IS NOT NULL"))
         conn.execute(text("DELETE FROM instruction"))

@@ -12,6 +12,7 @@ import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import type { PageProps } from '../registry';
 import { Orgs } from './AccessOrgs';
+import { GroupMap } from './AccessGroupMap';
 import { GrantList, ReqList } from './AccessRequests';
 import { rowsFor, userCard, type MatrixRow } from './roleMatrix';
 import { SectionTabs, sectionsOf } from './SectionTabs';
@@ -184,6 +185,7 @@ function Identity() {
             </tbody>
           </table>
         </div>
+        <GroupMap />
         <p className="note" style={{ margin: '6px 0 0' }}>
           Group membership is read-only here. Mapped roles only add permissions; a user's effective access is the union of their roles.
         </p>
@@ -300,7 +302,7 @@ function Roles() {
           <label htmlFor="tu-user">Directory user</label>
           <select id="tu-user" value={pick} onChange={(e) => setPick(e.target.value)}>
             <option value="">Choose a user</option>
-            {users.map((u) => <option key={u.id} value={u.id}>{u.email}</option>)}
+            {users.map((u) => <option key={u.id} value={u.email}>{u.email}</option>)}
           </select>
         </div>
         {pick && (
@@ -314,7 +316,7 @@ function Roles() {
 }
 
 function TestUserCard({ id }: { id: string }) {
-  const c = userCard(testUser(id));
+  const c = userCard(testUser(id)); // id is the directory user's email
   return (
     <div className="idpc" id="testUserCard">
       <b>{c.title}</b>

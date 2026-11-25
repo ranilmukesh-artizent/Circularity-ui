@@ -30,6 +30,7 @@ from di.core.auth import LIVE_GRANT, grant_end
 from di.repositories import access as access_repo
 from di.repositories import constants as C
 from di.repositories.common import REQ_SCOPE, REQ_SEQ_START, can, hash_id, money, requests
+from di.services import group_map
 from di.services.actions import agents
 from di.services.actions.decisions import NOW, push_event, rb_log
 from di.services.actions.pipeline import CallContext
@@ -198,6 +199,7 @@ def _hours_text(h: float) -> str:
 # Declared beside the catalog's actions (plan 8 UI gaps). Agents never run them
 # (di.services.agents.forbidden.FORBIDDEN_ACTIONS: "access.").
 _STR = {"req": True, "t": "string"}
+_OPT = {"req": False, "t": "string"}
 ACTIONS.setdefault(
     "access.revokeGrant",
     ActionDef(id="access.revokeGrant", title="Revoke tenant access", verb="revoke tenant access", risk="commit",
@@ -301,10 +303,10 @@ ACTIONS.setdefault(
 )  # fmt: skip
 ACTIONS.setdefault(
     "access.testUser",
-    ActionDef(id="access.testUser", title="Test a user", verb="test a user", risk="read", perm="manageIdentity",
-              scope="none", input={"user_id": _STR},
-              desc="What a directory user gets: role, tenants, warehouse, pages, permissions and approval limit. "
-              "Changes nothing."),
+    ActionDef(id="access.testUser", title="Test a user", verb="test a user", risk="read", perm=None, scope="none",
+              input={"email": _OPT, "user_id": _OPT, "groups": {"req": False, "t": "array"}},
+              desc="What a person gets: role, the group it came from, tenants, warehouse, pages, permissions, approval limit "
+              "and delegations, from the directory and the group map. Changes nothing."),
 )  # fmt: skip
 
 
@@ -327,34 +329,64 @@ def role_matrix(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - handlers
     }
 
 
+def _may_test_user(ctx: CallContext) -> bool:
+    return can(ctx, "manageIdentity") or can(ctx, "approve.tenantAccess")
+
+
 @guard("access.testUser")
 def test_user_guard(i: dict[str, Any], ctx: CallContext):
-    if state.get(ctx.session, "idp_users", i["user_id"]) is None:
+    if not _may_test_user(ctx):
+        return "out_of_scope", f"The {ctx.actor.role} view cannot test a user."
+    if not (i.get("email") or i.get("user_id")):
+        return "validation_error", 'Missing "email".'
+    if i.get("user_id") and not i.get("email") and state.get(ctx.session, "idp_users", i["user_id"]) is None:
         return "not_found", f"No directory user {i['user_id']}."
     return None
 
 
+def _directory_user(i: dict[str, Any], ctx: CallContext) -> dict | None:
+    if i.get("user_id"):
+        return state.get(ctx.session, "idp_users", i["user_id"])
+    wanted = str(i["email"]).strip().lower()
+    return next((u for u in _idp_users(ctx) if str(u["email"]).lower() == wanted), None)
+
+
 @implement("access.testUser")
 def test_user(i: dict[str, Any], ctx: CallContext):
-    """What a directory user gets today: the role from the directory (the account's as mapped, or a deputy's own), and
-    everything policy gives that role for this account."""
-    u = state.need(ctx.session, "idp_users", i["user_id"])
+    """What a person gets today, without signing in: a directory user's role is their account's (as mapped now) or a
+    deputy's own; an email the directory does not know is read through the group map with the `groups` given, if any."""
     actx = ctx.actor.ctx
-    role = policy.idp_role_of(u, actx) or ""
-    acct = policy.account(u["acct"], actx) if u.get("acct") else None
-    group = policy.IDP_GROUPS.get(u["acct"]) if u.get("acct") else None
-    who = acct or policy.Account(id="deputy:" + u["id"], role=role, label=role)
-    why = f"Group {group} maps to {role}" if group else f"Directory deputy without an account: role {role} from the directory"
+    u = _directory_user(i, ctx)
+    email = str(u["email"] if u else i.get("email") or "").strip().lower()
+    acct = policy.account(u["acct"], actx) if u and u.get("acct") else None
+    rule = next((r for g in i.get("groups") or [] if (r := policy.group_role(g, actx)) and r.role in policy.idp_roles()), None)
+    if u is None and rule is None:
+        return {"user_id": None, "email": email, "found": False, "source": "none", "group": None, "via_group": None,
+                "role": None, "why": "Not in the directory and no group of theirs is mapped to a role.", "account": None,
+                "tenants": [], "warehouse": None, "pages": [], "permissions": [], "approval_limit": None,
+                "delegations": [], "self_approve": False}  # fmt: skip
+    group: str | None
+    if u is None and rule is not None:
+        role, source, group = rule.role, "group map", rule.group_id
+        who = policy.Account(id="group:" + rule.group_id, role=role, label=role, tenant=rule.org_unit_id, site=rule.site,
+                             warehouse=rule.warehouse)  # fmt: skip
+    elif u is not None:
+        role, source = policy.idp_role_of(u, actx) or "", "directory"
+        group = group_map.group_of(acct, actx) if acct else None
+        who = acct or policy.Account(id="deputy:" + u["id"], role=role, label=role)
+    why = f"Role from group {group}" if group else f"Directory deputy without an account: role {role} from the directory"
     limit = policy.limit_for(who, actx)
     perms = [p for p in policy.permissions() if policy.can(who, p, actx)]
     return {
-        "user_id": u["id"], "email": u["email"], "group": group, "role": role, "why": why,
+        "user_id": u["id"] if u else None, "email": email, "found": True, "source": source, "group": group,
+        "via_group": group, "role": role, "why": why,
         "account": {"id": acct.id, "label": acct.label} if acct else None,
         "tenants": policy.allowed_tenants(who, actx),
         "warehouse": who.warehouse if policy.policy(who).get("warehouseScoped") else None,
         "pages": [pg for pg in [*policy.sections(), *policy.EXTRA_PAGES] if policy.can_page(who, pg)],
         "permissions": perms,
-        "limit": None if math.isinf(limit) else limit,  # None: no limit
+        "approval_limit": None if math.isinf(limit) else limit,  # None: no limit
+        "delegations": [k for k, on in actx.delegations.items() if on] if role == "Approver" else [],
         "self_approve": actx.self_approval and "approve.decisions" in perms,
     }  # fmt: skip
 
@@ -392,7 +424,12 @@ def sync_directory(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - handl
     idp = _idp(ctx, for_update=True) | {"lastSync": NOW}
     state.put(ctx.session, "access_settings", "idp", idp)
     n = len(_idp_users(ctx))
-    rb_log(ctx, "directory.synced", f"Directory sync: {n} users, {len(policy.IDP_GROUPS)} mappings", "access.syncDirectory")
+    rb_log(
+        ctx,
+        "directory.synced",
+        f"Directory sync: {n} users, {len(ctx.actor.ctx.group_map or {})} mappings",
+        "access.syncDirectory",
+    )
     return {"users": n}
 
 

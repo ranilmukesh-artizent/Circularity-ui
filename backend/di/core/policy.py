@@ -61,6 +61,17 @@ class Account:
     home: str | None = None
 
 
+@dataclass(frozen=True)
+class GroupRule:
+    """What a directory group gives a person who signs in with it: a role and a scope (never Admin)."""
+
+    group_id: str
+    role: str
+    org_unit_id: str | None = None
+    site: str | None = None
+    warehouse: str | None = None
+
+
 @dataclass
 class Context:
     """Run-time access state (from the database). The defaults are the demo's starting state."""
@@ -73,6 +84,8 @@ class Context:
     limits: dict[str, float | None] = field(default_factory=lambda: dict(STARTING_LIMITS))
     self_approval: bool = False
     org_units: dict[str, orgs.OrgUnit] | None = None  # the org tree (table org_unit); None: the seeded one
+    # directory group id -> the rule of its approved, in-date row (table idp_group_map); None: the seeded ten
+    group_map: dict[str, "GroupRule"] | None = None
 
 
 @cache
@@ -267,6 +280,22 @@ IDP_GROUPS = {
     "wm-1": "circ-warehouse-1",
     "wm-2": "circ-warehouse-2",
 }
+
+
+def starting_group_map() -> dict[str, GroupRule]:
+    """The seed of table idp_group_map: IDP_GROUPS with the role and scope of the demo account each group maps to."""
+    by_id = {a.id: a for a in starting_accounts()}
+    return {
+        group: GroupRule(group, by_id[acct].role, by_id[acct].tenant, by_id[acct].site, by_id[acct].warehouse)
+        for acct, group in IDP_GROUPS.items()
+        if acct in by_id
+    }
+
+
+def group_role(group_id: str, ctx: Context | None = None) -> GroupRule | None:
+    """The rule an approved, in-date mapping gives this directory group, or None when no mapping does."""
+    rules = ctx.group_map if ctx is not None and ctx.group_map is not None else starting_group_map()
+    return rules.get(group_id)
 
 
 def _idp_email(label: str) -> str:

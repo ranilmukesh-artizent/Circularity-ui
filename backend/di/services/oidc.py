@@ -201,21 +201,20 @@ def exchange(session: Session, code: str) -> dict[str, Any]:
 
 def resolve_directory_user(session: Session, email: str, groups: list[str], name: str | None = None) -> policy.Account | None:
     """The account for a directory user: the one linked to that email (as mapped now), else one provisioned from the
-    user's first group that maps to a role other than Admin; None when no group maps (P9-8.10 makes the map data)."""
+    user's first group that maps to a role other than Admin; None when no group maps (the map is the table idp_group_map)."""
     ctx = load_context(session)
     wanted = email.strip().lower()
     for u in state.items(session, "idp_users"):
         if str(u["email"]).lower() == wanted and u.get("acct"):
             return policy.account(u["acct"], ctx)
-    by_group = {group: acct for acct, group in policy.IDP_GROUPS.items()}
     for group in groups:
-        template = policy.account(by_group.get(group, ""), ctx)
-        if template is None or template.role not in policy.idp_roles():  # never Admin from a group
+        rule = policy.group_role(group, ctx)  # the approved, in-date mapping of the group (table idp_group_map)
+        if rule is None or rule.role not in policy.idp_roles():  # never Admin from a group
             continue
         out = invoke(
             "access.provisionUser",
-            {"email": wanted, "name": name or wanted.split("@")[0], "role": template.role, "tenant": template.tenant,
-             "site": template.site, "warehouse": template.warehouse, "via_group": group},
+            {"email": wanted, "name": name or wanted.split("@")[0], "role": rule.role, "tenant": rule.org_unit_id,
+             "site": rule.site, "warehouse": rule.warehouse, "via_group": group},
             CallContext(actor=SYSTEM, session=session),
         )  # fmt: skip
         if not out["ok"]:
