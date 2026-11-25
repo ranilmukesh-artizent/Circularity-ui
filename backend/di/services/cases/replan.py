@@ -51,7 +51,7 @@ def _kinds(q: intake.ToolQueue, orders: set[str]) -> dict[str, str]:
 
 def queue_plan(s: Session, case: Mapping[str, Any]) -> dict[str, Any] | None:
     """The case's place in the plan of its org's open queue (module docstring); None for a case of another template."""
-    if case.get("template") != "tool_fleet":
+    if case.get("template") != "tool_fleet" or intake.is_refresh(case):  # a contract refresh is in no queue (P9-5.1)
         return None
     me = case["id"]
     if case["stage"] in ("approved", "executing"):

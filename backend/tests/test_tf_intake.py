@@ -107,7 +107,7 @@ def test_x_case_without_new_settings_unchanged():
     assert flow.reason_of({"kind": "swap"}, "rma", "") == "rma"
     assert flow.facts_of_record({"toolClass": "CMH"}, []) == {}
     assert set(intake.REASONS) >= {"swap", "service_order", "pool_excess"}
-    assert set(blocks.CASE_REASONS) == set(intake.REASONS)
+    assert set(blocks.CASE_REASONS) == set(intake.REASONS) - {"contract_refresh"}  # only the daily scan opens a refresh (P9-5.1)
 
 
 def test_tf_01_reason_comes_from_the_record():

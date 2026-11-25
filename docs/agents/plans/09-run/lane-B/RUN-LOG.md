@@ -48,3 +48,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-25 22:21 | Merged origin/feature/plan-09-recover (11 commits: P9-2.15, 2.20, 2.21, 2.23, 8.2, 8.3, 8.5, 8.9, 8.13, Ask fix), clean. Decision (person asked for speed): three check slots (k mod 3), shorter writer briefs (spec section and patterns, not the whole plan), wider batch checks. |
 | 2026-11-25 22:27 | P9-3.6 returned by w2 (32044f6); stacked on the lane head as 4c2dbdb (test_template_e2e's grade-None expectation dropped: the lane's fix keeps grade B). Dispatch P9-3.7 to w2 and P9-3.8 to w5 (new worktree), both on 4c2dbdb. |
 | 25 Nov 16:58 | P9-3.6 merged. new gate G-CON-2 (G-CON-1 unchanged); Pack.owner and Pack.roles; 14 tests use tool_case_facts |
+| 25 Nov 16:59 | P9-5.1 merged. refresh settings in valuer.params.contract_refresh; refresh_late exception (Fleet desk); job refresh.scan daily |

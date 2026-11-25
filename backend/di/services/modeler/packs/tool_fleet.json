@@ -19,6 +19,10 @@
   {
    "key": "returns",
    "name": "Tool fleet returns"
+  },
+  {
+   "key": "contract_refresh",
+   "name": "Contract refresh"
   }
  ],
  "prompts": [
@@ -585,6 +589,25 @@
  "valuer": {
   "kind": "tool_fleet",
   "params": {
+   "contract_refresh": {
+    "flow": "contract_refresh",
+    "window_days": 90,
+    "routes": [
+     "keep",
+     "swap",
+     "upgrade"
+    ],
+    "stages": [
+     "window",
+     "tools",
+     "match",
+     "price",
+     "proposal",
+     "approval"
+    ],
+    "sla_working_days": 5,
+    "sla": "Proposal ready by day -90 + 5 working days"
+   },
    "paths": {
     "release": {
      "name": "Re-issue to fleet",
@@ -1587,6 +1610,12 @@
     "label": "Inspection backlog at a depot",
     "owner_role": "Planner",
     "action": "Move inspections to another depot"
+   },
+   {
+    "id": "refresh_late",
+    "label": "Refresh proposal late",
+    "owner_role": "Fleet desk",
+    "action": "Send the renewal proposal or ask the customer for more time"
    }
   ],
   "suggestion_rules": [],

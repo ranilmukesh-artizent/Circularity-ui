@@ -40,6 +40,10 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   `di.services.device.intake.device_case` from the trade-in on file: the feed price as the reference value, the cosmetic
   grade when graded; the valuer snapshot keeps the IMEI, quote, partner and the gathered inputs (`device.inputs`). The lab
   adapter's hook (`device.intake.open_from_tradein`) calls this `open_case`; a bulk batch comes as a PO-shaped lot.
+- **Contract refresh** (plan 9, P9-5.1). The reason `contract_refresh` opens a refresh case for a contract (asset key the
+  contract id, `facts` the flow `contract_refresh`, `term_end`, `market`, `lines`: kept as `refresh`); `dedupe_as` names
+  the dedupe key's asset (`<contractId>@<endDate>`, once per term). It is valued by no valuer yet (no routes, stage
+  `none`), has no system-of-record match and stays out of the tool queue.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
 
 The case reads (live rules, the active model, PLM) sit above the case store; this is the one place a case is opened from
@@ -79,7 +83,16 @@ from di.services.modeler.templates import TEMPLATE_KEYS
 from di.services.modeler.valuers import amount, device, tool_fleet
 from di.services.modeler.valuers.rng import mulberry32
 
-REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap", "service_order", "pool_excess")
+REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap", "service_order", "pool_excess",
+           "contract_refresh")  # fmt: skip
+REFRESH_FLOW = "contract_refresh"  # the flow of a refresh case (P9-5.1): opened for a contract, not valued as a return
+
+
+def is_refresh(c: Mapping[str, Any]) -> bool:
+    """Whether the case is a contract refresh (P9-5.1): it has no tool class and no route yet."""
+    return c.get("flow") == REFRESH_FLOW
+
+
 # the tool fleet's return kinds (P9-3.4) and the function each goes to: also the reasons of the contract feed's returns
 RETURN_FT = {"contract_end": "Fleet management", "swap": "Fleet management", "service_order": "Repair center",
              "pool_excess": "Tool pool"}  # fmt: skip
@@ -200,7 +213,7 @@ def _base(case_id: str, i: dict[str, Any], known: dict[str, Any], by: str) -> st
         "nextInspection": "—", "model": FormulaPredictor.model_version, "bomRef": known.get("bom_ref"),
         "snapshot": {"id": "EVS-" + hashlib.sha256(case_id.encode()).hexdigest()[:8].upper(), "items": 0,
                      "takenAt": _received(now)},
-        "intake": {"key": intake_key(i["asset_key"], i["reason"]), "reason": i["reason"], "by": by,
+        "intake": {"key": intake_key(i.get("dedupe_as") or i["asset_key"], i["reason"]), "reason": i["reason"], "by": by,
                    "at": now.astimezone(UTC).isoformat()},
     } | ({"batchRef": str(known["batch"])} if known.get("batch") else {})  # fmt: skip
 
@@ -326,9 +339,9 @@ def open_tool_cases(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
     rows = s.execute(
         text(
             "SELECT data FROM case_record WHERE owner = :o AND stage <> 'closed' "
-            "AND data ->> 'template' = 'tool_fleet' ORDER BY id"
+            "AND data ->> 'template' = 'tool_fleet' AND COALESCE(data ->> 'flow', '') <> :f ORDER BY id"
         ),
-        {"o": org_unit_id},
+        {"o": org_unit_id, "f": REFRESH_FLOW},
     ).scalars()
     return list(rows)
 
@@ -381,6 +394,9 @@ def revalue(s: Session, c: store.Case) -> None:
 def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     """Routes, recommendation and the flow version they were evaluated with (as a re-evaluation records them): the one
     decider's decision (di.services.cases.decide) set on the case."""
+    if is_refresh(c):  # a contract refresh is priced and matched by the later refresh tasks (P9-5.1): nothing to value yet
+        c |= {"routes": [], "recommendation": None, "stage": STAGES[0]}
+        return
     fv = flow_version(s, c)  # also refreshes the case's scope facts
     pack = _pack(s, c)
     was_held = isinstance(c.get("gateHold"), dict)
@@ -414,7 +430,7 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     if bad := problem(s, i):
         raise ActionError(*bad)
     s.execute(text("SELECT pg_advisory_xact_lock(1049)"))  # one intake at a time (api, worker): one case, one number
-    if dup := existing(s, i["asset_key"], i["reason"]):
+    if dup := existing(s, i.get("dedupe_as") or i["asset_key"], i["reason"]):
         raise ActionError("duplicate", f"{dup} is already open for {i['asset_key']} ({i['reason']}).")
     facts = dict(i.get("facts") or {})
     case_id = _next_id(s)
@@ -427,7 +443,10 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
         raise ActionError("validation_error", f"The case needs {', '.join(gone)} (the pack's minimum facts).")
     c = _base(case_id, i, known, i.get("by") or actor)
     c |= {k: known[k] for k in ("serial", "contract_id", "line_id", "flow") if known.get(k) is not None}  # a return's (P9-3.4)
-    record_match.receive(s, c, i.get("by") or actor)
+    if is_refresh(c):
+        c["refresh"] = dict(facts)  # the contract, its window and its lines (P9-5.1)
+    else:
+        record_match.receive(s, c, i.get("by") or actor)
     _value(s, c, facts)
     store.insert_new(s, c, f"Case opened from {i['reason']}", actor)
     payload = {"case_id": case_id, "owner": c["owner"], "template": c["template"], "asset_key": i["asset_key"],
@@ -436,7 +455,9 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
         text("INSERT INTO domain_event (type, case_id, payload) VALUES ('case.opened', :c, CAST(:p AS jsonb))"),
         {"c": case_id, "p": json.dumps(payload)},
     )
-    if c["template"] == "tool_fleet":  # the org's other open returns are planned again with this one (P9-1.4)
+    if c["template"] == "tool_fleet" and not is_refresh(
+        c
+    ):  # the org's other open returns are planned again with this one (P9-1.4)
         jobs.enqueue(
             s, "case.replan", {"org_unit_id": c["owner"], "template": "tool_fleet"}, dedupe_key=f"case.replan:{c['owner']}"
         )
