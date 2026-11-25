@@ -39,7 +39,7 @@ from sqlalchemy import text
 from di.core import state
 from di.services.actions.registry import ActionDef
 from di.services.agents import limits, registry
-from di.services.agents.forbidden import held_for_person
+from di.services.agents.forbidden import caution_only, held_for_person
 from di.services.agents.stage_context import Autonomy
 
 if TYPE_CHECKING:
@@ -165,7 +165,7 @@ def _case_state(a: ActionDef, i: dict[str, Any], ctx: "CallContext") -> tuple[bo
 def hold_check(a: ActionDef, i: dict[str, Any], ctx: "CallContext") -> list[Hold]:
     """Step 9b: the reasons to hold an agent-prepared write for a person. Only an agent's own, unconfirmed write is judged:
     a person's call, a read and a call a person confirmed (proposal.accept) are never held."""
-    if not ctx.preparer or not a.changes_state or ctx.confirmed:
+    if not ctx.preparer or not a.changes_state or ctx.confirmed or caution_only(a.id):  # caution is never held back
         return []
     st = ctx.stage
     if st is None:  # an agent outside the chain: no stage to read, only what holds at every level

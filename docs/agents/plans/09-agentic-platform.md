@@ -856,6 +856,7 @@ each story went.
 - [x] P9-2.22 Gates before the queue plan in decide_case
 - [x] P9-2.23 Ask reads workflows and their runs
 - [ ] P9-2.17 Phase 2 gate
+- [ ] P9-2.24 Phase 2 gate follow-ups: model reads off the lock, grounded concerns, tainted fraud text
 - [x] P9-3.1 Fleet contract and repair log mocks with adapters
 - [x] P9-3.2 Recall, telematics and parts mocks with adapters
 - [x] P9-3.3 Rated life and end of parts for tool classes in PLM
@@ -4546,6 +4547,46 @@ workflow or a run. **Size:** M. **Depends on:** P9-2.13.
 - `test_ask_workflow_access`: a person outside the source's tenant gets not-found and no run detail.
 - `test_ask_tools_read_only`: none of the new tools maps to a non-read action; `FORBIDDEN_ACTIONS` is unchanged.
 - Also run: `tests/test_ask.py tests/test_catalog_hygiene.py tests/test_tool_find.py tests/test_hold_policy.py`.
+
+#### P9-2.24 Phase 2 gate follow-ups: model reads off the lock, grounded concerns, tainted fraud text
+**Stories:** the phase 2 gate review (`docs/agents/plans/09-work/review-phase-2.md`, findings 2, 5, 6 and the lead's
+three). **Size:** M. **Depends on:** P9-2.17.
+
+**Files:**
+- Modify `backend/di/services/agents/runtime.py`: commit the deterministic step (stage record, run row) and release
+  the `agent_run` row lock before the stage reasoner or the fraud review calls the model; take the lock again to write
+  the reading. Enqueue the deduped `queue.plan` job after the reading, not before it. No transaction stays open
+  across a model call (the phase 2 shard 3 hang: an "idle in transaction" session on `job`).
+- Modify `backend/di/services/agents/stage_reasoner.py`: the brief carries each evidence record's contents (fields,
+  values, notes as data), not only its state; the prompt says a record whose state is "ready" was checked by the
+  stage's rules. `check_reading` drops a concern that cites no source from `case_sources` (it may not invent missing
+  data); a dropped concern is logged on the run, never silently lost.
+- Modify `backend/di/services/agents/fraud_review.py`: carry `res.tainted` onto the review and the run (taint
+  then holds every later write of the run as it does for the stage reasoner); evidence notes from source systems go
+  into the prompt fenced and labelled as data.
+- Modify `backend/di/services/ask/checked_answer.py`: once a question is a workflow question (a workflow tool is
+  called or the id shapes say so), hold all text until the check passes; a refused first draft is never left on screen
+  (or send a reset event the Ask panel honours).
+- Modify the case stage pages (`frontend/src/pages/case/`): the fraud hold banner shown on Overview shows on every
+  stage page of a held case, with the same text and the link to release (a person's action).
+- Test: `backend/tests/test_phase2_followups.py`; extend `frontend` unit tests for the banner.
+
+**Interfaces:**
+- **Model first (R16).** The model still reads every stage; grounding only removes concerns that cite nothing.
+  Caution computed by code (fraud hold, gates, conflicts) is never removed.
+- **Locks.** A person's accept or approve that wakes a run never waits for a model call.
+
+**Tests (red first):**
+- `test_no_transaction_open_during_model_call`: a FunctionModel that checks `pg_stat_activity` for an open
+  transaction from the worker's connection while it is called → none.
+- `test_queue_plan_enqueued_after_the_reading`.
+- `test_ready_evidence_gives_no_missing_data_concern`: RT-1048 with all evidence ready and a model that claims data
+  is missing without a source → concern dropped and logged; the standing policy can approve.
+- `test_fraud_review_tainted_by_source_notes`: an evidence note with an injection → review tainted, hold kept.
+- `test_ask_refused_draft_not_shown`: first draft refused, retry passes → the stream never carried the first draft.
+- Also run: `tests/test_stage_reasoner.py tests/test_stage_chain.py tests/test_fraud_review.py tests/test_fraud_triage.py
+  tests/test_hold_policy.py tests/test_standing_policy.py tests/test_ask_workflows.py tests/test_ask.py tests/evals`;
+  smoke-p9-2 after a reset (it should need far fewer candidates than 12).
 
 #### P9-3.1 Fleet contract and repair log mocks with adapters
 **Stories:** enabler: the fleet contract system and the legacy depot repair log are two of the seven systems of the
@@ -12645,7 +12686,7 @@ Every researched Recover story (159) and the task and test that prove it. `scrip
 | Story | Priority | Task | Test(s) |
 |---|---|---|---|
 | X-01 | P0 | P9-1.1, P9-1.6, P9-1.9 | test_x_01_missing_part_named, test_x_01_unknown_field_refused, test_x_01_pack_imports_through_pipeline, test_x_01_missing_part_refused, test_x_01_new_pack_needs_no_engine_code |
-| X-02 | P0 | P9-2.7; P9-2.15 | test_x_02_reading_log_counts_and_controls, test_x_02_matches_pack_for_sample_prompts, test_x_02_exactly_one_question, test_x_02_unknown_industry_nearest_and_question, test_x_02_assumed_items_marked, test_x_02_blocked_skip_refused_and_named, test_x_02_tighten_accepted_weaken_refused, test_x_02_never_code, test_x_02_held_for_maker_checker, test_x_02_model_optional; test_x_02_eval_config_agent_gates |
+| X-02 | P0 | P9-2.7; P9-2.15 | test_x_02_reading_log_counts_and_controls, test_x_02_matches_pack_for_sample_prompts, test_x_02_exactly_one_question, test_x_02_unknown_industry_nearest_and_question, test_x_02_assumed_items_marked, test_x_02_blocked_skip_refused_and_named, test_x_02_tighten_accepted_weaken_refused, test_x_02_never_code, test_x_02_held_for_maker_checker, test_x_02_no_model_gives_the_deterministic_result; test_x_02_eval_config_agent_gates |
 | X-03 | P0 | P9-1.2, P9-1.6 | test_x_03_gate_has_typed_fields, test_x_03_compliance_gates_locked, test_x_03_gate_change_needs_approval, test_x_03_agent_cannot_publish_gate_change |
 | X-04 | P0 | P9-1.3, P9-1.5 | test_x_04_tighten_only, test_x_04_compliance_skip_refused, test_x_04_compliance_skip_audited, test_x_04_add_approver_on_locked, test_x_04_rebase_keeps_stricter, test_x_04_rebase_conflict_on_param, test_x_04_rebase_target_gone, test_x_04_pack_update_never_drops_customer_change, test_x_04_diversion_runs |
 | X-05 | P0 | P9-2.1; P9-2.2; P9-2.4; P9-2.5; P9-2.6; P9-2.8; P9-2.9; P9-2.15 | test_x_05_chain_runs_stages_in_order, test_x_05_autopilot_calls_unchanged_on_chain, test_x_05_each_stage_has_its_agent, test_x_05_stage_record_has_confidence_and_threshold; test_x_05_accept_resumes_with_person_result_no_rerun; test_x_05_recommend_always_holds, test_x_05_limits_holds_above_value, test_x_05_limits_runs_within, test_x_05_alone_holds_below_threshold, test_x_05_alone_ignores_value, test_x_05_guardrail_holds_at_every_level, test_x_05_held_item_shows_recommendation_and_reason; test_x_05_policy_approves_within_threshold, test_x_05_policy_cannot_approve_above_threshold, test_x_05_policy_skips_holds_exceptions_and_conflicts, test_x_05_policy_capped_by_pack_and_owner_limit; test_x_05_trace_spans_for_chain_run; test_x_05_queue_stage_waits_and_wakes; test_x_05_calibration_fits_isotonic, test_x_05_calibration_needs_min_n, test_x_05_calibrated_confidence_drives_hold; test_x_05_eval_chain_cases, test_x_05_eval_injection_corpus |

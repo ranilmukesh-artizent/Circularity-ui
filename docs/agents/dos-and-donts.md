@@ -54,6 +54,9 @@ For coding agents. Each rule names the reason or the incident behind it; see [le
 
 ## Tests
 
+- **Do** check a long run (full suite, parallel shards, smokes, a gate) at least every 5 minutes and report counts so
+  far. A log that has not grown for 5 minutes is hung: look in `pg_stat_activity` on its database for a session
+  `idle in transaction` and end it with `pg_terminate_backend` (26 Nov 2026: shard 3 sat 75 minutes behind one).
 - **Do** run api tests through `scripts/dev/api-test.sh` or `scripts/dev/full-suite.sh`. They hold the flock, so
   only one api pytest runs at a time.
 - **Don't** run the full api suite from several agents at once. It deadlocked the shared database twice.
