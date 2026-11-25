@@ -661,7 +661,9 @@
      "min_coverage": 0.7,
      "max_mae_share": 0.15,
      "holdout_weeks": 8
-    }
+    },
+    "options": {"upgrade_life_pct": 50, "gr_14_usd": 600, "gr_c1_usd": 300, "take_up_prior": {"a": -3.2, "b": 9.0},
+     "fx_fallback": {"USD": 1, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52}, "owners": {"GR-14": "Fleet manager", "GR-C1": "Sales", "GR-S3": "Fleet manager", "GR-S1": "Engineer"}}
    },
    "paths": {
     "release": {

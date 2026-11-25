@@ -79,3 +79,5 @@ One line per event, newest last, times from `date`.
 | 2026-11-26 02:40 | w5's port of P9-3.8 (991135b) deadlocks again in di_w5 (idle-in-transaction read of job vs TRUNCATE job) on test_contract_entitlement/test_tf_grade, which pass on the lane without it; w5 told to find the open session in its new job/re-evaluation code. |
 | 25 Nov 21:27 | P9-3.8 merged. G-TOOL-TEL require_approval (no hold kind); the earlier deadlock was a test reusing a closed session (fixed); review item: gate_hold._bound can outlive its session |
 | 2026-11-26 03:06 | Verify P9-3.8 green (14 api files incl. tf_intake, lint, web). Pushed. |
+| 25 Nov 21:40 | P9-4.6 merged. fix, swap, upgrade per tool; approval holds GR-S3, GR-S1, GR-14, GR-C1 read by the standing policy (no parallel path); no model step |
+| 2026-11-26 03:10 | P9-4.6 returned by w3 (e66d9d4), committed. test_order_invariant_tool_fleet fails on the lane head (from P9-3.7/3.8); fix to w4. |

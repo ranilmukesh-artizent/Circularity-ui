@@ -1,0 +1,163 @@
+"""What the options valuer decides a ticket on (plan 9, P9-4.6, story SD-04; reads I-15 tables, P9-4.1 stock and offers).
+
+    gather(s, case, as_of) -> ServiceDeskInputs | None   the snapshot `modeler.valuers.service_desk.decide_ticket` reads
+
+Per line: the estimate the case holds (P9-4.4), the outputs of the `cover_terms` and `credit_rules` tables with the version each
+cites, the `terms` card, the refurbished stock of the class and the median turnaround of the similar repairs. For the case: the
+take-up curve (the pack's prior, `{a, b}`; a learned model of P9-4.11 takes its place when one is active), the account shift,
+the fx rate to USD and the approved table versions of `as_of`, which GR-S3 compares each cited version with.
+
+- **Account shift.** With at least 10 offers to the account in the 24 months before `as_of`,
+  `shift = logit((k + 1) / (n + 2)) - logit(base)`: `k` accepted of `n`, `base` the market's acceptance share in the window.
+- **Reads facts dated before `as_of`** only (offers offered before it; tables effective on it; repairs closed before it).
+- A market without the five tables returns None: the case is then valued as a plain tool-fleet return, as before.
+
+Never does: write, evaluate a language model, or approve anything.
+"""
+
+import math
+from collections.abc import Mapping
+from datetime import date
+from decimal import Decimal
+from statistics import median
+from typing import Any
+
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from di.repositories import market_tables as tables_repo
+from di.repositories import refurb_stock
+from di.repositories.repair_history import similar
+from di.repositories.upgrade_offers import offers
+from di.services.modeler.pack import load_pack
+from di.services.modeler.tables import JdmTable, TableRef, ZenEvaluator
+from di.services.modeler.valuers.tool_fleet import CLS
+from di.services.models.cost import FLOW, PACK
+
+ServiceDeskInputs = dict[str, Any]
+CARDS = ("labour", "parts", "terms", "cover_terms", "credit_rules")
+MIN_OFFERS = 10
+WINDOW_MONTHS = 24
+
+
+def _ref(row: Any) -> str:
+    return str(TableRef(PACK, FLOW, row.market, row.name, row.version))
+
+
+def _logit(p: float) -> float:
+    p = min(max(p, 0.01), 0.99)
+    return math.log(p / (1 - p))
+
+
+def _since(as_of: date, months: int) -> date:
+    y, m = divmod(as_of.year * 12 + as_of.month - 1 - months, 12)
+    return date(y, m + 1, min(as_of.day, 28))
+
+
+def fx_per_usd(s: Session, currency: str, as_of: date) -> Decimal:
+    """Units of `currency` per USD on `as_of`: the newest dated rate, else the pack's fixed fallback."""
+    if currency == "USD":
+        return Decimal(1)
+    r = s.execute(
+        text("SELECT usd_rate FROM fx_rate WHERE currency = :c AND date <= :d ORDER BY date DESC LIMIT 1"),
+        {"c": currency, "d": as_of},
+    ).scalar()
+    if r is not None:
+        return Decimal(str(r))
+    return Decimal(str(load_pack(PACK).valuer.params["service_desk"]["options"]["fx_fallback"][currency]))
+
+
+def account_shift(s: Session, org: str | None, account: str | None, market: str, as_of: date) -> float:
+    """The account's lean towards accepting an upgrade against the market's (module docstring); 0 below 10 offers."""
+    if not account:
+        return 0.0
+    since = _since(as_of, WINDOW_MONTHS)
+    mine = offers(s, org, account, market, since, as_of)
+    if len(mine) < MIN_OFFERS:
+        return 0.0
+    allm = offers(s, org, None, market, since, as_of)
+    base = sum(1 for o in allm if o.accepted) / len(allm)
+    k, n = sum(1 for o in mine if o.accepted), len(mine)
+    return _logit((k + 1) / (n + 2)) - _logit(base)
+
+
+def _decide(row: Any, given: Mapping[str, Any]) -> dict[str, Any]:
+    return dict(ZenEvaluator().evaluate(JdmTable.model_validate(row.body), given).outputs)
+
+
+def gather(s: Session, case: Mapping[str, Any], as_of: date) -> ServiceDeskInputs | None:
+    """The valuer's inputs for the case's ticket on `as_of` (module docstring); None when the market lacks a table."""
+    base = case.get("serviceDesk")
+    if not isinstance(base, dict) or not base.get("market"):
+        return None
+    org, market = case.get("owner"), str(base["market"])
+    tables_repo.ensure_seeded(s, PACK)
+    rows = {n: tables_repo.effective(s, org, PACK, FLOW, market, n, as_of) for n in CARDS}
+    if any(r is None for r in rows.values()):
+        return None
+    cur = rows["labour"].currency or ""  # type: ignore[union-attr]
+    terms = {k: float(v) for k, v in rows["terms"].body["values"].items()}  # type: ignore[union-attr]
+    p = load_pack(PACK).valuer.params["service_desk"]["options"]
+    history: dict[tuple[str, str], int | None] = {}
+    lines = []
+    for ln in base["lines"]:
+        cls, fault = str(ln["model_class"]), ln.get("fault_code") or None
+        cover = _decide(
+            rows["cover_terms"],
+            {
+                "market": market,
+                "family": cls,
+                "cover_type": ln.get("cover_type") or "none",
+                "age_months": ln.get("age_months") or 0,
+            },
+        )
+        credit = _decide(
+            rows["credit_rules"],
+            {"market": market, "family": cls, "age_months": ln.get("age_months") or 0, "life_used_pct": ln["life_used_pct"]},
+        )
+        est = ln.get("estimate")
+        if fault is not None and (cls, fault) not in history:
+            days = [
+                r.turnaround_days
+                for r in similar(s, org, cls, fault, None, _since(as_of, 36), as_of)
+                if r.turnaround_days is not None
+            ]
+            history[(cls, fault)] = int(median(days)) if days else None
+        refs = [_ref(rows[n]) for n in ("terms", "cover_terms", "credit_rules")]
+        lines.append(
+            {
+                "n": ln["n"],
+                "serial": ln["serial"],
+                "model_class": cls,
+                "family": CLS.get(cls, {}).get("name", cls),
+                "life_used_pct": ln["life_used_pct"],
+                "estimate": est,
+                "cover": {
+                    "repair_covered": bool(cover["repair_covered"]),
+                    "swap_allowed": bool(cover["swap_allowed"]),
+                    "upgrade_allowed": bool(cover["upgrade_allowed"]),
+                    "reason": str(cover["reason"]),
+                    "ref": refs[1],
+                },
+                "credit": {"credit_pct": float(credit["credit_pct"]), "credit_cap": float(credit["credit_cap"]), "ref": refs[2]},
+                "terms": {**terms, "ref": refs[0]},
+                "refurb_stock": refurb_stock.available(s, org, cls),
+                "fix_days": history.get((cls, fault)) if fault else None,
+                "cited": sorted({*(e["cites"] for e in (est or {}).get("lines", [])), *refs}),
+            }
+        )
+    prior = p["take_up_prior"]
+    return {
+        "market": market,
+        "currency": cur,
+        "fx": float(fx_per_usd(s, cur, as_of)),
+        "as_of": as_of.isoformat(),
+        "take_up": {
+            "a": prior["a"],
+            "b": prior["b"],
+            "shift": account_shift(s, org, base.get("account"), market, as_of),
+            "source": "prior",
+        },
+        "approved": sorted(_ref(r) for r in rows.values() if r is not None),
+        "lines": lines,
+    }

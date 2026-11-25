@@ -18,16 +18,34 @@ export interface LineEstimate {
   auto: boolean; reason: string; confidence: number; currency: string; as_of: string; item: number | null;
 }
 
+/** The three ways to settle a line: fix it, a covered swap, an upgrade offer (P9-4.6, SD-04). */
+export type OptionKey = 'fix' | 'swap' | 'upgrade';
+
+/** One value line of an option and the table it cites. `type` v is value, c is cost. */
+export interface OptionLine { type: 'v' | 'c'; label: string; amt: number; basis: string; cites: string }
+
+/** One option of a line (or of the whole case), computed by the server from the estimate, the approved tables, the refurbished
+ * stock and the past offers; never written by a model. An ineligible option has only its `why`. `takeUp` is the chance the
+ * customer accepts an upgrade. */
+export interface TicketOption {
+  k: OptionKey; name: string; eligible: boolean; why: string; customer_price: number | null; margin: number | null;
+  expected_margin: number | null; days: number | null; take_up: number | null; credit: number | null; cost: number | null; lines: OptionLine[];
+}
+
+/** Who approves the recommendation, and what holds it for a person (GR-14, GR-C1, GR-S3, GR-S1). */
+export interface Approval { route: string; owner: string; holds: { id: string; reason: string; owner: string }[] }
+
 /** One tool of the ticket. `fault_code` is empty when the fault is unclear; `life_used_pct` is its age against its rated life. */
 export interface TicketLine {
   n: number; serial: string; model_class: string; family: string; age_months: number; fault_code: string | null; fault_text: string | null;
   cover_type: string | null; cover_until: string | null; life_used_pct: number; gates: LineGate[]; estimate?: LineEstimate | null;
+  options?: TicketOption[]; best?: OptionKey | null;
 }
 
 /** A service ticket (or a batch of tools) and its lines. */
 export interface ServiceDeskView {
   ticket: string; account: string | null; market: string | null; site: string | null; batch: boolean; batchId: string | null;
-  loanerPromised: boolean; requesterRole: string | null; lines: TicketLine[];
+  loanerPromised: boolean; requesterRole: string | null; lines: TicketLine[]; options?: TicketOption[]; approval?: Approval | null;
 }
 
 /** The service-desk block of a case, or null for a case that is not opened from a ticket (the industrial book, a return). */
