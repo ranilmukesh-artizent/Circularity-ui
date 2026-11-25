@@ -71,3 +71,4 @@ One line per event, newest last, times from `date`.
 | 25 Nov 20:01 | P9-4.3 merged. no model in intake (fault text only shown; the P9-2.18 stage reasoner reads it); case valued on its worst line; dry run writes nothing |
 | 2026-11-26 01:41 | Verify P9-4.3 green. Hourly sync: merged lane A b51d1cb (mapping calibration refit, data only). Pushed. |
 | 25 Nov 20:22 | P9-4.4 merged. RepairCostModel (pure); GR-S1 params in pack service_desk params; no model step (fixed phrases over computed numbers) |
+| 2026-11-26 02:00 | Verify P9-4.4: 109 passed, 1 failed (test_pack_format exception roles missed P9-4.3's technician_check; fixed by the lead); lint ok, web 498. Pushed. |
