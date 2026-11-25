@@ -79,7 +79,20 @@ def _resolve(token: str, audience: str, session: Session) -> "Principal":
     a = policy.account(claims.get("sub", ""), ctx)
     if a is None:
         raise HTTPException(401, {"code": "unauthenticated", "message": "Unknown account."})
+    if _revoked(session, a.id, claims.get("iat")):
+        raise HTTPException(401, _ENDED, headers={"WWW-Authenticate": 'Bearer error="invalid_token"'})
     return Principal(a, ctx)
+
+
+def _revoked(session: Session, account_id: str, issued_at: object) -> bool:
+    """A token issued at or before the account's `revoked_after` is refused (P9-8.11: a leaver's sessions end at once).
+    `revoked_after` is wall-clock ISO time in the collection "account_revoked"; `iat` has whole seconds, so a token
+    issued in the same second as the revocation counts as issued before it."""
+    rec = state.get(session, "account_revoked", account_id)
+    if rec is None or not rec.get("revoked_after"):
+        return False
+    after = datetime.fromisoformat(rec["revoked_after"]).timestamp()
+    return not isinstance(issued_at, int | float) or issued_at <= int(after)
 
 
 GROUP_RULES = text(

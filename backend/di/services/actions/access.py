@@ -19,18 +19,21 @@ Where the state lives:
 Every change is logged to the event log as the demo's rbLog does.
 """
 
+import dataclasses
 import math
 import re
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import text
 
+from di.connectors.http import SourceError
 from di.core import policy, state
-from di.core.auth import LIVE_GRANT, grant_end
+from di.core.auth import LIVE_GRANT, grant_end, load_context
 from di.repositories import access as access_repo
 from di.repositories import constants as C
 from di.repositories.common import REQ_SCOPE, REQ_SEQ_START, can, hash_id, money, requests
-from di.services import group_map
+from di.services import directory_sync, group_map
 from di.services.actions import agents
 from di.services.actions.decisions import NOW, push_event, rb_log
 from di.services.actions.pipeline import CallContext
@@ -421,6 +424,19 @@ def _idp_users(ctx: CallContext) -> list[dict]:
 
 @implement("access.syncDirectory")
 def sync_directory(i: dict[str, Any], ctx: CallContext):  # noqa: ARG001 - handlers take (input, ctx)
+    """Today's sync (the demo's: stamp the time, count the users), or, with a directory source connected (source `idp`),
+    the pull sync of di.services.directory_sync: joiners provisioned, leavers deactivated, through the SCIM actions."""
+    if directory_sync.connected(ctx.session):
+        try:
+            res = directory_sync.pull(ctx.session)
+        except SourceError as e:
+            raise ActionError("conflict", f"The directory could not be read: {e}") from e
+        state.put(ctx.session, "access_settings", "idp", _idp(ctx, for_update=True) | {"lastSync": NOW})
+        note = (
+            f"Directory sync: {res.users} users, {len(res.joiners)} joiners, {len(res.leavers)} leavers, {res.mappings} mappings"
+        )
+        rb_log(ctx, "directory.synced", note, "access.syncDirectory")
+        return {"users": res.users, "joiners": res.joiners, "leavers": res.leavers, "mappings": res.mappings}
     idp = _idp(ctx, for_update=True) | {"lastSync": NOW}
     state.put(ctx.session, "access_settings", "idp", idp)
     n = len(_idp_users(ctx))
@@ -668,3 +684,203 @@ def provision_user(i: dict[str, Any], ctx: CallContext):
         "access.provisionUser",
     )  # fmt: skip
     return {"account_id": acct.id, "role": acct.role}
+
+
+# ---------------------------------------------------------------- SCIM and directory sync: joiners and leavers (P9-8.11)
+# Risk "system": only di.services.scim (the SCIM routes) and di.services.directory_sync run them, as the system actor.
+# A joiner's role comes from the approved group map only (never Admin); a leaver is deactivated, never deleted.
+# State: "account_revoked" holds one record per deactivated person, with `revoked_after` (wall-clock ISO time): a token
+# issued at or before it is refused (di.core.auth), so a session ends at once. `active: false` marks the record as the
+# person's SCIM resource while they are deactivated.
+state.register("account_revoked", lambda: [])
+_BOOL = {"req": False, "t": "boolean"}
+_LIST = {"req": False, "t": "array"}
+for _id, _title, _verb, _in in (
+    ("access.scimUpsertUser", "Upsert a directory user", "upsert a directory user",
+     {"external_id": _STR, "email": _STR, "name": _STR, "active": _BOOL, "groups": _LIST, "origin": _OPT}),
+    ("access.scimDeactivateUser", "Deactivate a directory user", "deactivate a directory user", {"external_id": _STR}),
+    ("access.scimPatchGroup", "Change a directory group's members", "change a directory group's members",
+     {"group_id": _STR, "add": _LIST, "remove": _LIST}),
+):  # fmt: skip
+    ACTIONS.setdefault(
+        _id,
+        ActionDef(id=_id, title=_title, verb=_verb, risk="system", perm=None, scope="none", input=_in,
+                  desc=_title + " as the directory says. Run by SCIM or the directory sync, never by a person or an agent."),
+    )  # fmt: skip
+
+
+def _log(ctx: CallContext, type_: str, note: str) -> None:
+    """An access-control entry in the event log, written by the directory (the journal row says who ran the action)."""
+    push_event(
+        ctx,
+        {"dir": "in", "type": type_, "caseId": None, "decisionId": None, "approval": None, "ver": None,
+         "dest": "Circularity · access control", "ack": "acknowledged", "note": note, "by": "directory sync", "ts": NOW,
+         "key": "acc-" + hash_id(type_ + note)[:6].lower()},
+        "access.scim",
+    )  # fmt: skip
+
+
+def _find_user(ctx: CallContext, key: str, email: str = "") -> dict | None:
+    """The directory user with this external id (or id), else, when an email is given, the one with that email."""
+    users = _idp_users(ctx)
+    found = next((u for u in users if key in (u.get("external_id"), u["id"])), None)
+    return found or next((u for u in users if email and str(u["email"]).lower() == email), None)
+
+
+def _is_admin(ctx: CallContext, u: dict) -> bool:
+    a = policy.account(u["acct"], load_context(ctx.session)) if u.get("acct") else None
+    return a is not None and a.role == "Admin"
+
+
+def _scope(rule: policy.GroupRule) -> dict[str, Any]:
+    return {"tenant": rule.org_unit_id, "site": rule.site, "warehouse": rule.warehouse}
+
+
+def _upsert(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    email, groups = i["email"].strip().lower(), [str(g) for g in i.get("groups") or []]
+    actx = load_context(ctx.session)
+    rule = next((r for g in groups if (r := policy.group_role(g, actx)) and r.role in policy.idp_roles()), None)
+    u = _find_user(ctx, i["external_id"], email)
+    if i.get("active") is False:
+        return _deactivate(ctx, u) if u else {"id": None, "account_id": None, "created_account": False, "active": False}
+    created, acct = False, policy.account(u["acct"], actx) if u and u.get("acct") else None
+    if u is None or (acct is None and rule is not None and not u.get("role")):  # a joiner, or a listed user now mapped
+        aid = _provisioned_id(email)
+        if u is not None:
+            state.delete(ctx.session, "idp_users", u["id"])
+        back = policy.account(aid, actx)
+        if rule is None:
+            state.add(ctx.session, "idp_users", aid, {"id": aid, "email": email, "acct": None})
+        elif back is None:
+            provision_user(
+                {"email": email, "name": i["name"], "role": rule.role, "via_group": rule.group_id, **_scope(rule)}, ctx
+            )
+            created = True
+        else:  # a person who left and is back: their account is kept, so it is linked again, as the map says now
+            state.add(ctx.session, "idp_users", aid, {"id": aid, "email": email, "acct": aid})
+            _apply_rule(ctx, back, rule, email)
+            created = True
+        u = state.need(ctx.session, "idp_users", aid)
+    elif acct is not None and rule is not None and acct.role != "Admin":
+        _apply_rule(ctx, acct, rule, email)
+    keep = {
+        "email": email,
+        "name": i["name"],
+        "groups": groups,
+        "external_id": i["external_id"],
+        "origin": i.get("origin") or "scim",
+    }
+    u = state.put(ctx.session, "idp_users", u["id"], u | keep)
+    rev = state.get(ctx.session, "account_revoked", u["id"], for_update=True)
+    if rev is not None:  # back from a deactivation: the record stays (old tokens stay dead), it is no longer the resource
+        state.put(ctx.session, "account_revoked", u["id"], rev | {"active": True})
+    return {"id": u["id"], "account_id": u.get("acct"), "created_account": created, "active": True,
+            "role": acct.role if acct else rule.role if rule else None}  # fmt: skip
+
+
+def _apply_rule(ctx: CallContext, acct: policy.Account, rule: policy.GroupRule, email: str) -> None:
+    new = dataclasses.replace(acct, role=rule.role, tenant=rule.org_unit_id, site=rule.site, warehouse=rule.warehouse)
+    if new != acct:
+        state.put(ctx.session, "accounts", new.id, dict(new.__dict__))
+        _log(ctx, "identity.mapping.changed", f"{email} → {rule.role} from {rule.group_id}")
+
+
+@implement("access.scimUpsertUser")
+def scim_upsert_user(i: dict[str, Any], ctx: CallContext):
+    """Upsert the directory user: listed in `idp_users`; a mapped group provisions or updates their account (as
+    access.provisionUser does), an unmapped one leaves them listed with no access. Never Admin; `active: false` deactivates."""
+    return _upsert(i, ctx)
+
+
+@guard("access.scimDeactivateUser")
+def scim_deactivate_guard(i: dict[str, Any], ctx: CallContext):
+    u = _find_user(ctx, i["external_id"])
+    if u is None:
+        return "not_found", "No such directory user."
+    if _is_admin(ctx, u):
+        return "conflict", "The Admin account cannot be deactivated here."
+    return None
+
+
+@implement("access.scimDeactivateUser")
+def scim_deactivate_user(i: dict[str, Any], ctx: CallContext):
+    u = _find_user(ctx, i["external_id"])
+    if u is None:  # not reached: the guard refused an unknown user
+        raise ActionError("not_found", "No such directory user.")
+    return _deactivate(ctx, u)
+
+
+def _deactivate(ctx: CallContext, u: dict) -> dict[str, Any]:
+    """A leaver: off the directory list, their sessions ended, their tenant grants revoked, their pending approvals
+    moved to their out-of-office delegate (else the Approver role). The account stays. Every step is journaled."""
+    s, email, aid = ctx.session, str(u["email"]).lower(), u.get("acct") or u["id"]
+    if _is_admin(ctx, u):
+        raise ActionError("conflict", "The Admin account cannot be deactivated here.")
+    state.delete(s, "idp_users", u["id"])
+    _log(ctx, "user.deprovisioned", f"{email} removed from the directory; access ended")
+    when = datetime.now(UTC)  # wall clock: tokens carry wall-clock issue times
+    rec = {"id": u["id"], "email": email, "name": u.get("name"), "external_id": u.get("external_id"), "active": False,
+           "groups": u.get("groups") or [], "revoked_after": when.isoformat()}  # fmt: skip
+    state.put(s, "account_revoked", aid, rec)
+    _log(ctx, "identity.revoked", f"{email}: signed-in sessions ended")
+    rows = s.execute(
+        text("UPDATE tenant_grant SET revoked_at = now(), revoked_by = 'system', revoke_note = 'Directory: user deactivated' "
+             "WHERE account_id = :a AND revoked_at IS NULL RETURNING tenant"), {"a": aid},
+    ).all()  # fmt: skip
+    if rows:
+        _log(ctx, "access.revoked", f"{email} → {', '.join(r.tenant for r in rows)} · user deactivated")
+    moved = _reassign(ctx, aid, email)
+    return {"id": u["id"], "account_id": u.get("acct"), "created_account": False, "active": False, "grants_revoked": len(rows),
+            "requests_moved": moved}  # fmt: skip
+
+
+def _delegate(ctx: CallContext, leaver: str) -> str | None:
+    """The leaver's out-of-office delegate: the first one set (Access › Identity) who is not the leaver, else None."""
+    for d in _idp(ctx)["ooo"]:
+        u = _find_user(ctx, "", str(d["email"]).lower())
+        if u is not None and (u.get("acct") or u["id"]) != leaver:
+            return u.get("acct") or u["id"]
+    return None
+
+
+def _reassign(ctx: CallContext, leaver: str, email: str) -> int:
+    waiting = [r for r in state.items(ctx.session, "requests") if r["status"] == "pending" and r.get("assignedTo") == leaver]
+    to = _delegate(ctx, leaver) if waiting else None
+    for r in waiting:
+        state.put(
+            ctx.session, "requests", r["id"], r | ({"assignedTo": to} if to else {"assignedTo": None, "assignedRole": "Approver"})
+        )
+        _log(ctx, "access.reassigned", f"{r['id']} from {email} → {to or 'the Approver role'}")
+    return len(waiting)
+
+
+def _groups_of(u: dict) -> list[str]:
+    stored = u.get("groups")
+    return [str(g) for g in stored] if isinstance(stored, list) else [g for g in [policy.IDP_GROUPS.get(str(u.get("acct")))] if g]
+
+
+@guard("access.scimPatchGroup")
+def scim_patch_group_guard(i: dict[str, Any], ctx: CallContext):
+    known = policy.group_role(i["group_id"], load_context(ctx.session)) or any(
+        i["group_id"] in _groups_of(u) for u in _idp_users(ctx)
+    )
+    return None if known else ("not_found", "No such directory group.")
+
+
+@implement("access.scimPatchGroup")
+def scim_patch_group(i: dict[str, Any], ctx: CallContext):
+    """Add or remove members of a directory group. An added member is upserted with the group among their groups (a
+    mapped group gives their role); a removed one keeps their account (only a deactivation takes access away)."""
+    group, added, removed = i["group_id"], 0, 0
+    for key in i.get("add") or []:
+        u = _find_user(ctx, key)
+        if u is not None:
+            _upsert({"external_id": u.get("external_id") or u["id"], "email": u["email"], "name": u.get("name") or u["email"],
+                     "groups": [*dict.fromkeys([*_groups_of(u), group])], "origin": u.get("origin")}, ctx)  # fmt: skip
+            added += 1
+    for key in i.get("remove") or []:
+        u = _find_user(ctx, key)
+        if u is not None:
+            state.put(ctx.session, "idp_users", u["id"], u | {"groups": [g for g in _groups_of(u) if g != group]})
+            removed += 1
+    return {"group_id": group, "added": added, "removed": removed}

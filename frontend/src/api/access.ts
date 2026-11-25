@@ -129,6 +129,17 @@ export interface Idp {
 }
 
 export const idp = (): Idp => screen().identity;
+
+/** What a directory sync did. With a directory source connected (P9-8.11) it also names the joiners and leavers. */
+export interface SyncAnswer { users: number; joiners?: string[]; leavers?: string[]; mappings?: number }
+/** Sync from the directory (access.syncDirectory). */
+export const syncDirectory = () => invoke<SyncAnswer>('access.syncDirectory', {});
+/** "2 joiners, 1 leaver" for the sync line, or '' when the sync had no directory source (the answer has no lists). */
+export function syncLine(a: SyncAnswer): string {
+  if (!a.joiners || !a.leavers) return '';
+  const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 's'}`;
+  return `${n(a.joiners.length, 'joiner')}, ${n(a.leavers.length, 'leaver')}`;
+}
 /** The mapping rows, drafts and retired ones too (the Identity section). */
 export const groupMap = (): GroupMapRow[] => idp().group_map;
 /** Draft a mapping; another person approves it (access.saveGroupMap). */
