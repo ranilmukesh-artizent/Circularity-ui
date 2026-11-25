@@ -929,7 +929,7 @@ each story went.
 - [ ] P9-7.7 FR market canary for service desk tables
 - [ ] P9-7.8 Phase 7 demo smoke script
 - [ ] P9-7.9 Phase 7 gate
-- [ ] P9-8.1 Adapter registry with environments and owner approval
+- [x] P9-8.1 Adapter registry with environments and owner approval
 - [ ] P9-8.2 Field mapping suggestions with calibrated confidence
 - [ ] P9-8.3 Discovery samples 500 records from the test connection
 - [ ] P9-8.4 Five mapping choices with ask the owner

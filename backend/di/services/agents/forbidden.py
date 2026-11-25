@@ -30,6 +30,8 @@ FORBIDDEN_ACTIONS = (
     "standingPolicy.approve", "standingPolicy.retire",  # plan 9 P9-2.5: a person decides which policy approves (R7, R21)
     "fraud.release", "fraud.reject",  # plan 9 P9-2.11: only a person clears a fraud hold or declines the held return
     "work.resolve", "work.assign",  # plan 9 P9-1.7: only a person resolves or hands on an exception, approval or question
+    # plan 9 P9-8.1: a connection and the system owner's approval of its production or write access are a person's (R21)
+    "connection.", "registry.release",
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
     "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
 )  # fmt: skip

@@ -1,11 +1,12 @@
 """Source systems, sync runs and cursors, the fetch log, raw records, encrypted credentials, versioned field mappings,
-connection settings and received webhooks (migrations 0004, 0010, 0011, 0013, 0014)."""
+connection settings and received webhooks (migrations 0004, 0010, 0011, 0013, 0014, 0053)."""
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
     Column,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
@@ -13,6 +14,7 @@ from sqlalchemy import (
     Numeric,
     Table,
     Text,
+    func,
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -149,6 +151,12 @@ source_connection = Table(
     Column("resources", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
     Column("updated_by", Text),  # NULL: the seeded default of a demo source
     ts("updated_at", now=True),
+    # 0053 (plan 9 P9-8.1): where the connection runs, who owns the system, and the registry entry it came from
+    Column("environment", Text, nullable=False, server_default="production"),  # test, production
+    Column("system_owner", Text),
+    Column("registry_id", Text),
+    Column("registry_version", Integer),
+    CheckConstraint("environment IN ('test','production')", name="source_connection_environment"),
 )
 
 
@@ -163,4 +171,52 @@ webhook_event = Table(
     ts("event_time"),
     ts("received_at", now=True),
     Index("ix_webhook_event_received", "received_at"),
+)
+
+
+# --- 0053 adapter registry and the system owner's approvals (plan 9 P9-8.1; di/connectors/registry.py) ----------------
+
+adapter_registry = Table(
+    "adapter_registry",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("version", Integer, primary_key=True),
+    Column("kind", Text, nullable=False),  # catalogue, generic_rest, from_spec
+    Column("system_type", Text, nullable=False),
+    Column("vendor_family", Text, nullable=False),
+    Column("auth_methods", ARRAY(Text), nullable=False, server_default="{}"),
+    Column("resources", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column("canonical_entities", ARRAY(Text), nullable=False, server_default="{}"),
+    Column("write_actions", ARRAY(Text), nullable=False, server_default="{}"),
+    Column("mapping_templates", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column("status", Text, nullable=False),  # draft, tested, released, deprecated
+    Column("maintainer", Text),
+    Column("source_licence", Text),
+    Column("spec", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column("org_unit_id", Text),
+    Column("created_by", Text, nullable=False),
+    Column("released_by", Text),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    CheckConstraint("kind IN ('catalogue','generic_rest','from_spec')", name="adapter_registry_kind"),
+    CheckConstraint("status IN ('draft','tested','released','deprecated')", name="adapter_registry_status"),
+)
+
+connection_approval = Table(
+    "connection_approval",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("source_id", Text, nullable=False),
+    Column("environment", Text, nullable=False),  # test, production
+    Column("access", Text, nullable=False),  # read, read_write
+    Column("requested_by", Text, nullable=False),
+    Column("owner", Text, nullable=False),
+    Column("status", Text, nullable=False),  # pending, approved, declined
+    Column("reason", Text),
+    Column("decided_by", Text),
+    ts("decided_at"),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    Index("ix_connection_approval_source_status", "source_id", "status"),
+    CheckConstraint("environment IN ('test','production')", name="connection_approval_environment"),
+    CheckConstraint("access IN ('read','read_write')", name="connection_approval_access"),
+    CheckConstraint("status IN ('pending','approved','declined')", name="connection_approval_status"),
 )

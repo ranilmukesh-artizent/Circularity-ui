@@ -21,6 +21,7 @@ import { VendorLogo } from '../../components/kit/VendorLogo';
 import { runTest, TestSteps } from './ConnectionTests';
 import { useInt } from './FabricContext';
 import { FabricStatus } from './FabricStatus';
+import { RegistryPicker } from './RegistryPicker';
 
 export type CxStart = { mode: 'new'; cat: string } | { mode: 'reauth'; src: string };
 const STEPS = ['Authentication', 'Scopes', 'Test connection', 'Field mapping', 'First sync'];
@@ -54,6 +55,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
   const [connected, setDone] = useState(false);
   const [sandbox, setSandbox] = useState<string | null>(null);
   const [org, setOrg] = useState<string | null>(null); // null until the org units have loaded: shared, as before
+  const [tab, setTab] = useState<'catalogue' | 'registry'>('catalogue'); // plan 9 P9-8.1: or start from the adapter registry
   const live = useRef(true);
   useEffect(() => {
     live.current = true;
@@ -246,8 +248,23 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
     foot = connected ? <button className="btn pri" onClick={onClose}>Done</button> : <button className="btn" disabled>Syncing…</button>;
   }
 
+  const tabs = !reauth && step === 1 && (
+    <div className="row" role="tablist" aria-label="Where to connect from" style={{ marginBottom: 8 }}>
+      <button role="tab" aria-selected={tab === 'catalogue'} className={'btn sm' + (tab === 'catalogue' ? ' pri' : '')} onClick={() => setTab('catalogue')}>Catalogue</button>
+      <button role="tab" aria-selected={tab === 'registry'} className={'btn sm' + (tab === 'registry' ? ' pri' : '')} onClick={() => setTab('registry')}>From the adapter registry</button>
+    </div>
+  );
+  if (tabs && tab === 'registry') {
+    return (
+      <Modal title="Connect a system" wide onClose={onClose}>
+        {tabs}
+        <RegistryPicker onClose={onClose} />
+      </Modal>
+    );
+  }
   return (
     <Modal title={(reauth ? 'Re-authenticate ' : 'Connect ') + v} wide onClose={onClose} foot={foot}>
+      {tabs}
       <ol className="frcxs">
         {steps.map((t, i) => (
           <li key={t} className={i < si ? 'done' : i === si ? 'on' : ''}><span>{i < si ? '✓' : i + 1}</span>{t}</li>

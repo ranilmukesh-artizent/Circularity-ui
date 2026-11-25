@@ -8,7 +8,8 @@ A send locks its row, calls the step's writer and records the outcome:
                    acknowledges it through adapter.acknowledge (demo reference, `simulated: true`)
     waiting        the step cannot go yet (delivery waits for the carrier's proof of delivery); the event that brings
                    what it waits for queues the send again (di/services/instructions/events.py)
-    failed         the source is read-only here (lifecycle.access_of, P9-0.14), the system refused it for a business
+    failed         the source's connection is in the test environment (P9-8.1), the source is read-only here
+                   (lifecycle.access_of, P9-0.14), the system refused it for a business
                    reason (writers.Refused), or the job ran out of attempts
     held           plan 8 MVP-10.3: the case's org unit, or one above it, is in pilot mode (di.services.actions.
                    org_pilot): nothing is sent; the row is marked held with the note "Pilot mode: not sent to <target>"
@@ -31,7 +32,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.connectors import lifecycle
+from di.connectors import connection, lifecycle
 from di.core import clock
 from di.core.config import get_settings
 from di.core.db import SessionLocal
@@ -62,13 +63,8 @@ def send(iid: int, resend: bool = False) -> str:
         cfg = outbound.settings(s, ins["system"])  # the target's outbound workflow published here; {}: none (the demo)
         kind = writers.operation_for(ins["kind"], cfg.get("operation"))
         writer = writers.WRITERS.get(kind)
-        if writer is not None and lifecycle.access_of(s, ins["system"]) == "read":
-            vendor = s.execute(text("SELECT vendor FROM source_system WHERE id = :i"), {"i": ins["system"]}).scalar()
-            _update(
-                s, iid, status="failed",
-                last_error=f"{vendor or ins['system']} is connected read-only here: instructions are not sent. "
-                "Change its access to Read / write to send them.",
-            )  # fmt: skip
+        if refusal := _refusal(s, ins["system"], writer is not None):
+            _update(s, iid, status="failed", last_error=refusal)
             s.commit()
             return "failed"
         s.execute(text("UPDATE instruction SET attempts = attempts + 1, updated_at = now() WHERE id = :i"), {"i": iid})
@@ -117,6 +113,24 @@ def send(iid: int, resend: bool = False) -> str:
         )
         s.commit()
         return "sent"
+
+
+def _refusal(s: Session, system: str, has_writer: bool) -> str | None:
+    """Why nothing is sent to this system, or None. A connection in the test environment (plan 9 P9-8.1) gets no
+    instruction at all; a read-only source (P9-0.14) refuses the ones a writer would send."""
+    if not has_writer and not connection.in_test(s, system):
+        return None
+    vendor = s.execute(text("SELECT vendor FROM source_system WHERE id = :i"), {"i": system}).scalar() or system
+    if connection.in_test(s, system):
+        return (
+            f"{vendor} is in the test environment here: instructions are not sent. "
+            "Ask its system owner to approve production access, then promote it."
+        )
+    if lifecycle.access_of(s, system) == "read":
+        return (
+            f"{vendor} is connected read-only here: instructions are not sent. " "Change its access to Read / write to send them."
+        )
+    return None
 
 
 def _hold(s: Session, ins: dict, resend: bool) -> str:

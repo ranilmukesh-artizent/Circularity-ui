@@ -344,6 +344,8 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
             return {"source_id": source_id, "status": "skipped", "reason": src.status}
         if lifecycle.is_deleted(s, source_id):
             return {"source_id": source_id, "status": "skipped", "reason": "deleted"}
+        if connection.in_test(s, source_id):  # plan 9 P9-8.1: promoted to production before it is synced
+            return {"source_id": source_id, "status": "skipped", "reason": "test environment"}
         run_id = s.execute(
             text("INSERT INTO sync_run (source_id, trigger, status) VALUES (:s, :t, 'running') RETURNING id"),
             {"s": source_id, "t": trigger},
@@ -423,7 +425,10 @@ def _is_xf(graph: dict, nid: str) -> bool:
 
 
 def enqueue_sync(session: Session, source_id: str, trigger: str, full: bool = False) -> int | None:
-    """Queue a sync job unless one for this source is already waiting. Returns the job id (None if already queued)."""
+    """Queue a sync job unless one for this source is already waiting. Returns the job id (None if already queued, or when
+    the source's connection is in the test environment: only test runs and discovery read it, plan 9 P9-8.1)."""
+    if connection.in_test(session, source_id):
+        return None
     waiting = session.execute(
         text("SELECT id FROM job WHERE kind = 'sync.source' AND status IN ('queued','running') AND payload->>'source_id' = :s"),
         {"s": source_id},

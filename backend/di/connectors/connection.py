@@ -45,6 +45,12 @@ class Connection:
     resources: list[dict[str, Any]] = field(default_factory=list)
     updated_by: str | None = None
     updated_at: datetime | None = None
+    environment: str = (
+        "production"  # plan 9 P9-8.1: a connection made from the registry starts in "test" (no sync, no instructions)
+    )
+    system_owner: str | None = None  # the directory account whose approval production and write access need
+    registry_id: str | None = None
+    registry_version: int | None = None
 
     @property
     def origin(self) -> str:
@@ -84,7 +90,7 @@ def default_for(adapter: "Adapter") -> Connection:
 def _row(r) -> Connection:
     return Connection(
         r.source_id, r.base_url, r.protocol, r.auth_kind, dict(r.auth_params or {}), dict(r.paging or {}),
-        list(r.resources or []), r.updated_by, r.updated_at,
+        list(r.resources or []), r.updated_by, r.updated_at, r.environment, r.system_owner, r.registry_id, r.registry_version,
     )  # fmt: skip
 
 
@@ -166,6 +172,36 @@ def reset_demo(conn, keep: list[str]) -> None:
 
     conn.execute(text("DELETE FROM source_connection"))
     _seed(conn, [a for sid, a in ADAPTERS.items() if sid in keep])
+
+
+# ---------------------------------------------------------------- environment (plan 9 P9-8.1, registry entry I-18)
+def in_test(s: Session, source_id: str) -> bool:
+    """The source's connection runs in the test environment: it is not synced on a schedule and gets no instructions."""
+    env = s.execute(text("SELECT environment FROM source_connection WHERE source_id = :i"), {"i": source_id}).scalar()
+    return env == "test"
+
+
+def tag(
+    s: Session,
+    source_id: str,
+    *,
+    environment: str,
+    system_owner: str | None,
+    registry_id: str | None,
+    registry_version: int | None,
+) -> None:
+    """Record where the connection runs and which registry entry made it (the row exists: save_connection wrote it)."""
+    s.execute(
+        text(
+            "UPDATE source_connection SET environment = :e, system_owner = :o, registry_id = :r, registry_version = :v "
+            "WHERE source_id = :i"
+        ),
+        {"e": environment, "o": system_owner, "r": registry_id, "v": registry_version, "i": source_id},
+    )
+
+
+def set_environment(s: Session, source_id: str, environment: str) -> None:
+    s.execute(text("UPDATE source_connection SET environment = :e WHERE source_id = :i"), {"e": environment, "i": source_id})
 
 
 # ---------------------------------------------------------------- signing in

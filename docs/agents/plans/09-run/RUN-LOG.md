@@ -94,3 +94,4 @@ unattended". Times are local (IST).
 | 25 Nov 18:12 | P9-2.13 merged. Sonnet; red first quoted. Lead at merge: test reset re-seeds recover-config (full suite found it), registry seed set and two MCP HTTP tests expect tools_find |
 | 25 Nov 18:24 | P9-2.18 merged. Sonnet; red first quoted; reasoner on intake, condition, valuation, disposition, follow-through; checks win, 2 retries then rules; model_concern hold never cleared by the model; router role stage served by stage/agent models |
 | 25 Nov 18:34 | P9-2.22 merged. Sonnet; lead approved tool_fleet.py gateBlocked hook and trace (gates, valuation, queue_plan, rules, rank); RT-1048 pinned redeploy 8314 |
+| 25 Nov 18:45 | P9-8.1 merged. Sonnet; red first quoted; connection.* and registry.release forbidden to agents; test environment refuses every instruction. Gap: owner Approve/Decline buttons in My work not built (facade exists) |
