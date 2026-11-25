@@ -70,6 +70,19 @@ def test_submit_clears_returned():
     assert f.status == "review" and f.returned is None
 
 
+def test_rollback_clears_returned_p9_0_12():
+    """P9-0.17: a rolled-back flow shows no stale Returned mark."""
+    fid = flowkit.fork_and_publish("Customer A", [("IR-01", "exclude", "material", SCOPE)])
+    with engine.begin() as conn:  # a mark a reject left behind
+        conn.execute(
+            text("UPDATE decision_flow SET returned = CAST(:r AS jsonb) WHERE id = :f"),
+            {"r": '{"reason": "x", "node_id": null, "by": "approver", "at": "t"}', "f": fid},
+        )
+    ok(call("flow.rollback", {"flow_id": fid}, "approver"))
+    f, _ = flowkit.get(fid)
+    assert f.returned is None
+
+
 def test_reject_without_node_unchanged():
     fid = _in_review()
     out = ok(call("flow.reject", {"flow_id": fid, "reason": REASON}, "approver"))

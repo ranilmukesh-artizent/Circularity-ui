@@ -1481,6 +1481,8 @@ def _parse_import(data: dict[str, Any], sources: dict[str, dict]) -> tuple[dict[
     cat = data.get("type")
     if cat not in _CAT_KIND:
         cat = "Outbound" if any(n["k"] == "wconn" for n in nodes) else "Ingest" if conns else "Decision"
+    if _CAT_KIND[cat] == "dec":  # P9-0.17: an import is always a new draft, and Studio makes no decision workflows
+        return None, [{"path": "type", "message": "Decision rules live in the Modeler"}]
     t = data.get("trigger")
     trig: dict[str, Any] = {"t": "manual"}
     if isinstance(t, dict) and t.get("t") in TRIG_L:

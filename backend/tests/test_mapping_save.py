@@ -92,6 +92,19 @@ def test_mapping_save_bad_target_refused():
     assert call("mapping.save", {"source_id": SID, "maps": _edited()}, "engineer")["ok"] is False  # no manageIntegrations
 
 
+def test_mapping_save_agent_bad_target_refused_not_held_p9_0_10():
+    """P9-0.17: an agent's invalid call is refused (validation_error), not held; no proposal is made."""
+    hdr = h("developer") | {"X-Circularity-Preparer": AGENT}
+    bad = [["a", "", "widget.x", "", "copy"]]
+    r = client.post("/api/actions/mapping.save", json={"source_id": SID, "maps": bad}, headers=hdr).json()
+    assert r["ok"] is False and r["error"]["code"] == "validation_error", r
+    r = client.post("/api/actions/mapping.save", json={"source_id": "nope", "maps": bad}, headers=hdr).json()
+    assert r["ok"] is False and r["error"]["code"] == "not_found", r
+    with SessionLocal() as s:
+        assert s.execute(text("SELECT count(*) FROM agent_proposal")).scalar() == 0
+    assert _version() is None
+
+
 def test_mapping_save_agent_held_then_accepted():
     hdr = h("developer") | {"X-Circularity-Preparer": AGENT}
     r = client.post("/api/actions/mapping.save", json={"source_id": SID, "maps": _edited()}, headers=hdr).json()

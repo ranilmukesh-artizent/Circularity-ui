@@ -116,7 +116,7 @@ def test_workflow_changes_reach_the_studio():
             lambda k, d: k == "workflow" and d["payload"]["id"] == "WF-101" and d["payload"]["data"]["status"] == "paused"
         )
         assert hit is not None and hit[2]["payload"]["op"] == "update"
-        made = act("developer", "workflow.create", {"type": "dec"})["output"]["id"]
+        made = act("developer", "workflow.create", {"type": "blank"})["output"]["id"]
         assert dev.wait_for(lambda k, d: k == "workflow" and d["payload"]["id"] == made and d["payload"]["op"] == "insert")
     finally:
         dev.close()

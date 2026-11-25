@@ -54,7 +54,7 @@ from di.repositories.reference import lists
 from di.repositories.workflows import all_workflows, wf_using
 from di.services.actions.decisions import push_event
 from di.services.actions.pipeline import CallContext
-from di.services.actions.registry import ACTIONS, ActionDef, ActionError, implement
+from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
 
 _L = lists()
 CONN_METHODS: dict[str, dict] = _L["CONN_METHODS"]
@@ -989,16 +989,29 @@ def mapping_revert(i: dict[str, Any], ctx: CallContext):
     return {"source_id": sid, "version": new, "ver": ver, "rows": len(maps), "maps": maps}
 
 
+def _save_maps(i: dict[str, Any]) -> list[list[str]]:
+    return [[str(y).strip() for y in m] for m in i["maps"] if isinstance(m, list)]
+
+
+@guard("mapping.save")
+def mapping_save_guard(i: dict[str, Any], ctx: CallContext):
+    """P9-0.17: the checks run before the pipeline's hold (step 9b), so an agent's invalid call is refused, not held."""
+    try:
+        cur, _ = _current(ctx, i["source_id"])
+        maps = _save_maps(i)
+        _check_maps(cur["id"], maps)
+    except ActionError as e:
+        return e.code, e.message
+    return ("conflict", "No changes to save.") if maps == cur["maps"] else None
+
+
 @implement("mapping.save")
 def mapping_save(i: dict[str, Any], ctx: CallContext):
     """plan 9 P9-0.10: the Data Mapping tab's rows saved as a new mapping version, apart from the rest of the source
     (source.update still takes `maps`). Held for a person when an agent prepares it (HELD_FOR_PERSON)."""
     cur, cfg = _current(ctx, i["source_id"])
     sid = cur["id"]
-    maps = [[str(y).strip() for y in m] for m in i["maps"] if isinstance(m, list)]
-    _check_maps(sid, maps)
-    if maps == cur["maps"]:
-        raise ActionError("conflict", "No changes to save.")
+    maps = _save_maps(i)
     note = str(i.get("note") or "").strip() or "Field mapping saved"
     version = mapping.save_version(ctx.session, sid, maps, _by(ctx), note, ctx.now)
     ver = _bump(ctx, cur, cfg, f"Field mapping saved ({len(maps)} rows)")

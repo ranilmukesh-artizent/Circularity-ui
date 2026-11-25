@@ -333,11 +333,12 @@ def test_plan_connection_sentence_unchanged():
 
 def test_new_dec_draft_refused():
     state.reset(["workflows", "workflow_runs"])
-    made = call("workflow.create", {"type": "dec"}, DEV)
-    assert made["ok"], made
-    wid = made["output"]["id"]
+    wid = call("workflow.create", {"type": "blank"}, DEV)["output"]["id"]
     with SessionLocal() as s:
         w = state.get(s, "workflows", wid)
+        w["kind"] = "dec"  # an old install's never-published decision draft
+        state.put(s, "workflows", wid, w)
+        s.commit()
     saved = call("workflow.save", {"id": wid, "name": "Mine", "graph": w["graph"]}, DEV)
     assert not saved["ok"] and saved["error"]["code"] == "validation_error"
     assert saved["error"]["message"] == "Decision rules live in the Modeler"

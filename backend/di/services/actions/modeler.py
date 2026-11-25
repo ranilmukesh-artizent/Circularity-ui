@@ -376,7 +376,7 @@ def rollback(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow(ctx, i, for_update=True)
     h = repo.versions(ctx.session, f.id)[0]
     ctx.session.execute(text("DELETE FROM decision_flow_version WHERE flow_id = :f AND ver = :v"), {"f": f.id, "v": h.ver})
-    _update(ctx, f, status="pub", ver=h.ver, dver=None, maker=None, checker=None, published=h.graph, draft=None)
+    _update(ctx, f, status="pub", ver=h.ver, dver=None, maker=None, checker=None, published=h.graph, draft=None, returned=None)
     return {"id": f.id, "status": "pub", "ver": h.ver, "log": f"Rolled back {f.name} from v{f.ver} to v{h.ver}"}
 
 
