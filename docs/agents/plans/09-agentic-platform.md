@@ -848,7 +848,7 @@ each story went.
 - [x] P9-2.13 MCP tools generated from the action catalogue
 - [x] P9-2.14 OAuth protected resource metadata for MCP
 - [x] P9-2.15 Agent evals in CI with an injection corpus
-- [ ] P9-2.16 Phase 2 demo smoke script
+- [x] P9-2.16 Phase 2 demo smoke script
 - [x] P9-2.18 Stage agents reason with the model
 - [x] P9-2.19 Exception assistant and fraud review drafted by the model
 - [x] P9-2.20 Lease end, return authorised and transit stage agents

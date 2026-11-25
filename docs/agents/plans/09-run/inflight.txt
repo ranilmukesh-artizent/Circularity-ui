@@ -1,5 +1,4 @@
 # Tasks in flight (task id, writer, model, started)
-P9-2.16 w1 sonnet 23:45 done 102d78a, waiting: lead runs it (reset before and after; never run by the writer)
 P9-8.15 w3 sonnet 00:55 done 3490da9, waiting to merge (run test_workflow_engine on main; smoke-fabric)
 P9-8.7 w1 sonnet 01:40 done e64f480, waiting to merge (migration 0055 edited; registry.saveEntry held)
 P9-8.11 w2 sonnet 01:40 done 3034bc8, waiting to merge (SCIM routes; /scim not in the Vite proxy; no new library)
