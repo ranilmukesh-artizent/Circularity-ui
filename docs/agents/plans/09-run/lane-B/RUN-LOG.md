@@ -78,3 +78,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-26 02:40 | Hourly sync: merged lane A 3d911f4 (P9-2.17 review fixes; forbidden.py: payout.decide and conflict.resolve, both kept) as 710823d; conflicts, agent_catalog, catalog_hygiene and device_payout 36 passed, lint ok, web 501. Pushed. |
 | 2026-11-26 02:40 | w5's port of P9-3.8 (991135b) deadlocks again in di_w5 (idle-in-transaction read of job vs TRUNCATE job) on test_contract_entitlement/test_tf_grade, which pass on the lane without it; w5 told to find the open session in its new job/re-evaluation code. |
 | 25 Nov 21:27 | P9-3.8 merged. G-TOOL-TEL require_approval (no hold kind); the earlier deadlock was a test reusing a closed session (fixed); review item: gate_hold._bound can outlive its session |
+| 2026-11-26 03:06 | Verify P9-3.8 green (14 api files incl. tf_intake, lint, web). Pushed. |
