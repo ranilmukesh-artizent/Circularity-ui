@@ -62,11 +62,11 @@ from di.services.engine.routes import Route
 from di.services.modeler.compile import FlowVersion
 from di.services.modeler.pack import Pack, load_pack
 from di.services.modeler.templates import TEMPLATE_KEYS
-from di.services.modeler.valuers import device, tool_fleet
+from di.services.modeler.valuers import amount, device, tool_fleet
 from di.services.modeler.valuers.rng import mulberry32
 
 REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual")
-IMPORTED_VALUERS = ("tool_fleet", "device")  # the valuers an imported pack (a template key beyond TEMPLATE_KEYS) may use
+IMPORTED_VALUERS = ("tool_fleet", "device", "standard")  # valuers an imported pack (a key beyond TEMPLATE_KEYS) may use
 LOCATION = "Warehouse 1"  # where a returned asset is received when no source says otherwise
 # the sources' asset types (asset.asset_type, any case) that name an engine class otherwise than by its key
 _CLASS_OF = {"tool": "drill", "iteq": "it", "toolflt": "batch", "battery": "batch"}
@@ -99,6 +99,17 @@ def problem(s: Session, i: dict[str, Any]) -> tuple[str, str] | None:
     if s.execute(text("SELECT 1 FROM org_unit WHERE id = :i"), {"i": i.get("org_unit_id")}).first() is None:
         return "not_found", f"No org unit {i.get('org_unit_id')}."
     return None
+
+
+def missing_fields(s: Session, i: dict[str, Any], known: Mapping[str, Any]) -> list[str]:
+    """The `data.min_fields` of a standard pack that the facts (with what the canonical record knows) leave out (P9-1.9)."""
+    key = str(i["template_key"])
+    if key in TEMPLATE_KEYS:
+        return []
+    pack = active_pack(s, key, i.get("org_unit_id"))
+    if pack.valuer.kind != "standard":
+        return []
+    return [f for f in pack.data.min_fields if amount.lookup(known, f) is None]
 
 
 def existing(s: Session, asset_key: str, reason: str) -> str | None:
@@ -236,6 +247,9 @@ def _snapshot(c: store.Case, facts: dict[str, Any], kind: str) -> None:
         vc = tool_fleet_case(c["id"], facts)
         c |= {k: vc[k] for k in ("cls", "ft", "site", "grade", "rul", "partRul", "dem")} | {"valuer": vc}
         c["product"] = c["product"] or tool_fleet.CLS[vc["cls"]]["name"]
+    elif kind == "standard":  # the facts as given: the pack's value lines read them (and the case's own fields)
+        c["valuer"] = copy.deepcopy(facts)
+        c["product"] = c["product"] or str(c["assetId"])
     else:
         lot = device_lot(c["id"], facts)
         c |= {k: lot[k] for k in ("brand", "band", "grade", "ref", "doh")} | {"qty": lot["qty"], "cls": "device"}
@@ -366,6 +380,8 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
         raise ActionError("duplicate", f"{dup} is already open for {i['asset_key']} ({i['reason']}).")
     facts = dict(i.get("facts") or {})
     known = _canonical(s, i["asset_key"]) | facts
+    if gone := missing_fields(s, i, known):
+        raise ActionError("validation_error", f"The case needs {', '.join(gone)} (the pack's minimum facts).")
     case_id = _next_id(s)
     c = _base(case_id, i, known, i.get("by") or actor)
     _value(s, c, facts)

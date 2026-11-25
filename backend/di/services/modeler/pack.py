@@ -15,7 +15,8 @@ Conventions of this module's data:
 - A guardrail's `forbids` and `protects` are the authoring checks of `templates.Forbid` and `templates.TextPattern`
   (`protects`: each inner list is the regexes that must all match the lowercased text).
 - `valuer.params` is free-form per valuer kind. Tool fleet: `paths, classes, basep, fin, poolk, funcs, sites,
-  sources, cust, dealers`. Device: `dch, dcn, dcfg, dst, dg`. The valuer modules copy what they read.
+  sources, cust, dealers`. Device: `dch, dcn, dcfg, dst, dg`. The valuer modules copy what they read. Standard
+  (P9-1.9): `lines, requires, tables, params`, validated at parse by `check_standard`.
 - `customer_layer.params` is keyed `"<guardrail id>.<field>"` when a pack publishes one (none of the shipped packs do).
 """
 
@@ -25,7 +26,7 @@ from functools import cache
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, ValidationInfo, field_validator
 
 from di.services.modeler.stages import STAGE_KEYS, GuardType, StageKey
 
@@ -250,6 +251,50 @@ class AnalyticsQuestion(_Part):
     example: list[Any] = Field(default_factory=list)
 
 
+_CONDS_OPS = ("eq", "ne", "in", "gte", "lte", "exists")
+
+
+def _check_conds(conds: Any, where: str) -> None:
+    if not isinstance(conds, list) or not all(
+        isinstance(c, dict) and isinstance(c.get("fact"), str) and c.get("op") in _CONDS_OPS and set(c) <= {"fact", "op", "value"}
+        for c in conds
+    ):
+        raise ValueError(f"{where} is a list of conditions (fact, op, value)")
+
+
+def check_standard(params: Mapping[str, Any], route_ids: list[str]) -> None:
+    """The standard valuer's data (`valuer.params` of kind `standard`): `lines`, `requires`, `tables` and `params`, checked
+    at parse (the amounts by `valuers.amount.check`). ValueError names the line."""
+    from di.services.modeler.valuers.amount import AmountError, check  # the valuers import this module: not at the top
+
+    extra = set(params) - {"lines", "requires", "tables", "params"}
+    if extra:
+        raise ValueError(f"valuer.params of a standard valuer has no {sorted(extra)[0]}")
+    for i, ln in enumerate(params.get("lines") or []):
+        at = f"lines[{i}]"
+        if not isinstance(ln, dict) or not {"route", "type", "label", "amount"} <= set(ln) or not set(ln) <= {
+            "route", "type", "label", "basis", "amount", "when", "kind",
+        }:  # fmt: skip
+            raise ValueError(f"{at} is {{route, type, label, basis, amount, when?, kind?}}")
+        if ln["route"] not in route_ids:
+            raise ValueError(f"{at} names the route {ln['route']}, which the pack does not have")
+        if ln["type"] not in ("v", "c", "h"):
+            raise ValueError(f"{at} type is v (value), c (cost) or h (holding)")
+        _check_conds(ln.get("when") or [], f"{at}.when")
+        try:
+            check(ln["amount"], f"{at}.amount")
+        except AmountError as e:
+            raise ValueError(str(e)) from e
+    for i, rq in enumerate(params.get("requires") or []):
+        at = f"requires[{i}]"
+        if not isinstance(rq, dict) or set(rq) != {"route", "requires", "why"} or rq["route"] not in route_ids:
+            raise ValueError(f"{at} is {{route, requires, why}} for a route of the pack")
+        _check_conds(rq["requires"], f"{at}.requires")
+    for name in ("tables", "params"):
+        if not isinstance(params.get(name) or {}, dict):
+            raise ValueError(f"valuer.params.{name} is an object")
+
+
 class Pack(_Part):
     """A template pack. Each top-level field belongs to one of the 13 parts (`FIELD_PART`)."""
 
@@ -305,6 +350,13 @@ class Pack(_Part):
             raise ValueError(f"exactly the seven stages in order: {', '.join(STAGE_KEYS)}")
         if any(not 0.65 <= s.confidence <= 0.85 for s in v):
             raise ValueError("stage confidence must be from 0.65 to 0.85")
+        return v
+
+    @field_validator("valuer")
+    @classmethod
+    def _standard_valuer(cls, v: PackValuer, info: ValidationInfo) -> PackValuer:
+        if v.kind == "standard":
+            check_standard(v.params, [r.id for r in info.data.get("routes") or []])
         return v
 
     @field_validator("routes")

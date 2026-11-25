@@ -18,7 +18,8 @@ The values come first, as inputs (a route's money does not depend on a gate), bu
 earlier step excluded: the waiver of the rules restores only what the gates left eligible (audit F5). The pack's valuer
 kind chooses the values: `industrial` is the engine's formulas on the case's seeded predictor, `tool_fleet` the queue
 planner's plan over the org's open returns with their named demand (a `queue` given decides the case within that queue,
-without named demand), `device` the channel scores.
+without named demand), `device` the channel scores, `standard` the pack's own value lines (P9-1.9; the `VALUERS` table of
+I-21, where a code plug-in registers too).
 
 A case is a stored case (a `str` id, loaded with the session) or a Mapping: a case document, or a valuer-shaped sample
 (the Modeler's sample queue). The case given is never changed; callers set the result on their own copy with `write_back`.
@@ -46,7 +47,7 @@ from di.services.modeler.gates import Cond, GateDef, GateEffectDef, GateResult, 
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack
 from di.services.modeler.templates import Template, template_of_pack
-from di.services.modeler.valuers import device, tool_fleet
+from di.services.modeler.valuers import VALUERS, device, tool_fleet
 from di.services.modeler.valuers.routes_adapter import to_routes
 
 TRACE = ("gates", "compliance", "rules", "rank")
@@ -226,6 +227,18 @@ def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule]) ->
     )
 
 
+def _plugin(kind: str, c: Mapping[str, Any], pack: Pack, t: Template, as_of: datetime | None) -> _Valued:
+    """A pack valued by the `VALUERS` plug-in of its kind (I-21; the standard valuer reads the pack's own value lines) on
+    the case's facts: the snapshot of a stored case over its fields, a facts mapping as it is. The values are given with
+    only what the valuer itself leaves out (a requirement); the flow's rules act afterwards in `apply_business`."""
+    facts = {**{k: v for k, v in c.items() if k != "valuer"}, **(c.get("valuer") or {})}
+    values = VALUERS[kind](facts, pack, as_of)
+    routes = to_routes(t, values)
+    _decorate(t, routes)
+    best = max((v for v in values if v["ok"]), key=lambda v: v["net"], default=None)
+    return _Valued(routes, best["k"] if best else None)
+
+
 def _industrial(c: dict[str, Any], session: Session | None) -> list[Route]:
     if session is None:
         raise TypeError(f"decide_case needs a session to value {c.get('id')} (the active model and PLM)")
@@ -270,6 +283,8 @@ def decide_case(
         valued = _tool_fleet(c, pack, t, rules, session, queue, planner)
     elif kind == "device":
         valued = _device(c, t, rules)
+    elif kind in VALUERS:  # a data-only pack (`standard`) or a code plug-in (I-21)
+        valued = _plugin(kind, c, pack, t, as_of)
     else:
         raise ValueError(f"No valuer for the {kind} pack {pack.key}")
     routes = valued.routes

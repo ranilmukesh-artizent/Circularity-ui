@@ -22,7 +22,7 @@ import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date, timedelta
-from typing import Any, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 from di.services.engine.jsmath import js_round, js_sum
 from di.services.engine.routes import Route
@@ -89,6 +89,7 @@ class ValueLine(TypedDict):
     label: str
     basis: str
     amt: float
+    kind: NotRequired[str]  # the term kind (routes_adapter) when the valuer names it; the standard valuer always does
 
 
 class PathValue(TypedDict):

@@ -53,3 +53,5 @@ unattended". Times are local (IST).
 | 25 Nov 09:10 | P9-1.6 merged. Sonnet; R21 tests red first; pack.approve and pack.reject forbidden to agents; one .importlinter ignore added (intake -> repositories.packs, as for live_rules); overlays still read the pack file (outside its files): flagged. |
 | 25 Nov 14:05 | P9-1.12 and P9-1.6 merged (P9-1.12 message rewritten: the writer put the body on the subject line). P9-1.7 verifying (import-linter conflict with P9-1.6 resolved, both entries kept). P9-1.9 to w1. Phase 1: 7 of 15. |
 | 25 Nov 09:27 | P9-1.7 merged. Sonnet; red first quoted; migration 0033 filled; two .importlinter ignores (process -> workspace, common); import-linter conflict with P9-1.6 resolved keeping both. |
+| 25 Nov 14:50 | P9-1.7 merged (lead added a facade test for askForInfo: knip). P9-1.9 verifying. P9-1.8 to w2, P9-1.11 to w3. Phase 1: 8 of 15. |
+| 25 Nov 09:49 | P9-1.9 merged. Sonnet; red first quoted; VALUERS registry created (I-21); two files outside its list (valuers/__init__.py, tool_fleet.py ValueLine.kind) as I-21 requires. |

@@ -1,0 +1,356 @@
+{
+ "key": "rental_std_test",
+ "name": "Rental returns (standard valuer test)",
+ "version": "1.0.0",
+ "unit": "unit",
+ "author_role": "Planner",
+ "prefix": "RS",
+ "industry": "Equipment rental",
+ "regions": [
+  "US"
+ ],
+ "legal_review": {
+  "status": "pending",
+  "date": null
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "returns",
+   "name": "Rental returns"
+  }
+ ],
+ "prompts": [
+  "",
+  "",
+  ""
+ ],
+ "clarify": null,
+ "classes": [
+  {
+   "id": "rental",
+   "name": "Rental unit",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {}
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Return and receive",
+   "agent": "Intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Match and verify",
+   "agent": "Intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Condition",
+   "agent": "Condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "Valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide",
+   "agent": "Routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "Follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and learn",
+   "agent": "Analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "rerent",
+   "name": "Re-rent",
+   "app": "Rental desk",
+   "owner": "Rental lead",
+   "lead_days": null,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "refurbish",
+   "name": "Refurbish",
+   "app": "Workshop",
+   "owner": "Workshop lead",
+   "lead_days": null,
+   "classes": [
+    "refurbish"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "dispose",
+   "name": "Dispose",
+   "app": "Disposal desk",
+   "owner": "Planner",
+   "lead_days": null,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": []
+  }
+ ],
+ "guardrails": [],
+ "gates": [],
+ "dims": [
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": []
+  }
+ ],
+ "actors": [
+  [
+   "pshah",
+   "Priya Shah",
+   "Remarketing lead"
+  ],
+  [
+   "tbecker",
+   "Tom Becker",
+   "Disposition owner"
+  ],
+  [
+   "lng",
+   "Lena Ng",
+   "Tool pool planner"
+  ]
+ ],
+ "wording": {
+  "every": "every unit",
+  "phrases": [
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "rerent": "Re-rent",
+   "refurbish": "Refurbish",
+   "dispose": "Dispose"
+  }
+ },
+ "customer_layer": {
+  "editable": {},
+  "params": {},
+  "sample_diversions": [],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [],
+  "entities": [],
+  "mappings": [],
+  "min_fields": [
+   "rate",
+   "months"
+  ],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "none",
+   "d_rule": "none"
+  },
+  "params": {
+   "params": {
+    "refurb_cost": 150,
+    "scrap": 20
+   },
+   "tables": {
+    "grade_cost": {
+     "A": 10,
+     "B": 25,
+     "C": 40,
+     "D": 60
+    }
+   },
+   "lines": [
+    {
+     "route": "rerent",
+     "type": "v",
+     "label": "Re-rent income",
+     "basis": "rate x months x utilisation",
+     "amount": {
+      "mul": [
+       {
+        "field": "rate"
+       },
+       {
+        "field": "months"
+       },
+       {
+        "field": "utilisation"
+       }
+      ]
+     }
+    },
+    {
+     "route": "rerent",
+     "type": "c",
+     "label": "Preparation",
+     "basis": "preparation cost",
+     "amount": {
+      "field": "prep"
+     }
+    },
+    {
+     "route": "refurbish",
+     "type": "v",
+     "label": "Refurbished rental income",
+     "basis": "rate x months x 0.9",
+     "amount": {
+      "mul": [
+       {
+        "field": "rate"
+       },
+       {
+        "field": "months"
+       },
+       {
+        "const": 0.9
+       }
+      ]
+     }
+    },
+    {
+     "route": "refurbish",
+     "type": "c",
+     "label": "Refurbishment",
+     "basis": "workshop cost",
+     "amount": {
+      "param": "refurb_cost"
+     }
+    },
+    {
+     "route": "refurbish",
+     "type": "c",
+     "label": "Grade surcharge",
+     "basis": "by grade",
+     "amount": {
+      "table": "grade_cost",
+      "by": [
+       "grade"
+      ]
+     },
+     "when": [
+      {
+       "fact": "grade",
+       "op": "exists",
+       "value": null
+      }
+     ]
+    },
+    {
+     "route": "dispose",
+     "type": "v",
+     "label": "Scrap value",
+     "basis": "flat scrap value",
+     "amount": {
+      "param": "scrap"
+     }
+    },
+    {
+     "route": "dispose",
+     "type": "c",
+     "label": "Haulage",
+     "basis": "0.4 a month",
+     "amount": {
+      "round": {
+       "mul": [
+        {
+         "field": "months"
+        },
+        {
+         "const": 0.4
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "requires": [
+    {
+     "route": "rerent",
+     "requires": [
+      {
+       "fact": "utilisation",
+       "op": "gte",
+       "value": 0.5
+      }
+     ],
+     "why": "Utilisation is under 50 percent"
+    }
+   ]
+  }
+ },
+ "replay": {
+  "dataset": null,
+  "example": null
+ },
+ "runtime": {
+  "exception_types": [],
+  "suggestion_rules": [],
+  "sla_hours": {},
+  "escalate_to": null
+ },
+ "kpis": [],
+ "analytics": [],
+ "stories": []
+}

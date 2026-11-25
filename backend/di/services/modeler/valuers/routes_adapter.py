@@ -3,6 +3,7 @@
 - Tool fleet (`PathValue`): one term per value line; values positive, costs and holding negative, so the route's net
   is the valuer's net; the route keeps the valuer's `dest` (who takes the tool, the order's `id`). Term kinds follow
   `_KINDS` (tests/test_routes_adapter.py states the table).
+- Standard (P9-1.9, `PathValue` from the pack's value lines): the same, with each line's own `kind`.
 - Device (`ChannelValue`): the expected cash a unit (`sale`) and the penalty for days past the service level (`risk`),
   so the route's net is the channel's score.
 A path the valuer (or a business rule) leaves out fails at gate 2 (Policy & certification) with the valuer's reason.
@@ -34,6 +35,8 @@ _KINDS: tuple[tuple[frozenset[str] | None, str, tuple[str, ...] | None, str], ..
 
 
 def _kind(path: str, line: ValueLine) -> str:
+    if line.get("kind"):  # a standard valuer's line names its term kind (P9-1.9)
+        return line["kind"]
     for paths, type_, prefixes, kind in _KINDS:
         if (
             (paths is None or path in paths)
