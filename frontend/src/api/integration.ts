@@ -350,11 +350,35 @@ export const saveMapping = (id: string, maps: string[][], note?: string) =>
 export type MappingBand = 'pre_ticked' | 'check' | 'none';
 export interface MappingSuggestion {
   field: string; target: string | null; confidence: number; reason: string; rule: string; proposed_by: 'rule' | 'memory' | 'model';
-  candidates: [string, number][]; band: MappingBand; resource: string; samples: string[];
+  candidates: [string, number][]; band: MappingBand; resource: string; samples: string[]; decision: MappingDecision | null;
 }
-export interface MappingSuggestions { source_id: string; rows: MappingSuggestion[]; gaps: string[]; by_model: boolean }
+/** The live choice a person made for a row (P9-8.4); `asked_owner` is a question waiting for the system owner. */
+export type MappingChoice = 'accepted' | 'replaced' | 'accepted_with_rule' | 'not_needed';
+export interface MappingDecision {
+  id: number; decision: MappingChoice | 'asked_owner'; target: string | null; rule: string | null; owner: string | null; reason: string | null;
+}
+export interface MappingSuggestions { source_id: string; rows: MappingSuggestion[]; gaps: string[]; waiting: number; fields: string[]; by_model: boolean }
 export const suggestFieldMappings = (sourceId: string, resource?: string) =>
   invoke<MappingSuggestions>('mapping.suggest', { source_id: sourceId, ...(resource ? { resource } : {}) });
+/** One person's choice for a suggested field (mapping.decide, P9-8.4): saves nothing until `applyMappings`. `proposed` is the
+ * target that was proposed (so a replaced proposal is not made again from memory); `values` are the converted sample values. */
+export interface MappingChoiceInput { decision: MappingChoice; target?: string; rule?: string; resource?: string; proposed?: string; confidence?: number; reason?: string; proposed_by?: string }
+export interface MappingChoiceAnswer {
+  id: number; source_id: string; src: string; decision: MappingChoice; target: string | null; rule: string | null;
+  samples?: string[]; values?: (string | number | null)[]; warning?: string; blocking?: boolean;
+}
+export const decideMapping = (sourceId: string, src: string, c: MappingChoiceInput) =>
+  invoke<MappingChoiceAnswer>('mapping.decide', { source_id: sourceId, src, ...c });
+/** Ask the system owner what a field means (mapping.askOwner): a My work item for them; applying waits for the answer. */
+export const askOwner = (sourceId: string, src: string, question: string, resource?: string) =>
+  invoke<{ id: number; owner: string; item_id: number; samples: string[] }>('mapping.askOwner', { source_id: sourceId, src, question, ...(resource ? { resource } : {}) });
+/** The owner's answer (mapping.answerOwner): their choice replaces the question and closes the item. */
+export const answerOwner = (decisionId: number, c: Pick<MappingChoiceInput, 'decision' | 'target' | 'rule'>) =>
+  invoke<MappingChoiceAnswer>('mapping.answerOwner', { decision_id: decisionId, ...c });
+/** Save the accepted rows as a new mapping version (mapping.apply); refused while a question to the owner is open. */
+export interface AppliedRow { src: string; target: string; rule?: string; resource?: string }
+export const applyMappings = (sourceId: string, rows: AppliedRow[], note?: string) =>
+  invoke<{ source_id: string; version: number; ver: string; rows: number }>('mapping.apply', { source_id: sourceId, rows, ...(note ? { note } : {}) });
 export async function resolveConflict(id: string, choice?: ConflictChoice) {
   // the server names the authority and the kind; the queue's copy is the fallback
   const c = (lastConflicts ? peek<ConflictAnswer>(lastConflicts)?.conflicts : undefined)?.find((x) => x.id === id);

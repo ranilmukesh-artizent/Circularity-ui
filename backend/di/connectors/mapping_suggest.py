@@ -21,6 +21,7 @@ How a proposal is made (R16, model first, code holds the line):
      writes nothing.
 
 Never does: call a model itself, read a database, or save a mapping (mapping.apply does, a person's choice, P9-8.4).
+The `memory` argument comes from `di.repositories.mapping_decisions.memory_for` (what people chose for the vendor family).
 """
 
 import json

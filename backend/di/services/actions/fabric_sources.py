@@ -47,6 +47,7 @@ from di.connectors import catalog, connection, extra, lifecycle, mapping, mcp_cl
 from di.connectors.probe import probe
 from di.connectors.registry import ADAPTERS
 from di.core import golden, policy
+from di.repositories import mapping_decisions
 from di.repositories.common import fmt_dy, hash_id, iso, ms
 from di.repositories.constants import MAPPINGS, SRC_TYPES
 from di.repositories.fabric import SCREEN_STATUS, type_of
@@ -1011,9 +1012,12 @@ def mapping_save(i: dict[str, Any], ctx: CallContext):
     """plan 9 P9-0.10: the Data Mapping tab's rows saved as a new mapping version, apart from the rest of the source
     (source.update still takes `maps`). Held for a person when an agent prepares it (HELD_FOR_PERSON)."""
     cur, cfg = _current(ctx, i["source_id"])
+    return _save_rows(ctx, cur, cfg, _save_maps(i), str(i.get("note") or "").strip() or "Field mapping saved")
+
+
+def _save_rows(ctx: CallContext, cur: dict[str, Any], cfg: dict[str, Any], maps: list[list[str]], note: str) -> dict[str, Any]:
+    """The one path that saves a source's field mapping as a new version: mapping.save and mapping.apply (P9-8.4) call it."""
     sid = cur["id"]
-    maps = _save_maps(i)
-    note = str(i.get("note") or "").strip() or "Field mapping saved"
     version = mapping.save_version(ctx.session, sid, maps, _by(ctx), note, ctx.now)
     ver = _bump(ctx, cur, cfg, f"Field mapping saved ({len(maps)} rows)")
     cfg["maps"] = maps
@@ -1037,7 +1041,7 @@ def _family_memory(s: Any, sid: str, vendor: str) -> dict[str, str]:
     for (other,) in rows.all():
         for r in mapping.active_rows(s, other):
             memory.setdefault(r.src, f"{r.model}.{r.field}")
-    return memory
+    return memory | mapping_decisions.memory_for(s, mapping_decisions.family_of(vendor))  # the people's choices win (P9-8.4)
 
 
 @implement("mapping.suggest")
@@ -1046,7 +1050,8 @@ def mapping_suggest_fields(i: dict[str, Any], ctx: CallContext):
     resource, discover.SAMPLE), with calibrated confidence, a band and a reason. The profiles are masked before the model
     reads them (di.connectors.mapping_suggest); the model, when the router has one, only reranks the candidates. Rows:
     the proposal, its `resource` and its masked `samples`; `gaps`: required canonical fields of the models proposed with
-    no proposal. Writes nothing: a person accepts rows in the Data Mapping tab (P9-8.4)."""
+    no proposal; `decision` is the row's live choice and `waiting` the questions open to the system owner and `fields`
+    the canonical fields to choose from (P9-8.4). Writes nothing."""
     from di.connectors import discover, mapping_suggest
     from di.services.agents.mapping_rerank import make_reranker
 
@@ -1066,7 +1071,273 @@ def mapping_suggest_fields(i: dict[str, Any], ctx: CallContext):
         profiles = [mapping_suggest.profile(sample, f) for f in mapping_suggest.field_paths(sample)]
         for p, prop in zip(profiles, mapping_suggest.suggest(profiles, sample, canon, memory=memory, rerank=rerank), strict=True):
             rows.append(prop.as_dict() | {"resource": res, "samples": p.top_values})
+    live = {(d["resource"] or "", d["src"]): d for d in mapping_decisions.of_source(s, sid)}
+    for r in rows:
+        d = live.get((r["resource"], r["field"])) or live.get(("", r["field"]))
+        r["decision"] = {k: d[k] for k in ("id", "decision", "target", "rule", "owner", "reason")} if d else None
     models = {r["target"].split(".")[0] for r in rows if r["target"]}
     have = {r["target"] for r in rows if r["target"]}
     gaps = [c.target for c in canon if c.required and c.model in models and c.target not in have]
-    return {"source_id": sid, "rows": rows, "gaps": gaps, "by_model": any(r["proposed_by"] == "model" for r in rows)}
+    waiting = len(mapping_decisions.open_questions(s, sid))
+    by_model = any(r["proposed_by"] == "model" for r in rows)
+    fields = [c.target for c in canon]  # what "Choose another field" offers
+    return {"source_id": sid, "rows": rows, "gaps": gaps, "waiting": waiting, "fields": fields, "by_model": by_model}
+
+
+# ---------------------------------------------------------------- the five choices (plan 9 P9-8.4)
+_CHOICES = ("accepted", "replaced", "accepted_with_rule", "not_needed")
+_STRING = {"t": "string"}
+_declare(
+    "mapping.decide", "Choose for a suggested mapping", "choose for suggested mappings",
+    "Record a person's choice for one suggested field: accept it, choose another field, accept it with a conversion or mark it "
+    "not needed. Saves nothing: Apply mappings does.", "act",
+    _SRC | {"src": {"req": True, "t": "string"}, "decision": {"req": True, "t": "string"}, "target": _STRING, "rule": _STRING,
+            "resource": _STRING, "proposed": _STRING, "confidence": {"t": "number"}, "reason": _STRING, "proposed_by": _STRING},
+    _MGR,
+)  # fmt: skip
+_declare(
+    "mapping.askOwner", "Ask the system owner about a field", "ask system owners about fields",
+    "Ask the source's system owner what a field means; it appears in their My work. Mapping cannot be applied until they answer.",
+    "act",
+    _SRC | {"src": {"req": True, "t": "string"}, "resource": _STRING,
+            "question": {"req": True, "t": "string", "min": 5, "minText": "Write the question."}},
+    _MGR,
+)  # fmt: skip
+_declare(
+    "mapping.answerOwner", "Answer a mapping question", "answer mapping questions",
+    "The system owner's choice for a field they were asked about; closes the work item.", "act",
+    {"decision_id": {"req": True, "t": "number"}, "decision": {"req": True, "t": "string"}, "target": _STRING,
+     "rule": _STRING}, None,
+)  # fmt: skip
+ACTIONS["mapping.apply"].input |= {"rows": {"req": True, "t": "array"}}  # the catalogue's action: the accepted rows (P9-8.4)
+ACTIONS["mapping.apply"].perm = _MGR
+_OWNER_TYPE = "mapping_owner"
+
+
+def _refused(fn: Any, *a: Any) -> tuple[str, str] | None:
+    try:
+        fn(*a)
+    except ActionError as e:
+        return e.code, e.message
+    return None
+
+
+def _check_choice(i: dict[str, Any]) -> None:
+    """A choice the server can record: a known decision, a canonical `model.field` target, a rule parse_rule knows."""
+    from di.connectors import mapping_suggest
+
+    d = str(i.get("decision") or "")
+    if d not in _CHOICES:
+        raise ActionError("validation_error", f"The choice is one of {', '.join(_CHOICES)}.")
+    t = str(i.get("target") or "")
+    if d != "not_needed" and t not in {c.target for c in mapping_suggest.canonical_fields()}:
+        raise ActionError("validation_error", f"Choose a canonical field (model.field); {t or 'none'} is not one.")
+    if d == "accepted_with_rule":
+        rule = mapping.parse_rule(i.get("rule"))
+        if rule is None or rule == mapping.CODE:
+            raise ActionError("validation_error", f"No conversion rule '{i.get('rule') or ''}'.")
+
+
+def _sample_values(s: Any, sid: str, src: str, resource: str | None) -> list[Any]:
+    from di.connectors import discover
+
+    out: list[Any] = []
+    for res, recs in discover._samples(s, sid).items():
+        if resource and res != resource:
+            continue
+        for _, payload in recs:
+            v = mapping.lookup(payload, src)
+            if v is not mapping._MISSING and v is not None:
+                out.append(v)
+    return out
+
+
+def _converted(s: Any, sid: str, src: str, resource: str | None, rule: str, n: int = 5) -> dict[str, Any]:
+    """The first sample values of the field before (masked) and after the rule: what the person sees at once."""
+    from di.connectors.mapping_suggest import mask
+
+    before, after = [], []
+    for v in _sample_values(s, sid, src, resource)[:n]:
+        before.append(mask(v))
+        try:
+            r = mapping.apply_rule(rule, v)
+        except ValueError:
+            r = None
+        after.append(round(r, 2) if isinstance(r, float) else mask(r) if isinstance(r, str) else r)
+    return {"samples": before, "values": after}
+
+
+def _close_questions(ctx: CallContext, old: list[dict[str, Any]], outcome: str) -> None:
+    from di.services.cases import process
+
+    for o in old:
+        if o["decision"] != "asked_owner":
+            continue
+        for (item,) in ctx.session.execute(
+            text("SELECT id FROM work_item WHERE type = :t AND status = 'open'"), {"t": f"{_OWNER_TYPE}:{o['id']}"}
+        ).all():
+            process.close_item(ctx.session, item, outcome, _by(ctx))
+
+
+def _record_choice(
+    ctx: CallContext, sid: str, i: dict[str, Any], src: str, resource: str | None, owner: str | None
+) -> dict[str, Any]:
+    s = ctx.session
+    d = str(i["decision"])
+    target = str(i.get("target") or "") or None
+    rule = mapping.parse_rule(i.get("rule")) if d == "accepted_with_rule" else None
+    old = mapping_decisions.supersede(s, sid, src, resource)
+    _close_questions(ctx, old, f"{d}: {target or src}")
+    did = mapping_decisions.record(
+        s, source_id=sid, src=src, resource=resource, decision=d, by=ctx.actor.id, target=target, rule=rule, owner=owner,
+        confidence=float(i["confidence"]) if i.get("confidence") is not None else None, reason=i.get("reason"),
+        proposed_by=i.get("proposed_by"), answer={"proposed": i["proposed"]} if i.get("proposed") else None,
+    )  # fmt: skip
+    out: dict[str, Any] = {"id": did, "source_id": sid, "src": src, "decision": d, "target": target, "rule": rule}
+    if rule:
+        out |= _converted(s, sid, src, resource, rule)
+    if d == "not_needed" and target:
+        from di.connectors import mapping_suggest
+
+        if any(c.required and c.target == target for c in mapping_suggest.canonical_fields()):
+            out |= {"blocking": True, "warning": f"Required field {target} is marked not needed."}
+    return out
+
+
+@guard("mapping.decide")
+def mapping_decide_guard(i: dict[str, Any], ctx: CallContext):
+    if bad := _refused(_current, ctx, i["source_id"]):
+        return bad
+    return _refused(_check_choice, i)
+
+
+@implement("mapping.decide")
+def mapping_decide(i: dict[str, Any], ctx: CallContext):
+    """P9-8.4: one person's choice for one suggested field, recorded in `mapping_decision` (memory for the vendor family).
+    An agent's call is held for a person (HELD_FOR_PERSON). It saves no mapping; `mapping.apply` does."""
+    cur, _ = _current(ctx, i["source_id"])
+    out = _record_choice(ctx, cur["id"], i, str(i["src"]), str(i.get("resource") or "") or None, None)
+    return out | {"log": f"Chose for {i['src']}"}
+
+
+def _owner_of(ctx: CallContext, sid: str) -> Any:
+    conn = connection.connection_for(ctx.session, sid)
+    owner = policy.account(conn.system_owner or "", ctx.actor.ctx) if conn else None
+    if owner is None:
+        raise ActionError("validation_error", f"{sid} has no system owner in the directory: name one first.")
+    return owner
+
+
+def _org_of(ctx: CallContext, sid: str) -> Any:
+    return ctx.session.execute(text("SELECT org_unit_id FROM source_system WHERE id = :i"), {"i": sid}).scalar()
+
+
+@guard("mapping.askOwner")
+def mapping_ask_guard(i: dict[str, Any], ctx: CallContext):
+    try:
+        _current(ctx, i["source_id"])
+        _check_org({"org_unit_id": _org_of(ctx, i["source_id"])}, ctx)
+        _owner_of(ctx, i["source_id"])
+    except ActionError as e:
+        return e.code, e.message
+    return None
+
+
+@implement("mapping.askOwner")
+def mapping_ask_owner(i: dict[str, Any], ctx: CallContext):
+    """P9-8.4: record the question (`asked_owner`) and open a My work item for the source's system owner with the field, three
+    masked sample values and the question. Agents may ask (it creates a question, nothing else); only a person answers."""
+    from di.connectors.mapping_suggest import mask
+    from di.services.cases import process
+
+    cur, _ = _current(ctx, i["source_id"])
+    sid, src, owner = cur["id"], str(i["src"]), _owner_of(ctx, i["source_id"])
+    resource = str(i.get("resource") or "") or None
+    s = ctx.session
+    question = str(i["question"]).strip()
+    samples = [mask(v) for v in _sample_values(s, sid, src, resource)[:3]]
+    _close_questions(ctx, mapping_decisions.supersede(s, sid, src, resource), "Asked again")
+    did = mapping_decisions.record(
+        s, source_id=sid, src=src, resource=resource, decision="asked_owner", by=ctx.actor.id, owner=owner.id, reason=question,
+        answer={"question": question, "samples": samples},
+    )  # fmt: skip
+    item = process.open_item(
+        s, kind="step", case_id=None, org_unit_id=_org_of(ctx, sid), type=f"{_OWNER_TYPE}:{did}",
+        title=f"Which field is {src} on {cur['name']}?", action="Answer the mapping question",
+        cause=f"{question} Sample values: {', '.join(samples) or 'none yet'}.",
+        owner_role=owner.role, owner_account=owner.id, due_hours=None, by=ctx.actor.id,
+    )  # fmt: skip
+    return {"id": did, "source_id": sid, "src": src, "owner": owner.id, "item_id": item, "samples": samples,
+            "log": f"Asked {owner.id} about {src}"}  # fmt: skip
+
+
+@guard("mapping.answerOwner")
+def mapping_answer_guard(i: dict[str, Any], ctx: CallContext):
+    row = mapping_decisions.get(ctx.session, int(i["decision_id"]))
+    if row is None or row["decision"] != "asked_owner":
+        return "not_found", "No such question."
+    if row["superseded"]:
+        return "conflict", "That question is already answered."
+    a = ctx.actor.account
+    if a is None or not (a.id == row["owner"] or policy.can(a, _MGR, ctx.actor.ctx)):
+        return "out_of_scope", f"Only {row['owner']} (the system owner) or an integration manager answers this."
+    return _refused(_check_choice, i)
+
+
+@implement("mapping.answerOwner")
+def mapping_answer_owner(i: dict[str, Any], ctx: CallContext):
+    """P9-8.4: the owner's choice replaces the question (the owner's word wins in the family memory) and closes the item.
+    In `FORBIDDEN_ACTIONS`: an agent never answers for a person."""
+    row = mapping_decisions.get(ctx.session, int(i["decision_id"]))
+    assert row is not None  # noqa: S101 - the guard found it
+    out = _record_choice(ctx, row["source_id"], i, row["src"], row["resource"], row["owner"])
+    return out | {"log": f"Answered for {row['src']}"}
+
+
+def _apply_maps(cur_maps: list[list[str]], rows: list[Any]) -> list[list[str]]:
+    """The tab's rows with the accepted rows put in: a row of the same source field (and resource) is replaced."""
+    new: list[list[str]] = []
+    for r in rows:
+        if isinstance(r, dict):
+            m = [str(r.get("src", "")), "", str(r.get("target", "")), "", str(r.get("rule") or "")]
+            new.append(m + ([str(r["resource"])] if r.get("resource") else []))
+        elif isinstance(r, list):
+            new.append([str(x).strip() for x in r])
+    key = {(m[0], m[5] if len(m) > 5 else "") for m in new}
+    return [m for m in cur_maps if (m[0], m[5] if len(m) > 5 else "") not in key] + new
+
+
+def _required_not_needed(s: Any, sid: str, maps: list[list[str]]) -> list[str]:
+    from di.connectors import mapping_suggest
+
+    required = {c.target for c in mapping_suggest.canonical_fields() if c.required}
+    mapped = {m[2] for m in maps if len(m) > 2}
+    skipped = {d["target"] for d in mapping_decisions.of_source(s, sid) if d["decision"] == "not_needed" and d["target"]}
+    return sorted((skipped & required) - mapped)
+
+
+@guard("mapping.apply")
+def mapping_apply_guard(i: dict[str, Any], ctx: CallContext):
+    """Before the pipeline's hold, so an agent's invalid call is refused, not held (P9-0.17)."""
+    try:
+        cur, _ = _current(ctx, i["source_id"])
+        if not isinstance(i["rows"], list) or not i["rows"]:
+            raise ActionError("validation_error", "Accept at least one mapping.")
+        maps = _apply_maps(cur["maps"], i["rows"])
+        _check_maps(cur["id"], maps)
+    except ActionError as e:
+        return e.code, e.message
+    if n := len(mapping_decisions.open_questions(ctx.session, cur["id"])):
+        return "conflict", f"Waiting for the system owner on {n} field{'s' if n != 1 else ''}."
+    if missing := _required_not_needed(ctx.session, cur["id"], maps):
+        return "conflict", f"Required field {', '.join(missing)} is marked not needed."
+    return ("conflict", "No changes to save.") if maps == cur["maps"] else None
+
+
+@implement("mapping.apply")
+def mapping_apply(i: dict[str, Any], ctx: CallContext):
+    """P9-8.4: the accepted rows become a new mapping version through `_save_rows`, the path `mapping.save` uses. Refused
+    while a question to the system owner is open. Held for a person when an agent prepares it (HELD_FOR_PERSON)."""
+    cur, cfg = _current(ctx, i["source_id"])
+    note = str(i.get("note") or "").strip() or "Suggested mappings accepted"
+    return _save_rows(ctx, cur, cfg, _apply_maps(cur["maps"], i["rows"]), note)
