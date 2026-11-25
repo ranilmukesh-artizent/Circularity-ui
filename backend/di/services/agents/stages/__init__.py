@@ -1,4 +1,5 @@
-"""The eleven stage modules of the chain, in order (plan 9, P9-2.1; registry entry I-7; the first three are P9-2.20).
+"""The twelve stage modules of the chain, in order (plan 9, P9-2.1; registry entry I-7; the first three are P9-2.20, the last
+two P9-2.21).
 
 `CHAIN` is the one list the stage-chain playbook walks. A stage module is pure and has this shape (`StageModule`):
 
@@ -20,7 +21,6 @@ from typing import Any, Protocol, cast
 from di.services.agents.playbooks.case_autopilot import Next
 from di.services.agents.stage_context import STAGE_IDS, StageId
 from di.services.agents.stages import (
-    analytics,
     condition,
     demand,
     disposition,
@@ -28,6 +28,8 @@ from di.services.agents.stages import (
     follow_through,
     intake,
     lease_end,
+    outcome,
+    reconcile,
     return_auth,
     transit,
     valuation,
@@ -46,7 +48,8 @@ class StageModule(Protocol):
 
 
 _MODULES: tuple[ModuleType, ...] = (
-    lease_end, return_auth, transit, intake, condition, demand, fit_for_use, valuation, disposition, follow_through, analytics,
+    lease_end, return_auth, transit, intake, condition, demand, fit_for_use, valuation, disposition, follow_through,
+    outcome, reconcile,
 )  # fmt: skip
 CHAIN: tuple[StageModule, ...] = tuple(cast(StageModule, m) for m in _MODULES)
 if tuple(m.ID for m in CHAIN) != STAGE_IDS:

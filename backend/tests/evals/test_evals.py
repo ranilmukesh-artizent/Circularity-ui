@@ -72,9 +72,15 @@ def test_eval_toolsets_never_forbidden():
     from tests.evals.datasets import toolset_names
 
     names = toolset_names()
-    assert {"exception_writer", "pack_author", "stage_reasoner", "workflow_author", "stage:intake", "stage:analytics"} <= set(
-        names
-    )
+    assert {
+        "exception_writer",
+        "pack_author",
+        "stage_reasoner",
+        "workflow_author",
+        "stage:intake",
+        "stage:outcome",
+        "stage:reconcile",
+    } <= set(names)
     gate(run_suite("toolsets"))
 
 

@@ -37,7 +37,8 @@ LIFECYCLE = {"lease_end": "skipped", "return_auth": "skipped", "transit": "skipp
 OPEN = {**LIFECYCLE, "intake": "done", "condition": "done", "demand": "done", "fit_for_use": "done", "valuation": "done"}
 WAITING = {**OPEN, "disposition": "waiting"}  # the decision waits for a person's approval
 SKIPPED = {**OPEN, "disposition": "skipped"}  # evidence is missing: nothing to decide yet
-EXECUTING = {**OPEN, "disposition": "done", "follow_through": "done", "analytics": "skipped"}
+# P9-2.21: an open case skips outcome and reconcile
+EXECUTING = {**OPEN, "disposition": "done", "follow_through": "done", "outcome": "skipped", "reconcile": "skipped"}
 DEVICE_HELD = {**OPEN, "disposition": "held"}
 
 # (case id or template, facts, expected route, stage statuses, hold reasons)

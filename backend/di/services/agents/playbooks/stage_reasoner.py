@@ -1,7 +1,8 @@
 """The stage reasoner playbook (plan 9, P9-2.18; an LLM playbook of the AgentLoop port, registry entry I-8; used by I-7).
 
     spec_for(stage) -> LoopSpec    v1 for one chain stage: `lease_end`, `return_auth`, `transit`, `intake`, `condition`,
-                                   `valuation`, `decide` (the chain's `disposition`), `follow_through`; any other stage
+                                   `valuation`, `decide` (the chain's `disposition`), `follow_through`, `reconcile` (P9-2.21);
+                                   any other stage
                                    gets the general words
     spec()                         the general spec, the one registered in `playbook_versions`
 
@@ -40,10 +41,12 @@ FOCUS: dict[str, str] = {
     "valuation": "Stage valuation: explain why the ranked routes are ordered as they are. Recommend only a ranked route.",
     "decide": "Stage decide: do the facts support the route the rules chose? If another ranked route fits better, recommend it.",
     "follow_through": "Stage follow-through: did the instructions reach the systems, and is anything stuck or contradicted?",
+    "reconcile": "Stage reconcile: explain the biggest deltas between predicted and actual, line by line, from the lines you are "
+    "given. Never compute or restate a figure that is not in the stage's output.",
 }
 STAGE_KEY = {"disposition": "decide"}  # the chain's id for the pack's `decide` stage
 REASONED = frozenset(
-    {"lease_end", "return_auth", "transit", "intake", "condition", "valuation", "disposition", "follow_through"}
+    {"lease_end", "return_auth", "transit", "intake", "condition", "valuation", "disposition", "follow_through", "reconcile"}
 )  # the stages that get a reading
 
 

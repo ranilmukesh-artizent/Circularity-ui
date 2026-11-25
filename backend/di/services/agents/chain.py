@@ -1,7 +1,7 @@
 """The stage chain (plan 9, P9-2.1; registry entry I-7; research F section 8a): one agent per stage, application code
 picking the next stage, each stage leaving a typed record.
 
-    stage_defs(pack) -> [StageDef]       pure: the eleven stages of the effective pack (after the org's overlay, I-4), with
+    stage_defs(pack) -> [StageDef]       pure: the twelve stages of the effective pack (after the org's overlay, I-4), with
                                          the D1 defaults for whatever the pack does not say
     build_record(defn, mod, st, case, status) -> StageRecord      pure: what a stage module says about the case now
     save_record / records_of             the table `agent_stage_record` (migration 0034), one row per (run, stage)
@@ -26,7 +26,7 @@ from typing import Any, Literal
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.services.agents.stage_context import STAGE_IDS, Autonomy, StageContext, StageId, StageKind
+from di.services.agents.stage_context import LEGACY_STAGE_IDS, STAGE_IDS, Autonomy, StageContext, StageId, StageKind
 from di.services.agents.stages import CHAIN, StageModule, disposition
 from di.services.modeler.pack import Pack
 from di.services.modeler.stages import StageKey
@@ -46,24 +46,24 @@ AGENT_IDS: dict[StageId, str] = {
     "lease_end": "stage-lease", "return_auth": "stage-return", "transit": "stage-transit",
     "intake": "stage-intake", "condition": "stage-condition", "demand": "stage-demand", "fit_for_use": "stage-fit",
     "valuation": "stage-valuation", "disposition": "stage-disposition", "follow_through": "stage-follow",
-    "analytics": "stage-analytics",
+    "outcome": "stage-outcome", "reconcile": "stage-reconcile",
 }  # fmt: skip
 DEFAULT_AUTONOMY: dict[StageId, Autonomy] = {
     "lease_end": "alone", "return_auth": "limits", "transit": "alone",
     "intake": "alone", "condition": "limits", "demand": "alone", "fit_for_use": "limits", "valuation": "alone",
-    "disposition": "limits", "follow_through": "limits", "analytics": "alone",
+    "disposition": "limits", "follow_through": "limits", "outcome": "limits", "reconcile": "alone",
 }  # fmt: skip
 LIFECYCLE: tuple[StageId, ...] = ("lease_end", "return_auth", "transit")  # stages 1 to 3 of the journey, before intake
-# The pack's seven stages (B 1.2) and the chain's eleven: the pack stage whose threshold a chain stage takes, and (where the
+# The pack's seven stages (B 1.2) and the chain's twelve: the pack stage whose threshold a chain stage takes, and (where the
 # two correspond one to one) whose autonomy. Demand, fit-for-use and the three lifecycle stages have no stage of their own in
 # the pack: they take the match (or receive) stage's threshold and the D1 autonomy.
 THRESHOLD_FROM: dict[StageId, StageKey] = {
     "lease_end": "receive", "return_auth": "receive", "transit": "receive", "intake": "receive",
     "condition": "condition", "demand": "match", "fit_for_use": "match", "valuation": "value",
-    "disposition": "decide", "follow_through": "execute", "analytics": "close",
+    "disposition": "decide", "follow_through": "execute", "outcome": "close", "reconcile": "close",
 }  # fmt: skip
 AUTONOMY_FROM: dict[StageId, StageKey] = {
-    k: v for k, v in THRESHOLD_FROM.items() if k not in ("demand", "fit_for_use", *LIFECYCLE)
+    k: v for k, v in THRESHOLD_FROM.items() if k not in ("demand", "fit_for_use", "outcome", *LIFECYCLE)
 }
 
 
@@ -101,7 +101,7 @@ class ChainRun:
 
 
 def stage_defs(pack: Pack) -> list[StageDef]:
-    """The eleven stage definitions of the pack, in chain order. A threshold outside 0.65 to 0.85 raises ValueError (the
+    """The twelve stage definitions of the pack, in chain order. A threshold outside 0.65 to 0.85 raises ValueError (the
     overlay validator, P9-1.3, refuses it first); a pack without a stage list gets the defaults."""
     by_key = {s.key: s for s in pack.stages}
     out: list[StageDef] = []
@@ -198,7 +198,7 @@ def save_record(s: Session, run_id: str, case_id: str, r: StageRecord) -> None:
 
 
 def records_of(s: Session, run_id: str) -> list[StageRecord]:
-    """The run's stage records, in chain order."""
+    """The run's stage records, in chain order (a stored `analytics` record, from before P9-2.21, last)."""
     rows = {str(r["stage"]): r for r in s.execute(SELECT, {"run": run_id}).mappings()}
     return [
         StageRecord(
@@ -206,7 +206,7 @@ def records_of(s: Session, run_id: str) -> list[StageRecord]:
             confidence=None if r["confidence"] is None else float(r["confidence"]), threshold=float(r["threshold"]),
             sources=list(r["sources"]), reasons=list(r["reasons"]),
         )
-        for sid in STAGE_IDS
+        for sid in (*STAGE_IDS, *LEGACY_STAGE_IDS)  # a record of a run before P9-2.21 may be `analytics`
         if (r := rows.get(sid)) is not None
     ]  # fmt: skip
 

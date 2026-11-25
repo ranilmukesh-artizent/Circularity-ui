@@ -852,7 +852,7 @@ each story went.
 - [x] P9-2.18 Stage agents reason with the model
 - [x] P9-2.19 Exception assistant and fraud review drafted by the model
 - [x] P9-2.20 Lease end, return authorised and transit stage agents
-- [ ] P9-2.21 Ten-stage journey on the case run view
+- [x] P9-2.21 Ten-stage journey on the case run view
 - [x] P9-2.22 Gates before the queue plan in decide_case
 - [ ] P9-2.23 Ask reads workflows and their runs
 - [ ] P9-2.17 Phase 2 gate

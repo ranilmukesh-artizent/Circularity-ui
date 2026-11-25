@@ -1,4 +1,4 @@
-"""P9-2.1 (story X-05): the stage chain runs a case through the eleven stages, one agent per stage, each leaving a typed
+"""P9-2.1 (story X-05): the stage chain runs a case through the twelve stages, one agent per stage, each leaving a typed
 record in `agent_stage_record` (registry entry I-7).
 
 The tests play the worker (runtime.run_until_blocked), as tests/test_agent_runtime.py does. `case_autopilot` is an alias
@@ -16,7 +16,7 @@ from di.core.db import SessionLocal
 from di.services.agents import chain, runtime
 from di.services.agents.forbidden import FORBIDDEN_ACTIONS
 from di.services.agents.playbooks import stage_chain
-from di.services.agents.stages import CHAIN, analytics, condition, valuation
+from di.services.agents.stages import CHAIN, condition, outcome, reconcile, valuation
 from di.services.modeler.pack import load_pack
 from tests import starting
 from tests.helpers import call, client, h
@@ -27,7 +27,7 @@ CASE = "RT-1048"
 BLOCKED = "RT-1051"  # evidence is missing: intake asks for it
 LIFECYCLE = ["lease_end", "return_auth", "transit"]  # P9-2.20: skipped on a case with no lease records
 ORDER = [*LIFECYCLE, "intake", "condition", "demand", "fit_for_use", "valuation", "disposition"]
-D1_AUTONOMY = ["alone", "limits", "alone", "alone", "limits", "alone", "limits", "alone", "limits", "limits", "alone"]
+D1_AUTONOMY = ["alone", "limits", "alone", "alone", "limits", "alone", "limits", "alone", "limits", "limits", "limits", "alone"]
 
 
 def _clean() -> None:
@@ -104,7 +104,7 @@ def test_x_05_chain_finishes_after_approval():
     with SessionLocal() as s:
         runtime.run_until_blocked(s, run_id)
     assert _run(run_id)["status"] == "done"
-    assert [r.stage for r in _records(run_id)] == [*ORDER, "follow_through", "analytics"]
+    assert [r.stage for r in _records(run_id)] == [*ORDER, "follow_through", "outcome", "reconcile"]
     last = _records(run_id)[-1]
     assert last.status == "skipped"  # the case is not closed
 
@@ -185,16 +185,21 @@ def test_x_05_valuation_confidence_formulas():
     assert valuation.confidence({}, {"routes": []}) is None
 
 
-def test_x_05_analytics_output_only_when_closed():
-    case = {"stage": "closed", "recommendation": {"net": 100}, "outcome": {"net": 90}}
-    assert analytics.output({}, case) == {"predicted_net": 100, "actual_net": 90}
-    assert analytics.next_call(0, {}, {"stage": "approved"}).skipped is True  # type: ignore[union-attr]
+def test_x_05_outcome_and_reconcile_only_when_closed():
+    """P9-2.21: the analytics stage became outcome (9) and reconcile (10); neither invents anything for an open case."""
+    case = {"id": "RT-1", "stage": "closed", "recommendation": {"net": 100, "terms": []}, "outcome": {"net": 90, "lines": []}}
+    assert outcome.output({}, case) == {"actual_costs": [], "realised_value": 90, "confirmed_by": None}
+    assert reconcile.output({}, case)["net"] == {"predicted": 100.0, "actual": 90.0, "delta": -10.0}
+    for mod in (outcome, reconcile):
+        assert mod.output({}, {"stage": "approved"}) == {}
+    assert outcome.next_call(0, {}, {"stage": "approved"}).skipped is True  # type: ignore[union-attr]
+    assert reconcile.next_call(0, {}, {"stage": "approved"}).skipped is True  # type: ignore[union-attr]
 
 
 def test_stage_defs_defaults_and_range():
     pack = load_pack("industrial")
     bare = chain.stage_defs(pack.model_copy(update={"stages": []}))
-    assert [d.id for d in bare] == [m.ID for m in CHAIN] and len(bare) == 11
+    assert [d.id for d in bare] == [m.ID for m in CHAIN] and len(bare) == 12
     assert [d.autonomy for d in bare] == D1_AUTONOMY
     assert {d.threshold for d in bare} == {0.75}
     assert [d.agent_id for d in bare][3:5] == ["stage-intake", "stage-condition"] and bare[6].agent_id == "stage-fit"

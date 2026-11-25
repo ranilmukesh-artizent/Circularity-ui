@@ -63,7 +63,7 @@ from di.services.agents.playbooks import stage_reasoner as stage_playbook
 from di.services.agents.playbooks.case_autopilot import Done, Halt, Skip, Wait
 from di.services.agents.pydantic_ai_loop import PydanticAILoop
 from di.services.agents.stage_context import STAGE_IDS, StageContext
-from di.services.agents.stages import CHAIN, disposition
+from di.services.agents.stages import CHAIN, disposition, outcome
 from di.services.cases import store
 from di.services.llm import router
 from di.services.modeler.evidence import evidence_of
@@ -165,15 +165,16 @@ def _save(s: Session, run: dict, status: str, n: int, st: dict[str, Any]) -> str
     return status
 
 
-def _log_step(s: Session, run_id: str, action: str, i: dict, out: dict) -> None:
-    """One call of the run, numbered from 1 (agent_run_step.n)."""
+def _log_step(s: Session, run_id: str, action: str, i: dict, out: dict, stage: str | None = None) -> None:
+    """One call of the run, numbered from 1 (agent_run_step.n). A call of a stage keeps the stage id in its output (`stage`),
+    so the journey (P9-2.21) shows each call under its own stage."""
     s.execute(
         text(
             "INSERT INTO agent_run_step (run_id, n, tool, input, output) "
             "VALUES (:r, (SELECT coalesce(max(n), 0) + 1 FROM agent_run_step WHERE run_id = :r), :t, "
             "CAST(:i AS jsonb), CAST(:o AS jsonb))"
         ),
-        {"r": run_id, "t": action, "i": json.dumps(i), "o": json.dumps(out, default=str)},
+        {"r": run_id, "t": action, "i": json.dumps(i), "o": json.dumps(out | ({"stage": stage} if stage else {}), default=str)},
     )
 
 
@@ -348,7 +349,7 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
     ctx.preparer = _preparer(run, agent, defn)
     ctx.stage = calibrated(s, stage_confidence(chain.stage_context(defn, CHAIN[stage], st, case), case), pack.key)
     r = invoke(nxt.action, nxt.input, ctx)
-    _log_step(s, run_id, nxt.action, nxt.input, r)
+    _log_step(s, run_id, nxt.action, nxt.input, r, sid)
     if r["ok"] and isinstance(r["output"], dict) and "held" in r["output"]:
         stage_chain.advance_step(st, stage, sub)
         _stage_record(s, run, stage, defn, st, case, "held", r["output"].get("reasons"))
@@ -504,6 +505,12 @@ def _llm_step(s: Session, run: dict, ctx: CallContext) -> str:
         return _save(s, run, "waiting", n + 1, st | extra)
     out = res.output.model_dump(mode="json") if res.output is not None else None
     return _save(s, run, "done", n + 1, st | {"output": out, "note": "playbook finished"})
+
+
+@after("outcome.confirm")
+def _confirmed(i: dict[str, Any], out: dict[str, Any], ctx: CallContext) -> None:  # noqa: ARG001 - hooks take (input, output, ctx)
+    """Finance confirmed the outcome (P9-2.21): the runs waiting in the outcome stage run on."""
+    resume_waiting(ctx.session, str(i["case_id"]), outcome.WAITING)
 
 
 @after("decision.approve")

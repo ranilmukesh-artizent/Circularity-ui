@@ -4,7 +4,8 @@
     run_trace(s, run_id) -> dict | None
         run (status, step, why it ended or waits, model, tokens), stages (the typed records of the chain), calls
         (`agent_run_step`), spans (a tree: each has `children`), journal (the rows with the run's id), proposals (with the
-        hold reasons) and pauses (the journaled `agent.setEnabled` rows of the run's agent: who, when, on or off)
+        hold reasons), journey (the ten stages of the journey, `di.services.agents.journey`) and pauses (the journaled
+        `agent.setEnabled` rows of the run's agent: who, when, on or off)
 
 Read only. Call inputs go through `di.core.redact.clean`; span attributes were cleaned when written.
 """
@@ -15,7 +16,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core.redact import clean
-from di.services.agents.stage_context import STAGE_IDS
+from di.services.agents.journey import journey
+from di.services.agents.stage_context import LEGACY_STAGE_IDS, STAGE_IDS
 
 
 def latest_run_for_case(s: Session, case_id: str) -> str | None:
@@ -58,7 +60,7 @@ def run_trace(s: Session, run_id: str) -> dict[str, Any] | None:
         "FROM agent_stage_record WHERE run_id = :r",
         r=run_id,
     )
-    order = list(STAGE_IDS)
+    order = [*STAGE_IDS, *LEGACY_STAGE_IDS]
     stages.sort(key=lambda x: order.index(x["stage"]) if x["stage"] in order else len(order))
     for x in stages:
         x["confidence"] = None if x["confidence"] is None else float(x["confidence"])
@@ -68,6 +70,7 @@ def run_trace(s: Session, run_id: str) -> dict[str, Any] | None:
     for c in calls:
         c["input"], c["at"] = clean(c["input"]), _iso(c["at"])
         out = c["output"]
+        c["stage"] = out.get("stage") if isinstance(out, dict) else None  # the stage that made the call (runtime._log_step)
         c["ok"] = not (isinstance(out, dict) and out.get("ok") is False)
         c["held"] = out["output"].get("held") if isinstance(out, dict) and isinstance(out.get("output"), dict) else None
         c["output"] = None  # the result lives in the journal and the records; the view shows the call and its outcome
@@ -103,6 +106,7 @@ def run_trace(s: Session, run_id: str) -> dict[str, Any] | None:
         )
     ]
     usage = st.get("usage") or {}
+    ten = [j.as_dict() for j in journey({"stages": stages, "calls": calls})]  # P9-2.21: the ten-stage journey of the run view
     return {
         "run": {
             "id": run["id"], "agent": run["agent"], "agentName": run["agent_name"], "playbook": run["playbook"],
@@ -112,6 +116,7 @@ def run_trace(s: Session, run_id: str) -> dict[str, Any] | None:
             "created_at": _iso(run["created_at"]), "updated_at": _iso(run["updated_at"]),
         },
         "stages": stages,
+        "journey": ten,
         "calls": calls,
         "spans": span_tree(spans),
         "journal": journal,
