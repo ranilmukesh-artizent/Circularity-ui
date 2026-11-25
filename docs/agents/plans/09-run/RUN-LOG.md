@@ -49,3 +49,4 @@ unattended". Times are local (IST).
 | 25 Nov 11:55 | P9-1.3 and P9-1.4 merged. P9-1.5 (one decider, I-6, R19/R20) to w1; the only ready task. Phase 1: 4 of 15. |
 | 25 Nov 08:25 | P9-1.5 merged. Sonnet; red first quoted; intake, re-evaluation, shadow and simulation call decide_case; slot planning under a flow's rules recorded in the decision log by the lead (no seeded case changes). |
 | 25 Nov 12:40 | P9-1.5 merged (one decider; parallel 3,921, RT-1048 smoke stage 10). P9-1.6 to w1, P9-1.7 to w2 (Sonnet), P9-1.12 to w3 (Haiku). Phase 1: 5 of 15. |
+| 25 Nov 08:49 | P9-1.12 merged. Haiku; red first quoted; only CO2e moves (R8 report 09-diffs/P9-1.12.md, decision-log row); factors stay sample values (Kinective Legal team review before any real set). |

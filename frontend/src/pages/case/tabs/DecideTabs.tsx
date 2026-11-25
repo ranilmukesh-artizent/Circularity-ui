@@ -20,7 +20,7 @@ import { AfBadge, CasePanel, ExMethod, ProvB, RangeBar, Stp, Tbl } from '../Case
 import { approveGuarded, caseActions, runNextStep, scrollToId } from '../caseActions';
 import { useCaseUi } from '../CaseContext';
 import { gateLine, holdLine } from '../gates';
-import { co2Label } from '../co2';
+import { co2Label, type Co2Card } from '../co2';
 import { planLines } from '../queuePlan';
 import type { TabProps } from './index';
 
@@ -40,6 +40,19 @@ const metrics = (a: CaseAnalysis, r: Route, net = r.net): RankRow => {
   const sum = (f: (v: number) => boolean) => r.terms.filter((t) => f(t.amt)).reduce((s, t) => s + t.amt, 0);
   return { route: r.id, plan: r.plan, gross: sum((v) => v > 0), cost: sum((v) => v < 0), net, days: 0, prob: 0, life: '—', co2: 0 };
 };
+/** The CO2e provenance under a figure: the label, the transport kg, the reason when there is no factor, and the factors. */
+function Co2Note({ card }: { card: Co2Card }) {
+  if (card.missing) return <div className="note">{card.missing}</div>;
+  if (!card.set) return null;
+  return (
+    <>
+      <div className="note">{card.label}{card.transport ? ' · ' + card.transport : ''}</div>
+      <details className="note"><summary>{card.set}</summary>
+        <ul>{card.factors.map((f) => <li key={f.name}>{f.name} {f.value}: {f.source}, {f.year}</li>)}</ul>
+      </details>
+    </>
+  );
+}
 /** scenRoutes and tiRows for the assumptions in view. */
 export function useRows(c: CaseRec, a: CaseAnalysis): { sr: ScenRoutes; rows: TiRow[] } {
   const sr = scenRoutes(c);
@@ -335,7 +348,7 @@ function TiP2({ c, rows }: PS) {
                 <td><b>{z.r.plan}</b>{sameR(z.r, rec) && <> <span className="chip y">Recommended</span></>}</td>
                 <td className="r num">{money(z.gross)}</td><td className="r num">{money(z.cost)}</td>
                 <td><span className="tinet"><b className="num">{money(z.net)}</b><span className="bar"><i style={{ width: Math.max(4, (Math.abs(z.net) / mxn) * 100) + '%', background: z.net < 0 ? 'var(--bad)' : 'var(--ok)' }}></i></span></span></td>
-                <td className="r num">{z.days}</td><td className="r num">{z.prob}%</td><td className="r num">{z.life}</td><td className="r num">{fmtN(z.co2)} kg{co2Label(z.r).source && <div className="note">{co2Label(z.r).source}</div>}</td><td className="r num"><b>{z.fit}</b></td>
+                <td className="r num">{z.days}</td><td className="r num">{z.prob}%</td><td className="r num">{z.life}</td><td className="r num">{z.co2 == null ? '—' : fmtN(z.co2) + ' kg'}<Co2Note card={co2Label(z.r)} /></td><td className="r num"><b>{z.fit}</b></td>
               </tr>
             ))}</tbody>
           </table>
@@ -745,7 +758,7 @@ export function TiMulti({ c, a, rows }: PS) {
   const pick = sel.length >= 2 ? sel : rows.slice(0, 3), ranked = rows.slice();
   if (t && t.near && t.preferred === t.b) { ranked[0] = t.b; ranked[1] = t.a; }
   const R = a.rul, life = (z: TiRow) => (R && ['redeploy', 'resale', 'relase'].includes(z.r.id) ? R.estLow + '–' + R.estHigh + ' mo' : '—'), cf = rec ? confidence(a, rec) : 'Medium', open = cf === 'Low' || !!(t && t.near);
-  const cols: [string, (z: TiRow) => string, string][] = [['Cycle time', (z) => z.days + ' days', 'cycle'], ['RUL', life, 'rul'], ['Success', (z) => z.prob + '%', 'risk'], ['Demand', (z) => (z.r.demandStatus === 'confirmed' ? 'Confirmed' : 'Forecast'), 'demand'], ['CO₂e avoided', (z) => fmtN(z.co2) + ' kg', 'co2']];
+  const cols: [string, (z: TiRow) => string, string][] = [['Cycle time', (z) => z.days + ' days', 'cycle'], ['RUL', life, 'rul'], ['Success', (z) => z.prob + '%', 'risk'], ['Demand', (z) => (z.r.demandStatus === 'confirmed' ? 'Confirmed' : 'Forecast'), 'demand'], ['CO₂e avoided', (z) => (z.co2 == null ? '—' : fmtN(z.co2) + ' kg'), 'co2']];
   const vis = cols.filter((col) => !ti.diffOnly || new Set(pick.map(col[1])).size > 1);
   const why = t && t.near ? tieText(t) : `${ranked[0].r.plan} ranks first on net value, ahead by ${money(ranked[0].net - ranked[1].net)}.`;
   return (
@@ -861,7 +874,7 @@ export function compareBody(c: CaseRec, rows: TiRow[], sel: string[] | null): Re
   const best = (k: keyof TiRow, dir: number) => pick.reduce((x, y) => (dir * ((y[k] as number) - (x[k] as number)) > 0 ? y : x), pick[0]);
   const rowsd: [string, keyof TiRow, (v: number) => ReactNode, number][] = [
     ['Net recovery', 'net', money, 1], ['Recovery value', 'gross', money, 1], ['Treatment cost', 'cost', money, 1], ['Cycle time (days)', 'days', (v) => v, -1],
-    ['Success probability', 'prob', (v) => v + '%', 1], ['CO₂e avoided', 'co2', (v) => fmtN(v) + ' kg', 1], ['Objective fit', 'fit', (v) => v, 1],
+    ['Success probability', 'prob', (v) => v + '%', 1], ['CO₂e avoided', 'co2', (v: number | null) => (v == null ? '—' : fmtN(v) + ' kg'), 1], ['Objective fit', 'fit', (v) => v, 1],
   ];
   return (
     <>

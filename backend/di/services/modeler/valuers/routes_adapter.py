@@ -66,7 +66,7 @@ def to_routes(t: Template, values: Sequence[PathValue | ChannelValue]) -> list[R
         name = p.name if p else v["k"]
         r = mk_route({"id": v["k"], "plan": name, "terms": _terms(v), "why": v["why"]})
         r["co2"] = v["co2"]
-        r["co2Src"] = v["co2Src"]
+        r["co2Prov"] = v["co2Prov"]
         if "lines" in v:  # a tool-fleet route carries its destination (the named order it fills), P9-1.4
             r["dest"] = cast(PathValue, v)["dest"]
         if not v["ok"]:

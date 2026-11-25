@@ -201,7 +201,13 @@ def tie_break(c: Case, rows: list[dict]) -> dict | None:
         ("demand", dem(a), dem(b), higher(lambda x, y: x != y), lambda v: "confirmed" if v else "forecast"),
         ("cycle", a["days"], b["days"], lambda x, y: ("a" if x < y else "b") if abs(x - y) >= 3 else None, lambda v: f"{v} days"),
         ("rul", life(a), life(b), higher(lambda x, y: abs(x - y) >= 6), lambda v: f"{v} months" if v else "none"),
-        ("co2", a["co2"], b["co2"], higher(lambda x, y: abs(x - y) >= 0.1 * max(x, y, 1)), lambda v: fmt_n(v) + " kg"),
+        (
+            "co2",
+            a["co2"],
+            b["co2"],
+            lambda x, y: None if x is None or y is None else higher(lambda p, q: abs(p - q) >= 0.1 * max(p, q, 1))(x, y),
+            lambda v: "—" if v is None else fmt_n(v) + " kg",
+        ),
     ]
     values = [{"k": k, "label": TB_RULES[k], "a": fmt(x), "b": fmt(y), "w": win(x, y)} for k, x, y, win, fmt in factors]
     d = next((v for v in values if v["w"]), None)

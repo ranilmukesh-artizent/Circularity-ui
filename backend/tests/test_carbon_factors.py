@@ -1,9 +1,13 @@
-"""P9-0.6: the carbon factor set and the CO2e line in both valuers (information only: no route or net changes)."""
+"""P9-0.6: the carbon factor set and the CO2e line in both valuers (information only: no route or net changes).
+
+P9-1.12: set cfs-2026.2 (the B 5.7 formula, provenance per factor); the expectations below moved with it.
+"""
 
 import pytest
 
 from di.core import golden
 from di.services.modeler.carbon import co2_avoided
+from di.services.modeler.pack import load_pack
 from di.services.modeler.templates import load_template
 from di.services.modeler.valuers import device, tool_fleet
 from di.services.modeler.valuers.routes_adapter import to_routes
@@ -11,6 +15,7 @@ from tests import starting
 from tests.helpers import client, h
 
 NET_TOL = 1e-6
+CMH_RELEASE_CO2 = 61  # 62 x 1 - 0 - 1.5 = 60.5: the sample release lands on a confirmed lease order (30 without one)
 
 
 def setup_module():
@@ -23,21 +28,21 @@ def _cmh_case():
 
 def test_tool_fleet_co2_line():
     v = tool_fleet.value(_cmh_case(), "release")
-    assert v["co2"] == 43  # 62 x 0.7 = 43.4
-    assert v["co2Src"].startswith("cfs-2026.1")
-    assert v["co2Src"] == "cfs-2026.1 · Sample value (synthetic), 2026"
+    assert v["co2"] == CMH_RELEASE_CO2
+    assert v["co2Prov"]["set"] == "cfs-2026.2"
+    assert v["co2Prov"]["label"] == "avoided, not inventory"
 
 
 def test_device_co2_per_lot():
     lot = {**device.sample_lots()[0], "qty": 10}
-    assert device.score(lot, "auction")["co2"] == 275  # 55 x 0.5 x 10
-    assert device.score(lot, "auction")["co2Src"].startswith("cfs-2026.1")
+    assert device.score(lot, "auction")["co2"] == 269  # (55 x 0.5 - 0.2 - 0.4) x 10
+    assert device.score(lot, "auction")["co2Prov"]["set"] == "cfs-2026.2"
 
 
 def test_no_factor_gives_none():
-    assert co2_avoided("tool_fleet", "ZZZ", "release", 1) is None
-    assert co2_avoided("tool_fleet", "CMH", "nowhere", 1) is None
-    assert co2_avoided("no_such_pack", None, "release", 1) is None
+    tf = load_pack("tool_fleet")
+    assert co2_avoided(tf, "ZZZ", "release", 1, confirmed=True) is None
+    assert co2_avoided(tf, "CMH", "nowhere", 1, confirmed=True) is None
 
 
 def test_co2_does_not_change_route_or_net():
@@ -60,8 +65,8 @@ def test_routes_carry_co2():
     t = load_template("tool_fleet")
     d = tool_fleet.decide(_cmh_case(), tool_fleet.BASEP, [])
     routes = {r["id"]: r for r in to_routes(t, d["all"])}
-    assert routes["release"]["co2"] == 43
-    assert routes["release"]["co2Src"].startswith("cfs-2026.1")
+    assert routes["release"]["co2"] == CMH_RELEASE_CO2
+    assert routes["release"]["co2Prov"]["set"] == "cfs-2026.2"
 
 
 def test_industrial_co2_unchanged():
@@ -74,5 +79,7 @@ def test_industrial_co2_unchanged():
 
 
 def test_same_inputs_same_co2():
-    assert co2_avoided("tool_fleet", "CMH", "release", 1) == co2_avoided("tool_fleet", "CMH", "release", 1)
-    assert co2_avoided("device", None, "auction", 10) == co2_avoided("device", None, "auction", 10)
+    tf = load_pack("tool_fleet")
+    dv = load_pack("device")
+    assert co2_avoided(tf, "CMH", "release", 1, confirmed=True) == co2_avoided(tf, "CMH", "release", 1, confirmed=True)
+    assert co2_avoided(dv, None, "auction", 10, confirmed=False) == co2_avoided(dv, None, "auction", 10, confirmed=False)

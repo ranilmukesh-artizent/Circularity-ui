@@ -832,8 +832,8 @@
    }
   },
   "carbon": {
-   "set": "cfs-2026.1",
-   "d_rule": "low"
+   "set": "cfs-2026.2",
+   "d_rule": "demand"
   }
  },
  "replay": {

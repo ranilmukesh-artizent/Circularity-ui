@@ -18,10 +18,12 @@ import { sessionScoped, view } from './view';
 
 // ---------- records ----------
 export interface CostTerm { kind: string; label: string; amt: number }
+/** A route's CO2e provenance (P9-1.12): the factor set, the label and each factor with its value, source and year. */
+export interface Co2Prov { set: string; label: string; factors: { name: string; value: number; source: string; year: number }[]; transportKg: number | null }
 export interface Route {
   id: string; plan: string; net: number; p10: number; p90: number; why?: string; target?: string; unc?: string;
   excluded?: boolean; failReason?: string; failGate?: number; terms: CostTerm[]; gates: string[]; gateNotes?: string[];
-  co2?: number; co2Src?: string;
+  co2?: number | null; co2Prov?: Co2Prov | null;
   demandStatus?: string; demandLabel?: string; variant?: string; vendor?: string; refurbDelta?: number | null; poolNet?: number;
   hold?: { forecast: number; holding: number; headline: number; sellNow: number; opp: string; review: string; days: number; fallback: number };
   components?: { n: string; dest: string; ref: string; v: number }[];
@@ -93,7 +95,7 @@ export interface Prov {
   id: string; key: string; label: string; status: string; state?: string; sourceName?: string; vendor?: string; record?: string | null;
   value?: string; fetchedAt?: string; reason?: string; usedIn: string[]; notes?: string[];
 }
-export interface RankRow { route: string; plan: string; gross: number; cost: number; net: number; days: number; prob: number; life: string; co2: number }
+export interface RankRow { route: string; plan: string; gross: number; cost: number; net: number; days: number; prob: number; life: string; co2: number | null }
 export interface PlanStep {
   n: number; k: string; label: string; sys: string; app: string; act: string; docs: string[]; planned: boolean; owner: string; lim: string;
   state: string; clock: Clock | null; why: string;
@@ -345,9 +347,9 @@ export function tiRows(c: CaseRec, a: CaseAnalysis, sr: ScenRoutes): TiRow[] {
   const rows: TiRow[] = sr.el.map((x) => ({ ...base(x.r), net: x.sn, r: x.r, x, fit: 0 }));
   if (!rows.length) return rows;
   const mn = (v: number[]) => Math.min(...v), mx = (v: number[]) => Math.max(...v);
-  const nets = rows.map((z) => z.net), ds = rows.map((z) => z.days), cs = rows.map((z) => z.co2), W = ti.w, ws = W.net + W.time + W.env + W.serv || 1;
+  const nets = rows.map((z) => z.net), ds = rows.map((z) => z.days), cs = rows.map((z) => z.co2 ?? 0), W = ti.w, ws = W.net + W.time + W.env + W.serv || 1;
   rows.forEach((z) => {
-    const nn = (z.net - mn(nets)) / (mx(nets) - mn(nets) || 1), tt = 1 - (z.days - mn(ds)) / (mx(ds) - mn(ds) || 1), ee = (z.co2 - mn(cs)) / (mx(cs) - mn(cs) || 1), ss = (z.prob / 100) * (TI_SERV[z.r.id] || 0);
+    const nn = (z.net - mn(nets)) / (mx(nets) - mn(nets) || 1), tt = 1 - (z.days - mn(ds)) / (mx(ds) - mn(ds) || 1), ee = ((z.co2 ?? 0) - mn(cs)) / (mx(cs) - mn(cs) || 1), ss = (z.prob / 100) * (TI_SERV[z.r.id] || 0);
     z.fit = Math.round((100 * (W.net * nn + W.time * tt + W.env * ee + W.serv * ss)) / ws);
   });
   return rows;
@@ -372,9 +374,11 @@ export function tieBreak(a0: CaseAnalysis, rows: TiRow[]): Tie | null {
     ['demand', dem(a), dem(b), (x, y) => (x !== y ? (x > y ? 'a' : 'b') : null), (v) => (v ? 'confirmed' : 'forecast')],
     ['cycle', a.days, b.days, (x, y) => (Math.abs(x - y) >= 3 ? (x < y ? 'a' : 'b') : null), (v) => v + ' days'],
     ['rul', life(a), life(b), (x, y) => (Math.abs(x - y) >= 6 ? (x > y ? 'a' : 'b') : null), (v) => (v ? v + ' months' : 'none')],
-    ['co2', a.co2, b.co2, (x, y) => (Math.abs(x - y) >= 0.1 * Math.max(x, y, 1) ? (x > y ? 'a' : 'b') : null), (v) => fmtNumber(v) + ' kg'],
   ];
-  const values = Fs.map((f) => ({ k: f[0], label: TB_RULES.find((t) => t[0] === f[0])![1], a: f[4](f[1]), b: f[4](f[2]), w: f[3](f[1], f[2]) }));
+  const values: TieValue[] = Fs.map((f) => ({ k: f[0], label: TB_RULES.find((t) => t[0] === f[0])![1], a: f[4](f[1]), b: f[4](f[2]), w: f[3](f[1], f[2]) }));
+  // Carbon last (P9-1.12): a route with no CO2e figure has no carbon decision, shown as a dash.
+  const co2Win = a.co2 == null || b.co2 == null ? null : Math.abs(a.co2 - b.co2) >= 0.1 * Math.max(a.co2, b.co2, 1) ? (a.co2 > b.co2 ? 'a' : 'b') : null;
+  values.push({ k: 'co2', label: TB_RULES.find((t) => t[0] === 'co2')![1], a: a.co2 == null ? '—' : fmtNumber(a.co2) + ' kg', b: b.co2 == null ? '—' : fmtNumber(b.co2) + ' kg', w: co2Win });
   const d = values.find((v) => v.w);
   return { near: true, gap, pct: Math.round((gap / Math.max(1, Math.abs(a.net))) * 100), a, b, decidedBy: d ? d.k : null, preferred: d && d.w === 'b' ? b : a, values };
 }

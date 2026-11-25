@@ -792,7 +792,7 @@
    ]
   },
   "carbon": {
-   "set": "cfs-2026.1",
+   "set": "cfs-2026.2",
    "d_rule": "demand"
   }
  },

@@ -102,8 +102,8 @@ class PathValue(TypedDict):
     lines: list[ValueLine]
     dest: dict[str, Any] | None
     misses: list[str]
-    co2: float  # kg CO2e avoided, information only (carbon.co2_avoided); 0 without a factor
-    co2Src: str
+    co2: float | None  # kg CO2e avoided, information only (carbon.co2_avoided); None without a factor or avoided figure
+    co2Prov: dict[str, Any] | None  # the card's provenance (carbon.Co2.prov); None without a factor
 
 
 class Decision(TypedDict, total=False):
@@ -116,6 +116,10 @@ class Decision(TypedDict, total=False):
     rules: list[str]
     indep: PathValue  # open cases: the best path when the return is decided alone (no queue plan)
     blk: list[str]  # open cases: the orders (and "DEPOT") the queue plan keeps from this return
+
+
+# A destination that is a confirmed named order on the demand line: its carbon d is 1, else the forecast (P9-1.12).
+CONFIRMED_KINDS = frozenset({"lease", "so", "proj"})
 
 
 # ---------------------------------------------------------------- helpers
@@ -486,7 +490,8 @@ def _value(c: Case, k: str, p: Params, ctx: _Ctx) -> PathValue:
     cost = js_sum(x["amt"] for x in L if x["type"] == "c")
     hold = p["hold"] * lead_k
     net = gross - cost - hold
-    cv = co2_avoided("tool_fleet", c["cls"], k, 1)
+    confirmed = dest is not None and dest.get("kind") in CONFIRMED_KINDS
+    cv = co2_avoided(load_pack("tool_fleet"), c["cls"], k, 1, confirmed=confirmed)
     return {
         "k": k,
         "ok": bool(ok),
@@ -498,8 +503,8 @@ def _value(c: Case, k: str, p: Params, ctx: _Ctx) -> PathValue:
         "lines": L,
         "dest": dest,
         "misses": misses,
-        "co2": cv.kg if cv else 0,
-        "co2Src": cv.label if cv else "",
+        "co2": cv.kg if cv else None,
+        "co2Prov": cv.prov() if cv else None,
     }
 
 

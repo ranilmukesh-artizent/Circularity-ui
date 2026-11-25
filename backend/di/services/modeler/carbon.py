@@ -1,10 +1,15 @@
-"""Carbon factor set: the kg of CO2e a route avoids against buying new (plan 9, P9-0.6).
+"""Carbon factor set: the kg of CO2e a route avoids against buying new (plan 9, P9-0.6; X-12 in P9-1.12).
 
 Owns the read of `packs/carbon.json` and `co2_avoided`, the one place a valuer asks for a route's CO2e. A pack names
-its factor set in `valuer.carbon.set`; a pack naming a set this file does not hold has no CO2e.
-Never changes a route, a net or a ranking: the figure is information on the route. The sample factors are synthetic
-and no third-party data is bundled; a real factor set needs review by Kinective's Legal team before any report.
-P9-1.12 (X-12) replaces the simple share with B 5.7's formula.
+its factor set in `valuer.carbon.set`; a pack naming a set this file does not hold has no CO2e. The pack's
+`valuer.carbon.d_rule` says how the demand share d is found: `demand` (1 on a confirmed named order, the forecast
+otherwise), `low` (`params.d_low`), `transport_only` (no avoided figure, the transport kg only) or `none`.
+
+Formula (B 5.7, "avoided, not inventory"): kg = (e_new x d - e_prep - e_log) x qty, rounded as the demo rounds.
+Every factor that enters the figure is returned with its own provenance (source, year, set): a figure without a factor
+is never shown. Never changes a route, a net or a ranking: the figure is information on the route. The sample factors
+are synthetic and no third-party data is bundled; a real factor set needs review by Kinective's Legal team before any
+report.
 """
 
 import json
@@ -14,23 +19,40 @@ from pathlib import Path
 from typing import Any
 
 from di.services.engine.jsmath import js_round
-from di.services.modeler.pack import Pack, load_pack
+from di.services.modeler.pack import Pack
 
 _FILE = Path(__file__).parent / "packs" / "carbon.json"
 
 
 @dataclass(frozen=True)
-class Co2:
-    kg: float
-    set: str
+class Factor:
+    name: str  # e_new, d, e_prep or e_log
+    value: float
     source: str
     year: int
-    method: str
+    version: str
+    licence: str
+
+
+@dataclass(frozen=True)
+class Co2:
+    kg: float | None  # avoided kg CO2e; None when the rule gives no avoided figure (transport only)
+    transport_kg: float | None  # e_log x qty, shown under the transport-only rule
+    set: str
+    factors: tuple[Factor, ...]
 
     @property
     def label(self) -> str:
-        """The factor source line, for example `cfs-2026.1 · Sample value (synthetic), 2026`."""
-        return f"{self.set} · {self.source}, {self.year}"
+        return "avoided, not inventory" if self.kg is not None else "transport only, not avoided"
+
+    def prov(self) -> dict[str, Any]:
+        """The card's provenance: the set, the label, each factor with its value, source and year."""
+        return {
+            "set": self.set,
+            "label": self.label,
+            "factors": [{"name": f.name, "value": f.value, "source": f.source, "year": f.year} for f in self.factors],
+            "transportKg": self.transport_kg,
+        }
 
 
 @cache
@@ -40,27 +62,49 @@ def _factors() -> dict[str, Any]:
     return data
 
 
-def co2_avoided(pack_key: str, cls: str | None, route: str, qty: float) -> Co2 | None:
-    """`co2_avoided_of` for the pack `pack_key`; None for an unknown pack."""
-    try:
-        pack = load_pack(pack_key)
-    except KeyError:
-        return None
-    return co2_avoided_of(pack, cls, route, qty)
+def _lookup(table: dict[str, Any], key: str | None) -> dict[str, Any] | None:
+    """A factor entry by its key (a class or a route), or the table's `*` entry for every key; None without one."""
+    if key is not None and key in table:
+        return table[key]
+    return table.get("*")
 
 
-def co2_avoided_of(pack: Pack, cls: str | None, route: str, qty: float) -> Co2 | None:
-    """E_new of the class (or `*`) x the route's share x quantity, rounded as the demo rounds, from the factor set the
-    pack names (`valuer.carbon.set`); None without that set or without a factor."""
+def _factor(name: str, entry: dict[str, Any], version: str) -> Factor:
+    return Factor(name, entry["value"], entry["source"], entry["year"], version, entry["licence"])
+
+
+def co2_avoided(pack: Pack, cls: str | None, route: str, qty: float, *, confirmed: bool) -> Co2 | None:
+    """The CO2e a route avoids for `qty` units of class `cls` (the pack's `valuer.carbon.d_rule` decides d).
+
+    `confirmed` says the route's destination is a confirmed named order (the demand line). None without the pack's
+    factor set, without a factor for the class or route, or under the `none` rule.
+    """
     f = _factors()
     if pack.valuer.carbon.set != f["set"]:
         return None
     entry = f["packs"].get(pack.key)
-    if entry is None:
+    rule = pack.valuer.carbon.d_rule
+    if entry is None or rule == "none":
         return None
-    e_new = entry["e_new"].get(cls or "*")
-    share = entry["share"].get(route)
-    if e_new is None or share is None:
+    e_log_entry = _lookup(entry["e_log"], route)
+    if e_log_entry is None:
         return None
-    src = f["source"]
-    return Co2(js_round(e_new * share * qty), f["set"], src["source"], src["year"], src["method"])
+    e_log = _factor("e_log", e_log_entry, f["set"])
+    if rule == "transport_only":
+        return Co2(None, e_log.value * qty, f["set"], (e_log,))
+    e_new_entry = _lookup(entry["e_new"], cls)
+    e_prep_entry = _lookup(entry["e_prep"], route)
+    if e_new_entry is None or e_prep_entry is None:
+        return None
+    if rule == "low":
+        d_low = pack.valuer.params.get("d_low")
+        if d_low is None:
+            return None
+        d_entry = {**entry["d_forecast"], "value": d_low, "source": "Pack parameter d_low (low-confidence demand)"}
+    else:
+        d_entry = entry["d_confirmed"] if confirmed else entry["d_forecast"]
+    e_new = _factor("e_new", e_new_entry, f["set"])
+    d = _factor("d", d_entry, f["set"])
+    e_prep = _factor("e_prep", e_prep_entry, f["set"])
+    kg = js_round((e_new.value * d.value - e_prep.value - e_log.value) * qty)
+    return Co2(kg, None, f["set"], (e_new, d, e_prep, e_log))

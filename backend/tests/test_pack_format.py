@@ -170,9 +170,9 @@ def test_runtime_and_kpis_of_the_two_packs():
 
 
 def test_carbon_reads_the_pack_named_set():
-    assert load_pack("tool_fleet").valuer.carbon.set == "cfs-2026.1"
-    assert carbon.co2_avoided("tool_fleet", "CMH", "release", 1) is not None
+    assert load_pack("tool_fleet").valuer.carbon.set == "cfs-2026.2"
     pack = load_pack("tool_fleet")
+    assert carbon.co2_avoided(pack, "CMH", "release", 1, confirmed=True) is not None
     carbon_ref = pack.valuer.carbon.model_copy(update={"set": "other"})
     other = pack.model_copy(update={"valuer": pack.valuer.model_copy(update={"carbon": carbon_ref})})
-    assert carbon.co2_avoided_of(other, "CMH", "release", 1) is None
+    assert carbon.co2_avoided(other, "CMH", "release", 1, confirmed=True) is None

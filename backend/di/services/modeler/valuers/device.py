@@ -28,7 +28,8 @@ NAME = "Device recommerce"
 
 # The channels, their settings, the learning table and the policy are the pack's `valuer.params` (packs/device.json),
 # copied so a valuer never changes the cached pack.
-_PARAMS: dict[str, Any] = copy.deepcopy(load_pack("device").valuer.params)
+_PACK = load_pack("device")
+_PARAMS: dict[str, Any] = copy.deepcopy(_PACK.valuer.params)
 DCH: list[str] = _PARAMS["dch"]  # 2329
 DCN: dict[str, str] = _PARAMS["dcn"]  # 2330
 # Channel settings (2332): fee share, fixed fee, logistics per unit, listing window in days, maximum lot size.
@@ -63,8 +64,8 @@ class ChannelValue(TypedDict):
     score: float
     ok: bool
     why: str
-    co2: float  # kg CO2e avoided for the lot, information only (carbon.co2_avoided); 0 without a factor
-    co2Src: str
+    co2: float | None  # kg CO2e avoided for the lot, information only (carbon.co2_avoided); None without a factor
+    co2Prov: dict[str, Any] | None  # the card's provenance (carbon.Co2.prov); None without a factor
 
 
 class Decision(TypedDict):
@@ -117,7 +118,7 @@ def score(lot: Lot, channel: str) -> ChannelValue:
     days = s[1] * s[2] + (1 - s[1]) * (c["win"] + a[2])
     cash = s[1] * net + (1 - s[1]) * aun * math.pow(1 - DG["ero"], c["win"] / 7) - DG["hold"] * days
     ok = not (lot["grade"] == "D" and channel in ("buynow", "market")) and lot["qty"] <= c["lot"]
-    cv = co2_avoided("device", None, channel, lot["qty"])
+    cv = co2_avoided(_PACK, None, channel, lot["qty"], confirmed=False)
     return {
         "k": channel,
         "cash": cash,
@@ -125,8 +126,8 @@ def score(lot: Lot, channel: str) -> ChannelValue:
         "score": cash - DG["pen"] * max(0, lot["doh"] + days - DG["sla"]),
         "ok": ok,
         "why": "",
-        "co2": cv.kg if cv else 0,
-        "co2Src": cv.label if cv else "",
+        "co2": cv.kg if cv else None,
+        "co2Prov": cv.prov() if cv else None,
     }
 
 
