@@ -9,7 +9,7 @@ vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>
 
 import { actionScope, matcher } from './invalidation';
 import {
-  applySuggestion, approveFlow, approveOverlay, discardFlow, forkFlow, publishFlow, rebaseOverlay, rejectFlow, rejectOverlay, rollbackFlow,
+  applySuggestion, approveFlow, exportBpmn, exportDmn, approveOverlay, discardFlow, forkFlow, publishFlow, rebaseOverlay, rejectFlow, rejectOverlay, rollbackFlow,
   ruleSuggestions, saveDraft, saveOverlay, simulateFlow, submitOverlay,
   submitFlow, useModeler, type RuleSuggestion,
 } from './modeler'; // prettier-ignore
@@ -119,5 +119,16 @@ describe('the Modeler facade (plan 8 MVP-4.3)', () => {
 
   it('reading suggestions changes nothing', () => {
     expect(matcher(actionScope('flow.suggestions'))).toBeNull();
+  });
+});
+
+describe('the flow exports (P9-8.21)', () => {
+  it('each export is a read action on the flow, and invalidates nothing', async () => {
+    await exportDmn(3);
+    expect(last()).toEqual(['flow.exportDmn', { flow_id: 3 }]);
+    await exportBpmn(3);
+    expect(last()).toEqual(['flow.exportBpmn', { flow_id: 3 }]);
+    expect(matcher(actionScope('flow.exportDmn'))).toBeNull();
+    expect(matcher(actionScope('flow.exportBpmn'))).toBeNull();
   });
 });

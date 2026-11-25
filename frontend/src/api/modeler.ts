@@ -147,3 +147,14 @@ export const saveDecisionTable = (t: MarketTable, body: Jdm, validFrom: string, 
   saveMarketTable({ pack: t.pack, flow: t.flow, market: t.market, name: t.name, kind: 'decision_table', valid_from: validFrom, ...(t.org_unit_id ? { org_unit_id: t.org_unit_id } : {}), body, ...(own ? { id: t.id } : {}) }); // prettier-ignore
 /** "Test this decision": the stored version on sample inputs; answers the outputs and the matched row. */
 export const testDecisionTable = testMarketTable;
+
+/** A flow exported for other tools (P9-8.21): the file name, its type and the XML text. */
+export interface FlowExport {
+  filename: string;
+  content_type: string;
+  xml: string;
+}
+/** The flow's rules, guardrails and decision tables as DMN 1.3 (flow.exportDmn, a read). */
+export const exportDmn = (flowId: number): Promise<ActionResult<FlowExport>> => invoke('flow.exportDmn', { flow_id: flowId });
+/** The flow's case process as BPMN 2.0 (flow.exportBpmn, a read). */
+export const exportBpmn = (flowId: number): Promise<ActionResult<FlowExport>> => invoke('flow.exportBpmn', { flow_id: flowId });
