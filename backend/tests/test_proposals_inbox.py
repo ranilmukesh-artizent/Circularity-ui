@@ -37,7 +37,7 @@ def fresh():
 def held(user: str = "planner-a", case_id: str = CASE) -> int:
     hdr = h(user) | {"X-Circularity-Preparer": AGENT["id"]}
     r = client.post("/api/actions/evidence.request", json={"case_id": case_id}, headers=hdr).json()
-    assert r["ok"] is True and set(r["output"]) == {"held"}, r
+    assert r["ok"] is True and set(r["output"]) == {"held", "reasons"}, r
     return int(r["output"]["held"])
 
 

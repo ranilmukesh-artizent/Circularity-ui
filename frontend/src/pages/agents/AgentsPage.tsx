@@ -195,13 +195,14 @@ function Proposals({ list }: { list: AgentProposal[] }) {
         {list.length ? (
           <div className="tw">
             <table className="t static">
-              <thead><tr><th>#</th><th>Agent</th><th>Action</th><th>Case</th><th>Prepared</th><th></th></tr></thead>
+              <thead><tr><th>#</th><th>Agent</th><th>Action</th><th>Held because</th><th>Case</th><th>Prepared</th><th></th></tr></thead>
               <tbody>
                 {list.map((p) => (
                   <tr key={p.id} id={'agp-' + p.id}>
                     <td className="num">{p.id}</td>
                     <td>{p.agentName}</td>
-                    <td>{p.title} <span className="note mono">{p.action}</span></td>
+                    <td>{p.title} <span className="note mono">{p.action}</span>{p.why && <span className="note">{p.why}</span>}</td>
+                    <td data-reasons>{p.reasons?.length ? p.reasons.map((r) => <span key={r.reason + r.detail} className={'chip ' + (r.reason === 'taint' || r.reason === 'destructive' ? 'bad' : 'line')} title={r.reason}>{r.detail}</span>) : <span className="note">—</span>}</td>
                     <td>{p.case_id ? <a href={caseHref(p.case_id)}>{p.case_id}</a> : <span className="note">—</span>}</td>
                     <td className="num nowrap">{p.at.slice(0, 16).replace('T', ' ')}</td>
                     <td className="nowrap">

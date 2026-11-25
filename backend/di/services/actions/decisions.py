@@ -32,7 +32,7 @@ from di.repositories.common import AS_OF, case_demand, hash_id, iso, limit_for, 
 from di.repositories.live_rules import Shadow, live_rules, shadow_rules
 from di.services import instructions
 from di.services.actions.pipeline import CallContext
-from di.services.actions.registry import ACTIONS, ActionError, guard, implement
+from di.services.actions.registry import ACTIONS, ActionError, guard, implement, mark_destructive
 from di.services.cases import intake, lifecycle, store
 from di.services.engine.evaluate import apply_business, build_routes, draft_of, evaluate
 from di.services.engine.predictor import FormulaPredictor
@@ -623,6 +623,9 @@ def scenario_save(i: dict[str, Any], ctx: CallContext):
     }  # fmt: skip
     state.add(s, "scenarios", f"SCN-{n}", item)
     return {"case_id": i["case_id"], "id": sid, "name": i["name"]}
+
+
+mark_destructive("scenario.delete")  # an agent that prepares it is held for a person (P9-2.4)
 
 
 @implement("scenario.delete")

@@ -160,6 +160,8 @@ export function assignAlert(id: string, toRole: string): void {
  */
 export interface HomeProposal {
   id: number; agent: string; agentName: string; action: string; title: string; why: string;
+  /** Why the hold policy held it (plan 9, P9-2.4); absent or empty for a proposal held before. */
+  reasons?: { reason: string; detail: string }[];
   input: Record<string, unknown>; case_id: string | null; run_id: string | null; at: string;
   /** The agent acted for this signed-in person: they may only reject it (proposal.accept refuses them, maker-checker). */
   own?: boolean;

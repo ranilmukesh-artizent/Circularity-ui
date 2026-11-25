@@ -87,10 +87,10 @@ def _action_tool(action_id: str) -> Tool[_Deps]:
         r = invoke(action_id, args, replace(d.ctx, idem_key=f"{d.ctx.run_id}:{rc.tool_call_id}"))
         if r["ok"]:
             out = r["output"]
-            if isinstance(out, dict) and set(out) == {"held"}:
+            if isinstance(out, dict) and "held" in out:  # {held, reasons} (P9-2.4)
                 raise CallDeferred(metadata={"kind": "external", "action": action_id, "proposal_id": out["held"]})
             if action_id in d.untrusted:
-                d.tainted = True
+                d.tainted = d.ctx.taint = True  # the rest of the run's writes are held (P9-2.4)
             return out
         e = r["error"]
         if e["code"] == "duplicate":

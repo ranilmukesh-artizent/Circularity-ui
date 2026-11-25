@@ -7,7 +7,8 @@
         agent_mode     "no" for the actions no agent may run (di.services.agents.forbidden.FORBIDDEN_ACTIONS:
                        approving, overriding, declining, access, publishing, connection changes ...; the reads of
                        NO_AGENT_READS that handle a secret; system-only actions; actions with no handler yet),
-                       "held" for HELD_FOR_PERSON (an agent prepares it, a person runs it), else "yes"
+                       "held" for a destructive or HELD_FOR_PERSON action (a person runs it), else "yes"
+        destructive    a delete, discard or revert: the hold policy holds it at every autonomy level (P9-2.4, I-10)
         agent_allowed  agent_mode != "no"
         implemented    the action has a handler (an unbuilt one answers 501)
 
@@ -46,7 +47,7 @@ def agent_mode(a: ActionDef) -> Literal["yes", "held", "no"]:
         return "no"
     if a.id.startswith(FORBIDDEN_ACTIONS) and a.risk != "read":
         return "no"
-    return "held" if held_for_person(a.id) else "yes"
+    return "held" if a.destructive or held_for_person(a.id) else "yes"
 
 
 def agent_allowed(a: ActionDef) -> bool:
@@ -63,6 +64,7 @@ def entry(a: ActionDef) -> dict[str, Any]:
         "input_schema": input_schema(a),
         "agent_allowed": agent_allowed(a),
         "agent_mode": agent_mode(a),
+        "destructive": a.destructive or held_for_person(a.id),
         "implemented": a.handler is not None,
     }
 

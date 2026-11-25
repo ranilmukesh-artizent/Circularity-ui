@@ -4,8 +4,8 @@
     4 the permission            5 case scope: exists, tenant boundary, warehouse lock
     6 the agent gate (when an agent prepared it)              7 the action's own guard
     8 policy limits (approval limits, B12; an agent's kill switch, autonomy and run limits, MVP-11.1)
-    9 idempotency                (then: an agent with autonomy "propose" holds a write for a person, MVP-11.4;
-                                 every agent holds a HELD_FOR_PERSON write, P9-0.4)
+    9 idempotency                (then 9b, the hold policy, P9-2.4: an agent's write waits for a person when
+                                 `hold.hold_check` gives a reason: risk, value, confidence, taint, destructive or autonomy)
     10 run the handler           11 journal it (and run its `after` hooks)   12 emit events
 Read actions stop after the handler: they are not journaled.
 Every result is the demo's shape: {ok: true, output, key, action, seq} or {ok: false, error: {code, message}}.
@@ -21,6 +21,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from di.core import clock, policy
+from di.services.actions import hold
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError
 from di.services.actions.scope import case_scope
 from di.services.agents import limits, proposals
@@ -77,7 +78,8 @@ class CallContext:
     confirmed: bool = False  # a person pressed the final button on the agent's plan
     run_id: str | None = None
     idem_key: str | None = None  # an Idempotency-Key from the client, for actions without their own key
-    stage: StageContext | None = None  # the chain stage of an agent call (P9-2.1; P9-2.4 reads it)
+    stage: StageContext | None = None  # the chain stage of an agent call (P9-2.1; the hold policy reads it)
+    taint: bool = False  # the run read untrusted content (an `untrusted_tools` result): every write is held (P9-2.4)
     now: datetime = field(default_factory=clock.now)  # the workspace clock (di/core/clock.py)
 
 
@@ -156,7 +158,7 @@ def agent_route(a: ActionDef, ctx: CallContext) -> Literal["refused", "held", "r
         a.changes_state
         and not ctx.confirmed
         and ctx.preparer
-        and (held_for_person(a.id) or proposals.holds(ctx.session, ctx.preparer))
+        and (a.destructive or held_for_person(a.id) or proposals.holds(ctx.session, ctx.preparer))
     ):
         return "held"
     return "runs"
@@ -234,11 +236,11 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[s
         seen = ctx.session.execute(text("SELECT seq FROM action_journal WHERE idem_key = :k AND NOT undone"), {"k": key}).first()
         if seen:
             return fail("duplicate", f"{a.dup_text or 'Already done'}. Nothing was created twice.")
-    # 9b an agent registered with autonomy "propose" does not run a write, and no agent runs a HELD_FOR_PERSON one:
-    # it holds for a person (MVP-11.4, P9-0.4)
-    if ctx.preparer and agent_route(a, ctx) == "held":
-        pid = proposals.hold(ctx, a.id, _clean(i), case_id)
-        return {"ok": True, "output": {"held": pid}, "key": None, "action": a.id}
+    # 9b the hold policy (P9-2.4, I-10): an agent's write that has a reason to wait for a person is stored as a proposal
+    if ctx.preparer and a.handler is not None and (holds := hold.hold_check(a, i, ctx)):
+        reasons = hold.reasons_json(holds)
+        pid = proposals.hold(ctx, a.id, _clean(i), case_id, reasons)
+        return {"ok": True, "output": {"held": pid, "reasons": reasons}, "key": None, "action": a.id}
     # 10 run
     if a.handler is None:
         return fail("not_implemented", f"{a.title} is not available on the server yet.")

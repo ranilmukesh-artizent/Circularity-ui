@@ -42,7 +42,7 @@ from di.repositories.flows import FlowRow
 from di.repositories.orgs import units
 from di.services.actions.modeler_sim import lever_problem, sim_json, simulate_graph, simulate_rules
 from di.services.actions.pipeline import CallContext
-from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
+from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement, mark_destructive
 from di.services.ask.modeler_read import model_rule
 from di.services.modeler.compile import compile_flow
 from di.services.modeler.flow import Flow
@@ -88,6 +88,7 @@ _declare("flow.publish", "Publish a flow", "publish decision flows",
          "Publish an approved decision flow. Decisions use it from the next re-evaluation.", "commit", _ID, _APPROVE)  # fmt: skip
 _declare("flow.discard", "Discard a flow draft", "edit decision flows",
          "Drop the draft and go back to the published decision flow.", "act", _ID, _MANAGE)  # fmt: skip
+mark_destructive("flow.discard")  # an agent that prepares it is held for a person (P9-2.4)
 _declare("flow.rollback", "Roll back a flow", "roll back decision flows",
          "Restore the decision flow published before the current one.", "commit", _ID, _APPROVE)  # fmt: skip
 _declare("flow.get", "Read a flow", "read decision flows",

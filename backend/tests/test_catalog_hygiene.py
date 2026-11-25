@@ -84,7 +84,7 @@ def test_mapping_revert_held_for_agent_with_act():
         s.commit()
         assert [v["version"] for v in mapping.versions(s, SID)] == [2, 1]
     r = prepared("mapping.revert", {"source_id": SID, "version": 1}, "developer")
-    assert r["ok"] is True and set(r["output"]) == {"held"}, r
+    assert r["ok"] is True and set(r["output"]) == {"held", "reasons"}, r
     with SessionLocal() as s:
         assert mapping.active_version(s, SID) == 2
     assert [(p["agent"], p["action"], p["status"]) for p in proposals()] == [(AGENT, "mapping.revert", "pending")]
@@ -93,7 +93,7 @@ def test_mapping_revert_held_for_agent_with_act():
 def test_tables_update_held_for_agent_with_act():
     body = {"src": "erp", "op": "add", "table": {"n": "T001X", "cols": [["A", ""]], "rows": "—", "x": 1, "y": 1}}
     r = prepared("tables.update", body, "developer")
-    assert r["ok"] is True and set(r["output"]) == {"held"}, r
+    assert r["ok"] is True and set(r["output"]) == {"held", "reasons"}, r
     assert [(p["agent"], p["action"], p["status"]) for p in proposals()] == [(AGENT, "tables.update", "pending")]
     model = client.get("/api/screens/integration/tables", headers=h("developer")).json()
     assert "T001X" not in str(model)

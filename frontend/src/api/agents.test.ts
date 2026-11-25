@@ -8,7 +8,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, fitModel, promoteModel, proposeModel, registerAgent, rejectProposal, setLlmModel, stageLabel, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, fitModel, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, setLlmModel, stageLabel, startRun, updateAgent, useAgents, useModels,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
 
@@ -67,6 +67,18 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
     expect(stageLabel('fit_for_use')).toBe('Fit-for-use');
     expect(stageLabel('condition')).toBe('Condition and life');
     expect(stageLabel('somewhere_new')).toBe('somewhere_new');
+  });
+
+  it('the hold reasons read as one line (plan 9 P9-2.4)', () => {
+    expect(reasonText([{ reason: 'value', detail: 'Value $900 is above the $600 limit' }])).toBe('Value $900 is above the $600 limit');
+    expect(
+      reasonText([
+        { reason: 'value', detail: 'Value $900 is above the $600 limit' },
+        { reason: 'confidence', detail: 'Confidence 0.62 is below 0.75' },
+      ]),
+    ).toBe('Value $900 is above the $600 limit · Confidence 0.62 is below 0.75');
+    expect(reasonText([])).toBe('');
+    expect(reasonText(undefined)).toBe('');
   });
 
   it('an agent change or a decided proposal refreshes every page', () => {

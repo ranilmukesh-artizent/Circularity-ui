@@ -62,6 +62,15 @@ describe('ProposalsCard', () => {
     expect(m.accept).toHaveBeenCalledWith(7);
   });
 
+  it('shows why the hold policy held it (plan 9 P9-2.4), and nothing for a proposal held before', () => {
+    m.list = [{ ...P, reasons: [{ reason: 'value', detail: 'Value $900 is above the $600 limit' }, { reason: 'confidence', detail: 'Confidence 0.62 is below 0.75' }] }];
+    draw();
+    expect(host.querySelector('[data-reasons]')!.textContent).toBe('Held because: Value $900 is above the $600 limit · Confidence 0.62 is below 0.75');
+    m.list = [{ ...P, reasons: [] }];
+    draw();
+    expect(host.querySelector('[data-reasons]')).toBeNull();
+  });
+
   it("the person's own agent's proposal: no Accept (the server refuses it), a note, Reject stays", () => {
     m.list = [{ ...P, own: true }];
     draw();

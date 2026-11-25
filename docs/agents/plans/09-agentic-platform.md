@@ -813,7 +813,7 @@ each story went.
 - [x] P9-2.1 Stage chain runtime with typed stage records
 - [x] P9-2.2 AgentLoop port with the Pydantic AI adapter
 - [x] P9-2.3 LLM router with budgets and cooldowns
-- [ ] P9-2.4 Hold policy with typed reasons in the pipeline
+- [x] P9-2.4 Hold policy with typed reasons in the pipeline
 - [ ] P9-2.5 Standing policy approves within thresholds
 - [ ] P9-2.6 Run tracing and the agent run view
 - [ ] P9-2.7 Configuration agent drafts a pack change set

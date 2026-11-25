@@ -1,2 +1,2 @@
 # Tasks in flight (task id, writer, model, started)
-P9-2.4 w1 sonnet 14:28
+P9-2.10 w2 sonnet 15:00

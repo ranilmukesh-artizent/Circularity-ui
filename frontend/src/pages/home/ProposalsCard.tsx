@@ -5,7 +5,7 @@
  * drawn, so Home looks as before.
  */
 import { useState } from 'react';
-import { OWN_PROPOSAL_NOTE } from '../../api/agents';
+import { OWN_PROPOSAL_NOTE, reasonText, type HoldReason } from '../../api/agents';
 import { acceptProposal, proposals, rgTime, rejectProposal, type HomeProposal } from '../../api/home';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
@@ -46,6 +46,7 @@ export function ProposalsCard() {
               <b>{p.title}</b>
               {p.case_id && <> · <a href={'#/product/' + p.case_id}>{p.case_id}</a></>}
               <span className="note">{p.why}</span>
+              {!!p.reasons?.length && <span className="note" data-reasons>Held because: {reasonText(p.reasons as HoldReason[])}</span>}
               <span className="note">{p.agentName} · {rgTime(p.at)}</span>
               <span className="row">
                 {p.own ? <span className="note">{OWN_PROPOSAL_NOTE}</span> : <button className="btn sm pri" disabled={action.pending} onClick={() => accept(p)}>Accept</button>}

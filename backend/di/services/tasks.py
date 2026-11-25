@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from di.core import jobs
 from di.services.actions.pipeline import CallContext
-from di.services.actions.registry import ACTIONS, ActionDef, ActionError, implement
+from di.services.actions.registry import ACTIONS, ActionDef, ActionError, implement, mark_destructive
 
 PERM = "manageIntegrations"
 COLUMNS = (
@@ -45,6 +45,7 @@ _declare(
 )  # fmt: skip
 _declare("task.retry", "Retry a task", "retry tasks", "Queue a dead, failed or cancelled task again.", _ID)
 _declare("task.cancel", "Cancel a task", "cancel tasks", "Cancel a task that has not started.", _ID)
+mark_destructive("task.cancel")  # an agent that prepares it is held for a person (P9-2.4)
 _declare(
     "task.reprioritise", "Reprioritise a task", "reprioritise tasks", "Change a queued task's priority (lower runs first).",
     _ID | {"priority": {"req": True, "t": "number"}},

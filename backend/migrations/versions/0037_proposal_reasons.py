@@ -1,23 +1,29 @@
-"""Reserved for P9-2.4 (plan 9): Hold policy with typed reasons in the pipeline.
+"""agent_proposal.reasons (plan 9, P9-2.4; registry entry I-10): why the hold policy held a call for a person.
 
-Empty until that task fills it. Plan 9's writers run in parallel and merge in any order, so every migration from
-0029 to 0061 exists, chained, from the start; a filled one is idempotent (IF NOT EXISTS), and
-`scripts/dev/migrate-reapply.sh 0028` applies it on a database that already ran it empty.
+A JSON list of {reason, detail}, reason one of risk, value, confidence, taint, destructive, autonomy
+(di.services.actions.hold). Proposals held before this step get an empty list; the Home inbox and the Agents page show
+none for them.
 
 Revision ID: 0037
 Revises: 0036
 Create Date: 2026-11-25
+
+Idempotent (IF NOT EXISTS), as every plan 9 migration is: bash scripts/dev/migrate-reapply.sh 0028
 """
+
+from alembic import op
 
 revision = "0037"
 down_revision = "0036"
 branch_labels = None
 depends_on = None
 
+SQL = "ALTER TABLE agent_proposal ADD COLUMN IF NOT EXISTS reasons jsonb NOT NULL DEFAULT '[]'"
+
 
 def upgrade() -> None:
-    pass
+    op.execute(SQL)
 
 
 def downgrade() -> None:
-    pass
+    op.execute("ALTER TABLE agent_proposal DROP COLUMN IF EXISTS reasons")

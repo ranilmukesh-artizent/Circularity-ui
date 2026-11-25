@@ -56,6 +56,9 @@ class ActionDef:
     # a write that is not journaled and emits no event: a person's own scratch state (an autosaved workflow draft),
     # which would otherwise fill the journal and the audit views every few seconds. Still a write for every gate.
     journaled: bool = True
+    # a delete, discard or revert: an agent that prepares it is held for a person at every autonomy level (P9-2.4, I-10;
+    # `mark_destructive` beside each declaration; di.services.actions.hold)
+    destructive: bool = False
 
     @property
     def permission(self) -> str | None:
@@ -104,3 +107,10 @@ def guard(action_id: str) -> Callable[[G], G]:
         return fn
 
     return register
+
+
+def mark_destructive(*action_ids: str) -> None:
+    """Mark actions as deletes, discards or reverts (`ActionDef.destructive`): the hold policy holds an agent's call of
+    one for a person whatever its autonomy (P9-2.4, I-10). Call it beside the action's declaration."""
+    for action_id in action_ids:
+        ACTIONS[action_id].destructive = True

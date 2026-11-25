@@ -223,6 +223,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-2.1 stage chain runtime with typed stage records | this commit | lead on main after migrate-reapply 0028 and restart: 14 agent, migration and golden test files passed except test_milestone_rt1048 (an old test-isolation bug, fixed in the previous commit; 11 passed with the autopilot tests); lint all passed; tsc 0, vitest 367 passed | done |
 | 2026-11-25 | 09 · P9-2.2 agentLoop port with the Pydantic AI adapter | this commit | lead on main after migrate-reapply 0028 and restart: test_agent_loop, agent runtime, proposals, stage chain, migrations, autopilot, ask 121 passed; lint all passed; tsc 0, vitest 367 passed | done |
 | 2026-11-25 | 09 · P9-2.3 lLM router with budgets and cooldowns | this commit | lead on main after migrate-reapply 0028 and restart: llm router, ask, agent loop, config, migrations, ask chain, catalogue, agent screens and serial-only test_mcp_server 159 passed; lint all passed; tsc 0, vitest 367 passed | done |
+| 2026-11-25 | 09 · P9-2.4 hold policy with typed reasons in the pipeline | this commit | lead on main after migrate-reapply 0028 and restart: parallel-suite and test_hold_policy, test_mcp_server, test_milestone_rt1048, test_stage_chain, test_proposals_inbox green except 2 hold tests that assumed no synced conflict on RT-1048's asset; the lead pinned only that half of the case state in the test (23 passed); lint all passed; tsc 0, vitest 369 passed | done |
 
 ## Decisions taken without the user (to review)
 

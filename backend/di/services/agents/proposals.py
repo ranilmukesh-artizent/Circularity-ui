@@ -1,13 +1,14 @@
 """Proposals that hold for a person (plan 8, MVP-11.4; edge case 26): table agent_proposal (migration 0024).
 
     holds(s, agent_id) -> bool          the agent is registered with autonomy "propose": its writes are held
-    hold(ctx, action, input, case_id) -> id   store the call (the pipeline does this instead of running it)
+    hold(ctx, action, input, case_id, reasons) -> id   store the call (the pipeline does this instead of running it), with the
+                                        typed reasons the hold policy gave (di.services.actions.hold, P9-2.4; column `reasons`)
     get(s, id, for_update) -> dict | None
     decide(s, id, status, by, at, result)    accepted or rejected, by whom and when, with the result
     pending_for(s, account, pctx) -> [dict]  the pending proposals a person may act on: the held action's own
                                              permission, and the case in their tenants (Home's proposals); a case
-                                             the server cannot place is nobody's (fail closed). Each with `why`, and
-                                             `own` when the agent acted for this person: they only reject it (F3a).
+                                             the server cannot place is nobody's (fail closed). Each with `why`, `reasons`
+                                             and `own` when the agent acted for this person: they only reject it (F3a).
 Holding a proposal adds a domain_event `proposal.held` ({id, action, agent}, with the case), so the live stream
 refreshes the inboxes.
 
@@ -30,7 +31,7 @@ from di.services.agents import registry
 if TYPE_CHECKING:
     from di.services.actions.pipeline import CallContext
 
-_COLS = "id, agent, action, input, case_id, run_id, status, created_at, decided_by, decided_at, result, requested_by"
+_COLS = "id, agent, action, input, case_id, run_id, status, created_at, decided_by, decided_at, result, requested_by, reasons"
 
 
 def holds(s: Session, agent_id: str) -> bool:
@@ -38,11 +39,13 @@ def holds(s: Session, agent_id: str) -> bool:
     return a is not None and a.autonomy == "propose"
 
 
-def hold(ctx: "CallContext", action: str, i: dict[str, Any], case_id: str | None) -> int:
+def hold(
+    ctx: "CallContext", action: str, i: dict[str, Any], case_id: str | None, reasons: list[dict[str, str]] | None = None
+) -> int:
     pid: int = ctx.session.execute(
         text(
-            "INSERT INTO agent_proposal (agent, action, input, case_id, run_id, status, created_at, requested_by) "
-            "VALUES (:a, :act, CAST(:i AS jsonb), :c, :r, 'pending', :at, :by) RETURNING id"
+            "INSERT INTO agent_proposal (agent, action, input, case_id, run_id, status, created_at, requested_by, reasons) "
+            "VALUES (:a, :act, CAST(:i AS jsonb), :c, :r, 'pending', :at, :by, CAST(:rs AS jsonb)) RETURNING id"
         ),
         {
             "a": ctx.preparer,
@@ -52,6 +55,7 @@ def hold(ctx: "CallContext", action: str, i: dict[str, Any], case_id: str | None
             "r": ctx.run_id,
             "at": ctx.now,
             "by": ctx.actor.id,
+            "rs": json.dumps(reasons or []),
         },
     ).scalar_one()
     # a journal event, so the live stream (filtered by the case's tenant) refreshes the inboxes; never the input
@@ -121,7 +125,7 @@ def pending_for(s: Session, account: policy.Account, pctx: policy.Context) -> li
                 {
                     "id": r["id"], "agent": r["agent"], "agentName": names.get(r["agent"], r["agent"]), "action": r["action"],
                     "title": a.title, "why": why(r), "input": r["input"], "case_id": r["case_id"], "run_id": r["run_id"],
-                    "at": r["created_at"].isoformat(), "own": own(r, account),
+                    "at": r["created_at"].isoformat(), "own": own(r, account), "reasons": r["reasons"],
                 }
             )  # fmt: skip
     return out

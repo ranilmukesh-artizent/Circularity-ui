@@ -108,7 +108,7 @@ def test_mapping_save_agent_bad_target_refused_not_held_p9_0_10():
 def test_mapping_save_agent_held_then_accepted():
     hdr = h("developer") | {"X-Circularity-Preparer": AGENT}
     r = client.post("/api/actions/mapping.save", json={"source_id": SID, "maps": _edited()}, headers=hdr).json()
-    assert r["ok"] is True and set(r["output"]) == {"held"}, r
+    assert r["ok"] is True and set(r["output"]) == {"held", "reasons"}, r
     assert _version() is None  # nothing was saved
     pid = r["output"]["held"]
     acc = call("proposal.accept", {"id": pid}, "admin")

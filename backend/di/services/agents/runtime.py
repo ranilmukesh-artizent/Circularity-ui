@@ -21,6 +21,10 @@ Plan 9 (P9-2.1): every playbook walks the stage chain (`playbooks/stage_chain.py
 `ctx.stage` set; `case_autopilot` is an alias that makes the same calls in the same order as the run's own agent. After a
 stage's last call (or when it waits, is held or fails) its record is upserted in `agent_stage_record`.
 
+Plan 9 (P9-2.4, I-10): the pipeline's hold policy (`di.services.actions.hold`) holds a stage call for a person by the stage's
+autonomy, value, confidence and open exceptions, and every write of a tainted run (`ctx.taint`, from the run state); the held
+reasons go to the stage record. `stage_confidence` gives a case with no condition confidence none, so it is never held for it.
+
 Plan 9 (P9-2.2, I-8): a playbook registered in `playbook_versions` is an LLM playbook: `step` runs it through the
 `AgentLoop` (`loop_runner()`; tests swap it with `set_loop`). A call the pipeline holds is a deferred call: the run waits with
 `state.deferred = {tool_call_id: proposal_id}`, and `wake` resumes the loop with each accepted proposal's output once all are
@@ -50,8 +54,10 @@ from di.services.agents.playbooks import case_autopilot as autopilot
 from di.services.agents.playbooks import stage_chain
 from di.services.agents.playbooks.case_autopilot import Done, Halt, Skip, Wait
 from di.services.agents.pydantic_ai_loop import PydanticAILoop
+from di.services.agents.stage_context import StageContext
 from di.services.agents.stages import CHAIN
 from di.services.cases import store
+from di.services.modeler.evidence import evidence_of
 
 log = logging.getLogger(__name__)
 PLAYBOOKS = {autopilot.NAME: stage_chain, stage_chain.NAME: stage_chain}  # case_autopilot is an alias of the chain
@@ -170,7 +176,10 @@ def _context(s: Session, run: dict) -> CallContext | None:
     account = policy.account(run["state"].get("account") or "", pctx)
     if account is None:
         return None
-    return CallContext(actor=Actor(account=account, ctx=pctx), session=s, preparer=run["agent"], run_id=run["id"])
+    taint = bool(
+        (run["state"] or {}).get("tainted")
+    )  # an untrusted tool returned in an earlier loop: every write is held (P9-2.4)
+    return CallContext(actor=Actor(account=account, ctx=pctx), session=s, preparer=run["agent"], run_id=run["id"], taint=taint)
 
 
 def _preparer(run: dict, agent: registry.Agent, defn: chain.StageDef) -> str:
@@ -182,9 +191,30 @@ def _preparer(run: dict, agent: registry.Agent, defn: chain.StageDef) -> str:
 
 
 def _stage_record(
-    s: Session, run: dict, stage: int, defn: chain.StageDef, st: dict[str, Any], case: dict, status: chain.Status
+    s: Session,
+    run: dict,
+    stage: int,
+    defn: chain.StageDef,
+    st: dict[str, Any],
+    case: dict,
+    status: chain.Status,
+    reasons: list[dict[str, Any]] | None = None,
 ) -> None:
-    chain.save_record(s, run["id"], run["case_id"], chain.build_record(defn, CHAIN[stage], st, case, status))
+    rec = chain.build_record(defn, CHAIN[stage], st, case, status)
+    rec.reasons = reasons or []  # why the hold policy held a call of the stage (P9-2.4)
+    chain.save_record(s, run["id"], run["case_id"], rec)
+
+
+def stage_confidence(ctx_stage: StageContext, case: dict) -> StageContext:
+    """The stage context the hold policy reads, with the confidence rule scoped to a case that has a confidence (P9-2.4).
+    - condition: a case without a `grade` evidence record (an industrial case has none) is read as 0.0 by the stage module,
+      which would hold every call at a threshold; it has no confidence, so None here.
+    - intake: its confidence is how complete the evidence is, and its one write (`evidence.request`) is the remedy for a low
+      value, so holding it for that would stop the fix; None here.
+    The industrial demo's cases and RT-1048 are therefore never held for a confidence they do not have."""
+    if (ctx_stage.stage == "condition" and evidence_of(case, "grade") is None) or ctx_stage.stage == "intake":
+        ctx_stage.confidence = None
+    return ctx_stage
 
 
 def _stage_done(s: Session, run: dict, stage: int, defn: chain.StageDef, st: dict[str, Any], case: dict, nxt: Done) -> str:
@@ -242,12 +272,12 @@ def step(s: Session, run_id: str) -> str:
     if isinstance(nxt, Done):
         return _stage_done(s, run, stage, defn, st, case, nxt)
     ctx.preparer = _preparer(run, agent, defn)
-    ctx.stage = chain.stage_context(defn, CHAIN[stage], st, case)
+    ctx.stage = stage_confidence(chain.stage_context(defn, CHAIN[stage], st, case), case)
     r = invoke(nxt.action, nxt.input, ctx)
     _log_step(s, run_id, nxt.action, nxt.input, r)
     if r["ok"] and isinstance(r["output"], dict) and "held" in r["output"]:
         stage_chain.advance_step(st, stage, sub)
-        _stage_record(s, run, stage, defn, st, case, "held")
+        _stage_record(s, run, stage, defn, st, case, "held", r["output"].get("reasons"))
         return _save(s, run, "waiting", n + 1, st | {"waiting": "proposal", "proposal": r["output"]["held"]})
     if r["ok"] or r["error"]["code"] == "duplicate":
         if r["ok"]:

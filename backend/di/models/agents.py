@@ -53,6 +53,7 @@ agent_proposal = Table(
     ts("decided_at"),
     Column("result", JSONB),
     Column("requested_by", Text),  # 0028: the person the agent acted for (audit F3a)
+    Column("reasons", JSONB, nullable=False, server_default="[]"),  # 0037: [{reason, detail}] the hold policy gave (P9-2.4)
     CheckConstraint("status IN ('pending','accepted','rejected','expired')", name="agent_proposal_status"),
     Index("ix_agent_proposal_status", "status", "created_at"),
 )

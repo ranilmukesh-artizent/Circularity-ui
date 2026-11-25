@@ -55,12 +55,23 @@ export interface AgentRun {
   steps: RunStep[];
 }
 
+/** Why the hold policy held a call for a person (plan 9, P9-2.4, I-10): `detail` is the sentence to show. */
+export type HoldReasonKind = 'risk' | 'value' | 'confidence' | 'taint' | 'destructive' | 'autonomy';
+export interface HoldReason { reason: HoldReasonKind; detail: string }
+
+/** The reasons as one line, "Value $900 is above the $600 limit · Confidence 0.62 is below 0.75"; empty when there are none. */
+export const reasonText = (reasons?: HoldReason[]): string => (reasons ?? []).map((r) => r.detail).join(' · ');
+
 export interface AgentProposal {
   id: number;
   agent: string;
   agentName: string;
   action: string;
   title: string;
+  /** What the agent recommends, in its own words (its reason, else what the action is for). */
+  why?: string;
+  /** Why the hold policy held it (empty for a proposal held before plan 9). */
+  reasons?: HoldReason[];
   input: Record<string, unknown>;
   case_id: string | null;
   run_id: string | null;

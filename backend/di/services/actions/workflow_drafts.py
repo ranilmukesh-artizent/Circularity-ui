@@ -25,7 +25,7 @@ from sqlalchemy import text
 from di.core import state
 from di.repositories.common import iso, ms
 from di.services.actions.pipeline import CallContext
-from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
+from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement, mark_destructive
 
 COLLECTION = "workflow_drafts"
 state.register(COLLECTION, list)
@@ -58,6 +58,7 @@ _declare("workflow.draft.save", "Autosave a workflow draft", "Keep the working c
          _DRAFT_IN)  # fmt: skip
 _declare("workflow.draft.discard", "Discard a workflow draft", "Drop this person's working copy of a workflow.", "draft",
          {"id": {"req": True, "t": "string"}})  # fmt: skip
+mark_destructive("workflow.draft.discard")  # an agent that prepares it is held for a person (P9-2.4)
 
 
 def key(wid: str, account: str) -> str:

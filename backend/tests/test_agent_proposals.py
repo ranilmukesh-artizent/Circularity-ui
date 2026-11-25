@@ -50,7 +50,7 @@ def proposal(pid: int) -> dict:
 
 def held() -> int:
     r = prepared("evidence.request", EVIDENCE)
-    assert r["ok"] is True and set(r["output"]) == {"held"}, r
+    assert r["ok"] is True and set(r["output"]) == {"held", "reasons"}, r
     return int(r["output"]["held"])
 
 

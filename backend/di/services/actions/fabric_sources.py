@@ -54,7 +54,7 @@ from di.repositories.reference import lists
 from di.repositories.workflows import all_workflows, wf_using
 from di.services.actions.decisions import push_event
 from di.services.actions.pipeline import CallContext
-from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
+from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement, mark_destructive
 
 _L = lists()
 CONN_METHODS: dict[str, dict] = _L["CONN_METHODS"]
@@ -899,6 +899,7 @@ _declare(
     "Save a new version of a source's field mapping equal to an older one; the next sync applies it.", "act",
     _SRC | {"version": {"req": True, "t": "number"}}, _MGR,
 )  # fmt: skip
+mark_destructive("mapping.revert")  # an agent that prepares it is held for a person (P9-2.4)
 _declare(
     "mapping.save", "Save a field mapping", "save field mappings",
     "Save a new version of a source's field mapping without touching its connection; the next sync applies it.", "act",
