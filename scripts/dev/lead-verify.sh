@@ -24,7 +24,8 @@ fi
 if [ $# -gt 0 ]; then
   out=$(bash scripts/dev/api-test.sh "$@" 2>&1); rc=$?
   printf '%s\n' "$out" | grep -E "(passed|failed|error)( |,)" | tail -n 1
-  printf '%s\n' "$out" | grep -E "^FAILED|^ERROR" | head -10
+  printf '%s\n' "$out" | grep -E "^FAILED|^ERROR|^E   |^tests/.*:[0-9]+: " | head -20  # the failing test, its error, its line
+  printf '%s\n' "$out" > "${LEAD_LOG:-test-results/lead-verify-api.log}" 2>/dev/null || true
   [ $rc -eq 0 ] && ok "api-test $*" || bad "api-test"
 fi
 bash scripts/dev/lint.sh >/tmp/lead-lint.log 2>&1 && ok "lint" || { bad "lint"; grep -A8 FAIL /tmp/lead-lint.log | head -20; }
