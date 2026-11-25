@@ -72,6 +72,8 @@ def accept(i: dict[str, Any], ctx: CallContext):
     p = proposals.get(ctx.session, int(i["id"]), for_update=True)
     if p is None:  # not reached: the guard refused it
         raise ActionError("not_found", f"No proposal {i['id']}.")
+    if p["status"] != "pending":  # decided by someone else between the guard and this row lock (phase 2 review)
+        raise ActionError("conflict", f"Proposal {p['id']} is already {p['status']}.")
     run = CallContext(actor=ctx.actor, session=ctx.session, preparer=p["agent"], confirmed=True, run_id=p["run_id"], now=ctx.now)
     r = invoke(p["action"], p["input"], run)
     if not r["ok"]:
@@ -88,6 +90,8 @@ def reject(i: dict[str, Any], ctx: CallContext):
     p = proposals.get(ctx.session, int(i["id"]), for_update=True)
     if p is None:  # not reached: the guard refused it
         raise ActionError("not_found", f"No proposal {i['id']}.")
+    if p["status"] != "pending":  # decided by someone else between the guard and this row lock (phase 2 review)
+        raise ActionError("conflict", f"Proposal {p['id']} is already {p['status']}.")
     proposals.decide(ctx.session, p["id"], "rejected", ctx.actor.id, ctx.now, {"reason": i["reason"].strip()})
     if p["run_id"]:  # the agent run that waits for it stops
         runtime.wake(ctx.session, p["run_id"])

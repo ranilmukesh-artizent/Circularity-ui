@@ -39,6 +39,7 @@ FORBIDDEN_ACTIONS = (
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
     "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
     "payout.decide",  # plan 9 P9-6.8: the payout a customer is paid, above the automatic limit, is decided by a person (R21)
+    "conflict.resolve",  # phase 2 review: choosing between two systems' values clears a hold; a person decides it
 )  # fmt: skip
 
 # Writes an agent may prepare but never run, whatever its autonomy: the pipeline (step 9b) holds them for a person.
@@ -53,11 +54,24 @@ HELD_FOR_PERSON = (
     "marketTable.submit",
 )  # a policy draft is a person's (P9-2.5)
 
+# Writes that only add caution: never held for a person (phase 2 review). Holding them would let a model's own concern
+# or a tainted read keep the computed hold off the case (R16: the model adds caution, never removes it).
+CAUTION_ONLY = (
+    "fraud.hold",  # P9-2.11: the intake stage holds a case whose fraud score reaches the pack's threshold
+    "transit.flagDelay",  # P9-2.20: the transit stage marks a shipment as late
+)
+
+
+def caution_only(action_id: str) -> bool:
+    return action_id in CAUTION_ONLY
+
+
 # Reads no agent may call: they handle a secret (step 6 of the pipeline refuses them).
 NO_AGENT_READS = ("source.test", "source.sandboxKey")
-# An action whose name deletes, discards, reverts, cancels or decides must be forbidden (checked by check_person_only).
+# An action whose name deletes, discards, reverts, cancels, resolves, waives or decides must be forbidden (check_person_only).
 PERSON_ONLY_NAME = re.compile(
-    r"\.(delete|remove|discard|revert|cancel|purge|approve|publish|reject|promote|override|decline|rollback|retire|release)",
+    r"\.(delete|remove|discard|revert|cancel|purge|approve|publish|reject|promote|override|decline|rollback|retire|release"
+    r"|resolve|waive|clear|dismiss|accept)",
     re.IGNORECASE,
 )
 

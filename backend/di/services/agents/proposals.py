@@ -76,7 +76,7 @@ def decide(s: Session, pid: int, status: str, by: str, at: datetime, result: dic
     s.execute(
         text(
             "UPDATE agent_proposal SET status = :st, decided_by = :by, decided_at = :at, result = CAST(:r AS jsonb) "
-            "WHERE id = :i"
+            "WHERE id = :i AND status = 'pending'"  # only a pending proposal is decided, once
         ),
         {"st": status, "by": by, "at": at, "r": json.dumps(result, default=str), "i": pid},
     )
