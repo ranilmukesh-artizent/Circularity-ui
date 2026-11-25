@@ -18,3 +18,10 @@ One line per event, newest last, times from `date`.
 | 2026-11-25 18:54 | Decision (person asked for maximum parallelism): PLAN_DEPS_ONLY=1 for lane B. Phases 4 and 5 start on their tasks' own Depends on, not the whole previous phase; 'the Phase N task that ...' keeps phase N. Logic files are ordered within a track (tool fleet 3-5, device 6). 4 writers, wt-check runs take two slot locks (/tmp/wt-slot-0/1.lock). |
 | 2026-11-25 18:54 | Dispatch P9-3.3 to w3, P9-4.1 to w4 (sonnet). |
 | 2026-11-25 18:56 | Merged origin/feature/plan-09-recover (9 commits: P9-2.11, 2.12, 2.13, 2.18, 2.22, 8.1, plan-next fixes) as dc48cb2. Took lane A's Depends-on parsing fix and dropped mine; kept PLAN_DEPS_ONLY on top. |
+| 2026-11-25 19:00 | P9-3.2 returned by w1 (7ce1748; cherry-picked as e815a69 for the next base); waits for the suite to finish before merge. Dispatch P9-6.2 to w1 on top of e815a69. |
+| 2026-11-25 19:05 | P9-3.4 returned by w2 (eca5d15); waits for merge (check test_workflow_open_case on the main stack). Dispatch P9-3.5 to w2 on top of P9-3.2 + P9-3.4. |
+| 2026-11-25 19:50 | Suite after the lane A merge: shard 1 2027 passed; shard 2 2249 passed, 2 failed (test_ask_chain: empty chain, chain of two; llm_model rows, suspected order dependence); lint ok, web 395. Re-run alone after the restart. |
+| 2026-11-25 19:50 | P9-3.3 returned by w3 (08ff72e). Nothing ready for w3: each remaining task waits on P9-3.5, P9-4.1 or P9-6.2. Decision (person asked): WSL memory to 11 GB, restart when the check locks are held. |
+| 2026-11-25 19:55 | P9-4.1 returned by w4 (7bd11ff). Dispatch P9-4.2 to w4 on top of it; the lead adds zen-engine==2.1.8 to the locks with the WSL restart rebuild. |
+| 2026-11-25 19:58 | Merged origin/feature/plan-09-recover again (P9-2.14, 2.19, 8.8, 8.12, 8.17, phase 8 libraries) as 7324e9e and pushed, at the person's request. The lane is level with lane A. P9-3.21 waits through plan-next (lane A's range fix), not blocked.txt. Images rebuild at the WSL restart. |
+| 2026-11-25 20:01 | Decision: zen-engine pinned at 2.1.7, not the spec's 2.1.8 (released 2026-11-20, under two weeks). Writer 4 told. |

@@ -2488,3 +2488,11 @@ wrapt==2.5.2 \
     --hash=sha256:fa642d3781c061579cb138773add4a55b16f99de9ebc41603e89a756cf9e62c6 \
     --hash=sha256:fabc60720d1e4a36bbe8aaf1c32024f04c6674991313f5acaca5eeadb564c600
     # via formulaic
+zen-engine==2.1.7 \
+    --hash=sha256:559671ab9f5926ce81c07fb5e65daea82b3f74944612c5643be77196cb0cf04e \
+    --hash=sha256:5e60f2d79dddc1a02ce601e4c92b72ec1930a8a72f999b0a6e66400de0168faf \
+    --hash=sha256:8ce6635e91f4daaf62558d99a2100e3cf92883776fb614254994650d9fcaea40 \
+    --hash=sha256:bd6c41c0ffa9e327b209a677c8703de1e5787490dbe9dea1c8e034f35d30641c \
+    --hash=sha256:d95ac1e22d7ff7eb825ef380da1550bf36c571cf0a22a54f9c449c6e6e817b47 \
+    --hash=sha256:fc7f9bdfbe72afbe80b1f507ecf195f856f50867c2d111240cf6094a0c761931
+    # via -r requirements.in
