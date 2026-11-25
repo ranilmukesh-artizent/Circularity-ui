@@ -34,6 +34,8 @@ class Node(TypedDict):
     owner: NotRequired[str]
     ai: NotRequired[bool]
     src: NotRequired[str]
+    table: NotRequired[str]  # a `table` node: the pack's decision table it stands for (P9-8.16)
+    body: NotRequired[dict[str, Any]]  # a `table` node: its JDM graph, checked by validate_flow
 
 
 class Edge(TypedDict):

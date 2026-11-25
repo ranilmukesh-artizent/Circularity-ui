@@ -1,9 +1,13 @@
+import { lazy, Suspense } from 'react';
 import { useSimNodes } from '../../api/modeler';
 import type { FlowGraph, FlowNode, ModelerScreen, ScopeDim } from '../../api/types';
 import { flowText, LockIcon, nodeTitle, TTAG } from './FlowCanvas';
 import { byStage } from './guardrails';
 
-type Scope = NonNullable<FlowNode['scope']>;
+/** Loaded when a decision table step is opened, so no other page pays for the editor. */
+const TableEditor = lazy(() => import('./TableEditor'));
+
+type Scope =NonNullable<FlowNode['scope']>;
 
 interface Props {
   s: ModelerScreen;
@@ -24,7 +28,7 @@ function DimField({ d, scope, editable, set }: { d: ScopeDim; scope: Scope; edit
     const v = scope[d.key];
     return (
       <label className="mdl-f" htmlFor={id}>
-        <span>{d.label} {d.kind === 'min' ? '≥' : '<'}</span>
+        <span>{d.label} {d.kind === 'min' ? 'â‰¥' : '<'}</span>
         <input id={id} type="number" disabled={!editable} value={v == null ? '' : String(v)} style={{ width: 90 }}
                onChange={(e) => set(e.target.value === '' ? null : Number(e.target.value))} />
       </label>
@@ -78,7 +82,7 @@ export function FlowInspector({ s, graph, node, editable, onRule, onConnect, onD
       <ul>
         {outs.map((e) => (
           <li key={e.id}>
-            → {by[e.b] ? nodeTitle(by[e.b], s) : e.b}
+            â†’ {by[e.b] ? nodeTitle(by[e.b], s) : e.b}
             {editable && !(node.lock && by[e.b]?.lock) && (
               <button className="btn sm ghost" onClick={() => onDisconnect(e.id)} aria-label={'Remove connection to ' + e.b}>Remove</button>
             )}
@@ -89,7 +93,7 @@ export function FlowInspector({ s, graph, node, editable, onRule, onConnect, onD
         <label className="mdl-f">
           <span>Connect to</span>
           <select value="" onChange={(e) => e.target.value && onConnect(node.id, e.target.value)}>
-            <option value="">choose…</option>
+            <option value="">chooseâ€¦</option>
             {targets.map((n) => <option key={n.id} value={n.id}>{nodeTitle(n, s)}</option>)}
           </select>
         </label>
@@ -125,11 +129,25 @@ export function FlowInspector({ s, graph, node, editable, onRule, onConnect, onD
       </div>
     );
   }
+  if (node.t === 'table') {
+    return (
+      <div className="mdl-insp">
+        <h3>{node.label}</h3>
+        <p className="note">{TTAG.table} Â· {node.sub}</p>
+        {node.table ? (
+          <Suspense fallback={<p className="note">Loading the table editor.</p>}>
+            <TableEditor pack={s.template.key} name={node.table} org={s.org} />
+          </Suspense>
+        ) : <p className="note">This step names no table.</p>}
+        {next}
+      </div>
+    );
+  }
   if (node.t !== 'rule') {
     return (
       <div className="mdl-insp">
         <h3>{node.label} {node.lock && <LockIcon />}</h3>
-        <p className="note">{TTAG[node.t]} · {node.sub}</p>
+        <p className="note">{TTAG[node.t]} Â· {node.sub}</p>
         {node.lock && <p className="note">Core prediction and agents are fixed: the Modeler never edits what this step predicts.</p>}
         {next}
         {editable && !node.lock && <button className="btn sm" onClick={() => onRemove(node.id)}>Delete step</button>}
@@ -140,8 +158,8 @@ export function FlowInspector({ s, graph, node, editable, onRule, onConnect, onD
   const setDim = (k: string, v: Scope[string]) => onRule(node.id, { scope: { ...scope, [k]: v } });
   return (
     <div className="mdl-insp">
-      <h3>{node.rid} · business rule</h3>
-      {node.src && <p className="note">From: “{node.src}”</p>}
+      <h3>{node.rid} Â· business rule</h3>
+      {node.src && <p className="note">From: â€œ{node.src}â€</p>}
       <div className="mdl-row">
         <label className="mdl-f">
           <span>Action</span>
@@ -152,7 +170,7 @@ export function FlowInspector({ s, graph, node, editable, onRule, onConnect, onD
         <label className="mdl-f">
           <span>Path</span>
           <select aria-label="Path" disabled={!editable} value={node.path ?? ''} onChange={(e) => onRule(node.id, { path: e.target.value || null })}>
-            <option value="">choose…</option>
+            <option value="">chooseâ€¦</option>
             {s.template.paths.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </label>

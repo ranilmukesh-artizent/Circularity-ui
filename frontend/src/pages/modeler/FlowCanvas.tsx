@@ -16,7 +16,7 @@ import { NODE_W } from './flowEdit';
 export const TTAG: Record<FlowNode['t'], string> = {
   trigger: 'Core · intake', agent: 'Core agent', gate: 'Guardrail gate', guard: 'Guardrail', decision: 'Core decision',
   approval: 'Owner approval', execute: 'Core · execute', learn: 'Core · learning', rule: 'Business rule', path: 'Outcome',
-  step: 'Process step',
+  step: 'Process step', table: 'Decision table',
 }; // prettier-ignore
 
 export const LockIcon = () => (

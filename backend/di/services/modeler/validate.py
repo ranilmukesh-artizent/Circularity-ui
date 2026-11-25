@@ -2,6 +2,8 @@
 
 Each check is `(level, message, node_id)`: `ok`, `warn`, or `fail` (blocking). Rules that break a guardrail are
 blocked, not warned; conflicting rules (the same path, one excluding, overlapping scopes) are warned.
+A `table` node (P9-8.16, a decision table: `body` is its JDM graph) that holds a function or expression node, or that
+`validate_table` refuses, is blocked: tables hold conditions and outputs only.
 """
 
 from collections.abc import Mapping, Sequence
@@ -9,6 +11,7 @@ from typing import Any, Literal, NamedTuple
 
 from di.services.modeler.flow import Flow, Node, node_label, reach
 from di.services.modeler.guard import rule_breaks
+from di.services.modeler.tables import validate_table
 from di.services.modeler.templates import Template
 from di.services.modeler.text import rule_text
 
@@ -98,9 +101,28 @@ def _rule_checks(t: Template, f: Flow) -> list[Check]:
     return out
 
 
+TABLE_CODE_OFF = "Function nodes are off: tables hold conditions and outputs only."
+_CODE_TYPES = ("functionNode", "customNode", "expressionNode")
+
+
+def _table_checks(f: Flow) -> list[Check]:
+    """One `fail` per table node whose graph runs code (function, custom or expression node) or is not a valid table."""
+    out: list[Check] = []
+    for n in f["nodes"]:
+        if n["t"] != "table":
+            continue
+        body = n.get("body") or {}
+        nodes = body.get("nodes") if isinstance(body, Mapping) else None
+        if any(isinstance(x, Mapping) and x.get("type") in _CODE_TYPES for x in nodes or []):
+            out.append(Check("fail", TABLE_CODE_OFF, n["id"]))
+        elif problems := validate_table(body):
+            out.append(Check("fail", f"{n['label']}: {' '.join(problems)}", n["id"]))
+    return out
+
+
 def validate_flow(t: Template, f: Flow) -> list[Check]:
     everything = reach(f, _first(f, "trigger")["id"])
-    return _connection_checks(t, f, everything) + _rule_checks(t, f)
+    return _connection_checks(t, f, everything) + _rule_checks(t, f) + _table_checks(f)
 
 
 def blocking(checks: Sequence[Check]) -> list[Check]:

@@ -10,6 +10,7 @@
 import { useSyncExternalStore } from 'react';
 import { invoke } from './actions';
 import { cached, withQuery } from './client';
+import { saveMarketTable, testMarketTable, type Jdm, type MarketTable } from './marketTables';
 import type { ActionResult, FlowGraph, ModelerScreen, OverlayConflict, OverlayOp, SimResult } from './types';
 
 /** The Modeler page for a template and an org unit (Suspense read cache). */
@@ -138,3 +139,11 @@ export const importPack = (doc: unknown, org?: string): Promise<PackDone> => inv
 export const submitPack = (id: number): Promise<PackDone> => invoke('pack.submit', { id });
 export const approvePack = (id: number): Promise<PackDone> => invoke('pack.approve', { id });
 export const rejectPack = (id: number, reason: string): Promise<PackDone> => invoke('pack.reject', { id, reason });
+
+// ---- decision tables in the editor (plan 9, P9-8.16): the marketTable.* actions of P9-4.2, one table store, no second path
+export { useMarketTables as decisionTable } from './marketTables';
+/** Save the editor's graph as a draft (your own draft is edited in place; otherwise a new version starting on `validFrom`). */
+export const saveDecisionTable = (t: MarketTable, body: Jdm, validFrom: string, own: boolean) =>
+  saveMarketTable({ pack: t.pack, flow: t.flow, market: t.market, name: t.name, kind: 'decision_table', valid_from: validFrom, ...(t.org_unit_id ? { org_unit_id: t.org_unit_id } : {}), body, ...(own ? { id: t.id } : {}) }); // prettier-ignore
+/** "Test this decision": the stored version on sample inputs; answers the outputs and the matched row. */
+export const testDecisionTable = testMarketTable;
