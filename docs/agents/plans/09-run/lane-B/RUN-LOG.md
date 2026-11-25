@@ -58,3 +58,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-25 23:10 | Lane A lead confirmed lane B at 13/65 and will fast-forward lane B into recover and run the phase 2 gate. After phase 6, lane B takes phase 10, 11 or 12 tasks, split through inflight.txt. Writers told: check forbidden(id), not startswith(FORBIDDEN_ACTIONS) (AGENT_EXEMPT). |
 | 25 Nov 17:55 | P9-6.5 merged. gate G-DEV-QUOTE (catalogue 43 with G-CON-2); quote_mismatch item; no model step |
 | 25 Nov 17:55 | P9-6.6 merged. G-DEV-LOCK and GR-D7; a received device with no registry check is held; overlay refuses the skip |
+| 2026-11-25 23:35 | Verify P9-6.5 + P9-6.6: device_sources + wipe_sim 13 passed, api 181 passed, lint ok, web ok. Pushed. Hourly sync: nothing new on lane A. |
