@@ -51,7 +51,8 @@ CHAINS: list[tuple[str, ChainIn, str | None, dict[str, str], list[str]]] = [
     ("industrial_exit", ChainIn("RT-1104"), "exit", WAITING, []),
     ("industrial_blocked_second", ChainIn("RT-1017"), None, SKIPPED, []),
     ("industrial_executing", ChainIn("RT-1003"), "extparts", EXECUTING, []),
-    ("tool_fleet_from_data", ChainIn(None, "tool_fleet", FT), "resell", WAITING, []),
+    # since P9-3.6 and P9-3.7 a tool case from bare facts has no contract line or recall check: nothing to decide yet
+    ("tool_fleet_from_data", ChainIn(None, "tool_fleet", FT), None, SKIPPED, []),
     ("device_from_data", ChainIn(None, "device", DV), "offers", DEVICE_HELD, ["confidence", "risk"]),
 ]  # fmt: skip
 
@@ -143,7 +144,7 @@ def model_first() -> Dataset[ModelFirstIn, ModelFirstOut, Any]:
         "exception_owner": {
             "ok": True,
             "owner_role": "Planner",
-            "action": "Find the contract or hold the return",
+            "action": "Check the contract line in the fleet contract system",  # the tool-fleet pack text since P9-3.6
             "by_model": False,  # the model's owner is not a pack role: refused, the pack's draft stands
         },
         "workflow_publish": {"ok": True, "status": "handed_over", "draft": None},  # a bad graph is handed over, never published
