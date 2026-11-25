@@ -167,12 +167,14 @@ def test_runtime_and_kpis_of_the_two_packs():
     tf, dv = load_pack("tool_fleet"), load_pack("device")
     # P9-1.10 added not_in_system_of_record and expected_return_missing (both Planner) in front of the five of P9-1.1
     # no_active_contract belongs to the Fleet desk, which the pack's roles table routes to a Planner (P9-3.6);
-    # P9-5.1 added refresh_late (Fleet desk) at the end
+    # P9-5.1 added refresh_late (Fleet desk) at the end; P9-3.7 recall_quarantine (Quality) and P9-4.3 technician_check
+    # (Engineer) after no_active_contract
     assert [e.owner_role for e in tf.runtime.exception_types] == [
         "Planner",
         "Planner",
         "Fleet desk",
         "Quality",
+        "Engineer",
         "Engineer",
         "Approver",
         "Planner",
