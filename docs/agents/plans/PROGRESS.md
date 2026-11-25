@@ -255,6 +255,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-8.6 connector from an API spec through an OpenAPI importer | this commit | 89 api (openapi_import, adapter_registry, configured_paging, configured_adapter, catalog_hygiene, tool_find, agent_catalog), 436 web, lint | done |
 | 2026-11-25 | 09 · P9-8.4 five mapping choices with ask the owner | this commit | 155 api (mapping_decisions, mapping_suggest, mapping_save, mapping_runs, catalog_mappings, discover_sample, catalog_hygiene, agent_catalog, hold_policy, tool_find, process_layer, screens_mywork), 443 web, lint | done |
 | 2026-11-25 | 09 · P9-2.16 phase 2 demo smoke script | this commit | smoke-p9-2 8/8 on a fresh reset (live model) | done |
+| 2026-11-26 | 09 · P9-2.17 phase 2 gate | this commit | api: parallel-suite 3 shards 4,637 passed (1 calibration failure, refit in b51d1cb) and serial run of the 39 serial-only files plus the review-fix tests 910 passed (19:11); source-sim 344 passed; tsc 0, vitest 476 passed; lint and mypy clean; story matrix phase 2 clean; compose 5 services; smoke-pages 11 accounts 0 failing; smoke-rt1048 stage 10; smoke-p9-2 8/8 (live model); review: 6 findings, 3 fixed in 3d911f4, 3 in P9-2.24 | done |
 
 ## Decisions taken without the user (to review)
 
