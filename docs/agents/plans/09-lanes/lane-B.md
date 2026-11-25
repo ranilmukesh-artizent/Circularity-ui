@@ -94,7 +94,7 @@ phase 6 gate is green. Report progress in docs/agents/plans/09-run/lane-B/RUN-LO
 
 Set once in every shell: `export PLAN_RUN=docs/agents/plans/09-run/lane-B MSYS_NO_PATHCONV=1`.
 
-1. **Pick**: `python scripts/dev/plan-next.py --phases 3,4,5,6 --max 2`. At most two writers at a time (Docker memory).
+1. **Pick**: `python scripts/dev/plan-next.py --phases 3,4,5,6 --max 3`. Up to three writers at a time (two if Docker memory is tight).
    Add each picked task to `$PLAN_RUN/inflight.txt` as `<task id> w<k> <model> <time from date>`.
 2. **Brief** each writer with the Agent tool: `subagent_type: general-purpose`, `model: sonnet` (`haiku` for a task that
    is only docs or a script's doc row), `isolation: "worktree"`, `run_in_background: true`, and this prompt:

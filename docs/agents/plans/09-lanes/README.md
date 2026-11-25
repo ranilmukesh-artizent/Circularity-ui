@@ -1,5 +1,7 @@
 # Plan 9 in two lanes
 
+**Lane B lead: start with [lane-B-start.md](lane-B-start.md).**
+
 Since 25 Nov 2026, plan 9 is built on two machines at once. Each lane has a lead (a Claude Code session, Opus) that runs
 writers (subagents, Sonnet or Haiku) as described in `../09-agentic-platform.md`, "How to run this plan unattended".
 
