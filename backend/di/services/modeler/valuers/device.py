@@ -18,6 +18,7 @@ from typing import Any, TypedDict
 
 from di.services.engine.jsmath import js_round, js_sum
 from di.services.modeler.carbon import co2_avoided
+from di.services.modeler.pack import load_pack
 from di.services.modeler.valuers.rng import mulberry32
 
 Lot = dict[str, Any]
@@ -25,98 +26,15 @@ Rule = dict[str, Any]
 
 NAME = "Device recommerce"
 
-DCH = ["buynow", "offers", "auction", "market"]  # 2329
-DCN = {"buynow": "Buy Now", "offers": "Offers", "auction": "Auction", "market": "Marketplace"}  # 2330
+# The channels, their settings, the learning table and the policy are the pack's `valuer.params` (packs/device.json),
+# copied so a valuer never changes the cached pack.
+_PARAMS: dict[str, Any] = copy.deepcopy(load_pack("device").valuer.params)
+DCH: list[str] = _PARAMS["dch"]  # 2329
+DCN: dict[str, str] = _PARAMS["dcn"]  # 2330
 # Channel settings (2332): fee share, fixed fee, logistics per unit, listing window in days, maximum lot size.
-DCFG: dict[str, dict[str, float]] = {
-    "buynow": {"fee": 0.03, "fix": 1, "log": 6, "win": 30, "lot": 100},
-    "offers": {"fee": 0.03, "fix": 1.5, "log": 4, "win": 21, "lot": 500},
-    "auction": {"fee": 0.06, "fix": 2.5, "log": 2.5, "win": 7, "lot": 1000},
-    "market": {"fee": 0.10, "fix": 1, "log": 8, "win": 45, "lot": 40},
-}
+DCFG: dict[str, dict[str, float]] = _PARAMS["dcfg"]
 # Channel learning per grade, age band and channel (2333): [lots sold, sell-through, days to sell, price index, return rate].
-DST: dict[str, dict[str, dict[str, list[float]]]] = {
-    "A": {
-        "0-24m": {
-            "buynow": [1656, 0.804, 11.6, 0.957, 0.032],
-            "offers": [181, 0.851, 5.6, 0.922, 0.007],
-            "auction": [169, 0.982, 4.1, 0.849, 0.005],
-            "market": [198, 0.838, 12.9, 1.091, 0.055],
-        },
-        "25-48m": {
-            "buynow": [2660, 0.702, 12.8, 0.938, 0.032],
-            "offers": [273, 0.791, 6.4, 0.9, 0.01],
-            "auction": [331, 0.876, 4.7, 0.828, 0.005],
-            "market": [320, 0.741, 15.0, 1.07, 0.046],
-        },
-        "49m+": {
-            "buynow": [1302, 0.611, 14.9, 0.908, 0.033],
-            "offers": [150, 0.613, 7.4, 0.873, 0.008],
-            "auction": [138, 0.775, 4.8, 0.808, 0.005],
-            "market": [156, 0.66, 16.9, 1.035, 0.036],
-        },
-    },
-    "B": {
-        "0-24m": {
-            "buynow": [192, 0.604, 12.8, 0.912, 0.039],
-            "offers": [1712, 0.815, 6.6, 0.9, 0.01],
-            "auction": [201, 0.99, 4.3, 0.837, 0.005],
-            "market": [194, 0.603, 16.7, 1.012, 0.073],
-        },
-        "25-48m": {
-            "buynow": [285, 0.558, 14.5, 0.896, 0.028],
-            "offers": [2645, 0.74, 7.3, 0.879, 0.009],
-            "auction": [299, 0.833, 4.6, 0.826, 0.005],
-            "market": [280, 0.607, 19.6, 0.977, 0.08],
-        },
-        "49m+": {
-            "buynow": [141, 0.518, 16.9, 0.866, 0.034],
-            "offers": [1304, 0.645, 8.4, 0.853, 0.01],
-            "auction": [116, 0.75, 4.8, 0.8, 0.006],
-            "market": [154, 0.461, 18.7, 0.954, 0.064],
-        },
-    },
-    "C": {
-        "0-24m": {
-            "buynow": [210, 0.448, 16.8, 0.856, 0.063],
-            "offers": [216, 0.718, 7.5, 0.874, 0.013],
-            "auction": [1641, 0.957, 4.1, 0.833, 0.005],
-            "market": [179, 0.508, 20.7, 0.901, 0.096],
-        },
-        "25-48m": {
-            "buynow": [281, 0.327, 20.1, 0.847, 0.054],
-            "offers": [295, 0.729, 8.6, 0.851, 0.016],
-            "auction": [2659, 0.86, 4.6, 0.818, 0.005],
-            "market": [300, 0.35, 24.9, 0.87, 0.096],
-        },
-        "49m+": {
-            "buynow": [150, 0.293, 23.9, 0.81, 0.075],
-            "offers": [135, 0.622, 9.2, 0.827, 0.014],
-            "auction": [1253, 0.742, 5.1, 0.79, 0.005],
-            "market": [137, 0.445, 29.8, 0.834, 0.111],
-        },
-    },
-    "D": {
-        "0-24m": {
-            "buynow": [52, 0.404, 22.5, 0.81, 0.091],
-            "offers": [176, 0.71, 9.0, 0.823, 0.021],
-            "auction": [2007, 0.949, 4.2, 0.805, 0.005],
-            "market": [48, 0.25, 18.4, 0.83, 0.125],
-        },
-        "25-48m": {
-            "buynow": [96, 0.354, 23.3, 0.782, 0.063],
-            "offers": [281, 0.605, 8.9, 0.813, 0.022],
-            "auction": [3034, 0.852, 4.6, 0.785, 0.005],
-            "market": [72, 0.361, 28.9, 0.811, 0.115],
-        },
-        "49m+": {
-            "buynow": [52, 0.231, 24.2, 0.75, 0.075],
-            "offers": [143, 0.483, 11.7, 0.785, 0.021],
-            "auction": [1483, 0.736, 5.1, 0.762, 0.005],
-            "market": [43, 0.209, 32.6, 0.778, 0.12],
-        },
-    },
-}
+DST: dict[str, dict[str, dict[str, list[float]]]] = _PARAMS["dst"]
 # Models (2335): brand, model, reference value of grade A, age band.
 DMOD: list[list[Any]] = [
     ["Apple", "iPhone 15", 470, "0-24m"],
@@ -132,7 +50,7 @@ DMOD: list[list[Any]] = [
 ]
 # Policy (2334): holding cost a unit a day, penalty a day past the SLA, SLA days, cost per return, weekly price erosion,
 # recovery floor.
-DG = {"hold": 0.35, "pen": 1.5, "sla": 60, "retc": 18, "ero": 0.013, "floor": 0.55}
+DG: dict[str, float] = _PARAMS["dg"]
 
 # compileDevice(PUB.device) (2367, flow 2357-2366): the published flow's rule DR-01.
 LIVE_RULES: list[Rule] = [{"action": "exclude", "id": "DR-01", "path": "buynow", "scope": {"dohMin": 45}}]

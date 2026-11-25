@@ -795,7 +795,7 @@ each story went.
 - [x] P9-0.15 What-if over the tool-fleet queue
 - [x] P9-0.16 Relabel Studio decision workflows to point to the Modeler
 - [x] P9-0.17 Phase 0 gate
-- [ ] P9-1.1 Pack format v1 with tool fleet and device as data
+- [x] P9-1.1 Pack format v1 with tool fleet and device as data
 - [ ] P9-1.2 Gate catalogue with evidence and batch hold
 - [ ] P9-1.3 Customer overlay with tighten-only and rebase
 - [ ] P9-1.4 Queue planner port with named demand on live cases

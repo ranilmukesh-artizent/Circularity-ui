@@ -1,26 +1,20 @@
 """Template packs: the paths, locked guardrails, scope dimensions and actors of one kind of returns desk.
 
-Three packs (`TEMPLATE_KEYS`):
-- `industrial`: the demo's 7 routes (`fixtures/golden/world.json`) and its gate texts as guardrails, from the packaged
-  `packs/industrial.json`;
-- `tool_fleet` and `device`: the PO prototype's tool-fleet (`TPL.equip`) and device recommerce templates, built from
-  the PO golden `fixtures/golden/po/templates.json` plus the prototype's rule checks (`ruleGuardE`, `ruleGuardD`,
-  `textGuard`) and rule wording (`ruleTextE`, `ruleTextD`), which are code in the prototype and data here.
+Three packs (`TEMPLATE_KEYS`), each a pack file (`packs/<key>.json`, format v1 in `di.services.modeler.pack`, plan 9
+P9-1.1) turned into a `Template` by `template_of_pack`:
+- `industrial`: the demo's 7 routes (`fixtures/golden/world.json`) and its gate texts as guardrails;
+- `tool_fleet` and `device`: the PO prototype's tool-fleet (`TPL.equip`) and device recommerce templates (the golden
+  `fixtures/golden/po/templates.json`, the prototype's rule checks `ruleGuardE`, `ruleGuardD`, `textGuard` and its rule
+  wording `ruleTextE`, `ruleTextD`), which are code in the prototype and data in the pack files.
 """
 
-import json
-from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import cache
-from pathlib import Path
-from typing import Any, Literal, cast
 
-from di.core import golden
+from di.services.modeler.pack import DimKind, Pack, load_pack
 from di.services.modeler.stages import GuardType, StageKey
 
 TEMPLATE_KEYS = ("industrial", "tool_fleet", "device")
-PACKS = Path(__file__).parent / "packs"
-DimKind = Literal["set", "min", "max"]
 
 
 @dataclass(frozen=True)
@@ -116,131 +110,30 @@ class Template:
         return tuple(p.id for p in self.paths)
 
 
-# ----------------------------------------------------------------------------- the prototype's code as data
-APPROVAL = TextPattern(("auto-?approv|without approval|skip approval",))
-TOOL_FLEET_GUARDS: dict[str, tuple[tuple[Forbid, ...], tuple[TextPattern, ...]]] = {
-    "GR-01": ((Forbid("release", ("require", "prefer"), {"grade": ("C", "D")}),), ()),
-    "GR-02": ((), (TextPattern(("refurb", "to stock")),)),
-    "GR-03": ((), (TextPattern(("fit-for-use|threshold", "lower|reduce|change|set|relax|raise")),)),
-    "GR-04": ((), (TextPattern(("holding cost",)),)),
-    "GR-05": ((), (APPROVAL,)),
-}
-DEVICE_GUARDS: dict[str, tuple[tuple[Forbid, ...], tuple[TextPattern, ...]]] = {
-    "GR-D1": ((), (TextPattern(("wipe|certificate", r"skip|without|\bno\b")),)),
-    "GR-D2": ((), (TextPattern(("floor", "lower|reduce|change|set|remove")),)),
-    "GR-D3": (
-        tuple(Forbid(k, ("require", "prefer"), {"grade": ("D",)}) for k in ("buynow", "market")),
-        (),
-    ),
-    "GR-D4": ((), (TextPattern(("lot size|lot limit", "raise|increase|remove|change")),)),
-    "GR-D5": ((), (TextPattern(("undercut",)),)),
-    "GR-D6": ((), (APPROVAL,)),
-}
-# (type, stage) of the tool-fleet and device guardrails (P9-0.11); P9-1.1 moves these into the pack files
-GUARD_META: dict[str, tuple[GuardType, StageKey]] = {
-    "GR-01": ("Compliance", "decide"), "GR-02": ("Compliance", "decide"), "GR-03": ("Threshold", "condition"),
-    "GR-04": ("Threshold", "value"), "GR-05": ("Approval", "decide"), "GR-06": ("Compliance", "execute"),
-    "GR-D1": ("Compliance", "condition"), "GR-D2": ("Threshold", "value"), "GR-D3": ("Compliance", "decide"),
-    "GR-D4": ("Threshold", "decide"), "GR-D5": ("Threshold", "value"), "GR-D6": ("Approval", "decide"),
-}  # fmt: skip
-DIM_KIND: dict[str, DimKind] = {"rulMax": "max", "rulMin": "min", "dohMin": "min", "qtyMin": "min"}
-DIM_FIELDS = {"grade": ("grade", "estGrade"), "rulMax": ("rul",), "rulMin": ("rul",), "dohMin": ("doh",),
-              "qtyMin": ("qty",)}  # fmt: skip
-DEVICE_FIELDS = {"dohMin": ("doh",), "qtyMin": ("qty",)}
-
-
-def _tool_fleet_wording(paths: Sequence[PathDef], clswords: dict[str, str]) -> Wording:
-    phrases = (
-        Phrase("ft", "{} returns", " or "),
-        Phrase("cls", "{}", " or ", clswords),
-        Phrase("grade", "grade {}", "/"),
-        Phrase("site", "at {}", " or "),
-        Phrase("rulMax", "under {}% life", ""),
-        Phrase("rulMin", "{}%+ life", ""),
-    )
-    return Wording("every return", phrases, {p.id: p.name.replace(" → place", "").lower() for p in paths})
-
-
-def _device_wording(paths: Sequence[PathDef]) -> Wording:
-    phrases = (
-        Phrase("brand", "{}", " or "),
-        Phrase("grade", "grade {}", "/"),
-        Phrase("band", "{} age", " or "),
-        Phrase("dohMin", "{}+ days on hand", ""),
-        Phrase("qtyMin", "lots of {}+ units", ""),
-    )
-    return Wording("every lot", phrases, {p.id: p.name for p in paths})
-
-
 # ----------------------------------------------------------------------------- loading
-def _po(key: str) -> dict[str, Any]:
-    return cast(dict[str, Any], next(t for t in golden.load("po/templates")["templates"] if t["key"] == key))
-
-
-def _guards(rows: Sequence[Mapping[str, str]], checks: Mapping[str, tuple[tuple[Forbid, ...], tuple[TextPattern, ...]]]
-            ) -> tuple[Guardrail, ...]:  # fmt: skip
-    out = []
-    for g in rows:
-        forbids, protects = checks.get(g["id"], ((), ()))
-        gtype, stage = GUARD_META[g["id"]]
-        out.append(Guardrail(g["id"], g["text"], g["owner"], forbids, protects, gtype, stage, gtype == "Compliance"))
-    return tuple(out)
-
-
-def _po_dims(rows: Sequence[Mapping[str, Any]], fields: Mapping[str, tuple[str, ...]]) -> tuple[ScopeDim, ...]:
-    return tuple(
-        ScopeDim(d["key"], d["label"], DIM_KIND.get(d["key"], "set"), tuple(d["values"] or ()), fields.get(d["key"], ()))
-        for d in rows
-    )
-
-
-def _tool_fleet() -> Template:
-    g, root = _po("equip"), golden.load("po/templates")
-    paths = tuple(PathDef(p["key"], p["name"], p["app"], p["owner"], p["lead"]) for p in g["paths"])
-    actors = tuple((a["id"], a["name"], a["role"]) for a in root["ACTORS"])
-    return Template("tool_fleet", g["name"], g["pre"], paths, _guards(g["guards"], TOOL_FLEET_GUARDS),
-                    _po_dims(g["dims"], DIM_FIELDS), actors, _tool_fleet_wording(paths, dict(root["CLSWORDS"])))  # fmt: skip
-
-
-def _device() -> Template:
-    """The device pack: the prototype has no `TPL.device` and gives it no name; the golden's rebuilt entry, named
-    "Device recommerce" (decision log, 2026-11-23). A channel's app and owner come from its path node in `tplDevice`."""
-    g = _po("device")
-    nodes = {n.get("path"): n for n in golden.load("po/flows")["device"]["n"] if n["t"] == "path"}
-    paths = tuple(PathDef(p["key"], p["name"], nodes[p["key"]]["sub"], nodes[p["key"]]["owner"], None) for p in g["paths"])
-    actors = tuple((a["id"], a["name"], a["role"]) for a in golden.load("po/templates")["ACTORS"])
-    return Template("device", "Device recommerce", g["pre"], paths, _guards(g["guards"], DEVICE_GUARDS),
-                    _po_dims(g["dims"], DEVICE_FIELDS), actors, _device_wording(paths))  # fmt: skip
-
-
-def _industrial() -> Template:
-    d = json.loads((PACKS / "industrial.json").read_text(encoding="utf-8"))
-    paths = tuple(PathDef(p["id"], p["name"], p["app"], p["owner"], p["lead_days"]) for p in d["paths"])
+def template_of_pack(p: Pack) -> Template:
+    """The authoring template of a pack: its routes as paths, guardrails with their checks, dims, actors, wording."""
+    paths = tuple(PathDef(r.id, r.name, r.app, r.owner, r.lead_days) for r in p.routes)
     guards = tuple(
         Guardrail(
-            g["id"],
-            g["text"],
-            g["owner"],
-            (),
-            tuple(TextPattern(tuple(p)) for p in g["protects"]),
-            g["type"],
-            g["stage"],
-            g["type"] == "Compliance",
+            g.id,
+            g.text,
+            g.owner,
+            tuple(Forbid(f.path, tuple(f.actions), {k: tuple(v) for k, v in f.scope_any.items()}) for f in g.forbids),
+            tuple(TextPattern(tuple(pattern)) for pattern in g.protects),
+            g.type,
+            g.stage,
+            g.locked,
         )
-        for g in d["guardrails"]
+        for g in p.guardrails
     )
-    dims = tuple(ScopeDim(x["key"], x["label"], x["kind"], tuple(x["values"]), tuple(x["fields"])) for x in d["dims"])
-    w = d["wording"]
-    phrases = tuple(Phrase(p["key"], p["fmt"], p["joiner"], dict(p["words"])) for p in w["phrases"])
-    wording = Wording(w["every"], phrases, {p.id: p.name.lower() for p in paths})
-    actors = tuple((a[0], a[1], a[2]) for a in d["actors"])
-    return Template(d["key"], d["name"], d["pre"], paths, guards, dims, actors, wording)
-
-
-BUILDERS = {"industrial": _industrial, "tool_fleet": _tool_fleet, "device": _device}
+    dims = tuple(ScopeDim(d.key, d.label, d.kind, tuple(d.values), tuple(d.fields)) for d in p.dims)
+    w = p.wording
+    phrases = tuple(Phrase(x.key, x.fmt, x.joiner, dict(x.words)) for x in w.phrases)
+    return Template(p.key, p.name, p.prefix, paths, guards, dims, tuple(p.actors), Wording(w.every, phrases, dict(w.path_names)))
 
 
 @cache
 def load_template(key: str) -> Template:
-    """The template pack `key`; a KeyError for an unknown key. Cached: treat as read-only."""
-    return BUILDERS[key]()
+    """The template of pack `key`; a KeyError for an unknown key. Cached: treat as read-only."""
+    return template_of_pack(load_pack(key))

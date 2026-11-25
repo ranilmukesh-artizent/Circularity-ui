@@ -1,0 +1,1329 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$defs": {
+  "AnalyticsQuestion": {
+   "additionalProperties": false,
+   "properties": {
+    "question": {
+     "title": "Question",
+     "type": "string"
+    },
+    "chart": {
+     "title": "Chart",
+     "type": "string"
+    },
+    "query": {
+     "anyOf": [
+      {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Query"
+    },
+    "example": {
+     "items": {},
+     "title": "Example",
+     "type": "array"
+    }
+   },
+   "required": [
+    "question",
+    "chart"
+   ],
+   "title": "AnalyticsQuestion",
+   "type": "object"
+  },
+  "AssetAttrs": {
+   "additionalProperties": false,
+   "properties": {
+    "serialised": {
+     "title": "Serialised",
+     "type": "boolean"
+    },
+    "has_media": {
+     "title": "Has Media",
+     "type": "boolean"
+    },
+    "hazardous": {
+     "title": "Hazardous",
+     "type": "boolean"
+    },
+    "regulated": {
+     "title": "Regulated",
+     "type": "boolean"
+    },
+    "patient_data": {
+     "title": "Patient Data",
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "serialised",
+    "has_media",
+    "hazardous",
+    "regulated",
+    "patient_data"
+   ],
+   "title": "AssetAttrs",
+   "type": "object"
+  },
+  "CarbonRef": {
+   "additionalProperties": false,
+   "properties": {
+    "set": {
+     "title": "Set",
+     "type": "string"
+    },
+    "d_rule": {
+     "enum": [
+      "demand",
+      "low",
+      "transport_only",
+      "none"
+     ],
+     "title": "D Rule",
+     "type": "string"
+    }
+   },
+   "required": [
+    "set",
+    "d_rule"
+   ],
+   "title": "CarbonRef",
+   "type": "object"
+  },
+  "Clarify": {
+   "additionalProperties": false,
+   "properties": {
+    "question": {
+     "title": "Question",
+     "type": "string"
+    },
+    "options": {
+     "items": {
+      "$ref": "#/$defs/ClarifyOption"
+     },
+     "title": "Options",
+     "type": "array"
+    }
+   },
+   "required": [
+    "question",
+    "options"
+   ],
+   "title": "Clarify",
+   "type": "object"
+  },
+  "ClarifyOption": {
+   "additionalProperties": false,
+   "properties": {
+    "label": {
+     "title": "Label",
+     "type": "string"
+    },
+    "adds": {
+     "title": "Adds",
+     "type": "string"
+    }
+   },
+   "required": [
+    "label",
+    "adds"
+   ],
+   "title": "ClarifyOption",
+   "type": "object"
+  },
+  "CustomerLayer": {
+   "additionalProperties": false,
+   "properties": {
+    "editable": {
+     "additionalProperties": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "title": "Editable",
+     "type": "object"
+    },
+    "params": {
+     "additionalProperties": {
+      "$ref": "#/$defs/ParamRange"
+     },
+     "title": "Params",
+     "type": "object"
+    },
+    "sample_diversions": {
+     "items": {
+      "$ref": "#/$defs/SampleDiversion"
+     },
+     "title": "Sample Diversions",
+     "type": "array"
+    },
+    "merge_rule": {
+     "const": "stricter_wins",
+     "default": "stricter_wins",
+     "title": "Merge Rule",
+     "type": "string"
+    }
+   },
+   "title": "CustomerLayer",
+   "type": "object"
+  },
+  "DataEntity": {
+   "additionalProperties": false,
+   "properties": {
+    "name": {
+     "title": "Name",
+     "type": "string"
+    },
+    "canonical": {
+     "title": "Canonical",
+     "type": "string"
+    }
+   },
+   "required": [
+    "name",
+    "canonical"
+   ],
+   "title": "DataEntity",
+   "type": "object"
+  },
+  "DataSystem": {
+   "additionalProperties": false,
+   "properties": {
+    "type": {
+     "title": "Type",
+     "type": "string"
+    },
+    "name": {
+     "title": "Name",
+     "type": "string"
+    },
+    "adapter": {
+     "enum": [
+      "registry",
+      "needs_connector"
+     ],
+     "title": "Adapter",
+     "type": "string"
+    },
+    "system_of_record": {
+     "default": false,
+     "title": "System Of Record",
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "type",
+    "name",
+    "adapter"
+   ],
+   "title": "DataSystem",
+   "type": "object"
+  },
+  "Diversion": {
+   "additionalProperties": false,
+   "description": "One customer step or shortcut, written by `apply_overlay` (P9-1.3); never present in a pack file.",
+   "properties": {
+    "op_id": {
+     "title": "Op Id",
+     "type": "string"
+    },
+    "stage": {
+     "enum": [
+      "receive",
+      "match",
+      "condition",
+      "value",
+      "decide",
+      "execute",
+      "close"
+     ],
+     "title": "Stage",
+     "type": "string"
+    },
+    "when": {
+     "items": {
+      "additionalProperties": true,
+      "type": "object"
+     },
+     "title": "When",
+     "type": "array"
+    },
+    "kind": {
+     "enum": [
+      "step",
+      "shortcut"
+     ],
+     "title": "Kind",
+     "type": "string"
+    },
+    "step": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Step"
+    },
+    "to": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "To"
+    },
+    "owner_role": {
+     "default": "",
+     "title": "Owner Role",
+     "type": "string"
+    }
+   },
+   "required": [
+    "op_id",
+    "stage",
+    "kind"
+   ],
+   "title": "Diversion",
+   "type": "object"
+  },
+  "ExceptionType": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "label": {
+     "title": "Label",
+     "type": "string"
+    },
+    "owner_role": {
+     "title": "Owner Role",
+     "type": "string"
+    },
+    "action": {
+     "title": "Action",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "label",
+    "owner_role",
+    "action"
+   ],
+   "title": "ExceptionType",
+   "type": "object"
+  },
+  "FlowRef": {
+   "additionalProperties": false,
+   "properties": {
+    "key": {
+     "title": "Key",
+     "type": "string"
+    },
+    "name": {
+     "title": "Name",
+     "type": "string"
+    }
+   },
+   "required": [
+    "key",
+    "name"
+   ],
+   "title": "FlowRef",
+   "type": "object"
+  },
+  "ForbidDef": {
+   "additionalProperties": false,
+   "properties": {
+    "path": {
+     "title": "Path",
+     "type": "string"
+    },
+    "actions": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Actions",
+     "type": "array"
+    },
+    "scope_any": {
+     "additionalProperties": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "title": "Scope Any",
+     "type": "object"
+    }
+   },
+   "required": [
+    "path",
+    "actions"
+   ],
+   "title": "ForbidDef",
+   "type": "object"
+  },
+  "GateRef": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "params": {
+     "additionalProperties": true,
+     "title": "Params",
+     "type": "object"
+    },
+    "active": {
+     "default": true,
+     "title": "Active",
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "title": "GateRef",
+   "type": "object"
+  },
+  "Grades": {
+   "additionalProperties": false,
+   "properties": {
+    "scale": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Scale",
+     "type": "array"
+    },
+    "graded_by": {
+     "enum": [
+      "read",
+      "computed"
+     ],
+     "title": "Graded By",
+     "type": "string"
+    },
+    "map_from": {
+     "additionalProperties": true,
+     "title": "Map From",
+     "type": "object"
+    }
+   },
+   "required": [
+    "scale",
+    "graded_by"
+   ],
+   "title": "Grades",
+   "type": "object"
+  },
+  "GuardParam": {
+   "additionalProperties": false,
+   "properties": {
+    "field": {
+     "title": "Field",
+     "type": "string"
+    },
+    "value": {
+     "title": "Value",
+     "type": "number"
+    },
+    "stricter": {
+     "enum": [
+      "lower",
+      "higher"
+     ],
+     "title": "Stricter",
+     "type": "string"
+    },
+    "min": {
+     "title": "Min",
+     "type": "number"
+    },
+    "max": {
+     "title": "Max",
+     "type": "number"
+    }
+   },
+   "required": [
+    "field",
+    "value",
+    "stricter",
+    "min",
+    "max"
+   ],
+   "title": "GuardParam",
+   "type": "object"
+  },
+  "Kpi": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "label": {
+     "title": "Label",
+     "type": "string"
+    },
+    "definition": {
+     "title": "Definition",
+     "type": "string"
+    },
+    "measure": {
+     "anyOf": [
+      {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Measure"
+    },
+    "trend": {
+     "anyOf": [
+      {
+       "enum": [
+        "weekly",
+        "monthly"
+       ],
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Trend"
+    }
+   },
+   "required": [
+    "id",
+    "label",
+    "definition"
+   ],
+   "title": "Kpi",
+   "type": "object"
+  },
+  "LegalReview": {
+   "additionalProperties": false,
+   "properties": {
+    "status": {
+     "enum": [
+      "pending",
+      "reviewed"
+     ],
+     "title": "Status",
+     "type": "string"
+    },
+    "date": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Date"
+    }
+   },
+   "required": [
+    "status"
+   ],
+   "title": "LegalReview",
+   "type": "object"
+  },
+  "PackClass": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "name": {
+     "title": "Name",
+     "type": "string"
+    },
+    "attrs": {
+     "$ref": "#/$defs/AssetAttrs"
+    },
+    "new_price": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "New Price"
+    }
+   },
+   "required": [
+    "id",
+    "name",
+    "attrs"
+   ],
+   "title": "PackClass",
+   "type": "object"
+  },
+  "PackData": {
+   "additionalProperties": false,
+   "properties": {
+    "systems": {
+     "items": {
+      "$ref": "#/$defs/DataSystem"
+     },
+     "title": "Systems",
+     "type": "array"
+    },
+    "entities": {
+     "items": {
+      "$ref": "#/$defs/DataEntity"
+     },
+     "title": "Entities",
+     "type": "array"
+    },
+    "mappings": {
+     "items": {
+      "additionalProperties": true,
+      "type": "object"
+     },
+     "title": "Mappings",
+     "type": "array"
+    },
+    "min_fields": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Min Fields",
+     "type": "array"
+    },
+    "record_match": {
+     "anyOf": [
+      {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Record Match"
+    }
+   },
+   "title": "PackData",
+   "type": "object"
+  },
+  "PackGuardrail": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "text": {
+     "title": "Text",
+     "type": "string"
+    },
+    "owner": {
+     "title": "Owner",
+     "type": "string"
+    },
+    "type": {
+     "enum": [
+      "Compliance",
+      "Data quality",
+      "Threshold",
+      "Approval"
+     ],
+     "title": "Type",
+     "type": "string"
+    },
+    "stage": {
+     "enum": [
+      "receive",
+      "match",
+      "condition",
+      "value",
+      "decide",
+      "execute",
+      "close"
+     ],
+     "title": "Stage",
+     "type": "string"
+    },
+    "locked": {
+     "title": "Locked",
+     "type": "boolean"
+    },
+    "forbids": {
+     "items": {
+      "$ref": "#/$defs/ForbidDef"
+     },
+     "title": "Forbids",
+     "type": "array"
+    },
+    "protects": {
+     "items": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "title": "Protects",
+     "type": "array"
+    },
+    "approvers": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Approvers",
+     "type": "array"
+    },
+    "param": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/GuardParam"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    }
+   },
+   "required": [
+    "id",
+    "text",
+    "owner",
+    "type",
+    "stage",
+    "locked"
+   ],
+   "title": "PackGuardrail",
+   "type": "object"
+  },
+  "PackRoute": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "name": {
+     "title": "Name",
+     "type": "string"
+    },
+    "app": {
+     "title": "App",
+     "type": "string"
+    },
+    "owner": {
+     "title": "Owner",
+     "type": "string"
+    },
+    "lead_days": {
+     "anyOf": [
+      {
+       "type": "integer"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Lead Days"
+    },
+    "classes": {
+     "items": {
+      "enum": [
+       "reuse",
+       "release",
+       "refurbish",
+       "sale",
+       "parts",
+       "recycle",
+       "exit"
+      ],
+      "type": "string"
+     },
+     "title": "Classes",
+     "type": "array"
+    },
+    "instructions": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Instructions",
+     "type": "array"
+    }
+   },
+   "required": [
+    "id",
+    "name",
+    "app",
+    "owner",
+    "classes"
+   ],
+   "title": "PackRoute",
+   "type": "object"
+  },
+  "PackStage": {
+   "additionalProperties": false,
+   "properties": {
+    "key": {
+     "enum": [
+      "receive",
+      "match",
+      "condition",
+      "value",
+      "decide",
+      "execute",
+      "close"
+     ],
+     "title": "Key",
+     "type": "string"
+    },
+    "label": {
+     "title": "Label",
+     "type": "string"
+    },
+    "agent": {
+     "title": "Agent",
+     "type": "string"
+    },
+    "autonomy": {
+     "enum": [
+      "recommend",
+      "limits",
+      "alone"
+     ],
+     "title": "Autonomy",
+     "type": "string"
+    },
+    "confidence": {
+     "title": "Confidence",
+     "type": "number"
+    }
+   },
+   "required": [
+    "key",
+    "label",
+    "agent",
+    "autonomy",
+    "confidence"
+   ],
+   "title": "PackStage",
+   "type": "object"
+  },
+  "PackValuer": {
+   "additionalProperties": false,
+   "properties": {
+    "kind": {
+     "enum": [
+      "industrial",
+      "tool_fleet",
+      "device",
+      "standard"
+     ],
+     "title": "Kind",
+     "type": "string"
+    },
+    "params": {
+     "additionalProperties": true,
+     "title": "Params",
+     "type": "object"
+    },
+    "carbon": {
+     "$ref": "#/$defs/CarbonRef"
+    }
+   },
+   "required": [
+    "kind",
+    "carbon"
+   ],
+   "title": "PackValuer",
+   "type": "object"
+  },
+  "ParamRange": {
+   "additionalProperties": false,
+   "properties": {
+    "value": {
+     "title": "Value",
+     "type": "number"
+    },
+    "min": {
+     "title": "Min",
+     "type": "number"
+    },
+    "max": {
+     "title": "Max",
+     "type": "number"
+    }
+   },
+   "required": [
+    "value",
+    "min",
+    "max"
+   ],
+   "title": "ParamRange",
+   "type": "object"
+  },
+  "PhraseDef": {
+   "additionalProperties": false,
+   "properties": {
+    "key": {
+     "title": "Key",
+     "type": "string"
+    },
+    "fmt": {
+     "title": "Fmt",
+     "type": "string"
+    },
+    "joiner": {
+     "title": "Joiner",
+     "type": "string"
+    },
+    "words": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "title": "Words",
+     "type": "object"
+    }
+   },
+   "required": [
+    "key",
+    "fmt",
+    "joiner"
+   ],
+   "title": "PhraseDef",
+   "type": "object"
+  },
+  "Replay": {
+   "additionalProperties": false,
+   "properties": {
+    "dataset": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Dataset"
+    },
+    "example": {
+     "anyOf": [
+      {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Example"
+    }
+   },
+   "title": "Replay",
+   "type": "object"
+  },
+  "Runtime": {
+   "additionalProperties": false,
+   "properties": {
+    "exception_types": {
+     "items": {
+      "$ref": "#/$defs/ExceptionType"
+     },
+     "title": "Exception Types",
+     "type": "array"
+    },
+    "suggestion_rules": {
+     "items": {
+      "additionalProperties": true,
+      "type": "object"
+     },
+     "title": "Suggestion Rules",
+     "type": "array"
+    },
+    "sla_hours": {
+     "additionalProperties": {
+      "type": "number"
+     },
+     "title": "Sla Hours",
+     "type": "object"
+    },
+    "escalate_to": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Escalate To"
+    }
+   },
+   "title": "Runtime",
+   "type": "object"
+  },
+  "SampleDiversion": {
+   "additionalProperties": false,
+   "properties": {
+    "text": {
+     "title": "Text",
+     "type": "string"
+    },
+    "op": {
+     "additionalProperties": true,
+     "title": "Op",
+     "type": "object"
+    },
+    "blocked": {
+     "title": "Blocked",
+     "type": "boolean"
+    },
+    "reason": {
+     "title": "Reason",
+     "type": "string"
+    }
+   },
+   "required": [
+    "text",
+    "op",
+    "blocked",
+    "reason"
+   ],
+   "title": "SampleDiversion",
+   "type": "object"
+  },
+  "ScopeDimDef": {
+   "additionalProperties": false,
+   "properties": {
+    "key": {
+     "title": "Key",
+     "type": "string"
+    },
+    "label": {
+     "title": "Label",
+     "type": "string"
+    },
+    "kind": {
+     "enum": [
+      "set",
+      "min",
+      "max"
+     ],
+     "title": "Kind",
+     "type": "string"
+    },
+    "values": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Values",
+     "type": "array"
+    },
+    "fields": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Fields",
+     "type": "array"
+    }
+   },
+   "required": [
+    "key",
+    "label",
+    "kind",
+    "values"
+   ],
+   "title": "ScopeDimDef",
+   "type": "object"
+  },
+  "WordingDef": {
+   "additionalProperties": false,
+   "properties": {
+    "every": {
+     "title": "Every",
+     "type": "string"
+    },
+    "phrases": {
+     "items": {
+      "$ref": "#/$defs/PhraseDef"
+     },
+     "title": "Phrases",
+     "type": "array"
+    },
+    "path_names": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "title": "Path Names",
+     "type": "object"
+    }
+   },
+   "required": [
+    "every",
+    "phrases",
+    "path_names"
+   ],
+   "title": "WordingDef",
+   "type": "object"
+  }
+ },
+ "additionalProperties": false,
+ "description": "A template pack. Each top-level field belongs to one of the 13 parts (`FIELD_PART`).",
+ "properties": {
+  "key": {
+   "title": "Key",
+   "type": "string"
+  },
+  "name": {
+   "title": "Name",
+   "type": "string"
+  },
+  "version": {
+   "pattern": "^\\d+\\.\\d+\\.\\d+$",
+   "title": "Version",
+   "type": "string"
+  },
+  "unit": {
+   "title": "Unit",
+   "type": "string"
+  },
+  "author_role": {
+   "title": "Author Role",
+   "type": "string"
+  },
+  "prefix": {
+   "title": "Prefix",
+   "type": "string"
+  },
+  "industry": {
+   "title": "Industry",
+   "type": "string"
+  },
+  "regions": {
+   "items": {
+    "type": "string"
+   },
+   "title": "Regions",
+   "type": "array"
+  },
+  "legal_review": {
+   "$ref": "#/$defs/LegalReview"
+  },
+  "data_licence": {
+   "title": "Data Licence",
+   "type": "string"
+  },
+  "flows": {
+   "items": {
+    "$ref": "#/$defs/FlowRef"
+   },
+   "title": "Flows",
+   "type": "array"
+  },
+  "prompts": {
+   "items": {
+    "type": "string"
+   },
+   "maxItems": 3,
+   "minItems": 3,
+   "title": "Prompts",
+   "type": "array"
+  },
+  "clarify": {
+   "anyOf": [
+    {
+     "$ref": "#/$defs/Clarify"
+    },
+    {
+     "type": "null"
+    }
+   ],
+   "default": null
+  },
+  "classes": {
+   "items": {
+    "$ref": "#/$defs/PackClass"
+   },
+   "title": "Classes",
+   "type": "array"
+  },
+  "grades": {
+   "$ref": "#/$defs/Grades"
+  },
+  "stages": {
+   "items": {
+    "$ref": "#/$defs/PackStage"
+   },
+   "title": "Stages",
+   "type": "array"
+  },
+  "routes": {
+   "items": {
+    "$ref": "#/$defs/PackRoute"
+   },
+   "minItems": 1,
+   "title": "Routes",
+   "type": "array"
+  },
+  "guardrails": {
+   "items": {
+    "$ref": "#/$defs/PackGuardrail"
+   },
+   "title": "Guardrails",
+   "type": "array"
+  },
+  "gates": {
+   "items": {
+    "$ref": "#/$defs/GateRef"
+   },
+   "title": "Gates",
+   "type": "array"
+  },
+  "dims": {
+   "items": {
+    "$ref": "#/$defs/ScopeDimDef"
+   },
+   "title": "Dims",
+   "type": "array"
+  },
+  "actors": {
+   "items": {
+    "maxItems": 3,
+    "minItems": 3,
+    "prefixItems": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "string"
+     },
+     {
+      "type": "string"
+     }
+    ],
+    "type": "array"
+   },
+   "title": "Actors",
+   "type": "array"
+  },
+  "wording": {
+   "$ref": "#/$defs/WordingDef"
+  },
+  "customer_layer": {
+   "$ref": "#/$defs/CustomerLayer"
+  },
+  "diversions": {
+   "items": {
+    "$ref": "#/$defs/Diversion"
+   },
+   "title": "Diversions",
+   "type": "array"
+  },
+  "data": {
+   "$ref": "#/$defs/PackData"
+  },
+  "valuer": {
+   "$ref": "#/$defs/PackValuer"
+  },
+  "replay": {
+   "$ref": "#/$defs/Replay"
+  },
+  "runtime": {
+   "$ref": "#/$defs/Runtime"
+  },
+  "kpis": {
+   "items": {
+    "$ref": "#/$defs/Kpi"
+   },
+   "title": "Kpis",
+   "type": "array"
+  },
+  "analytics": {
+   "items": {
+    "$ref": "#/$defs/AnalyticsQuestion"
+   },
+   "title": "Analytics",
+   "type": "array"
+  },
+  "stories": {
+   "items": {
+    "type": "string"
+   },
+   "title": "Stories",
+   "type": "array"
+  }
+ },
+ "required": [
+  "key",
+  "name",
+  "version",
+  "unit",
+  "author_role",
+  "prefix",
+  "industry",
+  "regions",
+  "legal_review",
+  "data_licence",
+  "flows",
+  "prompts",
+  "classes",
+  "grades",
+  "stages",
+  "routes",
+  "guardrails",
+  "gates",
+  "dims",
+  "actors",
+  "wording",
+  "customer_layer",
+  "diversions",
+  "data",
+  "valuer",
+  "replay",
+  "runtime",
+  "kpis",
+  "analytics",
+  "stories"
+ ],
+ "title": "Pack",
+ "type": "object"
+}

@@ -29,6 +29,7 @@ from di.services.engine.routes import Route
 from di.services.modeler.apply import apply_rules as shared_apply_rules
 from di.services.modeler.carbon import co2_avoided
 from di.services.modeler.compile import CompiledRule
+from di.services.modeler.pack import load_pack
 from di.services.modeler.templates import load_template
 from di.services.modeler.valuers.rng import mulberry32
 
@@ -38,135 +39,31 @@ Params = dict[str, float]
 
 NAME = "Tool fleet returns"  # TPL.equip.name (2374)
 
-# PATHS (799-806): name, executing application, lead days, owner.
-PATHS: dict[str, dict[str, Any]] = {
-    "release": {"name": "Re-issue to fleet", "app": "Fleet contract system", "lead": 4, "owner": "Fleet desk"},
-    "refurb": {
-        "name": "Refurbish → place",
-        "app": "Repair center work orders (ERP service)",
-        "lead": 7,
-        "owner": "Repair center lead",
-    },
-    "redeploy": {"name": "Tool pool", "app": "ERP stock transfer (tool pool)", "lead": 3, "owner": "Tool pool planner"},
-    "resell": {"name": "Pre-owned sale", "app": "Pre-owned sales channel", "lead": 9, "owner": "Remarketing lead"},
-    "harvest": {
-        "name": "Harvest parts",
-        "app": "Repair center teardown + spare parts (ERP)",
-        "lead": 5,
-        "owner": "Service parts planner",
-    },
-    "exit": {"name": "Recycle", "app": "Recycler portal + circularity ledger", "lead": 6, "owner": "Sustainability lead"},
-}
+# The constants below are the pack's `valuer.params` (packs/tool_fleet.json), copied so a valuer never changes the
+# cached pack. PATHS (799-806): name, executing application, lead days, owner.
+_PARAMS: dict[str, Any] = copy.deepcopy(load_pack("tool_fleet").valuer.params)
+PATHS: dict[str, dict[str, Any]] = _PARAMS["paths"]
 PK = list(PATHS)
-FUNCS = ["Fleet management", "Repair center", "Remarketing", "Tool pool"]  # 818
-SITES = ["Houston", "Denver", "Atlanta", "Chicago", "Phoenix"]  # 819
-SOURCES = {  # 820
-    "Fleet management": "Contract end or fleet swap",
-    "Repair center": "Repair request",
-    "Remarketing": "Customer trade-in",
-    "Tool pool": "Pool excess",
-}
+FUNCS: list[str] = _PARAMS["funcs"]  # 818
+SITES: list[str] = _PARAMS["sites"]  # 819
+SOURCES: dict[str, str] = _PARAMS["sources"]  # 820
 
 # CLS (822-835) with `freight` (837).
-CLS: dict[str, dict[str, Any]] = {
-    "CMH": {
-        "name": "Combihammer, 12 kg class",
-        "fam": "Heavy drilling",
-        "newP": 1450,
-        "lease12": 660,
-        "refurb": 210,
-        "mat": 14,
-        "fee": 6,
-        "res": {"A": 0.50, "B": 0.38, "C": 0.22, "D": 0.06},
-        "rs": 0.60,
-        "parts": [["Motor armature", 260], ["Gearbox", 180], ["Electronics module", 120], ["Piston and seal kit", 90]],
-    },
-    "BRK": {
-        "name": "Demolition breaker, 30 kg class",
-        "fam": "Heavy chiselling",
-        "newP": 1900,
-        "lease12": 840,
-        "refurb": 280,
-        "mat": 22,
-        "fee": 8,
-        "res": {"A": 0.50, "B": 0.38, "C": 0.22, "D": 0.06},
-        "rs": 0.60,
-        "parts": [["Motor", 380], ["Impact mechanism", 320], ["Chisel holder", 110], ["Handle and vibration damper", 70]],
-    },
-    "DCD": {
-        "name": "Diamond core drill rig",
-        "fam": "Diamond systems",
-        "newP": 3200,
-        "lease12": 1380,
-        "refurb": 520,
-        "mat": 38,
-        "fee": 12,
-        "res": {"A": 0.52, "B": 0.40, "C": 0.24, "D": 0.07},
-        "rs": 0.62,
-        "parts": [["Drill motor", 900], ["Gearbox", 420], ["Drill stand", 380], ["Control electronics", 210]],
-    },
-    "CRH": {
-        "name": "Cordless rotary hammer, 22 V",
-        "fam": "Cordless",
-        "newP": 620,
-        "lease12": 300,
-        "refurb": 70,
-        "mat": 6,
-        "fee": 3,
-        "res": {"A": 0.52, "B": 0.40, "C": 0.24, "D": 0.06},
-        "rs": 0.64,
-        "parts": [["Brushless motor", 160], ["Electronics module", 95], ["Chuck assembly", 45]],
-    },
-    "AGR": {
-        "name": "Angle grinder, 230 mm",
-        "fam": "Cutting and grinding",
-        "newP": 260,
-        "lease12": 132,
-        "refurb": 45,
-        "mat": 3,
-        "fee": 2,
-        "res": {"A": 0.48, "B": 0.36, "C": 0.20, "D": 0.05},
-        "rs": 0.58,
-        "parts": [["Armature", 70], ["Gear set", 38], ["On/off switch", 22]],
-    },
-    "LSR": {
-        "name": "Rotating construction laser",
-        "fam": "Measuring",
-        "newP": 1100,
-        "lease12": 480,
-        "refurb": 140,
-        "mat": 8,
-        "fee": 4,
-        "res": {"A": 0.55, "B": 0.42, "C": 0.25, "D": 0.06},
-        "rs": 0.66,
-        "parts": [["Laser module", 320], ["Rotor head", 170], ["Receiver", 110]],
-    },
-}
+CLS: dict[str, dict[str, Any]] = _PARAMS["classes"]
 for _c in CLS.values():
     _c["freight"] = js_round(_c["newP"] * 0.015 + 12)
 CK = list(CLS)
 
-CUST = [
-    "Brightline Mechanical",
-    "Granite Civil",
-    "Westmark Supply",
-    "Pinecrest Builders",
-    "Ridgeway Facilities",
-    "Harborview Utilities",
-    "Tri-County Paving",
-    "Summit Industrial Services",
-    "Lakeshore Contractors",
-    "Granite Ridge Mining",
-]  # 840
-DEALERS = ["Gulf Coast Tool Exchange", "Prairie Contractor Supply", "Mesa Pre-Owned Tools", "Northline Trade Tools"]  # 841
+CUST: list[str] = _PARAMS["cust"]  # 840
+DEALERS: list[str] = _PARAMS["dealers"]  # 841
 TODAY = date(2026, 11, 1)  # 842: Date.UTC(2026, 10, 1)
 TRANSIT = 2
 GR = {"A": 0, "B": 1, "C": 2, "D": 3}
 _MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-BASEP: Params = {"market": 1, "labor": 1, "lease": 1, "downtime": 120, "rulMin": 50, "hold": 2, "slots": 8}  # 868
-FIN = {"rate": 0.09, "lifePerMonth": 1.2, "refurbLife": 20, "svc": 0.03}  # 869
-POOLK = frozenset({"lease", "so", "proj"})  # 916: the kinds of named order a queue plan hands to one return only
+BASEP: Params = _PARAMS["basep"]  # 868
+FIN: dict[str, float] = _PARAMS["fin"]  # 869
+POOLK = frozenset(_PARAMS["poolk"])  # 916: the kinds of named order a queue plan hands to one return only
 
 # liveRules() = compileEquip(PUB.equip) (1052-1061): the published flow's rules BR-01 and BR-02 (1019-1020).
 LIVE_RULES: list[Rule] = [

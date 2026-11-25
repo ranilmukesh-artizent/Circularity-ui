@@ -1,39 +1,396 @@
 {
-  "key": "industrial",
-  "name": "Industrial returns",
-  "pre": "IR",
-  "paths": [
-    {"id": "redeploy", "name": "Redeploy", "app": "OMS · order allocation", "owner": "Customer operations · order desk", "lead_days": null},
-    {"id": "resale", "name": "Whole-asset resale", "app": "OMS · sale order", "owner": "Sales operations", "lead_days": null},
-    {"id": "intparts", "name": "Internal recovered-part use", "app": "ERP · stock transfer", "owner": "Materials planner", "lead_days": null},
-    {"id": "relase", "name": "Re-lease", "app": "Lease · contract", "owner": "Lease administration", "lead_days": null},
-    {"id": "material", "name": "Material recovery", "app": "Recycler / Exit partner", "owner": "Exit partner", "lead_days": null},
-    {"id": "extparts", "name": "External parts sale", "app": "CRM · sale task", "owner": "Sales operations", "lead_days": null},
-    {"id": "exit", "name": "Responsible exit", "app": "Recycler / Exit partner", "owner": "Exit partner", "lead_days": null}
-  ],
-  "guardrails": [
-    {"id": "GR-I1", "text": "Data-erasure certificate not issued; sanitization required before release", "owner": "Compliance", "type": "Compliance", "stage": "condition", "forbids": [], "protects": []},
-    {"id": "GR-I2", "text": "Safety-rated unit: criticality restriction needs recertification", "owner": "Quality", "type": "Compliance", "stage": "condition", "forbids": [], "protects": []},
-    {"id": "GR-I3", "text": "Demand belongs to another client; customer consent not on file", "owner": "Customer operations", "type": "Compliance", "stage": "match", "forbids": [], "protects": []},
-    {"id": "GR-I4", "text": "Cell chemistry requires an approved hazardous-waste route", "owner": "Sustainability lead", "type": "Compliance", "stage": "execute", "forbids": [], "protects": []},
-    {"id": "GR-I5", "text": "Every decision is approved by a named owner before execution", "owner": "Governance board", "type": "Approval", "stage": "decide", "forbids": [], "protects": [["auto-?approv|without approval|skip approval"]]}
-  ],
-  "dims": [
-    {"key": "cls", "label": "Asset class", "kind": "set", "values": ["batch", "control", "drill", "it", "motor", "pump"], "fields": ["cls"]},
-    {"key": "grade", "label": "Grade", "kind": "set", "values": ["A", "B", "C", "D"], "fields": ["grade"]},
-    {"key": "site", "label": "Site", "kind": "set", "values": ["Site 1", "Site 2", "Site 3", "Site 4", "Site 5", "Site 6", "Site 7", "Site 8"], "fields": ["demand.site"]},
-    {"key": "owner", "label": "Organisation", "kind": "set", "values": ["Customer A", "Customer B", "Customer C"], "fields": ["owner"]},
-    {"key": "alarm", "label": "Telemetry alarm", "kind": "set", "values": ["yes", "no"], "fields": ["alarm"]}
-  ],
-  "actors": [],
-  "wording": {
-    "every": "every return",
-    "phrases": [
-      {"key": "cls", "fmt": "{}", "joiner": " or ", "words": {"batch": "tool-fleet batches", "control": "control units", "drill": "power tools", "it": "IT electronics", "motor": "industrial motors", "pump": "hydraulic pumps"}},
-      {"key": "grade", "fmt": "grade {}", "joiner": "/", "words": {}},
-      {"key": "site", "fmt": "at {}", "joiner": " or ", "words": {}},
-      {"key": "owner", "fmt": "for {}", "joiner": " or ", "words": {}},
-      {"key": "alarm", "fmt": "{}", "joiner": " or ", "words": {"yes": "with a telemetry alarm", "no": "without a telemetry alarm"}}
-    ]
+ "key": "industrial",
+ "name": "Industrial returns",
+ "version": "1.0.0",
+ "unit": "asset",
+ "author_role": "Planner",
+ "prefix": "IR",
+ "industry": "Industrial equipment",
+ "regions": [],
+ "legal_review": {
+  "status": "pending",
+  "date": null
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "returns",
+   "name": "Industrial returns"
   }
+ ],
+ "prompts": [
+  "",
+  "",
+  ""
+ ],
+ "clarify": null,
+ "classes": [],
+ "grades": {
+  "scale": [],
+  "graded_by": "read",
+  "map_from": {}
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Return and receive",
+   "agent": "Intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Match and verify",
+   "agent": "Intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Condition",
+   "agent": "Condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "Valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide",
+   "agent": "Routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "Follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and learn",
+   "agent": "Analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "redeploy",
+   "name": "Redeploy",
+   "app": "OMS · order allocation",
+   "owner": "Customer operations · order desk",
+   "lead_days": null,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "resale",
+   "name": "Whole-asset resale",
+   "app": "OMS · sale order",
+   "owner": "Sales operations",
+   "lead_days": null,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "intparts",
+   "name": "Internal recovered-part use",
+   "app": "ERP · stock transfer",
+   "owner": "Materials planner",
+   "lead_days": null,
+   "classes": [
+    "parts"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "relase",
+   "name": "Re-lease",
+   "app": "Lease · contract",
+   "owner": "Lease administration",
+   "lead_days": null,
+   "classes": [
+    "release"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "material",
+   "name": "Material recovery",
+   "app": "Recycler / Exit partner",
+   "owner": "Exit partner",
+   "lead_days": null,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "extparts",
+   "name": "External parts sale",
+   "app": "CRM · sale task",
+   "owner": "Sales operations",
+   "lead_days": null,
+   "classes": [
+    "parts",
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "exit",
+   "name": "Responsible exit",
+   "app": "Recycler / Exit partner",
+   "owner": "Exit partner",
+   "lead_days": null,
+   "classes": [
+    "exit"
+   ],
+   "instructions": []
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "GR-I1",
+   "text": "Data-erasure certificate not issued; sanitization required before release",
+   "owner": "Compliance",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-I2",
+   "text": "Safety-rated unit: criticality restriction needs recertification",
+   "owner": "Quality",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-I3",
+   "text": "Demand belongs to another client; customer consent not on file",
+   "owner": "Customer operations",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-I4",
+   "text": "Cell chemistry requires an approved hazardous-waste route",
+   "owner": "Sustainability lead",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-I5",
+   "text": "Every decision is approved by a named owner before execution",
+   "owner": "Governance board",
+   "type": "Approval",
+   "stage": "decide",
+   "locked": false,
+   "forbids": [],
+   "protects": [
+    [
+     "auto-?approv|without approval|skip approval"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  }
+ ],
+ "gates": [],
+ "dims": [
+  {
+   "key": "cls",
+   "label": "Asset class",
+   "kind": "set",
+   "values": [
+    "batch",
+    "control",
+    "drill",
+    "it",
+    "motor",
+    "pump"
+   ],
+   "fields": [
+    "cls"
+   ]
+  },
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": [
+    "grade"
+   ]
+  },
+  {
+   "key": "site",
+   "label": "Site",
+   "kind": "set",
+   "values": [
+    "Site 1",
+    "Site 2",
+    "Site 3",
+    "Site 4",
+    "Site 5",
+    "Site 6",
+    "Site 7",
+    "Site 8"
+   ],
+   "fields": [
+    "demand.site"
+   ]
+  },
+  {
+   "key": "owner",
+   "label": "Organisation",
+   "kind": "set",
+   "values": [
+    "Customer A",
+    "Customer B",
+    "Customer C"
+   ],
+   "fields": [
+    "owner"
+   ]
+  },
+  {
+   "key": "alarm",
+   "label": "Telemetry alarm",
+   "kind": "set",
+   "values": [
+    "yes",
+    "no"
+   ],
+   "fields": [
+    "alarm"
+   ]
+  }
+ ],
+ "actors": [],
+ "wording": {
+  "every": "every return",
+  "phrases": [
+   {
+    "key": "cls",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "batch": "tool-fleet batches",
+     "control": "control units",
+     "drill": "power tools",
+     "it": "IT electronics",
+     "motor": "industrial motors",
+     "pump": "hydraulic pumps"
+    }
+   },
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "site",
+    "fmt": "at {}",
+    "joiner": " or ",
+    "words": {}
+   },
+   {
+    "key": "owner",
+    "fmt": "for {}",
+    "joiner": " or ",
+    "words": {}
+   },
+   {
+    "key": "alarm",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "yes": "with a telemetry alarm",
+     "no": "without a telemetry alarm"
+    }
+   }
+  ],
+  "path_names": {
+   "redeploy": "redeploy",
+   "resale": "whole-asset resale",
+   "intparts": "internal recovered-part use",
+   "relase": "re-lease",
+   "material": "material recovery",
+   "extparts": "external parts sale",
+   "exit": "responsible exit"
+  }
+ },
+ "customer_layer": {
+  "editable": {},
+  "params": {},
+  "sample_diversions": [],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [],
+  "entities": [],
+  "mappings": [],
+  "min_fields": [],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "industrial",
+  "params": {},
+  "carbon": {
+   "set": "cfs-2026.1",
+   "d_rule": "none"
+  }
+ },
+ "replay": {
+  "dataset": null,
+  "example": null
+ },
+ "runtime": {
+  "exception_types": [],
+  "suggestion_rules": [],
+  "sla_hours": {},
+  "escalate_to": null
+ },
+ "kpis": [],
+ "analytics": [],
+ "stories": []
 }
