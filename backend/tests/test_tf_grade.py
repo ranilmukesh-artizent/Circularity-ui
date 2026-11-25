@@ -81,9 +81,19 @@ def test_tf_03_grade_without_test_result_is_in_progress():
 
 
 # ------------------------------------------------------------------ the screen and the late grade
+def _clear_canonical() -> None:
+    """Remove the `condition` records this module writes through the `repairlog` source (`starting.reset()` keeps them)."""
+    keys = {"k": [SERIAL, "LSR-00001"]}
+    with engine.begin() as c:
+        c.execute(text("DELETE FROM provenance WHERE model = 'condition' AND source_id = 'repairlog' AND key = ANY(:k)"), keys)
+        c.execute(text("DELETE FROM canonical WHERE model = 'condition' AND key = ANY(:k)"), keys)
+        c.execute(text("DELETE FROM conflict WHERE model = 'condition' AND key = ANY(:k)"), keys)
+
+
 @pytest.fixture(scope="module")
 def opened():
     starting.reset()
+    _clear_canonical()
     assert call("org.create", {"id": ORG, "parent_id": "workspace", "kind": "company", "name": "Tool fleet A"}, "admin")["ok"]
     with SessionLocal() as s:
         c = intake.open_case(
@@ -93,6 +103,7 @@ def opened():
     yield c["id"]
     _clear_jobs()
     starting.reset()
+    _clear_canonical()
 
 
 def _view(case_id: str, user: str = "admin"):
