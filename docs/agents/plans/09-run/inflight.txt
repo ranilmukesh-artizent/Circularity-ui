@@ -1,5 +1,6 @@
 # Tasks in flight (task id, writer, model, started)
-P9-2.15 w1 sonnet 19:40 done 00a336e, waiting to merge (fraud review eval case to add: 2.19 was not on its base)
 P9-2.21 w1 sonnet 20:55 done de17c54, waiting to merge (edits migration 0062 in place: migrate-reapply 0062, restart worker; no red run)
-P9-2.23 w2 sonnet 21:35
-P9-8.3 w3 sonnet 21:35
+P9-2.23 w2 sonnet 21:35 done 05b2c96, waiting to merge
+P9-8.3 w3 sonnet 21:35 done a1d7510, waiting to merge (spec: connection.discover agent-allowed, but the connection. prefix forbids it; decide at merge; run smoke-fabric)
+P9-8.10 w2 sonnet 22:20
+P9-8.14 w3 sonnet 22:20 done a7b3fca, waiting to merge (run smoke-modeler, smoke-mvp)

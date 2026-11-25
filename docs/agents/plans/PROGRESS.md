@@ -246,6 +246,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-8.2 field mapping suggestions with calibrated confidence | this commit | 79 api (mapping_suggest, catalog_mappings, mapping_runs, catalog_hygiene, tool_find), 404 web, lint | done |
 | 2026-11-25 | 09 · P9-8.13 studio canvas on xyflow with dagre layout | this commit | 417 web, tsc 0, lint and knip clean, smoke-pages 11 accounts 0 failing, smoke-fabric 12/12 | done |
 | 2026-11-25 | 09 · P9-8.9 oIDC sign-in with authlib beside the demo sign-in | this commit | 109 api (oidc_signin, auth, writes_access, catalog_hygiene, access_gaps, hold_policy, screens_reference, tool_find), 418 web, lint, smoke-signin, manual SSO round trip | done |
+| 2026-11-25 | 09 · P9-2.15 agent evals in CI with an injection corpus | this commit | 7 evals (FunctionModel/TestModel, no network), 112 api (llm_router, ask, fraud_review, exception_assistant, catalog_hygiene), ruff, mypy, 418 web | done |
 
 ## Decisions taken without the user (to review)
 
