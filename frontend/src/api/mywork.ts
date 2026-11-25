@@ -51,6 +51,27 @@ export const resolveItem = (itemId: number, outcome: string, note?: string): Pro
 export const assignItem = (itemId: number, account: string): Promise<ActionResult<{ id: number; account: string }>> =>
   invoke('work.assign', { item_id: itemId, account });
 
+/** One fact behind the exception assistant's draft, with where it came from and when. */
+export interface DraftSource {
+  fact: string;
+  source: string;
+  at: string;
+}
+
+/** P9-2.10: the exception assistant's draft for an exception item. `owner_role` and `recommended_action` come from the pack;
+ *  `by_model` is true when a language model worded `cause`. */
+export interface ExceptionDraft {
+  cause: string;
+  recommended_action: string;
+  owner_role: string;
+  by_model: boolean;
+  sources: DraftSource[];
+}
+
+/** The assistant's draft for an exception item (exception.explain, a read): it proposes, a person resolves or assigns. */
+export const explainException = (exceptionId: number): Promise<ActionResult<ExceptionDraft>> =>
+  invoke('exception.explain', { exception_id: exceptionId });
+
 /** Ask a role a question about a case; it appears in that role's My work, due as the pack's SLA says. */
 export const askForInfo = (caseId: string, question: string, toRole: string): Promise<ActionResult<{ id: number; case_id: string }>> =>
   invoke('case.needInfo', { case_id: caseId, question, to_role: toRole });

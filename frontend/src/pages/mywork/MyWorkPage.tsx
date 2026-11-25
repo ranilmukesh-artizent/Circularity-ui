@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { acceptProposal, rejectProposal } from '../../api/agents';
-import { assignItem, resolveItem, useMyWork, type WorkItem, type WorkKind } from '../../api/mywork';
+import { assignItem, explainException, resolveItem, useMyWork, type ExceptionDraft, type WorkItem, type WorkKind } from '../../api/mywork';
 import { accounts } from '../../api/session';
 import { useBackend } from '../../api/useBackend';
 import { Modal } from '../../components/Overlay';
@@ -64,6 +64,7 @@ export function MyWorkPage() {
               {i.case_id && <> · <a href={'#/product/' + i.case_id}>{i.case_id}</a></>}
               {i.cause && <span className="note">{i.cause}</span>}
               {i.action && <span className="note">Next: {i.action}</span>}
+              {i.kind === 'exception' && workId(i) !== null && <AssistantDraft id={workId(i) as number} />}
               <span className="note">
                 For {i.owner}
                 {i.due && <> · <span className={'chip ' + (i.overdue ? 'bad' : 'line')}>{dueLabel(i)}</span></>}
@@ -81,6 +82,30 @@ export function MyWorkPage() {
       </ul>
       {dialog && <ItemDialog d={dialog} onClose={() => setDialog(null)} />}
     </div>
+  );
+}
+
+/** P9-2.10: "Assistant: cause · recommended action · owner" under an exception, from exception.explain. The assistant only
+ *  proposes; the person resolves or assigns with the buttons of the row. Nothing shows when the draft cannot be read. */
+function AssistantDraft({ id }: { id: number }) {
+  const [draft, setDraft] = useState<ExceptionDraft | null>(null);
+  useEffect(() => {
+    let live = true;
+    void explainException(id).then((r) => {
+      if (live && r.ok) setDraft(r.output);
+    });
+    return () => {
+      live = false;
+    };
+  }, [id]);
+  if (!draft) return null;
+  return (
+    <span className="note" data-testid="assistant-draft">
+      Assistant: {draft.cause} · {draft.recommended_action} · {draft.owner_role}
+      <br />
+      Drafted by the exception assistant{draft.by_model ? ', worded by a model' : ''}
+      {draft.sources.length > 0 && <> · from {[...new Set(draft.sources.map((s) => s.source))].join(', ')}</>}
+    </span>
   );
 }
 

@@ -14,6 +14,8 @@ person (`items_for`, My work).
                                                           agents' proposals for the person and the conflicts that hold
                                                           a decision, sorted by priority, then due time
     role_of_owner(owner)                                  a pack owner's name as one of today's roles
+    exception_of(s, item_id), facts_of(exc, case)         an exception item with its case, and the facts behind it
+                                                          (the exception assistant, P9-2.10)
 
 Time is the workspace clock (`di.core.clock`): a due time is `clock.now()` plus the hours, and `on_sla` compares with the
 same clock, so the pinned test clock and the simulated clock both work. Owns: the `work_item` table (migration 0033).
@@ -26,6 +28,7 @@ proposal, `c:<id>` a conflict.
 """
 
 import json
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Literal
@@ -326,3 +329,35 @@ def items_for(s: Session, ctx: "CallContext") -> list[WorkView]:
     pctx = ctx.actor.ctx
     rows = [*_work_rows(s, a, pctx, clock.now()), *_home_rows(ctx, a), *_proposal_rows(s, a, pctx), *_conflict_rows(s, a, pctx)]
     return sorted(rows, key=lambda w: (w.priority, w.due is None, w.due or "", w.id))
+
+
+# ---------------------------------------------------------------- an exception, for the exception assistant (P9-2.10)
+def exception_of(s: Session, item_id: int) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    """An exception work item (any status) and its case (`{}` when it has none), or None when `item_id` is not an
+    exception. The assistant reads the item's type, case and facts here and nowhere else."""
+    row = s.execute(text("SELECT * FROM work_item WHERE id = :i AND kind = 'exception'"), {"i": int(item_id)}).mappings().first()
+    if row is None:
+        return None
+    from di.services.cases import store
+
+    case = store.get(s, row["case_id"]) if row["case_id"] else None
+    return dict(row), dict(case or {})
+
+
+def facts_of(exc: Mapping[str, Any], case: Mapping[str, Any]) -> list[dict[str, str]]:
+    """The facts behind an exception, each `{fact, source, at}`: the asset of the case, what the item itself says, the
+    reasons of the gates that failed and the evidence that is not ready. `at` is the item's creation time (ISO)."""
+    at = exc["created_at"].isoformat() if exc.get("created_at") else clock.now().isoformat()
+    out: list[dict[str, str]] = []
+    if case.get("assetId"):
+        out.append({"fact": f"Asset {case['assetId']}", "source": "case record", "at": at})
+    if exc.get("cause"):
+        out.append({"fact": str(exc["cause"]).strip(), "source": f"work item {exc['id']}", "at": at})
+    for g in case.get("gates") or []:
+        if not g.get("passed") and g.get("reason"):
+            out.append({"fact": str(g["reason"]).strip(), "source": f"gate {g.get('name') or g.get('id')}", "at": at})
+    for e in case.get("evidence") or []:
+        if e.get("state") not in (None, "ready"):
+            note = f" ({e['note']})" if e.get("note") else ""
+            out.append({"fact": f"{e['label']}: {e['state']}{note}", "source": str(e.get("source") or "case evidence"), "at": at})
+    return out

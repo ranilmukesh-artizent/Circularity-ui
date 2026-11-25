@@ -77,3 +77,5 @@ unattended". Times are local (IST).
 | 25 Nov 14:59 | P9-2.3 merged. Sonnet; red first quoted; Pydantic AI FallbackModel docs read; open: runtime drops model_route on save (pick_model uses state.model), Ask has no budgets yet, complete_json still reads ASK_MODEL_CHAIN. |
 | 25 Nov 15:00 | P9-2.3 merged and pushed. P9-2.10 to w2. P9-2.4 still with w1. |
 | 25 Nov 15:27 | P9-2.4 merged. Sonnet; red proven with a stub (code written first); industrial cases without a grade have no confidence hold (parity kept); agents.test.ts import line conflict with P9-2.3 resolved keeping both. |
+| 25 Nov 15:27 | P9-2.4 merged and pushed (2 hold tests pinned off synced conflicts). P9-2.5 to w1; P9-2.10 verifying. |
+| 25 Nov 15:31 | P9-2.10 merged. Sonnet; red proven by moving modules aside (code first); read-only agent recover-exceptions seeded; drafts never resolve or assign. |
