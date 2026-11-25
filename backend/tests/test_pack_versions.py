@@ -242,6 +242,22 @@ def test_pack_publish_notes_a_new_locked_gate_on_a_rebased_overlay():
     assert row is not None and "Data-wipe certificate added by the pack" in row.notes
 
 
+def test_x_01_industrial_demo_pack_is_not_imported():
+    doc = json.loads((PACKS_DIR / "industrial.json").read_text(encoding="utf-8"))
+    doc["version"] = "99.0.0"
+    r = call("pack.import", {"doc": doc}, "admin")
+    assert r["ok"] is False and r["error"]["code"] == "validation_error"
+    assert r["error"]["message"] == "The industrial demo pack is not imported in plan 9."
+
+
+def test_x_01_a_pack_version_keeps_its_valuer_kind():
+    doc = json.loads((PACKS_DIR / "tool_fleet.json").read_text(encoding="utf-8"))
+    doc["key"], doc["version"] = "device", "9.0.0"  # a tool-fleet valuer under the device key
+    r = call("pack.import", {"doc": doc}, "admin")
+    assert r["ok"] is False and r["error"]["code"] == "validation_error"
+    assert r["error"]["message"].startswith("A pack version keeps its valuer kind")
+
+
 def test_version_must_increase():
     r = call("pack.import", {"doc": _doc("2.7.0")}, "admin")
     assert r["error"] == {"code": "conflict", "message": "Pack device 2.7.0 is not newer than 2.7.0."}

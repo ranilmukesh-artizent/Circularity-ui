@@ -102,13 +102,41 @@ def test_open_item_with_due_hours_queues_one_sla_job():
     with SessionLocal() as s:
         rows = s.execute(text("SELECT payload, dedupe_key, run_after FROM job WHERE kind = 'work.sla'")).all()
     assert [(p, k) for p, k, _ in rows] == [({"item_id": item}, f"work.sla:{item}")]
-    assert rows[0][2] == r["due_at"]
+    assert rows[0][2] > r["due_at"]  # run_after is on the database clock (R-fix: the pinned workspace clock is in the past)
     assert "work.sla" in worker.HANDLERS
     worker.HANDLERS["work.sla"]({"item_id": item})  # not due yet at the pinned clock: nothing changes
     assert _row(item)["priority"] == 100
     no_timer = _open(title="No timer")
     with SessionLocal() as s:
         assert s.execute(text("SELECT count(*) FROM job WHERE dedupe_key = :k"), {"k": f"work.sla:{no_timer}"}).scalar_one() == 0
+
+
+def test_r13_sla_job_waits_on_database_clock_and_escalates_once_due(monkeypatch):
+    item = _open(due_hours=24)
+    with SessionLocal() as s:
+        db_now = s.execute(text("SELECT now()")).scalar_one()
+        run_after = s.execute(text("SELECT run_after FROM job WHERE dedupe_key = :k"), {"k": f"work.sla:{item}"}).scalar_one()
+    assert run_after >= db_now + timedelta(hours=23)  # the job does not run at once
+    with SessionLocal() as s:
+        assert process.on_sla(s, item) == "not_due"
+        s.commit()
+    assert _row(item)["escalated_at"] is None
+    with SessionLocal() as s:  # a fresh job waits for the due time, on the database clock again
+        later = (
+            s.execute(
+                text("SELECT run_after FROM job WHERE kind = 'work.sla' AND status = 'queued' AND dedupe_key <> :k"),
+                {"k": f"work.sla:{item}"},
+            )
+            .scalars()
+            .all()
+        )
+    assert len(later) == 1 and later[0] >= db_now + timedelta(hours=23)
+    start = clock.now()
+    monkeypatch.setattr(clock, "now", lambda: start + timedelta(hours=25))
+    with SessionLocal() as s:
+        assert process.on_sla(s, item) == "escalated"
+        s.commit()
+    assert _row(item)["escalated_at"] is not None
 
 
 def test_sla_on_closed_item_is_closed():

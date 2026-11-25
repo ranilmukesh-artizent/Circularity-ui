@@ -184,6 +184,17 @@ def _rebuild(ctx: CallContext, c: store.Case, rnd: Callable[[], float]) -> None:
         _record_shadow(ctx, c, shadow, rank_routes(copied, c.get("blocked"), sprobe["preferred"]))
 
 
+def _revalue(ctx: CallContext, c: store.Case, rnd: Callable[[], float]) -> None:
+    """A case opened from data (it has a `template` key: industrial, tool fleet or device) is decided again by the one
+    decider (`intake.revalue`, plan 9 R19); only the 128 book cases are rebuilt from the demo's formulas."""
+    if "template" not in c:
+        _rebuild(ctx, c, rnd)
+        return
+    intake.revalue(ctx.session, c)
+    if shadow := shadow_rules(ctx.session, c):  # a flow in shadow: the draft's choice beside the live one (MVP-3.5)
+        _record_shadow(ctx, c, shadow, intake.recommend(ctx.session, c, shadow.version))
+
+
 def _rerank(ctx: CallContext, c: store.Case) -> None:
     """A hand-modelled case keeps its route terms and is ranked again. With business rules (or after them: a case a
     rule excluded routes of), its routes are evaluated again from their drafts, keeping the hand-modelled exclusions
@@ -540,7 +551,7 @@ def record_result(i: dict[str, Any], ctx: CallContext):
         e["state"], e["note"], e["fresh"] = "ready", "", "just now"
     if hero:
         c["demand"] = {"internal": True, "confirmed": True, "site": "Site 4", "lease": None, "parts": True}
-    _rebuild(ctx, c, rnd)
+    _revalue(ctx, c, rnd)
     c["requested"], c["predictions"] = None, None
     r = c["recommendation"]
     if r:
@@ -576,16 +587,12 @@ def reevaluate(i: dict[str, Any], ctx: CallContext):
     key = _key("case.reevaluate", i, ctx)
     c, by = _case(ctx, i["case_id"]), _by(ctx)
     was = c["recommendation"]["plan"] if c.get("recommendation") else None
-    # a hand-modelled case keeps its routes and is ranked again; a template case (tool fleet, device) is valued again by
-    # its template's valuer; any other is valued again from the formulas
+    # a hand-modelled case keeps its routes and is ranked again; a case opened from data is decided again by the one
+    # decider; any other (the book's) is valued again from the formulas
     if c.get("hero"):
         _rerank(ctx, c)
-    elif (c.get("template") or "industrial") != "industrial":
-        intake.revalue(ctx.session, c)
-        if shadow := shadow_rules(ctx.session, c):  # a flow in shadow: the draft's choice beside the live one (MVP-3.5)
-            _record_shadow(ctx, c, shadow, intake.recommend(ctx.session, c, shadow.version))
     else:
-        _rebuild(ctx, c, _seeded(key))
+        _revalue(ctx, c, _seeded(key))
     r = c["recommendation"]
     c["reevalReason"] = None
     c["snapshot"] = {"id": "EVS-" + hash_id(f"{c['id']}re{cyc(c)}"), "takenAt": NOW, "items": len(c.get("evidence") or [])}

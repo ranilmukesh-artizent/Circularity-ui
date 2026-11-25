@@ -4,6 +4,8 @@ person (`items_for`, My work).
 
     open_item(s, kind=, case_id=, ..., due_hours=, by=)   a `work_item` row; with `due_hours` it gets a due time and a
                                                           `work.sla` job (dedupe key `work.sla:<id>`) that runs then
+                                                          (`run_after` is on the database clock; an early run queues
+                                                          itself again)
     close_item(s, item_id, outcome, by)                   the item is done
     on_sla(s, item_id)                                    the timer: an item still open and overdue is escalated
                                                           ("escalated", "not_due", "closed")
@@ -124,8 +126,14 @@ def open_item(
          "a": owner_account, "d": due, "by": by, "now": now},
     ).scalar_one()  # fmt: skip
     if due is not None:
-        jobs.enqueue(s, SLA_JOB, {"item_id": item_id}, run_after=due, dedupe_key=f"{SLA_JOB}:{item_id}")
+        wait = due - now  # the job queue claims on the database clock, so the wait is added to that, not to `due`
+        jobs.enqueue(s, SLA_JOB, {"item_id": item_id}, run_after=_db_now(s) + wait, dedupe_key=f"{SLA_JOB}:{item_id}")
     return int(item_id)
+
+
+def _db_now(s: Session) -> datetime:
+    """The database clock, which `jobs.claim` compares `run_after` with (the workspace clock may be pinned or simulated)."""
+    return s.execute(text("SELECT now()")).scalar_one()
 
 
 def close_item(s: Session, item_id: int, outcome: str, by: str) -> None:
@@ -172,7 +180,17 @@ def on_sla(s: Session, item_id: int) -> Outcome:
     if row is None or row["status"] != "open":
         return "closed"
     now = clock.now()
-    if row["due_at"] is None or row["due_at"] > now or row["escalated_at"] is not None:
+    if row["due_at"] is None or row["escalated_at"] is not None:
+        return "not_due"
+    if row["due_at"] > now:  # early: wait the rest of the time on the database clock (fresh key: this job still runs)
+        at = _db_now(s)
+        jobs.enqueue(
+            s,
+            SLA_JOB,
+            {"item_id": item_id},
+            run_after=at + (row["due_at"] - now),
+            dedupe_key=f"{SLA_JOB}:{item_id}:{at.isoformat()}",
+        )
         return "not_due"
     role = pack_of(s, row["case_id"]).runtime.escalate_to or row["owner_role"]
     account = _cover(s, role)

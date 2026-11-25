@@ -11,8 +11,10 @@ import pytest
 from sqlalchemy import text
 
 from di.core.db import SessionLocal, engine
+from di.repositories.live_rules import flow_version, live_pack
 from di.services.actions.registry import ActionError
 from di.services.cases import intake, store
+from di.services.cases.decide import decide_case
 from di.services.engine.routes import rank_routes
 from di.services.modeler.templates import load_template
 from di.services.modeler.valuers import tool_fleet
@@ -134,3 +136,31 @@ def test_planner_other_org_refused():
 
 def test_roles_without_open_cases_refused():
     assert _open("T-MTR-8", user="approver")["error"]["code"] == "out_of_scope"
+
+
+def _stored(cid: str) -> dict:
+    with SessionLocal() as s:
+        c = store.get(s, cid)
+    assert c is not None
+    return c
+
+
+def test_r19_reevaluate_data_opened_industrial_case_keeps_open_numbers():
+    cid = _open("T-MTR-R19")["output"]["case_id"]
+    opened = _stored(cid)["recommendation"]
+    assert call("decision.submit", {"case_id": cid}, "planner-a")["ok"]
+    assert call("decision.decline", {"case_id": cid, "reason": "Check again."}, "approver")["ok"]
+    assert call("case.reevaluate", {"case_id": cid}, "planner-a")["ok"]
+    again = _stored(cid)["recommendation"]
+    assert (again["id"], again["net"]) == (opened["id"], opened["net"])
+
+
+def test_r19_record_result_on_tool_fleet_case_uses_decide_case():
+    facts = {"cls": "CMH", "grade": "B", "ft": "Repair center", "site": "Houston", "rul": 62}
+    cid = _open("T-CMH-R19", template_key="tool_fleet", reason="contract_end", facts=facts)["output"]["case_id"]
+    r = call("evidence.recordResult", {"case_id": cid}, "admin")
+    assert r["ok"], r
+    c = _stored(cid)
+    with SessionLocal() as s:
+        d = decide_case(cid, live_pack(s, c), flow_version(s, c), session=s)
+    assert c["recommendation"] is not None and (c["recommendation"]["id"], c["recommendation"]["net"]) == (d.route, d.net)

@@ -85,7 +85,7 @@ def test_x_04_save_refuses_weakening_with_the_ops_id():
 
 
 def test_x_04_compliance_skip_audited(monkeypatch):
-    monkeypatch.setattr("di.services.actions.overlays.load_pack", lambda key: _recall_pack())
+    monkeypatch.setattr("di.services.actions.overlays.active_pack", lambda s, key, org: _recall_pack())
     r = call("overlay.save", _body("Customer A", "tool_fleet", SKIP), "planner-a")
     assert r["error"]["code"] == "validation_error" and r["error"]["overlay_code"] == "skips_compliance"
     assert r["error"]["message"] == "Blocked: this skips the compliance guardrail Safety recall check at Match and verify."
@@ -171,7 +171,7 @@ def test_x_04_rebase_needs_a_newer_pack_and_makes_a_draft(monkeypatch):
         for g in newer.guardrails
     ]
     newer = newer.model_copy(update={"guardrails": gs, "version": "2.8.0"})
-    monkeypatch.setattr("di.services.actions.overlays.load_pack", lambda key: newer)
+    monkeypatch.setattr("di.services.actions.overlays.active_pack", lambda s, key, org: newer)
     out = ok(call("overlay.rebase", _ref(), "planner-a"))
     assert out["notes"] == ["GR-D2: the pack is now stricter (0.65); your change is no longer needed."]
     row = _row()
@@ -183,7 +183,7 @@ def test_x_04_unresolved_conflicts_block_submit(monkeypatch):
     _publish()
     base = load_pack("device")
     newer = base.model_copy(update={"guardrails": [g for g in base.guardrails if g.id != "GR-D2"], "version": "2.8.0"})
-    monkeypatch.setattr("di.services.actions.overlays.load_pack", lambda key: newer)
+    monkeypatch.setattr("di.services.actions.overlays.active_pack", lambda s, key, org: newer)
     out = ok(call("overlay.rebase", _ref(), "planner-a"))
     assert [c["kind"] for c in out["conflicts"]] == ["target_gone"]
     r = call("overlay.submit", _ref(), "planner-a")
@@ -238,3 +238,62 @@ def test_x_04_modeler_screen_carries_the_orgs_overlay():
         "pub", 1, {"org_unit_id": "Customer A", "ver": 1}, {"edit": False, "approve": True},
     )  # fmt: skip
     assert got["ops"][0]["value"] == 0.60 and got["ops"][0]["by"] == "planner-a"
+
+
+def _device_doc(version: str, compliance: bool = False) -> dict:
+    from di.services.modeler.pack import PACKS_DIR
+
+    d = json.loads((PACKS_DIR / "device.json").read_text(encoding="utf-8"))
+    d["version"] = version
+    if compliance:  # the value stage now holds a compliance guardrail
+        next(g for g in d["guardrails"] if g["id"] == "GR-D2")["type"] = "Compliance"
+    return d
+
+
+def _publish_pack(doc: dict) -> None:
+    pid = ok(call("pack.import", {"doc": doc}, "admin"))["id"]
+    ok(call("pack.submit", {"id": pid}, "admin"))
+    ok(call("pack.approve", {"id": pid}, "approver"))
+
+
+@pytest.fixture
+def pack_versions():
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM pack_version"))
+    yield
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM pack_version"))
+
+
+def test_x_04_save_uses_the_pack_in_force_not_the_file(pack_versions):
+    skip = {"id": "op-1", "op": "shortcut", "stage": "condition", "to": "decide", "when": []}
+    assert call("overlay.save", _body("Customer A", "device", skip), "planner-a")["ok"]  # the file skips no compliance rule
+    _reset()
+    _publish_pack(_device_doc("2.8.0", compliance=True))
+    r = call("overlay.save", _body("Customer A", "device", skip), "planner-a")
+    assert r["ok"] is False and "skips the compliance guardrail" in r["error"]["message"], r
+
+
+def test_x_04_rebase_onto_the_version_in_force_is_already_there(pack_versions):
+    ok(call("overlay.save", _body(), "planner-a"))
+    _publish_pack(_device_doc("2.8.0"))  # publishing rebases the draft onto 2.8.0
+    assert _row().draft_base_version == "2.8.0"
+    r = call("overlay.rebase", _ref(), "planner-a")
+    assert r == {"ok": False, "error": {"code": "conflict", "message": "Already on 2.8.0."}}
+
+
+def test_x_04_approve_rechecks_the_status_after_the_row_lock():
+    from di.core import policy
+    from di.core.auth import load_context
+    from di.services.actions import overlays
+    from di.services.actions.pipeline import Actor, CallContext
+    from di.services.actions.registry import ActionError
+
+    ok(call("overlay.save", _body(), "planner-a"))  # still a draft: returned to draft between the guard and the handler
+    with SessionLocal() as s:
+        pctx = load_context(s)
+        ctx = CallContext(actor=Actor(account=policy.account("approver", pctx), ctx=pctx), session=s)
+        with pytest.raises(ActionError) as e:
+            overlays.approve(_ref(), ctx)
+        assert e.value.code == "conflict"
+    assert _row().status == "draft" and _row().ver == 0

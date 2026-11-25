@@ -28,11 +28,12 @@ from di.core.db import SessionLocal
 from di.repositories import overlays as repo
 from di.repositories.orgs import units
 from di.repositories.overlays import OverlayRow
+from di.repositories.packs import active_pack
 from di.services.actions.modeler import MAKER_CHECKER, _boundary, _org_ok
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
 from di.services.modeler.overlay import OverlayError, OverlayOp, apply_overlay, ops_json, parse_ops, rebase
-from di.services.modeler.pack import Pack, load_pack, pack_keys
+from di.services.modeler.pack import Pack, pack_keys
 
 _MANAGE, _APPROVE = "manageFlows", "approve.flows"
 _STR = {"req": True, "t": "string"}
@@ -75,6 +76,11 @@ def _reach(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     if org not in units(ctx.session):
         return "not_found", f"No org unit {org}."
     return None if _org_ok(ctx, org) else _boundary(org)
+
+
+def _in_force(i: dict[str, Any], ctx: CallContext) -> Pack:
+    """The pack in force for the overlay's org: its published version, else the pack file (not the file alone)."""
+    return active_pack(ctx.session, i["pack_key"], i["org_unit_id"])
 
 
 def _label(i: dict[str, Any]) -> str:
@@ -170,7 +176,7 @@ def save_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | tuple[s
     ops = _parse(i["ops"])
     if isinstance(ops, tuple):
         return ops
-    err = _refused(load_pack(i["pack_key"]), ops)
+    err = _refused(_in_force(i, ctx), ops)
     if err is None:
         return None
     if err.code == "skips_compliance":
@@ -180,7 +186,7 @@ def save_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | tuple[s
 
 @implement("overlay.save")
 def save(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
-    pack = load_pack(i["pack_key"])
+    pack = _in_force(i, ctx)
     ops = [o.model_copy(update={"by": o.by or ctx.actor.id}) for o in parse_ops(i["ops"])]
     row = repo.get(ctx.session, i["pack_key"], i["org_unit_id"], for_update=True)
     mine = ops_json(ops)
@@ -235,7 +241,7 @@ def submit_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | tuple
     ops = _parse(row.draft or [])
     if isinstance(ops, tuple):
         return ops
-    err = _refused(load_pack(i["pack_key"]), ops)
+    err = _refused(_in_force(i, ctx), ops)
     return _refusal(err) if err else None
 
 
@@ -265,6 +271,8 @@ def approve_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None
 @implement("overlay.approve")
 def approve(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     row = _get(i, ctx, for_update=True)
+    if row.status != "review":  # returned or approved by someone else between the guard and this lock
+        raise ActionError("conflict", f"The overlay for {_label(i)} is not waiting for approval.")
     ver = row.ver + 1
     base = row.draft_base_version or row.base_version
     _update(ctx, row, status="pub", ver=ver, checker=ctx.actor.id, published=row.draft or [], base_version=base,
@@ -312,14 +320,14 @@ def rebase_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     row = _wanted(repo.get(ctx.session, i["pack_key"], i["org_unit_id"]), ("draft", "pub"), msg)
     if isinstance(row, tuple):
         return row
-    version = load_pack(i["pack_key"]).version
+    version = _in_force(i, ctx).version
     return ("conflict", f"Already on {version}.") if _rebase_source(row)[1] == version else None
 
 
 @implement("overlay.rebase")
 def rebase_overlay(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     row = _get(i, ctx, for_update=True)
-    new = load_pack(i["pack_key"])
+    new = _in_force(i, ctx)
     raw, base = _rebase_source(row)
     res = rebase(new.model_copy(update={"version": base}), new, parse_ops(raw))
     conflicts = [c.model_dump(mode="json") for c in res.conflicts]

@@ -113,7 +113,7 @@ def _can(p: Principal, f: FlowRow, org: str) -> dict[str, bool]:
 
 def _overlay(p: Principal, s: Session, key: str, org: str) -> dict[str, Any]:
     """The org's customer overlay of the template's pack, with what the Customer layer panel needs to edit it."""
-    pack, row = load_pack(key), get_overlay(s, key, org)
+    pack, row = pack_repo.active_pack(s, key, org), get_overlay(s, key, org)
     live = nearest_published(s, key, org)
     shown_base = pack.version
     if row:

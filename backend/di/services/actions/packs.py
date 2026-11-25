@@ -118,6 +118,14 @@ def import_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | tuple
         pack = parse_pack(i["doc"])
     except PackError as e:
         return "validation_error", str(e), {"part": e.part, "part_name": e.part_name}
+    if pack.key == "industrial":
+        return "validation_error", "The industrial demo pack is not imported in plan 9."
+    try:
+        kind = repo.active_pack(ctx.session, pack.key, i.get("org_unit_id") or None).valuer.kind
+    except KeyError:
+        kind = None  # a new pack key
+    if kind is not None and kind != pack.valuer.kind:
+        return "validation_error", f"A pack version keeps its valuer kind ({kind}, not {pack.valuer.kind})."
     newest = repo.newest_version(ctx.session, pack.key)
     if newest is not None and repo.semver(pack.version) <= repo.semver(newest):
         return "conflict", f"Pack {pack.key} {pack.version} is not newer than {newest}."
