@@ -46,6 +46,7 @@ def apply(s: Session, c: MutableMapping[str, Any]) -> bool:
         return False
     vc = tool_inputs.valuer_case(c["valuer"], workbench_evidence(s, c.get("serial") or c.get("assetId")))
     shown = vc["grade"] or vc["estGrade"]
+    vc["grade"] = shown  # no workbench grade: the snapshot keeps its estimate as grade, as opened
     changed = vc != c["valuer"] or c.get("grade") != shown
     c["valuer"], c["grade"] = vc, shown
     return changed
