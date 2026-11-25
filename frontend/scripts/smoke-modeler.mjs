@@ -110,7 +110,7 @@ check(found, `the case page shows "Excluded by business rule IR-01"`);
 // 6. The assistant (MVP-5.4): the Admin asks for a change to the tool-fleet flow on the workspace
 const admin = await session('admin');
 await admin.goto(base + '/#/modeler?template=tool_fleet&org=workspace');
-check(await waitText(admin, /I watch this flow and the decisions it produces/), 'the assistant opens with its line');
+check(await waitText(admin, /I watch this flow and the decisions it produces/, 20000), 'the assistant opens with its line'); // first load of the modeler screen takes ~9 s after sign-in
 await admin.fill('#mdl-ask', 'Never recycle construction lasers');
 await admin.press('#mdl-ask', 'Enter');
 check(await waitText(admin, /Proposed change/i, 20000), 'the assistant shows "Proposed change"');
