@@ -36,6 +36,8 @@ EXTRA_PERMS: dict[str, tuple[str, ...]] = {
     "approve.flows": ("Admin", "Approver"),
     "manageAgents": ("Admin",),
     "openCases": ("Admin", "Developer", "Planner"),
+    "managePacks": ("Admin", "Planner"),  # plan 9 P9-1.6: import and submit a pack version
+    "approve.packs": ("Admin", "Approver"),  # plan 9 P9-1.6: approve or return a pack version
 }
 EXTRA_PAGES: dict[str, tuple[str, ...]] = {
     "modeler": ("Admin", "Planner", "Approver", "Executive"),

@@ -88,6 +88,9 @@ ignore_imports =
     di.services.cases.intake -> di.repositories.live_rules
     di.services.cases.intake -> di.services.actions.models
     di.services.cases.intake -> di.repositories.plm
+    # The template of a case can be a pack version published for its owner (plan 9, P9-1.6): intake reads it, as it reads
+    # the owner's flow.
+    di.services.cases.intake -> di.repositories.packs
 
 [importlinter:contract:foundations]
 name = di.core and di.models import nothing above them

@@ -1,0 +1,926 @@
+{
+  "key": "device_eu",
+  "name": "Device recommerce (EU)",
+  "version": "1.0.0",
+  "unit": "device",
+  "author_role": "Planner",
+  "prefix": "DE",
+  "industry": "Device recommerce",
+  "regions": [
+    "US"
+  ],
+  "legal_review": {
+    "status": "pending",
+    "date": null
+  },
+  "data_licence": "synthetic, no third-party data",
+  "flows": [
+    {
+      "key": "returns",
+      "name": "Device recommerce"
+    }
+  ],
+  "prompts": [
+    "",
+    "",
+    ""
+  ],
+  "clarify": null,
+  "classes": [
+    {
+      "id": "phone",
+      "name": "Phone",
+      "attrs": {
+        "serialised": true,
+        "has_media": true,
+        "hazardous": false,
+        "regulated": false,
+        "patient_data": false
+      },
+      "new_price": null
+    }
+  ],
+  "grades": {
+    "scale": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "graded_by": "read",
+    "map_from": {}
+  },
+  "stages": [
+    {
+      "key": "receive",
+      "label": "Return and receive",
+      "agent": "Intake",
+      "autonomy": "alone",
+      "confidence": 0.75
+    },
+    {
+      "key": "match",
+      "label": "Match and verify",
+      "agent": "Intake",
+      "autonomy": "alone",
+      "confidence": 0.75
+    },
+    {
+      "key": "condition",
+      "label": "Condition",
+      "agent": "Condition",
+      "autonomy": "limits",
+      "confidence": 0.75
+    },
+    {
+      "key": "value",
+      "label": "Value each route",
+      "agent": "Valuation",
+      "autonomy": "alone",
+      "confidence": 0.75
+    },
+    {
+      "key": "decide",
+      "label": "Decide",
+      "agent": "Routing",
+      "autonomy": "limits",
+      "confidence": 0.75
+    },
+    {
+      "key": "execute",
+      "label": "Execute",
+      "agent": "Follow-through",
+      "autonomy": "limits",
+      "confidence": 0.75
+    },
+    {
+      "key": "close",
+      "label": "Close and learn",
+      "agent": "Analytics",
+      "autonomy": "alone",
+      "confidence": 0.75
+    }
+  ],
+  "routes": [
+    {
+      "id": "buynow",
+      "name": "Buy Now",
+      "app": "Storefront · 30-day window",
+      "owner": "Channel Ops lead",
+      "lead_days": null,
+      "classes": [
+        "sale"
+      ],
+      "instructions": []
+    },
+    {
+      "id": "offers",
+      "name": "Offers",
+      "app": "Offer management · 21 days",
+      "owner": "Channel Ops lead",
+      "lead_days": null,
+      "classes": [
+        "sale"
+      ],
+      "instructions": []
+    },
+    {
+      "id": "auction",
+      "name": "Auction",
+      "app": "Auction platform · 7 days · unsold fallback",
+      "owner": "Channel Ops lead",
+      "lead_days": null,
+      "classes": [
+        "sale"
+      ],
+      "instructions": []
+    },
+    {
+      "id": "market",
+      "name": "Marketplace",
+      "app": "Marketplace connector · 45 days",
+      "owner": "Channel Ops lead",
+      "lead_days": null,
+      "classes": [
+        "sale"
+      ],
+      "instructions": []
+    }
+  ],
+  "guardrails": [
+    {
+      "id": "GR-D1",
+      "text": "Certified data wipe before any listing",
+      "owner": "Compliance",
+      "type": "Compliance",
+      "stage": "condition",
+      "locked": true,
+      "forbids": [],
+      "protects": [
+        [
+          "wipe|certificate",
+          "skip|without|\\bno\\b"
+        ]
+      ],
+      "approvers": [],
+      "param": null
+    },
+    {
+      "id": "GR-D2",
+      "text": "Recovery floor: below 55% of reference value goes to human review",
+      "owner": "Recommerce Finance",
+      "type": "Threshold",
+      "stage": "value",
+      "locked": false,
+      "forbids": [],
+      "protects": [
+        [
+          "floor",
+          "lower|reduce|change|set|remove"
+        ]
+      ],
+      "approvers": [],
+      "param": {
+        "field": "floor",
+        "value": 0.55,
+        "stricter": "higher",
+        "min": 0.3,
+        "max": 0.9
+      }
+    },
+    {
+      "id": "GR-D3",
+      "text": "Grade D never listed on Buy Now or Marketplace",
+      "owner": "Channel Ops",
+      "type": "Compliance",
+      "stage": "decide",
+      "locked": true,
+      "forbids": [
+        {
+          "path": "buynow",
+          "actions": [
+            "require",
+            "prefer"
+          ],
+          "scope_any": {
+            "grade": [
+              "D"
+            ]
+          }
+        },
+        {
+          "path": "market",
+          "actions": [
+            "require",
+            "prefer"
+          ],
+          "scope_any": {
+            "grade": [
+              "D"
+            ]
+          }
+        }
+      ],
+      "protects": [],
+      "approvers": [],
+      "param": null
+    },
+    {
+      "id": "GR-D4",
+      "text": "Maximum lot size per channel",
+      "owner": "Channel Ops",
+      "type": "Threshold",
+      "stage": "decide",
+      "locked": false,
+      "forbids": [],
+      "protects": [
+        [
+          "lot size|lot limit",
+          "raise|increase|remove|change"
+        ]
+      ],
+      "approvers": [],
+      "param": null
+    },
+    {
+      "id": "GR-D5",
+      "text": "Marketplace never undercuts the live Buy Now price",
+      "owner": "Pricing",
+      "type": "Threshold",
+      "stage": "value",
+      "locked": false,
+      "forbids": [],
+      "protects": [
+        [
+          "undercut"
+        ]
+      ],
+      "approvers": [],
+      "param": null
+    },
+    {
+      "id": "GR-D6",
+      "text": "Every routing approved by a named owner",
+      "owner": "Governance board",
+      "type": "Approval",
+      "stage": "decide",
+      "locked": false,
+      "forbids": [],
+      "protects": [
+        [
+          "auto-?approv|without approval|skip approval"
+        ]
+      ],
+      "approvers": [],
+      "param": null
+    }
+  ],
+  "gates": [],
+  "dims": [
+    {
+      "key": "brand",
+      "label": "Brand",
+      "kind": "set",
+      "values": [
+        "Apple",
+        "Samsung",
+        "Google",
+        "Motorola"
+      ],
+      "fields": []
+    },
+    {
+      "key": "grade",
+      "label": "Grade",
+      "kind": "set",
+      "values": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fields": []
+    },
+    {
+      "key": "band",
+      "label": "Age band",
+      "kind": "set",
+      "values": [
+        "0-24m",
+        "25-48m",
+        "49m+"
+      ],
+      "fields": []
+    },
+    {
+      "key": "dohMin",
+      "label": "Days on hand ≥",
+      "kind": "min",
+      "values": [],
+      "fields": [
+        "doh"
+      ]
+    },
+    {
+      "key": "qtyMin",
+      "label": "Lot units ≥",
+      "kind": "min",
+      "values": [],
+      "fields": [
+        "qty"
+      ]
+    }
+  ],
+  "actors": [
+    [
+      "pshah",
+      "Priya Shah",
+      "Remarketing lead"
+    ],
+    [
+      "tbecker",
+      "Tom Becker",
+      "Disposition owner"
+    ],
+    [
+      "lng",
+      "Lena Ng",
+      "Tool pool planner"
+    ]
+  ],
+  "wording": {
+    "every": "every lot",
+    "phrases": [
+      {
+        "key": "brand",
+        "fmt": "{}",
+        "joiner": " or ",
+        "words": {}
+      },
+      {
+        "key": "grade",
+        "fmt": "grade {}",
+        "joiner": "/",
+        "words": {}
+      },
+      {
+        "key": "band",
+        "fmt": "{} age",
+        "joiner": " or ",
+        "words": {}
+      },
+      {
+        "key": "dohMin",
+        "fmt": "{}+ days on hand",
+        "joiner": "",
+        "words": {}
+      },
+      {
+        "key": "qtyMin",
+        "fmt": "lots of {}+ units",
+        "joiner": "",
+        "words": {}
+      }
+    ],
+    "path_names": {
+      "buynow": "Buy Now",
+      "offers": "Offers",
+      "auction": "Auction",
+      "market": "Marketplace"
+    }
+  },
+  "customer_layer": {
+    "editable": {
+      "GR-D2": [
+        "floor"
+      ]
+    },
+    "params": {},
+    "sample_diversions": [],
+    "merge_rule": "stricter_wins"
+  },
+  "diversions": [],
+  "data": {
+    "systems": [],
+    "entities": [],
+    "mappings": [],
+    "min_fields": [],
+    "record_match": null
+  },
+  "valuer": {
+    "kind": "device",
+    "params": {
+      "dch": [
+        "buynow",
+        "offers",
+        "auction",
+        "market"
+      ],
+      "dcn": {
+        "buynow": "Buy Now",
+        "offers": "Offers",
+        "auction": "Auction",
+        "market": "Marketplace"
+      },
+      "dcfg": {
+        "buynow": {
+          "fee": 0.03,
+          "fix": 1,
+          "log": 6,
+          "win": 30,
+          "lot": 100
+        },
+        "offers": {
+          "fee": 0.03,
+          "fix": 1.5,
+          "log": 4,
+          "win": 21,
+          "lot": 500
+        },
+        "auction": {
+          "fee": 0.06,
+          "fix": 2.5,
+          "log": 2.5,
+          "win": 7,
+          "lot": 1000
+        },
+        "market": {
+          "fee": 0.1,
+          "fix": 1,
+          "log": 8,
+          "win": 45,
+          "lot": 40
+        }
+      },
+      "dst": {
+        "A": {
+          "0-24m": {
+            "buynow": [
+              1656,
+              0.804,
+              11.6,
+              0.957,
+              0.032
+            ],
+            "offers": [
+              181,
+              0.851,
+              5.6,
+              0.922,
+              0.007
+            ],
+            "auction": [
+              169,
+              0.982,
+              4.1,
+              0.849,
+              0.005
+            ],
+            "market": [
+              198,
+              0.838,
+              12.9,
+              1.091,
+              0.055
+            ]
+          },
+          "25-48m": {
+            "buynow": [
+              2660,
+              0.702,
+              12.8,
+              0.938,
+              0.032
+            ],
+            "offers": [
+              273,
+              0.791,
+              6.4,
+              0.9,
+              0.01
+            ],
+            "auction": [
+              331,
+              0.876,
+              4.7,
+              0.828,
+              0.005
+            ],
+            "market": [
+              320,
+              0.741,
+              15.0,
+              1.07,
+              0.046
+            ]
+          },
+          "49m+": {
+            "buynow": [
+              1302,
+              0.611,
+              14.9,
+              0.908,
+              0.033
+            ],
+            "offers": [
+              150,
+              0.613,
+              7.4,
+              0.873,
+              0.008
+            ],
+            "auction": [
+              138,
+              0.775,
+              4.8,
+              0.808,
+              0.005
+            ],
+            "market": [
+              156,
+              0.66,
+              16.9,
+              1.035,
+              0.036
+            ]
+          }
+        },
+        "B": {
+          "0-24m": {
+            "buynow": [
+              192,
+              0.604,
+              12.8,
+              0.912,
+              0.039
+            ],
+            "offers": [
+              1712,
+              0.815,
+              6.6,
+              0.9,
+              0.01
+            ],
+            "auction": [
+              201,
+              0.99,
+              4.3,
+              0.837,
+              0.005
+            ],
+            "market": [
+              194,
+              0.603,
+              16.7,
+              1.012,
+              0.073
+            ]
+          },
+          "25-48m": {
+            "buynow": [
+              285,
+              0.558,
+              14.5,
+              0.896,
+              0.028
+            ],
+            "offers": [
+              2645,
+              0.74,
+              7.3,
+              0.879,
+              0.009
+            ],
+            "auction": [
+              299,
+              0.833,
+              4.6,
+              0.826,
+              0.005
+            ],
+            "market": [
+              280,
+              0.607,
+              19.6,
+              0.977,
+              0.08
+            ]
+          },
+          "49m+": {
+            "buynow": [
+              141,
+              0.518,
+              16.9,
+              0.866,
+              0.034
+            ],
+            "offers": [
+              1304,
+              0.645,
+              8.4,
+              0.853,
+              0.01
+            ],
+            "auction": [
+              116,
+              0.75,
+              4.8,
+              0.8,
+              0.006
+            ],
+            "market": [
+              154,
+              0.461,
+              18.7,
+              0.954,
+              0.064
+            ]
+          }
+        },
+        "C": {
+          "0-24m": {
+            "buynow": [
+              210,
+              0.448,
+              16.8,
+              0.856,
+              0.063
+            ],
+            "offers": [
+              216,
+              0.718,
+              7.5,
+              0.874,
+              0.013
+            ],
+            "auction": [
+              1641,
+              0.957,
+              4.1,
+              0.833,
+              0.005
+            ],
+            "market": [
+              179,
+              0.508,
+              20.7,
+              0.901,
+              0.096
+            ]
+          },
+          "25-48m": {
+            "buynow": [
+              281,
+              0.327,
+              20.1,
+              0.847,
+              0.054
+            ],
+            "offers": [
+              295,
+              0.729,
+              8.6,
+              0.851,
+              0.016
+            ],
+            "auction": [
+              2659,
+              0.86,
+              4.6,
+              0.818,
+              0.005
+            ],
+            "market": [
+              300,
+              0.35,
+              24.9,
+              0.87,
+              0.096
+            ]
+          },
+          "49m+": {
+            "buynow": [
+              150,
+              0.293,
+              23.9,
+              0.81,
+              0.075
+            ],
+            "offers": [
+              135,
+              0.622,
+              9.2,
+              0.827,
+              0.014
+            ],
+            "auction": [
+              1253,
+              0.742,
+              5.1,
+              0.79,
+              0.005
+            ],
+            "market": [
+              137,
+              0.445,
+              29.8,
+              0.834,
+              0.111
+            ]
+          }
+        },
+        "D": {
+          "0-24m": {
+            "buynow": [
+              52,
+              0.404,
+              22.5,
+              0.81,
+              0.091
+            ],
+            "offers": [
+              176,
+              0.71,
+              9.0,
+              0.823,
+              0.021
+            ],
+            "auction": [
+              2007,
+              0.949,
+              4.2,
+              0.805,
+              0.005
+            ],
+            "market": [
+              48,
+              0.25,
+              18.4,
+              0.83,
+              0.125
+            ]
+          },
+          "25-48m": {
+            "buynow": [
+              96,
+              0.354,
+              23.3,
+              0.782,
+              0.063
+            ],
+            "offers": [
+              281,
+              0.605,
+              8.9,
+              0.813,
+              0.022
+            ],
+            "auction": [
+              3034,
+              0.852,
+              4.6,
+              0.785,
+              0.005
+            ],
+            "market": [
+              72,
+              0.361,
+              28.9,
+              0.811,
+              0.115
+            ]
+          },
+          "49m+": {
+            "buynow": [
+              52,
+              0.231,
+              24.2,
+              0.75,
+              0.075
+            ],
+            "offers": [
+              143,
+              0.483,
+              11.7,
+              0.785,
+              0.021
+            ],
+            "auction": [
+              1483,
+              0.736,
+              5.1,
+              0.762,
+              0.005
+            ],
+            "market": [
+              43,
+              0.209,
+              32.6,
+              0.778,
+              0.12
+            ]
+          }
+        }
+      },
+      "dg": {
+        "hold": 0.35,
+        "pen": 1.5,
+        "sla": 60,
+        "retc": 18,
+        "ero": 0.013,
+        "floor": 0.55
+      }
+    },
+    "carbon": {
+      "set": "cfs-2026.1",
+      "d_rule": "low"
+    }
+  },
+  "replay": {
+    "dataset": null,
+    "example": null
+  },
+  "runtime": {
+    "exception_types": [
+      {
+        "id": "grade_below_quote",
+        "label": "Grade well below the quote",
+        "owner_role": "Engineer",
+        "action": "Re-grade the lot and update the quote"
+      },
+      {
+        "id": "missing_wipe_certificates",
+        "label": "Missing wipe certificates on a batch",
+        "owner_role": "Approver",
+        "action": "Hold the batch until the certificates arrive"
+      },
+      {
+        "id": "marketplace_price_drop",
+        "label": "Marketplace price drop after a launch",
+        "owner_role": "Planner",
+        "action": "Review the listing price"
+      },
+      {
+        "id": "auction_reserve_not_met",
+        "label": "Auction reserve not met",
+        "owner_role": "Planner",
+        "action": "Compare the cost of holding with a lower reserve"
+      },
+      {
+        "id": "wholesale_lot_over_limit",
+        "label": "Wholesale lot over the limit",
+        "owner_role": "Approver",
+        "action": "Split the lot or approve it"
+      }
+    ],
+    "suggestion_rules": [],
+    "sla_hours": {},
+    "escalate_to": null
+  },
+  "kpis": [
+    {
+      "id": "recovery_rate",
+      "label": "Recovery rate of original value",
+      "definition": "realised sale value / original reference value",
+      "measure": null,
+      "trend": "monthly"
+    },
+    {
+      "id": "days_to_sale",
+      "label": "Days to sale",
+      "definition": "receipt to the sale of the lot",
+      "measure": null,
+      "trend": "monthly"
+    },
+    {
+      "id": "price_vs_forecast",
+      "label": "Price realised against forecast",
+      "definition": "realised price / forecast price",
+      "measure": null,
+      "trend": "monthly"
+    },
+    {
+      "id": "straight_through",
+      "label": "Straight-through %",
+      "definition": "lots closed without a person changing data or the channel (approval by policy counts)",
+      "measure": null,
+      "trend": "monthly"
+    },
+    {
+      "id": "wipe_compliance",
+      "label": "Data-wipe compliance",
+      "definition": "lots listed with a wipe certificate / lots listed",
+      "measure": null,
+      "trend": "monthly"
+    },
+    {
+      "id": "grading_disputes",
+      "label": "Grading disputes",
+      "definition": "lots whose grade a buyer or an inspector disputed / lots graded",
+      "measure": null,
+      "trend": "monthly"
+    }
+  ],
+  "analytics": [],
+  "stories": []
+}

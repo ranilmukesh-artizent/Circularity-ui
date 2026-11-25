@@ -800,7 +800,7 @@ each story went.
 - [x] P9-1.3 Customer overlay with tighten-only and rebase
 - [x] P9-1.4 Queue planner port with named demand on live cases
 - [x] P9-1.5 One decider for intake, re-evaluation and simulation
-- [ ] P9-1.6 Pack versions through the pipeline with maker-checker
+- [x] P9-1.6 Pack versions through the pipeline with maker-checker
 - [ ] P9-1.7 Case process layer with SLA timers and My work
 - [ ] P9-1.8 My work replaces Home tasks and Actions on me
 - [ ] P9-1.9 Standard valuer from pack value lines

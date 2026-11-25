@@ -24,6 +24,7 @@ from typing import Any, cast
 from di.repositories.context import visible_cases
 from di.repositories.flows import FlowRow, flow_for
 from di.repositories.live_rules import live_pack
+from di.repositories.packs import published_pack
 from di.services.actions.pipeline import CallContext
 from di.services.cases import gate_hold
 from di.services.cases.decide import WhatIfPlanner, decide_case
@@ -103,7 +104,9 @@ def template_decider(ctx: CallContext, f: FlowRow, params: Mapping[str, float] |
         owner = c["owner"] if live else f.org_unit_id
         if owner not in packs:
             probe = {"template": f.template_key, "owner": owner}
-            packs[owner] = live_pack(ctx.session, probe, gate_hold.base_pack(probe))
+            packs[owner] = live_pack(
+                ctx.session, probe, gate_hold.base_pack(probe, published_pack(ctx.session, f.template_key, owner))
+            )
         pack = packs[owner]
         planner = WhatIfPlanner(planner_for(pack), params) if params else None
         fv = FlowVersion(f.id, f.ver, tuple(rules))

@@ -209,6 +209,29 @@ export interface OverlayScreen {
   can: { edit: boolean; approve: boolean };
 }
 
+/** One stored version of a pack (plan 9, P9-1.6; the pack.* actions): `impact` is what publishing it would change. */
+export interface PackVersion {
+  id: number;
+  key: string;
+  version: string;
+  org_unit_id: string | null;
+  status: 'draft' | 'review' | 'pub' | 'retired';
+  maker: string | null;
+  checker: string | null;
+  note: string | null;
+  impact: { changed: number; total: number; dv: number } | null;
+  parts: { ok: number; total: number };
+  created_at: string;
+  published_at: string | null;
+}
+
+/** The Modeler's `packs`: the versions of every pack the account may see, and the templates a case can be opened with. */
+export interface PacksScreen {
+  keys: { key: string; name: string; file_version: string | null; versions: PackVersion[] }[];
+  templates: { key: string; name: string }[];
+  can: { import: boolean; approve: boolean };
+}
+
 export interface ModelerScreen {
   templates: { key: string; name: string }[];
   org: string;
@@ -245,4 +268,5 @@ export interface ModelerScreen {
   log: { at: string; actor: string; role: string; action: string; note: string | null }[];
   can: { edit: boolean; approve: boolean; fork: boolean };
   overlay: OverlayScreen;
+  packs: PacksScreen;
 }

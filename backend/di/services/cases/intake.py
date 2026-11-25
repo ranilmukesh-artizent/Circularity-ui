@@ -49,6 +49,7 @@ from di.core import clock, jobs
 from di.core.config import get_settings
 from di.repositories import plm
 from di.repositories.live_rules import flow_version, live_pack
+from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
@@ -65,6 +66,7 @@ from di.services.modeler.valuers import device, tool_fleet
 from di.services.modeler.valuers.rng import mulberry32
 
 REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual")
+IMPORTED_VALUERS = ("tool_fleet", "device")  # the valuers an imported pack (a template key beyond TEMPLATE_KEYS) may use
 LOCATION = "Warehouse 1"  # where a returned asset is received when no source says otherwise
 # the sources' asset types (asset.asset_type, any case) that name an engine class otherwise than by its key
 _CLASS_OF = {"tool": "drill", "iteq": "it", "toolflt": "batch", "battery": "batch"}
@@ -86,8 +88,12 @@ def problem(s: Session, i: dict[str, Any]) -> tuple[str, str] | None:
     """Why the intake cannot open a case (code, message), or None."""
     if i.get("reason") not in REASONS:
         return "validation_error", f"The reason is one of {', '.join(REASONS)}."
-    if i.get("template_key") not in TEMPLATE_KEYS:
-        return "validation_error", f"The template is one of {', '.join(TEMPLATE_KEYS)}."
+    key = i.get("template_key")
+    imported = published_keys(s)
+    if key not in TEMPLATE_KEYS and key not in imported:
+        return "validation_error", f"The template is one of {', '.join([*TEMPLATE_KEYS, *sorted(imported)])}."
+    if key not in TEMPLATE_KEYS and active_pack(s, str(key), i.get("org_unit_id")).valuer.kind not in IMPORTED_VALUERS:
+        return "validation_error", f"The pack {key} needs a valuer of one of these kinds: {', '.join(IMPORTED_VALUERS)}."
     if not str(i.get("asset_key") or "").strip():
         return "validation_error", "Give the asset key the case is opened for."
     if s.execute(text("SELECT 1 FROM org_unit WHERE id = :i"), {"i": i.get("org_unit_id")}).first() is None:
@@ -223,9 +229,10 @@ def _with_bom(s: Session, c: store.Case, p: Predictor) -> Predictor:
     return p
 
 
-def _snapshot(c: store.Case, facts: dict[str, Any], template_key: str) -> None:
-    """The valuer's input from the facts, kept on the case (`valuer`) with the fields its pages read."""
-    if template_key == "tool_fleet":
+def _snapshot(c: store.Case, facts: dict[str, Any], kind: str) -> None:
+    """The valuer's input from the facts, kept on the case (`valuer`) with the fields its pages read; `kind` is the pack's
+    valuer kind."""
+    if kind == "tool_fleet":
         vc = tool_fleet_case(c["id"], facts)
         c |= {k: vc[k] for k in ("cls", "ft", "site", "grade", "rul", "partRul", "dem")} | {"valuer": vc}
         c["product"] = c["product"] or tool_fleet.CLS[vc["cls"]]["name"]
@@ -309,7 +316,7 @@ def tool_plan(q: ToolQueue, rules: Sequence[Any], params: Mapping[str, float] | 
 def _pack(s: Session, c: store.Case) -> Pack:
     """The pack the case is decided with: its pack file (or the one a gate recheck is given) with its owner's published
     customer overlay."""
-    return live_pack(s, c, gate_hold.base_pack(c))
+    return live_pack(s, c, gate_hold.base_pack(c, published_pack(s, c.get("template") or "industrial", c["owner"])))
 
 
 def recommend(s: Session, c: store.Case, fv: FlowVersion) -> Route | None:
@@ -334,7 +341,7 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     if pack.key != "industrial":
         gate_hold.attach_evidence(s, c)  # the gates read the asset's compliance records (plan 9, P9-1.2)
         if facts or not c.get("routes"):
-            _snapshot(c, facts, pack.key)
+            _snapshot(c, facts, pack.valuer.kind)
     decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]

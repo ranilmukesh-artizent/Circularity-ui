@@ -20,6 +20,7 @@ FORBIDDEN_ACTIONS = (
     "model.promote",  # plan 8 MVP-12.2: a person decides which model values new cases
     "model.propose",  # plan 8 UI gaps: a person proposes a model for promotion
     "overlay.approve", "overlay.reject",  # plan 9 P9-1.3: a person decides which customer changes to a pack take effect
+    "pack.approve", "pack.reject",  # plan 9 P9-1.6: a person decides which pack version is in force
     "credentials.rotate",  # plan 9 P9-0.4: a new secret is a person's, never an agent's (review focus 6)
 )  # fmt: skip
 

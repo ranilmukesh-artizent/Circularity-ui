@@ -113,6 +113,7 @@ const ACTION_FAMILY: Record<string, Scope> = {
   workflow: WORKFLOW_WRITE, // what a run then changes elsewhere arrives as its own stream events
   flow: ['modeler', ...CASES], // a decision flow (plan 8): the Modeler, and the case pages that show the rules applied
   overlay: ['modeler', ...CASES], // a customer overlay of a pack (plan 9): the Modeler's Customer layer, and the cases it decides
+  pack: ['modeler', ...CASES], // a pack version (plan 9, P9-1.6): the Modeler's Packs panel, and the cases it decides
   mcp: [...SUMMARY, 'mcp', 'access'], // mcp.propose: a request for a person, in the inboxes and the MCP page
   access: 'all', // who may see or do what: every page can change
   agent: 'all', // agent.setEnabled: what the agents may do (access)

@@ -16,6 +16,12 @@
         log        the journal rows of the flow's actions, newest first ({at, actor, role, action, note})
         queue      the open queue the flow decides, under its published rules ({id, label, best, net}): the live cases
                    the account may see; for tool_fleet and device also the template's sample queue (MVP-6.3)
+        packs      the pack versions (plan 9, P9-1.6; the pack.* actions of di.services.actions.packs): {keys [{key, name,
+                   file_version (the pack file's, null for an imported key), versions [{id, version, status (draft, review,
+                   pub, retired), org_unit_id, maker, checker, note, impact {changed, total, dv} | null, parts {ok, total},
+                   created_at, published_at}], newest first}], templates [{key, name}] (every template a case can be opened
+                   with: the three packs and the published imported ones), can {import, approve}}; the versions the account
+                   may see (a tenant-scoped Planner: the ones for every org and for its own units)
         can        {edit, approve, fork}: what the account may do (edit: manageFlows on the flow's own org; fork: give
                    the shown org its own flow; approve: approve.flows). The actions check again.
         overlay    the shown org's customer overlay of the pack (plan 9, P9-1.3): {pack_key, org_unit_id, pack_version,
@@ -43,6 +49,7 @@ from sqlalchemy.orm import Session
 from di.core import golden, policy
 from di.core.auth import Principal
 from di.repositories import flows as repo
+from di.repositories import packs as pack_repo
 from di.repositories.context import call_ctx
 from di.repositories.flows import FlowRow
 from di.repositories.orgs import units
@@ -52,7 +59,7 @@ from di.services.actions.modeler import checks_json
 from di.services.actions.modeler_sim import queue_rows
 from di.services.modeler.compile import compile_flow
 from di.services.modeler.flow import PO_FLOW, Flow
-from di.services.modeler.pack import load_pack
+from di.services.modeler.pack import load_pack, pack_keys
 from di.services.modeler.stages import STAGE_KEYS, STAGE_LABELS
 from di.services.modeler.templates import TEMPLATE_KEYS, Template, load_template
 
@@ -132,6 +139,26 @@ def _overlay(p: Principal, s: Session, key: str, org: str) -> dict[str, Any]:
     }  # fmt: skip
 
 
+def _packs(p: Principal, s: Session) -> dict[str, Any]:
+    """The pack versions the account may see, and the templates a case can be opened with."""
+    keys = sorted(set(pack_keys()) | set(pack_repo.stored_keys(s)))
+    published = pack_repo.published_keys(s)
+    out, names = [], {k: load_template(k).name for k in TEMPLATE_KEYS}
+    for k in keys:
+        versions = [v for v in pack_repo.versions(s, k) if v["org_unit_id"] is None or _org_ok(p, v["org_unit_id"])]
+        newest = pack_repo.rows(s, k)
+        name = names.get(k) or (newest[0].doc.get("name") if newest else k)
+        out.append({"key": k, "name": name, "file_version": load_pack(k).version if k in pack_keys() else None,
+                    "versions": versions})  # fmt: skip
+        if k in published and k not in names:
+            names[k] = str(name)
+    return {
+        "keys": out,
+        "templates": [{"key": k, "name": n} for k, n in names.items()],
+        "can": {"import": policy.can(p.account, "managePacks", p.ctx), "approve": policy.can(p.account, "approve.packs", p.ctx)},
+    }
+
+
 def page(p: Principal, s: Session, template: str | None = None, org: str | None = None) -> dict[str, Any]:
     p.require_page("modeler")
     key = template or "industrial"
@@ -167,4 +194,5 @@ def page(p: Principal, s: Session, template: str | None = None, org: str | None 
         "queue": queue_rows(call_ctx(p, s), f),
         "can": _can(p, f, org),
         "overlay": _overlay(p, s, key, org),
+        "packs": _packs(p, s),
     }

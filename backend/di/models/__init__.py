@@ -37,6 +37,7 @@ from di.models.learning import model_version
 from di.models.modeler import decision_flow, decision_flow_version, shadow_decision
 from di.models.org import org_unit
 from di.models.overlay import customer_overlay
+from di.models.packs import pack_version
 from di.models.reference import fx_rate
 from di.models.workspace import state_item, state_seed
 
@@ -65,6 +66,7 @@ __all__ = [
     "metadata",
     "model_version",
     "org_unit",
+    "pack_version",
     "provenance",
     "raw_record",
     "shadow_decision",

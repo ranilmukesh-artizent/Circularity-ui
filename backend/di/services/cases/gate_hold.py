@@ -116,9 +116,12 @@ def hold(case: MutableMapping[str, Any], results: Sequence[GateResult]) -> bool:
     return True
 
 
-def base_pack(case: Mapping[str, Any]) -> Pack:
-    """The pack file the case's customer overlay is laid on (`default_pack_of`, or the pack a `recheck` is given)."""
-    return (_override.get() or default_pack_of)(case)
+def base_pack(case: Mapping[str, Any], published: Pack | None = None) -> Pack:
+    """The pack the case's customer overlay is laid on: the pack a `recheck` is given, else `published` (the pack version
+    published for the case's owner, P9-1.6; the caller reads it), else `default_pack_of`."""
+    if (given := _override.get()) is not None:
+        return given(case)
+    return published or default_pack_of(case)
 
 
 def apply(

@@ -18,6 +18,7 @@ import di.services.actions.org_pack  # registers action handlers (org.exportPack
 import di.services.actions.org_pilot  # registers action handlers (org.setPilot, org.pilotReport; plan 8)
 import di.services.actions.orgs  # registers action handlers (org.create, org.update, org.move, org.tree; plan 8)
 import di.services.actions.overlays  # registers action handlers (overlay.*: the customer overlay of a pack; plan 9)
+import di.services.actions.packs  # registers action handlers (pack.*: pack versions with maker-checker; plan 9)
 import di.services.actions.proposals  # registers action handlers (proposal.accept, proposal.reject; plan 8)
 import di.services.actions.workflow_builder  # registers action handlers (workflow.draft, workflow.plan)
 import di.services.actions.workflow_drafts  # registers action handlers (workflow.draft.save, workflow.draft.discard, testRun)

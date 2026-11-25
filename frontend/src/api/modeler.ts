@@ -112,3 +112,11 @@ export const rejectOverlay = (pack: string, org: string, reason: string): Promis
 /** Move the overlay onto the pack's newer version as a draft; the answer lists its conflicts and notes. */
 export const rebaseOverlay = (pack: string, org: string): Promise<ActionResult<{ status: string; ops: number; conflicts: OverlayConflict[]; notes: string[]; log: string }>> =>
   invoke('overlay.rebase', { pack_key: pack, org_unit_id: org });
+
+type PackDone = ActionResult<{ id?: number; status: string; log?: string }>;
+
+/** Import a pack document as a draft version for an org (none: every org, Admin only); refused with the part that failed. */
+export const importPack = (doc: unknown, org?: string): Promise<PackDone> => invoke('pack.import', { doc, ...(org ? { org_unit_id: org } : {}) });
+export const submitPack = (id: number): Promise<PackDone> => invoke('pack.submit', { id });
+export const approvePack = (id: number): Promise<PackDone> => invoke('pack.approve', { id });
+export const rejectPack = (id: number, reason: string): Promise<PackDone> => invoke('pack.reject', { id, reason });
