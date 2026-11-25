@@ -87,5 +87,6 @@ repair_accuracy = Table(
     Column("auto_share", Numeric(6, 4), nullable=False),
     Column("instant", Boolean, nullable=False),
     ts("computed_at", nullable=False, now=True),
-    Index("ix_repair_accuracy_class", "model_class", "as_of"),
 )
+# matches migration 0045: the newest row per class first
+Index("ix_repair_accuracy_class", repair_accuracy.c.model_class, repair_accuracy.c.as_of.desc())
