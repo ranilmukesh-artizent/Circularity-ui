@@ -107,6 +107,8 @@ SEED_AGENTS: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("stage-analytics", "Analytics agent", (), "act"),
     # plan 9 P9-2.10 (migration 0041): the exception assistant, read only
     ("recover-exceptions", "Exception assistant", ("case.get", "case.evidence", "case.trace", "exception.explain"), "read"),
+    # plan 9 P9-2.7 (migration 0040): the configuration agent, its drafts held as one proposal
+    ("recover-config", "Configuration agent", ("config.read", "config.draft", "overlay.save"), "propose"),
 )
 
 

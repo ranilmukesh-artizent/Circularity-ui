@@ -20,6 +20,12 @@ export interface ToolCall { ts: Date | string; agent: string; tool: string; case
 type ApiCall = ToolCall & { openable: boolean };
 const callsA = () => cached<{ calls: ApiCall[] }>('/api/screens/mcp/calls').calls;
 
+/** A tool generated from the action catalogue (plan 9 P9-2.13), with the hints an MCP client reads. */
+export interface GeneratedTool { tool: string; action: string; read_only: boolean; destructive: boolean; needs_person: boolean }
+export interface GeneratedAgent { agent: string; name: string; tools: GeneratedTool[] }
+/** Per registered agent, the tools generated from the action catalogue: GET /api/screens/mcp/generated. */
+export const generatedTools = (): GeneratedAgent[] => cached<{ agents: GeneratedAgent[] }>('/api/screens/mcp/generated').agents;
+
 export const tools = (): Tool[] => ref('TOOLS');
 export const toolById = (id: string): Tool | undefined => tools().find((t) => t.id === id);
 export const mcpAgents = (): McpAgent[] => cached<{ agents: McpAgent[] }>('/api/screens/mcp/agents').agents;

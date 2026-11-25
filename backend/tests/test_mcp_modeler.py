@@ -33,7 +33,7 @@ def test_mcp_lists_flow_tools():
     assert t.annotations.read_only_hint is True and t.meta["requiresHumanApproval"] is False
     assert t.input_schema["required"] == ["template"]
     assert everything["propose_rule_change"].input_schema["required"] == ["flow_id", "text"]
-    assert list(with_client(headers("admin", AGENT), go)) == ["get_decision_flow", "propose_rule_change"]
+    assert list(with_client(headers("admin", AGENT), go)) == ["get_decision_flow", "propose_rule_change", "tools_find"]
 
 
 def test_get_decision_flow_reads_the_flow():

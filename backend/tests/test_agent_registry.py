@@ -45,7 +45,7 @@ def test_seeded_agents():
         got = {a.id: a for a in registry.all_agents(s)}
     want = golden.load("tools")["agents"]
     chain_agents = {a[0] for a in starting.SEED_AGENTS if a[0] == "recover-chain" or a[0].startswith("stage-")}  # P9-2.1, 0034
-    assert set(got) == {a["id"] for a in want} | {"ask", "recover-exceptions"} | chain_agents  # 0041: P9-2.10
+    assert set(got) == {a["id"] for a in want} | {"ask", "recover-exceptions", "recover-config"} | chain_agents  # 0041, 0040
     for a in want:
         g = got[a["id"]]
         assert (g.name, g.kind, g.tools, g.enabled, g.org_scope, g.autonomy) == (

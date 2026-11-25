@@ -5,7 +5,7 @@ import { mcpProposals } from '../../api/access';
 import { useBackend } from '../../api/useBackend';
 import {
   autoAgent, benchCases, caseOpenable, clientServers, exampleInput, hardRules, journeyStep,
-  mcpAgents, PERM_CHIP, permCell, registryTools, runPlaygroundTool, tenantList, toolById,
+  generatedTools, mcpAgents, PERM_CHIP, permCell, registryTools, runPlaygroundTool, tenantList, toolById,
   toolCalls, tools, toolSchema, type Tool, type ToolRun,
 } from '../../api/mcp';
 import { can, canPage } from '../../api/session';
@@ -60,7 +60,12 @@ export function McpPage({ route }: PageProps) {
           <Catalog onSchema={showSchema} />
         </>
       )}
-      {key === 'agents' && <AgentRegistry />}
+      {key === 'agents' && (
+        <>
+          <AgentRegistry />
+          <Generated />
+        </>
+      )}
       {key === 'playground' && canPage('mcp', 'playground') && (
         <>
           <div className="sect" id="pg">
@@ -98,6 +103,40 @@ function SchemaModal({ id, onClose }: { id: string; onClose: () => void }) {
       <p className="ink2" style={{ marginTop: 0 }}>{t.desc}</p>
       <JsonView variant="escaped" value={toolSchema(t)} />
     </Modal>
+  );
+}
+
+/** Per agent, the tools generated from the action catalogue and their MCP hints (P9-2.13). */
+function Generated() {
+  const rows = generatedTools().filter((a) => a.tools.length > 0);
+  const yn = (b: boolean) => <span className={'chip ' + (b ? 'warn' : 'line')}>{b ? 'yes' : 'no'}</span>;
+  return (
+    <section className="sect" id="afGen">
+      <div className="sh">
+        <h2>Generated from the action catalogue</h2>
+        <span className="note">an agent gets a tool only for an action it may run; never a delete or an approval</span>
+      </div>
+      <div className="panel">
+        <div className="tw" style={{ maxHeight: 420, overflow: 'auto' }}>
+          <table className="t static tight">
+            <thead><tr><th>Agent</th><th>Tool</th><th>Action</th><th>Read only</th><th>Destructive</th><th>Needs a person</th></tr></thead>
+            <tbody>
+              {rows.flatMap((a) => a.tools.map((t) => (
+                <tr key={a.agent + t.tool}>
+                  <td>{a.name}</td>
+                  <td className="mono">{t.tool}</td>
+                  <td className="mono note">{t.action}</td>
+                  <td>{yn(t.read_only)}</td>
+                  <td>{yn(t.destructive)}</td>
+                  <td>{yn(t.needs_person)}</td>
+                </tr>
+              )))}
+              {rows.length === 0 && <tr><td colSpan={6} className="note">No agent has a tool from the catalogue yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   );
 }
 

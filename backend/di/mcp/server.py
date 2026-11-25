@@ -53,8 +53,12 @@ def _tool(t: dict) -> types.Tool:
 async def list_tools(ctx: ServerRequestContext, params: types.PaginatedRequestParams | None) -> types.ListToolsResult:  # noqa: ARG001 - the MCP SDK's handler signature
     """Every tool when no agent is named (discovery; a call names one); else only the agent's own (MVP-11.6)."""
     headers = ctx.request.headers if ctx.request is not None else Headers()
-    allowed = await anyio.to_thread.run_sync(policy.tools_for, headers.get(AGENT_HEADER))
-    return types.ListToolsResult(tools=[_tool(t) for t in TOOLS.values() if allowed is None or t["id"] in allowed])
+    agent_id = headers.get(AGENT_HEADER)
+    allowed = await anyio.to_thread.run_sync(policy.tools_for, agent_id)
+    tools = [_tool(t) for t in TOOLS.values() if allowed is None or t["id"] in allowed]
+    if agent_id:  # a named agent also gets the tools generated from the action catalogue (P9-2.13)
+        tools += await anyio.to_thread.run_sync(policy.generated_tools, agent_id)
+    return types.ListToolsResult(tools=tools)
 
 
 def _bearer(headers: Headers) -> str | None:
