@@ -8,6 +8,9 @@ GET /api/screens/case/{id}/analysis
     trace, the ranking, tie-break and what would flip it, demand and life, the pool, the execution plan, move and
     what-if guidance, the preparation build-up, the lease trail, the journal and events, and the evidence pack.
 
+A case opened from a received device (plan 9, P9-6.4) also carries `device` ({imei, sku, model, storageGb, declaredGrade, grade,
+quote, partner, batch, received, ref, refSource, bulk, lines}; the facade's `deviceView`).
+
 A template case with gates (plan 9, P9-1.2) also carries, inside `case`: `gates` (one row per gate result), `gateHold`
 (held until evidence arrives), `requiredSteps` and `batch` ({ref, total, held, released} of its batch); the facade's
 `CaseRec` types them and the Decide tab's Gates block draws them.
@@ -596,6 +599,28 @@ def pack_stages(session: Session, c: Case) -> list[dict] | None:
     return [{"key": s.key, "label": s.label, "agent": s.agent, "autonomy": s.autonomy} for s in pack.stages]
 
 
+def device_block(c: Case) -> dict | None:
+    """The `device` block of a case opened from a received trade-in (plan 9, P9-6.4; facade `deviceView`): IMEI (none for a
+    bulk lot), SKU, quote, partner, batch, received date and, for a lot, a line per device. None for any other case."""
+    v = c.get("valuer") if c.get("template") == "device" else None
+    if not isinstance(v, dict) or not (v.get("imei") or v.get("lines")):
+        return None
+    q = v.get("quote") or {}
+    return {
+        "imei": v.get("imei"), "sku": v.get("sku_key") or "", "brand": v.get("brand") or "", "model": v.get("model") or "",
+        "storageGb": v.get("storage_gb"), "declaredGrade": v.get("declared_grade") or v["grade"], "grade": v["grade"],
+        "graded": bool(v.get("graded")),
+        "quote": {"amount": q["amount"], "currency": q.get("currency", "USD")} if q.get("amount") is not None else None,
+        "partner": v.get("partner") or "", "batch": v.get("batch_id"), "received": v.get("received") or c["received"],
+        "ref": v["ref"], "refSource": v.get("ref_source") or "quote", "bulk": not v.get("imei"),
+        "lines": [
+            {"imei": x["imei"], "model": x["model"], "storageGb": x["storage_gb"], "declaredGrade": x["declared_grade"],
+             "grade": x["grade"], "quote": x.get("quote") or 0}
+            for x in v.get("lines") or []
+        ],
+    }  # fmt: skip
+
+
 def case_page(session: Session, p: Principal, case_id: str) -> dict:
     """Everything the stage bar, the stage pages, the Overview and the approval card read, for one case."""
     c = load_case(p, session, case_id, "product", "case")
@@ -607,6 +632,8 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
     rec = case_record(c, session)
     if rec.get("batchRef"):  # a lot opened in a batch: how many of its lots are released (plan 9, P9-1.2)
         rec["batch"] = {"ref": rec["batchRef"], **gate_hold.batch_status(session, rec["batchRef"])}
+    if (dev := device_block(c)) is not None:  # a received device or a bulk lot (plan 9, P9-6.4)
+        rec["device"] = dev
     return {
         "case": rec,
         "model": as_model(c),

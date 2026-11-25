@@ -51,3 +51,15 @@ def by_imei(s: Session, imei: str) -> TradeInRow | None:
         {"i": imei},
     ).first()
     return TradeInRow(*r) if r else None
+
+
+def by_batch(s: Session, batch_id: str) -> list[TradeInRow]:
+    """The bulk trade-ins of a batch, oldest first (a batch lands as one lot case, P9-6.4)."""
+    rows = s.execute(
+        text(
+            f"SELECT {_COLUMNS} FROM device_tradein WHERE batch_id = :b AND bulk "  # noqa: S608 - fixed column list
+            "ORDER BY received_at, trade_in_id"
+        ),
+        {"b": batch_id},
+    )
+    return [TradeInRow(*r) for r in rows]

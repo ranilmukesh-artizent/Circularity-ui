@@ -39,3 +39,7 @@ One line per event, newest last, times from `date`.
 | 2026-11-25 21:09 | Committed P9-6.3 (w3 a812941) as ed81659, verify batched with the next merge. Dispatch P9-6.4 to w1. |
 | 2026-11-25 21:10 | P9-4.2 returned by w4 (6163dc1; stacked as c7aa20b, forbidden.py merged with P9-8.17's line). Dispatch P9-5.1 to w3 on top of it. |
 | 25 Nov 15:45 | P9-4.2 merged. zen-engine 2.1.7; tables under valuer.params.market_tables, seeded on first read; Finance sees Modeler |
+| 2026-11-25 21:55 | P9-6.4 returned by w1 (af07a1d). It found a regression from P9-3.5: test_template_e2e::test_import_rows_open_template_cases[tool_fleet] (grade None vs B), which my 3.5 verify did not include. Fix sent to w4 as its own commit. Dispatch P9-6.5 to w1 on top of 6.4. |
+| 2026-11-25 22:05 | Regression fix returned by w4 (c536518): regrade.apply keeps the estimate as the valuer grade when no workbench record exists. w4 idle (P9-4.3 waits for P9-3.6/3.7). |
+| 2026-11-25 22:06 | Suite (N=2) after P9-4.2: shard 1 2104 passed 1 failed, shard 2 2323 passed 3 failed: template_e2e[tool_fleet] (fixed, c536518), fx_rate seed (P9-4.1 GBP/AUD rows), models_screen_refused[finance] (P9-4.2 gave Finance the modeler page), migrations round trip (connection killed by administrator command, writers' DB drops; re-run alone). Fixes 2 and 3 to w4. P9-4.2 not pushed until green. |
+| 25 Nov 16:36 | P9-6.4 merged. no model step (intake reads no text); bulk lot keeps the four PO channels; .importlinter gains two ignores |

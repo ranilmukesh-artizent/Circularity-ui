@@ -93,6 +93,10 @@ ignore_imports =
     # The template of a case can be a pack version published for its owner (plan 9, P9-1.6): intake reads it, as it reads
     # the owner's flow.
     di.services.cases.intake -> di.repositories.packs
+    # A received device's case is built by the device flow (plan 9, P9-6.4): intake reads the trade-in, the market feed and
+    # the owner's flow through di.services.device, as it reads the live rules.
+    di.services.cases.intake -> di.services.device.intake
+    di.services.cases.intake -> di.services.device.inputs
     # The case process layer (plan 9, P9-1.7) merges Home's approvals and tasks into My work, and reads the Approver's
     # out-of-office cover when it escalates: lazy reads of the workspace repository, as intake reads the live rules.
     di.services.cases.process -> di.repositories.workspace

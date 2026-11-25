@@ -12,3 +12,4 @@
 | 2026-11-25 | 09 · P9-6.2 device data tables, registry and lab adapters | this commit | writer: 40 passed on a temporary source-sim (device_sources, device_wipe_sim, canonical_schema, models_migrations, pack_format), lint ok; lead verify follows | done |
 | 2026-11-25 | 09 · P9-6.3 device market adapter | this commit | writer wt-check all passed (device_market_source, device_sources; lint); lead verify follows | done |
 | 2026-11-25 | 09 · P9-4.2 per-market decision tables with maker-checker | this commit | writer wt-check all passed: 67 passed (market_tables, models_migrations, policy_orgs, modeler_templates, screens_modeler, audit_fixes), vitest 403, tsc, eslint; lead verify follows | done |
+| 2026-11-25 | 09 · P9-6.4 one case per received device | this commit | writer wt-check: 123 passed, 1 failed (template_e2e[tool_fleet], the P9-3.5 regression, fixed separately), lint, tsc, vitest, eslint ok; lead verify follows | done |

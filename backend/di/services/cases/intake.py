@@ -36,6 +36,10 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   `returns`, with `contract_id` and `line_id` kept on the case. The same serial with another reason is another case.
 - **Workbench grade** (plan 9, P9-3.5). A tool-fleet case's valuer reads the repair log's graded `condition` of the serial
   when it has a test result (`regrade.apply`, on opening and on every re-check); otherwise its own estimate, labelled so.
+- **Received devices** (plan 9, P9-6.4). A `trade_in` device intake with an `imei` (and no `ref`) is built by
+  `di.services.device.intake.device_case` from the trade-in on file: the feed price as the reference value, the cosmetic
+  grade when graded; the valuer snapshot keeps the IMEI, quote, partner and the gathered inputs (`device.inputs`). The lab
+  adapter's hook (`device.intake.open_from_tradein`) calls this `open_case`; a bulk batch comes as a PO-shaped lot.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
 
 The case reads (live rules, the active model, PLM) sit above the case store; this is the one place a case is opened from
@@ -63,6 +67,8 @@ from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
 from di.services.cases import decide, gate_hold, named_demand, record_match, regrade, store
 from di.services.cases.lifecycle import STAGES
+from di.services.device import inputs as device_inputs
+from di.services.device import intake as device_intake
 from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
 from di.services.engine.queue import Capacity, Dem, planner_for
@@ -235,10 +241,11 @@ def device_lot(case_id: str, facts: dict[str, Any]) -> dict[str, Any]:
         raise ActionError("validation_error", "A device lot needs a grade (A-D) and an age band (0-24m, 25-48m, 49m+).")
     if not isinstance(facts.get("ref"), int | float) or not isinstance(facts.get("qty"), int) or facts["qty"] < 1:
         raise ActionError("validation_error", "A device lot needs a reference value (ref) and a number of units (qty).")
-    return {
+    lot = {
         "id": case_id, "brand": facts.get("brand") or "", "model": facts.get("model") or "", "band": band,
         "grade": grade, "ref": facts["ref"], "qty": facts["qty"], "doh": facts.get("doh") or 1,
     }  # fmt: skip
+    return lot | {k: facts[k] for k in device_intake.EXTRA if k in facts}  # a received device keeps its IMEI, quote ... (P9-6.4)
 
 
 def industrial_predictor(s: Session, c: store.Case) -> Predictor:
@@ -262,7 +269,7 @@ def _with_bom(s: Session, c: store.Case, p: Predictor) -> Predictor:
     return p
 
 
-def _snapshot(c: store.Case, facts: dict[str, Any], kind: str) -> None:
+def _snapshot(c: store.Case, facts: dict[str, Any], kind: str, s: Session | None = None) -> None:
     """The valuer's input from the facts, kept on the case (`valuer`) with the fields its pages read; `kind` is the pack's
     valuer kind."""
     if kind == "tool_fleet":
@@ -276,6 +283,8 @@ def _snapshot(c: store.Case, facts: dict[str, Any], kind: str) -> None:
         lot = device_lot(c["id"], facts)
         c |= {k: lot[k] for k in ("brand", "band", "grade", "ref", "doh")} | {"qty": lot["qty"], "cls": "device"}
         c |= {"valuer": lot}
+        if s is not None and lot.get("imei"):  # a received device: the feed price and evidence it opened with (P9-6.4)
+            lot["inputs"] = device_inputs.gather(s, lot, clock.now().date()).as_dict()
         c["product"] = c["product"] or f"{lot['brand']} {lot['model']}".strip()
 
 
@@ -378,7 +387,7 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     if pack.key != "industrial":
         gate_hold.attach_evidence(s, c)  # the gates read the asset's compliance records (plan 9, P9-1.2)
         if facts or not c.get("routes"):
-            _snapshot(c, facts, pack.valuer.kind)
+            _snapshot(c, facts, pack.valuer.kind, s)
         if pack.valuer.kind == "tool_fleet" and regrade.apply(s, c):  # the workbench grade, else the estimate (P9-3.5)
             fv = flow_version(s, c)  # the rules' scope reads the grade the case now shows
     decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
@@ -408,12 +417,14 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     if dup := existing(s, i["asset_key"], i["reason"]):
         raise ActionError("duplicate", f"{dup} is already open for {i['asset_key']} ({i['reason']}).")
     facts = dict(i.get("facts") or {})
+    case_id = _next_id(s)
     if i["template_key"] == "tool_fleet":
         facts = tool_return_facts(facts, i["asset_key"], i["reason"])
+    elif i["template_key"] == "device" and i["reason"] == "trade_in" and facts.get("imei") and "ref" not in facts:
+        facts = device_intake.intake_facts(s, case_id, facts)  # a received device (P9-6.4)
     known = _canonical(s, i["asset_key"]) | facts
     if gone := missing_fields(s, i, known):
         raise ActionError("validation_error", f"The case needs {', '.join(gone)} (the pack's minimum facts).")
-    case_id = _next_id(s)
     c = _base(case_id, i, known, i.get("by") or actor)
     c |= {k: known[k] for k in ("serial", "contract_id", "line_id", "flow") if known.get(k) is not None}  # a return's (P9-3.4)
     record_match.receive(s, c, i.get("by") or actor)

@@ -65,49 +65,49 @@
  "stages": [
   {
    "key": "receive",
-   "label": "Return and receive",
+   "label": "Trade-in received",
    "agent": "Intake",
    "autonomy": "alone",
    "confidence": 0.75
   },
   {
    "key": "match",
-   "label": "Match and verify",
+   "label": "Verify against the quote",
    "agent": "Intake",
    "autonomy": "alone",
    "confidence": 0.75
   },
   {
    "key": "condition",
-   "label": "Condition",
+   "label": "Diagnose and grade",
    "agent": "Condition",
    "autonomy": "limits",
    "confidence": 0.75
   },
   {
    "key": "value",
-   "label": "Value each route",
+   "label": "Price by channel",
    "agent": "Valuation",
    "autonomy": "alone",
    "confidence": 0.75
   },
   {
    "key": "decide",
-   "label": "Decide",
+   "label": "Decide the channel",
    "agent": "Routing",
    "autonomy": "limits",
    "confidence": 0.75
   },
   {
    "key": "execute",
-   "label": "Execute",
+   "label": "List and ship",
    "agent": "Follow-through",
    "autonomy": "limits",
    "confidence": 0.75
   },
   {
    "key": "close",
-   "label": "Close and learn",
+   "label": "Settle and learn",
    "agent": "Analytics",
    "autonomy": "alone",
    "confidence": 0.75
@@ -432,6 +432,11 @@
     "offers",
     "auction",
     "market"
+   ],
+   "recover_channels": [
+    "buynow",
+    "offers",
+    "auction"
    ],
    "dcn": {
     "buynow": "Buy Now",

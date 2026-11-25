@@ -11,6 +11,7 @@
  */
 import type { PackStage } from './analytics';
 import { ApiError, cached, invalidate, ref, withQuery } from './client';
+import type { DeviceView } from './device';
 import type { Reference } from './reference';
 import { fmtDate, fmtDateYear, fmtNumber, money } from './format';
 import { bump, onSessionChange } from './store';
@@ -60,6 +61,8 @@ export interface CaseRec {
   evidence: Evidence[];
   gates?: GateRow[]; gateHold?: GateHold | null; requiredSteps?: RequiredStep[]; batch?: BatchStatus | null;
   snapshot?: { id: string; items?: number } | null;
+  /** A case opened from a received device or a bulk lot of devices (P9-6.4); read it with `deviceView` (device.ts). */
+  device?: DeviceView;
 }
 
 // ---------- stages ----------
