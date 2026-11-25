@@ -23,6 +23,10 @@
   {
    "key": "contract_refresh",
    "name": "Contract refresh"
+  },
+  {
+   "key": "service_desk",
+   "name": "Service desk"
   }
  ],
  "prompts": [
@@ -614,6 +618,33 @@
     ],
     "sla_working_days": 5,
     "sla": "Proposal ready by day -90 + 5 working days"
+   },
+   "service_desk": {
+    "flow": "service_desk",
+    "intake_reason": "service_ticket",
+    "stages": [
+     "ticket",
+     "estimate",
+     "price",
+     "decision"
+    ],
+    "guardrails": [
+     "GR-07",
+     "GR-12"
+    ],
+    "exception_types": [
+     "no_active_contract",
+     "recall_quarantine",
+     "technician_check"
+    ],
+    "rated_months": {
+     "CMH": 48,
+     "BRK": 48,
+     "DCD": 60,
+     "CRH": 36,
+     "AGR": 36,
+     "LSR": 60
+    }
    },
    "paths": {
     "release": {
@@ -1599,6 +1630,12 @@
     "label": "Safety recall quarantine",
     "owner_role": "Quality",
     "action": "Release the tool after the fix (repair), or send it to exit or safe harvest"
+   },
+   {
+    "id": "technician_check",
+    "label": "Technician check",
+    "owner_role": "Engineer",
+    "action": "Post the fault for the tool"
    },
    {
     "id": "grade_wear_disagree",

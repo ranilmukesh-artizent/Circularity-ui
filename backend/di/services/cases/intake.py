@@ -40,6 +40,9 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   `di.services.device.intake.device_case` from the trade-in on file: the feed price as the reference value, the cosmetic
   grade when graded; the valuer snapshot keeps the IMEI, quote, partner and the gathered inputs (`device.inputs`). The lab
   adapter's hook (`device.intake.open_from_tradein`) calls this `open_case`; a bulk batch comes as a PO-shaped lot.
+- **Service ticket** (plan 9, P9-4.3). The reason `service_ticket` opens one case per service ticket or batch
+  (`di.services.service_desk.intake.open_from_ticket`): `facts` the flow `service_desk` and `serviceDesk` (the ticket and its
+  lines, kept as `serviceDesk`), with the class, serial and age of the worst line for the valuer.
 - **Contract refresh** (plan 9, P9-5.1). The reason `contract_refresh` opens a refresh case for a contract (asset key the
   contract id, `facts` the flow `contract_refresh`, `term_end`, `market`, `lines`: kept as `refresh`); `dedupe_as` names
   the dedupe key's asset (`<contractId>@<endDate>`, once per term). It is valued by no valuer yet (no routes, stage
@@ -88,7 +91,7 @@ from di.services.modeler.valuers import amount, device, tool_fleet
 from di.services.modeler.valuers.rng import mulberry32
 
 REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap", "service_order", "pool_excess",
-           "contract_refresh")  # fmt: skip
+           "contract_refresh", "service_ticket")  # fmt: skip
 REFRESH_FLOW = "contract_refresh"  # the flow of a refresh case (P9-5.1): opened for a contract, not valued as a return
 
 
@@ -456,7 +459,8 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     if gone := missing_fields(s, i, known):
         raise ActionError("validation_error", f"The case needs {', '.join(gone)} (the pack's minimum facts).")
     c = _base(case_id, i, known, i.get("by") or actor)
-    c |= {k: known[k] for k in ("serial", "contract_id", "line_id", "flow") if known.get(k) is not None}  # a return's (P9-3.4)
+    kept = ("serial", "contract_id", "line_id", "flow", "serviceDesk")  # a return's (P9-3.4), a ticket's (P9-4.3)
+    c |= {k: known[k] for k in kept if known.get(k) is not None}
     if is_refresh(c):
         c["refresh"] = dict(facts)  # the contract, its window and its lines (P9-5.1)
     else:

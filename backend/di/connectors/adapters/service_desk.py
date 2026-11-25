@@ -15,11 +15,14 @@ It writes plain tables, not canonical facts (`map` makes none; the sync still ke
                                by a sync (a case opened from the ticket keeps it)
     offers                     upgrade_offer   id (sys_id), account, market, model_class, offered_on, credit_pct,
                                credit_amount, currency, accepted
-Rows are landed in the sync's own session as each page is read, so a failed or dry run undoes them with it. They are
-idempotent on the source key: reading a record again changes nothing. They belong to the source's org unit (None: shared).
+After the tickets are read, the post-sync hook `open_cases` opens a case for each pending ticket (P9-4.3,
+di.services.service_desk.intake), in the same session. Rows are landed in the sync's own session as each page is
+read, so a failed or dry run undoes them with it. They are idempotent on the source key: reading a record again changes
+nothing. They belong to the source's org unit (None: shared).
 """
 
 import json
+import logging
 from collections.abc import Iterator
 
 from sqlalchemy import text
@@ -29,6 +32,7 @@ from di.connectors.base import Adapter, Record, Resource
 from di.connectors.http import OAuthClientCredentials, SourceClient
 from di.services.canonical.store import Fact
 
+log = logging.getLogger(__name__)
 API = "/servicenow/api/now/table"
 PAGE = 200
 OPEN = "1"  # sn_customerservice_case.state New
@@ -74,6 +78,19 @@ def offer_params(row: dict, org: str | None, source: str) -> dict:
     }  # fmt: skip
 
 
+def open_cases(s) -> None:
+    """The post-sync hook (P9-4.3): one case per pending ticket of each org whose tool-fleet flow is published
+    (di.services.service_desk.intake). In the sync's session, in a savepoint, so a dry or failed run undoes the cases with the
+    rows, and a ticket that cannot open never fails the sync."""
+    from di.services.service_desk.intake import open_all_pending  # services import the connectors' tables, not the reverse
+
+    try:
+        with s.begin_nested():
+            open_all_pending(s)
+    except Exception:
+        log.exception("sdesk: opening the cases of the service tickets failed")
+
+
 class ServiceDeskAdapter(Adapter):
     source_id = "sdesk"
     provisioned = False  # no demo source: registered and connected by a person (di.connectors.extra)
@@ -114,6 +131,8 @@ class ServiceDeskAdapter(Adapter):
                 key = value(row, "sys_id" if offers else "number")
                 yield Record(table, key, row, str(r.request.url), changed(value(row, "sys_updated_on")))
             if len(rows) < PAGE:
+                if not offers:  # the tickets are read: open the cases of the ones that have none (P9-4.3)
+                    open_cases(client.session)
                 return
             offset += PAGE
 

@@ -5,6 +5,7 @@ import * as D from './DecideTabs';
 import { ComplianceTab, DeviceTab, PayoutTab, QuoteTab } from './DeviceTabs';
 import * as E from './EarlyTabs';
 import * as X from './ExecuteTabs';
+import { TicketTab } from './ServiceDeskTabs';
 
 export interface TabProps { c: CaseRec; a: CaseAnalysis; s: CaseScreen }
 export type TabDef = [key: string, label: string, View: (p: TabProps) => ReactNode];
@@ -30,6 +31,7 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
       return [...extra, ...early];
     }
     case 6: return [
+      ...(c.serviceDesk ? [['ticket', 'Ticket', TicketTab] as TabDef] : []), // a service ticket starts with its Ticket tab (P9-4.3)
       ['packet', 'Decision packet', D.PacketTab], ['compare', 'Compare outcomes', D.CompareTab], ['why', 'Why this outcome', D.WhyTab],
       ['evidence', 'Evidence', D.EvidenceTab], ['whatif', 'What-if and edge cases', D.WhatIfTab], ['predicted', 'How it was predicted', D.PredictedTab],
       ['demand', 'Demand', D.DemandTab],
