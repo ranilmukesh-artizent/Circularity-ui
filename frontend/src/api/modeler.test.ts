@@ -9,7 +9,8 @@ vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>
 
 import { actionScope, matcher } from './invalidation';
 import {
-  applySuggestion, approveFlow, discardFlow, forkFlow, publishFlow, rejectFlow, rollbackFlow, ruleSuggestions, saveDraft, simulateFlow,
+  applySuggestion, approveFlow, approveOverlay, discardFlow, forkFlow, publishFlow, rebaseOverlay, rejectFlow, rejectOverlay, rollbackFlow,
+  ruleSuggestions, saveDraft, saveOverlay, simulateFlow, submitOverlay,
   submitFlow, useModeler, type RuleSuggestion,
 } from './modeler'; // prettier-ignore
 import type { FlowGraph } from './types';
@@ -45,6 +46,24 @@ describe('the Modeler facade (plan 8 MVP-4.3)', () => {
     for (const [run, id, body] of cases) {
       await run();
       expect(last()).toEqual([id, body]);
+    }
+  });
+
+  it('x-04: each overlay write invokes its action and refreshes the Modeler', async () => {
+    const op = { id: 'op-1', by: '', note: '', op: 'add_approver', target: 'GR-01', role: 'Finance' } as const;
+    const ref = { pack_key: 'device', org_unit_id: 'Customer A' };
+    const cases: [() => Promise<unknown>, string, Record<string, unknown>][] = [
+      [() => saveOverlay('device', 'Customer A', [op]), 'overlay.save', { ...ref, ops: [op] }],
+      [() => saveOverlay('device', 'Customer A', [], ['op-1']), 'overlay.save', { ...ref, ops: [], resolved: ['op-1'] }],
+      [() => submitOverlay('device', 'Customer A'), 'overlay.submit', ref],
+      [() => approveOverlay('device', 'Customer A'), 'overlay.approve', ref],
+      [() => rejectOverlay('device', 'Customer A', 'Floor too high.'), 'overlay.reject', { ...ref, reason: 'Floor too high.' }],
+      [() => rebaseOverlay('device', 'Customer A'), 'overlay.rebase', ref],
+    ];
+    for (const [run, id, body] of cases) {
+      await run();
+      expect(last()).toEqual([id, body]);
+      expect(matcher(actionScope(id))!(['GET', '/api/screens/modeler?template=device'])).toBe(true);
     }
   });
 

@@ -15,6 +15,7 @@ import { addRule, connect, disconnect, moveNode, nextRid, removeNode, updateRule
 import { HistoryPanel } from './HistoryPanel';
 import { ImpactPanel } from './ImpactPanel';
 import { LifecycleBar } from './LifecycleBar';
+import { OverlayPanel } from './OverlayPanel';
 import { SuggestionsPanel } from './SuggestionsPanel';
 import './modeler.css';
 
@@ -184,6 +185,9 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
           <SuggestionsPanel s={s} onApply={applySug} />
         </div>
       )}
+      <div className="mdl-main mdl-lower" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
+        <OverlayPanel s={s} />
+      </div>
       <ModelsPanel />
     </>
   );

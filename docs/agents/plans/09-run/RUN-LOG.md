@@ -43,3 +43,5 @@ unattended". Times are local (IST).
 | 25 Nov 06:14 | P9-1.1 merged. Sonnet; red first quoted; no number changed (R8 not triggered); several pack data values invented and listed in the commit (stage confidence 0.75, agent names, carbon d_rule): flagged for review. |
 | 25 Nov 09:55 | P9-1.2 (gate catalogue, I-2/I-3) to w2. Phase 1: 1 of 15. |
 | 25 Nov 06:49 | P9-1.2 merged. Sonnet; red first obtained by removing its modules (code written first); gate stages assigned by the writer (B gives none); catalogue entries carry legal_review pending (Kinective Legal team). |
+| 25 Nov 10:35 | P9-1.2 merged (parallel 3,868 passed). P9-1.3 (overlay, I-4) to w1, P9-1.4 (queue planner, I-5) to w2. Phase 1: 2 of 15. |
+| 25 Nov 07:25 | P9-1.3 merged. Sonnet; R21 tests red first; overlay.approve and overlay.reject forbidden to agents; migration 0031 filled; jsonpatch and deepdiff not used. |

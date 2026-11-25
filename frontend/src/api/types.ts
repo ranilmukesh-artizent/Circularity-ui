@@ -130,6 +130,85 @@ export interface CompiledRule {
 
 export type FlowStatus = 'draft' | 'review' | 'shadow' | 'pub';
 
+/** A condition of a diversion: a case fact, an operator and a value (backend `modeler.gates.Cond`). */
+export interface OverlayCond {
+  fact: string;
+  op: 'eq' | 'ne' | 'in' | 'gte' | 'lte' | 'exists';
+  value?: unknown;
+}
+
+interface OverlayOpBase {
+  /** "op-<n>", stable */
+  id: string;
+  by: string;
+  note: string;
+}
+
+/** One change of a customer overlay (backend `modeler.overlay.OverlayOp`, I-4): never loosens a guardrail. */
+export type OverlayOp =
+  | (OverlayOpBase & { op: 'tighten'; target: string; field: string; value: number; seen: number })
+  | (OverlayOpBase & { op: 'add_approver'; target: string; role: string })
+  | (OverlayOpBase & { op: 'add_step'; stage: GuardrailStage; when: OverlayCond[]; step: string; owner_role: string })
+  | (OverlayOpBase & { op: 'shortcut'; stage: GuardrailStage; when: OverlayCond[]; to: string })
+  | (OverlayOpBase & { op: 'set_param'; path: string; value: number; seen: number });
+
+/** A guardrail field a customer may tighten, with the pack's value and range. */
+export interface OverlayGuardrail {
+  id: string;
+  text: string;
+  field: string;
+  value: number;
+  stricter: 'lower' | 'higher';
+  min: number;
+  max: number;
+  locked: boolean;
+}
+
+export interface OverlayConflict {
+  op_id: string;
+  kind: 'target_gone' | 'changed_by_pack' | 'now_skips_compliance';
+  message: string;
+  mine: unknown;
+  theirs: unknown;
+  /** the operation as the customer made it, for "Keep mine" */
+  op: OverlayOp | null;
+}
+
+export type OverlayStatus = 'none' | 'draft' | 'review' | 'pub';
+
+/** The shown org's customer overlay of the pack (GET /api/screens/modeler, `overlay`). */
+export interface OverlayScreen {
+  pack_key: string;
+  org_unit_id: string;
+  pack_version: string;
+  status: OverlayStatus;
+  ver: number;
+  base_version: string | null;
+  draft_base_version: string | null;
+  /** the pack is newer than the version the shown operations were made against: rebase */
+  stale: boolean;
+  maker: string | null;
+  checker: string | null;
+  /** the draft's operations, else the published ones */
+  ops: OverlayOp[];
+  published: OverlayOp[];
+  conflicts: OverlayConflict[];
+  notes: string[];
+  guardrails: {
+    id: string;
+    text: string;
+    locked: boolean;
+    stage_label: string;
+    approvers: string[];
+    param: { field: string; value: number; stricter: 'lower' | 'higher'; min: number; max: number } | null;
+  }[];
+  stages: { key: GuardrailStage; label: string }[];
+  routes: { id: string; name: string }[];
+  /** the published overlay this org's cases use: its own or inherited */
+  in_force: { org_unit_id: string; ver: number } | null;
+  can: { edit: boolean; approve: boolean };
+}
+
 export interface ModelerScreen {
   templates: { key: string; name: string }[];
   org: string;
@@ -165,4 +244,5 @@ export interface ModelerScreen {
   shadow: { n: number; agree: number; disagree: number; dv: number } | null;
   log: { at: string; actor: string; role: string; action: string; note: string | null }[];
   can: { edit: boolean; approve: boolean; fork: boolean };
+  overlay: OverlayScreen;
 }

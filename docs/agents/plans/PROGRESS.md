@@ -207,6 +207,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · **P9-0.17 phase 0 gate** (fast gate) | this commit | api: parallel-suite 4 shards 3,826 passed + 1 failed (`test_sync_binding` order-dependent in a shard; 2 passed alone on main) and serial-only 38 files 764 passed (4,591 in all, 4,459 at the last gate); source-sim 271 passed; lint all passed; tsc 0, vitest 329 passed; smoke-pages 11 accounts 0 failing; smoke-rt1048 stage 10, no page errors (after `wait-idle.sh`; the gate script first ran it without and it timed out on the post-reset syncs); story-matrix no rows for phase 0; selftest all passed; review: 4 findings, 3 fixed in `28fe893`, 1 for the person | done |
 | 2026-11-25 | 09 · P9-1.1 pack format v1 with tool fleet and device as data | this commit | lead on main: parallel-suite 4 shards 3,847 passed (every non-serial api test file); lint all passed | done |
 | 2026-11-25 | 09 · P9-1.2 gate catalogue with evidence and batch hold | this commit | lead on main after restart: parallel-suite 4 shards 3,868 passed; serial test_milestone_rt1048, test_workflow_open_case 7 passed; lint all passed; tsc 0, vitest 335 passed | done |
+| 2026-11-25 | 09 · P9-1.3 customer overlay with tighten-only and rebase | this commit | lead on main after migrate-reapply 0028 and restart: overlay, flows, live rules, modeler, migrations, catalogue, pack, gates, golden, engine and serial-only test_mcp_server 360 passed; lint all passed; web-check passed | done |
 
 ## Decisions taken without the user (to review)
 

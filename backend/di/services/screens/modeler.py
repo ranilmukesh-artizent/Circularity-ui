@@ -18,6 +18,13 @@
                    the account may see; for tool_fleet and device also the template's sample queue (MVP-6.3)
         can        {edit, approve, fork}: what the account may do (edit: manageFlows on the flow's own org; fork: give
                    the shown org its own flow; approve: approve.flows). The actions check again.
+        overlay    the shown org's customer overlay of the pack (plan 9, P9-1.3): {pack_key, org_unit_id, pack_version,
+                   status ("none" before the first save, else draft, review or pub), ver, base_version,
+                   draft_base_version, stale (the pack is newer than the base of what is shown), maker, checker, ops (the
+                   draft, else the published ones), published, conflicts, notes, guardrails [{id, text, locked,
+                   stage_label, approvers, param {field, value, stricter, min, max} | null}], stages [{key, label}],
+                   routes [{id, name}], in_force {org_unit_id, ver} | null (the published overlay the org's cases use,
+                   its own or inherited), can {edit, approve}}
 
 Access: the `modeler` page (Admin, Planner, Approver, Executive; read-only for the Executive). An org outside the
 account's units is refused with `tenant_boundary`.
@@ -39,11 +46,14 @@ from di.repositories import flows as repo
 from di.repositories.context import call_ctx
 from di.repositories.flows import FlowRow
 from di.repositories.orgs import units
+from di.repositories.overlays import get as get_overlay
+from di.repositories.overlays import nearest_published
 from di.services.actions.modeler import checks_json
 from di.services.actions.modeler_sim import queue_rows
 from di.services.modeler.compile import compile_flow
 from di.services.modeler.flow import PO_FLOW, Flow
-from di.services.modeler.stages import STAGE_LABELS
+from di.services.modeler.pack import load_pack
+from di.services.modeler.stages import STAGE_KEYS, STAGE_LABELS
 from di.services.modeler.templates import TEMPLATE_KEYS, Template, load_template
 
 LOG_SQL = (
@@ -94,6 +104,34 @@ def _can(p: Principal, f: FlowRow, org: str) -> dict[str, bool]:
     }
 
 
+def _overlay(p: Principal, s: Session, key: str, org: str) -> dict[str, Any]:
+    """The org's customer overlay of the template's pack, with what the Customer layer panel needs to edit it."""
+    pack, row = load_pack(key), get_overlay(s, key, org)
+    live = nearest_published(s, key, org)
+    shown_base = pack.version
+    if row:
+        shown_base = (row.draft_base_version if row.draft is not None else None) or row.base_version
+    ok_org = _org_ok(p, org)
+    return {
+        "pack_key": key, "org_unit_id": org, "pack_version": pack.version, "status": row.status if row else "none",
+        "ver": row.ver if row else 0, "base_version": row.base_version if row else None,
+        "draft_base_version": row.draft_base_version if row else None, "stale": shown_base != pack.version,
+        "maker": row.maker if row else None, "checker": row.checker if row else None,
+        "ops": (row.draft if row.draft is not None else row.published) if row else [],
+        "published": row.published if row else [], "conflicts": row.conflicts if row else [], "notes": row.notes if row else [],
+        "guardrails": [
+            {"id": g.id, "text": g.text, "locked": g.locked, "stage_label": STAGE_LABELS[g.stage], "approvers": g.approvers,
+             "param": g.param.model_dump() if g.param else None}
+            for g in pack.guardrails
+        ],
+        "stages": [{"key": k, "label": STAGE_LABELS[k]} for k in STAGE_KEYS],
+        "routes": [{"id": r.id, "name": r.name} for r in pack.routes],
+        "in_force": {"org_unit_id": live.org_unit_id, "ver": live.ver} if live else None,
+        "can": {"edit": policy.can(p.account, "manageFlows", p.ctx) and ok_org,
+                "approve": policy.can(p.account, "approve.flows", p.ctx) and ok_org},
+    }  # fmt: skip
+
+
 def page(p: Principal, s: Session, template: str | None = None, org: str | None = None) -> dict[str, Any]:
     p.require_page("modeler")
     key = template or "industrial"
@@ -128,4 +166,5 @@ def page(p: Principal, s: Session, template: str | None = None, org: str | None 
         "log": _log(s, p, f),
         "queue": queue_rows(call_ctx(p, s), f),
         "can": _can(p, f, org),
+        "overlay": _overlay(p, s, key, org),
     }

@@ -797,7 +797,7 @@ each story went.
 - [x] P9-0.17 Phase 0 gate
 - [x] P9-1.1 Pack format v1 with tool fleet and device as data
 - [x] P9-1.2 Gate catalogue with evidence and batch hold
-- [ ] P9-1.3 Customer overlay with tighten-only and rebase
+- [x] P9-1.3 Customer overlay with tighten-only and rebase
 - [ ] P9-1.4 Queue planner port with named demand on live cases
 - [ ] P9-1.5 One decider for intake, re-evaluation and simulation
 - [ ] P9-1.6 Pack versions through the pipeline with maker-checker

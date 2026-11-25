@@ -1,0 +1,892 @@
+{
+ "key": "tool_fleet",
+ "name": "Tool fleet returns",
+ "version": "3.2.0",
+ "unit": "tool",
+ "author_role": "Planner",
+ "prefix": "BR",
+ "industry": "Tool fleet",
+ "regions": [
+  "US"
+ ],
+ "legal_review": {
+  "status": "pending",
+  "date": null
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "returns",
+   "name": "Tool fleet returns"
+  }
+ ],
+ "prompts": [
+  "",
+  "",
+  ""
+ ],
+ "clarify": null,
+ "classes": [
+  {
+   "id": "CMH",
+   "name": "Combihammer, 12 kg class",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 1450.0
+  },
+  {
+   "id": "BRK",
+   "name": "Demolition breaker, 30 kg class",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 1900.0
+  },
+  {
+   "id": "DCD",
+   "name": "Diamond core drill rig",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 3200.0
+  },
+  {
+   "id": "CRH",
+   "name": "Cordless rotary hammer, 22 V",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 620.0
+  },
+  {
+   "id": "AGR",
+   "name": "Angle grinder, 230 mm",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 260.0
+  },
+  {
+   "id": "LSR",
+   "name": "Rotating construction laser",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 1100.0
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {}
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Return and receive",
+   "agent": "Intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Match and verify",
+   "agent": "Intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Condition",
+   "agent": "Condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "Valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide",
+   "agent": "Routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "Follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and learn",
+   "agent": "Analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "release",
+   "name": "Re-issue to fleet",
+   "app": "Fleet contract system",
+   "owner": "Fleet desk",
+   "lead_days": 4,
+   "classes": [
+    "release"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "refurb",
+   "name": "Refurbish → place",
+   "app": "Repair center work orders (ERP service)",
+   "owner": "Repair center lead",
+   "lead_days": 7,
+   "classes": [
+    "refurbish"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "redeploy",
+   "name": "Tool pool",
+   "app": "ERP stock transfer (tool pool)",
+   "owner": "Tool pool planner",
+   "lead_days": 3,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "resell",
+   "name": "Pre-owned sale",
+   "app": "Pre-owned sales channel",
+   "owner": "Remarketing lead",
+   "lead_days": 9,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "harvest",
+   "name": "Harvest parts",
+   "app": "Repair center teardown + spare parts (ERP)",
+   "owner": "Service parts planner",
+   "lead_days": 5,
+   "classes": [
+    "parts"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "exit",
+   "name": "Recycle",
+   "app": "Recycler portal + circularity ledger",
+   "owner": "Sustainability lead",
+   "lead_days": 6,
+   "classes": [
+    "recycle",
+    "exit"
+   ],
+   "instructions": []
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "GR-01",
+   "text": "Grade C and D tools are never issued to a fleet without refurbishment",
+   "owner": "Fleet desk",
+   "type": "Compliance",
+   "stage": "decide",
+   "locked": true,
+   "forbids": [
+    {
+     "path": "release",
+     "actions": [
+      "require",
+      "prefer"
+     ],
+     "scope_any": {
+      "grade": [
+       "C",
+       "D"
+      ]
+     }
+    }
+   ],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-02",
+   "text": "Refurbishment always ends in a named fleet contract, sales order or pool request",
+   "owner": "Repair center lead",
+   "type": "Compliance",
+   "stage": "decide",
+   "locked": true,
+   "forbids": [],
+   "protects": [
+    [
+     "refurb",
+     "to stock"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-03",
+   "text": "Harvested parts are certified only at or above the fit-for-use threshold",
+   "owner": "Quality",
+   "type": "Threshold",
+   "stage": "condition",
+   "locked": false,
+   "forbids": [],
+   "protects": [
+    [
+     "fit-for-use|threshold",
+     "lower|reduce|change|set|relax|raise"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-04",
+   "text": "The holding cost rate is set by Finance",
+   "owner": "Finance",
+   "type": "Threshold",
+   "stage": "value",
+   "locked": false,
+   "forbids": [],
+   "protects": [
+    [
+     "holding cost"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-05",
+   "text": "Every decision is approved by a named owner before execution",
+   "owner": "Governance board",
+   "type": "Approval",
+   "stage": "decide",
+   "locked": false,
+   "forbids": [],
+   "protects": [
+    [
+     "auto-?approv|without approval|skip approval"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-06",
+   "text": "Recycling only through a certified recycler, certificate and CO2 record on file",
+   "owner": "Sustainability lead",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  }
+ ],
+ "gates": [
+  {
+   "id": "G-TOOL-REC",
+   "params": {},
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "cls",
+   "label": "Model",
+   "kind": "set",
+   "values": [
+    "CMH",
+    "BRK",
+    "DCD",
+    "CRH",
+    "AGR",
+    "LSR"
+   ],
+   "fields": []
+  },
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": [
+    "grade",
+    "estGrade"
+   ]
+  },
+  {
+   "key": "ft",
+   "label": "Return channel",
+   "kind": "set",
+   "values": [
+    "Fleet management",
+    "Repair center",
+    "Remarketing",
+    "Tool pool"
+   ],
+   "fields": []
+  },
+  {
+   "key": "site",
+   "label": "Site",
+   "kind": "set",
+   "values": [
+    "Houston",
+    "Denver",
+    "Atlanta",
+    "Chicago",
+    "Phoenix"
+   ],
+   "fields": []
+  },
+  {
+   "key": "rulMax",
+   "label": "Life under %",
+   "kind": "max",
+   "values": [],
+   "fields": [
+    "rul"
+   ]
+  },
+  {
+   "key": "rulMin",
+   "label": "Life at least %",
+   "kind": "min",
+   "values": [],
+   "fields": [
+    "rul"
+   ]
+  }
+ ],
+ "actors": [
+  [
+   "pshah",
+   "Priya Shah",
+   "Remarketing lead"
+  ],
+  [
+   "tbecker",
+   "Tom Becker",
+   "Disposition owner"
+  ],
+  [
+   "lng",
+   "Lena Ng",
+   "Tool pool planner"
+  ]
+ ],
+ "wording": {
+  "every": "every return",
+  "phrases": [
+   {
+    "key": "ft",
+    "fmt": "{} returns",
+    "joiner": " or ",
+    "words": {}
+   },
+   {
+    "key": "cls",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "AGR": "angle grinders",
+     "BRK": "breakers",
+     "CMH": "combihammers",
+     "CRH": "cordless rotary hammers",
+     "DCD": "core drill rigs",
+     "LSR": "construction lasers"
+    }
+   },
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "site",
+    "fmt": "at {}",
+    "joiner": " or ",
+    "words": {}
+   },
+   {
+    "key": "rulMax",
+    "fmt": "under {}% life",
+    "joiner": "",
+    "words": {}
+   },
+   {
+    "key": "rulMin",
+    "fmt": "{}%+ life",
+    "joiner": "",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "release": "re-issue to fleet",
+   "refurb": "refurbish",
+   "redeploy": "tool pool",
+   "resell": "pre-owned sale",
+   "harvest": "harvest parts",
+   "exit": "recycle"
+  }
+ },
+ "customer_layer": {
+  "editable": {},
+  "params": {},
+  "sample_diversions": [],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [],
+  "entities": [],
+  "mappings": [],
+  "min_fields": [],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "tool_fleet",
+  "params": {
+   "paths": {
+    "release": {
+     "name": "Re-issue to fleet",
+     "app": "Fleet contract system",
+     "lead": 4,
+     "owner": "Fleet desk"
+    },
+    "refurb": {
+     "name": "Refurbish → place",
+     "app": "Repair center work orders (ERP service)",
+     "lead": 7,
+     "owner": "Repair center lead"
+    },
+    "redeploy": {
+     "name": "Tool pool",
+     "app": "ERP stock transfer (tool pool)",
+     "lead": 3,
+     "owner": "Tool pool planner"
+    },
+    "resell": {
+     "name": "Pre-owned sale",
+     "app": "Pre-owned sales channel",
+     "lead": 9,
+     "owner": "Remarketing lead"
+    },
+    "harvest": {
+     "name": "Harvest parts",
+     "app": "Repair center teardown + spare parts (ERP)",
+     "lead": 5,
+     "owner": "Service parts planner"
+    },
+    "exit": {
+     "name": "Recycle",
+     "app": "Recycler portal + circularity ledger",
+     "lead": 6,
+     "owner": "Sustainability lead"
+    }
+   },
+   "classes": {
+    "CMH": {
+     "name": "Combihammer, 12 kg class",
+     "fam": "Heavy drilling",
+     "newP": 1450,
+     "lease12": 660,
+     "refurb": 210,
+     "mat": 14,
+     "fee": 6,
+     "res": {
+      "A": 0.5,
+      "B": 0.38,
+      "C": 0.22,
+      "D": 0.06
+     },
+     "rs": 0.6,
+     "parts": [
+      [
+       "Motor armature",
+       260
+      ],
+      [
+       "Gearbox",
+       180
+      ],
+      [
+       "Electronics module",
+       120
+      ],
+      [
+       "Piston and seal kit",
+       90
+      ]
+     ]
+    },
+    "BRK": {
+     "name": "Demolition breaker, 30 kg class",
+     "fam": "Heavy chiselling",
+     "newP": 1900,
+     "lease12": 840,
+     "refurb": 280,
+     "mat": 22,
+     "fee": 8,
+     "res": {
+      "A": 0.5,
+      "B": 0.38,
+      "C": 0.22,
+      "D": 0.06
+     },
+     "rs": 0.6,
+     "parts": [
+      [
+       "Motor",
+       380
+      ],
+      [
+       "Impact mechanism",
+       320
+      ],
+      [
+       "Chisel holder",
+       110
+      ],
+      [
+       "Handle and vibration damper",
+       70
+      ]
+     ]
+    },
+    "DCD": {
+     "name": "Diamond core drill rig",
+     "fam": "Diamond systems",
+     "newP": 3200,
+     "lease12": 1380,
+     "refurb": 520,
+     "mat": 38,
+     "fee": 12,
+     "res": {
+      "A": 0.52,
+      "B": 0.4,
+      "C": 0.24,
+      "D": 0.07
+     },
+     "rs": 0.62,
+     "parts": [
+      [
+       "Drill motor",
+       900
+      ],
+      [
+       "Gearbox",
+       420
+      ],
+      [
+       "Drill stand",
+       380
+      ],
+      [
+       "Control electronics",
+       210
+      ]
+     ]
+    },
+    "CRH": {
+     "name": "Cordless rotary hammer, 22 V",
+     "fam": "Cordless",
+     "newP": 620,
+     "lease12": 300,
+     "refurb": 70,
+     "mat": 6,
+     "fee": 3,
+     "res": {
+      "A": 0.52,
+      "B": 0.4,
+      "C": 0.24,
+      "D": 0.06
+     },
+     "rs": 0.64,
+     "parts": [
+      [
+       "Brushless motor",
+       160
+      ],
+      [
+       "Electronics module",
+       95
+      ],
+      [
+       "Chuck assembly",
+       45
+      ]
+     ]
+    },
+    "AGR": {
+     "name": "Angle grinder, 230 mm",
+     "fam": "Cutting and grinding",
+     "newP": 260,
+     "lease12": 132,
+     "refurb": 45,
+     "mat": 3,
+     "fee": 2,
+     "res": {
+      "A": 0.48,
+      "B": 0.36,
+      "C": 0.2,
+      "D": 0.05
+     },
+     "rs": 0.58,
+     "parts": [
+      [
+       "Armature",
+       70
+      ],
+      [
+       "Gear set",
+       38
+      ],
+      [
+       "On/off switch",
+       22
+      ]
+     ]
+    },
+    "LSR": {
+     "name": "Rotating construction laser",
+     "fam": "Measuring",
+     "newP": 1100,
+     "lease12": 480,
+     "refurb": 140,
+     "mat": 8,
+     "fee": 4,
+     "res": {
+      "A": 0.55,
+      "B": 0.42,
+      "C": 0.25,
+      "D": 0.06
+     },
+     "rs": 0.66,
+     "parts": [
+      [
+       "Laser module",
+       320
+      ],
+      [
+       "Rotor head",
+       170
+      ],
+      [
+       "Receiver",
+       110
+      ]
+     ]
+    }
+   },
+   "basep": {
+    "market": 1,
+    "labor": 1,
+    "lease": 1,
+    "downtime": 120,
+    "rulMin": 50,
+    "hold": 2,
+    "slots": 8
+   },
+   "fin": {
+    "rate": 0.09,
+    "lifePerMonth": 1.2,
+    "refurbLife": 20,
+    "svc": 0.03
+   },
+   "poolk": [
+    "lease",
+    "proj",
+    "so"
+   ],
+   "funcs": [
+    "Fleet management",
+    "Repair center",
+    "Remarketing",
+    "Tool pool"
+   ],
+   "sites": [
+    "Houston",
+    "Denver",
+    "Atlanta",
+    "Chicago",
+    "Phoenix"
+   ],
+   "sources": {
+    "Fleet management": "Contract end or fleet swap",
+    "Repair center": "Repair request",
+    "Remarketing": "Customer trade-in",
+    "Tool pool": "Pool excess"
+   },
+   "cust": [
+    "Brightline Mechanical",
+    "Granite Civil",
+    "Westmark Supply",
+    "Pinecrest Builders",
+    "Ridgeway Facilities",
+    "Harborview Utilities",
+    "Tri-County Paving",
+    "Summit Industrial Services",
+    "Lakeshore Contractors",
+    "Granite Ridge Mining"
+   ],
+   "dealers": [
+    "Gulf Coast Tool Exchange",
+    "Prairie Contractor Supply",
+    "Mesa Pre-Owned Tools",
+    "Northline Trade Tools"
+   ]
+  },
+  "carbon": {
+   "set": "cfs-2026.1",
+   "d_rule": "demand"
+  }
+ },
+ "replay": {
+  "dataset": null,
+  "example": null
+ },
+ "runtime": {
+  "exception_types": [
+   {
+    "id": "no_active_contract",
+    "label": "No active contract for the serial",
+    "owner_role": "Planner",
+    "action": "Find the contract or hold the return"
+   },
+   {
+    "id": "grade_wear_disagree",
+    "label": "Telematics and inspection disagree",
+    "owner_role": "Engineer",
+    "action": "Re-inspect the tool"
+   },
+   {
+    "id": "repair_over_limit",
+    "label": "Repair over the limit",
+    "owner_role": "Approver",
+    "action": "Approve the repair or choose another route"
+   },
+   {
+    "id": "writeoff_under_24m",
+    "label": "Write-off under 24 months",
+    "owner_role": "Planner",
+    "action": "Review the write-off with service operations"
+   },
+   {
+    "id": "inspection_backlog",
+    "label": "Inspection backlog at a depot",
+    "owner_role": "Planner",
+    "action": "Move inspections to another depot"
+   }
+  ],
+  "suggestion_rules": [],
+  "sla_hours": {},
+  "escalate_to": null
+ },
+ "kpis": [
+  {
+   "id": "value_per_tool",
+   "label": "Value recovered per tool",
+   "definition": "realised net (value lines minus costs and holding) / returns",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "days_to_next_use",
+   "label": "Days to next use",
+   "definition": "receipt to the next productive use (issue, pool or sale)",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "redeploy_rate",
+   "label": "Redeploy rate",
+   "definition": "share of returns re-issued or pooled",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "straight_through",
+   "label": "Straight-through %",
+   "definition": "cases closed without a person changing data or the route (approval by policy counts)",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "upgrade_accepted",
+   "label": "Upgrade offers accepted",
+   "definition": "accepted / offered (comes from Service desk and Refresh)",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "held_by_guardrails",
+   "label": "% held by guardrails",
+   "definition": "cases stopped by any guardrail / cases",
+   "measure": null,
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [],
+ "stories": []
+}

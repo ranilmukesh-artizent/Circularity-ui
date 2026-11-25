@@ -1,13 +1,14 @@
 /**
  * The Modeler (plan 8, MVP-4.3): one decision flow per template and org unit, its checks, compiled rules, history and
- * log, read from GET /api/screens/modeler (backend/di/services/screens/modeler.py). Every change is a flow.* action
+ * log, read from GET /api/screens/modeler (backend/di/services/screens/modeler.py), with the org's customer overlay of
+ * the pack (`overlay`, plan 9 P9-1.3: the overlay.* actions of backend/di/services/actions/overlays.py). Every change is a flow.* action
  * (backend/di/services/actions/modeler.py): a person edits a draft and submits it, a different person approves it (a
  * shadow run starts) and publishes it. A successful write invalidates the Modeler read and the case reads
  * (invalidation.ts, the `flow` family). simulateFlow and ruleSuggestions are read actions run on demand, not cached.
  */
 import { invoke } from './actions';
 import { cached, withQuery } from './client';
-import type { ActionResult, FlowGraph, ModelerScreen, SimResult } from './types';
+import type { ActionResult, FlowGraph, ModelerScreen, OverlayConflict, OverlayOp, SimResult } from './types';
 
 /** The Modeler page for a template and an org unit (Suspense read cache). */
 export const useModeler = (template: string, org: string): ModelerScreen =>
@@ -96,3 +97,18 @@ export async function ruleSuggestions(flowId: number): Promise<RuleSuggestions> 
 /** Apply a suggestion to the draft: the person's own saveDraft of its graph. Submitting and publishing stay separate. */
 export const applySuggestion = (flowId: number, s: RuleSuggestion): Promise<ActionResult<{ id: number; checks: ModelerScreen['checks'] }>> =>
   invoke('flow.saveDraft', { flow_id: flowId, graph: s.proposal.graph, source: 'assistant', note: 'Suggested from overrides: ' + s.text });
+
+type OverlayDone = ActionResult<{ status: string; log?: string }>;
+
+/** Save the customer overlay's draft (tighten-only: the server refuses a weakening or a skipped compliance rule). */
+export const saveOverlay = (pack: string, org: string, ops: OverlayOp[], resolved?: string[]): Promise<OverlayDone> =>
+  invoke('overlay.save', { pack_key: pack, org_unit_id: org, ops, ...(resolved?.length ? { resolved } : {}) });
+
+export const submitOverlay = (pack: string, org: string): Promise<OverlayDone> => invoke('overlay.submit', { pack_key: pack, org_unit_id: org });
+export const approveOverlay = (pack: string, org: string): Promise<OverlayDone> => invoke('overlay.approve', { pack_key: pack, org_unit_id: org });
+export const rejectOverlay = (pack: string, org: string, reason: string): Promise<OverlayDone> =>
+  invoke('overlay.reject', { pack_key: pack, org_unit_id: org, reason });
+
+/** Move the overlay onto the pack's newer version as a draft; the answer lists its conflicts and notes. */
+export const rebaseOverlay = (pack: string, org: string): Promise<ActionResult<{ status: string; ops: number; conflicts: OverlayConflict[]; notes: string[]; log: string }>> =>
+  invoke('overlay.rebase', { pack_key: pack, org_unit_id: org });

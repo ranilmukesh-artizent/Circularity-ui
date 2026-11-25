@@ -17,15 +17,33 @@ from typing import Any, cast
 from sqlalchemy.orm import Session
 
 from di.repositories.flows import flow_for
+from di.repositories.overlays import nearest_published
 from di.services.canonical import store as canonical
 from di.services.modeler.compile import CompiledRule, compile_flow
 from di.services.modeler.facts import FACT_KEYS, TELEMETRY_FIELDS, case_scope_facts
 from di.services.modeler.flow import Flow
+from di.services.modeler.overlay import OverlayError, apply_overlay, parse_ops
+from di.services.modeler.pack import Pack, load_pack
 from di.services.modeler.templates import Template, load_template
 
 
 def template_of(case: Mapping[str, Any]) -> Template:
     return load_template(case.get("template") or "industrial")
+
+
+def live_pack(s: Session, case: Mapping[str, Any]) -> Pack:
+    """The pack the case is decided with (plan 9, P9-1.3, I-4): its template's pack with the published customer overlay of
+    the nearest org unit, from the case's owner up to `workspace`, that has one. An operation that no longer applies to
+    the pack (a newer version, until the overlay is rebased) is skipped: the pack's own value is the stricter safe one."""
+    key = case.get("template") or "industrial"
+    pack = load_pack(key)
+    row = nearest_published(s, key, case.get("owner") or "workspace")
+    for op in parse_ops(row.published) if row else ():
+        try:
+            pack = apply_overlay(pack, [op])
+        except OverlayError:
+            continue
+    return pack
 
 
 def telemetry(s: Session, case: Mapping[str, Any]) -> dict[str, Any] | None:
