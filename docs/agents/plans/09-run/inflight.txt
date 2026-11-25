@@ -1,3 +1,2 @@
 # Tasks in flight (task id, writer, model, started)
-P9-2.24 w1 sonnet 02:17 done 055fc86, waiting to merge (13 new tests; evals x_05 and model_first_paths fail in its worktree, also on 3d911f4: check on main; smoke-p9-2 after reset)
 P9-9.2 w3 sonnet 03:10 (vehicle lease and dealer mocks; branched from unpushed 0449432)
