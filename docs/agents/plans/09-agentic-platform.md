@@ -571,6 +571,10 @@ R16. **Model first; code holds the line** (decided by the person, 25 Nov 2026; r
        task's repair rounds), then the deterministic path answers.
      - **The model can add caution, never remove it.** It may raise a concern, a hold or a question. It never clears a
        hold, lowers a gate, approves, publishes or declines (golden rule 10).
+     - **Agents create, read and update; they never delete or approve** (the person, 25 Nov 2026). Every delete,
+       discard, revert, cancel, approve, publish, reject, promote, override, decline, rollback, retire or release
+       action is in `FORBIDDEN_ACTIONS`; `di.main` refuses to start when one is not (`check_person_only`). A new action
+       of that kind joins the list in the same commit.
      - **Computed numbers stay computed.** Values, prices, gate results, calibrated confidence, queue plans and
        replay figures come from code and trained models, never from the language model. The model reasons over them and
        explains them. A number in model text must appear in the computed facts.
@@ -847,6 +851,8 @@ each story went.
 - [ ] P9-2.16 Phase 2 demo smoke script
 - [ ] P9-2.18 Stage agents reason with the model
 - [ ] P9-2.19 Exception assistant and fraud review drafted by the model
+- [ ] P9-2.20 Lease end, return authorised and transit stage agents
+- [ ] P9-2.21 Ten-stage journey on the case run view
 - [ ] P9-2.17 Phase 2 gate
 - [ ] P9-3.1 Fleet contract and repair log mocks with adapters
 - [ ] P9-3.2 Recall, telematics and parts mocks with adapters
@@ -4126,7 +4132,7 @@ gate (R16). The datasets also cover the model-first paths of P9-2.18 and P9-2.19
 case plus the live run).
 
 #### P9-2.16 Phase 2 demo smoke script
-**Stories:** X-02, X-05, X-15. **Size:** S. **Depends on:** P9-2.1 to P9-2.15, P9-2.18, P9-2.19.
+**Stories:** X-02, X-05, X-15. **Size:** S. **Depends on:** P9-2.1 to P9-2.15, P9-2.18, P9-2.19, P9-2.20, P9-2.21.
 
 **Files:** Create `frontend/scripts/smoke-p9-2.mjs` (pattern: `frontend/scripts/smoke-modeler.mjs`; Node Playwright with
 `channel: 'chrome'`; screenshots to the session scratchpad, never `/tmp`).
@@ -4327,6 +4333,138 @@ in P9-2.16.
 - Also run: `tests/test_fraud_triage.py tests/test_stage_chain.py`.
 
 **Notes:** fraud outcomes stay holds for a person (B §8.4). The model adds caution, never removes it (R16).
+
+#### P9-2.20 Lease end, return authorised and transit stage agents
+**Stories:** X-05; the ten-stage returned-asset journey of `docs/reference/agent-first-workbench-pr.md` (stages 1-3;
+the person, 25 Nov 2026). **Size:** M. **Depends on:** P9-2.1, P9-2.8, P9-2.18.
+
+**Files:**
+- Modify `backend/di/services/agents/stage_context.py` (`StageId` and `STAGE_IDS` gain `lease_end`, `return_auth`,
+  `transit`, in that order before `intake`).
+- Create `backend/di/services/agents/stages/lease_end.py`, `backend/di/services/agents/stages/return_auth.py`,
+  `backend/di/services/agents/stages/transit.py`; modify `backend/di/services/agents/stages/__init__.py` (`CHAIN`).
+- Modify `backend/di/services/agents/chain.py` (`AGENT_IDS` `stage-lease`, `stage-return`, `stage-transit`;
+  `DEFAULT_AUTONOMY` lease_end `alone`, return_auth `limits`, transit `alone`).
+- Modify `backend/di/services/agents/playbooks/stage_reasoner.py` (a `LoopSpec` for each new stage).
+- Modify `backend/di/services/modeler/packs/tool_fleet.json` and `backend/di/services/modeler/packs/device.json`
+  (evidence types `lease_record` from `oracle_lease`, `return_authorisation` from `s4` and `oracle_lease`,
+  `shipment` from `otm`, `customer_intent` from `salesforce`).
+- Modify the seeds of `source-sim/sim/vendors/oracle_lease/`, `source-sim/sim/vendors/otm/` and
+  `source-sim/sim/vendors/salesforce/` only where a field below is missing (deterministic, no new vendor).
+- Create `backend/migrations/versions/0062_lifecycle_stage_agents.py` (data only, after 0061: the three
+  `agent_identity` rows, internal, autonomy `read`, tools as below; ON CONFLICT DO NOTHING).
+- Test: `backend/tests/test_lifecycle_stages.py`.
+
+**Interfaces:**
+- `lease_end` (stage 1, "Lease ends"): reads `case.get` and `case.evidence`. Output: `{serial, model, site, usage,
+  intent, lease_end, terms}` from `lease_record` and `customer_intent`. A missing record → `evidence.request`.
+  Confidence = fields found ÷ fields required.
+- `return_auth` (stage 2, "Return authorised"): output `{ra_number, fees, replacement_order, book_value,
+  acquired_on}` from `return_authorisation`. A missing record → `evidence.request`; confidence as above.
+- `transit` (stage 3, "Pickup and transit"): output `{pickup_on, eta, freight_cost, carrier, delayed}` from
+  `shipment`.
+  - Until goods receipt evidence exists, the stage is `Wait("transit")`; the receipt evidence wakes it (as
+    `resume_waiting` does for approvals).
+  - `eta` before the workspace clock with no receipt → `delayed: true` and one I-20 exception item "Transit delayed"
+    for the Planner (`process.open_item`, dedupe per case).
+- A case with none of the three evidence types (the demo's 128 cases and RT-1048 today) records all three as
+  `skipped` with the reason "not a lease return" and makes no call. Autopilot steps, journal and golden files are
+  unchanged.
+- Agent writes: only `evidence.request` and the exception item. Nothing deletes or approves (R16).
+- With a model (P9-2.18), each stage's reasoner reads the records and free text (customer intent notes, carrier
+  remarks) and writes findings, concerns and questions; code checks them as in P9-2.18.
+
+**UI slice:** no new page: the run view and the P9-2.21 timeline show the three stages. vitest in P9-2.21.
+
+**Tests (red first):**
+- `test_lease_end_output_and_confidence`: a tool-fleet case with a lease record and intent → the seven fields,
+  confidence 1.0; without intent → 6/7 and an `evidence.request`.
+- `test_return_auth_reads_fees_and_book_value`.
+- `test_transit_waits_until_receipt`: waiting with a shipment and no receipt; a receipt resumes the chain into `intake`.
+- `test_transit_delay_opens_one_exception`: ETA passed → `delayed`, one "Transit delayed" item; a second run opens no
+  second item.
+- `test_book_cases_skip_lifecycle_stages`: RT-1048 → three `skipped` records, no call, the same journal as before.
+- `test_lifecycle_stage_reasoner_reads_intent_note` (`FunctionModel`): the intent note becomes a finding with its
+  source.
+- `test_lifecycle_agents_never_delete_or_approve`: each new stage's tools pass `check_person_only` and the forbidden
+  list.
+- Also run: `tests/test_stage_chain.py tests/test_milestone_rt1048.py tests/test_queue_stage.py
+  tests/test_stage_reasoner.py`, and the source-sim tests of the three vendors if their seeds changed (serial-only:
+  the lead runs them).
+
+**Notes:** the systems are the existing synthetic mocks (lease management, ERP finance, transport, CRM); no vendor is
+really connected (golden rule 14).
+
+#### P9-2.21 Ten-stage journey on the case run view
+**Stories:** X-05; the ten-stage journey and the case run view of `docs/reference/agent-first-workbench-pr.md` (the
+person, 25 Nov 2026). **Size:** M. **Depends on:** P9-2.6, P9-2.18, P9-2.20.
+
+**Files:**
+- Modify `backend/di/services/agents/stage_context.py` (`StageId` gains `outcome` and `reconcile`; `analytics` stays
+  readable for stored records).
+- Create `backend/di/services/agents/stages/outcome.py` and `backend/di/services/agents/stages/reconcile.py`; modify
+  `backend/di/services/agents/stages/__init__.py` (`CHAIN`: `analytics` is replaced by `outcome`, `reconcile`) and
+  `backend/di/services/agents/chain.py` (`AGENT_IDS` `stage-outcome`, `stage-reconcile`; autonomy `limits`, `alone`).
+- Create `backend/di/services/agents/journey.py` (`JourneyStage`, `journey`).
+- Modify `backend/di/services/screens/agents.py` (a run answers `journey`).
+- Modify `backend/migrations/versions/0062_lifecycle_stage_agents.py` (the two agent rows too).
+- Modify `frontend/src/api/agents.ts` (+ test) and `frontend/src/pages/agents/RunView.tsx`; create
+  `frontend/src/pages/agents/JourneyTimeline.tsx` (+ `journeyView.test.ts`).
+- Test: `backend/tests/test_journey.py`.
+
+**Interfaces:**
+- `outcome` (stage 9): reads the executing systems' final acknowledgements and the actual costs and realised value
+  (the follow-through records). When the pack asks Finance to confirm, it waits for `outcome.confirm` by a person
+  (forbidden to agents). Output `{actual_costs, realised_value, confirmed_by}`.
+- `reconcile` (stage 10): compares predicted and actual line by line (the case's valuation against `outcome`), writes
+  the learning record the analytics stage wrote before, and carries open items forward. Output `{lines: [{item,
+  predicted, actual, delta}], learning_id}`. All numbers computed; with a model the reasoner explains the biggest
+  deltas.
+- `JourneyStage(n: int, name: str, status: Literal["Queued", "Running", "Completed", "Waiting for approval",
+  "Warning", "Failed", "Skipped"], agent: str, purpose: str, activity: str, evidence: list[dict], calls: list[dict],
+  result: dict, validation: list[str], state_change: str, next_step: str, reading: dict | None)`: the nine fields of
+  the spec's stage panel, plus the model's reading.
+- `journey(run) -> list[JourneyStage]` (pure), the ten stages from the chain's records:
+  1. lease_end
+  2. return_auth
+  3. transit
+  4. intake ("Received")
+  5. condition ("Inspect and grade")
+  6. "Decide" (demand, fit_for_use, valuation and disposition up to the submit, as sub-steps)
+  7. "Approve" (disposition's wait, or the standing policy's approval)
+  8. follow_through ("Execute")
+  9. outcome
+  10. reconcile
+  Status mapping: `done` → Completed, `skipped` → Skipped, `waiting` → "Waiting for approval" at 7 and Running
+  elsewhere, `held` → Warning, `exception` → Failed.
+- Controls (spec "Case run view"):
+  - **Next** performs the current stage's work once, through `agent.step`. At Approve it opens the approval card for a
+    person with authority, or shows "Waiting for <role>".
+  - **Back** changes the view only.
+  - **Replay** steps through stored records and writes nothing.
+  - A blocked stage says why and offers escalation. It never skips silently.
+
+**UI slice:** the run view (and the case's "Agent run" panel) shows the ten-stage timeline with each stage's status,
+then the selected stage's panel (purpose, agent, activity, evidence with provenance, calls with input and output,
+result, validation, state change, next step, and the model's reading). The case page's journey strip and its ten
+golden journey steps are unchanged (parity). vitest for `journeyView` (status mapping, labels, Next/Back/Replay
+enablement); smoke step in P9-2.16.
+
+**Tests (red first):**
+- `test_journey_maps_ten_stages`: a full tool-fleet run → ten stages in order with the mapped statuses.
+- `test_journey_decide_groups_four_stages`: stage 6 lists demand, fit for use, valuation and disposition as
+  sub-steps.
+- `test_journey_approve_waits_for_role`: an unapproved case → stage 7 "Waiting for approval" with the role.
+- `test_outcome_waits_for_person_confirm`: an agent-prepared `outcome.confirm` is refused; a person's confirm
+  completes stage 9.
+- `test_reconcile_lines_computed`: predicted vs actual deltas equal the computed values; a learning record is written.
+- `test_replay_writes_nothing` and `test_back_writes_nothing` (journal unchanged).
+- `test_journey_book_case`: RT-1048 → stages 1-3 Skipped, the rest as today.
+- Also run: `tests/test_stage_chain.py tests/test_run_trace.py tests/test_milestone_rt1048.py
+  tests/test_lifecycle_stages.py`, and `bash scripts/dev/web-check.sh`.
+
+**Notes:** the prototype's screens are a concept only; follow our kit and the run view of P9-2.6. Hidden model
+reasoning is not shown; the reading's typed fields are.
 
 #### P9-3.1 Fleet contract and repair log mocks with adapters
 **Stories:** enabler: the fleet contract system and the legacy depot repair log are two of the seven systems of the

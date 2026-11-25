@@ -131,6 +131,9 @@ Set once in every shell: `export PLAN_RUN=docs/agents/plans/09-run/lane-B MSYS_N
   fault text), P9-6.17 (the model writes the worked-question sentence; its numbers are checked) and every Compose or
   agent step. Writers follow the brief's "Model first" rule. A task that reads or writes language without the model
   is sent back.
+- **Agents never delete or approve (25 Nov, by the person).** Every delete, discard, revert, cancel, approve, publish,
+  reject, promote, override, decline, rollback, retire or release action joins `FORBIDDEN_ACTIONS` in the same commit;
+  `di.main` refuses to start otherwise. The ten-stage journey (P9-2.20, P9-2.21) adds stage ids: read `STAGE_IDS`.
 - **Worktrees start from the default branch**: every writer must fast-forward to the lane branch first (the brief says
   so).
 - **Private-database failures are not always real**: `wt-check.sh` runs on a fresh database without the synced
