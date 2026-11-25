@@ -648,7 +648,10 @@
     "gr_s1": {
      "min_matches": 50,
      "max_width_share": 0.3,
-     "window_years": 3
+     "window_years": 3,
+     "min_coverage": 0.7,
+     "max_mae_share": 0.15,
+     "holdout_weeks": 8
     }
    },
    "paths": {

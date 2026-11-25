@@ -39,6 +39,10 @@ are the signed-in person's actions.
                            proposed yet, already proposed), else null: the buttons show the reason, the actions check
                            again (di.services.actions.models)
         can        {fit, promote}: manageFlows (fit and propose) and approve.flows (approve the promotion)
+        repairAccuracy  (plan 9, P9-4.5) the repair estimate replayed on held-out repairs: {rows: [{org_unit_id | null,
+                   model_class, as_of, n, mae, mae_share, coverage, auto_share, instant}] (newest per org unit and class,
+                   only tenants the person sees), bar: {min_coverage, max_mae_share, holdout_weeks} (GR-S1),
+                   can: {compute}: manageMarketTables}; serviceDesk.computeAccuracy is computeRepairAccuracy()
     Access: the `agents` or the `modeler` page (Admin, Developer, Planner, Approver, Executive), so an Approver can
     approve what a Planner proposed.
 
@@ -56,6 +60,7 @@ from sqlalchemy.orm import Session
 from di.core import policy
 from di.core.auth import Principal
 from di.core.redact import clean
+from di.repositories import repair_accuracy as accuracy_repo
 from di.repositories.constants import TOOLS_BY_ID
 from di.repositories.model_versions import ModelRow
 from di.repositories.orgs import units
@@ -67,6 +72,7 @@ from di.services.agents.stage_context import STAGE_IDS
 from di.services.engine.predictor import FormulaPredictor
 from di.services.llm.view import models_view
 from di.services.modeler.templates import TEMPLATE_KEYS
+from di.services.service_desk import accuracy
 
 RUNS = 50
 RUNS_SQL = (
@@ -184,4 +190,22 @@ def models(p: Principal, s: Session) -> dict[str, Any]:
             }
         out.append({**j, "metrics": metrics, "proposal": proposal_of(m), "blocks": blocks})
     can = {"fit": can_fit, "promote": can_promote}
-    return {"base": FormulaPredictor.model_version, "active": active, "models": out, "can": can}
+    acc = _repair_accuracy(p, s)
+    return {"base": FormulaPredictor.model_version, "active": active, "models": out, "can": can, "repairAccuracy": acc}
+
+
+def _repair_accuracy(p: Principal, s: Session) -> dict[str, Any]:
+    """The newest held-out accuracy of the repair estimate per org unit and tool class, those the principal's tenants allow
+    (plan 9, P9-4.5; di.services.service_desk.accuracy), with GR-S1's bar."""
+    b = accuracy.bar()
+    rows = [r for r in accuracy_repo.latest_all(s) if r.org_unit_id is None or p.tenant_ok(r.org_unit_id)]
+    return {
+        "rows": [
+            {"org_unit_id": r.org_unit_id, "model_class": r.model_class, "as_of": r.as_of.isoformat(), "n": r.n,
+             "mae": float(r.mae), "mae_share": float(r.mae_share), "coverage": float(r.coverage),
+             "auto_share": float(r.auto_share), "instant": r.instant}
+            for r in rows
+        ],
+        "bar": {"min_coverage": float(b.min_coverage), "max_mae_share": float(b.max_mae_share), "holdout_weeks": b.holdout_weeks},
+        "can": {"compute": p.can("manageMarketTables")},
+    }  # fmt: skip

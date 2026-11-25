@@ -104,6 +104,7 @@ const ACTION_FAMILY: Record<string, Scope> = {
   notify: CASE_WRITE, // notifications: alerts, the asset page's notes, tasks
   escalation: CASE_WRITE,
   comment: [...CASE_WRITE, 'integration'], // comments sit under audit entries, cases and Connection Fabric records
+  serviceDesk: ['modeler', 'case'], // serviceDesk.computeAccuracy (plan 9, P9-4.5): the Models panel (no area, always refetched) and the estimates on cases
   source: FABRIC_WRITE,
   credentials: FABRIC_WRITE,
   conflict: FABRIC_WRITE,

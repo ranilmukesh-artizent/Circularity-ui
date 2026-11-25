@@ -11,6 +11,9 @@
   `[as_of - window_years, as_of)`, read once per class and fault for the whole case. **Cards.** The approved labour, parts and
   terms cards of the ticket's market in force on `as_of` (the org's own version first, else the shared one); the lines cite them.
   A market without cards is a draft, not a failure: the case still opens and a technician prices it.
+- **Held-out accuracy (P9-4.5).** A class whose newest `repair_accuracy` row (the org's, else the shared one) has `instant` false
+  is never priced without a technician: the estimate keeps its figures, `auto` is false and the reason names the held-out
+  coverage (or error) and the bar. The row's coverage is the estimate's `confidence`; with no row it stays 0.80.
 - **Technician check.** A draft books one `needs_info` work item of type `technician_check` for the Engineer role per line,
   "Technician check: post the fault for <serial>", through `cases.process.open_item` (the same item `case.needInfo` opens, I-20);
   evaluating the line again finds it and books no second.
@@ -21,6 +24,7 @@ Never does: delete, approve or release anything, add an action, or open a case (
 """
 
 from collections.abc import Mapping, MutableMapping
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -29,6 +33,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.repositories import market_tables as tables_repo
+from di.repositories import repair_accuracy as accuracy_repo
+from di.repositories.repair_accuracy import AccuracyRow
 from di.repositories.repair_history import RepairRow, similar
 from di.services.cases import process
 from di.services.modeler.pack import load_pack
@@ -45,6 +51,16 @@ def gr_s1() -> GrS1Params:
     """GR-S1: at least `min_matches` similar repairs, a range of at most `max_width_share` of the point, `window_years` back."""
     p = load_pack(PACK).valuer.params["service_desk"]["gr_s1"]
     return GrS1Params(int(p["min_matches"]), Decimal(str(p["max_width_share"])), int(p["window_years"]))
+
+
+def _off(acc: AccuracyRow) -> str:
+    """Why a family is not priced instantly: its newest held-out figures against GR-S1's bar."""
+    p = load_pack(PACK).valuer.params["service_desk"]["gr_s1"]
+    least, most = Decimal(str(p["min_coverage"])), Decimal(str(p["max_mae_share"]))
+    off = "Instant pricing is off for this family: held-out"
+    if acc.coverage < least:
+        return f"{off} coverage {acc.coverage * 100:.0f}% is under the {least * 100:.0f}% bar"
+    return f"{off} error {acc.mae_share * 100:.0f}% is over the {most * 100:.0f}% bar"
 
 
 def _since(as_of: date, years: int) -> date:
@@ -109,7 +125,12 @@ def estimate_line(
                 cache[key] = similar(s, org, cls, fault, None, key[3], key[4])
             rows = cache[key]
         band = age_band(line.get("age_months")) or ""
-        e = RepairCostModel().estimate(rows, RepairKey(cls, fault, band), cards, params, None)
+        acc = accuracy_repo.latest(s, org, cls)
+        e = RepairCostModel().estimate(
+            rows, RepairKey(cls, fault, band), cards, params, None if acc is None else float(acc.coverage)
+        )
+        if e.auto and acc is not None and not acc.instant:
+            e = replace(e, auto=False, reason=_off(acc))
     if not e.auto:
         _book_check(s, case, line, e.reason)
     return e

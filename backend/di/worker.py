@@ -276,6 +276,33 @@ def enqueue_refresh_scan() -> None:
         s.commit()
 
 
+@handler("serviceDesk.accuracy")
+def _service_desk_accuracy(payload: dict[str, Any]) -> None:
+    """The daily held-out accuracy of the repair estimate (plan 9, P9-4.5; di.services.service_desk.accuracy.compute).
+    `payload.today` (an ISO date) is for tests; the day is the workspace clock's."""
+    from di.core import clock
+    from di.services.service_desk import accuracy
+
+    today = date.fromisoformat(payload["today"]) if payload.get("today") else clock.now().date()
+    with SessionLocal() as s:
+        rows = accuracy.compute(s, today)
+        s.commit()
+    log.info("repair estimate accuracy %s: %s families", today, len(rows))
+
+
+def enqueue_accuracy() -> None:
+    """Queue the day's `serviceDesk.accuracy` job unless one is queued or running or the day's rows exist already (the periodic
+    step runs every 30 s, so a second call on the same simulated day adds nothing)."""
+    from di.core import clock
+    from di.repositories import repair_accuracy
+
+    today = clock.now().date()
+    with SessionLocal() as s:
+        if not repair_accuracy.computed_on(s, today):
+            jobs.enqueue(s, "serviceDesk.accuracy", {}, priority=200, dedupe_key=f"serviceDesk.accuracy:{today.isoformat()}")
+        s.commit()
+
+
 @handler("agent.autostart")
 def _agent_autostart(payload: dict[str, Any]) -> None:
     """A case was opened and the autopilot setting is on: start its run (runtime.autostart, P9-0.9). The run's own
@@ -418,6 +445,10 @@ def periodic() -> None:
         enqueue_refresh_scan()
     except Exception:
         log.exception("queueing the refresh scan failed")
+    try:
+        enqueue_accuracy()
+    except Exception:
+        log.exception("queueing the repair accuracy job failed")
     tick_triggers()  # first: a lost workflow run is closed ("worker lost") before its stale job is requeued
     try:
         with SessionLocal() as s:

@@ -226,7 +226,37 @@ export interface ModelsScreen {
   active: Record<string, string | null>;
   models: ModelVersion[];
   can: { fit: boolean; promote: boolean };
+  /** the repair estimate replayed on held-out repairs (plan 9, P9-4.5): the newest figures per org unit and tool class */
+  repairAccuracy: { rows: RepairAccuracy[]; bar: RepairAccuracyBar; can: { compute: boolean } };
 }
+
+export interface RepairAccuracy {
+  org_unit_id: string | null;
+  model_class: string;
+  as_of: string;
+  /** repairs held out */
+  n: number;
+  /** mean absolute error of the estimate's point, in the market's currency */
+  mae: number;
+  /** MAE as a share of the median actual cost */
+  mae_share: number;
+  /** share of actual costs inside the P10 to P90 range */
+  coverage: number;
+  /** share that would have been priced without a technician */
+  auto_share: number;
+  instant: boolean;
+}
+
+/** The bar of guardrail GR-S1 (the pack's parameters). */
+export interface RepairAccuracyBar {
+  min_coverage: number;
+  max_mae_share: number;
+  holdout_weeks: number;
+}
+
+/** Compute the held-out accuracy now (manageMarketTables; serviceDesk.computeAccuracy). It only measures. */
+export const computeRepairAccuracy = (): Promise<ActionResult<{ families: number; below: number }>> =>
+  invoke('serviceDesk.computeAccuracy', {});
 
 /** The Models panel (Suspense read cache). */
 export const useModels = (): ModelsScreen => cached<ModelsScreen>('/api/screens/agents/models');
