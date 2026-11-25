@@ -13,7 +13,8 @@ Resources and facts (snake case of the source's camelCase fields)
     lines       contract_line.<serial>      every line field; the key is the tool's serial, not the line id
     renewals    demand.<demandId>           kind (lease), need_by, lease_rate, term_months, renew, site, tool_class,
                                             buyer (the customer), contract_ref
-    returns     no fact: the open returns are read by the tool-return intake (P9-3.4) from the raw records
+    returns     no fact: handed, with the tool class of their line (`toolClass`), to the bound ingest workflow, whose
+                Open case step opens one case per return (P9-3.4)
     history     no fact: the ended contracts are read by the renewal work (Phase 5) from the raw records
 `proposals` and `draftLines` are written by Phase 5 (P9-5.5), never read here. Nothing is ever written to the source.
 """
@@ -65,7 +66,7 @@ class FleetContractsAdapter(GenericAdapter):
         return [
             Resource("contracts", self.read("contracts", "/contracts", "contractId")),
             Resource("lines", self.read("lines", "/contract-lines", "lineId")),
-            Resource("returns", self.read("returns", "/returns", "returnId")),
+            Resource("returns", self.returns),
             Resource("renewals", self.read("renewals", "/renewals", "demandId")),
             Resource("history", self.read("history", "/contract-history", "contractId")),
         ]
@@ -75,6 +76,20 @@ class FleetContractsAdapter(GenericAdapter):
             return self.flat(client, name, path, id_field, since)
 
         return reader
+
+    def returns(self, client: SourceClient, since: str | None) -> Iterator[Record]:
+        """The open returns with the tool class of their line (`toolClass`), for the bound ingest workflow's Open case step
+        (P9-3.4). The return itself names the serial, not the class; the lines are read in full."""
+        classes = {row["serial"]: row["toolClass"] for row, _ in self.pages(client, "/contract-lines")}
+        for rec in self.flat(client, "returns", "/returns", "returnId", since):
+            yield self.with_class(rec, classes)
+
+    @staticmethod
+    def with_class(rec: Record, classes: dict[str, str]) -> Record:
+        cls = classes.get(str(rec.payload.get("serial")))
+        return (
+            rec if cls is None else Record(rec.resource, rec.ext_id, rec.payload | {"toolClass": cls}, rec.request, rec.changed)
+        )
 
     def map(self, record: Record) -> list[Fact]:
         p = record.payload

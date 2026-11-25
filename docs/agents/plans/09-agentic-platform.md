@@ -858,7 +858,7 @@ each story went.
 - [x] P9-3.1 Fleet contract and repair log mocks with adapters
 - [x] P9-3.2 Recall, telematics and parts mocks with adapters
 - [x] P9-3.3 Rated life and end of parts for tool classes in PLM
-- [ ] P9-3.4 Tool returns open cases from the contract feed
+- [x] P9-3.4 Tool returns open cases from the contract feed
 - [ ] P9-3.5 Workbench grade on the tool fleet case panel
 - [ ] P9-3.6 Contract right gate GR-07
 - [ ] P9-3.7 Safety recall check with quarantine

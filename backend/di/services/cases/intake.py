@@ -31,6 +31,9 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   there, and `custody` (received on open, matched, moved, released when a gate hold clears), append-only.
 - **Dedupe** (Review Focus 5). The same asset key and reason open one case: a second intake (a webhook replay, a
   re-sync, an import read twice) is refused with `duplicate`. The action's idempotency key is the same pair.
+- **Tool returns** (plan 9, P9-3.4). The contract feed's returns open tool-fleet cases with the reasons `contract_end`,
+  `swap`, `service_order`, `pool_excess` (`RETURN_FT`): `tool_return_facts` gives the case `cls`, `serial`, `ft`, `flow`
+  `returns`, with `contract_id` and `line_id` kept on the case. The same serial with another reason is another case.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
 
 The case reads (live rules, the active model, PLM) sit above the case store; this is the one place a case is opened from
@@ -68,7 +71,10 @@ from di.services.modeler.templates import TEMPLATE_KEYS
 from di.services.modeler.valuers import amount, device, tool_fleet
 from di.services.modeler.valuers.rng import mulberry32
 
-REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual")
+REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap", "service_order", "pool_excess")
+# the tool fleet's return kinds (P9-3.4) and the function each goes to: also the reasons of the contract feed's returns
+RETURN_FT = {"contract_end": "Fleet management", "swap": "Fleet management", "service_order": "Repair center",
+             "pool_excess": "Tool pool"}  # fmt: skip
 IMPORTED_VALUERS = ("tool_fleet", "device", "standard")  # valuers an imported pack (a key beyond TEMPLATE_KEYS) may use
 LOCATION = "Warehouse 1"  # where a returned asset is received when no source says otherwise
 # the sources' asset types (asset.asset_type, any case) that name an engine class otherwise than by its key
@@ -113,6 +119,17 @@ def missing_fields(s: Session, i: dict[str, Any], known: Mapping[str, Any]) -> l
     if pack.valuer.kind != "standard":
         return []
     return [f for f in pack.data.min_fields if amount.lookup(known, f) is None]
+
+
+def tool_return_facts(facts: Mapping[str, Any], asset_key: str, reason: str) -> dict[str, Any]:
+    """A tool return's facts (P9-3.4) in the case's names: `cls` from `tool_class`, the serial (the asset key), `ft` from
+    the reason (what the facts give wins), and `flow` `returns`. Other reasons (manual ...) keep their facts as given."""
+    f = dict(facts)
+    if reason not in RETURN_FT:
+        return f
+    if "tool_class" in f:
+        f.setdefault("cls", f.pop("tool_class"))
+    return {"ft": RETURN_FT[reason], "serial": asset_key, "flow": "returns"} | f
 
 
 def existing(s: Session, asset_key: str, reason: str) -> str | None:
@@ -387,11 +404,14 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     if dup := existing(s, i["asset_key"], i["reason"]):
         raise ActionError("duplicate", f"{dup} is already open for {i['asset_key']} ({i['reason']}).")
     facts = dict(i.get("facts") or {})
+    if i["template_key"] == "tool_fleet":
+        facts = tool_return_facts(facts, i["asset_key"], i["reason"])
     known = _canonical(s, i["asset_key"]) | facts
     if gone := missing_fields(s, i, known):
         raise ActionError("validation_error", f"The case needs {', '.join(gone)} (the pack's minimum facts).")
     case_id = _next_id(s)
     c = _base(case_id, i, known, i.get("by") or actor)
+    c |= {k: known[k] for k in ("serial", "contract_id", "line_id", "flow") if known.get(k) is not None}  # a return's (P9-3.4)
     record_match.receive(s, c, i.get("by") or actor)
     _value(s, c, facts)
     store.insert_new(s, c, f"Case opened from {i['reason']}", actor)

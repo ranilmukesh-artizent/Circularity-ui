@@ -27,3 +27,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-25 20:01 | Decision: zen-engine pinned at 2.1.7, not the spec's 2.1.8 (released 2026-11-20, under two weeks). Writer 4 told. |
 | 25 Nov 14:34 | P9-3.2 merged. closed recall RC-2026-009 added; 30 serials without telematics |
 | 25 Nov 14:34 | P9-3.3 merged. tool rows after the 48 industrial parts; illustrative rated lives for four classes |
+| 25 Nov 14:34 | P9-3.4 merged. x_case gains reason_field and facts; smoke-p9-3 step 1 written, runs at the gate |
