@@ -228,6 +228,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-2.5 standing policy approves within thresholds | this commit | lead on main after migrate-reapply 0028 and restart: standing policy, writes decisions, hold policy, policy, delegated approvals, migrations, actions, catalogue, access matrix, stage chain, serial-only test_milestone_rt1048 and test_mcp_server, golden: 387 passed, 1 test_stage_chain failure from the main stack's synced conflict (the lead pinned it off as in the hold tests; 55 passed); lint all passed; tsc 0, vitest 373 passed | done |
 | 2026-11-25 | 09 · P9-2.6 run tracing and the agent run view | this commit | lead on main after migrate-reapply 0028 and restart: run trace, stage chain, hold, standing policy, agent runtime, loop, agent screens, actions, secrets, llm router, case screens, serial-only test_mcp_server 427 passed (test_run_trace uses the shared no_synced_conflicts fixture); lint all passed; tsc 0, vitest 376 passed | done |
 | 2026-11-25 | 09 · P9-2.8 queue stage waits for the queue plan | this commit | lead-verify: 49 api passed (queue_stage, stage_chain, valuer_tool_fleet, queue_planner, milestone_rt1048, run_trace), lint, web 376 | done |
+| 2026-11-25 | 09 · P9-2.7 configuration agent drafts a pack change set | this commit | lead-verify: 62 api passed (config_agent, agent_registry, models_migrations, pack_format, overlay_core, milestone_rt1048), lint, web 378 | done |
 
 ## Decisions taken without the user (to review)
 

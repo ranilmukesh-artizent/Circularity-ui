@@ -84,3 +84,5 @@ unattended". Times are local (IST).
 | 25 Nov 16:11 | P9-2.6 merged. Sonnet; red first quoted; spans in their own short sessions; content attributes only with trace_content; Pydantic AI agent docs read. |
 | 25 Nov 16:11 | P9-2.5 and P9-2.6 merged and pushed: lane B fully unblocked. Shared no_synced_conflicts fixture (`a2b5272`). P9-2.7 to w1, P9-2.8 to w2. Phase 2: 8 of 17. |
 | 25 Nov 16:36 | P9-2.8 merged. Sonnet; red first quoted; chain.py one-line kind queue (not in spec files); planner named by valuer params, tool_fleet heuristic default |
+| 25 Nov 16:37 | Decision (by the person): agents are model first; R16 rewritten, P9-2.18 and P9-2.19 added (`c46a091`); P9-2.7 writer redirected mid-task. P9-2.8 merged and pushed (`8b1373c`). P9-2.11 to w2, P9-2.9 to w3. Phase 2: 9 of 19. |
+| 25 Nov 16:49 | P9-2.7 merged. Sonnet; redirected mid-task to model first: pack_author drafts, code checks win, one retry then rules; tests a-e on FunctionModel; filled tool_fleet/device prompts and clarify. Gaps: Describe dialog's sample buttons empty (Modeler screen does not expose pack prompts); change set shown after the hold, not before send |

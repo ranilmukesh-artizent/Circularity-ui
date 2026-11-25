@@ -21,11 +21,23 @@
   }
  ],
  "prompts": [
-  "",
-  "",
-  ""
+  "We lease cordless tools to building sites. Repairs over $600 go to the fleet manager. Never issue a grade C or D tool without refurbishment.",
+  "Our power tools come back at the end of a fleet contract. Refurbish a tool when a named contract or buyer order can take it, otherwise sell it to a trade buyer.",
+  "Returned tools that cannot be repaired economically are harvested for parts on open repair orders, or recycled through a certified recycler."
  ],
- "clarify": null,
+ "clarify": {
+  "question": "When a repair is over your limit, who signs it off?",
+  "options": [
+   {
+    "label": "The fleet manager approves",
+    "adds": "[{\"id\": \"op-1\", \"op\": \"add_approver\", \"target\": \"GR-05\", \"role\": \"Approver\"}]"
+   },
+   {
+    "label": "The tool pool planner decides alone",
+    "adds": "Keeps the pack's approval rule as it is."
+   }
+  ]
+ },
  "classes": [
   {
    "id": "CMH",

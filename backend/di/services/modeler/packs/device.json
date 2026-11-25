@@ -21,11 +21,23 @@
   }
  ],
  "prompts": [
-  "",
-  "",
-  ""
+  "We buy back used phones and tablets. Never list a device below 60% of its forecast price. A data-wipe certificate is required before listing.",
+  "Trade-in devices are graded on receipt and sold on the channel with the best net price: Buy Now, Offers, Auction or a wholesale lot.",
+  "Devices from a retail partner get a second grading check before we price them, and grade D devices are recycled."
  ],
- "clarify": null,
+ "clarify": {
+  "question": "When the grade is well below the quote, should customer care review it?",
+  "options": [
+   {
+    "label": "Yes, customer care reviews the grading photos",
+    "adds": "[{\"id\": \"op-1\", \"op\": \"add_step\", \"stage\": \"condition\", \"step\": \"Customer care reviews the grading photos\", \"owner_role\": \"Planner\"}]"
+   },
+   {
+    "label": "No, adjust the payout automatically",
+    "adds": "Keeps the pack's grading rule as it is."
+   }
+  ]
+ },
  "classes": [
   {
    "id": "phone",

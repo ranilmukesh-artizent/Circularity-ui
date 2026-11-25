@@ -19,6 +19,7 @@ from di.models.agents import agent_identity, agent_proposal, agent_run, agent_ru
 from di.models.base import Base, metadata
 from di.models.canonical import canonical, conflict, failed_record, provenance
 from di.models.cases import case_record, case_stage_log
+from di.models.compose import config_change_set
 from di.models.connectors import (
     fetch_log,
     field_mapping,
@@ -55,6 +56,7 @@ __all__ = [
     "canonical",
     "case_record",
     "case_stage_log",
+    "config_change_set",
     "conflict",
     "customer_overlay",
     "decision_flow",
