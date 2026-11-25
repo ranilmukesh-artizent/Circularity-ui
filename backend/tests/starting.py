@@ -49,6 +49,11 @@ def reset() -> None:
                 {"i": aid, "n": name, "t": list(tools), "a": autonomy},
             )
         conn.execute(text("DELETE FROM model_version"))  # plan 8 MVP-12.2: no candidate or promoted model
+        # plan 9: no open work items (P9-1.7), customer overlays (P9-1.3) or imported pack versions (P9-1.6): the packs
+        # in force are the files, as shipped
+        conn.execute(text("DELETE FROM work_item"))
+        conn.execute(text("DELETE FROM customer_overlay"))
+        conn.execute(text("DELETE FROM pack_version"))
         _reset_flows(conn)
         reset_sources(conn)
         # plan 8 MVP-1.1: only the seeded org units (workspace and the three customers), once no source points at others
@@ -96,7 +101,8 @@ def _reset_flows(conn: Connection) -> None:
         conn.execute(
             text(
                 "UPDATE decision_flow SET status = 'pub', ver = 1, dver = NULL, maker = NULL, checker = NULL, "
-                "draft = NULL, published = CAST(:g AS jsonb) WHERE template_key = :k AND org_unit_id = 'workspace'"
+                "draft = NULL, returned = NULL, published = CAST(:g AS jsonb) "
+                "WHERE template_key = :k AND org_unit_id = 'workspace'"
             ),
             {"k": key, "g": json.dumps(default_flow(load_template(key)))},
         )
