@@ -19,7 +19,8 @@ The used-car fields (plan 9, P9-9.2) are written by the extra adapters uc_lease 
 vin, return_kind, mileage_at_return, mileage_lease_record, model_year, segment, powertrain, return_center,
 seller_fleet_size, lot_id, days_on_lot; on `condition` odometer_statement_ref, odometer_not_actual, payoff_confirmed; on
 `market` the objects keyed by lot id (lot_avg_price, lot_days_to_sale, lot_spread, lot_comparables, lot_distance_miles)
-and dealer_bid.
+and dealer_bid. The title fields (P9-9.3) are written by uc_title on `condition`: title_status, lien_open,
+lien_release_ref, title_brand, title_checked_at.
 
 A field a connector starts to write must be added here (with its type), or its facts are held as failed records.
 Types: text, ref (a reference string), date (ISO 8601 date or timestamp string), number, bool, list, object, any.
@@ -211,6 +212,8 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "inspection_work_order": "text",
         "inspection_work_order_status": "text",
         "inspector": "text",
+        "lien_open": "bool",
+        "lien_release_ref": "ref",
         "life_assessment": "text",
         "life_confidence": "text",
         "life_months": "number",
@@ -245,6 +248,9 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "standards": "list",
         "storage_read_gb": "number",
         "teardown_findings": "list",
+        "title_brand": "text",
+        "title_checked_at": "date",
+        "title_status": "text",
         "telemetry_at": "date",
         "telemetry_coverage_pct": "number",
         "telemetry_events": "list",

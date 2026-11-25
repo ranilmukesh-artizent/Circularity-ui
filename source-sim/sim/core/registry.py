@@ -89,6 +89,8 @@ EXTRA_SYSTEMS: tuple[System, ...] = (
     # Plan 9 P9-9.2: the used-car segment's lease system and dealer management system, synthetic vendor mocks
     System("uc_lease", "Vehicle lease system (synthetic)", "vehicle_lease", "vendor", "/vehicle-lease"),
     System("uc_dms", "Dealer management system (synthetic)", "dealer_dms", "vendor", "/dealer-dms"),
+    # Plan 9 P9-9.3: the title and lien service, a synthetic vendor mock
+    System("uc_title", "Title and lien service (synthetic)", "title_lien", "vendor", "/title-lien"),
 )
 EXTRA_BY_ID = {s.source_id: s for s in EXTRA_SYSTEMS}
 
