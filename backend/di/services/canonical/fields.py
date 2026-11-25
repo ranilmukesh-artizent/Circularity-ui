@@ -270,6 +270,11 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "paired_devices": "bool",
         "recon_estimate": "number",
         "recon_lines": "list",
+        # plan 9 P9-9.5, the vehicle recall database (extra adapter uc_recall), keyed by vin_key
+        "recall_open": "bool",
+        "recall_campaigns": "list",
+        "recall_checked_at": "date",
+        "recall_remedy_ref": "ref",
     },
     "demand": {
         "accepts_refurbished": "bool",
