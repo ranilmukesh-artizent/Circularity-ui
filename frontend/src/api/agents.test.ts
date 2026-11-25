@@ -8,7 +8,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, fitModel, promoteModel, proposeModel, registerAgent, rejectProposal, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, fitModel, promoteModel, proposeModel, registerAgent, rejectProposal, stageLabel, startRun, updateAgent, useAgents, useModels,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
 
@@ -58,6 +58,14 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
       await run();
       expect(last()).toEqual([id, body]);
     }
+  });
+
+  it('a stage chain run sends its playbook and the stage ids show in the D1 words (plan 9 P9-2.1)', async () => {
+    await startRun('stage-intake', 'RT-1048', 'stage_chain');
+    expect(last()).toEqual(['agent.startRun', { agent: 'stage-intake', case_id: 'RT-1048', playbook: 'stage_chain' }]);
+    expect(stageLabel('fit_for_use')).toBe('Fit-for-use');
+    expect(stageLabel('condition')).toBe('Condition and life');
+    expect(stageLabel('somewhere_new')).toBe('somewhere_new');
   });
 
   it('an agent change or a decided proposal refreshes every page', () => {

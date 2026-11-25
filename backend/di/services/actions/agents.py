@@ -7,8 +7,9 @@ The demo has a fixed list of nine agents, so these are declared here, beside the
     agent.register  commit  {id, name, kind?, org_scope?, tools?, autonomy?}   a new agent (kind external, autonomy
                                                                                 propose unless given)
     agent.update    commit  {id, name?, org_scope?, tools?, autonomy?, enabled?}   change what is sent
-    agent.startRun  act     {agent, case_id, playbook?}   start a playbook run on a case (default case_autopilot); the
-                                                          agent acts as the person who started it (MVP-12.4)
+    agent.startRun  act     {agent, case_id, playbook?}   start a playbook run on a case (case_autopilot, the default, or
+                                                          stage_chain, P9-2.1); the agent acts as the person who
+                                                          started it (MVP-12.4)
 
 agent.setEnabled (di.services.actions.access, the demo's kill switch) writes the row too, through `set_enabled`.
 `tools` are MCP tool ids (di.mcp.tools.TOOLS) or action ids; `org_scope` are org unit ids (empty: every org). An action

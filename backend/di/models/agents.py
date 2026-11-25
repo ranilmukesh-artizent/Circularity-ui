@@ -1,6 +1,19 @@
-"""Agents (plan 8, phase 11): the registry (0023), proposals (0024) and runs (0025)."""
+"""Agents (plan 8, phase 11): the registry (0023), proposals (0024) and runs (0025); plan 9: stage records (0034)."""
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Column, DateTime, ForeignKey, Index, Integer, Table, Text, func
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    Table,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 from di.models.base import metadata, ts
@@ -71,4 +84,28 @@ agent_run_step = Table(
     Column("input", JSONB, nullable=False, server_default="{}"),
     Column("output", JSONB),
     ts("at", now=True),
+)
+
+# --- 0034 stage records: what each stage of the chain said about a case in a run (plan 9, P9-2.1) ---------------------------
+
+agent_stage_record = Table(
+    "agent_stage_record",
+    metadata,
+    Column("run_id", Text, ForeignKey("agent_run.id", ondelete="CASCADE"), primary_key=True),
+    Column("stage", Text, primary_key=True),
+    Column("case_id", Text, nullable=False),
+    Column("agent", Text, nullable=False),
+    Column("kind", Text, nullable=False),  # deterministic, llm, queue
+    Column("autonomy", Text, nullable=False),  # recommend, limits, alone
+    Column("status", Text, nullable=False),  # done, skipped, held, waiting, exception
+    Column("output", JSONB, nullable=False, server_default="{}"),
+    Column("confidence", Numeric(4, 3)),
+    Column("threshold", Numeric(4, 3), nullable=False),
+    Column("sources", JSONB, nullable=False, server_default="[]"),
+    Column("reasons", JSONB, nullable=False, server_default="[]"),
+    ts("at", now=True),
+    CheckConstraint("kind IN ('deterministic','llm','queue')", name="agent_stage_record_kind"),
+    CheckConstraint("autonomy IN ('recommend','limits','alone')", name="agent_stage_record_autonomy"),
+    CheckConstraint("status IN ('done','skipped','held','waiting','exception')", name="agent_stage_record_status"),
+    Index("ix_agent_stage_record_case", "case_id", "at"),
 )

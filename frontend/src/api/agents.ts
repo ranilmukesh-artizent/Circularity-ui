@@ -43,6 +43,8 @@ export interface AgentRun {
   case_id: string | null;
   status: 'running' | 'waiting' | 'done' | 'failed' | 'stopped';
   step: number;
+  /** the stage of the chain the run is at (a stage id), null once it has finished */
+  stage: string | null;
   reason: string | null;
   /** what the run waits for from a person */
   waiting: { kind: 'proposal'; proposal: number } | { kind: string; case_id: string | null } | null;
@@ -100,11 +102,28 @@ export type AgentPatch = Partial<Pick<AgentRow, 'name' | 'org_scope' | 'tools' |
 /** Change an agent: stop or start it, its autonomy, tools or org scope (Admin, manageAgents). */
 export const updateAgent = (id: string, patch: AgentPatch): Promise<ActionResult<AgentRow>> => invoke('agent.update', { id, ...patch });
 
+export type Playbook = 'case_autopilot' | 'stage_chain';
+
+/** The D1 words for the chain's stage ids (plan 9, P9-2.1). */
+const STAGE_LABELS: Record<string, string> = {
+  intake: 'Intake',
+  condition: 'Condition and life',
+  demand: 'Demand',
+  fit_for_use: 'Fit-for-use',
+  valuation: 'Valuation',
+  disposition: 'Disposition',
+  follow_through: 'Follow-through',
+  analytics: 'Analytics',
+};
+
+/** A stage's display name; an unknown id shows as it is. */
+export const stageLabel = (id: string): string => STAGE_LABELS[id] ?? id;
+
 /** Start an agent's playbook on a case (Admin, manageAgents; agent.startRun). The agent acts as the signed-in person. */
 export const startRun = (
   agent: string,
   caseId: string,
-  playbook = 'case_autopilot',
+  playbook: Playbook = 'case_autopilot',
 ): Promise<ActionResult<{ run_id: string; agent: string; playbook: string; case_id: string }>> =>
   invoke('agent.startRun', { agent, case_id: caseId, playbook });
 

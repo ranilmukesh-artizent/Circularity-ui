@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import {
-  acceptProposal, OWN_PROPOSAL_NOTE, rejectProposal, startRun, updateAgent, useAgents,
-  type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy,
+  acceptProposal, OWN_PROPOSAL_NOTE, rejectProposal, stageLabel, startRun, updateAgent, useAgents,
+  type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy, type Playbook,
 } from '../../api/agents'; // prettier-ignore
 import { useBackend } from '../../api/useBackend';
 import { Modal } from '../../components/Overlay';
@@ -246,19 +246,22 @@ function Waiting({ run }: { run: AgentRun }) {
   return w.case_id ? <a className="btn sm" href={caseHref(w.case_id)}>Approval of {w.case_id}</a> : <span className="note">A person</span>;
 }
 
-/** Start the case autopilot on a case (Admin): the agent acts as the person who starts it (agent.startRun). */
+const PLAYBOOKS: Record<Playbook, string> = { case_autopilot: 'Case autopilot', stage_chain: 'Stage chain' };
+
+/** Start a playbook on a case (Admin): the agent acts as the person who starts it (agent.startRun). */
 function StartRun({ agents }: { agents: AgentRow[] }) {
   const action = useAction();
   const on = agents.filter((a) => a.enabled);
   const [agent, setAgent] = useState(on[0]?.id ?? '');
   const [caseId, setCaseId] = useState('');
+  const [playbook, setPlaybook] = useState<Playbook>('case_autopilot');
   const [err, setErr] = useState('');
   const start = async () => {
-    const r = await action.run(() => startRun(agent, caseId.trim()), { all: setErr });
+    const r = await action.run(() => startRun(agent, caseId.trim(), playbook), { all: setErr });
     if (!r.ok) return;
     setErr('');
     setCaseId('');
-    toast(`Run ${r.output.run_id} started: case autopilot on ${r.output.case_id}.`);
+    toast(`Run ${r.output.run_id} started: ${PLAYBOOKS[playbook].toLowerCase()} on ${r.output.case_id}.`);
   };
   return (
     <div className="pb axrl" style={{ borderBottom: '1px solid var(--line)' }}>
@@ -266,9 +269,13 @@ function StartRun({ agents }: { agents: AgentRow[] }) {
       <select id="ag-run-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
         {on.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
       </select>
+      <label htmlFor="ag-run-playbook">Playbook</label>
+      <select id="ag-run-playbook" value={playbook} onChange={(e) => setPlaybook(e.target.value as Playbook)}>
+        {(Object.keys(PLAYBOOKS) as Playbook[]).map((p) => <option key={p} value={p}>{PLAYBOOKS[p]}</option>)}
+      </select>
       <label htmlFor="ag-run-case">Case</label>
       <input id="ag-run-case" value={caseId} onChange={(e) => setCaseId(e.target.value)} placeholder="e.g. RT-1048" style={{ width: 120 }} />
-      <button className="btn sm pri" disabled={action.pending || !agent || !caseId.trim()} onClick={start}>Start case autopilot</button>
+      <button className="btn sm pri" disabled={action.pending || !agent || !caseId.trim()} onClick={start}>Start run</button>
       {err && <span className="note err">{err}</span>}
     </div>
   );
@@ -295,7 +302,7 @@ function Runs({ s }: { s: AgentsScreen }) {
                     <tr>
                       <td className="mono">{r.id}</td>
                       <td>{r.agentName}</td>
-                      <td className="mono note">{r.playbook}</td>
+                      <td className="mono note">{r.playbook}{r.stage && <><br />Stage: {stageLabel(r.stage)}</>}</td>
                       <td>{r.case_id ? <a href={caseHref(r.case_id)}>{r.case_id}</a> : '—'}</td>
                       <td><span className={'chip ' + RUN_CHIP[r.status]}>{r.status}</span></td>
                       <td className="r">

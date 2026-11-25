@@ -8,7 +8,9 @@ the tool catalogue.
         orgs       the org unit ids an org scope may name
         mcp_tools  the MCP tool ids an agent's tools may name (besides the action ids of `tools`)
         runs       the newest agent runs (table agent_run) on cases the account may see: [{id, agent, agentName,
-                   playbook, case_id, status, step, reason, waiting, created_at, updated_at, steps}]
+                   playbook, case_id, status, step, stage, reason, waiting, created_at, updated_at, steps}]
+                   stage    the stage of the chain the run is at (`intake` … `analytics`, P9-2.1), null once it has
+                            finished or when it has no position (a run started before the chain)
                    waiting  {kind: "proposal", proposal: id} or {kind: "approval", case_id}: what the run waits for
                             from a person, else null
                    reason   why it failed or stopped, or the note it finished with, else null
@@ -53,6 +55,7 @@ from di.repositories.orgs import units
 from di.services.actions.models import model_json, promote_block, proposal_of, propose_block
 from di.services.agents import proposals, registry
 from di.services.agents.catalog import catalog
+from di.services.agents.stage_context import STAGE_IDS
 from di.services.engine.predictor import FormulaPredictor
 from di.services.modeler.templates import TEMPLATE_KEYS
 
@@ -71,6 +74,11 @@ def _waiting(r: dict[str, Any]) -> dict[str, Any] | None:
     if st.get("waiting") == "proposal":
         return {"kind": "proposal", "proposal": st.get("proposal")}
     return {"kind": str(st.get("waiting") or "approval"), "case_id": r["case_id"]}
+
+
+def _stage(r: dict[str, Any]) -> str | None:
+    i = (r["state"] or {}).get("stage")
+    return STAGE_IDS[i] if isinstance(i, int) and 0 <= i < len(STAGE_IDS) else None
 
 
 def _step(row: dict[str, Any]) -> dict[str, Any]:
@@ -94,7 +102,7 @@ def _runs(p: Principal, s: Session, names: dict[str, str]) -> list[dict[str, Any
         state = r["state"] or {}
         out.append({
             "id": r["id"], "agent": r["agent"], "agentName": names.get(r["agent"], r["agent"]), "playbook": r["playbook"],
-            "case_id": r["case_id"], "status": r["status"], "step": r["step"],
+            "case_id": r["case_id"], "status": r["status"], "step": r["step"], "stage": _stage(r),
             "reason": state.get("reason") or state.get("note"),
             "waiting": _waiting(r), "created_at": r["created_at"].isoformat(), "updated_at": r["updated_at"].isoformat(),
             "steps": steps.get(r["id"], []),

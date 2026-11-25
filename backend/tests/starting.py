@@ -88,6 +88,21 @@ SEED_AGENTS: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ),
     ("auditor", "Audit Assistant", ("case.trace",), "act"),
     ("ask", "Ask Circularity", (), "read"),
+    # plan 9 P9-2.1 (migration 0034): the stage chain's agents
+    (
+        "recover-chain",
+        "Recover chain",
+        ("case.evidence", "evidence.request", "case.reevaluate", "case.routes", "decision.submit", "instruction.resend"),
+        "act",
+    ),
+    ("stage-intake", "Intake agent", ("case.evidence", "evidence.request"), "act"),
+    ("stage-condition", "Condition agent", (), "act"),
+    ("stage-demand", "Demand agent", (), "act"),
+    ("stage-fit", "Fit-for-use agent", (), "act"),
+    ("stage-valuation", "Valuation agent", ("case.reevaluate", "case.routes"), "act"),
+    ("stage-disposition", "Disposition agent", ("decision.submit",), "act"),
+    ("stage-follow", "Follow-through agent", ("instruction.resend",), "act"),
+    ("stage-analytics", "Analytics agent", (), "act"),
 )
 
 

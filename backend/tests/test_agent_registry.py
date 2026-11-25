@@ -44,7 +44,8 @@ def test_seeded_agents():
     with SessionLocal() as s:
         got = {a.id: a for a in registry.all_agents(s)}
     want = golden.load("tools")["agents"]
-    assert set(got) == {a["id"] for a in want} | {"ask"}
+    chain_agents = {a[0] for a in starting.SEED_AGENTS if a[0] == "recover-chain" or a[0].startswith("stage-")}  # P9-2.1, 0034
+    assert set(got) == {a["id"] for a in want} | {"ask"} | chain_agents
     for a in want:
         g = got[a["id"]]
         assert (g.name, g.kind, g.tools, g.enabled, g.org_scope, g.autonomy) == (

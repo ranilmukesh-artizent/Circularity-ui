@@ -25,6 +25,7 @@ from di.services.actions.registry import ACTIONS, ActionDef, ActionError
 from di.services.actions.scope import case_scope
 from di.services.agents import limits, proposals
 from di.services.agents.forbidden import NO_AGENT_READS, forbidden, held_for_person
+from di.services.agents.stage_context import StageContext
 
 # HTTP status per error code (the body always carries the demo's code and message)
 ERROR_STATUS = {
@@ -76,6 +77,7 @@ class CallContext:
     confirmed: bool = False  # a person pressed the final button on the agent's plan
     run_id: str | None = None
     idem_key: str | None = None  # an Idempotency-Key from the client, for actions without their own key
+    stage: StageContext | None = None  # the chain stage of an agent call (P9-2.1; P9-2.4 reads it)
     now: datetime = field(default_factory=clock.now)  # the workspace clock (di/core/clock.py)
 
 

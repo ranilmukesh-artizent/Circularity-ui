@@ -810,7 +810,7 @@ each story went.
 - [x] P9-1.13 Pack-driven views in existing pages
 - [x] P9-1.14 Phase 1 demo smoke script
 - [x] P9-1.15 Phase 1 gate
-- [ ] P9-2.1 Stage chain runtime with typed stage records
+- [x] P9-2.1 Stage chain runtime with typed stage records
 - [ ] P9-2.2 AgentLoop port with the Pydantic AI adapter
 - [ ] P9-2.3 LLM router with budgets and cooldowns
 - [ ] P9-2.4 Hold policy with typed reasons in the pipeline

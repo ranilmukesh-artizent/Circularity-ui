@@ -70,3 +70,4 @@ unattended". Times are local (IST).
 | 25 Nov 12:42 | P9-1.14 merged (smoke-p9-1 all 7 steps; reset fix `3439eee`); pushed. Phase 1 gate running (serial-only, sim, smokes, story matrix, selftest) with one Opus reviewer. |
 | 25 Nov 12:48 | Phase 1 review in: 6 findings, 5 confirmed in the code and sent to a fix writer (w2), 1 (gates before the queue plan) after P9-2.1. Note: 09-work/review-phase-1.md. |
 | 25 Nov 13:28 | **Phase 1 gate green** (counts in PROGRESS.md); review fixes merged. Lane B may start. |
+| 25 Nov 13:59 | P9-2.1 merged. Sonnet; red first quoted; nine stage agents seeded (starting.py re-seeds them on reset); watch for P9-2.4: industrial cases have no grade evidence, so condition confidence is 0. |
