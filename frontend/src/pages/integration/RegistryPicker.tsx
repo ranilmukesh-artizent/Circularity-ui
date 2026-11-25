@@ -3,6 +3,7 @@
    read only (connection.create). Production access and write-back are the owner's to approve, from the Source drawer.
    The secret is a password field, sent once and cleared after the call; the server stores it encrypted and never returns it. */
 import { Suspense, useState } from 'react';
+import { startAdapterDraft } from '../../api/agents';
 import { createConnection, importSpec, registryEntries, type ConnectorKind, type RegistryEntry, type SpecImport } from '../../api/connections';
 import { useOrgUnits } from '../../api/orgs';
 import { toast } from '../../components/toast';
@@ -40,6 +41,16 @@ function SpecImporter() {
     toast(r.output.needs_fixes ? name.trim() + ' is saved as a draft that needs fixes.' : name.trim() + ' is saved as a draft.');
   }
 
+  /* The Integration Assistant drafts the spec; its proposal waits for another person in My work and on Home (P9-8.7). */
+  async function askAssistant() {
+    if (busy) return;
+    setBusy(true);
+    const r = await startAdapterDraft({ name: name.trim(), systemType: 'erp', vendorFamily: family.trim(), document: doc, ...(base ? { baseUrl: base } : {}) }); // prettier-ignore
+    setBusy(false);
+    if (refused(r)) return;
+    toast('The Integration Assistant is drafting ' + name.trim() + '. Its proposal waits for a person in My work; see the run on the Agents page.');
+  }
+
   return (
     <div style={{ marginTop: 8 }}>
       <label htmlFor="spDoc">API specification (OpenAPI 3, JSON or YAML)</label>
@@ -53,6 +64,7 @@ function SpecImporter() {
       <input id="spBase" className="sel" style={{ width: '100%' }} placeholder="https://test.example.com/api" value={base} onChange={(e) => setBase(e.target.value)} />
       <div className="row" style={{ marginTop: 8 }}>
         <button className="btn pri" disabled={!ready || busy} onClick={() => void save()}>Save draft</button>
+        <button className="btn" disabled={!ready || busy} onClick={() => void askAssistant()}>Ask the Integration Assistant to draft it</button>
       </div>
       {found && (
         <div style={{ marginTop: 8 }}>

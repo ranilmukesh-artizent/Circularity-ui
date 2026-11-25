@@ -52,6 +52,7 @@ HELD_FOR_PERSON = (
     "standingPolicy.save",
     "marketTable.save",  # P9-4.2: a rate card or table draft, and its submission, are a person's
     "marketTable.submit",
+    "registry.saveEntry",  # plan 9 P9-8.7: an agent's connector draft is held for a person (the adapter author's one proposal)
 )  # a policy draft is a person's (P9-2.5)
 
 # Writes that only add caution: never held for a person (phase 2 review). Holding them would let a model's own concern

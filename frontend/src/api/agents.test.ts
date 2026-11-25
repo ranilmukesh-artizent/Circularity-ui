@@ -9,7 +9,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, findTools, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, findTools, startAdapterDraft, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
   type TraceSpan,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
@@ -99,8 +99,15 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
     expect(reasonText(undefined)).toBe('');
   });
 
+  it('p9-8.7: startAdapterDraft sends the document, the base URL and the test connection only when given', async () => {
+    await startAdapterDraft({ name: 'Items API', systemType: 'erp', vendorFamily: 'Items', document: '{"openapi":"3.1.0"}' });
+    expect(last()).toEqual(['registry.draftFromSpec', { name: 'Items API', system_type: 'erp', vendor_family: 'Items', document: '{"openapi":"3.1.0"}' }]);
+    await startAdapterDraft({ name: 'Items API', systemType: 'erp', vendorFamily: 'Items', document: '{}', baseUrl: 'https://t.example/api', testSourceId: 'items-test' });
+    expect(last()[1]).toMatchObject({ base_url: 'https://t.example/api', test_source_id: 'items-test' });
+  });
+
   it('an agent change or a decided proposal refreshes every page', () => {
-    for (const id of ['agent.update', 'agent.register', 'agent.startRun', 'proposal.accept', 'proposal.reject', 'model.fit', 'model.propose', 'model.promote', 'llm.setModel']) expect(actionScope(id)).toBe('all');
+    for (const id of ['agent.update', 'agent.register', 'agent.startRun', 'proposal.accept', 'proposal.reject', 'registry.draftFromSpec', 'model.fit', 'model.propose', 'model.promote', 'llm.setModel']) expect(actionScope(id)).toBe('all');
   });
 
   it('the run view reads one run or the latest on a case, with its spans nested (plan 9 P9-2.6)', () => {

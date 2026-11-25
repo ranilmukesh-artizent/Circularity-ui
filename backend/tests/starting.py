@@ -96,7 +96,15 @@ SEED_AGENTS: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     (
         "integrator",
         "Integration Assistant",
-        ("workflow.draft", "workflow.validate"),
+        # plan 9 P9-8.7 (migration 0055): the adapter author's tools
+        (
+            "registry.importSpec",
+            "registry.draftFromSpec",
+            "connection.discover",
+            "mapping.suggest",
+            "mapping.decide",
+            "workflow.testRun",
+        ),
         "act",
     ),
     ("auditor", "Audit Assistant", ("case.trace",), "act"),
