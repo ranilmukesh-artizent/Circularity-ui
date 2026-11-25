@@ -29,6 +29,11 @@ Plan 9 (P9-2.18, R16): after a stage's deterministic step, when the router has a
 (`stage_reasoner`) reads it and its reading joins the stage record (`_stage_record`, `_read_stage`); a held concern holds the
 stage and every later write, and nothing is asked when no model answers.
 
+Plan 9 (P9-2.24): no transaction stays open across a model call. The deterministic step is saved and committed (the stage
+record, the run row), the `agent_run` row lock is released, the stage reasoner or the fraud review answers, and the lock is taken
+again to write the reading (`_read_after`, `_review_off_lock`): a run that moved meanwhile is re-read, never written over. The
+deduped `queue.plan` job is enqueued after the reading. A tainted fraud review taints the run, as a stage reading does.
+
 Plan 9 (P9-2.2, I-8): a playbook registered in `playbook_versions` is an LLM playbook: `step` runs it through the
 `AgentLoop` (`loop_runner()`; tests swap it with `set_loop`). A call the pipeline holds is a deferred call: the run waits with
 `state.deferred = {tool_call_id: proposal_id}`, and `wake` resumes the loop with each accepted proposal's output once all are
@@ -59,6 +64,7 @@ from di.services.actions.fraud import review_case, triage_case  # also registers
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
 from di.services.agents import calibrate, chain, lifecycle_evidence, limits, playbook_versions, registry, stage_reasoner
 from di.services.agents.forbidden import forbidden
+from di.services.agents.fraud_review import review_fraud
 from di.services.agents.loop import AgentLoop, LoopSpec
 from di.services.agents.playbooks import adapter_author, stage_chain
 from di.services.agents.playbooks import case_autopilot as autopilot
@@ -70,6 +76,7 @@ from di.services.agents.stages import CHAIN, disposition, outcome
 from di.services.cases import store
 from di.services.llm import router
 from di.services.modeler.evidence import evidence_of
+from di.services.modeler.fraud import FraudResult
 
 log = logging.getLogger(__name__)
 PLAYBOOKS = {autopilot.NAME: stage_chain, stage_chain.NAME: stage_chain}  # case_autopilot is an alias of the chain
@@ -214,12 +221,16 @@ def _stage_record(
     case: dict,
     status: chain.Status,
     reasons: list[dict[str, Any]] | None = None,
-) -> None:
+) -> chain.StageRecord:
+    """The stage's deterministic record, saved. A reading the run already holds is applied; asking the model is not done here
+    (no transaction may stay open across a model call): `_read_after` does it once the step is saved (P9-2.24)."""
     rec = chain.build_record(defn, CHAIN[stage], st, case, status)
     rec.reasons = reasons or []  # why the hold policy held a call of the stage (P9-2.4)
-    if status in READ_STATUSES and defn.id in stage_playbook.REASONED:
-        _read_stage(s, run, defn, st, case, rec)
+    cached = (st.get("readings") or {}).get(defn.id)
+    if status in READ_STATUSES and defn.id in stage_playbook.REASONED and cached is not None:
+        chain.apply_reading(rec, cached, st)
     chain.save_record(s, run["id"], run["case_id"], rec)
+    return rec
 
 
 def _stage_loop(s: Session) -> AgentLoop | None:
@@ -230,21 +241,71 @@ def _stage_loop(s: Session) -> AgentLoop | None:
     return PydanticAILoop() if router.chain_for(s, "stage") else None
 
 
-def _read_stage(s: Session, run: dict, defn: chain.StageDef, st: dict[str, Any], case: dict, rec: chain.StageRecord) -> None:
-    """After the stage's deterministic step: its model's reading, asked once per stage and run (a miss too: the run state
-    keeps it), added to the record. An untrusted tool the reasoner read taints the run's later writes (P9-2.4)."""
+def _save_state(s: Session, run_id: str, st: dict[str, Any]) -> None:
+    """Write the run's state only: never its status or step (a person's accept may have moved those)."""
+    s.execute(
+        text("UPDATE agent_run SET state = CAST(:st AS jsonb), updated_at = now() WHERE id = :i"),
+        {"st": json.dumps(st, default=str), "i": run_id},
+    )
+
+
+def _read_after(s: Session, run: dict, defn: chain.StageDef, case: dict, rec: chain.StageRecord) -> None:
+    """After the stage's step is saved: its model's reading, asked once per stage and run (a miss too: the run state keeps it),
+    added to the record (P9-2.18). P9-2.24: the step (its record, the run row) is committed first and the `agent_run` row lock
+    is released, so no transaction stays open across the model call and a person's accept never waits for it. The lock is then
+    taken again and the run re-read; the reading goes to the stage's record and to the `readings`, `concerns` and `tainted`
+    keys of the fresh state only, never over the run's status or step. An untrusted tool the reasoner read taints the run's
+    later writes (P9-2.4)."""
+    if rec.status not in READ_STATUSES or defn.id not in stage_playbook.REASONED:
+        return
+    run_id = run["id"]
+    now = get(s, run_id)
+    if now is None or defn.id in ((now["state"] or {}).get("readings") or {}):
+        return  # gone, or read already (a cached miss included)
+    loop = _stage_loop(s)
+    ctx = _context(s, now) if loop is not None else None
+    got = None
+    if loop is not None and ctx is not None:
+        s.commit()  # nothing of this session is open or locked while the model answers
+        got = stage_reasoner.reason_stage(s, ctx, defn.id, case, rec.output, loop=loop)
+    fresh = get(s, run_id, for_update=True)
+    if fresh is None:
+        return
+    st = dict(fresh["state"] or {})
     readings = st.setdefault("readings", {})
-    if defn.id not in readings:
-        readings[defn.id] = None
-        loop = _stage_loop(s)
-        ctx = _context(s, run) if loop is not None else None
-        if loop is not None and ctx is not None:
-            got = stage_reasoner.reason_stage(s, ctx, defn.id, case, rec.output, loop=loop)
-            if got is not None:
-                readings[defn.id] = {"reading": got.reading.model_dump(mode="json"), "model": got.model}
-                st["tainted"] = bool(st.get("tainted")) or got.tainted
-    if readings[defn.id] is not None:
-        chain.apply_reading(rec, readings[defn.id], st)
+    if defn.id in readings:
+        return  # another worker read it meanwhile
+    readings[defn.id] = None
+    if got is not None:
+        entry: dict[str, Any] = {"reading": got.reading.model_dump(mode="json"), "model": got.model}
+        if got.dropped:  # concerns that cited no source: kept where a person can see them (P9-2.24)
+            entry["dropped"] = [c.model_dump(mode="json") for c in got.dropped]
+        readings[defn.id] = entry
+        st["tainted"] = bool(st.get("tainted")) or got.tainted
+        chain.apply_reading(rec, entry, st)
+        chain.save_record(s, run_id, run["case_id"], rec)
+    _save_state(s, run_id, st)
+
+
+def _review_off_lock(s: Session, run: dict, ctx: CallContext, case: dict, result: FraudResult, st: dict[str, Any]) -> str | None:
+    """The model's fraud review of the intake triage (P9-2.19), asked with no transaction open (P9-2.24): the step so far is
+    committed, the review is asked, the run row is locked again and re-read. A run that moved meanwhile (stopped, woken, a
+    state a person changed) is left alone: its status is returned and nothing is written, the step runs again from the run as it
+    is. Otherwise `st["fraud_review"]` holds the review (or None) and a tainted review taints the run, now and for this step's
+    own calls; None is returned."""
+    loop = loop_runner()
+    s.commit()
+    got = review_fraud(s, ctx, case, result, loop=loop)
+    fresh = get(s, run["id"], for_update=True)
+    if fresh is None:
+        return "stopped"
+    if fresh["status"] != "running" or int(fresh["step"]) != int(run["step"]) or (fresh["state"] or {}) != (run["state"] or {}):
+        return str(fresh["status"])
+    st["fraud_review"] = got.model_dump(mode="json") if got is not None else None
+    if got is not None and got.tainted:
+        st["tainted"] = True
+        ctx.taint = True
+    return None
 
 
 def stage_confidence(ctx_stage: StageContext, case: dict) -> StageContext:
@@ -274,14 +335,17 @@ def calibrated(s: Session, ctx_stage: StageContext, pack: str) -> StageContext:
 
 def _stage_done(s: Session, run: dict, stage: int, defn: chain.StageDef, st: dict[str, Any], case: dict, nxt: Done) -> str:
     """The stage's last step: its record, its confidence for the stages after it, then the next stage (or the end)."""
-    _stage_record(s, run, stage, defn, st, case, "skipped" if nxt.skipped else "done")
+    rec = _stage_record(s, run, stage, defn, st, case, "skipped" if nxt.skipped else "done")
     st.setdefault("confidence", {})[defn.id] = CHAIN[stage].confidence(st, case)
     n = int(run["step"]) + 1
     if stage + 1 >= len(CHAIN):
         stage_chain.finish(st)
-        return _save(s, run, "done", n, st | {"note": "playbook finished"})
-    stage_chain.advance_stage(st, stage)
-    return _save(s, run, "running", n, st)
+        status = _save(s, run, "done", n, st | {"note": "playbook finished"})
+    else:
+        stage_chain.advance_stage(st, stage)
+        status = _save(s, run, "running", n, st)
+    _read_after(s, run, defn, case, rec)
+    return status
 
 
 def step(s: Session, run_id: str) -> str:
@@ -325,7 +389,11 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
         st["rul_min"] = floor
     st["queue_planner"] = disposition.planner_name(pack)  # the disposition stage waits for the queue plan (P9-2.8)
     if sid == "intake" and pack.fraud is not None:  # the fraud triage of the intake stage (P9-2.11): intake holds on it
-        st["fraud"] = review_case(s, ctx, case, triage_case(s, case, pack), st).as_dict()  # the model may add a hold (P9-2.19)
+        result = triage_case(s, case, pack)
+        due = "fraud_review" not in st and not case.get("fraud")  # the model reads the case off the lock (P9-2.24)
+        if due and (moved := _review_off_lock(s, run, ctx, case, result, st)) is not None:
+            return moved
+        st["fraud"] = review_case(s, ctx, case, result, st).as_dict()  # the model may add a hold (P9-2.19)
     if sid in chain.LIFECYCLE:  # the lease, return and shipment records of the asset (P9-2.20); none: nothing changes
         lifecycle_evidence.refresh(s, case, st)
     nxt = stage_chain.next_step(stage, sub, st, case)
@@ -339,13 +407,17 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
         stage_chain.advance_step(st, stage, sub)
         return _save(s, run, "running", n + 1, st)
     if isinstance(nxt, Wait):
-        if nxt.reason == "queue":  # the deduped job is the fan-in: one plan for every case waiting in this pack and org
-            key = f"{QUEUE_JOB}:{pack.key}:{case['owner']}"
-            jobs.enqueue(s, QUEUE_JOB, {"pack": pack.key, "org_unit_id": case["owner"]}, dedupe_key=key)
-        _stage_record(
+        rec = _stage_record(
             s, run, stage, defn, st, case, "held" if nxt.reason == "fraud" else "waiting"
         )  # a fraud hold is a hold (P9-2.11)
-        return _save(s, run, "waiting", n, st | {"waiting": nxt.reason})
+        status = _save(s, run, "waiting", n, st | {"waiting": nxt.reason})
+        try:
+            _read_after(s, run, defn, case, rec)
+        finally:
+            if nxt.reason == "queue":  # the deduped job is the fan-in: one plan for every case waiting in this pack and org
+                key = f"{QUEUE_JOB}:{pack.key}:{case['owner']}"  # enqueued after the reading, so the plan cannot wake the run
+                jobs.enqueue(s, QUEUE_JOB, {"pack": pack.key, "org_unit_id": case["owner"]}, dedupe_key=key)  # before it
+        return status
     if isinstance(nxt, Halt):
         _stage_record(s, run, stage, defn, st, case, "skipped")
         stage_chain.finish(st)
@@ -358,8 +430,10 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
     _log_step(s, run_id, nxt.action, nxt.input, r, sid)
     if r["ok"] and isinstance(r["output"], dict) and "held" in r["output"]:
         stage_chain.advance_step(st, stage, sub)
-        _stage_record(s, run, stage, defn, st, case, "held", r["output"].get("reasons"))
-        return _save(s, run, "waiting", n + 1, st | {"waiting": "proposal", "proposal": r["output"]["held"]})
+        rec = _stage_record(s, run, stage, defn, st, case, "held", r["output"].get("reasons"))
+        status = _save(s, run, "waiting", n + 1, st | {"waiting": "proposal", "proposal": r["output"]["held"]})
+        _read_after(s, run, defn, case, rec)
+        return status
     if r["ok"] or r["error"]["code"] == "duplicate":
         if r["ok"]:
             CHAIN[stage].record(sub, r["output"], st)
