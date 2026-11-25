@@ -34,3 +34,5 @@ One line per event, newest last, times from `date`.
 | 2026-11-25 20:49 | P9-6.2 fixed by w1 (cd95b5f): dvlab lands rows from the reader via client.session; dry-run test added; the wipe-in-mock test moved to serial-only test_device_wipe_sim.py. w1 idle: nothing ready until P9-6.3, 3.6, 3.7 or 4.2. |
 | 25 Nov 15:24 | P9-3.5 merged. grade_of takes now (pure core); evidence type in tool_fleet.json data.mappings; smoke step 1 org kind company |
 | 25 Nov 15:24 | P9-6.2 merged. dvlab lands rows from the reader (dry run writes nothing); evidence types in valuer.params; wipe test serial-only |
+| 2026-11-25 21:08 | Verify P9-3.5 + P9-6.2: api 93/94 (test_device_sources 589 != 588: a wipe left in the main dvlab mock by w1's earlier runs); after /_sim/reset?system=dvlab, device_sources + device_wipe_sim 13 passed; lint ok, web 407, source-sim 13 passed. Pushed. |
+| 25 Nov 15:38 | P9-6.3 merged. dvmkt lands rows from the reader (dry run writes nothing); replacement_demand cannot filter by date (no raised-at column) |
