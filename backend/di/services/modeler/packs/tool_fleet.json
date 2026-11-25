@@ -825,7 +825,667 @@
     "Prairie Contractor Supply",
     "Mesa Pre-Owned Tools",
     "Northline Trade Tools"
-   ]
+   ],
+   "market_tables": {
+    "flow": "service_desk",
+    "valid_from": "2026-01-01",
+    "markets": {
+     "DE": "EUR",
+     "FR": "EUR",
+     "UK": "GBP",
+     "US": "USD",
+     "AU": "AUD"
+    },
+    "tables": [
+     {
+      "name": "labour",
+      "title": "labour rates",
+      "kind": "rate_card",
+      "versions": [
+       {
+        "valid_from": "2026-01-01",
+        "values": {
+         "DE": {
+          "per_hour": 42
+         },
+         "FR": {
+          "per_hour": 46
+         },
+         "UK": {
+          "per_hour": 40
+         },
+         "US": {
+          "per_hour": 58
+         },
+         "AU": {
+          "per_hour": 64
+         }
+        }
+       }
+      ]
+     },
+     {
+      "name": "parts",
+      "title": "parts prices",
+      "kind": "rate_card",
+      "versions": [
+       {
+        "valid_from": "2026-09-01",
+        "valid_to": "2026-09-30",
+        "values": {
+         "DE": {
+          "CMH.Motor armature": 251,
+          "CMH.Gearbox": 174,
+          "CMH.Electronics module": 116,
+          "CMH.Piston and seal kit": 87,
+          "BRK.Motor": 367,
+          "BRK.Impact mechanism": 309,
+          "BRK.Chisel holder": 106,
+          "BRK.Handle and vibration damper": 68,
+          "DCD.Drill motor": 869,
+          "DCD.Gearbox": 406,
+          "DCD.Drill stand": 367,
+          "DCD.Control electronics": 203,
+          "CRH.Brushless motor": 155,
+          "CRH.Electronics module": 92,
+          "CRH.Chuck assembly": 43,
+          "AGR.Armature": 68,
+          "AGR.Gear set": 37,
+          "AGR.On/off switch": 21,
+          "LSR.Laser module": 309,
+          "LSR.Rotor head": 164,
+          "LSR.Receiver": 106
+         },
+         "FR": {
+          "CMH.Motor armature": 251,
+          "CMH.Gearbox": 174,
+          "CMH.Electronics module": 116,
+          "CMH.Piston and seal kit": 87,
+          "BRK.Motor": 367,
+          "BRK.Impact mechanism": 309,
+          "BRK.Chisel holder": 106,
+          "BRK.Handle and vibration damper": 68,
+          "DCD.Drill motor": 869,
+          "DCD.Gearbox": 406,
+          "DCD.Drill stand": 367,
+          "DCD.Control electronics": 203,
+          "CRH.Brushless motor": 155,
+          "CRH.Electronics module": 92,
+          "CRH.Chuck assembly": 43,
+          "AGR.Armature": 68,
+          "AGR.Gear set": 37,
+          "AGR.On/off switch": 21,
+          "LSR.Laser module": 309,
+          "LSR.Rotor head": 164,
+          "LSR.Receiver": 106
+         },
+         "UK": {
+          "CMH.Motor armature": 216,
+          "CMH.Gearbox": 149,
+          "CMH.Electronics module": 100,
+          "CMH.Piston and seal kit": 75,
+          "BRK.Motor": 315,
+          "BRK.Impact mechanism": 265,
+          "BRK.Chisel holder": 91,
+          "BRK.Handle and vibration damper": 58,
+          "DCD.Drill motor": 747,
+          "DCD.Gearbox": 348,
+          "DCD.Drill stand": 315,
+          "DCD.Control electronics": 174,
+          "CRH.Brushless motor": 133,
+          "CRH.Electronics module": 79,
+          "CRH.Chuck assembly": 37,
+          "AGR.Armature": 58,
+          "AGR.Gear set": 32,
+          "AGR.On/off switch": 18,
+          "LSR.Laser module": 265,
+          "LSR.Rotor head": 141,
+          "LSR.Receiver": 91
+         },
+         "US": {
+          "CMH.Motor armature": 273,
+          "CMH.Gearbox": 189,
+          "CMH.Electronics module": 126,
+          "CMH.Piston and seal kit": 95,
+          "BRK.Motor": 399,
+          "BRK.Impact mechanism": 336,
+          "BRK.Chisel holder": 116,
+          "BRK.Handle and vibration damper": 74,
+          "DCD.Drill motor": 945,
+          "DCD.Gearbox": 441,
+          "DCD.Drill stand": 399,
+          "DCD.Control electronics": 221,
+          "CRH.Brushless motor": 168,
+          "CRH.Electronics module": 100,
+          "CRH.Chuck assembly": 47,
+          "AGR.Armature": 74,
+          "AGR.Gear set": 40,
+          "AGR.On/off switch": 23,
+          "LSR.Laser module": 336,
+          "LSR.Rotor head": 179,
+          "LSR.Receiver": 116
+         },
+         "AU": {
+          "CMH.Motor armature": 415,
+          "CMH.Gearbox": 287,
+          "CMH.Electronics module": 192,
+          "CMH.Piston and seal kit": 144,
+          "BRK.Motor": 606,
+          "BRK.Impact mechanism": 511,
+          "BRK.Chisel holder": 176,
+          "BRK.Handle and vibration damper": 112,
+          "DCD.Drill motor": 1436,
+          "DCD.Gearbox": 670,
+          "DCD.Drill stand": 606,
+          "DCD.Control electronics": 335,
+          "CRH.Brushless motor": 255,
+          "CRH.Electronics module": 152,
+          "CRH.Chuck assembly": 72,
+          "AGR.Armature": 112,
+          "AGR.Gear set": 61,
+          "AGR.On/off switch": 35,
+          "LSR.Laser module": 511,
+          "LSR.Rotor head": 271,
+          "LSR.Receiver": 176
+         }
+        }
+       },
+       {
+        "valid_from": "2026-10-01",
+        "values": {
+         "DE": {
+          "CMH.Motor armature": 251,
+          "CMH.Gearbox": 174,
+          "CMH.Electronics module": 116,
+          "CMH.Piston and seal kit": 87,
+          "BRK.Motor": 367,
+          "BRK.Impact mechanism": 309,
+          "BRK.Chisel holder": 106,
+          "BRK.Handle and vibration damper": 68,
+          "DCD.Drill motor": 869,
+          "DCD.Gearbox": 406,
+          "DCD.Drill stand": 367,
+          "DCD.Control electronics": 203,
+          "CRH.Brushless motor": 155,
+          "CRH.Electronics module": 92,
+          "CRH.Chuck assembly": 43,
+          "AGR.Armature": 68,
+          "AGR.Gear set": 37,
+          "AGR.On/off switch": 21,
+          "LSR.Laser module": 309,
+          "LSR.Rotor head": 164,
+          "LSR.Receiver": 106
+         },
+         "FR": {
+          "CMH.Motor armature": 251,
+          "CMH.Gearbox": 174,
+          "CMH.Electronics module": 116,
+          "CMH.Piston and seal kit": 87,
+          "BRK.Motor": 367,
+          "BRK.Impact mechanism": 309,
+          "BRK.Chisel holder": 106,
+          "BRK.Handle and vibration damper": 68,
+          "DCD.Drill motor": 869,
+          "DCD.Gearbox": 406,
+          "DCD.Drill stand": 367,
+          "DCD.Control electronics": 203,
+          "CRH.Brushless motor": 155,
+          "CRH.Electronics module": 92,
+          "CRH.Chuck assembly": 43,
+          "AGR.Armature": 68,
+          "AGR.Gear set": 37,
+          "AGR.On/off switch": 21,
+          "LSR.Laser module": 309,
+          "LSR.Rotor head": 164,
+          "LSR.Receiver": 106
+         },
+         "UK": {
+          "CMH.Motor armature": 216,
+          "CMH.Gearbox": 149,
+          "CMH.Electronics module": 100,
+          "CMH.Piston and seal kit": 75,
+          "BRK.Motor": 315,
+          "BRK.Impact mechanism": 265,
+          "BRK.Chisel holder": 91,
+          "BRK.Handle and vibration damper": 58,
+          "DCD.Drill motor": 747,
+          "DCD.Gearbox": 348,
+          "DCD.Drill stand": 315,
+          "DCD.Control electronics": 174,
+          "CRH.Brushless motor": 133,
+          "CRH.Electronics module": 79,
+          "CRH.Chuck assembly": 37,
+          "AGR.Armature": 58,
+          "AGR.Gear set": 32,
+          "AGR.On/off switch": 18,
+          "LSR.Laser module": 265,
+          "LSR.Rotor head": 141,
+          "LSR.Receiver": 91
+         },
+         "US": {
+          "CMH.Motor armature": 273,
+          "CMH.Gearbox": 189,
+          "CMH.Electronics module": 126,
+          "CMH.Piston and seal kit": 95,
+          "BRK.Motor": 399,
+          "BRK.Impact mechanism": 336,
+          "BRK.Chisel holder": 116,
+          "BRK.Handle and vibration damper": 74,
+          "DCD.Drill motor": 945,
+          "DCD.Gearbox": 441,
+          "DCD.Drill stand": 399,
+          "DCD.Control electronics": 221,
+          "CRH.Brushless motor": 168,
+          "CRH.Electronics module": 100,
+          "CRH.Chuck assembly": 47,
+          "AGR.Armature": 74,
+          "AGR.Gear set": 40,
+          "AGR.On/off switch": 23,
+          "LSR.Laser module": 336,
+          "LSR.Rotor head": 179,
+          "LSR.Receiver": 116
+         },
+         "AU": {
+          "CMH.Motor armature": 415,
+          "CMH.Gearbox": 287,
+          "CMH.Electronics module": 192,
+          "CMH.Piston and seal kit": 144,
+          "BRK.Motor": 606,
+          "BRK.Impact mechanism": 511,
+          "BRK.Chisel holder": 176,
+          "BRK.Handle and vibration damper": 112,
+          "DCD.Drill motor": 1436,
+          "DCD.Gearbox": 670,
+          "DCD.Drill stand": 606,
+          "DCD.Control electronics": 335,
+          "CRH.Brushless motor": 255,
+          "CRH.Electronics module": 152,
+          "CRH.Chuck assembly": 72,
+          "AGR.Armature": 112,
+          "AGR.Gear set": 61,
+          "AGR.On/off switch": 35,
+          "LSR.Laser module": 511,
+          "LSR.Rotor head": 271,
+          "LSR.Receiver": 176
+         }
+        }
+       }
+      ]
+     },
+     {
+      "name": "terms",
+      "title": "terms",
+      "kind": "rate_card",
+      "versions": [
+       {
+        "valid_from": "2026-01-01",
+        "values": {
+         "DE": {
+          "test_fee": 12,
+          "logistics": 18,
+          "markup": 0.35,
+          "unit_cost_share": 0.62,
+          "list_price.CMH": 1334,
+          "list_price.BRK": 1748,
+          "list_price.DCD": 2944,
+          "list_price.CRH": 570,
+          "list_price.AGR": 239,
+          "list_price.LSR": 1012,
+          "swap_days": 2,
+          "upgrade_days": 3,
+          "proposal_valid_days": 14
+         },
+         "FR": {
+          "test_fee": 12,
+          "logistics": 19,
+          "markup": 0.35,
+          "unit_cost_share": 0.62,
+          "list_price.CMH": 1334,
+          "list_price.BRK": 1748,
+          "list_price.DCD": 2944,
+          "list_price.CRH": 570,
+          "list_price.AGR": 239,
+          "list_price.LSR": 1012,
+          "swap_days": 2,
+          "upgrade_days": 3,
+          "proposal_valid_days": 14
+         },
+         "UK": {
+          "test_fee": 11,
+          "logistics": 17,
+          "markup": 0.35,
+          "unit_cost_share": 0.62,
+          "list_price.CMH": 1146,
+          "list_price.BRK": 1501,
+          "list_price.DCD": 2528,
+          "list_price.CRH": 490,
+          "list_price.AGR": 205,
+          "list_price.LSR": 869,
+          "swap_days": 2,
+          "upgrade_days": 3,
+          "proposal_valid_days": 14
+         },
+         "US": {
+          "test_fee": 14,
+          "logistics": 24,
+          "markup": 0.35,
+          "unit_cost_share": 0.62,
+          "list_price.CMH": 1450,
+          "list_price.BRK": 1900,
+          "list_price.DCD": 3200,
+          "list_price.CRH": 620,
+          "list_price.AGR": 260,
+          "list_price.LSR": 1100,
+          "swap_days": 2,
+          "upgrade_days": 3,
+          "proposal_valid_days": 14
+         },
+         "AU": {
+          "test_fee": 15,
+          "logistics": 28,
+          "markup": 0.35,
+          "unit_cost_share": 0.62,
+          "list_price.CMH": 2204,
+          "list_price.BRK": 2888,
+          "list_price.DCD": 4864,
+          "list_price.CRH": 942,
+          "list_price.AGR": 395,
+          "list_price.LSR": 1672,
+          "swap_days": 2,
+          "upgrade_days": 3,
+          "proposal_valid_days": 14
+         }
+        }
+       }
+      ]
+     },
+     {
+      "name": "cover_terms",
+      "title": "cover terms",
+      "kind": "decision_table",
+      "inputs": [
+       "market",
+       "family",
+       "cover_type",
+       "age_months"
+      ],
+      "body": {
+       "nodes": [
+        {
+         "id": "n_in",
+         "type": "inputNode",
+         "name": "Request",
+         "position": {
+          "x": 100,
+          "y": 100
+         }
+        },
+        {
+         "id": "n_tbl",
+         "type": "decisionTableNode",
+         "name": "Table",
+         "position": {
+          "x": 360,
+          "y": 100
+         },
+         "content": {
+          "hitPolicy": "first",
+          "inputs": [
+           {
+            "id": "in_market",
+            "name": "market",
+            "field": "market",
+            "type": "expression"
+           },
+           {
+            "id": "in_family",
+            "name": "family",
+            "field": "family",
+            "type": "expression"
+           },
+           {
+            "id": "in_cover_type",
+            "name": "cover_type",
+            "field": "cover_type",
+            "type": "expression"
+           },
+           {
+            "id": "in_age_months",
+            "name": "age_months",
+            "field": "age_months",
+            "type": "expression"
+           }
+          ],
+          "outputs": [
+           {
+            "id": "out_repair_covered",
+            "name": "repair_covered",
+            "field": "repair_covered",
+            "type": "expression"
+           },
+           {
+            "id": "out_swap_allowed",
+            "name": "swap_allowed",
+            "field": "swap_allowed",
+            "type": "expression"
+           },
+           {
+            "id": "out_upgrade_allowed",
+            "name": "upgrade_allowed",
+            "field": "upgrade_allowed",
+            "type": "expression"
+           },
+           {
+            "id": "out_reason",
+            "name": "reason",
+            "field": "reason",
+            "type": "expression"
+           }
+          ],
+          "rules": [
+           {
+            "_id": "r1",
+            "in_market": "",
+            "in_family": "\"CRH\"",
+            "in_cover_type": "\"fleet\"",
+            "in_age_months": "",
+            "out_repair_covered": "true",
+            "out_swap_allowed": "true",
+            "out_upgrade_allowed": "true",
+            "out_reason": "\"Fleet cover: swap allowed for cordless tools\""
+           },
+           {
+            "_id": "r2",
+            "in_market": "",
+            "in_family": "",
+            "in_cover_type": "\"fleet\"",
+            "in_age_months": "",
+            "out_repair_covered": "true",
+            "out_swap_allowed": "false",
+            "out_upgrade_allowed": "false",
+            "out_reason": "\"Fleet cover: repair covered\""
+           },
+           {
+            "_id": "r3",
+            "in_market": "",
+            "in_family": "",
+            "in_cover_type": "\"warranty\"",
+            "in_age_months": "<= 24",
+            "out_repair_covered": "true",
+            "out_swap_allowed": "false",
+            "out_upgrade_allowed": "false",
+            "out_reason": "\"Warranty: repair covered\""
+           },
+           {
+            "_id": "r4",
+            "in_market": "",
+            "in_family": "",
+            "in_cover_type": "",
+            "in_age_months": "",
+            "out_repair_covered": "false",
+            "out_swap_allowed": "false",
+            "out_upgrade_allowed": "false",
+            "out_reason": "\"No cover\""
+           }
+          ]
+         }
+        },
+        {
+         "id": "n_out",
+         "type": "outputNode",
+         "name": "Response",
+         "position": {
+          "x": 620,
+          "y": 100
+         }
+        }
+       ],
+       "edges": [
+        {
+         "id": "e1",
+         "sourceId": "n_in",
+         "targetId": "n_tbl",
+         "type": "edge"
+        },
+        {
+         "id": "e2",
+         "sourceId": "n_tbl",
+         "targetId": "n_out",
+         "type": "edge"
+        }
+       ]
+      }
+     },
+     {
+      "name": "credit_rules",
+      "title": "credit rules",
+      "kind": "decision_table",
+      "inputs": [
+       "market",
+       "family",
+       "age_months",
+       "life_used_pct"
+      ],
+      "body": {
+       "nodes": [
+        {
+         "id": "n_in",
+         "type": "inputNode",
+         "name": "Request",
+         "position": {
+          "x": 100,
+          "y": 100
+         }
+        },
+        {
+         "id": "n_tbl",
+         "type": "decisionTableNode",
+         "name": "Table",
+         "position": {
+          "x": 360,
+          "y": 100
+         },
+         "content": {
+          "hitPolicy": "first",
+          "inputs": [
+           {
+            "id": "in_market",
+            "name": "market",
+            "field": "market",
+            "type": "expression"
+           },
+           {
+            "id": "in_family",
+            "name": "family",
+            "field": "family",
+            "type": "expression"
+           },
+           {
+            "id": "in_age_months",
+            "name": "age_months",
+            "field": "age_months",
+            "type": "expression"
+           },
+           {
+            "id": "in_life_used_pct",
+            "name": "life_used_pct",
+            "field": "life_used_pct",
+            "type": "expression"
+           }
+          ],
+          "outputs": [
+           {
+            "id": "out_credit_pct",
+            "name": "credit_pct",
+            "field": "credit_pct",
+            "type": "expression"
+           },
+           {
+            "id": "out_credit_cap",
+            "name": "credit_cap",
+            "field": "credit_cap",
+            "type": "expression"
+           }
+          ],
+          "rules": [
+           {
+            "_id": "r1",
+            "in_market": "",
+            "in_family": "",
+            "in_age_months": "",
+            "in_life_used_pct": ">= 80",
+            "out_credit_pct": "0.25",
+            "out_credit_cap": "400"
+           },
+           {
+            "_id": "r2",
+            "in_market": "",
+            "in_family": "",
+            "in_age_months": "",
+            "in_life_used_pct": ">= 50",
+            "out_credit_pct": "0.2",
+            "out_credit_cap": "300"
+           },
+           {
+            "_id": "r3",
+            "in_market": "",
+            "in_family": "",
+            "in_age_months": "",
+            "in_life_used_pct": "",
+            "out_credit_pct": "0.1",
+            "out_credit_cap": "150"
+           }
+          ]
+         }
+        },
+        {
+         "id": "n_out",
+         "type": "outputNode",
+         "name": "Response",
+         "position": {
+          "x": 620,
+          "y": 100
+         }
+        }
+       ],
+       "edges": [
+        {
+         "id": "e1",
+         "sourceId": "n_in",
+         "targetId": "n_tbl",
+         "type": "edge"
+        },
+        {
+         "id": "e2",
+         "sourceId": "n_tbl",
+         "targetId": "n_out",
+         "type": "edge"
+        }
+       ]
+      }
+     }
+    ]
+   }
   },
   "carbon": {
    "set": "cfs-2026.2",

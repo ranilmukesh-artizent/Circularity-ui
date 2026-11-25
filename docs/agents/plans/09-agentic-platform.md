@@ -878,7 +878,7 @@ each story went.
 - [ ] P9-3.21 Paths agree and order invariant for tool returns
 - [ ] P9-3.22 Phase 3 gate
 - [x] P9-4.1 Service desk mocks with repair history and offers
-- [ ] P9-4.2 Per-market decision tables with maker-checker
+- [x] P9-4.2 Per-market decision tables with maker-checker
 - [ ] P9-4.3 One case per service ticket or batch
 - [ ] P9-4.4 Estimate from similar past repairs
 - [ ] P9-4.5 Estimate accuracy on held-out repairs

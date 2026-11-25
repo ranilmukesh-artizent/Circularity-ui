@@ -36,3 +36,6 @@ One line per event, newest last, times from `date`.
 | 25 Nov 15:24 | P9-6.2 merged. dvlab lands rows from the reader (dry run writes nothing); evidence types in valuer.params; wipe test serial-only |
 | 2026-11-25 21:08 | Verify P9-3.5 + P9-6.2: api 93/94 (test_device_sources 589 != 588: a wipe left in the main dvlab mock by w1's earlier runs); after /_sim/reset?system=dvlab, device_sources + device_wipe_sim 13 passed; lint ok, web 407, source-sim 13 passed. Pushed. |
 | 25 Nov 15:38 | P9-6.3 merged. dvmkt lands rows from the reader (dry run writes nothing); replacement_demand cannot filter by date (no raised-at column) |
+| 2026-11-25 21:09 | Committed P9-6.3 (w3 a812941) as ed81659, verify batched with the next merge. Dispatch P9-6.4 to w1. |
+| 2026-11-25 21:10 | P9-4.2 returned by w4 (6163dc1; stacked as c7aa20b, forbidden.py merged with P9-8.17's line). Dispatch P9-5.1 to w3 on top of it. |
+| 25 Nov 15:45 | P9-4.2 merged. zen-engine 2.1.7; tables under valuer.params.market_tables, seeded on first read; Finance sees Modeler |

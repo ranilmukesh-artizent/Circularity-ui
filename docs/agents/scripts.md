@@ -80,6 +80,9 @@ done
 
 Check a lock installs cleanly without touching the stack:
 `docker run --rm -v "$PWD:/repo:ro" -w /repo/<svc> python:3.12-slim sh -c 'pip install -q --require-hashes --no-deps -r requirements.lock -r requirements-dev.lock && pip check'`.
+`zen-engine` (plan 9 P9-4.2, pinned 2.1.7, MIT, GoRules) is a binary wheel that the per-market decision tables run on
+(`di.services.modeler.tables.ZenEvaluator`); `docker compose run --rm --no-deps api python -c "import zen; print(zen.ZenEngine)"`
+proves an image has it.
 The images install the same way (`backend/Dockerfile`, `source-sim/Dockerfile`, `frontend/Dockerfile`); rebuild after a lock change.
 
 Images (`backend/Dockerfile`, `source-sim/Dockerfile`, `frontend/Dockerfile`): base images pinned by digest; target `dev` is what `docker-compose.yml` builds

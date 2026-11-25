@@ -11,3 +11,4 @@
 | 2026-11-25 | 09 · P9-3.5 workbench grade on the tool fleet case panel | this commit | writer wt-check all passed (tf_grade, valuer_tool_fleet, case_intake, screens_any_template, tf_intake, gate_hold; tsc, vitest, eslint); lead verify follows with P9-6.2 | done |
 | 2026-11-25 | 09 · P9-6.2 device data tables, registry and lab adapters | this commit | writer: 40 passed on a temporary source-sim (device_sources, device_wipe_sim, canonical_schema, models_migrations, pack_format), lint ok; lead verify follows | done |
 | 2026-11-25 | 09 · P9-6.3 device market adapter | this commit | writer wt-check all passed (device_market_source, device_sources; lint); lead verify follows | done |
+| 2026-11-25 | 09 · P9-4.2 per-market decision tables with maker-checker | this commit | writer wt-check all passed: 67 passed (market_tables, models_migrations, policy_orgs, modeler_templates, screens_modeler, audit_fixes), vitest 403, tsc, eslint; lead verify follows | done |

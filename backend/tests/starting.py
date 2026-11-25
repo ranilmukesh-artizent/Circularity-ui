@@ -56,6 +56,7 @@ def reset() -> None:
         conn.execute(text("DELETE FROM pack_version"))
         conn.execute(text("DELETE FROM standing_policy_version"))  # plan 9 P9-2.5: no standing policy approves anything
         conn.execute(text("DELETE FROM standing_policy"))
+        conn.execute(text("DELETE FROM market_table"))  # plan 9 P9-4.2: the pack's tables are seeded again on first read
         for table in ("repair_history", "upgrade_offer", "refurb_unit", "service_ticket"):  # plan 9 P9-4.1: no sync yet
             conn.execute(text(f"DELETE FROM {table}"))  # noqa: S608 - fixed names
         # plan 9 P9-6.2: the device lab's and market's landed rows (their extra sources are removed below)
