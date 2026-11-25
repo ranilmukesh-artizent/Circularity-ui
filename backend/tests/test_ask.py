@@ -352,6 +352,28 @@ def test_groq_provider_streams_tool_calls_and_text(monkeypatch):
     assert second["messages"][-2]["tool_calls"][0]["function"] == {"name": "get_case", "arguments": '{"case_id":"RT-1048"}'}
 
 
+def test_groq_answer_is_the_last_turns_text(monkeypatch):
+    """Seen live (25 Nov): the model wrote an answer, called one more tool and answered again; the final text joined both
+    turns and repeated the answer. The final text is the last turn's."""
+    n = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        n.append(1)
+        if len(n) == 1:
+            sse = (_chunk({"role": "assistant", "content": "RT-1048 goes to redeploy (draft).",
+                           "tool_calls": [{"index": 0, "id": "call_1", "type": "function",
+                                           "function": {"name": "get_case", "arguments": '{"case_id":"RT-1048"}'}}]},
+                          "tool_calls"))  # fmt: skip
+        else:
+            sse = _chunk({"content": "RT-1048 (MTR-2041) is recommended for redeploy."}, "stop")
+        return httpx.Response(200, text=sse + "data: [DONE]\n\n", headers={"content-type": "text/event-stream"})
+
+    _groq(monkeypatch, handler)
+    _, final = ask("planner-a", "Why is RT-1048 recommended for redeploy?")
+    assert final["provider"] == "groq"
+    assert final["text"] == "RT-1048 (MTR-2041) is recommended for redeploy."
+
+
 def _golden_answer(acct: str, q: str) -> dict:
     return next(a["run"] for a in G["answers"] if a["as"] == acct and a["q"] == q)
 
