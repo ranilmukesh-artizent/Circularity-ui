@@ -55,13 +55,14 @@ from di.services.agents.playbooks import stage_chain
 from di.services.agents.playbooks.case_autopilot import Done, Halt, Skip, Wait
 from di.services.agents.pydantic_ai_loop import PydanticAILoop
 from di.services.agents.stage_context import STAGE_IDS, StageContext
-from di.services.agents.stages import CHAIN
+from di.services.agents.stages import CHAIN, disposition
 from di.services.cases import store
 from di.services.modeler.evidence import evidence_of
 
 log = logging.getLogger(__name__)
 PLAYBOOKS = {autopilot.NAME: stage_chain, stage_chain.NAME: stage_chain}  # case_autopilot is an alias of the chain
 JOB = "agent.step"
+QUEUE_JOB = "queue.plan"  # P9-2.8: plans a pack's open queue of an org; its end wakes the runs waiting `queue`
 _REACHED = (*autopilot.ACTIONS, *stage_chain.ACTIONS, *(a for m in CHAIN for a in m.ACTIONS))
 _FORBIDDEN = [a for a in _REACHED if a.startswith(FORBIDDEN_ACTIONS)]
 if _FORBIDDEN:
@@ -265,6 +266,7 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
     pack = live_pack(s, case)
     if (floor := chain.pack_rul_min(pack)) is not None:
         st["rul_min"] = floor
+    st["queue_planner"] = disposition.planner_name(pack)  # the disposition stage waits for the queue plan (P9-2.8)
     nxt = stage_chain.next_step(stage, sub, st, case)
     if nxt is None:
         return _save(s, run, "done", n, st | {"note": "playbook finished"})
@@ -276,6 +278,9 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
         stage_chain.advance_step(st, stage, sub)
         return _save(s, run, "running", n + 1, st)
     if isinstance(nxt, Wait):
+        if nxt.reason == "queue":  # the deduped job is the fan-in: one plan for every case waiting in this pack and org
+            key = f"{QUEUE_JOB}:{pack.key}:{case['owner']}"
+            jobs.enqueue(s, QUEUE_JOB, {"pack": pack.key, "org_unit_id": case["owner"]}, dedupe_key=key)
         _stage_record(s, run, stage, defn, st, case, "waiting")
         return _save(s, run, "waiting", n, st | {"waiting": nxt.reason})
     if isinstance(nxt, Halt):
@@ -356,6 +361,27 @@ def resume_waiting(s: Session, case_id: str) -> int:
         _enqueue(s, run_id)
         n += 1
     return n
+
+
+def wake_queue(s: Session, pack: str, org_unit_id: str) -> list[str]:
+    """The queue of the pack in the org was planned (job `queue.plan`): every run waiting `queue` on a case of that pack and
+    org runs on (a new job each). Returns their ids."""
+    q = text(
+        "SELECT r.id FROM agent_run r JOIN case_record c ON c.id = r.case_id "
+        "WHERE r.status = 'waiting' AND r.state->>'waiting' = 'queue' AND c.owner = :o AND c.data ->> 'template' = :p "
+        "ORDER BY r.id"
+    )
+    woken: list[str] = []
+    for run_id in list(s.execute(q, {"o": org_unit_id, "p": pack}).scalars()):
+        run = get(s, run_id, for_update=True)
+        if run is None or run["status"] != "waiting":
+            continue
+        st = dict(run["state"])
+        st.pop("waiting", None)
+        _save(s, run, "running", int(run["step"]), st)
+        _enqueue(s, run_id)
+        woken.append(run_id)
+    return woken
 
 
 # --- LLM playbooks (P9-2.2) ------------------------------------------------------------------------------------------

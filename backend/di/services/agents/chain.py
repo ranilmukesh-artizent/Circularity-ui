@@ -24,7 +24,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.services.agents.stage_context import STAGE_IDS, Autonomy, StageContext, StageId, StageKind
-from di.services.agents.stages import CHAIN, StageModule
+from di.services.agents.stages import CHAIN, StageModule, disposition
 from di.services.modeler.pack import Pack
 from di.services.modeler.stages import StageKey
 
@@ -104,7 +104,9 @@ def stage_defs(pack: Pack) -> list[StageDef]:
         own = by_key.get(akey) if akey else None
         out.append(
             StageDef(
-                id=sid, agent_id=AGENT_IDS[sid], kind="deterministic", autonomy=own.autonomy if own else DEFAULT_AUTONOMY[sid],
+                id=sid, agent_id=AGENT_IDS[sid],
+                kind="queue" if sid == "disposition" and disposition.planner_name(pack) else "deterministic",
+                autonomy=own.autonomy if own else DEFAULT_AUTONOMY[sid],
                 threshold=float(threshold), value_limit=None, bulk_limit=None, tools=tuple(module.ACTIONS),
             )
         )  # fmt: skip

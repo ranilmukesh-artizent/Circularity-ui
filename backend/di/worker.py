@@ -285,6 +285,18 @@ def _case_replan(payload: dict[str, Any]) -> None:
     log.info("replan %s: moved %s", payload["org_unit_id"], moved or "none")
 
 
+@handler("queue.plan")
+def _queue_plan(payload: dict[str, Any]) -> None:
+    """A disposition stage waits for the queue plan: plan the pack's open cases of the org together and wake the runs
+    (di.services.agents.queue_job.plan, P9-2.8)."""
+    from di.services.agents import queue_job
+
+    with SessionLocal() as s:
+        woken = queue_job.plan(s, payload["pack"], payload["org_unit_id"])
+        s.commit()
+    log.info("queue plan %s/%s: woke %s", payload["pack"], payload["org_unit_id"], woken or "none")
+
+
 @handler("case.recordMatch")
 def _record_match(payload: dict[str, Any]) -> None:
     """A sync of a pack's system of record finished: the cases not yet found are matched again, and the assets it says are
