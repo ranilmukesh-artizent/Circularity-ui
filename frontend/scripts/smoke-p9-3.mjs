@@ -14,6 +14,8 @@
  *      Approver releases it after the fix (the card reads released); a Planner is refused.
  *   5  (P9-3.8) after the telematics source syncs, CMH-48777 (last seen 2026-09-29) reads "Telematics last seen 8 days ago:
  *      re-issue and pool need a person" on its Overview; CMH-48213 reads "Telematics 3 days old".
+ *   6  (P9-3.9) CMH-48213 (820 h, 30% high load) reads its wear index ("WTI 65" when the piston kit was replaced at 500 h;
+ *      the repair log's own replacements decide it) and "RUL 21% (Motor armature)" on its Overview.
  *
  * The UI has no one-click setup for this, so the script calls the app's own actions as the signed-in person (the same
  * ones the Source Map and Workflow Studio call) and reads the result in the pages. Needs the worker (the sync runs on it)
@@ -24,7 +26,7 @@
  *   node frontend/scripts/smoke-p9-3.mjs http://localhost:5173
  *   bash scripts/dev/reset.sh
  * (hold the api test lock meanwhile). Screenshots of a failing step go to SMOKE_OUT (default: <OS temp>/smoke-p9-3).
- * The last line is "smoke-p9-3: all 5 steps passed".
+ * The last line is "smoke-p9-3: all 6 steps passed".
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -303,9 +305,47 @@ await step('5 Telematics: CMH-48777 last seen 8 days ago needs a person for re-i
   await lineOf('CMH-48213', /Telematics 3 days old/, '"Telematics 3 days old"');
   return stale.replace(/\s+/g, ' ');
 });
+
+// ---------------------------------------------------------------- 6
+await step('6 Life: CMH-48213 reads its wear index and the remaining life of its weakest component', async () => {
+  const admin = await as('admin');
+  const r = await must(admin, 'cases.list', { q: 'CMH-48213', limit: 5 });
+  const row = (r.rows || []).find((x) => x.id);
+  if (!row) throw new Error('no case for CMH-48213');
+  const id = row.id;
+  // the telematics sync (step 5) queued the re-evaluation that computes the life on the worker
+  await until(
+    async () => !!(await getJson(admin, '/api/screens/toolfleet/' + id)).life,
+    `CMH-48213 (${id}) has no computed life`,
+    SYNC,
+    admin,
+  );
+  await admin.goto(`${base}/#/product/${id}/overview`);
+  await admin.locator('#view').waitFor();
+  // the piston kit's replacement comes from the repair log: the wear index follows it (65 with the replacement at 500 h)
+  const wti = await until(
+    async () => {
+      const t = await admin.locator('[data-testid="tf-life-wti"]').first().innerText();
+      return /^WTI \d+$/.test(t.trim()) ? t.trim() : null;
+    },
+    'CMH-48213 does not show a wear index on the Overview',
+    UI,
+    admin,
+  );
+  const rul = await until(
+    async () => {
+      const t = await admin.locator('[data-testid="tf-life-rul"]').first().innerText();
+      return /RUL 21% \(Motor armature\)/.test(t) ? t.trim() : null;
+    },
+    'CMH-48213 does not show "RUL 21% (Motor armature)" on the Overview',
+    UI,
+    admin,
+  );
+  return `${wti}; ${rul}`;
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));
   process.exit(1);
 }
-say('smoke-p9-3: all 5 steps passed');
+say('smoke-p9-3: all 6 steps passed');

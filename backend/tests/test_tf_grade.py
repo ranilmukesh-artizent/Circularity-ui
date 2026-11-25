@@ -120,7 +120,8 @@ def test_tf_03_view_shows_the_estimate(opened):
     gates = [(g["id"], g["passed"]) for g in v["gates"]]
     # the recall check (P9-3.7), fresh telematics (P9-3.8), the contract right (P9-3.6)
     assert gates == [("G-TOOL-REC", True), ("G-TOOL-TEL", True), ("G-CON-2", True)]
-    assert (v["life"], v["paths"], v["plan"], v["approval"], v["followThrough"]) == (None, [], None, None, None)
+    # `life` is computed when the canonical store holds run hours or months on contract for the serial (P9-3.9, test_tf_life)
+    assert (v["paths"], v["plan"], v["approval"], v["followThrough"]) == ([], None, None, None)
 
 
 def test_tf_03_late_grade_reevaluates(opened):

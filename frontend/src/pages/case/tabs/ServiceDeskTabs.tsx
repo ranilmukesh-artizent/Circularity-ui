@@ -1,7 +1,11 @@
 /** The Ticket tab of a service-desk case (P9-4.3, SD-01): ticket number, account code, market, site, loaner promised and one row
  * per tool (serial, family, age, fault or "unclear", cover) with the result of the contract right and recall checks. Starts
  * stage 6 of a service-desk case (tabs/index.tsx). */
-import { serviceDeskView } from '../../../api/serviceDesk';
+import { useState } from 'react';
+import { can } from '../../../api/session';
+import { FAULT_CODES, postFault, serviceDeskView } from '../../../api/serviceDesk';
+import { toast } from '../../../components/toast';
+import { refused } from '../../../hooks/useAction';
 import { Kv } from '../CaseBlocks';
 import { approvalLine, estimateLine, estimateStatus, expectedLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, ticketLine } from '../serviceDesk';
 import type { TabProps } from './index';
@@ -69,6 +73,7 @@ export function EstimateTab({ c }: TabProps) {
                 )}
               </>
             )}
+            {e && !e.auto && can('assess') && <PostFaultForm caseId={c.id} line={l.n} serial={l.serial} />}
           </div>
         );
       })}
@@ -113,5 +118,33 @@ export function OptionsTab({ c }: TabProps) {
       })}
       {v.approval && <p className="stpad">{approvalLine(v.approval)}</p>}
     </>
+  );
+}
+
+/** "Post the fault" (P9-4.7, SD-06): on a draft line, a technician (a role with `assess`) picks the fault code and may add a note; the
+ * server prices the line again and runs its options again, and the Estimate and Options tabs refresh without re-keying. */
+function PostFaultForm({ caseId, line, serial }: { caseId: string; line: number; serial: string }) {
+  const [code, setCode] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const post = async () => {
+    setBusy(true);
+    try {
+      const r = await postFault(caseId, line, code, note.trim() || undefined);
+      if (!refused(r, 4200)) toast(`Fault posted for ${serial}: ${code}. Options re-run.`);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div aria-label={`Post the fault for ${serial}`}>
+      <h5>Post the fault</h5>
+      <label>Fault <select value={code} onChange={(ev) => setCode(ev.target.value)} aria-label={`Fault code for ${serial}`}>
+        <option value="">Choose the fault</option>
+        {FAULT_CODES.map((f) => <option key={f.code} value={f.code}>{f.code} {f.name}</option>)}
+      </select></label>{' '}
+      <label>Note <input value={note} onChange={(ev) => setNote(ev.target.value)} aria-label={`Note for ${serial}`} /></label>{' '}
+      <button className="btn pri" disabled={!code || busy} onClick={post}>Post the fault</button>
+    </div>
   );
 }

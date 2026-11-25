@@ -1,10 +1,16 @@
 """The tool-fleet valuer's case from the evidence on file (plan 9, P9-3.5, story TF-03). Pure.
 
     grade_of(evidence, est_grade, now=None) -> GradeView        the grade a case shows and where it came from
-    valuer_case(base, evidence) -> dict                         the `tool_fleet` valuer case with that grade set
+    life_of(evidence, cls, now) -> LifeResult | None            the wear index and remaining life (P9-3.9, `tool_life`)
+    valuer_case(base, evidence, now=None) -> dict               the `tool_fleet` valuer case with that grade and life set
 
 The evidence is a mapping of evidence type to the newest record on file, or None (`workbench_grade`, from the repair log's
-`condition` record of the serial, di.services.cases.regrade). Later tasks extend `valuer_case` (life, demand).
+`condition` record of the serial, di.services.cases.regrade; `life_inputs`, di.services.cases.life_evidence). Later tasks
+extend `valuer_case` (demand).
+
+- **Life.** With telematics hours or a contract duration on file, `rul` and `partRul` are computed (`tool_life`, the pack's
+  `valuer.params.life` table, PLM's rated life first) and replace the case's input values; the result is `life`. Without
+  either, the case's own `rul` and `partRul` stay (the sample world and cases with no evidence).
 
 - **Workbench grade.** A `workbench_grade` record whose `grade` is set and whose `test_result` is not null. The valuer
   then reads `grade` as it always did.
@@ -16,14 +22,19 @@ passes `now`; without it `age_hours` is None. Implements no registry entry; the 
 """
 
 import copy
+import dataclasses
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Literal
 
 from di.services.modeler.evidence import Evidence
+from di.services.modeler.pack import load_pack
+from di.services.modeler.valuers import fleet_evidence, tool_fleet, tool_life
 
 WORKBENCH = "workbench_grade"
+LIFE = "life_inputs"  # the evidence type of the life facts (P9-3.9): value keys in `life_of`
+LIFE_PARAMS: Mapping[str, Any] = load_pack("tool_fleet").valuer.params["life"]  # the pack's life table (never changed here)
 
 
 @dataclass(frozen=True)
@@ -53,11 +64,47 @@ def grade_of(evidence: Mapping[str, Evidence | None], est_grade: str, now: datet
     return GradeView(str(e.value["grade"]), "workbench", str(ref) if ref else None, e.at.isoformat(), age)
 
 
-def valuer_case(base: Mapping[str, Any], evidence: Mapping[str, Evidence | None]) -> dict[str, Any]:
-    """`base` (the valuer case as opened) with `grade` the workbench grade, or None with `estGrade` the estimate."""
+def life_of(evidence: Mapping[str, Evidence | None], cls: str, now: datetime | None = None) -> tool_life.LifeResult | None:
+    """The tool's wear index and remaining life from the `life_inputs` evidence (telematics run hours, high-load share, event
+    counts, coverage, months on contract, the repair log's replacements, PLM's ratings; di.services.cases.life_evidence),
+    computed by `tool_life.evaluate` with the pack's table. None when the evidence has neither the telematics hours nor the
+    months on contract, or the class has no components: the case's own inputs then stay."""
+    e = evidence.get(LIFE)
+    if e is None:
+        return None
+    v = e.value
+    if v.get("hours") is None and v.get("months_on_contract") is None:
+        return None
+    comps = tool_life.components(
+        cls, LIFE_PARAMS, v.get("ratings") or (), tool_life.replacements_for(cls, v.get("replacements") or {}, LIFE_PARAMS)
+    )
+    if not comps:
+        return None
+    seen = v.get("telemetry_at")
+    age = fleet_evidence.age_days(seen, now) if now is not None and seen else None
+    inp = tool_life.LifeInputs(
+        cls=cls, hours=v.get("hours"), high_load_share=v.get("high_load_share"), events=v.get("events") or {},
+        months_on_contract=v.get("months_on_contract"), coverage_pct=v.get("coverage_pct"),
+        telemetry_age_days=None if age is None else float(age),
+        repair_history_complete=bool(v.get("repair_history_complete", True)), components=comps,
+    )  # fmt: skip
+    return tool_life.evaluate(inp, LIFE_PARAMS)
+
+
+def valuer_case(base: Mapping[str, Any], evidence: Mapping[str, Evidence | None], now: datetime | None = None) -> dict[str, Any]:
+    """`base` (the valuer case as opened) with `grade` the workbench grade, or None with `estGrade` the estimate; and, when
+    the evidence gives a life result (`life_of`), `rul` and `partRul` computed (each part by its component's name, else the
+    tool's remaining life) and `life` the result as a dict. `now` is the time the age of the telematics is read at."""
     c = copy.deepcopy(dict(base))
     est = str(c.get("estGrade") or c.get("grade") or "C")
     g = grade_of(evidence, est)
     c["estGrade"] = est
     c["grade"] = g.grade if g.source == "workbench" else None
+    life = life_of(evidence, str(c.get("cls") or ""), now)
+    if life is not None:
+        by = {x.name: x.rul_pct for x in life.per_component}
+        parts = tool_fleet.CLS[c["cls"]]["parts"]
+        c["rul"] = life.rul_tool
+        c["partRul"] = [by.get(pn, life.rul_tool) for pn, _pv in parts]
+        c["life"] = dataclasses.asdict(life) | {"range": list(life.range) if life.range else None}  # as JSON keeps it
     return c

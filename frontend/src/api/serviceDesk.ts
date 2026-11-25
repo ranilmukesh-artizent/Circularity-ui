@@ -3,7 +3,9 @@
  * customer's service ticket or batch (backend/di/services/service_desk/intake.py, the `serviceDesk` block of the case). A read
  * only: the block comes with the case screen, so a service-desk case needs no call of its own.
  */
+import { invoke } from './actions';
 import type { CaseRec } from './case';
+import type { ActionResult } from './types';
 
 /** The result of one check of one line: the contract right (GR-07) or the safety recall check (GR-12). */
 export interface LineGate { id: 'G-CON-2' | 'G-TOOL-REC'; name: string; guardrail: 'GR-07' | 'GR-12'; passed: boolean; reason: string }
@@ -50,3 +52,12 @@ export interface ServiceDeskView {
 
 /** The service-desk block of a case, or null for a case that is not opened from a ticket (the industrial book, a return). */
 export const serviceDeskView = (c: CaseRec): ServiceDeskView | null => c.serviceDesk ?? null;
+
+/** The fault codes of a repair order (the depot's list): motor, gearbox, electronics, wear parts. */
+export const FAULT_CODES: { code: string; name: string }[] = [
+  { code: 'MOT', name: 'Motor' }, { code: 'GBX', name: 'Gearbox or drive train' }, { code: 'ELE', name: 'Electronics' }, { code: 'WEA', name: 'Wear parts' },
+];
+
+/** Post the fault found on a draft line (needs ssess; serviceDesk.postFault): the server prices the line again and runs its options again. An agent's call is held for a person. */
+export const postFault = (caseId: string, line: number, faultCode: string, notes?: string): Promise<ActionResult> =>
+  invoke('serviceDesk.postFault', { case_id: caseId, line, fault_code: faultCode, ...(notes ? { notes } : {}) });

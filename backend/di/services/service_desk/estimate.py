@@ -17,6 +17,8 @@
 - **Technician check.** A draft books one `needs_info` work item of type `technician_check` for the Engineer role per line,
   "Technician check: post the fault for <serial>", through `cases.process.open_item` (the same item `case.needInfo` opens, I-20);
   evaluating the line again finds it and books no second.
+- **Fault posted (P9-4.7).** `serviceDesk.postFault` estimates the line again with the code and closes its check item; the
+  estimate then names no item. The check stays the same row (`check_item` finds it by title), so a draft never books a second.
 - **Stored, so decisions repeat (R19).** `estimate_case` writes the estimate onto the line, so `decide_case` reads the same facts
   on a second run. The page reads `serviceDesk.lines[*].estimate` from the case.
 
@@ -44,6 +46,7 @@ from di.services.models.cost import FLOW, PACK, Estimate, GrS1Params, PriceCards
 ROLE = "Engineer"
 CHECK = "technician_check"
 CARDS = ("labour", "parts", "terms")
+FAULTS = ("MOT", "GBX", "ELE", "WEA")  # the depot's fault codes: motor, gearbox, electronics, wear parts
 History = dict[tuple[str | None, str, str, date, date], list[RepairRow]]
 
 

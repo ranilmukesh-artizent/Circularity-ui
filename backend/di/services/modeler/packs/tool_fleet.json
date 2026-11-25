@@ -609,6 +609,48 @@
  "valuer": {
   "kind": "tool_fleet",
   "params": {
+   "life": {
+    "rule_version": "tf-life-1",
+    "table_version": "tf-life-table-1",
+    "default_high_load_share": 0.3,
+    "events": {"overheat": 40, "drop": 25, "overload": 15},
+    "confidence": {"high_coverage_pct": 90, "max_age_days": 7},
+    "repair_aliases": {
+     "CMH": {"Piston seal": "Piston and seal kit"},
+     "BRK": {"Handle damper": "Handle and vibration damper"},
+     "DCD": {"Motor": "Drill motor"},
+     "CRH": {"Chuck": "Chuck assembly"}
+    },
+    "classes": {
+     "CMH": {"duty": {"p10": 12, "p50": 20, "p90": 30}, "components": [
+      {"name": "Motor armature", "rated_hours": 1200, "weight": 0.4, "critical": true, "alpha": 0.5},
+      {"name": "Gearbox", "rated_hours": 1500, "weight": 0.3, "critical": true, "alpha": 0.5},
+      {"name": "Electronics module", "rated_hours": 2000, "weight": 0.2, "critical": true, "alpha": 0},
+      {"name": "Piston and seal kit", "rated_hours": 600, "weight": 0.1, "critical": false, "alpha": 0.5}]},
+     "BRK": {"duty": {"p10": 10, "p50": 18, "p90": 28}, "components": [
+      {"name": "Motor", "rated_hours": 1000, "weight": 0.35, "critical": true, "alpha": 0.5},
+      {"name": "Impact mechanism", "rated_hours": 800, "weight": 0.35, "critical": true, "alpha": 0.5},
+      {"name": "Chisel holder", "rated_hours": 500, "weight": 0.2, "critical": false, "alpha": 0.5},
+      {"name": "Handle and vibration damper", "rated_hours": 300, "weight": 0.1, "critical": false, "alpha": 0.3}]},
+     "DCD": {"duty": {"p10": 15, "p50": 25, "p90": 40}, "components": [
+      {"name": "Drill motor", "rated_hours": 1500, "weight": 0.4, "critical": true, "alpha": 0.5},
+      {"name": "Gearbox", "rated_hours": 1800, "weight": 0.25, "critical": true, "alpha": 0.5},
+      {"name": "Drill stand", "rated_hours": 3000, "weight": 0.15, "critical": false, "alpha": 0},
+      {"name": "Control electronics", "rated_hours": 2500, "weight": 0.2, "critical": true, "alpha": 0}]},
+     "CRH": {"duty": {"p10": 10, "p50": 16, "p90": 24}, "components": [
+      {"name": "Brushless motor", "rated_hours": 1800, "weight": 0.5, "critical": true, "alpha": 0.4},
+      {"name": "Electronics module", "rated_hours": 2500, "weight": 0.3, "critical": true, "alpha": 0},
+      {"name": "Chuck assembly", "rated_hours": 900, "weight": 0.2, "critical": false, "alpha": 0.5}]},
+     "AGR": {"duty": {"p10": 8, "p50": 14, "p90": 22}, "components": [
+      {"name": "Armature", "rated_hours": 300, "weight": 0.5, "critical": true, "alpha": 0.5},
+      {"name": "Gear set", "rated_hours": 450, "weight": 0.3, "critical": true, "alpha": 0.5},
+      {"name": "On/off switch", "rated_hours": 600, "weight": 0.2, "critical": false, "alpha": 0}]},
+     "LSR": {"duty": {"p10": 20, "p50": 40, "p90": 60}, "components": [
+      {"name": "Laser module", "rated_hours": 5000, "weight": 0.5, "critical": true, "alpha": 0},
+      {"name": "Rotor head", "rated_hours": 4000, "weight": 0.3, "critical": true, "alpha": 0.3},
+      {"name": "Receiver", "rated_hours": 3000, "weight": 0.2, "critical": false, "alpha": 0}]}
+    }
+   },
    "contract_refresh": {
     "flow": "contract_refresh",
     "window_days": 90,

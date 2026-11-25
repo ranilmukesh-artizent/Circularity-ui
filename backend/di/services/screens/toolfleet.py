@@ -9,6 +9,10 @@ GET /api/screens/toolfleet/{case_id}
     passed, reason, guardrail, owner, kind, stage, stageLabel, hold, locked}`; a failed GR-07 (G-CON-2) says the term it
     failed on ("Theft recovered: claim CLM-7781 is open"). GR-13 (G-TOOL-TEL, P9-3.8) also has `age_days` (whole days since the
     tool's telematics were last seen, null with none) and `max_age_days`: its freshness line.
+    `life` (P9-3.9) is the tool's computed wear (`tool_life.LifeResult`, kept on the case when its valuation ran): `{wti,
+    rul_tool, rul_tool_hours, weakest, per_component: [{name, used_hours, consumed_pct, rul_pct, source}], confidence (High,
+    Medium, Low), range ([low, high] RUL_tool without telematics, else null), inputs, table_version, rule_version}`; null
+    for a case with neither telematics hours nor months on contract (it keeps its own inputs).
     `quarantine` (P9-3.7) is the recall quarantine of the tool, `{recall_id, remedy, blocked, affected_parts, released}`
     (`released`: `{by, at, note}` once Quality released a repair recall), or null when no active recall names its serial.
 
@@ -73,7 +77,7 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         "grade": dataclasses.asdict(grade),
         "quarantine": fleet_evidence.quarantine_of(c),
         "gates": [_gate(g, now, params) for g in c.get("gates") or []],
-        "life": None,
+        "life": c.get("life"),
         "paths": [],
         "plan": None,
         "approval": None,
