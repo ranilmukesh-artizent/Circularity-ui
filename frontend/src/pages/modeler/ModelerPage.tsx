@@ -17,6 +17,7 @@ import { ImpactPanel } from './ImpactPanel';
 import { LifecycleBar } from './LifecycleBar';
 import { OverlayPanel } from './OverlayPanel';
 import { PacksPanel } from './PacksPanel';
+import { StandingPolicyPanel } from './StandingPolicyPanel';
 import { SuggestionsPanel } from './SuggestionsPanel';
 import './modeler.css';
 
@@ -192,6 +193,7 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
       <div className="mdl-main mdl-lower" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
         <PacksPanel s={s} />
       </div>
+      <StandingPolicyPanel s={s} />
       <ModelsPanel />
     </>
   );

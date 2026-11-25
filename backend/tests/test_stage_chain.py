@@ -57,6 +57,17 @@ def _run(run_id: str) -> dict:
         return dict(s.execute(text("SELECT * FROM agent_run WHERE id = :i"), {"i": run_id}).mappings().one())
 
 
+@pytest.fixture(autouse=True)
+def _no_synced_conflicts(monkeypatch):
+    """On a stack whose Connection Fabric has synced, RT-1048's asset has an open conflict, and since P9-2.4 the hold
+    policy rightly holds a `limits` stage's write for a person (reason `risk`). These tests are about the chain's order
+    and records, so the conflict half of the case state is pinned to "none" (test_hold_policy covers the hold)."""
+    from di.services.actions import hold
+
+    real = hold._case_state
+    monkeypatch.setattr(hold, "_case_state", lambda *a, **k: (real(*a, **k)[0], False))
+
+
 def _records(run_id: str) -> list[chain.StageRecord]:
     with SessionLocal() as s:
         return chain.records_of(s, run_id)

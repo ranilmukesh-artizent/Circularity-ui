@@ -39,6 +39,7 @@ from di.models.modeler import decision_flow, decision_flow_version, shadow_decis
 from di.models.org import org_unit
 from di.models.overlay import customer_overlay
 from di.models.packs import pack_version
+from di.models.policy import standing_policy, standing_policy_version
 from di.models.reference import fx_rate
 from di.models.work import work_item
 from di.models.workspace import state_item, state_seed
@@ -77,6 +78,8 @@ __all__ = [
     "source_connection",
     "source_secret",
     "source_system",
+    "standing_policy",
+    "standing_policy_version",
     "state_item",
     "state_seed",
     "stream_event",

@@ -54,6 +54,8 @@ def reset() -> None:
         conn.execute(text("DELETE FROM work_item"))
         conn.execute(text("DELETE FROM customer_overlay"))
         conn.execute(text("DELETE FROM pack_version"))
+        conn.execute(text("DELETE FROM standing_policy_version"))  # plan 9 P9-2.5: no standing policy approves anything
+        conn.execute(text("DELETE FROM standing_policy"))
         _reset_flows(conn)
         reset_sources(conn)
         # plan 8 MVP-1.1: only the seeded org units (workspace and the three customers), once no source points at others

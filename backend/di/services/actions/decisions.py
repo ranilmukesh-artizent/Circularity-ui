@@ -32,7 +32,7 @@ from di.repositories.common import AS_OF, case_demand, hash_id, iso, limit_for, 
 from di.repositories.live_rules import Shadow, live_rules, shadow_rules
 from di.services import instructions
 from di.services.actions.pipeline import CallContext
-from di.services.actions.registry import ACTIONS, ActionError, guard, implement, mark_destructive
+from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement, mark_destructive
 from di.services.cases import intake, lifecycle, store
 from di.services.engine.evaluate import apply_business, build_routes, draft_of, evaluate
 from di.services.engine.predictor import FormulaPredictor
@@ -350,10 +350,12 @@ def _approve_idem(i: dict[str, Any], ctx: CallContext):
     return skey(c, 7, cyc(c))
 
 
-def _approve(action: str, i: dict[str, Any], ctx: CallContext) -> dict:
-    """The demo's approveHandler: the approval, the execution plan with its first step active, and the instruction."""
+def _approve(action: str, i: dict[str, Any], ctx: CallContext, approver: str | None = None) -> dict:
+    """The demo's approveHandler: the approval, the execution plan with its first step active, and the instruction.
+    `approver` is the label the approval records instead of the acting account's (a standing policy approves as
+    "policy SP-1 v1", plan 9 P9-2.5: `decision.approveByPolicy`)."""
     key = _key(action, i, ctx)
-    c, by = _case(ctx, i["case_id"]), _by(ctx)
+    c, by = _case(ctx, i["case_id"]), approver or _by(ctx)
     rec = c["recommendation"]
     t = next((r for r in c["routes"] if r["plan"] == i.get("route")), None) or rec
     is_ov = t is not rec
@@ -385,11 +387,11 @@ def _approve(action: str, i: dict[str, Any], ctx: CallContext) -> dict:
             "dir": "out", "type": "instruction.sent", "caseId": c["id"], "decisionId": c["exec"]["decisionId"],
             "approval": ref, "ver": 1, "dest": steps[0]["sys"], "ack": "sent · awaiting ack",
             "key": "idem-" + hash_id(c["id"] + ref)[:6].lower(), "retries": 0,
-            "note": "Override approved with reason" if is_ov else "", "sim": True,
+            "note": "Override approved with reason" if is_ov else "", "sim": True, "by": by,
         },
         key,
     )  # fmt: skip
-    why = f"{'Override approved' if is_ov else 'Approved'} under {ref}"
+    why = f"{'Override approved' if is_ov else 'Approved'} under {ref}" + (f" · {i['rationale']}" if approver else "")
     lifecycle.move(ctx.session, c, "approved", why + (f" on behalf of {cover['for']}" if cover else ""), ctx.actor.id)
     instructions.queue_first(ctx.session, c)  # B13b: the first step goes to its system (when sending is on)
     out = {"case_id": c["id"], "ref": ref, "route": t["plan"], "net": t["net"], "override": is_ov, "sent_to": steps[0]["sys"]}
@@ -404,6 +406,51 @@ def approve(i: dict[str, Any], ctx: CallContext):
 @implement("decision.override", idem=_approve_idem, emits=["instruction.sent"])
 def override(i: dict[str, Any], ctx: CallContext):
     return _approve("decision.override", i, ctx)
+
+
+# A standing policy approves a decision under its limits (plan 9, P9-2.5, registry entry I-11; story X-05). A system action: only
+# the hook of `decision.submit` (di.services.actions.standing_policy) calls it, as SYSTEM, in the submit's transaction. No agent
+# may (the pipeline's agent gate: the `decision.` and `system` rules), and no person calls it: a person approves with
+# `decision.approve`.
+ACTIONS.setdefault(
+    "decision.approveByPolicy",
+    ActionDef(
+        id="decision.approveByPolicy", title="Approve by standing policy", verb="approve by standing policy", risk="system",
+        desc="Approve a submitted decision because the active standing policy covers it; re-checked against the policy's limits.",
+        perm=None, scope="case",
+        input={"case_id": {"req": True, "t": "string"}, "policy_id": {"req": True, "t": "string"}, "ver": {"req": True, "t": "number"}},  # noqa: E501
+    ),
+)  # fmt: skip
+ABOVE_POLICY = "Above the policy's threshold: a person approves this decision."
+
+
+@guard("decision.approveByPolicy")
+def approve_by_policy_guard(i: dict[str, Any], ctx: CallContext):
+    from di.repositories import standing_policies  # lazy: the policy actions import this module
+    from di.services.actions.standing_policy import decision_covered
+
+    c = _peek(ctx, i["case_id"])
+    if c["stage"] != "awaiting_approval" or not c.get("submitted"):
+        return "conflict", f"{c['id']} is not submitted and awaiting approval."
+    row = standing_policies.get(ctx.session, str(i["policy_id"]))
+    if row is None or row.status != "active" or row.ver != i["ver"]:
+        return "conflict", f"Policy {i['policy_id']} v{i['ver']} is not in force."
+    return None if decision_covered(ctx, c, row) else ("approval_required", ABOVE_POLICY)
+
+
+@implement("decision.approveByPolicy", idem=_approve_idem, emits=["instruction.sent"])
+def approve_by_policy(i: dict[str, Any], ctx: CallContext):
+    from di.repositories import standing_policies
+
+    row = standing_policies.get(ctx.session, str(i["policy_id"]))
+    if row is None:  # not reached: the guard found it
+        raise ActionError("not_found", f"No standing policy {i['policy_id']}.")
+    label = f"policy {row.id} v{row.ver}"
+    note = f"Approved by {label}, owner {row.owner}"
+    key = _key("decision.approveByPolicy", i, ctx)
+    out = _approve("decision.approveByPolicy", {"case_id": i["case_id"], "rationale": note, "spend": 0}, ctx, approver=label)
+    rb_log(ctx, "decision.approved.policy", note, key)
+    return out | {"policy_id": row.id, "ver": row.ver, "owner": row.owner}
 
 
 @guard("decision.decline")
@@ -737,3 +784,7 @@ def escalation_send(i: dict[str, Any], ctx: CallContext):
     )  # fmt: skip
     rb_log(ctx, "escalation.sent", f"{n['id']} · {i['case_id']} → {to.label}", key)
     return {"id": n["id"], "to": to.label, "case_id": i["case_id"]}
+
+
+# The hook that lets a standing policy approve a submitted decision is registered wherever decisions are (worker too).
+import di.services.actions.standing_policy  # noqa: E402,F401

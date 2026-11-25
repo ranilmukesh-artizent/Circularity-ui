@@ -23,12 +23,18 @@ FORBIDDEN_ACTIONS = (
     "pack.approve", "pack.reject",  # plan 9 P9-1.6: a person decides which pack version is in force
     "credentials.rotate",  # plan 9 P9-0.4: a new secret is a person's, never an agent's (review focus 6)
     "llm.",  # plan 9 P9-2.3: which language models run, and their limits, are a person's (llm.models, llm.setModel)
+    "standingPolicy.approve", "standingPolicy.retire",  # plan 9 P9-2.5: a person decides which policy approves (R7, R21)
     "work.resolve", "work.assign",  # plan 9 P9-1.7: only a person resolves or hands on an exception, approval or question
 )  # fmt: skip
 
 # Writes an agent may prepare but never run, whatever its autonomy: the pipeline (step 9b) holds them for a person.
 # P9-2.4 folds this tuple into HoldReason.destructive (I-10).
-HELD_FOR_PERSON = ("mapping.revert", "tables.update", "mapping.save")
+HELD_FOR_PERSON = (
+    "mapping.revert",
+    "tables.update",
+    "mapping.save",
+    "standingPolicy.save",
+)  # a policy draft is a person's (P9-2.5)
 
 # Reads no agent may call: they handle a secret (step 6 of the pipeline refuses them).
 NO_AGENT_READS = ("source.test", "source.sandboxKey")

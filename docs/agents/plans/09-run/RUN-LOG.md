@@ -79,3 +79,5 @@ unattended". Times are local (IST).
 | 25 Nov 15:27 | P9-2.4 merged. Sonnet; red proven with a stub (code written first); industrial cases without a grade have no confidence hold (parity kept); agents.test.ts import line conflict with P9-2.3 resolved keeping both. |
 | 25 Nov 15:27 | P9-2.4 merged and pushed (2 hold tests pinned off synced conflicts). P9-2.5 to w1; P9-2.10 verifying. |
 | 25 Nov 15:31 | P9-2.10 merged. Sonnet; red proven by moving modules aside (code first); read-only agent recover-exceptions seeded; drafts never resolve or assign. |
+| 25 Nov 15:32 | P9-2.10 merged and pushed. P9-2.6 to w2. |
+| 25 Nov 16:03 | P9-2.5 merged. Sonnet; R21 tests; standingPolicy approve/reject forbidden to agents; red proven by removing the hook (code first); demo and RT-1048 unchanged with no policy. |
