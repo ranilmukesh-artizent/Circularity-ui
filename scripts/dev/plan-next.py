@@ -76,9 +76,13 @@ def parse() -> dict[str, dict]:
         if not m or m.group(1) not in tasks:
             continue
         t = tasks[m.group(1)]
-        d = re.search(r"\*\*Depends on:\*\*([^\n]*)", blk)
+        d = re.search(r"\*\*Depends on:\*\*(.*?)(?:\n\n|\n\*\*|\Z)", blk, re.S)  # it may wrap onto the next line
         if d:
             t["deps"] = set(re.findall(ID, d.group(1))) - {m.group(1)}
+            # a range "P9-8.1 to P9-8.21" / "P9-8.1 … P9-8.21" means every task of that phase between the two
+            for a, b in re.findall(rf"({ID})\s*(?:to|…|\.\.\.|–|�)\s*({ID})", d.group(1)):
+                lo, hi = key(a), key(b)
+                t["deps"] |= {o for o in tasks if key(o)[0] == lo[0] and lo[1] <= key(o)[1] <= hi[1]} - {m.group(1)}
         s = re.search(r"\*\*Size:\*\*\s*([SML])", blk)
         if s:
             t["size"] = s.group(1)
