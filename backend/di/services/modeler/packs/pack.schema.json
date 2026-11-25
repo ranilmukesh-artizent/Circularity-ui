@@ -382,6 +382,78 @@
    "title": "ForbidDef",
    "type": "object"
   },
+  "FraudRule": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "signal": {
+     "enum": [
+      "blacklisted",
+      "quote_mismatch",
+      "repeat_returns",
+      "refund_before_receipt",
+      "serial_not_on_contract"
+     ],
+     "title": "Signal",
+     "type": "string"
+    },
+    "weight": {
+     "exclusiveMinimum": 0,
+     "maximum": 1,
+     "title": "Weight",
+     "type": "number"
+    },
+    "params": {
+     "additionalProperties": true,
+     "title": "Params",
+     "type": "object"
+    },
+    "source": {
+     "title": "Source",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "signal",
+    "weight",
+    "source"
+   ],
+   "title": "FraudRule",
+   "type": "object"
+  },
+  "FraudRules": {
+   "additionalProperties": false,
+   "description": "The pack's fraud part: the rule set version, the score a case is held at, and the weighted rules.",
+   "properties": {
+    "version": {
+     "title": "Version",
+     "type": "string"
+    },
+    "threshold": {
+     "exclusiveMinimum": 0,
+     "title": "Threshold",
+     "type": "number"
+    },
+    "rules": {
+     "items": {
+      "$ref": "#/$defs/FraudRule"
+     },
+     "title": "Rules",
+     "type": "array"
+    }
+   },
+   "required": [
+    "version",
+    "threshold",
+    "rules"
+   ],
+   "title": "FraudRules",
+   "type": "object"
+  },
   "GateRef": {
    "additionalProperties": false,
    "properties": {
@@ -1290,6 +1362,17 @@
    },
    "title": "Stories",
    "type": "array"
+  },
+  "fraud": {
+   "anyOf": [
+    {
+     "$ref": "#/$defs/FraudRules"
+    },
+    {
+     "type": "null"
+    }
+   ],
+   "default": null
   }
  },
  "required": [

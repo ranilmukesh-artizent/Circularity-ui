@@ -28,6 +28,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, ValidationInfo, field_validator
 
+from di.services.modeler.fraud import FraudRules
 from di.services.modeler.stages import STAGE_KEYS, GuardType, StageKey
 
 PACKS_DIR = Path(__file__).parent / "packs"
@@ -340,8 +341,9 @@ class Pack(_Part):
     # 12 KPIs
     kpis: list[Kpi]
     analytics: list[AnalyticsQuestion]
-    # 13 stories
+    # 13 stories and fraud signals
     stories: list[str]
+    fraud: FraudRules | None = None  # plan 9 P9-2.11: the fraud rules (di.services.modeler.fraud); none: no fraud hold
 
     @field_validator("stages")
     @classmethod
@@ -388,6 +390,7 @@ FIELD_PART: dict[str, int] = {
     "runtime": 11,
     **dict.fromkeys(("kpis", "analytics"), 12),
     "stories": 13,
+    "fraud": 13,
 }  # fmt: skip
 
 

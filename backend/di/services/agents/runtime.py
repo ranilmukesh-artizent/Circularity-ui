@@ -47,6 +47,7 @@ from di.core.auth import load_context
 from di.core.config import get_settings
 from di.repositories import stage_outcomes
 from di.repositories.live_rules import live_pack
+from di.services.actions.fraud import triage_case  # also registers fraud.hold in the worker
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
 from di.services.agents import calibrate, chain, limits, playbook_versions, registry
 from di.services.agents.forbidden import FORBIDDEN_ACTIONS
@@ -280,6 +281,8 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
     if (floor := chain.pack_rul_min(pack)) is not None:
         st["rul_min"] = floor
     st["queue_planner"] = disposition.planner_name(pack)  # the disposition stage waits for the queue plan (P9-2.8)
+    if stage == 0 and pack.fraud is not None:  # the fraud triage of the intake stage (P9-2.11): intake holds on it
+        st["fraud"] = triage_case(s, case, pack).as_dict()
     nxt = stage_chain.next_step(stage, sub, st, case)
     if nxt is None:
         return _save(s, run, "done", n, st | {"note": "playbook finished"})
@@ -294,7 +297,9 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
         if nxt.reason == "queue":  # the deduped job is the fan-in: one plan for every case waiting in this pack and org
             key = f"{QUEUE_JOB}:{pack.key}:{case['owner']}"
             jobs.enqueue(s, QUEUE_JOB, {"pack": pack.key, "org_unit_id": case["owner"]}, dedupe_key=key)
-        _stage_record(s, run, stage, defn, st, case, "waiting")
+        _stage_record(
+            s, run, stage, defn, st, case, "held" if nxt.reason == "fraud" else "waiting"
+        )  # a fraud hold is a hold (P9-2.11)
         return _save(s, run, "waiting", n, st | {"waiting": nxt.reason})
     if isinstance(nxt, Halt):
         _stage_record(s, run, stage, defn, st, case, "skipped")
@@ -357,11 +362,12 @@ def wake(s: Session, run_id: str) -> None:
         _save(s, run, "stopped", int(run["step"]), st | {"reason": "A person rejected the proposal."})
 
 
-def resume_waiting(s: Session, case_id: str) -> int:
-    """The case was approved: every run waiting for that approval runs on. Returns how many."""
+def resume_waiting(s: Session, case_id: str, waiting: str = "approval") -> int:
+    """The case was approved (or, with `waiting="fraud"`, released from a fraud hold): every run waiting for that runs on.
+    Returns how many."""
     ids = s.execute(
-        text("SELECT id FROM agent_run WHERE case_id = :c AND status = 'waiting' AND state->>'waiting' = 'approval'"),
-        {"c": case_id},
+        text("SELECT id FROM agent_run WHERE case_id = :c AND status = 'waiting' AND state->>'waiting' = :w"),
+        {"c": case_id, "w": waiting},
     ).scalars()
     n = 0
     for run_id in list(ids):
