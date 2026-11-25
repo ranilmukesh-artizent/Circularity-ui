@@ -163,8 +163,9 @@ def test_route_classes_and_guardrail_types():
 
 def test_runtime_and_kpis_of_the_two_packs():
     tf, dv = load_pack("tool_fleet"), load_pack("device")
-    assert [e.owner_role for e in tf.runtime.exception_types] == ["Planner", "Engineer", "Approver", "Planner", "Planner"]
-    assert len(dv.runtime.exception_types) == 5 and len(dv.kpis) == 6
+    # P9-1.10 added not_in_system_of_record and expected_return_missing (both Planner) in front of the five of P9-1.1
+    assert [e.owner_role for e in tf.runtime.exception_types] == ["Planner"] * 3 + ["Engineer", "Approver", "Planner", "Planner"]
+    assert len(dv.runtime.exception_types) == 7 and len(dv.kpis) == 6
     assert [k.label for k in tf.kpis][:2] == ["Value recovered per tool", "Days to next use"]
     assert len(tf.kpis) == 6 and all(k.measure is None for k in tf.kpis)
 

@@ -15,6 +15,10 @@ A template case with gates (plan 9, P9-1.2) also carries, inside `case`: `gates`
 A tool-fleet case's page also has `plan` (plan 9, P9-1.4): its place in its org's queue plan, `{holds, contested, lost,
 kinds}` (di.services.cases.replan.queue_plan; None for other templates). The Decide tab's "Queue plan" line draws it.
 
+A template case also has `recordMatch` (plan 9, P9-1.10: whether the pack's system of record holds the asset, by
+di.services.cases.record_match.view; None when the pack has none) and `custody` (the append-only list, oldest first). The
+Overview's "System of record" line and Custody list draw them.
+
 Both refuse as the case actions do: 403 out_of_scope when the account has no case pages, 404 not_found for an unknown
 case, 403 tenant_boundary outside the account's tenants or warehouse (same messages as di.services.actions.pipeline).
 
@@ -133,10 +137,11 @@ from di.repositories.common import (
     ti_conf,
 )
 from di.repositories.context import call_ctx, load_case, visible_cases
+from di.repositories.packs import active_pack
 from di.repositories.provenance import prov_for, snap_time
 from di.services.actions.decisions import draft_rationale
 from di.services.actions.pipeline import CallContext
-from di.services.cases import gate_hold, replan
+from di.services.cases import gate_hold, record_match, replan
 from di.services.execution import (
     as_sc,
     ex_actual,
@@ -602,6 +607,8 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
         "approval": {"role": "Approver" if deleg else "Admin", "limit": no_inf(policy.limit_for(p.account, p.ctx))},
         "sources": case_sources(),
         "plan": replan.queue_plan(session, c),
+        "recordMatch": record_match.view(c, active_pack(session, c["template"], c["owner"])) if c.get("template") else None,
+        "custody": list(c.get("custody") or []),
     }
 
 

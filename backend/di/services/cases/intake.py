@@ -26,6 +26,9 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   gates are evaluated and applied to the routes before the business rules (inside `decide_case`), and a gate that holds
   leaves the case at stage `none` with `gateHold` until the evidence arrives (di.services.cases.gate_hold).
   `facts.batch` is kept as `batchRef`.
+- **System of record and custody** (plan 9, P9-1.10). A template case is matched to its pack's system of record when it
+  opens and on every re-check (di.services.cases.record_match): `recordMatch`, an exception item when the asset is not
+  there, and `custody` (received on open, matched, moved, released when a gate hold clears), append-only.
 - **Dedupe** (Review Focus 5). The same asset key and reason open one case: a second intake (a webhook replay, a
   re-sync, an import read twice) is refused with `duplicate`. The action's idempotency key is the same pair.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
@@ -53,7 +56,7 @@ from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
-from di.services.cases import decide, gate_hold, named_demand, store
+from di.services.cases import decide, gate_hold, named_demand, record_match, store
 from di.services.cases.lifecycle import STAGES
 from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
@@ -352,11 +355,16 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     decider's decision (di.services.cases.decide) set on the case."""
     fv = flow_version(s, c)  # also refreshes the case's scope facts
     pack = _pack(s, c)
+    was_held = isinstance(c.get("gateHold"), dict)
     if pack.key != "industrial":
         gate_hold.attach_evidence(s, c)  # the gates read the asset's compliance records (plan 9, P9-1.2)
         if facts or not c.get("routes"):
             _snapshot(c, facts, pack.valuer.kind)
     decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
+    if pack.key != "industrial":  # custody and the system of record (plan 9, P9-1.10)
+        if was_held and c.get("gateHold") is None:
+            record_match.released(c)
+        record_match.check(s, c, pack)
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
 
@@ -384,6 +392,7 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
         raise ActionError("validation_error", f"The case needs {', '.join(gone)} (the pack's minimum facts).")
     case_id = _next_id(s)
     c = _base(case_id, i, known, i.get("by") or actor)
+    record_match.receive(s, c, i.get("by") or actor)
     _value(s, c, facts)
     store.insert_new(s, c, f"Case opened from {i['reason']}", actor)
     payload = {"case_id": case_id, "owner": c["owner"], "template": c["template"], "asset_key": i["asset_key"],

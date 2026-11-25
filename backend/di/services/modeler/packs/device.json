@@ -405,7 +405,12 @@
   "entities": [],
   "mappings": [],
   "min_fields": [],
-  "record_match": null
+  "record_match": {
+   "source_type": "rl",
+   "field": "asset.return_ref",
+   "mode": "exception",
+   "missing_after_days": 2
+  }
  },
  "valuer": {
   "kind": "device",
@@ -842,6 +847,18 @@
  },
  "runtime": {
   "exception_types": [
+   {
+    "id": "not_in_system_of_record",
+    "label": "Not in the system of record",
+    "owner_role": "Planner",
+    "action": "Check the serial in the system of record, or correct the asset key"
+   },
+   {
+    "id": "expected_return_missing",
+    "label": "Expected return missing",
+    "owner_role": "Planner",
+    "action": "Find the unit or confirm it was not returned"
+   },
    {
     "id": "grade_below_quote",
     "label": "Grade well below the quote",

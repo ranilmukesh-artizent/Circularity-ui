@@ -259,6 +259,19 @@ def _case_replan(payload: dict[str, Any]) -> None:
     log.info("replan %s: moved %s", payload["org_unit_id"], moved or "none")
 
 
+@handler("case.recordMatch")
+def _record_match(payload: dict[str, Any]) -> None:
+    """A sync of a pack's system of record finished: the cases not yet found are matched again, and the assets it says are
+    on their way back with no case after the pack's wait become exceptions (di.services.cases.record_match.reconcile,
+    P9-1.10)."""
+    from di.services.cases import record_match
+
+    with SessionLocal() as s:
+        report = record_match.reconcile(s, payload["source_id"])
+        s.commit()
+    log.info("record match %s: %s", payload["source_id"], report)
+
+
 @handler("work.sla")
 def _work_sla(payload: dict[str, Any]) -> None:
     """A work item's due time came (di.services.cases.process.open_item queued this job): if it is still open it is

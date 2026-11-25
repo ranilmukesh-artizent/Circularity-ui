@@ -80,12 +80,20 @@ export interface Source { id: string; short?: string; name: string; vendor: stri
  * and a short name for each order ("lease renewal"). */
 export interface QueuePlan { holds: string | null; contested: string[]; lost: { order: string; to: string; gain: number }[]; kinds: Record<string, string> }
 
+/** One entry of a case's custody list (backend/di/services/cases/record_match.py, P9-1.10): append-only, oldest first. */
+export interface CustodyEntry { at: string; event: 'received' | 'matched' | 'moved' | 'released'; source: string | null; location: string | null; by: string }
+/** Whether the pack's system of record holds the asset: the system's name, the record's key and how long ago it synced, or the
+ * role the exception went to. */
+export interface RecordMatchView {
+  found: boolean; system: string; key: string | null; syncedAt: string | null; syncedMinutesAgo?: number; since: string | null; owner: string | null;
+}
+
 /** GET /api/screens/case/{id} */
 export interface CaseScreen {
   case: CaseRec; model: string; serial: string; run: Run; tags: StageTag[]; stages: StageData[];
   landing: number | 'overview'; next: NextStep; clock: Clock | null;
   approval: { role: 'Approver' | 'Admin'; limit: number | null }; sources: Record<string, Source>;
-  plan?: QueuePlan | null;
+  plan?: QueuePlan | null; recordMatch?: RecordMatchView | null; custody?: CustodyEntry[];
 }
 
 // ---------- the analysis ----------
@@ -195,6 +203,10 @@ export const nextStep = (c: CaseRec): NextStep => screenOf(c).next;
 export const sources = (c: CaseRec): Record<string, Source> => screenOf(c).sources;
 /** A tool-fleet case's queue plan; null for other templates. */
 export const queuePlan = (c: CaseRec): QueuePlan | null => screenOf(c).plan ?? null;
+/** Whether the pack's system of record holds the case's asset; null for a pack without one. */
+export const recordMatch = (c: CaseRec): RecordMatchView | null => screenOf(c).recordMatch ?? null;
+/** The case's custody list, oldest first (empty for the industrial pack). */
+export const custody = (c: CaseRec): CustodyEntry[] => screenOf(c).custody ?? [];
 /** "07 Oct 14:20" (time only when it is not midnight UTC; the demo's stWhen). */
 export function when(d: string | Date | null | undefined): string {
   if (!d) return '';

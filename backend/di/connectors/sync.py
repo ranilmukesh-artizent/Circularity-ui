@@ -34,6 +34,7 @@ from di.core import golden
 from di.core.db import SessionLocal, engine
 from di.core.jobs import enqueue
 from di.services.canonical import store
+from di.services.cases import record_match
 from di.workflow import binding
 from di.workflow.engine import Feed, run_graph
 
@@ -403,6 +404,8 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
             ),
             {"ns": new_status, "ok": status != "failed", "r": read, "f": failed, "s": source_id},
         )
+        if status != "failed" and record_match.is_record_source(s, source_id):  # the pack's system of record (P9-1.10)
+            enqueue(s, "case.recordMatch", {"source_id": source_id}, dedupe_key=f"case.recordMatch:{source_id}")
         s.commit()
     return {
         "run_id": run_id,

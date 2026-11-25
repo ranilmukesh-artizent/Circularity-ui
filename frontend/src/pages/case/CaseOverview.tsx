@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import {
-  assetModel, assetSerial, lc, nextStep, phases, runOf, stageHref, stageSentence,
+  assetModel, assetSerial, custody, lc, nextStep, phases, recordMatch, runOf, stageHref, stageSentence,
   stageState, stageTitle, stages, when, type CaseRec,
 } from '../../api/case';
 import { fmtDate, fmtDateYear, money } from '../../api/format';
@@ -10,6 +10,7 @@ import { Panel } from '../../components/kit/Panel';
 import { Photo, Pva, Tag } from './CaseBlocks';
 import { approveGuarded, caseActions, runNextStep } from './caseActions';
 import { useCaseUi } from './CaseContext';
+import { custodyLines, recordMatchLine } from './custody';
 
 const href = (id: string, n: number | 'overview' | 'full') => '#/' + stageHref(id, n);
 
@@ -50,7 +51,8 @@ export function Overview({ c }: { c: CaseRec }) {
       </li>
     );
   };
-  const mine = nx.kind === 'act' || nx.kind === 'approve' || nx.kind === 'ack';
+  const matchLine = recordMatchLine(recordMatch(c)), trail = custodyLines(custody(c));
+  const mine = nx.kind ==='act' || nx.kind === 'approve' || nx.kind === 'ack';
   return (
     <div className="stpage stovw" data-stage="overview">
       <nav className="frbc stbc" aria-label="Breadcrumb">
@@ -91,6 +93,15 @@ export function Overview({ c }: { c: CaseRec }) {
               )}
             </div>
           </section>
+          {(matchLine || trail.length > 0) && (
+            <section className="panel frp" aria-label="System of record and custody">
+              <div className="ph"><h3>Custody</h3></div>
+              <div className="pb">
+                {matchLine && <p className={recordMatch(c)?.found ? 'note' : 'note tx-bad'} style={{ marginTop: 0 }}>{matchLine}</p>}
+                {trail.length > 0 && <ul className="note" style={{ margin: 0, paddingLeft: 16 }}>{trail.map((l) => <li key={l}>{l}</li>)}</ul>}
+              </div>
+            </section>
+          )}
           <section className="panel frp">
             <div className="ph"><h3><Icon name="spark" /> Agent suggests</h3></div>
             <div className="pb">
