@@ -33,7 +33,9 @@ def test_device_pack_matches_golden():
     t, g = load_template("device"), PO["device"]
     assert (t.key, t.name, t.pre) == ("device", "Device recommerce", g["pre"])
     assert [(p.id, p.name) for p in t.paths] == [(p["key"], p["name"]) for p in g["paths"]]
-    assert [(x.id, x.text, x.owner) for x in t.guardrails] == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
+    # GR-D13 (quote match, P9-6.5) is a plan 9 addition for received devices; the demo has no such guardrail
+    guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id != "GR-D13"]
+    assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
     assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
     assert [d.kind for d in t.dims] == ["set", "set", "set", "min", "min"]
     gr_d3 = next(x for x in t.guardrails if x.id == "GR-D3")

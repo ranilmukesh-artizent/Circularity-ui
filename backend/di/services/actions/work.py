@@ -20,6 +20,7 @@ from di.core import policy
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
 from di.services.cases import process, store
+from di.services.device import verify
 
 _STR = {"req": True, "t": "string"}
 ACTIONS.setdefault(
@@ -103,6 +104,23 @@ def need_info(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------- work.resolve
+def _answer_quote_mismatch(ctx: CallContext, row: dict[str, Any], outcome: str) -> None:
+    """Keep the person's answer on the case and value it again: a re-quote accepted lets the channels go (the case moves on
+    from `none` with a stage log row by the person); the trade-in returned keeps them held."""
+    from di.services.cases import intake, lifecycle  # intake imports the actions layer
+
+    c = store.get(ctx.session, row["case_id"], for_update=True)
+    if c is None:
+        return
+    held = c["stage"] == "none"
+    verify.resolved(c, outcome, ctx.actor.id, ctx.now.isoformat())
+    intake.revalue(ctx.session, c)
+    if held and c.get("recommendation"):
+        lifecycle.move(ctx.session, c, "awaiting_approval", f"Quote mismatch resolved: {outcome}", ctx.actor.id)
+    else:
+        store.save(ctx.session, c)
+
+
 @guard("work.resolve")
 def resolve_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     return _refusal(_row(ctx, i["item_id"]), ctx)
@@ -122,6 +140,8 @@ def resolve(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
                 {"at": ctx.now.isoformat(), "by": ctx.actor.id, "text": f"Answer to '{row['cause']}': {note or i['outcome']}"}
             )
             store.save(ctx.session, c)
+    if row["type"] == verify.QUOTE_MISMATCH and row["case_id"]:  # a person's answer on a quote mismatch (P9-6.5, DV-02)
+        _answer_quote_mismatch(ctx, row, i["outcome"])
     return {
         "id": row["id"],
         "case_id": row["case_id"],

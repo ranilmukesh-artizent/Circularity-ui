@@ -116,7 +116,9 @@ def test_device_template_equals_po_golden():
     t, g = load_template("device"), PO["device"]
     assert t == template_of_pack(load_pack("device"))
     assert [(p.id, p.name) for p in t.paths] == [(p["key"], p["name"]) for p in g["paths"]]
-    assert [(x.id, x.text, x.owner) for x in t.guardrails] == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
+    # GR-D13 (quote match, P9-6.5) is a plan 9 addition for received devices; the demo has no such guardrail
+    guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id != "GR-D13"]
+    assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
     assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
     assert [asdict(r) for r in compile_flow(t, default_flow(t))] == [
         {"id": "DR-01", "scope": {"dohMin": 45}, "action": "exclude", "path": "buynow", "text": "45+ days on hand: never Buy Now"}
@@ -176,7 +178,7 @@ def test_runtime_and_kpis_of_the_two_packs():
         "Planner",
         "Fleet desk",
     ]
-    assert len(dv.runtime.exception_types) == 7 and len(dv.kpis) == 6
+    assert len(dv.runtime.exception_types) == 8 and len(dv.kpis) == 6  # P9-6.5 added quote_mismatch
     assert [k.label for k in tf.kpis][:2] == ["Value recovered per tool", "Days to next use"]
     # P9-1.13 gave three of the six a measure; the other three show "No data yet" until their phase
     assert len(tf.kpis) == 6 and [k.id for k in tf.kpis if k.measure] == ["value_per_tool", "redeploy_rate", "held_by_guardrails"]

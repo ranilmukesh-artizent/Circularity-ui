@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react';
 import type { CaseAnalysis, CaseRec, CaseScreen } from '../../../api/case';
 import * as D from './DecideTabs';
-import { DeviceTab } from './DeviceTabs';
+import { DeviceTab, QuoteTab } from './DeviceTabs';
 import * as E from './EarlyTabs';
 import * as X from './ExecuteTabs';
 
@@ -18,7 +18,8 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
     case 4: return [['evidence', 'Evidence checklist', E.EvidenceListTab], ['location', 'Location', E.LocationTab], ['holding', 'Holding cost', E.HoldingTab]];
     case 5: {
       const early: TabDef[] = [['findings', 'Findings', E.FindingsTab], ['diag', 'Diagnostic condition', E.DiagTab], ['cert', 'Certified period', E.CertTab], ['photos', 'Photos', E.PhotosTab]];
-      return c.device ? [['device', 'Device', DeviceTab], ...early] : early; // a received device starts with its Device tab (P9-6.4)
+      // a received device starts with its Device tab (P9-6.4), then the Quote tab when it has one (P9-6.5)
+      return c.device ? [['device', 'Device', DeviceTab], ...(c.device.quoteCheck ? [['quote', 'Quote', QuoteTab] as TabDef] : []), ...early] : early;
     }
     case 6: return [
       ['packet', 'Decision packet', D.PacketTab], ['compare', 'Compare outcomes', D.CompareTab], ['why', 'Why this outcome', D.WhyTab],

@@ -115,6 +115,35 @@
   "legal_review": "pending"
  },
  {
+  "id": "G-DEV-QUOTE",
+  "name": "Quote match",
+  "type": "Data quality",
+  "stage": "match",
+  "packs": [
+   "device"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": [
+    {
+     "fact": "valuer.imei",
+     "op": "exists",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Customer care",
+  "citation": "Plan 9 P9-6.5 (guardrail GR-D13): the device read must match the quote; no regulation",
+  "legal_review": "pending"
+ },
+ {
   "id": "G-VEH-TITLE",
   "name": "Clear title, no open finance",
   "type": "Compliance",

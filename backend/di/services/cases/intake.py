@@ -73,6 +73,7 @@ from di.services.cases import decide, gate_hold, named_demand, record_match, reg
 from di.services.cases.lifecycle import STAGES
 from di.services.device import inputs as device_inputs
 from di.services.device import intake as device_intake
+from di.services.device import verify as device_verify
 from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
 from di.services.engine.queue import Capacity, Dem, planner_for
@@ -406,11 +407,15 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
             _snapshot(c, facts, pack.valuer.kind, s)
         if pack.valuer.kind == "tool_fleet" and regrade.apply(s, c):  # the workbench grade, else the estimate (P9-3.5)
             fv = flow_version(s, c)  # the rules' scope reads the grade the case now shows
+        if pack.valuer.kind == "device":  # the quote against the lab's read, on every valuation (P9-6.5)
+            device_verify.refresh(s, c)
     decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
     if pack.key != "industrial":  # custody and the system of record (plan 9, P9-1.10)
         if was_held and c.get("gateHold") is None:
             record_match.released(c)
         record_match.check(s, c, pack)
+        if pack.valuer.kind == "device":
+            device_verify.check(s, c, pack)  # a mismatch opens the quote_mismatch exception (P9-6.5)
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
 

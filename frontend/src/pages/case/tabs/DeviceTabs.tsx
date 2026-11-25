@@ -3,8 +3,33 @@
 import { deviceView } from '../../../api/device';
 import { fmtDateYear } from '../../../api/format';
 import { Kv } from '../CaseBlocks';
-import { deviceLine, gradeLine, lotLines, refLine } from '../device';
+import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine } from '../device';
 import type { TabProps } from './index';
+
+const LABEL = { imei: 'IMEI', model: 'Model', storage: 'Storage' } as const;
+const shown = (field: keyof typeof LABEL, v: string | number | null) => (v == null ? 'Not read yet' : field === 'storage' ? `${v} GB` : String(v));
+
+/** The Quote tab of a received-device case (P9-6.5, DV-02): the quoted and the read IMEI, model and storage side by side, a
+ * mismatch row in red with the exception's owner and state. Only a person resolves the exception (My work). */
+export function QuoteTab({ c }: TabProps) {
+  const q = deviceView(c)?.quoteCheck;
+  if (!q) return null;
+  return (
+    <>
+      <p className="stpad" role="status">{quoteCheckLine(q)}</p>
+      <table className="stpad" aria-label="Quote against the device read">
+        <thead><tr><th>Field</th><th>Quoted</th><th>Read</th></tr></thead>
+        <tbody>
+          {q.rows.map((r) => (
+            <tr key={r.field} style={r.mismatch ? { color: 'var(--bad)', background: 'var(--bad-soft)' } : undefined} title={r.mismatch ? mismatchLine(r) : undefined}>
+              <td>{LABEL[r.field]}</td><td>{shown(r.field, r.quoted)}</td><td>{shown(r.field, r.read)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
+}
 
 export function DeviceTab({ c }: TabProps) {
   const v = deviceView(c);

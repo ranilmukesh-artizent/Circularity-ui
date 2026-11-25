@@ -9,7 +9,8 @@ GET /api/screens/case/{id}/analysis
     what-if guidance, the preparation build-up, the lease trail, the journal and events, and the evidence pack.
 
 A case opened from a received device (plan 9, P9-6.4) also carries `device` ({imei, sku, model, storageGb, declaredGrade, grade,
-quote, partner, batch, received, ref, refSource, bulk, lines}; the facade's `deviceView`).
+quote, partner, batch, received, ref, refSource, bulk, lines, quoteCheck}; the facade's `deviceView`; `quoteCheck` is the quote
+against the lab's read, P9-6.5).
 
 A template case with gates (plan 9, P9-1.2) also carries, inside `case`: `gates` (one row per gate result), `gateHold`
 (held until evidence arrives), `requiredSteps` and `batch` ({ref, total, held, released} of its batch); the facade's
@@ -149,6 +150,7 @@ from di.repositories.provenance import prov_for, snap_time
 from di.services.actions.decisions import draft_rationale
 from di.services.actions.pipeline import CallContext
 from di.services.cases import gate_hold, record_match, replan
+from di.services.device import verify as device_verify
 from di.services.execution import (
     as_sc,
     ex_actual,
@@ -599,7 +601,7 @@ def pack_stages(session: Session, c: Case) -> list[dict] | None:
     return [{"key": s.key, "label": s.label, "agent": s.agent, "autonomy": s.autonomy} for s in pack.stages]
 
 
-def device_block(c: Case) -> dict | None:
+def device_block(c: Case, session: Session | None = None) -> dict | None:
     """The `device` block of a case opened from a received trade-in (plan 9, P9-6.4; facade `deviceView`): IMEI (none for a
     bulk lot), SKU, quote, partner, batch, received date and, for a lot, a line per device. None for any other case."""
     v = c.get("valuer") if c.get("template") == "device" else None
@@ -618,6 +620,7 @@ def device_block(c: Case) -> dict | None:
              "grade": x["grade"], "quote": x.get("quote") or 0}
             for x in v.get("lines") or []
         ],
+        "quoteCheck": device_verify.view(session, c) if session is not None else None,  # the quote against the read (P9-6.5)
     }  # fmt: skip
 
 
@@ -632,7 +635,7 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
     rec = case_record(c, session)
     if rec.get("batchRef"):  # a lot opened in a batch: how many of its lots are released (plan 9, P9-1.2)
         rec["batch"] = {"ref": rec["batchRef"], **gate_hold.batch_status(session, rec["batchRef"])}
-    if (dev := device_block(c)) is not None:  # a received device or a bulk lot (plan 9, P9-6.4)
+    if (dev := device_block(c, session)) is not None:  # a received device or a bulk lot (plan 9, P9-6.4)
         rec["device"] = dev
     return {
         "case": rec,

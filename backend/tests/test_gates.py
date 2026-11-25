@@ -1,4 +1,4 @@
-"""P9-1.2 (I-2, I-3): the gate catalogue (41 gates of research B section 5, and G-CON-2), evidence records and the pure evaluation
+"""P9-1.2 (I-2, I-3): the gate catalogue (43 gates: B section 5, G-CON-2, G-DEV-QUOTE), evidence records and the pure evaluation
 of a case's gates. The hold and the release on evidence are in test_gate_hold.py."""
 
 import json
@@ -27,7 +27,8 @@ T0 = datetime(2026, 10, 1, 8, 0, tzinfo=UTC)
 
 # research B sections 5.2 to 5.6, in order
 B5_IDS = [
-    "G-TOOL-REC", "G-TOOL-TEL", "G-DEV-WIPE", "G-DEV-LOCK", "G-VEH-TITLE", "G-VEH-ODO", "G-VEH-RECALL", "G-VEH-BRAND",
+    "G-TOOL-REC", "G-TOOL-TEL", "G-DEV-WIPE", "G-DEV-LOCK", "G-DEV-QUOTE", "G-VEH-TITLE", "G-VEH-ODO", "G-VEH-RECALL",
+    "G-VEH-BRAND",
     "G-VEH-SALV", "G-NET-INV", "G-NET-CFG", "G-NET-EXP", "G-NET-COV", "G-MED-DECON", "G-MED-SVC", "G-MED-FSN",
     "G-MED-REFURB",
     "G-DATA-1", "G-DATA-2", "G-DATA-3", "G-DS-1", "G-DS-2", "G-WEEE-1", "G-WEEE-2", "G-WASTE-1", "G-WASTE-2",
@@ -62,10 +63,18 @@ def _routes() -> list[dict[str, Any]]:
 
 def test_x_03_gate_has_typed_fields():
     cat = catalogue()
-    assert len(cat) == 42  # 41 of research B section 5, and G-CON-2 (P9-3.6)
+    assert len(cat) == 43  # 41 of research B section 5, G-CON-2 (P9-3.6) and G-DEV-QUOTE (P9-6.5)
     assert list(cat) == B5_IDS
     for g in cat.values():
-        assert g.type and g.stage and g.trigger is not None and g.evidence and g.effect.kind and g.owner and g.citation, g.id
+        assert (
+            g.type
+            and g.stage
+            and g.trigger is not None
+            and (g.evidence or g.id == "G-DEV-QUOTE")
+            and g.effect.kind
+            and g.owner
+            and g.citation
+        ), g.id
         assert g.legal_review == "pending"
         assert all(e in EVIDENCE_TYPES for e in g.evidence), g.id
     assert {g.type for g in cat.values()} == {"Compliance", "Data quality"}
@@ -212,9 +221,12 @@ def test_evidence_expiry():
 
 def test_shipped_packs_have_only_the_gates_a_phase_switched_on():
     """A parity guard (plan 9): the pack phases flip it as they switch gates on. P9-1.11 switched G-CON-1 on in the tool-fleet
-    pack; it triggers only on a restricting contract record, so a case without one is not gated. P9-3.6 switched G-CON-2 on."""
+    pack; it triggers only on a restricting contract record, so a case without one is not gated. P9-3.6 switched G-CON-2 on,
+    P9-6.5 G-DEV-QUOTE (a received device only)."""
     for k in pack_keys():
-        assert [g.id for g in load_pack(k).gates] == (["G-CON-1", "G-CON-2"] if k == "tool_fleet" else []), k
+        assert [g.id for g in load_pack(k).gates] == {"tool_fleet": ["G-CON-1", "G-CON-2"], "device": ["G-DEV-QUOTE"]}.get(
+            k, []
+        ), k
         got = evaluate_gates({"cls": "x"}, load_pack(k))
         # the tool fleet's contract right (P9-3.6) applies to every case: with no contract line it fails
         assert [(r.gate_id, r.passed) for r in got] == ([("G-CON-2", False)] if k == "tool_fleet" else []), k

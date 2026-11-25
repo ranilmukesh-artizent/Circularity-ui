@@ -1,6 +1,32 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceView } from '../../api/device';
-import { deviceLine, gradeLine, lotLines, refLine } from './device';
+import type { QuoteCheck } from '../../api/device';
+import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine } from './device';
+
+describe('P9-6.5 mismatchLine (DV-02)', () => {
+  it('names the quoted and the read value', () => {
+    expect(mismatchLine({ field: 'storage', quoted: 256, read: 128 })).toBe('Storage quoted 256 GB, read 128 GB');
+    expect(mismatchLine({ field: 'model', quoted: 'iPhone 14', read: 'iPhone 13' })).toBe('Model quoted iPhone 14, read iPhone 13');
+    expect(mismatchLine({ field: 'imei', quoted: '359990000000428', read: '359990000000429' })).toBe(
+      'IMEI quoted 359990000000428, read 359990000000429',
+    );
+  });
+  const rows: QuoteCheck['rows'] = [
+    { field: 'imei', quoted: '1', read: '1', mismatch: false },
+    { field: 'storage', quoted: 256, read: 128, mismatch: true },
+  ];
+  it('says the state, the owner and where the exception stands', () => {
+    expect(quoteCheckLine({ state: 'waiting', rows: [], owner: 'Customer care', item: null })).toBe("Waiting for the lab's diagnostics");
+    expect(quoteCheckLine({ state: 'match', rows, owner: 'Customer care', item: null })).toBe('Quote matches the device read');
+    const item = { id: 7, state: 'open' as const, outcome: null, by: null };
+    expect(quoteCheckLine({ state: 'mismatch', rows, owner: 'Customer care', item })).toBe(
+      'Storage quoted 256 GB, read 128 GB. Customer care, open',
+    );
+    expect(quoteCheckLine({ state: 'mismatch', rows, owner: 'Customer care', item: { ...item, state: 'done', outcome: 'Re-quote accepted' } })).toBe(
+      'Storage quoted 256 GB, read 128 GB. Customer care, resolved: Re-quote accepted',
+    );
+  });
+});
 
 const one: DeviceView = {
   imei: '359990000000428', sku: 'iPhone 14|128', brand: 'Apple', model: 'iPhone 14', storageGb: 128, declaredGrade: 'B', grade: 'B',

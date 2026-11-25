@@ -285,9 +285,32 @@
    ],
    "approvers": [],
    "param": null
+  },
+  {
+   "id": "GR-D13",
+   "text": "Quote match: the device read must match the quote",
+   "owner": "Customer care",
+   "type": "Data quality",
+   "stage": "match",
+   "locked": false,
+   "forbids": [],
+   "protects": [
+    [
+     "quote match|quote check",
+     "skip|remove|without|\\bno\\b"
+    ]
+   ],
+   "approvers": [],
+   "param": null
   }
  ],
- "gates": [],
+ "gates": [
+  {
+   "id": "G-DEV-QUOTE",
+   "params": {},
+   "active": true
+  }
+ ],
  "dims": [
   {
    "key": "brand",
@@ -968,6 +991,12 @@
     "label": "Auction reserve not met",
     "owner_role": "Planner",
     "action": "Compare the cost of holding with a lower reserve"
+   },
+   {
+    "id": "quote_mismatch",
+    "label": "Device read differs from the quote",
+    "owner_role": "Planner",
+    "action": "Accept a re-quote or return the trade-in"
    },
    {
     "id": "wholesale_lot_over_limit",
