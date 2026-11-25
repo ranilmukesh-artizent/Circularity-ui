@@ -56,6 +56,12 @@ def _recall_pack() -> Pack:
     return parse_pack(json.loads(RECALL.read_text(encoding="utf-8")))
 
 
+def _no_gates(pack: Pack) -> Pack:
+    """The pack with no gates: since P9-1.11 the shipped tool-fleet pack has a compliance gate at Match (G-CON-1),
+    so the tests that need a pack where a shortcut skips nothing compliant take its gates off."""
+    return pack.model_copy(update={"gates": []})
+
+
 def _refused(pack: Pack, op: OverlayOp) -> OverlayError:
     with pytest.raises(OverlayError) as e:
         apply_overlay(pack, [op])
@@ -92,7 +98,7 @@ def test_x_04_compliance_skip_refused():
     assert str(err) == "Blocked: this skips the compliance guardrail Safety recall check at Match and verify."
     assert err.guardrail == "G-TOOL-REC"
     # the same shortcut on the pack without the gate skips nothing compliant
-    assert apply_overlay(load_pack("tool_fleet"), [op]).diversions[0].to == "condition"
+    assert apply_overlay(_no_gates(load_pack("tool_fleet")), [op]).diversions[0].to == "condition"
 
 
 def test_x_04_compliance_skip_is_a_graph_check_not_a_text_match():
@@ -175,7 +181,7 @@ def test_x_04_rebase_target_gone():
 
 
 def test_x_04_rebase_diversion_that_now_skips_compliance_is_dropped():
-    old = load_pack("tool_fleet")
+    old = _no_gates(load_pack("tool_fleet"))
     op = Shortcut(id="op-1", op="shortcut", stage="receive", to="condition")
     assert rebase(old, old, [op]).ops == [op]
     res = rebase(old, _recall_pack(), [op])
