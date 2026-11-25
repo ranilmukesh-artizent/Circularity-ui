@@ -128,7 +128,8 @@ def reset_di() -> None:
 
 @pytest.fixture(scope="module", autouse=True)
 def real_loop():
-    saved = (SETTINGS.clock, SETTINGS.instructions)
+    live = get_settings()  # the instance the app reads now: another test may have cleared the settings cache (P9-0.9)
+    saved = (live.clock, live.instructions)
     # the live api must not receive (and acknowledge) the same events: remove its subscription for the run
     for sub in sim("GET", "/_sim/webhooks").json():
         if sub["url"] == SETTINGS.webhook_url:
@@ -139,10 +140,10 @@ def real_loop():
     reset_di()
     with SessionLocal() as s:
         ensure_sources(s)
-    SETTINGS.clock, SETTINGS.instructions = "sim", True
+    live.clock, live.instructions = "sim", True
     clock.invalidate()
     yield
-    SETTINGS.clock, SETTINGS.instructions = saved
+    live.clock, live.instructions = saved
     clock.invalidate()
     sim("DELETE", "/_sim/faults")
     sim("POST", "/_sim/reset")
