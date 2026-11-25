@@ -12,6 +12,8 @@ A person's resolution sticks (plan 6 B2): the conflict keeps the fingerprint of 
 source's value or entering one (`override`) writes a provenance row from source `manual` (resource `conflict`) that
 is the canonical value while the resolution holds; when a value changes, a new conflict opens and the choice is
 dropped. Manual Import rows (di/connectors/manual.py) are ordinary facts from source `manual` (resource `import`).
+
+Any `compliance` fact (gate evidence, plan 9 P9-1.2) also enqueues a `case.gateRecheck` job for its asset.
 """
 
 import hashlib
@@ -25,7 +27,8 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.services.canonical.schema import MODELS, authority
+from di.core import jobs
+from di.services.canonical.schema import MODELS, authority, compliance_asset
 
 NUMERIC_TOLERANCE = 0.005  # values within 0.5% count as the same (currency rounding, unit conversion)
 # list fields every source adds to: the canonical value is the union, and sources never conflict on them
@@ -105,6 +108,9 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
         touched.add((f.model, f.key, f.field))
     for model, key, field in sorted(touched):
         _settle(session, model, key, field, now)
+    # new evidence may release the cases held for it (plan 9, P9-1.2): one recheck job per asset (deduped)
+    for asset_key in sorted({compliance_asset(f.key) for f in facts if f.model == "compliance"}):
+        jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
     return len(facts)
 
 

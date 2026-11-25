@@ -1,0 +1,1330 @@
+[
+ {
+  "id": "G-TOOL-REC",
+  "name": "Safety recall check",
+  "type": "Compliance",
+  "stage": "match",
+  "packs": [
+   "tool_fleet"
+  ],
+  "trigger": {
+   "routes": [
+    "release",
+    "reuse",
+    "sale",
+    "parts"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "recall_check"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": "Quarantine",
+   "on_fail": null
+  },
+  "owner": "Quality",
+  "citation": "Pack v3.2 (01 §4.1); US Consumer Product Safety Act §15 (15 U.S.C. 2064); EU General Product Safety Regulation (EU) 2023/988 (applies 13 Dec 2024). Texts not re-read; detail in A",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-TOOL-TEL",
+  "name": "Telematics under 7 days old",
+  "type": "Data quality",
+  "stage": "condition",
+  "packs": [
+   "tool_fleet"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": [
+    {
+     "fact": "rul",
+     "op": "exists",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "telematics_reading"
+  ],
+  "effect": {
+   "kind": "require_approval",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Engineer",
+  "citation": "Pack v3.2 (no regulation)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-DEV-WIPE",
+  "name": "Data-wipe certificate",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "device"
+  ],
+  "trigger": {
+   "routes": [
+    "sale"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "data_wipe"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": {
+    "step": "Re-run the wipe or destroy the storage"
+   }
+  },
+  "owner": "Compliance",
+  "citation": "Specialises G-DATA-1 (NIST SP 800-88 Rev. 2, 26 Sep 2025); detail in A",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-DEV-LOCK",
+  "name": "Blacklist and lock",
+  "type": "Compliance",
+  "stage": "match",
+  "packs": [
+   "device"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": []
+  },
+  "evidence": [
+   "device_registry_check"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Compliance",
+  "citation": "Pack v2.7; industry registries (GSMA Device Registry; CTIA stolen-phone checker). Practice, not law, in most places (unconfirmed); detail in A",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-VEH-TITLE",
+  "name": "Clear title, no open finance",
+  "type": "Compliance",
+  "stage": "match",
+  "packs": [
+   "used_cars"
+  ],
+  "trigger": {
+   "routes": [
+    "sale",
+    "release"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "title_status"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": {
+    "step": "Title desk exception"
+   }
+  },
+  "owner": "Title desk",
+  "citation": "Pack v1.9; state title law; 49 U.S.C. 30502-30505; 28 CFR Part 25 Subpart B",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-VEH-ODO",
+  "name": "Odometer verified and disclosed",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "used_cars"
+  ],
+  "trigger": {
+   "routes": [
+    "sale",
+    "release"
+   ],
+   "when": [
+    {
+     "fact": "vehicle.odometer_exempt",
+     "op": "ne",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "odometer_statement"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Title desk / inspection lead",
+  "citation": "49 CFR 580.7, 580.17; NHTSA final rule 2 Oct 2019, effective 1 Jan 2021 (FR 26 Nov 2019)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-VEH-RECALL",
+  "name": "No retail with an open recall",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "used_cars"
+  ],
+  "trigger": {
+   "routes": [
+    "sale"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "vin_recall"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Used-car manager",
+  "citation": "Pack v1.9; 49 U.S.C. 30120(i) (Safe Rental Car Act, in force 1 Jun 2016); FTC Used Car Rule amendment (81 FR, 18 Nov 2016, effective 27 Jan 2017); NHTSA VIN lookup",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-VEH-BRAND",
+  "name": "Title brand disclosed",
+  "type": "Compliance",
+  "stage": "match",
+  "packs": [
+   "used_cars"
+  ],
+  "trigger": {
+   "routes": [
+    "sale"
+   ],
+   "when": [
+    {
+     "fact": "title.brand",
+     "op": "exists",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "title_brand"
+  ],
+  "effect": {
+   "kind": "require_step",
+   "hold_until_evidence": false,
+   "step": "Disclose the title brand on every listing",
+   "on_fail": null
+  },
+  "owner": "Title desk",
+  "citation": "State law (unconfirmed per state)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-VEH-SALV",
+  "name": "Salvage reporting",
+  "type": "Compliance",
+  "stage": "execute",
+  "packs": [
+   "used_cars"
+  ],
+  "trigger": {
+   "routes": [
+    "recycle"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "reporting_status"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Remarketing manager",
+  "citation": "49 U.S.C. 30504; 28 CFR 25.56; EU ELV Reg. 2026/1738 (OJ 24 Jul 2026; detail unconfirmed)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-NET-INV",
+  "name": "Unit matches network inventory",
+  "type": "Data quality",
+  "stage": "match",
+  "packs": [
+   "telecom_network"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": []
+  },
+  "evidence": [
+   "inventory_match"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": {
+    "step": "Inventory lead exception"
+   }
+  },
+  "owner": "Inventory lead",
+  "citation": "Pack v1.4",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-NET-CFG",
+  "name": "Configuration wipe certificate",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "telecom_network"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": []
+  },
+  "evidence": [
+   "config_wipe"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": {
+    "step": "Destroy the storage; no resale"
+   }
+  },
+  "owner": "Test bench lead",
+  "citation": "Pack v1.4; NIST SP 800-88 Rev. 2 (no router/switch appendix since Rev. 2; IEEE 2883)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-NET-EXP",
+  "name": "Export control before resale",
+  "type": "Compliance",
+  "stage": "value",
+  "packs": [
+   "telecom_network"
+  ],
+  "trigger": {
+   "routes": [
+    "sale"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "export_classification"
+  ],
+  "effect": {
+   "kind": "require_approval",
+   "hold_until_evidence": false,
+   "step": "Trade compliance approval",
+   "on_fail": null
+  },
+  "owner": "Trade compliance",
+  "citation": "15 CFR 730-774; 15 CFR 740.17(b)(2) (BIS guidance); Reg. (EU) 2021/821 Annex I as replaced by Del. Reg. (EU) 2025/2003 (in force 15 Nov 2025)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-NET-COV",
+  "name": "Covered equipment: dispose only",
+  "type": "Compliance",
+  "stage": "match",
+  "packs": [
+   "telecom_network"
+  ],
+  "trigger": {
+   "routes": [
+    "reuse",
+    "release",
+    "sale",
+    "parts"
+   ],
+   "when": [
+    {
+     "fact": "equipment.fcc_covered",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "covered_list_clearance"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Trade compliance",
+  "citation": "Secure and Trusted Communications Networks Act of 2019; 47 CFR 1.50004 (disposal: (j)); FCC best practices, FR 27 Oct 2021",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-MED-DECON",
+  "name": "Decontamination record",
+  "type": "Compliance",
+  "stage": "match",
+  "packs": [
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": []
+  },
+  "evidence": [
+   "decontamination"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Decontamination lead",
+  "citation": "Pack v1.6; CDC disinfection guideline (Spaulding, not re-read); MHRA Managing Medical Devices (2021) and NHSScotland loan-device guidance (unconfirmed wording)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-MED-SVC",
+  "name": "Service and certification in date for the whole rental",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": [
+    "reuse",
+    "release"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "service_record"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Biomedical engineer",
+  "citation": "Pack v1.6; 42 CFR 482.41 and CMS S&C 14-07-Hospital (20 Dec 2013); IEC 62353:2014",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-MED-FSN",
+  "name": "No open recall or field safety notice",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": [
+    "reuse",
+    "release"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "field_safety_status"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Biomedical engineer",
+  "citation": "FDA recalls (21 CFR Part 7; Part 806 for manufacturers); EU MDR field safety corrective actions. Not re-read",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-MED-REFURB",
+  "name": "Refurbish stays servicing",
+  "type": "Compliance",
+  "stage": "decide",
+  "packs": [
+   "medical_rental",
+   "medical_capital"
+  ],
+  "trigger": {
+   "routes": [
+    "refurbish"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "refurb_assessment"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Clinical engineering / Regulatory",
+  "citation": "FDA Remanufacturing of Medical Devices (May 2024); QMSR in force 2 Feb 2026; EU MDR 2017/745 Art. 2 (\"fully refurbishing\")",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-DATA-1",
+  "name": "Data sanitisation per serial",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "device",
+   "used_cars",
+   "telecom_network",
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": [
+    "sale",
+    "release",
+    "parts"
+   ],
+   "when": [
+    {
+     "fact": "class.has_media",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "data_wipe"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": {
+    "step": "Re-run the wipe or destroy the storage"
+   }
+  },
+  "owner": "Compliance",
+  "citation": "NIST SP 800-88 Rev. 2 (Sep 2025); IEEE 2883-2022",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-DATA-2",
+  "name": "Destruction when sanitising fails",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "device",
+   "used_cars",
+   "telecom_network",
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": [
+    {
+     "fact": "media.sanitisable",
+     "op": "eq",
+     "value": false
+    }
+   ]
+  },
+  "evidence": [
+   "destruction_record"
+  ],
+  "effect": {
+   "kind": "require_step",
+   "hold_until_evidence": false,
+   "step": "Destroy the media",
+   "on_fail": null
+  },
+  "owner": "Compliance",
+  "citation": "NIST SP 800-88 Rev. 2",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-DATA-3",
+  "name": "Personal and patient data",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "device",
+   "used_cars",
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": [
+    "sale",
+    "release",
+    "parts"
+   ],
+   "when": [
+    {
+     "fact": "class.patient_data",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "data_wipe",
+   "controller_signoff"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": true,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Compliance",
+  "citation": "HIPAA 45 CFR 164.310(d) (US); GDPR Art. 32 (EU)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-DS-1",
+  "name": "Certified downstream vendor",
+  "type": "Compliance",
+  "stage": "decide",
+  "packs": [
+   "tool_fleet",
+   "device",
+   "used_cars",
+   "telecom_network",
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": [
+    "recycle",
+    "exit",
+    "parts"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "vendor_certificate"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Sustainability lead",
+  "citation": "R2v3 (SERI, 2020); e-Stewards v4.0 (BAN, 2020)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-DS-2",
+  "name": "No hazardous e-waste export",
+  "type": "Compliance",
+  "stage": "decide",
+  "packs": [
+   "itad"
+  ],
+  "trigger": {
+   "routes": [
+    "recycle",
+    "exit"
+   ],
+   "when": [
+    {
+     "fact": "owner.policy",
+     "op": "eq",
+     "value": "e-stewards"
+    }
+   ]
+  },
+  "evidence": [
+   "downstream_declaration"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Sustainability lead",
+  "citation": "e-Stewards v4.0",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-WEEE-1",
+  "name": "Used equipment shipped as not waste",
+  "type": "Compliance",
+  "stage": "decide",
+  "packs": [
+   "tool_fleet",
+   "device",
+   "used_cars",
+   "telecom_network",
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": [
+    "reuse",
+    "release",
+    "sale"
+   ],
+   "when": [
+    {
+     "fact": "shipment.cross_border",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "weee_transfer_documents"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Compliance",
+  "citation": "WEEE Directive 2012/19/EU, Annex VI",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-WEEE-2",
+  "name": "Authorised treatment facility",
+  "type": "Compliance",
+  "stage": "decide",
+  "packs": [
+   "tool_fleet",
+   "device",
+   "used_cars",
+   "telecom_network",
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": [
+    "recycle",
+    "exit"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "treatment_facility_authorisation"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Sustainability lead",
+  "citation": "WEEE Directive, Art. 8 and Annex VII",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-WASTE-1",
+  "name": "Prior informed consent for waste shipments",
+  "type": "Compliance",
+  "stage": "execute",
+  "packs": [
+   "itad",
+   "telecom_network",
+   "device"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": [
+    {
+     "fact": "shipment.cross_border",
+     "op": "eq",
+     "value": true
+    },
+    {
+     "fact": "shipment.waste",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "shipment_consent"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Compliance",
+  "citation": "Basel e-waste amendments (in force 1 Jan 2025); EU WSR 2024/1157",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-WASTE-2",
+  "name": "Non-OECD destination listed",
+  "type": "Compliance",
+  "stage": "execute",
+  "packs": [
+   "itad",
+   "telecom_network",
+   "device"
+  ],
+  "trigger": {
+   "routes": [
+    "recycle",
+    "exit"
+   ],
+   "when": [
+    {
+     "fact": "shipment.destination_non_oecd",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "destination_listing",
+   "shipment_consent"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Compliance",
+  "citation": "EU WSR 2024/1157 (export rules from 21 May 2027, unconfirmed detail)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-BAT-1",
+  "name": "Battery state of health",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "battery",
+   "used_cars"
+  ],
+  "trigger": {
+   "routes": [
+    "reuse",
+    "release",
+    "refurbish"
+   ],
+   "when": [
+    {
+     "fact": "battery.rechargeable",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "battery_soh"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Engineer",
+  "citation": "Reg. (EU) 2023/1542, Art. 14",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-BAT-2",
+  "name": "Repurposed battery fitness",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "battery"
+  ],
+  "trigger": {
+   "routes": [
+    "reuse",
+    "refurbish"
+   ],
+   "when": [
+    {
+     "fact": "battery.waste",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "repurpose_fitness"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Quality",
+  "citation": "Reg. 2023/1542, Art. 73 (details unconfirmed)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-BAT-3",
+  "name": "Battery passport",
+  "type": "Compliance",
+  "stage": "execute",
+  "packs": [
+   "battery"
+  ],
+  "trigger": {
+   "routes": [
+    "reuse",
+    "refurbish"
+   ],
+   "when": [
+    {
+     "fact": "battery.eu_market",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "battery_passport"
+  ],
+  "effect": {
+   "kind": "require_step",
+   "hold_until_evidence": false,
+   "step": "Issue a new battery passport linked to the original",
+   "on_fail": null
+  },
+  "owner": "Compliance",
+  "citation": "Reg. 2023/1542, Art. 77 (passport from 18 Feb 2027)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-BAT-4",
+  "name": "Damaged battery transport",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "used_cars",
+   "telecom_network",
+   "battery"
+  ],
+  "trigger": {
+   "routes": [
+    "reuse",
+    "release",
+    "sale"
+   ],
+   "when": [
+    {
+     "fact": "battery.damaged",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "battery_safety_class"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Warehouse / Compliance",
+  "citation": "ADR / IATA lithium battery rules (special provisions unconfirmed)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-BAT-5",
+  "name": "Permitted battery recycler",
+  "type": "Compliance",
+  "stage": "decide",
+  "packs": [
+   "battery"
+  ],
+  "trigger": {
+   "routes": [
+    "recycle"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "recycler_permit"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Sustainability lead",
+  "citation": "Reg. 2023/1542, Art. 71",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-MED-1",
+  "name": "Servicing versus remanufacturing",
+  "type": "Compliance",
+  "stage": "decide",
+  "packs": [
+   "medical_rental",
+   "medical_capital"
+  ],
+  "trigger": {
+   "routes": [
+    "refurbish"
+   ],
+   "when": [
+    {
+     "fact": "work.changes_performance",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "refurb_assessment"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Quality / Regulatory",
+  "citation": "FDA Remanufacturing of Medical Devices (May 2024)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-MED-2",
+  "name": "Single-use device clearance",
+  "type": "Compliance",
+  "stage": "match",
+  "packs": [
+   "medical_rental",
+   "medical_capital"
+  ],
+  "trigger": {
+   "routes": [
+    "reuse",
+    "release",
+    "sale"
+   ],
+   "when": [
+    {
+     "fact": "device.single_use",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "single_use_clearance"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Quality / Regulatory",
+  "citation": "FDA (reprocessed single-use devices need clearance); EU MDR Art. 17",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-MED-3",
+  "name": "Cross-market medical resale",
+  "type": "Compliance",
+  "stage": "decide",
+  "packs": [
+   "medical_rental",
+   "medical_capital"
+  ],
+  "trigger": {
+   "routes": [
+    "sale"
+   ],
+   "when": [
+    {
+     "fact": "market.cross_market",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "market_duties_record"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Regulatory",
+  "citation": "EU MDR (economic operators, UDI)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-ESPR-1",
+  "name": "Destruction of unsold goods",
+  "type": "Compliance",
+  "stage": "decide",
+  "packs": [
+   "b2c_serial"
+  ],
+  "trigger": {
+   "routes": [
+    "recycle",
+    "exit"
+   ],
+   "when": [
+    {
+     "fact": "product.unsold_apparel",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "destruction_exception"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Compliance",
+  "citation": "ESPR 2024/1781 destruction ban (large companies from 19 Jul 2026)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-DPP-1",
+  "name": "Digital product passport",
+  "type": "Compliance",
+  "stage": "receive",
+  "packs": [
+   "b2c_serial"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": [
+    {
+     "fact": "product.dpp_required",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "product_passport"
+  ],
+  "effect": {
+   "kind": "require_step",
+   "hold_until_evidence": false,
+   "step": "Update the digital product passport",
+   "on_fail": null
+  },
+  "owner": "Compliance",
+  "citation": "ESPR digital product passport (registry live 20 Jul 2026; product rules by delegated act, timing unconfirmed)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-CON-1",
+  "name": "Contract entitlement",
+  "type": "Compliance",
+  "stage": "match",
+  "packs": [
+   "tool_fleet",
+   "used_cars"
+  ],
+  "trigger": {
+   "routes": [
+    "release",
+    "reuse",
+    "sale"
+   ],
+   "when": [
+    {
+     "fact": "contract.restricts_resale",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "contract_clause",
+   "customer_consent"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Customer operations",
+  "citation": "Contract (lease, fleet, service)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-SAFE-1",
+  "name": "Safety certification",
+  "type": "Compliance",
+  "stage": "condition",
+  "packs": [
+   "tool_fleet"
+  ],
+  "trigger": {
+   "routes": [
+    "reuse",
+    "release",
+    "sale"
+   ],
+   "when": [
+    {
+     "fact": "safety_rated",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "test_certificate"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Quality",
+  "citation": "Product safety and quality (OEM spec, QMS)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-REP-1",
+  "name": "CSRD datapoints per closed case",
+  "type": "Compliance",
+  "stage": "close",
+  "packs": [
+   "tool_fleet",
+   "device",
+   "used_cars",
+   "telecom_network",
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": [
+    {
+     "fact": "owner.csrd_scope",
+     "op": "eq",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "case_material_report"
+  ],
+  "effect": {
+   "kind": "close_block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Sustainability lead",
+  "citation": "CSRD as amended by Omnibus I (Directive (EU) 2026/470); ESRS E5 (simplified datapoints unconfirmed)",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-REP-2",
+  "name": "Waste treatment code",
+  "type": "Compliance",
+  "stage": "close",
+  "packs": [
+   "tool_fleet",
+   "device",
+   "used_cars",
+   "telecom_network",
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": [
+    "recycle",
+    "exit"
+   ],
+   "when": []
+  },
+  "evidence": [
+   "treatment_code"
+  ],
+  "effect": {
+   "kind": "close_block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Sustainability lead",
+  "citation": "Waste Framework Directive 2008/98/EC, Annexes I-II",
+  "legal_review": "pending"
+ },
+ {
+  "id": "G-REP-3",
+  "name": "Carbon figure provenance",
+  "type": "Compliance",
+  "stage": "close",
+  "packs": [
+   "tool_fleet",
+   "device",
+   "used_cars",
+   "telecom_network",
+   "medical_rental"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": [
+    {
+     "fact": "carbon",
+     "op": "exists",
+     "value": true
+    }
+   ]
+  },
+  "evidence": [
+   "carbon_provenance"
+  ],
+  "effect": {
+   "kind": "close_block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Sustainability lead",
+  "citation": "GHG Protocol Scope 3 cat. 12; WBCSD avoided-emissions guidance (Mar 2023)",
+  "legal_review": "pending"
+ }
+]

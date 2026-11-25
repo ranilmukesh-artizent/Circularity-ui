@@ -30,6 +30,17 @@ export interface Evidence { k: string; label: string; state: string; source: str
 export interface ExecStep { k?: string; label: string; sys: string; state: string; ack?: { by: string; ref: string; at: string } | null }
 export interface Prediction { src: string; inputs: string; model: string; ver: string; result: string; range: string; conf: string }
 export interface OutcomeLine { label: string; kind: string; pred: number; act: number; model: string | null; ver: string | null; src?: string | null }
+/** One gate result on a case (backend/di/services/cases/gate_hold.py, plan 9 P9-1.2). */
+export interface GateEvidenceOnFile { type: string; label: string; source: string; at: string }
+export interface GateRow {
+  id: string; name: string; type: string; stage: string; stageLabel: string; passed: boolean;
+  kind: 'block' | 'require_step' | 'require_approval' | 'close_block'; routes: string[]; routeNames: string[]; hold: boolean;
+  step: string | null; owner: string; evidence: GateEvidenceOnFile[]; missing: string[]; reason: string; locked: boolean;
+}
+/** A case held until evidence arrives; `batch` names the lot batch it was opened in. */
+export interface GateHold { gates: string[]; since: string; batch: string | null }
+export interface RequiredStep { gate: string; step: string; owner: string }
+export interface BatchStatus { ref: string; total: number; held: number; released: number }
 export interface CaseRec {
   id: string; owner: string; location: string; assetId: string; product: string; mfr: string; cls: string; qty: number; age: number;
   received: string; stage: string; grade?: string; condition: string; assessment: string; engLife: string; nextInspection?: string;
@@ -44,6 +55,7 @@ export interface CaseRec {
   blocked?: { action: string; owner: string; reason: string; gateName?: string } | null;
   requested?: { ref: string; at: string } | null;
   evidence: Evidence[];
+  gates?: GateRow[]; gateHold?: GateHold | null; requiredSteps?: RequiredStep[]; batch?: BatchStatus | null;
   snapshot?: { id: string; items?: number } | null;
 }
 

@@ -416,4 +416,17 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "parent_revision": "text",
         "qty": "number",
     },
+    # gate evidence (plan 9, P9-1.2): one record per asset and evidence type, keyed by schema.compliance_key
+    "compliance": {
+        "asset_key": "text",
+        "at": "date",
+        "method": "text",
+        "operator": "text",
+        "ref": "ref",
+        "result": "text",
+        "tool": "text",
+        "type": "text",
+        "valid_until": "date",
+        "value": "any",
+    },
 }

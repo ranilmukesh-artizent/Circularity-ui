@@ -8,6 +8,10 @@ GET /api/screens/case/{id}/analysis
     trace, the ranking, tie-break and what would flip it, demand and life, the pool, the execution plan, move and
     what-if guidance, the preparation build-up, the lease trail, the journal and events, and the evidence pack.
 
+A template case with gates (plan 9, P9-1.2) also carries, inside `case`: `gates` (one row per gate result), `gateHold`
+(held until evidence arrives), `requiredSteps` and `batch` ({ref, total, held, released} of its batch); the facade's
+`CaseRec` types them and the Decide tab's Gates block draws them.
+
 Both refuse as the case actions do: 403 out_of_scope when the account has no case pages, 404 not_found for an unknown
 case, 403 tenant_boundary outside the account's tenants or warehouse (same messages as di.services.actions.pipeline).
 
@@ -129,6 +133,7 @@ from di.repositories.context import call_ctx, load_case, visible_cases
 from di.repositories.provenance import prov_for, snap_time
 from di.services.actions.decisions import draft_rationale
 from di.services.actions.pipeline import CallContext
+from di.services.cases import gate_hold
 from di.services.execution import (
     as_sc,
     ex_actual,
@@ -578,8 +583,11 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
     cover = ooo_cover(ctx) if c.get("submitted") else None
     waiting = f"{cover['delegate']} (covering for the Approver)" if cover else None
     rn = run(c, ctx)
+    rec = case_record(c, session)
+    if rec.get("batchRef"):  # a lot opened in a batch: how many of its lots are released (plan 9, P9-1.2)
+        rec["batch"] = {"ref": rec["batchRef"], **gate_hold.batch_status(session, rec["batchRef"])}
     return {
-        "case": case_record(c, session),
+        "case": rec,
         "model": as_model(c),
         "serial": "SN" + str(as_hex(c, "sn"))[:7].rjust(7, "0"),
         "run": rn,

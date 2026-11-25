@@ -1,0 +1,188 @@
+"""Gates on a case: evidence attached, gates applied to the routes, a hold until evidence arrives, release (plan 9,
+P9-1.2; stories X-03 and X-07). Uses registry entries I-2 (`gates`) and I-3 (`evidence`).
+
+    attach_evidence(s, case)   the canonical `compliance` records of the case's asset become `case["evidenceRecords"]`
+    apply(case, routes)        gates evaluated for the case's pack, applied to the routes, then `hold` (R20: before the
+                               business rules and before ranking; `intake.template_routes` calls it)
+    hold(case, results)        a failed gate that holds sets `case["gateHold"]` and leaves no recommendation (stage
+                               `none`); a failed gate with a step appends it to `case["requiredSteps"]`
+    recheck(s, asset_key)      the worker job `case.gateRecheck`: evidence landed, so every held case of the asset is
+                               valued again; a case that clears is released with a stage log row by `system`
+    batch_status(s, ref)       {total, held, released} of the cases opened with the same `facts.batch`
+
+Owns: those functions and the case keys `evidenceRecords`, `gates` (one row per gate result, as the Case page shows it),
+`gateHold` and `requiredSteps`. Never does: approve anything. A release makes the case decidable again; a person still
+approves the decision.
+
+The pack of a case is `default_pack_of(case)`: the pack file of its template (the live pack once P9-1.3 adds
+`live_rules.live_pack`). Tests and `recheck(pack_of=...)` replace it. The shipped packs have no active gates, so no
+shipped case is gated.
+"""
+
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
+from contextvars import ContextVar
+from datetime import datetime
+from typing import Any
+
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from di.core import clock
+from di.services.cases import lifecycle, store
+from di.services.engine.routes import Route
+from di.services.modeler.evidence import evidence_of, label_of, records_of
+from di.services.modeler.gates import GateResult, apply_gate_results, catalogue, evaluate_gates
+from di.services.modeler.pack import Pack, load_pack
+from di.services.modeler.stages import STAGE_LABELS
+
+PackOf = Callable[[Mapping[str, Any]], Pack]
+_override: ContextVar[PackOf | None] = ContextVar("gate_hold_pack_of", default=None)
+
+
+def default_pack_of(case: Mapping[str, Any]) -> Pack:
+    """The pack the case is gated by: its template's pack file."""
+    return load_pack(case.get("template") or "industrial")
+
+
+# ---------------------------------------------------------------- evidence
+def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
+    """Set `case["evidenceRecords"]` from the canonical `compliance` records of the case's asset key (each with the
+    source that wrote its result). A case with none and no earlier list is left as it is."""
+    rows = s.execute(
+        text(
+            "SELECT c.data, (SELECT p.source_id FROM provenance p WHERE p.model = 'compliance' AND p.key = c.key "
+            "AND p.field = 'result' ORDER BY p.fetched_at DESC LIMIT 1) AS source "
+            "FROM canonical c WHERE c.model = 'compliance' AND c.data ->> 'asset_key' = :a ORDER BY c.key"
+        ),
+        {"a": case.get("assetId")},
+    ).all()
+    recs = [
+        {k: d.get(k) for k in ("type", "result", "at", "valid_until", "method", "tool", "ref", "operator")}
+        | {"source": src or "", "value": d.get("value") if isinstance(d.get("value"), dict) else {}}
+        for d, src in rows
+    ]
+    if recs or "evidenceRecords" in case:
+        case["evidenceRecords"] = recs
+
+
+def _as_of(case: Mapping[str, Any]) -> datetime:
+    """The time gates read evidence at: now, or the newest record's time when that is later (a source's clock may run
+    ahead of ours; evidence on file is never ignored for being from the future)."""
+    return max([clock.now(), *(e.at for e in records_of(case))])
+
+
+# ---------------------------------------------------------------- gates on a case
+def _rows(case: Mapping[str, Any], pack: Pack, results: Sequence[GateResult], as_of: datetime) -> list[dict[str, Any]]:
+    cat = catalogue()
+    names = {r.id: r.name for r in pack.routes}
+    out = []
+    for r in results:
+        g = cat[r.gate_id]
+        on_file = [
+            {"type": t, "label": label_of(t), "source": e.source, "at": e.at.isoformat()}
+            for t in g.evidence
+            if (e := evidence_of(case, t, as_of)) is not None and e.result == "pass"
+        ]
+        out.append({
+            "id": g.id, "name": g.name, "type": g.type, "stage": g.stage, "stageLabel": STAGE_LABELS[g.stage],
+            "passed": r.passed, "kind": r.effect.kind, "routes": list(r.effect.routes),
+            "routeNames": [names[i] for i in r.effect.routes if i in names], "hold": r.effect.hold, "step": r.effect.step,
+            "owner": g.owner, "evidence": on_file, "missing": [label_of(t) for t in r.evidence_missing], "reason": r.reason,
+            "locked": g.locked,
+        })  # fmt: skip
+    return out
+
+
+def hold(case: MutableMapping[str, Any], results: Sequence[GateResult]) -> bool:
+    """Set the hold and the required steps from the gate results; True when the case is held. A failed result that
+    holds sets `gateHold` {gates, since, batch}, leaves no recommendation and stage `none`; the time it has been held
+    since stays when it is held again. A failed result with a step lists {gate, step, owner} in `requiredSteps`."""
+    cat = catalogue()
+    failed = [r for r in results if not r.passed]
+    held = [r.gate_id for r in failed if r.effect.hold]
+    steps = [{"gate": r.gate_id, "step": r.effect.step, "owner": cat[r.gate_id].owner} for r in failed if r.effect.step]
+    if steps:
+        case["requiredSteps"] = steps
+    else:
+        case.pop("requiredSteps", None)
+    if not held:
+        if case.get("gateHold") is not None:
+            case["gateHold"] = None
+        return False
+    prior = case.get("gateHold") or {}
+    case["gateHold"] = {"gates": held, "since": prior.get("since") or clock.now().isoformat(), "batch": case.get("batchRef")}
+    case["recommendation"] = None
+    case["stage"] = "none"
+    return True
+
+
+def apply(case: MutableMapping[str, Any], routes: list[Route]) -> list[GateResult]:
+    """Evaluate the case's gates, fail the blocked routes and hold the case (R20: call it before the business rules
+    and before ranking). A case that no gate applies to, and has none recorded, is left untouched."""
+    pack = (_override.get() or default_pack_of)(case)
+    as_of = _as_of(case)
+    results = evaluate_gates(case, pack, as_of)
+    if not results and "gates" not in case:
+        return results
+    apply_gate_results(routes, results)
+    case["gates"] = _rows(case, pack, results, as_of)
+    hold(case, results)
+    return results
+
+
+# ---------------------------------------------------------------- release on evidence
+def _released_line(case: Mapping[str, Any], gate_ids: Sequence[str]) -> str:
+    as_of = _as_of(case)
+    cat = catalogue()
+    parts = []
+    for gid in gate_ids:
+        for t in cat[gid].evidence if gid in cat else ():
+            if (e := evidence_of(case, t, as_of)) is not None and e.result == "pass":
+                parts.append(f"{label_of(t)} from {e.source or 'a source'} at {e.at.strftime('%Y-%m-%d %H:%M UTC')}")
+    return "Released: " + ("; ".join(dict.fromkeys(parts)) or "the evidence arrived")
+
+
+def recheck(s: Session, asset_key: str, *, pack_of: PackOf | None = None) -> list[str]:
+    """Every open case of the asset that is held gets its evidence attached and its gates evaluated again (it is valued
+    again, `intake.revalue`). A case that clears is released: `gateHold` is None, it moves on from `none` and a stage
+    log row by `system` says why. A case still missing evidence stays held. Returns the released case ids. In the
+    caller's transaction."""
+    from di.services.cases import intake  # intake imports this module
+
+    held = s.execute(
+        text(
+            "SELECT id FROM case_record WHERE data ->> 'assetId' = :a AND stage <> 'closed' "
+            "AND jsonb_typeof(data -> 'gateHold') = 'object' ORDER BY id"
+        ),
+        {"a": asset_key},
+    ).scalars().all()  # fmt: skip
+    released: list[str] = []
+    token = _override.set(pack_of)
+    try:
+        for cid in held:
+            c = store.get(s, cid, for_update=True)
+            if c is None or not isinstance(c.get("gateHold"), dict):
+                continue
+            was = list(c["gateHold"].get("gates") or [])
+            intake.revalue(s, c)
+            if c.get("gateHold") is not None:
+                store.save(s, c)
+                continue
+            lifecycle.move(s, c, "awaiting_approval" if c.get("recommendation") else "none", _released_line(c, was), "system")
+            released.append(cid)
+    finally:
+        _override.reset(token)
+    return released
+
+
+def batch_status(s: Session, batch_ref: str) -> dict[str, int]:
+    """{total, held, released} of the cases opened with this batch: held are those with a gateHold, the rest are
+    released."""
+    row = s.execute(
+        text(
+            "SELECT count(*), count(*) FILTER (WHERE jsonb_typeof(data -> 'gateHold') = 'object') "
+            "FROM case_record WHERE data ->> 'batchRef' = :b"
+        ),
+        {"b": batch_ref},
+    ).one()
+    return {"total": row[0], "held": row[1], "released": row[0] - row[1]}

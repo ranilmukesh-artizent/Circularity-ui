@@ -16,6 +16,10 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   MVP-9.4). Other templates: the
   template's valuer (tool fleet, device) through `to_routes`. Then the business rules of the owner's published flow
   (di.repositories.live_rules), and `rank_routes` gives the recommendation.
+- **Gates** (plan 9, P9-1.2). A template case carries the asset's compliance records (`evidenceRecords`); the pack's
+  gates are evaluated and applied to the routes before the business rules, and a gate that holds leaves the case at
+  stage `none` with `gateHold` until the evidence arrives (di.services.cases.gate_hold). `facts.batch` is kept as
+  `batchRef`.
 - **Dedupe** (Review Focus 5). The same asset key and reason open one case: a second intake (a webhook replay, a
   re-sync, an import read twice) is refused with `duplicate`. The action's idempotency key is the same pair.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
@@ -42,7 +46,7 @@ from di.repositories.live_rules import live_rules
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
-from di.services.cases import store
+from di.services.cases import gate_hold, store
 from di.services.cases.lifecycle import STAGES
 from di.services.engine.evaluate import apply_business, build_routes
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
@@ -145,7 +149,7 @@ def _base(case_id: str, i: dict[str, Any], known: dict[str, Any], by: str) -> st
                      "takenAt": _received(now)},
         "intake": {"key": intake_key(i["asset_key"], i["reason"]), "reason": i["reason"], "by": by,
                    "at": now.astimezone(UTC).isoformat()},
-    }  # fmt: skip
+    } | ({"batchRef": str(known["batch"])} if known.get("batch") else {})  # fmt: skip
 
 
 # ---------------------------------------------------------------- valuation
@@ -257,6 +261,7 @@ def template_routes(c: store.Case, t: Template, rules: list) -> tuple[list[Route
     for r in routes:  # what the case pages read of a route: who takes it, through which application
         p = t.path(r["id"])
         r |= {"demandLabel": f"{p.owner} · {p.app}" if p else r["plan"], "demandStatus": "forecast", "unc": ""}
+    gate_hold.apply(c, routes)  # the pack's gates fail their routes first (R20), then the business rules
     apply_business(c, routes, rules, t)
     best = dec.get("best")
     return routes, best["k"] if best else None
@@ -266,7 +271,8 @@ def _rank(c: store.Case, routes: list[Route], best: str | None) -> Route | None:
     """The recommendation: the valuer's chosen path when it is still eligible, else the ranking (a rule's preference
     first)."""
     eligible = {r["id"] for r in routes if not r["excluded"]}
-    return rank_routes(routes, c.get("blocked"), best if best in eligible else c.get("preferred"))
+    held = c.get("blocked") or c.get("gateHold")  # a case held for evidence has no recommendation
+    return rank_routes(routes, held, best if best in eligible else c.get("preferred"))
 
 
 def recommend(s: Session, c: store.Case, rules: list) -> Route | None:
@@ -289,6 +295,8 @@ def revalue(s: Session, c: store.Case) -> None:
 def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     """Routes, recommendation and the flow version they were evaluated with (as a re-evaluation records them)."""
     t, rules, ver = live_rules(s, c)
+    if t.key != "industrial":
+        gate_hold.attach_evidence(s, c)  # the gates read the asset's compliance records (plan 9, P9-1.2)
     if t.key == "industrial":
         routes, best = _industrial_routes(s, c, t, rules), None
     elif facts or not c.get("routes"):

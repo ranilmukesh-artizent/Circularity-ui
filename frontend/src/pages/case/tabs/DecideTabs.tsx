@@ -19,6 +19,7 @@ import { openExSrc, openExSrcAll, openModels, openSources, openTrace } from '../
 import { AfBadge, CasePanel, ExMethod, ProvB, RangeBar, Stp, Tbl } from '../CaseBlocks';
 import { approveGuarded, caseActions, runNextStep, scrollToId } from '../caseActions';
 import { useCaseUi } from '../CaseContext';
+import { gateLine, holdLine } from '../gates';
 import { co2Label } from '../co2';
 import type { TabProps } from './index';
 
@@ -507,6 +508,30 @@ export function EvidenceBlock({ c, a }: P) {
     </section>
   );
 }
+/** The gates of the case's pack and what each does now; a held case says what it waits for (P9-1.2). Only a template case with gates has them. */
+export function GatesBlock({ c }: { c: CaseRec }) {
+  const rows = c.gates ?? [];
+  if (!rows.length && !c.gateHold) return null;
+  const passed = rows.filter((g) => g.passed).length;
+  return (
+    <section className="blk" id="b-gates">
+      <div className="bh"><h2>Gates</h2><span className="sp"></span><span className={'chip ' + (passed === rows.length ? 'ok' : 'warn')}>{passed} of {rows.length} passed</span></div>
+      {c.gateHold && <div className="callout bad" style={{ marginBottom: 12 }}><b>{holdLine(c.gateHold, c.batch)}.</b> No recommendation until the evidence is on file; a person still approves the decision.</div>}
+      <div className="evgrid">{rows.map((g) => (
+        <div key={g.id} className={'ev ' + (g.passed ? 'ready' : 'missing')}>
+          <span className="ic" aria-hidden="true">{g.passed ? '✓' : '!'}</span>
+          <div><b>{g.name} <span className="chip">{g.type}</span> <span className="chip">{g.stageLabel}</span></b><small>{gateLine(g)}</small></div>
+          <em>{g.owner}</em>
+        </div>
+      ))}</div>
+      {!!c.requiredSteps?.length && (
+        <div style={{ marginTop: 12 }}><b>Required steps</b>
+          <ul>{c.requiredSteps.map((r) => <li key={r.gate + r.step}>{r.step} <span className="note">({r.owner}, {r.gate})</span></li>)}</ul>
+        </div>
+      )}
+    </section>
+  );
+}
 const F22 = { font: '800 24px var(--f-display)', margin: '4px 0' };
 export function SpecialBlock({ c }: { c: CaseRec }) {
   const top = c.routes.find((r) => r.hold);
@@ -555,7 +580,7 @@ export function SpecialBlock({ c }: { c: CaseRec }) {
     </>
   );
 }
-export const EvidenceTab = ({ c, a }: TabProps) => <div className="tidetail"><EvidenceBlock c={c} a={a} /><SpecialBlock c={c} /></div>;
+export const EvidenceTab = ({ c, a }: TabProps) => <div className="tidetail"><EvidenceBlock c={c} a={a} /><GatesBlock c={c} /><SpecialBlock c={c} /></div>;
 
 // ================================================================ how it was predicted (predictBlock, optionsBlock)
 export function PredictBlock({ c }: { c: CaseRec }) {

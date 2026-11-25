@@ -18,6 +18,10 @@ Models use the namespaces of the demo's field mappings (MAPPINGS in index.html):
                                                 org units never collides and each key keeps its own revision
     bom            PLM BOM line (MVP-9.1)       parent, child, quantity, parent revision, harvestable; keyed by bom_key,
                                                 one line per parent revision (as built next to released)
+    compliance     Gate evidence (plan 9, P9-1.2) one record per asset and evidence type (a data-wipe certificate, a
+                                                recall check ...): result, method, tool, reference, time, expiry,
+                                                operator; keyed by compliance_key, written by one source each, so it
+                                                has no FIELD_AUTHORITY entry
 Route candidate and Decision are produced by Circularity itself (B10-B13), not by connectors; an Outcome's actuals
 are read back from S/4HANA.
 
@@ -40,8 +44,19 @@ from di.services.canonical.fields import CONNECTOR_FIELDS
 
 MODELS = (
     "asset", "condition", "demand", "intervention", "market", "route", "sustainability", "vendor", "outcome", "part", "bom",
+    "compliance",
 )  # fmt: skip
 SHARED_ORG = "shared"  # the key prefix of PLM data bound to no org unit
+
+
+def compliance_key(asset_key: str, type: str) -> str:
+    """The canonical key of a compliance record: `<asset key>:<evidence type>` (one record per asset and type)."""
+    return f"{asset_key}:{type}"
+
+
+def compliance_asset(key: str) -> str:
+    """The asset key of a compliance record's key (an evidence type holds no colon, an asset key may)."""
+    return key.rsplit(":", 1)[0]
 
 
 def part_key(org_unit_id: str | None, number: str) -> str:

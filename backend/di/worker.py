@@ -235,6 +235,18 @@ def _agent_autostart(payload: dict[str, Any]) -> None:
         s.commit()
 
 
+@handler("case.gateRecheck")
+def _gate_recheck(payload: dict[str, Any]) -> None:
+    """Gate evidence landed for an asset (a `compliance` fact, canonical.apply): the cases held for it are valued again
+    and the ones that clear are released (di.services.cases.gate_hold.recheck, P9-1.2)."""
+    from di.services.cases import gate_hold
+
+    with SessionLocal() as s:
+        released = gate_hold.recheck(s, payload["asset_key"])
+        s.commit()
+    log.info("gate recheck %s: released %s", payload["asset_key"], released or "none")
+
+
 def tick_instructions() -> None:
     """Acknowledge the simulated steps that are due on the simulated clock."""
     import di.services.actions.execution  # noqa: F401
