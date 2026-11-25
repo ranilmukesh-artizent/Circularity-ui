@@ -81,3 +81,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-26 03:06 | Verify P9-3.8 green (14 api files incl. tf_intake, lint, web). Pushed. |
 | 25 Nov 21:40 | P9-4.6 merged. fix, swap, upgrade per tool; approval holds GR-S3, GR-S1, GR-14, GR-C1 read by the standing policy (no parallel path); no model step |
 | 2026-11-26 03:10 | P9-4.6 returned by w3 (e66d9d4), committed. test_order_invariant_tool_fleet fails on the lane head (from P9-3.7/3.8); fix to w4. |
+| 2026-11-26 03:21 | Verify P9-4.6 green (12 api files, lint, web). Pushed. |
