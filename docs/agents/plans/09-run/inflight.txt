@@ -1,8 +1,5 @@
 # Tasks in flight (task id, writer, model, started)
-P9-9.3 w2 sonnet 03:53 done c1354c1, waiting for the sim batch with 9.4-9.6
-P9-9.4 w1 sonnet 03:58 done c8ad457, waiting for the sim batch
-P9-9.5 w3 sonnet 03:58 (recall mock; append-only registry/fields)
-P9-9.6 w5 sonnet 03:58 (auction and pricing mocks; append-only registry/fields)
 P9-9.7 w2 sonnet 04:24 (case per VIN; on top of c8ad457)
 P9-10.2 w6 sonnet 04:24 (network inventory and decommission mocks)
 P9-11.2 w7 sonnet 04:24 (rental system and asset management mocks)
+P9-7.1 w1 sonnet 04:36 (history import, early: phase 6 gate open)

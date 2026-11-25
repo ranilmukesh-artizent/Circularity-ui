@@ -956,10 +956,10 @@ each story went.
 - [ ] P9-8.23 Phase 8 gate
 - [x] P9-9.1 Used-car pack data file
 - [x] P9-9.2 Vehicle lease and dealer system mocks
-- [ ] P9-9.3 Title and lien service mock
-- [ ] P9-9.4 Vehicle inspection app mock
-- [ ] P9-9.5 Vehicle recall database mock
-- [ ] P9-9.6 Vehicle auction and pricing guide mocks
+- [x] P9-9.3 Title and lien service mock
+- [x] P9-9.4 Vehicle inspection app mock
+- [x] P9-9.5 Vehicle recall database mock
+- [x] P9-9.6 Vehicle auction and pricing guide mocks
 - [ ] P9-9.7 One case per VIN with the inspection read
 - [ ] P9-9.8 Title finance and title brand gates
 - [ ] P9-9.9 Odometer and open recall gates

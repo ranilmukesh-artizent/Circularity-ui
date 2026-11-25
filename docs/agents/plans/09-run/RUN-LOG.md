@@ -148,3 +148,7 @@ unattended". Times are local (IST).
 | 26 Nov 04:33 | P9-8.18 merged. Compose describe and mapping steps; smoke-modeler runs with the next reset batch. |
 | 26 Nov 04:33 | P9-10.1 merged. Early, data only (phase 8 gate open); format gaps listed in the writer report. |
 | 26 Nov 04:33 | P9-11.1 merged. Early, data only (phase 8 gate open); format gaps as used_cars. |
+| 26 Nov 05:11 | P9-9.3 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |
+| 26 Nov 05:11 | P9-9.4 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |
+| 26 Nov 05:11 | P9-9.5 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |
+| 26 Nov 05:11 | P9-9.6 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |
