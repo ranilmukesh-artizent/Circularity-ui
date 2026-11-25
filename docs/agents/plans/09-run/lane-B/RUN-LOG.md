@@ -61,3 +61,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-25 23:35 | Verify P9-6.5 + P9-6.6: device_sources + wipe_sim 13 passed, api 181 passed, lint ok, web ok. Pushed. Hourly sync: nothing new on lane A. |
 | 25 Nov 18:24 | P9-6.7 merged. G-DEV-WIPE via params.when; batch held as one, each case releases alone; bulk lots not wipe-gated |
 | 2026-11-26 00:04 | Verify P9-6.7 green (device sync tests, 17 api files, lint, web). Pushed. |
+| 2026-11-26 00:11 | w5's wt-check (P9-3.8) deadlocked 90 min in di_w5: a session idle in transaction on job vs TRUNCATE job. Killed its container; w5 told to close the session; w2 (P9-3.7), queued on the same slot for 87 min, now runs. |
