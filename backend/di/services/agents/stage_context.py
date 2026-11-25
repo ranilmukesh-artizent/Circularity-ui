@@ -12,9 +12,13 @@ from typing import Literal
 
 Autonomy = Literal["recommend", "limits", "alone"]
 StageKind = Literal["deterministic", "llm", "queue"]
-StageId = Literal["intake", "condition", "demand", "fit_for_use", "valuation", "disposition", "follow_through", "analytics"]
+StageId = Literal[
+    "lease_end", "return_auth", "transit", "intake", "condition", "demand", "fit_for_use", "valuation", "disposition",
+    "follow_through", "analytics",
+]  # fmt: skip
 STAGE_IDS: tuple[StageId, ...] = (
-    "intake", "condition", "demand", "fit_for_use", "valuation", "disposition", "follow_through", "analytics",
+    "lease_end", "return_auth", "transit", "intake", "condition", "demand", "fit_for_use", "valuation", "disposition",
+    "follow_through", "analytics",
 )  # fmt: skip
 
 

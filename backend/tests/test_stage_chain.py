@@ -1,4 +1,4 @@
-"""P9-2.1 (story X-05): the stage chain runs a case through the eight stages, one agent per stage, each leaving a typed
+"""P9-2.1 (story X-05): the stage chain runs a case through the eleven stages, one agent per stage, each leaving a typed
 record in `agent_stage_record` (registry entry I-7).
 
 The tests play the worker (runtime.run_until_blocked), as tests/test_agent_runtime.py does. `case_autopilot` is an alias
@@ -25,8 +25,9 @@ pytestmark = pytest.mark.usefixtures("no_synced_conflicts")  # see conftest: syn
 
 CASE = "RT-1048"
 BLOCKED = "RT-1051"  # evidence is missing: intake asks for it
-ORDER = ["intake", "condition", "demand", "fit_for_use", "valuation", "disposition"]
-D1_AUTONOMY = ["alone", "limits", "alone", "limits", "alone", "limits", "limits", "alone"]
+LIFECYCLE = ["lease_end", "return_auth", "transit"]  # P9-2.20: skipped on a case with no lease records
+ORDER = [*LIFECYCLE, "intake", "condition", "demand", "fit_for_use", "valuation", "disposition"]
+D1_AUTONOMY = ["alone", "limits", "alone", "alone", "limits", "alone", "limits", "alone", "limits", "limits", "alone"]
 
 
 def _clean() -> None:
@@ -82,8 +83,11 @@ def test_x_05_chain_runs_stages_in_order():
     assert run["status"] == "waiting" and run["state"]["waiting"] == "approval"
     recs = _records(run_id)
     assert [r.stage for r in recs] == ORDER
-    assert [r.status for r in recs] == ["done"] * 5 + ["waiting"]
+    assert [r.status for r in recs] == ["skipped"] * 3 + ["done"] * 5 + ["waiting"]
     assert {r.agent for r in recs} == {
+        "stage-lease",
+        "stage-return",
+        "stage-transit",
         "stage-intake",
         "stage-condition",
         "stage-demand",
@@ -190,11 +194,11 @@ def test_x_05_analytics_output_only_when_closed():
 def test_stage_defs_defaults_and_range():
     pack = load_pack("industrial")
     bare = chain.stage_defs(pack.model_copy(update={"stages": []}))
-    assert [d.id for d in bare] == [m.ID for m in CHAIN] and len(bare) == 8
+    assert [d.id for d in bare] == [m.ID for m in CHAIN] and len(bare) == 11
     assert [d.autonomy for d in bare] == D1_AUTONOMY
     assert {d.threshold for d in bare} == {0.75}
-    assert [d.agent_id for d in bare][:2] == ["stage-intake", "stage-condition"] and bare[3].agent_id == "stage-fit"
-    assert bare[4].tools == ("case.reevaluate", "case.routes") and bare[0].value_limit is None
+    assert [d.agent_id for d in bare][3:5] == ["stage-intake", "stage-condition"] and bare[6].agent_id == "stage-fit"
+    assert bare[7].tools == ("case.reevaluate", "case.routes") and bare[0].value_limit is None
     bad = [pack.stages[0].model_copy(update={"confidence": 0.9}), *pack.stages[1:]]
     with pytest.raises(ValueError, match="0.65"):
         chain.stage_defs(pack.model_copy(update={"stages": bad}))
@@ -213,7 +217,7 @@ def test_stage_chain_never_reaches_forbidden():
 
 
 def test_x_05_legacy_run_keeps_its_place():
-    assert stage_chain.where({}, 0) == (0, 0) and stage_chain.where({}, 3) == (5, 0) and stage_chain.where({}, 4) == (5, 1)
+    assert stage_chain.where({}, 0) == (3, 0) and stage_chain.where({}, 3) == (8, 0) and stage_chain.where({}, 4) == (8, 1)
     assert stage_chain.where({"stage": 4, "sub": 1}, 0) == (4, 1)
 
 
@@ -242,4 +246,4 @@ def test_x_05_stage_record_is_one_row_per_run_and_stage():
         n = s.execute(
             text("SELECT count(*), count(DISTINCT stage) FROM agent_stage_record WHERE run_id = :i"), {"i": run_id}
         ).one()
-    assert tuple(n) == (6, 6)
+    assert tuple(n) == (9, 9)

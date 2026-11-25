@@ -15,6 +15,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core.redact import clean
+from di.services.agents.stage_context import STAGE_IDS
 
 
 def latest_run_for_case(s: Session, case_id: str) -> str | None:
@@ -57,7 +58,7 @@ def run_trace(s: Session, run_id: str) -> dict[str, Any] | None:
         "FROM agent_stage_record WHERE run_id = :r",
         r=run_id,
     )
-    order = ["intake", "condition", "demand", "fit_for_use", "valuation", "disposition", "follow_through", "analytics"]
+    order = list(STAGE_IDS)
     stages.sort(key=lambda x: order.index(x["stage"]) if x["stage"] in order else len(order))
     for x in stages:
         x["confidence"] = None if x["confidence"] is None else float(x["confidence"])

@@ -105,6 +105,10 @@ SEED_AGENTS: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     ("stage-disposition", "Disposition agent", ("decision.submit",), "act"),
     ("stage-follow", "Follow-through agent", ("instruction.resend",), "act"),
     ("stage-analytics", "Analytics agent", (), "act"),
+    # plan 9 P9-2.20 (migration 0062): the lifecycle stages before intake
+    ("stage-lease", "Lease-end agent", ("case.get", "case.evidence", "evidence.request"), "act"),
+    ("stage-return", "Return-authorisation agent", ("case.get", "case.evidence", "evidence.request"), "act"),
+    ("stage-transit", "Transit agent", ("case.get", "case.evidence", "transit.flagDelay"), "act"),
     # plan 9 P9-2.10 (migration 0041): the exception assistant, read only
     ("recover-exceptions", "Exception assistant", ("case.get", "case.evidence", "case.trace", "exception.explain"), "read"),
     # plan 9 P9-2.7 (migration 0040): the configuration agent, its drafts held as one proposal

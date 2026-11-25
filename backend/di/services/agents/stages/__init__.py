@@ -1,4 +1,4 @@
-"""The eight stage modules of the chain, in order (plan 9, P9-2.1; registry entry I-7).
+"""The eleven stage modules of the chain, in order (plan 9, P9-2.1; registry entry I-7; the first three are P9-2.20).
 
 `CHAIN` is the one list the stage-chain playbook walks. A stage module is pure and has this shape (`StageModule`):
 
@@ -19,7 +19,19 @@ from typing import Any, Protocol, cast
 
 from di.services.agents.playbooks.case_autopilot import Next
 from di.services.agents.stage_context import STAGE_IDS, StageId
-from di.services.agents.stages import analytics, condition, demand, disposition, fit_for_use, follow_through, intake, valuation
+from di.services.agents.stages import (
+    analytics,
+    condition,
+    demand,
+    disposition,
+    fit_for_use,
+    follow_through,
+    intake,
+    lease_end,
+    return_auth,
+    transit,
+    valuation,
+)  # fmt: skip
 
 
 class StageModule(Protocol):
@@ -33,7 +45,9 @@ class StageModule(Protocol):
     def sources(self, st: dict[str, Any], case: Mapping[str, Any]) -> list[dict[str, Any]]: ...
 
 
-_MODULES: tuple[ModuleType, ...] = (intake, condition, demand, fit_for_use, valuation, disposition, follow_through, analytics)
+_MODULES: tuple[ModuleType, ...] = (
+    lease_end, return_auth, transit, intake, condition, demand, fit_for_use, valuation, disposition, follow_through, analytics,
+)  # fmt: skip
 CHAIN: tuple[StageModule, ...] = tuple(cast(StageModule, m) for m in _MODULES)
 if tuple(m.ID for m in CHAIN) != STAGE_IDS:
     raise RuntimeError("the stage modules are not in chain order")

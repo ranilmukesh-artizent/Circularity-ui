@@ -114,7 +114,7 @@ def intake(cid: str) -> tuple[str, chain.StageRecord]:
     with SessionLocal() as s:
         run_id = runtime.start(s, "recover-chain", "stage_chain", cid, account="planner-a")
         s.commit()
-        runtime.run_until_blocked(s, run_id, max_steps=6)
+        runtime.run_until_blocked(s, run_id, max_steps=9)  # three skipped lifecycle stages, then intake
     with SessionLocal() as s:
         recs = {r.stage: r for r in chain.records_of(s, run_id)}
     return run_id, recs["intake"]

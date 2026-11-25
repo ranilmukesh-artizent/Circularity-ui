@@ -120,8 +120,9 @@ def test_stopped_agent_stops_run():
     register()
     run_id = start()
     with SessionLocal() as s:
-        assert runtime.step(s, run_id) == "running"  # case.evidence
-        s.commit()
+        for _ in range(4):  # the three lifecycle stages of a book case skip with no call (P9-2.20), then case.evidence
+            assert runtime.step(s, run_id) == "running"
+            s.commit()
     assert call("agent.setEnabled", {"id": "ext-autopilot", "on": False}, "admin")["ok"] is True
     r = drive(run_id)
     assert r["status"] == "stopped" and steps(run_id) == ["case.evidence"]

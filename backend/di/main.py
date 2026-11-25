@@ -16,6 +16,7 @@ import di.services.actions.exceptions  # registers action handlers (exception.ex
 import di.services.actions.execution  # registers action handlers
 import di.services.actions.fraud  # registers action handlers (fraud.hold, release, reject, simulate; plan 9)
 import di.services.actions.integration  # registers action handlers
+import di.services.actions.lifecycle  # registers transit.flagDelay (plan 9 P9-2.20)
 import di.services.actions.llm  # registers action handlers (llm.models, llm.setModel; plan 9)
 import di.services.actions.modeler  # registers action handlers (flow.*: the decision flow lifecycle; plan 8)
 import di.services.actions.modeler_suggest  # registers action handlers (flow.suggestions; plan 8)

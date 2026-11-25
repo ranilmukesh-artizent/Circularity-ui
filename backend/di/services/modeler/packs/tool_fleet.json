@@ -510,7 +510,32 @@
  },
  "diversions": [],
  "data": {
-  "systems": [],
+  "systems": [
+   {
+    "type": "lease",
+    "name": "Lease management",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "tms",
+    "name": "Transport management",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "crm",
+    "name": "CRM",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
   "entities": [],
   "mappings": [],
   "min_fields": [],

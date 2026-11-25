@@ -45,7 +45,8 @@ from sqlalchemy.orm import Session
 
 import di.repositories.cases  # registers case.evidence (the worker imports only what its jobs need)
 import di.services.actions.decisions  # registers evidence.request, case.reevaluate, decision.submit
-import di.services.actions.execution  # noqa: F401 - registers instruction.resend
+import di.services.actions.execution  # registers instruction.resend
+import di.services.actions.lifecycle  # noqa: F401 - registers transit.flagDelay (P9-2.20)
 from di.core import jobs, policy, tracing
 from di.core.auth import load_context
 from di.core.config import get_settings
@@ -53,7 +54,7 @@ from di.repositories import stage_outcomes
 from di.repositories.live_rules import live_pack
 from di.services.actions.fraud import review_case, triage_case  # also registers fraud.hold in the worker
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
-from di.services.agents import calibrate, chain, limits, playbook_versions, registry, stage_reasoner
+from di.services.agents import calibrate, chain, lifecycle_evidence, limits, playbook_versions, registry, stage_reasoner
 from di.services.agents.forbidden import FORBIDDEN_ACTIONS
 from di.services.agents.loop import AgentLoop, LoopSpec
 from di.services.agents.playbooks import case_autopilot as autopilot
@@ -248,8 +249,9 @@ def stage_confidence(ctx_stage: StageContext, case: dict) -> StageContext:
       which would hold every call at a threshold; it has no confidence, so None here.
     - intake: its confidence is how complete the evidence is, and its one write (`evidence.request`) is the remedy for a low
       value, so holding it for that would stop the fix; None here.
+    - lease end, return authorised, transit (P9-2.20): the same, their writes ask for the missing record or flag a late one.
     The industrial demo's cases and RT-1048 are therefore never held for a confidence they do not have."""
-    if (ctx_stage.stage == "condition" and evidence_of(case, "grade") is None) or ctx_stage.stage == "intake":
+    if (ctx_stage.stage == "condition" and evidence_of(case, "grade") is None) or ctx_stage.stage in ("intake", *chain.LIFECYCLE):
         ctx_stage.confidence = None
     return ctx_stage
 
@@ -307,7 +309,7 @@ def step(s: Session, run_id: str) -> str:
 
 def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, case: dict, stage: int, sub: int) -> str:
     """The step of a `stage_chain` run once its stage is known (inside the stage's span)."""
-    run_id = run["id"]
+    run_id, sid = run["id"], STAGE_IDS[stage]
     st, n = dict(run["state"] or {}), int(run["step"])
     st |= {"stage": stage, "sub": sub, "legacy": run["playbook"] == autopilot.NAME}
     st["failed_instruction"] = _failed_instruction(s, case["id"])
@@ -315,8 +317,10 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
     if (floor := chain.pack_rul_min(pack)) is not None:
         st["rul_min"] = floor
     st["queue_planner"] = disposition.planner_name(pack)  # the disposition stage waits for the queue plan (P9-2.8)
-    if stage == 0 and pack.fraud is not None:  # the fraud triage of the intake stage (P9-2.11): intake holds on it
+    if sid == "intake" and pack.fraud is not None:  # the fraud triage of the intake stage (P9-2.11): intake holds on it
         st["fraud"] = review_case(s, ctx, case, triage_case(s, case, pack), st).as_dict()  # the model may add a hold (P9-2.19)
+    if sid in chain.LIFECYCLE:  # the lease, return and shipment records of the asset (P9-2.20); none: nothing changes
+        lifecycle_evidence.refresh(s, case, st)
     nxt = stage_chain.next_step(stage, sub, st, case)
     if nxt is None:
         return _save(s, run, "done", n, st | {"note": "playbook finished"})

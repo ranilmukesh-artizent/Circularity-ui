@@ -264,11 +264,14 @@ def _agent_autostart(payload: dict[str, Any]) -> None:
 @handler("case.gateRecheck")
 def _gate_recheck(payload: dict[str, Any]) -> None:
     """Gate evidence landed for an asset (a `compliance` fact, canonical.apply): the cases held for it are valued again
-    and the ones that clear are released (di.services.cases.gate_hold.recheck, P9-1.2)."""
+    and the ones that clear are released (di.services.cases.gate_hold.recheck, P9-1.2). A goods receipt also wakes the runs
+    waiting in the transit stage (di.services.agents.lifecycle_evidence.wake_transit, P9-2.20)."""
+    from di.services.agents import lifecycle_evidence
     from di.services.cases import gate_hold
 
     with SessionLocal() as s:
         released = gate_hold.recheck(s, payload["asset_key"])
+        lifecycle_evidence.wake_transit(s, payload["asset_key"])  # a goods receipt wakes the runs waiting in transit (P9-2.20)
         s.commit()
     log.info("gate recheck %s: released %s", payload["asset_key"], released or "none")
 

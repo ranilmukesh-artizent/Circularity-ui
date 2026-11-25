@@ -1,6 +1,6 @@
 # Tasks in flight (task id, writer, model, started)
-P9-2.20 w3 sonnet 18:25
 P9-8.2 w5 sonnet 18:46
 P9-8.5 w6 sonnet 18:46
 P9-2.15 w1 sonnet 19:40
 P9-8.9 w2 sonnet 19:40
+P9-8.13 w3 sonnet 19:58 done 19a576b, waiting to merge
