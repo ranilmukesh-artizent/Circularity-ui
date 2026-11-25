@@ -93,3 +93,4 @@ unattended". Times are local (IST).
 | 25 Nov 17:44 | Decision: phase 8 starts after phase 1 (18 of 23 tasks need only phases 0-2; the rest name P9-4.2 or P9-7.1-7.3), so lane A runs it beside phase 2. P9-2.22 added (phase 1 review finding 2: gates before the queue plan). P9-2.22 to w3, P9-8.1 to w4. Full suite running. |
 | 25 Nov 18:12 | P9-2.13 merged. Sonnet; red first quoted. Lead at merge: test reset re-seeds recover-config (full suite found it), registry seed set and two MCP HTTP tests expect tools_find |
 | 25 Nov 18:24 | P9-2.18 merged. Sonnet; red first quoted; reasoner on intake, condition, valuation, disposition, follow-through; checks win, 2 retries then rules; model_concern hold never cleared by the model; router role stage served by stage/agent models |
+| 25 Nov 18:34 | P9-2.22 merged. Sonnet; lead approved tool_fleet.py gateBlocked hook and trace (gates, valuation, queue_plan, rules, rank); RT-1048 pinned redeploy 8314 |

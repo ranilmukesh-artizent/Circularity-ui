@@ -26,7 +26,7 @@ from tests.helpers import call
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "packs" / "rental_std_test.json"
 FACTS = {"rate": 40, "months": 12, "utilisation": 0.8, "prep": 60}
 ORG = "Customer A"
-ORDER = ("gates", "compliance", "rules", "rank")
+ORDER = ("gates", "valuation", "queue_plan", "rules", "rank")
 
 
 def _doc() -> dict[str, Any]:

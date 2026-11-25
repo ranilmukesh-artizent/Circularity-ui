@@ -7,19 +7,23 @@ simulation all call `decide_case`; replay (P9-7.2) and the chain (P9-2.1) join t
 
 The order for every case is R20 (`Decision.trace`, asserted by `test_order_invariant_<pack>`):
 
-1. **gates**: the pack's gates (I-2) fail their routes and may hold the case for evidence (di.services.cases.gate_hold);
-2. **compliance**: a compiled rule that breaks a locked guardrail is dropped (compile drops them too; this is the run-time
-   check, and it is also what the valuer is given);
-3. **rules**: the pack's diversions that match the case (`add_step` lists a required step with its owner role, `shortcut`
+1. **gates**: the pack's gates (I-2) are evaluated first and may hold the case for evidence (di.services.cases.gate_hold);
+   the routes they block are known before any value is computed;
+2. **valuation** over the routes the gates left eligible, and, for the tool fleet, 3. the **queue plan**: a blocked route
+   is left out of the plan (the case's `gateBlocked`), so it never wins a named order and leaves it unfilled; the gates'
+   results then fail those routes with the gate's reason;
+   (the compiled rules that break a locked guardrail are dropped before this, as compile drops them too: that is the
+   run-time check, and it is also what the valuer is given);
+4. **rules**: the pack's diversions that match the case (`add_step` lists a required step with its owner role, `shortcut`
    to a route prefers it when it is eligible), then the flow's business rules (`apply_business`);
-4. **rank**: `rank_routes`: the shortcut's route, else the valuer's choice while it is eligible, else a rule's preference.
+5. **rank**: `rank_routes`: the shortcut's route, else the valuer's choice while it is eligible, else a rule's preference.
 
-The values come first, as inputs (a route's money does not depend on a gate), but no later step brings back a route an
-earlier step excluded: the waiver of the rules restores only what the gates left eligible (audit F5). The pack's valuer
-kind chooses the values: `industrial` is the engine's formulas on the case's seeded predictor, `tool_fleet` the queue
+A route's money does not depend on a gate (only the tool fleet's plan of named orders does), and no later step brings back
+a route an earlier step excluded: the waiver of the rules restores only what the gates left eligible (audit F5). The pack's
+valuer kind chooses the values: `industrial` is the engine's formulas on the case's seeded predictor, `tool_fleet` the queue
 planner's plan over the org's open returns with their named demand (a `queue` given decides the case within that queue,
 without named demand), `device` the channel scores, `standard` the pack's own value lines (P9-1.9; the `VALUERS` table of
-I-21, where a code plug-in registers too).
+I-21, where a code plug-in registers too). The valuers read the case as it was before a hold set its stage.
 
 A case is a stored case (a `str` id, loaded with the session) or a Mapping: a case document, or a valuer-shaped sample
 (the Modeler's sample queue). The case given is never changed; callers set the result on their own copy with `write_back`.
@@ -43,14 +47,14 @@ from di.services.engine.queue import Capacity, Dem, QueuePlanner, planner_for
 from di.services.engine.routes import Route, rank_routes
 from di.services.modeler.apply import FLOW_REMOVED
 from di.services.modeler.compile import FLOW, CompiledRule, FlowVersion
-from di.services.modeler.gates import Cond, GateDef, GateEffectDef, GateResult, GateTrigger, triggered
+from di.services.modeler.gates import Cond, GateDef, GateEffectDef, GateResult, GateTrigger, apply_gate_results, triggered
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack
 from di.services.modeler.templates import Template, template_of_pack
 from di.services.modeler.valuers import VALUERS, device, tool_fleet
 from di.services.modeler.valuers.routes_adapter import to_routes
 
-TRACE = ("gates", "compliance", "rules", "rank")
+TRACE = ("gates", "valuation", "queue_plan", "rules", "rank")
 GATE_KEYS = ("gates", "gateHold", "requiredSteps")  # the case keys the gates and the diversions set
 RULE_KEYS = ("rulesApplied", "rulesWaived", "preferred")
 RULE_REASONS = ("Excluded by business rule ", "Business rule ", FLOW_REMOVED)  # why a path a business rule excluded says
@@ -184,26 +188,31 @@ def _rule_dicts(rules: Sequence[CompiledRule]) -> list[dict[str, Any]]:
 
 def _tool_fleet(
     c: Mapping[str, Any], pack: Pack, t: Template, rules: Sequence[CompiledRule], session: Session | None,
-    queue: Sequence[Mapping[str, Any]] | None, planner: QueuePlanner | None,
+    queue: Sequence[Mapping[str, Any]] | None, planner: QueuePlanner | None, blocked: frozenset[str] = frozenset(),
 ) -> _Valued:  # fmt: skip
     """The queue plan under the flow's rules gives the values, the valuer's choice and what the valuer itself leaves out (a
     depot slot, an order another return holds): the rules change who gets a slot, so these are read from that plan. A path a
     rule excluded is let through again here, with its description from the plan without rules, so `apply_business` excludes
-    it with its own reason and records the rule."""
+    it with its own reason and records the rule. `blocked` are the paths the gates blocked for this case (R20: the gates ran
+    first): the plan leaves them out (`gateBlocked`, so none wins a named order) and they are let through again here the
+    same way, for `apply_gate_results` to fail them with the gate's reason."""
     v = _valuer_case(c, "tool_fleet")
     cases, demand = _queue_of(c, v, session, queue)
     p = planner or planner_for(pack)
     cap = Capacity(slots=js_round(tool_fleet.BASEP["slots"]))
 
-    def planned(rs: list[dict[str, Any]]) -> tool_fleet.Plan:
-        return p.plan(cases, demand, cap, rules=rs, params=tool_fleet.BASEP)
-
-    plan = planned(_rule_dicts(rules))
     me = v["id"]
+    stamped = [x | {"gateBlocked": sorted(blocked)} if x["id"] == me else x for x in cases] if blocked else cases
+
+    def planned(rs: list[dict[str, Any]], gated: bool = False) -> tool_fleet.Plan:
+        return p.plan(stamped if gated else cases, demand, cap, rules=rs, params=tool_fleet.BASEP)
+
+    plan = planned(_rule_dicts(rules), True)
     dec: dict[str, Any] = {**plan["res"][me], "indep": plan["indep"][me], "blk": sorted(plan["blk"][me])}
     by_rule = [x["k"] for x in dec["all"] if not x["ok"] and str(x["why"]).startswith(RULE_REASONS)]
-    plain = {x["k"]: x for x in planned([])["res"][me]["all"]} if by_rule else {}
-    values = [x | {"ok": True, "why": plain[x["k"]]["why"]} if x["k"] in by_rule else x for x in dec["all"]]
+    by_gate = [x["k"] for x in dec["all"] if not x["ok"] and x["why"] == tool_fleet.GATE_BLOCKED]
+    plain = {x["k"]: x for x in planned([])["res"][me]["all"]} if by_rule or by_gate else {}
+    values = [x | {"ok": True, "why": plain[x["k"]]["why"]} if x["k"] in by_rule + by_gate else x for x in dec["all"]]
     routes = to_routes(t, values)
     _decorate(t, routes)
     queue_plan = {
@@ -276,22 +285,24 @@ def decide_case(
     c = _load(case_or_facts, session)
     t = template_of_pack(pack)
     rules = _compliant(t, flow_ver.rules)
+    before = dict(c)  # what the valuers read: the case as it was before a hold set its stage and recommendation
+    results = gate_hold.apply(c, [], pack, as_of)  # 1. gates (and the hold), before any valuation or queue plan
+    blocked = frozenset(i for r in results if not r.passed and r.effect.kind == "block" for i in r.effect.routes)
     kind = pack.valuer.kind
     if kind == "industrial":
-        valued = _Valued(_industrial(c, session), None)
-    elif kind == "tool_fleet":
-        valued = _tool_fleet(c, pack, t, rules, session, queue, planner)
+        valued = _Valued(_industrial(before, session), None)
+    elif kind == "tool_fleet":  # 2. valuation, then the queue plan, over the routes the gates left eligible
+        valued = _tool_fleet(before, pack, t, rules, session, queue, planner, blocked)
     elif kind == "device":
-        valued = _device(c, t, rules)
+        valued = _device(before, t, rules)
     elif kind in VALUERS:  # a data-only pack (`standard`) or a code plug-in (I-21)
-        valued = _plugin(kind, c, pack, t, as_of)
+        valued = _plugin(kind, before, pack, t, as_of)
     else:
         raise ValueError(f"No valuer for the {kind} pack {pack.key}")
     routes = valued.routes
-
-    results = gate_hold.apply(c, routes, pack, as_of)  # 1. gates (and the hold)
-    # 2. compliance: `rules` above are the compiled rules that break no locked guardrail
-    diversions = [d for d in pack.diversions if _matches(d, c, pack)]  # 3. diversions, then the business rules
+    apply_gate_results(routes, results)  # the gates' results fail the routes they block
+    # (compliance: `rules` above are the compiled rules that break no locked guardrail)
+    diversions = [d for d in pack.diversions if _matches(d, c, pack)]  # 4. diversions, then the business rules
     steps = [
         {"gate": d.op_id, "step": d.step, "owner": d.owner_role, "stage": d.stage, "kind": "diversion"}
         for d in diversions
@@ -306,7 +317,7 @@ def decide_case(
     go = _shortcut(diversions, routes)
     if go:
         c["preferred"] = go
-    eligible = {r["id"] for r in routes if not r["excluded"]}  # 4. rank
+    eligible = {r["id"] for r in routes if not r["excluded"]}  # 5. rank
     chosen = go or (valued.best if valued.best in eligible else c.get("preferred"))
     rec = rank_routes(routes, c.get("blocked") or c.get("gateHold"), chosen)
     return Decision(

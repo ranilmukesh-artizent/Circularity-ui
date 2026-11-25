@@ -44,6 +44,7 @@ NAME = "Tool fleet returns"  # TPL.equip.name (2374)
 _PARAMS: dict[str, Any] = copy.deepcopy(load_pack("tool_fleet").valuer.params)
 PATHS: dict[str, dict[str, Any]] = _PARAMS["paths"]
 PK = list(PATHS)
+GATE_BLOCKED = "Blocked by a gate"  # why a path in a case's `gateBlocked` is left out of the plan (apply_rules)
 FUNCS: list[str] = _PARAMS["funcs"]  # 818
 SITES: list[str] = _PARAMS["sites"]  # 819
 SOURCES: dict[str, str] = _PARAMS["sources"]  # 820
@@ -515,7 +516,14 @@ def _value(c: Case, k: str, p: Params, ctx: _Ctx) -> PathValue:
 def apply_rules(c: Case, values: list[PathValue], rules: Sequence[Rule]) -> dict[str, Any]:
     """applyRules (1035) through the shared `di.services.modeler.apply.apply_rules`: marks the paths the rules exclude
     (or a require rule leaves out) as not ok, in place. Returns `{ids, pref}`, or `{ids: [], pref: None, waived: True}`
-    when the rules would leave no path (then nothing changes)."""
+    when the rules would leave no path (then nothing changes). A case that carries `gateBlocked` (a list of path ids, set by
+    `decide_case` from the gates' results) has those paths left out first, with the reason `GATE_BLOCKED`, so the plan never
+    gives one of them a named order; a case without the key is planned exactly as before."""
+    gated = set(c.get("gateBlocked") or ())  # paths a gate blocks for this case (decide_case, R20): never planned
+    if gated and any(v["ok"] and v["k"] not in gated for v in values):  # (a gate that blocks every path is left to the gates)
+        for v in values:
+            if v["ok"] and v["k"] in gated:
+                v["ok"], v["why"] = False, GATE_BLOCKED
     routes: list[Route] = [
         {"id": v["k"], "excluded": not v["ok"], "failGate": -1, "failReason": v["why"], "gates": ["pass"] * 6} for v in values
     ]

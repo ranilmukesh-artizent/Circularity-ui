@@ -11,7 +11,7 @@ from di.services.modeler.compile import CompiledRule, FlowVersion
 from di.services.modeler.pack import Pack, load_pack, parse_pack
 
 RECALL = Path(__file__).resolve().parent / "fixtures" / "packs" / "recall_test.json"
-ORDER = ("gates", "compliance", "rules", "rank")
+ORDER = ("gates", "valuation", "queue_plan", "rules", "rank")
 
 
 def _decide(case: dict, pack: Pack, *rules: CompiledRule) -> Decision:
