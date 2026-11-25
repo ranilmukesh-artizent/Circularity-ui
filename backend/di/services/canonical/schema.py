@@ -74,6 +74,13 @@ def part_key(org_unit_id: str | None, number: str) -> str:
     return f"{org_unit_id or SHARED_ORG}:{number}"
 
 
+def vin_key(org_unit_id: str | None, vin: str) -> str:
+    """The canonical key of a used car (plan 9, P9-9.2): `<org unit or "shared">:<VIN>`, as part_key. The lease system,
+    the dealer system and later the title and inspection sources write the car's `asset`, `condition` and `market`
+    facts under it."""
+    return f"{org_unit_id or SHARED_ORG}:{vin}"
+
+
 def bom_key(org_unit_id: str | None, parent: str, parent_revision: str, child: str) -> str:
     """The canonical key of a BOM line: the parent's part key, its revision and the child's number."""
     return f"{part_key(org_unit_id, parent)}@{parent_revision}>{child}"
