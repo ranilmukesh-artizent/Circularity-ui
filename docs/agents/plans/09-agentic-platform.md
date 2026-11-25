@@ -943,7 +943,7 @@ each story went.
 - [ ] P9-8.11 SCIM provisioning and directory sync for joiners
 - [x] P9-8.12 Workflow author from a sentence with repair rounds
 - [x] P9-8.13 Studio canvas on xyflow with dagre layout
-- [ ] P9-8.14 Modeler canvas on xyflow
+- [x] P9-8.14 Modeler canvas on xyflow
 - [ ] P9-8.15 Per-node input and output samples with pinned data
 - [ ] P9-8.16 Decision table editor in the Modeler
 - [x] P9-8.17 Composition object with maker-checker

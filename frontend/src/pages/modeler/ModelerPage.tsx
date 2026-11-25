@@ -107,6 +107,11 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
     schedule();
   };
 
+  const remove = (id: string) => {
+    edit(removeNode(graph, id));
+    setSel(null);
+  };
+
   const fork = async () => {
     const r = await action.run(() => forkFlow(s.template.key, s.org));
     if (r.ok) toast(s.org + ' now has its own ' + s.flow.name + ' flow.');
@@ -162,6 +167,9 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
           onSelect={setSel}
           onMove={(id, x, y) => editable && setGraph((g) => moveNode(g, id, x, y))}
           onMoved={schedule}
+          onConnect={(a, b) => edit(connect(graph, a, b))}
+          onRemove={remove}
+          onDisconnect={(id) => edit(disconnect(graph, id))}
         />
         <div className="mdl-side">
           <FlowInspector
@@ -172,10 +180,7 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
             onRule={(id, patch) => edit(updateRule(graph, id, patch))}
             onConnect={(a, b) => edit(connect(graph, a, b))}
             onDisconnect={(id) => edit(disconnect(graph, id))}
-            onRemove={(id) => {
-              edit(removeNode(graph, id));
-              setSel(null);
-            }}
+            onRemove={remove}
           />
           <AssistantPanel s={s} proposal={proposal} onProposal={setProposal} onApply={apply} />
           <ChecksPanel checks={checks} onSelect={setSel} />

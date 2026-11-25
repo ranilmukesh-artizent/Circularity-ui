@@ -250,6 +250,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-2.21 ten-stage journey on the case run view | this commit | 125 api (journey, stage_chain, lifecycle_stages, run_trace, agent_registry, agent_runtime, stage_reasoner, hold_policy, milestone_rt1048, queue_stage, fraud_review, evals), 426 web, lint | done |
 | 2026-11-25 | 09 · P9-8.3 discovery samples 500 records from the test connection | this commit | 196 api (discover_sample, discover, adapter_registry, agent_catalog, catalog_hygiene, tool_find, hold_policy, mapping_suggest, mcp_server, agent_runtime, ask; live Groq test passed on rerun), 427 web, lint, mypy | done |
 | 2026-11-25 | 09 · P9-2.23 ask reads workflows and their runs | this commit | 158 api (ask_workflows, ask, catalog_hygiene, tool_find, hold_policy, agent_catalog, mcp_server, evals), 427 web, lint; live: the user's WF-116 question answered by the model from get_workflow + get_workflow_run (RUN-D1CFE, failed step, error, Fix/Diagnose), and by the rules when the check refused twice | done |
+| 2026-11-25 | 09 · P9-8.14 modeler canvas on xyflow | this commit | 432 web, tsc 0, lint and knip; smoke-modeler all checks, smoke-mvp 12/12, smoke-fabric 12/12 (each after a reset) | done |
 
 ## Decisions taken without the user (to review)
 

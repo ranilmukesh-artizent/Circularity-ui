@@ -428,8 +428,9 @@ await step('7 Admin starts the case autopilot from the Agents page; it stops at 
     await waitToast(admin, /autonomy changed/, m);
   }
   await admin.locator('#ag-run-agent').selectOption(AGENT);
+  await admin.locator('#ag-run-playbook').selectOption('case_autopilot'); // plan 9 added the playbook choice
   await admin.locator('#ag-run-case').fill(id);
-  const t = await clickToast(admin, admin.getByRole('button', { name: 'Start case autopilot' }), /Run AR-\w+ started/);
+  const t = await clickToast(admin, admin.getByRole('button', { name: 'Start run' }), /Run AR-\w+ started/);
   const run = t.match(/AR-\w+/)[0];
   // the worker runs it to the hold: the run waits for a proposal, the proposal is the decision.submit
   const row = await until(admin, async () => {

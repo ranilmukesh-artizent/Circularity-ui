@@ -1,6 +1,5 @@
 # Tasks in flight (task id, writer, model, started)
 P9-8.10 w2 sonnet 22:20 done c823b63, waiting to merge (migration 0057; check test_writes_access[mcp_proposals] on synced stack)
-P9-8.14 w3 sonnet 22:20 done a7b3fca, waiting to merge (run smoke-modeler, smoke-mvp)
 P9-2.16 w1 sonnet 23:45 done 102d78a, waiting: lead runs it (reset before and after; never run by the writer)
-P9-8.4 w4 sonnet 23:45
-P9-8.6 w5 sonnet 23:45
+P9-8.4 w4 sonnet 23:45 done e008a10, waiting to merge (migration 0054; run test_mapping_runs, test_catalog_mappings, test_discover_sample, test_mapping_save; My work answer not built)
+P9-8.6 w5 sonnet 23:45 done 225de27, waiting to merge (no new library; pyyaml lazy)
