@@ -61,6 +61,7 @@ export function TasksPage() {
         sub="Everything whose next step is yours, grouped by what it asks of you. The same list feeds Home › Needs you."
         right={<span className={'chip ' + (l.length ? 'warn' : 'ok')} id="frTasksN">{l.length} open</span>}
       />
+      <p className="note">Your tasks are also in My work, with exceptions, approvals, questions and proposals. <a className="lnk" href="#/mywork">Open My work →</a></p>
       <div className="frkpis fr4">
         {G.map((g) => (
           <HomeKpi key={g[0]} o={{ ic: g[2], h: g[3], v: count(g[0]), n: count(g[0]), l: g[1], k: g[0] }} />

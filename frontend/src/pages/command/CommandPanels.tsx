@@ -206,6 +206,7 @@ export function Aome() {
       <div className="ph">
         <div><h3>Actions on me</h3><div className="note">Everything whose next step is yours</div></div>
         <span className="sp" />
+        <a className="lnk" href="#/mywork">All my work →</a>
         <OpScopeChip />
         <span className={'chip ' + (l.length ? 'warn' : 'ok')}>{l.length}</span>
       </div>

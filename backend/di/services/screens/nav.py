@@ -6,7 +6,8 @@
                  ("operational" or "senior": the senior view has fewer sections); last_asset is the asset the user
                  last opened (the Asset intelligence link points at it when the account may see it, else at its first
                  visible case)
-        badges   nav.ts navBadges(): cases awaiting approval, the approvals inbox, open conflicts, and the per-section
+        badges   nav.ts navBadges(): cases awaiting approval, the approvals inbox, open conflicts, `mywork` (the length of
+                 cases.process.items_for for the account: My work, plan 9 P9-1.8) and the per-section
                  counts keyed as in NAV (conf, srcissue, wffail, inbox)
         tasks    the open tasks count in the menu (the demo's frCounts().tasks: Actions on me)
     GET /api/screens/nav/scope   every case id with its owner and location ({id: [owner, location]}), so the frontend
@@ -71,7 +72,7 @@ from di.repositories.context import call_ctx, can_see_case, visible_cases
 from di.repositories.fabric import held_conflicts
 from di.repositories.reference import lists
 from di.repositories.workspace import aome_items
-from di.services.cases import store
+from di.services.cases import process, store
 
 # sources with an issue: stale or unavailable, and the connector states the screens show as stale
 ISSUE_SQL = "SELECT count(*) FROM source_system WHERE status IN ('stale', 'unavailable', 'failing', 'auth_expired')"
@@ -79,6 +80,8 @@ ISSUE_SQL = "SELECT count(*) FROM source_system WHERE status IN ('stale', 'unava
 EXTRA_KIDS: dict[str, list[list[str]]] = {"access": [["orgs", "Organisation", "Groups, companies, sites and customers"]]}
 # Pages beyond the demo's NAV (plan 8; visible as policy.EXTRA_PAGES allows): (the group or section it goes before, the entry)
 EXTRA_NAV: list[tuple[str, dict]] = [
+    ("home", {"id": "mywork", "label": "My work", "sub": "Exceptions, approvals and questions for you", "icon": "inbox",
+              "leaf": True, "badge": "mywork"}),
     ("More", {"id": "modeler", "label": "Modeler", "sub": "Decision process and business rules", "icon": "branch",
               "sec": "Integration", "leaf": True}),
     ("orchestration", {"id": "agents", "label": "Agents", "sub": "Registry, runs, proposals and tools", "icon": "bot",
@@ -167,6 +170,7 @@ def badges(p: Principal, session: Session, tenant_filter: str = "All") -> dict:
         "awaiting": awaiting,
         "inbox": inbox if policy.can_page(p.account, "command", "approvals") else 0,
         "integration": conf if policy.can_page(p.account, "integration", "conflicts") else 0,
+        "mywork": len(process.items_for(session, ctx)),
         "sections": {"conf": conf, "srcissue": srcissue, "wffail": wffail, "inbox": inbox},
     }
 

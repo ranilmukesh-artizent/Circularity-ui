@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { logos, navBadges, navCounts, navigation, type NavGroup } from '../api/nav';
+import { logos, navBadge, navBadges, navCounts, navigation, type NavGroup } from '../api/nav';
 import { currentAccount, roleAvatar, signInEmail } from '../api/session';
 import { Icon } from '../components/Icon';
 
@@ -121,6 +121,7 @@ function Group({ g, active, open, onToggle, sectionKey, counts, badges }: {
         : g.id === 'product' ? badges.awaiting
           : g.id === 'command' ? badges.inbox
             : g.id === 'integration' ? badges.integration
+              : g.id === 'mywork' ? navBadge('mywork')
               : 0;
   const cnt = n ? <span className={'cnt' + (g.id === 'alerts' ? ' bad' : '')}>{n}</span> : null;
   return (

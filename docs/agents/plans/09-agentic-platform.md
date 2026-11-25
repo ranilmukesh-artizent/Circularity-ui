@@ -802,7 +802,7 @@ each story went.
 - [x] P9-1.5 One decider for intake, re-evaluation and simulation
 - [x] P9-1.6 Pack versions through the pipeline with maker-checker
 - [x] P9-1.7 Case process layer with SLA timers and My work
-- [ ] P9-1.8 My work replaces Home tasks and Actions on me
+- [x] P9-1.8 My work replaces Home tasks and Actions on me
 - [x] P9-1.9 Standard valuer from pack value lines
 - [ ] P9-1.10 Match to the system of record with exceptions
 - [x] P9-1.11 Contract entitlement gate with clause and consent

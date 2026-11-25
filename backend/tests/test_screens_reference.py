@@ -78,11 +78,18 @@ def test_reference_has_no_state():
 def with_org_section(acct: str, groups: list[dict]) -> list[dict]:
     """The demo's menu, with Access's Organisation section for whoever may see it (plan 8 MVP-1.5: a deliberate
     change, decision-log "Org units replace the fixed tenants"; policy.EXTRA_SECTIONS)."""
-    groups = with_agents(acct, with_modeler(acct, groups))
+    groups = with_mywork(with_agents(acct, with_modeler(acct, groups)))
     if not policy.can_page(policy.account(acct), "access", "orgs"):
         return groups
     kid = {"id": "orgs", "label": "Organisation", "sub": "Groups, companies, sites and customers", "href": "#/access/orgs"}
     return [g | {"kids": [*g["kids"], kid]} if g["id"] == "access" else g for g in groups]
+
+
+def with_mywork(groups: list[dict]) -> list[dict]:
+    """My work (plan 9 P9-1.8, a new page for every role: policy.EXTRA_PAGES) before the first group."""
+    g = {"id": "mywork", "label": "My work", "sub": "Exceptions, approvals and questions for you", "icon": "inbox",
+         "section": "", "leaf": True, "href": "#/mywork", "kids": []}  # fmt: skip
+    return [g, *groups]
 
 
 def with_modeler(acct: str, groups: list[dict]) -> list[dict]:

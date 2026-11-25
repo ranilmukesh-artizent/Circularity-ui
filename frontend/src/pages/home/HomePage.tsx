@@ -142,6 +142,7 @@ function RightTabs() {
       </div>
       <div className="pb frrtp" role="tabpanel" id="afNeeds" hidden={tab !== 'needs'}>
         <h3 className="sr">Needs you</h3>
+        <p className="note" style={{ marginTop: 0, textAlign: 'right' }}><a className="lnk" href="#/mywork">All my work →</a></p>
         {needs.length ? (
           <>
             <ul className="aol">{needs.slice(0, 8).map((i, k) => <TaskRow key={k} i={i} />)}</ul>

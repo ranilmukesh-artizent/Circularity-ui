@@ -56,3 +56,5 @@ unattended". Times are local (IST).
 | 25 Nov 14:50 | P9-1.7 merged (lead added a facade test for askForInfo: knip). P9-1.9 verifying. P9-1.8 to w2, P9-1.11 to w3. Phase 1: 8 of 15. |
 | 25 Nov 09:49 | P9-1.9 merged. Sonnet; red first quoted; VALUERS registry created (I-21); two files outside its list (valuers/__init__.py, tool_fleet.py ValueLine.kind) as I-21 requires. |
 | 25 Nov 09:52 | P9-1.11 merged. Sonnet; red first quoted; G-CON-1 on in the tool-fleet pack; contract and consent wording needs review by Kinective's Legal team (noted in the decision log). |
+| 25 Nov 15:40 | P9-1.9 and P9-1.11 merged. P9-1.8 verifying (with smoke-pages). P9-1.10 to w1. Phase 1: 10 of 15. |
+| 25 Nov 10:24 | P9-1.8 merged. Sonnet; red first quoted; My work in the menu with a count, links from Home and Command. |

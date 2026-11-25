@@ -9,7 +9,7 @@ import { view } from './view';
 export interface NavSection { id: string; label: string; sub: string; href: string; badge?: string }
 export interface NavGroup { id: string; label: string; sub: string; icon: string; section: string; leaf: boolean; href: string; kids: NavSection[] }
 
-interface Badges { awaiting: number; inbox: number; integration: number; sections: Record<string, number> }
+interface Badges { awaiting: number; inbox: number; integration: number; mywork?: number; sections: Record<string, number> }
 interface NavAnswer { groups: NavGroup[]; badges: Badges; tasks: number }
 
 /** GET /api/screens/nav with the view settings it depends on. */
@@ -24,6 +24,9 @@ export const navigation = (): NavGroup[] => navAnswer().groups;
  *  open conflicts that hold up a pending decision (Connection Fabric; di/services/screens/nav.py), and per-section badges keyed
  *  as in NAV (conf, srcissue, wffail, inbox). */
 export const navBadges = (): Badges => navAnswer().badges;
+
+/** One count in the menu by key: awaiting, inbox, integration, or mywork (My work: the length of its list, plan 9 P9-1.8); 0 when absent. */
+export const navBadge = (key: 'awaiting' | 'inbox' | 'integration' | 'mywork'): number => navAnswer().badges[key] ?? 0;
 
 export interface AlertItem { id: string; kind: string; ic: string; h: string; t: string; s: string; sev: number; go: string; ack: boolean }
 

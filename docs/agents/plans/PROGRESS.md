@@ -215,6 +215,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-1.7 case process layer with SLA timers and My work | this commit | lead on main after migrate-reapply 0028 and restart: parallel-suite 4 shards 3,969 passed; serial test_screens_home, test_screens_reference (both failed only on the private db), test_mcp_server 406 passed; lint all passed after the lead added a facade test for askForInfo (knip flagged it unused: agent-facing, no button in the spec); tsc 0, vitest 351 passed | done |
 | 2026-11-25 | 09 · P9-1.9 standard valuer from pack value lines | this commit | lead on main after restart: parallel-suite 4 shards 3,977 passed; serial test_milestone_rt1048, test_mcp_server 26 passed; lint all passed; tsc 0, vitest 351 passed | done |
 | 2026-11-25 | 09 · P9-1.11 contract entitlement gate with clause and consent | this commit | lead on main: contract entitlement, gates, gate hold, golden, tool-fleet valuer, paths-agree, case screens, decide_case, order invariant, standard valuer 95 passed; lint all passed; tsc 0, vitest 354 passed | done |
+| 2026-11-25 | 09 · P9-1.8 my work replaces Home tasks and Actions on me | this commit | lead on main after restart: parallel-suite 4 shards 4,001 passed (2 failures in test_overlay_core came from P9-1.11, fixed in the next commit); serial screens reference, home, command, mywork, mywork_nav 894 passed; lint all passed; tsc 0, vitest 356 passed; smoke-pages 11 accounts 0 failing | done |
 
 ## Decisions taken without the user (to review)
 
