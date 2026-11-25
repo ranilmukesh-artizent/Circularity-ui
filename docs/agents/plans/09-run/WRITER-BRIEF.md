@@ -5,8 +5,10 @@ named `<k>` and the task in your prompt.
 
 ## Step 0, before anything else
 
-Your worktree may start from the default branch. Run `git merge --ff-only feature/plan-09-recover` (PowerShell tool
-for git). It must succeed; if not, stop and report.
+Your worktree may start from the default branch. Run `git merge --ff-only <run branch>` (PowerShell tool for git): the
+run branch your lead named, `feature/plan-09-recover` unless the prompt says otherwise (lane B:
+`feature/plan-09-lane-b`). It must succeed; if not, stop and report. In lane B, also set `WT_BASE` to that branch for
+`wt-check.sh`.
 
 ## Read
 

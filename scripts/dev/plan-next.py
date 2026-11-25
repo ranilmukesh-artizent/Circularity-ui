@@ -3,6 +3,7 @@
     python scripts/dev/plan-next.py                 # ready tasks, in plan order, file-disjoint, at most 6
     python scripts/dev/plan-next.py --max 4
     python scripts/dev/plan-next.py --upto 3        # only tasks of phases 0-3 (a run that stops after phase 3)
+    python scripts/dev/plan-next.py --phases 3,4,5,6   # one lane's ready tasks (docs/agents/plans/09-lanes/)
     python scripts/dev/plan-next.py --status        # done / in flight / blocked / left, per phase
     python scripts/dev/plan-next.py --simulate 4    # estimated wall-clock hours with 4 writers (--fast: quicker tasks)
 
@@ -17,18 +18,21 @@ A task is ready when:
   5. it is not a barrier task (it adds a dependency or is a phase gate), unless nothing is in flight.
 Host Python, no packages; reads files as UTF-8.
 """
+import os
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PLAN = ROOT / "docs/agents/plans/09-agentic-platform.md"
-RUN = ROOT / "docs/agents/plans/09-run"
+RUN = Path(os.environ["PLAN_RUN"]) if os.environ.get("PLAN_RUN") else ROOT / "docs/agents/plans/09-run"  # a lane: its own run folder
 
 # Phases that must be fully done before a phase starts. Tool fleet (3-5) and device (6) share core files, so rule 4
 # orders those files; the three asset packs (9, 10, 11) run side by side after Compose (8).
-PHASE_AFTER = {1: {0}, 2: {1}, 3: {2}, 4: {3}, 5: {4}, 6: {2}, 7: {2}, 8: {7},
+PHASE_AFTER = {1: {0}, 2: {1}, 3: {1}, 4: {3}, 5: {4}, 6: {1}, 7: {2}, 8: {7},
                9: {8}, 10: {8}, 11: {8}, 12: {8}, 13: set(range(13))}
+# Two lanes since 25 Nov 2026 (docs/agents/plans/09-lanes/): tool fleet (3-5) and device (6) need from phase 2 only
+# P9-2.1, P9-2.4 and P9-2.5, which their tasks name in "Depends on", so they start after phase 1, not phase 2.
 # Dependencies are added once, up front, by the lead (all plan-9 libraries in one rebuild), so tasks that list these
 # files only check that their library is there; they do not serialize on them.
 DEPENDENCY_FILES = ("pyproject.toml", "package.json", "package-lock.json", "requirements")
@@ -93,8 +97,9 @@ def listed(name: str) -> set[str]:
     return {ln.split()[0] for ln in p.read_text(encoding="utf-8").splitlines() if re.match(ID, ln.strip())}
 
 
-def ready(tasks: dict, done: set, inflight: set, blocked: set, limit: int) -> list[str]:
-    order = sorted(tasks, key=key)
+def ready(tasks: dict, done: set, inflight: set, blocked: set, limit: int, lane: set | None = None) -> list[str]:
+    """`lane`: only these tasks are picked, and only they order each other (the other lane's tasks merge through git)."""
+    order = sorted(lane if lane is not None else tasks, key=key)
     busy = set().union(*(core(tasks[t]["files"]) for t in inflight)) if inflight else set()
     picked: list[str] = []
     for i, tid in enumerate(order):
@@ -104,7 +109,7 @@ def ready(tasks: dict, done: set, inflight: set, blocked: set, limit: int) -> li
         ph = key(tid)[0]
         if not t["deps"] <= done:
             continue
-        if any(key(o)[0] in PHASE_AFTER.get(ph, set()) and o not in done for o in order):
+        if any(key(o)[0] in PHASE_AFTER.get(ph, set()) and o not in done for o in tasks):
             continue
         earlier = [o for o in order[:i] if o not in done]
         if any(tasks[o]["files"] & core(t["files"]) for o in earlier):
@@ -165,13 +170,18 @@ def main() -> None:
                   f"{sum(t in blocked for t in ids)} blocked, {len(ids)} total")
         return
     limit = int(args[args.index("--max") + 1]) if "--max" in args else 6
+    lane = None
+    if "--phases" in args:  # a lane: only these phases, e.g. --phases 3,4,5,6
+        want = {int(x) for x in args[args.index("--phases") + 1].split(",")}
+        lane = {k for k in tasks if key(k)[0] in want}
+        inflight = inflight & lane
     if "--upto" in args:
         last = int(args[args.index("--upto") + 1])
         tasks = {k: v for k, v in tasks.items() if key(k)[0] <= last}
         if all(v["done"] for v in tasks.values()):
             print(f"phases 0-{last} are done")
             return
-    for tid in ready(tasks, done, inflight, blocked, limit):
+    for tid in ready(tasks, done, inflight, blocked, limit, lane):
         t = tasks[tid]
         flag = " [barrier: run alone, in the main tree]" if t["barrier"] else ""
         print(f"{tid} ({t['size']}) {t['title']}{flag}")
