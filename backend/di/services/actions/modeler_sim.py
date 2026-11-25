@@ -11,7 +11,8 @@ proposals (MVP-5.2) answer.
   base parameters (BASEP) on the candidate side only; the base side stays the published rules at BASEP. Read only.
 - `tool_fleet` and `device` (MVP-6.3): the template's sample queue (the prototype's open tool returns, rng(26110); its
   device lots, rng(4242)) plus any live cases of the template, decided by the template's valuer
-  (di.services.modeler.valuers), so a simulation equals the prototype's fSim on the same flows.
+  (di.services.modeler.valuers), so a simulation equals the prototype's fSim on the same flows. A live tool-fleet case
+  is decided in the plan of its org's open queue, with named demand (P9-1.4), as it is when it opens.
 """
 
 import copy
@@ -88,23 +89,23 @@ def _live(c: Mapping[str, Any]) -> bool:
     return "stage" in c
 
 
-def tool_fleet_decider_at(params: Mapping[str, float] | None = None) -> Decider:
+def tool_fleet_decider_at(params: Mapping[str, float] | None = None, ctx: CallContext | None = None) -> Decider:
     """The tool-fleet valuer (the prototype's decide): a sample return within the sample queue's plan; an open case
-    as it is valued when it opens or is re-evaluated (di.services.cases.intake.template_decide; audit F1). `params`
-    are what-if levers over BASEP (None: the published numbers)."""
+    as it is valued when it opens or is re-evaluated (di.services.cases.intake.template_decide; audit F1), in the plan
+    of its org's open queue when `ctx` is given (P9-1.4), so live cases share named orders as they do when decided.
+    `params` are what-if levers over BASEP (None: the published numbers)."""
     p = None if params is None else tool_fleet.BASEP | dict(params)
 
     def decide(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
         if _live(c):
-            best = intake.template_decide("tool_fleet", intake.valuer_input(c, "tool_fleet"), rules, params)["best"]
+            v = intake.valuer_input(c, "tool_fleet")
+            queue = intake.tool_queue(ctx.session, c["owner"], v) if ctx else None
+            best = intake.template_decide("tool_fleet", v, rules, params, queue=queue)["best"]
         else:
             best = tool_fleet.decide(dict(c), p, _rule_dicts(rules))["best"]
         return Decision(best["k"], float(best["net"])) if best else Decision(None, 0.0)
 
     return decide
-
-
-tool_fleet_decider = tool_fleet_decider_at()
 
 
 def device_decider(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
@@ -115,7 +116,7 @@ def device_decider(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decis
 
 
 def _tool_fleet(ctx: CallContext, f: FlowRow, _t: Template) -> tuple[list[dict[str, Any]], Decider]:
-    return tool_fleet.sample_queue() + open_queue(ctx, f), tool_fleet_decider
+    return tool_fleet.sample_queue() + open_queue(ctx, f), tool_fleet_decider_at(None, ctx)
 
 
 def _device(ctx: CallContext, f: FlowRow, _t: Template) -> tuple[list[dict[str, Any]], Decider]:
@@ -155,7 +156,7 @@ def simulate_rules(
     t = load_template(f.template_key)
     base = compile_flow(t, cast(Flow, f.published)) if base is None else base
     queue, decide = SOURCES.get(f.template_key, _industrial)(ctx, f, t)
-    return simulate(t, base, cand, queue, decide, tool_fleet_decider_at(params) if params else None)
+    return simulate(t, base, cand, queue, decide, tool_fleet_decider_at(params, ctx) if params else None)
 
 
 def queue_rows(ctx: CallContext, f: FlowRow) -> list[dict[str, Any]]:

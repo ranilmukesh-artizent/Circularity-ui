@@ -1,7 +1,8 @@
 """A template case's valuer output as the engine's routes (plan 8, MVP-6.4), so `rank_routes` gives the recommendation.
 
 - Tool fleet (`PathValue`): one term per value line; values positive, costs and holding negative, so the route's net
-  is the valuer's net. Term kinds follow `_KINDS` (tests/test_routes_adapter.py states the table).
+  is the valuer's net; the route keeps the valuer's `dest` (who takes the tool, the order's `id`). Term kinds follow
+  `_KINDS` (tests/test_routes_adapter.py states the table).
 - Device (`ChannelValue`): the expected cash a unit (`sale`) and the penalty for days past the service level (`risk`),
   so the route's net is the channel's score.
 A path the valuer (or a business rule) leaves out fails at gate 2 (Policy & certification) with the valuer's reason.
@@ -66,6 +67,8 @@ def to_routes(t: Template, values: Sequence[PathValue | ChannelValue]) -> list[R
         r = mk_route({"id": v["k"], "plan": name, "terms": _terms(v), "why": v["why"]})
         r["co2"] = v["co2"]
         r["co2Src"] = v["co2Src"]
+        if "lines" in v:  # a tool-fleet route carries its destination (the named order it fills), P9-1.4
+            r["dest"] = cast(PathValue, v)["dest"]
         if not v["ok"]:
             fail(r, POLICY, v["why"] or f"{name} cannot take this lot")
         out.append(r)

@@ -16,6 +16,10 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   MVP-9.4). Other templates: the
   template's valuer (tool fleet, device) through `to_routes`. Then the business rules of the owner's published flow
   (di.repositories.live_rules), and `rank_routes` gives the recommendation.
+- **Queue plan** (plan 9, P9-1.4). A tool-fleet case is planned within its org's open tool-fleet cases (not closed;
+  an approved or executing one keeps its order) with the named demand of the canonical store, through the pack's
+  queue planner (di.services.engine.queue); `open_case` then queues `case.replan` so the org's other open cases are
+  planned again (di.services.cases.replan).
 - **Gates** (plan 9, P9-1.2). A template case carries the asset's compliance records (`evidenceRecords`); the pack's
   gates are evaluated and applied to the routes before the business rules, and a gate that holds leaves the case at
   stage `none` with `gateHold` until the evidence arrives (di.services.cases.gate_hold). `facts.batch` is kept as
@@ -46,11 +50,14 @@ from di.repositories.live_rules import live_rules
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
-from di.services.cases import gate_hold, store
+from di.services.cases import gate_hold, named_demand, store
 from di.services.cases.lifecycle import STAGES
 from di.services.engine.evaluate import apply_business, build_routes
+from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
+from di.services.engine.queue import Capacity, Dem, planner_for
 from di.services.engine.routes import Route, rank_routes
+from di.services.modeler.pack import load_pack
 from di.services.modeler.templates import TEMPLATE_KEYS, Template
 from di.services.modeler.valuers import device, tool_fleet
 from di.services.modeler.valuers.rng import mulberry32
@@ -213,7 +220,9 @@ def _with_bom(s: Session, c: store.Case, p: Predictor) -> Predictor:
     return p
 
 
-def _template_routes(c: store.Case, facts: dict[str, Any], t: Template, rules: list) -> tuple[list[Route], str | None]:
+def _template_routes(
+    s: Session, c: store.Case, facts: dict[str, Any], t: Template, rules: list
+) -> tuple[list[Route], str | None]:
     if t.key == "tool_fleet":
         vc = tool_fleet_case(c["id"], facts)
         c |= {k: vc[k] for k in ("cls", "ft", "site", "grade", "rul", "partRul", "dem")} | {"valuer": vc}
@@ -223,7 +232,7 @@ def _template_routes(c: store.Case, facts: dict[str, Any], t: Template, rules: l
         c |= {k: lot[k] for k in ("brand", "band", "grade", "ref", "doh")} | {"qty": lot["qty"], "cls": "device"}
         c |= {"valuer": lot}
         c["product"] = c["product"] or f"{lot['brand']} {lot['model']}".strip()
-    return template_routes(c, t, rules)
+    return template_routes(c, t, rules, s)
 
 
 def valuer_input(c: Mapping[str, Any], template_key: str) -> dict[str, Any]:
@@ -235,28 +244,96 @@ def valuer_input(c: Mapping[str, Any], template_key: str) -> dict[str, Any]:
     return tool_fleet_case(c["id"], facts) if template_key == "tool_fleet" else device_lot(c["id"], facts | {"model": ""})
 
 
+@dataclasses.dataclass(frozen=True)
+class ToolQueue:
+    """The tool-fleet queue one case is planned in (P9-1.4): the valuer inputs of its org's open cases, this one among
+    them, and the named demand (canonical `demand` records) to add to each case by its id."""
+
+    cases: list[dict[str, Any]]
+    demand: dict[str, Dem]
+
+
+def _recommended(doc: Mapping[str, Any]) -> Mapping[str, Any]:
+    i = doc.get("rec_index")
+    return doc["routes"][i] if i is not None and doc.get("routes") else {}
+
+
+def tool_input(doc: Mapping[str, Any]) -> dict[str, Any]:
+    """A stored tool-fleet case (its document) as the queue plan reads it: an approved or executing case is `sent` and
+    keeps the order its recommendation names; the others are `new`."""
+    x = valuer_input(doc, "tool_fleet")
+    if doc.get("stage") in ("approved", "executing"):
+        rec = _recommended(doc)
+        return x | {"status": "sent", "order": (rec.get("dest") or {}).get("id"), "path": rec.get("id")}
+    return x | {"status": "new"}
+
+
+def open_tool_cases(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
+    """The documents of the org's tool-fleet cases that are not closed, by id."""
+    rows = s.execute(
+        text(
+            "SELECT data FROM case_record WHERE owner = :o AND stage <> 'closed' "
+            "AND data ->> 'template' = 'tool_fleet' ORDER BY id"
+        ),
+        {"o": org_unit_id},
+    ).scalars()
+    return list(rows)
+
+
+def tool_queue(s: Session, org_unit_id: str, v: dict[str, Any]) -> ToolQueue:
+    """The queue for the valuer input `v` of a case of the org: its open tool-fleet cases plus `v`, with the named
+    demand of their classes (named_demand.for_queue)."""
+    cases = [tool_input(d) for d in open_tool_cases(s, org_unit_id) if d["id"] != v["id"]] + [v | {"status": "new"}]
+    named = named_demand.for_queue(s, org_unit_id, sorted({c["cls"] for c in cases}))
+    return ToolQueue(cases, {c["id"]: named[c["cls"]] for c in cases})
+
+
+def case_rules(s: Session, c: Mapping[str, Any]) -> list[Any]:
+    """The rules of the case's owner's published flow (what its recommendation was valued with)."""
+    return live_rules(s, dict(c))[1]
+
+
+def _rule_dicts(rules: Sequence[Any]) -> list[dict[str, Any]]:
+    return [dataclasses.asdict(r) if dataclasses.is_dataclass(r) and not isinstance(r, type) else dict(r) for r in rules]
+
+
+def tool_plan(q: ToolQueue, rules: Sequence[Any], params: Mapping[str, float] | None = None) -> tool_fleet.Plan:
+    """The queue planned by the tool-fleet pack's planner (engine.queue, I-5)."""
+    p = tool_fleet.BASEP if params is None else tool_fleet.BASEP | dict(params)
+    return planner_for(load_pack("tool_fleet")).plan(
+        q.cases, q.demand, Capacity(slots=js_round(p["slots"])), rules=_rule_dicts(rules), params=p
+    )
+
+
 def template_decide(
-    template_key: str, v: dict[str, Any], rules: Sequence[Any], params: Mapping[str, float] | None = None
+    template_key: str,
+    v: dict[str, Any],
+    rules: Sequence[Any],
+    params: Mapping[str, float] | None = None,
+    *,
+    queue: ToolQueue | None = None,
 ) -> dict[str, Any]:
-    """The template's valuer on one case, with the flow's compiled rules (audit F1, F6): the tool fleet decides the
-    return in a queue of its own (no sample orders), the device lot alone. The simulation ranks open cases the same way
+    """The template's valuer on one case, with the flow's compiled rules (audit F1, F6). The tool fleet plans the return
+    within its org's open queue (`queue`, with named demand; P9-1.4), so an order two returns want goes to one; with no
+    queue it is planned alone. The device lot is decided alone. The simulation ranks open cases the same way
     (di.services.actions.modeler_sim), so a case's recommendation is what the Modeler predicts for it. `params` are the
     tool-fleet what-if levers laid over the base parameters (P9-0.15); None is the published numbers."""
-    rd = [dataclasses.asdict(r) if dataclasses.is_dataclass(r) and not isinstance(r, type) else dict(r) for r in rules]
     if template_key == "tool_fleet":
-        return dict(tool_fleet.decide(dict(v), None if params is None else tool_fleet.BASEP | dict(params), rd, queue=[v]))
-    return dict(device.decide(dict(v), rd))
+        plan = tool_plan(queue or ToolQueue([v | {"status": "new"}], {}), rules, params)
+        return {**plan["res"][v["id"]], "indep": plan["indep"][v["id"]], "blk": sorted(plan["blk"][v["id"]])}
+    return dict(device.decide(dict(v), _rule_dicts(rules)))
 
 
-def template_routes(c: store.Case, t: Template, rules: list) -> tuple[list[Route], str | None]:
+def template_routes(c: store.Case, t: Template, rules: list, s: Session | None = None) -> tuple[list[Route], str | None]:
     """The case's routes from its template's valuer, with the business rules recorded on the case, and the path the
     valuer chose (it ranks first; the device valuer's "prefer" wins only within 15% of the best). The routes keep only
     the valuer's own exclusions: the business rules are applied to them as to an industrial case, so an excluded path
     says which rule excluded it and `rulesApplied` lists the rule (the valuer's run with the rules gives the values and
     the chosen path)."""
     v = valuer_input(c, t.key)
-    dec = template_decide(t.key, v, rules)
-    own = {x["k"]: x for x in template_decide(t.key, v, [])["all"]}  # what the valuer alone leaves out, and why
+    queue = tool_queue(s, c["owner"], v) if s is not None and t.key == "tool_fleet" else None  # P9-1.4
+    dec = template_decide(t.key, v, rules, queue=queue)
+    own = {x["k"]: x for x in template_decide(t.key, v, [], queue=queue)["all"]}  # what the valuer alone leaves out, and why
     routes = to_routes(t, [x | {"ok": own[x["k"]]["ok"], "why": own[x["k"]]["why"]} for x in dec["all"]])
     for r in routes:  # what the case pages read of a route: who takes it, through which application
         p = t.path(r["id"])
@@ -280,7 +357,7 @@ def recommend(s: Session, c: store.Case, rules: list) -> Route | None:
     snapshot it opened with, on a copy: the case itself is unchanged."""
     t = live_rules(s, c)[0]
     probe = copy.deepcopy(c)
-    routes, best = template_routes(probe, t, rules)
+    routes, best = template_routes(probe, t, rules, s)
     return _rank(probe, routes, best)
 
 
@@ -300,9 +377,9 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     if t.key == "industrial":
         routes, best = _industrial_routes(s, c, t, rules), None
     elif facts or not c.get("routes"):
-        routes, best = _template_routes(c, facts, t, rules)
+        routes, best = _template_routes(s, c, facts, t, rules)
     else:  # a re-evaluation: the snapshot the case opened with
-        routes, best = template_routes(c, t, rules)
+        routes, best = template_routes(c, t, rules, s)
     c["routes"] = routes
     c["recommendation"] = _rank(c, routes, best)
     c["flowVer"] = ver
@@ -342,6 +419,10 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
         text("INSERT INTO domain_event (type, case_id, payload) VALUES ('case.opened', :c, CAST(:p AS jsonb))"),
         {"c": case_id, "p": json.dumps(payload)},
     )
+    if c["template"] == "tool_fleet":  # the org's other open returns are planned again with this one (P9-1.4)
+        jobs.enqueue(
+            s, "case.replan", {"org_unit_id": c["owner"], "template": "tool_fleet"}, dedupe_key=f"case.replan:{c['owner']}"
+        )
     if get_settings().autopilot_on_open:
         jobs.enqueue(s, "agent.autostart", {"case_id": case_id, "account": account_id}, dedupe_key=f"agent.autostart:{case_id}")
     return c

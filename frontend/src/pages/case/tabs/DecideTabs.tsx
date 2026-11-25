@@ -7,7 +7,7 @@ import { useState, type ReactNode } from 'react';
 import { invoke } from '../../../api/actions';
 import {
   confidence, fmtDY, fmtN, isoT, kfmt, lc, recert, refList, resetScen, scen, scenActive, scenAdj, scenChanged, scenRoutes, setScen, setTi,
-  stageHref, tiRows, tieBreak, tieText, tiView, TB_RULES, exTs, locName,
+  queuePlan, stageHref, tiRows, tieBreak, tieText, tiView, TB_RULES, exTs, locName,
   type CaseAnalysis, type CaseRec, type Evidence, type RankRow, type Route, type ScenKey, type ScenRoutes, type Tie, type TiRow,
 } from '../../../api/case';
 import { money } from '../../../api/format';
@@ -21,6 +21,7 @@ import { approveGuarded, caseActions, runNextStep, scrollToId } from '../caseAct
 import { useCaseUi } from '../CaseContext';
 import { gateLine, holdLine } from '../gates';
 import { co2Label } from '../co2';
+import { planLines } from '../queuePlan';
 import type { TabProps } from './index';
 
 type P = { c: CaseRec; a: CaseAnalysis };
@@ -469,6 +470,7 @@ export function ExplainBlock({ c, a }: P) {
         ))}
       </div>
       {body}
+      {planLines(queuePlan(c)).map((l) => <p key={l} className="note" style={{ margin: '10px 0 0' }}><b>Queue plan:</b> {l}</p>)}
     </section>
   );
 }

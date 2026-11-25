@@ -147,6 +147,15 @@ _CANON_NS = {
     "Intervention": "intervention",
     "Outcome": "outcome",
 }
+# The named orders of the tool-fleet queue (plan 9, P9-1.4): a `demand` record with `pack` "tool_fleet" is one order
+# (kind lease, so, bid, proj, or wo for a part) the queue planner gives to one return. A lease takes its rate from
+# `lease_rate`, its term from `proposed_term_months` and is a renewal when it names a `contract_ref`.
+NAMED_ORDER_FIELDS = {
+    "pack": "text", "org_unit": "text", "cls": "text", "who": "text", "need_days": "number", "price": "number",
+    "gmin": "text", "exp_days": "number", "rental": "number", "part": "text", "backorder": "bool", "what": "text",
+    "when": "text",
+}  # fmt: skip
+
 # the identity keys of canonical.json's models, and of the PLM part and BOM line (MVP-9.1)
 REQUIRED = {("asset", "asset_id"), ("demand", "demand_id"), ("part", "number"), ("bom", "parent"), ("bom", "child")}
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -177,6 +186,7 @@ def _build() -> dict[str, dict[str, FieldSpec]]:
         for f, t in fields.items():
             if types[ns].get(f) in (None, "any"):
                 types[ns][f] = t
+    types["demand"] |= NAMED_ORDER_FIELDS
     return {ns: {f: FieldSpec(t, (ns, f) in REQUIRED) for f, t in fs.items()} for ns, fs in types.items()}
 
 

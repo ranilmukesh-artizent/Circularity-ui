@@ -247,6 +247,18 @@ def _gate_recheck(payload: dict[str, Any]) -> None:
     log.info("gate recheck %s: released %s", payload["asset_key"], released or "none")
 
 
+@handler("case.replan")
+def _case_replan(payload: dict[str, Any]) -> None:
+    """A tool-fleet case was opened: the org's other open cases are planned again with it, so an order two returns want
+    goes to one (di.services.cases.replan.on_opened, P9-1.4)."""
+    from di.services.cases import replan
+
+    with SessionLocal() as s:
+        moved = replan.on_opened(s, payload["org_unit_id"])
+        s.commit()
+    log.info("replan %s: moved %s", payload["org_unit_id"], moved or "none")
+
+
 def tick_instructions() -> None:
     """Acknowledge the simulated steps that are due on the simulated clock."""
     import di.services.actions.execution  # noqa: F401

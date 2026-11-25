@@ -73,11 +73,17 @@ export interface NextStep { kind: 'act' | 'ack' | 'approve' | 'wait' | 'blocked'
 export interface Clock { level?: number; lim?: string; to?: string | null; due?: string; due2?: string }
 export interface Source { id: string; short?: string; name: string; vendor: string; mode: string; status: string; freshMin?: number | null }
 
+/** A tool-fleet case's place in its org's queue plan (backend/di/services/cases/replan.py, P9-1.4): the named order it
+ * holds, the orders it competes for, the ones another return got (`to` its case id, `gain` what it gains from the order)
+ * and a short name for each order ("lease renewal"). */
+export interface QueuePlan { holds: string | null; contested: string[]; lost: { order: string; to: string; gain: number }[]; kinds: Record<string, string> }
+
 /** GET /api/screens/case/{id} */
 export interface CaseScreen {
   case: CaseRec; model: string; serial: string; run: Run; tags: StageTag[]; stages: StageData[];
   landing: number | 'overview'; next: NextStep; clock: Clock | null;
   approval: { role: 'Approver' | 'Admin'; limit: number | null }; sources: Record<string, Source>;
+  plan?: QueuePlan | null;
 }
 
 // ---------- the analysis ----------
@@ -185,6 +191,8 @@ export const stageData = (c: CaseRec, n: number): StageData => screenOf(c).stage
 export const landing = (c: CaseRec): number | 'overview' => screenOf(c).landing;
 export const nextStep = (c: CaseRec): NextStep => screenOf(c).next;
 export const sources = (c: CaseRec): Record<string, Source> => screenOf(c).sources;
+/** A tool-fleet case's queue plan; null for other templates. */
+export const queuePlan = (c: CaseRec): QueuePlan | null => screenOf(c).plan ?? null;
 /** "07 Oct 14:20" (time only when it is not midnight UTC; the demo's stWhen). */
 export function when(d: string | Date | null | undefined): string {
   if (!d) return '';

@@ -12,6 +12,9 @@ A template case with gates (plan 9, P9-1.2) also carries, inside `case`: `gates`
 (held until evidence arrives), `requiredSteps` and `batch` ({ref, total, held, released} of its batch); the facade's
 `CaseRec` types them and the Decide tab's Gates block draws them.
 
+A tool-fleet case's page also has `plan` (plan 9, P9-1.4): its place in its org's queue plan, `{holds, contested, lost,
+kinds}` (di.services.cases.replan.queue_plan; None for other templates). The Decide tab's "Queue plan" line draws it.
+
 Both refuse as the case actions do: 403 out_of_scope when the account has no case pages, 404 not_found for an unknown
 case, 403 tenant_boundary outside the account's tenants or warehouse (same messages as di.services.actions.pipeline).
 
@@ -133,7 +136,7 @@ from di.repositories.context import call_ctx, load_case, visible_cases
 from di.repositories.provenance import prov_for, snap_time
 from di.services.actions.decisions import draft_rationale
 from di.services.actions.pipeline import CallContext
-from di.services.cases import gate_hold
+from di.services.cases import gate_hold, replan
 from di.services.execution import (
     as_sc,
     ex_actual,
@@ -598,6 +601,7 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
         "clock": active_clock(c),
         "approval": {"role": "Approver" if deleg else "Admin", "limit": no_inf(policy.limit_for(p.account, p.ctx))},
         "sources": case_sources(),
+        "plan": replan.queue_plan(session, c),
     }
 
 

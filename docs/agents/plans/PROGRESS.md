@@ -208,6 +208,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-1.1 pack format v1 with tool fleet and device as data | this commit | lead on main: parallel-suite 4 shards 3,847 passed (every non-serial api test file); lint all passed | done |
 | 2026-11-25 | 09 · P9-1.2 gate catalogue with evidence and batch hold | this commit | lead on main after restart: parallel-suite 4 shards 3,868 passed; serial test_milestone_rt1048, test_workflow_open_case 7 passed; lint all passed; tsc 0, vitest 335 passed | done |
 | 2026-11-25 | 09 · P9-1.3 customer overlay with tighten-only and rebase | this commit | lead on main after migrate-reapply 0028 and restart: overlay, flows, live rules, modeler, migrations, catalogue, pack, gates, golden, engine and serial-only test_mcp_server 360 passed; lint all passed; web-check passed | done |
+| 2026-11-25 | 09 · P9-1.4 queue planner port with named demand on live cases | this commit | lead on main after restart: parallel-suite 4 shards 3,913 passed; lint all passed; tsc 0, vitest 342 passed | done |
 
 ## Decisions taken without the user (to review)
 

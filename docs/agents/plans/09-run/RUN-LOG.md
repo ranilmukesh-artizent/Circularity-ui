@@ -45,3 +45,4 @@ unattended". Times are local (IST).
 | 25 Nov 06:49 | P9-1.2 merged. Sonnet; red first obtained by removing its modules (code written first); gate stages assigned by the writer (B gives none); catalogue entries carry legal_review pending (Kinective Legal team). |
 | 25 Nov 10:35 | P9-1.2 merged (parallel 3,868 passed). P9-1.3 (overlay, I-4) to w1, P9-1.4 (queue planner, I-5) to w2. Phase 1: 2 of 15. |
 | 25 Nov 07:25 | P9-1.3 merged. Sonnet; R21 tests red first; overlay.approve and overlay.reject forbidden to agents; migration 0031 filled; jsonpatch and deepdiff not used. |
+| 25 Nov 07:37 | P9-1.4 merged. Sonnet; red first quoted; HeuristicPlanner parity with plan_queue; R8 report says no seeded case changes (all seeded cases are industrial). |
