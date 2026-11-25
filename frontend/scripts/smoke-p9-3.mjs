@@ -343,6 +343,26 @@ await step('6 Life: CMH-48213 reads its wear index and the remaining life of its
   );
   return `${wti}; ${rul}`;
 });
+
+// ---------------------------------------------------------------- 9
+await step('9 Paths: CMH-48213 reads six valued paths and the renewal FC-30117-R in the re-issue lines', async () => {
+  const admin = await as('admin');
+  const r = await must(admin, 'cases.list', { q: 'CMH-48213', limit: 5 });
+  const row = (r.rows || []).find((x) => x.id);
+  if (!row) throw new Error('no case for CMH-48213');
+  const v = await getJson(admin, '/api/screens/toolfleet/' + row.id);
+  if ((v.paths || []).length !== 6) throw new Error(`expected six paths, got ${(v.paths || []).length}`);
+  const release = v.paths.find((p) => p.k === 'release');
+  if (!release.lines.some((l) => /Fleet renewal FC-30117-R/.test(l.label))) {
+    throw new Error('the re-issue lines do not name the renewal FC-30117-R: ' + release.lines.map((l) => l.label).join(' | '));
+  }
+  await admin.goto(`${base}/#/product/${row.id}/overview`);
+  await admin.locator('#view').waitFor();
+  await admin.locator('[data-testid="tf-path-release"]').first().waitFor({ timeout: UI });
+  const shown = await admin.locator('[data-testid="tf-paths"]').first().textContent();
+  if (!/Fleet renewal FC-30117-R/.test(shown || '')) throw new Error('the Overview does not show "Fleet renewal FC-30117-R"');
+  return `${v.paths.map((p) => p.k).join(', ')}; best ${v.best}, uplift ${v.uplift}`;
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));

@@ -868,7 +868,7 @@ each story went.
 - [x] P9-3.9 Wear index and remaining life per component
 - [ ] P9-3.10 Remaining life model and teardown calibration
 - [ ] P9-3.11 Telematics and inspection disagreement exception
-- [ ] P9-3.12 Six paths valued against live named demand
+- [x] P9-3.12 Six paths valued against live named demand
 - [ ] P9-3.13 Live queue plan for open tool returns
 - [ ] P9-3.14 CO2e per route and the recycling certificate
 - [ ] P9-3.15 Threshold approvals and standing policy for returns

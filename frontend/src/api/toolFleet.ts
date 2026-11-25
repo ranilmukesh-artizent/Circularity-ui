@@ -64,6 +64,29 @@ export interface LifeView {
   rule_version: string;
 }
 
+/** One value line of a path (type v value, c cost, h holding), as the valuer states it (P9-3.12). */
+export interface PathLine {
+  type: 'v' | 'c' | 'h';
+  label: string;
+  basis: string;
+  amt: number;
+}
+
+/** One of the six paths valued against the live named demand (P9-3.12, TF-07); `dest` is the named order it fills. */
+export interface PathView {
+  k: string;
+  name: string;
+  ok: boolean;
+  net: number;
+  gross: number;
+  cost: number;
+  hold: number;
+  /** why the path was chosen, or why it is blocked */
+  why: string;
+  lines: PathLine[];
+  dest: { id: string; who: string; kind?: string } | null;
+}
+
 export interface ToolFleetView {
   case_id: string;
   pack_version: string;
@@ -74,7 +97,13 @@ export interface ToolFleetView {
   quarantine: QuarantineView | null;
   /** null for a case with neither telematics hours nor months on contract */
   life: LifeView | null;
-  paths: unknown[];
+  /** the six paths in the pack's order (P9-3.12) */
+  paths: PathView[];
+  /** the recommended path, the next eligible one, the standard route (the function's default) and best net minus standard net; null with no recommendation */
+  best?: string | null;
+  second?: string | null;
+  standard?: string;
+  uplift?: number | null;
   plan: unknown | null;
   approval: unknown | null;
   followThrough: unknown | null;
