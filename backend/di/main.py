@@ -8,10 +8,12 @@ import di.services.actions.access  # registers action handlers
 import di.services.actions.agents  # registers action handlers (agent.register, agent.update; plan 8)
 import di.services.actions.cases_intake  # registers action handlers (case.open; plan 8)
 import di.services.actions.config_agent  # registers action handlers (config.read, config.draft: the configuration agent; plan 9)
+import di.services.actions.connections  # registers action handlers (registry.*, connection.*: the adapter registry; plan 9)
 import di.services.actions.decisions  # registers action handlers
 import di.services.actions.engine  # registers action handlers
 import di.services.actions.exceptions  # registers action handlers (exception.explain: the exception assistant; plan 9)
 import di.services.actions.execution  # registers action handlers
+import di.services.actions.fraud  # registers action handlers (fraud.hold, release, reject, simulate; plan 9)
 import di.services.actions.integration  # registers action handlers
 import di.services.actions.llm  # registers action handlers (llm.models, llm.setModel; plan 9)
 import di.services.actions.modeler  # registers action handlers (flow.*: the decision flow lifecycle; plan 8)
@@ -24,6 +26,7 @@ import di.services.actions.overlays  # registers action handlers (overlay.*: the
 import di.services.actions.packs  # registers action handlers (pack.*: pack versions with maker-checker; plan 9)
 import di.services.actions.proposals  # registers action handlers (proposal.accept, proposal.reject; plan 8)
 import di.services.actions.standing_policy  # registers action handlers (standingPolicy.*, policy approval; plan 9)
+import di.services.actions.tools  # registers action handlers (tools.find: the tool search; plan 9)
 import di.services.actions.work  # registers action handlers (case.needInfo, work.resolve, work.assign; plan 9)
 import di.services.actions.workflow_builder  # registers action handlers (workflow.draft, workflow.plan)
 import di.services.actions.workflow_drafts  # registers action handlers (workflow.draft.save, workflow.draft.discard, testRun)

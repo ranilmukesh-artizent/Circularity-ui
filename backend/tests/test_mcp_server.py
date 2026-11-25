@@ -193,13 +193,16 @@ def test_tools_are_filtered_per_agent():
         return [t.name for t in (await c.list_tools()).tools]
 
     assert with_client(headers("planner-a", "assembler"), go) == [
-        "get_case_evidence", "list_eligible_routes", "get_model_validation",
-    ]  # fmt: skip
+        "get_case_evidence",
+        "list_eligible_routes",
+        "get_model_validation",
+        "tools_find",
+    ]  # fmt: skip  (P9-2.13: tools_find for every named agent)
     assert with_client(headers("planner-a", "intruder"), go) == []
     ext = {"id": "ext-reader", "name": "External reader", "tools": ["get_case_evidence"], "autonomy": "read"}
     assert action("admin", "agent.register", ext)["ok"] is True
     try:
-        assert with_client(headers("planner-a", "ext-reader"), go) == ["get_case_evidence"]
+        assert with_client(headers("planner-a", "ext-reader"), go) == ["get_case_evidence", "tools_find"]
         assert call("planner-a", "ext-reader", "get_case_evidence", {"case_id": "RT-1048"})["ok"] is True
         no = call("planner-a", "ext-reader", "find_demand", {"case_id": "RT-1048"})
         assert no["error"] == {

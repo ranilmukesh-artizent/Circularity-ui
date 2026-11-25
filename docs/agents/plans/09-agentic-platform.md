@@ -843,16 +843,17 @@ each story went.
 - [x] P9-2.8 Queue stage waits for the queue plan
 - [x] P9-2.9 Calibrated stage confidence from outcomes
 - [x] P9-2.10 Exception assistant drafts cause and owner
-- [ ] P9-2.11 Fraud triage on intake with a person release
-- [ ] P9-2.12 Richer tool schemas and a find tools read
-- [ ] P9-2.13 MCP tools generated from the action catalogue
+- [x] P9-2.11 Fraud triage on intake with a person release
+- [x] P9-2.12 Richer tool schemas and a find tools read
+- [x] P9-2.13 MCP tools generated from the action catalogue
 - [ ] P9-2.14 OAuth protected resource metadata for MCP
 - [ ] P9-2.15 Agent evals in CI with an injection corpus
 - [ ] P9-2.16 Phase 2 demo smoke script
-- [ ] P9-2.18 Stage agents reason with the model
+- [x] P9-2.18 Stage agents reason with the model
 - [ ] P9-2.19 Exception assistant and fraud review drafted by the model
 - [ ] P9-2.20 Lease end, return authorised and transit stage agents
 - [ ] P9-2.21 Ten-stage journey on the case run view
+- [x] P9-2.22 Gates before the queue plan in decide_case
 - [ ] P9-2.17 Phase 2 gate
 - [x] P9-3.1 Fleet contract and repair log mocks with adapters
 - [ ] P9-3.2 Recall, telematics and parts mocks with adapters
@@ -928,7 +929,7 @@ each story went.
 - [ ] P9-7.7 FR market canary for service desk tables
 - [ ] P9-7.8 Phase 7 demo smoke script
 - [ ] P9-7.9 Phase 7 gate
-- [ ] P9-8.1 Adapter registry with environments and owner approval
+- [x] P9-8.1 Adapter registry with environments and owner approval
 - [ ] P9-8.2 Field mapping suggestions with calibrated confidence
 - [ ] P9-8.3 Discovery samples 500 records from the test connection
 - [ ] P9-8.4 Five mapping choices with ask the owner
@@ -4299,6 +4300,7 @@ sources, concerns (held ones marked) and questions. vitest for the facade; smoke
   a hold, never release one).
 - Modify `frontend/src/pages/case/CaseOverview.tsx` (the fraud banner shows the review) and the exception draft view
   of My work.
+- Modify `backend/di/services/actions/decisions.py` (`decision.approve` refuses a fraud-held case).
 - Test: `backend/tests/test_exception_assistant.py` (extend), `backend/tests/test_fraud_review.py`.
 
 **Interfaces:**
@@ -4316,6 +4318,8 @@ sources, concerns (held ones marked) and questions. vitest for the facade; smoke
   - `raise_hold: true` on a case below the threshold holds it with signal `model_review` (its narrative and sources).
   - The computed score and `rule_version` are unchanged. A review never releases a hold.
   - Cited sources must exist, else one retry, then no review.
+- A fraud-held case cannot be approved: `decision.approve` answers `conflict` "Held for fraud review: release it
+  first" until a person runs `fraud.release` (found when P9-2.11 merged: a held case only stopped standing policies).
 
 **UI slice:** the fraud banner shows "Model review: <narrative>" with its sources; a hold raised by the review says so.
 The exception draft says "Drafted by the exception assistant (<model>)" or "Drafted from the pack". vitest; smoke step
@@ -4330,6 +4334,7 @@ in P9-2.16.
 - `test_fraud_review_never_releases`: a held case with a review saying "not fraud" stays held.
 - `test_fraud_review_unknown_source_dropped`.
 - `test_fraud_and_exception_no_model_same_as_today`.
+- `test_fraud_held_case_cannot_be_approved_until_released`.
 - Also run: `tests/test_fraud_triage.py tests/test_stage_chain.py`.
 
 **Notes:** fraud outcomes stay holds for a person (B §8.4). The model adds caution, never removes it (R16).
@@ -4465,6 +4470,35 @@ enablement); smoke step in P9-2.16.
 
 **Notes:** the prototype's screens are a concept only; follow our kit and the run view of P9-2.6. Hidden model
 reasoning is not shown; the reading's typed fields are.
+
+#### P9-2.22 Gates before the queue plan in decide_case
+**Stories:** R20 (phase 1 review finding 2). **Size:** S. **Depends on:** P9-1.5, P9-2.8.
+
+**Files:**
+- Modify `backend/di/services/cases/decide.py` (`decide_case`: gates and the hold first, then the tool fleet's
+  valuation and queue plan over the routes the gates left eligible).
+- Test: `backend/tests/test_decide_gate_order.py`.
+
+**Interfaces:**
+- Today `_tool_fleet` (valuation and queue plan) runs before `gate_hold.apply`, so a gate-blocked route can win a
+  named order in the queue plan and leave that order unfilled.
+- After the fix:
+  1. `gate_hold.apply` runs first.
+  2. The routes it blocks are passed to the planner as ineligible for this case.
+  3. The plan assigns orders only to eligible routes.
+  4. The trace order reads gates → valuation → queue plan → business rules → rank.
+- Industrial cases (no queue plan) and the demo's 128 cases are unchanged: same routes, nets and golden output.
+
+**UI slice:** none.
+
+**Tests (red first):**
+- `test_gate_blocked_route_never_wins_an_order`: a tool-fleet case whose contract clause blocks redeploy (G-CON-1)
+  and a named redeploy order → the order goes to the next eligible case or stays open; this case's plan has no
+  redeploy assignment.
+- `test_gate_order_in_trace`: the trace lists the gates before the queue plan.
+- `test_industrial_decide_unchanged`: RT-1048 and a book case give the same result as before.
+- Also run: `tests/test_decide_case.py tests/test_queue_planner.py tests/test_queue_stage.py
+  tests/test_milestone_rt1048.py tests/test_valuer_tool_fleet.py`, and the parity files.
 
 #### P9-3.1 Fleet contract and repair log mocks with adapters
 **Stories:** enabler: the fleet contract system and the legacy depot repair log are two of the seven systems of the

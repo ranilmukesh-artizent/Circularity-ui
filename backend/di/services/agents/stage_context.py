@@ -30,3 +30,4 @@ class StageContext:
     value_limit: Decimal | None
     bulk_limit: int | None
     guardrail_holds: list[str] = field(default_factory=list)
+    model_concerns: list[str] = field(default_factory=list)  # held concerns of earlier stage readings (P9-2.18)

@@ -3,6 +3,8 @@ enterprise MCP servers Circularity consumes, and MCP server proposals (B14).
 
     GET /api/screens/mcp/tools                 the ten tools (with input schema and approval rule) and the hard rules
     GET /api/screens/mcp/agents                the agents, their scopes, tools, limits and call counts
+    GET /api/screens/mcp/generated             per registered agent, the tools generated from the action catalogue with
+                                               their hints (plan 9 P9-2.13; section "agents")
     GET /api/screens/mcp/matrix?tenant=        what each agent may do with each tool on behalf of a tenant (permCell)
     GET /api/screens/mcp/calls?filter=all|issues&limit=
                                                the call log, newest first, each call with whether this account may
@@ -28,6 +30,7 @@ Facade (frontend/src/api/mcp.ts) → here:
 |---|---|
 | tools, toolById, hardRules | GET /tools |
 | mcpAgents | GET /agents |
+| generated (useMcp) | GET /generated |
 | permCell (per agent, tool and tenant) | GET /matrix?tenant= |
 | toolCalls, caseOpenable | GET /calls (`openable` on each call) |
 | clientServers | GET /client |
@@ -48,6 +51,7 @@ from di.repositories import mcp_calls  # noqa: F401 - registers the "mcp_calls" 
 from di.repositories.access import request_rows
 from di.repositories.constants import AGENTS, HARD_RULES, TOOLS
 from di.repositories.context import case_openable
+from di.services.agents import registry as agent_registry
 
 
 # ---------------------------------------------------------------- the demo's permCell
@@ -73,6 +77,24 @@ def tools() -> dict:
 def agents() -> dict:
     """GET /agents."""
     return {"agents": AGENTS}
+
+
+def generated(session: Session) -> dict:
+    """GET /generated: each registered agent's tools generated from the action catalogue, with the hints (P9-2.13)."""
+    from di.mcp.catalog_tools import tools_for  # late: di.mcp imports the action modules this page need not load
+
+    rows = []
+    for a in agent_registry.all_agents(session):
+        tools = [
+            {
+                "tool": t.name, "action": (t.meta or {}).get("action"), "read_only": t.annotations.read_only_hint,
+                "destructive": t.annotations.destructive_hint, "needs_person": (t.meta or {}).get("requiresHumanApproval"),
+            }
+            for t in tools_for(a)
+            if t.annotations is not None
+        ]  # fmt: skip
+        rows.append({"agent": a.id, "name": a.name, "tools": tools})
+    return {"agents": rows}
 
 
 def matrix(tenant: str | None) -> dict | None:

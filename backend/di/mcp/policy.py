@@ -32,7 +32,7 @@ from sqlalchemy.orm import Session
 
 from di.core import clock, policy, state
 from di.core.auth import principal
-from di.mcp import calllog
+from di.mcp import calllog, catalog_tools
 from di.mcp.tools import ACTIONS_OF, AGENTS, NO_APPROVAL_REF, RUN, TOOLS, Refused, ToolCall, cross_tenant
 from di.services.actions.pipeline import Actor, CallContext
 from di.services.agents import registry as agent_registry
@@ -41,6 +41,7 @@ from di.services.cases import store
 
 # Actions no tool may ever run (di.services.agents.forbidden). Checked once, against the whole tool table.
 _REACHED = [a for acts in ACTIONS_OF.values() for a in acts if a.startswith(FORBIDDEN_ACTIONS)]
+_REACHED += catalog_tools.unsafe()  # the generated tools (P9-2.13) are checked the same way
 if _REACHED:
     raise RuntimeError(f"tools reach actions no agent may run: {_REACHED}")
 
@@ -147,6 +148,15 @@ def tools_for(agent_id: str | None) -> set[str] | None:
     return set(row.tools) if row else set()
 
 
+def generated_tools(agent_id: str) -> list:
+    """The agent's tools generated from the action catalogue (di.mcp.catalog_tools); none for an unregistered agent."""
+    from di.core.db import SessionLocal
+
+    with SessionLocal() as s:
+        row = agent_registry.get(s, agent_id)
+    return catalog_tools.tools_for(row) if row else []
+
+
 def account_of(token: str | None) -> policy.Account | None:
     """For the HTTP gate: the token's account, or None."""
     from di.core.db import SessionLocal
@@ -173,6 +183,9 @@ def call_tool(s: Session, who: Caller, tool_id: str, arguments: dict | None) -> 
 
 def _run(s: Session, who: Caller, call: Call, tool_id: str, args: dict) -> dict:
     tool = TOOLS.get(tool_id)
+    gen = None if tool is not None else catalog_tools.action_of(tool_id)  # a tool generated from the catalogue (P9-2.13)
+    if gen is not None:
+        tool = catalog_tools.as_tool(gen)
     if tool is None:
         return call.fail("not_found", f"No tool {tool_id}. Tools: {', '.join(TOOLS)}.")
     acct = _account(s, who.token)
@@ -203,7 +216,7 @@ def _run(s: Session, who: Caller, call: Call, tool_id: str, args: dict) -> dict:
         )
     call.step("Authenticate agent token", True, ag["name"] + " · service identity")
     # 2 scope
-    if tool_id not in ag["tools"]:
+    if not (catalog_tools.may_call(ag["tools"], gen) if gen is not None else tool_id in ag["tools"]):
         call.step("Check agent scope", False, f"{ag['name']} is not scoped for {tool_id}")
         return call.fail("out_of_scope", f"{ag['name']} cannot call {tool_id}. Scopes: {', '.join(ag['scopes'])}.")
     call.step("Check agent scope", True, ", ".join(ag["scopes"]))
@@ -240,7 +253,7 @@ def _run(s: Session, who: Caller, call: Call, tool_id: str, args: dict) -> dict:
     ctx = CallContext(actor=Actor(account=account, ctx=pctx), session=s, preparer=ag["id"])
     t = ToolCall(tool=tool, args=clean, case=case, tenant=call.tenant, ctx=ctx, step=call.step)
     try:
-        result = RUN[tool_id](t)
+        result = catalog_tools.run(gen, t) if gen is not None else RUN[tool_id](t)
     except Refused as e:
         if e.step is not None:
             call.step("Run tool", False, e.step)
@@ -264,7 +277,7 @@ def _log(s: Session, call: Call, who: Caller, tool_id: str, answer: dict) -> Non
             "tenant": call.tenant or "—",
             "lat": answer["ms"],
             "outcome": answer["outcome"],
-            "step": tool["step"][0] if tool else None,
+            "step": tool["step"][0] if tool else (6 if call.agent and catalog_tools.action_of(tool_id) else None),
             "account": call.account,
             "code": None if answer["ok"] else answer["error"]["code"],
         },

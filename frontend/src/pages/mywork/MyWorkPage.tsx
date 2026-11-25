@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { acceptProposal, rejectProposal } from '../../api/agents';
+import { isFraudItem } from '../../api/fraud';
 import { assignItem, explainException, resolveItem, useMyWork, type ExceptionDraft, type WorkItem, type WorkKind } from '../../api/mywork';
 import { accounts } from '../../api/session';
 import { useBackend } from '../../api/useBackend';
@@ -15,7 +16,7 @@ type Dialog = { kind: 'resolve' | 'assign' | 'reject'; item: WorkItem };
 export function MyWorkPage() {
   useBackend();
   const s = useMyWork();
-  const [kind, setKind] = useState<WorkKind | 'all'>('all');
+  const [kind, setKind] = useState<WorkKind | 'all' | 'fraud'>('all');
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const action = useAction();
   useEffect(() => {
@@ -23,7 +24,7 @@ export function MyWorkPage() {
   }, []);
   const packs = [...new Set(s.kpis.map((k) => k.pack))];
   const counts = countsByKind(s.items);
-  const rows = sortItems(s.items).filter((i) => kind === 'all' || i.kind === kind);
+  const rows = sortItems(s.items).filter((i) => kind === 'all' || (kind === 'fraud' ? isFraudItem(i) : i.kind === kind));
   const accept = async (i: WorkItem) => {
     const id = proposalId(i);
     if (id === null) return;
@@ -53,6 +54,9 @@ export function MyWorkPage() {
             {KIND_LABEL[k]} {counts[k]}
           </button>
         ))}
+        <button className={'chip ' + (kind === 'fraud' ? 'ok' : 'line')} aria-pressed={kind === 'fraud'} onClick={() => setKind('fraud')}>
+          Fraud and compliance {s.items.filter(isFraudItem).length}
+        </button>
       </div>
       {!rows.length && <div className="callout info">Nothing waits for you here.</div>}
       <ul className="frbl" aria-label="My work">

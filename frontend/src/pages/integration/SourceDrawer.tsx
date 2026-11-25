@@ -1,6 +1,7 @@
 /* The source drawer (the demo's sdOpen / sdRender with the Connection Fabric tabs): Overview, Configuration, Data Mapping,
    Sync & History, Security, Comments for a connected system; Connection, Operations, Field mapping for a new one. */
 import { Suspense, useMemo, useState, type ReactNode } from 'react';
+import { connectionApprovals, promoteConnection, requestOwner } from '../../api/connections';
 import { fmtDateYear } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {
@@ -660,6 +661,7 @@ function OvTab({ s, use, setUse }: { s: Source; use: string; setUse: (v: string)
         <dt>Connected on</dt><dd>{fmtDateYear(new Date(s.audit && s.audit[0] ? s.audit[0].ts : s.updatedAt))}</dd>
         <dt>Last sync</dt><dd>{srcAgeText(s)}</dd>
       </dl>
+      {canMgr() && <Suspense fallback={null}><ConnectionCard s={s} /></Suspense>}
       <h4>Usage and performance</h4>
       <div className="frusg"><Segmented items={[['7', '7D'], ['30', '30D'], ['90', '90D']]} cur={use} onPick={setUse} label="Usage period" /></div>
       <div className="frust">
@@ -684,6 +686,50 @@ function OvTab({ s, use, setUse }: { s: Source; use: string; setUse: (v: string)
         <div id="frSdTest"><TestSteps id={s.id} /></div>
       </details>
     </>
+  );
+}
+
+/** Plan 9 P9-8.1: where a connection made from the adapter registry stands: its environment (test, then production), its
+ *  access (read, then read and write), its system owner and the owner's approvals. The owner approves in My work; the person
+ *  who asked cannot. Nothing shows for a source that was not made from the registry and runs in production. The credential
+ *  for production is a password field, cleared after the call and never shown again. */
+function ConnectionCard({ s }: { s: Source }) {
+  const st = connectionApprovals(s.id);
+  const act = useAction();
+  const [secret, setSecret] = useState('');
+  if (!st.registry_id && st.environment !== 'test') return null;
+  const asked = st.approvals.find((a) => a.status === 'pending');
+  const latest = st.approvals[0];
+  const prodOk = st.approvals.some((a) => a.environment === 'production' && a.access === st.access && a.status === 'approved');
+  const state = asked
+    ? `Waiting for ${asked.owner} to approve ${asked.access === 'read_write' ? 'write-back' : asked.environment + ' access'}`
+    : latest?.status === 'declined' ? `Declined by ${latest.decided_by}: ${latest.reason}` : latest ? 'Approved by ' + latest.decided_by : 'Nothing asked yet';
+  const ask = (access: 'read' | 'read_write') => void act.run(() => requestOwner(s.id, 'production', access)).then((r) => r.ok && toast('Asked ' + r.output.owner + ' to approve.'));
+  const promote = () => {
+    const key = secret;
+    setSecret(''); // never kept after the call
+    void act.run(() => promoteConnection(s.id, key)).then((r) => r.ok && toast(s.vendor + ' is in production. Its first sync is queued.'));
+  };
+  return (
+    <div className="frsect" aria-label="Connection environment">
+      <h4>Environment and access</h4>
+      <dl className="frdl">
+        <dt>Environment</dt><dd><span className={'chip ' + (st.environment === 'test' ? 'warn' : 'ok')}>{st.environment === 'test' ? 'Test' : 'Production'}</span></dd>
+        <dt>Access</dt><dd>{st.access === 'read_write' ? 'Read and write' : 'Read only'}</dd>
+        <dt>System owner</dt><dd>{st.system_owner ?? '—'}</dd>
+        <dt>Approval</dt><dd>{state}</dd>
+      </dl>
+      <div className="row">
+        {st.environment === 'test' && !asked && !prodOk && <button className="btn sm" disabled={act.pending} onClick={() => ask('read')}>Ask the owner to approve</button>}
+        {st.environment === 'production' && st.access === 'read' && !asked && <button className="btn sm" disabled={act.pending} onClick={() => ask('read_write')}>Ask for write access</button>}
+      </div>
+      {st.environment === 'test' && prodOk && (
+        <div className="row" style={{ marginTop: 8 }}>
+          <input type="password" className="sel" aria-label="Production credential" placeholder="Production credential" autoComplete="off" value={secret} onChange={(e) => setSecret(e.target.value)} />
+          <button className="btn sm pri" disabled={act.pending || secret.length < 8} onClick={promote}>Promote to production</button>
+        </div>
+      )}
+    </div>
   );
 }
 

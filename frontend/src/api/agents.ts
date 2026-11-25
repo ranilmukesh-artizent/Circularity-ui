@@ -83,7 +83,7 @@ export interface AgentProposal {
 /** Shown in place of Accept on a proposal the person's own agent prepared. */
 export const OWN_PROPOSAL_NOTE = "Your agent's proposal: another person accepts it.";
 
-interface CatalogTool {
+export interface CatalogTool {
   name: string;
   action: string;
   title: string;
@@ -109,7 +109,7 @@ export interface AgentsScreen {
   can: { manage: boolean };
 }
 
-export type LlmRole = 'ask' | 'agent' | 'author' | 'judge';
+export type LlmRole = 'ask' | 'agent' | 'author' | 'judge' | 'stage';
 
 /** A language model the router may use (plan 9, P9-2.3): its limits, use this minute and today, and any cooldown. */
 export interface LlmModel {
@@ -126,6 +126,16 @@ export interface LlmModel {
   used_day: { requests: number; tokens: number };
   /** the model is out of the chain until this time (an ISO timestamp), else null */
   cooling_until: string | null;
+}
+
+/**
+ * The tools that fit a few words, the best `limit` (ten by default), among those the signed-in account may call and an
+ * agent may use (`tools.find`, backend/di/services/actions/tools.py; plan 9 P9-2.12). A blank query or a refusal gives none.
+ */
+export async function findTools(query: string, limit = 10): Promise<CatalogTool[]> {
+  if (!query.trim()) return [];
+  const r = await invoke<{ tools: CatalogTool[] }>('tools.find', { query: query.trim(), limit });
+  return r.ok ? r.output.tools : [];
 }
 
 /** The Agents page (Suspense read cache). */
@@ -269,8 +279,26 @@ export interface TraceStage {
   /** what the stage read: the source system, its record and how old it was */
   sources: Record<string, unknown>[];
   reasons: HoldReason[];
+  /** the rules' output; with a model, `reading` (what it wrote) and `model` (which answered) are added (plan 9 P9-2.18) */
+  output?: { reading?: StageReading; model?: string | null } & Record<string, unknown>;
   at: string;
 }
+
+export interface StageConcern { kind: 'data_gap' | 'disagreement' | 'risk' | 'fraud_signal' | 'policy'; text: string; sources: string[]; hold: boolean }
+/** What a stage's model wrote (P9-2.18): no number of its own, every finding with its source. */
+export interface StageReading {
+  summary: string;
+  findings: { text: string; source: string }[];
+  concerns: StageConcern[];
+  recommendation: { route: string; why: string } | null;
+  questions: string[];
+}
+
+/** A stage's reading and the model that wrote it, or null when only the rules ran ("Rules only"). */
+export const stageReading = (s: Pick<TraceStage, 'output'>): { reading: StageReading; model: string } | null => {
+  const r = s.output?.reading;
+  return r ? { reading: r, model: s.output?.model ?? 'a model' } : null;
+};
 
 export interface TraceCall { n: number; tool: string; ok: boolean; held: number | null; input: Record<string, unknown>; at: string }
 export interface TraceProposal { id: number; action: string; status: string; case_id: string | null; reasons: HoldReason[]; decided_by: string | null }

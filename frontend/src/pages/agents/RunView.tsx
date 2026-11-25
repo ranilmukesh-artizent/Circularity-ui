@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { reasonText, runTrace, setAgentEnabled, spanMs, spanRows, stageLabel, type RunTrace, type TraceSpan } from '../../api/agents';
+import { reasonText, runTrace, setAgentEnabled, spanMs, spanRows, stageLabel, stageReading, type RunTrace, type TraceSpan, type TraceStage } from '../../api/agents';
 import { ApiError } from '../../api/client';
 import { can } from '../../api/session';
 import { useAction } from '../../hooks/useAction';
@@ -64,7 +64,10 @@ function Body({ t }: { t: RunTrace }) {
                     {s.reasons.length > 0 && <div className="note">{reasonText(s.reasons)}</div>}
                   </td>
                   <td className="r num">{s.confidence === null ? '—' : `${s.confidence.toFixed(2)} of ${s.threshold.toFixed(2)}`}</td>
-                  <td className="note">{s.sources.length ? s.sources.map((x) => [x.source, x.age ?? x.fresh].filter(Boolean).join(' ')).join(' · ') : '—'}</td>
+                  <td className="note">
+                    {s.sources.length ? s.sources.map((x) => [x.source, x.age ?? x.fresh].filter(Boolean).join(' ')).join(' · ') : '—'}
+                    <Reading stage={s} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -136,4 +139,23 @@ function Loaded({ runId, caseId }: { runId?: string; caseId?: string }) {
  * switch with its history. The Agents page opens it for a run (`runId`); the case page's "Agent run" drawer for the case. */
 export function RunView(props: { runId?: string; caseId?: string }) {
   return <Suspense fallback={<p className="note">Loading…</p>}><Loaded {...props} /></Suspense>;
+}
+
+/** A stage's reading (plan 9, P9-2.18): who reasoned, the summary, findings with their sources, concerns (a held one is marked)
+ * and questions; "Rules only" when no model read the stage. */
+function Reading({ stage }: { stage: TraceStage }) {
+  const got = stageReading(stage);
+  if (!got) return <div className="note">Rules only</div>;
+  const { reading, model } = got;
+  return (
+    <div className="note" aria-label={`Reading of ${stage.stage}`}>
+      <div>Reasoned by {model}</div>
+      <div>{reading.summary}</div>
+      {reading.findings.length > 0 && <ul>{reading.findings.map((f, i) => <li key={i}>{f.text} <span className="mono">({f.source})</span></li>)}</ul>}
+      {reading.concerns.map((c, i) => (
+        <div key={i}>{c.hold && <span className="chip y">held</span>} {c.kind.replace('_', ' ')}: {c.text}</div>
+      ))}
+      {reading.questions.length > 0 && <ul>{reading.questions.map((q, i) => <li key={i}>{q}</li>)}</ul>}
+    </div>
+  );
 }

@@ -23,6 +23,12 @@ def agents(p: CurrentPrincipal):
     return svc.agents()
 
 
+@router.get("/generated")
+def generated(p: CurrentPrincipal, session: DbSession):
+    p.require_page("mcp", "agents")
+    return svc.generated(session)
+
+
 @router.get("/matrix")
 def matrix(p: CurrentPrincipal, tenant: str | None = None):
     p.require_page("mcp", "perms")

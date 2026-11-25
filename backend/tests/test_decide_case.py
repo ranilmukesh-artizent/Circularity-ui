@@ -60,7 +60,7 @@ def test_decide_case_returns_a_frozen_decision():
         d = decide_case(cid, pack, flow_version(s, c), session=s)
     assert isinstance(d, Decision) and (d.case_id, d.pack_key, d.pack_version) == (cid, "tool_fleet", pack.version)
     assert d.route == c["recommendation"]["id"] and d.recommendation is not None and d.hold is None
-    assert d.trace == ("gates", "compliance", "rules", "rank") and d.flow_ver == c["flowVer"]
+    assert d.trace == ("gates", "valuation", "queue_plan", "rules", "rank") and d.flow_ver == c["flowVer"]
     with pytest.raises(AttributeError):
         d.route = "x"  # type: ignore[misc]
 
