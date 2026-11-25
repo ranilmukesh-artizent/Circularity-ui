@@ -62,3 +62,8 @@ unattended". Times are local (IST).
 | 25 Nov 10:40 | P9-1.10 merged. Sonnet; red first quoted; record match on sync end opens expected-return and missing-unit items; chain of custody is a record, not a legal claim (Kinective Legal team review). |
 | 25 Nov 17:00 | P9-1.10 merged (parallel 4,019). P9-1.13 to w1. Phase 1: 12 of 15. |
 | 25 Nov 11:26 | P9-1.13 merged. Sonnet; red first quoted; KPI measures and questions from the pack in Analytics, My work and the case Overview; industrial screens unchanged. |
+| 25 Nov 17:45 | P9-1.13 merged (smoke-pages 11 accounts 0 failing). P9-1.14 (phase 1 demo smoke) to w1; then the phase 1 gate. Phase 1: 13 of 15. |
+| 25 Nov 18:30 | P9-1.14 smoke merged into the tree, run by the lead: step 1 failed (the Modeler ignores ?template=: script fixed to pick it in the select), then the demo reset did not clear plan-9 tables (pack_version, customer_overlay, work_item, flow returned): fixed in tests/starting.py. Steps 1-2 pass; a Sonnet helper now fixes steps 3-7 on the main stack (no writers running). |
+| 25 Nov 11:53 (system clock) | **Correction:** the hour stamps from about 05:05 to 18:30 above were written by the lead without reading the clock and are wrong; the whole run so far took about 9 hours (02:45 to 11:53). Times from here on come from `date`. Load lowered for the user: at most 2 writers, parallel suite in 3 shards. |
+| 25 Nov 12:25 | P9-2.1 to w1 (lane A starts phase 2 early: lane B waits on 2.1, 2.4, 2.5). Agent docs updated with the night's lessons (`80f6aeb`). Per-merge checks now light (lead-verify.sh); full suite at gates. |
+| 25 Nov 12:42 | P9-1.14 merged. Sonnet wrote it untested (no stack); the lead and a Sonnet helper fixed 3 script bugs on the main stack; no product bug. |
