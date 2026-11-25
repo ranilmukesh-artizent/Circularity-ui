@@ -1,7 +1,7 @@
 """Plan 9 P9-0.4: catalogue hygiene and credentials rotation forbidden to agents (review focus 6).
 
 - credentials.rotate joins FORBIDDEN_ACTIONS: an agent that prepares it is refused, the stored secret is untouched
-- mapping.revert and tables.update are HELD_FOR_PERSON: even an agent with autonomy "act" only proposes them
+- tables.update is HELD_FOR_PERSON: even an agent with autonomy "act" only proposes it (mapping.revert: forbidden, 25 Nov)
 - source.test and source.sandboxKey (NO_AGENT_READS) handle a secret: no agent may call them
 - the catalogue's agent_mode and the pipeline's agent_route agree for every action of the registry
 - the twelve actions with no handler are "no" and not implemented; the seeded agents list none of them as a tool
@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
-from di.connectors import mapping, secrets
+from di.connectors import secrets
 from di.connectors.sync import ensure_sources
 from di.core.db import SessionLocal
 from di.mcp.tools import TOOLS
@@ -75,19 +75,11 @@ def test_agent_cannot_rotate_credentials():
     assert call("credentials.rotate", body, "admin")["ok"] is True
 
 
-def test_mapping_revert_held_for_agent_with_act():
-    start = mapping.starting_maps(SID)
-    edited = [list(m) for m in start]
-    edited[0][4] = "code:grade"
-    with SessionLocal() as s:
-        assert mapping.save_version(s, SID, edited, "test") == 2
-        s.commit()
-        assert [v["version"] for v in mapping.versions(s, SID)] == [2, 1]
+def test_mapping_revert_forbidden_to_agents():
+    """25 Nov 2026: agents never delete or revert (was held for a person)."""
     r = prepared("mapping.revert", {"source_id": SID, "version": 1}, "developer")
-    assert r["ok"] is True and set(r["output"]) == {"held", "reasons"}, r
-    with SessionLocal() as s:
-        assert mapping.active_version(s, SID) == 2
-    assert [(p["agent"], p["action"], p["status"]) for p in proposals()] == [(AGENT, "mapping.revert", "pending")]
+    assert r["ok"] is False and r["error"]["code"] == "approval_required", r
+    assert proposals() == []
 
 
 def test_tables_update_held_for_agent_with_act():
@@ -153,7 +145,22 @@ def test_reads_under_forbidden_prefix_show_allowed():
     by = {t["action"]: t for t in catalog()}
     assert by["access.lookup"]["agent_mode"] == "yes"
     assert by["source.test"]["agent_mode"] == "no" and by["source.sandboxKey"]["agent_mode"] == "no"
-    assert by["mapping.revert"]["agent_mode"] == "held" and by["tables.update"]["agent_mode"] == "held"
+    assert by["mapping.revert"]["agent_mode"] == "no" and by["tables.update"]["agent_mode"] == "held"
     assert by["credentials.rotate"]["agent_mode"] == "no" and by["credentials.rotate"]["implemented"] is True
     r = prepared("source.test", {"source_id": "erp"})
     assert r["ok"] is False and r["error"]["code"] == "approval_required" and "secret" in r["error"]["message"]
+
+
+def test_agents_never_delete_or_approve():
+    """25 Nov 2026, the person: agents create, read and update, never delete or approve; di.main checks it at start-up."""
+    from types import SimpleNamespace
+
+    from di.services.agents.forbidden import check_person_only
+
+    check_person_only(ACTIONS)
+    for a in ("flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel"):
+        assert agent_mode(ACTIONS[a]) == "no", a
+    with pytest.raises(RuntimeError, match="thing.delete"):
+        check_person_only({"thing.delete": SimpleNamespace(destructive=False)})
+    with pytest.raises(RuntimeError, match="thing.wipe"):
+        check_person_only({"thing.wipe": SimpleNamespace(destructive=True)})

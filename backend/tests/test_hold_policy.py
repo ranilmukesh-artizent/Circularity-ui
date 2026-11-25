@@ -149,9 +149,10 @@ def test_x_05_held_item_shows_recommendation_and_reason():
 # --- every level: destructive and taint ------------------------------------------------------------------------------
 
 
-def test_hold_destructive_always():
+def test_destructive_forbidden_to_agents():
+    """25 Nov 2026: agents never delete; a destructive action prepared by an agent is refused, not held."""
     r = prepared("scenario.delete", {"case_id": "RT-1048", "id": "SCN-1"}, stage("alone", sid="valuation", confidence=1.0))
-    assert held_reasons(r) == ["destructive"]
+    assert r["ok"] is False and r["error"]["code"] == "approval_required", r
     assert catalog_entry("scenario.delete")["destructive"] is True
 
 

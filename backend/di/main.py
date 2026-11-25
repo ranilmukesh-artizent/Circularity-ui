@@ -32,10 +32,14 @@ from di.core.errors import register as register_error_handlers
 from di.core.logs import configure_logging
 from di.mcp import server as mcp_server
 from di.routes import actions, agents, ask, auth, health, screens, sources, stream, tasks, webhooks
+from di.services.actions.registry import ACTIONS
+from di.services.agents.forbidden import check_person_only
 from di.services.cases import use_database_scope
 
 configure_logging()  # one format and level for di and uvicorn; secrets masked in access lines (di/core/logs.py)
 log = logging.getLogger("di.api")
+check_person_only(ACTIONS)  # every action module is imported above: agents never delete or approve
+
 app = FastAPI(title="Circularity DI API", version="0.2.0", lifespan=mcp_server.lifespan)
 register_error_handlers(app)  # every error answers {ok: false, error: {code, message}} (di/core/errors.py, D1)
 app.include_router(auth.router)

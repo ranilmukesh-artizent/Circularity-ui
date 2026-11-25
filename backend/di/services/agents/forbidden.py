@@ -9,6 +9,10 @@ HELD_FOR_PERSON and NO_AGENT_READS (plan 9 P9-0.4) are the two milder lists besi
 action's mode ("yes", "held", "no") from all three (di.services.agents.catalog.agent_mode).
 """
 
+import re
+from collections.abc import Mapping
+from typing import Any
+
 FORBIDDEN_ACTIONS = (
     "decision.approve", "decision.override", "decision.decline", "outcome.confirm", "adapter.acknowledge",
     "access.", "agent.", "workflow.publish", "workflow.setStatus", "workflow.delete", "source.", "mcp.",
@@ -25,12 +29,13 @@ FORBIDDEN_ACTIONS = (
     "llm.",  # plan 9 P9-2.3: which language models run, and their limits, are a person's (llm.models, llm.setModel)
     "standingPolicy.approve", "standingPolicy.retire",  # plan 9 P9-2.5: a person decides which policy approves (R7, R21)
     "work.resolve", "work.assign",  # plan 9 P9-1.7: only a person resolves or hands on an exception, approval or question
+    # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
+    "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
 )  # fmt: skip
 
 # Writes an agent may prepare but never run, whatever its autonomy: the pipeline (step 9b) holds them for a person.
 # P9-2.4 folds this tuple into HoldReason.destructive (I-10).
 HELD_FOR_PERSON = (
-    "mapping.revert",
     "tables.update",
     "mapping.save",
     "standingPolicy.save",
@@ -38,6 +43,11 @@ HELD_FOR_PERSON = (
 
 # Reads no agent may call: they handle a secret (step 6 of the pipeline refuses them).
 NO_AGENT_READS = ("source.test", "source.sandboxKey")
+# An action whose name deletes, discards, reverts, cancels or decides must be forbidden (checked by check_person_only).
+PERSON_ONLY_NAME = re.compile(
+    r"\.(delete|remove|discard|revert|cancel|purge|approve|publish|reject|promote|override|decline|rollback|retire|release)",
+    re.IGNORECASE,
+)
 
 
 def forbidden(action_id: str) -> bool:
@@ -46,3 +56,12 @@ def forbidden(action_id: str) -> bool:
 
 def held_for_person(action_id: str) -> bool:
     return action_id in HELD_FOR_PERSON
+
+
+def check_person_only(actions: Mapping[str, Any]) -> None:
+    """Raise at start-up if a destructive or deciding action is reachable by an agent (agents never delete or approve).
+
+    `actions` is the action registry (`di.services.actions.registry.ACTIONS`, id -> ActionDef); called by `di.main`."""
+    bad = sorted(i for i, a in actions.items() if (PERSON_ONLY_NAME.search(i) or a.destructive) and not forbidden(i))
+    if bad:
+        raise RuntimeError(f"agents must never delete or approve; add to FORBIDDEN_ACTIONS: {', '.join(bad)}")
