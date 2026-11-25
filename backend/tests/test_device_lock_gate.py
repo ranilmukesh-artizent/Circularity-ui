@@ -20,7 +20,7 @@ from di.services.device import intake as device_intake
 from di.services.modeler.overlay import OverlayError, Shortcut, apply_overlay
 from di.services.modeler.pack import load_pack
 from tests import starting
-from tests.device_registry import seed_registry
+from tests.device_registry import seed_registry, seed_wipe
 from tests.helpers import call, client, h
 
 ORG = "Customer A"
@@ -155,6 +155,7 @@ def test_dv_03_stale_check_waits():
 
 
 def test_dv_03_no_check_waits_and_a_fresh_one_releases():
+    seed_wipe(IMEI)  # the wipe gate (P9-6.7) has its certificate; only the registry check is missing
     c = _open()
     assert c["gateHold"] is not None and all("No registry check on file" in r["failReason"] for r in c["routes"])
     seed_registry(IMEI, days_ago=1)

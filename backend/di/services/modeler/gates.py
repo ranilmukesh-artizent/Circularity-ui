@@ -163,8 +163,11 @@ def _holds(c: Cond, v: Any) -> bool:
 
 
 def triggered(gate: GateDef, case: Mapping[str, Any], pack: Pack) -> bool:
-    """The gate applies to the case: the pack has a route of the trigger's classes and every condition holds."""
-    return bool(gate_routes(gate, pack)) and all(_holds(c, _fact(case, pack, c.fact)) for c in gate.trigger.when)
+    """The gate applies to the case: the pack has a route of the trigger's classes and every condition holds. A pack may narrow
+    a gate with the conditions of its ref's `params.when` (P9-6.7: the wipe gate of the device pack applies to a received
+    device only); they are `Cond`s like the trigger's."""
+    narrow = [Cond.model_validate(c) for c in gate.params.get("when") or []]
+    return bool(gate_routes(gate, pack)) and all(_holds(c, _fact(case, pack, c.fact)) for c in [*gate.trigger.when, *narrow])
 
 
 # ---------------------------------------------------------------- evaluation

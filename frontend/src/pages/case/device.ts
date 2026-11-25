@@ -1,6 +1,6 @@
 /** Wording of the case page's Device tab (P9-6.4, DV-01) over the `device` block of a case. */
 import { money } from '../../api/format';
-import type { DeviceView, QuoteCheck, QuoteRow, RegistryView } from '../../api/device';
+import type { DeviceView, QuoteCheck, QuoteRow, RegistryView, WipeView } from '../../api/device';
 
 /** "iPhone 14 · 128 GB · declared B · quote $410 · partner P01"; a bulk lot: "20 devices · batch BATCH-0020 · grade B · partner P01". */
 export function deviceLine(v: DeviceView): string {
@@ -48,6 +48,22 @@ const day = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numer
 export function registryLine(e: Pick<RegistryView, 'status' | 'checkedAt' | 'source'>): string {
   if (!e.checkedAt && e.status === 'clear') return 'Registry: no check on file';
   return ['Registry: ' + e.status, e.checkedAt ? `checked ${day(e.checkedAt)}` : 'no check date', e.source].filter(Boolean).join(' · ');
+}
+
+/** "Purge · tool 4.2 · verified · operator OP-17 · 6 Oct 2026" (the certificate's method, tool version, verification, operator
+ * and day); a verification that failed reads "verification failed". */
+export function wipeLine(c: NonNullable<WipeView['certificate']>): string {
+  const how = c.verification === 'pass' ? 'verified' : c.verification === 'fail' ? 'verification failed' : (c.verification ?? '');
+  return [c.method, c.toolVersion ? `tool ${c.toolVersion}` : '', how, c.operator ? `operator ${c.operator}` : '', c.at ? day(c.at) : '']
+    .filter(Boolean).join(' · ');
+}
+
+/** What the Compliance tab says of the wipe: the certificate line, "Wipe verification failed: re-run the wipe or destroy the
+ * storage", or "Waiting for the wipe certificate (batch BATCH-0007: 12 of 40 waiting)". */
+export function wipeState(w: WipeView): string {
+  if (w.state === 'ok' && w.certificate) return wipeLine(w.certificate);
+  if (w.state === 'failed') return 'Wipe verification failed: re-run the wipe or destroy the storage';
+  return 'Waiting for the wipe certificate' + (w.batch ? ` (batch ${w.batch.ref}: ${w.batch.waiting} of ${w.batch.total} waiting)` : '');
 }
 
 /** Where a registry hit stands: "Waiting for Compliance" while its item is open, "Released by Compliance" once a person

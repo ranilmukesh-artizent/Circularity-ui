@@ -13,7 +13,8 @@ source's value or entering one (`override`) writes a provenance row from source 
 is the canonical value while the resolution holds; when a value changes, a new conflict opens and the choice is
 dropped. Manual Import rows (di/connectors/manual.py) are ordinary facts from source `manual` (resource `import`).
 
-Any `compliance` fact (gate evidence, plan 9 P9-1.2) also enqueues a `case.gateRecheck` job for its asset. A `condition`
+Any `compliance` fact (gate evidence, plan 9 P9-1.2) also enqueues a `case.gateRecheck` job for its asset, and so does a
+`condition.wipe_certificate` (a device's data-wipe certificate, P9-6.7). A `condition`
 `grade` or `test_result` fact (the workbench grade, P9-3.5) enqueues a `case.reevaluate` job for each open tool-fleet case
 of that serial.
 """
@@ -114,6 +115,9 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
     # new evidence may release the cases held for it (plan 9, P9-1.2): one recheck job per asset (deduped)
     for asset_key in sorted({compliance_asset(f.key) for f in facts if f.model == "compliance"}):
         jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+    # a device's wipe certificate may release the cases held on it (plan 9, P9-6.7): one recheck job per device (deduped)
+    for key in sorted({f.key for f in facts if f.model == "condition" and f.field == "wipe_certificate"}):
+        jobs.enqueue(session, "case.gateRecheck", {"asset_key": key}, dedupe_key=f"case.gateRecheck:{key}")
     # a change of a contract line re-checks the cases held on it (plan 9, P9-3.6): one recheck job per serial (deduped)
     lines = sorted({f.key for f in facts if f.model == "contract_line"})
     if lines:

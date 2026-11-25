@@ -75,6 +75,7 @@ from di.services.device import inputs as device_inputs
 from di.services.device import intake as device_intake
 from di.services.device import lock as device_lock
 from di.services.device import verify as device_verify
+from di.services.device import wipe as device_wipe
 from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
 from di.services.engine.queue import Capacity, Dem, planner_for
@@ -411,6 +412,7 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
         if pack.valuer.kind == "device":  # the quote against the lab's read, on every valuation (P9-6.5)
             device_verify.refresh(s, c)
             device_lock.refresh(s, c, pack)  # and the registry check, its date and age (P9-6.6)
+            device_wipe.refresh(s, c)  # and the wipe certificate (P9-6.7)
     decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
     if pack.key != "industrial":  # custody and the system of record (plan 9, P9-1.10)
         if was_held and c.get("gateHold") is None:

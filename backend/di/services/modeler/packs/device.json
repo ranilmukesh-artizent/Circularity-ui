@@ -323,6 +323,24 @@
  ],
  "gates": [
   {
+   "id": "G-DEV-WIPE",
+   "params": {
+    "guardrail": "GR-D1",
+    "when": [
+     {
+      "fact": "valuer.imei",
+      "op": "exists",
+      "value": true
+     }
+    ],
+    "exception": "missing_wipe_certificates",
+    "kept_routes": [
+     "recycle"
+    ]
+   },
+   "active": true
+  },
+  {
    "id": "G-DEV-LOCK",
    "params": {
     "recheck_days": 7,

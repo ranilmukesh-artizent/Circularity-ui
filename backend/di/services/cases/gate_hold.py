@@ -247,6 +247,10 @@ def sync_item(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
 
 # ---------------------------------------------------------------- release on evidence
 def _released_line(case: Mapping[str, Any], gate_ids: Sequence[str]) -> str:
+    from di.services.device import wipe  # a received device's certificate is in its condition, not in the evidence records
+
+    if "G-DEV-WIPE" in gate_ids and (line := wipe.released_line(case)):
+        return line
     as_of = _as_of(case)
     cat = catalogue()
     parts = []

@@ -3,7 +3,7 @@
 import { deviceView } from '../../../api/device';
 import { fmtDateYear } from '../../../api/format';
 import { Kv } from '../CaseBlocks';
-import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine, registryLine, registryState } from '../device';
+import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine, registryLine, registryState, wipeState } from '../device';
 import type { TabProps } from './index';
 
 const LABEL = { imei: 'IMEI', model: 'Model', storage: 'Storage' } as const;
@@ -59,10 +59,27 @@ export function DeviceTab({ c }: TabProps) {
  * exception's owner and state ("Waiting for Compliance") and the routes the device may still take. Only a person releases a
  * hit, and only with a registry check newer than the hit. */
 export function ComplianceTab({ c }: TabProps) {
-  const r = deviceView(c)?.registry;
+  const d = deviceView(c);
+  const r = d?.registry;
   if (!r) return null;
+  const w = d?.wipe;
   return (
     <>
+      {w && (
+        <>
+          <p className="stpad" role="status" style={w.state === 'ok' ? undefined : { color: 'var(--bad)' }}>Data wipe: {wipeState(w)}</p>
+          {w.certificate && w.state !== 'none' && (
+            <Kv rows={[
+              ['Certificate', w.certificate.id ?? 'None'],
+              ['Method', w.certificate.method ?? 'None'],
+              ['Tool version', w.certificate.toolVersion ?? 'None'],
+              ['Verification', w.certificate.verification ?? 'None'],
+              ['Operator', w.certificate.operator ?? 'None'],
+              ['Time', w.certificate.at ? fmtDateYear(w.certificate.at) : 'None'],
+            ]} />
+          )}
+        </>
+      )}
       <p className="stpad" role="status" style={r.state === 'hit' ? { color: 'var(--bad)' } : undefined}>{registryLine(r)}</p>
       <Kv rows={[
         ['Status', registryState(r)],

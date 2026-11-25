@@ -222,11 +222,11 @@ def test_evidence_expiry():
 def test_shipped_packs_have_only_the_gates_a_phase_switched_on():
     """A parity guard (plan 9): the pack phases flip it as they switch gates on. P9-1.11 switched G-CON-1 on in the tool-fleet
     pack; it triggers only on a restricting contract record, so a case without one is not gated. P9-3.6 switched G-CON-2 on,
-    P9-6.5 G-DEV-QUOTE and P9-6.6 G-DEV-LOCK (a received device only)."""
+    P9-6.5 G-DEV-QUOTE, P9-6.6 G-DEV-LOCK and P9-6.7 G-DEV-WIPE (a received device only)."""
     for k in pack_keys():
         assert [g.id for g in load_pack(k).gates] == {
             "tool_fleet": ["G-CON-1", "G-CON-2"],
-            "device": ["G-DEV-LOCK", "G-DEV-QUOTE"],
+            "device": ["G-DEV-WIPE", "G-DEV-LOCK", "G-DEV-QUOTE"],
         }.get(k, []), k
         got = evaluate_gates({"cls": "x"}, load_pack(k))
         # the tool fleet's contract right (P9-3.6) applies to every case: with no contract line it fails

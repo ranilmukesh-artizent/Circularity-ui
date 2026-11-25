@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceView } from '../../api/device';
-import type { QuoteCheck, RegistryView } from '../../api/device';
-import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine, registryLine, registryState } from './device';
+import type { QuoteCheck, RegistryView, WipeView } from '../../api/device';
+import { deviceLine, gradeLine, lotLines, mismatchLine, quoteCheckLine, refLine, registryLine, registryState, wipeLine, wipeState } from './device';
+
+const cert = { id: 'WC-1', method: 'Purge', toolVersion: '4.2', verification: 'pass', operator: 'OP-17', at: '2026-10-06T08:00:00Z' };
+
+describe('P9-6.7 wipeLine and wipeState (DV-04)', () => {
+  it('names the method, tool, verification, operator and day', () => {
+    expect(wipeLine(cert)).toBe('Purge · tool 4.2 · verified · operator OP-17 · 6 Oct 2026');
+    expect(wipeLine({ ...cert, verification: 'fail' })).toBe('Purge · tool 4.2 · verification failed · operator OP-17 · 6 Oct 2026');
+  });
+  it('says what a missing or failed certificate waits for, with the batch count', () => {
+    const w: WipeView = { state: 'none', certificate: null, missing: ['method'], batch: { ref: 'BATCH-0007', total: 40, waiting: 12 } };
+    expect(wipeState(w)).toBe('Waiting for the wipe certificate (batch BATCH-0007: 12 of 40 waiting)');
+    expect(wipeState({ ...w, batch: null })).toBe('Waiting for the wipe certificate');
+    expect(wipeState({ ...w, state: 'failed', certificate: { ...cert, verification: 'fail' } })).toBe('Wipe verification failed: re-run the wipe or destroy the storage');
+    expect(wipeState({ ...w, state: 'ok', certificate: cert })).toBe('Purge · tool 4.2 · verified · operator OP-17 · 6 Oct 2026');
+  });
+});
 
 const hit: RegistryView = {
   state: 'hit', status: 'reported stolen', checkedAt: '2026-10-06', source: 'Device registry (synthetic)', ageDays: 2,

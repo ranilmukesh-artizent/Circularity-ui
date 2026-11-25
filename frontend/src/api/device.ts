@@ -40,6 +40,16 @@ export interface RegistryView {
   allowedRoutes: string[];
 }
 
+/** The lab's data-wipe certificate of the device (P9-6.7, DV-04). `none`: no certificate, or one lacking a field (every channel
+ * but recycle is blocked and the case waits); `failed`: the verification failed (a step is required); `ok`. `batch` counts
+ * the cases of the device's batch that still wait for a certificate. */
+export interface WipeView {
+  state: 'none' | 'failed' | 'ok';
+  certificate: { id: string | null; method: string | null; toolVersion: string | null; verification: string | null; operator: string | null; at: string | null } | null;
+  missing: string[];
+  batch: { ref: string; total: number; waiting: number } | null;
+}
+
 export interface DeviceView {
   /** the device's IMEI; null for a bulk lot */
   imei: string | null;
@@ -65,6 +75,8 @@ export interface DeviceView {
   quoteCheck?: QuoteCheck | null;
   /** the registry's check; null for a bulk lot */
   registry?: RegistryView | null;
+  /** the wipe certificate; null for a bulk lot */
+  wipe?: WipeView | null;
 }
 
 /** The device block of a case, or null for a case that is not a received device (the industrial book, a tool return). */
