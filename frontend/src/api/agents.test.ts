@@ -9,7 +9,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, fitModel, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, stageLabel, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, stageCalibrationOf, stageLabel, startRun, updateAgent, useAgents, useModels,
   type TraceSpan,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
@@ -26,6 +26,11 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
     m.cached.mockReturnValue({ agents: [] });
     expect(useAgents()).toEqual({ agents: [] });
     expect(m.cached).toHaveBeenCalledWith('/api/screens/agents');
+  });
+
+  it('names the pack and stage of a stage calibration model (P9-2.9)', () => {
+    expect(stageCalibrationOf('industrial.stage.fit_for_use')).toEqual({ pack: 'industrial', stage: 'fit_for_use' });
+    expect(stageCalibrationOf('industrial')).toBeNull();
   });
 
   it('reads the Models panel (plan 8 UI gaps)', () => {
@@ -54,6 +59,7 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
       [() => setLlmModel('groq-default', { enabled: false, priority: 2 }), 'llm.setModel', { id: 'groq-default', enabled: false, priority: 2 }],
       [() => fitModel(), 'model.fit', { template: 'industrial' }],
       [() => fitModel('device'), 'model.fit', { template: 'device' }],
+      [() => fitStageCalibration('industrial', 'disposition'), 'stage.fitCalibration', { pack: 'industrial', stage: 'disposition' }],
       [() => proposeModel('MV-001'), 'model.propose', { id: 'MV-001' }],
       [() => promoteModel('MV-001'), 'model.promote', { id: 'MV-001' }],
     ];

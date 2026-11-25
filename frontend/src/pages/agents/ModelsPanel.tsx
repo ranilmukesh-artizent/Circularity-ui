@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { fitModel, promoteModel, proposeModel, useModels, type ModelVersion } from '../../api/agents';
+import {
+  fitModel, fitStageCalibration, promoteModel, proposeModel, STAGE_OPTIONS, stageCalibrationOf, stageLabel, useModels, type ModelVersion,
+} from '../../api/agents'; // prettier-ignore
 import { fmtDateYear, money } from '../../api/format';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
@@ -8,6 +10,15 @@ const STATUS_CHIP: Record<ModelVersion['status'], string> = { candidate: 'y', ac
 const TEMPLATE_LABEL: Record<string, string> = { industrial: 'Industrial', tool_fleet: 'Tool fleet', device: 'Device recommerce' };
 const label = (t: string) => TEMPLATE_LABEL[t] ?? t;
 const err = (v: number | null) => (v == null ? '—' : money(v));
+/** A price model's template, or a stage calibration's pack and stage (P9-2.9). */
+const templateLabel = (t: string) => {
+  const sc = stageCalibrationOf(t);
+  return sc ? `${label(sc.pack)} · ${stageLabel(sc.stage)} confidence` : label(t);
+};
+const describe = (m: ModelVersion) => {
+  if (stageCalibrationOf(m.template)) return m.factors.map((f) => `${f.raw?.toFixed(2)} → ${f.cal?.toFixed(2)}`).join('; ') || 'No steps';
+  return m.factors.length ? m.factors.map((f) => `${f.route} · ${f.cls} ×${(f.factor ?? 0).toFixed(2)}`).join('; ') : 'No factors: too few outcomes';
+};
 
 /**
  * Models (plan 8 UI gaps): the model that values new intake cases and its calibration on the confirmed outcomes. A
@@ -18,8 +29,13 @@ const err = (v: number | null) => (v == null ? '—' : money(v));
 export function ModelsPanel() {
   const s = useModels();
   const action = useAction();
-  const templates = Object.keys(s.active);
+  const templates = Object.keys(s.active).filter((t) => !stageCalibrationOf(t));
   const [template, setTemplate] = useState(templates[0] ?? 'industrial');
+  const [stage, setStage] = useState(STAGE_OPTIONS[0] ?? 'intake');
+  const fitStage = async () => {
+    const r = await action.run(() => fitStageCalibration(template, stage));
+    if (r.ok) toast(`Candidate ${r.output.id} calibrates ${stageLabel(stage)} confidence on ${r.output.metrics.n} decided outcomes.`);
+  };
   const fit = async () => {
     const r = await action.run(() => fitModel(template));
     if (r.ok) toast(`Candidate ${r.output.id} fitted on ${r.output.metrics.n} confirmed outcomes.`);
@@ -56,6 +72,11 @@ export function ModelsPanel() {
                 {templates.map((t) => <option key={t} value={t}>{label(t)}</option>)}
               </select>
               <button className="btn sm pri" id="ag-mdl-fit" disabled={action.pending} onClick={fit}>Fit a candidate</button>
+              <label htmlFor="ag-mdl-stage">Stage</label>
+              <select id="ag-mdl-stage" value={stage} onChange={(e) => setStage(e.target.value)}>
+                {STAGE_OPTIONS.map((t) => <option key={t} value={t}>{stageLabel(t)}</option>)}
+              </select>
+              <button className="btn sm" id="ag-mdl-fit-stage" disabled={action.pending} onClick={fitStage} title="Needs 20 decided outcomes of the stage; until then it keeps its raw confidence (not calibrated yet).">Fit stage calibration</button>
             </div>
           )}
         </div>
@@ -73,9 +94,9 @@ export function ModelsPanel() {
                   <tr key={m.id} data-model={m.id}>
                     <td>
                       <b className="mono">{m.id}</b>
-                      <div className="note">{m.factors.length ? m.factors.map((f) => `${f.route} · ${f.cls} ×${f.factor.toFixed(2)}`).join('; ') : 'No factors: too few outcomes'}</div>
+                      <div className="note">{describe(m)}</div>
                     </td>
-                    <td>{label(m.template)}</td>
+                    <td>{templateLabel(m.template)}</td>
                     <td><span className={'chip ' + STATUS_CHIP[m.status]}>{m.status}</span></td>
                     <td className="r num">{m.metrics.n}</td>
                     <td className="r num" title="Mean absolute error of the active model's net on the outcomes">{err(m.metrics.mae_active)}</td>

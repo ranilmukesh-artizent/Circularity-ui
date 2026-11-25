@@ -45,9 +45,10 @@ import di.services.actions.execution  # noqa: F401 - registers instruction.resen
 from di.core import jobs, policy, tracing
 from di.core.auth import load_context
 from di.core.config import get_settings
+from di.repositories import stage_outcomes
 from di.repositories.live_rules import live_pack
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
-from di.services.agents import chain, limits, playbook_versions, registry
+from di.services.agents import calibrate, chain, limits, playbook_versions, registry
 from di.services.agents.forbidden import FORBIDDEN_ACTIONS
 from di.services.agents.loop import AgentLoop, LoopSpec
 from di.services.agents.playbooks import case_autopilot as autopilot
@@ -218,6 +219,18 @@ def stage_confidence(ctx_stage: StageContext, case: dict) -> StageContext:
     return ctx_stage
 
 
+def calibrated(s: Session, ctx_stage: StageContext, pack: str) -> StageContext:
+    """The stage context with its raw confidence passed through the pack stage's active calibration (P9-2.9, story X-05).
+    No active calibration, or no confidence: unchanged, so the stage keeps its raw one ("not calibrated yet"). The stage's
+    record keeps the raw value, which is what the next calibration is fitted on."""
+    if ctx_stage.confidence is None:
+        return ctx_stage
+    steps = stage_outcomes.active_steps(s, pack, ctx_stage.stage)
+    if steps is not None:
+        ctx_stage.confidence = round(calibrate.apply(steps, ctx_stage.confidence), 3)
+    return ctx_stage
+
+
 def _stage_done(s: Session, run: dict, stage: int, defn: chain.StageDef, st: dict[str, Any], case: dict, nxt: Done) -> str:
     """The stage's last step: its record, its confidence for the stages after it, then the next stage (or the end)."""
     _stage_record(s, run, stage, defn, st, case, "skipped" if nxt.skipped else "done")
@@ -290,7 +303,7 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
     if isinstance(nxt, Done):
         return _stage_done(s, run, stage, defn, st, case, nxt)
     ctx.preparer = _preparer(run, agent, defn)
-    ctx.stage = stage_confidence(chain.stage_context(defn, CHAIN[stage], st, case), case)
+    ctx.stage = calibrated(s, stage_confidence(chain.stage_context(defn, CHAIN[stage], st, case), case), pack.key)
     r = invoke(nxt.action, nxt.input, ctx)
     _log_step(s, run_id, nxt.action, nxt.input, r)
     if r["ok"] and isinstance(r["output"], dict) and "held" in r["output"]:

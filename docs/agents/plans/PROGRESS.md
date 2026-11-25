@@ -229,6 +229,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-2.6 run tracing and the agent run view | this commit | lead on main after migrate-reapply 0028 and restart: run trace, stage chain, hold, standing policy, agent runtime, loop, agent screens, actions, secrets, llm router, case screens, serial-only test_mcp_server 427 passed (test_run_trace uses the shared no_synced_conflicts fixture); lint all passed; tsc 0, vitest 376 passed | done |
 | 2026-11-25 | 09 · P9-2.8 queue stage waits for the queue plan | this commit | lead-verify: 49 api passed (queue_stage, stage_chain, valuer_tool_fleet, queue_planner, milestone_rt1048, run_trace), lint, web 376 | done |
 | 2026-11-25 | 09 · P9-2.7 configuration agent drafts a pack change set | this commit | lead-verify: 62 api passed (config_agent, agent_registry, models_migrations, pack_format, overlay_core, milestone_rt1048), lint, web 378 | done |
+| 2026-11-25 | 09 · P9-2.9 calibrated stage confidence from outcomes | this commit | lead-verify: api passed (stage_calibration, model_promote, hold_policy, model_list, agent_screens_gaps, stage_chain, milestone_rt1048), lint, web | done |
 
 ## Decisions taken without the user (to review)
 

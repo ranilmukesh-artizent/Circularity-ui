@@ -8,6 +8,9 @@
     model.promote  commit  {id}         a proposed candidate -> active; the active model it replaces is retired
     model.list     read    {template?}  the template's models, the newest first (for agents and API clients); for a
                                         person who may fit or promote models
+    stage.fitCalibration act {pack, stage}  plan 9, P9-2.9: a candidate `<pack>.stage.<stage>` whose steps map a stage's
+                                        raw confidence to the share of its proposals and decisions a person accepted
+                                        (di.services.agents.calibrate); manageFlows. Propose and promote follow as above.
 
 Maker-checker as for decision flows (Domain spec D7): the person who fitted a model, or who proposed it, cannot promote
 it, and an agent never proposes or promotes one (di.services.agents.forbidden.FORBIDDEN_ACTIONS; the guards refuse a prepared call
@@ -25,10 +28,13 @@ from sqlalchemy.orm import Session
 
 from di.core import policy
 from di.repositories import model_versions as repo
+from di.repositories import stage_outcomes
 from di.repositories.model_versions import ModelRow
 from di.repositories.outcomes import outcome_rows
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
+from di.services.agents import calibrate
+from di.services.agents.stage_context import STAGE_IDS
 from di.services.engine.calibration import CalibratedPredictor, Key, OutcomeRow, fit
 from di.services.engine.predictor import Predictor
 from di.services.modeler.templates import TEMPLATE_KEYS
@@ -140,6 +146,58 @@ def fit_model(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         ),
         {"i": mid, "t": t, "f": json.dumps(stored), "by": ctx.actor.id, "m": json.dumps(metrics), "now": ctx.now},
     )
+    m = repo.get(ctx.session, mid)
+    if m is None:  # not reached: inserted above
+        raise ActionError("not_found", f"No model {mid}.")
+    return model_json(m)
+
+
+# ---------------------------------------------------------------- stage calibration (plan 9, P9-2.9)
+ACTIONS.setdefault(
+    "stage.fitCalibration",
+    ActionDef(
+        id="stage.fitCalibration", title="Fit a stage calibration", risk="act", perm="manageFlows", scope="none",
+        verb="fit stage calibrations", desc="Fit a candidate that maps a chain stage's raw confidence to the share of its "
+        "proposals and decisions a person accepted. It is used only once a different person promotes it.",
+        input={"pack": {"req": True, "t": "string"}, "stage": {"req": True, "t": "string"}},
+    ),
+)  # fmt: skip
+
+
+@guard("stage.fitCalibration")
+def fit_calibration_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if i["pack"] not in TEMPLATE_KEYS:
+        return "validation_error", f"The pack is one of {', '.join(TEMPLATE_KEYS)}."
+    if i["stage"] not in STAGE_IDS:
+        return "validation_error", f"The stage is one of {', '.join(STAGE_IDS)}."
+    n = len(stage_outcomes.rows(ctx.session, i["pack"], i["stage"]))
+    if n < calibrate.MIN_POINTS:
+        return "conflict", f"The {i['stage']} stage has {n} decided outcomes; {calibrate.MIN_POINTS} are needed to calibrate it."
+    return None
+
+
+@implement("stage.fitCalibration")
+def fit_stage_calibration(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    pack, stage = i["pack"], i["stage"]
+    points = stage_outcomes.rows(ctx.session, pack, stage)
+    steps = calibrate.fit(points) or []  # not empty: the guard counted the points
+    template = stage_outcomes.template_key(pack, stage)
+    act = repo.active(ctx.session, template)
+    metrics = {
+        "n": len(points), "active_id": act.id if act else None, "mae_active": None, "mae_candidate": None,
+        "kind": "stage_calibration", "pack": pack, "stage": stage,
+    }  # fmt: skip
+    mid = repo.next_id(ctx.session)
+    ctx.session.execute(
+        text(
+            "INSERT INTO model_version (id, template, factors, status, created_by, metrics, created_at) "
+            "VALUES (:i, :t, CAST(:f AS jsonb), 'candidate', :by, CAST(:m AS jsonb), :now)"
+        ),
+        {
+            "i": mid, "t": template, "f": json.dumps([{"raw": raw, "cal": cal} for raw, cal in steps]), "by": ctx.actor.id,
+            "m": json.dumps(metrics), "now": ctx.now,
+        },
+    )  # fmt: skip
     m = repo.get(ctx.session, mid)
     if m is None:  # not reached: inserted above
         raise ActionError("not_found", f"No model {mid}.")

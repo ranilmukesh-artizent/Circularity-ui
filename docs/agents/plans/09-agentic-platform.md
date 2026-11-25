@@ -841,7 +841,7 @@ each story went.
 - [x] P9-2.6 Run tracing and the agent run view
 - [x] P9-2.7 Configuration agent drafts a pack change set
 - [x] P9-2.8 Queue stage waits for the queue plan
-- [ ] P9-2.9 Calibrated stage confidence from outcomes
+- [x] P9-2.9 Calibrated stage confidence from outcomes
 - [x] P9-2.10 Exception assistant drafts cause and owner
 - [ ] P9-2.11 Fraud triage on intake with a person release
 - [ ] P9-2.12 Richer tool schemas and a find tools read

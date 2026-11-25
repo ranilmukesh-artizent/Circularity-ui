@@ -150,6 +150,9 @@ const STAGE_LABELS: Record<string, string> = {
   analytics: 'Analytics',
 };
 
+/** The chain's stage ids in order (the stage calibration picker, P9-2.9). */
+export const STAGE_OPTIONS: string[] = Object.keys(STAGE_LABELS);
+
 /** A stage's display name; an unknown id shows as it is. */
 export const stageLabel = (id: string): string => STAGE_LABELS[id] ?? id;
 
@@ -190,8 +193,9 @@ export interface ModelVersion {
   created_by: string;
   approved_by: string | null;
   created_at: string;
-  factors: { route: string; cls: string; factor: number }[];
-  /** n outcome rows; the mean absolute error of the active model and of this one on them (null without rows) */
+  /** a price model's factors; a stage calibration's steps (`raw` confidence to `cal`ibrated, P9-2.9) */
+  factors: { route?: string; cls?: string; factor?: number; raw?: number; cal?: number }[];
+  /** n outcome rows (decided outcomes for a stage calibration); the mean absolute error of the active model and of this one on them (null without rows) */
   metrics: { n: number; active_id: string | null; mae_active: number | null; mae_candidate: number | null };
   proposal: { by: string; at: string } | null;
   /** why the signed-in person may not propose or approve it, else null */
@@ -212,6 +216,20 @@ export const useModels = (): ModelsScreen => cached<ModelsScreen>('/api/screens/
 
 /** Fit a candidate calibration model on the confirmed outcomes (manageFlows; model.fit). */
 export const fitModel = (template = 'industrial'): Promise<ActionResult<ModelVersion>> => invoke('model.fit', { template });
+
+/**
+ * Fit a candidate calibration of a pack's stage confidence on what people accepted or rejected (manageFlows;
+ * stage.fitCalibration, plan 9 P9-2.9). It is stored as a model of template `<pack>.stage.<stage>`; propose and promote follow.
+ * The server refuses it with fewer than 20 decided outcomes.
+ */
+export const fitStageCalibration = (pack: string, stage: string): Promise<ActionResult<ModelVersion>> =>
+  invoke('stage.fitCalibration', { pack, stage });
+
+/** The pack and stage of a stage calibration model (template `<pack>.stage.<stage>`), or null for a price model. */
+export const stageCalibrationOf = (template: string): { pack: string; stage: string } | null => {
+  const [pack, stage] = template.split('.stage.');
+  return pack && stage ? { pack, stage } : null;
+};
 
 /** Propose a candidate for promotion (manageFlows; model.propose). */
 export const proposeModel = (id: string): Promise<ActionResult<ModelVersion>> => invoke('model.propose', { id });
