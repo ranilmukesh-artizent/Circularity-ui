@@ -844,7 +844,7 @@ each story went.
 - [x] P9-2.9 Calibrated stage confidence from outcomes
 - [x] P9-2.10 Exception assistant drafts cause and owner
 - [x] P9-2.11 Fraud triage on intake with a person release
-- [ ] P9-2.12 Richer tool schemas and a find tools read
+- [x] P9-2.12 Richer tool schemas and a find tools read
 - [ ] P9-2.13 MCP tools generated from the action catalogue
 - [ ] P9-2.14 OAuth protected resource metadata for MCP
 - [ ] P9-2.15 Agent evals in CI with an injection corpus
@@ -4299,6 +4299,7 @@ sources, concerns (held ones marked) and questions. vitest for the facade; smoke
   a hold, never release one).
 - Modify `frontend/src/pages/case/CaseOverview.tsx` (the fraud banner shows the review) and the exception draft view
   of My work.
+- Modify `backend/di/services/actions/decisions.py` (`decision.approve` refuses a fraud-held case).
 - Test: `backend/tests/test_exception_assistant.py` (extend), `backend/tests/test_fraud_review.py`.
 
 **Interfaces:**
@@ -4316,6 +4317,8 @@ sources, concerns (held ones marked) and questions. vitest for the facade; smoke
   - `raise_hold: true` on a case below the threshold holds it with signal `model_review` (its narrative and sources).
   - The computed score and `rule_version` are unchanged. A review never releases a hold.
   - Cited sources must exist, else one retry, then no review.
+- A fraud-held case cannot be approved: `decision.approve` answers `conflict` "Held for fraud review: release it
+  first" until a person runs `fraud.release` (found when P9-2.11 merged: a held case only stopped standing policies).
 
 **UI slice:** the fraud banner shows "Model review: <narrative>" with its sources; a hold raised by the review says so.
 The exception draft says "Drafted by the exception assistant (<model>)" or "Drafted from the pack". vitest; smoke step
@@ -4330,6 +4333,7 @@ in P9-2.16.
 - `test_fraud_review_never_releases`: a held case with a review saying "not fraud" stays held.
 - `test_fraud_review_unknown_source_dropped`.
 - `test_fraud_and_exception_no_model_same_as_today`.
+- `test_fraud_held_case_cannot_be_approved_until_released`.
 - Also run: `tests/test_fraud_triage.py tests/test_stage_chain.py`.
 
 **Notes:** fraud outcomes stay holds for a person (B §8.4). The model adds caution, never removes it (R16).

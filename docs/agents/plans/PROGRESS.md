@@ -231,6 +231,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-2.7 configuration agent drafts a pack change set | this commit | lead-verify: 62 api passed (config_agent, agent_registry, models_migrations, pack_format, overlay_core, milestone_rt1048), lint, web 378 | done |
 | 2026-11-25 | 09 · P9-2.9 calibrated stage confidence from outcomes | this commit | lead-verify: api passed (stage_calibration, model_promote, hold_policy, model_list, agent_screens_gaps, stage_chain, milestone_rt1048), lint, web | done |
 | 2026-11-25 | 09 · P9-2.11 fraud triage on intake with a person release | this commit | lead-verify: 125 api passed (fraud_triage, stage_chain, standing_policy, case_intake, pack_format, catalog_hygiene, agent_catalog, agent_runtime, pack_versions, milestone_rt1048, stage_calibration), lint, web | done |
+| 2026-11-25 | 09 · P9-2.12 richer tool schemas and a find tools read | this commit | lead-verify: 336 api passed (tool_find, agent_catalog, actions, catalog_hygiene, mcp_server, fraud_triage), lint, web 386 | done |
 
 ## Decisions taken without the user (to review)
 

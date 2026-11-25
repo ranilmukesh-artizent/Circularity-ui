@@ -9,7 +9,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, stageCalibrationOf, stageLabel, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, findTools, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, stageCalibrationOf, stageLabel, startRun, updateAgent, useAgents, useModels,
   type TraceSpan,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
@@ -121,5 +121,22 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
   it('Pause agent calls the journaled kill switch (plan 9 P9-2.6)', async () => {
     await setAgentEnabled('stage-intake', false);
     expect(last()).toEqual(['agent.setEnabled', { id: 'stage-intake', on: false }]);
+  });
+});
+
+describe('findTools (plan 9 P9-2.12)', () => {
+  it('invokes the tools.find read and returns its tools, the ten best by default', async () => {
+    m.invoke.mockResolvedValueOnce({ ok: true, output: { tools: [{ action: 'evidence.request' }] }, key: null, action: 'tools.find' });
+    const tools = await findTools('request missing evidence');
+    expect(last()).toEqual(['tools.find', { query: 'request missing evidence', limit: 10 }]);
+    expect(tools).toEqual([{ action: 'evidence.request' }]);
+  });
+
+  it('returns nothing for a blank query without calling the server, and for a refusal', async () => {
+    m.invoke.mockClear();
+    expect(await findTools('  ')).toEqual([]);
+    expect(m.invoke).not.toHaveBeenCalled();
+    m.invoke.mockResolvedValueOnce({ ok: false, code: 'out_of_scope', message: 'no' });
+    expect(await findTools('case')).toEqual([]);
   });
 });

@@ -83,7 +83,7 @@ export interface AgentProposal {
 /** Shown in place of Accept on a proposal the person's own agent prepared. */
 export const OWN_PROPOSAL_NOTE = "Your agent's proposal: another person accepts it.";
 
-interface CatalogTool {
+export interface CatalogTool {
   name: string;
   action: string;
   title: string;
@@ -126,6 +126,16 @@ export interface LlmModel {
   used_day: { requests: number; tokens: number };
   /** the model is out of the chain until this time (an ISO timestamp), else null */
   cooling_until: string | null;
+}
+
+/**
+ * The tools that fit a few words, the best `limit` (ten by default), among those the signed-in account may call and an
+ * agent may use (`tools.find`, backend/di/services/actions/tools.py; plan 9 P9-2.12). A blank query or a refusal gives none.
+ */
+export async function findTools(query: string, limit = 10): Promise<CatalogTool[]> {
+  if (!query.trim()) return [];
+  const r = await invoke<{ tools: CatalogTool[] }>('tools.find', { query: query.trim(), limit });
+  return r.ok ? r.output.tools : [];
 }
 
 /** The Agents page (Suspense read cache). */

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import {
-  acceptProposal, OWN_PROPOSAL_NOTE, rejectProposal, stageLabel, startRun, updateAgent, useAgents,
+  acceptProposal, findTools, OWN_PROPOSAL_NOTE, rejectProposal, stageLabel, startRun, updateAgent, useAgents,
   type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy, type Playbook,
 } from '../../api/agents'; // prettier-ignore
 import { useBackend } from '../../api/useBackend';
@@ -352,13 +352,28 @@ function ModeChip({ t }: { t: AgentsScreen['tools'][number] }) {
 
 function Catalogue({ s }: { s: AgentsScreen }) {
   const [only, setOnly] = useState(false);
-  const list = s.tools.filter((t) => !only || t.agent_mode !== 'no');
+  const [q, setQ] = useState('');
+  const [found, setFound] = useState<AgentsScreen['tools'] | null>(null);
+  useEffect(() => {
+    let live = true;
+    if (!q.trim()) {
+      setFound(null);
+      return;
+    }
+    const t = setTimeout(() => void findTools(q).then((r) => live && setFound(r)), 250);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+  }, [q]);
+  const list = found ?? s.tools.filter((t) => !only || t.agent_mode !== 'no');
   return (
     <section className="sect" id="agTools">
       <div className="sh">
         <h2>Tool catalogue</h2>
         <span className="note">{s.tools.length} actions · {s.tools.filter((t) => t.agent_mode !== 'no').length} an agent may call or prepare</span>
         <span className="grow" />
+        <input type="search" aria-label="Find a tool" placeholder="Find a tool: what do you want to do?" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="seg">
           <button aria-pressed={!only} onClick={() => setOnly(false)}>All</button>
           <button aria-pressed={only} onClick={() => setOnly(true)}>Agent may call</button>
