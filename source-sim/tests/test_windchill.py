@@ -83,21 +83,21 @@ def test_paging(client):
     first = parts(client)
     assert len(first["value"]) == 25 and "$skip=25" in first["@odata.nextLink"].replace("%24", "$")
     seen = every_part(client)  # server-driven: pages of 25 linked by @odata.nextLink
-    assert len(seen) == 48 and len({p["ID"] for p in seen}) == 48 and seen[:25] == first["value"]
+    assert len(seen) == 75 and len({p["ID"] for p in seen}) == 75 and seen[:25] == first["value"]
     page = parts(client, **{"$top": 15, "$skip": 15})  # client-driven: $top caps the answer, no link
     assert page["value"] == seen[15:30] and "@odata.nextLink" not in page
-    assert parts(client, **{"$top": 5, "$skip": 45})["value"] == seen[45:]
+    assert parts(client, **{"$top": 5, "$skip": 70})["value"] == seen[70:]
     capped = parts(client, **{"$top": 30})  # more than a page: the link asks for the rest of the 30 only
     rest = client.get(capped["@odata.nextLink"], headers=AUTH).json()
     assert capped["value"] + rest["value"] == seen[:30] and "@odata.nextLink" not in rest
-    assert parts(client, **{"$skip": 60})["value"] == []
+    assert parts(client, **{"$skip": 90})["value"] == []
     for bad in ({"$top": "-1"}, {"$top": "x"}, {"$skip": "-3"}):
         r = client.get(f"{ODATA}/Parts", params=bad, headers=AUTH)
         assert r.status_code == 400 and r.json()["error"]["message"], bad
 
 
 def test_forty_parts_eight_assemblies_overlapping_aras(client):
-    everything = every_part(client)
+    everything = [p for p in every_part(client) if not p["Number"].startswith("TF-")]  # the tool classes are P9-3.3
     asm = [p for p in everything if structure(client, p["ID"]).json()["value"][0]["Uses"]]
     assert len(asm) == 8 and len(everything) - len(asm) == 40
     aras = {i["data"].get("item_number") for i in aras_items(seed()) if i["itemtype"] == "Part"}
@@ -105,6 +105,22 @@ def test_forty_parts_eight_assemblies_overlapping_aras(client):
     assert len(shared) == 5
     used = {u["Part"]["Number"] for a in asm for u in structure(client, a["ID"]).json()["value"][0]["Uses"]}
     assert shared <= used  # where-used across systems: every shared number sits in a Windchill assembly
+
+
+# ------------------------------------------------------------------ tool classes (P9-3.3)
+def test_windchill_serves_tool_ratings(client):
+    """TF-CMH uses four wear parts whose soft attributes carry the rated life (A 1.5) and the end of parts (A 1.10.2)."""
+    by_number = {p["Number"]: p for p in every_part(client)}
+    cmh = by_number["TF-CMH"]
+    assert cmh["ToolClass"] == "CMH" and cmh["EndOfPartsDate"] == "2028-06-30" and cmh["SuccessorNumber"] == "TF-CMH2"
+    (root,) = structure(client, cmh["ID"]).json()["value"]
+    used = [by_number[u["Part"]["Number"]] for u in root["Uses"]]
+    assert [u["RatedLifeHours"] for u in used] == [1200, 1500, 2000, 600]
+    assert [u["Critical"] for u in used] == [True, True, True, False]
+    assert sum(u["CriticalityWeight"] for u in used) == pytest.approx(1.0)
+    assert by_number["TF-CRH"]["EndOfPartsDate"] == "2027-03-31" and by_number["TF-CRH"]["SuccessorNumber"] == "TF-CRH2"
+    assert "EndOfPartsDate" not in by_number["TF-AGR"]
+    assert "RatedLifeHours" not in by_number["0000100001"]  # the industrial parts carry no soft attributes
 
 
 # ------------------------------------------------------------------ structure

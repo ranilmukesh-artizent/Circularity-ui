@@ -416,11 +416,17 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
     # PLM parts and BOM lines (plan 8, MVP-9.1): written by the PLM adapters beyond the demo (Windchill, MVP-9.3);
     # keys from schema.part_key and schema.bom_key
     "part": {
+        "criticality_weight": "number",  # plan 9, P9-3.3: the tool classes' soft attributes (Windchill)
+        "critical": "bool",
+        "end_of_parts": "date",
         "name": "text",
         "number": "text",
         "org_unit_id": "text",
+        "rated_life_hours": "number",
         "revision": "text",
         "state": "text",
+        "successor": "text",
+        "tool_class": "text",
         "unit_cost": "number",
     },
     "bom": {

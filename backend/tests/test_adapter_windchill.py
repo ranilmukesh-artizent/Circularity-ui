@@ -110,7 +110,7 @@ def test_sync_maps_parts_and_bom():
         assert conn.execute(text("SELECT status FROM source_system WHERE id = :i"), {"i": SID}).scalar_one() == "disconnected"
     out = connect(SID)
     parts = mock_parts()
-    assert out["records_read"] == len(parts) + 8  # every part, and the structure of the 8 assemblies
+    assert out["records_read"] == len(parts) + 14  # every part, and the structure of the 8 + 6 tool assemblies
     seal = parts["VLT-SK-250M"]
     p = canonical("part", part_key("Customer A", "VLT-SK-250M"))
     assert p["data"] == {
@@ -134,7 +134,7 @@ def test_sync_maps_parts_and_bom():
         n = conn.execute(
             text("SELECT count(*) FROM canonical WHERE model = 'bom' AND key LIKE :k"), {"k": "Customer A:%"}
         ).scalar_one()
-    assert n == 8 * 6  # 6 lines per assembly
+    assert n == 8 * 6 + 21  # 6 lines per industrial assembly, and the 21 wear parts of the 6 tool assemblies
 
 
 def test_two_orgs_two_windchill_instances_do_not_collide():
@@ -158,3 +158,16 @@ def test_two_orgs_two_windchill_instances_do_not_collide():
         ).all()
     orgs = {r.org: r.n for r in rows}
     assert orgs["Customer A"] == orgs["Customer B"] == len(mock_parts())
+
+
+def test_sync_maps_tool_ratings():
+    """P9-3.3: the soft attributes of a tool class's assembly and wear parts reach the canonical part."""
+    wear = canonical("part", part_key("Customer A", "TF-CMH-01"))["data"]
+    assert (wear["tool_class"], wear["rated_life_hours"], wear["criticality_weight"], wear["critical"]) == (
+        "CMH", 1200, 0.4, True,
+    )  # fmt: skip
+    assert wear["name"] == "Motor armature" and "end_of_parts" not in wear
+    asm = canonical("part", part_key("Customer A", "TF-CMH"))["data"]
+    assert (asm["end_of_parts"], asm["successor"], asm["tool_class"]) == ("2028-06-30", "TF-CMH2", "CMH")
+    assert "rated_life_hours" not in asm
+    assert "rated_life_hours" not in canonical("part", part_key("Customer A", "VLT-SK-250M"))["data"]  # industrial

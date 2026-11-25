@@ -4,7 +4,7 @@ A usage link (WTPartUsageLink) runs from a parent part version to the child's ma
 holds it: the structure resolves the child to its current version when it is read.
 """
 
-from sqlalchemy import Column, Float, Integer, MetaData, String, Table
+from sqlalchemy import Boolean, Column, Float, Integer, MetaData, String, Table
 
 metadata = MetaData(schema="windchill")
 
@@ -18,6 +18,13 @@ WTPART = Table(
     Column("iteration", String(8), nullable=False),  # 1, 2 ...
     Column("state", String(20), nullable=False),  # INWORK, RELEASED, OBSOLETE
     Column("unit_cost", Float, nullable=False),
+    # soft attributes of the tool classes (P9-3.3), null on the industrial parts
+    Column("rated_life_hours", Float),
+    Column("criticality_weight", Float),
+    Column("critical", Boolean),
+    Column("end_of_parts_date", String(10)),  # ISO date
+    Column("successor_number", String(40)),
+    Column("tool_class", String(8)),
 )
 
 USAGE = Table(

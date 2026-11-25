@@ -65,11 +65,18 @@ def _context(request: Request, what: str) -> str:
     return f"{request.base_url}Windchill/servlet/odata/ProdMgmt/$metadata#{what}"
 
 
+SOFT = (  # (column, soft attribute): served only when the part has a value (P9-3.3)
+    ("rated_life_hours", "RatedLifeHours"), ("criticality_weight", "CriticalityWeight"), ("critical", "Critical"),
+    ("end_of_parts_date", "EndOfPartsDate"), ("successor_number", "SuccessorNumber"), ("tool_class", "ToolClass"),
+)  # fmt: skip
+
+
 def _part(r) -> dict:
+    soft = {name: getattr(r, col) for col, name in SOFT if getattr(r, col) is not None}
     return {
         "ID": r.id, "Number": r.number, "Name": r.name, "Version": r.version, "Iteration": r.iteration,
         "State": {"Value": r.state, "Display": STATES[r.state]}, "UnitCost": r.unit_cost,
-    }  # fmt: skip
+    } | soft  # fmt: skip
 
 
 @router.get("/ProdMgmt/Parts")

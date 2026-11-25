@@ -26,3 +26,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-25 19:58 | Merged origin/feature/plan-09-recover again (P9-2.14, 2.19, 8.8, 8.12, 8.17, phase 8 libraries) as 7324e9e and pushed, at the person's request. The lane is level with lane A. P9-3.21 waits through plan-next (lane A's range fix), not blocked.txt. Images rebuild at the WSL restart. |
 | 2026-11-25 20:01 | Decision: zen-engine pinned at 2.1.7, not the spec's 2.1.8 (released 2026-11-20, under two weeks). Writer 4 told. |
 | 25 Nov 14:34 | P9-3.2 merged. closed recall RC-2026-009 added; 30 serials without telematics |
+| 25 Nov 14:34 | P9-3.3 merged. tool rows after the 48 industrial parts; illustrative rated lives for four classes |
