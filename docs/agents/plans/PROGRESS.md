@@ -263,6 +263,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-26 | 09 · P9-8.21 dMN and BPMN export from the Modeler | this commit | batch lead-verify after the lane B merge (5ae9952): parallel-suite 4,785 passed, 13 failed, all from lane B's P9-3.7/6.7/6.8 pack changes (older tests not updated, reported to lane B); serial-only mcp_modeler, mcp_server, milestone_rt1048, writes_access passed; lint; web 517 | done |
 | 2026-11-26 | 09 · P9-9.1 used-car pack data file | this commit | batch lead-verify after the lane B merge (5ae9952): parallel-suite 4,785 passed, 13 failed, all from lane B's P9-3.7/6.7/6.8 pack changes (older tests not updated, reported to lane B); serial-only mcp_modeler, mcp_server, milestone_rt1048, writes_access passed; lint; web 517 | done |
 | 2026-11-26 | 09 · P9-2.24 phase 2 gate follow-ups: model reads off the lock, grounded concerns, tainted fraud text | this commit | lead-verify: 188 api passed, 1 failed (evals x_05 tool_fleet_from_data: lane B's GR-12 recall gate fails a case with no serial, reported to lane B); lint; web 517+; smoke-p9-2 8/8 after a reset (step 4, accept resumes the run: 24 s, was 47 s) | done |
+| 2026-11-26 | 09 · P9-9.2 vehicle lease and dealer system mocks | this commit | sim suite 356 passed; api 62 passed (adapters, canonical schema, connectors, catalog hygiene, fabric sources); lint; web 520 | done |
 
 ## Decisions taken without the user (to review)
 

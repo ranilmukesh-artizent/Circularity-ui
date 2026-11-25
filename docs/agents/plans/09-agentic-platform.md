@@ -955,7 +955,7 @@ each story went.
 - [ ] P9-8.22 Compose demo smoke
 - [ ] P9-8.23 Phase 8 gate
 - [x] P9-9.1 Used-car pack data file
-- [ ] P9-9.2 Vehicle lease and dealer system mocks
+- [x] P9-9.2 Vehicle lease and dealer system mocks
 - [ ] P9-9.3 Title and lien service mock
 - [ ] P9-9.4 Vehicle inspection app mock
 - [ ] P9-9.5 Vehicle recall database mock
