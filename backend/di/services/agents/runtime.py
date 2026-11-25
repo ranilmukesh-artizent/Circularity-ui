@@ -42,7 +42,7 @@ from sqlalchemy.orm import Session
 import di.repositories.cases  # registers case.evidence (the worker imports only what its jobs need)
 import di.services.actions.decisions  # registers evidence.request, case.reevaluate, decision.submit
 import di.services.actions.execution  # noqa: F401 - registers instruction.resend
-from di.core import jobs, policy
+from di.core import jobs, policy, tracing
 from di.core.auth import load_context
 from di.core.config import get_settings
 from di.repositories.live_rules import live_pack
@@ -54,7 +54,7 @@ from di.services.agents.playbooks import case_autopilot as autopilot
 from di.services.agents.playbooks import stage_chain
 from di.services.agents.playbooks.case_autopilot import Done, Halt, Skip, Wait
 from di.services.agents.pydantic_ai_loop import PydanticAILoop
-from di.services.agents.stage_context import StageContext
+from di.services.agents.stage_context import STAGE_IDS, StageContext
 from di.services.agents.stages import CHAIN
 from di.services.cases import store
 from di.services.modeler.evidence import evidence_of
@@ -247,6 +247,19 @@ def step(s: Session, run_id: str) -> str:
     if case is None:
         return _save(s, run, "failed", n, st | {"reason": f"No live case {run['case_id']}."})
     stage, sub = stage_chain.where(st, n)
+    sid = STAGE_IDS[stage] if stage < len(STAGE_IDS) else str(stage)
+    # one `stage` span per stage and run: later steps of the stage update its row (P9-2.6, I-12)
+    with tracing.span(
+        s, f"stage {sid}", kind="stage", run_id=run_id, span_id=f"{run_id}:{sid}",
+        attrs={"di.stage": sid, "di.agent": run["agent"]},
+    ):  # fmt: skip
+        return _stage_step(s, run, agent, ctx, case, stage, sub)
+
+
+def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, case: dict, stage: int, sub: int) -> str:
+    """The step of a `stage_chain` run once its stage is known (inside the stage's span)."""
+    run_id = run["id"]
+    st, n = dict(run["state"] or {}), int(run["step"])
     st |= {"stage": stage, "sub": sub, "legacy": run["playbook"] == autopilot.NAME}
     st["failed_instruction"] = _failed_instruction(s, case["id"])
     pack = live_pack(s, case)
@@ -293,11 +306,19 @@ def step(s: Session, run_id: str) -> str:
 def run_until_blocked(s: Session, run_id: str, max_steps: int = 50) -> str:
     """What the worker's job does: step until the run is no longer running, committing each step."""
     status = "running"
-    for _ in range(max_steps):
-        status = step(s, run_id)
-        s.commit()
-        if status != "running":
-            break
+    run = get(s, run_id)
+    # one `run` span per run: each burst of steps moves its end (P9-2.6, I-12)
+    with tracing.span(
+        s, "agent run", kind="run", run_id=run_id, span_id=run_id,
+        attrs={"di.agent": run["agent"] if run else None, "di.playbook": run["playbook"] if run else None},
+    ) as sp:  # fmt: skip
+        for _ in range(max_steps):
+            status = step(s, run_id)
+            s.commit()
+            if status != "running":
+                break
+        sp.attrs["di.status"] = status
+    s.commit()
     return status
 
 

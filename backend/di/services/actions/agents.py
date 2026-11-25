@@ -14,6 +14,10 @@ The demo has a fixed list of nine agents, so these are declared here, beside the
 agent.setEnabled (di.services.actions.access, the demo's kill switch) writes the row too, through `set_enabled`.
 `tools` are MCP tool ids (di.mcp.tools.TOOLS) or action ids; `org_scope` are org unit ids (empty: every org). An action
 no agent may run (di.services.agents.catalog.agent_allowed: FORBIDDEN_ACTIONS and system actions) is refused as a tool.
+    agent.runTrace  read   {run_id? | case_id?}   P9-2.6 (I-12): one run (the latest for a case) with its stage records, calls,
+                                                  spans as a tree, journal rows, proposals and the agent's pause history
+                                                  (`di.repositories.run_trace`). Needs the agents page, or for a case the
+                                                  case scope (a case outside the person's tenants: `tenant_boundary`).
 The Agents page registers one with its Register agent dialog (frontend/src/pages/agents/RegisterAgentDialog.tsx).
 """
 
@@ -23,10 +27,12 @@ from typing import Any
 from sqlalchemy import text
 
 from di.core import policy, state
+from di.repositories import run_trace
 from di.repositories.constants import TOOLS_BY_ID
 from di.services.actions.decisions import rb_log
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, guard, implement
+from di.services.actions.scope import case_scope
 from di.services.agents import registry, runtime
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{1,63}$")
@@ -164,3 +170,48 @@ def start_run(i: dict[str, Any], ctx: CallContext):
     run_id = runtime.start(ctx.session, i["agent"], playbook, i["case_id"], account=ctx.actor.id)
     rb_log(ctx, "agent.run.started", f"{i['agent']} · {playbook} · {i['case_id']}", "agent.startRun")
     return {"run_id": run_id, "agent": i["agent"], "playbook": playbook, "case_id": i["case_id"]}
+
+
+ACTIONS.setdefault(
+    "agent.runTrace",
+    ActionDef(
+        id="agent.runTrace", title="Read an agent run", verb="read agent runs", risk="read", perm=None, scope="none",
+        desc="One agent run: its stages, calls, spans, journal rows, proposals and the agent's pause history. Changes nothing.",
+        input={"run_id": {**_OPT, "t": "string"}, "case_id": {**_OPT, "t": "string"}},
+    ),
+)  # fmt: skip
+EMPTY_TRACE: dict[str, Any] = {"run": None, "stages": [], "calls": [], "spans": [], "journal": [], "proposals": [], "pauses": []}
+
+
+@guard("agent.runTrace")
+def run_trace_guard(i: dict[str, Any], ctx: CallContext):
+    run_id, case_id = i.get("run_id"), i.get("case_id")
+    if not run_id and not case_id:
+        return "validation_error", "Name a run (run_id) or a case (case_id)."
+    if ctx.actor.system:
+        return None
+    if run_id:
+        row = ctx.session.execute(text("SELECT case_id FROM agent_run WHERE id = :i"), {"i": run_id}).first()
+        if row is None:
+            return "not_found", f"No agent run {run_id}."
+        if case_id and row[0] != case_id:
+            return "validation_error", f"{run_id} is not a run on {case_id}."
+        case_id = row[0]
+    acct = ctx.actor.account
+    if case_id:
+        where = case_scope(str(case_id))
+        if where is None:
+            return "not_found", f"No live case {case_id}."
+        owner, location = where
+        if acct is None or not policy.tenant_ok(acct, owner, ctx.actor.ctx) or not policy.location_ok(acct, location):
+            return "tenant_boundary", f"{case_id} belongs to {owner}, a tenant you cannot see. Request tenant access first."
+        return None
+    if not policy.can_page(acct, "agents"):
+        return "out_of_scope", f"The {ctx.actor.role} view cannot read agent runs."
+    return None
+
+
+@implement("agent.runTrace")
+def read_run_trace(i: dict[str, Any], ctx: CallContext):
+    run_id = i.get("run_id") or run_trace.latest_run_for_case(ctx.session, str(i["case_id"]))
+    return (run_id and run_trace.run_trace(ctx.session, run_id)) or EMPTY_TRACE

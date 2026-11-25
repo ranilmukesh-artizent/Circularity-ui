@@ -81,3 +81,4 @@ unattended". Times are local (IST).
 | 25 Nov 15:31 | P9-2.10 merged. Sonnet; red proven by moving modules aside (code first); read-only agent recover-exceptions seeded; drafts never resolve or assign. |
 | 25 Nov 15:32 | P9-2.10 merged and pushed. P9-2.6 to w2. |
 | 25 Nov 16:03 | P9-2.5 merged. Sonnet; R21 tests; standingPolicy approve/reject forbidden to agents; red proven by removing the hook (code first); demo and RT-1048 unchanged with no policy. |
+| 25 Nov 16:11 | P9-2.6 merged. Sonnet; red first quoted; spans in their own short sessions; content attributes only with trace_content; Pydantic AI agent docs read. |

@@ -4,12 +4,13 @@ import {
   type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy, type Playbook,
 } from '../../api/agents'; // prettier-ignore
 import { useBackend } from '../../api/useBackend';
-import { Modal } from '../../components/Overlay';
+import { Drawer, Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { LlmModelsPanel } from './LlmModelsPanel';
 import { ModelsPanel } from './ModelsPanel';
 import { RegisterAgentDialog } from './RegisterAgentDialog';
+import { RunView } from './RunView';
 
 const AUTONOMY: [Autonomy, string][] = [['read', 'Read only'], ['propose', 'Propose for a person'], ['act', 'Act within its tools']];
 const RUN_CHIP: Record<AgentRun['status'], string> = { running: 'line', waiting: 'y', done: 'ok', failed: 'bad', stopped: 'warn' };
@@ -287,8 +288,10 @@ function StartRun({ agents }: { agents: AgentRow[] }) {
 function Runs({ s }: { s: AgentsScreen }) {
   const runs = s.runs;
   const [open, setOpen] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<string | null>(null);
   return (
     <section className="sect" id="agRuns">
+      {viewing && <Drawer title={'Run ' + viewing} sub="What the agent did, step by step" wide onClose={() => setViewing(null)}><RunView runId={viewing} /></Drawer>}
       <div className="sh">
         <h2>Runs</h2>
         <span className="note">{runs.length} recent · {runs.filter((r) => r.status === 'waiting').length} waiting for a person</span>
@@ -311,7 +314,7 @@ function Runs({ s }: { s: AgentsScreen }) {
                       <td className="r">
                         <button className="btn sm ghost" aria-expanded={open === r.id} onClick={() => setOpen(open === r.id ? null : r.id)}>{r.steps.length}</button>
                       </td>
-                      <td><Waiting run={r} /></td>
+                      <td><Waiting run={r} /> <button className="btn sm ghost" onClick={() => setViewing(r.id)}>View</button></td>
                     </tr>
                     {open === r.id && (
                       <tr>

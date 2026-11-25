@@ -20,7 +20,8 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from di.core import clock, policy
+from di.core import clock, policy, tracing
+from di.core.redact import SECRET_WORDS, clean  # noqa: F401 - SECRET_WORDS stays importable from here
 from di.services.actions import hold
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError
 from di.services.actions.scope import case_scope
@@ -40,7 +41,6 @@ ERROR_STATUS = {
     "duplicate": 409,
     "not_implemented": 501,
 }
-SECRET_WORDS = ("secret", "password", "token", "credential", "api_key", "apikey", "private_key")
 
 
 @dataclass
@@ -164,20 +164,6 @@ def agent_route(a: ActionDef, ctx: CallContext) -> Literal["refused", "held", "r
     return "runs"
 
 
-def _clean(i: dict[str, Any]) -> dict[str, Any]:
-    """Inputs are stored; anything that looks like a secret is never kept."""
-
-    def walk(x: Any) -> Any:
-        if isinstance(x, dict):
-            return {k: walk(v) for k, v in x.items() if not any(w in k.lower() for w in SECRET_WORDS)}
-        if isinstance(x, list):
-            return [walk(v) for v in x]
-        return x
-
-    cleaned: dict[str, Any] = walk(i)
-    return cleaned
-
-
 def _output_ref(o: dict[str, Any] | None) -> dict[str, Any] | None:
     if not isinstance(o, dict):
         return None
@@ -186,6 +172,25 @@ def _output_ref(o: dict[str, Any] | None) -> dict[str, Any] | None:
 
 
 def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[str, Any]:
+    """Run an action through steps 1 to 12. A call an agent prepared is traced: it opens an `action` span (P9-2.6, I-12)."""
+    if not ctx.preparer:
+        return _invoke(action_id, i, ctx)
+    a = ACTIONS.get(action_id)
+    attrs: dict[str, Any] = {"di.agent": ctx.preparer, "di.preparer": ctx.preparer, "di.action": action_id}
+    if ctx.stage is not None:
+        attrs["di.stage"] = ctx.stage.stage
+    if a is not None and a.scope == "case" and (where := case_scope(str((i or {}).get("case_id", "")))):
+        attrs["di.tenant"] = where[0]
+    with tracing.span(ctx.session, action_id, kind="action", run_id=ctx.run_id, attrs=attrs) as sp:
+        r = _invoke(action_id, i, ctx)
+        if not r["ok"]:
+            sp.attrs["di.error"] = r["error"]["code"]
+        elif isinstance(r["output"], dict) and "held" in r["output"]:
+            sp.attrs["di.proposal_id"] = r["output"]["held"]
+    return r
+
+
+def _invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[str, Any]:
     a = ACTIONS.get(action_id)
     i = i or {}
     if a is None:
@@ -239,7 +244,7 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[s
     # 9b the hold policy (P9-2.4, I-10): an agent's write that has a reason to wait for a person is stored as a proposal
     if ctx.preparer and a.handler is not None and (holds := hold.hold_check(a, i, ctx)):
         reasons = hold.reasons_json(holds)
-        pid = proposals.hold(ctx, a.id, _clean(i), case_id, reasons)
+        pid = proposals.hold(ctx, a.id, clean(i), case_id, reasons)
         return {"ok": True, "output": {"held": pid, "reasons": reasons}, "key": None, "action": a.id}
     # 10 run
     if a.handler is None:
@@ -259,7 +264,7 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[s
                 ),
                 {
                     "a": a.id,
-                    "i": _json(_clean(i)),
+                    "i": _json(clean(i)),
                     "actor": actor.id,
                     "role": actor.role,
                     "prep": ctx.preparer,
@@ -282,7 +287,7 @@ def invoke(action_id: str, i: dict[str, Any] | None, ctx: CallContext) -> dict[s
                         "t": t,
                         "s": seq,
                         "c": case_id,
-                        "p": _json({"action": a.id, "input": _clean(i), "output": out, "by": actor.id}),
+                        "p": _json({"action": a.id, "input": clean(i), "output": out, "by": actor.id}),
                         "at": ctx.now,
                     },
                 )

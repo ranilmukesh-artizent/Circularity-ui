@@ -19,12 +19,16 @@ No model (the factory returns None): `LoopResult(output=None, model=None)` and n
 deterministic path (R16). The model comes from the router (di.services.llm.router, P9-2.3: the default factory
 `router_model_factory(s, run_id, role)`): budgets, cooldowns, a fallback on 429 or 5xx, and the model that answered
 kept in `state.model_route`.
+
+P9-2.6 (I-12): each model response is a `model` span (tokens, model, `di.model_route`), open while its tool calls run, and each
+tool call a `tool` span under it (`di.core.tracing`; inputs and outputs only with `trace_content`).
 Never does: start OpenTelemetry,
 or call an action outside the spec. Tests use `FunctionModel` or `TestModel`, never a live provider.
 """
 
 import asyncio
 import json
+import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from typing import Any
@@ -38,12 +42,13 @@ from pydantic_ai import (
     RunContext,
     Tool,
 )
-from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
+from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter, ModelResponse
 from pydantic_ai.models import Model
 from pydantic_ai.usage import UsageLimits
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from di.core import tracing
 from di.services.actions.pipeline import CallContext, invoke
 from di.services.actions.registry import ACTIONS
 from di.services.agents import catalog
@@ -84,7 +89,14 @@ def _action_tool(action_id: str) -> Tool[_Deps]:
 
     async def call(rc: RunContext[_Deps], **args: Any) -> Any:
         d = rc.deps
-        r = invoke(action_id, args, replace(d.ctx, idem_key=f"{d.ctx.run_id}:{rc.tool_call_id}"))
+        attrs: dict[str, Any] = {"di.action": action_id, "di.agent": d.ctx.preparer, "content.input": args}
+        with tracing.span(
+            d.ctx.session, f"tool {catalog.tool_name(action_id)}", kind="tool", run_id=d.ctx.run_id, attrs=attrs
+        ) as sp:
+            r = invoke(action_id, args, replace(d.ctx, idem_key=f"{d.ctx.run_id}:{rc.tool_call_id}"))
+            sp.attrs["content.output"] = r["output"] if r["ok"] else r["error"]
+            if r["ok"] and isinstance(r["output"], dict) and "held" in r["output"]:
+                sp.attrs["di.proposal_id"] = r["output"]["held"]
         if r["ok"]:
             out = r["output"]
             if isinstance(out, dict) and "held" in out:  # {held, reasons} (P9-2.4)
@@ -133,6 +145,33 @@ def _save_turn(s: Session, run_id: str, new: list[ModelMessage], model: str | No
     s.commit()
 
 
+class _ModelSpan:
+    """The `model` span of one model response (P9-2.6): open from the request node until the next request or the end, so
+    the `tool` spans of that response's calls nest under it. It never records a prompt unless `trace_content` is on."""
+
+    def __init__(self, s: Session, run_id: str, agent: str | None) -> None:
+        self._s, self._run, self._agent = s, run_id, agent
+        self._scope: tracing.SpanScope | None = None
+
+    def open(self) -> None:
+        self._scope = tracing.span(self._s, "model response", kind="model", run_id=self._run, attrs={"di.agent": self._agent})
+        self._scope.__enter__()
+
+    def answered(self, resp: ModelResponse, model: Model) -> None:
+        if self._scope is None:
+            return
+        u, attrs = resp.usage, self._scope.span.attrs
+        attrs["gen_ai.request.model"] = resp.model_name or _name(model)
+        attrs["gen_ai.usage.input_tokens"], attrs["gen_ai.usage.output_tokens"] = u.input_tokens, u.output_tokens
+        if isinstance(model, router.RouterModel) and model.answered is not None:
+            attrs["di.model_route"] = model.answered.id  # which model of the fallback chain answered
+
+    def close(self, et: type[BaseException] | None = None, ev: BaseException | None = None, tb: Any = None) -> None:
+        if self._scope is not None:
+            scope, self._scope = self._scope, None
+            scope.__exit__(et, ev, tb)
+
+
 class PydanticAILoop:
     def __init__(self, model_factory: ModelFactory = router_model_factory) -> None:
         self._factory = model_factory
@@ -164,6 +203,7 @@ class PydanticAILoop:
         answers = DeferredToolResults(calls=dict(resume)) if resume else None
         saved = len(history)
         name = _name(model)
+        turn = _ModelSpan(s, run_id, ctx.preparer)
         async with agent.iter(
             None if resume is not None else prompt,
             message_history=history or None,
@@ -171,14 +211,26 @@ class PydanticAILoop:
             deps=deps,
             usage_limits=UsageLimits(request_limit=spec.max_turns),
         ) as ar:
-            async for node in ar:
-                # a request node is next (the tools of the last response have run) or the run ended: save the new messages
-                if type(node).__name__ in ("ModelRequestNode", "End") and len(ar.all_messages()) > saved:
-                    name = _name(model)
-                    if isinstance(model, router.RouterModel) and model.answered is not None:
-                        router.record_route(s, run_id, model.answered.id)
-                    _save_turn(s, run_id, ar.all_messages()[saved:], name)
-                    saved = len(ar.all_messages())
+            try:
+                async for node in ar:
+                    if Agent.is_model_request_node(node):
+                        turn.close()  # the tools of the last response have run
+                        turn.open()
+                    elif Agent.is_call_tools_node(node):
+                        turn.answered(node.model_response, model)
+                    elif Agent.is_end_node(node):
+                        turn.close()
+                    # a request node is next (the tools of the last response have run) or the run ended: save the new messages
+                    if type(node).__name__ in ("ModelRequestNode", "End") and len(ar.all_messages()) > saved:
+                        name = _name(model)
+                        if isinstance(model, router.RouterModel) and model.answered is not None:
+                            router.record_route(s, run_id, model.answered.id)
+                        _save_turn(s, run_id, ar.all_messages()[saved:], name)
+                        saved = len(ar.all_messages())
+            except BaseException:
+                turn.close(*sys.exc_info())
+                raise
+            turn.close()
         result = ar.result
         out = result.output if result is not None else None
         u = ar.usage

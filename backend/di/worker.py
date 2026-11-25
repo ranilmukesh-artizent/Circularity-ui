@@ -18,7 +18,7 @@ import signal
 import threading
 import time
 from collections.abc import Callable
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import psycopg
@@ -224,6 +224,32 @@ def _agent_step(payload: dict[str, Any]) -> None:
         log.info("agent run %s: %s", payload["run_id"], runtime.run_until_blocked(s, payload["run_id"]))
 
 
+@handler("trace.prune")
+def _trace_prune(payload: dict[str, Any]) -> None:  # noqa: ARG001 - jobs take a payload
+    """Delete the spans of agent runs older than the setting `trace_retention_days` (di.core.tracing.prune, P9-2.6)."""
+    from di.core import tracing
+
+    with SessionLocal() as s:
+        n = tracing.prune(s, get_settings().trace_retention_days)
+        s.commit()
+    log.info("trace prune: deleted %s span(s)", n)
+
+
+_last_prune: str | None = None
+
+
+def enqueue_trace_prune() -> None:
+    """Queue the daily `trace.prune` job: once per calendar day (UTC) per worker process, from the periodic step."""
+    global _last_prune
+    today = datetime.now(UTC).date().isoformat()
+    if _last_prune == today:
+        return
+    with SessionLocal() as s:
+        jobs.enqueue(s, "trace.prune", {}, priority=200, dedupe_key="trace.prune")
+        s.commit()
+    _last_prune = today
+
+
 @handler("agent.autostart")
 def _agent_autostart(payload: dict[str, Any]) -> None:
     """A case was opened and the autopilot setting is on: start its run (runtime.autostart, P9-0.9). The run's own
@@ -331,6 +357,10 @@ def periodic() -> None:
             log.info("queued syncs: %s", ", ".join(queued))
     except Exception:
         log.exception("periodic step failed")
+    try:
+        enqueue_trace_prune()
+    except Exception:
+        log.exception("queueing the trace prune failed")
     tick_triggers()  # first: a lost workflow run is closed ("worker lost") before its stale job is requeued
     try:
         with SessionLocal() as s:

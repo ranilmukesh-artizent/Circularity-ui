@@ -11,7 +11,7 @@
  *
  * Plan 9 P9-2.3: `useAgents().llm` lists the language models (Admin); setLlmModel is llm.setModel. Agents never run it.
  */
-import { invoke } from './actions';
+import { invoke, read } from './actions';
 import { cached } from './client';
 import type { ActionResult } from './types';
 
@@ -224,3 +224,83 @@ export type LlmModelPatch = Partial<Pick<LlmModel, 'enabled' | 'priority' | 'rol
 
 /** Switch a language model on or off, order it, or change its roles or limits (Admin, manageAgents; llm.setModel). */
 export const setLlmModel = (id: string, patch: LlmModelPatch): Promise<ActionResult<LlmModel>> => invoke('llm.setModel', { id, ...patch });
+
+/** One span of a run (plan 9, P9-2.6, I-12): a `run`, `stage`, `model` response, `tool` call or `action` the pipeline ran. */
+export interface TraceSpan {
+  span_id: string;
+  trace_id: string;
+  parent_id: string | null;
+  name: string;
+  kind: 'run' | 'stage' | 'model' | 'tool' | 'action';
+  started_at: string;
+  ended_at: string;
+  status: 'ok' | 'error';
+  /** `di.*` and `gen_ai.*` attributes (the model, its tokens, which model of the chain answered, the stage) */
+  attrs: Record<string, unknown>;
+  children: TraceSpan[];
+}
+
+export interface TraceStage {
+  stage: string;
+  agent: string;
+  kind: string;
+  autonomy: 'recommend' | 'limits' | 'alone';
+  status: 'done' | 'skipped' | 'held' | 'waiting' | 'exception';
+  confidence: number | null;
+  threshold: number;
+  /** what the stage read: the source system, its record and how old it was */
+  sources: Record<string, unknown>[];
+  reasons: HoldReason[];
+  at: string;
+}
+
+export interface TraceCall { n: number; tool: string; ok: boolean; held: number | null; input: Record<string, unknown>; at: string }
+export interface TraceProposal { id: number; action: string; status: string; case_id: string | null; reasons: HoldReason[]; decided_by: string | null }
+export interface TracePause { by: string; on: boolean; at: string }
+
+/** Everything one run did (`agent.runTrace`, backend/di/repositories/run_trace.py); `run` is null for a case with no run. */
+export interface RunTrace {
+  run: {
+    id: string; agent: string; agentName: string; playbook: string; case_id: string | null; status: AgentRun['status']; step: number;
+    reason: string | null; waiting: string | null; model: string | null; model_route: string | null;
+    tokens: { input: number | null; output: number | null } | null; created_at: string; updated_at: string;
+  } | null;
+  stages: TraceStage[];
+  calls: TraceCall[];
+  spans: TraceSpan[];
+  journal: { seq: number; action: string; actor: string; preparer: string | null; at: string }[];
+  proposals: TraceProposal[];
+  pauses: TracePause[];
+}
+
+/** Nest spans by `parent_id` (a flat list in start order, or an already nested tree): a `tool` span lands under its `model`
+ * span. A span whose parent is not in the list is a root. */
+export function spanTree(spans: readonly TraceSpan[]): TraceSpan[] {
+  const flat: TraceSpan[] = [];
+  const take = (list: readonly TraceSpan[]) => list.forEach((s) => (flat.push({ ...s, children: [] }), take(s.children ?? [])));
+  take(spans);
+  const by = new Map(flat.map((s) => [s.span_id, s]));
+  const roots: TraceSpan[] = [];
+  for (const s of flat) {
+    const parent = s.parent_id ? by.get(s.parent_id) : undefined;
+    (parent ? parent.children : roots).push(s);
+  }
+  return roots;
+}
+
+/** The tree as rows for a table: each span with its depth, parents first. */
+export const spanRows = (tree: readonly TraceSpan[], depth = 0): { span: TraceSpan; depth: number }[] =>
+  tree.flatMap((s) => [{ span: s, depth }, ...spanRows(s.children, depth + 1)]);
+
+/** How long a span took, in milliseconds. */
+export const spanMs = (s: Pick<TraceSpan, 'started_at' | 'ended_at'>): number => Math.max(0, Date.parse(s.ended_at) - Date.parse(s.started_at));
+
+/** The run view's data (Suspense read cache): the run `runId`, or the latest run on `caseId`. */
+export function runTrace(q: { runId: string } | { caseId: string }): RunTrace {
+  const t = read<RunTrace>('agent.runTrace', 'runId' in q ? { run_id: q.runId } : { case_id: q.caseId });
+  return { ...t, spans: spanTree(t.spans) };
+}
+
+/** The pause switch: stop (`on` false) or start an agent (Admin; the journaled `agent.setEnabled`). */
+export const setAgentEnabled = (id: string, on: boolean): Promise<ActionResult<{ id: string; on: boolean }>> =>
+  invoke('agent.setEnabled', { id, on });

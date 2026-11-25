@@ -3,6 +3,7 @@
  * sources and models), drawn as React and opened through the page's CaseUi.modal.
  */
 import { Suspense, type ReactNode } from 'react';
+import { runTrace } from '../../api/agents';
 import { modelStats, modelVersions } from '../../api/analytics';
 import { fmtD, fmtDY, inr, isoT, refList, type CaseAnalysis, type CaseRec, type Prov } from '../../api/case';
 import { ApiError } from '../../api/client';
@@ -10,6 +11,7 @@ import { money } from '../../api/format';
 import { canPage } from '../../api/session';
 import { toast } from '../../components/toast';
 import { JsonView } from '../../components/kit/JsonView';
+import { RunView } from '../agents/RunView';
 import { ExMethod } from './CaseBlocks';
 import { hashId } from './tabs/EarlyTabs';
 import type { CaseUi } from './CaseContext';
@@ -232,6 +234,32 @@ export function openSources(ui: CaseUi, c: CaseRec) {
     ),
   });
 }
+/** The agent's run on this case (plan 9, P9-2.6): the run view in a drawer. */
+export function openAgentRun(ui: CaseUi, c: Pick<CaseRec, 'id'>) {
+  ui.modal({ title: 'Agent run', sub: c.id, drawer: true, wide: true, body: <RunView caseId={c.id} />, foot: closeBtn(ui) });
+}
+function HasRun({ c, ui }: { c: Pick<CaseRec, 'id'>; ui: CaseUi }) {
+  let has = false;
+  try {
+    has = runTrace({ caseId: c.id }).run !== null;
+  } catch (e) {
+    if (!(e instanceof ApiError)) throw e; // a refusal: this person cannot read the run, so no button
+  }
+  if (!has) return null;
+  return (
+    <section className="panel frp" aria-label="Agent run">
+      <div className="ph"><h3>Agent run</h3></div>
+      <div className="pb">
+        <p className="note" style={{ marginTop: 0 }}>What the agents did on {c.id}: stages, calls and why anything was held.</p>
+        <button className="btn sm" onClick={() => openAgentRun(ui, c)}>View agent run</button>
+      </div>
+    </section>
+  );
+}
+/** The case Overview's "Agent run" panel: shown only when an agent has run on the case (the demo's cases have none). */
+export const AgentRunPanel = ({ c, ui }: { c: Pick<CaseRec, 'id'>; ui: CaseUi }) => (
+  <Suspense fallback={null}><HasRun c={c} ui={ui} /></Suspense>
+);
 const pct = (n: number, d = 0) => (n * 100).toFixed(d) + '%';
 function ModelRows() {
   let rows;

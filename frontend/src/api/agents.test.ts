@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const m = vi.hoisted(() => ({
   invoke: vi.fn(async (): Promise<unknown> => ({ ok: true, output: { id: 'x' }, key: null, action: 'x' })),
   cached: vi.fn(),
+  read: vi.fn(),
 }));
-vi.mock('./actions', () => ({ invoke: m.invoke }));
+vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, fitModel, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, setLlmModel, stageLabel, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, fitModel, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, stageLabel, startRun, updateAgent, useAgents, useModels,
+  type TraceSpan,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
 
@@ -83,5 +85,35 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
 
   it('an agent change or a decided proposal refreshes every page', () => {
     for (const id of ['agent.update', 'agent.register', 'agent.startRun', 'proposal.accept', 'proposal.reject', 'model.fit', 'model.propose', 'model.promote', 'llm.setModel']) expect(actionScope(id)).toBe('all');
+  });
+
+  it('the run view reads one run or the latest on a case, with its spans nested (plan 9 P9-2.6)', () => {
+    const sp = (span_id: string, parent_id: string | null, kind: TraceSpan['kind']): TraceSpan => ({
+      span_id, trace_id: 'AR-1', parent_id, name: kind, kind, started_at: '2026-11-25T10:00:00Z', ended_at: '2026-11-25T10:00:02Z', status: 'ok', attrs: {}, children: [],
+    });
+    m.read.mockReturnValue({ run: null, spans: [sp('a', null, 'run'), sp('b', 'a', 'model'), sp('c', 'b', 'tool')] });
+    const t = runTrace({ caseId: 'RT-1048' });
+    expect(m.read).toHaveBeenLastCalledWith('agent.runTrace', { case_id: 'RT-1048' });
+    expect(runTrace({ runId: 'AR-1' })).toBeTruthy();
+    expect(m.read).toHaveBeenLastCalledWith('agent.runTrace', { run_id: 'AR-1' });
+    expect(t.spans).toHaveLength(1);
+    expect(t.spans[0].children[0].children[0].kind).toBe('tool'); // the tool span sits under its model span
+  });
+
+  it('the span-tree helper nests a tool span under its model span, flat or already nested (plan 9 P9-2.6)', () => {
+    const mk = (span_id: string, parent_id: string | null, kind: TraceSpan['kind']): TraceSpan => ({
+      span_id, trace_id: 't', parent_id, name: kind, kind, started_at: '2026-11-25T10:00:00Z', ended_at: '2026-11-25T10:00:01Z', status: 'ok', attrs: {}, children: [],
+    });
+    const flat = [mk('m', null, 'model'), mk('t', 'm', 'tool'), mk('lost', 'gone', 'action')];
+    const tree = spanTree(flat);
+    expect(tree.map((s) => s.span_id)).toEqual(['m', 'lost']);
+    expect(tree[0].children.map((s) => s.kind)).toEqual(['tool']);
+    expect(spanTree(tree)).toEqual(tree);
+    expect(spanRows(tree).map((r) => [r.span.span_id, r.depth])).toEqual([['m', 0], ['t', 1], ['lost', 0]]);
+  });
+
+  it('Pause agent calls the journaled kill switch (plan 9 P9-2.6)', async () => {
+    await setAgentEnabled('stage-intake', false);
+    expect(last()).toEqual(['agent.setEnabled', { id: 'stage-intake', on: false }]);
   });
 });

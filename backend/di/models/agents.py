@@ -122,3 +122,24 @@ agent_run_message = Table(
     Column("model", Text),
     ts("at", now=True),
 )
+
+# --- 0039 trace spans of an agent run (plan 9, P9-2.6, I-12) -------------------------------------------------------------
+
+trace_span = Table(
+    "trace_span",
+    metadata,
+    Column("span_id", Text, primary_key=True),
+    Column("trace_id", Text, nullable=False),
+    Column("parent_id", Text),
+    Column("run_id", Text),
+    Column("name", Text, nullable=False),
+    Column("kind", Text, nullable=False),  # run, stage, model, tool, action
+    ts("started_at", nullable=False),
+    ts("ended_at", nullable=False),
+    Column("status", Text, nullable=False),  # ok, error
+    Column("attrs", JSONB, nullable=False, server_default="{}"),
+    CheckConstraint("kind IN ('run','stage','model','tool','action')", name="trace_span_kind"),
+    CheckConstraint("status IN ('ok','error')", name="trace_span_status"),
+    Index("ix_trace_span_run", "run_id", "started_at"),
+    Index("ix_trace_span_started", "started_at"),
+)

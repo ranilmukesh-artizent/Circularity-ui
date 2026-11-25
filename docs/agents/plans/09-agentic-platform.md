@@ -815,7 +815,7 @@ each story went.
 - [x] P9-2.3 LLM router with budgets and cooldowns
 - [x] P9-2.4 Hold policy with typed reasons in the pipeline
 - [x] P9-2.5 Standing policy approves within thresholds
-- [ ] P9-2.6 Run tracing and the agent run view
+- [x] P9-2.6 Run tracing and the agent run view
 - [ ] P9-2.7 Configuration agent drafts a pack change set
 - [ ] P9-2.8 Queue stage waits for the queue plan
 - [ ] P9-2.9 Calibrated stage confidence from outcomes

@@ -67,6 +67,11 @@ class Settings(BaseSettings):
     autopilot_agent: str = "coordinator"
     autopilot_account: str = ""
 
+    # P9-2.6: spans of agent runs (di/core/tracing.py): kept this many days (the daily `trace.prune` job), and prompts and
+    # tool inputs and outputs (attributes named `content.*`) are stored only when trace_content is true
+    trace_retention_days: int = 14
+    trace_content: bool = False
+
     @field_validator("jwt_secret", "webhook_secret", mode="before")
     @classmethod
     def _empty_is_the_dev_default(cls, v: object, info: ValidationInfo) -> object:

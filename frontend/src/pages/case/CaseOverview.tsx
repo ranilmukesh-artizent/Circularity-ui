@@ -10,6 +10,7 @@ import { Icon } from '../../components/Icon';
 import { Panel } from '../../components/kit/Panel';
 import { Photo, Pva, Tag } from './CaseBlocks';
 import { approveGuarded, caseActions, runNextStep } from './caseActions';
+import { AgentRunPanel } from './CaseDrawers';
 import { useCaseUi } from './CaseContext';
 import { custodyLines, recordMatchLine } from './custody';
 
@@ -112,6 +113,7 @@ export function Overview({ c }: { c: CaseRec }) {
               <div className="pb"><p className="note" style={{ margin: 0 }}>{agents}</p></div>
             </section>
           )}
+          <AgentRunPanel c={c} ui={ui} />
           {(matchLine || trail.length > 0) && (
             <section className="panel frp" aria-label="System of record and custody">
               <div className="ph"><h3>Custody</h3></div>
