@@ -45,7 +45,8 @@ from sqlalchemy.orm import Session
 
 import di.repositories.cases  # registers case.evidence (the worker imports only what its jobs need)
 import di.services.actions.decisions  # registers evidence.request, case.reevaluate, decision.submit
-import di.services.actions.execution  # noqa: F401 - registers instruction.resend
+import di.services.actions.execution  # registers instruction.resend
+import di.services.actions.lifecycle  # noqa: F401 - registers transit.flagDelay (P9-2.20)
 from di.core import jobs, policy, tracing
 from di.core.auth import load_context
 from di.core.config import get_settings
@@ -53,8 +54,8 @@ from di.repositories import stage_outcomes
 from di.repositories.live_rules import live_pack
 from di.services.actions.fraud import review_case, triage_case  # also registers fraud.hold in the worker
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
-from di.services.agents import calibrate, chain, limits, playbook_versions, registry, stage_reasoner
-from di.services.agents.forbidden import FORBIDDEN_ACTIONS
+from di.services.agents import calibrate, chain, lifecycle_evidence, limits, playbook_versions, registry, stage_reasoner
+from di.services.agents.forbidden import forbidden
 from di.services.agents.loop import AgentLoop, LoopSpec
 from di.services.agents.playbooks import case_autopilot as autopilot
 from di.services.agents.playbooks import stage_chain
@@ -62,7 +63,7 @@ from di.services.agents.playbooks import stage_reasoner as stage_playbook
 from di.services.agents.playbooks.case_autopilot import Done, Halt, Skip, Wait
 from di.services.agents.pydantic_ai_loop import PydanticAILoop
 from di.services.agents.stage_context import STAGE_IDS, StageContext
-from di.services.agents.stages import CHAIN, disposition
+from di.services.agents.stages import CHAIN, disposition, outcome
 from di.services.cases import store
 from di.services.llm import router
 from di.services.modeler.evidence import evidence_of
@@ -72,7 +73,7 @@ PLAYBOOKS = {autopilot.NAME: stage_chain, stage_chain.NAME: stage_chain}  # case
 JOB = "agent.step"
 QUEUE_JOB = "queue.plan"  # P9-2.8: plans a pack's open queue of an org; its end wakes the runs waiting `queue`
 _REACHED = (*autopilot.ACTIONS, *stage_chain.ACTIONS, *(a for m in CHAIN for a in m.ACTIONS))
-_FORBIDDEN = [a for a in _REACHED if a.startswith(FORBIDDEN_ACTIONS)]
+_FORBIDDEN = [a for a in _REACHED if forbidden(a)]
 if _FORBIDDEN:
     raise RuntimeError(f"playbooks reach actions no agent may run: {_FORBIDDEN}")
 READ_STATUSES = ("done", "waiting", "held")  # the stage records a stage's model reads (P9-2.18)
@@ -164,15 +165,16 @@ def _save(s: Session, run: dict, status: str, n: int, st: dict[str, Any]) -> str
     return status
 
 
-def _log_step(s: Session, run_id: str, action: str, i: dict, out: dict) -> None:
-    """One call of the run, numbered from 1 (agent_run_step.n)."""
+def _log_step(s: Session, run_id: str, action: str, i: dict, out: dict, stage: str | None = None) -> None:
+    """One call of the run, numbered from 1 (agent_run_step.n). A call of a stage keeps the stage id in its output (`stage`),
+    so the journey (P9-2.21) shows each call under its own stage."""
     s.execute(
         text(
             "INSERT INTO agent_run_step (run_id, n, tool, input, output) "
             "VALUES (:r, (SELECT coalesce(max(n), 0) + 1 FROM agent_run_step WHERE run_id = :r), :t, "
             "CAST(:i AS jsonb), CAST(:o AS jsonb))"
         ),
-        {"r": run_id, "t": action, "i": json.dumps(i), "o": json.dumps(out, default=str)},
+        {"r": run_id, "t": action, "i": json.dumps(i), "o": json.dumps(out | ({"stage": stage} if stage else {}), default=str)},
     )
 
 
@@ -248,8 +250,9 @@ def stage_confidence(ctx_stage: StageContext, case: dict) -> StageContext:
       which would hold every call at a threshold; it has no confidence, so None here.
     - intake: its confidence is how complete the evidence is, and its one write (`evidence.request`) is the remedy for a low
       value, so holding it for that would stop the fix; None here.
+    - lease end, return authorised, transit (P9-2.20): the same, their writes ask for the missing record or flag a late one.
     The industrial demo's cases and RT-1048 are therefore never held for a confidence they do not have."""
-    if (ctx_stage.stage == "condition" and evidence_of(case, "grade") is None) or ctx_stage.stage == "intake":
+    if (ctx_stage.stage == "condition" and evidence_of(case, "grade") is None) or ctx_stage.stage in ("intake", *chain.LIFECYCLE):
         ctx_stage.confidence = None
     return ctx_stage
 
@@ -307,7 +310,7 @@ def step(s: Session, run_id: str) -> str:
 
 def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, case: dict, stage: int, sub: int) -> str:
     """The step of a `stage_chain` run once its stage is known (inside the stage's span)."""
-    run_id = run["id"]
+    run_id, sid = run["id"], STAGE_IDS[stage]
     st, n = dict(run["state"] or {}), int(run["step"])
     st |= {"stage": stage, "sub": sub, "legacy": run["playbook"] == autopilot.NAME}
     st["failed_instruction"] = _failed_instruction(s, case["id"])
@@ -315,8 +318,10 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
     if (floor := chain.pack_rul_min(pack)) is not None:
         st["rul_min"] = floor
     st["queue_planner"] = disposition.planner_name(pack)  # the disposition stage waits for the queue plan (P9-2.8)
-    if stage == 0 and pack.fraud is not None:  # the fraud triage of the intake stage (P9-2.11): intake holds on it
+    if sid == "intake" and pack.fraud is not None:  # the fraud triage of the intake stage (P9-2.11): intake holds on it
         st["fraud"] = review_case(s, ctx, case, triage_case(s, case, pack), st).as_dict()  # the model may add a hold (P9-2.19)
+    if sid in chain.LIFECYCLE:  # the lease, return and shipment records of the asset (P9-2.20); none: nothing changes
+        lifecycle_evidence.refresh(s, case, st)
     nxt = stage_chain.next_step(stage, sub, st, case)
     if nxt is None:
         return _save(s, run, "done", n, st | {"note": "playbook finished"})
@@ -344,7 +349,7 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
     ctx.preparer = _preparer(run, agent, defn)
     ctx.stage = calibrated(s, stage_confidence(chain.stage_context(defn, CHAIN[stage], st, case), case), pack.key)
     r = invoke(nxt.action, nxt.input, ctx)
-    _log_step(s, run_id, nxt.action, nxt.input, r)
+    _log_step(s, run_id, nxt.action, nxt.input, r, sid)
     if r["ok"] and isinstance(r["output"], dict) and "held" in r["output"]:
         stage_chain.advance_step(st, stage, sub)
         _stage_record(s, run, stage, defn, st, case, "held", r["output"].get("reasons"))
@@ -500,6 +505,12 @@ def _llm_step(s: Session, run: dict, ctx: CallContext) -> str:
         return _save(s, run, "waiting", n + 1, st | extra)
     out = res.output.model_dump(mode="json") if res.output is not None else None
     return _save(s, run, "done", n + 1, st | {"output": out, "note": "playbook finished"})
+
+
+@after("outcome.confirm")
+def _confirmed(i: dict[str, Any], out: dict[str, Any], ctx: CallContext) -> None:  # noqa: ARG001 - hooks take (input, output, ctx)
+    """Finance confirmed the outcome (P9-2.21): the runs waiting in the outcome stage run on."""
+    resume_waiting(ctx.session, str(i["case_id"]), outcome.WAITING)
 
 
 @after("decision.approve")

@@ -1,7 +1,9 @@
 """The LLM router (plan 9, P9-2.3; registry entry I-9): which language model a caller may use now.
 
     chain_for(s, role, needs_tools=False) -> [ModelRef]   enabled models of the role, not cooling down, with budget left
-                                                          in the minute and the day, by priority (table llm_model)
+                                                          in the minute and the day, whose eval score has not fallen by
+                                                          more than 10 points (P9-2.15), by priority (table llm_model)
+    eval_candidates(s) -> [ModelRef]                      the enabled provider models with a key (tests/evals/live.py)
     pick_model(s, run_id, role="agent") -> ModelRef | None  the run's sticky model, else the first of the chain
     reserve(s, model_id, est_tokens) -> bool              one atomic statement per window; False leaves the model out
                                                           of the chain for the rest of that window
@@ -47,6 +49,7 @@ TOOL_ROLES = ("agent", "stage")
 SEED_ID = "groq-default"  # the row of migration 0036; GROQ_MODEL still overrides its model at run time
 DEFAULT_COOLDOWN = 60.0
 DEFAULT_MAX_TOKENS = 1024
+EVAL_DROP = 10  # a model whose eval score fell by more than this many points since the last run leaves the chain (P9-2.15)
 DAY_TOKEN_CAP = 2_000_000_000  # the day window limits requests only
 TEST_MODELS: dict[str, Model] = {}  # provider `test`: row id -> the FunctionModel a test registered
 
@@ -80,6 +83,7 @@ WHERE m.enabled AND (:role = ANY(m.roles) OR (:role = 'stage' AND 'agent' = ANY(
   AND (m.cooldown_until IS NULL OR m.cooldown_until <= now())
   AND coalesce(bm.used_requests, 0) < m.rpm AND coalesce(bm.used_tokens, 0) < m.tpm
   AND coalesce(bd.used_requests, 0) < m.rpd
+  AND (m.eval_score IS NULL OR m.eval_prev IS NULL OR m.eval_prev - m.eval_score <= :drop)
 ORDER BY m.priority, m.id
 """
 
@@ -96,7 +100,19 @@ def _usable(ref: ModelRef) -> bool:
 
 
 def chain_for(s: Session, role: Role | str, *, needs_tools: bool = False) -> list[ModelRef]:
-    rows = s.execute(text(_CHAIN_SQL), {"role": role, "tools": needs_tools or role in TOOL_ROLES}).all()
+    rows = s.execute(text(_CHAIN_SQL), {"role": role, "tools": needs_tools or role in TOOL_ROLES, "drop": EVAL_DROP}).all()
+    return [r for r in map(_ref, rows) if _usable(r)]
+
+
+def eval_candidates(s: Session) -> list[ModelRef]:
+    """The enabled provider models that have a key here, whatever their budget, cooldown or last eval score (tests.evals.live
+    scores each one; a model that was dropped can win its place back)."""
+    rows = s.execute(
+        text(
+            "SELECT id, provider, model, key_ref, request_timeout FROM llm_model "
+            "WHERE enabled AND provider <> 'test' ORDER BY priority, id"
+        )
+    ).all()
     return [r for r in map(_ref, rows) if _usable(r)]
 
 

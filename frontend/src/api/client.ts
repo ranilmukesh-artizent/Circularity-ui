@@ -110,8 +110,11 @@ export async function http<T>(path: string, init: { method?: string; body?: unkn
 }
 
 /** Sign in with an ID or work email and a password. Throws ApiError with the server's message on a refusal. */
-export async function login(username: string, password: string): Promise<Me> {
-  const out = await http<Me & { access_token: string }>('/api/auth/login', { method: 'POST', body: { username, password } });
+export const login = (username: string, password: string): Promise<Me> => openSession('/api/auth/login', { username, password });
+
+/** Start the session from a sign-in answer ({access_token, ...Me}): the password form, or a single sign-on code (P9-8.9). */
+export async function openSession(path: string, body: unknown): Promise<Me> {
+  const out = await http<Me & { access_token: string }>(path, { method: 'POST', body });
   writeToken(out.access_token);
   me = { account: out.account, description: out.description, home: out.home, permissions: out.permissions, pages: out.pages,
          tenants: out.tenants, tenant_scoped: out.tenant_scoped, warehouse: out.warehouse, grants: out.grants }; // prettier-ignore

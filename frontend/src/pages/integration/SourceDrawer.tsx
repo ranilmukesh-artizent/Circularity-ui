@@ -1,7 +1,7 @@
 /* The source drawer (the demo's sdOpen / sdRender with the Connection Fabric tabs): Overview, Configuration, Data Mapping,
    Sync & History, Security, Comments for a connected system; Connection, Operations, Field mapping for a new one. */
 import { Suspense, useMemo, useState, type ReactNode } from 'react';
-import { connectionApprovals, promoteConnection, requestOwner } from '../../api/connections';
+import { connectionApprovals, discoverConnection, promoteConnection, requestOwner, type ConnectionSample } from '../../api/connections';
 import { fmtDateYear } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {
@@ -18,6 +18,7 @@ import { Delta, pctDelta } from '../../components/kit/Delta';
 import { IconTile } from '../../components/kit/IconTile';
 import { Segmented } from '../../components/kit/Segmented';
 import { StatusChip } from '../../components/kit/StatusChip';
+import { MappingSuggestions } from './MappingSuggestions';
 import { VendorLogo } from '../../components/kit/VendorLogo';
 import { TestSteps } from './ConnectionTests';
 import { canMgr, NOMGR, useInt } from './FabricContext';
@@ -205,7 +206,7 @@ export function SourceDrawer({ at, onClose, onOpen }: { at: DrawerRef; onClose: 
   else if (tab === 'ops') body = opsTab;
   else if (tab === 'map') body = <MapTab s={s} dirty={dirty} d={d} maps={maps} errs={errs} onChange={(m, k) => { setMaps(m); if (k) clearErr(k, 'maps'); touch(); }} onReverted={(m) => { setMaps(m.map((r) => r.slice())); }} />;
   else if (tab === 'cm' && s) body = <Comments k={'src:' + s.id} label="source" />;
-  else if (tab === 'ov' && s) body = <OvTab s={s} use={use} setUse={setUse} />;
+  else if (tab === 'ov' && s) body = <OvTab s={s} use={use} setUse={setUse} onSuggest={() => setTab('map')} />;
   else if (tab === 'sec' && s) body = <SecTab s={s} />;
   else if (s) body = <HistTab s={s} />;
 
@@ -494,6 +495,7 @@ function MapTab({ s, dirty, d, maps, errs: e, onChange, onReverted }: {
         Source field → canonical field. Units, currency, timestamps and status codes are normalised; source values and provenance are retained. Target model: <b>{srcTypes()[d.type].target}</b>.
       </p>
       {s && <MapVersionBar s={s} maps={maps} dirty={dirty} onReverted={onReverted} />}
+      {s && <MappingSuggestions sourceId={s.id} />}
       <datalist id="canonFields">{opts.map((o) => <option key={o} value={o} />)}</datalist>
       {maps.length ? (
         <div className="tw">
@@ -643,7 +645,7 @@ export function UsageChart({ s, n }: { s: Source; n: number }) {
   );
 }
 
-function OvTab({ s, use, setUse }: { s: Source; use: string; setUse: (v: string) => void }) {
+function OvTab({ s, use, setUse, onSuggest }: { s: Source; use: string; setUse: (v: string) => void; onSuggest: () => void }) {
   const ui = useInt();
   const n = +use, a = series(s, n), rec = sum(a), calls = Math.round(rec * 2.4), pr = sum(series(s, n * 2).slice(0, n));
   const uses = wfUsing(s.id), wr = (s.write || []).length, CM = connMethods();
@@ -661,7 +663,7 @@ function OvTab({ s, use, setUse }: { s: Source; use: string; setUse: (v: string)
         <dt>Connected on</dt><dd>{fmtDateYear(new Date(s.audit && s.audit[0] ? s.audit[0].ts : s.updatedAt))}</dd>
         <dt>Last sync</dt><dd>{srcAgeText(s)}</dd>
       </dl>
-      {canMgr() && <Suspense fallback={null}><ConnectionCard s={s} /></Suspense>}
+      {canMgr() && <Suspense fallback={null}><ConnectionCard s={s} onSuggest={onSuggest} /></Suspense>}
       <h4>Usage and performance</h4>
       <div className="frusg"><Segmented items={[['7', '7D'], ['30', '30D'], ['90', '90D']]} cur={use} onPick={setUse} label="Usage period" /></div>
       <div className="frust">
@@ -693,10 +695,12 @@ function OvTab({ s, use, setUse }: { s: Source; use: string; setUse: (v: string)
  *  access (read, then read and write), its system owner and the owner's approvals. The owner approves in My work; the person
  *  who asked cannot. Nothing shows for a source that was not made from the registry and runs in production. The credential
  *  for production is a password field, cleared after the call and never shown again. */
-function ConnectionCard({ s }: { s: Source }) {
+function ConnectionCard({ s, onSuggest }: { s: Source; onSuggest: () => void }) {
   const st = connectionApprovals(s.id);
   const act = useAction();
   const [secret, setSecret] = useState('');
+  const [sample, setSample] = useState<ConnectionSample | null>(null);
+  const readSample = () => void act.run(() => discoverConnection(s.id)).then((r) => r.ok && setSample(r.output));
   if (!st.registry_id && st.environment !== 'test') return null;
   const asked = st.approvals.find((a) => a.status === 'pending');
   const latest = st.approvals[0];
@@ -723,6 +727,20 @@ function ConnectionCard({ s }: { s: Source }) {
         {st.environment === 'test' && !asked && !prodOk && <button className="btn sm" disabled={act.pending} onClick={() => ask('read')}>Ask the owner to approve</button>}
         {st.environment === 'production' && st.access === 'read' && !asked && <button className="btn sm" disabled={act.pending} onClick={() => ask('read_write')}>Ask for write access</button>}
       </div>
+      {st.environment === 'test' && (
+        <div style={{ marginTop: 8 }} aria-label="Sample from the test connection">
+          <div className="row">
+            <button className="btn sm" disabled={act.pending} onClick={readSample}>Read a sample (up to 500 records per resource)</button>
+          </div>
+          {act.pending && <div className="note"><span className="spin" /> Reading the sample…</div>}
+          {sample && (
+            <div className="note" role="status">
+              {Object.entries(sample.counts).map(([r, n]) => `${r}: ${n}${sample.spread[r] ? ' (newest and spread over the window)' : ''}`).join(' · ') || 'The connection has no resources.'}
+              {' '}<button className="btn sm" onClick={onSuggest}>Suggest mappings</button>
+            </div>
+          )}
+        </div>
+      )}
       {st.environment === 'test' && prodOk && (
         <div className="row" style={{ marginTop: 8 }}>
           <input type="password" className="sel" aria-label="Production credential" placeholder="Production credential" autoComplete="off" value={secret} onChange={(e) => setSecret(e.target.value)} />

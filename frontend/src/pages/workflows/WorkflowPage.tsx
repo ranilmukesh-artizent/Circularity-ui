@@ -6,16 +6,18 @@ import { useBackend } from '../../api/useBackend';
 import { can } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import {
-  ago, analyze, hashId, history, mergeChecks, nowMs, NOWF, publishedVersion, publishWorkflow, republishVer, runCounts, runErrors, runFigures,
+  ago, hashId, history, mergeChecks, nowMs, NOWF, publishedVersion, publishWorkflow, republishVer, runCounts, runErrors, runFigures,
   runFromLast, runOrder, runQuality, saveWorkflow, savedOf, serverChecks, setWorkflowStatus, type Check, sourceCategoryLabel,
-  stepInfo, systemOf, templateOf, testRunWorkflow, trigText, usedBy, validate, wfStat, workflow, WF_H, WF_W, WF_WH, worldWidth, type TestRun, type Trigger, type Workflow,
+  stepInfo, systemOf, templateOf, testRunWorkflow, trigText, usedBy, validate, wfStat, workflow, WF_H, WF_W, type TestRun, type Trigger, type Workflow,
 } from '../../api/workflows';
 import { Icon } from '../../components/Icon';
+import type { GraphApi } from '../../components/graph/GraphView';
+import { autoLayout as layout } from '../../components/graph/layout';
 import { openAsk } from '../../utils/askBus';
 import { toast } from '../../components/toast';
 import { refused, useAction } from '../../hooks/useAction';
 import { draftOf, edit, reload, undoRedo, useDrafts, type Draft } from './draftStore';
-import { CanvasView, canvasOps, ChecksPanel, FIXMSG, Inspector, Palette, TaskInstances, type Sel } from './Canvas';
+import { CanvasView, canvasOps, ChecksPanel, Inspector, Palette, TaskInstances, type Sel } from './Canvas';
 import { IconTile } from '../../components/kit/IconTile';
 import { Panel } from '../../components/kit/Panel';
 import { Ring } from '../../components/kit/Ring';
@@ -32,7 +34,6 @@ type Tab = 'studio' | 'settings' | 'history' | 'docs';
 type View = 'overview' | 'details' | 'flow';
 type ModalState = { k: 'del' } | { k: 'run'; run: string } | { k: 'failed' } | null;
 const TRIGS: [string, string][] = [['schedule', 'On a schedule'], ['event', 'On event'], ['approval', 'On approval'], ['file', 'On file arrival'], ['case', 'On case request'], ['manual', 'Manual only']];
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const stamp = (ts: number) => new Date(ts).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 /** The demo keeps the open tab across workflows (S.frWfTab) and the canvas view (S.frWfView). */
 const keptView = sessionScoped<View>(() => 'details');
@@ -56,14 +57,13 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   const mgr = can('manageWorkflows');
   const [tab, setTab] = useState<Tab>('studio');
   const [sel, setSel] = useState<Sel>(null);
-  const [z, setZ] = useState(0.72);
   const [view, setView0] = useState<View>(keptView.current);
   const setView = (v: View) => { keptView.current = v; setView0(v); };
   const [mini, setMini] = useState(true);
   const [wide, setWide] = useState(false);
   const [modal, setModal] = useState<ModalState>(null);
   const [ghost, setGhost] = useState<{ label: string; x: number; y: number } | null>(null);
-  const viewRef = useRef<HTMLDivElement>(null);
+  const apiRef = useRef<GraphApi | null>(null);
   const checksRef = useRef<HTMLDivElement>(null);
 
   // ---- the test run, painted on the canvas; starts from the workflow's last real run. A test run is a dry run of the
@@ -108,7 +108,6 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   // a test run carries the records that really went in and out of each step
   const counts = run?.counts ?? runCounts(w.id, g, run ? run.states : null);
   const ops = canvasOps(d, w.kind, setSel, clearRun);
-  const WW = worldWidth(w.kind);
 
   /** Run the draft dry on the server; `approved` continues past Human approval (a dry run stops there: held). */
   async function dryRun(approved: boolean, prev?: TestRun) {
@@ -221,58 +220,27 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
   }
 
   // ---- canvas tools
-  // stable for a workflow (Loaded is keyed by id, so WW never changes in one instance): the fit below runs only when
-  // the canvas is expanded, never on a later render, so a manual zoom stays
-  const zoom = useCallback((a: number) => {
-    if (a === 0) { const v = viewRef.current; setZ(clamp(Math.floor(((v ? v.clientWidth : 1000) - 8) / WW * 100) / 100, 0.5, 1.2)); }
-    else setZ((x) => clamp(Math.round((x + a * 0.1) * 10) / 10, 0.5, 1.4));
-  }, [WW]);
-  useEffect(() => { if (wide) zoom(0); }, [wide, zoom]);
+  /** dagre lays every step out left to right (components/graph/layout.ts), then the view fits. */
   function autoLayout() {
-    const A = analyze(g), dep: Record<string, number> = {}, lay: Record<number, string[]> = {};
-    runOrder(g).forEach((x) => (dep[x] = Math.max(0, ...A.pred[x].map((p) => (dep[p] || 0) + 1))));
-    g.nodes.forEach((n) => (lay[dep[n.id] ?? 0] ??= []).push(n.id));
-    const cols = Object.keys(lay).length, cw = Math.min(206, Math.floor((WW - WF_W - 48) / Math.max(1, cols - 1)));
+    const pos = layout(g.nodes.map((n) => ({ id: n.id, w: WF_W, h: WF_H })), g.edges);
     edit(w.id, (dd) => {
-      Object.entries(lay).forEach(([k, l]) => l.forEach((nid, i) => {
-        const n = dd.graph.nodes.find((x) => x.id === nid)!;
-        n.x = 24 + +k * cw;
-        n.y = clamp(Math.round((WF_WH / 2 - WF_H / 2 + (i - (l.length - 1) / 2) * 150) / 8) * 8, 8, WF_WH - WF_H - 8);
-      }));
+      dd.graph.nodes.forEach((n) => { const p = pos[n.id]; if (p) { n.x = Math.max(0, Math.round(p.x / 8) * 8); n.y = Math.max(0, Math.round(p.y / 8) * 8); } });
     }, { track: true });
     clearRun();
     toast('Steps laid out left to right in run order.');
+    setTimeout(() => apiRef.current?.fit(), 50);
   }
   function pick(nid: string) {
     const n = g.nodes.find((x) => x.id === nid);
     if (!n) return;
     setSel({ t: 'n', id: nid });
-    const v = viewRef.current;
-    if (v) { v.scrollTo({ left: Math.max(0, n.x * z - 80), top: Math.max(0, n.y * z - 120), behavior: 'smooth' }); v.scrollIntoView({ block: 'nearest' }); }
+    apiRef.current?.center(n.x + WF_W / 2, n.y + WF_H / 2);
+    document.getElementById('wfView')?.scrollIntoView({ block: 'nearest' });
   }
   function toggleFail(nid: string) {
     edit(w.id, (dd) => { const n = dd.graph.nodes.find((x) => x.id === nid); if (n) n.fail = !n.fail; }, { dirty: d.dirty });
     clearRun();
   }
-
-  // ---- keyboard: Delete removes, arrows move (Shift for 40 px)
-  useEffect(() => {
-    function key(e: KeyboardEvent) {
-      if (tab !== 'studio' || !sel || (e.target as Element).closest?.('input,select,textarea')) return;
-      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); ops.del(sel); return; }
-      const m = ({ ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] } as Record<string, number[]>)[e.key];
-      if (m && sel.t === 'n') {
-        const n = g.nodes.find((x) => x.id === sel.id);
-        if (!n) return;
-        e.preventDefault();
-        if (n.k === 'fixed') return toast(FIXMSG);
-        const s = e.shiftKey ? 40 : 8;
-        edit(w.id, (dd) => { const x = dd.graph.nodes.find((y) => y.id === n.id)!; x.x = clamp(x.x + m[0] * s, 0, WW - WF_W); x.y = clamp(x.y + m[1] * s, 0, WF_WH - WF_H); });
-      }
-    }
-    document.addEventListener('keydown', key);
-    return () => document.removeEventListener('keydown', key);
-  });
 
   // ---- palette: drag onto the canvas, or click / Enter to add at a free spot
   function palDown(e: RPointerEvent, key: string, label: string) {
@@ -291,11 +259,11 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
       document.removeEventListener('pointercancel', cancel);
       setGhost(null);
       if (!moved) return ops.add(key);
-      const v = viewRef.current;
-      if (!v) return;
-      const r = v.getBoundingClientRect();
-      if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom)
-        ops.add(key, (ev.clientX - r.left + v.scrollLeft) / z - WF_W / 2, (ev.clientY - r.top + v.scrollTop) / z - WF_H / 2);
+      const api = apiRef.current, r = api?.bounds();
+      if (api && r && ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
+        const p = api.screenToFlow({ x: ev.clientX, y: ev.clientY });
+        ops.add(key, p.x - WF_W / 2, p.y - WF_H / 2);
+      }
     };
     const cancel = () => {
       document.removeEventListener('pointermove', move);
@@ -419,10 +387,6 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
 
   const toolbar = (
     <div className="frcvt" role="toolbar" aria-label="Canvas tools">
-      <div className="wfzoom" role="group" aria-label="Zoom">
-        <button aria-label="Zoom out" onClick={() => zoom(-1)}><Icon name="zout" /></button><span id="wfZ">{Math.round(z * 100)}%</span>
-        <button aria-label="Zoom in" onClick={() => zoom(1)}><Icon name="zin" /></button><button aria-label="Fit to width" onClick={() => zoom(0)}><Icon name="max" /></button>
-      </div>
       <button className="iconbtn sm" id="frUndo" aria-label="Undo" disabled={d.hist.i <= 0} onClick={() => { undoRedo(w.id, -1); clearRun(); }}><Icon name="undo" /></button>
       <button className="iconbtn sm" id="frRedo" aria-label="Redo" disabled={d.hist.i >= d.hist.s.length - 1} onClick={() => { undoRedo(w.id, 1); clearRun(); }}><Icon name="redo" /></button>
       <button className="btn sm" onClick={autoLayout}>Auto layout</button>
@@ -441,8 +405,8 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
       <div className={'frwfg' + (wide ? ' cxwide' : '')}>
         <div className={'wf frwf' + (hasInsp ? '' : ' noinsp') + (phone ? ' ro' : '')} data-view={view}>
           <Palette w={w} onDown={palDown} onKeyAdd={(k) => ops.add(k)} />
-          <CanvasView w={w} d={d} z={z} sel={sel} run={run} checks={checks} counts={counts} flow={view === 'flow'} mini={mini}
-            onSel={setSel} ops={ops} changed={clearRun} viewRef={viewRef} toolbar={toolbar} />
+          <CanvasView w={w} d={d} sel={sel} run={run} checks={checks} counts={counts} flow={view === 'flow'} mini={mini} readOnly={phone}
+            onSel={setSel} ops={ops} changed={clearRun} apiRef={apiRef} toolbar={toolbar} />
           <Inspector d={d} sel={sel} checks={checks} ops={ops} onFail={toggleFail} />
         </div>
         <aside className="frwfr"><Details w={w} d={d} mgr={mgr} onDup={dup} onDelete={() => setModal({ k: 'del' })} /></aside>

@@ -20,6 +20,7 @@ Every change is logged to the event log as the demo's rbLog does.
 """
 
 import math
+import re
 from typing import Any
 
 from sqlalchemy import text
@@ -28,9 +29,9 @@ from di.core import policy, state
 from di.core.auth import LIVE_GRANT, grant_end
 from di.repositories import access as access_repo
 from di.repositories import constants as C
-from di.repositories.common import REQ_SCOPE, REQ_SEQ_START, can, money, requests
+from di.repositories.common import REQ_SCOPE, REQ_SEQ_START, can, hash_id, money, requests
 from di.services.actions import agents
-from di.services.actions.decisions import NOW, rb_log
+from di.services.actions.decisions import NOW, push_event, rb_log
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
 from di.services.agents import registry as agent_registry
@@ -579,3 +580,54 @@ def set_run_limits(i: dict[str, Any], ctx: CallContext):
     note = f"{i['actions']} actions per run · {i['bulk']} items per bulk plan"
     rb_log(ctx, "agent.limits.changed", note, "access.setRunLimits")
     return lim
+
+
+# ---------------------------------------------------------------- a joiner provisioned from a directory group (P9-8.9)
+# Declared beside the catalog's actions. Risk "system": the pipeline refuses people and agents (step 3), so only the
+# sign-in service (di.services.oidc) runs it, as the system actor; "access." is forbidden to agents as well.
+ACTIONS.setdefault(
+    "access.provisionUser",
+    ActionDef(id="access.provisionUser", title="Provision a directory user", verb="provision a directory user", risk="system",
+              desc="Create the account of a person who signed in through the organisation's directory, from their group.",
+              perm=None, scope="none",
+              input={"email": _STR, "name": _STR, "role": _STR, "via_group": _STR, "tenant": {"req": False, "t": "string"},
+                     "site": {"req": False, "t": "string"}, "warehouse": {"req": False, "t": "string"}}),
+)  # fmt: skip
+
+
+def _provisioned_id(email: str) -> str:
+    return "sso-" + re.sub(r"[^a-z0-9]+", "-", email.lower()).strip("-")
+
+
+@guard("access.provisionUser")
+def provision_user_guard(i: dict[str, Any], ctx: CallContext):
+    if i["role"] not in policy.idp_roles():
+        return "validation_error", "A directory group never gives this role."
+    if policy.account(_provisioned_id(i["email"]), ctx.actor.ctx) or any(
+        str(u["email"]).lower() == i["email"].lower() for u in _idp_users(ctx)
+    ):
+        return "conflict", "That person already has an account."
+    return None
+
+
+@implement("access.provisionUser", idem=lambda i, ctx: f"idp-prov:{i['email'].lower()}")  # noqa: ARG005 - idem keys take (input, ctx)
+def provision_user(i: dict[str, Any], ctx: CallContext):
+    acct = policy.Account(
+        id=_provisioned_id(i["email"]), role=i["role"], label=i["name"], tenant=i.get("tenant"), site=i.get("site"),
+        warehouse=i.get("warehouse"),
+    )  # fmt: skip
+    state.add(ctx.session, "accounts", acct.id, dict(acct.__dict__))
+    state.add(ctx.session, "idp_users", acct.id, {"id": acct.id, "email": i["email"].lower(), "acct": acct.id})
+    note = (
+        f"{i['email'].lower()} provisioned as {acct.role}"
+        + (f" · {acct.tenant}" if acct.tenant else "")
+        + f" from {i['via_group']}"
+    )
+    push_event(
+        ctx,
+        {"dir": "in", "type": "user.provisioned", "caseId": None, "decisionId": None, "approval": None, "ver": None,
+         "dest": "Circularity · access control", "ack": "acknowledged", "note": note, "by": "directory sync", "ts": NOW,
+         "key": "acc-" + hash_id("user.provisioned" + note)[:6].lower()},
+        "access.provisionUser",
+    )  # fmt: skip
+    return {"account_id": acct.id, "role": acct.role}

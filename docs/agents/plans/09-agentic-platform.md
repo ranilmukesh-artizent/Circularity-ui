@@ -847,13 +847,14 @@ each story went.
 - [x] P9-2.12 Richer tool schemas and a find tools read
 - [x] P9-2.13 MCP tools generated from the action catalogue
 - [x] P9-2.14 OAuth protected resource metadata for MCP
-- [ ] P9-2.15 Agent evals in CI with an injection corpus
+- [x] P9-2.15 Agent evals in CI with an injection corpus
 - [ ] P9-2.16 Phase 2 demo smoke script
 - [x] P9-2.18 Stage agents reason with the model
 - [x] P9-2.19 Exception assistant and fraud review drafted by the model
-- [ ] P9-2.20 Lease end, return authorised and transit stage agents
-- [ ] P9-2.21 Ten-stage journey on the case run view
+- [x] P9-2.20 Lease end, return authorised and transit stage agents
+- [x] P9-2.21 Ten-stage journey on the case run view
 - [x] P9-2.22 Gates before the queue plan in decide_case
+- [x] P9-2.23 Ask reads workflows and their runs
 - [ ] P9-2.17 Phase 2 gate
 - [x] P9-3.1 Fleet contract and repair log mocks with adapters
 - [x] P9-3.2 Recall, telematics and parts mocks with adapters
@@ -930,18 +931,18 @@ each story went.
 - [ ] P9-7.8 Phase 7 demo smoke script
 - [ ] P9-7.9 Phase 7 gate
 - [x] P9-8.1 Adapter registry with environments and owner approval
-- [ ] P9-8.2 Field mapping suggestions with calibrated confidence
-- [ ] P9-8.3 Discovery samples 500 records from the test connection
+- [x] P9-8.2 Field mapping suggestions with calibrated confidence
+- [x] P9-8.3 Discovery samples 500 records from the test connection
 - [ ] P9-8.4 Five mapping choices with ask the owner
-- [ ] P9-8.5 Configured adapter reads dlt-style paging and selectors
+- [x] P9-8.5 Configured adapter reads dlt-style paging and selectors
 - [ ] P9-8.6 Connector from an API spec through an OpenAPI importer
 - [ ] P9-8.7 Agent drafts an adapter spec held for a person
 - [x] P9-8.8 Directory mock with OIDC and a users API in source-sim
-- [ ] P9-8.9 OIDC sign-in with authlib beside the demo sign-in
+- [x] P9-8.9 OIDC sign-in with authlib beside the demo sign-in
 - [ ] P9-8.10 Directory groups to roles as data with test a user
 - [ ] P9-8.11 SCIM provisioning and directory sync for joiners
 - [x] P9-8.12 Workflow author from a sentence with repair rounds
-- [ ] P9-8.13 Studio canvas on xyflow with dagre layout
+- [x] P9-8.13 Studio canvas on xyflow with dagre layout
 - [ ] P9-8.14 Modeler canvas on xyflow
 - [ ] P9-8.15 Per-node input and output samples with pinned data
 - [ ] P9-8.16 Decision table editor in the Modeler
@@ -4499,6 +4500,52 @@ reasoning is not shown; the reading's typed fields are.
 - `test_industrial_decide_unchanged`: RT-1048 and a book case give the same result as before.
 - Also run: `tests/test_decide_case.py tests/test_queue_planner.py tests/test_queue_stage.py
   tests/test_milestone_rt1048.py tests/test_valuer_tool_fleet.py`, and the parity files.
+
+#### P9-2.23 Ask reads workflows and their runs
+**Stories:** user review 25 Nov 2026: on Workflow Studio, Ask was asked why WF-116 failed in a run; it called
+`get_case` with WF-116, got `not_found` twice and answered "you don't have access". Ask had no tool that reads a
+workflow or a run. **Size:** M. **Depends on:** P9-2.13.
+
+**Files:**
+- Modify `backend/di/services/ask/tools.py`. Add read tools, each mapped to a read action through the same pipeline
+  (the person's permissions and tenant boundary):
+  - `list_workflows` (filter by status, source, text);
+  - `get_workflow` (blocks, version, status, trigger, last run);
+  - `get_workflow_run` (a run's steps with status and record counts, its log lines, held records with the rule that
+    held them, retries and the error).
+- Create `backend/di/services/actions/workflow_read.py` with read actions `workflow.get`, `workflow.runs` and
+  `workflow.runGet`, if the catalogue has no read action for them yet. Register them as reads (agent mode read);
+  reuse the screen read model that Workflow Studio shows, never a second query.
+- Modify `backend/di/services/ask/prompt.py`: the page context (`integration` / `studio`) and the id shapes
+  (`WF-nnn` is a workflow, `RUN-xxxxx` is a run, `RT-nnnn` is a case) steer the tool choice.
+- Modify `backend/di/services/ask/fallback.py`: the rule-based answers without a key can read a run too.
+- Test: `backend/tests/test_ask_workflows.py`; `frontend` unchanged unless the Ask panel needs a tool label.
+
+**Interfaces:**
+- **Model first (R16).** The model reads the run (failed step, log lines, retries, held records, the upstream
+  system's error) and explains why it failed and what to do. Code holds the line:
+  - every number and id in the reply must appear in the tool facts (checked; on a miss the model retries, then the
+    deterministic answer replies, `by_model: false`);
+  - Ask only reads. It may point to the page's Diagnose, Fix, Run now or Reprocess buttons, but never calls
+    `workflow.applyFix`, `workflow.run`, `workflow.reprocess` or any write (they are not Ask tools).
+- **Not found.** An id that is not found is named by its shape: "There is no workflow WF-999 you can see". A
+  workflow id is never called a case, and "you don't have access" is said only when the pipeline refused on access.
+- **Access.** A person who cannot see the workflow's source (tenant boundary, permission) gets the not-found answer;
+  nothing about the run leaks.
+
+**UI slice:** none, beyond the tool names shown in the Ask panel's tool chips.
+
+**Tests (red first):**
+- `test_ask_workflow_run_failure`: on the Workflow Studio page context, "why did WF-116 fail at Validation &
+  enrichment in run <its latest failed run>?" → Ask calls `get_workflow_run`, and the reply names the failed step,
+  the upstream error and the retries, with every number from the run (FunctionModel).
+- `test_ask_workflow_id_not_a_case`: `get_case` is never called with a `WF-` or `RUN-` id; an unknown `WF-999` gets
+  "no workflow WF-999" and the word "case" doesn't appear.
+- `test_ask_workflow_number_check`: a model reply with a record count that isn't in the run → retry, then the
+  deterministic answer (`by_model: false`).
+- `test_ask_workflow_access`: a person outside the source's tenant gets not-found and no run detail.
+- `test_ask_tools_read_only`: none of the new tools maps to a non-read action; `FORBIDDEN_ACTIONS` is unchanged.
+- Also run: `tests/test_ask.py tests/test_catalog_hygiene.py tests/test_tool_find.py tests/test_hold_policy.py`.
 
 #### P9-3.1 Fleet contract and repair log mocks with adapters
 **Stories:** enabler: the fleet contract system and the legacy depot repair log are two of the seven systems of the

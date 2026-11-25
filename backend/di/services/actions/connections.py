@@ -10,6 +10,7 @@
     connection.ownerDecline commit  {id, reason}                          ... or declines it, with a reason
     connection.promote      commit  {source_id, secret}                   test -> production, once the owner approved it
     connection.approvals    read    {source_id}                           where a connection stands and its requests
+    connection.discover     act     {source_id}                           read up to 500 records per resource from a TEST connection into the dry raw store (P9-8.3)
 
 A connection starts in the test environment with read access: no scheduled sync, no instruction (di.connectors.sync,
 di.services.instructions.send). Production access and write-back (`rw` "Read / write") are each a request the named
@@ -33,7 +34,8 @@ from typing import Any
 
 from sqlalchemy import text
 
-from di.connectors import catalog, connection, lifecycle, secrets, sync
+from di.connectors import catalog, connection, discover, lifecycle, secrets, sync
+from di.connectors.http import SourceError
 from di.connectors.registry import GENERIC_AUTH_METHODS, RegistryEntry, catalogue_entries
 from di.core import policy
 from di.repositories import adapter_registry as repo
@@ -92,6 +94,9 @@ _declare("connection.promote", "Promote a connection to production", "promote co
          "commit", {"source_id": _STR, "secret": _STR}, _MGR)  # fmt: skip
 _declare("connection.approvals", "Where a connection stands", "see a connection's approvals",
          "The connection's environment, access, system owner and the owner's approvals.", "read", {"source_id": _STR}, None)  # fmt: skip
+_declare("connection.discover", "Read a sample from the test connection", "read samples from test connections",
+         "Read up to 500 records per resource from the test connection into the quarantined sample store; writes no canonical fact.",
+         "act", {"source_id": _STR}, _MGR)  # fmt: skip
 
 
 # ---------------------------------------------------------------- helpers
@@ -461,4 +466,37 @@ def approvals(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         "registry_id": conn.registry_id,
         "registry_version": conn.registry_version,
         "approvals": repo.approvals_of(ctx.session, i["source_id"]),
+    }
+
+
+# ---------------------------------------------------------------- connection.discover (P9-8.3)
+@guard("connection.discover")
+def discover_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    src = _source(ctx, i["source_id"])
+    if src is None:
+        return "not_found", f"No source {i['source_id']}."
+    if bad := _tenant_refusal(ctx, src["org"]):
+        return bad
+    if src["conn"].environment != "test":
+        return "conflict", discover.TEST_ONLY
+    return None if src["conn"].resources else ("conflict", f"{src['name']} has no resources to read a sample from.")
+
+
+@implement("connection.discover")
+def discover_sample(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    """Counts per resource and whether the spread over the window was used. The records are stored dry (di.connectors.
+    discover.DRY): Suggest mappings and Source Tables read them; no canonical fact exists until a sync."""
+    sid = i["source_id"]
+    try:
+        report = discover.sample_report(ctx.session, sid)
+    except SourceError as e:
+        raise ActionError("conflict", f"The test system did not give a sample: {e}") from e
+    except ValueError as e:
+        raise ActionError("conflict", str(e)) from e
+    total = sum(v["read"] for v in report.values())
+    return {
+        "source_id": sid,
+        "counts": {r: v["read"] for r, v in report.items()},
+        "spread": {r: v["spread"] for r, v in report.items()},
+        "log": f"Read a sample of {total} records from the test connection {sid}",
     }

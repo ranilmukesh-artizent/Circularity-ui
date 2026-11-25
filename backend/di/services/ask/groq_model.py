@@ -100,7 +100,9 @@ class GroqModel:
                 raise ModelUnavailable(_reason(e), type(e).__name__) from None
             said.append("".join(text))
             if not calls:
-                yield Done("".join(said))
+                # the answer is the last turn's text: text written before a further tool call was a draft, and joining it
+                # repeated the answer (seen live, 25 Nov); an empty last turn keeps what was said before
+                yield Done(said[-1] if said[-1].strip() else "".join(said))
                 return
             ordered = [calls[k] for k in sorted(calls)]
             for i, c in enumerate(ordered):

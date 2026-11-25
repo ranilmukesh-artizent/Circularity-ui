@@ -9,7 +9,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, findTools, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, findTools, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
   type TraceSpan,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
@@ -75,6 +75,9 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
     expect(stageLabel('fit_for_use')).toBe('Fit-for-use');
     expect(stageLabel('condition')).toBe('Condition and life');
     expect(stageLabel('somewhere_new')).toBe('somewhere_new');
+    expect(['lease_end', 'return_auth', 'transit', 'outcome', 'reconcile'].map(stageLabel)).toEqual(['Lease end', 'Return authorised', 'Pickup and transit', 'Outcome', 'Reconcile']);
+    expect(stageLabel('analytics')).toBe('Analytics'); // a stored record of a run before P9-2.21
+    expect(STAGE_OPTIONS).toEqual(['lease_end', 'return_auth', 'transit', 'intake', 'condition', 'demand', 'fit_for_use', 'valuation', 'disposition', 'follow_through', 'outcome', 'reconcile']);
   });
 
   it('a stage reading shows who reasoned, or "Rules only" without one (plan 9 P9-2.18)', () => {

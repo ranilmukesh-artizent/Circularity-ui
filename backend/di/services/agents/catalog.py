@@ -25,7 +25,7 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from di.services.actions.registry import ACTIONS, ActionDef
-from di.services.agents.forbidden import FORBIDDEN_ACTIONS, NO_AGENT_READS, held_for_person
+from di.services.agents.forbidden import NO_AGENT_READS, forbidden, held_for_person
 from di.services.agents.schema_notes import NOTES
 
 SCHEMA = "https://json-schema.org/draft/2020-12/schema"
@@ -57,7 +57,7 @@ def agent_mode(a: ActionDef) -> Literal["yes", "held", "no"]:
     """May an agent call it? A read under a forbidden prefix (access.lookup) is a yes; one that handles a secret is not."""
     if a.risk == "system" or a.handler is None or a.id in NO_AGENT_READS:
         return "no"
-    if a.id.startswith(FORBIDDEN_ACTIONS) and a.risk != "read":
+    if forbidden(a.id) and a.risk != "read":
         return "no"
     return "held" if a.destructive or held_for_person(a.id) else "yes"
 

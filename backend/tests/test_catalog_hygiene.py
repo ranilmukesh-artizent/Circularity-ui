@@ -25,7 +25,7 @@ from tests.helpers import call, client, h
 
 AGENT = "coordinator"  # seeded, autonomy act
 UNBUILT = (
-    "analytics.query", "audit.search", "sources.health", "sources.diagnose", "mapping.suggest", "mapping.apply",
+    "analytics.query", "audit.search", "sources.health", "sources.diagnose", "mapping.apply",
     "tables.suggestLinks", "tables.describe", "conflict.suggest", "import.clean", "event.explain", "asset.summary",
 )  # fmt: skip
 SID = "insp"
@@ -164,3 +164,14 @@ def test_agents_never_delete_or_approve():
         check_person_only({"thing.delete": SimpleNamespace(destructive=False)})
     with pytest.raises(RuntimeError, match="thing.wipe"):
         check_person_only({"thing.wipe": SimpleNamespace(destructive=True)})
+
+
+def test_connection_discover_is_the_only_connection_action_agents_run():
+    """P9-8.3: discovery reads a sample from the test connection, so an agent may run it; every other connection action
+    (create, approve, change access) stays a person's."""
+    from di.services.actions.registry import ACTIONS
+    from di.services.agents.forbidden import forbidden
+
+    assert not forbidden("connection.discover")
+    others = [i for i in ACTIONS if i.startswith("connection.") and i != "connection.discover"]
+    assert others and all(forbidden(i) for i in others)

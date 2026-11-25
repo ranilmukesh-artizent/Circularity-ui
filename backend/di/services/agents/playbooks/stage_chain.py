@@ -16,9 +16,9 @@ from di.services.agents.stages import CHAIN, StageModule
 NAME = "stage_chain"
 ACTIONS = tuple(dict.fromkeys(a for m in CHAIN for a in m.ACTIONS))
 # A run started before the chain existed has no position, only its autopilot step number (case_autopilot.STEPS): the
-# stage and sub-step that step is now.
+# stage and sub-step that step is now (the three lifecycle stages of P9-2.20 come before intake).
 LEGACY_POSITION = {
-    "evidence": (0, 0), "request": (0, 1), "reevaluate": (4, 0), "submit": (5, 0), "approval": (5, 1), "resend": (6, 0),
+    "evidence": (3, 0), "request": (3, 1), "reevaluate": (7, 0), "submit": (8, 0), "approval": (8, 1), "resend": (9, 0),
 }  # fmt: skip
 
 

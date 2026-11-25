@@ -9,12 +9,14 @@ the tool catalogue.
         mcp_tools  the MCP tool ids an agent's tools may name (besides the action ids of `tools`)
         runs       the newest agent runs (table agent_run) on cases the account may see: [{id, agent, agentName,
                    playbook, case_id, status, step, stage, reason, waiting, created_at, updated_at, steps}]
-                   stage    the stage of the chain the run is at (`intake` … `analytics`, P9-2.1), null once it has
+                   stage    the stage of the chain the run is at (`lease_end` … `reconcile`, P9-2.1 and P9-2.21), null once it has
                             finished or when it has no position (a run started before the chain)
                    waiting  {kind: "proposal", proposal: id} or {kind: "approval", case_id}: what the run waits for
                             from a person, else null
                    reason   why it failed or stopped, or the note it finished with, else null
                    steps    the calls it made: [{n, tool, ok, note, at}] (note: the refusal, or the proposal it held)
+                   journey  the ten stages of its journey, [JourneyStage] (P9-2.21, `di.services.agents.journey`): a stage
+                            with no record is "Queued", nothing is invented for it
         proposals  the pending proposals the account may act on (di.services.agents.proposals.pending_for): accept
                    or reject them with proposal.accept and proposal.reject, as the person (`own`: only reject)
         tools      the tool catalogue (di.services.agents.catalog), read only: every action with its input schema and
@@ -52,12 +54,14 @@ from sqlalchemy.orm import Session
 
 from di.core import policy
 from di.core.auth import Principal
+from di.core.redact import clean
 from di.repositories.constants import TOOLS_BY_ID
 from di.repositories.model_versions import ModelRow
 from di.repositories.orgs import units
 from di.services.actions.models import model_json, promote_block, proposal_of, propose_block
 from di.services.agents import proposals, registry
 from di.services.agents.catalog import catalog
+from di.services.agents.journey import journey
 from di.services.agents.stage_context import STAGE_IDS
 from di.services.engine.predictor import FormulaPredictor
 from di.services.llm.view import models_view
@@ -68,7 +72,11 @@ RUNS_SQL = (
     "SELECT r.id, r.agent, r.playbook, r.case_id, r.status, r.step, r.state, r.created_at, r.updated_at, c.owner "
     "FROM agent_run r LEFT JOIN case_record c ON c.id = r.case_id ORDER BY r.created_at DESC, r.id LIMIT :n"
 )
-STEPS_SQL = "SELECT run_id, n, tool, output, at FROM agent_run_step WHERE run_id = ANY(:ids) ORDER BY run_id, n"
+STEPS_SQL = "SELECT run_id, n, tool, input, output, at FROM agent_run_step WHERE run_id = ANY(:ids) ORDER BY run_id, n"
+STAGES_SQL = (
+    "SELECT run_id, stage, agent, status, output, confidence, threshold, sources, reasons FROM agent_stage_record "
+    "WHERE run_id = ANY(:ids)"
+)
 
 
 def _waiting(r: dict[str, Any]) -> dict[str, Any] | None:
@@ -95,12 +103,32 @@ def _step(row: dict[str, Any]) -> dict[str, Any]:
     return {"n": row["n"], "tool": row["tool"], "ok": ok, "note": note, "at": row["at"].isoformat()}
 
 
+def _call(row: dict[str, Any]) -> dict[str, Any]:
+    """A call as the journey reads it: `{n, tool, ok, held, input, stage}` (the stage is in the logged output)."""
+    out = row["output"] or {}
+    held = out["output"].get("held") if isinstance(out.get("output"), dict) else None
+    return {
+        "n": row["n"],
+        "tool": row["tool"],
+        "ok": bool(out.get("ok")),
+        "held": held,
+        "input": clean(row["input"]),
+        "stage": out.get("stage"),
+    }
+
+
 def _runs(p: Principal, s: Session, names: dict[str, str]) -> list[dict[str, Any]]:
     rows = [dict(r) for r in s.execute(text(RUNS_SQL), {"n": RUNS}).mappings()]
     rows = [r for r in rows if r["owner"] is None or p.tenant_ok(r["owner"])]
+    ids = [r["id"] for r in rows]
     steps: dict[str, list[dict[str, Any]]] = {}
-    for st in s.execute(text(STEPS_SQL), {"ids": [r["id"] for r in rows]}).mappings():
+    calls: dict[str, list[dict[str, Any]]] = {}
+    for st in s.execute(text(STEPS_SQL), {"ids": ids}).mappings():
         steps.setdefault(st["run_id"], []).append(_step(dict(st)))
+        calls.setdefault(st["run_id"], []).append(_call(dict(st)))
+    records: dict[str, list[dict[str, Any]]] = {}
+    for rec in s.execute(text(STAGES_SQL), {"ids": ids}).mappings():
+        records.setdefault(rec["run_id"], []).append(dict(rec))
     out = []
     for r in rows:
         state = r["state"] or {}
@@ -110,6 +138,7 @@ def _runs(p: Principal, s: Session, names: dict[str, str]) -> list[dict[str, Any
             "reason": state.get("reason") or state.get("note"),
             "waiting": _waiting(r), "created_at": r["created_at"].isoformat(), "updated_at": r["updated_at"].isoformat(),
             "steps": steps.get(r["id"], []),
+            "journey": [j.as_dict() for j in journey({"stages": records.get(r["id"], []), "calls": calls.get(r["id"], [])})],
         })  # fmt: skip
     return out
 

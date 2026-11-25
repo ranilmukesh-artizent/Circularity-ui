@@ -36,11 +36,11 @@ from di.mcp import calllog, catalog_tools
 from di.mcp.tools import ACTIONS_OF, AGENTS, NO_APPROVAL_REF, RUN, TOOLS, Refused, ToolCall, cross_tenant
 from di.services.actions.pipeline import Actor, CallContext
 from di.services.agents import registry as agent_registry
-from di.services.agents.forbidden import FORBIDDEN_ACTIONS
+from di.services.agents.forbidden import forbidden
 from di.services.cases import store
 
 # Actions no tool may ever run (di.services.agents.forbidden). Checked once, against the whole tool table.
-_REACHED = [a for acts in ACTIONS_OF.values() for a in acts if a.startswith(FORBIDDEN_ACTIONS)]
+_REACHED = [a for acts in ACTIONS_OF.values() for a in acts if forbidden(a)]
 _REACHED += catalog_tools.unsafe()  # the generated tools (P9-2.13) are checked the same way
 if _REACHED:
     raise RuntimeError(f"tools reach actions no agent may run: {_REACHED}")

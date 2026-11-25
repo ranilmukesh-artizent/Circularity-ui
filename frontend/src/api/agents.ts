@@ -53,6 +53,8 @@ export interface AgentRun {
   created_at: string;
   updated_at: string;
   steps: RunStep[];
+  /** the ten-stage journey of the run (P9-2.21) */
+  journey: JourneyStage[];
 }
 
 /** Why the hold policy held a call for a person (plan 9, P9-2.4, I-10): `detail` is the sentence to show. */
@@ -150,6 +152,9 @@ export type Playbook = 'case_autopilot' | 'stage_chain';
 
 /** The D1 words for the chain's stage ids (plan 9, P9-2.1). */
 const STAGE_LABELS: Record<string, string> = {
+  lease_end: 'Lease end',
+  return_auth: 'Return authorised',
+  transit: 'Pickup and transit',
   intake: 'Intake',
   condition: 'Condition and life',
   demand: 'Demand',
@@ -157,11 +162,13 @@ const STAGE_LABELS: Record<string, string> = {
   valuation: 'Valuation',
   disposition: 'Disposition',
   follow_through: 'Follow-through',
-  analytics: 'Analytics',
+  outcome: 'Outcome',
+  reconcile: 'Reconcile',
+  analytics: 'Analytics', // stored by runs before P9-2.21: readable, no longer a stage of the chain
 };
 
 /** The chain's stage ids in order (the stage calibration picker, P9-2.9). */
-export const STAGE_OPTIONS: string[] = Object.keys(STAGE_LABELS);
+export const STAGE_OPTIONS: string[] = Object.keys(STAGE_LABELS).filter((id) => id !== 'analytics');
 
 /** A stage's display name; an unknown id shows as it is. */
 export const stageLabel = (id: string): string => STAGE_LABELS[id] ?? id;
@@ -300,7 +307,27 @@ export const stageReading = (s: Pick<TraceStage, 'output'>): { reading: StageRea
   return r ? { reading: r, model: s.output?.model ?? 'a model' } : null;
 };
 
-export interface TraceCall { n: number; tool: string; ok: boolean; held: number | null; input: Record<string, unknown>; at: string }
+export interface TraceCall { n: number; tool: string; ok: boolean; held: number | null; input: Record<string, unknown>; at: string; stage?: string | null }
+
+/** The status of a journey stage (P9-2.21): a stage with no record yet is `Queued`, "not reached". */
+export type JourneyStatus = 'Queued' | 'Running' | 'Completed' | 'Waiting for approval' | 'Warning' | 'Failed' | 'Skipped';
+/** One of the ten stages of a case's journey (`di.services.agents.journey`): the nine fields of the stage panel plus the model's reading. */
+export interface JourneyStage {
+  n: number;
+  name: string;
+  status: JourneyStatus;
+  agent: string;
+  purpose: string;
+  activity: string;
+  /** what the stage read: `{fact, source, at}` */
+  evidence: Record<string, unknown>[];
+  calls: { n: number; tool: string; input: Record<string, unknown>; ok: boolean; held: number | null }[];
+  result: Record<string, unknown>;
+  validation: string[];
+  state_change: string;
+  next_step: string;
+  reading: { model: string | null; reading: StageReading } | null;
+}
 export interface TraceProposal { id: number; action: string; status: string; case_id: string | null; reasons: HoldReason[]; decided_by: string | null }
 export interface TracePause { by: string; on: boolean; at: string }
 
@@ -312,6 +339,8 @@ export interface RunTrace {
     tokens: { input: number | null; output: number | null } | null; created_at: string; updated_at: string;
   } | null;
   stages: TraceStage[];
+  /** the ten-stage journey of the run (P9-2.21) */
+  journey: JourneyStage[];
   calls: TraceCall[];
   spans: TraceSpan[];
   journal: { seq: number; action: string; actor: string; preparer: string | null; at: string }[];

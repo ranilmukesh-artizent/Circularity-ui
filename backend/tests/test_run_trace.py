@@ -196,7 +196,7 @@ def test_run_trace_read_shape_and_permissions():
     out = call("agent.runTrace", {"case_id": CASE}, "planner.a")
     assert out["ok"] is True
     o = out["output"]
-    assert o["run"]["id"] == run.run_id and next(x["stage"] for x in o["stages"]) == "intake"
+    assert o["run"]["id"] == run.run_id and next(x["stage"] for x in o["stages"]) == "lease_end"
     assert o["calls"] and o["journal"] and o["spans"][0]["kind"] == "run" and o["spans"][0]["children"]
     by_run = call("agent.runTrace", {"run_id": run.run_id}, "admin")["output"]
     assert by_run["run"]["id"] == run.run_id

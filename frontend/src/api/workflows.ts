@@ -229,9 +229,6 @@ export const republishVer = (w: Workflow): string | null => G.republishVer(w, pu
 /** null when a → b may be connected, otherwise the reason it may not. */
 export const canLink = (g: WfGraph, a: string, b: string): string | null => G.canLink(lk(), g, a, b);
 export const runOrder = (g: WfGraph): string[] => G.order(g);
-export function analyze(g: WfGraph): { pred: Record<string, string[]>; succ: Record<string, string[]>; desc: (id: string) => Set<string> } {
-  return G.analyze(g);
-}
 /** The last real run, painted on the canvas when the workflow opens. */
 export function runFromLast(id: string): TestRun | null {
   const w = workflow(id);
@@ -439,8 +436,6 @@ export const readableSources = (): Source[] => sources().filter((s) => s.read.le
 export const writableSources = (): Source[] => sources().filter((s) => s.write.length);
 
 // ---- small view helpers from the demo ----
-/** The edge path between two points (wfPathXY): a curve forward, a rounded detour backward. */
-export const edgePath = (sx: number, sy: number, tx: number, ty: number): string => G.pathXY(sx, sy, tx, ty);
 /** Status pill label and colour class (FR_ST), e.g. failing → ['Failing', 'bad']. */
 export const statusPill = (k: string): [string, string] => ref('FR_ST')[k] ?? [k, 'line'];
 /** The workflow's source system, or null for a decision workflow. */

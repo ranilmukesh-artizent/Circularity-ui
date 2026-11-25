@@ -3,6 +3,7 @@ import { reasonText, runTrace, setAgentEnabled, spanMs, spanRows, stageLabel, st
 import { ApiError } from '../../api/client';
 import { can } from '../../api/session';
 import { useAction } from '../../hooks/useAction';
+import { JourneyTimeline } from './JourneyTimeline';
 
 const STATUS_CHIP: Record<string, string> = { running: 'line', waiting: 'y', done: 'ok', failed: 'bad', stopped: 'warn', held: 'y', exception: 'bad', skipped: 'line' };
 const AUTONOMY = { recommend: 'recommends only', limits: 'within limits', alone: 'acts alone' } as const;
@@ -49,7 +50,10 @@ function Body({ t }: { t: RunTrace }) {
         <ul className="note" aria-label="Pause history">{t.pauses.map((p) => <li key={p.at}>{p.on ? 'Started' : 'Paused'} by {p.by} · {at(p.at)}</li>)}</ul>
       )}
 
-      <h4>Stages</h4>
+      <h4>Journey</h4>
+      {t.journey.length ? <JourneyTimeline journey={t.journey} caseId={run.case_id} /> : <p className="note">No journey for this run.</p>}
+
+      <h4>Stage records</h4>
       {t.stages.length ? (
         <div className="tw">
           <table className="t static tight">

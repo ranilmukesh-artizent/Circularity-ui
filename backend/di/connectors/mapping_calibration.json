@@ -1,0 +1,76 @@
+{
+  "_note": "Written by backend/scripts/fit_mapping_calibration.py from the gold set; do not edit by hand.",
+  "points": [
+    [
+      0.1803,
+      0.0
+    ],
+    [
+      0.1893,
+      0.0
+    ],
+    [
+      0.2461,
+      0.0
+    ],
+    [
+      0.2817,
+      0.0
+    ],
+    [
+      0.2842,
+      0.0
+    ],
+    [
+      0.2854,
+      0.0
+    ],
+    [
+      0.2998,
+      0.0
+    ],
+    [
+      0.3592,
+      0.0625
+    ],
+    [
+      0.4062,
+      0.0833
+    ],
+    [
+      0.4931,
+      0.1875
+    ],
+    [
+      0.5614,
+      0.2
+    ],
+    [
+      0.5988,
+      0.5
+    ],
+    [
+      0.7239,
+      0.5238
+    ],
+    [
+      0.8,
+      1.0
+    ],
+    [
+      0.85,
+      1.0
+    ]
+  ],
+  "pre_ticked": 2.0,
+  "check": 0.3,
+  "agree_bonus": 0.03,
+  "disagree_factor": 0.8,
+  "memory_bonus": 0.05,
+  "gold": {
+    "rows": 93,
+    "families": 20,
+    "top1_accuracy": 0.2796,
+    "pre_ticked_support": 0
+  }
+}

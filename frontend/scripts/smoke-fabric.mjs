@@ -243,7 +243,7 @@ await step('3 Edit a mapping rule on SafetyCulture: Preview, Save, Revert', asyn
   const pv = await bar.innerText();
   check(/Changed/.test(pv), 'the preview marks no fact as Changed');
   const sample = pv.match(/Sample record (\S+)/)[1];
-  const saved = await clickToast(drawer().getByRole('button', { name: 'Save changes' }), /saved\. Configuration is now v/);
+  const saved = await clickToast(drawer().getByRole('button', { name: 'Save changes' }), /saved( \(\d+ rows?\))?\. Configuration is now v/); // "Field mapping saved (3 rows)." since P9-0.10
   const ver = await until(async () => (await bar.innerText()).match(/Mapping v(\d+) runs on every sync/)?.[1], 'the mapping version is not shown after Save');
   check(+ver >= 2, 'Save did not make a new mapping version (v' + ver + ')');
   const pick = drawer().locator('select[aria-label="Mapping version to revert to"]');
