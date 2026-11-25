@@ -62,3 +62,4 @@ One line per event, newest last, times from `date`.
 | 25 Nov 18:24 | P9-6.7 merged. G-DEV-WIPE via params.when; batch held as one, each case releases alone; bulk lots not wipe-gated |
 | 2026-11-26 00:04 | Verify P9-6.7 green (device sync tests, 17 api files, lint, web). Pushed. |
 | 2026-11-26 00:11 | w5's wt-check (P9-3.8) deadlocked 90 min in di_w5: a session idle in transaction on job vs TRUNCATE job. Killed its container; w5 told to close the session; w2 (P9-3.7), queued on the same slot for 87 min, now runs. |
+| 2026-11-26 00:39 | Hourly sync: merged lane A (a90414c models match migrations 0054/0057, P9-2.16 smoke, phase 9 order, their merge of lane B). test_models_migrations 3 passed, lint ok, web 478. Pushed. |
