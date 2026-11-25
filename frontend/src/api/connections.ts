@@ -97,5 +97,30 @@ export interface ConnectionSample {
  *  stored sample is what "Suggest mappings" and the Source Tables read. A production connection is refused (conflict). */
 export const discoverConnection = (sourceId: string): Promise<ActionResult<ConnectionSample>> => invoke('connection.discover', { source_id: sourceId });
 
+/** What an API-spec import found (P9-8.6): the draft it saved, the resources it read, what it left out and the checks. */
+export interface SpecImport {
+  id: string;
+  version: number;
+  status: 'draft';
+  resources: { name: string; path: string; id_field?: string; data_selector: string; include_from_parent?: string[] }[];
+  auth_methods: string[];
+  notes: string[];
+  unsupported: string[];
+  checks: { field: string; message: string }[];
+  needs_fixes: boolean;
+}
+export interface NewSpecImport {
+  name: string;
+  systemType: string;
+  vendorFamily: string;
+  /** the OpenAPI 3 document as the person pasted or uploaded it (JSON or YAML text), never a URL */
+  document: string;
+  baseUrl?: string;
+}
+/** Turn an OpenAPI 3 document into a from_spec draft (registry.importSpec). A spec with check errors is still saved, marked
+ *  needs fixes; another person releases the draft before a connection is made from it. */
+export const importSpec = (s: NewSpecImport): Promise<ActionResult<SpecImport>> =>
+  invoke('registry.importSpec', { name: s.name, system_type: s.systemType, vendor_family: s.vendorFamily, document: s.document, ...(s.baseUrl ? { base_url: s.baseUrl } : {}) }); // prettier-ignore
+
 /** Where a connection stands: environment, access, system owner and the owner's approvals (read action). */
 export const connectionApprovals = (sourceId: string): ConnectionState => read<ConnectionState>('connection.approvals', { source_id: sourceId });

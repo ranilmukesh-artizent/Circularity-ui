@@ -1,6 +1,15 @@
-import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
+/**
+ * The Modeler's flow canvas (plan 9, P9-8.14): draws a decision flow on the shared GraphView (xyflow) so it pans, zooms
+ * and fits like the Studio. Owns the look of a flow node (title, TTAG label, lock, dashed when proposed, the returned
+ * pill) and the fixed band behind the core prediction and agents. Never edits the graph: every move, connection and
+ * removal goes out as a callback and the page applies `flowEdit.ts`; a locked step is refused here with a toast.
+ */
+import { useState } from 'react';
+import { Handle, Position, type NodeProps, type NodeTypes } from '@xyflow/react';
 import type { FlowGraph, FlowNode, ModelerScreen } from '../../api/types';
-import { edgePath, extent, NODE_W } from './flowEdit';
+import { GraphView, type GEdge, type GNode, type GSel } from '../../components/graph/GraphView';
+import { toast } from '../../components/toast';
+import { NODE_W } from './flowEdit';
 
 /** The prototype's TTAG: what each node type is. */
 export const TTAG: Record<FlowNode['t'], string> = {
@@ -24,6 +33,48 @@ export function nodeTitle(n: FlowNode, s: ModelerScreen): string {
   return (n.rid ?? '') + ' · ' + (p ? verb + p.name.toLowerCase() : 'set a path');
 }
 
+const BAND = '__band';
+const LOCKED_MSG = 'Locked steps cannot be removed.';
+
+interface FlowData extends Record<string, unknown> {
+  n: FlowNode;
+  title: string;
+  owner?: string;
+  returned?: string;
+  bad: boolean;
+  proposed: boolean;
+  pick: (id: string) => void;
+}
+interface BandData extends Record<string, unknown> { label: string; rectH: number }
+
+function ModelerNode({ data, selected }: NodeProps) {
+  const { n, title, owner, returned, bad, proposed, pick } = data as FlowData;
+  const cls = ['mdl-node', 't-' + n.t, selected && 'sel', bad && 'bad', proposed && 'prop'];
+  return (
+    <div className={cls.filter(Boolean).join(' ')} data-node={n.id} title={returned ? 'Returned: ' + returned : undefined}
+      role="button" tabIndex={0} aria-pressed={!!selected} onKeyDown={(e) => e.key === 'Enter' && pick(n.id)}>
+      {n.t !== 'trigger' && <Handle type="target" position={Position.Left} className="port in mdl-port" />}
+      <Handle type="source" position={Position.Right} className="port out mdl-port" />
+      <span className="hd"><span className="tg">{TTAG[n.t]}</span>{n.lock && <LockIcon />}</span>
+      <b>{title}</b>
+      <span className="s">{n.t === 'rule' ? n.owner ?? '' : n.sub}</span>
+      {owner && <span className="ow">{owner}</span>}
+      {returned && (
+        <span className="pill" data-returned={n.id} title={returned} aria-label={'Returned: ' + returned}
+          style={{ alignSelf: 'flex-start', color: 'var(--bad)', background: 'var(--bad-soft)' }}>Returned</span>
+      )}
+    </div>
+  );
+}
+
+/** The dashed box behind the core steps, with its label under it; it takes no clicks and cannot move. */
+function BandNode({ data }: NodeProps) {
+  const { label, rectH } = data as BandData;
+  return <div className="mdl-band"><div className="mdl-bandbox" style={{ height: rectH }} /><span>{label}</span></div>;
+}
+
+const NODE_TYPES: NodeTypes = { flow: ModelerNode, band: BandNode };
+
 interface Props {
   s: ModelerScreen;
   graph: FlowGraph;
@@ -35,96 +86,52 @@ interface Props {
   editable: boolean;
   onSelect: (id: string | null) => void;
   onMove: (id: string, x: number, y: number) => void;
+  /** A move is finished (drag stop or arrow key): the page schedules its autosave. */
   onMoved: () => void;
+  onConnect: (a: string, b: string) => void;
+  onRemove: (id: string) => void;
+  onDisconnect: (edgeId: string) => void;
 }
 
-/**
- * The flow canvas (the prototype's canvasHtml): absolute-positioned nodes at x, y over SVG edges; drag a node to move
- * it, click to select. Locked nodes show a lock. The fixed band labels the core prediction and agents.
- */
-export function FlowCanvas({ s, graph, selected, bad, proposed, editable, onSelect, onMove, onMoved }: Props) {
-  const drag = useRef<{ id: string; dx: number; dy: number; moved: boolean } | null>(null);
-  const { w, h } = extent(graph);
-  const by = Object.fromEntries(graph.nodes.map((n) => [n.id, n]));
+export function FlowCanvas({ s, graph, selected, bad, proposed, editable, onSelect, onMove, onMoved, onConnect, onRemove, onDisconnect }: Props) {
+  const [edgeSel, setEdgeSel] = useState<string | null>(null);
+  const by = new Map(graph.nodes.map((n) => [n.id, n]));
   const ret = s.flow.returned;
 
-  const down = (e: ReactPointerEvent<HTMLDivElement>, n: FlowNode) => {
-    onSelect(n.id);
-    if (!editable) return;
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-    drag.current = { id: n.id, dx: e.clientX - n.x, dy: e.clientY - n.y, moved: false };
+  const gnodes: GNode[] = graph.nodes.map((n) => {
+    const p = n.t === 'path' ? s.template.paths.find((x) => x.id === n.path) : undefined;
+    const isRet = !!ret && n.id === ret.node_id;
+    const data: FlowData = { n, title: nodeTitle(n, s), owner: p?.owner, returned: isRet ? ret.reason : undefined, bad: bad.has(n.id), proposed: n.id === proposed, pick: (id) => onSelect(id) };
+    return { id: n.id, x: n.x, y: n.y, w: NODE_W, h: n.h, type: 'flow', data, selected: n.id === selected };
+  });
+  if (s.band) {
+    const [x, y, w, h, label] = s.band;
+    const data: BandData = { label, rectH: h };
+    gnodes.unshift({ id: BAND, x, y, w, h: h + 24, type: 'band', data, locked: true });
+  }
+  const gedges: GEdge[] = graph.edges.flatMap((e) => by.has(e.a) && by.has(e.b)
+    ? [{ id: e.id, a: e.a, b: e.b, selected: e.id === edgeSel, className: proposed && (e.a === proposed || e.b === proposed) ? 'pe' : undefined }]
+    : []);
+
+  const select = (sel: GSel) => {
+    if (sel?.id === BAND) return;
+    setEdgeSel(sel?.t === 'e' ? sel.id : null);
+    onSelect(sel?.t === 'n' ? sel.id : null);
   };
-  const move = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    if (!d) return;
-    d.moved = true;
-    onMove(d.id, e.clientX - d.dx, e.clientY - d.dy);
+  const remove = (sel: NonNullable<GSel>) => {
+    if (sel.t === 'e') { setEdgeSel(null); onDisconnect(sel.id); return; }
+    if (by.get(sel.id)?.lock) { toast(LOCKED_MSG); return; }
+    onRemove(sel.id);
   };
-  const up = () => {
-    if (drag.current?.moved) onMoved();
-    drag.current = null;
-  };
+  const moveTo = (id: string, x: number, y: number) => { onMove(id, x, y); onMoved(); };
 
   return (
     <div className="mdl-canvas" role="group" aria-label="Decision flow canvas">
-      <div className="mdl-fc" style={{ width: w, height: h }} onPointerMove={move} onPointerUp={up}>
-        <svg className="mdl-edges" width={w} height={h} aria-hidden="true">
-          <defs>
-            <marker id="mdl-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0 0L10 5L0 10z" fill="var(--muted)" />
-            </marker>
-          </defs>
-          {s.band && (
-            <g className="mdl-band">
-              <rect x={s.band[0]} y={s.band[1]} width={s.band[2]} height={s.band[3]} rx="12" />
-              <text x={s.band[0] + 10} y={s.band[1] + s.band[3] + 16}>{s.band[4]}</text>
-            </g>
-          )}
-          {graph.edges.map((e) => {
-            const a = by[e.a], b = by[e.b];
-            if (!a || !b) return null;
-            const pe = proposed && (e.a === proposed || e.b === proposed);
-            return <path key={e.id} className={'mdl-ed' + (pe ? ' pe' : '')} d={edgePath(a, b)} markerEnd="url(#mdl-arr)" />;
-          })}
-        </svg>
-        {graph.nodes.map((n) => {
-          const cls = ['mdl-node', 't-' + n.t, n.id === selected && 'sel', bad.has(n.id) && 'bad', n.id === proposed && 'prop'];
-          const p = n.t === 'path' ? s.template.paths.find((x) => x.id === n.path) : undefined;
-          return (
-            <div
-              key={n.id}
-              className={cls.filter(Boolean).join(' ')}
-              data-node={n.id}
-              title={ret && n.id === ret.node_id ? 'Returned: ' + ret.reason : undefined}
-              style={{ left: n.x, top: n.y, height: n.h, width: NODE_W }}
-              role="button"
-              tabIndex={0}
-              aria-pressed={n.id === selected}
-              onPointerDown={(e) => down(e, n)}
-              onKeyDown={(e) => e.key === 'Enter' && onSelect(n.id)}
-            >
-              <span className="hd">
-                <span className="tg">{TTAG[n.t]}</span>
-                {n.lock && <LockIcon />}
-              </span>
-              <b>{nodeTitle(n, s)}</b>
-              <span className="s">{n.t === 'rule' ? n.owner ?? '' : n.sub}</span>
-              {p && <span className="ow">{p.owner}</span>}
-              {ret && n.id === ret.node_id && (
-                <span
-                  className="pill"
-                  data-returned={n.id}
-                  title={ret.reason}
-                  aria-label={'Returned: ' + ret.reason}
-                  style={{ alignSelf: 'flex-start', color: 'var(--bad)', background: 'var(--bad-soft)' }}
-                >
-                  Returned
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <GraphView nodes={gnodes} edges={gedges} nodeTypes={NODE_TYPES} readOnly={!editable} minimap
+        nodeColor={(id) => (by.get(id)?.lock ? 'var(--ink)' : 'var(--mv-line)')}
+        label="Decision flow canvas. Select a step, then use arrow keys to move it or Delete to remove it."
+        onSelect={select} onDelete={remove} onConnect={onConnect} onMove={moveTo}
+        onNudge={(id, dx, dy) => { const n = by.get(id); if (n) moveTo(id, n.x + dx, n.y + dy); }} />
     </div>
   );
 }

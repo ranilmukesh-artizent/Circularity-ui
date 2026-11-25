@@ -32,6 +32,7 @@ FORBIDDEN_ACTIONS = (
     "work.resolve", "work.assign",  # plan 9 P9-1.7: only a person resolves or hands on an exception, approval or question
     # plan 9 P9-8.1: a connection and the system owner's approval of its production or write access are a person's (R21)
     "connection.", "registry.release",
+    "mapping.answerOwner",  # plan 9 P9-8.4: only the system owner (a person) answers a mapping question
     "compose.sendBack", "compose.approve", "compose.publish",  # plan 9 P9-8.17: a person decides which composition takes effect
     "marketTable.approve", "marketTable.reject",  # plan 9 P9-4.2: a person decides which rates and tables price a repair (R21)
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
@@ -43,6 +44,8 @@ FORBIDDEN_ACTIONS = (
 HELD_FOR_PERSON = (
     "tables.update",
     "mapping.save",
+    "mapping.decide",  # plan 9 P9-8.4: a choice on a suggested mapping is a person's
+    "mapping.apply",  # plan 9 P9-8.4: saves the accepted rows as a mapping version
     "standingPolicy.save",
     "marketTable.save",  # P9-4.2: a rate card or table draft, and its submission, are a person's
     "marketTable.submit",

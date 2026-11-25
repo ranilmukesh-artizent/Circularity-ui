@@ -1,0 +1,46 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Generic mock (parts and orders)", "version": "0.1.0"},
+  "paths": {
+    "/mock/parts": {
+      "get": {
+        "operationId": "mock_parts_list",
+        "parameters": [
+          {"name": "limit", "in": "query", "required": false, "schema": {"type": "integer", "default": 50, "maximum": 200}},
+          {"name": "offset", "in": "query", "required": false, "schema": {"type": "integer", "default": 0}}
+        ],
+        "responses": {"200": {"description": "A page of parts", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PartPage"}}}}}
+      },
+      "post": {
+        "operationId": "mock_parts_create",
+        "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Part"}}}}}
+      }
+    },
+    "/mock/parts/{item_id}": {
+      "get": {
+        "operationId": "mock_parts_get",
+        "parameters": [{"name": "item_id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {"200": {"description": "One part", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Part"}}}}}
+      }
+    },
+    "/mock/orders": {
+      "get": {
+        "operationId": "mock_orders_list",
+        "parameters": [
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}},
+          {"name": "offset", "in": "query", "schema": {"type": "integer"}},
+          {"name": "status", "in": "query", "schema": {"type": "string"}}
+        ],
+        "responses": {"200": {"description": "A page of orders", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/OrderPage"}}}}}
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Part": {"type": "object", "required": ["part_id"], "properties": {"part_id": {"type": "string"}, "description": {"type": "string"}, "qty": {"type": "integer"}}},
+      "Order": {"type": "object", "required": ["order_id"], "properties": {"order_id": {"type": "string"}, "status": {"type": "string"}}},
+      "PartPage": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Part"}}, "next": {"type": ["integer", "null"]}, "total": {"type": "integer"}}},
+      "OrderPage": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Order"}}, "next": {"type": ["integer", "null"]}, "total": {"type": "integer"}}}
+    }
+  }
+}

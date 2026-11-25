@@ -79,21 +79,3 @@ export function moveNode(g: FlowGraph, id: string, x: number, y: number): FlowGr
 export function updateRule(g: FlowGraph, id: string, patch: Pick<Partial<FlowNode>, 'action' | 'path' | 'scope' | 'owner'>): FlowGraph {
   return { nodes: g.nodes.map((n) => (n.id === id && n.t === 'rule' ? { ...n, ...patch } : n)), edges: g.edges };
 }
-
-/** The canvas size that holds every node, with a margin. */
-export function extent(g: FlowGraph): { w: number; h: number } {
-  const w = Math.max(600, ...g.nodes.map((n) => n.x + NODE_W)) + 60;
-  const h = Math.max(300, ...g.nodes.map((n) => n.y + n.h)) + 60;
-  return { w, h };
-}
-
-/** The prototype's edgePath: a curve from a's right side to b's left side (or round the right when b is behind). */
-export function edgePath(a: FlowNode, b: FlowNode): string {
-  const x1 = a.x + NODE_W, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y + b.h / 2, dx = Math.max(40, Math.abs(x2 - x1) / 2);
-  if (x2 >= x1 - 10) return `M${x1} ${y1} C${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2 - 2} ${y2}`;
-  if (Math.abs(a.x - b.x) < 20) {
-    const xr = a.x + NODE_W + 26;
-    return `M${x1} ${y1} C${xr} ${y1} ${xr} ${y2} ${b.x + NODE_W} ${y2}`;
-  }
-  return `M${x1} ${y1} C${x1 + 80} ${y1} ${x2 - 80} ${y2} ${x2 - 2} ${y2}`;
-}

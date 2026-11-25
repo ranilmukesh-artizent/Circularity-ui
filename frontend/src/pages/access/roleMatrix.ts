@@ -29,14 +29,16 @@ const list = (xs: string[], none: string): string => (xs.length ? xs.join(', ') 
 /** The card for one tested user: role, why, tenants, warehouse, pages and permissions. */
 export function userCard(r: TestUserResult): UserCard {
   return {
-    title: r.email + ' · ' + r.role,
+    title: r.email + (r.role ? ' · ' + r.role : ''),
     why: r.why,
     lines: [
-      { label: 'Account', value: r.account ? r.account.label : 'None (directory deputy)' },
+      { label: 'Found in', value: r.source === 'none' ? 'Nowhere: no mapped group' : r.source === 'group map' ? 'The group map (no account yet)' : 'The directory' },
+      { label: 'Account', value: r.account ? r.account.label : 'None' },
       { label: 'Tenants', value: list(r.tenants, 'None') },
       { label: 'Warehouse', value: r.warehouse ?? 'Any' },
-      { label: 'Approval limit', value: r.limit == null ? 'No limit' : '$' + r.limit.toLocaleString('en-US') },
+      { label: 'Approval limit', value: r.approval_limit == null ? 'No limit' : '$' + r.approval_limit.toLocaleString('en-US') },
       { label: 'Self-approval', value: r.self_approve ? 'Allowed within the limit' : 'Not allowed' },
+      { label: 'Delegations', value: list(r.delegations, 'None') },
       { label: 'Pages', value: list(r.pages, 'None') },
       { label: 'Permissions', value: list(r.permissions, 'None') },
     ],

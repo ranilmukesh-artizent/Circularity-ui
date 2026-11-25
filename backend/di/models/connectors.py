@@ -1,5 +1,5 @@
 """Source systems, sync runs and cursors, the fetch log, raw records, encrypted credentials, versioned field mappings,
-connection settings and received webhooks (migrations 0004, 0010, 0011, 0013, 0014, 0053)."""
+connection settings, received webhooks and mapping decisions (migrations 0004, 0010, 0011, 0013, 0014, 0053, 0054)."""
 
 from sqlalchemy import (
     BigInteger,
@@ -7,6 +7,7 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -219,4 +220,31 @@ connection_approval = Table(
     CheckConstraint("environment IN ('test','production')", name="connection_approval_environment"),
     CheckConstraint("access IN ('read','read_write')", name="connection_approval_access"),
     CheckConstraint("status IN ('pending','approved','declined')", name="connection_approval_status"),
+)
+
+
+# --- 0054 the person's choice for each suggested field mapping (plan 9 P9-8.4; di/repositories/mapping_decisions.py) ------
+
+mapping_decision = Table(
+    "mapping_decision",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("source_id", Text, nullable=False),
+    Column("resource", Text),
+    Column("src", Text, nullable=False),
+    Column("decision", Text, nullable=False),  # accepted, replaced, accepted_with_rule, not_needed, asked_owner
+    Column("target", Text),
+    Column("rule", Text),
+    Column("confidence", Float),
+    Column("reason", Text),
+    Column("proposed_by", Text),
+    Column("owner", Text),
+    Column("answer", JSONB),
+    Column("decided_by", Text, nullable=False),
+    Column("decided_at", DateTime(timezone=True), server_default=func.now()),
+    Column("superseded", Boolean, nullable=False, server_default=text("false")),
+    Index("ix_mapping_decision_source_src", "source_id", "src"),
+    CheckConstraint(
+        "decision IN ('accepted','replaced','accepted_with_rule','not_needed','asked_owner')", name="mapping_decision_decision"
+    ),
 )

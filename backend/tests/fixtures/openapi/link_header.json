@@ -1,0 +1,29 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Items API", "version": "2"},
+  "servers": [{"url": "https://api.example.com/v2"}],
+  "paths": {
+    "/items": {
+      "get": {
+        "operationId": "listItems",
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "per_page", "in": "query", "schema": {"type": "integer", "maximum": 100}}
+        ],
+        "responses": {"200": {
+          "description": "Items, linked by the Link header",
+          "headers": {"Link": {"description": "rel=next", "schema": {"type": "string"}}},
+          "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Item"}}}}
+        }}
+      },
+      "post": {"operationId": "createItem", "responses": {"201": {"description": "Created"}}}
+    },
+    "/exports": {
+      "get": {
+        "operationId": "exportXml",
+        "responses": {"200": {"description": "An XML export", "content": {"application/xml": {"schema": {"type": "string"}}}}}
+      }
+    }
+  },
+  "components": {"schemas": {"Item": {"type": "object", "properties": {"id": {"type": "string"}, "name": {"type": "string"}}}}}
+}

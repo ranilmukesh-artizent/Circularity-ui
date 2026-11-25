@@ -19,9 +19,9 @@ describe('P9-0.13 roleMatrix rowsFor', () => {
 });
 
 const planner: TestUserResult = {
-  user_id: 'planner-a', email: 'planner@example.com', group: 'circ-planners-customer-a', role: 'Planner',
-  why: 'Group circ-planners-customer-a maps to Planner', account: { id: 'planner-a', label: 'Planner · Customer A' },
-  tenants: ['Customer A'], warehouse: null, pages: ['modeler'], permissions: ['manageFlows'], limit: 0, self_approve: false,
+  user_id: 'planner-a', email: 'planner@example.com', found: true, via_group: 'circ-planners-customer-a', source: 'directory', role: 'Planner',
+  why: 'Role from group circ-planners-customer-a', account: { id: 'planner-a', label: 'Planner · Customer A' },
+  tenants: ['Customer A'], warehouse: null, pages: ['modeler'], permissions: ['manageFlows'], delegations: [], approval_limit: 0, self_approve: false,
 };
 
 describe('P9-0.13 roleMatrix userCard', () => {
@@ -35,10 +35,10 @@ describe('P9-0.13 roleMatrix userCard', () => {
     expect(by['Approval limit']).toBe('$0');
     expect(by.Pages).toBe('modeler');
   });
-  it('a deputy has no account and no limit', () => {
-    const c = userCard({ ...planner, account: null, limit: null, tenants: [] });
+  it('a person without an account has no limit shown', () => {
+    const c = userCard({ ...planner, account: null, approval_limit: null, tenants: [] });
     const by = Object.fromEntries(c.lines.map((l) => [l.label, l.value]));
-    expect(by.Account).toBe('None (directory deputy)');
+    expect(by.Account).toBe('None');
     expect(by['Approval limit']).toBe('No limit');
     expect(by.Tenants).toBe('None');
   });

@@ -933,17 +933,17 @@ each story went.
 - [x] P9-8.1 Adapter registry with environments and owner approval
 - [x] P9-8.2 Field mapping suggestions with calibrated confidence
 - [x] P9-8.3 Discovery samples 500 records from the test connection
-- [ ] P9-8.4 Five mapping choices with ask the owner
+- [x] P9-8.4 Five mapping choices with ask the owner
 - [x] P9-8.5 Configured adapter reads dlt-style paging and selectors
-- [ ] P9-8.6 Connector from an API spec through an OpenAPI importer
+- [x] P9-8.6 Connector from an API spec through an OpenAPI importer
 - [ ] P9-8.7 Agent drafts an adapter spec held for a person
 - [x] P9-8.8 Directory mock with OIDC and a users API in source-sim
 - [x] P9-8.9 OIDC sign-in with authlib beside the demo sign-in
-- [ ] P9-8.10 Directory groups to roles as data with test a user
+- [x] P9-8.10 Directory groups to roles as data with test a user
 - [ ] P9-8.11 SCIM provisioning and directory sync for joiners
 - [x] P9-8.12 Workflow author from a sentence with repair rounds
 - [x] P9-8.13 Studio canvas on xyflow with dagre layout
-- [ ] P9-8.14 Modeler canvas on xyflow
+- [x] P9-8.14 Modeler canvas on xyflow
 - [ ] P9-8.15 Per-node input and output samples with pinned data
 - [ ] P9-8.16 Decision table editor in the Modeler
 - [x] P9-8.17 Composition object with maker-checker

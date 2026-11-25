@@ -1,0 +1,29 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Assets API", "version": "1"},
+  "servers": [{"url": "https://api.example.com"}],
+  "security": [{"ApiKeyAuth": []}],
+  "paths": {
+    "/v1/assets": {
+      "get": {
+        "operationId": "listAssets",
+        "parameters": [{"name": "limit", "in": "query", "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "Assets", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AssetList"}}}}}
+      }
+    },
+    "/v1/assets/{asset_id}/events": {
+      "get": {
+        "operationId": "listAssetEvents",
+        "parameters": [{"name": "asset_id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {"200": {"description": "Events", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"type": "array", "items": {"type": "object", "properties": {"event_id": {"type": "string"}, "kind": {"type": "string"}}}}}}}}}}
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {"ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "x-api-key"}},
+    "schemas": {
+      "Asset": {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}, "serial": {"type": "string"}}},
+      "AssetList": {"type": "object", "properties": {"data": {"type": "array", "items": {"$ref": "#/components/schemas/Asset"}}, "meta": {"type": "object", "properties": {"next_url": {"type": ["string", "null"], "format": "uri"}}}}}
+    }
+  }
+}

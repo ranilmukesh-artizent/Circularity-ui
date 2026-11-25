@@ -11,6 +11,7 @@
     connection.promote      commit  {source_id, secret}                   test -> production, once the owner approved it
     connection.approvals    read    {source_id}                           where a connection stands and its requests
     connection.discover     act     {source_id}                           read up to 500 records per resource from a TEST connection into the dry raw store (P9-8.3)
+    registry.importSpec     act     {name, system_type, vendor_family, document, base_url?}   an OpenAPI 3 document to a from_spec draft, with its notes and checks (P9-8.6)
 
 A connection starts in the test environment with read access: no scheduled sync, no instruction (di.connectors.sync,
 di.services.instructions.send). Production access and write-back (`rw` "Read / write") are each a request the named
@@ -29,14 +30,19 @@ Owns: the registry and connection actions and their guards. Never does: store or
 """
 # ruff: noqa: E501 - long lines in the action texts and the registry's field lists
 
+import importlib
+import json
 import re
 from typing import Any
+from urllib.parse import urlparse
 
 from sqlalchemy import text
 
 from di.connectors import catalog, connection, discover, lifecycle, secrets, sync
 from di.connectors.http import SourceError
+from di.connectors.openapi_import import import_openapi
 from di.connectors.registry import GENERIC_AUTH_METHODS, RegistryEntry, catalogue_entries
+from di.connectors.spec_check import check_spec
 from di.core import policy
 from di.repositories import adapter_registry as repo
 from di.services.actions.fabric_sources import CATALOG, FR_AUTH, SRC_TYPES, source_update
@@ -97,6 +103,9 @@ _declare("connection.approvals", "Where a connection stands", "see a connection'
 _declare("connection.discover", "Read a sample from the test connection", "read samples from test connections",
          "Read up to 500 records per resource from the test connection into the quarantined sample store; writes no canonical fact.",
          "act", {"source_id": _STR}, _MGR)  # fmt: skip
+_declare("registry.importSpec", "Import a connector from an API spec", "import connectors from API specs",
+         "Turn an OpenAPI 3 document the person pasted or uploaded into a connector draft, with the resources it found, what it left out and the checks.",
+         "act", {"name": _STR, "system_type": _STR, "vendor_family": _STR, "document": {"req": True}, "base_url": {"t": "string"}}, _MGR)  # fmt: skip
 
 
 # ---------------------------------------------------------------- helpers
@@ -188,8 +197,6 @@ def save_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
 
 @implement("registry.saveEntry")
 def save_entry(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
-    import json
-
     e = i["entry"]
     ver = repo.next_version(ctx.session, e["id"])
     ctx.session.execute(
@@ -232,6 +239,69 @@ def release(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         {"by": ctx.actor.id, "i": row.id, "v": row.version},
     )
     return {"id": row.id, "version": row.version, "status": "released", "log": f"Released connector {row.id} v{row.version}"}
+
+
+# ---------------------------------------------------------------- registry.importSpec (P9-8.6)
+def _document(raw: Any) -> dict[str, Any]:
+    """The OpenAPI document as an object: already one, or pasted JSON or YAML text. Never fetched from a URL."""
+    if isinstance(raw, dict):
+        return raw
+    if not isinstance(raw, str):
+        raise ValueError("The document is an object, or pasted JSON or YAML text.")
+    try:
+        found: Any = json.loads(raw)
+    except ValueError:
+        try:
+            found = importlib.import_module("yaml").safe_load(raw)
+        except ImportError as e:
+            raise ValueError("The document is not JSON. Paste it as JSON.") from e
+        except Exception as e:
+            raise ValueError("The document is neither JSON nor YAML.") from e
+    if not isinstance(found, dict):
+        raise ValueError("The document is neither JSON nor YAML of an OpenAPI 3 description.")
+    return found
+
+
+def _imported_entry(i: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """(the from_spec entry to save, the answer): the draft carries the import's notes, what was left out and the checks."""
+    base = str(i.get("base_url") or "").strip() or None
+    if base and not _is_http(base):
+        raise ValueError("The base URL starts with http:// or https://.")
+    imported = import_openapi(_document(i["document"]), base)
+    errors = check_spec(imported.spec, urlparse(base or "").hostname or "")
+    checks = [{"field": e.field, "message": e.message} for e in errors]
+    notes = {
+        "source": "openapi",
+        "notes": imported.notes,
+        "unsupported": imported.unsupported,
+        "checks": checks,
+        "needs_fixes": bool(checks),
+    }
+    slug = re.sub(r"[^a-z0-9]+", "-", str(i["name"]).lower()).strip("-")[:62]
+    entry = {
+        "id": slug, "kind": "from_spec", "system_type": str(i["system_type"]).strip(), "vendor_family": str(i["vendor_family"]).strip(),
+        "auth_methods": imported.auth_methods, "resources": imported.resources, "spec": imported.spec | {"import": notes},
+    }  # fmt: skip
+    answer = {"resources": imported.resources, "auth_methods": imported.auth_methods, "notes": imported.notes,
+              "unsupported": imported.unsupported, "checks": checks, "needs_fixes": bool(checks)}  # fmt: skip
+    return entry, answer
+
+
+@guard("registry.importSpec")
+def import_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    try:
+        entry, _ = _imported_entry(i)
+    except ValueError as e:
+        return "validation_error", str(e)
+    return save_guard({"entry": entry}, ctx)
+
+
+@implement("registry.importSpec")
+def import_spec(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    entry, answer = _imported_entry(i)
+    saved = save_entry({"entry": entry}, ctx)
+    mark = " (needs fixes)" if answer["needs_fixes"] else ""
+    return saved | answer | {"log": f"Imported the API spec as the draft of connector {entry['id']} v{saved['version']}{mark}"}
 
 
 # ---------------------------------------------------------------- connection.create
