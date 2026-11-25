@@ -43,6 +43,7 @@ from di.repositories.context import can_see_case
 from di.schemas.ask import AskBody
 from di.services.actions.pipeline import Actor, CallContext
 from di.services.ask import memory
+from di.services.ask.checked_answer import answer_checked
 from di.services.ask.fallback import ask_rule, rules_first
 from di.services.ask.model import AskModel, AskRequest, Done, ModelUnavailable, NoModel, TextDelta, ToolUse
 from di.services.ask.prompt import system_prompt
@@ -62,6 +63,7 @@ WHY = {
     "unavailable": "the language model is unavailable",
     "model_error": "the language model could not answer",
     "error": "the language model answer failed",
+    "unchecked": "the language model's answer about a workflow did not match what the workflow's run shows",
     "rules_first": "workflow drafts come from the workflow builder, which uses the real palette and checks every step",
 }
 
@@ -142,7 +144,7 @@ def answer_stream(body: AskBody, p: Principal, model: AskModel) -> Iterator[str]
             if rules_first(q, ctx, page):
                 raise ModelUnavailable("rules_first", "answered by the rules")
             req = AskRequest(question=q, system=system_prompt(account, pctx, page), conversation=memory.messages(turns))
-            for ev in model.answer(req, box):
+            for ev in answer_checked(model, req, box):  # an answer about a workflow is checked first (P9-2.23)
                 if isinstance(ev, TextDelta):
                     streamed = True
                     yield sse("delta", {"text": tidy(ev.text)})
@@ -175,6 +177,7 @@ def answer_stream(body: AskBody, p: Principal, model: AskModel) -> Iterator[str]
             final = {
                 "provider": model.name,
                 "model": model.model,
+                "by_model": True,
                 "fallback_reason": None,
                 "notice": None,
                 "text": text,
@@ -211,6 +214,7 @@ def answer_stream(body: AskBody, p: Principal, model: AskModel) -> Iterator[str]
             final = {
                 "provider": "fallback",
                 "model": None,
+                "by_model": False,
                 "fallback_reason": reason,
                 "notice": f"Answered by Circularity's rule-based assistant, because {WHY.get(reason, reason)}.",
                 "text": rule["text"],

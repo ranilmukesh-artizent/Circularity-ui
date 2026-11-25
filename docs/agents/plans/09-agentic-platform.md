@@ -854,7 +854,7 @@ each story went.
 - [x] P9-2.20 Lease end, return authorised and transit stage agents
 - [x] P9-2.21 Ten-stage journey on the case run view
 - [x] P9-2.22 Gates before the queue plan in decide_case
-- [ ] P9-2.23 Ask reads workflows and their runs
+- [x] P9-2.23 Ask reads workflows and their runs
 - [ ] P9-2.17 Phase 2 gate
 - [ ] P9-3.1 Fleet contract and repair log mocks with adapters
 - [ ] P9-3.2 Recall, telematics and parts mocks with adapters

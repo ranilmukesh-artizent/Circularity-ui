@@ -279,7 +279,7 @@ def test_stream_event_shape():
     assert "".join(d["text"] for k, d in ev if k == "delta") == final["text"]
     assert set(final) == {
         "type", "provider", "model", "fallback_reason", "notice", "text", "case_ids", "asset_ids", "sources", "tools",
-        "refused", "next", "intent", "result", "cards", "conversation_id",
+        "refused", "next", "intent", "result", "cards", "conversation_id", "by_model",
     }  # fmt: skip
     assert re.fullmatch(r"ASK-\d+", final["conversation_id"])
 

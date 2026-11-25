@@ -14,6 +14,9 @@
     what_if               case.whatIf                                  read action
     explain_kpi           kpi.explain                                  read action
     get_inbox             inbox.get                                    read action
+    list_workflows        workflow.list                                read action (Workflow Studio's list; P9-2.23)
+    get_workflow          workflow.get                                 read action (blocks, version, trigger, last run)
+    get_workflow_run      workflow.runGet                              read action (steps, log, held records, the error)
 
 Read-only, by construction: the table holds only MCP tools whose `rw` is "read" and actions whose risk is "read"; both
 are asserted at import, together with the MCP layer's list of actions no agent may reach (di.mcp.policy
@@ -42,6 +45,9 @@ from di.core import clock, policy
 from di.mcp import calllog
 from di.mcp.policy import outcome_of
 from di.mcp.tools import ACTIONS_OF, RUN, TOOLS, Refused, ToolCall, schema
+from di.services.actions import (
+    workflow_read,  # noqa: F401 - registers workflow.list, get, runs, runGet before the table below reads them
+)
 from di.services.actions.pipeline import Actor, CallContext, invoke
 from di.services.actions.registry import ACTIONS
 from di.services.agents.forbidden import forbidden
@@ -64,6 +70,10 @@ def _p(t: str, desc: str, **kw) -> dict:
 
 
 CASE_ID = _p("string", "Case id, e.g. RT-1048")
+WORKFLOW_ID = _p("string", "Workflow id, e.g. WF-116 (not a case)")
+RUN_ID = _p("string", "Workflow run id, e.g. RUN-D1CFE (not a case)")
+# an id of a workflow or a workflow run is never a case's: a case tool given one answers wrong_kind without running
+WORKFLOW_KIND = re.compile(r"^(?:(WF)-\d+|RUN-[A-Z0-9]{5})$")
 # read actions offered to the model: name -> (action, description, JSON schema properties, required)
 ACTION_TOOLS: dict[str, tuple[str, str, dict, list[str]]] = {
     "list_cases": (
@@ -105,6 +115,31 @@ ACTION_TOOLS: dict[str, tuple[str, str, dict, list[str]]] = {
         "Explain a headline figure: its value, definition and top contributors.",
         {"kpi": _p("string", "assets, potential, risk, co2, recovery, avoided or variance")},
         ["kpi"],
+    ),
+    "list_workflows": (
+        "workflow.list",
+        "List the Workflow Studio workflows you can see, with status (published, draft, paused, failing) and last run. "
+        "Filters optional.",
+        {
+            "status": _p("string", "published, draft, paused or failing"),
+            "src": _p("string", "source system id, e.g. repair"),
+            "q": _p("string", "text to search in name, id, owner"),
+            "limit": _p("number", "at most 20"),
+        },
+        [],
+    ),
+    "get_workflow": (
+        "workflow.get",
+        "One workflow (WF-nnn): its blocks, version, status, trigger, last run and recent runs.",
+        {"id": WORKFLOW_ID},
+        ["id"],
+    ),
+    "get_workflow_run": (
+        "workflow.runGet",
+        "One workflow run (RUN-xxxxx): its steps with status and record counts, log lines, held records with the rule that "
+        "held them, retries, the error and the page's suggested fix.",
+        {"id": RUN_ID},
+        ["id"],
     ),
     "get_inbox": ("inbox.get", "What needs the signed-in user now: approvals, evidence gaps, outcomes, notifications.", {}, []),
 }
@@ -235,6 +270,10 @@ class Toolbox:
             want = PY_TYPE.get(props[k]["type"])
             if want and (not isinstance(v, want) or (props[k]["type"] == "number" and isinstance(v, bool))):
                 return self._done(name, clean, t0, error=("validation_error", f'"{k}" must be a {props[k]["type"]}.'))
+        if isinstance(clean.get("case_id"), str) and (m := WORKFLOW_KIND.match(clean["case_id"].strip())):
+            what, use = ("a workflow", "get_workflow") if m[1] else ("a workflow run", "get_workflow_run")
+            msg = f"{clean['case_id']} is {what}, not a case. Use {use} with this id."
+            return self._done(name, clean, t0, error=("wrong_kind", msg))
         ctx = self.ctx()
         try:
             if name in MCP_TOOLS:

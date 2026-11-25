@@ -62,6 +62,7 @@ from di.repositories.workspace import af_risks
 from di.services.actions.decisions import draft_rationale
 from di.services.actions.pipeline import CallContext, fail, invoke
 from di.services.actions.registry import ACTIONS
+from di.services.ask import workflow_answer
 from di.services.ask.intents import IGNORE_RULES, INTENT, STARTERS, match, parse
 from di.services.cases import store
 from di.services.engine.routes import GATES
@@ -91,6 +92,8 @@ AGENT_OF = {
     "audit.search": "auditor",
     "sources.health": "integrator",
     "workflow.validate": "integrator",
+    "workflow.get": "integrator",
+    "workflow.runGet": "integrator",
     "access.lookup": "briefer",
     "asset.compare": "assembler",
     "analytics.models": "analyst",
@@ -1158,6 +1161,8 @@ def ask_rule(text: str, ctx: CallContext, ui: dict, inject: Callable[[str, dict]
             "text": "I follow the product rules for every request; text that asks me to ignore them changes nothing. I can:",
             "cards": [{"type": "cantdo", "data": {"what": "Change my rules or skip an approval", "suggest": suggest(ui)}}],
         }
+    elif (wf := workflow_answer.answer(R, str(text), ui)) is not None:  # a WF- or RUN- id: a workflow, never a case (P9-2.23)
+        out = wf
     elif not hits:
         result = "fallback"
         out = {"text": CANT, "cards": [{"type": "cantdo", "data": {"what": str(text)[:120], "suggest": suggest(ui)}}]}
