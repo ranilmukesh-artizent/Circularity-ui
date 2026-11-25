@@ -42,6 +42,7 @@ EXTRA_PERMS: dict[str, tuple[str, ...]] = {
 EXTRA_PAGES: dict[str, tuple[str, ...]] = {
     "modeler": ("Admin", "Planner", "Approver", "Executive"),
     "agents": ("Admin", "Developer"),
+    "mywork": ("Admin", "Developer", "Planner", "Approver", "Engineer", "Finance", "Executive", "Warehouse Manager"),
 }
 EXTRA_SECTIONS: dict[tuple[str, str], tuple[str, ...]] = {("access", "orgs"): ("Admin",)}
 

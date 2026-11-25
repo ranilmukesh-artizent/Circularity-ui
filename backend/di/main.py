@@ -20,6 +20,7 @@ import di.services.actions.orgs  # registers action handlers (org.create, org.up
 import di.services.actions.overlays  # registers action handlers (overlay.*: the customer overlay of a pack; plan 9)
 import di.services.actions.packs  # registers action handlers (pack.*: pack versions with maker-checker; plan 9)
 import di.services.actions.proposals  # registers action handlers (proposal.accept, proposal.reject; plan 8)
+import di.services.actions.work  # registers action handlers (case.needInfo, work.resolve, work.assign; plan 9)
 import di.services.actions.workflow_builder  # registers action handlers (workflow.draft, workflow.plan)
 import di.services.actions.workflow_drafts  # registers action handlers (workflow.draft.save, workflow.draft.discard, testRun)
 import di.services.actions.workflows  # noqa: F401  (registers action handlers)

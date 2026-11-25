@@ -259,6 +259,18 @@ def _case_replan(payload: dict[str, Any]) -> None:
     log.info("replan %s: moved %s", payload["org_unit_id"], moved or "none")
 
 
+@handler("work.sla")
+def _work_sla(payload: dict[str, Any]) -> None:
+    """A work item's due time came (di.services.cases.process.open_item queued this job): if it is still open it is
+    escalated (process.on_sla, P9-1.7). The timer only asks someone else; it never approves or resolves."""
+    from di.services.cases import process
+
+    with SessionLocal() as s:
+        outcome = process.on_sla(s, payload["item_id"])
+        s.commit()
+    log.info("work sla %s: %s", payload["item_id"], outcome)
+
+
 def tick_instructions() -> None:
     """Acknowledge the simulated steps that are due on the simulated clock."""
     import di.services.actions.execution  # noqa: F401

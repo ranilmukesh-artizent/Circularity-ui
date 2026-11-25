@@ -22,6 +22,7 @@ FORBIDDEN_ACTIONS = (
     "overlay.approve", "overlay.reject",  # plan 9 P9-1.3: a person decides which customer changes to a pack take effect
     "pack.approve", "pack.reject",  # plan 9 P9-1.6: a person decides which pack version is in force
     "credentials.rotate",  # plan 9 P9-0.4: a new secret is a person's, never an agent's (review focus 6)
+    "work.resolve", "work.assign",  # plan 9 P9-1.7: only a person resolves or hands on an exception, approval or question
 )  # fmt: skip
 
 # Writes an agent may prepare but never run, whatever its autonomy: the pipeline (step 9b) holds them for a person.

@@ -51,3 +51,5 @@ unattended". Times are local (IST).
 | 25 Nov 12:40 | P9-1.5 merged (one decider; parallel 3,921, RT-1048 smoke stage 10). P9-1.6 to w1, P9-1.7 to w2 (Sonnet), P9-1.12 to w3 (Haiku). Phase 1: 5 of 15. |
 | 25 Nov 08:49 | P9-1.12 merged. Haiku; red first quoted; only CO2e moves (R8 report 09-diffs/P9-1.12.md, decision-log row); factors stay sample values (Kinective Legal team review before any real set). |
 | 25 Nov 09:10 | P9-1.6 merged. Sonnet; R21 tests red first; pack.approve and pack.reject forbidden to agents; one .importlinter ignore added (intake -> repositories.packs, as for live_rules); overlays still read the pack file (outside its files): flagged. |
+| 25 Nov 14:05 | P9-1.12 and P9-1.6 merged (P9-1.12 message rewritten: the writer put the body on the subject line). P9-1.7 verifying (import-linter conflict with P9-1.6 resolved, both entries kept). P9-1.9 to w1. Phase 1: 7 of 15. |
+| 25 Nov 09:27 | P9-1.7 merged. Sonnet; red first quoted; migration 0033 filled; two .importlinter ignores (process -> workspace, common); import-linter conflict with P9-1.6 resolved keeping both. |

@@ -10,6 +10,9 @@ P9-1.2; stories X-03 and X-07). Uses registry entries I-2 (`gates`) and I-3 (`ev
                                valued again; a case that clears is released with a stage log row by `system`
     batch_status(s, ref)       {total, held, released} of the cases opened with the same `facts.batch`
 
+A hold also opens one exception item for the case (`sync_item`, type `evidence_missing`, P9-1.7: My work lists it, the
+pack's SLA escalates it) and a release closes it with the outcome "released".
+
 Owns: those functions and the case keys `evidenceRecords`, `gates` (one row per gate result, as the Case page shows it),
 `gateHold` and `requiredSteps`. Never does: approve anything. A release makes the case decidable again; a person still
 approves the decision.
@@ -37,6 +40,10 @@ from di.services.modeler.stages import STAGE_LABELS
 
 PackOf = Callable[[Mapping[str, Any]], Pack]
 _override: ContextVar[PackOf | None] = ContextVar("gate_hold_pack_of", default=None)
+# The session and case id `attach_evidence` was called with: the very next `apply` for that case uses it to open or close
+# the case's exception item (P9-1.7), once. `apply` has no session of its own (`decide_case` is pure on the case).
+_bound: ContextVar[tuple[Session, str] | None] = ContextVar("gate_hold_session", default=None)
+EVIDENCE_MISSING = "evidence_missing"  # the type of the exception item a hold opens
 
 
 def default_pack_of(case: Mapping[str, Any]) -> Pack:
@@ -63,6 +70,7 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
     ]
     if recs or "evidenceRecords" in case:
         case["evidenceRecords"] = recs
+    _bound.set((s, str(case.get("id"))))
 
 
 def _as_of(case: Mapping[str, Any]) -> datetime:
@@ -130,6 +138,8 @@ def apply(
     """Evaluate the case's gates, fail the blocked routes and hold the case (R20: call it before the business rules
     and before ranking). `pack` (default: `base_pack(case)`) and `as_of` (default: `_as_of(case)`) are what `decide_case`
     decides with. A case that no gate applies to, and has none recorded, is left untouched."""
+    bound = _bound.get()
+    _bound.set(None)  # taken once, whether or not a gate applies
     pack = pack or base_pack(case)
     as_of = as_of or _as_of(case)
     results = evaluate_gates(case, pack, as_of)
@@ -138,7 +148,42 @@ def apply(
     apply_gate_results(routes, results)
     case["gates"] = _rows(case, pack, results, as_of)
     hold(case, results)
+    if bound is not None and bound[1] == str(case.get("id")):
+        sync_item(bound[0], case, pack)
     return results
+
+
+# ---------------------------------------------------------------- the exception item of a hold (P9-1.7)
+def sync_item(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
+    """One open exception item (type `evidence_missing`) while the case is held, none after: a hold opens it for the owner
+    of the pack's exception type of that id, else the role of the failed gate's owner, with the pack's `exception` SLA; a
+    release closes it with the outcome "released". A case already held keeps its item. In the caller's transaction."""
+    from di.services.cases import process
+
+    cid = str(case["id"])
+    open_id = s.execute(
+        text("SELECT id FROM work_item WHERE case_id = :c AND type = :t AND status = 'open' ORDER BY id LIMIT 1"),
+        {"c": cid, "t": EVIDENCE_MISSING},
+    ).scalar()
+    held = isinstance(case.get("gateHold"), dict)
+    if not held:
+        if open_id is not None:
+            process.close_item(s, int(open_id), "released", "system")
+        return
+    if open_id is not None:
+        return
+    failed = [g for g in case.get("gates") or [] if not g["passed"] and g["hold"]]
+    missing = list(dict.fromkeys(m for g in failed for m in g["missing"]))
+    kind = next((t for t in pack.runtime.exception_types if t.id == EVIDENCE_MISSING), None)
+    role = kind.owner_role if kind else process.role_of_owner(failed[0]["owner"] if failed else "")
+    what = ", ".join(missing) or "the evidence"
+    process.open_item(
+        s, kind="exception", case_id=cid, org_unit_id=case.get("owner"), type=EVIDENCE_MISSING,
+        title=f"{cid} is held: {what} missing",
+        cause="; ".join(g["reason"] for g in failed if g.get("reason")) or "A gate needs evidence the case does not have",
+        action=kind.action if kind else f"Wait for {what} or chase the source system", owner_role=role,
+        due_hours=pack.runtime.sla_hours.get("exception"), by="system",
+    )  # fmt: skip
 
 
 # ---------------------------------------------------------------- release on evidence

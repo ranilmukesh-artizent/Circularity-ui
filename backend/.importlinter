@@ -65,6 +65,7 @@ modules =
     di.services.screens.integration
     di.services.screens.mcp
     di.services.screens.modeler
+    di.services.screens.mywork
     di.services.screens.nav
     di.services.screens.orchestration
     di.services.screens.product
@@ -91,6 +92,10 @@ ignore_imports =
     # The template of a case can be a pack version published for its owner (plan 9, P9-1.6): intake reads it, as it reads
     # the owner's flow.
     di.services.cases.intake -> di.repositories.packs
+    # The case process layer (plan 9, P9-1.7) merges Home's approvals and tasks into My work, and reads the Approver's
+    # out-of-office cover when it escalates: lazy reads of the workspace repository, as intake reads the live rules.
+    di.services.cases.process -> di.repositories.workspace
+    di.services.cases.process -> di.repositories.common
 
 [importlinter:contract:foundations]
 name = di.core and di.models import nothing above them

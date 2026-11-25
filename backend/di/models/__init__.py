@@ -39,6 +39,7 @@ from di.models.org import org_unit
 from di.models.overlay import customer_overlay
 from di.models.packs import pack_version
 from di.models.reference import fx_rate
+from di.models.work import work_item
 from di.models.workspace import state_item, state_seed
 
 __all__ = [
@@ -80,4 +81,5 @@ __all__ = [
     "sync_run",
     "tenant_grant",
     "webhook_event",
+    "work_item",
 ]

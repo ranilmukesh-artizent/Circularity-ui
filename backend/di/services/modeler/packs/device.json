@@ -874,8 +874,11 @@
    }
   ],
   "suggestion_rules": [],
-  "sla_hours": {},
-  "escalate_to": null
+  "sla_hours": {
+   "exception": 24,
+   "needs_info": 48
+  },
+  "escalate_to": "Approver"
  },
  "kpis": [
   {
