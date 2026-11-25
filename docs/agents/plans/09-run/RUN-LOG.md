@@ -98,3 +98,4 @@ unattended". Times are local (IST).
 | 25 Nov 18:52 | P9-8.12 merged. Sonnet; model drafts the graph (typed), up to 3 repairs, then hands over; keyword planner only with no model; saves drafts only. Lead: the no-key filter test accepts the serial rule on the synced stack |
 | 25 Nov 19:02 | P9-2.14 merged. Sonnet; red first quoted; RFC 9728 metadata and scope challenges; UI tokens keep working (aud di). Lead: the 401 test expects the resource_metadata challenge |
 | 25 Nov 19:08 | P9-8.8 merged. Sonnet; red first quoted; in-memory OIDC directory mock (discovery, PKCE code flow, RS256 id token, JWKS, userinfo, users/groups API); no registry entry, so the 21 systems are untouched; synthetic users only |
+| 25 Nov 19:17 | P9-8.17 merged. Sonnet; red first quoted; compose.sendBack/approve/publish forbidden to agents; maker is never checker. Lead at merge: forbidden.py and decision-log kept both sides (P9-8.1); vitest for compositions/useComposition (knip) |

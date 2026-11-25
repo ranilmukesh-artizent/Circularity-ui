@@ -945,7 +945,7 @@ each story went.
 - [ ] P9-8.14 Modeler canvas on xyflow
 - [ ] P9-8.15 Per-node input and output samples with pinned data
 - [ ] P9-8.16 Decision table editor in the Modeler
-- [ ] P9-8.17 Composition object with maker-checker
+- [x] P9-8.17 Composition object with maker-checker
 - [ ] P9-8.18 Compose describe and adapter mapping steps
 - [ ] P9-8.19 Compose test run shows where cases stopped
 - [ ] P9-8.20 Compose agent mapping, approve and publish steps

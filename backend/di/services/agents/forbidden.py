@@ -32,6 +32,7 @@ FORBIDDEN_ACTIONS = (
     "work.resolve", "work.assign",  # plan 9 P9-1.7: only a person resolves or hands on an exception, approval or question
     # plan 9 P9-8.1: a connection and the system owner's approval of its production or write access are a person's (R21)
     "connection.", "registry.release",
+    "compose.sendBack", "compose.approve", "compose.publish",  # plan 9 P9-8.17: a person decides which composition takes effect
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
     "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
 )  # fmt: skip

@@ -239,6 +239,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-8.12 workflow author from a sentence with repair rounds | this commit | lead-verify: workflow_builder, workflow_drafts, actions, tool_find, catalog_hygiene, agent_catalog, writes_workflows passed, lint, web 397; test_workflow_author 13 passed after a lead fix | done |
 | 2026-11-25 | 09 · P9-2.14 oAuth protected resource metadata for MCP | this commit | lead-verify: 60 passed api (mcp_oauth_metadata, auth, mcp_server, mcp_modeler, mcp_catalog_tools), lint, web 397 | done |
 | 2026-11-25 | 09 · P9-8.8 directory mock with OIDC and a users API in source-sim | this commit | source-sim restarted; source-sim suite 281 passed (incl. 10 directory mock tests); lint, web 397 | done |
+| 2026-11-25 | 09 · P9-8.17 composition object with maker-checker | this commit | lead-verify: 73 api passed (composition, models_migrations, config_agent, overlay_actions, catalog_hygiene, agent_catalog, tool_fleet find), lint, web 400 | done |
 
 ## Decisions taken without the user (to review)
 
