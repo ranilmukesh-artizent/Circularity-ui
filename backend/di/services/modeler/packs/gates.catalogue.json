@@ -27,7 +27,10 @@
   },
   "owner": "Quality",
   "citation": "Pack v3.2 (01 §4.1); US Consumer Product Safety Act §15 (15 U.S.C. 2064); EU General Product Safety Regulation (EU) 2023/988 (applies 13 Dec 2024). Texts not re-read; detail in A",
-  "legal_review": "pending"
+  "legal_review": "pending",
+  "params": {
+   "guardrail": "GR-12"
+  }
  },
  {
   "id": "G-TOOL-TEL",

@@ -13,7 +13,9 @@ P9-1.2; stories X-03 and X-07). Uses registry entries I-2 (`gates`) and I-3 (`ev
 A hold also opens one exception item for the case (`sync_item`, type `evidence_missing`, or the type of `EXCEPTION_OF` for
 the gate that holds it: the contract right G-CON-2 opens `no_active_contract` for the Fleet desk, P9-3.6; P9-1.7: My work
 lists it, the pack's SLA escalates it) and a release closes it with the outcome "released". The tool fleet's contract line
-is read with the evidence (`contract_line.evidence`); a later write of the line queues `recheck` (canonical.store.apply).
+is read with the evidence (`contract_line.evidence`); a later write of the line queues `recheck` (canonical.store.apply). The
+safety recall check G-TOOL-REC (P9-3.7) does not hold: it blocks routes and keeps one `recall_quarantine` item open for Quality
+while it fails (`sync_quarantine`); the notices are read with the evidence (`recall_evidence.evidence`).
 
 Owns: those functions and the case keys `evidenceRecords`, `gates` (one row per gate result, as the Case page shows it),
 `gateHold` and `requiredSteps`. Never does: approve anything. A release makes the case decidable again; a person still
@@ -34,7 +36,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
-from di.services.cases import contract_line, lifecycle, store
+from di.services.cases import contract_line, lifecycle, recall_evidence, store
 from di.services.engine.routes import Route
 from di.services.modeler.evidence import evidence_of, label_of, records_of
 from di.services.modeler.gates import GateResult, apply_gate_results, catalogue, evaluate_gates
@@ -48,6 +50,9 @@ _override: ContextVar[PackOf | None] = ContextVar("gate_hold_pack_of", default=N
 _bound: ContextVar[tuple[Session, str] | None] = ContextVar("gate_hold_session", default=None)
 EVIDENCE_MISSING = "evidence_missing"  # the type of the exception item a hold opens
 EXCEPTION_OF = {"G-CON-2": "no_active_contract"}  # a hold by this gate opens an item of this type instead (P9-3.6)
+QUARANTINE_ITEM = (
+    "recall_quarantine"  # the item a failed recall check G-TOOL-REC keeps open while the tool is quarantined (P9-3.7)
+)
 CONTRACT_GATE = "G-CON-1"  # the contract entitlement gate (P9-1.11)
 
 
@@ -76,6 +81,8 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
     _lease_on_clause(s, case.get("assetId"), recs)
     if case.get("template") == "tool_fleet" and (line := contract_line.evidence(s, case.get("serial") or case.get("assetId"))):
         recs.append(line)  # the fleet contract line, for GR-07 (P9-3.6)
+    if case.get("template") == "tool_fleet":  # the register's notices and the case's release, for GR-12 (P9-3.7)
+        recs.append(recall_evidence.evidence(s, case.get("cls"), case.get("recallRelease")))
     if recs or "evidenceRecords" in case:
         case["evidenceRecords"] = recs
     _bound.set((s, str(case.get("id"))))
@@ -216,6 +223,7 @@ def sync_item(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
     from di.services.cases import process
 
     cid = str(case["id"])
+    sync_quarantine(s, case, pack)
     open_id = s.execute(
         text("SELECT id FROM work_item WHERE case_id = :c AND type = ANY(:t) AND status = 'open' ORDER BY id LIMIT 1"),
         {"c": cid, "t": [EVIDENCE_MISSING, *EXCEPTION_OF.values()]},
@@ -245,8 +253,40 @@ def sync_item(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
     )  # fmt: skip
 
 
+def sync_quarantine(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
+    """One open `recall_quarantine` item for Quality while the recall check G-TOOL-REC fails for the case, none after (P9-3.7):
+    a failed check opens it with the recall's own text, a pass (the tool was released, or the notice closed) closes it with the
+    outcome "released". The case is not held, so this is separate from the hold's item. In the caller's transaction."""
+    from di.services.cases import process
+
+    cid = str(case["id"])
+    failed = next((g for g in case.get("gates") or [] if g["id"] == "G-TOOL-REC" and not g["passed"]), None)
+    open_id = s.execute(
+        text("SELECT id FROM work_item WHERE case_id = :c AND type = :t AND status = 'open' ORDER BY id LIMIT 1"),
+        {"c": cid, "t": QUARANTINE_ITEM},
+    ).scalar()
+    if failed is None:
+        if open_id is not None:
+            process.close_item(s, int(open_id), "released", "system")
+        return
+    if open_id is not None:
+        return
+    kind = next((t for t in pack.runtime.exception_types if t.id == QUARANTINE_ITEM), None)
+    owner = kind.owner_role if kind else failed["owner"]
+    action = kind.action if kind else "Release the tool after the fix, or choose exit or safe harvest"
+    process.open_item(
+        s, kind="exception", case_id=cid, org_unit_id=case.get("owner"), type=QUARANTINE_ITEM,
+        title=f"{cid} is quarantined: {failed['reason']}", cause=failed["reason"], action=action,
+        owner_role=pack.roles.get(owner, owner), due_hours=pack.runtime.sla_hours.get("exception"), by="system",
+    )  # fmt: skip
+
+
 # ---------------------------------------------------------------- release on evidence
 def _released_line(case: Mapping[str, Any], gate_ids: Sequence[str]) -> str:
+    from di.services.device import wipe  # a received device's certificate is in its condition, not in the evidence records
+
+    if "G-DEV-WIPE" in gate_ids and (line := wipe.released_line(case)):
+        return line
     as_of = _as_of(case)
     cat = catalogue()
     parts = []

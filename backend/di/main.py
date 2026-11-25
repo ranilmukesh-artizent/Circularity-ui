@@ -11,6 +11,7 @@ import di.services.actions.compose  # registers action handlers (compose.*: the 
 import di.services.actions.config_agent  # registers action handlers (config.read, config.draft: the configuration agent; plan 9)
 import di.services.actions.connections  # registers action handlers (registry.*, connection.*: the adapter registry; plan 9)
 import di.services.actions.decisions  # registers action handlers
+import di.services.actions.device_cases  # registers action handlers (payout.decide; plan 9 P9-6.8)
 import di.services.actions.engine  # registers action handlers
 import di.services.actions.exceptions  # registers action handlers (exception.explain: the exception assistant; plan 9)
 import di.services.actions.execution  # registers action handlers
@@ -29,7 +30,9 @@ import di.services.actions.orgs  # registers action handlers (org.create, org.up
 import di.services.actions.overlays  # registers action handlers (overlay.*: the customer overlay of a pack; plan 9)
 import di.services.actions.packs  # registers action handlers (pack.*: pack versions with maker-checker; plan 9)
 import di.services.actions.proposals  # registers action handlers (proposal.accept, proposal.reject; plan 8)
+import di.services.actions.service_desk  # registers serviceDesk.computeAccuracy (held-out repair accuracy; plan 9 P9-4.5)
 import di.services.actions.standing_policy  # registers action handlers (standingPolicy.*, policy approval; plan 9)
+import di.services.actions.tool_quarantine  # registers recall.release (safety recall quarantine; plan 9)
 import di.services.actions.tools  # registers action handlers (tools.find: the tool search; plan 9)
 import di.services.actions.work  # registers action handlers (case.needInfo, work.resolve, work.assign; plan 9)
 import di.services.actions.workflow_author  # registers action handlers (workflow.author: a draft from a sentence, P9-8.12)

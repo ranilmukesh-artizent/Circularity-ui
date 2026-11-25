@@ -33,6 +33,7 @@ SYSTEM_OF = {
     "transport": "tms",
     "move": "wms",
     "finance": "erp",
+    "payout": "dvlab",  # P9-6.8: the payout of a received device, outside an approval's plan (di.services.device.payout.send)
 }
 
 

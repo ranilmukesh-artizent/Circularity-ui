@@ -3,6 +3,7 @@
     contract_check(line, owner_org, serial="") -> GateResult   does the contract line give the right to dispose of the tool?
     line_value(line, contract) -> dict                         a canonical `contract_line` as the check reads it
     sample_evidence(case) -> {"contract_line": Evidence}       the complete evidence of a sample-world case
+    recall_check(serial, cls, recalls, released) -> (GateResult, paths, parts)   GR-12, the safety recall check (P9-3.7, below)
 
 **GR-07, the contract right gate** (catalogue gate `G-CON-2`, the pack's guardrail GR-07, Compliance, locked, stage match).
 The line the fleet contract system holds for the serial is the evidence `contract_line`. The check fails, and blocks every
@@ -20,13 +21,21 @@ A failed check holds the case until the line changes (`hold_until_evidence`); `d
 exception item `no_active_contract` and a later sync of the line releases it. The result's routes are the pack's: the
 check registers itself in `gates.CHECKS`, which fills them.
 
+**GR-12, the safety recall check** (P9-3.7, TF-04; catalogue gate `G-TOOL-REC`, Compliance, locked, stage match). The register's
+active notices whose serial range holds the tool's serial (evidence `recall_check`, `recall_check()` below): a `repair` recall
+blocks release, redeploy and resell until a person releases the tool after the fix (action `recall.release`); a `replace` or
+`refund` recall leaves exit and harvest only and is never released; harvest never certifies a part the notice names. The gate
+does not hold the case (it still has a recommendation); it requires the step Quarantine and opens the exception
+`recall_quarantine` for Quality (`gate_hold.sync_quarantine`). No model step: the notices and remedies are the register's
+own fields.
+
 Never does: read the canonical store, the clock or a case (the caller passes the line), write language (the reasons are
 fixed text of the line's own terms; no model step), or touch the sample world's numbers: a sample-world case is decided
 with `sample_evidence`, an active line, so the gate passes there and the PO goldens keep their numbers.
 """
 
 import dataclasses
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any
 
@@ -94,4 +103,135 @@ def sample_evidence(case: Mapping[str, Any]) -> dict[str, Evidence]:
     serial = str(case.get("serial") or case.get("id") or "")
     value = {"lineId": f"FL-{serial}", "serial": serial, "status": "active", "returnReason": None, "theftClaimOpen": False,
              "claimRef": None, "damageChargeOpen": False, "chargeRef": None, "ownerOrg": None}  # fmt: skip
-    return {CONTRACT_LINE: Evidence(CONTRACT_LINE, "sample", SAMPLE_AT, "pass", value)}
+    return {CONTRACT_LINE: Evidence(CONTRACT_LINE, "sample", SAMPLE_AT, "pass", value)} | recall_sample()
+
+
+# ---------------------------------------------------------------- the safety recall check (P9-3.7, story TF-04)
+RECALL = "recall_check"  # the evidence type: {recalls: [the register's notices for the serial's class], released: {...} | None}
+RECALL_GATE = "G-TOOL-REC"  # catalogue gate; the pack's gate ref carries guardrail GR-12 (Compliance, locked, stage match)
+QUARANTINE = "Quarantine"  # the step a failed recall check requires
+PATH_ORDER = ("release", "refurb", "redeploy", "resell", "harvest", "exit")
+REPAIR_BLOCKS = ("release", "redeploy", "resell")  # a repair recall: refurb does the repair, harvest and exit stay
+NEVER_BACK = ("release", "refurb", "redeploy", "resell")  # a replace or refund recall: only exit and harvest stay
+
+
+def _serial_key(serial: str) -> tuple[str, int | None]:
+    head = serial.rstrip("0123456789")
+    tail = serial[len(head) :]
+    return head, int(tail) if tail else None
+
+
+def _in_range(serial: str, lo: Any, hi: Any) -> bool:
+    """The serial lies in the notice's range: the same prefix and a number between the two (else by text order)."""
+    if not (lo and hi and serial):
+        return False
+    (p, n), (p1, n1), (p2, n2) = _serial_key(serial), _serial_key(str(lo)), _serial_key(str(hi))
+    if n is not None and n1 is not None and n2 is not None:
+        return p == p1 == p2 and n1 <= n <= n2
+    return str(lo) <= serial <= str(hi)
+
+
+def _hits(serial: str, cls: str, recalls: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """The active notices of the tool's class whose serial range holds the serial; a closed notice is ignored."""
+    return [
+        n for n in recalls
+        if str(n.get("status") or "").lower() == "active"
+        and (not n.get("tool_class") or not cls or n["tool_class"] == cls)
+        and _in_range(serial, n.get("serial_from"), n.get("serial_to"))
+    ]  # fmt: skip
+
+
+def _freed(n: Mapping[str, Any], released: Mapping[str, Any] | None) -> bool:
+    """A repair recall is freed by a release of its own notice; a replace or refund recall never is."""
+    return n.get("remedy") == "repair" and bool(released) and (released or {}).get("recall_id") == n.get("recall_id")
+
+
+def recall_check(
+    serial: str, cls: str, recalls: Sequence[Mapping[str, Any]], released: Mapping[str, Any] | None
+) -> tuple[GateResult, frozenset[str], frozenset[str]]:
+    """GR-12: the gate result, the blocked paths and the blocked parts of a tool against the register's notices (`recalls`,
+    the canonical `recall` names: recall_id, tool_class, serial_from, serial_to, remedy, affected_parts, status). An active
+    notice whose range holds the serial:
+      `repair`          release, redeploy and resell are blocked until `released` (recall_id, by, at, note) frees the tool;
+                        refurb, harvest and exit stay; harvest never certifies a part the notice names (until released);
+      `replace`/`refund` only exit and harvest stay (harvest again without the named parts); a release changes nothing.
+    A result that fails blocks, does not hold the case, and requires the step Quarantine. The routes are the pack's ids."""
+    hits = _hits(serial, cls, recalls)
+    open_ = [n for n in hits if not _freed(n, released)]
+    if not open_:
+        why = (
+            f"Safety recall {', '.join(str(n.get('recall_id')) for n in hits)} released by {(released or {}).get('by') or '?'}"
+            if hits
+            else f"No active safety recall for serial {serial or '?'}"
+        )
+        return GateResult(RECALL_GATE, True, GateEffect("block", (), False, None), (), why), frozenset(), frozenset()
+    open_.sort(key=lambda n: n.get("remedy") == "repair")  # a replace or refund notice speaks first
+    paths = {p for n in open_ for p in (REPAIR_BLOCKS if n.get("remedy") == "repair" else NEVER_BACK)}
+    parts = frozenset(str(p) for n in open_ for p in n.get("affected_parts") or [])
+    texts = [
+        f"Safety recall {n.get('recall_id')} (repair): quarantined until Quality releases it"
+        if n.get("remedy") == "repair"
+        else f"Safety recall {n.get('recall_id')} ({n.get('remedy')}): never released to the fleet; only exit and safe parts"
+        for n in open_
+    ]
+    routes = tuple(p for p in PATH_ORDER if p in paths)
+    return (
+        GateResult(RECALL_GATE, False, GateEffect("block", routes, False, QUARANTINE), (), "; ".join(texts)),
+        frozenset(routes),
+        parts,
+    )
+
+
+def _recall_inputs(case: Mapping[str, Any]) -> tuple[str, str, Sequence[Mapping[str, Any]], Mapping[str, Any] | None] | None:
+    e = evidence_of(case, RECALL)
+    if e is None:
+        return None
+    serial = str(case.get("serial") or case.get("assetId") or "")
+    return serial, str(case.get("cls") or ""), e.value.get("recalls") or [], e.value.get("released")
+
+
+def blocked_parts(case: Mapping[str, Any]) -> frozenset[str]:
+    """The parts harvest never certifies for this case (the parts the recall names, until a repair recall is released)."""
+    got = _recall_inputs(case)
+    return recall_check(*got)[2] if got else frozenset()
+
+
+def quarantine_of(case: Mapping[str, Any]) -> dict[str, Any] | None:
+    """What the case panel shows of the recall: the notice (a replace or refund notice first), what it blocks now, the parts
+    it names and who released it; None when no active notice names the serial."""
+    got = _recall_inputs(case)
+    if got is None:
+        return None
+    hits = _hits(got[0], got[1], got[2])
+    if not hits:
+        return None
+    _, paths, parts = recall_check(*got)
+    hits.sort(key=lambda n: n.get("remedy") == "repair")
+    n = hits[0]
+    rel = got[3] if _freed(n, got[3]) else None
+    return {
+        "recall_id": n.get("recall_id"), "remedy": n.get("remedy"), "blocked": [p for p in PATH_ORDER if p in paths],
+        "affected_parts": sorted(str(p) for p in n.get("affected_parts") or []),
+        "released": {"by": rel.get("by"), "at": rel.get("at"), "note": rel.get("note")} if rel else None,
+    }  # fmt: skip
+
+
+def _recall_gate(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult | None:
+    got = _recall_inputs(case)
+    if got is None:
+        return None  # no record: the data path holds "Recall check missing"
+    res, _, _ = recall_check(*got)
+    mine = {r.id for r in pack.routes}
+    return dataclasses.replace(
+        res,
+        gate_id=gate.id,
+        effect=GateEffect(res.effect.kind, tuple(p for p in res.effect.routes if p in mine), False, res.effect.step),
+    )
+
+
+CHECKS[RECALL_GATE] = _recall_gate
+
+
+def recall_sample() -> dict[str, Evidence]:
+    """The sample world has no recall: the register's answer for it is complete and empty."""
+    return {RECALL: Evidence(RECALL, "sample", SAMPLE_AT, "pass", {"recalls": [], "released": None})}

@@ -43,6 +43,7 @@ from di.services.actions.registry import ActionError
 from di.services.cases import gate_hold, store
 from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
 from di.services.device import verify as _device_verify  # noqa: F401 - registers the check of the gate G-DEV-QUOTE (P9-6.5)
+from di.services.device import wipe as _device_wipe  # noqa: F401 - registers the check of the gate G-DEV-WIPE (P9-6.7)
 from di.services.engine.evaluate import apply_business, build_routes
 from di.services.engine.jsmath import js_round
 from di.services.engine.queue import Capacity, Dem, QueuePlanner, planner_for
@@ -199,7 +200,11 @@ def _tool_fleet(
     first): the plan leaves them out (`gateBlocked`, so none wins a named order) and they are let through again here the
     same way, for `apply_gate_results` to fail them with the gate's reason."""
     v = _valuer_case(c, "tool_fleet")
+    if parts := fleet_evidence.blocked_parts(c):  # the parts harvest never certifies (GR-12, P9-3.7)
+        v["recallParts"] = sorted(parts)
     cases, demand = _queue_of(c, v, session, queue)
+    if v.get("recallParts"):  # the queue holds this case as it was read: the plan sees the same parts blocked
+        cases = [x | {"recallParts": v["recallParts"]} if x["id"] == v["id"] else x for x in cases]
     p = planner or planner_for(pack)
     cap = Capacity(slots=js_round(tool_fleet.BASEP["slots"]))
 

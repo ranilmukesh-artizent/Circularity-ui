@@ -2,9 +2,38 @@
  * The device recommerce case view (plan 9, P9-6.4, story DV-01): what the case page's "Device" tab shows for a case opened
  * from a received trade-in (backend/di/services/screens/case.py, the `device` block of the case). A read only: the block
  * comes with the case screen, so a device case needs no call of its own. A one-device case has an IMEI; a bulk lot has
- * none and a line per device.
+ * none and a line per device. The one write is `decidePayout` (P9-6.8, DV-05): a person's decision on a payout that waits for
+ * Customer care, through the action pipeline.
  */
+import { invoke } from './actions';
 import type { CaseRec } from './case';
+
+/** The payout adjustment of a received device (P9-6.8, DV-05): the quote, the payout the pack's table gives and the gap. A gap
+ * within the limit (`auto`) is adjusted at once; a bigger one is `waiting` for Customer care, with the grading photos, until a
+ * person with `decidePayouts` decides it (`decided`). */
+export interface PayoutView {
+  status: 'adjusted' | 'waiting' | 'decided';
+  quote: number;
+  adjusted: number;
+  /** the share the payout moved: -0.06 is 6% below the quote */
+  gapPct: number;
+  reason: string;
+  /** the table version the rule is from, "US payout rules v1" */
+  table: string;
+  auto: boolean;
+  /** the largest gap adjusted at once (guardrail GR-D11's max_auto_gap): 0.1 is 10% */
+  limit: number;
+  currency: string;
+  /** the grading's photo ids */
+  photos: string[];
+  /** the `payout_gap` work item while it waits */
+  item: number | null;
+  decided: { by: string; reason: string; at: string } | null;
+}
+
+/** payout.decide: a person sets the payout of a waiting payout (never above the quote), with a reason. */
+export const decidePayout = (caseId: string, payout: number, reason: string) =>
+  invoke<{ case_id: string; payout: number }>('payout.decide', { case_id: caseId, payout, reason });
 
 /** One device of a bulk lot. */
 export interface DeviceLine { imei: string; model: string; storageGb: number; declaredGrade: string; grade: string; quote: number }
@@ -40,6 +69,16 @@ export interface RegistryView {
   allowedRoutes: string[];
 }
 
+/** The lab's data-wipe certificate of the device (P9-6.7, DV-04). `none`: no certificate, or one lacking a field (every channel
+ * but recycle is blocked and the case waits); `failed`: the verification failed (a step is required); `ok`. `batch` counts
+ * the cases of the device's batch that still wait for a certificate. */
+export interface WipeView {
+  state: 'none' | 'failed' | 'ok';
+  certificate: { id: string | null; method: string | null; toolVersion: string | null; verification: string | null; operator: string | null; at: string | null } | null;
+  missing: string[];
+  batch: { ref: string; total: number; waiting: number } | null;
+}
+
 export interface DeviceView {
   /** the device's IMEI; null for a bulk lot */
   imei: string | null;
@@ -65,6 +104,10 @@ export interface DeviceView {
   quoteCheck?: QuoteCheck | null;
   /** the registry's check; null for a bulk lot */
   registry?: RegistryView | null;
+  /** the wipe certificate; null for a bulk lot */
+  wipe?: WipeView | null;
+  /** the payout adjustment; null until the lab has graded the device and read its battery (and for a bulk lot) */
+  payout?: PayoutView | null;
 }
 
 /** The device block of a case, or null for a case that is not a received device (the industrial book, a tool return). */

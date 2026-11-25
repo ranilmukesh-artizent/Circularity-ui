@@ -42,6 +42,11 @@ EXTRA_PERMS: dict[str, tuple[str, ...]] = {
     "approve.standingPolicy": ("Admin", "Approver"),  # plan 9 P9-2.5: approve or retire a standing policy
     "ownSystem": ("Admin",),  # plan 9 P9-8.1: decide a connection's owner approval for any system (the named owner may too)
     "manageMarketTables": ("Admin", "Planner", "Finance"),  # plan 9 P9-4.2: draft and submit a market rate card or table
+    "decidePayouts": (
+        "Admin",
+        "Planner",
+    ),  # plan 9 P9-6.8: decide a payout adjustment above the limit (a person's, never an agent's)
+    "releaseQuarantine": ("Admin", "Approver"),  # plan 9 P9-3.7: release a recalled tool from quarantine after the fix
 }
 EXTRA_PAGES: dict[str, tuple[str, ...]] = {
     "modeler": ("Admin", "Planner", "Approver", "Executive", "Finance"),  # Finance: the market tables (P9-4.2)

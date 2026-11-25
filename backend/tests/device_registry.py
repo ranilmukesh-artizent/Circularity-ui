@@ -10,11 +10,29 @@ from di.services.canonical import store as canonical
 from di.services.canonical.store import Fact
 
 
-def seed_registry(imei: str, *, days_ago: float = 1, blacklist: str = "clear", lock: str = "off", finance: str = "clear") -> str:
-    """Write the registry check; return its time (ISO)."""
+def seed_wipe(imei: str, *, verification: str = "pass", certificate_id: str | None = None, **over: str | None) -> dict:
+    """Write the lab's data-wipe certificate (`condition.wipe_certificate`, as the dvlab adapter lands it); return it. Since
+    P9-6.7 a received device with no certificate is held, so a test that wants a recommendation seeds one."""
+    cert = {
+        "certificate_id": certificate_id or f"WC-{imei[-5:]}", "method": "Purge", "tool_version": "4.2.1",
+        "verification": verification, "operator": "OP-77", "at": clock.now().isoformat(),
+    } | over  # fmt: skip
+    with SessionLocal() as s:
+        canonical.apply(s, "dvlab", [Fact("condition", f"IMEI:{imei}", "wipe_certificate", cert)])
+        s.commit()
+    return cert
+
+
+def seed_registry(
+    imei: str, *, days_ago: float = 1, blacklist: str = "clear", lock: str = "off", finance: str = "clear", wipe: bool = True
+) -> str:
+    """Write the registry check; return its time (ISO). Also a passing wipe certificate unless `wipe` is false, so the
+    tests of the registry gate (and the ones that only want a recommendation) are not held by the wipe gate."""
     at = (clock.now() - timedelta(days=days_ago)).isoformat()
     facts = {"device_blacklist": blacklist, "device_lock": lock, "device_finance": finance, "registry_checked_at": at}
     with SessionLocal() as s:
         canonical.apply(s, "dvreg", [Fact("condition", f"IMEI:{imei}", k, v) for k, v in facts.items()])
         s.commit()
+    if wipe:
+        seed_wipe(imei)
     return at

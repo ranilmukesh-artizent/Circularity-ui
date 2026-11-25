@@ -151,7 +151,9 @@ from di.services.actions.decisions import draft_rationale
 from di.services.actions.pipeline import CallContext
 from di.services.cases import gate_hold, record_match, replan
 from di.services.device import lock as device_lock
+from di.services.device import payout as device_payout
 from di.services.device import verify as device_verify
+from di.services.device import wipe as device_wipe
 from di.services.execution import (
     as_sc,
     ex_actual,
@@ -165,6 +167,7 @@ from di.services.execution import (
 from di.services.execution.lanes import LOCS, RATE_CARD, loc_win
 from di.services.execution.plan import ack_note, ex_delivered, value_order
 from di.services.execution.steps import ex_doc_ref, ho_kind
+from di.services.service_desk.intake import view as service_desk_view
 
 # ================================================================ shared by the product, case and orchestration screens
 
@@ -625,6 +628,8 @@ def device_block(c: Case, session: Session | None = None) -> dict | None:
         "registry": (
             device_lock.view(session, c, active_pack(session, c["template"], c["owner"])) if session is not None else None
         ),
+        "wipe": device_wipe.view(session, c) if session is not None else None,  # the wipe certificate (P9-6.7)
+        "payout": device_payout.view(session, c) if session is not None else None,  # the payout adjustment (P9-6.8)
     }  # fmt: skip
 
 
@@ -641,6 +646,8 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
         rec["batch"] = {"ref": rec["batchRef"], **gate_hold.batch_status(session, rec["batchRef"])}
     if (dev := device_block(c, session)) is not None:  # a received device or a bulk lot (plan 9, P9-6.4)
         rec["device"] = dev
+    if (sd := service_desk_view(session, c)) is not None:  # a service ticket or batch (plan 9, P9-4.3)
+        rec["serviceDesk"] = sd
     return {
         "case": rec,
         "model": as_model(c),

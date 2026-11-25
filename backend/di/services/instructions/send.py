@@ -53,7 +53,8 @@ def send(iid: int, resend: bool = False) -> str:
         if not resend and ins["status"] in ("acknowledged", "failed", "sent"):
             return "skipped"  # a duplicate job, or an event got there first
         c = store.get(s, ins["case_id"])
-        if c is None or not c.get("exec") or c["exec"]["ref"] != ins["approval_ref"]:
+        own_ref = ins["kind"] == "payout"  # a payout is sent on its own, outside an approval's plan (P9-6.8)
+        if c is None or (not own_ref and (not c.get("exec") or c["exec"]["ref"] != ins["approval_ref"])):
             _update(s, iid, status="failed", last_error="The approval this instruction belongs to is no longer current")
             s.commit()
             return "failed"
@@ -157,6 +158,12 @@ def tick() -> int:
     with SessionLocal() as s:
         due = queue.simulated_due(s)
     for ins in due:
+        if ins["kind"] == "payout":  # no plan step to acknowledge: the simulated payout is done when due (P9-6.8)
+            with SessionLocal() as s:
+                _update(s, ins["id"], status="acknowledged")
+                s.commit()
+            done += 1
+            continue
         with SessionLocal() as s:
             r = invoke(
                 "adapter.acknowledge",

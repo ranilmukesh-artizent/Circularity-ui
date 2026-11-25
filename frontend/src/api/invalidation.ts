@@ -104,6 +104,7 @@ const ACTION_FAMILY: Record<string, Scope> = {
   notify: CASE_WRITE, // notifications: alerts, the asset page's notes, tasks
   escalation: CASE_WRITE,
   comment: [...CASE_WRITE, 'integration'], // comments sit under audit entries, cases and Connection Fabric records
+  serviceDesk: ['modeler', 'case'], // serviceDesk.computeAccuracy (plan 9, P9-4.5): the Models panel (no area, always refetched) and the estimates on cases
   source: FABRIC_WRITE,
   credentials: FABRIC_WRITE,
   conflict: FABRIC_WRITE,
@@ -115,6 +116,7 @@ const ACTION_FAMILY: Record<string, Scope> = {
   overlay: ['modeler', ...CASES], // a customer overlay of a pack (plan 9): the Modeler's Customer layer, and the cases it decides
   pack: ['modeler', ...CASES], // a pack version (plan 9, P9-1.6): the Modeler's Packs panel, and the cases it decides
   marketTable: ['modeler'], // a per-market rate card or table version (plan 9, P9-4.2): the Modeler's Tables panel
+  payout: CASE_WRITE, // payout.decide (plan 9, P9-6.8): a device case's payout, its work item and the summaries that count them
   mcp: [...SUMMARY, 'mcp', 'access'], // mcp.propose: a request for a person, in the inboxes and the MCP page
   access: 'all', // who may see or do what: every page can change
   agent: 'all', // agent.setEnabled: what the agents may do (access)

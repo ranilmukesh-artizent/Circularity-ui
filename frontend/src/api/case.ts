@@ -13,6 +13,7 @@ import type { PackStage } from './analytics';
 import { ApiError, cached, invalidate, ref, withQuery } from './client';
 import type { DeviceView } from './device';
 import type { Reference } from './reference';
+import type { ServiceDeskView } from './serviceDesk';
 import { fmtDate, fmtDateYear, fmtNumber, money } from './format';
 import { bump, onSessionChange } from './store';
 import type { ActionResult } from './types';
@@ -63,6 +64,10 @@ export interface CaseRec {
   snapshot?: { id: string; items?: number } | null;
   /** A case opened from a received device or a bulk lot of devices (P9-6.4); read it with `deviceView` (device.ts). */
   device?: DeviceView;
+  /** The case's flow (`service_desk` for a case opened from a service ticket, P9-4.3). */
+  flow?: string;
+  /** A case opened from a service ticket or batch (P9-4.3); read it with `serviceDeskView` (serviceDesk.ts). */
+  serviceDesk?: ServiceDeskView;
 }
 
 // ---------- stages ----------

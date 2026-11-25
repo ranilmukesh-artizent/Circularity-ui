@@ -863,7 +863,7 @@ each story went.
 - [x] P9-3.4 Tool returns open cases from the contract feed
 - [x] P9-3.5 Workbench grade on the tool fleet case panel
 - [x] P9-3.6 Contract right gate GR-07
-- [ ] P9-3.7 Safety recall check with quarantine
+- [x] P9-3.7 Safety recall check with quarantine
 - [ ] P9-3.8 Stale telematics guardrail GR-13
 - [ ] P9-3.9 Wear index and remaining life per component
 - [ ] P9-3.10 Remaining life model and teardown calibration
@@ -881,9 +881,9 @@ each story went.
 - [ ] P9-3.22 Phase 3 gate
 - [x] P9-4.1 Service desk mocks with repair history and offers
 - [x] P9-4.2 Per-market decision tables with maker-checker
-- [ ] P9-4.3 One case per service ticket or batch
-- [ ] P9-4.4 Estimate from similar past repairs
-- [ ] P9-4.5 Estimate accuracy on held-out repairs
+- [x] P9-4.3 One case per service ticket or batch
+- [x] P9-4.4 Estimate from similar past repairs
+- [x] P9-4.5 Estimate accuracy on held-out repairs
 - [ ] P9-4.6 Price fix, covered swap and upgrade options
 - [ ] P9-4.7 Re-run options when the fault is posted
 - [ ] P9-4.8 Decide a batch per tool as one split
@@ -907,8 +907,8 @@ each story went.
 - [x] P9-6.4 One case per received device
 - [x] P9-6.5 Verify the device against the quote
 - [x] P9-6.6 Blacklist and lock gate for devices
-- [ ] P9-6.7 Wipe certificate gate with batch hold
-- [ ] P9-6.8 Payout adjustment within 10 percent
+- [x] P9-6.7 Wipe certificate gate with batch hold
+- [x] P9-6.8 Payout adjustment within 10 percent
 - [ ] P9-6.9 Price model behind the predictor
 - [ ] P9-6.10 Price per channel with interval and floor
 - [ ] P9-6.11 Wholesale lots sold to the best approved bid

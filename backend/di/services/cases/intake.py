@@ -40,6 +40,9 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   `di.services.device.intake.device_case` from the trade-in on file: the feed price as the reference value, the cosmetic
   grade when graded; the valuer snapshot keeps the IMEI, quote, partner and the gathered inputs (`device.inputs`). The lab
   adapter's hook (`device.intake.open_from_tradein`) calls this `open_case`; a bulk batch comes as a PO-shaped lot.
+- **Service ticket** (plan 9, P9-4.3). The reason `service_ticket` opens one case per service ticket or batch
+  (`di.services.service_desk.intake.open_from_ticket`): `facts` the flow `service_desk` and `serviceDesk` (the ticket and its
+  lines, kept as `serviceDesk`), with the class, serial and age of the worst line for the valuer.
 - **Contract refresh** (plan 9, P9-5.1). The reason `contract_refresh` opens a refresh case for a contract (asset key the
   contract id, `facts` the flow `contract_refresh`, `term_end`, `market`, `lines`: kept as `refresh`); `dedupe_as` names
   the dedupe key's asset (`<contractId>@<endDate>`, once per term). It is valued by no valuer yet (no routes, stage
@@ -74,7 +77,9 @@ from di.services.cases.lifecycle import STAGES
 from di.services.device import inputs as device_inputs
 from di.services.device import intake as device_intake
 from di.services.device import lock as device_lock
+from di.services.device import payout as device_payout
 from di.services.device import verify as device_verify
+from di.services.device import wipe as device_wipe
 from di.services.engine.jsmath import js_round
 from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, FormulaPredictor, Predictor
 from di.services.engine.queue import Capacity, Dem, planner_for
@@ -86,7 +91,7 @@ from di.services.modeler.valuers import amount, device, tool_fleet
 from di.services.modeler.valuers.rng import mulberry32
 
 REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap", "service_order", "pool_excess",
-           "contract_refresh")  # fmt: skip
+           "contract_refresh", "service_ticket")  # fmt: skip
 REFRESH_FLOW = "contract_refresh"  # the flow of a refresh case (P9-5.1): opened for a contract, not valued as a return
 
 
@@ -411,6 +416,7 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
         if pack.valuer.kind == "device":  # the quote against the lab's read, on every valuation (P9-6.5)
             device_verify.refresh(s, c)
             device_lock.refresh(s, c, pack)  # and the registry check, its date and age (P9-6.6)
+            device_wipe.refresh(s, c)  # and the wipe certificate (P9-6.7)
     decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
     if pack.key != "industrial":  # custody and the system of record (plan 9, P9-1.10)
         if was_held and c.get("gateHold") is None:
@@ -419,6 +425,9 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
         if pack.valuer.kind == "device":
             device_lock.check(s, c, pack)  # a registry hit opens the blacklist_hit exception (P9-6.6)
             device_verify.check(s, c, pack)  # a mismatch opens the quote_mismatch exception (P9-6.5)
+            device_payout.assess_case(
+                s, c, pack
+            )  # the payout once graded: within the limit adjusted, else for Customer care (P9-6.8)
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
 
@@ -450,13 +459,15 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     if gone := missing_fields(s, i, known):
         raise ActionError("validation_error", f"The case needs {', '.join(gone)} (the pack's minimum facts).")
     c = _base(case_id, i, known, i.get("by") or actor)
-    c |= {k: known[k] for k in ("serial", "contract_id", "line_id", "flow") if known.get(k) is not None}  # a return's (P9-3.4)
+    kept = ("serial", "contract_id", "line_id", "flow", "serviceDesk")  # a return's (P9-3.4), a ticket's (P9-4.3)
+    c |= {k: known[k] for k in kept if known.get(k) is not None}
     if is_refresh(c):
         c["refresh"] = dict(facts)  # the contract, its window and its lines (P9-5.1)
     else:
         record_match.receive(s, c, i.get("by") or actor)
     _value(s, c, facts)
     store.insert_new(s, c, f"Case opened from {i['reason']}", actor)
+    device_payout.flush(s, c)  # the payout's journal line, now the case row exists (P9-6.8)
     payload = {"case_id": case_id, "owner": c["owner"], "template": c["template"], "asset_key": i["asset_key"],
                "reason": i["reason"], "by": c["intake"]["by"]}  # fmt: skip
     s.execute(

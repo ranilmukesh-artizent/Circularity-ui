@@ -1,7 +1,7 @@
 """The service desk's data (migration 0043; plan 9 P9-4.1): closed repairs, upgrade offers, refurbished stock and service
 tickets, landed by the extra sources `rephist` and `sdesk`. Plain tables: they are not canonical facts."""
 
-from sqlalchemy import Boolean, Column, Date, Index, Integer, Numeric, Table, Text
+from sqlalchemy import BigInteger, Boolean, Column, Date, Index, Integer, Numeric, Table, Text
 from sqlalchemy.dialects.postgresql import JSONB
 
 from di.models.base import metadata, ts
@@ -72,3 +72,21 @@ service_ticket = Table(
     Column("case_id", Text),  # None until a case is opened from the ticket
     Column("source", Text),
 )
+
+repair_accuracy = Table(
+    "repair_accuracy",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("org_unit_id", Text),  # None: the shared rows only
+    Column("as_of", Date, nullable=False),
+    Column("model_class", Text, nullable=False),
+    Column("n", Integer, nullable=False),
+    Column("mae", Numeric(12, 2), nullable=False),
+    Column("mae_share", Numeric(6, 4), nullable=False),
+    Column("coverage", Numeric(6, 4), nullable=False),
+    Column("auto_share", Numeric(6, 4), nullable=False),
+    Column("instant", Boolean, nullable=False),
+    ts("computed_at", nullable=False, now=True),
+)
+# matches migration 0045: the newest row per class first
+Index("ix_repair_accuracy_class", repair_accuracy.c.model_class, repair_accuracy.c.as_of.desc())

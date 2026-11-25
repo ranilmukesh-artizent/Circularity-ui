@@ -319,9 +319,50 @@
    ],
    "approvers": [],
    "param": null
+  },
+  {
+   "id": "GR-D11",
+   "text": "Payout adjustment above 10% of the quote waits for Customer care",
+   "owner": "Customer care",
+   "type": "Threshold",
+   "stage": "condition",
+   "locked": false,
+   "forbids": [],
+   "protects": [
+    [
+     "payout gap|payout limit|max auto gap",
+     "raise|increase|remove|skip|without|\\bno\\b"
+    ]
+   ],
+   "approvers": [],
+   "param": {
+    "field": "max_auto_gap",
+    "value": 0.1,
+    "stricter": "lower",
+    "min": 0.0,
+    "max": 0.25
+   }
   }
  ],
  "gates": [
+  {
+   "id": "G-DEV-WIPE",
+   "params": {
+    "guardrail": "GR-D1",
+    "when": [
+     {
+      "fact": "valuer.imei",
+      "op": "exists",
+      "value": true
+     }
+    ],
+    "exception": "missing_wipe_certificates",
+    "kept_routes": [
+     "recycle"
+    ]
+   },
+   "active": true
+  },
   {
    "id": "G-DEV-LOCK",
    "params": {
@@ -987,7 +1028,252 @@
      "field": "condition.parts_status",
      "freshness_days": null
     }
-   ]
+   ],
+   "market_tables": {
+    "flow": "returns",
+    "valid_from": "2026-01-01",
+    "markets": {
+     "US": "USD"
+    },
+    "tables": [
+     {
+      "name": "payout_rules",
+      "title": "payout rules",
+      "kind": "decision_table",
+      "inputs": [
+       "declared_grade",
+       "actual_grade",
+       "battery_pct",
+       "functional_fails"
+      ],
+      "body": {
+       "nodes": [
+        {
+         "id": "n_in",
+         "type": "inputNode",
+         "name": "Request",
+         "position": {
+          "x": 100,
+          "y": 100
+         }
+        },
+        {
+         "id": "n_tbl",
+         "type": "decisionTableNode",
+         "name": "Table",
+         "position": {
+          "x": 360,
+          "y": 100
+         },
+         "content": {
+          "hitPolicy": "first",
+          "inputs": [
+           {
+            "id": "in_declared_grade",
+            "name": "declared_grade",
+            "field": "declared_grade",
+            "type": "expression"
+           },
+           {
+            "id": "in_actual_grade",
+            "name": "actual_grade",
+            "field": "actual_grade",
+            "type": "expression"
+           },
+           {
+            "id": "in_battery_pct",
+            "name": "battery_pct",
+            "field": "battery_pct",
+            "type": "expression"
+           },
+           {
+            "id": "in_functional_fails",
+            "name": "functional_fails",
+            "field": "functional_fails",
+            "type": "expression"
+           }
+          ],
+          "outputs": [
+           {
+            "id": "out_adjust_pct",
+            "name": "adjust_pct",
+            "field": "adjust_pct",
+            "type": "expression"
+           },
+           {
+            "id": "out_reason",
+            "name": "reason",
+            "field": "reason",
+            "type": "expression"
+           }
+          ],
+          "rules": [
+           {
+            "_id": "r1",
+            "in_declared_grade": "",
+            "in_actual_grade": "",
+            "in_battery_pct": "",
+            "in_functional_fails": "> 0",
+            "out_adjust_pct": "-0.2",
+            "out_reason": "\"Functional test failed\""
+           },
+           {
+            "_id": "r2",
+            "in_declared_grade": "\"A\"",
+            "in_actual_grade": "\"C\",\"D\"",
+            "in_battery_pct": "",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.3",
+            "out_reason": "\"Graded two or more grades below the quote\""
+           },
+           {
+            "_id": "r3",
+            "in_declared_grade": "\"B\"",
+            "in_actual_grade": "\"D\"",
+            "in_battery_pct": "",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.3",
+            "out_reason": "\"Graded two or more grades below the quote\""
+           },
+           {
+            "_id": "r4",
+            "in_declared_grade": "\"A\"",
+            "in_actual_grade": "\"B\"",
+            "in_battery_pct": "",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.15",
+            "out_reason": "\"Graded one grade below the quote\""
+           },
+           {
+            "_id": "r5",
+            "in_declared_grade": "\"B\"",
+            "in_actual_grade": "\"C\"",
+            "in_battery_pct": "",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.15",
+            "out_reason": "\"Graded one grade below the quote\""
+           },
+           {
+            "_id": "r6",
+            "in_declared_grade": "\"C\"",
+            "in_actual_grade": "\"D\"",
+            "in_battery_pct": "",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.15",
+            "out_reason": "\"Graded one grade below the quote\""
+           },
+           {
+            "_id": "r7",
+            "in_declared_grade": "\"A\"",
+            "in_actual_grade": "\"A\"",
+            "in_battery_pct": "[80..84]",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.06",
+            "out_reason": "\"Battery health 80–84%\""
+           },
+           {
+            "_id": "r8",
+            "in_declared_grade": "\"B\"",
+            "in_actual_grade": "\"B\"",
+            "in_battery_pct": "[80..84]",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.06",
+            "out_reason": "\"Battery health 80–84%\""
+           },
+           {
+            "_id": "r9",
+            "in_declared_grade": "\"C\"",
+            "in_actual_grade": "\"C\"",
+            "in_battery_pct": "[80..84]",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.06",
+            "out_reason": "\"Battery health 80–84%\""
+           },
+           {
+            "_id": "r10",
+            "in_declared_grade": "\"D\"",
+            "in_actual_grade": "\"D\"",
+            "in_battery_pct": "[80..84]",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.06",
+            "out_reason": "\"Battery health 80–84%\""
+           },
+           {
+            "_id": "r11",
+            "in_declared_grade": "\"A\"",
+            "in_actual_grade": "\"A\"",
+            "in_battery_pct": "< 80",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.12",
+            "out_reason": "\"Battery health under 80%\""
+           },
+           {
+            "_id": "r12",
+            "in_declared_grade": "\"B\"",
+            "in_actual_grade": "\"B\"",
+            "in_battery_pct": "< 80",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.12",
+            "out_reason": "\"Battery health under 80%\""
+           },
+           {
+            "_id": "r13",
+            "in_declared_grade": "\"C\"",
+            "in_actual_grade": "\"C\"",
+            "in_battery_pct": "< 80",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.12",
+            "out_reason": "\"Battery health under 80%\""
+           },
+           {
+            "_id": "r14",
+            "in_declared_grade": "\"D\"",
+            "in_actual_grade": "\"D\"",
+            "in_battery_pct": "< 80",
+            "in_functional_fails": "",
+            "out_adjust_pct": "-0.12",
+            "out_reason": "\"Battery health under 80%\""
+           },
+           {
+            "_id": "r15",
+            "in_declared_grade": "",
+            "in_actual_grade": "",
+            "in_battery_pct": "",
+            "in_functional_fails": "",
+            "out_adjust_pct": "0",
+            "out_reason": "\"As quoted\""
+           }
+          ]
+         }
+        },
+        {
+         "id": "n_out",
+         "type": "outputNode",
+         "name": "Response",
+         "position": {
+          "x": 620,
+          "y": 100
+         }
+        }
+       ],
+       "edges": [
+        {
+         "id": "e1",
+         "sourceId": "n_in",
+         "targetId": "n_tbl",
+         "type": "edge"
+        },
+        {
+         "id": "e2",
+         "sourceId": "n_tbl",
+         "targetId": "n_out",
+         "type": "edge"
+        }
+       ]
+      }
+     }
+    ]
+   }
   },
   "carbon": {
    "set": "cfs-2026.2",
@@ -1053,6 +1339,12 @@
     "label": "Wholesale lot over the limit",
     "owner_role": "Approver",
     "action": "Split the lot or approve it"
+   },
+   {
+    "id": "payout_gap",
+    "label": "Payout adjustment above the limit",
+    "owner_role": "Planner",
+    "action": "Decide the payout from the grading photos"
    }
   ],
   "suggestion_rules": [],

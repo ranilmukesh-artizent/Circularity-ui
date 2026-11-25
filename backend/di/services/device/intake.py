@@ -128,7 +128,8 @@ def intake_facts(s: Session, case_id: str, facts: Mapping[str, Any]) -> dict[str
     row = device_tradeins.by_imei(s, str(facts["imei"]))
     if row is None:
         raise ActionError("validation_error", f"No trade-in was received for IMEI {facts['imei']}.")
-    return device_case(case_id, row, tradein_facts(s, row, clock.now())) | dict(facts)
+    batch = {"batch": row.batch_id} if row.batch_id else {}  # kept as `batchRef`: a batch holds and releases together (P9-6.7)
+    return device_case(case_id, row, tradein_facts(s, row, clock.now())) | batch | dict(facts)
 
 
 def open_from_tradein(s: Session, tradein: TradeInRow, actor: str) -> store.Case:

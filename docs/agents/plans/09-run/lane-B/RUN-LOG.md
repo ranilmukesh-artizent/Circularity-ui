@@ -59,3 +59,20 @@ One line per event, newest last, times from `date`.
 | 25 Nov 17:55 | P9-6.5 merged. gate G-DEV-QUOTE (catalogue 43 with G-CON-2); quote_mismatch item; no model step |
 | 25 Nov 17:55 | P9-6.6 merged. G-DEV-LOCK and GR-D7; a received device with no registry check is held; overlay refuses the skip |
 | 2026-11-25 23:35 | Verify P9-6.5 + P9-6.6: device_sources + wipe_sim 13 passed, api 181 passed, lint ok, web ok. Pushed. Hourly sync: nothing new on lane A. |
+| 25 Nov 18:24 | P9-6.7 merged. G-DEV-WIPE via params.when; batch held as one, each case releases alone; bulk lots not wipe-gated |
+| 2026-11-26 00:04 | Verify P9-6.7 green (device sync tests, 17 api files, lint, web). Pushed. |
+| 2026-11-26 00:11 | w5's wt-check (P9-3.8) deadlocked 90 min in di_w5: a session idle in transaction on job vs TRUNCATE job. Killed its container; w5 told to close the session; w2 (P9-3.7), queued on the same slot for 87 min, now runs. |
+| 2026-11-26 00:39 | Hourly sync: merged lane A (a90414c models match migrations 0054/0057, P9-2.16 smoke, phase 9 order, their merge of lane B). test_models_migrations 3 passed, lint ok, web 478. Pushed. |
+| 25 Nov 19:12 | P9-6.8 merged. auto within GR-D11 10%; larger gaps held as payout_gap for a person; payout.decide forbidden to agents; maker-checker on prepared_by |
+| 2026-11-26 00:53 | Verify P9-6.8 green (12 api files, lint, web 481). Pushed. |
+| 25 Nov 19:34 | P9-3.7 merged. G-TOOL-REC with GR-12; recall.release forbidden to agents (Admin, Approver); conflicts in policy.py and test_gates.py merged with P9-6.x |
+| 2026-11-26 01:05 | Committed P9-3.7 (w2 25039e6) as 5b97d01; policy.py and test_gates.py merged with P9-6.x. Decision: P9-4.3 dispatched to w3 now that GR-07 (3.6) and GR-12 (3.7) are in, although plan-next keeps it until all of phase 3 (its Depends on names those two tasks only). |
+| 2026-11-26 01:15 | Verify P9-3.7 green (15 api files incl. tf_intake against the synced sim, lint, web). Pushed. |
+| 25 Nov 20:01 | P9-4.3 merged. no model in intake (fault text only shown; the P9-2.18 stage reasoner reads it); case valued on its worst line; dry run writes nothing |
+| 2026-11-26 01:41 | Verify P9-4.3 green. Hourly sync: merged lane A b51d1cb (mapping calibration refit, data only). Pushed. |
+| 25 Nov 20:22 | P9-4.4 merged. RepairCostModel (pure); GR-S1 params in pack service_desk params; no model step (fixed phrases over computed numbers) |
+| 2026-11-26 02:00 | Verify P9-4.4: 109 passed, 1 failed (test_pack_format exception roles missed P9-4.3's technician_check; fixed by the lead); lint ok, web 498. Pushed. |
+| 2026-11-26 02:00 | Note: commit 1753314 is mislabelled 'P9-4.4: Estimate from similar past repairs'. It holds only the lead's test fix (test_pack_format lists P9-4.3's technician_check, Engineer); the real P9-4.4 is ee2276e. Pushed history is not rewritten. |
+| 25 Nov 20:45 | P9-4.5 merged. accuracy per org and class, bar from gr_s1; instant pricing off below the bar; review item for the gate: fixed fx rates in code instead of the fx_rate table |
+| 2026-11-26 02:27 | Verify P9-4.5: 425 passed, 1 failed (alembic check: model index on as_of vs migration 0045's as_of DESC; fixed by the lead); migrations + accuracy 7 passed; web 501. Pushed. |
+| 2026-11-26 02:40 | Hourly sync: merged lane A 3d911f4 (P9-2.17 review fixes; forbidden.py: payout.decide and conflict.resolve, both kept) as 710823d; conflicts, agent_catalog, catalog_hygiene and device_payout 36 passed, lint ok, web 501. Pushed. |

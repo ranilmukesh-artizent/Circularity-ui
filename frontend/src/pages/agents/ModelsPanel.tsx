@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import {
-  fitModel, fitStageCalibration, promoteModel, proposeModel, STAGE_OPTIONS, stageCalibrationOf, stageLabel, useModels, type ModelVersion,
+  computeRepairAccuracy, fitModel, fitStageCalibration, promoteModel, proposeModel, STAGE_OPTIONS, stageCalibrationOf, stageLabel, useModels,
+  type ModelVersion,
 } from '../../api/agents'; // prettier-ignore
+import { barText } from './repairAccuracy';
 import { fmtDateYear, money } from '../../api/format';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
@@ -115,7 +117,51 @@ export function ModelsPanel() {
           <div className="pb"><div className="empty"><b>No models fitted yet</b>New cases are valued with the base model {s.base}.</div></div>
         )}
       </div>
+      <RepairAccuracy />
     </section>
+  ); // prettier-ignore
+}
+
+/** Repair estimate accuracy (plan 9, P9-4.5, SD-08): the estimate replayed on held-out repairs, and which families are priced instantly. */
+function RepairAccuracy() {
+  const { repairAccuracy: a } = useModels();
+  const action = useAction();
+  const compute = async () => {
+    const r = await action.run(() => computeRepairAccuracy());
+    if (r.ok) toast(`Repair estimate accuracy computed: ${r.output.families} families, ${r.output.below} below the bar.`);
+  };
+  return (
+    <div className="panel" id="agRepairAccuracy" style={{ marginTop: 12 }}>
+      <div className="sh" style={{ padding: '8px 12px' }}>
+        <h3>Repair estimate accuracy</h3>
+        {a.can.compute && <button className="btn sm" id="ag-acc-compute" disabled={action.pending} onClick={compute}>Compute now</button>}
+      </div>
+      <div className="pb"><p className="note" style={{ marginTop: 0 }}>{barText(a.bar)}</p></div>
+      {a.rows.length ? (
+        <div className="tw">
+          <table className="t static">
+            <thead>
+              <tr><th>Family</th><th>Org unit</th><th className="r">Held out</th><th className="r">MAE</th><th className="r">Inside the range</th><th className="r">Auto-priced</th><th>Instant pricing</th></tr>
+            </thead>
+            <tbody>
+              {a.rows.map((r) => (
+                <tr key={`${r.org_unit_id}/${r.model_class}`} data-family={r.model_class}>
+                  <td><b>{r.model_class}</b></td>
+                  <td>{r.org_unit_id ?? 'Shared'}</td>
+                  <td className="r num">{r.n}</td>
+                  <td className="r num">{money(r.mae)}</td>
+                  <td className="r num">{Math.round(r.coverage * 100)}%</td>
+                  <td className="r num">{Math.round(r.auto_share * 100)}%</td>
+                  <td><span className={'chip ' + (r.instant ? 'ok' : 'y')}>{r.instant ? 'Instant pricing on' : 'Instant pricing off'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="pb"><div className="empty"><b>Not computed yet</b>The worker computes it once a day; a person who manages market tables can compute it now.</div></div>
+      )}
+    </div>
   ); // prettier-ignore
 }
 

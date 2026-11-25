@@ -21,14 +21,15 @@ class TicketRow:
     loaner_promised: bool
     opened_at: datetime
     case_id: str | None
+    org_unit_id: str | None = None  # the org unit the source is bound to (None: shared)
 
 
 def pending(s: Session, org: str | None) -> list[TicketRow]:
     """Tickets of `org` (and the shared ones) that have no case yet, oldest first."""
     rows = s.execute(
         text(
-            "SELECT number, account, market, site, batch_id, lines, requester_role, loaner_promised, opened_at, case_id "
-            "FROM service_ticket WHERE case_id IS NULL AND (org_unit_id IS NULL OR org_unit_id = :org) "
+            "SELECT number, account, market, site, batch_id, lines, requester_role, loaner_promised, opened_at, "
+            "case_id, org_unit_id FROM service_ticket WHERE case_id IS NULL AND (org_unit_id IS NULL OR org_unit_id = :org) "
             "ORDER BY opened_at, number"
         ),
         {"org": org},
@@ -45,6 +46,7 @@ def pending(s: Session, org: str | None) -> list[TicketRow]:
             r.loaner_promised,
             r.opened_at,
             r.case_id,
+            r.org_unit_id,
         )  # fmt: skip
         for r in rows
     ]
