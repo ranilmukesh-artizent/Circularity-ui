@@ -1,4 +1,4 @@
-"""Service desk actions (plan 9, P9-4.5 story SD-08, P9-4.7 story SD-06; registry entry I-14 measured, not changed).
+"""Service desk actions (plan 9: P9-4.5 SD-08, P9-4.7 SD-06, P9-4.10 SD-09; registry entry I-14 measured, not changed).
 
     serviceDesk.computeAccuracy   act  {}   replay the estimate on the held-out repairs of every org unit and store today's
                                             figures per tool class (`di.services.service_desk.accuracy`)
@@ -7,13 +7,18 @@
                                             and the options of the case run again (`estimate.estimate_line`, then the one
                                             decider, `intake.revalue` -> `decide_case`, R19); its technician-check item closes
 
+    serviceDesk.whatIf            read  {case_id, line?, credit_pct?, take_up?, repair_cost_pct?, wait_days?}   the options run
+                                            again on a copy with the levers moved, and the expected margin over credit 0 to 40%
+                                            (service_desk.what_if); stores, journals and sends nothing
+
 computeAccuracy only measures: no model, table or bar changes, so it needs no maker-checker and an agent may run it (not in
 FORBIDDEN_ACTIONS). Permission `manageMarketTables`. The worker runs the same job once a simulated day (`serviceDesk.accuracy`).
 Changing the bar is a guardrail change (the GR-S1 parameters, I-4), not an action here.
 
 postFault needs `assess` (the Engineer's), keeps the ticket's text, and an agent's call is held for a person (HELD_FOR_PERSON,
 I-10). It approves and releases nothing, so it is not in FORBIDDEN_ACTIONS. No model step (R16): the fault is a code picked from
-the depot's four and nothing reads the free text, so there is no `AgentLoop` here.
+the depot's four and nothing reads the free text, so there is no `AgentLoop` here. whatIf is a read and a computation: no model
+step either (R16), so no model tests; an agent may call it, and it approves and releases nothing, so it joins no forbidden list.
 """
 
 from datetime import date
@@ -23,7 +28,8 @@ from di.core import clock
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
 from di.services.cases import process, store
-from di.services.service_desk import accuracy, estimate
+from di.services.service_desk import accuracy, estimate, what_if
+from di.services.service_desk import inputs as sd_inputs
 
 ACTIONS.setdefault(
     "serviceDesk.computeAccuracy",
@@ -105,3 +111,53 @@ def post_fault(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         "case_id": c["id"], "line": ln["n"], "fault_code": i["fault_code"],
         "log": f"Fault posted for {ln['serial']}: {i['fault_code']}; options re-run",
     }  # fmt: skip
+
+
+ACTIONS.setdefault(
+    "serviceDesk.whatIf",
+    ActionDef(
+        id="serviceDesk.whatIf", title="Test a credit", verb="test a credit",
+        desc="Run the options of a service ticket again with another credit, take-up, repair cost or wait, and see the "
+             "expected margin over credits from 0 to 40%. Changes nothing and sends nothing.",
+        risk="read", perm=None, scope="case",
+        input={
+            "case_id": {"req": True, "t": "string"},
+            "line": {"t": "number"},
+            "credit_pct": {"t": "number"},
+            "take_up": {"t": "number"},
+            "repair_cost_pct": {"t": "number"},
+            "wait_days": {"t": "number"},
+        },
+    ),
+)  # fmt: skip
+
+_LEVERS = ("credit_pct", "take_up", "repair_cost_pct", "wait_days")
+
+
+@guard("serviceDesk.whatIf")
+def what_if_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if bad := what_if.out_of_range(i):
+        return "validation_error", bad
+    c = store.get(ctx.session, i["case_id"])
+    if c is None or not isinstance(c.get("serviceDesk"), dict):
+        return "not_found", f"{i['case_id']} is not a service ticket case."
+    if i.get("line") is not None and _line(c, i["line"]) is None:
+        return "validation_error", f"No line {i['line']} on {i['case_id']}."
+    return None
+
+
+@implement("serviceDesk.whatIf")
+def what_if_read(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    """A read: no case save, no journal row (the pipeline stops after a read), no instruction. No model step (R16)."""
+    s = ctx.session
+    c = store.get(s, i["case_id"])
+    if c is None:
+        raise ActionError("not_found", f"No case {i['case_id']}.")
+    sd = c.get("serviceDesk") or {}
+    given = [date.fromisoformat(ln["estimate"]["as_of"]) for ln in sd.get("lines", []) if ln.get("estimate")]
+    inputs = sd_inputs.gather(s, c, max(given, default=clock.now().date()))
+    if inputs is None:
+        raise ActionError("not_found", f"No approved tables for the market of {i['case_id']}.")
+    only = int(i["line"]) if i.get("line") is not None else None
+    out = what_if.check(inputs, {k: i[k] for k in _LEVERS if i.get(k) is not None}, only)
+    return out | {"case_id": i["case_id"], "log": "Credit tested: nothing was changed or sent"}

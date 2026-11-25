@@ -61,3 +61,24 @@ export const FAULT_CODES: { code: string; name: string }[] = [
 /** Post the fault found on a draft line (needs ssess; serviceDesk.postFault): the server prices the line again and runs its options again. An agent's call is held for a person. */
 export const postFault = (caseId: string, line: number, faultCode: string, notes?: string): Promise<ActionResult> =>
   invoke('serviceDesk.postFault', { case_id: caseId, line, fault_code: faultCode, ...(notes ? { notes } : {}) });
+
+/** The levers of a credit test (P9-4.10, SD-09): credit share 0 to 0.40, take-up 0 to 1, repair cost 80 to 150 (% of the estimate) and extra days waiting. */
+export interface WhatIfLevers { credit_pct?: number; take_up?: number; repair_cost_pct?: number; wait_days?: number; line?: number }
+
+/** One point of the curve: the expected margin of the upgrade at this credit (take-up x margin + (1 - take-up) x the fix's margin). */
+export interface CreditPoint { credit_pct: number; upgrade_margin: number | null; take_up: number | null; upgrade: number | null; fix: number | null; best: OptionKey | null }
+
+/** Where the best option at no credit stops winning: the last credit it wins and the first it loses, on a 1% grid. */
+export interface CreditCrossing { from: OptionKey; to: OptionKey; credit_pct: number; next_pct: number }
+
+/** What a credit test says about one line. `flips` is true when the recommendation differs from the one the case holds. */
+export interface WhatIfLine {
+  n: number; serial: string; currency: string; options: TicketOption[]; best: OptionKey | null; expected_margin: number | null;
+  flips: boolean; from: OptionKey | null; to: OptionKey | null; curve: CreditPoint[]; peak: { credit_pct: number; upgrade: number } | null; crossing: CreditCrossing | null;
+}
+
+export interface WhatIfResult { market: string; currency: string; lines: WhatIfLine[]; holds: Approval['holds']; gr_c1: Approval['holds']; case_id: string }
+
+/** Test a credit (serviceDesk.whatIf, a read): the options run again with the levers moved. Nothing is stored or sent, and no model writes it. */
+export const serviceDeskWhatIf = (caseId: string, levers: WhatIfLevers): Promise<ActionResult<WhatIfResult>> =>
+  invoke<WhatIfResult>('serviceDesk.whatIf', { case_id: caseId, ...levers });

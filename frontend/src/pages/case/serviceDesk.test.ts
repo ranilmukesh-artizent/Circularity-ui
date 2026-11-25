@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TicketOption } from '../../api/serviceDesk';
-import { approvalLine, estimateLine, estimateStatus, expectedLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, ticketLine } from './serviceDesk';
+import { approvalLine, estimateLine, estimateStatus, expectedLine, flipLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, peakLine, ticketLine } from './serviceDesk';
 
 describe('P9-4.4 estimateLine (SD-02)', () => {
   const e = { point: 430, p10: 395, p90: 470, confidence: 0.92, n: 186, currency: 'USD' };
@@ -74,5 +74,17 @@ describe('P9-4.6 options (SD-04)', () => {
     expect(approvalLine({ owner: 'Fleet manager', holds: [{ id: 'GR-14', reason: 'The repair costs over $600', owner: 'Fleet manager' }] })).toBe(
       'Approval: Fleet manager (GR-14). The repair costs over $600',
     );
+  });
+});
+describe('P9-4.10 flipLine (SD-09)', () => {
+  it('says which option wins above which credit', () => {
+    expect(flipLine({ from: 'upgrade', crossing: { from: 'upgrade', to: 'fix', credit_pct: 0.28 } })).toBe('Fix and return beats Upgrade with credit above 28% credit');
+  });
+  it('says the best stays best when nothing flips, and when nothing can be offered', () => {
+    expect(flipLine({ from: 'upgrade', crossing: null })).toBe('Upgrade stays best at every credit up to 40%');
+    expect(flipLine({ from: null, crossing: null })).toBe('No option can be offered yet');
+  });
+  it('names where the expected margin peaks', () => {
+    expect(peakLine({ peak: { credit_pct: 0.2, upgrade: 97.1 }, currency: 'USD' })).toBe('Expected margin of the upgrade peaks at 20% credit: $97.10');
   });
 });
