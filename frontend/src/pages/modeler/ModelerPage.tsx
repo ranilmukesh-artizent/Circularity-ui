@@ -199,7 +199,7 @@ function ModelerBody({ s }: { s: ModelerScreen }) {
       </div>
       <StandingPolicyPanel s={s} />
       {s.template.key === 'tool_fleet' && <TablesPanel s={s} />}
-      <ModelsPanel />
+      {currentAccount()?.role !== 'Finance' && <ModelsPanel />}
       {describing && <DescribeDialog org={s.org} prompts={[]} onClose={() => setDescribing(false)} />}
     </>
   );
