@@ -67,3 +67,6 @@ unattended". Times are local (IST).
 | 25 Nov 11:53 (system clock) | **Correction:** the hour stamps from about 05:05 to 18:30 above were written by the lead without reading the clock and are wrong; the whole run so far took about 9 hours (02:45 to 11:53). Times from here on come from `date`. Load lowered for the user: at most 2 writers, parallel suite in 3 shards. |
 | 25 Nov 12:25 | P9-2.1 to w1 (lane A starts phase 2 early: lane B waits on 2.1, 2.4, 2.5). Agent docs updated with the night's lessons (`80f6aeb`). Per-merge checks now light (lead-verify.sh); full suite at gates. |
 | 25 Nov 12:42 | P9-1.14 merged. Sonnet wrote it untested (no stack); the lead and a Sonnet helper fixed 3 script bugs on the main stack; no product bug. |
+| 25 Nov 12:42 | P9-1.14 merged (smoke-p9-1 all 7 steps; reset fix `3439eee`); pushed. Phase 1 gate running (serial-only, sim, smokes, story matrix, selftest) with one Opus reviewer. |
+| 25 Nov 12:48 | Phase 1 review in: 6 findings, 5 confirmed in the code and sent to a fix writer (w2), 1 (gates before the queue plan) after P9-2.1. Note: 09-work/review-phase-1.md. |
+| 25 Nov 13:28 | **Phase 1 gate green** (counts in PROGRESS.md); review fixes merged. Lane B may start. |
