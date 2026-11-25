@@ -10,6 +10,7 @@ import { ErrorBoundary } from '../../components/Boundary';
 import { Icon } from '../../components/Icon';
 import { IconTile } from '../../components/kit/IconTile';
 import { Doc, hue, StageLogos, StProv, Tag } from './CaseBlocks';
+import { FraudHold } from './FraudHold';
 import { stageTabs, type TabDef } from './tabs';
 import { approveGuarded, caseActions, runNextStep } from './caseActions';
 import { useCaseUi, type CaseUi } from './CaseContext';
@@ -204,6 +205,7 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
           {(n === 6 || n === 7) && <button className="btn" id="afPackBtn" onClick={() => caseActions.downloadPack(c.id)}>Evidence pack</button>}
         </div>
       </header>
+      <FraudHold c={c} />
       <div className="stgrid">
         {reached ? (
           <section className="stwh" id="stWhat" aria-labelledby="stWhatH">

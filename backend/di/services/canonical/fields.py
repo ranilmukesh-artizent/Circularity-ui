@@ -15,6 +15,12 @@ their adapters. tests/test_canonical_schema.py proves a full sync of the demo so
 
 The `part` and `bom` models (plan 8, MVP-9.1) are no demo model: their fields are listed here alone.
 
+The used-car fields (plan 9, P9-9.2) are written by the extra adapters uc_lease and uc_dms, keyed by `vin_key`: on `asset`
+vin, return_kind, mileage_at_return, mileage_lease_record, model_year, segment, powertrain, return_center,
+seller_fleet_size, lot_id, days_on_lot; on `condition` odometer_statement_ref, odometer_not_actual, payoff_confirmed; on
+`market` the objects keyed by lot id (lot_avg_price, lot_days_to_sale, lot_spread, lot_comparables, lot_distance_miles)
+and dealer_bid.
+
 A field a connector starts to write must be added here (with its type), or its facts are held as failed records.
 Types: text, ref (a reference string), date (ISO 8601 date or timestamp string), number, bool, list, object, any.
 """
@@ -49,6 +55,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "contract_status": "text",
         "criticality": "number",
         "customer_intent": "text",
+        "days_on_lot": "number",
         "description": "text",
         "disposition": "text",
         "disposition_final": "bool",
@@ -86,11 +93,15 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "lease_term_months": "number",
         "lessee": "text",
         "location": "text",
+        "lot_id": "text",
         "maintenance_cost": "number",
         "manufacturer": "text",
         "manufacturer_parts": "list",
         "material_cost": "number",
+        "mileage_at_return": "number",
+        "mileage_lease_record": "number",
         "model": "text",
+        "model_year": "number",
         "nameplate": "object",
         "operating_status": "text",
         "origin_site": "text",
@@ -98,6 +109,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "outbound_load": "text",
         "owner_tenant": "text",
         "ownership_type": "text",
+        "powertrain": "text",
         "priority": "number",
         "purchase_price": "number",
         "qty": "number",
@@ -123,7 +135,9 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "reserved_qty": "number",
         "return_authorization_ref": "ref",
         "return_authorized_at": "date",
+        "return_center": "text",
         "return_id": "text",
+        "return_kind": "text",
         "return_reason": "text",
         "return_reason_code": "text",
         "return_reason_text": "text",
@@ -133,6 +147,8 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "return_status": "text",
         "returned_on": "date",
         "run_hours": "number",
+        "segment": "text",
+        "seller_fleet_size": "number",
         "serial_number": "text",
         "site": "text",
         "site_name": "text",
@@ -149,6 +165,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "transfer_shipment_ref": "ref",
         "transfer_status": "text",
         "transfer_to": "text",
+        "vin": "text",
         "warranty_expiration": "date",
         "work_order_count": "number",
         "work_order_ref": "ref",
@@ -203,7 +220,10 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "model_read": "text",
         "next_inspection": "date",
         "next_inspection_due": "date",
+        "odometer_not_actual": "bool",
+        "odometer_statement_ref": "ref",
         "parts_status": "text",
+        "payoff_confirmed": "bool",
         "photo_count": "number",
         "photo_refs": "list",
         "policy": "text",
@@ -324,6 +344,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "comparable_low": "number",
         "comparables": "list",
         "comparables_count": "number",
+        "dealer_bid": "number",
         "dealer_fees": "number",
         "dealer_fees_detail": "object",
         "dealer_name": "text",
@@ -346,6 +367,11 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "listing_ref": "ref",
         "listing_status": "text",
         "listing_time_to_sell": "number",
+        "lot_avg_price": "object",
+        "lot_comparables": "object",
+        "lot_days_to_sale": "object",
+        "lot_distance_miles": "object",
+        "lot_spread": "object",
         "open_listings": "number",
         "price_index": "number",
         "price_index_change_pct": "number",

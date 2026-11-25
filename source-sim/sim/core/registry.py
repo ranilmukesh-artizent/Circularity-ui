@@ -86,6 +86,9 @@ EXTRA_SYSTEMS: tuple[System, ...] = (
     System("recall", "Safety recall register (synthetic)", "recall", "generic-rest", "/recalls/api"),
     System("tooltel", "Connected-tool telematics (synthetic)", "tooltel", "generic-rest", "/tooltel/v2"),
     System("parts", "Tool service, stock and trade demand (synthetic)", "parts", "generic-rest", "/parts/api"),
+    # Plan 9 P9-9.2: the used-car segment's lease system and dealer management system, synthetic vendor mocks
+    System("uc_lease", "Vehicle lease system (synthetic)", "vehicle_lease", "vendor", "/vehicle-lease"),
+    System("uc_dms", "Dealer management system (synthetic)", "dealer_dms", "vendor", "/dealer-dms"),
 )
 EXTRA_BY_ID = {s.source_id: s for s in EXTRA_SYSTEMS}
 

@@ -143,3 +143,5 @@ unattended". Times are local (IST).
 | 26 Nov 03:20 | P9-8.16 merged. P9-8.16 merged in the batch. decision table editor (FlowInspector import conflict resolved) |
 | 26 Nov 03:20 | P9-8.21 merged. P9-8.21 merged in the batch. DMN and BPMN export (api/modeler.ts conflict resolved: both kept) |
 | 26 Nov 03:20 | P9-9.1 merged. P9-9.1 merged in the batch. used-car pack data (test_gates conflict: lane B gates + G-VEH kept; pack-format gaps listed in inflight note) |
+| 26 Nov 03:36 | P9-2.24 merged. P9-2.24 merged: stage steps commit before model reads, grounded concerns, fraud review taint, Ask holds workflow text, fraud banner on stage pages. Step 5 of smoke-p9-2 still ~155 s. |
+| 26 Nov 04:08 | P9-9.2 merged. Vehicle lease and dealer mocks merged as 06b2479. |

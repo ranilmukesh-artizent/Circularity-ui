@@ -856,7 +856,7 @@ each story went.
 - [x] P9-2.22 Gates before the queue plan in decide_case
 - [x] P9-2.23 Ask reads workflows and their runs
 - [x] P9-2.17 Phase 2 gate
-- [ ] P9-2.24 Phase 2 gate follow-ups: model reads off the lock, grounded concerns, tainted fraud text
+- [x] P9-2.24 Phase 2 gate follow-ups: model reads off the lock, grounded concerns, tainted fraud text
 - [x] P9-3.1 Fleet contract and repair log mocks with adapters
 - [x] P9-3.2 Recall, telematics and parts mocks with adapters
 - [x] P9-3.3 Rated life and end of parts for tool classes in PLM
@@ -955,7 +955,7 @@ each story went.
 - [ ] P9-8.22 Compose demo smoke
 - [ ] P9-8.23 Phase 8 gate
 - [x] P9-9.1 Used-car pack data file
-- [ ] P9-9.2 Vehicle lease and dealer system mocks
+- [x] P9-9.2 Vehicle lease and dealer system mocks
 - [ ] P9-9.3 Title and lien service mock
 - [ ] P9-9.4 Vehicle inspection app mock
 - [ ] P9-9.5 Vehicle recall database mock
