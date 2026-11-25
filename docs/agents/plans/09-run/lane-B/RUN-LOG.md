@@ -72,3 +72,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-26 01:41 | Verify P9-4.3 green. Hourly sync: merged lane A b51d1cb (mapping calibration refit, data only). Pushed. |
 | 25 Nov 20:22 | P9-4.4 merged. RepairCostModel (pure); GR-S1 params in pack service_desk params; no model step (fixed phrases over computed numbers) |
 | 2026-11-26 02:00 | Verify P9-4.4: 109 passed, 1 failed (test_pack_format exception roles missed P9-4.3's technician_check; fixed by the lead); lint ok, web 498. Pushed. |
+| 2026-11-26 02:00 | Note: commit 1753314 is mislabelled 'P9-4.4: Estimate from similar past repairs'. It holds only the lead's test fix (test_pack_format lists P9-4.3's technician_check, Engineer); the real P9-4.4 is ee2276e. Pushed history is not rewritten. |
