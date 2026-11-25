@@ -807,7 +807,7 @@ each story went.
 - [x] P9-1.10 Match to the system of record with exceptions
 - [x] P9-1.11 Contract entitlement gate with clause and consent
 - [x] P9-1.12 Carbon with provenance on every card
-- [ ] P9-1.13 Pack-driven views in existing pages
+- [x] P9-1.13 Pack-driven views in existing pages
 - [ ] P9-1.14 Phase 1 demo smoke script
 - [ ] P9-1.15 Phase 1 gate
 - [ ] P9-2.1 Stage chain runtime with typed stage records

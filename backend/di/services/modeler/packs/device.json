@@ -902,7 +902,12 @@
    "id": "recovery_rate",
    "label": "Recovery rate of original value",
    "definition": "realised sale value / original reference value",
-   "measure": null,
+   "measure": {
+    "kind": "avg",
+    "of": "recommendation.net / ref",
+    "scale": 100,
+    "unit": "%"
+   },
    "trend": "monthly"
   },
   {
@@ -930,7 +935,17 @@
    "id": "wipe_compliance",
    "label": "Data-wipe compliance",
    "definition": "lots listed with a wipe certificate / lots listed",
-   "measure": null,
+   "measure": {
+    "kind": "share",
+    "where": [
+     {
+      "fact": "evidence_result.data_wipe",
+      "op": "eq",
+      "value": "pass"
+     }
+    ],
+    "over": []
+   },
    "trend": "monthly"
   },
   {
@@ -941,6 +956,30 @@
    "trend": "monthly"
   }
  ],
- "analytics": [],
+ "analytics": [
+  {
+   "question": "Which channel do lots go to?",
+   "chart": "bar",
+   "query": {
+    "group_by": "recommendation.id",
+    "measure": {
+     "kind": "count"
+    }
+   }
+  },
+  {
+   "question": "How much of the reference value does each grade recover?",
+   "chart": "bar",
+   "query": {
+    "group_by": "grade",
+    "measure": {
+     "kind": "avg",
+     "of": "recommendation.net / ref",
+     "scale": 100,
+     "unit": "%"
+    }
+   }
+  }
+ ],
  "stories": []
 }

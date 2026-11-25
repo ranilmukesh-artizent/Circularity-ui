@@ -3,7 +3,7 @@ registers the read action analytics.models)."""
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from di.core.deps import CurrentPrincipal, DbSession
 from di.services.screens import analytics as svc
@@ -26,3 +26,12 @@ def analytics(
 ):
     p.require_page("analytics")
     return svc.page(p, session, tenant, cls, route, from_, to, model, tenant_filter, org)
+
+
+@router.get("/pack")
+def pack(p: CurrentPrincipal, session: DbSession, key: str = ""):
+    p.require_page("analytics")
+    try:
+        return svc.pack_view(session, p, key)
+    except KeyError:
+        raise HTTPException(404, {"code": "not_found", "message": f"No pack {key}."}) from None

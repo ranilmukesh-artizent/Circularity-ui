@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
+import type { PackStage } from '../../api/analytics';
 import {
-  assetModel, assetSerial, custody, lc, nextStep, phases, recordMatch, runOf, stageHref, stageSentence,
+  assetModel, assetSerial, custody, lc, nextStep, packStages, phases, recordMatch, runOf, stageHref, stageSentence,
   stageState, stageTitle, stages, when, type CaseRec,
 } from '../../api/case';
 import { fmtDate, fmtDateYear, money } from '../../api/format';
@@ -13,6 +14,18 @@ import { useCaseUi } from './CaseContext';
 import { custodyLines, recordMatchLine } from './custody';
 
 const href = (id: string, n: number | 'overview' | 'full') => '#/' + stageHref(id, n);
+const AUTONOMY = { recommend: 'recommends only', limits: 'within limits', alone: 'acts alone' } as const;
+
+/** "Intake (acts alone) · Condition (within limits) · …": the pack's stage agents, a repeated agent once; null for no pack stages. */
+const agentsLine = (stages: PackStage[] | null): string | null => {
+  if (!stages) return null;
+  const seen = new Set<string>();
+  const parts = stages.flatMap((s) => {
+    const part = `${s.agent} (${AUTONOMY[s.autonomy]})`;
+    return seen.has(part) ? [] : (seen.add(part), [part]);
+  });
+  return parts.length ? parts.join(' · ') : null;
+};
 
 /** The case Overview: one card per stage, grouped by phase; the decision or outcome at a glance (stOverview). */
 export function Overview({ c }: { c: CaseRec }) {
@@ -51,7 +64,7 @@ export function Overview({ c }: { c: CaseRec }) {
       </li>
     );
   };
-  const matchLine = recordMatchLine(recordMatch(c)), trail = custodyLines(custody(c));
+  const matchLine = recordMatchLine(recordMatch(c)), trail = custodyLines(custody(c)), agents = agentsLine(packStages(c));
   const mine = nx.kind ==='act' || nx.kind === 'approve' || nx.kind === 'ack';
   return (
     <div className="stpage stovw" data-stage="overview">
@@ -93,6 +106,12 @@ export function Overview({ c }: { c: CaseRec }) {
               )}
             </div>
           </section>
+          {agents && (
+            <section className="panel frp" aria-label="Agents on this case">
+              <div className="ph"><h3>Agents on this case</h3></div>
+              <div className="pb"><p className="note" style={{ margin: 0 }}>{agents}</p></div>
+            </section>
+          )}
           {(matchLine || trail.length > 0) && (
             <section className="panel frp" aria-label="System of record and custody">
               <div className="ph"><h3>Custody</h3></div>

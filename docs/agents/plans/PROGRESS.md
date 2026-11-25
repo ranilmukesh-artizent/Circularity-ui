@@ -217,6 +217,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-1.11 contract entitlement gate with clause and consent | this commit | lead on main: contract entitlement, gates, gate hold, golden, tool-fleet valuer, paths-agree, case screens, decide_case, order invariant, standard valuer 95 passed; lint all passed; tsc 0, vitest 354 passed | done |
 | 2026-11-25 | 09 · P9-1.8 my work replaces Home tasks and Actions on me | this commit | lead on main after restart: parallel-suite 4 shards 4,001 passed (2 failures in test_overlay_core came from P9-1.11, fixed in the next commit); serial screens reference, home, command, mywork, mywork_nav 894 passed; lint all passed; tsc 0, vitest 356 passed; smoke-pages 11 accounts 0 failing | done |
 | 2026-11-25 | 09 · P9-1.10 match to the system of record with exceptions | this commit | lead on main after restart: parallel-suite 4 shards 4,019 passed; serial test_sync_reliability, test_milestone_rt1048, test_screens_home 374 passed; lint all passed; tsc 0, vitest 363 passed | done |
+| 2026-11-25 | 09 · P9-1.13 pack-driven views in existing pages | this commit | lead on main after restart: parallel-suite 4 shards 4,027 passed; serial test_screens_home (its developer briefing failed only on the private db), test_screens_reference, test_mcp_server 406 passed; lint all passed; tsc 0, vitest 366 passed; smoke-pages 11 accounts 0 failing | done |
 
 ## Decisions taken without the user (to review)
 

@@ -9,6 +9,7 @@
  * A proposal row is accepted or rejected with acceptProposal and rejectProposal from ./agents, as Home does.
  */
 import { invoke } from './actions';
+import type { PackKpi } from './analytics';
 import { cached } from './client';
 import type { ActionResult } from './types';
 
@@ -35,8 +36,8 @@ export interface WorkItem {
 export interface MyWorkScreen {
   items: WorkItem[];
   counts: Record<WorkKind, number>;
-  /** filled by P9-1.13 */
-  kpis: unknown[];
+  /** P9-1.13: the KPIs of the packs of the cases the account sees, from the packs' own data (empty for the industrial demo) */
+  kpis: (PackKpi & { pack: string; pack_name: string })[];
 }
 
 /** My work (Suspense read cache). */

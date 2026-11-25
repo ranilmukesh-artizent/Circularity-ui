@@ -120,3 +120,24 @@ export interface ModelAccuracy {
 }
 /** The agent's answer beside predicted vs actual: the read action analytics.models (the demo's analytics.accuracy intent). */
 export const modelAccuracy = (): ModelAccuracy => read<ModelAccuracy>('analytics.models');
+
+// ---------------------------------------------------------------- the Packs tab (plan 9, P9-1.13)
+/** One KPI of a pack, as the server computed it from the pack's own measure (backend/di/services/modeler/kpis.py). `value` is null for "No data yet". */
+export interface PackKpi {
+  id: string; label: string; definition: string; value: number | null;
+  /** "%", "$" or "" */
+  unit: string; trend: { period: string; value: number }[];
+  /** why a measure the grammar refused shows no value, else null */
+  error: string | null;
+}
+/** An analytics question of a pack, answered: bars of {key, value} and up to five example case ids. */
+export interface PackQuestion { question: string; chart: string; rows: { key: string; value: number }[]; examples: string[] }
+/** A stage of the pack with its agent and autonomy. */
+export interface PackStage { key: string; label: string; agent: string; autonomy: 'recommend' | 'limits' | 'alone' }
+/** GET /api/screens/analytics/pack?key= */
+export interface PackViewData {
+  key: string; name: string; packs: { key: string; name: string }[]; kpis: PackKpi[]; questions: PackQuestion[];
+  suggestion_rules: Record<string, unknown>[]; stages: PackStage[];
+}
+/** The Packs tab: the pack's KPIs, questions and stages over the cases of that pack the account may see ("" picks the first pack with KPIs). */
+export const usePackView = (key: string): PackViewData => cached<PackViewData>(withQuery('/api/screens/analytics/pack', { key }));

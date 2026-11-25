@@ -16,9 +16,11 @@ import type { PageProps } from '../registry';
 import { Icon } from '../../components/Icon';
 import { openAsk } from '../../utils/askBus';
 import { Drawer } from '../../components/Overlay';
+import { Segmented } from '../../components/kit/Segmented';
 import { PilotReportButton } from '../../components/PilotReport';
 import { toast } from '../../components/toast';
 import { downloadCsv } from '../../utils/csv';
+import { PacksTab } from './PackView';
 import { drills, Funnel, Heat, MixChart, ModelTable, Overrides, PoolChart, Scatter, Sustain, Waterfall, type Drill } from './AnalyticsCharts';
 
 // View state survives leaving and coming back, as the demo's S.fA and S.drill do.
@@ -56,6 +58,7 @@ export function AnalyticsPage({ route }: PageProps) {
   const [f, setF] = useState<AnalyticsFilter>(savedFilter.current);
   const [drill, setDrillState] = useState(savedDrill.current);
   const [openRow, setOpenRow] = useState<string | null>(null);
+  const [tab, setTab] = useState<'closed' | 'packs'>(route.a === 'packs' ? 'packs' : 'closed');
   const setFilter = (x: AnalyticsFilter) => { savedFilter.current = x; setF(x); };
   const setDrill = (d: (Drill & { page: number }) | null) => { savedDrill.current = d; setDrillState(d); };
   const onDrill = (d: Drill) => {
@@ -109,6 +112,24 @@ export function AnalyticsPage({ route }: PageProps) {
       </>
     ));
 
+  const tabs = (
+    <Segmented name="antab" label="Analytics view" items={[['closed', 'Decisions'], ['packs', 'Packs']] as const} cur={tab} onPick={setTab} />
+  );
+  if (tab === 'packs') {
+    return (
+      <>
+        <div className="phead">
+          <div>
+            <h1>Analytics</h1>
+            <p>What each pack measures, from the pack&apos;s own data: its KPIs, two questions with example cases and its stage agents.</p>
+          </div>
+        </div>
+        <div style={{ marginBottom: 12 }}>{tabs}</div>
+        <PacksTab />
+      </>
+    );
+  }
+
   return (
     <>
       <div className="phead">
@@ -121,6 +142,7 @@ export function AnalyticsPage({ route }: PageProps) {
           </p>
         </div>
       </div>
+      <div style={{ marginBottom: 12 }}>{tabs}</div>
       {focus && (
         <div className="grid g2 anr sect cxfocus" style={{ '--cols': 'minmax(0,1.1fr) minmax(0,1fr)' } as CSSProperties}>
           {predicted()}

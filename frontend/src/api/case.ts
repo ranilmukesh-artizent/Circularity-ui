@@ -9,6 +9,7 @@
  * Formatting, the what-if assumptions and the remembered tabs are frontend-only (backend/di/services/screens/case.py has the
  * mapping table).
  */
+import type { PackStage } from './analytics';
 import { ApiError, cached, invalidate, ref, withQuery } from './client';
 import type { Reference } from './reference';
 import { fmtDate, fmtDateYear, fmtNumber, money } from './format';
@@ -94,6 +95,7 @@ export interface CaseScreen {
   landing: number | 'overview'; next: NextStep; clock: Clock | null;
   approval: { role: 'Approver' | 'Admin'; limit: number | null }; sources: Record<string, Source>;
   plan?: QueuePlan | null; recordMatch?: RecordMatchView | null; custody?: CustodyEntry[];
+  packStages?: PackStage[] | null;
 }
 
 // ---------- the analysis ----------
@@ -207,6 +209,8 @@ export const queuePlan = (c: CaseRec): QueuePlan | null => screenOf(c).plan ?? n
 export const recordMatch = (c: CaseRec): RecordMatchView | null => screenOf(c).recordMatch ?? null;
 /** The case's custody list, oldest first (empty for the industrial pack). */
 export const custody = (c: CaseRec): CustodyEntry[] => screenOf(c).custody ?? [];
+/** The stage agents of the case's pack with their autonomy (P9-1.13); null for the industrial demo's cases. */
+export const packStages = (c: CaseRec): PackStage[] | null => screenOf(c).packStages ?? null;
 /** "07 Oct 14:20" (time only when it is not midnight UTC; the demo's stWhen). */
 export function when(d: string | Date | null | undefined): string {
   if (!d) return '';

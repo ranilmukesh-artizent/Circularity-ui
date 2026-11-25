@@ -61,3 +61,4 @@ unattended". Times are local (IST).
 | 25 Nov 16:35 | P9-1.8 merged (smoke-pages 11 accounts 0 failing). P9-1.11 had broken 2 overlay tests (the tool-fleet pack now has a gate at Match); the lead fixed the tests (`be9a839`). P9-1.10 verifying. Phase 1: 11 of 15. |
 | 25 Nov 10:40 | P9-1.10 merged. Sonnet; red first quoted; record match on sync end opens expected-return and missing-unit items; chain of custody is a record, not a legal claim (Kinective Legal team review). |
 | 25 Nov 17:00 | P9-1.10 merged (parallel 4,019). P9-1.13 to w1. Phase 1: 12 of 15. |
+| 25 Nov 11:26 | P9-1.13 merged. Sonnet; red first quoted; KPI measures and questions from the pack in Analytics, My work and the case Overview; industrial screens unchanged. |

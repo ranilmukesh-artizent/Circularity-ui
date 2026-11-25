@@ -19,6 +19,10 @@ A template case also has `recordMatch` (plan 9, P9-1.10: whether the pack's syst
 di.services.cases.record_match.view; None when the pack has none) and `custody` (the append-only list, oldest first). The
 Overview's "System of record" line and Custody list draw them.
 
+A template case also has `packStages` (plan 9, P9-1.13): its pack's stage agents with their autonomy, `[{key, label, agent,
+autonomy}]` in stage order (None for the industrial demo's cases); the Overview's "Agents on this case" row draws it.
+(`stages` is the ten stage pages.)
+
 Both refuse as the case actions do: 403 out_of_scope when the account has no case pages, 404 not_found for an unknown
 case, 403 tenant_boundary outside the account's tenants or warehouse (same messages as di.services.actions.pipeline).
 
@@ -583,6 +587,15 @@ def active_clock(c: Case) -> dict | None:
     return with_times(ex_clock(c, a, AS_OF)) if a else None
 
 
+def pack_stages(session: Session, c: Case) -> list[dict] | None:
+    """The stage agents of the case's pack with their autonomy (plan 9, P9-1.13): [{key, label, agent, autonomy}] in stage
+    order; None for a case with no template (the industrial demo's), whose page is unchanged."""
+    if not c.get("template"):
+        return None
+    pack = active_pack(session, c["template"], c["owner"])
+    return [{"key": s.key, "label": s.label, "agent": s.agent, "autonomy": s.autonomy} for s in pack.stages]
+
+
 def case_page(session: Session, p: Principal, case_id: str) -> dict:
     """Everything the stage bar, the stage pages, the Overview and the approval card read, for one case."""
     c = load_case(p, session, case_id, "product", "case")
@@ -609,6 +622,7 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
         "plan": replan.queue_plan(session, c),
         "recordMatch": record_match.view(c, active_pack(session, c["template"], c["owner"])) if c.get("template") else None,
         "custody": list(c.get("custody") or []),
+        "packStages": pack_stages(session, c),
     }
 
 

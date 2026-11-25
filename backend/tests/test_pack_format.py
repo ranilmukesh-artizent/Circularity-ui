@@ -167,7 +167,8 @@ def test_runtime_and_kpis_of_the_two_packs():
     assert [e.owner_role for e in tf.runtime.exception_types] == ["Planner"] * 3 + ["Engineer", "Approver", "Planner", "Planner"]
     assert len(dv.runtime.exception_types) == 7 and len(dv.kpis) == 6
     assert [k.label for k in tf.kpis][:2] == ["Value recovered per tool", "Days to next use"]
-    assert len(tf.kpis) == 6 and all(k.measure is None for k in tf.kpis)
+    # P9-1.13 gave three of the six a measure; the other three show "No data yet" until their phase
+    assert len(tf.kpis) == 6 and [k.id for k in tf.kpis if k.measure] == ["value_per_tool", "redeploy_rate", "held_by_guardrails"]
 
 
 def test_carbon_reads_the_pack_named_set():

@@ -6,6 +6,7 @@ import { useBackend } from '../../api/useBackend';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import { PackKpiTiles } from '../analytics/PackView';
 import { countsByKind, dueLabel, KIND_LABEL, KINDS, proposalId, sortItems, workId } from './mywork';
 
 type Dialog = { kind: 'resolve' | 'assign' | 'reject'; item: WorkItem };
@@ -20,6 +21,7 @@ export function MyWorkPage() {
   useEffect(() => {
     document.title = 'My work · Circularity Decision Workbench';
   }, []);
+  const packs = [...new Set(s.kpis.map((k) => k.pack))];
   const counts = countsByKind(s.items);
   const rows = sortItems(s.items).filter((i) => kind === 'all' || i.kind === kind);
   const accept = async (i: WorkItem) => {
@@ -36,6 +38,12 @@ export function MyWorkPage() {
           <p>Exceptions, approvals, questions and proposals that wait for you, most urgent first.</p>
         </div>
       </div>
+      {packs.map((k) => (
+        <section key={k} aria-label={'KPIs: ' + s.kpis.find((x) => x.pack === k)?.pack_name} style={{ marginBottom: 12 }}>
+          <p className="note" style={{ margin: '0 0 6px' }}>{s.kpis.find((x) => x.pack === k)?.pack_name}</p>
+          <PackKpiTiles kpis={s.kpis.filter((x) => x.pack === k)} />
+        </section>
+      ))}
       <div className="row" role="group" aria-label="Filter by kind" style={{ marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
         <button className={'chip ' + (kind === 'all' ? 'ok' : 'line')} aria-pressed={kind === 'all'} onClick={() => setKind('all')}>
           All {s.items.length}
