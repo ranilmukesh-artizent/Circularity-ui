@@ -36,10 +36,12 @@ class Paging:
     offset:  ?{limit_param}=&{offset_param}=                 next = the next offset (or None)
     page:    ?{page_param}=&{size_param}=   (1-based)        next = the next page number (or None)
     cursor:  ?{limit_param}=&{cursor_param}=  (opaque)       next = the next cursor (or None)
+    header_link: ?{limit_param}=&{offset_param}=             next = a full URL in `Link: <url>; rel="next"`, no next in the body
+    json_link:   ?{limit_param}=&{offset_param}=             next = a full URL in the body at `next_key` (dotted: "meta.next")
     The body is {items_key: [...], next_key: next, total_key: total}; set a key to None to leave it out.
     """
 
-    style: Literal["offset", "page", "cursor"] = "offset"
+    style: Literal["offset", "page", "cursor", "header_link", "json_link"] = "offset"
     limit_param: str = "limit"
     offset_param: str = "offset"
     page_param: str = "page"

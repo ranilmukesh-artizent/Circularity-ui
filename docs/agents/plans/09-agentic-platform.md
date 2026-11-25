@@ -851,7 +851,7 @@ each story went.
 - [ ] P9-2.16 Phase 2 demo smoke script
 - [x] P9-2.18 Stage agents reason with the model
 - [x] P9-2.19 Exception assistant and fraud review drafted by the model
-- [ ] P9-2.20 Lease end, return authorised and transit stage agents
+- [x] P9-2.20 Lease end, return authorised and transit stage agents
 - [ ] P9-2.21 Ten-stage journey on the case run view
 - [x] P9-2.22 Gates before the queue plan in decide_case
 - [ ] P9-2.17 Phase 2 gate
@@ -933,7 +933,7 @@ each story went.
 - [ ] P9-8.2 Field mapping suggestions with calibrated confidence
 - [ ] P9-8.3 Discovery samples 500 records from the test connection
 - [ ] P9-8.4 Five mapping choices with ask the owner
-- [ ] P9-8.5 Configured adapter reads dlt-style paging and selectors
+- [x] P9-8.5 Configured adapter reads dlt-style paging and selectors
 - [ ] P9-8.6 Connector from an API spec through an OpenAPI importer
 - [ ] P9-8.7 Agent drafts an adapter spec held for a person
 - [x] P9-8.8 Directory mock with OIDC and a users API in source-sim

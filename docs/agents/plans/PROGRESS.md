@@ -241,6 +241,8 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-25 | 09 · P9-8.8 directory mock with OIDC and a users API in source-sim | this commit | source-sim restarted; source-sim suite 281 passed (incl. 10 directory mock tests); lint, web 397 | done |
 | 2026-11-25 | 09 · P9-8.17 composition object with maker-checker | this commit | lead-verify: 73 api passed (composition, models_migrations, config_agent, overlay_actions, catalog_hygiene, agent_catalog, tool_fleet find), lint, web 400 | done |
 | 2026-11-25 | 09 · P9-2.19 exception assistant and fraud review drafted by the model | this commit | 123 api (exception_assistant, fraud_review, fraud_triage, stage_chain, stage_reasoner, hold_policy, writes_decisions, milestone_rt1048, tool_find, catalog_hygiene), 402 web, tsc 0, knip after ignore | done |
+| 2026-11-25 | 09 · P9-2.20 lease end, return authorised and transit stage agents | this commit | 104 api, 402 web, lint, mypy | done |
+| 2026-11-25 | 09 · P9-8.5 configured adapter reads dlt-style paging and selectors | this commit | 283 source-sim, 77 api (fabric_sources, mapping_runs, configured_adapter, configured_paging), 402 web, lint | done |
 
 ## Decisions taken without the user (to review)
 

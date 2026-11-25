@@ -200,11 +200,16 @@ def build(spec: Spec) -> Mock:
                 )
             p = spec.paging
             body: dict[str, Any] = {p.items_key: rows}
+            nxt = next_value(offset, size, total)
+            if p.style in LINK_STYLES:
+                args = {p.limit_param: size, p.offset_param: nxt}
+                link = None if nxt is None else str(request.url.include_query_params(**args))
+                if p.style == "header_link":
+                    return JSONResponse(_with_total(body, p, total), headers={"Link": f'<{link}>; rel="next"'} if link else None)
+                nxt = link
             if p.next_key:
-                body[p.next_key] = next_value(offset, size, total)
-            if p.total_key:
-                body[p.total_key] = total
-            return body
+                _put(body, p.next_key, nxt)
+            return _with_total(body, p, total)
 
         @router.get(res.path + "/{item_id}", name=f"{spec.source_id}:{res.name}:get")
         def get(item_id: str, request: Request):
@@ -275,6 +280,23 @@ def build(spec: Spec) -> Mock:
 
     router.expire_tokens = expire_tokens  # fault injection (B6)
     return Mock(spec.source_id, router, ensure, reset, spec.title)
+
+
+LINK_STYLES = ("header_link", "json_link")
+
+
+def _put(body: dict[str, Any], dotted: str, value: Any) -> None:
+    """body["meta"]["next"] = value for "meta.next" (the nested next link of a json_link mock)."""
+    *parents, last = dotted.split(".")
+    for k in parents:
+        body = body.setdefault(k, {})
+    body[last] = value
+
+
+def _with_total(body: dict[str, Any], p: Paging, total: int) -> dict[str, Any]:
+    if p.total_key:
+        body[p.total_key] = total
+    return body
 
 
 def _paging_params(p: Paging) -> set[str]:
