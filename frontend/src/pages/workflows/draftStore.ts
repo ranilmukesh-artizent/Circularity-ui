@@ -8,7 +8,7 @@
  * copy is taken up again, still unsaved. Save, Publish, Discard and a restored version drop it (workflow.draft.discard).
  */
 import { useSyncExternalStore } from 'react';
-import { discardDraft, graphOf, graphStamp, saveDraft, serverDraftOf, workflow, type Trigger, type WfGraph } from '../../api/workflows';
+import { discardDraft, graphOf, graphStamp, saveDraft, serverDraftOf, workflow, type Pins, type SampleRec, type Trigger, type WfGraph } from '../../api/workflows';
 import { sessionScoped } from '../../api/view';
 
 export interface Draft {
@@ -20,6 +20,8 @@ export interface Draft {
   /** The run settings (Settings tab): retries 0, 1, 3 or 5 (default 3) and when to alert (default "A run fails"). */
   retries: number;
   alert: string;
+  /** Records pinned on steps to test from (P9-8.15): test data in the copy only; Save, Publish and Discard drop them. */
+  pins: Pins;
   dirty: boolean;
   /** "Leave with unsaved changes" was already warned once. */
   warned: boolean;
@@ -51,7 +53,7 @@ function fresh(id: string): Draft {
   const w = workflow(id)!;
   const graph = graphOf(id);
   return {
-    id, graph, name: w.name, owner: w.owner, trig: { ...w.trig }, retries: w.retries ?? 3, alert: w.alert || 'A run fails',
+    id, graph, name: w.name, owner: w.owner, trig: { ...w.trig }, retries: w.retries ?? 3, alert: w.alert || 'A run fails', pins: {},
     dirty: !!w.dirty, warned: false, base: baseOf(id),
     hist: { s: [JSON.stringify(graph)], i: 0 }, seq: 100,
   };
@@ -64,7 +66,7 @@ function fromServer(id: string): Draft | null {
   const d = fresh(id);
   Object.assign(d, {
     graph: s.graph, name: s.name, owner: s.owner ?? d.owner, trig: s.trig ? { ...s.trig } : d.trig, retries: s.retries ?? d.retries,
-    alert: s.alert || d.alert, base: s.base ?? d.base, dirty: true, hist: { s: [JSON.stringify(s.graph)], i: 0 },
+    alert: s.alert || d.alert, pins: s.pins ?? {}, base: s.base ?? d.base, dirty: true, hist: { s: [JSON.stringify(s.graph)], i: 0 },
   });
   onServer.current.add(id);
   return d;
@@ -102,7 +104,7 @@ async function push(id: string) {
   if (!d || !d.dirty) return;
   onServer.current.add(id);
   try {
-    await saveDraft({ id, graph: d.graph, name: d.name, owner: d.owner, trig: d.trig, retries: d.retries, alert: d.alert, base: d.base });
+    await saveDraft({ id, graph: d.graph, name: d.name, owner: d.owner, trig: d.trig, retries: d.retries, alert: d.alert, base: d.base, pins: d.pins });
   } catch {
     // best effort: the copy stays in memory and the next change tries again
   }
@@ -147,6 +149,14 @@ export function setCfg(id: string, nodeId: string, key: string, value: unknown) 
     if (n) n.cfg = { ...(n.cfg ?? {}), [key]: value };
   }, { track: true });
 }
+
+/** Pin records on a step, or unpin it with none: a step's pinned input is what the next test run starts from. One step at a
+ *  time, since a test run starts from a single step. Pins do not mark the copy unsaved; they ride along with its autosave. */
+export function setPin(id: string, nodeId: string, records: SampleRec[]) {
+  edit(id, (d) => { d.pins = records.length ? { [nodeId]: records.slice(0, PIN_MAX) } : {}; }, { dirty: false });
+}
+/** The server takes at most this many pinned records. */
+export const PIN_MAX = 20;
 
 export function undoRedo(id: string, step: -1 | 1) {
   const d = draftOf(id);

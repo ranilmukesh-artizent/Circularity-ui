@@ -62,6 +62,7 @@ class SimResult:
     flips: list[Flip]
     dv: float
     extra: dict[str, float]
+    per_node: dict[str, dict[str, Any]] = field(default_factory=dict)  # {node id: {in, out, examples}}, see per_node.py
 
 
 Row = tuple[Mapping[str, Any], Decision, Decision]  # a case, its base decision, its candidate decision

@@ -88,6 +88,20 @@ def test_simulate_needs_a_flow_permission():
     assert r["ok"] is False and r["error"]["code"] == "out_of_scope"
 
 
+def test_simulate_per_node_counts():
+    """P9-8.15: the answer's `per_node` says how many cases reach each node and leave it; an exclude rule on grade C
+    removes exactly the grade-C cases of the sample queue."""
+    from di.services.modeler.valuers import tool_fleet
+
+    fid = flowkit.flow_id("tool_fleet", "workspace")
+    g = with_rule(default_flow(load_template("tool_fleet")), "TF-C", "exclude", "resell", {"grade": ["C"]})
+    out = ok(call("flow.simulate", {"flow_id": fid, "graph": g}, "admin"))
+    node = out["per_node"]["r-TF-C"]
+    sample_c = sum(1 for c in tool_fleet.sample_queue() if (c.get("grade") or c.get("estGrade")) == "C")
+    assert node["in"] == out["n"] and node["in"] - node["out"] >= sample_c > 0
+    assert 1 <= len(node["examples"]) <= 3
+
+
 # ---------------------------------------------------------------- MVP-6.3: the template sample queues
 def test_tool_fleet_simulation_equals_golden():
     fid = flowkit.flow_id("tool_fleet", "workspace")

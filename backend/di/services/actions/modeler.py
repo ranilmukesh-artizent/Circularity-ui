@@ -450,7 +450,7 @@ def simulate(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow(ctx, i)
     g = cast(Flow, i["graph"]) if i.get("graph") is not None else _graph(f)
     params = i.get("params")
-    return sim_json(simulate_graph(ctx, f, g, params), params)
+    return sim_json(simulate_graph(ctx, f, g, params, with_nodes=True), params)
 
 
 # ---------------------------------------------------------------- propose

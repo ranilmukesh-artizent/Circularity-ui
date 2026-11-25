@@ -75,7 +75,10 @@ export interface TestRun {
 }
 /** A record as a test run shows it: its id and data (after mapping, its canonical facts; a rejected one, its rule). */
 export interface SampleRec { ext_id: string; resource: string; data?: Record<string, unknown>; facts?: { model: string; key: string; field: string; value: unknown }[]; rule?: string; field?: string; reason?: string }
-export interface StepSamples { before: SampleRec[]; after: SampleRec[] }
+/** `held`: the records the step rejected, each with its rule and reason. Values are masked by the server. */
+export interface StepSamples { before: SampleRec[]; after: SampleRec[]; held?: SampleRec[] }
+/** Records pinned on steps ({node id: records}) to start a test run from; test data kept in the draft only (P9-8.15). */
+export type Pins = Record<string, SampleRec[]>;
 /** What workflow.testRun answers. */
 export interface TestRunResult {
   id: string; name: string; dry: true; status: 'held' | 'failed' | 'success'; states: Record<string, RunState>; counts: Record<string, Counts>;
@@ -105,7 +108,7 @@ interface Detail {
   draft?: ServerDraft | null;
 }
 /** A working copy kept on the server (di/services/actions/workflow_drafts.py). `base`: the ver|updated it was taken from. */
-export interface ServerDraft { graph: WfGraph; name: string; owner?: string; trig?: Trigger; retries?: number; alert?: string; base?: string; at?: string }
+export interface ServerDraft { graph: WfGraph; name: string; owner?: string; trig?: Trigger; retries?: number; alert?: string; base?: string; pins?: Pins; at?: string }
 /** A kept version of a workflow (plan 6 C8): `current` is the saved one, `published` the one runs use. */
 export interface WfVersion { ver: string; at: string; by: string; note: string; current: boolean; published: boolean }
 /** What changed from version a to version b (GET /api/screens/workflows/{id}/compare). */
@@ -415,9 +418,10 @@ export const serverDraftOf = (id: string): ServerDraft | null => (workflow(id) ?
 /** Autosave the working copy (workflow.draft.save); the canvas calls it after two seconds of quiet. */
 export const saveDraft = (d: { id: string } & ServerDraft) => invoke<{ id: string; at: string }>('workflow.draft.save', { ...d });
 /** Test run (workflow.testRun): a dry run of the draft's graph on the server over a sample of real records, writing
- *  nothing. It stops at Human approval ("held") unless `approved`. */
-export const testRunWorkflow = (id: string, graph: WfGraph, approved = false, sample?: number) =>
-  invoke<TestRunResult>('workflow.testRun', { id, graph, ...(approved ? { approved } : {}), ...(sample ? { sample } : {}) });
+ *  nothing. It stops at Human approval ("held") unless `approved`. With `pinned` it starts from that step with those records
+ *  (at most 20): the steps before it are skipped. */
+export const testRunWorkflow = (id: string, graph: WfGraph, approved = false, sample?: number, pinned?: { node_id: string; records: SampleRec[] }) =>
+  invoke<TestRunResult>('workflow.testRun', { id, graph, ...(approved ? { approved } : {}), ...(sample ? { sample } : {}), ...(pinned ? { pinned } : {}) });
 /** Drop the working copy kept on the server (after Save, Publish or Discard). */
 export const discardDraft = (id: string) => invoke<{ id: string; discarded: boolean }>('workflow.draft.discard', { id });
 export const deleteWorkflow = (id: string) => invoke<{ id: string; name: string }>('workflow.delete', { id });

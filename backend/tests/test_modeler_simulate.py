@@ -36,3 +36,20 @@ def test_simulate_device_extras():
     assert out.extra == pytest.approx({
         "u": 40, "cash": 10 * 80 + 30 * 55, "days": 30.0, "dd": 30.0 - (10 * 10 + 30 * 30) / 40, "dl": 10 - 0,
     })  # fmt: skip
+
+
+# ---------------------------------------------------------------- P9-8.15: per-node counts of a simulation
+def test_per_node_counts_by_rule_scope():
+    from di.services.modeler.flow import default_flow, fe, fn
+    from di.services.modeler.per_node import per_node
+
+    t = load_template("tool_fleet")
+    g = default_flow(t)
+    gate = next(n["id"] for n in g["nodes"] if n["t"] == "gate")
+    dec = next(n["id"] for n in g["nodes"] if n["t"] == "decision")
+    g["nodes"].append(fn("r-X", "rule", 320, 200, "", "", rid="X", action="exclude", path="resell", scope={"grade": ["C"]}))
+    g["edges"] += [fe(gate, "r-X"), fe("r-X", dec)]
+    queue = [{"id": f"Q{i}", "grade": gr} for i, gr in enumerate("ABCCD")]
+    out = per_node(t, g, queue)
+    assert out["r-X"] == {"in": 5, "out": 3, "examples": ["Q2", "Q3"]}
+    assert out[dec] == {"in": 5, "out": 5, "examples": ["Q0", "Q1", "Q2"]}

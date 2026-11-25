@@ -16,7 +16,7 @@ import { autoLayout as layout } from '../../components/graph/layout';
 import { openAsk } from '../../utils/askBus';
 import { toast } from '../../components/toast';
 import { refused, useAction } from '../../hooks/useAction';
-import { draftOf, edit, reload, undoRedo, useDrafts, type Draft } from './draftStore';
+import { draftOf, edit, reload, setPin, undoRedo, useDrafts, type Draft } from './draftStore';
 import { CanvasView, canvasOps, ChecksPanel, Inspector, Palette, TaskInstances, type Sel } from './Canvas';
 import { IconTile } from '../../components/kit/IconTile';
 import { Panel } from '../../components/kit/Panel';
@@ -118,7 +118,9 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     };
     runRef.current = r;
     paint();
-    const res = await testRunWorkflow(w.id, g, approved);
+    // records pinned on a step (Pin this input) start the run from that step
+    const pin = Object.entries(d.pins).find(([id, recs]) => recs.length && g.nodes.some((n) => n.id === id));
+    const res = await testRunWorkflow(w.id, g, approved, undefined, pin ? { node_id: pin[0], records: pin[1] } : undefined);
     if (runRef.current !== r) return; // cleared, or a new run started, while the server ran it
     if (refused(res, 4200)) { runRef.current = null; paint(); return; }
     const o = res.output;
@@ -407,7 +409,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
           <Palette w={w} onDown={palDown} onKeyAdd={(k) => ops.add(k)} />
           <CanvasView w={w} d={d} sel={sel} run={run} checks={checks} counts={counts} flow={view === 'flow'} mini={mini} readOnly={phone}
             onSel={setSel} ops={ops} changed={clearRun} apiRef={apiRef} toolbar={toolbar} />
-          <Inspector d={d} sel={sel} checks={checks} ops={ops} onFail={toggleFail} />
+          <Inspector d={d} sel={sel} checks={checks} ops={ops} onFail={toggleFail} run={run} onPin={(id, recs) => { setPin(w.id, id, recs); toast(recs.length ? 'Input pinned. The next test run starts from this step.' : 'Input unpinned.'); }} />
         </div>
         <aside className="frwfr"><Details w={w} d={d} mgr={mgr} onDup={dup} onDelete={() => setModal({ k: 'del' })} /></aside>
       </div>

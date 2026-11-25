@@ -1,5 +1,6 @@
+import { useSimNodes } from '../../api/modeler';
 import type { FlowGraph, FlowNode, ModelerScreen, ScopeDim } from '../../api/types';
-import { LockIcon, nodeTitle, TTAG } from './FlowCanvas';
+import { flowText, LockIcon, nodeTitle, TTAG } from './FlowCanvas';
 import { byStage } from './guardrails';
 
 type Scope = NonNullable<FlowNode['scope']>;
@@ -42,6 +43,18 @@ function DimField({ d, scope, editable, set }: { d: ScopeDim; scope: Scope; edit
         ))}
       </div>
     </fieldset>
+  );
+}
+
+/** What the last simulation says about a node: how many cases reached and left it, and up to three of them. */
+function SimNote({ flowId, nodeId }: { flowId: number | undefined; nodeId: string }) {
+  const c = useSimNodes(flowId)?.[nodeId];
+  if (!c) return null;
+  return (
+    <div className="mdl-simnote" data-sim={nodeId}>
+      <p className="note">Last simulation: <b>{flowText(c)}</b></p>
+      {c.examples.length > 0 && <p className="note">Examples: {c.examples.map((id, i) => <span key={id}>{i > 0 && ', '}<a href={'#/product/' + id}>{id}</a></span>)}</p>}
+    </div>
   );
 }
 
@@ -150,6 +163,7 @@ export function FlowInspector({ s, graph, node, editable, onRule, onConnect, onD
         <input aria-label="Owner" disabled={!editable} value={node.owner ?? ''} onChange={(e) => onRule(node.id, { owner: e.target.value })} />
       </label>
       <p className="mdl-read">{node.path ? nodeTitle(node, s) : 'Pick a path'}.</p>
+      <SimNote flowId={s.flow.id} nodeId={node.id} />
       {next}
       {editable && <button className="btn sm" onClick={() => onRemove(node.id)}>Delete rule</button>}
     </div>

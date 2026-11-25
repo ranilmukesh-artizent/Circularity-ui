@@ -6,6 +6,7 @@
  */
 import { useState } from 'react';
 import { Handle, Position, type NodeProps, type NodeTypes } from '@xyflow/react';
+import { useSimNodes, type NodeFlow } from '../../api/modeler';
 import type { FlowGraph, FlowNode, ModelerScreen } from '../../api/types';
 import { GraphView, type GEdge, type GNode, type GSel } from '../../components/graph/GraphView';
 import { toast } from '../../components/toast';
@@ -25,6 +26,9 @@ export const LockIcon = () => (
   </svg>
 );
 
+/** "41 in → 38 out": how the last simulation's queue flowed through a node. */
+export const flowText = (c: NodeFlow): string => `${c.in} in → ${c.out} out`;
+
 /** A rule node's title: "<rid> · <never|only|prefer path>" (the prototype's nodeLabel), or "set a path". */
 export function nodeTitle(n: FlowNode, s: ModelerScreen): string {
   if (n.t !== 'rule') return n.label;
@@ -41,6 +45,8 @@ interface FlowData extends Record<string, unknown> {
   title: string;
   owner?: string;
   returned?: string;
+  /** The last simulation's "41 in → 38 out" (rule nodes). */
+  io?: string;
   bad: boolean;
   proposed: boolean;
   pick: (id: string) => void;
@@ -48,7 +54,7 @@ interface FlowData extends Record<string, unknown> {
 interface BandData extends Record<string, unknown> { label: string; rectH: number }
 
 function ModelerNode({ data, selected }: NodeProps) {
-  const { n, title, owner, returned, bad, proposed, pick } = data as FlowData;
+  const { n, title, owner, returned, io, bad, proposed, pick } = data as FlowData;
   const cls = ['mdl-node', 't-' + n.t, selected && 'sel', bad && 'bad', proposed && 'prop'];
   return (
     <div className={cls.filter(Boolean).join(' ')} data-node={n.id} title={returned ? 'Returned: ' + returned : undefined}
@@ -59,6 +65,7 @@ function ModelerNode({ data, selected }: NodeProps) {
       <b>{title}</b>
       <span className="s">{n.t === 'rule' ? n.owner ?? '' : n.sub}</span>
       {owner && <span className="ow">{owner}</span>}
+      {io && <span className="s" data-io={n.id}>{io}</span>}
       {returned && (
         <span className="pill" data-returned={n.id} title={returned} aria-label={'Returned: ' + returned}
           style={{ alignSelf: 'flex-start', color: 'var(--bad)', background: 'var(--bad-soft)' }}>Returned</span>
@@ -97,11 +104,12 @@ export function FlowCanvas({ s, graph, selected, bad, proposed, editable, onSele
   const [edgeSel, setEdgeSel] = useState<string | null>(null);
   const by = new Map(graph.nodes.map((n) => [n.id, n]));
   const ret = s.flow.returned;
+  const sim = useSimNodes(s.flow.id);
 
   const gnodes: GNode[] = graph.nodes.map((n) => {
     const p = n.t === 'path' ? s.template.paths.find((x) => x.id === n.path) : undefined;
     const isRet = !!ret && n.id === ret.node_id;
-    const data: FlowData = { n, title: nodeTitle(n, s), owner: p?.owner, returned: isRet ? ret.reason : undefined, bad: bad.has(n.id), proposed: n.id === proposed, pick: (id) => onSelect(id) };
+    const data: FlowData = { n, title: nodeTitle(n, s), owner: p?.owner, returned: isRet ? ret.reason : undefined, io: n.t === 'rule' && sim?.[n.id] ? flowText(sim[n.id]) : undefined, bad: bad.has(n.id), proposed: n.id === proposed, pick: (id) => onSelect(id) };
     return { id: n.id, x: n.x, y: n.y, w: NODE_W, h: n.h, type: 'flow', data, selected: n.id === selected };
   });
   if (s.band) {
