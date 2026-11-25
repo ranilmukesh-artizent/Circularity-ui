@@ -10,6 +10,8 @@ from di.services.cases.decide import Decision, decide_case
 from di.services.modeler.compile import CompiledRule, FlowVersion
 from di.services.modeler.pack import Pack, load_pack, parse_pack
 
+REPAIR = {"recall_id": "RC-2026-017", "tool_class": "BRK", "serial_from": "BRK-51000", "serial_to": "BRK-51999",
+          "remedy": "repair", "affected_parts": ["Impact mechanism"], "status": "active"}  # fmt: skip
 RECALL = Path(__file__).resolve().parent / "fixtures" / "packs" / "recall_test.json"
 ORDER = ("gates", "valuation", "queue_plan", "rules", "rank")
 
@@ -23,8 +25,17 @@ def _route(d: Decision, rid: str) -> dict:
 
 
 def test_order_invariant_tool_fleet():
-    pack = parse_pack(json.loads(RECALL.read_text(encoding="utf-8")))  # G-TOOL-REC active: no recall check, no resell
-    case = intake.tool_fleet_case("RT-9001", {"cls": "CMH", "grade": "B", "rul": 60})
+    pack = parse_pack(json.loads(RECALL.read_text(encoding="utf-8")))  # G-TOOL-REC active (GR-12)
+    case = intake.tool_fleet_case("RT-9001", {"cls": "BRK", "grade": "B", "rul": 60, "serial": "BRK-51007"})
+    case["evidenceRecords"] = [
+        {
+            "type": "recall_check",
+            "source": "register",
+            "at": "2026-11-01T00:00:00+00:00",
+            "result": "pass",
+            "value": {"recalls": [REPAIR], "released": None},
+        }
+    ]  # a repair recall names this serial
     require = CompiledRule("R-1", {}, "require", "resell", "send every return to resale")
     d = _decide(case, pack, require)
     assert d.trace == ORDER
