@@ -89,3 +89,4 @@ One line per event, newest last, times from `date`.
 | 2026-11-26 03:50 | Committed P9-4.7 (w3 edab27b) as 676e8b3. My first commit 211f194 kept a forbidden.py conflict (registry.saveEntry vs serviceDesk.postFault): resolved both kept, amended before any push. Lesson: stop the tick when the cherry-pick conflicts. Dispatch P9-4.10 to w3. |
 | 2026-11-26 03:58 | P9-4.8 returned by w1 (bb22730), partial: test_sd_07_one_set_of_orders deferred to P9-4.9 (needs its execution plan); paths-agree covers intake, reevaluate and decide_case only (simulate and chain go to the paths-agree tasks). w1 ports it onto the head (ServiceDeskTabs conflict with P9-4.7), then does P9-4.9. |
 | 2026-11-26 04:09 | Verify P9-3.9 + P9-4.7 green (20 api files, lint, web). Pushed. |
+| 2026-11-26 04:46 | Hourly sync: merged lane A (P9-2.24, P9-9.2 vehicle mocks); verify green (fraud, stage reasoner, po_golden, catalog; source-sim registry and mocks). Pushed. |
