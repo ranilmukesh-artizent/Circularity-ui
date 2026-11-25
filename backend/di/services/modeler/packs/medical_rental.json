@@ -1,0 +1,1168 @@
+{
+ "key": "medical_rental",
+ "name": "Medical rental · hospital equipment",
+ "version": "1.6.0",
+ "unit": "devices",
+ "author_role": "rental_fleet_director",
+ "prefix": "MR",
+ "industry": "Medical equipment rental",
+ "regions": [
+  "US",
+  "UK"
+ ],
+ "legal_review": {
+  "status": "pending"
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "returns",
+   "name": "Rental device returns"
+  }
+ ],
+ "prompts": [
+  "Return to re-rent: when a pump, monitor, bed or other rental device comes back from a hospital, a decontamination record is required before anyone handles it; then inspect and test it and send it to the hospital that needs it next. A repair over $1,000 needs the fleet manager.",
+  "Plan servicing around demand",
+  "Retire or refurbish ageing devices"
+ ],
+ "clarify": {
+  "question": "Should servicing be brought forward when it falls due within the next rental?",
+  "options": [
+   {
+    "label": "Yes, always service first",
+    "adds": "[{\"id\": \"BR-MR-SVC\", \"op\": \"business_rule\", \"text\": \"service due within the next rental → service then re-rent\", \"stage\": \"decide\", \"scope\": \"condition.service_due_within_rental == true\", \"action\": \"require\", \"path\": \"service_rerent\"}]"
+   },
+   {
+    "label": "Only if the rental is longer than 30 days",
+    "adds": "[{\"id\": \"BR-MR-SVC\", \"op\": \"business_rule\", \"text\": \"service due within the next rental → service then re-rent\", \"stage\": \"decide\", \"scope\": \"condition.service_due_within_rental == true and request.days > 30\", \"action\": \"require\", \"path\": \"service_rerent\"}]"
+   }
+  ]
+ },
+ "classes": [
+  {
+   "id": "infusion_pump",
+   "name": "Infusion pump",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": true,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "patient_monitor",
+   "name": "Patient monitor",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": true,
+    "patient_data": true
+   },
+   "new_price": null
+  },
+  {
+   "id": "electric_bed",
+   "name": "Electric bed",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": true,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "syringe_driver",
+   "name": "Syringe driver",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": true,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "transport_ventilator",
+   "name": "Transport ventilator",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": true,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "pulse_oximeter",
+   "name": "Pulse oximeter",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": true,
+    "patient_data": false
+   },
+   "new_price": null
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {}
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Device returned",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Decontamination",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Inspect and test",
+   "agent": "condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide the route",
+   "agent": "routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and learn",
+   "agent": "analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "rerent",
+   "name": "Re-rent",
+   "app": "mr_rental",
+   "owner": "operations_manager",
+   "lead_days": 1,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": [
+    "dispatch"
+   ]
+  },
+  {
+   "id": "service_rerent",
+   "name": "Service then re-rent",
+   "app": "mr_biomed",
+   "owner": "biomedical_engineer",
+   "lead_days": 2,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": [
+    "service_order",
+    "dispatch"
+   ]
+  },
+  {
+   "id": "refurbish",
+   "name": "Refurbish",
+   "app": "mr_biomed",
+   "owner": "clinical_engineering",
+   "lead_days": 10,
+   "classes": [
+    "refurbish"
+   ],
+   "instructions": [
+    "refurb_order"
+   ]
+  },
+  {
+   "id": "retire",
+   "name": "Retire",
+   "app": "mr_disposal",
+   "owner": "fleet_manager",
+   "lead_days": 7,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": [
+    "data_sanitisation",
+    "disposal_collection",
+    "write_off"
+   ]
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "G-MED-DECON",
+   "text": "A decontamination record that ends after check-in before any handling",
+   "owner": "decontamination_lead",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-MED-SVC",
+   "text": "Service and certification in date for the whole rental",
+   "owner": "biomedical_engineer",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-MED-FSN",
+   "text": "No open recall or field safety notice",
+   "owner": "biomedical_engineer",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-MED-REFURB",
+   "text": "Refurbish stays servicing, never remanufacturing",
+   "owner": "clinical_engineering",
+   "type": "Compliance",
+   "stage": "decide",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-DATA-3",
+   "text": "Patient data sanitised before any release route",
+   "owner": "fleet_manager",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "AP-MR-REPAIR",
+   "text": "Repair over $1,000 → fleet manager",
+   "owner": "fleet_manager",
+   "type": "Approval",
+   "stage": "decide",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [
+    "fleet_manager"
+   ],
+   "param": {
+    "field": "intervention.repair_estimate",
+    "value": 1000,
+    "stricter": "lower",
+    "min": 250,
+    "max": 5000
+   }
+  }
+ ],
+ "gates": [
+  {
+   "id": "G-MED-DECON",
+   "params": {
+    "stage": 2,
+    "locked": true,
+    "routes": "all",
+    "record_must_end_after_checkin": true,
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-MED-SVC",
+   "params": {
+    "stage": 3,
+    "locked": true,
+    "routes": [
+     "rerent",
+     "service_rerent"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-MED-FSN",
+   "params": {
+    "stage": 3,
+    "routes": [
+     "rerent",
+     "service_rerent"
+    ],
+    "research_addition": true,
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-MED-REFURB",
+   "params": {
+    "stage": 5,
+    "routes": [
+     "refurbish"
+    ],
+    "manufacturer_status_markets": [],
+    "research_addition": true,
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-DATA-3",
+   "params": {
+    "stage": 6,
+    "routes": [
+     "retire"
+    ],
+    "classes": [
+     "patient_monitor"
+    ],
+    "research_addition": true,
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "device_class",
+   "label": "Device type",
+   "kind": "set",
+   "values": [
+    "infusion_pump",
+    "patient_monitor",
+    "electric_bed",
+    "syringe_driver",
+    "transport_ventilator",
+    "pulse_oximeter"
+   ],
+   "fields": [
+    "class"
+   ]
+  },
+  {
+   "key": "depot",
+   "label": "Depot",
+   "kind": "set",
+   "values": [
+    "DEPOT-E",
+    "DEPOT-W",
+    "DEPOT-C"
+   ],
+   "fields": []
+  },
+  {
+   "key": "age_band",
+   "label": "Age",
+   "kind": "min",
+   "values": [
+    "0",
+    "3",
+    "6"
+   ],
+   "fields": []
+  }
+ ],
+ "actors": [
+  [
+   "mrdir",
+   "Riley Shaw",
+   "Rental fleet director"
+  ],
+  [
+   "mrfleet",
+   "Sam Ortega",
+   "Fleet manager"
+  ],
+  [
+   "mrops",
+   "Dana Wells",
+   "Operations manager"
+  ]
+ ],
+ "wording": {
+  "every": "every device",
+  "phrases": [
+   {
+    "key": "device_class",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "infusion_pump": "infusion pumps",
+     "patient_monitor": "patient monitors",
+     "electric_bed": "electric beds",
+     "syringe_driver": "syringe drivers",
+     "transport_ventilator": "transport ventilators",
+     "pulse_oximeter": "pulse oximeters"
+    }
+   },
+   {
+    "key": "depot",
+    "fmt": "at {}",
+    "joiner": " or ",
+    "words": {}
+   },
+   {
+    "key": "age_band",
+    "fmt": "{} years or older",
+    "joiner": " or ",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "rerent": "Re-rent",
+   "service_rerent": "Service then re-rent",
+   "refurbish": "Refurbish",
+   "retire": "Retire"
+  }
+ },
+ "customer_layer": {
+  "editable": {
+   "G-MED-FSN": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-MED-REFURB": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-DATA-3": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "AP-MR-REPAIR": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ]
+  },
+  "params": {},
+  "sample_diversions": [
+   {
+    "text": "from an isolation ward → enhanced decontamination",
+    "op": {
+     "id": "DV-MR-ISO",
+     "op": "add_step",
+     "stage": "match",
+     "step": "Enhanced decontamination",
+     "owner_role": "decontamination_lead",
+     "when": [
+      {
+       "fact": "asset.return_unit",
+       "op": "eq",
+       "value": "isolation_ward"
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Adds a step at Decontamination; the record is still required."
+   },
+   {
+    "text": "same hospital asks again within 24 h → re-rent directly",
+    "op": {
+     "id": "DV-MR-SAME",
+     "op": "shortcut",
+     "stage": "decide",
+     "to": "rerent",
+     "when": [
+      {
+       "fact": "request.same_hospital_within_24h",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Starts after the decontamination, service and recall gates; they still run."
+   },
+   {
+    "text": "emergency request: skip the decontamination record",
+    "op": {
+     "id": "DV-MR-SKIP",
+     "op": "shortcut",
+     "stage": "receive",
+     "to": "condition",
+     "when": [
+      {
+       "fact": "request.priority",
+       "op": "eq",
+       "value": "emergency"
+      }
+     ],
+     "blocked_suggestion": "dispatch an already decontaminated unit from the nearest depot"
+    },
+    "blocked": true,
+    "reason": "Blocked: this skips the compliance guardrail G-MED-DECON, the decontamination record. Suggestion: dispatch an already decontaminated unit from the nearest depot."
+   }
+  ],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [
+   {
+    "type": "mr_rental",
+    "name": "Rental system",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "mr_assets",
+    "name": "Asset management",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "mr_decon",
+    "name": "Decontamination log",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "mr_biomed",
+    "name": "Biomedical service system",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "crm",
+    "name": "CRM",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "mr_parts",
+    "name": "Parts supplier portal",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "mr_disposal",
+    "name": "Disposal partner",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Device",
+    "canonical": "asset"
+   },
+   {
+    "name": "Return event",
+    "canonical": "asset.return_kind"
+   },
+   {
+    "name": "Test result",
+    "canonical": "condition.functional_test"
+   },
+   {
+    "name": "Compliance record",
+    "canonical": "condition.decon_ended_at"
+   },
+   {
+    "name": "Demand signal",
+    "canonical": "market.regional_demand"
+   },
+   {
+    "name": "Cost rate",
+    "canonical": "market.transport_per_mile"
+   },
+   {
+    "name": "Location",
+    "canonical": "asset.depot_id"
+   }
+  ],
+  "mappings": [
+   {
+    "kind": "hint",
+    "source": "mr_decon",
+    "field": "cycleEndedAt",
+    "canonical": "condition.decon_ended_at",
+    "confidence": 0.79,
+    "reason": "two timestamps; the end of the cycle was chosen"
+   },
+   {
+    "kind": "hint",
+    "source": "mr_biomed",
+    "field": "pmCode",
+    "canonical": "condition.pm_code",
+    "confidence": 0.73,
+    "reason": "meaning taken from the service manual"
+   },
+   {
+    "kind": "threshold",
+    "value": 0.8
+   },
+   {
+    "kind": "intake_trigger",
+    "source": "mr_rental",
+    "resource": "returns",
+    "when": null,
+    "reason": "rental_return",
+    "key": "asset_tag"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "decon_record",
+    "model": "condition",
+    "key": "asset_tag",
+    "fields": [
+     "decon_ended_at"
+    ],
+    "source": "mr_decon"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "pm_record",
+    "model": "condition",
+    "key": "asset_tag",
+    "fields": [
+     "pm_code",
+     "pm_done_at"
+    ],
+    "source": "mr_biomed"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "electrical_safety",
+    "model": "condition",
+    "key": "asset_tag",
+    "fields": [
+     "electrical_safety_test"
+    ],
+    "source": "mr_biomed"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "certification",
+    "model": "condition",
+    "key": "asset_tag",
+    "fields": [
+     "certification_days_left"
+    ],
+    "source": "mr_biomed"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "correction_status",
+    "model": "condition",
+    "key": "asset_tag",
+    "fields": [
+     "field_safety_notice_open"
+    ],
+    "source": "mr_assets"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "servicing_assessment",
+    "model": "condition",
+    "key": "asset_tag",
+    "fields": [
+     "servicing_assessment_ref"
+    ],
+    "source": "mr_biomed"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "sanitisation_record",
+    "model": "condition",
+    "key": "asset_tag",
+    "fields": [
+     "sanitisation_ref"
+    ],
+    "source": "mr_disposal"
+   }
+  ],
+  "min_fields": [
+   "asset_tag",
+   "return_date",
+   "hospital",
+   "source"
+  ],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "cfs-2026.2",
+   "d_rule": "transport_only"
+  },
+  "params": {
+   "params": {
+    "plugin": "medical_rental",
+    "daily_rate": {
+     "infusion_pump": 18,
+     "patient_monitor": 24,
+     "electric_bed": 15,
+     "syringe_driver": 12,
+     "transport_ventilator": 55,
+     "pulse_oximeter": 6
+    },
+    "transport_per_mile": 1.4,
+    "prep_cost": 35,
+    "service_labour_per_hour": 85,
+    "pm_kit": {
+     "default": 60
+    },
+    "pm_hours": 2,
+    "service_days": 2,
+    "refurb_min_age_years": 6,
+    "refurb_cost": {
+     "default": 2600
+    },
+    "refurb_extra_years": 3,
+    "annual_margin": {
+     "default": 1400
+    },
+    "refurb_downtime_days": 10,
+    "disposal_fee": 40,
+    "sanitisation_cost": 25,
+    "service_avoided_12m": {
+     "default": 260
+    },
+    "utilisation_forecast_days": 90,
+    "utilisation_rate": 0.7,
+    "carbon_note": "transport E_log only on the card; re-rent displaces nothing new"
+   }
+  }
+ },
+ "replay": {
+  "dataset": "medical_rental",
+  "example": {
+   "case": "MR-S1",
+   "legal_review_note": "Decontamination, maintenance-duty, recall and remanufacturing rules summarised; several wordings unconfirmed. Kinective's Legal team must review before shipping.",
+   "asset_fields": [
+    "model",
+    "service interval",
+    "certification",
+    "decontamination"
+   ],
+   "worked_questions": {
+    "WQ-MR-1": "Why did turnaround slip at the East depot?",
+    "WQ-MR-2": "Which device models are retired earliest?"
+   },
+   "modelled": {
+    "devices": 1880,
+    "straight_through_pct": 83,
+    "approvals_per_day": 7,
+    "exceptions_per_day": 5,
+    "utilisation_points": 6
+   },
+   "samples": [
+    {
+     "id": "MR-S1",
+     "title": "Infusion pump back from a general ward",
+     "serial": "SYN-MR-IP-0001",
+     "facts": {
+      "asset.class": "infusion_pump",
+      "asset.age_years": 3,
+      "asset.return_unit": "general_ward",
+      "asset.checked_in_at": "2026-03-10T08:00:00Z",
+      "condition.decon_record": true,
+      "condition.decon_ended_at": "2026-03-10T11:30:00Z",
+      "condition.certification_days_left": 200,
+      "condition.service_due_within_rental": false,
+      "condition.field_safety_notice_open": false,
+      "condition.functional_test": "pass",
+      "condition.electrical_safety_test": "pass",
+      "intervention.repair_estimate": 0,
+      "asset.residual_value": 900,
+      "request.days": 14
+     }
+    },
+    {
+     "id": "MR-S2",
+     "title": "Pump with certification ending in 12 days",
+     "serial": "SYN-MR-IP-0002",
+     "facts": {
+      "asset.class": "infusion_pump",
+      "asset.age_years": 3,
+      "asset.return_unit": "general_ward",
+      "asset.checked_in_at": "2026-03-10T08:00:00Z",
+      "condition.decon_record": true,
+      "condition.decon_ended_at": "2026-03-10T11:30:00Z",
+      "condition.certification_days_left": 12,
+      "condition.service_due_within_rental": false,
+      "condition.field_safety_notice_open": false,
+      "condition.functional_test": "pass",
+      "condition.electrical_safety_test": "pass",
+      "intervention.repair_estimate": 0,
+      "asset.residual_value": 900,
+      "request.days": 30
+     }
+    },
+    {
+     "id": "MR-S3",
+     "title": "No decontamination record",
+     "serial": "SYN-MR-IP-0003",
+     "facts": {
+      "asset.class": "infusion_pump",
+      "asset.age_years": 3,
+      "asset.return_unit": "general_ward",
+      "asset.checked_in_at": "2026-03-10T08:00:00Z",
+      "condition.decon_record": false,
+      "condition.decon_ended_at": null,
+      "condition.certification_days_left": 200,
+      "condition.service_due_within_rental": false,
+      "condition.field_safety_notice_open": false,
+      "condition.functional_test": "pass",
+      "condition.electrical_safety_test": "pass",
+      "intervention.repair_estimate": 0,
+      "asset.residual_value": 900,
+      "request.days": 14
+     }
+    },
+    {
+     "id": "MR-S4",
+     "title": "Record ends before check-in",
+     "serial": "SYN-MR-IP-0004",
+     "facts": {
+      "asset.class": "infusion_pump",
+      "asset.age_years": 3,
+      "asset.return_unit": "general_ward",
+      "asset.checked_in_at": "2026-03-10T08:00:00Z",
+      "condition.decon_record": true,
+      "condition.decon_ended_at": "2026-03-10T07:15:00Z",
+      "condition.certification_days_left": 200,
+      "condition.service_due_within_rental": false,
+      "condition.field_safety_notice_open": false,
+      "condition.functional_test": "pass",
+      "condition.electrical_safety_test": "pass",
+      "intervention.repair_estimate": 0,
+      "asset.residual_value": 900,
+      "request.days": 14
+     }
+    },
+    {
+     "id": "MR-S5",
+     "title": "Monitor with a $1,350 repair",
+     "serial": "SYN-MR-PM-0005",
+     "facts": {
+      "asset.class": "patient_monitor",
+      "asset.age_years": 5,
+      "asset.return_unit": "general_ward",
+      "asset.checked_in_at": "2026-03-10T08:00:00Z",
+      "condition.decon_record": true,
+      "condition.decon_ended_at": "2026-03-10T11:30:00Z",
+      "condition.certification_days_left": 200,
+      "condition.service_due_within_rental": false,
+      "condition.field_safety_notice_open": false,
+      "condition.functional_test": "pass",
+      "condition.electrical_safety_test": "pass",
+      "intervention.repair_estimate": 1350,
+      "asset.residual_value": 900,
+      "request.days": 14
+     }
+    },
+    {
+     "id": "MR-S6",
+     "title": "Model under an open field safety notice",
+     "serial": "SYN-MR-SD-0006",
+     "facts": {
+      "asset.class": "syringe_driver",
+      "asset.age_years": 3,
+      "asset.return_unit": "general_ward",
+      "asset.checked_in_at": "2026-03-10T08:00:00Z",
+      "condition.decon_record": true,
+      "condition.decon_ended_at": "2026-03-10T11:30:00Z",
+      "condition.certification_days_left": 200,
+      "condition.service_due_within_rental": false,
+      "condition.field_safety_notice_open": true,
+      "condition.functional_test": "pass",
+      "condition.electrical_safety_test": "pass",
+      "intervention.repair_estimate": 0,
+      "asset.residual_value": 900,
+      "request.days": 14
+     }
+    },
+    {
+     "id": "MR-S7",
+     "title": "7-year-old bed for refurbishment",
+     "serial": "SYN-MR-EB-0007",
+     "facts": {
+      "asset.class": "electric_bed",
+      "asset.age_years": 7,
+      "asset.return_unit": "general_ward",
+      "asset.checked_in_at": "2026-03-10T08:00:00Z",
+      "condition.decon_record": true,
+      "condition.decon_ended_at": "2026-03-10T11:30:00Z",
+      "condition.certification_days_left": 200,
+      "condition.service_due_within_rental": false,
+      "condition.field_safety_notice_open": false,
+      "condition.functional_test": "pass",
+      "condition.electrical_safety_test": "pass",
+      "intervention.repair_estimate": 800,
+      "asset.residual_value": 900,
+      "request.days": 14
+     }
+    },
+    {
+     "id": "MR-S8",
+     "title": "4-year-old monitor, repair exceeds residual",
+     "serial": "SYN-MR-PM-0008",
+     "facts": {
+      "asset.class": "patient_monitor",
+      "asset.age_years": 4,
+      "asset.return_unit": "general_ward",
+      "asset.checked_in_at": "2026-03-10T08:00:00Z",
+      "condition.decon_record": true,
+      "condition.decon_ended_at": "2026-03-10T11:30:00Z",
+      "condition.certification_days_left": 200,
+      "condition.service_due_within_rental": false,
+      "condition.field_safety_notice_open": false,
+      "condition.functional_test": "pass",
+      "condition.electrical_safety_test": "pass",
+      "intervention.repair_estimate": 1500,
+      "asset.residual_value": 1100,
+      "request.days": 14
+     }
+    }
+   ]
+  }
+ },
+ "runtime": {
+  "exception_types": [
+   {
+    "id": "EX-MR-DECON",
+    "label": "No decontamination record",
+    "owner_role": "decontamination_lead",
+    "action": "Re-run decontamination; held until the record exists"
+   },
+   {
+    "id": "EX-MR-CERT",
+    "label": "Certification expires during the rental",
+    "owner_role": "biomedical_engineer",
+    "action": "Send a different unit; book certification for this one"
+   }
+  ],
+  "suggestion_rules": [
+   {
+    "id": "AP-MR-REPAIR",
+    "kind": "approval",
+    "owner": "fleet_manager",
+    "field": "intervention.repair_estimate",
+    "op": "gt",
+    "value": 1000,
+    "action": "Approve when modelled rental income over the next period clearly exceeds the repair"
+   },
+   {
+    "id": "AL-MR-TURNAROUND",
+    "kind": "alert",
+    "label": "Turnaround slipping at a depot",
+    "owner": "operations_manager",
+    "action": "Move decontamination capacity from a quieter depot",
+    "params": {
+     "avg_turnaround_days_gt": 2.5,
+     "window_days": 14
+    }
+   },
+   {
+    "id": "SR-MR-SVCWEEK",
+    "kind": "suggestion",
+    "label": "service due within the next rental → service in the week of lowest regional demand"
+   }
+  ],
+  "sla_hours": {},
+  "escalate_to": null
+ },
+ "roles": {
+  "rental_fleet_director": "Planner",
+  "operations_director": "Approver",
+  "fleet_manager": "Approver",
+  "clinical_engineering": "Approver",
+  "biomedical_engineer": "Engineer",
+  "decontamination_lead": "Warehouse Manager",
+  "operations_manager": "Planner"
+ },
+ "kpis": [
+  {
+   "id": "fleet_utilisation",
+   "label": "Fleet utilisation",
+   "definition": "device-days on rent / device-days available",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "turnaround_days",
+   "label": "Turnaround days",
+   "definition": "return to ready to rent; modelled trend 2.9 to 1.6 days",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "rerented_within_48h",
+   "label": "Re-rented within 48 h",
+   "definition": "devices on rent again within 48 hours of return / devices returned",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "straight_through_pct",
+   "label": "Straight-through share",
+   "definition": "devices decided with no person in the loop / devices",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "compliance_exceptions",
+   "label": "Compliance exceptions",
+   "definition": "devices held by a gate or guardrail / devices",
+   "measure": {
+    "kind": "share",
+    "where": [
+     {
+      "fact": "held_by_guardrails",
+      "op": "eq",
+      "value": true
+     }
+    ]
+   },
+   "trend": "monthly"
+  },
+  {
+   "id": "repairs_over_limit",
+   "label": "Repairs over the limit",
+   "definition": "repairs above the fleet manager's limit / repairs",
+   "measure": {
+    "kind": "avg",
+    "of": "intervention.repair_estimate",
+    "unit": "$"
+   },
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Why did turnaround slip at the East depot?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.depot_id",
+    "measure": {
+     "kind": "avg",
+     "of": "asset.turnaround_days"
+    }
+   }
+  },
+  {
+   "question": "Which device models are retired earliest?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.class",
+    "measure": {
+     "kind": "avg",
+     "of": "asset.age_years",
+     "where": [
+      {
+       "fact": "recommendation.id",
+       "op": "eq",
+       "value": "retire"
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "stories": [
+  "MR-01",
+  "MR-02",
+  "MR-03",
+  "MR-04",
+  "MR-05",
+  "MR-06",
+  "MR-07",
+  "MR-08",
+  "MR-09",
+  "MR-10",
+  "MR-11",
+  "MR-12",
+  "MR-13",
+  "MR-14",
+  "MR-15",
+  "MR-16",
+  "MR-17",
+  "MR-18",
+  "MR-19",
+  "MR-20",
+  "MR-21",
+  "MR-22",
+  "MR-23"
+ ]
+}
