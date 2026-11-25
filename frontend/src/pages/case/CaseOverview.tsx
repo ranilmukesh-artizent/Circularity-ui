@@ -5,7 +5,7 @@ import {
   stageState, stageTitle, stages, when, type CaseRec,
 } from '../../api/case';
 import { fmtDate, fmtDateYear, money } from '../../api/format';
-import { fraudLine, fraudOf, rejectFraud, releaseFraud, type FraudRecord } from '../../api/fraud';
+import { fraudLine, fraudOf, heldByReview, rejectFraud, releaseFraud, reviewLine, reviewSources, type FraudRecord } from '../../api/fraud';
 import { can, canPage } from '../../api/session';
 import { Icon } from '../../components/Icon';
 import { toast } from '../../components/toast';
@@ -170,6 +170,13 @@ function FraudHold({ c }: { c: CaseRec }) {
   return (
     <section className="callout bad" role="alert" aria-label="Fraud hold" data-testid="fraud-hold">
       <p style={{ margin: 0 }}><b>{fraudLine(f)}</b></p>
+      {heldByReview(f) && <p className="note" style={{ margin: '4px 0 0' }} data-testid="fraud-review-hold">The model&apos;s review asked for this hold; the score alone did not.</p>}
+      {reviewLine(f) && (
+        <p className="note" style={{ margin: '4px 0 0' }} data-testid="fraud-review">
+          {reviewLine(f)}
+          {reviewSources(f).length > 0 && <> · sources: {reviewSources(f).join(', ')}</>}
+        </p>
+      )}
       <ul className="note" style={{ margin: '6px 0', paddingLeft: 16 }}>
         {f.signals.map((s) => (
           <li key={s.id}>{s.id} · {s.source}{s.at ? ' · ' + when(s.at) : ''}</li>

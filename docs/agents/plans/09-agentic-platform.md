@@ -850,7 +850,7 @@ each story went.
 - [ ] P9-2.15 Agent evals in CI with an injection corpus
 - [ ] P9-2.16 Phase 2 demo smoke script
 - [x] P9-2.18 Stage agents reason with the model
-- [ ] P9-2.19 Exception assistant and fraud review drafted by the model
+- [x] P9-2.19 Exception assistant and fraud review drafted by the model
 - [ ] P9-2.20 Lease end, return authorised and transit stage agents
 - [ ] P9-2.21 Ten-stage journey on the case run view
 - [x] P9-2.22 Gates before the queue plan in decide_case
@@ -8822,6 +8822,8 @@ questions as today, then the drafted graph on the canvas with "Checked in N roun
 **Files:**
 - Modify `frontend/package.json` (`@xyflow/react` and `@dagrejs/dagre`, exact versions at least two weeks old on the day
   of the task; D §8 read 13.0.3 and 3.1.3).
+- Modify `frontend/knip.json`: remove `ignoreDependencies` (the lead added both libraries at 84da3dd, already
+  installed at 12.12.1 and 3.1.3; knip ignores them until this task imports them).
 - Modify `docs/agents/plans/09-licences.md` (rows: `@xyflow/react` MIT, `@dagrejs/dagre` MIT).
 - Create `frontend/src/components/graph/layout.ts` and `layout.test.ts` (dagre wrapper).
 - Create `frontend/src/components/graph/GraphView.tsx` (the shared ReactFlow wrapper: pan, zoom, minimap, controls,

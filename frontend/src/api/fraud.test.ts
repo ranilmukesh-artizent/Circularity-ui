@@ -6,7 +6,7 @@ const m = vi.hoisted(() => ({
 vi.mock('./actions', () => ({ invoke: m.invoke }));
 
 import type { CaseRec } from './case';
-import { fraudLine, fraudOf, isFraudItem, rejectFraud, releaseFraud, simulateFraud, type FraudRecord } from './fraud';
+import { fraudLine, fraudOf, heldByReview, isFraudItem, rejectFraud, releaseFraud, reviewLine, reviewSources, simulateFraud, type FraudRecord } from './fraud';
 import type { WorkItem } from './mywork';
 
 const last = () => m.invoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
@@ -40,6 +40,16 @@ describe('the fraud facade (plan 9, P9-2.11, X-15)', () => {
   it('x-15: the case record is read off the case, null when it was never held', () => {
     expect(fraudOf({ id: 'RT-1', fraud: record } as unknown as CaseRec)).toEqual(record);
     expect(fraudOf({ id: 'RT-1' } as unknown as CaseRec)).toBeNull();
+  });
+
+  it('p9-2.19: the model review shows as a line with its sources, and a hold it asked for is told apart', () => {
+    expect(reviewLine(record)).toBeNull();
+    const review = { narrative: 'The capacity differs.', concerns: [{ text: 't', sources: ['F-QM', 'quote_check'] }, { text: 'u', sources: ['F-QM'] }], raise_hold: true };
+    const asked: FraudRecord = { ...record, review, signals: [{ id: 'model_review', fired: true, value: 'x', source: 'F-QM', at: null }] };
+    expect(reviewLine(asked)).toBe('Model review: The capacity differs.');
+    expect(reviewSources(asked)).toEqual(['F-QM', 'quote_check']);
+    expect(heldByReview(asked)).toBe(true);
+    expect(heldByReview(record)).toBe(false);
   });
 
   it('x-15: My work tells the fraud holds from other exceptions', () => {

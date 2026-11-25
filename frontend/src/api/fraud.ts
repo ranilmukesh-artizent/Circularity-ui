@@ -22,6 +22,14 @@ export interface FraudSignal {
 
 export type FraudStatus = 'held' | 'released' | 'rejected';
 
+/** The model's review of a triage (P9-2.19): why the case looks or does not look like fraud, with the sources it cites. It
+ *  only adds caution: a hold it asked for carries the signal `model_review`; it never releases one. */
+export interface FraudReview {
+  narrative: string;
+  concerns: { text: string; sources: string[] }[];
+  raise_hold: boolean;
+}
+
 /** The case's fraud record: what held it, and later who released it or rejected the return, and why. */
 export interface FraudRecord {
   status: FraudStatus;
@@ -31,6 +39,7 @@ export interface FraudRecord {
   rule_version: string;
   held_at: string;
   by: string;
+  review?: FraudReview;
   resolved_by?: string;
   resolved_at?: string;
   reason?: string;
@@ -42,6 +51,15 @@ export const fraudOf = (c: CaseRec): FraudRecord | null => (c as CaseRec & { fra
 /** "Held for fraud review: score 0.8 ≥ 0.6 · rule set v1" (without the threshold when the hold did not record one). */
 export const fraudLine = (f: FraudRecord): string =>
   `Held for fraud review: score ${f.score}${f.threshold == null ? '' : ` ≥ ${f.threshold}`} · rule set ${f.rule_version}`;
+
+/** "Model review: <narrative>", or null when no model reviewed the case. */
+export const reviewLine = (f: FraudRecord): string | null => (f.review ? `Model review: ${f.review.narrative}` : null);
+
+/** The ids the review cites, once each, in the order they come. */
+export const reviewSources = (f: FraudRecord): string[] => [...new Set((f.review?.concerns ?? []).flatMap((c) => c.sources))];
+
+/** True when the review itself asked for this hold (the computed score alone would not have held the case). */
+export const heldByReview = (f: FraudRecord): boolean => f.signals.some((s) => s.id === 'model_review');
 
 /** My work's "Fraud and compliance" rows: the exceptions fraud.hold opens (their title starts with this). */
 export const FRAUD_TITLE = 'Fraud and compliance';

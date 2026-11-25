@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const m = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock('./actions', () => ({ invoke: m.invoke }));
 
-import { askForInfo, explainException } from './mywork';
+import { askForInfo, draftedBy, draftOwner, explainException } from './mywork';
 
 beforeEach(() => m.invoke.mockReset());
 
@@ -27,5 +27,13 @@ describe('explainException (P9-2.10, exception.explain)', () => {
     const r = await explainException(7);
     expect(m.invoke).toHaveBeenCalledWith('exception.explain', { exception_id: 7 });
     expect(r.ok && r.output).toEqual(draft);
+  });
+
+  it('p9-2.19: says who drafted it and what the pack default owner is', () => {
+    const base = { cause: 'c', recommended_action: 'a', owner_role: 'Approver', by_model: false, sources: [] };
+    expect(draftedBy(base)).toBe('Drafted from the pack');
+    expect(draftedBy({ ...base, by_model: true, model: 'function:fn' })).toBe('Drafted by the exception assistant (function:fn)');
+    expect(draftOwner(base)).toBe('Approver');
+    expect(draftOwner({ ...base, by_model: true, pack_default: 'Planner' })).toBe('Approver (pack default: Planner)');
   });
 });

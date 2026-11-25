@@ -58,15 +58,25 @@ export interface DraftSource {
   at: string;
 }
 
-/** P9-2.10: the exception assistant's draft for an exception item. `owner_role` and `recommended_action` come from the pack;
- *  `by_model` is true when a language model worded `cause`. */
+/** P9-2.10 and P9-2.19: the exception assistant's draft for an exception item. `by_model` is true when a language model drafted
+ *  the cause, the action and the owner (`model` names it); `pack_default` is the owner the pack would have chosen, set only
+ *  when the model's owner differs. Without a model the draft is the pack's. */
 export interface ExceptionDraft {
   cause: string;
   recommended_action: string;
   owner_role: string;
   by_model: boolean;
+  model?: string | null;
+  pack_default?: string | null;
   sources: DraftSource[];
 }
+
+/** "Drafted by the exception assistant (<model>)" or "Drafted from the pack". */
+export const draftedBy = (d: ExceptionDraft): string =>
+  d.by_model ? `Drafted by the exception assistant${d.model ? ` (${d.model})` : ''}` : 'Drafted from the pack';
+
+/** The owner of the draft, with "pack default: <role>" when the model chose another one. */
+export const draftOwner = (d: ExceptionDraft): string => (d.pack_default ? `${d.owner_role} (pack default: ${d.pack_default})` : d.owner_role);
 
 /** The assistant's draft for an exception item (exception.explain, a read): it proposes, a person resolves or assigns. */
 export const explainException = (exceptionId: number): Promise<ActionResult<ExceptionDraft>> =>
