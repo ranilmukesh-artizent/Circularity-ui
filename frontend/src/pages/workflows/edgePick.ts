@@ -37,13 +37,3 @@ export function nearestLine(lines: Line[], p: Pt): string | null {
   }
   return best;
 }
-
-/** Points along an SVG path every `step` units (its own user space), for nearestLine. */
-export function samplePath(path: SVGPathElement, step = 6): Pt[] {
-  const len = path.getTotalLength();
-  const n = Math.max(2, Math.ceil(len / step));
-  return Array.from({ length: n + 1 }, (_, i) => {
-    const q = path.getPointAtLength((len * i) / n);
-    return { x: q.x, y: q.y };
-  });
-}

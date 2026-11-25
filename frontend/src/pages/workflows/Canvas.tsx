@@ -1,13 +1,14 @@
 /**
  * The Airflow-style canvas (the demo's wf* canvas code): palette, nodes and edges with drag to move, drag from the
- * right dot to connect, select and Delete, arrow keys, zoom, minimap, inspector, checks and task instances.
+ * right dot to connect, select and Delete, arrow keys, pan and zoom, minimap, inspector, checks and task instances.
+ * The canvas itself is the shared GraphView (xyflow, P9-8.13); this file says what a step may do.
  * It edits the page's working copy (draftStore.ts); Save and Publish send it through invoke().
  */
-import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
+import { useEffect, useState, type MutableRefObject, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { fmtNumber } from '../../api/format';
 import { can } from '../../api/session';
 import {
-  actTypes, agentsUsing, blockOperations, blockResources, blockSpecOf, nodeSettings, settingErrors, CH, channelsOf, deliverMap, deliverOf, edgePath, fixedStep, frTransforms, mappings, mapTarget,
+  actTypes, agentsUsing, blockOperations, blockResources, blockSpecOf, nodeSettings, settingErrors, CH, channelsOf, deliverMap, deliverOf, fixedStep, frTransforms, mappings, mapTarget,
   NOWF, nowMs, RUN_CHIP, RUN_LABEL, runTimes, sourceGroups, sourceLabel, sources, source, sourceShortLabel, stepInfo, tools,
   transforms, canLink, WF_H, WF_W, WF_WH, worldWidth, type Check, type Counts, type RunState, type TestRun, type WfGraph, type WfNode, type Workflow,
 } from '../../api/workflows';
@@ -16,12 +17,13 @@ import { onActivateKey } from '../../utils/keys';
 import { toast } from '../../components/toast';
 import { BlockSettings } from './BlockSettings';
 import { edit, nextId, setCfg, type Draft } from './draftStore';
-import { nearestLine, samplePath } from './edgePick';
-import { GRIP_SVG, LOCK_SVG, NodeMark, SourceMark, StateChip, TileMark } from './WorkflowMarks';
+import { GraphView, type GEdge, type GNode, type GraphApi } from '../../components/graph/GraphView';
+import { placeMissing } from '../../components/graph/layout';
+import { StepNode, type StepData } from './StepNode';
+import { GRIP_SVG, LOCK_SVG, SourceMark, StateChip, TileMark } from './WorkflowMarks';
 
 export type Sel = { t: 'n' | 'e'; id: string } | null;
 export const FIXMSG = 'Fixed steps belong to Circularity and cannot be moved or removed.';
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const ICO: Partial<Record<RunState, string>> = { success: '✓', warning: '✓', failed: '✕', upstream_failed: '!', running: '…', held: '⏸' };
 const POOL = (n: WfNode) => (n.k === 'conn' || n.k === 'wconn' ? 'source_pool' : n.k === 'xf' || n.k === 'map' ? 'transform_pool' : n.k === 'tool' ? 'agent_pool' : 'platform_pool');
 const hms = (ms: number) => new Date(ms).toTimeString().slice(0, 8);
@@ -40,7 +42,7 @@ export function canvasOps(d: Draft, kind: 'pipe' | 'dec', setSel: (s: Sel) => vo
     add(key: string, x?: number, y?: number) {
       const [k, ref] = key.split(':') as [WfNode['k'], string];
       if (x == null || y == null) ({ x, y } = free());
-      const n: WfNode = { id: '', k, ref, x: clamp(Math.round(x / 8) * 8, 0, WW - WF_W), y: clamp(Math.round(y / 8) * 8, 0, WF_WH - WF_H) };
+      const n: WfNode = { id: '', k, ref, x: Math.max(0, Math.round(x / 8) * 8), y: Math.max(0, Math.round(y / 8) * 8) };
       edit(d.id, (dd) => { n.id = nextId(dd, 'n'); dd.graph.nodes.push(n); }, { track: true });
       changed();
       setSel({ t: 'n', id: n.id });
@@ -162,106 +164,21 @@ export function Palette({ w, onDown, onKeyAdd }: { w: Workflow; onDown: (e: RPoi
 }
 
 // ---------------------------------------------------------------- canvas
-export function CanvasView({ w, d, z, sel, run, checks, counts, flow, mini, onSel, ops, changed, viewRef, toolbar }: {
-  w: Workflow; d: Draft; z: number; sel: Sel; run: TestRun | null; checks: Check[]; counts: Record<string, Counts>; flow: boolean; mini: boolean;
-  onSel: (s: Sel) => void; ops: ReturnType<typeof canvasOps>; changed: () => void; viewRef: React.RefObject<HTMLDivElement>;
+const NODE_TYPES = { step: StepNode };
+
+/** The canvas: the draft's steps and links on the shared GraphView (xyflow). Steps without coordinates are laid out with dagre and stored. */
+export function CanvasView({ w, d, sel, run, checks, counts, flow, mini, readOnly, onSel, ops, changed, apiRef, toolbar }: {
+  w: Workflow; d: Draft; sel: Sel; run: TestRun | null; checks: Check[]; counts: Record<string, Counts>; flow: boolean; mini: boolean; readOnly: boolean;
+  onSel: (s: Sel) => void; ops: ReturnType<typeof canvasOps>; changed: () => void; apiRef: MutableRefObject<GraphApi | null>;
   toolbar: ReactNode;
 }) {
-  const g = d.graph, WW = worldWidth(w.kind), by: Record<string, WfNode> = {};
-  g.nodes.forEach((n) => (by[n.id] = n));
-  const drag = useRef<{ id: string; fixed: boolean; dx: number; dy: number; sx: number; sy: number; moved: boolean; warned?: boolean } | null>(null);
-  const [link, setLink] = useState<{ from: string; x: number; y: number; hot: string | null } | null>(null);
-  const linkRef = useRef(link);
-  linkRef.current = link;
-
-  const pt = (e: { clientX: number; clientY: number }) => {
-    const v = viewRef.current!, r = v.getBoundingClientRect();
-    return { x: (e.clientX - r.left + v.scrollLeft) / z, y: (e.clientY - r.top + v.scrollTop) / z };
-  };
-  const nodeAt = (x: number, y: number) => (document.elementFromPoint(x, y)?.closest('.wfn') as HTMLElement | null) ?? null;
-
+  const g = d.graph;
+  const missing = placeMissing(g.nodes.map((n) => ({ id: n.id, w: WF_W, h: WF_H, x: n.x, y: n.y })), g.edges);
+  // a graph with no coordinates (generated, imported) is laid out once and the layout kept in the copy, without marking it changed
   useEffect(() => {
-    function move(e: PointerEvent) {
-      const dr = drag.current;
-      if (dr) {
-        if (!dr.moved && Math.hypot(e.clientX - dr.sx, e.clientY - dr.sy) < 5) return;
-        dr.moved = true;
-        if (dr.fixed) { if (!dr.warned) { dr.warned = true; toast(FIXMSG); } return; }
-        const p = pt(e);
-        edit(d.id, (dd) => {
-          const n = dd.graph.nodes.find((x) => x.id === dr.id);
-          if (n) { n.x = clamp(Math.round((p.x - dr.dx) / 8) * 8, 0, WW - WF_W); n.y = clamp(Math.round((p.y - dr.dy) / 8) * 8, 0, WF_WH - WF_H); }
-        }, { dirty: false });
-        return;
-      }
-      const l = linkRef.current;
-      if (l) {
-        const p = pt(e), nd = nodeAt(e.clientX, e.clientY);
-        const hot = nd && nd.dataset.id !== l.from && nd.querySelector('.port.in') ? nd.dataset.id! : null;
-        setLink({ ...l, x: p.x, y: p.y, hot });
-      }
-    }
-    function up(e: PointerEvent, cancel = false) {
-      const dr = drag.current;
-      if (dr) {
-        drag.current = null;
-        if (dr.moved && !dr.fixed && !cancel) { edit(d.id, () => {}, { track: true }); changed(); }
-      }
-      const l = linkRef.current;
-      if (l) {
-        setLink(null);
-        if (!cancel) {
-          const nd = nodeAt(e.clientX, e.clientY);
-          if (nd && nd.querySelector('.port.in') && nd.dataset.id !== l.from) ops.link(l.from, nd.dataset.id!);
-        }
-      }
-    }
-    const cancel = (e: PointerEvent) => up(e, true);
-    document.addEventListener('pointermove', move);
-    document.addEventListener('pointerup', up);
-    document.addEventListener('pointercancel', cancel);
-    return () => {
-      document.removeEventListener('pointermove', move);
-      document.removeEventListener('pointerup', up);
-      document.removeEventListener('pointercancel', cancel);
-    };
+    if (!Object.keys(missing).length) return;
+    edit(d.id, (dd) => { dd.graph.nodes.forEach((n) => { const p = missing[n.id]; if (p) { n.x = p.x; n.y = p.y; } }); }, { dirty: false });
   });
-
-  /** The link whose line passes closest to the click (edgePick.ts), not the hit area that happens to be on top. */
-  function pickEdge(e: RPointerEvent): string | null {
-    const svg = viewRef.current?.querySelector<SVGSVGElement>('svg.wfe');
-    const paths = [...(svg?.querySelectorAll<SVGPathElement>('g[data-e] > path.hit') ?? [])];
-    const m = svg?.getScreenCTM?.();
-    if (!svg || !m || !paths.length || typeof paths[0].getTotalLength !== 'function') return null; // no SVG geometry (tests)
-    const at = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse()); // the click in the lines' own coordinates
-    return nearestLine(paths.map((p) => ({ id: (p.parentNode as SVGGElement).dataset.e!, points: samplePath(p) })), { x: at.x, y: at.y });
-  }
-
-  function down(e: RPointerEvent) {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    const t = e.target as Element;
-    const port = t.closest('.wfn .port.out');
-    if (port) {
-      const id = (port.closest('.wfn') as HTMLElement).dataset.id!;
-      onSel({ t: 'n', id });
-      const n = by[id];
-      setLink({ from: id, x: n.x + WF_W, y: n.y + WF_H / 2, hot: null });
-      e.preventDefault();
-      return;
-    }
-    const nd = t.closest('.wfn') as HTMLElement | null;
-    if (nd) {
-      const id = nd.dataset.id!, n = by[id], p = pt(e);
-      onSel({ t: 'n', id });
-      drag.current = { id, fixed: n.k === 'fixed', dx: p.x - n.x, dy: p.y - n.y, sx: e.clientX, sy: e.clientY, moved: false };
-      nd.focus({ preventScroll: true });
-      e.preventDefault();
-      return;
-    }
-    const eh = t.closest('.wfe .hit');
-    if (eh) { onSel({ t: 'e', id: pickEdge(e) ?? (eh.parentNode as SVGGElement).dataset.e! }); return; }
-    if (sel) onSel(null);
-  }
 
   const L = RUN_LABEL();
   const sevOf = (id: string) => {
@@ -269,62 +186,42 @@ export function CanvasView({ w, d, z, sel, run, checks, counts, flow, mini, onSe
     return sv.some((x) => x.sev === 'error') ? 'error' : sv.length ? 'warn' : undefined;
   };
   const showCounts = !!(run || w.last);
-  const color = (n: WfNode) => {
-    const st = run?.states[n.id];
-    return st === 'success' || st === 'warning' ? 'var(--ok)' : st === 'failed' ? 'var(--bad)' : st === 'upstream_failed' ? '#D9651E' : st === 'running' ? 'var(--yellow)' : n.k === 'fixed' ? 'var(--ink)' : 'var(--mv-line)';
+  const color = (id: string) => {
+    const n = g.nodes.find((x) => x.id === id), st = run?.states[id];
+    return st === 'success' || st === 'warning' ? 'var(--ok)' : st === 'failed' ? 'var(--bad)' : st === 'upstream_failed' ? '#D9651E' : st === 'running' ? 'var(--yellow)' : n?.k === 'fixed' ? 'var(--ink)' : 'var(--mv-line)';
   };
+  const gnodes: GNode[] = g.nodes.map((n) => {
+    const st = run?.states[n.id], c = counts[n.id], p = missing[n.id] ?? n;
+    const data: StepData = { n, st, stLabel: st ? L[st] : '', records: c && showCounts ? fmtNumber(c.out) + ' records' : '', sev: sevOf(n.id) };
+    return { id: n.id, x: p.x, y: p.y, w: WF_W, h: WF_H, type: 'step', data, selected: sel?.t === 'n' && sel.id === n.id, locked: n.k === 'fixed' };
+  });
+  const gedges: GEdge[] = g.edges.flatMap((e) => {
+    const sa = run?.states[e.a], sb = run?.states[e.b], c = counts[e.a];
+    if (!g.nodes.some((n) => n.id === e.a) || !g.nodes.some((n) => n.id === e.b)) return [];
+    const st = sb === 'failed' ? 'bad' : sb === 'upstream_failed' ? 'up' : sb === 'running' ? 'run' : sa === 'success' || sa === 'warning' ? 'ok' : sa === 'failed' ? 'bad' : sa === 'upstream_failed' ? 'up' : '';
+    return [{ id: e.id, a: e.a, b: e.b, selected: sel?.t === 'e' && sel.id === e.id, className: [e.locked ? 'lk' : '', st].join(' ').trim(), label: flow && c ? fmtNumber(c.out) : undefined }];
+  });
 
   return (
     <div className="wfcanvas">
       {toolbar}
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- the canvas takes focus for its arrow-key and Delete shortcuts, as its label says */}
-      <div className="wfview" id="wfView" ref={viewRef} tabIndex={0} role="group" aria-label="Workflow canvas. Select a step, then use arrow keys to move it or Delete to remove it." onPointerDown={down}>
-        <div id="wfSizer" style={{ width: WW * z, height: WF_WH * z }}>
-          <div id="wfWorld" style={{ width: WW, height: WF_WH, transform: `scale(${z})` }}>
-            <svg className="wfe" width={WW} height={WF_WH} aria-hidden="true">
-              <g id="wfEg">
-                {g.edges.map((e) => {
-                  const a = by[e.a], b = by[e.b];
-                  if (!a || !b) return null;
-                  const sa = run?.states[e.a], sb = run?.states[e.b];
-                  const c = sb === 'failed' ? 'bad' : sb === 'upstream_failed' ? 'up' : sb === 'running' ? 'run' : sa === 'success' || sa === 'warning' ? 'ok' : sa === 'failed' ? 'bad' : sa === 'upstream_failed' ? 'up' : '';
-                  const ty = b.y + WF_H / 2, tx = b.x - 1, path = edgePath(a.x + WF_W + 1, a.y + WF_H / 2, b.x - 9, b.y + WF_H / 2);
-                  return (
-                    <g key={e.id} data-e={e.id} className={[e.locked ? 'lk' : '', c, sel?.t === 'e' && sel.id === e.id ? 'sel' : ''].join(' ')}>
-                      <path className="hit" d={path} /><path className="l" d={path} /><path className="ah" d={`M${tx - 1} ${ty}l-9 -5v10z`} />
-                    </g>
-                  );
-                })}
-                {flow && g.edges.map((e) => {
-                  const a = by[e.a], b = by[e.b], c = counts[e.a];
-                  if (!a || !b || !c) return null;
-                  const x = (a.x + WF_W + b.x) / 2, y = (a.y + b.y) / 2 + WF_H / 2 - 6;
-                  return <g key={'l' + e.id} className="frel"><rect x={x - 26} y={y - 9} width="52" height="16" rx="8" /><text x={x} y={y + 3} textAnchor="middle">{fmtNumber(c.out)}</text></g>;
-                })}
-                {link && by[link.from] && <path className="tmp" d={edgePath(by[link.from].x + WF_W + 1, by[link.from].y + WF_H / 2, link.x, link.y)} />}
-              </g>
-            </svg>
-            {g.nodes.map((n) => {
-              const i = stepInfo(n), fx = n.k === 'fixed', st = run?.states[n.id], c = counts[n.id];
-              return (
-                <div key={n.id} className={'wfn frn ' + (fx ? 'fixed' : 'mov') + (sel?.t === 'n' && sel.id === n.id ? ' sel' : '') + (n.fail ? ' inj' : '')}
-                  data-id={n.id} data-sev={sevOf(n.id)} data-st={st} style={{ left: n.x, top: n.y }} tabIndex={0} role="button"
-                  aria-label={`${i.label}. ${fx ? 'Fixed' : 'Movable'} ${i.tag.replace(/^Fixed · /, '')}.`} title={i.sub}>
-                  {i.in && <span className={'port in' + (link?.hot === n.id ? ' hot' : '')} />}
-                  {i.out && <span className="port out" />}
-                  <span className="frnh"><NodeMark n={n} /><span className="frnt"><span className="lb">{i.label}</span><span className="sb">{i.sub}</span></span>{fx && <span className="frlk" aria-hidden="true">{LOCK_SVG}</span>}</span>
-                  <span className="frnf"><span className="st">{st ? L[st] : ''}</span><span className="frrcn num" data-rc={n.id}>{c && showCounts ? fmtNumber(c.out) + ' records' : ''}</span></span>
-                  <span className="tag">{i.tag}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-      <div className="wfmini" id="wfMini" hidden={!mini}>
-        <svg viewBox={`0 0 ${WW} ${WF_WH}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-          {g.nodes.map((n) => <rect key={n.id} x={n.x} y={n.y} width={WF_W} height={WF_H} rx="8" fill={color(n)} />)}
-        </svg>
+      <div className="wfview graphview" id="wfView">
+        <GraphView nodes={gnodes} edges={gedges} nodeTypes={NODE_TYPES} readOnly={readOnly} minimap={mini} nodeColor={color} apiRef={apiRef}
+          label="Workflow canvas. Select a step, then use arrow keys to move it or Delete to remove it."
+          onSelect={onSel} onDelete={(s) => ops.del(s)} onConnect={(a, b) => { ops.link(a, b); }} onBlocked={() => toast(FIXMSG)}
+          onMove={(id, x, y) => {
+            edit(d.id, (dd) => {
+              const n = dd.graph.nodes.find((q) => q.id === id);
+              if (n) { n.x = Math.max(0, Math.round(x / 8) * 8); n.y = Math.max(0, Math.round(y / 8) * 8); }
+            }, { track: true });
+            changed();
+          }}
+          onNudge={(id, dx, dy) => {
+            const n = g.nodes.find((q) => q.id === id);
+            if (!n) return;
+            if (n.k === 'fixed') return toast(FIXMSG);
+            edit(d.id, (dd) => { const q = dd.graph.nodes.find((r) => r.id === id)!; q.x = Math.max(0, q.x + dx); q.y = Math.max(0, q.y + dy); });
+          }} />
       </div>
       <div className="wflegend"><span><i className="f" />Fixed · owned by Circularity</span><span><i className="m" />Movable · yours to arrange</span><span><i className="fre" />Red · failed</span></div>
       <p className="frphone note">Read-only on a phone. Open on a larger screen to edit the canvas.</p>
