@@ -25,3 +25,4 @@ temporarily unavailable", and there is no host Python or Docker CLI. Use these i
   lock, run one check at a time, and never leave one running when you finish.
 - **Temporary source-sim** (to prove a sync test against your new mock): only under your slot lock, on a database
   `sources_w<k>`, and removed before you release it.
+- **Forbidden checks:** in product code, call `di.services.agents.forbidden.forbidden(action_id)`, never `action_id.startswith(FORBIDDEN_ACTIONS)`: since lane A's aa47ad2, AGENT_EXEMPT lets a few actions through (`connection.discover`).
