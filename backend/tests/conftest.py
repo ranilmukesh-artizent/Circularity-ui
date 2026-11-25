@@ -55,3 +55,16 @@ def clean_jobs():
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE job RESTART IDENTITY"))
     return
+
+
+@pytest.fixture
+def no_synced_conflicts(monkeypatch):
+    """Plan 9 (P9-2.4): the hold policy holds a `limits` stage's write when the case's asset has an open conflict. On a
+    stack whose Connection Fabric has synced, the demo assets (RT-1048's included) have hundreds of open conflicts; on
+    a fresh database they have none. Tests about the agent chain's order, records or traces, not about holds, use this
+    fixture (`pytestmark = pytest.mark.usefixtures("no_synced_conflicts")`) so they give the same answer on both; the
+    open-exception half of the case state stays real. test_hold_policy covers conflict holds through evaluate_hold."""
+    from di.services.actions import hold
+
+    real = hold._case_state
+    monkeypatch.setattr(hold, "_case_state", lambda *a, **k: (real(*a, **k)[0], False))

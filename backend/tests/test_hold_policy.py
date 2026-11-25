@@ -26,6 +26,8 @@ from di.services.modeler.pack import load_pack
 from tests import starting
 from tests.helpers import call, client, h
 
+pytestmark = pytest.mark.usefixtures("no_synced_conflicts")  # see conftest: synced conflicts and the hold policy
+
 SUBMIT = {"case_id": "RT-1048"}
 EVIDENCE = {"case_id": "RT-1051"}
 
@@ -84,15 +86,6 @@ def eval_hold(**kw):
         "policy": hold.HoldPolicy(Decimal(600), 100, 0.75),
     }  # fmt: skip
     return hold.evaluate_hold(**(base | kw))
-
-
-@pytest.fixture(autouse=True)
-def _no_synced_conflicts(monkeypatch):
-    """On a stack whose Connection Fabric has synced, RT-1048's asset has an open conflict, which rightly adds a `risk`
-    reason; on a fresh database it has none. The pipeline tests here are about autonomy, value, confidence and open
-    exceptions, so the conflict half of the case state is pinned to "none" (the pure `evaluate_hold` tests cover it)."""
-    real = hold._case_state
-    monkeypatch.setattr(hold, "_case_state", lambda *a, **k: (real(*a, **k)[0], False))
 
 
 # --- the pipeline: what each autonomy level holds --------------------------------------------------------------------

@@ -21,6 +21,8 @@ from di.services.modeler.pack import load_pack
 from tests import starting
 from tests.helpers import call, client, h
 
+pytestmark = pytest.mark.usefixtures("no_synced_conflicts")  # see conftest: synced conflicts and the hold policy
+
 CASE = "RT-1048"
 BLOCKED = "RT-1051"  # evidence is missing: intake asks for it
 ORDER = ["intake", "condition", "demand", "fit_for_use", "valuation", "disposition"]
@@ -55,17 +57,6 @@ def _drive(agent: str, playbook: str, case: str = CASE) -> str:
 def _run(run_id: str) -> dict:
     with SessionLocal() as s:
         return dict(s.execute(text("SELECT * FROM agent_run WHERE id = :i"), {"i": run_id}).mappings().one())
-
-
-@pytest.fixture(autouse=True)
-def _no_synced_conflicts(monkeypatch):
-    """On a stack whose Connection Fabric has synced, RT-1048's asset has an open conflict, and since P9-2.4 the hold
-    policy rightly holds a `limits` stage's write for a person (reason `risk`). These tests are about the chain's order
-    and records, so the conflict half of the case state is pinned to "none" (test_hold_policy covers the hold)."""
-    from di.services.actions import hold
-
-    real = hold._case_state
-    monkeypatch.setattr(hold, "_case_state", lambda *a, **k: (real(*a, **k)[0], False))
 
 
 def _records(run_id: str) -> list[chain.StageRecord]:
