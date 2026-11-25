@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { logos } from '../api/nav';
-import { accounts, homeRoute, rolePolicy, signInEmail, signInWith } from '../api/session';
+import { SSO_START_URL, accounts, exchangeSsoCode, homeRoute, rolePolicy, signInEmail, signInWith, ssoConfig } from '../api/session';
 import type { Account } from '../api/types';
 import { Icon } from '../components/Icon';
 import { useTheme, toggleTheme } from '../utils/theme';
@@ -15,6 +15,10 @@ export function SignInPage({ next }: { next?: string }) {
   const [pw, setPw] = useState('');
   const [err, setErr] = useState('');
   const [sso, setSso] = useState(false);
+  const [org, setOrg] = useState<{ enabled: boolean; label?: string }>({ enabled: false });
+  const [params] = useSearchParams();
+  const ssoCode = params.get('sso');
+  const exchanged = useRef(false); // a one-time code is swapped once, also under StrictMode's second effect run
   const idRef = useRef<HTMLInputElement>(null);
   const pwRef = useRef<HTMLInputElement>(null);
 
@@ -24,6 +28,22 @@ export function SignInPage({ next }: { next?: string }) {
     idRef.current?.focus();
     return () => document.getElementById('app')?.classList.remove('signedout');
   }, []);
+
+  useEffect(() => {
+    void ssoConfig().then(setOrg);
+    const refused = params.get('sso_error');
+    if (refused) setErr(refused);
+  }, [params]);
+
+  useEffect(() => {
+    if (!ssoCode || exchanged.current) return;
+    exchanged.current = true;
+    void exchangeSsoCode(ssoCode).then((r) => {
+      if (r.ok) entered(r.account);
+      else setErr(r.message);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once for the code in the URL
+  }, [ssoCode]);
 
   function entered(a: Account) {
     toast('Signed in as ' + a.label + '. ' + rolePolicy(a.role).desc, 4200);
@@ -83,6 +103,16 @@ export function SignInPage({ next }: { next?: string }) {
           <p className="note" style={{ margin: '4px 0 0' }}>
             Use your work email or user ID.
           </p>
+          {org.enabled && (
+            <>
+              <button className="btn pri si2b" type="button" style={{ marginTop: 12 }} onClick={() => window.location.assign(SSO_START_URL)}>
+                {org.label ?? 'Sign in with your organisation'}
+              </button>
+              <div className="si2or" aria-hidden="true">
+                or use the demo sign-in
+              </div>
+            </>
+          )}
           <form className="si2f" noValidate onSubmit={submit}>
             <div className="fld">
               <label htmlFor="si-id">Work email or user ID</label>

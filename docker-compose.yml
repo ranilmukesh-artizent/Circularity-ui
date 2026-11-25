@@ -76,6 +76,13 @@ services:
     environment:
       <<: *api-env
       DEV_POLLING: ${DEV_POLLING:-}
+      # P9-8.9, dev only: OIDC sign-in beside the demo sign-in, against the synthetic directory in source-sim (the browser
+      # reaches it as localhost, the api as source-sim; the trial package leaves these empty, so SSO is off there)
+      DI_OIDC_ISSUER: ${DI_OIDC_ISSUER:-http://localhost:8100/directory}
+      DI_OIDC_INTERNAL_URL: ${DI_OIDC_INTERNAL_URL:-http://source-sim:8100/directory}
+      DI_OIDC_CLIENT_ID: ${DI_OIDC_CLIENT_ID:-circularity}
+      DI_OIDC_CLIENT_SECRET: ${DI_OIDC_CLIENT_SECRET:-circularity-demo-secret}
+      DI_OIDC_REDIRECT_URI: ${DI_OIDC_REDIRECT_URI:-http://localhost:5173/api/auth/oidc/callback}
     # DEV_POLLING 1/0 -> watchfiles' WATCHFILES_FORCE_POLLING true/false (unset: its own default, polling only on WSL2)
     # --timeout-graceful-shutdown 3: a reload closes open connections after 3 s; without it uvicorn waits for the
     # browser's live stream (SSE, never ends by itself) and the api hangs "waiting for connections to close"

@@ -4,7 +4,7 @@
  * (ROLE_POLICY, RB_AV, TENANTS, PERM_ALIAS, PAGES, RB_SECS). can, canPage and canRoute are evaluated here from
  * /api/auth/me as the demo does (di/services/screens/nav.py has the mapping).
  */
-import { ApiError, cached, login, logout, ref, session } from './client';
+import { ApiError, cached, http, login, logout, openSession, ref, session } from './client';
 import type { Account, RolePolicy, RouteRef } from './types';
 import { setView, view } from './view';
 
@@ -34,6 +34,27 @@ export async function signInWith(idOrEmail: string, password: string, sso = fals
     const msg = err instanceof Error ? err.message : String(err);
     const field = err instanceof ApiError && err.code === 'validation_error' && /password/i.test(msg) ? 'pw' : 'id';
     return { ok: false, message: msg, field };
+  }
+}
+
+/** Is single sign-on set up (GET /api/auth/oidc/config)? Off when the call fails: the password form stays. */
+export async function ssoConfig(): Promise<{ enabled: boolean; label?: string }> {
+  try {
+    return await http<{ enabled: boolean; label?: string }>('/api/auth/oidc/config');
+  } catch {
+    return { enabled: false };
+  }
+}
+
+/** Where the browser goes to sign in at the organisation's identity provider (the server redirects on). */
+export const SSO_START_URL = '/api/auth/oidc/start';
+
+/** Swap the one-time code the server put in the return URL (`?sso=`) for the session; same result as signInWith. */
+export async function exchangeSsoCode(code: string): Promise<SignInResult> {
+  try {
+    return { ok: true, account: (await openSession('/api/auth/oidc/exchange', { code })).account };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : String(err), field: 'id' };
   }
 }
 

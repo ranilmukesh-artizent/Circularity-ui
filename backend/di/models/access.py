@@ -1,4 +1,4 @@
-"""Access state: Approver delegations and tenant grants (migrations 0002 and 0027)."""
+"""Access state: Approver delegations and tenant grants (migrations 0002 and 0027) and OIDC sign-in attempts (0056)."""
 
 from sqlalchemy import (
     Boolean,
@@ -22,6 +22,20 @@ delegation = Table(
     CheckConstraint("scope IN ('decisions','mcp','tenantAccess')", name="ck_delegation_scope"),
 )
 
+
+# 0056 (P9-8.9): one OIDC sign-in attempt: state, nonce and PKCE verifier (valid 10 minutes), then a one-time code (60 s)
+oidc_login = Table(
+    "oidc_login",
+    metadata,
+    Column("state", Text, primary_key=True),
+    Column("nonce", Text, nullable=False),
+    Column("verifier", Text, nullable=False),
+    ts("created_at", now=True),
+    ts("used_at"),
+    Column("code", Text, unique=True),
+    Column("account_id", Text),
+    ts("code_expires_at"),
+)
 
 tenant_grant = Table(
     "tenant_grant",

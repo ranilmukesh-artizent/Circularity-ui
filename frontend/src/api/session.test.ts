@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { can, canPage, canRoute, currentAccount, homeRoute, signInWith, signOut } from './session';
+import { can, canPage, canRoute, currentAccount, exchangeSsoCode, homeRoute, signInWith, signOut, ssoConfig } from './session';
 
 /** A fake di-api with the answers sign-in and the access checks need (shapes as di/routes/auth.py and di/services/screens). */
 const REFERENCE = {
@@ -28,6 +28,12 @@ beforeAll(() => {
       const { username } = JSON.parse(String(init?.body));
       if (username === 'nobody') return json({ detail: { code: 'unknown_account', message: 'nope' } }, 401);
       return json({ ...ME_B, access_token: 't' });
+    }
+    if (path === '/api/auth/oidc/config') return json({ enabled: true, label: 'Sign in with your organisation' });
+    if (path === '/api/auth/oidc/exchange') {
+      const { code } = JSON.parse(String(init?.body));
+      if (code !== 'good') return json({ error: { code: 'unauthenticated', message: 'Your session has ended. Sign in again.' } }, 401);
+      return json({ ...ME_B, access_token: 'sso-t' });
     }
     if (path === '/api/screens/nav/scope') return json({ 'RT-1048': ['Customer A', 'Warehouse 1'], 'RT-1101': ['Customer B', 'Warehouse 2'] });
     return json({ detail: 'not in the fake' }, 404);
@@ -70,6 +76,16 @@ describe('session against di-api', () => {
     expect(await settle(() => canRoute({ page: 'product', a: 'RT-1048', b: null }))).toBe('tenant');
     expect(canRoute({ page: 'product', a: 'RT-1101', b: null })).toBe(true);
     expect(canRoute({ page: 'access', a: null, b: null })).toBe(false);
+  });
+
+  it('reads whether single sign-on is set up, and swaps a one-time code for the session (P9-8.9)', async () => {
+    expect(await ssoConfig()).toEqual({ enabled: true, label: 'Sign in with your organisation' });
+    const bad = await exchangeSsoCode('stale');
+    expect(bad.ok).toBe(false);
+    expect(!bad.ok && bad.message).toBe('Your session has ended. Sign in again.');
+    const good = await exchangeSsoCode('good');
+    expect(good.ok && good.account.id).toBe('planner-b');
+    expect(currentAccount()?.id).toBe('planner-b');
   });
 
   it('signs out', () => {

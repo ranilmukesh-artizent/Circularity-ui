@@ -66,6 +66,15 @@ class Settings(BaseSettings):
     ask_timeout_seconds: float = 20.0  # one model request; on timeout Ask falls back
     ask_max_rounds: int = 4  # model requests per question (tool rounds), the last one without tools
 
+    # P9-8.9: OIDC sign-in beside the demo sign-in (X-10). All empty means off. The issuer is the string the browser and the
+    # ID token carry; `oidc_internal_url` replaces its origin for the api's own calls (compose: http://source-sim:8100/directory)
+    oidc_issuer: str = ""
+    oidc_internal_url: str = ""
+    oidc_client_id: str = ""
+    oidc_client_secret: SecretStr = SecretStr("")
+    oidc_redirect_uri: str = ""  # the api's /api/auth/oidc/callback as the browser reaches it
+    oidc_groups_claim: str = "groups"
+
     # P9-0.9: start the case autopilot (a playbook run of `autopilot_agent`) when a case opens; off by default. A case
     # opened by the system (a workflow, an import) has no person: `autopilot_account` is who the agent then acts for.
     autopilot_on_open: bool = False

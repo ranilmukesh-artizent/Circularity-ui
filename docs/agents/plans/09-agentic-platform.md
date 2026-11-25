@@ -938,7 +938,7 @@ each story went.
 - [ ] P9-8.6 Connector from an API spec through an OpenAPI importer
 - [ ] P9-8.7 Agent drafts an adapter spec held for a person
 - [x] P9-8.8 Directory mock with OIDC and a users API in source-sim
-- [ ] P9-8.9 OIDC sign-in with authlib beside the demo sign-in
+- [x] P9-8.9 OIDC sign-in with authlib beside the demo sign-in
 - [ ] P9-8.10 Directory groups to roles as data with test a user
 - [ ] P9-8.11 SCIM provisioning and directory sync for joiners
 - [x] P9-8.12 Workflow author from a sentence with repair rounds
