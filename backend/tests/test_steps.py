@@ -184,7 +184,8 @@ def test_x_fx_converts_at_the_dated_rate_and_records_it(session):
 
 def test_fx_rate_seed_matches_the_fixed_rates(session):
     rows = dict(session.execute(text("SELECT currency, usd_rate FROM fx_rate WHERE date = '2026-10-06'")).all())
-    assert {k: float(v) for k, v in rows.items()} == {"USD": 1.0, "INR": 83.5, "EUR": 0.92}
+    # USD, INR, EUR: the demo's fixed rates (to_usd); GBP, AUD: the service desk markets (0043)
+    assert {k: float(v) for k, v in rows.items()} == {"USD": 1.0, "INR": 83.5, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52}
 
 
 def test_x_utc_normalises_local_times():
