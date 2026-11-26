@@ -337,6 +337,10 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-26 | 09 · P9-13.5 close only with reporting evidence | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
 | 2026-11-26 | 09 · P9-13.10 oAuth for outside MCP clients | this commit | 3 api test files, ruff, mypy, lint-imports, tsc, vitest, eslint green | done |
 | 2026-11-26 | 09 · P9-12.4 rental fleet pack with re-rent rebuild or sell | this commit | api: 35 pass (only known po_golden fail), source-sim test_equipment_rental 5 pass, lint green | done |
+| 2026-11-27 | 09 · P9-12.3 iTAD sanitisation per serial and residual decay | this commit | ns_it_sanitisation, itad_paths, pack_itad, ns_it_manifest, standard_valuer, gates, pack_format green; lint green | done |
+| 2026-11-27 | 09 · P9-12.7 battery pack with passport and safe lanes | this commit | pack_battery, ns_bat, battery_paths, gates, pack_format green; sim test_battery_bms 9 (with core_returns) pass; lint green | done |
+| 2026-11-27 | 09 · P9-12.8 automotive cores pack with acceptance and fraud hold | this commit | pack_auto_core, ns_core, auto_core_paths, gates, pack_format green; sim test_core_returns pass; lint green | done |
+| 2026-11-27 | 09 · P9-13.6 core credit settlement with ERP match | this commit | ns_core_credit, x16_credit_settlement, ns_core, auto_core_paths, pack_auto_core green; lint green | done |
 
 ## Decisions taken without the user (to review)
 

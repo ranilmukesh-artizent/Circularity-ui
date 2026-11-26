@@ -1064,12 +1064,12 @@ each story went.
 - [ ] P9-11.19 Phase 11 gate
 - [x] P9-12.1 Extend the standard valuer with conditions and decay
 - [x] P9-12.2 ITAD pack with manifest reconciliation
-- [ ] P9-12.3 ITAD sanitisation per serial and residual decay
+- [x] P9-12.3 ITAD sanitisation per serial and residual decay
 - [x] P9-12.4 Rental fleet pack with re-rent rebuild or sell
 - [ ] P9-12.5 Rental fleet damage recovery and branch transfer
 - [ ] P9-12.6 Telecom CPE pack with lot decisions
-- [ ] P9-12.7 Battery pack with passport and safe lanes
-- [ ] P9-12.8 Automotive cores pack with acceptance and fraud hold
+- [x] P9-12.7 Battery pack with passport and safe lanes
+- [x] P9-12.8 Automotive cores pack with acceptance and fraud hold
 - [ ] P9-12.9 Medical capital pack with regulatory assessment
 - [ ] P9-12.10 Serialised retail returns pack
 - [ ] P9-12.11 Industrial pack in the full pack format
@@ -1080,7 +1080,7 @@ each story went.
 - [x] P9-13.3 Downstream vendor qualification with certificate dates
 - [x] P9-13.4 Customer credit settlement with ERP match
 - [x] P9-13.5 Close only with reporting evidence
-- [ ] P9-13.6 Core credit settlement with ERP match
+- [x] P9-13.6 Core credit settlement with ERP match
 - [x] P9-13.7 Calibration and model candidates across all packs
 - [x] P9-13.8 Model quality, drift and cadence across packs
 - [x] P9-13.9 Per-agent credentials with client credentials

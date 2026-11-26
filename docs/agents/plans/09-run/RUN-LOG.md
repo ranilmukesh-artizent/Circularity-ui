@@ -218,3 +218,7 @@ unattended". Times are local (IST).
 | 26 Nov 21:00 | P9-13.5 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
 | 26 Nov 21:06 | P9-13.10 merged. Admin-only agent.registerClient/revokeClient/clients; PKCE S256 only; 15-minute tokens with act claim; decision-log row asks Legal review before outside clients go to a customer |
 | 26 Nov 21:43 | P9-12.4 merged. rerent 27,600 / rebuild -6,800 / retail 6,270, recommendation rerent; per-class rates as valuer tables; G-SAFE-1 locked for scissor_lift and telehandler; sim seed fixed (duplicate utilisation key) |
+| 27 Nov 00:02 | P9-12.3 merged. G-DATA-1 fails routes without holding; G-DATA-2 requires destruct_media until a destruction record exists; SR-IT-AGE pure; ITAD cases cannot be opened from data yet |
+| 27 Nov 00:02 | P9-12.7 merged. G-BAT-1/2/3/5 battery-only; dangerous-goods lane as required step dg_lane; SoH floors 80/60/50 (synthetic); compliance text (passport, dangerous goods) needs Legal review. tn_follow_through/uc_customer_layer not run after merge (deferred to the final gate) |
+| 27 Nov 00:02 | P9-12.8 merged. credit via core_credit (in the gate reason, not stored); fraud hold held for a person. pack-looping suites (config_agent, mr_compose, tn_compose, x13, x16) deferred to the final gate |
+| 27 Nov 00:02 | P9-13.6 merged. deposit x core share; zero credit posts nothing; mismatch resolved by Finance (13.4) |
