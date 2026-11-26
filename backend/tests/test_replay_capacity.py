@@ -131,7 +131,7 @@ def planned(spy: Spy) -> list[tuple[str, int, list[str], int]]:
     return [a for a in spy.asked if a[1] > 1 or a[3] != 1]
 
 
-def test_x_06_items_are_decided_per_date_in_date_order_with_the_demand_open_that_day():
+def test_x_06_demand_as_of():
     items = [item(1, "2026-05-20"), item(2, "2026-05-04"), item(3, "2026-05-04"), item(4, "2026-07-01")]
     spy = Spy()
     rows = [dem(1, closes_at=date(2026, 5, 10), capacity=1), dem(2, opens_at=date(2026, 5, 15), capacity=1)]
@@ -180,7 +180,7 @@ def test_x_06_without_demand_rows_replay_is_unchanged():
     assert rep.constraint_loss == 0.0
 
 
-def test_x_06_constraint_loss_is_case_by_case_minus_planned():
+def test_x_06_constraint_loss_reported():
     """The case-by-case decision (each return alone, every unit on offer) is worth more than the planned one when returns
     compete for one unit: the loss is the difference of the two sums."""
 
@@ -212,7 +212,7 @@ def test_x_06_real_decider_planned_never_beats_case_by_case():
     assert plain.constraint_loss == 0.0
 
 
-def test_x_06_real_decider_units_taken_once():
+def test_x_06_replay_fills_each_demand_once():
     """Four returns of one class on one day, one lease unit: at most one of them can be placed on it."""
     items = [item(k, "2026-05-04", grade="A") for k in range(1, 5)]
     rep = R.replay(batch(4), items, FV, pack=load_pack(PACK), demand=[dem(1, capacity=1, value=1500.0)])

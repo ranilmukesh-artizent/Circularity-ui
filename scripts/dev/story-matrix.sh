@@ -39,7 +39,7 @@ while IFS=$'\t' read -r story task tests; do
     case "$task" in "P9-$phase."*) ;; *) continue ;; esac
   fi
   rcount=$((rcount + 1))
-  if ! printf '%s' "$story" | grep -qE '^[A-Z]{1,3}(-[A-Z]{2,4})?-[0-9]{2}$'; then
+  if ! printf '%s' "$story" | grep -qE '^[A-Z]{1,3}(-[A-Z0-9]{2,4})?-[0-9]{2}$'; then
     echo "BADID  $story"
     bad=$((bad + 1))
   fi
