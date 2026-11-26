@@ -5,7 +5,7 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock('./client', () => ({ apiInvoke: m.apiInvoke, cachedAction: vi.fn(), cached: vi.fn(), http: vi.fn(), peek: vi.fn() }));
 
-import { importHistory, replayBatches } from './replay';
+import { importHistory, replayBatches, replayReport, replayRuns, runReplay } from './replay';
 
 const last = () => (m.apiInvoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>]).slice(0, 2);
 
@@ -23,5 +23,17 @@ describe('the replay facade (plan 9, P9-7.1, X-06)', () => {
   it('x-06: replayBatches asks for the pack and org unit', async () => {
     await replayBatches('device', 'Customer B');
     expect(last()).toEqual(['replay.batches', { pack: 'device', org_unit_id: 'Customer B' }]);
+  });
+  it('x-06: runReplay sends {batch_id, flow_id} and flow_ver only when given', async () => {
+    await runReplay(3, 7);
+    expect(last()).toEqual(['replay.run', { batch_id: 3, flow_id: 7 }]);
+    await runReplay(3, 7, 'draft');
+    expect(last()).toEqual(['replay.run', { batch_id: 3, flow_id: 7, flow_ver: 'draft' }]);
+  });
+  it('x-06: replayReport and replayRuns ask by run and by flow', async () => {
+    await replayReport(9);
+    expect(last()).toEqual(['replay.report', { run_id: 9 }]);
+    await replayRuns(7);
+    expect(last()).toEqual(['replay.runs', { flow_id: 7 }]);
   });
 });

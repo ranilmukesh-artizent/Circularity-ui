@@ -224,6 +224,14 @@ def _agent_step(payload: dict[str, Any]) -> None:
         log.info("agent run %s: %s", payload["run_id"], runtime.run_until_blocked(s, payload["run_id"]))
 
 
+@handler("replay.run")
+def _replay_run(payload: dict[str, Any]) -> None:
+    """An as-of replay of a history batch under a flow (plan 9, P9-7.2): its report or its error is stored on the run."""
+    from di.services.actions.replay import run_job
+
+    log.info("replay run %s: %s", payload.get("run_id"), run_job(payload))
+
+
 @handler("trace.prune")
 def _trace_prune(payload: dict[str, Any]) -> None:  # noqa: ARG001 - jobs take a payload
     """Delete the spans of agent runs older than the setting `trace_retention_days` (di.core.tracing.prune, P9-2.6)."""

@@ -2,6 +2,7 @@
 route and the same net, to the cent. The chain (P9-2.1) and replay (P9-7.2) join by extending these tests. Every test ends
 with the starting state."""
 
+from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -44,6 +45,34 @@ def _queue_row(template: str, cid: str) -> dict[str, Any]:
     return next(q for q in page.json()["queue"] if q["id"] == cid)
 
 
+def _replayed(template: str, c: dict[str, Any], pack, fv) -> tuple[str | None, float]:
+    """The route and net a replay of the same facts, as of the same date, gets from the one decider (P9-7.2, R19)."""
+    from di.core import clock
+    from di.repositories.replay import Batch
+    from di.services.cases.decide import decide_case as one_decider
+    from di.services.replay import run as replay_run
+
+    when = clock.now()
+    facts = {k: {"value": v, "at": when - timedelta(days=1)} for k, v in FACTS[template].items()}
+    it = {
+        "item_id": f"T-PA-{template}",
+        "decided_at": when,
+        "cls": FACTS[template].get("cls"),
+        "market": None,
+        "actual_route": "redeploy" if template == "tool_fleet" else "buynow",
+        "realised_value": 1.0,
+        "facts": facts,
+    }
+    got: list = []
+
+    def decide(*a, **k):
+        got.append(one_decider(*a, **k))
+        return got[-1]
+
+    replay_run.replay(Batch(1, c["template"], ORG, 1, 0, None, {}), [it], fv, pack=pack, decide=decide)
+    return got[0].route, got[0].net
+
+
 def _paths_agree(template: str) -> None:
     body = {
         "org_unit_id": ORG,
@@ -71,6 +100,9 @@ def _paths_agree(template: str) -> None:
     with SessionLocal() as s:
         d = decide_case(cid, live_pack(s, c), flow_version(s, c), session=s)
     seen["decide_case"] = (d.route, d.net)
+
+    with SessionLocal() as s:
+        seen["replay"] = _replayed(template, c, live_pack(s, c), flow_version(s, c))  # P9-7.2: replay is a fifth path
 
     routes = {path[0] for path in seen.values()}
     assert len(routes) == 1, seen

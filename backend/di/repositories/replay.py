@@ -6,7 +6,7 @@ decides who may see a batch (the actions apply the tenant boundary).
 
 import json
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import text
@@ -139,3 +139,71 @@ def held_items(s: Session, batch_id: int) -> list[dict[str, Any]]:
         {"b": batch_id, "l": HELD_SHOWN},
     ).mappings()
     return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------- runs (P9-7.2; migration 0050)
+def ok_items(s: Session, batch_id: int) -> list[dict[str, Any]]:
+    """The batch's good items as a replay reads them: facts with their `at` as datetimes, in file order."""
+    rows = s.execute(
+        text(
+            "SELECT n, item_id, decided_at, cls, market, actual_route, realised_value, costs, facts FROM replay_item "
+            "WHERE batch_id = :b AND status = 'ok' ORDER BY n"
+        ),
+        {"b": batch_id},
+    ).mappings()
+    out = []
+    for r in rows:
+        facts = {k: {"value": f["value"], "at": _at(f["at"])} for k, f in (r["facts"] or {}).items()}
+        value = float(r["realised_value"]) if r["realised_value"] is not None else None
+        out.append({**r, "realised_value": value, "facts": facts})
+    return out
+
+
+def _at(v: str | None) -> datetime | None:
+    if not v:
+        return None
+    d = datetime.fromisoformat(v)
+    return d if d.tzinfo else d.replace(tzinfo=UTC)
+
+
+def create_run(s: Session, batch_id: int, flow_id: int, flow_ver: str, dver: int | None, by: str) -> int:
+    return int(
+        s.execute(
+            text(
+                "INSERT INTO replay_run (batch_id, flow_id, flow_ver, dver, status, created_by) "
+                "VALUES (:b, :f, :v, :d, 'queued', :by) RETURNING id"
+            ),
+            {"b": batch_id, "f": flow_id, "v": flow_ver, "d": dver, "by": by},
+        ).scalar_one()
+    )
+
+
+_RUN = "id, batch_id, flow_id, flow_ver, dver, status, report, error, created_by, created_at, finished_at"
+
+
+def get_run(s: Session, run_id: int, for_update: bool = False) -> dict[str, Any] | None:
+    sql = f"SELECT {_RUN} FROM replay_run WHERE id = :i" + (" FOR UPDATE" if for_update else "")  # noqa: S608 - fixed columns
+    r = s.execute(text(sql), {"i": run_id}).mappings().first()
+    return dict(r) if r else None
+
+
+def runs_of_flow(s: Session, flow_id: int) -> list[dict[str, Any]]:
+    """The flow's runs, newest first, without their reports (a report is read one run at a time)."""
+    rows = s.execute(
+        text(
+            "SELECT id, batch_id, flow_id, flow_ver, dver, status, error, created_by, created_at, finished_at "
+            "FROM replay_run WHERE flow_id = :f ORDER BY id DESC"
+        ),
+        {"f": flow_id},
+    ).mappings()
+    return [dict(r) for r in rows]
+
+
+def set_status(s: Session, run_id: int, status: str, *, report: dict[str, Any] | None = None, error: str | None = None) -> None:
+    s.execute(
+        text(
+            "UPDATE replay_run SET status = :st, report = CAST(:r AS jsonb), error = :e, "
+            "finished_at = CASE WHEN :st IN ('done', 'failed') THEN now() ELSE NULL END WHERE id = :i"
+        ),
+        {"st": status, "r": json.dumps(report) if report is not None else None, "e": error, "i": run_id},
+    )

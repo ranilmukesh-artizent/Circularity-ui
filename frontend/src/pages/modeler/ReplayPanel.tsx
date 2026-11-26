@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { importHistory, replayBatches, type BatchView } from '../../api/replay';
+import { importHistory, replayBatches, replayReport, replayRuns, runReplay, type BatchView, type ReplayReport } from '../../api/replay';
 import { can, currentAccount } from '../../api/session';
 import type { ModelerScreen } from '../../api/types';
 import { Panel } from '../../components/kit/Panel';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import { finished, headline, upliftLine, versionLabel } from './replayReport';
 
 /** The packs history can be replayed for (the pack of the template on screen). */
 export const REPLAY_PACKS = ['tool_fleet', 'device'];
@@ -16,9 +17,12 @@ export const periodLine = (b: Pick<BatchView, 'period'>): string => (b.period ? 
 export const showReplay = (s: ModelerScreen): boolean => REPLAY_PACKS.includes(s.template.key) && can('runReplay');
 
 /**
- * Replay (plan 9, P9-7.1, story X-06): import a CSV of past decisions for this pack and org unit. The file is read in the
- * browser and sent as text; the server checks every row, keeps the good ones and holds the rest with a reason. Shows the rows
- * kept, the decision period and the held rows (the first 50). The Executive role reads only: no import button.
+ * Replay (plan 9, P9-7.1 and P9-7.2, story X-06): import a CSV of past decisions for this pack and org unit. The file is read in
+ * the browser and sent as text; the server checks every row, keeps the good ones and holds the rest with a reason. Shows the rows
+ * kept, the decision period and the held rows (the first 50). "Replay" decides every kept row as of its own date under the
+ * flow's draft (or a published version) and shows the four numbers: the route mix, straight-through, approvals and exceptions a
+ * day, and the uplift with its 80 % band, then the facts dropped for being later than the decision and the data-quality list.
+ * The Executive role reads only: no import or replay button, but the latest report shows.
  */
 export function ReplayPanel({ s }: { s: ModelerScreen }) {
   const pack = s.template.key;
@@ -26,6 +30,41 @@ export function ReplayPanel({ s }: { s: ModelerScreen }) {
   const [batches, setBatches] = useState<BatchView[]>([]);
   const [err, setErr] = useState('');
   const canImport = currentAccount()?.role !== 'Executive';
+  const flow = s.flow;
+  const [ver, setVer] = useState(flow.dver !== null ? 'draft' : String(flow.ver));
+  const [report, setReport] = useState<ReplayReport | null>(null);
+  const [waiting, setWaiting] = useState(false);
+  const versions = [...(flow.dver !== null ? ['draft'] : []), String(flow.ver), ...s.versions.map((v) => String(v.ver))];
+
+  /** Ask for the run's report until it ends (the replay runs in the worker): done shows it, failed shows why. */
+  const follow = useCallback(async (runId: number) => {
+    setWaiting(true);
+    for (let k = 0; k < 120; k++) {
+      const r = await replayReport(runId);
+      if (!r.ok) break;
+      if (finished(r.output.status)) {
+        if (r.output.report) setReport(r.output.report);
+        else if (r.output.error) setErr(r.output.error);
+        break;
+      }
+      await new Promise((ok) => setTimeout(ok, 1500));
+    }
+    setWaiting(false);
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      const r = await replayRuns(flow.id);
+      const done = r.ok ? r.output.runs.find((x) => x.status === 'done') : undefined;
+      if (done) void follow(done.run_id);
+    })();
+  }, [flow.id, follow]);
+
+  const replayBatch = async (b: BatchView) => {
+    setErr('');
+    const r = await action.run(() => runReplay(b.id, flow.id, ver), { inline: setErr, ms: 4200 });
+    if (r.ok) await follow(r.output.run_id);
+  };
 
   const load = useCallback(async () => {
     const r = await replayBatches(pack, s.org);
@@ -62,6 +101,16 @@ export function ReplayPanel({ s }: { s: ModelerScreen }) {
           <li key={b.id} data-replay-batch={b.id}>
             <b>Batch {b.id}</b>{' '}
             <span className="note">· {b.rows} rows · {b.held} held · {periodLine(b)}</span>
+            {canImport && b.rows > b.held && (
+              <span className="mdl-row" data-replay-run>
+                <select value={ver} onChange={(e) => setVer(e.target.value)} aria-label="Flow version to replay" disabled={waiting}>
+                  {versions.map((v) => <option key={v} value={v}>{versionLabel(v)}</option>)}
+                </select>
+                <button type="button" className="btn sm pri" disabled={action.pending || waiting} onClick={() => void replayBatch(b)}>
+                  {ver === 'draft' ? 'Replay the draft' : `Replay ${versionLabel(ver)}`}
+                </button>
+              </span>
+            )}
             {b.held > 0 && (
               <ul className="mdl-hist" data-replay-held>
                 {Object.entries(b.held_reasons).map(([why, n]) => <li key={why}>{n} × {why}</li>)}
@@ -71,6 +120,39 @@ export function ReplayPanel({ s }: { s: ModelerScreen }) {
           </li>
         ))}
       </ul>
+      {waiting && <p className="note" data-replay-waiting>Replaying the history…</p>}
+      {report && <ReplayResult r={report} />}
     </Panel>
+  );
+}
+
+/** The four numbers first, then the facts left out as later than the decision and the data-quality list. */
+function ReplayResult({ r }: { r: ReplayReport }) {
+  return (
+    <div data-replay-report={r.run_id}>
+      <h4>
+        Batch {r.batch_id} under {versionLabel(r.flow_ver)}: {r.n_decided} of {r.n_items} items decided over {r.days} business days
+      </h4>
+      <table className="tbl" data-replay-mix>
+        <thead><tr><th>Route</th><th>Actual</th><th>Flow</th></tr></thead>
+        <tbody>
+          {r.route_mix.map((m) => (
+            <tr key={m.route}><td>{m.route}</td><td>{m.actual_pct.toFixed(1)} %</td><td>{m.flow_pct.toFixed(1)} %</td></tr>
+          ))}
+        </tbody>
+      </table>
+      <ul className="mdl-hist" data-replay-loads>
+        {headline(r).map((h) => <li key={h.key} data-replay-load={h.key}>{h.label}: <b>{h.value}</b></li>)}
+        <li data-replay-uplift>Uplift: <b>{upliftLine(r.uplift)}</b> <span className="note">· the flow agrees with {r.agreement_pct.toFixed(1)} % of past routes</span></li>
+      </ul>
+      {r.leakage.length > 0 && (
+        <p className="note" data-replay-leakage>{r.leakage.length} fact reading(s) dated after the decision were left out.</p>
+      )}
+      {r.data_quality.length > 0 && (
+        <ul className="mdl-hist" data-replay-quality>
+          {r.data_quality.map((d) => <li key={d.reason} className="note">{d.count} × {d.reason}</li>)}
+        </ul>
+      )}
+    </div>
   );
 }

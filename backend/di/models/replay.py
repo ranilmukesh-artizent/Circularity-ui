@@ -38,3 +38,21 @@ replay_item = Table(
     CheckConstraint("status IN ('ok','held')", name="replay_item_status"),
     Index("ix_replay_item_status", "batch_id", "status"),
 )
+
+replay_run = Table(
+    "replay_run",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("batch_id", BigInteger, ForeignKey("replay_batch.id"), nullable=False),
+    Column("flow_id", BigInteger, ForeignKey("decision_flow.id"), nullable=False),
+    Column("flow_ver", Text, nullable=False),
+    Column("dver", Integer),
+    Column("status", Text, nullable=False),
+    Column("report", JSONB),
+    Column("error", Text),
+    Column("created_by", Text, nullable=False),
+    ts("created_at", now=True),
+    ts("finished_at"),
+    CheckConstraint("status IN ('queued','running','done','failed')", name="replay_run_status"),
+    Index("ix_replay_run_flow", "flow_id", "dver", "status"),
+)
