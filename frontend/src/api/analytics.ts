@@ -47,6 +47,10 @@ export const routes = (): Route[] => ref('ROUTES');
 export const modelVersions = (): ModelVersion[] => ref('MODELS');
 /** The demo's classes, then the ones the packs add (labels for every class a closed decision may carry). */
 export const assetClasses = (): Record<string, { label: string }> => ({ ...ref('CLASSES'), ...packClasses() });
+/** The asset-class filter's options: the demo's classes exactly for the industrial pack (the default), plus the pack classes
+ *  only when another pack or template is selected. */
+export const classOptions = (pack = 'industrial'): Record<string, { label: string }> =>
+  pack === 'industrial' ? { ...ref('CLASSES') } : { ...ref('CLASSES'), ...packClasses() };
 export const classIcon = (cls: string): string => ref('CLS_ICON')[cls] ?? 'box';
 export const equipmentModels = (): string[] => ref('EQUIP').map((x) => x.m);
 export const components = (): string[] => ref('COMPS');

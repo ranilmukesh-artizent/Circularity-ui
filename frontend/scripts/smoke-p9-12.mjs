@@ -313,7 +313,7 @@ await step('5 A device for another market with no UDI shows "UDI missing"; engin
   await dlg.getByLabel('Outcome').selectOption('servicing'); // its label is "Servicing"
   await dlg.getByLabel('Reason').fill('Replace the battery and the housing seals; no change to intended use or performance.');
   await dlg.getByRole('button', { name: 'Save assessment', exact: true }).click();
-  await waitText(eng, new RegExp(`Assessment recorded for ${id}: Servicing\.`), 'no toast "Assessment recorded for <id>: Servicing."', UI);
+  await waitText(eng, new RegExp(`Assessment recorded for ${id}: Servicing.`), 'no toast "Assessment recorded for <id>: Servicing."', UI);
   const rec = eng.locator('[data-testid="assessment-recorded"]');
   await rec.first().waitFor({ timeout: UI });
   if (!/Servicing, recorded by engineer/.test(await rec.first().innerText())) throw new Error('the assessment bar does not say "Servicing, recorded by engineer"');

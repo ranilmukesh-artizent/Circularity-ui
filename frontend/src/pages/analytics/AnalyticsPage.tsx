@@ -5,7 +5,7 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  analyticsOrgs, analyticsRows, assetClasses, classIcon, closedRow, DEFAULT_FILTER, journeyStep, kfmt, metrics, modelAccuracy, months, routeById, routes,
+  analyticsOrgs, analyticsRows, assetClasses, classIcon, classOptions, closedRow, DEFAULT_FILTER, journeyStep, kfmt, metrics, modelAccuracy, months, routeById, routes,
   type AnalyticsFilter, type ClosedRow,
 } from '../../api/analytics';
 import { fmtDateYear, money } from '../../api/format';
@@ -84,7 +84,7 @@ export function AnalyticsPage({ route, query }: PageProps) {
     return () => window.clearTimeout(t);
   }, [sec, focus]);
 
-  const rows = analyticsRows(f), m = metrics(rows), M = months(), CL = assetClasses(), orgs = analyticsOrgs();
+  const rows = analyticsRows(f), m = metrics(rows), M = months(), orgs = analyticsOrgs();
   const sel = (k: 'tenant' | 'cls' | 'route', opts: [string, string][], label: string) => (
     <select className="sel" aria-label={label} value={f[k]} onChange={(e) => setFilter({ ...f, [k]: e.target.value })}>
       <option value="">{label}</option>
@@ -194,7 +194,7 @@ export function AnalyticsPage({ route, query }: PageProps) {
             </select>
           )}
           {f.org && <PilotReportButton id={f.org} name={orgs.find((o) => o.id === f.org)?.name ?? f.org} className="btn ghost sm" />}
-          {sel('cls', Object.entries(CL).map(([k, v]) => [k, v.label]), 'Asset class')}
+          {sel('cls', Object.entries(classOptions()).map(([k, v]) => [k, v.label]), 'Asset class')}
           {sel('route', routes().map((r) => [r.id, r.name]), 'Route')}
           <button className="btn ghost sm" onClick={() => { setFilter({ ...DEFAULT_FILTER }); setDrill(null); }}>Reset filters</button>
           <span className="grow" />
