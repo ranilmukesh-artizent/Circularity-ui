@@ -43,6 +43,7 @@ SYSTEM_OF = {
     "salvage_sale": "uc_auction",
     "residual": "erp",  # P9-9.20: the close of a used-car lease return, outside an approval's plan
     "lessee_charge": "uc_lease",
+    "enhanced_decon": "mr_decon",  # P9-11.12: an enhanced cycle for a device from an isolation ward
 }
 # The kinds sent on their own, outside an approval's plan: no plan step to acknowledge, and the case's `exec` is not theirs
 OFF_PLAN = frozenset({"payout", "residual", "lessee_charge"})

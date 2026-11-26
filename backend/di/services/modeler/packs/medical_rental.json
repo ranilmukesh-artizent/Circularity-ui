@@ -320,6 +320,10 @@
     "locked": true,
     "routes": "all",
     "record_must_end_after_checkin": true,
+    "skip_refusal": {
+     "name": "Decontamination record required",
+     "suggestion": "dispatch an already decontaminated unit from the nearest depot"
+    },
     "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
    },
    "active": true
@@ -519,9 +523,9 @@
      "owner_role": "decontamination_lead",
      "when": [
       {
-       "fact": "asset.return_unit",
+       "fact": "asset.ward_type",
        "op": "eq",
-       "value": "isolation_ward"
+       "value": "isolation"
       }
      ]
     },
@@ -537,7 +541,7 @@
      "to": "rerent",
      "when": [
       {
-       "fact": "request.same_hospital_within_24h",
+       "fact": "demand.same_hospital_within_24h",
        "op": "eq",
        "value": true
       }

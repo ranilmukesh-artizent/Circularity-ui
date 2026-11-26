@@ -174,6 +174,13 @@ def _check_skip(op: Shortcut, pack: Pack) -> None:
     if hit is not None:
         gid, name, stage = hit
         msg = f"Blocked: this skips the compliance guardrail {name} at {STAGE_LABELS[stage]}."
+        gate = next((g for g in pack_gates(pack) if g.id == gid), None)
+        note = (gate.params.get("skip_refusal") if gate is not None else None) or {}
+        if note.get("name") and note.get("suggestion"):  # the pack's own wording for its gate (P9-11.12, MR-14)
+            msg = (
+                f"Blocked: this would bypass the compliance guardrail '{note['name']}'; ask for a change to the guardrail "
+                f"instead. Suggestion: {note['suggestion']}."
+            )
         raise OverlayError(op.id, "skips_compliance", msg, gid)
 
 

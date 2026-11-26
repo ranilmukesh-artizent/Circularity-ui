@@ -600,7 +600,28 @@ def firmware_upgrade(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent: 
     return Sent([{"call": "POST refurb-orders", "body": body}], order_id, {"orderId": order_id, "serial": serial})
 
 
+def enhanced_decon(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Decontamination log (the medical rental company's): POST /cycles {tag, enhanced: true} schedules an enhanced cycle for the
+    device, the step DV-MR-ISO adds for a device from an isolation ward (P9-11.12, MR-12). The tag is the key: a repeat while a
+    cycle is scheduled answers with that cycle and schedules no second one. The gate G-MED-DECON then needs the record of that
+    cycle (`decon_enhanced`). Decontamination guidance needs review by Kinective's Legal team before it is relied on."""
+    key = str(c.get("assetId") or "")
+    if ":" not in key:
+        raise NotApplicable("no device tag to decontaminate")
+    body = {"tag": key.split(":", 1)[1], "enhanced": True}
+    cl = client(s, "mr_decon")
+    try:
+        r = cl.request("POST", "/cycles", json=body)
+    except SourceError as e:
+        raise _refused(e) from e
+    finally:
+        cl.close()
+    cycle = r.json().get("cycleId")
+    return Sent([{"call": "POST cycles", "body": body}], cycle, {"cycleId": cycle, "enhanced": True})
+
+
 WRITERS = {
+    "enhanced_decon": enhanced_decon,
     "security_inspection": security_inspection,
     "firmware_upgrade": firmware_upgrade,
     "residual": residual,

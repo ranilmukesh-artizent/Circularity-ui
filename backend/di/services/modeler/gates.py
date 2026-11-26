@@ -167,6 +167,12 @@ def _holds(c: Cond, v: Any) -> bool:
         return False
 
 
+def conds_hold(conds: Sequence[Mapping[str, Any]], case: Mapping[str, Any], pack: Pack) -> bool:
+    """Every condition (`{fact, op, value}`, as a diversion keeps them) holds for the case: the same reading a gate's trigger
+    does, for a check that needs to know which customer diversions apply to the case (P9-11.12)."""
+    return all(_holds(c, _fact(case, pack, c.fact)) for c in (Cond.model_validate(x) for x in conds))
+
+
 def triggered(gate: GateDef, case: Mapping[str, Any], pack: Pack) -> bool:
     """The gate applies to the case: the pack has a route of the trigger's classes and every condition holds. A pack may narrow
     a gate with the conditions of its ref's `params.when` (P9-6.7: the wipe gate of the device pack applies to a received

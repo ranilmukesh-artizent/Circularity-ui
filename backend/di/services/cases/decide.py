@@ -504,22 +504,31 @@ def decide_case(
         required_steps=list(c.get("requiredSteps") or []),
         hold=c.get("gateHold"), trace=TRACE, as_of=as_of, extra=_extra(rec, valued.figures),
         case_fields={k: c[k] for k in GATE_KEYS if k in c}, ticket=_ticket_of(valued.ticket, rec),
-        approvals=[dict(a) | {"route": a.get("route") or rec["id"]} for a in valued.approvals] if rec else [],  # P9-11.9
-        evidence=_evidence(valued, rec, pack),
+        approvals=_approvals(valued, rec),
+        evidence=_evidence(valued, rec, pack, as_of),
     )  # fmt: skip
 
 
-def _evidence(valued: _Valued, rec: Route | None, pack: Pack) -> list[str]:
-    """The plain facts behind a recommendation, from the plug-in's `evidence_lines` hook (a used car, P9-9.11; a rental
-    device, P9-11.9); none for another pack or no route."""
+def _evidence(valued: _Valued, rec: Route | None, pack: Pack, as_of: datetime | None = None) -> list[str]:
+    """The plain facts behind the recommendation (the valuer's hook): a used car's (P9-9.11) or a re-rent's (P9-11.9); none for
+    another pack or no route."""
     if rec is None or not valued.facts:
         return []
+    best = cast(PathValue, {"k": rec["id"]})
     kind = kind_of(pack)
     if kind == "used_cars":
-        return used_cars.evidence_lines(valued.facts, cast(PathValue, {"k": rec["id"]}), pack)
+        return used_cars.evidence_lines(valued.facts, best, pack)
     if kind == "medical_rental":
-        return medical_rental.evidence_lines(valued.facts, cast(PathValue, {"k": rec["id"]}), pack)
+        return medical_rental.evidence_lines(valued.facts, best, pack, as_of)
     return []
+
+
+def _approvals(valued: _Valued, rec: Route | None) -> list[dict[str, Any]]:
+    """The approval checks of the decision; a hold a plug-in left without a route (AP-MR-REPAIR) names the recommendation that
+    the person approves."""
+    if rec is None:
+        return []
+    return [{**a, "route": rec["id"]} if "route" in a and a["route"] is None else a for a in valued.approvals]
 
 
 def _ticket_of(ticket: dict[str, Any] | None, rec: Route | None) -> dict[str, Any] | None:

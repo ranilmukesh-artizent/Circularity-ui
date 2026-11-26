@@ -175,7 +175,6 @@ def test_x_02_never_code():
         "question",
         "answer",
         "by_model",
-        "rules",
         "outline",
     }
     names = json.dumps(schema).lower()

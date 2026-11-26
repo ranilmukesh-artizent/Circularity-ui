@@ -48,12 +48,13 @@ from typing import Any
 
 from di.services.modeler import mapping_choices
 from di.services.modeler.evidence import evidence_of, parse_time
-from di.services.modeler.gates import CHECKS, GateDef, GateEffect, GateResult, gate_routes
+from di.services.modeler.gates import CHECKS, GateDef, GateEffect, GateResult, conds_hold, gate_routes
 from di.services.modeler.pack import Pack
 
 DECON_GATE = "G-MED-DECON"
 DECONTAMINATION = "decontamination"
 REASON = "Decontamination record required"
+ENHANCED_STEP, ENHANCED_REASON = "enhanced_decon", "Enhanced decontamination record required"
 SVC_GATE, FSN_GATE = "G-MED-SVC", "G-MED-FSN"
 REFURB_GATE, ASSESSMENT = "G-MED-REFURB", "servicing_assessment"
 FULL = ("remanufacturing", "full_refurbishment")
@@ -61,17 +62,27 @@ SERVICE_RECORD, SAFETY_STATUS = "service_record", "field_safety_status"
 TESTS = {"functional_test": "Functional test", "electrical_safety": "Electrical safety test (IEC 62353)"}
 
 
+def needs_enhanced(case: Mapping[str, Any], pack: Pack) -> bool:
+    """A customer diversion of the pack adds the step `enhanced_decon` at the decontamination stage and its conditions hold for
+    the case (DV-MR-ISO: a device from an isolation ward, MR-12): the record must then be an enhanced cycle's."""
+    return any(d.kind == "step" and d.step == ENHANCED_STEP and conds_hold(d.when, case, pack) for d in pack.diversions)
+
+
 def check_decontamination(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult:
-    """G-MED-DECON (module docstring)."""
+    """G-MED-DECON (module docstring). With the step `enhanced_decon` in force for the case (`needs_enhanced`) the record must
+    also be of an enhanced cycle (`decon_enhanced` true): a standard one does not pass, reason "Enhanced decontamination record
+    required". The step only adds to the gate; no overlay can lower it."""
     e = evidence_of(case, DECONTAMINATION)
     checked_in = parse_time(e.value.get("checked_in_at")) if e is not None else None
-    if e is not None and e.result == "pass" and checked_in is not None and e.at > checked_in:
+    enhanced = e is not None and e.value.get("decon_enhanced") is True
+    ask = needs_enhanced(case, pack)
+    if e is not None and e.result == "pass" and checked_in is not None and e.at > checked_in and (enhanced or not ask):
         return GateResult(
             gate.id, True, GateEffect("block", (), gate.effect.hold_until_evidence, None), (), "Decontamination record on file"
         )
     return GateResult(
         gate.id, False, GateEffect("block", gate_routes(gate, pack), gate.effect.hold_until_evidence, gate.effect.step),
-        (DECONTAMINATION,), REASON,
+        (DECONTAMINATION,), ENHANCED_REASON if ask and e is not None and e.result == "pass" and not enhanced else REASON,
     )  # fmt: skip
 
 
