@@ -37,6 +37,7 @@ from sqlalchemy.orm import Session
 
 from di.core import clock
 from di.services.cases import (
+    bench_evidence,
     contract_line,
     decon_evidence,
     inventory_evidence,
@@ -67,7 +68,8 @@ EXCEPTION_OF = {
     "G-MED-DECON": "EX-MR-DECON",
     "G-NET-INV": "EX-TN-INV",
     "G-VEH-ODO": "EX-UC-ODO",
-}  # a hold by a gate opens an item of this type (P9-3.6, P9-9.8, P9-9.9, P9-10.6, P9-11.6)
+    "G-NET-CFG": "EX-TN-CFG",
+}  # a hold by a gate opens an item of this type (P9-3.6, P9-9.8, P9-9.9, P9-10.6, P9-10.7, P9-11.6)
 QUARANTINE_ITEM = (
     "recall_quarantine"  # the item a failed recall check G-TOOL-REC keeps open while the tool is quarantined (P9-3.7)
 )
@@ -130,8 +132,15 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
                 case[k] = svc_keys[k]
             else:
                 case.pop(k, None)
-    if case.get("template") == "telecom_network":  # the network inventory's record of the unit, for G-NET-INV (P9-10.6)
+    if case.get("template") == "telecom_network":  # the inventory's record (G-NET-INV, P9-10.6), the bench's (G-NET-CFG, P9-10.7)
+        recs[:] = [r for r in recs if r["type"] != bench_evidence.WIPE]  # only the bench's own read is a certificate
         recs.extend(inventory_evidence.evidence(s, case.get("assetId")))
+        read = bench_evidence.read(s, case.get("assetId"))
+        recs.extend(bench_evidence.evidence(read))
+        if read:
+            case["bench"] = read
+        else:
+            case.pop("bench", None)
     if recs or "evidenceRecords" in case:
         case["evidenceRecords"] = recs
     _bound.set((s, str(case.get("id"))))

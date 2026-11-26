@@ -1,8 +1,9 @@
 """The decommission tracker mock's seed: 12 removal jobs and 2 site demands, synthetic, fixed (no randomness).
 
-Eleven jobs remove three network elements each (`SN-TN-0001` ... `0033`, the ones the inventory holds as removed, at the
-site the inventory gives them). Job `RJ-09` removes eight serials, `SN-TN-0201` ... `0208`, that the inventory does not
-hold: `0201` joins it one simulated day after a reset, the other seven never do.
+Eleven jobs remove three network elements each (`SN-TN-0001` ... `0033`, the ones the inventory holds as removed). Each unit
+carries its own `siteId`, the site the inventory gives it; the job's `siteId` is its first unit's. Job `RJ-09` removes eight
+serials, `SN-TN-0201` ... `0208`, that the inventory does not hold, all at `SITE-301`:
+`0201` joins it one simulated day after a reset, the other seven never do.
 """
 
 from datetime import date, timedelta
@@ -24,13 +25,13 @@ def _job(j: int) -> dict:
     if j == UNKNOWN_JOB:
         site = "SITE-301"
         units = [
-            {"serial": inventory.serial(n), "model": inventory.MODELS[(n - 201) % len(inventory.MODELS)][0]}
+            {"serial": inventory.serial(n), "model": inventory.MODELS[(n - 201) % len(inventory.MODELS)][0], "siteId": site}
             for n in UNKNOWN_SERIALS
         ]
     else:
         first = (j - (1 if j < UNKNOWN_JOB else 2)) * 3 + 1  # job 1 -> 1..3, job 2 -> 4..6, job 10 -> 25..27
         els = [inventory.element(n) for n in range(first, first + 3)]
-        site, units = els[0]["site"], [{"serial": e["serial"], "model": e["model"]} for e in els]
+        site, units = els[0]["site"], [{"serial": e["serial"], "model": e["model"], "siteId": e["site"]} for e in els]
     return {
         "jobId": f"RJ-{j:02d}",
         "siteId": site,

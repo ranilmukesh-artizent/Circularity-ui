@@ -90,9 +90,14 @@ def output(st: dict[str, Any], case: Mapping[str, Any]) -> dict[str, Any]:
         "grade_source": e.source if e else None,
         "estimate": estimate,
         "rul": dict(rul.value) if rul else None,
+        **({"bench": dict(case["bench"])} if case.get("bench") else {}),  # the test bench's own read, as it gave it (P9-10.7)
     }
 
 
 def sources(st: dict[str, Any], case: Mapping[str, Any]) -> list[dict[str, Any]]:
     found = (("Grade", evidence_of(case, "grade")), ("Remaining life", evidence_of(case, "rul")))
-    return [{"fact": name, "source": e.source, "at": e.at.isoformat()} for name, e in found if e is not None]
+    out = [{"fact": name, "source": e.source, "at": e.at.isoformat()} for name, e in found if e is not None]
+    bench = case.get("bench") or {}
+    return out + [  # the bench result, firmware and wipe certificate of a network unit, each with its source and time (P9-10.7)
+        {"fact": f["label"], "source": f["source"], "at": f["at"]} for f in bench.get("facts") or [] if f.get("at")
+    ]

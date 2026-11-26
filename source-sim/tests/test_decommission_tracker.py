@@ -36,12 +36,18 @@ def test_decommission_jobs_and_site_demand(client):
     jobs = client.get(f"{API}/removal-jobs", headers=KEY).json()["jobs"]
     assert len(jobs) == 12 and {j["programme"] for j in jobs} == {"site_swap", "decommission", "reimbursement_programme"}
     assert set(jobs[0]) == {"jobId", "siteId", "removedAt", "programme", "units"}
-    assert set(jobs[0]["units"][0]) == {"serial", "model"}
+    assert set(jobs[0]["units"][0]) == {"serial", "model", "siteId"}
     nine = next(j for j in jobs if j["jobId"] == "RJ-09")
     serials = [u["serial"] for u in nine["units"]]
     assert serials == [f"SN-TN-{n:04d}" for n in range(201, 209)]
     known = {e["serial"] for e in client.get(f"{INV}/elements", params={"limit": 200}, headers=INV_KEY).json()["elements"]}
     assert not known & set(serials)  # 8 serials the inventory does not know (yet)
+    assert {u["siteId"] for u in nine["units"]} == {"SITE-301"} and nine["siteId"] == "SITE-301"
+    elements = client.get(f"{INV}/elements", params={"limit": 200}, headers=INV_KEY).json()["elements"]
+    sites = {e["serial"]: e["site"] for e in elements}
+    for j in jobs:  # every unit sits at the site the inventory holds for it (P9-10.7)
+        for u in j["units"]:
+            assert j["jobId"] == "RJ-09" or u["siteId"] == sites[u["serial"]]
     others = [u["serial"] for j in jobs if j["jobId"] != "RJ-09" for u in j["units"]]
     assert others and set(others) <= known
     demand = client.get(f"{API}/site-demand", headers=KEY).json()

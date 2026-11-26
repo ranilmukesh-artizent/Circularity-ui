@@ -7,9 +7,11 @@ adapter (backend/di/connectors/adapters/decommission_tracker.py), which maps a r
 serial and a site demand to a `demand.site_demand` fact. The field service app stays the existing `fsm` source: this
 tracker carries the removal jobs, so the demo's service management seed is not touched. No real system, no real company.
 
-    GET /decommission/api/v2/removal-jobs   {jobs: [{jobId, siteId, removedAt, programme, units: [{serial, model}]}]}
+    GET /decommission/api/v2/removal-jobs   {jobs: [{jobId, siteId, removedAt, programme, units: [{serial, model, siteId}]}]}
     GET /decommission/api/v2/site-demand    [{demandId, siteId, model, minFirmwareMajor, needBy, region}]
 
+`siteId` of a unit is the site the network inventory holds it at (the job's `siteId` is its first unit's); `RJ-09`'s
+units are at `SITE-301`.
 `programme` is `site_swap`, `decommission` or `reimbursement_programme`. Auth: API key in `x-api-key` (demo key
 `tn_decom-demo-key`); 401 with an error body otherwise. Neither list is paged.
 

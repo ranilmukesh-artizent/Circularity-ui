@@ -104,6 +104,7 @@ class GateResult:
     evidence_missing: tuple[str, ...]
     reason: str
     disclosures: tuple[str, ...] = ()  # texts every route of the decision carries (effect `disclose`, `apply_disclosures`)
+    route_reasons: tuple[tuple[str, str], ...] = ()  # (route id, reason) where a route fails with its own text (P9-10.7)
 
 
 Check = Callable[[Mapping[str, Any], Pack, GateDef], GateResult | None]
@@ -205,13 +206,14 @@ def evaluate_gates(case: Mapping[str, Any], pack: Pack, as_of: datetime | None =
 
 def apply_gate_results(routes: list[Route], results: Sequence[GateResult]) -> None:
     """Each failed `block` result fails its routes at the policy gate with "<gate name>: <reason>" (a route that
-    already failed keeps its first reason). Run it before the business rules and before ranking (R20)."""
+    already failed keeps its first reason; `route_reasons` give a route its own reason). Run it before the business rules and
+    before ranking (R20)."""
     for res in results:
         if res.passed or res.effect.kind != "block":
             continue
         for r in routes:
             if r["id"] in res.effect.routes and not r["excluded"]:
-                fail(r, POLICY, f"{catalogue()[res.gate_id].name}: {res.reason}")
+                fail(r, POLICY, f"{catalogue()[res.gate_id].name}: {dict(res.route_reasons).get(r['id'], res.reason)}")
 
 
 def apply_disclosures(routes: list[Route], results: Sequence[GateResult]) -> None:

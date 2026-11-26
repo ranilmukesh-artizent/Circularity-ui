@@ -51,7 +51,17 @@ TITLE_FIELDS = (
     "odometer_photo_reading",
 )  # a car's title facts (P9-9.8), and the odometer facts that release a car held for a second inspection (P9-9.9)
 DECON_FIELDS = ("decon_ended_at", "decon_started_at", "decon_record_ref", "decon_result")  # a device's decontamination (P9-11.6)
-INVENTORY_FIELDS = ("inventory_status", "model", "site")  # a unit's inventory facts (P9-10.6)
+INVENTORY_FIELDS = ("inventory_status", "model", "site", "manufacturer", "region")  # a unit's inventory facts (P9-10.6, 10.7)
+BENCH_FIELDS = (
+    "wipe_status",
+    "wipe_attempts",
+    "wipe_scope",
+    "wipe_certificate_ref",
+    "wipe_verified_at",
+    "bench_passed",
+    "bench_total",
+    "firmware",
+)  # a unit's test bench facts: the wipe certificate and the bench read (P9-10.7)
 OVERRIDE_RESOURCE = "conflict"  # a person's choice in the Conflict Queue (provenance.resource); imports are "import"
 
 
@@ -150,6 +160,7 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
         ("condition", TITLE_FIELDS, "used_cars"),
         ("condition", DECON_FIELDS, "medical_rental"),
         ("asset", INVENTORY_FIELDS, "telecom_network"),
+        ("condition", BENCH_FIELDS, "telecom_network"),  # the wipe re-run on the bench (P9-10.7)
     ):
         keys = sorted({f.key for f in facts if f.model == model and f.field in fields})
         if not keys:

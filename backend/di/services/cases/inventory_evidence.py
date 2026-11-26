@@ -7,7 +7,7 @@ The canonical `asset` record of the unit (key `schema.serial_key`) holds what th
 inventory's own model is read from the provenance of `tn_inv`, never from the merged value. The record exists once the
 inventory has written the unit:
 
-    inventory_match   {serial, model, site, status}, source `tn_inv`, at the time the inventory last wrote the unit
+    inventory_match   {serial, model, site, status, manufacturer, region}, source `tn_inv`, at the time of its last write
 
 Whether it matches the removal (same model, same site) is the gate's (`gate_checks.network`); no record means "not in the
 inventory". `gate_hold.attach_evidence` adds the record to a `telecom_network` case; a later write of the unit's inventory
@@ -49,4 +49,5 @@ def evidence(s: Session, asset_key: Any) -> list[dict[str, Any]]:
     site, _ = _own(rec, "site")
     data = rec["data"]
     value = {"serial": data.get("serial"), "model": model, "site": site, "status": status}
+    value |= {k: _own(rec, k)[0] for k in ("manufacturer", "region")}  # for the covered-equipment gate (P9-10.7)
     return [{"type": "inventory_match", "source": SOURCE, "at": at.isoformat(), "result": "pass", "value": value}]

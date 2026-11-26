@@ -53,8 +53,8 @@ class DecommissionTrackerAdapter(GenericAdapter):
             for j in jobs:
                 for u in j["units"]:
                     payload = {
-                        "jobId": j["jobId"], "siteId": j["siteId"], "removedAt": j["removedAt"], "programme": j["programme"],
-                        "serial": u["serial"], "model": u["model"], "org_unit_id": org,
+                        "jobId": j["jobId"], "siteId": u.get("siteId") or j["siteId"], "removedAt": j["removedAt"],
+                        "programme": j["programme"], "serial": u["serial"], "model": u["model"], "org_unit_id": org,
                     }  # fmt: skip
                     yield Record("removal_jobs", f"{j['jobId']}:{u['serial']}", payload, url)
 

@@ -402,13 +402,7 @@
     "sale",
     "parts"
    ],
-   "when": [
-    {
-     "fact": "equipment.fcc_covered",
-     "op": "eq",
-     "value": true
-    }
-   ]
+   "when": []
   },
   "evidence": [
    "covered_list_clearance"

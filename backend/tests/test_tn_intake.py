@@ -23,8 +23,7 @@ from di.connectors.registry import ADAPTERS
 from di.core.db import SessionLocal, engine
 from di.services.agents.forbidden import forbidden
 from di.services.canonical import store as canonical
-from di.services.canonical.schema import compliance_key, serial_key
-from di.services.canonical.store import Fact
+from di.services.canonical.schema import serial_key
 from di.services.cases import intake
 from di.services.cases import store as cases
 from tests import starting
@@ -32,7 +31,6 @@ from tests.helpers import call
 
 ORG = "Customer A"
 PACK = Path(__file__).resolve().parents[1] / "di" / "services" / "modeler" / "packs" / "telecom_network.json"
-OLD = "2026-10-07T09:00:00+00:00"
 ACTION = "Field team to confirm serial and site"
 ROUTES = ("redeploy", "spare", "resell", "harvest", "recycle")
 
@@ -86,7 +84,7 @@ def fresh():
     _ok(call("pack.submit", {"id": pid}, "admin"))
     _ok(call("pack.approve", {"id": pid}, "approver"))
     with SessionLocal() as s:
-        for sid in ("tn_inv", "tn_decom"):
+        for sid in ("tn_inv", "tn_decom", "tn_bench"):
             extra.register(s, sid, ORG)
         s.commit()
     yield
@@ -100,12 +98,20 @@ def _write(source: str, resource: str, payload: dict[str, Any]) -> None:
         s.commit()
 
 
+def _bench(n: int, wipe: dict[str, Any] | None = None, **over: Any) -> dict[str, Any]:
+    """A result as the test bench serves it: 18 of 18 tests passed, firmware current, a verified wipe with its certificate."""
+    verified = {"status": "verified", "attempts": 1, "scope": ["configuration", "credentials", "keys", "logs"],
+                "verifiedAt": "2026-10-03T09:00:00Z", "certificateRef": f"WC-{n:04d}"}  # fmt: skip
+    return {
+        "serial": sn(n), "tests": {"passed": 18, "total": 18}, "firmware": "3.2", "firmwareLatest": "3.2",
+        "wipe": verified | (wipe or {}), "boards": [], "weightKg": 9.5, "battery": None, "org_unit_id": ORG,
+    } | over  # fmt: skip
+
+
 def _evidence(n: int) -> None:
     """The configuration-wipe certificate on file (another gate, P9-10.7's: so that only the inventory gate decides)."""
-    key = serial_key(ORG, sn(n))
-    row = {"asset_key": key, "type": "config_wipe", "result": "pass", "ref": "W-1", "at": OLD, "value": {}}
+    _write("tn_bench", "results", _bench(n))
     with SessionLocal() as s:
-        canonical.apply(s, "manual", [Fact("compliance", compliance_key(key, "config_wipe"), f, v) for f, v in row.items()])
         s.execute(text("DELETE FROM job WHERE kind = 'case.gateRecheck'"))
         s.commit()
 
