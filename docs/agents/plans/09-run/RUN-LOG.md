@@ -166,3 +166,8 @@ unattended". Times are local (IST).
 | 26 Nov 07:06 | P9-7.2 merged. Batch b6; 10.6 merged onto 11.6 by the lead (intake profile plus telecom hooks; table-driven gate rechecks). |
 | 26 Nov 07:06 | P9-11.6 merged. Batch b6; 10.6 merged onto 11.6 by the lead (intake profile plus telecom hooks; table-driven gate rechecks). |
 | 26 Nov 07:06 | P9-10.6 merged. Batch b6; 10.6 merged onto 11.6 by the lead (intake profile plus telecom hooks; table-driven gate rechecks). |
+| 26 Nov 08:04 | P9-9.9 merged. Batch b7; gate wiring for 9.9/10.7/11.7 merged by the lead. |
+| 26 Nov 08:04 | P9-11.7 merged. Batch b7; gate wiring for 9.9/10.7/11.7 merged by the lead. |
+| 26 Nov 08:04 | P9-7.3 merged. Batch b7; gate wiring for 9.9/10.7/11.7 merged by the lead. |
+| 26 Nov 08:04 | P9-7.5 merged. Batch b7; gate wiring for 9.9/10.7/11.7 merged by the lead. |
+| 26 Nov 08:04 | P9-10.7 merged. Batch b7; gate wiring for 9.9/10.7/11.7 merged by the lead. |

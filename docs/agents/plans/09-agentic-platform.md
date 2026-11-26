@@ -924,9 +924,9 @@ each story went.
 - [ ] P9-6.21 Phase 6 gate
 - [x] P9-7.1 Import a history batch with checks
 - [x] P9-7.2 As-of replay with the four measures
-- [ ] P9-7.3 Publish in steps with canary by region and share
+- [x] P9-7.3 Publish in steps with canary by region and share
 - [ ] P9-7.4 Canary report and automatic pause
-- [ ] P9-7.5 Replay honours queue capacity by date
+- [x] P9-7.5 Replay honours queue capacity by date
 - [ ] P9-7.6 Back-test report page with PDF export
 - [ ] P9-7.7 FR market canary for service desk tables
 - [ ] P9-7.8 Phase 7 demo smoke script
@@ -962,7 +962,7 @@ each story went.
 - [x] P9-9.6 Vehicle auction and pricing guide mocks
 - [x] P9-9.7 One case per VIN with the inspection read
 - [x] P9-9.8 Title finance and title brand gates
-- [ ] P9-9.9 Odometer and open recall gates
+- [x] P9-9.9 Odometer and open recall gates
 - [ ] P9-9.10 Used-car channel valuer net of costs
 - [ ] P9-9.11 Lot choice and recon approval
 - [ ] P9-9.12 Compose draft from the used-car prompt
@@ -982,7 +982,7 @@ each story went.
 - [x] P9-10.4 Spares planning mock with requisitions
 - [x] P9-10.5 Broker marketplace and recycler portal mocks
 - [x] P9-10.6 One case per serial with inventory match gate
-- [ ] P9-10.7 Configuration wipe and covered equipment gates
+- [x] P9-10.7 Configuration wipe and covered equipment gates
 - [ ] P9-10.8 Export control gate and trade compliance approval
 - [ ] P9-10.9 Telecom five-route valuer
 - [ ] P9-10.10 Spares before new and site-swap matching
@@ -1001,7 +1001,7 @@ each story went.
 - [x] P9-11.4 Biomedical service system mock
 - [x] P9-11.5 Parts supplier portal and disposal partner mocks
 - [x] P9-11.6 One case per tag with decontamination gate
-- [ ] P9-11.7 Service in date and safety notice gates
+- [x] P9-11.7 Service in date and safety notice gates
 - [ ] P9-11.8 Medical rental four-route valuer
 - [ ] P9-11.9 Nearest next hospital and repair approval
 - [ ] P9-11.10 Refurbish stays servicing gate
