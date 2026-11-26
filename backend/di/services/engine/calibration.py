@@ -10,6 +10,7 @@
 Pure: no Session, no I/O. The rows come from `di.repositories.outcomes`.
 """
 
+import dataclasses
 import statistics
 from collections.abc import Mapping, Sequence
 from typing import Any, TypedDict
@@ -55,7 +56,11 @@ class CalibratedPredictor:
         return v if f == 1.0 else js_round(v * f)
 
     def channel_price(self, facts: Mapping[str, Any], channel: str) -> PriceBand:
-        return self.base.channel_price(facts, channel)
+        """The base's band with its prices scaled by the factor of the route named like the channel (a device pack's channels
+        are its routes, P9-13.7); a channel without a factor keeps the base's band."""
+        b = self.base.channel_price(facts, channel)
+        f = self._f(channel)
+        return b if f == 1.0 else dataclasses.replace(b, p10=b.p10 * f, p50=b.p50 * f, p90=b.p90 * f)
 
     def market_value(self, a: Asset) -> float:
         return self.base.market_value(a)

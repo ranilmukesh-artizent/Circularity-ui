@@ -45,6 +45,7 @@ from di.services.agents import calibrate
 from di.services.agents.stage_context import STAGE_IDS
 from di.services.engine.calibration import CalibratedPredictor, Key, OutcomeRow, fit
 from di.services.engine.predictor import Predictor
+from di.services.modeler.pack import pack_keys
 from di.services.modeler.templates import TEMPLATE_KEYS
 
 MAKER_CHECKER = "Maker-checker: you created this model, so you cannot promote it."
@@ -146,7 +147,8 @@ def fit_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:  #
         return "validation_error", "A price model is fitted for the device template."
     if kind == "take_up" and t != "tool_fleet":
         return "validation_error", "A take-up model is fitted for the tool_fleet template."
-    return None if t in TEMPLATE_KEYS else ("validation_error", f"The template is one of {', '.join(TEMPLATE_KEYS)}.")
+    keys = pack_keys()  # every pack of the pack module (P9-13.7), not only the first three
+    return None if t in keys else ("validation_error", f"The template is one of {', '.join(keys)}.")
 
 
 def _insert_candidate(

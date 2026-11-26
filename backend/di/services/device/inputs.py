@@ -116,13 +116,14 @@ def price_bands(
     if not case.get("imei") or case.get("ref") is None:
         return {}
     # lazily: the actions package imports the case intake, which imports this module
-    from di.services.actions.models import price_predictor
+    from di.services.actions.models import intake_predictor, price_predictor
     from di.services.engine.predictor import FormulaPredictor
     from di.services.modeler.valuers import device
     from di.services.models.price import battery_band
 
     base = FormulaPredictor()
-    pred = price_predictor(s, base)
+    priced = price_predictor(s, base)
+    pred = intake_predictor(s, priced, "device", "device")  # the device pack's promoted calibration, new cases only (P9-13.7)
     pct, fails = cond.get("battery_health_pct"), cond.get("functional_fails")
     age = next((str(m[3]) for m in device.DMOD if m[1] == case.get("model")), None)
     facts = {
@@ -133,7 +134,7 @@ def price_bands(
     }  # fmt: skip
     out: dict[str, dict[str, Any]] = {}
     for ch in device.RECOVER:
-        if pred is base and ch == "wholesale":
+        if priced is base and ch == "wholesale":
             continue
         b = pred.channel_price(facts, ch)
         week = b.feed_week or feed_week

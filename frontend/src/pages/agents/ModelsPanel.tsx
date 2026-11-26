@@ -10,7 +10,12 @@ import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 
 const STATUS_CHIP: Record<ModelVersion['status'], string> = { candidate: 'y', active: 'ok', retired: 'line' };
-const TEMPLATE_LABEL: Record<string, string> = { industrial: 'Industrial', tool_fleet: 'Tool fleet', device: 'Device recommerce' };
+const TEMPLATE_LABEL: Record<string, string> = {
+  industrial: 'Industrial', tool_fleet: 'Tool fleet', device: 'Device recommerce', used_cars: 'Used cars',
+  telecom_network: 'Telecom network', medical_rental: 'Medical rental',
+};
+/** The six packs a model can be fitted for (P9-13.7), whatever the server has an active model for. */
+const PACKS = Object.keys(TEMPLATE_LABEL);
 const label = (t: string) => TEMPLATE_LABEL[t] ?? t;
 const err = (v: number | null) => (v == null ? '—' : money(v));
 /** A price model's template, or a stage calibration's pack and stage (P9-2.9). */
@@ -35,7 +40,7 @@ const describe = (m: ModelVersion) => {
 export function ModelsPanel() {
   const s = useModels();
   const action = useAction();
-  const templates = Object.keys(s.active).filter((t) => !stageCalibrationOf(t));
+  const templates = [...new Set([...PACKS, ...Object.keys(s.active).filter((t) => !stageCalibrationOf(t))])];
   const [template, setTemplate] = useState(templates[0] ?? 'industrial');
   const [stage, setStage] = useState(STAGE_OPTIONS[0] ?? 'intake');
   const fitStage = async () => {
