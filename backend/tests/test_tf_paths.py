@@ -212,7 +212,8 @@ def test_tf_07_demand_in_the_past_is_not_offered(clean):
     _write_demand(over={RENEWAL: {"need_by": "2026-10-01"}, "BID-P1": {"expires": "2026-10-06"}})
     with SessionLocal() as s:
         d = tool_demand.named_demand(s, ORG, "CMH", AS_OF)
-    assert d["lease"] == [] and d["bid"] == [] and len(d["so"]) == 1
+    # only this test's rows are asserted: a stack with the fleet mock synced offers its own live renewals too
+    assert _mine(d["lease"]) == [] and _mine(d["bid"]) == [] and [x["id"] for x in _mine(d["so"])] == ["SO-P1"]
 
 
 # ------------------------------------------------------------------ the panel
@@ -261,8 +262,8 @@ def test_tf_07_held_demand_excluded(clean):
             {"i": first},
         )
     with SessionLocal() as s:
-        assert tool_demand.named_demand(s, ORG, "CMH", AS_OF)["lease"] == []
-        assert [x["id"] for x in tool_demand.named_demand(s, ORG, "CMH", AS_OF, case_id=first)["lease"]] == [RENEWAL]
+        assert _mine(tool_demand.named_demand(s, ORG, "CMH", AS_OF)["lease"]) == []
+        assert [x["id"] for x in _mine(tool_demand.named_demand(s, ORG, "CMH", AS_OF, case_id=first)["lease"])] == [RENEWAL]
     _grade_a(OTHER)
     second = _open(OTHER)
     labels = " ".join(x["label"] for p in _paths(second)["paths"] for x in p["lines"])

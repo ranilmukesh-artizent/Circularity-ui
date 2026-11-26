@@ -11,7 +11,8 @@ TABLE = {
                    "GR-I5": ("Approval", "decide")},
     "tool_fleet": {"GR-01": ("Compliance", "decide"), "GR-02": ("Compliance", "decide"),
                    "GR-03": ("Threshold", "condition"), "GR-04": ("Threshold", "value"),
-                   "GR-05": ("Approval", "decide"), "GR-06": ("Compliance", "execute")},
+                   "GR-05": ("Approval", "decide"), "GR-06": ("Compliance", "execute"),
+                   "GR-14": ("Approval", "decide"), "GR-15": ("Approval", "decide")},
     "device": {"GR-D1": ("Compliance", "condition"), "GR-D2": ("Threshold", "value"),
                "GR-D3": ("Compliance", "decide"), "GR-D4": ("Threshold", "decide"),
                "GR-D5": ("Threshold", "value"), "GR-D6": ("Approval", "decide"),
@@ -33,7 +34,7 @@ def test_every_guardrail_has_type_and_stage():
         got = {g.id: (g.type, g.stage) for g in load_template(key).guardrails}
         assert got == rows, key
         n += len(got)
-    assert n == 20
+    assert n == 22  # 20 of the demo and the first plan 9 packs, plus GR-14 and GR-15 of the tool fleet (P9-3.15)
 
 
 def test_compliance_guardrails_are_locked():

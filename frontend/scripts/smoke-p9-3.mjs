@@ -14,8 +14,13 @@
  *      Approver releases it after the fix (the card reads released); a Planner is refused.
  *   5  (P9-3.8) after the telematics source syncs, CMH-48777 (last seen 2026-09-29) reads "Telematics last seen 8 days ago:
  *      re-issue and pool need a person" on its Overview; CMH-48213 reads "Telematics 3 days old".
+ *   10 (P9-3.13) two CMH returns that both want FC-30117-R: the plan gives it to one, the other reads "is planned for RT-nnnn, where it adds more across the queue" with the gain over first come, first served.
  *   6  (P9-3.9) CMH-48213 (820 h, 30% high load) reads its wear index ("WTI 65" when the piston kit was replaced at 500 h;
  *      the repair log's own replacements decide it) and "RUL 21% (Motor armature)" on its Overview.
+ *   7  (P9-3.10) planner.a fits a remaining-life model on the repair log's teardown verdicts and proposes it; the Approver
+ *      promotes it; the Models panel lists it as active with its median hours per component. (A case already open keeps
+ *      its life until it is valued again; the Overview shows the model id for cases valued after the promotion.)
+ *   9  (P9-3.12) CMH-48213 reads six valued paths and the renewal FC-30117-R in the re-issue lines.
  *
  * The UI has no one-click setup for this, so the script calls the app's own actions as the signed-in person (the same
  * ones the Source Map and Workflow Studio call) and reads the result in the pages. Needs the worker (the sync runs on it)
@@ -26,7 +31,7 @@
  *   node frontend/scripts/smoke-p9-3.mjs http://localhost:5173
  *   bash scripts/dev/reset.sh
  * (hold the api test lock meanwhile). Screenshots of a failing step go to SMOKE_OUT (default: <OS temp>/smoke-p9-3).
- * The last line is "smoke-p9-3: all 8 steps passed".
+ * The last line is "smoke-p9-3: all <N> steps passed", N being the number of steps that ran.
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -93,7 +98,9 @@ const until = async (fn, msg, ms, p) => {
   }
 };
 
+let stepsRun = 0;
 async function step(name, fn) {
+  stepsRun += 1;
   const t0 = Date.now();
   try {
     const detail = await fn();
@@ -359,6 +366,24 @@ await step('8 Disagreement: a tool whose grade and wear agree shows no flag; one
   return view.disagreement ? view.disagreement.text : 'no disagreement (estimate grade)';
 });
 
+// ---------------------------------------------------------------- 7
+await step('7 Remaining life: planner.a fits and proposes, the Approver promotes, the Models panel lists it', async () => {
+  const planner = await as('planner.a');
+  const m = await must(planner, 'model.fit', { template: 'tool_fleet', kind: 'rated_life' });
+  if (!m.factors.length) throw new Error(`${m.id} fitted no component (${m.metrics.n} verdicts): is the repair log synced?`);
+  await must(planner, 'model.propose', { id: m.id });
+  const approver = await as('approver');
+  await must(approver, 'model.promote', { id: m.id });
+  const view = await getJson(approver, '/api/screens/agents/models');
+  if (view.activeRatedLife !== m.id) throw new Error(`the active remaining-life model is ${view.activeRatedLife}, not ${m.id}`);
+  await approver.goto(`${base}/#/agents`);
+  const row = approver.locator(`tr[data-model="${m.id}"]`);
+  await row.waitFor();
+  const t = await row.innerText();
+  if (!/median [\d,]+ h/.test(t) || !/active/.test(t)) throw new Error(`the Models panel row of ${m.id} shows no median hours and active: ${t.slice(0, 160)}`);
+  return `${m.id} active, ${m.factors.length} components`;
+});
+
 // ---------------------------------------------------------------- 9
 await step('9 Paths: CMH-48213 reads six valued paths and the renewal FC-30117-R in the re-issue lines', async () => {
   const admin = await as('admin');
@@ -378,9 +403,35 @@ await step('9 Paths: CMH-48213 reads six valued paths and the renewal FC-30117-R
   if (!/Fleet renewal FC-30117-R/.test(shown || '')) throw new Error('the Overview does not show "Fleet renewal FC-30117-R"');
   return `${v.paths.map((p) => p.k).join(', ')}; best ${v.best}, uplift ${v.uplift}`;
 });
+// ---------------------------------------------------------------- 10
+await step('10 Queue plan: two CMH returns that both want FC-30117-R share it, the plan says who takes it', async () => {
+  const admin = await as('admin');
+  const open = async (serial) =>
+    (await must(admin, 'case.open', { org_unit_id: ORG, template_key: 'tool_fleet', asset_key: serial, reason: 'manual', facts: { cls: 'CMH', grade: 'A', site: 'Houston', rul: 62 } })).case_id;
+  const a = await open('CMH-QP-1');
+  const b = await open('CMH-QP-2');
+  const plans = [];
+  for (const id of [a, b]) {
+    await until(async () => (await getJson(admin, '/api/screens/toolfleet/' + id)).plan, 'no queue plan for ' + id, SYNC, admin);
+    plans.push([id, (await getJson(admin, '/api/screens/toolfleet/' + id)).plan]);
+  }
+  // the renewal goes to one case only: another open CMH return (CMH-48213) may take it, so the two new returns need not hold it
+  const holders = plans.filter(([, p]) => p.holds === 'FC-30117-R');
+  if (holders.length > 1) throw new Error('FC-30117-R is held by both returns: ' + JSON.stringify(plans.map(([i, p]) => [i, p.holds])));
+  const lost = plans.find(([, p]) => p.lost.some((x) => x.order === 'FC-30117-R'));
+  if (!lost) throw new Error('neither return lost FC-30117-R to another: ' + JSON.stringify(plans.map(([i, p]) => [i, p.holds, p.headline])));
+  const [loserId, loser] = lost;
+  if (!/FC-30117-R .* is planned for RT-\d+, where it adds more across the queue/.test(loser.headline || '')) throw new Error('the losing reason reads: ' + loser.headline);
+  await admin.goto(`${base}/#/product/${loserId}/overview`);
+  await admin.locator('#view').waitFor();
+  await admin.locator('[data-testid="tf-plan"]').first().waitFor({ timeout: UI });
+  const shown = (await admin.locator('[data-testid="tf-plan"]').first().innerText()).replace(/\s+/g, ' ');
+  if (!/is planned for RT-\d+, where it adds more across the queue/.test(shown) || !/first come, first served/.test(shown)) throw new Error('the Overview reads: ' + shown);
+  return shown;
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));
   process.exit(1);
 }
-say('smoke-p9-3: all 8 steps passed');
+say(`smoke-p9-3: all ${stepsRun} steps passed`);

@@ -32,6 +32,7 @@ from typing import Any, Literal
 from di.services.modeler.evidence import Evidence
 from di.services.modeler.pack import load_pack
 from di.services.modeler.valuers import fleet_evidence, tool_fleet, tool_life
+from di.services.models.rul import RulModel
 
 WORKBENCH = "workbench_grade"
 LIFE = "life_inputs"  # the evidence type of the life facts (P9-3.9): value keys in `life_of`
@@ -65,11 +66,14 @@ def grade_of(evidence: Mapping[str, Evidence | None], est_grade: str, now: datet
     return GradeView(str(e.value["grade"]), "workbench", str(ref) if ref else None, e.at.isoformat(), age)
 
 
-def life_of(evidence: Mapping[str, Evidence | None], cls: str, now: datetime | None = None) -> tool_life.LifeResult | None:
+def life_of(
+    evidence: Mapping[str, Evidence | None], cls: str, now: datetime | None = None, rul_model: RulModel | None = None
+) -> tool_life.LifeResult | None:
     """The tool's wear index and remaining life from the `life_inputs` evidence (telematics run hours, high-load share, event
     counts, coverage, months on contract, the repair log's replacements, PLM's ratings; di.services.cases.life_evidence),
-    computed by `tool_life.evaluate` with the pack's table. None when the evidence has neither the telematics hours nor the
-    months on contract, or the class has no components: the case's own inputs then stay."""
+    computed by `tool_life.evaluate` with the pack's table, or with the promoted remaining-life model (`rul_model`, P9-3.10)
+    for the components it covers (the life result's `table_version` is then the model id). None when the evidence has neither
+    the telematics hours nor the months on contract, or the class has no components: the case's own inputs then stay."""
     e = evidence.get(LIFE)
     if e is None:
         return None
@@ -79,6 +83,7 @@ def life_of(evidence: Mapping[str, Evidence | None], cls: str, now: datetime | N
     comps = tool_life.components(
         cls, LIFE_PARAMS, v.get("ratings") or (), tool_life.replacements_for(cls, v.get("replacements") or {}, LIFE_PARAMS)
     )
+    comps = tool_life.with_model(comps, rul_model)  # a promoted rated_life model rates what it covers (P9-3.10)
     if not comps:
         return None
     seen = v.get("telemetry_at")
@@ -89,7 +94,10 @@ def life_of(evidence: Mapping[str, Evidence | None], cls: str, now: datetime | N
         telemetry_age_days=None if age is None else float(age),
         repair_history_complete=bool(v.get("repair_history_complete", True)), components=comps,
     )  # fmt: skip
-    return tool_life.evaluate(inp, LIFE_PARAMS)
+    res = tool_life.evaluate(inp, LIFE_PARAMS)
+    if rul_model and any(c.source == "model" for c in comps):
+        return dataclasses.replace(res, table_version=rul_model.version)
+    return res
 
 
 def merge_demand(base: Mapping[str, Any], extra: Mapping[str, Any]) -> dict[str, Any]:
@@ -111,7 +119,10 @@ def merge_demand(base: Mapping[str, Any], extra: Mapping[str, Any]) -> dict[str,
     return out
 
 
-def valuer_case(base: Mapping[str, Any], evidence: Mapping[str, Evidence | None], now: datetime | None = None) -> dict[str, Any]:
+def valuer_case(
+    base: Mapping[str, Any], evidence: Mapping[str, Evidence | None], now: datetime | None = None,
+    rul_model: RulModel | None = None,
+) -> dict[str, Any]:  # fmt: skip
     """`base` (the valuer case as opened) with `grade` the workbench grade, or None with `estGrade` the estimate; and, when
     the evidence gives a life result (`life_of`), `rul` and `partRul` computed (each part by its component's name, else the
     tool's remaining life) and `life` the result as a dict. `now` is the time the age of the telematics is read at."""
@@ -120,7 +131,7 @@ def valuer_case(base: Mapping[str, Any], evidence: Mapping[str, Evidence | None]
     g = grade_of(evidence, est)
     c["estGrade"] = est
     c["grade"] = g.grade if g.source == "workbench" else None
-    life = life_of(evidence, str(c.get("cls") or ""), now)
+    life = life_of(evidence, str(c.get("cls") or ""), now, rul_model)
     if life is not None:
         by = {x.name: x.rul_pct for x in life.per_component}
         parts = tool_fleet.CLS[c["cls"]]["parts"]

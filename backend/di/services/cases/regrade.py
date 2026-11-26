@@ -13,13 +13,15 @@ The evidence type `workbench_grade` is the pack's `data.mappings` row: canonical
 `tool_life.disagreement`; the condition record's `damage_code` says the tool is damaged), or removes it. The exception item it
 opens is `gate_hold.sync_item`.
 
-Never does: grade anything, move a stage or write to the canonical store. A late grade reaches an open case through the
-job `case.reevaluate` (canonical.store.apply enqueues it; `replan.on_graded` runs it).
+Never does: grade anything, fit a model (only the active `rated_life` model is read), move a stage or write to the canonical
+store. A late grade reaches an open case through the job `case.reevaluate` (canonical.store.apply enqueues it;
+`replan.on_graded` runs it).
 """
 
 from collections.abc import Mapping, MutableMapping
 from typing import Any, Literal
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
@@ -27,6 +29,7 @@ from di.services.canonical import store as canonical
 from di.services.cases import life_evidence
 from di.services.modeler.evidence import Evidence, parse_time
 from di.services.modeler.valuers import tool_inputs, tool_life
+from di.services.models.rul import RulModel
 
 FIELDS = ("grade", "test_result", "inspection_ref", "graded_at")
 
@@ -51,7 +54,7 @@ def apply(s: Session, c: MutableMapping[str, Any]) -> bool:
     if not isinstance(c.get("valuer"), dict):
         return False
     ev = workbench_evidence(s, c.get("serial") or c.get("assetId")) | life_evidence.evidence(s, c)
-    vc = tool_inputs.valuer_case(c["valuer"], ev, clock.now())
+    vc = tool_inputs.valuer_case(c["valuer"], ev, clock.now(), _rul_model(s, str(c.get("cls") or "")))
     shown = vc["grade"] or vc["estGrade"]
     vc["grade"] = shown  # no workbench grade: the snapshot keeps its estimate as grade, as opened
     changed = vc != c["valuer"] or c.get("grade") != shown
@@ -75,3 +78,12 @@ def _sync_disagreement(s: Session, c: MutableMapping[str, Any], ev: Mapping[str,
     d = tool_life.disagreement(grade, tool_life.life_from_dict(c["life"]), damage)
     if d is not None:
         c["disagreement"] = {"text": d.text, "components": d.components}
+
+
+def _rul_model(s: Session, cls: str) -> RulModel | None:
+    """The promoted remaining-life model (kind `rated_life`) of the tool class, or None: the pack's table then rates the life
+    (P9-3.10). A stored model, so the case's life is the same every time it is computed until a person promotes another."""
+    row = s.execute(
+        text("SELECT id, factors FROM model_version WHERE template = 'tool_fleet' AND kind = 'rated_life' AND status = 'active'")
+    ).first()
+    return RulModel.for_class(row.factors, cls, row.id) if row else None

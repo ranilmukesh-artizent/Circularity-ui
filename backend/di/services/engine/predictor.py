@@ -12,7 +12,8 @@ import math
 import random
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from datetime import date
+from typing import Any, Protocol
 
 from di.services.engine.jsmath import js_round
 
@@ -61,7 +62,20 @@ class Asset:
         return GRADE_F[self.grade]
 
 
+@dataclass(frozen=True)
+class PriceBand:
+    """A device's sale price on one channel (plan 9, P9-6.9, I-14): P10, P50 and P90 per unit, the price model that gave it
+    (None for the pack's index table) and the week of the market feed it rests on (None when it does not use the feed)."""
+
+    p10: float
+    p50: float
+    p90: float
+    model_id: str | None
+    feed_week: date | None
+
+
 class Predictor(Protocol):
+    def channel_price(self, facts: Mapping[str, Any], channel: str) -> PriceBand: ...
     def market_value(self, a: Asset) -> float: ...
     def sale(self, a: Asset, mv: float) -> tuple[int, int]: ...  # (expected proceeds, fees and freight)
     def refurbishment(self, a: Asset, sale: int) -> tuple[int, int]: ...  # (price uplift, refurbishment cost)
@@ -92,6 +106,15 @@ class FormulaPredictor:
 
     def __init__(self, rnd: Callable[[], float] | None = None):
         self.rnd = rnd or random.Random(20261007).random  # noqa: S311 - seeded for repeatable demo numbers, not security
+
+    def channel_price(self, facts: Mapping[str, Any], channel: str) -> PriceBand:
+        """A device's price on a channel from the pack's index table: `ref` (`facts["ref"]`) times the channel's price index
+        for the grade and age band. No interval and no random draw, so the industrial draws stay as they were."""
+        from di.services.modeler.pack import load_pack  # lazy: the pack is read only by a device case
+
+        dst = load_pack("device").valuer.params["dst"]
+        p = float(facts["ref"]) * float(dst[facts["grade"]][facts["band"]][channel][3])
+        return PriceBand(p, p, p, None, None)
 
     def market_value(self, a: Asset) -> float:
         # depreciation by age, grade factor, quantity, and 8% log-normal market noise
@@ -149,6 +172,9 @@ class BomPartsPredictor:
 
     def __init__(self, base: Predictor, lines: Sequence[BomLine], demand: Mapping[str, int]):
         self.base, self.lines, self.demand = base, list(lines), dict(demand)
+
+    def channel_price(self, facts: Mapping[str, Any], channel: str) -> PriceBand:
+        return self.base.channel_price(facts, channel)
 
     def market_value(self, a: Asset) -> float:
         return self.base.market_value(a)

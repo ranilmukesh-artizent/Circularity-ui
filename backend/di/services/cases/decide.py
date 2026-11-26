@@ -77,6 +77,7 @@ from di.services.modeler.valuers import (
     kind_of,
     medical_rental,
     service_desk,
+    tool_approval,
     tool_fleet,
     used_car_steps,
     used_cars,
@@ -118,6 +119,7 @@ class Decision:
     extra: Mapping[str, float] = field(default_factory=dict)
     case_fields: Mapping[str, Any] = field(default_factory=dict)
     ticket: Mapping[str, Any] | None = None  # a service ticket's options, holds and inputs (P9-4.6)
+    approval: Mapping[str, Any] | None = None  # a tool return's route for approval and its confidence (P9-3.15)
     approvals: list[dict[str, Any]] = field(default_factory=list)  # the pack's approval limits on the case (P9-9.11)
     evidence: list[str] = field(default_factory=list)  # the plain facts behind the recommendation (P9-9.11)
 
@@ -156,6 +158,7 @@ class _Valued:
     plan: dict[str, Any] | None = None
     figures: Mapping[str, Mapping[str, float]] = field(default_factory=dict)
     ticket: dict[str, Any] | None = None
+    values: Sequence[PathValue] = ()  # the tool fleet's path values (their lines say what a repair costs, P9-3.15)
     approvals: list[dict[str, Any]] = field(default_factory=list)  # a used car's approval limits (P9-9.11)
     facts: Mapping[str, Any] = field(default_factory=dict)  # the facts the valuer read (the evidence lines read them)
 
@@ -267,7 +270,7 @@ def _tool_fleet(
         "lost": [{"order": o, "to": w["to"], "gain": w["gain"]} for o, w in sorted(plan["why"].items()) if me in w["others"]],
     }
     best = dec.get("best")
-    return _Valued(routes, best["k"] if best else None, queue_plan)
+    return _Valued(routes, best["k"] if best else None, queue_plan, values=values)
 
 
 def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as_of: datetime | None) -> _Valued | None:
@@ -292,7 +295,9 @@ def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as
         inputs = sd.get("inputs")  # a replay or a simulation without a session: the snapshot the case holds
     if inputs is None:
         return None
-    ticket = service_desk.decide_ticket(inputs)
+    ticket = (
+        service_desk.batch_ticket(inputs) if sd.get("batch") else service_desk.decide_ticket(inputs)
+    )  # a batch per tool (P9-4.8)
     if (
         ticket["best"] is None
     ):  # nothing priced yet (a draft, no estimate): the return is valued as before, a technician checks first
@@ -306,6 +311,8 @@ def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as
     ]  # fmt: skip
     routes = to_routes(t, cast(list[PathValue | ChannelValue], values))
     _decorate(t, routes)
+    for r in routes:  # what each route's plan is made of: the steps and the lines each covers (P9-4.9)
+        r |= service_desk.step_plan(ticket, r["id"], sd.get("site"))
     return _Valued(routes, ticket["best"], ticket=ticket | {"inputs": inputs})
 
 
@@ -496,6 +503,7 @@ def decide_case(
     chosen = go or (valued.best if valued.best in eligible else c.get("preferred"))
     rec = rank_routes(routes, c.get("blocked") or c.get("gateHold"), chosen)
     rec = _not_held_for_person(rec, routes, results, c.get("life"), c.get("disagreement"))
+    approval = _approval(rec, valued, c, results, pack)  # 6. who approves (P9-3.15)
     return Decision(
         case_id=str(c.get("id")), pack_key=pack.key, pack_version=pack.version, flow_ver=flow_ver.ver,
         route=rec["id"] if rec else None, net=float(rec["net"]) if rec else 0.0, routes=routes, recommendation=rec,
@@ -504,9 +512,22 @@ def decide_case(
         required_steps=list(c.get("requiredSteps") or []),
         hold=c.get("gateHold"), trace=TRACE, as_of=as_of, extra=_extra(rec, valued.figures),
         case_fields={k: c[k] for k in GATE_KEYS if k in c}, ticket=_ticket_of(valued.ticket, rec),
+        approval=approval,
         approvals=_approvals(valued, rec),
         evidence=_evidence(valued, rec, pack, as_of),
     )  # fmt: skip
+
+
+def _approval(
+    rec: Route | None, valued: _Valued, c: Mapping[str, Any], results: Sequence[GateResult], pack: Pack
+) -> dict[str, Any] | None:
+    """A tool return's route for approval (`tool_approval.route_for_approval`): None for any other decision."""
+    if not valued.values or rec is None:
+        return None
+    best = next((v for v in valued.values if v["k"] == rec["id"]), None)
+    conf = tool_approval.confidence_of(c.get("life"), pack)
+    r = tool_approval.route_for_approval(best, c, conf, results, pack)
+    return {"kind": r.kind, "role": r.role, "reasons": r.reasons, "holds": list(r.holds), "confidence": conf}
 
 
 def _evidence(valued: _Valued, rec: Route | None, pack: Pack, as_of: datetime | None = None) -> list[str]:
@@ -552,8 +573,14 @@ def write_back(case: MutableMapping[str, Any], d: Decision) -> None:
     if d.rules_applied or d.waived or d.preferred:
         case.update(rulesApplied=d.rules_applied, rulesWaived=d.waived, preferred=d.preferred)
     case.pop("approvalHolds", None)
-    for k in ("approvalChecks", "evidenceLines"):
+    for k in ("approvalRoute", "decisionConfidence", "approvalChecks", "evidenceLines"):
         case.pop(k, None)
+    if d.approval is not None:  # a tool return: who approves, the holds I-10 and I-11 read, and the confidence they judge on
+        case["approvalRoute"] = {k: d.approval[k] for k in ("kind", "role", "reasons")}
+        if d.approval["holds"]:
+            case["approvalHolds"] = d.approval["holds"]
+        if d.approval["confidence"] is not None:
+            case["decisionConfidence"] = d.approval["confidence"]
     if d.approvals:  # a used car's approval limits (P9-9.11): the results, and the ones that hold the decision
         case["approvalChecks"] = [dict(a) for a in d.approvals]
         if held := [dict(a) for a in d.approvals if not a["passed"]]:
@@ -569,5 +596,11 @@ def write_back(case: MutableMapping[str, Any], d: Decision) -> None:
         by_n = {ln["n"]: ln for ln in d.ticket["lines"]}
         for line in sd["lines"]:
             line["options"], line["best"] = by_n[line["n"]]["options"], by_n[line["n"]]["best"]
+        if "batch" in d.ticket:  # a batch: the split, its totals and each line's chosen option (P9-4.8)
+            sd["split"] = {
+                "counts": d.ticket["batch"]["split"],
+                "totals": d.ticket["batch"]["totals"],
+                "lines": d.ticket["batch"]["lines"],
+            }
         if d.ticket["holds"]:
             case["approvalHolds"] = d.ticket["holds"]

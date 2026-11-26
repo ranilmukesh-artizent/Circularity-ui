@@ -7,8 +7,9 @@ that adds a library fills in its pinned version.
 |---|---|---|---|---|---|---|
 | pydantic-ai | PyPI | MIT | 2.73.0 (`pydantic-ai-slim[groq]`, installed at run setup) | P9-2.2 | agent loop behind the AgentLoop port | pending |
 | zen-engine | PyPI | MIT (GoRules) | 2.1.7 (`backend/requirements.in`; 2.1.8 is under two weeks old) | P9-4.2 | decision-table evaluator (GoRules ZEN) | pending |
-| lightgbm | PyPI | MIT | set by the adding task | P9-6.9 | device price model (quantile boosters) | pending |
-| mapie | PyPI | BSD-3-Clause | set by the adding task | P9-6.9 | conformal intervals around the price model | pending |
+| lightgbm | PyPI | MIT | 4.7.0 (`backend/requirements.in`; the api image also has `libgomp1`) | P9-6.9 | device price model (quantile boosters) | pending |
+| mapie | PyPI | BSD-3-Clause | 1.6.0 (`backend/requirements.in`) | P9-6.9 | conformal intervals around the price model | pending |
+| scikit-learn | PyPI | BSD-3-Clause | 1.9.1 (locked; mapie's and lightgbm's dependency) | P9-6.9 | estimator base classes of the price model; MAPIE needs it | pending |
 | lifelines | PyPI | MIT | 0.30.3 (installed at run setup, with pandas 2.3.3) | P9-3.10 | remaining-life model (Weibull AFT and Cox) | pending |
 | statsforecast | PyPI | Apache-2.0 | set by the adding task | not named by a task yet; set when first needed | demand forecasting (intermittent-demand models) | pending |
 | scipy | PyPI | BSD-3-Clause | set by the adding task | P9-5.3 (first use; see plan note) | `milp` (HiGHS) queue planner; `linear_sum_assignment` matching | pending |

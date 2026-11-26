@@ -32,6 +32,9 @@ are the signed-in person's actions.
     GET /api/screens/agents/models   (plan 8 UI gaps: the Models panel, on the Agents page and the Modeler)
         base       the base predictor's model version (FormulaPredictor.model_version, "v1.3")
         active     {template: id of its active calibration model, or null} for every template
+        activeRatedLife  the id of the active remaining-life model (kind rated_life, P9-3.10), or null
+        activePrice      the id of the active device price model (kind price, P9-6.9), or null; its metrics
+                         carry mae, mape, coverage (against target 0.8), n_train, n_test and window
         models     every fitted model (table model_version), newest first: [{id, template, status, created_by,
                    approved_by, created_at, factors: [{route, cls, factor}], metrics: {n, active_id, mae_active,
                    mae_candidate}, proposal: {by, at} | null, blocks: {propose, promote}}]
@@ -166,7 +169,7 @@ def page(p: Principal, s: Session) -> dict[str, Any]:
 
 
 MODELS_SQL = (
-    "SELECT id, template, factors, status, created_by, approved_by, metrics, created_at FROM model_version "
+    "SELECT id, template, factors, status, created_by, approved_by, metrics, created_at, kind FROM model_version "
     "ORDER BY created_at DESC, id DESC"
 )
 
@@ -177,7 +180,11 @@ def models(p: Principal, s: Session) -> dict[str, Any]:
         raise HTTPException(403, {"code": "out_of_scope", "message": "Not available for the Finance view."})
     can_fit, can_promote = p.can("manageFlows"), p.can("approve.flows")
     rows = [ModelRow(*r) for r in s.execute(text(MODELS_SQL))]
-    active = {t: None for t in TEMPLATE_KEYS} | {m.template: m.id for m in rows if m.status == "active"}
+    active = {t: None for t in TEMPLATE_KEYS} | {
+        m.template: m.id for m in rows if m.status == "active" and m.kind == "calibration"
+    }
+    rated = next((m.id for m in rows if m.status == "active" and m.kind == "rated_life"), None)
+    price = next((m.id for m in rows if m.status == "active" and m.kind == "price"), None)
     out = []
     for m in rows:
         j = model_json(m)
@@ -191,7 +198,15 @@ def models(p: Principal, s: Session) -> dict[str, Any]:
         out.append({**j, "metrics": metrics, "proposal": proposal_of(m), "blocks": blocks})
     can = {"fit": can_fit, "promote": can_promote}
     acc = _repair_accuracy(p, s)
-    return {"base": FormulaPredictor.model_version, "active": active, "models": out, "can": can, "repairAccuracy": acc}
+    return {
+        "base": FormulaPredictor.model_version,
+        "active": active,
+        "activeRatedLife": rated,
+        "activePrice": price,
+        "models": out,
+        "can": can,
+        "repairAccuracy": acc,
+    }
 
 
 def _repair_accuracy(p: Principal, s: Session) -> dict[str, Any]:

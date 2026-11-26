@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from di.services.engine.calibration import Key
 
-_COLS = "id, template, factors, status, created_by, approved_by, metrics, created_at"
+_COLS = "id, template, factors, status, created_by, approved_by, metrics, created_at, kind"
 
 
 @dataclass(frozen=True)
@@ -23,6 +23,7 @@ class ModelRow:
     approved_by: str | None
     metrics: dict[str, Any]
     created_at: datetime
+    kind: str = "calibration"  # calibration, rated_life ... (migration 0042)
 
     def as_factors(self) -> dict[Key, float]:
         return {(self.template, f["route"], f["cls"]): float(f["factor"]) for f in self.factors}
@@ -37,13 +38,17 @@ def get(s: Session, model_id: str, for_update: bool = False) -> ModelRow | None:
     return _one(s, "id = :i" + (" FOR UPDATE" if for_update else ""), {"i": model_id})
 
 
-def active(s: Session, template: str) -> ModelRow | None:
-    return _one(s, "template = :t AND status = 'active'", {"t": template})
+def active(s: Session, template: str, kind: str = "calibration") -> ModelRow | None:
+    return _one(s, "template = :t AND kind = :k AND status = 'active'", {"t": template, "k": kind})
 
 
-def candidate(s: Session, template: str) -> ModelRow | None:
+def candidate(s: Session, template: str, kind: str = "calibration") -> ModelRow | None:
     """The newest candidate of the template, if any."""
-    return _one(s, "template = :t AND status = 'candidate' ORDER BY created_at DESC, id DESC LIMIT 1", {"t": template})
+    return _one(
+        s,
+        "template = :t AND kind = :k AND status = 'candidate' ORDER BY created_at DESC, id DESC LIMIT 1",
+        {"t": template, "k": kind},
+    )
 
 
 def of_template(s: Session, template: str) -> list[ModelRow]:

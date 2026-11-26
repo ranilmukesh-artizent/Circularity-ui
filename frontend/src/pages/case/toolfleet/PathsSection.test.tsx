@@ -4,7 +4,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { PathView } from '../../../api/toolFleet';
-import { PathsSection, netLine, tagsOf } from './PathsSection';
+import { PathsSection, co2Text, netLine, tagsOf } from './PathsSection';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -58,6 +58,14 @@ describe('PathsSection', () => {
     const t = render().querySelector('[data-testid="tf-path-refurb"]')?.textContent ?? '';
     expect(t).toContain('Blocked');
     expect(t).toContain('Grade A needs only a clean and inspect');
+  });
+  it('shows the CO2e avoided with its factor source on a ready path only (P9-3.14, TF-13)', () => {
+    const rel = { ...PATHS[0], co2: 83.5, co2Source: 'sample factors tf-co2-2026.1' };
+    expect(co2Text(rel)).toBe('CO2e avoided 83.5 kg · sample factors tf-co2-2026.1');
+    expect(co2Text(PATHS[0])).toBeNull();
+    act(() => root.render(<PathsSection paths={[rel, { ...PATHS[1], co2: 70, co2Source: 'x' }]} best="release" />));
+    expect(host.querySelector('[data-testid="tf-path-release-co2"]')?.textContent).toBe('CO2e avoided 83.5 kg · sample factors tf-co2-2026.1');
+    expect(host.querySelector('[data-testid="tf-path-refurb-co2"]')).toBeNull();
   });
   it('renders nothing without paths', () => {
     act(() => root.render(<PathsSection paths={[]} />));

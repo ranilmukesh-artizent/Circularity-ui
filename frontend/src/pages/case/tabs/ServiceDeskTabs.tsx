@@ -117,6 +117,7 @@ export function OptionsTab({ c }: TabProps) {
         );
       })}
       {v.approval && <p className="stpad">{approvalLine(v.approval)}</p>}
+      {c.exec?.terms && <p className="stpad">{termsLine(c.exec.terms)}</p>}{/* the terms of an approved plan (P9-4.9) */}
     </>
   );
 }
@@ -220,3 +221,46 @@ export function CreditLeverTab({ c }: TabProps) {
 }
 
 const optionName = (k: string) => (k === 'fix' ? 'Fix and return' : k === 'swap' ? 'Covered swap' : 'Upgrade');
+
+// The Batch tab (P9-4.8): its own imports sit with it, so the block stands alone.
+import { batchTotalsLine, splitLine, termsLine } from '../serviceDesk';
+
+/** The Batch tab of a batch case (P9-4.8, SD-07): the split ("Upgrade 9 · Fix 11 · Covered swap 2"), the totals of the chosen
+ * options for the customer and the margin, and a table of the lines with each line's option and reason; a line opens to its
+ * options. The split, the totals and every reason are the server's, computed per tool, never a model's. */
+export function BatchTab({ c }: TabProps) {
+  const v = serviceDeskView(c);
+  const sp = v?.split;
+  if (!v || !sp) return null;
+  const cur = v.lines.find((l) => l.estimate)?.estimate?.currency ?? '';
+  const byN = new Map(v.lines.map((l) => [l.n, l]));
+  return (
+    <>
+      <Kv rows={[
+        ['Split', splitLine(sp.counts) || 'No option can be offered yet'],
+        ['Totals', batchTotalsLine(sp.totals, cur)],
+      ]} />
+      <table className="stpad" aria-label="The lines of the batch and the option each takes">
+        <thead><tr><th>#</th><th>Serial</th><th>Option</th><th>Why</th><th>Options</th></tr></thead>
+        <tbody>
+          {sp.lines.map((x) => {
+            const l = byN.get(x.n);
+            return (
+              <tr key={x.n}>
+                <td>{x.n}</td><td>{x.serial}</td><td>{x.name ?? 'None yet'}</td><td>{x.why}</td>
+                <td>
+                  {l?.options && (
+                    <details>
+                      <summary>Options</summary>
+                      {optionOrder(l.options, l.best).map((o) => <div key={o.k}>{o.name}: {optionSummary(o, cur)}</div>)}
+                    </details>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </>
+  );
+}

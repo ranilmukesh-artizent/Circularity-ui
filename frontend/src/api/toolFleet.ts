@@ -80,6 +80,10 @@ export interface PathLine {
 
 /** One of the six paths valued against the live named demand (P9-3.12, TF-07); `dest` is the named order it fills. */
 export interface PathView {
+  /** kg CO2e avoided against buying new (P9-3.14, TF-13), its formula and the factor set it used; null without a factor. Information only: never in `net`. */
+  co2?: number | null;
+  co2Formula?: string | null;
+  co2Source?: string | null;
   k: string;
   name: string;
   ok: boolean;
@@ -91,6 +95,38 @@ export interface PathView {
   why: string;
   lines: PathLine[];
   dest: { id: string; who: string; kind?: string } | null;
+}
+
+/** The org's open tool returns planned together, as this return sees it (P9-3.13, TF-08); headline is the order it takes or the reason it lost one. */
+export interface PlanView {
+  /** the named order the plan gives this return, null when none */
+  holds: string | null;
+  headline: string | null;
+  /** the orders this return competes for, and a short kind for each ('lease renewal', 'sales order' ...) */
+  contested: string[];
+  kinds: Record<string, string>;
+  /** the orders this return wanted and the plan gave to another case, with what that case gains from it */
+  lost: { order: string; to: string; gain: number }[];
+  /** the queue's total net, first come first served's, and the plan's gain over it */
+  total: number;
+  fcfs: number;
+  gain: number;
+  slots: number;
+  refurb_n: number;
+}
+
+/** Who approves the decision (P9-3.15, TF-09): the standing policy within its limits, or a person (role and reasons); `text` is the sentence to show. */
+export interface ApprovalView {
+  kind: 'policy' | 'person';
+  role: string | null;
+  /** the app role the role's approval item routes to (pack roles) */
+  appRole: string | null;
+  reasons: string[];
+  holds: { id: string; reason: string; owner: string }[];
+  confidence: number | null;
+  policy: { id: string; ver: number | null; owner: string | null } | null;
+  by: string | null;
+  text: string;
 }
 
 export interface ToolFleetView {
@@ -112,8 +148,8 @@ export interface ToolFleetView {
   second?: string | null;
   standard?: string;
   uplift?: number | null;
-  plan: unknown | null;
-  approval: unknown | null;
+  plan: PlanView | null;
+  approval: ApprovalView | null;
   followThrough: unknown | null;
 }
 

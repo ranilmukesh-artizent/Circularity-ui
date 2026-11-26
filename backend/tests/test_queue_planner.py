@@ -21,6 +21,8 @@ from di.services.modeler.valuers import tool_fleet
 from tests import starting
 from tests.helpers import call, client, h, tool_case_facts
 
+pytestmark = pytest.mark.usefixtures("no_synced_demand")
+
 ORDER = {"kind": "lease", "id": "L-1", "renew": True, "who": "Acme Rentals", "site": "Houston", "need": 9, "rate": 900,
          "term": 24, "what": "Fleet contract L-1 renews", "when": "renewal confirmed"}  # fmt: skip
 NAMED = {

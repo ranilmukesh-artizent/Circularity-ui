@@ -1,8 +1,13 @@
 """Calibration model actions (plan 8, MVP-12.2; story M): fit a candidate on the confirmed outcomes, promote it.
 
-    model.fit      act     {template?}  a candidate model of the template (default industrial): the calibration factors
+    model.fit      act     {template?, kind?}  a candidate model of the template (default industrial): the calibration factors
                                         (di.services.engine.calibration.fit) and, as metrics, the mean absolute error
-                                        of the active model vs the candidate on the template's outcome rows
+                                        of the active model vs the candidate on the template's outcome rows. `kind`
+                                        `rated_life` (template tool_fleet; plan 9, P9-3.10) fits instead the components'
+                                        Weibull remaining life on the teardown verdicts of the actor's org units
+                                        (di.services.models.rul_fit, imported only here); `price` (template device; plan 9,
+                                        P9-6.9) fits the device price model, three conformalised LightGBM quantile boosters
+                                        (di.services.models.price) on the settled sales and the feed; `calibration` is the default
     model.propose  act     {id}         a person proposes a candidate for promotion (plan 8 UI gaps): stored as
                                         metrics.proposal {by, at}; manageFlows
     model.promote  commit  {id}         a proposed candidate -> active; the active model it replaces is retired
@@ -19,6 +24,7 @@ too). `promote_block` and `propose_block` say why a person may not, for the guar
 (`intake_predictor`); the cases opened from the engine's book keep their routes.
 """
 
+import dataclasses
 import json
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -40,6 +46,7 @@ from di.services.engine.predictor import Predictor
 from di.services.modeler.templates import TEMPLATE_KEYS
 
 MAKER_CHECKER = "Maker-checker: you created this model, so you cannot promote it."
+FIT_KINDS = ("calibration", "rated_life", "price")
 PROPOSER_CHECKER = "Maker-checker: you proposed this model, so you cannot promote it."
 
 ACTIONS.setdefault(
@@ -47,7 +54,8 @@ ACTIONS.setdefault(
     ActionDef(
         id="model.fit", title="Fit a model candidate", risk="act", perm="manageFlows", scope="none",
         verb="fit models", desc="Fit a candidate calibration model on the confirmed outcomes. It is used only once "
-        "a different person promotes it.", input={"template": {"req": False, "t": "string"}},
+        "a different person promotes it.",
+        input={"template": {"req": False, "t": "string"}, "kind": {"req": False, "t": "string"}},
     ),
 )  # fmt: skip
 ACTIONS.setdefault(
@@ -112,9 +120,11 @@ def _mae(rows: Sequence[OutcomeRow], factors: Mapping[Key, float]) -> float | No
 
 
 def model_json(m: ModelRow) -> dict[str, Any]:
+    # a price model's artefact (its boosters as text) stays in the table: the screens and actions send its metrics
+    factors = [] if m.kind == "price" else m.factors
     return {
-        "id": m.id, "template": m.template, "factors": m.factors, "status": m.status, "created_by": m.created_by,
-        "approved_by": m.approved_by, "metrics": m.metrics, "created_at": m.created_at.isoformat(),
+        "id": m.id, "template": m.template, "factors": factors, "status": m.status, "created_by": m.created_by,
+        "approved_by": m.approved_by, "metrics": m.metrics, "created_at": m.created_at.isoformat(), "kind": m.kind,
     }  # fmt: skip
 
 
@@ -122,12 +132,123 @@ def model_json(m: ModelRow) -> dict[str, Any]:
 @guard("model.fit")
 def fit_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:  # noqa: ARG001 - the guard signature
     t = i.get("template") or "industrial"
+    kind = i.get("kind") or "calibration"
+    if kind not in FIT_KINDS:
+        return "validation_error", f"The kind is one of {', '.join(FIT_KINDS)}."
+    if kind == "rated_life" and t != "tool_fleet":
+        return "validation_error", "A rated-life model is fitted for the tool_fleet template."
+    if kind == "price" and t != "device":
+        return "validation_error", "A price model is fitted for the device template."
     return None if t in TEMPLATE_KEYS else ("validation_error", f"The template is one of {', '.join(TEMPLATE_KEYS)}.")
+
+
+def _insert_candidate(
+    ctx: CallContext, template: str, kind: str, factors: list[dict[str, Any]], metrics: dict[str, Any]
+) -> dict[str, Any]:
+    mid = repo.next_id(ctx.session)
+    ctx.session.execute(
+        text(
+            "INSERT INTO model_version (id, template, factors, status, created_by, metrics, created_at, kind) "
+            "VALUES (:i, :t, CAST(:f AS jsonb), 'candidate', :by, CAST(:m AS jsonb), :now, :k)"
+        ),
+        {
+            "i": mid,
+            "t": template,
+            "f": json.dumps(factors),
+            "by": ctx.actor.id,
+            "m": json.dumps(metrics),
+            "now": ctx.now,
+            "k": kind,
+        },  # fmt: skip
+    )
+    m = repo.get(ctx.session, mid)
+    if m is None:  # not reached: inserted above
+        raise ActionError("not_found", f"No model {mid}.")
+    return model_json(m)
+
+
+def _fit_rated_life(ctx: CallContext) -> dict[str, Any]:
+    """The remaining-life candidate (P9-3.10): a Weibull per component and class on the teardown verdicts of the org units the
+    actor may see (a serial no contract names is depot-wide history, visible to all). Components whose repair-log name the pack
+    maps (`repair_aliases`) are stored under the pack's name. lifelines loads here only."""
+    from di.repositories import teardowns
+    from di.services.modeler.valuers import tool_inputs
+    from di.services.models.rul import TeardownRow
+    from di.services.models.rul_fit import fit_rated_life
+
+    params = tool_inputs.LIFE_PARAMS
+    acct = ctx.actor.account
+    by_cls: dict[str, list[TeardownRow]] = {}
+    for cls, r in teardowns.rows(ctx.session):
+        if cls not in params["classes"]:
+            continue
+        if r.org is not None and (acct is None or not policy.tenant_ok(acct, r.org, ctx.actor.ctx)):
+            continue  # a contract of an org the actor may not see
+        alias = (params.get("repair_aliases") or {}).get(cls) or {}
+        by_cls.setdefault(cls, []).append(dataclasses.replace(r, component=alias.get(r.component, r.component)))
+    factors: list[dict[str, Any]] = []
+    classes: dict[str, Any] = {}
+    errs: list[tuple[float, int]] = []
+    conc: list[tuple[float, int]] = []
+    for cls, rows in sorted(by_cls.items()):
+        c = fit_rated_life(rows, cls)
+        factors += [{"cls": cls, **f} for f in c.components]
+        classes[cls] = {
+            "n": c.n, "held_out": c.held_out, "mae": c.mae, "concordance": c.concordance, "skipped": c.skipped, "notes": c.notes,
+        }  # fmt: skip
+        if c.mae is not None:
+            errs.append((c.mae, c.held_out))
+        if c.concordance is not None:
+            conc.append((c.concordance, c.held_out))
+
+    def mean(xs: list[tuple[float, int]]) -> float | None:
+        return sum(x * w for x, w in xs) / sum(w for _, w in xs) if xs else None
+
+    act = repo.active(ctx.session, "tool_fleet", "rated_life")
+    mae = mean(errs)
+    metrics = {
+        "n": sum(len(v) for v in by_cls.values()), "active_id": act.id if act else None, "mae_active": None, "mae_candidate": mae,
+        "kind": "rated_life", "mae": mae, "concordance": mean(conc), "held_out": sum(w for _, w in errs), "by_class": classes,
+    }  # fmt: skip
+    return _insert_candidate(ctx, "tool_fleet", "rated_life", factors, metrics)
+
+
+def _fit_price(ctx: CallContext) -> dict[str, Any]:
+    """The device price candidate (P9-6.9): the settled sales and the feed as of today, fitted and conformalised. The artefact
+    is stored as `factors[0]["artefact"]`; the metrics are what the Models panel shows. LightGBM and MAPIE load here only."""
+    from di.services.models import price_rows
+    from di.services.models.price import MIN_ROWS, TOO_FEW, PriceModel
+
+    rows = price_rows.training_rows(ctx.session, ctx.now.date())
+    if len(rows) < MIN_ROWS:
+        raise ActionError("validation_error", TOO_FEW)
+    model = PriceModel.fit(rows)
+    act = repo.active(ctx.session, "device", "price")
+    mae = model.metrics["mae"]
+    metrics = {
+        "n": len(rows), "active_id": act.id if act else None, "mae_active": (act.metrics or {}).get("mae") if act else None,
+        "mae_candidate": mae, "kind": "price", **model.metrics,
+    }  # fmt: skip
+    return _insert_candidate(ctx, "device", "price", [{"artefact": model.save()}], metrics)
+
+
+def price_predictor(s: Session, base: Predictor) -> Predictor:
+    """`base`, with the active device price model's band for `channel_price` if a person has promoted one (P9-6.9)."""
+    act = repo.active(s, "device", "price")
+    if act is None or not act.factors:
+        return base
+    from di.services.models.price import ModelPredictor, PriceModel
+
+    return ModelPredictor(base, PriceModel.load(act.factors[0]["artefact"]), act.id)
 
 
 @implement("model.fit")
 def fit_model(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     t = i.get("template") or "industrial"
+    if i.get("kind") == "rated_life":
+        return _fit_rated_life(ctx)
+    if i.get("kind") == "price":
+        return _fit_price(ctx)
     rows = [r for r in outcome_rows(ctx.session) if r["template"] == t]
     factors = fit(rows)
     act = repo.active(ctx.session, t)
@@ -261,7 +382,7 @@ def promote(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     m = repo.get(ctx.session, i["id"], for_update=True)
     if m is None:  # not reached: the guard found it
         raise ActionError("not_found", f"No model {i['id']}.")
-    old = repo.active(ctx.session, m.template)
+    old = repo.active(ctx.session, m.template, m.kind)
     if old is not None:
         ctx.session.execute(text("UPDATE model_version SET status = 'retired' WHERE id = :i"), {"i": old.id})
     ctx.session.execute(

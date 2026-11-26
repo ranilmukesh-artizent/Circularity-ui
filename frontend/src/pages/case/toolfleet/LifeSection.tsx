@@ -38,7 +38,7 @@ export function LifeSection({ life, disagreement = null }: { life: LifeView | nu
               <td>{c.used_hours}</td>
               <td>{c.consumed_pct}%</td>
               <td>{c.rul_pct}%</td>
-              <td>{c.source === 'plm' ? 'PLM' : `Pack table ${life.table_version}`}</td>
+              <td>{c.source === 'plm' ? 'PLM' : c.source === 'model' ? `Model ${life.table_version}` : `Pack table ${life.table_version}`}</td>
             </tr>
           ))}
         </tbody>

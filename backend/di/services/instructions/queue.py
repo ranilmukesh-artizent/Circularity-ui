@@ -105,6 +105,11 @@ def queue(s: Session, c: store.Case, step: int) -> int | None:
             "at": clock.now(),
         },
     ).scalar_one()
+    if x.get("terms"):  # a service ticket's instruction carries the market terms (P9-4.9)
+        s.execute(
+            text("UPDATE instruction SET detail = detail || jsonb_build_object('terms', CAST(:t AS jsonb)) WHERE id = :i"),
+            {"t": _json(x["terms"]), "i": iid},
+        )
     jobs.enqueue(s, "instruction.send", {"instruction_id": iid})
     from di.services.actions.org_pilot import is_pilot  # plan 8 MVP-10.3; lazy: the actions import this package
 
@@ -133,7 +138,11 @@ def queue_first(s: Session, c: store.Case) -> int | None:
 
 def on_acknowledged(s: Session, c: store.Case, step: int, ref: str) -> None:
     """In adapter.acknowledge's transaction: the step's row is acknowledged with the system's reference, and the next
-    step is queued."""
+    step is queued. A service ticket's `takeback` first opens the Returns cases of the old tools (P9-4.9)."""
+    if c.get("serviceDesk") and c["exec"]["steps"][step]["k"] == "takeback":
+        from di.services.service_desk import follow_through as sd_follow_through  # lazy: it reads the case store and the intake
+
+        sd_follow_through.on_takeback(s, c, step)
     follow_through.on_confirmed(s, c, step, ref)  # a used car's last confirmation closes the route owner's timer
     if not enabled():
         return

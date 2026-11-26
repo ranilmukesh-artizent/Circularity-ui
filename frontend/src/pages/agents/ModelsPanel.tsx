@@ -4,6 +4,7 @@ import {
   type ModelVersion,
 } from '../../api/agents'; // prettier-ignore
 import { barText } from './repairAccuracy';
+import { medianLines, qualityLine, skippedLines } from './ratedLife';
 import { fmtDateYear, money } from '../../api/format';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
@@ -13,7 +14,9 @@ const TEMPLATE_LABEL: Record<string, string> = { industrial: 'Industrial', tool_
 const label = (t: string) => TEMPLATE_LABEL[t] ?? t;
 const err = (v: number | null) => (v == null ? '—' : money(v));
 /** A price model's template, or a stage calibration's pack and stage (P9-2.9). */
-const templateLabel = (t: string) => {
+const templateLabel = (t: string, kind?: string) => {
+  if (kind === 'rated_life') return `${label(t)} · remaining life`;
+  if (kind === 'price') return `${label(t)} · price`;
   const sc = stageCalibrationOf(t);
   return sc ? `${label(sc.pack)} · ${stageLabel(sc.stage)} confidence` : label(t);
 };
@@ -42,6 +45,14 @@ export function ModelsPanel() {
     const r = await action.run(() => fitModel(template));
     if (r.ok) toast(`Candidate ${r.output.id} fitted on ${r.output.metrics.n} confirmed outcomes.`);
   };
+  const fitLife = async () => {
+    const r = await action.run(() => fitModel('tool_fleet', 'rated_life'));
+    if (r.ok) toast(`Candidate ${r.output.id} fitted on ${r.output.metrics.n} teardown verdicts.`);
+  };
+  const fitPrice = async () => {
+    const r = await action.run(() => fitModel('device', 'price'));
+    if (r.ok) toast(`Candidate ${r.output.id} fitted on ${r.output.metrics.n} settled sales and feed prices.`);
+  };
   const propose = async (m: ModelVersion) => {
     const r = await action.run(() => proposeModel(m.id));
     if (r.ok) toast(`${m.id} is proposed. A different person approves the promotion.`);
@@ -59,6 +70,8 @@ export function ModelsPanel() {
           {templates.map((t, k) => (
             <span key={t}>{k > 0 && ' · '}{label(t)}: {s.active[t] ? <b>{s.active[t]}</b> : 'no calibration'}</span>
           ))}
+          {' · '}Tool remaining life: {s.activeRatedLife ? <b>{s.activeRatedLife}</b> : 'pack table'}
+          {' · '}Device price: {s.activePrice ? <b>{s.activePrice}</b> : 'pack index table'}
         </span>
       </div>
       <div className="panel">
@@ -78,6 +91,12 @@ export function ModelsPanel() {
               <select id="ag-mdl-stage" value={stage} onChange={(e) => setStage(e.target.value)}>
                 {STAGE_OPTIONS.map((t) => <option key={t} value={t}>{stageLabel(t)}</option>)}
               </select>
+              {template === 'tool_fleet' && (
+                <button className="btn sm" id="ag-mdl-fit-life" disabled={action.pending} onClick={fitLife} title="Fits each component's Weibull remaining life on the depot's teardown verdicts; it values tool life only once a different person promotes it.">Fit remaining life</button>
+              )}
+              {template === 'device' && (
+                <button className="btn sm" id="ag-mdl-fit-price" disabled={action.pending} onClick={fitPrice} title="Fits a price per channel with a P10 to P90 range on the settled sales and the weekly feed (at least 300 rows); it prices devices only once a different person promotes it.">Fit price model</button>
+              )}
               <button className="btn sm" id="ag-mdl-fit-stage" disabled={action.pending} onClick={fitStage} title="Needs 20 decided outcomes of the stage; until then it keeps its raw confidence (not calibrated yet).">Fit stage calibration</button>
             </div>
           )}
@@ -87,7 +106,7 @@ export function ModelsPanel() {
             <table className="t static">
               <thead>
                 <tr>
-                  <th>Model</th><th>Template</th><th>Status</th><th className="r">Outcomes</th><th className="r">Error, current</th>
+                  <th>Model</th><th>Template</th><th>Status</th><th className="r">Outcomes or verdicts</th><th className="r">Error, current</th>
                   <th className="r">Error, this model</th><th>Fitted by</th><th>Promotion</th><th></th>
                 </tr>
               </thead>
@@ -96,13 +115,13 @@ export function ModelsPanel() {
                   <tr key={m.id} data-model={m.id}>
                     <td>
                       <b className="mono">{m.id}</b>
-                      <div className="note">{describe(m)}</div>
+                      <ModelNote m={m} />
                     </td>
-                    <td>{templateLabel(m.template)}</td>
+                    <td>{templateLabel(m.template, m.kind)}</td>
                     <td><span className={'chip ' + STATUS_CHIP[m.status]}>{m.status}</span></td>
                     <td className="r num">{m.metrics.n}</td>
-                    <td className="r num" title="Mean absolute error of the active model's net on the outcomes">{err(m.metrics.mae_active)}</td>
-                    <td className="r num" title="Mean absolute error of this model's net on the outcomes">{err(m.metrics.mae_candidate)}</td>
+                    <td className="r num" title="Mean absolute error of the active model's net on the outcomes">{m.kind === 'rated_life' ? '—' : err(m.metrics.mae_active)}</td>
+                    <td className="r num" title="Mean absolute error of this model's net on the outcomes">{m.kind === 'rated_life' ? <span title="Run hours, on the last 3 months held out">{qualityLine(m)}</span> : err(m.metrics.mae_candidate)}</td>
                     <td className="nowrap">{m.created_by}<div className="note">{fmtDateYear(m.created_at)}</div></td>
                     <td className="nowrap">
                       {m.approved_by ? <>Approved by {m.approved_by}</> : m.proposal ? <>Proposed by {m.proposal.by}<div className="note">{fmtDateYear(m.proposal.at)}</div></> : <span className="note">Not proposed</span>}
@@ -179,6 +198,28 @@ function Buttons({ m, can, busy, onPropose, onPromote }: {
         <button className="btn sm pri" disabled={busy || !!why} title={why ?? undefined} onClick={() => onPromote(m)}>Approve promotion</button>
       )}
       {why && <span className="note">{why}</span>}
+    </div>
+  );
+}
+
+/** A device price model's quality on the newest 20% of rows: MAE, MAPE and the share inside P10 to P90 against its target, and what it learned from. */
+export function priceLine(m: ModelVersion): string {
+  const x = m.metrics;
+  const pct = (v?: number) => (v == null ? '—' : `${Math.round(v * 100)}%`);
+  const win = x.window ? `, ${x.window.from} to ${x.window.to}` : '';
+  return `MAE ${err(x.mae ?? null)}, MAPE ${x.mape == null ? '—' : `${(x.mape * 100).toFixed(1)}%`}, inside the range ${pct(x.coverage)} (target ${pct(x.target ?? 0.8)}); trained on ${x.n_train ?? '—'} rows, tested on ${x.n_test ?? '—'}${win}`;
+}
+
+/** What a model holds: its calibration factors or steps, or, for a remaining-life model, the median hours per component. */
+export function ModelNote({ m }: { m: ModelVersion }) {
+  if (m.kind === 'price') return <div className="note" data-testid="price-note">{priceLine(m)}</div>;
+  if (m.kind !== 'rated_life') return <div className="note">{describe(m)}</div>;
+  const lines = medianLines(m);
+  return (
+    <div className="note" data-testid="rated-life-note">
+      <div>Remaining life, per component: {lines.length ? '' : 'none fitted; every component keeps its current rating'}</div>
+      {lines.map((l) => <div key={l}>{l}</div>)}
+      {skippedLines(m).map((l) => <div key={l}>{l}</div>)}
     </div>
   );
 }

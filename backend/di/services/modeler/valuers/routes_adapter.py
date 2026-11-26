@@ -19,10 +19,11 @@ from di.services.modeler.valuers import service_desk
 from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.tool_fleet import PathValue, ValueLine
 
+_TICKET = frozenset({"fix", "swap", "upgrade", "split", "all_fix", "all_upgrade"})
 # (paths or None for any, line type, label prefixes or None for any) -> term kind; the first match wins.
 _KINDS: tuple[tuple[frozenset[str] | None, str, tuple[str, ...] | None, str], ...] = (
-    (frozenset({"fix", "swap", "upgrade"}), "v", None, "sale"),  # a service ticket's expected margin (P9-4.6)
-    (frozenset({"fix", "swap", "upgrade"}), "c", None, "prep"),
+    (_TICKET, "v", None, "sale"),  # a service ticket's expected margin (P9-4.6), a batch's split and comparisons (P9-4.8)
+    (_TICKET, "c", None, "prep"),
     (frozenset({"release", "refurb"}), "v", ("Fleet renewal", "New fleet order"), "lease"),
     (frozenset({"release", "refurb"}), "v", ("Value when the contract ends", "Sales order"), "sale"),
     (frozenset({"redeploy"}), "v", None, "purchase"),

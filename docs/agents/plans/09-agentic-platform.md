@@ -866,12 +866,12 @@ each story went.
 - [x] P9-3.7 Safety recall check with quarantine
 - [x] P9-3.8 Stale telematics guardrail GR-13
 - [x] P9-3.9 Wear index and remaining life per component
-- [ ] P9-3.10 Remaining life model and teardown calibration
+- [x] P9-3.10 Remaining life model and teardown calibration
 - [x] P9-3.11 Telematics and inspection disagreement exception
 - [x] P9-3.12 Six paths valued against live named demand
-- [ ] P9-3.13 Live queue plan for open tool returns
-- [ ] P9-3.14 CO2e per route and the recycling certificate
-- [ ] P9-3.15 Threshold approvals and standing policy for returns
+- [x] P9-3.13 Live queue plan for open tool returns
+- [x] P9-3.14 CO2e per route and the recycling certificate
+- [x] P9-3.15 Threshold approvals and standing policy for returns
 - [ ] P9-3.16 Key account returns to account manager review
 - [ ] P9-3.17 Follow-through to the executing systems and outcome
 - [ ] P9-3.18 Non-return fees posted from closed lines
@@ -886,8 +886,8 @@ each story went.
 - [x] P9-4.5 Estimate accuracy on held-out repairs
 - [x] P9-4.6 Price fix, covered swap and upgrade options
 - [x] P9-4.7 Re-run options when the fault is posted
-- [ ] P9-4.8 Decide a batch per tool as one split
-- [ ] P9-4.9 Execute the approved option on market terms
+- [x] P9-4.8 Decide a batch per tool as one split
+- [x] P9-4.9 Execute the approved option on market terms
 - [x] P9-4.10 Test a credit before offering it
 - [ ] P9-4.11 Take-up model learned from past offers
 - [ ] P9-4.12 Service desk browser smoke
@@ -909,7 +909,7 @@ each story went.
 - [x] P9-6.6 Blacklist and lock gate for devices
 - [x] P9-6.7 Wipe certificate gate with batch hold
 - [x] P9-6.8 Payout adjustment within 10 percent
-- [ ] P9-6.9 Price model behind the predictor
+- [x] P9-6.9 Price model behind the predictor
 - [ ] P9-6.10 Price per channel with interval and floor
 - [ ] P9-6.11 Wholesale lots sold to the best approved bid
 - [ ] P9-6.12 List, settle and learn from device sales

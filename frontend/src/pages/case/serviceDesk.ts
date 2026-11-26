@@ -86,3 +86,22 @@ export function flipLine(r: { from: OptionKey | null; crossing: { from: OptionKe
 export function peakLine(r: { peak: { credit_pct: number; upgrade: number } | null; currency: string }): string {
   return r.peak ? `Expected margin of the upgrade peaks at ${Math.round(r.peak.credit_pct * 100)}% credit: ${money(r.peak.upgrade, r.currency)}` : 'The upgrade cannot be offered to this tool';
 }
+
+/** "Upgrade 9 · Fix 11 · Covered swap 2": the lines of a batch per chosen option; an option no line took is left out (P9-4.8, SD-07). */
+export function splitLine(counts: Partial<Record<OptionKey, number>>): string {
+  const parts: [OptionKey, string][] = [['upgrade', 'Upgrade'], ['fix', 'Fix'], ['swap', 'Covered swap']];
+  return parts.filter(([k]) => (counts[k] ?? 0) > 0).map(([k, label]) => `${label} ${counts[k]}`).join(' · ');
+}
+
+/** "Customer pays $4,120 · margin $1,236 · expected margin $1,180" over the chosen options of a batch. */
+export function batchTotalsLine(t: { customer_price: number; margin: number; expected_margin: number }, currency: string): string {
+  return `Customer pays ${money(t.customer_price, currency)} · margin ${money(t.margin, currency)} · expected margin ${money(t.expected_margin, currency)}`;
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "Market terms: US parts prices v2, US labour rates v1, US credit rules v1 · valid until 21 Oct 2026" (P9-4.9, SD-05). */
+export function termsLine(t: { refs: string[]; valid_until: string }): string {
+  const [y, m, d] = t.valid_until.split('-').map(Number);
+  return `Market terms: ${t.refs.join(', ')} · valid until ${d} ${MONTHS[m - 1]} ${y}`;
+}

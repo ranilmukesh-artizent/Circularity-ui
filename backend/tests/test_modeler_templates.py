@@ -21,7 +21,9 @@ def test_tool_fleet_pack_matches_golden():
     assert [(p.id, p.name, p.app, p.owner, p.lead_days) for p in t.paths] == [
         (p["key"], p["name"], p["app"], p["owner"], p["lead"]) for p in g["paths"]
     ]
-    assert [(x.id, x.text, x.owner) for x in t.guardrails] == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
+    # GR-14 and GR-15 (repair over $600, young write-off: P9-3.15) are plan 9 approval guardrails; the demo has neither
+    guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-14", "GR-15")]
+    assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
     assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
     assert [d.kind for d in t.dims] == ["set", "set", "set", "set", "max", "min"]
     gr01 = t.guardrails[0]

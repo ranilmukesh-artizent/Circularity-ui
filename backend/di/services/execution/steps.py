@@ -82,6 +82,11 @@ EX_STEP: dict[str, dict[str, Any]] = {
     "holdout": _s("Outcome reported", "ERP · finance", ("INV", "Invoice"), "Finance", 16, "outcome.reported", 65,
                   "outcome posted",
                   "Receipts post in SAP S/4HANA"),
+    # plan 9 P9-4.9: a service ticket's old tool comes back (the Returns case opens on its acknowledgement), then the credit goes
+    "takeback": _s("Take back the old tool", "WMS · inbound receipt", ("RCV", "Receipt"), "Fleet desk", 48, "tool.received", 33,
+                   "old tool received; a Returns case opened for it", "The Fleet desk receives the tool the customer returns"),
+    "credit": _s("Release the credit", "ERP · credit memo", ("CM", "Credit memo"), "Finance", 16, "credit.released", 71,
+                 "credit memo released to the customer", "Finance releases the credit once the old tool is received"),
     # plan 9 P9-6.8: the payout of a received device; sent on its own (di.services.device.payout), never a step of a plan
     "payout": _s("Payout adjusted", "Trade-in platform · payout", ("TI", "Trade-in"), "Customer care", None, "payout.adjusted", 0,
                  "payout adjusted on the trade-in", "Customer care owns the payout the customer is paid"),
@@ -133,6 +138,13 @@ STEP_TPL: dict[str, list[str]] = {
     "offers": ["reserve", "sale", "ship", "fulfil", "receipt"],
     "auction": ["reserve", "sale", "ship", "fulfil", "receipt"],
     "market": ["reserve", "sale", "ship", "fulfil", "receipt"],
+    # a service ticket's options (P9-4.9; the valuer's OPTION_KINDS says the same, tests/test_service_desk_execute.py): a batch's
+    # `split` has no plan of its own, the route carries the union of its lines' kinds (`kinds`, below)
+    "fix": ["repair", "transport", "finance"],
+    "swap": ["reserve", "transport", "takeback", "finance"],
+    "upgrade": ["sale", "transport", "takeback", "credit", "finance"],
+    "all_fix": ["repair", "transport", "finance"],
+    "all_upgrade": ["sale", "transport", "takeback", "credit", "finance"],
 }
 # The demo's ACK_NOTE: notes for steps without a kind (none are created any more; kept for stored plans)
 ACK_NOTE = {
@@ -153,6 +165,8 @@ def ex_kinds(r: dict) -> list[str]:
     """The demo's exKinds: the step kinds for a route."""
     if r.get("steps"):  # a route that names its own steps (the used-car channels, P9-9.17)
         return [str(k) for k in r["steps"]]
+    if r.get("kinds"):  # a service ticket's split: the union of its lines' kinds, each once (P9-4.9)
+        return list(r["kinds"])
     k = list(STEP_TPL.get(r.get("id") or "resale") or STEP_TPL["resale"])
     if r.get("id") == "resale" and r.get("variant") == "refurb":
         k.insert(1, "repair")
@@ -161,6 +175,7 @@ def ex_kinds(r: dict) -> list[str]:
 
 def steps_for(r: dict, done: int = 0) -> list[dict]:
     """The demo's stepsFor(r, done): steps before `done` are done, `done` is active (-1: every step still to do)."""
+    lines, to = r.get("stepLines") or {}, r.get("shipTo")  # a service ticket: the lines each step covers, the site (P9-4.9)
     return [
         {
             "k": k,
@@ -168,6 +183,8 @@ def steps_for(r: dict, done: int = 0) -> list[dict]:
             "sys": EX_STEP[k]["sys"],
             "state": "done" if i < done else "active" if i == done else "todo",
             "ack": None,
+            **({"lines": list(lines[k])} if k in lines else {}),
+            **({"to": to} if to and k == "transport" else {}),
         }
         for i, k in enumerate(ex_kinds(r))
     ]
