@@ -109,6 +109,15 @@ def template(tpl: dict | None, saved: list[dict] | None = None) -> dict | None:
     return t
 
 
+def _template_live(session: Session, tpl: dict | None) -> dict | None:
+    """`template(tpl)` with the sources as they are now: an ingest workflow of a source the Connection Fabric made (not one of
+    the demo's) builds its graph from the live source, as New workflow did when it was created."""
+    from di.services.actions.workflows import live_sources
+
+    with live_sources(session):
+        return template(tpl, templates(session) if tpl and tpl.get("k") == "tpl" else None)
+
+
 # ---------------------------------------------------------------- the collections
 
 
@@ -326,7 +335,7 @@ def workflow_detail(session: Session, workflow_id: str, account_id: str) -> dict
         "saved": saved
         and {"graph": saved["g"], "name": saved["m"]["name"], "owner": saved["m"]["owner"], "trig": saved["m"]["trig"]}
         | {k: saved["m"][k] for k in ("retries", "alert") if k in saved["m"]},  # the run settings, once saved
-        "template": template(tpl, templates(session) if tpl and tpl.get("k") == "tpl" else None),
+        "template": _template_live(session, tpl),
         "history": history(w, [r for _, r in runs]),
         "run_figures": figures(session, w, runs),  # one per history entry: in / out / held of the runs that happened
         "run_counts": c,
