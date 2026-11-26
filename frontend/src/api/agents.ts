@@ -230,7 +230,7 @@ export interface ModelVersion {
   approved_by: string | null;
   created_at: string;
   /** a price model's factors; a stage calibration's steps (`raw` confidence to `cal`ibrated, P9-2.9) */
-  factors: { route?: string; cls?: string; factor?: number; raw?: number; cal?: number; name?: string; shape?: number; scale?: number; median_hours?: number }[];
+  factors: { a?: number; b?: number; route?: string; cls?: string; factor?: number; raw?: number; cal?: number; name?: string; shape?: number; scale?: number; median_hours?: number }[];
   /** n outcome rows (decided outcomes for a stage calibration); the mean absolute error of the active model and of this one on them (null without rows) */
   metrics: {
     n: number; active_id: string | null; mae_active: number | null; mae_candidate: number | null;
@@ -238,9 +238,12 @@ export interface ModelVersion {
     mae?: number | null; concordance?: number | null; by_class?: Record<string, { skipped: { name: string; n: number; reason: string }[] }>;
     /** device price model (P9-6.9), on the newest 20% of rows: mean absolute percentage error, share of prices inside P10 to P90 and its target */
     mape?: number; coverage?: number; target?: number; n_train?: number; n_test?: number; window?: { from: string; to: string };
+    /** take-up model (P9-4.11), on the offers it was fitted on, against the pack's prior (the baseline) */
+    log_loss?: number; brier?: number; baseline_log_loss?: number; baseline_brier?: number; market?: string | null;
+    bands?: { lo: number; hi: number; offered: number; accepted: number; predicted: number }[];
   };
   /** what the model predicts: a calibration of route values (default), the remaining life of tool components, or a device's price per channel */
-  kind?: 'calibration' | 'rated_life' | 'price';
+  kind?: 'calibration' | 'rated_life' | 'price' | 'take_up';
   proposal: { by: string; at: string } | null;
   /** why the signed-in person may not propose or approve it, else null */
   blocks: { propose: string | null; promote: string | null };
@@ -255,6 +258,8 @@ export interface ModelsScreen {
   activeRatedLife: string | null;
   /** the active device price model (kind price, P9-6.9), or null */
   activePrice?: string | null;
+  /** the active take-up model (kind take_up, P9-4.11), or null */
+  activeTakeUp?: string | null;
   models: ModelVersion[];
   can: { fit: boolean; promote: boolean };
   /** the repair estimate replayed on held-out repairs (plan 9, P9-4.5): the newest figures per org unit and tool class */
@@ -293,7 +298,7 @@ export const computeRepairAccuracy = (): Promise<ActionResult<{ families: number
 export const useModels = (): ModelsScreen => cached<ModelsScreen>('/api/screens/agents/models');
 
 /** Fit a candidate calibration model on the confirmed outcomes (manageFlows; model.fit). */
-export const fitModel = (template = 'industrial', kind?: 'rated_life' | 'price'): Promise<ActionResult<ModelVersion>> =>
+export const fitModel = (template = 'industrial', kind?: 'rated_life' | 'price' | 'take_up'): Promise<ActionResult<ModelVersion>> =>
   invoke('model.fit', kind ? { template, kind } : { template });
 
 /**

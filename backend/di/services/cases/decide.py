@@ -72,6 +72,7 @@ from di.services.modeler.templates import Template, template_of_pack
 from di.services.modeler.valuers import (
     APPROVALS,
     VALUERS,
+    battery,
     device,
     fleet_evidence,
     kind_of,
@@ -85,6 +86,7 @@ from di.services.modeler.valuers import (
 from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.routes_adapter import to_routes
 from di.services.modeler.valuers.tool_fleet import PathValue
+from di.services.modeler.valuers.tool_inputs import fleet_params
 
 TRACE = ("gates", "valuation", "queue_plan", "rules", "rank")
 GATE_KEYS = ("gates", "gateHold", "requiredSteps")  # the case keys the gates and the diversions set
@@ -254,7 +256,7 @@ def _tool_fleet(
     stamped = [x | {"gateBlocked": sorted(blocked)} if x["id"] == me else x for x in cases] if blocked else cases
 
     def planned(rs: list[dict[str, Any]], gated: bool = False) -> tool_fleet.Plan:
-        return p.plan(stamped if gated else cases, demand, cap, rules=rs, params=tool_fleet.BASEP)
+        return p.plan(stamped if gated else cases, demand, cap, rules=rs, params=fleet_params(pack))  # GR-03 floor
 
     plan = planned(_rule_dicts(rules), True)
     dec: dict[str, Any] = {**plan["res"][me], "indep": plan["indep"][me], "blk": sorted(plan["blk"][me])}
@@ -271,6 +273,15 @@ def _tool_fleet(
     }
     best = dec.get("best")
     return _Valued(routes, best["k"] if best else None, queue_plan, values=values)
+
+
+def _battery(c: Mapping[str, Any], pack: Pack, t: Template) -> _Valued:
+    """A battery pack (class `BAT`, P9-3.19) is valued by `battery.decide` on the pack's own figures, outside the queue plan:
+    its four paths, the best eligible one, no plan. The gates and the flow's rules act on its routes as on any other."""
+    dec = battery.decide(dict(c.get("valuer") or c), pack.valuer.params["battery"])
+    routes = to_routes(t, dec["all"])
+    _decorate(t, routes)
+    return _Valued(routes, dec["best"]["k"], None, values=dec["all"])
 
 
 def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as_of: datetime | None) -> _Valued | None:
@@ -460,6 +471,8 @@ def decide_case(
     c = _load(case_or_facts, session)
     t = template_of_pack(pack)
     rules = _compliant(t, flow_ver.rules)
+    if pack.valuer.kind == "tool_fleet" and c.get("cls") == battery.CLASS:  # a pack: the facts the G-BAT gates read (P9-3.19)
+        c["battery"] = battery.gate_facts(c)["battery"]
     if pack.valuer.kind == "tool_fleet" and "stage" not in c:  # a sample-world return (P9-3.6)
         have = {r.get("type") for r in c.get("evidenceRecords") or []}
         c["evidenceRecords"] = [
@@ -481,7 +494,11 @@ def decide_case(
     if kind == "industrial":
         valued = _Valued(_industrial(before, session), None)
     elif kind == "tool_fleet":  # 2. valuation, then the queue plan, over the routes the gates left eligible
-        valued = _service_desk(before, t, session, as_of) or _tool_fleet(before, pack, t, rules, session, queue, planner, blocked)
+        valued = _service_desk(before, t, session, as_of) or (
+            _battery(before, pack, t)
+            if before.get("cls") == battery.CLASS
+            else _tool_fleet(before, pack, t, rules, session, queue, planner, blocked)
+        )
     elif kind == "device":
         valued = _device(before, t, rules)
     elif kind == "telecom_network":  # 2. valuation, then the queue plan of the units (P9-10.10)

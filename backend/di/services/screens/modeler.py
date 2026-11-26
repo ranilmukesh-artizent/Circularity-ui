@@ -131,6 +131,7 @@ def _overlay(p: Principal, s: Session, key: str, org: str) -> dict[str, Any]:
              "param": g.param.model_dump() if g.param else None}
             for g in pack.guardrails
         ],
+        "params": [{"path": k, **v.model_dump()} for k, v in pack.customer_layer.params.items()],  # P9-3.20
         "stages": [{"key": k, "label": STAGE_LABELS[k]} for k in STAGE_KEYS],
         "routes": [{"id": r.id, "name": r.name} for r in pack.routes],
         "in_force": {"org_unit_id": live.org_unit_id, "ver": live.ver} if live else None,

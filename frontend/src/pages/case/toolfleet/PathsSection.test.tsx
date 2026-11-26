@@ -4,7 +4,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { PathView } from '../../../api/toolFleet';
-import { PathsSection, co2Text, netLine, tagsOf } from './PathsSection';
+import { PathsSection, co2Text, hazardLine, netLine, tagsOf } from './PathsSection';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -70,5 +70,33 @@ describe('PathsSection', () => {
   it('renders nothing without paths', () => {
     act(() => root.render(<PathsSection paths={[]} />));
     expect(host.innerHTML).toBe('');
+  });
+});
+
+describe('a battery pack (P9-3.19, TF-16)', () => {
+  const BAT = [
+    path('release', { ok: false, net: 0, why: 'State of health 62% is under the 80% this path needs' }),
+    path('redeploy', { ok: false, net: 0, why: 'State of health 62% is under the 70% this path needs' }),
+    path('resell', { ok: false, net: 0, why: 'Damaged battery transport: a damaged pack takes no standard lane and is not resold' }),
+    path('exit', {
+      name: 'Take-back recycling', net: -23,
+      lines: [
+        { type: 'v', label: 'Material credit (cells)', basis: 'recycler quote RQ-77', amt: 9 },
+        { type: 'c', label: 'Hazardous transport (lithium-ion, UN 3480)', basis: 'dangerous goods, flat per pack', amt: 14 },
+        { type: 'c', label: 'Take-back scheme fee', basis: 'producer take-back scheme', amt: 6 },
+      ],
+    }),
+  ];
+  it('says the hazardous-transport line of the take-back only', () => {
+    expect(hazardLine(BAT[3])).toBe('Hazardous transport (lithium-ion, UN 3480): $14');
+    expect(hazardLine(BAT[0])).toBeNull();
+  });
+  it('shows four rows, the take-back with its hazard line and the blocked ones with their reason', () => {
+    act(() => root.render(<PathsSection paths={BAT} best="exit" standard="exit" />));
+    expect(host.querySelectorAll('details')).toHaveLength(4);
+    expect(host.querySelector('[data-testid="tf-path-exit-hazard"]')?.textContent).toBe('Hazardous transport (lithium-ion, UN 3480): $14');
+    expect(host.querySelector('[data-testid="tf-path-exit"]')?.textContent).toContain('Take-back recycling');
+    expect(host.querySelector('[data-testid="tf-path-resell"]')?.textContent).toContain('Damaged battery transport');
+    expect(host.querySelector('[data-testid="tf-path-release-hazard"]')).toBeNull();
   });
 });

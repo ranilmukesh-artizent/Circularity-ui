@@ -4,6 +4,7 @@
     totals(actions) -> {"keep": n, "swap": n, "upgrade": n}                                       the panel's split
     flag(action) -> str | None                                                                    "life estimate low confidence"
     hold_reason(actions) -> "confidence" | None                                           why the decision waits for a person
+    needs(case_id, actions) -> list[Need]                                                 the like-life need of each swap (P9-5.3)
 
 The per-tool choice is the market's decision table `refresh_tool_action` (I-15, P9-4.2), first hit: parts end before the next term
 ends -> `upgrade` to the successor; remaining life under 25% -> `swap`; else `keep`. The thresholds are business rules (BR-C1),
@@ -24,6 +25,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, Literal
 
+from di.services.engine import like_life
 from di.services.modeler.tables import DecisionTableEvaluator, JdmTable
 from di.services.modeler.valuers.tool_life import LifeResult
 
@@ -95,3 +97,10 @@ def flag(a: ToolAction) -> str | None:
 def hold_reason(actions: Sequence[ToolAction]) -> Literal["confidence"] | None:
     """`confidence` when any tool's life estimate is Low confidence: a person decides before the proposal goes on."""
     return "confidence" if any(a.confidence == "Low" for a in actions) else None
+
+
+def needs(case_id: str, actions: Sequence[ToolAction]) -> list[like_life.Need]:
+    """One like-life need for each swapped tool (P9-5.3): id `<case>:<serial>`, the class, and the target life, the median of
+    the tools kept (`like_life.target`). The assignment itself is `like_life.match`, over every open contract together."""
+    tgt = like_life.target(actions)
+    return [like_life.Need(f"{case_id}:{a.serial}", case_id, a.cls, tgt) for a in actions if a.action == "swap"]

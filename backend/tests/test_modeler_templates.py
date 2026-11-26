@@ -24,8 +24,9 @@ def test_tool_fleet_pack_matches_golden():
     # GR-14 and GR-15 (repair over $600, young write-off: P9-3.15) are plan 9 approval guardrails; the demo has neither
     guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-14", "GR-15")]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
-    assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
-    assert [d.kind for d in t.dims] == ["set", "set", "set", "set", "max", "min"]
+    dims = [(d.key, d.label, list(d.values) or None) for d in t.dims if d.key != "keyAccount"]  # keyAccount: P9-3.16, plan 9
+    assert dims == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
+    assert [d.kind for d in t.dims] == ["set", "set", "set", "set", "max", "min", "set"]
     gr01 = t.guardrails[0]
     assert gr01.forbids == (Forbid("release", ("require", "prefer"), {"grade": ("C", "D")}),)
     assert t.actors == tuple((a["id"], a["name"], a["role"]) for a in golden.load("po/templates")["ACTORS"])

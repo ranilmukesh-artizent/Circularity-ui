@@ -947,6 +947,7 @@
   },
   "ParamRange": {
    "additionalProperties": false,
+   "description": "A parameter a pack publishes for a customer overlay (`set_param`). `direction` \"raise_only\": a customer may only move\nit up from the pack's value (P9-3.20); `guardrail` names the guardrail that says so, `owner` who owns the number.",
    "properties": {
     "value": {
      "title": "Value",
@@ -959,6 +960,43 @@
     "max": {
      "title": "Max",
      "type": "number"
+    },
+    "direction": {
+     "anyOf": [
+      {
+       "const": "raise_only",
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Direction"
+    },
+    "guardrail": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Guardrail"
+    },
+    "owner": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Owner"
     }
    },
    "required": [

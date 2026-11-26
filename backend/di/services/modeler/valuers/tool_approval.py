@@ -11,6 +11,7 @@ limits). The reasons, in this order:
     GR-15   a tool younger than the write-off months is recycled or harvested                                -> Service operations
     gate    any gate that failed on the case                                                                -> the gate's owner
     TF-CONF the decision's confidence is under the flow's threshold                                          -> Fleet desk
+    TF-KEY  the customer is a key account (contract evidence, P9-3.16)                                        -> Account manager
 
 The first reason names the role; every reason is a hold (`ApprovalRoute.holds`, `{id, reason, owner}`, the shape of
 `service_desk.approval_holds`) that the decider keeps on the case as `approvalHolds`. The hold policy (I-10) and the standing
@@ -30,6 +31,7 @@ from typing import Any, Literal
 
 from di.services.modeler import gates as gate_catalogue
 from di.services.modeler.pack import Pack
+from di.services.modeler.valuers import tool_inputs
 from di.services.modeler.valuers.tool_fleet import PathValue
 
 REPAIR_LABEL = "Refurbish to certified condition"
@@ -119,6 +121,11 @@ def route_for_approval(
             hold(g.gate_id, g.reason or f"Gate {g.gate_id} failed", _owner(g.gate_id))
     if confidence is not None and confidence < t.confidence:
         hold(CONFIDENCE_HOLD, f"Confidence {confidence:.2f} is under the flow's {t.confidence:.2f}", DESK_ROLE)
+    key = pack.valuer.params.get("approval", {}).get("key_account")
+    if key:  # P9-3.16 (TF-12), after the gates: it adds the account manager, never changes the route ranking
+        is_key, customer = tool_inputs.key_account(case)
+        if is_key:
+            hold(key["id"], f"Key account {customer or 'customer'}: the account manager reviews the return", key["role"])
     if not holds:
         return ApprovalRoute("policy", None, [])
     return ApprovalRoute("person", holds[0]["owner"], [h["reason"] for h in holds], tuple(holds))

@@ -107,7 +107,9 @@ def test_tool_fleet_template_equals_po_golden():
     # GR-14 (repair over $600) and GR-15 (young write-off), P9-3.15: plan 9 approval guardrails, not in the prototype
     guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-14", "GR-15")]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
-    assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
+    # the keyAccount dim (P9-3.16): plan 9, not in the prototype
+    dims = [(d.key, d.label, list(d.values) or None) for d in t.dims if d.key != "keyAccount"]
+    assert dims == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
     for c in golden.load("po/compile_cases")["cases"]:
         flow = {"nodes": c["flow"]["n"], "edges": c["flow"]["e"]}
         rules = compile_flow(t, flow)
@@ -176,11 +178,11 @@ def test_runtime_and_kpis_of_the_two_packs():
     assert [e.id for e in tf.runtime.exception_types] == [
         "not_in_system_of_record", "expected_return_missing", "no_active_contract", "recall_quarantine", "technician_check",
         "grade_wear_disagreement", "repair_over_limit", "writeoff_under_24m", "inspection_backlog", "refresh_late",
-        "stale_telematics",
+        "stale_telematics", "variance_check",  # P9-3.17 (Finance, last)
     ]  # fmt: skip
     assert [e.owner_role for e in tf.runtime.exception_types] == [
         "Planner", "Planner", "Fleet desk", "Quality", "Engineer", "Quality", "Approver", "Planner", "Planner", "Fleet desk",
-        "Quality",
+        "Quality", "Finance",
     ]  # fmt: skip
     assert len(dv.runtime.exception_types) == 10 and len(dv.kpis) == 6  # P9-6.5 quote_mismatch, P9-6.6 blacklist_hit
     assert [k.label for k in tf.kpis][:2] == ["Value recovered per tool", "Days to next use"]

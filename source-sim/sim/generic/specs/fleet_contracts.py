@@ -241,7 +241,7 @@ SPEC = Spec(
     paging=Paging("offset", limit_param="limit", offset_param="offset", items_key="items", next_key="next", total_key="total"),
     resources=(
         Resource("contracts", "/contracts", "contractId", filters=("status", "market")),
-        Resource("lines", "/contract-lines", "lineId", filters=("serial", "contractId", "status"), update=True),
+        Resource("lines", "/contract-lines", "lineId", filters=("serial", "contractId", "status"), update=True, event="fleet.line"),
         Resource("returns", "/returns", "returnId", filters=("serial",), event="fleet.return"),
         Resource("renewals", "/renewals", "demandId", filters=("toolClass",)),
         Resource("history", "/contract-history", "contractId"),

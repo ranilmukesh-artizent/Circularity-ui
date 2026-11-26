@@ -25,7 +25,7 @@ from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, guard, implement
 from di.services.cases import lifecycle, store
 from di.services.engine.jsmath import js_sum
-from di.services.execution import EX_STEP, ack_note, ack_ref, ex_ev, line_actuals, ref_label, value_order
+from di.services.execution import EX_STEP, ack_note, ack_ref, ex_ev, line_actuals, ref_label, value_order, variance
 
 
 def _active(c: store.Case) -> int:
@@ -93,6 +93,8 @@ def outcome_confirm(i: dict[str, Any], ctx: CallContext):
         key,
     )  # fmt: skip
     store.save(ctx.session, c)
+    if c.get("template") == "tool_fleet":  # P9-3.17: a net off the prediction by more than the pack's tolerance goes to Finance
+        variance.check(ctx.session, c, net, r["net"])
     return {"case_id": c["id"], "actual": net, "predicted": r["net"], "variance": net - r["net"]}
 
 

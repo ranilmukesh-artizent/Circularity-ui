@@ -17,6 +17,7 @@ const err = (v: number | null) => (v == null ? '—' : money(v));
 const templateLabel = (t: string, kind?: string) => {
   if (kind === 'rated_life') return `${label(t)} · remaining life`;
   if (kind === 'price') return `${label(t)} · price`;
+  if (kind === 'take_up') return `${label(t)} · take-up`;
   const sc = stageCalibrationOf(t);
   return sc ? `${label(sc.pack)} · ${stageLabel(sc.stage)} confidence` : label(t);
 };
@@ -53,6 +54,10 @@ export function ModelsPanel() {
     const r = await action.run(() => fitModel('device', 'price'));
     if (r.ok) toast(`Candidate ${r.output.id} fitted on ${r.output.metrics.n} settled sales and feed prices.`);
   };
+  const fitTakeUp = async () => {
+    const r = await action.run(() => fitModel('tool_fleet', 'take_up'));
+    if (r.ok) toast(`Candidate ${r.output.id} fitted on ${r.output.metrics.n} past upgrade offers.`);
+  };
   const propose = async (m: ModelVersion) => {
     const r = await action.run(() => proposeModel(m.id));
     if (r.ok) toast(`${m.id} is proposed. A different person approves the promotion.`);
@@ -72,6 +77,7 @@ export function ModelsPanel() {
           ))}
           {' · '}Tool remaining life: {s.activeRatedLife ? <b>{s.activeRatedLife}</b> : 'pack table'}
           {' · '}Device price: {s.activePrice ? <b>{s.activePrice}</b> : 'pack index table'}
+          {' · '}Upgrade take-up: {s.activeTakeUp ? <b>{s.activeTakeUp}</b> : 'pack prior'}
         </span>
       </div>
       <div className="panel">
@@ -93,6 +99,9 @@ export function ModelsPanel() {
               </select>
               {template === 'tool_fleet' && (
                 <button className="btn sm" id="ag-mdl-fit-life" disabled={action.pending} onClick={fitLife} title="Fits each component's Weibull remaining life on the depot's teardown verdicts; it values tool life only once a different person promotes it.">Fit remaining life</button>
+              )}
+              {template === 'tool_fleet' && (
+                <button className="btn sm" id="ag-mdl-fit-takeup" disabled={action.pending} onClick={fitTakeUp} title="Fits how the share of customers taking an upgrade rises with the credit offered, on the last 24 months of offers (at least 200); it replaces the pack's prior only once a different person promotes it.">Fit take-up model</button>
               )}
               {template === 'device' && (
                 <button className="btn sm" id="ag-mdl-fit-price" disabled={action.pending} onClick={fitPrice} title="Fits a price per channel with a P10 to P90 range on the settled sales and the weekly feed (at least 300 rows); it prices devices only once a different person promotes it.">Fit price model</button>
@@ -120,8 +129,8 @@ export function ModelsPanel() {
                     <td>{templateLabel(m.template, m.kind)}</td>
                     <td><span className={'chip ' + STATUS_CHIP[m.status]}>{m.status}</span></td>
                     <td className="r num">{m.metrics.n}</td>
-                    <td className="r num" title="Mean absolute error of the active model's net on the outcomes">{m.kind === 'rated_life' ? '—' : err(m.metrics.mae_active)}</td>
-                    <td className="r num" title="Mean absolute error of this model's net on the outcomes">{m.kind === 'rated_life' ? <span title="Run hours, on the last 3 months held out">{qualityLine(m)}</span> : err(m.metrics.mae_candidate)}</td>
+                    <td className="r num" title="Mean absolute error of the active model's net on the outcomes">{m.kind === 'rated_life' ? '—' : m.kind === 'take_up' ? <span title="Log loss of the pack's prior curve on the same offers">{loss(m.metrics.baseline_log_loss)}</span> : err(m.metrics.mae_active)}</td>
+                    <td className="r num" title="Mean absolute error of this model's net on the outcomes">{m.kind === 'rated_life' ? <span title="Run hours, on the last 3 months held out">{qualityLine(m)}</span> : m.kind === 'take_up' ? <span title="Log loss of the learned curve on the offers it was fitted on">{loss(m.metrics.log_loss)}</span> : err(m.metrics.mae_candidate)}</td>
                     <td className="nowrap">{m.created_by}<div className="note">{fmtDateYear(m.created_at)}</div></td>
                     <td className="nowrap">
                       {m.approved_by ? <>Approved by {m.approved_by}</> : m.proposal ? <>Proposed by {m.proposal.by}<div className="note">{fmtDateYear(m.proposal.at)}</div></> : <span className="note">Not proposed</span>}
@@ -210,9 +219,32 @@ export function priceLine(m: ModelVersion): string {
   return `MAE ${err(x.mae ?? null)}, MAPE ${x.mape == null ? '—' : `${(x.mape * 100).toFixed(1)}%`}, inside the range ${pct(x.coverage)} (target ${pct(x.target ?? 0.8)}); trained on ${x.n_train ?? '—'} rows, tested on ${x.n_test ?? '—'}${win}`;
 }
 
+const loss = (v?: number) => (v == null ? '—' : v.toFixed(3));
+
+/** A take-up model's curve and its error against the pack's prior (log loss, Brier score), then acceptance by credit band. */
+export function takeUpLine(m: ModelVersion): string {
+  const x = m.metrics;
+  const f = m.factors[0];
+  const curve = f ? `credit share x: 1 / (1 + exp(-(${(f.a ?? 0).toFixed(2)} + ${(f.b ?? 0).toFixed(2)} x)))` : 'no curve';
+  return `${curve}; log loss ${loss(x.log_loss)} (prior ${loss(x.baseline_log_loss)}), Brier ${loss(x.brier)} (prior ${loss(x.baseline_brier)}); ${x.market ?? 'all markets'}, ${x.n} offers${x.window ? `, ${x.window.from} to ${x.window.to}` : ''}`;
+}
+
 /** What a model holds: its calibration factors or steps, or, for a remaining-life model, the median hours per component. */
 export function ModelNote({ m }: { m: ModelVersion }) {
   if (m.kind === 'price') return <div className="note" data-testid="price-note">{priceLine(m)}</div>;
+  if (m.kind === 'take_up') {
+    const pct = (v: number) => `${Math.round(v * 100)}%`;
+    return (
+      <div className="note" data-testid="take-up-note">
+        <div>{takeUpLine(m)}</div>
+        {(m.metrics.bands ?? []).map((b) => (
+          <div key={b.lo}>
+            Credit {pct(b.lo)} to {pct(b.hi)}: {b.offered} offered, {b.accepted} taken ({b.offered ? pct(b.accepted / b.offered) : '—'}), {b.predicted.toFixed(0)} expected
+          </div>
+        ))}
+      </div>
+    );
+  }
   if (m.kind !== 'rated_life') return <div className="note">{describe(m)}</div>;
   const lines = medianLines(m);
   return (

@@ -26,6 +26,9 @@ GET /api/screens/toolfleet/{case_id}
     `approval` (P9-3.15) is who approves the decision: `{kind: "policy" | "person", role, appRole, reasons, holds, confidence,
     policy: {id, ver, owner} | null, by, text}`; `text` is "Approved by policy SP-1 v1 (owner admin)" or "Waits for the Fleet
     manager: Repair $702 is over $600 (GR-14)". Null before the case is valued.
+    `followThrough` (P9-3.17) is what happened after the approval: `{ref, slaHours, steps: [{k, label, system, state, status, ack,
+    waiting, error}], outcome}`, `outcome` `{actual, predicted, variance, tolerance, flagged, task}` once Finance confirmed it
+    (`flagged`: above the pack's tolerance, `task` the open Finance item). Null before the approval.
 
 Refuses as `screens.case.case_page` does: 403 out_of_scope without the case pages, 404 not_found for an unknown case (or a
 case of another template), 403 tenant_boundary outside the account's tenants or warehouse.
@@ -43,6 +46,7 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
@@ -51,6 +55,8 @@ from di.repositories import standing_policies
 from di.repositories.context import load_case
 from di.repositories.packs import active_pack
 from di.services.cases import intake, regrade, replan, tool_queue
+from di.services.execution import variance
+from di.services.instructions import queue
 from di.services.modeler import gates as gate_catalogue
 from di.services.modeler.pack import Pack
 from di.services.modeler.valuers import fleet_evidence, tool_carbon, tool_fleet, tool_inputs
@@ -101,6 +107,41 @@ def _approval(s: Session, c: dict[str, Any], pack: Pack) -> dict[str, Any] | Non
         "holds": c.get("approvalHolds") or [], "confidence": c.get("decisionConfidence"), "policy": policy, "by": by or None,
         "text": text,
     }  # fmt: skip
+
+
+def _follow_through(s: Session, c: dict[str, Any], pack: Pack) -> dict[str, Any] | None:
+    """What happened after the approval (P9-3.17, TF-10): `{ref, slaHours, steps: [{k, label, system, state, status, ack, waiting,
+    error}], outcome}`. `status` is the step's instruction row (queued, sent, acknowledged, failed ...), `ack` `{by, ref, at,
+    sim}` once the system acknowledged it (`sim` true: no write in the mocked systems), `waiting` what the send waits
+    for. `outcome` is null until Finance confirms, then `{actual, predicted, variance, tolerance, flagged, task}`: `flagged`
+    when the variance is above the pack's tolerance, `task` the open Finance item's id. Null before the approval."""
+    x = c.get("exec")
+    if not x:
+        return None
+    rows = {r["step"]: r for r in queue.for_case(s, c["id"]) if r["approval_ref"] == x["ref"]}
+    steps = [
+        {
+            "k": st["k"], "label": st["label"], "system": st["sys"], "state": st["state"],
+            "status": (rows.get(i) or {}).get("status"), "ack": st.get("ack"),
+            "waiting": (rows.get(i) or {}).get("waiting_for"), "error": (rows.get(i) or {}).get("last_error"),
+        }
+        for i, st in enumerate(x["steps"])
+    ]  # fmt: skip
+    outcome = None
+    if o := c.get("outcome"):
+        predicted = float((c.get("chosen") or c["recommendation"])["net"])
+        tol = variance.tolerance(predicted, pack)
+        task = s.execute(
+            text("SELECT id FROM work_item WHERE case_id = :c AND type = :t AND status = 'open' ORDER BY id LIMIT 1"),
+            {"c": c["id"], "t": variance.EXCEPTION},
+        ).scalar()
+        gap = float(o["net"]) - predicted
+        outcome = {
+            "actual": o["net"], "predicted": predicted, "variance": round(gap, 2), "tolerance": round(tol, 2),
+            "flagged": abs(gap) > tol, "task": task,
+        }  # fmt: skip
+    sla = ((pack.valuer.params.get("follow_through") or {}).get("sla_hours") or {}).get("default", 48)
+    return {"ref": x["ref"], "slaHours": sla, "steps": steps, "outcome": outcome}
 
 
 PATH_KEYS = ("k", "name", "ok", "net", "gross", "cost", "hold", "why", "lines", "dest")
@@ -215,5 +256,5 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         **paths,
         "plan": _plan(s, c),
         "approval": _approval(s, c, pack),
-        "followThrough": None,
+        "followThrough": _follow_through(s, c, pack),
     }

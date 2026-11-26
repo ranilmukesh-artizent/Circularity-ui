@@ -21,6 +21,8 @@
  *      promotes it; the Models panel lists it as active with its median hours per component. (A case already open keeps
  *      its life until it is valued again; the Overview shows the model id for cases valued after the promotion.)
  *   9  (P9-3.12) CMH-48213 reads six valued paths and the renewal FC-30117-R in the re-issue lines.
+ *   17 (P9-3.20) planner.a is refused a fit-for-use threshold of 40 (GR-03), proposes 60 and cannot approve it; the Approver
+ *      approves; a CMH return with parts at 55% life no longer harvests them. (The overlay stays: the lead resets after.)
  *
  * The UI has no one-click setup for this, so the script calls the app's own actions as the signed-in person (the same
  * ones the Source Map and Workflow Studio call) and reads the result in the pages. Needs the worker (the sync runs on it)
@@ -428,6 +430,45 @@ await step('10 Queue plan: two CMH returns that both want FC-30117-R share it, t
   const shown = (await admin.locator('[data-testid="tf-plan"]').first().innerText()).replace(/\s+/g, ' ');
   if (!/is planned for RT-\d+, where it adds more across the queue/.test(shown) || !/first come, first served/.test(shown)) throw new Error('the Overview reads: ' + shown);
   return shown;
+});
+// ---------------------------------------------------------------- 13
+await step('13 Key account: CRH-44120 (contract FC-30140, Westmark Supply) waits for the account manager', async () => {
+  const admin = await as('admin');
+  const r = await must(admin, 'cases.list', { q: 'CRH-44120', limit: 5 });
+  const row = (r.rows || []).find((x) => x.id);
+  if (!row) throw new Error('no case for CRH-44120');
+  const v = await getJson(admin, '/api/screens/toolfleet/' + row.id);
+  const key = ((v.approval || {}).holds || []).find((x) => x.id === 'TF-KEY');
+  if (!key || !/Westmark Supply/.test(key.reason) || key.owner !== 'Account manager') throw new Error('no key-account hold: ' + JSON.stringify(v.approval));
+  if (v.approval.kind !== 'person') throw new Error('a key account must wait for a person: ' + JSON.stringify(v.approval));
+  await admin.goto(`${base}/#/product/${row.id}/overview`);
+  await admin.locator('#view').waitFor();
+  await admin.locator('[data-testid="tf-approval-key"]').first().waitFor({ timeout: UI });
+  const shown = (await admin.locator('[data-testid="tf-approval"]').first().innerText()).replace(/\s+/g, ' ');
+  if (!/Westmark Supply/.test(shown)) throw new Error('the Overview reads: ' + shown);
+  return shown;
+});
+// ---------------------------------------------------------------- 17
+await step('17 Fit-for-use threshold: planner.a proposes 60, lowering is refused, the Approver approves, a harvest case loses its parts', async () => {
+  const planner = await as('planner.a');
+  const ref = { pack_key: 'tool_fleet', org_unit_id: ORG };
+  const op = (value) => ({ id: 'op-1', op: 'set_param', path: 'valuer.rulMin', value, seen: 50 });
+  const low = await callAction(planner, 'overlay.save', { ...ref, ops: [op(40)] });
+  if (low.ok || !/GR-03/.test(low.error?.message || '')) throw new Error('lowering the threshold to 40 was not refused naming GR-03: ' + JSON.stringify(low).slice(0, 200));
+  await must(planner, 'overlay.save', { ...ref, ops: [op(60)] });
+  await must(planner, 'overlay.submit', ref);
+  const own = await callAction(planner, 'overlay.approve', ref);
+  if (own.ok) throw new Error('the maker approved her own change to the threshold');
+  const admin = await as('admin');
+  const shown = await getJson(admin, `/api/screens/modeler?template=tool_fleet&org=${ORG}`);
+  const p = (shown.overlay.params || []).find((x) => x.path === 'valuer.rulMin');
+  if (!p || p.value !== 50 || p.owner !== 'Quality' || p.direction !== 'raise_only') throw new Error('the Modeler lists no Quality-owned threshold: ' + JSON.stringify(shown.overlay.params));
+  await must(await as('approver'), 'overlay.approve', ref);
+  const id = (await must(admin, 'case.open', { org_unit_id: ORG, template_key: 'tool_fleet', asset_key: 'CMH-FU-1', reason: 'manual', facts: { cls: 'CMH', grade: 'C', site: 'Houston', rul: 55 } })).case_id;
+  const v = await until(async () => (await getJson(admin, '/api/screens/toolfleet/' + id)).paths?.length && (await getJson(admin, '/api/screens/toolfleet/' + id)), 'no paths for ' + id, SYNC, admin);
+  const harvest = v.paths.find((x) => x.k === 'harvest');
+  if (!harvest || harvest.lines.some((l) => /55% life/.test(l.basis || ''))) throw new Error('a part at 55% still counts at a 60% threshold: ' + JSON.stringify(harvest).slice(0, 200));
+  return `threshold 60, harvest: ${harvest.why}`;
 });
 await browser.close();
 if (errors.length) {

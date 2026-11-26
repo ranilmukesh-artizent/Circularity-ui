@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Literal
 
-from di.services.modeler.evidence import Evidence
+from di.services.modeler.evidence import Evidence, evidence_of
 from di.services.modeler.pack import load_pack
 from di.services.modeler.valuers import fleet_evidence, tool_fleet, tool_life
 from di.services.models.rul import RulModel
@@ -100,6 +100,16 @@ def life_of(
     return res
 
 
+def key_account(case: Mapping[str, Any]) -> tuple[bool, str | None]:
+    """(whether the case's customer is a key account, the customer's name) from the case's `contract_line` evidence record
+    (P9-3.16, TF-12): the fleet contract's `key_account` flag and `customer`, as `fleet_evidence.line_value` copies them.
+    No record or no flag is (False, None or the name): a missing flag never holds a case."""
+    e = evidence_of(case, fleet_evidence.CONTRACT_LINE)
+    v = e.value if e is not None else {}
+    name = v.get("customer")
+    return v.get("keyAccount") is True, str(name) if name else None
+
+
 def merge_demand(base: Mapping[str, Any], extra: Mapping[str, Any]) -> dict[str, Any]:
     """`base` (a valuer `dem`: lease, so, bid lists, proj one or None, wo part -> list) with the named orders of `extra` added
     (P9-3.12, the live named demand, `di.repositories.tool_demand`): one order for each id, the base's own first; a base `proj`
@@ -117,6 +127,22 @@ def merge_demand(base: Mapping[str, Any], extra: Mapping[str, Any]) -> dict[str,
         seen = {d["id"] for d in have}
         have += [copy.deepcopy(d) for d in orders if d["id"] not in seen]
     return out
+
+
+BATTERY_SOH = "battery_soh"  # the evidence type of a pack's state of health (P9-3.19): value `soh_pct`, `read_at`, `damaged`
+
+
+def battery_case(base: Mapping[str, Any], evidence: Mapping[str, Evidence | None]) -> dict[str, Any]:
+    """`base` (a `BAT` case as opened) with the state of health read from the `battery_soh` evidence (the tool telematics'
+    reading of the pack: percent, the date it was read, whether the pack is damaged): `soh`, `sohRead` and `damaged`. Without
+    the record `soh` is None and nothing is assumed (`battery.decide` then leaves only take-back). Neither argument is changed."""
+    c = copy.deepcopy(dict(base))
+    e = evidence.get(BATTERY_SOH)
+    v = e.value if e is not None else {}
+    c["soh"] = v.get("soh_pct")
+    c["sohRead"] = v.get("read_at") or (e.at.date().isoformat() if e is not None and v.get("soh_pct") is not None else None)
+    c["damaged"] = bool(v.get("damaged", c.get("damaged", False)))
+    return c
 
 
 def valuer_case(
@@ -139,3 +165,19 @@ def valuer_case(
         c["partRul"] = [by.get(pn, life.rul_tool) for pn, _pv in parts]
         c["life"] = dataclasses.asdict(life) | {"range": list(life.range) if life.range else None}  # as JSON keeps it
     return c
+
+
+RUL_MIN = "valuer.rulMin"  # the pack parameter of the fit-for-use threshold (P9-3.20, GR-03): owned by Quality, raise-only
+
+
+def fit_for_use_floor(pack: Any) -> float:
+    """The remaining life, in percent, a harvested part must reach to be certified: the pack's `valuer.rulMin` parameter
+    (the shipped 50, or a customer's raised value once its overlay is approved), else the valuer's own `BASEP["rulMin"]`."""
+    own = pack.customer_layer.params.get(RUL_MIN)
+    return float(own.value) if own is not None else float(tool_fleet.BASEP["rulMin"])
+
+
+def fleet_params(pack: Any) -> dict[str, float]:
+    """The valuer's parameters for a case decided with `pack` (the live pack, overlay laid on): `BASEP` with the threshold
+    of the pack. With no overlay these are `BASEP` itself, so every decision is as before."""
+    return dict(tool_fleet.BASEP) | {"rulMin": fit_for_use_floor(pack)}

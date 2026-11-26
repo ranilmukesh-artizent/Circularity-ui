@@ -1,4 +1,5 @@
 # Testing
+| `smoke-p9-4.mjs <base>` | Plan 9 Phase 4 (service desk), 7 steps, one PASS line each, exit 1 at the first failure: market table v2 made by Finance and approved by the Approver, sdesk and rephist synced and the ticket cases open, CS0010042 (estimate, three options, credit lever, a fault posted), repair estimate accuracy per family, the CS0010050 batch split, a held upgrade approved with market terms and a take-back that opens a Returns case, a take-up model fitted. Each step checks the page and the screen API. Needs the worker and source-sim. **Changes state:** `reset.sh` and `wait-idle.sh` before, `reset.sh` after, holding the api test lock. |
 
 From Windows with Docker Desktop, run the scripts below from the repo root in Git Bash (`export MSYS_NO_PATHCONV=1`
 first; see CLAUDE.md, "Git Bash pitfalls"). Where Docker runs inside WSL:

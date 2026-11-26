@@ -38,6 +38,19 @@ export interface RefreshTool {
   successor: string | null;
 }
 
+/** The like-life unit of one swapped tool (P9-5.3, CR-03): unit_id is null and why says why when none fits. */
+export interface RefreshMatch {
+  serial: string;
+  need_id: string;
+  cls: string;
+  target: number;
+  unit_id: string | null;
+  rul: number | null;
+  distance: number | null;
+  source: 'stock' | 'return' | null;
+  why: string | null;
+}
+
 export interface RefreshView {
   case_id: string;
   contract: RefreshContract;
@@ -46,7 +59,7 @@ export interface RefreshView {
   tools: RefreshTool[];
   tools_totals: { keep: number; swap: number; upgrade: number };
   tools_hold: 'confidence' | null;
-  match: unknown[];
+  match: RefreshMatch[];
   pricing: unknown | null;
   approval: unknown | null;
   execution: unknown | null;

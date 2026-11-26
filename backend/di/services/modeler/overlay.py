@@ -225,6 +225,9 @@ def _set_param(pack: Pack, op: SetParam) -> Pack:
         raise _unknown(op.id, op.path, pack)
     if not rng.min <= op.value <= rng.max:
         raise OverlayError(op.id, "out_of_range", f"{op.path} must be between {_n(rng.min)} and {_n(rng.max)}.")
+    if rng.direction == "raise_only" and op.value < rng.value:  # the number's owner sets the floor (P9-3.20)
+        who = rng.guardrail or "The pack"
+        raise OverlayError(op.id, "weakens", f"{who} can only be raised: {op.path} {_n(rng.value)} → {_n(op.value)} weakens it.")
     params = {**layer.params, op.path: rng.model_copy(update={"value": op.value})}
     return pack.model_copy(update={"customer_layer": layer.model_copy(update={"params": params})})
 

@@ -15,6 +15,12 @@ export const tagsOf = (k: string, m: Marks): string[] =>
 /** "Net $1,234" for a ready path, or the reason a blocked one cannot be taken. */
 export const netLine = (p: PathView): string => (p.ok ? `Net ${money(p.net)}` : p.why);
 
+/** The hazardous-transport line of a battery pack's take-back (P9-3.19, TF-16): "Hazardous transport (lithium-ion, UN 3480): $14", or null for any other path. */
+export const hazardLine = (p: PathView): string | null => {
+  const l = p.lines.find((x) => x.type === 'c' && x.label.startsWith('Hazardous transport'));
+  return l ? `${l.label}: ${money(l.amt)}` : null;
+};
+
 /** "Value Fleet renewal ...: $3,210", "Cost Clean and inspect: −$40": a value line as a sentence with its sign. */
 export const lineText = (l: PathView['lines'][number]): string =>
   `${l.type === 'v' ? 'Value' : l.type === 'c' ? 'Cost' : 'Holding'} ${l.label}: ${l.type === 'v' ? '' : '−'}${money(l.amt)}`;
@@ -44,6 +50,11 @@ export function PathsSection({ paths, best, second, standard, uplift }: { paths:
             {!p.ok && <span className="chip bad">Blocked</span>}
           </summary>
           {p.ok && <p style={{ margin: '4px 0' }}>{p.why}</p>}
+          {hazardLine(p) && (
+            <p className="muted" style={{ margin: '4px 0' }} data-testid={`tf-path-${p.k}-hazard`}>
+              {hazardLine(p)}
+            </p>
+          )}
           {p.ok && co2Text(p) && (
             <p className="muted" style={{ margin: '4px 0' }} title={p.co2Formula ?? undefined} data-testid={`tf-path-${p.k}-co2`}>
               {co2Text(p)}

@@ -41,7 +41,7 @@ def ex_plan(c: Case, r: dict | None = None, now: int = AS_OF) -> list[dict]:
     if not r:
         return []
     x = c.get("exec")
-    st = x["steps"] if x and _same(c.get("chosen") or c.get("recommendation"), r) else steps_for(r, -1)
+    st = x["steps"] if x and _same(c.get("chosen") or c.get("recommendation"), r) else steps_for(r, -1, c.get("template"))
     M, mv, P = case_demand(c), ex_move(c, r), ex_prep_parts(c, r)
     rows = []
     for i, s in enumerate(st):

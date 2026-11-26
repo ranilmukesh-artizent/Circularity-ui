@@ -164,6 +164,20 @@ await step('2 Refresh: FC-30117 shows its keep, swap and upgrade split', async (
   if (rows !== 14) throw new Error(`the tools list has ${rows} rows, not 14`);
   return text;
 });
+// ---------------------------------------------------------------- 3
+await step('3 Refresh: the CMH swap is matched to refurbished stock RU-7...', async () => {
+  const admin = await as('admin');
+  const unit = await until(
+    async () => {
+      const x = await admin.locator('[data-testid="rf-match"] tbody tr[data-cls="CMH"]').first().getAttribute('data-unit');
+      return x && /^RU-7/.test(x) ? x : null;
+    },
+    'the refresh panel does not match the CMH swap to a unit RU-7...',
+    UI,
+    admin,
+  );
+  return unit;
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));

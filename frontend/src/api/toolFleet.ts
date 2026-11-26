@@ -129,6 +129,25 @@ export interface ApprovalView {
   text: string;
 }
 
+/** What happened after the approval (P9-3.17, TF-10): each step with its executing system and acknowledgement, and the outcome once Finance confirmed it. */
+export interface FollowThroughView {
+  ref: string;
+  slaHours: number;
+  steps: {
+    k: string;
+    label: string;
+    system: string;
+    state: 'done' | 'active' | 'todo';
+    /** the step's instruction row (queued, sent, acknowledged, failed ...), null before it is queued */
+    status: string | null;
+    ack: { by: string; ref: string; at: string; sim: boolean } | null;
+    waiting: string | null;
+    error: string | null;
+  }[];
+  /** realised against predicted; `flagged` above the pack's tolerance, `task` the open Finance item */
+  outcome: { actual: number; predicted: number; variance: number; tolerance: number; flagged: boolean; task: number | null } | null;
+}
+
 export interface ToolFleetView {
   case_id: string;
   pack_version: string;
@@ -150,7 +169,7 @@ export interface ToolFleetView {
   uplift?: number | null;
   plan: PlanView | null;
   approval: ApprovalView | null;
-  followThrough: unknown | null;
+  followThrough: FollowThroughView | null;
 }
 
 /** The panel's read for a tool fleet case (GET /api/screens/toolfleet/{id}). */

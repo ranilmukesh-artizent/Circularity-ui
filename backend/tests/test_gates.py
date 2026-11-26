@@ -227,7 +227,15 @@ def test_shipped_packs_have_only_the_gates_a_phase_switched_on():
     fresh telematics fails it for re-issue and pool only)."""
     for k in pack_keys():
         assert [g.id for g in load_pack(k).gates] == {
-            "tool_fleet": ["G-CON-1", "G-CON-2", "G-TOOL-REC", "G-TOOL-TEL"],
+            "tool_fleet": [
+                "G-CON-1",
+                "G-CON-2",
+                "G-TOOL-REC",
+                "G-TOOL-TEL",
+                "G-BAT-1",
+                "G-BAT-4",
+                "G-BAT-5",
+            ],  # P9-3.19: a BAT case only
             "device": ["G-DEV-WIPE", "G-DEV-LOCK", "G-DEV-QUOTE"],
             "used_cars": ["G-VEH-TITLE", "G-VEH-ODO", "G-VEH-RECALL", "G-VEH-BRAND", "G-VEH-SALV"],  # P9-9.1, data only
             "medical_rental": ["G-MED-DECON", "G-MED-SVC", "G-MED-FSN", "G-MED-REFURB", "G-DATA-3"],  # P9-11.1, data only

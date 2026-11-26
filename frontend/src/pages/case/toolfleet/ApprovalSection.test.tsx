@@ -50,4 +50,15 @@ describe('ApprovalSection', () => {
     const h = render({ ...BASE, holds: [...BASE.holds, { id: 'TF-CONF', reason: "Confidence 0.50 is under the flow's 0.75", owner: 'Fleet desk' }] });
     expect(h.querySelector('[data-testid="tf-approval-holds"]')?.textContent).toBe("Confidence 0.50 is under the flow's 0.75");
   });
+
+  it('TF-12: a key account waits for the account manager and says the customer', () => {
+    const reason = 'Key account Westmark Supply: the account manager reviews the return';
+    const h = render({
+      ...BASE, role: 'Account manager', reasons: [reason], holds: [{ id: 'TF-KEY', reason, owner: 'Account manager' }],
+      text: `Waits for the Account manager: ${reason}`,
+    });
+    expect(h.querySelector('[data-testid="tf-approval-text"]')?.textContent).toContain('Westmark Supply');
+    expect(h.querySelector('[data-testid="tf-approval-key"]')?.textContent).toBe('Key account: account manager review');
+    expect(render(BASE).querySelector('[data-testid="tf-approval-key"]')).toBeNull();
+  });
 });

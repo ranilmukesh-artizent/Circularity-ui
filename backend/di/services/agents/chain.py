@@ -124,8 +124,10 @@ def stage_defs(pack: Pack) -> list[StageDef]:
 
 
 def pack_rul_min(pack: Pack) -> float | None:
-    """The pack's remaining-life floor for a harvested part (`rulMin` of the valuer's base parameters), if it names one."""
-    v = (pack.valuer.params.get("basep") or {}).get("rulMin")
+    """The pack's remaining-life floor for a harvested part (the Quality-owned `valuer.rulMin` parameter, P9-3.20, else `rulMin`
+    of the valuer's base parameters), if it names one."""
+    own = pack.customer_layer.params.get("valuer.rulMin")
+    v = own.value if own is not None else (pack.valuer.params.get("basep") or {}).get("rulMin")
     return float(v) if isinstance(v, int | float) and not isinstance(v, bool) else None
 
 

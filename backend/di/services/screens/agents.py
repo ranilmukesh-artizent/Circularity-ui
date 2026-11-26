@@ -35,6 +35,8 @@ are the signed-in person's actions.
         activeRatedLife  the id of the active remaining-life model (kind rated_life, P9-3.10), or null
         activePrice      the id of the active device price model (kind price, P9-6.9), or null; its metrics
                          carry mae, mape, coverage (against target 0.8), n_train, n_test and window
+        activeTakeUp     the id of the active take-up model (kind take_up, P9-4.11), or null; its metrics carry log_loss, brier,
+                         baseline_log_loss, baseline_brier, market, window and bands [{lo, hi, offered, accepted, predicted}]
         models     every fitted model (table model_version), newest first: [{id, template, status, created_by,
                    approved_by, created_at, factors: [{route, cls, factor}], metrics: {n, active_id, mae_active,
                    mae_candidate}, proposal: {by, at} | null, blocks: {propose, promote}}]
@@ -185,6 +187,7 @@ def models(p: Principal, s: Session) -> dict[str, Any]:
     }
     rated = next((m.id for m in rows if m.status == "active" and m.kind == "rated_life"), None)
     price = next((m.id for m in rows if m.status == "active" and m.kind == "price"), None)
+    take_up = next((m.id for m in rows if m.status == "active" and m.kind == "take_up"), None)
     out = []
     for m in rows:
         j = model_json(m)
@@ -203,6 +206,7 @@ def models(p: Principal, s: Session) -> dict[str, Any]:
         "active": active,
         "activeRatedLife": rated,
         "activePrice": price,
+        "activeTakeUp": take_up,
         "models": out,
         "can": can,
         "repairAccuracy": acc,

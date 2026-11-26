@@ -62,6 +62,10 @@ COMPLETES: dict[str, Completion] = {
     "sap.s4.beh.journalentry.v1.JournalEntry.Created.v1": Completion(
         "erp", ("finance",), lambda d: [d.get("DocumentReferenceID")], lambda d: d.get("AccountingDocument")
     ),
+    # P9-3.17: the tool fleet's re-issue (the contract line is issued) and harvest (a repair order got its part); matched by the
+    # `issuedKey` the writers send, which is the instruction key
+    "fleet.line.updated": Completion("fleet", ("lease",), lambda d: [d.get("issuedKey")], lambda d: d.get("lineId")),
+    "parts.repair_order.updated": Completion("parts", ("partsxfer",), lambda d: [d.get("issuedKey")], lambda d: d.get("roId")),
 }
 DELIVERED = "otm.shipment.delivered"
 

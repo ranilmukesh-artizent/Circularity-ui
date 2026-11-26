@@ -421,6 +421,48 @@
     "locked": true
    },
    "active": true
+  },
+  {
+   "id": "G-BAT-1",
+   "params": {
+    "when": [
+     {
+      "fact": "cls",
+      "op": "eq",
+      "value": "BAT"
+     }
+    ],
+    "legal_review": "Battery regulation per market is unconfirmed (needs Legal review). Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  },
+  {
+   "id": "G-BAT-4",
+   "params": {
+    "when": [
+     {
+      "fact": "cls",
+      "op": "eq",
+      "value": "BAT"
+     }
+    ],
+    "legal_review": "Dangerous-goods rules for a damaged pack are unconfirmed (needs Legal review). Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  },
+  {
+   "id": "G-BAT-5",
+   "params": {
+    "when": [
+     {
+      "fact": "cls",
+      "op": "eq",
+      "value": "BAT"
+     }
+    ],
+    "legal_review": "Recycler permit rules per market are unconfirmed (needs Legal review). Kinective's Legal team must review before shipping."
+   },
+   "active": true
   }
  ],
  "dims": [
@@ -495,6 +537,18 @@
    "fields": [
     "rul"
    ]
+  },
+  {
+   "key": "keyAccount",
+   "label": "Key account",
+   "kind": "set",
+   "values": [
+    "Yes",
+    "No"
+   ],
+   "fields": [
+    "keyAccount"
+   ]
   }
  ],
  "actors": [
@@ -559,6 +613,15 @@
     "fmt": "{}%+ life",
     "joiner": "",
     "words": {}
+   },
+   {
+    "key": "keyAccount",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "Yes": "key account returns",
+     "No": "other accounts' returns"
+    }
    }
   ],
   "path_names": {
@@ -572,7 +635,16 @@
  },
  "customer_layer": {
   "editable": {},
-  "params": {},
+  "params": {
+   "valuer.rulMin": {
+    "value": 50,
+    "min": 30,
+    "max": 90,
+    "direction": "raise_only",
+    "guardrail": "GR-03",
+    "owner": "Quality"
+   }
+  },
   "sample_diversions": [],
   "merge_rule": "stricter_wins"
  },
@@ -703,7 +775,8 @@
       {"name": "Receiver", "rated_hours": 3000, "weight": 0.2, "critical": false, "alpha": 0}]}
     }
    },
-   "approval": {"confidence_by_life": {"High": 0.90, "Medium": 0.78, "Low": 0.50}},
+   "approval": {"confidence_by_life": {"High": 0.90, "Medium": 0.78, "Low": 0.50}, "key_account": {"id": "TF-KEY", "role": "Account manager"}},
+   "follow_through": {"variance_tolerance": {"pct": 10, "usd": 50}, "sla_hours": {"default": 48}},
    "contract_refresh": {
     "flow": "contract_refresh",
     "window_days": 90,
@@ -1006,6 +1079,38 @@
     "lifePerMonth": 1.2,
     "refurbLife": 20,
     "svc": 0.03
+   },
+   "battery": {
+    "id": "BAT",
+    "name": "Battery pack, 22 V 8 Ah",
+    "note": "A battery pack is valued by its own valuer (P9-3.19), not the tool classes above: no refurbish or harvest path. Synthetic figures; battery regulation per market needs Legal review.",
+    "newP": 185,
+    "min_soh": {
+     "release": 80,
+     "redeploy": 70,
+     "resell": 70
+    },
+    "res": 0.55,
+    "test": 8,
+    "mat": 9,
+    "hazmat": 14,
+    "fee": 6,
+    "damaged_pack": 18,
+    "sale_fee": 0.08,
+    "hold": 2,
+    "rate": 0.09,
+    "lead": {
+     "release": 4,
+     "redeploy": 3,
+     "resell": 9,
+     "exit": 6
+    },
+    "names": {
+     "release": "Re-issue to fleet",
+     "redeploy": "Tool pool",
+     "resell": "Pre-owned sale",
+     "exit": "Take-back recycling"
+    }
    },
    "poolk": [
     "lease",
@@ -1914,6 +2019,12 @@
     "label": "Telematics older than the limit",
     "owner_role": "Quality",
     "action": "Check the tool's telematics link or read the tool before it is re-issued or pooled"
+   },
+   {
+    "id": "variance_check",
+    "label": "Realised net off the prediction",
+    "owner_role": "Finance",
+    "action": "Check the posted cost lines against the predicted ones"
    }
   ],
   "suggestion_rules": [],

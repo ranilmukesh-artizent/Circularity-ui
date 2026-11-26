@@ -4,8 +4,8 @@
 
 Per line: the estimate the case holds (P9-4.4), the outputs of the `cover_terms` and `credit_rules` tables with the version each
 cites, the `terms` card, the refurbished stock of the class and the median turnaround of the similar repairs. For the case: the
-take-up curve (the pack's prior, `{a, b}`; a learned model of P9-4.11 takes its place when one is active), the account shift,
-the fx rate to USD and the approved table versions of `as_of`, which GR-S3 compares each cited version with.
+take-up curve (the pack's prior, `{a, b}`; the active `take_up` model of P9-4.11 takes its place, `source` "model <id>"),
+the account shift, the fx rate to USD and the approved table versions of `as_of`, which GR-S3 compares each cited version with.
 
 - **Account shift.** With at least 10 offers to the account in the 24 months before `as_of`,
   `shift = logit((k + 1) / (n + 2)) - logit(base)`: `k` accepted of `n`, `base` the market's acceptance share in the window.
@@ -26,7 +26,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.repositories import market_tables as tables_repo
-from di.repositories import refurb_stock
+from di.repositories import model_versions, refurb_stock
 from di.repositories.repair_history import similar
 from di.repositories.upgrade_offers import offers
 from di.services.modeler.pack import load_pack
@@ -81,6 +81,21 @@ def account_shift(s: Session, org: str | None, account: str | None, market: str,
     return _logit((k + 1) / (n + 2)) - _logit(base)
 
 
+def take_up_prior() -> dict[str, float]:
+    """The pack's take-up curve `{a, b}`, used until a learned model is promoted."""
+    return dict(load_pack(PACK).valuer.params["service_desk"]["options"]["take_up_prior"])
+
+
+def take_up_of(s: Session, shift: float, market: str) -> dict[str, Any]:
+    """The take-up curve of a ticket: the active `take_up` model (P9-4.11; of this market, or fitted on all) with source
+    `model <id>`, else the pack's prior with source `prior`."""
+    act = model_versions.active(s, "tool_fleet", "take_up")
+    if act is not None and act.factors and (act.metrics or {}).get("market") in (None, market):
+        return {"a": act.factors[0]["a"], "b": act.factors[0]["b"], "shift": shift, "source": f"model {act.id}"}
+    prior = take_up_prior()
+    return {"a": prior["a"], "b": prior["b"], "shift": shift, "source": "prior"}
+
+
 def _decide(row: Any, given: Mapping[str, Any]) -> dict[str, Any]:
     return dict(ZenEvaluator().evaluate(JdmTable.model_validate(row.body), given).outputs)
 
@@ -97,7 +112,6 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> ServiceDeskInput
         return None
     cur = rows["labour"].currency or ""  # type: ignore[union-attr]
     terms = {k: float(v) for k, v in rows["terms"].body["values"].items()}  # type: ignore[union-attr]
-    p = load_pack(PACK).valuer.params["service_desk"]["options"]
     history: dict[tuple[str, str], int | None] = {}
     lines = []
     for ln in base["lines"]:
@@ -146,18 +160,12 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> ServiceDeskInput
                 "cited": sorted({*(e["cites"] for e in (est or {}).get("lines", [])), *refs}),
             }
         )
-    prior = p["take_up_prior"]
     return {
         "market": market,
         "currency": cur,
         "fx": float(fx_per_usd(s, cur, as_of)),
         "as_of": as_of.isoformat(),
-        "take_up": {
-            "a": prior["a"],
-            "b": prior["b"],
-            "shift": account_shift(s, org, base.get("account"), market, as_of),
-            "source": "prior",
-        },
+        "take_up": take_up_of(s, account_shift(s, org, base.get("account"), market, as_of), market),
         "approved": sorted(_ref(r) for r in rows.values() if r is not None),
         "lines": lines,
     }

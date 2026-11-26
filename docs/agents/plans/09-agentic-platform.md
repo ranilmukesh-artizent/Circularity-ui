@@ -872,11 +872,11 @@ each story went.
 - [x] P9-3.13 Live queue plan for open tool returns
 - [x] P9-3.14 CO2e per route and the recycling certificate
 - [x] P9-3.15 Threshold approvals and standing policy for returns
-- [ ] P9-3.16 Key account returns to account manager review
-- [ ] P9-3.17 Follow-through to the executing systems and outcome
+- [x] P9-3.16 Key account returns to account manager review
+- [x] P9-3.17 Follow-through to the executing systems and outcome
 - [ ] P9-3.18 Non-return fees posted from closed lines
-- [ ] P9-3.19 Batteries valued as their own class
-- [ ] P9-3.20 Fit-for-use threshold owned by Quality
+- [x] P9-3.19 Batteries valued as their own class
+- [x] P9-3.20 Fit-for-use threshold owned by Quality
 - [ ] P9-3.21 Paths agree and order invariant for tool returns
 - [ ] P9-3.22 Phase 3 gate
 - [x] P9-4.1 Service desk mocks with repair history and offers
@@ -889,12 +889,12 @@ each story went.
 - [x] P9-4.8 Decide a batch per tool as one split
 - [x] P9-4.9 Execute the approved option on market terms
 - [x] P9-4.10 Test a credit before offering it
-- [ ] P9-4.11 Take-up model learned from past offers
-- [ ] P9-4.12 Service desk browser smoke
+- [x] P9-4.11 Take-up model learned from past offers
+- [x] P9-4.12 Service desk browser smoke
 - [ ] P9-4.13 Phase 4 gate
 - [x] P9-5.1 Refresh case per contract entering the window
 - [x] P9-5.2 Keep, like-life swap or upgrade per tool
-- [ ] P9-5.3 Like-life units matched and reserved once
+- [x] P9-5.3 Like-life units matched and reserved once
 - [ ] P9-5.4 Refresh proposal priced with fee and renewal odds
 - [ ] P9-5.5 Approved proposal sent, lines drafted, units reserved
 - [ ] P9-5.6 Test-the-proposal levers

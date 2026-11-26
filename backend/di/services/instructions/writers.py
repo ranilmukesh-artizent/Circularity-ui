@@ -61,7 +61,7 @@ from di.core.config import get_settings
 from di.repositories.common import FAC_LOC, case_demand, demand_order
 from di.services.cases import store
 from di.services.execution import ex_doc_num, ex_doc_ref, ex_kg, ex_move_raw, line_actuals
-from di.services.instructions.queue import SYSTEM_OF, journal_ref
+from di.services.instructions.queue import SYSTEM_OF, TEMPLATE_SYSTEM_OF, journal_ref
 
 OTM_DOMAIN = "NORTHFIELD"
 MANHATTAN_ORG = "NORTHFIELD"
@@ -670,12 +670,27 @@ WRITERS = {
     "pod": pod,
     "finance": finance,
 }
+from di.services.instructions import writers_fleet  # noqa: E402 - it uses Sent, Refused and client, defined above
+
+WRITERS |= {"fleet_issue": writers_fleet.fleet_issue, "parts_issue": writers_fleet.parts_issue}
 
 
 def operations(system: str) -> list[str]:
     """The write operations of a target system (the step kinds written to it): the choices of a write connector's
-    Target operation. oms: order, pod; repair: repair, teardown; tms: transport; wms: move; erp: finance."""
-    return [k for k, sys in SYSTEM_OF.items() if sys == system]
+    Target operation. oms: order, pod; repair: repair, teardown; tms: transport; wms: move; erp: finance; fleet: lease;
+    parts: partsxfer (the tool fleet's re-issue and harvest, P9-3.17)."""
+    own = [k for t in TEMPLATE_SYSTEM_OF.values() for k, sys in t.items() if sys == system]
+    return [k for k, sys in SYSTEM_OF.items() if sys == system] + own
+
+
+# P9-3.17: the writer of a step of a template that writes it to its own system (the industrial `lease` and `partsxfer` steps
+# have none: the simulated adapter acknowledges them)
+WRITE_KIND = {"tool_fleet": {"lease": "fleet_issue", "partsxfer": "parts_issue"}}
+
+
+def write_kind(c: store.Case, kind: str) -> str:
+    """The writer a case's step of `kind` goes through: its template's own (`fleet_issue`, `parts_issue`), else the kind."""
+    return WRITE_KIND.get(c.get("template") or "", {}).get(kind, kind)
 
 
 def operation_for(kind: str, operation: str | None) -> str:

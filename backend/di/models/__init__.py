@@ -41,6 +41,7 @@ from di.models.device import (
     device_sale,
     device_tradein,
 )
+from di.models.fleet import unit_reservation
 from di.models.instructions import instruction
 from di.models.jobs import Job
 from di.models.journal import action_journal, domain_event, stream_event
@@ -121,6 +122,7 @@ __all__ = [
     "sync_cursor",
     "sync_run",
     "tenant_grant",
+    "unit_reservation",
     "upgrade_offer",
     "webhook_event",
     "work_item",

@@ -17,7 +17,8 @@ Conventions of this module's data:
 - `valuer.params` is free-form per valuer kind. Tool fleet: `paths, classes, basep, fin, poolk, funcs, sites,
   sources, cust, dealers`. Device: `dch, dcn, dcfg, dst, dg`. The valuer modules copy what they read. Standard
   (P9-1.9): `lines, requires, tables, params`, validated at parse by `check_standard`.
-- `customer_layer.params` is keyed `"<guardrail id>.<field>"` when a pack publishes one (none of the shipped packs do).
+- `customer_layer.params` is keyed `"<guardrail id>.<field>"`, or `valuer.<name>` for a valuer parameter, when a pack
+  publishes one (the tool fleet publishes `valuer.rulMin`, the fit-for-use threshold, P9-3.20).
 """
 
 import json
@@ -156,9 +157,15 @@ class WordingDef(_Part):
 
 
 class ParamRange(_Part):
+    """A parameter a pack publishes for a customer overlay (`set_param`). `direction` "raise_only": a customer may only move
+    it up from the pack's value (P9-3.20); `guardrail` names the guardrail that says so, `owner` who owns the number."""
+
     value: float
     min: float
     max: float
+    direction: Literal["raise_only"] | None = None
+    guardrail: str | None = None
+    owner: str | None = None
 
 
 class SampleDiversion(_Part):
