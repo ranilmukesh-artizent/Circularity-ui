@@ -62,6 +62,7 @@ async function as(acct) {
   await p.fill('#si-pw', 'demo');
   await p.click('button[type=submit]');
   await p.waitForURL((u) => !/signin/.test(u.hash), { timeout: FIRST });
+  await p.locator('#view').first().waitFor({ timeout: FIRST }); // the post-sign-in redirect lands first, or a goto right after races it
   pages[acct] = p;
   return p;
 }
