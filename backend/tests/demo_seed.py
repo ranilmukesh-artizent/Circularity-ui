@@ -197,18 +197,20 @@ def _agents(cases: dict[str, dict[str, str]]) -> list[str]:
 def seed() -> dict[str, Any]:
     """Seed the cases of every non-industrial pack, then the agent runs. Returns the ids: {"cases": {pack: {held, waiting,
     closed}}, "runs": [...]}."""
-    for pack in ("used_cars", "telecom_network", "medical_rental"):
-        _publish(pack)
-    cases = {
-        "tool_fleet": _tool_fleet(),
-        "device": _device(),
-        "used_cars": _used_cars(),
-        "telecom_network": _telecom(),
-        "medical_rental": _medical(),
-    }
-    # the seed runs on every reset: no model call, the deterministic path of every stage (R16: code answers when no model does)
+    # THE no-model switch of the seed (R16: code answers when no model does): a loop that never finds a model, set for the
+    # whole seed and restored after. Every model path of the seed (stage reads, agent loops) goes through `runtime.loop_runner`
+    # / `_stage_loop`, so a key in the environment (GROQ_API_KEY) cannot make a reset call a model.
     runtime.set_loop(PydanticAILoop(lambda _s, _run, _role: None))
     try:
+        for pack in ("used_cars", "telecom_network", "medical_rental"):
+            _publish(pack)
+        cases = {
+            "tool_fleet": _tool_fleet(),
+            "device": _device(),
+            "used_cars": _used_cars(),
+            "telecom_network": _telecom(),
+            "medical_rental": _medical(),
+        }
         runs = _agents(cases)
     finally:
         runtime.set_loop(None)

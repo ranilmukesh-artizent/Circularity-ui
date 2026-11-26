@@ -50,6 +50,9 @@ def reset() -> None:
                 text("INSERT INTO agent_identity (id, name, kind, tools, autonomy) " "VALUES (:i, :n, 'internal', :t, :a)"),
                 {"i": aid, "n": name, "t": list(tools), "a": autonomy},
             )
+        # the model meter counts requests per minute and day: a fresh start has made none, so the demo seed's "no model call"
+        # is checked against zero and a leftover count of an earlier run or test never reads as the seed's (final gate, 27 Nov)
+        conn.execute(text("DELETE FROM llm_budget"))
         conn.execute(text("DELETE FROM model_version"))  # plan 8 MVP-12.2: no candidate or promoted model
         # plan 9: no open work items (P9-1.7), customer overlays (P9-1.3) or imported pack versions (P9-1.6): the packs
         # in force are the files, as shipped
