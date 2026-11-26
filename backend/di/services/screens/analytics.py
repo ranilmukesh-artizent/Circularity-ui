@@ -286,8 +286,10 @@ def pack_view(session: Session, p: Principal, key: str = "") -> dict[str, Any]:
     ctx = call_ctx(p, session)
     keys = sorted({*pack_keys(), *published_keys(session)}, key=lambda k: (k != "industrial", k))  # the primary pack first
     packs = {k: active_pack(session, k, None) for k in keys}
-    if not key:  # the first pack with KPIs and cases the account sees, else the primary pack (industrial: the demo's)
-        key = next((k for k, v in packs.items() if v.kpis and pack_cases(ctx, v)), keys[0])
+    if (
+        not key
+    ):  # the first pack with computed KPIs (not the demo's industrial valuer) and cases the account sees, else industrial
+        key = next((k for k, v in packs.items() if v.kpis and v.valuer.kind != "industrial" and pack_cases(ctx, v)), keys[0])
     pack = packs[key]
     cases = pack_cases(ctx, pack)
     return {

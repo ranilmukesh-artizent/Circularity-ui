@@ -44,7 +44,8 @@ PACK_OF: dict[str, str] = {
     "mr_rental": "medical_rental", "mr_assets": "medical_rental", "mr_biomed": "medical_rental",
     "mr_decon": "medical_rental", "mr_parts": "medical_rental", "mr_disposal": "medical_rental",
     "it_cmdb": "itad", "it_logistics": "itad",
-    "rf_rental": "rental_fleet",
+    "rf_rental": "rental_fleet", "bat_bms": "battery", "core_ret": "auto_core", "mc_tradein": "medical_capital",
+    "cpe_bss": "telecom_cpe", "b2c_ret": "b2c_serial",
 }  # fmt: skip
 
 

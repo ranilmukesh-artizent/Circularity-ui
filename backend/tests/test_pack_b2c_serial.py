@@ -20,12 +20,28 @@ def test_b2c_serial_pack_validates():
     assert (p.name, p.version, p.unit, p.prefix) == ("Serialised retail returns", "1.0.0", "items", "B2C")
     assert p.valuer.kind == "standard" and p.valuer.params["params"]["plugin"] == "b2c_serial"
     device = load_pack("device")
-    assert [r.id for r in p.routes] == [*(r.id for r in device.routes), "donate", "recycle", "exit"]
-    assert [r.classes for r in p.routes[:5]] == [r.classes for r in device.routes]  # the device pack's channels, unchanged
+    sale = [
+        "buynow",
+        "offers",
+        "auction",
+        "market",
+        "wholesale",
+    ]  # the device pack's channels; its repair_sell, parts and replacement are not offered
+    assert [r.id for r in p.routes] == [*sale, "donate", "recycle", "exit"]
+    assert [r.classes for r in p.routes[:5]] == [
+        r.classes for r in device.routes if r.id in sale
+    ]  # the device pack's channels, unchanged
     assert [g.id for g in p.gates] == ["G-DEV-WIPE", "G-DEV-LOCK", "G-ESPR-1"]
     by = {g.id: g for g in p.gates}
     dev = {g.id: g for g in device.gates}
-    assert by["G-DEV-WIPE"].params == dev["G-DEV-WIPE"].params and by["G-DEV-LOCK"].params == dev["G-DEV-LOCK"].params
+
+    # the device gates' params except `locked_routes` (lane B: parts and recycle; b2c locks none)
+    def same(a, b):
+        return {k: v for k, v in a.params.items() if k != "locked_routes"} == {
+            k: v for k, v in b.params.items() if k != "locked_routes"
+        }
+
+    assert same(by["G-DEV-WIPE"], dev["G-DEV-WIPE"]) and same(by["G-DEV-LOCK"], dev["G-DEV-LOCK"])
     assert by["G-ESPR-1"].params["stage"] == 5 and by["G-ESPR-1"].params["classes"] == ["apparel", "footwear"]
     assert by["G-ESPR-1"].params["routes"] == ["exit"] and by["G-ESPR-1"].params["allowed_exceptions"]
     assert "Legal team must review" in by["G-ESPR-1"].params["legal_review"]

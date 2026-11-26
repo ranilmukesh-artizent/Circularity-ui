@@ -39,6 +39,8 @@ def test_ns_b2c_01_phone_valued_by_device_pack():
     want = {x["k"]: x for x in device.decide(lot, [])["all"]}  # the device pack's valuation of the same facts
     assert {"buynow", "offers", "auction"} <= set(want)
     for k, x in want.items():
+        if k not in {"buynow", "offers", "auction", "market", "wholesale"}:
+            continue  # only the sale channels are valued as the device pack does (lane B changed the rest)
         got = _route(c, k)
         assert not got["excluded"] and abs(got["net"] - x["score"]) < 0.005, (k, got["net"], x["score"])
     assert c["recommendation"] is not None and c["recommendation"]["id"] == device.decide(lot, [])["best"]["k"]
