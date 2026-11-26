@@ -31,6 +31,9 @@ turnaround; on `market` residual_sale_value; on `demand` rental_requests and reg
 The biomedical service fields (P9-11.4) are written by mr_biomed, keyed by `tag_key`: on `condition` pm_due, pm_code,
 certification_expiry, functional_test, electrical_safety, notes, correction_open, correction_ref, servicing_assessment; on
 `intervention` repair_estimate.
+turnaround; on `market` residual_sale_value; on `demand` rental_requests and region_forecast. The parts portal and the
+disposal partner (P9-11.5, mr_parts and mr_disposal) write `market` part_prices and harvest_values (keyed by device model)
+and `condition` sanitisation_record_ref and disposal_certificate_ref (keyed by tag).
 
 A field a connector starts to write must be added here (with its type), or its facts are held as failed records.
 Types: text, ref (a reference string), date (ISO 8601 date or timestamp string), number, bool, list, object, any.
@@ -313,6 +316,9 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "correction_open": "bool",
         "correction_ref": "ref",
         "servicing_assessment": "text",
+        # plan 9, P9-11.5: the disposal partner (sanitisation record and disposal certificate), keyed by tag_key
+        "sanitisation_record_ref": "ref",
+        "disposal_certificate_ref": "ref",
     },
     "demand": {
         "accepts_refurbished": "bool",
@@ -454,6 +460,8 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "salvage_bid": "number",
         "salvage_buyer": "text",
         "residual_sale_value": "number",  # plan 9, P9-11.2: asset management
+        "part_prices": "list",  # plan 9, P9-11.5: the parts supplier portal (per device model)
+        "harvest_values": "list",
     },
     "outcome": {
         "accounting_document": "text",
