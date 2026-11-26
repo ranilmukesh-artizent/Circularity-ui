@@ -145,7 +145,8 @@ def _audit_blocked(i: dict[str, Any], op_id: str, guardrail: str | None, ctx: Ca
 
 
 def _refusal(e: OverlayError) -> tuple[str, str, dict[str, Any]]:
-    return "validation_error", e.message, {"op_id": e.op_id, "overlay_code": e.code}
+    code = "locked_guardrail" if e.code == "locked" else "validation_error"  # a locked guardrail is its own refusal (UC-17)
+    return code, e.message, {"op_id": e.op_id, "overlay_code": e.code}
 
 
 def _refused(pack: Pack, ops: list[OverlayOp]) -> OverlayError | None:

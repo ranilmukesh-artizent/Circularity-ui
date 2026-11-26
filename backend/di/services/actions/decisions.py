@@ -379,7 +379,7 @@ def _approve(action: str, i: dict[str, Any], ctx: CallContext, approver: str | N
         "decisionId": _decision_id(c),
         "instruction": 1,
         "steps": steps,
-        "dest": steps[0]["sys"].split(" · ")[0] + " / " + steps[1]["sys"].split(" · ")[0],
+        "dest": " / ".join(st["sys"].split(" · ")[0] for st in steps[:2]),  # a one-step route (an auction consignment) has one
         "approvedAt": NOW,
         "approver": by,
     }

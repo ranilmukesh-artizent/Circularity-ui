@@ -47,9 +47,10 @@ from di.services.canonical.schema import MODELS
 from di.services.canonical.store import Fact
 
 CODE = "code"  # keep the adapter's own mapping for this canonical field
-SIMPLE = ("copy", "upper", "lower", "number", "int", "date", "utc")
+SIMPLE = ("copy", "upper", "lower", "number", "int", "date", "utc", "list")
 LABEL = {
     "copy": "Pass-through",
+    "list": "Wrap in a list",
     "upper": "Upper case",
     "lower": "Lower case",
     "number": "Number",
@@ -61,6 +62,7 @@ ALIASES = {
     "pass-through": "copy", "passthrough": "copy", "copy": "copy", "upper": "upper", "uppercase": "upper",
     "upper case": "upper", "lower": "lower", "lowercase": "lower", "lower case": "lower", "number": "number",
     "decimal": "number", "int": "int", "integer": "int", "date": "date", "utc": "utc", "timestamp to utc": "utc",
+    "list": "list", "wrap in a list": "list",
 }  # fmt: skip
 # units: factor to a base unit per dimension
 UNITS: dict[str, tuple[str, float]] = {
@@ -129,8 +131,10 @@ def parse_rule(t: str | None) -> str | None:
         return None
     if m := re.fullmatch(r"code:\s*([a-z0-9_]+)", low):
         return f"code:{m.group(1)}" if m.group(1) in CODE_TABLES else None
-    if m := re.fullmatch(r"prefix:\s*([a-z0-9_]+)", low):  # a key of its own: "postgres:MTR-2041" (catalogue systems)
-        return f"prefix:{m.group(1)}"
+    if m := re.fullmatch(
+        r"prefix:\s*([a-z0-9_][a-z0-9_ .-]*)", s, re.IGNORECASE
+    ):  # a key of its own: "postgres:MTR-2041"; case kept ("Customer A:SYNUC...", a car's key)
+        return f"prefix:{m.group(1).strip()}"
     return None
 
 
@@ -178,6 +182,8 @@ def apply_rule(rule: str, v: Any) -> Any:
         return None
     if rule in ("copy", CODE):
         return v
+    if rule == "list":  # a scalar becomes a one-element list (a canonical field of type list)
+        return v if isinstance(v, list) else [v]
     if rule == "upper":
         return str(v).upper()
     if rule == "lower":

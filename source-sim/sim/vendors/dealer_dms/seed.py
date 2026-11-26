@@ -43,6 +43,21 @@ def band_of(miles: int) -> str:
     return BANDS[0] if miles < 40000 else BANDS[1] if miles < 80000 else BANDS[2] if miles < 120000 else BANDS[3]
 
 
+def car_of(vin_: str) -> tuple[str, int] | None:
+    """(segment, mileage) of a car of the lease and trade-in mocks by VIN (...001 to ...060 returned leases, ...061 to ...100
+    trade-ins), or None for a VIN the group does not know."""
+    if not vin_.startswith("SYNUC") or not vin_[5:].isdigit():
+        return None
+    n = int(vin_[5:])
+    if 1 <= n <= 60:
+        r = returns()[n - 1]
+        return r["segment"], r["odometerAtReturn"]
+    if FIRST_TRADE <= n <= LAST_TRADE:
+        segment, _p, _y, miles = _trade_car(n)
+        return segment, miles
+    return None
+
+
 def lot_cell(lot: str, segment: str, band: str) -> dict:
     """One cell of a lot's own sales history: {avgPrice, avgDaysToSale, count, spread}."""
     b = BANDS.index(band)

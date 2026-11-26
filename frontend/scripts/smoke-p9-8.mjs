@@ -241,7 +241,7 @@ await step('2 Adapter mapping: Needs an adapter, spec import, test connection, o
   const dev = await as('developer');
   const doc = await repairLogDocument();
   await open(dev, base + '/#/integration/overview', 'tr[data-int]');
-  await dev.getByRole('button', { name: 'Connect', exact: true }).first().click();
+  await dev.locator('tr[data-int]').getByRole('button', { name: 'Connect', exact: true }).first().click(); // a catalogue row's Connect opens the dialog
   const dlg = dev.locator('[role=dialog]').last();
   await dlg.getByRole('tab', { name: 'From the adapter registry' }).click();
   const kind = (name) => dlg.getByRole('tablist', { name: 'Connector kind' }).getByRole('tab', { name });

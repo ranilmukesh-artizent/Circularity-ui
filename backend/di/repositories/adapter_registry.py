@@ -98,3 +98,21 @@ def pending_like(s: Session, source_id: str, environment: str, access: str) -> b
 
 def approved(s: Session, source_id: str, environment: str, access: str) -> bool:
     return _has(s, source_id, environment, access, "approved")
+
+
+def live_system(s: Session, system_type: str, org_unit_id: str | None) -> bool:
+    """A connection of this system type runs in production for the org unit (or is shared) and is not deleted: a connection
+    in the test environment is not live (P9-9.13, UC-04). A source whose own id is the system type counts as well."""
+    from di.connectors import lifecycle
+
+    gone = lifecycle.deleted(s)
+    rows = s.execute(
+        text(
+            "SELECT ss.id FROM source_connection sc JOIN source_system ss ON ss.id = sc.source_id "
+            "LEFT JOIN adapter_registry ar ON ar.id = sc.registry_id AND ar.version = sc.registry_version "
+            "WHERE sc.environment = 'production' AND (ss.org_unit_id IS NULL OR ss.org_unit_id = :o) "
+            "AND (ar.system_type = :t OR ss.id = :t)"
+        ),
+        {"o": org_unit_id, "t": system_type},
+    ).scalars()
+    return any(sid not in gone for sid in rows)

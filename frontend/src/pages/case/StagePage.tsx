@@ -1,7 +1,7 @@
 import { Suspense, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  activeClock, approverRole, assetModel, caseAnalysis, caseScreen, lc, nextStep, phaseOf, phases, rememberTab, rememberedTab, runOf,
+  activeClock, approverRole, assetModel, caseAnalysis, caseScreen, lc, nextStep, notConnected, phaseOf, phases, rememberTab, rememberedTab, runOf,
   sources, stageData, stageHref, stageSentence, stageState, stageTitle, stageWillHappen, stages, when,
   type CaseRec, type Run, type StageTag,
 } from '../../api/case';
@@ -9,7 +9,7 @@ import { can, canPage } from '../../api/session';
 import { ErrorBoundary } from '../../components/Boundary';
 import { Icon } from '../../components/Icon';
 import { IconTile } from '../../components/kit/IconTile';
-import { Doc, hue, StageLogos, StProv, Tag } from './CaseBlocks';
+import { Doc, hue, NotConnected, StageLogos, StProv, Tag } from './CaseBlocks';
 import { FraudHold } from './FraudHold';
 import { stageTabs, type TabDef } from './tabs';
 import { approveGuarded, caseActions, runNextStep } from './caseActions';
@@ -220,6 +220,7 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
                 ))}
               </dl>
             )}
+            <NotConnected notes={notConnected(c)} />
             {d.docs.length > 0 && <p className="stdocs"><span className="note">Documents</span>{d.docs.map((r) => <Doc key={r} r={r} />)}</p>}
           </section>
         ) : (

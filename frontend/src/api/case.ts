@@ -110,6 +110,8 @@ export interface CaseScreen {
   approval: { role: 'Approver' | 'Admin'; limit: number | null }; sources: Record<string, Source>;
   plan?: QueuePlan | null; recordMatch?: RecordMatchView | null; custody?: CustodyEntry[];
   packStages?: PackStage[] | null;
+  /** One note per system the pack needs a connector for that is not live for the case's org unit (P9-9.13, UC-04). */
+  notConnected?: string[];
 }
 
 // ---------- the analysis ----------
@@ -225,6 +227,8 @@ export const recordMatch = (c: CaseRec): RecordMatchView | null => screenOf(c).r
 export const custody = (c: CaseRec): CustodyEntry[] => screenOf(c).custody ?? [];
 /** The stage agents of the case's pack with their autonomy (P9-1.13); null for the industrial demo's cases. */
 export const packStages = (c: CaseRec): PackStage[] | null => screenOf(c).packStages ?? null;
+/** The systems the case's pack reads that are not connected yet, as notes ("Older damage history not connected"); empty when none. */
+export const notConnected = (c: CaseRec): string[] => screenOf(c).notConnected ?? [];
 /** "07 Oct 14:20" (time only when it is not midnight UTC; the demo's stWhen). */
 export function when(d: string | Date | null | undefined): string {
   if (!d) return '';

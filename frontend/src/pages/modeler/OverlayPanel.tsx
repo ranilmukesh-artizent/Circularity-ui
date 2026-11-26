@@ -4,7 +4,7 @@ import type { ActionResult, GuardrailStage, ModelerScreen, OverlayCond, OverlayC
 import { Panel } from '../../components/kit/Panel';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
-import { nextOpId, opLabel, STAGE_LABEL, tightenable, weakens, withTighten } from './overlay';
+import { guardrailControls, nextOpId, opLabel, STAGE_LABEL, tightenable, weakens, withApprover, withTighten } from './overlay';
 
 const STATUS: Record<OverlayScreen['status'], string> = { none: 'No overlay yet', draft: 'Draft', review: 'In review', pub: 'Published' };
 const MIN_REASON = 15;
@@ -77,6 +77,7 @@ export function OverlayPanel({ s }: { s: ModelerScreen }) {
         ))}
       </ul>
       {err && <p className="mdl-msg blk" role="alert" data-overlay-refusal>{err}</p>}
+      <GuardrailList o={o} busy={action.pending || !editing} onSave={save} />
       {editing && <TightenForm o={o} busy={action.pending} onSave={save} />}
       {editing && <DiversionForm o={o} busy={action.pending} onSave={save} />}
     </Panel>
@@ -98,6 +99,35 @@ function Conflicts({ o, busy, onKeep, onTake }: { o: OverlayScreen; busy: boolea
           <button className="btn sm" disabled={busy} onClick={() => onTake(c)}>Take the pack&apos;s</button>
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * The pack's guardrails with their customer controls (UC-17): a locked guardrail shows threshold, scope, exception and
+ * suspend-until disabled (the server answers `locked_guardrail`); every guardrail takes an extra approver.
+ */
+function GuardrailList({ o, busy, onSave }: { o: OverlayScreen; busy: boolean; onSave: (ops: OverlayOp[]) => Promise<boolean> }) {
+  const [roles, setRoles] = useState<Record<string, string>>({});
+  return (
+    <div className="mdl-prop" data-overlay-guardrails>
+      <span className="label">Guardrails</span>
+      {o.guardrails.map((g) => {
+        const c = guardrailControls(g);
+        const role = roles[g.id] ?? '';
+        return (
+          <div key={g.id} className="mdl-row" data-overlay-guardrail={g.id}>
+            <span>{g.id}: {g.text}{g.locked ? ' (locked by the pack)' : ''}</span>
+            {c.fields.map((f) => (
+              <label key={f.label} className="note">{f.label} <input type="checkbox" disabled={f.disabled || busy} aria-label={`${g.id} ${f.label}`} /></label>
+            ))}
+            <label className="sr" htmlFor={`mdl-ov-ap-${g.id}`}>Approver role for {g.id}</label>
+            <input id={`mdl-ov-ap-${g.id}`} value={role} placeholder="approver role" style={{ width: 120 }} onChange={(e) => setRoles({ ...roles, [g.id]: e.target.value })} />
+            <button className="btn sm" disabled={busy || !c.addApprover || role.trim() === ''}
+                    onClick={async () => (await onSave(withApprover(o.ops, g, role))) && setRoles({ ...roles, [g.id]: '' })}>Add approver</button>
+          </div>
+        );
+      })}
     </div>
   );
 }

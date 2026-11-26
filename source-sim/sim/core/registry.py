@@ -118,6 +118,8 @@ EXTRA_SYSTEMS: tuple[System, ...] = (
     # Plan 9 P9-11.5: the parts supplier portal and the disposal partner, synthetic vendor mocks
     System("mr_parts", "Parts supplier portal (synthetic)", "parts_portal", "vendor", "/parts-portal"),
     System("mr_disposal", "Disposal partner (synthetic)", "disposal_partner", "vendor", "/disposal-partner"),
+    # Plan 9 P9-9.13: the used-car segment's legacy body-shop system, synthetic, with no di adapter (built from its API spec)
+    System("uc_bodyshop", "Legacy body-shop system (synthetic)", "body_shop_legacy", "generic-rest", "/body-shop"),
 )
 EXTRA_BY_ID = {s.source_id: s for s in EXTRA_SYSTEMS}
 

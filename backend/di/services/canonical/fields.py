@@ -20,7 +20,8 @@ vin, return_kind, mileage_at_return, mileage_lease_record, model_year, segment, 
 seller_fleet_size, lot_id, days_on_lot; on `condition` odometer_statement_ref, odometer_not_actual, payoff_confirmed; on
 `market` the objects keyed by lot id (lot_avg_price, lot_days_to_sale, lot_spread, lot_comparables, lot_distance_miles)
 and dealer_bid. The title fields (P9-9.3) are written by uc_title on `condition`: title_status, lien_open,
-lien_release_ref, title_brand, title_checked_at.
+lien_release_ref, title_brand, title_checked_at. The sale facts (P9-9.20) are written by uc_dms and uc_auction on `outcome`:
+sale_price, sold_at, days_to_sale; uc_lease also writes `asset.contract_mileage`.
 
 The medical rental fields (plan 9, P9-11.2) are written by the extra adapters mr_rental and mr_assets, keyed by `tag_key`: on
 `asset` tag, device_class, serial, in_service_date, age_years, has_patient_data, depot, checked_in_at, hospital, ward_type,
@@ -58,6 +59,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "compatibility": "text",
         "compatible_items": "list",
         "components": "list",
+        "contract_mileage": "number",  # plan 9, P9-9.20: the lease contract's mileage (uc_lease), for the excess-mileage charge
         "config_properties": "object",
         "config_release_status": "text",
         "config_revision": "text",
@@ -321,6 +323,9 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "sanitisation_record_ref": "ref",
         "disposal_certificate_ref": "ref",
         "recall_remedied": "list",  # P9-9.9: the remedied campaign ids
+        # plan 9 P9-9.13, the legacy body-shop system (a connector built from its API spec, no adapter): older damage history
+        "damage_history": "list",
+        "damage_repair_date": "date",
     },
     "demand": {
         "accepts_refurbished": "bool",
@@ -470,6 +475,10 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "company_code": "text",
         "fiscal_year": "text",
         "line": "object",
+        # plan 9, P9-9.20: the sale of a used car, written by uc_dms (a listing sold) and uc_auction (a consignment sold)
+        "sale_price": "number",
+        "sold_at": "date",
+        "days_to_sale": "number",
     },
     "route": {
         "asset_id": "text",

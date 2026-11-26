@@ -29,7 +29,7 @@ threshold (the policy a standing policy is judged at), since a pack's stage auto
 
 import random
 from collections import Counter, defaultdict
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
@@ -381,7 +381,20 @@ class _Demand:
 
 
 def _route(d: Decision, route: str | None) -> Mapping[str, Any] | None:
-    return next((r for r in d.routes if r["id"] == route), None) if route else None
+    """The decision's valued route of a pack route id. A route that is one per demand (the medical pack's `rerent:<request>`)
+    is found by its prefix: the best request that is eligible, else the first."""
+    if not route:
+        return None
+    exact = next((r for r in d.routes if r["id"] == route), None)
+    if exact is not None:
+        return exact
+    per_demand = [r for r in d.routes if str(r["id"]).startswith(f"{route}:")]
+    return next((r for r in per_demand if not r.get("excluded")), per_demand[0] if per_demand else None)
+
+
+def _base(route: str | None, known: Collection[str]) -> str | None:
+    """A chosen route as its pack route: `rerent:REQ-1` is `rerent`; an id the pack lists is kept as it is."""
+    return route.split(":", 1)[0] if route and route not in known and ":" in route else route
 
 
 def _reason(actual: str | None, flow: str | None, ar: Mapping[str, Any] | None, delta: float) -> str:
@@ -427,6 +440,7 @@ def replay(
     actual_routes: list[str | None] = []
     flow_routes: list[str | None] = []
     rails: dict[str, list[Any]] = defaultdict(lambda: ["", 0, 0])
+    route_ids = {r.id for r in pack.routes}
 
     def record(it: Mapping[str, Any], d: Decision, alone: float | None = None) -> bool:
         """Count one decided item in the measures; False when the actual route is not valued (listed under data quality)."""
@@ -439,13 +453,14 @@ def replay(
         sig.append(s)
         days.append(it["decided_at"].date())
         actual_routes.append(actual)
-        flow_routes.append(d.route)
+        flow = _base(d.route, route_ids)
+        flow_routes.append(flow)
         real = float(it["realised_value"] or 0)
-        rows.append({"actual_net": float(ar["net"]), "flow_net": float(d.net), "realised": real, "agree": d.route == actual,
-                     "alone_net": float(d.net) if alone is None else alone, "flow_route": d.route})  # fmt: skip
-        if d.route != actual:
+        rows.append({"actual_net": float(ar["net"]), "flow_net": float(d.net), "realised": real, "agree": flow == actual,
+                     "alone_net": float(d.net) if alone is None else alone, "flow_route": flow})  # fmt: skip
+        if flow != actual:
             delta = float(d.net) - float(ar["net"])
-            flips.append(Flip(item_id=str(it["item_id"]), actual=actual, flow=d.route, delta=round(delta, 2),
+            flips.append(Flip(item_id=str(it["item_id"]), actual=actual, flow=flow, delta=round(delta, 2),
                               reason=_reason(actual, d.route, ar, delta), gate=_gate(ar, d),
                               trace=" · ".join(d.trace)[:600]))  # fmt: skip
         for gid, (owner, appr, exc) in s.guardrails.items():

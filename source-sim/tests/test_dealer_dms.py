@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
+from sim.core import scheduler
 from sim.core.db import engine
 from sim.core.registry import BY_SOURCE_ID, EXTRA_BY_ID, SYSTEMS
 from sim.main import MOCKS, app
@@ -122,3 +123,43 @@ def test_dms_other_writes_and_validation(client):
     assert client.post(f"{API}/transfers", json=unknown, headers=KEY).status_code == 422
     assert client.post(f"{API}/recon-orders", json={"vin": vin(1)}, headers=KEY).status_code == 422
     assert client.post(f"{API}/listings", content=b"nope", headers=KEY).status_code == 400
+
+
+def _sold_events() -> list[dict]:
+    sql = text("SELECT data FROM sim.outbox WHERE source = 'uc_dms' AND type = 'dms.listing.sold' ORDER BY id")
+    with engine.connect() as conn:
+        return [r.data for r in conn.execute(sql)]
+
+
+def test_uc_23_listing_sells_after_the_lots_average_days_to_sale(client):
+    """VIN ...001 (an SUV, 38,000 miles) listed at LOT-S sells at that lot's 24,300 after its 15 days, once, with an event."""
+    body = {"vin": vin(1), "lotId": "LOT-S", "price": 25000, "disclosures": []}
+    made = client.post(f"{API}/listings", json=body, headers=KEY | {"Idempotency-Key": "k-sale-1"})
+    assert made.status_code == 201
+    again = client.post(f"{API}/listings", json=body, headers=KEY | {"Idempotency-Key": "k-sale-1"})
+    assert again.status_code == 200  # a repeat schedules no second sale
+    mine = {"vin": vin(1), "lotId": "LOT-S"}
+    scheduler.tick()
+    assert listing(client, "/sales", **mine) == []
+    client.post("/_sim/clock/advance", json={"days": 14}).raise_for_status()
+    scheduler.tick()
+    assert listing(client, "/sales", **mine) == []  # day 14: not yet
+    client.post("/_sim/clock/advance", json={"days": 1}).raise_for_status()
+    scheduler.tick()
+    (sold,) = listing(client, "/sales", **mine)
+    assert (sold["listingId"], sold["price"], sold["daysToSale"]) == (made.json()["listingId"], 24300, 15)
+    assert set(sold) == {"listingId", "vin", "lotId", "price", "listedAt", "soldAt", "daysToSale"}
+    scheduler.tick()
+    assert listing(client, "/sales", **mine) == [sold]
+    mine_event = [e for e in _sold_events() if e["vin"] == vin(1) and e["price"] == 24300]
+    assert [(e["vin"], e["price"], e["soldAt"]) for e in mine_event] == [(vin(1), 24300, sold["soldAt"])]
+    client.post("/_sim/clock/reset").raise_for_status()
+
+
+def test_uc_23_listing_of_an_unknown_car_never_sells(client):
+    body = {"vin": "SYNUC000000000999", "lotId": "LOT-C", "price": 20000, "disclosures": []}
+    assert client.post(f"{API}/listings", json=body, headers=KEY).status_code == 201
+    client.post("/_sim/clock/advance", json={"days": 90}).raise_for_status()
+    scheduler.tick()
+    assert listing(client, "/sales", vin="SYNUC000000000999") == []
+    client.post("/_sim/clock/reset").raise_for_status()

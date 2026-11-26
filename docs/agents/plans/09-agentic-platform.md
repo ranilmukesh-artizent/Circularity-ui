@@ -966,14 +966,14 @@ each story went.
 - [x] P9-9.10 Used-car channel valuer net of costs
 - [x] P9-9.11 Lot choice and recon approval
 - [x] P9-9.12 Compose draft from the used-car prompt
-- [ ] P9-9.13 Used-car mappings and legacy body-shop connector
+- [x] P9-9.13 Used-car mappings and legacy body-shop connector
 - [ ] P9-9.14 Used-car diversions and locked guardrails
 - [ ] P9-9.15 Used-car replay data and 20 percent publish
 - [ ] P9-9.16 Auction under 40000 miles guardrail in plain words
-- [ ] P9-9.17 Used-car follow-through per channel
+- [x] P9-9.17 Used-car follow-through per channel
 - [ ] P9-9.18 Lot ageing flag alert and suggestion
 - [ ] P9-9.19 Used-car worked analytics questions
-- [ ] P9-9.20 Sold and learn with residual gain or loss
+- [x] P9-9.20 Sold and learn with residual gain or loss
 - [ ] P9-9.21 Used-car demo smoke
 - [ ] P9-9.22 Phase 9 gate
 - [x] P9-10.1 Telecom network pack data file
@@ -986,8 +986,8 @@ each story went.
 - [x] P9-10.8 Export control gate and trade compliance approval
 - [x] P9-10.9 Telecom five-route valuer
 - [x] P9-10.10 Spares before new and site-swap matching
-- [ ] P9-10.11 Compose draft from the telecom prompt
-- [ ] P9-10.12 Telecom diversions and blocked wipe skip
+- [x] P9-10.11 Compose draft from the telecom prompt
+- [x] P9-10.12 Telecom diversions and blocked wipe skip
 - [ ] P9-10.13 Telecom replay data and 20 percent publish
 - [ ] P9-10.14 Current-generation resale guardrail in plain words
 - [ ] P9-10.15 Cross-region transfer alert and suggestion
@@ -1005,8 +1005,8 @@ each story went.
 - [x] P9-11.8 Medical rental four-route valuer
 - [x] P9-11.9 Nearest next hospital and repair approval
 - [x] P9-11.10 Refurbish stays servicing gate
-- [ ] P9-11.11 Compose draft and mappings for medical rental
-- [ ] P9-11.12 Medical diversions and blocked decontamination skip
+- [x] P9-11.11 Compose draft and mappings for medical rental
+- [x] P9-11.12 Medical diversions and blocked decontamination skip
 - [ ] P9-11.13 Medical replay data and 20 percent publish
 - [ ] P9-11.14 Retire under 5 years guardrail in plain words
 - [ ] P9-11.15 Service planning around regional demand

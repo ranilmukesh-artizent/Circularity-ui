@@ -53,6 +53,22 @@ export function nextOpId(ops: OverlayOp[]): string {
   return 'op-' + (Math.max(0, ...ops.map((o) => Number(o.id.slice(3)) || 0)) + 1);
 }
 
+/** The four guardrail fields a customer may not change on a locked guardrail (the server answers `locked_guardrail`). */
+export const LOCKED_FIELDS = ['Threshold', 'Scope', 'Exception', 'Suspend until'] as const;
+
+/** The guardrail's customer controls: each of the four fields, disabled when the pack locks the guardrail, and the extra
+ *  approver, which a locked guardrail still takes (only tightening and extra approvers are allowed, UC-17). */
+export function guardrailControls(g: { locked: boolean }): { fields: { label: string; disabled: boolean }[]; addApprover: boolean } {
+  return { fields: LOCKED_FIELDS.map((label) => ({ label, disabled: g.locked })), addApprover: true };
+}
+
+/** The ops with an extra approver for the guardrail (unchanged when the role is blank, already named there or already added). */
+export function withApprover(ops: OverlayOp[], g: { id: string; approvers: string[] }, role: string): OverlayOp[] {
+  const r = role.trim();
+  if (!r || g.approvers.includes(r) || ops.some((o) => o.op === 'add_approver' && o.target === g.id && o.role === r)) return ops;
+  return [...ops, { id: nextOpId(ops), by: '', note: '', op: 'add_approver', target: g.id, role: r }];
+}
+
 /** The ops with this tightening in place of any earlier one of the same guardrail field (the server compares in order). */
 export function withTighten(ops: OverlayOp[], g: OverlayGuardrail, value: number): OverlayOp[] {
   const rest = ops.filter((o) => !(o.op === 'tighten' && o.target === g.id && o.field === g.field));

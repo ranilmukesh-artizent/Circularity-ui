@@ -98,7 +98,7 @@ from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
-from di.services.cases import approval_hold, decide, gate_hold, named_demand, record_match, regrade, store
+from di.services.cases import approval_hold, battery_wait, decide, gate_hold, named_demand, record_match, regrade, store
 from di.services.cases.lifecycle import STAGES
 from di.services.device import inputs as device_inputs
 from di.services.device import intake as device_intake
@@ -624,6 +624,8 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
     if pack.key == CAR_TEMPLATE:  # a decision over the pack's recon limit waits for the manager, as an item in My work (P9-9.11)
         approval_hold.sync(s, c, pack)
+        if battery_wait.holding(c):  # an EV waits for its battery assessment: one request to the inspection app (P9-9.14)
+            battery_wait.request(s, c)
 
 
 def one_open(s: Session, template: str, asset_key: str) -> str | None:

@@ -45,7 +45,8 @@ import di.services.actions.workflow_author  # registers action handlers (workflo
 import di.services.actions.workflow_builder  # registers action handlers (workflow.draft, workflow.plan)
 import di.services.actions.workflow_drafts  # registers action handlers (workflow.draft.save, workflow.draft.discard, testRun)
 import di.services.actions.workflow_read  # registers action handlers (workflow.list, get, runs, runGet: reads for Ask; P9-2.23)
-import di.services.actions.workflows  # noqa: F401  (registers action handlers)
+import di.services.actions.workflows  # registers action handlers
+import di.services.cases.close_used_cars  # noqa: F401  (registers usedCar.close and usedCar.post; plan 9 P9-9.20)
 from di.core.errors import register as register_error_handlers
 from di.core.logs import configure_logging
 from di.mcp import server as mcp_server

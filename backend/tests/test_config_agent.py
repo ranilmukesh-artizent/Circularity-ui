@@ -167,6 +167,7 @@ def test_x_02_never_code():
         "pack",
         "base_version",
         "ops",
+        "rules",
         "assumed",
         "blocked",
         "systems",
@@ -174,7 +175,6 @@ def test_x_02_never_code():
         "question",
         "answer",
         "by_model",
-        "rules",
         "outline",
     }
     names = json.dumps(schema).lower()

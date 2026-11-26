@@ -40,6 +40,7 @@ from di.services.cases import (
     bench_evidence,
     contract_line,
     decon_evidence,
+    diversion_facts,
     export_approval,
     export_evidence,
     inventory_evidence,
@@ -135,6 +136,9 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
                 case[k] = svc_keys[k]
             else:
                 case.pop(k, None)
+        for k in ("asset", "demand"):  # what a customer diversion reads (P9-11.12)
+            case.pop(k, None)
+        case.update(diversion_facts.facts(s, case))
     if case.get("template") == "telecom_network":  # the inventory's record (G-NET-INV, P9-10.6), the bench's (G-NET-CFG, P9-10.7)
         recs[:] = [r for r in recs if r["type"] != bench_evidence.WIPE]  # only the bench's own read is a certificate
         recs.extend(inventory_evidence.evidence(s, case.get("assetId")))

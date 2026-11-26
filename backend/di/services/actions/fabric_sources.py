@@ -1069,7 +1069,9 @@ def mapping_suggest_fields(i: dict[str, Any], ctx: CallContext):
             continue
         sample = [p for _, p in recs]
         profiles = [mapping_suggest.profile(sample, f) for f in mapping_suggest.field_paths(sample)]
-        for p, prop in zip(profiles, mapping_suggest.suggest(profiles, sample, canon, memory=memory, rerank=rerank), strict=True):
+        for p, prop in zip(
+            profiles, mapping_suggest.suggest(profiles, sample, canon, memory=memory, rerank=rerank, source_id=sid), strict=True
+        ):
             rows.append(prop.as_dict() | {"resource": res, "samples": p.top_values})
             if choices := mapping_suggest.allowed_choices(sid, p.name):
                 rows[-1]["allowed_choices"] = choices  # a pack hint offers only these (P9-10.8)

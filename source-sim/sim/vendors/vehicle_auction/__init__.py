@@ -20,6 +20,8 @@ Reads (lists are `{items, next, total}`, `limit` 1-200 default 25 and `offset`; 
     GET /vehicle-auction/v1/buyers         [{buyerId, name, salvage, titleDbReporting}]: SB-1 and SB-3 salvage buyers that
                                            report to the national title database, SB-2 a salvage buyer that does not,
                                            RB-1 a wholesale buyer (not salvage) that does
+    GET /vehicle-auction/v1/sold           ?vin= : the consignments that sold (P9-9.20): {consignmentId, vin, price, consignedAt,
+                                           soldAt, daysToSale}; none at start
 Writes (JSON body; idempotent: a repeat answers 200 with the first document instead of 201 and a second one. The
 repeat is the `Idempotency-Key` header's, or else the same body key (vin and sale date; vin and buyer). A bad body is
 422, one that is not JSON 400):
@@ -28,6 +30,9 @@ repeat is the `Idempotency-Key` header's, or else the same body key (vin and sal
                                            for a buyer that does not report to the title database (SB-2),
                                            `buyer_not_salvage` for one that does not buy salvage, `invalid` for an
                                            unknown buyer
+A consignment sells on its sale date (noon UTC) on the simulated clock (sim/core/scheduler.py, handler
+`vehicle_auction.consignment.sold`), at the cleared price of the car's segment and mileage band (`results`); the sale joins
+`sold` and the event `auction.consignment.sold {vin, price, soldAt}` is emitted. A repeated consignment schedules nothing.
 Auth: API key in `x-api-key` (demo key `uc_auction-demo-key`); 401 with an error body otherwise.
 
 Data in Postgres schema `vehicle_auction` (models.py, seed.py): fixed, no randomness. A reset drops the written

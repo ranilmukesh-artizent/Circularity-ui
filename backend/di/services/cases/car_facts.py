@@ -1,8 +1,11 @@
 """The money facts of a used car, read from the canonical store for the used-car valuer (plan 9, P9-9.11; registry entry I-21).
 
-    records(s, asset_key) -> {"asset", "condition", "market"}   the car's canonical records as nested dicts, the shape
-                                                                `valuers/used_cars.py` reads (`asset.book_value`,
+    records(s, asset_key) -> {"asset", "condition", "market", "vendor"}   the car's canonical records as nested dicts, the
+                                                                shape `valuers/used_cars.py` reads (`asset.book_value`,
                                                                 `condition.recon_estimate`, `market.lot_avg_price` ...)
+
+`vendor` (P9-9.17) is the buyer of the best salvage bid: {buyer_id, title_db_reporting}, the auction platform's record of that
+buyer (`title_db_reporting` is left out when the platform has not said); `G-VEH-SALV` reads it. A car with no bid has none.
 
 The adapters of the lease system, the inspection app, the dealer system, the pricing guide and the auction platform write
 these records (P9-9.3 to P9-9.6); until now the case only kept the facts it was opened with, so a stored car had no market to
@@ -28,4 +31,7 @@ def records(s: Session, asset_key: str) -> dict[str, dict[str, Any]]:
         rec = canonical.get(s, model, asset_key)
         if rec and rec.get("data"):
             out[model] = dict(rec["data"])
+    if buyer := out.get("market", {}).get("salvage_buyer"):
+        reports = ((canonical.get(s, "vendor", str(buyer)) or {}).get("data") or {}).get("title_db_reporting")
+        out["vendor"] = {"buyer_id": buyer} | ({} if reports is None else {"title_db_reporting": reports})
     return out

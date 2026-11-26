@@ -17,10 +17,16 @@ Reads (all `{items, next, total}`, `limit` 1-200 default 25 and `offset`):
                                          the residual value of the lease mock, to the 100)
     GET /dealer-dms/api/v1/stock         30 cars on the lots, daysOnLot 3 to 72; seven are over 45 days and five of them
                                          are EV crossovers at LOT-N (VINs ...041 to ...045, lease returns)
+    GET /dealer-dms/api/v1/sales         ?vin=&lotId= : the listings that sold (P9-9.20): {listingId, vin, lotId, price, listedAt,
+                                         soldAt, daysToSale}; none at start
 Writes (JSON body; header `Idempotency-Key` makes a repeat answer 200 with the first document instead of 201 and a
 second one; a bad body is 422, one that is not JSON 400):
     POST /recon-orders {vin, estimate, lines}   POST /transfers {vin, fromLot, toLot}
     POST /listings {vin, lotId, price, disclosures}   POST /dealer-trades {vin, partner, price, titleRef}
+A new listing sells later on the simulated clock (sim/core/scheduler.py, handler `dealer_dms.listing.sold`): after the lot's
+average days to sale for a car of its segment and mileage band, at that lot's average price (VIN ...001 at LOT-S: 24,300 after
+15 days). The sale joins `sales` and the event `dms.listing.sold {vin, price, soldAt}` is emitted. A repeated listing schedules
+nothing; a VIN of neither the lease nor the trade-in mock never sells.
 Auth: API key in `x-api-key` (demo key `uc_dms-demo-key`); 401 with an error body otherwise.
 
 Data in Postgres schema `dealer_dms` (models.py, seed.py): fixed, no randomness. A reset drops the written documents.

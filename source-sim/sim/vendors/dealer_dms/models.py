@@ -12,7 +12,7 @@ metadata = MetaData(schema="dealer_dms")
 RECORD = Table(
     "record",
     metadata,
-    Column("kind", String(20), primary_key=True),  # trade-ins | lots | lot-sales | partner-bids | stock
+    Column("kind", String(20), primary_key=True),  # trade-ins | lots | lot-sales | partner-bids | stock | sales
     Column("rec_id", String(40), primary_key=True),
     Column("ord", Integer, nullable=False),  # the order the API lists them in
     Column("vin", String(17), index=True),

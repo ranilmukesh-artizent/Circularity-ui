@@ -141,6 +141,7 @@
     "sale"
    ],
    "instructions": [
+    "infotainment_reset",
     "recon_order",
     "lot_transfer",
     "listing"
@@ -156,6 +157,7 @@
     "sale"
    ],
    "instructions": [
+    "infotainment_reset",
     "consignment"
    ]
   },
@@ -169,6 +171,7 @@
     "sale"
    ],
    "instructions": [
+    "infotainment_reset",
     "dealer_trade"
    ]
   },
@@ -182,6 +185,7 @@
     "recycle"
    ],
    "instructions": [
+    "infotainment_reset",
     "salvage_sale"
    ]
   }

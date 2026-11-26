@@ -7,14 +7,15 @@ resource is read in full (Resource.delta False).
 Not one of the demo's 21 sources: it starts unregistered, so every demo screen and count is unchanged.
 di.connectors.extra registers it and source.reconnect connects it. It fills the canonical models `market` (per car,
 keyed by the source's org unit: schema.vin_key) and `vendor` (per buyer, keyed by the buyer id). It implements no
-registry entry of its own. Nothing is ever written to the source (its two write routes are for the actions of later
-tasks).
+registry entry of its own. Nothing is ever written to the source here (its write routes are the instruction writers').
 
 Resources and facts (snake case of the source's camelCase fields)
     vin_auction  market.<vin key>  auction_next_sale_days (days to the next sale of the site the car's return centre
                                    sends to, the lease system's `return_center` fact of the same org unit; none without
                                    one), auction_sell_fee, auction_transport, salvage_bid and salvage_buyer (the best
                                    bid and who made it)
+    sold         outcome.<vin key> sale_price, sold_at, days_to_sale: a consignment that sold (P9-9.20; the sale a case is closed
+                                   against, `di.services.cases.close_used_cars`)
     buyers       vendor.<buyer id> title_db_reporting (whether the buyer reports to the national title database)
     results      no fact: the cleared prices by segment and mileage band, kept raw
 A car is a VIN of the org unit's `asset` facts already in the store or with a salvage bid; sync the lease system first
@@ -54,6 +55,7 @@ class VehicleAuctionAdapter(GenericAdapter):
             Resource("vin_auction", self.read_cars, delta=False),
             Resource("buyers", lambda c, _s: self._plain(c, "buyers", "/buyers", "buyerId"), delta=False),
             Resource("results", lambda c, _s: self._results(c), delta=False),
+            Resource("sold", self.read_sold, delta=False),
         ]
 
     # ------------------------------------------------------------- reading
@@ -64,6 +66,11 @@ class VehicleAuctionAdapter(GenericAdapter):
     def _results(self, client: SourceClient) -> Iterator[Record]:
         for row, url in self.pages(client, "/results"):
             yield Record("results", f"{row['segment']}:{row['band']}", row, url)
+
+    def read_sold(self, client: SourceClient, since: str | None) -> Iterator[Record]:  # noqa: ARG002 - always in full
+        org = _org(client)
+        for row, url in self.pages(client, "/sold"):
+            yield Record("sold", str(row["consignmentId"]), row | {"org_unit_id": org}, url)
 
     @staticmethod
     def _store_cars(client: SourceClient, org: str | None) -> dict[str, str | None]:
@@ -106,6 +113,10 @@ class VehicleAuctionAdapter(GenericAdapter):
             reporting = p.get("titleDbReporting")
             fact = Fact("vendor", p["buyerId"], "title_db_reporting", reporting, "titleDbReporting", reporting, "Pass-through")
             return keep([fact])
+        if record.resource == "sold":
+            key = vin_key(p.get("org_unit_id"), p["vin"])
+            sale = (("price", "sale_price"), ("soldAt", "sold_at"), ("daysToSale", "days_to_sale"))
+            return keep([Fact("outcome", key, to, p.get(src), src, p.get(src), "Consignment sold") for src, to in sale])
         if record.resource != "vin_auction":
             return []
         key = vin_key(p.get("org_unit_id"), p["vin"])

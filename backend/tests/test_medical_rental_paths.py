@@ -267,19 +267,22 @@ def test_mr_09_a_business_rule_on_rerent_reaches_the_request_routes_of_a_real_ca
 
 
 def test_order_invariant_medical_rental():
-    """R20 with MR-S3: no decontamination record. The rule "prefer re-rent" and DV-MR-SAME (shortcut to `rerent`, enabled)
-    revive nothing: every route the decontamination gate blocked stays blocked, and the case is held with no recommendation."""
+    """R20 with MR-S3: no decontamination record. The rule "prefer re-rent", DV-MR-SAME (shortcut to `rerent`) and DV-MR-ISO
+    (enhanced decontamination step) revive nothing: every route the decontamination gate blocked stays blocked, and the
+    case is held with no recommendation."""
     c = _open(3, **SCENARIOS["MR-S3"])
     assert c["gateHold"]["gates"] == ["G-MED-DECON"] and c["recommendation"] is None
     same = Diversion(op_id="DV-MR-SAME", stage="decide", kind="shortcut", to="rerent",
-                     when=[{"fact": "request.same_hospital_within_24h", "op": "eq", "value": True}])  # fmt: skip
+                     when=[{"fact": "demand.same_hospital_within_24h", "op": "eq", "value": True}])  # fmt: skip
+    iso = Diversion(op_id="DV-MR-ISO", stage="match", kind="step", step="enhanced_decon", owner_role="decontamination_lead",
+                    when=[{"fact": "asset.ward_type", "op": "eq", "value": "isolation"}])  # fmt: skip
     with SessionLocal() as s:
-        pack = live_pack(s, c).model_copy(update={"diversions": [same]})
-        probe = {**c, "request": {"same_hospital_within_24h": True}}
+        pack = live_pack(s, c).model_copy(update={"diversions": [iso, same]})
+        probe = {**c, "asset": {"ward_type": "isolation"}, "demand": {"same_hospital_within_24h": True}}
         d = decide_case(probe, pack, FlowVersion(None, 3, (CompiledRule("BR-3", {}, "prefer", "rerent", "prefer re-rent"),)),
                         session=s)  # fmt: skip
     assert d.trace == ("gates", "valuation", "queue_plan", "rules", "rank")
-    assert d.diversions == ["DV-MR-SAME"]  # the shortcut matched, after the gates
+    assert d.diversions == ["DV-MR-ISO", "DV-MR-SAME"]  # both matched, after the gates
     assert d.recommendation is None and d.route is None and d.hold is not None
     why = [(r["id"], r["excluded"], r["failReason"]) for r in d.routes]
     assert all(r["excluded"] for r in d.routes), why  # the 3-year-old pump's refurbish was never considered: still excluded

@@ -72,7 +72,7 @@ from di.services.agents.config_agent import MAX_TEXT, ChangeSet, ChangeSetError,
 from di.services.agents.playbooks import pack_author, stop_explainer
 from di.services.cases.decide import Decision, decide_case
 from di.services.modeler import compose as core
-from di.services.modeler import stop_reasons
+from di.services.modeler import mapping_choices, stop_reasons
 from di.services.modeler.compile import FlowVersion
 from di.services.modeler.gates import catalogue
 from di.services.modeler.overlay import OverlayError, apply_overlay, ops_json, parse_ops
@@ -395,7 +395,7 @@ def _mapping_summary(ctx: CallContext, sid: str, vendor: str) -> dict[str, int]:
     for recs in discover._samples(s, sid).values():
         sample = [p for _, p in recs]
         profiles = [mapping_suggest.profile(sample, f) for f in mapping_suggest.field_paths(sample)]
-        for prop in mapping_suggest.suggest(profiles, sample, canon, memory=memory):
+        for prop in mapping_suggest.suggest(profiles, sample, canon, memory=memory, source_id=sid):
             counts["fields"] += 1
             counts[prop.band] += 1
     counts["asked_owner"] = len(mapping_decisions.open_questions(s, sid))
@@ -563,21 +563,56 @@ def test_run(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         f"{s_.stage}: reached {s_.reached}, stopped {s_.stopped}; " + ", ".join(f"{r}: {n}" for r, n in s_.reasons)
         for s_ in stops if s_.stopped
     )  # fmt: skip
+    choices = mapping_choices.report(items, draft)  # what each choice of an ambiguous mapping would have stopped (P9-11.11)
+    facts += "".join(f"\n{c['text']}" for c in choices)
     words = stop_explainer.explain(ctx, facts, lambda t: stop_reasons.check_text(t, facts))
     return {
         "id": row["id"], "batch_id": batch.id, "sample": len(items), "total": total, "decided": n_decided,
-        "stages": [s_.view() for s_ in stops], "text": words or line, "by_model": words is not None,
+        "stages": [s_.view() for s_ in stops], "text": "\n".join([words or line, *(c["text"] for c in choices)]),
+        "by_model": words is not None, "mapping_choices": choices,
         "decisions": [{"item_id": t.item_id, "route": decided[t.item_id].route} for t in traces if t.stage is None],
     }  # fmt: skip
 
 
 # ---------------------------------------------------------------- submit
+def _undecided(row: dict[str, Any], pack: Pack, ctx: CallContext) -> list[str]:
+    """The mapping fields the pack hints at (a field it knows to be unsure, P9-9.13, UC-03) in the stored sample of a source
+    the composition needs, that have no person's choice yet, or whose question the system owner has not answered. Each
+    needs a person's choice among the five; the composition cannot be sent for approval before."""
+    from di.connectors import discover, mapping_suggest
+
+    s, org = ctx.session, row["org_unit_id"]
+    reg_type = {(e.id, e.version): e.system_type for e in adapter_repo.entries(s, org)}
+    sources = _sources(s, org)
+    out: list[str] = []
+    for _name, kind, key in _wanted_systems(row, pack):
+        found = sorted((m, x["id"]) for x in sources if (m := _match(x, key, kind, reg_type)) is not None)
+        if not found:
+            continue
+        sid = found[0][1]
+        live = {(d["resource"] or "", d["src"]): d for d in mapping_decisions.of_source(s, sid)}
+        for res, recs in discover._samples(s, sid).items():
+            for f in mapping_suggest.field_paths([p for _, p in recs]):
+                if mapping_suggest.hint_of(sid, f) is None:
+                    continue
+                d = live.get((res, f)) or live.get(("", f))
+                if d is None:
+                    out.append(
+                        f"A mapping field ({f} of {sid}) has no decision yet: accept it, choose another field, accept it "
+                        "with a conversion, mark it not needed or ask the system owner."
+                    )
+                elif d["decision"] == "asked_owner":
+                    out.append(f"A mapping field ({f} of {sid}) is still waiting for its owner.")
+    return out
+
+
 @guard("compose.submit")
 def submit_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | tuple[str, str, dict[str, Any]] | None:
     if bad := _editable_guard(i, ctx):
         return bad
     row = _row(i, ctx)
-    left = core.blocking(row["steps"], _ops(row), _pack(row, ctx))
+    pack = _pack(row, ctx)
+    left = [*core.blocking(row["steps"], _ops(row), pack), *_undecided(row, pack, ctx)]
     return ("conflict", "Not ready to submit: " + " ".join(left), {"blocking": left}) if left else None
 
 

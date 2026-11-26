@@ -124,6 +124,9 @@ class RebaseResult(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+_LOCKED = "{id} is a compliance guardrail locked by the pack: only tightening and extra approvers are allowed."
+
+
 def _n(x: float) -> str:
     return f"{x:g}"
 
@@ -174,6 +177,13 @@ def _check_skip(op: Shortcut, pack: Pack) -> None:
     if hit is not None:
         gid, name, stage = hit
         msg = f"Blocked: this skips the compliance guardrail {name} at {STAGE_LABELS[stage]}."
+        gate = next((g for g in pack_gates(pack) if g.id == gid), None)
+        note = (gate.params.get("skip_refusal") if gate is not None else None) or {}
+        if note.get("name") and note.get("suggestion"):  # the pack's own wording for its gate (P9-11.12, MR-14)
+            msg = (
+                f"Blocked: this would bypass the compliance guardrail '{note['name']}'; ask for a change to the guardrail "
+                f"instead. Suggestion: {note['suggestion']}."
+            )
         raise OverlayError(op.id, "skips_compliance", msg, gid)
 
 
@@ -185,8 +195,7 @@ def _tighten(pack: Pack, op: Tighten) -> Pack:
     param = g.param
     if param is None or op.field != param.field:  # only a field with a direction (`param.stricter`) can be tightened
         if g.locked:
-            msg = f"{g.id} is a compliance guardrail locked by the pack: only tightening and extra approvers are allowed."
-            raise OverlayError(op.id, "locked", msg)
+            raise OverlayError(op.id, "locked", _LOCKED.format(id=g.id))
         raise OverlayError(op.id, "not_editable", f"{op.field} of {g.id} is not editable in this pack.")
     stricter = op.value > param.value if param.stricter == "higher" else op.value < param.value
     if not stricter:
@@ -210,6 +219,9 @@ def _set_param(pack: Pack, op: SetParam) -> Pack:
     layer = pack.customer_layer
     rng = layer.params.get(op.path)
     if rng is None:
+        locked = _guardrail(pack, op.path.partition(".")[0])
+        if locked is not None and locked.locked:  # a parameter of a locked guardrail is never the customer's (UC-17)
+            raise OverlayError(op.id, "locked", _LOCKED.format(id=locked.id))
         raise _unknown(op.id, op.path, pack)
     if not rng.min <= op.value <= rng.max:
         raise OverlayError(op.id, "out_of_range", f"{op.path} must be between {_n(rng.min)} and {_n(rng.max)}.")

@@ -46,14 +46,14 @@ from sqlalchemy.orm import Session
 
 from di.core import clock
 from di.services.actions.registry import ActionError
-from di.services.cases import car_facts, gate_hold, store, unit_plan
+from di.services.cases import battery_wait, car_facts, gate_hold, store, telecom_facts, unit_plan
 from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
 from di.services.device import verify as _device_verify  # noqa: F401 - registers the check of the gate G-DEV-QUOTE (P9-6.5)
 from di.services.device import wipe as _device_wipe  # noqa: F401 - registers the check of the gate G-DEV-WIPE (P9-6.7)
 from di.services.engine.evaluate import apply_business, build_routes
 from di.services.engine.jsmath import js_round
 from di.services.engine.queue import Capacity, Dem, QueuePlanner, planner_for
-from di.services.engine.routes import Route, rank_routes
+from di.services.engine.routes import POLICY, Route, fail, rank_routes
 from di.services.modeler.apply import FLOW_REMOVED
 from di.services.modeler.compile import FLOW, CompiledRule, FlowVersion
 from di.services.modeler.gates import (
@@ -81,6 +81,7 @@ from di.services.modeler.valuers import (
     service_desk,
     tool_approval,
     tool_fleet,
+    used_car_steps,
     used_cars,
 )
 from di.services.modeler.valuers.device import ChannelValue
@@ -364,6 +365,8 @@ def _plugin(kind: str, c: Mapping[str, Any], pack: Pack, t: Template, as_of: dat
     _decorate(t, routes)
     best = best_of(values)
     if kind == "used_cars":
+        for r in routes:
+            r["steps"] = used_car_steps.follow_steps(r["id"], pack, facts)  # the channel's follow-through (P9-9.17)
         return _Valued(routes, best["k"] if best else None, approvals=used_cars.approval_checks(facts, pack, values), facts=facts)
     approve = APPROVALS.get(kind)  # a guardrail the plug-in holds the decision with for a person (P9-11.9)
     holds = approve(facts, pack, values) if approve else []  # a plug-in's holds are failed approval checks (P9-9.11 model)
@@ -375,7 +378,8 @@ def _unit_pack(
     as_of: datetime | None, blocked: frozenset[str],
 ) -> _Valued:  # fmt: skip
     """A unit pack (telecom network, P9-10.10) valued, then planned with the units of its queue: the `queue` given, else the
-    org's other open cases of the template. Spares before new and every named demand filled once (`unit_plan`)."""
+    org's other open cases of the template. Spares before new and every named demand filled once (`unit_plan`). With a session,
+    each unit (this one and the queue's) is valued on its canonical facts where the case holds none (`telecom_facts`)."""
     members = (
         [dict(x) for x in queue]
         if queue is not None
@@ -383,6 +387,9 @@ def _unit_pack(
         if session is not None and c.get("owner")
         else []
     )
+    if session is not None:  # the market, demand and spares facts of each unit from the canonical store (P9-10.11)
+        c = telecom_facts.overlay(session, c)
+        members = [telecom_facts.overlay(session, m) for m in members]
     values = unit_plan.plan(c, pack, as_of, blocked, members)
     routes = to_routes(t, values)
     _decorate(t, routes)
@@ -406,6 +413,16 @@ def _shortcut(diversions: Sequence[Diversion], routes: list[Route]) -> str | Non
             if hit is not None:
                 return hit
     return None
+
+
+def _only(diversions: Sequence[Diversion], routes: list[Route], go: str) -> None:
+    """A used car's shortcut to a channel (DV-UC-MILES: over 120,000 miles goes to the wholesale auction) values only that
+    channel: the others fail with the diversion's id. The gates ran before this (R20), and a channel they blocked stays
+    blocked with its own reason (P9-9.14)."""
+    d = next(x for x in diversions if x.kind == "shortcut" and go.split(":", 1)[0] == x.to)
+    for r in routes:
+        if not r["excluded"] and r["id"] != go:
+            fail(r, POLICY, f"Diversion {d.op_id}: only {d.to} is valued for this car")
 
 
 LOW_LIFE_HELD = frozenset({"release", "redeploy"})  # re-issue and pool: a Low life confidence leaves them to a person (P9-3.9)
@@ -510,10 +527,14 @@ def decide_case(
         c["requiredSteps"] = [*kept, *steps]
     else:
         c.pop("requiredSteps", None)
+    if wait := battery_wait.waiting(c, diversions):  # an EV waits for its battery assessment: no channel is valued (P9-9.14)
+        battery_wait.hold(c, routes, wait)
     apply_business(c, routes, rules, t)
-    go = _shortcut(diversions, routes)
+    go = None if wait else _shortcut(diversions, routes)
     if go:
         c["preferred"] = go
+        if kind == "used_cars":
+            _only(diversions, routes, go)
     eligible = {r["id"] for r in routes if not r["excluded"]}  # 5. rank
     chosen = go or (valued.best if valued.best in eligible else c.get("preferred"))
     rec = rank_routes(routes, c.get("blocked") or c.get("gateHold"), chosen)
@@ -528,8 +549,8 @@ def decide_case(
         hold=c.get("gateHold"), trace=TRACE, as_of=as_of, extra=_extra(rec, valued.figures),
         case_fields={k: c[k] for k in GATE_KEYS if k in c}, ticket=_ticket_of(valued.ticket, rec),
         approval=approval,
-        approvals=[dict(a) | {"route": a.get("route") or rec["id"]} for a in valued.approvals] if rec else [],  # P9-11.9
-        evidence=_evidence(valued, rec, pack),
+        approvals=_approvals(valued, rec),
+        evidence=_evidence(valued, rec, pack, as_of),
     )  # fmt: skip
 
 
@@ -549,17 +570,26 @@ def _approval(
     return {"kind": r.kind, "role": r.role, "reasons": r.reasons, "holds": list(r.holds), "confidence": conf}
 
 
-def _evidence(valued: _Valued, rec: Route | None, pack: Pack) -> list[str]:
-    """The plain facts behind a recommendation, from the plug-in's `evidence_lines` hook (a used car, P9-9.11; a rental
-    device, P9-11.9); none for another pack or no route."""
+def _evidence(valued: _Valued, rec: Route | None, pack: Pack, as_of: datetime | None = None) -> list[str]:
+    """The plain facts behind the recommendation (the valuer's hook): a used car's (P9-9.11) or a re-rent's (P9-11.9); none for
+    another pack or no route."""
     if rec is None or not valued.facts:
         return []
+    best = cast(PathValue, {"k": rec["id"]})
     kind = kind_of(pack)
     if kind == "used_cars":
-        return used_cars.evidence_lines(valued.facts, cast(PathValue, {"k": rec["id"]}), pack)
+        return used_cars.evidence_lines(valued.facts, best, pack)
     if kind == "medical_rental":
-        return medical_rental.evidence_lines(valued.facts, cast(PathValue, {"k": rec["id"]}), pack)
+        return medical_rental.evidence_lines(valued.facts, best, pack, as_of)
     return []
+
+
+def _approvals(valued: _Valued, rec: Route | None) -> list[dict[str, Any]]:
+    """The approval checks of the decision; a hold a plug-in left without a route (AP-MR-REPAIR) names the recommendation that
+    the person approves."""
+    if rec is None:
+        return []
+    return [{**a, "route": rec["id"]} if "route" in a and a["route"] is None else a for a in valued.approvals]
 
 
 def _ticket_of(ticket: dict[str, Any] | None, rec: Route | None) -> dict[str, Any] | None:

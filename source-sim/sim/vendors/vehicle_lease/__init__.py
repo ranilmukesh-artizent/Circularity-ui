@@ -9,6 +9,12 @@ lessee: `lesseeRef` is a code (`L-0001` ...), never a name.
     GET /vehicle-lease/api/v1/lease-returns?limit=&offset=&updatedSince=   {items, next, total}
     GET /vehicle-lease/api/v1/lease-returns/{leaseId}                      one return
 
+    POST /vehicle-lease/api/v1/charges {leaseId, kind, amount}   a charge to the lessee (P9-9.20): kind `excess_mileage` or
+                                  `excess_wear`, amount above zero -> 201 {chargeId: CH-0001 ..., leaseId, kind, amount, status:
+                                  "accepted"}; idempotent (the `Idempotency-Key` header's, else the lease and kind: a repeat
+                                  answers 200 with the first charge); 404 for an unknown lease, 422 for a bad body, 400 for
+                                  one that is not JSON. A reset drops the charges.
+
 Auth: API key in `x-api-key` (demo key `uc_lease-demo-key`); 401 with an error body otherwise.
 Paging: `limit` 1-200 (default 25) and `offset`; `next` is the next offset or null. `updatedSince` (ISO 8601) keeps
 the returns changed after it. Errors are `{"error": {"code", "message"}}`.
