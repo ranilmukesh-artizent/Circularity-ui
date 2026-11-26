@@ -46,6 +46,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { describeInAssistant, openInSetup } from './a10-setup.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
@@ -221,11 +222,8 @@ async function repairLogDocument() {
 await step('1 Compose: sample prompt 1, the reading, the pack and one question', async () => {
   const p = await as('planner-a');
   await openCompose(p, null);
-  const prompt = panel(p).locator('.cmp-prompts button').first();
-  await prompt.waitFor();
-  await prompt.click();
-  if (!(await panel(p).getByLabel('Describe your business').inputValue()).trim()) throw new Error('the sample prompt did not fill the box');
-  await panel(p).getByRole('button', { name: 'Draft the changes' }).click();
+  await describeInAssistant(p); // plan 10: the Describe step is Ask Circularity's Set up mode; sample prompt 1
+  await openInSetup(p);
   await panel(p).getByRole('heading', { name: /What the agent read/ }).waitFor({ timeout: UI });
   const t = await panel(p).innerText();
   if (!/Matched pack|Nearest pack/.test(t) || !/tool_fleet/.test(t)) throw new Error('no matched pack line naming tool_fleet');

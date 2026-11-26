@@ -10,7 +10,6 @@ import type { PageProps } from '../registry';
 import { AssistantPanel } from './AssistantPanel';
 import { ChecksPanel } from './ChecksPanel';
 import { ComposePanel } from './compose/ComposePanel';
-import { DescribeDialog } from './DescribeDialog';
 import { FlowCanvas } from './FlowCanvas';
 import { FlowInspector } from './FlowInspector';
 import { addRule, connect, disconnect, moveNode, nextRid, removeNode, updateRule } from './flowEdit';
@@ -70,7 +69,6 @@ function ModelerBody({ s, compose0 }: { s: ModelerScreen; compose0: number | nul
   const [checks, setChecks] = useState<Check[]>(s.checks);
   const [sel, setSel] = useState<string | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
-  const [describing, setDescribing] = useState(false);
   const dirty = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(graph);
@@ -161,7 +159,6 @@ function ModelerBody({ s, compose0 }: { s: ModelerScreen; compose0: number | nul
         {s.flow.org_unit_id !== s.org && <span className="note">{s.org} uses this flow from {s.flow.org_unit_id}.</span>}
         <span className="grow" />
         {s.can.fork && <button className="btn sm" disabled={action.pending} onClick={fork}>Give {s.org} its own flow</button>}
-        {can('managePacks') && <button className="btn sm" onClick={() => setDescribing(true)}>Describe your business</button>}
         {can('managePacks') && <button className="btn sm" aria-pressed={composing} onClick={() => setComposing((v) => !v)}>Compose</button>}
         {editable && <button className="btn sm pri" onClick={add}>Add rule</button>}
         {!editable && !s.can.fork && <span className="note">Read only</span>}
@@ -217,7 +214,6 @@ function ModelerBody({ s, compose0 }: { s: ModelerScreen; compose0: number | nul
       {s.template.key === 'tool_fleet' && <TablesPanel s={s} />}
       {showReplay(s) && <ReplayPanel s={s} />}
       {currentAccount()?.role !== 'Finance' && <ModelsPanel />}
-      {describing && <DescribeDialog org={s.org} prompts={[]} onClose={() => setDescribing(false)} />}
     </>
   );
 }

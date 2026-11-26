@@ -1,58 +1,32 @@
 import { useEffect, useState } from 'react';
-import { answerQuestion, markStep, packPrompts, readDescription, startComposition, type Composition, type PackMatch } from '../../../api/compose';
+import { answerQuestion, markStep, readDescription, type Composition, type PackMatch } from '../../../api/compose';
 import { toast } from '../../../components/toast';
 import { useAction } from '../../../hooks/useAction';
-
-const MAX = 4000;
-
-/** The pack's sample descriptions as buttons (a pack that has none shows none). */
-function Prompts({ pack, onPick }: { pack: string; onPick: (t: string) => void }) {
-  const list = packPrompts(pack);
-  return (
-    <div className="cmp-prompts" aria-label="Sample descriptions">
-      {list.map((p) => (
-        <button key={p} className="btn sm" onClick={() => onPick(p)} title={p}>{p.length > 56 ? p.slice(0, 56) + '…' : p}</button>
-      ))}
-    </div>
-  );
-}
+import { openAssistant } from '../../../utils/askBus';
+import { ChangeSetList } from './ChangeSetList';
+import { matchLine, wordCountLine } from './changeSetView';
 
 /**
- * Step 1 of Compose (plan 9, P9-8.18, story X-10): describe the business. Before a composition exists: a text box and the pack's
- * sample prompts. After `startComposition`: the reading log, the matched pack with its score, the one question (answer or Skip),
- * then the drafted changes, systems and KPIs. Operations the person did not state carry an "assumed" badge. Nothing here approves
- * anything: "Mark done" only says this step is finished, and a different person approves the composition as a whole.
+ * Step 1 of Compose (plan 9, P9-8.18, story X-10; plan 10, T3). Before a composition exists this is a launcher: the conversation
+ * (describe, read, one question, draft) happens in Ask Circularity's Set up mode, so there is one place to describe a business.
+ * After it, this is the review of what was drafted: the reading line, the matched pack with its score, the one question (answer or
+ * Skip), the changes as plain sentences with "assumed" tags and the blocked lines. Nothing here approves anything: "Mark done" only
+ * says this step is finished, and a different person approves the composition as a whole.
  */
-export function DescribeStep({ org, pack, composition, onStarted }: {
-  org: string;
-  /** the pack whose sample prompts are offered, and the pack the draft starts from */
-  pack: string;
+export function DescribeStep({ composition }: {
+  /** the pack's org and key are read from the page by the assistant; kept in the props so Compose passes one set to every step */
+  org?: string;
+  pack?: string;
   composition: Composition | null;
-  onStarted: (id: number) => void;
+  onStarted?: (id: number) => void;
 }) {
-  const [text, setText] = useState('');
-  const [err, setErr] = useState('');
-  const action = useAction();
-
-  const start = async () => {
-    setErr('');
-    const r = await action.run(() => startComposition(org, text.trim(), pack), { all: setErr });
-    if (!r.ok) return;
-    toast(r.output.log ?? 'Drafted the changes.');
-    onStarted(r.output.id);
-  };
-
   if (!composition) {
     return (
       <div className="cmp-step">
-        <p className="note">Say how your returns work in a few sentences. The agent drafts configuration, never code; a person approves it.</p>
-        <Prompts pack={pack} onPick={setText} />
-        <textarea aria-label="Describe your business" rows={5} maxLength={MAX} value={text} onChange={(e) => setText(e.target.value)} className="cmp-text" />
+        <p className="note">Describe how your returns work in a few sentences. Ask Circularity drafts configuration, never code; a person approves it.</p>
         <div className="row">
-          <button className="btn sm pri" disabled={action.pending || !text.trim()} onClick={() => void start()}>Draft the changes</button>
-          <span className="note">{text.length}/{MAX}</span>
+          <button className="btn sm pri" onClick={() => openAssistant({ mode: 'setup' })}>Describe the business in Ask Circularity</button>
         </div>
-        {err && <p className="err" role="alert">{err}</p>}
       </div>
     );
   }
@@ -67,6 +41,7 @@ function Drafted({ c }: { c: Composition }) {
   const editable = c.status === 'draft' || c.status === 'sent_back';
   const done = c.steps.describe.state === 'done';
   const explicit = c.reading.explicit_controls ?? c.reading.controls.length;
+  const m = matchLine(match, c.pack_key);
 
   // the score of the match is the reading's, not stored with the composition
   useEffect(() => {
@@ -87,14 +62,8 @@ function Drafted({ c }: { c: Composition }) {
   return (
     <div className="cmp-step">
       <h4>What the agent read{c.reading.by_model ? ' (drafted by a model, checked by the rules)' : ''}</h4>
-      <p>
-        {c.reading.word_count} words · {explicit} explicit control{explicit === 1 ? '' : 's'}
-        {c.reading.systems.length > 0 && ` · systems: ${c.reading.systems.join(', ')}`}
-      </p>
-      <p>
-        <b>{match?.nearest_only ? 'Nearest pack' : 'Matched pack'}:</b> {c.pack_key}
-        {match && ` (${Math.round(match.score)})`}
-      </p>
+      <p>{wordCountLine(c.reading.word_count, explicit, c.reading.systems)}</p>
+      <p className={m.amber ? 'cmp-amber' : undefined}>{m.text}</p>
       {cs.question && editable && (
         <div className="cmp-question">
           <b>{cs.question.text}</b>
@@ -107,28 +76,13 @@ function Drafted({ c }: { c: Composition }) {
         </div>
       )}
       <h4>Drafted for {cs.pack} v{cs.base_version}{cs.by_model ? ' (by a model)' : ''}</h4>
-      <ul className="cmp-ops">
-        {cs.ops.map((o) => (
-          <li key={o.id}>
-            {o.op}: {JSON.stringify(Object.fromEntries(Object.entries(o).filter(([k]) => !['id', 'op', 'by', 'note'].includes(k))))}
-            {cs.assumed.includes(o.id) && <span className="chip line" title="You did not state this; check it">assumed</span>}
-          </li>
-        ))}
-        {cs.ops.length === 0 && <li className="note">No changes to the pack.</li>}
-        {(cs.rules ?? []).map((r) => (
-          <li key={r.id}>
-            Rule {r.id} at stage {r.stage_no}: {r.text} ({r.action} {r.path}; from your answer to the {r.origin.question} question)
-            {r.assumed && <span className="chip line" title="You did not answer; this is the pack's default">assumed</span>}
-          </li>
-        ))}
-      </ul>
+      <ChangeSetList cs={cs} />
       {cs.outline && (
         <p className="note">
           Guardrails you stated: {cs.outline.stated.join(', ') || 'none'}. From the pack: {cs.outline.from_pack.join(', ') || 'none'}.
           Research additions: {cs.outline.research_additions.join(', ') || 'none'}. Asset fields: {cs.outline.asset_fields.join(', ')}.
         </p>
       )}
-      {cs.blocked.map((b, i) => <p key={i} className="err">Blocked ({b.guardrail}): {b.text}</p>)}
       <p><b>Systems:</b> {cs.systems.map((s) => s.name).join(', ') || 'none named'}</p>
       <p><b>KPIs:</b> {cs.kpis.join(', ') || 'none'}</p>
       {err && <p className="err" role="alert">{err}</p>}

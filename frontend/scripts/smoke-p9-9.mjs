@@ -41,6 +41,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { describeInAssistant, openInSetup } from './a10-setup.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const shots = process.env.SMOKE_SHOTS || path.join(tmpdir(), 'smoke-p9-9');
@@ -229,14 +230,9 @@ async function startCompose(p, typed) {
   await open(p, MODELER, '.mdl-bar');
   await p.getByRole('button', { name: 'Compose', exact: true }).click();
   await compose(p).waitFor();
-  if (typed === undefined) {
-    const prompt = compose(p).locator('.cmp-prompts button[title^="Lease returns to best channel"]').first();
-    await prompt.waitFor({ timeout: UI });
-    await prompt.click();
-  } else {
-    await compose(p).getByLabel('Describe your business').fill(typed);
-  }
-  await compose(p).getByRole('button', { name: 'Draft the changes' }).click();
+  // plan 10: the Describe step is Ask Circularity's Set up mode, then "Open in Set up" shows the composition
+  await describeInAssistant(p, typed === undefined ? { title: 'Lease returns to best channel', timeout: UI } : { typed, timeout: UI });
+  await openInSetup(p, UI);
   await compose(p).getByRole('heading', { name: /What the agent read/ }).waitFor({ timeout: UI });
 }
 let COMP = 0;
