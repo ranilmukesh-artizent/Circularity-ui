@@ -24,7 +24,9 @@ lien_release_ref, title_brand, title_checked_at.
 
 The medical rental fields (plan 9, P9-11.2) are written by the extra adapters mr_rental and mr_assets, keyed by `tag_key`: on
 `asset` tag, device_class, serial, in_service_date, age_years, has_patient_data, depot, checked_in_at, hospital, ward_type,
-turnaround; on `market` residual_sale_value; on `demand` rental_requests and region_forecast.
+turnaround; on `market` residual_sale_value; on `demand` rental_requests and region_forecast. The decontamination fields
+(P9-11.3) are written by mr_decon on `condition`: decon_started_at, decon_ended_at, decon_record_ref, decon_enhanced,
+decon_result.
 
 A field a connector starts to write must be added here (with its type), or its facts are held as failed records.
 Types: text, ref (a reference string), date (ISO 8601 date or timestamp string), number, bool, list, object, any.
@@ -291,6 +293,12 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "recall_campaigns": "list",
         "recall_checked_at": "date",
         "recall_remedy_ref": "ref",
+        # plan 9 P9-11.3, the decontamination log (extra adapter mr_decon), keyed by tag_key
+        "decon_started_at": "date",
+        "decon_ended_at": "date",
+        "decon_record_ref": "ref",
+        "decon_enhanced": "bool",
+        "decon_result": "text",
     },
     "demand": {
         "accepts_refurbished": "bool",
