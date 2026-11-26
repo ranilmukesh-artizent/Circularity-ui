@@ -19,6 +19,10 @@ with a key it deduplicates on.
     consignment, salvage_sale       the auction platform (`uc_auction`): POST consignments (with the title reference and the
                                     disclosures), salvage-sales (only to a buyer that reports to the national title database)
                                     all idempotent on the header Idempotency-Key = key; the reply is the system's confirmation
+    residual, lessee_charge         the close of a used-car lease return (P9-9.20), sent on their own, outside an approval's plan,
+                                    after Finance accepts the agent's proposal: `residual` the gain or loss against the book
+                                    value, one S/4HANA journal item and the clearing item (same posting as `finance`);
+                                    `lessee_charge` POST charges {leaseId, kind, amount} to the lease system (`uc_lease`)
 
 Where things come from: the order line is the case's matched demand (caseDemand: SO-48102 line 10 for RT-1048) and the
 unit is the case's asset (the serial Sterling, Depot Repair and Manhattan know, MTR-2041). The transport goes from the
@@ -336,6 +340,14 @@ def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: 
         items.append(_item(n, GL.get(ln["kind"], GL_OTHER), -ln["act"], ln["label"], ln["kind"], c["assetId"], plant))
     total = sum(ln["act"] for ln in lines)
     items.append(_item(len(lines) + 1, GL_CLEARING, total, f"Decision clearing {c['id']}", CLEARING, None, None))
+    doc, detail = _post_journal(s, ins, ref, f"Actuals {c['id']}", items)
+    call = {"call": "POST JournalEntryCreateRequestConfirmation_In", "body": {"DocumentReferenceID": ref, "lines": lines}}
+    return Sent([call], doc, detail)
+
+
+def _post_journal(s: Session, ins: dict, ref: str, header: str, items: list[str]) -> tuple[str, dict[str, Any]]:
+    """One S/4HANA journal entry (SOAP Journal Entry - Post) with the items, once per instruction key: the document number and
+    what later steps need (`detail`: AccountingDocument, CompanyCode, FiscalYear, duplicate). A refusal is `Refused`."""
     today = clock.now().date().isoformat()
     msg = uuid.uuid5(uuid.NAMESPACE_URL, ins["idem_key"]).hex.upper()  # the same message id on every resend
     xml = (
@@ -346,7 +358,7 @@ def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: 
         "<OriginalReferenceDocumentType>BKPFF</OriginalReferenceDocumentType>"
         "<BusinessTransactionType>RFBU</BusinessTransactionType><AccountingDocumentType>SA</AccountingDocumentType>"
         f"<DocumentReferenceID>{escape(ref)}</DocumentReferenceID>"
-        f"<DocumentHeaderText>{escape(('Actuals ' + c['id'])[:25])}</DocumentHeaderText>"
+        f"<DocumentHeaderText>{escape(header[:25])}</DocumentHeaderText>"
         f"<CompanyCode>{S4_COMPANY}</CompanyCode><DocumentDate>{today}</DocumentDate><PostingDate>{today}</PostingDate>"
         + "".join(items)
         + "</JournalEntry></JournalEntryCreateRequest></sfin:JournalEntryBulkCreateRequest></soapenv:Body></soapenv:Envelope>"
@@ -364,9 +376,8 @@ def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: 
     if severity == "3" or not doc or doc == "0000000000":
         notes = "; ".join(e.text or "" for e in root.iter() if e.tag.rsplit("}", 1)[-1] == "Note")
         raise Refused(f"SAP S/4HANA did not post the journal entry: {notes}")
-    call = {"call": "POST JournalEntryCreateRequestConfirmation_In", "body": {"DocumentReferenceID": ref, "lines": lines}}
     detail = {"AccountingDocument": doc, "CompanyCode": _find(root, "CompanyCode"), "FiscalYear": _find(root, "FiscalYear")}
-    return Sent([call], doc, detail | {"duplicate": severity == "2"})
+    return doc, detail | {"duplicate": severity == "2"}
 
 
 def _item(n: int, gl: str, usd: float, text_: str, assignment: str, material: str | None, plant: str | None) -> str:
@@ -413,10 +424,11 @@ UC_DMS = "/dealer-dms/api/v1"
 UC_AUCTION = "/vehicle-auction/v1"
 
 
-def _uc_post(s: Session, source: str, path: str, ins: dict, body: dict, id_field: str) -> Sent:
+def _uc_post(s: Session, source: str, path: str, ins: dict, body: dict, id_field: str, step: bool = True) -> Sent:
     """One idempotent write to the dealer system or the auction platform (`Idempotency-Key` = the instruction key: a repeat
     answers the first document). The reply's document is the system's confirmation: `detail.confirmed` lets the send
-    acknowledge the step (these systems send no completion event)."""
+    acknowledge the step (these systems send no completion event); `step` False for an instruction outside an approval's plan
+    (P9-9.20), which has no plan step to acknowledge: the send marks its own row."""
     cl = client(s, source)
     try:
         doc = cl.request("POST", path, json=body, headers={"Idempotency-Key": ins["idem_key"]}).json()
@@ -425,7 +437,9 @@ def _uc_post(s: Session, source: str, path: str, ins: dict, body: dict, id_field
     finally:
         cl.close()
     ref = str(doc.get(id_field) or "")
-    return Sent([{"call": f"POST {path.lstrip('/')}", "body": body}], ref or None, {"confirmed": bool(ref), id_field: ref})
+    return Sent(
+        [{"call": f"POST {path.lstrip('/')}", "body": body}], ref or None, {"confirmed": bool(ref), id_field: ref, "step": step}
+    )
 
 
 def _car(s: Session, c: store.Case) -> tuple[str, dict[str, dict[str, Any]]]:
@@ -521,7 +535,50 @@ def salvage_sale(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # n
     return _uc_post(s, "uc_auction", f"{UC_AUCTION}/salvage-sales", ins, {"vin": vin, "buyerId": buyer}, "salvageSaleId")
 
 
+# ---------------------------------------------------------------- the close of a used-car lease return (P9-9.20)
+UC_LEASE = "/vehicle-lease/api/v1"
+
+
+def _close_amount(ins: dict) -> tuple[str, float]:
+    """The label and amount the close step stored on the instruction (`detail.close`, di.services.cases.close_used_cars)."""
+    close = (ins.get("detail") or {}).get("close") or {}
+    if close.get("amount") is None:
+        raise NotApplicable("no amount on the instruction")
+    return str(close.get("label") or "Residual"), float(close["amount"])
+
+
+def residual(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """SAP S/4HANA: the residual gain or loss of a lease return, realised net less the book value (the lease's residual). A
+    gain is a credit on the residual account, a loss a debit, balanced on the clearing account, like the lines of `finance`."""
+    label, amount = _close_amount(ins)
+    if amount == 0:
+        raise NotApplicable("no gain or loss to post")
+    ref = journal_ref(f"RES-{c['id']}")
+    items = [
+        _item(1, GL["residual"], -amount, label, "residual", None, None),
+        _item(2, GL_CLEARING, amount, f"Residual clearing {c['id']}", CLEARING, None, None),
+    ]
+    doc, detail = _post_journal(s, ins, ref, f"Residual {c['id']}", items)
+    call = {"call": "POST JournalEntryCreateRequestConfirmation_In", "body": {"DocumentReferenceID": ref, "residual": amount}}
+    return Sent([call], doc, detail | {"confirmed": True, "step": False})
+
+
+def lessee_charge(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Lease system: POST /charges {leaseId, kind, amount}: the excess-mileage or the excess-wear charge to the lessee, the
+    lease's own id read from the car's `asset.lease_ref`."""
+    label, amount = _close_amount(ins)
+    kind = str(((ins.get("detail") or {}).get("close") or {}).get("kind") or "")
+    _vin, facts = _car(s, c)
+    lease = facts.get("asset", {}).get("lease_ref")
+    if not lease:
+        raise NotApplicable("the car has no lease")
+    body = {"leaseId": str(lease), "kind": kind, "amount": amount}
+    return _uc_post(s, "uc_lease", f"{UC_LEASE}/charges", ins, body, "chargeId", step=False)
+
+
 WRITERS = {
+    "residual": residual,
+    "lessee_charge": lessee_charge,
     "recon_order": recon_order,
     "lot_transfer": lot_transfer,
     "listing": listing,

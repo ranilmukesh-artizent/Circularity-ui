@@ -93,3 +93,28 @@ def test_lease_return_by_id_and_updated_since(client):
     assert [r["vin"] for r in newer["items"]] == [r["vin"] for r in rows[45:]] and newer["total"] == 15
     assert client.get(f"{API}/lease-returns", params={"updatedSince": "yesterday"}, headers=KEY).status_code == 400
     assert client.get(f"{API}/lease-returns", params={"limit": 0}, headers=KEY).status_code == 400
+
+
+def test_uc_23_charges_are_idempotent_and_validated(client):
+    client.post("/_sim/reset", params={"system": "uc_lease"}).raise_for_status()
+    body = {"leaseId": "LS-0001", "kind": "excess_mileage", "amount": 400}
+    one = client.post(f"{API}/charges", json=body, headers=KEY)
+    assert one.status_code == 201 and one.json()["chargeId"] == "CH-0001" and one.json()["status"] == "accepted"
+    assert (one.json()["leaseId"], one.json()["kind"], one.json()["amount"]) == ("LS-0001", "excess_mileage", 400)
+    again = client.post(f"{API}/charges", json=body, headers=KEY)
+    assert again.status_code == 200 and again.json() == one.json()  # the same lease and kind: the first charge
+    wear = client.post(f"{API}/charges", json=body | {"kind": "excess_wear", "amount": 700}, headers=KEY)
+    assert wear.status_code == 201 and wear.json()["chargeId"] == "CH-0002"
+    keyed = client.post(f"{API}/charges", json=body | {"amount": 410}, headers=KEY | {"Idempotency-Key": "k-1"})
+    assert keyed.status_code == 201
+    repeat = client.post(f"{API}/charges", json=body | {"amount": 410}, headers=KEY | {"Idempotency-Key": "k-1"})
+    assert repeat.status_code == 200 and repeat.json() == keyed.json()
+
+
+def test_uc_23_charge_bad_bodies_and_key(client):
+    ok = {"leaseId": "LS-0001", "kind": "excess_wear", "amount": 50}
+    assert client.post(f"{API}/charges", json=ok).status_code == 401
+    for bad in ({**ok, "kind": "fine"}, {**ok, "amount": 0}, {**ok, "amount": "x"}, {**ok, "leaseId": None}):
+        assert client.post(f"{API}/charges", json=bad, headers=KEY).status_code == 422
+    assert client.post(f"{API}/charges", json={**ok, "leaseId": "LS-9999"}, headers=KEY).status_code == 404
+    assert client.post(f"{API}/charges", content=b"nope", headers=KEY).status_code == 400

@@ -9,8 +9,10 @@ from itertools import pairwise
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
-from sim.core import clock
+from sim.core import clock, scheduler
+from sim.core.db import engine
 from sim.core.registry import BY_SOURCE_ID, EXTRA_BY_ID, SYSTEMS
 from sim.main import MOCKS, app
 
@@ -130,3 +132,29 @@ def test_reset_drops_the_writes_and_the_seed_is_the_same_twice(client):
     body = {"vin": vin(1), "saleDate": "2026-10-13", "titleRef": "TT-0001", "disclosures": []}
     again = client.post(f"{API}/consignments", json=body, headers=KEY)
     assert again.status_code == 201 and again.json()["consignmentId"] == "CN-0001"
+
+
+def test_uc_23_consignment_sells_on_its_sale_date_at_the_cleared_price(client):
+    """VIN ...001 (an SUV, 38,000 miles) consigned for 13 Oct sells at noon that day at the SUV 0-40k cleared price, once."""
+    client.post("/_sim/reset", params={"system": "uc_auction"}).raise_for_status()
+    body = {"vin": vin(1), "saleDate": "2026-10-13", "titleRef": "TT-0001", "disclosures": []}
+    made = client.post(f"{API}/consignments", json=body, headers=KEY)
+    assert made.status_code == 201
+    assert client.post(f"{API}/consignments", json=body, headers=KEY).status_code == 200
+    scheduler.tick()
+    assert listing(client, "/sold", vin=vin(1)) == []
+    client.post("/_sim/clock/advance", json={"days": 6}).raise_for_status()  # 7 Oct 09:00 -> 13 Oct 09:00: before noon
+    scheduler.tick()
+    assert listing(client, "/sold", vin=vin(1)) == []
+    client.post("/_sim/clock/advance", json={"hours": 4}).raise_for_status()
+    scheduler.tick()
+    (sold,) = listing(client, "/sold", vin=vin(1))
+    cleared = next(r for r in listing(client, "/results", segment="suv") if r["band"] == "0-40k")["avgClearedPrice"]
+    assert (sold["consignmentId"], sold["price"], sold["daysToSale"]) == (made.json()["consignmentId"], cleared, 6)
+    assert sold["soldAt"].startswith("2026-10-13T13:00")
+    sql = text("SELECT data FROM sim.outbox WHERE source = 'uc_auction' AND type = 'auction.consignment.sold'")
+    with engine.connect() as conn:
+        events = [r.data for r in conn.execute(sql)]
+    assert [(e["vin"], e["price"]) for e in events] == [(vin(1), cleared)]
+    client.post("/_sim/clock/reset").raise_for_status()
+    client.post("/_sim/reset", params={"system": "uc_auction"}).raise_for_status()

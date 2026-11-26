@@ -53,7 +53,9 @@ def send(iid: int, resend: bool = False) -> str:
         if not resend and ins["status"] in ("acknowledged", "failed", "sent"):
             return "skipped"  # a duplicate job, or an event got there first
         c = store.get(s, ins["case_id"])
-        own_ref = ins["kind"] == "payout"  # a payout is sent on its own, outside an approval's plan (P9-6.8)
+        own_ref = (
+            ins["kind"] in queue.OFF_PLAN
+        )  # a payout or a used-car close is sent on its own, outside a plan (P9-6.8, P9-9.20)
         if c is None or (not own_ref and (not c.get("exec") or c["exec"]["ref"] != ins["approval_ref"])):
             _update(s, iid, status="failed", last_error="The approval this instruction belongs to is no longer current")
             s.commit()
@@ -114,7 +116,12 @@ def send(iid: int, resend: bool = False) -> str:
         )
         s.commit()
     if out.detail.get("confirmed") and not resend:
-        _confirm(ins, out.doc_ref)
+        if out.detail.get("step", True):
+            _confirm(ins, out.doc_ref)
+        else:  # off plan (P9-9.20): the system's reply is the confirmation, kept on the instruction's own row
+            with SessionLocal() as s:
+                _update(s, iid, status="acknowledged", doc_ref=out.doc_ref, acknowledged_at=clock.now())
+                s.commit()
     return "sent"
 
 
@@ -175,7 +182,7 @@ def tick() -> int:
     with SessionLocal() as s:
         due = queue.simulated_due(s)
     for ins in due:
-        if ins["kind"] == "payout":  # no plan step to acknowledge: the simulated payout is done when due (P9-6.8)
+        if ins["kind"] in queue.OFF_PLAN:  # no plan step to acknowledge: the simulated write is done when due (P9-6.8, P9-9.20)
             with SessionLocal() as s:
                 _update(s, ins["id"], status="acknowledged")
                 s.commit()
@@ -208,7 +215,9 @@ def _earlier(s: Session, ins: dict) -> dict[str, dict]:
     return {r["kind"]: dict(r) for r in rows}
 
 
-_UPDATABLE = frozenset({"status", "last_error", "simulated", "due_at", "sent_at", "request", "waiting_for"})
+_UPDATABLE = frozenset(
+    {"status", "last_error", "simulated", "due_at", "sent_at", "request", "waiting_for", "doc_ref", "acknowledged_at"}
+)
 
 
 def _update(s: Session, iid: int, **values) -> None:

@@ -1,17 +1,25 @@
 """The auction mock's routes: the reads and the two idempotent writes (see the package docstring for the contract)."""
 
 import json
-from datetime import date
+from datetime import UTC, date, datetime, time
 from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, insert, select, text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.engine import Connection
 
-from sim.core import clock
+from sim.core import clock, events, scheduler
 from sim.core.db import engine
+from sim.vendors.dealer_dms.seed import band_of, car_of
 from sim.vendors.vehicle_auction.models import RECORD, WRITTEN
-from sim.vendors.vehicle_auction.seed import AS_OF, FEES
+from sim.vendors.vehicle_auction.seed import AS_OF, FEES, result_cell
+
+SOURCE = "uc_auction"
+SOLD_HANDLER = "vehicle_auction.consignment.sold"
+SOLD_EVENT = "auction.consignment.sold"
+SALE_HOUR = time(12, 0, tzinfo=UTC)  # a sale closes at noon UTC on its sale date
 
 router = APIRouter(prefix="/vehicle-auction/v1")
 API_KEY = "uc_auction-demo-key"  # demo credential, not a secret
@@ -21,6 +29,7 @@ FILTERS = {  # route -> (query parameter -> RECORD column)
     "results": {"segment": "segment", "band": "band"},
     "salvage-bids": {"vin": "vin"},
     "buyers": {},
+    "sold": {"vin": "vin"},
 }
 ID_PREFIX = {"consignments": ("consignmentId", "CN"), "salvage-sales": ("salvageSaleId", "SS")}
 
@@ -92,6 +101,11 @@ def buyers(request: Request):
     return _read("buyers", request)
 
 
+@router.get("/sold")
+def sold(request: Request):
+    return _read("sold", request)
+
+
 # ------------------------------------------------------------------ writes
 def _text(body: dict, name: str) -> str | None:
     v = body.get(name)
@@ -153,7 +167,34 @@ async def _write(kind: str, request: Request):
         seq = conn.execute(select(func.coalesce(func.max(WRITTEN.c.seq), 0) + 1).where(WRITTEN.c.kind == kind)).scalar_one()
         doc = {id_field: f"{prefix}-{seq:04d}", **body, "status": "accepted", "createdAt": AS_OF.isoformat()}
         conn.execute(insert(WRITTEN).values(kind=kind, seq=seq, idem_key=key, doc=doc))
+        if kind == "consignments":
+            _schedule_sale(conn, doc)
     return JSONResponse(doc, status_code=201)
+
+
+def _schedule_sale(conn: Connection, doc: dict) -> None:
+    """A consignment sells on its sale date at the cleared price of its segment and mileage band (P9-9.20). A car the group does
+    not know never sells."""
+    car = car_of(doc["vin"])
+    if car is None:
+        return
+    due = datetime.combine(date.fromisoformat(doc["saleDate"]), SALE_HOUR)
+    payload = {"consignmentId": doc["consignmentId"], "vin": doc["vin"], "consignedAt": clock.now(conn).isoformat(),
+               "price": result_cell(car[0], band_of(car[1]))["avgClearedPrice"]}  # fmt: skip
+    scheduler.schedule(conn, due, SOLD_HANDLER, payload, SOURCE)
+
+
+@scheduler.handler(SOLD_HANDLER)
+def consignment_sold(conn: Connection, payload: dict) -> None:
+    """The consignment sells: list the sale and tell subscribers (`auction.consignment.sold {vin, price, soldAt}`)."""
+    at = clock.now(conn)
+    days = max(0, (at.date() - datetime.fromisoformat(payload["consignedAt"]).date()).days)
+    doc = {"consignmentId": payload["consignmentId"], "vin": payload["vin"], "price": payload["price"],
+           "consignedAt": payload["consignedAt"], "soldAt": at.isoformat(), "daysToSale": days}  # fmt: skip
+    n = conn.execute(select(func.count()).select_from(RECORD).where(RECORD.c.kind == "sold")).scalar_one()
+    row = {"kind": "sold", "rec_id": doc["consignmentId"], "ord": n, "vin": doc["vin"], "doc": doc}
+    if conn.execute(pg_insert(RECORD).values(**row).on_conflict_do_nothing()).rowcount:  # a replay sells nothing twice
+        events.emit(conn, SOURCE, SOLD_EVENT, doc["consignmentId"], {k: doc[k] for k in ("vin", "price", "soldAt")}, at)
 
 
 @router.post("/consignments")

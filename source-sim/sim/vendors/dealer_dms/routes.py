@@ -1,16 +1,24 @@
 """The dealer mock's routes: the reads and the four idempotent writes (see the package docstring for the contract)."""
 
 import json
+from datetime import timedelta
 from numbers import Number
 from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, insert, select, text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.engine import Connection
 
+from sim.core import clock, events, scheduler
 from sim.core.db import engine
 from sim.vendors.dealer_dms.models import RECORD, WRITTEN
-from sim.vendors.dealer_dms.seed import AS_OF, LOTS
+from sim.vendors.dealer_dms.seed import AS_OF, LOTS, band_of, car_of, lot_cell
+
+SOURCE = "uc_dms"
+SOLD_HANDLER = "dealer_dms.listing.sold"
+SOLD_EVENT = "dms.listing.sold"
 
 router = APIRouter(prefix="/dealer-dms/api/v1")
 API_KEY = "uc_dms-demo-key"  # demo credential, not a secret
@@ -21,6 +29,7 @@ FILTERS = {  # route -> (query parameter -> RECORD column)
     "lot-sales": {"segment": "segment", "lotId": "lot_id", "mileageBand": "mileage_band"},
     "partner-bids": {"vin": "vin"},
     "stock": {"vin": "vin", "lotId": "lot_id", "segment": "segment"},
+    "sales": {"vin": "vin", "lotId": "lot_id"},
 }
 LOT_IDS = {lot for lot, _n, _m in LOTS}
 ID_PREFIX = {"recon-orders": ("orderId", "RO-D"), "transfers": ("transferId", "TR"), "listings": ("listingId", "LST"),
@@ -89,6 +98,11 @@ def stock(request: Request):
     return _read("stock", request)
 
 
+@router.get("/sales")
+def sales(request: Request):
+    return _read("sales", request)
+
+
 # ------------------------------------------------------------------ writes
 def _text(body: dict, name: str) -> str | None:
     v = body.get(name)
@@ -145,7 +159,34 @@ async def _write(kind: str, request: Request):
         seq = conn.execute(select(func.coalesce(func.max(WRITTEN.c.seq), 0) + 1).where(WRITTEN.c.kind == kind)).scalar_one()
         doc = {id_field: f"{prefix}-{seq:04d}", **body, "status": "accepted", "createdAt": AS_OF.isoformat()}
         conn.execute(insert(WRITTEN).values(kind=kind, seq=seq, idem_key=key, doc=doc))
+        if kind == "listings":
+            _schedule_sale(conn, doc)
     return JSONResponse(doc, status_code=201)
+
+
+def _schedule_sale(conn: Connection, doc: dict) -> None:
+    """A new listing sells after the lot's average days to sale for a car of its segment and mileage band, at that lot's average
+    price (P9-9.20). A car the dealer group does not know, or a lot with no sales for its cell, never sells."""
+    car = car_of(doc["vin"])
+    if car is None:
+        return
+    cell = lot_cell(doc["lotId"], car[0], band_of(car[1]))
+    listed = clock.now(conn)
+    payload = {"listingId": doc["listingId"], "vin": doc["vin"], "lotId": doc["lotId"], "price": cell["avgPrice"],
+               "listedAt": listed.isoformat(), "days": cell["avgDaysToSale"]}  # fmt: skip
+    scheduler.schedule(conn, listed + timedelta(days=cell["avgDaysToSale"]), SOLD_HANDLER, payload, SOURCE)
+
+
+@scheduler.handler(SOLD_HANDLER)
+def listing_sold(conn: Connection, payload: dict) -> None:
+    """The listing sells: list the sale and tell subscribers (`dms.listing.sold {vin, price, soldAt}`)."""
+    sold = clock.now(conn)
+    doc = {"listingId": payload["listingId"], "vin": payload["vin"], "lotId": payload["lotId"], "price": payload["price"],
+           "listedAt": payload["listedAt"], "soldAt": sold.isoformat(), "daysToSale": payload["days"]}  # fmt: skip
+    n = conn.execute(select(func.count()).select_from(RECORD).where(RECORD.c.kind == "sales")).scalar_one()
+    row = {"kind": "sales", "rec_id": doc["listingId"], "ord": n, "vin": doc["vin"], "lot_id": doc["lotId"], "doc": doc}
+    if conn.execute(pg_insert(RECORD).values(**row).on_conflict_do_nothing()).rowcount:  # a replay sells nothing twice
+        events.emit(conn, SOURCE, SOLD_EVENT, doc["listingId"], {"vin": doc["vin"], "price": doc["price"], "soldAt": doc["soldAt"]}, sold)
 
 
 @router.post("/recon-orders")

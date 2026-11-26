@@ -7,16 +7,17 @@ Not one of the demo's 21 sources: it starts unregistered (no source_system row),
 unchanged. di.connectors.extra registers it and source.reconnect connects it (as plm_wc, Windchill). It implements no
 registry entry of its own: it fills the canonical models `asset` and `condition` for a car, keyed by the source's org
 unit (schema.vin_key), which the used-car pack's intake trigger (resource `lease-returns`, status `returned`) and
-gates read. Nothing is ever written to the source.
+gates read. It reads only; the charge to the lessee (`lessee_charge`, P9-9.20) is written by the instruction writer.
 
 Resource and facts (snake case of the source's camelCase fields)
     lease_returns   asset.<vin key>      vin, return_kind (always `lease_end`), lease_ref (leaseId), book_value (the
                                          residual value), mileage_at_return (odometerAtReturn), mileage_lease_record
-                                         (odometerLastService), model_year, segment, powertrain, return_center,
+                                         (odometerLastService), contract_mileage (contractMileage: the excess-mileage
+                                         charge's base, P9-9.20), model_year, segment, powertrain, return_center,
                                          seller_fleet_size
                     condition.<vin key>  odometer_statement_ref, odometer_not_actual
 The two mileage fields exist on purpose: the lease record's reading and the reading taken at return are different
-facts, and the pack's mapping hint (UC-03) picks `mileage_at_return`. `lesseeRef` (a code), `contractMileage`,
+facts, and the pack's mapping hint (UC-03) picks `mileage_at_return`. `lesseeRef` (a code),
 `leaseEnd` and `status` stay in the raw record: no fact.
 """
 
@@ -32,7 +33,8 @@ from di.services.canonical.store import Fact
 
 ASSET = {
     "vin": "vin", "leaseId": "lease_ref", "residualValue": "book_value", "odometerAtReturn": "mileage_at_return",
-    "odometerLastService": "mileage_lease_record", "modelYear": "model_year", "segment": "segment",
+    "odometerLastService": "mileage_lease_record", "contractMileage": "contract_mileage", "modelYear": "model_year",
+    "segment": "segment",
     "powertrain": "powertrain", "returnCenter": "return_center", "sellerFleetSize": "seller_fleet_size",
 }  # fmt: skip
 CONDITION = {"odometerStatementRef": "odometer_statement_ref", "odometerNotActual": "odometer_not_actual"}

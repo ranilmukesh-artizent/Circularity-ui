@@ -41,7 +41,11 @@ SYSTEM_OF = {
     "dealer_trade": "uc_dms",
     "consignment": "uc_auction",
     "salvage_sale": "uc_auction",
+    "residual": "erp",  # P9-9.20: the close of a used-car lease return, outside an approval's plan
+    "lessee_charge": "uc_lease",
 }
+# The kinds sent on their own, outside an approval's plan: no plan step to acknowledge, and the case's `exec` is not theirs
+OFF_PLAN = frozenset({"payout", "residual", "lessee_charge"})
 
 
 def enabled() -> bool:

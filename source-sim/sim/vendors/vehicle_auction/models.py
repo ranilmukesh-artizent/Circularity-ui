@@ -12,7 +12,7 @@ metadata = MetaData(schema="vehicle_auction")
 RECORD = Table(
     "record",
     metadata,
-    Column("kind", String(20), primary_key=True),  # sales | results | salvage-bids | buyers
+    Column("kind", String(20), primary_key=True),  # sales | results | salvage-bids | buyers | sold
     Column("rec_id", String(40), primary_key=True),
     Column("ord", Integer, nullable=False),  # the order the API lists them in
     Column("vin", String(17), index=True),

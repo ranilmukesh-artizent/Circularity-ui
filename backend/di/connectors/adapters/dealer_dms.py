@@ -7,7 +7,7 @@ resource is read in full (Resource.delta False).
 Not one of the demo's 21 sources: it starts unregistered, so every demo screen and count is unchanged.
 di.connectors.extra registers it and source.reconnect connects it. It fills the canonical models `asset`, `condition` and
 `market` for a car, keyed by the source's org unit (schema.vin_key). It implements no registry entry of its own. Nothing is
-ever written to the source (its four write routes are for the actions of later tasks).
+ever written to the source here (its write routes are the instruction writers').
 
 Resources and facts (snake case of the source's camelCase fields)
     trade_ins   asset.<vin key>      vin, return_kind (always `trade_in`), book_value (tradeAllowance), mileage_at_return
@@ -17,6 +17,8 @@ Resources and facts (snake case of the source's camelCase fields)
     vin_market  market.<vin key>     per lot, an object keyed by lot id: lot_avg_price, lot_days_to_sale, lot_spread,
                                      lot_comparables (the sales count), lot_distance_miles; and dealer_bid, the highest
                                      partner bid
+    sales       outcome.<vin key>    sale_price, sold_at, days_to_sale: a listing that sold (P9-9.20; the sale a case is closed
+                                     against, `di.services.cases.close_used_cars`)
     lots        no fact: read for the distances, kept raw
 A car's market facts need its segment and mileage band (the lots' sales history is per segment and band). For a
 trade-in they come from the trade-in; for any other car from the car's `asset` facts of the same org unit already in the
@@ -72,6 +74,7 @@ class DealerDmsAdapter(GenericAdapter):
             Resource("trade_ins", lambda c, _s: self._plain(c, "trade_ins", "/trade-ins", "tradeId"), delta=False),
             Resource("lots", lambda c, _s: self._plain(c, "lots", "/lots", "lotId"), delta=False),
             Resource("stock", lambda c, _s: self._plain(c, "stock", "/stock", "stockId"), delta=False),
+            Resource("sales", lambda c, _s: self._plain(c, "sales", "/sales", "listingId"), delta=False),
             Resource("vin_market", self.read_market, delta=False),
         ]
 
@@ -125,6 +128,8 @@ class DealerDmsAdapter(GenericAdapter):
             ]
         if record.resource == "vin_market":
             return self._market(p)
+        if record.resource == "sales":
+            return self._sale(p)
         return []
 
     @staticmethod
@@ -137,6 +142,12 @@ class DealerDmsAdapter(GenericAdapter):
         confirmed = p.get("payoffConfirmed")
         facts.append(Fact("condition", key, "payoff_confirmed", confirmed, "payoffConfirmed", confirmed, "Pass-through"))
         return keep(facts)
+
+    @staticmethod
+    def _sale(p: dict[str, Any]) -> list[Fact]:
+        key = vin_key(p.get("org_unit_id"), p["vin"])
+        pairs = (("price", "sale_price"), ("soldAt", "sold_at"), ("daysToSale", "days_to_sale"))
+        return keep([Fact("outcome", key, to, p.get(src), src, p.get(src), "Listing sold") for src, to in pairs])
 
     @staticmethod
     def _market(p: dict[str, Any]) -> list[Fact]:
