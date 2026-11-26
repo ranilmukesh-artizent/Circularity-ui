@@ -798,3 +798,14 @@ CONNECTOR_FIELDS["asset"] |= {
 CONNECTOR_FIELDS["asset"] |= {"lot_serials": "list", "lot_week": "text", "returned_at": "text", "subscriber_ref": "text"}
 CONNECTOR_FIELDS["condition"] |= {"factory_reset": "object"}
 CONNECTOR_FIELDS["demand"] |= {"new_subscriber_forecast": "number"}
+
+# Serialised retail returns (plan 9, P9-12.10), written by the extra adapter b2c_ret, keyed by `serial_key`: on `asset`, the
+# portal's item (item_id, item_class phone, tablet, apparel or footwear, sku, unsold, exception_evidence: an object
+# {exception, ref} or null); `imei` and `serial` are the existing ones.
+CONNECTOR_FIELDS["asset"] |= {
+    "exception_evidence": "object",
+    "item_class": "text",
+    "item_id": "text",
+    "sku": "text",
+    "unsold": "bool",
+}

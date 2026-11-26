@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Any
 
 from di.services.modeler.pack import Pack
-from di.services.modeler.valuers import medical_rental, standard, telecom_network, used_cars
+from di.services.modeler.valuers import b2c_serial, medical_rental, standard, telecom_network, used_cars
 from di.services.modeler.valuers.tool_fleet import PathValue
 
 ValuerFn = Callable[[Mapping[str, Any], Pack, datetime | None], list[PathValue]]
@@ -24,6 +24,7 @@ VALUERS: dict[str, ValuerFn] = {
     "used_cars": used_cars.value_routes,
     "telecom_network": telecom_network.value_routes,
     "medical_rental": medical_rental.value_routes,
+    "b2c_serial": b2c_serial.value_routes,
 }
 
 # A plug-in that holds a decision for a person registers its guardrail check here (P9-11.9): given the facts, the pack and the

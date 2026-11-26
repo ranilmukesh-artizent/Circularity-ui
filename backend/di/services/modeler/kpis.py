@@ -178,6 +178,8 @@ def compute(kpi: Kpi, cases: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 def kpi_rows(pack: Pack, cases: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """The pack's KPIs as the screens show them: id, label, definition, value, unit, trend and `error` (the grammar's refusal
     of a measure, else None). A KPI whose measure is refused shows no value; the others are served."""
+    if pack.valuer.kind == "industrial":  # the demo's own pages carry its numbers: the pack's KPIs describe them, parity first
+        return []
     out: list[dict[str, Any]] = []
     for k in pack.kpis:
         try:
@@ -214,6 +216,8 @@ def question(q: AnalyticsQuestion, cases: Sequence[Mapping[str, Any]]) -> dict[s
 
 def question_rows(pack: Pack, cases: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """The pack's questions answered over the cases; one the grammar refuses has no rows."""
+    if pack.valuer.kind == "industrial":  # as `kpi_rows`: the demo's Analytics page answers its own questions
+        return []
     out = []
     for q in pack.analytics:
         try:
