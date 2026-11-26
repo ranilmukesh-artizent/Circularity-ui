@@ -22,6 +22,7 @@ from di.core import clock, jobs
 from di.core.config import get_settings
 from di.services.cases import store
 from di.services.execution.steps import EX_STEP, ex_doc_ref
+from di.services.instructions import follow_through
 
 # The step kinds that are real writes to a mock, and the system (source id) each goes to. Every other kind is
 # acknowledged by the simulated adapter (see di.services.instructions.writers).
@@ -34,6 +35,12 @@ SYSTEM_OF = {
     "move": "wms",
     "finance": "erp",
     "payout": "dvlab",  # P9-6.8: the payout of a received device, outside an approval's plan (di.services.device.payout.send)
+    "recon_order": "uc_dms",  # P9-9.17: the used-car channels (the pack's route instructions)
+    "lot_transfer": "uc_dms",
+    "listing": "uc_dms",
+    "dealer_trade": "uc_dms",
+    "consignment": "uc_auction",
+    "salvage_sale": "uc_auction",
 }
 
 
@@ -113,13 +120,16 @@ def _trigger_outbound(s: Session, system: str) -> None:
 
 
 def queue_first(s: Session, c: store.Case) -> int | None:
-    """On approval: the first step goes out (only when sending instructions is switched on)."""
+    """On approval: the first step goes out (only when sending instructions is switched on). A used car's route owner also gets
+    the timer that reminds them when the route's confirmation is late (P9-9.17), whether or not instructions are sent."""
+    follow_through.open_timer(s, c)
     return queue(s, c, 0) if enabled() else None
 
 
 def on_acknowledged(s: Session, c: store.Case, step: int, ref: str) -> None:
     """In adapter.acknowledge's transaction: the step's row is acknowledged with the system's reference, and the next
     step is queued."""
+    follow_through.on_confirmed(s, c, step, ref)  # a used car's last confirmation closes the route owner's timer
     if not enabled():
         return
     s.execute(

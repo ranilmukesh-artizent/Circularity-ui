@@ -1,4 +1,5 @@
-"""The used-car compliance gates (plan 9, P9-9.8 title, P9-9.9 odometer and recall; stories UC-06, UC-24, UC-07, UC-08). Pure.
+"""The used-car compliance gates (plan 9, P9-9.8 title, P9-9.9 odometer and recall, P9-9.17 salvage reporting; stories UC-06,
+UC-24, UC-07, UC-08, UC-18). Pure.
 Implements the checks of registry entry I-2 for the catalogue gates `G-VEH-TITLE`, `G-VEH-BRAND` (Compliance, stage match),
 `G-VEH-ODO` and `G-VEH-RECALL` (Compliance, stage condition); they run before any business rule (R20).
 
@@ -6,6 +7,7 @@ Implements the checks of registry entry I-2 for the catalogue gates `G-VEH-TITLE
     check_title_brand(case, pack, gate) -> GateResult    G-VEH-BRAND: a title brand is disclosed, some brands block retail
     check_odometer(case, pack, gate) -> GateResult       G-VEH-ODO: the odometer photo agrees with the lease record
     check_open_recall(case, pack, gate) -> GateResult    G-VEH-RECALL: no retail with an open recall, a fleet sells none
+    check_salvage_reporting(case, pack, gate) -> GateResult | None   G-VEH-SALV: a salvage buyer reports to the title database
 
 **G-VEH-TITLE.** The evidence `title_status` is the title and lien search (`di.services.cases.title_evidence`: title status,
 whether a lien is open, the trade-in's payoff). The gate passes when the title is `clear`, no lien is open and, for a
@@ -40,6 +42,12 @@ stale), fails with effect `require_step` and `evidence_missing: ("recall_check",
 "Open recall disclosed: <campaign ids>" on every route and blocks `retail` ("Open recall: no retail until remedied"); a
 seller fleet of `params.rental_fleet_min` or more blocks every route of `params.rental_fleet_block_routes` instead.
 Neither holds the case. The check's date is the evidence's `at`.
+
+**G-VEH-SALV** (stage 6). The case's `vendor` is the buyer of the best salvage bid and the auction platform's record of it
+(`cases.car_facts`: `buyer_id`, `title_db_reporting`). A buyer the platform says does not report to the national title database
+fails the `salvage` route (effect `block`, the routes of the gate's trigger): "Salvage buyer must report to the national title
+database"; the writer `salvage_sale` refuses it too, so nothing is sent. A buyer that reports, or a car with no buyer or no word
+on its reporting yet, leaves the gate to its evidence (`reporting_status`).
 
 Never does: read the canonical store, the clock or a session, release a lien, or write a case. State title and brand law differ
 and is unconfirmed per state; the pack's lists are data, and any wording built on them needs review by Kinective's Legal team
@@ -205,7 +213,21 @@ def check_open_recall(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> Gat
     return GateResult(gate.id, False, GateEffect("block", routes, False, None), (), REASON_NO_RETAIL, shown)
 
 
+SALV_GATE = "G-VEH-SALV"
+REASON_SALVAGE_BUYER = "Salvage buyer must report to the national title database"
+
+
+def check_salvage_reporting(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult | None:
+    """G-VEH-SALV (module docstring); None leaves the gate to its evidence."""
+    vendor = case.get("vendor")
+    if not isinstance(vendor, Mapping) or vendor.get("title_db_reporting") is not False:
+        return None
+    routes = _only(gate.params.get("routes") or ("salvage",), pack)
+    return GateResult(gate.id, False, GateEffect("block", routes, False, None), (), REASON_SALVAGE_BUYER)
+
+
 CHECKS[TITLE_GATE] = check_title_clear
 CHECKS[BRAND_GATE] = check_title_brand
 CHECKS[ODO_GATE] = check_odometer
 CHECKS[RECALL_GATE] = check_open_recall
+CHECKS[SALV_GATE] = check_salvage_reporting

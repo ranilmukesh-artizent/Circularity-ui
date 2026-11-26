@@ -963,6 +963,13 @@ EX_STEP: dict[str, tuple[int | None, str]] = {
     "reeval": (16, "Planner"),
     "holdout": (16, "Finance"),
     "payout": (None, "Customer care"),
+    "infotainment_reset": (None, "Inspection lead"),  # plan 9 P9-9.17: the used-car channels' follow-through
+    "recon_order": (8, "Lot manager"),
+    "lot_transfer": (8, "Lot manager"),
+    "listing": (8, "Lot manager"),
+    "consignment": (8, "Remarketing manager"),
+    "dealer_trade": (8, "Remarketing manager"),
+    "salvage_sale": (8, "Remarketing manager"),
 }
 _HOUR_MS = 3_600_000
 

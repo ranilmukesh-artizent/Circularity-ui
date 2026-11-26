@@ -14,6 +14,11 @@ with a key it deduplicates on.
                                     the line's status decides: only the missing actions are sent
     finance    SAP S/4HANA          SOAP Journal Entry - Post, one item per actual cost line
                                     DocumentReferenceID = approval reference; a repeat confirms the first (F5 117)
+    recon_order, lot_transfer, listing, dealer_trade     the dealer system (`uc_dms`, plan 9 P9-9.17: the used-car channels)
+                                    POST recon-orders, transfers, listings (with the route's disclosures), dealer-trades
+    consignment, salvage_sale       the auction platform (`uc_auction`): POST consignments (with the title reference and the
+                                    disclosures), salvage-sales (only to a buyer that reports to the national title database)
+                                    all idempotent on the header Idempotency-Key = key; the reply is the system's confirmation
 
 Where things come from: the order line is the case's matched demand (caseDemand: SO-48102 line 10 for RT-1048) and the
 unit is the case's asset (the serial Sterling, Depot Repair and Manhattan know, MTR-2041). The transport goes from the
@@ -38,6 +43,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from datetime import timedelta
 from typing import Any
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
@@ -402,7 +408,126 @@ def payout(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: A
     return Sent([{"call": "PATCH tradeins/{tradeInId}", "body": body}], row.trade_in_id, {"tradeInId": row.trade_in_id, **body})
 
 
+# ---------------------------------------------------------------- used-car channels (P9-9.17)
+UC_DMS = "/dealer-dms/api/v1"
+UC_AUCTION = "/vehicle-auction/v1"
+
+
+def _uc_post(s: Session, source: str, path: str, ins: dict, body: dict, id_field: str) -> Sent:
+    """One idempotent write to the dealer system or the auction platform (`Idempotency-Key` = the instruction key: a repeat
+    answers the first document). The reply's document is the system's confirmation: `detail.confirmed` lets the send
+    acknowledge the step (these systems send no completion event)."""
+    cl = client(s, source)
+    try:
+        doc = cl.request("POST", path, json=body, headers={"Idempotency-Key": ins["idem_key"]}).json()
+    except SourceError as e:
+        raise _refused(e) from e
+    finally:
+        cl.close()
+    ref = str(doc.get(id_field) or "")
+    return Sent([{"call": f"POST {path.lstrip('/')}", "body": body}], ref or None, {"confirmed": bool(ref), id_field: ref})
+
+
+def _car(s: Session, c: store.Case) -> tuple[str, dict[str, dict[str, Any]]]:
+    """The car's VIN and its canonical records (`asset`, `condition`, `market`, `vendor`)."""
+    from di.services.cases import car_facts  # lazy: only the used-car writers read the car's records
+
+    vin = (c.get("vehicle") or {}).get("vin")
+    if not vin:
+        raise NotApplicable("the case has no VIN")
+    return str(vin), car_facts.records(s, str(c["assetId"]))
+
+
+def _title_ref(c: store.Case, vin: str) -> str:
+    """The title reference an auction or a dealer trade carries: the lien release's reference when there was a lien, else the
+    title search of the VIN (the title service gives no reference of its own)."""
+    return str((c.get("title") or {}).get("lien_release_ref") or f"TITLE-{vin}")
+
+
+def recon_order(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Dealer system: POST /recon-orders {vin, estimate, lines}, the inspection's estimate and lines."""
+    vin, facts = _car(s, c)
+    cond = facts.get("condition", {})
+    if cond.get("recon_estimate") is None:
+        raise NotApplicable("no reconditioning estimate")
+    body = {"vin": vin, "estimate": cond["recon_estimate"], "lines": list(cond.get("recon_lines") or [])}
+    return _uc_post(s, "uc_dms", f"{UC_DMS}/recon-orders", ins, body, "orderId")
+
+
+def lot_transfer(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Dealer system: POST /transfers {vin, fromLot, toLot}. The car is at its lot (`asset.lot_id`), else at the lot nearest the
+    return centre (`market.lot_distance_miles`); it goes to the retail route's lot, and nothing is sent when it is there."""
+    vin, facts = _car(s, c)
+    to = str((c.get("chosen") or {}).get("id", "")).partition(":")[2]
+    near: dict[str, Any] = facts.get("market", {}).get("lot_distance_miles") or {}
+    here = facts.get("asset", {}).get("lot_id") or min(near, key=lambda lot: near[lot], default=None)
+    if not to or not here or here == to:
+        raise NotApplicable("the car is already at the lot")
+    return _uc_post(s, "uc_dms", f"{UC_DMS}/transfers", ins, {"vin": vin, "fromLot": here, "toLot": to}, "transferId")
+
+
+def listing(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Dealer system: POST /listings {vin, lotId, price, disclosures}: the retail price of the chosen route and the route's
+    disclosures (a title brand, an open recall, an odometer that is not the actual mileage)."""
+    vin, _ = _car(s, c)
+    chosen = c.get("chosen") or {}
+    lot = str(chosen.get("id", "")).partition(":")[2]
+    price = next((t["amt"] for t in chosen.get("terms") or [] if t.get("kind") == "sale"), None)
+    if not lot or price is None:
+        raise NotApplicable("no lot or retail price on the chosen route")
+    body = {"vin": vin, "lotId": lot, "price": price, "disclosures": list(chosen.get("disclosures") or [])}
+    return _uc_post(s, "uc_dms", f"{UC_DMS}/listings", ins, body, "listingId")
+
+
+def dealer_trade(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Dealer system: POST /dealer-trades {vin, partner, price, titleRef}: the highest partner bid, read from the system."""
+    vin, _ = _car(s, c)
+    cl = client(s, "uc_dms")
+    try:
+        bids = cl.get_json(f"{UC_DMS}/partner-bids", params={"vin": vin}).get("items") or []
+    except SourceError as e:
+        raise _refused(e) from e
+    finally:
+        cl.close()
+    best = max(bids, key=lambda b: b["amount"], default=None)
+    if best is None:
+        raise Refused("The dealer system holds no partner bid for the car")
+    body = {"vin": vin, "partner": best["partner"], "price": best["amount"], "titleRef": _title_ref(c, vin)}
+    return _uc_post(s, "uc_dms", f"{UC_DMS}/dealer-trades", ins, body, "dealerTradeId")
+
+
+def consignment(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Auction platform: POST /consignments {vin, saleDate, titleRef, disclosures}: the next sale of the car's site and the
+    route's disclosures."""
+    vin, facts = _car(s, c)
+    days = facts.get("market", {}).get("auction_next_sale_days")
+    if days is None:
+        raise Refused("The auction platform has no next sale for the car's site")
+    sale = clock.now().date() + timedelta(days=int(days))
+    disclosures = list((c.get("chosen") or {}).get("disclosures") or [])
+    body = {"vin": vin, "saleDate": sale.isoformat(), "titleRef": _title_ref(c, vin), "disclosures": disclosures}
+    return _uc_post(s, "uc_auction", f"{UC_AUCTION}/consignments", ins, body, "consignmentId")
+
+
+def salvage_sale(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Auction platform: POST /salvage-sales {vin, buyerId}: the buyer of the best salvage bid, only when it reports to the
+    national title database (G-VEH-SALV; the platform refuses a buyer that does not as well)."""
+    vin, facts = _car(s, c)
+    buyer = facts.get("market", {}).get("salvage_buyer")
+    if not buyer:
+        raise Refused("No salvage buyer on file for the car")
+    if (facts.get("vendor") or {}).get("title_db_reporting") is not True:
+        raise Refused("Salvage buyer must report to the national title database")
+    return _uc_post(s, "uc_auction", f"{UC_AUCTION}/salvage-sales", ins, {"vin": vin, "buyerId": buyer}, "salvageSaleId")
+
+
 WRITERS = {
+    "recon_order": recon_order,
+    "lot_transfer": lot_transfer,
+    "listing": listing,
+    "dealer_trade": dealer_trade,
+    "consignment": consignment,
+    "salvage_sale": salvage_sale,
     "payout": payout,
     "order": order,
     "repair": repair,

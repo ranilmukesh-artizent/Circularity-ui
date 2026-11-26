@@ -85,6 +85,29 @@ EX_STEP: dict[str, dict[str, Any]] = {
     # plan 9 P9-6.8: the payout of a received device; sent on its own (di.services.device.payout), never a step of a plan
     "payout": _s("Payout adjusted", "Trade-in platform · payout", ("TI", "Trade-in"), "Customer care", None, "payout.adjusted", 0,
                  "payout adjusted on the trade-in", "Customer care owns the payout the customer is paid"),
+    # plan 9 P9-9.17: the used-car channels' follow-through (the pack's route instructions, UC-18 and UC-25); written to the
+    # dealer system (`uc_dms`) and the auction platform (`uc_auction`), or a person's checklist with no system write
+    "infotainment_reset": _s("Reset infotainment and remove paired devices", "Lot · checklist", ("CHK", "Checklist"),
+                             "Inspection lead", None, "release.confirmed", 0,
+                             "infotainment reset and paired devices removed",
+                             "The inspection lead resets the car's infotainment before it is released (UC-25)"),
+    "recon_order": _s("Reconditioning order", "Dealer system · recon order", ("RO", "Recon order"), "Lot manager", 8,
+                      "workorder.created", 13, "recon order accepted by the dealer system",
+                      "The lot manager owns the car's reconditioning at the dealer system"),
+    "lot_transfer": _s("Transfer to the lot", "Dealer system · lot transfer", ("TR", "Transfer"), "Lot manager", 8,
+                       "movement.confirmed", 26, "car transferred to the chosen lot",
+                       "The lot manager moves the car to the lot that sells it best"),
+    "listing": _s("Retail listing", "Dealer system · listing", ("LST", "Listing"), "Lot manager", 8, "sale.recorded", 39,
+                  "listing published with its disclosures", "The lot manager lists the car; the listing carries the disclosures"),
+    "consignment": _s("Auction consignment", "Auction platform · consignment", ("CN", "Consignment"), "Remarketing manager", 8,
+                      "sale.recorded", 0, "consigned to the next sale with the title reference",
+                      "The remarketing manager consigns the car to the wholesale auction"),
+    "dealer_trade": _s("Dealer trade", "Dealer system · dealer trade", ("DT", "Dealer trade"), "Remarketing manager", 8,
+                       "sale.recorded", 0, "trade booked with the partner dealer",
+                       "The remarketing manager books the trade with the highest-bidding partner"),
+    "salvage_sale": _s("Salvage sale", "Auction platform · salvage sale", ("SS", "Salvage sale"), "Remarketing manager", 8,
+                       "sale.recorded", 0, "sold to a salvage buyer that reports to the national title database",
+                       "The remarketing manager sells to a buyer that reports to the national title database"),
 }  # fmt: skip
 
 # The step plan per route; a refurbish-then-sell resale gets a repair step after the reservation. A step's identity is
@@ -128,6 +151,8 @@ ACK_NOTE = {
 
 def ex_kinds(r: dict) -> list[str]:
     """The demo's exKinds: the step kinds for a route."""
+    if r.get("steps"):  # a route that names its own steps (the used-car channels, P9-9.17)
+        return [str(k) for k in r["steps"]]
     k = list(STEP_TPL.get(r.get("id") or "resale") or STEP_TPL["resale"])
     if r.get("id") == "resale" and r.get("variant") == "refurb":
         k.insert(1, "repair")

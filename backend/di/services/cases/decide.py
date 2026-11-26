@@ -78,6 +78,7 @@ from di.services.modeler.valuers import (
     medical_rental,
     service_desk,
     tool_fleet,
+    used_car_steps,
     used_cars,
 )
 from di.services.modeler.valuers.device import ChannelValue
@@ -341,6 +342,8 @@ def _plugin(kind: str, c: Mapping[str, Any], pack: Pack, t: Template, as_of: dat
     _decorate(t, routes)
     best = best_of(values)
     if kind == "used_cars":
+        for r in routes:
+            r["steps"] = used_car_steps.follow_steps(r["id"], pack, facts)  # the channel's follow-through (P9-9.17)
         return _Valued(routes, best["k"] if best else None, approvals=used_cars.approval_checks(facts, pack, values), facts=facts)
     approve = APPROVALS.get(kind)  # a guardrail the plug-in holds the decision with for a person (P9-11.9)
     holds = approve(facts, pack, values) if approve else []  # a plug-in's holds are failed approval checks (P9-9.11 model)

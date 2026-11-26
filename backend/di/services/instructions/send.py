@@ -113,7 +113,24 @@ def send(iid: int, resend: bool = False) -> str:
             {"i": iid, "doc": out.doc_ref, "detail": json.dumps(out.detail), "req": json.dumps(out.request), "at": clock.now()},
         )
         s.commit()
-        return "sent"
+    if out.detail.get("confirmed") and not resend:
+        _confirm(ins, out.doc_ref)
+    return "sent"
+
+
+def _confirm(ins: dict, ref: str | None) -> None:
+    """A write whose reply is the system's confirmation (the dealer system and the auction platform send no completion event,
+    P9-9.17): the step is acknowledged with the document's reference, as an event would, through the pipeline as the system."""
+    with SessionLocal() as s:
+        r = invoke(
+            "adapter.acknowledge",
+            {"case_id": ins["case_id"], "step": ins["step"], "ref": ref},
+            CallContext(actor=SYSTEM, session=s),
+        )
+        if r["ok"]:
+            s.commit()
+        else:
+            s.rollback()  # the step is acknowledged already, or the case moved on
 
 
 def _refusal(s: Session, system: str, has_writer: bool) -> str | None:
