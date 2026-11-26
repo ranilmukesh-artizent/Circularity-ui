@@ -72,7 +72,8 @@
   "type": "Compliance",
   "stage": "condition",
   "packs": [
-   "device"
+   "device",
+   "b2c_serial"
   ],
   "trigger": {
    "routes": [
@@ -101,7 +102,8 @@
   "type": "Compliance",
   "stage": "match",
   "packs": [
-   "device"
+   "device",
+   "b2c_serial"
   ],
   "trigger": {
    "routes": "any",
@@ -1143,9 +1145,12 @@
    ],
    "when": [
     {
-     "fact": "product.unsold_apparel",
-     "op": "eq",
-     "value": true
+     "fact": "valuer.itemClass",
+     "op": "in",
+     "value": [
+      "apparel",
+      "footwear"
+     ]
     }
    ]
   },

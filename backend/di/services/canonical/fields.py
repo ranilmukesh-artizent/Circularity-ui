@@ -756,3 +756,13 @@ CONNECTOR_FIELDS["condition"] |= {"erasures": "list"}
 CONNECTOR_FIELDS["asset"] |= {"branch": "text", "hours": "number", "machine_id": "text"}
 CONNECTOR_FIELDS["demand"] |= {"branch_utilisation": "number", "purchase_plans": "list"}
 CONNECTOR_FIELDS["condition"] |= {"damage_claims": "list"}
+# Serialised retail returns (plan 9, P9-12.10), written by the extra adapter b2c_ret, keyed by `serial_key`: on `asset`, the
+# portal's item (item_id, item_class phone, tablet, apparel or footwear, sku, unsold, exception_evidence: an object
+# {exception, ref} or null); `imei` and `serial` are the existing ones.
+CONNECTOR_FIELDS["asset"] |= {
+    "exception_evidence": "object",
+    "item_class": "text",
+    "item_id": "text",
+    "sku": "text",
+    "unsold": "bool",
+}

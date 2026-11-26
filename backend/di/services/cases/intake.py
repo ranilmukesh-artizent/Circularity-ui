@@ -130,6 +130,7 @@ def is_refresh(c: Mapping[str, Any]) -> bool:
 # the tool fleet's return kinds (P9-3.4) and the function each goes to: also the reasons of the contract feed's returns
 RETURN_FT = {"contract_end": "Fleet management", "swap": "Fleet management", "service_order": "Repair center",
              "pool_excess": "Tool pool"}  # fmt: skip
+SERIAL_PACK = "b2c_serial"  # the pack that refuses an item without a serial (P9-12.10)
 IMPORTED_VALUERS = ("tool_fleet", "device", "standard")  # valuers an imported pack (a key beyond TEMPLATE_KEYS) may use
 LOCATION = "Warehouse 1"  # where a returned asset is received when no source says otherwise
 # the sources' asset types (asset.asset_type, any case) that name an engine class otherwise than by its key
@@ -160,6 +161,8 @@ def problem(s: Session, i: dict[str, Any]) -> tuple[str, str] | None:
         return "validation_error", f"The pack {key} needs a valuer of one of these kinds: {', '.join(IMPORTED_VALUERS)}."
     if not str(i.get("asset_key") or "").strip():
         return "validation_error", "Give the asset key the case is opened for."
+    if key == SERIAL_PACK and not any(str((i.get("facts") or {}).get(k) or "").strip() for k in ("serial", "imei")):
+        return "not_serialised", "Only serialised items enter this pack: give the item's serial or IMEI."
     if s.execute(text("SELECT 1 FROM org_unit WHERE id = :i"), {"i": i.get("org_unit_id")}).first() is None:
         return "not_found", f"No org unit {i.get('org_unit_id')}."
     return None
@@ -606,6 +609,9 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
             _snapshot(c, facts, pack.valuer.kind, s)
         if pack.valuer.kind == "tool_fleet" and regrade.apply(s, c):  # the workbench grade, else the estimate (P9-3.5)
             fv = flow_version(s, c)  # the rules' scope reads the grade the case now shows
+        if pack.key == SERIAL_PACK:  # a returned phone's wipe certificate and registry check, as a device's (P9-12.10)
+            device_lock.refresh(s, c, pack)
+            device_wipe.refresh(s, c)
         if pack.valuer.kind == "device":  # the quote against the lab's read, on every valuation (P9-6.5)
             device_verify.refresh(s, c)
             device_lock.refresh(s, c, pack)  # and the registry check, its date and age (P9-6.6)
