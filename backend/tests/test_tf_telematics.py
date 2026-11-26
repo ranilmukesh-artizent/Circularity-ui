@@ -17,7 +17,7 @@ from sqlalchemy import text
 
 from di.core import golden
 from di.core.db import SessionLocal, engine
-from di.services.cases import intake
+from di.services.cases import intake, store
 from di.services.cases.decide import decide_case
 from di.services.modeler import gates
 from di.services.modeler.compile import FlowVersion
@@ -85,8 +85,9 @@ def fresh():
     _clean()
 
 
-def _open(serial: str, seen: str | None) -> dict:
-    facts = tool_case_facts(serial, {"tool_class": serial.split("-")[0], "site": "Houston", "grade": "B", "rul": 62}, seen=seen)
+def _open(serial: str, seen: str | None, grade: str = "B", dem: dict | None = None) -> dict:
+    base = {"tool_class": serial.split("-")[0], "site": "Houston", "grade": grade, "rul": 62}
+    facts = tool_case_facts(serial, base | ({"dem": dem} if dem else {}), seen=seen)
     with SessionLocal() as s:
         c = intake.open_case(
             s,
@@ -168,3 +169,33 @@ def test_tf_05_stale_telematics_never_recommends_reissue_or_pool_even_at_the_hig
         net = lambda dec: {r["id"]: r["net"] for r in dec.routes if r["id"] in HELD}  # noqa: E731
         assert net(d) == net(base), w["id"]  # the held routes keep their net
         assert all(not r["excluded"] for r in d.routes if r["id"] == w["best"]["k"])  # still valued and shown
+
+
+def test_tf_05_exactly_seven_days_is_stale():
+    """2026-09-30 09:00 is exactly 7 days before the pinned clock: the limit itself fails (7 or more), a second less passes."""
+    r = fleet_evidence.telematics_check(_reading("2026-09-30T09:00:00+00:00"), NOW, 7)
+    assert not r.passed and r.reason == "Telematics last seen 7 days ago" and r.gate_id == "G-TOOL-TEL"
+    assert fleet_evidence.telematics_check(_reading("2026-09-30T09:00:01+00:00"), NOW, 7).passed
+
+
+@pytest.mark.usefixtures("no_synced_demand")
+def test_tf_05_person_may_choose_held_route():
+    """An Approver may override to the held `release`: the gate keeps it from being recommended, never from being chosen."""
+    lease = {"kind": "lease", "id": "FC-30117-R", "renew": True, "who": "Brightline Mechanical", "site": "Houston", "need": 9,
+             "rate": 900, "term": 24, "what": "Fleet contract FC-30117 renews", "when": "renewal confirmed"}  # fmt: skip
+    c = _open("CMH-48777", "2026-09-29T07:40:00+00:00", "A", {"lease": [lease]})
+    assert next(r for r in c["routes"] if r["id"] == "release")["excluded"] is False
+    assert not _gate(c)["passed"] and c["recommendation"]["id"] not in HELD
+    cid = c["id"]
+    assert call("decision.submit", {"case_id": cid}, "admin")["ok"]
+    with SessionLocal() as s:
+        route = next(r for r in store.get(s, cid)["routes"] if r["id"] == "release")
+    body = {"case_id": cid, "reviewed": True, "rationale": "Quality saw the tool yesterday.", "route": route["plan"]}
+    out = call("decision.override", body, "approver")
+    assert out["ok"], out
+    with SessionLocal() as s:
+        done = store.get(s, cid)
+        log = s.execute(text("SELECT reason FROM case_stage_log WHERE case_id = :c ORDER BY id"), {"c": cid}).scalars().all()
+    assert done["chosen"]["id"] == "release" and done["override"]["reason"] == "Quality saw the tool yesterday."
+    assert any(x.startswith("Override approved") for x in log)  # the journal
+    assert any(g["id"] == "G-TOOL-TEL" and not g["passed"] for g in done["gates"])  # the held reason stays on the case

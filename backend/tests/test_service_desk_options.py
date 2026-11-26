@@ -113,7 +113,7 @@ def _opts(c: dict, line: int = 0) -> dict[str, dict]:
     return {o["k"]: o for o in c["serviceDesk"]["lines"][line]["options"]}
 
 
-def test_sd_04_options_on_the_case_and_every_line_cites_its_table():
+def test_sd_04_three_options_priced():
     _history()
     _stock(2)
     _ticket("CS0010042", [_line()])
@@ -128,7 +128,7 @@ def test_sd_04_options_on_the_case_and_every_line_cites_its_table():
     assert c["serviceDesk"]["lines"][0]["best"] == max(o.values(), key=lambda x: x["expected_margin"])["k"]
 
 
-def test_sd_04_swap_waits_for_stock_and_cover():
+def test_sd_04_swap_only_under_cover():
     _history()
     _ticket("CS0010042", [_line()])
     swap = _opts(_open("CS0010042"))["swap"]
@@ -161,7 +161,7 @@ def test_sd_04_account_shift_moves_the_take_up_after_ten_offers():
     assert up != base and abs(up - expect) < 1e-3
 
 
-def test_sd_04_a_fix_over_600_usd_holds_for_the_fleet_manager_and_i11_reads_it():
+def test_sd_04_repair_over_600_waits_for_fleet_manager():
     _history(hours=18.0)  # 18 h at $58 plus parts, well over $600
     _ticket("CS0010042", [_line(age=10, cover="none")])  # no cover, 28% of life: the fix is the only option
     c = _open("CS0010042")
@@ -171,7 +171,7 @@ def test_sd_04_a_fix_over_600_usd_holds_for_the_fleet_manager_and_i11_reads_it()
     assert _guardrail_holds(c) == ["GR-14"]  # the standing policy (I-11) sees the hold the pipeline's policy (I-10) reads
 
 
-def test_sd_04_gr_s3_a_stale_cited_table_holds_the_case():
+def test_sd_04_stale_table_held_gr_s3():
     _history()
     _ticket("CS0010042", [_line()])
     c = _open("CS0010042")
