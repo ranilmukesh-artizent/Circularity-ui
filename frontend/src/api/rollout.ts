@@ -72,3 +72,55 @@ export const rollbackRollout = (flowId: number, reason: string): Promise<ActionR
 /** "Canary: FR at 20 % of volume" (one clause per region), or '' with no canary rows. */
 export const canaryLine = (rows: Pick<RolloutRow, 'region' | 'share'>[]): string =>
   rows.length ? 'Canary: ' + rows.map((r) => `${r.region ?? 'all regions'} at ${r.share} % of volume`).join(', ') : '';
+
+/** One arm's figures in the canary report (rates are 0 to 1; the means are null while no case has the value). */
+export interface ArmStats {
+  n: number;
+  decided: number;
+  override_rate: number;
+  exception_rate: number;
+  hold_rate: number;
+  mean_net: number | null;
+  mean_realised: number | null;
+}
+
+/** Canary against control (backend/di/services/modeler/canary_stats.py): every figure is computed by the server, none by a model. */
+export interface RolloutReport {
+  flow_id: number;
+  name: string;
+  stage: RolloutStage | null;
+  canary: ArmStats;
+  control: ArmStats;
+  /** the difference of mean nets (canary minus control) with its bootstrap bands; null while an arm has no values */
+  band: { diff: number; band80: [number, number]; band95: [number, number] } | null;
+  n_needed: number;
+  rules: Record<string, number>;
+  /** "Too few cases to tell a difference yet" while either arm is below the cases it needs */
+  note: string | null;
+  /** the stop rule breached right now, if any */
+  breach: string | null;
+  /** set while the canary is paused: why, and whether the system did it */
+  paused: { reason: string; by: string; automatic?: boolean; at?: string } | null;
+}
+
+export const rolloutReport = (flowId: number): Promise<ActionResult<RolloutReport>> =>
+  invoke<RolloutReport>('rollout.report', { flow_id: flowId });
+
+const pct = (x: number): string => `${Math.round(x * 100)} %`;
+const money = (x: number | null): string => (x === null ? '–' : Math.round(x).toLocaleString('en-US'));
+
+/** The comparison table rows: [label, canary, control]. */
+export const reportRows = (r: Pick<RolloutReport, 'canary' | 'control'>): [string, string, string][] => [
+  ['Cases', String(r.canary.n), String(r.control.n)],
+  ['Override rate', pct(r.canary.override_rate), pct(r.control.override_rate)],
+  ['Exception rate', pct(r.canary.exception_rate), pct(r.control.exception_rate)],
+  ['Holds', pct(r.canary.hold_rate), pct(r.control.hold_rate)],
+  ['Mean net', money(r.canary.mean_net), money(r.control.mean_net)],
+];
+
+/** "Difference of mean net: +10 (80 % band -2 to +21)", or '' while an arm has no values. */
+export const bandLine = (r: Pick<RolloutReport, 'band'>): string => {
+  if (!r.band) return '';
+  const s = (x: number) => (x > 0 ? '+' : '') + Math.round(x).toLocaleString('en-US');
+  return `Difference of mean net: ${s(r.band.diff)} (80 % band ${s(r.band.band80[0])} to ${s(r.band.band80[1])})`;
+};

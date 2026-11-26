@@ -187,6 +187,19 @@ def _instruction_send(payload: dict[str, Any]) -> None:
     log.info("instruction %s: %s", payload["instruction_id"], out)
 
 
+# ---------------------------------------------------------------- canary watch (plan 9 P9-7.4)
+@handler("rollout.watch")
+def _rollout_watch(payload: dict[str, Any]) -> None:
+    """After a decision on a canary case: pause the canary when its stop rules are breached (nothing else, ever)."""
+    from di.services.actions.rollout import watch
+
+    with SessionLocal() as s:
+        reason = watch(s, int(payload["rollout_id"]))
+        s.commit()
+    if reason:
+        log.info("rollout %s paused automatically: %s", payload["rollout_id"], reason)
+
+
 # ---------------------------------------------------------------- workflow runs (B15)
 @handler("workflow.run")
 def _workflow_run(payload: dict[str, Any]) -> None:

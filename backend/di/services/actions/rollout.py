@@ -15,24 +15,38 @@ A flow approved into `shadow` (flow.approve) has a candidate version, its draft.
     rollout.rollback    {flow_id, reason}                      commit  the canary ends; assignments of cases not yet approved are
                                                                deleted (they use the base version next), approved ones keep theirs
     rollout.get         {flow_id}                              read    stage, rows, counts per arm, the replay, what is refused and why
+    rollout.report      {flow_id}                              read    canary against control: cases, override, exception and hold
+                                                               rates, mean net with the band of the difference, the sample note
+    rollout.autoPause   {rollout_id, reason}                   system  the worker pauses a canary whose stop rule is breached
 
 Which version decides a case is `di.repositories.rollouts.version_for`, used by di.repositories.live_rules.flow_version; a stored
 assignment is kept through approval, execution and close. Starting, widening and going full are refused for anyone who made the
 flow's changes (maker-checker, the same journal rule as flow.approve). Every write is journaled. No agent may run any of them
-(`rollout.` in di.services.agents.forbidden); `rollout.get` is a read.
+(`rollout.` in di.services.agents.forbidden); `rollout.get` and `rollout.report` are reads.
+
+Canary report and automatic pause (P9-7.4): `rollout.report` is computed by di.services.modeler.canary_stats from the arms' cases
+(no model, no free text: every figure is code). After a `decision.submit` or `decision.override` on a case in a running canary,
+a `rollout.watch` job (deduped per rollout) checks the stop rules stored at canary start; a breach runs `rollout.autoPause` as
+SYSTEM: the canary pauses (new cases use the base version, the way `rollout.pause` does), the journal row is by `system`, a
+`rollout.paused` event is written and a My work task opens for each role with approve.flows. That is the only thing the system
+does on its own, because a pause moves towards the known-good version. Widening, adding a region and going full stay a person's.
 """
 
 import hashlib
 from typing import Any, cast
 
-from di.core import policy
+from sqlalchemy import text
+
+from di.core import jobs, policy
 from di.repositories import flows as flow_repo
 from di.repositories import rollouts as repo
 from di.repositories.flows import FlowRow
 from di.services.actions import modeler as flows
 from di.services.actions.modeler import _boundary, _org_ok, _reach, makers
-from di.services.actions.pipeline import CallContext
+from di.services.actions.pipeline import SYSTEM, CallContext, after, invoke
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
+from di.services.cases import process
+from di.services.modeler import canary_stats as stats
 from di.services.modeler.rollout import Rollout, Stage, can_move
 
 _APPROVE = "approve.flows"
@@ -65,6 +79,15 @@ _declare("rollout.full", "Publish a canary in full", "publish decision flows in 
 _declare("rollout.rollback", "Roll back a canary", "publish decision flows in steps",
          "End the canary: cases not yet approved use the base version again.", "commit",
          {**_ID, "reason": _NEED_REASON}, _APPROVE)  # fmt: skip
+_declare("rollout.report", "Read a canary report", "see how a canary compares with its control",
+         "Canary against control: cases, override, exception and hold rates, mean net with the band of the difference. Changes nothing.",
+         "read", _ID, None)  # fmt: skip
+ACTIONS.setdefault(
+    "rollout.autoPause",
+    ActionDef(id="rollout.autoPause", title="Pause a canary automatically", verb="pause a canary automatically", risk="system",
+              desc="The worker pauses a canary whose stop rule is breached: new cases use the base version again.", perm=None,
+              scope="none", input={"rollout_id": {"req": True, "t": "number"}, "reason": {"req": True, "t": "string"}}),
+)  # fmt: skip
 _declare("rollout.get", "Read a rollout", "see how a flow is published",
          "The stage of a flow's publish steps, its canary rows and counts per arm. Changes nothing.", "read", _ID, None)  # fmt: skip
 
@@ -191,6 +214,7 @@ def widen(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
                     run_id=None)  # fmt: skip
     if any(r.stage == "paused" for r in rows):  # widening a paused canary resumes it
         repo.set_stage(ctx.session, f.id, "canary", ("paused",), ctx.actor.id, ctx.now)
+        _close_pause_items(ctx, f.id, "resumed")
     now = repo.active_rollout(ctx.session, f.id)
     return {"flow_id": f.id, "stage": "canary", "rollouts": [_view(r) for r in now],
             "log": f"Widened the canary of {f.name}: " + ", ".join(f"{r.region} at {r.share} %" for r in now)}  # fmt: skip
@@ -239,6 +263,7 @@ def full(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow_of(ctx, i)
     out = flows.publish({"flow_id": f.id}, ctx)  # the flow.publish path: the base version goes to history
     repo.set_stage(ctx.session, f.id, "full", ("canary", "paused"), ctx.actor.id, ctx.now)
+    _close_pause_items(ctx, f.id, "published in full")
     return {**out, "stage": "full", "flow_id": f.id, "log": f"Published {f.name} v{out['ver']} in full after its canary"}
 
 
@@ -256,20 +281,30 @@ def rollback(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     repo.set_stage(ctx.session, f.id, "rolled_back", ("canary", "paused"), ctx.actor.id, ctx.now,
                    {"rolled_back": {"reason": i["reason"], "by": ctx.actor.id, "at": ctx.now.isoformat()}})  # fmt: skip
     cleared = repo.clear_undecided(ctx.session, f.id)
+    _close_pause_items(ctx, f.id, "rolled back")
     return {"flow_id": f.id, "stage": "rolled_back", "cleared": cleared, "reason": i["reason"],
             "log": f"Rolled back the canary of {f.name}: {cleared} undecided cases use v{f.ver} again"}  # fmt: skip
 
 
 # ---------------------------------------------------------------- read
-@guard("rollout.get")
-def get_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+def _read_guard(i: dict[str, Any], ctx: CallContext, perms: tuple[str, ...]) -> tuple[str, str] | None:
     acct = ctx.actor.account
-    if acct is None or not any(policy.can(acct, p, ctx.actor.ctx) for p in ("manageFlows", _APPROVE)):
+    if acct is None or not any(policy.can(acct, p, ctx.actor.ctx) for p in perms):
         return "out_of_scope", f"The {ctx.actor.role} view cannot read a flow's rollout."
     f = flows.repo.get_flow(ctx.session, int(i["flow_id"]))
     if f is None:
         return "not_found", f"No decision flow {i['flow_id']}."
     return None if _org_ok(ctx, f.org_unit_id) else _boundary(f.org_unit_id)
+
+
+@guard("rollout.get")
+def get_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    return _read_guard(i, ctx, ("manageFlows", _APPROVE))
+
+
+@guard("rollout.report")
+def report_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    return _read_guard(i, ctx, ("manageFlows", _APPROVE, "runReplay"))
 
 
 @implement("rollout.get")
@@ -295,3 +330,95 @@ def get(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
             "rollback": None if stage in ("canary", "paused") else "No canary is running.",
         },
     }  # fmt: skip
+
+
+# ---------------------------------------------------------------- report (P9-7.4)
+def build_report(s: Any, f: FlowRow) -> dict[str, Any]:
+    """Both arms' figures, the band of the difference, the sample the comparison needs, the stop rules and any breach: all
+    computed by code (di.services.modeler.canary_stats) from the cases of the flow's running or paused canary."""
+    rows = repo.arm_rows(s, f.id)
+    stored = repo.stop_rules_of(s, f.id)
+    rules = stats.rules_of(stored)
+    canary, control = stats.arm_stats(rows["canary"]), stats.arm_stats(rows["control"])
+    c_nets = [r["net"] for r in rows["canary"] if r["net"] is not None]
+    k_nets = [r["net"] for r in rows["control"] if r["net"] is not None]
+    needed = stats.n_needed(k_nets)
+    stage = current_stage(s, f)
+    return {
+        "flow_id": f.id, "name": f.name, "stage": stage, "canary": canary, "control": control,
+        "band": stats.diff_band(c_nets, k_nets), "n_needed": needed, "rules": rules,
+        "note": stats.sample_note(canary, control, needed, rules), "breach": stats.stop_check(canary, control, rules),
+        "paused": stored.get("paused") if stage == "paused" else None,
+    }  # fmt: skip
+
+
+@implement("rollout.report")
+def report(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    return build_report(ctx.session, cast(FlowRow, flows.repo.get_flow(ctx.session, int(i["flow_id"]))))
+
+
+# ---------------------------------------------------------------- the automatic pause (P9-7.4)
+WATCH_JOB = "rollout.watch"
+PAUSE_TYPE = "canary_paused"  # work item type, suffixed with the flow id so one flow's items close together
+
+
+@guard("rollout.autoPause")
+def auto_pause_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    ro = repo.get(ctx.session, int(i["rollout_id"]))
+    if ro is None or ro.subject_kind != "flow":
+        return "not_found", f"No rollout {i['rollout_id']}."
+    return None if ro.stage == "canary" else ("conflict", f"Rollout {ro.id} is not running a canary.")
+
+
+@implement("rollout.autoPause", emits=["rollout.paused"])
+def auto_pause(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    ro = cast(Rollout, repo.get(ctx.session, int(i["rollout_id"])))
+    f = cast(FlowRow, flow_repo.get_flow(ctx.session, int(ro.subject_id), for_update=True))
+    reason = str(i["reason"])
+    repo.set_stage(ctx.session, f.id, "paused", ("canary",), "system", ctx.now,
+                   {"paused": {"reason": reason, "by": "system", "automatic": True, "at": ctx.now.isoformat()}})  # fmt: skip
+    for role in policy.EXTRA_PERMS[_APPROVE]:  # I-20: a My work task for the people who may resume or roll back
+        process.open_item(
+            ctx.session, kind="step", case_id=None, org_unit_id=f.org_unit_id, type=f"{PAUSE_TYPE}:{f.id}",
+            title=f"Canary of {f.name} paused automatically", cause=reason,
+            action="Resume the canary (Modeler, Rollout) or roll it back", owner_role=role, due_hours=None, by="system",
+        )  # fmt: skip
+    return {"flow_id": f.id, "rollout_id": ro.id, "stage": "paused", "reason": reason, "automatic": True,
+            "log": f"Paused the canary of {f.name} automatically: {reason}"}  # fmt: skip
+
+
+def _close_pause_items(ctx: CallContext, flow_id: int, outcome: str) -> None:
+    """A resumed, published or rolled-back canary no longer waits on the My work tasks its automatic pause opened."""
+    ids = (
+        ctx.session.execute(
+            text("SELECT id FROM work_item WHERE type = :t AND status = 'open'"), {"t": f"{PAUSE_TYPE}:{flow_id}"}
+        )
+        .scalars()
+        .all()
+    )
+    for n in ids:
+        process.close_item(ctx.session, int(n), outcome, ctx.actor.id)
+
+
+# ---------------------------------------------------------------- the watch
+@after("decision.submit")
+@after("decision.override")
+def _watch_after_decision(i: dict[str, Any], out: dict[str, Any], ctx: CallContext) -> None:  # noqa: ARG001 - hooks take (input, output, ctx)
+    """A decision on a case of a running canary queues one check of its stop rules (deduped per rollout)."""
+    rid = repo.canary_of_case(ctx.session, str(i["case_id"]))
+    if rid is not None:
+        jobs.enqueue(ctx.session, WATCH_JOB, {"rollout_id": rid}, priority=150, dedupe_key=f"{WATCH_JOB}:{rid}")
+
+
+def watch(s: Any, rollout_id: int) -> str | None:
+    """The worker's check: when the canary's stop rules are breached, pause it as SYSTEM and answer the reason, else None. The
+    caller commits. Never widens, adds a region or goes full."""
+    ro = repo.get(s, rollout_id)
+    if ro is None or ro.stage != "canary":
+        return None
+    f = flow_repo.get_flow(s, int(ro.subject_id))
+    breach = build_report(s, f)["breach"] if f is not None else None
+    if breach is None:
+        return None
+    done = invoke("rollout.autoPause", {"rollout_id": ro.id, "reason": breach}, CallContext(actor=SYSTEM, session=s))
+    return breach if done.get("ok") else None

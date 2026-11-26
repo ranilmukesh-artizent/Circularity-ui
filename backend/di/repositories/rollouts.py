@@ -14,6 +14,7 @@ from sqlalchemy import CursorResult, text
 from sqlalchemy.orm import Session
 
 from di.repositories.flows import FlowRow
+from di.services.modeler.canary_stats import DEFAULT_RULES
 from di.services.modeler.rollout import Rollout, assign
 
 Arm = Literal["canary", "control", "out", "none"]
@@ -104,12 +105,13 @@ def _region(case: Mapping[str, Any], ro: Rollout) -> str | None:
 
 # ---------------------------------------------------------------- writes (the rollout actions)
 def insert(s: Session, flow_id: int, *, candidate: int | None, base: int, region_key: str, region: str, share: int,
-           salt: str, by: str, run_id: int | None) -> int:  # fmt: skip
+           salt: str, by: str, run_id: int | None, rules: dict[str, Any] | None = None) -> int:  # fmt: skip
     return int(
         s.execute(
             text(
                 "INSERT INTO rollout (subject_kind, subject_id, candidate_ver, base_ver, stage, region_key, region, share, "
-                "salt, replay_run_id, set_by) VALUES ('flow', :f, :c, :b, 'canary', :k, :r, :sh, :salt, :run, :by) RETURNING id"
+                "salt, replay_run_id, set_by, stop_rules) VALUES ('flow', :f, :c, :b, 'canary', :k, :r, :sh, :salt, :run, :by, "
+                "CAST(:rules AS jsonb)) RETURNING id"
             ),
             {
                 "f": str(flow_id),
@@ -121,6 +123,7 @@ def insert(s: Session, flow_id: int, *, candidate: int | None, base: int, region
                 "salt": salt,
                 "run": run_id,
                 "by": by,
+                "rules": json.dumps(rules or DEFAULT_RULES),  # the stop rules the canary starts with (P9-7.4)
             },
         ).scalar_one()  # fmt: skip
     )
@@ -179,3 +182,58 @@ def done_replay(s: Session, flow_id: int, dver: int | None) -> int | None:
         {"f": flow_id, "d": dver},
     ).scalar()
     return int(r) if r is not None else None
+
+
+# ---------------------------------------------------------------- the canary report (P9-7.4)
+def stop_rules_of(s: Session, flow_id: int) -> dict[str, Any]:
+    """The stored stop rules (and pause reason, if any) of the flow's newest running or paused canary row; {} when none."""
+    r = s.execute(
+        text(
+            "SELECT stop_rules FROM rollout WHERE subject_kind = 'flow' AND subject_id = :f AND stage IN ('canary', 'paused') "
+            "ORDER BY id LIMIT 1"
+        ),
+        {"f": str(flow_id)},
+    ).scalar()
+    return dict(r) if r else {}
+
+
+def arm_rows(s: Session, flow_id: int) -> dict[str, list[dict[str, Any]]]:
+    """One row per case assigned over the flow's running or paused canary rows, by arm: {decided, override, exception, hold,
+    net, realised}. `net` is the chosen route's net of a decided case (none before the decision), `realised` the confirmed
+    outcome's. An exception is any exception work item of the case, a hold a gate hold or a fraud hold on it."""
+    rows = s.execute(
+        text(
+            "SELECT a.arm, jsonb_typeof(c.data -> 'approval') = 'object' AS decided, "
+            "jsonb_typeof(c.data -> 'override') = 'object' AS override, "
+            "EXISTS (SELECT 1 FROM work_item w WHERE w.case_id = c.id AND w.kind = 'exception') AS exception, "
+            "(jsonb_typeof(c.data -> 'gateHold') = 'object' "
+            "OR COALESCE(c.data -> 'fraud' ->> 'status', '') IN ('held', 'rejected')) AS hold, "
+            "CASE WHEN jsonb_typeof(c.data -> 'approval') = 'object' THEN (c.data -> 'chosen' ->> 'net')::float END AS net, "
+            "(c.data -> 'outcome' ->> 'net')::float AS realised "
+            "FROM rollout_assignment a JOIN rollout r ON r.id = a.rollout_id JOIN case_record c ON c.id = a.case_id "
+            "WHERE r.subject_kind = 'flow' AND r.subject_id = :f AND r.stage IN ('canary', 'paused') "
+            "AND a.arm IN ('canary', 'control') ORDER BY a.case_id"
+        ),
+        {"f": str(flow_id)},
+    ).mappings()
+    out: dict[str, list[dict[str, Any]]] = {"canary": [], "control": []}
+    for r in rows:
+        out[r["arm"]].append({k: r[k] for k in ("decided", "override", "exception", "hold", "net", "realised")})
+    return out
+
+
+def canary_of_case(s: Session, case_id: str) -> int | None:
+    """The id of the running canary rollout the case is assigned to, else None."""
+    r = s.execute(
+        text(
+            "SELECT a.rollout_id FROM rollout_assignment a JOIN rollout r ON r.id = a.rollout_id "
+            "WHERE a.case_id = :c AND r.stage = 'canary' ORDER BY a.at DESC LIMIT 1"
+        ),
+        {"c": case_id},
+    ).scalar()
+    return int(r) if r is not None else None
+
+
+def get(s: Session, rollout_id: int) -> Rollout | None:
+    r = s.execute(text(f"SELECT {_COLS} FROM rollout WHERE id = :i"), {"i": rollout_id}).first()  # noqa: S608 - fixed columns
+    return _row(r) if r else None

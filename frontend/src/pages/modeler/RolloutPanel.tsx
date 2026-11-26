@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ROLLOUT_STEPS,
+  bandLine,
   canaryLine,
   getRollout,
   goFull,
   pauseRollout,
+  reportRows,
   rollbackRollout,
+  rolloutReport,
   startCanary,
   widenRollout,
   type Rollout,
   type RolloutDone,
+  type RolloutReport,
 } from '../../api/rollout';
 import { can } from '../../api/session';
 import type { ActionResult, ModelerScreen } from '../../api/types';
@@ -37,6 +41,7 @@ export function RolloutPanel({ s }: { s: ModelerScreen }) {
   const flowId = s.flow.id;
   const action = useAction();
   const [r, setR] = useState<Rollout | null>(null);
+  const [rep, setRep] = useState<RolloutReport | null>(null);
   const [err, setErr] = useState('');
   const [region, setRegion] = useState('');
   const [share, setShare] = useState('20');
@@ -45,6 +50,8 @@ export function RolloutPanel({ s }: { s: ModelerScreen }) {
   const load = useCallback(async () => {
     const got = await getRollout(flowId);
     if (got.ok) setR(got.output);
+    const report = await rolloutReport(flowId);
+    setRep(report.ok ? report.output : null);
   }, [flowId]);
   useEffect(() => {
     void load();
@@ -84,6 +91,26 @@ export function RolloutPanel({ s }: { s: ModelerScreen }) {
           {r.counts.canary} cases on v{r.candidate_ver}, {r.counts.control} on v{r.base_ver}
         </p>
       )}
+      {r.stage === 'paused' && rep?.paused && (
+        <p className="mdl-msg blk" role="status" data-rollout-paused-banner>
+          {rep.paused.automatic ? 'Paused automatically: ' : 'Paused: '}
+          {rep.paused.reason}
+        </p>
+      )}
+      {running && rep && (
+        <table className="tbl" data-rollout-report aria-label="Canary against control">
+          <thead>
+            <tr><th scope="col" /><th scope="col">Canary</th><th scope="col">Control</th></tr>
+          </thead>
+          <tbody>
+            {reportRows(rep).map(([label, a, b]) => (
+              <tr key={label}><th scope="row">{label}</th><td>{a}</td><td>{b}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {running && rep && bandLine(rep) && <p className="note" data-rollout-band>{bandLine(rep)}</p>}
+      {running && rep?.note && <p className="note" data-rollout-sample-note>{rep.note}.</p>}
       {!running && !r.replay_done && r.stage === 'shadow' && <p className="note" data-rollout-needs-replay>{r.can.startCanary}</p>}
       {err && <p className="mdl-msg blk" role="alert" data-rollout-refusal>{err}</p>}
       {(r.stage === 'shadow' || r.stage === 'rolled_back') && (
@@ -106,6 +133,12 @@ export function RolloutPanel({ s }: { s: ModelerScreen }) {
             <button type="button" className="btn sm pri" title={why('widen')} disabled={action.pending || !!r.can.widen} onClick={() => void go(() => widenRollout(flowId, pct))}>
               {r.stage === 'paused' ? 'Resume at this share' : 'Widen'}
             </button>
+            {r.stage === 'paused' && (
+              <button type="button" className="btn sm pri" title={why('widen')} disabled={action.pending || !!r.can.widen}
+                      onClick={() => void go(() => widenRollout(flowId, r.rollouts[0]?.share))}>
+                Resume canary
+              </button>
+            )}
             <button type="button" className="btn sm pri" title={why('full')} disabled={action.pending || !!r.can.full} onClick={() => void go(() => goFull(flowId))}>
               Publish in full
             </button>
