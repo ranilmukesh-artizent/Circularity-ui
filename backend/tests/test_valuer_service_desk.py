@@ -91,7 +91,7 @@ def test_sd_04_upgrade_credit_is_capped_and_account_shift_moves_take_up():
     assert up["credit"] == 100.0 and abs(up["take_up"] - _p(0.25, 0.7)) < 1e-6
 
 
-def test_sd_04_upgrade_not_offered_before_half_the_life_unless_cover_allows():
+def test_sd_04_upgrade_only_past_half_life():
     early = _opt(sdv.decide_ticket(_inputs(_line(life=49))), "upgrade")
     assert not early["eligible"] and early["why"] == "Upgrade is offered from 50% of life used (BR-S1); this tool has used 49%"
     assert _opt(sdv.decide_ticket(_inputs(_line(life=49, upgrade=True))), "upgrade")["eligible"]
@@ -155,3 +155,14 @@ def test_sd_04_no_estimate_means_no_priced_option():
     d = sdv.decide_ticket(_inputs(ln))
     assert not any(o["eligible"] for o in d["lines"][0]["options"]) and d["lines"][0]["best"] is None
     assert _opt(d, "fix")["why"] == "No estimate yet: a technician checks the tool first"
+
+
+def test_sd_04_credit_over_300_waits_for_sales():
+    """GR-C1: a credit of $320 holds the upgrade for Sales; $280 with a fix under $600 holds nothing (the standing policy's)."""
+    over = sdv.decide_ticket(_inputs(_line(life=90, pct=0.6, cap=320)))
+    assert _opt(over, "upgrade")["credit"] == 320.0
+    holds = sdv.approval_holds(over, "upgrade")
+    assert [h["id"] for h in holds] == ["GR-C1"] and holds[0]["owner"] == "Sales"
+    under = sdv.decide_ticket(_inputs(_line(life=90, pct=0.6, cap=280)))
+    assert _opt(under, "upgrade")["credit"] == 280.0 and _opt(under, "fix")["cost"] < 600
+    assert sdv.approval_holds(under, "upgrade") == []

@@ -68,7 +68,8 @@ pass "images.tar.gz $(du -h "$OUT/images.tar.gz" | cut -f1)"
 
 echo "== archives"
 (cd "$DIST" && tar -czf "$NAME.tar.gz" "$NAME") || fail "tar"
-docker run --rm --user "$(id -u):$(id -g)" -v "$DIST:/d" -w /d --entrypoint python "circularity-trial-api:$VERSION" \
+# MSYS_NO_PATHCONV is scoped to this one call: Git Bash would rewrite "-w /d" to "D:/"; other systems ignore it.
+MSYS_NO_PATHCONV=1 docker run --rm --user "$(id -u):$(id -g)" -v "$DIST:/d" -w /d --entrypoint python "circularity-trial-api:$VERSION" \
   -m zipfile -c "$NAME.zip" "$NAME" || fail "zip"
 pass "$DIST/$NAME.tar.gz ($(du -h "$DIST/$NAME.tar.gz" | cut -f1)), $DIST/$NAME.zip ($(du -h "$DIST/$NAME.zip" | cut -f1))"
 echo "== trial package $VERSION built; check it with: bash scripts/trial/check.sh $DIST/$NAME.tar.gz"

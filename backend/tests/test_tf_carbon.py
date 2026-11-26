@@ -95,7 +95,7 @@ def test_tf_13_routes_carry_co2():
     assert v["co2"]["version"] == "tf-co2-2026.1" and v["co2"]["legal_review"] == "pending"
 
 
-def test_tf_13_recycling_needs_the_certificate():
+def test_tf_13_recycle_cannot_close_without_certificate():
     from di.services.actions import execution
 
     case = {"template": "tool_fleet", "chosen": {"id": "exit"}, "exec": {"steps": [{"k": "custody", "ack": None}]}}
@@ -107,3 +107,38 @@ def test_tf_13_recycling_needs_the_certificate():
     assert execution.recycling_refusal({**case, "chosen": {"id": "release"}, "exec": {"steps": []}}) is None
     assert execution.recycling_refusal({**case, "template": None, "exec": {"steps": []}}) is None
     assert execution.RECYCLING_TEXT == "Recycling needs the recycler's certificate before the case closes (GR-06)"
+
+
+def test_tf_13_outcome_confirm_is_refused_until_the_certificate_is_acknowledged():
+    """Through the pipeline: a closed `exit` case with an unacknowledged custody step is refused with the GR-06 text."""
+    from di.services.actions import execution
+    from di.services.cases import store
+
+    cid = _open("CMH-70102")
+    with SessionLocal() as s:
+        c = store.get(s, cid, for_update=True)
+        c["chosen"] = next(r for r in c["routes"] if r["id"] == "exit")
+        c["stage"] = "closed"
+        c["exec"] = {"ref": "AP-T", "decisionId": "D-T", "instruction": 1, "approver": "approver",
+                     "steps": [{"k": "custody", "sys": "Recycler", "state": "done", "ack": None}]}  # fmt: skip
+        store.save(s, c)
+        s.commit()
+    out = call("outcome.confirm", {"case_id": cid}, "finance")
+    assert not out["ok"] and execution.RECYCLING_TEXT in str(out), out
+
+
+def test_tf_13_co2_does_not_change_net():
+    """Every path of every golden tool-fleet decision keeps its net now that the CO2e line is carried."""
+    from di.core import golden
+    from di.services.modeler.valuers import tool_fleet
+
+    want = golden.load("po/equip_decisions")
+    cases = {c["id"]: c for c in tool_fleet.sample_queue()}
+    checked = 0
+    for w in want["decisions"]:
+        got = tool_fleet.decide(cases[w["id"]], tool_fleet.BASEP, want["rules"])
+        nets = {p["k"]: p["net"] for p in got["all"]}
+        for p in w["paths"]:
+            assert nets[p["k"]] == pytest.approx(p["net"], abs=1e-6), (w["id"], p["k"])
+            checked += 1
+    assert checked >= 6 * len(want["decisions"]) - 1
