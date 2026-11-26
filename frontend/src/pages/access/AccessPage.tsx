@@ -82,7 +82,7 @@ function Accounts() {
 
 function Identity() {
   const I = idp();
-  const accts = accounts().filter((a) => a.role !== 'Admin');
+  const accts = accounts().filter((a) => a.role !== 'Admin' && I.groups[a.id]); // a provisioned joiner has no app-role row
   const eligible = I.users.filter((u) => idpRoleOf(u) === 'Approver' && u.acct !== 'approver');
   const manage = can('manageIdentity');
   const [to, setTo] = useState(eligible[0]?.id ?? '');
