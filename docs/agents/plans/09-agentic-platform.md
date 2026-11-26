@@ -998,7 +998,7 @@ each story went.
 - [x] P9-9.16 Auction under 40000 miles guardrail in plain words
 - [x] P9-9.17 Used-car follow-through per channel
 - [x] P9-9.18 Lot ageing flag alert and suggestion
-- [ ] P9-9.19 Used-car worked analytics questions
+- [x] P9-9.19 Used-car worked analytics questions
 - [x] P9-9.20 Sold and learn with residual gain or loss
 - [ ] P9-9.21 Used-car demo smoke
 - [ ] P9-9.22 Phase 9 gate
@@ -1036,7 +1036,7 @@ each story went.
 - [x] P9-11.13 Medical replay data and 20 percent publish
 - [x] P9-11.14 Retire under 5 years guardrail in plain words
 - [x] P9-11.15 Service planning around regional demand
-- [ ] P9-11.16 Turnaround alert and medical worked questions
+- [x] P9-11.16 Turnaround alert and medical worked questions
 - [ ] P9-11.17 Medical follow-through hospital evidence and close
 - [ ] P9-11.18 Medical rental demo smoke
 - [ ] P9-11.19 Phase 11 gate
