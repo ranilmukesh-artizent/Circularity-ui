@@ -13,6 +13,7 @@ import {
 import { money } from '../../../api/format';
 import { can } from '../../../api/session';
 import { onActivateKey } from '../../../utils/keys';
+import { ask, launch } from '../../../utils/launchers';
 import { toast } from '../../../components/toast';
 import { refused } from '../../../hooks/useAction';
 import { openExSrc, openExSrcAll, openModels, openSources, openTrace } from '../CaseDrawers';
@@ -166,7 +167,7 @@ function Packet({ c, a, s }: TabProps) {
         {ap && c.stage === 'awaiting_approval' && <B pri onClick={() => approveGuarded(c.id, ui)}>Approve…</B>}
         {sb && <B pri onClick={() => caseActions.submit(c.id)}>Submit for review</B>}
         {(ap || sb) && c.stage === 'awaiting_approval' && <B href={'#/' + stageHref(c.id, 7)}>Edit</B>}
-        <B onClick={caseActions.askSoon}>Escalate</B>
+        <B onClick={() => ask(launch.escalateCase(c.id))}>Escalate</B>
         <B href={'#/' + stageHref(c.id, 'full')}>Full analysis</B>
         <B onClick={() => openExSrcAll(ui, c, a, c.routes.findIndex((x) => sameR(x, r)))}>Where the numbers come from</B>
         <B href={'#/orchestration/run?case=' + c.id}>Show trace</B>

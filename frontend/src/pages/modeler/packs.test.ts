@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { impactLine, partsLine, refusalLine } from './packs';
+import { impactLine, packTitle, partsLine, refusalLine } from './packs';
 
 describe('pack version lines (X-01, X-03)', () => {
   it('x-01: the parts line counts the parts that check out', () => {
@@ -19,5 +19,14 @@ describe('pack version lines (X-01, X-03)', () => {
   it('x-01: a refusal leads with the part that failed', () => {
     expect(refusalLine('Pack device v2.8.0: part 5 (routes): Field required')).toBe('Part 5 (routes): Field required');
     expect(refusalLine('Pack device 2.7.0 is not newer than 2.7.0.')).toBe('Pack device 2.7.0 is not newer than 2.7.0.');
+  });
+});
+
+describe('pack titles (QA A item 11)', () => {
+  it('keeps a real name and spells out a key used as the name', () => {
+    expect(packTitle({ key: 'industrial', name: 'Industrial returns' })).toBe('Industrial returns');
+    expect(packTitle({ key: 'medical_rental', name: 'medical_rental' })).toBe('Medical rental');
+    expect(packTitle({ key: 'used_cars', name: 'used_cars' })).toBe('Used cars');
+    expect(packTitle({ key: 'itad', name: 'itad' })).toBe('ITAD');
   });
 });

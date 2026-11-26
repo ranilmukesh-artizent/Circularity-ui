@@ -105,5 +105,5 @@
 .rev-tag { display: inline-block; padding: 0 5px; font: 600 11px/16px var(--f-mono); color: var(--as-rev); border: 1px solid var(--as-rev); border-radius: 4px; }
 
 /* ---------- the Modeler's tab strip and rail hosts (T4 fills them, these are the shared looks) ---------- */
-.mdl-strip { width: var(--mdl-strip-w); flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 16px; border-left: 1px solid var(--line); background: var(--panel); }
-.mdl-rail { width: var(--mdl-rail-w); flex: none; padding: 20px; display: grid; gap: 24px; align-content: start; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); background: var(--panel); }
+/* The rail host and its strip are laid out by pages/modeler/modeler.css (the rail is a work-surface part, not the
+   assistant): a panel look here (padding, grid, overflow) clipped the rail panel to the 44px strip (T8). */

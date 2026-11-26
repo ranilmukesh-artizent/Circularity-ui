@@ -165,27 +165,37 @@ export function FlowInspector({ s, graph, node, editable, onRule, onConnect, onD
     <div className="mdl-insp">
       <h3>{node.rid} · business rule</h3>
       {node.src && <p className="note">From: “{node.src}”</p>}
-      <div className="mdl-row">
+      <section className="mdl-isec" aria-label="What the rule does">
+        <h4>What it does</h4>
+        <div className="mdl-iform">
+          <label className="mdl-f">
+            <span>Action</span>
+            <select aria-label="Action" disabled={!editable} value={node.action ?? 'exclude'} onChange={(e) => onRule(node.id, { action: e.target.value as FlowNode['action'] })}>
+              {ACTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </label>
+          <label className="mdl-f">
+            <span>Path</span>
+            <select aria-label="Path" disabled={!editable} value={node.path ?? ''} onChange={(e) => onRule(node.id, { path: e.target.value || null })}>
+              <option value="">Choose a path…</option>
+              {s.template.paths.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </label>
+        </div>
+      </section>
+      <section className="mdl-isec" aria-label="Where it applies">
+        <h4>Applies to</h4>
+        <p className="note">Leave a group empty to apply to all of it.</p>
+        {s.template.dims.map((d) => <DimField key={d.key} d={d} scope={scope} editable={editable} set={(v) => setDim(d.key, v)} />)}
+      </section>
+      <section className="mdl-isec" aria-label="Owner">
+        <h4>Owner</h4>
         <label className="mdl-f">
-          <span>Action</span>
-          <select aria-label="Action" disabled={!editable} value={node.action ?? 'exclude'} onChange={(e) => onRule(node.id, { action: e.target.value as FlowNode['action'] })}>
-            {ACTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
+          <span>Who answers for this rule</span>
+          <input aria-label="Owner" disabled={!editable} value={node.owner ?? ''} onChange={(e) => onRule(node.id, { owner: e.target.value })} />
         </label>
-        <label className="mdl-f">
-          <span>Path</span>
-          <select aria-label="Path" disabled={!editable} value={node.path ?? ''} onChange={(e) => onRule(node.id, { path: e.target.value || null })}>
-            <option value="">choose…</option>
-            {s.template.paths.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </label>
-      </div>
-      {s.template.dims.map((d) => <DimField key={d.key} d={d} scope={scope} editable={editable} set={(v) => setDim(d.key, v)} />)}
-      <label className="mdl-f">
-        <span>Owner</span>
-        <input aria-label="Owner" disabled={!editable} value={node.owner ?? ''} onChange={(e) => onRule(node.id, { owner: e.target.value })} />
-      </label>
-      <p className="mdl-read">{node.path ? nodeTitle(node, s) : 'Pick a path'}.</p>
+      </section>
+      <p className={node.path ? 'mdl-read' : 'note'}>{node.path ? nodeTitle(node, s) + '.' : 'Choose a path to finish the rule.'}</p>
       <SimNote flowId={s.flow.id} nodeId={node.id} />
       {next}
       {editable && <button className="btn sm" onClick={() => onRemove(node.id)}>Delete rule</button>}

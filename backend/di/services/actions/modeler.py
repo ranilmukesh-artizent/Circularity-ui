@@ -54,10 +54,9 @@ from di.services.modeler.compile import compile_flow
 from di.services.modeler.export_bpmn import process_of, to_bpmn
 from di.services.modeler.export_dmn import Table, decision_id, to_dmn
 from di.services.modeler.flow import Flow
-from di.services.modeler.guard import text_breaks
 from di.services.modeler.pack import load_pack
 from di.services.modeler.parse import parse_rule
-from di.services.modeler.propose import STEP, Proposal, build_proposal, fill_parsed
+from di.services.modeler.propose import STEP, Proposal, build_proposal, fill_parsed, refused_text
 from di.services.modeler.tables import table_title
 from di.services.modeler.templates import Template, load_template, template_keys
 from di.services.modeler.validate import blocking, validate_flow
@@ -506,7 +505,7 @@ def propose(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
 def _model_fill(t: Template, text: str) -> dict[str, Any]:
     """The optional model reading (MVP-5.3), asked only when the parser finds no path in a sentence that is neither a
     guardrail change nor a step: {} without a key or on any failure."""
-    if text_breaks(t, text) or STEP.search(text) or parse_rule(t, text).path:
+    if refused_text(t, text) or STEP.search(text) or parse_rule(t, text).path:
         return {}
     return model_rule(text, t)
 

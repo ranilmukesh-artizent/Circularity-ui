@@ -8,7 +8,9 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useOverlay } from '../../components/Overlay';
 import { onOpenAssistant } from '../../utils/askBus';
 import { AssistantPanel } from './AssistantPanel';
-import { effectiveMode, focusPinned, hasPinned, isOpen, pickMode, send, setOpen, stop, useConv, useUi } from './store';
+import {
+  effectiveMode, focusPinned, hasPinned, isOpen, pickMode, reveal, send, setComposeId, setOpen, stop, useConv, useUi,
+} from './store';
 import { useAssistantContext } from './useAssistantContext';
 
 const WIDE = '(min-width: 1280px)';
@@ -47,14 +49,16 @@ export function AssistantDock() {
     return () => document.removeEventListener('keydown', key);
   }, []);
 
-  // openAssistant({ mode, question }) from the top bar, a page launcher, or openAsk()
+  // openAssistant({ mode, question, composeId }) from the top bar, a page launcher, or openAsk(). The composition is part
+  // of the context the modes read (Set up names it), so it is set before the question is sent.
   useEffect(
     () =>
       onOpenAssistant((req) => {
-        if (hasPinned()) focusPinned();
-        else setOpen(true);
+        reveal();
+        setComposeId(req.composeId ?? null);
         if (req.mode) pickMode(req.mode);
-        if (req.question) send(req.question, req.mode ?? effectiveMode(latest.current), latest.current);
+        const ctx = req.composeId != null && latest.current.composeId == null ? { ...latest.current, composeId: req.composeId } : latest.current;
+        if (req.question) send(req.question, req.mode ?? effectiveMode(ctx), ctx);
       }),
     [],
   );

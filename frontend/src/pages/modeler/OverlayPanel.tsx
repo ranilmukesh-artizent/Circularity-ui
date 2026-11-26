@@ -4,6 +4,7 @@ import type { ActionResult, GuardrailStage, ModelerScreen, OverlayCond, OverlayC
 import { Panel } from '../../components/kit/Panel';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import { Field, WhyOff } from './Field';
 import { guardrailControls, nextOpId, opLabel, STAGE_LABEL, tightenable, weakens, withApprover, withTighten } from './overlay';
 
 const STATUS: Record<OverlayScreen['status'], string> = { none: 'No overlay yet', draft: 'Draft', review: 'In review', pub: 'Published' };
@@ -112,22 +113,39 @@ function GuardrailList({ o, busy, onSave }: { o: OverlayScreen; busy: boolean; o
   return (
     <div className="mdl-prop" data-overlay-guardrails>
       <span className="label">Guardrails</span>
-      {o.guardrails.map((g) => {
-        const c = guardrailControls(g);
-        const role = roles[g.id] ?? '';
-        return (
-          <div key={g.id} className="mdl-row" data-overlay-guardrail={g.id}>
-            <span>{g.id}: {g.text}{g.locked ? ' (locked by the pack)' : ''}</span>
-            {c.fields.map((f) => (
-              <label key={f.label} className="note">{f.label} <input type="checkbox" disabled={f.disabled || busy} aria-label={`${g.id} ${f.label}`} /></label>
-            ))}
-            <label className="sr" htmlFor={`mdl-ov-ap-${g.id}`}>Approver role for {g.id}</label>
-            <input id={`mdl-ov-ap-${g.id}`} value={role} placeholder="approver role" style={{ width: 120 }} onChange={(e) => setRoles({ ...roles, [g.id]: e.target.value })} />
-            <button className="btn sm" disabled={busy || !c.addApprover || role.trim() === ''}
-                    onClick={async () => (await onSave(withApprover(o.ops, g, role))) && setRoles({ ...roles, [g.id]: '' })}>Add approver</button>
-          </div>
-        );
-      })}
+      <ul className="mdl-grs">
+        {o.guardrails.map((g) => {
+          const c = guardrailControls(g);
+          const role = roles[g.id] ?? '';
+          const off = !c.addApprover ? 'This guardrail takes no extra approver.' : busy ? 'This overlay cannot be edited now.' : role.trim() === '' ? 'Type an approver role first.' : null;
+          return (
+            <li key={g.id} className="mdl-gr" data-overlay-guardrail={g.id}>
+              <div className="mdl-gr-head">
+                <b>{g.id}</b>
+                {g.locked && <span className="pill mdl-st draft">Locked by the pack</span>}
+              </div>
+              <p className="mdl-gr-text">{g.text}</p>
+              <fieldset className="mdl-gr-ctl">
+                <legend>What a customer may change</legend>
+                {c.fields.map((f) => (
+                  <label key={f.label} className="mdl-chk1" title={f.disabled ? 'Locked by the pack' : undefined}>
+                    <input type="checkbox" disabled={f.disabled || busy} aria-label={`${g.id} ${f.label}`} /> {f.label}
+                  </label>
+                ))}
+              </fieldset>
+              <div className="mdl-gr-ap">
+                <Field id={`mdl-ov-ap-${g.id}`} label={`Extra approver for ${g.id}`}>
+                  <input id={`mdl-ov-ap-${g.id}`} value={role} placeholder="Role, e.g. Finance" aria-describedby={off ? `mdl-ov-why-${g.id}` : undefined}
+                         onChange={(e) => setRoles({ ...roles, [g.id]: e.target.value })} />
+                </Field>
+                <button className="btn sm" disabled={off !== null} title={off ?? undefined}
+                        onClick={async () => (await onSave(withApprover(o.ops, g, role))) && setRoles({ ...roles, [g.id]: '' })}>Add approver</button>
+                <WhyOff id={`mdl-ov-why-${g.id}`} why={off} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -146,18 +164,23 @@ function TightenForm({ o, busy, onSave }: FormProps) {
   if (!g) return null;
   const value = Number(raw);
   const refusal = raw.trim() === '' || Number.isNaN(value) ? null : weakens(g, value);
+  const off = busy ? 'Saving…' : raw.trim() === '' || Number.isNaN(value) ? `Enter the new ${g.field} first.` : refusal;
   return (
     <div className="mdl-prop" data-overlay-tighten>
       <span className="label">Tighten a guardrail</span>
-      <div className="mdl-row">
-        <label className="sr" htmlFor="mdl-ov-g">Guardrail</label>
-        <select id="mdl-ov-g" value={id} onChange={(e) => { setId(e.target.value); setRaw(''); }}>
-          {gs.map((x) => <option key={x.id} value={x.id}>{x.id}: {x.text} ({x.field} {x.value})</option>)}
-        </select>
-        <label className="sr" htmlFor="mdl-ov-v">New {g.field}</label>
-        <input id="mdl-ov-v" type="number" step="any" value={raw} placeholder={`${g.field}, ${g.stricter} is stricter`} style={{ width: 150 }} onChange={(e) => setRaw(e.target.value)} />
-        <button className="btn sm pri" disabled={busy || raw.trim() === '' || Number.isNaN(value) || refusal !== null}
-                onClick={async () => (await onSave(withTighten(o.ops, g, value))) && setRaw('')}>Save</button>
+      <div className="mdl-form">
+        <Field id="mdl-ov-g" label="Guardrail" wide>
+          <select id="mdl-ov-g" value={id} onChange={(e) => { setId(e.target.value); setRaw(''); }}>
+            {gs.map((x) => <option key={x.id} value={x.id}>{x.id}: {x.text} ({x.field} {x.value})</option>)}
+          </select>
+        </Field>
+        <Field id="mdl-ov-v" label={`New ${g.field}`} hint={`${g.stricter === 'higher' ? 'Higher' : 'Lower'} is stricter. Now ${g.value}.`}>
+          <input id="mdl-ov-v" type="number" step="any" value={raw} placeholder={String(g.value)} onChange={(e) => setRaw(e.target.value)} />
+        </Field>
+        <div className="mdl-form-go">
+          <button className="btn sm pri" disabled={off !== null} title={off ?? undefined}
+                  onClick={async () => (await onSave(withTighten(o.ops, g, value))) && setRaw('')}>Save</button>
+        </div>
       </div>
       {refusal && <p className="mdl-msg blk" role="alert" style={{ margin: 0 }}>{refusal}</p>}
     </div>
@@ -180,45 +203,58 @@ function DiversionForm({ o, busy, onSave }: FormProps) {
     const base = { id: nextOpId(o.ops), by: '', note: '', stage, when };
     return kind === 'step' ? { ...base, op: 'add_step', step: step.trim(), owner_role: owner.trim() } : { ...base, op: 'shortcut', to };
   };
+  const off = busy ? 'Saving…' : ready ? null : kind === 'step' ? 'Name the step and its owner role first.' : 'Pick where it goes first.';
   return (
     <div className="mdl-prop" data-overlay-diversion>
       <span className="label">Add a diversion</span>
-      <div className="mdl-row">
-        <label className="sr" htmlFor="mdl-ov-stage">Stage</label>
-        <select id="mdl-ov-stage" value={stage} onChange={(e) => { setStage(e.target.value as GuardrailStage); setTo(''); }}>
-          {o.stages.map((x) => <option key={x.key} value={x.key}>{STAGE_LABEL[x.key]}</option>)}
-        </select>
-        <label className="sr" htmlFor="mdl-ov-fact">Condition fact</label>
-        <input id="mdl-ov-fact" value={fact} placeholder="when this fact (optional)" style={{ width: 150 }} onChange={(e) => setFact(e.target.value)} />
-        <label className="sr" htmlFor="mdl-ov-cmp">Operator</label>
-        <select id="mdl-ov-cmp" value={cmp} onChange={(e) => setCmp(e.target.value as OverlayCond['op'])}>{CMP.map((c) => <option key={c} value={c}>{c}</option>)}</select>
-        {cmp !== 'exists' && <><label className="sr" htmlFor="mdl-ov-val">Value</label><input id="mdl-ov-val" value={val} placeholder="value" style={{ width: 100 }} onChange={(e) => setVal(e.target.value)} /></>}
+      <div className="mdl-form">
+        <Field id="mdl-ov-stage" label="At stage">
+          <select id="mdl-ov-stage" value={stage} onChange={(e) => { setStage(e.target.value as GuardrailStage); setTo(''); }}>
+            {o.stages.map((x) => <option key={x.key} value={x.key}>{STAGE_LABEL[x.key]}</option>)}
+          </select>
+        </Field>
+        <Field id="mdl-ov-fact" label="When this fact (optional)" hint="Leave empty to apply always.">
+          <input id="mdl-ov-fact" value={fact} placeholder="e.g. grade" onChange={(e) => setFact(e.target.value)} />
+        </Field>
+        <Field id="mdl-ov-cmp" label="Compare">
+          <select id="mdl-ov-cmp" value={cmp} onChange={(e) => setCmp(e.target.value as OverlayCond['op'])}>{CMP.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+        </Field>
+        {cmp !== 'exists' && (
+          <Field id="mdl-ov-val" label="Value" hint={cmp === 'in' ? 'Comma separated.' : undefined}>
+            <input id="mdl-ov-val" value={val} placeholder="e.g. D" onChange={(e) => setVal(e.target.value)} />
+          </Field>
+        )}
       </div>
-      <div className="mdl-row">
-        <label className="sr" htmlFor="mdl-ov-kind">Kind</label>
-        <select id="mdl-ov-kind" value={kind} onChange={(e) => setKind(e.target.value as 'step' | 'shortcut')}>
-          <option value="step">Extra step</option>
-          <option value="shortcut">Shortcut</option>
-        </select>
+      <div className="mdl-form">
+        <Field id="mdl-ov-kind" label="Then">
+          <select id="mdl-ov-kind" value={kind} onChange={(e) => setKind(e.target.value as 'step' | 'shortcut')}>
+            <option value="step">Add an extra step</option>
+            <option value="shortcut">Take a shortcut</option>
+          </select>
+        </Field>
         {kind === 'step' ? (
           <>
-            <label className="sr" htmlFor="mdl-ov-step">Step</label>
-            <input id="mdl-ov-step" value={step} placeholder="step, e.g. Second grading check" style={{ width: 220 }} onChange={(e) => setStep(e.target.value)} />
-            <label className="sr" htmlFor="mdl-ov-owner">Owner role</label>
-            <input id="mdl-ov-owner" value={owner} placeholder="owner role" style={{ width: 110 }} onChange={(e) => setOwner(e.target.value)} />
+            <Field id="mdl-ov-step" label="Step" wide>
+              <input id="mdl-ov-step" value={step} placeholder="e.g. Second grading check" onChange={(e) => setStep(e.target.value)} />
+            </Field>
+            <Field id="mdl-ov-owner" label="Owner role">
+              <input id="mdl-ov-owner" value={owner} placeholder="e.g. Engineer" onChange={(e) => setOwner(e.target.value)} />
+            </Field>
           </>
         ) : (
-          <>
-            <label className="sr" htmlFor="mdl-ov-to">Go to</label>
+          <Field id="mdl-ov-to" label="Go to" wide>
             <select id="mdl-ov-to" value={to} onChange={(e) => setTo(e.target.value)}>
-              <option value="">Go to…</option>
+              <option value="">Choose where…</option>
               {later.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
               {o.routes.map((r) => <option key={r.id} value={r.id}>Route: {r.name}</option>)}
             </select>
-          </>
+          </Field>
         )}
-        <button className="btn sm pri" disabled={busy || !ready} onClick={() => onSave([...o.ops, make()])}>Save</button>
+        <div className="mdl-form-go">
+          <button className="btn sm pri" disabled={off !== null} title={off ?? undefined} onClick={() => onSave([...o.ops, make()])}>Save</button>
+        </div>
       </div>
+      {off && !busy && <p className="note mdl-why">{off}</p>}
     </div>
   );
 }

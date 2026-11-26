@@ -20,7 +20,7 @@ export function Watching({ s, held }: { s: ModelerScreen; held: HomeProposal[] }
   };
   return (
     <Sec icon="eye" title="Watching"
-         right={canRead && <button type="button" className="as-link" disabled={sg?.busy} onClick={() => void loadSuggestions(s.flow.id)}>{sg?.busy ? 'Reading overrides' : 'Refresh'}</button>}>
+         right={canRead && <button type="button" className="as-link" disabled={sg?.busy} aria-label="Find suggestions from overrides again" onClick={() => void loadSuggestions(s.flow.id)}>{sg?.busy ? 'Reading overrides' : 'Refresh'}</button>}>
       {rows.map((r) => (
         <Row key={r.id} icon={r.icon} tag={r.tag} go={r.action === 'suggestions' ? 'Review' : undefined} onGo={open}>{r.text}</Row>
       ))}

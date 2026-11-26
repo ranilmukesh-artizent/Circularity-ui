@@ -9,6 +9,7 @@ import {
   escalationDraft, failDrill, LR_PACE, modelTag, nextStep, orCaseById, orDur, runModel, runNext, runSignature, runStates, runTimeline,
   sendEscalation, stageModels, type NextStep, type RunLine, type RunModel, type RunStage, type Segment,
 } from '../../api/orchestration';
+import { Icon } from '../../components/Icon';
 import { useOverlay } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
@@ -145,7 +146,7 @@ export function LiveBoard({ caseId, replaySignal }: { caseId: string; replaySign
         <div className="lrt">
           <span className="livedot"><i />Live</span>
           <h2>Run {run.id}</h2>
-          <span className="note">{c.id} · {c.product} · {run.stage > 10 ? 'complete' : 'stage ' + run.stage + ' of 10'} · orchestrated by <b className="lrorc">✦ Circularity Agent</b></span>
+          <span className="note">{c.id} · {c.product} · {run.stage > 10 ? 'complete' : 'stage ' + run.stage + ' of 10'} · orchestrated by <b className="lrorc"><Icon name="bot" className="lr-ic" /> Circularity Agent</b></span>
         </div>
         <div className="row lrctl">
           <button className="btn sm" id="lrPlay" disabled={V.ended} onClick={() => setL((p) => (p.t >= p.total ? p : { ...p, playing: !p.playing, open: !p.playing ? undefined : p.open }))}>
@@ -178,7 +179,7 @@ export function LiveBoard({ caseId, replaySignal }: { caseId: string; replaySign
               <button className="lrh" aria-expanded={b.open} aria-controls={'lrBody-' + s.n} aria-label={`Stage ${s.n}: ${s.t}, ${ch[0]}`} onClick={() => toggle(s.n)}>
                 <span className="tin">{s.n}</span>
                 <b>{s.t}</b>
-                <span className="lrlead note">{ag.length ? '✦ ' + ag[0] + (ag.length > 1 ? ' +' + (ag.length - 1) : '') : '—'}</span>
+                <span className="lrlead note">{ag.length ? <><Icon name="bot" className="lr-ic" /> {ag[0] + (ag.length > 1 ? ' +' + (ag.length - 1) : '')}</> : '—'}</span>
                 <span className={'chip ' + ch[1]}>{ch[0]}</span>
                 <span className="lrc note">{b.phase === 'played' ? b.cnt : ''}</span>
               </button>
@@ -211,13 +212,13 @@ function StageBody({ caseId, s, b, chip, prev, cur }: { caseId: string; s: RunSt
         <b>Stage {s.n} · {s.t}</b>
         <span className={'chip lrbc ' + chip[1]}>{chip[0]}</span>
         {s.at && <span className="note num">{fmtDateYear(s.at)}{prev ? ' · took ' + orDur(new Date(prev), new Date(s.at)) : ''}</span>}
-        {ag.length ? <span className="lrags">{ag.map((a) => <span key={a} className="lra ag"><i aria-hidden="true">✦</i>{a}</span>)}</span> : s.by ? <span className="note">by {s.by}</span> : null}
+        {ag.length ? <span className="lrags">{ag.map((a) => <span key={a} className="lra ag"><Icon name="bot" className="lr-ic" />{a}</span>)}</span> : s.by ? <span className="note">by {s.by}</span> : null}
       </div>
       <ol className="lrls">
         {s.lines.map((l, j) => (
           <li key={j} className={'lrl s-' + b.lines[j]}>
             <span className="lri" aria-hidden="true" />
-            <span className={'lra ' + (l.agent ? 'ag' : 'pp')}>{l.agent && <i aria-hidden="true">✦</i>}{l.who}</span>
+            <span className={'lra ' + (l.agent ? 'ag' : 'pp')}>{l.agent && <Icon name="bot" className="lr-ic" />}{l.who}</span>
             <span className="lrw">
               <b>{l.verb}</b>{l.what ? ' · ' + l.what : ''}
               <span className="lrt">

@@ -11,11 +11,18 @@ import {
 } from './turns';
 import type { AssistantContext, AssistantMode, Turn } from './types';
 
-/** open: the dock; picked: the person's mode; hint: the mode a pinned host asks for (the Modeler's tab); pinned: hosts mounted */
-export interface Ui { open: boolean; picked: AssistantMode | null; hint: AssistantMode | null; pinned: number }
+/**
+ * open: the dock; picked: the person's mode; hint: the mode a pinned host asks for (the Modeler's tab); pinned: hosts
+ * mounted; draft: text put back in the composer (Rephrase), taken once by the visible host (n tells two apart);
+ * composeId: the composition an `openAssistant({ composeId })` named, for Set up.
+ */
+export interface Ui {
+  open: boolean; picked: AssistantMode | null; hint: AssistantMode | null; pinned: number;
+  draft: { text: string; n: number } | null; composeId: number | null;
+}
 
 let conv: Conv = emptyConv();
-let ui: Ui = { open: false, picked: null, hint: null, pinned: 0 };
+let ui: Ui = { open: false, picked: null, hint: null, pinned: 0, draft: null, composeId: null };
 let queuedCtx: AssistantContext | null = null;
 let abort: AbortController | null = null;
 let pinnedFocus: (() => void) | null = null;
@@ -39,6 +46,8 @@ const subscribe = (l: () => void) => {
 
 export const useConv = (): Conv => useSyncExternalStore(subscribe, () => conv, () => conv);
 export const useUi = (): Ui => useSyncExternalStore(subscribe, () => ui, () => ui);
+/** The ui state outside React (tests, listeners). */
+export const uiState = (): Ui => ui;
 
 /**
  * The mode shown: the person's pick while it is available here, else the pinned host's hint (the Modeler's tab), else
@@ -71,6 +80,34 @@ export function registerPinned(focus: () => void): () => void {
   };
 }
 export const focusPinned = () => pinnedFocus?.();
+
+/** Show the assistant: the pinned column's composer when the Modeler shows one, else the dock. */
+export function reveal(): void {
+  if (hasPinned()) focusPinned();
+  else setOpen(true);
+}
+
+/** The composition Set up is about (from `openAssistant({ composeId })`); null forgets it. */
+export const setComposeId = (id: number | null) => {
+  if (ui.composeId !== id) setUi({ composeId: id });
+};
+
+/**
+ * Put text back in the composer without sending it (Rephrase, 2.3): the mode is picked, the assistant is shown and the
+ * visible host's composer takes the text and focus. The person edits it and sends it themselves.
+ */
+export function prefill(text: string, mode?: AssistantMode): void {
+  setUi({ draft: { text, n: (ui.draft?.n ?? 0) + 1 }, ...(mode ? { picked: mode } : {}) });
+  reveal();
+}
+
+/** The visible composer takes the text put back for it, once. */
+export function takeDraft(): string | null {
+  const d = ui.draft;
+  if (!d) return null;
+  setUi({ draft: null });
+  return d.text;
+}
 
 /** Send now, or hold in the one queue slot while a turn runs (a later message replaces the one waiting). */
 export function send(text: string, mode: AssistantMode, ctx: AssistantContext): void {

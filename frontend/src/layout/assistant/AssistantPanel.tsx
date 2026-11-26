@@ -6,26 +6,20 @@
  * The panel is generic: the person's words, a status line, the mode's own Turn body, the mode radio, the limits line,
  * the composer with Stop, queue and the "wrong mode" hint. What a mode says and does is in modes/.
  */
-import { useEffect, useRef, useState, type ComponentType, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { Icon } from '../../components/Icon';
+import { AgentsOnThis } from './AgentsOnThis';
 import { contextParts } from './context';
 import { modeHint } from './intent';
 import { MODES } from './modes';
 import {
-  dropQueued, effectiveMode, newConversation, pickMode, registerPinned, send, setHint, stop, useConv, useUi,
+  dropQueued, effectiveMode, newConversation, pickMode, registerPinned, send, setHint, stop, takeDraft, useConv, useUi,
 } from './store';
 import { statusText } from './status';
 import type { AssistantMode } from './types';
 import { useAssistantContext } from './useAssistantContext';
+import { WaitingStrip } from './WaitingStrip';
 import './panel.css';
-
-// Placeholders for the tasks that land beside this one: each file adds its section by existing (T5), no edit here.
-const slots = import.meta.glob<{ WaitingStrip?: ComponentType; AgentsOnThis?: ComponentType }>(
-  ['./WaitingStrip.tsx', './AgentsOnThis.tsx'],
-  { eager: true },
-);
-const WaitingStrip = Object.values(slots).find((m) => m.WaitingStrip)?.WaitingStrip;
-const AgentsOnThis = Object.values(slots).find((m) => m.AgentsOnThis)?.AgentsOnThis;
 
 const SEND_LABEL: Record<AssistantMode, string> = { ask: 'Ask', change: 'Propose', setup: 'Draft' };
 
@@ -37,9 +31,14 @@ export interface AssistantPanelProps {
   mode?: AssistantMode;
   /** pinned only: the section sent as the page section (the Modeler's tab) */
   section?: string;
+  /**
+   * pinned only: what the host shows above the transcript, scrolling with it (the Modeler's Flow tab: What I see,
+   * Watching, Proposals, Last simulation; plan 10, 3.3). Its held proposals are left out of "Waiting for you".
+   */
+  sections?: ReactNode;
 }
 
-export function AssistantPanel({ host, onClose, mode: hint, section }: AssistantPanelProps) {
+export function AssistantPanel({ host, onClose, mode: hint, section, sections }: AssistantPanelProps) {
   const conv = useConv();
   const ui = useUi();
   const ctx = useAssistantContext(section);
@@ -66,6 +65,18 @@ export function AssistantPanel({ host, onClose, mode: hint, section }: Assistant
   useEffect(() => {
     if (host === 'dock') input.current?.focus();
   }, [host]);
+  // Rephrase puts a sentence back in the composer: the visible host takes it, once, and the person sends it
+  useEffect(() => {
+    if (!ui.draft) return;
+    const text = takeDraft();
+    if (text == null) return;
+    setQ(text);
+    requestAnimationFrame(() => {
+      const el = input.current;
+      el?.focus();
+      el?.setSelectionRange(text.length, text.length);
+    });
+  }, [ui.draft]);
   useEffect(() => {
     log.current?.scrollTo({ top: log.current.scrollHeight });
   }, [conv.turns]);
@@ -140,9 +151,10 @@ export function AssistantPanel({ host, onClose, mode: hint, section }: Assistant
       <p className="as-ctx" aria-label="Context">
         Looking at: {contextParts(ctx).join(' · ')}
       </p>
-      {WaitingStrip && <WaitingStrip />}
-      {AgentsOnThis && <AgentsOnThis />}
       <div className="as-log" ref={log}>
+        <WaitingStrip caseId={ctx.caseId} flow={!!ctx.flow} skipFlow={sections && ctx.flow ? ctx.flow.id : undefined} />
+        <AgentsOnThis caseId={ctx.caseId} />
+        {sections}
         {conv.turns.length === 0 && <def.Empty ctx={ctx} ask={ask} />}
         {conv.turns.map((t) => {
           const tdef = MODES.find((m) => m.id === t.mode);

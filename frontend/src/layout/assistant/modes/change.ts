@@ -56,7 +56,9 @@ export const changeMode: ModeDef = {
       io.patch((t) => ({ ...t, status: [{ verb: 'Stopped', item: 'the check', limit: 'nothing was saved', state: 'stopped' }] }));
       return;
     }
-    if ((p.kind === 'rule' || p.kind === 'step' || p.kind === 'blocked') && p.graph) setPending(pendingOfSentence(p, text, key, sf));
+    // a blocked sentence is the blocked card too (2.3), with or without a drawn graph: a text that would change a
+    // guardrail has none, a rule that breaks one is drawn in red
+    if (p.kind === 'blocked' || ((p.kind === 'rule' || p.kind === 'step') && p.graph)) setPending(pendingOfSentence(p, text, key, sf));
     io.patch((t) => ({ ...t, data: { key, proposal: p, text } satisfies ChangeData, status: [proposedStatus(p, n)] }));
   },
 

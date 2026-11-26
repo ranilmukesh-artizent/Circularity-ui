@@ -134,6 +134,17 @@ function SetupEmpty({ ctx, ask }: { ctx: AssistantContext; ask: (text: string, m
   return (
     <div className="st-empty">
       <p>{ctx.org ? `Describe how returns work for ${ctx.org} in a few sentences. Drafts only: nothing is published; a different person approves it.` : 'Open the Modeler and pick a template and organisation, then describe how returns work.'}</p>
+      {ctx.composeId != null && (
+        <p className="st-basis">
+          Composition {ctx.composeId} is open in Set up. A new description drafts a new composition beside it.
+          {ctx.page !== 'modeler' && (
+            <>
+              {' '}
+              <a href={'#' + setupHref(ctx.composeId, { template: ctx.pack, org: ctx.org })}>Open composition {ctx.composeId}</a>
+            </>
+          )}
+        </p>
+      )}
       {ctx.org && ctx.pack && (
         <Suspense fallback={<p className="note">Loading sample descriptions{'…'}</p>}>
           <Starters ctx={ctx} ask={ask} />

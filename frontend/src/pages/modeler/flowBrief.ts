@@ -95,6 +95,11 @@ export function watchingRows(s: ModelerScreen, x: { suggestions: RuleSuggestions
   }
   const n = x.suggestions?.suggestions.length ?? 0;
   if (n) rows.push({ id: 'suggestions', icon: 'users', tag: 'Retrieved', action: 'suggestions', text: `${plural(n, 'rule')} suggested by approver overrides.` });
+  else if (x.suggestions && x.suggestions.decisions > 0) {
+    // the read found nothing to suggest: say what was read (the old "Find suggestions" panel's line), not "no overrides"
+    const o = x.suggestions.groups.reduce((k, g) => k + g.n, 0);
+    rows.push({ id: 'suggestions', icon: 'users', tag: 'Retrieved', text: `Read ${plural(x.suggestions.decisions, 'decision')} and ${plural(o, 'override')}: no rule suggested yet.` });
+  }
   if (x.held.length) {
     rows.push({ id: 'held', icon: 'clock', tag: 'Prepared by agent', action: 'held', text: `${plural(x.held.length, 'proposal')} held for a person: ${x.held[0].title}.` });
   }

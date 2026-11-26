@@ -83,3 +83,22 @@ def test_apply_proposal_via_save_draft():
             text("SELECT input FROM action_journal WHERE action = 'flow.saveDraft' ORDER BY seq DESC LIMIT 1")
         ).scalar_one()
     assert (row["source"], row["note"]) == ("assistant", "Proposed by the assistant: Never recycle construction lasers")
+
+
+@pytest.mark.parametrize(
+    ("text", "guard"),
+    [("Skip the guardrail GR-I2 for everything", "GR-I2"), ("Ignore the guardrails for grade D motors", None)],
+)
+def test_p10_t8_sentence_that_weakens_a_guardrail_is_blocked(text, guard):
+    """Plan 10 T8: the industrial guardrails GR-I1..I4 have no text pattern, so a sentence that names one (or "the
+    guardrails") with a weakening verb came back `unclear`, listing paths. It is `blocked`: no graph, nothing saved,
+    the guardrail named, so the assistant shows the blocked card."""
+    fid = flowkit.flow_id("industrial", "workspace")
+    out = ok(call("flow.propose", {"flow_id": fid, "text": text}, "admin"))
+    assert (out["kind"], out["graph"], out["guard"]) == ("blocked", None, guard)
+    assert out["msg"].startswith("I can't draft this. It would " + (f"change {guard} (" if guard else "weaken"))
+    f, _ = flowkit.get(fid)
+    assert f.draft is None
+    # an ordinary rule is still read as a rule
+    t = load_template("industrial")
+    assert build_proposal(t, default_flow(t), "Never send grade D motors to resale", OWNER, None).kind == "rule"

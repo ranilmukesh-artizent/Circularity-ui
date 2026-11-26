@@ -62,7 +62,7 @@ export function ModelerRail(p: Props) {
         {RAIL_TABS.map((t) => {
           const on = state.open && state.tab === t.id;
           return (
-            <button key={t.id} id={'mdl-railtab-' + t.id} type="button" role="tab" aria-selected={on} aria-controls={idOf(t.id)}
+            <button key={t.id} id={'mdl-railtab-' + t.id} type="button" role="tab" aria-selected={on} aria-controls={on ? idOf(t.id) : undefined}
                     title={t.label} tabIndex={on || (!state.open && t.id === state.tab) ? 0 : -1} onClick={() => p.onPick(t.id)}>
               <Icon name={t.icon} />
               <span className="sr">{t.label}</span>

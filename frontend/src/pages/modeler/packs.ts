@@ -21,3 +21,13 @@ export function refusalLine(message: string): string {
 }
 
 export const STATUS_LABEL: Record<PackVersion['status'], string> = { draft: 'Draft', review: 'In review', pub: 'Published', retired: 'Retired' };
+
+const ACRONYMS = new Set(['itad']);
+
+/** A pack's title for people: its name, or the key spelled out ("medical_rental" reads "Medical rental") when the name is the key. */
+export function packTitle(k: { key: string; name: string }): string {
+  if (k.name !== k.key) return k.name;
+  if (ACRONYMS.has(k.key)) return k.key.toUpperCase();
+  const words = k.key.replace(/[_-]+/g, ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}

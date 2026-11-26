@@ -4,7 +4,8 @@ import type { ActionResult, ModelerScreen, PackVersion } from '../../api/types';
 import { Panel } from '../../components/kit/Panel';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
-import { impactLine, partsLine, refusalLine, STATUS_LABEL } from './packs';
+import { Field } from './Field';
+import { impactLine, packTitle, partsLine, refusalLine, STATUS_LABEL } from './packs';
 
 const MIN_REASON = 15;
 const EVERY_ORG = '';
@@ -50,23 +51,25 @@ export function PacksPanel({ s }: { s: ModelerScreen }) {
   return (
     <Panel title="Packs" sub="Versions of each pack: import, check, approve" cls="mdl-packs">
       {p.can.import && (
-        <div className="mdl-row" data-pack-import>
-          <label className="sr" htmlFor="mdl-pk-scope">For</label>
-          <select id="mdl-pk-scope" value={scope} onChange={(e) => setScope(e.target.value)}>
-            {s.orgs.map((o) => <option key={o} value={o}>{o}</option>)}
-            <option value={EVERY_ORG}>Every org (Admin)</option>
-          </select>
-          <label className="btn sm pri" htmlFor="mdl-pk-file">Import a pack</label>
-          <input id="mdl-pk-file" type="file" accept="application/json,.json" className="sr" disabled={action.pending}
-                 onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ''; }} />
+        <div className="mdl-form mdl-packs-import" data-pack-import>
+          <Field id="mdl-pk-scope" label="Import for" hint="The org the imported draft belongs to.">
+            <select id="mdl-pk-scope" value={scope} onChange={(e) => setScope(e.target.value)}>
+              {s.orgs.map((o) => <option key={o} value={o}>{o}</option>)}
+              <option value={EVERY_ORG}>Every org (Admin)</option>
+            </select>
+          </Field>
+          <div className="mdl-form-go">
+            <label className={'btn sm pri' + (action.pending ? ' off' : '')} htmlFor="mdl-pk-file" aria-disabled={action.pending}>Import a pack (JSON)</label>
+            <input id="mdl-pk-file" type="file" accept="application/json,.json" className="sr" disabled={action.pending}
+                   onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ''; }} />
+          </div>
         </div>
       )}
       {err && <p className="mdl-msg blk" role="alert" data-pack-refusal>{err}</p>}
       {p.keys.map((k) => (
-        <div key={k.key} data-pack-key={k.key}>
-          <h4>{k.name} <span className="note">· {k.key}{k.file_version ? ` · file v${k.file_version}` : ''}</span></h4>
-          {k.versions.length === 0 && <p className="note">No imported versions: the pack file decides.</p>}
-          <ul className="mdl-hist">
+        <div key={k.key} className="mdl-pack" data-pack-key={k.key}>
+          <h4>{packTitle(k)} <span className="note">{k.file_version ? `file v${k.file_version}` : ''}{k.versions.length === 0 ? `${k.file_version ? ' · ' : ''}no imported versions, the pack file decides` : ''}</span></h4>
+          {k.versions.length > 0 && <ul className="mdl-hist">
             {k.versions.map((v) => (
               <li key={v.id} data-pack-version={v.id}>
                 <b>v{v.version}</b> <span className={'pill mdl-st ' + (v.status === 'retired' ? 'draft' : v.status)}>{STATUS_LABEL[v.status]}</span>{' '}
@@ -86,7 +89,7 @@ export function PacksPanel({ s }: { s: ModelerScreen }) {
                 )}
               </li>
             ))}
-          </ul>
+          </ul>}
         </div>
       ))}
       <h4>Templates a case can use</h4>

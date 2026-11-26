@@ -3,6 +3,7 @@ import { useModeler } from '../../../api/modeler';
 import { ErrorBoundary } from '../../../components/Boundary';
 import { looksLikeQuestion } from '../../../pages/modeler/proposal';
 import { useSurface } from '../../../utils/workSurface';
+import { prefill } from '../store';
 import type { AssistantContext, AssistantMode, Turn } from '../types';
 import { AppliedLine } from '../flow/AppliedLine';
 import { loadSuggestions, pendingOfSuggestion, setPending, useChange } from '../flow/changeStore';
@@ -26,10 +27,14 @@ export function ChangeTurn({ turn, ask }: { turn: Turn; ctx: AssistantContext; a
     <div className="as-turn-body">
       <p className="as-basis">{basis}</p>
       {p.kind === 'unclear' && (
-        <>
+        // a question back (2.5): the parser names what it needs; the person rephrases, nothing proceeds on its own
+        <div role="group" aria-label="A question from Ask Circularity">
           <p>{p.msg}</p>
-          {looksLikeQuestion(d.text) && <button type="button" className="as-link" onClick={() => ask(d.text, 'ask')}>This reads like a question. Ask it instead</button>}
-        </>
+          <p className="as-turn-acts">
+            <button type="button" className="btn sm" onClick={() => prefill(d.text, 'change')}>Rephrase</button>
+            {looksLikeQuestion(d.text) && <button type="button" className="as-link" onClick={() => ask(d.text, 'ask')}>This reads like a question. Ask it instead</button>}
+          </p>
+        </div>
       )}
       {p.kind === 'blocked' && !mine && <p className="as-blocked">{p.msg}</p>}
       {mine && st.sections > 0 && <p>{p.kind === 'blocked' ? `Blocked by ${p.guard ?? 'a guardrail'}.` : `Proposed: ${p.label ?? p.text}.`} Review it under Proposals.</p>}
