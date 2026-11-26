@@ -24,6 +24,10 @@ with a key it deduplicates on.
                                     value, one S/4HANA journal item and the clearing item (same posting as `finance`);
                                     `lessee_charge` POST charges {leaseId, kind, amount} to the lease system (`uc_lease`)
 
+    dispatch, service_order, refurb_order, data_sanitisation, disposal_collection
+                                    the medical rental pack's follow-through (P9-11.17, `writers_medical`): the rental system, the
+                                    biomedical service system and the disposal partner; each system's own document confirms it
+
 Where things come from: the order line is the case's matched demand (caseDemand: SO-48102 line 10 for RT-1048) and the
 unit is the case's asset (the serial Sterling, Depot Repair and Manhattan know, MTR-2041). The transport goes from the
 case's warehouse (FAC_LOC) to the demand's ship-to (the move's last stop when there is no demand); Manhattan's facility
@@ -722,6 +726,15 @@ WRITERS |= {
     "bench_teardown": writers_telecom.bench_teardown,
     "broker_listing": writers_telecom.broker_listing,
     "recycler_pickup": writers_telecom.recycler_pickup,
+}
+from di.services.instructions import writers_medical  # noqa: E402 - the medical rental pack's writes (P9-11.17), same reason
+
+WRITERS |= {
+    "dispatch": writers_medical.dispatch,
+    "service_order": writers_medical.service_order,
+    "refurb_order": writers_medical.refurb_order,
+    "data_sanitisation": writers_medical.data_sanitisation,
+    "disposal_collection": writers_medical.disposal_collection,
 }
 
 
