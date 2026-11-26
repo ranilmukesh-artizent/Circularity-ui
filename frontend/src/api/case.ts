@@ -353,6 +353,11 @@ export const bookService = (caseId: string, assetTag: string, kind: ServiceKind,
   invoke('service.book', { case_id: caseId, asset_tag: assetTag, kind, due_by: dueBy });
 /** The booking the case's service gate proposes, null when the unit is in date or the case has no service check. */
 export const serviceProposal = (c: CaseRec): ServiceBooking | null => c.serviceCheck?.proposed?.input ?? null;
+// ---------- regulatory assessment (plan 9, P9-12.9, NS-MED-01) ----------
+export type AssessmentResult = 'servicing' | 'remanufacturing' | 'full_refurbishment';
+/** Record the regulatory assessment of the planned refurbishment of a medical device (assessment.record: Admin or Engineer; never an agent). */
+export const recordAssessment = (caseId: string, plannedWork: string, result: AssessmentResult, rationale: string): Promise<ActionResult<{ case_id: string; result: string }>> =>
+  invoke('assessment.record', { case_id: caseId, planned_work: plannedWork, result, rationale });
 // ---------- formatting (the demo's helpers, frontend-only) ----------
 export const fmtD = fmtDate;
 export const fmtDY = fmtDateYear;

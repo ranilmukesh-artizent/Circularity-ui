@@ -748,3 +748,15 @@ CONNECTOR_FIELDS["asset"] |= {
     "security_level": "text",
 }
 CONNECTOR_FIELDS["condition"] |= {"erasures": "list"}
+
+# Medical capital equipment (plan 9, P9-12.9), written by the extra adapter mc_tradein, keyed by `tag_key`: on `asset`, the
+# trade-in register's UDI, single-use label, markets (where it came from, where it is to be sold), service record reference and
+# whether its recalls are closed. device_class, model, tag and has_patient_data are the rental pack's.
+CONNECTOR_FIELDS["asset"] |= {
+    "origin_market": "text",
+    "recalls_closed": "bool",
+    "service_record_ref": "ref",
+    "single_use": "bool",
+    "target_market": "text",
+    "udi": "text",
+}

@@ -476,7 +476,8 @@
   "type": "Compliance",
   "stage": "condition",
   "packs": [
-   "medical_rental"
+   "medical_rental",
+   "medical_capital"
   ],
   "trigger": {
    "routes": [
@@ -610,7 +611,8 @@
   "packs": [
    "device",
    "used_cars",
-   "medical_rental"
+   "medical_rental",
+   "medical_capital"
   ],
   "trigger": {
    "routes": [

@@ -1,0 +1,838 @@
+{
+ "key": "medical_capital",
+ "name": "Medical capital equipment \u00b7 trade-in, refurbish, resale",
+ "version": "1.0.0",
+ "unit": "devices",
+ "author_role": "refurbishment_lead",
+ "prefix": "MC",
+ "industry": "Medical capital equipment",
+ "regions": [
+  "US",
+  "EU"
+ ],
+ "legal_review": {
+  "status": "pending"
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "trade_in",
+   "name": "Medical capital equipment trade-ins"
+  }
+ ],
+ "prompts": [
+  "Medical capital trade-ins: when a hospital trades in an imaging system, monitor, pump or ventilator, record the regulatory assessment of the planned work, then refurbish and resell, resell as is, harvest parts or recycle. Single-use devices are recycled; a device with patient data is sanitised before it leaves; a sale in another market needs the UDI, the service record and closed recalls.",
+  "Assess the planned work before refurbishing",
+  "Sanitise patient data before any release"
+ ],
+ "clarify": null,
+ "classes": [
+  {
+   "id": "imaging_system",
+   "name": "Imaging system",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": true,
+    "patient_data": true
+   },
+   "new_price": null
+  },
+  {
+   "id": "patient_monitor",
+   "name": "Patient monitor",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": true,
+    "patient_data": true
+   },
+   "new_price": null
+  },
+  {
+   "id": "infusion_pump",
+   "name": "Infusion pump",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": true,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "ventilator",
+   "name": "Ventilator",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": true,
+    "patient_data": false
+   },
+   "new_price": null
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {
+   "A": "all tests passed",
+   "B": "cosmetic wear",
+   "C": "minor failures",
+   "D": "failed"
+  }
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Trade-in received",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Check market and label",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Assess and test",
+   "agent": "condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide the route",
+   "agent": "routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and settle",
+   "agent": "analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "refurbish_resell",
+   "name": "Refurbish and resell",
+   "app": "mr_biomed",
+   "owner": "refurbishment_lead",
+   "lead_days": 21,
+   "classes": [
+    "refurbish",
+    "reuse",
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "resell_as_is",
+   "name": "Resell as is",
+   "app": "erp",
+   "owner": "refurbishment_lead",
+   "lead_days": 14,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "harvest",
+   "name": "Harvest parts",
+   "app": "mr_parts",
+   "owner": "clinical_engineering",
+   "lead_days": 7,
+   "classes": [
+    "parts"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "recycle",
+   "name": "Recycle",
+   "app": "mr_disposal",
+   "owner": "regulatory",
+   "lead_days": 10,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": []
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "G-MED-1",
+   "text": "The planned work has a regulatory assessment: servicing, or remanufacturing only where we have manufacturer status",
+   "owner": "regulatory",
+   "type": "Compliance",
+   "stage": "decide",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-MED-2",
+   "text": "A single-use device is never reused or resold",
+   "owner": "regulatory",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-MED-3",
+   "text": "A sale in another market needs the UDI, the service record and closed recalls",
+   "owner": "regulatory",
+   "type": "Compliance",
+   "stage": "value",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-DATA-3",
+   "text": "Imaging systems and monitors are sanitised, with a record, before any release route",
+   "owner": "regulatory",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-MED-FSN",
+   "text": "No open field safety notice or recall",
+   "owner": "clinical_engineering",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  }
+ ],
+ "gates": [
+  {
+   "id": "G-MED-1",
+   "params": {
+    "stage": 5,
+    "routes": [
+     "refurbish_resell"
+    ],
+    "manufacturer_status_markets": [],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-MED-2",
+   "params": {
+    "stage": 2,
+    "routes": [
+     "refurbish_resell",
+     "resell_as_is"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-MED-3",
+   "params": {
+    "stage": 4,
+    "routes": [
+     "refurbish_resell",
+     "resell_as_is"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-DATA-3",
+   "params": {
+    "stage": 6,
+    "routes": [
+     "refurbish_resell",
+     "resell_as_is",
+     "harvest",
+     "recycle"
+    ],
+    "classes": [
+     "imaging_system",
+     "patient_monitor"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-MED-FSN",
+   "params": {
+    "stage": 3,
+    "routes": [
+     "refurbish_resell"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": [
+    "grade"
+   ]
+  },
+  {
+   "key": "class",
+   "label": "Device class",
+   "kind": "set",
+   "values": [
+    "imaging_system",
+    "patient_monitor",
+    "infusion_pump",
+    "ventilator"
+   ],
+   "fields": []
+  },
+  {
+   "key": "region",
+   "label": "Region",
+   "kind": "set",
+   "values": [
+    "US",
+    "EU"
+   ],
+   "fields": []
+  }
+ ],
+ "actors": [
+  [
+   "mclead",
+   "Refurbishment lead",
+   "Refurbishment lead"
+  ],
+  [
+   "mceng",
+   "Clinical engineering",
+   "Clinical engineering"
+  ],
+  [
+   "mcreg",
+   "Regulatory",
+   "Regulatory"
+  ]
+ ],
+ "wording": {
+  "every": "every device",
+  "phrases": [
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "class",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "imaging_system": "imaging systems",
+     "patient_monitor": "patient monitors",
+     "infusion_pump": "infusion pumps",
+     "ventilator": "ventilators"
+    }
+   },
+   {
+    "key": "region",
+    "fmt": "in {}",
+    "joiner": " or ",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "refurbish_resell": "Refurbish and resell",
+   "resell_as_is": "Resell as is",
+   "harvest": "Harvest parts",
+   "recycle": "Recycle"
+  }
+ },
+ "customer_layer": {
+  "editable": {
+   "G-MED-FSN": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ]
+  },
+  "params": {},
+  "sample_diversions": [
+   {
+    "text": "imaging systems \u2192 physics and image quality check",
+    "op": {
+     "id": "DV-MC-PHYS",
+     "op": "add_step",
+     "stage": "condition",
+     "step": "Physics and image quality check",
+     "owner_role": "clinical_engineering",
+     "when": [
+      {
+       "fact": "cls",
+       "op": "eq",
+       "value": "imaging_system"
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Adds a step at Assess and test; no gate is skipped."
+   },
+   {
+    "text": "urgent sale: skip the regulatory assessment",
+    "op": {
+     "id": "DV-MC-SKIP",
+     "op": "shortcut",
+     "stage": "match",
+     "to": "value",
+     "when": [
+      {
+       "fact": "request.urgent",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    },
+    "blocked": true,
+    "reason": "Blocked: this skips the compliance guardrail G-MED-1, the regulatory assessment of the planned work. Suggestion: record the assessment first; servicing is quick."
+   }
+  ],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [
+   {
+    "type": "mc_tradein",
+    "name": "Medical trade-in register",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "mr_biomed",
+    "name": "Biomedical service system",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Trade-in device",
+    "canonical": "asset"
+   },
+   {
+    "name": "UDI",
+    "canonical": "asset.udi"
+   },
+   {
+    "name": "Single-use label",
+    "canonical": "asset.single_use"
+   },
+   {
+    "name": "Service record",
+    "canonical": "asset.service_record_ref"
+   }
+  ],
+  "mappings": [
+   {
+    "kind": "threshold",
+    "value": 0.8
+   },
+   {
+    "kind": "intake_trigger",
+    "source": "mc_tradein",
+    "resource": "tradeins",
+    "when": null,
+    "reason": "trade_in",
+    "key": "tag"
+   }
+  ],
+  "min_fields": [
+   "cls"
+  ],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "none",
+   "d_rule": "none"
+  },
+  "params": {
+   "params": {
+    "resell_fee_pct": 0.12,
+    "as_is_factor": 0.6,
+    "logistics": 150,
+    "teardown": 200,
+    "recycle_credit": 80,
+    "recycle_fee": 60
+   },
+   "lines": [
+    {
+     "route": "refurbish_resell",
+     "type": "v",
+     "label": "Resale after refurbishment",
+     "basis": "resale price",
+     "amount": {
+      "field": "resale_price"
+     }
+    },
+    {
+     "route": "refurbish_resell",
+     "type": "c",
+     "label": "Refurbishment",
+     "basis": "refurbishment cost",
+     "amount": {
+      "field": "refurb_cost"
+     }
+    },
+    {
+     "route": "refurbish_resell",
+     "type": "h",
+     "label": "Sales fee",
+     "basis": "fee share of the resale price",
+     "amount": {
+      "mul": [
+       {
+        "field": "resale_price"
+       },
+       {
+        "param": "resell_fee_pct"
+       }
+      ]
+     }
+    },
+    {
+     "route": "refurbish_resell",
+     "type": "c",
+     "label": "Logistics",
+     "basis": "per device",
+     "amount": {
+      "param": "logistics"
+     }
+    },
+    {
+     "route": "resell_as_is",
+     "type": "v",
+     "label": "Resale as is",
+     "basis": "resale price x as-is factor",
+     "amount": {
+      "mul": [
+       {
+        "field": "resale_price"
+       },
+       {
+        "param": "as_is_factor"
+       }
+      ]
+     }
+    },
+    {
+     "route": "resell_as_is",
+     "type": "h",
+     "label": "Sales fee",
+     "basis": "fee share of the as-is price",
+     "amount": {
+      "mul": [
+       {
+        "field": "resale_price"
+       },
+       {
+        "param": "as_is_factor"
+       },
+       {
+        "param": "resell_fee_pct"
+       }
+      ]
+     }
+    },
+    {
+     "route": "resell_as_is",
+     "type": "c",
+     "label": "Logistics",
+     "basis": "per device",
+     "amount": {
+      "param": "logistics"
+     }
+    },
+    {
+     "route": "harvest",
+     "type": "v",
+     "label": "Parts value",
+     "basis": "value of the parts",
+     "amount": {
+      "field": "parts_value"
+     }
+    },
+    {
+     "route": "harvest",
+     "type": "c",
+     "label": "Teardown",
+     "basis": "teardown cost",
+     "amount": {
+      "param": "teardown"
+     }
+    },
+    {
+     "route": "recycle",
+     "type": "v",
+     "label": "Recycling credit",
+     "basis": "material credit",
+     "amount": {
+      "param": "recycle_credit"
+     }
+    },
+    {
+     "route": "recycle",
+     "type": "h",
+     "label": "Recycling fee",
+     "basis": "treatment fee",
+     "amount": {
+      "param": "recycle_fee"
+     }
+    }
+   ],
+   "routes": [
+    {
+     "route": "harvest",
+     "eligible_if": {
+      "fact": "single_use",
+      "op": "ne",
+      "value": true
+     },
+     "ineligible_reason": "A single-use device has no reusable parts"
+    }
+   ]
+  }
+ },
+ "replay": {
+  "dataset": "medical_capital",
+  "example": {
+   "case": "MC-S1",
+   "legal_review_note": "Remanufacturing (FDA guidance May 2024), single-use and cross-market (EU MDR Art. 17, economic operators, UDI) and patient-data sanitisation rules summarised. Kinective's Legal team must review before shipping.",
+   "modelled": {
+    "devices": 800,
+    "straight_through_pct": 55,
+    "approvals_per_day": 5,
+    "exceptions_per_day": 3,
+    "recovery_per_device": 2100
+   },
+   "required_facts": [
+    "cls",
+    "resale_price",
+    "refurb_cost"
+   ],
+   "samples": [
+    {
+     "id": "MC-S1",
+     "title": "Infusion pump, assessed as servicing",
+     "serial": "SYNMC000000000001",
+     "facts": {
+      "cls": "infusion_pump",
+      "resale_price": 4000,
+      "refurb_cost": 1200,
+      "parts_value": 500,
+      "single_use": false
+     }
+    },
+    {
+     "id": "MC-S2",
+     "title": "Patient monitor, sanitised",
+     "serial": "SYNMC000000000002",
+     "facts": {
+      "cls": "patient_monitor",
+      "resale_price": 4000,
+      "refurb_cost": 1200,
+      "parts_value": 500,
+      "single_use": false,
+      "sanitisation_ref": "SAN-S2"
+     }
+    },
+    {
+     "id": "MC-S3",
+     "title": "Single-use device",
+     "serial": "SYNMC000000000003",
+     "facts": {
+      "cls": "infusion_pump",
+      "resale_price": 4000,
+      "refurb_cost": 1200,
+      "parts_value": 500,
+      "single_use": true
+     }
+    },
+    {
+     "id": "MC-S4",
+     "title": "Imaging system for another market, no UDI",
+     "serial": "SYNMC000000000004",
+     "facts": {
+      "cls": "imaging_system",
+      "resale_price": 4000,
+      "refurb_cost": 1200,
+      "parts_value": 500,
+      "single_use": false,
+      "target_market": "EU",
+      "origin_market": "US",
+      "udi": null
+     }
+    }
+   ]
+  }
+ },
+ "runtime": {
+  "exception_types": [],
+  "suggestion_rules": [],
+  "sla_hours": {
+   "exception": 24
+  },
+  "escalate_to": null
+ },
+ "roles": {
+  "refurbishment_lead": "Planner",
+  "clinical_engineering": "Approver",
+  "regulatory": "Approver"
+ },
+ "kpis": [
+  {
+   "id": "recovery_per_device",
+   "label": "Recovery per device",
+   "definition": "realised net after route costs / devices",
+   "measure": {
+    "kind": "avg",
+    "of": "recommendation.net",
+    "unit": "$"
+   },
+   "trend": "monthly"
+  },
+  {
+   "id": "refurbish_share",
+   "label": "Refurbish and resell share",
+   "definition": "devices refurbished and resold / devices",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "assessment_blocks",
+   "label": "Assessment blocks",
+   "definition": "devices whose refurbishing the assessment stopped / devices",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "cross_market_blocks",
+   "label": "Cross-market blocks",
+   "definition": "cross-market sales stopped for a missing item / devices",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "straight_through_pct",
+   "label": "Straight-through share",
+   "definition": "devices decided with no person in the loop / devices",
+   "measure": null,
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Which device classes are traded in most?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.device_class",
+    "measure": {
+     "kind": "count",
+     "where": []
+    }
+   }
+  },
+  {
+   "question": "How many single-use devices come back, by market?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.origin_market",
+    "measure": {
+     "kind": "count",
+     "where": [
+      {
+       "fact": "asset.single_use",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "stories": [
+  "NS-MED-01",
+  "NS-MED-02",
+  "NS-MED-03"
+ ]
+}
