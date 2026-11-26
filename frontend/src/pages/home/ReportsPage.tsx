@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { asOfLabel, logReportExported, logReportViewed, reportLink, reportRows, reports, toCsv, type Report } from '../../api/home';
-import { fmtNumber } from '../../api/format';
+import { reportCell } from './reportCells';
 import { useBackend } from '../../api/useBackend';
 import { allowedTenants } from '../../api/session';
 import { Icon } from '../../components/Icon';
@@ -104,11 +104,10 @@ export function ReportsPage() {
                     {body.length ? (
                       body.map((x, i) => (
                         <tr key={i}>
-                          {x.map((v, j) => (
-                            <td key={j} className={typeof v === 'number' ? 'r num' : ''}>
-                              {typeof v === 'number' && Math.abs(v) >= 1000 ? fmtNumber(v) : String(v ?? '')}
-                            </td>
-                          ))}
+                          {x.map((v, j) => {
+                            const c = reportCell(rows[0][j], v);
+                            return <td key={j} className={(c.num ? 'r num ' : '') + (c.id || /^(stage|tenant)$/i.test(String(rows[0][j])) ? 'nowrap' : '') + (c.empty ? ' note' : '')}>{c.text}</td>;
+                          })}
                         </tr>
                       ))
                     ) : (
@@ -150,7 +149,10 @@ export function ReportsPage() {
                 </thead>
                 <tbody>
                   {print.rows.slice(1, 200).map((x, i) => (
-                    <tr key={i}>{x.map((v, j) => <td key={j}>{String(v ?? '')}</td>)}</tr>
+                    <tr key={i}>{x.map((v, j) => {
+                      const c = reportCell(print.rows[0][j], v);
+                      return <td key={j} className={(c.id ? 'nowrap' : '') + (c.empty ? ' note' : '')}>{c.text}</td>;
+                    })}</tr>
                   ))}
                 </tbody>
               </table>

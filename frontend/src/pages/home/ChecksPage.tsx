@@ -40,9 +40,9 @@ export function ChecksPage() {
               {res.map((r) => (
                 <tr key={r.name}>
                   <td><b>{r.name}</b></td>
-                  <td className="note">{r.detail}</td>
+                  <td className="note">{r.detail || <span title="No description recorded for this check">&mdash;</span>}</td>
                   <td><StatusPill {...(r.ok ? status('success', 'Pass') : status('failed', 'Fail'))} /></td>
-                  <td>{checkOwner(r.name)}</td>
+                  <td className="nowrap">{checkOwner(r.name)}</td>
                   <td><button className="lnk" onClick={() => ask(launch.explainCheck(r.name))}>Explain</button></td>
                 </tr>
               ))}

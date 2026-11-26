@@ -1,3 +1,4 @@
+import '../../components/kit/tables.css';
 import { useState } from 'react';
 import { acknowledgeAlert, alertAssignee, alertKinds, alerts, assignAlert, status, type Alert } from '../../api/home';
 import { useBackend } from '../../api/useBackend';
@@ -58,14 +59,14 @@ export function AlertsPage() {
                 s: a.s + (who ? ' · assigned to ' + who : ''),
                 x: (
                   <>
-                    <a className="lnk" href={'#/' + a.go}>Open</a>
+                    <a className="btn sm" href={'#/' + a.go}>Open</a>
                     {!a.ack && (
                       <>
-                        <button className="lnk" onClick={() => ack(a)}>Acknowledge</button>
-                        <button className="lnk" onClick={() => { setTo(ROLES[0]); setAssign(a); }}>Assign</button>
+                        <button className="btn sm" onClick={() => ack(a)}>Acknowledge</button>
+                        <button className="btn sm" onClick={() => { setTo(ROLES[0]); setAssign(a); }}>Assign</button>
                       </>
                     )}
-                    <button className="lnk" onClick={() => ask(launch.explainAlert(a.t))}>Explain</button>
+                    <button className="btn sm" onClick={() => ask(launch.explainAlert(a.t))}>Explain</button>
                   </>
                 ),
                 st: <StatusPill {...(a.ack ? status('ack') : a.sev >= 2 ? status('failed', 'High') : status('open', 'Medium'))} />,

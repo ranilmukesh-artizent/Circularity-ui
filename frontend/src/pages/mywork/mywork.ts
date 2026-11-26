@@ -55,3 +55,21 @@ const NON_RETURN = 'Non-return fee ';
 export function nonReturnLine(i: WorkItem): string | null {
   return i.kind === 'exception' && i.id.startsWith('w:') && i.title.startsWith(NON_RETURN) ? i.title.slice(NON_RETURN.length).trim() || null : null;
 }
+
+const LABEL_WORD: Record<string, string> = { ref: 'reference', id: 'ID', qty: 'quantity', no: 'number' };
+
+/** A title or cause with its snake_case field names read as words ("work_order_ref" shows as "work order reference").
+ *  Ids such as "RT-1073" and "MTR-1108" have no underscore, so they stay as they are. */
+export function readable(text: string): string {
+  return text.replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g, (m) =>
+    m.split('_').map((w, k, all) => (k === all.length - 1 && LABEL_WORD[w]) || w).join(' '),
+  );
+}
+
+/** The text when it says something; '' for a lone dot or other punctuation the backend leaves behind. */
+export function meaningful(text: string | null | undefined): string {
+  return text && /[\p{L}\p{N}]/u.test(text) ? text : '';
+}
+
+/** How many rows My work draws at first, and how many each "Show more" adds (the list holds hundreds). */
+export const PAGE = 50;

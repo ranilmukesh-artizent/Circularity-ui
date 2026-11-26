@@ -11,7 +11,7 @@ import { useAction } from '../../hooks/useAction';
 import { PackKpiTiles } from '../analytics/PackView';
 import { AgeingCard } from './AgeingCard';
 import { LotsCard } from './LotsCard';
-import { conflictGroupTitle, countsByKind, dueLabel, groupConflicts, KIND_LABEL, KINDS, nonReturnLine, proposalId, sortItems, workId } from './mywork';
+import { conflictGroupTitle, countsByKind, dueLabel, groupConflicts, KIND_LABEL, KINDS, meaningful, nonReturnLine, PAGE, proposalId, readable, sortItems, workId } from './mywork';
 
 type Dialog = { kind: 'resolve' | 'assign' | 'reject'; item: WorkItem };
 
@@ -21,6 +21,7 @@ export function MyWorkPage() {
   const s = useMyWork();
   const [kind, setKind] = useState<WorkKind | 'all' | 'fraud'>('all');
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [limit, setLimit] = useState(PAGE);
   const action = useAction();
   useEffect(() => {
     document.title = 'My work · Circularity Decision Workbench';
@@ -74,13 +75,13 @@ export function MyWorkPage() {
       </div>
       {!rows.length && !grouped.conflicts.length && <div className="callout info">Nothing waits for you here.</div>}
       <ul className="frbl" aria-label="My work">
-        {rows.map((i) => (
+        {rows.slice(0, limit).map((i) => (
           <li key={i.id} data-kind={i.kind} data-id={i.id}>
             <span>
               <span className="chip line" style={{ marginRight: 6 }}>{KIND_LABEL[i.kind]}</span>
-              <b>{i.title}</b>
-              {i.case_id && <> · <a href={'#/product/' + i.case_id}>{i.case_id}</a></>}
-              {i.cause && <span className="note">{i.cause}</span>}
+              <b>{readable(i.title)}</b>
+              {i.case_id && <span className="note">Case <a href={'#/product/' + i.case_id}>{i.case_id}</a></span>}
+              {meaningful(i.cause) && <span className="note">{readable(meaningful(i.cause))}</span>}
               {i.action && <span className="note">Next: {i.action}</span>}
               {i.kind === 'exception' && workId(i) !== null && <AssistantDraft id={workId(i) as number} />}
               <span className="note">
@@ -112,6 +113,12 @@ export function MyWorkPage() {
           </li>
         )}
       </ul>
+      {rows.length > limit && (
+        <div className="row" style={{ justifyContent: 'space-between', margin: '12px 0' }}>
+          <span className="note">Showing {limit} of {rows.length}</span>
+          <button className="btn sm" onClick={() => setLimit(limit + PAGE)}>Show {Math.min(PAGE, rows.length - limit)} more</button>
+        </div>
+      )}
       {dialog && <ItemDialog d={dialog} onClose={() => setDialog(null)} />}
     </div>
   );

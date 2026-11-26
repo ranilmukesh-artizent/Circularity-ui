@@ -14,6 +14,7 @@ import {
 import { canPage, tenants } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import { Icon } from '../../components/Icon';
+import { TableScroll } from '../../components/kit/TableScroll';
 import { onActivateKey } from '../../utils/keys';
 import { Drawer } from '../../components/Overlay';
 import { toast } from '../../components/toast';
@@ -256,7 +257,7 @@ function QueueTable({ f, focus }: { f: Q; focus: string | null }) {
           <button aria-pressed={f.group} onClick={() => setQ({ group: true })}>Group by product</button>
         </div>
       </div>
-      <div className="tw">
+      <TableScroll label="Returned assets">
         <table className="t">
           <thead>
             <tr>
@@ -271,7 +272,7 @@ function QueueTable({ f, focus }: { f: Q; focus: string | null }) {
             )}
           </tbody>
         </table>
-      </div>
+      </TableScroll>
       <div className="filters" style={{ borderTop: '1px solid var(--line2)', borderBottom: 0, justifyContent: 'space-between' }}>
         <span className="note">
           {f.group ? 'Grouped by product and customer: ' + rows.length + ' units' : 'Showing ' + shown.length + ' of ' + rows.length}. Physical inventory
@@ -347,7 +348,7 @@ function ExpectedTable({ onOpen }: { onOpen: (e: Expected) => void }) {
         (buyouts, extensions, early terminations).
       </div>
       <div className="panel">
-        <div className="tw">
+        <TableScroll label="Expected returns">
           <table className="t" id="expTab">
             <thead>
               <tr>
@@ -397,7 +398,7 @@ function ExpectedTable({ onOpen }: { onOpen: (e: Expected) => void }) {
               )}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       </div>
     </>
   );

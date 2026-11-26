@@ -16,3 +16,6 @@
 .asmbar .asmtxt .muted { color: var(--muted); }
 .asmbar .btn { flex: none; min-height: 32px; }
 @media (max-width: 860px) { .cspage > .asmbar { flex-direction: column; align-items: stretch; } }
+
+/* A sub-tab opened from the strip scrolls to just under the top bar; the last panel clears the fixed foot bar. */
+#stDet { scroll-margin-top: 80px; padding-bottom: 72px; }

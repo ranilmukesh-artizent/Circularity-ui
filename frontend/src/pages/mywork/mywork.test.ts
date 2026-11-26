@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkItem } from '../../api/mywork';
-import { conflictGroupTitle, countsByKind, dueLabel, groupConflicts, nonReturnLine, sortItems } from './mywork';
+import { conflictGroupTitle, countsByKind, dueLabel, groupConflicts, meaningful, nonReturnLine, readable, sortItems } from './mywork';
 
 const item = (o: Partial<WorkItem>): WorkItem => ({
   id: 'w:1', kind: 'exception', case_id: null, title: 't', cause: null, action: null, owner: 'Planner', due: null, overdue: false, priority: 100, go: null, ...o,
@@ -56,5 +56,17 @@ describe('My work conflict grouping (UI audit gap 20)', () => {
   });
   it('has no group without conflicts', () => {
     expect(groupConflicts([item({ id: 'a:1', kind: 'approval' })]).conflicts).toEqual([]);
+  });
+});
+
+describe('My work text (UI fix 29)', () => {
+  it('reads snake_case field names as words and keeps ids', () => {
+    expect(readable('Sources disagree on work_order_ref of MTR-1108')).toBe('Sources disagree on work order reference of MTR-1108');
+    expect(readable('Sources disagree on work_order_type of RT-1073')).toBe('Sources disagree on work order type of RT-1073');
+  });
+  it('drops a lone dot', () => {
+    expect(meaningful('.')).toBe('');
+    expect(meaningful(null)).toBe('');
+    expect(meaningful('Demand cancelled.')).toBe('Demand cancelled.');
   });
 });

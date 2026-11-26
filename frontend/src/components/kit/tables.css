@@ -1,0 +1,20 @@
+/* Sideways-scrolling tables (TableScroll). Edge shadows show where columns are hidden; the first column stays put. */
+.twc{position:relative}
+.twc::before,.twc::after{content:"";position:absolute;top:0;bottom:0;width:28px;z-index:3;pointer-events:none;opacity:0;transition:opacity .15s}
+.twc::before{left:0;background:linear-gradient(to right,var(--panel3),transparent)}
+.twc::after{right:0;background:linear-gradient(to left,var(--panel3),transparent)}
+.twc[data-left=true]::before,.twc[data-right=true]::after{opacity:1}
+.twc .tw{scrollbar-width:thin;scrollbar-color:var(--muted) transparent}
+.twc .tw:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+.tw-sticky table.t th:first-child,.tw-sticky table.t td:first-child{position:sticky;left:0;z-index:1;background:var(--panel)}
+.tw-sticky table.t th:first-child{z-index:2}
+.tw-sticky table.t tbody tr:hover td:first-child{background:var(--panel2)}
+.tw-sticky table.t tbody tr.sel td:first-child{background:linear-gradient(var(--yellow-soft),var(--yellow-soft)),var(--panel)}
+/* A long header stays on one line and ends in an ellipsis; the cell carries the full text in its title. */
+.twc table.t th{max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.twc table.t th,.twc table.t td{padding-left:10px;padding-right:10px}
+.fral .frtlx{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+/* The tab strip keeps its underline: the fade sits above it and stops short of the border. */
+.tabsc::before,.tabsc::after{bottom:15px;width:32px}
+.tabsc .tabs{scrollbar-width:none}.tabsc .tabs::-webkit-scrollbar{display:none}
+.tabsc::before{background:linear-gradient(to right,var(--bg),transparent)}.tabsc::after{background:linear-gradient(to left,var(--bg),transparent)}
