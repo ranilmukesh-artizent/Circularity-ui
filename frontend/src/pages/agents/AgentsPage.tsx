@@ -8,6 +8,7 @@ import { useBackend } from '../../api/useBackend';
 import { Drawer, Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import { AgentsBusiness } from './AgentsBusiness';
 import { LlmModelsPanel } from './LlmModelsPanel';
 import { OutsideClients } from './OutsideClients';
 import { ModelsPanel } from './ModelsPanel';
@@ -31,7 +32,7 @@ export function AgentsPage() {
         <div>
           <h1>Agents</h1>
           <p>
-            The agents that may call Circularity, what they may use and how far they may go. Agents prepare and propose; a person accepts, approves and changes
+            What each agent does for you, how far it may go and when it last ran. Agents prepare and propose; a person accepts, approves and changes
             access.
           </p>
         </div>
@@ -41,11 +42,16 @@ export function AgentsPage() {
           <b>Read-only view.</b> Admin manages agents. You accept or reject the proposals your permissions cover.
         </div>
       )}
+      <AgentsBusiness s={s} />
+      <Proposals list={s.proposals} />
+      <Runs s={s} />
+      <div className="sh" id="agExpert" style={{ marginTop: 28, borderTop: '1px solid var(--line)', paddingTop: 16 }}>
+        <h2>Models and tools</h2>
+        <span className="note">For admins and developers: the registry, credentials, language models and the tool catalogue.</span>
+      </div>
       <Registry s={s} />
       {s.can.manage && <Credentials agents={s.agents} />}
       {s.can.manage && <OutsideClients agents={s.agents} />}
-      <Proposals list={s.proposals} />
-      <Runs s={s} />
       <LlmModelsPanel s={s} />
       <ModelsPanel />
       <Catalogue s={s} />
@@ -65,7 +71,7 @@ function Registry({ s }: { s: AgentsScreen }) {
   return (
     <section className="sect" id="agReg">
       <div className="sh">
-        <h2>Registry</h2>
+        <h2>Agent registry</h2>
         <span className="note">{s.agents.length} agents · {s.agents.filter((a) => !a.enabled).length} stopped</span>
         <span className="grow" />
         {s.can.manage && <button className="btn sm pri" id="ag-register" onClick={() => setRegistering(true)}>Register agent</button>}
@@ -73,7 +79,7 @@ function Registry({ s }: { s: AgentsScreen }) {
       <div className="panel">
         <div className="tw">
           <table className="t static">
-            <thead><tr><th>Agent</th><th>Kind</th><th>Status</th><th>Autonomy</th><th>Tools</th><th>Org scope</th><th></th></tr></thead>
+            <thead><tr><th>Agent</th><th>Kind</th><th>Status</th><th title="The most an agent may do over MCP, whatever its stages allow">Highest level</th><th>Tools</th><th>Org scope</th><th></th></tr></thead>
             <tbody>
               {s.agents.map((a) => (
                 <tr key={a.id} data-agent={a.id}>
@@ -91,7 +97,7 @@ function Registry({ s }: { s: AgentsScreen }) {
                     {s.can.manage ? (
                       <>
                         <label className="sr" htmlFor={'ag-au-' + a.id}>Autonomy of {a.name}</label>
-                        <select id={'ag-au-' + a.id} value={a.autonomy} disabled={action.pending} onChange={(e) => change(a, { autonomy: e.target.value as Autonomy }, a.name + ' autonomy changed.')}>
+                        <select className="sel" id={'ag-au-' + a.id} value={a.autonomy} disabled={action.pending} onChange={(e) => change(a, { autonomy: e.target.value as Autonomy }, a.name + ' autonomy changed.')}>
                           {AUTONOMY.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                         </select>
                       </>
@@ -159,7 +165,7 @@ function Credentials({ agents }: { agents: AgentRow[] }) {
         <span className="note">A credential lets an agent get its own token. It acts as you, limited to its tools.</span>
         <span className="grow" />
         <label className="sr" htmlFor="ag-cred-agent">Agent</label>
-        <select id="ag-cred-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
+        <select className="sel" id="ag-cred-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
           {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>{' '}
         <button className="btn sm pri" id="ag-cred-issue" disabled={action.pending || !agent} onClick={issue}>Issue credential</button>
@@ -347,11 +353,11 @@ function StartRun({ agents }: { agents: AgentRow[] }) {
   return (
     <div className="pb axrl" style={{ borderBottom: '1px solid var(--line)' }}>
       <label htmlFor="ag-run-agent">Agent</label>
-      <select id="ag-run-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
+      <select className="sel" id="ag-run-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
         {on.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
       </select>
       <label htmlFor="ag-run-playbook">Playbook</label>
-      <select id="ag-run-playbook" value={playbook} onChange={(e) => setPlaybook(e.target.value as Playbook)}>
+      <select className="sel" id="ag-run-playbook" value={playbook} onChange={(e) => setPlaybook(e.target.value as Playbook)}>
         {(Object.keys(PLAYBOOKS) as Playbook[]).map((p) => <option key={p} value={p}>{PLAYBOOKS[p]}</option>)}
       </select>
       <label htmlFor="ag-run-case">Case</label>
