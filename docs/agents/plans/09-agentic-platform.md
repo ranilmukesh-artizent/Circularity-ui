@@ -329,22 +329,47 @@ report.
    main tree.
 2. **Brief.** For each ready task, add its line to `inflight.txt` and start a writer with the brief below. Writer
    numbers 1–4 name their databases (`di_w1` … `di_w4`).
+   - **Shared piece first.** When two or more ready tasks need the same new shared code (an overlay op, a valuer
+     hook, a step kind), one writer builds it and the lead merges it before the siblings start (26 Nov: two writers
+     built the same `add_approver` extension at once and one rebuilt its code to match).
+
+### Speed rules (26 Nov, after a day of low throughput)
+
+The limit on this machine is file reads over the Windows bind mount, not CPU: every extra check run slows every other
+writer. A task is about an hour of code; it must not take three hours of checks.
+- **Writers** iterate with `WT_LINT=0` on their spec's tests and the tests of the modules they changed, and run the
+  full `wt-check.sh` once, just before the commit. A single failing test is iterated with `-k <name>`. After two
+  failed full runs, the writer commits with the failing test named in the body and reports; the lead fixes it after
+  the merge.
+- **The lead** runs no check twice: not the writer's checks before the merge, not the whole suite per batch (see
+  step 4). At most three check runs (writers and lead together) at a time; a writer whose check waits behind them is
+  fine.
+- **No second stack.** Browser smokes run at phase gates on the main stack; no writer starts its own Compose project.
+- **Idle servers stay quiet.** The main stack runs with `DEV_POLLING=0` during a run (the reloaders' file polling cost
+  about two cores); `lead-verify.sh` restarts the containers anyway.
+- **Stop means stop.** After stopping a backgrounded verify, also kill its script and `docker rm -f` its
+  `di_par<n>` containers.
 3. **Verify** each report as it arrives. Read the report and `git show --stat <sha>`, not the whole diff.
    - The commit touches only the task's files, plus tests and the registration files.
    - The commit message starts with the task id.
    - The report quotes a passing `wt-check.sh`.
-   Then rerun the writer's checks yourself from its worktree, as writer 0: `bash scripts/dev/wt-check.sh 0 <tests>`
-   (AGENTS.md rule 15).
-4. **Merge.** In the main tree, run `git cherry-pick -n <sha>`.
-   - Resolve conflicts in append-like and registration files by keeping both sides.
+   Do not rerun the writer's checks from its worktree: the impacted run after the merge (step 4) is the lead's own
+   check (AGENTS.md rule 15), and running both doubles the cost (26 Nov).
+4. **Merge in batches** in the lead's merge worktree (`lead-merge`), so the main tree stays free:
+   `git cherry-pick <sha>` for each report that has arrived; merge lane B's branch the same way.
+   - Resolve conflicts in append-like and registration files by keeping both sides. Where two sides built the same
+     helper, keep one and rename the callers.
    - A conflict in a logic file means the scheduler missed an overlap. `git cherry-pick --abort`, put the task back
      (remove it from `inflight.txt`) and log it.
-   - If the task filled a migration, run `migrate-reapply.sh 0028`. Run `restart.sh` when R14 says so.
-   - Run the task's tests on the main database through `api-test.sh`, including any serial-only files that
-     `wt-check.sh` refused. Run `lint.sh`, and `web-check.sh` if `frontend/` changed.
-   - Green: tick the box, add the PROGRESS row, and commit with the writer's message plus a "Verified by the lead:"
-     line quoting the summaries.
-   - Red: run `git restore --staged --worktree -- <the task's files>` and log it.
+   - **Test by impact, once per batch:** `bash scripts/dev/impacted-tests.sh <last verified commit>` lists the tests
+     that cover the batch's changed modules. Run them on the lead's private database (`wt-check.sh 9`,
+     `WT_LINT=0`), plus the serial-only files among them through `lead-verify.sh --impacted`. Lint, and web only
+     when `frontend/` changed, run once per batch, not per task. The parallel suite, the sim shard and the smokes are
+     for phase gates only, or for a batch that changes `di/core`, migrations or `conftest.py`.
+   - If the batch filled a migration, run `migrate-reapply.sh 0028`. Run `restart.sh` when R14 says so.
+   - Green: move the run branch to the merge worktree (`git reset --keep lead-merge`), tick each box with
+     `plan-tick.py`, and commit the ticks with the summaries.
+   - Red: fix a small slip yourself; otherwise revert that task's commit and send the failure to its writer.
 5. **Retry once.** Send the failure (the last 40 lines) to the same writer with `SendMessage`; it keeps its context.
    On a second failure:
    - move the task to `blocked.txt` with the reason and a one-line decision needed;
@@ -374,7 +399,8 @@ Read: AGENTS.md; in docs/agents/plans/09-agentic-platform.md the sections "Agent
 "#### <task id>"; every file in its Files list; the stories it cites in research A or B.
 Follow the standard task cycle S1–S6 with these changes for the parallel run:
 - Tests run only through `bash scripts/dev/wt-check.sh <k> <test files>` from your worktree root (WT_LINT=0 for the
-  red-first run). Never run api-test.sh, full-suite.sh, reset.sh, restart.sh, a smoke, or docker compose exec.
+  red-first run and while you iterate; the full check once, before the commit; see "Speed rules"). Never run
+  api-test.sh, full-suite.sh, reset.sh, restart.sh, a smoke, or docker compose exec.
 - Change only the files in your spec, plus your tests and the registration files it names. If you need another
   file, stop and say so in your report.
 - If your task fills a migration, the file already exists (empty): fill it, idempotent (IF NOT EXISTS).
