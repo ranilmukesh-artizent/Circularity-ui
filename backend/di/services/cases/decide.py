@@ -56,7 +56,7 @@ from di.services.modeler.gates import Cond, GateDef, GateEffectDef, GateResult, 
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack
 from di.services.modeler.templates import Template, template_of_pack
-from di.services.modeler.valuers import VALUERS, device, fleet_evidence, service_desk, tool_fleet
+from di.services.modeler.valuers import VALUERS, device, fleet_evidence, service_desk, tool_approval, tool_fleet
 from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.routes_adapter import to_routes
 from di.services.modeler.valuers.tool_fleet import PathValue
@@ -94,6 +94,7 @@ class Decision:
     extra: Mapping[str, float] = field(default_factory=dict)
     case_fields: Mapping[str, Any] = field(default_factory=dict)
     ticket: Mapping[str, Any] | None = None  # a service ticket's options, holds and inputs (P9-4.6)
+    approval: Mapping[str, Any] | None = None  # a tool return's route for approval and its confidence (P9-3.15)
 
 
 class WhatIfPlanner:
@@ -125,6 +126,7 @@ class _Valued:
     plan: dict[str, Any] | None = None
     figures: Mapping[str, Mapping[str, float]] = field(default_factory=dict)
     ticket: dict[str, Any] | None = None
+    values: Sequence[PathValue] = ()  # the tool fleet's path values (their lines say what a repair costs, P9-3.15)
 
 
 # ---------------------------------------------------------------- the steps
@@ -234,7 +236,7 @@ def _tool_fleet(
         "lost": [{"order": o, "to": w["to"], "gain": w["gain"]} for o, w in sorted(plan["why"].items()) if me in w["others"]],
     }
     best = dec.get("best")
-    return _Valued(routes, best["k"] if best else None, queue_plan)
+    return _Valued(routes, best["k"] if best else None, queue_plan, values=values)
 
 
 def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as_of: datetime | None) -> _Valued | None:
@@ -401,6 +403,7 @@ def decide_case(
     chosen = go or (valued.best if valued.best in eligible else c.get("preferred"))
     rec = rank_routes(routes, c.get("blocked") or c.get("gateHold"), chosen)
     rec = _not_held_for_person(rec, routes, results, c.get("life"))
+    approval = _approval(rec, valued, c, results, pack)  # 6. who approves (P9-3.15)
     return Decision(
         case_id=str(c.get("id")), pack_key=pack.key, pack_version=pack.version, flow_ver=flow_ver.ver,
         route=rec["id"] if rec else None, net=float(rec["net"]) if rec else 0.0, routes=routes, recommendation=rec,
@@ -409,7 +412,20 @@ def decide_case(
         required_steps=list(c.get("requiredSteps") or []),
         hold=c.get("gateHold"), trace=TRACE, as_of=as_of, extra=_extra(rec, valued.figures),
         case_fields={k: c[k] for k in GATE_KEYS if k in c}, ticket=_ticket_of(valued.ticket, rec),
+        approval=approval,
     )  # fmt: skip
+
+
+def _approval(
+    rec: Route | None, valued: _Valued, c: Mapping[str, Any], results: Sequence[GateResult], pack: Pack
+) -> dict[str, Any] | None:
+    """A tool return's route for approval (`tool_approval.route_for_approval`): None for any other decision."""
+    if not valued.values or rec is None:
+        return None
+    best = next((v for v in valued.values if v["k"] == rec["id"]), None)
+    conf = tool_approval.confidence_of(c.get("life"), pack)
+    r = tool_approval.route_for_approval(best, c, conf, results, pack)
+    return {"kind": r.kind, "role": r.role, "reasons": r.reasons, "holds": list(r.holds), "confidence": conf}
 
 
 def _ticket_of(ticket: dict[str, Any] | None, rec: Route | None) -> dict[str, Any] | None:
@@ -433,6 +449,14 @@ def write_back(case: MutableMapping[str, Any], d: Decision) -> None:
     if d.rules_applied or d.waived or d.preferred:
         case.update(rulesApplied=d.rules_applied, rulesWaived=d.waived, preferred=d.preferred)
     case.pop("approvalHolds", None)
+    for k in ("approvalRoute", "decisionConfidence"):
+        case.pop(k, None)
+    if d.approval is not None:  # a tool return: who approves, the holds I-10 and I-11 read, and the confidence they judge on
+        case["approvalRoute"] = {k: d.approval[k] for k in ("kind", "role", "reasons")}
+        if d.approval["holds"]:
+            case["approvalHolds"] = d.approval["holds"]
+        if d.approval["confidence"] is not None:
+            case["decisionConfidence"] = d.approval["confidence"]
     if d.ticket is not None and isinstance(
         case.get("serviceDesk"), dict
     ):  # a ticket: each line's options, the holds I-10 and I-11 read

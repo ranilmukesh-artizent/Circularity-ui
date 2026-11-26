@@ -363,6 +363,27 @@ await step('9 Paths: CMH-48213 reads six valued paths and the renewal FC-30117-R
   if (!/Fleet renewal FC-30117-R/.test(shown || '')) throw new Error('the Overview does not show "Fleet renewal FC-30117-R"');
   return `${v.paths.map((p) => p.k).join(', ')}; best ${v.best}, uplift ${v.uplift}`;
 });
+// ---------------------------------------------------------------- 12
+await step('12 Approval: each tool case says who approves (a policy, or a person with the reason)', async () => {
+  const admin = await as('admin');
+  const seen = [];
+  for (const serial of ['CMH-48213', 'CMH-48777', 'BRK-51007', 'CRH-44120']) {
+    const r = await must(admin, 'cases.list', { q: serial, limit: 5 });
+    const row = (r.rows || []).find((x) => x.id);
+    if (!row) continue;
+    const v = await getJson(admin, '/api/screens/toolfleet/' + row.id);
+    if (!v.approval) continue;
+    if (!v.approval.text) throw new Error(`${serial}: the approval has no sentence`);
+    await admin.goto(`${base}/#/product/${row.id}/overview`);
+    await admin.locator('#view').waitFor();
+    await admin.locator('[data-testid="tf-approval-text"]').first().waitFor({ timeout: UI });
+    const shown = await admin.locator('[data-testid="tf-approval-text"]').first().textContent();
+    if (shown !== v.approval.text) throw new Error(`${serial}: the Overview shows "${shown}", the API says "${v.approval.text}"`);
+    seen.push(`${serial} ${v.approval.kind}: ${v.approval.text}`);
+  }
+  if (!seen.length) throw new Error('no tool case reads an approval');
+  return seen.join('; ');
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));

@@ -355,6 +355,42 @@
    "protects": [],
    "approvers": [],
    "param": null
+  },
+  {
+   "id": "GR-14",
+   "text": "Repair over $600 → Fleet manager",
+   "owner": "Fleet manager",
+   "type": "Approval",
+   "stage": "decide",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": {
+    "field": "repair_usd",
+    "value": 600,
+    "stricter": "lower",
+    "min": 100,
+    "max": 600
+   }
+  },
+  {
+   "id": "GR-15",
+   "text": "Write-off under 24 months → Service operations",
+   "owner": "Service operations",
+   "type": "Approval",
+   "stage": "decide",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": {
+    "field": "write_off_months",
+    "value": 24,
+    "stricter": "higher",
+    "min": 24,
+    "max": 60
+   }
   }
  ],
  "gates": [
@@ -651,6 +687,7 @@
       {"name": "Receiver", "rated_hours": 3000, "weight": 0.2, "critical": false, "alpha": 0}]}
     }
    },
+   "approval": {"confidence_by_life": {"High": 0.90, "Medium": 0.78, "Low": 0.50}},
    "contract_refresh": {
     "flow": "contract_refresh",
     "window_days": 90,

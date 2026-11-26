@@ -19,6 +19,9 @@ GET /api/screens/toolfleet/{case_id}
     the next eligible by net, `standard` the default path of the tool's function and `uplift` best net minus standard net.
     `quarantine` (P9-3.7) is the recall quarantine of the tool, `{recall_id, remedy, blocked, affected_parts, released}`
     (`released`: `{by, at, note}` once Quality released a repair recall), or null when no active recall names its serial.
+    `approval` (P9-3.15) is who approves the decision: `{kind: "policy" | "person", role, appRole, reasons, holds, confidence,
+    policy: {id, ver, owner} | null, by, text}`; `text` is "Approved by policy SP-1 v1 (owner admin)" or "Waits for the Fleet
+    manager: Repair $702 is over $600 (GR-14)". Null before the case is valued.
 
 Refuses as `screens.case.case_page` does: 403 out_of_scope without the case pages, 404 not_found for an unknown case (or a
 case of another template), 403 tenant_boundary outside the account's tenants or warehouse.
@@ -40,10 +43,12 @@ from sqlalchemy.orm import Session
 
 from di.core import clock
 from di.core.auth import Principal
+from di.repositories import standing_policies
 from di.repositories.context import load_case
 from di.repositories.packs import active_pack
 from di.services.cases import intake, regrade
 from di.services.modeler import gates as gate_catalogue
+from di.services.modeler.pack import Pack
 from di.services.modeler.valuers import fleet_evidence, tool_fleet, tool_inputs
 
 GATE_KEYS = ("id", "name", "passed", "reason", "guardrail", "owner", "kind", "stage", "stageLabel", "hold", "locked")
@@ -61,6 +66,37 @@ def _gate(row: dict[str, Any], now: datetime, params: dict[str, Any]) -> dict[st
             "max_age_days": params.get("max_age_days", fleet_evidence.MAX_AGE_DAYS),
         }
     return out
+
+
+def _approval(s: Session, c: dict[str, Any], pack: Pack) -> dict[str, Any] | None:
+    """Who approves the decision (P9-3.15), as the decider left it on the case (`approvalRoute`, `approvalHolds`): `{kind
+    "policy" | "person", role, appRole, reasons, holds, confidence, policy: {id, ver, owner} | null, by, text}`. `appRole` is
+    the app role the role's approval item routes to (pack `roles`), `policy` the standing policy that approved it. Null
+    before the case is valued."""
+    r = c.get("approvalRoute")
+    if not isinstance(r, dict):
+        return None
+    role = r.get("role")
+    by = str((c.get("approval") or {}).get("by") or "")
+    policy = None
+    if by.startswith("policy "):
+        pid, _, ver = by.removeprefix("policy ").partition(" v")
+        row = standing_policies.get(s, pid)
+        policy = {"id": pid, "ver": int(ver) if ver.isdigit() else None, "owner": row.owner if row else None}
+        text = f"Approved by policy {pid} v{ver} (owner {policy['owner']})"
+    elif by:
+        text = f"Approved by {by}"
+    elif r["kind"] == "person":
+        text = f"Waits for the {role}: {r['reasons'][0]}"
+    elif row := standing_policies.effective(s, pack.key, c["owner"]):
+        text = f"Approved by policy {row.id} v{row.ver} (owner {row.owner}) when it is submitted"
+    else:
+        text = "Waits for a person: no standing policy is active"
+    return {
+        "kind": r["kind"], "role": role, "appRole": pack.roles.get(role) if role else None, "reasons": r["reasons"],
+        "holds": c.get("approvalHolds") or [], "confidence": c.get("decisionConfidence"), "policy": policy, "by": by or None,
+        "text": text,
+    }  # fmt: skip
 
 
 PATH_KEYS = ("k", "name", "ok", "net", "gross", "cost", "hold", "why", "lines", "dest")
@@ -118,6 +154,6 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         "life": c.get("life"),
         **_paths(s, c),
         "plan": None,
-        "approval": None,
+        "approval": _approval(s, c, pack),
         "followThrough": None,
     }

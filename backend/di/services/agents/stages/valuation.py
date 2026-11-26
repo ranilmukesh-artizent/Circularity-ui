@@ -46,6 +46,9 @@ def _top_two(case: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 
 def confidence(st: dict[str, Any], case: Mapping[str, Any]) -> float | None:
+    dc = case.get("decisionConfidence")  # a tool return: the confidence of its life class (P9-3.15), not the routes' overlap
+    if isinstance(dc, float):
+        return dc
     top = _top_two(case)
     if not top:
         return None
