@@ -9,10 +9,10 @@ weight. Every number is a parameter of the pack. Pure: no database, no source-si
 import copy
 from typing import Any
 
-from di.services.cases.decide import _valuer_kind, decide_case
+from di.services.cases.decide import decide_case
 from di.services.modeler.compile import FlowVersion
 from di.services.modeler.pack import Pack, load_pack
-from di.services.modeler.valuers import VALUERS, telecom_network
+from di.services.modeler.valuers import VALUERS, kind_of, telecom_network
 from di.services.modeler.valuers.tool_fleet import PathValue
 
 PACK = load_pack("telecom_network")
@@ -139,7 +139,7 @@ def test_tn_11_scalar_region_inputs_are_the_units_own_cell():
 
 def test_tn_11_registered_and_decide_case_values_the_five_routes():
     assert VALUERS["telecom_network"] is telecom_network.value_routes
-    assert _valuer_kind(PACK) == "telecom_network"
+    assert kind_of(PACK) == "telecom_network"
     case = {"id": "TN-S1", "template": "telecom_network", "valuer": facts_s1(), "assetId": "asset.Customer A:SYNTN000000000001"}
     d = decide_case(case, PACK, FlowVersion(None, 0, ()))
     named = {r["id"]: r for r in d.routes}

@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Any
 
 from di.services.modeler.pack import Pack
-from di.services.modeler.valuers import standard, telecom_network, used_cars
+from di.services.modeler.valuers import medical_rental, standard, telecom_network, used_cars
 from di.services.modeler.valuers.tool_fleet import PathValue
 
 ValuerFn = Callable[[Mapping[str, Any], Pack, datetime | None], list[PathValue]]
@@ -21,4 +21,12 @@ VALUERS: dict[str, ValuerFn] = {
     "standard": standard.value_routes,
     "used_cars": used_cars.value_routes,
     "telecom_network": telecom_network.value_routes,
+    "medical_rental": medical_rental.value_routes,
 }
+
+
+def kind_of(pack: Pack) -> str:
+    """The key `VALUERS` is read with: a standard pack that names a code plug-in (`valuer.params.params.plugin`) is valued by
+    it (P9-9.10, P9-11.8), else the pack's own `valuer.kind`."""
+    plugin = (pack.valuer.params.get("params") or {}).get("plugin") if pack.valuer.kind == "standard" else None
+    return plugin if plugin in VALUERS else pack.valuer.kind

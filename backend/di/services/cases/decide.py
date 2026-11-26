@@ -65,7 +65,7 @@ from di.services.modeler.gates import (
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack
 from di.services.modeler.templates import Template, template_of_pack
-from di.services.modeler.valuers import VALUERS, device, fleet_evidence, service_desk, tool_fleet, used_cars
+from di.services.modeler.valuers import VALUERS, device, fleet_evidence, kind_of, service_desk, tool_fleet, used_cars
 from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.routes_adapter import to_routes
 from di.services.modeler.valuers.tool_fleet import PathValue
@@ -392,13 +392,6 @@ def _extra(rec: Route | None, figures: Mapping[str, Mapping[str, float]]) -> Map
     return {"cash": float(v["cash"]), "days": float(v["days"])} if v else {"cash": 0.0, "days": 0.0}
 
 
-def _valuer_kind(pack: Pack) -> str:
-    """The `VALUERS` key a pack is valued by: a standard pack that names a code plug-in (`valuer.params.params.plugin`, P9-9.10)
-    is valued by it, else the pack's valuer kind."""
-    plugin = (pack.valuer.params.get("params") or {}).get("plugin") if pack.valuer.kind == "standard" else None
-    return str(plugin) if plugin in VALUERS else pack.valuer.kind
-
-
 # ---------------------------------------------------------------- the decider
 def decide_case(
     case_or_facts: str | Mapping[str, Any],
@@ -426,14 +419,14 @@ def decide_case(
                 if e.type not in have
             ),
         ]  # its evidence is complete: an active contract line, so the gates pass and the sample's numbers stay
-    if _valuer_kind(pack) == "used_cars" and session is not None and c.get("assetId"):
+    if kind_of(pack) == "used_cars" and session is not None and c.get("assetId"):
         for model, data in car_facts.records(session, str(c["assetId"])).items():  # the car's money facts (P9-9.11)
             if not isinstance(c.get(model), Mapping):  # the gates, diversions and valuer read them as `asset.<fact>`
                 c[model] = data
     before = dict(c)  # what the valuers read: the case as it was before a hold set its stage and recommendation
     results = gate_hold.apply(c, [], pack, as_of)  # 1. gates (and the hold), before any valuation or queue plan
     blocked = frozenset(i for r in results if not r.passed and r.effect.kind == "block" for i in r.effect.routes)
-    kind = _valuer_kind(pack)
+    kind = kind_of(pack)
     if kind == "industrial":
         valued = _Valued(_industrial(before, session), None)
     elif kind == "tool_fleet":  # 2. valuation, then the queue plan, over the routes the gates left eligible
