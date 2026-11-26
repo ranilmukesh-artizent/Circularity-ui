@@ -69,7 +69,17 @@ from di.services.modeler.gates import (
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack
 from di.services.modeler.templates import Template, template_of_pack
-from di.services.modeler.valuers import APPROVALS, VALUERS, device, fleet_evidence, kind_of, service_desk, tool_fleet, used_cars
+from di.services.modeler.valuers import (
+    APPROVALS,
+    VALUERS,
+    device,
+    fleet_evidence,
+    kind_of,
+    medical_rental,
+    service_desk,
+    tool_fleet,
+    used_cars,
+)
 from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.routes_adapter import to_routes
 from di.services.modeler.valuers.tool_fleet import PathValue
@@ -487,16 +497,22 @@ def decide_case(
         required_steps=list(c.get("requiredSteps") or []),
         hold=c.get("gateHold"), trace=TRACE, as_of=as_of, extra=_extra(rec, valued.figures),
         case_fields={k: c[k] for k in GATE_KEYS if k in c}, ticket=_ticket_of(valued.ticket, rec),
-        approvals=valued.approvals if rec else [],
+        approvals=[dict(a) | {"route": a.get("route") or rec["id"]} for a in valued.approvals] if rec else [],  # P9-11.9
         evidence=_evidence(valued, rec, pack),
     )  # fmt: skip
 
 
 def _evidence(valued: _Valued, rec: Route | None, pack: Pack) -> list[str]:
-    """The plain facts behind a used car's recommendation (the valuer's hook, P9-9.11); none for another pack or no route."""
+    """The plain facts behind a recommendation, from the plug-in's `evidence_lines` hook (a used car, P9-9.11; a rental
+    device, P9-11.9); none for another pack or no route."""
     if rec is None or not valued.facts:
         return []
-    return used_cars.evidence_lines(valued.facts, cast(PathValue, {"k": rec["id"]}), pack)
+    kind = kind_of(pack)
+    if kind == "used_cars":
+        return used_cars.evidence_lines(valued.facts, cast(PathValue, {"k": rec["id"]}), pack)
+    if kind == "medical_rental":
+        return medical_rental.evidence_lines(valued.facts, cast(PathValue, {"k": rec["id"]}), pack)
+    return []
 
 
 def _ticket_of(ticket: dict[str, Any] | None, rec: Route | None) -> dict[str, Any] | None:
