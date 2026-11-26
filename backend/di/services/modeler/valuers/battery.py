@@ -2,7 +2,7 @@
 
     decide(case, params) -> Decision            the four paths of a pack, the same keys as `tool_fleet.Decision`
     gate_facts(case) -> dict                    the case with the `battery` facts the G-BAT gates read
-    sample_evidence(soh, at, damaged) -> list   the records a pack with a read state of health, a safety class and a permit has
+    sample_evidence(soh, at, damaged) -> list   the records of a pack with a read state of health, a safety class, a permit
 
 `params` is the tool-fleet pack's `valuer.params.battery` (its own figures: the pack's price, the state-of-health floors, the
 material credit, the hazardous-transport and take-back lines). The case is a mapping: `id`, `cls` "BAT", `soh` (percent, or
@@ -65,14 +65,20 @@ def sample_evidence(soh: float, at: datetime, damaged: bool = False) -> list[dic
     packaging, and a recycler's permit. As case `evidenceRecords`."""
     when = at.isoformat()
     return [
-        {"type": "battery_soh", "source": "tooltel", "at": when, "result": "pass", "value": {"soh_pct": soh, "read_at": when[:10], "damaged": damaged}},
-        {"type": "battery_safety_class", "source": "sample", "at": when, "result": "pass", "value": {"class": "UN 3480", "damaged": damaged}},
+        {
+            "type": "battery_soh", "source": "tooltel", "at": when, "result": "pass",
+            "value": {"soh_pct": soh, "read_at": when[:10], "damaged": damaged},
+        },
+        {
+            "type": "battery_safety_class", "source": "sample", "at": when, "result": "pass",
+            "value": {"class": "UN 3480", "damaged": damaged},
+        },
         {"type": "recycler_permit", "source": "sample", "at": when, "result": "pass", "value": {"recycler": "take-back scheme"}},
     ]  # fmt: skip
 
 
 def decide(case: Mapping[str, Any], params: Mapping[str, Any]) -> Decision:
-    """The four paths valued, the best eligible by net, the runner-up, the standard route (take-back) and the uplift of the best over it."""
+    """The four paths valued, the best eligible by net, the runner-up, the standard route (take-back) and the uplift over it."""
     values = [_value(case, k, params) for k in PATHS]
     ok = sorted((v for v in values if v["ok"]), key=lambda v: -v["net"])  # stable, like the tool fleet's
     best = ok[0]  # exit is always possible
@@ -99,16 +105,29 @@ def _value(c: Mapping[str, Any], k: str, p: Mapping[str, Any]) -> PathValue:
     ok, why, dest, misses = False, "", None, []
     if k == "release":
         floor = p["min_soh"]["release"]
-        orders = [d for d in dem.get("lease") or []]
+        orders = list(dem.get("lease") or [])
         d = max(orders, key=lambda x: x["rate"] * x["term"], default=None)
         if d:
             mr = p["rate"] / 12
             n = d["term"]
             inc = d["rate"] * (1 - math.pow(1 + mr, -n)) / mr
-            add("v", f"Fleet order {d['id']} · {d['who']}, {n} months in today's money", f"${d['rate']:,} a month × {n} months, discounted at {_pct(p['rate'])} a year", inc, "lease")
+            add(
+                "v",
+                f"Fleet order {d['id']} · {d['who']}, {n} months in today's money",
+                f"${d['rate']:,} a month × {n} months, discounted at {_pct(p['rate'])} a year",
+                inc,
+                "lease",
+            )
             add("c", "Test and repack", "flat per pack", p["test"], "prep")
             buffer = d["need"] - lead
-            dest = {**d, "ready": lead, "buffer": buffer, "tr": 0, "verb": f"issue to {d['who']} on fleet order {d['id']}", "short": f"{d['who']} ({d['id']})"}
+            dest = {
+                **d,
+                "ready": lead,
+                "buffer": buffer,
+                "tr": 0,
+                "verb": f"issue to {d['who']} on fleet order {d['id']}",
+                "short": f"{d['who']} ({d['id']})",
+            }
             if buffer < 0:
                 misses.append(f"{d['id']} ({d['who']}) needs it in {d['need']} days; the pack is ready in {lead}")
         ok = bool(d) and soh is not None and soh >= floor and not misses and not damaged
@@ -119,16 +138,30 @@ def _value(c: Mapping[str, Any], k: str, p: Mapping[str, Any]) -> PathValue:
         floor = p["min_soh"]["redeploy"]
         d = dem.get("proj")
         if d:
-            add("v", f"New pool pack avoided · {d['id']}", f"purchase requisition {d['quote']} for 1 new pool pack", d["rental"], "purchase")
+            add(
+                "v",
+                f"New pool pack avoided · {d['id']}",
+                f"purchase requisition {d['quote']} for 1 new pool pack",
+                d["rental"],
+                "purchase",
+            )
             add("c", "Test and repack", "flat per pack", p["test"], "prep")
             buffer = d["need"] - lead
-            dest = {**d, "ready": lead, "buffer": buffer, "tr": 0, "verb": f"place in the {d['site']} loaner pool ({d['id']})", "short": f"pool · {d['site']}"}
+            dest = {
+                **d,
+                "ready": lead,
+                "buffer": buffer,
+                "tr": 0,
+                "verb": f"place in the {d['site']} loaner pool ({d['id']})",
+                "short": f"pool · {d['site']}",
+            }
             if buffer < 0:
                 misses.append(f"{d['id']} needs it in {d['need']} days; the pack is ready in {lead}")
         ok = bool(d) and soh is not None and soh >= floor and not misses and not damaged
         why = (f"Place in the {d['site']} loaner pool ({d['id']})" if ok and d else DAMAGED_WHY if damaged
                else misses[0] if misses and soh is not None and soh >= floor
-               else floor_why(floor) if soh is None or soh < floor else "No service center pool is short of this pack")  # fmt: skip
+               else floor_why(floor) if soh is None or soh < floor else "No service center pool is short of this pack"
+               )  # fmt: skip
     elif k == "resell":
         floor = p["min_soh"]["resell"]
         bids = sorted(dem.get("bid") or [], key=lambda b: -b["price"])
@@ -137,27 +170,40 @@ def _value(c: Mapping[str, Any], k: str, p: Mapping[str, Any]) -> PathValue:
         if b:
             add("v", f"Bid {b['id']} · {b['who']}", "firm bid for a tested pack", sale, "sale")
         else:
-            add("v", "Outlet sale (estimate)", f"{_money(p['newP'])} new × {_pct(p['res'])} × {soh if soh is not None else 0:g}% state of health", sale, "sale")
+            basis = f"{_money(p['newP'])} new × {_pct(p['res'])} × {soh if soh is not None else 0:g}% state of health"
+            add("v", "Outlet sale (estimate)", basis, sale, "sale")
         add("c", "Test for sale", "flat per pack", p["test"], "prep")
         add("c", "Channel fees", f"{_pct(p['sale_fee'])} of sale price", sale * p["sale_fee"], "fees")
-        dest = {"kind": "bid" if b else "market", "id": b["id"] if b else "listing", "who": b["who"] if b else "pre-owned outlet", "need": 9, "ready": 9, "buffer": 0, "tr": 0,
-                "verb": f"sell to {b['who']} ({b['id']})" if b else "list in the pre-owned outlet", "short": "bid" if b else "outlet", "committed": bool(b)}  # fmt: skip
+        dest = {
+            "kind": "bid" if b else "market", "id": b["id"] if b else "listing",
+            "who": b["who"] if b else "pre-owned outlet", "need": 9, "ready": 9, "buffer": 0, "tr": 0,
+            "verb": f"sell to {b['who']} ({b['id']})" if b else "list in the pre-owned outlet",
+            "short": "bid" if b else "outlet", "committed": bool(b),
+        }  # fmt: skip
         ok = not damaged and soh is not None and soh >= floor
-        why = DAMAGED_WHY if damaged else floor_why(floor) if not ok else f"Test and sell to {b['who']} on bid {b['id']}" if b else f"No live bid; outlet estimate at {soh:g}% state of health"
+        why = (DAMAGED_WHY if damaged else floor_why(floor) if not ok
+               else f"Test and sell to {b['who']} on bid {b['id']}" if b
+               else f"No live bid; outlet estimate at {soh:g}% state of health")  # fmt: skip
     else:
         add("v", CREDIT, f"recycler quote {dem.get('rcq') or 'on file'}", p["mat"], "material")
         add("c", HAZMAT, "dangerous goods, flat per pack", p["hazmat"], "fees")
         add("c", FEE, "producer take-back scheme", p["fee"], "fees")
         if damaged:
             add("c", PACKAGING, "damaged-pack packaging", p["damaged_pack"], "prep")
-        dest = {"kind": "exit", "id": dem.get("rcq") or "take-back", "who": "permitted recycler", "name": p["names"]["exit"], "need": lead, "ready": lead, "buffer": 0, "tr": 0,
-                "verb": "send to the permitted recycler under the take-back scheme", "short": "take-back"}  # fmt: skip
-        ok, why = True, "Take-back recycling under the producer scheme" + (" (damaged pack, dangerous-goods packaging)" if damaged else "")
+        dest = {
+            "kind": "exit", "id": dem.get("rcq") or "take-back", "who": "permitted recycler", "name": p["names"]["exit"],
+            "need": lead, "ready": lead, "buffer": 0, "tr": 0,
+            "verb": "send to the permitted recycler under the take-back scheme", "short": "take-back",
+        }  # fmt: skip
+        ok, why = True, "Take-back recycling under the producer scheme"
+        if damaged:
+            why += " (damaged pack, dangerous-goods packaging)"
     add("h", "Holding until done", f"{_money(p['hold'])} a day × {lead} days to complete", p["hold"] * lead, "fees")
     gross = sum(x["amt"] for x in lines if x["type"] == "v")
     cost = sum(x["amt"] for x in lines if x["type"] == "c")
     hold = p["hold"] * lead
     return {
-        "k": k, "ok": bool(ok), "gross": gross, "cost": cost, "hold": hold, "net": gross - cost - hold, "why": why, "lines": lines,
+        "k": k, "ok": bool(ok), "gross": gross, "cost": cost, "hold": hold, "net": gross - cost - hold,
+        "why": why, "lines": lines,
         "dest": dest, "misses": misses, "co2": None, "co2Prov": None,
     }  # fmt: skip
