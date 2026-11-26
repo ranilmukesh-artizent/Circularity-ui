@@ -13,6 +13,7 @@ import di.services.actions.connections  # registers action handlers (registry.*,
 import di.services.actions.decisions  # registers action handlers
 import di.services.actions.device_cases  # registers action handlers (payout.decide; plan 9 P9-6.8)
 import di.services.actions.device_learning  # registers action handlers (device.ageingSuggestions; plan 9 P9-6.13)
+import di.services.actions.tn_cross_region  # registers action handlers (telecom.crossRegion; plan 9 P9-10.15)
 import di.services.actions.device_lots  # registers action handlers (lot.build, propose, approve, reject, list; plan 9 P9-6.11)
 import di.services.actions.engine  # registers action handlers
 import di.services.actions.evidence_refresh  # registers evidence.refresh (re-run a recall check; plan 9 P9-9.9)
