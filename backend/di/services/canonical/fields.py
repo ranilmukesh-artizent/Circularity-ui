@@ -27,6 +27,10 @@ The medical rental fields (plan 9, P9-11.2) are written by the extra adapters mr
 turnaround; on `market` residual_sale_value; on `demand` rental_requests and region_forecast. The decontamination fields
 (P9-11.3) are written by mr_decon on `condition`: decon_started_at, decon_ended_at, decon_record_ref, decon_enhanced,
 decon_result.
+turnaround; on `market` residual_sale_value; on `demand` rental_requests and region_forecast.
+The biomedical service fields (P9-11.4) are written by mr_biomed, keyed by `tag_key`: on `condition` pm_due, pm_code,
+certification_expiry, functional_test, electrical_safety, notes, correction_open, correction_ref, servicing_assessment; on
+`intervention` repair_estimate.
 
 A field a connector starts to write must be added here (with its type), or its facts are held as failed records.
 Types: text, ref (a reference string), date (ISO 8601 date or timestamp string), number, bool, list, object, any.
@@ -299,6 +303,16 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "decon_record_ref": "ref",
         "decon_enhanced": "bool",
         "decon_result": "text",
+        # plan 9 P9-11.4, the biomedical service system (extra adapter mr_biomed), keyed by tag_key
+        "pm_due": "date",
+        "pm_code": "text",
+        "certification_expiry": "date",
+        "functional_test": "object",
+        "electrical_safety": "object",
+        "notes": "list",
+        "correction_open": "bool",
+        "correction_ref": "ref",
+        "servicing_assessment": "text",
     },
     "demand": {
         "accepts_refurbished": "bool",
@@ -386,6 +400,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "scope": "text",
         "tasks": "list",
         "tasks_complete": "text",
+        "repair_estimate": "number",  # plan 9, P9-11.4: the biomedical service system
     },
     "market": {
         "buyer_demand": "number",
