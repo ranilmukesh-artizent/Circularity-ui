@@ -100,6 +100,7 @@ from sqlalchemy.orm import Session
 
 from di.core import policy
 from di.core.auth import Principal
+from di.repositories import adapter_registry
 from di.repositories.case_detail import (
     af_lease,
     as_rma,
@@ -611,6 +612,22 @@ def pack_stages(session: Session, c: Case) -> list[dict] | None:
     return [{"key": s.key, "label": s.label, "agent": s.agent, "autonomy": s.autonomy} for s in pack.stages]
 
 
+def not_connected(session: Session, c: Case) -> list[str]:
+    """The notes of the systems the case's pack needs a connector for (`adapter: needs_connector`) that have no live
+    connection for the case's org unit (plan 9, P9-9.13, UC-04): the `missing_note` of the pack's `missing` mapping, in pack
+    order. `[]` for a case with no template or with every such system connected; a test connection is not live."""
+    if not c.get("template"):
+        return []
+    pack = active_pack(session, c["template"], c["owner"])
+    gaps = {s.type for s in pack.data.systems if s.adapter == "needs_connector"}
+    return [
+        str(m["missing_note"])
+        for m in pack.data.mappings
+        if m.get("kind") == "missing" and m.get("source") in gaps and m.get("missing_note")
+        and not adapter_registry.live_system(session, str(m["source"]), c["owner"])
+    ]  # fmt: skip
+
+
 def device_block(c: Case, session: Session | None = None) -> dict | None:
     """The `device` block of a case opened from a received trade-in (plan 9, P9-6.4; facade `deviceView`): IMEI (none for a
     bulk lot), SKU, quote, partner, batch, received date and, for a lot, a line per device. None for any other case."""
@@ -670,6 +687,7 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
         "recordMatch": record_match.view(c, active_pack(session, c["template"], c["owner"])) if c.get("template") else None,
         "custody": list(c.get("custody") or []),
         "packStages": pack_stages(session, c),
+        "notConnected": not_connected(session, c),
     }
 
 

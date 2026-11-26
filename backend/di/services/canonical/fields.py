@@ -321,6 +321,9 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "sanitisation_record_ref": "ref",
         "disposal_certificate_ref": "ref",
         "recall_remedied": "list",  # P9-9.9: the remedied campaign ids
+        # plan 9 P9-9.13, the legacy body-shop system (a connector built from its API spec, no adapter): older damage history
+        "damage_history": "list",
+        "damage_repair_date": "date",
     },
     "demand": {
         "accepts_refurbished": "bool",

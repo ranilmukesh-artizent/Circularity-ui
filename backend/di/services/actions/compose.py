@@ -395,7 +395,7 @@ def _mapping_summary(ctx: CallContext, sid: str, vendor: str) -> dict[str, int]:
     for recs in discover._samples(s, sid).values():
         sample = [p for _, p in recs]
         profiles = [mapping_suggest.profile(sample, f) for f in mapping_suggest.field_paths(sample)]
-        for prop in mapping_suggest.suggest(profiles, sample, canon, memory=memory):
+        for prop in mapping_suggest.suggest(profiles, sample, canon, memory=memory, source_id=sid):
             counts["fields"] += 1
             counts[prop.band] += 1
     counts["asked_owner"] = len(mapping_decisions.open_questions(s, sid))
@@ -572,12 +572,44 @@ def test_run(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------- submit
+def _undecided(row: dict[str, Any], pack: Pack, ctx: CallContext) -> list[str]:
+    """The mapping fields the pack hints at (a field it knows to be unsure, P9-9.13, UC-03) in the stored sample of a source
+    the composition needs, that have no person's choice yet, or whose question the system owner has not answered. Each
+    needs a person's choice among the five; the composition cannot be sent for approval before."""
+    from di.connectors import discover, mapping_suggest
+
+    s, org = ctx.session, row["org_unit_id"]
+    reg_type = {(e.id, e.version): e.system_type for e in adapter_repo.entries(s, org)}
+    sources = _sources(s, org)
+    out: list[str] = []
+    for _name, kind, key in _wanted_systems(row, pack):
+        found = sorted((m, x["id"]) for x in sources if (m := _match(x, key, kind, reg_type)) is not None)
+        if not found:
+            continue
+        sid = found[0][1]
+        live = {(d["resource"] or "", d["src"]): d for d in mapping_decisions.of_source(s, sid)}
+        for res, recs in discover._samples(s, sid).items():
+            for f in mapping_suggest.field_paths([p for _, p in recs]):
+                if mapping_suggest.hint_of(sid, f) is None:
+                    continue
+                d = live.get((res, f)) or live.get(("", f))
+                if d is None:
+                    out.append(
+                        f"A mapping field ({f} of {sid}) has no decision yet: accept it, choose another field, accept it "
+                        "with a conversion, mark it not needed or ask the system owner."
+                    )
+                elif d["decision"] == "asked_owner":
+                    out.append(f"A mapping field ({f} of {sid}) is still waiting for its owner.")
+    return out
+
+
 @guard("compose.submit")
 def submit_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | tuple[str, str, dict[str, Any]] | None:
     if bad := _editable_guard(i, ctx):
         return bad
     row = _row(i, ctx)
-    left = core.blocking(row["steps"], _ops(row), _pack(row, ctx))
+    pack = _pack(row, ctx)
+    left = [*core.blocking(row["steps"], _ops(row), pack), *_undecided(row, pack, ctx)]
     return ("conflict", "Not ready to submit: " + " ".join(left), {"blocking": left}) if left else None
 
 

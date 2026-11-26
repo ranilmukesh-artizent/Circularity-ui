@@ -78,6 +78,11 @@ export function Disclosures({ r }: { r: { disclosures?: string[] } }) {
   if (!r.disclosures?.length) return null;
   return <p className="note" data-disclosures="route"><b>Disclose:</b> {r.disclosures.join('; ')}</p>;
 }
+/** The systems a pack needs a connector for that are not live yet (P9-9.13, UC-04): one muted line each, nothing when none. */
+export function NotConnected({ notes }: { notes?: string[] }) {
+  if (!notes?.length) return null;
+  return <>{notes.map((n) => <p key={n} className="note" data-not-connected="system">{n}</p>)}</>;
+}
 /** The service gate of a rental device (G-MED-SVC, P9-11.7, MR-06): why the unit fails a request, "Send a different unit: <tag>", and
  *  for a person who may (Admin, Engineer, Planner) "Book certification" for this unit. Nothing when the unit is in date. */
 export function BookCertification({ c }: { c: CaseRec }) {

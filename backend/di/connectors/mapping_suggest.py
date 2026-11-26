@@ -415,6 +415,8 @@ def _rule_for(p: FieldProfile, c: CanonicalField) -> str:
         return "code:grade"
     if c.type == "bool" and {"flag_01", "flag_YN"} & set(p.code_sets):
         return "code:bool"
+    if c.type == "list" and p.type != "list":
+        return "list"  # one value becomes a one-element list
     return c.type if c.type in ("date", "number") and p.type == c.type else "copy"
 
 
@@ -464,7 +466,33 @@ def suggest(
     *,
     memory: Mapping[str, str] | None = None,
     rerank: Reranker | None = None,
+    source_id: str | None = None,
 ) -> list[MappingProposal]:
-    """One proposal per source field (I-19). The proposals are drafts: nothing here accepts or saves one."""
+    """One proposal per source field (I-19). The proposals are drafts: nothing here accepts or saves one. With `source_id`, a
+    field the shipped packs hint at (`hint_of`) is proposed as the pack says (`_hinted`)."""
     cal = calibration()
-    return [_propose(p, raw_candidates(p, canonical, memory), rerank, cal) for p in source_fields]
+    by_target = {c.target: c for c in canonical}
+    out: list[MappingProposal] = []
+    for p in source_fields:
+        cands = raw_candidates(p, canonical, memory)
+        h = hint_of(source_id, p.name) if source_id else None
+        if h is not None and h.get("canonical") in by_target:
+            out.append(_hinted(p, cands, h, by_target[str(h["canonical"])], cal))
+        else:
+            out.append(_propose(p, cands, rerank, cal))
+    return out
+
+
+def _hinted(
+    p: FieldProfile, cands: list[_Scored], h: Mapping[str, Any], canon: CanonicalField, cal: Calibration
+) -> MappingProposal:
+    """A pack's hint (P9-9.13, UC-03): the pack names the target, its figure and its reason for a field it knows to be unsure
+    (two mileage fields, a scale of unknown direction). The pack's confidence is kept as it is, never raised by a model or a
+    memory hit, and the band is `check` at the lowest: a person chooses among the five. The candidates stay for the choice
+    "choose another field"; the model's rerank is not asked (the pack has the answer; it adds no caution a model could)."""
+    conf = round(float(h["confidence"]), 4)
+    band = _band(conf, cal)
+    return MappingProposal(
+        p.name, canon.target, conf, str(h["reason"]), _rule_for(p, canon), "rule",
+        [(s.canon.target, s.raw) for s in cands], "check" if band == "none" else band,
+    )  # fmt: skip
