@@ -80,6 +80,10 @@ export interface AgentProposal {
   at: string;
   /** The agent acted for this signed-in person: they may only reject it (proposal.accept refuses them, maker-checker). */
   own?: boolean;
+  /** What the agent's run knew (see HomeProposal): absent when the run recorded none. */
+  confidence?: number;
+  threshold?: number;
+  sources?: { fact: string; source: string; at?: string | null }[];
 }
 
 /** Shown in place of Accept on a proposal the person's own agent prepared. */

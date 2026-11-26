@@ -8,7 +8,7 @@ import { Suspense } from 'react';
 import { proposals } from '../../api/home';
 import { ErrorBoundary } from '../../components/Boundary';
 import { Icon } from '../../components/Icon';
-import { orderProposals, ProposalRow, type ProposalContext } from '../../components/ProposalRow';
+import { orderProposals, ProposalItems, type ProposalContext } from '../../components/ProposalRow';
 import { heldForFlow } from '../../pages/modeler/flowBrief';
 
 function Strip({ ctx, skipFlow }: { ctx: ProposalContext; skipFlow?: number }) {
@@ -25,9 +25,7 @@ function Strip({ ctx, skipFlow }: { ctx: ProposalContext; skipFlow?: number }) {
         <span>Waiting for you ({list.length})</span>
         <Icon name="chevD" className="as-chev" />
       </summary>
-      <ul className="as-list" aria-label="Waiting for you">
-        {list.map((p) => <ProposalRow key={p.id} p={p} id={'asp-' + p.id} />)}
-      </ul>
+      <ProposalItems list={list} idPrefix="asp-" label="Waiting for you" />
     </details>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkItem } from '../../api/mywork';
-import { conflictGroupTitle, countsByKind, dueLabel, groupConflicts, meaningful, nonReturnLine, readable, sortItems } from './mywork';
+import { conflictGroupTitle, conflictSummary, countsByKind, dueLabel, groupConflicts, meaningful, nonReturnLine, readable, sortForPerson, sortItems } from './mywork';
 
 const item = (o: Partial<WorkItem>): WorkItem => ({
   id: 'w:1', kind: 'exception', case_id: null, title: 't', cause: null, action: null, owner: 'Planner', due: null, overdue: false, priority: 100, go: null, ...o,
@@ -68,5 +68,22 @@ describe('My work text (UI fix 29)', () => {
     expect(meaningful('.')).toBe('');
     expect(meaningful(null)).toBe('');
     expect(meaningful('Demand cancelled.')).toBe('Demand cancelled.');
+  });
+});
+
+describe('My work order (UI fix 39, F20)', () => {
+  it('puts what only this person decides first and the conflicts last', () => {
+    const kinds = sortForPerson([
+      item({ id: 'c:1', kind: 'conflict', priority: 1 }),
+      item({ id: 'w:2', kind: 'exception', priority: 1 }),
+      item({ id: 'p:3', kind: 'proposal', priority: 100 }),
+      item({ id: 'a:4', kind: 'approval', priority: 100 }),
+      item({ id: 'w:5', kind: 'needs_info', priority: 100 }),
+    ]).map((i) => i.kind);
+    expect(kinds).toEqual(['approval', 'proposal', 'needs_info', 'exception', 'conflict']);
+  });
+  it('words the conflict pile', () => {
+    expect(conflictSummary(154)).toBe('154 data conflicts hold decisions');
+    expect(conflictSummary(1)).toBe('1 data conflict holds a decision');
   });
 });

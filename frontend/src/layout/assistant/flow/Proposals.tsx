@@ -1,6 +1,6 @@
 import type { HomeProposal } from '../../../api/home';
 import type { ModelerScreen } from '../../../api/types';
-import { ProposalRow } from '../../../components/ProposalRow';
+import { ProposalItems } from '../../../components/ProposalRow';
 import { AppliedLine } from './AppliedLine';
 import { flowSurface, pendingOfSuggestion, setPending, useChange } from './changeStore';
 import { PendingCard } from './PendingCard';
@@ -28,9 +28,7 @@ export function Proposals({ s, held }: { s: ModelerScreen; held: HomeProposal[] 
         <Row key={g.dim + g.value + g.path} icon="users" tag="Retrieved" go="Review" onGo={() => open(i)}>{g.text}</Row>
       ))}
       {held.length > 0 && (
-        <ul className="as-list" aria-label="Held for you">
-          {held.map((p) => <ProposalRow key={p.id} p={p} id={'asf-' + p.id} />)}
-        </ul>
+        <ProposalItems list={held} idPrefix="asf-" label="Held for you" />
       )}
       {!n && !st.applied && <p className="as-empty">No proposals. Describe a change below and it is checked and simulated before anything is saved.</p>}
     </Sec>

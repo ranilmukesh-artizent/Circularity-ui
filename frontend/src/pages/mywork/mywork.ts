@@ -71,5 +71,19 @@ export function meaningful(text: string | null | undefined): string {
   return text && /[\p{L}\p{N}]/u.test(text) ? text : '';
 }
 
+/** Who can do it: what only this person can decide first (approvals, then the agents' proposals held for them, then
+ *  questions put to them), then exceptions and steps, and the data conflicts last (F20). */
+const RANK: Record<WorkKind, number> = { approval: 0, proposal: 1, needs_info: 2, exception: 3, task: 4, conflict: 5 };
+
+/** By who can do it (RANK), then priority, then due time. The input is not changed. */
+export function sortForPerson(items: WorkItem[]): WorkItem[] {
+  return [...items].sort((a, b) => RANK[a.kind] - RANK[b.kind] || a.priority - b.priority || (a.due ?? '9999').localeCompare(b.due ?? '9999'));
+}
+
+/** The summary row for a pile of conflicts, "154 data conflicts hold decisions". */
+export function conflictSummary(n: number): string {
+  return `${n} data ${n === 1 ? 'conflict holds a decision' : 'conflicts hold decisions'}`;
+}
+
 /** How many rows My work draws at first, and how many each "Show more" adds (the list holds hundreds). */
 export const PAGE = 50;

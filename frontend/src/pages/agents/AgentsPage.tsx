@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import {
-  acceptProposal, agentCredentials, findTools, issueCredential, revokeCredential, OWN_PROPOSAL_NOTE, rejectProposal, stageLabel, startRun, updateAgent, useAgents,
+  agentCredentials, findTools, issueCredential, revokeCredential, stageLabel, startRun, updateAgent, useAgents,
   type AgentCredential, type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy, type Playbook,
 } from '../../api/agents'; // prettier-ignore
 import { useBackend } from '../../api/useBackend';
@@ -10,6 +10,7 @@ import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import './agents.css';
 import { AgentsBusiness } from './AgentsBusiness';
+import { ProposalItems } from '../../components/ProposalRow';
 import { LlmModelsPanel } from './LlmModelsPanel';
 import { OutsideClients } from './OutsideClients';
 import { ModelsPanel } from './ModelsPanel';
@@ -256,71 +257,19 @@ function EditModal({ s, agent, busy, onClose, onSave }: {
   );
 }
 
+/** The held proposals as the shared ProposalRow cards (the same card as Home and the assistant): what accepting does,
+ *  the hold reasons, bulk accept for the same reason; Accept runs as the signed-in person, Reject asks why. */
 function Proposals({ list }: { list: AgentProposal[] }) {
-  const action = useAction();
-  const [rejecting, setRejecting] = useState<AgentProposal | null>(null);
-  const [reason, setReason] = useState('');
-  const accept = async (p: AgentProposal) => {
-    const r = await action.run(() => acceptProposal(p.id));
-    if (r.ok) toast(`Proposal ${p.id} accepted: ${p.title} ran as you.`);
-  };
-  const reject = async () => {
-    if (!rejecting) return;
-    const r = await action.run(() => rejectProposal(rejecting.id, reason.trim()));
-    if (!r.ok) return;
-    toast(`Proposal ${rejecting.id} rejected.`);
-    setRejecting(null);
-    setReason('');
-  };
   return (
     <section className="sect" id="agProps">
       <div className="sh">
         <h2>Proposals waiting for you</h2>
         <span className="note">An agent prepared these; nothing runs until a person accepts it</span>
       </div>
-      <div className="panel">
-        {list.length ? (
-          <div className="tw">
-            <table className="t static">
-              <thead><tr><th>#</th><th>Agent</th><th>Action</th><th>Held because</th><th>Case</th><th>Prepared</th><th></th></tr></thead>
-              <tbody>
-                {list.map((p) => (
-                  <tr key={p.id} id={'agp-' + p.id}>
-                    <td className="num">{p.id}</td>
-                    <td>{p.agentName}</td>
-                    <td>{p.title} <span className="note mono">{p.action}</span>{p.why && <span className="note">{p.why}</span>}</td>
-                    <td data-reasons>{p.reasons?.length ? p.reasons.map((r) => <span key={r.reason + r.detail} className={'chip ' + (r.reason === 'taint' || r.reason === 'destructive' ? 'bad' : 'line')} title={r.reason}>{r.detail}</span>) : <span className="note">—</span>}</td>
-                    <td>{p.case_id ? <a href={caseHref(p.case_id)}>{p.case_id}</a> : <span className="note">—</span>}</td>
-                    <td className="num nowrap">{p.at.slice(0, 16).replace('T', ' ')}</td>
-                    <td className="nowrap">
-                      {p.own ? <span className="note">{OWN_PROPOSAL_NOTE}</span> : <button className="btn sm pri" disabled={action.pending} onClick={() => accept(p)}>Accept</button>}{' '}
-                      <button className="btn sm" disabled={action.pending} onClick={() => setRejecting(p)}>Reject</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="pb"><div className="empty"><b>Nothing waiting</b>Proposals that agents hold for a person you may decide show here.</div></div>
-        )}
-      </div>
-      {rejecting && (
-        <Modal
-          title={'Reject proposal ' + rejecting.id}
-          onClose={() => setRejecting(null)}
-          foot={
-            <>
-              <button className="btn" onClick={() => setRejecting(null)}>Cancel</button>
-              <button className="btn pri" disabled={action.pending} onClick={reject}>Reject</button>
-            </>
-          }
-        >
-          <div className="fld">
-            <label htmlFor="agp-reason">Reason for the agent's owner</label>
-            <textarea id="agp-reason" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
-          </div>
-        </Modal>
+      {list.length ? (
+        <ProposalItems list={list.map((p) => ({ ...p, why: p.why ?? '' }))} idPrefix="agp-" label="Proposals waiting for you" className="as-list" />
+      ) : (
+        <div className="panel"><div className="pb"><div className="empty"><b>Nothing waiting</b>Proposals that agents hold for a person you may decide show here.</div></div></div>
       )}
     </section>
   );

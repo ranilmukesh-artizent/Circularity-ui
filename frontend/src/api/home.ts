@@ -165,6 +165,10 @@ export interface HomeProposal {
   input: Record<string, unknown>; case_id: string | null; run_id: string | null; at: string;
   /** The agent acted for this signed-in person: they may only reject it (proposal.accept refuses them, maker-checker). */
   own?: boolean;
+  /** What the agent's run knew: its confidence and threshold (0 to 1) and the sources behind it. Absent when the run recorded none. */
+  confidence?: number;
+  threshold?: number;
+  sources?: { fact: string; source: string; at?: string | null }[];
 }
 export const proposals = (): HomeProposal[] => cached<HomeProposal[]>(H + '/proposals');
 /** Run the action the agent prepared, as the signed-in person. */

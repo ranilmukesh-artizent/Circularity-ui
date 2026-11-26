@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react';
-import { acceptProposal, rejectProposal } from '../../api/agents';
 import { isFraudItem } from '../../api/fraud';
 import { assignItem, draftedBy, draftOwner, explainException, resolveItem, useMyWork, type ExceptionDraft, type WorkItem, type WorkKind } from '../../api/mywork';
 import { accounts, can, canPage } from '../../api/session';
+import { proposals as heldProposals } from '../../api/home';
 import { postNonReturnFee } from '../../api/toolFleet';
 import { useBackend } from '../../api/useBackend';
 import { Modal } from '../../components/Overlay';
+import { ProposalItems } from '../../components/ProposalRow';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { PackKpiTiles } from '../analytics/PackView';
 import { AgeingCard } from './AgeingCard';
 import { LotsCard } from './LotsCard';
-import { conflictGroupTitle, countsByKind, dueLabel, groupConflicts, KIND_LABEL, KINDS, meaningful, nonReturnLine, PAGE, proposalId, readable, sortItems, workId } from './mywork';
+import { conflictSummary, countsByKind, dueLabel, KIND_LABEL, KINDS, meaningful, nonReturnLine, PAGE, readable, sortForPerson, workId } from './mywork';
 
-type Dialog = { kind: 'resolve' | 'assign' | 'reject'; item: WorkItem };
+type Dialog = { kind: 'resolve' | 'assign'; item: WorkItem };
 
 /** My work (plan 9, P9-1.7): everything that waits for the signed-in person, in one list. */
 export function MyWorkPage() {
@@ -28,21 +29,42 @@ export function MyWorkPage() {
   }, []);
   const packs = [...new Set(s.kpis.map((k) => k.pack))];
   const counts = countsByKind(s.items);
-  const picked = sortItems(s.items).filter((i) => kind === 'all' || (kind === 'fraud' ? isFraudItem(i) : i.kind === kind));
-  // in "All", the conflicts are one row below everything else; the Conflicts chip lists them one by one
-  const grouped = kind === 'all' ? groupConflicts(picked) : { rows: picked, conflicts: [] as WorkItem[] };
-  const rows = grouped.rows;
-  const conflictGo = grouped.conflicts.every((c) => c.go === grouped.conflicts[0]?.go) ? grouped.conflicts[0]?.go : null;
-  const accept = async (i: WorkItem) => {
-    const id = proposalId(i);
-    if (id === null) return;
-    const r = await action.run(() => acceptProposal(id));
-    if (r.ok) toast('Done: the action ran as you.');
-  };
+  const shown = sortForPerson(s.items).filter((i) => kind === 'all' || (kind === 'fraud' ? isFraudItem(i) : i.kind === kind));
+  // F20: in the full list the data conflicts are one summary row at the end, so what only this person can do shows first;
+  // the Conflicts chip lists them one by one
+  const conflicts = kind === 'all' ? shown.filter((i) => i.kind === 'conflict') : [];
+  const rows = kind === 'all' ? shown.filter((i) => i.kind !== 'conflict') : shown;
+  // the agents' proposals are the shared card (what accepting does, bulk accept), from Home's list of the same proposals
+  const heldIds = new Set(rows.filter((i) => i.kind === 'proposal').map((i) => i.id));
+  const held = heldProposals().filter((p) => heldIds.has('p:' + p.id));
+  const lead = rows.filter((i) => i.kind === 'approval');
+  const rest = rows.filter((i) => i.kind !== 'approval' && i.kind !== 'proposal');
   const postFee = async (line: string) => {
     const r = await action.run(() => postNonReturnFee(line));
     if (r.ok) toast('Fee posted.');
   };
+  const renderRow = (i: WorkItem) => (
+    <li key={i.id} data-kind={i.kind} data-id={i.id}>
+      <span>
+        <span className="chip line" style={{ marginRight: 6 }}>{KIND_LABEL[i.kind]}</span>
+        <b>{readable(i.title)}</b>
+        {i.case_id && <span className="note">Case <a href={'#/product/' + i.case_id}>{i.case_id}</a></span>}
+        {meaningful(i.cause) && <span className="note">{readable(meaningful(i.cause))}</span>}
+        {i.action && <span className="note">Next: {i.action}</span>}
+        {i.kind === 'exception' && workId(i) !== null && <AssistantDraft id={workId(i) as number} />}
+        <span className="note">
+          For {i.owner}
+          {i.due && <> · <span className={'chip ' + (i.overdue ? 'bad' : 'line')}>{dueLabel(i)}</span></>}
+        </span>
+        <span className="row">
+          {workId(i) !== null && <button className="btn sm pri" disabled={action.pending} onClick={() => setDialog({ kind: 'resolve', item: i })}>Resolve</button>}
+          {workId(i) !== null && <button className="btn sm" disabled={action.pending} onClick={() => setDialog({ kind: 'assign', item: i })}>Assign</button>}
+          {nonReturnLine(i) !== null && <button className="btn sm pri" disabled={action.pending} onClick={() => postFee(nonReturnLine(i) as string)}>Post the fee</button>}
+          {i.go && <a className="btn sm" href={'#/' + i.go}>Open</a>}
+        </span>
+      </span>
+    </li>
+  );
   return (
     <div className="frpage" id="mywork">
       <div className="phead">
@@ -73,50 +95,36 @@ export function MyWorkPage() {
           Fraud and compliance {s.items.filter(isFraudItem).length}
         </button>
       </div>
-      {!rows.length && !grouped.conflicts.length && <div className="callout info">Nothing waits for you here.</div>}
-      <ul className="frbl" aria-label="My work">
-        {rows.slice(0, limit).map((i) => (
-          <li key={i.id} data-kind={i.kind} data-id={i.id}>
-            <span>
-              <span className="chip line" style={{ marginRight: 6 }}>{KIND_LABEL[i.kind]}</span>
-              <b>{readable(i.title)}</b>
-              {i.case_id && <span className="note">Case <a href={'#/product/' + i.case_id}>{i.case_id}</a></span>}
-              {meaningful(i.cause) && <span className="note">{readable(meaningful(i.cause))}</span>}
-              {i.action && <span className="note">Next: {i.action}</span>}
-              {i.kind === 'exception' && workId(i) !== null && <AssistantDraft id={workId(i) as number} />}
-              <span className="note">
-                For {i.owner}
-                {i.due && <> · <span className={'chip ' + (i.overdue ? 'bad' : 'line')}>{dueLabel(i)}</span></>}
-              </span>
-              <span className="row">
-                {workId(i) !== null && <button className="btn sm pri" disabled={action.pending} onClick={() => setDialog({ kind: 'resolve', item: i })}>Resolve</button>}
-                {workId(i) !== null && <button className="btn sm" disabled={action.pending} onClick={() => setDialog({ kind: 'assign', item: i })}>Assign</button>}
-                {proposalId(i) !== null && <button className="btn sm pri" disabled={action.pending} onClick={() => accept(i)}>Accept</button>}
-                {proposalId(i) !== null && <button className="btn sm" disabled={action.pending} onClick={() => setDialog({ kind: 'reject', item: i })}>Reject</button>}
-                {nonReturnLine(i) !== null && <button className="btn sm pri" disabled={action.pending} onClick={() => postFee(nonReturnLine(i) as string)}>Post the fee</button>}
-                {i.go && <a className="btn sm" href={'#/' + i.go}>Open</a>}
-              </span>
-            </span>
-          </li>
-        ))}
-        {grouped.conflicts.length > 0 && (
-          <li data-kind="conflict" data-id="conflicts">
+      {!rows.length && !conflicts.length && !held.length && <div className="callout info">Nothing waits for you here.</div>}
+      {lead.length > 0 && <ul className="frbl" aria-label="My work">
+        {lead.slice(0, limit).map(renderRow)}
+      </ul>}
+      {held.length > 0 && (
+        <section aria-label="Proposals held for you" style={{ margin: '12px 0' }}>
+          <p className="note" style={{ margin: '0 0 8px' }}>Agents prepared these. Nothing runs until you accept; accepting runs the action as you.</p>
+          <ProposalItems list={held} idPrefix="mwp-" label="Proposals held for you" />
+        </section>
+      )}
+      <ul className="frbl" aria-label="Other work">
+        {rest.slice(0, Math.max(0, limit - lead.length)).map(renderRow)}
+        {conflicts.length > 0 && (
+          <li data-kind="conflict" data-group="conflicts">
             <span>
               <span className="chip line" style={{ marginRight: 6 }}>{KIND_LABEL.conflict}</span>
-              <b>{conflictGroupTitle(grouped.conflicts.length)}</b>
-              <span className="note">They hold decisions until a source is chosen.</span>
+              <b>{conflictSummary(conflicts.length)}</b>
+              <span className="note">Sources disagree on a field of an asset. A data owner settles them in the Conflict Queue.</span>
               <span className="row">
-                <a className="btn sm pri" href={'#/' + (conflictGo ?? 'integration/conflicts')}>Open the conflict queue</a>
-                <button className="btn sm" onClick={() => setKind('conflict')}>List them here</button>
+                <a className="btn sm" href="#/integration/conflicts">Review in Conflict Queue →</a>
+                <button className="btn sm ghost" onClick={() => setKind('conflict')}>List them here</button>
               </span>
             </span>
           </li>
         )}
       </ul>
-      {rows.length > limit && (
+      {lead.length + rest.length > limit && (
         <div className="row" style={{ justifyContent: 'space-between', margin: '12px 0' }}>
-          <span className="note">Showing {limit} of {rows.length}</span>
-          <button className="btn sm" onClick={() => setLimit(limit + PAGE)}>Show {Math.min(PAGE, rows.length - limit)} more</button>
+          <span className="note">Showing {limit} of {lead.length + rest.length}</span>
+          <button className="btn sm" onClick={() => setLimit(limit + PAGE)}>Show {Math.min(PAGE, lead.length + rest.length - limit)} more</button>
         </div>
       )}
       {dialog && <ItemDialog d={dialog} onClose={() => setDialog(null)} />}
@@ -156,21 +164,18 @@ function ItemDialog({ d, onClose }: { d: Dialog; onClose: () => void }) {
   const people = accounts();
   const submit = async () => {
     const wid = workId(d.item);
-    const pid = proposalId(d.item);
     const r =
       d.kind === 'resolve' && wid !== null
         ? await action.run(() => resolveItem(wid, d.item.kind === 'needs_info' ? 'answered' : 'resolved', text.trim()), { inline: setErr })
         : d.kind === 'assign' && wid !== null
           ? await action.run(() => assignItem(wid, account), { inline: setErr })
-          : pid !== null
-            ? await action.run(() => rejectProposal(pid, text.trim()), { inline: setErr })
-            : null;
+          : null;
     if (!r?.ok) return;
-    toast(d.kind === 'resolve' ? 'Resolved.' : d.kind === 'assign' ? 'Assigned.' : 'Proposal rejected.');
+    toast(d.kind === 'resolve' ? 'Resolved.' : 'Assigned.');
     onClose();
   };
-  const title = { resolve: 'Resolve', assign: 'Assign', reject: 'Reject' }[d.kind] + ': ' + d.item.title;
-  const ready = d.kind === 'assign' ? !!account : d.kind === 'reject' || (d.kind === 'resolve' && d.item.kind === 'needs_info') ? !!text.trim() : true;
+  const title = { resolve: 'Resolve', assign: 'Assign' }[d.kind] + ': ' + d.item.title;
+  const ready = d.kind === 'assign' ? !!account : d.item.kind === 'needs_info' ? !!text.trim() : true;
   return (
     <Modal
       title={title}
@@ -178,7 +183,7 @@ function ItemDialog({ d, onClose }: { d: Dialog; onClose: () => void }) {
       foot={
         <>
           <button className="btn" onClick={onClose}>Cancel</button>
-          <button className="btn pri" disabled={action.pending || !ready} onClick={submit}>{d.kind === 'assign' ? 'Assign' : d.kind === 'reject' ? 'Reject' : 'Resolve'}</button>
+          <button className="btn pri" disabled={action.pending || !ready} onClick={submit}>{d.kind === 'assign' ? 'Assign' : 'Resolve'}</button>
         </>
       }
     >
@@ -193,7 +198,7 @@ function ItemDialog({ d, onClose }: { d: Dialog; onClose: () => void }) {
           </>
         ) : (
           <>
-            <label htmlFor="mw-note">{d.kind === 'reject' ? "Why not? The agent's owner sees this." : 'What was done? Add a note for the record.'}</label>
+            <label htmlFor="mw-note">What was done? Add a note for the record.</label>
             <textarea id="mw-note" maxLength={300} value={text} onChange={(e) => { setText(e.target.value); setErr(''); }} />
           </>
         )}

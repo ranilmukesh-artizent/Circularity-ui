@@ -131,3 +131,42 @@ def test_holding_emits_a_journal_event_for_the_live_stream():
         ).all()
     assert ev.case_id == CASE and ev.payload == {"id": pid, "action": "evidence.request", "agent": AGENT["id"]}
     assert streamed and streamed[-1].tenant is not None  # filtered by the case's tenant on the stream
+
+
+def test_row_carries_what_the_run_knew_and_nothing_made_up():
+    """UI fix 39 (E13): confidence, threshold and sources come from the run's stage records; a proposal without a run, or a
+    run that recorded none, has none of the three keys (the screen shows nothing for it)."""
+    import json
+
+    bare = insert("evidence.request", CASE, {"case_id": CASE})
+    src = [{"fact": "Grade", "source": "Inspection app", "at": "2026-10-01T00:00:00+00:00"}]
+    with SessionLocal() as s:
+        s.execute(
+            text("INSERT INTO agent_run (id, agent, playbook, case_id, status) VALUES (:i, :a, :p, :c, :st)"),
+            {"i": "run-e13", "a": AGENT["id"], "p": "stage_chain", "c": CASE, "st": "waiting"},
+        )
+        s.execute(
+            text(
+                "INSERT INTO agent_stage_record "
+                "(run_id, stage, case_id, agent, kind, autonomy, status, confidence, threshold, sources) "
+                "VALUES ('run-e13', 'condition', :c, :a, 'deterministic', 'limits', 'held', 0.62, 0.75, CAST(:src AS jsonb))"
+            ),
+            {"a": AGENT["id"], "c": CASE, "src": json.dumps(src)},
+        )
+        pid = s.execute(
+            text(
+                "INSERT INTO agent_proposal (agent, action, input, case_id, run_id, status, created_at) "
+                "VALUES (:a, 'evidence.request', CAST(:i AS jsonb), :c, 'run-e13', 'pending', now()) RETURNING id"
+            ),
+            {"a": AGENT["id"], "i": json.dumps({"case_id": CASE}), "c": CASE},
+        ).scalar_one()
+        s.commit()
+    try:
+        rows = {x["id"]: x for x in inbox("planner-a")}
+        assert rows[pid]["confidence"] == 0.62 and rows[pid]["threshold"] == 0.75
+        assert rows[pid]["sources"] == [{"fact": "Grade", "source": "Inspection app", "at": "2026-10-01T00:00:00+00:00"}]
+        assert not {"confidence", "threshold", "sources"} & set(rows[bare])
+    finally:
+        with SessionLocal() as s:
+            s.execute(text("DELETE FROM agent_run WHERE id = 'run-e13'"))
+            s.commit()
