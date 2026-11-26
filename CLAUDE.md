@@ -58,6 +58,7 @@ Don't edit them; apply these adaptations when you use them:
 | mcp-builder | anthropics | Its `scripts/` folder was removed (its evaluation sent tool results to an external API). This repo's MCP server is Python (`backend/di/mcp/`), so use the Python guide. |
 | frontend-design | anthropics | Work from the existing brand tokens (`frontend/src/styles/`, `frontend/src/layout/app.css`); never change a demo number or text, golden files or the generated demo stylesheet. Plan per `docs/agents/plans/10-unified-assistant-ux.md`. |
 | web-interface-guidelines | vercel-labs | Review any frontend change against it; report file:line. |
+| emil-design-eng | emilkowalski | Interaction polish and motion restraint only; skip its "Initial Response" line. No motion on actions people repeat all day. |
 
 - A cross-reference like `superpowers:test-driven-development` means the project skill of the same name, without
   the prefix.
