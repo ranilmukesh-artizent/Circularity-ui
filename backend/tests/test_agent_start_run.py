@@ -81,8 +81,8 @@ def test_worker_runs_on_an_opened_case():
     assert row["state"]["waiting"] == "proposal"
 
 
-def test_only_admin_starts_runs():
-    for user in ("planner-a", "developer"):
+def test_only_admin_and_run_agent_roles_start_runs():
+    for user in ("developer", "executive"):
         r = call("agent.startRun", {"agent": AGENT["id"], "case_id": CASE}, user)
         assert r["ok"] is False and r["error"]["code"] == "out_of_scope", (user, r)
 

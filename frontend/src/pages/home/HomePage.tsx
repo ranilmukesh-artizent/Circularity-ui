@@ -18,6 +18,7 @@ import { Ring } from '../../components/kit/Ring';
 import { Segmented } from '../../components/kit/Segmented';
 import { StatusPill } from '../../components/kit/StatusPill';
 import { Timeline } from '../../components/kit/Timeline';
+import { AgentActivityLink } from './AgentActivityLink';
 import { AttentionCard } from './AttentionCard';
 import { HomeKpi } from './HomeKpi';
 import { ProposalsCard } from './ProposalsCard';
@@ -402,6 +403,7 @@ export function HomePage() {
         <aside className="frhside">
           <RightTabs />
           <ProposalsCard />
+          <AgentActivityLink />
           {attn && <AttentionCard head={attn.head} line={attn.line} btn={attn.btn} onClick={() => nav('/' + attn.go)} />}
           <QuickActions />
         </aside>

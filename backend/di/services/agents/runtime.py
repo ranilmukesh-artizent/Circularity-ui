@@ -107,7 +107,7 @@ def _enqueue(s: Session, run_id: str) -> None:
     jobs.enqueue(s, JOB, {"run_id": run_id}, dedupe_key=f"{JOB}:{run_id}")
 
 
-def start(s: Session, agent: str, playbook: str, case_id: str | None, *, account: str) -> str:
+def start(s: Session, agent: str, playbook: str, case_id: str | None, *, account: str, propose_only: bool = False) -> str:
     llm = playbook not in PLAYBOOKS and playbook_versions.known(playbook)
     if playbook not in PLAYBOOKS and not llm:
         raise ValueError(f"unknown playbook {playbook!r}")
@@ -125,7 +125,7 @@ def start(s: Session, agent: str, playbook: str, case_id: str | None, *, account
             "a": agent,
             "p": playbook,
             "c": case_id,
-            "st": json.dumps({"account": account} | first),
+            "st": json.dumps({"account": account} | ({"propose_only": True} if propose_only else {}) | first),
         },
     )
     _enqueue(s, run_id)

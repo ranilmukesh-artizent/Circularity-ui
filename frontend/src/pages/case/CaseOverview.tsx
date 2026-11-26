@@ -15,6 +15,7 @@ import { ToolFleetPanel } from './toolfleet/ToolFleetPanel';
 import { approveGuarded, caseActions, runNextStep } from './caseActions';
 import { AgentRunPanel } from './CaseDrawers';
 import { useCaseUi } from './CaseContext';
+import { RunAgentPanel } from './RunAgentPanel';
 import { custodyLines, recordMatchLine } from './custody';
 
 const href = (id: string, n: number | 'overview' | 'full') => '#/' + stageHref(id, n);
@@ -117,6 +118,7 @@ export function Overview({ c }: { c: CaseRec }) {
               <div className="pb"><p className="note" style={{ margin: 0 }}>{agents}</p></div>
             </section>
           )}
+          <RunAgentPanel caseId={id} />
           <AgentRunPanel c={c} ui={ui} />
           {c.template === 'tool_fleet' && ((c as CaseRec & { flow?: string }).flow === 'contract_refresh' ? <RefreshPanel caseId={id} /> : <ToolFleetPanel caseId={id} />)}
           {(matchLine || trail.length > 0) && (

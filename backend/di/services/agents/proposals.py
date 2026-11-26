@@ -82,6 +82,15 @@ def decide(s: Session, pid: int, status: str, by: str, at: datetime, result: dic
     )
 
 
+def run_holds(s: Session, run_id: str | None) -> bool:
+    """The run was started by a person who may only have it prepare (agent.startRun for a Planner or Approver, gap 15):
+    every write of the run holds for a person, whatever the agent's own autonomy is."""
+    if not run_id:
+        return False
+    st = s.execute(text("SELECT state FROM agent_run WHERE id = :i"), {"i": run_id}).scalar_one_or_none()
+    return bool(isinstance(st, dict) and st.get("propose_only"))
+
+
 def own(p: dict, account: policy.Account) -> bool:
     """The person the agent acted for (audit F3a): they do not accept their own agent's proposal."""
     return bool(p.get("requested_by")) and p["requested_by"] == account.id

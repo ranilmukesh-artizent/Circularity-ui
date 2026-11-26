@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { acceptProposal, rejectProposal } from '../../api/agents';
 import { isFraudItem } from '../../api/fraud';
 import { assignItem, draftedBy, draftOwner, explainException, resolveItem, useMyWork, type ExceptionDraft, type WorkItem, type WorkKind } from '../../api/mywork';
-import { accounts, can } from '../../api/session';
+import { accounts, can, canPage } from '../../api/session';
 import { postNonReturnFee } from '../../api/toolFleet';
 import { useBackend } from '../../api/useBackend';
 import { Modal } from '../../components/Overlay';
@@ -48,6 +48,7 @@ export function MyWorkPage() {
         <div>
           <h1>My work</h1>
           <p>Exceptions, approvals, questions and proposals that wait for you, most urgent first.</p>
+          {canPage('agent-activity') && <p><a href="#/agent-activity">See what the agents did on your cases</a></p>}
         </div>
       </div>
       {packs.map((k) => (
