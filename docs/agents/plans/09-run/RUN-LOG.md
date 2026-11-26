@@ -211,3 +211,8 @@ unattended". Times are local (IST).
 | 26 Nov 20:27 | P9-13.7 merged. model.fit/list for every pack file; device price bands go through intake_predictor. No factor ships by default. |
 | 26 Nov 20:29 | P9-13.1 merged. Close step (retire/transfer) appended to routes with asset_effect; S/4 asset endpoints modelled, not verified against SAP docs. |
 | 26 Nov 20:36 | P9-13.9 merged. Owner deactivation refuses /oauth/token and every agent-token request until reactivated (fix b589f1d8: the iat check was second-granular). Migration 0060 filled: re-apply needed on existing databases. |
+| 26 Nov 21:00 | P9-13.2 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
+| 26 Nov 21:00 | P9-12.2 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
+| 26 Nov 21:00 | P9-13.8 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
+| 26 Nov 21:00 | P9-13.4 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
+| 26 Nov 21:00 | P9-13.5 merged. Merged by the lead 26 Nov; see the commit body for decisions. |

@@ -330,6 +330,11 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-26 | 09 · P9-13.7 calibration and model candidates across all packs | this commit | wt-check 9 own tests + pack_format, standard_valuer, tn_follow_through: passed except test_device_template_equals_po_golden (lane B 6.13, known); lint ok | done |
 | 2026-11-26 | 09 · P9-13.1 fixed-asset retirement and transfer instructions | this commit | writer: test_x13_asset_retirement + full wt-check ok; source-sim test_s4_assets 6 passed (private db); lead: uc/tn/mr follow-through fixed in fa5cbc5e (wt-check 2: all passed) | done |
 | 2026-11-26 | 09 · P9-13.9 per-agent credentials with client credentials | this commit | wt-check 9 test_agent_credentials, test_auth, test_access_matrix, test_agent_registry: all passed; lint ok | done |
+| 2026-11-26 | 09 · P9-13.2 lease residual gain or loss on the case | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
+| 2026-11-26 | 09 · P9-12.2 iTAD pack with manifest reconciliation | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
+| 2026-11-26 | 09 · P9-13.8 model quality, drift and cadence across packs | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
+| 2026-11-26 | 09 · P9-13.4 customer credit settlement with ERP match | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
+| 2026-11-26 | 09 · P9-13.5 close only with reporting evidence | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
 
 ## Decisions taken without the user (to review)
 

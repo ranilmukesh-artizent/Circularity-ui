@@ -1062,7 +1062,7 @@ each story went.
 - [ ] P9-11.18 Medical rental demo smoke
 - [ ] P9-11.19 Phase 11 gate
 - [x] P9-12.1 Extend the standard valuer with conditions and decay
-- [ ] P9-12.2 ITAD pack with manifest reconciliation
+- [x] P9-12.2 ITAD pack with manifest reconciliation
 - [ ] P9-12.3 ITAD sanitisation per serial and residual decay
 - [ ] P9-12.4 Rental fleet pack with re-rent rebuild or sell
 - [ ] P9-12.5 Rental fleet damage recovery and branch transfer
@@ -1075,13 +1075,13 @@ each story went.
 - [ ] P9-12.12 Next-segments demo smoke
 - [ ] P9-12.13 Phase 12 gate
 - [x] P9-13.1 Fixed-asset retirement and transfer instructions
-- [ ] P9-13.2 Lease residual gain or loss on the case
+- [x] P9-13.2 Lease residual gain or loss on the case
 - [x] P9-13.3 Downstream vendor qualification with certificate dates
-- [ ] P9-13.4 Customer credit settlement with ERP match
-- [ ] P9-13.5 Close only with reporting evidence
+- [x] P9-13.4 Customer credit settlement with ERP match
+- [x] P9-13.5 Close only with reporting evidence
 - [ ] P9-13.6 Core credit settlement with ERP match
 - [x] P9-13.7 Calibration and model candidates across all packs
-- [ ] P9-13.8 Model quality, drift and cadence across packs
+- [x] P9-13.8 Model quality, drift and cadence across packs
 - [x] P9-13.9 Per-agent credentials with client credentials
 - [ ] P9-13.10 OAuth for outside MCP clients
 - [ ] P9-13.11 Final end-to-end smoke over the five packs
