@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://circ:circ@localhost:5432/di"
     source_sim_url: str = "http://localhost:8100"
     worker_poll_seconds: float = 1.0
+    # plan 5: OpenTelemetry is off unless OTEL_EXPORTER_OTLP_ENDPOINT is set (di/telemetry.py). Logs go out over OTLP only
+    # with DI_OTEL_LOGS; prompts, answers and tool arguments reach a span only with DI_OTEL_CAPTURE_CONTENT (4 KB each).
+    otel_logs: bool = False
+    otel_capture_content: bool = False
     job_max_attempts: int = 5
     # B1 golden files: the access policy and reference data (mounted at /fixtures in Docker)
     golden_dir: str = "/fixtures/golden"

@@ -28,6 +28,7 @@ from di.core import jobs
 from di.core.config import get_settings
 from di.core.db import SessionLocal
 from di.core.logs import configure_logging
+from di.telemetry import setup_telemetry
 
 log = logging.getLogger("di.worker")
 
@@ -150,6 +151,7 @@ def serve(stopping: Callable[[], bool], poll: float, *, housekeeping: bool = Tru
 
 def main() -> None:
     configure_logging()  # the api's format and level (di/core/logs.py)
+    setup_telemetry("di-worker")  # plan 5: a no-op unless OTEL_EXPORTER_OTLP_ENDPOINT is set
     stopping = False
 
     def stop(*_: object) -> None:

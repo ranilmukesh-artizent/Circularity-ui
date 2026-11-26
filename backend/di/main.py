@@ -74,12 +74,14 @@ from di.routes import (
 from di.services.actions.registry import ACTIONS
 from di.services.agents.forbidden import check_person_only
 from di.services.cases import use_database_scope
+from di.telemetry import setup_telemetry
 
 configure_logging()  # one format and level for di and uvicorn; secrets masked in access lines (di/core/logs.py)
 log = logging.getLogger("di.api")
 check_person_only(ACTIONS)  # every action module is imported above: agents never delete or approve
 
 app = FastAPI(title="Circularity DI API", version="0.2.0", lifespan=mcp_server.lifespan)
+setup_telemetry("di-api", app)  # plan 5: a no-op unless OTEL_EXPORTER_OTLP_ENDPOINT is set (di/telemetry.py)
 register_error_handlers(app)  # every error answers {ok: false, error: {code, message}} (di/core/errors.py, D1)
 app.include_router(auth.router)
 app.include_router(actions.router)
