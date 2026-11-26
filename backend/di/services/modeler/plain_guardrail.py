@@ -142,9 +142,9 @@ def _scope(subject: str, v: Vocab) -> tuple[list[Cond], list[str]] | None:
             codes.append(val.code)
     for r in v.ranges:
         for m in re.finditer(
-            rf"\b(?P<w>{'|'.join(map(re.escape, (*r.below, *r.above)))})\s+(?P<n>\d+(?:\.\d+)?)\s+{r.unit}\b", n
+            rf"\b(?P<w>{'|'.join(map(re.escape, (*r.below, *r.above)))})\s+(?P<n>\d[\d,]*(?:\.\d+)?)\s+{r.unit}\b", n
         ):
-            num = float(m.group("n"))
+            num = float(m.group("n").replace(",", ""))
             conds.append(Cond(fact=r.fact, op="lt" if m.group("w") in r.below else "gt", value=num))
             codes.append(f"{num:g}".replace(".", ""))
     return conds, codes
