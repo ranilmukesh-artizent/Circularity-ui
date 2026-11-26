@@ -92,7 +92,7 @@ def test_sd_03_seeding_runs_once():
         s.commit()
         rows = market_tables.listed(s, PACK, FLOW, "DE", None)
     names = sorted({r.name for r in rows})
-    assert names == ["cover_terms", "credit_rules", "labour", "parts", "refresh_tool_action", "terms"]
+    assert names == ["cover_terms", "credit_rules", "labour", "parts", "refresh_terms", "refresh_tool_action", "terms"]
     assert [r.version for r in rows if r.name == "parts"] == [2, 1]  # newest first
 
 
@@ -235,7 +235,7 @@ def test_market_table_test_action_never_writes():
     assert ok(call("marketTable.test", {"id": card.id, "inputs": {}}, "finance"))["outputs"] == {"per_hour": 58}
     with SessionLocal() as s:
         before = len(market_tables.listed(s, PACK, FLOW, "US", None))
-    assert before == 7
+    assert before == 8
 
 
 # ---------------------------------------------------------------- R21: maker is never checker, no agent, tenants

@@ -105,7 +105,7 @@ def test_tool_fleet_template_equals_po_golden():
         (p["key"], p["name"], p["app"], p["owner"], p["lead"]) for p in g["paths"]
     ]
     # GR-14 (repair over $600) and GR-15 (young write-off), P9-3.15: plan 9 approval guardrails, not in the prototype
-    guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-14", "GR-15")]
+    guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-14", "GR-15", "GR-C1")]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
     # the keyAccount dim (P9-3.16): plan 9, not in the prototype
     dims = [(d.key, d.label, list(d.values) or None) for d in t.dims if d.key != "keyAccount"]

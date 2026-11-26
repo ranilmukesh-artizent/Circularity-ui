@@ -178,6 +178,24 @@ await step('3 Refresh: the CMH swap is matched to refurbished stock RU-7...', as
   );
   return unit;
 });
+// ---------------------------------------------------------------- 4
+await step('4 Refresh: the proposal is priced and waits for a person', async () => {
+  const admin = await as('admin');
+  const pricing = await until(
+    async () => {
+      const x = await admin.locator('[data-testid="rf-likelihood"]').first().innerText();
+      return /^Renewal likelihood \d+% with a proposal \(\d+% without\)$/.test(x) ? x : null;
+    },
+    'the refresh panel does not show "Renewal likelihood N% with a proposal (M% without)"',
+    UI,
+    admin,
+  );
+  const basis = await admin.locator('[data-testid="rf-basis"]').first().innerText();
+  if (!/modelled, observational/.test(basis)) throw new Error('the renewal basis does not say it is modelled: ' + basis);
+  const who = await admin.locator('[data-testid="rf-approval-text"]').first().innerText();
+  if (!/^Waits for (Sales: credits .* are over \$300|the Fleet desk)$/.test(who)) throw new Error('the approval line says: ' + who);
+  return `${pricing}; ${who}`;
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));

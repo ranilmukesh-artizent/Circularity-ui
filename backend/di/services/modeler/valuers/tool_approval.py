@@ -3,6 +3,7 @@
     thresholds(pack) -> Thresholds                              the pack's approval limits, as the customer's overlay left them
     confidence_of(life, pack) -> float | None                   the decision's confidence from the tool's life confidence class
     route_for_approval(best, case, confidence, gates, pack) -> ApprovalRoute
+    refresh_route(credit_total_usd, pack) -> ApprovalRoute      a refresh proposal: GR-C1 credits over the limit, GR-C2 (P9-5.4)
 
 The route is `person` (with the role that signs) or `policy` (the standing policy of the flow, I-11, may approve within its
 limits). The reasons, in this order:
@@ -129,3 +130,22 @@ def route_for_approval(
     if not holds:
         return ApprovalRoute("policy", None, [])
     return ApprovalRoute("person", holds[0]["owner"], [h["reason"] for h in holds], tuple(holds))
+
+
+# ---------------------------------------------------------------- a contract refresh proposal (P9-5.4, story CR-04)
+CREDIT_GUARD, ALWAYS_PERSON_GUARD = "GR-C1", "GR-C2"
+CREDIT_ROLE = "Sales"  # maps to the Approver permission (decision log, 26 Nov)
+
+
+def refresh_route(credit_total_usd: float, pack: Pack) -> ApprovalRoute:
+    """Who approves a refresh proposal. GR-C1 is per proposal: credits in total over the limit wait for Sales. Below it GR-C2
+    still holds it for a person (the Fleet desk): a price prepared for a customer is never approved by policy, so the kind is
+    always `person`. `credit_total_usd` is the proposal's credits converted to USD."""
+    limit = _param(pack, CREDIT_GUARD)
+    if limit is not None and credit_total_usd > limit:
+        why = f"credits {_money(credit_total_usd)} are over {_money(limit)}"
+        h = {"id": CREDIT_GUARD, "reason": why, "owner": CREDIT_ROLE}
+        return ApprovalRoute("person", CREDIT_ROLE, [why], (h,))
+    why = "a proposal to a customer is approved by a person, never by policy"
+    h = {"id": ALWAYS_PERSON_GUARD, "reason": why, "owner": DESK_ROLE}
+    return ApprovalRoute("person", DESK_ROLE, [why], (h,))
