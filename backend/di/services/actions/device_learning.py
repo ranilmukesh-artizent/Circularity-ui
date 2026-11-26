@@ -1,4 +1,11 @@
-"""Ageing suggestions for listed devices (plan 9, P9-6.13, story DV-08).
+"""Ageing suggestions for listed devices (plan 9, P9-6.13, story DV-08) and worked device questions (P9-6.17, DV-13).
+
+    device.question           read  {question_id, org_unit_id?}  one worked question of the device pack answered from the data
+                                                             (`di.services.device.analytics`): sentence, chart, examples
+`device.question` is a read with no permission, open to every account and to agents (Ask calls it); it reads only the rows of the
+actor's own org units (a tenant-scoped role: its tenants) and of `org_unit_id`'s subtree when named (a tenant it cannot see is
+`tenant_boundary`). Every figure is computed; a model may word the sentence only through `analytics.word`.
+
 
     device.ageingSuggestions  read  {flow_id | org_unit_id, offers_days?}  the moves the live listings of the flow's org (or of
                                                              the named org, read with the flow that decides it) call for, each
@@ -15,13 +22,14 @@ who may edit or approve flows, within the flow's org scope, as `flow.suggestions
 from typing import Any, cast
 
 from di.core import clock, policy
+from di.core.orgs import subtree
 from di.repositories import flows as repo
 from di.repositories import orgs
 from di.repositories.flows import FlowRow
 from di.services.actions import modeler_suggest as base
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
-from di.services.device import ageing
+from di.services.device import ageing, analytics
 from di.services.modeler.flow import Flow
 from di.services.modeler.suggest import Suggestion
 from di.services.modeler.templates import load_template
@@ -104,3 +112,45 @@ def ageing_suggestions(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         "offers_days": cfg.offers_to_auction_days, "choices": list(ageing.choices()), "buynow_days": cfg.buynow_to_offers_days,
         "suggestions": out,
     }  # fmt: skip
+
+
+ACTIONS.setdefault(
+    "device.question",
+    ActionDef(
+        id="device.question",
+        title="Answer a device question",
+        desc="One worked question of the device pack (price after a launch, disputes by partner), computed. Changes nothing.",
+        risk="read",
+        perm=None,
+        scope="none",
+        input={"question_id": {"req": True, "t": "string"}, "org_unit_id": {"req": False, "t": "string"}},
+        verb="read a device question",
+    ),
+)
+
+
+@guard("device.question")
+def question_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if i.get("question_id") not in analytics.REGISTRY:
+        return "not_found", f"No question {i.get('question_id')}. Questions: {', '.join(analytics.REGISTRY)}."
+    org = i.get("org_unit_id")
+    if org:
+        if org not in orgs.units(ctx.session):
+            return "not_found", f"No org unit {org}."
+        person = ctx.actor.person
+        if policy.policy(person).get("tenantScoped") and not policy.tenant_ok(person, org, ctx.actor.ctx):
+            return "tenant_boundary", f"{org} is a tenant you cannot see. Request tenant access first."
+    return None
+
+
+@implement("device.question")
+def question(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    visible = _visible(ctx)
+    allowed = None if visible is None else set(visible)
+    if i.get("org_unit_id"):
+        wanted = subtree(orgs.units(ctx.session), i["org_unit_id"])
+        allowed = wanted if allowed is None else wanted & allowed
+    as_of = clock.now().date()
+    scope = analytics.Scope(frozenset(allowed)) if allowed is not None else None
+    ans = analytics.answer(ctx.session, i["question_id"], scope, as_of)
+    return ans.as_dict() | {"question": analytics.REGISTRY[i["question_id"]].question, "as_of": as_of.isoformat()}

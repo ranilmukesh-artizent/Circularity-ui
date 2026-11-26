@@ -943,7 +943,7 @@ each story went.
 - [ ] P9-6.14 Device customer diversions
 - [ ] P9-6.15 Repair then sell, parts and recycle routes
 - [ ] P9-6.16 Replacement stock as a device channel
-- [ ] P9-6.17 Two worked device analytics questions
+- [x] P9-6.17 Two worked device analytics questions
 - [ ] P9-6.18 Retrained price model with shadow and promotion
 - [ ] P9-6.19 Undercut and parts declaration checks
 - [ ] P9-6.20 Device recommerce browser smoke

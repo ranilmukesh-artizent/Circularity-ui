@@ -152,3 +152,4 @@ One line per event, newest last, times from `date`.
 | 26 Nov 08:52 | P9-6.12 merged. Device sale settles from the listing; test_template_e2e[device] failure is the wholesale leak (writer 5 fixing) |
 | 26 Nov 09:04 | P9-5.7 merged. Renewal report |
 | 26 Nov 10:15 | P9-6.13 merged. Lead fixed the device parser to read the ageing dims by phrase and excluded them from the demo-dims golden test |
+| 26 Nov 12:26 | P9-6.17 merged. Interface: device/analytics.py Answer, Scope, WorkedQuestion, REGISTRY; action device.question |

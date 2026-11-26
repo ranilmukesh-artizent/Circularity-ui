@@ -157,3 +157,15 @@ export interface RenewalReport {
 /** The renewal rate with and without a proposal, per segment, and the proposals' predictions against the outcomes. An empty bound is the server's default (the last two years). */
 export const renewalReport = (f: { since: string; until: string }): RenewalReport =>
   cached<RenewalReport>(withQuery('/api/screens/analytics/renewals', f));
+
+// ---------------------------------------------------------------- Worked pack questions (plan 9, P9-6.17, DV-13)
+/** One point of a worked question chart; `launch` marks the week a successor launched (line charts). */
+export interface QuestionPoint { x: string; y: number | null; launch?: boolean }
+/** What `device.question` answers: the computed sentence, the chart series and example records (every figure computed, never a models). */
+export interface PackAnswer {
+  question_id: string; question: string; as_of: string; sentence: string;
+  chart: { kind: 'line' | 'bar'; series: { name: string; points: QuestionPoint[] }[] };
+  examples: Record<string, string | number>[];
+}
+/** The action `device.question {question_id}`, over the records the account may see (the same call Ask makes). */
+export const packQuestion = (id: string): PackAnswer => read<PackAnswer>('device.question', { question_id: id });

@@ -14,6 +14,7 @@
     what_if               case.whatIf                                  read action
     explain_kpi           kpi.explain                                  read action
     get_inbox             inbox.get                                    read action
+    device_question       device.question                              read action (worked device analytics question)
     list_workflows        workflow.list                                read action (Workflow Studio's list; P9-2.23)
     get_workflow          workflow.get                                 read action (blocks, version, trigger, last run)
     get_workflow_run      workflow.runGet                              read action (steps, log, held records, the error)
@@ -46,6 +47,7 @@ from di.mcp import calllog
 from di.mcp.policy import outcome_of
 from di.mcp.tools import ACTIONS_OF, RUN, TOOLS, Refused, ToolCall, schema
 from di.services.actions import (
+    device_learning,  # noqa: F401 - registers device.question before the table below reads it
     workflow_read,  # noqa: F401 - registers workflow.list, get, runs, runGet before the table below reads them
 )
 from di.services.actions.pipeline import Actor, CallContext, invoke
@@ -142,6 +144,16 @@ ACTION_TOOLS: dict[str, tuple[str, str, dict, list[str]]] = {
         ["id"],
     ),
     "get_inbox": ("inbox.get", "What needs the signed-in user now: approvals, evidence gaps, outcomes, notifications.", {}, []),
+    "device_question": (
+        "device.question",
+        "A worked analytics question of the device pack, computed from the data: price_after_launch (why price realised dropped) "
+        "or disputes_by_partner (who causes grading disputes). Gives the sentence, chart rows and examples; quote its numbers.",
+        {
+            "question_id": _p("string", "price_after_launch or disputes_by_partner"),
+            "org_unit_id": _p("string", "optional org unit to narrow to"),
+        },
+        ["question_id"],
+    ),
 }
 TOOL_NAMES = (*MCP_TOOLS, *ACTION_TOOLS)
 
