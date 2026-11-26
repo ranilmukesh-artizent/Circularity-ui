@@ -890,7 +890,7 @@ each story went.
 - [x] P9-4.9 Execute the approved option on market terms
 - [x] P9-4.10 Test a credit before offering it
 - [x] P9-4.11 Take-up model learned from past offers
-- [ ] P9-4.12 Service desk browser smoke
+- [x] P9-4.12 Service desk browser smoke
 - [ ] P9-4.13 Phase 4 gate
 - [x] P9-5.1 Refresh case per contract entering the window
 - [x] P9-5.2 Keep, like-life swap or upgrade per tool
