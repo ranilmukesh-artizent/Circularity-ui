@@ -207,3 +207,5 @@ unattended". Times are local (IST).
 | 26 Nov 19:07 | P9-10.17 merged. Questions wq_tn_1, wq_tn_2 in di.services.questions.telecom_network. close_case is callable from code only (no action registered yet). Red run quoted. |
 | 26 Nov 19:07 | P9-11.17 merged. Medical refurbish step renamed biomed_refurb (e26dfa72; it collided with telecom's refurb_order). rental.writeOff held for a person. No DemandModel table: training rows kept on the case. A Waiting disposal collection has no requeue hook yet. |
 | 26 Nov 20:14 | P9-12.1 merged. Per-route eligible_if in valuer.params.routes (no schema change). load_pack validates standard valuers. Schema regenerated in adacf644. |
+| 26 Nov 20:27 | P9-13.3 merged. G-DS-1 reads case vendors first, falls back to downstream. Device pack has no downstream route. Duplicate downstream_roles field removed in a40702a8. |
+| 26 Nov 20:27 | P9-13.7 merged. model.fit/list for every pack file; device price bands go through intake_predictor. No factor ships by default. |

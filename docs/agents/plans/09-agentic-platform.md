@@ -1076,11 +1076,11 @@ each story went.
 - [ ] P9-12.13 Phase 12 gate
 - [ ] P9-13.1 Fixed-asset retirement and transfer instructions
 - [ ] P9-13.2 Lease residual gain or loss on the case
-- [ ] P9-13.3 Downstream vendor qualification with certificate dates
+- [x] P9-13.3 Downstream vendor qualification with certificate dates
 - [ ] P9-13.4 Customer credit settlement with ERP match
 - [ ] P9-13.5 Close only with reporting evidence
 - [ ] P9-13.6 Core credit settlement with ERP match
-- [ ] P9-13.7 Calibration and model candidates across all packs
+- [x] P9-13.7 Calibration and model candidates across all packs
 - [ ] P9-13.8 Model quality, drift and cadence across packs
 - [ ] P9-13.9 Per-agent credentials with client credentials
 - [ ] P9-13.10 OAuth for outside MCP clients
