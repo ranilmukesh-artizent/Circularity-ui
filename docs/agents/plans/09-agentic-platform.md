@@ -948,7 +948,7 @@ each story went.
 - [x] P9-5.6 Test-the-proposal levers
 - [x] P9-5.7 Renewal outcomes recorded and compared
 - [x] P9-5.8 Paths agree and order invariant for refresh
-- [ ] P9-5.9 Phase 5 gate
+- [x] P9-5.9 Phase 5 gate
 - [x] P9-6.1 Device mocks for registry, lab and market
 - [x] P9-6.2 Device data tables, registry and lab adapters
 - [x] P9-6.3 Device market adapter
@@ -969,7 +969,7 @@ each story went.
 - [x] P9-6.18 Retrained price model with shadow and promotion
 - [x] P9-6.19 Undercut and parts declaration checks
 - [x] P9-6.20 Device recommerce browser smoke
-- [ ] P9-6.21 Phase 6 gate
+- [x] P9-6.21 Phase 6 gate
 - [x] P9-7.1 Import a history batch with checks
 - [x] P9-7.2 As-of replay with the four measures
 - [x] P9-7.3 Publish in steps with canary by region and share

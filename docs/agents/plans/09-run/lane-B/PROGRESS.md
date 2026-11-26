@@ -63,3 +63,5 @@
 | 2026-11-26 | 09 · P9-6.19 undercut and parts declaration checks | this commit | test_device_checks_p2 and device set green on main | done |
 | 2026-11-26 | 09 · P9-6.16 replacement stock as a device channel | this commit | device test files (replacement, settle, lots, routes_more, intake, gates, verify, channels, payout, checks_p2, diversions, ageing, execution_detail, pack_format, po_golden) 171 passed on main; ruff, mypy, import-linter ok; writer tsc/vitest/eslint ok | done |
 | 2026-11-26 | 09 · P9-6.20 device recommerce browser smoke | this commit | smoke-p9-6.mjs written (10 steps) and node --check ok; not run: browser smokes are deferred to the final pass | done |
+| 2026-11-26 | 09 · P9-5.9 phase 5 gate | this commit | Phase 5 check: reviews written, High and Medium findings fixed (3b38c8d0) | done |
+| 2026-11-26 | 09 · P9-6.21 phase 6 gate | this commit | Phase 6 check: reviews written, F1 F2 F4 F5 F7 F9 F10 fixed (d8a1ac38); F3 F6 F8 open for a decision | done |
