@@ -703,3 +703,10 @@ CONNECTOR_FIELDS["demand"] |= {
     "use_probability": "number",
 }
 CONNECTOR_FIELDS["asset"] |= {"idle_days": "number"}
+# Telecom resale and recycling (plan 9, P9-10.5), written by the extra adapters tn_broker and tn_recycler: on `market`,
+# keyed by the model number, the broker's bids (broker_bids) and the latest cleared price (cleared_price); on `vendor`, a
+# recycler's certificate (recycler_certificate, an object) and dangerous-goods lane (dg_lane); on `condition`, keyed by
+# `serial_key`, the id of the disposal certificate (disposal_record_ref).
+CONNECTOR_FIELDS["market"] |= {"broker_bids": "list", "cleared_price": "number"}
+CONNECTOR_FIELDS["vendor"] |= {"recycler_certificate": "object", "dg_lane": "bool"}
+CONNECTOR_FIELDS["condition"] |= {"disposal_record_ref": "ref"}

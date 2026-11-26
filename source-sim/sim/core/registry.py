@@ -112,6 +112,9 @@ EXTRA_SYSTEMS: tuple[System, ...] = (
     System("tn_bench", "Test bench (synthetic)", "test_bench", "vendor", "/test-bench"),
     # Plan 9 P9-10.4: the telecom segment's spares planning system (catalogue, targets, requisitions), synthetic
     System("tn_spares", "Spares planning (synthetic)", "spares_planning", "vendor", "/spares-planning"),
+    # Plan 9 P9-10.5: the telecom segment's broker marketplace and recycler portal, synthetic vendor mocks
+    System("tn_broker", "Broker marketplace (synthetic)", "broker_marketplace", "vendor", "/broker-market"),
+    System("tn_recycler", "Recycler portal (synthetic)", "recycler_portal", "vendor", "/recycler-portal"),
 )
 EXTRA_BY_ID = {s.source_id: s for s in EXTRA_SYSTEMS}
 
