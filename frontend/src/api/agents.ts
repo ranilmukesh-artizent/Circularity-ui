@@ -230,9 +230,15 @@ export interface ModelVersion {
   approved_by: string | null;
   created_at: string;
   /** a price model's factors; a stage calibration's steps (`raw` confidence to `cal`ibrated, P9-2.9) */
-  factors: { route?: string; cls?: string; factor?: number; raw?: number; cal?: number }[];
+  factors: { route?: string; cls?: string; factor?: number; raw?: number; cal?: number; name?: string; shape?: number; scale?: number; median_hours?: number }[];
   /** n outcome rows (decided outcomes for a stage calibration); the mean absolute error of the active model and of this one on them (null without rows) */
-  metrics: { n: number; active_id: string | null; mae_active: number | null; mae_candidate: number | null };
+  metrics: {
+    n: number; active_id: string | null; mae_active: number | null; mae_candidate: number | null;
+    /** rated life (P9-3.10): MAE in run hours of the predicted median life on the last 3 months held out, and the concordance index */
+    mae?: number | null; concordance?: number | null; by_class?: Record<string, { skipped: { name: string; n: number; reason: string }[] }>;
+  };
+  /** what the model predicts: a price calibration (default) or the remaining life of tool components */
+  kind?: 'calibration' | 'rated_life';
   proposal: { by: string; at: string } | null;
   /** why the signed-in person may not propose or approve it, else null */
   blocks: { propose: string | null; promote: string | null };
@@ -243,6 +249,8 @@ export interface ModelsScreen {
   base: string;
   /** the active calibration model of each template, or null */
   active: Record<string, string | null>;
+  /** the active remaining-life model (kind rated_life, P9-3.10), or null */
+  activeRatedLife: string | null;
   models: ModelVersion[];
   can: { fit: boolean; promote: boolean };
   /** the repair estimate replayed on held-out repairs (plan 9, P9-4.5): the newest figures per org unit and tool class */
@@ -281,7 +289,8 @@ export const computeRepairAccuracy = (): Promise<ActionResult<{ families: number
 export const useModels = (): ModelsScreen => cached<ModelsScreen>('/api/screens/agents/models');
 
 /** Fit a candidate calibration model on the confirmed outcomes (manageFlows; model.fit). */
-export const fitModel = (template = 'industrial'): Promise<ActionResult<ModelVersion>> => invoke('model.fit', { template });
+export const fitModel = (template = 'industrial', kind?: 'rated_life'): Promise<ActionResult<ModelVersion>> =>
+  invoke('model.fit', kind ? { template, kind } : { template });
 
 /**
  * Fit a candidate calibration of a pack's stage confidence on what people accepted or rejected (manageFlows;

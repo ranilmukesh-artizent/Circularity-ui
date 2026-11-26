@@ -866,7 +866,7 @@ each story went.
 - [x] P9-3.7 Safety recall check with quarantine
 - [x] P9-3.8 Stale telematics guardrail GR-13
 - [x] P9-3.9 Wear index and remaining life per component
-- [ ] P9-3.10 Remaining life model and teardown calibration
+- [x] P9-3.10 Remaining life model and teardown calibration
 - [x] P9-3.11 Telematics and inspection disagreement exception
 - [x] P9-3.12 Six paths valued against live named demand
 - [ ] P9-3.13 Live queue plan for open tool returns

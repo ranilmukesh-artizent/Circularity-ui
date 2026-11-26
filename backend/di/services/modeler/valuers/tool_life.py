@@ -26,10 +26,12 @@ with WTI >= 60, or grade D with WTI <= 20 and no damage code, is a disagreement 
 consumed share is >= 60% (A or B) or <= 20% (D).
 An estimated grade never triggers it. The text is computed from those numbers, never written by a model.
 
-Never does: read the database or the clock (the caller passes the facts and the age of the reading), learn (P9-3.10 adds the
-model behind it) or write text: no model step, so no AgentLoop. Implements no registry entry.
+Never does: read the database or the clock (the caller passes the facts and the age of the reading), learn (P9-3.10:
+`with_model` swaps in the rated lives of a promoted `RulModel`, fitted elsewhere) or write text: no model step, so no
+AgentLoop. Implements no registry entry.
 """
 
+import dataclasses
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -37,6 +39,8 @@ from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from di.services.modeler.valuers.tool_inputs import GradeView
+
+from di.services.models.rul import RulModel
 
 Confidence = Literal["High", "Medium", "Low"]
 
@@ -49,7 +53,9 @@ class Component:
     critical: bool
     alpha: float
     h0: float  # run hours at its last replacement (0: never replaced)
-    source: str  # where the rated life came from: "plm" or "pack"
+    source: str  # where the rated life came from: "plm", "pack" or "model" (P9-3.10: the Weibull median)
+    p10_hours: float | None = None  # the fitted model's P10 and P90 lives (source "model" only)
+    p90_hours: float | None = None
 
 
 @dataclass(frozen=True)
@@ -91,6 +97,20 @@ class LifeResult:
 def _round(x: float) -> int:
     """Half up, as the prototype's Math.round does (Python's round goes to even)."""
     return int(math.floor(x + 0.5))
+
+
+def with_model(comps: Sequence[Component], model: RulModel | None) -> list[Component]:
+    """`comps` with each component the fitted model covers rated at its Weibull median (source `model`, P10 and P90 lives kept
+    for the range); the others, and all of them without a model, as they are. The model wins over PLM and the pack's table."""
+    if model is None:
+        return list(comps)
+    out = []
+    for c in comps:
+        if model.has(c.name):
+            lo, mid, hi = model.lives(c.name)
+            c = dataclasses.replace(c, rated_hours=mid, source="model", p10_hours=lo, p90_hours=hi)
+        out.append(c)
+    return out
 
 
 def components(
@@ -189,6 +209,12 @@ def evaluate(inp: LifeInputs, params: Mapping[str, Any]) -> LifeResult:
             _rul_tool(comps, inp.months_on_contract * float(duty["p90"]), s_hi, penalty),  # type: ignore[operator]
             _rul_tool(comps, inp.months_on_contract * float(duty["p10"]), s_hi, penalty),  # type: ignore[operator]
         )
+    elif any(c.source == "model" for c in comps):  # the fitted model's spread: RUL_tool at the P10 and at the P90 lives
+
+        def at(pick: str) -> list[Component]:
+            return [dataclasses.replace(c, rated_hours=getattr(c, pick)) if c.source == "model" else c for c in comps]
+
+        rng = (_rul_tool(at("p10_hours"), h, s_hi, penalty), _rul_tool(at("p90_hours"), h, s_hi, penalty))
     return LifeResult(
         wti=wti,
         rul_tool=_round(100 * (1 - share)),
