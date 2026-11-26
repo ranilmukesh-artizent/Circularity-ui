@@ -49,7 +49,7 @@ from di.services.engine import drift
 from di.services.engine.calibration import CalibratedPredictor, Key, OutcomeRow, fit
 from di.services.engine.predictor import Predictor
 from di.services.modeler.pack import pack_keys
-from di.services.modeler.templates import TEMPLATE_KEYS
+from di.services.modeler.templates import template_keys
 
 DRIFT_TYPE = "model_drift"
 MAKER_CHECKER = "Maker-checker: you created this model, so you cannot promote it."
@@ -456,8 +456,8 @@ ACTIONS.setdefault(
 
 @guard("stage.fitCalibration")
 def fit_calibration_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
-    if i["pack"] not in TEMPLATE_KEYS:
-        return "validation_error", f"The pack is one of {', '.join(TEMPLATE_KEYS)}."
+    if i["pack"] not in template_keys():
+        return "validation_error", f"The pack is one of {', '.join(template_keys())}."
     if i["stage"] not in STAGE_IDS:
         return "validation_error", f"The stage is one of {', '.join(STAGE_IDS)}."
     n = len(stage_outcomes.rows(ctx.session, i["pack"], i["stage"]))

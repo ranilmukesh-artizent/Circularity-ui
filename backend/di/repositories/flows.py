@@ -1,10 +1,11 @@
-"""The Modeler's process flows as read from `decision_flow` and `decision_flow_version` (plan 8, MVP-3.1). Reads only;
-the lifecycle actions (di.services.actions.modeler) write them.
+"""The Modeler's process flows as read from `decision_flow` and `decision_flow_version` (plan 8, MVP-3.1). Reads only,
+but `ensure_pack_flows`; the lifecycle actions (di.services.actions.modeler) write them.
 
 A flow belongs to a template and an org unit. A case uses the flow of the nearest unit, from its owner up to the root
 `workspace`, that has one (`flow_for`); the workspace holds the seeded defaults.
 """
 
+import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -67,6 +68,25 @@ def flow_for(s: Session, template_key: str, org_unit_id: str) -> FlowRow | None:
     ).all()
     by_org = {r.org_unit_id: r for r in rows}
     return next((_flow(by_org[u]) for u in chain if u in by_org), None)
+
+
+def ensure_pack_flows(s: Session) -> int:
+    """The published default flow on `workspace` of every pack that has none yet (migration 0064 seeds the packs there
+    were; the worker calls this at start for later ones). Idempotent; returns how many it added."""
+    from di.services.modeler.flow import default_flow  # the modeler package sits above this layer
+    from di.services.modeler.templates import load_template, template_keys
+
+    have = {r[0] for r in s.execute(text("SELECT template_key FROM decision_flow WHERE org_unit_id = 'workspace'"))}
+    ins = text(
+        "INSERT INTO decision_flow (template_key, org_unit_id, name, status, ver, published) "
+        "VALUES (:k, 'workspace', :n, 'pub', 1, CAST(:g AS jsonb)) ON CONFLICT DO NOTHING"
+    )
+    added = 0
+    for key in (k for k in template_keys() if k not in have):
+        t = load_template(key)
+        s.execute(ins, {"k": key, "n": t.name, "g": json.dumps(default_flow(t))})
+        added += 1
+    return added
 
 
 def flows(s: Session, org_ids: set[str]) -> list[FlowRow]:

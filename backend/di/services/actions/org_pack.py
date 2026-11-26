@@ -40,7 +40,7 @@ from di.repositories.workflows import all_workflows
 from di.services.actions import modeler, workflows
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
-from di.services.modeler.templates import TEMPLATE_KEYS
+from di.services.modeler.templates import template_keys
 
 VERSION = 1
 # a setting whose name holds one of these (case and "_"/"-" ignored) is never exported. Audit F7 added the key-shaped
@@ -169,7 +169,7 @@ def export_pack(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     sources = _sources(ctx, orgs.subtree(us, uid))
     ids = {x["id"] for x in sources}
     flows: dict[str, Any] = {}
-    for key in TEMPLATE_KEYS:
+    for key in template_keys():
         f = flow_repo.flow_for(s, key, uid)
         if f is not None:
             flows[key] = copy.deepcopy(f.published)
@@ -208,7 +208,7 @@ def _pack_problem(p: dict[str, Any]) -> str | None:
         conn = x.get("connection")
         if conn is not None and not (isinstance(conn, dict) and conn.get("base_url")):
             return f"The connection of source {x['id']} needs a base URL."
-    bad = [k for k in p["flows"] if k not in TEMPLATE_KEYS]
+    bad = [k for k in p["flows"] if k not in template_keys()]
     if bad:
         return f"Unknown template {bad[0]} in the pack's flows."
     return None

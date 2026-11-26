@@ -59,7 +59,7 @@ from di.services.modeler.pack import load_pack
 from di.services.modeler.parse import parse_rule
 from di.services.modeler.propose import STEP, Proposal, build_proposal, fill_parsed
 from di.services.modeler.tables import table_title
-from di.services.modeler.templates import TEMPLATE_KEYS, Template, load_template
+from di.services.modeler.templates import Template, load_template, template_keys
 from di.services.modeler.validate import blocking, validate_flow
 
 MAKER_CHECKER = "Maker-checker: you made these changes, so you cannot approve them."
@@ -250,8 +250,8 @@ def save_draft(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
 # ---------------------------------------------------------------- fork
 @guard("flow.fork")
 def fork_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
-    if i["template_key"] not in TEMPLATE_KEYS:
-        return "validation_error", f"The template is one of {', '.join(TEMPLATE_KEYS)}."
+    if i["template_key"] not in template_keys():
+        return "validation_error", f"The template is one of {', '.join(template_keys())}."
     org = i["org_unit_id"]
     if org not in units(ctx.session):
         return "not_found", f"No org unit {org}."
@@ -409,8 +409,8 @@ def _by_org(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | FlowRow:
     """flow.get by {template, org} (MVP-5.5, the MCP and Ask tool): the flow the org uses, its own or inherited; the
     org (default `workspace`) must be one the actor may see."""
     key, org = i.get("template") or "industrial", i.get("org") or "workspace"
-    if key not in TEMPLATE_KEYS:
-        return "validation_error", f"The template is one of {', '.join(TEMPLATE_KEYS)}."
+    if key not in template_keys():
+        return "validation_error", f"The template is one of {', '.join(template_keys())}."
     if org not in units(ctx.session):
         return "not_found", f"No org unit {org}."
     if not _org_ok(ctx, org):

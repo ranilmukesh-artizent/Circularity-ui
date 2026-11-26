@@ -76,7 +76,7 @@ from di.services.agents.journey import journey
 from di.services.agents.stage_context import STAGE_IDS
 from di.services.engine.predictor import FormulaPredictor
 from di.services.llm.view import models_view
-from di.services.modeler.templates import TEMPLATE_KEYS
+from di.services.modeler.templates import template_keys
 from di.services.service_desk import accuracy
 
 RUNS = 50
@@ -183,7 +183,7 @@ def models(p: Principal, s: Session) -> dict[str, Any]:
         raise HTTPException(403, {"code": "out_of_scope", "message": "Not available for the Finance view."})
     can_fit, can_promote = p.can("manageFlows"), p.can("approve.flows")
     rows = [ModelRow(*r) for r in s.execute(text(MODELS_SQL))]
-    active = {t: None for t in TEMPLATE_KEYS} | {
+    active = {t: None for t in template_keys()} | {
         m.template: m.id for m in rows if m.status == "active" and m.kind == "calibration"
     }
     rated = next((m.id for m in rows if m.status == "active" and m.kind == "rated_life"), None)

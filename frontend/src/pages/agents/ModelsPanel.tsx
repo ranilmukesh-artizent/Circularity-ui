@@ -12,9 +12,9 @@ import { useAction } from '../../hooks/useAction';
 const STATUS_CHIP: Record<ModelVersion['status'], string> = { candidate: 'y', active: 'ok', retired: 'line' };
 const TEMPLATE_LABEL: Record<string, string> = {
   industrial: 'Industrial', tool_fleet: 'Tool fleet', device: 'Device recommerce', used_cars: 'Used cars',
-  telecom_network: 'Telecom network', medical_rental: 'Medical rental',
+  telecom_network: 'Telecom network', medical_rental: 'Medical rental', itad: 'IT asset disposition',
 };
-/** The six packs a model can be fitted for (P9-13.7), whatever the server has an active model for. */
+/** The seven packs a model can be fitted for (P9-13.7), whatever the server has an active model for. */
 const PACKS = Object.keys(TEMPLATE_LABEL);
 const label = (t: string) => TEMPLATE_LABEL[t] ?? t;
 const err = (v: number | null) => (v == null ? '—' : money(v));

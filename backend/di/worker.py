@@ -473,10 +473,13 @@ def startup() -> None:
     """Register the sources and subscribe to source-sim's change events (idempotent)."""
     from di.connectors.sync import ensure_sources
     from di.connectors.webhook import ensure_subscription
+    from di.repositories.flows import ensure_pack_flows
 
     try:
         with SessionLocal() as s:
             ensure_sources(s)
+            ensure_pack_flows(s)  # a pack file added since the last migration gets its default flow
+            s.commit()
         ensure_subscription()
     except Exception:  # the periodic step retries the subscription
         log.exception("startup step failed")

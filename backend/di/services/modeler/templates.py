@@ -1,7 +1,7 @@
 """Template packs: the paths, locked guardrails, scope dimensions and actors of one kind of returns desk.
 
-Three packs (`TEMPLATE_KEYS`), each a pack file (`packs/<key>.json`, format v1 in `di.services.modeler.pack`, plan 9
-P9-1.1) turned into a `Template` by `template_of_pack`:
+Every pack file is a template (`template_keys()`; `TEMPLATE_KEYS` is the demo's three), each a pack file
+(`packs/<key>.json`, format v1 in `di.services.modeler.pack`, plan 9 P9-1.1) turned into a `Template` by `template_of_pack`:
 - `industrial`: the demo's 7 routes (`fixtures/golden/world.json`) and its gate texts as guardrails;
 - `tool_fleet` and `device`: the PO prototype's tool-fleet (`TPL.equip`) and device recommerce templates (the golden
   `fixtures/golden/po/templates.json`, the prototype's rule checks `ruleGuardE`, `ruleGuardD`, `textGuard` and its rule
@@ -11,10 +11,15 @@ P9-1.1) turned into a `Template` by `template_of_pack`:
 from dataclasses import dataclass, field
 from functools import cache
 
-from di.services.modeler.pack import DimKind, Pack, load_pack
+from di.services.modeler.pack import DimKind, Pack, load_pack, pack_keys
 from di.services.modeler.stages import GuardType, StageKey
 
-TEMPLATE_KEYS = ("industrial", "tool_fleet", "device")
+TEMPLATE_KEYS = ("industrial", "tool_fleet", "device")  # the demo's three (the built-in case templates)
+
+
+def template_keys() -> tuple[str, ...]:
+    """Every pack file is a template: the demo's three first, then the other packs by key."""
+    return (*TEMPLATE_KEYS, *(k for k in pack_keys() if k not in TEMPLATE_KEYS))
 
 
 @dataclass(frozen=True)
