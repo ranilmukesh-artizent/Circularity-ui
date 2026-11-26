@@ -110,12 +110,12 @@ check(found, `the case page shows "Excluded by business rule IR-01"`);
 // 6. The assistant (MVP-5.4): the Admin asks for a change to the tool-fleet flow on the workspace
 const admin = await session('admin');
 await admin.goto(base + '/#/modeler?template=tool_fleet&org=workspace');
-check(await waitText(admin, /I watch this flow and the decisions it produces/, 20000), 'the assistant opens with its line'); // first load of the modeler screen takes ~9 s after sign-in
-await admin.fill('#mdl-ask', 'Never recycle construction lasers');
-await admin.press('#mdl-ask', 'Enter');
-check(await waitText(admin, /Proposed change/i, 20000), 'the assistant shows "Proposed change"');
+check(await waitText(admin, /What I see/, 20000), 'the pinned agent column opens with "What I see"'); // first load of the modeler screen takes ~9 s after sign-in (plan 10: the column replaced the Assistant panel)
+await admin.locator('.mdl-agent textarea').fill('Never recycle construction lasers');
+await admin.locator('.mdl-agent textarea').press('Enter');
+check(await waitText(admin, /Proposed: /, 20000), 'the assistant shows the proposal card ("Proposed: ...")');
 check(await waitText(admin, /BR-03: construction lasers: never recycle/), 'the proposal reads "BR-03: construction lasers: never recycle"');
-check(await admin.locator('.mdl-node.prop').count() === 1, 'the proposed rule is drawn dashed on the canvas');
+check(await admin.locator('.mdl-node.prop, .mdl-node.rev').count() === 1, 'the proposed rule is drawn dashed on the canvas');
 
 if (planner.errors.length > onModeler) console.log('info: case page errors', JSON.stringify(planner.errors.slice(onModeler)));
 const errors = [...planner.errors.slice(0, onModeler).map((e) => 'planner: ' + e), ...approver.errors.map((e) => 'approver: ' + e), ...admin.errors.map((e) => 'admin: ' + e)];

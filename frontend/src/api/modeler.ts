@@ -9,7 +9,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { invoke } from './actions';
-import { cached, withQuery } from './client';
+import { cached, peek, withQuery } from './client';
 import { saveMarketTable, testMarketTable, type Jdm, type MarketTable } from './marketTables';
 import type { ActionResult, FlowGraph, ModelerScreen, OverlayConflict, OverlayOp, SimResult } from './types';
 
@@ -19,8 +19,9 @@ export const useModeler = (template: string, org: string): ModelerScreen =>
 
 type Done = ActionResult<{ id: number; status?: string; log?: string }>;
 
-export const saveDraft = (flowId: number, graph: FlowGraph): Promise<ActionResult<{ id: number; checks: ModelerScreen['checks'] }>> =>
-  invoke('flow.saveDraft', { flow_id: flowId, graph });
+/** Save a draft; `note` is the journal line of an assistant apply or undo (plan 10, 2.7), left out for an ordinary edit. */
+export const saveDraft = (flowId: number, graph: FlowGraph, note?: string): Promise<ActionResult<{ id: number; checks: ModelerScreen['checks'] }>> =>
+  invoke('flow.saveDraft', { flow_id: flowId, graph, ...(note ? { note } : {}) });
 
 export const forkFlow = (template: string, org: string): Promise<ActionResult<{ id: number; flow_id: number }>> =>
   invoke('flow.fork', { template_key: template, org_unit_id: org });
@@ -69,18 +70,33 @@ export type SimWithNodes = SimResult & { per_node?: Record<string, NodeFlow> };
 // the last simulation's per-node counts of each flow, so the canvas and the inspector can show them without the Impact
 // panel passing them down; a new simulation of the flow replaces them
 const lastNodes = new Map<number, Record<string, NodeFlow>>();
+// plan 10 (T2): the whole last simulation of each flow with its time, for the agent column's "Last simulation"
+export interface LastSim { sim: SimWithNodes; at: number; /** the draft version simulated, when the caller knew it */ draftVer: number | null }
+const lastSims = new Map<number, LastSim>();
 const watchers = new Set<() => void>();
 /** The per-node counts of the flow's last simulation in this session, or undefined (none yet, or a template without them). */
 export function useSimNodes(flowId: number | undefined): Record<string, NodeFlow> | undefined {
   return useSyncExternalStore((f) => (watchers.add(f), () => watchers.delete(f)), () => (flowId == null ? undefined : lastNodes.get(flowId)));
 }
 
+/** How many locked guardrails the shown template has, if the Modeler read for it is already in the cache (never fetches). */
+export const guardrailCount = (template: string, org: string): number | undefined =>
+  peek<ModelerScreen>(withQuery('/api/screens/modeler', { template: template || null, org: org || null }))?.template.guardrails.length;
+
+/** The flow's last simulation, read once (no subscription). */
+export const lastSimOf = (flowId: number): LastSim | undefined => lastSims.get(flowId);
+/** The flow's last simulation in this session (plan 10, T2), or undefined; a new simulation replaces it. */
+export function useLastSim(flowId: number | undefined): LastSim | undefined {
+  return useSyncExternalStore((f) => (watchers.add(f), () => watchers.delete(f)), () => (flowId == null ? undefined : lastSims.get(flowId)));
+}
+
 /** The graph (or the saved draft) against the published rules on the open queue; rejects with the refusal message. */
-export async function simulateFlow(flowId: number, graph?: FlowGraph, params?: Partial<Record<'market' | 'labor' | 'lease' | 'slots', number>>): Promise<SimWithNodes> {
+export async function simulateFlow(flowId: number, graph?: FlowGraph, params?: Partial<Record<'market' | 'labor' | 'lease' | 'slots', number>>, draftVer: number | null = null): Promise<SimWithNodes> {
   const input = { flow_id: flowId, ...(graph ? { graph } : {}), ...(params ? { params } : {}) };
   const r = await invoke<SimWithNodes>('flow.simulate', input);
   if (!r.ok) throw new Error(r.error.message);
   if (r.output.per_node) lastNodes.set(flowId, r.output.per_node); else lastNodes.delete(flowId);
+  lastSims.set(flowId, { sim: r.output, at: Date.now(), draftVer });
   watchers.forEach((f) => f());
   return r.output;
 }
