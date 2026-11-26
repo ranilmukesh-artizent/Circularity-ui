@@ -938,9 +938,9 @@ model provider; exchange-programme and remanufacture routes; digital product pas
 Plan: [docs/agents/plans/09-agentic-platform.md](agents/plans/09-agentic-platform.md). Built by a lead with parallel
 writers. The plan's checklist ticks each task; `docs/agents/plans/PROGRESS.md` has one line per task with its commit and
 gate, and `docs/agents/plans/09-run/RUN-LOG.md` the run's merges and notes. This section is a first draft written on
-26 Nov while phases 12 and 13 were still landing; the final pass refreshes it. All data stays synthetic and every
-enterprise system is a source-sim mock (rule 14). Decisions are in `docs/agents/decision-log.md` (rows dated 25 and
-26 Nov).
+26 Nov and refreshed in a final pass on 27 Nov (run branch at `94569c3d`). The final gate and proof are still open
+(see the end of this section). All data stays synthetic and every enterprise system is a source-sim mock (rule 14).
+Decisions are in `docs/agents/decision-log.md` (rows dated 25 to 27 Nov).
 
 **What each phase delivered**
 - **0 Harness and quick wins:** plan decisions and the licence list, `scripts/dev/gate-p9.sh`, `story-matrix.sh`,
@@ -981,12 +981,18 @@ enterprise system is a source-sim mock (rule 14). Decisions are in `docs/agents/
   safety notice), the route valuers, Compose drafts and mappings from a prompt, diversions, replay data with a 20
   percent publish, plain-words guardrails, alerts and suggestions, follow-through, and worked analytics questions
   (`di/services/questions/`).
-- **12 Next segments (partly landed):** the standard valuer extended with conditions, decay and division; the ITAD pack
-  (`itad.json`, manifest reconciliation) and the rental fleet pack (`rental_fleet.json`, re-rent, rebuild or sell) are
-  on the run branch. Not landed when this was written: 12.3, 12.5 to 12.13 (ITAD sanitisation per serial, rental damage
-  recovery, telecom CPE, battery, automotive cores, medical capital, serialised retail returns, the industrial pack in
-  the full format, the smoke, the gate).
-- **13 Close and learn across packs** (landed: 13.1 to 13.5 and 13.7 to 13.10):
+- **12 Next segments (landed except the smoke and gate):** the standard valuer extended with conditions, decay and
+  division, and eight more packs, each with mocks and a demo seed:
+  - `itad.json` v1.0.0: sanitisation per serial, residual decay, manifest reconciliation (12.3).
+  - `rental_fleet.json`: re-rent, rebuild or sell, damage recovery at close, an idle-machine branch transfer alert (12.5).
+  - `telecom_cpe.json`: home routers and set-top boxes decided as lots (12.6).
+  - `battery.json`: passport and safe lanes (12.7).
+  - `auto_core.json`: acceptance, a fraud hold a person releases, core credit settlement against the ERP (12.8, 13.6).
+  - `medical_capital.json`: a regulatory assessment recorded on the case, with its UI (12.9).
+  - `b2c_serial.json`: serialised retail returns on the device valuer (12.10).
+  - `industrial.json` moved to the full pack format with no change in numbers or texts (12.11).
+  - Not yet run: 12.12 and 12.13 (the phase 12 smoke and gate).
+- **13 Close and learn across packs** (landed: 13.1 to 13.10; 13.6 is core credit settlement, see 12 above):
   - 13.1 a pack with `close.fixed_asset` appends a `retire` or `transfer` step; the ERP's answer (document, proceeds,
     book value, gain or loss) is stored on the case (`execution/asset.py`), not computed.
   - 13.2 the lease residual's gain or loss on the case (`execution/residual.py`): proceeds minus the contract's
@@ -1003,23 +1009,49 @@ enterprise system is a source-sim mock (rule 14). Decisions are in `docs/agents/
   - 13.9 per-agent credentials (`agent_credentials.py`, `POST /oauth/token` with client credentials, 900-second tokens,
     secret shown once, scrypt hash stored). 13.10 OAuth for outside MCP clients (`oauth.py`: authorization code with PKCE
     S256, pre-registered clients, consent by a signed-in person, audience-bound 15-minute tokens, no refresh token).
-  - Not landed: 13.6 core credit settlement, 13.11 final smoke, 13.12 fresh clone and trial package proof, 13.13 these
-    docs (this draft), 13.14 the gate.
+  - Open: 13.11 final smoke, 13.12 fresh clone and trial package proof, 13.14 the gate. 13.13 is these docs.
+
+**Also on the run branch since the draft**
+- **Packs as templates:** every pack is a template in the Modeler and in the pickers (Add source, Records import,
+  Analytics follow the picker); the server lists the packs, the worked questions per pack and My work groups conflicts.
+  The Fabric's Add source groups the mocks by pack.
+- **Staged publish for tables (P9-7.7, 7.8):** market tables for the service desk go out through a canary of their own,
+  with a smoke.
+- **Plan 10, one assistant (done, frontend only):** Ask, the Modeler's assistant, the Describe dialog and Compose's
+  helper are one dock (`layout/assistant/`: Ask, Change flow and Set up modes, preview card with Undo, status lines,
+  held proposals and agent runs in the same panel) and the Modeler has the pinned agent column, a rail and page tabs.
+- **Plan 3, CRUD and gzip (done):** gzip responses (event streams excepted), a generic CRUD router over registered resources (`/api/v1/{name}`, through the action pipeline) and
+  the missing write handlers (`source.connect`). Its `test_fabric_sources` run is deferred to the final gate.
+- **Plan 5, OpenTelemetry (done, off by default):** setup, job and worker traces, GenAI spans and a metric for Ask, MCP
+  spans and a duration metric; a local `otel` compose profile (`docker-compose.otel.yml`; how to view traces is in
+  `docs/agents/testing.md`). The live trace check waits for an image pull; the default `docker compose config` is
+  unchanged. Plan 4 (async) is next.
+- **UI audit items (26 Nov, E15 and others):** an agent activity page for every role with My work, "Run the agent on
+  this case" behind the new `runAgent` right, and the Agents page split into sections (built on the lead's merge branch;
+  they reach the run branch with its next merge).
 
 **Known gaps and deferred items**
 - Client ID metadata documents and dynamic client registration for outside clients: not built (fetching a
   client-supplied URL is an outbound call the plan does not add). DMN import: not built (export only).
 - The S/4 asset endpoints are modelled in the mock, not verified against the vendor's documentation.
+- Automotive cores: a core written after its case exists does not queue a gate recheck (`core_ret`); the fraud release
+  needs `approve.decisions`, so an Approver or Admin releases it (the plan said Planner).
+- Table canaries: the standard quote is the first other market in the pack in the same currency; a table canary needs
+  a done replay of the flow (replay has no table-version support), has no automatic pause and cannot go full
+  (`rollout.full` is refused for tables).
 - Telecom: the case's battery and downstream facts are not yet wired from bench and recycler records; the agent does not
   prepare `requisition.reduce` itself. Medical: no demand model table (training rows stay on the case); a case waiting
   for disposal has no requeue hook yet. Used cars: saved views, role sharing and the days-in-stock alert are not built.
 - Migration 0060 (agent credentials) is filled: re-apply it on an existing database.
-- The gate lines of phases 3 to 13 are not ticked yet.
+- The gate lines of phases 3 to 13 are not all ticked yet; `PROGRESS.md` has the lines that are.
 - The compliance and accounting texts (CSRD, waste treatment codes, fixed-asset accounting, outside-client access) are
   orientation only: Kinective's Legal team reviews them before anyone relies on them.
 
-**To refresh in the final pass:** the api, source-sim and web counts at the last gate (`PROGRESS.md`), the ticked tasks,
-the pack list and versions, the smoke list.
+**Browser smokes** for plan 9: `frontend/scripts/smoke-p9-1.mjs` to `smoke-p9-11.mjs` (phases 1 to 11; phases 12 and 13
+have none until 13.11). Gate scripts: `scripts/dev/gate-p9.sh`, `story-matrix.sh`.
+
+**What is open:** the final smoke (13.11), the fresh clone and trial package proof (13.12) and the final gate (13.14).
+Test counts at each gate are in `docs/agents/plans/PROGRESS.md`; they are not repeated here.
 
 ## Order and rough size
 
