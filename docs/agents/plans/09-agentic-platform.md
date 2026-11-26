@@ -1087,7 +1087,7 @@ each story went.
 - [x] P9-13.10 OAuth for outside MCP clients
 - [ ] P9-13.11 Final end-to-end smoke over the five packs
 - [ ] P9-13.12 Story matrix, fresh clone and trial package proof
-- [ ] P9-13.13 Plan 9 docs, status and user guides
+- [x] P9-13.13 Plan 9 docs, status and user guides
 - [ ] P9-13.14 Phase 13 gate and final gate
 
 ## Task specs
