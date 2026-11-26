@@ -21,7 +21,7 @@ from tests import cpefixtures as cpe
 from tests.helpers import call
 
 pytestmark = pytest.mark.usefixtures("no_synced_conflicts")  # see conftest: synced conflicts and the hold policy
-POLICY = {"max_value": 20000, "min_confidence": 0.75, "routes": ["refurbish_redeploy"]}  # "lots under $20,000" (the pack's sample)
+POLICY = {"max_value": 20000, "min_confidence": 0.75, "routes": ["refurbish_redeploy"]}  # "lots under $20,000"
 
 
 @pytest.fixture(autouse=True)

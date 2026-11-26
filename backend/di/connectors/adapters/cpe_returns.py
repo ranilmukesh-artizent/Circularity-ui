@@ -1,5 +1,5 @@
-"""Subscriber returns and CPE refurbishment (cpe_bss, plan 9 P9-12.6): returned home routers, their factory-reset records, the lots
-built from them and the new-subscriber forecast. Read only.
+"""Subscriber returns and CPE refurbishment (cpe_bss, plan 9 P9-12.6): returned home routers, their factory-reset records, the
+lots built from them and the new-subscriber forecast. Read only.
 
 Written against source-sim's synthetic mock (source-sim/sim/vendors/cpe_returns): no real billing or refurbishment system is
 connected. API key in `x-api-key`; four unpaged lists, read in full (Resource.delta False). Subscriber references are codes only.

@@ -1,5 +1,5 @@
-"""The lines of a telecom CPE lot (plan 9, P9-12.6; stories NS-CPE-01, NS-CPE-02): one case per lot of one model and grade per week,
-each device of the lot a line that is released or held for its factory-reset record.
+"""The lines of a telecom CPE lot (plan 9, P9-12.6; stories NS-CPE-01, NS-CPE-02): one case per lot of one model and grade
+per week, each device of the lot a line that is released or held for its factory-reset record.
 
     refresh(s, case, pack)   the case's `lot`, read from the canonical store: the lot's serials (`asset.lot_serials` of the lot's
                              asset key) and each serial's `condition.factory_reset`; every valuation does it first
@@ -49,8 +49,9 @@ def _line(serial: str, rec: dict[str, Any] | None, ok: set[str]) -> dict[str, An
 
 def refresh(s: Session, c: store.Case, pack: Pack) -> None:
     """Set `c["lot"]` from the canonical store (module docstring); remove it when the lot has no serials on file."""
-    lot = s.execute(text("SELECT data FROM canonical WHERE model = 'asset' AND key = :k"), {"k": c.get("assetId")}).scalar()
-    serials = (lot or {}).get("lot_serials")
+    found = s.execute(text("SELECT data FROM canonical WHERE model = 'asset' AND key = :k"), {"k": c.get("assetId")}).scalar()
+    lot: dict[str, Any] = found or {}
+    serials = lot.get("lot_serials")
     if not isinstance(serials, list) or not serials:
         c.pop("lot", None)
         return

@@ -66,9 +66,9 @@ def clean() -> None:
         conn.execute(text("DELETE FROM work_item"))
         conn.execute(text("DELETE FROM pack_version"))
         conn.execute(text("DELETE FROM customer_overlay"))
-        for table in ("provenance", "canonical"):
-            conn.execute(text(f"DELETE FROM {table} WHERE key LIKE :p"), {"p": "%:SN-CPE-%"})
-            conn.execute(text(f"DELETE FROM {table} WHERE key LIKE :p"), {"p": "%:LOT-R7-%"})
+        for pattern in ("%:SN-CPE-%", "%:LOT-R7-%"):
+            conn.execute(text("DELETE FROM provenance WHERE key LIKE :p"), {"p": pattern})
+            conn.execute(text("DELETE FROM canonical WHERE key LIKE :p"), {"p": pattern})
         conn.execute(text("DELETE FROM standing_policy_version"))
         conn.execute(text("DELETE FROM standing_policy"))
 
@@ -102,9 +102,7 @@ def sync_lot(lot_id: str, *, resets: list[int] | None = None) -> list[str]:
     adapter: Any = ADAPTERS["cpe_bss"]
     docs = {
         "/lot-grades": [{"lotId": lot_id, "model": "R7", "grade": grade, "week": "2026-W47", "serials": serials}],
-        "/factory-resets": [
-            {"serial": serial(n), "method": "factory_reset", "firmwareRefreshed": True, "at": AT} for n in have
-        ],
+        "/factory-resets": [{"serial": serial(n), "method": "factory_reset", "firmwareRefreshed": True, "at": AT} for n in have],
     }
     with SessionLocal() as s:
         for name in ("lot_grades", "factory_resets"):
