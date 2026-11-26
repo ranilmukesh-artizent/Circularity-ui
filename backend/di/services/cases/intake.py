@@ -592,7 +592,10 @@ def revalue(s: Session, c: store.Case) -> None:
     stage is the caller's to move."""
     stage = c["stage"]
     _value(s, c, {})
-    c["stage"] = stage
+    if c.get("flow") != "service_desk" or stage not in OPEN_STAGES:
+        c["stage"] = stage
+    # else a ticket no one has acted on follows its decision (`_value` set it): a recommendation waits for approval, a held one
+    # (GR-S1, GR-12) has none. Its options exist only after its estimate, so the opening valuation could not know them (F2).
 
 
 def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:

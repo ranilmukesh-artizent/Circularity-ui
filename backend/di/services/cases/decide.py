@@ -302,8 +302,9 @@ def _battery(c: Mapping[str, Any], pack: Pack, t: Template) -> _Valued:
 
 
 def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as_of: datetime | None) -> _Valued | None:
-    """A ticket case (flow `service_desk`) is valued as its three options: fix, covered swap, upgrade (P9-4.6). None when the
-    case is not one, or its market has no tables: it is then valued as a tool-fleet return, as before."""
+    """A ticket case (flow `service_desk`) is valued as its three options: fix, covered swap, upgrade (P9-4.6). None only when the
+    case is not one. A ticket nothing can be priced for (a draft, no estimate, a recalled tool, a market without tables) has no
+    option open and no recommendation: GR-S1 holds it for a technician. It is never valued as a tool-fleet return (F2)."""
     sd = c.get("serviceDesk")
     if c.get("flow") != "service_desk" or not isinstance(sd, dict) or "lines" not in sd:
         return None
@@ -316,20 +317,17 @@ def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as
                 default=clock.now().date(),
             )
         )
+        decided_on = as_of.date() if as_of else clock.now().date()  # GR-S3 compares the cited tables with these
         inputs = import_module("di.services.service_desk.inputs").gather(
-            session, c, on
+            session, c, on, decided_on
         )  # not imported: the case store may not import repositories
     else:
         inputs = sd.get("inputs")  # a replay or a simulation without a session: the snapshot the case holds
     if inputs is None:
-        return None
-    ticket = (
-        service_desk.batch_ticket(inputs) if sd.get("batch") else service_desk.decide_ticket(inputs)
-    )  # a batch per tool (P9-4.8)
-    if (
-        ticket["best"] is None
-    ):  # nothing priced yet (a draft, no estimate): the return is valued as before, a technician checks first
-        return None
+        why = f"No approved tables for the market {sd.get('market') or 'of this ticket'}: a technician checks the tool first"
+        ticket = service_desk.unpriced_ticket(sd["lines"], bool(sd.get("batch")), why)
+    else:
+        ticket = service_desk.batch_ticket(inputs) if sd.get("batch") else service_desk.decide_ticket(inputs)  # a batch per tool
     values = [
         {"k": o["k"], "ok": o["eligible"], "gross": 0.0, "cost": 0.0, "hold": 0.0, "net": o["expected_margin"] or 0.0,
          "why": o["why"], "lines": [{"type": "v" if (o["expected_margin"] or 0) >= 0 else "c", "label": "Expected margin",

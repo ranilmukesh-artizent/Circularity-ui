@@ -53,6 +53,15 @@ def terms_of(c: dict[str, Any], on: date) -> dict[str, Any] | None:
     }
 
 
+def stale_tables(s: Session, c: dict[str, Any], on: date) -> list[str]:
+    """GR-S3 at the approval: the table versions the case's options cite that are not the approved ones in force on `on`
+    (none for a case that is not a service ticket).
+    The terms' `valid_until` runs from `on`."""
+    from di.services.service_desk import inputs  # lazy: inputs reads the repositories
+
+    return inputs.stale_refs(s, c, on)
+
+
 def _unit(s: Session, org: str | None, model_class: str) -> str | None:
     row = s.execute(
         text(

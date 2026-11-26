@@ -5,7 +5,9 @@
 Per line: the estimate the case holds (P9-4.4), the outputs of the `cover_terms` and `credit_rules` tables with the version each
 cites, the `terms` card, the refurbished stock of the class and the median turnaround of the similar repairs. For the case: the
 take-up curve (the pack's prior, `{a, b}`; the active `take_up` model of P9-4.11 takes its place, `source` "model <id>"),
-the account shift, the fx rate to USD and the approved table versions of `as_of`, which GR-S3 compares each cited version with.
+the account shift, the fx rate to USD and the approved table versions of the decision date,
+which GR-S3 compares each cited version with. Per line
+`recall` is the reason GR-12 gives when a notice holds the tool (None otherwise).
 
 - **Account shift.** With at least 10 offers to the account in the 24 months before `as_of`,
   `shift = logit((k + 1) / (n + 2)) - logit(base)`: `k` accepted of `n`, `base` the market's acceptance share in the window.
@@ -29,8 +31,10 @@ from di.repositories import market_tables as tables_repo
 from di.repositories import model_versions, refurb_stock
 from di.repositories.repair_history import similar
 from di.repositories.upgrade_offers import offers
+from di.services.cases import recall_evidence
 from di.services.modeler.pack import load_pack
 from di.services.modeler.tables import JdmTable, TableRef, ZenEvaluator
+from di.services.modeler.valuers import fleet_evidence
 from di.services.modeler.valuers.tool_fleet import CLS
 from di.services.models.cost import FLOW, PACK
 
@@ -100,8 +104,23 @@ def _decide(row: Any, given: Mapping[str, Any]) -> dict[str, Any]:
     return dict(ZenEvaluator().evaluate(JdmTable.model_validate(row.body), given).outputs)
 
 
-def gather(s: Session, case: Mapping[str, Any], as_of: date) -> ServiceDeskInputs | None:
-    """The valuer's inputs for the case's ticket on `as_of` (module docstring); None when the market lacks a table."""
+def stale_refs(s: Session, case: Mapping[str, Any], on: date) -> list[str]:
+    """GR-S3: the table versions the case's lines cite that are not the approved versions in force on `on`; empty for a case
+    that cites none (not a ticket, or no options yet)."""
+    sd = case.get("serviceDesk")
+    inputs = sd.get("inputs") if isinstance(sd, dict) else None
+    if not inputs:
+        return []
+    org, market = case.get("owner"), str(inputs["market"])
+    rows = (tables_repo.effective(s, org, PACK, FLOW, market, n, on) for n in CARDS)
+    now = {_ref(r) for r in rows if r is not None}
+    return sorted({c for ln in inputs["lines"] for c in ln.get("cited") or []} - now)
+
+
+def gather(s: Session, case: Mapping[str, Any], as_of: date, decided_on: date | None = None) -> ServiceDeskInputs | None:
+    """The valuer's inputs for the case's ticket on `as_of` (module docstring); None when the market lacks a table. The prices
+    are those in force on `as_of` (the estimate's day); `approved` are the versions in force on `decided_on` (default `as_of`,
+    never earlier), which GR-S3 compares the cited ones with."""
     base = case.get("serviceDesk")
     if not isinstance(base, dict) or not base.get("market"):
         return None
@@ -110,6 +129,10 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> ServiceDeskInput
     rows = {n: tables_repo.effective(s, org, PACK, FLOW, market, n, as_of) for n in CARDS}
     if any(r is None for r in rows.values()):
         return None
+    now = max(decided_on or as_of, as_of)
+    current = rows if now == as_of else {n: tables_repo.effective(s, org, PACK, FLOW, market, n, now) for n in CARDS}
+    notices = recall_evidence.evidence(s, None, None)["value"]["recalls"]  # GR-12, read once for every line
+    own = case.get("recallRelease") if isinstance(case.get("recallRelease"), dict) else None
     cur = rows["labour"].currency or ""  # type: ignore[union-attr]
     terms = {k: float(v) for k, v in rows["terms"].body["values"].items()}  # type: ignore[union-attr]
     history: dict[tuple[str, str], int | None] = {}
@@ -130,6 +153,9 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> ServiceDeskInput
             {"market": market, "family": cls, "age_months": ln.get("age_months") or 0, "life_used_pct": ln["life_used_pct"]},
         )
         est = ln.get("estimate")
+        recall, _, _ = fleet_evidence.recall_check(
+            str(ln["serial"]), cls, notices, own if ln["serial"] == case.get("serial") else None
+        )  # a person's release frees the line it was given for, as the page's line checks read it
         if fault is not None and (cls, fault) not in history:
             days = [
                 r.turnaround_days
@@ -157,6 +183,7 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> ServiceDeskInput
                 "terms": {**terms, "ref": refs[0]},
                 "refurb_stock": refurb_stock.available(s, org, cls),
                 "fix_days": history.get((cls, fault)) if fault else None,
+                "recall": None if recall.passed else recall.reason,  # GR-12: why no option of this tool may run
                 "cited": sorted({*(e["cites"] for e in (est or {}).get("lines", [])), *refs}),
             }
         )
@@ -166,6 +193,6 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> ServiceDeskInput
         "fx": float(fx_per_usd(s, cur, as_of)),
         "as_of": as_of.isoformat(),
         "take_up": take_up_of(s, account_shift(s, org, base.get("account"), market, as_of), market),
-        "approved": sorted(_ref(r) for r in rows.values() if r is not None),
+        "approved": sorted(_ref(r) for r in current.values() if r is not None),
         "lines": lines,
     }

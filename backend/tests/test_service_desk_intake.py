@@ -120,7 +120,8 @@ def test_sd_01_one_case_per_ticket():
     _ticket("CS0010042", lines)
     c = _open("CS0010042")
     assert c["template"] == "tool_fleet" and c["flow"] == "service_desk" and c["intake"]["reason"] == "service_ticket"
-    assert c["intake"]["key"] == "CS0010042:service_ticket" and c["recommendation"] is not None
+    assert c["intake"]["key"] == "CS0010042:service_ticket"
+    assert c["recommendation"] is None and [x["id"] for x in c["approvalHolds"]] == ["GR-S1"]
     d = c["serviceDesk"]
     assert d["ticket"] == "CS0010042" and d["batch"] is False and len(d["lines"]) == 1
     ln = d["lines"][0]
