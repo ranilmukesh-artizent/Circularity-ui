@@ -118,7 +118,7 @@ digest from Docker Hub (`https://hub.docker.com/v2/repositories/library/<image>/
 | `golden-sandbox.mjs` | Shared headless sandbox for the golden scripts (`freshDemo`, `plain`, `writeGolden`). |
 | `golden/<area>.mjs` | Per-area golden files: `analytics_audit` (screens reference, analytics, audit, nav, checks), `ask`, `fabric` (screens integration, mcp, access, workflows), `home_command` (home, command), `mcp_calls` (mcp.json), `product_case` (product, case, orchestration), `workflow_writes`. See `golden/README.md`. |
 | `dump-po-golden.mjs` | Writes `fixtures/golden/po/*.json` from the PO Modeler prototype (`docs/reference/po-modeler/recover-app-prototype.html`), the reference plan 8's Modeler code is tested against. |
-| `smoke-pages.mjs`, `smoke-signin.mjs`, `smoke-ask.mjs`, `smoke-approve.mjs`, `smoke-rt1048.mjs`, `smoke-fabric.mjs`, `smoke-modeler.mjs`, `smoke-mvp.mjs`, `smoke-p9-1.mjs`, `smoke-p9-2.mjs`, `smoke-p9-8.mjs`, `smoke-p9-4.mjs` | Browser smoke checks with Chrome: see [testing.md](testing.md#browser-smoke-scripts-frontendscripts). |
+| `smoke-pages.mjs`, `smoke-signin.mjs`, `smoke-ask.mjs`, `smoke-approve.mjs`, `smoke-rt1048.mjs`, `smoke-fabric.mjs`, `smoke-modeler.mjs`, `smoke-mvp.mjs`, `smoke-p9-1.mjs`, `smoke-p9-2.mjs`, `smoke-p9-8.mjs`, `smoke-p9-4.mjs`, `smoke-p9-6.mjs` | Browser smoke checks with Chrome: see [testing.md](testing.md#browser-smoke-scripts-frontendscripts). |
 | `screenshot.mjs <outDir> <account\|-> <route> [route…]` | Dev helper: screenshots routes of the running app, signed in as the account. |
 
 ## npm scripts (frontend/package.json)

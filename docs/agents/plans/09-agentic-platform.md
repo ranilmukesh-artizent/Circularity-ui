@@ -968,7 +968,7 @@ each story went.
 - [x] P9-6.17 Two worked device analytics questions
 - [x] P9-6.18 Retrained price model with shadow and promotion
 - [x] P9-6.19 Undercut and parts declaration checks
-- [ ] P9-6.20 Device recommerce browser smoke
+- [x] P9-6.20 Device recommerce browser smoke
 - [ ] P9-6.21 Phase 6 gate
 - [x] P9-7.1 Import a history batch with checks
 - [x] P9-7.2 As-of replay with the four measures
