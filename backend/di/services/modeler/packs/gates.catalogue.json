@@ -651,7 +651,8 @@
    "used_cars",
    "telecom_network",
    "medical_rental",
-   "itad"
+   "itad",
+   "rental_fleet"
   ],
   "trigger": {
    "routes": [
@@ -1258,7 +1259,8 @@
   "type": "Compliance",
   "stage": "condition",
   "packs": [
-   "tool_fleet"
+   "tool_fleet",
+   "rental_fleet"
   ],
   "trigger": {
    "routes": [

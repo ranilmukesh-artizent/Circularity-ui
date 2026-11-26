@@ -241,8 +241,9 @@ def test_shipped_packs_have_only_the_gates_a_phase_switched_on():
             "medical_rental": ["G-MED-DECON", "G-MED-SVC", "G-MED-FSN", "G-MED-REFURB", "G-DATA-3"],  # P9-11.1, data only
             "telecom_network": ["G-NET-INV", "G-NET-CFG", "G-NET-EXP", "G-NET-COV", "G-BAT-4", "G-DS-1", "G-WEEE-2"],
             "itad": ["G-DATA-1", "G-DATA-2", "G-CON-1", "G-DS-1", "G-WEEE-2"],  # P9-12.2, data only
+            "rental_fleet": ["G-SAFE-1", "G-DS-1"],  # P9-12.4, data only
         }.get(k, []), k
-        if k in ("used_cars", "medical_rental", "telecom_network", "itad"):
+        if k in ("used_cars", "medical_rental", "telecom_network", "itad", "rental_fleet"):
             continue  # their gates fire on a bare case by design; phases 9 to 11 test them
         got = evaluate_gates({"cls": "x"}, load_pack(k))
         # the tool fleet's contract right (P9-3.6) applies to every case: with no contract line it fails
