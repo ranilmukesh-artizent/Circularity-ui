@@ -205,6 +205,8 @@ def _prompt1() -> dict:
 def test_x_02_exactly_one_question():
     r = ok(call("config.read", _prompt1(), "planner-a"))
     assert r["match"]["key"] == "tool_fleet" and r["match"]["nearest_only"] is False
+    assert r["match"]["name"] == load_pack("tool_fleet").name  # the pack file's own name, for the screen
+    assert r["pack_names"]["tool_fleet"] == r["match"]["name"] and len(r["pack_names"]) >= 8  # derived from the pack files
     assert r["question"]["text"] and len(r["question"]["options"]) == 2
     qid = r["question"]["options"][0]["id"]
     assert call("config.draft", _prompt1(), "planner-a")["error"]["code"] == "validation_error"  # unanswered
@@ -361,3 +363,37 @@ def test_x_02_no_model_gives_the_deterministic_result():  # (e)
     assert r["reading"]["by_model"] is False and r["match"]["key"] == "tool_fleet"
     with SessionLocal() as s:  # a run that no model took part in leaves no row
         assert s.execute(text("SELECT count(*) FROM agent_run WHERE agent = 'recover-config'")).scalar_one() == 0
+
+
+def _every_pack() -> list[Pack]:
+    from di.services.modeler.pack import load_pack, pack_keys
+
+    return [load_pack(k) for k in pack_keys()]
+
+
+def test_ui_a2_every_pack_file_matches_its_own_sample_prompts():
+    """The list is derived from the pack files: a new pack must be found by its own prompts, not by another pack's unit word."""
+    packs = _every_pack()
+    assert len(packs) >= 8
+    for p in packs:
+        for prompt in (q for q in p.prompts if q):
+            m = match_pack(read_text(prompt), prompt, packs)
+            assert (m.key, m.nearest_only) == (p.key, False), (p.key, prompt, m)
+
+
+def test_ui_a2_one_generic_word_is_not_a_perfect_match():
+    """'asset' is industrial's unit: a text that only contains it must not score 100 for industrial."""
+    packs = _every_pack()
+    text = "Please keep the asset register tidy"
+    m = match_pack(read_text(text), text, packs)
+    assert m.score < 100, m
+    itad = "IT asset disposition: wipe laptops and certify data destruction"
+    m = match_pack(read_text(itad), itad, packs)
+    assert (m.key, m.nearest_only) == ("itad", False)
+
+
+def test_ui_a2_text_no_pack_describes_is_nearest_only():
+    packs = _every_pack()
+    for desc in ("We sell coffee beans to cafes", "We roast and ship coffee to cafes across the region"):
+        m = match_pack(read_text(desc), desc, packs)
+        assert m.nearest_only is True and m.score < 60, (desc, m)

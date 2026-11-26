@@ -69,12 +69,25 @@ export function changeTitle(cs: ChangeSet): string {
 /** The guardrail's refusals, one line each. */
 export const blockedLines = (cs: ChangeSet): string[] => cs.blocked.map((b) => `Blocked by ${b.guardrail}: ${b.text}`);
 
-/** The pack line: the score is `config.read`'s; below the bar it is only the nearest pack (amber). */
-export function matchLine(m: PackMatch | null, pack?: string): { text: string; amber: boolean } {
-  if (!m) return { text: `Matched pack: ${pack ?? 'none'}`, amber: false };
+/** A pack's name as the pack file gives it, short: "Used vehicles · lease and trade-in returns" reads "Used vehicles". */
+export const packLabel = (key: string, names?: Record<string, string>): string => (names?.[key] ?? key).split(' · ')[0].trim() || key;
+
+/**
+ * The pack line (UI audit A2): the score is `config.read`'s. A match reads "Matched: Used vehicles (86)"; below the bar no pack fits,
+ * so it says that (amber) and no score stands as a match. `pack` is the pack the draft was made against: when the person kept
+ * another one than the match, the line says so. `names` is `config.read`'s `pack_names` (the pack files' own names).
+ */
+export function matchLine(m: PackMatch | null, pack?: string, names?: Record<string, string>): { text: string; amber: boolean } {
+  const used = pack ? packLabel(pack, names) : 'none';
+  if (!m) return { text: `Matched: ${used}`, amber: false };
   const score = Math.round(m.score);
-  if (m.nearest_only) return { text: `Nearest pack: ${m.key} (${score}). No pack matched well. Check every change.`, amber: true };
-  return { text: `Matched pack: ${m.key} (${score})`, amber: false };
+  const nearest = packLabel(m.key, names);
+  if (m.nearest_only) {
+    const tail = pack ? ` Drafted against ${used}: check every change.` : '';
+    return { text: `No pack fits this description yet. Closest: ${nearest} (${score}).${tail}`, amber: true };
+  }
+  const base = `Matched: ${nearest} (${score})`;
+  return { text: pack && pack !== m.key ? `${base}. Drafted against ${used}, the one you picked.` : base, amber: false };
 }
 
 /** "Read 62 words, 1 explicit control, systems: SAP". */

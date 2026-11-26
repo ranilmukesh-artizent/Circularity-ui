@@ -81,8 +81,14 @@ def read(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     reading = read_text(i["text"], packs).model_copy(update={"by_model": cs.by_model})
     match = match_pack(reading, i["text"], packs)
     if cs.by_model and match.key != cs.pack:  # the model chose the pack; the score shown is the text's against the best
-        match = PackMatch(key=cs.pack, score=match.score, nearest_only=match.nearest_only)
+        match = PackMatch(
+            key=cs.pack,
+            score=match.score,
+            nearest_only=match.nearest_only,
+            name=next((p.name for p in packs if p.key == cs.pack), ""),
+        )
     return {"reading": reading.model_dump(mode="json"), "match": match.model_dump(mode="json"),
+            "pack_names": {p.key: p.name for p in packs},
             "question": cs.question.model_dump(mode="json") if cs.question else None}  # fmt: skip
 
 

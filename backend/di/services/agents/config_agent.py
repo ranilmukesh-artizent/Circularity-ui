@@ -47,6 +47,7 @@ from di.services.modeler.stages import STAGE_KEYS, StageKey
 log = logging.getLogger(__name__)
 
 BAR = 60  # a pack score below this is "nearest only": no pack is invented
+ONE_WORD_CAP = BAR - 5  # a one-word candidate (a unit, a system) scores at most this
 TIE = 5  # a model reading breaks a tie within this many points
 MAX_TEXT = 4000
 # Market codes the reading knows beside the packs' regions (two capital letters; "IT" and "IN" are left out: they are words).
@@ -85,6 +86,7 @@ class PackMatch(BaseModel):
     key: str
     score: float
     nearest_only: bool
+    name: str = ""  # the pack file's own name ("Used vehicles"), for the screen
 
 
 class Option(BaseModel):
@@ -326,9 +328,18 @@ def _candidates(p: Pack) -> list[str]:
     return [c for c in (p.name, p.industry, p.unit, routes, systems, *p.prompts) if c]
 
 
+def _one_score(t: str, candidate: str) -> float:
+    """`token_set_ratio` gives 100 when the candidate's words all occur in the text, so a one-word candidate (a unit like
+    "asset") would call any text containing it a perfect match. A one-word candidate never decides a match alone: its score
+    is capped below the bar (it still counts for ordering and ties)."""
+    c = _prep(candidate)
+    s = fuzz.token_set_ratio(t, c)
+    return min(s, ONE_WORD_CAP) if len(c.split()) < 2 else s
+
+
 def _score(text: str, p: Pack) -> tuple[float, int]:
     t = _prep(text)
-    scores = [fuzz.token_set_ratio(t, _prep(c)) for c in _candidates(p)]
+    scores = [_one_score(t, c) for c in _candidates(p)]
     return max(scores, default=0.0), sum(1 for s in scores if s >= BAR)
 
 
@@ -345,7 +356,7 @@ def match_pack(reading: Reading, text: str, packs: Sequence[Pack]) -> PackMatch:
         same = [t for t in top if t[0].unit == reading.unit]
         top = same or top
     p, s, _ = max(top, key=lambda t: (t[1], t[2]))
-    return PackMatch(key=p.key, score=round(s, 1), nearest_only=s < BAR)
+    return PackMatch(key=p.key, score=round(s, 1), nearest_only=s < BAR, name=p.name)
 
 
 # ---------------------------------------------------------------- drafting
