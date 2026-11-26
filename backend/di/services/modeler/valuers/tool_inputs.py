@@ -119,6 +119,22 @@ def merge_demand(base: Mapping[str, Any], extra: Mapping[str, Any]) -> dict[str,
     return out
 
 
+BATTERY_SOH = "battery_soh"  # the evidence type of a pack's state of health (P9-3.19): value `soh_pct`, `read_at`, `damaged`
+
+
+def battery_case(base: Mapping[str, Any], evidence: Mapping[str, Evidence | None]) -> dict[str, Any]:
+    """`base` (a `BAT` case as opened) with the state of health read from the `battery_soh` evidence (the tool telematics'
+    reading of the pack: percent, the date it was read, whether the pack is damaged): `soh`, `sohRead` and `damaged`. Without
+    the record `soh` is None and nothing is assumed (`battery.decide` then leaves only take-back). Neither argument is changed."""
+    c = copy.deepcopy(dict(base))
+    e = evidence.get(BATTERY_SOH)
+    v = e.value if e is not None else {}
+    c["soh"] = v.get("soh_pct")
+    c["sohRead"] = v.get("read_at") or (e.at.date().isoformat() if e is not None and v.get("soh_pct") is not None else None)
+    c["damaged"] = bool(v.get("damaged", c.get("damaged", False)))
+    return c
+
+
 def valuer_case(
     base: Mapping[str, Any], evidence: Mapping[str, Evidence | None], now: datetime | None = None,
     rul_model: RulModel | None = None,

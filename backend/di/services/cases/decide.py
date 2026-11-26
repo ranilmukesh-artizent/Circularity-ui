@@ -72,6 +72,7 @@ from di.services.modeler.templates import Template, template_of_pack
 from di.services.modeler.valuers import (
     APPROVALS,
     VALUERS,
+    battery,
     device,
     fleet_evidence,
     kind_of,
@@ -272,6 +273,15 @@ def _tool_fleet(
     return _Valued(routes, best["k"] if best else None, queue_plan, values=values)
 
 
+def _battery(c: Mapping[str, Any], pack: Pack, t: Template) -> _Valued:
+    """A battery pack (class `BAT`, P9-3.19) is valued by `battery.decide` on the pack's own figures, outside the queue plan:
+    its four paths, the best eligible one, no plan. The gates and the flow's rules act on its routes as on any other."""
+    dec = battery.decide(dict(c.get("valuer") or c), pack.valuer.params["battery"])
+    routes = to_routes(t, dec["all"])
+    _decorate(t, routes)
+    return _Valued(routes, dec["best"]["k"], None, values=dec["all"])
+
+
 def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as_of: datetime | None) -> _Valued | None:
     """A ticket case (flow `service_desk`) is valued as its three options: fix, covered swap, upgrade (P9-4.6). None when the
     case is not one, or its market has no tables: it is then valued as a tool-fleet return, as before."""
@@ -443,6 +453,8 @@ def decide_case(
     c = _load(case_or_facts, session)
     t = template_of_pack(pack)
     rules = _compliant(t, flow_ver.rules)
+    if pack.valuer.kind == "tool_fleet" and c.get("cls") == battery.CLASS:  # a pack: the facts the G-BAT gates read (P9-3.19)
+        c["battery"] = battery.gate_facts(c)["battery"]
     if pack.valuer.kind == "tool_fleet" and "stage" not in c:  # a sample-world return (P9-3.6)
         have = {r.get("type") for r in c.get("evidenceRecords") or []}
         c["evidenceRecords"] = [
@@ -464,7 +476,11 @@ def decide_case(
     if kind == "industrial":
         valued = _Valued(_industrial(before, session), None)
     elif kind == "tool_fleet":  # 2. valuation, then the queue plan, over the routes the gates left eligible
-        valued = _service_desk(before, t, session, as_of) or _tool_fleet(before, pack, t, rules, session, queue, planner, blocked)
+        valued = _service_desk(before, t, session, as_of) or (
+            _battery(before, pack, t)
+            if before.get("cls") == battery.CLASS
+            else _tool_fleet(before, pack, t, rules, session, queue, planner, blocked)
+        )
     elif kind == "device":
         valued = _device(before, t, rules)
     elif kind == "telecom_network":  # 2. valuation, then the queue plan of the units (P9-10.10)

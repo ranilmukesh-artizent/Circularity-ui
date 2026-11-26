@@ -421,6 +421,48 @@
     "locked": true
    },
    "active": true
+  },
+  {
+   "id": "G-BAT-1",
+   "params": {
+    "when": [
+     {
+      "fact": "cls",
+      "op": "eq",
+      "value": "BAT"
+     }
+    ],
+    "legal_review": "Battery regulation per market is unconfirmed (needs Legal review). Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  },
+  {
+   "id": "G-BAT-4",
+   "params": {
+    "when": [
+     {
+      "fact": "cls",
+      "op": "eq",
+      "value": "BAT"
+     }
+    ],
+    "legal_review": "Dangerous-goods rules for a damaged pack are unconfirmed (needs Legal review). Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  },
+  {
+   "id": "G-BAT-5",
+   "params": {
+    "when": [
+     {
+      "fact": "cls",
+      "op": "eq",
+      "value": "BAT"
+     }
+    ],
+    "legal_review": "Recycler permit rules per market are unconfirmed (needs Legal review). Kinective's Legal team must review before shipping."
+   },
+   "active": true
   }
  ],
  "dims": [
@@ -1006,6 +1048,38 @@
     "lifePerMonth": 1.2,
     "refurbLife": 20,
     "svc": 0.03
+   },
+   "battery": {
+    "id": "BAT",
+    "name": "Battery pack, 22 V 8 Ah",
+    "note": "A battery pack is valued by its own valuer (P9-3.19), not the tool classes above: no refurbish or harvest path. Synthetic figures; battery regulation per market needs Legal review.",
+    "newP": 185,
+    "min_soh": {
+     "release": 80,
+     "redeploy": 70,
+     "resell": 70
+    },
+    "res": 0.55,
+    "test": 8,
+    "mat": 9,
+    "hazmat": 14,
+    "fee": 6,
+    "damaged_pack": 18,
+    "sale_fee": 0.08,
+    "hold": 2,
+    "rate": 0.09,
+    "lead": {
+     "release": 4,
+     "redeploy": 3,
+     "resell": 9,
+     "exit": 6
+    },
+    "names": {
+     "release": "Re-issue to fleet",
+     "redeploy": "Tool pool",
+     "resell": "Pre-owned sale",
+     "exit": "Take-back recycling"
+    }
    },
    "poolk": [
     "lease",
