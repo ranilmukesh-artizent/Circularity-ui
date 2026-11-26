@@ -28,7 +28,7 @@ from di.core import jobs
 from di.core.config import get_settings
 from di.core.db import SessionLocal
 from di.core.logs import configure_logging
-from di.telemetry import setup_telemetry
+from di.telemetry import job_span, setup_telemetry
 
 log = logging.getLogger("di.worker")
 
@@ -81,7 +81,9 @@ def run_once() -> bool:
                 fn = HANDLERS.get(job.kind)
                 if fn is None:
                     raise LookupError(f"no handler for job kind {job.kind!r}")
-                fn(job.payload)
+                span, payload = job_span(job.kind, job.id, job.attempts, job.payload)  # plan 5: a no-op unless tracing is on
+                with span:
+                    fn(payload)
                 jobs.complete(session, job.id)
             except Exception as exc:  # every failure is recorded on the job
                 log.exception("job %s (%s) failed", job.id, job.kind)

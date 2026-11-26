@@ -84,3 +84,96 @@ def test_no_secret_reaches_a_span_attribute(traced):
     for s in exporter.get_finished_spans():
         for k, v in dict(s.attributes).items():
             assert SECRET not in str(v), (s.name, k)
+
+
+# ---------------------------------------------------------------- plan 5 task 2: worker and job traces
+@pytest.fixture(scope="module")
+def traced_tasks():
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+    from di import telemetry
+    from di.routes import tasks as tasks_routes
+
+    exporter = InMemorySpanExporter()
+    app = FastAPI()
+    app.include_router(tasks_routes.router)
+    telemetry.setup_telemetry("di-api", app, exporter=exporter)
+    with TestClient(app) as c:
+        yield c, exporter
+
+
+def _run_until(seen: list) -> None:
+    from di import worker
+
+    for _ in range(50):  # other queued jobs of the shared database may come first
+        if seen or not worker.run_once():
+            return
+
+
+def test_a_job_queued_by_a_request_carries_its_traceparent_and_the_worker_span_links_to_it(traced_tasks):
+    c, exporter = traced_tasks
+    exporter.clear()
+    from di import worker
+
+    kind = "test.otel.job"
+    seen: list = []
+    worker.HANDLERS[kind] = seen.append  # a task may only name a kind a worker runs
+    r = c.post("/api/v1/tasks", json={"kind": kind, "payload": {"n": 1}}, headers=h("developer"))
+    assert r.status_code == 201, r.text
+    carrier = r.json()["payload"]["_trace"]
+    server = next(s for s in exporter.get_finished_spans() if s.kind.name == "SERVER")
+    tid = format(server.context.trace_id, "032x")
+    assert carrier["traceparent"].startswith(f"00-{tid}-")
+    # the worker's handler sees the payload it always saw: the trace carrier is not part of it
+    exporter.clear()
+    _run_until(seen)
+    assert seen == [{"n": 1}]
+    job = [s for s in exporter.get_finished_spans() if s.name == f"job {kind}"]
+    assert len(job) == 1
+    span = job[0]
+    assert span.kind.name == "CONSUMER"
+    assert span.attributes["di.job.kind"] == kind
+    links = [(format(k.context.trace_id, "032x"), format(k.context.span_id, "016x")) for k in span.links]
+    assert links[0][0] == tid and len(links) == 1
+
+
+def test_a_failing_job_span_has_error_status(traced_tasks):
+    from di import worker
+
+    c, exporter = traced_tasks
+    kind = "test.otel.boom"
+
+    def boom(_payload):
+        raise RuntimeError("boom")
+
+    worker.HANDLERS[kind] = boom
+    r = c.post("/api/v1/tasks", json={"kind": kind}, headers=h("developer"))
+    assert r.status_code == 201, r.text
+    exporter.clear()
+    for _ in range(50):
+        if any(s.name == f"job {kind}" for s in exporter.get_finished_spans()) or not worker.run_once():
+            break
+    span = next(s for s in exporter.get_finished_spans() if s.name == f"job {kind}")
+    assert span.status.status_code.name == "ERROR"
+
+
+def test_nothing_is_added_to_a_job_payload_when_tracing_is_off(monkeypatch):
+    from di import telemetry
+    from di.core import jobs
+    from di.core.db import SessionLocal
+
+    monkeypatch.setattr(telemetry, "_provider", None)
+    with SessionLocal() as s:
+        job = jobs.enqueue(s, "ping", {"n": 1})
+        assert job.payload == {"n": 1}
+        s.rollback()
+
+
+def test_a_job_queued_outside_any_span_has_no_trace_carrier(traced_tasks):
+    from di.core import jobs
+    from di.core.db import SessionLocal
+
+    with SessionLocal() as s:
+        job = jobs.enqueue(s, "ping", {"n": 2})
+        assert job.payload == {"n": 2}
+        s.rollback()

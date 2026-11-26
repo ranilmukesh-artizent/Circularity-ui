@@ -38,6 +38,47 @@ def enabled() -> bool:
     return _provider is not None
 
 
+TRACE_KEY = "_trace"  # the job payload's key for the W3C trace carrier (plan 5, Task 2)
+
+
+def inject_trace(payload: dict[str, Any]) -> dict[str, Any]:
+    """A job's payload with the current trace context (`traceparent`) under `_trace`: what a request hands the worker so
+    the job's span links back to it. The payload itself when tracing is off or no span is current (no cost then)."""
+    if _provider is None:
+        return payload
+    from opentelemetry import propagate
+
+    carrier: dict[str, str] = {}
+    propagate.inject(carrier)
+    return {**payload, TRACE_KEY: carrier} if "traceparent" in carrier else payload
+
+
+def job_span(kind: str, job_id: int, attempt: int, payload: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
+    """The worker side: (a context manager that is the job's span, the payload without the trace carrier). The span is a
+    CONSUMER span `job {kind}` in a trace of its own, linked to the span that queued the job; an exception through it
+    marks it as an error. When tracing is off: a null context and the payload as it is."""
+    import contextlib
+
+    if _provider is None:
+        return contextlib.nullcontext(), payload
+    from opentelemetry import propagate
+
+    carrier = payload.get(TRACE_KEY)
+    rest = {k: v for k, v in payload.items() if k != TRACE_KEY}
+    links = []
+    if isinstance(carrier, dict):
+        queued = trace.get_current_span(propagate.extract({k: v for k, v in carrier.items() if isinstance(v, str)}))
+        if queued.get_span_context().is_valid:
+            links.append(trace.Link(queued.get_span_context()))
+    span = tracer.start_as_current_span(
+        f"job {kind}",
+        kind=trace.SpanKind.CONSUMER,
+        links=links,
+        attributes={"di.job.id": job_id, "di.job.kind": kind, "di.job.attempt": attempt},
+    )
+    return span, rest
+
+
 def _mask(match: re.Match[str]) -> str:
     return (match.group(1) or match.group(2) or "") + "[redacted]"
 

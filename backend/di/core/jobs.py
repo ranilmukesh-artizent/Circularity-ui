@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 
 from di.core.config import get_settings
 from di.models import Job
+from di.telemetry import inject_trace
 
 ACTIVE = ("queued", "running")  # the statuses a dedupe key is unique among (ux_job_dedupe)
 RETRYABLE = ("dead", "failed", "cancelled")
@@ -54,7 +55,7 @@ def enqueue(
     running job already holds, nothing is added and that job is returned."""
     values: dict[str, Any] = {
         "kind": kind,
-        "payload": payload or {},
+        "payload": inject_trace(payload or {}),  # plan 5: the request's trace context, only when tracing is on
         "priority": priority,
         "max_attempts": max_attempts or get_settings().job_max_attempts,
         "dedupe_key": dedupe_key,
