@@ -80,18 +80,19 @@ def co2_avoided(pack: Pack, cls: str | None, route: str, qty: float, *, confirme
     factor set, without a factor for the class or route, or under the `none` rule.
     """
     f = _factors()
-    if pack.valuer.carbon.set != f["set"]:
-        return None
     entry = f["packs"].get(pack.key)
+    set_name = f["set"] if entry is None else entry.get("set", f["set"])  # a pack may carry a set of its own (P9-12.6)
+    if pack.valuer.carbon.set != set_name:
+        return None
     rule = pack.valuer.carbon.d_rule
     if entry is None or rule == "none":
         return None
     e_log_entry = _lookup(entry["e_log"], route)
     if e_log_entry is None:
         return None
-    e_log = _factor("e_log", e_log_entry, f["set"])
+    e_log = _factor("e_log", e_log_entry, set_name)
     if rule == "transport_only":
-        return Co2(None, e_log.value * qty, f["set"], (e_log,))
+        return Co2(None, e_log.value * qty, set_name, (e_log,))
     e_new_entry = _lookup(entry["e_new"], cls)
     e_prep_entry = _lookup(entry["e_prep"], route)
     if e_new_entry is None or e_prep_entry is None:
@@ -103,8 +104,8 @@ def co2_avoided(pack: Pack, cls: str | None, route: str, qty: float, *, confirme
         d_entry = {**entry["d_forecast"], "value": d_low, "source": "Pack parameter d_low (low-confidence demand)"}
     else:
         d_entry = entry["d_confirmed"] if confirmed else entry["d_forecast"]
-    e_new = _factor("e_new", e_new_entry, f["set"])
-    d = _factor("d", d_entry, f["set"])
-    e_prep = _factor("e_prep", e_prep_entry, f["set"])
+    e_new = _factor("e_new", e_new_entry, set_name)
+    d = _factor("d", d_entry, set_name)
+    e_prep = _factor("e_prep", e_prep_entry, set_name)
     kg = js_round((e_new.value * d.value - e_prep.value - e_log.value) * qty)
-    return Co2(kg, None, f["set"], (e_new, d, e_prep, e_log))
+    return Co2(kg, None, set_name, (e_new, d, e_prep, e_log))

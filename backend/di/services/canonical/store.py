@@ -176,6 +176,18 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
         ).scalars()
         for asset_key in sorted(held):
             jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+    # a device's reset record releases its line of the open telecom CPE lot that holds it (plan 9, P9-12.6): one job per lot
+    resets = sorted({f.key for f in facts if f.model == "condition" and f.field == "factory_reset"})
+    if resets:
+        lots = session.execute(
+            text(
+                "SELECT DISTINCT data ->> 'assetId' FROM case_record WHERE stage <> 'closed' AND data ->> 'template' = "
+                "'telecom_cpe' AND jsonb_exists_any(COALESCE(data -> 'lot' -> 'heldKeys', '[]'::jsonb), CAST(:k AS text[]))"
+            ),
+            {"k": resets},
+        ).scalars()
+        for asset_key in sorted(lots):
+            jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
     # a late workbench grade re-evaluates the open tool-fleet cases of the serial (plan 9, P9-3.5): one job per case (deduped)
     for serial in sorted({f.key for f in facts if f.model == "condition" and f.field in GRADE_FIELDS}):
         ids = session.execute(

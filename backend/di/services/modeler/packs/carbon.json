@@ -30,4 +30,10 @@
      "d_confirmed": {"value": 1, "source": "Confirmed named order on the demand line", "year": 2026, "version": "cfs-2026.2", "licence": "synthetic, no third-party data"},
      "e_new": {"*": {"value": 55, "source": "Sample value (synthetic)", "year": 2026, "version": "cfs-2026.2", "licence": "synthetic, no third-party data"}},
      "e_prep": {"*": {"value": 0.2, "source": "Sample value per unit (synthetic)", "year": 2026, "version": "cfs-2026.2", "licence": "synthetic, no third-party data"}},
-     "e_log": {"*": {"value": 0.4, "source": "Sample value per unit (synthetic)", "year": 2026, "version": "cfs-2026.2", "licence": "synthetic, no third-party data"}}}}}
+     "e_log": {"*": {"value": 0.4, "source": "Sample value per unit (synthetic)", "year": 2026, "version": "cfs-2026.2", "licence": "synthetic, no third-party data"}}},
+   "telecom_cpe": {"unit": "device", "set": "cpe_gsma_2025",
+     "d_forecast": {"value": 1, "source": "Synthetic placeholder; the sustainability lead publishes the real set (against the new-subscriber forecast)", "year": 2025, "version": "cpe_gsma_2025", "licence": "synthetic, no third-party data"},
+     "d_confirmed": {"value": 1, "source": "Synthetic placeholder; the sustainability lead publishes the real set (against the new-subscriber forecast)", "year": 2025, "version": "cpe_gsma_2025", "licence": "synthetic, no third-party data"},
+     "e_new": {"*": {"value": 80, "source": "Synthetic placeholder; the sustainability lead publishes the real set (method after GSMA, Feb 2025)", "year": 2025, "version": "cpe_gsma_2025", "licence": "synthetic, no third-party data"}},
+     "e_prep": {"refurbish_redeploy": {"value": 4, "source": "Synthetic placeholder; the sustainability lead publishes the real set (method after GSMA, Feb 2025)", "year": 2025, "version": "cpe_gsma_2025", "licence": "synthetic, no third-party data"}},
+     "e_log": {"refurbish_redeploy": {"value": 1.5, "source": "Synthetic placeholder; the sustainability lead publishes the real set (method after GSMA, Feb 2025)", "year": 2025, "version": "cpe_gsma_2025", "licence": "synthetic, no third-party data"}}}}}

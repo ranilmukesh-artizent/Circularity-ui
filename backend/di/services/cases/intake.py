@@ -103,7 +103,17 @@ from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
-from di.services.cases import approval_hold, battery_wait, decide, gate_hold, named_demand, record_match, regrade, store
+from di.services.cases import (
+    approval_hold,
+    battery_wait,
+    cpe_lot,
+    decide,
+    gate_hold,
+    named_demand,
+    record_match,
+    regrade,
+    store,
+)
 from di.services.cases.lifecycle import STAGES
 from di.services.device import inputs as device_inputs
 from di.services.device import intake as device_intake
@@ -620,6 +630,8 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     was_held = isinstance(c.get("gateHold"), dict)
     if pack.key != "industrial":
         gate_hold.attach_evidence(s, c)  # the gates read the asset's compliance records (plan 9, P9-1.2)
+        if pack.key == cpe_lot.PACK:
+            cpe_lot.refresh(s, c, pack)  # a telecom CPE lot's lines, each with its reset record or held without (P9-12.6)
         if pack.key == CAR_TEMPLATE:
             car_read(s, c, pack)  # the inspection read, or an estimate, as the grade evidence (P9-9.7)
         if facts or not c.get("routes"):

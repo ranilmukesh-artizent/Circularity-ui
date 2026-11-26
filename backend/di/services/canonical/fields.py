@@ -790,3 +790,11 @@ CONNECTOR_FIELDS["asset"] |= {
     "target_market": "text",
     "udi": "text",
 }
+
+# Telecom CPE (plan 9, P9-12.6), written by the extra adapter cpe_bss: on `asset`, a returned device keyed by `serial_key`
+# (subscriber_ref: a code, never a name; returned_at) and a lot keyed by its id the same way (lot_serials: the list of the lot's
+# serials, lot_week); on `condition`, factory_reset ({method, firmwareRefreshed, at}); on `demand`, the new-subscriber forecast
+# of a model (new_subscriber_forecast: units for the week).
+CONNECTOR_FIELDS["asset"] |= {"lot_serials": "list", "lot_week": "text", "returned_at": "text", "subscriber_ref": "text"}
+CONNECTOR_FIELDS["condition"] |= {"factory_reset": "object"}
+CONNECTOR_FIELDS["demand"] |= {"new_subscriber_forecast": "number"}

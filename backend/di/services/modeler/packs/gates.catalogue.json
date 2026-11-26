@@ -537,7 +537,8 @@
    "used_cars",
    "telecom_network",
    "medical_rental",
-   "itad"
+   "itad",
+   "telecom_cpe"
   ],
   "trigger": {
    "routes": [
@@ -654,7 +655,8 @@
    "telecom_network",
    "medical_rental",
    "itad",
-   "rental_fleet"
+   "rental_fleet",
+   "telecom_cpe"
   ],
   "trigger": {
    "routes": [
@@ -761,7 +763,8 @@
    "used_cars",
    "telecom_network",
    "medical_rental",
-   "itad"
+   "itad",
+   "telecom_cpe"
   ],
   "trigger": {
    "routes": [
