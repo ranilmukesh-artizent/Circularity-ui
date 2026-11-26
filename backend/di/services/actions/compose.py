@@ -72,7 +72,7 @@ from di.services.agents.config_agent import MAX_TEXT, ChangeSet, ChangeSetError,
 from di.services.agents.playbooks import pack_author, stop_explainer
 from di.services.cases.decide import Decision, decide_case
 from di.services.modeler import compose as core
-from di.services.modeler import stop_reasons
+from di.services.modeler import mapping_choices, stop_reasons
 from di.services.modeler.compile import FlowVersion
 from di.services.modeler.gates import catalogue
 from di.services.modeler.overlay import OverlayError, apply_overlay, ops_json, parse_ops
@@ -563,10 +563,13 @@ def test_run(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         f"{s_.stage}: reached {s_.reached}, stopped {s_.stopped}; " + ", ".join(f"{r}: {n}" for r, n in s_.reasons)
         for s_ in stops if s_.stopped
     )  # fmt: skip
+    choices = mapping_choices.report(items, draft)  # what each choice of an ambiguous mapping would have stopped (P9-11.11)
+    facts += "".join(f"\n{c['text']}" for c in choices)
     words = stop_explainer.explain(ctx, facts, lambda t: stop_reasons.check_text(t, facts))
     return {
         "id": row["id"], "batch_id": batch.id, "sample": len(items), "total": total, "decided": n_decided,
-        "stages": [s_.view() for s_ in stops], "text": words or line, "by_model": words is not None,
+        "stages": [s_.view() for s_ in stops], "text": "\n".join([words or line, *(c["text"] for c in choices)]),
+        "by_model": words is not None, "mapping_choices": choices,
         "decisions": [{"item_id": t.item_id, "route": decided[t.item_id].route} for t in traces if t.stage is None],
     }  # fmt: skip
 

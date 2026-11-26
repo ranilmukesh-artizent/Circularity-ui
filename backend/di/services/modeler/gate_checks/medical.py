@@ -46,6 +46,7 @@ from collections.abc import Mapping, Sequence
 from datetime import date, timedelta
 from typing import Any
 
+from di.services.modeler import mapping_choices
 from di.services.modeler.evidence import evidence_of, parse_time
 from di.services.modeler.gates import CHECKS, GateDef, GateEffect, GateResult, gate_routes
 from di.services.modeler.pack import Pack
@@ -183,3 +184,44 @@ CHECKS[DECON_GATE] = check_decontamination
 CHECKS[SVC_GATE] = check_service_in_date
 CHECKS[FSN_GATE] = check_safety_notice
 CHECKS[REFURB_GATE] = check_refurbish_servicing
+
+
+# ---------------------------------------------------------------- the decontamination timestamp, per choice (MR-03)
+CHOICES = (("cycle_start", "cycleStartedAt", "decon_started_at"), ("cycle_end", "cycleEndedAt", "decon_ended_at"))
+
+
+def _fact(item: Mapping[str, Any], name: str) -> Any:
+    raw = (item.get("facts") or {}).get(name)
+    return raw.get("value") if isinstance(raw, Mapping) else raw
+
+
+def _stops(item: Mapping[str, Any], fact: str, pack: Pack, gate: GateDef) -> bool | None:
+    """Whether the gate stops the past device when the record is taken at the item's `fact` time; None without the times."""
+    at, checked_in = parse_time(_fact(item, fact)), parse_time(_fact(item, "checked_in_at"))
+    if at is None or checked_in is None:
+        return None
+    record = {"type": DECONTAMINATION, "at": at.isoformat(), "result": "pass", "value": {"checked_in_at": checked_in.isoformat()}}
+    return not check_decontamination({"evidenceRecords": [record]}, pack, gate).passed
+
+
+def decon_timestamp_report(items: Sequence[Mapping[str, Any]], pack: Pack, gate: GateDef) -> dict[str, Any] | None:
+    """How many past devices G-MED-DECON would have stopped under each choice of the timestamp the mapping `cycleEndedAt ->
+    condition.decon_ended_at` leaves to a person: the cycle start or the cycle end. Past items are history items whose facts
+    hold `decon_started_at`, `decon_ended_at` and `checked_in_at`; one without them is not counted. The gate is the real
+    check, so a count is never a model's. None when no item has the times."""
+    counted = [i for i in items if all(_stops(i, f, pack, gate) is not None for _, _, f in CHOICES)]
+    if not counted:
+        return None
+    stopped = {cid: sum(1 for i in counted if _stops(i, f, pack, gate)) for cid, _, f in CHOICES}
+    n = len(counted)
+    text = (
+        f"Of {n} past devices, taking the cycle start as the decontamination time would have stopped {stopped['cycle_start']} "
+        f"of {n} at the decontamination gate; taking the cycle end, {stopped['cycle_end']} of {n}."
+    )
+    return {
+        "gate": gate.id, "devices": n, "text": text,
+        "choices": [{"id": cid, "field": src, "stopped": stopped[cid]} for cid, src, _ in CHOICES],
+    }  # fmt: skip
+
+
+mapping_choices.REPORTERS[DECON_GATE] = decon_timestamp_report
