@@ -226,5 +226,6 @@ def apply_disclosures(routes: list[Route], results: Sequence[GateResult]) -> Non
 
 # a gate whose logic lives in a valuer module registers its check on import (`CHECKS`); that module imports this one
 from di.services.modeler.gate_checks import medical as _medical  # noqa: E402,F401
+from di.services.modeler.gate_checks import network as _network  # noqa: E402,F401
 from di.services.modeler.gate_checks import vehicle as _vehicle  # noqa: E402,F401
 from di.services.modeler.valuers import fleet_evidence as _fleet_evidence  # noqa: E402,F401

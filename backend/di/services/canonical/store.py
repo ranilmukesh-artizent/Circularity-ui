@@ -48,6 +48,7 @@ TITLE_FIELDS = (
     "payoff_confirmed",
 )  # a car's title facts (P9-9.8)
 DECON_FIELDS = ("decon_ended_at", "decon_started_at", "decon_record_ref", "decon_result")  # a device's decontamination (P9-11.6)
+INVENTORY_FIELDS = ("inventory_status", "model", "site")  # a unit's inventory facts (P9-10.6)
 OVERRIDE_RESOURCE = "conflict"  # a person's choice in the Conflict Queue (provenance.resource); imports are "import"
 
 
@@ -140,27 +141,22 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
         ).scalars()
         for asset_key in sorted(held):
             jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
-    # a car's title facts (the lien released, the payoff confirmed) re-check the used-car cases held on it (plan 9, P9-9.8)
-    titles = sorted({f.key for f in facts if f.model == "condition" and f.field in TITLE_FIELDS})
-    if titles:
+    # facts that can release a gate hold re-check the cases held on that asset, one recheck job per asset (deduped):
+    # a car's title (P9-9.8), a rental device's decontamination (P9-11.6), a telecom unit's inventory record (P9-10.6)
+    for model, fields, template in (
+        ("condition", TITLE_FIELDS, "used_cars"),
+        ("condition", DECON_FIELDS, "medical_rental"),
+        ("asset", INVENTORY_FIELDS, "telecom_network"),
+    ):
+        keys = sorted({f.key for f in facts if f.model == model and f.field in fields})
+        if not keys:
+            continue
         held = session.execute(
             text(
                 "SELECT DISTINCT data ->> 'assetId' FROM case_record WHERE stage <> 'closed' AND data ->> 'assetId' = ANY(:k) "
-                "AND data ->> 'template' = 'used_cars' AND jsonb_typeof(data -> 'gateHold') = 'object'"
+                "AND data ->> 'template' = :t AND jsonb_typeof(data -> 'gateHold') = 'object'"
             ),
-            {"k": titles},
-        ).scalars()
-        for asset_key in sorted(held):
-            jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
-    # a device's decontamination record re-checks the rental cases held on it (plan 9, P9-11.6): one recheck job per device
-    decons = sorted({f.key for f in facts if f.model == "condition" and f.field in DECON_FIELDS})
-    if decons:
-        held = session.execute(
-            text(
-                "SELECT DISTINCT data ->> 'assetId' FROM case_record WHERE stage <> 'closed' AND data ->> 'assetId' = ANY(:k) "
-                "AND data ->> 'template' = 'medical_rental' AND jsonb_typeof(data -> 'gateHold') = 'object'"
-            ),
-            {"k": decons},
+            {"k": keys, "t": template},
         ).scalars()
         for asset_key in sorted(held):
             jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")

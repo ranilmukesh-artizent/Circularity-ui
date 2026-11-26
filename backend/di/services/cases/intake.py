@@ -63,6 +63,12 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   out, and the minimum facts `asset_tag` and `return_date` come from them) are kept as the list `rental.facts`, each with
   its source and age. A second event for the same tag joins the open case under the intake lock, as for a car. The
   decontamination gate G-MED-DECON reads the device's record (`di.services.cases.decon_evidence`) and holds the case.
+- **One case per serial** (plan 9, P9-10.6, TN-04). A `telecom_network` case is keyed by the unit (`asset_key` is
+  `schema.serial_key(org, serial)`, the reason `decommission`, one event per unit of a removal job). Its facts (`serial`,
+  `model`, `site`, `removed_at`, `removal_job`, `programme`, `source`) are kept in `network.facts` with their source and
+  age, as for a car; the removal `site` and `model` are also `network.site` and `network.model`, which the inventory match
+  gate G-NET-INV compares with the inventory (`di.services.cases.inventory_evidence`). A second event for the serial joins
+  the open case (`intake.joined`), whatever its reason.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
 
 The case reads (live rules, the active model, PLM) sit above the case store; this is the one place a case is opened from
@@ -140,8 +146,8 @@ def seed_of(case_id: str) -> int:
 # ---------------------------------------------------------------- checks
 def problem(s: Session, i: dict[str, Any]) -> tuple[str, str] | None:
     """Why the intake cannot open a case (code, message), or None."""
-    if i.get("reason") not in REASONS:
-        return "validation_error", f"The reason is one of {', '.join(REASONS)}."
+    if i.get("reason") not in (*REASONS, *UNIT_REASONS):
+        return "validation_error", f"The reason is one of {', '.join((*REASONS, *UNIT_REASONS))}."
     key = i.get("template_key")
     imported = published_keys(s)
     if key not in TEMPLATE_KEYS and key not in imported:
@@ -599,6 +605,75 @@ def _join_one(
     return c
 
 
+# ---------------------------------------------------------------- telecom units (P9-10.6)
+UNIT_TEMPLATE = "telecom_network"
+UNIT_SOURCE = {"decommission": "tn_decom"}  # the source an event's facts come from unless it names one
+UNIT_FIELDS = {  # a case fact -> the `asset` field that gives its source and age (the tracker's own writes)
+    "serial": "serial", "model": "model", "removed_at": "removed_at", "removal_job": "removal_job", "programme": "programme",
+}  # fmt: skip
+UNIT_REASONS = ("decommission",)  # the removal of a unit (the pack's intake trigger), allowed beside REASONS by `problem`
+
+
+def unit_facts(s: Session, key: str, facts: Mapping[str, Any], source: str, at: datetime) -> list[dict[str, Any]]:
+    """Each fact of a removed unit with its source and age (in days): when the event's source wrote the fact's canonical
+    `asset` field, that write's time; else the event's."""
+    asset = canonical.get(s, "asset", key)
+    out: list[dict[str, Any]] = []
+    for name, value in facts.items():
+        when = (_newest(asset, UNIT_FIELDS[name], source) if name in UNIT_FIELDS else None) or at
+        out.append({"fact": name, "value": value, "source": source, "at": when.isoformat(), "ageDays": _age_days(when)})
+    return out
+
+
+def unit_view(facts: Mapping[str, Any], source: str, kept: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    """The case's `network`: the unit's serial, model, removal `site`, `removedAt` and job, the first `source` and every
+    fact with its source and age (`facts`, the newest last). The inventory match gate reads the model and the site."""
+    return {
+        "serial": facts.get("serial"), "model": facts.get("model"), "site": facts.get("site"),
+        "removedAt": facts.get("removed_at"), "job": facts.get("removal_job"), "source": source, "facts": list(kept),
+    }  # fmt: skip
+
+
+def unit_case(s: Session, asset_key: str) -> str | None:
+    """The open (not closed) case of the unit, if any."""
+    row = s.execute(
+        text(
+            "SELECT id FROM case_record WHERE stage <> 'closed' AND data ->> 'template' = :t AND data ->> 'assetId' = :a "
+            "ORDER BY id LIMIT 1"
+        ),
+        {"t": UNIT_TEMPLATE, "a": asset_key},
+    ).first()
+    return row[0] if row else None
+
+
+def _join_unit(s: Session, case_id: str, i: dict[str, Any], facts: dict[str, Any], at: datetime, actor: str) -> store.Case:
+    """A second event for a unit joins its open case: its facts are added with their own source and age, the event is listed
+    in `intake.joined`, the case is valued again while no one has acted on it, and the stage log says so."""
+    c = store.get(s, case_id, for_update=True)
+    if c is None:  # not reached: unit_case just found it under the same lock
+        raise ActionError("not_found", f"No case {case_id}.")
+    by = i.get("by") or actor
+    net = c.setdefault("network", unit_view(facts, facts["source"], []))
+    net["facts"] += unit_facts(s, i["asset_key"], facts, facts["source"], at)
+    for name, field in (("model", "model"), ("site", "site"), ("removed_at", "removedAt"), ("removal_job", "job")):
+        if facts.get(name) is not None:  # the newest event's removal facts are the case's
+            net[field] = facts[name]
+    c["intake"].setdefault("joined", []).append(
+        {"key": intake_key(i.get("dedupe_as") or i["asset_key"], i["reason"]), "reason": i["reason"], "by": by,
+         "source": facts["source"], "at": at.astimezone(UTC).isoformat()}
+    )  # fmt: skip
+    if isinstance(c.get("valuer"), dict):
+        c["valuer"] |= {k: v for k, v in facts.items() if k != "source"}
+    if c["stage"] in OPEN_STAGES:
+        revalue(s, c)
+    store.save(s, c)
+    s.execute(
+        text("INSERT INTO case_stage_log (case_id, from_stage, to_stage, reason, actor) VALUES (:c, :st, :st, :r, :a)"),
+        {"c": case_id, "st": c["stage"], "r": f"Joined by {i['reason']} from {facts['source']}", "a": actor},
+    )
+    return c
+
+
 # ---------------------------------------------------------------- open
 def _next_id(s: Session) -> str:
     top = s.execute(text("SELECT max(CAST(substring(id FROM 4) AS integer)) FROM case_record WHERE id ~ '^RT-[0-9]+$'")).scalar()
@@ -623,6 +698,12 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
         if joined := one_open(s, i["template_key"], i["asset_key"]):
             return _join_one(s, one, joined, i, facts | {"source": source}, at, actor)
         facts = one_known(s, one, i["asset_key"]) | facts | {"source": source}
+    unit = i["template_key"] == UNIT_TEMPLATE
+    if unit:  # one case per serial (P9-10.6): a second event for the unit joins the open case
+        source = str(i.get("source") or facts.get("source") or UNIT_SOURCE.get(i["reason"], ""))
+        at = parse_time(i.get("at")) or clock.now()
+        if joined := unit_case(s, i["asset_key"]):
+            return _join_unit(s, joined, i, facts | {"source": source}, at, actor)
     case_id = _next_id(s)
     if i["template_key"] == "tool_fleet":
         facts = tool_return_facts(facts, i["asset_key"], i["reason"])
@@ -634,6 +715,8 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     c = _base(case_id, i, known, i.get("by") or actor)
     if one is not None:
         c[one.group] = {one.id_fact: facts.get(one.id_fact), "facts": one_facts(s, one, i["asset_key"], facts, source, at)}
+    if unit:
+        c["network"] = unit_view(facts, source, unit_facts(s, i["asset_key"], facts, source, at))
     kept = ("serial", "contract_id", "line_id", "flow", "serviceDesk")  # a return's (P9-3.4), a ticket's (P9-4.3)
     c |= {k: known[k] for k in kept if known.get(k) is not None}
     if is_refresh(c):
