@@ -96,7 +96,7 @@ from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
-from di.services.cases import decide, gate_hold, named_demand, record_match, regrade, store
+from di.services.cases import approval_hold, decide, gate_hold, named_demand, record_match, regrade, store
 from di.services.cases.lifecycle import STAGES
 from di.services.device import inputs as device_inputs
 from di.services.device import intake as device_intake
@@ -576,6 +576,8 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
             )  # the payout once graded: within the limit adjusted, else for Customer care (P9-6.8)
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
+    if pack.key == CAR_TEMPLATE:  # a decision over the pack's recon limit waits for the manager, as an item in My work (P9-9.11)
+        approval_hold.sync(s, c, pack)
 
 
 def one_open(s: Session, template: str, asset_key: str) -> str | None:

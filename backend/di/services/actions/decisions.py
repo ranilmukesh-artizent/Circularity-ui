@@ -795,4 +795,5 @@ def escalation_send(i: dict[str, Any], ctx: CallContext):
 
 
 # The hook that lets a standing policy approve a submitted decision is registered wherever decisions are (worker too).
+import di.services.actions.approval_items  # noqa: E402 - closes a held decision's approval item (P9-9.11)
 import di.services.actions.standing_policy  # noqa: E402,F401

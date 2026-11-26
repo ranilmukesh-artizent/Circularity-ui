@@ -42,7 +42,7 @@ from sqlalchemy.orm import Session
 
 from di.core import clock
 from di.services.actions.registry import ActionError
-from di.services.cases import gate_hold, store
+from di.services.cases import car_facts, gate_hold, store
 from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
 from di.services.device import verify as _device_verify  # noqa: F401 - registers the check of the gate G-DEV-QUOTE (P9-6.5)
 from di.services.device import wipe as _device_wipe  # noqa: F401 - registers the check of the gate G-DEV-WIPE (P9-6.7)
@@ -65,7 +65,7 @@ from di.services.modeler.gates import (
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack
 from di.services.modeler.templates import Template, template_of_pack
-from di.services.modeler.valuers import VALUERS, device, fleet_evidence, service_desk, tool_fleet
+from di.services.modeler.valuers import VALUERS, device, fleet_evidence, service_desk, tool_fleet, used_cars
 from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.routes_adapter import to_routes
 from di.services.modeler.valuers.tool_fleet import PathValue
@@ -103,6 +103,8 @@ class Decision:
     extra: Mapping[str, float] = field(default_factory=dict)
     case_fields: Mapping[str, Any] = field(default_factory=dict)
     ticket: Mapping[str, Any] | None = None  # a service ticket's options, holds and inputs (P9-4.6)
+    approvals: list[dict[str, Any]] = field(default_factory=list)  # the pack's approval limits on the case (P9-9.11)
+    evidence: list[str] = field(default_factory=list)  # the plain facts behind the recommendation (P9-9.11)
 
 
 class WhatIfPlanner:
@@ -134,6 +136,8 @@ class _Valued:
     plan: dict[str, Any] | None = None
     figures: Mapping[str, Mapping[str, float]] = field(default_factory=dict)
     ticket: dict[str, Any] | None = None
+    approvals: list[dict[str, Any]] = field(default_factory=list)  # a used car's approval limits (P9-9.11)
+    facts: Mapping[str, Any] = field(default_factory=dict)  # the facts the valuer read (the evidence lines read them)
 
 
 # ---------------------------------------------------------------- the steps
@@ -297,6 +301,17 @@ def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule]) ->
     )
 
 
+def _days(v: PathValue) -> float:
+    d = (v.get("dest") or {}).get("days")
+    return float(d) if isinstance(d, int | float) and not isinstance(d, bool) else float("inf")
+
+
+def best_of(values: Sequence[PathValue]) -> PathValue | None:
+    """The valued channel with the best net after holding costs; a tie goes to the fewer days to sell (a channel that names no
+    days is not "fewer"), then to the listed order (P9-9.11)."""
+    return max((v for v in values if v["ok"]), key=lambda v: (v["net"], -_days(v)), default=None)
+
+
 def _plugin(kind: str, c: Mapping[str, Any], pack: Pack, t: Template, as_of: datetime | None) -> _Valued:
     """A pack valued by the `VALUERS` plug-in of its kind (I-21; the standard valuer reads the pack's own value lines) on
     the case's facts: the snapshot of a stored case over its fields, a facts mapping as it is. The values are given with
@@ -305,8 +320,10 @@ def _plugin(kind: str, c: Mapping[str, Any], pack: Pack, t: Template, as_of: dat
     values = VALUERS[kind](facts, pack, as_of)
     routes = to_routes(t, values)
     _decorate(t, routes)
-    best = max((v for v in values if v["ok"]), key=lambda v: v["net"], default=None)
-    return _Valued(routes, best["k"] if best else None)
+    best = best_of(values)
+    if kind != "used_cars":
+        return _Valued(routes, best["k"] if best else None)
+    return _Valued(routes, best["k"] if best else None, approvals=used_cars.approval_checks(facts, pack, values), facts=facts)
 
 
 def _industrial(c: dict[str, Any], session: Session | None) -> list[Route]:
@@ -389,6 +406,10 @@ def decide_case(
                 if e.type not in have
             ),
         ]  # its evidence is complete: an active contract line, so the gates pass and the sample's numbers stay
+    if _valuer_kind(pack) == "used_cars" and session is not None and c.get("assetId"):
+        for model, data in car_facts.records(session, str(c["assetId"])).items():  # the car's money facts (P9-9.11)
+            if not isinstance(c.get(model), Mapping):  # the gates, diversions and valuer read them as `asset.<fact>`
+                c[model] = data
     before = dict(c)  # what the valuers read: the case as it was before a hold set its stage and recommendation
     results = gate_hold.apply(c, [], pack, as_of)  # 1. gates (and the hold), before any valuation or queue plan
     blocked = frozenset(i for r in results if not r.passed and r.effect.kind == "block" for i in r.effect.routes)
@@ -434,7 +455,16 @@ def decide_case(
         required_steps=list(c.get("requiredSteps") or []),
         hold=c.get("gateHold"), trace=TRACE, as_of=as_of, extra=_extra(rec, valued.figures),
         case_fields={k: c[k] for k in GATE_KEYS if k in c}, ticket=_ticket_of(valued.ticket, rec),
+        approvals=valued.approvals if rec else [],
+        evidence=_evidence(valued, rec, pack),
     )  # fmt: skip
+
+
+def _evidence(valued: _Valued, rec: Route | None, pack: Pack) -> list[str]:
+    """The plain facts behind a used car's recommendation (the valuer's hook, P9-9.11); none for another pack or no route."""
+    if rec is None or not valued.facts:
+        return []
+    return used_cars.evidence_lines(valued.facts, cast(PathValue, {"k": rec["id"]}), pack)
 
 
 def _ticket_of(ticket: dict[str, Any] | None, rec: Route | None) -> dict[str, Any] | None:
@@ -458,6 +488,14 @@ def write_back(case: MutableMapping[str, Any], d: Decision) -> None:
     if d.rules_applied or d.waived or d.preferred:
         case.update(rulesApplied=d.rules_applied, rulesWaived=d.waived, preferred=d.preferred)
     case.pop("approvalHolds", None)
+    for k in ("approvalChecks", "evidenceLines"):
+        case.pop(k, None)
+    if d.approvals:  # a used car's approval limits (P9-9.11): the results, and the ones that hold the decision
+        case["approvalChecks"] = [dict(a) for a in d.approvals]
+        if held := [dict(a) for a in d.approvals if not a["passed"]]:
+            case["approvalHolds"] = held
+    if d.evidence:
+        case["evidenceLines"] = list(d.evidence)
     if d.ticket is not None and isinstance(
         case.get("serviceDesk"), dict
     ):  # a ticket: each line's options, the holds I-10 and I-11 read

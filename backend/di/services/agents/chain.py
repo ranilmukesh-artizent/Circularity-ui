@@ -141,6 +141,9 @@ def stage_context(defn: StageDef, mod: StageModule, st: dict[str, Any], case: Ma
         stage=defn.id, autonomy=defn.autonomy, confidence=mod.confidence(st, case), threshold=defn.threshold,
         value=case_value(case), value_limit=defn.value_limit, bulk_limit=defn.bulk_limit,
         model_concerns=[t for texts in (st.get("concerns") or {}).values() for t in texts],
+        value_holds=[
+            str(h["reason"]) for h in case.get("approvalHolds") or [] if isinstance(h, Mapping) and h.get("kind") == "value"
+        ],  # P9-9.11: an approval limit the decision is over (a used car's recon)
     )  # fmt: skip
 
 

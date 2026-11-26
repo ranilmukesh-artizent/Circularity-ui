@@ -803,6 +803,11 @@
   "params": {
    "params": {
     "plugin": "used_cars",
+    "lot_names": {
+     "LOT-N": "North lot",
+     "LOT-C": "Central lot",
+     "LOT-S": "South lot"
+    },
     "holding_cost_per_day": 38,
     "transport_per_mile": 1.1,
     "retail_selling_cost": 450,

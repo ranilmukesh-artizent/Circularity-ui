@@ -38,4 +38,5 @@ class StageContext:
     value_limit: Decimal | None
     bulk_limit: int | None
     guardrail_holds: list[str] = field(default_factory=list)
+    value_holds: list[str] = field(default_factory=list)  # approval limits the case is over, as the cause (P9-9.11)
     model_concerns: list[str] = field(default_factory=list)  # held concerns of earlier stage readings (P9-2.18)

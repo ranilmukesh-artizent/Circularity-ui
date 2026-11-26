@@ -8,7 +8,8 @@
                                      taint of the run, the case's open exceptions and conflicts, the agent's registry row)
 
 Reasons (`HoldReason`): `risk` (a guardrail needs an owner, more items than the bulk limit, an open exception or a conflict
-on the case), `value` (above the stage's limit), `confidence` (below the stage's threshold), `taint` (the run read
+on the case), `value` (above the stage's limit, or over an approval limit the pack sets on a fact of the case: a used car's
+recon over AP-UC-RECON holds at every level, P9-9.11), `confidence` (below the stage's threshold), `taint` (the run read
 untrusted content), `destructive` (a delete, discard or revert), `autonomy` (the stage is set to Recommend only, or the
 agent may only propose), `model_concern` (a stage's model raised a concern with `hold`, P9-2.18: it holds every later write
 of the run at every level; the model adds caution and never clears a hold, and a person's accept of the proposal is the
@@ -102,6 +103,7 @@ def evaluate_hold(
     policy: HoldPolicy,
     stage_name: str = "The stage",
     model_concerns: list[str] | None = None,
+    value_holds: list[str] | None = None,
 ) -> list[Hold]:
     """The reasons to hold `action` for a person at this autonomy, in the order they are decided (empty: it may run)."""
     out: list[Hold] = []
@@ -111,6 +113,7 @@ def evaluate_hold(
         out.append(Hold("taint", "The run read untrusted content, so a person confirms every write."))
     out += [Hold("model_concern", c) for c in model_concerns or []]  # a stage's model raised it: it only ever adds caution
     out += [Hold("risk", _guardrail(g)) for g in guardrail_holds]
+    out += [Hold("value", v) for v in value_holds or []]  # an approval limit the case is over (P9-9.11): every level
     if autonomy == "recommend":
         out.append(Hold("autonomy", f"{stage_name} is set to Recommend only"))
         return out
@@ -195,6 +198,7 @@ def hold_check(a: ActionDef, i: dict[str, Any], ctx: "CallContext") -> list[Hold
         policy=policy,
         stage_name=name,
         model_concerns=concerns,
+        value_holds=st.value_holds if st is not None else None,
     )
     agent = registry.get(ctx.session, ctx.preparer)
     if agent is not None and agent.autonomy == "propose":
