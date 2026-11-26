@@ -127,6 +127,15 @@ def sales(s: Session, since: date, until: date) -> list[SaleRow]:
     return [SaleRow(r[0], r[1], r[2], r[3], _f(r[4]), _f(r[5]), _f(r[6]), r[7], r[8]) for r in rows]
 
 
+def sales_by_id(s: Session, ids: list[str]) -> list[SaleRow]:
+    """The sales with these ids, oldest first (P9-6.12: the sales a sync just landed)."""
+    rows = s.execute(
+        text(f"SELECT {_SALE} FROM device_sale WHERE sale_id = ANY(:ids) ORDER BY settled_at, sale_id"),  # noqa: S608 - fixed column list
+        {"ids": ids},
+    )
+    return [SaleRow(r[0], r[1], r[2], r[3], _f(r[4]), _f(r[5]), _f(r[6]), r[7], r[8]) for r in rows]
+
+
 def launches(s: Session, as_of: date) -> list[LaunchRow]:
     """The launches on or before `as_of`, oldest first."""
     rows = s.execute(

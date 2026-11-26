@@ -331,7 +331,9 @@ def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule]) ->
     lot = _valuer_case(c, "device")
     dec = device.decide(dict(lot), _rule_dicts(rules))
     own = {x["k"]: x for x in device.decide(dict(lot), [])["all"]}
-    routes = to_routes(t, [x | {"ok": own[x["k"]]["ok"], "why": own[x["k"]]["why"]} for x in dec["all"]])
+    routes = to_routes(
+        t, [x | {"ok": own[x["k"]]["ok"], "why": own[x["k"]]["why"]} for x in dec["all"]], listing=bool(lot.get("imei"))
+    )  # a received device is listed on its channel (P9-6.12)
     _decorate(t, routes)
     best = dec["best"]
     figures = {

@@ -152,6 +152,7 @@ from di.services.actions.pipeline import CallContext
 from di.services.cases import gate_hold, record_match, replan
 from di.services.device import lock as device_lock
 from di.services.device import payout as device_payout
+from di.services.device import settle as device_settle
 from di.services.device import verify as device_verify
 from di.services.device import wipe as device_wipe
 from di.services.execution import (
@@ -637,6 +638,7 @@ def device_block(c: Case, session: Session | None = None) -> dict | None:
         ),
         "wipe": device_wipe.view(session, c) if session is not None else None,  # the wipe certificate (P9-6.7)
         "payout": device_payout.view(session, c) if session is not None else None,  # the payout adjustment (P9-6.8)
+        "settlement": device_settle.view(c),  # the sale's price against the forecast (P9-6.12)
         # the price of each channel with its interval and feed date, and what holds it (P9-6.10)
         "channels": device_price.channels_view(v) if v.get("imei") else None,
         "priceHolds": [h for h in c.get("approvalHolds") or [] if h.get("id") in device_price.PRICE_GUARDS],

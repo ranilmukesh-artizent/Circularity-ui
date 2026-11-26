@@ -20,6 +20,10 @@ changes nothing). They are upserts on the source's key, so a sync twice is a syn
     replacementDemand  device_replacement_demand     sku_key, grade_min, qty (units), unit_cost (price); `reserved` is kept
     lots               not read: the bids name their lot
 Only listings carry an org unit (the source's; None: shared).
+
+The reads change nothing at the source. The one write to it is a received device's listing (`POST /listings`, the `list`
+step of an approved case, `di.services.instructions.writers.list_device`). A sale new to us settles the cases it names
+(`di.services.device.settle.on_sale`), in the same session as the landing.
 """
 
 import json
@@ -158,7 +162,19 @@ class DeviceMarketAdapter(GenericAdapter):
     def land(s: Session, name: str, batch: list[Record], org: str | None) -> list[Record]:
         """Upsert a batch in the sync's session (a rolled-back run undoes it), then hand its records on."""
         if batch:
+            ids = [r.ext_id for r in batch]
+            known = (
+                set(s.execute(text("SELECT sale_id FROM device_sale WHERE sale_id = ANY(:i)"), {"i": ids}).scalars())
+                if name == "sales"
+                else set()
+            )
             s.execute(UPSERT[name], [params(name, r.payload, org) for r in batch])
+            if name == "sales":  # a sale new to us settles its cases (P9-6.12); one we had does not settle again
+                from di.repositories import device_market
+                from di.services.device import settle
+
+                for sale in device_market.sales_by_id(s, [i for i in ids if i not in known]):
+                    settle.on_sale(s, sale)
         return batch
 
     def map(self, record: Record) -> list[Fact]:  # noqa: ARG002 - the rows are landed as they are read

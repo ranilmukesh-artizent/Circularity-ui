@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react';
 import type { CaseAnalysis, CaseRec, CaseScreen } from '../../../api/case';
 import * as D from './DecideTabs';
-import { ChannelsTab, ComplianceTab, DeviceTab, PayoutTab, QuoteTab } from './DeviceTabs';
+import { ChannelsTab, ComplianceTab, DeviceTab, PayoutTab, QuoteTab, SettlementTab } from './DeviceTabs';
 import * as E from './EarlyTabs';
 import * as X from './ExecuteTabs';
 import { BatchTab, CreditLeverTab, EstimateTab, OptionsTab, TicketTab } from './ServiceDeskTabs';
@@ -43,7 +43,10 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
     ];
     case 7: return r ? [['rationale', 'Rationale', X.RationaleTab], ['checks', 'Checks', X.ChecksTab], ['history', 'History', X.HistoryTab]] : [];
     case 8: return r ? [['plan', 'Plan', X.PlanTab], ['route', 'Route and timing', X.MoveTab], ['acks', 'Messages and acknowledgements', X.AcksTab], ['instr', 'Instruction', X.InstrTab]] : [];
-    case 9: return r ? [['delivery', 'Delivery', X.DeliveryTab], ['costs', 'Actual costs', X.CostsTab], ['docs', 'Documents', X.DocsTab]] : [];
+    case 9: return r ? [
+      ['delivery', 'Delivery', X.DeliveryTab], ['costs', 'Actual costs', X.CostsTab], ['docs', 'Documents', X.DocsTab],
+      ...(c.device?.settlement ? [['settlement', 'Settlement', SettlementTab] as TabDef] : []), // the sale against the forecast (P9-6.12)
+    ] : [];
     default: return r ? [['lines', 'Lines', X.LinesTab], ['learn', 'Learning record', X.LearnTab], ['carried', 'Carried forward', X.CarriedTab]] : [];
   }
 }

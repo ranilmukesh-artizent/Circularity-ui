@@ -1,6 +1,6 @@
 /** Wording of the case page's Device tab (P9-6.4, DV-01) over the `device` block of a case. */
 import { money } from '../../api/format';
-import type { ChannelView, DeviceView, PayoutView, QuoteCheck, QuoteRow, RegistryView, WipeView } from '../../api/device';
+import type { ChannelView, DeviceView, PayoutView, QuoteCheck, QuoteRow, RegistryView, SettlementView, WipeView } from '../../api/device';
 
 /** "iPhone 14 · 128 GB · declared B · quote $410 · partner P01"; a bulk lot: "20 devices · batch BATCH-0020 · grade B · partner P01". */
 export function deviceLine(v: DeviceView): string {
@@ -113,3 +113,15 @@ export function channelRow(v: ChannelView): string {
   return [v.name, `${money(v.cash)} net`, `${v.days.toFixed(1)} days`, band, feed, v.modelId ? `model ${v.modelId}` : '', v.ok ? '' : 'not allowed']
     .filter(Boolean).join(' · ');
 }
+
+/** "98.6%" for a sale at 0.986 of the forecast, "90%" at 0.9 (one decimal, no trailing zero). */
+const sharePct = (r: number): string => `${Number((r * 100).toFixed(1))}%`;
+
+/** "Sold $318 · fees $9.54 · returns $0 · 98.6% of forecast" (P9-6.12, DV-09): what the unit sold for, the fees and returns, and the
+ * price over the forecast P50. */
+export function settlementLine(s: SettlementView): string {
+  return `Sold ${usd(s.price)} · fees ${usd(s.fees)} · returns ${usd(s.buyerReturns)} · ${sharePct(s.realisedVsForecast)} of forecast`;
+}
+
+/** "Price realised against forecast 98.6%": the KPI of a settled device case. */
+export const realisedKpi = (s: SettlementView): string => `Price realised against forecast ${sharePct(s.realisedVsForecast)}`;

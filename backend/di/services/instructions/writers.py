@@ -419,7 +419,39 @@ def payout(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: A
     return Sent([{"call": "PATCH tradeins/{tradeInId}", "body": body}], row.trade_in_id, {"tradeInId": row.trade_in_id, **body})
 
 
+def list_device(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Device market: POST /listings, the received device on its channel at the forecast P50 (P9-6.12). The listing id is
+    made from the case and the channel (`<case id>:<channel>`), so a repeat is the market's own 409: the first listing is
+    read and no second is made. The body carries the instruction key (`issuedKey`), which the market's
+    `devicemarket.listing.created` event returns."""
+    from di.services.device import settle  # lazy: the device services are only needed by this write
+
+    body = settle.listing_body(c)
+    if body is None:
+        raise NotApplicable("nothing to list: not a received device on a listing channel")
+    body = body | {"issuedKey": ins["idem_key"]}
+    lid, duplicate = body["listingId"], False
+    cl = client(s, "dvmkt")
+    try:
+        try:
+            cl.request("POST", "/listings", json=body)
+        except SourceError as e:
+            if e.status != 409:
+                raise
+            cl.get_json(f"/listings/{lid}")  # listed before: the first listing stands
+            duplicate = True
+    except SourceError as e:
+        raise _refused(e) from e
+    finally:
+        cl.close()
+    return Sent(
+        [{"call": "POST listings", "body": body}], lid,
+        {"listingId": lid, "channel": body["channel"], "price": body["price"], "duplicate": duplicate},
+    )  # fmt: skip
+
+
 WRITERS = {
+    "list": list_device,
     "payout": payout,
     "order": order,
     "repair": repair,

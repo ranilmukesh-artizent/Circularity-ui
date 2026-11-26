@@ -101,6 +101,9 @@ EX_STEP: dict[str, dict[str, Any]] = {
     # plan 9 P9-6.8: the payout of a received device; sent on its own (di.services.device.payout), never a step of a plan
     "payout": _s("Payout adjusted", "Trade-in platform · payout", ("TI", "Trade-in"), "Customer care", None, "payout.adjusted", 0,
                  "payout adjusted on the trade-in", "Customer care owns the payout the customer is paid"),
+    # plan 9 P9-6.12: a received device on a listing channel is listed on the device market (di.services.device.settle)
+    "list": _s("List on the channel", "Marketplace · listing", ("LST", "Listing"), "Channel ops", 8, "listing.posted", 21,
+               "listing live on the channel", "Channel ops owns what is offered for sale and at what price"),
 }  # fmt: skip
 
 # The step plan per route; a refurbish-then-sell resale gets a repair step after the reservation. A step's identity is
@@ -167,6 +170,8 @@ def ex_kinds(r: dict) -> list[str]:
     k = list(STEP_TPL.get(r.get("id") or "resale") or STEP_TPL["resale"])
     if r.get("id") == "resale" and r.get("variant") == "refurb":
         k.insert(1, "repair")
+    if r.get("variant") == "listing":  # plan 9 P9-6.12: a received device on a channel is listed, not entered as a sale order
+        k = ["list" if x == "sale" else x for x in k]
     return k
 
 

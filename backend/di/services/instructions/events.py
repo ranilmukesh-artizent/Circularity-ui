@@ -13,6 +13,9 @@ A tool-fleet refresh (P9-5.5) has three more, all matched by `issuedKey` (the in
 `fleet.proposal.created` (fleet), `propdraft` by `fleet.draft_line.created` (fleet; the first line's event completes it) and
 `propreserve` by `parts.stock.updated` (parts). The reference acknowledged is the planned PR-, DL- or RU- number the writer sent.
 
+A received device's `list` step (P9-6.12) is completed by `devicemarket.listing.created` (dvmkt), matched by `issuedKey`; the
+reference acknowledged is the listing id.
+
 Why these: each is the moment the step's work is done in the system that owns it — the unit is allocated to the line;
 the repair is complete (tests passed, release to service); the carrier accepted the tender, so the load is booked
 (the delivery itself is the delivery step's business); the warehouse shipped the unit; the order line is delivered
@@ -75,6 +78,8 @@ COMPLETES: dict[str, Completion] = {
     "fleet.proposal.created": Completion("fleet", ("propsend",), lambda d: [d.get("issuedKey")], lambda d: d.get("proposalId")),
     "fleet.draft_line.created": Completion("fleet", ("propdraft",), lambda d: [d.get("issuedKey")], lambda d: d.get("draftRef")),
     "parts.stock.updated": Completion("parts", ("propreserve",), lambda d: [d.get("issuedKey")], lambda d: d.get("reserveRef")),
+    # P9-6.12: a received device's listing is live on the device market; matched by the `issuedKey` the writer sends
+    "devicemarket.listing.created": Completion("dvmkt", ("list",), lambda d: [d.get("issuedKey")], lambda d: d.get("listingId")),
 }
 DELIVERED = "otm.shipment.delivered"
 

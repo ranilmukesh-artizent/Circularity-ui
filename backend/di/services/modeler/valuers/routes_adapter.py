@@ -65,8 +65,13 @@ def _terms(v: PathValue | ChannelValue) -> list[dict[str, Any]]:
     ]
 
 
-def to_routes(t: Template, values: Sequence[PathValue | ChannelValue]) -> list[Route]:
-    """The engine's route dicts (`mk_route`), one per value, in the valuer's order: `id` the path, `plan` its name."""
+LISTING_CHANNELS = frozenset({"buynow", "offers", "auction"})  # a received device is listed on these (P9-6.12)
+
+
+def to_routes(t: Template, values: Sequence[PathValue | ChannelValue], listing: bool = False) -> list[Route]:
+    """The engine's route dicts (`mk_route`), one per value, in the valuer's order: `id` the path, `plan` its name. With
+    `listing` (a received device, P9-6.12) the channel routes that list the device carry `variant: "listing"`, so their plan has
+    a `list` step (a wholesale lot is sold to a bid, not listed)."""
     out = []
     for v in values:
         p = t.path(v["k"])
@@ -77,6 +82,8 @@ def to_routes(t: Template, values: Sequence[PathValue | ChannelValue]) -> list[R
         r = mk_route({"id": v["k"], "plan": name, "terms": _terms(v), "why": v["why"]})
         r["co2"] = v["co2"]
         r["co2Prov"] = v["co2Prov"]
+        if listing and v["k"] in LISTING_CHANNELS:
+            r["variant"] = "listing"
         if "lines" not in v and "p10_cash" in v:  # a channel priced by a band: its interval is the route's (P9-6.10)
             cv = v
             if cv["p90_cash"] > cv["p10_cash"]:

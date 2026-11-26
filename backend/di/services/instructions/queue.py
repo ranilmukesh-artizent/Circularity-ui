@@ -34,6 +34,7 @@ SYSTEM_OF = {
     "move": "wms",
     "finance": "erp",
     "payout": "dvlab",  # P9-6.8: the payout of a received device, outside an approval's plan (di.services.device.payout.send)
+    "list": "dvmkt",  # P9-6.12: a received device is listed on the device market (di.services.device.settle)
 }
 
 

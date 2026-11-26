@@ -34,6 +34,7 @@ _PACK = load_pack("device")
 _PARAMS: dict[str, Any] = copy.deepcopy(_PACK.valuer.params)
 DCH: list[str] = _PARAMS["dch"]  # 2329
 DCN: dict[str, str] = _PARAMS["dcn"]
+WHOLESALE_INDEX: dict[str, float] = _PARAMS["wholesale_index"]  # a wholesale lot's price share of the reference value per grade
 # The channels of a Recover device case (a lot with an `imei`, P9-6.4): the pack's `recover_channels`, the ones the valuer can
 # price today. A PO lot (no imei) keeps DCH.
 RECOVER: list[str] = _PARAMS["recover_channels"]  # 2330
