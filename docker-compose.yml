@@ -147,6 +147,16 @@ services:
       timeout: 5s
       retries: 60
 
+  # Plan 5, opt-in (profile otel; docker-compose.otel.yml starts it): Grafana, Tempo, Loki, Prometheus and an OTLP
+  # collector in one container. Not part of the default stack. Grafana on :3000, OTLP/HTTP on :4318.
+  otel:
+    restart: unless-stopped
+    image: grafana/otel-lgtm:0.39.0
+    profiles: ["otel"]
+    ports:
+      - "${BIND_ADDR:-127.0.0.1}:${OTEL_GRAFANA_PORT:-3000}:3000"
+      - "${BIND_ADDR:-127.0.0.1}:${OTEL_OTLP_PORT:-4318}:4318"
+
 volumes:
   pgdata:
   web_node_modules:

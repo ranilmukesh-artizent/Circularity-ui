@@ -61,6 +61,7 @@ Engine with Compose v2 on Linux). Services: `postgres` (5432), `source-sim` (810
 bash scripts/doctor.sh                             # optional: Docker, Compose v2, free ports, memory, line endings
 docker compose up -d --build                       # the app on :5173 reads di-api
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build   # opt-in runtime images
+docker compose -f docker-compose.yml -f docker-compose.otel.yml --profile otel up -d   # opt-in traces: Grafana :3000 (testing.md)
 ```
 
 - A second dev server on the host (hot reload without the container; needs Node 24):

@@ -166,6 +166,32 @@ Then 20 more between 6.2s and 2.5s, the same kinds (adapter syncs, `test_connect
   all 17 checks; `smoke-mvp.mjs` all 12 steps. Route counts per account vary between runs (links are collected
   800 ms after sign-in, before Home has fully rendered), so compare failures, not counts.
 
+## Viewing traces (plan 5, opt-in)
+
+Off by default: with no `OTEL_EXPORTER_OTLP_ENDPOINT` nothing is exported. To look at traces locally:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.otel.yml --profile otel up -d
+```
+
+This starts `otel` (`grafana/otel-lgtm:0.39.0`: collector, Tempo, Loki, Prometheus, Grafana) and recreates `api` and
+`worker` with `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4318`. Use the same `-f` and `--profile` flags for `down`,
+`logs` and `ps`. Why an override file: Compose has no per-profile environment, and the file keeps the default
+`docker compose config` identical. Host ports: `OTEL_GRAFANA_PORT` (3000), `OTEL_OTLP_PORT` (4318).
+
+- Open Grafana at http://localhost:3000 (the image's default login is `admin`/`admin`, local only), then Explore, data
+  source Tempo, search by service `di-api` or `di-worker`.
+- Spans to expect: the HTTP request (`GET /api/...`), SQL and psycopg spans under it, `job {kind}` in the worker (the
+  job's trace continues the request that queued it), and for Ask: `invoke_agent Ask Circularity`, then `chat {model}`
+  (GenAI attributes, token counts, finish reason) and `execute_tool {tool}` under it. Over MCP: `tools/call {tool}`
+  (`mcp.method.name`, `gen_ai.tool.name`; a failing tool has `error.type=tool_error`).
+- `DI_OTEL_LOGS=true` also sends logs to Loki. `DI_OTEL_CAPTURE_CONTENT` stays off by default; set it to `true` to
+  record on the spans the prompt and answer (`gen_ai.input.messages`, `gen_ai.output.messages`) and the tool arguments and
+  result (`gen_ai.tool.call.arguments`, `gen_ai.tool.call.result`), each cut to 4 KB. Tokens and keys are masked, but
+  case data can appear: use it on synthetic data only.
+- `Failed to export` lines in the api log mean the collector is not up yet; spans are dropped, requests are never
+  blocked. The image is not pulled by any test.
+
 ## Known flaky tests
 
 - Browser smoke failures with "Failed to fetch" or `ERR_NETWORK_IO_SUSPENDED` while the api restarts, or while

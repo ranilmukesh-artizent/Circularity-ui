@@ -1,0 +1,16 @@
+# Plan 5: send di-api and di-worker traces to the local Grafana stack (service `otel`, profile `otel`).
+#   docker compose -f docker-compose.yml -f docker-compose.otel.yml --profile otel up -d
+# Grafana http://localhost:3000 (Explore, Tempo). Without this file the stack is unchanged and exports nothing.
+# DI_OTEL_LOGS=true also sends logs; DI_OTEL_CAPTURE_CONTENT=true adds prompts and tool arguments to spans (off by default).
+
+services:
+  api:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel:4318
+      DI_OTEL_LOGS: ${DI_OTEL_LOGS:-false}
+      DI_OTEL_CAPTURE_CONTENT: ${DI_OTEL_CAPTURE_CONTENT:-false}
+  worker:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel:4318
+      DI_OTEL_LOGS: ${DI_OTEL_LOGS:-false}
+      DI_OTEL_CAPTURE_CONTENT: ${DI_OTEL_CAPTURE_CONTENT:-false}
