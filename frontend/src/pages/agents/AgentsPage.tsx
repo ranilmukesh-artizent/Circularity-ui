@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
 import {
   acceptProposal, agentCredentials, findTools, issueCredential, revokeCredential, OWN_PROPOSAL_NOTE, rejectProposal, stageLabel, startRun, updateAgent, useAgents,
   type AgentCredential, type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy, type Playbook,
@@ -364,7 +365,9 @@ function StartRun({ agents }: { agents: AgentRow[] }) {
 function Runs({ s }: { s: AgentsScreen }) {
   const runs = s.runs;
   const [open, setOpen] = useState<string | null>(null);
-  const [viewing, setViewing] = useState<string | null>(null);
+  // a run linked from the assistant's strip ("View the run", plan 10) opens its drawer: #/agents?run=<id>
+  const linked = new URLSearchParams(useLocation().search).get('run');
+  const [viewing, setViewing] = useState<string | null>(linked);
   return (
     <section className="sect" id="agRuns">
       {viewing && <Drawer title={'Run ' + viewing} sub="What the agent did, step by step" wide onClose={() => setViewing(null)}><RunView runId={viewing} /></Drawer>}
