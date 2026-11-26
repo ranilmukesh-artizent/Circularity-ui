@@ -114,7 +114,7 @@ from di.services.modeler.compile import FlowVersion
 from di.services.modeler.evidence import parse_time
 from di.services.modeler.pack import Pack, load_pack
 from di.services.modeler.templates import TEMPLATE_KEYS
-from di.services.modeler.valuers import amount, device, tool_fleet, tool_inputs
+from di.services.modeler.valuers import amount, battery, device, tool_fleet, tool_inputs
 from di.services.modeler.valuers.rng import mulberry32
 
 REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap", "service_order", "pool_excess",
@@ -372,6 +372,8 @@ def tool_fleet_case(case_id: str, facts: dict[str, Any]) -> dict[str, Any]:
     """The tool-fleet valuer's case (the prototype's mkCase shape) from the facts; what the facts leave out takes the
     prototype's defaults for a fresh return (no named orders, every part at the tool's remaining life)."""
     cls = facts.get("cls")
+    if cls == battery.CLASS:  # a battery pack (P9-3.19): valued by its own valuer, outside the tools' queue
+        return battery_case(case_id, facts)
     if cls not in tool_fleet.CLS:
         raise ActionError("validation_error", f"A tool fleet case needs a tool class, one of {', '.join(tool_fleet.CK)}.")
     grade = facts.get("grade") or "C"
@@ -394,6 +396,22 @@ def tool_fleet_case(case_id: str, facts: dict[str, Any]) -> dict[str, Any]:
     c["dem"]["wo"] = {pn: [] for pn, _ in tool_fleet.CLS[cls]["parts"]} | (dem.get("wo") or {})
     c["src"] = tool_fleet.SOURCES.get(c["ft"], "")
     return c
+
+
+def battery_case(case_id: str, facts: dict[str, Any]) -> dict[str, Any]:
+    """The battery valuer's case (P9-3.19): state of health with its read date, damaged or not, the site and the named orders
+    the facts give. A pack has no workbench grade, parts or remaining life of its own: those fields are the neutral defaults
+    the case document needs, and `tool_fleet.CLS` is not asked for them."""
+    if facts.get("site") is not None and facts["site"] not in tool_fleet.SITES:
+        raise ActionError("validation_error", f"A battery case's site is one of {', '.join(tool_fleet.SITES)}.")
+    dem = dict(facts.get("dem") or {})
+    return {
+        "id": case_id, "cls": battery.CLASS, "ft": tool_fleet.FUNCS[0], "site": facts.get("site") or tool_fleet.SITES[0],
+        "grade": "C", "estGrade": "C", "rul": 0, "serial": "", "age": 12, "days": 1, "partRul": [], "status": "new", "log": [],
+        "soh": facts.get("soh"), "sohRead": facts.get("sohRead"), "damaged": bool(facts.get("damaged")),
+        "dem": {"lease": [], "so": [], "bid": [], "proj": None, "rcq": "", "wo": {}} | dem,
+        "src": tool_fleet.SOURCES.get(tool_fleet.FUNCS[0], ""),
+    }  # fmt: skip
 
 
 def device_lot(case_id: str, facts: dict[str, Any]) -> dict[str, Any]:
@@ -437,7 +455,7 @@ def _snapshot(c: store.Case, facts: dict[str, Any], kind: str, s: Session | None
     if kind == "tool_fleet":
         vc = tool_fleet_case(c["id"], facts)
         c |= {k: vc[k] for k in ("cls", "ft", "site", "grade", "rul", "partRul", "dem")} | {"valuer": vc}
-        c["product"] = c["product"] or tool_fleet.CLS[vc["cls"]]["name"]
+        c["product"] = c["product"] or (tool_fleet.CLS.get(vc["cls"]) or {"name": "Battery pack"})["name"]
     elif kind == "standard":  # the facts as given: the pack's value lines read them (and the case's own fields)
         c["valuer"] = copy.deepcopy(facts)
         c["product"] = c["product"] or str(c["assetId"])
@@ -484,11 +502,13 @@ def tool_input(doc: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def open_tool_cases(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
-    """The documents of the org's tool-fleet cases that are not closed, in case id order."""
+    """The documents of the org's tool-fleet cases that are not closed, in case id order (a battery pack has its own valuer and
+    is not in the tools' queue)."""
     rows = s.execute(
         text(
             "SELECT data FROM case_record WHERE owner = :o AND stage <> 'closed' "
-            "AND data ->> 'template' = 'tool_fleet' AND COALESCE(data ->> 'flow', '') <> :f ORDER BY id"
+            "AND data ->> 'template' = 'tool_fleet' AND COALESCE(data ->> 'flow', '') <> :f "
+            "AND COALESCE(data ->> 'cls', '') <> 'BAT' ORDER BY id"
         ),
         {"o": org_unit_id, "f": REFRESH_FLOW},
     ).scalars()
