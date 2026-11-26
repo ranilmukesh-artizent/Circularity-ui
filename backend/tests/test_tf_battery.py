@@ -114,6 +114,7 @@ def test_tf_16_state_of_health_from_telematics_evidence():
     assert c["soh"] == 71.5 and c["sohRead"] == "2026-10-30" and c["damaged"] is False
     assert tool_inputs.battery_case({"id": "BT-3", "cls": "BAT"}, {})["soh"] is None  # nothing is assumed
 
+
 # ------------------------------------------------------------------ a battery case opened from data (P9-3.19 follow-up)
 KEYS = ["BAT-48001", "CMH-48213", "FC-TEST"]
 
