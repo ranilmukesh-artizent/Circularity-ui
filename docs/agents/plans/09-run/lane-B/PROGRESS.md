@@ -34,3 +34,4 @@
 | 2026-11-26 | 09 · P9-3.10 remaining life model and teardown calibration | this commit | writer wt-check (port 15dfd0b): tf_rul_model, model_promote, models_migrations, tf_paths, tf_life, po_golden ok, lint, tsc, vitest, eslint; lead verify follows | done |
 | 2026-11-26 | 09 · P9-3.13 live queue plan for open tool returns | this commit | writer wt-check: tf_queue 5 passed, po_golden, screens_case, queue_planner, tf_intake, tf_life ok, lint, tsc, vitest, eslint; lead verify follows | done |
 | 2026-11-26 | 09 · P9-3.14 cO2e per route and the recycling certificate | this commit | writer wt-check: tf_carbon, carbon_factors ok, lint, tsc, vitest, eslint; lead verify follows | done |
+| 2026-11-26 | 09 · P9-3.15 threshold approvals and standing policy for returns | this commit | writer wt-check: 180 passed, 1 failed (GR-D11 row, fixed by lane A); tf_approvals 14; lint, tsc, vitest; lead verify follows | done |

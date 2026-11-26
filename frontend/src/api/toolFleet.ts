@@ -115,6 +115,20 @@ export interface PlanView {
   refurb_n: number;
 }
 
+/** Who approves the decision (P9-3.15, TF-09): the standing policy within its limits, or a person (role and reasons); `text` is the sentence to show. */
+export interface ApprovalView {
+  kind: 'policy' | 'person';
+  role: string | null;
+  /** the app role the role's approval item routes to (pack roles) */
+  appRole: string | null;
+  reasons: string[];
+  holds: { id: string; reason: string; owner: string }[];
+  confidence: number | null;
+  policy: { id: string; ver: number | null; owner: string | null } | null;
+  by: string | null;
+  text: string;
+}
+
 export interface ToolFleetView {
   case_id: string;
   pack_version: string;
@@ -135,7 +149,7 @@ export interface ToolFleetView {
   standard?: string;
   uplift?: number | null;
   plan: PlanView | null;
-  approval: unknown | null;
+  approval: ApprovalView | null;
   followThrough: unknown | null;
 }
 
