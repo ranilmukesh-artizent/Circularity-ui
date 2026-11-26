@@ -756,3 +756,17 @@ CONNECTOR_FIELDS["condition"] |= {"erasures": "list"}
 CONNECTOR_FIELDS["asset"] |= {"branch": "text", "hours": "number", "machine_id": "text"}
 CONNECTOR_FIELDS["demand"] |= {"branch_utilisation": "number", "purchase_plans": "list"}
 CONNECTOR_FIELDS["condition"] |= {"damage_claims": "list"}
+
+# Battery packs (plan 9, P9-12.7), written by the extra adapter bat_bms, keyed by `serial_key` of the pack id: on `asset`, the
+# pack's chemistry (pack_chemistry), the VIN of the car it came from (vin_ref), its market (pack_market, EU or US), its
+# transport class (safety_class), a thermal event and damage (thermal_event, pack_damaged); on `condition`, the BMS's read of
+# state of health (soh_pct), expected life (expected_life_years) and the read date (soh_read_at).
+CONNECTOR_FIELDS["asset"] |= {
+    "pack_chemistry": "text",
+    "pack_damaged": "bool",
+    "pack_market": "text",
+    "safety_class": "text",
+    "thermal_event": "bool",
+    "vin_ref": "text",
+}
+CONNECTOR_FIELDS["condition"] |= {"expected_life_years": "number", "soh_pct": "number", "soh_read_at": "date"}

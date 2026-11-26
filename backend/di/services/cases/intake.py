@@ -73,6 +73,11 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   age, as for a car; the removal `site` and `model` are also `network.site` and `network.model`, which the inventory match
   gate G-NET-INV compares with the inventory (`di.services.cases.inventory_evidence`). A second event for the serial joins
   the open case (`intake.joined`), whatever its reason.
+- **Battery packs** (plan 9, P9-12.7, NS-BAT-01). A `battery` case (reason `pack_replacement`, asset key `schema.serial_key(org,
+  pack id)`) keeps `battery`, the facts its G-BAT gates read (`battery_facts`: the opening facts, over which the BMS's canonical
+  read wins; `gate_checks.battery.case_view`). A used car whose battery assessment result is `pack_replacement_needed` opens one
+  for the pack the BMS names for its VIN (`open_battery_case`, on opening and on every re-evaluation): `linked_case` on the pack's
+  case is the car's, `linked` on the car's lists it.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
 
 The case reads (live rules, the active model, PLM) sit above the case store; this is the one place a case is opened from
@@ -112,13 +117,14 @@ from di.services.engine.queue import Capacity, Dem, planner_for
 from di.services.engine.routes import Route
 from di.services.modeler.compile import FlowVersion
 from di.services.modeler.evidence import parse_time
+from di.services.modeler.gate_checks import battery as battery_gates
 from di.services.modeler.pack import Pack, load_pack
 from di.services.modeler.templates import TEMPLATE_KEYS
 from di.services.modeler.valuers import amount, battery, device, tool_fleet, tool_inputs
 from di.services.modeler.valuers.rng import mulberry32
 
 REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap", "service_order", "pool_excess",
-           "contract_refresh", "service_ticket", "rental_return")  # fmt: skip
+           "contract_refresh", "service_ticket", "rental_return", "pack_replacement")  # fmt: skip
 REFRESH_FLOW = "contract_refresh"  # the flow of a refresh case (P9-5.1): opened for a contract, not valued as a return
 
 
@@ -220,6 +226,7 @@ class OneCase:
 
 
 CAR_TEMPLATE = "used_cars"
+BATTERY_TEMPLATE = "battery"  # the battery pack's cases (P9-12.7)
 APPROVAL_PACKS = (CAR_TEMPLATE, "telecom_network", "medical_rental")  # the packs whose decisions can hold for an approval item
 RENTAL_TEMPLATE = "medical_rental"
 ONE_CASE = {
@@ -584,6 +591,7 @@ def revalue(s: Session, c: store.Case) -> None:
     stage = c["stage"]
     _value(s, c, {})
     c["stage"] = stage
+    open_battery_case(s, c)  # an EV whose assessment says replace the pack opens the pack's case (P9-12.7)
 
 
 def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
@@ -604,6 +612,8 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
             car_read(s, c, pack)  # the inspection read, or an estimate, as the grade evidence (P9-9.7)
         if facts or not c.get("routes"):
             _snapshot(c, facts, pack.valuer.kind, s)
+        if pack.key == BATTERY_TEMPLATE:
+            c["battery"] = battery_facts(s, c)  # the BMS's read, as the G-BAT gates and the value lines read it (P9-12.7)
         if pack.valuer.kind == "tool_fleet" and regrade.apply(s, c):  # the workbench grade, else the estimate (P9-3.5)
             fv = flow_version(s, c)  # the rules' scope reads the grade the case now shows
         if pack.valuer.kind == "device":  # the quote against the lab's read, on every valuation (P9-6.5)
@@ -628,6 +638,56 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
         approval_hold.sync(s, c, pack)  # and so does a telecom resale the customer's guardrail holds (P9-10.14)
         if pack.key == CAR_TEMPLATE and battery_wait.holding(c):  # an EV waits for its battery assessment (P9-9.14)
             battery_wait.request(s, c)
+
+
+def battery_facts(s: Session, c: Mapping[str, Any]) -> dict[str, Any]:
+    """The `battery` facts of a pack case (P9-12.7): the facts the case opened with, over which the canonical record of the pack
+    (the BMS's read: `asset.pack_*`, `condition.soh_pct` ...) wins where it has a value; damage and a thermal event are never
+    cleared by a later read (either source saying so keeps the pack damaged). `gate_checks.battery.case_view` shapes them."""
+    key = str(c["assetId"])
+    asset = (canonical.get(s, "asset", key) or {}).get("data") or {}
+    cond = (canonical.get(s, "condition", key) or {}).get("data") or {}
+    snap = dict(c.get("valuer") or {})
+    read = {
+        "chemistry": asset.get("pack_chemistry"), "market": asset.get("pack_market"), "safety_class": asset.get("safety_class"),
+        "soh_pct": cond.get("soh_pct"), "expected_life_years": cond.get("expected_life_years"), "read_at": cond.get("soh_read_at"),
+    }  # fmt: skip
+    facts = snap | {k: v for k, v in read.items() if v is not None}
+    facts["damaged"] = bool(snap.get("damaged")) or bool(asset.get("pack_damaged"))
+    facts["thermal_event"] = bool(snap.get("thermal_event")) or bool(asset.get("thermal_event"))
+    facts.setdefault("packId", key.rpartition(":")[2])
+    return battery_gates.case_view(facts)
+
+
+def open_battery_case(s: Session, c: store.Case) -> bool:
+    """NS-BAT-01 (P9-12.7): a used car whose battery assessment (P9-9.14) says `pack_replacement_needed` opens a `battery` case for
+    its pack, linked both ways: the new case's `linked_case` is the car case, the car case's `linked` lists it. The pack is the
+    one the BMS names for the car's VIN (`asset.vin_ref`); with none on file nothing opens. Returns True when this call linked a
+    case; the caller saves `c`."""
+    if c.get("template") != CAR_TEMPLATE or any(x.get("template") == BATTERY_TEMPLATE for x in c.get("linked") or []):
+        return False
+    cond = (canonical.get(s, "condition", str(c["assetId"])) or {}).get("data") or {}
+    if cond.get("battery_assessment_result") != "pack_replacement_needed":
+        return False
+    vin = str((c.get("vehicle") or {}).get("vin") or str(c["assetId"]).rpartition(":")[2])
+    row = s.execute(
+        text("SELECT key FROM canonical WHERE model = 'asset' AND key LIKE :o AND data ->> 'vin_ref' = :v ORDER BY key LIMIT 1"),
+        {"o": f"{c['owner']}:%", "v": vin},
+    ).first()
+    if row is None:
+        return False
+    ref = str(row[0]).rpartition(":")[2]
+    body = {"org_unit_id": c["owner"], "template_key": BATTERY_TEMPLATE, "asset_key": row[0], "reason": "pack_replacement",
+            "facts": {"packId": ref, "linked_case": c["id"]}, "by": "system"}  # fmt: skip
+    try:
+        opened = open_case(s, body, "system")
+    except ActionError as e:
+        if e.code == "duplicate":  # the pack has a case already (opened by a person): the car links to it
+            opened = {"id": e.message.split(" ")[0]}
+        else:
+            raise
+    c.setdefault("linked", []).append({"case": opened["id"], "template": BATTERY_TEMPLATE, "ref": ref})
+    return True
 
 
 def one_open(s: Session, template: str, asset_key: str) -> str | None:
@@ -783,7 +843,7 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
         c[one.group] = {one.id_fact: facts.get(one.id_fact), "facts": one_facts(s, one, i["asset_key"], facts, source, at)}
     if unit:
         c["network"] = unit_view(facts, source, unit_facts(s, i["asset_key"], facts, source, at))
-    kept = ("serial", "contract_id", "line_id", "flow", "serviceDesk")  # a return's (P9-3.4), a ticket's (P9-4.3)
+    kept = ("serial", "contract_id", "line_id", "flow", "serviceDesk", "linked_case")  # a return's, a ticket's, a pack's car
     c |= {k: known[k] for k in kept if known.get(k) is not None}
     if is_refresh(c):
         c["refresh"] = dict(facts)  # the contract, its window and its lines (P9-5.1)
@@ -791,6 +851,8 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
         record_match.receive(s, c, i.get("by") or actor)
     _value(s, c, facts)
     store.insert_new(s, c, f"Case opened from {i['reason']}", actor)
+    if open_battery_case(s, c):
+        store.save(s, c)  # the link to the pack's case, now that this case has its row
     device_payout.flush(s, c)  # the payout's journal line, now the case row exists (P9-6.8)
     payload = {"case_id": case_id, "owner": c["owner"], "template": c["template"], "asset_key": i["asset_key"],
                "reason": i["reason"], "by": c["intake"]["by"]}  # fmt: skip

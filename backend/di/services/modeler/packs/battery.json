@@ -1,0 +1,811 @@
+{
+ "key": "battery",
+ "name": "EV and industrial batteries",
+ "version": "1.0.0",
+ "unit": "packs",
+ "author_role": "battery_lead",
+ "prefix": "BAT",
+ "industry": "Batteries",
+ "regions": [
+  "EU",
+  "US"
+ ],
+ "legal_review": {
+  "status": "pending"
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "pack_end_of_first_life",
+   "name": "Battery packs at the end of their first life"
+  }
+ ],
+ "prompts": [
+  "Battery packs at the end of their first life: read the state of health from the battery management system, then reuse, remanufacture, repurpose for second-life storage, or recycle. A damaged pack or one with a thermal event goes to a permitted recycler through the dangerous-goods lane, never to a resale. From the date the EU requires it, a repurposed or remanufactured pack needs a new battery passport.",
+  "Read every pack's state of health before any resale",
+  "Damaged packs only through the dangerous-goods lane"
+ ],
+ "clarify": null,
+ "classes": [
+  {
+   "id": "ev_pack",
+   "name": "EV traction battery",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": true,
+    "regulated": true,
+    "patient_data": false
+   },
+   "new_price": 9000
+  },
+  {
+   "id": "industrial_pack",
+   "name": "Industrial battery",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": true,
+    "regulated": true,
+    "patient_data": false
+   },
+   "new_price": 6000
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {
+   "A": "state of health 85 percent or more",
+   "B": "70 to 84 percent",
+   "C": "50 to 69 percent",
+   "D": "under 50 percent or damaged"
+  }
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Pack returned",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Identify the pack",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Read state of health",
+   "agent": "condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Fitness and safety",
+   "agent": "valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide the route",
+   "agent": "routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and report",
+   "agent": "analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "reuse",
+   "name": "Reuse as a vehicle pack",
+   "app": "bat_bms",
+   "owner": "battery_lead",
+   "lead_days": 10,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "remanufacture",
+   "name": "Remanufacture",
+   "app": "bat_bms",
+   "owner": "battery_lead",
+   "lead_days": 21,
+   "classes": [
+    "refurbish"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "repurpose",
+   "name": "Repurpose for second life",
+   "app": "bat_bms",
+   "owner": "sustainability_lead",
+   "lead_days": 21,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "recycle",
+   "name": "Recycle",
+   "app": "erp",
+   "owner": "sustainability_lead",
+   "lead_days": 14,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": []
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "G-BAT-1",
+   "text": "Battery state of health is read from the BMS, with its date; without it only recycling is left",
+   "owner": "battery_lead",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-BAT-2",
+   "text": "A repurposed battery has fitness documentation",
+   "owner": "battery_lead",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-BAT-3",
+   "text": "A repurposed or remanufactured pack for the EU has a battery passport from the date the EU requires it",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-BAT-4",
+   "text": "A damaged or thermal-event pack takes only the dangerous-goods lane and is never resold",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-BAT-5",
+   "text": "Recycling only through a permitted recycler that covers the pack's chemistry",
+   "owner": "sustainability_lead",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  }
+ ],
+ "gates": [
+  {
+   "id": "G-BAT-1",
+   "params": {
+    "stage": 3,
+    "routes": [
+     "reuse",
+     "remanufacture",
+     "repurpose"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-BAT-2",
+   "params": {
+    "stage": 4,
+    "routes": [
+     "repurpose"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-BAT-3",
+   "params": {
+    "stage": 6,
+    "passport_from": "2027-02-18",
+    "routes": [
+     "repurpose",
+     "remanufacture"
+    ],
+    "markets": [
+     "EU"
+    ],
+    "note": "Date indicative (Reg. (EU) 2023/1542, Art. 77). The Regulation has been amended: due diligence moved to 18 Aug 2027 by Reg. 2025/1561; which provisions the ELV Regulation (EU) 2026/1738 changes is unconfirmed; check the consolidated text before shipping.",
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-BAT-4",
+   "params": {
+    "stage": 6,
+    "routes": [
+     "reuse",
+     "remanufacture",
+     "repurpose"
+    ],
+    "note": "ADR / IATA special provisions unconfirmed.",
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-BAT-5",
+   "params": {
+    "stage": 6,
+    "routes": [
+     "recycle"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": [
+    "grade"
+   ]
+  },
+  {
+   "key": "class",
+   "label": "Pack class",
+   "kind": "set",
+   "values": [
+    "ev_pack",
+    "industrial_pack"
+   ],
+   "fields": []
+  },
+  {
+   "key": "chemistry",
+   "label": "Chemistry",
+   "kind": "set",
+   "values": [
+    "NMC",
+    "LFP",
+    "NCA"
+   ],
+   "fields": []
+  },
+  {
+   "key": "region",
+   "label": "Market",
+   "kind": "set",
+   "values": [
+    "EU",
+    "US"
+   ],
+   "fields": []
+  }
+ ],
+ "actors": [
+  [
+   "batl",
+   "Battery lead",
+   "Battery lead"
+  ],
+  [
+   "batc",
+   "Compliance",
+   "Compliance"
+  ],
+  [
+   "bats",
+   "Sustainability lead",
+   "Sustainability lead"
+  ]
+ ],
+ "wording": {
+  "every": "every pack",
+  "phrases": [
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "class",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "ev_pack": "EV packs",
+     "industrial_pack": "industrial packs"
+    }
+   },
+   {
+    "key": "chemistry",
+    "fmt": "{} chemistry",
+    "joiner": " or ",
+    "words": {}
+   },
+   {
+    "key": "region",
+    "fmt": "in {}",
+    "joiner": " or ",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "reuse": "Reuse as a vehicle pack",
+   "remanufacture": "Remanufacture",
+   "repurpose": "Repurpose for second life",
+   "recycle": "Recycle"
+  }
+ },
+ "customer_layer": {
+  "editable": {
+   "G-BAT-1": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-BAT-2": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ]
+  },
+  "params": {},
+  "sample_diversions": [
+   {
+    "text": "pack with a state of health under 60 percent → recycle review",
+    "op": {
+     "id": "DV-BAT-LOW",
+     "op": "add_step",
+     "stage": "condition",
+     "step": "Second state-of-health read",
+     "owner_role": "battery_lead",
+     "when": [
+      {
+       "fact": "battery.soh_pct",
+       "op": "lt",
+       "value": 60
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Adds a step at Read state of health; no gate is skipped."
+   },
+   {
+    "text": "urgent resale: skip the dangerous-goods lane",
+    "op": {
+     "id": "DV-BAT-SKIP",
+     "op": "shortcut",
+     "stage": "match",
+     "to": "reuse",
+     "when": [
+      {
+       "fact": "battery.damaged",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    },
+    "blocked": true,
+    "reason": "Blocked: this skips the compliance guardrail G-BAT-4, the dangerous-goods lane for damaged packs. Suggestion: send the pack to a permitted recycler."
+   }
+  ],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [
+   {
+    "type": "bat_bms",
+    "name": "Battery management data",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Battery pack",
+    "canonical": "asset"
+   },
+   {
+    "name": "State of health",
+    "canonical": "condition.soh_pct"
+   },
+   {
+    "name": "Expected life",
+    "canonical": "condition.expected_life_years"
+   },
+   {
+    "name": "Car the pack came from",
+    "canonical": "asset.vin_ref"
+   }
+  ],
+  "mappings": [
+   {
+    "kind": "threshold",
+    "value": 0.8
+   }
+  ],
+  "min_fields": [],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "cfs-2026.2",
+   "d_rule": "demand"
+  },
+  "params": {
+   "lines": [
+    {
+     "route": "reuse",
+     "type": "v",
+     "label": "Resale of the pack",
+     "basis": "new price x state of health x factor",
+     "amount": {
+      "mul": [
+       {
+        "param": "new_pack_price"
+       },
+       {
+        "param": "reuse_factor"
+       },
+       {
+        "div": [
+         {
+          "field": "battery.soh_pct"
+         },
+         {
+          "const": 100
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "route": "reuse",
+     "type": "c",
+     "label": "Transport",
+     "basis": "per pack",
+     "amount": {
+      "param": "transport_standard"
+     }
+    },
+    {
+     "route": "remanufacture",
+     "type": "v",
+     "label": "Resale of the remanufactured pack",
+     "basis": "new price x factor",
+     "amount": {
+      "mul": [
+       {
+        "param": "new_pack_price"
+       },
+       {
+        "param": "remanufacture_factor"
+       }
+      ]
+     }
+    },
+    {
+     "route": "remanufacture",
+     "type": "c",
+     "label": "Remanufacturing",
+     "basis": "per pack",
+     "amount": {
+      "param": "remanufacture_cost"
+     }
+    },
+    {
+     "route": "remanufacture",
+     "type": "c",
+     "label": "Transport",
+     "basis": "per pack",
+     "amount": {
+      "param": "transport_standard"
+     }
+    },
+    {
+     "route": "repurpose",
+     "type": "v",
+     "label": "Second-life storage value",
+     "basis": "per pack",
+     "amount": {
+      "param": "repurpose_value"
+     }
+    },
+    {
+     "route": "repurpose",
+     "type": "c",
+     "label": "Repurposing",
+     "basis": "per pack",
+     "amount": {
+      "param": "repurpose_cost"
+     }
+    },
+    {
+     "route": "repurpose",
+     "type": "c",
+     "label": "Transport",
+     "basis": "per pack",
+     "amount": {
+      "param": "transport_standard"
+     }
+    },
+    {
+     "route": "recycle",
+     "type": "v",
+     "label": "Recovered materials",
+     "basis": "per pack",
+     "amount": {
+      "param": "recycle_credit"
+     }
+    },
+    {
+     "route": "recycle",
+     "type": "c",
+     "label": "Dangerous-goods transport",
+     "basis": "per pack",
+     "amount": {
+      "param": "transport_dg"
+     }
+    }
+   ],
+   "routes": [
+    {
+     "route": "reuse",
+     "eligible_if": {
+      "fact": "battery.soh_pct",
+      "op": "ge",
+      "value": 80
+     },
+     "ineligible_reason": "State of health under 80 percent is not resold as a vehicle pack"
+    },
+    {
+     "route": "remanufacture",
+     "eligible_if": {
+      "fact": "battery.soh_pct",
+      "op": "ge",
+      "value": 60
+     },
+     "ineligible_reason": "State of health under 60 percent is not remanufactured"
+    },
+    {
+     "route": "repurpose",
+     "eligible_if": {
+      "fact": "battery.soh_pct",
+      "op": "ge",
+      "value": 50
+     },
+     "ineligible_reason": "State of health under 50 percent is not repurposed"
+    }
+   ],
+   "params": {
+    "plugin": "battery",
+    "new_pack_price": 9000,
+    "reuse_factor": 0.45,
+    "remanufacture_factor": 0.4,
+    "remanufacture_cost": 1500,
+    "repurpose_value": 2600,
+    "repurpose_cost": 700,
+    "recycle_credit": 900,
+    "transport_standard": 220,
+    "transport_dg": 640
+   }
+  }
+ },
+ "replay": {
+  "dataset": "battery",
+  "example": {
+   "case": "BAT-S1",
+   "legal_review_note": "Battery passport (Reg. (EU) 2023/1542), recycler and dangerous-goods rules summarised; dates indicative and some provisions unconfirmed. Kinective's Legal team must review before shipping.",
+   "modelled": {
+    "packs": 600,
+    "straight_through_pct": 62,
+    "approvals_per_day": 3,
+    "exceptions_per_day": 2,
+    "recovery_per_pack": 940
+   },
+   "required_facts": [
+    "battery.soh_pct",
+    "battery.expected_life_years",
+    "battery.read_at"
+   ],
+   "samples": [
+    {
+     "id": "BAT-S1",
+     "title": "Healthy pack, 86 percent",
+     "serial": "SYNBATS1",
+     "facts": {
+      "battery.chemistry": "NMC",
+      "battery.soh_pct": 86,
+      "battery.expected_life_years": 7,
+      "battery.read_at": "2026-11-10",
+      "battery.market": "US",
+      "battery.damaged": false,
+      "battery.thermal_event": false
+     }
+    },
+    {
+     "id": "BAT-S2",
+     "title": "Second-life pack, 66 percent",
+     "serial": "SYNBATS2",
+     "facts": {
+      "battery.chemistry": "NMC",
+      "battery.soh_pct": 66,
+      "battery.expected_life_years": 3,
+      "battery.read_at": "2026-11-10",
+      "battery.market": "US",
+      "battery.damaged": false,
+      "battery.thermal_event": false
+     }
+    },
+    {
+     "id": "BAT-S3",
+     "title": "Damaged pack: recycle only",
+     "serial": "SYNBATS3",
+     "facts": {
+      "battery.chemistry": "NMC",
+      "battery.soh_pct": 74,
+      "battery.expected_life_years": 7,
+      "battery.read_at": "2026-11-10",
+      "battery.market": "US",
+      "battery.damaged": true,
+      "battery.thermal_event": false
+     }
+    },
+    {
+     "id": "BAT-S4",
+     "title": "No BMS reading: recycle only",
+     "serial": "SYNBATS4",
+     "facts": {
+      "battery.chemistry": "NMC",
+      "battery.soh_pct": null,
+      "battery.expected_life_years": null,
+      "battery.read_at": null,
+      "battery.market": "US",
+      "battery.damaged": false,
+      "battery.thermal_event": false
+     }
+    }
+   ]
+  }
+ },
+ "runtime": {
+  "exception_types": [
+   {
+    "id": "EX-BAT-NOREAD",
+    "label": "State of health not read",
+    "owner_role": "battery_lead",
+    "action": "Read the pack on the BMS again, or take it to the recycler"
+   }
+  ],
+  "suggestion_rules": [],
+  "sla_hours": {
+   "exception": 24
+  },
+  "escalate_to": null
+ },
+ "roles": {
+  "battery_lead": "Engineer",
+  "compliance": "Approver",
+  "sustainability_lead": "Engineer"
+ },
+ "kpis": [
+  {
+   "id": "recovery_per_pack",
+   "label": "Recovery per pack",
+   "definition": "realised net after route costs / packs",
+   "measure": {
+    "kind": "avg",
+    "of": "recommendation.net",
+    "unit": "$"
+   },
+   "trend": "monthly"
+  },
+  {
+   "id": "second_life_rate",
+   "label": "Second-life rate",
+   "definition": "packs reused or repurposed / packs",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "damaged_packs",
+   "label": "Damaged packs",
+   "definition": "packs sent through the dangerous-goods lane / packs",
+   "measure": null,
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Which chemistries keep the most state of health?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.pack_chemistry",
+    "measure": {
+     "kind": "avg",
+     "of": "condition.soh_pct"
+    }
+   }
+  }
+ ],
+ "stories": [
+  "NS-BAT-01",
+  "NS-BAT-02",
+  "NS-BAT-03"
+ ]
+}
