@@ -923,7 +923,7 @@ each story went.
 - [ ] P9-6.20 Device recommerce browser smoke
 - [ ] P9-6.21 Phase 6 gate
 - [x] P9-7.1 Import a history batch with checks
-- [ ] P9-7.2 As-of replay with the four measures
+- [x] P9-7.2 As-of replay with the four measures
 - [ ] P9-7.3 Publish in steps with canary by region and share
 - [ ] P9-7.4 Canary report and automatic pause
 - [ ] P9-7.5 Replay honours queue capacity by date
@@ -978,10 +978,10 @@ each story went.
 - [ ] P9-9.22 Phase 9 gate
 - [x] P9-10.1 Telecom network pack data file
 - [x] P9-10.2 Network inventory and decommission tracker mocks
-- [ ] P9-10.3 Test bench mock with wipe and firmware
-- [ ] P9-10.4 Spares planning mock with requisitions
-- [ ] P9-10.5 Broker marketplace and recycler portal mocks
-- [ ] P9-10.6 One case per serial with inventory match gate
+- [x] P9-10.3 Test bench mock with wipe and firmware
+- [x] P9-10.4 Spares planning mock with requisitions
+- [x] P9-10.5 Broker marketplace and recycler portal mocks
+- [x] P9-10.6 One case per serial with inventory match gate
 - [ ] P9-10.7 Configuration wipe and covered equipment gates
 - [ ] P9-10.8 Export control gate and trade compliance approval
 - [ ] P9-10.9 Telecom five-route valuer
@@ -999,8 +999,8 @@ each story went.
 - [x] P9-11.2 Rental system and asset management mocks
 - [x] P9-11.3 Decontamination log mock
 - [x] P9-11.4 Biomedical service system mock
-- [ ] P9-11.5 Parts supplier portal and disposal partner mocks
-- [ ] P9-11.6 One case per tag with decontamination gate
+- [x] P9-11.5 Parts supplier portal and disposal partner mocks
+- [x] P9-11.6 One case per tag with decontamination gate
 - [ ] P9-11.7 Service in date and safety notice gates
 - [ ] P9-11.8 Medical rental four-route valuer
 - [ ] P9-11.9 Nearest next hospital and repair approval

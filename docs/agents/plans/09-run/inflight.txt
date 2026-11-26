@@ -1,8 +1,6 @@
 # Tasks in flight (task id, writer, model, started)
-P9-10.5 w8 done 11f67c4, waiting for the next batch
-P9-7.2 w1 sonnet 05:15 (as-of replay; on 2a31af6)
-P9-9.9 w2 sonnet 05:40 (odometer and recall gates; on 38e97e6)
-P9-10.3 w6 sonnet 05:06 (test bench mock; on 91ddbd6)
-P9-10.4 w4 sonnet 05:06 (spares planning mock; on 91ddbd6)
-P9-11.5 w5 sonnet 04:53 (parts and disposal mocks; on e9703ec)
-P9-11.6 w7 sonnet 05:43 (case per tag, decon gate)
+P9-9.9 w2 done c2ffb46, fixing: open recall passes only when every campaign is remedied
+P9-7.3 w1 sonnet 06:00 (staged publish, canary; on a2a6309)
+P9-7.5 w4 sonnet 06:00 (replay queue capacity; on a2a6309)
+P9-11.7 w7 sonnet 06:12 (service and safety notice gates; on 300aad8)
+P9-10.7 w6 sonnet 06:16 (wipe and covered gates + tracker seed sites; on 8ebf6aa, d108ea0)
