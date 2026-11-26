@@ -125,6 +125,8 @@ EXTRA_SYSTEMS: tuple[System, ...] = (
     System("rf_rental", "Equipment rental system (synthetic)", "equipment_rental", "vendor", "/equipment-rental"),
     # Plan 9 P9-12.7: the battery segment's battery management data, a synthetic vendor mock
     System("bat_bms", "Battery management data (synthetic)", "battery_bms", "vendor", "/battery-bms"),
+    # Plan 9 P9-12.8: the automotive cores segment's core returns system, a synthetic vendor mock
+    System("core_ret", "Core returns system (synthetic)", "core_returns", "vendor", "/core-returns"),
     # Plan 9 P9-9.13: the used-car segment's legacy body-shop system, synthetic, with no di adapter (built from its API spec)
     System("uc_bodyshop", "Legacy body-shop system (synthetic)", "body_shop_legacy", "generic-rest", "/body-shop"),
 )

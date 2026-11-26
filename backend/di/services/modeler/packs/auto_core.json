@@ -1,0 +1,690 @@
+{
+ "key": "auto_core",
+ "name": "Automotive cores · remanufacturing",
+ "version": "1.0.0",
+ "unit": "cores",
+ "author_role": "reman_lead",
+ "prefix": "CORE",
+ "industry": "Automotive remanufacturing",
+ "regions": [
+  "US",
+  "EU"
+ ],
+ "legal_review": {
+  "status": "pending"
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "core_return",
+   "name": "Dealer core returns"
+  }
+ ],
+ "prompts": [
+  "Automotive cores: when a dealer returns a used alternator, starter or transmission for its deposit, inspect it against the part's acceptance criteria, credit the deposit in full, in part or not at all, then remanufacture, harvest parts, sell to a broker or scrap it. A part from the wrong family, or a dealer who keeps returning rejected cores, is held for a person.",
+  "Credit the deposit by the acceptance criteria",
+  "Hold a suspect return for a person"
+ ],
+ "clarify": null,
+ "classes": [
+  {
+   "id": "alternator",
+   "name": "Alternator",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 120
+  },
+  {
+   "id": "starter",
+   "name": "Starter",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 95
+  },
+  {
+   "id": "transmission",
+   "name": "Transmission",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 640
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {
+   "A": "all checks passed",
+   "B": "one allowed check failed",
+   "C": "a required check failed",
+   "D": "cracked or wrong family"
+  }
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Receive the core",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Match to the dealer's claim",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Inspect and credit",
+   "agent": "condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide the route",
+   "agent": "routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and settle",
+   "agent": "analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "reman",
+   "name": "Remanufacture",
+   "app": "erp",
+   "owner": "reman_lead",
+   "lead_days": 10,
+   "classes": [
+    "refurbish"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "harvest",
+   "name": "Harvest parts",
+   "app": "erp",
+   "owner": "reman_lead",
+   "lead_days": 5,
+   "classes": [
+    "parts"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "broker",
+   "name": "Sell to a core broker",
+   "app": "erp",
+   "owner": "broker_desk",
+   "lead_days": 7,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "scrap",
+   "name": "Scrap",
+   "app": "erp",
+   "owner": "reman_lead",
+   "lead_days": 3,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": []
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "CORE-ACCEPT",
+   "text": "A core is credited by the acceptance criteria of its part number: in full, in part or not at all",
+   "owner": "reman_lead",
+   "type": "Threshold",
+   "stage": "condition",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  }
+ ],
+ "gates": [
+  {
+   "id": "CORE-ACCEPT",
+   "params": {
+    "stage": 3,
+    "routes": [
+     "reman"
+    ],
+    "partial_pct": 50,
+    "acceptance": {
+     "ALT-1450": {
+      "required": [
+       "housing_intact",
+       "no_cracks",
+       "complete",
+       "family_match"
+      ],
+      "partial_allowed": [
+       "complete"
+      ]
+     },
+     "STR-2210": {
+      "required": [
+       "housing_intact",
+       "no_cracks",
+       "complete",
+       "family_match"
+      ],
+      "partial_allowed": [
+       "complete"
+      ]
+     },
+     "TRN-3300": {
+      "required": [
+       "housing_intact",
+       "no_cracks",
+       "complete",
+       "family_match"
+      ],
+      "partial_allowed": []
+     }
+    },
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": [
+    "grade"
+   ]
+  },
+  {
+   "key": "class",
+   "label": "Part family",
+   "kind": "set",
+   "values": [
+    "alternator",
+    "starter",
+    "transmission"
+   ],
+   "fields": []
+  },
+  {
+   "key": "region",
+   "label": "Region",
+   "kind": "set",
+   "values": [
+    "US",
+    "EU"
+   ],
+   "fields": []
+  }
+ ],
+ "actors": [
+  [
+   "reman",
+   "Remanufacturing lead",
+   "Remanufacturing lead"
+  ],
+  [
+   "broker",
+   "Broker desk",
+   "Broker desk"
+  ],
+  [
+   "coreap",
+   "Core approver",
+   "Core approver"
+  ]
+ ],
+ "wording": {
+  "every": "every core",
+  "phrases": [
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "class",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "alternator": "alternators",
+     "starter": "starters",
+     "transmission": "transmissions"
+    }
+   },
+   {
+    "key": "region",
+    "fmt": "in {}",
+    "joiner": " or ",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "reman": "Remanufacture",
+   "harvest": "Harvest parts",
+   "broker": "Sell to a core broker",
+   "scrap": "Scrap"
+  }
+ },
+ "customer_layer": {
+  "editable": {
+   "CORE-ACCEPT": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ]
+  },
+  "params": {
+   "fraud.threshold": {
+    "value": 0.6,
+    "min": 0.3,
+    "max": 0.95
+   }
+  },
+  "sample_diversions": [],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [
+   {
+    "type": "core_ret",
+    "name": "Core returns system",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Returned core",
+    "canonical": "asset"
+   },
+   {
+    "name": "Inspection checks",
+    "canonical": "condition.core_checks"
+   },
+   {
+    "name": "Dealer rejects",
+    "canonical": "condition.dealer_rejects"
+   },
+   {
+    "name": "Core deposit",
+    "canonical": "market.core_deposit"
+   }
+  ],
+  "mappings": [
+   {
+    "kind": "threshold",
+    "value": 0.8
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "core_acceptance",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "core_checks"
+    ],
+    "source": "core_ret"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "quote_check",
+    "model": "asset",
+    "key": "serial",
+    "fields": [
+     "declared_part_number",
+     "observed_part_number"
+    ],
+    "source": "core_ret"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "dealer_history",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "dealer_rejects"
+    ],
+    "source": "core_ret"
+   }
+  ],
+  "min_fields": [],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "none",
+   "d_rule": "none"
+  },
+  "params": {
+   "params": {
+    "freight": 6,
+    "teardown": 12,
+    "broker_fee": 4,
+    "scrap": 14
+   },
+   "tables": {
+    "reman_value": {
+     "alternator": 120,
+     "starter": 95,
+     "transmission": 640
+    },
+    "reman_cost": {
+     "alternator": 70,
+     "starter": 55,
+     "transmission": 380
+    },
+    "harvest_value": {
+     "alternator": 40,
+     "starter": 30,
+     "transmission": 260
+    },
+    "broker_value": {
+     "alternator": 28,
+     "starter": 22,
+     "transmission": 210
+    }
+   },
+   "lines": [
+    {
+     "route": "reman",
+     "type": "v",
+     "label": "Remanufactured unit value",
+     "basis": "by part family",
+     "amount": {
+      "table": "reman_value",
+      "by": [
+       "family"
+      ]
+     }
+    },
+    {
+     "route": "reman",
+     "type": "c",
+     "label": "Remanufacturing cost",
+     "basis": "by part family",
+     "amount": {
+      "table": "reman_cost",
+      "by": [
+       "family"
+      ]
+     }
+    },
+    {
+     "route": "reman",
+     "type": "c",
+     "label": "Core freight",
+     "basis": "per core",
+     "amount": {
+      "param": "freight"
+     }
+    },
+    {
+     "route": "harvest",
+     "type": "v",
+     "label": "Parts sold",
+     "basis": "by part family",
+     "amount": {
+      "table": "harvest_value",
+      "by": [
+       "family"
+      ]
+     }
+    },
+    {
+     "route": "harvest",
+     "type": "c",
+     "label": "Teardown",
+     "basis": "per core",
+     "amount": {
+      "param": "teardown"
+     }
+    },
+    {
+     "route": "broker",
+     "type": "v",
+     "label": "Broker price",
+     "basis": "by part family",
+     "amount": {
+      "table": "broker_value",
+      "by": [
+       "family"
+      ]
+     }
+    },
+    {
+     "route": "broker",
+     "type": "c",
+     "label": "Broker fee",
+     "basis": "per core",
+     "amount": {
+      "param": "broker_fee"
+     }
+    },
+    {
+     "route": "scrap",
+     "type": "v",
+     "label": "Scrap metal",
+     "basis": "flat per core",
+     "amount": {
+      "param": "scrap"
+     }
+    }
+   ]
+  }
+ },
+ "replay": {
+  "dataset": "auto_core",
+  "example": {
+   "case": "CORE-S1",
+   "legal_review_note": "Core credit and fraud rules are commercial matters. Kinective's Legal team must review before shipping.",
+   "modelled": {
+    "cores": 1800,
+    "straight_through_pct": 78,
+    "approvals_per_day": 4,
+    "exceptions_per_day": 3,
+    "recovery_per_core": 31
+   },
+   "required_facts": [
+    "family",
+    "deposit",
+    "core"
+   ],
+   "samples": [
+    {
+     "id": "CORE-S1",
+     "title": "Clean alternator core",
+     "serial": "SYNCORE00000001",
+     "facts": {
+      "family": "alternator",
+      "deposit": 85,
+      "core.declaredPartNumber": "ALT-1450",
+      "core.checks": {
+       "housing_intact": true,
+       "no_cracks": true,
+       "complete": true,
+       "family_match": true
+      }
+     }
+    },
+    {
+     "id": "CORE-S2",
+     "title": "Alternator core, bracket missing",
+     "serial": "SYNCORE00000002",
+     "facts": {
+      "family": "alternator",
+      "deposit": 85,
+      "core.declaredPartNumber": "ALT-1450",
+      "core.checks": {
+       "housing_intact": true,
+       "no_cracks": true,
+       "complete": false,
+       "family_match": true
+      }
+     }
+    },
+    {
+     "id": "CORE-S3",
+     "title": "Cracked alternator core",
+     "serial": "SYNCORE00000003",
+     "facts": {
+      "family": "alternator",
+      "deposit": 85,
+      "core.declaredPartNumber": "ALT-1450",
+      "core.checks": {
+       "housing_intact": true,
+       "no_cracks": false,
+       "complete": true,
+       "family_match": true
+      }
+     }
+    }
+   ]
+  }
+ },
+ "runtime": {
+  "exception_types": [],
+  "suggestion_rules": [],
+  "sla_hours": {
+   "exception": 24
+  },
+  "escalate_to": null
+ },
+ "roles": {
+  "reman_lead": "Planner",
+  "broker_desk": "Planner",
+  "core_approver": "Approver",
+  "finance": "Finance"
+ },
+ "kpis": [
+  {
+   "id": "credit_full_pct",
+   "label": "Full-credit share",
+   "definition": "cores credited in full / cores received",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "fraud_holds",
+   "label": "Fraud holds",
+   "definition": "cores held for fraud review / cores received",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "reman_yield",
+   "label": "Remanufacture yield",
+   "definition": "cores remanufactured / cores received",
+   "measure": null,
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Which dealers return the most rejected cores?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.dealer_id",
+    "measure": {
+     "kind": "count"
+    }
+   }
+  }
+ ],
+ "stories": [
+  "NS-CORE-01",
+  "NS-CORE-03"
+ ],
+ "fraud": {
+  "version": "core-fraud-1",
+  "threshold": 0.6,
+  "rules": [
+   {
+    "id": "part_family_mismatch",
+    "signal": "quote_mismatch",
+    "weight": 0.7,
+    "params": {},
+    "source": "core_ret"
+   },
+   {
+    "id": "repeat_returner",
+    "signal": "dealer_rejects",
+    "weight": 0.7,
+    "params": {
+     "n": 3,
+     "days": 90
+    },
+    "source": "core_ret"
+   }
+  ]
+ }
+}

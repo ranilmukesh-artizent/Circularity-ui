@@ -1390,5 +1390,35 @@
   "owner": "Sustainability lead",
   "citation": "GHG Protocol Scope 3 cat. 12; WBCSD avoided-emissions guidance (Mar 2023)",
   "legal_review": "pending"
+ },
+ {
+  "id": "CORE-ACCEPT",
+  "name": "Core acceptance",
+  "type": "Threshold",
+  "stage": "condition",
+  "packs": [
+   "auto_core"
+  ],
+  "trigger": {
+   "routes": "any",
+   "when": [
+    {
+     "fact": "core.declaredPartNumber",
+     "op": "exists"
+    }
+   ]
+  },
+  "evidence": [
+   "core_acceptance"
+  ],
+  "effect": {
+   "kind": "block",
+   "hold_until_evidence": false,
+   "step": null,
+   "on_fail": null
+  },
+  "owner": "Remanufacturing lead",
+  "citation": "Plan 9 P9-12.8 (NS-CORE-01): acceptance criteria per part number, set by the remanufacturer's core programme; no regulation",
+  "legal_review": "pending"
  }
 ]

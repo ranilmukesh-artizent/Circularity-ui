@@ -770,3 +770,11 @@ CONNECTOR_FIELDS["asset"] |= {
     "vin_ref": "text",
 }
 CONNECTOR_FIELDS["condition"] |= {"expected_life_years": "number", "soh_pct": "number", "soh_read_at": "date"}
+
+# Automotive cores (plan 9, P9-12.8), written by the extra adapter core_ret, keyed by `serial_key` of the core id: on `asset`,
+# the part numbers declared by the dealer and observed at inspection (declared_part_number, observed_part_number) and the dealer
+# (dealer_id); on `condition`, the inspection checks (core_checks: {housing_intact, no_cracks, complete, family_match}) and the
+# dealer's rejected returns by window in days (dealer_rejects: {"30": n, "90": n}); on `market`, the core deposit.
+CONNECTOR_FIELDS["asset"] |= {"dealer_id": "text", "declared_part_number": "text", "observed_part_number": "text"}
+CONNECTOR_FIELDS["condition"] |= {"core_checks": "object", "dealer_rejects": "object"}
+CONNECTOR_FIELDS["market"] |= {"core_deposit": "number"}
