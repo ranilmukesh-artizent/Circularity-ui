@@ -36,7 +36,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
-from di.services.cases import contract_line, lifecycle, recall_evidence, store, telematics
+from di.services.cases import contract_line, lifecycle, recall_evidence, store, telematics, title_evidence
 from di.services.engine.routes import Route
 from di.services.modeler.evidence import evidence_of, label_of, records_of
 from di.services.modeler.gates import GateResult, apply_gate_results, catalogue, evaluate_gates, pack_gates
@@ -50,7 +50,10 @@ _override: ContextVar[PackOf | None] = ContextVar("gate_hold_pack_of", default=N
 # the case's exception item (P9-1.7), once. `apply` has no session of its own (`decide_case` is pure on the case).
 _bound: ContextVar[tuple[Session, str] | None] = ContextVar("gate_hold_session", default=None)
 EVIDENCE_MISSING = "evidence_missing"  # the type of the exception item a hold opens
-EXCEPTION_OF = {"G-CON-2": "no_active_contract"}  # a hold by this gate opens an item of this type instead (P9-3.6)
+EXCEPTION_OF = {
+    "G-CON-2": "no_active_contract",
+    "G-VEH-TITLE": "EX-UC-LIEN",
+}  # a hold by a gate opens an item of this type (P9-3.6, P9-9.8)
 QUARANTINE_ITEM = (
     "recall_quarantine"  # the item a failed recall check G-TOOL-REC keeps open while the tool is quarantined (P9-3.7)
 )
@@ -87,6 +90,13 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
         recs.append(recall_evidence.evidence(s, case.get("cls"), case.get("recallRelease")))
     if case.get("template") == "tool_fleet" and (tel := telematics.evidence(s, case.get("serial") or case.get("assetId"))):
         recs.append(tel)  # the tool's telematics, for GR-13 (P9-3.8)
+    if case.get("template") == "used_cars":  # the car's title and lien search, for G-VEH-TITLE and G-VEH-BRAND (P9-9.8)
+        title_recs, title = title_evidence.evidence(s, case.get("assetId"))
+        recs.extend(title_recs)
+        if title:
+            case["title"] = title
+        else:
+            case.pop("title", None)
     if recs or "evidenceRecords" in case:
         case["evidenceRecords"] = recs
     _bound.set((s, str(case.get("id"))))
@@ -233,13 +243,15 @@ def sync_item(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
     sync_quarantine(s, case, pack)
     _sync_advisory(s, case, pack)
     open_id = s.execute(
-        text("SELECT id FROM work_item WHERE case_id = :c AND type = ANY(:t) AND status = 'open' ORDER BY id LIMIT 1"),
+        text("SELECT id, type FROM work_item WHERE case_id = :c AND type = ANY(:t) AND status = 'open' ORDER BY id LIMIT 1"),
         {"c": cid, "t": [EVIDENCE_MISSING, *EXCEPTION_OF.values()]},
-    ).scalar()
+    ).first()
     held = isinstance(case.get("gateHold"), dict)
     if not held:
         if open_id is not None:
-            process.close_item(s, int(open_id), "released", "system")
+            ref = (case.get("title") or {}).get("lien_release_ref")
+            outcome = f"Lien released ({ref})" if open_id.type == "EX-UC-LIEN" and ref else "released"
+            process.close_item(s, int(open_id.id), outcome, "system")
         return
     if open_id is not None:
         return

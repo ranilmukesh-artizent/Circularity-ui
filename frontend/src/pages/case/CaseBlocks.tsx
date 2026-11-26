@@ -55,6 +55,11 @@ export function StProv({ k, sys, src, estimate }: { k: string; sys: string; src:
 export const EstimateBadge = () => (
   <span className="aszb mod" data-prov="estimate" data-tip="An estimate, not a recorded read: the inspection is missing or not done yet. The decision is held until a person confirms it.">estimate</span>
 );
+/** What a route must disclose to a buyer, from the gates (a title brand, P9-9.8): one line per route, nothing when none. */
+export function Disclosures({ r }: { r: { disclosures?: string[] } }) {
+  if (!r.disclosures?.length) return null;
+  return <p className="note" data-disclosures="route"><b>Disclose:</b> {r.disclosures.join('; ')}</p>;
+}
 /** Retrieved / Model / Rules / Draft / Prepared by agent (afBadge). */
 export function AfBadge({ k }: { k: string }) {
   const tip = refList('AF_BADGE_TIP')[k] || k;

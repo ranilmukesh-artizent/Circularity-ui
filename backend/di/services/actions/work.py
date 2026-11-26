@@ -19,8 +19,10 @@ from sqlalchemy import text
 from di.core import policy
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
-from di.services.cases import process, store
+from di.services.cases import process, store, title_evidence
 from di.services.device import lock, verify
+
+LIEN_ITEM = "EX-UC-LIEN"  # the exception of a car held for an open lien (P9-9.8): resolved only once a release is on file
 
 _STR = {"req": True, "t": "string"}
 ACTIONS.setdefault(
@@ -134,6 +136,10 @@ def resolve_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None
         c = store.get(ctx.session, row["case_id"])
         if c is not None and (why := lock.resolve_refusal(ctx.session, c, process.pack_of(ctx.session, row["case_id"]))):
             return "conflict", why
+    if row is not None and row["type"] == LIEN_ITEM and row["case_id"]:  # a lien exception ends with the lien's release (P9-9.8)
+        recs, _ = title_evidence.evidence(ctx.session, (store.get(ctx.session, row["case_id"]) or {}).get("assetId"))
+        if not any(r["type"] == "lien_release" for r in recs):
+            return "evidence_missing", "Lien release not on file"
     return None
 
 

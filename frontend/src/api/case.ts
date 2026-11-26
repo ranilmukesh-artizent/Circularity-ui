@@ -27,6 +27,7 @@ export interface Route {
   id: string; plan: string; net: number; p10: number; p90: number; why?: string; target?: string; unc?: string;
   excluded?: boolean; failReason?: string; failGate?: number; terms: CostTerm[]; gates: string[]; gateNotes?: string[];
   co2?: number | null; co2Prov?: Co2Prov | null;
+  disclosures?: string[];
   demandStatus?: string; demandLabel?: string; variant?: string; vendor?: string; refurbDelta?: number | null; poolNet?: number;
   hold?: { forecast: number; holding: number; headline: number; sellNow: number; opp: string; review: string; days: number; fallback: number };
   components?: { n: string; dest: string; ref: string; v: number }[];
@@ -39,7 +40,7 @@ export interface OutcomeLine { label: string; kind: string; pred: number; act: n
 export interface GateEvidenceOnFile { type: string; label: string; source: string; at: string; value?: Record<string, unknown> }
 export interface GateRow {
   id: string; name: string; type: string; stage: string; stageLabel: string; passed: boolean;
-  kind: 'block' | 'require_step' | 'require_approval' | 'close_block'; routes: string[]; routeNames: string[]; hold: boolean;
+  kind: 'block' | 'require_step' | 'require_approval' | 'close_block' | 'disclose'; routes: string[]; routeNames: string[]; hold: boolean;
   step: string | null; owner: string; evidence: GateEvidenceOnFile[]; missing: string[]; reason: string; locked: boolean;
 }
 /** A case held until evidence arrives; `batch` names the lot batch it was opened in. */

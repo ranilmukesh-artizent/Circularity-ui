@@ -39,6 +39,13 @@ MERGE_FIELDS = {"asset.source_refs"}
 MANUAL = "manual"  # the source of data a person entered: Manual Import rows, choices in the Conflict Queue
 # the `condition` fields a tool-fleet case is valued again on: a workbench grade (P9-3.5), the telematics last seen (P9-3.8)
 GRADE_FIELDS = ("grade", "test_result", "telemetry_at")
+TITLE_FIELDS = (
+    "title_status",
+    "lien_open",
+    "lien_release_ref",
+    "title_brand",
+    "payoff_confirmed",
+)  # a car's title facts (P9-9.8)
 OVERRIDE_RESOURCE = "conflict"  # a person's choice in the Conflict Queue (provenance.resource); imports are "import"
 
 
@@ -128,6 +135,18 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
                 "AND data ->> 'template' = 'tool_fleet' AND jsonb_typeof(data -> 'gateHold') = 'object'"
             ),
             {"k": lines},
+        ).scalars()
+        for asset_key in sorted(held):
+            jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+    # a car's title facts (the lien released, the payoff confirmed) re-check the used-car cases held on it (plan 9, P9-9.8)
+    titles = sorted({f.key for f in facts if f.model == "condition" and f.field in TITLE_FIELDS})
+    if titles:
+        held = session.execute(
+            text(
+                "SELECT DISTINCT data ->> 'assetId' FROM case_record WHERE stage <> 'closed' AND data ->> 'assetId' = ANY(:k) "
+                "AND data ->> 'template' = 'used_cars' AND jsonb_typeof(data -> 'gateHold') = 'object'"
+            ),
+            {"k": titles},
         ).scalars()
         for asset_key in sorted(held):
             jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")

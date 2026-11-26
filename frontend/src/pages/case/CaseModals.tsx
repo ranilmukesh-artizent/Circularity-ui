@@ -11,7 +11,7 @@ import { Modal, useOverlay } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { JsonView } from '../../components/kit/JsonView';
-import { AfBadge } from './CaseBlocks';
+import { AfBadge, Disclosures } from './CaseBlocks';
 import { TiResult } from './tabs/DecideTabs';
 
 /** The approval card (ACT.approve with the agent's draft, the limit and the raw instruction; confirmApprove). */
@@ -207,6 +207,7 @@ export function ExplainView({ caseId, onClose }: { caseId: string; onClose: () =
           <div className="cxl">
             <section className="panel cxp">
               <div className="cxph"><h3>Why this outcome</h3><span className="note">{r.why || ''}</span></div>
+              <Disclosures r={r} />
               <div className="cxds" onMouseOver={onDriver} onFocus={onDriver}><Drivers a={a} r={r} /></div>
               <p className="cxnx note">
                 {nx && <>Next best: <b>{nx.plan}</b>, {money(nx.net)}, {money(r.net - nx.net)} less. </>}
