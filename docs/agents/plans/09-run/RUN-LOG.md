@@ -217,3 +217,4 @@ unattended". Times are local (IST).
 | 26 Nov 21:00 | P9-13.4 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
 | 26 Nov 21:00 | P9-13.5 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
 | 26 Nov 21:06 | P9-13.10 merged. Admin-only agent.registerClient/revokeClient/clients; PKCE S256 only; 15-minute tokens with act claim; decision-log row asks Legal review before outside clients go to a customer |
+| 26 Nov 21:43 | P9-12.4 merged. rerent 27,600 / rebuild -6,800 / retail 6,270, recommendation rerent; per-class rates as valuer tables; G-SAFE-1 locked for scissor_lift and telehandler; sim seed fixed (duplicate utilisation key) |

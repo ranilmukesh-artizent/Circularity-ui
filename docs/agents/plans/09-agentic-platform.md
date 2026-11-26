@@ -1065,7 +1065,7 @@ each story went.
 - [x] P9-12.1 Extend the standard valuer with conditions and decay
 - [x] P9-12.2 ITAD pack with manifest reconciliation
 - [ ] P9-12.3 ITAD sanitisation per serial and residual decay
-- [ ] P9-12.4 Rental fleet pack with re-rent rebuild or sell
+- [x] P9-12.4 Rental fleet pack with re-rent rebuild or sell
 - [ ] P9-12.5 Rental fleet damage recovery and branch transfer
 - [ ] P9-12.6 Telecom CPE pack with lot decisions
 - [ ] P9-12.7 Battery pack with passport and safe lanes
