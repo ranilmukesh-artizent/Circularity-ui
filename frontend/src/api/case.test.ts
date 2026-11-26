@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fixedAssetLine } from './case';
+import { fixedAssetLine, leaseResidualLine } from './case';
 
 describe('P9-13.1 fixedAssetLine (X-13)', () => {
   it('shows the ERP retirement with its gain', () => {
@@ -12,5 +12,16 @@ describe('P9-13.1 fixedAssetLine (X-13)', () => {
   });
   it('is null for a case without the asset block (the industrial cases)', () => {
     expect(fixedAssetLine({})).toBeNull();
+  });
+});
+
+describe('P9-13.2 leaseResidualLine (X-13)', () => {
+  it('shows the gain against the residual', () => {
+    const r = { contract_ref: 'LC-900001', residual: 18000, proceeds: 19250, gain_loss: 1250 };
+    expect(leaseResidualLine({ finance: { residual: r } })).toBe('Lease residual · contract LC-900001 · residual $18,000 · proceeds $19,250 · gain against residual $1,250');
+    expect(leaseResidualLine({ finance: { residual: { ...r, proceeds: 16400, gain_loss: -1600 } } })).toContain('loss against residual $1,600');
+  });
+  it('has no line without a residual', () => {
+    expect(leaseResidualLine({})).toBeNull();
   });
 });

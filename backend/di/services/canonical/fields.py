@@ -105,6 +105,8 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "lease_opportunity_ref": "ref",
         "lease_rate": "number",
         "lease_ref": "ref",
+        "lease_residual": "number",  # P9-13.2: the lease contract's residual value, in `lease_residual_currency`
+        "lease_residual_currency": "text",
         "lease_status": "text",
         "lease_term_months": "number",
         "lessee": "text",

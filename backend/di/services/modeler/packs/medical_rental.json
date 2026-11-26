@@ -1174,6 +1174,7 @@
   "MR-23"
  ],
  "close": {
-  "fixed_asset": true
+  "fixed_asset": true,
+  "lease_residual": true
  }
 }

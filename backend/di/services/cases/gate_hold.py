@@ -53,6 +53,7 @@ from di.services.cases import (
     vehicle_evidence,
 )
 from di.services.engine.routes import Route
+from di.services.execution import residual
 from di.services.modeler.evidence import evidence_of, label_of, records_of
 from di.services.modeler.gates import GateResult, apply_gate_results, catalogue, evaluate_gates, pack_gates
 from di.services.modeler.pack import Pack, load_pack
@@ -151,6 +152,10 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
             case["bench"] = read
         else:
             case.pop("bench", None)
+    if case.get("template") in ("used_cars", "medical_rental") and default_pack_of(case).close.lease_residual:
+        q = text("SELECT data FROM canonical WHERE model = 'asset' AND key = :a")
+        asset = s.execute(q, {"a": case.get("assetId")}).scalar()
+        recs.extend(residual.evidence(asset or {}, clock.now()))  # the lease's residual, for the gain or loss (P9-13.2)
     if recs or "evidenceRecords" in case:
         case["evidenceRecords"] = recs
     _bound.set((s, str(case.get("id"))))

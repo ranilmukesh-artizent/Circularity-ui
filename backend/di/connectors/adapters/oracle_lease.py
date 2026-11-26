@@ -131,6 +131,20 @@ class OracleLeaseAdapter(Adapter):
                 "Option map",
             ),
         ]
+        if p.get("RESIDUAL_VALUE") is not None:  # P9-13.2: a used-car or medical lease states its residual, in its own currency
+            rc = p.get("RESIDUAL_CURRENCY") or cur
+            facts.append(
+                Fact(
+                    "asset",
+                    key,
+                    "lease_residual",
+                    p["RESIDUAL_VALUE"],
+                    "RESIDUAL_VALUE",
+                    f"{p['RESIDUAL_VALUE']} {rc}",
+                    "Pass-through",
+                )
+            )
+            facts.append(Fact("asset", key, "lease_residual_currency", rc, "RESIDUAL_CURRENCY", rc, "Pass-through"))
         if rental is not None:
             usd = to_usd(Decimal(str(rental)) * per_month, cur)
             facts.append(

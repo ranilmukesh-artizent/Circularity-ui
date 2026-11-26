@@ -38,6 +38,16 @@ EXTRA = {
 }
 
 
+# P9-13.2 (X-13): lease contracts of sample used cars (key SYNUC<n>) and medical devices (tag SYN-MR-IP-<n>) with the residual the
+# lease states; the first car's 18,000 is the book value of its asset in the ERP mock. Industrial contracts carry none.
+RESIDUAL_SAMPLES = (
+    ("LC-900001", "SYNUC000000000001", "Northfield Auto Finance", 18000.00),
+    ("LC-900002", "SYNUC000000000002", "Northfield Auto Finance", 17900.00),
+    ("LC-900003", "SYN-MR-IP-0001", "Northfield Health", 9500.00),
+    ("LC-900004", "SYN-MR-IP-0002", "Northfield Health", 9440.00),
+)
+
+
 def tenant_key(name: str) -> str:
     return re.sub(r"\W+", "_", name.strip()).upper()
 
@@ -69,9 +79,19 @@ def day_end(d: date) -> datetime:
 
 
 def contract_doc(
-    cid: str, kle: int, asset: str, qty: int, owner: str, start: date, end: date, term: int, rental: float, renew: str
+    cid: str,
+    kle: int,
+    asset: str,
+    qty: int,
+    owner: str,
+    start: date,
+    end: date,
+    term: int,
+    rental: float,
+    renew: str,
+    residual: float | None = None,
 ):
-    return {
+    doc = {
         "LEASE_CONTRACT_ID": cid,
         "CONTRACT_NUMBER": cid,
         "CHR_ID": 100000 + int(cid[3:]),
@@ -91,6 +111,9 @@ def contract_doc(
         "ASSET_COUNT": qty,
         "DATE_TERMINATED": None,
     }
+    if residual is not None:  # P9-13.2: only the used-car and medical contracts state a residual; an industrial one never does
+        doc |= {"RESIDUAL_VALUE": float(residual), "RESIDUAL_CURRENCY": "USD"}
+    return doc
 
 
 def load(conn: Connection, seed: Seed) -> dict[str, int]:
@@ -205,6 +228,18 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
             "AGE_YEARS": None,
         }
     )
+    for i, (cid, asset, owner, residual) in enumerate(RESIDUAL_SAMPLES):
+        n = len(contracts)
+        end = _month_end(as_of.year, as_of.month + 1 + i)
+        contracts.append(contract_doc(cid, 500000 + n, asset, 1, owner, _start(end, 36), end, 36, 450.0, "RETURN", residual))
+        assets.append(
+            {
+                "ASSET_NUMBER": asset, "KLE_ID": 500000 + n, "ASSET_DESCRIPTION": asset, "ASSET_CATEGORY": "RESIDUAL_SAMPLE",
+                "MANUFACTURER": None, "QUANTITY": 1, "OWNER_NAME": tenant_key(owner), "OWNERSHIP_TYPE": "CUSTOMER_OWNED",
+                "LEASE_CONTRACT_ID": cid, "LESSEE_NAME": tenant_key(owner), "LEASE_STATUS": "ON_LEASE", "RETURN_DATE": None,
+                "ORIGINAL_COST": residual, "CURRENCY_CODE": "USD", "AGE_YEARS": None,
+            }
+        )  # fmt: skip
     conn.execute(
         insert(t.CONTRACTS), [{"contract_number": c["CONTRACT_NUMBER"], "doc": c, "last_update_date": stamp} for c in contracts]
     )
