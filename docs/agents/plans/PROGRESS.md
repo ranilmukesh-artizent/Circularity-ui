@@ -440,3 +440,8 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
   - Re-check at the wave gate. If it is still slow, look for open stream connections exhausting the thread pool.
 - **Process:** an agent ran `git stash`/pop on the shared tree at 15:07 UTC. It wiped and then restored other agents'
   edits; the affected agents re-applied theirs. Every agent is now forbidden to use stash, reset or checkout.
+| 2026-11-27 | 03 · Task 1-2 gzip and the generic CRUD router | this commit | test_gzip, test_resources green (202 passed in the combined run) | done |
+| 2026-11-27 | 03 · Task 3 register the resources | this commit | test_resources_groups green | done |
+| 2026-11-27 | 03 · Task 4 the missing write handlers (source.connect) | this commit | test_source_connect, test_resources_groups green; test_fabric_sources deferred to the final gate | done |
+| 2026-11-27 | 05 · Task 1-4 OpenTelemetry setup, worker and job traces, Ask GenAI spans, MCP spans | this commit | test_otel, test_otel_genai, test_otel_mcp, test_jobs, test_ask, test_ask_chain green; test_mcp_server deferred to the final gate; main stack needs `docker compose build api worker` | done |
+| 2026-11-27 | 05 · Task 5 local backend and docs | this commit | files; live trace check pending user approval of the image pull; default `docker compose config` unchanged | done |
