@@ -157,6 +157,17 @@
     "sale"
    ],
    "instructions": []
+  },
+  {
+   "id": "wholesale",
+   "name": "Wholesale lot",
+   "app": "Wholesale buyers · 10 days · Recover cases only",
+   "owner": "Channel Ops lead",
+   "lead_days": null,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
   }
  ],
  "guardrails": [
@@ -298,6 +309,23 @@
     [
      "blacklist|activation lock|lock check|registry check",
      "skip|without|remove|\\bno\\b"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-D8",
+   "text": "Price confidence: a thin, stale or wide price goes to the pricing analyst",
+   "owner": "Pricing analyst",
+   "type": "Data quality",
+   "stage": "value",
+   "locked": false,
+   "forbids": [],
+   "protects": [
+    [
+     "price confidence|confidence hold|price interval",
+     "skip|remove|without|\\bno\\b"
     ]
    ],
    "approvers": [],
@@ -497,7 +525,13 @@
     "floor"
    ]
   },
-  "params": {},
+  "params": {
+   "device.floor": {
+    "value": 0.55,
+    "min": 0.55,
+    "max": 0.9
+   }
+  },
   "sample_diversions": [
    {
     "text": "Quote under $50: skip the blacklist check",
@@ -569,15 +603,36 @@
    "recover_channels": [
     "buynow",
     "offers",
-    "auction"
+    "auction",
+    "wholesale"
    ],
    "dcn": {
     "buynow": "Buy Now",
     "offers": "Offers",
     "auction": "Auction",
-    "market": "Marketplace"
+    "market": "Marketplace",
+    "wholesale": "Wholesale lot"
+   },
+   "wholesale_index": {
+    "A": 0.72,
+    "B": 0.66,
+    "C": 0.58,
+    "D": 0.45
+   },
+   "confidence": {
+    "max_interval_share": 0.35,
+    "min_sales_90d": 20,
+    "max_feed_age_days": 14,
+    "max_overlap": 0.5
    },
    "dcfg": {
+    "wholesale": {
+     "fee": 0.02,
+     "fix": 0.5,
+     "log": 1.5,
+     "win": 10,
+     "lot": 1000
+    },
     "buynow": {
      "fee": 0.03,
      "fix": 1,

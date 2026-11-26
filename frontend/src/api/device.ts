@@ -108,7 +108,30 @@ export interface DeviceView {
   wipe?: WipeView | null;
   /** the payout adjustment; null until the lab has graded the device and read its battery (and for a bulk lot) */
   payout?: PayoutView | null;
+  /** the price of each channel with its interval, best first (P9-6.10); null for a bulk lot */
+  channels?: ChannelView[] | null;
+  /** the floor (GR-D2) and price-confidence (GR-D8) holds that wait for a person, with their owner label */
+  priceHolds?: PriceHold[];
 }
+
+/** One channel's price (P9-6.10): expected cash a unit and days to sell; P10 and P90 cash, the week of the market feed and
+ * the price model's id when the channel has a price band. */
+export interface ChannelView {
+  k: string;
+  name: string;
+  cash: number;
+  days: number;
+  p10: number | null;
+  p90: number | null;
+  /** ISO date of the feed week the price rests on */
+  feedWeek: string | null;
+  modelId: string | null;
+  ok: boolean;
+  why: string;
+}
+
+/** A hold on the price: the guardrail that raised it (GR-D2 floor, GR-D8 confidence), why, and who it waits for. */
+export interface PriceHold { id: string; reason: string; owner: string; signals?: string[] }
 
 /** The device block of a case, or null for a case that is not a received device (the industrial book, a tool return). */
 export const deviceView = (c: CaseRec): DeviceView | null => c.device ?? null;

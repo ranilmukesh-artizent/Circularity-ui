@@ -74,6 +74,7 @@ from di.services.modeler.valuers import (
     VALUERS,
     battery,
     device,
+    device_price,
     fleet_evidence,
     kind_of,
     medical_rental,
@@ -333,9 +334,11 @@ def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule]) ->
     routes = to_routes(t, [x | {"ok": own[x["k"]]["ok"], "why": own[x["k"]]["why"]} for x in dec["all"]])
     _decorate(t, routes)
     best = dec["best"]
-    return _Valued(
-        routes, best["k"] if best else None, None, {x["k"]: {"cash": x["cash"], "days": x["days"]} for x in dec["all"]}
-    )
+    figures = {
+        x["k"]: {"cash": x["cash"], "days": x["days"], **device_price.band_figures(x, device.bands_of(lot).get(x["k"]))}
+        for x in dec["all"]
+    }
+    return _Valued(routes, best["k"] if best else None, None, figures)
 
 
 def _days(v: PathValue) -> float:
@@ -531,7 +534,11 @@ def decide_case(
 def _approval(
     rec: Route | None, valued: _Valued, c: Mapping[str, Any], results: Sequence[GateResult], pack: Pack
 ) -> dict[str, Any] | None:
-    """A tool return's route for approval (`tool_approval.route_for_approval`): None for any other decision."""
+    """A tool return's route for approval (`tool_approval.route_for_approval`): None for any other decision. A device case: the
+    floor and price-confidence holds (`device_price.approval`, P9-6.10), after valuation and ranking."""
+    if pack.valuer.kind == "device":
+        ranked = [r["id"] for r in sorted((r for r in valued.routes if not r["excluded"]), key=lambda r: r["rank"])]
+        return device_price.approval(rec["id"] if rec else None, ranked, valued.figures, _valuer_case(c, "device"), pack)
     if not valued.values or rec is None:
         return None
     best = next((v for v in valued.values if v["k"] == rec["id"]), None)

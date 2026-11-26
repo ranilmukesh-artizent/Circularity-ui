@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react';
 import type { CaseAnalysis, CaseRec, CaseScreen } from '../../../api/case';
 import * as D from './DecideTabs';
-import { ComplianceTab, DeviceTab, PayoutTab, QuoteTab } from './DeviceTabs';
+import { ChannelsTab, ComplianceTab, DeviceTab, PayoutTab, QuoteTab } from './DeviceTabs';
 import * as E from './EarlyTabs';
 import * as X from './ExecuteTabs';
 import { BatchTab, CreditLeverTab, EstimateTab, OptionsTab, TicketTab } from './ServiceDeskTabs';
@@ -36,6 +36,7 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
       ...(c.serviceDesk ? [['options', 'Options', OptionsTab] as TabDef] : []), // fix, covered swap, upgrade (P9-4.6)
       ...(c.serviceDesk ? [['credit', 'Credit lever', CreditLeverTab] as TabDef] : []), // test a credit before offering it (P9-4.10)
       ...(c.serviceDesk?.batch ? [['batch', 'Batch', BatchTab] as TabDef] : []), // a batch's split (P9-4.8)
+      ...(c.device?.channels ? [['channels', 'Channels', ChannelsTab] as TabDef] : []), // a device's price per channel (P9-6.10)
       ['packet', 'Decision packet', D.PacketTab], ['compare', 'Compare outcomes', D.CompareTab], ['why', 'Why this outcome', D.WhyTab],
       ['evidence', 'Evidence', D.EvidenceTab], ['whatif', 'What-if and edge cases', D.WhatIfTab], ['predicted', 'How it was predicted', D.PredictedTab],
       ['demand', 'Demand', D.DemandTab],

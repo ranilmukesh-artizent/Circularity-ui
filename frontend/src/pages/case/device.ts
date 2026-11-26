@@ -1,6 +1,6 @@
 /** Wording of the case page's Device tab (P9-6.4, DV-01) over the `device` block of a case. */
 import { money } from '../../api/format';
-import type { DeviceView, PayoutView, QuoteCheck, QuoteRow, RegistryView, WipeView } from '../../api/device';
+import type { ChannelView, DeviceView, PayoutView, QuoteCheck, QuoteRow, RegistryView, WipeView } from '../../api/device';
 
 /** "iPhone 14 · 128 GB · declared B · quote $410 · partner P01"; a bulk lot: "20 devices · batch BATCH-0020 · grade B · partner P01". */
 export function deviceLine(v: DeviceView): string {
@@ -103,4 +103,13 @@ export function payoutState(p: PayoutView): string {
   if (p.status === 'decided' && p.decided) return `Decided by ${p.decided.by}: ${usd(p.adjusted)} (${p.decided.reason})`;
   if (p.status === 'waiting') return `Waiting for Customer care: the gap is above ${gapText(p.limit).replace(/^[+−]/, '')}`;
   return `Adjusted by the table: ${p.table}`;
+}
+
+/** "Buy Now · $312 net · 11.6 days · $280–$335 · feed 5 Oct 2026" (P9-6.10): a channel's expected net a unit, days to sell, the
+ * P10 to P90 cash and the feed week, the last two only when the channel was priced from a band; the model follows its id. */
+export function channelRow(v: ChannelView): string {
+  const band = v.p10 != null && v.p90 != null ? `${money(v.p10)}–${money(v.p90)}` : '';
+  const feed = v.feedWeek ? `feed ${day(v.feedWeek)}` : '';
+  return [v.name, `${money(v.cash)} net`, `${v.days.toFixed(1)} days`, band, feed, v.modelId ? `model ${v.modelId}` : '', v.ok ? '' : 'not allowed']
+    .filter(Boolean).join(' · ');
 }

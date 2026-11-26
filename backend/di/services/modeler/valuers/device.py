@@ -13,10 +13,12 @@ po/README.md). Pure code: no Session, no I/O. Lots and rules are the prototype's
 
 import copy
 import math
-from collections.abc import Sequence
-from typing import Any, TypedDict
+from collections.abc import Mapping, Sequence
+from datetime import date
+from typing import Any, NotRequired, TypedDict
 
 from di.services.engine.jsmath import js_round, js_sum
+from di.services.engine.predictor import PriceBand
 from di.services.modeler.carbon import co2_avoided
 from di.services.modeler.pack import load_pack
 from di.services.modeler.valuers.rng import mulberry32
@@ -69,6 +71,11 @@ class ChannelValue(TypedDict):
     why: str
     co2: float | None  # kg CO2e avoided for the lot, information only (carbon.co2_avoided); None without a factor
     co2Prov: dict[str, Any] | None  # the card's provenance (carbon.Co2.prov); None without a factor
+    # with a price band (P9-6.10): the same cash at the band's P10 and P90, the feed week it rests on and the model that gave it
+    p10_cash: NotRequired[float]
+    p90_cash: NotRequired[float]
+    feed_week: NotRequired[str | None]
+    model_id: NotRequired[str | None]
 
 
 class Decision(TypedDict):
@@ -110,28 +117,89 @@ def sample_lots() -> list[Lot]:
     return copy.deepcopy(_LOTS[0])
 
 
-def score(lot: Lot, channel: str) -> ChannelValue:
-    """dScore (2341): an unsold lot falls back to auction after the channel's window, at the eroded price."""
+def _cash(lot: Lot, channel: str, price: float) -> tuple[float, float]:
+    """(cash a unit, days to sell) on a channel at the sale `price` a unit: an unsold lot falls back to auction after the
+    channel's window, at the eroded price."""
     s = DST[lot["grade"]][lot["band"]][channel]
     a = DST[lot["grade"]][lot["band"]]["auction"]
     c = DCFG[channel]
     ca = DCFG["auction"]
-    net = lot["ref"] * s[3] * (1 - c["fee"]) - c["fix"] - c["log"] - s[4] * DG["retc"]
+    net = price * (1 - c["fee"]) - c["fix"] - c["log"] - s[4] * DG["retc"]
     aun = lot["ref"] * a[3] * (1 - ca["fee"]) - ca["fix"] - ca["log"] - a[4] * DG["retc"]
     days = s[1] * s[2] + (1 - s[1]) * (c["win"] + a[2])
     cash = s[1] * net + (1 - s[1]) * aun * math.pow(1 - DG["ero"], c["win"] / 7) - DG["hold"] * days
-    ok = not (lot["grade"] == "D" and channel in ("buynow", "market")) and lot["qty"] <= c["lot"]
+    return cash, days
+
+
+def _wholesale(lot: Lot, band: PriceBand | None) -> tuple[float, float, float, float, str]:
+    """(cash, p10 cash, p90 cash, days, why) a unit of a wholesale lot (P9-6.10): the best open approved bid a unit when the
+    lot's inputs name one (`inputs.bid_per_unit`, P9-6.11), else the index estimate: the grade's `wholesale_index` times the
+    reference value ("No live bid: index estimate"); with a band (the model learned wholesale prices) its P10, P50 and P90."""
+    c = DCFG["wholesale"]
+    bid = (lot.get("inputs") or {}).get("bid_per_unit")
+
+    def cash(price: float) -> float:
+        return price * (1 - c["fee"]) - c["fix"] - c["log"] - DG["hold"] * c["win"]
+
+    if bid is not None:
+        v = cash(float(bid))
+        return v, v, v, c["win"], "Best open bid"
+    if band is not None:
+        return cash(band.p50), cash(band.p10), cash(band.p90), c["win"], "No live bid: index estimate"
+    v = cash(float(_PARAMS["wholesale_index"][lot["grade"]]) * lot["ref"])
+    return v, v, v, c["win"], "No live bid: index estimate"
+
+
+def score(lot: Lot, channel: str, band: PriceBand | None = None) -> ChannelValue:
+    """dScore (2341): an unsold lot falls back to auction after the channel's window, at the eroded price. With `band` the
+    sale price is its P50 (instead of the reference value times the grade's price index) and the value gains `p10_cash` and
+    `p90_cash` (the same formula at P10 and P90), `feed_week` and `model_id`; days and sell-through still come from `DST`.
+    The `wholesale` channel (a Recover case's lot sale, P9-6.10) has no learning table: see `_wholesale`."""
+    c = DCFG[channel]
+    extra: dict[str, Any] = {}
+    if channel == "wholesale":
+        cash, lo, hi, days, why = _wholesale(lot, band)
+        ok = lot["qty"] <= c["lot"]
+        why = why if ok else ""
+        if band is not None:
+            extra = {"p10_cash": lo, "p90_cash": hi, "feed_week": _week(band), "model_id": band.model_id}
+    else:
+        why = ""
+        price = lot["ref"] * DST[lot["grade"]][lot["band"]][channel][3] if band is None else band.p50
+        cash, days = _cash(lot, channel, price)
+        ok = not (lot["grade"] == "D" and channel in ("buynow", "market")) and lot["qty"] <= c["lot"]
+        if band is not None:
+            extra = {
+                "p10_cash": _cash(lot, channel, band.p10)[0], "p90_cash": _cash(lot, channel, band.p90)[0],
+                "feed_week": _week(band), "model_id": band.model_id,
+            }  # fmt: skip
     cv = co2_avoided(_PACK, None, channel, lot["qty"], confirmed=False)
-    return {
+    value: ChannelValue = {
         "k": channel,
         "cash": cash,
         "days": days,
         "score": cash - DG["pen"] * max(0, lot["doh"] + days - DG["sla"]),
         "ok": ok,
-        "why": "",
+        "why": why,
         "co2": cv.kg if cv else None,
         "co2Prov": cv.prov() if cv else None,
     }
+    return value | extra  # type: ignore[return-value]
+
+
+def _week(band: PriceBand) -> str | None:
+    return band.feed_week.isoformat() if isinstance(band.feed_week, date) else None
+
+
+def bands_of(lot: Lot) -> dict[str, PriceBand]:
+    """The price bands a received device's case opened with (`inputs.bands`, one per channel, P9-6.10); none for a PO lot."""
+    out: dict[str, PriceBand] = {}
+    for k, b in ((lot.get("inputs") or {}).get("bands") or {}).items():
+        week = b.get("feed_week")
+        out[k] = PriceBand(
+            float(b["p10"]), float(b["p50"]), float(b["p90"]), b.get("model_id"), date.fromisoformat(week) if week else None
+        )
+    return out
 
 
 def in_scope(lot: Lot, s: dict[str, Any]) -> bool:  # dIn (2345)
@@ -149,10 +217,12 @@ def channels_for(lot: Lot) -> list[str]:
     return list(RECOVER if lot.get("imei") else DCH)
 
 
-def decide(lot: Lot, rules: Sequence[Rule] | None = None) -> Decision:
+def decide(lot: Lot, rules: Sequence[Rule] | None = None, bands: Mapping[str, PriceBand] | None = None) -> Decision:
     """dDecide (2347): rules in order; a prefer rule wins when within 15% of the best score; rules that would leave no
-    channel are waived. `rules` defaults to the published flow's rules. Only `channels_for(lot)` are scored."""
-    values = [score(lot, k) for k in channels_for(lot)]
+    channel are waived. `rules` defaults to the published flow's rules. Only `channels_for(lot)` are scored, each on its price
+    band (`bands`, default the lot's own, `bands_of`)."""
+    bands = bands_of(lot) if bands is None else bands
+    values = [score(lot, k, bands.get(k)) for k in channels_for(lot)]
     keep = [v["ok"] for v in values]
     pref = None
     for r in LIVE_RULES if rules is None else rules:

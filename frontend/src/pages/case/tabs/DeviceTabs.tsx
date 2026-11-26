@@ -6,7 +6,7 @@ import { fmtDateYear } from '../../../api/format';
 import { can } from '../../../api/session';
 import { useAction } from '../../../hooks/useAction';
 import { Kv } from '../CaseBlocks';
-import { deviceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, refLine, registryLine, registryState, usd, wipeState } from '../device';
+import { channelRow, deviceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, refLine, registryLine, registryState, usd, wipeState } from '../device';
 import type { TabProps } from './index';
 
 const LABEL = { imei: 'IMEI', model: 'Model', storage: 'Storage' } as const;
@@ -137,6 +137,23 @@ export function PayoutTab({ c }: TabProps) {
           )}
         </>
       )}
+    </>
+  );
+}
+
+/** The Channels tab of a received-device case (P9-6.10, DV-06): the expected net, days to sell, P10 to P90 and feed week of every
+ * channel, and a banner for a floor or price-confidence hold with the owner it waits for. Only a person releases a hold. */
+export function ChannelsTab({ c }: TabProps) {
+  const d = deviceView(c);
+  const rows = d?.channels;
+  if (!rows) return null;
+  const holds = d?.priceHolds ?? [];
+  return (
+    <>
+      {holds.map((h) => (
+        <p key={h.id} className="stpad" role="status" style={{ color: 'var(--bad)' }}>{h.reason} · waits for {h.owner}</p>
+      ))}
+      <ul className="stsys stpad" aria-label="Price per channel">{rows.map((r) => <li key={r.k} title={r.why || undefined}>{channelRow(r)}</li>)}</ul>
     </>
   );
 }

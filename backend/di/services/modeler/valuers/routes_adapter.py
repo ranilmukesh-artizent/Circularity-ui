@@ -16,7 +16,7 @@ from typing import Any, cast
 from di.services.engine.routes import POLICY, Route, fail, mk_route
 from di.services.modeler.templates import Template
 from di.services.modeler.valuers import service_desk
-from di.services.modeler.valuers.device import ChannelValue
+from di.services.modeler.valuers.device import DCN, ChannelValue
 from di.services.modeler.valuers.tool_fleet import PathValue, ValueLine
 
 _TICKET = frozenset({"fix", "swap", "upgrade", "split", "all_fix", "all_upgrade"})
@@ -72,11 +72,16 @@ def to_routes(t: Template, values: Sequence[PathValue | ChannelValue]) -> list[R
         p = t.path(v["k"])
         dest = cast(PathValue, v).get("dest") if "lines" in v else None
         name = (dest or {}).get("name") or (
-            p.name if p else service_desk.NAMES.get(v["k"], v["k"])
+            p.name if p else service_desk.NAMES.get(v["k"], DCN.get(v["k"], v["k"]))
         )  # a value names its route (P9-9.10)
         r = mk_route({"id": v["k"], "plan": name, "terms": _terms(v), "why": v["why"]})
         r["co2"] = v["co2"]
         r["co2Prov"] = v["co2Prov"]
+        if "lines" not in v and "p10_cash" in v:  # a channel priced by a band: its interval is the route's (P9-6.10)
+            cv = v
+            if cv["p90_cash"] > cv["p10_cash"]:
+                held = cv["score"] - cv["cash"]  # the days past the service level, the same at every price
+                r["p10"], r["p90"] = round(cv["p10_cash"] + held), round(cv["p90_cash"] + held)
         if "lines" in v:  # a tool-fleet route carries its destination (the named order it fills), P9-1.4
             r["dest"] = cast(PathValue, v)["dest"]
         if not v["ok"]:

@@ -167,6 +167,7 @@ from di.services.execution import (
 from di.services.execution.lanes import LOCS, RATE_CARD, loc_win
 from di.services.execution.plan import ack_note, ex_delivered, value_order
 from di.services.execution.steps import ex_doc_ref, ho_kind
+from di.services.modeler.valuers import device_price
 from di.services.service_desk.intake import view as service_desk_view
 
 # ================================================================ shared by the product, case and orchestration screens
@@ -636,6 +637,9 @@ def device_block(c: Case, session: Session | None = None) -> dict | None:
         ),
         "wipe": device_wipe.view(session, c) if session is not None else None,  # the wipe certificate (P9-6.7)
         "payout": device_payout.view(session, c) if session is not None else None,  # the payout adjustment (P9-6.8)
+        # the price of each channel with its interval and feed date, and what holds it (P9-6.10)
+        "channels": device_price.channels_view(v) if v.get("imei") else None,
+        "priceHolds": [h for h in c.get("approvalHolds") or [] if h.get("id") in device_price.PRICE_GUARDS],
     }  # fmt: skip
 
 
