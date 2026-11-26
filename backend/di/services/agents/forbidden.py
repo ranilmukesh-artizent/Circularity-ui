@@ -44,6 +44,7 @@ FORBIDDEN_ACTIONS = (
     "rollout.",  # plan 9 P9-7.3: starting, widening, publishing and rolling back a canary are a person's (R21)
     "device.ageingSuggestions",  # plan 9 P9-6.13: a person reads the ageing suggestions, accepts one into their draft (R21)
     "telecom.crossRegion",  # P9-10.15: a person reads the cross-region transfers and accepts the rule into their draft (R21)
+    "assessment.record",  # plan 9 P9-12.9: servicing or remanufacturing is a person's regulatory call (R7)
     "conflict.resolve",  # phase 2 review: choosing between two systems' values clears a hold; a person decides it
 )  # fmt: skip
 

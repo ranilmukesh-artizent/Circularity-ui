@@ -10,7 +10,8 @@ written by the disposal partner's adapter). Without it the result fails, effect 
 (`di.services.instructions.writers`) asks this check and does not send until it passes. Sanitisation is a step of the retire route
 itself, so the gate is asked at the collection and never excludes the route at decision time.
 
-The check answers only for the medical rental pack: it returns None for a device with no patient data and for every other pack,
+The check answers only for the medical rental pack and, from P9-12.9, the medical capital pack (whose `routes` param names every
+release route; its case's `sanitisationRef` comes from the fact `sanitisation_ref`): it returns None for a device with no patient data and for every other pack,
 which keep the gate's evidence list (data wipe, controller sign-off). Never does: read the store, the clock or a session, or
 write a case. HIPAA 45 CFR 164.310(d) and GDPR Art. 32 are the sources; the wording needs review by Kinective's Legal team before
 it is relied on.
@@ -28,12 +29,13 @@ from di.services.modeler.valuers.medical_steps import patient_data
 
 GATE = "G-DATA-3"
 PACK = "medical_rental"
+PACKS = (PACK, "medical_capital")  # P9-12.9: imaging systems and patient monitors need the record before any release route
 RECORD = "sanitisation_record"
 
 
 def check_patient_data_sanitised(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult | None:
     """G-DATA-3 (module docstring); None leaves a device with no patient data, or another pack, to the data."""
-    if pack.key != PACK or not patient_data(pack, case):
+    if pack.key not in PACKS or not patient_data(pack, case):
         return None
     ref = case.get("sanitisationRef")
     if ref:

@@ -36,6 +36,13 @@ system's `condition.servicing_assessment`, value `{assessment}`). `refurbish` ne
 case's market (`case["market"]`, else `valuer.market`) is in the gate's param `manufacturer_status_markets` (empty by default; the
 pack's list is the only way in, an overlay cannot widen it: the gate is Compliance, so locked). Only `refurbish` is affected.
 
+The medical capital pack (P9-12.9) uses G-MED-1 (`check_regulatory_assessment`: the planned work needs the assessment a person
+records with `assessment.record`; remanufacturing needs manufacturer status in the market), G-MED-2 (`check_single_use`: a
+single-use device is neither reused nor resold) and G-MED-3 (`check_cross_market`: resale in another market needs the UDI, the
+service record and closed recalls). They read the case's `device` and `market` facts (`di.services.cases.capital_facts`). FDA
+remanufacturing guidance (May 2024), EU MDR Art. 17 and the MDR economic operator and UDI rules are not re-read; the wording
+needs review by Kinective's Legal team.
+
 Never does: read the canonical store, the clock or a session, or write a case. The CDC guideline is not re-read, and the MHRA
 and NHSScotland wording is unconfirmed. 42 CFR 482.41 and CMS S&C 14-07 are the hospital's duty (the flow-down through rental
 contracts is unconfirmed), IEC 62353:2014 names the electrical safety test, and 21 CFR Part 7 and 806 and the EU MDR field safety
@@ -191,10 +198,65 @@ def check_refurbish_servicing(case: Mapping[str, Any], pack: Pack, gate: GateDef
     return GateResult(gate.id, True, ok, (), "Servicing assessment on file")
 
 
+# ---------------------------------------------------------------- the medical capital pack (P9-12.9, stories NS-MED-01 to 03)
+def _market_of(case: Mapping[str, Any]) -> Mapping[str, Any]:
+    m = case.get("market")
+    return m if isinstance(m, Mapping) else {}
+
+
+def check_regulatory_assessment(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult:
+    """G-MED-1 (medical capital, Compliance, stage 5): the planned work needs a regulatory assessment. `refurbish_resell` fails
+    with `evidence_missing: ("servicing_assessment",)` when none is on file ("Regulatory assessment of the planned work
+    required"), and "Would be remanufacturing or full refurbishment: needs manufacturer status in this market" when it says
+    `remanufacturing` or `full_refurbishment` and the market the device is to be sold in (`market.target`, else `market.origin`)
+    is not in the gate's `manufacturer_status_markets` (empty by default; the pack's list is the only way in). The assessment is
+    recorded by a person (`assessment.record`). The cited FDA (May 2024) and EU MDR wording needs review by Legal."""
+    routes = gate_routes(gate, pack)
+    e = evidence_of(case, ASSESSMENT)
+    if e is None:
+        return GateResult(gate.id, False, GateEffect("block", routes, gate.effect.hold_until_evidence, None),
+                          (ASSESSMENT,), "Regulatory assessment of the planned work required")  # fmt: skip
+    m = _market_of(case)
+    market = m.get("target") or m.get("origin")
+    if str(e.value.get("assessment") or "") in FULL and market not in (gate.params.get("manufacturer_status_markets") or []):
+        reason = "Would be remanufacturing or full refurbishment: needs manufacturer status in this market"
+        return GateResult(gate.id, False, GateEffect("block", routes, gate.effect.hold_until_evidence, None), (), reason)
+    return GateResult(
+        gate.id, True, GateEffect("block", (), gate.effect.hold_until_evidence, None), (), "Servicing assessment on file"
+    )
+
+
+def check_single_use(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult:  # noqa: ARG001 - a check takes the case
+    """G-MED-2 (Compliance, stage 2): a device labelled single-use is not reused or resold, so the routes of reuse and sale
+    fail and recycling is what is left. The gate triggers on `device.single_use`; another device never gets here."""
+    reason = "Single-use device: reuse and resale are not allowed; recycle it"
+    return GateResult(
+        gate.id, False, GateEffect("block", gate_routes(gate, pack), gate.effect.hold_until_evidence, None), (), reason
+    )
+
+
+def check_cross_market(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult:
+    """G-MED-3 (Compliance, stage 4): resale in another market than the device came from needs the UDI, the service record and
+    closed recalls. Each missing item is named: "UDI missing", "Service record missing", "Recalls not closed" (EU MDR economic
+    operators and UDI; wording to be reviewed by Legal). The gate triggers on `market.cross_market`."""
+    m = _market_of(case)
+    missing = [t for t, ok in (("UDI missing", m.get("udi")), ("Service record missing", m.get("service_record_ref")),
+                               ("Recalls not closed", m.get("recalls_closed") is True)) if not ok]  # fmt: skip
+    if not missing:
+        return GateResult(
+            gate.id, True, GateEffect("block", (), gate.effect.hold_until_evidence, None), (), "Market duties on file"
+        )
+    effect = GateEffect("block", gate_routes(gate, pack), gate.effect.hold_until_evidence, None)
+    return GateResult(gate.id, False, effect, (), "; ".join(missing))
+
+
 CHECKS[DECON_GATE] = check_decontamination
 CHECKS[SVC_GATE] = check_service_in_date
 CHECKS[FSN_GATE] = check_safety_notice
 CHECKS[REFURB_GATE] = check_refurbish_servicing
+CHECKS["G-MED-1"] = check_regulatory_assessment
+CHECKS["G-MED-2"] = check_single_use
+CHECKS["G-MED-3"] = check_cross_market
 
 
 # ---------------------------------------------------------------- the decontamination timestamp, per choice (MR-03)
