@@ -15,7 +15,7 @@ import { allowedTenants, can, canPage, tenantFilter } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import type { PageProps } from '../registry';
 import { Icon } from '../../components/Icon';
-import { openAsk } from '../../utils/askBus';
+import { openAssistant } from '../../utils/askBus';
 import { Drawer } from '../../components/Overlay';
 import { Segmented } from '../../components/kit/Segmented';
 import { PilotReportButton } from '../../components/PilotReport';
@@ -351,10 +351,10 @@ function AgentAnswer({ onOpen }: { onOpen: () => void }) {
     return <section className="panel"><div className="pb"><p className="note">{(e as Error).message}</p></div></section>;
   }
   const a = o.versions[0], b = o.versions[o.versions.length - 1];
-  const ask = (e: FormEvent) => { e.preventDefault(); if (q.trim()) openAsk(q.trim()); setQ(''); };
+  const ask = (e: FormEvent) => { e.preventDefault(); if (q.trim()) openAssistant({ mode: 'ask', question: q.trim() }); setQ(''); };
   return (
     <section className="panel" aria-label="Circularity Agent answer">
-      <div className="ph"><h3>✦ Circularity Agent</h3><span className="note">Predicted vs actual: what changed across the model versions?</span></div>
+      <div className="ph"><h3><Icon name="bot" /> Circularity Agent</h3><span className="note">Predicted vs actual: what changed across the model versions?</span></div>
       <div className="pb">
         <p style={{ marginTop: 0 }}>
           Every reconciled decision is scored against its prediction. Error fell from {a.error_pct}% on {a.version} to {b.error_pct}% on {b.version}, and {o.within_band_pct}% of{' '}

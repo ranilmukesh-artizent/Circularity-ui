@@ -13,6 +13,7 @@ import { can, canPage, currentAccount } from '../../../api/session';
 import { toast } from '../../../components/toast';
 import { refused } from '../../../hooks/useAction';
 import { askContext } from '../context';
+import { PreviewCard } from '../PreviewCard';
 import { statusLine, statusText } from '../status';
 import { applyAskEvent, askData } from '../turns';
 import type { AssistantContext, AssistantMode, ModeDef, Turn } from '../types';
@@ -153,27 +154,22 @@ function AskTurn({ turn, ask }: { turn: Turn; ask: (text: string, mode?: Assista
   );
 }
 
-/** The intent preview (2.3) for a suggested step that runs an action: what runs, the limits, Run it / Not now. */
+/**
+ * The intent preview (2.3) for a suggested step that runs an action: the shared PreviewCard, titled with the step's
+ * label; what changes is the action's verb from the catalogue; the limits say it runs as the person. Run it / Not now.
+ */
 function NextStepCard({ n, onRun, onDismiss }: { n: AskNext; onRun: () => void; onDismiss: () => void }) {
   return (
-    <div className="as-card" role="group" aria-label={n.label}>
-      <p className="as-card-t">Proposed: {n.label}</p>
-      <p className="as-basis">Suggested by Ask Circularity</p>
-      <p className="as-card-h">What changes</p>
-      <p>
-        Runs <span className="mono">{n.action}</span>.
-      </p>
-      <p className="as-card-h">Limits</p>
-      <p>Runs as you, with your role's checks and approvals. Undo it from the case if the action allows.</p>
-      <div className="as-card-b">
-        <button type="button" className="btn pri sm" onClick={onRun}>
-          Run it
-        </button>
-        <button type="button" className="btn sm" onClick={onDismiss}>
-          Not now
-        </button>
-      </div>
-    </div>
+    <PreviewCard
+      title={'Proposed: ' + n.label}
+      basis="Suggested by Ask Circularity"
+      sections={[{ heading: 'What changes', lines: [{ text: 'Runs ' + n.action + '.', sign: '~' }] }]}
+      limits="Runs as you, with your role's checks and approvals. Undo it from the case if the action allows."
+      actions={[
+        { label: 'Run it', primary: true, onClick: onRun },
+        { label: 'Not now', onClick: onDismiss },
+      ]}
+    />
   );
 }
 
@@ -222,19 +218,26 @@ function Card({ c, q, onNext }: { c: AskCard; q: string; onNext: (n: AskNext) =>
       </div>
     );
   if (c.type === 'table' && Array.isArray(d.cols))
+    // the dock is 400px: the table scrolls sideways inside its own box (focusable, so the keyboard scrolls it too), and
+    // a line under it says so when it has more columns than fit (QA B-33)
     return (
-      <div className="tw as-sub">
+      <div className="as-sub as-tablecard">
         {d.title && <b>{String(d.title)}</b>}
-        <table>
-          <thead>
-            <tr>{d.cols.map((h: string) => <th key={h}>{h}</th>)}</tr>
-          </thead>
-          <tbody>
-            {(d.rows ?? []).slice(0, 12).map((r: { cells: unknown[] }, i: number) => (
-              <tr key={i}>{r.cells.map((x, k) => <td key={k}>{typeof x === 'object' ? JSON.stringify(x) : String(x ?? '')}</td>)}</tr>
-            ))}
-          </tbody>
-        </table>
+        {/* a scrollable region is focusable so a keyboard can scroll it (WCAG 2.1.1) */}
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
+        <div className="as-table" role="region" aria-label={String(d.title ?? 'Answer table')} tabIndex={0}>
+          <table>
+            <thead>
+              <tr>{d.cols.map((h: string) => <th key={h}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {(d.rows ?? []).slice(0, 12).map((r: { cells: unknown[] }, i: number) => (
+                <tr key={i}>{r.cells.map((x, k) => <td key={k}>{typeof x === 'object' ? JSON.stringify(x) : String(x ?? '')}</td>)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {d.cols.length > 3 && <p className="as-note">{d.cols.length} columns · scroll sideways to see them all</p>}
       </div>
     );
   if (c.type === 'briefing' && Array.isArray(d.lines))

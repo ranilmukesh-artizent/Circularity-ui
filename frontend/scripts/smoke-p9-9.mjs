@@ -41,7 +41,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describeInAssistant, openInSetup } from './a10-setup.mjs';
+import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const shots = process.env.SMOKE_SHOTS || path.join(tmpdir(), 'smoke-p9-9');
@@ -227,8 +227,8 @@ await step('1 Connect the seven used-car systems, sync them and open the cars as
 // ---------------------------------------------------------------- 2
 const compose = (p) => p.locator('section[aria-label="Compose"]');
 async function startCompose(p, typed) {
-  await open(p, MODELER, '.mdl-bar');
-  await p.getByRole('button', { name: 'Compose', exact: true }).click();
+  await open(p, MODELER, '.mdl-tabs');
+  await openSetupTab(p);
   await compose(p).waitFor();
   // plan 10: the Describe step is Ask Circularity's Set up mode, then "Open in Set up" shows the composition
   await describeInAssistant(p, typed === undefined ? { title: 'Lease returns to best channel', timeout: UI } : { typed, timeout: UI });
@@ -366,8 +366,8 @@ await step('9 The ageing alert, the analytics question and the modelled replay f
   }
 
   // the replay figures, on the Compose publish step of the composition of step 2
-  await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-bar');
-  if (!COMP) await p.getByRole('button', { name: 'Compose', exact: true }).click();
+  await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
+  if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();
   const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
   if (await tab.count()) await tab.click();

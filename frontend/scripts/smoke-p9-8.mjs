@@ -46,7 +46,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describeInAssistant, openInSetup } from './a10-setup.mjs';
+import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
@@ -141,8 +141,8 @@ async function step(name, fn) {
 const panel = (p) => p.locator('section[aria-label="Compose"]');
 const stepTab = (p, name) => panel(p).getByRole('tab', { name, exact: true });
 async function openCompose(p, id) {
-  await open(p, `${MODELER}${id ? `&compose=${id}` : ''}`, '.mdl-bar');
-  if (!id) await p.getByRole('button', { name: 'Compose', exact: true }).click();
+  await open(p, `${MODELER}${id ? `&compose=${id}` : ''}`, '.mdl-tabs');
+  if (!id) await openSetupTab(p);
   await panel(p).waitFor();
 }
 let COMP = 0; // the composition id

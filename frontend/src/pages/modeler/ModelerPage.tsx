@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { forkFlow, saveDraft, useModeler, type Proposal } from '../../api/modeler';
 import type { ActionResult, Check, FlowGraph, ModelerScreen } from '../../api/types';
 import { can, currentAccount } from '../../api/session';
@@ -7,6 +7,8 @@ import { useBackend } from '../../api/useBackend';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { AssistantPanel } from '../../layout/assistant/AssistantPanel';
+import { FlowSections } from '../../layout/assistant/flow/FlowSections';
+import type { AssistantMode } from '../../layout/assistant/types';
 import { registerSurface } from '../../utils/workSurface';
 import type { PageProps } from '../registry';
 import { ComposePanel } from './compose/ComposePanel';
@@ -34,8 +36,10 @@ export const AUTOSAVE_MS = 2000;
  */
 export function ModelerPage({ query }: PageProps) {
   useBackend();
-  const [template, setTemplate] = useState(query.get('template') ?? '');
-  const [org, setOrg] = useState(query.get('org') ?? '');
+  const nav = useNavigate();
+  // the template and org live in the URL, so a link ("Open in Set up" from the assistant) can change them while the page is open
+  const template = query.get('template') ?? '';
+  const org = query.get('org') ?? '';
   const s = useModeler(template, org);
   const compose = composeParam(query.get('compose'));
   const tabs = visibleTabs({ managePacks: can('managePacks'), template: s.template.key });
@@ -48,6 +52,13 @@ export function ModelerPage({ query }: PageProps) {
     const str = q.toString();
     return str ? '?' + str : '';
   };
+  const pick = (k: 'template' | 'org', v: string) => {
+    const q = new URLSearchParams(query);
+    q.set(k, v);
+    // another template has another flow: a composition belongs to the pair it was drafted for
+    if (k === 'template') q.delete('compose');
+    nav({ search: '?' + q.toString() }, { replace: true });
+  };
   return (
     <div className="mdl mdl-page" id="modeler">
       <header className="mdl-head">
@@ -55,11 +66,11 @@ export function ModelerPage({ query }: PageProps) {
           <h1>Modeler</h1>
           <div className="row">
             <label className="sr" htmlFor="mdl-tpl">Template</label>
-            <select id="mdl-tpl" value={s.template.key} onChange={(e) => setTemplate(e.target.value)}>
+            <select id="mdl-tpl" value={s.template.key} onChange={(e) => pick('template', e.target.value)}>
               {s.templates.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
             </select>
             <label className="sr" htmlFor="mdl-org">Organisation</label>
-            <select id="mdl-org" value={s.org} onChange={(e) => setOrg(e.target.value)}>
+            <select id="mdl-org" value={s.org} onChange={(e) => pick('org', e.target.value)}>
               {s.orgs.map((o) => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
@@ -70,6 +81,9 @@ export function ModelerPage({ query }: PageProps) {
     </div>
   );
 }
+
+/** The pinned assistant's mode on each tab (plan 10, 3.3): Change flow on Flow (Ask without edit rights), Set up on Set up, else Ask. */
+const TAB_MODE: Record<PageTab, AssistantMode | undefined> = { flow: undefined, setup: 'setup', layer: 'ask', policies: 'ask', tables: 'ask', packs: 'ask' };
 
 /** `?compose=<id>` opens the Set up tab on that composition. */
 const composeParam = (v: string | null): number | null => (v && /^\d+$/.test(v) ? Number(v) : null);
@@ -86,6 +100,10 @@ function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; comp
   const [rail, setRail] = useState<RailState>(() => initialRail(window.innerWidth));
   const [drawer, setDrawer] = useState<'rollout' | 'replay' | null>(null);
   const [agentOpen, setAgentOpen] = useState(false);
+  /** the node just applied from a proposal: its revision outline closes once (plan 10, 4.4), then the mark goes */
+  const [resolved, setResolved] = useState<string | null>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const drawerOpener = useRef<HTMLElement | null>(null);
   const dirty = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(graph);
@@ -165,10 +183,16 @@ function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; comp
     if (!r.ok) return false;
     setGraph(g);
     setChecks(r.output.checks);
+    setResolved(proposal?.node_id ?? null);
     setProposal(null);
     select(nodeId);
     return true;
   };
+  useEffect(() => {
+    if (!resolved) return;
+    const t = setTimeout(() => setResolved(null), 1600);
+    return () => clearTimeout(t);
+  }, [resolved]);
 
   // The assistant column works on what this page registers (plan 10, section 5). The handle reads the latest closures
   // through a ref, so it is registered again only when what it names changes.
@@ -199,14 +223,26 @@ function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; comp
   const node = shown.nodes.find((n) => n.id === sel) ?? null;
   const flowTab = tab === 'flow';
 
-  // Esc closes the rollout drawer
+  // The rollout drawer: focus moves into it on open and back to the step that opened it on close; Esc closes it
+  const closeDrawer = () => {
+    setDrawer(null);
+    const o = drawerOpener.current;
+    drawerOpener.current = null;
+    if (o?.isConnected) requestAnimationFrame(() => o.focus({ preventScroll: true }));
+  };
+  const closeRef = useRef(closeDrawer);
+  closeRef.current = closeDrawer;
   useEffect(() => {
     if (!drawer) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(null);
+    drawerRef.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current();
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [drawer]);
-  const openStep = (k: RolloutStepId) => setDrawer(k === 'replay' && showReplay(s) ? 'replay' : 'rollout');
+  const openStep = (k: RolloutStepId) => {
+    if (!drawer && document.activeElement instanceof HTMLElement) drawerOpener.current = document.activeElement;
+    setDrawer(k === 'replay' && showReplay(s) ? 'replay' : 'rollout');
+  };
 
   const central = () => {
     switch (tab) {
@@ -238,7 +274,8 @@ function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; comp
             Ask Circularity{proposal ? ' · 1 proposal' : ''}{blocking > 0 ? ` · ${blocking} blocking` : ''}
           </button>
           <div className="mdl-agent-body">
-            <AssistantPanel host="pinned" />
+            {/* one panel, pinned: its mode follows the tab (3.3); What I see, Watching, Proposals and Last simulation only on Flow */}
+            <AssistantPanel host="pinned" mode={TAB_MODE[tab]} section={tab === 'flow' || tab === 'setup' ? undefined : tab} sections={flowTab ? <FlowSections /> : undefined} />
           </div>
         </section>
         <div className="mdl-center">
@@ -250,6 +287,8 @@ function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; comp
                 selected={sel}
                 bad={proposal?.kind === 'blocked' && proposal.node_id ? new Set([...bad, proposal.node_id]) : bad}
                 proposed={proposal?.node_id ?? null}
+                revision={s.flow.dver ?? s.flow.ver + 1}
+                resolved={resolved}
                 editable={editable && !proposal}
                 onSelect={select}
                 onMove={(id, x, y) => editable && setGraph((g) => moveNode(g, id, x, y))}
@@ -260,8 +299,8 @@ function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; comp
               />
               {editable && <button type="button" className="btn sm pri mdl-add" onClick={add}>Add rule</button>}
               {drawer && (
-                <div className="mdl-drawer" role="region" aria-label={drawer === 'replay' ? 'Replay' : 'Rollout'}>
-                  <button type="button" className="btn sm ghost mdl-drawer-x" onClick={() => setDrawer(null)}>Close</button>
+                <div className="mdl-drawer" role="region" aria-label={drawer === 'replay' ? 'Replay' : 'Rollout'} tabIndex={-1} ref={drawerRef}>
+                  <button type="button" className="btn sm ghost mdl-drawer-x" onClick={closeDrawer}>Close</button>
                   {drawer === 'replay' ? <ReplayPanel s={s} /> : <RolloutPanel s={s} />}
                 </div>
               )}

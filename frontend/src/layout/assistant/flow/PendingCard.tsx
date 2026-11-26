@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { ModelerScreen } from '../../../api/types';
 import { previewOf } from '../../../pages/modeler/proposal';
-import { openAssistant } from '../../../utils/askBus';
 import { PreviewCard, sectionsOf, type CardAction } from '../PreviewCard';
+import { prefill } from '../store';
 import { applyPending, dismissPending, flowSurface, useChange } from './changeStore';
 
 /**
@@ -26,9 +26,10 @@ export function PendingCard({ s }: { s: ModelerScreen }) {
       setBusy(false);
     }
   };
+  // the sentence goes back in the composer, unsent: the person edits it and proposes again (2.3)
   const rephrase = () => {
     dismissPending();
-    openAssistant({ mode: 'change', question: pd.text });
+    prefill(pd.text, 'change');
   };
   const actions: CardAction[] = [
     ...(m.canApply

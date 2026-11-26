@@ -3,9 +3,10 @@
  * `agent.runTrace {case_id}`: who ran, what it is doing now (the journey stage's status), and View the run. A person with
  * `manageAgents` can Pause the agent (`agent.setEnabled`, the existing kill switch). Shown only on a case.
  */
+import { Suspense } from 'react';
 import { runTrace, setAgentEnabled, type JourneyStatus, type RunTrace } from '../../api/agents';
 import { can } from '../../api/session';
-import { Boundary } from '../../components/Boundary';
+import { ErrorBoundary } from '../../components/Boundary';
 import { Icon } from '../../components/Icon';
 import { runHref } from '../../components/ProposalRow';
 import { useAction } from '../../hooks/useAction';
@@ -54,8 +55,10 @@ function Row({ caseId }: { caseId: string }) {
 export function AgentsOnThis({ caseId }: { caseId?: string }) {
   if (!caseId) return null;
   return (
-    <Boundary>
-      <Row caseId={caseId} />
-    </Boundary>
+    <ErrorBoundary resetKey={caseId}>
+      <Suspense fallback={null}>
+        <Row caseId={caseId} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

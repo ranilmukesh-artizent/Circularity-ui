@@ -24,7 +24,7 @@ vi.mock('../../api/case', () => ({
   evidencePack: vi.fn(),
 }));
 vi.mock('../../components/toast', () => ({ toast: m.toast }));
-vi.mock('../../utils/askBus', () => ({ askSoon: vi.fn(), openAsk: m.openAsk }));
+vi.mock('../../utils/askBus', () => ({ askSoon: vi.fn(), openAsk: vi.fn(), openAssistant: m.openAsk }));
 
 import { caseActions, runNextStep } from './caseActions';
 import type { CaseUi } from './CaseContext';
@@ -46,14 +46,14 @@ describe('runNextStep', () => {
 describe('the assistant launchers of the case pages', () => {
   it('"Ask about RT-1048" opens Ask with a question that names the case', () => {
     caseActions.askAboutCase('RT-1048');
-    expect(m.openAsk).toHaveBeenCalledWith('Tell me about RT-1048: where it stands, why this route, and what it is waiting for.');
+    expect(m.openAsk).toHaveBeenCalledWith({ mode: 'ask', question: 'Tell me about RT-1048: where it stands, why this route, and what it is waiting for.' });
   });
   it('"Ask about this stage" names the case, the stage number and its title', () => {
     caseActions.askAboutStage('RT-1048', 6, 'Re-evaluate');
-    expect(m.openAsk).toHaveBeenCalledWith('Tell me about stage 6 (Re-evaluate) of RT-1048: what it needs and who owns it.');
+    expect(m.openAsk).toHaveBeenCalledWith({ mode: 'ask', question: 'Tell me about stage 6 (Re-evaluate) of RT-1048: what it needs and who owns it.' });
   });
   it('"Notify the owner" drafts a note to the stage owner', () => {
     caseActions.notifyOwner('Approver');
-    expect(m.openAsk).toHaveBeenCalledWith('Draft a note to Approver asking them to act on the step this case is waiting for.');
+    expect(m.openAsk).toHaveBeenCalledWith({ mode: 'ask', question: 'Draft a note to Approver asking them to act on the step this case is waiting for.' });
   });
 });

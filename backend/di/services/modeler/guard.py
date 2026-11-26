@@ -38,3 +38,26 @@ def text_breaks(t: Template, text: str) -> str | None:
     rank = {g: i for i, g in enumerate(TEXT_ORDER.get(t.key, ()))}
     ordered = sorted(t.guardrails, key=lambda g: rank.get(g.id, -1))  # stable: unranked guardrails keep their order
     return next((g.id for g in ordered if any(_matches(p, low) for p in g.protects)), None)
+
+
+# Words that weaken or remove what they name. With a guardrail named (its id, or the word "guardrail"), the sentence is
+# about changing a guardrail, which only its owner may do (plan 10 T8): a pack whose guardrails carry no `protects`
+# pattern (the industrial GR-I1..I4, at demo parity) still refuses it instead of reading it as an unclear rule.
+_WEAKEN = re.compile(
+    r"\b(skip\w*|bypass\w*|ignor\w*|remov\w*|delet\w*|disabl\w*|drop\w*|turn(?:ing)? off|switch(?:ing)? off|waiv\w*"
+    r"|relax\w*|loosen\w*|lower\w*|overrid\w*|suspend\w*|exempt\w*|unlock\w*)\b"
+)  # not "without": "never resell units without a guardrail check" tightens, it does not weaken
+_GUARDRAIL_WORD = re.compile(r"\bguard ?rails?\b")
+ANY_GUARDRAIL = "*"
+
+
+def text_names_guardrail(t: Template, text: str) -> str | None:
+    """The guardrail a weakening sentence names by id ("Skip GR-I2"), `ANY_GUARDRAIL` when it weakens "the guardrails"
+    without naming one, or None (no weakening word, or no guardrail named). Checked after `text_breaks`."""
+    low = text.lower()
+    if not _WEAKEN.search(low):
+        return None
+    named = next((g.id for g in t.guardrails if re.search(r"(?<![\w-])" + re.escape(g.id.lower()) + r"(?![\w-])", low)), None)
+    if named:
+        return named
+    return ANY_GUARDRAIL if _GUARDRAIL_WORD.search(low) else None

@@ -21,7 +21,8 @@ describe('contextOf', () => {
   });
   it('takes the pack and org from a compose surface', () => {
     const c = contextOf({ page: 'modeler', a: null, b: null }, { kind: 'compose', id: 3, org: 'workspace', pack: 'industrial' }, 'admin');
-    expect(c).toMatchObject({ pack: 'industrial', org: 'workspace' });
+    expect(c).toMatchObject({ pack: 'industrial', org: 'workspace', composeId: 3 });
     expect(c.flow).toBeUndefined();
+    expect(contextParts(c)).toEqual(['Modeler', 'Pack: industrial', 'Org: workspace', 'Composition 3']);
   });
 });

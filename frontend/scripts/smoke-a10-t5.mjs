@@ -28,9 +28,12 @@ await page.waitForTimeout(1500);
 
 const card = await page.locator('#frProps li').count();
 await page.keyboard.press('Control+j');
+// plan 10 T8: the strip is not drawn when nothing is held, so zero is "no strip"
+await page.locator('.as-panel').waitFor({ timeout: 8000 });
 const strip = page.locator('.as-waiting summary');
-await strip.waitFor({ timeout: 8000 });
-const n = Number(((await strip.textContent()) ?? '').match(/\((\d+)\)/)?.[1] ?? -1);
+if (card > 0) await strip.waitFor({ timeout: 8000 });
+else await page.waitForTimeout(1500);
+const n = (await strip.count()) ? Number(((await strip.textContent()) ?? '').match(/\((\d+)\)/)?.[1] ?? -1) : 0;
 check(n === card, `Waiting for you (${n}) equals Home's card count (${card})`);
 
 if (n > 0) {

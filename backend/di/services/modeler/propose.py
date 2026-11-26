@@ -1,7 +1,8 @@
 """A plain-language change turned into a checked proposal (plan 8, MVP-5.2; Domain spec D10; the prototype's
 buildProposal, lines 2446-2460). It never saves anything: applying it is the person's own flow.saveDraft.
 
-- A text that would change a locked guardrail (`text_breaks`) gives a `blocked` proposal with no graph.
+- A text that would change a locked guardrail (`text_breaks`), or that weakens a guardrail it names
+  (`text_names_guardrail`, plan 10 T8), gives a `blocked` proposal with no graph.
 - "add … step before|for|after <path>" gives a `step` proposal: a process step after that path's node.
 - Otherwise the text is parsed (`parse_rule`); no path gives an `unclear` proposal. A rule proposal gets the next rule
   id, is placed between the last node feeding the decision and the decision, is validated (only its own checks and the
@@ -17,7 +18,7 @@ from typing import Any, Literal
 
 from di.services.modeler.compile import CompiledRule, compile_flow
 from di.services.modeler.flow import Flow, Node, fe, fn, node_label
-from di.services.modeler.guard import rule_breaks, text_breaks
+from di.services.modeler.guard import ANY_GUARDRAIL, rule_breaks, text_breaks, text_names_guardrail
 from di.services.modeler.parse import ParsedRule, parse_rule
 from di.services.modeler.simulate import SimResult
 from di.services.modeler.templates import Template
@@ -65,10 +66,19 @@ def next_rid(t: Template, f: Flow) -> str:
 
 
 def _blocked_text(t: Template, text: str, gid: str) -> Proposal:
+    if gid == ANY_GUARDRAIL:
+        msg = ("I can't draft this. It would weaken the guardrails. Each guardrail is changed only by its owner, never by "
+               "me or the Modeler.")  # fmt: skip
+        return Proposal("blocked", text, msg=msg)
     g = next(x for x in t.guardrails if x.id == gid)
     msg = (f"I can't draft this. It would change {gid} ({g.text}), which is owned by {g.owner}. Guardrails are changed "
            "only by their owner, never by me or the Modeler.")  # fmt: skip
-    return Proposal("blocked", text, msg=msg)
+    return Proposal("blocked", text, guard=gid, msg=msg)
+
+
+def refused_text(t: Template, text: str) -> str | None:
+    """The guardrail a plain-language text would change (`text_breaks`) or weaken by name (`text_names_guardrail`)."""
+    return text_breaks(t, text) or text_names_guardrail(t, text)
 
 
 def _step(t: Template, draft: Flow, text: str, m: re.Match[str], owner: str, sim: Callable[[Flow], SimResult | None]) -> Proposal:
@@ -144,7 +154,7 @@ def build_proposal(
     def sim(g: Flow) -> SimResult | None:
         return decide_queue(compile_flow(t, g)) if decide_queue else None
 
-    if gid := text_breaks(t, text):
+    if gid := refused_text(t, text):
         return _blocked_text(t, text, gid)
     if m := STEP.search(text):
         return _step(t, draft, text, m, actor_role, sim)
