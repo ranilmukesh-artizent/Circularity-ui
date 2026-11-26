@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { creditLine, creditMismatch, fixedAssetLine, leaseResidualLine, resolveSettlement } from './case';
+import { describe, expect, it, vi } from 'vitest';
+import { invoke } from './actions';
+import { TREATMENT_CODE, attachReporting, creditLine, creditMismatch, fixedAssetLine, leaseResidualLine, resolveSettlement, waitingEvidence } from './case';
+
+vi.mock('./actions', () => ({ invoke: vi.fn(async () => ({ ok: true, data: { case_id: 'RT-9', closed: true } })) }));
 
 describe('P9-13.1 fixedAssetLine (X-13)', () => {
   it('shows the ERP retirement with its gain', () => {
@@ -38,5 +41,20 @@ describe('P9-13.4 customer credit (X-16)', () => {
   });
   it('resolveSettlement is an action of the facade', () => {
     expect(typeof resolveSettlement).toBe('function');
+  });
+});
+
+describe('P9-13.5 reporting evidence (X-16)', () => {
+  it('attachReporting calls case.attachReporting with the facility evidence', async () => {
+    await attachReporting('RT-9', { mass_kg: 42.5, material: 'steel', treatment_code: 'R4', source_ref: 'FAC-77' });
+    expect(invoke).toHaveBeenCalledWith('case.attachReporting', { case_id: 'RT-9', mass_kg: 42.5, material: 'steel', treatment_code: 'R4', source_ref: 'FAC-77' });
+  });
+  it('knows an R or D code only', () => {
+    expect(TREATMENT_CODE.test('R4') && TREATMENT_CODE.test('D10')).toBe(true);
+    expect(TREATMENT_CODE.test('X9') || TREATMENT_CODE.test('R123')).toBe(false);
+  });
+  it('shows what a waiting case lacks, and nothing otherwise', () => {
+    expect(waitingEvidence([{ state: 'done' }, { state: 'waiting_evidence', waiting: 'Waiting for reporting evidence: treatment code (G-REP-2)' }])).toContain('treatment code (G-REP-2)');
+    expect(waitingEvidence([{ state: 'done' }])).toBeNull();
   });
 });

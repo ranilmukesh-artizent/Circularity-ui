@@ -148,7 +148,7 @@ export interface Lease {
   lease: string; end: string; intent: string; usage: string; rma: string; auth: string; fee: number; repl: string | null; book: number; acq: string;
   pickup: string; eta: string; carrier: string; freight: number; lane: { from: string; to: string; km: number; inr: number; mode: string; calc: string };
 }
-export interface StepView { k: string | null; label: string; sys: string; state: string; ack: ExecStep['ack']; app: string; doc_ref: string | null; owner: string; doc: [string, string]; note: string }
+export interface StepView { k: string | null; label: string; sys: string; state: string; ack: ExecStep['ack']; app: string; doc_ref: string | null; owner: string; doc: [string, string]; note: string; waiting?: string }
 export interface Health { score: number; comps: { n: string; h: number; st: string; cls: string }[]; band: Record<string, number>; est?: boolean }
 export interface Loc { name: string; win: string; city?: string; bin?: string; bay?: string; days?: number[] }
 export interface Risk { level: 'ok' | 'warn' | 'bad'; text: string; detail: string }
@@ -300,6 +300,16 @@ export async function checkAcknowledgement(c: CaseRec): Promise<ActionResult<{ l
   const a = c.exec?.steps.find((y) => y.state === 'active');
   return { ok: false, error: { code: 'conflict', message: a ? `No new acknowledgement yet: ${lc(a.label)} is with ${a.sys.split(' · ')[0]}. Acknowledgements arrive here as the systems send them${before ? ` (${before} so far)` : ''}.` : 'Every instruction is acknowledged.' } };
 }
+// ---------- reporting evidence at close (plan 9, P9-13.5, X-16) ----------
+/** The treatment code of the Waste Framework Directive's annexes: R or D and one or two digits. */
+export const TREATMENT_CODE = /^[RD]\d{1,2}$/;
+export interface ReportingEvidence { mass_kg: number; material: string; treatment_code: string; source_ref: string }
+/** Attach what the treatment facility reported (case.attachReporting: Admin, Engineer or Planner; an agent's call is held for a person). When nothing is missing any more the case closes. */
+export const attachReporting = (caseId: string, e: ReportingEvidence): Promise<ActionResult<{ case_id: string; closed: boolean }>> =>
+  invoke('case.attachReporting', { case_id: caseId, ...e });
+/** The sentence a case shows while its last step waits for the facility's evidence, null otherwise. */
+export const waitingEvidence = (steps: { state: string; waiting?: string }[]): string | null =>
+  steps.find((s) => s.state === 'waiting_evidence')?.waiting ?? null;
 // ---------- service in date (plan 9, P9-11.7, MR-06) ----------
 export type ServiceKind = 'pm' | 'certification' | 'repair' | 'refurbish';
 /** The service order the gate G-MED-SVC proposes for a unit whose certification or maintenance ends before a rental does. */

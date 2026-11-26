@@ -1247,6 +1247,7 @@
  ],
  "close": {
   "fixed_asset": true,
-  "lease_residual": true
+  "lease_residual": true,
+  "reporting": ["G-REP-1", "G-REP-2"]
  }
 }

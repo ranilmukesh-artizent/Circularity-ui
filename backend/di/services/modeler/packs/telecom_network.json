@@ -1286,6 +1286,7 @@
   "TN-24"
  ],
  "close": {
-  "fixed_asset": true
+  "fixed_asset": true,
+  "reporting": ["G-REP-1", "G-REP-2"]
  }
 }

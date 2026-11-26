@@ -23,6 +23,7 @@ from di.services import instructions
 from di.services.actions.decisions import NOW, _by, _case, _key, _peek, cyc, push_event, skey
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, guard, implement
+from di.services.actions.reporting import hold_for_evidence, reporting_missing
 from di.services.cases import lifecycle, store
 from di.services.engine.jsmath import js_sum
 from di.services.execution import (
@@ -179,8 +180,12 @@ def adapter_acknowledge(i: dict[str, Any], ctx: CallContext):
         lifecycle.move(ctx.session, c, "executing", why, ctx.actor.id)
         moved = True
     if k == len(e["steps"]) - 1 and not held:  # a credit the ERP posted differently keeps the case executing for Finance
-        lifecycle.move(ctx.session, c, "closed", why, ctx.actor.id)
-        moved = True
+        if missing := reporting_missing(ctx.session, c):  # P9-13.5 (X-16): the case closes only with the facility's evidence
+            hold_for_evidence(ctx, c, s, missing)
+            moved = True
+        else:
+            lifecycle.move(ctx.session, c, "closed", why, ctx.actor.id)
+            moved = True
     if not moved:
         store.save(ctx.session, c)
     instructions.on_acknowledged(ctx.session, c, k, s["ack"]["ref"])  # the next step goes out (when sending is on)

@@ -744,6 +744,7 @@ def step_view(c: Case, s: dict) -> dict:
         "owner": step_owner(c, s),
         "doc": list(ho_kind(s)),
         "note": ack_note(s, c),
+        **({"waiting": s["waiting"]} if s.get("waiting") else {}),  # P9-13.5: what the facility has not reported yet
     }
 
 
