@@ -144,7 +144,7 @@ await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async
   const n = await until(
     async () => {
       // the Returned assets read, counted by the tool serials in it (CMH-48213 ...): 18 once the sync has run
-      const r = JSON.stringify(await getJson(dev, '/api/screens/product/returned'));
+      const r = JSON.stringify(await getJson(admin, '/api/screens/product/returned'));
       const serials = new Set(r.match(/\b(?:CMH|BRK|DCD|CRH|AGR|LSR)-\d+\b/g) || []);
       return serials.size === 18 ? serials.size : 0;
     },
