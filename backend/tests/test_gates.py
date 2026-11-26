@@ -183,7 +183,7 @@ def test_x_03_trigger_facts_and_classes():
     got = evaluate_gates(_case(media={"sanitisable": False}, carbon=12.5), p)
     assert [r.gate_id for r in got] == ["G-DATA-1", "G-DATA-2", "G-REP-3"]
     assert got[1].effect.kind == "require_step" and got[1].effect.step == "Destroy the media"
-    assert got[2].effect.kind == "close_block" and got[2].effect.routes == ("buynow", "offers", "auction", "market")
+    assert got[2].effect.kind == "close_block" and got[2].effect.routes == ("buynow", "offers", "auction", "market", "wholesale")
     # a gate whose route classes the pack has no route for is not listed (the device pack sells only)
     assert evaluate_gates(_case(), _with_gates("device", "G-MED-REFURB")) == []
 

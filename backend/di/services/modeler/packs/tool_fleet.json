@@ -391,6 +391,24 @@
     "min": 24,
     "max": 60
    }
+  },
+  {
+   "id": "GR-C1",
+   "text": "Credits above $300 → Sales",
+   "owner": "Sales",
+   "type": "Approval",
+   "stage": "decide",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": {
+    "field": "credit_usd",
+    "value": 300,
+    "stricter": "lower",
+    "min": 50,
+    "max": 300
+   }
   }
  ],
  "gates": [
@@ -1528,6 +1546,23 @@
       ]
      },
      {
+      "name": "refresh_terms",
+      "title": "contract refresh fees",
+      "kind": "rate_card",
+      "versions": [
+       {
+        "valid_from": "2026-01-01",
+        "values": {
+         "DE": {"refresh_fee_rate": 0.04, "refurb_fee_discount": 0.15, "refurb_cost_share": 0.3},
+         "FR": {"refresh_fee_rate": 0.04, "refurb_fee_discount": 0.15, "refurb_cost_share": 0.3},
+         "UK": {"refresh_fee_rate": 0.04, "refurb_fee_discount": 0.15, "refurb_cost_share": 0.3},
+         "US": {"refresh_fee_rate": 0.04, "refurb_fee_discount": 0.15, "refurb_cost_share": 0.3},
+         "AU": {"refresh_fee_rate": 0.04, "refurb_fee_discount": 0.15, "refurb_cost_share": 0.3}
+        }
+       }
+      ]
+     },
+     {
       "name": "cover_terms",
       "title": "cover terms",
       "kind": "decision_table",
@@ -2025,6 +2060,12 @@
     "label": "Realised net off the prediction",
     "owner_role": "Finance",
     "action": "Check the posted cost lines against the predicted ones"
+   },
+   {
+    "id": "non_return",
+    "label": "Contract line closed without the tool",
+    "owner_role": "Fleet desk",
+    "action": "Post the contract's non-return fee"
    }
   ],
   "suggestion_rules": [],

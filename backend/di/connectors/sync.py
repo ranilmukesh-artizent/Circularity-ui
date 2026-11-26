@@ -388,6 +388,12 @@ def run_sync(source_id: str, trigger: str = "manual", full: bool = False) -> dic
         if status == "ok" and failed:
             first = next((p[2].first_error for p in parts if p[2].first_error), None)
             status, error = "partial", first or f"{failed} records held by {wf.get('name')}"
+        if status != "failed" and (after := getattr(adapter, "after_sync", None)) is not None:
+            try:  # an adapter's own follow-up once its records are stored (fleet non-return items, P9-3.18); never fails the sync
+                with s.begin_nested():
+                    after(s)
+            except Exception:
+                log.exception("after_sync of %s failed", source_id)
         s.execute(
             text(
                 "UPDATE sync_run SET status = :st, finished_at = now(), records_read = :r, facts_written = :w, "

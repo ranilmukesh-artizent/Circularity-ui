@@ -16,11 +16,19 @@ Resources and facts (snake case of the source's camelCase fields)
     returns     no fact: handed, with the tool class of their line (`toolClass`), to the bound ingest workflow, whose
                 Open case step opens one case per return (P9-3.4)
     history     no fact: the ended contracts are read by the renewal work (Phase 5) from the raw records
+After the same sync, a contract whose `renewalStatus` moved to `renewed` or `lapsed` records the outcome on its refresh case
+(di.services.refresh_outcome, P9-5.7): renewed or not, the fee after, the swaps accepted, and what the proposal predicted.
 `proposals` and `draftLines` are written by Phase 5 (P9-5.5), never read here. Nothing is ever written to the source.
+
+After each sync (`after_sync`, called by di.connectors.sync) a line whose status is `closed_not_returned` and whose
+`nonReturnFee` is above zero raises one `non_return` exception item for the Fleet desk with the fee as a value line (P9-3.18,
+TF-14); a person posts the fee with `nonReturnFee.post`, through the instruction queue.
 """
 
 from collections.abc import Iterator
 from typing import Any
+
+from sqlalchemy.orm import Session
 
 from di.connectors.base import Record, Resource
 from di.connectors.generic import GenericAdapter, keep
@@ -90,6 +98,17 @@ class FleetContractsAdapter(GenericAdapter):
         return (
             rec if cls is None else Record(rec.resource, rec.ext_id, rec.payload | {"toolClass": cls}, rec.request, rec.changed)
         )
+
+    def after_sync(self, session: Session) -> list[int]:
+        """P9-3.18: once a sync has written the lines, each line that closed without the tool and carries a fee raises one
+        `non_return` item for the Fleet desk (di.services.instructions.fees, I-20), once per line. Returns the new item ids; in
+        the sync's transaction. Nothing is written to the source."""
+        from di.services import refresh_outcome  # lazy, as fees: the services import the connectors' clients
+        from di.services.instructions import fees  # lazy: the instruction layer imports the connectors' clients
+
+        ids = fees.raise_items(session)
+        refresh_outcome.record(session)  # P9-5.7: a contract that renewed or lapsed records its refresh case's outcome
+        return ids
 
     def map(self, record: Record) -> list[Fact]:
         p = record.payload

@@ -30,7 +30,7 @@ from sqlalchemy import text
 from di.core import policy, state
 from di.repositories.common import AS_OF, case_demand, hash_id, iso, limit_for, money, ooo_cover
 from di.repositories.live_rules import Shadow, live_rules, shadow_rules
-from di.services import instructions
+from di.services import instructions, refresh_decision
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement, mark_destructive
 from di.services.cases import intake, lifecycle, store
@@ -265,6 +265,8 @@ def _submit_idem(i: dict[str, Any], ctx: CallContext):
 def submit(i: dict[str, Any], ctx: CallContext):
     key = _key("decision.submit", i, ctx)
     c, by = _case(ctx, i["case_id"]), _by(ctx)
+    if intake.is_refresh(c):  # a contract refresh is priced again when submitted, so the approver sees what was submitted
+        refresh_decision.attach(ctx.session, c)
     # byId: the demo adds it right after (afOn('action')), for the self-approval rule. flowVer (plan 8, MVP-3.4): the
     # decision flow version the routes were evaluated with (None: never evaluated with a stored flow); approval keeps
     # these routes, whatever is published later.
@@ -382,6 +384,7 @@ def _approve(action: str, i: dict[str, Any], ctx: CallContext, approver: str | N
         "approver": by,
     }
     follow_through.on_approve(ctx.session, c)  # a service ticket: its market terms and the units its swaps reserve (P9-4.9)
+    refresh_decision.on_approve(c)  # a contract refresh: the proposal document its plan sends, drafts and reserves (P9-5.5)
     c["approval"] = {
         "ref": ref, "by": by, "at": NOW, "rationale": i["rationale"], "spend": _spend(i), "terms": i.get("terms") or "",
         "prep": ctx.preparer,

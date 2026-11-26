@@ -26,12 +26,14 @@ def test_compile_covers_the_five_flows():
 
 def test_industrial_default_compiles_to_nothing():
     t = load_template("industrial")
-    assert compile_flow(t, default_flow(t)) == []
+    # the Recover-only wholesale channel (P9-6.10) is "removed from the flow" until a flow adds it
+    assert [r for r in compile_flow(t, default_flow(t)) if r.path != "wholesale"] == []
 
 
 def test_device_default_compiles_its_rule():
     t = load_template("device")
-    assert compile_flow(t, default_flow(t)) == [
+    # the Recover-only wholesale channel (P9-6.10) is "removed from the flow" until a flow adds it
+    assert [r for r in compile_flow(t, default_flow(t)) if r.path != "wholesale"] == [
         CompiledRule("DR-01", {"dohMin": 45}, "exclude", "buynow", "45+ days on hand: never Buy Now")
     ]
 

@@ -6,7 +6,7 @@ import { fmtDateYear } from '../../../api/format';
 import { can } from '../../../api/session';
 import { useAction } from '../../../hooks/useAction';
 import { Kv } from '../CaseBlocks';
-import { deviceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, refLine, registryLine, registryState, usd, wipeState } from '../device';
+import { channelRow, deviceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, settlementLine, usd, wipeState } from '../device';
 import type { TabProps } from './index';
 
 const LABEL = { imei: 'IMEI', model: 'Model', storage: 'Storage' } as const;
@@ -137,6 +137,46 @@ export function PayoutTab({ c }: TabProps) {
           )}
         </>
       )}
+    </>
+  );
+}
+
+/** The Settlement tab of a received-device case (P9-6.12, DV-09; stage 9): the sale price, fees, logistics, buyer returns, the
+ * forecast P50 and the share realised. Finance confirms the outcome with the Confirm outcome control of the stage's Actual costs
+ * tab: the confirmed net is what the models learn from. */
+export function SettlementTab({ c }: TabProps) {
+  const s = deviceView(c)?.settlement;
+  if (!s) return null;
+  return (
+    <>
+      <p className="stpad" role="status">{settlementLine(s)}</p>
+      <Kv rows={[
+        ['Sale price', usd(s.price)],
+        ['Fees', usd(s.fees)],
+        ['Logistics', usd(s.logistics)],
+        ['Buyer returns', usd(s.buyerReturns)],
+        ['Forecast P50', usd(s.forecastP50)],
+        ['Realised against forecast', realisedKpi(s).replace('Price realised against forecast ', '')],
+        ['Net realised', usd(s.net)],
+        ['Sale', s.saleId],
+      ]} />
+    </>
+  );
+}
+
+/** The Channels tab of a received-device case (P9-6.10, DV-06): the expected net, days to sell, P10 to P90 and feed week of every
+ * channel, and a banner for a floor or price-confidence hold with the owner it waits for. Only a person releases a hold. */
+export function ChannelsTab({ c }: TabProps) {
+  const d = deviceView(c);
+  const rows = d?.channels;
+  if (!rows) return null;
+  const holds = d?.priceHolds ?? [];
+  return (
+    <>
+      {holds.map((h) => (
+        <p key={h.id} className="stpad" role="status" style={{ color: 'var(--bad)' }}>{h.reason} · waits for {h.owner}</p>
+      ))}
+      <ul className="stsys stpad" aria-label="Price per channel">{rows.map((r) => <li key={r.k} title={r.why || undefined}>{channelRow(r)}</li>)}</ul>
     </>
   );
 }

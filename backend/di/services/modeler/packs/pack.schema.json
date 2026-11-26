@@ -856,6 +856,11 @@
      },
      "title": "Instructions",
      "type": "array"
+    },
+    "recover_only": {
+     "default": false,
+     "title": "Recover Only",
+     "type": "boolean"
     }
    },
    "required": [

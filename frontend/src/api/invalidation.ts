@@ -91,6 +91,8 @@ const ACTION_EXACT: Record<string, Scope> = Object.fromEntries(
     'access.grants', 'access.myAccess',
     // the org pack's export and import preview and the pilot report (reads)
     'org.exportPack', 'org.previewPack', 'org.pilotReport',
+    // plan 9 P9-6.11: the wholesale lots list (a read)
+    'lot.list',
   ].map((id) => [id, [] as Area[]]), // prettier-ignore
 );
 const ACTION_FAMILY: Record<string, Scope> = {
@@ -116,6 +118,7 @@ const ACTION_FAMILY: Record<string, Scope> = {
   overlay: ['modeler', ...CASES], // a customer overlay of a pack (plan 9): the Modeler's Customer layer, and the cases it decides
   pack: ['modeler', ...CASES], // a pack version (plan 9, P9-1.6): the Modeler's Packs panel, and the cases it decides
   marketTable: ['modeler'], // a per-market rate card or table version (plan 9, P9-4.2): the Modeler's Tables panel
+  lot: CASE_WRITE, // wholesale lots (plan 9, P9-6.11): approving one approves its cases; My work lists the lots
   payout: CASE_WRITE, // payout.decide (plan 9, P9-6.8): a device case's payout, its work item and the summaries that count them
   mcp: [...SUMMARY, 'mcp', 'access'], // mcp.propose: a request for a person, in the inboxes and the MCP page
   access: 'all', // who may see or do what: every page can change

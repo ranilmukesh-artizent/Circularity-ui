@@ -39,3 +39,10 @@ export function workId(i: WorkItem): number | null {
 export function proposalId(i: WorkItem): number | null {
   return i.id.startsWith('p:') ? Number(i.id.slice(2)) : null;
 }
+
+const NON_RETURN = 'Non-return fee ';
+
+/** P9-3.18: the contract line of a `non_return` exception ("Non-return fee FL-30128-04"), or null for any other row. */
+export function nonReturnLine(i: WorkItem): string | null {
+  return i.kind === 'exception' && i.id.startsWith('w:') && i.title.startsWith(NON_RETURN) ? i.title.slice(NON_RETURN.length).trim() || null : null;
+}

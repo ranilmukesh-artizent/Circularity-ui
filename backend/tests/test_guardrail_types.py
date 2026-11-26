@@ -12,11 +12,13 @@ TABLE = {
     "tool_fleet": {"GR-01": ("Compliance", "decide"), "GR-02": ("Compliance", "decide"),
                    "GR-03": ("Threshold", "condition"), "GR-04": ("Threshold", "value"),
                    "GR-05": ("Approval", "decide"), "GR-06": ("Compliance", "execute"),
-                   "GR-14": ("Approval", "decide"), "GR-15": ("Approval", "decide")},
+                   "GR-14": ("Approval", "decide"), "GR-15": ("Approval", "decide"),
+                   "GR-C1": ("Approval", "decide")},
     "device": {"GR-D1": ("Compliance", "condition"), "GR-D2": ("Threshold", "value"),
                "GR-D3": ("Compliance", "decide"), "GR-D4": ("Threshold", "decide"),
                "GR-D5": ("Threshold", "value"), "GR-D6": ("Approval", "decide"),
-               "GR-D7": ("Compliance", "match"), "GR-D11": ("Threshold", "condition"),
+               "GR-D7": ("Compliance", "match"), "GR-D8": ("Data quality", "value"), "GR-D10": ("Approval", "decide"),
+               "GR-D11": ("Threshold", "condition"), "GR-D12": ("Compliance", "decide"),
                "GR-D13": ("Data quality", "match")},
 }  # fmt: skip
 
@@ -34,7 +36,9 @@ def test_every_guardrail_has_type_and_stage():
         got = {g.id: (g.type, g.stage) for g in load_template(key).guardrails}
         assert got == rows, key
         n += len(got)
-    assert n == 22  # 20 of the demo and the first plan 9 packs, plus GR-14 and GR-15 of the tool fleet (P9-3.15)
+    # 20 of the demo and the first plan 9 packs, plus GR-14 and GR-15 (P9-3.15) and GR-C1 (P9-5.4) of the tool fleet and
+    # GR-D8 of the device price confidence (P9-6.10), GR-D10 and GR-D12 of the device wholesale lots (P9-6.11)
+    assert n == 26
 
 
 def test_compliance_guardrails_are_locked():

@@ -15,6 +15,7 @@ from di.services.agents import chain
 from di.services.cases import store
 from di.services.cases.decide import decide_case
 from di.services.device import intake as device_intake
+from di.services.modeler.valuers import device
 from tests import flowkit, starting
 from tests.device_registry import seed_registry
 from tests.helpers import call, client, h
@@ -87,12 +88,21 @@ def _open(*docs: dict) -> str:
 def _agree(cid: str) -> None:
     c = _case(cid)
     seen = {"opened": (c["recommendation"]["id"], c["recommendation"]["net"])}
+    opened_bands = c["valuer"].get("inputs", {}).get("bands", {})
 
     assert call("decision.submit", {"case_id": cid}, "planner-a")["ok"]
     assert call("decision.decline", {"case_id": cid, "reason": "Check again."}, "approver")["ok"]
     assert call("case.reevaluate", {"case_id": cid}, "planner-a")["ok"]
     c = _case(cid)
     seen["reevaluated"] = (c["recommendation"]["id"], c["recommendation"]["net"])
+    # P9-6.10: the same band on every channel after a new valuation
+    assert c["valuer"].get("inputs", {}).get("bands", {}) == opened_bands
+    if c["valuer"].get("imei"):  # a device (not a lot): a band per channel the formulas price, from the feed week, no interval
+        assert set(opened_bands) == {"buynow", "offers", "auction"}
+        assert all(b["p10"] == b["p50"] == b["p90"] and b["feed_week"] and b["model_id"] is None for b in opened_bands.values())
+        assert c["recommendation"]["id"] == device.decide(c["valuer"])["best"]["k"]
+    else:
+        assert opened_bands == {}
 
     page = client.get("/api/screens/modeler", params={"template": "device", "org": ORG}, headers=h("planner-a"))
     assert page.status_code == 200, page.text

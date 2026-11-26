@@ -874,10 +874,10 @@ each story went.
 - [x] P9-3.15 Threshold approvals and standing policy for returns
 - [x] P9-3.16 Key account returns to account manager review
 - [x] P9-3.17 Follow-through to the executing systems and outcome
-- [ ] P9-3.18 Non-return fees posted from closed lines
+- [x] P9-3.18 Non-return fees posted from closed lines
 - [x] P9-3.19 Batteries valued as their own class
 - [x] P9-3.20 Fit-for-use threshold owned by Quality
-- [ ] P9-3.21 Paths agree and order invariant for tool returns
+- [x] P9-3.21 Paths agree and order invariant for tool returns
 - [ ] P9-3.22 Phase 3 gate
 - [x] P9-4.1 Service desk mocks with repair history and offers
 - [x] P9-4.2 Per-market decision tables with maker-checker
@@ -895,10 +895,10 @@ each story went.
 - [x] P9-5.1 Refresh case per contract entering the window
 - [x] P9-5.2 Keep, like-life swap or upgrade per tool
 - [x] P9-5.3 Like-life units matched and reserved once
-- [ ] P9-5.4 Refresh proposal priced with fee and renewal odds
-- [ ] P9-5.5 Approved proposal sent, lines drafted, units reserved
+- [x] P9-5.4 Refresh proposal priced with fee and renewal odds
+- [x] P9-5.5 Approved proposal sent, lines drafted, units reserved
 - [ ] P9-5.6 Test-the-proposal levers
-- [ ] P9-5.7 Renewal outcomes recorded and compared
+- [x] P9-5.7 Renewal outcomes recorded and compared
 - [ ] P9-5.8 Paths agree and order invariant for refresh
 - [ ] P9-5.9 Phase 5 gate
 - [x] P9-6.1 Device mocks for registry, lab and market
@@ -910,9 +910,9 @@ each story went.
 - [x] P9-6.7 Wipe certificate gate with batch hold
 - [x] P9-6.8 Payout adjustment within 10 percent
 - [x] P9-6.9 Price model behind the predictor
-- [ ] P9-6.10 Price per channel with interval and floor
-- [ ] P9-6.11 Wholesale lots sold to the best approved bid
-- [ ] P9-6.12 List, settle and learn from device sales
+- [x] P9-6.10 Price per channel with interval and floor
+- [x] P9-6.11 Wholesale lots sold to the best approved bid
+- [x] P9-6.12 List, settle and learn from device sales
 - [ ] P9-6.13 Ageing suggestions accepted into rules
 - [ ] P9-6.14 Device customer diversions
 - [ ] P9-6.15 Repair then sell, parts and recycle routes

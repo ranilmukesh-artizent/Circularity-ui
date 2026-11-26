@@ -113,7 +113,7 @@ class Template:
 # ----------------------------------------------------------------------------- loading
 def template_of_pack(p: Pack) -> Template:
     """The authoring template of a pack: its routes as paths, guardrails with their checks, dims, actors, wording."""
-    paths = tuple(PathDef(r.id, r.name, r.app, r.owner, r.lead_days) for r in p.routes)
+    paths = tuple(PathDef(r.id, r.name, r.app, r.owner, r.lead_days) for r in p.routes if not r.recover_only)
     guards = tuple(
         Guardrail(
             g.id,

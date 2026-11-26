@@ -87,6 +87,17 @@ EX_STEP: dict[str, dict[str, Any]] = {
                    "old tool received; a Returns case opened for it", "The Fleet desk receives the tool the customer returns"),
     "credit": _s("Release the credit", "ERP · credit memo", ("CM", "Credit memo"), "Finance", 16, "credit.released", 71,
                  "credit memo released to the customer", "Finance releases the credit once the old tool is received"),
+    # plan 9 P9-5.5: an approved contract refresh is sent, its lines drafted and its units held (the systems answer
+    # with the proposal, the draft lines and the reservation; PR-, DL- and RU- are their planned numbers, which the mocks keep)
+    "propsend": _s("Send the proposal", "Fleet contract system · proposal", ("PR", "Proposal"), "Fleet desk", 8,
+                   "proposal.sent", 8,
+                   "proposal sent to the customer", "The Fleet desk owns what the customer is offered"),
+    "propdraft": _s("Draft the contract lines", "Fleet contract system · draft lines", ("DL", "Contract lines"), "Fleet desk", 8,
+                    "contract.drafted", 21, "contract lines drafted for the renewal",
+                    "The lines are drafted in the fleet contract system, ready for the customer's answer"),
+    "propreserve": _s("Reserve the units", "Parts and service system · reserve units", ("RU", "Reservation"), "Fleet desk", 8,
+                      "stock.reserved", 34, "refurbished units reserved for the swaps",
+                      "The units promised in the proposal are held so no other contract takes them"),
     # plan 9 P9-6.8: the payout of a received device; sent on its own (di.services.device.payout), never a step of a plan
     "payout": _s("Payout adjusted", "Trade-in platform · payout", ("TI", "Trade-in"), "Customer care", None, "payout.adjusted", 0,
                  "payout adjusted on the trade-in", "Customer care owns the payout the customer is paid"),
@@ -113,6 +124,9 @@ EX_STEP: dict[str, dict[str, Any]] = {
     "salvage_sale": _s("Salvage sale", "Auction platform · salvage sale", ("SS", "Salvage sale"), "Remarketing manager", 8,
                        "sale.recorded", 0, "sold to a salvage buyer that reports to the national title database",
                        "The remarketing manager sells to a buyer that reports to the national title database"),
+    # plan 9 P9-6.12: a received device on a listing channel is listed on the device market (di.services.device.settle)
+    "list": _s("List on the channel", "Marketplace · listing", ("LST", "Listing"), "Channel ops", 8, "listing.posted", 21,
+               "listing live on the channel", "Channel ops owns what is offered for sale and at what price"),
 }  # fmt: skip
 
 # The step plan per route; a refurbish-then-sell resale gets a repair step after the reservation. A step's identity is
@@ -138,6 +152,7 @@ STEP_TPL: dict[str, list[str]] = {
     "offers": ["reserve", "sale", "ship", "fulfil", "receipt"],
     "auction": ["reserve", "sale", "ship", "fulfil", "receipt"],
     "market": ["reserve", "sale", "ship", "fulfil", "receipt"],
+    "wholesale": ["reserve", "sale", "ship", "fulfil", "receipt"],  # plan 9 P9-6.11: a lot sold to the best approved bid
     # a service ticket's options (P9-4.9; the valuer's OPTION_KINDS says the same, tests/test_service_desk_execute.py): a batch's
     # `split` has no plan of its own, the route carries the union of its lines' kinds (`kinds`, below)
     "fix": ["repair", "transport", "finance"],
@@ -145,6 +160,11 @@ STEP_TPL: dict[str, list[str]] = {
     "upgrade": ["sale", "transport", "takeback", "credit", "finance"],
     "all_fix": ["repair", "transport", "finance"],
     "all_upgrade": ["sale", "transport", "takeback", "credit", "finance"],
+    # a contract refresh's routes (P9-5.4, P9-5.5): the proposal goes out, its lines are drafted, the swaps' units are held;
+    # renewing as it is has no swap to hold
+    "proposal": ["propsend", "propdraft", "propreserve"],
+    "renew_as_is": ["propsend", "propdraft"],
+    "upgrade_all": ["propsend", "propdraft", "propreserve"],
 }
 # plan 9 P9-3.17: the executing system of a step per template (the other steps keep EX_STEP's). A tool-fleet re-issue goes to the
 # fleet contract system and a harvest to the parts system; an industrial case never reads this
@@ -175,6 +195,8 @@ def ex_kinds(r: dict) -> list[str]:
     k = list(STEP_TPL.get(r.get("id") or "resale") or STEP_TPL["resale"])
     if r.get("id") == "resale" and r.get("variant") == "refurb":
         k.insert(1, "repair")
+    if r.get("variant") == "listing":  # plan 9 P9-6.12: a received device on a channel is listed, not entered as a sale order
+        k = ["list" if x == "sale" else x for x in k]
     return k
 
 

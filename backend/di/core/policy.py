@@ -42,12 +42,14 @@ EXTRA_PERMS: dict[str, tuple[str, ...]] = {
     "manageStandingPolicy": ("Admin",),  # plan 9 P9-2.5: draft and submit a standing policy
     "approve.standingPolicy": ("Admin", "Approver"),  # plan 9 P9-2.5: approve or retire a standing policy
     "ownSystem": ("Admin",),  # plan 9 P9-8.1: decide a connection's owner approval for any system (the named owner may too)
+    "manageLots": ("Admin", "Planner"),  # plan 9 P9-6.11: build, propose and list wholesale lots of received devices
     "manageMarketTables": ("Admin", "Planner", "Finance"),  # plan 9 P9-4.2: draft and submit a market rate card or table
     "decidePayouts": (
         "Admin",
         "Planner",
     ),  # plan 9 P9-6.8: decide a payout adjustment above the limit (a person's, never an agent's)
     "releaseQuarantine": ("Admin", "Approver"),  # plan 9 P9-3.7: release a recalled tool from quarantine after the fix
+    "postFees": ("Admin", "Planner", "Finance"),  # plan 9 P9-3.18: post a non-return fee of a closed contract line
     "bookService": ("Admin", "Engineer", "Planner"),  # plan 9 P9-11.7: book certification or maintenance for a rental device
 }
 EXTRA_PAGES: dict[str, tuple[str, ...]] = {

@@ -44,6 +44,7 @@ SYSTEM_OF = {
     "residual": "erp",  # P9-9.20: the close of a used-car lease return, outside an approval's plan
     "lessee_charge": "uc_lease",
     "enhanced_decon": "mr_decon",  # P9-11.12: an enhanced cycle for a device from an isolation ward
+    "list": "dvmkt",  # P9-6.12: a received device is listed on the device market (di.services.device.settle)
 }
 # The kinds sent on their own, outside an approval's plan: no plan step to acknowledge, and the case's `exec` is not theirs
 OFF_PLAN = frozenset({"payout", "residual", "lessee_charge"})
@@ -51,7 +52,9 @@ OFF_PLAN = frozenset({"payout", "residual", "lessee_charge"})
 
 # P9-3.17: the steps a template writes to a source of its own (the tool fleet's re-issue goes to the fleet contract system, its
 # harvest to the parts system); every other step, and every industrial step, goes where SYSTEM_OF says
-TEMPLATE_SYSTEM_OF = {"tool_fleet": {"lease": "fleet", "partsxfer": "parts"}}
+TEMPLATE_SYSTEM_OF = {
+    "tool_fleet": {"lease": "fleet", "partsxfer": "parts", "propsend": "fleet", "propdraft": "fleet", "propreserve": "parts"}
+}  # P9-5.5: an approved refresh's proposal and draft lines go to the fleet contract system, its units to the parts system
 
 
 def template_system(template: str | None, kind: str) -> str | None:

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkItem } from '../../api/mywork';
-import { countsByKind, dueLabel, sortItems } from './mywork';
+import { countsByKind, dueLabel, nonReturnLine, sortItems } from './mywork';
 
 const item = (o: Partial<WorkItem>): WorkItem => ({
   id: 'w:1', kind: 'exception', case_id: null, title: 't', cause: null, action: null, owner: 'Planner', due: null, overdue: false, priority: 100, go: null, ...o,
@@ -27,5 +27,13 @@ describe('My work (plan 9 P9-1.7, I-20)', () => {
     expect(dueLabel(item({ due: null }))).toBe('');
     expect(dueLabel(item({ due: '2026-10-08T09:00:00+00:00' }))).toMatch(/^Due /);
     expect(dueLabel(item({ due: '2026-10-06T09:00:00+00:00', overdue: true }))).toMatch(/^Overdue /);
+  });
+
+  it('finds the contract line of a non-return fee item, and only of that item (P9-3.18)', () => {
+    expect(nonReturnLine(item({ title: 'Non-return fee FL-30128-04' }))).toBe('FL-30128-04');
+    expect(nonReturnLine(item({ id: 'p:1', title: 'Non-return fee FL-30128-04' }))).toBeNull();
+    expect(nonReturnLine(item({ kind: 'task', title: 'Non-return fee FL-30128-04' }))).toBeNull();
+    expect(nonReturnLine(item({ title: 'Check the variance on RT-1' }))).toBeNull();
+    expect(nonReturnLine(item({ title: 'Non-return fee ' }))).toBeNull();
   });
 });

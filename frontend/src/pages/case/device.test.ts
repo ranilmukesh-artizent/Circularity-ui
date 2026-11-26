@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceView, PayoutView } from '../../api/device';
-import type { QuoteCheck, RegistryView, WipeView } from '../../api/device';
-import { deviceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, refLine, registryLine, registryState, wipeLine, wipeState } from './device';
+import type { ChannelView, QuoteCheck, RegistryView, SettlementView, WipeView } from '../../api/device';
+import { channelRow, deviceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, settlementLine, wipeLine, wipeState } from './device';
 
 const cert = { id: 'WC-1', method: 'Purge', toolVersion: '4.2', verification: 'pass', operator: 'OP-17', at: '2026-10-06T08:00:00Z' };
 
@@ -122,5 +122,32 @@ describe('P9-6.8 payoutLine (DV-05)', () => {
     expect(payoutState({ ...waiting, status: 'decided', adjusted: 300, decided: { by: 'planner.a', reason: 'Cracked glass', at: '2026-10-07T10:00:00Z' } }))
       .toBe('Decided by planner.a: $300 (Cracked glass)');
     expect(payoutState(adjusted)).toBe('Adjusted by the table: US payout rules v1');
+  });
+});
+
+describe('P9-6.10 channelRow (DV-06)', () => {
+  const v: ChannelView = { k: 'buynow', name: 'Buy Now', cash: 312.4, days: 11.6, p10: 280.2, p90: 335, feedWeek: '2026-10-05', modelId: null, ok: true, why: '' };
+  it('names the net, the days, the interval and the feed week', () => {
+    expect(channelRow(v)).toBe('Buy Now · $312 net · 11.6 days · $280–$335 · feed 5 Oct 2026');
+  });
+  it('adds the model and leaves out what a channel has no band for', () => {
+    expect(channelRow({ ...v, modelId: 'PM-3' })).toBe('Buy Now · $312 net · 11.6 days · $280–$335 · feed 5 Oct 2026 · model PM-3');
+    expect(channelRow({ ...v, p10: null, p90: null, feedWeek: null })).toBe('Buy Now · $312 net · 11.6 days');
+    expect(channelRow({ ...v, name: 'Wholesale lot', ok: false })).toBe('Wholesale lot · $312 net · 11.6 days · $280–$335 · feed 5 Oct 2026 · not allowed');
+  });
+});
+
+describe('P9-6.12 settlementLine (DV-09)', () => {
+  const s: SettlementView = {
+    price: 318, fees: 9.54, logistics: 6, buyerReturns: 0, forecastP50: 322.5, realisedVsForecast: 0.986, settledAt: '2026-10-07T10:00:00Z',
+    saleId: 'SAL-0001', net: 302.46, kpi: 'Price realised against forecast 98.6%', line: 'Sold $318 · fees $9.54 · returns $0 · 98.6% of forecast',
+  };
+  it('says the price, the fees, the returns and the share of the forecast', () => {
+    expect(settlementLine(s)).toBe('Sold $318 · fees $9.54 · returns $0 · 98.6% of forecast');
+    expect(settlementLine({ ...s, price: 290.5, buyerReturns: 12, realisedVsForecast: 0.9 })).toBe('Sold $290.50 · fees $9.54 · returns $12 · 90% of forecast');
+  });
+  it('names the KPI', () => {
+    expect(realisedKpi(s)).toBe('Price realised against forecast 98.6%');
+    expect(realisedKpi({ ...s, realisedVsForecast: 1.0123 })).toBe('Price realised against forecast 101.2%');
   });
 });

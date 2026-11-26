@@ -73,6 +73,7 @@ S4_PLANTS = {"Warehouse 1": "2010", "Warehouse 2": "2020", "Repair centre": "203
 # G/L accounts per cost line (this deployment's chart): costs to expense accounts, values to income accounts
 GL = {"purchase": "0048100000", "prep": "0051000000", "service": "0051200000", "residual": "0048200000", "lease": "0048300000"}
 GL_OTHER, GL_CLEARING = "0051900000", "0021100000"
+GL_FEE = "0048400000"  # the income account of a non-return fee (P9-3.18)
 CLEARING = "CLEARING"  # AssignmentReference of the balancing item
 
 
@@ -348,12 +349,12 @@ def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: 
         items.append(_item(n, GL.get(ln["kind"], GL_OTHER), -ln["act"], ln["label"], ln["kind"], c["assetId"], plant))
     total = sum(ln["act"] for ln in lines)
     items.append(_item(len(lines) + 1, GL_CLEARING, total, f"Decision clearing {c['id']}", CLEARING, None, None))
-    doc, detail = _post_journal(s, ins, ref, f"Actuals {c['id']}", items)
+    doc, detail = post_journal(s, ins, ref, f"Actuals {c['id']}", items)
     call = {"call": "POST JournalEntryCreateRequestConfirmation_In", "body": {"DocumentReferenceID": ref, "lines": lines}}
     return Sent([call], doc, detail)
 
 
-def _post_journal(s: Session, ins: dict, ref: str, header: str, items: list[str]) -> tuple[str, dict[str, Any]]:
+def post_journal(s: Session, ins: dict, ref: str, header: str, items: list[str]) -> tuple[str, dict[str, Any]]:
     """One S/4HANA journal entry (SOAP Journal Entry - Post) with the items, once per instruction key: the document number and
     what later steps need (`detail`: AccountingDocument, CompanyCode, FiscalYear, duplicate). A refusal is `Refused`."""
     today = clock.now().date().isoformat()
@@ -566,7 +567,7 @@ def residual(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa:
         _item(1, GL["residual"], -amount, label, "residual", None, None),
         _item(2, GL_CLEARING, amount, f"Residual clearing {c['id']}", CLEARING, None, None),
     ]
-    doc, detail = _post_journal(s, ins, ref, f"Residual {c['id']}", items)
+    doc, detail = post_journal(s, ins, ref, f"Residual {c['id']}", items)
     call = {"call": "POST JournalEntryCreateRequestConfirmation_In", "body": {"DocumentReferenceID": ref, "residual": amount}}
     return Sent([call], doc, detail | {"confirmed": True, "step": False})
 
@@ -648,7 +649,40 @@ def battery_assessment(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent
     return Sent([{"call": "POST battery-assessments", "body": body}], ref, {"assessmentId": ref, "vin": vin})
 
 
+
+def list_device(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Device market: POST /listings, the received device on its channel at the forecast P50 (P9-6.12). The listing id is
+    made from the case and the channel (`<case id>:<channel>`), so a repeat is the market's own 409: the first listing is
+    read and no second is made. The body carries the instruction key (`issuedKey`), which the market's
+    `devicemarket.listing.created` event returns."""
+    from di.services.device import settle  # lazy: the device services are only needed by this write
+
+    body = settle.listing_body(c)
+    if body is None:
+        raise NotApplicable("nothing to list: not a received device on a listing channel")
+    body = body | {"issuedKey": ins["idem_key"]}
+    lid, duplicate = body["listingId"], False
+    cl = client(s, "dvmkt")
+    try:
+        try:
+            cl.request("POST", "/listings", json=body)
+        except SourceError as e:
+            if e.status != 409:
+                raise
+            cl.get_json(f"/listings/{lid}")  # listed before: the first listing stands
+            duplicate = True
+    except SourceError as e:
+        raise _refused(e) from e
+    finally:
+        cl.close()
+    return Sent(
+        [{"call": "POST listings", "body": body}], lid,
+        {"listingId": lid, "channel": body["channel"], "price": body["price"], "duplicate": duplicate},
+    )  # fmt: skip
+
+
 WRITERS = {
+    "list": list_device,
     "battery_assessment": battery_assessment,
     "enhanced_decon": enhanced_decon,
     "security_inspection": security_inspection,
@@ -672,7 +706,14 @@ WRITERS = {
 }
 from di.services.instructions import writers_fleet  # noqa: E402 - it uses Sent, Refused and client, defined above
 
-WRITERS |= {"fleet_issue": writers_fleet.fleet_issue, "parts_issue": writers_fleet.parts_issue}
+WRITERS |= {
+    "fleet_issue": writers_fleet.fleet_issue,
+    "parts_issue": writers_fleet.parts_issue,
+    "nonreturnfee": writers_fleet.fee_post,
+    "proposal_send": writers_fleet.proposal_send,
+    "lines_draft": writers_fleet.lines_draft,
+    "units_reserve": writers_fleet.units_reserve,
+}
 
 
 def operations(system: str) -> list[str]:
@@ -685,7 +726,12 @@ def operations(system: str) -> list[str]:
 
 # P9-3.17: the writer of a step of a template that writes it to its own system (the industrial `lease` and `partsxfer` steps
 # have none: the simulated adapter acknowledges them)
-WRITE_KIND = {"tool_fleet": {"lease": "fleet_issue", "partsxfer": "parts_issue"}}
+WRITE_KIND = {
+    "tool_fleet": {
+        "lease": "fleet_issue", "partsxfer": "parts_issue",
+        "propsend": "proposal_send", "propdraft": "lines_draft", "propreserve": "units_reserve",
+    }
+}  # fmt: skip
 
 
 def write_kind(c: store.Case, kind: str) -> str:

@@ -470,6 +470,33 @@ await step('17 Fit-for-use threshold: planner.a proposes 60, lowering is refused
   if (!harvest || harvest.lines.some((l) => /55% life/.test(l.basis || ''))) throw new Error('a part at 55% still counts at a 60% threshold: ' + JSON.stringify(harvest).slice(0, 200));
   return `threshold 60, harvest: ${harvest.why}`;
 });
+
+// ---------------------------------------------------------------- 15
+await step('15 Non-return fee: AGR-20991 closed without the tool, planner.a posts the $180 fee from My work', async () => {
+  const planner = await as('planner.a');
+  const title = 'Non-return fee FL-30128-04';
+  const row = await until(
+    async () => ((await getJson(planner, '/api/screens/mywork')).items || []).find((i) => i.title === title),
+    'no "' + title + '" item in My work (the fleet source must have synced)',
+    SYNC,
+    planner,
+  );
+  if (!/\$180/.test(row.cause || '') || !/AGR-20991/.test(row.cause || '')) throw new Error('the item reads: ' + row.cause);
+  await planner.goto(`${base}/#/mywork`);
+  await planner.locator('#mywork').waitFor();
+  const li = planner.locator('#mywork li', { hasText: title }).first();
+  await li.waitFor({ timeout: UI });
+  await li.getByRole('button', { name: 'Post the fee' }).click();
+  await until(
+    async () => !((await getJson(planner, '/api/screens/mywork')).items || []).some((i) => i.title === title),
+    'the item is still open after the post',
+    UI,
+    planner,
+  );
+  const again = await callAction(planner, 'nonReturnFee.post', { line_id: 'FL-30128-04' });
+  if (again.ok || again.error?.code !== 'duplicate') throw new Error('a second post is not a duplicate: ' + JSON.stringify(again));
+  return 'posted once, the second post is a duplicate';
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));

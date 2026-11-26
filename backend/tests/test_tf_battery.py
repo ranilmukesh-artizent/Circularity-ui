@@ -6,11 +6,18 @@ The sample world's six classes and the PO goldens stay as they were; the pack's 
 
 from datetime import UTC, datetime
 
+import pytest
+from sqlalchemy import text
+
+from di.core.db import SessionLocal, engine
+from di.services.cases import intake, store, tool_queue
 from di.services.cases.decide import decide_case
 from di.services.modeler import gates as gate_catalogue
 from di.services.modeler.compile import FlowVersion
 from di.services.modeler.pack import load_pack
 from di.services.modeler.valuers import battery, tool_fleet, tool_inputs
+from tests import starting
+from tests.helpers import tool_case_facts
 
 AS_OF = datetime(2026, 11, 2, tzinfo=UTC)
 PARAMS = load_pack("tool_fleet").valuer.params["battery"]
@@ -106,3 +113,60 @@ def test_tf_16_state_of_health_from_telematics_evidence():
     c = tool_inputs.battery_case({"id": "BT-2", "cls": "BAT", "dem": {}}, {"battery_soh": e})
     assert c["soh"] == 71.5 and c["sohRead"] == "2026-10-30" and c["damaged"] is False
     assert tool_inputs.battery_case({"id": "BT-3", "cls": "BAT"}, {})["soh"] is None  # nothing is assumed
+
+
+# ------------------------------------------------------------------ a battery case opened from data (P9-3.19 follow-up)
+KEYS = ["BAT-48001", "CMH-48213", "FC-TEST"]
+
+
+def _clean() -> None:
+    with engine.begin() as conn:
+        for m in ("contract_line", "contract", "condition"):
+            for t in ("provenance", "canonical"):
+                conn.execute(text(f"DELETE FROM {t} WHERE model = :m AND key = ANY(:k)"), {"m": m, "k": KEYS})  # noqa: S608
+
+
+@pytest.fixture
+def world(no_synced_demand):
+    starting.reset()
+    _clean()
+    yield
+    starting.reset()
+    _clean()
+
+
+def _open(serial: str, facts: dict) -> dict:
+    with SessionLocal() as s:
+        c = intake.open_case(
+            s,
+            {"org_unit_id": "Customer A", "template_key": "tool_fleet", "asset_key": serial, "reason": "manual",
+             "facts": tool_case_facts(serial, facts)},
+            "system",
+        )  # fmt: skip
+        s.commit()
+    return c
+
+
+def test_tf_16_a_battery_case_opens_end_to_end(world):
+    c = _open("BAT-48001", {"cls": "BAT", "site": "Houston", "soh": 76, "sohRead": "2026-10-28", "dem": {"proj": POOL}})
+    assert c["cls"] == "BAT" and c["valuer"]["soh"] == 76
+    assert [r["id"] for r in c["routes"]] == ["release", "redeploy", "resell", "exit"]
+    by = {r["id"]: r for r in c["routes"]}
+    assert "Battery state of health" in by["redeploy"]["failReason"] and by["redeploy"]["excluded"]  # G-BAT-1: no reading on file
+    assert c["recommendation"]["id"] == "resell"  # the one path the gates leave open
+    assert next(r for r in c["routes"] if r["id"] == "exit")["excluded"]  # G-BAT-5: no permitted recycler on file
+    with SessionLocal() as s:
+        assert store.get(s, c["id"])["recommendation"]["id"] == "resell"
+        assert tool_queue.open_queue(s, "Customer A") == []  # a pack is not planned in the tools' queue
+
+
+def test_tf_16_a_battery_case_leaves_the_tools_queue_as_it_was(world):
+    tool = {"cls": "CMH", "grade": "B", "ft": "Repair center", "site": "Houston", "rul": 60, "dem": {"lease": [LEASE]}}
+    alone = _open("CMH-48213", tool)
+    before = (alone["recommendation"]["id"], alone["recommendation"]["net"])
+    _open("BAT-48001", {"cls": "BAT", "site": "Houston", "soh": 85, "sohRead": "2026-10-28", "dem": {"lease": [LEASE]}})
+    with SessionLocal() as s:
+        plan = tool_queue.plan_of(s, "Customer A")
+        again = store.get(s, alone["id"])
+    assert set(plan["res"]) == {alone["id"]}  # the pack is not in the plan, the tool is planned as before
+    assert (again["recommendation"]["id"], again["recommendation"]["net"]) == before

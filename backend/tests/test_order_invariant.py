@@ -5,10 +5,18 @@ only what was eligible after the gates."""
 import json
 from pathlib import Path
 
+import pytest
+from sqlalchemy import text
+
+from di.core.db import SessionLocal, engine
+from di.repositories.live_rules import live_pack
+from di.services.canonical import store as canonical
 from di.services.cases import intake
 from di.services.cases.decide import Decision, decide_case
 from di.services.modeler.compile import CompiledRule, FlowVersion
 from di.services.modeler.pack import Pack, load_pack, parse_pack
+from tests import starting
+from tests.helpers import tool_case_facts
 
 REPAIR = {"recall_id": "RC-2026-017", "tool_class": "BRK", "serial_from": "BRK-51000", "serial_to": "BRK-51999",
           "remedy": "repair", "affected_parts": ["Impact mechanism"], "status": "active"}  # fmt: skip
@@ -58,3 +66,86 @@ def test_order_invariant_device():
     assert d.trace == ORDER
     assert _route(d, "buynow")["excluded"]  # GR-D3: a grade D lot never goes to Buy Now
     assert d.recommendation is not None and d.route != "buynow" and d.preferred is None
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# P9-3.21 (R20, TF-04, TF-12): the order for the tool-fleet returns flow on stored cases: gates (the recall, the contract),
+# then the business rules, then valuation and ranking, then the approval holds, which come last.
+# ---------------------------------------------------------------------------------------------------------------------
+KEY_CONTRACT = "FC-TFOI-KEY"
+RECALLED = "BRK-51007"
+OI_KEYS = [RECALLED, "FC-TEST", KEY_CONTRACT, "RC-2026-017", "DR-OI-1"]
+ORG = "Customer A"
+
+
+def _clean_canonical() -> None:
+    with engine.begin() as conn:
+        for m in ("contract_line", "contract", "condition", "recall"):
+            for t in ("provenance", "canonical", "conflict"):
+                conn.execute(text(f"DELETE FROM {t} WHERE model = :m AND key = ANY(:k)"), {"m": m, "k": OI_KEYS})  # noqa: S608
+
+
+@pytest.fixture
+def stored_world(no_synced_demand):
+    starting.reset()
+    _clean_canonical()
+    yield
+    starting.reset()
+    _clean_canonical()
+
+
+def _write(source: str, facts: list[canonical.Fact]) -> None:
+    with SessionLocal() as s:
+        canonical.apply(s, source, facts)
+        s.commit()
+
+
+def _open_key_account(line: dict | None = None) -> dict:
+    """A breaker of a key-account contract (Westmark Supply) with fresh telematics and an inspection grade A, opened from data."""
+    _write("recall", [canonical.Fact("recall", REPAIR["recall_id"], k, v, resource="notices") for k, v in REPAIR.items()])
+    _write("fleet", [
+        canonical.Fact("contract", KEY_CONTRACT, "customer", "Westmark Supply", resource="contracts"),
+        canonical.Fact("contract", KEY_CONTRACT, "key_account", True, resource="contracts"),
+        canonical.Fact("condition", RECALLED, "run_hours", 820.0, resource="tools"),
+        canonical.Fact("condition", RECALLED, "high_load_share", 0.3, resource="tools"),
+        canonical.Fact("condition", RECALLED, "event_counts", {"overheat": 0, "drop": 0, "overload": 0}, resource="tools"),
+        canonical.Fact("condition", RECALLED, "telemetry_coverage_pct", 95, resource="tools"),
+    ])  # fmt: skip
+    grade = {"grade": "A", "test_result": "pass", "inspection_ref": "DR-OI-1", "graded_at": "2026-10-07T03:00:00Z"}
+    _write("repairlog", [canonical.Fact("condition", RECALLED, k, v, resource="orders") for k, v in grade.items()])
+    facts = tool_case_facts(RECALLED, {"cls": "BRK", "grade": "A", "ft": "Repair center", "site": "Houston", "rul": 75},
+                            line={"contract_id": KEY_CONTRACT, **(line or {})})  # fmt: skip
+    with SessionLocal() as s:
+        c = intake.open_case(s, {"org_unit_id": ORG, "template_key": "tool_fleet", "asset_key": RECALLED, "reason": "manual",
+                                 "facts": facts}, "system")  # fmt: skip
+        s.commit()
+    return c
+
+
+def test_order_invariant_tool_fleet_recalled_key_account_with_a_resell_rule(stored_world):
+    # Story: a recalled key-account breaker, and a business rule that prefers resell. GR-12 (the gate) blocks resell first, so the
+    # rule meets a route that is already out: it is reported as not applied, and the approval review comes after the ranking.
+    c = _open_key_account()
+    prefer = CompiledRule("R-1", {}, "prefer", "resell", "prefer resale")
+    with SessionLocal() as s:
+        d = decide_case(c, live_pack(s, c), FlowVersion(None, 3, (prefer,)), session=s)
+    assert d.trace == ORDER  # gates, valuation, queue plan, rules, rank: the approval holds are not a step before them
+    resell = _route(d, "resell")
+    assert resell["excluded"] and "Safety recall RC-2026-017 (repair)" in resell["failReason"]
+    assert d.rules_applied == [] and d.preferred is None and d.route not in (None, "resell")
+    holds = [x["id"] for x in d.approval["holds"]]
+    assert holds and holds[-1] == "TF-KEY"  # the account manager's review is added last, after the gates' own
+
+
+def test_order_invariant_tool_fleet_contract_block_hides_the_key_account_review(stored_world):
+    # Story: the same key account, but its line has an open damage charge (G-CON-2): every route is blocked before anything
+    # else runs, so there is no ranking and no review to wait for; the gate shows, not the account manager.
+    c = _open_key_account({"damage_charge_open": True, "charge_ref": "CHG-4412"})
+    assert c["recommendation"] is None and c["gateHold"]["gates"] == ["G-CON-2"]
+    assert all(r["excluded"] for r in c["routes"])
+    assert not any(x.get("id") == "TF-KEY" for x in c.get("approvalHolds") or [])
+    prefer = CompiledRule("R-1", {}, "prefer", "resell", "prefer resale")
+    with SessionLocal() as s:
+        d = decide_case(c, live_pack(s, c), FlowVersion(None, 3, (prefer,)), session=s)
+    assert d.route is None and d.rules_applied == [] and d.preferred is None
+    assert not any(x["id"] == "TF-KEY" for x in (d.approval or {}).get("holds") or [])

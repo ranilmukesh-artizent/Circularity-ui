@@ -39,9 +39,10 @@ from di.core.db import SessionLocal
 from di.services.actions.org_pilot import is_pilot
 from di.services.actions.pipeline import SYSTEM, CallContext, invoke
 from di.services.cases import store
-from di.services.instructions import outbound, queue, writers
+from di.services.instructions import fees, outbound, queue, writers
 
 log = logging.getLogger("di.services.instructions")
+OWN_KINDS = queue.OFF_PLAN | {fees.KIND}  # no plan step: nothing to acknowledge, done when sent (P9-6.8, P9-9.20, P9-3.18)
 
 
 def send(iid: int, resend: bool = False) -> str:
@@ -52,10 +53,9 @@ def send(iid: int, resend: bool = False) -> str:
             return "skipped"
         if not resend and ins["status"] in ("acknowledged", "failed", "sent"):
             return "skipped"  # a duplicate job, or an event got there first
-        c = store.get(s, ins["case_id"])
-        own_ref = (
-            ins["kind"] in queue.OFF_PLAN
-        )  # a payout or a used-car close is sent on its own, outside a plan (P9-6.8, P9-9.20)
+        # a payout (P9-6.8) and a non-return fee (P9-3.18) are sent on their own, outside an approval's plan; the fee has no case
+        own_ref = ins["kind"] in OWN_KINDS
+        c = fees.stand_in_case(ins) if ins["kind"] == fees.KIND else store.get(s, ins["case_id"])
         if c is None or (not own_ref and (not c.get("exec") or c["exec"]["ref"] != ins["approval_ref"])):
             _update(s, iid, status="failed", last_error="The approval this instruction belongs to is no longer current")
             s.commit()
@@ -184,7 +184,9 @@ def tick() -> int:
     with SessionLocal() as s:
         due = queue.simulated_due(s)
     for ins in due:
-        if ins["kind"] in queue.OFF_PLAN:  # no plan step to acknowledge: the simulated write is done when due (P9-6.8, P9-9.20)
+        if (
+            ins["kind"] in OWN_KINDS
+        ):  # no plan step to acknowledge: the simulated write is done when due
             with SessionLocal() as s:
                 _update(s, ins["id"], status="acknowledged")
                 s.commit()

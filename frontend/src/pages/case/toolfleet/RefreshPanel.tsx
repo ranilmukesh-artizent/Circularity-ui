@@ -1,7 +1,9 @@
 import { refreshView, type RefreshView } from '../../../api/refresh';
 import { money } from '../../../api/format';
 import { Panel } from '../../../components/kit/Panel';
+import { RefreshExecution } from './RefreshExecution';
 import { RefreshMatch } from './RefreshMatch';
+import { RefreshPricing } from './RefreshPricing';
 import { RefreshTools } from './RefreshTools';
 
 const day = (iso: string): string => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -45,6 +47,8 @@ export function RefreshPanel({ caseId }: { caseId: string }) {
       )}
       <RefreshTools tools={v.tools} totals={v.tools_totals} hold={v.tools_hold} />
       <RefreshMatch match={v.match} />
+      <RefreshPricing pricing={v.pricing} approval={v.approval} />
+      <RefreshExecution execution={v.execution} />
     </Panel>
   );
 }

@@ -1,8 +1,9 @@
 """The device-recommerce tables (migration 0047; plan 9 P9-6.2): trade-ins and grading disputes landed from the device
 lab, and the market tables (price feed, launches, listings, bids, sales, replacement demand) landed from the device market
-(P9-6.3). Core tables, read and written with SQL. Synthetic data; an IMEI is a device identifier, no person is stored."""
+(P9-6.3), and the wholesale lots with their member cases (P9-6.11, migration 0048). Core tables, read and written with SQL.
+Synthetic data; an IMEI is a device identifier, no person is stored."""
 
-from sqlalchemy import Boolean, Column, Date, Index, Integer, Numeric, PrimaryKeyConstraint, Table, Text, text
+from sqlalchemy import Boolean, CheckConstraint, Column, Date, Index, Integer, Numeric, PrimaryKeyConstraint, Table, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 
 from di.models.base import metadata, ts
@@ -113,7 +114,37 @@ device_replacement_demand = Table(
     Column("reserved", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
 )
 
+device_lot = Table(
+    "device_lot",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("org_unit_id", Text),
+    Column("lot_ref", Text, nullable=False, unique=True),
+    Column("model", Text, nullable=False),
+    Column("grade", Text, nullable=False),
+    Column("units", Integer, nullable=False),
+    Column("status", Text, nullable=False),
+    Column("best_bid_id", Text),
+    Column("value_usd", Numeric(12, 2)),
+    Column("created_by", Text, nullable=False),
+    Column("proposed_by", Text),
+    Column("approved_by", Text),
+    Column("reason", Text),
+    ts("created_at", nullable=False, now=True),
+    CheckConstraint("status IN ('draft','bidding','proposed','approved','rejected','sold')", name="device_lot_status"),
+    Index("ix_device_lot_org_status", "org_unit_id", "status"),
+)
+
+device_lot_member = Table(
+    "device_lot_member",
+    metadata,
+    Column("lot_id", Text, nullable=False),
+    Column("case_id", Text, nullable=False),
+    PrimaryKeyConstraint("lot_id", "case_id"),
+    Index("ix_device_lot_member_case", "case_id"),
+)
+
 DEVICE_TABLES = (
     device_tradein, device_price_point, device_launch, device_listing, device_bid, device_sale, device_dispute,
-    device_replacement_demand,
+    device_replacement_demand, device_lot, device_lot_member,
 )  # fmt: skip

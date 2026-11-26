@@ -970,8 +970,12 @@ EX_STEP: dict[str, tuple[int | None, str]] = {
     "consignment": (8, "Remarketing manager"),
     "dealer_trade": (8, "Remarketing manager"),
     "salvage_sale": (8, "Remarketing manager"),
+    "list": (8, "Channel ops"),  # plan 9 P9-6.12: a received device is listed on its channel
     "takeback": (48, "Fleet desk"),  # plan 9 P9-4.9: a service ticket's old tool comes back, then the credit goes
     "credit": (16, "Finance"),
+    "propsend": (8, "Fleet desk"),  # plan 9 P9-5.5: an approved contract refresh is sent, its lines drafted, its units held
+    "propdraft": (8, "Fleet desk"),
+    "propreserve": (8, "Fleet desk"),
 }
 _HOUR_MS = 3_600_000
 

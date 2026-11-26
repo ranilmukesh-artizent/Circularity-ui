@@ -111,7 +111,9 @@ def test_tf_10_steps_name_the_fleet_and_parts_systems():
     assert steps_for({"id": "release"})[3]["sys"] == "Lease · contract"  # an industrial case keeps the demo's systems
     assert queue.template_system("tool_fleet", "lease") == "fleet" and queue.template_system("tool_fleet", "partsxfer") == "parts"
     assert queue.template_system(None, "lease") is None
-    assert writers.operations("fleet") == ["lease"] and writers.operations("parts") == ["partsxfer"]
+    # P9-5.5 added a refresh's three steps: proposal and draft lines go to the fleet system, the unit holds to the parts system
+    assert writers.operations("fleet") == ["lease", "propsend", "propdraft"]
+    assert writers.operations("parts") == ["partsxfer", "propreserve"]
 
 
 def test_tf_10_the_writer_of_a_step_follows_its_template():

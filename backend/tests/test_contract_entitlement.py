@@ -76,7 +76,10 @@ def test_x_11_gate_is_in_the_pack_and_catalogue_as_specified():
     assert g.trigger.routes == "any" and g.owner == "Customer operations"
     assert [(c.fact, c.op) for c in g.trigger.when] == [("evidence.contract_clause.restricts", "exists")]
     assert g.evidence == ["customer_consent"] and g.effect.kind == "block" and g.effect.hold_until_evidence is False
-    assert [r.id for r in load_pack("tool_fleet").gates if r.active] == ["G-CON-1", "G-CON-2", "G-TOOL-REC", "G-TOOL-TEL"]
+    # G-BAT-1, G-BAT-4 and G-BAT-5 (P9-3.19) trigger only on the battery class
+    assert [r.id for r in load_pack("tool_fleet").gates if r.active] == [
+        "G-CON-1", "G-CON-2", "G-TOOL-REC", "G-TOOL-TEL", "G-BAT-1", "G-BAT-4", "G-BAT-5",
+    ]  # fmt: skip
 
 
 def test_x_11_clause_and_source_on_case():

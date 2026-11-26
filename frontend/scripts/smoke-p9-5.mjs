@@ -9,13 +9,16 @@
  *   2  The same panel lists each tool with its action and reason and the split "keep N, swap M, upgrade K" (the three add
  *      up to FC-30117's 14 lines).
  *
+ *   5  planner.a submits FC-30117, the Approver (Sales or Fleet desk) approves the proposal route; only time moves (the source-sim
+ *      clock) and the panel shows "Proposal sent PR-…", "Contract lines drafted DL-…" and "Units reserved RU-…".
+ *
  * Needs the worker (the sync and the job run on it) and source-sim with the fleet mock. Changes state, and resets nothing
  * itself. The lead runs:
  *   bash scripts/dev/reset.sh && bash scripts/dev/wait-idle.sh
  *   node frontend/scripts/smoke-p9-5.mjs http://localhost:5173
  *   bash scripts/dev/reset.sh
  * (hold the api test lock meanwhile). Screenshots of a failing step go to SMOKE_OUT (default: <OS temp>/smoke-p9-5).
- * The last line is "smoke-p9-5: all 2 steps passed".
+ * The last line is "smoke-p9-5: all <N> steps passed", N being the number of steps that ran.
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -90,7 +93,9 @@ const until = async (fn, msg, ms, p) => {
   }
 };
 
+let stepsRun = 0;
 async function step(name, fn) {
+  stepsRun += 1;
   const t0 = Date.now();
   try {
     const detail = await fn();
@@ -178,9 +183,78 @@ await step('3 Refresh: the CMH swap is matched to refurbished stock RU-7...', as
   );
   return unit;
 });
+// ---------------------------------------------------------------- 4
+await step('4 Refresh: the proposal is priced and waits for a person', async () => {
+  const admin = await as('admin');
+  const pricing = await until(
+    async () => {
+      const x = await admin.locator('[data-testid="rf-likelihood"]').first().innerText();
+      return /^Renewal likelihood \d+% with a proposal \(\d+% without\)$/.test(x) ? x : null;
+    },
+    'the refresh panel does not show "Renewal likelihood N% with a proposal (M% without)"',
+    UI,
+    admin,
+  );
+  const basis = await admin.locator('[data-testid="rf-basis"]').first().innerText();
+  if (!/modelled, observational/.test(basis)) throw new Error('the renewal basis does not say it is modelled: ' + basis);
+  const who = await admin.locator('[data-testid="rf-approval-text"]').first().innerText();
+  if (!/^Waits for (Sales: credits .* are over \$300|the Fleet desk)$/.test(who)) throw new Error('the approval line says: ' + who);
+  return `${pricing}; ${who}`;
+});
+// ---------------------------------------------------------------- 5
+await step('5 Refresh: planner.a submits, the Approver approves, the panel shows proposal sent, lines drafted, units reserved', async () => {
+  const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
+  const planner = await as('planner.a');
+  const approver = await as('approver');
+  const admin = await as('admin');
+  const r = await must(admin, 'cases.list', { q: 'FC-30117', limit: 5 });
+  const id = (r.rows || []).find((x) => x.id)?.id;
+  if (!id) throw new Error('no refresh case for FC-30117 (run steps 1 to 4 first)');
+  await must(planner, 'decision.submit', { case_id: id });
+  const view = () =>
+    approver.evaluate(
+      async (u) => (await fetch(u, { headers: { Authorization: 'Bearer ' + sessionStorage.getItem('circ-api-token') } })).json(),
+      `/api/screens/refresh/${id}`,
+    );
+  const v0 = await view();
+  if (v0.execution) throw new Error('the panel shows an execution before the approval');
+  const proposal = v0.pricing.routes.find((x) => x.id === 'proposal');
+  const body = { case_id: id, reviewed: true, rationale: 'Refresh proposal reviewed for the customer.', route: proposal.name };
+  await must(approver, v0.pricing.best === 'proposal' ? 'decision.approve' : 'decision.override', body);
+  await admin.goto(`${base}/#/product/${id}/overview`);
+  await admin.locator('#view').waitFor();
+  // only time moves: the worker sends each step, and the systems' events (or the simulated clock) acknowledge it
+  const text = await until(
+    async () => {
+      const t = await admin.locator('[data-testid="rf-execution"]').first().innerText().catch(() => '');
+      if (/Proposal sent PR-\d+/.test(t) && /Contract lines drafted DL-\d+/.test(t) && /Units reserved RU-\d+/.test(t)) return t;
+      await fetch(SIM + '/_sim/clock/advance', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ hours: 3 }) });
+      await admin.reload();
+      await admin.locator('#view').waitFor();
+      return null;
+    },
+    'the panel does not show "Proposal sent PR-...", "Contract lines drafted DL-..." and "Units reserved RU-..." (worker running, instructions on?)',
+    SYNC,
+    admin,
+  );
+  return text.split('\n').filter((l) => /Proposal sent|Contract lines drafted|Units reserved/.test(l)).join('; ');
+});
+// ---------------------------------------------------------------- 7
+await step('7 Analytics: the Contract renewals section shows both rates, the segments and the caveat', async () => {
+  const exec = await as('exec');
+  await exec.goto(`${base}/#/analytics`);
+  await exec.locator('#view').waitFor();
+  await exec.getByRole('radio', { name: 'Packs' }).or(exec.getByRole('button', { name: 'Packs' })).first().click();
+  const sec = exec.locator('[data-testid="renewals"]');
+  await sec.waitFor({ timeout: UI });
+  const text = await sec.innerText();
+  if (!/With a proposal: .*\d/.test(text) || !/Without a proposal: /.test(text)) throw new Error('the section shows no rates: ' + text.slice(0, 200));
+  if (!/This comparison is observational; a 20% region publish is the proof\./.test(text)) throw new Error('the caveat is missing');
+  return text.split('\n').find((l) => /With a proposal/.test(l)) || '';
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));
   process.exit(1);
 }
-say('smoke-p9-5: all 2 steps passed');
+say(`smoke-p9-5: all ${stepsRun} steps passed`);

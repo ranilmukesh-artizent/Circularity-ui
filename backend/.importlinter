@@ -113,6 +113,9 @@ ignore_imports =
     di.services.cases.tool_queue -> di.repositories.market_tables
     di.services.cases.tool_queue -> di.repositories.plm
     di.services.cases.tool_queue -> di.repositories.unit_reservations
+    # A contract refresh case is priced when it opens or is re-evaluated (plan 9, P9-5.5): the decision module prices it from the
+    # market tables and the contract history, lazily, as intake reads the live rules.
+    di.services.cases.intake -> di.services.refresh_decision
 
 [importlinter:contract:foundations]
 name = di.core and di.models import nothing above them

@@ -34,7 +34,7 @@ def opened() -> dict[str, str]:
 
 
 def _paths(t: str) -> list[str]:
-    return [p.name for p in load_template(t).paths]
+    return [p.name for p in load_template(t).paths if p.id != "wholesale"]  # a PO lot has no wholesale channel (P9-6.10)
 
 
 @pytest.mark.parametrize("template", list(FACTS))

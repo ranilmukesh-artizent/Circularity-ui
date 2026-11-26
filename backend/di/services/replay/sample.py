@@ -29,8 +29,9 @@ def make_csv(pack_key: str, rows: int, seed: int = 26111) -> str:
     rng = random.Random(f"{pack_key}:{seed}")  # noqa: S311 - invented sample data, not a secret
     spec = market_spec(pack_key)
     markets = list(spec.markets) if spec else ["US"]
-    route_ids = [r.id for r in pack.routes]
-    weights = [3 if r.classes and r.classes[0] in ("reuse", "sale", "refurbish") else 1 for r in pack.routes]
+    flow_routes = [r for r in pack.routes if not r.recover_only]  # the routes of the pack's default flow
+    route_ids = [r.id for r in flow_routes]
+    weights = [3 if r.classes and r.classes[0] in ("reuse", "sale", "refurbish") else 1 for r in flow_routes]
     out = io.StringIO()
     out.write(f"# python -m di.services.replay.sample {pack_key} {rows}" + (f" {seed}" if seed != 26111 else "") + "\n")
     w = csv.writer(out, lineterminator="\n")

@@ -273,7 +273,11 @@ def learn_ver(c: Case, model: str) -> str:
 
 def line_actuals(c: Case, r: dict) -> list[dict]:
     """The demo's lineActuals: an actual per cost line of the chosen route (deterministic per case and line, within
-    ±25%), and the model that learns from it."""
+    ±25%), and the model that learns from it. A device case with a settlement (P9-6.12) takes the realised sale instead."""
+    if c.get("template") == "device" and c.get("settlement"):
+        from di.services.device import settle  # lazy: the device services read the case store
+
+        return settle.lines(c, r)
     out = []
     for t in r["terms"]:
         m = LEARN.get(t["kind"])
