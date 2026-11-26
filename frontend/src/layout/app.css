@@ -3,3 +3,11 @@
 /* The revamp redefines --side-ink/--side-mut for its white menu; the sign-in panel stays dark, so give it the
    original dark-panel colours (as in the static demo's sign-in page). */
 .si .sil { --side-ink: #E9E3DB; --side-mut: #9C9189; }
+
+/* Dark mode: native controls follow the theme. Zero specificity (:where) so the demo's own control rules
+   (.fld input, .filters .sel, textarea.code ...) still win wherever they set a background. */
+:root[data-theme="dark"]{color-scheme:dark}
+:where(:root[data-theme="dark"]) :where(select,textarea,input:not([type=checkbox],[type=radio],[type=range],[type=button],[type=submit],[type=color])){
+  background-color:var(--panel);color:var(--ink);border:1px solid var(--line)}
+:where(:root[data-theme="dark"]) :where(select option,select optgroup){background-color:var(--panel);color:var(--ink)}
+:where(:root[data-theme="dark"]) :where(input,textarea)::placeholder{color:var(--muted)}
