@@ -841,6 +841,13 @@
   "dataset": "used_cars",
   "example": {
    "case": "UC-S1",
+   "asset_fields": [
+    "VIN",
+    "mileage",
+    "title",
+    "finance",
+    "damage history"
+   ],
    "modelled": {
     "cars": 2140,
     "straight_through_pct": 79,

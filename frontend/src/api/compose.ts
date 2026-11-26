@@ -22,6 +22,8 @@ export interface Reading {
   unit: string | null;
   /** a model drafted it (the rules still checked it) */
   by_model: boolean;
+  /** the clauses that state a limit, a condition, a market or a skip (a role alone is not one); absent in older rows */
+  explicit_controls?: number;
 }
 
 export interface PackMatch {
@@ -47,6 +49,33 @@ export interface OverlayOpRef {
   [field: string]: unknown;
 }
 
+/** A business rule the pack's answer adds (P9-9.12): listed for the person, published by the Modeler's flow, not by the draft. */
+export interface DraftRule {
+  id: string;
+  text: string;
+  stage: string;
+  /** 1-based position of the stage */
+  stage_no: number;
+  when: { fact: string; op: string; value: boolean | number | string }[];
+  action: 'allow' | 'require' | 'prefer' | 'exclude';
+  path: string;
+  origin: { kind: 'answer'; question: string };
+  /** the pack's default stood in for an answer */
+  assumed: boolean;
+}
+
+/** What the pack holds beside the draft: guardrail ids are stated by the text, the pack's own, or research additions. */
+export interface Outline {
+  asset_fields: string[];
+  stages: string[];
+  routes: string[];
+  stated: string[];
+  from_pack: string[];
+  research_additions: string[];
+  /** guardrails the text did not state, marked until confirmed */
+  assumed: string[];
+}
+
 export interface ChangeSet {
   pack: string;
   base_version: string;
@@ -59,6 +88,8 @@ export interface ChangeSet {
   question: ChangeQuestion | null;
   answer: string | null;
   by_model: boolean;
+  rules?: DraftRule[];
+  outline?: Outline;
 }
 
 export interface DescriptionRead {

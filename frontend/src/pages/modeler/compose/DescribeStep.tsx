@@ -66,6 +66,7 @@ function Drafted({ c }: { c: Composition }) {
   const cs = c.change_set;
   const editable = c.status === 'draft' || c.status === 'sent_back';
   const done = c.steps.describe.state === 'done';
+  const explicit = c.reading.explicit_controls ?? c.reading.controls.length;
 
   // the score of the match is the reading's, not stored with the composition
   useEffect(() => {
@@ -87,7 +88,7 @@ function Drafted({ c }: { c: Composition }) {
     <div className="cmp-step">
       <h4>What the agent read{c.reading.by_model ? ' (drafted by a model, checked by the rules)' : ''}</h4>
       <p>
-        {c.reading.word_count} words · {c.reading.controls.length} explicit control{c.reading.controls.length === 1 ? '' : 's'}
+        {c.reading.word_count} words · {explicit} explicit control{explicit === 1 ? '' : 's'}
         {c.reading.systems.length > 0 && ` · systems: ${c.reading.systems.join(', ')}`}
       </p>
       <p>
@@ -114,7 +115,19 @@ function Drafted({ c }: { c: Composition }) {
           </li>
         ))}
         {cs.ops.length === 0 && <li className="note">No changes to the pack.</li>}
+        {(cs.rules ?? []).map((r) => (
+          <li key={r.id}>
+            Rule {r.id} at stage {r.stage_no}: {r.text} ({r.action} {r.path}; from your answer to the {r.origin.question} question)
+            {r.assumed && <span className="chip line" title="You did not answer; this is the pack's default">assumed</span>}
+          </li>
+        ))}
       </ul>
+      {cs.outline && (
+        <p className="note">
+          Guardrails you stated: {cs.outline.stated.join(', ') || 'none'}. From the pack: {cs.outline.from_pack.join(', ') || 'none'}.
+          Research additions: {cs.outline.research_additions.join(', ') || 'none'}. Asset fields: {cs.outline.asset_fields.join(', ')}.
+        </p>
+      )}
       {cs.blocked.map((b, i) => <p key={i} className="err">Blocked ({b.guardrail}): {b.text}</p>)}
       <p><b>Systems:</b> {cs.systems.map((s) => s.name).join(', ') || 'none named'}</p>
       <p><b>KPIs:</b> {cs.kpis.join(', ') || 'none'}</p>
