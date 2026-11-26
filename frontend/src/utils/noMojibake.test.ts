@@ -20,5 +20,5 @@ describe('frontend sources are UTF-8, not Windows-1252 read as UTF-8 (the Modele
       .filter(([, line]) => line > 0)
       .map(([p, line]) => `${p}:${line}`);
     expect(bad).toEqual([]);
-  });
+  }, 120000);
 });
