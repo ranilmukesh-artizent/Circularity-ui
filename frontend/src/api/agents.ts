@@ -12,7 +12,7 @@
  * Plan 9 P9-2.3: `useAgents().llm` lists the language models (Admin); setLlmModel is llm.setModel. Agents never run it.
  */
 import { invoke, read } from './actions';
-import { cached } from './client';
+import { cached, http } from './client';
 import type { ActionResult } from './types';
 
 export type Autonomy = 'read' | 'propose' | 'act';
@@ -468,3 +468,28 @@ export const revokeCredential = (clientId: string): Promise<ActionResult<{ clien
   invoke('agent.revokeCredential', { client_id: clientId });
 export const agentCredentials = (agentId: string): Promise<ActionResult<{ agent_id: string; credentials: AgentCredential[] }>> =>
   invoke('agent.credentials', { agent_id: agentId });
+
+/** P9-13.10: outside MCP clients (OAuth authorization code with PKCE). Registered by Admin; a person consents on the consent page. */
+export const OAUTH_SCOPES = ['cases:read', 'cases:write', 'flows:draft', 'config:draft', 'tools:read'] as const;
+export const SCOPE_TEXT: Record<string, string> = {
+  'cases:read': 'Read cases',
+  'cases:write': 'Prepare case actions (held for a person)',
+  'flows:draft': 'Draft decision flows (held for a person)',
+  'config:draft': 'Draft configuration (held for a person)',
+  'tools:read': 'Find tools',
+};
+export interface OutsideClient {
+  client_id: string; name: string; redirect_uris: string[]; agent_id: string; agent_name: string | null; scopes: string[];
+  created_by: string; created_at: string | null; revoked_at: string | null;
+}
+export const registerClient = (c: { name: string; redirect_uris: string[]; agent_id: string; scopes: string[] }): Promise<ActionResult<{ client_id: string }>> =>
+  invoke('agent.registerClient', c);
+export const revokeClient = (clientId: string): Promise<ActionResult<{ client_id: string; revoked: boolean }>> =>
+  invoke('agent.revokeClient', { client_id: clientId });
+export const outsideClients = (): Promise<ActionResult<{ clients: OutsideClient[] }>> => invoke('agent.clients', {});
+
+/** What the consent page tells the person, and their answer (the answer is the URL to send the browser back to). */
+export interface ConsentRequest { client_name: string; agent_id: string; agent_name: string; scopes: string[] }
+export const consentRequest = (req: string): Promise<ConsentRequest> => http<ConsentRequest>('/api/oauth/consent?req=' + encodeURIComponent(req));
+export const answerConsent = (req: string, approve: boolean): Promise<{ redirect: string }> =>
+  http<{ redirect: string }>('/api/oauth/consent', { method: 'POST', body: { req, approve } });

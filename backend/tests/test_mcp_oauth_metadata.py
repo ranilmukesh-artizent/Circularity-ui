@@ -62,7 +62,9 @@ def test_mcp_prm_document(client):
         assert d["resource"] == get_settings().mcp_resource_url
         assert d["scopes_supported"] == ["cases:read", "cases:write", "flows:draft", "config:draft", "tools:read"]
         assert d["bearer_methods_supported"] == ["header"]
-        assert "authorization_servers" not in d  # none configured
+        assert d["authorization_servers"] == [
+            get_settings().mcp_resource_url.removesuffix("/mcp")
+        ]  # none configured: our own (P9-13.10)
 
 
 def test_mcp_prm_lists_configured_authorization_servers(client, monkeypatch):

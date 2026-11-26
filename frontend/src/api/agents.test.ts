@@ -9,7 +9,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, agentCredentials, findTools, issueCredential, revokeCredential, startAdapterDraft, fitModel, fitStageCalibration, checkModelDrift, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, agentCredentials, findTools, outsideClients, registerClient, revokeClient, issueCredential, revokeCredential, startAdapterDraft, fitModel, fitStageCalibration, checkModelDrift, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
   type TraceSpan,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
@@ -173,5 +173,17 @@ describe('agent credentials (P9-13.9)', () => {
     expect(last()).toEqual(['agent.credentials', { agent_id: 'finder' }]);
     await revokeCredential('agc_1');
     expect(last()).toEqual(['agent.revokeCredential', { client_id: 'agc_1' }]);
+  });
+});
+
+describe('outside MCP clients (P9-13.10)', () => {
+  it('registers, lists and revokes through the action pipeline', async () => {
+    const c = { name: 'Tool', redirect_uris: ['http://localhost:9/cb'], agent_id: 'finder', scopes: ['cases:read'] };
+    await registerClient(c);
+    expect(last()).toEqual(['agent.registerClient', c]);
+    await outsideClients();
+    expect(last()).toEqual(['agent.clients', {}]);
+    await revokeClient('ocl_1');
+    expect(last()).toEqual(['agent.revokeClient', { client_id: 'ocl_1' }]);
   });
 });

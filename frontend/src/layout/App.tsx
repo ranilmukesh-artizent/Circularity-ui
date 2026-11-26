@@ -5,6 +5,7 @@ import { canRoute, currentAccount, homeRoute, setBackendTheme, signOut } from '.
 import type { RouteRef } from '../api/types';
 import { NotPortedPage } from '../pages/NotPortedPage';
 import { pageFor } from '../pages/registry';
+import { OAuthConsentPage } from '../pages/OAuthConsentPage';
 import { SignInPage } from '../pages/SignInPage';
 import { Boundary } from '../components/Boundary';
 import { useTheme } from '../utils/theme';
@@ -40,6 +41,10 @@ export function App() {
         <Toasts />
       </>
     );
+  }
+  if (route.page === 'oauth' && route.a === 'consent') {
+    // P9-13.10: the consent page of an outside MCP client's authorization request, outside the shell like the sign-in page
+    return <Boundary><OAuthConsentPage req={new URLSearchParams(loc.search).get('req') ?? ''} /></Boundary>;
   }
   if (!route.page || route.page === 'signin') return <Navigate to={'/' + homeRoute()} replace />;
   return (

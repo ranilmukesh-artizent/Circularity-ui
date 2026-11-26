@@ -82,6 +82,10 @@ def _resolve(token: str, audience: str, session: Session) -> "Principal":
         agent_id = sub[len("agent:") :]
         _check_agent_token(session, claims, agent_id)
         sub = str(claims.get("own", ""))
+    act = claims.get("act")
+    if agent_id is None and isinstance(act, dict) and str(act.get("sub", "")).startswith("agent:"):
+        agent_id = str(act["sub"])[len("agent:") :]  # P9-13.10: an OAuth token acts as the person, prepared by the agent
+        _check_oauth_token(session, claims, agent_id)
     a = policy.account(sub, ctx)
     if a is None:
         raise HTTPException(401, {"code": "unauthenticated", "message": "Unknown account."})
@@ -113,6 +117,28 @@ def _check_agent_token(session: Session, claims: dict[str, object], agent_id: st
         or cred["owner"] != claims.get("own")
     ):
         raise HTTPException(401, _ENDED, headers={"WWW-Authenticate": 'Bearer error="invalid_token"'})
+
+
+def _check_oauth_token(session: Session, claims: dict[str, object], agent_id: str) -> None:
+    """401 unless the token's OAuth client is live and acts as this agent, and the agent is enabled (P9-13.10)."""
+    off = state.get(session, "access_settings", "agents_off") or {}
+    gone = state.get(session, "account_revoked", str(claims.get("sub", ""))) or {}
+    enabled = session.execute(text("SELECT enabled FROM agent_identity WHERE id = :a"), {"a": agent_id}).scalar()
+    live_client = session.execute(
+        text("SELECT 1 FROM oauth_client WHERE client_id = :c AND agent_id = :a AND revoked_at IS NULL"),
+        {"c": str(claims.get("client_id", "")), "a": agent_id},
+    ).first()
+    if not enabled or off.get(agent_id) or gone.get("active") is False or not live_client:
+        raise HTTPException(401, _ENDED, headers={"WWW-Authenticate": 'Bearer error="invalid_token"'})
+
+
+def resolve_mcp(token: str, session: Session) -> "Principal":
+    """The account behind a token presented to the MCP endpoint: an OAuth token names the MCP resource as its audience
+    (and is refused at /api); any other token is the account's own (aud "di")."""
+    claims = jwt.decode(token, options={"verify_signature": False}) if token.count(".") == 2 else {}
+    aud = claims.get("aud") if isinstance(claims, dict) else None
+    mcp = get_settings().mcp_resource_url
+    return _resolve(token, mcp if aud == mcp else AUDIENCE, session)
 
 
 def _revoked(session: Session, account_id: str, issued_at: object) -> bool:

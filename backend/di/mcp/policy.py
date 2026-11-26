@@ -26,12 +26,12 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+import jwt
 from fastapi import HTTPException
-from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from di.core import clock, policy, state
-from di.core.auth import principal
+from di.core.auth import resolve_mcp
 from di.mcp import calllog, catalog_tools
 from di.mcp.tools import ACTIONS_OF, AGENTS, NO_APPROVAL_REF, RUN, TOOLS, Refused, ToolCall, cross_tenant
 from di.services.actions.pipeline import Actor, CallContext
@@ -131,8 +131,8 @@ def _account(s: Session, token: str | None) -> tuple[policy.Account, policy.Cont
     if not token:
         return None
     try:
-        p = principal(HTTPAuthorizationCredentials(scheme="Bearer", credentials=token), s)
-    except HTTPException:
+        p = resolve_mcp(token, s)
+    except (HTTPException, jwt.PyJWTError):
         return None
     return p.account, p.ctx
 
@@ -145,8 +145,8 @@ def token_agent(token: str | None) -> str | None:
 
     with SessionLocal() as s:
         try:
-            return principal(HTTPAuthorizationCredentials(scheme="Bearer", credentials=token), s).agent_id
-        except HTTPException:
+            return resolve_mcp(token, s).agent_id
+        except (HTTPException, jwt.PyJWTError):
             return None
 
 
@@ -158,8 +158,8 @@ def effective_agent(token: str | None, named: str | None) -> str | None:
 
 def _principal_agent(s: Session, token: str | None) -> str | None:
     try:
-        return principal(HTTPAuthorizationCredentials(scheme="Bearer", credentials=token or ""), s).agent_id if token else None
-    except HTTPException:
+        return resolve_mcp(token, s).agent_id if token else None
+    except (HTTPException, jwt.PyJWTError):
         return None
 
 

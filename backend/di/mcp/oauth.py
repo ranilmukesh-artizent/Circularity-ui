@@ -38,8 +38,8 @@ IMPLIES = {"cases:write": {"cases:read"}}
 def document() -> dict[str, Any]:
     s = get_settings()
     doc: dict[str, Any] = {"resource": s.mcp_resource_url}
-    if s.mcp_auth_servers:
-        doc["authorization_servers"] = list(s.mcp_auth_servers)
+    u = urlsplit(s.mcp_resource_url)
+    doc["authorization_servers"] = list(s.mcp_auth_servers) or [f"{u.scheme}://{u.netloc}"]  # else our own (P9-13.10)
     return {**doc, "scopes_supported": SCOPES, "bearer_methods_supported": ["header"]}
 
 

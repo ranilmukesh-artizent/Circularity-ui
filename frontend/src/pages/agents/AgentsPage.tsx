@@ -8,6 +8,7 @@ import { Drawer, Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { LlmModelsPanel } from './LlmModelsPanel';
+import { OutsideClients } from './OutsideClients';
 import { ModelsPanel } from './ModelsPanel';
 import { RegisterAgentDialog } from './RegisterAgentDialog';
 import { RunView } from './RunView';
@@ -41,6 +42,7 @@ export function AgentsPage() {
       )}
       <Registry s={s} />
       {s.can.manage && <Credentials agents={s.agents} />}
+      {s.can.manage && <OutsideClients agents={s.agents} />}
       <Proposals list={s.proposals} />
       <Runs s={s} />
       <LlmModelsPanel s={s} />
