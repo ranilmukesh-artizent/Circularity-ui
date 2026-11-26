@@ -45,7 +45,8 @@ export interface GraphViewProps {
   gap?: number;
   /**
    * The lowest zoom the first view may open at (default: none, the whole graph is fitted). When the whole graph would
-   * need less, it opens at this zoom from the top left instead, so labels stay legible; the fit control still shows all.
+   * need less, it opens at this zoom anchored at the left and vertically centred, so the start of the flow shows and
+   * labels stay legible; the fit control still shows all.
    */
   openZoom?: number;
   nodeColor?: (id: string) => string;
@@ -109,7 +110,7 @@ function Inner(p: GraphViewProps) {
     return () => el.removeEventListener('keydown', nodeKey);
   }, []);
 
-  /** Open at `openZoom` at least: fit when the graph fits there, else anchor its top left (padding 24) at that zoom. */
+  /** Open at `openZoom` at least: fit when the graph fits there, else anchor its left edge (padding 24), vertically centred, at that zoom. */
   function openView() {
     const z = p.openZoom;
     const list = rf.getNodes();
@@ -120,7 +121,7 @@ function Inner(p: GraphViewProps) {
     const { width, height } = el.getBoundingClientRect();
     const fit = Math.min((width - 48) / b.width, (height - 48) / b.height);
     if (fit >= z) { void rf.fitView({ padding: 0.08, maxZoom: 1 }); return; }
-    void rf.setViewport({ x: 24 - b.x * z, y: 24 - b.y * z, zoom: z });
+    void rf.setViewport({ x: 24 - b.x * z, y: height / 2 - (b.y + b.height / 2) * z, zoom: z });
   }
 
   const nodes = toRfNodes(p.nodes, live, !!p.readOnly);
