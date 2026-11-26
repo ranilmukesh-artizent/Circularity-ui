@@ -15,8 +15,11 @@ replaying it under a flow.
     replay.run      act   {batch_id, flow_id, flow_ver?}          queue an as-of replay of the batch under the flow (`flow_ver` is
                                                                 "draft" or a version number as text; absent: the flow's draft if it
                                                                 has one, else its published version); answers {run_id, status}
-    replay.report   read  {run_id}                              the run's status and, once done, its ReplayReport
-    replay.runs     read  {flow_id}                             the flow's runs, newest first, without their reports
+    replay.report   read  {run_id}                              the run's status and, once done, its ReplayReport, with the
+                                                                `waterfall`, the ten `top_flips` explained and the fixed
+                                                                `method_note` of the report page (P9-7.6; measures.py)
+    replay.runs     read  {flow_id?}                            the flow's runs, newest first, without their reports; without
+                                                                `flow_id` the finished runs of the actor's orgs (P9-7.6)
 
 The job `replay.run` (di/worker.py, `run_job` here) decides every ok item with `decide_case` as of its own date
 (di.services.replay.run) and stores the report.
@@ -45,7 +48,7 @@ from di.services.modeler.compile import FlowVersion, compile_flow
 from di.services.modeler.flow import Flow
 from di.services.modeler.pack import Pack, load_pack, pack_keys
 from di.services.modeler.templates import template_of_pack
-from di.services.replay import history
+from di.services.replay import history, measures
 from di.services.replay import run as replay_run
 
 log = logging.getLogger(__name__)
@@ -80,12 +83,13 @@ _declare(
     "replay.report",
     "Read a replay report",
     "read a replay",
-    "The status of a replay run and, once it is done, its report.",
+    "The status of a replay run and, once it is done, its report with the waterfall, the ten largest flips explained and the method note.",
     "read",
     {"run_id": {"req": True, "t": "number"}},
 )
-_declare("replay.runs", "List replay runs", "see replays", "The replay runs of a decision flow, newest first.",
-         "read", {"flow_id": {"req": True, "t": "number"}})  # fmt: skip
+_declare("replay.runs", "List replay runs", "see replays",
+         "The replay runs of a decision flow, newest first; with no flow, the finished runs of every flow the actor may see.",
+         "read", {"flow_id": {"t": "number"}})  # fmt: skip
 
 
 def _reach(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | Pack:
@@ -284,7 +288,13 @@ def report_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
 @implement("replay.report")
 def report(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     r = cast(dict[str, Any], _run_reach(i, ctx))
-    return _run_view(r) | {"report": r["report"]}
+    rep = r["report"]
+    return _run_view(r) | {
+        "report": rep,
+        "waterfall": measures.waterfall(rep) if rep else [],
+        "top_flips": measures.top_flips_explained(rep) if rep else [],
+        "method_note": measures.method_note(),
+    }
 
 
 def _run_view(r: dict[str, Any]) -> dict[str, Any]:
@@ -297,12 +307,23 @@ def _run_view(r: dict[str, Any]) -> dict[str, Any]:
 
 @guard("replay.runs")
 def runs_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if i.get("flow_id") is None:
+        return None
     f = _flow_reach(i, ctx)
     return f if isinstance(f, tuple) else None
 
 
 @implement("replay.runs")
 def runs(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    if i.get("flow_id") is None:  # the back-test picker (P9-7.6): finished runs of the flows of the orgs the actor reaches
+        orgs = {o for o in units(ctx.session) if _org_ok(ctx, o)}
+        out = [
+            _run_view(r) | {"flow_name": f.name, "template_key": f.template_key, "org_unit_id": f.org_unit_id}
+            for f in flow_repo.flows(ctx.session, orgs)
+            for r in repo.runs_of_flow(ctx.session, f.id)
+            if r["status"] == "done"
+        ]
+        return {"runs": sorted(out, key=lambda r: -r["run_id"])[:50]}
     return {"runs": [_run_view(r) for r in repo.runs_of_flow(ctx.session, int(i["flow_id"]))]}
 
 

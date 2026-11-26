@@ -151,6 +151,7 @@ function ReplayResult({ r }: { r: ReplayReport }) {
       <h4>
         Batch {r.batch_id} under {versionLabel(r.flow_ver)}: {r.n_decided} of {r.n_items} items decided over {r.days} business days
       </h4>
+      <p><a href={`#/analytics?backtest=${r.run_id}`} data-replay-open-report>Open the report</a> <span className="note">(the Back-test page, with the waterfall and a PDF)</span></p>
       <table className="tbl" data-replay-mix>
         <thead><tr><th>Route</th><th>Actual</th><th>Flow</th></tr></thead>
         <tbody>

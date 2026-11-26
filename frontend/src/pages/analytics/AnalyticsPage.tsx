@@ -9,8 +9,9 @@ import {
   type AnalyticsFilter, type ClosedRow,
 } from '../../api/analytics';
 import { fmtDateYear, money } from '../../api/format';
+import { finishedRuns, type RunPick } from '../../api/replay';
 import { useBackend } from '../../api/useBackend';
-import { allowedTenants, canPage, tenantFilter } from '../../api/session';
+import { allowedTenants, can, canPage, tenantFilter } from '../../api/session';
 import { sessionScoped } from '../../api/view';
 import type { PageProps } from '../registry';
 import { Icon } from '../../components/Icon';
@@ -20,6 +21,7 @@ import { Segmented } from '../../components/kit/Segmented';
 import { PilotReportButton } from '../../components/PilotReport';
 import { toast } from '../../components/toast';
 import { downloadCsv } from '../../utils/csv';
+import { BacktestSection } from './BacktestReport';
 import { PacksTab } from './PackView';
 import { drills, Funnel, Heat, MixChart, ModelTable, Overrides, PoolChart, Scatter, Sustain, Waterfall, type Drill } from './AnalyticsCharts';
 
@@ -52,13 +54,21 @@ const statusChip = (r: ClosedRow) =>
     expired: <span className="chip line">Offer expired</span>,
   })[r.status];
 
-export function AnalyticsPage({ route }: PageProps) {
+export function AnalyticsPage({ route, query }: PageProps) {
   useBackend();
   const nav = useNavigate();
   const [f, setF] = useState<AnalyticsFilter>(savedFilter.current);
   const [drill, setDrillState] = useState(savedDrill.current);
   const [openRow, setOpenRow] = useState<string | null>(null);
-  const [tab, setTab] = useState<'closed' | 'packs'>(route.a === 'packs' ? 'packs' : 'closed');
+  const deepRun = Number(query.get('backtest')) || null; // #/analytics?backtest=<run_id>
+  const [tab, setTab] = useState<'closed' | 'packs' | 'backtest'>(deepRun ? 'backtest' : route.a === 'packs' ? 'packs' : 'closed');
+  const [runs, setRuns] = useState<RunPick[]>([]);
+  useEffect(() => {
+    if (!can('runReplay')) return;
+    let live = true;
+    void finishedRuns().then((r) => { if (live && r.ok) setRuns(r.output.runs); });
+    return () => { live = false; };
+  }, []);
   const setFilter = (x: AnalyticsFilter) => { savedFilter.current = x; setF(x); };
   const setDrill = (d: (Drill & { page: number }) | null) => { savedDrill.current = d; setDrillState(d); };
   const onDrill = (d: Drill) => {
@@ -113,8 +123,25 @@ export function AnalyticsPage({ route }: PageProps) {
     ));
 
   const tabs = (
-    <Segmented name="antab" label="Analytics view" items={[['closed', 'Decisions'], ['packs', 'Packs']] as const} cur={tab} onPick={setTab} />
+    <Segmented
+      name="antab" label="Analytics view" cur={tab} onPick={setTab}
+      items={[['closed', 'Decisions'], ['packs', 'Packs'], ...(runs.length > 0 || deepRun ? [['backtest', 'Back-test'] as const] : [])] as const}
+    />
   );
+  if (tab === 'backtest') {
+    return (
+      <>
+        <div className="phead">
+          <div>
+            <h1>Analytics</h1>
+            <p>What a decision flow would have decided on past decisions, each on the facts known then. Modelled, never realised.</p>
+          </div>
+        </div>
+        <div style={{ marginBottom: 12 }}>{tabs}</div>
+        <BacktestSection runs={runs} initial={deepRun} />
+      </>
+    );
+  }
   if (tab === 'packs') {
     return (
       <>

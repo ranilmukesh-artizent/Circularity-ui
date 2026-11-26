@@ -1,0 +1,29 @@
+/* Back-test report (P9-7.6). On screen it is a panel; "Export PDF" calls window.print(), so the @media print block is the PDF. */
+.bt-report { display: grid; gap: 18px; }
+.bt-head { display: grid; gap: 6px; }
+.bt-head h2 { margin: 0; }
+.bt-report h3 { margin: 0 0 8px; }
+.bt-loads { margin: 8px 0 0; padding-left: 18px; }
+.bt-wf { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.bt-wf li { display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(0, 2fr) minmax(90px, auto); gap: 10px; align-items: center; }
+.bt-wf li[data-bt-step='result'] { border-top: 1px solid var(--line, #ccc); padding-top: 6px; }
+.bt-wf b { text-align: right; }
+.bt-bar { display: block; height: 10px; background: var(--bg2, rgba(128, 128, 128, 0.12)); border-radius: 5px; overflow: hidden; }
+.bt-bar i { display: block; height: 100%; background: var(--ok, #2a7f62); }
+.bt-bar i.neg { background: var(--warn, #b8601a); }
+
+@media print {
+  /* only the report prints: everything else on the page (sidebar, top bar, filters, Ask panel, toasts) is hidden */
+  body * { visibility: hidden !important; }
+  .bt-report, .bt-report * { visibility: visible !important; }
+  .bt-report { position: absolute; left: 0; top: 0; width: 100%; padding: 0; background: #fff; color: #000; }
+  .bt-noprint { display: none !important; }
+  .bt-report section { break-inside: avoid; page-break-inside: avoid; }
+  .bt-report section[data-bt-section='waterfall'],
+  .bt-report section[data-bt-section='agreement'],
+  .bt-report section[data-bt-section='method'] { break-before: page; page-break-before: always; }
+  .bt-report table { width: 100%; border-collapse: collapse; }
+  .bt-report th, .bt-report td { border-bottom: 1px solid #bbb; padding: 4px 6px; text-align: left; }
+  .bt-bar { border: 1px solid #999; background: #fff; }
+  .bt-bar i, .bt-bar i.neg { background: #444; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

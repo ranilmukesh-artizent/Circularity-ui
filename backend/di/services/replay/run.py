@@ -237,6 +237,8 @@ class Flip(BaseModel):
     flow: str | None
     delta: float
     reason: str
+    gate: str | None = None  # what decided it (P9-7.6): the gate that excluded the actual route, else the first rule applied
+    trace: str = ""  # the decision's own trace text, as the case page shows it (P9-7.6)
 
 
 class ReplayReport(BaseModel):
@@ -255,6 +257,11 @@ class ReplayReport(BaseModel):
     uplift: Uplift
     constraint_loss: float = 0.0  # case-by-case net minus planned net (P9-7.5); 0 without demand at the time
     agreement_pct: float
+    held_for_person: int = 0  # decided items that would wait for an approval or raise an exception (P9-7.6)
+    actual_net: float = 0.0  # sum of the actual routes' nets, valued as of the decision (P9-7.6, the waterfall's start)
+    flow_net: float = 0.0  # sum of the flow's planned nets (the waterfall's end)
+    repricing: float = 0.0  # same-route items: the route's net run alone minus the actual net (the bias step)
+    route_changes: list[dict[str, Any]] = []  # [{route, amount}] by the flow's route: its net run alone minus the actual net
     flips: list[Flip]
     leakage: list[dict[str, Any]]
     data_quality: list[dict[str, Any]]
@@ -381,6 +388,13 @@ def _reason(actual: str | None, flow: str | None, ar: Mapping[str, Any] | None, 
     return f"the flow's route is worth ${abs(delta):,.2f} {'more' if delta >= 0 else 'less'} than {actual}"
 
 
+def _gate(ar: Mapping[str, Any] | None, d: Decision) -> str | None:
+    """What decided a flip: the gate that excluded the actual route, else the first rule the flow applied, else nothing."""
+    if ar is not None and ar.get("excluded"):
+        return str(ar.get("failReason") or "a gate")
+    return d.rules_applied[0] if d.rules_applied else None
+
+
 def replay(
     batch: Batch,
     items: Sequence[Mapping[str, Any]],
@@ -410,7 +424,7 @@ def replay(
     flow_routes: list[str | None] = []
     rails: dict[str, list[Any]] = defaultdict(lambda: ["", 0, 0])
 
-    def record(it: Mapping[str, Any], d: Decision) -> bool:
+    def record(it: Mapping[str, Any], d: Decision, alone: float | None = None) -> bool:
         """Count one decided item in the measures; False when the actual route is not valued (listed under data quality)."""
         actual = it["actual_route"]
         ar = _route(d, actual)
@@ -423,11 +437,13 @@ def replay(
         actual_routes.append(actual)
         flow_routes.append(d.route)
         real = float(it["realised_value"] or 0)
-        rows.append({"actual_net": float(ar["net"]), "flow_net": float(d.net), "realised": real, "agree": d.route == actual})
+        rows.append({"actual_net": float(ar["net"]), "flow_net": float(d.net), "realised": real, "agree": d.route == actual,
+                     "alone_net": float(d.net) if alone is None else alone, "flow_route": d.route})  # fmt: skip
         if d.route != actual:
             delta = float(d.net) - float(ar["net"])
             flips.append(Flip(item_id=str(it["item_id"]), actual=actual, flow=d.route, delta=round(delta, 2),
-                              reason=_reason(actual, d.route, ar, delta)))  # fmt: skip
+                              reason=_reason(actual, d.route, ar, delta), gate=_gate(ar, d),
+                              trace=" · ".join(d.trace)[:600]))  # fmt: skip
         for gid, (owner, appr, exc) in s.guardrails.items():
             rails[gid][0] = owner
             rails[gid][1] += appr
@@ -459,7 +475,7 @@ def replay(
                     dq[f"Not decided: {e.message}"] += 1
                     continue
                 planner.claim(case["id"], d)
-                if record(it, d):
+                if record(it, d, float(alone.net)):
                     loss += float(alone.net) - float(d.net)
             state.fill(day, planner.claims)  # a unit taken today is not on offer on a later day
         return _report(batch, items, flow_ver, pack, run_id, label, constraint_loss=loss, rows=rows, flips=flips,
@@ -491,6 +507,10 @@ def _report(
     up = measures.uplift(rows)
     band = bootstrap_band([(r["flow_net"] - r["actual_net"], r["actual_net"]) for r in rows])
     flips.sort(key=lambda f: -abs(f.delta))
+    changes: dict[str, float] = defaultdict(float)
+    for r in rows:
+        if not r["agree"]:
+            changes[r["flow_route"] or "no route"] += r["alone_net"] - r["actual_net"]
     return ReplayReport(
         run_id=run_id, batch_id=batch.id, flow_ver=label or str(flow_ver.ver), n_items=len(items), n_held_rows=batch.held,
         n_decided=n, days=ndays,
@@ -501,5 +521,9 @@ def _report(
         by_guardrail=[{"guardrail": g, "owner": o, "approvals": a, "exceptions": e} for g, (o, a, e) in sorted(rails.items())],
         uplift=Uplift(**up, **band), constraint_loss=round(constraint_loss, 2),
         agreement_pct=measures.pct(sum(r["agree"] for r in rows), n),
+        held_for_person=sum(bool(s.approval or s.exception) for s in sig),
+        actual_net=round(sum(r["actual_net"] for r in rows), 4), flow_net=round(sum(r["flow_net"] for r in rows), 4),
+        repricing=round(sum(r["alone_net"] - r["actual_net"] for r in rows if r["agree"]), 4),
+        route_changes=[{"route": k, "amount": round(v, 4)} for k, v in sorted(changes.items())],
         flips=flips[:FLIPS_SHOWN], leakage=leakage, data_quality=[{"reason": r, "count": c} for r, c in dq.most_common()],
     )  # fmt: skip

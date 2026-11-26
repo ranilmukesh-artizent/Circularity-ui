@@ -93,7 +93,14 @@ export interface ReplayReport {
   /** case-by-case net minus planned net: what capacity and competing returns cost (P9-7.5); 0 with no demand file */
   constraint_loss: number;
   agreement_pct: number;
-  flips: { item_id: string; actual: string | null; flow: string | null; delta: number; reason: string }[];
+  /** decided items that would wait for an approval or raise an exception (P9-7.6) */
+  held_for_person: number;
+  /** waterfall inputs (P9-7.6): sums of the actual and the flow's planned nets */
+  actual_net: number;
+  flow_net: number;
+  repricing: number;
+  route_changes: { route: string; amount: number }[];
+  flips: { item_id: string; actual: string | null; flow: string | null; delta: number; reason: string; gate?: string | null; trace?: string }[];
   leakage: { item_id: string; fact: string; fact_at: string | null; decided_at: string }[];
   data_quality: { reason: string; count: number }[];
   method: string;
@@ -116,7 +123,40 @@ export interface RunView {
 export const runReplay = (batchId: number, flowId: number, flowVer?: string): Promise<ActionResult<{ run_id: number; status: RunStatus }>> =>
   invoke<{ run_id: number; status: RunStatus }>('replay.run', { batch_id: batchId, flow_id: flowId, ...(flowVer === undefined ? {} : { flow_ver: flowVer }) });
 
-export const replayReport = (runId: number): Promise<ActionResult<RunView & { report: ReplayReport | null }>> =>
-  invoke<RunView & { report: ReplayReport | null }>('replay.report', { run_id: runId });
+/** One step of the back-test waterfall (P9-7.6): the actual net (`base`), a change (`delta`), the net uplift (`result`). The base
+ * and the deltas add up to the flow's net. */
+export interface WaterfallStep {
+  step: string;
+  amount: number;
+  kind: 'base' | 'delta' | 'result';
+}
+
+/** One of the largest flips, explained: the gate or rule that decided it and the decision's own trace text. */
+export interface ExplainedFlip {
+  item_id: string;
+  from: string | null;
+  to: string | null;
+  delta: number;
+  reason: string;
+  gate: string | null;
+  trace: string;
+}
+
+/** `replay.report`: the run, its report and the three parts of the back-test page, all computed by the server. */
+export type ReplayReportOut = RunView & {
+  report: ReplayReport | null;
+  waterfall: WaterfallStep[];
+  top_flips: ExplainedFlip[];
+  /** the fixed method text, shown as sent */
+  method_note: string;
+};
+
+export const replayReport = (runId: number): Promise<ActionResult<ReplayReportOut>> => invoke<ReplayReportOut>('replay.report', { run_id: runId });
 
 export const replayRuns = (flowId: number): Promise<ActionResult<{ runs: RunView[] }>> => invoke<{ runs: RunView[] }>('replay.runs', { flow_id: flowId });
+
+/** A finished run with the flow it replayed, for the Analytics run picker. */
+export type RunPick = RunView & { flow_name: string; template_key: string; org_unit_id: string };
+
+/** The finished runs of every flow the signed-in person may see, newest first (the Back-test section's picker). */
+export const finishedRuns = (): Promise<ActionResult<{ runs: RunPick[] }>> => invoke<{ runs: RunPick[] }>('replay.runs', {});
