@@ -33,7 +33,7 @@ RRU = {
     "manufacturer": "MFR-B", "site": "SITE-101", "siteKind": "edge", "region": "North", "status": "removed",
     "exportClassInferred": "5A992", "exportClassConfirmed": None, "org_unit_id": ORG,
 }  # fmt: skip
-RAD = RRU | {"serial": "SN-TN-0003", "model": "RAD-7700", "exportClassInferred": None, "exportClassConfirmed": "5A002"}
+RAD = RRU | {"serial": "SN-TN-0006", "model": "RAD-7700", "exportClassInferred": None, "exportClassConfirmed": "5A002"}
 
 
 def _forget() -> None:
@@ -107,7 +107,7 @@ def test_adapter_network_inventory_keeps_inferred_class_apart():
 
 
 def test_adapter_network_inventory_confirmed_class_fills_export_class():
-    by = {f.field: f.value for f in ADAPTERS[SID].map(Record("elements", "SN-TN-0003", RAD))}
+    by = {f.field: f.value for f in ADAPTERS[SID].map(Record("elements", "SN-TN-0006", RAD))}
     assert by["export_class"] == "5A002" and "export_class_inferred" not in by
 
 
@@ -125,7 +125,7 @@ def test_adapter_network_inventory_sync():
     assert r["ok"], r
     out = run_sync(SID, "manual", full=True)
     assert out["status"] == "ok" and out["records_failed"] == 0 and out["records_read"] >= 120, out
-    rad = canonical("asset", serial_key(ORG, "SN-TN-0003"))["data"]
+    rad = canonical("asset", serial_key(ORG, "SN-TN-0006"))["data"]
     assert rad["model"] == "RAD-7700" and rad["export_class"] == "5A002"
     rru = next(
         canonical("asset", serial_key(ORG, f"SN-TN-{n:04d}"))["data"]
