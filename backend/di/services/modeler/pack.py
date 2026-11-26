@@ -118,6 +118,7 @@ class PackClose(_Part):
     lease_residual: bool = False
     credit_settlement: bool = False
     credit_table: dict[str, float] = Field(default_factory=dict)  # grade -> credit percent
+    damage_charge_min: float | None = None  # P9-12.5: a check-in damage claim of at least this becomes a held customer charge
     reporting: list[str] = Field(default_factory=list)
 
 

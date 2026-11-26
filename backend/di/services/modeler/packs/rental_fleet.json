@@ -1018,7 +1018,23 @@
  },
  "runtime": {
   "exception_types": [],
-  "suggestion_rules": [],
+  "suggestion_rules": [
+   {
+    "id": "AL-RF-XBRANCH",
+    "kind": "alert",
+    "label": "Machines idle at one branch while another branch plans to buy",
+    "owner": "branch_manager",
+    "action": "Transfer to the branch buying new",
+    "params": {
+     "idle_days_gt": 30
+    }
+   },
+   {
+    "id": "SR-RF-XBRANCH",
+    "kind": "suggestion",
+    "label": "offer idle machines to another branch before a new purchase"
+   }
+  ],
   "sla_hours": {
    "exception": 24
   },
@@ -1112,5 +1128,8 @@
   "NS-RC-01",
   "NS-RC-02",
   "NS-RC-03"
- ]
+ ],
+ "close": {
+  "damage_charge_min": 100
+ }
 }

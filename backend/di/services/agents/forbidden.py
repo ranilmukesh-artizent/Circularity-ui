@@ -65,6 +65,7 @@ HELD_FOR_PERSON = (
     "service.book",  # P9-11.7: a service order for a rental device is booked by a person
     "requisition.reduce",  # P9-10.16: cutting a purchase requisition is a person's; the follow-through agent prepares it
     "rental.writeOff",  # P9-11.17: the write-off of a retired rental device is posted by Finance
+    "rentalFleet.chargeDamage",  # P9-12.5: the customer charge for a machine's check-in damage is recorded by Finance
     "usedCar.post",  # P9-9.20: the residual gain or loss and the lessee's charges of a sold car are posted by Finance
     "case.attachReporting",  # P9-13.5: reporting evidence for a close is attached by a person; an agent may prepare it
 )  # a policy draft is a person's (P9-2.5)
