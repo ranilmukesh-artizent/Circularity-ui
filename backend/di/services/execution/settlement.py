@@ -44,7 +44,7 @@ CENT = Decimal("0.01")
 class Credit:
     amount: Decimal
     currency: str
-    basis: Literal["requote", "grade_table"]
+    basis: Literal["requote", "grade_table", "core_acceptance"]
     grade_declared: str | None
     grade_received: str | None
     quote: Decimal | None
@@ -73,7 +73,11 @@ def _quote(case: Mapping[str, Any]) -> tuple[Decimal, str] | None:
 
 def credit_amount(case: Mapping[str, Any], pack: Pack) -> Credit | None:
     """The credit the case says (module docstring); a payout that still waits for a person is not an amount yet."""
-    if not pack.close.credit_settlement or (got := _quote(case)) is None:
+    if not pack.close.credit_settlement:
+        return None
+    if isinstance(case.get("core"), Mapping):
+        return _core_credit(case, pack)
+    if (got := _quote(case)) is None:
         return None
     quote, currency = got
     lot, pay = case.get("valuer") or {}, case.get("payout") or {}
@@ -90,12 +94,29 @@ def credit_amount(case: Mapping[str, Any], pack: Pack) -> Credit | None:
     return Credit(_cents(quote * Decimal(str(pct)) / 100), currency, "grade_table", declared, received, quote, None)
 
 
+def _core_credit(case: Mapping[str, Any], pack: Pack) -> Credit | None:
+    """A returned core (automotive cores pack, P9-13.6, NS-CORE-02): the deposit times the acceptance share the pack's gate gives
+    (full 100 %, partial 50 %, none 0, `core_credit`); the quote field holds the deposit. None without a deposit."""
+    from di.services.modeler.gate_checks.core import core_credit  # lazy: the gate checks import the modeler
+
+    core = case["core"]
+    deposit = _dec(core.get("deposit"))
+    if deposit is None:
+        deposit = _dec(case.get("deposit"))
+    if deposit is None:
+        return None
+    got = core_credit(core, pack)
+    return Credit(_cents(deposit * got["pct"] / 100), "USD", "core_acceptance", None, got["credit"], _cents(deposit), None)
+
+
 def money(v: Any) -> str:
     return f"${_cents(v):,.2f}"
 
 
 def basis_line(credit: Mapping[str, Any]) -> str:
     """ "grade B at 80 % of the $200.00 quote", or the adjusted payout's own words, for the case page."""
+    if credit.get("basis") == "core_acceptance":
+        return f"core accepted with {credit.get('grade_received')} credit of the {money(credit['quote'])} deposit"
     if credit.get("basis") == "requote":
         return (
             f"payout adjusted from the {money(credit['quote'])} quote" if credit.get("quote") is not None else "payout adjusted"

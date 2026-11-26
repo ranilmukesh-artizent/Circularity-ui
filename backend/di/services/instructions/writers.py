@@ -446,7 +446,7 @@ def credit(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: A
 
     pack = active_pack(s, str(c.get("template") or ""), c.get("owner"))
     got = settlement.credit_amount(c, pack)
-    if got is None:
+    if got is None or (got.basis == "core_acceptance" and got.amount <= 0):  # a rejected core earns no credit memo (P9-13.6)
         raise NotApplicable("no credit to post for this case")
     body = {
         "customer": c.get("customer") or c.get("owner"), "amount": float(got.amount), "currency": got.currency,

@@ -686,5 +686,8 @@
     "source": "core_ret"
    }
   ]
+ },
+ "close": {
+  "credit_settlement": true
  }
 }
