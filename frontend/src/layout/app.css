@@ -86,3 +86,12 @@ html { scrollbar-gutter: stable; }
   .frhst > :first-child { grid-area: mid; }
   .frhst > :last-child { grid-area: fig; }
 }
+/* The class tile of an asset class with no product photo (components/ClassArt.tsx): a line icon over the class name,
+   on the demo's .asph and .thumb colours, so it follows the theme. */
+.classart{padding:0 6px;text-align:center;line-height:1.25}
+.classart .thumb svg{width:32px;height:32px}
+.asimg.stph .classart,.asimg.sm .classart{gap:4px;font-size:12px}
+.asimg.stph .classart .thumb,.asimg.sm .classart .thumb{width:36px;height:32px}
+.asimg.stph .classart .thumb svg,.asimg.sm .classart .thumb svg{width:22px;height:22px}
+.asimg.stph .classart>span:last-child,.asimg.sm .classart>span:last-child{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.asimg.xs .classart .thumb svg{width:18px;height:18px}

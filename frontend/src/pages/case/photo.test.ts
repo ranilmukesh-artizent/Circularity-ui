@@ -11,24 +11,19 @@ describe('UI audit gap 8: the product photo of any class', () => {
     expect(photoSrc('it')).toBe('assets/products/it.webp');
   });
 
-  it('gives every plan-9 pack class a photo that exists, never undefined.webp', () => {
-    const known = ['motor', 'pump', 'control', 'powertool', 'it'];
+  it('keeps the tool fleet on the power-tool photo', () => {
+    for (const c of ['CMH', 'BRK', 'DCD', 'CRH', 'AGR', 'LSR', 'BAT']) expect(photoSrc(c), c).toBe('assets/products/powertool.webp');
+  });
+
+  it('gives no photo to a pack class: it shows its tile, never an industrial photo or undefined.webp', () => {
     const classes = ['car_ice', 'car_ev', 'radio', 'baseband', 'router', 'line_card', 'power_unit', 'microwave_link',
       'infusion_pump', 'patient_monitor', 'electric_bed', 'syringe_driver', 'transport_ventilator', 'pulse_oximeter',
-      'laptop', 'desktop', 'server', 'network', 'excavator_20t', 'wheel_loader', 'scissor_lift', 'telehandler', 'generator',
-      'CMH', 'BRK', 'DCD', 'CRH', 'AGR', 'LSR', 'BAT', 'device', 'phone'];
-    for (const c of classes) expect(known, c).toContain(photoFile(c));
+      'laptop', 'desktop', 'server', 'network', 'phone', 'device', 'ev_pack', 'industrial_pack', 'alternator', 'starter',
+      'transmission', 'excavator_20t', 'wheel_loader', 'scissor_lift', 'telehandler', 'generator'];
+    for (const c of classes) { expect(photoSrc(c), c).toBeNull(); expect(photoFile(c), c).toBeNull(); }
   });
 
-  it('falls back to a generic photo for an unknown, empty or missing class', () => {
-    for (const c of ['zeppelin', '', undefined, null]) {
-      expect(photoSrc(c as string)).not.toContain('undefined');
-      expect(photoSrc(c as string)).toMatch(/^assets\/products\/[a-z]+\.webp$/);
-    }
-  });
-
-  it('uses one placeholder per pack: vehicles, network kit and medical devices differ', () => {
-    expect(new Set([photoFile('car_ice'), photoFile('radio'), photoFile('infusion_pump')]).size).toBe(3);
-    expect(photoFile('car_ev')).toBe(photoFile('car_ice'));
+  it('gives no photo to an unknown, empty or missing class', () => {
+    for (const c of ['zeppelin', '', undefined, null, 'toString', '__proto__']) expect(photoSrc(c as string)).toBeNull();
   });
 });

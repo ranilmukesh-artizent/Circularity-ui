@@ -4,13 +4,13 @@ import { Link } from 'react-router';
 import { fmtDateYear } from '../../api/format';
 import {
   addDays, asHex, asModel, asMoney, asRMA, asReceipt, asRev, asSC, asSerial, asTitle, assetEcon, assetEligibility, assetEvents, assetRelated,
-  badgeTip, caseStageKey, catalogueValue, classInfo, exFx, gateNames, inr, learnVersion, localCurrency, myCases, partPrices, partsAvailability,
+  badgeTip, caseStageKey, catalogueValue, classInfo, classLabelOf, exFx, gateNames, inr, learnVersion, localCurrency, myCases, partPrices, partsAvailability,
   prepCost, prepParts, rateCardId, routeInfo, type Case, type Health,
 } from '../../api/product';
 import { Icon } from '../../components/Icon';
 import { onActivateKey } from '../../utils/keys';
+import { ClassArt } from '../../components/ClassArt';
 import { photoSrc } from '../case/photo';
-import { Thumb } from './AssetChips';
 
 // ---------- context: the asset in view and the page's view state ----------
 export interface AsCtx {
@@ -62,17 +62,15 @@ export function Photo({ x, cls, noZoom }: { x: Case; cls?: string; noZoom?: bool
   const [broken, setBroken] = useState(false);
   const alt = `${x.product}, ${x.mfr}`;
   // the tile is the control (Enter or Space enlarges too); the image inside names it
-  const open = () => zoom(photoSrc(x.cls), alt);
-  const zoomable = noZoom || broken ? {} : { role: 'button', tabIndex: 0, onClick: open, onKeyDown: onActivateKey(open) };
+  const src = photoSrc(x.cls);
+  const open = () => src && zoom(src, alt);
+  const zoomable = noZoom || broken || !src ? {} : { role: 'button', tabIndex: 0, onClick: open, onKeyDown: onActivateKey(open) };
   return (
     <div className={'asimg ' + (cls || '')} {...zoomable}>
-      {!broken && (
-        <img src={photoSrc(x.cls)} alt={alt} loading="lazy" onError={() => setBroken(true)} />
+      {src && !broken && (
+        <img src={src} alt={alt} loading="lazy" onError={() => setBroken(true)} />
       )}
-      <span className="asph" hidden={!broken}>
-        <Thumb cls={x.cls} />
-        <span>{classInfo(x.cls).label}</span>
-      </span>
+      {(!src || broken) && <ClassArt cls={x.cls} label={classLabelOf(x.cls)} />}
       {x.qty > 1 && <span className="asqty">×{x.qty}</span>}
     </div>
   );

@@ -1,7 +1,8 @@
 /** The detail tabs of stages 1 to 5 (stData's tabs: afLeaseHTML, stKv, stSysTab, stEvTable, asCostInputs, asCond, asKnownDiag, asKnownCert). */
 import type { CSSProperties, ReactNode } from 'react';
-import { exNum, fmtD, fmtDY, inr, refList, stages, type CaseAnalysis, type CaseRec } from '../../../api/case';
+import { classLabelOf, exNum, fmtD, fmtDY, inr, refList, stages, type CaseAnalysis, type CaseRec } from '../../../api/case';
 import { money } from '../../../api/format';
+import { ClassArt } from '../../../components/ClassArt';
 import { VendorLogo } from '../../../components/kit/VendorLogo';
 import { AfBadge, CasePanel, Kv, ProvB, SourceStatus, ST_SYS, locOf, photoSrc, Photo } from '../CaseBlocks';
 import type { TabProps } from './index';
@@ -201,11 +202,20 @@ export function CertTab({ c, a }: TabProps) {
   );
 }
 export function PhotosTab({ c }: TabProps) {
+  const src = photoSrc(c.cls);
+  if (!src) {
+    return (
+      <CasePanel t="Photos">
+        <div className="asgal"><div className="asimg"><ClassArt cls={c.cls} label={classLabelOf(c.cls)} /></div></div>
+        <p className="note" style={{ margin: '6px 0 0' }}>No stock photo for this asset class. Inspection photos attach here when they arrive from the inspection system.</p>
+      </CasePanel>
+    );
+  }
   return (
     <CasePanel t="Photos">
       <div className="asgal">
         {['36% 60%', '70% 40%', '20% 30%', '55% 85%'].map((p, i) => (
-          <div key={i} className="asimg zoomg" style={{ '--op': p } as CSSProperties}><img src={photoSrc(c.cls)} alt={`${c.product} view ${i + 1}`} loading="lazy" /></div>
+          <div key={i} className="asimg zoomg" style={{ '--op': p } as CSSProperties}><img src={src} alt={`${c.product} view ${i + 1}`} loading="lazy" /></div>
         ))}
       </div>
       <p className="note" style={{ margin: '6px 0 0' }}>Close-up crops of the product photo. Inspection photos attach here when they arrive from the inspection system.</p>

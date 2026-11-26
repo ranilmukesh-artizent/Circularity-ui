@@ -51,6 +51,13 @@ def test_ui_audit_8_pack_classes_name_every_pack_class_without_touching_the_demo
             assert cl.id in pc or cl.id in REF["CLASSES"], (key, cl.id)
 
 
+def test_ui_audit_c8_every_asset_family_has_named_classes():
+    pc = client.get("/api/screens/reference", params={"names": "PACK_CLASSES"}).json()["PACK_CLASSES"]
+    for k in ("car_ev", "router", "patient_monitor", "laptop", "ev_pack", "industrial_pack", "alternator", "excavator_20t"):
+        assert pc[k]["label"].strip() and pc[k]["label"] != k, k  # a plain name, never the id
+    assert {pc[k]["pack"] for k in ("ev_pack", "alternator", "laptop")} == {"battery", "auto_core", "itad"}
+
+
 def test_reference_by_name():
     r = client.get("/api/screens/reference", params={"names": "MONTHS, ROUTES"})
     assert r.json() == {"MONTHS": REF["MONTHS"], "ROUTES": REF["ROUTES"]}

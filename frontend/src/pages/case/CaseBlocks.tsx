@@ -16,6 +16,7 @@ import { IconTile } from '../../components/kit/IconTile';
 import { KeyedStatus, type StatusTable } from '../../components/kit/StatusPill';
 import { VendorLogo } from '../../components/kit/VendorLogo';
 import { caseActions } from './caseActions';
+import { ClassArt } from '../../components/ClassArt';
 import { photoSrc } from './photo';
 
 export const hue = (h: string, k?: number) => ({ '--c': `var(--h-${h})`, ...(k != null ? { '--k': k } : {}) }) as CSSProperties;
@@ -195,11 +196,11 @@ export { photoSrc };
 /** The product photo, with the class name as a fallback (asPhoto). */
 export function Photo({ c, cls }: { c: CaseRec; cls?: string }) {
   const [broken, setBroken] = useState(false);
-  const label = classLabelOf(c.cls);
+  const label = classLabelOf(c.cls), src = photoSrc(c.cls);
   return (
     <div className={'asimg ' + (cls || '')}>
-      {!broken && <img src={photoSrc(c.cls)} alt={`${c.product}, ${c.mfr}`} onError={() => setBroken(true)} />}
-      <span className="asph" hidden={!broken}><span>{label}</span></span>
+      {src && !broken && <img src={src} alt={`${c.product}, ${c.mfr}`} onError={() => setBroken(true)} />}
+      {(!src || broken) && <ClassArt cls={c.cls} label={label} />}
       {c.qty > 1 && <span className="asqty">×{c.qty}</span>}
     </div>
   );
