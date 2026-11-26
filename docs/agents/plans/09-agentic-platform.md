@@ -344,7 +344,13 @@ writer. A task is about an hour of code; it must not take three hours of checks.
 - **The lead** runs no check twice: not the writer's checks before the merge, not the whole suite per batch (see
   step 4). At most three check runs (writers and lead together) at a time; a writer whose check waits behind them is
   fine.
-- **No second stack.** Browser smokes run at phase gates on the main stack; no writer starts its own Compose project.
+- **No second stack.** Browser smokes run on the main stack; no writer starts its own Compose project.
+- **Smokes never block writers (26 Nov, the user: smokes took three quarters of the day).** A phase whose tasks are
+  merged and whose impacted tests pass counts as done for the tasks after it: the next writers start at once, even
+  when the spec lists that phase's gate as a dependency. The demo smokes of several phases run as one batch, in the
+  background, while writers work (reset and `wait-idle.sh` before each); a smoke failure becomes a fix task like any
+  other, never a reason to stop dispatching. The lead never spends more than one smoke run fixing a selector by hand:
+  the second failure goes to a writer.
 - **Idle servers stay quiet.** The main stack runs with `DEV_POLLING=0` during a run (the reloaders' file polling cost
   about two cores); `lead-verify.sh` restarts the containers anyway.
 - **Stop means stop.** After stopping a backgrounded verify, also kill its script and `docker rm -f` its
