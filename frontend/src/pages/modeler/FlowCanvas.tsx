@@ -67,10 +67,10 @@ interface BandData extends Record<string, unknown> { label: string; rectH: numbe
 
 function ModelerNode({ data, selected }: NodeProps) {
   const { n, title, owner, returned, io, bad, proposed, resolved, revision, pick } = data as FlowData;
-  const cls = ['mdl-node', 't-' + n.t, selected && 'sel', bad && 'bad', proposed && 'prop rev', resolved && 'rev-done'];
+  const cls = ['mdl-node', 't-' + n.t, selected && 'sel', bad && 'bad', title.length > 16 && 'tl', proposed && 'prop rev', resolved && 'rev-done'];
   return (
     <div className={cls.filter(Boolean).join(' ')} data-node={n.id} title={returned ? 'Returned: ' + returned : undefined}
-      role="button" tabIndex={0} aria-pressed={!!selected} onKeyDown={(e) => e.key === 'Enter' && pick(n.id)}>
+      role="button" tabIndex={0} aria-pressed={!!selected} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(n.id); } }}>
       {n.t !== 'trigger' && <Handle type="target" position={Position.Left} className="port in mdl-port" />}
       <Handle type="source" position={Position.Right} className="port out mdl-port" />
       {(proposed || resolved) && (
@@ -86,7 +86,7 @@ function ModelerNode({ data, selected }: NodeProps) {
         <span className="kind"><Icon name={KIND_ICON[n.t]} className="kind-ic" /><span className="tg">{TTAG[n.t]}</span></span>
         {n.lock && <span className="mdl-key" role="img" aria-label="Locked"><Icon name="key" className="kind-ic" /></span>}
       </span>
-      <b>{title}</b>
+      <b title={title}>{title}</b>
       <span className="s">{n.t === 'rule' ? n.owner ?? '' : n.sub}</span>
       {owner && <span className="ow">{owner}</span>}
       {io && <span className="s" data-io={n.id}>{io}</span>}
@@ -163,9 +163,9 @@ export function FlowCanvas({ s, graph, selected, bad, proposed, revision = null,
 
   return (
     <div className="mdl-canvas" role="group" aria-label="Decision flow canvas">
-      <GraphView nodes={gnodes} edges={gedges} nodeTypes={NODE_TYPES} readOnly={!editable} minimap
+      <GraphView nodes={gnodes} edges={gedges} nodeTypes={NODE_TYPES} readOnly={!editable} minimap minimapSize={[160, 100]} minimapMinWidth={1100} gap={24} openZoom={0.8}
         nodeColor={(id) => (by.get(id)?.lock ? 'var(--muted)' : 'var(--ink2)')}
-        label="Decision flow canvas. Select a step, then use arrow keys to move it or Delete to remove it."
+        label="Decision flow canvas. Tab to a step and press Enter or Space to select it, then use arrow keys to move it or Delete to remove it."
         onSelect={select} onDelete={remove} onConnect={onConnect} onMove={moveTo}
         onNudge={(id, dx, dy) => { const n = by.get(id); if (n) moveTo(id, n.x + dx, n.y + dy); }} />
     </div>
