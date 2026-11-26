@@ -130,7 +130,9 @@ def test_device_template_equals_po_golden():
         (x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D8", "GR-D10", "GR-D11", "GR-D12", "GR-D13")
     ]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
-    assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
+    # the listing dims (listChannel, listDaysMin, offersMax: ageing rules, P9-6.13) are a plan 9 addition, not in the demo
+    dims = [d for d in t.dims if d.key not in ("listChannel", "listDaysMin", "offersMax")]
+    assert [(d.key, d.label, list(d.values) or None) for d in dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
     # the demo flow has no wholesale node, so the Recover-only wholesale channel is "removed from the flow" until a flow adds it
     rules = [asdict(r) for r in compile_flow(t, default_flow(t)) if r.path != "wholesale"]
     assert rules == [
