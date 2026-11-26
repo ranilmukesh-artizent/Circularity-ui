@@ -17,7 +17,7 @@ from di.connectors import catalog
 from di.core import state
 from di.core.db import SessionLocal, engine
 from di.services.modeler.flow import default_flow
-from di.services.modeler.templates import load_template
+from di.services.modeler.templates import load_template, template_keys
 from tests import flowkit, starting
 from tests.flowkit import ok
 from tests.helpers import call
@@ -84,7 +84,7 @@ def test_export_has_no_secrets(org_a):
     assert wf["source_id"] == CAT and any(s["ref"] == CAT for s in wf["steps"])
     rules = [n for n in pack["flows"]["industrial"]["nodes"] if n["t"] == "rule"]
     assert [n["rid"] for n in rules] == ["IR-07"]
-    assert set(pack["flows"]) == {"industrial", "tool_fleet", "device"}
+    assert set(pack["flows"]) == set(template_keys())  # every pack file is a template (plan 9): one flow each
     assert _export(user="planner-a")["error"]["code"] in ("forbidden", "out_of_scope")
 
 
@@ -107,7 +107,7 @@ def test_import_creates_drafts_only(org_a):
         wfs = [state.get(s, "workflows", w) for w in created["workflows"]]
     assert len(wfs) == 1 and wfs[0]["status"] == "draft" and "pub" not in wfs[0] and wfs[0]["src"] == sid
     assert {n["ref"] for n in wfs[0]["graph"]["nodes"] if n["k"] in ("conn", "wconn", "map")} == {sid}
-    assert len(created["flows"]) == 3
+    assert len(created["flows"]) == len(template_keys())
     for fid in created["flows"]:
         f, _ = flowkit.get(fid)
         assert (f.org_unit_id, f.status) == ("Customer B", "draft")

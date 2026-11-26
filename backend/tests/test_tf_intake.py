@@ -107,8 +107,9 @@ def test_x_case_without_new_settings_unchanged():
     assert flow.reason_of({"kind": "swap"}, "rma", "") == "rma"
     assert flow.facts_of_record({"toolClass": "CMH"}, []) == {}
     assert set(intake.REASONS) >= {"swap", "service_order", "pool_excess"}
-    assert set(blocks.CASE_REASONS) == set(intake.REASONS) - {"contract_refresh", "service_ticket"}
-    # only the daily scan opens a refresh (P9-5.1); only the sdesk hook opens a ticket's case (P9-4.3)
+    assert set(blocks.CASE_REASONS) == set(intake.REASONS) - {"contract_refresh", "service_ticket", "pack_replacement"}
+    # only the daily scan opens a refresh (P9-5.1); only the sdesk hook opens a ticket's case (P9-4.3); only a used car's
+    # battery assessment opens a pack_replacement (P9-12.7)
 
 
 def test_tf_01_reason_comes_from_the_record():

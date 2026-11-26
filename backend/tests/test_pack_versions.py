@@ -17,6 +17,7 @@ from di.repositories.overlays import get as get_overlay
 from di.services.agents.forbidden import forbidden
 from di.services.cases import store
 from di.services.modeler.pack import PACKS_DIR
+from di.services.modeler.templates import template_keys
 from tests import starting
 from tests.helpers import call, client, h
 
@@ -291,7 +292,7 @@ def test_x_01_screen_lists_versions_and_the_template_picker():
     pid = _import(json.loads(FIXTURE.read_text(encoding="utf-8")))
     url = "/api/screens/modeler"
     out = client.get(url, params={"template": "device", "org": "Customer A"}, headers=h("planner-a")).json()
-    assert [t["key"] for t in out["packs"]["templates"]] == ["industrial", "tool_fleet", "device"]  # a draft is not offered
+    assert [t["key"] for t in out["packs"]["templates"]] == list(template_keys())  # a draft is not offered
     packs = {p["key"]: p for p in out["packs"]["keys"]}
     assert packs["device_eu"]["versions"][0]["status"] == "draft"
     assert packs["device_eu"]["versions"][0]["parts"] == {"ok": 13, "total": 13}
@@ -299,5 +300,5 @@ def test_x_01_screen_lists_versions_and_the_template_picker():
     ok(call("pack.submit", {"id": pid}, "admin"))
     ok(call("pack.approve", {"id": pid}, "approver"))
     out = client.get(url, params={"template": "device", "org": "Customer A"}, headers=h("approver")).json()
-    assert [t["key"] for t in out["packs"]["templates"]] == ["industrial", "tool_fleet", "device", "device_eu"]
+    assert [t["key"] for t in out["packs"]["templates"]] == [*template_keys(), "device_eu"]
     assert out["packs"]["can"] == {"import": False, "approve": True}
