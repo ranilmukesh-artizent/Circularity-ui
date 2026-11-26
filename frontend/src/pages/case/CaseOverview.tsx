@@ -12,6 +12,7 @@ import { Photo, Pva, Tag } from './CaseBlocks';
 import { FraudHold } from './FraudHold';
 import { RefreshPanel } from './toolfleet/RefreshPanel';
 import { ToolFleetPanel } from './toolfleet/ToolFleetPanel';
+import { UsedCarPanel } from './usedcars/UsedCarPanel';
 import { approveGuarded, caseActions, runNextStep } from './caseActions';
 import { AgentRunPanel } from './CaseDrawers';
 import { useCaseUi } from './CaseContext';
@@ -121,6 +122,7 @@ export function Overview({ c }: { c: CaseRec }) {
           <RunAgentPanel caseId={id} />
           <AgentRunPanel c={c} ui={ui} />
           {c.template === 'tool_fleet' && ((c as CaseRec & { flow?: string }).flow === 'contract_refresh' ? <RefreshPanel caseId={id} /> : <ToolFleetPanel caseId={id} />)}
+          {c.template === 'used_cars' && <UsedCarPanel c={c} />}
           {(matchLine || trail.length > 0) && (
             <section className="panel frp" aria-label="System of record and custody">
               <div className="ph"><h3>Custody</h3></div>

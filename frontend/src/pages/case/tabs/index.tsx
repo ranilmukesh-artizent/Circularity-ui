@@ -5,6 +5,7 @@ import * as D from './DecideTabs';
 import { ChannelsTab, ComplianceTab, DeviceTab, PayoutTab, QuoteTab, SettlementTab } from './DeviceTabs';
 import * as E from './EarlyTabs';
 import * as X from './ExecuteTabs';
+import { CarChannelsTab, VehicleChecksTab } from '../usedcars/UsedCarTabs';
 import { BatchTab, CreditLeverTab, EstimateTab, OptionsTab, TicketTab } from './ServiceDeskTabs';
 
 export interface TabProps { c: CaseRec; a: CaseAnalysis; s: CaseScreen }
@@ -28,7 +29,8 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
             ...(c.device.payout ? [['payout', 'Payout', PayoutTab] as TabDef] : []), // the payout adjustment (P9-6.8)
           ]
         : [];
-      return [...extra, ...early];
+      const car: TabDef[] = c.template === 'used_cars' ? [['vehicle', 'Vehicle checks', VehicleChecksTab]] : []; // title, odometer, recall (gap 7)
+      return [...car, ...extra, ...early];
     }
     case 6: return [
       ...(c.serviceDesk ? [['ticket', 'Ticket', TicketTab] as TabDef] : []), // a service ticket starts with its Ticket tab (P9-4.3)
@@ -37,6 +39,7 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
       ...(c.serviceDesk ? [['credit', 'Credit lever', CreditLeverTab] as TabDef] : []), // test a credit before offering it (P9-4.10)
       ...(c.serviceDesk?.batch ? [['batch', 'Batch', BatchTab] as TabDef] : []), // a batch's split (P9-4.8)
       ...(c.device?.channels ? [['channels', 'Channels', ChannelsTab] as TabDef] : []), // a device's price per channel (P9-6.10)
+      ...(c.template === 'used_cars' ? [['carchannels', 'Channels', CarChannelsTab] as TabDef] : []), // a used car's channels (gap 7)
       ['packet', 'Decision packet', D.PacketTab], ['compare', 'Compare outcomes', D.CompareTab], ['why', 'Why this outcome', D.WhyTab],
       ['evidence', 'Evidence', D.EvidenceTab], ['whatif', 'What-if and edge cases', D.WhatIfTab], ['predicted', 'How it was predicted', D.PredictedTab],
       ['demand', 'Demand', D.DemandTab],
