@@ -1,6 +1,6 @@
 /** Wording of the case page's Device tab (P9-6.4, DV-01) over the `device` block of a case. */
 import { money } from '../../api/format';
-import type { ChannelView, DeviceView, PayoutView, QuoteCheck, QuoteRow, RegistryView, SettlementView, WipeView } from '../../api/device';
+import type { ChannelView, DeviceView, DiversionView, PayoutView, QuoteCheck, QuoteRow, RegistryView, SettlementView, WipeView } from '../../api/device';
 
 /** "iPhone 14 · 128 GB · declared B · quote $410 · partner P01"; a bulk lot: "20 devices · batch BATCH-0020 · grade B · partner P01". */
 export function deviceLine(v: DeviceView): string {
@@ -125,3 +125,10 @@ export function settlementLine(s: SettlementView): string {
 
 /** "Price realised against forecast 98.6%": the KPI of a settled device case. */
 export const realisedKpi = (s: SettlementView): string => `Price realised against forecast ${sharePct(s.realisedVsForecast)}`;
+
+/** "Diversion: second grading check (partner P02)" or "Diversion: straight to wholesale lot (grade C, model over 3 years)": what a
+ * customer's diversion did, then why. A route other than wholesale reads "straight to <route>". */
+export function diversionLine(d: Pick<DiversionView, 'kind' | 'step' | 'to' | 'because'>): string {
+  const what = d.kind === 'step' ? (d.step ?? 'extra step').toLowerCase() : `straight to ${d.to === 'wholesale' ? 'wholesale lot' : (d.to ?? 'a route')}`;
+  return `Diversion: ${what}${d.because.length ? ` (${d.because.join(', ')})` : ''}`;
+}

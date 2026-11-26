@@ -58,3 +58,19 @@ def test_order_invariant_device_price_holds_come_after_valuation_and_ranking():
     assert d.approval is not None and [h["id"] for h in d.approval["holds"]] == ["GR-D2"]
     cash = next(r for r in d.routes if r["id"] == "buynow")
     assert device_price.usd(d.extra["cash"]) in d.approval["holds"][0]["reason"] and cash["net"] == d.net
+
+
+def test_order_invariant_device_a_shortcut_never_bypasses_the_gates():
+    """P9-6.14 (R20): the grade C shortcut to wholesale runs after the gates; a reported-stolen device with no wipe certificate
+    still has no route, and both gates speak."""
+    from di.services.modeler.overlay import apply_overlay, parse_ops
+
+    op = next(s.op for s in load_pack("device").customer_layer.sample_diversions if s.op.get("to") == "wholesale")
+    pack = apply_overlay(load_pack("device"), parse_ops([{**op, "id": "op-1"}]))
+    case = _device_case()
+    case["valuer"] |= {"grade": "C"}
+    case["valuer"]["inputs"]["model_age_months"] = 40.0
+    d = decide_case(case, pack, FlowVersion(None, 3, ()))
+    assert d.diversions == ["op-1"] and d.route is None and d.recommendation is None
+    assert all(r["excluded"] for r in d.routes)
+    assert {g.gate_id for g in d.gates if not g.passed} >= {"G-DEV-WIPE", "G-DEV-LOCK"}

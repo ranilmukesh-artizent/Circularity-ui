@@ -8,7 +8,8 @@ model's, else the feed's reference value at the pack's channel index with no int
 the price confidence reads both. P9-6.11 adds `bid_per_unit`: the best net a unit among the approved bids on a lot of the device's
 model and grade that is collecting bids (the wholesale channel then values the device at that bid). P9-6.13 adds `listing`:
 the channel, days listed and offers of the device's live listing, which a rule's scope reads (`listChannel`, `listDaysMin`,
-`offersMax`); `refresh_listing` keeps it current on every valuation. Later tasks add replacement demand.
+`offersMax`); `refresh_listing` keeps it current on every valuation. P9-6.14 adds `model_age_months`, which a customer's
+diversion reads (grade C of a model over 36 months goes to wholesale). Later tasks add replacement demand.
 Never does: write, value a channel (the valuer does) or invent a number: a missing price or evidence is None.
 """
 
@@ -50,6 +51,8 @@ class DeviceInputs:
     bid_per_unit: float | None = None
     # the device's live listing, {channel, days, offers, offers_under, listing_id}; empty when it is not listed (P9-6.13)
     listing: dict[str, Any] = field(default_factory=dict)
+    # months from the model's first week in the market feed to `as_of` (P9-6.14); None when the feed has none of the model
+    model_age_months: float | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -74,6 +77,20 @@ def refresh_listing(s: Session, case: dict[str, Any], as_of: date) -> None:
     lot = case.get("valuer")
     if isinstance(lot, dict) and lot.get("imei") and isinstance(lot.get("inputs"), dict):
         lot["inputs"]["listing"] = listing_view(s, str(lot["imei"]), as_of)
+
+
+def model_age_months(s: Session, model: str | None, as_of: date) -> float | None:
+    """How old the model is, in months to one decimal: from its first week in the market feed (any SKU of the model) to `as_of`
+    (a month is 30.4375 days). None for a model the feed does not have, or one it has only after `as_of`. Counted, never a
+    model's guess (R16)."""
+    if not model:
+        return None
+    first = s.execute(
+        text("SELECT min(week) FROM device_price_point WHERE split_part(sku_key, '|', 1) = :m"), {"m": model}
+    ).scalar_one()
+    if first is None or first > as_of:
+        return None
+    return round((as_of - first).days / 30.4375, 1)
 
 
 def imei_key(imei: str) -> str:
@@ -156,4 +173,5 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
         sales_90d=sales_of_sku(s, str(case["sku_key"]), as_of) if case.get("sku_key") else None,
         bid_per_unit=bid_per_unit(s, case, as_of),
         listing=listing_view(s, imei, as_of),
+        model_age_months=model_age_months(s, case.get("model"), as_of),
     )

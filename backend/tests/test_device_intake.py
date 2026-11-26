@@ -254,7 +254,15 @@ def test_dv_01_gather_reads_the_feed_and_the_evidence_as_of():
     with SessionLocal() as s:
         g = inputs.gather(s, {"imei": IMEI, "sku_key": "iPhone 14|128", "grade": "B"}, _today())
     assert g.feed_price == 330 and g.feed_week == str(_today() - timedelta(days=3)) and g.feed_stale is False
-    assert set(g.evidence) == {"quote", "blacklist_check", "diagnostics", "photo_grade", "wipe_certificate", "parts_declaration"}
+    assert set(g.evidence) == {
+        "quote",
+        "blacklist_check",
+        "diagnostics",
+        "photo_grade",
+        "wipe_certificate",
+        "parts_declaration",
+        "grading_second",
+    }
     assert all(v is None for v in g.evidence.values())
     with SessionLocal() as s:
         old = inputs.gather(s, {"imei": IMEI, "sku_key": "iPhone 14|128", "grade": "B"}, _today() - timedelta(days=20))

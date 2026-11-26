@@ -250,7 +250,15 @@ def test_pending_is_oldest_first_and_for_the_org_and_shared():
 def test_device_pack_names_its_evidence_types_with_field_and_freshness():
     pack = load_pack("device")  # parses at load: the pack schema accepts it
     types = {e["id"]: e for e in pack.valuer.params["evidence_types"]}
-    assert list(types) == ["quote", "blacklist_check", "diagnostics", "photo_grade", "wipe_certificate", "parts_declaration"]
+    assert list(types) == [
+        "quote",
+        "blacklist_check",
+        "diagnostics",
+        "photo_grade",
+        "wipe_certificate",
+        "parts_declaration",
+        "grading_second",
+    ]
     for e in types.values():
         assert {"id", "label", "source", "field", "freshness_days"} == set(e)
         if e["field"].startswith("condition."):

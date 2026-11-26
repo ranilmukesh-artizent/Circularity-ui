@@ -628,6 +628,49 @@
   },
   "sample_diversions": [
    {
+    "text": "Retail partner P02 or P04: a second grading check",
+    "op": {
+     "op": "add_step",
+     "stage": "condition",
+     "step": "Second grading check",
+     "owner_role": "Planner",
+     "when": [
+      {
+       "fact": "valuer.partner",
+       "op": "in",
+       "value": [
+        "P02",
+        "P04"
+       ]
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Adds a step at Diagnose and grade: the case waits for a second lab grading (grading_second); the gates still run first."
+   },
+   {
+    "text": "Grade C and the model over 3 years old: straight to a wholesale lot",
+    "op": {
+     "op": "shortcut",
+     "stage": "value",
+     "to": "wholesale",
+     "when": [
+      {
+       "fact": "valuer.grade",
+       "op": "eq",
+       "value": "C"
+      },
+      {
+       "fact": "valuer.inputs.model_age_months",
+       "op": "gte",
+       "value": 36.1
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Starts after the wipe, registry and quote gates; they still run, and a channel they block stays blocked."
+   },
+   {
     "text": "Quote under $50: skip the blacklist check",
     "op": {
      "op": "shortcut",
@@ -1186,6 +1229,13 @@
      "source": "dvlab",
      "field": "condition.parts_status",
      "freshness_days": null
+    },
+    {
+     "id": "grading_second",
+     "label": "Second grading (retail partner)",
+     "source": "dvlab",
+     "field": "condition.cosmetic_grade_second",
+     "freshness_days": 30
     }
    ],
    "market_tables": {

@@ -220,6 +220,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "checklist": "list",
         "condition_code": "text",
         "cosmetic_grade": "text",
+        "cosmetic_grade_second": "text",
         "damage_code": "text",
         "device_blacklist": "text",
         "device_finance": "text",

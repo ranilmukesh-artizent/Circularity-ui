@@ -6,7 +6,7 @@ import { fmtDateYear } from '../../../api/format';
 import { can } from '../../../api/session';
 import { useAction } from '../../../hooks/useAction';
 import { Kv } from '../CaseBlocks';
-import { channelRow, deviceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, settlementLine, usd, wipeState } from '../device';
+import { channelRow, deviceLine, diversionLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, settlementLine, usd, wipeState } from '../device';
 import type { TabProps } from './index';
 
 const LABEL = { imei: 'IMEI', model: 'Model', storage: 'Storage' } as const;
@@ -48,9 +48,15 @@ export function DeviceTab({ c }: TabProps) {
     ['Received', fmtDateYear(v.received)],
   ];
   const lines = lotLines(v);
+  const diversions = v.diversions ?? [];
   return (
     <>
       <Kv rows={rows} />
+      {diversions.length > 0 && (
+        <ul className="stsys stpad" aria-label="Diversions">
+          {diversions.map((x) => <li key={x.op}>{diversionLine(x)} · overlay {x.op}</li>)}
+        </ul>
+      )}
       {lines.length > 0 && (
         <ul className="stsys stpad" aria-label="Device lines">{lines.map((l) => <li key={l}>{l}</li>)}</ul>
       )}

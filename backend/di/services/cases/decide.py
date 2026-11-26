@@ -47,6 +47,7 @@ from sqlalchemy.orm import Session
 from di.core import clock
 from di.services.actions.registry import ActionError
 from di.services.cases import battery_wait, car_facts, gate_hold, store, telecom_facts, unit_plan
+from di.services.device import diversions as device_diversions
 from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
 from di.services.device import verify as _device_verify  # noqa: F401 - registers the check of the gate G-DEV-QUOTE (P9-6.5)
 from di.services.device import wipe as _device_wipe  # noqa: F401 - registers the check of the gate G-DEV-WIPE (P9-6.7)
@@ -91,7 +92,7 @@ from di.services.modeler.valuers.tool_fleet import PathValue
 from di.services.modeler.valuers.tool_inputs import fleet_params
 
 TRACE = ("gates", "valuation", "queue_plan", "rules", "rank")
-GATE_KEYS = ("gates", "gateHold", "requiredSteps")  # the case keys the gates and the diversions set
+GATE_KEYS = ("gates", "gateHold", "requiredSteps", "diversionsApplied")  # the case keys the gates and the diversions set
 RULE_KEYS = ("rulesApplied", "rulesWaived", "preferred")
 RULE_REASONS = ("Excluded by business rule ", "Business rule ", FLOW_REMOVED)  # why a path a business rule excluded says
 
@@ -430,14 +431,14 @@ def _shortcut(diversions: Sequence[Diversion], routes: list[Route]) -> str | Non
     return None
 
 
-def _only(diversions: Sequence[Diversion], routes: list[Route], go: str) -> None:
+def _only(diversions: Sequence[Diversion], routes: list[Route], go: str, noun: str = "car") -> None:
     """A used car's shortcut to a channel (DV-UC-MILES: over 120,000 miles goes to the wholesale auction) values only that
     channel: the others fail with the diversion's id. The gates ran before this (R20), and a channel they blocked stays
     blocked with its own reason (P9-9.14)."""
     d = next(x for x in diversions if x.kind == "shortcut" and go.split(":", 1)[0] == x.to)
     for r in routes:
         if not r["excluded"] and r["id"] != go:
-            fail(r, POLICY, f"Diversion {d.op_id}: only {d.to} is valued for this car")
+            fail(r, POLICY, f"Diversion {d.op_id}: only {d.to} is valued for this {noun}")
 
 
 LOW_LIFE_HELD = frozenset({"release", "redeploy"})  # re-issue and pool: a Low life confidence leaves them to a person (P9-3.9)
@@ -545,12 +546,18 @@ def decide_case(
         c.pop("requiredSteps", None)
     if wait := battery_wait.waiting(c, diversions):  # an EV waits for its battery assessment: no channel is valued (P9-9.14)
         battery_wait.hold(c, routes, wait)
+    elif kind == "device" and (wait := device_diversions.waiting(c, diversions, session)):  # a second grading (P9-6.14)
+        device_diversions.hold(c, routes, wait)
     apply_business(c, routes, rules, t)
     go = None if wait else _shortcut(diversions, routes)
     if go:
         c["preferred"] = go
-        if kind == "used_cars":
-            _only(diversions, routes, go)
+        if kind in ("used_cars", "device"):  # a shortcut to a channel values only that channel (P9-9.14, P9-6.14)
+            _only(diversions, routes, go, "car" if kind == "used_cars" else "device")
+    if kind == "device" and (shown := device_diversions.applied(c, diversions, go)):
+        c["diversionsApplied"] = shown  # what the Device tab says acted (P9-6.14)
+    else:
+        c.pop("diversionsApplied", None)
     eligible = {r["id"] for r in routes if not r["excluded"]}  # 5. rank
     chosen = go or (valued.best if valued.best in eligible else c.get("preferred"))
     rec = rank_routes(routes, c.get("blocked") or c.get("gateHold"), chosen)

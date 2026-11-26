@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceView, PayoutView } from '../../api/device';
 import type { ChannelView, QuoteCheck, RegistryView, SettlementView, WipeView } from '../../api/device';
-import { channelRow, deviceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, settlementLine, wipeLine, wipeState } from './device';
+import { channelRow, deviceLine, diversionLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, settlementLine, wipeLine, wipeState } from './device';
 
 const cert = { id: 'WC-1', method: 'Purge', toolVersion: '4.2', verification: 'pass', operator: 'OP-17', at: '2026-10-06T08:00:00Z' };
 
@@ -149,5 +149,17 @@ describe('P9-6.12 settlementLine (DV-09)', () => {
   it('names the KPI', () => {
     expect(realisedKpi(s)).toBe('Price realised against forecast 98.6%');
     expect(realisedKpi({ ...s, realisedVsForecast: 1.0123 })).toBe('Price realised against forecast 101.2%');
+  });
+});
+
+describe('P9-6.14 diversionLine (DV-10)', () => {
+  it('says what the diversion did, then why', () => {
+    expect(diversionLine({ kind: 'step', step: 'Second grading check', to: null, because: ['partner P02'] })).toBe(
+      'Diversion: second grading check (partner P02)',
+    );
+    expect(diversionLine({ kind: 'shortcut', step: null, to: 'wholesale', because: ['grade C', 'model over 3 years'] })).toBe(
+      'Diversion: straight to wholesale lot (grade C, model over 3 years)',
+    );
+    expect(diversionLine({ kind: 'shortcut', step: null, to: 'auction', because: [] })).toBe('Diversion: straight to auction');
   });
 });

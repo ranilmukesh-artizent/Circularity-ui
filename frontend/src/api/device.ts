@@ -98,6 +98,10 @@ export interface WipeView {
   batch: { ref: string; total: number; waiting: number } | null;
 }
 
+/** A customer diversion that acted on the case (P9-6.14, DV-10): the overlay operation's id, its kind (a `step` the case waits
+ * for, or a `shortcut` to a route) and, in words, the conditions that matched ("partner P02", "grade C", "model over 3 years"). */
+export interface DiversionView { op: string; kind: 'step' | 'shortcut'; step: string | null; to: string | null; because: string[] }
+
 export interface DeviceView {
   /** the device's IMEI; null for a bulk lot */
   imei: string | null;
@@ -127,6 +131,8 @@ export interface DeviceView {
   wipe?: WipeView | null;
   /** the payout adjustment; null until the lab has graded the device and read its battery (and for a bulk lot) */
   payout?: PayoutView | null;
+  /** the customer's diversions that acted on the case (P9-6.14) */
+  diversions?: DiversionView[];
   /** the sale's price against the forecast; null until the market reports the sale */
   settlement?: SettlementView | null;
   /** the price of each channel with its interval, best first (P9-6.10); null for a bulk lot */

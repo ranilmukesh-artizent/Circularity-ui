@@ -655,6 +655,7 @@ def device_block(c: Case, session: Session | None = None) -> dict | None:
         ),
         "wipe": device_wipe.view(session, c) if session is not None else None,  # the wipe certificate (P9-6.7)
         "payout": device_payout.view(session, c) if session is not None else None,  # the payout adjustment (P9-6.8)
+        "diversions": c.get("diversionsApplied") or [],  # the customer's diversions that acted (P9-6.14)
         "settlement": device_settle.view(c),  # the sale's price against the forecast (P9-6.12)
         # the price of each channel with its interval and feed date, and what holds it (P9-6.10)
         "channels": device_price.channels_view(v) if v.get("imei") else None,

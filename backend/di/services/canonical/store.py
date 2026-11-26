@@ -161,6 +161,7 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
         ("condition", ("battery_assessment_result",), "used_cars"),  # an EV's assessment releases its hold (P9-9.14)
         ("condition", DECON_FIELDS, "medical_rental"),
         ("asset", INVENTORY_FIELDS, "telecom_network"),
+        ("condition", ("cosmetic_grade_second",), "device"),  # a retail partner's second grading releases its device (P9-6.14)
         ("condition", BENCH_FIELDS, "telecom_network"),  # the wipe re-run on the bench (P9-10.7)
     ):
         keys = sorted({f.key for f in facts if f.model == model and f.field in fields})

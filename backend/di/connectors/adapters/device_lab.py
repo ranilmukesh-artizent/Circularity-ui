@@ -182,6 +182,15 @@ class DeviceLabAdapter(GenericAdapter):
                         "condition", key, "cosmetic_grade", p.get("cosmeticGrade"), "cosmeticGrade", p.get("cosmeticGrade"), CAMEL
                     ),
                     Fact("condition", key, "photo_refs", p.get("photoIds"), "photoIds", p.get("photoIds"), CAMEL),
+                    Fact(  # a retail partner's second grading (P9-6.14)
+                        "condition",
+                        key,
+                        "cosmetic_grade_second",
+                        p.get("secondCosmeticGrade"),
+                        "secondCosmeticGrade",
+                        p.get("secondCosmeticGrade"),
+                        CAMEL,
+                    ),
                 ]
             )
         if res == "wipes":
