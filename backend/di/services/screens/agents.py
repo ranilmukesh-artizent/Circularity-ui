@@ -171,7 +171,8 @@ def page(p: Principal, s: Session) -> dict[str, Any]:
 
 
 MODELS_SQL = (
-    "SELECT id, template, factors, status, created_by, approved_by, metrics, created_at, kind FROM model_version "
+    "SELECT id, template, factors, status, created_by, approved_by, metrics, created_at, kind, pack, trained_at, data_window, "
+    "quality, drift, drift_status, cadence, next_due FROM model_version "
     "ORDER BY created_at DESC, id DESC"
 )
 

@@ -18,6 +18,7 @@ const TEMPLATE_LABEL: Record<string, string> = {
 const PACKS = Object.keys(TEMPLATE_LABEL);
 const label = (t: string) => TEMPLATE_LABEL[t] ?? t;
 const err = (v: number | null) => (v == null ? '—' : money(v));
+const DRIFT_CHIP = { ok: 'ok', watch: 'y', alert: 'bad' } as const;
 /** A price model's template, or a stage calibration's pack and stage (P9-2.9). */
 const templateLabel = (t: string, kind?: string) => {
   if (kind === 'rated_life') return `${label(t)} · remaining life`;
@@ -121,7 +122,7 @@ export function ModelsPanel() {
               <thead>
                 <tr>
                   <th>Model</th><th>Template</th><th>Status</th><th className="r">Outcomes or verdicts</th><th className="r">Error, current</th>
-                  <th className="r">Error, this model</th><th>Fitted by</th><th>Promotion</th><th></th>
+                  <th className="r">Error, this model</th><th>Fitted by</th><th>Drift and cadence</th><th>Promotion</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -137,6 +138,12 @@ export function ModelsPanel() {
                     <td className="r num" title="Mean absolute error of the active model's net on the outcomes">{m.kind === 'rated_life' ? '—' : m.kind === 'take_up' ? <span title="Log loss of the pack's prior curve on the same offers">{loss(m.metrics.baseline_log_loss)}</span> : err(m.metrics.mae_active)}</td>
                     <td className="r num" title="Mean absolute error of this model's net on the outcomes">{m.kind === 'rated_life' ? <span title="Run hours, on the last 3 months held out">{qualityLine(m)}</span> : m.kind === 'take_up' ? <span title="Log loss of the learned curve on the offers it was fitted on">{loss(m.metrics.log_loss)}</span> : err(m.metrics.mae_candidate)}</td>
                     <td className="nowrap">{m.created_by}<div className="note">{fmtDateYear(m.created_at)}</div></td>
+                    <td data-testid="drift-cell">
+                      {m.drift_status ? <span className={'chip ' + DRIFT_CHIP[m.drift_status]} title={m.drift?.explanation ?? m.drift?.rule}>{m.drift_status}</span> : <span className="note">Not checked yet</span>}
+                      {m.drift && <div className="note">{m.drift.rule}</div>}
+                      {m.drift?.explanation && <div className="note">{m.drift.explanation}</div>}
+                      <div className="note" title={m.cadence ?? undefined}>Trained {m.trained_at ? fmtDateYear(m.trained_at) : '—'}; next due {m.next_due ? fmtDateYear(m.next_due) : '—'}</div>
+                    </td>
                     <td className="nowrap">
                       {m.approved_by ? <>Approved by {m.approved_by}</> : m.proposal ? <>Proposed by {m.proposal.by}<div className="note">{fmtDateYear(m.proposal.at)}</div></> : <span className="note">Not proposed</span>}
                     </td>

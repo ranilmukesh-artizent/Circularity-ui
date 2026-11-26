@@ -9,7 +9,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, agentCredentials, findTools, issueCredential, revokeCredential, startAdapterDraft, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, agentCredentials, findTools, issueCredential, revokeCredential, startAdapterDraft, fitModel, fitStageCalibration, checkModelDrift, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
   type TraceSpan,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
@@ -67,6 +67,7 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
       [() => fitModel('tool_fleet', 'take_up'), 'model.fit', { template: 'tool_fleet', kind: 'take_up' }],
       [() => fitStageCalibration('industrial', 'disposition'), 'stage.fitCalibration', { pack: 'industrial', stage: 'disposition' }],
       [() => proposeModel('MV-001'), 'model.propose', { id: 'MV-001' }],
+      [() => checkModelDrift('MV-001'), 'model.checkDrift', { id: 'MV-001' }],
       [() => promoteModel('MV-001'), 'model.promote', { id: 'MV-001' }],
     ];
     for (const [run, id, body] of cases) {

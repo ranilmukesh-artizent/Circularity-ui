@@ -244,6 +244,15 @@ export interface ModelVersion {
   };
   /** what the model predicts: a calibration of route values (default), the remaining life of tool components, or a device's price per channel */
   kind?: 'calibration' | 'rated_life' | 'price' | 'take_up';
+  /** P9-13.8 registry fields: the pack, when and on what it was trained, its quality, the last drift check and the cadence */
+  pack?: string;
+  trained_at?: string | null;
+  data_window?: { from?: string | null; to?: string | null; n?: number | null } | null;
+  quality?: { mae: number | null; mae_active: number | null; n: number | null } | null;
+  drift_status?: 'ok' | 'watch' | 'alert' | null;
+  drift?: { psi: number; ratio: number; status: 'ok' | 'watch' | 'alert'; rule: string; n_new: number; checked_at: string; explanation?: string; by_model?: boolean } | null;
+  cadence?: string | null;
+  next_due?: string | null;
   proposal: { by: string; at: string } | null;
   /** why the signed-in person may not propose or approve it, else null */
   blocks: { propose: string | null; promote: string | null };
@@ -317,6 +326,10 @@ export const stageCalibrationOf = (template: string): { pack: string; stage: str
 
 /** Propose a candidate for promotion (manageFlows; model.propose). */
 export const proposeModel = (id: string): Promise<ActionResult<ModelVersion>> => invoke('model.propose', { id });
+
+/** Measure the active models (or one) against the outcomes closed since training; an alert opens a work item (manageFlows; model.checkDrift). */
+export const checkModelDrift = (id?: string): Promise<ActionResult<{ checked: { id: string; status: 'ok' | 'watch' | 'alert'; psi: number; ratio: number; rule: string }[] }>> =>
+  invoke('model.checkDrift', id ? { id } : {});
 
 /** Approve the promotion: the candidate becomes the active model (approve.flows; never its maker or proposer). */
 export const promoteModel = (id: string): Promise<ActionResult<{ id: string; status: string; retired: string | null }>> =>

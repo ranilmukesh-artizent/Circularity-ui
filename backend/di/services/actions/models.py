@@ -29,12 +29,13 @@ too). `promote_block` and `propose_block` say why a person may not, for the guar
 import dataclasses
 import json
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.core import policy
+from di.core import jobs, policy
 from di.repositories import model_versions as repo
 from di.repositories import stage_outcomes
 from di.repositories.model_versions import ModelRow
@@ -43,11 +44,14 @@ from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
 from di.services.agents import calibrate
 from di.services.agents.stage_context import STAGE_IDS
+from di.services.cases import process
+from di.services.engine import drift
 from di.services.engine.calibration import CalibratedPredictor, Key, OutcomeRow, fit
 from di.services.engine.predictor import Predictor
 from di.services.modeler.pack import pack_keys
 from di.services.modeler.templates import TEMPLATE_KEYS
 
+DRIFT_TYPE = "model_drift"
 MAKER_CHECKER = "Maker-checker: you created this model, so you cannot promote it."
 FIT_KINDS = ("calibration", "rated_life", "price", "take_up")
 PROPOSER_CHECKER = "Maker-checker: you proposed this model, so you cannot promote it."
@@ -131,6 +135,9 @@ def model_json(m: ModelRow) -> dict[str, Any]:
     return {
         "id": m.id, "template": m.template, "factors": factors, "status": m.status, "created_by": m.created_by,
         "approved_by": m.approved_by, "metrics": m.metrics, "created_at": m.created_at.isoformat(), "kind": m.kind,
+        "pack": m.pack or m.template, "trained_at": m.trained_at.isoformat() if m.trained_at else None,
+        "data_window": m.data_window, "quality": m.quality, "drift": m.drift, "drift_status": m.drift_status,
+        "cadence": m.cadence, "next_due": m.next_due.isoformat() if m.next_due else None,
     }  # fmt: skip
 
 
@@ -170,6 +177,7 @@ def _insert_candidate(
             "k": kind,
         },  # fmt: skip
     )
+    _stamp(ctx, mid, template, metrics, {"n": metrics.get("n")})
     m = repo.get(ctx.session, mid)
     if m is None:  # not reached: inserted above
         raise ActionError("not_found", f"No model {mid}.")
@@ -300,6 +308,7 @@ def fit_model(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         "mae_candidate": _mae(rows, factors),
     }
     stored = [{"route": route, "cls": cls, "factor": f} for (_, route, cls), f in sorted(factors.items())]
+    at = sorted(r["confirmed_at"] for r in rows)
     mid = repo.next_id(ctx.session)
     ctx.session.execute(
         text(
@@ -308,10 +317,129 @@ def fit_model(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         ),
         {"i": mid, "t": t, "f": json.dumps(stored), "by": ctx.actor.id, "m": json.dumps(metrics), "now": ctx.now},
     )
+    _stamp(ctx, mid, t, metrics, {"from": at[0] if at else None, "to": at[-1] if at else None, "n": len(rows)})
     m = repo.get(ctx.session, mid)
     if m is None:  # not reached: inserted above
         raise ActionError("not_found", f"No model {mid}.")
     return model_json(m)
+
+
+# ---------------------------------------------------------------- registry fields, drift (plan 9, P9-13.8)
+DRIFT_JOB = "model.drift"
+WEEK = timedelta(days=7)
+MIN_RECENT = 5  # outcomes closed since training that a drift check needs
+ACTIONS.setdefault(
+    "model.checkDrift",
+    ActionDef(
+        id="model.checkDrift", title="Check models for drift", risk="act", perm="manageFlows", scope="none",
+        verb="check models for drift", desc="Measure the active models (or one) against the outcomes closed since they were "
+        "trained: the shift of the predicted net per route and the growth of the error. An alert opens a work item.",
+        input={"id": {"req": False, "t": "string"}},
+    ),
+)  # fmt: skip
+
+
+def _db_now(s: Session) -> datetime:
+    """The database clock, which `jobs.claim` compares `run_after` with (the workspace clock may be pinned)."""
+    return s.execute(text("SELECT now()")).scalar_one()
+
+
+def schedule_drift(s: Session, model_id: str) -> None:
+    """Queue the model's next weekly `model.drift` job (deduped per model and day: the running job queues its successor)."""
+    due = _db_now(s) + WEEK
+    jobs.enqueue(
+        s, DRIFT_JOB, {"model_id": model_id}, priority=200, run_after=due, dedupe_key=f"{DRIFT_JOB}:{model_id}:{due.date()}"
+    )
+
+
+def _stamp(ctx: CallContext, mid: str, pack: str, metrics: Mapping[str, Any], window: dict[str, Any]) -> None:
+    """The registry fields of a candidate just fitted: pack, training time, data window, quality, cadence, next due; and the
+    weekly drift job."""
+    quality = {"mae": metrics.get("mae_candidate"), "mae_active": metrics.get("mae_active"), "n": metrics.get("n")}
+    ctx.session.execute(
+        text(
+            "UPDATE model_version SET pack = :p, trained_at = :now, data_window = CAST(:w AS jsonb), "
+            "quality = CAST(:q AS jsonb), "
+            "cadence = :c, next_due = :due WHERE id = :i"
+        ),
+        {"p": pack.split(".")[0], "now": ctx.now, "w": json.dumps(window), "q": json.dumps(quality), "c": drift.CADENCE_TEXT,
+         "due": ctx.now + timedelta(days=drift.CADENCE_DAYS), "i": mid},
+    )  # fmt: skip
+    schedule_drift(ctx.session, mid)
+
+
+def _when(at: str) -> datetime:
+    d = datetime.fromisoformat(at.replace("Z", "+00:00"))
+    return d if d.tzinfo else d.replace(tzinfo=UTC)
+
+
+@guard("model.checkDrift")
+def check_drift_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if i.get("id") and repo.get(ctx.session, i["id"]) is None:
+        return "not_found", f"No model {i['id']}."
+    return None
+
+
+def _measure(m: ModelRow, rows: Sequence[OutcomeRow], now: datetime) -> dict[str, Any]:
+    """The drift of one model on the outcomes of its template: computed only (the numbers of the Models panel)."""
+    trained = m.trained_at or m.created_at
+    old = [r["predicted_net"] for r in rows if _when(r["confirmed_at"]) <= trained]
+    new = [r for r in rows if _when(r["confirmed_at"]) > trained]
+    if len(new) < MIN_RECENT:
+        p, ratio = 0.0, 1.0
+    else:
+        p = drift.psi(old or [r["predicted_net"] for r in new], [r["predicted_net"] for r in new])
+        train_mae = float((m.quality or {}).get("mae") or 0.0)
+        ratio = drift.error_drift(train_mae, _mae(new, m.as_factors()) or 0.0)
+    st = drift.status(p, ratio)
+    return {
+        "id": m.id, "psi": round(p, 4), "ratio": round(ratio, 4), "status": st, "n_new": len(new), "rule": drift.rule(p, ratio),
+        "next_due": drift.next_due(trained, len(new), now).isoformat(),
+    }  # fmt: skip
+
+
+@implement("model.checkDrift")
+def check_drift(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    if i.get("id"):
+        models = [m for m in [repo.get(ctx.session, i["id"])] if m is not None]
+    else:
+        models = [m for m in repo.all_models(ctx.session) if m.status == "active"]
+    all_rows = outcome_rows(ctx.session)
+    checked = []
+    for m in models:
+        res = _measure(m, [r for r in all_rows if r["template"] == m.template], ctx.now)
+        res["by_model"] = False
+        if res["status"] != "ok":  # the model explains what moved; the rule text stands without it (R16)
+            from di.services.agents import drift_explainer  # lazy: the agents package imports the actions
+
+            note = drift_explainer.explain(ctx, res)
+            if note:
+                res["explanation"], res["by_model"] = note, True
+        stored = {**res, "checked_at": ctx.now.isoformat()}
+        ctx.session.execute(
+            text("UPDATE model_version SET drift = CAST(:d AS jsonb), drift_status = :s, next_due = :nd WHERE id = :i"),
+            {"d": json.dumps(stored), "s": res["status"], "nd": datetime.fromisoformat(res["next_due"]), "i": m.id},
+        )
+        if res["status"] == "alert":
+            _open_drift_item(ctx, m, res)
+        checked.append(res)
+    return {"checked": checked, "log": f"Checked {len(checked)} model(s) for drift"}
+
+
+def _open_drift_item(ctx: CallContext, m: ModelRow, res: dict[str, Any]) -> None:
+    """One open work item per drifted model (I-20), for the roles that manage flows."""
+    held = ctx.session.execute(
+        text("SELECT 1 FROM work_item WHERE type = :t AND status = 'open' AND title LIKE :l"),
+        {"t": DRIFT_TYPE, "l": f"Model {m.id} drifted:%"},
+    ).first()
+    if held:
+        return
+    process.open_item(
+        ctx.session, kind="exception", case_id=None, org_unit_id=None, type=DRIFT_TYPE,
+        title=f"Model {m.id} drifted: {res['rule']}",
+        cause=res.get("explanation") or f"{res['n_new']} outcomes closed since the model was trained.",
+        action="Refit the model, or review its candidates", owner_role="Planner", due_hours=None, by=ctx.actor.id,
+    )  # fmt: skip
 
 
 # ---------------------------------------------------------------- stage calibration (plan 9, P9-2.9)
@@ -360,6 +488,7 @@ def fit_stage_calibration(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]
             "m": json.dumps(metrics), "now": ctx.now,
         },
     )  # fmt: skip
+    _stamp(ctx, mid, template, metrics, {"n": len(points)})
     m = repo.get(ctx.session, mid)
     if m is None:  # not reached: inserted above
         raise ActionError("not_found", f"No model {mid}.")

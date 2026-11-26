@@ -10,7 +10,10 @@ from sqlalchemy.orm import Session
 
 from di.services.engine.calibration import Key
 
-_COLS = "id, template, factors, status, created_by, approved_by, metrics, created_at, kind"
+_COLS = (
+    "id, template, factors, status, created_by, approved_by, metrics, created_at, kind, "
+    "pack, trained_at, data_window, quality, drift, drift_status, cadence, next_due"
+)
 
 
 @dataclass(frozen=True)
@@ -24,6 +27,14 @@ class ModelRow:
     metrics: dict[str, Any]
     created_at: datetime
     kind: str = "calibration"  # calibration, rated_life ... (migration 0042)
+    pack: str | None = None  # migration 0059 (P9-13.8): the registry fields
+    trained_at: datetime | None = None
+    data_window: dict[str, Any] | None = None
+    quality: dict[str, Any] | None = None
+    drift: dict[str, Any] | None = None
+    drift_status: str | None = None
+    cadence: str | None = None
+    next_due: datetime | None = None
 
     def as_factors(self) -> dict[Key, float]:
         return {(self.template, f["route"], f["cls"]): float(f["factor"]) for f in self.factors}
@@ -60,3 +71,9 @@ def of_template(s: Session, template: str) -> list[ModelRow]:
 def next_id(s: Session) -> str:
     n = s.execute(text("SELECT coalesce(max(substring(id from 4)::int), 0) FROM model_version")).scalar_one()
     return f"MV-{n + 1:03d}"
+
+
+def all_models(s: Session) -> list[ModelRow]:
+    """Every model, the newest first (the drift check reads the active ones)."""
+    sql = f"SELECT {_COLS} FROM model_version ORDER BY created_at DESC, id DESC"  # noqa: S608 - fixed columns
+    return [ModelRow(*r) for r in s.execute(text(sql))]
