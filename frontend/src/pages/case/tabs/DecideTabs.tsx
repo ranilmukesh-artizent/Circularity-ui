@@ -16,7 +16,7 @@ import { onActivateKey } from '../../../utils/keys';
 import { toast } from '../../../components/toast';
 import { refused } from '../../../hooks/useAction';
 import { openExSrc, openExSrcAll, openModels, openSources, openTrace } from '../CaseDrawers';
-import { AfBadge, CasePanel, ExMethod, ProvB, RangeBar, RecheckButton, Stp, Tbl, staleType } from '../CaseBlocks';
+import { AfBadge, BookCertification, CasePanel, ExMethod, ProvB, RangeBar, RecheckButton, Stp, Tbl, staleType } from '../CaseBlocks';
 import { approveGuarded, caseActions, runNextStep, scrollToId } from '../caseActions';
 import { useCaseUi } from '../CaseContext';
 import { gateLine, holdLine } from '../gates';
@@ -539,6 +539,7 @@ export function GatesBlock({ c }: { c: CaseRec }) {
           <em>{g.owner}</em>
         </div>
       ))}</div>
+      <BookCertification c={c} />
       {!!c.requiredSteps?.length && (
         <div style={{ marginTop: 12 }}><b>Required steps</b>
           <ul>{c.requiredSteps.map((r) => <li key={r.gate + r.step}>{r.step} <span className="note">({r.owner}, {r.gate})</span></li>)}</ul>
