@@ -66,6 +66,8 @@ export interface CaseRec {
   evidence: Evidence[];
   gates?: GateRow[]; gateHold?: GateHold | null; requiredSteps?: RequiredStep[]; batch?: BatchStatus | null;
   snapshot?: { id: string; items?: number } | null;
+  /** A rental device's service gate result and the booking it proposes (P9-11.7); read it with `serviceProposal`. */
+  serviceCheck?: ServiceCheck;
   /** A case opened from a received device or a bulk lot of devices (P9-6.4); read it with `deviceView` (device.ts). */
   device?: DeviceView;
   /** The case's flow (`service_desk` for a case opened from a service ticket, P9-4.3). */
@@ -281,6 +283,18 @@ export async function checkAcknowledgement(c: CaseRec): Promise<ActionResult<{ l
   const a = c.exec?.steps.find((y) => y.state === 'active');
   return { ok: false, error: { code: 'conflict', message: a ? `No new acknowledgement yet: ${lc(a.label)} is with ${a.sys.split(' · ')[0]}. Acknowledgements arrive here as the systems send them${before ? ` (${before} so far)` : ''}.` : 'Every instruction is acknowledged.' } };
 }
+// ---------- service in date (plan 9, P9-11.7, MR-06) ----------
+export type ServiceKind = 'pm' | 'certification' | 'repair' | 'refurbish';
+/** The service order the gate G-MED-SVC proposes for a unit whose certification or maintenance ends before a rental does. */
+export interface ServiceBooking { case_id: string; asset_tag: string; kind: ServiceKind; due_by: string }
+/** The service gate's result per request: why the unit fails it, and "Send a different unit: <tag>". */
+export interface ServiceRequestCheck { req_id: string; ends: string; ok: boolean; reason: string | null; recommendation: string | null }
+export interface ServiceCheck { requests: ServiceRequestCheck[]; proposed: { action: 'service.book'; input: ServiceBooking } | null }
+/** Book certification or maintenance for a rental device (service.book: Admin, Engineer or Planner; an agent's call is held for a person). */
+export const bookService = (caseId: string, assetTag: string, kind: ServiceKind, dueBy: string): Promise<ActionResult<{ case_id: string; kind: string; sent: boolean }>> =>
+  invoke('service.book', { case_id: caseId, asset_tag: assetTag, kind, due_by: dueBy });
+/** The booking the case's service gate proposes, null when the unit is in date or the case has no service check. */
+export const serviceProposal = (c: CaseRec): ServiceBooking | null => c.serviceCheck?.proposed?.input ?? null;
 // ---------- formatting (the demo's helpers, frontend-only) ----------
 export const fmtD = fmtDate;
 export const fmtDY = fmtDateYear;

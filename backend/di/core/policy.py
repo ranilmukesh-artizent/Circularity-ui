@@ -48,6 +48,7 @@ EXTRA_PERMS: dict[str, tuple[str, ...]] = {
         "Planner",
     ),  # plan 9 P9-6.8: decide a payout adjustment above the limit (a person's, never an agent's)
     "releaseQuarantine": ("Admin", "Approver"),  # plan 9 P9-3.7: release a recalled tool from quarantine after the fix
+    "bookService": ("Admin", "Engineer", "Planner"),  # plan 9 P9-11.7: book certification or maintenance for a rental device
 }
 EXTRA_PAGES: dict[str, tuple[str, ...]] = {
     "modeler": ("Admin", "Planner", "Approver", "Executive", "Finance"),  # Finance: the market tables (P9-4.2)

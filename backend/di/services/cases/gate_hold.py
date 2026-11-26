@@ -42,6 +42,7 @@ from di.services.cases import (
     inventory_evidence,
     lifecycle,
     recall_evidence,
+    service_evidence,
     store,
     telematics,
     title_evidence,
@@ -70,7 +71,10 @@ EXCEPTION_OF = {
 QUARANTINE_ITEM = (
     "recall_quarantine"  # the item a failed recall check G-TOOL-REC keeps open while the tool is quarantined (P9-3.7)
 )
-ADVISORY = {"G-TOOL-TEL": "stale_telematics"}  # a failed gate that holds some routes, not the case, opens this item (P9-3.8)
+ADVISORY = {
+    "G-TOOL-TEL": "stale_telematics",
+    "G-MED-SVC": "EX-MR-CERT",
+}  # a failed gate that holds some routes, not the case, opens this item (P9-3.8, P9-11.7)
 CONTRACT_GATE = "G-CON-1"  # the contract entitlement gate (P9-1.11)
 
 
@@ -119,6 +123,13 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
                 case.pop(key, None)
     if case.get("template") == "medical_rental":  # the device's decontamination record, for G-MED-DECON (P9-11.6)
         recs.extend(decon_evidence.evidence(s, case.get("assetId")))
+        svc_recs, svc_keys = service_evidence.evidence(s, case)  # the service record, notice status and requests (P9-11.7)
+        recs.extend(svc_recs)
+        for k in ("rentalRequests", "serviceRead", "serviceCheck"):
+            if k in svc_keys:
+                case[k] = svc_keys[k]
+            else:
+                case.pop(k, None)
     if case.get("template") == "telecom_network":  # the network inventory's record of the unit, for G-NET-INV (P9-10.6)
         recs.extend(inventory_evidence.evidence(s, case.get("assetId")))
     if recs or "evidenceRecords" in case:

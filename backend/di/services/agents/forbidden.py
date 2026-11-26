@@ -54,6 +54,7 @@ HELD_FOR_PERSON = (
     "marketTable.submit",
     "registry.saveEntry",  # plan 9 P9-8.7: an agent's connector draft is held for a person (the adapter author's one proposal)
     "serviceDesk.postFault",  # P9-4.7: the fault found on a draft line re-prices it and re-runs its options; a person posts it
+    "service.book",  # P9-11.7: a service order for a rental device is booked by a person
 )  # a policy draft is a person's (P9-2.5)
 
 # Writes that only add caution: never held for a person (phase 2 review). Holding them would let a model's own concern

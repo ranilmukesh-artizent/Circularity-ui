@@ -5,9 +5,13 @@
  */
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import {
-  exTs, refList, refreshEvidence, srcAge, stages, type CaseAnalysis, type CaseRec, type Clock, type Source, type StageTag,
+  bookService, exTs, refList, refreshEvidence, serviceProposal, srcAge, stages, type CaseAnalysis, type CaseRec, type Clock,
+  type Source, type StageTag,
 } from '../../api/case';
 import { money } from '../../api/format';
+import { can } from '../../api/session';
+import { toast } from '../../components/toast';
+import { useAction } from '../../hooks/useAction';
 import { IconTile } from '../../components/kit/IconTile';
 import { KeyedStatus, type StatusTable } from '../../components/kit/StatusPill';
 import { VendorLogo } from '../../components/kit/VendorLogo';
@@ -74,6 +78,25 @@ export function RecheckButton({ caseId, type }: { caseId: string; type: string }
 export function Disclosures({ r }: { r: { disclosures?: string[] } }) {
   if (!r.disclosures?.length) return null;
   return <p className="note" data-disclosures="route"><b>Disclose:</b> {r.disclosures.join('; ')}</p>;
+}
+/** The service gate of a rental device (G-MED-SVC, P9-11.7, MR-06): why the unit fails a request, "Send a different unit: <tag>", and
+ *  for a person who may (Admin, Engineer, Planner) "Book certification" for this unit. Nothing when the unit is in date. */
+export function BookCertification({ c }: { c: CaseRec }) {
+  const act = useAction();
+  const p = serviceProposal(c);
+  const bad = c.serviceCheck?.requests.find((r) => !r.ok);
+  if (!p || !bad) return null;
+  const label = p.kind === 'pm' ? 'Book maintenance' : 'Book certification';
+  const book = async () => {
+    const r = await act.run(() => bookService(p.case_id, p.asset_tag, p.kind, p.due_by), 4200);
+    if (r.ok) toast(`${label} booked for ${p.asset_tag} by ${p.due_by}.`);
+  };
+  return (
+    <p className="note" data-testid="service-gate">
+      <b>{bad.reason}.</b> {bad.recommendation}.{' '}
+      {can('bookService') && <button className="btn pri" disabled={act.pending} onClick={book} data-testid="service-book">{label}</button>}
+    </p>
+  );
 }
 /** Retrieved / Model / Rules / Draft / Prepared by agent (afBadge). */
 export function AfBadge({ k }: { k: string }) {
