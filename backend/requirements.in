@@ -27,3 +27,12 @@ lightgbm==4.7.0  # P9-6.9: the device price model (released 2026-07-18)
 mapie==1.6.0  # P9-6.9: price intervals around the model (released 2026-10-19; brings scikit-learn)
 pandera[pandas]==0.36.0  # P9-7.1: checks on imported history batches (MIT)
 mypy-extensions==1.1.0  # pandera -> typing-inspect needs it; held at the release before 1.2.0 (under two weeks old), as in requirements-dev.in
+# Plan 5 T1: OpenTelemetry (off unless OTEL_EXPORTER_OTLP_ENDPOINT is set); all released 2026-10-29, pinned together
+opentelemetry-api==1.45.2
+opentelemetry-sdk==1.45.2
+opentelemetry-exporter-otlp-proto-http==1.45.2
+opentelemetry-instrumentation-fastapi==0.66b2
+opentelemetry-instrumentation-sqlalchemy==0.66b2
+opentelemetry-instrumentation-psycopg==0.66b2
+opentelemetry-instrumentation-httpx==0.66b2
+opentelemetry-instrumentation-logging==0.66b2

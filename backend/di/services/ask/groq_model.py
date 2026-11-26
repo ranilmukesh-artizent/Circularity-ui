@@ -18,13 +18,16 @@ The key comes from the settings (GROQ_API_KEY) and is handed to the SDK only; it
 """
 
 import json
+import time
 from collections.abc import Iterator
 from functools import lru_cache
 from typing import Any
 
 import groq
 import httpx
+from opentelemetry.trace import SpanKind, StatusCode
 
+from di import telemetry
 from di.services.ask.model import AskRequest, Done, Event, ModelUnavailable, TextDelta, Toolbox, ToolUse
 from di.services.ask.tools import as_text
 
@@ -46,6 +49,72 @@ def _reason(e: groq.APIError) -> str:
     if isinstance(e, groq.APIStatusError):
         return "unavailable" if e.status_code >= 500 else "model_error"
     return "model_error"
+
+
+class _Chat:
+    """One model request as an OpenTelemetry GenAI inference span `chat {model}` (CLIENT, a child of the Ask span) and a
+    sample of the histogram `gen_ai.client.inference.duration`. `end` is idempotent, so a stream that is closed half way
+    (the client left) still ends its span. No prompt or answer is recorded unless DI_OTEL_CAPTURE_CONTENT is on.
+    Nothing is created while telemetry is off."""
+
+    def __init__(self, model: str, tools: Toolbox, messages: list[dict]):
+        self.model, self.span, self.t0 = model, None, time.monotonic()
+        self.finish: list[str] = []
+        self.usage: tuple[int | None, int | None] = (None, None)
+        self.response_model: str | None = None
+        if not telemetry.enabled():
+            return
+        parent = getattr(tools, "trace_context", None)
+        attrs: dict[str, Any] = {
+            "gen_ai.operation.name": "chat",
+            "gen_ai.provider.name": "groq",
+            "gen_ai.request.model": model,
+        }
+        if conv := getattr(tools, "conversation_id", None):
+            attrs["gen_ai.conversation.id"] = conv
+        if telemetry.capture_content():
+            attrs["gen_ai.input.messages"] = telemetry.clip(json.dumps(messages, default=str))
+        self.span = telemetry.tracer.start_span(f"chat {model}", kind=SpanKind.CLIENT, context=parent, attributes=attrs)
+
+    def chunk(self, chunk: Any) -> None:
+        """Read what a streamed chunk says about the response: its model, finish reason and token usage (Groq sends the
+        usage in `x_groq.usage` of the last chunk, other servers in `usage`)."""
+        if self.span is None:
+            return
+        self.response_model = getattr(chunk, "model", None) or self.response_model
+        usage = getattr(chunk, "usage", None) or getattr(getattr(chunk, "x_groq", None), "usage", None)
+        if usage is not None:
+            self.usage = (getattr(usage, "prompt_tokens", None), getattr(usage, "completion_tokens", None))
+        for choice in chunk.choices or []:
+            if choice.finish_reason:
+                self.finish = [choice.finish_reason]
+
+    def end(self, error: str | None = None, output: dict | None = None) -> None:
+        span, self.span = self.span, None
+        if span is None:
+            return
+        attrs: dict[str, Any] = {  # the histogram's attributes
+            "gen_ai.operation.name": "chat",
+            "gen_ai.provider.name": "groq",
+            "gen_ai.request.model": self.model,
+        }
+        if self.response_model:
+            span.set_attribute("gen_ai.response.model", self.response_model)
+        if self.finish:
+            span.set_attribute("gen_ai.response.finish_reasons", self.finish)
+        for key, n in zip(("gen_ai.usage.input_tokens", "gen_ai.usage.output_tokens"), self.usage, strict=True):
+            if n is not None:
+                span.set_attribute(key, int(n))
+        if error:
+            span.set_attribute("error.type", error)
+            span.set_status(StatusCode.ERROR)
+            attrs["error.type"] = error
+        if output is not None and telemetry.capture_content():
+            span.set_attribute("gen_ai.output.messages", telemetry.clip(json.dumps([output], default=str)))
+        span.end()
+        telemetry.record_duration(
+            "gen_ai.client.inference.duration", time.monotonic() - self.t0, attrs, "Duration of a GenAI inference request"
+        )
 
 
 class GroqModel:
@@ -70,6 +139,7 @@ class GroqModel:
             last = n == self.max_rounds - 1
             text: list[str] = []
             calls: dict[int, dict[str, Any]] = {}
+            chat = _Chat(self.model, tools, messages)
             try:
                 stream = client.chat.completions.create(  # type: ignore[call-overload]  # messages and tools are the API's JSON dicts
                     model=self.model,
@@ -82,6 +152,7 @@ class GroqModel:
                     **self._reasoning,
                 )
                 for chunk in stream:
+                    chat.chunk(chunk)
                     if not chunk.choices:
                         continue
                     d = chunk.choices[0].delta
@@ -96,8 +167,13 @@ class GroqModel:
                             c["name"] += tc.function.name
                         if tc.function and tc.function.arguments:
                             c["arguments"] += tc.function.arguments
+                said_now = {"role": "assistant", "content": "".join(text), "tool_calls": [c["name"] for c in calls.values()]}
+                chat.end(output=said_now)
             except groq.APIError as e:
+                chat.end(error=type(e).__name__)
                 raise ModelUnavailable(_reason(e), type(e).__name__) from None
+            finally:
+                chat.end()  # a stream closed half way (the client left) still ends its span
             said.append("".join(text))
             if not calls:
                 # the answer is the last turn's text: text written before a further tool call was a draft, and joining it
@@ -118,7 +194,9 @@ class GroqModel:
                 }
             )
             for c in ordered:
-                result = tools.call(c["name"], c["arguments"] or "{}")
+                run = getattr(tools, "call_with_id", None)  # the provider's call id goes on the tool span (plan 5)
+                args_json = c["arguments"] or "{}"
+                result = run(c["name"], args_json, c["id"]) if run else tools.call(c["name"], args_json)
                 yield ToolUse(c["name"], _args(c["arguments"]), result)
                 messages.append({"role": "tool", "tool_call_id": c["id"], "content": as_text(result)})
         yield Done("".join(said))

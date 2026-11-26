@@ -35,6 +35,9 @@ import time
 from collections.abc import Iterator
 from typing import Any, cast
 
+from opentelemetry import trace
+
+from di import telemetry
 from di.core import policy
 from di.core.auth import Principal
 from di.core.db import SessionLocal
@@ -47,7 +50,7 @@ from di.services.ask.checked_answer import answer_checked
 from di.services.ask.fallback import ask_rule, rules_first
 from di.services.ask.model import AskModel, AskRequest, Done, ModelUnavailable, NoModel, TextDelta, ToolUse
 from di.services.ask.prompt import system_prompt
-from di.services.ask.tools import Toolbox, log_call
+from di.services.ask.tools import AGENT_NAME, Toolbox, log_call
 from di.services.cases import store
 
 log = logging.getLogger("di.services.ask")
@@ -129,6 +132,23 @@ def suggestions(ctx: CallContext, case_ids: list[str]) -> list[dict]:
 
 
 def answer_stream(body: AskBody, p: Principal, model: AskModel) -> Iterator[str]:
+    """The SSE events of one question, inside one OpenTelemetry GenAI span `invoke_agent Ask Circularity` (plan 5): the
+    chat, tool and fallback spans are its children. It ends with the stream, or when the client leaves and the stream
+    is closed (a generator's `finally`), so an abandoned stream leaks no span. Nothing is created while telemetry is off."""
+    root = None
+    if telemetry.enabled():
+        root = telemetry.tracer.start_span(
+            f"invoke_agent {AGENT_NAME}",
+            attributes={"gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": AGENT_NAME},
+        )
+    try:
+        yield from _answer(body, p, model, root)
+    finally:
+        if root is not None:
+            root.end()
+
+
+def _answer(body: AskBody, p: Principal, model: AskModel, root: Any) -> Iterator[str]:
     account, pctx = p.account, p.ctx
     q = body.question.strip()
     with SessionLocal() as s:
@@ -138,7 +158,11 @@ def answer_stream(body: AskBody, p: Principal, model: AskModel) -> Iterator[str]
         first = "fallback" if isinstance(model, NoModel) else model.name
         yield sse("start", {"conversation_id": conv, "provider": first, "model": model.model or None})
 
-        box = Toolbox(session=s, account=account, pctx=pctx)
+        box = Toolbox(session=s, account=account, pctx=pctx, conversation_id=conv)
+        if root is not None:
+            box.trace_context = trace.set_span_in_context(root)
+            if conv:
+                root.set_attribute("gen_ai.conversation.id", conv)
         text, reason, streamed = None, None, False
         try:
             if rules_first(q, ctx, page):
@@ -193,7 +217,8 @@ def answer_stream(body: AskBody, p: Principal, model: AskModel) -> Iterator[str]
             if streamed:
                 yield sse("reset", {"reason": reason})
             t0 = time.monotonic()
-            rule = ask_rule(q, ctx, page)
+            with telemetry.span("ask_fallback", attributes={"di.ask.fallback_reason": reason}, context=box.trace_context):
+                rule = ask_rule(q, ctx, page)  # its own span, a sibling of the failed chat span
             for c in rule["calls"]:
                 if not c["skipped"]:
                     log_call(s, account, c["action"], c["input"], round((time.monotonic() - t0) * 1000), c["code"])

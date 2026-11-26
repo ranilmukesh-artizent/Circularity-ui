@@ -28,6 +28,7 @@ from di.core import jobs
 from di.core.config import get_settings
 from di.core.db import SessionLocal
 from di.core.logs import configure_logging
+from di.telemetry import job_span, setup_telemetry
 
 log = logging.getLogger("di.worker")
 
@@ -80,7 +81,9 @@ def run_once() -> bool:
                 fn = HANDLERS.get(job.kind)
                 if fn is None:
                     raise LookupError(f"no handler for job kind {job.kind!r}")
-                fn(job.payload)
+                span, payload = job_span(job.kind, job.id, job.attempts, job.payload)  # plan 5: a no-op unless tracing is on
+                with span:
+                    fn(payload)
                 jobs.complete(session, job.id)
             except Exception as exc:  # every failure is recorded on the job
                 log.exception("job %s (%s) failed", job.id, job.kind)
@@ -150,6 +153,7 @@ def serve(stopping: Callable[[], bool], poll: float, *, housekeeping: bool = Tru
 
 def main() -> None:
     configure_logging()  # the api's format and level (di/core/logs.py)
+    setup_telemetry("di-worker")  # plan 5: a no-op unless OTEL_EXPORTER_OTLP_ENDPOINT is set
     stopping = False
 
     def stop(*_: object) -> None:
