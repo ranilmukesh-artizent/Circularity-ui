@@ -1061,7 +1061,7 @@ each story went.
 - [x] P9-11.17 Medical follow-through hospital evidence and close
 - [ ] P9-11.18 Medical rental demo smoke
 - [ ] P9-11.19 Phase 11 gate
-- [ ] P9-12.1 Extend the standard valuer with conditions and decay
+- [x] P9-12.1 Extend the standard valuer with conditions and decay
 - [ ] P9-12.2 ITAD pack with manifest reconciliation
 - [ ] P9-12.3 ITAD sanitisation per serial and residual decay
 - [ ] P9-12.4 Rental fleet pack with re-rent rebuild or sell
