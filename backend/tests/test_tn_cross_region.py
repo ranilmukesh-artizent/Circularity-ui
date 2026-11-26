@@ -159,3 +159,14 @@ def test_tn_18_person_only_and_telecom_only():
     r = call("telecom.crossRegion", {"flow_id": flowkit.flow_id("device", "workspace")}, "admin")
     assert r["ok"] is False and r["error"]["code"] == "validation_error"
     assert call("telecom.crossRegion", {"flow_id": _flow()}, "warehouse1")["ok"] is False
+
+
+def test_tn_18_f9_an_agent_on_a_persons_token_cannot_read_the_transfers():
+    from tests.helpers import client, h
+
+    fid = _flow()
+    assert call("telecom.crossRegion", {"flow_id": fid}, "planner-a")["ok"] is True
+    r = client.post(
+        "/api/actions/telecom.crossRegion", json={"flow_id": fid}, headers=h("planner-a") | {"X-Circularity-Preparer": "gap"}
+    ).json()
+    assert r["ok"] is False and r["error"]["code"] == "approval_required", r

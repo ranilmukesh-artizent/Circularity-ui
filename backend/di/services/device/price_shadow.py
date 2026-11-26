@@ -10,9 +10,10 @@ Owns:
 
 Never does: propose or promote a model (a person proposes, a different person promotes: `model.propose`, `model.promote`),
 let a shadow band reach a case's channel, price or net, or use a language model: every figure is counted or computed (R16).
+MAE and coverage grade a device only on a sale settled after its shadow and after the candidate's training window (not in-sample).
 A case counts once per candidate (its `priceShadow` is rewritten at every valuation). MAE and coverage are measured only on
 cases where both the candidate and the active model have a band for the channel the device sold on, so the two compare on the
-same devices.
+same devices, and only on a sale settled after the shadow was taken and after the candidate's training window (never in-sample).
 """
 
 import json
@@ -58,11 +59,22 @@ def shadow_count(s: Session, model_id: str) -> int:
     )
 
 
-def _sold(s: Session, imei: str) -> tuple[float, str] | None:
-    """The newest settled sale of the device: its price and channel (the listing's, `wholesale` for a lot, else `other`)."""
+def _trained_to(s: Session, model_id: str) -> date | None:
+    """The last day of the data the candidate was fitted on (its `metrics.window.to`), or None when it names none."""
+    row = repo.get(s, model_id)
+    to = ((row.metrics if row else None) or {}).get("window", {}).get("to")
+    return date.fromisoformat(str(to)[:10]) if to else None
+
+
+def _sold(s: Session, imei: str, after: date | None = None) -> tuple[float, str] | None:
+    """The newest settled sale of the device on a day after `after`: its price and channel (the listing's, `wholesale` for a lot,
+    else `other`). A sale on or before `after` is not counted: the candidate was shadowed or trained on it."""
     row = s.execute(
-        text("SELECT sale_id FROM device_sale WHERE imeis @> CAST(:j AS jsonb) ORDER BY settled_at DESC, sale_id DESC LIMIT 1"),
-        {"j": json.dumps([imei])},
+        text(
+            "SELECT sale_id FROM device_sale WHERE imeis @> CAST(:j AS jsonb) "
+            "AND (CAST(:a AS date) IS NULL OR settled_at >= CAST(:a AS date) + 1) ORDER BY settled_at DESC, sale_id DESC LIMIT 1"
+        ),
+        {"j": json.dumps([imei]), "a": after},
     ).first()
     if row is None:
         return None
@@ -80,8 +92,12 @@ def stats(s: Session, model_id: str) -> dict[str, Any]:
     shadows = _shadows(s, model_id)
     cand: list[tuple[float, bool]] = []
     act: list[tuple[float, bool]] = []
+    trained = _trained_to(s, model_id)
     for sh in shadows:
-        sold = _sold(s, str(sh.get("imei") or "")) if sh.get("imei") else None
+        # graded only on a sale settled after the shadow was taken and after the training window (never in-sample)
+        taken = date.fromisoformat(str(sh["at"])[:10]) if sh.get("at") else None
+        after = max((d for d in (taken, trained) if d is not None), default=None)
+        sold = _sold(s, str(sh.get("imei") or ""), after) if sh.get("imei") else None
         if sold is None:
             continue
         y, channel = sold

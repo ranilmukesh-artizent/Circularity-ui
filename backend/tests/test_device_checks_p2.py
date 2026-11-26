@@ -124,3 +124,22 @@ def test_dv_15_live_buynow_is_the_lowest_live_price_of_the_same_sku_and_grade(li
         assert inputs.live_buynow(s, "iPhone 14|128", "B", today) == 305
         assert inputs.live_buynow(s, "iPhone 14|128", "A", today) is None
         assert inputs.live_buynow(s, None, "B", today) is None
+
+
+def test_dv_15_f7_repair_then_sell_carries_the_parts_declaration_check():
+    """Repair then sell lists the device on a listing channel, so GR-D9 holds for it as for those channels."""
+    from tests.test_device_routes_more import QUOTE
+    from tests.test_device_routes_more import _lot as repair_lot
+
+    for status in (None, "unknown"):
+        lot = repair_lot()
+        lot["inputs"]["parts_status"] = status
+        v = _by(lot)["repair_sell"]
+        assert v["ok"] is False and v["why"] == "No genuine-parts declaration (GR-D9)", status
+    genuine = repair_lot()
+    genuine["inputs"]["parts_status"] = "genuine"
+    assert _by(genuine)["repair_sell"]["ok"] is True and "GR-D9" not in _by(genuine)["repair_sell"]["why"]
+    other = repair_lot()
+    other["inputs"]["parts_status"] = "non_genuine"
+    v = _by(other)["repair_sell"]
+    assert v["ok"] is True and "Parts declared non-genuine (GR-D9)" in v["why"] and device.repair_line(QUOTE) in v["why"]

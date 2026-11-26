@@ -223,3 +223,14 @@ def test_dv_08_the_daily_job_values_a_waiting_listed_case_as_an_agent():
     if done[cid] == "done":
         with SessionLocal() as s:
             assert ageing.reevaluate_listed(s, clock.now().date(), "coordinator") == {}  # nothing waits any more
+
+
+def test_dv_08_f9_an_agent_on_a_persons_token_cannot_read_the_suggestions():
+    """R21: the same planner reads them, but the call an agent prepared on that token is refused by the pipeline."""
+    from tests.helpers import client, h
+
+    fid = _fid()
+    assert call("device.ageingSuggestions", {"flow_id": fid}, "planner-a")["ok"] is True
+    for pre in ({"X-Circularity-Preparer": "gap"}, {"X-Circularity-Preparer": "gap", "X-Circularity-Confirmed": "true"}):
+        r = client.post("/api/actions/device.ageingSuggestions", json={"flow_id": fid}, headers=h("planner-a") | pre).json()
+        assert r["ok"] is False and r["error"]["code"] == "approval_required", r

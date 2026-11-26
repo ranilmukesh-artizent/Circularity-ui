@@ -26,7 +26,7 @@ from di.services.actions import hold
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError
 from di.services.actions.scope import case_scope
 from di.services.agents import limits, proposals
-from di.services.agents.forbidden import NO_AGENT_READS, forbidden, held_for_person
+from di.services.agents.forbidden import NO_AGENT_READS, PERSON_ONLY_READS, forbidden, held_for_person
 from di.services.agents.stage_context import StageContext
 
 # HTTP status per error code (the body always carries the demo's code and message)
@@ -138,6 +138,8 @@ def _agent_gate(a: ActionDef, ctx: CallContext) -> tuple[str, str] | None:
     stay open to agents (Ask's access.lookup): the list is about what an agent may change."""
     if a.id in NO_AGENT_READS:
         return "approval_required", f"No agent may {a.verb or a.title.lower()}: it handles a secret."
+    if a.id in PERSON_ONLY_READS:
+        return "approval_required", f"No agent may {a.verb or a.title.lower()}: a person reads this, without an agent."
     if forbidden(a.id) and a.risk != "read" and not a.id.startswith("decision."):
         return "approval_required", f"No agent may {a.verb or a.title.lower()}: a person does this, without an agent."
     if a.risk == "commit" and (not ctx.confirmed or a.id.startswith("decision.")):

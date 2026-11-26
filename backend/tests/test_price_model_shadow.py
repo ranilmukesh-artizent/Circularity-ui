@@ -57,7 +57,7 @@ def _shadow_cases(model_id: str, n: int, *, sold: bool = False, first: int = 0) 
         for k in range(first, first + n):
             imei = f"3599900{k:08d}"
             shadow = {
-                "model_id": model_id, "at": clock.now().isoformat(), "imei": imei,
+                "model_id": model_id, "at": (clock.now() - timedelta(days=2)).date().isoformat(), "imei": imei,
                 "bands": {"wholesale": _band(100 + 2 * k, 5)},
                 "active": {"model_id": None, "bands": {"wholesale": _band(100 + 4 * k, 6)}},
             }  # fmt: skip
@@ -76,6 +76,12 @@ def _shadow_cases(model_id: str, n: int, *, sold: bool = False, first: int = 0) 
                     ),
                     {"i": f"SHT-{k}", "m": json.dumps([imei]), "at": clock.now()},
                 )
+        if sold:  # the candidate was trained on data up to well before these sales
+            to = (clock.now() - timedelta(days=30)).date().isoformat()
+            s.execute(
+                text("UPDATE model_version SET metrics = coalesce(metrics, '{}'::jsonb) || CAST(:w AS jsonb) WHERE id = :i"),
+                {"i": model_id, "w": json.dumps({"window": {"from": "2025-01-01", "to": to}})},
+            )
         s.commit()
 
 
@@ -199,3 +205,40 @@ def test_dv_14_shadow_changes_no_decision(made):
     finally:
         starting.reset()
         _clean()
+
+
+def test_dv_14_f10_stats_exclude_sales_before_the_shadow_and_the_training_window(made):
+    """The candidate is graded only on sales settled after its shadow was taken and after its training window."""
+    mid = _candidate(made)
+    now = clock.now()
+    with SessionLocal() as s:
+        for k in range(3):
+            imei = f"3599900{k:08d}"
+            shadow = {"model_id": mid, "at": (now - timedelta(days=3)).date().isoformat(), "imei": imei,
+                      "bands": {"wholesale": _band(100, 5)},
+                      "active": {"model_id": None, "bands": {"wholesale": _band(100, 6)}}}  # fmt: skip
+            s.execute(
+                text(
+                    "INSERT INTO case_record (id, owner, location, stage, data) "
+                    "VALUES (:i, 'Customer A', 'x', 'intake', CAST(:d AS jsonb))"
+                ),
+                {"i": f"{CASES}{k}", "d": json.dumps({"id": f"{CASES}{k}", "priceShadow": shadow})},
+            )
+            when = [now - timedelta(days=5), now - timedelta(days=1), now - timedelta(days=1)][k]  # k=0 before the shadow
+            s.execute(
+                text(
+                    "INSERT INTO device_sale (sale_id, listing_id, lot_ref, imeis, price, fees, buyer_returns, settled_at, "
+                    "case_ids) "
+                    "VALUES (:i, NULL, 'LOT-SHT', CAST(:m AS jsonb), 100, 0, 0, :at, '[]')"
+                ),
+                {"i": f"SHT-{k}", "m": json.dumps([imei]), "at": when},
+            )
+        s.execute(text("UPDATE model_version SET metrics = coalesce(metrics, '{}'::jsonb) - 'window' WHERE id = :i"), {"i": mid})
+        s.commit()
+        assert price_shadow.stats(s, mid)["settled"] == 2  # the sale before the shadow is not graded
+        s.execute(
+            text("UPDATE model_version SET metrics = coalesce(metrics, '{}'::jsonb) || CAST(:w AS jsonb) WHERE id = :i"),
+            {"i": mid, "w": json.dumps({"window": {"from": "2026-01-01", "to": (now - timedelta(days=1)).date().isoformat()}})},
+        )
+        s.commit()
+        assert price_shadow.stats(s, mid)["settled"] == 0  # settled within the training window: in-sample

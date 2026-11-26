@@ -222,3 +222,16 @@ def test_dv_11_page_names_the_repair_evidence():
     assert row["ok"] and row["why"] == LINE
     assert row["repair"] == {"repair": "Battery swap", "cost": 24, "priceUplift": 28, "days": 5}
     assert all("repair" not in x for x in page["channels"] if x["k"] != "repair_sell")
+
+
+def test_dv_11_f7_a_repaired_device_is_listed_on_its_via_channel():
+    """The `list` step of repair then sell posts the listing on the channel the repaired device sells on."""
+    from di.services.device import settle
+
+    lot = _lot()
+    v = _by(lot)["repair_sell"]
+    case = {"id": "D-9150", "valuer": lot, "chosen": {"id": "repair_sell"}}
+    body = settle.listing_body(case)
+    assert body is not None and v["via"] in ("buynow", "offers", "auction")
+    assert body["channel"] == device.DCN[v["via"]] and body["listingId"] == f"LST-D-9150-{v['via']}"
+    assert body["price"] == round(settle.forecast_p50(lot, v["via"]) + QUOTE["price_uplift"], 2)

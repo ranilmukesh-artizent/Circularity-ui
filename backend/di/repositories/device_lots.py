@@ -111,16 +111,23 @@ def ranking(s: Session, lot: LotRow, as_of: date) -> Ranking:
     return rank_bids(bids(s, lot.lot_ref, as_of), approved_buyers(s, lot.org_unit_id, as_of))
 
 
-def best_net_per_unit(s: Session, model: str, grade: str, as_of: date) -> float | None:
-    """The best approved net a unit among the lots of this model and grade that are collecting bids (the valuer's
-    `inputs.bid_per_unit` of a received device of that model and grade), or None when no such lot has an approved bid."""
+def best_net_per_unit(s: Session, model: str, grade: str, as_of: date, org: str | None) -> float | None:
+    """The best approved net a unit among the lots of this model and grade and of the org `org` only (the tenant boundary: another
+    org's bids never value this org's device) that are collecting bids (the valuer's `inputs.bid_per_unit` of a received device of
+    that model and grade), or None when no such lot has an approved bid or the case has no org."""
+    if not org:
+        return None
     rows = s.execute(
-        text("SELECT org_unit_id, lot_ref FROM device_lot WHERE status = 'bidding' AND model = :m AND grade = :g ORDER BY id"),
-        {"m": model, "g": grade},
+        text(
+            "SELECT lot_ref FROM device_lot WHERE status = 'bidding' AND model = :m AND grade = :g "
+            "AND org_unit_id = :o ORDER BY id"
+        ),
+        {"m": model, "g": grade, "o": org},
     ).all()
     nets = []
-    for org, ref in rows:
-        best = rank_bids(bids(s, ref, as_of), approved_buyers(s, org, as_of)).best
+    approved = approved_buyers(s, org, as_of)
+    for (ref,) in rows:
+        best = rank_bids(bids(s, ref, as_of), approved).best
         if best is not None:
             nets.append(best.net)
     return max(nets) if nets else None

@@ -253,14 +253,15 @@ def price_bands(
     return out
 
 
-def bid_per_unit(s: Session, case: Mapping[str, Any], as_of: date) -> float | None:
-    """The best approved net a unit on a lot of the received device's model and grade that is collecting bids (P9-6.11)."""
+def bid_per_unit(s: Session, case: Mapping[str, Any], as_of: date, org: str | None = None) -> float | None:
+    """The best approved net a unit on a lot of the received device's model and grade, of the case's own org only, collecting
+    bids (P9-6.11; tenant boundary, phase 6 review F4). The org is `org`, else the case's `org`; with none there is no bid."""
     if not case.get("imei") or not case.get("model"):
         return None
-    return device_lots.best_net_per_unit(s, str(case["model"]), str(case["grade"]), as_of)
+    return device_lots.best_net_per_unit(s, str(case["model"]), str(case["grade"]), as_of, org or case.get("org"))
 
 
-def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
+def gather(s: Session, case: Mapping[str, Any], as_of: date, org: str | None = None) -> DeviceInputs:
     """The inputs of the device case (or lot dict) `case`, which names `imei`, `sku_key` and `grade`, as of `as_of`."""
     imei = case.get("imei")
     point = device_market.feed_price(s, str(case["sku_key"]), str(case["grade"]), as_of) if case.get("sku_key") else None
@@ -282,7 +283,7 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
         wipe=wipe.certificate_view(cond),
         bands=price_bands(s, case, cond, point.week if point else None),
         sales_90d=sales_of_sku(s, str(case["sku_key"]), as_of) if case.get("sku_key") else None,
-        bid_per_unit=bid_per_unit(s, case, as_of),
+        bid_per_unit=bid_per_unit(s, case, as_of, org),
         listing=listing_view(s, imei, as_of),
         model_age_months=model_age_months(s, case.get("model"), as_of),
         repair_quote=repair_quote(s, imei),

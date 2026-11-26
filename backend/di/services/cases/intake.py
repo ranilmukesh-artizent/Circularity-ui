@@ -478,7 +478,7 @@ def _snapshot(c: store.Case, facts: dict[str, Any], kind: str, s: Session | None
         c |= {k: lot[k] for k in ("brand", "band", "grade", "ref", "doh")} | {"qty": lot["qty"], "cls": "device"}
         c |= {"valuer": lot}
         if s is not None and lot.get("imei"):  # a received device: the feed price and evidence it opened with (P9-6.4)
-            lot["inputs"] = device_inputs.gather(s, lot, clock.now().date()).as_dict()
+            lot["inputs"] = device_inputs.gather(s, lot, clock.now().date(), c.get("owner")).as_dict()
         c["product"] = c["product"] or f"{lot['brand']} {lot['model']}".strip()
 
 
