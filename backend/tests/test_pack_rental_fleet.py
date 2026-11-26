@@ -37,7 +37,14 @@ def test_rental_fleet_pack_validates():
         "Close and learn",
     ]  # fmt: skip
     assert [r.id for r in p.routes] == [
-        "rerent", "rebuild", "transfer_branch", "retail", "auction", "dealer", "parts", "scrap",
+        "rerent",
+        "rebuild",
+        "transfer_branch",
+        "retail",
+        "auction",
+        "dealer",
+        "parts",
+        "scrap",
     ]
     assert p.valuer.kind == "standard" and standard.validate_valuer(p) == []
     assert "NS-RC-01" in p.stories
@@ -89,5 +96,8 @@ def test_rental_fleet_valuer_params_kpis_samples():
     assert ex is not None and [s["id"] for s in ex["samples"]] == [f"RF-S{n}" for n in range(1, 9)]
     s1 = ex["samples"][0]["facts"]
     assert (s1["asset.hours"], s1["asset.age_years"], s1["asset.book_value"], s1["demand.branch_utilisation"]) == (
-        6200, 8, 52000, 0.72,
+        6200,
+        8,
+        52000,
+        0.72,
     )

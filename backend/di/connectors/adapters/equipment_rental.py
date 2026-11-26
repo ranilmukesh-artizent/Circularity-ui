@@ -9,7 +9,7 @@ Not one of the demo's 21 sources: it starts unregistered (no source_system row),
 canonical model for a unit, keyed by the source's org unit (schema.serial_key) and the machine id.
 
 Resource and facts
-    machines   asset.<key>       machine_id, asset_class, hours, branch, age_years, book_value, owner_tenant, idle_days (when idle)
+    machines   asset.<key>       machine_id, asset_class, hours, branch, age_years, book_value, owner_tenant, idle_days
                demand.<key>      branch_utilisation (the branch and class), purchase_plans (the plans of OTHER branches for the
                                  class: {branch, assetClass, qty}; absent when there are none)
                market.<key>      price_index (the used price of the class and the machine's 1,000-hour band)
@@ -66,7 +66,8 @@ class EquipmentRentalAdapter(GenericAdapter):
             plans = client.get_json("/purchase-plans")
             idle = {i["machineId"]: i["idleDays"] for i in client.get_json("/idle")}
             for row in rows:
-                price = client.get_json("/price-index", params={"class": row["assetClass"], "hoursBand": hours_band(row["hours"])})
+                query = {"class": row["assetClass"], "hoursBand": hours_band(row["hours"])}
+                price = client.get_json("/price-index", params=query)
                 payload: dict[str, Any] = row | {
                     "org_unit_id": org,
                     "utilisation": util.get((row["branch"], row["assetClass"])),
@@ -86,16 +87,20 @@ class EquipmentRentalAdapter(GenericAdapter):
     def map(self, record: Record) -> list[Fact]:
         p = record.payload
         key = serial_key(p.get("org_unit_id"), p["machineId"])
-        facts = [Fact("asset", key, to, p.get(src), src, p.get(src), "Camel case to snake case") for src, to in ASSET.items()]
-        facts.append(Fact("asset", key, "owner_tenant", p.get("org_unit_id"), "org_unit_id", p.get("org_unit_id"), "The source's org"))
-        facts.append(Fact("asset", key, "idle_days", p.get("idleDays"), "idleDays", p.get("idleDays"), "Days idle at the branch"))
-        facts.append(Fact("demand", key, "branch_utilisation", p.get("utilisation"), "utilisation", p.get("utilisation"),
-                          "Utilisation of the machine's branch and class"))  # fmt: skip
-        plans = p.get("plans") or None
-        facts.append(Fact("demand", key, "purchase_plans", plans, "purchase-plans", plans, "Other branches planning to buy the class"))
-        facts.append(Fact("market", key, "price_index", p.get("price"), "price-index", p.get("price"), "Used price of the hours band"))
-        claims = p.get("claims") or None
-        facts.append(Fact("condition", key, "damage_claims", claims, "damage-claims", claims, "Check-in damage claims"))
+
+        def fact(model: str, field: str, src: str, value: Any, how: str) -> Fact:
+            return Fact(model, key, field, value, src, value, how)
+
+        org, plans, claims = p.get("org_unit_id"), p.get("plans") or None, p.get("claims") or None
+        facts = [fact("asset", to, src, p.get(src), "Camel case to snake case") for src, to in ASSET.items()]
+        facts += [
+            fact("asset", "owner_tenant", "org_unit_id", org, "The source's org"),
+            fact("asset", "idle_days", "idleDays", p.get("idleDays"), "Days idle at the branch"),
+            fact("demand", "branch_utilisation", "utilisation", p.get("utilisation"), "Utilisation of the branch and class"),
+            fact("demand", "purchase_plans", "purchase-plans", plans, "Other branches planning to buy the class"),
+            fact("market", "price_index", "price-index", p.get("price"), "Used price of the hours band"),
+            fact("condition", "damage_claims", "damage-claims", claims, "Check-in damage claims"),
+        ]
         return keep(facts)
 
 
